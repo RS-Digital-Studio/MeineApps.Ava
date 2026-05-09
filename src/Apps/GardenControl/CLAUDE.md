@@ -1,7 +1,15 @@
-# GardenControl - Bewässerungssteuerung
+# GardenControl — Bewässerungssteuerung
+
+> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 Automatische Gartenbewässerung mit Raspberry Pi 5 + 7"-Touchscreen als Kiosk-Station,
-plus Android-App für mobile Steuerung. Solar-betrieben (kein Strom im Garten).
+plus Android- und Desktop-App für mobile Steuerung. Solar-betrieben (kein Strom im Garten).
+
+| Aspekt | Wert |
+|--------|------|
+| Pi-Hostname | `gardencontrol.local` |
+| Server-URL | `http://<pi-ip>:5000` |
+| Theme | Sattes Grün `#2E7D32` + Wasser-Blau `#1E88E5` + Erd-Braun `#8D6E63` |
 
 ## Architektur
 

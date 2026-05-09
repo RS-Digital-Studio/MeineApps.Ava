@@ -1,40 +1,29 @@
-# Reborn Saga: Isekai Rising (Avalonia)
+# RebornSaga: Isekai Rising — Anime-RPG
 
-> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+Vollständig SkiaSharp-gerendertes Anime Isekai-RPG im Visual Novel Stil. Kein Avalonia-XAML im
+Spielbereich — alles Szenen, Overlays und UI werden direkt auf SKCanvasView gezeichnet.
 
-## App-Beschreibung
+| Aspekt | Wert |
+|--------|------|
+| Aktuelle Version | v1.0.0 |
+| Package-ID | org.rsdigital.rebornsaga |
+| Modus | In Entwicklung (Android-Test ausstehend) |
+| Farbpalette | "Isekai System Blue" — #4A90D9 Primary, #9B59B6 Lila, #F39C12 Gold |
+| Firebase | `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69,2 MB) |
 
-Anime Isekai-RPG im Visual Novel Stil mit SkiaSharp-Engine. Der Spieler erwacht als gefallener Held
-ohne Erinnerung in einer Game-World - mit Status-Fenstern (Solo Leveling inspiriert), Klassenwahl,
-aktionsbasierten Kämpfen, NPCs und verzweigten Story-Pfaden.
+> Für Build-Befehle, Conventions, Troubleshooting und Packaging-Patterns: [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
-**Version:** 1.0.0 | **Package-ID:** org.rsdigital.rebornsaga | **Status:** In Entwicklung
+---
 
-## Farbpalette ("Isekai System Blue")
-
-| Farbe | Hex | Zweck |
-|-------|-----|-------|
-| Primary | #4A90D9 | System-Blau, UI-Glow, Mana |
-| Secondary | #9B59B6 | Mystisches Lila, Magie |
-| Accent | #F39C12 | Gold, EXP, Belohnungen |
-| Health | #E74C3C | HP-Bars, Schaden |
-| Background | #0D1117 | Dunkles UI (GitHub-Dark) |
-| Surface | #161B22 | Karten, Panels |
-| SystemGlow | #58A6FF | ARIA System-Fenster |
-
-## Architektur
-
-### Szenen-basierte SkiaSharp-Engine
-
-Komplett SkiaSharp-gerendert (kein Avalonia XAML außer Host-View). Szenen-Stack mit Transitions.
+## Architektur: Szenen-basierte SkiaSharp-Engine
 
 ```
 MainView (SKCanvasView, 60fps DispatcherTimer)
-  └─ MainViewModel (Update + Render + Input Delegation)
-       └─ SceneManager (Scene-Stack + Overlays + Transitions)
-            ├─ Scene (abstrakt: Update, Render, HandleInput, Lifecycle)
-            ├─ TransitionEffect (Fade, Slide, Glitch, Dissolve, MangaWipe, Iris)
-            └─ InputManager (Pointer→InputAction: Tap, Hold, Swipe, Drag)
+  └── MainViewModel (Update + Render + Input-Delegation)
+        └── SceneManager (Scene-Stack + Overlays + Transitions)
+              ├── Scene (abstrakt: Update, Render, HandleInput, Lifecycle)
+              ├── TransitionEffect (Fade, Slide, Glitch, Dissolve, MangaWipe, Iris)
+              └── InputManager (Pointer → InputAction: Tap, Hold, Swipe, Drag)
 ```
 
 ### Scene-Lifecycle
@@ -43,116 +32,105 @@ MainView (SKCanvasView, 60fps DispatcherTimer)
 OnEnter() → Update(dt) / Render(canvas, bounds) / HandleInput() → OnPause() ↔ OnResume() → OnExit()
 ```
 
-- `ChangeScene<T>()` - Ersetzt aktive Szene (alte OnExit, neue OnEnter)
-- `PushScene<T>()` - Szene drüber legen (alte OnPause)
-- `PopScene()` - Obere entfernen (untere OnResume)
-- `ShowOverlay<T>()` / `HideOverlay()` - Transparente Overlays
-- `ConsumesInput` - Virtuelle Property (default: true). Bei `false` wird Input an darunterliegende Szene durchgereicht (z.B. EffectFeedbackOverlay)
+| Methode | Wann |
+|---------|------|
+| `ChangeScene<T>()` | Ersetzt aktive Szene (alte: OnExit, neue: OnEnter) |
+| `PushScene<T>()` | Szene drüberlegen (alte: OnPause) |
+| `PopScene()` | Obere entfernen (untere: OnResume) |
+| `ShowOverlay<T>()` / `HideOverlay()` | Transparente Overlays |
+
+`ConsumesInput` — virtuelle Property (default: `true`). Bei `false` wird Input an die darunterliegende
+Szene durchgereicht (Beispiel: `EffectFeedbackOverlay`).
+
+Szenen werden per `ActivatorUtilities.CreateInstance<T>()` mit Constructor Injection erstellt.
 
 ### Camera (Engine/Camera.cs)
 
-Viewport-Kamera mit Pan, Zoom und Screen-Shake. Wird von Szenen verwendet um den sichtbaren Bereich zu steuern. Properties: X, Y, Zoom. Methoden: Shake(intensity, duration), Update(dt), ApplyTransform(canvas, bounds).
+Viewport-Kamera mit Pan, Zoom und Screen-Shake. Properties: `X`, `Y`, `Zoom`.
+Methoden: `Shake(intensity, duration)`, `Update(dt)`, `ApplyTransform(canvas, bounds)`.
 
-### Szenen per DI erstellt
-
-`ActivatorUtilities.CreateInstance<T>()` - Constructor Injection für Services.
+---
 
 ## Szenen-Übersicht
 
 | Szene | Beschreibung |
 |-------|-------------|
-| AssetDownloadScene | Download-Screen für AI-Assets (Fortschrittsbalken, Partikel, Retry bei Fehler), automatischer Wechsel zu TitleScene |
-| TitleScene | Animierter Titelbildschirm, "Neues Spiel" vs "Fortsetzen" (SaveGame-Erkennung) |
-| SaveSlotScene | 3 Speicherplätze, Long-Press zum Löschen |
-| ClassSelectScene | 3 Klassen (Schwertmeister/Arkanist/Schattenklinke) |
-| DialogueScene | Hintergrund + Portrait + Typewriter + Choices + MangaPanel-Modus + GlitchEffect (ARIA) + Kamera-Zoom/Shake |
-| BattleScene | Aktions-basierter Kampf (Angriff/Ausweichen/Skill/Item) + AI-Enemy-Sprites + Angriffs-Animation, Dodge-Ghosting, SplashArt bei Ultimates, geführtes 5-Phasen-Tutorial (Prolog P1) |
-| OverworldScene | Node-Map (Slay the Spire-inspiriert) mit Kamera-Pan, AI-Regions-Hintergründe |
-| InventoryScene | Grid-Ansicht, 6 Kategorien, AI-Item-Icons mit Qualitäts-Glow, Ausrüsten/Benutzen |
-| ShopScene | Kaufen/Verkaufen, Gold-Counter |
-| StatusScene | 3 Tabs (Status/Skills/Equipment) |
-| CodexScene | Bestiary, Lore und Charakter-Profile nach Kategorien sortiert |
-| SettingsScene | Audio + Text-Geschwindigkeit, persistiert via IPreferencesService |
+| `AssetDownloadScene` | Download-Screen (Fortschrittsbalken, Partikel, Retry), wechselt automatisch zu TitleScene |
+| `TitleScene` | Animierter Titelbildschirm, "Neues Spiel" vs. "Fortsetzen" (SaveGame-Erkennung) |
+| `SaveSlotScene` | 3 Speicherplätze, Long-Press zum Löschen, `_isLoading`-Guard gegen Race Condition |
+| `ClassSelectScene` | 3 Klassen (Schwertmeister / Arkanist / Schattenklinke) |
+| `DialogueScene` | Hintergrund + Portrait + Typewriter + Choices + MangaPanel + GlitchEffect (ARIA) + Kamera-Zoom/Shake |
+| `BattleScene` | Aktionsbasierter Kampf + Element-System + geführtes 5-Phasen-Tutorial (Prolog P1) |
+| `OverworldScene` | Node-Map (Slay the Spire-inspiriert) mit Kamera-Pan, AI-Regions-Hintergründe |
+| `InventoryScene` | Grid-Ansicht, 6 Kategorien, AI-Item-Icons mit Qualitäts-Glow |
+| `ShopScene` | Kaufen/Verkaufen, Gold-Counter |
+| `StatusScene` | 3 Tabs (Status / Skills / Equipment) |
+| `CodexScene` | Bestiary, Lore und Charakter-Profile nach Kategorien sortiert |
+| `SettingsScene` | Audio + Text-Geschwindigkeit, persistiert via `IPreferencesService` |
+
+---
 
 ## Overlay-Übersicht
 
 | Overlay | Beschreibung |
 |---------|-------------|
-| PauseOverlay | 7 Buttons (Fortsetzen bis Hauptmenü), Press-Feedback |
-| StatusWindowOverlay | Solo Leveling Stil: Stats, HP/MP, Glitch-Ein |
-| SystemMessageOverlay | ARIA-Nachrichten, auto-dismiss 3-5s |
-| LevelUpOverlay | Fanfare, Stats hochzählen, +3 Punkte verteilen |
-| FateChangedOverlay | Glitch-Effekt, "Das Schicksal hat sich verändert..." |
-| GameOverOverlay | Revive (Rewarded Ad) oder Speicherpunkt laden |
-| ChapterUnlockOverlay | Gold-Kosten, Freischalten oder Video ansehen |
-| BacklogOverlay | Scrollbare Dialog-Historie (max 200), thread-safe, Scroll-Support |
-| EffectFeedbackOverlay | Floating-Texte (Karma/Affinität/EXP/Gold), auto-dismiss 2.5s, ConsumesInput=false (Input-Passthrough) |
-| TutorialOverlay | Highlight + ARIA-Textbox, ConsumesInput blockiert darunterliegende Szene |
+| `PauseOverlay` | 7 Buttons (Fortsetzen bis Hauptmenü), Press-Feedback |
+| `StatusWindowOverlay` | Solo Leveling Stil: Stats, HP/MP, Glitch-Einblendung |
+| `SystemMessageOverlay` | ARIA-Nachrichten, auto-dismiss 3-5 s |
+| `LevelUpOverlay` | Fanfare, Stats hochzählen, +3 Punkte verteilen |
+| `FateChangedOverlay` | Glitch-Effekt, "Das Schicksal hat sich verändert..." |
+| `GameOverOverlay` | Revive (Rewarded Ad) oder Speicherpunkt laden |
+| `ChapterUnlockOverlay` | Gold-Kosten, Freischalten oder Video ansehen |
+| `BacklogOverlay` | Scrollbare Dialog-Historie (max 200), thread-safe via `lock` |
+| `EffectFeedbackOverlay` | Floating-Texte (Karma/Affinität/EXP/Gold), auto-dismiss 2,5 s, `ConsumesInput=false` |
+| `TutorialOverlay` | Highlight + ARIA-Textbox, `ConsumesInput=true` blockiert BattleScene |
+
+---
 
 ## Rendering-System
 
-### Charakter-Rendering (AI-Sprites Only)
+### Charakter-Sprites (AI-Only)
 
-Rein Sprite-basiertes System: AI-generierte Einzelbilder pro Pose+Emotion. KEIN Fallback auf prozedurales Rendering.
+Rein Sprite-basiertes System. Kein prozeduraler Fallback — fehlendes Asset = nichts gezeichnet.
+Prozedurales Legacy-System (CharacterParts, FaceRenderer, HairRenderer usw.) wurde entfernt.
 
 **Sprite-Pipeline:**
-- `SpriteDefinitions` - Pose-Enum (Standing/Battle/Sitting/Kneeling/Floating/Lying/Running), CharacterSpriteData, OverlayInfo
-- `SpriteAssetPaths` - Pfad-Konventionen: `characters/{id}/full/{pose}_{emotion}.webp` + Overlays
-- `SpriteCharacterRenderer` - Statische Klasse: Komplette Bilder, Per-Character AnimState (unabhängiges Blinzeln), Crossfade, Idle-Breathing, Mund-Animation (3 Frames)
-- `SpriteCache` (Service) - LRU-Cache (max 30 Einzelbilder), thread-safe, IDisposable, Preload-Support. Methoden: GetSprite, GetEnemySprite, GetBackground, GetItemIcon, GetMapNodeIcon
-- `CharacterRenderer` - Fassade: DrawPortrait/DrawFullBody/DrawIcon, aktiv/inaktiv-Dimming. Ohne Sprites wird NICHTS gezeichnet
-- `CharacterDefinitions` - 10 Definitionen (3 Protagonist-Klassen + 5 NPCs + 2 Bosse) + `GetById()` Lookup
+
+| Klasse | Aufgabe |
+|--------|---------|
+| `SpriteCharacterRenderer` | Komplette Bilder, unabhängiges Blinzeln pro Charakter, Crossfade 150 ms, Mund-Animation (3 Frames) |
+| `SpriteCache` (Service) | LRU-Cache (max 30 Bilder), thread-safe, `IDisposable`, Preload-Support |
+| `CharacterRenderer` | Fassade: `DrawPortrait` / `DrawFullBody` / `DrawIcon`, aktiv/inaktiv-Dimming |
+| `CharacterDefinitions` | 10 Definitionen (3 Protagonist-Klassen + 5 NPCs + 2 Bosse), `GetById()` |
+| `SpriteDefinitions` | `Pose`-Enum (Standing/Battle/Sitting/Kneeling/Floating/Lying/Running) |
+| `SpriteAssetPaths` | Pfad-Konventionen aller Asset-Typen |
 
 **Asset-Pfade:**
 ```
-characters/{charId}/full/{pose}_{emotion}.webp   → Komplettes Charakter-Bild
-characters/{charId}/overlays/blink.webp            → Blinzel-Overlay
-characters/{charId}/overlays/mouth_open.webp       → Mund-Overlay (offen)
-characters/{charId}/overlays/mouth_wide.webp       → Mund-Overlay (weit)
-enemies/{enemyId}.webp                             → Gegner-Sprite
-backgrounds/{sceneKey}.webp                        → AI-generierter Hintergrund
-scenes/{sceneId}.webp                              → Animated WebP (Cutscenes)
-items/{category}/{itemId}.webp                     → Item-Icons
-map/nodes/{nodeType}.webp                          → Map-Node-Icons (story, boss, etc.)
-map/regions/{chapterId}.webp                       → Overworld-Regions-Hintergründe
+characters/{charId}/full/{pose}_{emotion}.webp
+characters/{charId}/overlays/blink.webp
+characters/{charId}/overlays/mouth_open.webp
+characters/{charId}/overlays/mouth_wide.webp
+enemies/{enemyId}.webp
+backgrounds/{sceneKey}.webp
+scenes/{sceneId}.webp          → Animated WebP (Cutscenes)
+items/{category}/{itemId}.webp
+map/nodes/{nodeType}.webp
+map/regions/{chapterId}.webp
 ```
 
-**Per-Character AnimState:**
-- Jeder Charakter hat eigenes Blinzel-Timing (3-5s Intervall, versetzt)
-- Mund-Animation mit 3 Frames (geschlossen/offen/weit) bei Sprechen
-- Crossfade (150ms) bei Emotions-Wechsel
-
 **Asset-Delivery:**
-- `AssetDeliveryService` - Firebase Storage REST API, SHA256-Hash-Verifikation, Delta-Updates
-- `AssetManifest` - Beschreibt alle Packs (characters, backgrounds, enemies, items, scenes)
-- Stream-basierter Download mit Retry (3x exponentieller Backoff), temporäre Dateien
-- Firebase: `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69.2 MB)
-- Generierung: ComfyUI + Animagine XL 4.0, Scripts in `F:\AI\ComfyUI_workflows\`
-- Upload: `upload_assets.py` (Uniform Bucket Access, kein make_public())
+- `AssetDeliveryService` — Firebase Storage REST API, SHA256-Hash-Verifikation, Delta-Updates
+- Stream-basierter Download mit Retry (3× exponentieller Backoff), temporäre Dateien
+- `AssetManifest` beschreibt alle Packs (characters, backgrounds, enemies, items, scenes)
 
-**Asset-Qualitäts-Pipeline (10. März 2026) - ABGESCHLOSSEN:**
-- `regenerate_all_assets.py` - 3-Phasen-Pipeline: Queue → Chroma Key → Deploy
-- `resume_missing_jobs.py` - Nur fehlende Jobs nachladen (nach ComfyUI-Crash)
-- Dunkle Chars (Nihilus, Xaroth, Vex, Kael, Assassin, Aldric, Sword): Green Screen + Chroma-Key
-- Helle Chars (Aria, Luna, System Aria, Mage): White BG + BiRefNet
-- 11 Charaktere (10-13 Posen + Overlays), 4 Enemies, 6 Backgrounds, 8 Items regeneriert
-- Alle Sprites: Full-Body, Long Shot, kein Close-Up, 1248x1824 WebP q90
-- Overlay-Varianten (blink/mouth) werden aus standing_neutral kopiert
+**AnimatedWebPRenderer:** SKCodec-basiertes Frame-für-Frame-Rendering für Cutscenes.
+Loop-Support, gecachte Frame-Bitmap, Frame-Timing aus WebP-Metadaten.
 
-**AnimatedWebPRenderer:**
-- SKCodec-basiertes Frame-für-Frame Rendering für CG-Szenen/Cutscenes
-- Loop-Support, gecachte Frame-Bitmap, Frame-Timing aus WebP-Metadaten
+### Hintergründe (Multi-Layer Komposition)
 
-**Prozedurales Legacy-System: ENTFERNT (7. März 2026)**
-- CharacterParts, FaceRenderer, EyeRenderer, HairRenderer, BodyRenderer, ClothingRenderer, AccessoryRenderer, CharacterEffects wurden gelöscht
-- Nur noch AI-Sprites via SpriteCharacterRenderer
+`BackgroundCompositor` orchestriert 6 Layer-Renderer rund um Charakter-Rendering:
 
-### Hintergründe (Multi-Layer Kompositions-System)
-
-Datengetriebenes System mit C#-Records (`SceneDef`) und 6 spezialisierten Layer-Renderern.
-`BackgroundCompositor` orchestriert alles mit Split-Rendering um Charaktere herum.
-
-**Render-Reihenfolge:**
 ```
 BackgroundCompositor.RenderBack()      // Sky + Elements + Ground + PointLights
 BackgroundCompositor.BeginLighting()   // SaveLayer mit Ambient ColorFilter
@@ -161,10 +139,8 @@ BackgroundCompositor.EndLighting()     // Restore (Ambient-Tönung angewendet)
 BackgroundCompositor.RenderFront()     // Foreground + Partikel
 ```
 
-**Layer-Renderer (in `Rendering/Backgrounds/Layers/`):**
-
-| Renderer | Aufgabe |
-|----------|---------|
+| Layer-Renderer | Aufgabe |
+|----------------|---------|
 | `SkyRenderer` | 3-Farben vertikaler LinearGradient, Shader-Caching |
 | `ElementRenderer` | 24 Silhouetten-Typen (Bäume, Gebäude, Felsen, Architektur, Innenraum, Spezial) |
 | `GroundRenderer` | Boden-Band mit Gradient-Übergang, 6 Texturen (Grass, Stone, Wood, Sand, Snow, Water) |
@@ -172,240 +148,297 @@ BackgroundCompositor.RenderFront()     // Foreground + Partikel
 | `SceneParticleRenderer` | 12 deterministische Partikel-Typen (kein Heap-State) |
 | `ForegroundRenderer` | 5 Typen über Charakteren (GrassBlade, Fog, Branch, Cobweb, LightRay) mit Safezone-Clip |
 
-**Datenmodell:**
-- `SceneDef` — Positional record: Sky, Elements, Ground, Lights, Particles, Foreground
-- `SceneDefinitions` — 14 statische Szenen + `Dictionary<string, SceneDef>` (case-insensitive)
-- Rückwärtskompatible Keys: "forest"→ForestDay, "village"→VillageSquare, "dungeon"→DungeonHalls etc.
+`SceneDef` (positional record) + `SceneDefinitions` (14 statische Szenen, Dictionary case-insensitive).
+Rückwärtskompatible Keys: `"forest"→ForestDay`, `"dungeon"→DungeonHalls` usw.
 
-**14 Szenen:** SystemVoid, Title, ForestDay, ForestNight, Campfire, VillageSquare, VillageTavern, DungeonHalls, DungeonBoss, TowerLibrary, TowerSummit, Battlefield, CastleHall, Dreamworld
-
+**14 Szenen:** SystemVoid, Title, ForestDay, ForestNight, Campfire, VillageSquare, VillageTavern,
+DungeonHalls, DungeonBoss, TowerLibrary, TowerSummit, Battlefield, CastleHall, Dreamworld.
 
 ### Effekte
 
 | System | Beschreibung |
 |--------|-------------|
-| ParticleSystem | Struct-basiert, 11 Presets (MagicSparkle, LevelUpGlow, SystemGlitch, BloodSplatter, AmbientFloat + 6 Element-Presets: FireBurst, IceShard, LightningStrike, WindGust, HolyLight, ShadowVoid) |
-| GlitchEffect | Horizontale Verschiebung + RGB-Split |
-| ScreenShake | Canvas-Translation (3px normal, 5px Kritisch) |
-| MangaPanelRenderer | Screen in Panels splitten |
-| SplashArtRenderer | Charakter-Portrait bei Ultimates |
+| `ParticleSystem` | Struct-basiert, 11 Presets (MagicSparkle, LevelUpGlow, SystemGlitch, BloodSplatter, AmbientFloat + 6 Element-Presets: FireBurst, IceShard, LightningStrike, WindGust, HolyLight, ShadowVoid) |
+| `GlitchEffect` | Horizontale Verschiebung + RGB-Split |
+| `ScreenShake` | Canvas-Translation (3 px normal, 5 px kritisch) |
+| `MangaPanelRenderer` | Screen in Panels splitten |
+| `SplashArtRenderer` | Charakter-Portrait bei Ultimates |
 
 ### UI-Renderer
 
-- `UIRenderer` - Buttons, TextWithShadow, ProgressBars, HitTest (statisch, gepoolte Paints)
-- `DialogBoxRenderer` - Halbtransparente Box, Sprecher-Name, Weiter-Indikator
-- `TypewriterRenderer` - Buchstabe-für-Buchstabe (4 Geschwindigkeiten)
-- `ChoiceButtonRenderer` - 2-4 Optionen vertikal, Tags ([Karma+], [STR Check])
-- `StatusWindowRenderer` - Solo Leveling Stil: Dunkler BG, blaue Glow-Ränder
+| Klasse | Aufgabe |
+|--------|---------|
+| `UIRenderer` | Buttons, TextWithShadow, ProgressBars, HitTest — statisch, gepoolte Paints |
+| `DialogBoxRenderer` | Halbtransparente Box, Sprecher-Name, Weiter-Indikator |
+| `TypewriterRenderer` | Buchstabe-für-Buchstabe (4 Geschwindigkeiten) |
+| `ChoiceButtonRenderer` | 2-4 Optionen vertikal, Tags ([Karma+], [STR Check]) |
+| `StatusWindowRenderer` | Solo Leveling Stil: dunkler BG, blaue Glow-Ränder |
 
 ### Map-Renderer
 
-- `OverworldRenderer` - Kapitel-Map mit Nodes und Pfaden, AI-Regions-Hintergrund (SetRegionBackground)
-- `NodeRenderer` - Knoten-Typen (Story, Boss, Sidequest, Rest, Shop), AI-Icons via SpriteCache (SetSpriteCache)
-- `PathRenderer` - Verbindungslinien (freigeschaltet/gesperrt)
+- `OverworldRenderer` — Kapitel-Map mit Nodes und Pfaden, AI-Regions-Hintergrund
+- `NodeRenderer` — Knoten-Typen (Story, Boss, Sidequest, Rest, Shop), AI-Icons via SpriteCache
+- `PathRenderer` — Verbindungslinien (freigeschaltet/gesperrt)
+
+---
 
 ## Story-System
 
-### JSON-basierte Kapitel
-
-13 Kapitel: Prolog P1-P3 + Arc 1 K1-K10.
+### JSON-basierte Kapitel (13 gesamt: P1-P3 + K1-K10)
 
 ```
-Data/Chapters/chapter_{id}.json      → Kapitel-Struktur (Nodes, Verbindungen)
-Data/Dialogue/{lang}/chapter_{id}.json → Lokalisierte Texte (DE, EN, ES, FR, IT, PT)
-Data/Maps/overworld_{id}.json         → Overworld-Map (Knoten + Pfade)
+Data/Chapters/chapter_{id}.json          → Kapitel-Struktur (Nodes, Verbindungen)
+Data/Dialogue/{lang}/chapter_{id}.json   → Lokalisierte Texte (DE, EN, ES, FR, IT, PT)
+Data/Maps/overworld_{id}.json            → Overworld-Map (Knoten + Pfade)
 ```
 
-### StoryEngine Service
+### StoryEngine (Service)
 
-- Lädt Kapitel aus EmbeddedResource
-- Navigiert durch Knoten (Next, Choices, Conditions)
-- Constructor Injection: `ProgressionService`, `FateTrackingService`, `GoldService`, `InventoryService`
-- `SetPlayer(player)` muss nach SaveGame-Load oder Neues-Spiel aufgerufen werden (synchronisiert Engine-State)
-- `AdvanceToNode()` prüft `node.Condition` - wenn nicht erfüllt, wird Knoten übersprungen (folgt node.Next, iterativ mit Limit 100)
-- Condition-Parser unterstützt:
-  - Vergleiche: `karma > 50`, `affinity:aria >= 10`, `class == 1`
-  - Item-Check: `has_item:M001`, `!has_item:M001`
-  - Flag-Check: `has_flag:betrayed_aldric`, `!has_flag:betrayed_aldric`
-  - Einwort-Flags: `alliance_aria`, `!alliance_kael` (Fallback auf Flags.Contains)
-- `ApplyEffects()` verarbeitet alle StoryEffects-Felder:
-  - `karma` → FateTrackingService.ModifyKarma() + Player.Karma sync
-  - `exp` → ProgressionService.AwardExp() (Level-Up Events)
-  - `gold` → GoldService.AddGold/SpendGold() (Minimum 0 Clamp)
-  - `affinity` → Engine + Player.Affinities sync
-  - `addItems`/`removeItems` → InventoryService.AddItem/RemoveItem + Engine + Player.Inventory sync
-  - `setFlags`/`removeFlags` → Engine + Player.Flags + FateTrackingService sync
-  - `fateChanged` → Flag speichern + FateTrackingService.RecordFateChange() + FateChangeTriggered Event
-- Sprach-Fallback: CurrentUICulture → Deutsch
-- Events: `EffectsApplied`, `ChapterCompleted`, `FateChangeTriggered`
+Navigiert durch Knoten, prüft Conditions und wendet StoryEffects an.
+`SetPlayer(player)` muss nach SaveGame-Load oder "Neues Spiel" aufgerufen werden.
 
-### Knoten-Typen (NodeType)
+**Condition-Parser unterstützt:**
+- Vergleiche: `karma > 50`, `affinity:aria >= 10`, `class == 1`
+- Item-Check: `has_item:M001`, `!has_item:M001`
+- Flag-Check: `has_flag:betrayed_aldric`, `!has_flag:betrayed_aldric`
+- Einwort-Flags: `alliance_aria` (Fallback auf `Flags.Contains`)
 
-Dialogue, Choice, Battle, ClassSelect, Shop, Cutscene, Overworld, BondScene, FateChange, SystemMessage, ChapterEnd
+`AdvanceToNode()` überspringt Knoten wenn Condition nicht erfüllt (iterativ, Limit 100).
+
+**ApplyEffects() verarbeitet:**
+- `karma` → `FateTrackingService.ModifyKarma()` + `Player.Karma` sync
+- `exp` → `ProgressionService.AwardExp()` (Level-Up Events)
+- `gold` → `GoldService.AddGold/SpendGold()` (Minimum 0 Clamp)
+- `affinity` → Engine + `Player.Affinities` sync
+- `addItems`/`removeItems` → `InventoryService` + Engine + `Player.Inventory` sync
+- `setFlags`/`removeFlags` → Engine + `Player.Flags` + `FateTrackingService` sync
+- `fateChanged` → `FateChangeTriggered` Event
+
+**Knoten-Typen:** Dialogue, Choice, Battle, ClassSelect, Shop, Cutscene, Overworld, BondScene,
+FateChange, SystemMessage, ChapterEnd.
+
+---
 
 ## RPG-Systeme
 
-### Klassen (3)
+### Klassen
 
-| Klasse | Stärke | Schwäche | Auto-Bonus |
-|--------|--------|----------|------------|
-| Schwertmeister | STR, DEF | MAG | +2 ATK/Level |
-| Arkanist | MAG, MP | DEF | +3 MP/Level |
-| Schattenklinke | AGI, LUK | HP | +5% Crit/Level |
+| Klasse | Stärke | Schwäche | Auto-Bonus/Level |
+|--------|--------|----------|------------------|
+| Schwertmeister | STR, DEF | MAG | +2 ATK |
+| Arkanist | MAG, MP | DEF | +3 MP |
+| Schattenklinke | AGI, LUK | HP | +5% Crit |
 
 ### Elemente (6)
 
-Feuer > Eis > Blitz > Wind > Licht > Dunkel > Feuer (1.5x bei Schwäche, 0.5x bei Resistenz)
+Feuer > Eis > Blitz > Wind > Licht > Dunkel > Feuer (Schwäche: 1,5×, Resistenz: 0,5×)
+
+### Battle-System
+
+**Kampf-Phasen (BattlePhase Enum):**
+```
+Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkillAttack)
+      → EnemyTurn → (Victory | Defeat | BossPhaseChange | Done)
+```
+
+`BossPhaseChange` — Boss wechselt Phase (Mini-Cutscene, volle HP).
+`Done` — Kampf abgeschlossen, keine weitere Interaktion.
+
+**Tutorial (Prolog P1, Gegner B001):**
+- Aktivierung: `enemy.Id == "B001" && TutorialService.ShouldShow("FirstBattle")`
+- 5 Phasen (_tutorialStep 0-5): Intro → Angriff → Skill → Item → Ausweichen → Frei
+- `IsTutorialActionEnabled()` erlaubt pro Phase nur die zu lernende Aktion
+- Schaden-Override: Vor Phase 3 max 10% HP, Phase 4 erzwingt erfolgreichen Dodge
+- Abschluss: `TutorialService.MarkSeen("FirstBattle")`
 
 ### Services-Übersicht
 
 | Service | Zweck |
 |---------|-------|
-| StoryEngine | Kapitel-Navigation, Conditions, Effekte (EXP/Gold/Karma/Flags), SetPlayer() |
-| BattleEngine | Schadensberechnung, Element-System, Crits |
-| SkillService | 15 Skills/Klasse, 5 Stufen, Freischaltung per Level |
-| InventoryService | Items verwalten, Ausrüsten, Stack-Verwaltung |
-| AffinityService | Bond-Stufen (0-100) für 5 NPCs |
-| FateTrackingService | Karma (-100 bis +100), Entscheidungs-Log, FateFlags, ModifyKarma() |
-| CodexService | Enzyklopädie (Charaktere, Orte, Lore) |
-| ProgressionService | EXP, Level-Up, Stat-Verteilung |
-| SaveGameService | SQLite, 3 Slots, Auto-Save bei Knoten-Wechsel. 5 Services per Constructor Injection (Skill/Inventory/Affinity/FateTracking/Codex). SaveGameAsync(slot, player, playTime), LoadGameAsync(slot) |
-| GoldService | Gold verwalten, Rewarded-Video-Cooldown (3x/Tag) |
-| ChapterUnlockService | K6-K10 per Gold (800-3.500), Gesamt 9.800. SemaphoreSlim gegen Doppel-Unlock |
-| AudioService | SFX (SoundPool, 28 GameSfx) + BGM (MediaPlayer, 10 BgmTracks), Desktop-Stub, Android: AndroidAudioService + Vibrator |
-| TutorialService | Erstbesucher-Hints per Preferences |
-| DailyService | Login-Bonus (Gold), Prophezeiung (lokalisierbar, Prophecy_0-13 RESX-Keys), Streak |
-| EnemyLoader | Statisch, Lazy-Load aus enemies.json. GetById() gibt geklonten Enemy zurück (Kampf-HP pro Kampf variabel) |
+| `StoryEngine` | Kapitel-Navigation, Conditions, Effekte (EXP/Gold/Karma/Flags) |
+| `BattleEngine` | Schadensberechnung, Element-System, Crits |
+| `SkillService` | 15 Skills/Klasse, 5 Stufen, Freischaltung per Level |
+| `InventoryService` | Items verwalten, Ausrüsten, Stack-Verwaltung |
+| `AffinityService` | Bond-Stufen (0-100) für 5 NPCs |
+| `FateTrackingService` | Karma (-100 bis +100), Entscheidungs-Log, FateFlags |
+| `CodexService` | Enzyklopädie (Charaktere, Orte, Lore) |
+| `ProgressionService` | EXP, Level-Up, Stat-Verteilung |
+| `SaveGameService` | SQLite, 3 Slots, Auto-Save bei Knoten-Wechsel, `SemaphoreSlim` + `IDisposable` |
+| `GoldService` | Gold verwalten, Rewarded-Video-Cooldown (3×/Tag) |
+| `ChapterUnlockService` | K6-K10 per Gold, `SemaphoreSlim` gegen Doppel-Unlock |
+| `AudioService` | SFX (SoundPool, 28 GameSfx) + BGM (MediaPlayer, 10 BgmTracks) |
+| `TutorialService` | Erstbesucher-Hints per Preferences |
+| `DailyService` | Login-Bonus (Gold), Prophezeiung (RESX-Keys Prophecy_0-13), Streak |
+| `EnemyLoader` | Lazy-Load aus enemies.json, `GetById()` gibt geklonten Enemy zurück |
+| `AssetDeliveryService` | Firebase Storage REST API, SHA256-Verifikation, Delta-Updates |
 
-## Gold-Economy
+### Gold-Economy
 
-| Kapitel | Kosten | Status |
-|---------|--------|--------|
+| Kapitel | Kosten | Kategorie |
+|---------|--------|-----------|
 | P1-P3 | Gratis | Prolog |
 | K1-K5 | Gratis | Arc 1 (frei) |
-| K6 | 500 Gold | Arc 1 (Gold) |
-| K7 | 800 Gold | Arc 1 (Gold) |
-| K8 | 1.200 Gold | Arc 1 (Gold) |
-| K9 | 1.800 Gold | Arc 1 (Gold) |
-| K10 | 2.700 Gold | Arc 1 (Gold) |
+| K6 | 500 Gold | Arc 1 (kostenpflichtig) |
+| K7 | 800 Gold | Arc 1 (kostenpflichtig) |
+| K8 | 1.200 Gold | Arc 1 (kostenpflichtig) |
+| K9 | 1.800 Gold | Arc 1 (kostenpflichtig) |
+| K10 | 2.700 Gold | Arc 1 (kostenpflichtig) |
 
-Gesamt K6-K10: 7.000 Gold (vorher 9.800, ursprünglich 20.000). Boss-Gold-Drops B005-B014 auf 100-500 erhöht (vorher 30-250).
+Gold-Quellen: Kampf-Drops, Story-Belohnungen, Rewarded Video (500 G, 3×/Tag), Daily Login.
 
-Gold-Quellen: Kampf-Drops, Story-Belohnungen, Rewarded Video (500G, 3x/Tag), Daily Login.
+---
 
-## Premium & Ads
+## Performance-Patterns
 
-- **Kein Banner-Ad** (Vollbild-SkiaSharp-Spiel)
-- **Rewarded Ads** (6 Placements): gold_bonus, time_rift, bonus_exp, revive, daily_prophecy, kodex_hint
-- **IAP**: Gold-Pakete, Zeitkristalle, remove_ads (Preise noch offen)
+**Kern-Regel:** Alle statischen `SKPaint` / `SKFont` / `SKMaskFilter` / `SKPath` werden als
+`static readonly` Felder gehalten. `Cleanup()` ist bewusst leer — statische Ressourcen leben
+für die gesamte App-Lifetime. Dispose crasht bei Wiederverwendung.
+
+| Bereich | Pattern |
+|---------|---------|
+| `StatusWindowRenderer` | Gecachte Bar- und Stat-Texte, nur bei Wertänderung neu erzeugt |
+| `BattleScene` | Gecachter `_cachedEnemySpriteKey`, `BackgroundCompositor.SetScene()` in `OnEnter()` |
+| `SaveSlotScene` | Gecachte Slot-Labels, `_isLoading`-Guard gegen async Race Condition |
+| `OverworldScene` | Vorgänger-Index (Dictionary) beim Map-Load aufgebaut, `MarkPredecessorsCompleted` O(V+E) |
+| `SpriteCache` | `PeekPixels()` statt `GetPixel()` für `ComputeContentBounds` (kein JNI-Overhead) |
+| `DissolveTransition` | `SKPath` als Instanzfeld mit `Rewind()` statt `new` pro Frame |
+| `GroundRenderer` | Fade-Shader gecacht, nur bei Szenen-/Bounds-Wechsel neu erstellt |
+| Services parallel | `LoadSkills()` + `LoadItems()` via `Task.WhenAll` in `InitializeServicesAsync` |
+
+**SKMaskFilter-Konvention:** Statische `static readonly SKMaskFilter` werden in `Cleanup()` NICHT
+disposed. Kommentar-Pflicht: `// _glowBlur ist static readonly — NICHT disposen`
+
+---
+
+## Gotchas & Fallstricke
+
+| Problem | Ursache | Lösung |
+|---------|---------|--------|
+| `SKMaskFilter` Memory Leak | `paint.MaskFilter = CreateBlur(...)` ohne Dispose des alten Filters | Gecachte `static readonly SKMaskFilter` verwenden; bei dynamischem Radius `paint.MaskFilter?.Dispose()` vor Neuzuweisung |
+| Render-Loop startet nicht (Countdown stuck) | `InvalidateCanvasRequested` hat beim `StartGameLoop()` noch keinen Subscriber (ContentControl+ViewLocator setzt DataContext verzögert) | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded Backup, (3) OnPaintSurface Safety-Net. Zentrale `TrySubscribeToViewModel()`-Methode (idempotent) |
+| SKCanvasView leer nach IsVisible-Toggle | `InvalidateSurface()` auf unsichtbare Canvas wird ignoriert | Nach Sichtbar-Werden Daten erneut setzen / `Calculate()` aufrufen |
+| `JsonSerializer.Serialize` auf Background-Thread crasht | GameLoop modifiziert State während Serialisierung | Serialisierung auf dem UI-Thread belassen (State klein, ~5-20 ms) oder DeepCopy vor Serialize |
+| Premium-Nutzer sieht Werbung nach Gerätewechsel | `PurchaseService.InitializeAsync()` nie aufgerufen | In `InitializeServicesAsync` aufrufen (Google-Play-Abgleich stellt Käufe wieder her) |
+| `StoryEngine` liefert falschen State | `SetPlayer()` nach SaveGame-Load vergessen | IMMER `SetPlayer(player)` nach Load und nach "Neues Spiel" aufrufen |
+| BGM-Loops kurz (12 s) | Designentscheidung — kurze Loops | `MediaPlayer.Looping=true` stellt nahtlosen Loop sicher |
+
+---
 
 ## Lokalisierung
 
-- **Story-Texte**: JSON in `Data/Dialogue/{lang}/` (DE, EN, ES, FR, IT, PT)
-- **UI-Strings**: ILocalizationService per Constructor Injection in Scenes/Overlays. AppStrings.resx + 5 Kultur-Dateien (de/es/fr/it/pt). AppStrings.Designer.cs manuell gepflegt (CLI-Build generiert nicht automatisch)
-- **Pattern**: Strings im Konstruktor cachen (`_localization.GetString("Key") ?? "Fallback"`), nicht per-Frame
-- **Lokalisierte Scenes/Overlays**: Alle Scenes und Overlays vollständig lokalisiert (BattleScene, TitleScene, SaveSlotScene, ClassSelectScene, DialogueScene, OverworldScene, StatusScene, InventoryScene, ShopScene, CodexScene, SettingsScene, AssetDownloadScene + alle Overlays)
-- **Fallback**: Englisch (Base .resx), Deutsch für Story-Texte (StoryEngine.LoadDialogueTextsAsync)
-- **DI-Registrierung**: `ILocalizationService` als Singleton in App.axaml.cs mit `RebornSaga.Resources.Strings.AppStrings.ResourceManager`
+- **Story-Texte:** JSON in `Data/Dialogue/{lang}/` (DE, EN, ES, FR, IT, PT)
+- **UI-Strings:** `ILocalizationService` per Constructor Injection in Scenes/Overlays
+- **Strings im Konstruktor cachen:** `_localization.GetString("Key") ?? "Fallback"` — nie per Frame
+- **Fallback:** Englisch (Base .resx), Deutsch für Story-Texte (`StoryEngine.LoadDialogueTextsAsync`)
+- **AppStrings.Designer.cs** manuell gepflegt (CLI-Build generiert nicht automatisch)
+- **135 RESX-Keys**, 6 Sprachen, 10 Scenes + 9 Overlays vollständig lokalisiert
+
+---
+
+## Premium & Ads
+
+- Kein Banner-Ad (Vollbild-SkiaSharp-Spiel, Landscape/Portrait)
+- **Rewarded Ads** (6 Placements): `gold_bonus`, `time_rift`, `bonus_exp`, `revive`, `daily_prophecy`, `kodex_hint`
+- **IAP:** Gold-Pakete, Zeitkristalle, `remove_ads` (Preise noch offen)
+
+---
 
 ## Daten-Dateien
 
 | Pfad | Inhalt |
 |------|--------|
-| Data/Chapters/ | 13 Kapitel-JSONs (P1-P3, K1-K10) |
-| Data/Dialogue/{lang}/ | Dialog-Texte pro Sprache |
-| Data/Maps/ | 13 Overworld-Map-JSONs |
-| Data/Skills/ | 3 Skill-JSONs (swordmaster, arcanist, shadowblade) |
-| Data/Items/ | items.json (Waffen, Rüstungen, Consumables, Key-Items) |
-| Data/Enemies/ | enemies.json (Gegner + Bosse) |
+| `Data/Chapters/` | 13 Kapitel-JSONs (P1-P3, K1-K10) |
+| `Data/Dialogue/{lang}/` | Dialog-Texte pro Sprache |
+| `Data/Maps/` | 13 Overworld-Map-JSONs |
+| `Data/Skills/` | 3 Skill-JSONs (swordmaster, arcanist, shadowblade) |
+| `Data/Items/` | items.json (Waffen, Rüstungen, Consumables, Key-Items) |
+| `Data/Enemies/` | enemies.json (Gegner + Bosse) |
+
+---
 
 ## Audio-Assets (Android)
 
 | Pfad | Inhalt | Anzahl |
 |------|--------|--------|
-| Assets/Sounds/*.ogg | SFX (SoundPool, GameSfx-Enum) | 28 |
-| Assets/Music/*.ogg | BGM (MediaPlayer, BgmTracks-Konstanten) | 10 |
+| `Assets/Sounds/*.ogg` | SFX (SoundPool, GameSfx-Enum) | 28 |
+| `Assets/Music/*.ogg` | BGM (MediaPlayer, BgmTracks-Konstanten) | 10 |
 
 Dateinamen-Mapping in `AndroidAudioService.SoundFileMap` (SFX) und `BgmFileMap` (BGM).
+
+---
+
+## Loading-Pipeline & Android-Besonderheiten
+
+### InitializeServicesAsync (App.axaml.cs)
+
+Wird von `MainView.OnAttachedToVisualTree` via `MainViewModel.InitializeAsync()` aufgerufen.
+`LoadSkills()` + `LoadItems()` parallel via `Task.WhenAll` (Voraussetzung für `SaveGameService.LoadGameAsync`).
+`IPurchaseService.InitializeAsync()` fire-and-forget.
+
+### DisposeServices
+
+Desktop: `ShutdownRequested` | Android: `MainActivity.OnDestroy`.
+Disposed: `IAudioService` (SoundPool + MediaPlayer), `SaveGameService` (SQLite `CloseAsync`).
+
+### Android-Konfiguration
+
+- Portrait-only, Immersive Fullscreen
+- `AudioServiceFactory` → `AndroidAudioService` (SoundPool + MediaPlayer + Vibrator)
+- `RewardedAdServiceFactory` → 6 Placements
+- `PurchaseServiceFactory` → Gold-Pakete + remove_ads
+- Double-Back-to-Exit via `BackPressHelper`
+
+---
 
 ## Thread-Safety
 
 | Komponente | Mechanismus |
 |-----------|-------------|
-| BacklogOverlay | `lock` auf Entries-Liste (Add/Clear/Render) |
-| ChapterUnlockService | `SemaphoreSlim(1,1)` gegen Doppel-Unlock |
-| SaveGameService | `SemaphoreSlim(1,1)` gegen parallele Saves + IDisposable (SQLite CloseAsync) |
-| GoldService | `AddGold`/`RemoveGold` mit `Math.Clamp(0, int.MaxValue)` |
+| `BacklogOverlay` | `lock` auf Entries-Liste (Add/Clear/Render) |
+| `ChapterUnlockService` | `SemaphoreSlim(1,1)` gegen Doppel-Unlock |
+| `SaveGameService` | `SemaphoreSlim(1,1)` gegen parallele Saves + `IDisposable` (SQLite `CloseAsync`) |
+| `GoldService` | `Math.Clamp(0, int.MaxValue)` in AddGold/RemoveGold |
 
-## BattleScene: Kampf-System
+---
 
-### Phasen (BattlePhase Enum)
+## AI-Asset-Pipeline (ComfyUI)
+
+Sprites werden mit ComfyUI + Animagine XL 4.0 generiert. Pro Charakter ein LoRA-Modell für
+dauerhafte Konsistenz über Posen, Emotionen und Outfits hinweg.
+
+| Parameter | Wert |
+|-----------|------|
+| Auflösung | 832×1216 (Portrait), 1216×832 (Landscape), 512×512 (Icons) |
+| Format | WebP q90, 1248×1824 für Full-Body-Sprites |
+| Sampler | euler_ancestral, 28 Steps, CFG 7.0 |
+| LoRA Training | 20 Bilder, 20 Repeats, 10 Epochen = 4.000 Steps |
+
+**11 Charakter-LoRAs fertig** (Aria, Protagonist Schwert/Magier/Assassin, Luna, Kael, Aldric,
+System ARIA, Vex, Nihilus, Xaroth). Gespeichert in `F:\AI\kohya_ss\`.
+
+**Chroma-Key-Regel:** Dunkle Chars (Nihilus, Xaroth, Vex, Kael, Aldric, Sword, Assassin) →
+Green Screen + Chroma-Key. Helle Chars (Aria, Luna, System Aria, Mage) → White BG + BiRefNet.
+
+**Workflow-Scripts** in `F:\AI\ComfyUI_workflows\`:
+`regenerate_all_assets.py`, `generate_manifest.py`, `upload_assets.py` (Firebase Uniform Bucket
+Access, kein `make_public()`).
+
+---
+
+## Build & Test
+
+```bash
+# Shared-Projekt bauen
+dotnet build src/Apps/RebornSaga/RebornSaga.Shared
+
+# Desktop (Schnell-Test ohne Android)
+dotnet run --project src/Apps/RebornSaga/RebornSaga.Desktop
+
+# Android
+dotnet build src/Apps/RebornSaga/RebornSaga.Android
+
+# AppChecker
+dotnet run --project tools/AppChecker RebornSaga
 ```
-Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkillAttack) → EnemyTurn → (Victory | Defeat | BossPhaseChange | Done)
-```
-- `Done`: Kampf abgeschlossen, keine weitere Interaktion (nach Victory/Defeat-Verarbeitung)
-- `BossPhaseChange`: Boss wechselt Phase (Mini-Cutscene, volle HP)
 
-### Skill-Integration
-- `SkillSelect`-Phase: Zeigt verfügbare Skills (max 6), MP-Kosten, Element-Icons
-- `ExecuteSkillAttack()`: Multiplier-basierter Schaden, MP-Abzug, Element-System (1.5x/0.5x), Skill-Evolution bei Mastery-Schwelle
-- `ApplySkillEffect()`: Verarbeitet `heal_Xpct` (HP-Heilung %) und `atk_buff_X` (ATK-Bonus temporär)
-- Constructor: `BattleScene(BattleEngine, SkillService, InventoryService, StoryEngine, ILocalizationService, TutorialService?, IAudioService?, SpriteCache?)` - alle per DI (TutorialService optional)
-
-### Item-Integration
-- `ItemSelect`-Phase: Zeigt Consumables aus InventoryService (max 6)
-- `UseItem()` via InventoryService: HealPercent oder HealHp/HealMp
-- Items mit `IsUsable`-Flag und korrekten Stat-Clamps (HP min 1, MP min 0)
-
-### Tutorial-System (geführter Prolog-Kampf)
-- **Aktivierung**: `_isTutorialBattle = true` wenn `enemy.Id == "B001" && TutorialService.ShouldShow("FirstBattle")`
-- **5 Phasen** (_tutorialStep 0-5): Intro → Angriff → Skill → Item → Ausweichen → Frei
-- **Button-Einschränkung**: `IsTutorialActionEnabled()` erlaubt pro Phase nur die zu lernende Aktion
-- **Schaden-Override**: Vor Phase 3 max 10% HP Schaden, in Phase 3 auf ~30% HP runtersetzen (Item-Tutorial)
-- **Dodge-Override**: Phase 4 erzwingt erfolgreichen Dodge
-- **TutorialOverlay**: Zeigt ARIA-Hinweise mit Button-Highlight, ConsumesInput blockiert BattleScene
-- **Abschluss**: Bei Victory → `TutorialService.MarkSeen("FirstBattle")`
-- **Starter-Item**: chapter_p1.json gibt `C001` (Heiltrank) per `addItems`-Effekt vor dem Kampf
-- **RESX-Keys**: `tutorial_battle_intro/attack/skill/item/dodge/finish` (6 Sprachen)
-
-## Performance-Optimierungen
-
-- **StatusWindowRenderer**: Gecachte Bar-Texte (3 Bars) + Stat-Texte (5 Stats), nur bei Wertänderung neu erzeugt
-- **StatusScene**: `CachedSkillEntry` struct für Skill-Display, Dirty-Flags für Neuberechnung
-- **ShopScene**: Gecachte Preis-Strings, nur bei Selektion aktualisiert
-- **InventoryScene**: Gecachte Item-Strings pro Slot
-- **Alle Renderer**: Statische SKPaint/SKFont/SKMaskFilter + SKPath-Felder mit Rewind(), keine per-Frame Allokationen. Cleanup() ist absichtlich leer (statische Ressourcen leben für App-Lifetime, Dispose crasht bei Wiederverwendung)
-- **BattleScene**: Gecachter Sprite-Key (`_cachedEnemySpriteKey`), nur bei Setup/Boss-Phasenwechsel aktualisiert. BackgroundCompositor.SetScene() in OnEnter() statt pro Frame
-- **SaveSlotScene**: Gecachte Slot-Labels, Level-Texte und PlayTime-Strings. BackgroundCompositor.SetScene() in OnEnter(). _isLoading Guard gegen Race Condition bei async Slot-Laden
-- **TutorialOverlay**: Gecachter ARIA-Titel-String
-- **OverworldScene**: Vorgänger-Index (Dictionary<string, List<string>>) beim Map-Load aufgebaut, MarkPredecessorsCompleted O(V+E) statt O(N²)
-- **NameKey-Lokalisierung**: Alle `.NameKey`-Anzeigen in Scenes über `_localization.GetString()` aufgelöst (BattleScene, StatusScene, ShopScene, InventoryScene, OverworldScene)
-- **SpriteCache.ComputeContentBounds**: PeekPixels() statt GetPixel() (direkter Speicherzugriff, kein JNI-Overhead bei ~142K Aufrufen)
-- **DissolveTransition**: SKPath als Instanzfeld mit Rewind() statt new pro Frame
-- **OverworldRenderer**: Spieler-Marker-Pfad gecacht (statisches SKPath-Feld)
-- **NodeRenderer**: 3 gecachte SKPath-Felder für Icon/Checkmark/Lock (kein new pro Frame)
-- **DialogBoxRenderer**: Text-Split gecacht (nur bei Textänderung) + Indikator-Pfad gecacht
-- **ChoiceButtonRenderer**: Zeilen-Cache in CalculateRects, DrawChoice liest gecachte Zeilen
-- **GroundRenderer**: Fade-Shader gecacht (nur bei Szenen-/Bounds-Wechsel neu erstellt)
-- **InitializeServicesAsync**: LoadSkills + LoadItems parallel via Task.WhenAll
-
-## Android-Besonderheiten
-
-- Portrait-only, Immersive Fullscreen
-- AudioServiceFactory: AndroidAudioService mit SoundPool + MediaPlayer
-- RewardedAdServiceFactory: 6 Placements
-- PurchaseServiceFactory: Gold-Pakete + remove_ads
-- Double-Back-to-Exit via BackPressHelper
-
-## Loading-Pipeline & Lifecycle
-
-### InitializeServicesAsync (App.axaml.cs)
-- Wird von MainView.OnAttachedToVisualTree via MainViewModel.InitializeAsync() aufgerufen
-- Lädt SkillService.LoadSkills() und InventoryService.LoadItems() parallel via Task.WhenAll (Voraussetzung für SaveGameService.LoadGameAsync)
-- IPurchaseService.InitializeAsync() fire-and-forget (stellt Käufe nach Gerätewechsel wieder her)
-- TitleScene braucht keine geladenen Daten, daher kein Blocking
-
-### DisposeServices (App.axaml.cs)
-- Desktop: ShutdownRequested, Android: MainActivity.OnDestroy
-- Disposed: IAudioService (SoundPool + MediaPlayer), SaveGameService (SQLite-Verbindung)
-- SaveGameService implementiert IDisposable (CloseAsync auf SQLiteAsyncConnection)
+Nächste Schritte: Android-Test auf physischem Gerät. Release nur auf Anfrage.

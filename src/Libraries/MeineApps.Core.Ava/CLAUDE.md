@@ -1,46 +1,28 @@
-# MeineApps.Core.Ava - Core Library
+# MeineApps.Core.Ava — Shared Core Library
 
-## Zweck
-Shared Library für alle Avalonia Apps:
-- PreferencesService (JSON-basiert)
-- Converters (Bool, String, Number, DateTime)
-- Design Tokens (ThemeColors.axaml)
-- HINWEIS: Behaviors (TapScale, FadeIn) wurden nach MeineApps.UI verschoben
+> Für app-spezifische Patterns siehe die jeweilige App-CLAUDE.md.
+> App-spezifische Farbpaletten sind in [Haupt-CLAUDE.md](../../../CLAUDE.md) dokumentiert.
+
+Shared Library für alle Avalonia Apps. Enthält Preferences-Persistenz, Plattform-
+Abstraktionen, Converters und Design-Tokens.
 
 ## Struktur
 
 ```
 MeineApps.Core.Ava/
 ├── Services/
-│   ├── IPreferencesService.cs
-│   ├── PreferencesService.cs
-│   ├── IHapticService.cs          # Interface + NoOpHapticService (zentral für alle Apps)
-│   ├── BackPressHelper.cs         # Double-Back-to-Exit Logik (verwendet von allen 8 Apps)
+│   ├── IPreferencesService + PreferencesService     # JSON-basiert, %APPDATA%/{AppName}/preferences.json
+│   ├── IHapticService + NoOpHapticService           # Interface + Desktop-Fallback
+│   └── BackPressHelper                              # Double-Back-to-Exit (alle Apps)
 ├── Themes/
-│   └── ThemeColors.axaml       # Design Tokens (Spacing, Radius, Fonts)
-├── Converters/
-│   ├── BoolConverters.cs
-│   ├── StringConverters.cs
-│   ├── NumberConverters.cs
-│   ├── DateTimeConverters.cs
-│   └── ColorConverters.cs
-└── (Behaviors/ entfernt → MeineApps.UI.Behaviors nutzen)
+│   └── ThemeColors.axaml                            # Design Tokens (Spacing, Radius, Fonts)
+└── Converters/
+    ├── BoolConverters.cs
+    ├── StringConverters.cs
+    ├── NumberConverters.cs
+    ├── DateTimeConverters.cs
+    └── ColorConverters.cs
 ```
-
-## App-spezifische Farbpaletten
-
-Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, die statisch in App.axaml geladen wird. Kein dynamischer Theme-Wechsel mehr.
-
-| App | Primary | Charakter |
-|-----|---------|-----------|
-| RechnerPlus | #7C7FF7 (Indigo) | Retro-Tech Calculator |
-| ZeitManager | #F7A833 (Amber) | Warme Zeitverwaltung |
-| FinanzRechner | #10B981 (Smaragd) | Living Finance |
-| FitnessRechner | #06B6D4 (Cyan) | VitalOS Medical |
-| HandwerkerRechner | #3B82F6 (Blau) | Blueprint Professional |
-| WorkTimePro | #4F8BF9 (Blau) | Professional Workspace |
-| HandwerkerImperium | #D97706 (Amber) | Warme Werkstatt |
-| BomberBlast | #FF6B35 (Orange) | Neon Arcade |
 
 ## Design Tokens
 
@@ -116,7 +98,12 @@ return _backPressHelper.HandleDoubleBack(exitMessage);
 - `StringToColorBrushConverter` - "#RRGGBB" → SolidColorBrush (Gray Fallback, statische `Instance` Property)
 - `StringToColorConverter` - "#RRGGBB" → Color (Gray Fallback, für SolidColorBrush.Color Bindings mit Opacity)
 
-## Behaviors (ENTFERNT)
+## Behaviors
 
-Behaviors wurden nach `MeineApps.UI.Behaviors` verschoben (kanonische Quelle).
-Alle XAML-Imports müssen `xmlns:behaviors="using:MeineApps.UI.Behaviors"` verwenden.
+Behaviors leben in `MeineApps.UI.Behaviors` (kanonische Quelle).
+XAML-Import: `xmlns:behaviors="using:MeineApps.UI.Behaviors"`.
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — App-spezifische Farbpaletten, generische Conventions
+- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Behaviors, Custom Controls, Skia-Helpers

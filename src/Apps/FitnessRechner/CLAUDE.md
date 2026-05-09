@@ -2,167 +2,248 @@
 
 > Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
-## App-Beschreibung
+Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Körperfett),
+Tracking-Charts, Nahrungsmittel-Suche (114 lokal + Open Food Facts API), Intervallfasten,
+Aktivitäts-Tracking, Rezept-Editor und Gamification.
 
-Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Körperfett), Tracking mit Charts, Nahrungsmittel-Suche (114 lokale + Open Food Facts API), Intervallfasten-Timer, Aktivitäts-Tracking und Rezept-Editor.
+| Aspekt | Wert |
+|--------|------|
+| Package-ID | `com.meineapps.fitnessrechner` |
+| Premium | 3,99 EUR `remove_ads` (keine Ads, unbegrenzte Barcode-Scans, permanente Extended Food-DB) |
+| Ad-Placements | `barcode_scan` (+5 Bonus-Scans), `detail_analysis` (7-Tage-Analyse), `tracking_export` (CSV), `extended_food_db` (24h-Zugang) |
+| Theme | VitalOS Medical (Cyan + Teal + Electric Blue) |
 
-**Version:** 2.0.6 | **Package-ID:** com.meineapps.fitnessrechner | **Status:** Geschlossener Test
+---
 
-## Features
+## Architektur
 
-- **4 Tabs**: Home (Dashboard + Streak-Card + Fasten-Status + Tageszeit-Begrüßung), Progress (Tracking + 5 Sub-Tabs inkl. Aktivitäten), Food Search (+ Quick-Add + Rezepte), Settings (+ Benutzerprofil)
-- **5 Rechner**: BMI, Calories, Water, IdealWeight, BodyFat (alle mit Profil-Vorausfüllung)
-- **Benutzerprofil**: Größe, Alter, Geschlecht, Aktivitätslevel in Settings → automatische Vorausfüllung aller Rechner
-- **Tracking**: Gewicht (+ Gewichtsziel mit ProgressBar), BMI, Körperfett, Wasser, Kalorien (JSON-basiert, TrackingService)
-- **Aktivitäts-Tracking**: 30 Aktivitäten mit MET-Werten, verbrannte Kalorien berechnen (kcal = MET * Gewicht * Dauer), Tages-Übersicht
-- **Charts**: SkiaSharp (HealthTrendVisualization für Gewicht/BMI/BodyFat, WeeklyCaloriesBarVisualization für Wochen-Kalorien), Chart-Zeitraum wählbar (7T/30T/90T)
-- **Mahlzeiten**: Gruppiert nach Typ (Frühstück/Mittag/Abend/Snack mit Icons + Subtotals), "Gestern kopieren" Funktion
-- **Food Search**: Lokale DB (114 Items) + Open Food Facts API-Textsuche (3M+ Produkte), Fuzzy Matching, Favorites
-- **Rezept-Editor**: RecipeViewModel + RecipeView (Erstellen/Bearbeiten/Löschen von Rezepten mit Zutaten-Suche, Nährwertberechnung, Als-Mahlzeit-Loggen mit Portionsauswahl)
-- **Intervallfasten-Timer**: 4 Pläne (16:8, 18:6, 20:4, Custom), Countdown-Timer, History der letzten 30 Perioden
-- **Automatische Makro-Berechnung**: Wenn Kalorienziel gesetzt wird → Default-Makros (30% Protein, 40% Carbs, 30% Fett)
-- **Wasser Quick-Add**: 4 Mengenoptionen (150ml Tasse, 250ml Glas, 500ml Flasche, 750ml große Flasche)
-- **Barcode Scanner**: Nativer CameraX + ML Kit Scanner (Android), manuelle Eingabe (Desktop), Open Food Facts API (BarcodeLookupService)
-- **Premium-Features**: Gewichts-Trendprognose ("Ziel erreicht bis..."), Makro-Verteilungs-Analyse
-- **SkiaSharp-Visualisierungen**: BMI-Gauge (BmiGaugeRenderer, Medical Grid + Nadel-Glow + Scan-Line), Körperfett-Grafik (BodyFatRenderer, Cyan-Kontur + Scan-Linie + Prozent-Ring Glow), Kalorien-Ringe (CalorieRingRenderer, Medical Grid + pulsierender 72BPM Glow + Data-Stream Partikel), Wasserglas (inline in WaterView), HealthTrendVisualization (Catmull-Rom Spline mit Gradient-Fill, Target-Zones, Milestones), WeeklyCaloriesBarVisualization (Gradient-Balken mit Target-Linie), FitnessRechnerSplashRenderer (EKG-Herzschlag-Splash), VitalSignsHeroRenderer (kreisförmiger Monitor mit EKG-Ring, 4 Quadranten, Center-Score, Data-Stream Partikel), MedicalBackgroundRenderer (animierter Hintergrund), MedicalTabBarRenderer (holografische Tab-Bar), MedicalCardRenderer (glassmorphe Cards), CalculatorHeaderRenderer (Medical-Style Header für alle 5 Rechner mit Feature-Farb-Gradient, Medical Grid, Mini-EKG, holografischem Back-Button). HomeView nutzt VitalSignsHeroRenderer (ersetzt Hero-Header + Score-Card + Dashboard-Grid) + LinearProgressVisualization (XP-Bar, Challenge-Bar). Alle 3 Calculator-Renderer haben optionalen `time`-Parameter (Default 0f) für Animationen (Render-Loop wird in späterem Task aktiviert)
-- **Medical-Styling (XAML-Cards)**: Alle verbleibenden Cards (Empty-State, Badges, Heatmap, Weekly Comparison, Disclaimer, Calculator-Buttons) nutzen Surface `#D90F1D32` + Cyan-Border `#1A06B6D4`. Weight Quick-Add + Evening Summary haben holografischen Cyan-Rand `#4D06B6D4`. Calculator-Buttons: `#D90F1D32` statt CardColor-Gradient, Feature-Farben auf Icon-Container beibehalten
+### Tab-Navigation (4 Tabs)
 
-## App-spezifische Services
+| Tab | Inhalt |
+|-----|--------|
+| Home | Dashboard mit VitalSignsHero + Streak-Card + Fasten-Status + Tageszeit-Begrüßung + Quick-Add-Buttons |
+| Progress | Tracking + 5 Sub-Tabs (Weight, BMI, BodyFat, Water/Calories, Aktivitäten) |
+| Food Search | Lokale + API-Suche + Quick-Add + Rezepte |
+| Settings | Benutzerprofil + Erinnerungen + Haptic/Sound-Toggles |
 
-- **TrackingService**: JSON-Persistenz (TrackingEntry Model), IDisposable mit CancellationTokenSource Cleanup, `EntryAdded`-Event für Streak
-- **FoodSearchService**: Fuzzy Matching, Favorites, Recipes (generisch für FoodItem/Recipe), `FoodLogAdded`-Event für Streak, Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` (N+1 Query Fix)
-- **IStreakService / StreakService**: Logging-Streak (aufeinanderfolgende Tage mit Aktivität), Preferences-basiert, Meilenstein-Confetti (3/7/14/21/30/50/75/100/150/200/365 Tage)
-- **FoodDatabase**: 114 Nahrungsmittel mit lokalisierten Namen + Aliase (statische Liste)
-- **BarcodeLookupService**: Open Food Facts API, _barcodeCache Dictionary mit SemaphoreSlim
-- **IScanLimitService / ScanLimitService**: Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad
-- **IBarcodeService**: Plattform-Interface für nativen Barcode-Scan (Android: CameraX + ML Kit, Desktop: null → manuelle Eingabe)
-- **IFastingService / FastingService**: Intervallfasten-Timer (16:8, 18:6, 20:4, Custom), Start/Stop, History (letzte 30 Perioden), Preferences-basiert
-- **IActivityService / ActivityService**: Sport-/Aktivitäts-Tracking mit MET-Werten, JSON-Persistenz (activity_log.json), Thread-safe
-- **ActivityDatabase**: 30 Aktivitäten mit MET-Werten in 4 Kategorien (Cardio/Kraft/Sport/Alltag), statische Liste
-- **IActivityService / ActivityService**: Aktivitäts-/Sport-Tracking mit MET-basierter Kalorienberechnung, JSON-Persistenz (activity_log.json), `ActivityAdded`-Event, Thread-Safe (SemaphoreSlim)
-- **ActivityDatabase**: 30 häufige Aktivitäten in 4 Kategorien (Cardio/Kraft/Sport/Alltag) mit MET-Werten, Material Icons, RESX-Keys. Formel: kcal = MET * Gewicht_kg * Dauer_h
+### Calculator-VM Factory-Pattern
 
-## Premium & Ads
+Calculator-VMs (`BmiViewModel`, `CaloriesViewModel`, `WaterViewModel`, `IdealWeightViewModel`,
+`BodyFatViewModel`) als **Transient** registriert. `MainViewModel` erhält `Func<T>`-Factories
+per Constructor-Injection (kein Service-Locator). Jedes Öffnen erzeugt frische VM-Instanz.
 
-### Ad-Placements (Rewarded)
-1. **barcode_scan**: +5 Bonus-Scans (FoodSearchView)
-2. **detail_analysis**: 7-Tage-Analyse (ProgressView)
-3. **tracking_export**: CSV-Export (ProgressView)
-4. **extended_food_db**: 24h-Zugang zu erweiterten Suchergebnissen (maxResults=200)
+### `ProgressViewModel` Partial-Class-Aufteilung
 
-### Premium-Modell
-- **Preis**: 3,99 EUR (`remove_ads`)
-- **Vorteile**: Keine Ads, unbegrenzte Barcode-Scans, permanente erweiterte Food-DB, direkter Export/Analyse
+Wegen Größe in 4 Files gesplittet:
 
-## Besondere Architektur
+| Datei | Inhalt |
+|-------|--------|
+| `ProgressViewModel.cs` | Felder, Constructor, Properties, Events, Lifecycle, Navigation |
+| `ProgressViewModel.Tracking.cs` | Add/Delete/Undo, Load/Refresh, Ziele, Weekly Analysis, Export |
+| `ProgressViewModel.Charts.cs` | Chart-Daten, Statistik, Meilensteine, Status-Updates, Meal Grouping |
+| `ProgressViewModel.Food.cs` | Food-Search, Add Food, "Gestern kopieren" |
 
-### Calculator-VM Factory Pattern
-- Calculator-VMs (BmiViewModel, CaloriesViewModel, etc.) als Transient registriert
-- MainViewModel erhält `Func<T>` Factories per Constructor Injection (kein Service-Locator)
-- Jedes Öffnen eines Rechners erzeugt eine frische VM-Instanz
+`OnAppearingAsync()` wird beim Tab-Wechsel aufgerufen.
 
-### ProgressView Sub-Tabs
-- 4 Sub-Tabs: Weight, BMI, BodyFat, Water/Calories
-- `ProgressViewModel.OnAppearingAsync()` wird beim Tab-Wechsel aufgerufen
-- **Partial-Class-Aufteilung** (4 Dateien):
-  - `ProgressViewModel.cs` → Felder, Constructor, Properties, Events, Lifecycle, Navigation Commands
-  - `ProgressViewModel.Tracking.cs` → Add/Delete/Undo, Load/Refresh, Ziele, Weekly Analysis, Export
-  - `ProgressViewModel.Charts.cs` → Chart-Daten, Statistik, Meilensteine, Status-Updates, Meal Grouping
-  - `ProgressViewModel.Food.cs` → Food-Search, Add Food, "Gestern kopieren"
+### `PreferenceKeys` (zentral)
 
-### Extended Food DB (24h Zugang)
-- **Ablauf-Key**: `extended_food_db_expiry` mit ISO 8601 UTC + `DateTimeStyles.RoundtripKind`
-- **Hint-Card**: Zeigt "Mehr laden" bei <=5 lokalen Ergebnissen für Non-Premium
+`PreferenceKeys.cs` im Shared-Projekt — alle Preference-Keys + Konstanten
+(`UndoTimeoutMs = 5000`) zentral. Alle ViewModels + Services referenzieren `PreferenceKeys`
+statt lokaler Konstanten.
 
-### Game Juice
-- **FloatingText**: "+{amount} ml" (Wasser), "+{calories} kcal" (Food), "+{value} kg/BMI/%" (Tracking)
-- **Celebration**: Confetti bei Wasser-Zielerreichung (einmal pro Session via `_wasWaterGoalReached`) + Streak-Meilensteine
+Key-Gruppen:
+- Streak: `streak_current`, `streak_best`, `streak_last_log_date`
+- Gamification: `fitness_xp`, `fitness_level`, `achievements_unlocked`,
+  `achievements_progress`, `challenge_completed_date`, `total_meals_logged`,
+  `total_barcodes_scanned`, `distinct_foods_tracked`, `calculators_used_mask`
+- Extended Food DB: `extended_food_db_expiry` (ISO 8601 UTC mit `DateTimeStyles.RoundtripKind`)
 
-### Barcode-Scanner Architektur (11.02.2026)
-- **Android**: `BarcodeScannerActivity` (AppCompatActivity) mit CameraX Preview + ML Kit ImageAnalysis
-  - Erkennt EAN-13, EAN-8, UPC-A, UPC-E
-  - Semi-transparentes Overlay mit Scan-Bereich + Ecken-Akzente
-  - `AndroidBarcodeService` → `StartActivityForResult` + `TaskCompletionSource`
-  - `MainActivity.OnActivityResult` + `OnRequestPermissionsResult` leiten an Service weiter
-- **Desktop**: `DesktopBarcodeService` gibt null zurück → `BarcodeScannerView` zeigt manuelle Texteingabe
-- **Flow**: FoodSearchVM.OpenBarcodeScanner → IBarcodeService.ScanBarcodeAsync → NavigationRequested("BarcodeScannerPage?barcode=...") → MainVM.CreateCalculatorVm → BarcodeScannerVM.OnBarcodeDetected → API-Lookup → UseFood → FoodSelected Event → zurück zu FoodSearch
-- **DI**: `App.BarcodeServiceFactory` (analog zu RewardedAdServiceFactory)
-- **Packages**: CameraX Camera2/Lifecycle/View 1.5.2.1 + ML Kit BarcodeScanning 117.3.0.5
+---
 
-### PreferenceKeys (zentral)
-- `PreferenceKeys.cs` im Shared-Projekt: Alle Preference-Keys + Konstanten (UndoTimeoutMs=5000) zentral definiert
-- Alle ViewModels + ScanLimitService + StreakService referenzieren PreferenceKeys statt lokaler Konstanten
-- Streak-Keys: `streak_current`, `streak_best`, `streak_last_log_date`
-- Gamification-Keys: `fitness_xp`, `fitness_level`, `achievements_unlocked`, `achievements_progress`, `challenge_completed_date`, `total_meals_logged`, `total_barcodes_scanned`, `distinct_foods_tracked`, `calculators_used_mask`
+## Services
+
+| Service | Zweck |
+|---------|-------|
+| `TrackingService` | JSON-Persistenz `TrackingEntry`, `IDisposable` mit CTS-Cleanup, `EntryAdded`-Event für Streak |
+| `FoodSearchService` | Fuzzy Matching, Favorites, Recipes (generisch FoodItem/Recipe), `FoodLogAdded`-Event, Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` (N+1 Query Fix) |
+| `IStreakService` / `StreakService` | Logging-Streak (aufeinanderfolgende Tage mit Aktivität), Preferences-basiert, Meilenstein-Confetti (3/7/14/21/30/50/75/100/150/200/365) |
+| `FoodDatabase` | 114 Nahrungsmittel mit lokalisierten Namen + Aliasen (statische Liste) |
+| `BarcodeLookupService` | Open Food Facts API, `_barcodeCache` Dictionary mit `SemaphoreSlim` |
+| `IScanLimitService` / `ScanLimitService` | Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad |
+| `IBarcodeService` | Plattform-Interface (Android: CameraX + ML Kit, Desktop: null → manuelle Eingabe) |
+| `IFastingService` / `FastingService` | Intervallfasten (16:8, 18:6, 20:4, Custom), Start/Stop, History (letzte 30 Perioden) |
+| `IActivityService` / `ActivityService` | Sport-Tracking mit MET-Werten, JSON-Persistenz `activity_log.json`, Thread-Safe (SemaphoreSlim), `ActivityAdded`-Event |
+| `ActivityDatabase` | 30 Aktivitäten in 4 Kategorien (Cardio/Kraft/Sport/Alltag) mit MET-Werten. Formel: `kcal = MET × Gewicht_kg × Dauer_h` |
+| `AchievementService` | 20 Achievements in 5 Kategorien (Tracking/Ernährung/Wasser/Körper/Special), Preferences-basiert (JSON), `AchievementUnlocked`-Event |
+| `LevelService` | XP-System (Max Level 50), Formel `XpForLevel(n) = 100 × n × (n+1) / 2`, `LevelUp`-Event |
+| `ChallengeService` | 10 tägliche Challenges (rotierend nach DayOfYear), `ChallengeCompleted`-Event |
+| `IHapticService` | Tick (Ziffern/Tab), Click (Speichern), HeavyClick (Achievement/Level-Up/Ziel) — Settings-Toggle |
+| `IFitnessSoundService` | `PlaySuccess` (System-Notification-Sound), Settings-Toggle, Android: MediaPlayer |
+| `IReminderService` / `AndroidReminderService` | 3 Erinnerungstypen (Wasser alle 2h, Gewicht täglich, Abend-Zusammenfassung). Android: AlarmManager + NotificationChannel + ReminderReceiver |
+
+---
+
+## Feature-Patterns
+
+### Profil-Vorausfüllung
+
+Benutzerprofil (Größe, Alter, Geschlecht, Aktivitätslevel) in Settings → automatische
+Vorausfüllung aller 5 Rechner.
+
+### Mahlzeiten-Gruppierung
+
+Logs nach Typ gruppiert (Frühstück/Mittag/Abend/Snack mit Icons + Subtotals).
+"Gestern kopieren"-Funktion in `ProgressViewModel.Food.cs`.
 
 ### Quick-Add Kalorien
-- Blitz-Button im FoodSearch-Header → Quick-Add Panel (Orange Gradient)
-- Kalorien direkt eingeben ohne Food-Suche, optionaler Name, Mahlzeit-Auswahl
-- `FoodSearchViewModel.ConfirmQuickAdd()` → `FoodLogEntry` mit Grams=0
 
-### Gamification (Phase 5)
-- **AchievementService**: 20 Achievements in 5 Kategorien (Tracking/Ernährung/Wasser/Körper/Special), Preferences-basiert (JSON), `AchievementUnlocked`-Event
-- **LevelService**: XP-System (Max Level 50), Formel `XpForLevel(n) = 100*n*(n+1)/2`, Preferences-basiert, `LevelUp`-Event
-- **ChallengeService**: 10 tägliche Challenges (rotierend nach DayOfYear), `ChallengeCompleted`-Event
-- **AchievementsView**: Fullscreen-Overlay (WrapPanel Grid), freigeschaltet=Gradient-Icon, gesperrt=grau+Fortschrittsbalken
-- **LocalizeKeyConverter**: Konvertiert RESX-Keys in lokalisierte Texte (für Achievement-Titel/Beschreibungen in DataTemplates)
-- **Dashboard-Elemente**: XP/Level-Bar, Daily Challenge Card (lila Gradient), Badge-Reihe (letzte 3), Wochenvergleich-Card (Kalorien/Wasser/Gewicht/Logging-Tage)
-- **XP-Vergabe**: Gewicht +10, Mahlzeit +5, Wasser +3, Rechner +2, Achievement +50-200, Challenge +25-50
-- **Calculator-Bitmask**: 5 Rechner als Bit-Flags (BMI=1, Calories=2, Water=4, IdealWeight=8, BodyFat=16) für "Alle benutzt"-Achievement
+Blitz-Button im FoodSearch-Header → Quick-Add Panel (Orange Gradient). Kalorien direkt
+eingeben ohne Food-Suche, optionaler Name, Mahlzeit-Auswahl. `FoodLogEntry` mit `Grams = 0`.
 
-### Polish & Platform Features (Phase 6)
-- **IHapticService**: Tick/Click/HeavyClick, IsEnabled Toggle in Settings, Android: Vibrator + HapticFeedback Fallback
-- **IFitnessSoundService**: PlaySuccess (System-Notification-Sound), IsEnabled Toggle in Settings, Android: MediaPlayer
-- **IReminderService / ReminderService**: 3 Erinnerungstypen (Wasser alle 2h, Gewicht täglich, Abend-Zusammenfassung), Preferences-basiert
-- **AndroidReminderService**: AlarmManager + NotificationChannel + ReminderReceiver BroadcastReceiver
-- **Haptic-Trigger**: Quick-Add=Tick, Speichern=Click, Achievement/Level-Up/Ziel-Erreichung=HeavyClick
-- **Sound-Trigger**: Achievement, Level-Up, Challenge, Wasser-Ziel, Streak-Meilenstein
-- **Abend-Zusammenfassung**: Dashboard-Card nach 20 Uhr (Kalorien|Wasser|Gewicht + Bewertung: Super/Gut/Morgen besser)
-- **Settings-Toggles**: Haptic, Sound, 3 Reminder (Wasser/Gewicht/Abend) mit ToggleSwitch
+### Wasser Quick-Add
 
-### VitalOS Design-System (Phase 7, 04.03.2026)
+4 Mengenoptionen: 150ml Tasse, 250ml Glas, 500ml Flasche, 750ml große Flasche.
+Wasser-Ziel-Celebration einmal pro Session via `_wasWaterGoalReached`.
 
-**Konzept:** High-End Medical Dashboard ("Apple Watch Health trifft Sci-Fi Medical Console"). Full SkiaSharp Immersion für alle visuellen Elemente, XAML nur für native Form-Controls.
+### Automatische Makro-Berechnung
 
-**Farbpalette:** `MedicalColors.cs` - zentrale Farbkonstanten
-- Primär: Cyan `#06B6D4`, Teal `#14B8A6`, Electric Blue `#3B82F6`
-- Hintergrund: Teal Deep `#142832` → Teal Dark `#0A1824`, Surface `#1E3844`
-- Feature: Weight=Lila `#8B5CF6`, BMI=Blau `#3B82F6`, Wasser=Grün `#22C55E`, Kalorien=Amber `#F59E0B`
-- EKG-Wellenform: 24-Punkt Array (P-Welle + QRS-Komplex + T-Welle + Baseline)
-- Herzschlag: 72 BPM (1.2 Beats/Sekunde)
+Wenn Kalorienziel gesetzt wird → Default-Makros (30% Protein, 40% Carbs, 30% Fett).
 
-**Renderer (10 Dateien in `Graphics/`):**
+### Extended Food DB (24h Premium-Zugang)
+
+Hint-Card erscheint bei ≤ 5 lokalen Ergebnissen für Non-Premium. Rewarded Ad → 24h
+permanente erweiterte Suchergebnisse (`maxResults = 200`).
+
+### Calculator-Bitmask für "Alle benutzt"-Achievement
+
+5 Rechner als Bit-Flags: BMI=1, Calories=2, Water=4, IdealWeight=8, BodyFat=16.
+
+### XP-Vergabe
+
+| Aktion | XP |
+|--------|-----|
+| Gewicht-Eintrag | +10 |
+| Mahlzeit-Eintrag | +5 |
+| Wasser-Eintrag | +3 |
+| Rechner-Nutzung | +2 |
+| Achievement | +50–200 |
+| Challenge | +25–50 |
+
+### Dashboard Quick-Add (3 SkiaSharp-Buttons)
+
+`QuickActionButtonRenderer`: +kg (lila), +250ml (grün), +kcal (orange). Holografischer
+Rand mit 3s Puls-Animation, Press-Effekt (Scale 0.95). Gewicht öffnet Quick-Add Panel
+(`NumericUpDown`, Min=20/Max=500, Increment=0.1). Wasser addiert sofort +250ml.
+Kalorien wechselt zu FoodSearch-Tab und öffnet Quick-Add Panel.
+
+### Game Juice
+
+`FloatingText` für `+{amount} ml` (Wasser), `+{calories} kcal` (Food), `+{value}` für
+Tracking. Confetti bei Wasser-Ziel + Streak-Meilensteinen.
+
+---
+
+## Barcode-Scanner Architektur
+
+| Plattform | Implementation |
+|-----------|----------------|
+| Android | `BarcodeScannerActivity` (AppCompatActivity) mit CameraX Preview + ML Kit ImageAnalysis. Erkennt EAN-13/EAN-8/UPC-A/UPC-E. Semi-transparentes Overlay mit Scan-Bereich + Ecken-Akzente |
+| Desktop | `DesktopBarcodeService` gibt null zurück → `BarcodeScannerView` zeigt manuelle Texteingabe |
+
+**Flow**:
+`FoodSearchVM.OpenBarcodeScanner` → `IBarcodeService.ScanBarcodeAsync` →
+`NavigationRequested("BarcodeScannerPage?barcode=...")` → `MainVM.CreateCalculatorVm` →
+`BarcodeScannerVM.OnBarcodeDetected` → API-Lookup → UseFood → `FoodSelected`-Event →
+zurück zu FoodSearch.
+
+**DI-Wiring**: `App.BarcodeServiceFactory` (analog zu `RewardedAdServiceFactory`).
+**Packages**: CameraX Camera2/Lifecycle/View 1.5.2.1 + ML Kit BarcodeScanning 117.3.0.5.
+
+**Android-Activity-Result**: `MainActivity.OnActivityResult` + `OnRequestPermissionsResult`
+leiten an `AndroidBarcodeService` weiter (`StartActivityForResult` + `TaskCompletionSource`).
+
+---
+
+## VitalOS Design-System
+
+Konzept: High-End Medical Dashboard ("Apple Watch Health trifft Sci-Fi Medical Console").
+Full SkiaSharp Immersion für alle visuellen Elemente, XAML nur für native Form-Controls.
+
+### Farbpalette (`MedicalColors.cs`)
+
+| Farbe | Hex | Zweck |
+|-------|-----|-------|
+| Primär | `#06B6D4` Cyan | Akzent, EKG, Glow |
+| Sekundär | `#14B8A6` Teal, `#3B82F6` Electric Blue | Hintergrund-Verläufe |
+| Hintergrund | `#142832` → `#0A1824` | Teal Deep / Teal Dark |
+| Surface | `#1E3844` | Cards |
+| Card-Surface | `#D90F1D32` | Universelle Card-Hintergrund |
+| Card-Border | `#1A06B6D4` (Standard), `#4D06B6D4` (holografisch) | Cyan-Glow |
+| Weight | `#8B5CF6` Lila | Feature-Farbe |
+| BMI | `#3B82F6` Blau | Feature-Farbe |
+| Wasser | `#22C55E` Grün | Feature-Farbe |
+| Kalorien | `#F59E0B` Amber | Feature-Farbe |
+
+### EKG-Konfiguration
+
+24-Punkt Array (P-Welle + QRS-Komplex + T-Welle + Baseline). Herzschlag: 72 BPM
+(1.2 Beats/Sekunde).
+
+### Renderer (`Graphics/`)
 
 | Renderer | Typ | Zweck |
 |----------|-----|-------|
-| `MedicalColors.cs` | Static | Farben, EKG-Daten, Timing-Konstanten |
-| `MedicalBackgroundRenderer.cs` | Instance | 5-Layer Hintergrund (Gradient, Grid, EKG, Partikel, Vignette) |
-| `MedicalTabBarRenderer.cs` | Instance | Holografische Tab-Bar (64dp, 4 Tabs, Cyan-Glow) |
-| `MedicalCardRenderer.cs` | Static | Universeller Card-Hintergrund (Surface + HUD-Brackets + Akzent) |
-| `VitalSignsHeroRenderer.cs` | Instance | Dashboard Vital Signs Monitor (300dp, 4 Quadranten, EKG-Ring) |
-| `QuickActionButtonRenderer.cs` | Static | Holografische Quick-Action Buttons (+kg, +250ml, +kcal) |
-| `StreakCardRenderer.cs` | Static | Medical Streak-Anzeige (pulsierendes Herz, Mini-EKG) |
-| `ChallengeCardRenderer.cs` | Static | Medical Challenge-Card (Indigo-Gradient, Scan-Line Progress) |
-| `LevelProgressRenderer.cs` | Static | Medical XP/Level-Bar (Cyan-Badge + Gradient-Bar + Scan-Line) |
-| `CalculatorHeaderRenderer.cs` | Static | Medical Header für alle 5 Rechner (Feature-Gradient + Grid + EKG) |
+| `MedicalColors` | Static | Farben, EKG-Daten, Timing-Konstanten |
+| `MedicalBackgroundRenderer` | Instance | 5-Layer Hintergrund (Gradient, Grid, EKG, Partikel, Vignette) |
+| `MedicalTabBarRenderer` | Instance | Holografische Tab-Bar (64dp, 4 Tabs, Cyan-Glow) |
+| `MedicalCardRenderer` | Static | Universeller Card-Hintergrund (Surface + HUD-Brackets + Akzent) |
+| `VitalSignsHeroRenderer` | Instance | Dashboard Vital Signs Monitor (300dp, 4 Quadranten, EKG-Ring, Center-Score) |
+| `QuickActionButtonRenderer` | Static | Holografische Quick-Action Buttons |
+| `StreakCardRenderer` | Static | Medical Streak-Anzeige (pulsierendes Herz, Mini-EKG) |
+| `ChallengeCardRenderer` | Static | Medical Challenge-Card (Indigo-Gradient, Scan-Line Progress) |
+| `LevelProgressRenderer` | Static | Medical XP/Level-Bar (Cyan-Badge + Gradient + Scan-Line) |
+| `CalculatorHeaderRenderer` | Static | Header für alle 5 Rechner (Feature-Gradient + Grid + EKG, holografischer Back-Button) |
+| `BmiGaugeRenderer` | Static | BMI-Gauge (Medical Grid + Nadel-Glow + Scan-Line) |
+| `BodyFatRenderer` | Static | Körperfett-Grafik (Cyan-Kontur + Scan-Linie + Prozent-Ring Glow) |
+| `CalorieRingRenderer` | Static | Kalorien-Ringe (Medical Grid + 72BPM Glow + Data-Stream Partikel) |
+| `HealthTrendVisualization` | Static | Catmull-Rom Spline mit Gradient-Fill, Target-Zones, Milestones |
+| `WeeklyCaloriesBarVisualization` | Static | Gradient-Balken mit Target-Linie |
+| `LinearProgressVisualization` | Static | XP-Bar, Challenge-Bar |
+| `FitnessRechnerSplashRenderer` | Splash | EKG-Herzschlag-Splash |
 
-**Render-Loop:**
-- MainView: DispatcherTimer 33ms (30fps), `_backgroundRenderer` + `_tabBarRenderer`
-- HomeView: `OnRenderTick(float)` von MainView aufgerufen → invalidiert VitalSigns, QuickButtons, Level, Challenge, Streak
-- Calculator-Views: Kein Render-Loop (time=0f → statischer Snapshot, Animationen vorbereitet)
+### Render-Loop
 
-**Touch-HitTest Pattern:**
-- `e.GetPosition(canvas)` → DPI-Skalierung (`lastBounds.Width / canvas.Bounds.Width`) → SkiaSharp-Koordinaten → HitTest
-- VitalSignsHero: Winkelberechnung (atan2) für Quadrant-Erkennung
-- TabBar: Positions-Berechnung (bounds.Width / 4) für Tab-Erkennung
-- CalculatorHeader: IsBackButtonHit() mit Radius-Toleranz
+| Pfad | Loop |
+|------|------|
+| `MainView` | DispatcherTimer 33ms (~30 FPS) → `_backgroundRenderer` + `_tabBarRenderer` |
+| `HomeView` | `OnRenderTick(float)` von `MainView` aufgerufen → invalidiert VitalSigns, QuickButtons, Level, Challenge, Streak |
+| Calculator-Views | Kein Render-Loop (`time = 0f` → statischer Snapshot, Animationen vorbereitet) |
 
-**Rohwert-Properties im MainViewModel:**
-`RawWeight`, `RawBmi`, `RawWaterMl`, `RawWaterGoalMl`, `RawCalories`, `RawCalorieGoal`, `WeightTrend`, `BmiCategoryText`
+### Touch-HitTest-Pattern
 
-### Dashboard Quick-Add
-- 3 SkiaSharp-Buttons (QuickActionButtonRenderer): +kg (lila), +250ml (grün), +kcal (orange)
-- Holografischer Rand mit 3s Puls-Animation, Press-Effekt (Scale 0.95)
-- **Gewicht**: Öffnet Quick-Add Panel (NumericUpDown, Min=20/Max=500, Increment=0.1), speichert via TrackingService
-- **Wasser**: Sofort +250ml addieren, Wasser-Ziel Celebration prüfen
-- **Kalorien**: Wechselt zu FoodSearch-Tab und öffnet Quick-Add Panel
+`e.GetPosition(canvas)` → DPI-Skalierung (`lastBounds.Width / canvas.Bounds.Width`) →
+SkiaSharp-Koordinaten → HitTest. Spezialfälle:
+- `VitalSignsHero`: Winkelberechnung (`atan2`) für Quadrant-Erkennung
+- `TabBar`: Positions-Berechnung (`bounds.Width / 4`) für Tab-Erkennung
+- `CalculatorHeader`: `IsBackButtonHit()` mit Radius-Toleranz
+
+### Rohwert-Properties im `MainViewModel`
+
+`RawWeight`, `RawBmi`, `RawWaterMl`, `RawWaterGoalMl`, `RawCalories`, `RawCalorieGoal`,
+`WeightTrend`, `BmiCategoryText` — direkter Zugriff für Renderer ohne Converter.
+
+### Medical-Styling (XAML-Cards)
+
+Empty-State, Badges, Heatmap, Weekly Comparison, Disclaimer, Calculator-Buttons nutzen
+Surface `#D90F1D32` + Cyan-Border `#1A06B6D4`. Weight Quick-Add + Evening Summary haben
+holografischen Cyan-Rand `#4D06B6D4`. Calculator-Buttons: `#D90F1D32` statt
+CardColor-Gradient, Feature-Farben auf Icon-Container beibehalten.
+
+---
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build-Befehle, Conventions, Troubleshooting
+- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Shared UI Components
+- [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — `IHapticService`, `BackPressHelper`, Converters
+- `Releases/FitnessRechner/CHANGELOG_*.md` — Release-Notes

@@ -1,203 +1,221 @@
-# MeineApps.Core.Premium.Ava - Premium Features Library
+# MeineApps.Core.Premium.Ava
 
-## Zweck
-Monetarisierungs-Library für Avalonia Apps (Ads, IAP, Trial):
-- Ad State Management (AdMob)
-- In-App Purchases State Management
-- 14-Day Trial System
-- AdBannerView Control
+Monetarisierungs-Library für alle 6 werbe-unterstützten Apps: AdMob (Banner + Rewarded), Google Play Billing v8, 14-Tage-Trial und In-App Review.
+Abhängigkeit: `MeineApps.Core.Ava` (IPreferencesService).
 
-**Depends on:** MeineApps.Core.Ava (IPreferencesService)
+---
 
-## Struktur
+## Komponenten
+
+| Datei | Typ | Zweck |
+|-------|-----|-------|
+| `Services/IAdService.cs` | Interface | Banner + Rewarded Ad State |
+| `Services/AdMobService.cs` | Service | Ad-State-Verwaltung (Singleton) |
+| `Services/AdConfig.cs` | Konfiguration | Alle AdMob-IDs der 6 Apps (1 Publisher-Account) |
+| `Services/IRewardedAdService.cs` | Interface | `IsAvailable`, `ShowRewardedAdAsync()` |
+| `Services/RewardedAdService.cs` | Desktop-Fallback | Simuliert Rewarded Ads (immer true) |
+| `Services/IPurchaseService.cs` | Interface | Kauf, Restore, IsAvailable |
+| `Services/PurchaseService.cs` | Basis-Klasse | Preference-basierter State, virtuelle Kauf-Methoden |
+| `Services/ITrialService.cs` | Interface | Trial-Status |
+| `Services/TrialService.cs` | Service | 14-Tage-Trial via Preferences + UTC-Timestamps |
+| `Controls/AdBannerView.axaml` | Control | Avalonia Placeholder (nativer Ad sitzt als FrameLayout darüber) |
+| `Extensions/ServiceCollectionExtensions.cs` | DI | `AddMeineAppsPremium()` |
+| `Android/AdMobHelper.cs` | Linked File | Nativer Android Banner + GDPR-Consent (UMP) |
+| `Android/RewardedAdHelper.cs` | Linked File | Rewarded Ad Lifecycle + JNI-Fix + Retry |
+| `Android/AndroidRewardedAdService.cs` | Linked File | `IRewardedAdService` Android-Implementierung |
+| `Android/AndroidPurchaseService.cs` | Linked File | Google Play Billing Client v8 |
+| `Android/AndroidPlayGamesService.cs` | Linked File | Google Play Games Services v2 |
+
+---
+
+## Apps und Monetarisierungsmodell
+
+| App | Premium-Produkt | Modell |
+|-----|----------------|--------|
+| HandwerkerRechner | `remove_ads` | 3,99 EUR Einmalkauf |
+| FinanzRechner | `remove_ads` | 3,99 EUR Einmalkauf |
+| FitnessRechner | `remove_ads` | 3,99 EUR Einmalkauf |
+| WorkTimePro | `premium_monthly` / `premium_lifetime` | 3,99 EUR/Mo oder 19,99 EUR |
+| HandwerkerImperium | `remove_ads` | 4,99 EUR Einmalkauf |
+| BomberBlast | `remove_ads` | 1,99 EUR Einmalkauf |
+
+RechnerPlus und ZeitManager sind werbefrei und referenzieren diese Library **nicht**.
+
+---
+
+## Architektur-Patterns
+
+### Linked-File-Pattern (Android-Dateien)
+
+Die `Android/`-Dateien werden im Library-Projekt selbst **nicht** kompiliert:
+
+```xml
+<!-- Library .csproj -->
+<Compile Remove="Android\**" />
 ```
-MeineApps.Core.Premium.Ava/
-├── Android/
-│   ├── AdMobHelper.cs              # Native AdMob banner (linked file, NOT compiled here)
-│   ├── RewardedAdHelper.cs         # Rewarded Ad helper (linked file, NOT compiled here)
-│   ├── AndroidRewardedAdService.cs # IRewardedAdService Android-Impl (linked file, NOT compiled here)
-│   ├── AndroidPurchaseService.cs   # Google Play Billing Client (linked file, NOT compiled here)
-│   └── AndroidPlayGamesService.cs # Google Play Games Services v2 (linked file, NOT compiled here)
-├── Services/
-│   ├── IAdService.cs          # Ad service interface
-│   ├── IPurchaseService.cs    # Purchase service interface
-│   ├── ITrialService.cs       # Trial service interface
-│   ├── AdConfig.cs            # AdMob IDs for all apps (real IDs)
-│   ├── AdMobService.cs        # Ad state management
-│   ├── PurchaseService.cs     # Purchase state (virtual methods for platform-specific billing)
-│   └── TrialService.cs        # 14-day trial via Preferences
-├── Controls/
-│   ├── AdBannerView.axaml     # Ad banner placeholder control
-│   └── AdBannerView.axaml.cs  # Code-behind with StyledProperties
-└── Extensions/
-    └── ServiceCollectionExtensions.cs  # DI: AddMeineAppsPremium()
+
+Jedes Android-App-Projekt bindet sie explizit ein:
+
+```xml
+<!-- {App}.Android.csproj -->
+<Compile Include="..\..\..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AdMobHelper.cs"
+         Link="Services\AdMobHelper.cs" />
 ```
 
-## Verwendung
+Warum: Die Android-Typen (`Activity`, `View`, `BillingClient`) existieren nur im `net10.0-android`-TFM. Das Library-Projekt zielt auf `net10.0`, kann diese Typen also nicht referenzieren. Linked Files lösen das ohne Code-Duplikation.
+
+### Factory-Pattern für Platform-Services
+
+Plattformspezifische Services werden nicht per DI registriert, sondern über statische Factories in `App.axaml.cs` injiziert. So bleibt das Shared-Projekt frei von Android-Abhängigkeiten.
+
 ```csharp
-// App.axaml.cs
-services.AddMeineAppsPremium();
+// App.axaml.cs (Shared)
+public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
+public static Func<IServiceProvider, IPurchaseService>? PurchaseServiceFactory { get; set; }
 
-// oder mit eigener PurchaseService-Implementierung:
-services.AddMeineAppsPremium<AndroidPurchaseService>();
+// ServiceCollectionExtensions.cs überschreibt nach AddMeineAppsPremium():
+if (App.RewardedAdServiceFactory != null)
+    services.AddSingleton(App.RewardedAdServiceFactory);
 ```
 
-## Unterschiede zu MAUI-Version
-- Nutzt IPreferencesService statt Preferences.Default
-- PurchaseService hat virtual Purchase-Methoden (plattformspezifisch überschreibbar)
-- AdBannerView ist Avalonia UserControl statt MAUI ContentView
-- Kein Plugin.InAppBilling direkt - Billing wird in Android-Projekten implementiert
-- DI via IServiceCollection statt MauiAppBuilder
+```csharp
+// MainActivity.cs (Android) — VOR base.OnCreate()
+App.RewardedAdServiceFactory = sp =>
+    new AndroidRewardedAdService(helper, sp.GetRequiredService<IPurchaseService>());
+App.PurchaseServiceFactory = sp =>
+    new AndroidPurchaseService(this, sp.GetRequiredService<IPreferencesService>(),
+                               sp.GetRequiredService<IAdService>());
+```
 
-## Apps (nur werbe-unterstützte)
-| App | Premium | Modell |
-|-----|---------|--------|
-| HandwerkerRechner | Ja | 3,99 EUR remove_ads |
-| FinanzRechner | Ja | 3,99 EUR remove_ads |
-| FitnessRechner | Ja | 3,99 EUR remove_ads |
-| WorkTimePro | Ja | 3,99 EUR/Mo oder 19,99 EUR Lifetime |
-| HandwerkerImperium | Ja | 4,99 EUR Premium |
-| BomberBlast | Ja | 3,99 EUR remove_ads |
+### AdConfig Multi-Placement
 
-## Product IDs
-- `remove_ads` - Legacy non-consumable
-- `premium_monthly` - Abo (WorkTimePro)
-- `premium_lifetime` - Einmalkauf (WorkTimePro)
+`AdConfig.cs` enthält alle AdMob-IDs für alle 6 Apps unter einem Publisher-Account (`ca-app-pub-2588160251469436`). Jede App hat eigene Banner-IDs, App-IDs und placement-spezifische Rewarded-IDs.
 
-**WICHTIG:** RechnerPlus und ZeitManager sind werbefrei und referenzieren NICHT Core.Premium! Keine Ad-IDs in AdConfig.cs für diese Apps.
+```csharp
+// RewardedAdHelper.cs
+public async Task<bool> LoadAndShowAsync(string placement)
+{
+    var adUnitId = AdConfig.GetRewardedAdUnitId(AppId, placement);
+    // ...
+}
+```
 
-## Android AdMob Integration (07.02.2026)
+Neue Rewarded-Placements → in `AdConfig.cs` eintragen, sonst `null`-Rückgabe und kein Ad.
 
-### AdMobHelper.cs (Linked File Pattern)
-- Lebt in `Android/AdMobHelper.cs` aber wird via `<Compile Remove="Android\**" />` NICHT im net10.0 Library-Projekt kompiliert
-- Stattdessen wird es per `<Compile Include="..." Link="Services\AdMobHelper.cs" />` in jedes Android-Projekt eingebunden
-- **Namespace:** `MeineApps.Core.Premium.Ava.Droid`
+### Banner-Positionierung (FrameLayout Overlay)
 
-### Ad Placement: FrameLayout Overlay
-- Banner-Ad wird als nativer Android FrameLayout-Overlay positioniert (kein LinearLayout-Wrapper)
-- **Standard**: `GravityFlags.Bottom | GravityFlags.CenterHorizontal` mit `BottomMargin = tabBarHeightDp * density`
-- **Top-Position**: `IAdService.SetBannerPosition(true)` wechselt auf `GravityFlags.Top` (z.B. BomberBlast GameView)
-- Positioniert die Werbung direkt UEBER der Avalonia Tab-Bar (Bottom) oder am oberen Rand (Top)
-- `AdInsetListener` passt BottomMargin für Navigation-Bar-Insets an (Edge-to-Edge)
-- `OnAdsStateChanged` reagiert auf `BannerVisible` (Show/Hide) UND `IsBannerTop` (Position-Wechsel)
-- **Adaptive Banner-Höhe**: `GetCurrentOrientationAnchoredAdaptiveBannerAdSize` erzeugt Banner mit variabler Höhe (50-60dp+ je nach Gerät). Avalonia Ad-Spacer muss 64dp sein (nicht 50dp)!
+Der native Android-Banner sitzt als `FrameLayout`-Overlay über Avalonia, **nicht** im Avalonia-Layout:
 
-### Tab-Bar-Höhen (tabBarHeightDp Parameter)
-| App | tabBarHeightDp | Grund |
-|-----|---------------|-------|
-| FinanzRechner | 56 | Buttons Height=56 |
-| FitnessRechner | 56 | Buttons Height=56 |
-| HandwerkerRechner | 56 | Buttons Height=56 |
-| WorkTimePro | 56 | ~55dp (Padding 8+8 + Content) |
-| HandwerkerImperium | 64 | MinHeight=48 + Padding 16 |
-| BomberBlast | 0 | Keine Tabs (Landscape-Spiel) |
+- Standard: `GravityFlags.Bottom | GravityFlags.CenterHorizontal` mit `BottomMargin = tabBarHeightDp * density`
+- Top-Position: `IAdService.SetBannerPosition(true)` → `GravityFlags.Top` (z.B. BomberBlast GameView)
+- `AdInsetListener` passt Margin für Edge-to-Edge Navigation-Bar-Insets an
 
-### UMP (GDPR Consent)
-- **C# Namespace hat Typo:** `Xamarin.Google.UserMesssagingPlatform` (DREIFACHES 's')
-- `ConsentRequestParameters` + `UserMessagingPlatform.LoadAndShowConsentFormIfRequired()`
-- Zeigt GDPR-Consent-Dialog für EU-Nutzer
-- **SDK-Init-Callback (10.02.2026):** `Initialize(activity, onComplete)` nutzt `IOnInitializationCompleteListener` - Ads duerfen erst nach Callback geladen werden
-- `AttachToActivity` erstellt Layout + lädt Banner sofort (innerhalb Init-Callback)
-- `RequestConsent()` zeigt nur GDPR-Form, keine Ad-Logik mehr im Consent-Callback
-- Fehler werden geloggt (ConsentFailureListener + ConsentFormDismissedListener), nicht verschluckt
+Tab-Bar-Höhen für `tabBarHeightDp`-Parameter:
 
-### NuGet Packages (in Directory.Packages.props)
-- `Xamarin.GooglePlayServices.Ads.Lite` 124.0.0.4
-- `Xamarin.Google.UserMessagingPlatform` 4.0.0.1
-- `Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` 1.10.0.1 (D8 Duplicate Fix)
+| App | tabBarHeightDp |
+|-----|----------------|
+| FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro | 56 |
+| HandwerkerImperium | 64 |
+| BomberBlast | 0 (kein Tab-Bar) |
 
-### D8 Duplicate Class Fix
-- `Directory.Build.targets`: `Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` mit `ExcludeAssets="all" PrivateAssets="all"` für Android-Projekte
-- Behebt Konflikt zwischen `...Annotation.Jvm` und `...Annotation.Android` Transitiv-Abhängigkeiten
+### Purchase-Restore beim App-Start
 
-### AdConfig.cs - Echte Ad-Unit-IDs
-- 1 Publisher-Account: `ca-app-pub-2588160251469436` (alle 6 Apps)
-- Alle 6 Apps haben echte Banner-IDs + Rewarded-IDs + App-IDs in AdConfig.cs und AndroidManifest.xml
+Alle 6 Loading-Pipelines müssen `IPurchaseService.InitializeAsync()` parallel im ersten Lade-Schritt aufrufen. Ohne diesen Aufruf sehen Premium-Nutzer nach Geräte- oder Datenwechsel wieder Werbung, weil der lokale `is_premium` Preference-Key fehlt.
 
-### Rewarded Ads (07.02.2026)
+```csharp
+// LoadingPipeline.cs (alle 6 Apps)
+await Task.WhenAll(
+    _purchaseService.InitializeAsync(),   // Stellt Käufe/Abos via Google Play wieder her
+    // ... weitere parallele Lade-Schritte
+);
+```
 
-#### RewardedAdHelper.cs (Linked File Pattern)
-- Lebt in `Android/RewardedAdHelper.cs`, wird per `<Compile Include>` in jedes Android-Projekt eingebunden
-- **Namespace:** `MeineApps.Core.Premium.Ava.Droid`
-- Load(Activity, adUnitId) + ShowAsync() → Task<bool> (true = Belohnung verdient)
-- Automatisches Nachladen nach Ad-Dismiss
-- **Retry mit exponentiellem Backoff (28.02.2026):** Bei fehlgeschlagenem Pre-Load: 5s → 15s → 30s (max 3 Versuche). `ScheduleRetry()` + `_retryCount` Feld. Reset bei erfolgreichem Load oder nach Ad-Dismiss
-- **KRITISCHER JNI Fix (28.02.2026):** `FixedRewardedAdLoadCallback` abstrakte Basis-Klasse mit korrektem JNI Delegate-Wiring. Behebt Xamarin Binding Bug #425 (https://github.com/xamarin/GooglePlayServicesComponents/issues/425):
-  - **Problem:** `RewardedAdLoadCallback` erbt von `AdLoadCallback<RewardedAd>`. Java Generics Erasure macht `onAdLoaded(RewardedAd)` zu `onAdLoaded(Object)`. Die Xamarin-Binding generiert `[Register("onAdLoaded", "...", "")]` mit leerem Connector → JNI Native Delegate wird NIE verdrahtet → C# `OnAdLoaded` wird nie aufgerufen → `_rewardedAd` bleibt null → 100% Match Rate aber 0 Impressions
-  - **Fix:** `JNINativeWrapper.CreateDelegate()` + `GetOnAdLoadedHandler` Connector + `n_OnAdLoaded` statische Methode + `[Register("onAdLoaded", "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V", "GetOnAdLoadedHandler")]` mit echtem Connector-String
-  - **Betrifft:** Alle 6 werbe-unterstützten Apps (LoadCallback + OnDemandLoadCallback erben beide von FixedRewardedAdLoadCallback)
+Auf Desktop ist `InitializeAsync()` ein No-Op (liest nur lokale Preferences).
 
-#### AndroidRewardedAdService.cs (Linked File Pattern)
-- Lebt in `Android/AndroidRewardedAdService.cs`, wird per `<Compile Include>` in jedes Android-Projekt eingebunden
-- Constructor: `(RewardedAdHelper helper, IPurchaseService purchaseService)`
-- Premium-Nutzer sehen keine Ads (IsAvailable = false)
-- Implementiert `IRewardedAdService`
+---
 
-#### DI-Integration in Apps
-- Jede App hat in `App.axaml.cs`: `static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory`
-- Nach `services.AddMeineAppsPremium()` wird Factory als DI-Override registriert (wenn gesetzt)
-- `MainActivity.cs` erstellt RewardedAdHelper, setzt Factory VOR base.OnCreate(), lädt Ad NACH DI-Build
-- Lazy Resolution: IPurchaseService wird erst beim ersten Aufruf über IServiceProvider aufgelöst
+## Kritische Gotchas
 
-#### IRewardedAdService Interface (Services/)
-- `IsAvailable`: bool - Ob Rewarded Ad geladen und bereit ist
-- `ShowRewardedAdAsync()`: Task<bool> - Zeigt Ad, gibt true bei Belohnung zurück
-- Premium-Nutzer: IsAvailable immer false (keine Ads)
+### UMP Namespace-Typo (GDPR Consent)
 
-#### RewardedAdService (Services/) - Desktop Fallback
-- Simuliert Rewarded Ads auf Desktop (Task.Delay + immer true)
-- Wird überschrieben durch AndroidRewardedAdService auf Android
+```csharp
+// RICHTIG — dreifaches 's'
+using Xamarin.Google.UserMesssagingPlatform;
 
-#### DI-Registrierung
-- `AddMeineAppsPremium()` registriert `IRewardedAdService` als Singleton (RewardedAdService)
-- Apps überschreiben via `RewardedAdServiceFactory` Property für Android-Implementierung
+// FALSCH — wird nicht gefunden
+using Xamarin.Google.UserMessagingPlatform;
+```
 
-### Google Play Billing Client (17.02.2026)
+Das NuGet-Paket `Xamarin.Google.UserMessagingPlatform` (korrekte Schreibung im Paket-Namen) erzeugt intern den Namespace mit drei 's'. Nicht behebbar, muss so stehen.
 
-#### AndroidPurchaseService.cs (Linked File Pattern)
-- Lebt in `Android/AndroidPurchaseService.cs`, wird per `<Compile Include>` in jedes Android-Projekt eingebunden
-- **Namespace:** `MeineApps.Core.Premium.Ava.Droid`
-- Erbt von `PurchaseService` (C#-Klasse) und überschreibt alle 5 virtuellen Kauf-Methoden
-- **Java-Callback-Pattern:** `IPurchasesUpdatedListener` und `IBillingClientStateListener` erben von `IJavaPeerable` → innere Klassen (`BillingStateListener`, `PurchaseUpdateListener`) die von `Java.Lang.Object` erben (gleich wie `RewardedAdHelper.LoadCallback`)
-- Constructor: `(Activity, IPreferencesService, IAdService)`
-- Auto-Reconnect mit exponentiellem Backoff (max 5 Versuche)
-- Unterstützt InApp (non-consumable + consumable) und Subscriptions
-- **NuGet:** `Xamarin.Android.Google.BillingClient` 8.3.0.1
+### Java Generics Erasure — JNI-Delegate niemals aufgerufen
 
-#### BillingClient v8 API-Besonderheiten
-- `EnablePendingPurchases(PendingPurchasesParams)` - parameterlose Variante entfernt in v8
-- `QueryPurchasesResult.Purchases` (nicht `PurchasesList`)
-- `Android.BillingClient.Api.PurchaseState.Purchased` (nicht `Purchase.PurchaseStateCode.Purchased`)
+`RewardedAdLoadCallback` erbt von `AdLoadCallback<RewardedAd>`. Java-Generics werden zur Laufzeit gelöscht (`erasure`): `onAdLoaded(RewardedAd)` wird zu `onAdLoaded(Object)`. Das Xamarin-Binding generiert `[Register("onAdLoaded", "...", "")]` mit **leerem Connector-String** → JNI Native Delegate wird nie verdrahtet → `OnAdLoaded` in C# wird nie aufgerufen → `_rewardedAd` bleibt null → 100% Match Rate, 0 Impressions.
 
-#### DI-Integration (analog zu RewardedAdServiceFactory)
-- Jede App hat in `App.axaml.cs`: `static Func<IServiceProvider, IPurchaseService>? PurchaseServiceFactory`
-- Nach `services.AddMeineAppsPremium()` wird Factory als DI-Override registriert (wenn gesetzt)
-- `MainActivity.cs` setzt Factory VOR `base.OnCreate()`
+Fix: `FixedRewardedAdLoadCallback` (in `RewardedAdHelper.cs`) mit explizitem JNI-Connector:
 
-### Purchase-Restore beim App-Start (03.03.2026)
+```csharp
+[Register("onAdLoaded",
+    "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V",
+    "GetOnAdLoadedHandler")]   // <-- nicht leer!
+public abstract void OnAdLoaded(RewardedAd ad);
+```
 
-**Problem:** `PurchaseService.InitializeAsync()` wurde in keiner der 6 Apps aufgerufen. Nach Geräte-/Datenwechsel oder App-Daten löschen sahen Premium-Nutzer wieder Werbung, weil der lokale `is_premium` Preference-Key fehlte. WorkTimePro-Abos wurden nicht als abgelaufen erkannt.
+Alle `LoadCallback`-Ableitungen müssen von `FixedRewardedAdLoadCallback` erben, nicht direkt von `RewardedAdLoadCallback`.
 
-**Fix:** Alle 6 Loading-Pipelines rufen `IPurchaseService.InitializeAsync()` parallel im ersten Lade-Schritt auf. Auf Android verbindet `AndroidPurchaseService.InitializeAsync()` zum Google Play Billing Service und stellt via `RestorePurchasesAsync()` alle aktiven Käufe/Abos wieder her. Auf Desktop ist es ein No-Op (liest nur lokale Preferences).
+### Google Play Billing — Java-Callback-Pattern
 
-**Betroffene Dateien:**
-- `BomberBlast.Shared/Loading/BomberBlastLoadingPipeline.cs`
-- `FinanzRechner.Shared/Loading/FinanzRechnerLoadingPipeline.cs`
-- `FitnessRechner.Shared/Loading/FitnessRechnerLoadingPipeline.cs`
-- `HandwerkerRechner.Shared/Loading/HandwerkerRechnerLoadingPipeline.cs`
-- `HandwerkerImperium.Shared/Loading/HandwerkerImperiumLoadingPipeline.cs`
-- `WorkTimePro.Shared/Loading/WorkTimeProLoadingPipeline.cs`
+`IBillingClientStateListener` und `IPurchasesUpdatedListener` dürfen **nicht** als C#-Interfaces direkt implementiert werden. Sie brauchen innere Klassen, die von `Java.Lang.Object` erben:
 
-### AdView Destroy nach Premium-Kauf (03.03.2026)
+```csharp
+// RICHTIG
+private class BillingStateListener : Java.Lang.Object, IBillingClientStateListener { ... }
+private class PurchaseUpdateListener : Java.Lang.Object, IPurchasesUpdatedListener { ... }
 
-**Problem:** `OnPremiumStatusChanged` und `OnAdsStateChanged` (bei `AdsEnabled=false`) setzten den AdView nur auf `Visibility=Gone`. Der AdView blieb im Speicher und im Layout.
+// FALSCH — kein JNI-Bridge → Callbacks kommen nie an
+private class BillingStateListener : IBillingClientStateListener { ... }
+```
 
-**Fix:** Bei Premium-Kauf oder `DisableAds()` wird der AdView jetzt per `RemoveView()` aus dem Layout entfernt und mit `Destroy()` freigegeben. `_adView` wird auf `null` gesetzt.
+Gilt analog für alle Android-Java-Callbacks in dieser Library.
 
-### Changelog (Premium Library)
+### Billing Client v8 API-Unterschiede
 
-- **03.03.2026**: Purchase-Restore in alle 6 Loading-Pipelines + AdView Destroy nach Premium-Kauf
-- **03.03.2026**: **KRITISCHER FIX: Rewarded Ad Belohnungen kamen nicht an** – `LoadAndShowAsync()` hatte 8s-Timeout der BEIDE Phasen (Laden + Video-Anzeige) abdeckte. Rewarded Videos dauern 15-30s → Timeout feuerte während User das Video schaute → `tcs.TrySetResult(false)` → ViewModel bekam `false` → Belohnung wurde nicht vergeben. Fix: `CancellationTokenSource` im `OnDemandLoadCallback` – Timeout wird gecancellt sobald Ad geladen ist und `ad.Show()` aufgerufen wird. Betrifft ALLE placement-spezifischen Rewarded Ads in ALLEN 6 Apps.
-- **28.02.2026**: **KRITISCHER FIX: Rewarded Ads OnAdLoaded JNI-Callback** – FixedRewardedAdLoadCallback mit korrektem JNI Delegate-Wiring (GetOnAdLoadedHandler Connector statt leerer String). Behebt 0 Impressions trotz 100% Match Rate in ALLEN 6 Apps. + Retry mit exponentiellem Backoff (5s/15s/30s, max 3 Versuche). + 2 fehlende BomberBlast Placements (lucky_spin, dungeon_run) in AdConfig.cs.
-- **17.02.2026**: AndroidPurchaseService mit Google Play Billing Client v8.3.0.1 integriert. Ersetzt AIDL-basierte Billing. Alle 6 Premium-Apps verwenden jetzt echte Google Play Billing Library.
-- **10.02.2026**: TrialService DateTime.Now → DateTime.UtcNow + TryParse mit CultureInfo.InvariantCulture + DateTimeStyles.RoundtripKind. AdMobHelper TestDeviceId nur noch in DEBUG-Builds registriert.
+```csharp
+// v8: EnablePendingPurchases braucht Parameter
+_billingClient.EnablePendingPurchases(PendingPurchasesParams.NewBuilder().Build());
+
+// v8: Purchases-Property heißt anders
+var purchases = result.Purchases;         // RICHTIG (nicht PurchasesList)
+
+// v8: PurchaseState-Namespace
+Android.BillingClient.Api.PurchaseState.Purchased   // RICHTIG
+Purchase.PurchaseStateCode.Purchased                 // FALSCH (v7)
+```
+
+### Rewarded Ad Timeout deckt nur Lade-Phase
+
+Das 8s-Timeout in `LoadAndShowAsync()` muss **nur** die Lade-Phase abdecken, nicht die Video-Anzeige. Sobald die Ad geladen ist und `ad.Show()` aufgerufen wird, muss der Timeout-Token gecancellt werden — sonst feuert er während des 15-30s langen Videos und der Callback erhält `false` statt `true`.
+
+```csharp
+// Im OnDemandLoadCallback.OnAdLoaded:
+_loadCts?.Cancel();   // Timeout stoppen, Ad ist geladen
+ad.Show(_activity, this);
+```
+
+### D8 Duplicate Class (Transitiv-Abhängigkeit)
+
+`Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` kollidiert mit `...Annotation.Android`. Fix in `Directory.Build.targets`:
+
+```xml
+<PackageReference Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm"
+                  ExcludeAssets="all" PrivateAssets="all" />
+```
+
+---
+
+## Verweise
+
+- AdMob-Gotchas (generisch) → `F:\Meine_Apps_Ava\CLAUDE.md` Abschnitt "AdMob"
+- Billing-Gotchas (generisch) → `F:\Meine_Apps_Ava\CLAUDE.md` Abschnitt "Google Play Billing"
+- App-spezifische Premium-Konfiguration → jeweilige `src/Apps/{App}/CLAUDE.md`
+- NuGet-Versionen → `Directory.Packages.props`

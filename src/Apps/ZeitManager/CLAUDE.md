@@ -1,92 +1,187 @@
-# ZeitManager - Timer, Stoppuhr, Wecker
+# ZeitManager — Timer, Stoppuhr, Wecker
 
-> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+Fünf-Tab-Zeitverwaltungs-App: Multi-Timer, Stoppuhr mit Rundenzeiten, Pomodoro, Wecker mit
+Challenges und Schichtplan-Rechner. Komplett werbefrei, kein Premium, kein MeineApps.Core.Premium.
 
-## Status
+| Aspekt | Wert |
+|--------|------|
+| Version | v2.0.7 |
+| Package-ID | com.meineapps.zeitmanager |
+| Modus | Geschlossener Test |
+| Preis | Kostenlos (werbefrei) |
+| Tabs | Timer, Stoppuhr, Pomodoro, Wecker/Schichtplan, Settings |
 
-**Version:** 2.0.6 | **Package-ID:** com.meineapps.zeitmanager | **Preis:** Kostenlos (werbefrei)
+> Für Build-Befehle, Conventions, Troubleshooting und Packages → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
-## App-Beschreibung
+---
 
-Multi-Timer, Stoppuhr mit Rundenzeiten, Pomodoro-Timer, Wecker mit Challenges, Schichtplan-Rechner (15/21-Schicht). 5 Tabs: Timer, Stoppuhr, Pomodoro, Wecker/Schichtplan, Settings. Komplett werbefrei, keine Premium-Features.
+## Architektur
 
-## Features
-
-- **Timer:** Mehrere gleichzeitig, Quick-Timer (1/5/10/15/30 min), +1/+5 Min Extend, Alle löschen, Snooze, AutoRepeat, Presets (DB-gespeichert), eingebaute + System-/benutzerdefinierte Töne
-- **Stoppuhr:** Rundenzeiten mit Best/Worst-Markierung + Delta, Undo-Funktion, Centisecond-Precision, FadeInBehavior auf Runden
-- **Wecker:** CRUD, Weekday-Toggles, Challenge-Support (Math + Shake mit UI), Tonauswahl (eingebaut + System-Ringtones + benutzerdefiniert), Snooze mit konfigurierbarer Dauer, ansteigende Lautstärke, Urlaubsmodus (Alarm-Pause mit WheelPicker 1-30 Tage)
-- **Schichtplan:** 15-Schicht (3 Gruppen Mo-Fr) + 21-Schicht (5 Gruppen 24/7), Kalender-Ansicht, Ausnahmen (Urlaub/Krank/Schichttausch)
-- **Fullscreen Alarm-Overlay:** Content-Swap statt ZIndex-Overlay (Avalonia ZIndex Hit-Testing funktioniert nicht auf Android). Normaler Content + Tab-Bar werden per `IsVisible="{Binding !IsAlarmOverlayVisible}"` versteckt, Alarm-Content wird als Ersatz angezeigt. Pulsier-Animation (nur Opacity, kein ScaleTransform in KeyFrames), Dismiss + Snooze Buttons, Math-Challenge + Shake-Challenge zum Aufwachen
-- **Pomodoro:** PomodoroViewModel mit konfigurierbaren Zeiten (Work/ShortBreak/LongBreak), Zyklus-Tracking (Zyklen bis Langpause + CycleDots), Auto-Start nächste Phase, Phasen-Ringfarbe (PhaseBrush), Streak-Anzeige (Tage in Folge), Focus-Statistiken (Heute + Woche mit Balkendiagramm/DayStatistic), FocusSession DB-Persistierung, Celebration + FloatingText bei Session-Abschluss, Config-Dialog (Bottom-Sheet, Preferences-gespeichert), Aufgabenname pro Session (optional, TextBox im Config-Dialog), konfigurierbares Tagesziel (1-20 Sessions, Stepper im Config-Dialog)
-- **Haptic-Feedback:** IHapticService (HeavyClick bei Alarm-Dismiss + Timer-Ende, Click bei Snooze), Android: VibrationEffect, Desktop: NoOp
-- **Game Juice:** FloatingTextOverlay (Stoppuhr-Runden, Timer fertig) + CelebrationOverlay (Confetti bei Timer-Ende) + TapScaleBehavior (Quick-Timer) + FadeInBehavior (Stoppuhr-Runden) + StaggerFadeInBehavior (Timer-/Alarm-Listen) + CountUpBehavior (Pomodoro-Statistiken) + SwipeToRevealBehavior (Alarm Swipe-to-Delete) + Onboarding (TooltipBubble, 2 Schritte) + TimerVisualization in TimerView (Flüssigkeitsfüllung + Wellen + Tropfen + Confetti bei Timer=0, ~30fps) + Streak Gold-Shimmer (#FFD700 + StreakGoldPulse bei Streak > 3) + Wochen-Balken-Einfahranimation (CubicEaseOut, ~500ms) + Monats-Heatmap (GitHub-Style) + BounceEaseOut Dialog-Spring-Animations (Timer/Alarm/Pomodoro Bottom-Sheets) + EmptyPulse auf Empty-State-Icons
-
-## App-spezifische Services
-
-- `ITimerService` → TimerService (In-Memory Timer Management + Snooze + AutoRepeat + System-Notifications + ExtendTimer + DeleteAll)
-- `IAudioService` → AudioService/AndroidAudioService (Eingebaute Töne + System-Ringtones + PlayUriAsync + PickSoundAsync)
-- `IAlarmSchedulerService` → AlarmSchedulerService (60s Check-Timer, Weekday-Matching, Double-Trigger-Schutz + System-Notifications via INotificationService + Urlaubsmodus/PauseAll)
-- `IShiftScheduleService` → ShiftScheduleService (15/21-Schicht Berechnung + Ausnahmen)
-- `IShakeDetectionService` → DesktopShakeDetectionService/AndroidShakeDetectionService (Shake-Challenge: Desktop=Button-Simulation, Android=Accelerometer)
-- `INotificationService` → Plattform-spezifisch via `ConfigurePlatformServices` (Android: AndroidNotificationService, Desktop: DesktopNotificationService)
-- `IHapticService` → NoOpHapticService (Desktop) / AndroidHapticService (Android): Haptisches Feedback bei Alarm-Dismiss (HeavyClick), Snooze (Click), Timer-Ende (HeavyClick)
-
-## Shared Audio-Klassen
+### Projekt-Struktur
 
 ```
-ZeitManager.Shared/Audio/
-├── WavGenerator.cs        # WAV-Daten generieren (Frequenz + Dauer)
-├── SoundDefinitions.cs    # 6 eingebaute Töne mit Frequenz/Dauer
-└── TimeFormatHelper.cs    # Shared HH:MM:SS.cs Formatierung
+src/Apps/ZeitManager/
+├── ZeitManager.Shared/
+│   ├── Audio/
+│   │   ├── WavGenerator.cs          # WAV-Daten generieren (Frequenz + Dauer)
+│   │   ├── SoundDefinitions.cs      # 6 eingebaute Töne mit Frequenz/Dauer
+│   │   └── TimeFormatHelper.cs      # HH:MM:SS.cs Formatierung
+│   ├── Graphics/                    # 6 SkiaSharp-Visualisierungen (siehe unten)
+│   ├── Loading/
+│   │   └── ZeitManagerLoadingPipeline.cs  # DB-Init + Shader-Kompilierung parallel
+│   ├── Models/                      # AlarmItem, TimerItem, FocusSession, ShiftException
+│   └── ViewModels/                  # TimerVM, StopwatchVM, AlarmVM, PomodoroVM, ShiftVM
+├── ZeitManager.Android/
+│   └── Services/                    # 7 Android-Services (siehe unten)
+└── ZeitManager.Desktop/
 ```
 
-## Android-Services
+### Loading-Pipeline
+
+`ZeitManagerLoadingPipeline` führt echtes Preloading aus: DB-Init + Shader-Kompilierung parallel,
+dann AlarmScheduler, dann ViewModel-Erstellung. `SkiaLoadingSplash` zeigt Fortschrittsring +
+Statustext. `App.axaml.cs` setzt DataContext erst nach Pipeline-Abschluss — kein fire-and-forget
+`_ = InitializeServicesAsync()`.
+
+### Android-Services
 
 ```
 ZeitManager.Android/Services/
-├── TimerForegroundService.cs     # Foreground Service mit Notification (Timer-Countdown)
-├── AlarmReceiver.cs              # BroadcastReceiver für Wecker-Auslösung
-├── BootReceiver.cs               # BOOT_COMPLETED → Wecker neu planen
-├── AlarmActivity.cs              # Fullscreen Lockscreen-Alarm (Dismiss/Snooze, Gradual Volume, Custom Sound)
-├── AndroidAudioService.cs        # System-Ringtones via RingtoneManager + PlayUri + PickSound
-├── AndroidNotificationService.cs # NotificationChannels + AlarmManager + StableHash
+├── TimerForegroundService.cs       # Foreground Service mit Notification (Timer-Countdown)
+├── AlarmReceiver.cs                # BroadcastReceiver für Wecker-Auslösung
+├── BootReceiver.cs                 # BOOT_COMPLETED → Wecker neu planen
+├── AlarmActivity.cs                # Fullscreen Lockscreen-Alarm (Dismiss/Snooze, Gradual Volume)
+├── AndroidAudioService.cs          # System-Ringtones via RingtoneManager + PlayUri + PickSound
+├── AndroidNotificationService.cs   # NotificationChannels + AlarmManager + StableHash
 └── AndroidShakeDetectionService.cs # Accelerometer-basierte Shake-Erkennung
 ```
 
-**AndroidManifest Permissions:** FOREGROUND_SERVICE, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED, POST_NOTIFICATIONS, VIBRATE, USE_FULL_SCREEN_INTENT, WAKE_LOCK
+**AndroidManifest Permissions:** FOREGROUND_SERVICE, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED,
+POST_NOTIFICATIONS, VIBRATE, USE_FULL_SCREEN_INTENT, WAKE_LOCK
 
-## Architektur-Entscheidungen
+---
 
-- **Loading-Pipeline:** `ZeitManagerLoadingPipeline` (in `Loading/`) führt echtes Preloading aus: DB-Init + Shader-Kompilierung parallel, dann AlarmScheduler, ViewModel-Erstellung. `SkiaLoadingSplash` zeigt Fortschrittsring + Statustext. App.axaml.cs setzt DataContext erst nach Pipeline-Abschluss (statt synchron). Bisheriges fire-and-forget `_ = InitializeServicesAsync()` entfernt.
-- **Alarm/Timer-Notifications (Hintergrund):** AlarmSchedulerService und TimerService nutzen INotificationService, um System-Notifications zu planen (Android: AlarmManager.SetAlarmClock, Desktop: Task.Delay). Dadurch funktionieren Alarme/Timer auch wenn die App minimiert/geschlossen ist. AlarmViewModel nutzt IAlarmSchedulerService statt direkt die DB, damit Notifications konsistent geplant/gecancelt werden.
-- **AlarmActivity:** Dedizierte Android Activity (ShowWhenLocked, TurnScreenOn) für Fullscreen-Alarm über Lockscreen. Wird von AlarmReceiver gestartet (via AlarmManager). Buttons (Dismiss/Snooze) lokalisiert via `App.Services.GetService<ILocalizationService>()`. Unterstützt benutzerdefinierte Alarm-Töne via `alarm_tone` Intent-Extra, Snooze-Dauer via `snooze_duration` Extra, ansteigende Lautstärke (Volume Ramp).
-- **Sound-System:** IAudioService erweitert mit SystemSounds, PlayUriAsync, PickSoundAsync. Android: RingtoneManager für System-Sounds + RingtoneManager.ActionRingtonePicker für Auswahl (ActivityResult via MainActivity). Desktop: Avalonia StorageProvider.OpenFilePickerAsync + Kopie in AppData. SoundItem hat optionale Uri (null für eingebaute Töne).
-- **StableHash:** Deterministische Hash-Funktion für Alarm-IDs (statt GetHashCode() der nicht deterministisch ist). Verwendet in AndroidNotificationService, AlarmActivity.
-- **Foreground-Check:** `MainActivity.IsAppInForeground` statisches Flag. AlarmReceiver prüft dies um Doppel-Auslösung (AlarmActivity + In-App Overlay) zu vermeiden.
-- **UI-Thread:** System.Timers.Timer feuert auf ThreadPool → `Dispatcher.UIThread.Post()` für Property-Updates
-- **Stopwatch Undo:** TimeSpan _offset Pattern (Stopwatch unterstützt keine direkte Elapsed-Zuweisung)
-- **Thread-Safety:** TimerService und AlarmSchedulerService nutzen `lock(_lock)` für List-Zugriffe, AudioService lock-swap für CTS, DesktopNotificationService ConcurrentDictionary
-- **AlarmItem:** Erbt ObservableObject, IsEnabled nutzt SetProperty für UI-Notification
-- **CustomShiftPattern:** ShortName() nutzt LocalizationManager.GetString() für lokalisierte Schicht-Kürzel
+## Services
+
+| Interface | Implementierung | Zweck |
+|-----------|----------------|-------|
+| `ITimerService` | `TimerService` | In-Memory Timer-Management + Snooze + AutoRepeat + Notifications + ExtendTimer + DeleteAll |
+| `IAudioService` | `AudioService` / `AndroidAudioService` | Eingebaute Töne + System-Ringtones + PlayUriAsync + PickSoundAsync |
+| `IAlarmSchedulerService` | `AlarmSchedulerService` | 60s Check-Timer, Weekday-Matching, Double-Trigger-Schutz + Notifications + Urlaubsmodus/PauseAll |
+| `IShiftScheduleService` | `ShiftScheduleService` | 15/21-Schicht-Berechnung + Ausnahmen |
+| `IShakeDetectionService` | `Desktop-` / `AndroidShakeDetectionService` | Shake-Challenge: Desktop = Button-Simulation, Android = Accelerometer |
+| `INotificationService` | Plattform-spezifisch via `ConfigurePlatformServices` | Android: `AndroidNotificationService`, Desktop: `DesktopNotificationService` |
+| `IHapticService` | `NoOpHapticService` / `AndroidHapticService` | HeavyClick bei Alarm-Dismiss + Timer-Ende, Click bei Snooze |
+
+---
+
+## Feature-Patterns
+
+### Timer
+
+- Mehrere Timer gleichzeitig, Quick-Timer (1/5/10/15/30 min), +1/+5 Min Extend, Alle löschen
+- Snooze, AutoRepeat, Presets (DB-gespeichert), eingebaute + System-/benutzerdefinierte Töne
+- `TimerView` nutzt `SkiaGradientRing` aus `MeineApps.UI` (Shared Control) mit `GlowEnabled` /
+  `IsPulsing` bei laufendem Timer — kein `CircularProgress` pro Timer-Item
+
+### Stoppuhr
+
+- Rundenzeiten mit Best/Worst-Markierung + Delta, Undo-Funktion, Centisecond-Precision
+- **Undo-Pattern:** `TimeSpan _offset` — `Stopwatch` unterstützt keine direkte Elapsed-Zuweisung,
+  deshalb Offset-Akkumulation beim Undo statt direkter Zuweisung
+
+### Wecker + Alarm-Overlay
+
+- CRUD, Weekday-Toggles, Challenge-Support (Math + Shake mit UI), Tonauswahl
+- Snooze mit konfigurierbarer Dauer, ansteigende Lautstärke, Urlaubsmodus (WheelPicker 1-30 Tage)
+- **Fullscreen Alarm-Overlay:** Content-Swap statt ZIndex-Overlay. Normaler Content + Tab-Bar
+  werden per `IsVisible="{Binding !IsAlarmOverlayVisible}"` versteckt, Alarm-Content als Ersatz
+  angezeigt. Grund: Avalonia ZIndex Hit-Testing funktioniert nicht auf Android
+- Pulsier-Animation: nur Opacity in KeyFrames — kein ScaleTransform (crasht auf Android-GPU)
+- `AlarmActivity`: Dedizierte Android Activity (`ShowWhenLocked`, `TurnScreenOn`) für
+  Fullscreen-Alarm über Lockscreen. Buttons (Dismiss/Snooze) lokalisiert via
+  `App.Services.GetService<ILocalizationService>()`. Unterstützt `alarm_tone` + `snooze_duration`
+  als Intent-Extras
+- **StableHash:** Deterministische Hash-Funktion für Alarm-IDs statt `GetHashCode()` (nicht
+  deterministisch). Verwendet in `AndroidNotificationService`, `AlarmActivity`
+- **Foreground-Check:** `MainActivity.IsAppInForeground` statisches Flag. `AlarmReceiver` prüft
+  dies um Doppel-Auslösung (AlarmActivity + In-App Overlay) zu vermeiden
+
+### Pomodoro
+
+- Konfigurierbare Zeiten (Work/ShortBreak/LongBreak), Zyklus-Tracking (CycleDots), Auto-Start
+- Phasen-Ringfarbe (PhaseBrush), Streak-Anzeige (Tage in Folge mit Gold-Shimmer bei Streak > 3)
+- Focus-Statistiken: Heute + Woche als Balkendiagramm (`DayStatistic`), Monats-Heatmap
+- `FocusSession` DB-Persistierung, Celebration + FloatingText bei Session-Abschluss
+- Config-Dialog (Bottom-Sheet, Preferences-gespeichert): Aufgabenname pro Session,
+  konfigurierbares Tagesziel (1-20 Sessions)
+
+### Schichtplan
+
+- 15-Schicht (3 Gruppen Mo-Fr) + 21-Schicht (5 Gruppen 24/7)
+- Kalender-Ansicht, Ausnahmen (Urlaub/Krank/Schichttausch)
+- `CustomShiftPattern.ShortName()` nutzt `LocalizationManager.GetString()` für lokalisierte Kürzel
+
+### Sound-System
+
+- `IAudioService` mit `SystemSounds`, `PlayUriAsync`, `PickSoundAsync`
+- Android: RingtoneManager für System-Sounds + `RingtoneManager.ActionRingtonePicker` für Auswahl
+  (ActivityResult via MainActivity)
+- Desktop: Avalonia `StorageProvider.OpenFilePickerAsync` + Kopie in AppData
+- `SoundItem.Uri` ist nullable — null = eingebauter Ton
+
+---
 
 ## SkiaSharp-Visualisierungen
 
-6 Visualisierungen in `Graphics/`:
+6 Visualisierungen in `ZeitManager.Shared/Graphics/`:
 
 | Datei | Beschreibung | Genutzt in |
 |-------|-------------|------------|
-| `ClockworkBackgroundRenderer.cs` | Animierter "Warm Clockwork"-Hintergrund (5 Layer): 3-Farben-Gradient (#382C22/#2A2018/#301A10), konzentrische pulsierende Uhrenringe (Alpha 8-10), driftende Glühwuermchen-Partikel (Amber, Alpha 15-20, Glow via MaskFilter), 60 Tick-Markierungen, radiale Vignette. Struct-Pool (max 12), gecachte Paints/Shader, ~5fps DispatcherTimer | MainView |
-| `StopwatchVisualization.cs` | Stoppuhr-Ring mit Sekundenzeiger + Nachleucht-Trail (6 Ghost-Positionen), Runden-Sektoren (farbige Bögen pro Runde, 8 Farben), Sub-Dial (Minuten-Ring oben rechts), 60 Sekunden-Ticks, Glow, Rundenpunkte | StopwatchView |
-| `PomodoroVisualization.cs` | RenderRing: Fortschrittsring mit Pulsier-Effekt (2Hz) auf aktivem Zyklus-Segment + Glow, innerer Session-Ring (Tages-Fortschritt als Segment-Bögen); RenderWeeklyBars: Wochen-Balkendiagramm | PomodoroView |
-| `TimerVisualization.cs` | Timer-Ring mit Flüssigkeits-Füllung + Welleneffekt, Tropfen-Partikel (8 Stück, fallen von Oberfläche), Countdown-Ziffern (letzte 5s, Scale-Bounce 1.5→1.0), Ablauf-Burst (20 Confetti-Partikel bei Timer=0) | TimerView (Reserve) |
-| `PomodoroStatisticsVisualization.cs` | Monats-Heatmap (GitHub-Contributions-Style): 7x5 Grid, 5 Intensitätsstufen (0→4+ Sessions), Wochentag-Labels, Heute-Highlight, Farb-Legende, HitTest für Tap-Interaktion | PomodoroView (Statistik-Ansicht) |
-| `ZeitManagerSplashRenderer.cs` | App-spezifischer Splash: "Die tickende Uhr" - Analoge Uhr mit Snap-Tick Sekundenzeiger, kreisförmiger Progress-Ring, 12 rotierende Zahnrad-Partikel, konzentrische Deko-Ringe | Splash-Screen |
+| `ClockworkBackgroundRenderer.cs` | Animierter "Warm Clockwork"-Hintergrund (5 Layer): 3-Farben-Gradient, konzentrische Uhrenringe, Glühwürmchen-Partikel (Amber, Glow via MaskFilter), 60 Tick-Markierungen, radiale Vignette. Struct-Pool (max 12), gecachte Paints/Shader, ~5 fps | MainView |
+| `StopwatchVisualization.cs` | Stoppuhr-Ring mit Sekundenzeiger + Nachleucht-Trail (6 Ghost-Positionen), Runden-Sektoren (farbige Bögen, 8 Farben), Sub-Dial (Minuten-Ring oben rechts), 60 Sekunden-Ticks, Rundenpunkte | StopwatchView |
+| `PomodoroVisualization.cs` | Fortschrittsring mit Pulsier-Effekt (2 Hz) auf aktivem Zyklus-Segment + Glow, innerer Session-Ring (Tages-Fortschritt als Segment-Bögen); Wochen-Balkendiagramm | PomodoroView |
+| `TimerVisualization.cs` | Flüssigkeits-Füllung + Welleneffekt, Tropfen-Partikel (8 Stück), Countdown-Ziffern (letzte 5 s, Scale-Bounce 1,5→1,0), Ablauf-Burst (20 Confetti-Partikel bei Timer=0) | TimerView (Reserve) |
+| `PomodoroStatisticsVisualization.cs` | Monats-Heatmap (GitHub-Contributions-Stil): 7×5 Grid, 5 Intensitätsstufen, Wochentag-Labels, Heute-Highlight, HitTest für Tap-Interaktion | PomodoroView (Statistik) |
+| `ZeitManagerSplashRenderer.cs` | Analoge Uhr mit Snap-Tick Sekundenzeiger, kreisförmiger Progress-Ring, 12 rotierende Zahnrad-Partikel, konzentrische Deko-Ringe | Splash-Screen |
 
-**TimerView:** Nutzt `SkiaGradientRing` aus MeineApps.UI (Shared Control) statt `CircularProgress` pro Timer-Item, mit `GlowEnabled`/`IsPulsing` bei laufendem Timer.
+---
+
+## Game Juice
+
+- `FloatingTextOverlay`: Stoppuhr-Runden, Timer fertig
+- `CelebrationOverlay`: Confetti bei Timer-Ende + Pomodoro-Session-Abschluss
+- `TapScaleBehavior`: Quick-Timer-Buttons
+- `FadeInBehavior`: Stoppuhr-Runden
+- `StaggerFadeInBehavior`: Timer-/Alarm-Listen
+- `CountUpBehavior`: Pomodoro-Statistiken
+- `SwipeToRevealBehavior`: Alarm Swipe-to-Delete
+- `BounceEaseOut`: Dialog-Spring-Animations (Timer/Alarm/Pomodoro Bottom-Sheets)
+- `EmptyPulse`: Empty-State-Icons
+- Onboarding: `TooltipBubble`, 2 Schritte
+- Streak Gold-Shimmer: `#FFD700` + `StreakGoldPulse` bei Streak > 3
+- Wochen-Balken-Einfahranimation: CubicEaseOut, ~500 ms
+
+---
+
+## Kritische Architektur-Entscheidungen
+
+### Thread-Safety
+
+`System.Timers.Timer` feuert auf ThreadPool → `Dispatcher.UIThread.Post()` für Property-Updates.
+`TimerService` und `AlarmSchedulerService` nutzen `lock(_lock)` für List-Zugriffe. `AudioService`
+lock-swap für CTS. `DesktopNotificationService` nutzt `ConcurrentDictionary`.
+
+### AlarmItem-Reaktivität
+
+`AlarmItem` erbt `ObservableObject`. `IsEnabled` nutzt `SetProperty()` für UI-Notification —
+kein manuelles `PropertyChanged?.Invoke()`.
+
+---
 
 ## Abhängigkeiten
 
-- MeineApps.Core.Ava, MeineApps.UI
-- sqlite-net-pcl + SQLitePCLRaw.bundle_green
-- SkiaSharp + Avalonia.Labs.Controls (SkiaSharp-Visualisierungen)
-- **Kein MeineApps.Core.Premium - komplett werbefrei!**
+- `MeineApps.Core.Ava`, `MeineApps.UI`
+- `sqlite-net-pcl` + `SQLitePCLRaw.bundle_green`
+- `SkiaSharp` + `Avalonia.Labs.Controls`
+- **Kein `MeineApps.Core.Premium` — komplett werbefrei**

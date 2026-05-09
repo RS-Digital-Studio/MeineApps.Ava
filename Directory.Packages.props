@@ -5,44 +5,44 @@
 
   <ItemGroup>
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- AVALONIA CORE (Basis: 11.3.13)                                  -->
+    <!-- AVALONIA CORE (Basis: 12.0.2)                                   -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Avalonia" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Android" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Skia" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.14" />
+    <PackageVersion Include="Avalonia" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Android" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Skia" Version="12.0.2" />
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- ICONS                                                            -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.0" />
+    <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.2" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- AUDIO (Desktop-Wiedergabe — Windows nutzt NAudio, Linux/macOS    -->
     <!-- spawnen ffplay als Fallback)                                    -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="NAudio" Version="2.2.1" />
+    <PackageVersion Include="NAudio" Version="2.3.0" />
     <PackageVersion Include="NAudio.Vorbis" Version="1.5.0" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- MVVM & BEHAVIORS                                                 -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="11.3.9.5" />
+    <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- GRAPHICS & CHARTS                                                -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="SkiaSharp" Version="3.119.2" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Android" Version="3.119.2" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.2" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.2" />
-    <PackageVersion Include="Avalonia.Labs.Controls" Version="11.3.1" />
-    <PackageVersion Include="Avalonia.Labs.Lottie" Version="11.3.1" />
-    <PackageVersion Include="SkiaSharp.Skottie" Version="3.119.2" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.4-preview.1.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Android" Version="3.119.4-preview.1.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.4-preview.1.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4-preview.1.1" />
+    <PackageVersion Include="Avalonia.Labs.Controls" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Labs.Lottie" Version="12.0.2" />
+    <PackageVersion Include="SkiaSharp.Skottie" Version="3.119.4-preview.1.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DATABASE                                                         -->
@@ -92,14 +92,14 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DI & LOGGING                                                     -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.6" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.6" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- CRYPTOGRAPHY                                                    -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.6" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.7" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TRADING INDICATORS                                              -->
@@ -107,12 +107,7 @@
     <PackageVersion Include="Skender.Stock.Indicators" Version="2.7.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- ML / OPTIMIERUNG (BingXBot ATI - reserviert, bei Bedarf hinzufuegen) -->
-    <!-- Microsoft.ML 5.0.0, Microsoft.ML.LightGbm 5.0.0,                  -->
-    <!-- Microsoft.ML.OnnxRuntime 1.22.0, GeneticSharp 3.1.4               -->
-    <!-- entfernt 2026-04-18: nicht implementiert, ~300MB transitive       -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- KARTEN & BLE & AR (SmartMeasure)                                  -->
+    <!-- KARTEN & BLE & AR (SmartMeasure)                                 -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Mapsui.Avalonia" Version="5.0.2" />
     <PackageVersion Include="InTheHand.BluetoothLE" Version="4.0.44" />
@@ -123,7 +118,7 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="System.Device.Gpio" Version="4.2.0" />
     <PackageVersion Include="Iot.Device.Bindings" Version="4.2.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.6" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.7" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TESTING                                                          -->
@@ -133,15 +128,13 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="FluentAssertions" Version="8.9.0" />
-    <PackageVersion Include="coverlet.collector" Version="8.0.1" />
-    <PackageVersion Include="Avalonia.Headless" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.13" />
-    <!-- Phase 18 / G5 + G6 — Snapshot- + Property-Based-Tests -->
+    <PackageVersion Include="coverlet.collector" Version="10.0.0" />
+    <PackageVersion Include="Avalonia.Headless" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.0.2" />
     <PackageVersion Include="Verify.Xunit" Version="28.4.0" />
-    <PackageVersion Include="FsCheck.Xunit" Version="3.1.0" />
-    <!-- Phase 18 / H6 — OpenTelemetry + Prometheus-Exporter (Bot-Server) -->
-    <PackageVersion Include="OpenTelemetry" Version="1.10.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.10.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.10.0-beta.1" />
+    <PackageVersion Include="FsCheck.Xunit" Version="3.3.3" />
+    <PackageVersion Include="OpenTelemetry" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.15.3-beta.1" />
   </ItemGroup>
 </Project>

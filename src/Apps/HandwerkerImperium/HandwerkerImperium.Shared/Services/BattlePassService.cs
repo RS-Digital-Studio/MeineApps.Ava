@@ -6,7 +6,7 @@ using MeineApps.Core.Premium.Ava.Services;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Verwaltet den Battle Pass (50 Tiers, Free + Premium Track, 42-Tage-Saison).
+/// Verwaltet den Battle Pass (50 Tiers, Free + Premium Track, 30-Tage-Saison — AAA-Audit P2).
 /// Automatische XP-Vergabe bei Aufträgen, MiniGames und Workshop-Upgrades.
 /// Premium-Track kann per IAP freigeschaltet werden.
 /// </summary>

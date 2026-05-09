@@ -72,13 +72,14 @@ public class BattlePassTests
     // ═══════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void DaysRemaining_FrischeSaison_IstBisZuVierzigZwei()
+    public void DaysRemaining_FrischeSaison_IstDreissigTage()
     {
         // Vorbereitung
         var bp = new BattlePass { SeasonStartDate = DateTime.UtcNow };
 
-        // Prüfung: Neue Saison hat maximal 42 Tage
-        bp.DaysRemaining.Should().Be(42);
+        // Prüfung: AAA-Audit P2 hat Saison-Dauer von 42 → 30 Tage reduziert
+        // (State-of-the-Art Mobile-Idle-Standard fuer staerkeren Daily-Drive).
+        bp.DaysRemaining.Should().Be(30);
     }
 
     [Fact]
@@ -263,15 +264,16 @@ public class BattlePassTests
     }
 
     [Fact]
-    public void GeneratePremiumRewards_Tier49_Capstone_HatHundertGoldschrauben()
+    public void GeneratePremiumRewards_Tier49_Capstone_HatHundertfuenfzigGoldschrauben()
     {
         // Ausführung
         var rewards = BattlePass.GeneratePremiumRewards(10m);
         var capstone = rewards.FirstOrDefault(r => r.Tier == 49);
 
-        // Prüfung: Premium Capstone hat 100 GS
+        // Prüfung: AAA-Audit P2 hat Capstone von 100 → 150 GS erhoeht
+        // (Premium-Spread auf 3x ggue. Free, Audit-Empfehlung 3.5x).
         capstone.Should().NotBeNull();
-        capstone!.GoldenScrewReward.Should().Be(100);
+        capstone!.GoldenScrewReward.Should().Be(150);
     }
 
     [Fact]

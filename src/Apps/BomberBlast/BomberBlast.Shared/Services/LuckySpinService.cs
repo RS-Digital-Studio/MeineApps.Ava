@@ -52,11 +52,39 @@ public sealed class LuckySpinService : ILuckySpinService
     }
 
     public int TotalSpins => _data.TotalSpins;
+    public int SpinsSinceLastJackpot => _data.SpinsSinceLastJackpot;
+    public int JackpotPityThreshold => 50;
 
     public IReadOnlyList<SpinReward> GetRewards() => _rewards;
 
+    public IReadOnlyList<(int RewardIndex, float ProbabilityPercent)> GetDropRates()
+    {
+        var list = new List<(int, float)>(_rewards.Length);
+        for (int i = 0; i < _rewards.Length; i++)
+        {
+            float pct = _rewards[i].Weight * 100f / _totalWeight;
+            list.Add((i, pct));
+        }
+        return list;
+    }
+
     public int Spin()
     {
+        int jackpotIndex = -1;
+        for (int i = 0; i < _rewards.Length; i++)
+            if (_rewards[i].IsJackpot) { jackpotIndex = i; break; }
+
+        // Phase 23 — Pity-Counter (Lootbox-Compliance UK/China):
+        // Nach 50 Spins ohne Jackpot wird der naechste Spin garantiert ein Jackpot.
+        // Schuetzt vor langen Pech-Streaks und macht das System transparent.
+        if (jackpotIndex >= 0 && _data.SpinsSinceLastJackpot >= JackpotPityThreshold)
+        {
+            _data.TotalSpins++;
+            _data.SpinsSinceLastJackpot = 0;
+            Save();
+            return jackpotIndex;
+        }
+
         // Gewichtete Zufallsauswahl
         int roll = _random.Next(_totalWeight);
         int cumulative = 0;
@@ -66,6 +94,10 @@ public sealed class LuckySpinService : ILuckySpinService
             if (roll < cumulative)
             {
                 _data.TotalSpins++;
+                if (i == jackpotIndex)
+                    _data.SpinsSinceLastJackpot = 0;
+                else
+                    _data.SpinsSinceLastJackpot++;
                 Save();
                 return i;
             }
@@ -104,5 +136,7 @@ public sealed class LuckySpinService : ILuckySpinService
     {
         public string? LastFreeSpinDate { get; set; }
         public int TotalSpins { get; set; }
+        /// <summary>Phase 23 — Pity-Counter für Lootbox-Compliance.</summary>
+        public int SpinsSinceLastJackpot { get; set; }
     }
 }

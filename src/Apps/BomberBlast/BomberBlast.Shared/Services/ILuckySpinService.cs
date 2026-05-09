@@ -11,6 +11,21 @@ public interface ILuckySpinService
     /// <summary>Gesamtanzahl bisheriger Spins</summary>
     int TotalSpins { get; }
 
+    // === Phase 23 — Lootbox-Compliance (Pity-Counter) ========================
+
+    /// <summary>
+    /// Phase 23 — Spins seit dem letzten Jackpot. Wird in der UI als
+    /// "Pity-Counter" angezeigt: bei <see cref="JackpotPityThreshold"/> garantiert das System
+    /// den nächsten Jackpot. Compliance-Anforderung (UK/China — Drop-Rate-Transparenz).
+    /// </summary>
+    int SpinsSinceLastJackpot { get; }
+
+    /// <summary>Anzahl Spins bis zum garantierten Jackpot (Konstante 50).</summary>
+    int JackpotPityThreshold { get; }
+
+    /// <summary>Drop-Rate-Tabelle in Prozent fuer UI-Disclosure (Compliance).</summary>
+    IReadOnlyList<(int RewardIndex, float ProbabilityPercent)> GetDropRates();
+
     /// <summary>Verfügbare Rad-Segmente</summary>
     IReadOnlyList<SpinReward> GetRewards();
 

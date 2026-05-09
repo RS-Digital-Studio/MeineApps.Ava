@@ -3,7 +3,6 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
-using Avalonia;
 using Avalonia.Android;
 using BomberBlast.Droid;
 using BomberBlast.Input;
@@ -24,7 +23,7 @@ namespace BomberBlast;
     Exported = true,
     ScreenOrientation = ScreenOrientation.Landscape,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
@@ -34,12 +33,6 @@ public class MainActivity : AvaloniaMainActivity<App>
     // (PERF-6, ~100-200ms Startup-Ersparnis) komplett aushebeln. Stattdessen `_mainVm?.GameVm`
     // bei Bedarf in DispatchKeyEvent/DispatchGenericMotionEvent abfragen — null wenn Spiel
     // noch nie gestartet wurde, da werden Gamepad-Events sowieso nicht gebraucht.
-
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-    {
-        return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
-    }
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {

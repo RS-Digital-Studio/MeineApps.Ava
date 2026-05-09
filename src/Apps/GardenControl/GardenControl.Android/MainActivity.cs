@@ -2,7 +2,6 @@ using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Widget;
-using Avalonia;
 using Avalonia.Android;
 using GardenControl.Shared;
 using GardenControl.Shared.ViewModels;
@@ -17,15 +16,9 @@ namespace GardenControl.Android;
     Exported = true,
     LaunchMode = LaunchMode.SingleTop,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     private MainViewModel? _mainVm;
-
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-    {
-        return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
-    }
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {

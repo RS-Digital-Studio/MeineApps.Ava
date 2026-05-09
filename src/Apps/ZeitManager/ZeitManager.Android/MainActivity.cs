@@ -5,7 +5,6 @@ using Android.Media;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
-using Avalonia;
 using Avalonia.Android;
 using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +21,7 @@ namespace ZeitManager.Android;
     MainLauncher = true,
     Exported = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     private const int RingtonePickerRequestCode = 9001;
 
@@ -39,6 +38,16 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // Avalonia 12: ConfigurePlatformServices-Hook muss VOR base.OnCreate (DI-Build) gesetzt sein.
+        // Frueher lief dieser Code in CustomizeAppBuilder.
+        App.ConfigurePlatformServices = services =>
+        {
+            services.AddSingleton<INotificationService, AndroidNotificationService>();
+            services.AddSingleton<IAudioService, AndroidAudioService>();
+            services.AddSingleton<IShakeDetectionService, AndroidShakeDetectionService>();
+            services.AddSingleton<IHapticService, AndroidHapticService>();
+        };
+
         base.OnCreate(savedInstanceState);
 
         // Immersive Fullscreen aktivieren
@@ -136,9 +145,11 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         if (Window == null) return;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.R) // API 30+
+        if (OperatingSystem.IsAndroidVersionAtLeast(30)) // API 30+
         {
+#pragma warning disable CA1422 // SetDecorFitsSystemWindows ist ab API 35 deprecated, hier API 30-34 korrekt
             Window.SetDecorFitsSystemWindows(false);
+#pragma warning restore CA1422
             var controller = Window.InsetsController;
             if (controller != null)
             {
@@ -148,8 +159,9 @@ public class MainActivity : AvaloniaMainActivity<App>
         }
         else
         {
-            // Fallback fuer aeltere API-Versionen (< 30)
-#pragma warning disable CA1422 // Deprecated API fuer Kompatibilitaet
+            // Fallback fuer aeltere API-Versionen (< 30) — SystemUiVisibility ist seit API 30 deprecated.
+#pragma warning disable CA1422
+#pragma warning disable CS0618
             Window.DecorView.SystemUiVisibility = (StatusBarVisibility)(
                 SystemUiFlags.ImmersiveSticky |
                 SystemUiFlags.LayoutStable |
@@ -157,6 +169,7 @@ public class MainActivity : AvaloniaMainActivity<App>
                 SystemUiFlags.LayoutFullscreen |
                 SystemUiFlags.HideNavigation |
                 SystemUiFlags.Fullscreen);
+#pragma warning restore CS0618
 #pragma warning restore CA1422
         }
     }
@@ -172,18 +185,4 @@ public class MainActivity : AvaloniaMainActivity<App>
     }
 #pragma warning restore CA1422
 
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-    {
-        // Register Android-specific services before app initialization
-        App.ConfigurePlatformServices = services =>
-        {
-            services.AddSingleton<INotificationService, AndroidNotificationService>();
-            services.AddSingleton<IAudioService, AndroidAudioService>();
-            services.AddSingleton<IShakeDetectionService, AndroidShakeDetectionService>();
-            services.AddSingleton<IHapticService, AndroidHapticService>();
-        };
-
-        return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
-    }
 }

@@ -2,7 +2,6 @@ using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Widget;
-using Avalonia;
 using Avalonia.Android;
 using BingXBot.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +11,9 @@ namespace BingXBot;
 /// <summary>
 /// Android-Einstiegspunkt fuer BingXBot. Minimalistisch — die App verbindet sich
 /// zum Pi-Server und steuert ihn ferngesteuert. Keine Trading-Engine auf dem Handy.
+///
+/// Avalonia 12: AvaloniaMainActivity (non-generic). Application-Bootstrap ist nun in
+/// <see cref="AndroidApp"/> ausgelagert — diese Activity macht nur noch UI/Lifecycle.
 /// </summary>
 [Activity(
     Label = "BingXBot",
@@ -21,22 +23,17 @@ namespace BingXBot;
     Exported = true,
     ScreenOrientation = ScreenOrientation.Portrait,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     private MainViewModel? _mainVm;
 
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-    {
-        // Android-spezifische Pfade registrieren BEVOR DI-Container gebaut wird.
-        // OnFrameworkInitializationCompleted ruft AppPathsFactory ab — muss vorher gesetzt sein.
-        App.AppPathsFactory = () => new AndroidAppPaths(this);
-
-        return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
-    }
-
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // Android-spezifische Pfade registrieren BEVOR DI-Container gebaut wird.
+        // OnFrameworkInitializationCompleted ruft AppPathsFactory ab — muss vor base.OnCreate gesetzt sein.
+        // Hier in der Activity (nicht in AndroidApp.OnCreate), weil AndroidAppPaths einen Context braucht.
+        App.AppPathsFactory = () => new AndroidAppPaths(this);
+
         base.OnCreate(savedInstanceState);
 
         _mainVm = App.Services?.GetService<MainViewModel>();

@@ -13,6 +13,7 @@
     <!-- Android Settings -->
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+
   </PropertyGroup>
 
   <ItemGroup>

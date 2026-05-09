@@ -4,7 +4,6 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
-using Avalonia;
 using Avalonia.Android;
 using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,15 +18,9 @@ namespace RechnerPlus.Android;
     MainLauncher = true,
     Exported = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     private MainViewModel? _mainVm;
-
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-    {
-        return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
-    }
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -99,9 +92,11 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         if (Window == null) return;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.R) // API 30+
+        if (OperatingSystem.IsAndroidVersionAtLeast(30)) // API 30+
         {
+#pragma warning disable CA1422 // SetDecorFitsSystemWindows ist ab API 35 deprecated, hier API 30-34 korrekt
             Window.SetDecorFitsSystemWindows(false);
+#pragma warning restore CA1422
             var controller = Window.InsetsController;
             if (controller != null)
             {
@@ -111,8 +106,9 @@ public class MainActivity : AvaloniaMainActivity<App>
         }
         else
         {
-            // Fallback fuer aeltere API-Versionen (< 30)
-#pragma warning disable CA1422 // Deprecated API fuer Kompatibilitaet
+            // Fallback fuer aeltere API-Versionen (< 30) — SystemUiVisibility ist seit API 30 deprecated.
+#pragma warning disable CA1422
+#pragma warning disable CS0618
             Window.DecorView.SystemUiVisibility = (StatusBarVisibility)(
                 SystemUiFlags.ImmersiveSticky |
                 SystemUiFlags.LayoutStable |
@@ -120,6 +116,7 @@ public class MainActivity : AvaloniaMainActivity<App>
                 SystemUiFlags.LayoutFullscreen |
                 SystemUiFlags.HideNavigation |
                 SystemUiFlags.Fullscreen);
+#pragma warning restore CS0618
 #pragma warning restore CA1422
         }
     }

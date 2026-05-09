@@ -5,7 +5,6 @@ using Android.OS;
 using Android.Widget;
 using AndroidX.Core.App;
 using AndroidX.Core.Content;
-using Avalonia;
 using Avalonia.Android;
 using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +26,7 @@ namespace SmartMeasure.Android;
     Exported = true,
     LaunchMode = LaunchMode.SingleTop,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     private const int BleRuntimePermissionRequestCode = 9001;
 
@@ -35,8 +34,12 @@ public class MainActivity : AvaloniaMainActivity<App>
     private AndroidArCaptureService? _arCaptureService;
     private IBleService? _bleService;
 
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
+    protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // Avalonia 12: Factory-Setups MUESSEN vor base.OnCreate gesetzt sein — diese werden
+        // beim ersten DI-Build (innerhalb von base.OnCreate → OnFrameworkInitializationCompleted)
+        // ausgewertet. Frueher lief dieser Code in CustomizeAppBuilder.
+
         // IAppPaths MUSS vor dem DI-Build gesetzt werden — ProjectService-Ctor hängt davon ab.
         // Context.FilesDir garantiert sandbox-sicheren Pfad auf allen Android-ROMs.
         App.AppPathsFactory = () => new AndroidAppPaths(this);
@@ -53,12 +56,6 @@ public class MainActivity : AvaloniaMainActivity<App>
         _arCaptureService = new AndroidArCaptureService(this);
         App.ArCaptureServiceFactory = _ => _arCaptureService;
 
-        return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
-    }
-
-    protected override void OnCreate(Bundle? savedInstanceState)
-    {
         base.OnCreate(savedInstanceState);
 
         _mainVm = App.Services?.GetService(typeof(MainViewModel)) as MainViewModel;

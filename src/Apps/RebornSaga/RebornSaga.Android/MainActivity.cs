@@ -3,7 +3,6 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
-using Avalonia;
 using Avalonia.Android;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
@@ -23,14 +22,17 @@ namespace RebornSaga;
     Exported = true,
     ScreenOrientation = ScreenOrientation.Portrait,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
 
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
+    protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // Avalonia 12: Factory-Setups muessen VOR base.OnCreate gesetzt sein.
+        // Frueher lief dieser Code in CustomizeAppBuilder.
+
         // Rewarded Ad Helper + Factory MUSS vor base.OnCreate (DI) registriert werden
         _rewardedAdHelper = new RewardedAdHelper();
         App.RewardedAdServiceFactory = sp =>
@@ -46,12 +48,6 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.AudioServiceFactory = sp =>
             new AndroidAudioService(this, sp.GetRequiredService<IPreferencesService>());
 
-        return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
-    }
-
-    protected override void OnCreate(Bundle? savedInstanceState)
-    {
         base.OnCreate(savedInstanceState);
 
         // Immersive Fullscreen (Portrait-Spiel)
@@ -113,9 +109,11 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         if (Window == null) return;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.R) // API 30+
+        if (OperatingSystem.IsAndroidVersionAtLeast(30)) // API 30+
         {
+#pragma warning disable CA1422 // SetDecorFitsSystemWindows ist ab API 35 deprecated, hier API 30-34 korrekt
             Window.SetDecorFitsSystemWindows(false);
+#pragma warning restore CA1422
             var controller = Window.InsetsController;
             if (controller != null)
             {
@@ -125,8 +123,9 @@ public class MainActivity : AvaloniaMainActivity<App>
         }
         else
         {
-            // Fallback für ältere API-Versionen (< 30)
-#pragma warning disable CA1422 // Deprecated API für Kompatibilität
+            // Fallback für ältere API-Versionen (< 30) — SystemUiVisibility ist seit API 30 deprecated.
+#pragma warning disable CA1422
+#pragma warning disable CS0618
             Window.DecorView.SystemUiVisibility = (StatusBarVisibility)(
                 SystemUiFlags.ImmersiveSticky |
                 SystemUiFlags.LayoutStable |
@@ -134,6 +133,7 @@ public class MainActivity : AvaloniaMainActivity<App>
                 SystemUiFlags.LayoutFullscreen |
                 SystemUiFlags.HideNavigation |
                 SystemUiFlags.Fullscreen);
+#pragma warning restore CS0618
 #pragma warning restore CA1422
         }
     }

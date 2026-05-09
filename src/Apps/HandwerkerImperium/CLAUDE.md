@@ -710,10 +710,9 @@ Saison-Dauer 42 → 30 Tage (12 Saisons/Jahr statt 8.7). Premium-Spread auf ~3x 
 
 ---
 
-## MainView Lazy-Loading (AAA-Audit P0)
+## MainView Lazy-Loading
 
-`MainView.axaml` ist von 425 → 250 Zeilen geschrumpft. Statt 25+ einzelner ContentControls
-mit `IsVisible`-Bindings nutzt das ContentPanel jetzt:
+Statt 25+ einzelner ContentControls mit `IsVisible`-Bindings nutzt das ContentPanel:
 
 - 4 Direct-Bound-Views (DashboardView/ImperiumView/MissionenView/PrestigeView) mit
   `DataContext = MainViewModel` und `IsVisible="{Binding IsXxxActive}"`.
@@ -729,9 +728,10 @@ Renderer, View-Locator-DataTemplates rendern nur die aktive Seite.
 
 ---
 
-## MainViewModel Zerlegungs-Sprint (AAA-Audit P0)
+## MainViewModel-Extraktion (Logik-Klumpen-Auslagerung)
 
-MainViewModel war 2412 Zeilen + 6 Partials. Logik-Klumpen sind in dedizierte Services extrahiert:
+Logik-Klumpen sind in dedizierte Services und Feature-VMs extrahiert, MainViewModel bleibt
+Routing- und Lifecycle-Layer.
 
 ### CinematicCoordinator
 
@@ -743,10 +743,10 @@ View-Trigger-Event. MainViewModel ruft im Ctor `StartListening()` auf und delegi
 ### ReputationTierEffects
 
 `IReputationTierEffects` + `ReputationTierEffects` — bündelt FloatingText + Celebration +
-LevelUp-Audio + Achievement-Dialog mit Tier-Effekten. MainViewModel.OnReputationTierChanged
-feuert nur noch die Property-Notifies und delegiert die Effekt-Logik an den Service.
+LevelUp-Audio + Achievement-Dialog mit Tier-Effekten. `MainViewModel.OnReputationTierChanged`
+feuert nur die Property-Notifies und delegiert die Effekt-Logik an den Service.
 
-### Bereits vorher extrahiert
+### Feature-ViewModels (Source-of-Truth)
 
 - HeaderViewModel (16 Properties)
 - PrestigeBannerViewModel (18 Properties)
@@ -757,13 +757,10 @@ feuert nur noch die Property-Notifies und delegiert die Effekt-Logik an den Serv
 - DialogViewModel + 6 Partial-Files (Story/Hint/Confirm/Achievement/LevelUp/Alert/PrestigeSummary)
 - NavigationService + DialogOrchestrator + MiniGameNavigator
 
-### Bewusste DEFER-Entscheidung
+### Bewusst beibehalten
 
-- **Tab-Select-Commands extrahieren** — bewusst nicht umgesetzt: AXAML-Bindings auf
-  ~12 RelayCommands wuerden brechen, der strukturelle Gewinn waere minimal.
-- **Voll-Zerlegung in max-200-Zeilen-Klassen** — Audit-Schaetzung L = 3-5 Tage; bereits
-  Substanz extrahiert (siehe oben), restlicher Schnitt braucht dediziertes Refactor-Projekt
-  mit Architektur-Review.
+- **Tab-Select-Commands** bleiben am MainViewModel: AXAML-Bindings auf ~12 RelayCommands —
+  Auslagerung würde bestehende Bindings brechen ohne strukturellen Gewinn.
 
 ---
 

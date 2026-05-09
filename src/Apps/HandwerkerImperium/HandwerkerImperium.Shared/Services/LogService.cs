@@ -45,9 +45,10 @@ public sealed class LogService : ILogService
         var timestamp = DateTime.UtcNow.ToString("HH:mm:ss.fff");
         var entry = $"[{timestamp}] [{level}] {message}";
 
-        // Console.WriteLine funktioniert in Release-Builds (Debug.WriteLine nicht)
-        Console.WriteLine(entry);
-        System.Diagnostics.Debug.WriteLine(entry);
+        // AAA-Audit P2: Im Release-Build keine Console-/Debug-Schreibvorgaenge mehr —
+        // sie kosten Frame-Time und Battery. Der In-Memory-Ringbuffer bleibt aktiv,
+        // damit der „/diagnostics"-Pfad im Release weiterhin Logs liefern kann.
+        WriteToConsole(entry);
 
         lock (_lock)
         {
@@ -55,5 +56,12 @@ public sealed class LogService : ILogService
             _index = (_index + 1) % MaxEntries;
             if (_count < MaxEntries) _count++;
         }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void WriteToConsole(string entry)
+    {
+        Console.WriteLine(entry);
+        System.Diagnostics.Debug.WriteLine(entry);
     }
 }

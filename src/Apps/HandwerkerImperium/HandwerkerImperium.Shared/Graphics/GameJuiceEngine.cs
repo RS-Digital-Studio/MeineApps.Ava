@@ -56,6 +56,16 @@ public sealed class GameJuiceEngine : IDisposable
     private uint _rngState = 42;
 
     /// <summary>
+    /// AAA-Audit P2 Accessibility: Wenn true, werden teure visuelle Effekte
+    /// (Confetti, Coin-Fly, Sparkle, RadialBurst) abgeschaltet und ScreenShake
+    /// gedämpft. Wird vom MainViewModel.ReduceMotion gesetzt
+    /// (= GraphicsQuality == Low). Apple/Google A11y-Stores penalisieren Apps
+    /// ohne Reduced-Motion-Mode; Photosensitivity-Spieler haben Probleme mit
+    /// Confetti/Fireworks.
+    /// </summary>
+    public bool ReduceMotion { get; set; }
+
+    /// <summary>
     /// Aktueller ScreenShake-Offset X (Canvas vor dem Rendern verschieben).
     /// </summary>
     public float ShakeOffsetX => _shakeOffsetX;
@@ -72,6 +82,14 @@ public sealed class GameJuiceEngine : IDisposable
     /// <param name="duration">Dauer in Sekunden (0.2-0.5 empfohlen).</param>
     public void ScreenShake(float intensity = 4f, float duration = 0.3f)
     {
+        // AAA-Audit P2 Accessibility: ReduceMotion daempft Shake auf 30%
+        // statt komplett abzuschalten — Spieler bekommt Tactile-Feedback,
+        // aber ohne starke Bildbewegung.
+        if (ReduceMotion)
+        {
+            intensity *= 0.3f;
+            duration *= 0.5f;
+        }
         _shakeIntensity = intensity;
         _shakeDuration = duration;
         _shakeTimer = duration;
@@ -82,6 +100,7 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void RadialBurst(float x, float y, SKColor color, float maxRadius = 60f, float duration = 0.4f)
     {
+        if (ReduceMotion) return; // AAA-Audit P2: A11y-Friendly
         AddEffect(new JuiceEffect
         {
             Type = EffectType.RadialBurst,
@@ -98,6 +117,9 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void CoinsFlyToWallet(float fromX, float fromY, float toX, float toY, int count = 10)
     {
+        // AAA-Audit P2 A11y: ReduceMotion reduziert Coins um 60% (4-6 statt 10),
+        // damit Tactile-Feedback bleibt aber Bildbewegung gedaempft.
+        if (ReduceMotion) count = Math.Max(2, count / 3);
         count = Math.Clamp(count, 4, 16);
         for (int i = 0; i < count; i++)
         {
@@ -124,6 +146,7 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void SparkleEffect(SKRect rect, SKColor color, int count = 8, float duration = 0.6f)
     {
+        if (ReduceMotion) { count = Math.Max(2, count / 3); duration *= 0.7f; } // AAA-Audit P2 A11y
         for (int i = 0; i < Math.Min(count, 20); i++)
         {
             AddEffect(new JuiceEffect
@@ -182,6 +205,7 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void ShockwaveRing(float x, float y, SKColor color, float maxRadius = 100f, float duration = 0.5f)
     {
+        if (ReduceMotion) return; // AAA-Audit P2 A11y
         AddEffect(new JuiceEffect
         {
             Type = EffectType.Shockwave,
@@ -198,6 +222,8 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void ConfettiBurst(float x, float y, int count = 30, float spread = 100f)
     {
+        // AAA-Audit P2 A11y: ReduceMotion = kein Confetti (Photosensitivity-Schutz).
+        if (ReduceMotion) return;
         for (int i = 0; i < Math.Min(count, 50); i++)
         {
             float angle = NextRandom(0f, MathF.PI * 2f);

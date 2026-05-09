@@ -1029,6 +1029,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _rebirthService = rebirthService;
         _tournamentService = tournamentService;
         GameJuiceEngine = gameJuiceEngine;
+        // AAA-Audit P2 Accessibility: ReduceMotion an GameJuiceEngine durchreichen,
+        // damit Confetti/CoinFly/Sparkle/RadialBurst gedaempft werden.
+        GameJuiceEngine.ReduceMotion = ReduceMotion;
 
         // Delegate-Felder zuweisen (statt anonymer Lambdas, damit Dispose() abmelden kann)
         _adUnavailableHandler = () => DialogVM.ShowAlertDialog(

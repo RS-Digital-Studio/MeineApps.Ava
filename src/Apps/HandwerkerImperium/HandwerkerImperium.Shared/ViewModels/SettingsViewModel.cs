@@ -326,6 +326,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         // neuen Wert beim naechsten Neustart (Tab-Wechsel, IsVisible-Toggle),
         // der WorkerAvatar-Shared-Timer reagiert sofort via CurrentChanged-Event.
         Graphics.FpsProfile.SetCurrent(value.Quality);
+
+        // AAA-Audit P2 A11y: ReduceMotion sofort an GameJuiceEngine durchreichen,
+        // damit Confetti/CoinFly/Sparkle/RadialBurst sofort respektiert werden —
+        // ohne App-Neustart.
+        var juice = App.Services?.GetService(typeof(Graphics.GameJuiceEngine)) as Graphics.GameJuiceEngine;
+        if (juice != null)
+            juice.ReduceMotion = value.Quality == GraphicsQuality.Low;
+
         _saveGameService.SaveAsync().FireAndForget();
     }
 

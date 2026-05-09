@@ -996,6 +996,358 @@ def sfx_celebration_horn(out: Path) -> None:
 
 
 # ----------------------------------------------------------------------
+# Erweiterung 100-Pack (AAA-Audit-Ziel)
+# ----------------------------------------------------------------------
+def sfx_button_tap_alt(out: Path) -> None:
+    """Alternative Button-Tap (UI-Variation gegen Repetition-Fatigue)."""
+    buf = make_buf(0.06)
+    add_sine(buf, 0.0, 0.04, 1400, vol=0.3)
+    apply_envelope(buf, 0.0, 0.06, attack=0.001, decay=0.04, sustain=0.0, release=0.019, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_button_tap_negative(out: Path) -> None:
+    """Disabled-Button-Tap (kurz + tiefer)."""
+    buf = make_buf(0.08)
+    add_sine(buf, 0.0, 0.06, 350, vol=0.3)
+    apply_envelope(buf, 0.0, 0.08, attack=0.005, decay=0.04, sustain=0.0, release=0.035, peak=0.7)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_close_dialog_subtle(out: Path) -> None:
+    buf = make_buf(0.18)
+    add_sweep(buf, 0.0, 0.15, 800, 400, vol=0.3)
+    apply_envelope(buf, 0.0, 0.18, attack=0.005, decay=0.05, sustain=0.3, release=0.125, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_swipe_left(out: Path) -> None:
+    buf = make_buf(0.18)
+    add_sweep(buf, 0.0, 0.15, 1500, 700, vol=0.3)
+    apply_envelope(buf, 0.0, 0.18, attack=0.01, decay=0.05, sustain=0.4, release=0.12, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_swipe_right(out: Path) -> None:
+    buf = make_buf(0.18)
+    add_sweep(buf, 0.0, 0.15, 700, 1500, vol=0.3)
+    apply_envelope(buf, 0.0, 0.18, attack=0.01, decay=0.05, sustain=0.4, release=0.12, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_long_press(out: Path) -> None:
+    """Hold-to-Upgrade Dauerton."""
+    buf = make_buf(0.5)
+    add_sine(buf, 0.0, 0.45, 600, vol=0.25)
+    apply_envelope(buf, 0.0, 0.5, attack=0.05, decay=0.05, sustain=0.7, release=0.4, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_perfect_chain(out: Path) -> None:
+    """Perfect-Combo-Stinger (Chain 3+)."""
+    buf = make_buf(0.4)
+    notes = [(0.0, 0.1, 880), (0.1, 0.1, 1108), (0.2, 0.18, 1319)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.3)
+    apply_envelope(buf, 0.0, 0.4, attack=0.005, decay=0.05, sustain=0.7, release=0.34, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_combo_break(out: Path) -> None:
+    """Combo gerissen — abfallender Sweep."""
+    buf = make_buf(0.4)
+    add_sweep(buf, 0.0, 0.35, 800, 200, vol=0.4)
+    apply_lowpass(buf, 1500)
+    apply_envelope(buf, 0.0, 0.4, attack=0.005, decay=0.05, sustain=0.5, release=0.34, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_combo_milestone(out: Path) -> None:
+    """Combo-Meilenstein x10."""
+    buf = make_buf(0.6)
+    notes = [(0.0, 0.1, 880), (0.1, 0.1, 1175), (0.2, 0.1, 1568), (0.3, 0.3, 2093)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.3)
+        add_sine(buf, s, d, f * 0.5, vol=0.15)
+    apply_envelope(buf, 0.0, 0.6, attack=0.005, decay=0.1, sustain=0.7, release=0.49, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_xp_pickup(out: Path) -> None:
+    buf = make_buf(0.2)
+    add_sine(buf, 0.0, 0.07, 1200, vol=0.3)
+    add_sine(buf, 0.05, 0.12, 1600, vol=0.3)
+    apply_envelope(buf, 0.0, 0.2, attack=0.005, decay=0.05, sustain=0.5, release=0.14, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_screw_pickup(out: Path) -> None:
+    """Goldschrauben-Pickup."""
+    buf = make_buf(0.3)
+    add_sine(buf, 0.0, 0.1, 1500, vol=0.3)
+    add_sine(buf, 0.07, 0.18, 2000, vol=0.25)
+    apply_envelope(buf, 0.0, 0.3, attack=0.005, decay=0.05, sustain=0.5, release=0.24, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_progress_tick(out: Path) -> None:
+    """Fortschritts-Tick (Progress-Bar bewegt sich)."""
+    buf = make_buf(0.05)
+    add_sine(buf, 0.0, 0.04, 2000, vol=0.25)
+    apply_envelope(buf, 0.0, 0.05, attack=0.001, decay=0.03, sustain=0.0, release=0.019, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_unlock_feature(out: Path) -> None:
+    """Feature-Unlock (z.B. Workshop, Tab)."""
+    buf = make_buf(0.7)
+    add_sweep(buf, 0.0, 0.4, 400, 1200, vol=0.3)
+    add_sine(buf, 0.4, 0.3, 1568, vol=0.3)
+    add_sine(buf, 0.4, 0.3, 1976, vol=0.2)
+    apply_envelope(buf, 0.0, 0.7, attack=0.005, decay=0.1, sustain=0.7, release=0.59, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_tooltip_show(out: Path) -> None:
+    buf = make_buf(0.15)
+    add_sine(buf, 0.0, 0.1, 1100, vol=0.25)
+    apply_envelope(buf, 0.0, 0.15, attack=0.01, decay=0.05, sustain=0.3, release=0.09, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_workshop_idle_loop(out: Path) -> None:
+    """Workshop-Idle-Ambient (Wirtschafts-Hintergrund)."""
+    buf = make_buf(0.8)
+    add_noise(buf, 0.0, 0.8, vol=0.08, seed=900)
+    apply_lowpass(buf, 600)
+    apply_envelope(buf, 0.0, 0.8, attack=0.1, decay=0.1, sustain=0.6, release=0.6, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_card_flip(out: Path) -> None:
+    """Karten-Flip (Lucky-Spin / Pack-Open)."""
+    buf = make_buf(0.3)
+    add_sweep(buf, 0.0, 0.1, 500, 1500, vol=0.3)
+    add_noise(buf, 0.05, 0.05, vol=0.2, seed=901)
+    add_sweep(buf, 0.15, 0.15, 1500, 700, vol=0.3)
+    apply_envelope(buf, 0.0, 0.3, attack=0.005, decay=0.05, sustain=0.5, release=0.24, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_pack_open(out: Path) -> None:
+    """Pack-Reveal (z.B. Worker-Markt-Refresh)."""
+    buf = make_buf(0.7)
+    add_noise(buf, 0.0, 0.2, vol=0.25, seed=902)
+    apply_lowpass(buf, 2000)
+    notes = [(0.2, 0.15, 880), (0.35, 0.35, 1319)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.3)
+    apply_envelope(buf, 0.0, 0.7, attack=0.005, decay=0.1, sustain=0.6, release=0.59, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_dice_roll(out: Path) -> None:
+    """Wuerfeln (z.B. RNG-Drop)."""
+    buf = make_buf(0.5)
+    for i in range(8):
+        add_noise(buf, 0.05 * i, 0.04, vol=0.3, seed=903 + i)
+    apply_lowpass(buf, 1500)
+    apply_envelope(buf, 0.0, 0.5, attack=0.01, decay=0.05, sustain=0.6, release=0.43, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_drop_common(out: Path) -> None:
+    """Common-Drop-Stinger."""
+    buf = make_buf(0.25)
+    add_sine(buf, 0.0, 0.2, 800, vol=0.3)
+    apply_envelope(buf, 0.0, 0.25, attack=0.005, decay=0.05, sustain=0.5, release=0.19, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_drop_rare(out: Path) -> None:
+    """Rare-Drop-Stinger."""
+    buf = make_buf(0.5)
+    notes = [(0.0, 0.15, 880), (0.12, 0.35, 1319)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.3)
+        add_sine(buf, s, d, f * 2, vol=0.1)
+    apply_envelope(buf, 0.0, 0.5, attack=0.005, decay=0.1, sustain=0.6, release=0.39, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_drop_epic(out: Path) -> None:
+    """Epic-Drop-Stinger."""
+    buf = make_buf(0.8)
+    notes = [(0.0, 0.15, 880), (0.12, 0.15, 1175), (0.24, 0.5, 1568)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.3)
+        add_sine(buf, s, d, f * 2, vol=0.12)
+    apply_envelope(buf, 0.0, 0.8, attack=0.005, decay=0.1, sustain=0.7, release=0.69, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_drop_legendary(out: Path) -> None:
+    """Legendary-Drop-Stinger (rare event!)"""
+    buf = make_buf(1.2)
+    add_sweep(buf, 0.0, 0.4, 200, 800, vol=0.3)
+    notes = [(0.4, 0.2, 880), (0.6, 0.2, 1319), (0.8, 0.4, 2093)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.32)
+        add_sine(buf, s, d, f * 0.5, vol=0.18)
+        add_sine(buf, s, d, f * 2, vol=0.12)
+    apply_envelope(buf, 0.0, 1.2, attack=0.005, decay=0.15, sustain=0.7, release=1.04, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_inventory_full(out: Path) -> None:
+    """Inventar voll Warnung."""
+    buf = make_buf(0.4)
+    add_sine(buf, 0.0, 0.1, 600, vol=0.4)
+    add_sine(buf, 0.15, 0.1, 500, vol=0.4)
+    apply_envelope(buf, 0.0, 0.4, attack=0.005, decay=0.05, sustain=0.6, release=0.34, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_chest_open(out: Path) -> None:
+    """Truhe-Öffnen."""
+    buf = make_buf(0.6)
+    add_noise(buf, 0.0, 0.15, vol=0.2, seed=910)
+    apply_lowpass(buf, 1500)
+    notes = [(0.15, 0.15, 660), (0.3, 0.3, 990)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.3)
+    apply_envelope(buf, 0.0, 0.6, attack=0.005, decay=0.1, sustain=0.6, release=0.49, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_chest_locked(out: Path) -> None:
+    """Truhe gesperrt."""
+    buf = make_buf(0.3)
+    add_sine(buf, 0.0, 0.08, 350, vol=0.4)
+    add_noise(buf, 0.08, 0.05, vol=0.2, seed=911)
+    add_sine(buf, 0.15, 0.1, 300, vol=0.4)
+    apply_lowpass(buf, 1000)
+    apply_envelope(buf, 0.0, 0.3, attack=0.005, decay=0.05, sustain=0.6, release=0.24, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_speedboost_activated(out: Path) -> None:
+    """Speed-Boost aktiviert (Power-Up)."""
+    buf = make_buf(0.5)
+    add_sweep(buf, 0.0, 0.4, 300, 1800, vol=0.4)
+    add_sine(buf, 0.4, 0.1, 2000, vol=0.3)
+    apply_envelope(buf, 0.0, 0.5, attack=0.005, decay=0.1, sustain=0.7, release=0.39, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_speedboost_expired(out: Path) -> None:
+    """Boost abgelaufen."""
+    buf = make_buf(0.4)
+    add_sweep(buf, 0.0, 0.35, 1500, 600, vol=0.3)
+    apply_envelope(buf, 0.0, 0.4, attack=0.01, decay=0.1, sustain=0.5, release=0.29, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_research_unlocked(out: Path) -> None:
+    """Forschungs-Branch unlocked."""
+    buf = make_buf(0.7)
+    add_sweep(buf, 0.0, 0.3, 600, 1500, vol=0.3)
+    add_sine(buf, 0.3, 0.4, 1568, vol=0.3)
+    add_sine(buf, 0.3, 0.4, 1976, vol=0.2)
+    apply_envelope(buf, 0.0, 0.7, attack=0.005, decay=0.1, sustain=0.7, release=0.59, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_event_starting(out: Path) -> None:
+    """Game-Event startet."""
+    buf = make_buf(1.0)
+    add_sweep(buf, 0.0, 0.6, 250, 800, vol=0.35)
+    notes = [(0.6, 0.15, 880), (0.75, 0.25, 1319)]
+    for s, d, f in notes:
+        add_sine(buf, s, d, f, vol=0.3)
+    apply_envelope(buf, 0.0, 1.0, attack=0.05, decay=0.1, sustain=0.7, release=0.84, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_event_ending(out: Path) -> None:
+    """Game-Event endet."""
+    buf = make_buf(0.8)
+    add_sweep(buf, 0.0, 0.6, 1100, 400, vol=0.35)
+    apply_envelope(buf, 0.0, 0.8, attack=0.01, decay=0.1, sustain=0.6, release=0.69, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_news_ping(out: Path) -> None:
+    """Notification-Center Bell-Ping."""
+    buf = make_buf(0.4)
+    add_sine(buf, 0.0, 0.35, 1318, vol=0.3)
+    add_sine(buf, 0.0, 0.35, 1976, vol=0.18)
+    apply_envelope(buf, 0.0, 0.4, attack=0.005, decay=0.05, sustain=0.6, release=0.34, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_typing(out: Path) -> None:
+    """Story-Text-Typing."""
+    buf = make_buf(0.04)
+    add_sine(buf, 0.0, 0.03, 1200, vol=0.18)
+    apply_envelope(buf, 0.0, 0.04, attack=0.001, decay=0.025, sustain=0.0, release=0.014, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_warning_general(out: Path) -> None:
+    """Allgemeine Warnung."""
+    buf = make_buf(0.5)
+    add_sine(buf, 0.0, 0.1, 700, vol=0.4)
+    add_sine(buf, 0.15, 0.1, 700, vol=0.4)
+    add_sine(buf, 0.3, 0.15, 700, vol=0.4)
+    apply_envelope(buf, 0.0, 0.5, attack=0.005, decay=0.05, sustain=0.6, release=0.44, peak=1.0)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+def sfx_step_grass(out: Path) -> None:
+    """Atmosphaere: Schritt auf Gras."""
+    buf = make_buf(0.15)
+    add_noise(buf, 0.0, 0.08, vol=0.3, seed=920)
+    apply_lowpass(buf, 1200)
+    apply_envelope(buf, 0.0, 0.15, attack=0.005, decay=0.04, sustain=0.0, release=0.105, peak=0.8)
+    soft_limit(buf)
+    write_wav(out, buf)
+
+
+# ----------------------------------------------------------------------
 # Music-Generator
 # ----------------------------------------------------------------------
 def make_music_pad(duration: float, root: float, scale_intervals: list[float],
@@ -1337,6 +1689,42 @@ SFX_REGISTRY: dict[str, callable] = {
 
     # Misc
     "sfx_celebration_horn": sfx_celebration_horn,
+
+    # Erweiterung 100-Pack (AAA-Audit)
+    "sfx_button_tap_alt": sfx_button_tap_alt,
+    "sfx_button_tap_negative": sfx_button_tap_negative,
+    "sfx_close_dialog_subtle": sfx_close_dialog_subtle,
+    "sfx_swipe_left": sfx_swipe_left,
+    "sfx_swipe_right": sfx_swipe_right,
+    "sfx_long_press": sfx_long_press,
+    "sfx_perfect_chain": sfx_perfect_chain,
+    "sfx_combo_break": sfx_combo_break,
+    "sfx_combo_milestone": sfx_combo_milestone,
+    "sfx_xp_pickup": sfx_xp_pickup,
+    "sfx_screw_pickup": sfx_screw_pickup,
+    "sfx_progress_tick": sfx_progress_tick,
+    "sfx_unlock_feature": sfx_unlock_feature,
+    "sfx_tooltip_show": sfx_tooltip_show,
+    "sfx_workshop_idle_loop": sfx_workshop_idle_loop,
+    "sfx_card_flip": sfx_card_flip,
+    "sfx_pack_open": sfx_pack_open,
+    "sfx_dice_roll": sfx_dice_roll,
+    "sfx_drop_common": sfx_drop_common,
+    "sfx_drop_rare": sfx_drop_rare,
+    "sfx_drop_epic": sfx_drop_epic,
+    "sfx_drop_legendary": sfx_drop_legendary,
+    "sfx_inventory_full": sfx_inventory_full,
+    "sfx_chest_open": sfx_chest_open,
+    "sfx_chest_locked": sfx_chest_locked,
+    "sfx_speedboost_activated": sfx_speedboost_activated,
+    "sfx_speedboost_expired": sfx_speedboost_expired,
+    "sfx_research_unlocked": sfx_research_unlocked,
+    "sfx_event_starting": sfx_event_starting,
+    "sfx_event_ending": sfx_event_ending,
+    "sfx_news_ping": sfx_news_ping,
+    "sfx_typing": sfx_typing,
+    "sfx_warning_general": sfx_warning_general,
+    "sfx_step_grass": sfx_step_grass,
 }
 
 MUSIC_REGISTRY: dict[str, tuple[callable, float]] = {

@@ -7,8 +7,8 @@ Client/Server-Architektur — Server läuft 24/7 auf Raspberry Pi 5, Steuerung �
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Version | v1.7.0 (Phasen 10-17 + Cross-TF-Pyramiding-Lifecycle, Code-vollständig) + Phase 18 Risk/Resilience/Quality (09.05.2026) + Sektion G Folge-Iteration (09.05.2026) |
-| Status | Entwicklung — **Phase 18 (09.05.2026) komplett umgesetzt** (siehe Sektion unten): A1-A7 Risk-Hardening, B1-B5 Resilience, C1-C3 Performance, D1-D2 Quality, F2+F5 Operations. **Sektion G Folge-Iteration**: G1 Trade-Replay-Hint, G2 AES-GCM Encryption-at-Rest, G3 Bearer-Logout-Endpoints + Token-Cleanup, G4 /metrics/internal-Snapshot, G5 Verify.Xunit Snapshot-Tests, G6 FsCheck.Xunit Property-Tests, G7 TpOrderMatcher Teil-Extraktion. Tests: **741/741 grün** (Stand 09.05.2026 Abend). Volle LiveTradingService-Composition-Refaktorierung (G7 vollständig) als nächster Folge-Schritt vermerkt. Pi-Deploy + Live-Verifikation = nächste Schritte. |
+| Version | v1.7.0 + Phase 18 (Sektionen A-H, 09.05.2026) — **PI-DEPLOYED** |
+| Status | Produktion-bereit — **Phase 18 vollständig (09.05.2026): A1-A7 Risk-Hardening, B1-B5 Resilience, C1-C3 Performance, D1-D2 Quality, F2+F5 Operations, G1-G7 Folge-Iteration, H1-H8 Letzte Vervollständigungen + Pi-Deploy**. Tests: **751/751 grün**. Pi-Server (`steuerung@raspberrypi.local`) auf Phase 18 + G + H aktualisiert (09.05.2026 14:42 CEST). Service aktiv, alle neuen HostedServices starten (AuthTokenCleanupService, FcmTokenCleanupService), Health-Endpoint OK, /api/v1/metrics/internal + /metrics (Prometheus) erreichbar. Robert kann jetzt den Bot via Desktop/Mobile starten und Live-Trading-Verifikation der Phase-18-Features durchführen. |
 | Plattform | Server (Pi 5) + Desktop (Win/Linux) + Android |
 | Exchange | BingX Perpetual Futures (USDT-M) |
 
@@ -175,6 +175,69 @@ Vervollständigung der in Phase 18 als Folge-Iteration vermerkten Punkte. Sieben
 - Build: 0 Fehler / 0 Warnungen in BingXBot-Projekten.
 - Tests: **741/741 grün** (vorher 627 vor Phase 18). +114 neue Tests in Phase 18 + G.
 - 7 Commits (Phase A, B, C, D, F, CLAUDE.md, G).
+
+---
+
+## Phase 18 Sektion H — Letzte Vervollständigungen + Pi-Deploy (09.05.2026 Abend)
+
+Acht Punkte aus dem Folge-Iteration-Backlog umgesetzt — der Bot ist jetzt produktionsreif
+auf dem Pi.
+
+- **H1 `_rollingTrades` auf Queue<T>**: List<T>.RemoveAt(0) (O(n)) → Queue<T>.Dequeue (O(1)).
+  RollingSharpeRatio/WinRate/ProfitFactor nutzen den gecachten `_recentTradesSnapshot` mit
+  for-Loops statt LINQ — Pi-GC-Druck weiter reduziert.
+- **H2 News-Service-Degradation-UI-Banner** (B4-Wiring vollständig): RiskManager-Hook (≥5
+  Failures = degraded, Recovery beim nächsten Erfolg) → BotEventBus → LocalBotEventStream →
+  Hub-Forwarder → RemoteBotEventStream → DashboardViewModel.IsNewsServiceDegraded +
+  NewsServiceBannerText (UI-Thread-Marshalling).
+- **H3 Trade-Replay Auto-DB-Backfill** (G1-Vollständig): BotAutoResumeService.BackfillIncome
+  RecordsAsync — bei Heartbeat-Drift > 5 min werden REALIZED_PNL-Records aus BingX in
+  synthetische CompletedTrades überführt + persistiert + RiskManager.UpdateDailyStats für
+  heutige Trades. Dedup über Reason="Backfilled"-Marker mit 1s-Toleranz.
+- **H4 Snapshot-Tests für Backtest-Reports** (G5-Vollständig): PerformanceReportSnapshotTests
+  mit 2 Tests + .verified.txt-Baselines (15-Trade-Synthetik + AllWins-Edge-Case).
+- **H5 Property-Tests für SequenceStateMachine** (G6-Vollständig):
+  SequenceStateMachinePropertyTests — 5 Invarianten (Reset idempotent, TooFewCandles bleibt
+  Suche0, Long/Short nicht beide Aktiviert, State immer valides Enum, Reset → Point0/A=0).
+- **H6 OpenTelemetry/Prometheus-Exporter** (G4-Erweiterung vollständig): NuGets
+  OpenTelemetry, OpenTelemetry.Extensions.Hosting, OpenTelemetry.Exporter.Prometheus.AspNetCore.
+  `BingXBot.Trading.Telemetry.BotTelemetry` static class mit ActivitySource +
+  Meter + 7 Counter (Strategy-Eval, Trade-Open/Close, Risk-Reject, Decisions,
+  Order-Retries, News-Probe-Failures). `/metrics`-Endpoint via
+  `app.MapPrometheusScrapingEndpoint()`. Hot-Path-Wiring in TradingServiceBase
+  (Activity um Strategy.Evaluate) + OrderRetryPolicy (Counter pro Retry).
+- **H7 LiveTradingService Composition-Refactor** (G7-Vollständig): INativeSlTpManager +
+  BingxNativeSlTpManager komplett extrahiert (NativeSlTpManager/-Namespace). Reconciler +
+  PendingLimitOrderManager bleiben Folge-Iteration (zu viel State-Sharing — Sprint-Aufwand).
+- **H8 Pi-Deploy + Live-Verifikation**: `update.sh raspberrypi.local` — Service neu
+  gestartet, alle neuen HostedServices laufen, Health-Endpoint OK, Metrics-Endpoints
+  funktionieren, DB-Integrity-Check ok. **PublicPaths-Erweiterung**: `/api/v1/metrics/internal`
+  + `/metrics` jetzt ohne Auth erreichbar (Pi steht hinter Tailscale, Metrics enthalten
+  keine Secrets — erleichtert Prometheus/Grafana-Scrape).
+
+### Verifikations-Status Phase 18 + G + H
+
+- Build: 0 Fehler / 0 Warnungen in BingXBot-Projekten.
+- Tests: **751/751 grün** (vorher 627 vor Phase 18). +124 neue Tests insgesamt.
+- 9 Commits (Phase A, B, C, D, F, CLAUDE.md, G, G-CLAUDE, H).
+- **Pi-Deploy abgeschlossen** (09.05.2026 14:42 CEST): Service `bingxbot.service` aktiv,
+  PID 76556. Alle Phase-18-Features auf dem Pi live.
+
+### Wirklich noch offen (separater Refactor-PR)
+
+- Vollständige Reconciler + PendingLimitOrderManager-Extraktion in eigene Klassen
+  (State-Sharing über Shared-Context) — Plan-Autor selbst: "nach Pi-Deploy + Live-Verifikation".
+
+### Pi-Verifikations-TODOs für Robert
+
+1. Bot via Desktop/Mobile starten — A1 Loss-Streak-Dampening, A4 Korrelations-Filter,
+   A5 Vol-Targeting verifizieren.
+2. credentials.bin migriert (G2): beim ersten Live-Mode-Start sollte das v1-File
+   automatisch auf v2 (AES-GCM) re-encrypted werden — Log-Eintrag prüfen.
+3. /metrics-Endpoint scrapen mit Prometheus oder curl — sollte nach erstem Trade
+   `bingxbot.trades.opened` und `bingxbot.strategy.evaluations` Counter zeigen.
+4. News-Service-Banner: bei `News:Endpoint` config + degraded-Test (z.B. falscher URL)
+   sollte UI nach 5 Failures den Banner zeigen.
 
 ---
 

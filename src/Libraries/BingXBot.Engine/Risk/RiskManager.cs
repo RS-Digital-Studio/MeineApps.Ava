@@ -210,8 +210,13 @@ public class RiskManager : IRiskManager
         // überschreiten. Der posSize wird ggf. reduziert, statt den Trade abzulehnen.
         if (context.Account.Balance > 0 && entryPrice > 0 && leverage > 0)
         {
-            var openMargins = context.OpenPositions.Sum(p =>
-                p.Leverage > 0 ? p.EntryPrice * p.Quantity / p.Leverage : p.EntryPrice * p.Quantity);
+            // Phase 18 / C1 — for-Loop statt LINQ Sum mit Closure (Hot-Path-Allocation eliminieren).
+            decimal openMargins = 0m;
+            for (var i = 0; i < context.OpenPositions.Count; i++)
+            {
+                var p = context.OpenPositions[i];
+                openMargins += p.Leverage > 0 ? p.EntryPrice * p.Quantity / p.Leverage : p.EntryPrice * p.Quantity;
+            }
             var marginCap = context.Account.Balance * 0.6m;
             var newMargin = entryPrice * posSize / leverage;
             if (openMargins + newMargin > marginCap)
@@ -422,9 +427,24 @@ public class RiskManager : IRiskManager
     // Rolling-Metriken: Ringpuffer der letzten N Trades
     private readonly List<CompletedTrade> _rollingTrades = new();
     private const int RollingWindowSize = 30;
+    // Phase 18 / C1 — Cache fuer RecentTrades-Snapshot. Vorher allokierte jeder UI-Read ein
+    // neues `ToList()`. Cache wird bei UpdateDailyStats/ResetAll invalidated und beim naechsten
+    // Read 1× neu gebaut.
+    private CompletedTrade[]? _recentTradesSnapshot;
 
-    /// <summary>Zugriff auf die letzten Trades für PnL-Kalender und Statistiken.</summary>
-    public IReadOnlyList<CompletedTrade> RecentTrades { get { lock (_lock) return _rollingTrades.ToList(); } }
+    /// <summary>Zugriff auf die letzten Trades für PnL-Kalender und Statistiken (gecached, lazy rebuild).</summary>
+    public IReadOnlyList<CompletedTrade> RecentTrades
+    {
+        get
+        {
+            lock (_lock)
+            {
+                if (_recentTradesSnapshot == null)
+                    _recentTradesSnapshot = _rollingTrades.ToArray();
+                return _recentTradesSnapshot;
+            }
+        }
+    }
 
     /// <summary>Rolling WinRate der letzten 30 Trades (0-1).</summary>
     public decimal RollingWinRate
@@ -560,6 +580,9 @@ public class RiskManager : IRiskManager
             if (_rollingTrades.Count > RollingWindowSize)
                 _rollingTrades.RemoveAt(0);
 
+            // Phase 18 / C1 — Snapshot-Cache invalidieren (lazy rebuild beim naechsten RecentTrades-Read).
+            _recentTradesSnapshot = null;
+
             // Consecutive Losses
             if (completedTrade.Pnl < 0) CurrentConsecutiveLosses++;
             else CurrentConsecutiveLosses = 0;
@@ -588,6 +611,7 @@ public class RiskManager : IRiskManager
             _peakEquity = 0m;
             _peakEquityInitialized = false;
             _rollingTrades.Clear();
+            _recentTradesSnapshot = null; // Phase 18 / C1
             CurrentConsecutiveLosses = 0;
         }
     }

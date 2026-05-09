@@ -351,6 +351,15 @@ public partial class App : Application
         // AAA-Audit P1: Limited-Time-Events (FOMO + Re-Engagement). 4 Templates:
         // DoubleReward, BossRush, CoopMarathon, MiniGameMastery.
         services.AddSingleton<ILiveEventService, LiveEventService>();
+
+        // AAA-Audit P0 Zerlegungs-Sprint (09.05.2026): Cinematic-Logik aus
+        // MainViewModel extrahiert. Eigener Coordinator subscribed auf PrestigeService
+        // und hat die Lokalisierung + Audio-Track-Steuerung.
+        services.AddSingleton<ICinematicCoordinator, CinematicCoordinator>();
+
+        // Reputation-Tier-Up-Effekte (FloatingText/Celebration/Audio/Achievement-Dialog)
+        // aus MainViewModel.OnReputationTierChanged extrahiert.
+        services.AddSingleton<IReputationTierEffects, ReputationTierEffects>();
         // P1.3 AAA-Audit: Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
         services.AddSingleton<IDailyBundleService, DailyBundleService>();
 

@@ -31,6 +31,67 @@
         },
         "weeklyProgress": {
           ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        "coopOrders": {
+          "$orderId": {
+            ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists())",
+            ".validate": "newData.hasChildren(['orderId', 'createdBy', 'invitedPlayer', 'status']) && newData.child('orderId').isString() && newData.child('orderId').val().length <= 64",
+            "createdBy": {
+              ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
+            },
+            "invitedPlayer": {
+              ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
+            },
+            "status": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+            },
+            "player1Score": {
+              ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 100)"
+            },
+            "player2Score": {
+              ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 100)"
+            },
+            "rewardSplit": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+            },
+            "baseReward": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+            },
+            "hmac": {
+              ".validate": "newData.isString() && newData.val().length <= 128"
+            }
+          }
+        },
+
+        "auctions": {
+          "$auctionId": {
+            ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+            ".validate": "newData.hasChildren(['auctionId', 'workerTier', 'status']) && newData.child('auctionId').isString() && newData.child('auctionId').val().length <= 64",
+            "workerTier": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9"
+            },
+            "workerName": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
+            "status": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
+            },
+            "highestBidderId": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 64)"
+            },
+            "highestBid": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+            },
+            "allBids": {
+              "$bidderId": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+              }
+            },
+            "hmac": {
+              ".validate": "newData.isString() && newData.val().length <= 128"
+            }
+          }
         }
       }
     },
@@ -349,12 +410,12 @@
         "metadata": {
           ".validate": "newData.hasChildren(['level', 'savedAt']) && newData.child('level').isNumber() && newData.child('savedAt').isString() && newData.child('savedAt').val().length <= 40",
           "level": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"},
-          "money": {".validate": "newData.isNumber()"},
+          "money": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e15"},
           "goldenScrews": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"},
-          "prestigePoints": {".validate": "newData.isNumber() && newData.val() >= 0"},
+          "prestigePoints": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e9"},
           "ascensionLevel": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"},
-          "savedAt": {".validate": "newData.isString()"},
-          "version": {".validate": "newData.isNumber()"},
+          "savedAt": {".validate": "newData.isString() && newData.val().length <= 40"},
+          "version": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"},
           "appVersion": {".validate": "newData.isString() && newData.val().length <= 20"}
         },
         "data": {

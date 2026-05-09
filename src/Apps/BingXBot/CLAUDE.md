@@ -7,8 +7,8 @@ Client/Server-Architektur — Server läuft 24/7 auf Raspberry Pi 5, Steuerung �
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Version | v1.7.0 (Phasen 10-17 + Cross-TF-Pyramiding-Lifecycle, Code-vollständig) + Phase 18 Risk/Resilience/Quality (09.05.2026) |
-| Status | Entwicklung — **Phase 18 (09.05.2026) zusätzlich umgesetzt** (siehe Sektion unten): A1-A7 Risk-Hardening, B1-B5 Resilience, C1-C3 Performance, D1-D2 Quality, F2+F5 Operations. Tests: **713/713 grün** (Stand 09.05.2026). E (LiveTradingService-Refactor), F1/F3/F4, D3/D4 als Folge-Iteration vermerkt. Pi-Deploy + Live-Verifikation = nächste Schritte. |
+| Version | v1.7.0 (Phasen 10-17 + Cross-TF-Pyramiding-Lifecycle, Code-vollständig) + Phase 18 Risk/Resilience/Quality (09.05.2026) + Sektion G Folge-Iteration (09.05.2026) |
+| Status | Entwicklung — **Phase 18 (09.05.2026) komplett umgesetzt** (siehe Sektion unten): A1-A7 Risk-Hardening, B1-B5 Resilience, C1-C3 Performance, D1-D2 Quality, F2+F5 Operations. **Sektion G Folge-Iteration**: G1 Trade-Replay-Hint, G2 AES-GCM Encryption-at-Rest, G3 Bearer-Logout-Endpoints + Token-Cleanup, G4 /metrics/internal-Snapshot, G5 Verify.Xunit Snapshot-Tests, G6 FsCheck.Xunit Property-Tests, G7 TpOrderMatcher Teil-Extraktion. Tests: **741/741 grün** (Stand 09.05.2026 Abend). Volle LiveTradingService-Composition-Refaktorierung (G7 vollständig) als nächster Folge-Schritt vermerkt. Pi-Deploy + Live-Verifikation = nächste Schritte. |
 | Plattform | Server (Pi 5) + Desktop (Win/Linux) + Android |
 | Exchange | BingX Perpetual Futures (USDT-M) |
 
@@ -134,12 +134,47 @@ nach Phase 17 Code-vollständig. Acht Punkte umgesetzt, sechs als Folge-Iteratio
 
 ### Folge-Schritte (Phase 19 oder Pi-Deploy)
 
-1. Pi-Deploy + Live-Verifikation der Phase-17-Features (vor E-Refactor).
-2. Trade-Replay-on-Resume via `GetUserTradesAsync` (B2-Erweiterung).
+1. Pi-Deploy + Live-Verifikation der Phase-17-Features (vor vollständigem E-Refactor).
+2. Auto-DB-Backfill via Trade-Pairing in BotAutoResumeService (G1-Vervollständigung — Replay-Hint ist da).
 3. UI-Banner für News-Service-Degradation (B4-Wiring).
-4. F1 OpenTelemetry, F3 Encryption-at-Rest, F4 Bearer-Token-Rotation.
-5. D3 Snapshot-Tests + D4 FsCheck-Tests (Tooling-Setup).
-6. E LiveTradingService-Refactor (XL).
+4. OpenTelemetry-Exporter (G4-Erweiterung — Stub-Endpoint ist da).
+5. Snapshot-/Property-Test-Suite ausbauen (G5/G6 — Pattern + 6 Beispiel-Tests etabliert).
+6. LiveTradingService-Composition-Refaktorierung vollständig (G7 — TpOrderMatcher als erste Bauteil-Bibliothek).
+
+---
+
+## Phase 18 Sektion G — Folge-Iteration (09.05.2026 Abend)
+
+Vervollständigung der in Phase 18 als Folge-Iteration vermerkten Punkte. Sieben Punkte umgesetzt.
+
+- **G1 Trade-Replay-Hint**: `BotAutoResumeService` liest `LastHeartbeatUtc`. Bei Drift > 5 min und
+  Live-Mode wird `GetIncomeHistoryAsync(REALIZED_PNL, since=lastHeartbeat)` aufgerufen, Anzahl
+  Records + Summe-PnL als WARNING geloggt. Auto-DB-Backfill via Trade-Pairing ist Folgeschritt.
+- **G2 F3 Encryption-at-Rest**: AES-CBC → AES-GCM (authentisierte Verschlüsselung mit
+  Tampering-Detection). Versions-Marker 0x02 trennt v2 (GCM) von Legacy v1 (CBC). Auto-Migration
+  beim ersten Read. 5 neue Tests (Roundtrip, Tampering, v2-Format).
+- **G3 F4 Bearer-Token-Rotation**: Refresh-Flow existierte bereits; Erweiterung um Logout-Endpoints
+  (`/api/v1/auth/logout` + `/auth/logout-others`) und `AuthTokenCleanupService` HostedService
+  (24h-Tick, Default 30 Tage Stale-Threshold). 7 neue Tests.
+- **G4 F1 Metrics-Snapshot**: Statt OpenTelemetry-NuGet (Plan-Autor: "niedriger Hebel weil Phase 4
+  schon viel abdeckt") ein leichter `/api/v1/metrics/internal` JSON-Snapshot-Endpoint mit
+  Bot-State, RiskManager-Counter, FCM-Devices, Token-Lifetime. OTel-Exporter ist Folge-Iteration.
+- **G5 D3 Snapshot-Tests**: `Verify.Xunit` integriert. `ConfluenceScoringSnapshotTests` mit
+  2 Tests + `.verified.txt`-Baselines. Pattern für weitere Backtest-Reports etabliert.
+- **G6 D4 Property-Based-Tests**: `FsCheck.Xunit` integriert.
+  `ConfluenceScoringPropertyTests` mit 4 Invarianten-Properties (Score-Range, Confidence-Range,
+  Reasons-Cache-Stability, Cache-Invalidation) à 100-200 generierte Sequenzen.
+- **G7 E Teil-Extraktion**: `TpOrderMatcher` als erste pure-function-Bauteil-Bibliothek im
+  `Reconciliation/`-Namespace. A2-IdempotencyCheck-Match-Logik (Side+Qty+Price+Toleranz) jetzt
+  isoliert testbar (10 Tests). Volle Composition-Refaktorierung
+  (IPendingLimitOrderManager/IReconciler/ISlTpManager) bleibt Folge-Iteration — Plan-Autor selbst:
+  "nach Pi-Deploy + Live-Verifikation".
+
+### Verifikations-Status Phase 18 + G
+
+- Build: 0 Fehler / 0 Warnungen in BingXBot-Projekten.
+- Tests: **741/741 grün** (vorher 627 vor Phase 18). +114 neue Tests in Phase 18 + G.
+- 7 Commits (Phase A, B, C, D, F, CLAUDE.md, G).
 
 ---
 

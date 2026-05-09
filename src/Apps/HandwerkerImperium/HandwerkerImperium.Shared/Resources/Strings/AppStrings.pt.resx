@@ -2215,6 +2215,28 @@
   <data name="ShopGoldenScrews450Desc" xml:space="preserve">
     <value>450 parafusos dourados</value>
   </data>
+  <!-- Pacotes Whale (AAA audit P0): tr&#234;s n&#237;veis premium acima do antigo teto de 4,99 EUR. -->
+  <data name="ShopBundleMidName" xml:space="preserve">
+    <value>Pacote Imp&#233;rio</value>
+  </data>
+  <data name="ShopBundleMidDesc" xml:space="preserve">
+    <value>1500 parafusos dourados + 8 h de Speed-Boost</value>
+  </data>
+  <data name="ShopBundleBigName" xml:space="preserve">
+    <value>Pacote Mestre</value>
+  </data>
+  <data name="ShopBundleBigDesc" xml:space="preserve">
+    <value>4000 parafusos dourados + 48 h de Speed-Boost + 25 mi EUR</value>
+  </data>
+  <data name="ShopBundleMegaName" xml:space="preserve">
+    <value>Pacote Lend&#225;rio</value>
+  </data>
+  <data name="ShopBundleMegaDesc" xml:space="preserve">
+    <value>12 000 parafusos dourados + 7 dias de Speed-Boost + 200 mi EUR + Premium</value>
+  </data>
+  <data name="BundleReceivedDesc" xml:space="preserve">
+    <value>O teu pacote foi ativado. Aproveita!</value>
+  </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>{0} parafusos dourados recebidos!</value>
   </data>
@@ -5808,6 +5830,65 @@
   <data name="HintAscensionAvailableText" xml:space="preserve">
     <value>Voc&#234; dominou o prest&#237;gio lenda 3 vezes! Agora voc&#234; pode realizar uma Ascens&#227;o - um meta-reset que concede Pontos de Ascens&#227;o permanentes para perks poderosos.</value>
   </data>
+  <data name="HintAscensionPathTitle" xml:space="preserve">
+    <value>Teu caminho para a Ascens&#227;o</value>
+  </data>
+  <data name="HintAscensionPathText" xml:space="preserve">
+    <value>Primeiro Prest&#237;gio feito, Mestre! Mais tarde ainda te espera a Ascens&#227;o &#8212; uma meta-fase ap&#243;s 3 Prest&#237;gios Lenda. Os Pontos de Ascens&#227;o desbloqueiam perks permanentes que sobrevivem a cada reset. At&#233; l&#225;: segue subindo tier ap&#243;s tier.</value>
+  </data>
+  <data name="AchievementsEmptyTitle" xml:space="preserve">
+    <value>Conquista o teu primeiro feito!</value>
+  </data>
+  <data name="AchievementsEmptyText" xml:space="preserve">
+    <value>110 conquistas te esperam. Completa encomendas, sobe oficinas, contrata trabalhadores &#8212; cada a&#231;&#227;o te aproxima. O primeiro trof&#233;u est&#225; mais perto do que imaginas.</value>
+  </data>
+  <!-- Cross-Promotion (AAA audit P1) -->
+  <data name="CrossPromoSectionTitle" xml:space="preserve"><value>Gostas desta app? Experimenta tamb&#233;m:</value></data>
+  <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calculadora Plus</value></data>
+  <data name="CrossPromo_RechnerPlus_Hook" xml:space="preserve"><value>Funciona. Sem an&#250;ncios. Sem bloat.</value></data>
+  <data name="CrossPromo_ZeitManager_Name" xml:space="preserve"><value>Gestor de Tempo</value></data>
+  <data name="CrossPromo_ZeitManager_Hook" xml:space="preserve"><value>O teu tempo. Ao segundo.</value></data>
+  <data name="CrossPromo_FinanzRechner_Name" xml:space="preserve"><value>Calculadora de Finan&#231;as</value></data>
+  <data name="CrossPromo_FinanzRechner_Hook" xml:space="preserve"><value>Quanto te custa REALMENTE o teu cr&#233;dito?</value></data>
+  <data name="CrossPromo_FitnessRechner_Name" xml:space="preserve"><value>Calculadora de Fitness</value></data>
+  <data name="CrossPromo_FitnessRechner_Hook" xml:space="preserve"><value>1800 kcal - sabes quanto comes realmente?</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Name" xml:space="preserve"><value>Calculadora de Constru&#231;&#227;o</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Hook" xml:space="preserve"><value>3 horas na loja de bricolagem poupadas.</value></data>
+  <data name="CrossPromo_WorkTimePro_Name" xml:space="preserve"><value>WorkTime Pro</value></data>
+  <data name="CrossPromo_WorkTimePro_Hook" xml:space="preserve"><value>O chefe pergunta pelas horas extras - sabes JA.</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Name" xml:space="preserve"><value>Imp&#233;rio do Artes&#227;o</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Hook" xml:space="preserve"><value>O teu imp&#233;rio. O teu crescimento.</value></data>
+  <data name="CrossPromo_BomberBlast_Name" xml:space="preserve"><value>BomberBlast</value></data>
+  <data name="CrossPromo_BomberBlast_Hook" xml:space="preserve"><value>Lembras-te do Bomberman? Voltou.</value></data>
+  <data name="CrossPromo_RebornSaga_Name" xml:space="preserve"><value>Reborn Saga</value></data>
+  <data name="CrossPromo_RebornSaga_Hook" xml:space="preserve"><value>RPG Isekai - come&#231;a a tua viagem.</value></data>
+  <data name="CrossPromo_BingXBot_Name" xml:space="preserve"><value>BingXBot</value></data>
+  <data name="CrossPromo_BingXBot_Hook" xml:space="preserve"><value>Bot de trading com servidor Pi - totalmente automatizado.</value></data>
+  <data name="CrossPromo_GardenControl_Name" xml:space="preserve"><value>GardenControl</value></data>
+  <data name="CrossPromo_GardenControl_Hook" xml:space="preserve"><value>Controla a rega - mesmo em f&#233;rias.</value></data>
+  <!-- FTUE (AAA audit P0) -->
+  <data name="FtueWelcomeTitle" xml:space="preserve"><value>Bem-vindo ao teu imp&#233;rio!</value></data>
+  <data name="FtueWelcomeText" xml:space="preserve"><value>Ol&#225;, sou o Mestre Hans. Em 60 segundos mostro-te o b&#225;sico. Pronto?</value></data>
+  <data name="FtueFirstUpgradeTitle" xml:space="preserve"><value>Melhora a tua oficina!</value></data>
+  <data name="FtueFirstUpgradeText" xml:space="preserve"><value>Toca em Melhorar. Isto aumenta o rendimento da tua carpintaria.</value></data>
+  <data name="FtueFirstOrderTitle" xml:space="preserve"><value>Aceita o teu primeiro pedido!</value></data>
+  <data name="FtueFirstOrderText" xml:space="preserve"><value>Pedidos d&#227;o b&#243;nus em dinheiro e XP. Toca num pedido livre para aceitar.</value></data>
+  <data name="FtueFirstMiniGameTitle" xml:space="preserve"><value>Joga o mini-jogo!</value></data>
+  <data name="FtueFirstMiniGameText" xml:space="preserve"><value>Cada pedido tem um mini-jogo. Quanto melhor jogares, maior a recompensa.</value></data>
+  <data name="FtueMoneyExplainedTitle" xml:space="preserve"><value>Ganhar dinheiro</value></data>
+  <data name="FtueMoneyExplainedText" xml:space="preserve"><value>Aqui em cima v&#234;s o teu dinheiro. Sobe automaticamente, mesmo offline!</value></data>
+  <data name="FtueFirstWorkerTitle" xml:space="preserve"><value>Contrata o teu primeiro trabalhador!</value></data>
+  <data name="FtueFirstWorkerText" xml:space="preserve"><value>Trabalhadores trabalham 24/7. Mais trabalhadores = mais rendimento.</value></data>
+  <data name="FtueXpExplainedTitle" xml:space="preserve"><value>N&#237;vel do jogador</value></data>
+  <data name="FtueXpExplainedText" xml:space="preserve"><value>Cada a&#231;&#227;o d&#225; XP. N&#237;vel 5 desbloqueia Quick Jobs. N&#237;vel 10 traz o canalizador.</value></data>
+  <data name="FtueScrewsExplainedTitle" xml:space="preserve"><value>Parafusos dourados</value></data>
+  <data name="FtueScrewsExplainedText" xml:space="preserve"><value>Os parafusos dourados s&#227;o a moeda premium. Ganha-os com conquistas, mini-jogos e logins.</value></data>
+  <data name="FtueImperiumIntroTitle" xml:space="preserve"><value>O separador Imp&#233;rio</value></data>
+  <data name="FtueImperiumIntroText" xml:space="preserve"><value>No Imp&#233;rio constr&#243;is, pesquisas e contratas. Visita-o ao chegar ao N&#237;vel 5.</value></data>
+  <data name="FtueCompleteTitle" xml:space="preserve"><value>Pronto, Mestre!</value></data>
+  <data name="FtueCompleteText" xml:space="preserve"><value>Sabes o essencial. Diverte-te com o teu imp&#233;rio - estou aqui se precisares.</value></data>
+  <data name="FtueSkipButton" xml:space="preserve"><value>Saltar tutorial</value></data>
+  <data name="FtueContinueButton" xml:space="preserve"><value>Continuar</value></data>
   <data name="HintRebirthReadyTitle" xml:space="preserve">
     <value>Renascimento Pronto!</value>
   </data>

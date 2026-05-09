@@ -2215,6 +2215,28 @@
   <data name="ShopGoldenScrews450Desc" xml:space="preserve">
     <value>450 viti dorate</value>
   </data>
+  <!-- Bundle Whale (AAA audit P0): tre livelli premium sopra il vecchio tetto di 4,99 EUR. -->
+  <data name="ShopBundleMidName" xml:space="preserve">
+    <value>Pacchetto Impero</value>
+  </data>
+  <data name="ShopBundleMidDesc" xml:space="preserve">
+    <value>1500 viti dorate + 8 h di Speed-Boost</value>
+  </data>
+  <data name="ShopBundleBigName" xml:space="preserve">
+    <value>Pacchetto Maestro</value>
+  </data>
+  <data name="ShopBundleBigDesc" xml:space="preserve">
+    <value>4000 viti dorate + 48 h di Speed-Boost + 25 mln EUR</value>
+  </data>
+  <data name="ShopBundleMegaName" xml:space="preserve">
+    <value>Pacchetto Leggendario</value>
+  </data>
+  <data name="ShopBundleMegaDesc" xml:space="preserve">
+    <value>12 000 viti dorate + 7 giorni di Speed-Boost + 200 mln EUR + Premium</value>
+  </data>
+  <data name="BundleReceivedDesc" xml:space="preserve">
+    <value>Il tuo pacchetto &#232; attivo. Buon divertimento!</value>
+  </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>{0} viti dorate ricevute!</value>
   </data>
@@ -5815,6 +5837,65 @@
   <data name="HintAscensionAvailableText" xml:space="preserve">
     <value>Hai padroneggiato il prestigio leggenda 3 volte! Ora puoi eseguire un'Ascensione - un meta-reset che concede Punti Ascensione permanenti per perk potenti.</value>
   </data>
+  <data name="HintAscensionPathTitle" xml:space="preserve">
+    <value>Il tuo cammino verso l'Ascensione</value>
+  </data>
+  <data name="HintAscensionPathText" xml:space="preserve">
+    <value>Primo Prestigio fatto, Maestro! Pi&#249; avanti ti aspetta ancora l'Ascensione &#8212; una meta-tappa dopo 3 Prestigi Leggenda. I Punti Ascensione sbloccano perk permanenti che sopravvivono a ogni reset. Fino ad allora: continua a salire tier dopo tier.</value>
+  </data>
+  <data name="AchievementsEmptyTitle" xml:space="preserve">
+    <value>Conquista il tuo primo obiettivo!</value>
+  </data>
+  <data name="AchievementsEmptyText" xml:space="preserve">
+    <value>Ti aspettano 110 obiettivi. Completa ordini, potenzia officine, assumi lavoratori &#8212; ogni azione ti avvicina. Il primo trofeo &#232; pi&#249; vicino di quanto pensi.</value>
+  </data>
+  <!-- Cross-Promotion (AAA audit P1) -->
+  <data name="CrossPromoSectionTitle" xml:space="preserve"><value>Ti piace questa app? Prova anche:</value></data>
+  <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calcolatrice Plus</value></data>
+  <data name="CrossPromo_RechnerPlus_Hook" xml:space="preserve"><value>Funziona. Senza pubblicit&#224;. Senza bloat.</value></data>
+  <data name="CrossPromo_ZeitManager_Name" xml:space="preserve"><value>Gestore del Tempo</value></data>
+  <data name="CrossPromo_ZeitManager_Hook" xml:space="preserve"><value>Il tuo tempo. Al secondo.</value></data>
+  <data name="CrossPromo_FinanzRechner_Name" xml:space="preserve"><value>Calcolatrice Finanziaria</value></data>
+  <data name="CrossPromo_FinanzRechner_Hook" xml:space="preserve"><value>Quanto ti costa DAVVERO il tuo prestito?</value></data>
+  <data name="CrossPromo_FitnessRechner_Name" xml:space="preserve"><value>Calcolatrice Fitness</value></data>
+  <data name="CrossPromo_FitnessRechner_Hook" xml:space="preserve"><value>1800 kcal - sai quanto mangi davvero?</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Name" xml:space="preserve"><value>Calcolatrice Edilizia</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Hook" xml:space="preserve"><value>3 ore di ferramenta risparmiate.</value></data>
+  <data name="CrossPromo_WorkTimePro_Name" xml:space="preserve"><value>WorkTime Pro</value></data>
+  <data name="CrossPromo_WorkTimePro_Hook" xml:space="preserve"><value>Il capo chiede gli straordinari - lo sai SUBITO.</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Name" xml:space="preserve"><value>Impero dell'Artigiano</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Hook" xml:space="preserve"><value>Il tuo impero. La tua crescita.</value></data>
+  <data name="CrossPromo_BomberBlast_Name" xml:space="preserve"><value>BomberBlast</value></data>
+  <data name="CrossPromo_BomberBlast_Hook" xml:space="preserve"><value>Ricordi Bomberman? &#200; tornato.</value></data>
+  <data name="CrossPromo_RebornSaga_Name" xml:space="preserve"><value>Reborn Saga</value></data>
+  <data name="CrossPromo_RebornSaga_Hook" xml:space="preserve"><value>RPG Isekai - inizia il tuo viaggio.</value></data>
+  <data name="CrossPromo_BingXBot_Name" xml:space="preserve"><value>BingXBot</value></data>
+  <data name="CrossPromo_BingXBot_Hook" xml:space="preserve"><value>Bot di trading con server Pi - completamente automatico.</value></data>
+  <data name="CrossPromo_GardenControl_Name" xml:space="preserve"><value>GardenControl</value></data>
+  <data name="CrossPromo_GardenControl_Hook" xml:space="preserve"><value>Gestisci l'irrigazione - anche in vacanza.</value></data>
+  <!-- FTUE (AAA audit P0) -->
+  <data name="FtueWelcomeTitle" xml:space="preserve"><value>Benvenuto nel tuo impero!</value></data>
+  <data name="FtueWelcomeText" xml:space="preserve"><value>Ciao, sono Maestro Hans. In 60 secondi ti mostro le basi. Pronto?</value></data>
+  <data name="FtueFirstUpgradeTitle" xml:space="preserve"><value>Potenzia la tua officina!</value></data>
+  <data name="FtueFirstUpgradeText" xml:space="preserve"><value>Tocca Potenzia. Questo aumenta il reddito della tua falegnameria.</value></data>
+  <data name="FtueFirstOrderTitle" xml:space="preserve"><value>Accetta il tuo primo ordine!</value></data>
+  <data name="FtueFirstOrderText" xml:space="preserve"><value>Gli ordini danno bonus in denaro e XP. Tocca un ordine libero per accettarlo.</value></data>
+  <data name="FtueFirstMiniGameTitle" xml:space="preserve"><value>Gioca al minigioco!</value></data>
+  <data name="FtueFirstMiniGameText" xml:space="preserve"><value>Ogni ordine ha un minigioco. Meglio giochi, pi&#249; grande la ricompensa.</value></data>
+  <data name="FtueMoneyExplainedTitle" xml:space="preserve"><value>Guadagnare denaro</value></data>
+  <data name="FtueMoneyExplainedText" xml:space="preserve"><value>Qui sopra vedi i tuoi soldi. Salgono in automatico, anche offline!</value></data>
+  <data name="FtueFirstWorkerTitle" xml:space="preserve"><value>Assumi il tuo primo lavoratore!</value></data>
+  <data name="FtueFirstWorkerText" xml:space="preserve"><value>I lavoratori lavorano 24/7. Pi&#249; lavoratori = pi&#249; reddito.</value></data>
+  <data name="FtueXpExplainedTitle" xml:space="preserve"><value>Livello giocatore</value></data>
+  <data name="FtueXpExplainedText" xml:space="preserve"><value>Ogni azione d&#224; XP. Livello 5 sblocca i Quick Job. Livello 10 porta l'idraulico.</value></data>
+  <data name="FtueScrewsExplainedTitle" xml:space="preserve"><value>Viti dorate</value></data>
+  <data name="FtueScrewsExplainedText" xml:space="preserve"><value>Le viti dorate sono la valuta premium. Le ottieni con obiettivi, minigiochi e accessi giornalieri.</value></data>
+  <data name="FtueImperiumIntroTitle" xml:space="preserve"><value>La scheda Impero</value></data>
+  <data name="FtueImperiumIntroText" xml:space="preserve"><value>Nell'Impero costruisci, ricerchi e assumi. Visitala al Livello 5.</value></data>
+  <data name="FtueCompleteTitle" xml:space="preserve"><value>Pronto, Maestro!</value></data>
+  <data name="FtueCompleteText" xml:space="preserve"><value>Sai tutto l'essenziale. Divertiti col tuo impero - sono qui se serve aiuto.</value></data>
+  <data name="FtueSkipButton" xml:space="preserve"><value>Salta tutorial</value></data>
+  <data name="FtueContinueButton" xml:space="preserve"><value>Continua</value></data>
   <data name="HintRebirthReadyTitle" xml:space="preserve">
     <value>Rinascita Pronta!</value>
   </data>

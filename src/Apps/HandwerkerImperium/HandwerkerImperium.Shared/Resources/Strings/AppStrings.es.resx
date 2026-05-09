@@ -2215,6 +2215,28 @@
   <data name="ShopGoldenScrews450Desc" xml:space="preserve">
     <value>450 tornillos dorados</value>
   </data>
+  <!-- Paquetes Whale (AAA audit P0): tres niveles premium por encima del techo de 4,99 EUR. -->
+  <data name="ShopBundleMidName" xml:space="preserve">
+    <value>Paquete Imperio</value>
+  </data>
+  <data name="ShopBundleMidDesc" xml:space="preserve">
+    <value>1500 tornillos dorados + 8 h de aceleraci&#243;n</value>
+  </data>
+  <data name="ShopBundleBigName" xml:space="preserve">
+    <value>Paquete Maestro</value>
+  </data>
+  <data name="ShopBundleBigDesc" xml:space="preserve">
+    <value>4000 tornillos dorados + 48 h de aceleraci&#243;n + 25 M EUR</value>
+  </data>
+  <data name="ShopBundleMegaName" xml:space="preserve">
+    <value>Paquete Legendario</value>
+  </data>
+  <data name="ShopBundleMegaDesc" xml:space="preserve">
+    <value>12 000 tornillos dorados + 7 d&#237;as de aceleraci&#243;n + 200 M EUR + Premium</value>
+  </data>
+  <data name="BundleReceivedDesc" xml:space="preserve">
+    <value>Tu paquete se ha activado. &#161;Disfr&#250;talo!</value>
+  </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>&#161;{0} tornillos dorados recibidos!</value>
   </data>
@@ -5807,6 +5829,65 @@
   <data name="HintAscensionAvailableText" xml:space="preserve">
     <value>&#161;Has dominado el prestigio leyenda 3 veces! Ahora puedes realizar una Ascensi&#243;n - un meta-reset que otorga Puntos de Ascensi&#243;n permanentes para perks poderosos.</value>
   </data>
+  <data name="HintAscensionPathTitle" xml:space="preserve">
+    <value>Tu camino hacia la Ascensi&#243;n</value>
+  </data>
+  <data name="HintAscensionPathText" xml:space="preserve">
+    <value>&#161;Primer Prestigio logrado, Maestro! M&#225;s adelante te espera la Ascensi&#243;n: una meta-etapa tras 3 Prestigios Leyenda. Los Puntos de Ascensi&#243;n desbloquean perks permanentes que sobreviven cada reset. Hasta entonces, sigue subiendo nivel a nivel.</value>
+  </data>
+  <data name="AchievementsEmptyTitle" xml:space="preserve">
+    <value>&#161;Gana tu primer logro!</value>
+  </data>
+  <data name="AchievementsEmptyText" xml:space="preserve">
+    <value>Te esperan 110 logros. Completa pedidos, sube de nivel los talleres, contrata trabajadores - cada acci&#243;n te acerca m&#225;s. Tu primer trofeo est&#225; m&#225;s cerca de lo que crees.</value>
+  </data>
+  <!-- Cross-Promotion (AAA audit P1) -->
+  <data name="CrossPromoSectionTitle" xml:space="preserve"><value>&#191;Te gusta esta app? Prueba tambi&#233;n:</value></data>
+  <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calculadora Plus</value></data>
+  <data name="CrossPromo_RechnerPlus_Hook" xml:space="preserve"><value>Funciona. Sin anuncios. Sin bloat.</value></data>
+  <data name="CrossPromo_ZeitManager_Name" xml:space="preserve"><value>Gestor de Tiempo</value></data>
+  <data name="CrossPromo_ZeitManager_Hook" xml:space="preserve"><value>Tu tiempo. Al segundo.</value></data>
+  <data name="CrossPromo_FinanzRechner_Name" xml:space="preserve"><value>Calculadora de Finanzas</value></data>
+  <data name="CrossPromo_FinanzRechner_Hook" xml:space="preserve"><value>&#191;Cu&#225;nto te cuesta tu pr&#233;stamo REALMENTE?</value></data>
+  <data name="CrossPromo_FitnessRechner_Name" xml:space="preserve"><value>Calculadora de Fitness</value></data>
+  <data name="CrossPromo_FitnessRechner_Hook" xml:space="preserve"><value>1800 kcal - &#191;sabes cu&#225;nto comes realmente?</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Name" xml:space="preserve"><value>Calculadora de Construcci&#243;n</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Hook" xml:space="preserve"><value>3 horas en la ferreter&#237;a ahorradas.</value></data>
+  <data name="CrossPromo_WorkTimePro_Name" xml:space="preserve"><value>WorkTime Pro</value></data>
+  <data name="CrossPromo_WorkTimePro_Hook" xml:space="preserve"><value>Tu jefe pregunta por las horas extra - lo sabes AL INSTANTE.</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Name" xml:space="preserve"><value>Imperio del Artesano</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Hook" xml:space="preserve"><value>Tu imperio. Tu crecimiento.</value></data>
+  <data name="CrossPromo_BomberBlast_Name" xml:space="preserve"><value>BomberBlast</value></data>
+  <data name="CrossPromo_BomberBlast_Hook" xml:space="preserve"><value>&#191;Recuerdas a Bomberman? Ha vuelto.</value></data>
+  <data name="CrossPromo_RebornSaga_Name" xml:space="preserve"><value>Reborn Saga</value></data>
+  <data name="CrossPromo_RebornSaga_Hook" xml:space="preserve"><value>RPG Isekai - empieza tu viaje.</value></data>
+  <data name="CrossPromo_BingXBot_Name" xml:space="preserve"><value>BingXBot</value></data>
+  <data name="CrossPromo_BingXBot_Hook" xml:space="preserve"><value>Bot de trading con servidor Pi - totalmente automatizado.</value></data>
+  <data name="CrossPromo_GardenControl_Name" xml:space="preserve"><value>GardenControl</value></data>
+  <data name="CrossPromo_GardenControl_Hook" xml:space="preserve"><value>Controla el riego - incluso de vacaciones.</value></data>
+  <!-- FTUE (AAA audit P0) -->
+  <data name="FtueWelcomeTitle" xml:space="preserve"><value>&#161;Bienvenido a tu imperio!</value></data>
+  <data name="FtueWelcomeText" xml:space="preserve"><value>Hola, soy Maestro Hans. En 60 segundos te muestro lo b&#225;sico. &#191;Listo?</value></data>
+  <data name="FtueFirstUpgradeTitle" xml:space="preserve"><value>&#161;Mejora tu taller!</value></data>
+  <data name="FtueFirstUpgradeText" xml:space="preserve"><value>Toca el bot&#243;n Mejorar. Esto aumenta los ingresos de tu carpinter&#237;a.</value></data>
+  <data name="FtueFirstOrderTitle" xml:space="preserve"><value>&#161;Acepta tu primer pedido!</value></data>
+  <data name="FtueFirstOrderText" xml:space="preserve"><value>Los pedidos dan dinero extra y XP. Toca un pedido libre para aceptarlo.</value></data>
+  <data name="FtueFirstMiniGameTitle" xml:space="preserve"><value>&#161;Juega el minijuego!</value></data>
+  <data name="FtueFirstMiniGameText" xml:space="preserve"><value>Cada pedido tiene un peque&#241;o minijuego. Cuanto mejor juegues, mayor recompensa.</value></data>
+  <data name="FtueMoneyExplainedTitle" xml:space="preserve"><value>Ganar dinero</value></data>
+  <data name="FtueMoneyExplainedText" xml:space="preserve"><value>Aqu&#237; arriba ves tu dinero. Sube autom&#225;ticamente, &#161;incluso fuera de l&#237;nea!</value></data>
+  <data name="FtueFirstWorkerTitle" xml:space="preserve"><value>&#161;Contrata tu primer trabajador!</value></data>
+  <data name="FtueFirstWorkerText" xml:space="preserve"><value>Los trabajadores trabajan 24/7. M&#225;s trabajadores = m&#225;s ingresos.</value></data>
+  <data name="FtueXpExplainedTitle" xml:space="preserve"><value>Nivel del jugador</value></data>
+  <data name="FtueXpExplainedText" xml:space="preserve"><value>Cada acci&#243;n da XP. Nivel 5 desbloquea Trabajos R&#225;pidos. Nivel 10 trae al fontanero.</value></data>
+  <data name="FtueScrewsExplainedTitle" xml:space="preserve"><value>Tornillos dorados</value></data>
+  <data name="FtueScrewsExplainedText" xml:space="preserve"><value>Los tornillos dorados son la moneda premium. Los obtienes con logros, minijuegos y recompensas diarias.</value></data>
+  <data name="FtueImperiumIntroTitle" xml:space="preserve"><value>La pesta&#241;a Imperio</value></data>
+  <data name="FtueImperiumIntroText" xml:space="preserve"><value>En el Imperio construyes, investigas y contratas. Vis&#237;tala al alcanzar el Nivel 5.</value></data>
+  <data name="FtueCompleteTitle" xml:space="preserve"><value>&#161;Listo, Maestro!</value></data>
+  <data name="FtueCompleteText" xml:space="preserve"><value>Sabes lo importante. &#161;Disfruta tu imperio! Estoy aqu&#237; si necesitas ayuda.</value></data>
+  <data name="FtueSkipButton" xml:space="preserve"><value>Saltar tutorial</value></data>
+  <data name="FtueContinueButton" xml:space="preserve"><value>Continuar</value></data>
   <data name="HintRebirthReadyTitle" xml:space="preserve">
     <value>&#161;Renacimiento Listo!</value>
   </data>

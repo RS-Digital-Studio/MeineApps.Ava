@@ -2215,6 +2215,28 @@
   <data name="ShopGoldenScrews450Desc" xml:space="preserve">
     <value>450 vis dor&#233;es</value>
   </data>
+  <!-- Bundles Whale (AAA audit P0) : trois paliers premium au-dessus du plafond de 4,99 EUR. -->
+  <data name="ShopBundleMidName" xml:space="preserve">
+    <value>Pack Empire</value>
+  </data>
+  <data name="ShopBundleMidDesc" xml:space="preserve">
+    <value>1500 vis dor&#233;es + 8 h de boost de vitesse</value>
+  </data>
+  <data name="ShopBundleBigName" xml:space="preserve">
+    <value>Pack Ma&#238;tre</value>
+  </data>
+  <data name="ShopBundleBigDesc" xml:space="preserve">
+    <value>4000 vis dor&#233;es + 48 h de boost + 25 M EUR</value>
+  </data>
+  <data name="ShopBundleMegaName" xml:space="preserve">
+    <value>Pack L&#233;gendaire</value>
+  </data>
+  <data name="ShopBundleMegaDesc" xml:space="preserve">
+    <value>12 000 vis dor&#233;es + 7 jours de boost + 200 M EUR + Premium</value>
+  </data>
+  <data name="BundleReceivedDesc" xml:space="preserve">
+    <value>Votre pack est activ&#233;. Profitez-en bien !</value>
+  </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>{0} vis dor&#233;es re&#231;ues !</value>
   </data>
@@ -5808,6 +5830,65 @@
   <data name="HintAscensionAvailableText" xml:space="preserve">
     <value>Vous avez ma&#238;tris&#233; le prestige l&#233;gende 3 fois ! Vous pouvez maintenant effectuer une Ascension - une m&#233;ta-r&#233;initialisation qui donne des Points d'Ascension permanents pour des perks puissants.</value>
   </data>
+  <data name="HintAscensionPathTitle" xml:space="preserve">
+    <value>Votre chemin vers l'Ascension</value>
+  </data>
+  <data name="HintAscensionPathText" xml:space="preserve">
+    <value>Premier Prestige accompli, Ma&#238;tre ! Plus tard, l'Ascension vous attend &#8212; un m&#233;ta-niveau apr&#232;s 3 Prestiges L&#233;gende. Les Points d'Ascension d&#233;bloquent des perks permanents qui survivent &#224; chaque reset. D'ici l&#224; : continuez &#224; gravir palier par palier.</value>
+  </data>
+  <data name="AchievementsEmptyTitle" xml:space="preserve">
+    <value>D&#233;crochez votre premier succ&#232;s !</value>
+  </data>
+  <data name="AchievementsEmptyText" xml:space="preserve">
+    <value>110 succ&#232;s vous attendent. Terminez des commandes, am&#233;liorez les ateliers, embauchez des ouvriers &#8212; chaque action vous rapproche. Votre premier troph&#233;e est plus proche que vous ne le pensez.</value>
+  </data>
+  <!-- Cross-Promotion (AAA audit P1) -->
+  <data name="CrossPromoSectionTitle" xml:space="preserve"><value>Cette app vous pla&#238;t ? Essayez aussi :</value></data>
+  <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calculatrice Plus</value></data>
+  <data name="CrossPromo_RechnerPlus_Hook" xml:space="preserve"><value>&#199;a marche. Sans pub. Sans bloat.</value></data>
+  <data name="CrossPromo_ZeitManager_Name" xml:space="preserve"><value>Gestionnaire de Temps</value></data>
+  <data name="CrossPromo_ZeitManager_Hook" xml:space="preserve"><value>Votre temps. &#192; la seconde pr&#232;s.</value></data>
+  <data name="CrossPromo_FinanzRechner_Name" xml:space="preserve"><value>Calculatrice Finances</value></data>
+  <data name="CrossPromo_FinanzRechner_Hook" xml:space="preserve"><value>Que vous co&#251;te VRAIMENT votre cr&#233;dit ?</value></data>
+  <data name="CrossPromo_FitnessRechner_Name" xml:space="preserve"><value>Calculatrice Fitness</value></data>
+  <data name="CrossPromo_FitnessRechner_Hook" xml:space="preserve"><value>1800 kcal - savez-vous ce que vous mangez vraiment ?</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Name" xml:space="preserve"><value>Calculatrice Bricolage</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Hook" xml:space="preserve"><value>3 h chez le quincaillier &#233;conomis&#233;es.</value></data>
+  <data name="CrossPromo_WorkTimePro_Name" xml:space="preserve"><value>WorkTime Pro</value></data>
+  <data name="CrossPromo_WorkTimePro_Hook" xml:space="preserve"><value>Le chef demande les heures sup' - vous savez TOUT DE SUITE.</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Name" xml:space="preserve"><value>L'Empire du Bricoleur</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Hook" xml:space="preserve"><value>Votre empire. Votre croissance.</value></data>
+  <data name="CrossPromo_BomberBlast_Name" xml:space="preserve"><value>BomberBlast</value></data>
+  <data name="CrossPromo_BomberBlast_Hook" xml:space="preserve"><value>Vous vous souvenez de Bomberman ? Le voil&#224; de retour.</value></data>
+  <data name="CrossPromo_RebornSaga_Name" xml:space="preserve"><value>Reborn Saga</value></data>
+  <data name="CrossPromo_RebornSaga_Hook" xml:space="preserve"><value>JDR Isekai - votre aventure commence.</value></data>
+  <data name="CrossPromo_BingXBot_Name" xml:space="preserve"><value>BingXBot</value></data>
+  <data name="CrossPromo_BingXBot_Hook" xml:space="preserve"><value>Bot de trading avec serveur Pi - tout automatique.</value></data>
+  <data name="CrossPromo_GardenControl_Name" xml:space="preserve"><value>GardenControl</value></data>
+  <data name="CrossPromo_GardenControl_Hook" xml:space="preserve"><value>Contr&#244;lez l'arrosage - m&#234;me en vacances.</value></data>
+  <!-- FTUE (AAA audit P0) -->
+  <data name="FtueWelcomeTitle" xml:space="preserve"><value>Bienvenue dans votre empire !</value></data>
+  <data name="FtueWelcomeText" xml:space="preserve"><value>Salut, je suis Ma&#238;tre Hans. En 60 secondes je vous montre les bases. Pr&#234;t ?</value></data>
+  <data name="FtueFirstUpgradeTitle" xml:space="preserve"><value>Am&#233;liorez votre atelier !</value></data>
+  <data name="FtueFirstUpgradeText" xml:space="preserve"><value>Touchez Am&#233;liorer. Cela augmente le revenu de votre menuiserie.</value></data>
+  <data name="FtueFirstOrderTitle" xml:space="preserve"><value>Acceptez votre premi&#232;re commande !</value></data>
+  <data name="FtueFirstOrderText" xml:space="preserve"><value>Les commandes donnent un bonus d'argent et de l'XP. Touchez une commande libre.</value></data>
+  <data name="FtueFirstMiniGameTitle" xml:space="preserve"><value>Jouez au mini-jeu !</value></data>
+  <data name="FtueFirstMiniGameText" xml:space="preserve"><value>Chaque commande a un mini-jeu. Mieux vous jouez, plus la r&#233;compense est grande.</value></data>
+  <data name="FtueMoneyExplainedTitle" xml:space="preserve"><value>Gagner de l'argent</value></data>
+  <data name="FtueMoneyExplainedText" xml:space="preserve"><value>En haut, vous voyez votre argent. Il monte automatiquement, m&#234;me hors-ligne !</value></data>
+  <data name="FtueFirstWorkerTitle" xml:space="preserve"><value>Embauchez votre premier ouvrier !</value></data>
+  <data name="FtueFirstWorkerText" xml:space="preserve"><value>Les ouvriers travaillent 24/7. Plus d'ouvriers = plus de revenus.</value></data>
+  <data name="FtueXpExplainedTitle" xml:space="preserve"><value>Niveau du joueur</value></data>
+  <data name="FtueXpExplainedText" xml:space="preserve"><value>Chaque action gagne de l'XP. Niveau 5 d&#233;bloque les Quick Jobs. Niveau 10 le plombier.</value></data>
+  <data name="FtueScrewsExplainedTitle" xml:space="preserve"><value>Vis dor&#233;es</value></data>
+  <data name="FtueScrewsExplainedText" xml:space="preserve"><value>Les vis dor&#233;es sont la monnaie premium. Gagnez-les via les succ&#232;s, mini-jeux et r&#233;compenses.</value></data>
+  <data name="FtueImperiumIntroTitle" xml:space="preserve"><value>L'onglet Empire</value></data>
+  <data name="FtueImperiumIntroText" xml:space="preserve"><value>Dans l'Empire vous construisez, recherchez et embauchez. Visitez-le au niveau 5.</value></data>
+  <data name="FtueCompleteTitle" xml:space="preserve"><value>Pr&#234;t, Ma&#238;tre !</value></data>
+  <data name="FtueCompleteText" xml:space="preserve"><value>Vous savez l'essentiel. Profitez de votre empire - je suis l&#224; si besoin.</value></data>
+  <data name="FtueSkipButton" xml:space="preserve"><value>Passer le tutoriel</value></data>
+  <data name="FtueContinueButton" xml:space="preserve"><value>Continuer</value></data>
   <data name="HintRebirthReadyTitle" xml:space="preserve">
     <value>Renaissance Pr&#234;te !</value>
   </data>

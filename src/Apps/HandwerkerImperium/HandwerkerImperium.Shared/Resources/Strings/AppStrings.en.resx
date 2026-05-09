@@ -2864,6 +2864,28 @@
   <data name="ShopGoldenScrews450Desc" xml:space="preserve">
     <value>450 golden screws</value>
   </data>
+  <!-- Whale bundles (AAA audit P0): three premium tiers above the previous 4.99 EUR ceiling. -->
+  <data name="ShopBundleMidName" xml:space="preserve">
+    <value>Empire Pack</value>
+  </data>
+  <data name="ShopBundleMidDesc" xml:space="preserve">
+    <value>1500 golden screws + 8h speed boost</value>
+  </data>
+  <data name="ShopBundleBigName" xml:space="preserve">
+    <value>Master Pack</value>
+  </data>
+  <data name="ShopBundleBigDesc" xml:space="preserve">
+    <value>4000 golden screws + 48h speed boost + 25M EUR</value>
+  </data>
+  <data name="ShopBundleMegaName" xml:space="preserve">
+    <value>Legendary Pack</value>
+  </data>
+  <data name="ShopBundleMegaDesc" xml:space="preserve">
+    <value>12000 golden screws + 7-day speed boost + 200M EUR + Premium</value>
+  </data>
+  <data name="BundleReceivedDesc" xml:space="preserve">
+    <value>Your bundle has been activated. Enjoy!</value>
+  </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>{0} golden screws received!</value>
   </data>
@@ -6032,6 +6054,65 @@
   <data name="HintAscensionAvailableText" xml:space="preserve">
     <value>You have mastered the legend prestige 3 times! You can now perform an Ascension - a meta-reset that grants permanent Ascension Points for powerful perks.</value>
   </data>
+  <data name="HintAscensionPathTitle" xml:space="preserve">
+    <value>Your path to Ascension</value>
+  </data>
+  <data name="HintAscensionPathText" xml:space="preserve">
+    <value>First Prestige done, Master! Later there's still Ascension waiting for you - a meta-stage after 3 Legend Prestiges. Ascension Points unlock permanent perks that survive every reset. Until then: keep climbing tier by tier.</value>
+  </data>
+  <data name="AchievementsEmptyTitle" xml:space="preserve">
+    <value>Earn your first achievement!</value>
+  </data>
+  <data name="AchievementsEmptyText" xml:space="preserve">
+    <value>110 achievements are waiting. Complete orders, level up workshops, hire workers - every action gets you closer. Your first trophy is closer than you think.</value>
+  </data>
+  <!-- Cross-Promotion (AAA audit P1): Hooks for the 11 portfolio apps. -->
+  <data name="CrossPromoSectionTitle" xml:space="preserve"><value>Liked this app? Try also:</value></data>
+  <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calculator Plus</value></data>
+  <data name="CrossPromo_RechnerPlus_Hook" xml:space="preserve"><value>It just works. No ads. No bloat.</value></data>
+  <data name="CrossPromo_ZeitManager_Name" xml:space="preserve"><value>Time Manager</value></data>
+  <data name="CrossPromo_ZeitManager_Hook" xml:space="preserve"><value>Your time. Down to the second.</value></data>
+  <data name="CrossPromo_FinanzRechner_Name" xml:space="preserve"><value>Finance Calculator</value></data>
+  <data name="CrossPromo_FinanzRechner_Hook" xml:space="preserve"><value>What does your loan REALLY cost?</value></data>
+  <data name="CrossPromo_FitnessRechner_Name" xml:space="preserve"><value>Fitness Calculator</value></data>
+  <data name="CrossPromo_FitnessRechner_Hook" xml:space="preserve"><value>1800 kcal - do you know what you really eat?</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Name" xml:space="preserve"><value>Handyman Calculator</value></data>
+  <data name="CrossPromo_HandwerkerRechner_Hook" xml:space="preserve"><value>3 hours of hardware-store time saved.</value></data>
+  <data name="CrossPromo_WorkTimePro_Name" xml:space="preserve"><value>WorkTime Pro</value></data>
+  <data name="CrossPromo_WorkTimePro_Hook" xml:space="preserve"><value>Boss asks about overtime - you know INSTANTLY.</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Name" xml:space="preserve"><value>Handyman Empire</value></data>
+  <data name="CrossPromo_HandwerkerImperium_Hook" xml:space="preserve"><value>Your empire. Your growth.</value></data>
+  <data name="CrossPromo_BomberBlast_Name" xml:space="preserve"><value>BomberBlast</value></data>
+  <data name="CrossPromo_BomberBlast_Hook" xml:space="preserve"><value>Remember Bomberman? It's back.</value></data>
+  <data name="CrossPromo_RebornSaga_Name" xml:space="preserve"><value>Reborn Saga</value></data>
+  <data name="CrossPromo_RebornSaga_Hook" xml:space="preserve"><value>Anime Isekai RPG - your journey begins.</value></data>
+  <data name="CrossPromo_BingXBot_Name" xml:space="preserve"><value>BingXBot</value></data>
+  <data name="CrossPromo_BingXBot_Hook" xml:space="preserve"><value>Trading bot with Pi server - fully automated.</value></data>
+  <data name="CrossPromo_GardenControl_Name" xml:space="preserve"><value>GardenControl</value></data>
+  <data name="CrossPromo_GardenControl_Hook" xml:space="preserve"><value>Control your watering - even on vacation.</value></data>
+  <!-- FTUE (AAA audit P0) - 10-step onboarding tour -->
+  <data name="FtueWelcomeTitle" xml:space="preserve"><value>Welcome to your empire!</value></data>
+  <data name="FtueWelcomeText" xml:space="preserve"><value>Hi, I'm Master Hans. In the next 60 seconds I'll show you the basics. Ready?</value></data>
+  <data name="FtueFirstUpgradeTitle" xml:space="preserve"><value>Upgrade your workshop!</value></data>
+  <data name="FtueFirstUpgradeText" xml:space="preserve"><value>Tap the Upgrade button. This raises the income of your carpentry.</value></data>
+  <data name="FtueFirstOrderTitle" xml:space="preserve"><value>Accept your first order!</value></data>
+  <data name="FtueFirstOrderText" xml:space="preserve"><value>Orders bring bonus money plus XP. Just tap a free order to accept it.</value></data>
+  <data name="FtueFirstMiniGameTitle" xml:space="preserve"><value>Play the mini-game!</value></data>
+  <data name="FtueFirstMiniGameText" xml:space="preserve"><value>Every order has a small mini-game. The better you play, the bigger your reward.</value></data>
+  <data name="FtueMoneyExplainedTitle" xml:space="preserve"><value>Earning money</value></data>
+  <data name="FtueMoneyExplainedText" xml:space="preserve"><value>Up here you see your money. It keeps going up automatically - even when you're offline!</value></data>
+  <data name="FtueFirstWorkerTitle" xml:space="preserve"><value>Hire your first worker!</value></data>
+  <data name="FtueFirstWorkerText" xml:space="preserve"><value>Workers work 24/7 for you. More workers = more income.</value></data>
+  <data name="FtueXpExplainedTitle" xml:space="preserve"><value>Player level</value></data>
+  <data name="FtueXpExplainedText" xml:space="preserve"><value>Every action gains XP. Level 5 unlocks Quick Jobs. Level 10 brings the plumber.</value></data>
+  <data name="FtueScrewsExplainedTitle" xml:space="preserve"><value>Golden screws</value></data>
+  <data name="FtueScrewsExplainedText" xml:space="preserve"><value>Golden screws are the premium currency. Earn them through achievements, mini-games and login rewards.</value></data>
+  <data name="FtueImperiumIntroTitle" xml:space="preserve"><value>The Empire tab</value></data>
+  <data name="FtueImperiumIntroText" xml:space="preserve"><value>In the Empire you build, research and hire workers. Visit it later when you reach Level 5.</value></data>
+  <data name="FtueCompleteTitle" xml:space="preserve"><value>You're ready, Master!</value></data>
+  <data name="FtueCompleteText" xml:space="preserve"><value>You know everything important. Have fun with your empire - I'm always here if you need help.</value></data>
+  <data name="FtueSkipButton" xml:space="preserve"><value>Skip Tutorial</value></data>
+  <data name="FtueContinueButton" xml:space="preserve"><value>Continue</value></data>
   <data name="HintRebirthReadyTitle" xml:space="preserve">
     <value>Rebirth Ready!</value>
   </data>

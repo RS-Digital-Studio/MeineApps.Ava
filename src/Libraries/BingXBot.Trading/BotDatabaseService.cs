@@ -366,6 +366,35 @@ public class BotDatabaseService
         return bool.TryParse(entity.Value.Trim(), out var result) && result;
     }
 
+    /// <summary>
+    /// Phase 18 / B2 — Persistiert den letzten Bot-Heartbeat-Zeitstempel (UTC, ISO-8601 "O").
+    /// Wird vom <c>TradingServiceBase</c> alle 30 s in der PriceTickerLoop geschrieben. Beim
+    /// Server-Resume liest <c>BotAutoResumeService</c> den Wert und entscheidet, ob ein
+    /// Trade-Replay (GetUserTradesAsync since=lastHeartbeat) noetig ist.
+    /// </summary>
+    public async Task SaveLastHeartbeatAsync(DateTime utc)
+    {
+        EnsureInitialized();
+        await _db!.InsertOrReplaceAsync(new SettingEntity
+        {
+            Key = "LastHeartbeatUtc",
+            Value = utc.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture)
+        });
+    }
+
+    /// <summary>
+    /// Phase 18 / B2 — Liest den letzten persistierten Heartbeat. NULL = kein bisheriger
+    /// Heartbeat (Frischer Pi, oder fruehere Version ohne Persistenz).
+    /// </summary>
+    public async Task<DateTime?> LoadLastHeartbeatAsync()
+    {
+        EnsureInitialized();
+        var entity = await _db!.FindAsync<SettingEntity>("LastHeartbeatUtc");
+        if (string.IsNullOrEmpty(entity?.Value)) return null;
+        return DateTime.TryParse(entity.Value, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.RoundtripKind, out var dt) ? dt : null;
+    }
+
     // === SK-VERIFY: [6.1] ExitState + Runtime-State Persistenz ===
 
     /// <summary>Speichert alle ExitStates für offene Positionen (bei Bot-Stop/Crash-Recovery).</summary>

@@ -196,6 +196,10 @@ public class LiveTradingManager : IDisposable
         // Echte Fee-Rates vom Account setzen (statt hardcoded)
         _service.SetCommissionRates(CommissionTakerRate, CommissionMakerRate);
 
+        // Phase 18 / B2 — Heartbeat-Persist verdrahten (DB-Service vorhanden).
+        if (_dbService != null)
+            _service.HeartbeatPersist = utc => _dbService.SaveLastHeartbeatAsync(utc);
+
         // Strategie aktivieren (Multi-TF Standalone: kein Preset mehr)
         var strategy = StrategyFactory.Create(strategyName);
         _strategyManager.SetStrategy(strategy);

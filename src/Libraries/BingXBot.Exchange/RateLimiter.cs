@@ -4,7 +4,10 @@ namespace BingXBot.Exchange;
 
 /// <summary>
 /// Token-Bucket Rate Limiter mit separaten Buckets pro Kategorie.
-/// "orders" = 10 Requests/Sekunde, "queries" = 20 Requests/Sekunde, Default = 20/s.
+/// Default-Kategorien: "orders" = 10 Requests/Sekunde, "queries" = 20 Requests/Sekunde, Default = 20/s.
+/// Phase 18 / B3 — neue Kategorien "trade" + "account" als BingX-Endpoint-spezifische Buckets
+/// (BingX-Doku: 100/10s pro IP fuer Trade-Endpoints → 10/s sustained). Limits konfigurierbar
+/// per <see cref="SetLimit"/>-Aufruf bei Bootstrap (z.B. fuer Pi-Mobile-LTE-Profil).
 /// Zugriff auf Queue{DateTime} ist durch SemaphoreSlim pro Kategorie geschützt.
 /// </summary>
 public class RateLimiter : IRateLimiter, IDisposable
@@ -14,9 +17,26 @@ public class RateLimiter : IRateLimiter, IDisposable
     private readonly ConcurrentDictionary<string, int> _limits = new()
     {
         ["orders"] = 10,
-        ["queries"] = 20
+        ["queries"] = 20,
+        ["trade"] = 10,    // Phase 18 / B3 — BingX 100/10s = 10/s sustained
+        ["account"] = 10   // Phase 18 / B3 — Account-Endpoints (Balance, Positions etc.)
     };
     private bool _disposed;
+
+    /// <summary>
+    /// Phase 18 / B3 — Setzt das Limit (Requests/s) fuer eine Kategorie zur Laufzeit.
+    /// Wird vom Server-Bootstrap aus IConfiguration aufgerufen. Bei nicht existierender
+    /// Kategorie wird sie angelegt; bestehende werden ueberschrieben.
+    /// </summary>
+    public void SetLimit(string category, int requestsPerSecond)
+    {
+        if (string.IsNullOrEmpty(category)) return;
+        if (requestsPerSecond < 1) requestsPerSecond = 1;
+        _limits[category] = requestsPerSecond;
+    }
+
+    /// <summary>Phase 18 / B3 — Liefert das aktuelle Limit fuer eine Kategorie (oder Default 20).</summary>
+    public int GetLimit(string category) => _limits.GetValueOrDefault(category, 20);
 
     /// <summary>
     /// Wartet bis ein Rate-Limit-Slot frei ist. Thread-safe pro Kategorie.

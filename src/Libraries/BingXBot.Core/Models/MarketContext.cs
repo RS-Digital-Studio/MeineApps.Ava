@@ -47,4 +47,12 @@ public record MarketContext(
     /// Args: (nowUtc, blackoutMinutes, ct) → liefert Event-Name oder null.
     /// Null = kein News-Filter aktiv (graceful degradation, Step1 passt durch).
     /// </summary>
-    Func<DateTime, int, CancellationToken, Task<string?>>? NewsBlackoutCheck = null);
+    /// <remarks>Phase 18 / B1 — Hot-Path nutzt jetzt <see cref="ResolvedNewsBlackoutEvent"/>
+    /// (pre-computed pro Tick) statt diesen Delegate. Delegate bleibt fuer Tests + Backwards-Compat.</remarks>
+    Func<DateTime, int, CancellationToken, Task<string?>>? NewsBlackoutCheck = null,
+    /// <summary>
+    /// Phase 18 / B1 — Pre-computed News-Blackout-Event-Name fuer den Hot-Path. NULL = kein
+    /// aktiver Blackout (entweder weil News-Service deaktiviert ist oder kein Event im Fenster).
+    /// Wird vom TradingServiceBase einmal pro Tick gesetzt — vermeidet sync-over-async pro Symbol.
+    /// </summary>
+    string? ResolvedNewsBlackoutEvent = null);

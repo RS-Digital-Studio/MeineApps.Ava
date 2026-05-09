@@ -48,6 +48,12 @@ public class SequenzKonzeptStrategy : IStrategy
     /// <summary>Letzter SK-Status für UI.</summary>
     public string LastStatus { get; private set; } = "";
 
+    /// <summary>
+    /// Phase 18 / B4 — Letzte Exception aus dem News-Blackout-Check (graceful-degradation-Pfad).
+    /// Wird vom TradingServiceBase nach jedem Evaluate gepollt + in einen Failure-Counter aggregiert.
+    /// </summary>
+    public Exception? LastNewsCheckException { get; private set; }
+
     /// <summary>Ampel-Status pro TF — wird pro Evaluate-Aufruf aktualisiert.</summary>
     public Dictionary<TimeFrame, string> AmpelStatus { get; private set; } = new();
 
@@ -160,24 +166,38 @@ public class SequenzKonzeptStrategy : IStrategy
 
         // ───────────────────────────────────────────────────────────
         // News-Blackout (Buch S.7: "Wirtschaftskalender checken — stehen große News an?")
-        // Early-Gate: Wenn ein High-Impact-Event im Blackout-Fenster liegt, sparen wir die
-        // kompletten SK-Berechnungen (Fahrplan/Sequenz/Confluence). Delegat kommt aus
-        // RiskManager.BuildMarketContext — null = News-Filter inaktiv (graceful pass).
+        // Phase 18 / B1 — Hot-Path nutzt pre-resolved Cache (TradingServiceBase fragt 1x/Tick).
+        // Vorher: GetAwaiter().GetResult() pro Symbol-Tick = N Sync-over-Async-Calls.
+        // Backwards-Compat: Wenn ResolvedNewsBlackoutEvent null + Delegate nicht null, fallen wir
+        // auf den alten synchron-await-Pfad zurueck (B4 Logging zeigt Failures auf).
         // ───────────────────────────────────────────────────────────
         var newsBlackoutMinutes = context.RiskSettings?.NewsBlackoutMinutes ?? 30;
-        if (context.NewsBlackoutCheck != null && newsBlackoutMinutes > 0)
+        if (newsBlackoutMinutes > 0)
         {
-            try
+            // 1) Pre-resolved aus dem TradingServiceBase-Pre-Computing-Schritt.
+            if (!string.IsNullOrEmpty(context.ResolvedNewsBlackoutEvent))
+                return Blocked(navTf, $"News-Blackout: {context.ResolvedNewsBlackoutEvent}",
+                    BingXBot.Core.Diagnostics.RejectionReasons.NewsBlackout);
+
+            // 2) Legacy-Fallback (Delegate nur dann, wenn kein Pre-Resolved gesetzt ist).
+            //    Tests + Backtest-Pfade die MarketContext direkt bauen ohne Pre-Compute landen hier.
+            if (context.ResolvedNewsBlackoutEvent == null && context.NewsBlackoutCheck != null)
             {
-                var nowForNews = context.NowUtc ?? DateTime.UtcNow;
-                var blackoutEvent = context.NewsBlackoutCheck(nowForNews, newsBlackoutMinutes, CancellationToken.None)
-                    .GetAwaiter().GetResult();
-                if (!string.IsNullOrEmpty(blackoutEvent))
-                    return Blocked(navTf, $"News-Blackout: {blackoutEvent}", BingXBot.Core.Diagnostics.RejectionReasons.NewsBlackout);
-            }
-            catch
-            {
-                // Graceful degradation: Netz-/Parse-Fehler im News-Service dürfen keine Trades blockieren.
+                try
+                {
+                    var nowForNews = context.NowUtc ?? DateTime.UtcNow;
+                    var blackoutEvent = context.NewsBlackoutCheck(nowForNews, newsBlackoutMinutes, CancellationToken.None)
+                        .GetAwaiter().GetResult();
+                    if (!string.IsNullOrEmpty(blackoutEvent))
+                        return Blocked(navTf, $"News-Blackout: {blackoutEvent}",
+                            BingXBot.Core.Diagnostics.RejectionReasons.NewsBlackout);
+                }
+                catch (Exception ex)
+                {
+                    // Phase 18 / B4 — vorher stiller Catch. Jetzt LastNewsCheckException
+                    // wird pro Strategy-Instanz gemerkt; TradingServiceBase pollt das + zaehlt.
+                    LastNewsCheckException = ex;
+                }
             }
         }
 

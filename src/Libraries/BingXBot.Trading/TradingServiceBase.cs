@@ -295,6 +295,37 @@ public abstract class TradingServiceBase : IDisposable
         // Scan-Loops starten (MarketCap-Cache wird im ersten Scan geladen)
         _ = RunLoopAsync(_cts.Token);
         _ = PriceTickerLoopAsync(_cts.Token);
+        _ = HeartbeatLoopAsync(_cts.Token);
+    }
+
+    /// <summary>
+    /// Phase 18 / B2 — Heartbeat-Loop persistiert alle 30 s den letzten "Bot-aktiv"-Zeitstempel
+    /// in der DB. Wird vom <c>BotAutoResumeService</c> beim Resume gelesen, um Trade-Replay
+    /// (BingX-User-Trades since=lastHeartbeat) anzustossen oder Missing-TP zu erkennen.
+    /// Bewusst eigener Loop: PriceTickerLoopAsync ist 5-s-Tick (zu haeufige DB-Writes), und
+    /// RunLoopAsync ist 60-s-Tick (zu lange Luecke wenn der Pi crasht).
+    /// </summary>
+    public Func<DateTime, Task>? HeartbeatPersist { get; set; }
+
+    private async Task HeartbeatLoopAsync(CancellationToken ct)
+    {
+        var interval = TimeSpan.FromSeconds(30);
+        while (_isRunning && !ct.IsCancellationRequested)
+        {
+            try
+            {
+                if (HeartbeatPersist != null)
+                    await HeartbeatPersist(DateTime.UtcNow).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Heartbeat",
+                    $"{LogPrefix}Heartbeat-Persist fehlgeschlagen: {ex.Message}"));
+            }
+            try { await Task.Delay(interval, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+        }
     }
 
     /// <summary>Gemeinsames Stop-Cleanup: CTS canceln, Signale leeren, State zurücksetzen.</summary>
@@ -939,6 +970,16 @@ public abstract class TradingServiceBase : IDisposable
         // 5. Evaluierung: pro Symbol × aktive TF — sequenziell (Order-Platzierung muss sequenziell sein)
         var orderPlaced = false;
 
+        // Phase 18 / B1 — News-Blackout 1× pro Scan-Tick auflösen (statt N× sync-over-async im Hot-Path).
+        // Bei Service-Fehlern liefert ResolveActiveNewsBlackoutAsync null → graceful pass, B4-Counter zaehlt mit.
+        string? resolvedNewsBlackout = null;
+        if (_riskManager != null)
+        {
+            try { resolvedNewsBlackout = await _riskManager.ResolveActiveNewsBlackoutAsync(ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { throw; }
+            catch { /* ResolveActiveNewsBlackoutAsync schluckt + loggt schon, hier nur Belt-and-Suspenders */ }
+        }
+
         // Multi-TF Standalone: Scanner-Result pro TF sammeln für /api/v1/scanner/results
         var scanSymbolsByTf = activeTfs.ToDictionary(
             tf => tf,
@@ -1007,7 +1048,8 @@ public abstract class TradingServiceBase : IDisposable
                         NavigatorTimeframe: navTf,
                         ScannerSettings: _scannerSettings,
                         RiskSettings: _riskSettings,
-                        FundingRatePercent: fundingForStrategy);
+                        FundingRatePercent: fundingForStrategy,
+                        ResolvedNewsBlackoutEvent: resolvedNewsBlackout);
                     var signal = strategy.Evaluate(context);
 
                     if (strategy is Engine.Strategies.SequenzKonzeptStrategy skInst

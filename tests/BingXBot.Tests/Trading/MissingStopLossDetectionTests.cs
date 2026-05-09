@@ -228,4 +228,134 @@ public class MissingStopLossDetectionTests
 
     private static Position MakePos(string sym, Side side, decimal qty, decimal entry) =>
         new(sym, side, entry, entry, qty, 0m, 10, MarginType.Isolated, DateTime.UtcNow);
+
+    // === Phase 18 / B2 — Missing-Take-Profit-Detection ===
+
+    [Fact]
+    public void MissingTakeProfit_PositionMitErwartetemTpOhneTpOrder_Erkannt()
+    {
+        var positions = new List<Position>
+        {
+            MakePos("ETH-USDT", Side.Buy, qty: 1m, entry: 3000m),
+        };
+        // SL ist da, aber kein TP-Limit-Reduce-Only.
+        var openOrders = new List<Order>
+        {
+            new Order("sl", "ETH-USDT", Side.Sell, OrderType.StopMarket, 0m, 1m, 2900m,
+                DateTime.UtcNow, OrderStatus.New, ReduceOnly: true),
+        };
+        var positionOpenedAt = new Dictionary<string, DateTime>
+        {
+            ["ETH-USDT_Buy"] = DateTime.UtcNow.AddMinutes(-2), // alt genug
+        };
+
+        var actions = PositionDriftAnalyzer.Analyze(
+            positions,
+            new[] { "ETH-USDT_Buy" },
+            NoPending,
+            graceWindow: TimeSpan.FromSeconds(90),
+            signalCreatedAt: NoSignalCreatedAt,
+            openOrders: openOrders,
+            positionOpenedAt: positionOpenedAt,
+            missingStopGraceWindow: Grace,
+            signalsExpectingTakeProfit: new HashSet<string> { "ETH-USDT_Buy" });
+
+        actions.Should().ContainSingle(a => a.Kind == PositionDriftAnalyzer.DriftKind.MissingTakeProfit);
+    }
+
+    [Fact]
+    public void MissingTakeProfit_TpOrderVorhanden_KeinDrift()
+    {
+        var positions = new List<Position>
+        {
+            MakePos("ETH-USDT", Side.Buy, qty: 1m, entry: 3000m),
+        };
+        var openOrders = new List<Order>
+        {
+            new Order("sl", "ETH-USDT", Side.Sell, OrderType.StopMarket, 0m, 1m, 2900m,
+                DateTime.UtcNow, OrderStatus.New, ReduceOnly: true),
+            new Order("tp1", "ETH-USDT", Side.Sell, OrderType.Limit, 3300m, 0.5m, null,
+                DateTime.UtcNow, OrderStatus.New, ReduceOnly: true),
+        };
+        var positionOpenedAt = new Dictionary<string, DateTime>
+        {
+            ["ETH-USDT_Buy"] = DateTime.UtcNow.AddMinutes(-2),
+        };
+
+        var actions = PositionDriftAnalyzer.Analyze(
+            positions,
+            new[] { "ETH-USDT_Buy" },
+            NoPending,
+            graceWindow: TimeSpan.FromSeconds(90),
+            signalCreatedAt: NoSignalCreatedAt,
+            openOrders: openOrders,
+            positionOpenedAt: positionOpenedAt,
+            missingStopGraceWindow: Grace,
+            signalsExpectingTakeProfit: new HashSet<string> { "ETH-USDT_Buy" });
+
+        actions.Should().NotContain(a => a.Kind == PositionDriftAnalyzer.DriftKind.MissingTakeProfit);
+    }
+
+    [Fact]
+    public void MissingTakeProfit_GraceWindowAktiv_KeinDrift()
+    {
+        var positions = new List<Position>
+        {
+            MakePos("ETH-USDT", Side.Buy, qty: 1m, entry: 3000m),
+        };
+        var openOrders = new List<Order>
+        {
+            new Order("sl", "ETH-USDT", Side.Sell, OrderType.StopMarket, 0m, 1m, 2900m,
+                DateTime.UtcNow, OrderStatus.New, ReduceOnly: true),
+        };
+        var positionOpenedAt = new Dictionary<string, DateTime>
+        {
+            ["ETH-USDT_Buy"] = DateTime.UtcNow.AddSeconds(-5), // FRISCH offen
+        };
+
+        var actions = PositionDriftAnalyzer.Analyze(
+            positions,
+            new[] { "ETH-USDT_Buy" },
+            NoPending,
+            graceWindow: TimeSpan.FromSeconds(90),
+            signalCreatedAt: NoSignalCreatedAt,
+            openOrders: openOrders,
+            positionOpenedAt: positionOpenedAt,
+            missingStopGraceWindow: Grace,
+            signalsExpectingTakeProfit: new HashSet<string> { "ETH-USDT_Buy" });
+
+        actions.Should().NotContain(a => a.Kind == PositionDriftAnalyzer.DriftKind.MissingTakeProfit);
+    }
+
+    [Fact]
+    public void MissingTakeProfit_SignalErwartetKeinenTp_KeinDrift()
+    {
+        var positions = new List<Position>
+        {
+            MakePos("ETH-USDT", Side.Buy, qty: 1m, entry: 3000m),
+        };
+        var openOrders = new List<Order>
+        {
+            new Order("sl", "ETH-USDT", Side.Sell, OrderType.StopMarket, 0m, 1m, 2900m,
+                DateTime.UtcNow, OrderStatus.New, ReduceOnly: true),
+        };
+        var positionOpenedAt = new Dictionary<string, DateTime>
+        {
+            ["ETH-USDT_Buy"] = DateTime.UtcNow.AddMinutes(-2),
+        };
+
+        var actions = PositionDriftAnalyzer.Analyze(
+            positions,
+            new[] { "ETH-USDT_Buy" },
+            NoPending,
+            graceWindow: TimeSpan.FromSeconds(90),
+            signalCreatedAt: NoSignalCreatedAt,
+            openOrders: openOrders,
+            positionOpenedAt: positionOpenedAt,
+            missingStopGraceWindow: Grace,
+            // ETH-USDT_Buy ist NICHT in signalsExpectingTakeProfit → kein Drift erwartet.
+            signalsExpectingTakeProfit: new HashSet<string>());
+
+        actions.Should().NotContain(a => a.Kind == PositionDriftAnalyzer.DriftKind.MissingTakeProfit);
+    }
 }

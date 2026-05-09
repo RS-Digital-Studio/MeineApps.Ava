@@ -36,7 +36,14 @@ public static class PositionDriftAnalyzer
         /// (Re-Place). Wenn kein Signal-SL bekannt: EmergencyStop fuer dieses Symbol (User-Eingriff noetig).
         /// Grace-Window 30 s nach Position-Open (verhindert Race zwischen Position-Eroeffnung und SL-Place).
         /// </summary>
-        MissingStopLoss
+        MissingStopLoss,
+
+        /// <summary>
+        /// Phase 18 / B2 — Position offen mit erwarteter TP-Konfiguration (Signal hat TakeProfit gesetzt),
+        /// aber keine bot-platzierte LIMIT-Reduce-Only-Order auf der Exchange. Aktion: PlaceTpLimitOrders
+        /// nachholen — analog zu Stage-3 (PendingTpRetry), aber explizit aus dem Reconcile getriggert.
+        /// </summary>
+        MissingTakeProfit
     }
 
     /// <summary>
@@ -61,7 +68,8 @@ public static class PositionDriftAnalyzer
         IReadOnlyDictionary<string, DateTime> signalCreatedAt,
         IReadOnlyList<Order>? openOrders = null,
         IReadOnlyDictionary<string, DateTime>? positionOpenedAt = null,
-        TimeSpan? missingStopGraceWindow = null)
+        TimeSpan? missingStopGraceWindow = null,
+        IReadOnlySet<string>? signalsExpectingTakeProfit = null)
     {
         var actions = new List<DriftAction>();
         var now = DateTime.UtcNow;
@@ -147,6 +155,41 @@ public static class PositionDriftAnalyzer
                     pos.Symbol,
                     pos.Side,
                     $"Position offen ohne nativen SL (Side={closingSide} STOP_MARKET ReduceOnly fehlt) — Re-Place erforderlich"));
+            }
+
+            // 4) Phase 18 / B2 — Missing-TP-Detection. Wenn das Signal ein TakeProfit erwartet
+            //    (set.Contains(key)) UND keine bot-platzierte LIMIT-Reduce-Only-Order existiert →
+            //    Re-Place TP nachholen. Ohne diesen Check laufen Positionen nach Bot-Restart
+            //    teilweise nur mit nativem SL bis SL-Hit oder manuellem Close.
+            if (signalsExpectingTakeProfit != null && signalsExpectingTakeProfit.Count > 0)
+            {
+                var tpOrderSet = new HashSet<(string Symbol, Side Side)>();
+                foreach (var o in openOrders)
+                {
+                    if (o.Type != OrderType.Limit) continue;
+                    if (!o.ReduceOnly) continue;
+                    tpOrderSet.Add((o.Symbol, o.Side));
+                }
+
+                foreach (var pos in exchangePositions.Where(p => p.Quantity > 0))
+                {
+                    var key = $"{pos.Symbol}_{pos.Side}";
+                    if (!signalsExpectingTakeProfit.Contains(key)) continue;
+                    var closingSide = pos.Side == Side.Buy ? Side.Sell : Side.Buy;
+                    if (tpOrderSet.Contains((pos.Symbol, closingSide))) continue;
+
+                    // Grace-Window analog Missing-Stop — frisch geoeffnet, TP-Place noch in Arbeit.
+                    if (positionOpenedAt != null
+                        && positionOpenedAt.TryGetValue(key, out var openedAt)
+                        && (now - openedAt) < (missingStopGraceWindow ?? TimeSpan.FromSeconds(30)))
+                        continue;
+
+                    actions.Add(new DriftAction(
+                        DriftKind.MissingTakeProfit,
+                        pos.Symbol,
+                        pos.Side,
+                        $"Position offen mit erwartetem TP, aber keine LIMIT-Reduce-Only-Order auf Exchange ({closingSide}) — Re-Place erforderlich"));
+                }
             }
         }
 

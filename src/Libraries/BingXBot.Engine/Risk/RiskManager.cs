@@ -101,23 +101,12 @@ public class RiskManager : IRiskManager
         if (context.Account.AvailableBalance <= 0)
             return new RiskCheckResult(false, "Keine verfügbare Balance — kein Trade möglich", 0m);
 
-        // Task 1.2 — News-Blackout (synchron abgefragt aus Cache; echter Fetch liegt im Service).
-        // Graceful degradation: Ohne Service läuft der Bot wie bisher weiter.
-        if (_newsCalendar != null && _settings.NewsBlackoutMinutes > 0)
-        {
-            try
-            {
-                var blackoutEvent = _newsCalendar.GetActiveBlackoutEventAsync(
-                    DateTime.UtcNow, _settings.NewsBlackoutMinutes).GetAwaiter().GetResult();
-                if (blackoutEvent != null)
-                    return new RiskCheckResult(false,
-                        $"News-Blackout: {blackoutEvent.Name} ({blackoutEvent.Country} {blackoutEvent.TimeUtc:HH:mm} UTC)", 0m);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "News-Blackout-Check fehlgeschlagen, Trade erlaubt (graceful degradation)");
-            }
-        }
+        // Phase 18 / B1 — News-Blackout zweite Schicht (Strategy ist erste). Liest Pre-Resolved
+        // aus dem MarketContext, vermeidet damit den fruehren GetAwaiter().GetResult()-Call pro
+        // Trade-Validierung. Wenn weder Pre-Resolved noch Calendar verfuegbar sind: graceful
+        // degradation (Bot tradet weiter, B4 Health-Check meldet defekten News-Service separat).
+        if (_settings.NewsBlackoutMinutes > 0 && !string.IsNullOrEmpty(context.ResolvedNewsBlackoutEvent))
+            return new RiskCheckResult(false, $"News-Blackout: {context.ResolvedNewsBlackoutEvent}", 0m);
 
         // SK-Plan 3.5: Max Daily Loss Circuit-Breaker
         // Nach Überschreitung werden bis UTC-00:00 keine neuen Entries erlaubt.
@@ -492,6 +481,39 @@ public class RiskManager : IRiskManager
 
     /// <summary>Aufeinanderfolgende Verluste aktuell.</summary>
     public int CurrentConsecutiveLosses { get; private set; }
+
+    /// <summary>
+    /// Phase 18 / B1 — Pre-Resolved News-Blackout-Event-Name (oder null) als async Helper.
+    /// Wird vom <c>TradingServiceBase</c> einmal pro Scan-Tick aufgerufen und in den
+    /// <see cref="MarketContext.ResolvedNewsBlackoutEvent"/> aller Symbol-Evaluationen gepusht —
+    /// ersetzt den frueheren GetAwaiter().GetResult()-Pfad pro Symbol.
+    /// </summary>
+    public async Task<string?> ResolveActiveNewsBlackoutAsync(CancellationToken ct = default)
+    {
+        if (_newsCalendar == null || _settings.NewsBlackoutMinutes <= 0) return null;
+        try
+        {
+            var ev = await _newsCalendar.GetActiveBlackoutEventAsync(
+                DateTime.UtcNow, _settings.NewsBlackoutMinutes, ct).ConfigureAwait(false);
+            ResetNewsCheckFailures();
+            if (ev == null) return null;
+            return $"{ev.Name} ({ev.Country} {ev.TimeUtc:HH:mm} UTC)";
+        }
+        catch (Exception ex)
+        {
+            // Phase 18 / B4 — Failure-Counter + structured Log statt stillem Schlucken.
+            Interlocked.Increment(ref _newsCheckFailureCount);
+            _logger.LogWarning(ex, "News-Blackout-Probe fehlgeschlagen (Failure #{Count}) — Trade wird ohne Filter durchgewinkt", _newsCheckFailureCount);
+            return null;
+        }
+    }
+
+    /// <summary>Phase 18 / B4 — Anzahl konsekutiver News-Service-Failures.</summary>
+    private int _newsCheckFailureCount;
+    public int NewsCheckFailureCount => _newsCheckFailureCount;
+
+    /// <summary>Phase 18 / B4 — Reset des News-Failure-Counters bei erfolgreichem Probe.</summary>
+    public void ResetNewsCheckFailures() => Interlocked.Exchange(ref _newsCheckFailureCount, 0);
 
     /// <summary>
     /// Setzt CurrentConsecutiveLosses auf einen externen Wert (v1.2.5).

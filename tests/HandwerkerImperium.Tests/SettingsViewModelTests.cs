@@ -58,7 +58,7 @@ public class SettingsViewModelTests
 
         // SaveGame: async void kompatibel
         saveGameSvc.SaveAsync().Returns(Task.CompletedTask);
-        saveGameSvc.ExportSaveAsync().Returns(Task.FromResult((string?)null));
+        saveGameSvc.ExportSaveAsync().Returns(Task.FromResult<string>(null!));
 
         var vm = new SettingsViewModel(
             audioSvc,

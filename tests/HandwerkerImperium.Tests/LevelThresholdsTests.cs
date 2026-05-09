@@ -21,10 +21,10 @@ public class LevelThresholdsTests
     }
 
     [Fact]
-    public void QuickJobs_IstLevel5()
+    public void QuickJobs_IstLevel2()
     {
-        // Prüfung: QuickJobs-Tab ab Level 5
-        LevelThresholds.QuickJobs.Should().Be(5);
+        // Prüfung: QuickJobs-Tab ab Level 2 (v2.0.36 Onboarding-Beschleunigung: 5 → 2)
+        LevelThresholds.QuickJobs.Should().Be(2);
     }
 
     [Fact]
@@ -227,9 +227,10 @@ public class LevelThresholdsTests
     public void ProgressiveDisclosureReihenfolge_IstLogisch()
     {
         // Prüfung: Features werden in sinnvoller Reihenfolge freigeschaltet
-        // BannerStrip(3) < QuickJobs(5) < CraftingResearch(8) < ManagerSection(10) < AutoCollect(15) < MasterTools(20)
-        LevelThresholds.BannerStrip.Should().BeLessThan(LevelThresholds.QuickJobs);
+        // v2.0.36 Onboarding-Beschleunigung: QuickJobs vorgezogen auf 2, BannerStrip bleibt bei 3.
+        // QuickJobs(2) < BannerStrip(3) < CraftingResearch(8) < ManagerSection(10) < AutoCollect(15) < MasterTools(20)
         LevelThresholds.QuickJobs.Should().BeLessThan(LevelThresholds.CraftingResearch);
+        LevelThresholds.BannerStrip.Should().BeLessThan(LevelThresholds.CraftingResearch);
         LevelThresholds.CraftingResearch.Should().BeLessThan(LevelThresholds.ManagerSection);
         LevelThresholds.ManagerSection.Should().BeLessThan(LevelThresholds.AutoCollect);
         LevelThresholds.AutoCollect.Should().BeLessThan(LevelThresholds.MasterToolsSection);

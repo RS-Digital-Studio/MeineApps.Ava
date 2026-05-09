@@ -104,19 +104,43 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     {
         var state = _gameStateService.State;
 
-        // Serialisierung auf Background-Thread unter State-Lock (Thread-Safety):
-        // - GameLoop (UI-Thread) kann kurz warten (max ~50-100ms alle 30s) bis der Lock frei ist
-        // - UI-Thread wird NICHT mehr blockiert → kein sichtbarer Mikro-Stutter alle 30s
-        // - JsonSerializer.Serialize ist sync, aber in Task.Run landet es auf ThreadPool
-        // - Der Lock verhindert Race-Condition mit parallelen State-Modifikationen
-        var (json, cloudLevel) = await Task.Run(() => _gameStateService.ExecuteWithLock(() =>
+        // v2.1.0: Snapshot-Pattern — Lock-Hold-Zeit minimieren.
+        // - Lock: nur LastSavedAt setzen + Signature berechnen + Serialize (~5-20ms)
+        // - Off-Lock: File-IO, Cloud-Upload (alles auf ThreadPool)
+        // - Der Background-Thread blockiert UI-Thread nur kurz waehrend Lock-Aequisition;
+        //   GameLoop tickt NUR unter dem gleichen Lock und kann nicht mit Save kollidieren.
+#if DEBUG
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+#endif
+        var (json, cloudLevel, cloudMetadata, cloudSaveEnabled) = await Task.Run(() =>
+            _gameStateService.ExecuteWithLock(() =>
         {
             state.LastSavedAt = DateTime.UtcNow;
             _integrityService.ComputeSignature(state);
             var serialized = JsonSerializer.Serialize(state, _jsonOptions);
-            // cloudLevel unter Lock snapshotten gegen GameLoop-Level-Up-Race
-            return (json: serialized, cloudLevel: state.PlayerLevel);
+            // Metadaten aus dem gleichen Lock-Snapshot — sonst kann GameLoop zwischen
+            // Serialize und Metadata-Bau einen Level-Up oder Goldene-Schraube-Add ticken.
+            var meta = new CloudSaveMetadata
+            {
+                PlayerLevel = state.PlayerLevel,
+                Money = state.Money,
+                GoldenScrews = state.GoldenScrews,
+                PrestigePoints = state.Prestige.PrestigePoints,
+                AscensionLevel = state.Ascension.AscensionLevel,
+                SavedAtIso = state.LastSavedAt.ToString("O"),
+                StateVersion = state.Version,
+                AppVersion = typeof(SaveGameService).Assembly.GetName().Version?.ToString(3) ?? "unknown"
+            };
+            return (json: serialized,
+                    cloudLevel: state.PlayerLevel,
+                    metadata: meta,
+                    cloudEnabled: state.Settings.CloudSaveEnabled);
         }));
+#if DEBUG
+        sw.Stop();
+        if (sw.ElapsedMilliseconds > 50)
+            System.Diagnostics.Debug.WriteLine($"[SaveGameService] Slow save snapshot: {sw.ElapsedMilliseconds}ms");
+#endif
 
         await File.WriteAllTextAsync(TempFilePath, json);
 
@@ -130,20 +154,29 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         // Cloud-Save (Firebase-REST) parallel (fire-and-forget, blockiert lokales Save nie).
         // Rate-Limit: Max. alle 2 Minuten uploaden damit Firebase-Kosten kontrolliert bleiben.
         // Der Save ist lokal immer konsistent — Cloud ist nur Backup.
-        if (_cloudSaveService?.IsAvailable == true && state.Settings.CloudSaveEnabled)
+        if (_cloudSaveService?.IsAvailable == true && cloudSaveEnabled)
         {
             var now = DateTime.UtcNow;
             if (now - _lastCloudUploadAttempt >= CloudUploadMinInterval)
             {
                 _lastCloudUploadAttempt = now;
                 var cloudSvc = _cloudSaveService;
-                var stateSnapshot = state; // Gleiche Referenz — wird beim Upload serialisiert
+                // Race-frei: JSON + Metadata sind bereits "frozen" (kein State-Zugriff im Background).
+                // Vermeidet "JsonSerializer.Serialize auf Background-Thread → Collection-modified-Crash".
+                var jsonForCloud = json;
+                var metadataForCloud = cloudMetadata;
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        var ok = await cloudSvc.UploadAsync(stateSnapshot);
-                        if (ok) stateSnapshot.Settings.LastCloudSaveTime = DateTime.UtcNow;
+                        var ok = await cloudSvc.UploadJsonAsync(jsonForCloud, metadataForCloud).ConfigureAwait(false);
+                        if (ok)
+                        {
+                            // LastCloudSaveTime ist nur ein Anzeige-Wert — Schreiben ohne Lock akzeptabel,
+                            // beim naechsten Save ueberschreiben wir den Wert sowieso atomar.
+                            _gameStateService.ExecuteWithLock(() =>
+                                state.Settings.LastCloudSaveTime = DateTime.UtcNow);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -542,7 +575,8 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     /// Führt alle notwendigen Versionsmigrationen durch (v1→v2→v3→v5).
     /// Zentrale Methode für LoadFromFileAsync und ImportSaveAsync.
     /// </summary>
-    private static GameState MigrateState(GameState state)
+    // P0.1 AAA-Audit: internal damit Property-Based Tests die Migration durch alle Stufen pruefen koennen.
+    internal static GameState MigrateState(GameState state)
     {
         if (state.Version < 2)
             state = MigrateFromV1(state);
@@ -569,6 +603,11 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
 
         // V5 → V6 (v2.0.35): Multi-Order-System. Bei alten Saves mit ActiveOrder
         // wird dieser in das neue ParallelOrdersByWorkshop-Dictionary migriert.
+        //
+        // v2.0.37 Audit-Fix K5: Audit hat „IsAccepted"-Flag in V5 angenommen — das gibt es
+        // aber nicht. In V5 war ActiveOrder die einzige Quelle fuer „in Bearbeitung". Pause-
+        // Mechanik (Order.PausedAt) wurde erst in V6 (Sprint 2) eingefuehrt. Damit ist die
+        // urspruengliche Migration korrekt — kein Datenverlust-Pfad fuer V5-Saves.
         if (state.Version < 6)
         {
             state.ParallelOrdersByWorkshop ??= new Dictionary<WorkshopType, Order>();

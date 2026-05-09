@@ -30,10 +30,11 @@ public class EquipmentTests
     // ═══════════════════════════════════════════════════════════════════
 
     [Theory]
-    [InlineData(EquipmentRarity.Common, 5)]
-    [InlineData(EquipmentRarity.Uncommon, 15)]
-    [InlineData(EquipmentRarity.Rare, 30)]
-    [InlineData(EquipmentRarity.Epic, 60)]
+    // v2.0.x Rebalancing (CLAUDE.md): F2P-Spieler kann Epic in ~1 Tag farmen statt 2 Tagen.
+    [InlineData(EquipmentRarity.Common, 3)]
+    [InlineData(EquipmentRarity.Uncommon, 8)]
+    [InlineData(EquipmentRarity.Rare, 18)]
+    [InlineData(EquipmentRarity.Epic, 40)]
     public void ShopPrice_AlleSeltenheiten_GibtKorrektenPreis(EquipmentRarity rarity, int erwartet)
     {
         // Vorbereitung

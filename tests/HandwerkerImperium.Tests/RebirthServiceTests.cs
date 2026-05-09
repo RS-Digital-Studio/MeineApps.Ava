@@ -104,7 +104,7 @@ public class RebirthServiceTests
     }
 
     [Fact]
-    public void GetRebirthCost_FuenfterStern_Kostet500Goldschrauben()
+    public void GetRebirthCost_FuenfterStern_Kostet400Goldschrauben()
     {
         // Vorbereitung: 4 Sterne → nächster = Stern 5
         var (_, _, _, _, state, sut) = ErstelleService();
@@ -113,8 +113,8 @@ public class RebirthServiceTests
         // Ausführung
         var (screws, _) = sut.GetRebirthCost(WorkshopType.Carpenter);
 
-        // Prüfung: Stern 5 = 500 GS (18.04.2026 halbiert)
-        screws.Should().Be(500);
+        // Prüfung: Stern 5 = 400 GS (v2.0.37: 500 → 400, F2P-Ersparnis)
+        screws.Should().Be(400);
     }
 
     [Theory]

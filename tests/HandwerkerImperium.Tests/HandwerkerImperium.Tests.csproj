@@ -13,6 +13,11 @@
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
+    <!-- P0.1 Layer 3 AAA-Audit: Avalonia.Headless fuer UI-Critical-Path-Tests -->
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Apps\HandwerkerImperium\HandwerkerImperium.Shared\HandwerkerImperium.Shared.csproj" />

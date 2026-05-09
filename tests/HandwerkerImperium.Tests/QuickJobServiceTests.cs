@@ -202,9 +202,11 @@ public class QuickJobServiceTests
         var serviceLow = new QuickJobService(ErstelleMockStateService(stateLow), ErstelleMockLocalizationService());
         var serviceHigh = new QuickJobService(ErstelleMockStateService(stateHigh), ErstelleMockLocalizationService());
 
-        // Ausführung
-        serviceLow.GenerateJobs(5);
-        serviceHigh.GenerateJobs(5);
+        // Ausführung — 30 Samples reduzieren die Varianz des Typ-Multiplikators (0.75-1.40x)
+        // ausreichend, dass die Schwelle "5x Verhältnis" robust passt (Law of Large Numbers).
+        // Vorher: 5 Samples — Test war intermittierend rot wegen Zufalls-Schwankung.
+        serviceLow.GenerateJobs(30);
+        serviceHigh.GenerateJobs(30);
 
         var avgLow = stateLow.QuickJobs.Average(j => (double)j.Reward);
         var avgHigh = stateHigh.QuickJobs.Average(j => (double)j.Reward);

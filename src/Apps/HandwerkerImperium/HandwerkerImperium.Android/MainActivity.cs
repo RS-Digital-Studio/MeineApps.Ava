@@ -165,7 +165,12 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         if (OperatingSystem.IsAndroidVersionAtLeast(30)) // API 30+
         {
+            // SetDecorFitsSystemWindows ist ab API 35 deprecated, aber von API 30-34
+            // weiterhin der offizielle Weg. WindowCompat.SetDecorFitsSystemWindows wuerde
+            // androidx.core erfordern und exakt dasselbe tun. Pragma ist hier korrekt.
+#pragma warning disable CA1422
             Window.SetDecorFitsSystemWindows(false);
+#pragma warning restore CA1422
             var controller = Window.InsetsController;
             if (controller != null)
             {
@@ -175,8 +180,9 @@ public class MainActivity : AvaloniaMainActivity<App>
         }
         else
         {
-            // Fallback fuer aeltere API-Versionen (< 30)
+            // Fallback fuer aeltere API-Versionen (< 30) — SystemUiVisibility ist seit API 30 deprecated.
 #pragma warning disable CA1422 // Deprecated API fuer Kompatibilitaet
+#pragma warning disable CS0618 // SystemUiVisibility-Property ist deprecated, hier korrekt da nur API < 30
             Window.DecorView.SystemUiVisibility = (StatusBarVisibility)(
                 SystemUiFlags.ImmersiveSticky |
                 SystemUiFlags.LayoutStable |
@@ -184,6 +190,7 @@ public class MainActivity : AvaloniaMainActivity<App>
                 SystemUiFlags.LayoutFullscreen |
                 SystemUiFlags.HideNavigation |
                 SystemUiFlags.Fullscreen);
+#pragma warning restore CS0618
 #pragma warning restore CA1422
         }
     }

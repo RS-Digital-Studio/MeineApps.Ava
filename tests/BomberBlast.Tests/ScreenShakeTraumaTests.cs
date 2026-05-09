@@ -124,4 +124,66 @@ public class ScreenShakeTraumaTests
 
         trauma.Should().BeGreaterThan(0.3f);
     }
+
+    // === Phase 21 (V4) — Camera-Pull-Back-Tests =============================
+
+    [Fact]
+    public void TriggerPullBack_AktiviertPullBackFactor()
+    {
+        var shake = new ScreenShake();
+        shake.PullBackFactor.Should().Be(1f);
+
+        shake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.4f);
+        shake.Update(0.05f); // Kurze Zeit ins Smoothstep-In
+
+        shake.PullBackFactor.Should().BeLessThan(1f, "Pull-Back senkt den Faktor unter 1.0");
+        shake.PullBackFactor.Should().BeGreaterThan(0.84f, "Max-Reduktion ist 15% bei magnitude=1");
+    }
+
+    [Fact]
+    public void TriggerPullBack_WhenDisabled_KeinEffekt()
+    {
+        var shake = new ScreenShake { Enabled = false };
+        shake.TriggerPullBack(1.0f);
+        shake.Update(0.1f);
+        shake.PullBackFactor.Should().Be(1f);
+    }
+
+    [Fact]
+    public void TriggerPullBack_RecoveryNachAblauf()
+    {
+        var shake = new ScreenShake();
+        shake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.3f);
+
+        // Auf 100% Lifetime tickern
+        for (int i = 0; i < 30; i++) shake.Update(0.01f);
+
+        shake.PullBackFactor.Should().BeApproximately(1f, 0.05f, "nach Ablauf vollständige Recovery");
+    }
+
+    [Fact]
+    public void TriggerPullBack_StaerkererGewinnt()
+    {
+        var shake = new ScreenShake();
+        shake.TriggerPullBack(magnitude: 0.3f, durationSeconds: 0.4f);
+        shake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.5f); // staerker
+        shake.Update(0.1f);
+
+        // Magnitude * Duration = 0.5 (vs 0.12) sollte gewinnen
+        // Pull-Back-Faktor sollte reduziert sein um etwa magnitude=1.0 entsprechend
+        shake.PullBackFactor.Should().BeLessThan(0.97f);
+    }
+
+    [Fact]
+    public void Reset_NulltAuchPullBack()
+    {
+        var shake = new ScreenShake();
+        shake.TriggerPullBack(1.0f, 0.5f);
+        shake.Update(0.05f);
+
+        shake.Reset();
+
+        shake.PullBackFactor.Should().Be(1f);
+        shake.IsActive.Should().BeFalse();
+    }
 }

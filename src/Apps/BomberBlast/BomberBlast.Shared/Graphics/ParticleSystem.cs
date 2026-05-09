@@ -9,8 +9,18 @@ namespace BomberBlast.Graphics;
 /// </summary>
 public sealed class ParticleSystem : IDisposable
 {
-    private const int MAX_PARTICLES = 300;
+    // Phase 21 (AAA-Audit V2): Cap auf 1500 erhöht (vorher 300).
+    // Phase 27 (P2): EffectiveMaxParticles wird vom HardwareProfileService dynamisch geliefert
+    // (300/800/1500 je nach Tier + Battery/Thermal-Override). MAX_PARTICLES bleibt als Hard-Limit
+    // (Array-Größe — Renderer wird nie über diesen Wert hinaus emittieren, auch bei Ultra-Tier).
+    private const int MAX_PARTICLES = 1500;
     private const float GRAVITY = 120f;
+
+    /// <summary>
+    /// Phase 27 — Effektive Particle-Cap (Tier-aware). Setzbar vom HardwareProfileService.
+    /// Default = MAX_PARTICLES (Backward-Compat wenn niemand setzt).
+    /// </summary>
+    public int EffectiveMaxParticles { get; set; } = MAX_PARTICLES;
 
     private readonly Particle[] _particles = new Particle[MAX_PARTICLES];
     private int _activeCount;
@@ -43,7 +53,10 @@ public sealed class ParticleSystem : IDisposable
         bool hasGlow = false, float airResistance = 0f)
     {
         if (!Enabled) return;
-        for (int i = 0; i < count && _activeCount < MAX_PARTICLES; i++)
+        // Phase 27: EffectiveMaxParticles wird vom HardwareProfileService dynamisch gesetzt.
+        // Hard-Limit ist MAX_PARTICLES (Array-Größe).
+        int cap = Math.Min(EffectiveMaxParticles, MAX_PARTICLES);
+        for (int i = 0; i < count && _activeCount < cap; i++)
         {
             float angle = (float)(_random.NextDouble() * Math.PI * 2);
             float spd = (float)_random.NextDouble() * speed;

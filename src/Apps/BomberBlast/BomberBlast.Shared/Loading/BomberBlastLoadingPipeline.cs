@@ -19,6 +19,11 @@ public sealed class BomberBlastLoadingPipeline : LoadingPipelineBase
     {
         var loc = services.GetRequiredService<ILocalizationService>();
 
+        // Phase 24 (AAA-Audit O3-O5): Retention-Service Session-Touch — vor allem anderen.
+        // Setzt FirstSessionUtc beim allerersten Start, aktualisiert LastSessionUtc bei jedem Start.
+        // Pflicht: D1/D7-Window + Comeback-Detection brauchen den Touch früh.
+        services.GetRequiredService<IRetentionService>().TouchSession();
+
         // Schritt 1: Shader + ViewModel + Assets + Käufe parallel laden
         AddStep(new LoadingStep
         {
@@ -32,6 +37,7 @@ public sealed class BomberBlastLoadingPipeline : LoadingPipelineBase
                     ShaderPreloader.PreloadAll();   // 12 generische SkSL-Shader
                     ExplosionShaders.Preload();     // Explosion Noise-LUT + Paint-Cache
                     ShaderEffects.Preload();        // WaterRipple SkSL (Ocean-Welt)
+                    BloomEffect.Preload();          // Phase 21b — SkSL Threshold + Box-Blur (Ultra-Tier-Gate)
                 });
                 var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();

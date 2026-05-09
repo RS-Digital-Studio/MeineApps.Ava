@@ -35,8 +35,16 @@ public sealed class ScreenShake
     /// <summary>Aktuelle Rotation in Grad (subtil, für GameRenderer-Anwendung)</summary>
     public float RotationDegrees { get; private set; }
 
+    /// <summary>
+    /// Phase 21 (AAA-Audit V4): Camera-Pull-Back-Faktor [0.85, 1.0].
+    /// 1.0 = normaler Zoom, 0.95 = leichter Pull-Back, 0.85 = starker Pull-Back (Big-Hit).
+    /// Der Renderer multipliziert canvas.Scale mit diesem Wert um Big-Hits visuell zu unterstreichen
+    /// (God-of-War-Pattern: Camera reagiert auf Action). Sin-Kurve mit Ease-Out (peak in 1/3 Dauer).
+    /// </summary>
+    public float PullBackFactor { get; private set; } = 1f;
+
     /// <summary>Ob der Shake-Effekt aktiv ist</summary>
-    public bool IsActive => _trauma > 0;
+    public bool IsActive => _trauma > 0 || _pullBackTimer > 0;
 
     /// <summary>Wenn false, werden Trigger-Aufrufe ignoriert (ReducedEffects/Accessibility)</summary>
     public bool Enabled { get; set; } = true;
@@ -81,11 +89,56 @@ public sealed class ScreenShake
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // CAMERA-PULL-BACK (Phase 21 — AAA-Audit V4)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private float _pullBackTimer;
+    private float _pullBackDuration;
+    private float _pullBackMagnitude;
+
+    /// <summary>
+    /// Triggert einen Camera-Pull-Back-Effekt für Big-Hits (Boss-Kill, ULTRA-Combo).
+    /// </summary>
+    /// <param name="magnitude">Stärke 0..1 (0.5 = leicht, 1.0 = stark, max 15% Zoom-Out).</param>
+    /// <param name="durationSeconds">Dauer der Sin-Kurve (Default 0.4s).</param>
+    public void TriggerPullBack(float magnitude, float durationSeconds = 0.4f)
+    {
+        if (!Enabled) return;
+        var clamp = Math.Clamp(magnitude, 0f, 1f);
+        // Stärkster aktiver Pull-Back gewinnt — verhindert dass kurze Combo einen Big-Hit-Pull überschreibt
+        if (clamp * durationSeconds > _pullBackMagnitude * _pullBackDuration)
+        {
+            _pullBackMagnitude = clamp;
+            _pullBackDuration = durationSeconds;
+            _pullBackTimer = durationSeconds;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // UPDATE
     // ═══════════════════════════════════════════════════════════════════════
 
     public void Update(float deltaTime)
     {
+        // Camera-Pull-Back-Hüllkurve (Phase 21): Sin-Kurve mit Peak bei 33% Lifetime
+        if (_pullBackTimer > 0f)
+        {
+            _pullBackTimer = MathF.Max(0f, _pullBackTimer - deltaTime);
+            float progress = _pullBackDuration > 0f ? 1f - (_pullBackTimer / _pullBackDuration) : 1f;
+            // Smoothstep-In + Linear-Out: schneller Peak, langsame Recovery
+            float curve = progress < 0.33f
+                ? (progress / 0.33f) * (progress / 0.33f) * (3f - 2f * (progress / 0.33f))  // Smoothstep-In
+                : 1f - ((progress - 0.33f) / 0.67f);                                          // Linear-Out
+            curve = Math.Clamp(curve, 0f, 1f);
+            // Max 15% Zoom-Out bei magnitude=1.0
+            PullBackFactor = 1f - (0.15f * _pullBackMagnitude * curve);
+        }
+        else
+        {
+            PullBackFactor = 1f;
+            _pullBackMagnitude = 0f;
+        }
+
         if (_trauma <= 0)
         {
             OffsetX = 0;
@@ -115,5 +168,9 @@ public sealed class ScreenShake
         OffsetX = 0;
         OffsetY = 0;
         RotationDegrees = 0;
+        _pullBackTimer = 0;
+        _pullBackDuration = 0;
+        _pullBackMagnitude = 0;
+        PullBackFactor = 1f;
     }
 }

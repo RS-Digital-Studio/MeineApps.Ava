@@ -34,6 +34,86 @@ public class InputManager : IDisposable
     public bool BombPressed => _activeHandler.BombPressed;
     public bool DetonatePressed => _activeHandler.DetonatePressed;
 
+    // === Phase 28b — Konami-Code-Detector-Hookup ============================
+    /// <summary>
+    /// Easter-Egg-Detector. <see cref="TickKonamiDetector"/> wird pro Frame im Engine-Update
+    /// aufgerufen und füttert den Detector mit aktuellen Inputs. <see cref="KonamiCodeDetector.CodeTriggered"/>
+    /// kann von außen abonniert werden.
+    /// </summary>
+    public KonamiCodeDetector KonamiDetector { get; } = new();
+
+    private Direction _lastTrackedDirection = Direction.None;
+    private bool _lastTrackedBombPressed;
+    private bool _lastTrackedDetonatePressed;
+
+    /// <summary>
+    /// Pro Frame im Engine-Update aufrufen. Erkennt Edge-Triggers (neue Direction, neuer Bomb/Detonate-Press)
+    /// und füttert sie an den KonamiCodeDetector. Verhindert Doppel-Registrierung wenn der Spieler
+    /// die Taste gedrückt hält.
+    /// </summary>
+    public void TickKonamiDetector(float deltaTime)
+    {
+        KonamiDetector.Update(deltaTime);
+
+        // Direction-Edge-Detect: Wenn die Richtung wechselt, registrieren
+        var currentDir = MovementDirection;
+        if (currentDir != _lastTrackedDirection && currentDir != Direction.None)
+        {
+            var step = KonamiCodeDetector.FromDirection(currentDir);
+            if (step.HasValue)
+                KonamiDetector.RegisterInput(step.Value);
+        }
+        _lastTrackedDirection = currentDir;
+
+        // Bomb-Edge-Detect (nur Press, nicht Hold)
+        var bomb = BombPressed;
+        if (bomb && !_lastTrackedBombPressed)
+        {
+            KonamiDetector.RegisterInput(KonamiCodeDetector.InputStep.Bomb);
+        }
+        _lastTrackedBombPressed = bomb;
+
+        // Detonate-Edge-Detect
+        var det = DetonatePressed;
+        if (det && !_lastTrackedDetonatePressed)
+        {
+            KonamiDetector.RegisterInput(KonamiCodeDetector.InputStep.Detonate);
+        }
+        _lastTrackedDetonatePressed = det;
+    }
+
+    // === Phase 22 — Input-Buffer (Coyote-Time-Pattern, AAA-Audit G1) =========
+    // Bomberman-Variant: Wenn der Spieler eine Bombe drückt aber NICHT auf Cell-Center steht,
+    // pufferte das alte System NICHT — Tap wurde verworfen. Mit Buffer wird der Press 6 Frames
+    // gespeichert (~100ms bei 60fps) und automatisch ausgelöst sobald Cell-Center erreicht.
+    private const int BombInputBufferFrames = 6;
+    private int _bombBufferRemaining;
+
+    /// <summary>
+    /// Phase 22 — Buffert einen Bomb-Press. Wird in <see cref="GameEngine"/> direkt nach
+    /// dem Frame-Input-Read aufgerufen wenn BombPressed true ist aber die Engine den Press
+    /// nicht sofort konsumieren kann (z.B. Bomb-Limit, Zellzentrum-Zwischen-Tile-Position).
+    /// </summary>
+    public void BufferBombPress()
+    {
+        _bombBufferRemaining = BombInputBufferFrames;
+    }
+
+    /// <summary>
+    /// True wenn Buffer aktiv ist (auch wenn aktueller BombPressed=false). Wird pro Frame
+    /// vom Update-Loop um 1 dekrementiert.
+    /// </summary>
+    public bool HasBufferedBombPress => _bombBufferRemaining > 0;
+
+    /// <summary>Konsumiert den Buffer (auf 0 setzen) — sobald die Bombe erfolgreich platziert ist.</summary>
+    public void ConsumeBufferedBombPress() => _bombBufferRemaining = 0;
+
+    /// <summary>Pro-Frame-Tick. In <see cref="GameEngine.Update"/> aufrufen.</summary>
+    public void TickInputBuffer()
+    {
+        if (_bombBufferRemaining > 0) _bombBufferRemaining--;
+    }
+
     /// <summary>
     /// Detonator-Button auf Joystick-Handler anzeigen
     /// </summary>

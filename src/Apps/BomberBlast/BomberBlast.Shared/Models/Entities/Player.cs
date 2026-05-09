@@ -140,9 +140,61 @@ public class Player : Entity
     {
     }
 
+    // === Phase 22b — Squash & Stretch (G2 aus AAA-Audit) =====================
+    // Subtile Sprite-Skalierung beim Bewegen — gibt das "Brawl-Stars-Wackel-Gefühl".
+    // SquashStretchPhase ist ein Sinus-Wert [0..2π], inkrementiert proportional zur Geschwindigkeit.
+    // Renderer multipliziert Sprite-Width/Height mit dem aus dieser Phase abgeleiteten Faktor.
+    private float _squashStretchPhase;
+
+    /// <summary>
+    /// X-Skalierungsfaktor für Sprite-Render (Squash & Stretch).
+    /// Beim Bewegen subtiles Wobble (±5%), im Ruhezustand 1.0. Beim Tod 0.6 (kollabiert).
+    /// Renderer wendet das via canvas.Scale auf Player-Sprite an.
+    /// </summary>
+    public float SquashScaleX
+    {
+        get
+        {
+            if (IsDying) return 0.6f + (1f - 0.6f) * (1f - DeathTimer / 0.5f); // Kollaps
+            if (!IsMoving) return 1f;
+            // Horizontal-Bewegung → mehr X-Stretch (gestreckt in Richtung), Vertikal → mehr Squash
+            var wobble = MathF.Sin(_squashStretchPhase) * 0.05f;
+            return MovementDirection == Direction.Left || MovementDirection == Direction.Right
+                ? 1f + wobble + 0.03f  // X-Stretch beim Horizontal-Lauf
+                : 1f - wobble * 0.5f;  // Subtle Y-Squash beim Vertikal-Lauf
+        }
+    }
+
+    /// <summary>
+    /// Y-Skalierungsfaktor für Sprite-Render. Komplementär zu SquashScaleX (Volumen-Erhaltung).
+    /// </summary>
+    public float SquashScaleY
+    {
+        get
+        {
+            if (IsDying) return 0.6f + (1f - 0.6f) * (1f - DeathTimer / 0.5f);
+            if (!IsMoving) return 1f;
+            var wobble = MathF.Sin(_squashStretchPhase) * 0.05f;
+            return MovementDirection == Direction.Up || MovementDirection == Direction.Down
+                ? 1f + wobble + 0.03f
+                : 1f - wobble * 0.5f;
+        }
+    }
+
     public override void Update(float deltaTime)
     {
         base.Update(deltaTime);
+
+        // Phase 22b — Squash-Phase ticken (nur bei Bewegung). Frequenz ~3 Hz (subtil).
+        if (IsMoving && !IsDying)
+        {
+            _squashStretchPhase += deltaTime * MathF.PI * 6f; // 3 Hz × 2π
+            if (_squashStretchPhase > MathF.PI * 2) _squashStretchPhase -= MathF.PI * 2;
+        }
+        else
+        {
+            _squashStretchPhase = 0f;
+        }
 
         // Update invincibility timer
         if (IsInvincible)

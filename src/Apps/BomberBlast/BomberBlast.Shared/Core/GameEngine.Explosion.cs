@@ -13,8 +13,18 @@ public sealed partial class GameEngine
 {
     private void PlaceBomb()
     {
-        int gridX = _player.GridX;
-        int gridY = _player.GridY;
+        // Phase 30e — Default-Pfad: Player 1. Co-Op-Pfad nutzt PlaceBombForOwner direkt.
+        PlaceBombForOwner(_player);
+    }
+
+    /// <summary>
+    /// Phase 30e — PlaceBomb mit explizitem Owner. Erlaubt Co-Op-Modus Player2-Bomben zu platzieren.
+    /// Im Single-Player-Modus immer mit _player aufrufen.
+    /// </summary>
+    private void PlaceBombForOwner(BomberBlast.Models.Entities.Player owner)
+    {
+        int gridX = owner.GridX;
+        int gridY = owner.GridY;
 
         var cell = _grid[gridX, gridY];
 
@@ -23,41 +33,46 @@ public sealed partial class GameEngine
             return;
 
         // Power-Bomb: Einzelne Mega-Bombe mit maximaler Reichweite, verbraucht alle Slots
-        if (_player.HasPowerBomb && _player.ActiveBombs == 0)
+        if (owner.HasPowerBomb && owner.ActiveBombs == 0)
         {
             PlacePowerBomb(gridX, gridY, cell);
             return;
         }
 
         // Line-Bomb: Alle verfügbaren Bomben in einer Linie platzieren
-        if (_player.HasLineBomb && _player.ActiveBombs == 0)
+        if (owner.HasLineBomb && owner.ActiveBombs == 0)
         {
             PlaceLineBombs(gridX, gridY);
             return;
         }
 
-        // Normale Bombe erstellen
-        var bomb = Bomb.CreateAtGrid(gridX, gridY, _player);
+        // Normale Bombe erstellen — Phase 30e: Owner explizit übergeben für Score-Zuweisung
+        var bomb = Bomb.CreateAtGrid(gridX, gridY, owner);
 
         // Karten-Deck: Aktive Karte als Bomben-Typ setzen wenn Uses vorhanden
-        var activeCard = _player.ActiveCard;
-        if (activeCard != null && activeCard.HasUsesLeft)
+        // Hinweis: Karten/Tracking sind aktuell global an Player 1 gebunden — Co-Op nutzt sie
+        // wenn der Owner == _player ist (Single-Player-Verhalten erhalten).
+        if (ReferenceEquals(owner, _player))
         {
-            bomb.Type = activeCard.BombType;
-            activeCard.RemainingUses--;
-
-            // Tracking: Spezial-Bombe (Achievement + Missionen)
-            _tracking.OnSpecialBombUsed();
-
-            // Deck-Balancing-Telemetrie: Used++ pro Platzierung (Plays/Wins werden bei
-            // CompleteLevel/GameOver aus _specialBombTypesUsedInLevel gebündelt gemeldet).
-            _deckTelemetry.RecordBombPlaced(bomb.Type);
-            _specialBombTypesUsedInLevel.Add(bomb.Type);
-
-            // Wenn keine Uses mehr → automatisch auf Normal zurückschalten
-            if (!activeCard.HasUsesLeft)
+            var activeCard = owner.ActiveCard;
+            if (activeCard != null && activeCard.HasUsesLeft)
             {
-                _player.ActiveCardSlot = -1;
+                bomb.Type = activeCard.BombType;
+                activeCard.RemainingUses--;
+
+                // Tracking: Spezial-Bombe (Achievement + Missionen)
+                _tracking.OnSpecialBombUsed();
+
+                // Deck-Balancing-Telemetrie: Used++ pro Platzierung (Plays/Wins werden bei
+                // CompleteLevel/GameOver aus _specialBombTypesUsedInLevel gebündelt gemeldet).
+                _deckTelemetry.RecordBombPlaced(bomb.Type);
+                _specialBombTypesUsedInLevel.Add(bomb.Type);
+
+                // Wenn keine Uses mehr → automatisch auf Normal zurückschalten
+                if (!activeCard.HasUsesLeft)
+                {
+                    owner.ActiveCardSlot = -1;
+                }
             }
         }
 
@@ -67,7 +82,7 @@ public sealed partial class GameEngine
 
         _bombs.Add(bomb);
         cell.Bomb = bomb;
-        _player.ActiveBombs++;
+        owner.ActiveBombs++;
         _bombsUsed++;
 
         _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
@@ -645,7 +660,7 @@ public sealed partial class GameEngine
 
             // Einfacher Sog: Gegner werden verlangsamt (50% Speed-Reduktion passiert in UpdateEnemies)
             // Visuelle Rückmeldung: kleine dunkle Partikel
-            if (_pontanRandom.Next(10) < 2)
+            if (EngineRngNext(10) < 2)
             {
                 _particleSystem.EmitShaped(enemy.X, enemy.Y, 1, new SKColor(60, 0, 100),
                     ParticleShape.Circle, 15f, 0.3f, 1f);

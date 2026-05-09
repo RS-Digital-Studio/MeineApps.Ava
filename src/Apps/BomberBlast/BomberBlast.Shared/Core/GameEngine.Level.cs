@@ -179,6 +179,9 @@ public sealed partial class GameEngine
                         ParticleShape.Circle, 110f, 0.7f, 3f, hasGlow: true);
                 }
                 _screenShake.AddTrauma(0.45f);
+                // Phase 21 (V4) — Boss-Reveal-Stinger + leichter Pull-Back
+                _screenShake.TriggerPullBack(magnitude: 0.7f, durationSeconds: 1.0f);
+                _soundManager.PlayStinger(SoundManager.STINGER_BOSS_REVEAL);
             }),
 
             // 0.25s: Zweiter Burst in welt-spezifischer Akzentfarbe (Boss-Theme)
@@ -734,6 +737,8 @@ public sealed partial class GameEngine
         _pontanPunishmentActive = false;
         _pontanSpawned = 0;
         _pontanInitialDelay = 0;
+        _pontanEarlyWarningTriggered = false;
+        _pontanFinalWarningTriggered = false;
         _defeatAllCooldown = 0;
         _fallingCeilingTimer = 0;
         _earthquakeTimer = 0;
@@ -835,6 +840,13 @@ public sealed partial class GameEngine
         {
             TryShowDiscoveryHint("mechanic_" + _currentLevel.Mechanic.ToString().ToLower());
         }
+
+        // Phase 18 — Mode-Lifecycle: Initialize-Hook für IGameMode aufrufen.
+        // Reihenfolge ist wichtig: NACH Player-Reset, NACH Grid-Setup, NACH Timer-Reset.
+        // Modi können hier ihren initialen State setzen (Survival-SpawnTimer, BossRush-StartTime, ...).
+        _modeTimeElapsed = 0f;
+        try { _currentMode?.Initialize(BuildModeContext()); }
+        catch { /* Best-Effort, no-op-Default in GameModeBase */ }
     }
 
     /// <summary>
@@ -1157,10 +1169,10 @@ public sealed partial class GameEngine
             preferred = dy > 0 ? Direction.Down : Direction.Up;
 
         // Zufällig: 70% bevorzugte Richtung, 30% zufällig (damit Boss nicht perfekt verfolgt)
-        if (_pontanRandom.NextDouble() < 0.3)
+        if (EngineRngNextDouble() < 0.3)
         {
             var dirs = new[] { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
-            preferred = dirs[_pontanRandom.Next(dirs.Length)];
+            preferred = dirs[EngineRngNext(dirs.Length)];
         }
 
         // Duo-Boss: Ausweichen wenn bevorzugte Richtung zu Kollision mit anderem Boss führt
@@ -1225,6 +1237,12 @@ public sealed partial class GameEngine
         _levelCompleteHandled = false;
         _timer.Pause();
         _vibration.VibrateLevelComplete();
+
+        // Phase 18 — IGameMode.OnLevelComplete-Hook (ARCH-1 aus Phase-15-Audit).
+        // Return-Wert ist aktuell informativ — wir feuern weiterhin den Engine-LevelComplete-Pfad.
+        // Folge-Phasen können Mode-spezifische Pre-Logic einbauen (z.B. Score-Modifier, Reward-Override).
+        try { _currentMode?.OnLevelComplete(BuildModeContext()); }
+        catch { /* Best-Effort, no-op-Default in GameModeBase */ }
 
         // v2.0.46 — Audio-Caption für gehörlose Spieler
         if (_accessibility?.SubtitlesEnabled == true)
@@ -1297,6 +1315,13 @@ public sealed partial class GameEngine
             _particleSystem.EmitShaped(_player.X, _player.Y, 24, new SKColor(255, 215, 0),
                 Graphics.ParticleShape.Circle, 150f, 1.0f, 3.5f, hasGlow: true);
             _particleSystem.EmitExplosionSparks(_player.X, _player.Y, 16, new SKColor(255, 200, 50), 180f);
+
+            // Phase 24b — RetentionService.RegisterFirstWin: True wenn dies wirklich der erste Win EVER
+            // (idempotent, kein zweiter Trigger nach App-Reinstall mit erhaltenem Cloud-Save).
+            if (RetentionService?.RegisterFirstWin() == true)
+            {
+                PlayFirstWinCinematic();
+            }
         }
 
         // Coins basierend auf Level-Score (nicht kumuliert, verhindert Inflation)
@@ -1523,6 +1548,9 @@ public sealed partial class GameEngine
                             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                             {
                                 _state = GameState.GameOver;
+                                // Phase 18 — IGameMode.OnGameOver-Hook auch im BossRush-Fallback
+                                try { _currentMode?.OnGameOver(BuildModeContext()); }
+                                catch { /* Best-Effort */ }
                                 GameOver?.Invoke();
                             });
                         }
@@ -1668,6 +1696,82 @@ public sealed partial class GameEngine
         _cinematic.Play(durationSeconds: 2.5f, events);
     }
 
+    /// <summary>
+    /// Phase 24b — First-Win-Cinematic (Royal-Match-Pattern).
+    /// 4-stufige Sequenz über 4 Sekunden mit eskalierenden Gold-Bursts, Stinger,
+    /// Camera-Pull-Back und Trauma-Spike. Wird NUR beim ECHTEN ersten Sieg eines Spielers
+    /// ausgelöst (RetentionService.RegisterFirstWin).
+    /// </summary>
+    private void PlayFirstWinCinematic()
+    {
+        float cx = _grid.PixelWidth / 2f;
+        float cy = _grid.PixelHeight / 2f;
+
+        var events = new List<CinematicSequencer.TimedEvent>
+        {
+            // Stufe 1 (0.0s): Initialer Gold-Burst um Spieler + Stinger + Camera-Pull-Back
+            new(0.0f, () =>
+            {
+                _particleSystem.EmitShaped(_player.X, _player.Y, 32, new SKColor(255, 215, 0),
+                    ParticleShape.Circle, 220f, 1.5f, 4.5f, hasGlow: true);
+                _particleSystem.EmitExplosionSparks(_player.X, _player.Y, 20, new SKColor(255, 200, 50), 220f);
+                _screenShake.AddTrauma(0.4f);
+                _screenShake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.6f);
+                _soundManager.PlayStinger(SoundManager.STINGER_VICTORY);
+                _vibration.VibrateAchievement();
+            }),
+            // Stufe 2 (0.7s): Multi-Color-Konfetti aus 6 Punkten
+            new(0.7f, () =>
+            {
+                var colors = new[]
+                {
+                    new SKColor(255, 100, 100),
+                    new SKColor(100, 255, 150),
+                    new SKColor(100, 180, 255),
+                    new SKColor(255, 215, 0),
+                    new SKColor(255, 100, 220),
+                    new SKColor(100, 240, 220),
+                };
+                for (int i = 0; i < 6; i++)
+                {
+                    var angle = (i / 6f) * MathF.PI * 2f;
+                    var px = cx + MathF.Cos(angle) * 220f;
+                    var py = cy + MathF.Sin(angle) * 130f;
+                    _particleSystem.EmitShaped(px, py, 16, colors[i],
+                        ParticleShape.Rectangle, 180f, 2.0f, 3.5f);
+                }
+            }),
+            // Stufe 3 (1.5s): Mid-Burst zentral + Subtitle (für gehörlose Spieler)
+            new(1.5f, () =>
+            {
+                _particleSystem.EmitShaped(cx, cy, 28, new SKColor(255, 255, 220),
+                    ParticleShape.Spark, 250f, 1.8f, 4f, hasGlow: true);
+                _screenShake.AddTrauma(0.35f);
+                if (_accessibility?.SubtitlesEnabled == true)
+                {
+                    _subtitles.Show(_localizationService.GetString("SubtitleFirstWin")
+                        ?? "[FIRST VICTORY!]", duration: 2.5f);
+                }
+            }),
+            // Stufe 4 (2.5s): Finale Mega-Gold-Explosion + Floating-Text
+            new(2.5f, () =>
+            {
+                _particleSystem.EmitShaped(cx, cy, 50, new SKColor(255, 215, 0),
+                    ParticleShape.Circle, 300f, 2.2f, 5.5f, hasGlow: true);
+                _particleSystem.EmitExplosionSparks(cx, cy, 30, new SKColor(255, 240, 100), 280f);
+                _screenShake.TriggerPullBack(magnitude: 0.8f, durationSeconds: 0.5f);
+                _soundManager.PlayStinger(SoundManager.STINGER_VICTORY);
+                _vibration.VibrateLevelComplete();
+                _floatingText.Spawn(cx, cy - 60,
+                    _localizationService.GetString("FloatFirstWin") ?? "ERSTER SIEG!",
+                    new SKColor(255, 215, 0), 28f, 3.5f);
+            })
+        };
+
+        _cinematic.MaxCameraZoom = 0; // Kein Zoom — Konfetti soll voll sichtbar sein
+        _cinematic.Play(durationSeconds: 4.0f, events);
+    }
+
     private void OnTimeWarning()
     {
         _soundManager.PlaySound(SoundManager.SFX_TIME_WARNING);
@@ -1707,10 +1811,28 @@ public sealed partial class GameEngine
 
         _pontanSpawnTimer -= deltaTime;
 
-        // Vorwarnung: Position vorberechnen wenn Timer unter Warnschwelle fällt
+        // Phase 22 (G8) — Stage 1: Early-Warning bei 3s (Audio + Subtitle + Time-Warning-SFX)
+        if (!_pontanEarlyWarningTriggered && _pontanSpawnTimer <= PONTAN_EARLY_WARNING_TIME && _pontanSpawnTimer > 0)
+        {
+            _pontanEarlyWarningTriggered = true;
+            _soundManager.PlaySound(SoundManager.SFX_TIME_WARNING);
+            if (_accessibility?.SubtitlesEnabled == true)
+            {
+                _subtitles.Show(_localizationService.GetString("SubtitleTimeWarning") ?? "[TIME WARNING]", duration: 2f);
+            }
+        }
+
+        // Stage 2 (Bestand): Position vorberechnen wenn Timer unter 1.5s fällt
         if (!_pontanWarningActive && _pontanSpawnTimer <= PONTAN_WARNING_TIME && _pontanSpawnTimer > 0)
         {
             PreCalculateNextPontanSpawn();
+        }
+
+        // Phase 22 (G8) — Stage 3: Final-Warning bei 0.5s (Trauma-Spike als visuelles Crescendo)
+        if (!_pontanFinalWarningTriggered && _pontanSpawnTimer <= PONTAN_FINAL_WARNING_TIME && _pontanSpawnTimer > 0)
+        {
+            _pontanFinalWarningTriggered = true;
+            _screenShake.AddTrauma(0.25f);
         }
 
         if (_pontanSpawnTimer > 0)
@@ -1718,6 +1840,9 @@ public sealed partial class GameEngine
 
         _pontanSpawnTimer = GetPontanSpawnInterval();
         _pontanWarningActive = false;
+        // Reset für nächsten Pontan-Spawn-Zyklus
+        _pontanEarlyWarningTriggered = false;
+        _pontanFinalWarningTriggered = false;
 
         // Pontan an der vorberechneten Position spawnen
         SpawnPontanAtWarningPosition();
@@ -1733,8 +1858,8 @@ public sealed partial class GameEngine
 
         for (int attempts = 0; attempts < 40; attempts++)
         {
-            int x = _pontanRandom.Next(3, GameGrid.WIDTH - 1);
-            int y = _pontanRandom.Next(3, GameGrid.HEIGHT - 1);
+            int x = EngineRngNext(3, GameGrid.WIDTH - 1);
+            int y = EngineRngNext(3, GameGrid.HEIGHT - 1);
 
             if (Math.Abs(x - playerCellX) + Math.Abs(y - playerCellY) < PONTAN_MIN_DISTANCE)
                 continue;

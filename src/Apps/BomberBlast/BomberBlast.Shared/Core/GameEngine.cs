@@ -61,6 +61,184 @@ public sealed partial class GameEngine : IDisposable
     private readonly IAnalyticsService _analytics;
     // v2.0.45 — AAA-Audit: Performance-Telemetry (FPS-Bucket für Crashlytics-Custom-Keys)
     private readonly ITelemetryService _telemetry;
+    // Phase 24b — Optional Retention-Service (für First-Win-Cinematic-Trigger).
+    // Kein Constructor-Param damit DI-Chain nicht angefasst werden muss; via Property-Injection
+    // vom App-Layer gesetzt nach GameEngine-Construction.
+    public IRetentionService? RetentionService { get; set; }
+
+    // === Phase 18c — FixedTimestep als opt-in Engine-Mode ===================
+    // Pragmatischer Ansatz: Wenn FixedTimestepEnabled=true, wird UpdatePlaying mehrmals pro Wall-Clock-Frame
+    // mit FIXED_TICK_SECONDS (16.67ms) aufgerufen statt einmal mit variable deltaTime. Das gibt
+    // deterministische Sim-Granularität ohne Engine-Refactor. Default off.
+    private readonly FixedTimestepRunner _fixedTimestep = new();
+    public bool FixedTimestepEnabled
+    {
+        get => _fixedTimestep.Enabled;
+        set
+        {
+            _fixedTimestep.Enabled = value;
+            // Phase 18d — RNG-Provider entsprechend wechseln
+            // Variable-Mode → System.Random (Bestand-Verhalten, schnell)
+            // Fixed-Mode → DeterministicRandom (plattform-unabhängig deterministisch)
+            _rngProvider = value
+                ? new DeterministicRngProvider((ulong)DateTime.UtcNow.Ticks)
+                : new SystemRngProvider();
+        }
+    }
+    public float FixedTimestepInterpolationAlpha => _fixedTimestep.GetInterpolationAlpha();
+
+    /// <summary>
+    /// Phase 18d — RNG-Provider. Default System.Random; im FixedTimestep-Mode DeterministicRandom.
+    /// Public read-only damit Engine-interne Subsysteme (LevelGenerator, EnemyAI) sich darauf verlassen können
+    /// (Foundation — Hot-Path-Migration aller engine-internen Random-Calls in Phase 18e).
+    /// </summary>
+    private IRngProvider _rngProvider = new SystemRngProvider();
+    public IRngProvider RngProvider => _rngProvider;
+
+    /// <summary>
+    /// Setzt einen expliziten Seed für deterministische Replays. Aktiviert automatisch FixedTimestep
+    /// und DeterministicRandom-Provider. Wird von Replay-Playback / Anti-Cheat-Verifikation aufgerufen.
+    /// </summary>
+    public void SetDeterministicSeed(ulong seed)
+    {
+        _fixedTimestep.Enabled = true;
+        _rngProvider = new DeterministicRngProvider(seed);
+    }
+
+    // Phase 18e — Engine-internal RNG-Helpers. Im Fixed-Mode geht alles über RngProvider
+    // (deterministisch). Im Variable-Mode wird System.Random (_pontanRandom) genutzt für
+    // Bestand-Verhalten. Aufrufstellen müssen die Helpers statt _pontanRandom direkt verwenden,
+    // wenn sie sim-relevant sind (Pontan-Spawn, Enemy-Spawn-Direction etc.).
+    private int EngineRngNext(int max)
+        => _fixedTimestep.Enabled ? _rngProvider.Next(max) : _pontanRandom.Next(max);
+    private int EngineRngNext(int min, int max)
+        => _fixedTimestep.Enabled ? _rngProvider.Next(min, max) : _pontanRandom.Next(min, max);
+    private double EngineRngNextDouble()
+        => _fixedTimestep.Enabled ? _rngProvider.NextDouble() : _pontanRandom.NextDouble();
+
+    // === Phase 30b — 2P-Co-Op-Engine-Foundation =============================
+    // Optionaler Player2 für Co-Op/Versus. Default null (Single-Player).
+    // Spawning + Input-Routing + Game-Over-Logic werden in Phase 30c verkabelt.
+    private Player? _player2;
+
+    /// <summary>Phase 30b — Aktiver Multiplayer-Modus. Default Single.</summary>
+    public BomberBlast.Core.Multiplayer.MultiplayerMode MultiplayerMode { get; private set; }
+        = BomberBlast.Core.Multiplayer.MultiplayerMode.Single;
+
+    /// <summary>Phase 30b — Player 2 (null im Single-Player-Modus).</summary>
+    public Player? Player2 => _player2;
+
+    /// <summary>
+    /// Phase 30b — Aktiviert 2P-Modus. Erzeugt Player2 an gegenüberliegender Spawn-Position.
+    /// Idempotent — wenn schon aktiv, no-op. Nur vor Level-Start aufrufen.
+    /// </summary>
+    public void EnableMultiplayer(BomberBlast.Core.Multiplayer.MultiplayerMode mode)
+    {
+        if (mode == BomberBlast.Core.Multiplayer.MultiplayerMode.Single)
+        {
+            DisableMultiplayer();
+            return;
+        }
+        MultiplayerMode = mode;
+        if (_player2 == null)
+        {
+            var spawn = BomberBlast.Core.Multiplayer.MultiplayerSpawnPositions.Player2;
+            _player2 = new Player(
+                spawn.x * BomberBlast.Models.Grid.GameGrid.CELL_SIZE
+                    + BomberBlast.Models.Grid.GameGrid.CELL_SIZE / 2f,
+                spawn.y * BomberBlast.Models.Grid.GameGrid.CELL_SIZE
+                    + BomberBlast.Models.Grid.GameGrid.CELL_SIZE / 2f);
+        }
+    }
+
+    /// <summary>Phase 30b — Schaltet 2P-Modus aus + entfernt Player2.</summary>
+    public void DisableMultiplayer()
+    {
+        MultiplayerMode = BomberBlast.Core.Multiplayer.MultiplayerMode.Single;
+        _player2 = null;
+    }
+
+    /// <summary>
+    /// Phase 30b — Game-Over-Logik für 2P-Co-Op: erst wenn BEIDE Spieler tot sind.
+    /// </summary>
+    public bool IsCoOpGameOver()
+    {
+        if (MultiplayerMode != BomberBlast.Core.Multiplayer.MultiplayerMode.LocalCoop) return false;
+        if (_player2 == null) return false;
+        return _player.Lives <= 0 && _player2.Lives <= 0;
+    }
+
+    /// <summary>
+    /// Phase 30c — Player-2-Update pro Sim-Tick. Wird von UpdatePlayer für Player 2
+    /// aufgerufen wenn Multiplayer aktiv ist. Pragmatisch: Bewegung, Cell-Snap, Animation.
+    /// Bomb-Place + Detonate kommen über separate Player2-Input-Snapshot-Setter.
+    /// </summary>
+    public void UpdatePlayer2Movement(float deltaTime)
+    {
+        if (_player2 == null) return;
+        if (!_player2.IsActive) return;
+        if (_player2.IsDying)
+        {
+            _player2.Update(deltaTime);
+            return;
+        }
+        _player2.Update(deltaTime);
+        _player2.Move(deltaTime, _grid);
+    }
+
+    /// <summary>
+    /// Phase 30c — Setzt die Bewegungsrichtung für Player 2 (vom Dual-Input-Layer aufgerufen).
+    /// </summary>
+    public void SetPlayer2Direction(BomberBlast.Models.Entities.Direction direction)
+    {
+        if (_player2 == null) return;
+        _player2.MovementDirection = direction;
+    }
+
+    /// <summary>
+    /// Phase 30c+e — Player 2 platziert eine Bombe (vom Dual-Input-Layer aufgerufen).
+    /// </summary>
+    public bool TryPlaceBombPlayer2()
+    {
+        if (_player2 == null) return false;
+        if (!_player2.CanPlaceBomb()) return false;
+        PlaceBombForOwnerInternal(_player2);
+        return true;
+    }
+
+    /// <summary>
+    /// Phase 30e — Internal-Wrapper für PlaceBombForOwner damit der private Pfad
+    /// auch von der public TryPlaceBombPlayer2-API erreichbar ist.
+    /// </summary>
+    private void PlaceBombForOwnerInternal(BomberBlast.Models.Entities.Player owner)
+        => PlaceBombForOwner(owner);
+
+    /// <summary>
+    /// Phase 30c — Liefert beide Spieler-Snapshots als InputBuffer-Eintrag (für Replay/Sync).
+    /// </summary>
+    public BomberBlast.Core.Multiplayer.PlayerInputSnapshot GetPlayer1InputSnapshot()
+        => new(BomberBlast.Core.Multiplayer.PlayerSlot.Player1,
+            _inputManager.MovementDirection, _inputManager.BombPressed, _inputManager.DetonatePressed);
+
+    /// <summary>
+    /// Phase 30d — Liefert den Spieler dem der Score zugewiesen wird basierend auf der
+    /// Source-Bomb. Im Single-Player-Modus immer Player 1. Im Co-Op-Modus der Bomb-Owner
+    /// (Player 1 oder Player 2). Bei null/unbekannt: Player 1 als Default.
+    /// </summary>
+    internal BomberBlast.Models.Entities.Player ResolveScoringPlayer(BomberBlast.Models.Entities.Bomb? sourceBomb)
+    {
+        if (MultiplayerMode == BomberBlast.Core.Multiplayer.MultiplayerMode.Single) return _player;
+        if (sourceBomb == null) return _player;
+        if (_player2 != null && ReferenceEquals(sourceBomb.Owner, _player2)) return _player2;
+        return _player;
+    }
+
+    /// <summary>
+    /// Phase 30d — Co-Op-Combined-Score (P1 + P2).
+    /// In Versus-Mode: getrennte Scores. In Co-Op: Summe wird als Team-Score angezeigt.
+    /// </summary>
+    public int CombinedScore => _player.Score + (_player2?.Score ?? 0);
+
     // FPS-Tracking: Wall-Clock Sample-Buffer (5s Window, ~150 Samples bei 30 FPS)
     private readonly Queue<long> _fpsFrameTicks = new();
     private long _lastFpsReportTicks;
@@ -135,6 +313,27 @@ public sealed partial class GameEngine : IDisposable
 
     /// <summary>Public-Accessor für den aktiven Mode (Telemetrie + ggf. UI-Logic).</summary>
     public BomberBlast.Core.Modes.IGameMode? CurrentMode => _currentMode;
+
+    /// <summary>
+    /// Wall-Clock-Akkumulator seit Mode-Start (für GameModeContext.TimeElapsed).
+    /// Wird in StartXxxModeAsync auf 0 gesetzt und in UpdatePlaying inkrementiert.
+    /// </summary>
+    private float _modeTimeElapsed;
+
+    /// <summary>
+    /// Phase 18 — Mode-Plugin-Framework Logic-Hook-Verkabelung (ARCH-1 aus Phase-15-Audit).
+    /// Erstellt einen GameModeContext für die aktuellen Engine-State-Werte. Wird vor jedem
+    /// IGameMode-Hook-Aufruf gebaut. Allokation ist 1× pro Frame im Hot-Path — akzeptabel,
+    /// da Modes aktuell no-op-Defaults haben (Phase 19+ migriert echte Logic in Mode-Klassen).
+    /// </summary>
+    private BomberBlast.Core.Modes.GameModeContext BuildModeContext() => new()
+    {
+        Player = _player,
+        Grid = _grid,
+        CurrentLevel = _currentLevel,
+        LevelNumber = _currentLevelNumber,
+        TimeElapsed = _modeTimeElapsed,
+    };
 
     /// <summary>Ob der aktuelle Lauf im Master Mode ist (New Game+ ab L100-Clear).</summary>
     public bool IsMasterMode => _isMasterMode;
@@ -396,7 +595,17 @@ public sealed partial class GameEngine : IDisposable
     private int _pontanSpawned;
     private float _pontanSpawnTimer;
     private float _pontanInitialDelay; // Gnadenfrist vor erstem Spawn (welt-abhängig)
-    private const float PONTAN_WARNING_TIME = 1.5f; // Sekunden Vorwarnung vor Spawn
+    // Phase 22 (G8 aus Audit) — Multi-Stage-Pontan-Warning:
+    //  3.0s vor Spawn → Audio-Cue + Bildschirmrand-Glow + Subtitle "[ZEIT-WARNUNG]"
+    //  1.5s vor Spawn → Pulsierendes "!"-Indicator (existing)
+    //  0.5s vor Spawn → Trauma-Spike + roter Flash
+    // Begründung: 1.5s allein war im Audit als zu schwach markiert. Drei Stufen geben dem Spieler
+    // Reaktionszeit auf Mobile (Tap-Latenz) ohne Pontan völlig vorhersehbar zu machen.
+    private const float PONTAN_WARNING_TIME = 1.5f; // Stage-2: Position + "!"-Indicator (Bestand)
+    private const float PONTAN_EARLY_WARNING_TIME = 3.0f; // Stage-1: Audio-Cue + Subtitle
+    private const float PONTAN_FINAL_WARNING_TIME = 0.5f; // Stage-3: Trauma-Spike-Flash
+    private bool _pontanEarlyWarningTriggered;
+    private bool _pontanFinalWarningTriggered;
     private const int PONTAN_MIN_DISTANCE = 5; // Mindestabstand zum Spieler
     private readonly Random _pontanRandom = new(); // Wiederverwendbar statt new Random() pro Aufruf
 
@@ -417,7 +626,8 @@ public sealed partial class GameEngine : IDisposable
             LocalizationService = _localizationService,
             PontanRandom = _pontanRandom,
             DestroyBlock = DestroyBlock,
-            KillEnemy = KillEnemy,
+            // Phase 30d — Wrapper damit Action<Enemy>-Delegate funktioniert (sourceBomb null = Default-Player)
+            KillEnemy = e => KillEnemy(e, null),
             ProcessExplosion = ProcessExplosion
         };
 
@@ -712,10 +922,45 @@ public sealed partial class GameEngine : IDisposable
         };
         _inputManager.DirectionChanged += _directionChangedHandler;
 
+        // Phase 28b — KonamiCode-Easter-Egg-Reward verkabeln
+        _inputManager.KonamiDetector.CodeTriggered += OnKonamiCodeTriggered;
+
         // HUD-Labels cachen und bei Sprachwechsel aktualisieren
         CacheHudLabels();
         _languageChangedHandler = (_, _) => CacheHudLabels();
         _localizationService.LanguageChanged += _languageChangedHandler;
+    }
+
+    /// <summary>
+    /// Phase 28b — Belohnung für den Konami-Code (1× pro Session):
+    /// 1500 Coins-Bonus + Gold-Konfetti + Floating-Text + Vibration.
+    /// Coin-Bonus bewusst klein (kein Cheat-Pfad), aber der Spieler hat etwas zum Erinnern.
+    /// CoinsEarned-Event signalisiert dem ViewModel-Layer das Hinzufügen via ICoinService.
+    /// </summary>
+    private void OnKonamiCodeTriggered()
+    {
+        const int konamiCoins = 1500;
+        // Engine kennt CoinService nicht direkt — sendet das Event und ViewModel addiert tatsächlich.
+        // Signature: (coinsEarned, totalScore, isLevelComplete). isLevelComplete=false → Sub-Reward.
+        CoinsEarned?.Invoke(konamiCoins, _player.Score, false);
+
+        // Floating-Text + Konfetti + Vibration als Sicht-Reward
+        var msg = _localizationService.GetString("KonamiCodeReward")
+            ?? $"+{konamiCoins} KONAMI!";
+        _floatingText.Spawn(_player.X, _player.Y - 30,
+            string.Format(msg, konamiCoins),
+            new SkiaSharp.SKColor(255, 215, 0), 22f, 3.0f);
+
+        _particleSystem.EmitShaped(_player.X, _player.Y, 32,
+            new SkiaSharp.SKColor(255, 215, 0),
+            ParticleShape.Circle, 180f, 1.5f, 4f, hasGlow: true);
+        _particleSystem.EmitExplosionSparks(_player.X, _player.Y, 18,
+            new SkiaSharp.SKColor(255, 200, 50), 220f);
+
+        _vibration.VibrateAchievement();
+        _soundManager.PlayStinger(SoundManager.STINGER_VICTORY);
+
+        _logger?.LogInfo($"[KonamiCode] Easter-Egg ausgeloest, +{konamiCoins} Coins");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -885,7 +1130,22 @@ public sealed partial class GameEngine : IDisposable
                 break;
 
             case GameState.Playing:
-                UpdatePlaying(deltaTime);
+                // Phase 18c — FixedTimestep opt-in:
+                // Wenn aktiv, wird UpdatePlaying mehrere Male pro Frame mit FIXED_TICK_SECONDS aufgerufen
+                // (deterministische Sim-Granularität). Im Variable-Mode bleibt der existierende Pfad.
+                if (_fixedTimestep.Enabled)
+                {
+                    int ticks = _fixedTimestep.GetTicksForFrame(deltaTime);
+                    for (int i = 0; i < ticks; i++)
+                    {
+                        UpdatePlaying(FixedTimestepRunner.FIXED_TICK_SECONDS);
+                        if (_state != GameState.Playing) break; // Sub-Tick-Transition (Tod/Complete)
+                    }
+                }
+                else
+                {
+                    UpdatePlaying(deltaTime);
+                }
                 break;
 
             case GameState.PlayerDied:
@@ -928,6 +1188,15 @@ public sealed partial class GameEngine : IDisposable
         // Echtzeit-deltaTime speichern BEVOR Slow-Motion angewendet wird
         // Timer und Combo-Timer laufen in Echtzeit (kein Exploit durch Slow-Motion)
         float realDeltaTime = deltaTime;
+
+        // Phase 18 — Mode-Time-Akkumulator (Wall-Clock, nicht Slow-Motion-affected)
+        _modeTimeElapsed += realDeltaTime;
+
+        // Phase 18 — IGameMode.UpdateLogic-Hook verkabeln (ARCH-1 aus Phase-15-Audit).
+        // Aktuell sind alle GameModeBase-Defaults no-op — Wirkung ist 0, aber die polymorphe
+        // API ist jetzt im Hot-Path verkabelt für Folge-Phasen (Logic-Migration in Mode-Klassen).
+        // realDeltaTime wird übergeben (nicht slow-mo-affected — Modi tracken Wall-Clock).
+        _currentMode?.UpdateLogic(realDeltaTime, BuildModeContext());
 
         // Slow-Motion: deltaTime verlangsamen für dramatischen Effekt
         if (_slowMotionTimer > 0)
@@ -1100,6 +1369,12 @@ public sealed partial class GameEngine : IDisposable
         int prevGridY = _player.GridY;
         _player.Move(deltaTime, _grid);
 
+        // Phase 30c — Player 2 parallel updaten wenn Co-Op-Modus aktiv
+        if (MultiplayerMode != BomberBlast.Core.Multiplayer.MultiplayerMode.Single)
+        {
+            UpdatePlayer2Movement(deltaTime);
+        }
+
         // Achievement: Curse-Ende erkennen (vor Update cursed, nach Update nicht mehr)
         var curseBeforeUpdate = _player.IsCursed ? _player.ActiveCurse : CurseType.None;
         _player.Update(deltaTime);
@@ -1131,14 +1406,27 @@ public sealed partial class GameEngine : IDisposable
             _player.DiarrheaTimer = 0.5f;
         }
 
-        // Bombe platzieren
-        if (_inputManager.BombPressed && _player.CanPlaceBomb())
+        // Phase 22 — Input-Buffer-Tick (G1 aus Audit). Pro Frame um 1 dekrementieren.
+        _inputManager.TickInputBuffer();
+        // Phase 28b — Konami-Code-Detector mit Inputs füttern (Edge-Triggers für Direction/Bomb/Detonate)
+        _inputManager.TickKonamiDetector(deltaTime);
+
+        // Bombe platzieren — entweder direkter Tap ODER gepufferter Press aus den letzten 6 Frames
+        bool bombPressNow = _inputManager.BombPressed;
+        bool bombFromBuffer = _inputManager.HasBufferedBombPress;
+        if ((bombPressNow || bombFromBuffer) && _player.CanPlaceBomb())
         {
             PlaceBomb();
+            _inputManager.ConsumeBufferedBombPress();
             // Gegner-Pfade invalidieren → sofortige Neuberechnung (Bombe blockiert Weg)
             InvalidateEnemyPaths();
             // Tutorial: Bomben-Schritt als abgeschlossen markieren
             _tutorialService.CheckStepCompletion(TutorialStepType.PlaceBomb);
+        }
+        else if (bombPressNow && !_player.CanPlaceBomb())
+        {
+            // Press kommt zu früh (Limit erreicht / nicht-Cell-Center) → buffern, evtl. nächste Frames konsumieren
+            _inputManager.BufferBombPress();
         }
 
         // Manuelle Detonation
@@ -1253,6 +1541,14 @@ public sealed partial class GameEngine : IDisposable
                     ["score"] = _player.Score,
                     ["mode"] = GetCurrentModeTag()
                 });
+
+                // Phase 18 — IGameMode.OnGameOver-Hook (ARCH-1 aus Phase-15-Audit)
+                try { _currentMode?.OnGameOver(BuildModeContext()); }
+                catch { /* Best-Effort, no-op-Default in GameModeBase */ }
+
+                // Phase 21 (V4) — Defeat-Stinger
+                _soundManager.PlayStinger(SoundManager.STINGER_DEFEAT);
+
                 GameOver?.Invoke();
             }
             else
@@ -1535,14 +1831,14 @@ public sealed partial class GameEngine : IDisposable
             _fallingCeilingTimer -= 15f; // Alle 15s danach wiederholen
 
             // 2-3 zufällige leere Zellen werden zu Blöcken
-            int count = _pontanRandom.Next(2, 4);
+            int count = EngineRngNext(2, 4);
             for (int i = 0; i < count; i++)
             {
                 int attempts = 20;
                 while (attempts-- > 0)
                 {
-                    int gx = _pontanRandom.Next(1, _grid.Width - 1);
-                    int gy = _pontanRandom.Next(1, _grid.Height - 1);
+                    int gx = EngineRngNext(1, _grid.Width - 1);
+                    int gy = EngineRngNext(1, _grid.Height - 1);
                     var cell = _grid.TryGetCell(gx, gy);
                     if (cell != null && cell.Type == CellType.Empty && cell.Bomb == null &&
                         !(gx == _player.GridX && gy == _player.GridY))
@@ -1587,21 +1883,21 @@ public sealed partial class GameEngine : IDisposable
             _screenShake.Trigger(4f, 0.5f);
 
             // 3-5 zufällige Blöcke verschieben
-            int count = _pontanRandom.Next(3, 6);
+            int count = EngineRngNext(3, 6);
             for (int i = 0; i < count; i++)
             {
                 // Zufälligen Block finden
                 int attempts = 30;
                 while (attempts-- > 0)
                 {
-                    int gx = _pontanRandom.Next(1, _grid.Width - 1);
-                    int gy = _pontanRandom.Next(1, _grid.Height - 1);
+                    int gx = EngineRngNext(1, _grid.Width - 1);
+                    int gy = EngineRngNext(1, _grid.Height - 1);
                     var cell = _grid.TryGetCell(gx, gy);
                     if (cell?.Type != CellType.Block) continue;
 
                     // Zufällige Richtung
                     var dirs = new[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
-                    var (dx, dy) = dirs[_pontanRandom.Next(dirs.Length)];
+                    var (dx, dy) = dirs[EngineRngNext(dirs.Length)];
                     int nx = gx + dx, ny = gy + dy;
                     var target = _grid.TryGetCell(nx, ny);
                     if (target != null && target.Type == CellType.Empty && target.Bomb == null &&
@@ -1789,12 +2085,12 @@ public sealed partial class GameEngine : IDisposable
     /// </summary>
     private void CalculateStoneGolemTargets(BossEnemy boss)
     {
-        int count = _pontanRandom.Next(3, 5);
+        int count = EngineRngNext(3, 5);
         int attempts = 40;
         while (boss.AttackTargetCells.Count < count && attempts-- > 0)
         {
-            int gx = _pontanRandom.Next(1, _grid.Width - 1);
-            int gy = _pontanRandom.Next(1, _grid.Height - 1);
+            int gx = EngineRngNext(1, _grid.Width - 1);
+            int gy = EngineRngNext(1, _grid.Height - 1);
             var cell = _grid.TryGetCell(gx, gy);
             if (cell != null && cell.Type == CellType.Empty && cell.Bomb == null &&
                 !boss.OccupiesCell(gx, gy))
@@ -1810,7 +2106,7 @@ public sealed partial class GameEngine : IDisposable
     private void CalculateIceDragonTargets(BossEnemy boss)
     {
         // Zufällige Reihe (nicht die äußersten Ränder)
-        int row = _pontanRandom.Next(1, _grid.Height - 1);
+        int row = EngineRngNext(1, _grid.Height - 1);
         for (int x = 1; x < _grid.Width - 1; x++)
         {
             var cell = _grid.TryGetCell(x, row);
@@ -1827,7 +2123,7 @@ public sealed partial class GameEngine : IDisposable
     private void CalculateFireDemonTargets(BossEnemy boss)
     {
         // Zufällig obere oder untere Hälfte
-        bool upperHalf = _pontanRandom.Next(2) == 0;
+        bool upperHalf = EngineRngNext(2) == 0;
         int startY = upperHalf ? 1 : _grid.Height / 2;
         int endY = upperHalf ? _grid.Height / 2 : _grid.Height - 1;
 
@@ -1968,8 +2264,8 @@ public sealed partial class GameEngine : IDisposable
         int attempts = 30;
         while (attempts-- > 0)
         {
-            int gx = _pontanRandom.Next(2, _grid.Width - boss.BossSize - 1);
-            int gy = _pontanRandom.Next(2, _grid.Height - boss.BossSize - 1);
+            int gx = EngineRngNext(2, _grid.Width - boss.BossSize - 1);
+            int gy = EngineRngNext(2, _grid.Height - boss.BossSize - 1);
 
             // Prüfen ob alle Zellen frei sind
             bool canPlace = true;
@@ -2046,6 +2342,7 @@ public sealed partial class GameEngine : IDisposable
         _timer.Warning -= OnTimeWarning;
         _timer.Expired -= OnTimeExpired;
         _inputManager.DirectionChanged -= _directionChangedHandler;
+        _inputManager.KonamiDetector.CodeTriggered -= OnKonamiCodeTriggered;
         _localizationService.LanguageChanged -= _languageChangedHandler;
 
         _overlayBgPaint.Dispose();

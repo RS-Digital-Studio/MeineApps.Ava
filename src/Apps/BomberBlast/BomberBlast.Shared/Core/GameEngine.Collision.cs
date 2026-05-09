@@ -363,7 +363,7 @@ public sealed partial class GameEngine
         _soundManager.PlaySound(SoundManager.SFX_PLAYER_DEATH);
     }
 
-    private void KillEnemy(Enemy enemy)
+    private void KillEnemy(Enemy enemy, Bomb? sourceBomb = null)
     {
         enemy.Kill();
         _enemiesRemainingDirty = true;
@@ -371,7 +371,11 @@ public sealed partial class GameEngine
 
         // Boss: Eigene Punkte statt EnemyType-Points
         int points = enemy is BossEnemy bossKilled ? bossKilled.BossPoints : enemy.Points;
-        _player.Score += points;
+
+        // Phase 30d — Co-Op: Score an den Spieler der die Bombe gelegt hat.
+        // Default (Single-Player oder Source-unbekannt): Player 1.
+        var scoringPlayer = ResolveScoringPlayer(sourceBomb);
+        scoringPlayer.Score += points;
 
         // Boss-Tod: Extra Celebration
         if (enemy is BossEnemy deadBoss)
@@ -380,6 +384,9 @@ public sealed partial class GameEngine
                 string.Format(_localizationService.GetString("FloatBossDefeated") ?? "BOSS DEFEATED! +{0}", points),
                 new SKColor(255, 215, 0), 20f, 2.0f);
             _screenShake.Trigger(6f, 0.4f);
+            // Phase 21 (V4) — Boss-Kill ist der ultimative Big-Hit: voller Camera-Pull-Back + Victory-Stinger
+            _screenShake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.6f);
+            _soundManager.PlayStinger(SoundManager.STINGER_VICTORY);
             _particleSystem.EmitShaped(enemy.X, enemy.Y, 24, new SKColor(255, 215, 0),
                 ParticleShape.Circle, 140f, 1.0f, 3.5f, hasGlow: true);
             _particleSystem.EmitExplosionSparks(enemy.X, enemy.Y, 16, new SKColor(255, 200, 50), 180f);
@@ -425,7 +432,8 @@ public sealed partial class GameEngine
                 comboBonus = (int)(comboBonus * 1.5f);
             }
 
-            _player.Score += comboBonus;
+            // Phase 30d — Combo-Bonus an den scoring-Spieler (gleicher Pfad wie Kill-Score)
+            scoringPlayer.Score += comboBonus;
 
             // Kettenreaktions-Text hat Vorrang vor normalem Combo-Text
             string comboText;
@@ -453,13 +461,47 @@ public sealed partial class GameEngine
             else if (_comboCount >= 7) comboColor = new SKColor(255, 0, 200);      // Magenta hoch
             else if (_comboCount >= 4) comboColor = new SKColor(255, 50, 0);       // Rot fuer hohe Combos
 
-            _floatingText.Spawn(enemy.X, enemy.Y - 12, comboText, comboColor, 18f, 1.5f);
+            // Phase 22b — Crit-Indicator (G3 aus Audit): Größen-Pop + längere Lifetime bei höherer Combo-Stufe.
+            // Hades-Pattern: ULTRA-Hits sind sofort als visuell "epischer" lesbar.
+            //   x2-x3: 18f, 1.5s (Standard)
+            //   x4-x6: 22f, 1.8s (CHAIN/MEGA-Edge)
+            //   x7-x9: 26f, 2.0s
+            //   x10+:  32f, 2.5s (ULTRA — Größen-Pop ×1.78, dauert deutlich länger)
+            float comboFontSize = _comboCount switch
+            {
+                >= 10 => 32f,
+                >= 7 => 26f,
+                >= 4 => 22f,
+                _ => 18f,
+            };
+            float comboDuration = _comboCount switch
+            {
+                >= 10 => 2.5f,
+                >= 7 => 2.0f,
+                >= 4 => 1.8f,
+                _ => 1.5f,
+            };
+            _floatingText.Spawn(enemy.X, enemy.Y - 12, comboText, comboColor, comboFontSize, comboDuration);
 
             // v2.0.48 — Audio-Caption für Ultra-Combo (x10+) — gehörlose Spieler bekommen Feedback
             // Throttling: Nur alle 5 Combos einen Subtitle damit nicht spammt
             if (_comboCount >= 10 && _comboCount % 5 == 0 && _accessibility?.SubtitlesEnabled == true)
             {
                 _subtitles.Show(_localizationService.GetString("SubtitleUltraCombo") ?? "[ULTRA COMBO]");
+            }
+
+            // Phase 21 (V4) — Camera-Pull-Back bei Big-Combos. Stinger-Trigger über SoundManager:
+            //  - MEGA (x5+):    leichter Pull-Back, MEGA-Stinger
+            //  - ULTRA (x10+):  starker Pull-Back, ULTRA-Stinger
+            if (_comboCount == 10)
+            {
+                _screenShake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.5f);
+                _soundManager.PlayStinger(SoundManager.STINGER_COMBO_ULTRA);
+            }
+            else if (_comboCount == 5)
+            {
+                _screenShake.TriggerPullBack(magnitude: 0.5f, durationSeconds: 0.35f);
+                _soundManager.PlayStinger(SoundManager.STINGER_COMBO_MEGA);
             }
 
             // Tracking: Combo erreicht (Achievement + Missionen)
@@ -470,7 +512,8 @@ public sealed partial class GameEngine
         if (_synergyMidasActive && _isDungeonRun)
         {
             int midasCoins = enemy is BossEnemy ? 50 : 10;
-            _player.Score += midasCoins;
+            // Phase 30d — Midas-Coins an den scoring-Spieler
+            scoringPlayer.Score += midasCoins;
             _floatingText.Spawn(enemy.X + 8, enemy.Y + 8, $"+{midasCoins}",
                 new SKColor(255, 215, 0), 11f, 0.8f);
             _particleSystem.Emit(enemy.X, enemy.Y, 4, new SKColor(255, 215, 0), 40f, 0.4f);

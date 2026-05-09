@@ -161,9 +161,18 @@ public sealed partial class GameEngine
         }
 
         // Screen-Shake: Canvas verschieben vor dem Spiel-Rendering
-        if (_screenShake.IsActive)
+        // Phase 21 (V4): Camera-Pull-Back via canvas.Scale wenn aktiv (BigHit-Reaktion).
+        // Pull-Back-Pivot ist Spielfeld-Mitte (in Screen-Koordinaten).
+        bool pullBackActive = _screenShake.PullBackFactor < 0.999f;
+        if (_screenShake.IsActive || pullBackActive)
         {
             canvas.Save();
+            if (pullBackActive)
+            {
+                float pivotX = (_grid.PixelWidth / 2f) * _renderer.Scale + _renderer.OffsetX;
+                float pivotY = (_grid.PixelHeight / 2f) * _renderer.Scale + _renderer.OffsetY;
+                canvas.Scale(_screenShake.PullBackFactor, _screenShake.PullBackFactor, pivotX, pivotY);
+            }
             canvas.Translate(_screenShake.OffsetX, _screenShake.OffsetY);
         }
 
@@ -232,8 +241,8 @@ public sealed partial class GameEngine
             RenderPontanWarning(canvas);
         }
 
-        // Screen-Shake Canvas wiederherstellen
-        if (_screenShake.IsActive)
+        // Screen-Shake Canvas wiederherstellen (Phase 21: auch bei aktivem Pull-Back)
+        if (_screenShake.IsActive || pullBackActive)
         {
             canvas.Restore();
         }

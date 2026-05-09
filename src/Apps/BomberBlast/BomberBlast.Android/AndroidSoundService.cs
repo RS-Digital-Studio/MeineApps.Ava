@@ -29,7 +29,7 @@ public sealed class AndroidSoundService : ISoundService
     // Maximale gleichzeitige SFX-Streams
     private const int MaxStreams = 8;
 
-    // Alle bekannten SFX-Keys
+    // Alle bekannten SFX-Keys (Basis-Keys — werden auch als Single-Sample-Fallback geladen)
     private static readonly string[] SfxKeys =
     [
         "explosion", "place_bomb", "fuse", "powerup",
@@ -39,6 +39,36 @@ public sealed class AndroidSoundService : ISoundService
         // Spezial-Bomben SFX (optional, Fallback im SoundManager)
         "bomb_ice", "bomb_fire", "bomb_lightning",
         "bomb_gravity", "bomb_vortex", "bomb_blackhole"
+    ];
+
+    // Multi-Sample-Pool-Keys (Phase 16). Werden zusätzlich zu den Basis-Keys geladen,
+    // jeweils nur wenn die Datei existiert (Hot-Path: TryLoadSfx mit silent fail).
+    // Basis-Key ohne Pool-Variant: SoundManager.PlayPooled fällt automatisch zurück.
+    private static readonly string[] PoolVariantKeys =
+    [
+        // 4-Pool für Hochfrequenz-SFX
+        "place_bomb_a", "place_bomb_b", "place_bomb_c", "place_bomb_d",
+        "explosion_a", "explosion_b", "explosion_c", "explosion_d",
+        // 3-Pool für mittelfrequente
+        "fuse_a", "fuse_b", "fuse_c",
+        "powerup_a", "powerup_b", "powerup_c",
+        "enemy_death_a", "enemy_death_b", "enemy_death_c",
+        // 2-Pool für seltene
+        "player_death_a", "player_death_b",
+        "menu_select_a", "menu_select_b",
+        "menu_confirm_a", "menu_confirm_b",
+        "level_complete_a", "level_complete_b",
+        "game_over_a", "game_over_b",
+    ];
+
+    // Cinematic-Stinger-Library (Phase 16/17)
+    private static readonly string[] StingerKeys =
+    [
+        "stinger_combo_mega",
+        "stinger_combo_ultra",
+        "stinger_boss_reveal",
+        "stinger_victory",
+        "stinger_defeat",
     ];
 
     // Alle bekannten Musik-Keys
@@ -76,6 +106,20 @@ public sealed class AndroidSoundService : ISoundService
             {
                 var loaded = TryLoadSfx($"Sounds/sfx_{key}.ogg", key)
                           || TryLoadSfx($"Sounds/sfx_{key}.wav", key);
+            }
+
+            // Multi-Sample-Pool-Variants laden (silent fail, Phase 17 stellt Files bereit)
+            foreach (var key in PoolVariantKeys)
+            {
+                _ = TryLoadSfx($"Sounds/sfx_{key}.ogg", key)
+                 || TryLoadSfx($"Sounds/sfx_{key}.wav", key);
+            }
+
+            // Cinematic-Stinger laden (silent fail bis Phase 17)
+            foreach (var key in StingerKeys)
+            {
+                _ = TryLoadSfx($"Sounds/sfx_{key}.ogg", key)
+                 || TryLoadSfx($"Sounds/sfx_{key}.wav", key);
             }
         });
     }

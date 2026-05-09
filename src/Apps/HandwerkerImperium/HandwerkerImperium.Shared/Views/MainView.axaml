@@ -312,6 +312,13 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                        PointerPressed="OnPrestigeCinematicTapped"
                        AutomationProperties.AutomationId="Main_Canvas_PrestigeCinematic" />
 
+    <!-- AAA-Audit P0 FTUE-UI: Spotlight-Overlay (DataContext = FtueOverlayViewModel via DI). -->
+    <views:FtueOverlay x:Name="FtueOverlayInstance"
+                        Grid.RowSpan="2"
+                        ZIndex="120"
+                        DataContext="{Binding FtueOverlayVM}"
+                        AutomationProperties.AutomationId="Main_View_FtueOverlay" />
+
     <!-- Animierter Loading-Screen (Zahnräder + Fortschritt + Tipps) -->
     <skia:SKCanvasView x:Name="LoadingCanvas"
                        Grid.RowSpan="2"

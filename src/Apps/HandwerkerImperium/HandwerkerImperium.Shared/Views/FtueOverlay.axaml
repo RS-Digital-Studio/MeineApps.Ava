@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             x:Class="HandwerkerImperium.Views.FtueOverlay"
+             x:DataType="vm:FtueOverlayViewModel"
+             x:CompileBindings="True"
+             IsVisible="{Binding IsVisible}"
+             AutomationProperties.AutomationId="Ftue_Overlay_Root">
+
+  <!-- AAA-Audit P0 FTUE-UI: Spotlight-Overlay zeichnet sich ueber den ganzen Screen.
+       Touch-Events durch das Overlay zum Spotlight-Target werden via IsHitTestVisible-False
+       am Backdrop ermoeglicht — die Bubble + Continue/Skip-Buttons sind hit-testable. -->
+
+  <Grid AutomationProperties.AutomationId="Ftue_Grid_Root">
+
+    <!-- Spotlight-Canvas (zeichnet Backdrop + ausgesparter Hot-Spot + Glow) -->
+    <skia:SKCanvasView x:Name="SpotlightCanvas"
+                       IsHitTestVisible="False"
+                       PaintSurface="OnSpotlightPaint"
+                       AutomationProperties.AutomationId="Ftue_Canvas_Spotlight" />
+
+    <!-- Bubble (Title + Text + Continue + Skip) -->
+    <Border x:Name="Bubble"
+            VerticalAlignment="Center" HorizontalAlignment="Center"
+            MaxWidth="320" Margin="24"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{StaticResource CraftGoldBrush}"
+            BorderThickness="2" CornerRadius="14"
+            Padding="20"
+            BoxShadow="0 6 24 0 #80000000"
+            AutomationProperties.AutomationId="Ftue_Border_Bubble">
+      <StackPanel Spacing="10">
+
+        <!-- Title -->
+        <TextBlock Text="{Binding Title}"
+                   FontSize="18" FontWeight="Bold"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                   TextWrapping="Wrap"
+                   AutomationProperties.AutomationId="Ftue_Txt_Title" />
+
+        <!-- Text -->
+        <TextBlock Text="{Binding Text}"
+                   FontSize="14" LineHeight="20"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   TextWrapping="Wrap"
+                   AutomationProperties.AutomationId="Ftue_Txt_Text" />
+
+        <!-- Buttons -->
+        <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+          <!-- Skip-Button (links, Text-Only) -->
+          <Button Grid.Column="0"
+                  Classes="Text"
+                  IsVisible="{Binding CanSkip}"
+                  Command="{Binding SkipCommand}"
+                  HorizontalAlignment="Left"
+                  AutomationProperties.AutomationId="Ftue_Btn_Skip">
+            <TextBlock Text="{loc:Translate FtueSkipButton}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </Button>
+
+          <!-- Continue-Button (rechts, Primary) -->
+          <Button Grid.Column="1"
+                  Classes="Primary"
+                  IsVisible="{Binding ShowContinueButton}"
+                  Command="{Binding ContinueCommand}"
+                  Padding="20,10" MinHeight="44"
+                  AutomationProperties.AutomationId="Ftue_Btn_Continue">
+            <TextBlock Text="{loc:Translate FtueContinueButton}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+          </Button>
+        </Grid>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

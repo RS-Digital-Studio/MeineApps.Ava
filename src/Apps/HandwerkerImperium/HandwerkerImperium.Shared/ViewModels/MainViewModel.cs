@@ -67,6 +67,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly ICinematicCoordinator? _cinematicCoordinator;
     /// <summary>AAA-Audit P0 Zerlegungs-Sprint: Reputation-Tier-Up-Effekte extrahiert.</summary>
     private readonly IReputationTierEffects? _reputationTierEffects;
+    /// <summary>AAA-Audit P0 FTUE-UI: Optionales Spotlight-Overlay-VM (per DI injiziert).</summary>
+    public FtueOverlayViewModel? FtueOverlayVM { get; }
     private readonly ICloudSaveService? _cloudSaveService;
     private readonly IRemoteConfigService? _remoteConfigService;
     private readonly IWeeklyMissionService _weeklyMissionService;
@@ -1045,7 +1047,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         IRemoteConfigService? remoteConfigService = null,
         IWhatsNewService? whatsNewService = null,
         ICinematicCoordinator? cinematicCoordinator = null,
-        IReputationTierEffects? reputationTierEffects = null)
+        IReputationTierEffects? reputationTierEffects = null,
+        FtueOverlayViewModel? ftueOverlayVm = null)
     {
         _navigationService = navigationService;
         _dialogOrchestrator = dialogOrchestrator;
@@ -1056,6 +1059,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _whatsNewService = whatsNewService;
         _cinematicCoordinator = cinematicCoordinator;
         _reputationTierEffects = reputationTierEffects;
+        FtueOverlayVM = ftueOverlayVm;
         // Host-Attach damit Services Navigation/Dialog-Kaskade an MainViewModel delegieren koennen
         _navigationService?.AttachHost(this);
         _dialogOrchestrator?.AttachHost(this);

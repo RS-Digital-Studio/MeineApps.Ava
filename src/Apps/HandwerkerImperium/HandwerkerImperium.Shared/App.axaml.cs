@@ -340,9 +340,9 @@ public partial class App : Application
         services.AddSingleton<ICrossPromoService, CrossPromoService>();
         services.AddSingleton<CrossPromoViewModel>();
 
-        // AAA-Audit P0: FTUE-Service-Skelett (10-Step-Tutorial). UI-Spotlight-Overlay
-        // wird in einem Folge-Sprint implementiert — Foundation hier ist build-fest.
+        // AAA-Audit P0: FTUE-Service + UI-Spotlight-Overlay (10-Step-Tutorial).
         services.AddSingleton<IFtueService, FtueService>();
+        services.AddSingleton<FtueOverlayViewModel>();
 
         // AAA-Audit P1: Friend-Invite Reward-Loop (K-Factor-Driver, ~30% Free-Installs bei
         // Voodoo / Lion). Server-Endpoint fuer Anti-Cheat ist Folge-Sprint.

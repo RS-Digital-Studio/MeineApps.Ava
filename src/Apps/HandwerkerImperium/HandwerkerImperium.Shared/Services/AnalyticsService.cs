@@ -104,6 +104,16 @@ public sealed class AnalyticsService : IAnalyticsService
             var days = (int)(DateTime.UtcNow - installDate).TotalDays;
             SetUserProperty(AnalyticsUserProperties.DaysSinceInstall, days.ToString());
 
+            // Install-Cohort-Week (ISO-8601: "2026-W19") — bleibt stabil ueber alle Sessions hinweg
+            var cohortWeekKey = "analytics_install_cohort_week";
+            var cohortWeek = _preferences.Get<string>(cohortWeekKey, string.Empty);
+            if (string.IsNullOrEmpty(cohortWeek))
+            {
+                cohortWeek = $"{installDate.Year}-W{System.Globalization.ISOWeek.GetWeekOfYear(installDate):00}";
+                _preferences.Set(cohortWeekKey, cohortWeek);
+            }
+            SetUserProperty(AnalyticsUserProperties.InstallCohortWeek, cohortWeek);
+
             // Retention-Event feuern (ein Mal pro Tag)
             var lastRetentionDayKey = "analytics_last_retention_day";
             var lastRetentionDay = _preferences.Get<int>(lastRetentionDayKey, -1);
@@ -112,6 +122,18 @@ public sealed class AnalyticsService : IAnalyticsService
                 _preferences.Set(lastRetentionDayKey, days);
                 TrackEvent(AnalyticsEvents.RetentionDay, new Dictionary<string, object?> { ["day"] = days });
             }
+        }
+
+        // A/B-Test-Cohort: deterministisch aus PlayerId gehasht (mod 2). Stabil ueber Sessions.
+        var playerId = _firebase.PlayerId;
+        if (!string.IsNullOrEmpty(playerId))
+        {
+            // Stabiler Hash — String.GetHashCode ist nicht stabil zwischen .NET-Versionen
+            var hash = 0;
+            foreach (var c in playerId) hash = unchecked(hash * 31 + c);
+            var cohort = (Math.Abs(hash) % 2) == 0 ? "a" : "b";
+            SetUserProperty(AnalyticsUserProperties.TestCohort, cohort);
+            SetUserProperty(AnalyticsUserProperties.PlayerIdProperty, playerId);
         }
 
         _isEnabled = _gameStateService.Settings.AnalyticsEnabled;

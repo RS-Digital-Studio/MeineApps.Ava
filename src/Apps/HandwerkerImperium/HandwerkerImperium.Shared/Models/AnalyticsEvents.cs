@@ -74,6 +74,48 @@ public static class AnalyticsEvents
     public const string CloudSaveDownloaded = "cloud_save_downloaded";
     public const string CloudSaveConflict = "cloud_save_conflict";
 
+    // Worker-Lifecycle (P1.1 — Detail-Tracking)
+    public const string WorkerPromoted = "worker_promoted";          // Praktikant→E
+    public const string WorkerAuraUnlocked = "worker_aura_unlocked"; // S-Tier+ erstmals
+    public const string WorkerQuit = "worker_quit";                  // Kuendigung wegen Mood
+
+    // Co-op-Auftraege (P1.1)
+    public const string CoopOrderInvited = "coop_order_invited";
+    public const string CoopOrderAccepted = "coop_order_accepted";
+    public const string CoopOrderDeclined = "coop_order_declined";
+    public const string CoopOrderCompleted = "coop_order_completed";
+    public const string CoopOrderScoreSubmitted = "coop_order_score_submitted";
+
+    // Worker-Auktionen (P1.1)
+    public const string AuctionBidPlaced = "auction_bid_placed";
+    public const string AuctionWon = "auction_won";
+    public const string AuctionLost = "auction_lost";
+
+    // Reputation-Shop (P1.1)
+    public const string ReputationShopPurchased = "reputation_shop_purchased";
+
+    // Equipment (P1.1)
+    public const string EquipmentDropped = "equipment_dropped";
+    public const string EquipmentEquipped = "equipment_equipped";
+
+    // Live/Premium-Order Telemetry (P1.1 — fuer Difficulty-Tuning)
+    public const string LiveOrderExpiredUnstarted = "live_order_expired_unstarted";
+    public const string LiveOrderPremiumAccepted = "live_order_premium_accepted";
+    public const string ParallelOrderStarted = "parallel_order_started";
+
+    // Prestige-Cinematic (P0.3 — Skip-Rate-Tracking)
+    public const string PrestigeCinematicSkipped = "prestige_cinematic_skipped";
+    public const string PrestigeCinematicCompleted = "prestige_cinematic_completed";
+
+    // Manager / Inbox (P1.1)
+    public const string ManagerUnlocked = "manager_unlocked";
+    public const string NotificationInboxOpened = "notification_inbox_opened";
+
+    // Onboarding-Funnel (P2.2 — A/B-Test)
+    public const string OnboardingStorySkipped = "onboarding_story_skipped";
+    public const string OnboardingFirstWorkshopShown = "onboarding_first_workshop_shown";
+    public const string OnboardingFirstOrderHinted = "onboarding_first_order_hinted";
+
     // Fehler (wichtig fuer QA)
     public const string ErrorOccurred = "error_occurred";
 }
@@ -91,4 +133,13 @@ public static class AnalyticsUserProperties
     public const string GraphicsQuality = "graphics_quality";
     public const string DaysSinceInstall = "days_since_install";
     public const string AppVersion = "app_version";
+
+    /// <summary>A/B-Test-Cohort. Hash auf PlayerId mod 2 → "a" oder "b". Wird einmalig zugewiesen.</summary>
+    public const string TestCohort = "test_cohort";
+
+    /// <summary>Install-Wochenmarker fuer Cohort-Funnel-Analyse (z.B. "2026-W19"). Wird einmalig gesetzt.</summary>
+    public const string InstallCohortWeek = "install_cohort_week";
+
+    /// <summary>Stabile PlayerId — erlaubt User-Funnel-Joins ueber Sessions hinweg.</summary>
+    public const string PlayerIdProperty = "player_id";
 }

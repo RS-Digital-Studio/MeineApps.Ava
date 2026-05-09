@@ -10,6 +10,7 @@ namespace HandwerkerImperium.Services;
 public sealed class EquipmentService : IEquipmentService
 {
     private readonly IGameStateService _gameStateService;
+    private readonly IAnalyticsService? _analyticsService;
     private readonly object _lock = new();
 
     /// <summary>
@@ -26,9 +27,10 @@ public sealed class EquipmentService : IEquipmentService
 
     public event Action? EquipmentDropped;
 
-    public EquipmentService(IGameStateService gameStateService)
+    public EquipmentService(IGameStateService gameStateService, IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
+        _analyticsService = analyticsService;
     }
 
     public void EquipItem(string workerId, Equipment equipment)
@@ -65,6 +67,14 @@ public sealed class EquipmentService : IEquipmentService
             inventory.Remove(inventoryItem);
 
             state.InvalidateIncomeCache();
+
+            // P1.1 AAA-Audit: Equipment-Equip-Tracking fuer Engagement-Analyse.
+            _analyticsService?.TrackEvent(AnalyticsEvents.EquipmentEquipped, new System.Collections.Generic.Dictionary<string, object?>
+            {
+                ["equipment_id"] = inventoryItem.Id,
+                ["rarity"] = inventoryItem.Rarity.ToString(),
+                ["worker_tier"] = worker.Tier.ToString()
+            });
         }
     }
 
@@ -101,6 +111,15 @@ public sealed class EquipmentService : IEquipmentService
 
         // Event AUSSERHALB des Locks aufrufen (Deadlock-Prävention)
         EquipmentDropped?.Invoke();
+
+        // P1.1 AAA-Audit: Equipment-Drop-Rate-Tracking fuer Difficulty-Tuning.
+        _analyticsService?.TrackEvent(AnalyticsEvents.EquipmentDropped, new System.Collections.Generic.Dictionary<string, object?>
+        {
+            ["equipment_id"] = result.Id,
+            ["rarity"] = result.Rarity.ToString(),
+            ["difficulty"] = difficulty,
+            ["is_perfect"] = isPerfect
+        });
         return result;
     }
 

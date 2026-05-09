@@ -140,15 +140,60 @@ public sealed class SoundManager : IDisposable
         await _soundService.PreloadSoundsAsync();
     }
 
+    // Pitch-Variation: ±5% für wiederholte SFX, vermeidet akustisches Stutter.
+    // Wird bei SFX_PLACE_BOMB / SFX_POWERUP / SFX_EXPLOSION aktiviert.
+    private static readonly Random _pitchRandom = new();
+    private const float DEFAULT_PITCH_VARIATION = 0.05f;
+    private static readonly HashSet<string> _pitchVariedSounds = new()
+    {
+        SFX_PLACE_BOMB,
+        SFX_POWERUP,
+        SFX_EXPLOSION,
+        SFX_FUSE,
+        SFX_ENEMY_DEATH
+    };
+
     /// <summary>
-    /// Soundeffekt abspielen
+    /// Soundeffekt abspielen.
+    /// Bei häufig wiederholten Sounds (Bomben/PowerUps) wird automatisch ±5% Pitch-Random angewendet,
+    /// damit das Spiel akustisch nicht repetitiv wirkt.
     /// </summary>
     public void PlaySound(string soundKey)
     {
         if (!_sfxEnabled)
             return;
 
-        _soundService.PlaySound(soundKey, _sfxVolume);
+        if (_pitchVariedSounds.Contains(soundKey))
+        {
+            // ±5% Pitch + ±10% Volume-Varianz für organischeren Klang
+            var pitch = 1.0f + ((float)_pitchRandom.NextDouble() * 2f - 1f) * DEFAULT_PITCH_VARIATION;
+            var volumeVar = 1.0f + ((float)_pitchRandom.NextDouble() * 2f - 1f) * 0.1f;
+            _soundService.PlaySound(soundKey, _sfxVolume * volumeVar, pitch, 0f);
+        }
+        else
+        {
+            _soundService.PlaySound(soundKey, _sfxVolume);
+        }
+    }
+
+    /// <summary>
+    /// Soundeffekt mit explizitem Pan abspielen (Stereo-Positionierung).
+    /// Pan -1 = links, 0 = mittig, 1 = rechts.
+    /// Wird für räumliches Audio bei Bomben verwendet (Pan basierend auf Bomb-Position-X / Screen-Width).
+    /// </summary>
+    public void PlaySoundPanned(string soundKey, float pan)
+    {
+        if (!_sfxEnabled)
+            return;
+
+        var pitch = 1.0f;
+        var volumeMul = 1.0f;
+        if (_pitchVariedSounds.Contains(soundKey))
+        {
+            pitch = 1.0f + ((float)_pitchRandom.NextDouble() * 2f - 1f) * DEFAULT_PITCH_VARIATION;
+            volumeMul = 1.0f + ((float)_pitchRandom.NextDouble() * 2f - 1f) * 0.1f;
+        }
+        _soundService.PlaySound(soundKey, _sfxVolume * volumeMul, pitch, pan);
     }
 
     /// <summary>

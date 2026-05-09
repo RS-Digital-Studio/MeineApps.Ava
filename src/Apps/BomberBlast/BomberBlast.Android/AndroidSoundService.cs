@@ -100,21 +100,50 @@ public sealed class AndroidSoundService : ISoundService
 
     public void PlaySound(string soundKey, float volume)
     {
+        PlaySound(soundKey, volume, 1.0f, 0f);
+    }
+
+    /// <summary>
+    /// Spielt einen Sound mit Pitch und Stereo-Pan über SoundPool.Play.
+    /// Pitch wird auf [0.5, 2.0] geclamped (SoundPool-Limit).
+    /// Pan wird in linkes/rechtes Volume umgesetzt (-1=links, 0=mittig, 1=rechts).
+    /// </summary>
+    public void PlaySound(string soundKey, float volume, float pitch, float pan = 0f)
+    {
         if (_soundPool == null || !_sfxIds.TryGetValue(soundKey, out var soundId))
             return;
 
         var clampedVol = Math.Clamp(volume, 0f, 1f);
-        _soundPool.Play(soundId, clampedVol, clampedVol, 1, 0, 1.0f);
+        var clampedPitch = Math.Clamp(pitch, 0.5f, 2.0f);
+        var clampedPan = Math.Clamp(pan, -1f, 1f);
+
+        // Stereo-Pan: links bei pan<0, rechts bei pan>0
+        var leftVol = clampedPan <= 0 ? clampedVol : clampedVol * (1f - clampedPan);
+        var rightVol = clampedPan >= 0 ? clampedVol : clampedVol * (1f + clampedPan);
+
+        _soundPool.Play(soundId, leftVol, rightVol, 1, 0, clampedPitch);
     }
 
     /// <summary>Versucht Sound abzuspielen. Gibt false zurück wenn der Sound nicht geladen ist.</summary>
     public bool TryPlaySound(string soundKey, float volume)
     {
+        return TryPlaySound(soundKey, volume, 1.0f, 0f);
+    }
+
+    /// <summary>Versucht Sound mit Pitch + Pan abzuspielen.</summary>
+    public bool TryPlaySound(string soundKey, float volume, float pitch, float pan = 0f)
+    {
         if (_soundPool == null || !_sfxIds.TryGetValue(soundKey, out var soundId))
             return false;
 
         var clampedVol = Math.Clamp(volume, 0f, 1f);
-        _soundPool.Play(soundId, clampedVol, clampedVol, 1, 0, 1.0f);
+        var clampedPitch = Math.Clamp(pitch, 0.5f, 2.0f);
+        var clampedPan = Math.Clamp(pan, -1f, 1f);
+
+        var leftVol = clampedPan <= 0 ? clampedVol : clampedVol * (1f - clampedPan);
+        var rightVol = clampedPan >= 0 ? clampedVol : clampedVol * (1f + clampedPan);
+
+        _soundPool.Play(soundId, leftVol, rightVol, 1, 0, clampedPitch);
         return true;
     }
 

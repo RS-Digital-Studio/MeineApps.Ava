@@ -6,7 +6,7 @@
     android:largeHeap="true"
     android:icon="@mipmap/appicon"
     android:roundIcon="@mipmap/appicon_round"
-    android:supportsRtl="true"
+    android:supportsRtl="false"
     android:label="BomberBlast"
     android:enableOnBackInvokedCallback="false"
     android:theme="@style/MyTheme.NoActionBar">

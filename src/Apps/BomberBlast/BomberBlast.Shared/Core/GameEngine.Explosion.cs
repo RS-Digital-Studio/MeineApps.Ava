@@ -73,8 +73,8 @@ public sealed partial class GameEngine
         _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
         _soundManager.PlaySound(SoundManager.SFX_FUSE);
 
-        // Haptisches Feedback bei Bomben-Platzierung
-        _vibration.VibrateLight();
+        // Haptisches Feedback bei Bomben-Platzierung (v2.0.45: differenzierter Doppel-Tick)
+        _vibration.VibrateBombPlant();
     }
 
     /// <summary>
@@ -97,8 +97,8 @@ public sealed partial class GameEngine
         _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
         _soundManager.PlaySound(SoundManager.SFX_FUSE);
 
-        // Haptisches Feedback bei Power-Bomb-Platzierung
-        _vibration.VibrateLight();
+        // Haptisches Feedback bei Power-Bomb-Platzierung (v2.0.45: starker Triple-Tap)
+        _vibration.VibrateSpecialBomb();
 
         // Tracking: Power-Bomb (Achievement + Missionen)
         _tracking.OnPowerBombUsed();
@@ -143,8 +143,8 @@ public sealed partial class GameEngine
             _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
             _soundManager.PlaySound(SoundManager.SFX_FUSE);
 
-            // Haptisches Feedback bei Line-Bomb-Platzierung
-            _vibration.VibrateLight();
+            // Haptisches Feedback bei Line-Bomb-Platzierung (v2.0.45: Special-Bomb-Pattern)
+            _vibration.VibrateSpecialBomb();
 
             // Tracking: Line-Bomb (Achievement + Missionen)
             _tracking.OnLineBombUsed();
@@ -280,16 +280,20 @@ public sealed partial class GameEngine
         _explosions.Add(explosion);
 
         // Spezial-Bomben: Differenzierter Sound (Layering), Normal: Standard-Explosion
+        // Stereo-Pan basierend auf Bomben-Grid-Position relativ zum Spielfeld-Mittelpunkt:
+        // Bombe links = Pan -1, rechts = Pan +1 → räumliche Verortung
+        float bombPan = Math.Clamp((bomb.GridX / (float)Math.Max(1, _grid.Width - 1)) * 2f - 1f, -1f, 1f);
         if (bomb.Type != BombType.Normal)
             _soundManager.PlayBombExplosion(bomb.Type);
         else
-            _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
+            _soundManager.PlaySoundPanned(SoundManager.SFX_EXPLOSION, bombPan);
 
-        // Game-Feel: Screen-Shake und Partikel eskalieren mit Kettenreaktions-Tiefe
+        // Game-Feel: Trauma-basierter Shake mit Distanz-Skalierung.
+        // Manhattan-Distanz zum Spieler in Grid-Zellen → Bomben weit weg shaken weniger.
         int depth = bomb.ChainDepth;
-        float shakeIntensity = 3f + depth * 1.5f;
-        float shakeDuration = 0.2f + depth * 0.05f;
-        _screenShake.Trigger(shakeIntensity, shakeDuration);
+        float baseTrauma = 0.35f + depth * 0.15f;          // 0.35 → 0.95 bei depth=4
+        float distanceCells = MathF.Abs(bomb.GridX - _player.GridX) + MathF.Abs(bomb.GridY - _player.GridY);
+        _screenShake.TriggerAt(baseTrauma, distanceCells, falloffCells: 4f);
         _vibration.VibrateMedium();
 
         float px = bomb.X;

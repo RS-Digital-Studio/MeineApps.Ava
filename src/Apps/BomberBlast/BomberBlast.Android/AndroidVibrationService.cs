@@ -30,15 +30,25 @@ public sealed class AndroidVibrationService : IVibrationService
 
     public void VibratePattern()
     {
-        if (!IsEnabled || _vibrator == null) return;
-        try
-        {
-            long[] pattern = { 0, 50, 50, 50, 50, 50 };
-            if (OperatingSystem.IsAndroidVersionAtLeast(26))
-                _vibrator.Vibrate(VibrationEffect.CreateWaveform(pattern, -1));
-        }
-        catch (Java.Lang.SecurityException) { /* VIBRATE-Permission entzogen */ }
+        Waveform(new long[] { 0, 50, 50, 50, 50, 50 });
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // v2.0.45 — Haptic-Library: Native Patterns für 8 Spielereignisse.
+    // VibrationEffect.createWaveform liefert kontextspezifisches Feedback.
+    // Auf älteren Androids fallen wir auf einfaches Pulse zurück.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public void VibrateBombPlant()       => Waveform(new long[] { 0, 10, 20, 10 });
+    public void VibrateSpecialBomb()     => Waveform(new long[] { 0, 15, 15, 15, 15, 15 });
+    public void VibratePickUp()          => Pulse(20);
+    public void VibrateShieldHit()       => Waveform(new long[] { 0, 35, 30, 35 });
+    public void VibrateDeath()           => Pulse(200);
+    public void VibrateLevelComplete()   => Waveform(new long[] { 0, 60, 40, 90, 40, 120 });
+    public void VibrateBossRoar()        => Pulse(400);
+    public void VibrateCurse()           => Waveform(new long[] { 0, 30, 80, 30 });
+    public void VibrateCombo()           => Waveform(new long[] { 0, 12, 30, 12, 30, 12, 30, 12 });
+    public void VibrateAchievement()     => Waveform(new long[] { 0, 40, 30, 40, 30, 100 });
 
     private void Pulse(int milliseconds)
     {
@@ -47,6 +57,17 @@ public sealed class AndroidVibrationService : IVibrationService
         {
             if (OperatingSystem.IsAndroidVersionAtLeast(26))
                 _vibrator.Vibrate(VibrationEffect.CreateOneShot(milliseconds, VibrationEffect.DefaultAmplitude));
+        }
+        catch (Java.Lang.SecurityException) { /* VIBRATE-Permission entzogen */ }
+    }
+
+    private void Waveform(long[] pattern)
+    {
+        if (!IsEnabled || _vibrator == null) return;
+        try
+        {
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+                _vibrator.Vibrate(VibrationEffect.CreateWaveform(pattern, -1));
         }
         catch (Java.Lang.SecurityException) { /* VIBRATE-Permission entzogen */ }
     }

@@ -95,10 +95,10 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.0.35 | Banner + Rewarded | 4,99 Premium | Produktion |
-| BomberBlast | v2.0.36 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion |
+| HandwerkerImperium | v2.1.0 | Banner + Rewarded | 4,99 Premium | Produktion |
+| BomberBlast | v2.0.55 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion (AAA-Audit Phase 1-15 09.05.2026: TIER-1+2 + Mode-Plugin-Framework + ComboSystem + FixedTimestepRunner + Firebase-Android-Stubs. **v2.0.55 Phase 15 4-Subagent-Review:** 2 P0 (Liga-Rules-Mismatch seit v2.0.34, DSGVO-Consent-UI) + 4 P1 (AccountDeletion-Reihenfolge, CloudSave-Version, Memory-Telemetry-Background-Thread, Cinematic-Stop) gefixt. = 286 Tests grün) |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
-| BingXBot | v1.3.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote, Multi-TF Standalone seit 15.04.2026, Buch-Only Strip Phase 2 21.04.2026 — 13 Non-Book-Features entfernt, DailyRisk+EntryMode.Both als User-Ausnahmen behalten) |
+| BingXBot | v1.7.0 + Phase 18 (09.05.2026) | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote, OPTIMIZATION_PLAN_2026-05 Phasen 0-17 umgesetzt 06.05.2026, **Phase 18 (09.05.2026): A1-A7 Risk-Hardening (GetPositionScalingFactor-Bug, Idempotency-Keys, Clock-Drift, Korrelations-Filter, Vol-Targeting, Tick-Size-Awareness, Session-Filter), B1-B5 Resilience (Sync-over-Async, Heartbeat+Missing-TP, Rate-Limit, News-Health), C1+C2+C3 Performance (Allocation-Pressure, ServerTime-Probe statt 80kB), D1+D2 Quality (Magic Numbers, MaxScore dynamisch), F2+F5 Operations (FCM-Cleanup, Funding-Threshold pro Category). Tests: 713/713 grün. E-Refactor + F1/F3/F4 + D3/D4 als Folge-Iteration vermerkt** — Pi-Deploy + Live-Verifikation = naechste Schritte) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
 | SmartMeasure | v1.0.2 | Nein | Nein | Entwicklung (privat, RTK-GPS Vermessung) |
 

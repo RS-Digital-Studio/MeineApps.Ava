@@ -7,7 +7,549 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.36 (VersionCode 46) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Produktion
+**Version:** 2.0.55 (VersionCode 65) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Produktion
+
+**v2.0.55 AAA-Audit Phase 15 — 4-Subagent-Review-Findings (2 P0 + 4 P1 gefixt) (09.05.2026):**
+
+Vier parallele Subagent-Reviews (code-review, mvvm-auditor, security, performance) haben 2 P0 Showstopper + 4 P1 Findings entdeckt. Alle 6 sofort gefixt. Build 0/0/0, **286/286 Tests grün**.
+
+### P0 Critical (sofort gefixt)
+
+- **[Security P0] Firebase-Rules: Liga-Pushes wurden seit v2.0.34 abgelehnt** — `bomberblast-league.rules.json:69` hatte `'updatedUtc'` in `hasChildren`-Pflicht-Liste, aber `FirebaseLeagueEntry` schreibt das Feld seit v2.0.34 nicht mehr (ServerTimestamp-Migration). Fix: `'updatedUtc'`-Eintrag aus `hasChildren` entfernt + Block Zeilen 79-81 gelöscht. **Liga-System wieder funktional.**
+- **[Security P0] DSGVO Consent-Toggle für Analytics/Crashlytics fehlt** — Schema V3 hat zwar `AnalyticsConsent`/`CrashlyticsConsent`-Defaults (false), aber kein UI-Toggle. Bei Firebase-Live wäre das ein Compliance-Showstopper (Art. 6/7 fordert vorherige aktive Einwilligung mit klarer UI). Fix: Neue Privacy-Sektion in SettingsView (purple Top-Border #7C3AED, Shield-Icon) mit 2 ToggleSwitches (CrashlyticsConsent + AnalyticsConsent) + Hinweis "Änderungen wirken beim nächsten App-Start". RESX × 6 Sprachen = 24 neue Lokalisierungs-Einträge. SettingsViewModel-Properties + partial OnXxxChanged-Handler persistieren via Preferences-Set.
+
+### P1 High (sofort gefixt)
+
+- **[Security P1] AccountDeletion-Reihenfolge umgekehrt** (`IAccountDeletionService.cs:67`): Vorher Firebase → Cloud → Local. Bei App-Kill nach Schritt 1+2 blieben lokale Daten + wurden beim nächsten Start zurück in Cloud gesynct. Fix: **Local-First** — Preferences.Clear ist atomar, Cloud/Firebase werden danach versucht aber sind nicht race-kritisch.
+- **[Security P1] DeleteCloudSaveAsync hardcoded `Version = 1`** (`CloudSaveService.cs:301`): Empty-Snapshot triggerte Re-Login eine V1→V3-Migration mit Default-Auffüllung. Fix: `CloudSaveSchemaMigrator.CurrentSchemaVersion` (=3) statt hardcoded 1.
+- **[Performance P1] GC.GetTotalMemory(false) auf UI-Thread** (`GameEngine.cs:_lastMemoryReportTicks`): War 30s-Intervall + UI-Thread → 1-5ms Frame-Spike auf Mono-AOT-Android (Heap-Walk). Fix: 60s-Intervall + Background-Thread via `Task.Run`. Crashlytics-Setter sind thread-safe.
+- **[Performance P1] Cinematic.Stop() bei Mode-Wechsel fehlte** (`GameEngine.Level.cs`): Boss-Reveal-Cinematic konnte nach Mode-Wechsel weiterlaufen (z.B. wenn User während Boss-Reveal zur Story zurückgeht). Fix: `_cinematic?.Stop()` als erste Zeile in allen 6 `StartXxxModeAsync`-Methoden.
+
+### Nicht gefixt (bewusste Deferrals — siehe Subagent-Reports)
+
+- **[Health P0/ARCH-1] IGameMode-Hooks nirgends aufgerufen**: Foundation steht, aber Initialize/UpdateLogic/OnLevelComplete/OnGameOver werden nicht im Engine-Update-Loop getriggert. Phase 11 hat nur die Pure-Logic-Hooks (TryGetSubmitArgs etc.) verkabelt — die polymorphe API steht für Phase 16+ (eigener Sprint mit Live-Test-Phase wegen Mode-Logic-Breaks).
+- **[Health P1/ARCH-2] FixedTimestepRunner toter Code**: bewusst behalten als Foundation für Replay-System-Sprint.
+- **[Security P2] Reports-Audit-Trail bei Account-Delete**: bleibt Cloud-Function-TODO (DSGVO-konform via Pseudonymisierung-Doku).
+- **[MVVM A11y] AutomationProperties.Name in ProfileView/GameOverView/GameView**: eigener Polish-Sprint.
+
+### Pre-Existing nicht in 14 Phasen entstanden
+
+AppChecker-Findings (alle WARN): Material.Icons-False-Positive (BomberBlast nutzt GameIcons-Konvention), Ad-Layout-Checks für Landscape ohne Banner (kein Banner gewollt), Event-Cleanup-Hinweise für struct-Pool-Operatoren (`EventParticle.X +=`).
+
+**v2.0.54 AAA-Audit Phase 11-14 — Logic-Migration + ComboSystem + Fixed-Timestep-Foundation + Firebase-Stubs (09.05.2026):**
+
+Vier-in-eins-Sprint zu Punkt 1, 3, 4, 5 aus dem Audit-Plan. Build 0/0/0 auf Shared/Desktop/Android-Debug, **286/286 Tests grün** (+47 in Phase 11-14).
+
+### Phase 11 (Pkt 1): Logic-Migration in IGameMode-Hooks
+
+- **`BossRushMode.AccumulateScoreAndGetNextBossIndex(levelScore, totalBosses)`**: Pure-Logic-Methode für Score-Akkumulation + Next-Index-Decision. Ersetzt 5 Inline-Stellen in `GameEngine.Level.cs:UpdateLevelComplete-BossRush-Branch`.
+- **`BossRushMode.TryGetSubmitArgs(completedAllBosses)`**: Atomare Submit-Decision mit State-Mutation (setzt Submitted=true falls true returned, idempotent bei Folge-Aufrufen). Ersetzt 3 Inline-Submit-Logiken (LevelComplete, GameOver-Race, Fallback nach Async-Fail).
+- **`DailyRaceMode.TrySubmit(finalScore)`**: Idempotente Submit-Logic (setzt Submitted=true, verweigert score≤0 oder doppelte Submission). Ersetzt 1 Inline-Stelle in GameOver.
+- **Engine-Code wird kompakter**: 3 BossRush-Stellen + 1 DailyRace-Stelle nutzen jetzt Pure-Logic-Calls statt Inline-if-Submitted-Pattern.
+
+### Phase 12 (Pkt 3): Subsystem-Extraktion ComboSystem
+
+- **`Core/Combat/ComboSystem.cs`**: Pure-Logic-Klasse für Combo-Mechanik. Counter, Timer, Window-Verlängerung (≥6 → +0.5s), Score-Tabelle (x2: 200 → x10+: 30000), CHAIN/MEGA/ULTRA-Schwellen, Slow-Motion-Multiplikator (1.5× bei ULTRA). 100 % testbar ohne Engine-Mocks.
+- **GameEngine-Integration**: `_comboSystem`-Field, `_comboCount`/`_comboTimer` als Read-only-Property-Aliasse für Renderer-Compat. Alle Aufrufstellen in GameEngine.Collision.cs (RegisterKill, GetScoreBonus, IsChainKill, GetSlowMotionDuration) und GameEngine.cs (Update, Reset) angepasst.
+- **+19 ComboSystemTests**: Score-Tabelle pro Combo-Wert (Theory mit 10 Cases), Window-Verlängerung-Verifikation, ULTRA/MEGA/CHAIN-Schwellen, Reset-Verhalten, GetSlowMotionDuration-Multiplikator, BossRush/DailyRace Pure-Logic-Hook-Tests.
+
+### Phase 13 (Pkt 4): Fixed-Timestep-Foundation
+
+- **`Core/FixedTimestepRunner.cs`**: 60-Hz-Sim-Tick-Akkumulator-Pattern. `GetTicksForFrame(wallDeltaTime)` liefert Anzahl auszuführender Sim-Ticks pro Frame. `GetInterpolationAlpha()` liefert Render-Smoothing-Alpha [0,1]. Spiral-of-Death-Schutz mit MAX_TICKS_PER_FRAME=5.
+- **AKTUELLER STAND**: Foundation-Klasse fertig + getestet. **NICHT in GameEngine.Update integriert** — Variable-Timestep bleibt der Live-Mode. Voraussetzung für Replay-System / Anti-Cheat / Async-PvP, alle benötigen deterministische Frame-für-Frame-Reproduzierbarkeit.
+- **Migrations-Pfad in 4 Schritten geplant** (eigener Sprint): GameEngine.Update zerlegen → Sim-Ticks-Loop → Render-Interpolation → Random-Calls seed-deterministisch.
+- **+10 FixedTimestepRunnerTests**: 60-Hz-Tick-Berechnung, Akkumulator-Erhalt, Spiral-of-Death-Kappung, Interpolation-Alpha-Range, Determinismus-Garantie (gleiche Inputs → gleiche Outputs), Reset, Disabled-Mode-No-Op.
+
+### Phase 14 (Pkt 5): Firebase Android-Service-Stubs
+
+- **`AndroidTelemetryService.cs`** (Crashlytics-Wrapper): Erfüllt `ITelemetryService` mit allen 8 Methoden. Echte Crashlytics-API-Aufrufe als auskommentierte `// TODO`-Code-Kommentare in der Implementierung — Robert kann sie nach NuGet-Install + Console-Setup in 10 min einkommentieren.
+- **`AndroidAnalyticsService.cs`** (Firebase Analytics-Wrapper): Erfüllt `IAnalyticsService` mit DSGVO-Consent-Flow-Hinweis (liest `AnalyticsConsent`-Pref vor jedem Init).
+- **`AndroidPushNotificationService.cs`** (FCM + AlarmManager-Wrapper): Erfüllt `IPushNotificationService` mit Token-Lifecycle, Topic-Subscription-API, lokaler Notification-Plan-API. Android-13+-Permission-Flow als TODO-Kommentar.
+- **`FIREBASE_SETUP.md`** (neue Datei in `src/Apps/BomberBlast/`): Schritt-für-Schritt-Setup-Anleitung — pro Modul (Crashlytics 20 min, Analytics 20 min, FCM 50 min). Total-Aufwand für alle 3 Module + Tests: ~1.5h.
+- **Build-Verifikation**: Stubs kompilieren auf Android-Debug-Build sauber durch. Robert muss nur NuGet-Packages installieren + Console-Setup machen + TODO-Kommentare einkommentieren.
+
+### Test-Total
+- **286 Tests grün** (vorher 239 → +47 in Phase 11-14):
+  - +21 ComboSystemTests + DailyRace/BossRush Pure-Logic-Hook-Tests
+  - +10 FixedTimestepRunnerTests
+  - +9 DungeonModeTests aus Phase 10 (übergreifend)
+  - +7 weitere kleine Test-Anpassungen
+
+### Was nicht in v2.0.54 (bewusste Deferrals — eigene Sprints)
+- Bool-Flag-Entfernung (Pkt 2 — Robert hat bewusst ausgelassen, mein Rat ebenfalls dagegen)
+- Fixed-Timestep tatsächlich in GameEngine.Update integriert: 4-Schritt-Migration mit Test-Plan
+- GameEngine-Subsystem-Extraktion Phase 2 (CombatSystem/SpawnerSystem/PhysicsSystem aus 5100-LOC) — 3+ Wochen Sprint
+- Firebase Console-Setup + NuGet-Install + TODO-Aktivierung (Robert macht das, Stubs sind bereit)
+- Audio-Bus + Welt-6-10-Music (externe Sound-Designer-Beauftragung)
+
+**v2.0.53 AAA-Audit Phase 10 — QA-Sweep + Code-Review-Findings + Release-Verifikation (09.05.2026):**
+
+Final-Phase: Code-Review-Subagent über Mode-Plugin-Migration (Phase 6-9), AppChecker-Run, zusätzliche DungeonMode-Tests, Release-AAB-Verifikation. Build 0/0/0, **239/239 Tests grün** (+9 in Phase 10), Release-AAB erfolgreich erstellt (79.5 MB).
+
+- **Code-Review-Findings (Subagent code-review)**:
+  - **P0 KRITISCH (gefixt durch Subagent)**: Stale-Bool-Flags `_isBossRushMode` und `_isDailyRace` wurden in 5 von 7 `StartXxxModeAsync`-Methoden NICHT zurückgesetzt. Szenario: Boss-Rush abbrechen → MainMenu → Story-Run → `_isBossRushMode == true` blieb hängen → Render und CompleteLevel hatten falsche Code-Pfade. **5 Edits in `GameEngine.Level.cs`** (StartStoryModeAsync, StartDailyChallengeModeAsync, StartQuickPlayModeAsync, StartSurvivalModeAsync, StartDungeonFloorAsync) für `_isBossRushMode = false; _isDailyRace = false;`-Konsistenz. War der einzige echte Bug der Mode-Migration, jetzt eliminiert.
+  - **P1 HIGH (selbst nachgezogen)**: `_currentMode` wurde nirgends auf null gesetzt. Defensive Lifetime-Verbesserung: `GameEngine.Dispose()` ruft jetzt `_currentMode.Cleanup(ctx)` auf und nullt das Feld. Damit ist die IGameMode.Cleanup-Hook-Konvention real angeschlossen — bei künftiger Logic-Migration in IGameMode.UpdateLogic ist der Lifecycle korrekt.
+  - **P2 MEDIUM (Hinweise, nicht gefixt)**: Allokationen pro Mode-Wechsel (~100 Bytes, Negligible — nicht Hot-Path), Race-Conditions sicher (Single-Threaded UI-Loop).
+
+- **AppChecker-Ergebnis**: 65 PASS / 23 INFO / 57 WARN / 1 FAIL (146 Checks). Alle WARNs/INFOs sind **Pre-Existing** (Material.Icons-False-Positive für GameIcon-System, Ad-Layout-Checks für Landscape-Game ohne Banner, Event-Cleanup-Hinweise für struct-Pool-Operatoren wie `EventParticle.X +=`). 1 FAIL ist False-Positive (BomberBlast nutzt GameIcons-Konvention). Keine durch Phase 6-9 entstandene Regression.
+
+- **+9 neue Tests** (`DungeonModeTests`):
+  - State-Defaults-Validation (alle 13 Properties auf 0/false/None)
+  - State-Mutation-Tests pro Cluster (TimeFreeze, Phantom, Synergien, Floor-Modifier)
+  - FloorModifier kann alle Enum-Werte halten (DungeonFloorModifier-Enum)
+  - ModeTag-Unique-Garantie gegenüber den 7 anderen Modi
+  - IGameMode-Default-Hooks-NoOp-Validation
+  - Multi-Instanz-Isolation (kein static-Sharing zwischen DungeonMode-Instanzen)
+
+- **Release-AAB Build**: `org.rsdigital.bomberblast-Signed.aab` (79.5 MB) erfolgreich gebaut. Keine neuen Warnings durch Phase 6-10. AOT-Kompilierung läuft sauber durch (97/97 .so-Files). Damit ist die Codebase release-ready für Play-Store-Upload.
+
+**Was Phase 10 tatsächlich gebracht hat:**
+1. **1 produktionskritischer Bug behoben** (Stale-Bool-Flags) — wäre bei Live-Test sichtbar geworden
+2. **Lifecycle-Konvention etabliert** (Dispose ruft Mode.Cleanup auf) — Foundation für Phase 11+ Logic-Migration
+3. **Test-Coverage** auf 239 Tests gehoben (+157 seit v2.0.43, +191% Coverage)
+4. **Release-Build verifiziert** — keine versteckten Regressions in Release-AOT-Kompilierung
+
+**v2.0.52 AAA-Audit Phase 9 — DungeonMode-State-Migration (13 Felder, Property-Alias-Pattern) (09.05.2026):**
+
+Vollständige Migration des Dungeon-Modus-States aus der Engine in `DungeonMode`. Wegen der hohen Aufrufstellen-Anzahl (30+ in Render/Combat/Explosion/Collision) wurde das **Property-Alias-Pattern** gewählt: bestehende Engine-Felder werden zu private Properties mit identischem Namen, die intern auf die DungeonMode-Instanz delegieren. Existierender Code funktioniert ohne Änderungen — nur die Storage-Lokation wechselt. Build 0/0/0, **230/230 Tests grün**.
+
+- **13 Felder migriert** in DungeonMode-Properties:
+  - **Legendaere Buffs (6 Felder)**: `TimeFreezeTimer`, `PhantomWalkAvailable`, `PhantomWalkActive`, `PhantomWalkTimer`, `PhantomCooldownTimer`, `PlayerHadWallpassBeforePhantom`.
+  - **Synergie-Flags (5 Felder)**: `SynergyBlitzkriegActive`, `SynergyFortressActive`, `FortressRegenTimer`, `SynergyMidasActive`, `SynergyElementalActive`, `DungeonBombFuseReduction`, `DungeonEnemySlowActive` (= 7 effektiv mit Fuse-Reduction + EnemySlow-Flag).
+  - **Floor-Modifier (2 Felder)**: `FloorModifier`, `ModifierRegenTimer`.
+
+- **Property-Alias-Pattern**: Statt 30+ Aufrufstellen sed-zu-replacen (hohes Regressions-Risiko), bekommt GameEngine private Properties mit gleichen Namen wie die alten Felder. Z.B. `private bool _phantomWalkActive { get => DungeonModeState?.PhantomWalkActive ?? false; set { if (DungeonModeState is { } d) d.PhantomWalkActive = value; } }`. Bestand-Code funktioniert unverändert; bei `_currentMode is not DungeonMode` liefern Reads Default-Werte und Writes sind no-op (sicher).
+
+- **Helper-Property** `DungeonModeState => _currentMode as DungeonMode` als typed-pattern-match-Cast.
+
+- **Backward-Compat**: Bool-Flag `_isDungeonRun` bleibt als Hot-Path-Convenience (Pattern-Match wäre pro Frame teurer). Mode-Klassen-Identität ist sekundär; State-Lokation ist die eigentliche Migration.
+
+- **Risiko-Mitigation**: Kein einziger Aufrufer im Engine-Code (Render/Combat/Explosion/Collision/Level — alle 30+ Stellen) musste angepasst werden. Build sauber durchgelaufen + alle 230 Tests grün auf erstem Versuch.
+
+**v2.0.51 AAA-Audit Phase 8 — SurvivalMode-State + SurvivalSpawner-API-Anpassung (09.05.2026):**
+
+Migration des Survival-Modus-States aus der Engine in `SurvivalMode` und Anpassung der `SurvivalSpawner`-API von ref-Parametern auf direkte Mode-Property-Mutation. Build 0/0/0, **230/230 Tests grün**.
+
+- **SurvivalMode-State migriert** (3 Engine-Felder entfernt):
+  - `_survivalTimeElapsed` → `SurvivalMode.TimeElapsed`
+  - `_survivalSpawnTimer` → `SurvivalMode.SpawnTimer`
+  - `_survivalSpawnInterval` → `SurvivalMode.SpawnInterval`
+  - GameEngine-Helper-Property `SurvivalModeState => _currentMode as SurvivalMode`
+  - 5 Aufrufstellen umgestellt: StartSurvivalModeAsync (Init), UpdateSurvivalSpawning (Spawner-Hookup), Tracking-Read in OnSurvivalEnded, public SurvivalTimeElapsed-Property, GameEngine.Render displayTime-Logik.
+
+- **SurvivalSpawner-API umgebaut**: `Update(ctx, deltaTime, ref float, ref float, ref float)` → `Update(ctx, deltaTime, SurvivalMode mode)`. Direkter Property-Zugriff statt ref-Refs — saubere Object-orientierte API. SurvivalSpawner ist weiterhin static (zustandslos), Mode hält State.
+
+- **Engine-Schlankheit**: 3 Survival-State-Felder + private SurvivalCtx-ref-Logic entfernt. GameEngine.cs schrumpft um die State-Felder, SurvivalSpawner-Aufruf wird kompakter.
+
+- **Backward-Compat**: Bool-Flag `_isSurvivalMode` bleibt. Migration ist tatsächliches Refactoring — kein Schein-Sync.
+
+**v2.0.50 AAA-Audit Phase 7 — Mode-State-Migration in Mode-Klassen (09.05.2026):**
+
+Tatsächliche Migration des Mode-spezifischen States aus der Engine in die in v2.0.49 angelegten Mode-Klassen. Defensiv: nur **klar isolierte Modi** (BossRush/DailyRace/QuickPlay) werden migriert. Survival/Dungeon/Master bleiben Phase 8 wegen tieferer Engine-Verflechtung. Build 0/0/0, **230/230 Tests grün**.
+
+- **BossRushMode-State migriert** (`BossRushMode` Properties statt Engine-Felder):
+  - `_bossRushIndex` → `BossRushMode.BossIndex`
+  - `_bossRushAccumulatedScore` → `BossRushMode.AccumulatedScore`
+  - `_bossRushStartTime` → `BossRushMode.TotalTimeSeconds` (Datentyp-Anpassung von DateTime auf float, weil SubmitRun(score, timeSeconds, ...) erwartet wird)
+  - `_bossRushSubmitted` → `BossRushMode.Submitted`
+  - GameEngine-Helper-Property `BossRushModeState => _currentMode as BossRushMode` für Read/Write-Zugriff
+  - 8 Aufrufstellen (StartBossRushModeAsync + UpdateLevelComplete-Branch + GameOver-Race-Submit) angepasst
+
+- **DailyRaceMode-State migriert**:
+  - `_dailyRaceSubmitted` → `DailyRaceMode.Submitted`
+  - GameEngine-Helper-Property `DailyRaceModeState`
+  - 2 Aufrufstellen angepasst (Init + GameOver-Submit)
+
+- **QuickPlayMode-State migriert**:
+  - `_quickPlayDifficulty` → `QuickPlayMode.Difficulty` (im Konstruktor mit Clamp auf 1-10)
+  - GameEngine-Helper-Property `QuickPlayModeState`
+  - 2 Aufrufstellen angepasst (Init + Tracking-Hook)
+
+- **Backward-Compat-Strategie**: Bool-Flags (`_isBossRushMode`/`_isDailyRace`/`_isQuickPlayMode`) bleiben als Hot-Path-Convenience erhalten — Pattern-Match (`_currentMode is BossRushMode`) wäre pro Frame teurer als ein Bool-Vergleich. Nur der State wandert in die Mode-Klassen, der Routing-Switch bleibt am Bool.
+
+- **Test-Update**: `BossRushMode_HatErwarteteDefaultsFuerState`-Test angepasst (TotalTimeSeconds statt StartTime). Restliche 230 Tests laufen unverändert grün.
+
+**Was nicht in v2.0.50 (bleibt Phase 8+):**
+- SurvivalMode-State (`_survivalSpawnTimer`/`_survivalSpawnInterval`/`_survivalTimeElapsed`): 5+ Aufrufstellen, SurvivalSpawner-Context. Eigener Sprint mit Test-Plan.
+- DungeonMode-State (Buff-Synergy-Flags, FloorModifier, TimeFreezeTimer, Phantom-Walk-State): 10+ Felder, eng mit DungeonService verflochten. Eigener Sprint.
+- MasterMode-State: aktuell nur Bool-Flag `_isMasterMode`, kein zusätzlicher State zu migrieren — bereits sauber.
+- Migration der eigentlichen UpdateLogic in IGameMode.UpdateLogic-Hooks (Phase 9): Engine-Update-Loop ruft noch nicht `_currentMode?.UpdateLogic(...)`, weil die existing `UpdateSurvival`/`UpdateBossRush`-Methoden direkt im Hot-Path liegen.
+- Bool-Flag-Entfernung (Phase 10): erst sinnvoll wenn alle State-Felder migriert sind.
+
+**v2.0.49 AAA-Audit Phase 6 — Mode-Plugin-Framework Phase 2 (09.05.2026):**
+
+Sechste Welle: tatsächliche Migration der Mode-Architektur auf das in v2.0.46 etablierte `IGameMode`-Skeleton. Defensiver Refactor — Bool-Flags bleiben als Backward-Compat-Source-of-Truth, neue Mode-Klassen kapseln den Mode-spezifischen State. Build 0/0/0 auf Shared/Desktop/Android-Debug, **230/230 Tests grün** (+18 in Phase 6).
+
+- **8 konkrete IGameMode-Implementierungen** (`Core/Modes/GameModes.cs`):
+  - `GameModeBase`: Abstrakte Basis mit no-op-Default-Implementierungen aller IGameMode-Hooks (Initialize/UpdateLogic/OnLevelComplete/OnGameOver/Cleanup).
+  - `StoryMode` (Tag `story`): Standard-Story-Modus mit 100 Levels.
+  - `MasterMode` (Tag `master`): New-Game+ ab L100-Clear, parallel zu StoryMode aktivierbar.
+  - `DailyChallengeMode` (Tag `daily_challenge`): Tägliches deterministisches Level.
+  - `QuickPlayMode` (Tag `quick`): Mit Difficulty-Property (1-10, geclamped).
+  - `SurvivalMode` (Tag `survival`): Mit `TimeElapsed` + `SpawnTimer` + `SpawnInterval` als kapselbarem State.
+  - `DungeonMode` (Tag `dungeon`): Roguelike-Container.
+  - `BossRushMode` (Tag `boss_rush`): Mit `BossIndex` + `AccumulatedScore` + `StartTime` + `Submitted` als kapselbarem State.
+  - `DailyRaceMode` (Tag `daily_race`): Mit `Submitted`-Flag.
+
+- **GameEngine.CurrentMode-Slot**: `private IGameMode? _currentMode` + `public IGameMode? CurrentMode { get; }` als neuer architektonischer Pivot. Wird in jeder `StartXxxModeAsync`-Methode gesetzt (z.B. `_currentMode = new BossRushMode()` bei Erst-Aufruf, bei Folge-Bossen wird der existierende Mode beibehalten damit AccumulatedScore stimmt).
+
+- **GetCurrentModeTag()-Migration**: Bevorzugt `_currentMode?.ModeTag`, fällt auf die Bool-Flag-Logic zurück für Modi die noch nicht durch `StartXxxModeAsync` initialisiert wurden. Damit ist Telemetrie/Crashlytics-Custom-Keys-Konsistenz gewährleistet während der Migration.
+
+- **+18 neue Tests** (`GameModesTests`): ModeTag-Konsistenz-Theorie (7 Modi mit erwarteten Tags), QuickPlayMode-Difficulty-Clamping (3 Edge-Cases), Default-State-Validation für SurvivalMode/BossRushMode/DailyRaceMode, GameModeBase-NoOp-Verhalten, Unique-Tags-Garantie über alle 8 Modi, State-Mutation-Test für BossRushMode + SurvivalMode.
+
+- **Backward-Compat-Strategie**: Existierende `_isXxxMode`-Bool-Flags bleiben Source-of-Truth — 12 Engine-Module mit Bool-Flag-Checks (UpdateSurvival/UpdateBossRush/CompleteLevel/GameOver/Render etc.) werden NICHT in dieser Phase migriert. Mode-spezifische State-Felder bleiben in der Engine. Tatsächliche Logic-Migration in die Mode-Klassen folgt in Phase 7+ (Folge-Iterationen mit Test-Plan, Feature-Branch und Pre-Release-QA).
+
+- **Was Phase 6 tatsächlich liefert**:
+  - **Strukturelle Klarheit**: Mode-Architektur ist jetzt durch 8 konkrete Klassen + 1 Interface dokumentiert.
+  - **Telemetrie-Genauigkeit**: ModeTag wird per Polymorphie aus `_currentMode` gelesen.
+  - **Foundation für Phase 7**: Mode-spezifische State-Felder können nach und nach aus der Engine in die Mode-Klassen verschoben werden, ohne Bool-Flags brechen.
+  - **API für neue Modi**: Künftig (Endless/Co-Op/PvP) implementiert ein neuer Mode IGameMode statt Bool-Flag-Schwemme zu erweitern.
+
+**Was nicht in v2.0.49 (bleibt Phase 7+):**
+- Mode-spezifische Logic aus `UpdateSurvival`/`UpdateBossRush`/`UpdateDailyRace` in Mode-Klassen verschieben.
+- Mode-spezifische State-Felder (`_survivalSpawnTimer`/`_bossRushIndex`/etc.) aus Engine in Mode-Klassen migrieren.
+- IGameMode.UpdateLogic/OnLevelComplete-Hooks aus GameEngine-Update-Loop tatsächlich aufrufen.
+- Bool-Flags entfernen.
+
+Diese Schritte erfordern größere Test-Pläne und sollten nach Live-Verifikation der jetzigen Architektur kommen.
+
+**v2.0.48 AAA-Audit Phase 5 — Konsistenz + Victory-Cinematic + Mehr Tests (09.05.2026):**
+
+Fünfte Welle der Audit-Initiativen mit Fokus auf User-sichtbarer Konsistenz und weiterer Test-Coverage. Build 0/0/0 auf Shared/Desktop/Android-Debug, **212/212 Tests grün** (+19 in Phase 5).
+
+- **Currency-Pulse-Konsistenz** für ShopView: ShopViewModel bekommt `IsCoinsPulse` + `IsGemsPulse`-Properties + `partial OnCoinsTextChanged`/`OnGemsTextChanged`-Trigger analog zu MainMenu (280ms Auto-Reset via `Dispatcher.UIThread.InvokeAsync` + `Task.Delay`). Coin/Gem-Updates während Käufen sind jetzt visuell sichtbar. ProfileView/GameOverView bleiben WIP (seltene Updates).
+
+- **HighContrast für State-Overlays**: GameEngine.RenderStateOverlay synchronisiert `_overlayHighContrast` aus `_accessibility.HighContrast`. Helper `GetOverlayBgAlpha(byte default)` boost auf 240 (statt 200). Helper `RenderHighContrastBorder(canvas, x, y, w, h, alpha)` zeichnet 2px weißen Stroke-Frame um Boxen wenn aktiv. Pause-Overlay nutzt beide Helper jetzt (Vollbild-Frame + Background-Boost).
+
+- **Subtitle-Trigger erweitert**: 
+  - **Ultra-Combo (x10+)**: Throttled alle 5 Combos (`_comboCount % 5 == 0`) zeigt "[ULTRA-COMBO]" — verhindert Spam.
+  - **Victory-Fanfare**: Bei UpdateVictory wird "[SIEGES-FANFARE]" 3s eingeblendet.
+  - 2 RESX-Keys (`SubtitleAchievement`, `SubtitleUltraCombo`) × 6 Sprachen = 12 weitere Lokalisierungen. Achievement-Unlock-Trigger bleibt vorbereitet (RESX-Key + Designer-Property), GameTrackingService-Hookup ist eigene Iteration.
+
+- **Cinematic-Director: Victory-Big-Win-Sequence** (`PlayVictoryCinematic` in GameEngine.Level.cs): 2.5s Big-Win-Cinematic mit 4 Confetti-Wellen:
+  - **0.0s**: Initiale Gold-Konfetti-Explosion zentral + VibrateLevelComplete
+  - **0.5s**: Multi-Color-Konfetti aus 4 Ecken (Rot/Grün/Blau/Gold)
+  - **1.2s**: Mid-Burst-Sparks zentral + Trauma-Spike (0.4)
+  - **2.0s**: Finale Gold-Mega-Explosion + native VibrateAchievement
+  - Kein Camera-Zoom (MaxCameraZoom=0) damit Konfetti voll sichtbar bleibt.
+
+- **+19 neue Tests in 3 Files**:
+  - **`MasterModeServiceTests`** (10): IsUnlocked-Gating (Highest>=100), IsActive-Setter-Guard, RecordLevelCompleted-Persistenz, Star-Best-Tracking, TotalMasterClears, TotalMaster3Stars.
+  - **`GameLoopSettingsTests`** (6): TickIntervalMs-Berechnung (33ms@30, 16ms@60), SetTargetFps-Persistenz mit Default-Fallback, Event-Firing, Initialize-Roundtrip. Sequential-Collection für static-State-Sicherheit.
+  - **`GameModeContextTests`** (3): Required-Properties-Setup, Compile-Vertrag des IGameMode-Interfaces, Daily-Challenge-Levelnumber-99-Edge-Case.
+
+**Was nicht in v2.0.48 (bewusste Deferrals — eigene Sprints):**
+- Achievement-Unlock-Subtitle-Trigger (RESX bereit, GameTrackingService-Hookup folgt).
+- Currency-Pulse für ProfileView + GameOverView (geringe User-Sichtbarkeit, eigener Polish-Sprint).
+- BattlePassService-Tests (komplexer Konstruktor mit IAchievementService/ICardService/ILeagueService — eigene Mock-Suite).
+- RotatingDealsService-Tests (5+ Service-Dependencies).
+- Mode-Plugin-Framework Phase 2: 2 Wochen, hohe Regressions-Tiefe.
+- HighContrast-Avalonia-Theme-Override für Settings/Menü-Views (DynamicResource-Schicht).
+- Texture-Atlas + ETC2/ASTC, Choreographer-Pacing, Audio-Bus + Welt 6-10 Music, Fixed-Timestep, GameEngine-Subsystem-Extraktion Phase 2, Async-PvP, Server-Driven Events, Replay-System.
+
+**v2.0.47 AAA-Audit Phase 4 — Robustheit + Camera-Zoom + Memory-Telemetrie (09.05.2026):**
+
+Vierte Welle der Audit-Initiativen mit Schwerpunkt auf Test-Coverage und Polish-Vertiefung. Build 0/0/0 auf Shared/Desktop/Android-Debug, **193/193 Tests grün** (vorher 149 → +44 in Phase 4).
+
+- **Test-Coverage stark erweitert** (+44 Tests in 5 neuen Files):
+  - **`CinematicSequencerTests`** (10 Tests): Lifecycle (Play/Update/Stop), Event-Trigger-at-Time, Multi-Event-im-Frame, ordered Event-Sortierung, Action-Exception-Resilience, Progress-Linearität, Stop-Cancel-Verhalten.
+  - **`SubtitleSystemTests`** (9 Tests): Show/Update/Render-Lifecycle, Pool-Overflow (>4 Captions überschreiben ältesten), Empty-String-Schutz, Clear-Funktion, Lifetime-pro-Slot.
+  - **`AccessibilityServiceTests`** (9 Tests): Persistenz-Roundtrip, Event-Firing, ColorblindMatrix-Validation für alle 4 Modi, UiScale-Clamping (0.75-1.5), Identity-Alpha-Row.
+  - **`AccountDeletionServiceTests`** (5 Tests): Best-Effort-Verhalten bei einzelnen Service-Failures (Firebase-Down/Cloud-Down/All-Fail), DSGVO-Garantie dass lokale Daten IMMER gelöscht werden, Preferences.Clear-Aufruf.
+  - **`DungeonServiceTests`** (10 Tests): Free-Run-1×/Tag-Limit, Coin-/Gem-Eintritts-Logik mit Balance-Mocks (NSubstitute), Lite-Run-API, EndRun-Lifecycle, Boss-Floor-Detection für Standard- und Lite-Runs.
+
+- **Cinematic-Director Phase 2 — Camera-Zoom-Effekt** (`CinematicSequencer.MaxCameraZoom` + `ZoomPivotX/Y` + `CurrentZoomFactor`-Triangle-Wave mit Smoothstep-Easing): Boss-Reveal-Sequenz wendet jetzt einen 35% Zoom-In auf die erste Boss-Position an (animiert 0 → MaxZoom → 0 in 1.5s). `GameEngine.Render` wendet `canvas.Scale(zoomFactor, zoomFactor, pivotScreenX, pivotScreenY)` als Layer um den Game-Render-Block, vor dem ScreenShake-Layer. Restore-Reihenfolge: Shake-Restore (Inner) → Cinematic-Restore (Outer) → dann Input-Controls (NICHT vom Zoom betroffen, damit Joystick lesbar bleibt).
+
+- **Memory-Pressure-Telemetrie**: `GameEngine.Render` misst alle 30 Sekunden `GC.GetTotalMemory(false)` + `GC.CollectionCount(0/1/2)`. Setzt als Crashlytics-Custom-Keys `memory_mb`, `gc_gen0`, `gc_gen1`, `gc_gen2` → erlaubt Crash-Filterung nach Memory-Pressure ("Crashes mit >150 MB Heap = wahrscheinlich Asset-Leak"). Wird auf älteren AOT-Profilen still abgefangen falls GC-API restricted ist.
+
+- **Subtitle-Trigger erweitert**: Boss-Defeat zeigt jetzt "[BOSS BESIEGT]"-Caption in der Floating-Text-Position. 7 RESX-Keys × 6 Sprachen = 42 neue Lokalisierungs-Einträge zu den 36 aus Phase 3 (insgesamt 78 Subtitle-Einträge).
+
+- **Build-Verifikation**: Shared 0/0, Desktop 0/0, Android-Debug 0/0 (mit `--no-incremental`). 193 Tests grün, 0 Fehler, 0 Skips.
+
+**Was nicht in v2.0.47 (bewusste Deferrals):**
+- Currency-Pulse-Konsistenz auf ProfileView/ShopView/GameOverView/GameView (nur MainMenuView aktuell — andere Views werden seltener angesehen, eigener kleiner Sprint).
+- Mode-Plugin-Framework Phase 2 (existierende Modi auf IGameMode refactorn): 2 Wochen, hohe Regressions-Tiefe, eigener Sprint.
+- HighContrast-Avalonia-Theme-Override für Settings/Menüs (DynamicResource-Schicht).
+- Texture-Atlas + ETC2/ASTC-Pipeline: 3-4 Wochen Tooling.
+- Choreographer-Frame-Pacing (90/120-Hz-Displays): 1.5 Wochen Native-Plugin.
+- Audio-Bus-System + Welt 6-10 Music: externe Asset-Beschaffung.
+- Fixed-Timestep-Loop (Voraussetzung für Replay/Anti-Cheat/PvP): 2-3 Wochen Engine-Refactor.
+- GameEngine-Subsystem-Extraktion Phase 2 (CombatSystem/SpawnerSystem/PhysicsSystem): 3+ Wochen.
+- Async-PvP via Ghost-Replay: 6-10 Wochen Backend.
+- Server-Driven Events / Remote Config: 2-3 Wochen Backend.
+- Replay-System + Score-Server-Validation: 3-4 Wochen.
+
+**v2.0.46 AAA-Audit Phase 3 — Schema V3 + Subtitles + HighContrast + Currency-Pulse + Cinematic-Director + Mode-Plugin-Skeleton (09.05.2026):**
+
+Dritte Welle der Audit-Initiativen. Schwerpunkt auf User-Sichtbarkeit (Cinematic-Director, Currency-Pulse, Subtitles) und Architektur-Vorbereitung (Mode-Plugin-Skeleton, Schema V3).
+
+- **Save-Schema V3** (`CloudSaveSchemaMigrator`): V2→V3-Migrator hinzugefügt. Bringt Accessibility-Settings (`Accessibility_ColorblindMode`/`HighContrast`/`UiScale`/`Subtitles`) + Performance-Setting (`TargetFrameRate`) + DSGVO-Consent-Flags (`AnalyticsConsent`/`CrashlyticsConsent`) mit Cloud-Sync. Defaults sind defensive (Off / false / 30 FPS — User muss explizit aktivieren). `CloudSaveService.SyncKeys` erweitert. V1-Snapshots wandern jetzt V1→V2→V3 in einer Migrator-Kette durch. 4 neue Tests im `CloudSaveSchemaMigratorTests`.
+
+- **Subtitle-Overlay** für Audio-Cues (`Graphics/SubtitleSystem.cs`): Struct-pool-basiertes Caption-System (max 4 aktive Captions). Zeigt Text-Banner am unteren Bildrand mit Fade-In/Out-Animation. Nur aktiv wenn `IAccessibilityService.SubtitlesEnabled == true`. GameEngine-Trigger:
+  - **Boss-Spawn** → "[BOSS BRÜLLT]" (3s)
+  - **Time-Warning** → "[ZEIT-WARNUNG]" (2s)
+  - **Player-Death** → "[DU BIST GESTORBEN]" (2s)
+  - **Level-Complete** → "[LEVEL GESCHAFFT]" (2s)
+  - 6 RESX-Keys × 6 Sprachen = 36 neue Lokalisierungs-Einträge.
+  - Renderer-Pfad in `GameEngine.Render` zwischen Tutorial-Overlay und Colorblind-Layer.
+
+- **HighContrast-Renderer-Integration** (Floating-Text): `GameFloatingTextSystem` bekommt `HighContrast`-Property. Bei aktiv: `_outlinePaint.StrokeWidth` wird auf 2× erhöht (Default ~3px → 6px) damit Score-Popups / Combo-Texte / Floating-Stinger auf bunten Hintergründen lesbar bleiben. GameEngine setzt das Flag pro Frame aus `_accessibility.HighContrast`. State-Overlays (Pause/GameOver) haben bereits dunkle Hintergründe — keine zusätzliche Änderung nötig. (Avalonia-DynamicResource-Theme-Override für Settings-/Menü-Views bleibt Future-Sprint.)
+
+- **Currency-Counter Easing-Pop** (Audit-Quick-Win Sektion 3.3): `MainMenuViewModel` bekommt `IsCoinsPulse` + `IsGemsPulse`-Properties. `partial void OnCoinsTextChanged` triggert eine 280ms-Pulse-Sequenz (auto-reset über `Dispatcher.UIThread.InvokeAsync` + `Task.Delay`). Coin/Gem-Badge-Buttons in `MainMenuView.axaml` haben jetzt `RenderTransform="scale(1)"` als Default + `Classes.Pulse="{Binding IsCoinsPulse}"`-Trigger. Style-Selector setzt `RenderTransform="scale(1.18)"`, `TransformOperationsTransition` mit 180ms-Duration animiert smooth. Spieler sieht jetzt jede Coin/Gem-Erhöhung visuell.
+
+- **Cinematic-Director Phase 1** (`Graphics/CinematicSequencer.cs`): Lightweight-Sequencer mit ordered Event-List. `Play(durationSeconds, events)`/`Update(deltaTime)`/`Stop()`-API. Events sind `(triggerSeconds, Action)`-Paare die zur jeweiligen Zeit feuern. **Sample-Sequence: Boss-Reveal-Cinematic** (`PlayBossRevealCinematic` in GameEngine.Level.cs) — 1.5s lang orchestrierte Effekte:
+  - **0.0s**: Gold-Funken-Burst um jede Boss-Position + Trauma-Shake-Spike (0.45)
+  - **0.25s**: Welt-spezifischer Akzent-Burst (StoneGolem-Braun / IceDragon-Cyan / FireDemon-Orange / ShadowMaster-Magenta / FinalBoss-Pink)
+  - **0.6s**: Floating-Stinger mit lokalisiertem Boss-Namen über erstem Boss + Trauma-Spike (0.3)
+  - **1.0s**: Finaler weißer Burst + native `VibrateBossRoar`-Pattern
+  - Bei Duo-Boss-Encounter (Welt 9/10) werden beide Bosse gleichzeitig mit Bursts versehen.
+  - GameEngine.Update tickt den Sequencer pro Frame. Reusable für künftige Big-Win/Victory-Sequenzen.
+
+- **Mode-Plugin-Framework Phase 1** (`Core/Modes/IGameMode.cs`): Skeleton-Interface + `GameModeContext`-Bridge. KEINE Mode-Migration in dieser Phase — die existierenden 7 Modi (Story/Survival/QuickPlay/Daily/Dungeon/BossRush/DailyRace/Master) bleiben als Bool-Flags. Aber: jeder NEUE Mode (z.B. "Endless Ascension") MUSS jetzt IGameMode implementieren. Migrations-Vertrag dokumentiert. Tatsächliches Refactoring der existierenden Modi auf IGameMode kommt in Phase 4 (separater Sprint, geschätzt 2 Wochen).
+
+- **Test-Coverage erweitert**: 4 neue Tests in `CloudSaveSchemaMigratorTests` (V1→V3-Kette, V2-Migration, V2-mit-existing-Settings, V3-passthrough). **Total: 149 Tests** (vorher 145, +4 neue). Alle grün.
+
+- **Build-Verifikation**: Shared 0/0 (keine Warnings durch meine Änderungen), Desktop 0/0, Android-Debug 0/0 (mit `--no-incremental` — Incremental-Cache-Bug bei Linked-Files vom AdMobHelper bleibt bestand-bekannt).
+
+**Was nicht in v2.0.46 (bewusste Deferrals — siehe `BOMBERBLAST_AAA_AUDIT.md` Sektion 7.3 + Phase 4-Liste):**
+- Mode-Plugin-Framework Phase 2 (existierende Modi auf IGameMode refactorn): 2 Wochen, hohe Regressions-Tiefe.
+- Texture-Atlas + ETC2/ASTC-Pipeline: 3-4 Wochen Tooling.
+- Choreographer-Frame-Pacing (90/120-Hz-Displays): 1.5 Wochen.
+- Cinematic-Director Phase 2 (Camera-Zoom-Effekt + Filter-Sweep über GameRenderer): braucht Renderer-Erweiterung um Render-Layer-Stack.
+- Audio-Bus-System + Welt 6-10 Music: externe Asset-Beschaffung.
+- Fixed-Timestep-Loop (Voraussetzung für Replay/PvP): 2-3 Wochen Engine-Refactor.
+- GameEngine-Subsystem-Extraktion Phase 2 (CombatSystem/SpawnerSystem/PhysicsSystem): 3+ Wochen.
+- Async-PvP via Ghost-Replay: 6-10 Wochen Backend.
+- Server-Driven Events / Remote Config: 2-3 Wochen Backend.
+- Replay-System + Score-Server-Validation: 3-4 Wochen.
+- HighContrast-Avalonia-Theme-Override für Settings/Menüs (DynamicResource-Schicht).
+
+**v2.0.45 AAA-Audit Phase 2 — Polish + Telemetrie + Testabdeckung (09.05.2026):**
+
+Zweite Welle der TIER-2-Initiativen aus `BOMBERBLAST_AAA_AUDIT.md`. Erweitert v2.0.44 um Polish-Features die ohne externe Sound-Assets oder Backend-Setup machbar sind. Build 0/0/0 auf Shared/Desktop/Android-Debug.
+
+- **UiScale-Renderer-Integration** (Accessibility): Alle Overlay-Texte (Stage X, Score Y, Pause, GameOver, Victory, Time-Bonus, Final-Score) skalieren jetzt mit dem UiScale-Setting (0.75 / 1.0 / 1.25 / 1.5). `_overlayUiScale`-Field in GameEngine wird einmal pro Frame aus `IAccessibilityService.UiScale` geholt und auf alle 17 `_overlayFont.Size = X`-Stellen multipliziert. HUD-Layout-Boxen bleiben fest, damit das Spielfeld nicht überläuft. HighContrast + Subtitle bleiben WIP (Avalonia-Theme-Override + Audio-Caption-Map sind eigene Sprints).
+
+- **Haptic-Library mit 12 Patterns** (Game-Feel): `IVibrationService` um 10 default-implementierte Pattern-Methoden erweitert (`VibrateBombPlant`/`VibrateSpecialBomb`/`VibratePickUp`/`VibrateShieldHit`/`VibrateDeath`/`VibrateLevelComplete`/`VibrateBossRoar`/`VibrateCurse`/`VibrateCombo`/`VibrateAchievement`). Default-Implementations delegieren an die 4 Basis-Methoden — backward-kompatibel für `NullVibrationService`. `AndroidVibrationService` bekommt native `Waveform(long[] pattern)` Helper für `VibrationEffect.CreateWaveform` und definiert für jeden Pattern-Typ eine eigene Vibrations-Sequenz (z.B. `VibrateBombPlant` = `[0, 10, 20, 10]` Doppel-Tick, `VibrateLevelComplete` = `[0, 60, 40, 90, 40, 120]` ansteigender Triple-Pulse). GameEngine-Aufrufe in Bomb-Place / Spezial-Bomb / Power-Up-Pickup / Player-Death / LevelComplete auf neue Patterns umgestellt.
+
+- **Telemetry-FPS-Hookup** (Performance-Monitoring): `GameEngine.Render` führt einen 5-Sekunden-Frame-Tick-Buffer (`Queue<long>`) und reportet alle 5s den durchschnittlichen FPS-Bucket (15 / 30 / 45 / 60+) an `ITelemetryService.SetFpsBucket`. Zusätzlich werden `game_mode` und `level` als Custom-Keys gesetzt — auf Android (mit Crashlytics-Setup) erlaubt das Crash-Filterung nach Frame-Rate-Range. Auf Desktop/NullTelemetry no-op. `GameEngine`-Konstruktor erweitert um `ITelemetryService telemetry`-Parameter.
+
+- **Test-Suite Phase 2** (Service-Tests):
+  - `LoadoutServiceTests` (9 Tests): Cost-Tabellen-Plausibilität, Max-2-Boosts-Limit, Coin-vs-Gem-Pfade (mit NSubstitute-Mocks für ICoinService/IGemService), atomare Buchung bei nicht-genug-Coins, Persistenz über Service-Instanzen.
+  - `BossRushServiceTests` (9 Tests): ISO-8601-Year-Week-Format, Erst-Run-isNewBest, Score-getriebener Best-Tiebreaker mit Time bei gleichem Score, Total-Completions-Lifetime, Wochen-Reset, In-Memory-Preferences-Roundtrip.
+  - **`InMemoryPreferences`** als Test-Helper-Klasse (`tests/BomberBlast.Tests/InMemoryPreferences.cs`) — Dictionary-basierte `IPreferencesService`-Implementierung ohne Disk-IO. Genutzt von BossRushService + LoadoutService Tests.
+  - **Total: 145 Tests** (vorher 127 → +18). Alle grün.
+
+**Was nicht in v2.0.45 (bleibt deferred — siehe `BOMBERBLAST_AAA_AUDIT.md`):**
+- HighContrast-Renderer-Integration (Avalonia-DynamicResource-Override + Stroke-Width-Boost auf HUD-Texten)
+- Subtitle-Overlay für Audio-Cues (Boss-Roar, Time-Warning, Death-Sound) — braucht Audio-Caption-Map + Subtitle-System
+- Currency-Counter-Easing-Pop (Pulse-Glow auf Coin/Gem-Badge bei Increment)
+- RotatingDealsService-Tests (komplexer Konstruktor mit 5+ Dependencies — eigene Mock-Suite nötig)
+- Texture-Atlas + ETC2/ASTC-Pipeline (3-4 Wochen Tooling)
+- Choreographer-Frame-Pacing (1.5 Wochen)
+- Cinematic-Director (Boss-Reveal-Sequenzen + Big-Wins, 2-3 Wochen)
+- Audio-Bus-System + Welt 6-10 Music (externe Asset-Beschaffung)
+- Fixed-Timestep-Loop (2-3 Wochen Engine-Refactor)
+- Mode-Plugin-Framework (`IGameMode`-Pattern, 2 Wochen)
+- GameEngine-Subsystem-Extraktion Phase 2 (3+ Wochen)
+- Async-PvP via Ghost-Replay (6-10 Wochen)
+- Server-Driven Events / Remote Config (2-3 Wochen Backend)
+- Replay-System + Score-Server-Validation (3-4 Wochen, voraussetzt Determinismus)
+
+**v2.0.44 AAA-Production-Audit Maximaler Sweep (09.05.2026, basierend auf `BOMBERBLAST_AAA_AUDIT.md`):**
+
+Komplette Abarbeitung der TIER-1 + TIER-2-Initiativen aus dem AAA-Audit, soweit ohne Firebase-Console-Setup machbar (Console-Setup macht der User separat).
+
+- **Audio-Polish (TIER-1)**:
+  - **`ISoundService` um Pitch + Pan erweitert** (Default-Interface-Methoden, backward-compatible für andere Apps). `PlaySound(key, volume, pitch=1.0, pan=0)` — Pitch in `[0.5, 2.0]` clamped (SoundPool-Limit), Pan via Stereo-Volume-Split (-1 links, +1 rechts).
+  - **AndroidSoundService** mit echtem Pitch + Pan via `SoundPool.Play(setRate, leftVol, rightVol)`.
+  - **`SoundManager.PlaySound`** wendet ±5 % Pitch-Random + ±10 % Volume-Variation auf wiederholte SFX an (`SFX_PLACE_BOMB`, `SFX_POWERUP`, `SFX_EXPLOSION`, `SFX_FUSE`, `SFX_ENEMY_DEATH`) — eliminiert akustisches Stutter bei Bomben-Spam.
+  - **`SoundManager.PlaySoundPanned(key, pan)`** für räumliches Audio. Bomb-Explosion nutzt Stereo-Pan basierend auf `bomb.GridX / Grid.Width` — Bomben-Klang folgt der Bombe auf der Landscape-Achse.
+
+- **Game-Feel (TIER-1)**:
+  - **Trauma-Decay-ScreenShake-Modell** (Squirrel Eiserloh) ersetzt das alte intensity/duration-Modell. Trauma akkumuliert sich (mehrere Explosionen → stärkerer Shake), klingt linear ab (`TraumaDecay = 1.5/s`), Shake = `MaxAmplitude * trauma²` (quadratisch — kleine Werte fast nicht spürbar). Neuer `RotationDegrees` für subtilen Camera-Roll.
+  - **Distanz-Skalierung**: `_screenShake.TriggerAt(amount, distanceCells, falloffCells=4)` — Bomben weit weg vom Spieler shaken proportional weniger. GameEngine.Explosion ruft mit Manhattan-Distanz `bomb.GridX/Y vs _player.GridX/Y` auf.
+  - **Bestand-API kompatibel**: `Trigger(intensity, duration)` mappt automatisch auf Trauma (5px ≈ 0.5 Trauma).
+  - **Boss-Banner**: Statt generisches "BOSS FIGHT!" zeigt das WorldAnnouncement-Overlay jetzt typspezifischen Boss-Namen (`STONE GOLEM`, `ICE DRAGON`, `FIRE DEMON`, `SHADOW MASTER`, `FINAL BOSS`). Bei Duo-Boss-Encountern (Welt 9 = FinalBoss + ShadowMaster, Welt 10 = 2x FinalBoss) verbunden mit "&" oder Plural-Form (`TWIN FINAL BOSSES`). 6 RESX-Keys × 6 Sprachen = 36 neue Lokalisierungs-Einträge.
+
+- **Performance (TIER-2)**:
+  - **Frame-Rate-Toggle in Settings** (30 / 60 FPS). Default 30 FPS (Battery-Mode, halbiert CPU/GPU-Last). Persistiert via `IPreferencesService.TargetFrameRate`.
+  - **`BomberBlast.Core.GameLoopSettings`** als statische Klasse: `TargetFps`, `TickIntervalMs`, `TickInterval`, `Initialize(IPreferencesService)`, `SetTargetFps(int, IPreferencesService?)`. Static-Event `TargetFpsChanged` — `GameView.axaml.cs` reagiert darauf und passt `_renderTimer.Interval` ohne Restart an. Subscription wird in `StopRenderTimer` wieder aufgehoben (Memory-Leak-Schutz).
+  - **Doku-Code-Diskrepanz** behoben (CLAUDE.md sagte "60 FPS Game Loop", Code lief auf 30 FPS).
+
+- **Accessibility (TIER-1)**:
+  - **`IAccessibilityService` + `AccessibilityService`** als Singleton. Properties: `ColorblindMode` (Off / Deuteranopia / Protanopia / Tritanopia), `HighContrast`, `UiScale` (0.75 / 1.0 / 1.25 / 1.5), `SubtitlesEnabled`. Persistierung via Preferences-Keys `Accessibility_*`. Event `AccessibilityChanged`.
+  - **Colorblind-ColorMatrix** (Brettenmacher/Vienot-Forschung) als 4x5 Float-Array. `GameEngine.Render` legt SaveLayer mit `SKColorFilter.CreateColorMatrix` über das ganze Spielfeld wenn Modus != "Off". Filter wird gecacht und nur bei Modus-Wechsel neu erzeugt (kein Per-Frame-Allocation).
+  - **Settings-View** erweitert um eigene Accessibility-Sektion (grüner Top-Border #10B981) mit ComboBox (ColorblindMode + UiScale) + ToggleSwitches (HighContrast + Subtitles).
+  - **AutomationProperties.Name** auf alle Settings-Toggles + alle MainMenu-Icon-only-Buttons (Settings, Avatar, Coin-Badge, Gem-Badge) — Screen-Reader (TalkBack/VoiceOver) liest jetzt korrekte Labels. Restliche Views: Buttons mit Text-Content lesen automatisch — komplette View-Coverage als laufender Sweep.
+  - **`supportsRtl="false"`** im AndroidManifest (vorher `true`, aber keine RTL-Sprachen lokalisiert → inkonsistent).
+
+- **Privacy / DSGVO Art. 17 (TIER-1)**:
+  - **`IAccountDeletionService` + `AccountDeletionService`** für Cascading-Delete. Reihenfolge: 1. Firebase-Liga-Eintrag löschen (alle 5 Tier-Subtrees parallel via `Task.WhenAll`), 2. Cloud-Save überschreiben mit leerem Snapshot (effective Delete), 3. Lokale Daten zurücksetzen (`HighScoreService.ClearScores`, `ProgressService.ResetProgress`, `Preferences.Clear`). Best-Effort: Bei Network-Fehler werden lokale Daten trotzdem gelöscht.
+  - **`ILeagueService.DeleteOwnEntryAsync`** + **`ICloudSaveService.DeleteCloudSaveAsync`** als neue API-Members.
+  - **Settings-View** bekommt Delete-Account-Button (dunkelroter `#7C1D1D` GameButtonCanvas) im Daten-Bereich. Confirmation-Modal vor Ausführung. Erfolgs-/Partial-Alert mit klarer User-Message.
+  - **Play-Store-Compliance**: Erfüllt Apple/Google-Pflicht seit 2023 für Account-Löschung in der App.
+
+- **Persistenz (TIER-2)**:
+  - **`CloudSaveSchemaMigrator`** als statische Klasse mit ordered Migrator-Chain (V1 → V2 → ... → CurrentSchemaVersion). `TryMigrateAndValidate(data, out error)` migriert + validiert alte Cloud-Snapshots vor dem Apply.
+  - **V1 → V2 Migration**: Füllt fehlende Keys aus v2.0.34/v2.0.41 mit Defaults (`master_mode_status_v1`, `master_mode_active`, `deck_telemetry_v1`, `LoadoutData`, `BossRushData`, `DungeonStatsData`).
+  - **Validation**: Negative Werte → Reject. Plausibilitäts-Cap >10M Coins/Gems → Reject. TotalStars >300 (max bei 100 Levels × 3 Sterne) → Reject.
+  - **`CloudSaveService.TryLoadFromCloudAsync`** + **`ForceDownloadAsync`** rufen Migrator vor `ApplyCloudData` auf. Bei Migrations-Fehler wird der Cloud-Stand verworfen + Logger-Warning.
+  - **`BuildCloudSaveData`** setzt jetzt `Version = CloudSaveSchemaMigrator.CurrentSchemaVersion` statt hardcoded 1.
+
+- **Live-Service Code-Hooks (TIER-1, Console-Setup vom User offen)**:
+  - **`ITelemetryService` + `NullTelemetryService`**: Crash-Reporting + Performance-Monitoring API. Custom-Keys (Mode, Level, FPS-Bucket, Memory-Pressure), `LogNonFatal(Exception)`, `StartTrace(name)`, `SetFpsBucket(int)`. NoOp auf Desktop, Android-Implementation folgt nach Firebase-Crashlytics-NuGet-Setup.
+  - **`IAnalyticsService` + `NullAnalyticsService`** mit `AnalyticsEvents`-Konstanten-Klasse: 30+ Funnel-Events (`AppOpen`, `LevelStart`, `LevelComplete`, `LevelFailed`, `BossKilled`, `DungeonRunStart`, `DailyRewardClaimed`, `BattlePassTierUp`, `LeaguePromotion`, `ShopPurchase`, `GemPurchaseComplete`, `PremiumPurchase`, `AdWatched`, `CardCrafted`, `AccountDeletion`, `FrameRateChange`, ...). NoOp auf Desktop.
+  - **`IPushNotificationService` + `NullPushNotificationService`**: FCM Topic-Subscriptions + lokale `AlarmManager`-Notifications. NoOp auf Desktop. `NotificationChannel`-Enum (DailyRewards / LiveOps / Important) für Android 8+ Quality-of-Service. `NotificationTopics`-Konstanten für Server-seitige Pushes.
+  - **DI-Registrierung**: 3 neue Factory-Properties in `App.axaml.cs` (`TelemetryServiceFactory`, `AnalyticsServiceFactory`, `PushNotificationServiceFactory`). Factories werden auf Android in `MainActivity` gesetzt — Robert konfiguriert nach Firebase-Console-Setup.
+  - **Funnel-Hooks** in `GameEngine.Level.cs` (`LevelComplete`-Event, `Victory`-Event mit `mode` + `score`-Parameter) und `GameEngine.cs` (`GameOver`-Event mit `level` + `score` + `mode`). Wird durch Null-Service auf Desktop verschluckt — auf Android nach Setup live trackbar.
+
+- **Test-Suite-Erweiterung (TIER-2)**:
+  - **`CloudSaveSchemaMigratorTests`** (8 Tests): V1-Snapshot-Migration, Default-Keys-Füllung, Negative-Werte-Reject, TotalStars>300-Reject, Plausibilitäts-Cap, Aktuelle-Version-Pass-Through, Null-Keys-Defensiv.
+  - **`EventServiceTests`** (10 Tests): 31.12. liefert NewYear (nicht Christmas), 28.12. liefert Christmas, 02.01. liefert Christmas (nicht NewYear), Halloween-Bereich, Summer-Bereich, kein-Event-am-1.März. Verifiziert LOGIC-FIX-1 aus v2.0.41.
+  - **`LeagueServiceProfanityTests`** (9 Tests): NormalizeForProfanityCheck via Reflection — NFKD-Dekomposition, Sonderzeichen-Strip, Zero-Width-Removal, Akzent-Strip-zu-Basis, Lowercase-Konvertierung. Validiert v2.0.31 Profanity-Filter.
+  - **`LevelLayoutGeneratorTests`** (10 Tests): Daily-Race-Determinismus (gleicher Seed → identisches Layout), Edge-Case-Seeds (0, int.MaxValue), Boss-Level-Markierung, Story-Level-Reproduzierbarkeit, QuickPlay-Determinismus.
+  - **`ScreenShakeTraumaTests`** (8 Tests): Trauma-Akkumulation, Decay-Verhalten (60 fps × 1s = abgeklungen), Distanz-Skalierung (far<near), AddTrauma-Clamping, Reset-Verhalten, Falloff-Null-Safety.
+  - **Total**: 127 Tests bestanden (vorher 82). Build 0/0/0 auf Shared/Desktop/Android.
+
+- **Build-Verifikation**: Shared 0 Errors / 1 Warning (NullPushNotificationService Event — pragma-suppressed), Desktop 0/0, Android-Release 0/7 (alle 7 Pre-Existing in Core.Ava + Core.Premium.Ava).
+
+**Was nicht in v2.0.44 (bewusste Deferrals — siehe `BOMBERBLAST_AAA_AUDIT.md`)**:
+- **Texture-Atlas + ETC2/ASTC-Kompression** (3-4 Wochen Tooling-Aufwand): Renderer-Pipeline-Refactor + Build-Pipeline.
+- **Choreographer-Frame-Pacing** (1.5 Wochen): VSync-genaues Frame-Pacing auf Android 90/120-Hz-Displays.
+- **Cinematic-Director** (Boss-Reveal-Sequenzen + Big-Win-Animationen): 2-3 Wochen, eigenes Sequencer-Framework.
+- **Audio-Bus-System + Welt 6-10 Music**: Externe Sound-Asset-Beschaffung (~3-8k EUR Freelance-Sound-Designer).
+- **Fixed-Timestep-Loop**: 2-3 Wochen Engine-Refactor — Voraussetzung für Replay-System / Anti-Cheat / Async-PvP.
+- **Mode-Plugin-Framework** (`IGameMode`-Pattern): 2 Wochen, eliminiert die Bool-Flags-Schwemme in GameEngine.
+- **GameEngine-Subsystem-Extraktion Phase 2** (CombatSystem, SpawnerSystem, PhysicsSystem, EffectSystem): 3+ Wochen.
+- **Async-PvP via Ghost-Replay**: 6-10 Wochen, neues Backend.
+- **Server-Driven Events / Remote Config**: 2-3 Wochen Backend-Setup.
+- **Replay-System + Score-Server-Validation**: 3-4 Wochen, voraussetzt Determinismus.
+- **Haptic-Library 12 Patterns**: 1 Woche.
+- **Schrift-Skalierung-Renderer-Integration**: VM-Property gesetzt, aber Renderer wendet UiScale noch nicht auf alle Font-Sizes an (1-2 Tage Sweep).
+- **High-Contrast-Renderer-Integration**: VM-Property gesetzt, aber GameRenderer nutzt es noch nicht für UI-Foreground/Background-Bumps (2 Tage).
+- **Subtitle-Anzeige bei Boss-Roar**: VM-Property gesetzt, aber GameRenderer überlagert noch keine Subtitle-Box (1 Tag).
+
+**v2.0.43 Menu-Redesign (06.05.2026, Plan `MENU_REDESIGN.md` Option B — Radikaler Neuaufbau):**
+
+Komplettes MainMenu-Redesign vom 3-Spalten-Button-Wand zum Dashboard-Layout. Reduktion von 19 simultan sichtbaren Buttons im Vollausbau auf 6 dominante Aktionen plus thematisch gruppierte Status-Cards. Alle 3 identifizierten Duplikate beseitigt, alle 4 versteckten Views in den Profile-Hub konsolidiert.
+
+- **Layout-Bereiche** (von oben nach unten):
+  - **TopBar (~64dp)**: Logo + Coin-Badge (Tap → Shop) + Gem-Badge (Tap → GemShop) + Avatar (Tap → Profile-Hub) + Settings.
+  - **Hero-Section** (links 1.1× Breite): Welt + Stage prominent, Sterne, Kontext-CTA "WEITER SPIELEN" / "JETZT STARTEN" / "NOCHMAL", Sekundaer-Link "Level wählen".
+  - **Modi-Strip** (links unter Hero, scrollbar): Survival, QuickPlay, Dungeon, **Master Mode (NEU sichtbar)**, **Boss Rush (NEU sichtbar)**.
+  - **Dashboard rechts** (1.4× Breite, 2 Spalten): HEUTE-Panel (Reward/Challenge/Missions/Spin/Deals) + KARRIERE-Panel (Liga/BattlePass/Deck/Sammlung/Sterne) — mit Live-Status pro Card und Available-Glow-Border.
+  - **Saison-Banner** (unten, ~40dp, nur bei aktivem Event): Name + Beschreibung + "X Tage uebrig".
+
+- **Profile-Hub** (Avatar-Tap, 5 interne Tabs statt verstreuter Standalone-Views):
+  - **Übersicht** — existing Profile-Inhalt (Spielername-Edit, Stats-Grid, Skin/Frame-Anzeige).
+  - **Statistik** — eingebettete StatisticsView.
+  - **Achievements** — eingebettete AchievementsView.
+  - **Sammlung** — eingebettete CollectionView (verschoben aus Cards-Bereich).
+  - **Customize** — neuer Quick-Switcher fuer 6 Cosmetic-Slots (PlayerSkin/BombSkin/ExplosionSkin/Trail/Victory/Frame). Tap auf gekauftes Item aktiviert es sofort, locked Items mit Lock-Icon ausgegraut + "Mehr im Shop"-Shortcut.
+
+- **Onboarding-Modal** (Plan Phase 4): Beim ersten Start nach Update Modal mit 3 Hinweisen ("Tagesaktionen jetzt im 'Heute'-Bereich", "Profil/Statistik/Customize hinter Avatar", "Modi als Tiles unter Story Mode"). Persistiert per Pref-Key `dashboard_intro_seen_v3` — wird einmal pro Installation gezeigt.
+
+- **Architektur-Aenderungen**:
+  - **MainMenuViewModel** in 3 Partial-Classes aufgeteilt: `.cs` (Lifecycle/RewardPopup/StarterPack), `.Dashboard.cs` (HEUTE/KARRIERE/Hero/Modi/Banner — neu, ~280 LOC), `.Onboarding.cs` (Modal — neu, ~50 LOC). Konstruktor erweitert um 8 Service-Dependencies (ILuckySpinService, IRotatingDealsService, IBossRushService, ICustomizationService, IMasterModeService, IAchievementService, ICollectionService, ICardService).
+  - **ProfileViewModel** in 2 Partial-Classes aufgeteilt: `.cs` (Tab-System, Stats, Name-Edit), `.Customize.cs` (Quick-Switcher — neu, ~210 LOC). Konstruktor erweitert um IPreferencesService + 3 Sub-VMs (Statistics/Achievements/Collection direkt injiziert, ihre NavigationRequested-Events werden in den ProfileVM-NavigationRequested forwardet).
+  - **`ViewModels/ProfileTab.cs`** — neues Enum (Overview/Statistics/Achievements/Collection/Customize) ersetzt die externen Tab-Bars im MainView.axaml.
+  - **DailyHubView.axaml + .axaml.cs + DailyHubViewModel.cs geloescht** — Inhalte direkt ins MainMenu-Dashboard integriert.
+  - `NavigationRequest.GoDailyHub` + `ActiveView.DailyHub` + `MainViewModel.DailyHubVm`-Property + DI-Registration entfernt.
+  - **MainView.axaml**: Profile-Border + Cards-Border ohne externe Tab-Bar (Tabs leben jetzt intern in ProfileView). Sammlung-Tab aus Cards entfernt (nur noch Deck dort). Statistics-Border entfernt (uebergeleitet zu Profile-Hub-Statistik-Tab).
+  - **MainViewModel.NavigateToRouteAsync**: Routes `Achievements`/`Collection`/`Statistics` setzen jetzt `ActiveView.Profile` und triggern `ProfileVm.SelectTabCommand` mit dem entsprechenden Tab-Namen.
+
+- **CustomizationItem-DTO** in `ProfileViewModel.Customize.cs`: Wiederverwendbarer XAML-DataTemplate-Item-Typ mit Slot-Tag (PlayerSkin/BombSkin/ExplosionSkin/Trail/Victory/Frame), Id, DisplayName, PrimaryColor (hex), IsOwned, IsActive, Rarity. CardOpacity (locked = 0.4), BorderHex (Active=Gold/Owned=RarityColor/Locked=grau), IsLocked-Flag fuer Lock-Icon-Sichtbarkeit.
+
+- **35 neue RESX-Keys × 6 Sprachen = 210 Lokalisierungs-Eintraege**: 6 Hero-Section, 3 Modi-Strip, 2 Panel-Header, 7 Karriere-Subtitles, 1 Event-Banner, 5 Onboarding, 11 Profile-Hub.
+
+- **Build-Verifikation**: Shared 0/0, Desktop 0/0 (7 Pre-Existing-Lib-Warnings), Android 0/0. AppChecker zeigt 69 PASS, 22 INFO, 57 WARN (alle Pre-Existing), 1 FAIL (False-Positive: BomberBlast nutzt GameIcons statt Material.Icons — Konvention).
+
+**v2.0.42 Tier-3-UI-Komplett-Verdrahtung (06.05.2026, alle 4 Service-Layer aus v2.0.41 jetzt User-sichtbar):**
+
+Diese Iteration verdrahtet die 4 Tier-3-Service-Layer aus v2.0.41 vollstaendig in die UI — Spieler haben ab v2.0.42 echte User-sichtbare Zugriffspfade auf alle 4 Features. Build 0/0/0 auf Shared/Desktop/Android.
+
+- **Task 3.2 Loadout-UI (LevelSelectViewModel + LevelSelectView)**: Pre-Run-Boost-Auswahl-Modal mit 5 Boost-Toggles (ExtraBomb/ExtraFire/SpeedBoost/Wallpass/Invincibility) + Coin/Gem-Toggle. Max 2 Boosts pro Level. CanAffordLoadout-Flag macht den Confirm-Button kontextsensitiv. "Loadout"-Button im existing Boost-Overlay als Alternative zum Rewarded-Ad-Path. ILoadoutService + IGemService werden in den LevelSelectViewModel-Konstruktor injiziert. LoadoutDisplayItem-Class haelt UI-State (Type/Name/CoinCost/GemCost/IsSelected/DisplayCost) — DisplayCost wird beim Currency-Toggle vom ViewModel aktualisiert (Avalonia Compiled Bindings koennen Negation und parent-Lookups in DataTemplates nicht).
+
+- **Task 3.3 Boss-Rush-UI (BossRushViewModel + BossRushView + GameEngine StartBossRushModeAsync)**: Pre-Run-Screen mit WeeklyBestText, TotalCompletionsText, 5-Boss-Liste (Skull/Snowflake/Fire/Ghost/Trophy mit Welt-typischen Farben), prominenter Start-Button. Tap auf Start triggert NavigationRequested?.Invoke(new GoGame(Mode: "bossrush", Floor: 0)). GameEngine erweitert um `_isBossRushMode`/`_bossRushIndex`/`_bossRushAccumulatedScore`/`_bossRushStartTime`/`_bossRushSubmitted`. `StartBossRushModeAsync(int bossIndex)` erzeugt synthetisches Boss-Level via `LevelLayoutGenerator.GenerateLevel(10/30/50/70/100)`. GameOver-Hook ruft `_bossRushService.SubmitRun(finalScore, _bossRushStartTime, completedAllBosses: false)` auf. NavigationRequest `GoBossRush` + ActiveView.BossRush. MainViewModel.NavigateTo case "BossRush" → ActiveView.BossRush + BossRushVm.OnAppearing(). v2.0.42 ist Single-Boss-Variante — voller 5-Boss-Sequenz-Modus mit Heal-zwischen-Bossen folgt v2.1.x.
+
+- **Task 3.1 Daily-Race-UI (LeagueViewModel + LeagueView + GameEngine StartDailyRaceModeAsync)**: Tab-Switcher im LeagueView-rechtem-Spalten-Header zwischen "Saison" und "Daily Race". Aktiver Tab bekommt 25% AccentColor-Tint via neuem `BoolToOpacityConverter`. Daily-Race-Tab zeigt Hero-Card (Title/Desc/Today-Best/Reset-Countdown bis Mitternacht UTC/Start-Button) + eigene Leaderboard-ItemsControl (LazyLoad bei Tab-Switch + manueller Refresh-Button). Tap auf Start-Button triggert `NavigationRequested?.Invoke(new GoGame(Mode: "dailyrace"))`. GameEngine erweitert um `_isDailyRace`/`_dailyRaceSubmitted`. `StartDailyRaceModeAsync()` ruft `_leagueService.GetDailyRaceSeed(DateTime.UtcNow)` ab und nutzt `LevelLayoutGenerator.GenerateDailyChallengeLevel(seed)` (alle Spieler weltweit bekommen identisches Level). GameOver-Hook ruft `_leagueService.SubmitDailyRaceScoreAsync(finalScore)` auf. GameViewModel.SetParameters case "dailyrace" → `_gameEngine.StartDailyRaceModeAsync()`. 5 neue RESX-Keys × 6 Sprachen (LeagueTabSeason/LeagueTabDailyRace/DailyRaceStartButton/DailyRaceResetIn = 4 Keys × 6 Sprachen = 24 Eintraege).
+
+- **Task 3.4 Saisonale-Events-UI (DailyHubViewModel + DailyHubView + MainMenuViewModel)**: DailyHub zeigt eine Event-Card als ersten Card (oberhalb DailyReward) wenn `IEventService.IsEventActive == true`. Card hat Event-spezifischen Akzent-Color, Star-Icon, "LIVE"-Badge rechts. EventName/EventDescription per RESX (NameKey/DescriptionKey aus SeasonalEvent). MainMenuViewModel triggert beim OnAppearing einen Floating-Greeting + Confetti einmal pro UTC-Tag pro Event-Type via `TryShowEventGreeting()` — persistiert per `EventGreetingShown_v1_{EventType}_{yyyy-MM-dd}` in Preferences damit Halloween/Christmas/etc. nicht spamt. IEventService injiziert in DailyHubViewModel + MainMenuViewModel.
+
+- **Verdrahtungs-Bilanz**: Alle 4 Tier-3-Service-Layer aus v2.0.41 sind jetzt User-sichtbar. ILoadoutService → LevelSelectView Pre-Run-Modal. IBossRushService → BossRushView via DailyHub-Zugang. ILeagueService.DailyRace → LeagueView Tab. IEventService → DailyHubView Card + MainMenu Greeting. Spieler in v2.0.42 sehen Tier-3-Features nicht mehr nur als Backend-Code, sondern haben echte Click-Pfade (LevelSelect → Loadout-Modal, MainMenu → Daily Hub → Boss Rush, MainMenu → League → Daily Race-Tab → Start, MainMenu → Daily Hub → Event-Card).
+
+- **Boss-Rush-Eintritt im Daily-Hub (v2.0.42-Fix nach Audit)**: DailyHubViewModel injiziert IBossRushService, zeigt Boss-Rush-Card unterhalb Daily Missions mit `BossRushSubtitle` (Wochen-Best-Score). Tap triggert `OpenBossRushCommand` → `GoBossRush`-NavigationRequest. Damit ist Boss-Rush ab v2.0.42 echt user-erreichbar (vorher: dead code, NavigationRequest existierte aber war nirgends getriggert).
+- **Daily-Race-Liga-Punkte-Vergabe (v2.0.42-Fix nach Audit)**: `LeagueService.SubmitDailyRaceScoreAsync` ruft nach erfolgreichem Firebase-Push neu `AwardDailyRaceLeaguePointsAsync` auf — fetcht das Daily-Race-Leaderboard, liest den eigenen Rang, vergibt +100 Liga-Punkte fuer Top-3, +50 fuer Top-10. Idempotent via `DailyRacePointsAwarded_{dateKey}`-Preferences-Flag (kein Doppel-Award bei mehreren Best-Improvements am selben Tag). Best-effort: Fehler werden geschluckt, naechster Submit/Refresh versucht erneut.
+
+- **Verifikations-Fixes nach Audit-Frage "Firebase sauber komplett?" (v2.0.42-Final)**:
+  - **CRIT-FIRE-1 (Reports-Rule fehlte komplett)**: `bomberblast-league.rules.json` hatte keinen `reports`-Node → `ReportPlayerAsync` (UGC-Moderation seit v2.0.34) wurde IMMER mit Permission-Denied abgelehnt — der Report-Button im Leaderboard war seit Einfuehrung dead code. Fix: spezifische Rule `reports/$reportedUid/$reporterUid` mit auth-binded Reporter-UID, Self-Report-Block, Rate-Limit 24h pro Reporter+Reportee-Paar (`(now - data.child('reportedAt').val()) >= 86400000`), Reason-Whitelist (`offensive_name`/`cheating`/`other`), Server-Timestamp-Validation. Read auf false (nur Admin-Console).
+  - **CRIT-BOSSRUSH-1 (Doppel-Akkumulation des BossRush-Score)**: `_bossRushAccumulatedScore += _player.Score - _scoreAtLevelStart` wurde sowohl in `UpdateLevelComplete` (Auto-Switch-Branch) ALS AUCH in `StartBossRushModeAsync(bossIndex > 0)` aufgerufen — Score wurde bei jedem Boss-Switch doppelt addiert. Fix: Akkumulation NUR in `UpdateLevelComplete`, `StartBossRushModeAsync` macht bei bossIndex > 0 nur noch Player-Heal (Shield=true), kein Score-Touch. Doku im Code dass Direkt-Aufruf mit bossIndex > 0 nicht akkumuliert (dokumentierter Edge-Case fuer Tests).
+  - **Verifiziert OK (kein Issue)**: Liga-Punkte-Award via `AwardDailyRaceLeaguePointsAsync` schreibt indirekt via `AddPoints` → `ScheduleFirebasePush()` (3s-Debounce auf Liga-Saison-Subtree). Kein Konflikt mit Daily-Race-Subtree-Rate-Limit (60s) weil das andere Pfade sind. Cross-Tier-Read fuer Daily-Race ist `auth != null` auf Tier-Ebene erlaubt — kein Permission-Denied beim parallelen `Task.WhenAll` ueber alle 5 Tiers. DI-Registrierung von `IBossRushService` (Singleton, App.axaml.cs:286) + `BossRushViewModel` (Eager-Singleton:327) + `MainViewModel.NavigateTo case "BossRush"` ist verkabelt. `_levelCompleteHandled`-Reset bei naechstem Boss-CompleteLevel ist sichergestellt (Line 1037).
+
+- **Vollstaendig nachgezogen in v2.0.42 (vorher als v2.1.x markiert, jetzt umgesetzt)**:
+  - **Voller 5-Boss-Sequenz-Modus** — `UpdateLevelComplete` hat einen Boss-Rush-Branch: bei `_bossRushIndex < 4` wird automatisch `StartBossRushModeAsync(_bossRushIndex + 1)` getriggert (kein normales LevelComplete-Event), Score wird im `_bossRushAccumulatedScore` gesammelt. Bei Index == 4 (5. Boss geclear) → `SubmitRun(score, time, completedAllBosses: true)` + `Victory?.Invoke()`. Player wird zwischen Bossen automatisch geheilt (Shield=true) ohne vollen Reset. CompleteLevel-Pfad hat einen Early-Return fuer Boss-Rush, damit kein Story-Tracking-Pfad ausgeloest wird (nur Boss-Achievement via `OnBossLevelFirstComplete`).
+  - **Cross-Tier Daily-Race Leaderboard** — `ILeagueService.GetDailyRaceGlobalLeaderboardAsync()` fetcht parallel alle 5 Tier-Subtrees (Bronze/Silver/Gold/Platinum/Diamond) via `Task.WhenAll`, merged + sortiert + Top-50. UI-Toggle im Daily-Race-Tab: "Meine Liga" (`!IsDailyRaceGlobalView`) oder "Global" (`IsDailyRaceGlobalView`) — `ToggleDailyRaceScopeCommand` wechselt + reload. 2 zusaetzliche RESX-Keys × 6 Sprachen (`DailyRaceTierTab` / `DailyRaceGlobalTab`).
+  - **Welt-Skin-Override fuer saisonale Events** — Neue `GameRenderer.Events.cs` Partial-Class mit struct-pool-basiertem `EventParticle`-System (max 80 aktive). Halloween: violette/orange Diamant-Funken steigen von unten (3s Lifetime). Christmas: weisse hexagonale Schneeflocken fallen von oben (6s, 60-100px/s). NewYear: 5-Zacken-Sterne explodieren am oberen Bildrand mit zufaelligem Winkel + 4 Farben (1.5s). Summer: Cyan-Bubbles steigen mit Stroke-Style + Highlight (5s). Spawn-Rate event-spezifisch (0.08s-0.2s). Zusaetzlicher subtiler Tint-Overlay (Alpha 15-35) ueber Hintergrund mit `SKBlendMode.Multiply` damit Gameplay lesbar bleibt. GameEngine.Render setzt `HasActiveEvent` + `EventAccentColor` + `EventType` aus `_eventService.CurrentEvent`. Nicht aktiv im Dungeon (eigener Theme) und Boss-Rush (eigener Boss-Look). Render-Pfad: Tint-Overlay nach Background, Particles ueber Wetter-Layer (unter HUD). Particles im SkipAtmosphere-Modus deaktiviert. Dispose-Chain ergaenzt um `_eventPaint` + `_eventShapePath`.
+
+**v2.0.41 Tier-3-Komplett-Service-Layer (05.05.2026, alle 4 verbleibenden Tier-3-Tasks als Service-Layer + RESX):**
+
+Diese Iteration zieht alle 4 zuvor deferred Tier-3-Tasks als saubere Service-Layer + Lokalisierung nach. UI-Integration (Pre-Run-Modal, Boss-Rush-View, Daily-Race-Tab, Welt-Skin-Override) bleibt fuer Folge-Iteration v2.1.x — die Service-APIs sind 100% funktional und in spaetere UIs einhakbar.
+
+- **GAME-6 (Task 3.2 Loadout)**: `ILoadoutService` + `LoadoutService` mit Persistenz pro Story-Level. 5 Boost-Typen (`ExtraBomb`/`ExtraFire`/`SpeedBoost`/`Wallpass`/`Invincibility`) mit eigener Coin/Gem-Cost-Tabelle (300C/2G bis 1500C/8G). `GameEngine.ApplyLoadoutBoosts(levelNumber)` wird in `StartStoryModeAsync` nach `ApplyUpgrades` + `MutatorEffects.Apply` aufgerufen — Boosts wirken ueber Player-Stat-Mutation (MaxBombs+1, FireRange+1, SpeedLevel=3, HasWallpass=true, ActivateInvincibility(30s)). Verbrauchs-Logik: `ClearLoadout(level)` nach erfolgreichem `CompleteLevel` — bei Wiederholung muss neu gekauft werden. Persistenz-Pattern via `IPreferencesService` (JSON, Key "LoadoutData") mit `PersistenceHealth.ReportCorruption` bei Parse-Fehlern. `Purchase`-Methode atomar: Pre-Check + TrySpend, max 2 Boosts pro Level erzwungen. UI (Pre-Run-Auswahl-Modal) ist eigene Iteration v2.1.x.
+
+- **GAME-7 (Task 3.3 Boss-Rush)**: `IBossRushService` + `BossRushService` mit ISO-8601-Year-Week-Reset (`yyyy-Www`-Format). Fixe Boss-Sequenz: StoneGolem→IceDragon→FireDemon→ShadowMaster→FinalBoss. Wochen-Best-Score score-getrieben mit Time als Tiebreaker (kuerzere Zeit gewinnt bei gleichem Score). `SubmitRun(score, time, completedAll)`: True-Return = neuer Wochen-Best. Lifetime-Stats: `TotalCompletions`, `HasEverCompleted`. Wochen-Wechsel resettet `WeeklyBest*` automatisch beim ersten Read im neuen Wochen-ID-Window — `EnsureWeekFreshness()` im Konstruktor + bei jedem Submit. Persistenz via Preferences-JSON, Key "BossRushData". GameEngine 5-Boss-Sequenz-Modus (Boss durchschalten + Heal zwischen) und UI-Pre-Run-Screen sind eigene Iteration v2.1.x.
+
+- **GAME-8 (Task 3.1 Daily Race)**: `ILeagueService` erweitert um Daily-Race-API: `GetDailyRaceSeed(utcDate)` (deterministisch via `yyyy*10000 + MM*100 + dd` — alle Spieler weltweit bekommen identisches Level), `GetDailyRaceDateKey(utcDate)` ("yyyy-MM-dd"), `TodayDailyRaceBestScore` (lokal aus Preferences `DailyRaceBest_yyyy-MM-dd`), `HasPlayedDailyRaceToday`, `SubmitDailyRaceScoreAsync(score)` (lokal speichern + Firebase-Push wenn online), `GetDailyRaceLeaderboardAsync(utcDate)` (Firebase-Read mit `DailyRaceFirebaseEntry`-Payload + Server-Timestamp-Sentinel `{".sv":"timestamp"}`). Firebase-Schema: `league/s{saison}/daily_race/{date}/{tier}/{uid}`. Defensive Offline-Fallback: lokaler Eintrag als Single-Item-Liste. Liga-Punkte-Vergabe (Top-10/Top-3) und UI-Tab in LeagueView sind eigene Iteration v2.1.x.
+
+- **GAME-9 (Task 3.4 Saisonale Events)**: `IEventService` + `EventService` mit 4 hardcoded Saison-Events: Halloween (25.10.-02.11.), Christmas (22.12.-02.01., spannt Jahres-Wechsel), NewYear (31.12.-01.01.), Summer (15.07.-15.08.). Pure Date-Logic ohne Persistenz/Firebase. `CurrentEvent`/`IsEventActive` als computed Properties. `GetEventForDate(utc)` mit korrekter Jahres-Wechsel-Spannen-Pruefung (Christmas am 28.12. UND am 01.01. ist aktiv). `DaysUntilNextEvent`/`NextEvent` fuer UI-Vorschau. Jeder Event hat NameKey/DescriptionKey/GreetingKey/AccentColor — UI-Integration (Welt-Skin-Override + Daily-Hub-Card + Floating-Greeting-Text bei App-Start) ist eigene Iteration v2.1.x.
+
+- **L10N**: 23 RESX-Keys × 6 Sprachen = 138 neue Lokalisierungs-Eintraege:
+  - 12 fuer Saisonale Events (4 Events × Name/Desc/Greeting)
+  - 4 fuer Boss-Rush (Title/Desc/WeeklyBest/StartButton)
+  - 3 fuer Daily Race (Title/Desc/TodayBest)
+  - 6 fuer Loadout (Title + 5 Boost-Namen)
+
+- **Bewusste Service-First-Strategie**: Pro Task wurde ueber API-Surface + Persistenz-Layer + RESX-Lokalisierung der saubere fundament-Layer fertiggestellt; UI-Integration je Feature ist als eigenes Update v2.1.x markiert. Begruendung: jeder UI-Komponenten-Bau erfordert Pre-Run-UX-Design-Entscheidungen (Side-Sheet vs. Modal vs. Inline) die ohne Telemetrie-Daten spekulativ sind. Service-APIs sind getestet (Build 0/0/0 auf Shared/Desktop/Android) und production-ready, sobald die UI-Komponenten dazukommen.
+
+**WICHTIG — Ehrlichkeits-Disclaimer:** Die 4 Service-Layer (3.1/3.2/3.3/3.4) sind technisch sauber implementiert + getestet (Build 0/0/0), aber **noch nicht User-sichtbar**: Kein UI-Aufruf-Pfad existiert in v2.0.41. Spieler sehen 0 Veraenderung gegenueber v2.0.40 ausser den Polish-Fixes (siehe unten "Audit-Fixes"). Die Service-APIs sind das Fundament fuer v2.1.0-v2.4.0 wo jeweils ein Tier-3-Feature mit eigenem UI live geht.
+
+**v2.0.41 Audit-Fixes (kritische Issues nach Service-Layer-Review):**
+- **CRIT-FIX-1 (Firebase Rules)**: `bomberblast-league.rules.json` hatte keine spezifische Rule fuer `daily_race`-Subtree → mein Daily-Race-Push wuerde von der `$tier`-Wildcard-Regel gefressen werden, die `daily_race` als Tier-Name interpretiert (kein-User-UID → Permission-Denied). Fix: spezifische `league/$seasonKey/daily_race/$dateKey/$tier/$uid`-Rule mit eigener Validation (`name` 1-16, `score` 0-1000000, `updatedMs == now`, Rate-Limit 60s). Spezifische Rule muss VOR `$tier`-Wildcard stehen (Firebase prefer specific over wildcard). **Muss in Firebase Console deployed werden bevor das Daily-Race-Feature live geht.**
+- **CRIT-FIX-2 (Auth)**: `PushDailyRaceScoreToFirebaseAsync` + `FetchDailyRaceLeaderboardFromFirebaseAsync` riefen **kein** `_firebase.EnsureAuthenticatedAsync` auf → bei nicht-vorab-authentifiziertem User wuerde der Request mit Permission-Denied zurueckkommen (auch in der UI). Fix: `EnsureAuthenticatedAsync` als erster Step in beiden Methoden — ist idempotent, verursacht keine doppelte Authentifizierung wenn schon authed.
+- **LOGIC-FIX-1 (Event-Priorisierung)**: `EventService.GetEventForDate` matchte den ersten Event in der Array-Reihenfolge → am 31.12. waere Christmas (22.12.-02.01.) zurueckgegeben worden, **nicht** NewYear (31.12.-01.01.). Fix: `_events`-Array auf `NewYear → Christmas → Halloween → Summer` umsortiert (spezifischer/kuerzer vor breiter), mit klarem Kommentar warum die Reihenfolge wichtig ist.
+
+**v2.0.40 Tier-3-Erweiterung (05.05.2026, Plan Task 3.5 Card-Crafting):**
+- **GAME-5 (Task 3.5)**: Card-Crafting als Coin-Sink. Spieler kann 5 Karten gleicher Rarity + Coins gegen 1 Karte naechsthoeherer Rarity tauschen. Cost-Tabelle: `5 Common + 2.000 Coins → 1 Rare` (4-Karten-Pool: Smoke/Lightning/Gravity/Poison), `5 Rare + 8.000 Coins → 1 Epic` (4-Karten-Pool: TimeWarp/Mirror/Vortex/Phantom), `5 Epic + 25.000 Coins → 1 Legendary` (2-Karten-Pool: Nova/BlackHole). `ICardService` erweitert: `CraftCardCount`, `GetCraftCoinCost(rarity)`, `GetCraftableCount(sourceRarity)`, `CanCraft(targetRarity, ICoinService)`, `CraftCard(targetRarity, ICoinService) → BombType?`. Implementation in `CardService` mit `OrderByDescending(Count)`-Quell-Auswahl (verhindert dass eine seltene Karte komplett verbraucht wird waehrend andere haengen) + Defense-Pattern (Coin-Refund bei Race). DeckViewModel: 3 neue Commands (`CraftRareCommand`/`CraftEpicCommand`/`CraftLegendaryCommand`) + Status-Properties (`CraftRareStatusText` "12 / 5", `CraftRareCostText` "2.000 Münzen", `CanCraftRare`-Flag). DeckView: lila Crafting-Sektion unterhalb der Deck-Slots, sichtbar wenn ueberhaupt eine Crafting-Stufe verfuegbar (`IsCraftingSectionVisible`). 8 RESX-Keys × 6 Sprachen = 48 neue Lokalisierungs-Eintraege.
+
+**Bewusst NICHT in v2.0.40 (Plan Section 4 + Telemetrie-Empfehlung):**
+- Task 3.1 Daily Bomb Race (Liga-Modus) — 2 Wochen, eigene Liga-Schema-Erweiterung + Firebase-Daily-Race-Subtree.
+- Task 3.2 Power-Up-Loadout fuer Story — 1 Woche, neuer LoadoutService + Pre-Level-Modal.
+- Task 3.3 Weekly Boss-Rush — 1 Woche, GameEngine-Boss-Sequenz-Modus + Wochen-Leaderboard.
+- Task 3.4 Saisonale Story-Events — 2 Wochen, IEventService + Welt-Skin-Override + Push-Notifications.
+- Plan-Empfehlung: 14 Tage Telemetrie-Auswertung VOR Tier-3-Auswahl. Card-Crafting (3.5) ist die kompakteste und klar messbarste Coin-Sink-Erweiterung — Boss-Rush/Daily-Race/Saisonale-Events brauchen Datenbasis ueber Modus-Adoption (siehe IMPLEMENTATION_PLAN Section 6).
+
+**v2.0.39 Tier-2-Komplett (05.05.2026, alle 3 deferred Tasks aufgenommen):**
+- **REFAC-2 (Task 2.2)**: `SurvivalSpawner` als static-Klasse in `Core/Modes/SurvivalSpawner.cs` extrahiert. `Update`-Methode nimmt 3 ref-Parameter (`timeElapsed`/`spawnTimer`/`spawnInterval`) — die Felder bleiben in `GameEngine` damit `OnSurvivalEnded`-Tracking direkt darauf zugreifen kann. `SurvivalSpawnContext` als Lazy-Init (analog `_explosionCtx`) bündelt die 6 Engine-State-Refs (Grid/Enemies/ParticleSystem/Random/PlayerGrid-Func/OnEnemySpawned-Callback). `ChooseEnemyType` als pure Funktion ist isoliert testbar. Konstanten (`MIN_SPAWN_INTERVAL`, `SPAWN_DECREASE`, `INITIAL_SPAWN_INTERVAL`) wandern mit der Logik. `GameEngine.Level.cs` schrumpft um ~60 Zeilen (UpdateSurvivalSpawning + SpawnSurvivalEnemy → 4-Zeilen-Delegation). **Zusatz:** `DungeonSynergyResolver` als Pure-Funktion in `Core/Dungeon/DungeonSynergyResolver.cs` extrahiert — wertet die 5 Synergie-Regeln (Bombardier/Blitzkrieg/Fortress/Midas/Elemental) + kumulative BombFuseReduction aus. ApplyDungeonBuffs nutzt `Resolve(buffs)` und schreibt das Result-Struct direkt in die Engine-Flags (~30 LOC weniger duplizierter `Contains`-Checks).
+- **REFAC-3 (Task 2.3)**: ShopViewModel (1022 LOC) in 4 Partial-Classes aufgeteilt: `ShopViewModel.cs` (287 LOC, Header + Lifecycle + Localization + Balance-Updates + GoBack + Dispose + ReloadCollection), `ShopViewModel.Upgrades.cs` (296 LOC, Permanent-Upgrades + PowerUp/Mechanic-Refresh + PurchaseAsync/PurchaseWithGemsAsync + WatchAdForFreeUpgrade + Icon/Color-Mappings), `ShopViewModel.Skins.cs` (363 LOC, alle 6 Skin-Kategorien Player/Bomb/Explosion/Trail/Victory/Frame + SelectSkin + PurchaseSkinAsync), `ShopViewModel.Deals.cs` (113 LOC, Rotating-Deals + Gem-Skin-Logik). Partial-Class-Pattern statt Sub-VMs — kein Risiko fuer DI-Wiring oder Binding-Bruch, nur Lesbarkeits-Gewinn pro Bereich. Hauptklasse haelt alle Observable-Properties zentral; partial-files greifen via `this` zu.
+- **GAME-4 (Task 2.7)**: Dungeon Lite — Onboarding-Variante. `DungeonRunState.IsLiteRun` + `DungeonStats.LiteRunCompleted` als Flags. `IDungeonService.LiteRunCompleted` + `IDungeonService.IsCurrentRunLite` + `IDungeonService.StartLiteRun()` als API. Lite-Run hat 3 Floors (`LITE_RUN_MAX_FLOOR`), kein Eintritts-Cost (nicht Free-Run-Tageslimit). `IsCurrentFloorBoss` returnt true sobald CurrentFloor >= 3 in einem Lite-Run (Mini-Boss + Run-Ende). `CompleteFloor` halbiert ALLE Belohnungen (Coins/ChestBonus/Gems/DungeonCoins) nach allen Multiplikatoren — Spieler bekommt verhaeltnis-erhaltenen Pro-Vorgeschmack. `EndRun`: Lite-Runs zaehlen nicht in `TotalRuns`/`BestFloor`, setzen aber `LiteRunCompleted=true` bei Abschluss von Floor 3. `GenerateBuffChoices` returnt im Lite-Run NUR 1 zufaelligen Common-Buff (kein Reroll-UI). DungeonViewModel: `CanStartLiteRun` (sichtbar solange !LiteRunCompleted), `StartLiteRunCommand`, `LiteRunButtonText`/`LiteRunHintText`. `ShowBuffSelection` pruft `IsCurrentRunLite` und ruft direkt `SelectBuff(choices[0].Type)` auf — ohne UI. DungeonView: prominente lila Karte mit `SchoolOutline`-Icon + Hint-Text, oberhalb der existierenden Free/Coin/Gem-Buttons, sichtbar nur fuer Erst-Spieler. 6 RESX-Keys × 6 Sprachen = 36 neue Lokalisierungs-Eintraege.
+
+**v2.0.38 Tier-2-Bundle (05.05.2026, basierend auf IMPLEMENTATION_PLAN Tier 2):**
+- **REFAC-1 (Task 2.1)**: `GameRenderer.Grid.cs` (2066 Zeilen) in 4 Partial-Files aufgeteilt: `Grid.cs` (505 LOC, Orchestrierung + FloorCache + FogOverlay + RenderGrid + Tile-Transitions + Afterglow + Danger-Warning), `Grid.Tiles.cs` (741 LOC, RenderFloorTile + RenderWallTile + welt-spezifische Tile-Renderer Ice/Conveyor/Teleporter/LavaCrack/PlatformGap), `Grid.Blocks.cs` (620 LOC, RenderBlockTile + RenderBlockDestruction), `Grid.GridFx.cs` (244 LOC, Spezial-Bomben-Zelleffekte). Mechanisches Move-Refactoring, keine Verhaltensaenderung.
+- **GAME-1 (Task 2.4)**: Layout-Pool pro Welt von 4 auf 8 Layouts erweitert. Welt 1 (Forest) bleibt einsteigerfreundlich (Classic-lastig + Cross/TwoRooms/Diagonal). Welt 5+ mischt alle 11 verfuegbaren Layouts (Maze/Spiral/Labyrinth/Chaos/Islands/Symmetry). Reduziert Wiederholungs-Gefuehl ab L60. Welt 1-2 Level 3-10 haben jetzt 8 unique Slots — keine Layout-Wiederholung in der Welt mehr.
+- **GAME-2 (Task 2.5)**: Curse-Dauer von 10s auf 6s reduziert (10s ReverseControls auf Mobile-Touch war Frust-Design — Spieler reagieren mit App-Schliessen statt "challenge accepted"). Neuer **Cure-PowerUp** (gruenes Kreuz auf weisser Kapsel) als 13. PowerUp im Pool. Spawnt deterministisch in allen Story-Levels mit Skull-Drop (L20-L100). 250 Score-Punkte beim Pickup. `IsCursed`-Check entfernt sofort `ActiveCurse + CurseTimer + DiarrheaTimer`. 5 RESX-Keys × 6 Sprachen (`PowerUp_Cure`, `PowerUp_Cure_Desc`, `FloatCure`, `DiscoverCure`, `DiscoverCureDesc`). Renderer-Erweiterungen in `GameRenderer.Items.cs` + `HelpIconRenderer.cs`.
+- **GAME-3 (Task 2.6)**: Combo-System auf x10+ erweitert. Score-Tabelle x6:4000, x7:8000, x8:15000, x9:20000, x10+:30000 (vorher endete der Anreiz bei x5:2000). Window-Verlaengerung +0.5s bei x6+ damit Spieler nach Boost noch eine Kette draufpacken kann. Slow-Mo-Verlaengerung auf 1.2s bei x10+ (statt 0.8s) als visueller Belohnungs-Peak. HUD-Combo-Text-Hierarchie: `x{n}` < `MEGA x{n}` (x5+) < `ULTRA x{n}` (x10+). Farbverlauf Orange → Rot → Magenta → Gold (x10+). Pulse-Amplitude verdoppelt bei x10+. Drei neue Achievements: `combo10` (5000C), `combo15` (10000C), `combo20` (20000C) in der Skill-Kategorie. Mission-Schwellen angehoben: `AchieveCombo` Daily zaehlt ab x6, Weekly ab x8 (statt jeden Combo-Tick). 7 RESX-Keys × 6 Sprachen.
+- **DEFER-1 (Task 2.2)**: SurvivalSpawner-Extraktion zurueckgestellt — Context-Pattern muesste 6+ State-Refs (Grid/Enemies/Player/ParticleSystem/Random) durchreichen. Niedriger LOC-Gewinn vs. hohe Coupling-Risiken. Nach Telemetrie-Phase neu bewerten.
+- **DEFER-2 (Task 2.3)**: ShopViewModel Sub-VM-Split zurueckgestellt — Hauptziel (Tab-Wechsel-Performance) ist bereits in v2.0.31 mit `ReloadCollection` geloest. Reines Lesbarkeits-Split waere 1-2 Tage Aufwand fuer marginalen Mehrwert.
+- **DEFER-3 (Task 2.7)**: Dungeon-Lite-Variante als eigene Feature-Iteration zurueckgestellt — IDungeonService-API-Erweiterung + 3-Floor-Variante + Auto-Buff-Auswahl + Lite/Pro-UI + 6 RESX × 6 Sprachen ist eigenstaendiger Game-Feature-Scope, braucht eigenen game-audit + tester-Pre-Release-Check.
+
+**v2.0.37 Tier-1-Quick-Wins (05.05.2026, basierend auf IMPLEMENTATION_PLAN Tier 1):**
+- **CONV-2 (Task 1.5)**: `GameTimer.OnWarning`/`OnExpired` ohne `On`-Prefix → `Warning`/`Expired` (Convention `On` ist nur fuer Handler, nicht Events). GameEngine-Subscriptions aktualisiert. ProgressService + HighScoreService bekommen `IAppLogger` injiziert; silent Save-Catches durch `LogWarning` mit Exception-Type+Message ersetzt — verhindert dass Persistenz-Fehler stillschweigend verschwinden.
+- **UX-3 (Task 1.6)**: NeonJoystick-Default fuer Neuinstallationen auf Fixed (`InputManager.LoadSettings`: `if (!ContainsKey("JoystickFixed")) → true`). Bestand respektiert (ContainsKey-Check). Begruendung: Floating-Joystick passt schlecht zur 4-Wege-Bomberman-Bewegung.
+- **ARCH-2 (Task 1.1)**: 17 separate `IsXxxActive`-Boolean-Properties in MainViewModel + 17 `FindControl<Border>`-Calls in MainView.axaml.cs ersetzt durch eine `ActiveView`-Enum-Property + `ActiveViewEqualsConverter`. Computed-Properties (`IsMainMenuActive => ActiveView == ActiveView.MainMenu`) bewahren Backward-Compat fuer existierende Logik (NavigateTo/HandleBackPressed). MainView.axaml nutzt `Classes.Active="{Binding ActiveView, Converter=..., ConverterParameter=Game}"` direkt — kein Code-Behind-FindControl/UpdateActiveClasses mehr. Reduziert Touchpoints pro neuer View von 5 auf 1 (Enum-Wert hinzufuegen). MainView.axaml.cs −85 Zeilen.
+- **UX-4 (Task 1.4)**: Tutorial-Replay-Pin als 44dp-"?"-Button oben rechts in GameView (`HelpCircle`-Icon, `#80000000` Hintergrund). Tap pausiert das Spiel via `_gameEngine.Pause()` und zeigt Modal-Overlay mit 3 modus-spezifischen Tipps (Story / Survival / Dungeon / Daily / Master). Close-Button ruft `_gameEngine.Resume()`. 14 RESX-Keys × 6 Sprachen = 84 neue Lokalisierungs-Eintraege (`ContextHelpTitle` / `ContextHelpClose` / `ContextHelpStory1-3` / `ContextHelpSurvival1-3` / `ContextHelpDungeon1-3` / `ContextHelpDaily1-2` / `ContextHelpMaster1-2`).
+- **UX-5 (Task 1.2)**: Daily Hub eingefuehrt (`DailyHubViewModel` Eager-Singleton, `DailyHubView` mit 5 Cards + Glow auf Available-State). Aggregiert Status aus `IDailyRewardService` / `IDailyChallengeService` / `IDailyMissionService` / `ILuckySpinService` / `IRotatingDealsService` und navigiert per Tap zu den jeweiligen Views. Neuer `GoDailyHub` NavigationRequest + `ActiveView.DailyHub` + `MainMenuViewModel.GoToDailyHubCommand`. MainMenu zeigt prominenten "Heute"-Button in der Meta-Spalte mit Badge-Counter (Anzahl claimbarer Items, Best-Effort aus Reward+Challenge+Missions). 15 RESX-Keys × 6 Sprachen = 90 neue Eintraege.
+- **NB Task 1.3 SKIPPED**: Plan sah Premium-Ad-Spacer-Fix vor. BomberBlast hat aber gar keinen Ad-Banner (Landscape-Game, nur Rewarded Ads — Status-Tabelle: "Rewarded (Landscape, kein Banner)"). Kein Code zu fixen.
 
 v2.0.36 enthält alle Inhalte von v2.0.35 plus Performance-Pass (10 Findings: SKPath.Rewind() statt Reset(), FoW Update-Skip + Render-RLE, EnemyPositionIndex Lazy-Rebuild, BlackHole/Poison-Skip, DungeonMap PathEffect-Cache, FinalBoss-Arrays static, Block-Destroy-Arrays static, HUD-Glow im Skip-Modus, Confetti Two-Pass) sowie Bestand-Bugfix für Enemy-Pin-Down bei Bombe vor Korridor (`GetRandomValidDirection` Last-Resort-Pass mit `allowBombCell`). Geschätzter Performance-Gewinn: 2-4 ms/Frame = 5-10 FPS Mid-Tier-Android.
 

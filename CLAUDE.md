@@ -59,7 +59,7 @@ F:\Meine_Apps_Ava\
 │   ├── UI/
 │   │   └── MeineApps.UI/           # Shared UI Components
 │   │
-│   └── Apps/                       # 11 Apps, jeweils Shared/Android/Desktop
+│   └── Apps/                       # 12 Apps, jeweils Shared/Android/Desktop
 │       ├── RechnerPlus/            # Taschenrechner (werbefrei)
 │       ├── ZeitManager/            # Timer/Stoppuhr/Alarm (werbefrei)
 │       ├── FinanzRechner/          # 6 Finanzrechner + Budget-Tracker
@@ -83,9 +83,9 @@ F:\Meine_Apps_Ava\
 
 ---
 
-## Status (18. April 2026)
+## Status
 
-7 Apps im geschlossenen Test. HandwerkerImperium in Produktion. RebornSaga + BingXBot in Entwicklung.
+7 Apps im geschlossenen Test. HandwerkerImperium + BomberBlast in Produktion. RebornSaga + BingXBot in Entwicklung.
 
 | App | Version | Ads | Premium | Status |
 |-----|---------|-----|---------|--------|
@@ -96,9 +96,9 @@ F:\Meine_Apps_Ava\
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
 | HandwerkerImperium | v2.1.0 | Banner + Rewarded | 4,99 Premium | Produktion |
-| BomberBlast | v2.0.55 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion (AAA-Audit Phase 1-15 09.05.2026: TIER-1+2 + Mode-Plugin-Framework + ComboSystem + FixedTimestepRunner + Firebase-Android-Stubs. **v2.0.55 Phase 15 4-Subagent-Review:** 2 P0 (Liga-Rules-Mismatch seit v2.0.34, DSGVO-Consent-UI) + 4 P1 (AccountDeletion-Reihenfolge, CloudSave-Version, Memory-Telemetry-Background-Thread, Cinematic-Stop) gefixt. = 286 Tests grün) |
+| BomberBlast | v2.0.55 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
-| BingXBot | v1.7.0 + Phase 18 (09.05.2026) | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote, OPTIMIZATION_PLAN_2026-05 Phasen 0-17 umgesetzt 06.05.2026, **Phase 18 (09.05.2026): A1-A7 Risk-Hardening (GetPositionScalingFactor-Bug, Idempotency-Keys, Clock-Drift, Korrelations-Filter, Vol-Targeting, Tick-Size-Awareness, Session-Filter), B1-B5 Resilience (Sync-over-Async, Heartbeat+Missing-TP, Rate-Limit, News-Health), C1+C2+C3 Performance (Allocation-Pressure, ServerTime-Probe statt 80kB), D1+D2 Quality (Magic Numbers, MaxScore dynamisch), F2+F5 Operations (FCM-Cleanup, Funding-Threshold pro Category). Tests: 713/713 grün. E-Refactor + F1/F3/F4 + D3/D4 als Folge-Iteration vermerkt** — Pi-Deploy + Live-Verifikation = naechste Schritte) |
+| BingXBot | v1.8.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
 | SmartMeasure | v1.1.4 | Nein | Nein | Entwicklung (privat, RTK-GPS Vermessung) |
 
@@ -138,7 +138,7 @@ Implementierung: Jede App lädt `<StyleInclude Source="/Themes/AppPalette.axaml"
 | SkiaSharp | 3.119.2 | 2D Graphics + SkSL GPU-Shader |
 | SkiaSharp.Skottie | 3.119.2 | Lottie-Animations-Backend |
 | Avalonia.Labs.Lottie | 11.3.1 | Lottie-Animationen (JSON) |
-| Xamarin.Android.Google.BillingClient | 8.3.0.2 | Google Play Billing |
+| Xamarin.Android.Google.BillingClient | 8.3.0.2 | Google Play Billing v8 |
 | Xamarin.Google.Android.Play.Review | 2.0.2.7 | Google In-App Review |
 | sqlite-net-pcl | 1.9.172 | Database |
 
@@ -348,7 +348,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 
 ---
 
-## Claude-Code Agents (24 Agents, Stand 16.04.2026)
+## Claude-Code Agents (24 Agents)
 
 | Kategorie | Agent | Modell | Effort | Zweck |
 |-----------|-------|--------|--------|-------|
@@ -406,7 +406,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 
 ### Hooks (User-Settings `~/.claude/settings.json`)
 
-- **SessionStart**: MVVM-Strict-Reminder, auto-commit-Verbot, deutsche Umlaute, CLAUDE.md-Pflicht
+- **SessionStart**: MVVM-Strict-Reminder, Auto-Commit erlaubt (sinnvoll/logisch nach Änderungen), deutsche Umlaute (kein ae/oe/ue/ss), CLAUDE.md-Pflicht
 - **PostToolUse Write/Edit auf `View*.axaml.cs`**: Injizierter Reminder für Code-Behind-Hygiene
 
 ---

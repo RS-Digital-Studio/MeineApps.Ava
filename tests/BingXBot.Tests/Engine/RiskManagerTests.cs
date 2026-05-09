@@ -623,6 +623,34 @@ public class RiskManagerTests
         result.IsAllowed.Should().BeTrue();
     }
 
+    // === Phase 18 / H2 — News-Service-Health-Edge-Transitions ===
+
+    [Fact]
+    public void NewsServiceHealthChanged_NoFailures_NeverFires()
+    {
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        var fireCount = 0;
+        risk.NewsServiceHealthChanged = (_, _, _) => fireCount++;
+        // ResetNewsCheckFailures ohne vorherige Failures darf KEIN Event firen.
+        risk.ResetNewsCheckFailures();
+        fireCount.Should().Be(0);
+    }
+
+    [Fact]
+    public void NewsCheckFailureCount_StartsAtZero()
+    {
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        risk.NewsCheckFailureCount.Should().Be(0);
+    }
+
+    [Fact]
+    public void ResetNewsCheckFailures_DefaultStart_NoOp()
+    {
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        risk.ResetNewsCheckFailures();
+        risk.NewsCheckFailureCount.Should().Be(0);
+    }
+
     // === Phase 18 / A5 — Volatility-Targeting ===
 
     [Fact]

@@ -29,5 +29,9 @@
     <PackageReference Include="sqlite-net-pcl" />
     <PackageReference Include="SQLitePCLRaw.bundle_green" />
     <!-- SignalR Server kommt im Microsoft.AspNetCore.App Framework mit, kein separates Package noetig -->
+    <!-- Phase 18 / H6 — OpenTelemetry-Tracing + Prometheus-Metrics -->
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,20 @@
+﻿{
+  "totalTrades": 15,
+  "winningTrades": 10,
+  "losingTrades": 5,
+  "winRate": 66.666666666666666666666666670,
+  "totalPnl": 675,
+  "profitFactor": 4.6486,
+  "averageWin": 86,
+  "averageLoss": 37,
+  "averageRrr": 2.3243,
+  "maxDrawdown": 51.0,
+  "maxDrawdownPercent": 0.4869,
+  "calmarRatio": 13.8646,
+  "recoveryFactor": 13.2353,
+  "maxConsecutiveWins": 3,
+  "maxConsecutiveLosses": 2,
+  "sharpeRatio": 14.1758,
+  "sortinoRatio": 38.9911,
+  "averageHoldTimeMinutes": 240
+}

@@ -1,0 +1,8 @@
+﻿{
+  "winRate": 100,
+  "losingTrades": 0,
+  "profitFactorIsMaxValue": true,
+  "maxConsecutiveWins": 12,
+  "maxConsecutiveLosses": 0,
+  "totalPnl": 600
+}

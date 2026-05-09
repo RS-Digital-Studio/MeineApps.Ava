@@ -2,6 +2,7 @@ using BingXBot.Contracts.Dto;
 using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Models;
 using BingXBot.Trading;
 
 namespace BingXBot.Server.Services;
@@ -203,9 +204,11 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
 
                     _logger.LogWarning(
                         "Auto-Resume Replay-Check: {Count} REALIZED_PNL-Records waehrend Offline-Zeit, Summe-PnL = {Sum:F4} USDT. " +
-                        "DB-Statistiken (DailyPnl, RollingTrades) koennten unvollstaendig sein. " +
-                        "Folge-Iteration: automatisches DB-Backfill via Trade-Pairing.",
+                        "Versuche DB-Backfill...",
                         income.Count, sumPnl);
+
+                    // Phase 18 / H3 — Auto-DB-Backfill der verpassten Trades.
+                    await BackfillIncomeRecordsAsync(income, lastHeartbeat.Value).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -216,6 +219,95 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Auto-Resume Replay-Hint fehlgeschlagen — Resume laeuft trotzdem weiter.");
+        }
+    }
+
+    /// <summary>
+    /// Phase 18 / H3 — Backfill verpasster Trades aus BingX-Income-Records in die lokale DB.
+    /// Strategie:
+    /// 1. Bestehende Backfilled-Trades (Reason="Backfilled (Pi offline)") aus DB laden zur Dedup-Erkennung.
+    /// 2. Pro Income-Record: Time-Match mit Toleranz 1 s — Skip wenn schon backfilled.
+    /// 3. Synthetischen CompletedTrade bauen (Best-Effort: EntryPrice/Quantity unbekannt = 0,
+    ///    EntryTime = ExitTime = IncomeRecord.Time, Pnl direkt vom IncomeRecord).
+    /// 4. SaveTradeAsync + RiskManager.UpdateDailyStats nur fuer Trades vom heutigen UTC-Tag.
+    /// Im Fehlerfall: Logging, kein Throw — Resume laeuft weiter.
+    /// </summary>
+    private async Task BackfillIncomeRecordsAsync(List<IncomeRecord> income, DateTime lastHeartbeat)
+    {
+        if (_dbService == null) return;
+
+        try
+        {
+            // Dedup: bereits backfilled-Trades laden + ExitTime-Set bauen (1 s Toleranz beim Match).
+            var existing = await _dbService.GetTradesAsync(modeFilter: TradingMode.Live, limit: 500).ConfigureAwait(false);
+            var alreadyBackfilledTimes = new HashSet<long>();
+            foreach (var t in existing)
+            {
+                if (t.Reason != null && t.Reason.StartsWith("Backfilled", StringComparison.OrdinalIgnoreCase))
+                    alreadyBackfilledTimes.Add(t.ExitTime.Ticks / TimeSpan.TicksPerSecond);
+            }
+
+            var todayUtc = DateTime.UtcNow.Date;
+            var rm = _liveManager?.Service?.RiskManager;
+            int backfilled = 0, skipped = 0, todayCount = 0;
+
+            foreach (var rec in income)
+            {
+                // Nur REALIZED_PNL-Records werden zu CompletedTrades — andere (FUNDING_FEE, TRADING_FEE)
+                // koennen wir nicht 1:1 als Trade-Close einspielen.
+                if (!string.Equals(rec.IncomeType, "REALIZED_PNL", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var keyTime = rec.Time.Ticks / TimeSpan.TicksPerSecond;
+                if (alreadyBackfilledTimes.Contains(keyTime) ||
+                    alreadyBackfilledTimes.Contains(keyTime - 1) || alreadyBackfilledTimes.Contains(keyTime + 1))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                // Synthetischer CompletedTrade — Best-Effort, da Income-Record nur PnL kennt.
+                var synth = new CompletedTrade(
+                    Symbol: rec.Symbol,
+                    Side: Side.Buy, // Side aus rec.Info ist meist nicht eindeutig — Default Buy
+                    EntryPrice: 0m,
+                    ExitPrice: 0m,
+                    Quantity: 0m,
+                    Pnl: rec.Income,
+                    Fee: 0m,
+                    EntryTime: rec.Time,
+                    ExitTime: rec.Time,
+                    Reason: "Backfilled (Pi offline)",
+                    Mode: TradingMode.Live,
+                    NavigatorTimeframe: TimeFrame.H4);
+
+                try
+                {
+                    await _dbService.SaveTradeAsync(synth).ConfigureAwait(false);
+                    backfilled++;
+
+                    // RiskManager.UpdateDailyStats nur fuer heute (DailyPnl ist tagesbasiert).
+                    if (rm != null && rec.Time.Date == todayUtc)
+                    {
+                        rm.UpdateDailyStats(synth);
+                        todayCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Auto-Resume Backfill: SaveTrade fehlgeschlagen fuer {Symbol} @ {Time}",
+                        rec.Symbol, rec.Time);
+                }
+            }
+
+            _logger.LogInformation(
+                "Auto-Resume Backfill abgeschlossen: {Backfilled} Trades neu in DB, {Skipped} bereits bekannt, " +
+                "{TodayCount} davon in DailyPnl uebernommen.",
+                backfilled, skipped, todayCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Auto-Resume Backfill fehlgeschlagen — DB-Stats bleiben unvollstaendig, manueller Eingriff noetig.");
         }
     }
 

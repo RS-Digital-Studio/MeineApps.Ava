@@ -10,7 +10,10 @@ using BingXBot.Server.Auth;
 using BingXBot.Server.Hubs;
 using BingXBot.Trading;
 using BingXBot.Trading.Local;
+using BingXBot.Trading.Telemetry;
 using Microsoft.AspNetCore.RateLimiting;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +30,16 @@ builder.Host.UseDefaultServiceProvider((ctx, opts) =>
 
 // ============ DI-Container ============
 var services = builder.Services;
+
+// Phase 18 / H6 — OpenTelemetry: Tracing + Metrics aus dem BotTelemetry-ActivitySource.
+// Prometheus-Exporter exposed unter /metrics fuer Grafana/Alertmanager-Integration.
+services.AddOpenTelemetry()
+    .WithTracing(t => t.AddSource(BotTelemetry.SourceName))
+    .WithMetrics(m =>
+    {
+        m.AddMeter(BotTelemetry.SourceName);
+        m.AddPrometheusExporter();
+    });
 
 // Server-Internals
 services.AddSingleton<AuthTokenStore>();
@@ -302,8 +315,10 @@ app.MapAuthEndpoints();
 app.MapStatusEndpoints();
 app.MapBotControlEndpoints();
 app.MapSettingsEndpoints();
-// Phase 18 / G4 — interner Metrics-Snapshot-Endpoint.
+// Phase 18 / G4 — interner Metrics-Snapshot-Endpoint (JSON).
 app.MapMetricsEndpoints();
+// Phase 18 / H6 — OpenTelemetry-Prometheus-Scraping-Endpoint /metrics (Standard-Pfad).
+app.MapPrometheusScrapingEndpoint();
 app.MapTradesAndLogsEndpoints();
 app.MapBacktestEndpoints();
 // v1.5.2 Phase 4 / v1.5.3 Phase 5 — Decision-Trail + Stats-Breakdown

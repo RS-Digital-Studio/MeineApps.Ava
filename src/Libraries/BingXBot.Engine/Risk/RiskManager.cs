@@ -424,33 +424,45 @@ public class RiskManager : IRiskManager
         return Math.Abs(netMargin) / balance * 100m;
     }
 
-    // Rolling-Metriken: Ringpuffer der letzten N Trades
-    private readonly List<CompletedTrade> _rollingTrades = new();
+    // Rolling-Metriken: Ringpuffer der letzten N Trades.
+    // Phase 18 / H1 — Queue<T> statt List<T> fuer O(1) Dequeue (vorher List.RemoveAt(0) = O(n)).
+    private readonly Queue<CompletedTrade> _rollingTrades = new();
     private const int RollingWindowSize = 30;
     // Phase 18 / C1 — Cache fuer RecentTrades-Snapshot. Vorher allokierte jeder UI-Read ein
     // neues `ToList()`. Cache wird bei UpdateDailyStats/ResetAll invalidated und beim naechsten
-    // Read 1× neu gebaut.
+    // Read 1× neu gebaut. Phase H1 — alle Lese-Properties (Sharpe/WinRate/ProfitFactor) gehen
+    // jetzt ueber dieses Snapshot statt Queue direkt → keine Mehrfach-Enumeration der Queue.
     private CompletedTrade[]? _recentTradesSnapshot;
+
+    /// <summary>Phase 18 / H1 — Lazy-rebuild des Snapshots (muss innerhalb des _lock laufen).</summary>
+    private CompletedTrade[] GetRecentTradesSnapshotLocked()
+    {
+        if (_recentTradesSnapshot == null)
+            _recentTradesSnapshot = _rollingTrades.ToArray();
+        return _recentTradesSnapshot;
+    }
 
     /// <summary>Zugriff auf die letzten Trades für PnL-Kalender und Statistiken (gecached, lazy rebuild).</summary>
     public IReadOnlyList<CompletedTrade> RecentTrades
     {
-        get
-        {
-            lock (_lock)
-            {
-                if (_recentTradesSnapshot == null)
-                    _recentTradesSnapshot = _rollingTrades.ToArray();
-                return _recentTradesSnapshot;
-            }
-        }
+        get { lock (_lock) return GetRecentTradesSnapshotLocked(); }
     }
 
     /// <summary>Rolling WinRate der letzten 30 Trades (0-1).</summary>
     public decimal RollingWinRate
     {
-        get { lock (_lock) return _rollingTrades.Count > 0
-            ? (decimal)_rollingTrades.Count(t => t.Pnl > 0) / _rollingTrades.Count : 0m; }
+        get
+        {
+            lock (_lock)
+            {
+                var snapshot = GetRecentTradesSnapshotLocked();
+                if (snapshot.Length == 0) return 0m;
+                int wins = 0;
+                for (var i = 0; i < snapshot.Length; i++)
+                    if (snapshot[i].Pnl > 0) wins++;
+                return (decimal)wins / snapshot.Length;
+            }
+        }
     }
 
     /// <summary>Rolling ProfitFactor der letzten 30 Trades.</summary>
@@ -460,8 +472,14 @@ public class RiskManager : IRiskManager
         {
             lock (_lock)
             {
-                var wins = _rollingTrades.Where(t => t.Pnl > 0).Sum(t => t.Pnl);
-                var losses = Math.Abs(_rollingTrades.Where(t => t.Pnl < 0).Sum(t => t.Pnl));
+                var snapshot = GetRecentTradesSnapshotLocked();
+                decimal wins = 0m, losses = 0m;
+                for (var i = 0; i < snapshot.Length; i++)
+                {
+                    var pnl = snapshot[i].Pnl;
+                    if (pnl > 0) wins += pnl;
+                    else if (pnl < 0) losses += -pnl;
+                }
                 return losses > 0 ? wins / losses : wins > 0 ? 99m : 0m;
             }
         }
@@ -474,23 +492,38 @@ public class RiskManager : IRiskManager
         {
             lock (_lock)
             {
-                if (_rollingTrades.Count < 5) return 0m;
-                // Prozentuale Returns normalisiert auf Positionswert (nicht absolute PnL)
-                var returns = _rollingTrades
-                    .Where(t => t.EntryPrice > 0 && t.Quantity > 0)
-                    .Select(t => (double)(t.Pnl / (t.EntryPrice * t.Quantity)))
-                    .ToArray();
-                if (returns.Length < 5) return 0m;
-                var avg = returns.Average();
+                var snapshot = GetRecentTradesSnapshotLocked();
+                if (snapshot.Length < 5) return 0m;
+                // Prozentuale Returns normalisiert auf Positionswert (nicht absolute PnL).
+                // Phase H1 — for-Loop statt LINQ, fuellt direkt in Pre-Allocated double[].
+                var validCount = 0;
+                for (var i = 0; i < snapshot.Length; i++)
+                    if (snapshot[i].EntryPrice > 0 && snapshot[i].Quantity > 0) validCount++;
+                if (validCount < 5) return 0m;
+
+                var returns = new double[validCount];
+                var idx = 0;
+                for (var i = 0; i < snapshot.Length; i++)
+                {
+                    var t = snapshot[i];
+                    if (t.EntryPrice > 0 && t.Quantity > 0)
+                        returns[idx++] = (double)(t.Pnl / (t.EntryPrice * t.Quantity));
+                }
+
+                double sum = 0;
+                for (var i = 0; i < returns.Length; i++) sum += returns[i];
+                var avg = sum / returns.Length;
+                double sumSqDiff = 0;
+                for (var i = 0; i < returns.Length; i++) { var d = returns[i] - avg; sumSqDiff += d * d; }
                 // Sample-Varianz (N-1) für korrekte Schätzung bei kleinen Stichproben
-                var variance = returns.Select(r => (r - avg) * (r - avg)).Sum() / (returns.Length - 1);
+                var variance = sumSqDiff / (returns.Length - 1);
                 var stdDev = Math.Sqrt(variance);
                 if (stdDev <= 0) return 0m;
 
                 // Annualisierung: Tatsächliche Trade-Frequenz statt fixem sqrt(365).
                 // sqrt(365) nimmt 1 Trade/Tag an — bei H4-Swing (0.3/Tag) oder Scalping (5/Tag) verzerrt.
-                var first = _rollingTrades[0].ExitTime;
-                var last = _rollingTrades[^1].ExitTime;
+                var first = snapshot[0].ExitTime;
+                var last = snapshot[snapshot.Length - 1].ExitTime;
                 var spanDays = (last - first).TotalDays;
                 // Trades pro Jahr aus tatsächlicher Frequenz (Fallback: 365 bei <1 Tag Spanne)
                 var tradesPerYear = spanDays > 1 ? returns.Length / spanDays * 365 : 365;
@@ -522,8 +555,14 @@ public class RiskManager : IRiskManager
         catch (Exception ex)
         {
             // Phase 18 / B4 — Failure-Counter + structured Log statt stillem Schlucken.
-            Interlocked.Increment(ref _newsCheckFailureCount);
-            _logger.LogWarning(ex, "News-Blackout-Probe fehlgeschlagen (Failure #{Count}) — Trade wird ohne Filter durchgewinkt", _newsCheckFailureCount);
+            var newCount = Interlocked.Increment(ref _newsCheckFailureCount);
+            _logger.LogWarning(ex, "News-Blackout-Probe fehlgeschlagen (Failure #{Count}) — Trade wird ohne Filter durchgewinkt", newCount);
+            // Phase 18 / H2 — Edge-Transition: ab Threshold die UI informieren.
+            if (newCount >= NewsServiceDegradedThreshold && !_lastNewsServiceDegraded)
+            {
+                _lastNewsServiceDegraded = true;
+                NewsServiceHealthChanged?.Invoke(true, newCount, $"News-Probe {newCount}× in Folge fehlgeschlagen ({ex.GetType().Name}).");
+            }
             return null;
         }
     }
@@ -533,7 +572,31 @@ public class RiskManager : IRiskManager
     public int NewsCheckFailureCount => _newsCheckFailureCount;
 
     /// <summary>Phase 18 / B4 — Reset des News-Failure-Counters bei erfolgreichem Probe.</summary>
-    public void ResetNewsCheckFailures() => Interlocked.Exchange(ref _newsCheckFailureCount, 0);
+    public void ResetNewsCheckFailures()
+    {
+        var was = Interlocked.Exchange(ref _newsCheckFailureCount, 0);
+        // Phase 18 / H2 — Recovery-Edge-Transition: war degraded → Recovery-Event publishen.
+        if (was >= NewsServiceDegradedThreshold && !_lastNewsServiceDegraded)
+        {
+            // Bereits unter Threshold gemeldet, nichts zu tun.
+        }
+        else if (was >= NewsServiceDegradedThreshold && _lastNewsServiceDegraded)
+        {
+            _lastNewsServiceDegraded = false;
+            NewsServiceHealthChanged?.Invoke(false, 0, "Recovery: News-Probe wieder erfolgreich.");
+        }
+    }
+
+    /// <summary>Phase 18 / H2 — Schwelle ab der News-Service als degraded gemeldet wird (5 Failures).</summary>
+    private const int NewsServiceDegradedThreshold = 5;
+    /// <summary>Phase 18 / H2 — Edge-Transition-State fuer NewsServiceHealthChanged.</summary>
+    private bool _lastNewsServiceDegraded;
+    /// <summary>
+    /// Phase 18 / H2 — Callback-Hook fuer Edge-Transition (degraded → recovered und umgekehrt).
+    /// TradingServiceBase verdrahtet das auf <c>LocalBotEventStream.PublishNewsServiceDegraded</c>.
+    /// Args: (isDegraded, failureCount, reason).
+    /// </summary>
+    public Action<bool, int, string?>? NewsServiceHealthChanged { get; set; }
 
     /// <summary>
     /// Setzt CurrentConsecutiveLosses auf einen externen Wert (v1.2.5).
@@ -575,12 +638,13 @@ public class RiskManager : IRiskManager
             _dailyPnl += completedTrade.Pnl;
             _totalPnl += completedTrade.Pnl;
 
-            // Rolling-Window aktualisieren
-            _rollingTrades.Add(completedTrade);
-            if (_rollingTrades.Count > RollingWindowSize)
-                _rollingTrades.RemoveAt(0);
+            // Rolling-Window aktualisieren — Phase H1 — Queue<T> mit O(1) Enqueue/Dequeue
+            // (vorher List<T>.RemoveAt(0) = O(n) Memory-Move bei jedem Trade).
+            _rollingTrades.Enqueue(completedTrade);
+            while (_rollingTrades.Count > RollingWindowSize)
+                _rollingTrades.Dequeue();
 
-            // Phase 18 / C1 — Snapshot-Cache invalidieren (lazy rebuild beim naechsten RecentTrades-Read).
+            // Phase 18 / C1 — Snapshot-Cache invalidieren (lazy rebuild beim naechsten Lese-Property).
             _recentTradesSnapshot = null;
 
             // Consecutive Losses

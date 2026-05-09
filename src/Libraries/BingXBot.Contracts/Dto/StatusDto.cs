@@ -92,3 +92,15 @@ public record ConnectionDegradedDto(
     bool IsDegraded,
     string? Reason,
     DateTime TimestampUtc);
+
+/// <summary>
+/// Phase 18 / H2 — News-Service-Health-Event. <c>IsDegraded=true</c> wenn der
+/// EconomicCalendar-Service ≥5 konsekutive Failures hatte (RiskManager.NewsCheckFailureCount).
+/// UI zeigt einen Banner "News-Filter degradiert — Trades werden ohne News-Schutz durchgewinkt".
+/// <c>IsDegraded=false</c> signalisiert Recovery (erfolgreicher Probe nach Failure-Sequenz).
+/// </summary>
+public record NewsServiceDegradedDto(
+    bool IsDegraded,
+    int FailureCount,
+    string? Reason,
+    DateTime TimestampUtc);

@@ -132,5 +132,9 @@
     <!-- Phase 18 / G5 + G6 — Snapshot- + Property-Based-Tests -->
     <PackageVersion Include="Verify.Xunit" Version="28.4.0" />
     <PackageVersion Include="FsCheck.Xunit" Version="3.1.0" />
+    <!-- Phase 18 / H6 — OpenTelemetry + Prometheus-Exporter (Bot-Server) -->
+    <PackageVersion Include="OpenTelemetry" Version="1.10.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.10.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.10.0-beta.1" />
   </ItemGroup>
 </Project>

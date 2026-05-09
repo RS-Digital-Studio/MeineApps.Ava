@@ -128,6 +128,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// <summary>Erklaert dem User warum die Ampel veraltet ist (deutsch, in-VM lokalisiert).</summary>
     [ObservableProperty] private string _idleHintText = "Bot läuft nicht — Status veraltet. Auf Start drücken.";
 
+    /// <summary>Phase 18 / H2 — News-Service-Health-Banner. true = News-Filter degradiert.</summary>
+    [ObservableProperty] private bool _isNewsServiceDegraded;
+    /// <summary>Phase 18 / H2 — Lesbarer Banner-Text fuer den News-Service-Status.</summary>
+    [ObservableProperty] private string _newsServiceBannerText = "";
+
     // === Account (nur anzeigen wenn Daten vorhanden) ===
     [ObservableProperty] private bool _hasAccountData;
     [ObservableProperty] private decimal _balance;
@@ -313,6 +318,10 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             _botControl.StatusChanged += OnRemoteStatusChanged;
             _ = StartRemoteAccountPollingAsync();
         }
+
+        // Phase 18 / H2 — News-Service-Health-Banner. Local + Remote-Mode (RiskManager feuert das Event
+        // ueber den BotEventBus, LocalBotEventStream/RemoteBotEventStream forwarden das gleichermassen).
+        _eventStream.NewsServiceDegraded += OnNewsServiceDegraded;
 
         // Keine Fake-Daten! Zeige ehrlichen Zustand.
         HasAccountData = false;
@@ -1392,6 +1401,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             _eventStream.EquityUpdate -= OnRemoteEquityUpdate;
             _botControl.StatusChanged -= OnRemoteStatusChanged;
         }
+        // Phase 18 / H2 — News-Service-Banner-Handler (Local + Remote).
+        _eventStream.NewsServiceDegraded -= OnNewsServiceDegraded;
 
         // EventBus-Handler sauber abmelden (verhindert Zugriff auf disposed-te Objekte)
         _eventBus.TradeCompleted -= OnTradeCompletedForMarkers;
@@ -1658,6 +1669,22 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             Balance = pt.Equity;
+        });
+    }
+
+    /// <summary>
+    /// Phase 18 / H2 — News-Service-Health-Banner-Handler. Wird vom IBotEventStream auf
+    /// degraded/recovered-Edge-Transitions gefeuert (Local: BotEventBus → LocalBotEventStream;
+    /// Remote: SignalR-Hub → RemoteBotEventStream).
+    /// </summary>
+    private void OnNewsServiceDegraded(BingXBot.Contracts.Dto.NewsServiceDegradedDto dto)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            IsNewsServiceDegraded = dto.IsDegraded;
+            NewsServiceBannerText = dto.IsDegraded
+                ? $"News-Filter degradiert ({dto.FailureCount}× Fehler) — Trades laufen ohne News-Schutz. {dto.Reason}"
+                : "News-Filter wieder erreichbar.";
         });
     }
 

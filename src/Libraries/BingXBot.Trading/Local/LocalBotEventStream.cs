@@ -42,12 +42,17 @@ public sealed class LocalBotEventStream : IBotEventStream
     public event Action<ConnectionDegradedDto>? ConnectionDegraded;
     /// <summary>v1.5.2 Phase 4 — Decision-Trail-Forward.</summary>
     public event Action<EvaluationDecisionDto>? EvaluationDecided;
+    /// <summary>Phase 18 / H2 — News-Service-Health-Edge-Transition.</summary>
+    public event Action<NewsServiceDegradedDto>? NewsServiceDegraded;
 
     /// <summary>
     /// Wird vom ServerHealthWatchdog aufgerufen wenn sich der BingX-Verbindungsstatus aendert.
     /// Publik damit der HostedService ohne zusaetzlichen EventBus-Hop direkt pushen kann.
     /// </summary>
     public void PublishConnectionDegraded(ConnectionDegradedDto dto) => ConnectionDegraded?.Invoke(dto);
+
+    /// <summary>Phase 18 / H2 — Wird vom RiskManager (via TradingServiceBase) bei Edge-Transition gerufen.</summary>
+    public void PublishNewsServiceDegraded(NewsServiceDegradedDto dto) => NewsServiceDegraded?.Invoke(dto);
 
     public LocalBotEventStream(
         BotEventBus bus,
@@ -77,6 +82,8 @@ public sealed class LocalBotEventStream : IBotEventStream
         _bus.ScannerSweep += HandleScannerSweep;
         // v1.5.2 Phase 4 — Decision-Trail Forward auf den IBotEventStream.
         _bus.EvaluationDecided += HandleEvaluationDecided;
+        // Phase 18 / H2 — News-Service-Health Forward.
+        _bus.NewsServiceHealthChanged += HandleNewsServiceHealthChanged;
 
         // v1.3.0 K1: Backtest-Progress + Completed werden vom LocalBacktestService-eigenen
         // Progress-Callback gefeuert. Wir subscriben optional hier — im Client-Standalone
@@ -118,6 +125,16 @@ public sealed class LocalBotEventStream : IBotEventStream
             ConfluenceScore: d.ConfluenceScore,
             ConfluenceCategories: d.ConfluenceCategories,
             HardFiltersFailed: d.HardFiltersFailed));
+    }
+
+    /// <summary>Phase 18 / H2 — Mappt News-Service-Health-Edge auf Wire-DTO und feuert das Stream-Event.</summary>
+    private void HandleNewsServiceHealthChanged(object? sender, (bool IsDegraded, int FailureCount, string? Reason) e)
+    {
+        NewsServiceDegraded?.Invoke(new NewsServiceDegradedDto(
+            IsDegraded: e.IsDegraded,
+            FailureCount: e.FailureCount,
+            Reason: e.Reason,
+            TimestampUtc: DateTime.UtcNow));
     }
 
     private void HandleBotState(object? sender, BotState state)
@@ -264,6 +281,7 @@ public sealed class LocalBotEventStream : IBotEventStream
         _bus.BtcPriceUpdate -= HandleBtcPriceUpdate;
         _bus.ScannerSweep -= HandleScannerSweep;
         _bus.EvaluationDecided -= HandleEvaluationDecided;
+        _bus.NewsServiceHealthChanged -= HandleNewsServiceHealthChanged;
         if (_backtest != null)
         {
             _backtest.ProgressReceived -= HandleBacktestProgress;

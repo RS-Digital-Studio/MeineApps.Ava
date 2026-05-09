@@ -123,6 +123,9 @@ public static class OrderRetryPolicy
                 lastException = ex;
                 if (attempt >= MaxAttempts || !ShouldRetry(ex))
                     throw;
+                // Phase 18 / H6 — Telemetry-Counter pro Retry-Versuch (mit Exception-Type-Tag).
+                BingXBot.Trading.Telemetry.BotTelemetry.OrderRetries.Add(1,
+                    new System.Collections.Generic.KeyValuePair<string, object?>("ex", ex.GetType().Name));
                 onRetry?.Invoke(attempt, ex);
                 var delay = GetBackoffMs(attempt + 1);
                 if (delay > 0)

@@ -283,6 +283,10 @@ public abstract class TradingServiceBase : IDisposable
     protected void StartBase(RiskManager riskManager)
     {
         _riskManager = riskManager;
+        // Phase 18 / H2 — RiskManager-Health-Hook auf den BotEventBus verdrahten.
+        // Edge-Transitions (degraded/recovered) erreichen darüber LocalBotEventStream → SignalR → UI.
+        _riskManager.NewsServiceHealthChanged = (isDeg, count, reason) =>
+            _eventBus.PublishNewsServiceHealthChanged(isDeg, count, reason);
         // K-5 Fix: Cancel VOR Dispose — sonst laufen alte Loops weiter (ObjectDisposedException
         // wird nicht von catch(OperationCanceledException) gefangen)
         _cts?.Cancel();
@@ -1050,7 +1054,18 @@ public abstract class TradingServiceBase : IDisposable
                         RiskSettings: _riskSettings,
                         FundingRatePercent: fundingForStrategy,
                         ResolvedNewsBlackoutEvent: resolvedNewsBlackout);
-                    var signal = strategy.Evaluate(context);
+                    // Phase 18 / H6 — Tracing + Counter pro Strategy-Evaluation.
+                    Telemetry.BotTelemetry.StrategyEvaluations.Add(1,
+                        new System.Collections.Generic.KeyValuePair<string, object?>("symbol", ticker.Symbol),
+                        new System.Collections.Generic.KeyValuePair<string, object?>("tf", navTf.ToString()));
+                    SignalResult signal;
+                    using (var act = Telemetry.BotTelemetry.StartActivity("Strategy.Evaluate"))
+                    {
+                        act?.SetTag("symbol", ticker.Symbol);
+                        act?.SetTag("tf", navTf.ToString());
+                        signal = strategy.Evaluate(context);
+                        act?.SetTag("signal", signal.Signal.ToString());
+                    }
 
                     if (strategy is Engine.Strategies.SequenzKonzeptStrategy skInst
                         && !string.IsNullOrEmpty(skInst.LastStatus) && !skInst.LastStatus.Contains("—"))

@@ -133,7 +133,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IProgressService progressService,
         IReviewService reviewService,
         IGameAssetService assetService,
-        IAppLogger logger)
+        IAppLogger logger,
+        IRetentionService retentionService)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
@@ -143,6 +144,10 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _reviewService = reviewService;
         _assetService = assetService;
         _logger = logger;
+
+        // Phase 24b — RetentionService property-injecten damit GameEngine.PlayFirstWinCinematic
+        // beim ECHTEN ersten Sieg getriggert werden kann.
+        _gameEngine.RetentionService = retentionService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

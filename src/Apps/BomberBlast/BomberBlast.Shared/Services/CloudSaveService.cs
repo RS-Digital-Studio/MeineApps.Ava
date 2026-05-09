@@ -88,7 +88,32 @@ public sealed class CloudSaveService : ICloudSaveService
         "Accessibility_Subtitles",
         "TargetFrameRate",
         "AnalyticsConsent",
-        "CrashlyticsConsent"
+        "CrashlyticsConsent",
+
+        // Phase 23 (AAA-Audit M5) — First-Time-Purchase-Bonus muss über Geräte-Wechsel synchen,
+        // sonst kann ein Spieler den Bonus durch App-Reinstall mehrfach einlösen (Exploit-Schutz).
+        "FirstPurchaseClaimed",
+
+        // Phase 24 (AAA-Audit O3-O5) — Retention-Tracking. FirstWin/FtueSkin müssen gegen
+        // App-Reinstall-Re-Trigger geschuetzt sein. FirstSession ist der D1/D7-Anker.
+        "Retention_FirstWin",
+        "Retention_FtueSkin",
+        "Retention_FirstSessionUtc",
+        "Retention_LastSessionUtc",
+        "Retention_ComebackLastClaim",
+
+        // Phase 25b (AAA-Audit Compliance) — Privacy-Center-Toggles. Sync verhindert dass
+        // ein Spieler nach Geräte-Wechsel ohne explizite Re-Zustimmung wieder auf Defaults landet.
+        "Privacy_PersonalizedAds",
+        "Privacy_PushNotifications",
+        "Privacy_ChildSafeMode",
+
+        // Phase 23b (AAA-Audit M1+M2) — Premium-Pass-Plus + VIP-Subscription.
+        // Müssen über Geräte-Wechsel synchen damit der Spieler den gekauften Tier nicht verliert.
+        "BattlePassPlus_Active",
+        "BattlePassPlus_Season",
+        "Vip_ExpiresAtUtc",
+        "Vip_DailyClaimedDate"
     ];
 
     /// <summary>

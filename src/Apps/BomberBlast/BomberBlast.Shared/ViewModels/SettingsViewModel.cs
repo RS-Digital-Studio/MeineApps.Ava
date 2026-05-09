@@ -31,6 +31,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private readonly IPreferencesService _preferences;
     private readonly IAccessibilityService _accessibilityService;
     private readonly IAccountDeletionService? _accountDeletionService;
+    // Phase 23b — Premium-Tier-Status für Settings-Anzeige
+    private readonly IBattlePassPlusService? _battlePassPlus;
+    private readonly IVipSubscriptionService? _vipSubscription;
 
     private bool _isInitializing = true;
 
@@ -107,6 +110,43 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     /// <summary>DSGVO-Consent für anonyme Nutzungs-Statistiken an Firebase Analytics. Default false.</summary>
     [ObservableProperty]
     private bool _analyticsConsent;
+
+    // === Phase 25b — Privacy-Center-Toggles ====================================
+
+    /// <summary>Personalisierte Werbung (Behavioral-Targeting via AdMob). Default false.</summary>
+    [ObservableProperty]
+    private bool _personalizedAdsConsent;
+
+    /// <summary>Push-Notifications (Re-Engagement, Daily-Reminder). Default true.</summary>
+    [ObservableProperty]
+    private bool _pushNotificationsConsent = true;
+
+    /// <summary>COPPA-Toggle: Spieler &lt;13 → kontextuelle Ads only. Default false.</summary>
+    [ObservableProperty]
+    private bool _childSafeMode;
+
+    // === Phase 23b — Premium-Tier-Anzeige =====================================
+
+    /// <summary>True wenn Battle-Pass-Plus aktuell aktiv ist (nur Read-Display).</summary>
+    [ObservableProperty]
+    private bool _hasBattlePassPlus;
+
+    /// <summary>True wenn VIP-Subscription aktuell aktiv ist (nur Read-Display).</summary>
+    [ObservableProperty]
+    private bool _hasVipSubscription;
+
+    /// <summary>VIP-Ablaufdatum als formatierter String (für Settings-Anzeige).</summary>
+    [ObservableProperty]
+    private string _vipExpiresAtText = string.Empty;
+
+    // === Phase 30b/c — Co-Op-Mode-Selector =====================================
+
+    /// <summary>
+    /// Co-Op-Modus aktiv (true = LocalCoop, false = Single-Player).
+    /// Persistiert in Preferences. Engine.EnableMultiplayer wird beim nächsten Game-Start gelesen.
+    /// </summary>
+    [ObservableProperty]
+    private bool _coOpModeEnabled;
 
     [ObservableProperty]
     private double _joystickSize = 120;
@@ -284,7 +324,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         SoundManager soundManager,
         IPreferencesService preferences,
         IAccessibilityService accessibilityService,
-        IAccountDeletionService? accountDeletionService = null)
+        IAccountDeletionService? accountDeletionService = null,
+        IBattlePassPlusService? battlePassPlus = null,
+        IVipSubscriptionService? vipSubscription = null)
     {
         _progressService = progressService;
         _highScoreService = highScoreService;
@@ -298,6 +340,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _preferences = preferences;
         _accessibilityService = accessibilityService;
         _accountDeletionService = accountDeletionService;
+        _battlePassPlus = battlePassPlus;
+        _vipSubscription = vipSubscription;
 
         // Version info
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
@@ -354,6 +398,21 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         // Privacy (v2.0.55 — DSGVO Consent-Flow für Firebase)
         CrashlyticsConsent = _preferences.Get("CrashlyticsConsent", false);
         AnalyticsConsent = _preferences.Get("AnalyticsConsent", false);
+        // Phase 25b — Privacy-Center-Toggles
+        PersonalizedAdsConsent = _preferences.Get("Privacy_PersonalizedAds", false);
+        PushNotificationsConsent = _preferences.Get("Privacy_PushNotifications", true);
+        ChildSafeMode = _preferences.Get("Privacy_ChildSafeMode", false);
+
+        // Phase 23b — Premium-Tier-Status laden (Read-Display)
+        HasBattlePassPlus = _battlePassPlus?.HasPlus ?? false;
+        HasVipSubscription = _vipSubscription?.IsActive ?? false;
+        var vipExp = _vipSubscription?.ExpiresAtUtc;
+        VipExpiresAtText = vipExp.HasValue
+            ? vipExp.Value.ToLocalTime().ToString("yyyy-MM-dd")
+            : string.Empty;
+
+        // Phase 30b/c — Co-Op-Modus aus Preferences laden
+        CoOpModeEnabled = _preferences.Get("Multiplayer_CoOpEnabled", false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -405,6 +464,37 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     {
         if (_isInitializing) return;
         _preferences.Set("AnalyticsConsent", value);
+    }
+
+    // Phase 25b — Privacy-Center-Toggles persistieren
+    partial void OnPersonalizedAdsConsentChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _preferences.Set("Privacy_PersonalizedAds", value);
+    }
+
+    partial void OnPushNotificationsConsentChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _preferences.Set("Privacy_PushNotifications", value);
+    }
+
+    partial void OnChildSafeModeChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _preferences.Set("Privacy_ChildSafeMode", value);
+        // ChildSafeMode aktiviert → automatisch Personalized-Ads aus
+        if (value && PersonalizedAdsConsent)
+        {
+            PersonalizedAdsConsent = false;
+        }
+    }
+
+    // Phase 30b/c — Co-Op-Modus persistieren
+    partial void OnCoOpModeEnabledChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _preferences.Set("Multiplayer_CoOpEnabled", value);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

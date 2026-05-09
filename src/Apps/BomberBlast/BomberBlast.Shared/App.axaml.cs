@@ -314,6 +314,17 @@ public partial class App : Application
         services.AddSingleton<IEventCalendarService, EventCalendarService>();
         // Phase 23 — AAA-Audit M5: First-Time-Purchase-Bonus (×2 auf ersten Kauf)
         services.AddSingleton<IFirstPurchaseService, FirstPurchaseService>();
+        // Phase 25 — DSGVO Art. 20: Datenexport-Service (Account-Holder können ihre Daten als JSON beziehen)
+        services.AddSingleton<IDataExportService, DataExportService>();
+        // Phase 27 — AAA-Audit P2/P3/P4: Hardware-Profile-Service (Quality-Tier + Battery + Thermal)
+        services.AddSingleton<IHardwareProfileService, HardwareProfileService>();
+        // Phase 24 — AAA-Audit O3-O5: Retention-Service (FirstWin / FTUE / Inactive-Detection)
+        services.AddSingleton<IRetentionService, RetentionService>();
+        // Phase 25b — AAA-Audit Compliance: Privacy-Center (DSGVO/COPPA-Toggles)
+        services.AddSingleton<IPrivacyCenter, PrivacyCenter>();
+        // Phase 23b — AAA-Audit M1+M2: Premium-Pass-Plus + VIP-Subscription
+        services.AddSingleton<IBattlePassPlusService, BattlePassPlusService>();
+        services.AddSingleton<IVipSubscriptionService, VipSubscriptionService>();
         // v2.0.44 — AAA-Audit: Accessibility + DSGVO Account-Löschung + Telemetrie
         services.AddSingleton<IAccessibilityService, AccessibilityService>();
         services.AddSingleton<IAccountDeletionService, AccountDeletionService>();

@@ -698,6 +698,36 @@
                                    Foreground="{DynamicResource SuccessBrush}" />
                 </Grid>
 
+                <!-- Phase 23b — Battle-Pass-Plus-Status -->
+                <Grid ColumnDefinitions="*,Auto"
+                      IsVisible="{Binding HasBattlePassPlus}">
+                  <TextBlock AutomationProperties.AutomationId="Settings_TxtBattlePassPlusActive"
+                             Text="{loc:Translate BattlePassPlusActive}"
+                             FontSize="13" FontWeight="Bold"
+                             Foreground="#A855F7" />
+                  <icons:GameIcon Grid.Column="1"
+                                   Kind="Check" Width="20" Height="20"
+                                   Foreground="#A855F7" />
+                </Grid>
+
+                <!-- Phase 23b — VIP-Subscription-Status -->
+                <StackPanel Spacing="2" IsVisible="{Binding HasVipSubscription}">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock AutomationProperties.AutomationId="Settings_TxtVipActive"
+                               Text="{loc:Translate VipSubscriptionActive}"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="#FFD700" />
+                    <icons:GameIcon Grid.Column="1"
+                                     Kind="Crown" Width="20" Height="20"
+                                     Foreground="#FFD700" />
+                  </Grid>
+                  <TextBlock Text="{Binding VipExpiresAtText, StringFormat='{loc:Translate VipExpiresAt}: {0}'}"
+                             FontSize="11"
+                             Opacity="0.85"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             IsVisible="{Binding VipExpiresAtText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+
                 <!-- Premium Feature-Liste -->
                 <StackPanel Spacing="6" IsVisible="{Binding !IsPremium}">
                   <StackPanel Orientation="Horizontal" Spacing="6">
@@ -814,6 +844,60 @@
                               Grid.Column="1"
                               OnContent="" OffContent=""
                               IsChecked="{Binding AnalyticsConsent}" />
+              </Grid>
+
+              <!-- Phase 25b — Erweiterte Privacy-Toggles -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtPersonalizedAds"
+                           Text="{loc:Translate PersonalizedAdsConsent}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_TogglePersonalizedAds"
+                              AutomationProperties.Name="{loc:Translate PersonalizedAdsConsent}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding PersonalizedAdsConsent}" />
+              </Grid>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtPushNotifications"
+                           Text="{loc:Translate PushNotificationsConsent}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_TogglePushNotifications"
+                              AutomationProperties.Name="{loc:Translate PushNotificationsConsent}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding PushNotificationsConsent}" />
+              </Grid>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtChildSafeMode"
+                           Text="{loc:Translate ChildSafeMode}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleChildSafeMode"
+                              AutomationProperties.Name="{loc:Translate ChildSafeMode}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding ChildSafeMode}" />
+              </Grid>
+
+              <!-- Phase 30b/c — Co-Op-Mode-Toggle -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtCoOpMode"
+                           Text="{loc:Translate CoOpModeEnabled}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleCoOpMode"
+                              AutomationProperties.Name="{loc:Translate CoOpModeEnabled}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding CoOpModeEnabled}" />
               </Grid>
 
               <TextBlock Text="{loc:Translate ConsentRequiresRestart}"

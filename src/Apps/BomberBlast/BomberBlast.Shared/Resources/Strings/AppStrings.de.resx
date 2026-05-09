@@ -469,6 +469,21 @@
   <data name="PowerUp_Skull_Desc" xml:space="preserve">
     <value>Zufälliger Fluch-Effekt (Debuff)</value>
   </data>
+  <data name="PowerUp_Cure" xml:space="preserve">
+    <value>Heilung</value>
+  </data>
+  <data name="PowerUp_Cure_Desc" xml:space="preserve">
+    <value>Entfernt jeden aktiven Fluch sofort</value>
+  </data>
+  <data name="FloatCure" xml:space="preserve">
+    <value>GEHEILT!</value>
+  </data>
+  <data name="DiscoverCure" xml:space="preserve">
+    <value>Heilung</value>
+  </data>
+  <data name="DiscoverCureDesc" xml:space="preserve">
+    <value>Das grüne Kreuz entfernt jeden aktiven Fluch — heb es dir für Notfälle auf.</value>
+  </data>
 
   <!-- Languages -->
   <data name="LanguageSection" xml:space="preserve">
@@ -3455,9 +3470,104 @@
     <value>BUFFS</value>
   </data>
 
+  <!-- v2.0.44 AAA-Audit: Accessibility / Performance / Privacy -->
+  <data name="HighFrameRate" xml:space="preserve">
+    <value>60-FPS-Modus (höherer Akkuverbrauch)</value>
+  </data>
+  <data name="AccessibilitySection" xml:space="preserve">
+    <value>Barrierefreiheit</value>
+  </data>
+  <data name="ColorblindMode" xml:space="preserve">
+    <value>Farbsehschwäche-Modus</value>
+  </data>
+  <data name="HighContrast" xml:space="preserve">
+    <value>Hoher Kontrast</value>
+  </data>
+  <data name="UiScale" xml:space="preserve">
+    <value>UI-Skalierung</value>
+  </data>
+  <data name="Subtitles" xml:space="preserve">
+    <value>Audio-Untertitel</value>
+  </data>
+  <data name="DeleteAccount" xml:space="preserve">
+    <value>Konto löschen</value>
+  </data>
+  <data name="DeleteAccountConfirm" xml:space="preserve">
+    <value>Alle deine Spieldaten werden unwiderruflich gelöscht — auch Cloud-Speicher und Liga-Stand. Fortfahren?</value>
+  </data>
+  <data name="DeleteAccountDone" xml:space="preserve">
+    <value>Alle Daten wurden entfernt. Bitte starte die App neu.</value>
+  </data>
+  <data name="DeleteAccountPartial" xml:space="preserve">
+    <value>Lokale Daten gelöscht. Cloud-Daten konnten nicht erreicht werden.</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="PrivacySection" xml:space="preserve">
+    <value>Datenschutz</value>
+  </data>
+  <data name="CrashlyticsConsent" xml:space="preserve">
+    <value>Anonyme Absturzberichte senden</value>
+  </data>
+  <data name="AnalyticsConsent" xml:space="preserve">
+    <value>Anonyme Nutzungsstatistiken senden</value>
+  </data>
+  <data name="ConsentRequiresRestart" xml:space="preserve">
+    <value>Änderungen wirken beim nächsten App-Start.</value>
+  </data>
+
+  <!-- v2.0.46 Audio-Captions -->
+  <data name="SubtitleBossRoar" xml:space="preserve">
+    <value>[BOSS BRÜLLT]</value>
+  </data>
+  <data name="SubtitleTimeWarning" xml:space="preserve">
+    <value>[ZEIT-WARNUNG]</value>
+  </data>
+  <data name="SubtitlePlayerDeath" xml:space="preserve">
+    <value>[DU BIST GESTORBEN]</value>
+  </data>
+  <data name="SubtitleLevelComplete" xml:space="preserve">
+    <value>[LEVEL GESCHAFFT]</value>
+  </data>
+  <data name="SubtitleVictoryFanfare" xml:space="preserve">
+    <value>[SIEGES-FANFARE]</value>
+  </data>
+  <data name="SubtitleExplosion" xml:space="preserve">
+    <value>[EXPLOSION]</value>
+  </data>
+  <data name="SubtitleBossDefeat" xml:space="preserve">
+    <value>[BOSS BESIEGT]</value>
+  </data>
+  <data name="SubtitleAchievement" xml:space="preserve">
+    <value>[ERFOLG FREIGESCHALTET]</value>
+  </data>
+  <data name="SubtitleUltraCombo" xml:space="preserve">
+    <value>[ULTRA-COMBO]</value>
+  </data>
+
   <!-- GameEngine Announcement Strings -->
   <data name="AnnounceBossFight" xml:space="preserve">
     <value>BOSSKAMPF!</value>
+  </data>
+  <!-- Typ-spezifische Boss-Banner (v2.0.44 — AAA-Audit) -->
+  <data name="BossNameStoneGolem" xml:space="preserve">
+    <value>STEINGOLEM</value>
+  </data>
+  <data name="BossNameIceDragon" xml:space="preserve">
+    <value>EISDRACHE</value>
+  </data>
+  <data name="BossNameFireDemon" xml:space="preserve">
+    <value>FEUERDÄMON</value>
+  </data>
+  <data name="BossNameShadowMaster" xml:space="preserve">
+    <value>SCHATTENMEISTER</value>
+  </data>
+  <data name="BossNameFinalBoss" xml:space="preserve">
+    <value>END-BOSS</value>
+  </data>
+  <data name="BossNamePluralFinalBoss" xml:space="preserve">
+    <value>ZWILLINGS-END-BOSSE</value>
   </data>
   <data name="AnnounceWorldFormat" xml:space="preserve">
     <value>WELT {0}</value>
@@ -3982,4 +4092,305 @@
   <data name="ChallengeShared" xml:space="preserve">
     <value>Herausforderung geteilt!</value>
   </data>
+
+  <!-- Saisonale Events (v2.0.41, Plan Task 3.4) -->
+  <data name="EventHalloween" xml:space="preserve">
+    <value>Halloween-Spuk</value>
+  </data>
+  <data name="EventHalloweenDesc" xml:space="preserve">
+    <value>Schaurige Welten und Kürbis-Power-Ups für 8 Tage.</value>
+  </data>
+  <data name="EventHalloweenGreeting" xml:space="preserve">
+    <value>Süßes oder Saures!</value>
+  </data>
+  <data name="EventChristmas" xml:space="preserve">
+    <value>Weihnachts-Sturm</value>
+  </data>
+  <data name="EventChristmasDesc" xml:space="preserve">
+    <value>Verschneite Welten und festliche Bomben über die Feiertage.</value>
+  </data>
+  <data name="EventChristmasGreeting" xml:space="preserve">
+    <value>Frohe Weihnachten!</value>
+  </data>
+  <data name="EventNewYear" xml:space="preserve">
+    <value>Feuerwerks-Nacht</value>
+  </data>
+  <data name="EventNewYearDesc" xml:space="preserve">
+    <value>Feiere mit explosiven Feuerwerksbomben.</value>
+  </data>
+  <data name="EventNewYearGreeting" xml:space="preserve">
+    <value>Frohes neues Jahr!</value>
+  </data>
+  <data name="EventSummer" xml:space="preserve">
+    <value>Tropischer Sommer</value>
+  </data>
+  <data name="EventSummerDesc" xml:space="preserve">
+    <value>Sonnige Welten und Strand-Vibes einen ganzen Monat lang.</value>
+  </data>
+  <data name="EventSummerGreeting" xml:space="preserve">
+    <value>Willkommen im Sommer!</value>
+  </data>
+
+  <!-- Boss Rush (v2.0.41, Plan Task 3.3) -->
+  <data name="BossRushTitle" xml:space="preserve">
+    <value>Wöchentlicher Boss-Rush</value>
+  </data>
+  <data name="BossRushDesc" xml:space="preserve">
+    <value>Besiege alle 5 Bosse hintereinander. Bester Score diese Woche zählt.</value>
+  </data>
+  <data name="BossRushWeeklyBest" xml:space="preserve">
+    <value>Wochen-Bestwert: {0}</value>
+  </data>
+  <data name="BossRushStartButton" xml:space="preserve">
+    <value>Boss-Rush starten</value>
+  </data>
+
+  <!-- Daily Race (v2.0.41, Plan Task 3.1) -->
+  <data name="DailyRaceTitle" xml:space="preserve">
+    <value>Tägliches Bomben-Rennen</value>
+  </data>
+  <data name="DailyRaceDesc" xml:space="preserve">
+    <value>Heute dasselbe Level für alle. Top-Spieler erhalten Liga-Punkte.</value>
+  </data>
+  <data name="DailyRaceTodayBest" xml:space="preserve">
+    <value>Heutiger Bestwert: {0}</value>
+  </data>
+  <data name="DailyRaceStartButton" xml:space="preserve">
+    <value>Rennen starten</value>
+  </data>
+  <data name="DailyRaceResetIn" xml:space="preserve">
+    <value>Reset in {0}h {1}m</value>
+  </data>
+  <data name="LeagueTabSeason" xml:space="preserve">
+    <value>Saison</value>
+  </data>
+  <data name="LeagueTabDailyRace" xml:space="preserve">
+    <value>Daily Race</value>
+  </data>
+  <data name="DailyRaceTierTab" xml:space="preserve">
+    <value>Meine Liga</value>
+  </data>
+  <data name="DailyRaceGlobalTab" xml:space="preserve">
+    <value>Global</value>
+  </data>
+
+  <!-- Loadout (v2.0.41, Plan Task 3.2) -->
+  <data name="LoadoutTitle" xml:space="preserve">
+    <value>Vor-Run-Boosts</value>
+  </data>
+  <data name="LoadoutBoostExtraBomb" xml:space="preserve">
+    <value>+1 Bombe</value>
+  </data>
+  <data name="LoadoutBoostExtraFire" xml:space="preserve">
+    <value>+1 Reichweite</value>
+  </data>
+  <data name="LoadoutBoostSpeed" xml:space="preserve">
+    <value>Maximales Tempo</value>
+  </data>
+  <data name="LoadoutBoostWallpass" xml:space="preserve">
+    <value>Wand-Pass</value>
+  </data>
+  <data name="LoadoutBoostInvincibility" xml:space="preserve">
+    <value>30s Schild</value>
+  </data>
+
+  <!-- Card Crafting (v2.0.40, Plan Task 3.5) -->
+  <data name="CraftingTitle" xml:space="preserve">
+    <value>Karten herstellen</value>
+  </data>
+  <data name="CraftStatusFormat" xml:space="preserve">
+    <value>{0} / {1}</value>
+  </data>
+  <data name="CraftCoinCostFormat" xml:space="preserve">
+    <value>{0} Münzen</value>
+  </data>
+  <data name="CraftRareButton" xml:space="preserve">
+    <value>Selten herstellen</value>
+  </data>
+  <data name="CraftEpicButton" xml:space="preserve">
+    <value>Episch herstellen</value>
+  </data>
+  <data name="CraftLegendaryButton" xml:space="preserve">
+    <value>Legendär herstellen</value>
+  </data>
+  <data name="CraftSuccessFormat" xml:space="preserve">
+    <value>Hergestellt: {0}</value>
+  </data>
+  <data name="CraftFailed" xml:space="preserve">
+    <value>Zu wenige Karten oder Münzen</value>
+  </data>
+
+  <!-- Dungeon Lite (v2.0.39, Plan Task 2.7) -->
+  <data name="DungeonLiteRunButton" xml:space="preserve">
+    <value>Lite-Run starten</value>
+  </data>
+  <data name="DungeonLiteRunHint" xml:space="preserve">
+    <value>Zum ersten Mal? Probier den 3-Etagen-Lite-Run — geführte Buffs, halbe Belohnung, kein Risiko.</value>
+  </data>
+  <data name="DungeonLiteRunStarted" xml:space="preserve">
+    <value>Lite-Run gestartet!</value>
+  </data>
+  <data name="DungeonLiteRunCompleted" xml:space="preserve">
+    <value>Lite-Run gemeistert — bereit für den vollen Dungeon?</value>
+  </data>
+  <data name="DungeonLiteRunBadge" xml:space="preserve">
+    <value>LITE</value>
+  </data>
+  <data name="DungeonLiteRunFloorFormat" xml:space="preserve">
+    <value>Etage {0} / 3</value>
+  </data>
+
+  <!-- Combo+ x10+ (v2.0.37, Task 2.6) -->
+  <data name="FloatUltra" xml:space="preserve">
+    <value>ULTRA x{0}!</value>
+  </data>
+  <data name="AchCombo10" xml:space="preserve">
+    <value>Combo-Meister</value>
+  </data>
+  <data name="AchCombo10Desc" xml:space="preserve">
+    <value>Erreiche eine x10-Combo</value>
+  </data>
+  <data name="AchCombo15" xml:space="preserve">
+    <value>Combo-Legende</value>
+  </data>
+  <data name="AchCombo15Desc" xml:space="preserve">
+    <value>Erreiche eine x15-Combo</value>
+  </data>
+  <data name="AchCombo20" xml:space="preserve">
+    <value>Combo-Mythos</value>
+  </data>
+  <data name="AchCombo20Desc" xml:space="preserve">
+    <value>Erreiche eine x20-Combo</value>
+  </data>
+
+  <!-- Daily Hub (v2.0.37) -->
+  <data name="DailyHubTitle" xml:space="preserve">
+    <value>Heute</value>
+  </data>
+  <data name="DailyHubButton" xml:space="preserve">
+    <value>Heute</value>
+  </data>
+  <data name="DailyHubReward" xml:space="preserve">
+    <value>Tagesbonus</value>
+  </data>
+  <data name="DailyHubRewardDay" xml:space="preserve">
+    <value>Tag {0} von 7</value>
+  </data>
+  <data name="DailyHubRewardClaimed" xml:space="preserve">
+    <value>Heute schon abgeholt</value>
+  </data>
+  <data name="DailyHubChallenge" xml:space="preserve">
+    <value>Tägliche Herausforderung</value>
+  </data>
+  <data name="DailyHubChallengeStreak" xml:space="preserve">
+    <value>Serie: {0}</value>
+  </data>
+  <data name="DailyHubChallengeBest" xml:space="preserve">
+    <value>Bestwert: {0}</value>
+  </data>
+  <data name="DailyHubMissions" xml:space="preserve">
+    <value>Tagesmissionen</value>
+  </data>
+  <data name="DailyHubMissionsProgress" xml:space="preserve">
+    <value>{0} / {1} erledigt</value>
+  </data>
+  <data name="DailyHubSpin" xml:space="preserve">
+    <value>Glücksrad</value>
+  </data>
+  <data name="DailyHubSpinReady" xml:space="preserve">
+    <value>Gratis-Dreh verfügbar</value>
+  </data>
+  <data name="DailyHubSpinUsed" xml:space="preserve">
+    <value>Heute schon gedreht — morgen wieder</value>
+  </data>
+  <data name="DailyHubDeals" xml:space="preserve">
+    <value>Tagesangebote</value>
+  </data>
+  <data name="DailyHubDealsCount" xml:space="preserve">
+    <value>{0} aktive Angebote</value>
+  </data>
+
+  <!-- Context Help (Tutorial-Replay-Pin in GameView, v2.0.37) -->
+  <data name="ContextHelpTitle" xml:space="preserve">
+    <value>Schnellhilfe</value>
+  </data>
+  <data name="ContextHelpClose" xml:space="preserve">
+    <value>Verstanden</value>
+  </data>
+  <data name="ContextHelpStory1" xml:space="preserve">
+    <value>Bomben legen, um Wände zu zerstören und Gegner zu besiegen.</value>
+  </data>
+  <data name="ContextHelpStory2" xml:space="preserve">
+    <value>Den versteckten Ausgang finden, indem du Blöcke zerstörst.</value>
+  </data>
+  <data name="ContextHelpStory3" xml:space="preserve">
+    <value>Power-Ups einsammeln für mehr Bomben, Reichweite und Tempo.</value>
+  </data>
+  <data name="ContextHelpSurvival1" xml:space="preserve">
+    <value>Endlos-Modus. Gegner spawnen mit der Zeit immer schneller.</value>
+  </data>
+  <data name="ContextHelpSurvival2" xml:space="preserve">
+    <value>Nur ein Leben — kein Weiterspielen.</value>
+  </data>
+  <data name="ContextHelpSurvival3" xml:space="preserve">
+    <value>Meilensteine bei 60s/120s/180s/300s geben Bonus-Münzen und Edelsteine.</value>
+  </data>
+  <data name="ContextHelpDungeon1" xml:space="preserve">
+    <value>Wähle einen Pfad auf der Karte. Andere Räume — andere Belohnungen.</value>
+  </data>
+  <data name="ContextHelpDungeon2" xml:space="preserve">
+    <value>Wähle nach Schlüsselebenen einen Buff. Kombiniere für Synergien.</value>
+  </data>
+  <data name="ContextHelpDungeon3" xml:space="preserve">
+    <value>Ebenen 5 und 10 sind Bosse. Verschwende keine Ressourcen.</value>
+  </data>
+  <data name="ContextHelpDaily1" xml:space="preserve">
+    <value>Heute dasselbe Level für alle. Score zählt für die Serie.</value>
+  </data>
+  <data name="ContextHelpDaily2" xml:space="preserve">
+    <value>180 Sekunden. Kein Weiterspielen. Bester Score gewinnt.</value>
+  </data>
+  <data name="ContextHelpMaster1" xml:space="preserve">
+    <value>Master-Modus: Gegner sind 1,5× schneller und stärker.</value>
+  </data>
+  <data name="ContextHelpMaster2" xml:space="preserve">
+    <value>1 Edelstein pro erstem 3-Sterne-Clear. Champion-Skin nach 100.</value>
+  </data>
+  <!-- Menu-Redesign v2.0.43 -->
+  <data name="MenuHeroReadyToStart" xml:space="preserve"><value>Bereit zum Start</value></data>
+  <data name="MenuHeroWorldStage" xml:space="preserve"><value>Welt {0} — Stage {1}</value></data>
+  <data name="MenuHeroContinue" xml:space="preserve"><value>WEITER SPIELEN</value></data>
+  <data name="MenuHeroStartNow" xml:space="preserve"><value>JETZT STARTEN</value></data>
+  <data name="MenuHeroReplay" xml:space="preserve"><value>NOCHMAL</value></data>
+  <data name="MenuHeroSelectLevel" xml:space="preserve"><value>Level wählen</value></data>
+  <data name="MenuMasterStatus" xml:space="preserve"><value>{0}/100 ★</value></data>
+  <data name="MenuBossRushBest" xml:space="preserve"><value>Best: {0}</value></data>
+  <data name="MenuBossRushNew" xml:space="preserve"><value>Wöchentlich</value></data>
+  <data name="MenuPanelToday" xml:space="preserve"><value>HEUTE</value></data>
+  <data name="MenuPanelCareer" xml:space="preserve"><value>KARRIERE</value></data>
+  <data name="MenuCareerLeagueRank" xml:space="preserve"><value>{0} • #{1}</value></data>
+  <data name="MenuCareerBattlePassTier" xml:space="preserve"><value>Tier {0} / 30</value></data>
+  <data name="MenuCareerBattlePassPaused" xml:space="preserve"><value>Pause</value></data>
+  <data name="MenuCareerDeckSlots" xml:space="preserve"><value>{0} / {1} Slots</value></data>
+  <data name="MenuCareerCollectionProgress" xml:space="preserve"><value>{0}% entdeckt</value></data>
+  <data name="MenuCareerStars" xml:space="preserve"><value>Sterne gesamt</value></data>
+  <data name="MenuCareerStarsProgress" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="EventBannerDaysLeft" xml:space="preserve"><value>{0} Tage übrig</value></data>
+  <data name="OnboardingTitle" xml:space="preserve"><value>Neues Layout!</value></data>
+  <data name="OnboardingHint1" xml:space="preserve"><value>Tagesaktionen findest du jetzt direkt im 'Heute'-Bereich.</value></data>
+  <data name="OnboardingHint2" xml:space="preserve"><value>Profil, Statistik &amp; Customize hinter deinem Avatar.</value></data>
+  <data name="OnboardingHint3" xml:space="preserve"><value>Modi findest du als Tiles unter Story Mode.</value></data>
+  <data name="OnboardingClose" xml:space="preserve"><value>Verstanden</value></data>
+  <data name="ProfileTabOverview" xml:space="preserve"><value>Übersicht</value></data>
+  <data name="ProfileTabStatistics" xml:space="preserve"><value>Statistik</value></data>
+  <data name="ProfileTabCustomize" xml:space="preserve"><value>Customize</value></data>
+  <data name="ProfileCustomizeHint" xml:space="preserve"><value>Tippe ein freigeschaltetes Item an um es zu aktivieren. Gesperrte Items im Shop kaufen.</value></data>
+  <data name="ProfileCustomizeShopHint" xml:space="preserve"><value>Mehr im Shop</value></data>
+  <data name="ProfileCustomizePlayerSkin" xml:space="preserve"><value>Spieler-Skin</value></data>
+  <data name="ProfileCustomizeBombSkin" xml:space="preserve"><value>Bombe</value></data>
+  <data name="ProfileCustomizeExplosionSkin" xml:space="preserve"><value>Explosion</value></data>
+  <data name="ProfileCustomizeTrail" xml:space="preserve"><value>Trail</value></data>
+  <data name="ProfileCustomizeVictory" xml:space="preserve"><value>Sieges-Pose</value></data>
+  <data name="ProfileCustomizeFrame" xml:space="preserve"><value>Rahmen</value></data>
+  <data name="ProfileCustomizeApplied" xml:space="preserve"><value>Aktiviert!</value></data>
 </root>

@@ -142,14 +142,31 @@
                 <!-- Reduzierte Effekte (ScreenShake, Partikel, Hit-Pause) -->
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtReducedEffects"
+                             AutomationProperties.Name="{loc:Translate ReducedEffects}"
                              Text="{loc:Translate ReducedEffects}"
                              FontSize="12"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                   <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleReducedEffects"
+                                AutomationProperties.Name="{loc:Translate ReducedEffects}"
                                 Grid.Column="1"
                                 OnContent="" OffContent=""
                                 IsChecked="{Binding ReducedEffects}" />
+                </Grid>
+
+                <!-- v2.0.44 — Performance: 30/60 FPS Toggle -->
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock AutomationProperties.AutomationId="Settings_TxtHighFps"
+                             AutomationProperties.Name="{loc:Translate HighFrameRate}"
+                             Text="{loc:Translate HighFrameRate}"
+                             FontSize="12"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                  <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleHighFps"
+                                AutomationProperties.Name="{loc:Translate HighFrameRate}"
+                                Grid.Column="1"
+                                OnContent="" OffContent=""
+                                IsChecked="{Binding UseHighFrameRate}" />
                 </Grid>
               </StackPanel>
             </Border>
@@ -382,6 +399,88 @@
                     </StackPanel>
                   </RadioButton>
                 </Border>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- v2.0.44 — Accessibility Section (Colorblind, High-Contrast, UI-Scale, Subtitles) -->
+          <Border AutomationProperties.AutomationId="Settings_AccessibilitySection"
+                  Classes="SettingsCard"
+                  BorderThickness="0,3,0,0" BorderBrush="#10B981"
+                  BoxShadow="0 2 8 0 #25000000">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <icons:GameIcon Kind="AccountCircle" Width="22" Height="22"
+                                 Foreground="#10B981" />
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtAccessibilityTitle"
+                           AutomationProperties.Name="{loc:Translate AccessibilitySection}"
+                           Text="{loc:Translate AccessibilitySection}"
+                           FontSize="17" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+
+              <!-- Colorblind Mode -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtColorblind"
+                           AutomationProperties.Name="{loc:Translate ColorblindMode}"
+                           Text="{loc:Translate ColorblindMode}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ComboBox AutomationProperties.AutomationId="Settings_ComboColorblind"
+                          AutomationProperties.Name="{loc:Translate ColorblindMode}"
+                          Grid.Column="1"
+                          ItemsSource="{Binding ColorblindModes}"
+                          SelectedItem="{Binding ColorblindMode}"
+                          MinWidth="160"
+                          Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+
+              <!-- High Contrast -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtHighContrast"
+                           AutomationProperties.Name="{loc:Translate HighContrast}"
+                           Text="{loc:Translate HighContrast}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleHighContrast"
+                              AutomationProperties.Name="{loc:Translate HighContrast}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding HighContrast}" />
+              </Grid>
+
+              <!-- UI-Scale -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtUiScale"
+                           AutomationProperties.Name="{loc:Translate UiScale}"
+                           Text="{loc:Translate UiScale}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ComboBox AutomationProperties.AutomationId="Settings_ComboUiScale"
+                          AutomationProperties.Name="{loc:Translate UiScale}"
+                          Grid.Column="1"
+                          ItemsSource="{Binding UiScales}"
+                          SelectedItem="{Binding UiScale}"
+                          MinWidth="100"
+                          Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+
+              <!-- Subtitles -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtSubtitles"
+                           AutomationProperties.Name="{loc:Translate Subtitles}"
+                           Text="{loc:Translate Subtitles}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleSubtitles"
+                              AutomationProperties.Name="{loc:Translate Subtitles}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding SubtitlesEnabled}" />
               </Grid>
             </StackPanel>
           </Border>
@@ -673,6 +772,57 @@
 
           </Grid>
 
+          <!-- v2.0.55 — Phase 15 P0-Fix: DSGVO Privacy/Consent-Sektion -->
+          <Border AutomationProperties.AutomationId="Settings_PrivacySection"
+                  Classes="SettingsCard"
+                  BorderThickness="0,3,0,0" BorderBrush="#7C3AED"
+                  BoxShadow="0 2 8 0 #25000000">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <icons:GameIcon Kind="ShieldOutline" Width="22" Height="22"
+                                 Foreground="#7C3AED" />
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtPrivacyTitle"
+                           AutomationProperties.Name="{loc:Translate PrivacySection}"
+                           Text="{loc:Translate PrivacySection}"
+                           FontSize="17" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtCrashlyticsConsent"
+                           AutomationProperties.Name="{loc:Translate CrashlyticsConsent}"
+                           Text="{loc:Translate CrashlyticsConsent}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleCrashlytics"
+                              AutomationProperties.Name="{loc:Translate CrashlyticsConsent}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding CrashlyticsConsent}" />
+              </Grid>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtAnalyticsConsent"
+                           AutomationProperties.Name="{loc:Translate AnalyticsConsent}"
+                           Text="{loc:Translate AnalyticsConsent}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleAnalytics"
+                              AutomationProperties.Name="{loc:Translate AnalyticsConsent}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding AnalyticsConsent}" />
+              </Grid>
+
+              <TextBlock Text="{loc:Translate ConsentRequiresRestart}"
+                         FontSize="10"
+                         Opacity="0.7"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+          </Border>
+
           <!-- Data + About: Side by Side -->
           <Grid ColumnDefinitions="*,*">
 
@@ -707,10 +857,25 @@
                 <Panel MinHeight="44">
                   <controls:GameButtonCanvas ButtonColor="#F44336" DamageLevel="0.7" ButtonSeed="167" />
                   <Button AutomationProperties.AutomationId="Settings_BtnClearHighScores"
+                          AutomationProperties.Name="{loc:Translate ClearHighScores}"
                           Content="{loc:Translate ClearHighScores}"
                           Background="Transparent"
                           Foreground="White"
                           Command="{Binding ClearHighScoresCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          FontSize="14" />
+                </Panel>
+
+                <!-- v2.0.44 — DSGVO Art. 17 Account-Löschung -->
+                <Panel MinHeight="44">
+                  <controls:GameButtonCanvas ButtonColor="#7C1D1D" DamageLevel="0.85" ButtonSeed="169" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnDeleteAccount"
+                          AutomationProperties.Name="{loc:Translate DeleteAccount}"
+                          Content="{loc:Translate DeleteAccount}"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding DeleteAccountCommand}"
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Center"
                           FontSize="14" />

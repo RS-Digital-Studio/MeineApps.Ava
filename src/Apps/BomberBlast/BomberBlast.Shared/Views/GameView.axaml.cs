@@ -143,16 +143,31 @@ public partial class GameView : UserControl
     {
         if (_renderTimer != null) return;
 
-        // 33ms ≈ 30fps — bei einem 2D-Bomberman-Spiel visuell gleichwertig zu 60fps,
-        // aber halbiert CPU/GPU-Last auf Android (Akku, Geräte-Erwärmung).
+        // Tick-Intervall aus GameLoopSettings (User-konfigurierbar in Settings: 30/60 FPS).
+        // Default 30 FPS halbiert CPU/GPU-Last auf Android (Akku, Geräte-Erwärmung).
         // GameEngine.Update nutzt deltaTime, reagiert also automatisch auf die neue Rate.
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        _renderTimer = new DispatcherTimer { Interval = BomberBlast.Core.GameLoopSettings.TickInterval };
         _renderTimer.Tick += OnRenderTick;
         _renderTimer.Start();
+
+        // Reagiert auf Frame-Rate-Toggle in Settings — Timer wird neu mit aktuellem Intervall gestartet.
+        BomberBlast.Core.GameLoopSettings.TargetFpsChanged += OnTargetFpsChanged;
+    }
+
+    private void OnTargetFpsChanged(object? sender, int newFps)
+    {
+        if (_renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer.Interval = BomberBlast.Core.GameLoopSettings.TickInterval;
+            _renderTimer.Start();
+        }
     }
 
     private void StopRenderTimer()
     {
+        // Static-Event-Subscription aufheben — sonst hält das Event den GameView am Leben (Memory Leak).
+        BomberBlast.Core.GameLoopSettings.TargetFpsChanged -= OnTargetFpsChanged;
         if (_renderTimer == null) return;
         _renderTimer.Stop();
         _renderTimer.Tick -= OnRenderTick;

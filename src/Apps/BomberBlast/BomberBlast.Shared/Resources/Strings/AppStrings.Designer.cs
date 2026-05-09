@@ -1398,6 +1398,35 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        // v2.0.44 — AAA-Audit: Accessibility / Performance / Privacy
+        internal static string HighFrameRate => ResourceManager.GetString("HighFrameRate", resourceCulture)!;
+        internal static string AccessibilitySection => ResourceManager.GetString("AccessibilitySection", resourceCulture)!;
+        internal static string ColorblindMode => ResourceManager.GetString("ColorblindMode", resourceCulture)!;
+        internal static string HighContrast => ResourceManager.GetString("HighContrast", resourceCulture)!;
+        internal static string UiScale => ResourceManager.GetString("UiScale", resourceCulture)!;
+        internal static string Subtitles => ResourceManager.GetString("Subtitles", resourceCulture)!;
+        internal static string DeleteAccount => ResourceManager.GetString("DeleteAccount", resourceCulture)!;
+        internal static string DeleteAccountConfirm => ResourceManager.GetString("DeleteAccountConfirm", resourceCulture)!;
+        internal static string DeleteAccountDone => ResourceManager.GetString("DeleteAccountDone", resourceCulture)!;
+        internal static string DeleteAccountPartial => ResourceManager.GetString("DeleteAccountPartial", resourceCulture)!;
+        internal static string Delete => ResourceManager.GetString("Delete", resourceCulture)!;
+        // v2.0.55 — Privacy/Consent (Phase 15 P0-Fix)
+        internal static string PrivacySection => ResourceManager.GetString("PrivacySection", resourceCulture)!;
+        internal static string CrashlyticsConsent => ResourceManager.GetString("CrashlyticsConsent", resourceCulture)!;
+        internal static string AnalyticsConsent => ResourceManager.GetString("AnalyticsConsent", resourceCulture)!;
+        internal static string ConsentRequiresRestart => ResourceManager.GetString("ConsentRequiresRestart", resourceCulture)!;
+
+        // v2.0.46 — Audio-Captions
+        internal static string SubtitleBossRoar => ResourceManager.GetString("SubtitleBossRoar", resourceCulture)!;
+        internal static string SubtitleTimeWarning => ResourceManager.GetString("SubtitleTimeWarning", resourceCulture)!;
+        internal static string SubtitlePlayerDeath => ResourceManager.GetString("SubtitlePlayerDeath", resourceCulture)!;
+        internal static string SubtitleLevelComplete => ResourceManager.GetString("SubtitleLevelComplete", resourceCulture)!;
+        internal static string SubtitleVictoryFanfare => ResourceManager.GetString("SubtitleVictoryFanfare", resourceCulture)!;
+        internal static string SubtitleExplosion => ResourceManager.GetString("SubtitleExplosion", resourceCulture)!;
+        internal static string SubtitleBossDefeat => ResourceManager.GetString("SubtitleBossDefeat", resourceCulture)!;
+        internal static string SubtitleAchievement => ResourceManager.GetString("SubtitleAchievement", resourceCulture)!;
+        internal static string SubtitleUltraCombo => ResourceManager.GetString("SubtitleUltraCombo", resourceCulture)!;
+
         internal static string ConfirmPurchaseTitle {
             get {
                 return ResourceManager.GetString("ConfirmPurchaseTitle", resourceCulture);
@@ -4353,6 +4382,18 @@ namespace BomberBlast.Resources.Strings {
 
         internal static string AnnounceBossFight => ResourceManager.GetString("AnnounceBossFight", resourceCulture)!;
 
+        internal static string BossNameStoneGolem => ResourceManager.GetString("BossNameStoneGolem", resourceCulture)!;
+
+        internal static string BossNameIceDragon => ResourceManager.GetString("BossNameIceDragon", resourceCulture)!;
+
+        internal static string BossNameFireDemon => ResourceManager.GetString("BossNameFireDemon", resourceCulture)!;
+
+        internal static string BossNameShadowMaster => ResourceManager.GetString("BossNameShadowMaster", resourceCulture)!;
+
+        internal static string BossNameFinalBoss => ResourceManager.GetString("BossNameFinalBoss", resourceCulture)!;
+
+        internal static string BossNamePluralFinalBoss => ResourceManager.GetString("BossNamePluralFinalBoss", resourceCulture)!;
+
         internal static string AnnounceBossFloorFormat => ResourceManager.GetString("AnnounceBossFloorFormat", resourceCulture)!;
 
         internal static string AnnounceDailyChallenge => ResourceManager.GetString("AnnounceDailyChallenge", resourceCulture)!;
@@ -4672,6 +4713,13 @@ namespace BomberBlast.Resources.Strings {
         internal static string PowerUp_Skull => ResourceManager.GetString("PowerUp_Skull", resourceCulture)!;
 
         internal static string PowerUp_Skull_Desc => ResourceManager.GetString("PowerUp_Skull_Desc", resourceCulture)!;
+
+        // Cure-PowerUp (v2.0.37, Plan Task 2.5)
+        internal static string PowerUp_Cure => ResourceManager.GetString("PowerUp_Cure", resourceCulture)!;
+        internal static string PowerUp_Cure_Desc => ResourceManager.GetString("PowerUp_Cure_Desc", resourceCulture)!;
+        internal static string FloatCure => ResourceManager.GetString("FloatCure", resourceCulture)!;
+        internal static string DiscoverCure => ResourceManager.GetString("DiscoverCure", resourceCulture)!;
+        internal static string DiscoverCureDesc => ResourceManager.GetString("DiscoverCureDesc", resourceCulture)!;
 
         internal static string PremiumFeatureDoubleCoins => ResourceManager.GetString("PremiumFeatureDoubleCoins", resourceCulture)!;
 
@@ -5036,6 +5084,144 @@ namespace BomberBlast.Resources.Strings {
         internal static string GemPackMega => ResourceManager.GetString("GemPackMega", resourceCulture)!;
 
         internal static string GemPackWhale => ResourceManager.GetString("GemPackWhale", resourceCulture)!;
+
+        // Saisonale Events (v2.0.41, Plan Task 3.4)
+        internal static string EventHalloween => ResourceManager.GetString("EventHalloween", resourceCulture)!;
+        internal static string EventHalloweenDesc => ResourceManager.GetString("EventHalloweenDesc", resourceCulture)!;
+        internal static string EventHalloweenGreeting => ResourceManager.GetString("EventHalloweenGreeting", resourceCulture)!;
+        internal static string EventChristmas => ResourceManager.GetString("EventChristmas", resourceCulture)!;
+        internal static string EventChristmasDesc => ResourceManager.GetString("EventChristmasDesc", resourceCulture)!;
+        internal static string EventChristmasGreeting => ResourceManager.GetString("EventChristmasGreeting", resourceCulture)!;
+        internal static string EventNewYear => ResourceManager.GetString("EventNewYear", resourceCulture)!;
+        internal static string EventNewYearDesc => ResourceManager.GetString("EventNewYearDesc", resourceCulture)!;
+        internal static string EventNewYearGreeting => ResourceManager.GetString("EventNewYearGreeting", resourceCulture)!;
+        internal static string EventSummer => ResourceManager.GetString("EventSummer", resourceCulture)!;
+        internal static string EventSummerDesc => ResourceManager.GetString("EventSummerDesc", resourceCulture)!;
+        internal static string EventSummerGreeting => ResourceManager.GetString("EventSummerGreeting", resourceCulture)!;
+
+        // Boss Rush (v2.0.41, Plan Task 3.3)
+        internal static string BossRushTitle => ResourceManager.GetString("BossRushTitle", resourceCulture)!;
+        internal static string BossRushDesc => ResourceManager.GetString("BossRushDesc", resourceCulture)!;
+        internal static string BossRushWeeklyBest => ResourceManager.GetString("BossRushWeeklyBest", resourceCulture)!;
+        internal static string BossRushStartButton => ResourceManager.GetString("BossRushStartButton", resourceCulture)!;
+
+        // Daily Race (v2.0.41, Plan Task 3.1)
+        internal static string DailyRaceTitle => ResourceManager.GetString("DailyRaceTitle", resourceCulture)!;
+        internal static string DailyRaceDesc => ResourceManager.GetString("DailyRaceDesc", resourceCulture)!;
+        internal static string DailyRaceTodayBest => ResourceManager.GetString("DailyRaceTodayBest", resourceCulture)!;
+        internal static string DailyRaceStartButton => ResourceManager.GetString("DailyRaceStartButton", resourceCulture)!;
+        internal static string DailyRaceResetIn => ResourceManager.GetString("DailyRaceResetIn", resourceCulture)!;
+        internal static string LeagueTabSeason => ResourceManager.GetString("LeagueTabSeason", resourceCulture)!;
+        internal static string LeagueTabDailyRace => ResourceManager.GetString("LeagueTabDailyRace", resourceCulture)!;
+        internal static string DailyRaceTierTab => ResourceManager.GetString("DailyRaceTierTab", resourceCulture)!;
+        internal static string DailyRaceGlobalTab => ResourceManager.GetString("DailyRaceGlobalTab", resourceCulture)!;
+
+        // Loadout (v2.0.41, Plan Task 3.2)
+        internal static string LoadoutTitle => ResourceManager.GetString("LoadoutTitle", resourceCulture)!;
+        internal static string LoadoutBoostExtraBomb => ResourceManager.GetString("LoadoutBoostExtraBomb", resourceCulture)!;
+        internal static string LoadoutBoostExtraFire => ResourceManager.GetString("LoadoutBoostExtraFire", resourceCulture)!;
+        internal static string LoadoutBoostSpeed => ResourceManager.GetString("LoadoutBoostSpeed", resourceCulture)!;
+        internal static string LoadoutBoostWallpass => ResourceManager.GetString("LoadoutBoostWallpass", resourceCulture)!;
+        internal static string LoadoutBoostInvincibility => ResourceManager.GetString("LoadoutBoostInvincibility", resourceCulture)!;
+
+        // Card Crafting (v2.0.40, Plan Task 3.5)
+        internal static string CraftingTitle => ResourceManager.GetString("CraftingTitle", resourceCulture)!;
+        internal static string CraftStatusFormat => ResourceManager.GetString("CraftStatusFormat", resourceCulture)!;
+        internal static string CraftCoinCostFormat => ResourceManager.GetString("CraftCoinCostFormat", resourceCulture)!;
+        internal static string CraftRareButton => ResourceManager.GetString("CraftRareButton", resourceCulture)!;
+        internal static string CraftEpicButton => ResourceManager.GetString("CraftEpicButton", resourceCulture)!;
+        internal static string CraftLegendaryButton => ResourceManager.GetString("CraftLegendaryButton", resourceCulture)!;
+        internal static string CraftSuccessFormat => ResourceManager.GetString("CraftSuccessFormat", resourceCulture)!;
+        internal static string CraftFailed => ResourceManager.GetString("CraftFailed", resourceCulture)!;
+
+        // Dungeon Lite (v2.0.39, Plan Task 2.7)
+        internal static string DungeonLiteRunButton => ResourceManager.GetString("DungeonLiteRunButton", resourceCulture)!;
+        internal static string DungeonLiteRunHint => ResourceManager.GetString("DungeonLiteRunHint", resourceCulture)!;
+        internal static string DungeonLiteRunStarted => ResourceManager.GetString("DungeonLiteRunStarted", resourceCulture)!;
+        internal static string DungeonLiteRunCompleted => ResourceManager.GetString("DungeonLiteRunCompleted", resourceCulture)!;
+        internal static string DungeonLiteRunBadge => ResourceManager.GetString("DungeonLiteRunBadge", resourceCulture)!;
+        internal static string DungeonLiteRunFloorFormat => ResourceManager.GetString("DungeonLiteRunFloorFormat", resourceCulture)!;
+
+        // Combo+ x10+ (v2.0.37, Task 2.6)
+        internal static string FloatUltra => ResourceManager.GetString("FloatUltra", resourceCulture)!;
+        internal static string AchCombo10 => ResourceManager.GetString("AchCombo10", resourceCulture)!;
+        internal static string AchCombo10Desc => ResourceManager.GetString("AchCombo10Desc", resourceCulture)!;
+        internal static string AchCombo15 => ResourceManager.GetString("AchCombo15", resourceCulture)!;
+        internal static string AchCombo15Desc => ResourceManager.GetString("AchCombo15Desc", resourceCulture)!;
+        internal static string AchCombo20 => ResourceManager.GetString("AchCombo20", resourceCulture)!;
+        internal static string AchCombo20Desc => ResourceManager.GetString("AchCombo20Desc", resourceCulture)!;
+
+        // Daily Hub (v2.0.37)
+        internal static string DailyHubTitle => ResourceManager.GetString("DailyHubTitle", resourceCulture)!;
+        internal static string DailyHubButton => ResourceManager.GetString("DailyHubButton", resourceCulture)!;
+        internal static string DailyHubReward => ResourceManager.GetString("DailyHubReward", resourceCulture)!;
+        internal static string DailyHubRewardDay => ResourceManager.GetString("DailyHubRewardDay", resourceCulture)!;
+        internal static string DailyHubRewardClaimed => ResourceManager.GetString("DailyHubRewardClaimed", resourceCulture)!;
+        internal static string DailyHubChallenge => ResourceManager.GetString("DailyHubChallenge", resourceCulture)!;
+        internal static string DailyHubChallengeStreak => ResourceManager.GetString("DailyHubChallengeStreak", resourceCulture)!;
+        internal static string DailyHubChallengeBest => ResourceManager.GetString("DailyHubChallengeBest", resourceCulture)!;
+        internal static string DailyHubMissions => ResourceManager.GetString("DailyHubMissions", resourceCulture)!;
+        internal static string DailyHubMissionsProgress => ResourceManager.GetString("DailyHubMissionsProgress", resourceCulture)!;
+        internal static string DailyHubSpin => ResourceManager.GetString("DailyHubSpin", resourceCulture)!;
+        internal static string DailyHubSpinReady => ResourceManager.GetString("DailyHubSpinReady", resourceCulture)!;
+        internal static string DailyHubSpinUsed => ResourceManager.GetString("DailyHubSpinUsed", resourceCulture)!;
+        internal static string DailyHubDeals => ResourceManager.GetString("DailyHubDeals", resourceCulture)!;
+        internal static string DailyHubDealsCount => ResourceManager.GetString("DailyHubDealsCount", resourceCulture)!;
+
+        // Context Help (Tutorial-Replay-Pin in GameView, v2.0.37)
+        internal static string ContextHelpTitle => ResourceManager.GetString("ContextHelpTitle", resourceCulture)!;
+        internal static string ContextHelpClose => ResourceManager.GetString("ContextHelpClose", resourceCulture)!;
+        internal static string ContextHelpStory1 => ResourceManager.GetString("ContextHelpStory1", resourceCulture)!;
+        internal static string ContextHelpStory2 => ResourceManager.GetString("ContextHelpStory2", resourceCulture)!;
+        internal static string ContextHelpStory3 => ResourceManager.GetString("ContextHelpStory3", resourceCulture)!;
+        internal static string ContextHelpSurvival1 => ResourceManager.GetString("ContextHelpSurvival1", resourceCulture)!;
+        internal static string ContextHelpSurvival2 => ResourceManager.GetString("ContextHelpSurvival2", resourceCulture)!;
+        internal static string ContextHelpSurvival3 => ResourceManager.GetString("ContextHelpSurvival3", resourceCulture)!;
+        internal static string ContextHelpDungeon1 => ResourceManager.GetString("ContextHelpDungeon1", resourceCulture)!;
+        internal static string ContextHelpDungeon2 => ResourceManager.GetString("ContextHelpDungeon2", resourceCulture)!;
+        internal static string ContextHelpDungeon3 => ResourceManager.GetString("ContextHelpDungeon3", resourceCulture)!;
+        internal static string ContextHelpDaily1 => ResourceManager.GetString("ContextHelpDaily1", resourceCulture)!;
+        internal static string ContextHelpDaily2 => ResourceManager.GetString("ContextHelpDaily2", resourceCulture)!;
+        internal static string ContextHelpMaster1 => ResourceManager.GetString("ContextHelpMaster1", resourceCulture)!;
+        internal static string ContextHelpMaster2 => ResourceManager.GetString("ContextHelpMaster2", resourceCulture)!;
+
+        // Menu-Redesign v2.0.43 (Plan Phase 4)
+        internal static string MenuHeroReadyToStart => ResourceManager.GetString("MenuHeroReadyToStart", resourceCulture)!;
+        internal static string MenuHeroWorldStage => ResourceManager.GetString("MenuHeroWorldStage", resourceCulture)!;
+        internal static string MenuHeroContinue => ResourceManager.GetString("MenuHeroContinue", resourceCulture)!;
+        internal static string MenuHeroStartNow => ResourceManager.GetString("MenuHeroStartNow", resourceCulture)!;
+        internal static string MenuHeroReplay => ResourceManager.GetString("MenuHeroReplay", resourceCulture)!;
+        internal static string MenuHeroSelectLevel => ResourceManager.GetString("MenuHeroSelectLevel", resourceCulture)!;
+        internal static string MenuMasterStatus => ResourceManager.GetString("MenuMasterStatus", resourceCulture)!;
+        internal static string MenuBossRushBest => ResourceManager.GetString("MenuBossRushBest", resourceCulture)!;
+        internal static string MenuBossRushNew => ResourceManager.GetString("MenuBossRushNew", resourceCulture)!;
+        internal static string MenuPanelToday => ResourceManager.GetString("MenuPanelToday", resourceCulture)!;
+        internal static string MenuPanelCareer => ResourceManager.GetString("MenuPanelCareer", resourceCulture)!;
+        internal static string MenuCareerLeagueRank => ResourceManager.GetString("MenuCareerLeagueRank", resourceCulture)!;
+        internal static string MenuCareerBattlePassTier => ResourceManager.GetString("MenuCareerBattlePassTier", resourceCulture)!;
+        internal static string MenuCareerBattlePassPaused => ResourceManager.GetString("MenuCareerBattlePassPaused", resourceCulture)!;
+        internal static string MenuCareerDeckSlots => ResourceManager.GetString("MenuCareerDeckSlots", resourceCulture)!;
+        internal static string MenuCareerCollectionProgress => ResourceManager.GetString("MenuCareerCollectionProgress", resourceCulture)!;
+        internal static string MenuCareerStars => ResourceManager.GetString("MenuCareerStars", resourceCulture)!;
+        internal static string MenuCareerStarsProgress => ResourceManager.GetString("MenuCareerStarsProgress", resourceCulture)!;
+        internal static string EventBannerDaysLeft => ResourceManager.GetString("EventBannerDaysLeft", resourceCulture)!;
+        internal static string OnboardingTitle => ResourceManager.GetString("OnboardingTitle", resourceCulture)!;
+        internal static string OnboardingHint1 => ResourceManager.GetString("OnboardingHint1", resourceCulture)!;
+        internal static string OnboardingHint2 => ResourceManager.GetString("OnboardingHint2", resourceCulture)!;
+        internal static string OnboardingHint3 => ResourceManager.GetString("OnboardingHint3", resourceCulture)!;
+        internal static string OnboardingClose => ResourceManager.GetString("OnboardingClose", resourceCulture)!;
+        internal static string ProfileTabOverview => ResourceManager.GetString("ProfileTabOverview", resourceCulture)!;
+        internal static string ProfileTabStatistics => ResourceManager.GetString("ProfileTabStatistics", resourceCulture)!;
+        internal static string ProfileTabCustomize => ResourceManager.GetString("ProfileTabCustomize", resourceCulture)!;
+        internal static string ProfileCustomizeHint => ResourceManager.GetString("ProfileCustomizeHint", resourceCulture)!;
+        internal static string ProfileCustomizeShopHint => ResourceManager.GetString("ProfileCustomizeShopHint", resourceCulture)!;
+        internal static string ProfileCustomizePlayerSkin => ResourceManager.GetString("ProfileCustomizePlayerSkin", resourceCulture)!;
+        internal static string ProfileCustomizeBombSkin => ResourceManager.GetString("ProfileCustomizeBombSkin", resourceCulture)!;
+        internal static string ProfileCustomizeExplosionSkin => ResourceManager.GetString("ProfileCustomizeExplosionSkin", resourceCulture)!;
+        internal static string ProfileCustomizeTrail => ResourceManager.GetString("ProfileCustomizeTrail", resourceCulture)!;
+        internal static string ProfileCustomizeVictory => ResourceManager.GetString("ProfileCustomizeVictory", resourceCulture)!;
+        internal static string ProfileCustomizeFrame => ResourceManager.GetString("ProfileCustomizeFrame", resourceCulture)!;
+        internal static string ProfileCustomizeApplied => ResourceManager.GetString("ProfileCustomizeApplied", resourceCulture)!;
 
     }
 }

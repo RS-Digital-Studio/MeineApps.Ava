@@ -2,6 +2,7 @@ using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
+using MeineApps.Core.Ava.Services;
 using BomberBlast.Core;
 using BomberBlast.Input;
 using BomberBlast.Services;
@@ -26,6 +27,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private readonly ICloudSaveService _cloudSaveService;
     private readonly InputManager _inputManager;
     private readonly SoundManager _soundManager;
+    // v2.0.44 — AAA-Audit: Accessibility + Performance + Privacy
+    private readonly IPreferencesService _preferences;
+    private readonly IAccessibilityService _accessibilityService;
+    private readonly IAccountDeletionService? _accountDeletionService;
 
     private bool _isInitializing = true;
 
@@ -57,7 +62,51 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private bool _joystickFixed; // false=schwebend, true=fixiert
 
     [ObservableProperty]
-    private bool _reducedEffects; // Reduzierte visuelle Effekte
+    private bool _reducedEffects; // Reduzierte visuelle Effekte (Reduce Motion)
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // OBSERVABLE PROPERTIES - ACCESSIBILITY (v2.0.44)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Hochkontrast-Modus für UI (verstärkte Trennung Foreground/Background)</summary>
+    [ObservableProperty]
+    private bool _highContrast;
+
+    /// <summary>Untertitel/Caption-Toggle für Audio-Cues (Boss-Roar, Time-Warning)</summary>
+    [ObservableProperty]
+    private bool _subtitlesEnabled;
+
+    /// <summary>UI-Skalierung 0.75/1.0/1.25/1.5</summary>
+    [ObservableProperty]
+    private double _uiScale = 1.0;
+
+    /// <summary>Colorblind-Modus: "Off", "Deuteranopia", "Protanopia", "Tritanopia"</summary>
+    [ObservableProperty]
+    private string _colorblindMode = "Off";
+
+    public List<string> ColorblindModes { get; } = ["Off", "Deuteranopia", "Protanopia", "Tritanopia"];
+
+    public List<double> UiScales { get; } = [0.75, 1.0, 1.25, 1.5];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // OBSERVABLE PROPERTIES - PERFORMANCE (v2.0.44)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>true = 60 FPS, false = 30 FPS (Default).</summary>
+    [ObservableProperty]
+    private bool _useHighFrameRate;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // OBSERVABLE PROPERTIES - DSGVO PRIVACY (v2.0.55 — Phase 15 Security-Fix P0)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>DSGVO-Consent für anonyme Crash-Reports an Firebase Crashlytics. Default false.</summary>
+    [ObservableProperty]
+    private bool _crashlyticsConsent;
+
+    /// <summary>DSGVO-Consent für anonyme Nutzungs-Statistiken an Firebase Analytics. Default false.</summary>
+    [ObservableProperty]
+    private bool _analyticsConsent;
 
     [ObservableProperty]
     private double _joystickSize = 120;
@@ -232,7 +281,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         IPlayGamesService playGames,
         ICloudSaveService cloudSaveService,
         InputManager inputManager,
-        SoundManager soundManager)
+        SoundManager soundManager,
+        IPreferencesService preferences,
+        IAccessibilityService accessibilityService,
+        IAccountDeletionService? accountDeletionService = null)
     {
         _progressService = progressService;
         _highScoreService = highScoreService;
@@ -243,6 +295,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _cloudSaveService = cloudSaveService;
         _inputManager = inputManager;
         _soundManager = soundManager;
+        _preferences = preferences;
+        _accessibilityService = accessibilityService;
+        _accountDeletionService = accountDeletionService;
 
         // Version info
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
@@ -286,6 +341,117 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         PlayGamesEnabled = _playGames.IsEnabled;
         IsPlayGamesSignedIn = _playGames.IsSignedIn;
         PlayGamesPlayerName = _playGames.PlayerName ?? "";
+
+        // Accessibility (v2.0.44)
+        ColorblindMode = _accessibilityService.ColorblindMode;
+        HighContrast = _accessibilityService.HighContrast;
+        UiScale = _accessibilityService.UiScale;
+        SubtitlesEnabled = _accessibilityService.SubtitlesEnabled;
+
+        // Performance (v2.0.44)
+        UseHighFrameRate = GameLoopSettings.TargetFps == GameLoopSettings.FrameRate60;
+
+        // Privacy (v2.0.55 — DSGVO Consent-Flow für Firebase)
+        CrashlyticsConsent = _preferences.Get("CrashlyticsConsent", false);
+        AnalyticsConsent = _preferences.Get("AnalyticsConsent", false);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTY CHANGE HANDLERS - ACCESSIBILITY + PERFORMANCE (v2.0.44)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    partial void OnColorblindModeChanged(string value)
+    {
+        if (_isInitializing) return;
+        _accessibilityService.ColorblindMode = value;
+    }
+
+    partial void OnHighContrastChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _accessibilityService.HighContrast = value;
+    }
+
+    partial void OnUiScaleChanged(double value)
+    {
+        if (_isInitializing) return;
+        _accessibilityService.UiScale = value;
+    }
+
+    partial void OnSubtitlesEnabledChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _accessibilityService.SubtitlesEnabled = value;
+    }
+
+    partial void OnUseHighFrameRateChanged(bool value)
+    {
+        if (_isInitializing) return;
+        GameLoopSettings.SetTargetFps(
+            value ? GameLoopSettings.FrameRate60 : GameLoopSettings.FrameRate30,
+            _preferences);
+    }
+
+    // v2.0.55 — Phase 15 P0-Fix: DSGVO Consent-Toggles. Werden beim nächsten App-Start
+    // von ITelemetryService/IAnalyticsService.Initialize() gelesen — keine sofortige
+    // Aktivierung/Deaktivierung weil die Firebase-SDKs nur einmal pro Process initialisiert werden.
+    partial void OnCrashlyticsConsentChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _preferences.Set("CrashlyticsConsent", value);
+    }
+
+    partial void OnAnalyticsConsentChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _preferences.Set("AnalyticsConsent", value);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMMAND - DSGVO ACCOUNT DELETION (v2.0.44)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private async Task DeleteAccountAsync()
+    {
+        if (_accountDeletionService == null)
+        {
+            ShowAlert(
+                _localizationService.GetString("Error") ?? "Error",
+                "Account-Löschung nicht verfügbar.",
+                _localizationService.GetString("OK") ?? "OK");
+            return;
+        }
+
+        bool confirmed = false;
+        if (ConfirmationRequested != null)
+        {
+            confirmed = await ConfirmationRequested.Invoke(
+                _localizationService.GetString("DeleteAccount") ?? "Konto löschen",
+                _localizationService.GetString("DeleteAccountConfirm") ??
+                    "Alle deine Spieldaten werden unwiderruflich gelöscht. Bist du sicher?",
+                _localizationService.GetString("Delete") ?? "Löschen",
+                _localizationService.GetString("Cancel") ?? "Abbrechen");
+        }
+
+        if (!confirmed) return;
+
+        var result = await _accountDeletionService.DeleteAccountAsync();
+        if (result.Success)
+        {
+            ShowAlert(
+                _localizationService.GetString("DeleteAccount") ?? "Konto gelöscht",
+                _localizationService.GetString("DeleteAccountDone") ??
+                    "Alle Daten wurden entfernt. Bitte starte die App neu.",
+                _localizationService.GetString("OK") ?? "OK");
+        }
+        else
+        {
+            ShowAlert(
+                _localizationService.GetString("DeleteAccount") ?? "Konto gelöscht",
+                $"{_localizationService.GetString("DeleteAccountPartial") ?? "Lokale Daten gelöscht. Cloud-Daten konnten nicht erreicht werden."} {result.ErrorMessage}",
+                _localizationService.GetString("OK") ?? "OK");
+        }
     }
 
     /// <summary>

@@ -60,6 +60,22 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, IVibrationService>? VibrationServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen ITelemetryService (Android setzt AndroidCrashlyticsService).
+    /// Wird im Console-Setup von Robert nachgereicht — bis dahin NullTelemetryService.
+    /// </summary>
+    public static Func<IServiceProvider, ITelemetryService>? TelemetryServiceFactory { get; set; }
+
+    /// <summary>
+    /// Factory fuer plattformspezifischen IAnalyticsService (Android setzt AndroidAnalyticsService).
+    /// </summary>
+    public static Func<IServiceProvider, IAnalyticsService>? AnalyticsServiceFactory { get; set; }
+
+    /// <summary>
+    /// Factory fuer plattformspezifischen IPushNotificationService (Android setzt AndroidPushNotificationService).
+    /// </summary>
+    public static Func<IServiceProvider, IPushNotificationService>? PushNotificationServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -79,6 +95,15 @@ public partial class App : Application
         PersistenceHealth.Logger = Services.GetRequiredService<IAppLogger>();
         // RewardedAdCooldownTracker: Preferences-Hook fuer persistierten Cooldown (Schutz gegen App-Restart-Bypass)
         RewardedAdCooldownTracker.Preferences = Services.GetRequiredService<IPreferencesService>();
+        // GameLoopSettings: Persistierten TargetFps-Wert laden (30/60 FPS, default 30 Battery-Mode)
+        GameLoopSettings.Initialize(Services.GetRequiredService<IPreferencesService>());
+
+        // v2.0.44 — AAA-Audit: Telemetrie + Analytics + Push-Notifications initialisieren.
+        // Bei NullImpl auf Desktop ist das ein No-Op. Auf Android sucht ein konfigurierter
+        // Firebase-Setup nach google-services.json (Console-Setup vom User).
+        Services.GetRequiredService<ITelemetryService>().Initialize();
+        Services.GetRequiredService<IAnalyticsService>().Initialize();
+        _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync();
 
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
         GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
@@ -125,7 +150,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.36",
+            AppVersion = "v2.0.42",
             Renderer = new BomberBlastSplashRenderer()
         };
     }
@@ -282,6 +307,15 @@ public partial class App : Application
         services.AddSingleton<IRotatingDealsService, RotatingDealsService>();
         services.AddSingleton<IDeckTelemetryService, DeckTelemetryService>();
         services.AddSingleton<IMasterModeService, MasterModeService>();
+        services.AddSingleton<ILoadoutService, LoadoutService>();
+        services.AddSingleton<IBossRushService, BossRushService>();
+        services.AddSingleton<IEventService, EventService>();
+        // v2.0.44 — AAA-Audit: Accessibility + DSGVO Account-Löschung + Telemetrie
+        services.AddSingleton<IAccessibilityService, AccessibilityService>();
+        services.AddSingleton<IAccountDeletionService, AccountDeletionService>();
+        services.AddSingleton<ITelemetryService>(sp => TelemetryServiceFactory?.Invoke(sp) ?? new NullTelemetryService());
+        services.AddSingleton<IAnalyticsService>(sp => AnalyticsServiceFactory?.Invoke(sp) ?? new NullAnalyticsService());
+        services.AddSingleton<IPushNotificationService>(sp => PushNotificationServiceFactory?.Invoke(sp) ?? new NullPushNotificationService());
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)
@@ -320,5 +354,6 @@ public partial class App : Application
         services.AddSingleton<LeagueViewModel>();
         services.AddSingleton<ProfileViewModel>();
         services.AddSingleton<GemShopViewModel>();
+        services.AddSingleton<BossRushViewModel>();
     }
 }

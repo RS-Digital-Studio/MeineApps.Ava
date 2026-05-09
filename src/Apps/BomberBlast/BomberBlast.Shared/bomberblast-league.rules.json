@@ -3,6 +3,33 @@
     ".read": false,
     ".write": false,
 
+    "analytics": {
+      "deck": {
+        "$uid": {
+          ".read": false,
+          ".write": "auth != null && $uid === auth.uid",
+
+          "$bombType": {
+            ".validate": "newData.hasChildren(['used', 'plays', 'wins']) || newData.exists() == false",
+
+            "used": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+            },
+            "plays": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+            },
+            "wins": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+            },
+
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+
     "reports": {
       "$reportedUid": {
         "$reporterUid": {
@@ -35,9 +62,9 @@
               ".read": "auth != null",
 
               "$uid": {
-                ".write": "auth != null && $uid === auth.uid && newData.exists() && (!data.exists() || !data.child('updatedMs').exists() || (now - data.child('updatedMs').val()) >= 60000)",
+                ".write": "auth != null && $uid === auth.uid && (!newData.exists() || !data.exists() || !data.child('updatedMs').exists() || (now - data.child('updatedMs').val()) >= 60000)",
 
-                ".validate": "newData.hasChildren(['name', 'score', 'updatedMs'])",
+                ".validate": "!newData.exists() || newData.hasChildren(['name', 'score', 'updatedMs'])",
 
                 "name": {
                   ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
@@ -64,9 +91,9 @@
           ".read": "auth != null",
 
           "$uid": {
-            ".write": "auth != null && $uid === auth.uid && newData.exists() && (!data.exists() || !data.child('updatedMs').exists() || (now - data.child('updatedMs').val()) >= 60000)",
+            ".write": "auth != null && $uid === auth.uid && (!newData.exists() || !data.exists() || !data.child('updatedMs').exists() || (now - data.child('updatedMs').val()) >= 60000)",
 
-            ".validate": "newData.hasChildren(['name', 'points', 'updatedMs'])",
+            ".validate": "!newData.exists() || newData.hasChildren(['name', 'points', 'updatedMs'])",
 
             "name": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"

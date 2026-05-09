@@ -23,4 +23,12 @@ public interface IPublicMarketDataClient
     /// Lädt alle verfügbaren Symbole.
     /// </summary>
     Task<List<string>> GetAllSymbolsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Phase 18 / A3 + C2 — Lädt die Server-Zeit von BingX als UTC-DateTime (vom Endpoint
+    /// <c>/openApi/swap/v2/server/time</c>, ~50 Bytes Response). Verwendet als Lightweight-Probe
+    /// im <c>ServerHealthWatchdog</c> (statt 80 kB Tickers) und für Clock-Drift-Detection.
+    /// Bei Fehler/Timeout wird eine Exception geworfen — Aufrufer behandelt das als Probe-Failure.
+    /// </summary>
+    Task<DateTime> GetServerTimeAsync(CancellationToken ct = default);
 }

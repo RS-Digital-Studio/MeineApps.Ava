@@ -368,4 +368,361 @@ public class RiskManagerTests
     }
 
     // BUCH-ONLY: Liquidations-Distanz-Check entfernt (nicht im Buch).
+
+    // === Phase 18 — A1: GetPositionScalingFactor (Loss-Streak + Equity-Curve-Scaling) ===
+    // Vorher: Methode war toter Stub (return 1m). Jetzt: SK-Plan 4.8 + 5.1 implementiert.
+
+    [Fact]
+    public void GetPositionScalingFactor_NoLossStreakNoDrawdown_ReturnsOne()
+    {
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(1m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_3ConsecutiveLosses_ReturnsHalf()
+    {
+        // SK-Buch S.13: ab 3 Verlusten in Folge soll die Position halbiert werden.
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(3);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(0.5m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_4ConsecutiveLosses_ReturnsHalf()
+    {
+        // 4 Verluste liegen weiterhin in der Halbierungs-Stufe (3-4 Losses).
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(4);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(0.5m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_5ConsecutiveLosses_ReturnsZero()
+    {
+        // SK-Buch S.13: ab 5 Verlusten in Folge — Pause (Faktor 0).
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(5);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(0m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_LossStreakDisabled_IgnoresStreak()
+    {
+        var settings = CreateTestSettings(s => s.EnableLossStreakDampening = false);
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(7);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(1m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_EquityScalingDisabledByDefault_IgnoresDrawdown()
+    {
+        // Equity-Curve-Scaling ist opt-in — Default false.
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        // Peak setzen via ValidateTrade
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        risk.ValidateTrade(signal, CreateContext(balance: 10000m));
+        // Equity um 50% gefallen — ohne Setting darf der Faktor nicht scalen.
+        var crashedAccount = new AccountInfo(5000m, 5000m, 0m, 0m);
+        risk.GetPositionScalingFactor(crashedAccount).Should().Be(1m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_EquityScalingBelowThreshold_ReturnsOne()
+    {
+        var settings = CreateTestSettings(s =>
+        {
+            s.EnableEquityCurveScaling = true;
+            s.EquityCurveScalingThresholdPercent = 5m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        // Peak bei 10000 setzen
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        risk.ValidateTrade(signal, CreateContext(balance: 10000m));
+        // Drawdown 4% — unter Schwelle, Faktor bleibt 1
+        var account = new AccountInfo(9600m, 9600m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(1m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_EquityScalingAtThresholdPlus10_ReturnsHalf()
+    {
+        var settings = CreateTestSettings(s =>
+        {
+            s.EnableEquityCurveScaling = true;
+            s.EquityCurveScalingThresholdPercent = 5m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        // Peak bei 10000 setzen
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        risk.ValidateTrade(signal, CreateContext(balance: 10000m));
+        // Drawdown 15% (= Schwelle 5% + 10% Lerp-Fenster) → Faktor 0.5
+        var account = new AccountInfo(8500m, 8500m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().BeApproximately(0.5m, 1e-8m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_EquityScalingFarBelowPeak_ClampsToHalf()
+    {
+        var settings = CreateTestSettings(s =>
+        {
+            s.EnableEquityCurveScaling = true;
+            s.EquityCurveScalingThresholdPercent = 5m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        risk.ValidateTrade(signal, CreateContext(balance: 10000m));
+        // Drawdown 50% — weit über Schwelle, aber Faktor darf nicht unter 0.5 fallen (Lerp clamped auf 1)
+        var account = new AccountInfo(5000m, 5000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().BeApproximately(0.5m, 1e-8m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_LossStreakAndEquityScaling_Multiplies()
+    {
+        // 3 Losses → 0.5×, plus Drawdown auf threshold+10 → weitere 0.5× → final 0.25×
+        var settings = CreateTestSettings(s =>
+        {
+            s.EnableEquityCurveScaling = true;
+            s.EquityCurveScalingThresholdPercent = 5m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        risk.ValidateTrade(signal, CreateContext(balance: 10000m));
+        risk.SetConsecutiveLosses(3);
+        var account = new AccountInfo(8500m, 8500m, 0m, 0m); // 15% DD
+        risk.GetPositionScalingFactor(account).Should().BeApproximately(0.25m, 1e-8m);
+    }
+
+    [Fact]
+    public void CalculatePositionSize_5LossesInRow_ReturnsZero()
+    {
+        // Integrations-Test: GetPositionScalingFactor=0 muss qty auf 0 ziehen → Trade-Block.
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxPositionSizePercent = 2m;
+            s.MaxLeverage = 10m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(5);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        var qty = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account);
+        qty.Should().Be(0m);
+    }
+
+    [Fact]
+    public void ValidateTrade_With5LossesInRow_BlocksTrade()
+    {
+        // Trade darf nach 5 Losses nicht mehr durch — posSize wird auf 0 geclamped.
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(5);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal, CreateContext());
+        result.IsAllowed.Should().BeFalse();
+        result.RejectionReason.Should().Contain("0");
+    }
+
+    // === Phase 18 / A4 — Cluster-Korrelations-Filter ===
+
+    [Fact]
+    public void ValidateTrade_CorrelationLimitDisabled_NoBlockingByDefault()
+    {
+        // Default: MaxCorrelatedExposurePercent=0 → Filter inaktiv
+        var settings = CreateTestSettings(s => { s.MaxOpenPositions = 5; });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var ethPos = new Position("ETH-USDT", Side.Buy, 3000m, 3000m, 1m, 0m, 10m, MarginType.Cross, DateTime.UtcNow);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "BTC-USDT", balance: 10000m, customPositions: new List<Position> { ethPos }));
+        // BTC und ETH sind verschiedene Cluster → Filter würde sowieso nicht greifen, aber Filter ist aus.
+        result.IsAllowed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ValidateTrade_CorrelationLimit_BlocksThirdL1WhenAlreadyTwoOpen()
+    {
+        // 3× Alt-L1 (SOL/AVAX bereits offen, ADA neu) → bei 30%-Limit und je 10% Margin (offen) + 10% geplant = 30%, geht
+        // Bei 3 offen + neu wäre es 40% > 30% → blocked.
+        // Setup: 30% Cluster-Cap, 10% MaxPositionSizePercent, 3 offene Alt-L1-Positionen mit je 10% Margin (gleicher Cluster).
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 10;
+            s.MaxPositionSizePercent = 10m;
+            s.MaxLeverage = 5m;
+            s.MaxCorrelatedExposurePercent = 30m;
+            s.MaxRiskPercentPerTrade = 100m; // Risk-Cap deaktivieren
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        // 3 offene L1-Positionen — pro Position Margin = (qty * entry) / leverage = (200 * 5) / 5 = 200 USDT
+        // Bei Balance=10000 → 200/10000 = 2% pro Position, 6% gesamt — nicht über 30%.
+        // Wir machen die Positionen größer: 1000 USDT Margin pro Position = 10% jeweils, 30% gesamt.
+        // qty=1000, entry=5, leverage=1 → margin=5000 (50%) — zu groß. Versuchen wir: qty=2000, entry=5, leverage=10 → margin=1000 (10%).
+        var solPos = new Position("SOL-USDT", Side.Buy, 5m, 5m, 2000m, 0m, 10m, MarginType.Cross, DateTime.UtcNow);
+        var avaxPos = new Position("AVAX-USDT", Side.Buy, 5m, 5m, 2000m, 0m, 10m, MarginType.Cross, DateTime.UtcNow);
+        var dotPos = new Position("DOT-USDT", Side.Buy, 5m, 5m, 2000m, 0m, 10m, MarginType.Cross, DateTime.UtcNow);
+
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "ADA-USDT", balance: 10000m,
+                customPositions: new List<Position> { solPos, avaxPos, dotPos }));
+        result.IsAllowed.Should().BeFalse();
+        result.RejectionReason.Should().Contain("Cluster-Limit");
+    }
+
+    [Fact]
+    public void ValidateTrade_CorrelationLimit_AllowsSecondL1WhenBudgetRemaining()
+    {
+        // 1 offene L1 mit kleiner Margin → neue L1 darf noch durch (Budget noch frei).
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 5;
+            s.MaxPositionSizePercent = 5m;
+            s.MaxLeverage = 5m;
+            s.MaxCorrelatedExposurePercent = 30m;
+            s.MaxRiskPercentPerTrade = 100m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        // 1 SOL: margin = 1000 USDT (10% von 10000)
+        var solPos = new Position("SOL-USDT", Side.Buy, 5m, 5m, 2000m, 0m, 10m, MarginType.Cross, DateTime.UtcNow);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        // ADA neu mit 5% Margin → 10% + 5% = 15% < 30%
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "ADA-USDT", balance: 10000m,
+                customPositions: new List<Position> { solPos }));
+        result.IsAllowed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ValidateTrade_CorrelationLimit_DifferentClusters_NoLimit()
+    {
+        // BTC (BtcMajor) + ETH (EthMajor) sind unterschiedliche Cluster — BTC-Margin zählt NICHT
+        // mit ins ETH-Cluster-Budget. Setup: ETH-Trade allein passt (5% von 10000 < 30% Limit).
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 5;
+            s.MaxPositionSizePercent = 5m;
+            s.MaxLeverage = 10m;
+            s.MaxCorrelatedExposurePercent = 30m;
+            s.MaxRiskPercentPerTrade = 100m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        // Hohe BTC-Position: würde im selben Cluster zum Limit-Hit führen — aber ist im BtcMajor, ETH ist EthMajor.
+        var btcPos = new Position("BTC-USDT", Side.Buy, 50000m, 50000m, 0.6m, 0m, 10m, MarginType.Cross, DateTime.UtcNow);
+        var signal = new SignalResult(Signal.Long, 0.8m, 3000m, 2900m, 3200m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "ETH-USDT", balance: 10000m,
+                customPositions: new List<Position> { btcPos }));
+        // ETH-Cluster ist leer + 5% geplant → unter dem 30%-Limit. BTC-Cluster wird ignoriert.
+        result.IsAllowed.Should().BeTrue();
+    }
+
+    // === Phase 18 / A5 — Volatility-Targeting ===
+
+    [Fact]
+    public void CalculatePositionSize_VolTargetingDisabled_NoScaling()
+    {
+        var settings = CreateTestSettings(s => { s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        // ATR-Param wird ignoriert weil Setting aus
+        var qty = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account, actualLeverage: 0, atrPercent: 5m);
+        qty.Should().Be(0.04m); // identisch zur Default-Variante
+    }
+
+    [Fact]
+    public void CalculatePositionSize_VolTargeting_HighVol_DownScales()
+    {
+        // ATR 4 % vs. Target 2 % → volScale = 0.5 → halbe Position.
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxPositionSizePercent = 2m;
+            s.MaxLeverage = 10m;
+            s.EnableVolatilityTargeting = true;
+            s.VolatilityTargetPercent = 2m;
+            s.VolatilityScaleCap = 1.5m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        var qty = risk.CalculatePositionSize("PEPE-USDT", 50000m, 49000m, account, actualLeverage: 0, atrPercent: 4m);
+        qty.Should().Be(0.04m * 0.5m); // 0.02
+    }
+
+    [Fact]
+    public void CalculatePositionSize_VolTargeting_LowVol_UpScalesButCapped()
+    {
+        // ATR 0.5 % vs. Target 2 % → volScale = 4, aber Cap auf 1.5×
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxPositionSizePercent = 2m;
+            s.MaxLeverage = 10m;
+            s.EnableVolatilityTargeting = true;
+            s.VolatilityTargetPercent = 2m;
+            s.VolatilityScaleCap = 1.5m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        var qty = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account, actualLeverage: 0, atrPercent: 0.5m);
+        qty.Should().Be(0.04m * 1.5m); // 0.06 (capped)
+    }
+
+    [Fact]
+    public void CalculatePositionSize_VolTargeting_MatchingVol_NoScaling()
+    {
+        // ATR exakt = Target → volScale = 1.0
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxPositionSizePercent = 2m;
+            s.MaxLeverage = 10m;
+            s.EnableVolatilityTargeting = true;
+            s.VolatilityTargetPercent = 2m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        var qty = risk.CalculatePositionSize("ETH-USDT", 50000m, 49000m, account, actualLeverage: 0, atrPercent: 2m);
+        qty.Should().Be(0.04m);
+    }
+
+    [Fact]
+    public void CalculatePositionSize_VolTargeting_ZeroAtr_NoScaling()
+    {
+        // ATR=0 (z.B. zu wenig Candles) → kein Scaling.
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxPositionSizePercent = 2m;
+            s.MaxLeverage = 10m;
+            s.EnableVolatilityTargeting = true;
+            s.VolatilityTargetPercent = 2m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        var qty = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account, actualLeverage: 0, atrPercent: 0m);
+        qty.Should().Be(0.04m);
+    }
+
+    [Fact]
+    public void ValidateTrade_CorrelationLimit_OtherClusterNoOp()
+    {
+        // Symbole im "CryptoOther"-Cluster (unbekannt) ueberspringen den Filter — sonst landet alles im selben Topf.
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 5;
+            s.MaxPositionSizePercent = 10m;
+            s.MaxCorrelatedExposurePercent = 1m; // sehr scharf
+            s.MaxRiskPercentPerTrade = 100m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var unknownPos = new Position("RANDOMCOIN-USDT", Side.Buy, 100m, 100m, 50m, 0m, 5m, MarginType.Cross, DateTime.UtcNow);
+        var signal = new SignalResult(Signal.Long, 0.8m, 100m, 95m, 110m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "ANOTHERUNKNOWN-USDT", balance: 10000m,
+                customPositions: new List<Position> { unknownPos }));
+        result.IsAllowed.Should().BeTrue();
+    }
 }

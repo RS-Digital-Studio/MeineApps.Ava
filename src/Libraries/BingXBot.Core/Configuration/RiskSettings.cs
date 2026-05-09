@@ -60,8 +60,34 @@ public class RiskSettings
     /// <summary>Max. Leverage-Faktor.</summary>
     public decimal MaxLeverage { get; set; } = 10m;
 
-    // BUCH-ONLY: Kein Korrelations-Check. Das Buch kennt keine Pearson-Korrelation zwischen offenen
-    // Positionen — Risiko-Diversifikation passiert ueber Risk-Per-Trade + Positionsgroesse.
+    // BUCH-ONLY: Kein Pearson-Korrelations-Check. Das Buch kennt keine quantitative Korrelations-
+    // Berechnung. Der Cluster-Filter (Phase 18 / A4) ist eine bewusste User-Ausnahme — er ersetzt
+    // keine Buch-Regel, sondern adressiert ein Phase-0-Risiko (Konto-Schutz beim Flash-Crash) das
+    // im Buch nicht abgedeckt ist (Buch ist Forex-zentriert, Crypto-Cluster-Korrelation ist eigene Risk-Klasse).
+
+    /// <summary>
+    /// Phase 18 / A5 — Volatility-Targeting fuer Position-Sizing (opt-in, default false).
+    /// Wenn true: Position-Quantity wird um <c>min(VolScaleCap, VolatilityTargetPercent / atrPct)</c>
+    /// skaliert. Bei stabilen Coins (BTC, ATR ~1 %) wird die Position gegenueber dem nominalen Sizing
+    /// hochgeschraubt; bei Memecoins (ATR ~8 %) heruntergeschraubt. Industriestandard fuer
+    /// systematisches Trading. Wirkt VOR dem MaxRisk-Cap — die finale Risiko-Obergrenze bleibt erhalten.
+    /// </summary>
+    public bool EnableVolatilityTargeting { get; set; } = false;
+
+    /// <summary>Phase 18 / A5 — Ziel-ATR in Prozent (z.B. 2.0 = 2 % je Periode). Default 2 %.</summary>
+    public decimal VolatilityTargetPercent { get; set; } = 2.0m;
+
+    /// <summary>Phase 18 / A5 — Obergrenze fuer den Skalierungs-Multiplikator (Default 1.5×).</summary>
+    public decimal VolatilityScaleCap { get; set; } = 1.5m;
+
+    /// <summary>
+    /// Phase 18 / A4 — Cluster-Korrelations-Filter (opt-in, default 0 = aus).
+    /// Wenn &gt; 0: Vor jedem Trade wird die Summe der Margins aller offenen Positionen im selben
+    /// <see cref="AssetCluster"/> berechnet. Wenn (Σ + neue Margin) &gt; <c>X %</c> der Wallet-Balance,
+    /// wird der Trade abgelehnt mit <see cref="RejectionReasons.CorrelationLimitExceeded"/>.
+    /// Empfehlung: 30 %. Schuetzt vor "3× BTC durch BTC/ETH/SOL parallel"-Disasters bei Flash-Crashes.
+    /// </summary>
+    public decimal MaxCorrelatedExposurePercent { get; set; } = 0m;
 
     /// <summary>
     /// Task 3.1 — Entry-Staffelung im BC-Zone-Korrekturbereich.
@@ -226,6 +252,30 @@ public class RiskSettings
     /// 0 = deaktiviert (wenn kein EconomicCalendarService verfügbar auch ignoriert).
     /// </summary>
     public int NewsBlackoutMinutes { get; set; } = 30;
+
+    // === Phase 18 / SK-Plan 4.8 + 5.1 — Adaptive Position-Scaling ===
+    /// <summary>
+    /// SK-Plan 4.8 (Buch S.13) — Loss-Streak-Dampening.
+    /// Wenn aktiv: ≥3 aufeinanderfolgende Verluste → Position auf 50 % skalieren,
+    /// ≥5 Verluste → Pause (Faktor 0). Wirkt in <see cref="GetPositionScalingFactor"/> als
+    /// Multiplikator vor dem MaxRisk-Cap. Default true — Buch-empfohlener Standard-Schutz.
+    /// </summary>
+    public bool EnableLossStreakDampening { get; set; } = true;
+
+    /// <summary>
+    /// SK-Plan 5.1 — Equity-Curve-Scaling (opt-in).
+    /// Wenn aktiv: Bei laufendem Drawdown vom Peak (in % der Equity) wird die Position-Size
+    /// ab <see cref="EquityCurveScalingThresholdPercent"/> linear bis auf 50 % gedämpft.
+    /// Default false — komplementär, aber konservativer als Loss-Streak-Dampening.
+    /// </summary>
+    public bool EnableEquityCurveScaling { get; set; } = false;
+
+    /// <summary>
+    /// SK-Plan 5.1 — Schwelle (Drawdown vom Peak in %), ab der das Equity-Curve-Scaling greift.
+    /// Bei (Schwelle + 10%) Drawdown ist der Faktor bei 0.5×.
+    /// Default 5 % (z.B. von 10.000 USDT auf 9.500 USDT).
+    /// </summary>
+    public decimal EquityCurveScalingThresholdPercent { get; set; } = 5m;
 
     /// <summary>
     /// Task 3.3 — Max. kumuliertes Tagesrisiko in % der Equity (Buch S.13: "1-3% pro Tag insgesamt").

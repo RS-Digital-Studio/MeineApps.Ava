@@ -63,6 +63,14 @@ public class BotSettings
     /// wird der TradePushSubscriber ausgehaengt und feuert nicht mehr.
     /// </summary>
     public bool EnableTradePushNotifications { get; set; } = true;
+
+    /// <summary>
+    /// Phase 18 / A7 — Erlaubte Crypto-Trading-Sessions als Bitmask (Asia/EU/EU-US-Overlap/US).
+    /// Crypto handelt 24/7, aber Liquiditaet/Setup-Qualitaet schwanken stark zwischen Sessions.
+    /// Default: All (= keine zeitliche Einschraenkung). Wirkt zusaetzlich zur TradFi-Stundenpruefung —
+    /// Crypto kann nun auch zeitlich beschraenkt werden.
+    /// </summary>
+    public TradingSessions EnabledSessions { get; set; } = TradingSessions.All;
 }
 
 /// <summary>UI-Theme-Optionen fuer die BingXBot-Clients (Desktop + Mobile).</summary>

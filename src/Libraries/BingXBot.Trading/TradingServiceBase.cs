@@ -966,6 +966,22 @@ public abstract class TradingServiceBase : IDisposable
                 if (!candidateSetByTf.TryGetValue(navTf, out var tfSet) || !tfSet.Contains(ticker.Symbol))
                     continue;
 
+                // Phase 18 / A7 — Time-of-Day Session-Filter (Crypto). Default = All → no-op.
+                // TradFi-Symbole haben ihre eigene Marktoeffnung-Pruefung (siehe TradingHoursFilter.IsMarketOpen).
+                if (!Engine.Filters.TradingHoursFilter.IsSessionAllowed(DateTime.UtcNow, _botSettings.EnabledSessions))
+                {
+                    if (_botSettings.EnableDecisionTrail)
+                    {
+                        var sessionDecision = new BingXBot.Core.Diagnostics.EvaluationDecision(
+                            ticker.Symbol, navTf, DateTime.UtcNow, "SessionFilter",
+                            null, null, null, false,
+                            BingXBot.Core.Diagnostics.RejectionReasons.OutsideAllowedSession,
+                            0, Array.Empty<string>(), Array.Empty<string>());
+                        _eventBus.PublishEvaluationDecision(sessionDecision);
+                    }
+                    continue;
+                }
+
                 if (!navResults.TryGetValue((ticker.Symbol, navTf), out var navCandles) || navCandles.Count < 50)
                     continue;
 

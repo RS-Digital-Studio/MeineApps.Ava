@@ -91,4 +91,54 @@ public class TradingHoursFilterTests
         TradingHoursFilter.GetMarketStatusText("NCCOGOLD2USD-USDT", saturday)
             .Should().Contain("geschlossen");
     }
+
+    // === Phase 18 / A7 — Time-of-Day Session-Filter ===
+
+    [Theory]
+    [InlineData(0, BingXBot.Core.Configuration.TradingSessions.Asia)]
+    [InlineData(7, BingXBot.Core.Configuration.TradingSessions.Asia)]
+    [InlineData(8, BingXBot.Core.Configuration.TradingSessions.Eu)]
+    [InlineData(12, BingXBot.Core.Configuration.TradingSessions.Eu)]
+    [InlineData(13, BingXBot.Core.Configuration.TradingSessions.EuUsOverlap)]
+    [InlineData(15, BingXBot.Core.Configuration.TradingSessions.EuUsOverlap)]
+    [InlineData(16, BingXBot.Core.Configuration.TradingSessions.Us)]
+    [InlineData(21, BingXBot.Core.Configuration.TradingSessions.Us)]
+    [InlineData(22, BingXBot.Core.Configuration.TradingSessions.Asia)]
+    [InlineData(23, BingXBot.Core.Configuration.TradingSessions.Asia)]
+    public void ClassifySession_MapsHourToSession(int hour, BingXBot.Core.Configuration.TradingSessions expected)
+    {
+        var utc = new DateTime(2026, 5, 9, hour, 0, 0, DateTimeKind.Utc);
+        TradingHoursFilter.ClassifySession(utc).Should().Be(expected);
+    }
+
+    [Fact]
+    public void IsSessionAllowed_AllSessions_AlwaysTrue()
+    {
+        var utc = new DateTime(2026, 5, 9, 3, 0, 0, DateTimeKind.Utc); // Asia
+        TradingHoursFilter.IsSessionAllowed(utc, BingXBot.Core.Configuration.TradingSessions.All).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsSessionAllowed_OnlyEu_BlocksAsia()
+    {
+        var utc = new DateTime(2026, 5, 9, 3, 0, 0, DateTimeKind.Utc); // Asia
+        TradingHoursFilter.IsSessionAllowed(utc, BingXBot.Core.Configuration.TradingSessions.Eu).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsSessionAllowed_EuPlusOverlap_AllowsBoth()
+    {
+        var utcEu = new DateTime(2026, 5, 9, 10, 0, 0, DateTimeKind.Utc);
+        var utcOverlap = new DateTime(2026, 5, 9, 14, 0, 0, DateTimeKind.Utc);
+        var allowed = BingXBot.Core.Configuration.TradingSessions.Eu | BingXBot.Core.Configuration.TradingSessions.EuUsOverlap;
+        TradingHoursFilter.IsSessionAllowed(utcEu, allowed).Should().BeTrue();
+        TradingHoursFilter.IsSessionAllowed(utcOverlap, allowed).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsSessionAllowed_None_AlwaysFalse()
+    {
+        var utc = new DateTime(2026, 5, 9, 14, 0, 0, DateTimeKind.Utc);
+        TradingHoursFilter.IsSessionAllowed(utc, BingXBot.Core.Configuration.TradingSessions.None).Should().BeFalse();
+    }
 }

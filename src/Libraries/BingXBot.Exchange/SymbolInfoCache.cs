@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
+using BingXBot.Core.Enums;
 using BingXBot.Core.Models;
 using BingXBot.Exchange.Models;
 using Microsoft.Extensions.Logging;
@@ -102,6 +103,23 @@ public class SymbolInfoCache
     {
         var info = GetInfo(symbol);
         return Math.Round(price, info.PricePrecision, MidpointRounding.ToEven);
+    }
+
+    /// <summary>
+    /// Phase 18 / A6 — Side-aware Tick-Size-Rundung fuer SL/TP.
+    /// Long-Position: Floor (Preis nach unten — bei SL = mehr Buffer, bei TP = naeher zum Entry).
+    /// Short-Position: Ceiling (Preis nach oben — symmetrisch).
+    /// Verhindert dass Tick-Rounding den geplanten SL-Buffer auffrisst (Long-SL wuerde auf
+    /// 95.5 statt 95.0 hochgerundet → SL liegt naeher am Entry → fast-fill-Risk) bzw. den TP
+    /// ueber den Plan-Wert verschiebt (Long-TP von 110.0 auf 110.5 → kleinere TP-Hit-Wahrscheinlichkeit).
+    /// </summary>
+    public decimal RoundPriceConservative(string symbol, decimal price, Side positionSide)
+    {
+        var info = GetInfo(symbol);
+        var factor = (decimal)Math.Pow(10, info.PricePrecision);
+        return positionSide == Side.Buy
+            ? Math.Floor(price * factor) / factor
+            : Math.Ceiling(price * factor) / factor;
     }
 
     /// <summary>

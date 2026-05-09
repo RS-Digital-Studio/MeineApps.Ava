@@ -137,4 +137,109 @@ public class OrderRetryPolicyTests
         await act.Should().ThrowAsync<OrderApiException>();
         attempts.Should().Be(OrderRetryPolicy.MaxAttempts);
     }
+
+    // === Phase 18 / A2 — IdempotencyCheck (Doppel-Order-Schutz nach TaskCanceledException) ===
+
+    [Fact]
+    public async Task ExecuteAsync_IdempotencyCheck_NotCalledOnFirstAttempt()
+    {
+        // Erster Versuch ist erfolgreich → Probe darf nicht laufen.
+        var probeCalls = 0;
+        var result = await OrderRetryPolicy.ExecuteAsync<string>(
+            action: () => Task.FromResult("ok"),
+            idempotencyCheck: () => { probeCalls++; return Task.FromResult<string?>(null); });
+        result.Should().Be("ok");
+        probeCalls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_IdempotencyCheck_TimeoutThenProbeFindsExisting_AvoidsDoublePlace()
+    {
+        // Disaster-Szenario: Place 1 timeoutet, Order liegt aber bei BingX → Retry darf NICHT 2. Order erzeugen.
+        var attempts = 0;
+        var probeCalls = 0;
+        var result = await OrderRetryPolicy.ExecuteAsync<string>(
+            action: () =>
+            {
+                attempts++;
+                if (attempts == 1) throw new TaskCanceledException("HTTP timeout");
+                return Task.FromResult("DOPPEL-PLACE!"); // Soll nie erreicht werden
+            },
+            idempotencyCheck: () =>
+            {
+                probeCalls++;
+                return Task.FromResult<string?>("existing-order-id"); // Probe findet bereits liegende Order
+            });
+        result.Should().Be("existing-order-id", "Probe-Treffer muss als Erfolg gelten — kein Doppel-Place");
+        attempts.Should().Be(1);
+        probeCalls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_IdempotencyCheck_ProbeReturnsNull_ContinuesRetry()
+    {
+        // Probe findet keine bestehende Order → Retry läuft normal.
+        var attempts = 0;
+        var probeCalls = 0;
+        var result = await OrderRetryPolicy.ExecuteAsync<string>(
+            action: () =>
+            {
+                attempts++;
+                if (attempts == 1) throw new TaskCanceledException("HTTP timeout");
+                return Task.FromResult("placed-after-retry");
+            },
+            idempotencyCheck: () =>
+            {
+                probeCalls++;
+                return Task.FromResult<string?>(null);
+            });
+        result.Should().Be("placed-after-retry");
+        attempts.Should().Be(2);
+        probeCalls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_IdempotencyCheck_ProbeThrows_SwallowsAndRetries()
+    {
+        // Probe selbst wirft (z.B. Netzfehler beim GetOpenOrdersAsync) → Retry trotzdem fortsetzen.
+        var attempts = 0;
+        var probeCalls = 0;
+        var result = await OrderRetryPolicy.ExecuteAsync<string>(
+            action: () =>
+            {
+                attempts++;
+                if (attempts == 1) throw new TaskCanceledException();
+                return Task.FromResult("placed");
+            },
+            idempotencyCheck: () =>
+            {
+                probeCalls++;
+                throw new HttpRequestException("probe failed");
+            });
+        result.Should().Be("placed");
+        attempts.Should().Be(2);
+        probeCalls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_IdempotencyCheck_RunsBeforeEachRetry()
+    {
+        // Mehrere Retries → Probe muss vor JEDEM Retry-Versuch laufen.
+        var attempts = 0;
+        var probeCalls = 0;
+        Func<Task> act = () => OrderRetryPolicy.ExecuteAsync<string>(
+            action: () =>
+            {
+                attempts++;
+                throw new TaskCanceledException();
+            },
+            idempotencyCheck: () =>
+            {
+                probeCalls++;
+                return Task.FromResult<string?>(null);
+            });
+        await act.Should().ThrowAsync<TaskCanceledException>();
+        attempts.Should().Be(OrderRetryPolicy.MaxAttempts);
+        probeCalls.Should().Be(OrderRetryPolicy.MaxAttempts - 1, "Probe läuft vor Retry 2..MaxAttempts");
+    }
 }

@@ -78,16 +78,38 @@ public static class OrderRetryPolicy
     /// <summary>
     /// Fuehrt eine asynchrone Aktion mit Retry + Backoff aus. Bei <see cref="MaxAttempts"/> Fehlern
     /// wird die letzte Exception weitergeworfen.
+    ///
+    /// <para>Phase 18 / A2 — <paramref name="idempotencyCheck"/>: Optionaler Pre-Retry-Probe.
+    /// Wird VOR jedem Retry-Versuch (ab Attempt 2) ausgefuehrt. Liefert einen Wert &lt;&gt; null →
+    /// die zuvor (ggf. timeoutete) Order ist bereits drueben angekommen — wir geben den Probe-Wert
+    /// als Erfolg zurueck und vermeiden den Doppel-Place. Liefert null → wir versuchen erneut.
+    /// Exceptions des Probes werden geschluckt (Best-Effort), damit ein temporaerer Probe-Fehler
+    /// den Retry nicht abbricht.</para>
     /// </summary>
     public static async Task<T> ExecuteAsync<T>(
         Func<Task<T>> action,
         Action<int, Exception>? onRetry = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Func<Task<T?>>? idempotencyCheck = null)
+        where T : class?
     {
         Exception? lastException = null;
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
             ct.ThrowIfCancellationRequested();
+
+            // Pre-Retry-Probe: vor Versuch 2..MaxAttempts pruefen, ob die Order beim vorherigen
+            // Versuch ggf. doch ankam (Response timeoutete) — verhindert Doppel-Place.
+            if (attempt > 1 && idempotencyCheck != null)
+            {
+                try
+                {
+                    var existing = await idempotencyCheck().ConfigureAwait(false);
+                    if (existing != null) return existing;
+                }
+                catch { /* Probe ist Best-Effort; bei Fehler normal weiter retryen. */ }
+            }
+
             try
             {
                 return await action().ConfigureAwait(false);

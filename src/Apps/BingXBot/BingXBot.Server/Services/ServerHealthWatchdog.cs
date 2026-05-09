@@ -19,7 +19,7 @@ namespace BingXBot.Server.Services;
 /// Edge-Transition-Logik: Event wird NUR bei Aenderung gefeuert, nicht periodisch — spart UI-
 /// Spam und Hub-Bandbreite. Initial-Zustand gilt als "OK" bis erster Disconnect beobachtet wird.
 /// </summary>
-public sealed class ServerHealthWatchdog : BackgroundService
+public sealed partial class ServerHealthWatchdog : BackgroundService
 {
     private readonly LocalBotEventStream _stream;
     private readonly LiveTradingManager _liveManager;
@@ -28,7 +28,10 @@ public sealed class ServerHealthWatchdog : BackgroundService
     private readonly ILogger<ServerHealthWatchdog> _logger;
     private readonly TimeSpan _interval;
     private readonly TimeSpan _probeTimeout;
+    private readonly TimeSpan _clockDriftWarn;
+    private readonly TimeSpan _clockDriftDegrade;
     private bool _lastDegraded;
+    private bool _clockDriftDegraded;
     /// <summary>v1.6.5 Phase 15 — Probe-Fail-Counter (2× in Folge → Degraded).</summary>
     private int _consecutiveProbeFailures;
     /// <summary>v1.6.5 Phase 15 — True wenn der letzte Probe-Failure-Stand gerade durch eine Recovery zurueckgesetzt wurde.</summary>
@@ -51,6 +54,12 @@ public sealed class ServerHealthWatchdog : BackgroundService
         _interval = TimeSpan.FromSeconds(secs);
         var probeMs = Math.Max(1000, config.GetValue<int>("Server:HealthProbeTimeoutMs", 5000));
         _probeTimeout = TimeSpan.FromMilliseconds(probeMs);
+        // Phase 18 / A3 — Clock-Drift-Schwellen. Default: Warning ab 2 s, Degraded ab 4 s.
+        // BingX recvWindow ist 5 s — bei 4 s sind wir noch unter dem Reject-Limit, aber bereits Disaster-Mode-nah.
+        var driftWarnMs = Math.Max(500, config.GetValue<int>("Server:ClockDriftWarnMs", 2000));
+        var driftDegradeMs = Math.Max(driftWarnMs + 500, config.GetValue<int>("Server:ClockDriftDegradeMs", 4000));
+        _clockDriftWarn = TimeSpan.FromMilliseconds(driftWarnMs);
+        _clockDriftDegrade = TimeSpan.FromMilliseconds(driftDegradeMs);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -83,15 +92,15 @@ public sealed class ServerHealthWatchdog : BackgroundService
             return;
         }
 
-        // v1.6.5 Phase 15 — Active-Probe via leichter Public-API-Endpoint (GetAllTickersAsync).
-        // BingX hat keinen dedizierten ServerTime-Endpoint im IPublicMarketDataClient — Tickers
-        // ist der naechstleichte (1 GET, ~80kB Response). Mit 5s-Timeout.
+        // Phase 18 / A3 + C2 — Active-Probe via /server/time (~50 Bytes statt ~80 kB Tickers).
+        // Liefert gleichzeitig BingX-Server-UTC fuer Clock-Drift-Detection. Mit Probe-Timeout.
+        DateTime? serverTime = null;
         bool probeOk;
         try
         {
             using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             probeCts.CancelAfter(_probeTimeout);
-            await _publicClient.GetAllTickersAsync(probeCts.Token).ConfigureAwait(false);
+            serverTime = await _publicClient.GetServerTimeAsync(probeCts.Token).ConfigureAwait(false);
             probeOk = true;
         }
         catch
@@ -102,10 +111,45 @@ public sealed class ServerHealthWatchdog : BackgroundService
         if (probeOk)
         {
             _consecutiveProbeFailures = 0;
+
+            // Phase 18 / A3 — Clock-Drift-Detection (BingX recvWindow 5 s).
+            // Bei Drift > 4 s sind ALLE signed Orders dem Risiko ausgesetzt mit "Timestamp out of recvWindow"
+            // abgelehnt zu werden. Stiller Disaster-Mode — Bot scannt, evaluiert, aber keine Order kommt durch.
+            if (serverTime.HasValue)
+            {
+                var drift = (DateTime.UtcNow - serverTime.Value).Duration();
+                if (drift >= _clockDriftDegrade)
+                {
+                    if (!_clockDriftDegraded)
+                    {
+                        _clockDriftDegraded = true;
+                        FireDegraded($"Clock-Drift {drift.TotalMilliseconds:F0} ms ≥ {_clockDriftDegrade.TotalMilliseconds:F0} ms (BingX recvWindow 5 s) — sudo systemctl restart chronyd auf dem Pi.");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Clock-Drift {DriftMs} ms bleibt > {LimitMs} ms — Trading-Orders koennen abgelehnt werden",
+                            drift.TotalMilliseconds, _clockDriftDegrade.TotalMilliseconds);
+                    }
+                    return; // Drift-Degraded ueberlagert Liveness-OK
+                }
+
+                if (drift >= _clockDriftWarn)
+                {
+                    _logger.LogWarning("Clock-Drift {DriftMs} ms zwischen Pi und BingX (Warning ab {WarnMs} ms, Degrade ab {DegradeMs} ms)",
+                        drift.TotalMilliseconds, _clockDriftWarn.TotalMilliseconds, _clockDriftDegrade.TotalMilliseconds);
+                }
+                else if (_clockDriftDegraded)
+                {
+                    // Recovery — Drift wieder unter Warn-Schwelle.
+                    _clockDriftDegraded = false;
+                    if (_lastDegraded) ResetDegraded($"Clock-Drift {drift.TotalMilliseconds:F0} ms wieder im Toleranzbereich.");
+                }
+            }
+
             // Liveness-Check (passive Variante als Backup): wenn IsConnected=false trotz
             // erfolgreichem Public-Probe, ist nur die Auth-API tot — eskaliert auch.
             var passiveDegraded = _liveManager is { IsRunning: true, IsConnected: false };
-            if (!passiveDegraded && _lastDegraded)
+            if (!passiveDegraded && _lastDegraded && !_clockDriftDegraded)
                 ResetDegraded("BingX-Exchange wieder erreichbar (Probe + Liveness OK).");
             else if (passiveDegraded && !_lastDegraded)
                 FireDegraded("BingX REST/WS unverbunden trotz erfolgreichem Public-Probe (Auth-Token?).");
@@ -165,3 +209,56 @@ public sealed class ServerHealthWatchdog : BackgroundService
 
 /// <summary>v1.6.5 Phase 15 — Pure-Function-Output fuer Probe-Auswertung.</summary>
 public sealed record ProbeOutcome(bool NewDegraded, int NewConsecutiveFailures, bool FireEvent);
+
+/// <summary>
+/// Phase 18 / A3 — Pure-Function-Output fuer Clock-Drift-Auswertung.
+/// </summary>
+/// <param name="NewDriftDegraded">Soll der Drift-Degraded-State nach diesem Probe gesetzt sein?</param>
+/// <param name="ShouldWarn">Drift im Warning-Bereich (zwischen Warn und Degrade) — Log-Warning.</param>
+/// <param name="ShouldFireDegradedEvent">Edge-Transition false→true — neues Event publishen.</param>
+/// <param name="ShouldFireRecoveryEvent">Edge-Transition true→false — Reset-Event publishen.</param>
+public sealed record ClockDriftOutcome(
+    bool NewDriftDegraded,
+    bool ShouldWarn,
+    bool ShouldFireDegradedEvent,
+    bool ShouldFireRecoveryEvent);
+
+public sealed partial class ServerHealthWatchdog
+{
+    /// <summary>
+    /// Phase 18 / A3 — Pure-Function fuer Clock-Drift-Bewertung. Kapselt die Edge-Transition-Logik
+    /// fuer Test-Coverage analog zu <see cref="EvaluateProbe"/>.
+    /// </summary>
+    public static ClockDriftOutcome EvaluateClockDrift(
+        TimeSpan absoluteDrift,
+        TimeSpan warnThreshold,
+        TimeSpan degradeThreshold,
+        bool currentlyDriftDegraded)
+    {
+        if (absoluteDrift >= degradeThreshold)
+        {
+            return new ClockDriftOutcome(
+                NewDriftDegraded: true,
+                ShouldWarn: false,
+                ShouldFireDegradedEvent: !currentlyDriftDegraded,
+                ShouldFireRecoveryEvent: false);
+        }
+
+        if (absoluteDrift >= warnThreshold)
+        {
+            // Warn-Bereich: nicht degraded (noch nicht), aber Log-Warning. Wenn vorher degraded → recover.
+            return new ClockDriftOutcome(
+                NewDriftDegraded: false,
+                ShouldWarn: true,
+                ShouldFireDegradedEvent: false,
+                ShouldFireRecoveryEvent: currentlyDriftDegraded);
+        }
+
+        // Drift unter Warn-Schwelle.
+        return new ClockDriftOutcome(
+            NewDriftDegraded: false,
+            ShouldWarn: false,
+            ShouldFireDegradedEvent: false,
+            ShouldFireRecoveryEvent: currentlyDriftDegraded);
+    }
+}

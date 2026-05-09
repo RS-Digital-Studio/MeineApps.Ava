@@ -415,6 +415,10 @@ public partial class LiveTradingService
         // Reject-basierte Retries: 3 Versuche mit 1.5 s Pause — historisches Verhalten beibehalten.
         // Exception-basierte Retries (Timeout/429/5xx) laufen INNERHALB jedes Versuchs durch
         // OrderRetryPolicy.ExecuteAsync, sodass kurze Netz-Bumps kein Reject-Versuch verbrauchen.
+        // Phase 18 / A2 — IdempotencyCheck via GetOpenOrdersAsync: vor jedem inneren Retry
+        // pruefen, ob der vorherige Place-Versuch (z.B. nach TaskCanceledException) in Wahrheit
+        // doch ankam — sonst Doppel-TP-Place mit reduceOnly-Konflikt.
+        var closeSide = side == Side.Buy ? Side.Sell : Side.Buy;
         for (int attempt = 1; attempt <= 3; attempt++)
         {
             Order order;
@@ -427,7 +431,8 @@ public partial class LiveTradingService
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
                             $"LIVE: {symbol} {tpLabel} Inner-Retry #{retry} ({ex.GetType().Name}: {ex.Message})",
                             symbol));
-                    }).ConfigureAwait(false);
+                    },
+                    idempotencyCheck: () => ProbeExistingTpOrderAsync(symbol, closeSide, quantity, price, tpLabel)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -472,6 +477,41 @@ public partial class LiveTradingService
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
             $"LIVE: {ticker.Symbol} Entry-Fee: {entryFee:N4} USDT", ticker.Symbol));
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Phase 18 / A2 — IdempotencyCheck-Probe fuer TP-Reduce-Only-Limits.
+    /// Sucht in den offenen Orders eine TP-Limit, die zur erwarteten Zielorder passt
+    /// (gleicher Symbol/Side/Qty/Price ± Toleranzfenster, ReduceOnly + Limit). Findet das Probe
+    /// einen Treffer, gilt der vorherige Place-Versuch als erfolgreich gelaufen — wir vermeiden
+    /// den Doppel-Place. Wird nur vor inneren Retry-Versuchen aufgerufen.
+    /// Toleranz: Qty 0.5 % (BingX truncated nach Precision-Cache), Price 0.05 % (Tick-Round).
+    /// </summary>
+    private async Task<Order?> ProbeExistingTpOrderAsync(
+        string symbol, Side closeSide, decimal expectedQuantity, decimal expectedPrice, string tpLabel)
+    {
+        var openOrders = await _restClient.GetOpenOrdersAsync(symbol).ConfigureAwait(false);
+        var qtyTolerance = Math.Max(expectedQuantity * 0.005m, 1e-8m);
+        var priceTolerance = Math.Max(expectedPrice * 0.0005m, 1e-8m);
+        Order? match = null;
+        foreach (var o in openOrders)
+        {
+            if (o.Symbol != symbol) continue;
+            if (o.Side != closeSide) continue;
+            if (!o.ReduceOnly) continue;
+            if (o.Type != OrderType.Limit) continue;
+            if (Math.Abs(o.Quantity - expectedQuantity) > qtyTolerance) continue;
+            if (Math.Abs(o.Price - expectedPrice) > priceTolerance) continue;
+            match = o;
+            break;
+        }
+        if (match != null)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                $"LIVE: {symbol} {tpLabel} Idempotency-Treffer — TP existiert bereits (OrderId={match.OrderId}, Qty={match.Quantity:F8} @ {match.Price:F8})",
+                symbol));
+        }
+        return match;
     }
 
     /// <summary>

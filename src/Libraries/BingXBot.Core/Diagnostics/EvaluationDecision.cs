@@ -79,6 +79,12 @@ public static class RejectionReasons
     public const string SlippageTooHigh = "slippage_too_high";
     /// <summary>v1.6.6 Phase 17 — TF wurde wegen schlechter WinRate auto-disabled.</summary>
     public const string TfAutoDisabled = "tf_auto_disabled";
+    /// <summary>Phase 18 / A4 — Korrelations-Cluster-Limit ueberschritten (Konto-Schutz).</summary>
+    public const string CorrelationLimitExceeded = "correlation_limit_exceeded";
+    /// <summary>Phase 18 / A7 — Trade ausserhalb der erlaubten Trading-Session (Asia/EU/US).</summary>
+    public const string OutsideAllowedSession = "outside_allowed_session";
+    /// <summary>Phase 18 / B4 — News-Service degradiert und RequireNewsFilter aktiv.</summary>
+    public const string NewsServiceUnavailable = "news_service_unavailable";
     /// <summary>Sonstiger generischer Reject — Detail im Reason-Text.</summary>
     public const string Other = "other";
 }

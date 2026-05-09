@@ -1,3 +1,4 @@
+using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Helpers;
 
@@ -60,4 +61,31 @@ public static class TradingHoursFilter
         var categoryName = SymbolClassifier.GetCategoryDisplayName(category);
         return $"{categoryName}-Markt geschlossen";
     }
+
+    /// <summary>
+    /// Phase 18 / A7 — True wenn die aktuelle UTC-Zeit innerhalb der vom User erlaubten Crypto-Sessions
+    /// liegt. Auf TradFi nicht angewendet (TradFi hat ohnehin <see cref="IsMarketOpen"/>-Pruefung).
+    /// </summary>
+    public static bool IsSessionAllowed(DateTime utcNow, TradingSessions allowed)
+    {
+        if (allowed == TradingSessions.All) return true;
+        if (allowed == TradingSessions.None) return false;
+        var current = ClassifySession(utcNow);
+        return (allowed & current) != 0;
+    }
+
+    /// <summary>
+    /// Phase 18 / A7 — Klassifiziert eine UTC-Stunde in eine Trading-Session.
+    /// Asia: 00:00-08:00 UTC. EU: 08:00-13:00 UTC. EU/US-Overlap: 13:00-16:00 UTC. US: 16:00-22:00 UTC.
+    /// 22:00-00:00 UTC = Asia-Vorlauf. Pro UTC-Stunde liegt der Tick in EXAKT einer Session.
+    /// </summary>
+    public static TradingSessions ClassifySession(DateTime utcNow)
+    {
+        var hour = utcNow.Hour;
+        if (hour >= 8 && hour < 13) return TradingSessions.Eu;
+        if (hour >= 13 && hour < 16) return TradingSessions.EuUsOverlap;
+        if (hour >= 16 && hour < 22) return TradingSessions.Us;
+        return TradingSessions.Asia;
+    }
 }
+

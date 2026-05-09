@@ -456,9 +456,11 @@ public class BingXRestClient : IExchangeClient
                 .ToString(CultureInfo.InvariantCulture);
 
         // Native SL/TP-Orders: BingX setzt SL/TP direkt auf der Position (serverseitig)
+        // Phase 18 / A6 — konservatives Tick-Rounding: Long-SL nach unten, Short-SL nach oben →
+        // garantiert dass der Buffer durch das Tick-Rounding NICHT weggefressen wird.
         if (request.StopLoss.HasValue && request.StopLoss.Value > 0)
         {
-            var roundedSl = _symbolInfoCache.RoundPrice(request.Symbol, request.StopLoss.Value);
+            var roundedSl = _symbolInfoCache.RoundPriceConservative(request.Symbol, request.StopLoss.Value, request.Side);
             parameters["stopLoss"] = JsonSerializer.Serialize(new
             {
                 type = "STOP_MARKET",
@@ -904,7 +906,9 @@ public class BingXRestClient : IExchangeClient
         var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
 
         var adjustedQty = _symbolInfoCache.TruncateQuantity(symbol, quantity);
-        var roundedPrice = _symbolInfoCache.RoundPrice(symbol, limitPrice);
+        // Phase 18 / A6 — TP zum Entry hin runden (Long: down, Short: up) → bessere Hit-Wahrscheinlichkeit,
+        // ohne den geplanten TP-Wert ueber den naechsten Tick hinaus zu schieben.
+        var roundedPrice = _symbolInfoCache.RoundPriceConservative(symbol, limitPrice, positionSide);
         if (adjustedQty <= 0) return new Order("", symbol, closeSide, OrderType.Limit,
             limitPrice, quantity, null, DateTime.UtcNow, OrderStatus.Rejected);
 

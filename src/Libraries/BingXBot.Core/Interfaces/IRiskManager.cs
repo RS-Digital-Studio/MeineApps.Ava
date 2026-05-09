@@ -8,6 +8,9 @@ public interface IRiskManager
     RiskCheckResult ValidateTrade(SignalResult signal, MarketContext context);
     RiskCheckResult ValidateTrade(SignalResult signal, MarketContext context, decimal? currentFundingRate, int actualLeverage = 0);
     decimal CalculatePositionSize(string symbol, decimal entryPrice, decimal? stopLoss, AccountInfo account, int actualLeverage = 0);
+
+    /// <summary>Phase 18 / A5 — Variante mit ATR-Prozent-Wert fuer Volatility-Targeting.</summary>
+    decimal CalculatePositionSize(string symbol, decimal entryPrice, decimal? stopLoss, AccountInfo account, int actualLeverage, decimal atrPercent);
     void UpdateDailyStats(CompletedTrade completedTrade);
     void ResetDailyStats();
 

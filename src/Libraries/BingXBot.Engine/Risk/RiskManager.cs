@@ -1,7 +1,9 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Engine.Indicators;
 using BingXBot.Engine.News;
 using Microsoft.Extensions.Logging;
 
@@ -69,6 +71,29 @@ public class RiskManager : IRiskManager
         if (symbolPositions >= _settings.MaxOpenPositionsPerSymbol)
             return new RiskCheckResult(false, $"Max {_settings.MaxOpenPositionsPerSymbol} Positionen pro Symbol erreicht", 0m);
 
+        // Phase 18 / A4 — Cluster-Korrelations-Limit (User-Ausnahme, opt-in).
+        // Schuetzt vor "3× BTC durch BTC/ETH/SOL parallel"-Disasters bei Crypto-Flash-Crashes.
+        // Nur greifen wenn Setting aktiviert UND Symbol in einem definierten Cluster (Other → Filter no-op).
+        if (_settings.MaxCorrelatedExposurePercent > 0 && context.Account.Balance > 0)
+        {
+            var newCluster = AssetClusterClassifier.Classify(context.Symbol);
+            if (newCluster != AssetCluster.Other && newCluster != AssetCluster.CryptoOther)
+            {
+                var clusterMargins = context.OpenPositions
+                    .Where(p => AssetClusterClassifier.Classify(p.Symbol) == newCluster)
+                    .Sum(p => p.Leverage > 0 ? p.EntryPrice * p.Quantity / p.Leverage : p.EntryPrice * p.Quantity);
+
+                // Geplante neue Margin: konservativ als Risk-Per-Trade-Cap (vor Position-Sizing-Fluktuation).
+                var plannedMargin = context.Account.Balance * _settings.MaxPositionSizePercent / 100m;
+                var totalClusterMargin = clusterMargins + plannedMargin;
+                var clusterPct = totalClusterMargin / context.Account.Balance * 100m;
+
+                if (clusterPct > _settings.MaxCorrelatedExposurePercent)
+                    return new RiskCheckResult(false,
+                        $"Cluster-Limit {newCluster}: {clusterPct:F1}% > {_settings.MaxCorrelatedExposurePercent}% (offene {clusterMargins:F2}$ + geplant {plannedMargin:F2}$)", 0m);
+            }
+        }
+
         // 4. Position-Größe berechnen mit tatsächlichem Leverage (nicht MaxLeverage)
         var entryPrice = signal.EntryPrice ?? context.CurrentTicker.LastPrice;
 
@@ -135,7 +160,15 @@ public class RiskManager : IRiskManager
             }
         }
 
-        var posSize = CalculatePositionSize(context.Symbol, entryPrice, signal.StopLoss, context.Account, actualLeverage);
+        // Phase 18 / A5 — ATR-Prozent fuer Volatility-Targeting durchreichen, sofern aktiviert UND Candles vorhanden.
+        decimal atrPct = 0m;
+        if (_settings.EnableVolatilityTargeting && context.Candles.Count >= 14 && entryPrice > 0)
+        {
+            var atrSeries = IndicatorHelper.CalculateAtr(context.Candles, 14);
+            if (atrSeries.Count > 0 && atrSeries[^1].HasValue)
+                atrPct = atrSeries[^1]!.Value / entryPrice * 100m;
+        }
+        var posSize = CalculatePositionSize(context.Symbol, entryPrice, signal.StopLoss, context.Account, actualLeverage, atrPct);
 
         if (posSize <= 0)
             return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
@@ -285,6 +318,15 @@ public class RiskManager : IRiskManager
     /// MaxPositionSizePercent = max. Positionswert in % der Balance (NICHT Margin, unabhängig vom Leverage).
     /// </summary>
     public decimal CalculatePositionSize(string symbol, decimal entryPrice, decimal? stopLoss, AccountInfo account, int actualLeverage = 0)
+        => CalculatePositionSize(symbol, entryPrice, stopLoss, account, actualLeverage, atrPercent: 0m);
+
+    /// <summary>
+    /// Phase 18 / A5 — Erweiterte Variante mit ATR-Prozent-Wert fuer Volatility-Targeting.
+    /// Wenn <see cref="RiskSettings.EnableVolatilityTargeting"/> true UND <paramref name="atrPercent"/> &gt; 0:
+    /// Quantity wird um <c>min(VolScaleCap, VolatilityTargetPercent / atrPercent)</c> skaliert.
+    /// Bei <paramref name="atrPercent"/> = 0 oder Setting aus: kein Scaling (= Legacy-Verhalten).
+    /// </summary>
+    public decimal CalculatePositionSize(string symbol, decimal entryPrice, decimal? stopLoss, AccountInfo account, int actualLeverage, decimal atrPercent)
     {
         if (entryPrice <= 0 || account.Balance <= 0) return 0m;
 
@@ -297,19 +339,53 @@ public class RiskManager : IRiskManager
         var margin = account.Balance * _settings.MaxPositionSizePercent / 100m * scaleFactor;
         var qty = margin * leverage / entryPrice;
 
+        // Phase 18 / A5 — Volatility-Targeting (opt-in).
+        if (_settings.EnableVolatilityTargeting && atrPercent > 0 && _settings.VolatilityTargetPercent > 0)
+        {
+            var volScale = _settings.VolatilityTargetPercent / atrPercent;
+            var cap = _settings.VolatilityScaleCap > 0 ? _settings.VolatilityScaleCap : 1.5m;
+            volScale = Math.Min(cap, volScale);
+            qty *= volScale;
+        }
+
         return qty;
     }
 
     /// <summary>
     /// SK-Plan 4.8 + 5.1: Kombinierter Scaling-Factor für Position-Sizing.
-    /// 4.8 Loss-Streak-Dampening: >=3 Verluste → 0.5×, >=5 → 0 (Pause).
-    /// 5.1 Equity-Curve-Scaling: Drawdown ab Schwelle → linear runter bis 0.5×.
-    /// Beide Faktoren multiplizieren sich.
+    /// 4.8 Loss-Streak-Dampening (Buch S.13): >=3 Verluste → 0.5×, >=5 → 0 (Pause).
+    /// 5.1 Equity-Curve-Scaling: Drawdown vom Peak ab Schwelle → linear runter bis 0.5×.
+    /// Beide Faktoren multiplizieren sich. Phase 18 (09.05.2026) — vorher toter Stub.
     /// </summary>
     public decimal GetPositionScalingFactor(AccountInfo account)
     {
         decimal factor = 1m;
-        return factor;
+
+        // 4.8 Loss-Streak-Dampening (Buch S.13)
+        if (_settings.EnableLossStreakDampening)
+        {
+            int losses;
+            lock (_lock) losses = CurrentConsecutiveLosses;
+            if (losses >= 5) return 0m;          // Pause — keine neue Position
+            if (losses >= 3) factor *= 0.5m;     // Position halbieren
+        }
+
+        // 5.1 Equity-Curve-Scaling (linear)
+        // Erfordert initialisierten Peak (sonst kein verlässlicher Drawdown-Bezug).
+        if (_settings.EnableEquityCurveScaling && _peakEquityInitialized && _peakEquity > 0)
+        {
+            var equity = account.Balance + account.UnrealizedPnl;
+            var ddPct = (_peakEquity - equity) / _peakEquity * 100m;
+            var threshold = _settings.EquityCurveScalingThresholdPercent;
+            if (ddPct > threshold)
+            {
+                // Bei (threshold + 10%) Drawdown ist factor bei 0.5×.
+                var lerp = Math.Min(1m, (ddPct - threshold) / 10m);
+                factor *= 1m - 0.5m * lerp;
+            }
+        }
+
+        return Math.Max(0m, factor);
     }
 
     /// <summary>

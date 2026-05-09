@@ -201,6 +201,36 @@ public class BingXPublicClient : IPublicMarketDataClient
     }
 
     /// <summary>
+    /// Phase 18 / A3 + C2 — Lädt die Server-Zeit von BingX (ms-Unix-Timestamp).
+    /// ~50 Bytes Response statt 80 kB Tickers. Wird vom ServerHealthWatchdog als Lightweight-
+    /// Probe verwendet und gleichzeitig für Clock-Drift-Detection (Pi-NTP vs BingX) genutzt.
+    /// Endpoint: <c>GET /openApi/swap/v2/server/time</c>.
+    /// </summary>
+    public async Task<DateTime> GetServerTimeAsync(CancellationToken ct = default)
+    {
+        return await SendWithRetryAsync(async () =>
+        {
+            await _rateLimiter.WaitForSlotAsync("queries", ct).ConfigureAwait(false);
+
+            var url = $"{BaseUrl}/openApi/swap/v2/server/time";
+            var response = await _httpClient.GetStringAsync(url, ct).ConfigureAwait(false);
+
+            // Response-Format: {"code":0,"msg":"","data":{"serverTime":1718000000000}}
+            using var doc = JsonDocument.Parse(response);
+            if (!doc.RootElement.TryGetProperty("code", out var codeEl) || !codeEl.TryGetInt32(out var code))
+                throw new InvalidOperationException("BingX server/time Response ohne gültiges code-Feld.");
+            if (code != 0)
+                throw new InvalidOperationException($"BingX server/time lieferte Fehler-Code: {code}");
+            if (!doc.RootElement.TryGetProperty("data", out var dataEl) ||
+                !dataEl.TryGetProperty("serverTime", out var stEl) ||
+                !stEl.TryGetInt64(out var serverTimeMs))
+                throw new InvalidOperationException("BingX server/time Response ohne serverTime-Feld.");
+
+            return DateTimeOffset.FromUnixTimeMilliseconds(serverTimeMs).UtcDateTime;
+        }, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Führt eine Funktion mit Retry bei transienten Fehlern aus (analog zu BingXRestClient).
     /// Exponentieller Backoff: 2s, 4s, 8s.
     /// </summary>

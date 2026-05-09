@@ -59,7 +59,7 @@
       <!-- ═══════════════════════════════════════════════════════════════
            CONTENT: 2-Spalten Landscape-Layout
            ═══════════════════════════════════════════════════════════════ -->
-      <Grid Grid.Row="1" ColumnDefinitions="*,2.5*" Margin="16,12,16,80">
+      <Grid Grid.Row="1" ColumnDefinitions="320,*" Margin="16,12,16,80">
 
         <!-- ═══════════════════════════════════════
              LINKE SPALTE: Info-Panel (Gold-tint Gradient)

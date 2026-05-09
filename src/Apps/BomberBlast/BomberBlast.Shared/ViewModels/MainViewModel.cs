@@ -86,66 +86,64 @@ public sealed partial class MainViewModel : ViewModelBase
     [ObservableProperty] private ProfileViewModel? _profileVm;
     [ObservableProperty] private GemShopViewModel? _gemShopVm;
 
+    // Boss-Rush (v2.0.42, Plan Task 3.3): Eager-Singleton — Modi-Strip-Tile im MainMenu zeigt
+    // Wochen-Best direkt; BossRushView ist die Pre-Run-Page.
+    // Daily-Hub aufgeloest (v2.0.43, Menu-Redesign) — Inhalte direkt im MainMenu-Dashboard.
+    public BossRushViewModel BossRushVm { get; }
+
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
 
-    [ObservableProperty]
-    private bool _isMainMenuActive = true;
-
-    [ObservableProperty]
-    private bool _isGameActive;
-
-    [ObservableProperty]
-    private bool _isLevelSelectActive;
-
-    [ObservableProperty]
-    private bool _isSettingsActive;
-
-    [ObservableProperty]
-    private bool _isHighScoresActive;
-
-    [ObservableProperty]
-    private bool _isGameOverActive;
-
-    [ObservableProperty]
-    private bool _isShopActive;
-
-    [ObservableProperty]
-    private bool _isVictoryActive;
-
-    [ObservableProperty]
-    private bool _isStatisticsActive;
-
-    [ObservableProperty]
-    private bool _isQuickPlayActive;
-
-    [ObservableProperty]
-    private bool _isDungeonActive;
-
-    [ObservableProperty]
-    private bool _isBattlePassActive;
-
-    [ObservableProperty]
-    private bool _isLeagueActive;
-
-    [ObservableProperty]
-    private bool _isProfileActive;
-
-    [ObservableProperty]
-    private bool _isGemShopActive;
-
     /// <summary>
-    /// Kombinierte View: Deck + Sammlung
+    /// Aktiv sichtbare Page (v2.0.37). Ersetzt 17 frueher separate IsXxxActive-Booleans.
+    /// MainView.axaml bindet ueber <see cref="Converters.ActiveViewEqualsConverter"/> auf
+    /// <c>Classes.Active</c> und <c>IsVisible</c> der einzelnen PageView-Border.
     /// </summary>
     [ObservableProperty]
-    private bool _isCardsActive;
+    private ActiveView _activeView = ActiveView.MainMenu;
 
-    /// <summary>
-    /// Kombinierte View: Tägliche Herausforderung + Missionen
-    /// </summary>
-    [ObservableProperty]
-    private bool _isChallengesActive;
+    // Backward-compat Computed-Properties — werden von Logik in NavigateTo()/HandleBackPressed()
+    // weiter genutzt (Tab-Status, Game-Lifecycle). Feuern OnPropertyChanged via partial method.
+    public bool IsMainMenuActive => ActiveView == ActiveView.MainMenu;
+    public bool IsGameActive => ActiveView == ActiveView.Game;
+    public bool IsLevelSelectActive => ActiveView == ActiveView.LevelSelect;
+    public bool IsSettingsActive => ActiveView == ActiveView.Settings;
+    public bool IsHighScoresActive => ActiveView == ActiveView.HighScores;
+    public bool IsGameOverActive => ActiveView == ActiveView.GameOver;
+    public bool IsShopActive => ActiveView == ActiveView.Shop;
+    public bool IsVictoryActive => ActiveView == ActiveView.Victory;
+    public bool IsStatisticsActive => ActiveView == ActiveView.Statistics;
+    public bool IsQuickPlayActive => ActiveView == ActiveView.QuickPlay;
+    public bool IsDungeonActive => ActiveView == ActiveView.Dungeon;
+    public bool IsBattlePassActive => ActiveView == ActiveView.BattlePass;
+    public bool IsLeagueActive => ActiveView == ActiveView.League;
+    public bool IsProfileActive => ActiveView == ActiveView.Profile;
+    public bool IsGemShopActive => ActiveView == ActiveView.GemShop;
+    public bool IsCardsActive => ActiveView == ActiveView.Cards;
+    public bool IsChallengesActive => ActiveView == ActiveView.Challenges;
+
+    partial void OnActiveViewChanged(ActiveView value)
+    {
+        // Computed-Properties benachrichtigen, damit Bindings auf IsXxxActive (z.B. IsAdBannerVisible-Logik) feuern
+        OnPropertyChanged(nameof(IsMainMenuActive));
+        OnPropertyChanged(nameof(IsGameActive));
+        OnPropertyChanged(nameof(IsLevelSelectActive));
+        OnPropertyChanged(nameof(IsSettingsActive));
+        OnPropertyChanged(nameof(IsHighScoresActive));
+        OnPropertyChanged(nameof(IsGameOverActive));
+        OnPropertyChanged(nameof(IsShopActive));
+        OnPropertyChanged(nameof(IsVictoryActive));
+        OnPropertyChanged(nameof(IsStatisticsActive));
+        OnPropertyChanged(nameof(IsQuickPlayActive));
+        OnPropertyChanged(nameof(IsDungeonActive));
+        OnPropertyChanged(nameof(IsBattlePassActive));
+        OnPropertyChanged(nameof(IsLeagueActive));
+        OnPropertyChanged(nameof(IsProfileActive));
+        OnPropertyChanged(nameof(IsGemShopActive));
+        OnPropertyChanged(nameof(IsCardsActive));
+        OnPropertyChanged(nameof(IsChallengesActive));
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // TAB-STATE PROPERTIES (für kombinierte Views)
@@ -284,6 +282,8 @@ public sealed partial class MainViewModel : ViewModelBase
         Lazy<LeagueViewModel> leagueVmLazy,
         Lazy<ProfileViewModel> profileVmLazy,
         Lazy<GemShopViewModel> gemShopVmLazy,
+        // Boss-Rush VM (eager) — Modi-Strip-Tile im MainMenu zeigt WeeklyBest direkt
+        BossRushViewModel bossRushVm,
         // Services
         ILocalizationService localization,
         IAdService adService,
@@ -319,6 +319,9 @@ public sealed partial class MainViewModel : ViewModelBase
         _leagueVmLazy = leagueVmLazy;
         _profileVmLazy = profileVmLazy;
         _gemShopVmLazy = gemShopVmLazy;
+
+        BossRushVm = bossRushVm;
+        WireCommon(bossRushVm);
 
         _localizationService = localization;
         _adService = adService;
@@ -394,6 +397,7 @@ public sealed partial class MainViewModel : ViewModelBase
             StatisticsVm?.UpdateLocalizedTexts();
             DailyChallengeVm?.UpdateLocalizedTexts();
             WeeklyChallengeVm?.UpdateLocalizedTexts();
+            BossRushVm.UpdateLocalizedTexts();
         };
 
         // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)
@@ -638,6 +642,8 @@ public sealed partial class MainViewModel : ViewModelBase
             GoBattlePass => "BattlePass",
             GoLeague => "League",
             GoGemShop => "GemShop",
+            GoBossRush => "BossRush",
+            GoDailyRace => "DailyRace",
             GoBack => "..",
             GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}&master={g.MasterMode}",
             GoGameOver go => $"GameOver?score={go.Score}&level={go.Level}&highscore={go.IsHighScore}&mode={go.Mode}&coins={go.Coins}&levelcomplete={go.LevelComplete}&cancontinue={go.CanContinue}&enemypts={go.EnemyPoints}&timebonus={go.TimeBonus}&effbonus={go.EfficiencyBonus}&multiplier={go.Multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture)}&kills={go.Kills}&survivaltime={go.SurvivalTime.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
@@ -714,16 +720,16 @@ public sealed partial class MainViewModel : ViewModelBase
         {
             case "MainMenu":
                 _returnToGameFromSettings = false;
-                IsMainMenuActive = true;
+                ActiveView = ActiveView.MainMenu;
                 MenuVm.OnAppearing();
                 break;
 
             case "Game":
                 // EnsureGameVm zuerst laden (loest Lazy<GameViewModel> auf + setzt GameVm),
-                // erst DANACH IsGameActive=true setzen — sonst ein Frame mit IsGameActive=true + GameVm=null,
+                // erst DANACH ActiveView=Game setzen — sonst ein Frame mit IsGameActive=true + GameVm=null,
                 // ContentControl-Binding wuerde einen leeren GameBorder zeigen.
                 var gameVm = EnsureGameVm();
-                IsGameActive = true;
+                ActiveView = ActiveView.Game;
                 // Spiel-Parameter parsen
                 if (route.Contains('?'))
                 {
@@ -758,17 +764,17 @@ public sealed partial class MainViewModel : ViewModelBase
                 break;
 
             case "LevelSelect":
-                IsLevelSelectActive = true;
+                ActiveView = ActiveView.LevelSelect;
                 LevelSelectVm.OnAppearing();
                 break;
 
             case "HighScores":
-                IsHighScoresActive = true;
+                ActiveView = ActiveView.HighScores;
                 HighScoresVm.OnAppearing();
                 break;
 
             case "GameOver":
-                IsGameOverActive = true;
+                ActiveView = ActiveView.GameOver;
                 if (route.Contains('?'))
                 {
                     var query = route[(route.IndexOf('?') + 1)..];
@@ -847,103 +853,124 @@ public sealed partial class MainViewModel : ViewModelBase
 
             // Shop (kombiniert mit Glücksrad)
             case "Shop":
-                IsShopActive = true;
+                ActiveView = ActiveView.Shop;
                 IsShopSpinTab = false;
                 EnsureShopVm().OnAppearing();
                 break;
 
             case "LuckySpin":
-                IsShopActive = true;
+                ActiveView = ActiveView.Shop;
                 IsShopSpinTab = true;
                 EnsureLuckySpinVm().OnAppearing();
                 break;
 
-            // Profil (kombiniert mit Erfolge)
+            // Profile-Hub (v2.0.43): 5 Tabs intern (Übersicht/Statistik/Achievements/Sammlung/Customize)
             case "Profile":
-                IsProfileActive = true;
-                IsProfileAchievementsTab = false;
+                ActiveView = ActiveView.Profile;
                 EnsureProfileVm().OnAppearing();
                 break;
 
             case "Achievements":
-                IsProfileActive = true;
-                IsProfileAchievementsTab = true;
-                EnsureAchievementsVm().OnAppearing();
+                ActiveView = ActiveView.Profile;
+                {
+                    var p = EnsureProfileVm();
+                    p.OnAppearing();
+                    p.SelectTabCommand.Execute("Achievements");
+                }
                 break;
 
             // Einstellungen (kombiniert mit Hilfe)
             case "Settings":
                 _returnToGameFromSettings = wasGameActive;
-                IsSettingsActive = true;
+                ActiveView = ActiveView.Settings;
                 IsSettingsHelpTab = false;
                 SettingsVm.OnAppearing();
                 break;
 
             case "Help":
-                IsSettingsActive = true;
+                ActiveView = ActiveView.Settings;
                 IsSettingsHelpTab = true;
                 break;
 
-            // Karten (Deck + Sammlung kombiniert)
+            // Karten/Deck (v2.0.43): Sammlung lebt jetzt im Profile-Hub
             case "Cards":
             case "Deck":
-                IsCardsActive = true;
-                IsCardsCollectionTab = false;
+                ActiveView = ActiveView.Cards;
                 EnsureDeckVm().OnAppearing();
                 break;
 
             case "Collection":
-                IsCardsActive = true;
-                IsCardsCollectionTab = true;
-                EnsureCollectionVm().OnAppearing();
+                // Collection wandert in den Profile-Hub als Sammlung-Tab.
+                ActiveView = ActiveView.Profile;
+                {
+                    var p = EnsureProfileVm();
+                    p.OnAppearing();
+                    p.SelectTabCommand.Execute("Collection");
+                }
                 break;
 
             // Herausforderungen (Daily + Missions kombiniert)
             case "Challenges":
             case "DailyChallenge":
-                IsChallengesActive = true;
+                ActiveView = ActiveView.Challenges;
                 IsChallengesMissionsTab = false;
                 EnsureDailyChallengeVm().OnAppearing();
                 break;
 
             case "WeeklyChallenge":
-                IsChallengesActive = true;
+                ActiveView = ActiveView.Challenges;
                 IsChallengesMissionsTab = true;
                 EnsureWeeklyChallengeVm().OnAppearing();
                 break;
 
             case "Statistics":
-                IsStatisticsActive = true;
-                EnsureStatisticsVm().OnAppearing();
+                // Statistics wandert in den Profile-Hub als Statistik-Tab.
+                ActiveView = ActiveView.Profile;
+                {
+                    var p = EnsureProfileVm();
+                    p.OnAppearing();
+                    p.SelectTabCommand.Execute("Statistics");
+                }
                 break;
 
             case "QuickPlay":
-                IsQuickPlayActive = true;
+                ActiveView = ActiveView.QuickPlay;
                 EnsureQuickPlayVm().OnAppearing();
                 break;
 
             case "Dungeon":
-                IsDungeonActive = true;
+                ActiveView = ActiveView.Dungeon;
                 EnsureDungeonVm().OnAppearing();
                 break;
 
             case "BattlePass":
-                IsBattlePassActive = true;
+                ActiveView = ActiveView.BattlePass;
                 EnsureBattlePassVm().OnAppearing();
                 break;
 
             case "League":
-                IsLeagueActive = true;
+                ActiveView = ActiveView.League;
                 EnsureLeagueVm().OnAppearing();
                 break;
 
             case "GemShop":
-                IsGemShopActive = true;
+                ActiveView = ActiveView.GemShop;
                 EnsureGemShopVm().OnAppearing();
                 break;
 
+            case "BossRush":
+                ActiveView = ActiveView.BossRush;
+                BossRushVm.OnAppearing();
+                break;
+
+            case "DailyRace":
+                // Daily Race nutzt Daily-Challenge-Tab in der Liga-View, daher leite via League
+                ActiveView = ActiveView.League;
+                EnsureLeagueVm().OnAppearing();
+                break;
+
             case "Victory":
-                IsVictoryActive = true;
+                ActiveView = ActiveView.Victory;
                 VictoryVm.OnAppearing();
                 // Query-Parameter parsen (score, coins)
                 if (route.Contains('?'))
@@ -976,19 +1003,19 @@ public sealed partial class MainViewModel : ViewModelBase
                 if (_returnToGameFromSettings)
                 {
                     _returnToGameFromSettings = false;
-                    IsGameActive = true;
+                    ActiveView = ActiveView.Game;
                     IsAdBannerVisible = false;
                     await EnsureGameVm().OnAppearingAsync();
                 }
                 else
                 {
-                    IsMainMenuActive = true;
+                    ActiveView = ActiveView.MainMenu;
                     MenuVm.OnAppearing();
                 }
                 break;
 
             default:
-                IsMainMenuActive = true;
+                ActiveView = ActiveView.MainMenu;
                 MenuVm.OnAppearing();
                 break;
         }
@@ -1000,32 +1027,20 @@ public sealed partial class MainViewModel : ViewModelBase
             try
             {
                 HideAll();
-                IsMainMenuActive = true;
+                ActiveView = ActiveView.MainMenu;
                 MenuVm.OnAppearing();
             }
             catch { /* Letzter Ausweg - App lebt weiter */ }
         }
     }
 
+    /// <summary>
+    /// Setzt alle View-States auf inaktiv. Mit der ActiveView-Enum reicht ein Setter,
+    /// die Tab-States werden zusaetzlich zurueckgesetzt damit auf re-entry der Default greift.
+    /// </summary>
     private void HideAll()
     {
-        IsMainMenuActive = false;
-        IsGameActive = false;
-        IsLevelSelectActive = false;
-        IsSettingsActive = false;
-        IsHighScoresActive = false;
-        IsGameOverActive = false;
-        IsShopActive = false;
-        IsVictoryActive = false;
-        IsStatisticsActive = false;
-        IsQuickPlayActive = false;
-        IsDungeonActive = false;
-        IsBattlePassActive = false;
-        IsLeagueActive = false;
-        IsProfileActive = false;
-        IsGemShopActive = false;
-        IsCardsActive = false;
-        IsChallengesActive = false;
+        ActiveView = ActiveView.None;
 
         // Tab-States zurücksetzen
         IsShopSpinTab = false;
@@ -1118,7 +1133,7 @@ public sealed partial class MainViewModel : ViewModelBase
                 // Andere Game-States (Starting, PlayerDied etc.) → zum Menü
                 GameVm.OnDisappearing();
                 HideAll();
-                IsMainMenuActive = true;
+                ActiveView = ActiveView.MainMenu;
                 MenuVm.OnAppearing();
             }
             return true;
@@ -1132,13 +1147,10 @@ public sealed partial class MainViewModel : ViewModelBase
         }
 
         // 5. Alle anderen Sub-Views → zurück zum Hauptmenü
-        if (IsGameOverActive || IsLevelSelectActive || IsHighScoresActive ||
-            IsShopActive || IsVictoryActive || IsStatisticsActive || IsQuickPlayActive ||
-            IsDungeonActive || IsBattlePassActive || IsLeagueActive || IsProfileActive ||
-            IsGemShopActive || IsCardsActive || IsChallengesActive)
+        if (ActiveView is not ActiveView.MainMenu and not ActiveView.None and not ActiveView.Game and not ActiveView.Settings)
         {
             HideAll();
-            IsMainMenuActive = true;
+            ActiveView = ActiveView.MainMenu;
             MenuVm.OnAppearing();
             return true;
         }

@@ -57,7 +57,7 @@
         <StackPanel Grid.Row="2" Spacing="4" Margin="0,0,0,12">
 
           <!-- Tab 0: Gegner (aktiv: roter linker Akzent) -->
-          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
+          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch" MinHeight="44"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="0">
             <Panel>
               <Border CornerRadius="8" Background="#40FFFFFF"
@@ -75,7 +75,7 @@
           </Button>
 
           <!-- Tab 1: Bosse (aktiv: goldener linker Akzent) -->
-          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
+          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch" MinHeight="44"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="1">
             <Panel>
               <Border CornerRadius="8" Background="#40FFFFFF"
@@ -93,7 +93,7 @@
           </Button>
 
           <!-- Tab 2: PowerUps (aktiv: grüner linker Akzent) -->
-          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
+          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch" MinHeight="44"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="2">
             <Panel>
               <Border CornerRadius="8" Background="#40FFFFFF"
@@ -111,7 +111,7 @@
           </Button>
 
           <!-- Tab 3: Karten (aktiv: blauer linker Akzent) -->
-          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
+          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch" MinHeight="44"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="3">
             <Panel>
               <Border CornerRadius="8" Background="#40FFFFFF"
@@ -129,7 +129,7 @@
           </Button>
 
           <!-- Tab 4: Kosmetik (aktiv: violetter linker Akzent) -->
-          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
+          <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch" MinHeight="44"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="4">
             <Panel>
               <Border CornerRadius="8" Background="#40FFFFFF"

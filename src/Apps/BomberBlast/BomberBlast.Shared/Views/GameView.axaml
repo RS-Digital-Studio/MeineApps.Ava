@@ -15,6 +15,125 @@
       <skia:SKCanvasView x:Name="GameCanvas" AutomationProperties.AutomationId="Game_Canvas" />
     </Border>
 
+    <!-- Tutorial-Replay-Pin: kontext-sensitive Hilfe waehrend Gameplay (v2.0.37) -->
+    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0,12,12,0"
+            Width="44" Height="44"
+            Background="#80000000"
+            Foreground="White"
+            BorderBrush="#33FFFFFF"
+            BorderThickness="1"
+            CornerRadius="22"
+            Padding="0"
+            HorizontalContentAlignment="Center"
+            VerticalContentAlignment="Center"
+            Command="{Binding ShowContextHelpCommand}"
+            IsVisible="{Binding !IsContextHelpVisible}"
+            AutomationProperties.AutomationId="Game_BtnContextHelp"
+            ToolTip.Tip="{loc:Translate ContextHelpTitle}">
+      <icons:GameIcon Kind="HelpCircle" Width="22" Height="22" Foreground="White" />
+    </Button>
+
+    <!-- Pause-Button (v2.0.43, Audit-Fix C1): Mobile-Pause-Trigger neben dem ?-Button.
+         Sichtbar nur waehrend Gameplay (nicht im ContextHelp / nicht bereits pausiert). -->
+    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0,12,68,0"
+            Width="44" Height="44"
+            Background="#80000000"
+            Foreground="White"
+            BorderBrush="#33FFFFFF"
+            BorderThickness="1"
+            CornerRadius="22"
+            Padding="0"
+            HorizontalContentAlignment="Center"
+            VerticalContentAlignment="Center"
+            Command="{Binding PauseCommand}"
+            IsVisible="{Binding !IsContextHelpVisible}"
+            AutomationProperties.AutomationId="Game_BtnPause"
+            ToolTip.Tip="{loc:Translate Paused}">
+      <icons:GameIcon Kind="Pause" Width="22" Height="22" Foreground="White" />
+    </Button>
+
+    <!-- Context Help Overlay (Tutorial-Replay-Pin, v2.0.37) -->
+    <Border IsVisible="{Binding IsContextHelpVisible}"
+            Background="#CC000000"
+            AutomationProperties.AutomationId="Game_ContextHelpOverlay">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="20"
+              Padding="28,24"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+              MaxWidth="460"
+              BorderBrush="{DynamicResource AccentBrush}"
+              BorderThickness="2"
+              BoxShadow="0 8 24 0 #40000000">
+        <StackPanel Spacing="14">
+          <!-- Titel -->
+          <TextBlock Text="{loc:Translate ContextHelpTitle}"
+                     FontSize="22"
+                     FontWeight="Bold"
+                     Foreground="{DynamicResource AccentBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Game_TxtContextHelpTitle" />
+
+          <!-- 3 Tipps untereinander, mit Bullet-Akzent -->
+          <StackPanel Spacing="10" MaxWidth="400">
+            <Border Padding="0,0,0,0" IsVisible="{Binding ContextHelpTip1, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Width="6" Height="6" CornerRadius="3"
+                        Background="{DynamicResource AccentBrush}"
+                        VerticalAlignment="Top" Margin="0,8,0,0" />
+                <TextBlock Text="{Binding ContextHelpTip1}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="380" />
+              </StackPanel>
+            </Border>
+            <Border IsVisible="{Binding ContextHelpTip2, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Width="6" Height="6" CornerRadius="3"
+                        Background="{DynamicResource AccentBrush}"
+                        VerticalAlignment="Top" Margin="0,8,0,0" />
+                <TextBlock Text="{Binding ContextHelpTip2}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="380" />
+              </StackPanel>
+            </Border>
+            <Border IsVisible="{Binding ContextHelpTip3, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Width="6" Height="6" CornerRadius="3"
+                        Background="{DynamicResource AccentBrush}"
+                        VerticalAlignment="Top" Margin="0,8,0,0" />
+                <TextBlock Text="{Binding ContextHelpTip3}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="380" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Close-Button -->
+          <Button Command="{Binding CloseContextHelpCommand}"
+                  Classes="Primary"
+                  Background="{DynamicResource AccentBrush}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Height="44"
+                  CornerRadius="10"
+                  Margin="0,4,0,0"
+                  AutomationProperties.AutomationId="Game_BtnContextHelpClose">
+            <TextBlock Text="{loc:Translate ContextHelpClose}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="White" />
+          </Button>
+        </StackPanel>
+      </Border>
+    </Border>
+
     <!-- Score Double Overlay (nach Level-Complete) -->
     <Border IsVisible="{Binding ShowScoreDoubleOverlay}"
             Background="#CC000000"

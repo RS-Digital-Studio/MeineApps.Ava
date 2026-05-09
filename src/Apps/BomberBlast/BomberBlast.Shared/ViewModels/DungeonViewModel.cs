@@ -48,6 +48,17 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
     [ObservableProperty] private bool _canStartFree;
     [ObservableProperty] private bool _canStartPaid = true;
     [ObservableProperty] private bool _canStartAd = true;
+
+    /// <summary>
+    /// v2.0.39 Plan Task 2.7: Lite-Run-Eintritt sichtbar wenn der Spieler den Lite-Run noch nicht abgeschlossen hat.
+    /// </summary>
+    [ObservableProperty] private bool _canStartLiteRun;
+
+    /// <summary>v2.0.39: lokalisierter Lite-Run-Button-Text.</summary>
+    [ObservableProperty] private string _liteRunButtonText = "";
+
+    /// <summary>v2.0.39: lokalisierter Hinweis fuer Erst-Spieler ("Probier den Lite-Run").</summary>
+    [ObservableProperty] private string _liteRunHintText = "";
     [ObservableProperty] private bool _isPreRun = true;
     [ObservableProperty] private bool _isBuffSelection;
     [ObservableProperty] private bool _isPostRun;
@@ -196,6 +207,12 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
                        || _gemService.CanAfford(_dungeonService.PaidRunGemCost);
         CanStartAd = _dungeonService.CanStartAdRun && RewardedAdCooldownTracker.CanShowAd;
 
+        // v2.0.39 Plan Task 2.7: Lite-Run als prominenter Eintritt fuer Erst-Spieler.
+        CanStartLiteRun = !_dungeonService.LiteRunCompleted;
+        LiteRunButtonText = _localizationService.GetString("DungeonLiteRunButton") ?? "Try Lite Run";
+        LiteRunHintText = _localizationService.GetString("DungeonLiteRunHint")
+            ?? "First time? Try the 3-floor Lite Run — guided buffs, half rewards, no risk.";
+
         // Stats
         var stats = _dungeonService.Stats;
         TotalRunsText = string.Format(
@@ -251,6 +268,19 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
     private void StartFreeRun()
     {
         if (!_dungeonService.StartRun(DungeonEntryType.Free)) return;
+        ShowMapAfterRunStart();
+    }
+
+    /// <summary>
+    /// v2.0.39 Plan Task 2.7: Lite-Run-Onboarding starten (3 Floors, Auto-Buff, 50% Belohnungen).
+    /// </summary>
+    [RelayCommand]
+    private void StartLiteRun()
+    {
+        if (!_dungeonService.StartLiteRun()) return;
+        FloatingTextRequested?.Invoke(
+            _localizationService.GetString("DungeonLiteRunStarted") ?? "Lite Run started!",
+            "success");
         ShowMapAfterRunStart();
     }
 
@@ -609,6 +639,14 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
     /// </summary>
     public void ShowBuffSelection(List<DungeonBuffDefinition> choices)
     {
+        // v2.0.39 Plan Task 2.7: Im Lite-Run wird der erste (einzige) Buff automatisch angewendet,
+        // ohne Auswahl-UI. Nutzt SelectBuff damit ContinueDungeon-Lifecycle inkl. UI-Switch greift.
+        if (_dungeonService.IsCurrentRunLite && choices.Count > 0)
+        {
+            SelectBuff(choices[0].Type);
+            return;
+        }
+
         IsPreRun = false;
         IsBuffSelection = true;
         IsPostRun = false;
@@ -912,6 +950,9 @@ public class DungeonBuffDisplayItem
 
     /// <summary>Glow-Opacity basierend auf Rarität (Common=0.3, Rare=0.5, Epic=0.7)</summary>
     public double RarityGlowOpacity { get; init; }
+
+    /// <summary>AutomationId fuer UI-Tests (v2.0.43 Audit-Fix C-Q3): "Buff_{Type}".</summary>
+    public string AutomationId => $"Buff_{Type}";
 }
 
 /// <summary>

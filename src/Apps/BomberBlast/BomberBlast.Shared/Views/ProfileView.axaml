@@ -2,213 +2,652 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.ProfileView"
              x:DataType="vm:ProfileViewModel"
              x:CompileBindings="True">
 
+  <UserControl.Styles>
+    <!-- Tab-Button: standardmaessig flach, beim Aktivsein gefuellt -->
+    <Style Selector="Border.ProfileTab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="MinHeight" Value="44" />
+    </Style>
+    <Style Selector="Border.ProfileTab.Active">
+      <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="Border.ProfileTab Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <!-- Customization-Item -->
+    <Style Selector="Border.CustomItem">
+      <Setter Property="Width" Value="78" />
+      <Setter Property="Height" Value="92" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="6,8" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BoxShadow" Value="0 2 6 0 #25000000" />
+    </Style>
+  </UserControl.Styles>
+
   <Panel AutomationProperties.AutomationId="Profile_Root">
     <controls:MenuBackgroundCanvas />
 
-    <Grid ColumnDefinitions="*,1.5*" Margin="16,12,16,80">
+    <Grid RowDefinitions="Auto,Auto,*" Margin="14,8,14,8">
 
-      <!-- LINKE SPALTE: Spieler-Karte -->
-      <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,12,0">
-
-        <!-- Header -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,12">
-          <Button Grid.Column="0" Classes="Secondary GameButton"
-                  Command="{Binding GoBackCommand}"
-                  Width="44" Height="44" Padding="0"
-                  HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-            <icons:GameIcon Kind="ArrowLeft" Width="22" Height="22"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-          </Button>
-          <TextBlock Grid.Column="1"
-                     Text="{Binding TitleText}"
-                     FontSize="22" FontWeight="Bold"
-                     Foreground="{DynamicResource AccentBrush}"
-                     HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Grid>
-
-        <!-- Spieler-Karte - Subtiler Gold-Schimmer Gradient -->
-        <Border Grid.Row="1"
-                CornerRadius="16" Padding="20" VerticalAlignment="Top">
-          <Border.Background>
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-              <GradientStop Color="#20FFD700" Offset="0" />
-              <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
-            </LinearGradientBrush>
-          </Border.Background>
-          <StackPanel Spacing="16" HorizontalAlignment="Center">
-
-            <!-- Spieler-Avatar (grosses Account-Icon mit Skin-Farbe + Glow-Ring) -->
-            <!-- Avatar Glow - Verstärkter Gold-Schimmer -->
-            <Border Width="84" Height="84" CornerRadius="42"
-                    BorderThickness="2" BoxShadow="0 0 20 0 #50FFD700"
-                    HorizontalAlignment="Center">
-              <Border.BorderBrush>
-                <SolidColorBrush Color="{Binding ActiveSkinColor}" Opacity="0.5" />
-              </Border.BorderBrush>
-              <Border Width="80" Height="80" CornerRadius="40">
-              <Border.Background>
-                <SolidColorBrush Color="{Binding ActiveSkinColor}" Opacity="0.2" />
-              </Border.Background>
-              <icons:GameIcon Kind="AccountCircle" Width="56" Height="56"
-                               HorizontalAlignment="Center" VerticalAlignment="Center">
-                <icons:GameIcon.Foreground>
-                  <SolidColorBrush Color="{Binding ActiveSkinColor}" />
-                </icons:GameIcon.Foreground>
-              </icons:GameIcon>
-            </Border>
-            </Border>
-
-            <!-- Name-Input -->
-            <StackPanel Spacing="6">
-              <TextBox Text="{Binding PlayerName, Mode=TwoWay}"
-                       MaxLength="16"
-                       Watermark="{Binding NameHintText}"
-                       FontSize="16" FontWeight="SemiBold"
-                       HorizontalAlignment="Stretch" />
-              <TextBlock Text="{Binding NameHintText}"
-                         FontSize="10"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
-              <Panel MinHeight="44">
-                <controls:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.3" ButtonSeed="175" />
-                <Button Classes="Primary GameButton"
-                        Command="{Binding SaveNameCommand}"
-                        IsEnabled="{Binding IsNameChanged}"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        MinHeight="44" Background="Transparent" Foreground="White">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <icons:GameIcon Kind="ContentSave" Width="16" Height="16" Foreground="White" />
-                    <TextBlock Text="{Binding SaveButtonText}" Foreground="White" FontSize="13" />
-                  </StackPanel>
-                </Button>
-              </Panel>
-            </StackPanel>
-
-            <!-- Skin + Frame Info -->
-            <Grid ColumnDefinitions="*,*" Margin="0,8,0,0">
-              <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
-                <TextBlock Text="{Binding SkinLabel}" FontSize="10"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding ActiveSkinName}" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-              <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
-                <TextBlock Text="{Binding FrameLabel}" FontSize="10"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding ActiveFrameName}" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-            </Grid>
-          </StackPanel>
-        </Border>
+      <!-- ═══ Header (Back + Titel) ═══ -->
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,8">
+        <Button Grid.Column="0" Classes="Secondary GameButton"
+                Command="{Binding GoBackCommand}"
+                Width="44" Height="44" Padding="0"
+                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                AutomationProperties.AutomationId="Profile_BtnBack">
+          <icons:GameIcon Kind="ArrowLeft" Width="22" Height="22"
+                          Foreground="{DynamicResource TextPrimaryBrush}" />
+        </Button>
+        <TextBlock Grid.Column="1" Text="{Binding TitleText}"
+                   FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource AccentBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   AutomationProperties.AutomationId="Profile_Title" />
       </Grid>
 
-      <!-- RECHTE SPALTE: Stats-Grid -->
-      <StackPanel Grid.Column="1" Spacing="10" VerticalAlignment="Center">
+      <!-- ═══ Tab-Bar (5 Tabs) ═══ -->
+      <Border Grid.Row="1" Background="#CC0D0D1A" Padding="6,4" CornerRadius="10"
+              Margin="0,0,0,8">
+        <Grid ColumnDefinitions="*,*,*,*,*">
 
-        <!-- Stats-Karten: 2x3 Grid -->
-        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" Margin="0,0,0,0">
-
-          <!-- Sterne - Gold Top-Border -->
-          <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="14,12" Margin="0,0,6,6"
-                  BoxShadow="0 2 8 0 #25000000"
-                  BorderBrush="#FFD700" BorderThickness="0,3,0,0">
-            <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <icons:GameIcon Kind="Star" Width="28" Height="28" Foreground="#FFD700"
-                               HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding StarsText}" FontSize="20" FontWeight="Bold"
-                         Foreground="#FFD700" HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding StarsLabel}" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}"
+          <Border Grid.Column="0" Classes="ProfileTab"
+                  Classes.Active="{Binding IsOverviewTab}">
+            <Button Command="{Binding SelectTabCommand}" CommandParameter="Overview"
+                    AutomationProperties.AutomationId="Profile_TabOverview">
+              <TextBlock Text="{Binding TabOverviewText}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
-            </StackPanel>
+            </Button>
           </Border>
 
-          <!-- Coins - Gold Top-Border -->
-          <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="14,12" Margin="3,0,3,6"
-                  BoxShadow="0 2 8 0 #25000000"
-                  BorderBrush="#FFD700" BorderThickness="0,3,0,0">
-            <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <icons:GameIcon Kind="CircleMultiple" Width="28" Height="28" Foreground="#FFD700"
-                               HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding CoinsText}" FontSize="20" FontWeight="Bold"
-                         Foreground="#FFD700" HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding CoinsLabel}" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}"
+          <Border Grid.Column="1" Classes="ProfileTab"
+                  Classes.Active="{Binding IsStatisticsTab}">
+            <Button Command="{Binding SelectTabCommand}" CommandParameter="Statistics"
+                    AutomationProperties.AutomationId="Profile_TabStatistics">
+              <TextBlock Text="{Binding TabStatisticsText}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
-            </StackPanel>
+            </Button>
           </Border>
 
-          <!-- Gems - Cyan Top-Border (konsistent mit Gem-Shop) -->
-          <Border Grid.Row="0" Grid.Column="2" Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="14,12" Margin="6,0,0,6"
-                  BoxShadow="0 2 8 0 #25000000"
-                  BorderBrush="#00BCD4" BorderThickness="0,3,0,0">
-            <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <icons:GameIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#00BCD4"
-                               HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding GemsText}" FontSize="20" FontWeight="Bold"
-                         Foreground="#00BCD4" HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding GemsLabel}" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}"
+          <Border Grid.Column="2" Classes="ProfileTab"
+                  Classes.Active="{Binding IsAchievementsTab}">
+            <Button Command="{Binding SelectTabCommand}" CommandParameter="Achievements"
+                    AutomationProperties.AutomationId="Profile_TabAchievements">
+              <TextBlock Text="{Binding TabAchievementsText}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
-            </StackPanel>
+            </Button>
           </Border>
 
-          <!-- Liga - Cyan Top-Border -->
-          <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="14,12" Margin="0,0,6,0"
-                  BoxShadow="0 2 8 0 #25000000"
-                  BorderBrush="#00CED1" BorderThickness="0,3,0,0">
-            <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <icons:GameIcon Kind="Trophy" Width="28" Height="28" Foreground="#00CED1"
-                               HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding LeagueText}" FontSize="16" FontWeight="Bold"
-                         HorizontalAlignment="Center">
-                <TextBlock.Foreground>
-                  <SolidColorBrush Color="{Binding LeagueColor}" />
-                </TextBlock.Foreground>
-              </TextBlock>
-              <TextBlock Text="{Binding LeagueLabel}" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}"
+          <Border Grid.Column="3" Classes="ProfileTab"
+                  Classes.Active="{Binding IsCollectionTab}">
+            <Button Command="{Binding SelectTabCommand}" CommandParameter="Collection"
+                    AutomationProperties.AutomationId="Profile_TabCollection">
+              <TextBlock Text="{Binding TabCollectionText}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
-            </StackPanel>
+            </Button>
           </Border>
 
-          <!-- Achievements - Gold Top-Border -->
-          <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
-                  Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="14,12" Margin="3,0,0,0"
-                  BoxShadow="0 2 8 0 #25000000"
-                  BorderBrush="#FFD700" BorderThickness="0,3,0,0">
-            <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <icons:GameIcon Kind="Medal" Width="28" Height="28" Foreground="#FFD700"
-                               HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding AchievementsText}" FontSize="20" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}"
+          <Border Grid.Column="4" Classes="ProfileTab"
+                  Classes.Active="{Binding IsCustomizeTab}">
+            <Button Command="{Binding SelectTabCommand}" CommandParameter="Customize"
+                    AutomationProperties.AutomationId="Profile_TabCustomize">
+              <TextBlock Text="{Binding TabCustomizeText}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
-              <ProgressBar Value="{Binding AchievementPercent}" Maximum="100"
-                           Foreground="#FFD700" Height="6" CornerRadius="3"
-                           HorizontalAlignment="Stretch" Margin="10,0" />
-              <TextBlock Text="{Binding AchievementsLabel}" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
-            </StackPanel>
+            </Button>
           </Border>
+
         </Grid>
-      </StackPanel>
+      </Border>
+
+      <!-- ═══ Tab-Inhalte (5 Sub-Sections) ═══ -->
+      <Panel Grid.Row="2">
+
+        <!-- Tab 1: Übersicht (existing Profile-Inhalt) -->
+        <Border IsVisible="{Binding IsOverviewTab}"
+                AutomationProperties.AutomationId="Profile_Content_Overview">
+          <Grid ColumnDefinitions="*,1.5*">
+            <!-- LINKS: Spieler-Karte -->
+            <Border Grid.Column="0" CornerRadius="16" Padding="20" VerticalAlignment="Top"
+                    Margin="0,0,8,0">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                  <GradientStop Color="#20FFD700" Offset="0" />
+                  <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <StackPanel Spacing="14" HorizontalAlignment="Center">
+                <Border Width="84" Height="84" CornerRadius="42"
+                        BorderThickness="2" BoxShadow="0 0 20 0 #50FFD700"
+                        HorizontalAlignment="Center">
+                  <Border.BorderBrush>
+                    <SolidColorBrush Color="{Binding ActiveSkinColor}" Opacity="0.5" />
+                  </Border.BorderBrush>
+                  <Border Width="80" Height="80" CornerRadius="40">
+                    <Border.Background>
+                      <SolidColorBrush Color="{Binding ActiveSkinColor}" Opacity="0.2" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="AccountCircle" Width="56" Height="56"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <icons:GameIcon.Foreground>
+                        <SolidColorBrush Color="{Binding ActiveSkinColor}" />
+                      </icons:GameIcon.Foreground>
+                    </icons:GameIcon>
+                  </Border>
+                </Border>
+                <StackPanel Spacing="6">
+                  <TextBox Text="{Binding PlayerName, Mode=TwoWay}"
+                           MaxLength="16"
+                           Watermark="{Binding NameHintText}"
+                           FontSize="16" FontWeight="SemiBold"
+                           HorizontalAlignment="Stretch" />
+                  <Panel MinHeight="44">
+                    <controls:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.3" ButtonSeed="175" />
+                    <Button Classes="Primary GameButton"
+                            Command="{Binding SaveNameCommand}"
+                            IsEnabled="{Binding IsNameChanged}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            MinHeight="44" Background="Transparent" Foreground="White">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <icons:GameIcon Kind="ContentSave" Width="16" Height="16" Foreground="White" />
+                        <TextBlock Text="{Binding SaveButtonText}" Foreground="White" FontSize="13" />
+                      </StackPanel>
+                    </Button>
+                  </Panel>
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*">
+                  <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding SkinLabel}" FontSize="10"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding ActiveSkinName}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               HorizontalAlignment="Center" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding FrameLabel}" FontSize="10"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding ActiveFrameName}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- RECHTS: Stats-Grid -->
+            <StackPanel Grid.Column="1" Spacing="10" Margin="8,0,0,0" VerticalAlignment="Center">
+              <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
+                <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="12" Padding="14,12" Margin="0,0,6,6"
+                        BoxShadow="0 2 8 0 #25000000"
+                        BorderBrush="#FFD700" BorderThickness="0,3,0,0">
+                  <StackPanel HorizontalAlignment="Center" Spacing="6">
+                    <icons:GameIcon Kind="Star" Width="28" Height="28" Foreground="#FFD700" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding StarsText}" FontSize="20" FontWeight="Bold"
+                               Foreground="#FFD700" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding StarsLabel}" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="12" Padding="14,12" Margin="3,0,3,6"
+                        BoxShadow="0 2 8 0 #25000000"
+                        BorderBrush="#FFD700" BorderThickness="0,3,0,0">
+                  <StackPanel HorizontalAlignment="Center" Spacing="6">
+                    <icons:GameIcon Kind="CircleMultiple" Width="28" Height="28" Foreground="#FFD700" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding CoinsText}" FontSize="20" FontWeight="Bold"
+                               Foreground="#FFD700" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding CoinsLabel}" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="2" Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="12" Padding="14,12" Margin="6,0,0,6"
+                        BoxShadow="0 2 8 0 #25000000"
+                        BorderBrush="#00BCD4" BorderThickness="0,3,0,0">
+                  <StackPanel HorizontalAlignment="Center" Spacing="6">
+                    <icons:GameIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#00BCD4" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding GemsText}" FontSize="20" FontWeight="Bold"
+                               Foreground="#00BCD4" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding GemsLabel}" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="12" Padding="14,12" Margin="0,0,6,0"
+                        BoxShadow="0 2 8 0 #25000000"
+                        BorderBrush="#00CED1" BorderThickness="0,3,0,0">
+                  <StackPanel HorizontalAlignment="Center" Spacing="6">
+                    <icons:GameIcon Kind="Trophy" Width="28" Height="28" Foreground="#00CED1" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding LeagueText}" FontSize="16" FontWeight="Bold"
+                               HorizontalAlignment="Center">
+                      <TextBlock.Foreground>
+                        <SolidColorBrush Color="{Binding LeagueColor}" />
+                      </TextBlock.Foreground>
+                    </TextBlock>
+                    <TextBlock Text="{Binding LeagueLabel}" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                        Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="12" Padding="14,12" Margin="3,0,0,0"
+                        BoxShadow="0 2 8 0 #25000000"
+                        BorderBrush="#FFD700" BorderThickness="0,3,0,0">
+                  <StackPanel HorizontalAlignment="Center" Spacing="6">
+                    <icons:GameIcon Kind="Medal" Width="28" Height="28" Foreground="#FFD700" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding AchievementsText}" FontSize="20" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
+                    <ProgressBar Value="{Binding AchievementPercent}" Maximum="100"
+                                 Foreground="#FFD700" Height="6" CornerRadius="3"
+                                 HorizontalAlignment="Stretch" Margin="10,0" />
+                    <TextBlock Text="{Binding AchievementsLabel}" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Tab 2: Statistik -->
+        <ContentControl IsVisible="{Binding IsStatisticsTab}"
+                        Content="{Binding StatisticsVm}"
+                        AutomationProperties.AutomationId="Profile_Content_Statistics" />
+
+        <!-- Tab 3: Achievements -->
+        <ContentControl IsVisible="{Binding IsAchievementsTab}"
+                        Content="{Binding AchievementsVm}"
+                        AutomationProperties.AutomationId="Profile_Content_Achievements" />
+
+        <!-- Tab 4: Sammlung -->
+        <ContentControl IsVisible="{Binding IsCollectionTab}"
+                        Content="{Binding CollectionVm}"
+                        AutomationProperties.AutomationId="Profile_Content_Collection" />
+
+        <!-- Tab 5: Customize -->
+        <Border IsVisible="{Binding IsCustomizeTab}"
+                AutomationProperties.AutomationId="Profile_Content_Customize">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="14" Margin="0,0,0,12">
+
+              <!-- Hint-Banner -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8"
+                      BorderThickness="1" BorderBrush="{DynamicResource AccentBrush}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <icons:GameIcon Grid.Column="0" Kind="InformationOutline" Width="18" Height="18"
+                                  Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding CustomizeHintText}"
+                             FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextWrapping="Wrap" Margin="10,0,0,0"
+                             VerticalAlignment="Center" />
+                  <Button Grid.Column="2" Classes="Secondary"
+                          Command="{Binding GoToShopCommand}"
+                          Padding="10,4">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <icons:GameIcon Kind="Store" Width="14" Height="14"
+                                      Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding CustomizeShopHintText}"
+                                 FontSize="11"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
+              </Border>
+
+              <!-- Section: Player-Skin -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding CustomizeSectionPlayerSkinTitle}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding PlayerSkinItems}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CustomizationItem">
+                        <Border Classes="CustomItem" Opacity="{Binding CardOpacity}">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource SurfaceColor}" />
+                          </Border.Background>
+                          <Border.BorderBrush>
+                            <SolidColorBrush Color="{Binding BorderHex}" />
+                          </Border.BorderBrush>
+                          <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Command="{Binding $parent[ItemsControl].((vm:ProfileViewModel)DataContext).ActivateCustomizationCommand}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <Border Width="28" Height="28" CornerRadius="14"
+                                      HorizontalAlignment="Center">
+                                <Border.Background>
+                                  <SolidColorBrush Color="{Binding PrimaryColor}" />
+                                </Border.Background>
+                              </Border>
+                              <TextBlock Text="{Binding DisplayName}"
+                                         FontSize="10" FontWeight="SemiBold"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         HorizontalAlignment="Center" TextWrapping="Wrap"
+                                         TextAlignment="Center" />
+                              <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                              Foreground="#888888"
+                                              IsVisible="{Binding IsLocked}"
+                                              HorizontalAlignment="Center" />
+                              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                                              Foreground="#FFD700"
+                                              IsVisible="{Binding IsActive}"
+                                              HorizontalAlignment="Center" />
+                            </StackPanel>
+                          </Button>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </StackPanel>
+
+              <!-- Section: Bomb-Skin -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding CustomizeSectionBombSkinTitle}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding BombSkinItems}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CustomizationItem">
+                        <Border Classes="CustomItem" Opacity="{Binding CardOpacity}">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource SurfaceColor}" />
+                          </Border.Background>
+                          <Border.BorderBrush>
+                            <SolidColorBrush Color="{Binding BorderHex}" />
+                          </Border.BorderBrush>
+                          <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Command="{Binding $parent[ItemsControl].((vm:ProfileViewModel)DataContext).ActivateCustomizationCommand}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <icons:GameIcon Kind="Bomb" Width="28" Height="28"
+                                              HorizontalAlignment="Center">
+                                <icons:GameIcon.Foreground>
+                                  <SolidColorBrush Color="{Binding PrimaryColor}" />
+                                </icons:GameIcon.Foreground>
+                              </icons:GameIcon>
+                              <TextBlock Text="{Binding DisplayName}"
+                                         FontSize="10" FontWeight="SemiBold"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         HorizontalAlignment="Center" TextWrapping="Wrap"
+                                         TextAlignment="Center" />
+                              <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                              Foreground="#888888"
+                                              IsVisible="{Binding IsLocked}"
+                                              HorizontalAlignment="Center" />
+                              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                                              Foreground="#FFD700"
+                                              IsVisible="{Binding IsActive}"
+                                              HorizontalAlignment="Center" />
+                            </StackPanel>
+                          </Button>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </StackPanel>
+
+              <!-- Section: Explosion-Skin -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding CustomizeSectionExplosionSkinTitle}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding ExplosionSkinItems}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CustomizationItem">
+                        <Border Classes="CustomItem" Opacity="{Binding CardOpacity}">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource SurfaceColor}" />
+                          </Border.Background>
+                          <Border.BorderBrush>
+                            <SolidColorBrush Color="{Binding BorderHex}" />
+                          </Border.BorderBrush>
+                          <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Command="{Binding $parent[ItemsControl].((vm:ProfileViewModel)DataContext).ActivateCustomizationCommand}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <icons:GameIcon Kind="Fire" Width="28" Height="28"
+                                              HorizontalAlignment="Center">
+                                <icons:GameIcon.Foreground>
+                                  <SolidColorBrush Color="{Binding PrimaryColor}" />
+                                </icons:GameIcon.Foreground>
+                              </icons:GameIcon>
+                              <TextBlock Text="{Binding DisplayName}"
+                                         FontSize="10" FontWeight="SemiBold"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         HorizontalAlignment="Center" TextWrapping="Wrap"
+                                         TextAlignment="Center" />
+                              <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                              Foreground="#888888"
+                                              IsVisible="{Binding IsLocked}"
+                                              HorizontalAlignment="Center" />
+                              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                                              Foreground="#FFD700"
+                                              IsVisible="{Binding IsActive}"
+                                              HorizontalAlignment="Center" />
+                            </StackPanel>
+                          </Button>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </StackPanel>
+
+              <!-- Section: Trail -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding CustomizeSectionTrailTitle}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding TrailItems}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CustomizationItem">
+                        <Border Classes="CustomItem" Opacity="{Binding CardOpacity}">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource SurfaceColor}" />
+                          </Border.Background>
+                          <Border.BorderBrush>
+                            <SolidColorBrush Color="{Binding BorderHex}" />
+                          </Border.BorderBrush>
+                          <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Command="{Binding $parent[ItemsControl].((vm:ProfileViewModel)DataContext).ActivateCustomizationCommand}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <icons:GameIcon Kind="Lightning" Width="28" Height="28"
+                                              HorizontalAlignment="Center">
+                                <icons:GameIcon.Foreground>
+                                  <SolidColorBrush Color="{Binding PrimaryColor}" />
+                                </icons:GameIcon.Foreground>
+                              </icons:GameIcon>
+                              <TextBlock Text="{Binding DisplayName}"
+                                         FontSize="10" FontWeight="SemiBold"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         HorizontalAlignment="Center" TextWrapping="Wrap"
+                                         TextAlignment="Center" />
+                              <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                              Foreground="#888888"
+                                              IsVisible="{Binding IsLocked}"
+                                              HorizontalAlignment="Center" />
+                              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                                              Foreground="#FFD700"
+                                              IsVisible="{Binding IsActive}"
+                                              HorizontalAlignment="Center" />
+                            </StackPanel>
+                          </Button>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </StackPanel>
+
+              <!-- Section: Victory -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding CustomizeSectionVictoryTitle}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding VictoryItems}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CustomizationItem">
+                        <Border Classes="CustomItem" Opacity="{Binding CardOpacity}">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource SurfaceColor}" />
+                          </Border.Background>
+                          <Border.BorderBrush>
+                            <SolidColorBrush Color="{Binding BorderHex}" />
+                          </Border.BorderBrush>
+                          <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Command="{Binding $parent[ItemsControl].((vm:ProfileViewModel)DataContext).ActivateCustomizationCommand}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <icons:GameIcon Kind="Trophy" Width="28" Height="28"
+                                              HorizontalAlignment="Center">
+                                <icons:GameIcon.Foreground>
+                                  <SolidColorBrush Color="{Binding PrimaryColor}" />
+                                </icons:GameIcon.Foreground>
+                              </icons:GameIcon>
+                              <TextBlock Text="{Binding DisplayName}"
+                                         FontSize="10" FontWeight="SemiBold"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         HorizontalAlignment="Center" TextWrapping="Wrap"
+                                         TextAlignment="Center" />
+                              <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                              Foreground="#888888"
+                                              IsVisible="{Binding IsLocked}"
+                                              HorizontalAlignment="Center" />
+                              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                                              Foreground="#FFD700"
+                                              IsVisible="{Binding IsActive}"
+                                              HorizontalAlignment="Center" />
+                            </StackPanel>
+                          </Button>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </StackPanel>
+
+              <!-- Section: Frame -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding CustomizeSectionFrameTitle}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding FrameItems}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CustomizationItem">
+                        <Border Classes="CustomItem" Opacity="{Binding CardOpacity}">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource SurfaceColor}" />
+                          </Border.Background>
+                          <Border.BorderBrush>
+                            <SolidColorBrush Color="{Binding BorderHex}" />
+                          </Border.BorderBrush>
+                          <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Command="{Binding $parent[ItemsControl].((vm:ProfileViewModel)DataContext).ActivateCustomizationCommand}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <Border Width="32" Height="32" CornerRadius="4"
+                                      BorderThickness="3" HorizontalAlignment="Center">
+                                <Border.BorderBrush>
+                                  <SolidColorBrush Color="{Binding PrimaryColor}" />
+                                </Border.BorderBrush>
+                              </Border>
+                              <TextBlock Text="{Binding DisplayName}"
+                                         FontSize="10" FontWeight="SemiBold"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         HorizontalAlignment="Center" TextWrapping="Wrap"
+                                         TextAlignment="Center" />
+                              <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                              Foreground="#888888"
+                                              IsVisible="{Binding IsLocked}"
+                                              HorizontalAlignment="Center" />
+                              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                                              Foreground="#FFD700"
+                                              IsVisible="{Binding IsActive}"
+                                              HorizontalAlignment="Center" />
+                            </StackPanel>
+                          </Button>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </StackPanel>
+
+            </StackPanel>
+          </ScrollViewer>
+        </Border>
+
+      </Panel>
     </Grid>
   </Panel>
 </UserControl>

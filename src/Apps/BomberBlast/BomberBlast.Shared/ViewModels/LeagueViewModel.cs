@@ -104,10 +104,63 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
     private string _loadingLeaderboardText = "";
 
     // ═══════════════════════════════════════════════════════════════════════
+    // DAILY RACE (v2.0.42, Plan Task 3.1)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Tab-Index: 0 = Saison-Liga, 1 = Daily Race.
+    // SwitchTab triggert Lazy-Load des Daily-Race-Leaderboards aus Firebase.
+
+    /// <summary>Aktiver Tab im Liga-Header (0=Saison, 1=Daily Race).</summary>
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
+    [ObservableProperty]
+    private bool _isSeasonTabActive = true;
+
+    [ObservableProperty]
+    private bool _isDailyRaceTabActive;
+
+    [ObservableProperty]
+    private string _seasonTabText = "";
+
+    [ObservableProperty]
+    private string _dailyRaceTabText = "";
+
+    [ObservableProperty]
+    private string _dailyRaceTitleText = "";
+
+    [ObservableProperty]
+    private string _dailyRaceDescText = "";
+
+    [ObservableProperty]
+    private string _dailyRaceTodayBestText = "";
+
+    [ObservableProperty]
+    private string _dailyRaceStartButtonText = "";
+
+    [ObservableProperty]
+    private string _dailyRaceCountdownText = "";
+
+    [ObservableProperty]
+    private bool _isDailyRaceLeaderboardLoading;
+
+    /// <summary>True = Cross-Tier (alle Spieler weltweit), false = Eigener Tier.</summary>
+    [ObservableProperty]
+    private bool _isDailyRaceGlobalView;
+
+    [ObservableProperty]
+    private string _dailyRaceTierTabText = "";
+
+    [ObservableProperty]
+    private string _dailyRaceGlobalTabText = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
     // COLLECTIONS
     // ═══════════════════════════════════════════════════════════════════════
 
     public ObservableCollection<LeagueDisplayEntry> LeaderboardEntries { get; } = [];
+
+    /// <summary>Daily-Race-Rangliste (heute, alle Tier des Spielers).</summary>
+    public ObservableCollection<LeagueDisplayEntry> DailyRaceLeaderboardEntries { get; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -154,11 +207,38 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
         PlayerHeaderText = _localization.GetString("LeaguePlayer") ?? "Player";
         PointsHeaderText = _localization.GetString("LeaguePointsHeader") ?? "Points";
         LoadingLeaderboardText = _localization.GetString("LeagueLoading") ?? "Loading...";
+
+        // Tab-Texte
+        SeasonTabText = _localization.GetString("LeagueTabSeason") ?? "Season";
+        DailyRaceTabText = _localization.GetString("LeagueTabDailyRace") ?? "Daily Race";
+        DailyRaceTierTabText = _localization.GetString("DailyRaceTierTab") ?? "My Tier";
+        DailyRaceGlobalTabText = _localization.GetString("DailyRaceGlobalTab") ?? "Global";
+
+        // Daily-Race-Texte
+        DailyRaceTitleText = _localization.GetString("DailyRaceTitle") ?? "Daily Bomb Race";
+        DailyRaceDescText = _localization.GetString("DailyRaceDesc") ?? "Same level for everyone. Top score wins.";
+        UpdateDailyRaceLocalizedFigures();
+
         LoadLeaderboard();
         UpdateTierInfo();
         UpdateCountdown();
         UpdateRewardState();
         UpdateStats();
+    }
+
+    /// <summary>Aktualisiert die Daily-Race-Texte mit den aktuellen Service-Werten (Today-Best, Start-Button, Countdown).</summary>
+    private void UpdateDailyRaceLocalizedFigures()
+    {
+        var bestFmt = _localization.GetString("DailyRaceTodayBest") ?? "Today's best: {0}";
+        DailyRaceTodayBestText = string.Format(bestFmt, _leagueService.TodayDailyRaceBestScore.ToString("N0"));
+        DailyRaceStartButtonText = _localization.GetString("DailyRaceStartButton") ?? "Start Race";
+
+        // Countdown bis Mitternacht UTC (naechster Daily-Race-Reset)
+        var now = DateTime.UtcNow;
+        var nextMidnight = now.Date.AddDays(1);
+        var until = nextMidnight - now;
+        var fmt = _localization.GetString("DailyRaceResetIn") ?? "Resets in {0}h {1}m";
+        DailyRaceCountdownText = string.Format(fmt, until.Hours, until.Minutes);
     }
 
     /// <summary>Firebase-Daten laden und UI aktualisieren.</summary>
@@ -348,6 +428,90 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
         {
             IsLoading = false;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DAILY RACE COMMANDS (v2.0.42, Plan Task 3.1)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Wechselt auf den Saison-Liga-Tab.</summary>
+    [RelayCommand]
+    private void SelectSeasonTab()
+    {
+        SelectedTabIndex = 0;
+        IsSeasonTabActive = true;
+        IsDailyRaceTabActive = false;
+    }
+
+    /// <summary>
+    /// Wechselt auf den Daily-Race-Tab und triggert Lazy-Load des Daily-Race-Leaderboards.
+    /// Erfordert eine bestehende Auth-Session (laeuft im Hintergrund weiter wenn offline).
+    /// </summary>
+    [RelayCommand]
+    private async Task SelectDailyRaceTab()
+    {
+        SelectedTabIndex = 1;
+        IsSeasonTabActive = false;
+        IsDailyRaceTabActive = true;
+        UpdateDailyRaceLocalizedFigures();
+        await LoadDailyRaceLeaderboardAsync();
+    }
+
+    /// <summary>Startet das Daily Race-Spiel (NavigationRequest mit Mode "dailyrace").</summary>
+    [RelayCommand]
+    private void StartDailyRace()
+    {
+        NavigationRequested?.Invoke(new GoGame(Mode: "dailyrace", Level: 1, Floor: 0));
+    }
+
+    /// <summary>Lazy-Load des Daily-Race-Leaderboards aus Firebase. Setzt _isDailyRaceLeaderboardLoading wahrend des Calls.</summary>
+    private async Task LoadDailyRaceLeaderboardAsync()
+    {
+        IsDailyRaceLeaderboardLoading = true;
+        try
+        {
+            // Cross-Tier (Global) oder eigener Tier abhaengig vom Toggle
+            var entries = IsDailyRaceGlobalView
+                ? await _leagueService.GetDailyRaceGlobalLeaderboardAsync()
+                : await _leagueService.GetDailyRaceLeaderboardAsync();
+            DailyRaceLeaderboardEntries.Clear();
+            foreach (var entry in entries)
+            {
+                DailyRaceLeaderboardEntries.Add(new LeagueDisplayEntry
+                {
+                    Uid = entry.Uid,
+                    Rank = entry.Rank,
+                    Name = entry.Name,
+                    Points = entry.Points,
+                    IsPlayer = entry.IsPlayer,
+                    IsRealPlayer = entry.IsRealPlayer,
+                    RankText = $"#{entry.Rank}",
+                    PointsText = $"{entry.Points:N0}",
+                    NameColor = entry.IsPlayer ? "#FFD700" : entry.IsRealPlayer ? "#00CED1" : "#FFFFFF",
+                    BackgroundOpacity = entry.IsPlayer ? 0.2 : entry.IsRealPlayer ? 0.1 : 0.05
+                });
+            }
+        }
+        finally
+        {
+            IsDailyRaceLeaderboardLoading = false;
+        }
+    }
+
+    /// <summary>Wechselt zwischen My-Tier-Ansicht und Global-Cross-Tier-Ansicht im Daily-Race-Leaderboard.</summary>
+    [RelayCommand]
+    private async Task ToggleDailyRaceScope()
+    {
+        IsDailyRaceGlobalView = !IsDailyRaceGlobalView;
+        await LoadDailyRaceLeaderboardAsync();
+    }
+
+    /// <summary>Manuelles Refresh des Daily-Race-Leaderboards (Refresh-Button im Daily-Race-Tab).</summary>
+    [RelayCommand]
+    private async Task RefreshDailyRaceLeaderboard()
+    {
+        UpdateDailyRaceLocalizedFigures();
+        await LoadDailyRaceLeaderboardAsync();
     }
 }
 

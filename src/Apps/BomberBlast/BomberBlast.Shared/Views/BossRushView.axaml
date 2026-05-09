@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
+             x:Class="BomberBlast.Views.BossRushView"
+             x:DataType="vm:BossRushViewModel"
+             x:CompileBindings="True">
+
+  <Panel AutomationProperties.AutomationId="BossRush_Root">
+    <controls:MenuBackgroundCanvas />
+
+    <Grid RowDefinitions="Auto,*" Margin="20,12,20,12">
+
+      <!-- Header -->
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+        <Button Grid.Column="0" Classes="Secondary GameButton"
+                Command="{Binding GoBackCommand}"
+                Width="44" Height="44" Padding="0"
+                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                AutomationProperties.AutomationId="BossRush_BtnBack">
+          <icons:GameIcon Kind="ArrowLeft" Width="22" Height="22"
+                          Foreground="{DynamicResource TextPrimaryBrush}" />
+        </Button>
+        <TextBlock Grid.Column="1" Text="{Binding TitleText}"
+                   FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource AccentBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <Border Grid.Column="2" Width="44" Height="44" />
+      </Grid>
+
+      <!-- Content -->
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16" MaxWidth="500" HorizontalAlignment="Center">
+
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="14" Padding="20,16"
+                  BorderThickness="2" BorderBrush="{DynamicResource AccentBrush}"
+                  BoxShadow="0 0 18 0 #50FF6B35">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{Binding DescText}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         TextWrapping="Wrap" TextAlignment="Center" />
+
+              <Border Background="#15FFD700" CornerRadius="10" Padding="12,8">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <icons:GameIcon Kind="Trophy" Width="20" Height="20" Foreground="#FFD700" />
+                  <TextBlock Text="{Binding WeeklyBestText}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="#FFD700" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <!-- 5 Boss-Liste -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="14" Padding="14,12"
+                  BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Bosse:" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                <Border Grid.Column="0" Background="#996B4226" CornerRadius="8" Padding="4">
+                  <icons:GameIcon Kind="Skull" Width="20" Height="20" Foreground="#A8A097"
+                                   HorizontalAlignment="Center" />
+                </Border>
+                <Border Grid.Column="1" Background="#9929B6F6" CornerRadius="8" Padding="4">
+                  <icons:GameIcon Kind="Snowflake" Width="20" Height="20" Foreground="White"
+                                   HorizontalAlignment="Center" />
+                </Border>
+                <Border Grid.Column="2" Background="#99FF5722" CornerRadius="8" Padding="4">
+                  <icons:GameIcon Kind="Fire" Width="20" Height="20" Foreground="#FFD54F"
+                                   HorizontalAlignment="Center" />
+                </Border>
+                <Border Grid.Column="3" Background="#998E24AA" CornerRadius="8" Padding="4">
+                  <icons:GameIcon Kind="Ghost" Width="20" Height="20" Foreground="White"
+                                   HorizontalAlignment="Center" />
+                </Border>
+                <Border Grid.Column="4" Background="#99B71C1C" CornerRadius="8" Padding="4">
+                  <icons:GameIcon Kind="Trophy" Width="20" Height="20" Foreground="#FFD700"
+                                   HorizontalAlignment="Center" />
+                </Border>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- Start-Button -->
+          <Panel MinHeight="56">
+            <controls:GameButtonCanvas ButtonColor="#B71C1C" DamageLevel="0.6" ButtonSeed="200" />
+            <Button Classes="Primary GameButton"
+                    Command="{Binding StartCommand}"
+                    Background="Transparent" Foreground="White"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Padding="16,14"
+                    AutomationProperties.AutomationId="BossRush_BtnStart">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <icons:GameIcon Kind="Sword" Width="22" Height="22" Foreground="White" />
+                <TextBlock Text="{Binding StartButtonText}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="White" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Panel>
+
+          <TextBlock Text="{Binding TotalCompletionsText, StringFormat='Lifetime Completions: {0}'}"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+      </ScrollViewer>
+
+    </Grid>
+  </Panel>
+</UserControl>

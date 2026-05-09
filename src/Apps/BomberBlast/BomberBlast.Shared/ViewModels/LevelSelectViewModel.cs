@@ -102,13 +102,18 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
+    private readonly ILoadoutService _loadoutService;
+    private readonly IGemService _gemService;
+
     public LevelSelectViewModel(
         IProgressService progressService,
         IPurchaseService purchaseService,
         ICoinService coinService,
         ILocalizationService localizationService,
         IRewardedAdService rewardedAdService,
-        IMasterModeService masterModeService)
+        IMasterModeService masterModeService,
+        ILoadoutService loadoutService,
+        IGemService gemService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
@@ -116,6 +121,8 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
         _masterModeService = masterModeService;
+        _loadoutService = loadoutService;
+        _gemService = gemService;
 
         // Coin-Anzeige bei Balance-Aenderung aktualisieren (z.B. nach Kauf im Shop)
         _coinService.BalanceChanged += OnBalanceChanged;
@@ -348,14 +355,25 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
             return;
         }
 
-        // Ab Level 20: Boost-Overlay anbieten (Cooldown-Check für Free-User)
-        bool showBoost = level.LevelNumber >= 20;
+        // Ab Level 5: Loadout-Modal anbieten (Coin/Gem-basiert, alternative zum Ad-Boost).
+        // Ab Level 20: zusaetzlich Ad-Boost-Overlay verfuegbar.
+        // Boost-Overlay bietet "Loadout"-Button als Alternative zum Ad — beide Wege fuehren zu PendingLevel.
         bool adAvailable = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
-        if (showBoost && (_purchaseService.IsPremium || adAvailable))
+        bool showAdBoost = level.LevelNumber >= 20 && (_purchaseService.IsPremium || adAvailable);
+        bool offerLoadout = level.LevelNumber >= 5;
+
+        if (showAdBoost)
         {
             PendingLevel = level.LevelNumber;
             PickRandomBoost();
             ShowBoostOverlay = true;
+            return;
+        }
+        if (offerLoadout)
+        {
+            // Direktes Loadout-Modal ohne Ad-Boost-Overlay
+            PendingLevel = level.LevelNumber;
+            OpenLoadout();
             return;
         }
 
@@ -434,6 +452,173 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     {
         _coinService.BalanceChanged -= OnBalanceChanged;
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LOADOUT (v2.0.42, Plan Task 3.2): Pre-Run-Boost-Auswahl-Modal
+    // ═══════════════════════════════════════════════════════════════════════
+    // Spieler tappt auf Level → SelectLevel zeigt vorhandenes Boost-Modal (Ad-basiert)
+    // ODER kann das neue Loadout-Modal oeffnen ueber den OpenLoadoutCommand-Button im LevelSelect.
+    // Loadout-Modal: 5 Toggles (max 2 aktiv), Coin/Gem-Toggle, "Bezahlen + Spielen"-Button.
+
+    [ObservableProperty] private bool _isLoadoutOverlayVisible;
+    [ObservableProperty] private bool _useGemsForLoadout;
+
+    /// <summary>5 Boost-Items mit lokalisierten Namen + Coin/Gem-Cost + Selected-State.</summary>
+    public ObservableCollection<LoadoutDisplayItem> LoadoutItems { get; } = new();
+
+    /// <summary>Anzahl ausgewaehlter Boosts (max 2).</summary>
+    [ObservableProperty] private int _selectedBoostCount;
+
+    /// <summary>Aufsummierte Kosten fuer alle ausgewaehlten Boosts (Coins ODER Gems je nach Toggle).</summary>
+    [ObservableProperty] private string _loadoutTotalCostText = "";
+
+    /// <summary>True wenn Spieler genug Coins/Gems hat fuer alle ausgewaehlten Boosts.</summary>
+    [ObservableProperty] private bool _canAffordLoadout;
+
+    /// <summary>Lokalisierter Titel des Loadout-Modals.</summary>
+    [ObservableProperty] private string _loadoutTitleText = "";
+
+    /// <summary>
+    /// Oeffnet das Loadout-Auswahl-Modal fuer das aktuell pendigte Level.
+    /// Wenn schon ein Loadout fuer das Level gespeichert ist, sind die Toggles vorausgewaehlt.
+    /// </summary>
+    [RelayCommand]
+    private void OpenLoadout()
+    {
+        if (PendingLevel <= 0) return;
+
+        // Falls Boost-Overlay aktiv ist, schliessen
+        ShowBoostOverlay = false;
+
+        LoadoutTitleText = string.Format(
+            _localizationService.GetString("LoadoutTitle") ?? "Pre-Run Boosts",
+            PendingLevel);
+        UseGemsForLoadout = false;
+
+        var saved = _loadoutService.GetSavedLoadout(PendingLevel);
+        var savedTypes = saved.Select(b => b.Type).ToHashSet();
+
+        LoadoutItems.Clear();
+        foreach (LoadoutBoostType type in Enum.GetValues<LoadoutBoostType>())
+        {
+            LoadoutItems.Add(new LoadoutDisplayItem
+            {
+                Type = type,
+                Name = GetLoadoutBoostName(type),
+                CoinCost = _loadoutService.GetCoinCost(type),
+                GemCost = _loadoutService.GetGemCost(type),
+                IsSelected = savedTypes.Contains(type),
+            });
+        }
+        UpdateLoadoutTotals();
+        IsLoadoutOverlayVisible = true;
+    }
+
+    /// <summary>Toggle ein Boost-Item. Erzwingt Max=2 Auswahl (aelteste wird abgewaehlt).</summary>
+    [RelayCommand]
+    private void ToggleLoadoutItem(LoadoutDisplayItem? item)
+    {
+        if (item == null) return;
+        if (!item.IsSelected)
+        {
+            // Zaehlung der bereits selektierten — wenn schon 2, abweisen
+            int currentCount = LoadoutItems.Count(i => i.IsSelected);
+            if (currentCount >= 2) return;
+        }
+        item.IsSelected = !item.IsSelected;
+        UpdateLoadoutTotals();
+    }
+
+    /// <summary>Toggle zwischen Coin- und Gem-Bezahlung.</summary>
+    [RelayCommand]
+    private void ToggleLoadoutCurrency()
+    {
+        UseGemsForLoadout = !UseGemsForLoadout;
+        UpdateLoadoutTotals();
+    }
+
+    /// <summary>Bezahlen + Loadout-Modal schliessen + Level starten.</summary>
+    [RelayCommand]
+    private void ConfirmLoadout()
+    {
+        var selected = LoadoutItems.Where(i => i.IsSelected).Select(i => i.Type).ToList();
+        if (selected.Count == 0)
+        {
+            // Kein Boost gewaehlt → einfach starten ohne Loadout
+            _loadoutService.ClearLoadout(PendingLevel);
+            IsLoadoutOverlayVisible = false;
+            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, MasterMode: IsMasterModeActive));
+            return;
+        }
+
+        var result = _loadoutService.Purchase(PendingLevel, selected, UseGemsForLoadout);
+        if (result == null)
+        {
+            FloatingTextRequested?.Invoke(
+                _localizationService.GetString("PurchaseFailed") ?? "Not enough currency",
+                "error");
+            return;
+        }
+
+        IsLoadoutOverlayVisible = false;
+        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, MasterMode: IsMasterModeActive));
+    }
+
+    /// <summary>Modal abbrechen — kein Boost angewandt, kein Spielen.</summary>
+    [RelayCommand]
+    private void CancelLoadout()
+    {
+        IsLoadoutOverlayVisible = false;
+    }
+
+    private void UpdateLoadoutTotals()
+    {
+        int totalCoins = 0, totalGems = 0;
+        int count = 0;
+        foreach (var item in LoadoutItems)
+        {
+            // DisplayCost je nach Currency-Toggle aktualisieren — Item-Level statt komplexes DataTemplate-Binding
+            item.DisplayCost = UseGemsForLoadout ? $"{item.GemCost} Gems" : $"{item.CoinCost:N0} Coins";
+
+            if (!item.IsSelected) continue;
+            count++;
+            totalCoins += item.CoinCost;
+            totalGems += item.GemCost;
+        }
+        SelectedBoostCount = count;
+        LoadoutTotalCostText = UseGemsForLoadout
+            ? $"{totalGems} Gems"
+            : $"{totalCoins:N0} Coins";
+        CanAffordLoadout = count == 0
+            || (UseGemsForLoadout ? _gemService.CanAfford(totalGems) : _coinService.CanAfford(totalCoins));
+    }
+
+    private string GetLoadoutBoostName(LoadoutBoostType type) => type switch
+    {
+        LoadoutBoostType.ExtraBomb => _localizationService.GetString("LoadoutBoostExtraBomb") ?? "+1 Bomb",
+        LoadoutBoostType.ExtraFire => _localizationService.GetString("LoadoutBoostExtraFire") ?? "+1 Range",
+        LoadoutBoostType.SpeedBoost => _localizationService.GetString("LoadoutBoostSpeed") ?? "Max Speed",
+        LoadoutBoostType.Wallpass => _localizationService.GetString("LoadoutBoostWallpass") ?? "Wallpass",
+        LoadoutBoostType.Invincibility => _localizationService.GetString("LoadoutBoostInvincibility") ?? "30s Shield",
+        _ => type.ToString()
+    };
+}
+
+/// <summary>
+/// View-Modell-Item fuer das Loadout-Auswahl-Modal (v2.0.42).
+/// DisplayCost wird vom ViewModel beim Toggle der Currency neu gesetzt — vermeidet komplexe
+/// $parent-Bindings im DataTemplate die Avalonia-Compiled-Bindings nicht unterstuetzen.
+/// </summary>
+public partial class LoadoutDisplayItem : ObservableObject
+{
+    [ObservableProperty] private LoadoutBoostType _type;
+    [ObservableProperty] private string _name = "";
+    [ObservableProperty] private int _coinCost;
+    [ObservableProperty] private int _gemCost;
+    [ObservableProperty] private bool _isSelected;
+
+    /// <summary>Vom ViewModel gesetzter formatierter Cost-Text (Coins oder Gems je nach Toggle).</summary>
+    [ObservableProperty] private string _displayCost = "";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

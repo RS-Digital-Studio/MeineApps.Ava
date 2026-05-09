@@ -4,11 +4,24 @@ using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models.League;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// Profil-Seite: Spielername editieren, aktiver Skin/Frame, Stats-Übersicht.
+/// Profile-Hub (v2.0.43, Plan Phase 4 — Menu-Redesign).
+///
+/// Konsolidiert die fünf Spieler-Bereiche:
+/// <list type="number">
+///   <item><b>Übersicht</b> — Spielername, Stats-Grid, aktiver Skin/Frame.</item>
+///   <item><b>Statistik</b> — eingebettet via <see cref="StatisticsVm"/>.</item>
+///   <item><b>Achievements</b> — eingebettet via <see cref="AchievementsVm"/>.</item>
+///   <item><b>Sammlung</b> — eingebettet via <see cref="CollectionVm"/>.</item>
+///   <item><b>Customize</b> — Quick-Switcher für PlayerSkin/BombSkin/ExplosionSkin/Trail/Victory/Frame
+///       (siehe Partial <c>ProfileViewModel.Customize.cs</c>).</item>
+/// </list>
+///
+/// Navigations-Events von Sub-VMs werden direkt durchgereicht (z. B. GoBack im Statistics-Tab).
 /// </summary>
 public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
@@ -19,6 +32,12 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IGemService _gemService;
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localization;
+    private readonly IPreferencesService _preferences;
+
+    // Eingebettete Sub-VMs fuer die Tab-Bereiche. Direkt-Injection via DI.
+    public StatisticsViewModel StatisticsVm { get; }
+    public AchievementsViewModel AchievementsVm { get; }
+    public CollectionViewModel CollectionVm { get; }
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
@@ -64,6 +83,27 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
     /// <summary>Ob der Spielername geändert wurde (Save-Button nur dann aktiv)</summary>
     public bool IsNameChanged => (PlayerName?.Trim() ?? "") != _originalName;
 
+    // Tab-System (v2.0.43)
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOverviewTab))]
+    [NotifyPropertyChangedFor(nameof(IsStatisticsTab))]
+    [NotifyPropertyChangedFor(nameof(IsAchievementsTab))]
+    [NotifyPropertyChangedFor(nameof(IsCollectionTab))]
+    [NotifyPropertyChangedFor(nameof(IsCustomizeTab))]
+    private ProfileTab _selectedTab = ProfileTab.Overview;
+
+    public bool IsOverviewTab => SelectedTab == ProfileTab.Overview;
+    public bool IsStatisticsTab => SelectedTab == ProfileTab.Statistics;
+    public bool IsAchievementsTab => SelectedTab == ProfileTab.Achievements;
+    public bool IsCollectionTab => SelectedTab == ProfileTab.Collection;
+    public bool IsCustomizeTab => SelectedTab == ProfileTab.Customize;
+
+    [ObservableProperty] private string _tabOverviewText = "";
+    [ObservableProperty] private string _tabStatisticsText = "";
+    [ObservableProperty] private string _tabAchievementsText = "";
+    [ObservableProperty] private string _tabCollectionText = "";
+    [ObservableProperty] private string _tabCustomizeText = "";
+
     public ProfileViewModel(
         ILeagueService leagueService,
         ICustomizationService customizationService,
@@ -71,7 +111,11 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
         ICoinService coinService,
         IGemService gemService,
         IAchievementService achievementService,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IPreferencesService preferences,
+        StatisticsViewModel statisticsVm,
+        AchievementsViewModel achievementsVm,
+        CollectionViewModel collectionVm)
     {
         _leagueService = leagueService;
         _customizationService = customizationService;
@@ -80,6 +124,15 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
         _gemService = gemService;
         _achievementService = achievementService;
         _localization = localization;
+        _preferences = preferences;
+        StatisticsVm = statisticsVm;
+        AchievementsVm = achievementsVm;
+        CollectionVm = collectionVm;
+
+        // Sub-VM Navigations durchreichen (z. B. GoBack im Statistics-Tab).
+        statisticsVm.NavigationRequested += request => NavigationRequested?.Invoke(request);
+        achievementsVm.NavigationRequested += request => NavigationRequested?.Invoke(request);
+        collectionVm.NavigationRequested += request => NavigationRequested?.Invoke(request);
 
         _coinService.BalanceChanged += (_, _) => UpdateStats();
         _gemService.BalanceChanged += (_, _) => UpdateStats();
@@ -104,6 +157,42 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
         ActiveFrameName = frame != null
             ? (_localization.GetString(frame.NameKey) ?? frame.Id)
             : (_localization.GetString("ProfileNoFrame") ?? "-");
+
+        // Customize-Picker neu aufbauen (PartialClass, Sub-VMs auch noch nicht erschienen).
+        RefreshCustomizationItems();
+
+        // Standardmaessig Uebersicht-Tab. Sub-VMs werden nur OnAppearing'd wenn der Tab gewaehlt wird.
+        SelectedTab = ProfileTab.Overview;
+    }
+
+    /// <summary>
+    /// Wechselt zum gewaehlten Tab und ruft falls noetig OnAppearing der Sub-VM auf.
+    /// </summary>
+    [RelayCommand]
+    private void SelectTab(string tab)
+    {
+        if (string.IsNullOrEmpty(tab)) return;
+        if (!System.Enum.TryParse<ProfileTab>(tab, ignoreCase: true, out var parsed)) return;
+
+        SelectedTab = parsed;
+        switch (parsed)
+        {
+            case ProfileTab.Statistics:
+                StatisticsVm.OnAppearing();
+                break;
+            case ProfileTab.Achievements:
+                AchievementsVm.OnAppearing();
+                _preferences.Set("feature_seen_achievements", true);
+                break;
+            case ProfileTab.Collection:
+                CollectionVm.OnAppearing();
+                _preferences.Set("feature_seen_collection", true);
+                break;
+            case ProfileTab.Customize:
+                RefreshCustomizationItems();
+                _preferences.Set("feature_seen_customization", true);
+                break;
+        }
     }
 
     public void UpdateLocalizedTexts()
@@ -118,6 +207,14 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
         GemsLabel = _localization.GetString("ProfileGems") ?? "Gems";
         LeagueLabel = _localization.GetString("ProfileLeague") ?? "League";
         AchievementsLabel = _localization.GetString("ProfileAchievements") ?? "Achievements";
+
+        TabOverviewText = _localization.GetString("ProfileTabOverview") ?? "Overview";
+        TabStatisticsText = _localization.GetString("ProfileTabStatistics") ?? "Stats";
+        TabAchievementsText = _localization.GetString("AchievementsTitle") ?? "Achievements";
+        TabCollectionText = _localization.GetString("CollectionButton") ?? "Collection";
+        TabCustomizeText = _localization.GetString("ProfileTabCustomize") ?? "Customize";
+
+        UpdateCustomizationLabels();
     }
 
     private void UpdateStats()

@@ -25,6 +25,8 @@ public record GoDungeon : NavigationRequest;
 public record GoBattlePass : NavigationRequest;
 public record GoLeague : NavigationRequest;
 public record GoGemShop : NavigationRequest;
+public record GoBossRush : NavigationRequest;
+public record GoDailyRace : NavigationRequest;
 
 // ── Zurück-Navigation ──
 public record GoBack : NavigationRequest;

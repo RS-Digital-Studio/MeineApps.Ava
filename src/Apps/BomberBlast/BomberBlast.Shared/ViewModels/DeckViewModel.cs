@@ -149,6 +149,52 @@ public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuic
     private string _unlockSlot5Text = "";
 
     // ═══════════════════════════════════════════════════════════════════════
+    // CRAFTING (v2.0.40, Plan Task 3.5)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Sichtbar wenn der Spieler 5+ Common-Karten und 2.000+ Coins hat.</summary>
+    [ObservableProperty]
+    private bool _canCraftRare;
+
+    /// <summary>Sichtbar wenn der Spieler 5+ Rare-Karten und 8.000+ Coins hat.</summary>
+    [ObservableProperty]
+    private bool _canCraftEpic;
+
+    /// <summary>Sichtbar wenn der Spieler 5+ Epic-Karten und 25.000+ Coins hat.</summary>
+    [ObservableProperty]
+    private bool _canCraftLegendary;
+
+    /// <summary>Status-Text fuer Crafting-Sektion-Header (z.B. "Karten herstellen").</summary>
+    [ObservableProperty]
+    private string _craftingTitleText = "";
+
+    /// <summary>Status-Text Common-Bestand vs. 5 (z.B. "12 / 5 Common").</summary>
+    [ObservableProperty]
+    private string _craftRareStatusText = "";
+
+    /// <summary>Status-Text Rare-Bestand vs. 5.</summary>
+    [ObservableProperty]
+    private string _craftEpicStatusText = "";
+
+    /// <summary>Status-Text Epic-Bestand vs. 5.</summary>
+    [ObservableProperty]
+    private string _craftLegendaryStatusText = "";
+
+    /// <summary>Coin-Cost-Label fuer Rare-Crafting (z.B. "2.000 Münzen").</summary>
+    [ObservableProperty]
+    private string _craftRareCostText = "";
+
+    [ObservableProperty]
+    private string _craftEpicCostText = "";
+
+    [ObservableProperty]
+    private string _craftLegendaryCostText = "";
+
+    /// <summary>Sichtbar wenn beim Spieler ueberhaupt eine Crafting-Stufe verfuegbar ist (Common >= 5).</summary>
+    [ObservableProperty]
+    private bool _isCraftingSectionVisible;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -171,6 +217,42 @@ public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuic
 
     [RelayCommand]
     private void GoBack() => NavigationRequested?.Invoke(new GoBack());
+
+    /// <summary>v2.0.40 Plan Task 3.5: 5 Common + 2.000 Coins → 1 Rare-Karte.</summary>
+    [RelayCommand]
+    private void CraftRare() => CraftCard(Rarity.Rare);
+
+    /// <summary>v2.0.40 Plan Task 3.5: 5 Rare + 8.000 Coins → 1 Epic-Karte.</summary>
+    [RelayCommand]
+    private void CraftEpic() => CraftCard(Rarity.Epic);
+
+    /// <summary>v2.0.40 Plan Task 3.5: 5 Epic + 25.000 Coins → 1 Legendary-Karte.</summary>
+    [RelayCommand]
+    private void CraftLegendary() => CraftCard(Rarity.Legendary);
+
+    /// <summary>
+    /// Gemeinsamer Crafting-Code: ruft Service auf, zeigt Floating-Text + Celebration bei Erfolg.
+    /// </summary>
+    private void CraftCard(Rarity targetRarity)
+    {
+        var crafted = _cardService.CraftCard(targetRarity, _coinService);
+        if (crafted == null)
+        {
+            FloatingTextRequested?.Invoke(
+                _localization.GetString("CraftFailed") ?? "Not enough cards or coins",
+                "error");
+            return;
+        }
+
+        // Karten-Name fuer Feedback ermitteln
+        var def = CardCatalog.GetCard(crafted.Value);
+        var name = def != null
+            ? (_localization.GetString(def.NameKey) ?? def.NameKey)
+            : crafted.Value.ToString();
+        var fmt = _localization.GetString("CraftSuccessFormat") ?? "Crafted: {0}";
+        FloatingTextRequested?.Invoke(string.Format(fmt, name), "gold");
+        CelebrationRequested?.Invoke();
+    }
 
     [RelayCommand]
     private void SelectCard(CardDisplayItem? card)
@@ -331,10 +413,42 @@ public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuic
         RefreshDeckSlots();
         UpdateCoins();
         UpdateCollectionProgress();
+        UpdateCraftingStatus();
 
         // Aktualisiere Detail wenn Karte noch ausgewählt
         if (HasSelectedCard && SelectedCard != null)
             UpdateSelectedCardDetails();
+    }
+
+    /// <summary>
+    /// Aktualisiert die 3 Crafting-Stufen-Status-Texte und CanCraft-Flags.
+    /// Wird bei jedem Refresh aufgerufen (Collection-Change, Coin-Change, OnAppearing).
+    /// </summary>
+    private void UpdateCraftingStatus()
+    {
+        int commonCount = _cardService.GetCraftableCount(Rarity.Common);
+        int rareCount = _cardService.GetCraftableCount(Rarity.Rare);
+        int epicCount = _cardService.GetCraftableCount(Rarity.Epic);
+        int needed = _cardService.CraftCardCount;
+
+        CanCraftRare = _cardService.CanCraft(Rarity.Rare, _coinService);
+        CanCraftEpic = _cardService.CanCraft(Rarity.Epic, _coinService);
+        CanCraftLegendary = _cardService.CanCraft(Rarity.Legendary, _coinService);
+
+        // Gesamte Sektion sichtbar wenn ueberhaupt eine Stufe craftbar ODER der Spieler 5+ einer Rarity sammelt.
+        IsCraftingSectionVisible = commonCount >= needed || rareCount >= needed || epicCount >= needed;
+
+        var fmt = _localization.GetString("CraftStatusFormat") ?? "{0} / {1}";
+        CraftRareStatusText = string.Format(fmt, commonCount, needed);
+        CraftEpicStatusText = string.Format(fmt, rareCount, needed);
+        CraftLegendaryStatusText = string.Format(fmt, epicCount, needed);
+
+        var coinFmt = _localization.GetString("CraftCoinCostFormat") ?? "{0} Coins";
+        CraftRareCostText = string.Format(coinFmt, _cardService.GetCraftCoinCost(Rarity.Rare).ToString("N0"));
+        CraftEpicCostText = string.Format(coinFmt, _cardService.GetCraftCoinCost(Rarity.Epic).ToString("N0"));
+        CraftLegendaryCostText = string.Format(coinFmt, _cardService.GetCraftCoinCost(Rarity.Legendary).ToString("N0"));
+
+        CraftingTitleText = _localization.GetString("CraftingTitle") ?? "Craft Cards";
     }
 
     private void RefreshCollection()

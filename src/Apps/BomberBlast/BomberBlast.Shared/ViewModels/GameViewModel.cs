@@ -83,6 +83,25 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     [ObservableProperty]
     private bool _canDoubleScore;
 
+    /// <summary>
+    /// Kontext-Hilfe-Overlay sichtbar (Tutorial-Replay-Pin, v2.0.37).
+    /// Modus-spezifische Tipps als Overlay; pausiert das Spiel waehrend offen.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isContextHelpVisible;
+
+    /// <summary>Erste modus-spezifische Tipp-Zeile fuer das ContextHelp-Overlay.</summary>
+    [ObservableProperty]
+    private string _contextHelpTip1 = "";
+
+    /// <summary>Zweite modus-spezifische Tipp-Zeile fuer das ContextHelp-Overlay.</summary>
+    [ObservableProperty]
+    private string _contextHelpTip2 = "";
+
+    /// <summary>Dritte Tipp-Zeile (kann leer sein wenn Modus nur 2 Tipps hat, z.B. Daily/Master).</summary>
+    [ObservableProperty]
+    private string _contextHelpTip3 = "";
+
     // ═══════════════════════════════════════════════════════════════════════
     // PUBLIC PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -257,6 +276,18 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
 
             case "dungeon":
                 await _gameEngine.StartDungeonFloorAsync(_dungeonFloor, _dungeonSeed);
+                break;
+
+            case "bossrush":
+                // v2.0.42 Plan Task 3.3: Boss-Rush Single-Boss-Run-Variante.
+                // bossIndex wird als _dungeonFloor uebergeben (re-use Floor-Parameter aus GoGame).
+                await _gameEngine.StartBossRushModeAsync(_dungeonFloor);
+                break;
+
+            case "dailyrace":
+                // v2.0.42 Plan Task 3.1: Daily Bomb Race - alle Spieler weltweit bekommen identisches Level via Date-Seed.
+                // Score wird in GameEngine GameOver-Hook automatisch an LeagueService.SubmitDailyRaceScoreAsync geschickt.
+                await _gameEngine.StartDailyRaceModeAsync();
                 break;
 
             case "story":
@@ -513,6 +544,67 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         StopGameLoop();
         IsPaused = false;
         NavigationRequested?.Invoke(new GoBack());
+    }
+
+    /// <summary>
+    /// Tutorial-Replay-Pin (v2.0.37). Pausiert das Spiel, befuellt 3 modus-spezifische Tipps,
+    /// zeigt das ContextHelp-Overlay. Verfuegbar in Story/Survival/Dungeon/Daily/Master.
+    /// </summary>
+    [RelayCommand]
+    private void ShowContextHelp()
+    {
+        if (IsContextHelpVisible) return;
+
+        // Tipps abhaengig vom aktuellen Modus zusammenstellen
+        var (tip1, tip2, tip3) = _mode.ToLowerInvariant() switch
+        {
+            "story" when _masterMode => (
+                Resources.Strings.AppStrings.ContextHelpMaster1,
+                Resources.Strings.AppStrings.ContextHelpMaster2,
+                ""),
+            "story" => (
+                Resources.Strings.AppStrings.ContextHelpStory1,
+                Resources.Strings.AppStrings.ContextHelpStory2,
+                Resources.Strings.AppStrings.ContextHelpStory3),
+            "survival" => (
+                Resources.Strings.AppStrings.ContextHelpSurvival1,
+                Resources.Strings.AppStrings.ContextHelpSurvival2,
+                Resources.Strings.AppStrings.ContextHelpSurvival3),
+            "dungeon" => (
+                Resources.Strings.AppStrings.ContextHelpDungeon1,
+                Resources.Strings.AppStrings.ContextHelpDungeon2,
+                Resources.Strings.AppStrings.ContextHelpDungeon3),
+            "daily" => (
+                Resources.Strings.AppStrings.ContextHelpDaily1,
+                Resources.Strings.AppStrings.ContextHelpDaily2,
+                ""),
+            _ => (
+                Resources.Strings.AppStrings.ContextHelpStory1,
+                Resources.Strings.AppStrings.ContextHelpStory2,
+                Resources.Strings.AppStrings.ContextHelpStory3),
+        };
+
+        ContextHelpTip1 = tip1;
+        ContextHelpTip2 = tip2;
+        ContextHelpTip3 = tip3;
+
+        // Spiel pausieren — analog zur Pause-Mechanik, aber ohne IsPaused=true
+        // (das wuerde das Pause-Overlay zeigen statt des ContextHelp-Overlays).
+        if (_gameEngine.State == GameState.Playing)
+            _gameEngine.Pause();
+
+        IsContextHelpVisible = true;
+    }
+
+    /// <summary>
+    /// Schliesst das ContextHelp-Overlay und nimmt das Spiel wieder auf.
+    /// </summary>
+    [RelayCommand]
+    private void CloseContextHelp()
+    {
+        if (!IsContextHelpVisible) return;
+        IsContextHelpVisible = false;
+        _gameEngine.Resume();
     }
 
     [RelayCommand]

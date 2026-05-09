@@ -2,13 +2,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:conv="using:BomberBlast.Converters"
              xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="BomberBlast.Views.MainView"
              x:DataType="vm:MainViewModel"
              x:CompileBindings="True">
 
   <UserControl.Styles>
-    <!-- PageView: Default unsichtbar, mit Fade-Transition -->
+    <!-- PageView: Default unsichtbar, mit Fade-Transition. v2.0.37: Active-Class wird per Binding +
+         ActiveViewEqualsConverter gesetzt (kein Code-Behind FindControl mehr). -->
     <Style Selector="Border.PageView">
       <Setter Property="Opacity" Value="0" />
       <Setter Property="IsHitTestVisible" Value="False" />
@@ -31,25 +33,29 @@
     <!-- Alle Page-Views -->
     <Panel>
       <!-- Main Menu -->
-      <Border Classes="PageView" x:Name="MainMenuBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=MainMenu}"
               AutomationProperties.AutomationId="MainView_PageMainMenu">
         <ContentControl Content="{Binding MenuVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Game -->
-      <Border Classes="PageView" x:Name="GameBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Game}"
               AutomationProperties.AutomationId="MainView_PageGame">
         <ContentControl Content="{Binding GameVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Level Select -->
-      <Border Classes="PageView" x:Name="LevelSelectBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=LevelSelect}"
               AutomationProperties.AutomationId="MainView_PageLevelSelect">
         <ContentControl Content="{Binding LevelSelectVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Einstellungen + Hilfe (kombiniert mit Tab-Bar) -->
-      <Border Classes="PageView" x:Name="SettingsBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Settings}"
               AutomationProperties.AutomationId="MainView_PageSettings">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
@@ -90,19 +96,22 @@
       </Border>
 
       <!-- High Scores -->
-      <Border Classes="PageView" x:Name="HighScoresBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=HighScores}"
               AutomationProperties.AutomationId="MainView_PageHighScores">
         <ContentControl Content="{Binding HighScoresVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Game Over -->
-      <Border Classes="PageView" x:Name="GameOverBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=GameOver}"
               AutomationProperties.AutomationId="MainView_PageGameOver">
         <ContentControl Content="{Binding GameOverVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Shop + Glücksrad (kombiniert mit Tab-Bar) -->
-      <Border Classes="PageView" x:Name="ShopBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Shop}"
               AutomationProperties.AutomationId="MainView_PageShop">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
@@ -142,55 +151,23 @@
         </Grid>
       </Border>
 
-      <!-- Profil + Erfolge (kombiniert mit Tab-Bar) -->
-      <Border Classes="PageView" x:Name="ProfileBorder"
+      <!-- Profile-Hub (v2.0.43): 5 Tabs intern in ProfileView (Übersicht/Statistik/Achievements/Sammlung/Customize) -->
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Profile}"
               AutomationProperties.AutomationId="MainView_PageProfile">
-        <Grid RowDefinitions="Auto,*">
-          <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
-            <Grid ColumnDefinitions="*,*" MinHeight="44">
-              <Panel Grid.Column="0">
-                <Border IsVisible="{Binding !IsProfileAchievementsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
-                  <TextBlock Text="{loc:Translate ProfileTitle}" FontSize="11" FontWeight="SemiBold"
-                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <Button IsVisible="{Binding IsProfileAchievementsTab}" Command="{Binding SwitchToProfileTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
-                  <TextBlock Text="{loc:Translate ProfileTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Button>
-              </Panel>
-              <Panel Grid.Column="1">
-                <Border IsVisible="{Binding IsProfileAchievementsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
-                  <TextBlock Text="{loc:Translate AchievementsTitle}" FontSize="11" FontWeight="SemiBold"
-                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <Button IsVisible="{Binding !IsProfileAchievementsTab}" Command="{Binding SwitchToAchievementsTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
-                  <TextBlock Text="{loc:Translate AchievementsTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Button>
-              </Panel>
-            </Grid>
-          </Border>
-          <Panel Grid.Row="1">
-            <Border IsVisible="{Binding !IsProfileAchievementsTab}">
-              <ContentControl Content="{Binding ProfileVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-            </Border>
-            <Border IsVisible="{Binding IsProfileAchievementsTab}">
-              <ContentControl Content="{Binding AchievementsVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-            </Border>
-          </Panel>
-        </Grid>
+        <ContentControl Content="{Binding ProfileVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Victory (alle 50 Level geschafft) -->
-      <Border Classes="PageView" x:Name="VictoryBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Victory}"
               AutomationProperties.AutomationId="MainView_PageVictory">
         <ContentControl Content="{Binding VictoryVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Herausforderungen: Daily Challenge + Missionen (kombiniert mit Tab-Bar) -->
-      <Border Classes="PageView" x:Name="ChallengesBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Challenges}"
               AutomationProperties.AutomationId="MainView_PageChallenges">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
@@ -230,81 +207,53 @@
         </Grid>
       </Border>
 
-      <!-- Statistics (Statistiken) -->
-      <Border Classes="PageView" x:Name="StatisticsBorder"
-              AutomationProperties.AutomationId="MainView_PageStatistics">
-        <ContentControl Content="{Binding StatisticsVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-      </Border>
-
       <!-- Quick Play (Zufalls-Level) -->
-      <Border Classes="PageView" x:Name="QuickPlayBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=QuickPlay}"
               AutomationProperties.AutomationId="MainView_PageQuickPlay">
         <ContentControl Content="{Binding QuickPlayVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
-      <!-- Karten: Deck + Sammlung (kombiniert mit Tab-Bar) -->
-      <Border Classes="PageView" x:Name="CardsBorder"
+      <!-- Karten/Deck (v2.0.43): Sammlung wandert in den Profile-Hub, Cards-Bereich zeigt nur noch Deck -->
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Cards}"
               AutomationProperties.AutomationId="MainView_PageCards">
-        <Grid RowDefinitions="Auto,*">
-          <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
-            <Grid ColumnDefinitions="*,*" MinHeight="44">
-              <Panel Grid.Column="0">
-                <Border IsVisible="{Binding !IsCardsCollectionTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
-                  <TextBlock Text="{loc:Translate DeckButton}" FontSize="11" FontWeight="SemiBold"
-                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <Button IsVisible="{Binding IsCardsCollectionTab}" Command="{Binding SwitchToDeckTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
-                  <TextBlock Text="{loc:Translate DeckButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Button>
-              </Panel>
-              <Panel Grid.Column="1">
-                <Border IsVisible="{Binding IsCardsCollectionTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
-                  <TextBlock Text="{loc:Translate CollectionButton}" FontSize="11" FontWeight="SemiBold"
-                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <Button IsVisible="{Binding !IsCardsCollectionTab}" Command="{Binding SwitchToCollectionTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
-                  <TextBlock Text="{loc:Translate CollectionButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Button>
-              </Panel>
-            </Grid>
-          </Border>
-          <Panel Grid.Row="1">
-            <Border IsVisible="{Binding !IsCardsCollectionTab}">
-              <ContentControl Content="{Binding DeckVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-            </Border>
-            <Border IsVisible="{Binding IsCardsCollectionTab}">
-              <ContentControl Content="{Binding CollectionVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-            </Border>
-          </Panel>
-        </Grid>
+        <ContentControl Content="{Binding DeckVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Dungeon Run (Roguelike-Modus) -->
-      <Border Classes="PageView" x:Name="DungeonBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=Dungeon}"
               AutomationProperties.AutomationId="MainView_PageDungeon">
         <ContentControl Content="{Binding DungeonVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Battle Pass -->
-      <Border Classes="PageView" x:Name="BattlePassBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=BattlePass}"
               AutomationProperties.AutomationId="MainView_PageBattlePass">
         <ContentControl Content="{Binding BattlePassVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Liga -->
-      <Border Classes="PageView" x:Name="LeagueBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=League}"
               AutomationProperties.AutomationId="MainView_PageLeague">
         <ContentControl Content="{Binding LeagueVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Gem-Shop -->
-      <Border Classes="PageView" x:Name="GemShopBorder"
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=GemShop}"
               AutomationProperties.AutomationId="MainView_PageGemShop">
         <ContentControl Content="{Binding GemShopVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+      </Border>
+
+      <!-- Boss-Rush (v2.0.42, Plan Task 3.3) -->
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=BossRush}"
+              AutomationProperties.AutomationId="MainView_PageBossRush">
+        <ContentControl Content="{Binding BossRushVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
     </Panel>
 

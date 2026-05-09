@@ -48,13 +48,15 @@
           </Style>
         </Grid.Styles>
 
-        <!-- Links: Score + Coins Info (ScrollViewer für Overflow-Schutz) -->
+        <!-- Links: Score + Coins Info — v2.0.43 Audit-Fix C4: Top-Alignment fuer natuerliches Scrollen
+             (vorher Center-Alignment hat bei Overflow den Score nach oben weggeschoben). -->
         <ScrollViewer Grid.Column="0"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
-        <StackPanel VerticalAlignment="Center"
+        <StackPanel VerticalAlignment="Top"
                     HorizontalAlignment="Center"
-                    Spacing="12">
+                    Spacing="12"
+                    Margin="0,8,0,8">
 
           <TextBlock AutomationProperties.AutomationId="GameOver_TxtGameOver"
                      Text="{loc:Translate GameOver}"

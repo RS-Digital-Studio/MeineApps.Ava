@@ -309,6 +309,36 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                 Icon = "ScrewFlatTop",
                 Price = "4,99 €",
                 IsPremiumItem = true
+            },
+            // ── Whale-Tier-Bundles (AAA-Audit P0 — Revenue-Hardcap durchbrechen) ──
+            // Zielgruppe: Top-10%-Spieler, die aktuell maximal ~24 EUR ausgeben koennen.
+            // Erwartung: ARPU +30-60% in der Whale-Cohort.
+            new ShopItem
+            {
+                Id = "bundle_mid",
+                Name = _localizationService.GetString("ShopBundleMidName") ?? "Imperium-Paket",
+                Description = _localizationService.GetString("ShopBundleMidDesc") ?? "1500 Goldschrauben + 8h Speed-Boost",
+                Icon = "PackageVariantClosed",
+                Price = "9,99 €",
+                IsPremiumItem = true
+            },
+            new ShopItem
+            {
+                Id = "bundle_big",
+                Name = _localizationService.GetString("ShopBundleBigName") ?? "Meister-Paket",
+                Description = _localizationService.GetString("ShopBundleBigDesc") ?? "4000 Goldschrauben + 48h Speed-Boost + 25 Mio. EUR",
+                Icon = "TrophyVariant",
+                Price = "19,99 €",
+                IsPremiumItem = true
+            },
+            new ShopItem
+            {
+                Id = "bundle_mega",
+                Name = _localizationService.GetString("ShopBundleMegaName") ?? "Legenden-Paket",
+                Description = _localizationService.GetString("ShopBundleMegaDesc") ?? "12000 Goldschrauben + 7 Tage Speed-Boost + 200 Mio. EUR + Premium",
+                Icon = "Crown",
+                Price = "49,99 €",
+                IsPremiumItem = true
             }
         ];
     }
@@ -682,6 +712,48 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                         }
                     }
                 }
+                // ── Whale-Bundles (AAA-Audit P0): Mid/Big/Mega-Tier (9,99/19,99/49,99 EUR) ──
+                else if (item.Id is "bundle_mid" or "bundle_big" or "bundle_mega")
+                {
+                    success = await _purchaseService.PurchaseConsumableAsync(item.Id);
+                    if (success)
+                    {
+                        var (gs, boostHours, cash, grantsPremium) = item.Id switch
+                        {
+                            "bundle_mid"  => (1500,   8m,         0m, false),
+                            "bundle_big"  => (4000,  48m,  25_000_000m, false),
+                            "bundle_mega" => (12000, 7m * 24m, 200_000_000m, true),
+                            _ => (0, 0m, 0m, false)
+                        };
+
+                        if (gs > 0)
+                            _gameStateService.AddGoldenScrews(gs, fromPurchase: true);
+                        if (boostHours > 0)
+                            _gameStateService.State.SpeedBoostEndTime = DateTime.UtcNow.AddHours((double)boostHours);
+                        if (cash > 0)
+                            _gameStateService.AddMoney(cash);
+                        if (grantsPremium && !_gameStateService.State.IsPremium)
+                        {
+                            _gameStateService.State.IsPremium = true;
+                            _gameStateService.State.InvalidateMaxOfflineHoursCache();
+                            _rewardedAdService.Disable();
+                            OnPropertyChanged(nameof(ShowAds));
+                        }
+
+                        GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
+                        CurrentBalance = FormatMoney(_gameStateService.State.Money);
+
+                        await _audioService.PlaySoundAsync(GameSound.LevelUp);
+                        ShowAlert(
+                            _localizationService.GetString("ThankYou") ?? "Vielen Dank!",
+                            _localizationService.GetString("BundleReceivedDesc")
+                                ?? "Dein Paket wurde aktiviert. Viel Erfolg!",
+                            _localizationService.GetString("Great") ?? "Super");
+
+                        LoadShopData();
+                        LoadTools();
+                    }
+                }
 
                 // VIP-System: Echtgeld-Kauf registrieren
                 if (success)
@@ -773,6 +845,10 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             "golden_screws_150" => 2.49m,
             "golden_screws_450" => 4.99m,
             "starter_pack" => 2.99m,
+            // Whale-Bundles (AAA-Audit P0): Top-VIP-Tier-Schub.
+            "bundle_mid" => 9.99m,
+            "bundle_big" => 19.99m,
+            "bundle_mega" => 49.99m,
             _ => 0m
         };
         if (amount > 0)

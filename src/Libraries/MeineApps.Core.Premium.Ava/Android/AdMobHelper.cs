@@ -104,6 +104,50 @@ public sealed class AdMobHelper : IDisposable
     }
 
     /// <summary>
+    /// AAA-Audit P1: Spieler kann den Consent-Status jederzeit zuruecksetzen.
+    /// Play-Store-DSGVO-Pflicht: 'Withdraw consent at any time'.
+    /// Setzt UMP-State zurueck und zeigt das Consent-Form sofort wieder.
+    /// </summary>
+    public static void ResetConsent(Activity activity, Action? onComplete = null)
+    {
+        try
+        {
+            var consentInfo = UserMessagingPlatform.GetConsentInformation(activity);
+            consentInfo.Reset();
+            // Direkt neu erfragen, damit der Spieler unmittelbar das Form sieht.
+            RequestConsent(activity, onComplete);
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error("AdMobHelper", $"ResetConsent failed: {ex.Message}");
+            onComplete?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// AAA-Audit P1: Privacy-Options-Form zeigen (UMP "Manage Options"-Flow).
+    /// Wird vom Settings-Button aufgerufen, wenn der Spieler seine Auswahl aendern will,
+    /// ohne den State komplett zurueckzusetzen.
+    /// </summary>
+    public static void ShowPrivacyOptionsForm(Activity activity, Action? onComplete = null)
+    {
+        try
+        {
+            UserMessagingPlatform.ShowPrivacyOptionsForm(activity, new ConsentFormDismissedListener(error =>
+            {
+                if (error != null)
+                    Android.Util.Log.Warn("AdMobHelper", $"Privacy options form dismissed with error: {error.Message}");
+                onComplete?.Invoke();
+            }));
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error("AdMobHelper", $"ShowPrivacyOptionsForm failed: {ex.Message}");
+            onComplete?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// Attach a banner ad as a FrameLayout overlay above the Avalonia tab bar.
     /// For apps with bottom tabs, pass the tab bar height in dp so the ad sits above it.
     /// For apps without tabs (e.g. BomberBlast), pass 0 for ad at the very bottom.

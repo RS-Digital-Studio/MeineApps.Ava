@@ -1,0 +1,43 @@
+﻿{
+  "maxScore": 11,
+  "score": 11,
+  "confidence": 1,
+  "hits": [
+    {
+      "category": "PriceAction",
+      "reason": "Test:PriceAction"
+    },
+    {
+      "category": "FibonacciGoldenPocket",
+      "reason": "Test:FibonacciGoldenPocket"
+    },
+    {
+      "category": "GklMasterZone",
+      "reason": "Test:GklMasterZone"
+    },
+    {
+      "category": "FahrplanAlignment",
+      "reason": "Test:FahrplanAlignment"
+    },
+    {
+      "category": "HigherTfSequence",
+      "reason": "Test:HigherTfSequence"
+    },
+    {
+      "category": "VolumeSpike",
+      "reason": "Test:VolumeSpike"
+    },
+    {
+      "category": "BcklReEntry",
+      "reason": "Test:BcklReEntry"
+    },
+    {
+      "category": "HighProbabilityZone",
+      "reason": "Test:HighProbabilityZone"
+    },
+    {
+      "category": "FavorableFundingRate",
+      "reason": "Test:FavorableFundingRate"
+    }
+  ]
+}

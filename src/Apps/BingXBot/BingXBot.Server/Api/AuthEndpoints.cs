@@ -116,5 +116,42 @@ public static class AuthEndpoints
                 RefreshToken: rec.RefreshToken,
                 TokenLifetimeSeconds: tokens.TokenLifetimeSeconds));
         }).RequireRateLimiting("refresh");
+
+        // Phase 18 / G3 — Single-Device-Logout: revoked nur den Bearer-Token des aktuellen Aufrufs.
+        // Der RefreshToken bleibt im Store (Tap kann erneut refreshed werden), allerdings ohne
+        // gueltigen Access-Token muss der Client trotzdem refreshen — d.h. de facto Single-Logout.
+        // Fuer "alle Tokens raus" siehe AuthLogoutOthers + zusaetzlichem expliziten Refresh-Revoke.
+        app.MapPost(ApiRoutes.AuthLogout, (HttpContext ctx, AuthTokenStore tokens) =>
+        {
+            var current = ExtractBearerToken(ctx);
+            if (string.IsNullOrEmpty(current))
+                return Results.Json(new ErrorResponse("invalid_request", "Kein Bearer-Token im Header"),
+                    statusCode: StatusCodes.Status401Unauthorized);
+            tokens.Revoke(current);
+            return Results.NoContent();
+        });
+
+        // Phase 18 / G3 — Logout-überall: revoked alle Tokens AUSSER dem aktuell genutzten.
+        // Use-case: "Mein Handy ist weg, ich melde mich vom Desktop und schmeisse alle anderen Sessions raus".
+        app.MapPost(ApiRoutes.AuthLogoutOthers, (HttpContext ctx, AuthTokenStore tokens) =>
+        {
+            var current = ExtractBearerToken(ctx);
+            if (string.IsNullOrEmpty(current))
+                return Results.Json(new ErrorResponse("invalid_request", "Kein Bearer-Token im Header"),
+                    statusCode: StatusCodes.Status401Unauthorized);
+            var removed = tokens.RevokeAllExcept(current);
+            return Results.Ok(new { revokedCount = removed });
+        });
+    }
+
+    /// <summary>Phase 18 / G3 — Helper: extrahiert den Bearer-Token aus dem Authorization-Header.</summary>
+    private static string? ExtractBearerToken(HttpContext ctx)
+    {
+        var auth = ctx.Request.Headers.Authorization.ToString();
+        if (string.IsNullOrEmpty(auth)) return null;
+        const string prefix = "Bearer ";
+        if (auth.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return auth.Substring(prefix.Length).Trim();
+        return null;
     }
 }

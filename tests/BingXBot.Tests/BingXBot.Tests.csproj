@@ -12,6 +12,9 @@
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <!-- Phase 18 / G5 + G6 — Snapshot- + Property-Based-Tests -->
+    <PackageReference Include="Verify.Xunit" />
+    <PackageReference Include="FsCheck.Xunit" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Libraries\BingXBot.Core\BingXBot.Core.csproj" />

@@ -30,6 +30,8 @@ var services = builder.Services;
 
 // Server-Internals
 services.AddSingleton<AuthTokenStore>();
+// Phase 18 / G3 — Periodischer Cleanup expired Bearer/Refresh-Tokens (24h-Tick).
+services.AddHostedService<BingXBot.Server.Services.AuthTokenCleanupService>();
 services.AddSingleton<PairingService>();
 services.AddSingleton<PiCredentialStore>();
 services.AddSingleton<ISecureStorageService>(sp => sp.GetRequiredService<PiCredentialStore>());
@@ -300,6 +302,8 @@ app.MapAuthEndpoints();
 app.MapStatusEndpoints();
 app.MapBotControlEndpoints();
 app.MapSettingsEndpoints();
+// Phase 18 / G4 — interner Metrics-Snapshot-Endpoint.
+app.MapMetricsEndpoints();
 app.MapTradesAndLogsEndpoints();
 app.MapBacktestEndpoints();
 // v1.5.2 Phase 4 / v1.5.3 Phase 5 — Decision-Trail + Stats-Breakdown

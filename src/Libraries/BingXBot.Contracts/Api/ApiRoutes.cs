@@ -13,6 +13,12 @@ public static class ApiRoutes
     public const string PairComplete = ApiPrefix + "/pair/complete";
     public const string PairCancel = ApiPrefix + "/pair/cancel";
     public const string AuthRefresh = ApiPrefix + "/auth/refresh";
+    /// <summary>Phase 18 / G3 — Revoke des aktuell verwendeten Tokens (Single-Device-Logout).</summary>
+    public const string AuthLogout = ApiPrefix + "/auth/logout";
+    /// <summary>Phase 18 / G3 — Revoke aller Tokens ausser dem aktuell verwendeten (Logout-überall).</summary>
+    public const string AuthLogoutOthers = ApiPrefix + "/auth/logout-others";
+    /// <summary>Phase 18 / G4 — Internal Metrics-Snapshot (JSON, keine externe Exporter-Dependency).</summary>
+    public const string MetricsInternal = ApiPrefix + "/metrics/internal";
 
     // Health (auth-frei, fuer Liveness-Check)
     public const string Health = ApiPrefix + "/health";

@@ -1,0 +1,6 @@
+﻿{
+  "maxScore": 11,
+  "score": 2,
+  "confidence": 0.1818181818181818181818181818,
+  "singleHit": "GklMasterZone"
+}

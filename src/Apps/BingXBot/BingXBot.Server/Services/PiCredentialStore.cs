@@ -44,9 +44,16 @@ public sealed class PiCredentialStore : ISecureStorageService
         _hasCredentials = File.Exists(_credentialsPath);
     }
 
+    /// <summary>Phase 18 / G2 — Ciphertext-Versions-Marker. v2 = AES-GCM (authentisiert).</summary>
+    private const byte CiphertextVersionAesGcm = 0x02;
+
     public async Task SaveCredentialsAsync(string apiKey, string apiSecret)
     {
         var json = JsonSerializer.Serialize(new CredentialData(apiKey, apiSecret));
+        // Phase 18 / G2 — AES-GCM statt AES-CBC. GCM ist authentisiert: jeder Modifikations-
+        // Versuch am Ciphertext wirft beim Decrypt eine CryptographicException (Tag-Mismatch),
+        // statt mit "interessantem" Klartext zu arbeiten. Auf Windows weiterhin DPAPI (legacy
+        // Verhalten — DPAPI ist vom Windows-Login-Account abgeleitet, AES-GCM auf Pi-Linux).
         var encrypted = Protect(Encoding.UTF8.GetBytes(json), GetOrCreateMasterKey());
         await AtomicWriteAsync(_credentialsPath, encrypted,
             UnixFileMode.UserRead | UnixFileMode.UserWrite);
@@ -86,7 +93,22 @@ public sealed class PiCredentialStore : ISecureStorageService
             var decrypted = Unprotect(encrypted, GetOrCreateMasterKey());
             var json = Encoding.UTF8.GetString(decrypted);
             var creds = JsonSerializer.Deserialize<CredentialData>(json);
-            if (creds != null) return (creds.ApiKey, creds.ApiSecret);
+            if (creds != null)
+            {
+                // Phase 18 / G2 — Auto-Migrate v1 (AES-CBC) → v2 (AES-GCM) on first successful read.
+                // Wenn die Datei nicht mit dem v2-Magic-Byte beginnt, schreiben wir sie mit
+                // dem neuen Format zurueck. Bei v2 ist das ein No-Op (Re-Save nur bei Versions-Drift).
+                if (encrypted.Length == 0 || encrypted[0] != CiphertextVersionAesGcm)
+                {
+                    try
+                    {
+                        await SaveCredentialsAsync(creds.ApiKey, creds.ApiSecret).ConfigureAwait(false);
+                        Console.Error.WriteLine("[PiCredentialStore] credentials.bin auf v2 (AES-GCM) migriert.");
+                    }
+                    catch { /* Lese-Pfad darf nicht fehlschlagen nur weil Save scheitert */ }
+                }
+                return (creds.ApiKey, creds.ApiSecret);
+            }
         }
         catch { /* ggf. Legacy-Format → Fallback unten */ }
 
@@ -146,16 +168,25 @@ public sealed class PiCredentialStore : ISecureStorageService
                 System.Security.Cryptography.DataProtectionScope.CurrentUser);
         }
 
-        using var aes = Aes.Create();
-        aes.Key = key;
-        aes.GenerateIV();
+        // Phase 18 / G2 — AES-GCM (authentisiert). Layout:
+        // [0]: Version-Magic (0x02)
+        // [1..13]: 12-Byte Nonce (zufaellig pro Save)
+        // [13..N-16]: Ciphertext
+        // [N-16..N]: 16-Byte GCM-Tag
+        var nonce = RandomNumberGenerator.GetBytes(12);
+        var ciphertext = new byte[data.Length];
+        var tag = new byte[16];
+        using (var aesGcm = new AesGcm(key, tagSizeInBytes: 16))
+        {
+            aesGcm.Encrypt(nonce, data, ciphertext, tag);
+        }
 
-        using var ms = new MemoryStream();
-        ms.Write(aes.IV, 0, aes.IV.Length);
-        using var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
-        cs.Write(data);
-        cs.FlushFinalBlock();
-        return ms.ToArray();
+        var output = new byte[1 + 12 + ciphertext.Length + 16];
+        output[0] = CiphertextVersionAesGcm;
+        Buffer.BlockCopy(nonce, 0, output, 1, 12);
+        Buffer.BlockCopy(ciphertext, 0, output, 13, ciphertext.Length);
+        Buffer.BlockCopy(tag, 0, output, 13 + ciphertext.Length, 16);
+        return output;
     }
 
     private static byte[] Unprotect(byte[] data, byte[] key)
@@ -166,10 +197,29 @@ public sealed class PiCredentialStore : ISecureStorageService
                 System.Security.Cryptography.DataProtectionScope.CurrentUser);
         }
 
+        // Phase 18 / G2 — Versionsmarker pruefen. Neues Format ist v2 (AES-GCM), Legacy v1 ist
+        // 16-Byte-IV + AES-CBC ohne Versionsbyte. Heuristik: Wenn das erste Byte exakt 0x02 ist
+        // UND die Datenlaenge mindestens 1+12+16 = 29 ist, behandeln wir das als v2.
+        if (data.Length >= 29 && data[0] == CiphertextVersionAesGcm)
+        {
+            var nonce = new byte[12];
+            Buffer.BlockCopy(data, 1, nonce, 0, 12);
+            var cipherLen = data.Length - 13 - 16;
+            var ciphertext = new byte[cipherLen];
+            Buffer.BlockCopy(data, 13, ciphertext, 0, cipherLen);
+            var tag = new byte[16];
+            Buffer.BlockCopy(data, 13 + cipherLen, tag, 0, 16);
+            var plaintext = new byte[cipherLen];
+            using var aesGcm = new AesGcm(key, tagSizeInBytes: 16);
+            aesGcm.Decrypt(nonce, ciphertext, tag, plaintext); // wirft CryptographicException bei Tag-Mismatch
+            return plaintext;
+        }
+
+        // Legacy v1: AES-CBC. Wir entschluesseln und der Aufrufer schreibt im Erfolgsfall mit v2 zurueck.
         var iv = new byte[16];
         Array.Copy(data, 0, iv, 0, 16);
-        var ciphertext = new byte[data.Length - 16];
-        Array.Copy(data, 16, ciphertext, 0, ciphertext.Length);
+        var legacyCiphertext = new byte[data.Length - 16];
+        Array.Copy(data, 16, legacyCiphertext, 0, legacyCiphertext.Length);
 
         using var aes = Aes.Create();
         aes.Key = key;
@@ -177,7 +227,7 @@ public sealed class PiCredentialStore : ISecureStorageService
 
         using var ms = new MemoryStream();
         using var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
-        cs.Write(ciphertext);
+        cs.Write(legacyCiphertext);
         cs.FlushFinalBlock();
         return ms.ToArray();
     }

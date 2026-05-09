@@ -490,21 +490,11 @@ public partial class LiveTradingService
     private async Task<Order?> ProbeExistingTpOrderAsync(
         string symbol, Side closeSide, decimal expectedQuantity, decimal expectedPrice, string tpLabel)
     {
+        // Phase 18 / G7 (Teil-Extraktion) — Match-Logik in pure-function-Helper TpOrderMatcher.
+        // Hier nur noch der I/O-Part (REST-Call) + Logging.
         var openOrders = await _restClient.GetOpenOrdersAsync(symbol).ConfigureAwait(false);
-        var qtyTolerance = Math.Max(expectedQuantity * 0.005m, 1e-8m);
-        var priceTolerance = Math.Max(expectedPrice * 0.0005m, 1e-8m);
-        Order? match = null;
-        foreach (var o in openOrders)
-        {
-            if (o.Symbol != symbol) continue;
-            if (o.Side != closeSide) continue;
-            if (!o.ReduceOnly) continue;
-            if (o.Type != OrderType.Limit) continue;
-            if (Math.Abs(o.Quantity - expectedQuantity) > qtyTolerance) continue;
-            if (Math.Abs(o.Price - expectedPrice) > priceTolerance) continue;
-            match = o;
-            break;
-        }
+        var match = Reconciliation.TpOrderMatcher.FindMatchingTpOrder(
+            openOrders, symbol, closeSide, expectedQuantity, expectedPrice);
         if (match != null)
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",

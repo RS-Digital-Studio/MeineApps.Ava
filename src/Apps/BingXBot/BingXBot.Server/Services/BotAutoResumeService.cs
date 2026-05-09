@@ -2,6 +2,7 @@ using BingXBot.Contracts.Dto;
 using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Trading;
 
 namespace BingXBot.Server.Services;
 
@@ -35,6 +36,12 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
     /// Probe wieder gruen ist (verhindert ConnectionLoss-Endless-Loop).
     /// </summary>
     private readonly ServerHealthWatchdog? _healthWatchdog;
+    /// <summary>Phase 18 / G1 — Optional fuer Trade-Replay: liest LastHeartbeat aus DB.</summary>
+    private readonly BotDatabaseService? _dbService;
+    /// <summary>Phase 18 / G1 — Optional fuer Trade-Replay: holt Income-Records aus BingX (wenn Live-Mode).</summary>
+    private readonly LiveTradingManager? _liveManager;
+    /// <summary>Phase 18 / G1 — Drift-Schwelle, ab der ein Trade-Replay-Hint geloggt wird.</summary>
+    private static readonly TimeSpan ReplayDriftThreshold = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// Eigener Lebenszyklus-CTS (24.04.2026 Debugger-Fix Bug #5):
@@ -50,13 +57,17 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         BotSettings botSettings,
         ScannerSettings scannerSettings,
         ILogger<BotAutoResumeService> logger,
-        ServerHealthWatchdog? healthWatchdog = null)
+        ServerHealthWatchdog? healthWatchdog = null,
+        BotDatabaseService? dbService = null,
+        LiveTradingManager? liveManager = null)
     {
         _botControl = botControl;
         _botSettings = botSettings;
         _scannerSettings = scannerSettings;
         _logger = logger;
         _healthWatchdog = healthWatchdog;
+        _dbService = dbService;
+        _liveManager = liveManager;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -102,6 +113,13 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                 return;
             }
 
+            // Phase 18 / G1 — Trade-Replay-Hint VOR Engine-Start. Wenn der Pi-Heartbeat groesser
+            // als ReplayDriftThreshold ist, koennten Trades waehrend der Offline-Zeit gefuellt
+            // worden sein, die der Bot nicht in seiner DB hat. Wir loggen das transparent — eine
+            // automatische DB-Synthese (Trade-Pairing aus Income-Records) ist als naechster
+            // Schritt vermerkt (separate UI-Action).
+            await TryLogReplayHintAsync(ct).ConfigureAwait(false);
+
             var tfs = _scannerSettings.ActiveTimeframes?.ToList() ?? new List<TimeFrame>();
             _logger.LogInformation(
                 "Auto-Resume: Engine wird im {Mode}-Modus mit Timeframes [{Tfs}] reaktiviert (vor Shutdown lief der Bot).",
@@ -130,6 +148,74 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         {
             _logger.LogError(ex,
                 "Auto-Resume fehlgeschlagen — Bot bleibt gestoppt. User muss manuell Start druecken.");
+        }
+    }
+
+    /// <summary>
+    /// Phase 18 / G1 — Liest LastHeartbeatUtc aus der DB und vergleicht mit jetzt. Bei Drift
+    /// > <see cref="ReplayDriftThreshold"/> wird (im Live-Mode) die BingX-Income-History fuer
+    /// die Offline-Zeit abgerufen und als WARNING geloggt. Damit erkennt der User auf einen Blick:
+    /// "Pi war 4 h offline, in der Zeit gab es 3 Income-Records mit Σ-PnL +12 USDT — DB-Stats
+    /// koennten unvollstaendig sein". Robust: Fehler werfen den Resume nicht ab.
+    /// </summary>
+    private async Task TryLogReplayHintAsync(CancellationToken ct)
+    {
+        if (_dbService == null) return;
+        try
+        {
+            var lastHeartbeat = await _dbService.LoadLastHeartbeatAsync().ConfigureAwait(false);
+            if (lastHeartbeat == null)
+            {
+                _logger.LogInformation("Auto-Resume: Kein Heartbeat-Wert in DB (Frischer Pi oder erste Phase-18-Iteration) — kein Replay-Check.");
+                return;
+            }
+
+            var drift = DateTime.UtcNow - lastHeartbeat.Value;
+            if (drift < ReplayDriftThreshold)
+            {
+                _logger.LogInformation("Auto-Resume: Heartbeat-Drift {Drift} unter Schwelle ({Threshold}) — kein Replay noetig.",
+                    drift, ReplayDriftThreshold);
+                return;
+            }
+
+            _logger.LogWarning(
+                "Auto-Resume: Heartbeat-Drift {Drift} (LastHeartbeat={LastHeartbeat:O}) — Pi war moeglicherweise offline.",
+                drift, lastHeartbeat.Value);
+
+            // Live-Mode: BingX-Income-History auswerten.
+            if (_botSettings.LastMode == TradingMode.Live && _liveManager?.RestClient != null)
+            {
+                try
+                {
+                    var since = lastHeartbeat.Value.AddMinutes(-1); // 1 min Sicherheits-Padding
+                    var income = await _liveManager.RestClient.GetIncomeHistoryAsync(
+                        symbol: null, incomeType: "REALIZED_PNL", startTime: since, endTime: DateTime.UtcNow, limit: 100)
+                        .ConfigureAwait(false);
+
+                    if (income.Count == 0)
+                    {
+                        _logger.LogInformation("Auto-Resume Replay-Check: Keine REALIZED_PNL-Records in der Offline-Zeit gefunden.");
+                        return;
+                    }
+
+                    decimal sumPnl = 0;
+                    foreach (var rec in income) sumPnl += rec.Income;
+
+                    _logger.LogWarning(
+                        "Auto-Resume Replay-Check: {Count} REALIZED_PNL-Records waehrend Offline-Zeit, Summe-PnL = {Sum:F4} USDT. " +
+                        "DB-Statistiken (DailyPnl, RollingTrades) koennten unvollstaendig sein. " +
+                        "Folge-Iteration: automatisches DB-Backfill via Trade-Pairing.",
+                        income.Count, sumPnl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Auto-Resume Replay-Check: Income-History-Abruf fehlgeschlagen.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Auto-Resume Replay-Hint fehlgeschlagen — Resume laeuft trotzdem weiter.");
         }
     }
 

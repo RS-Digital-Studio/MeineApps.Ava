@@ -3972,6 +3972,20 @@
   <data name="DailyRewardNotif" xml:space="preserve">
     <value>Your daily reward is waiting! Don't miss it.</value>
   </data>
+  <!-- AAA audit P1: 4 new re-engagement triggers -->
+  <!-- AAA audit P2 Mascot brand: Master Hans persona in notifications. -->
+  <data name="WorkerMoodCriticalNotif" xml:space="preserve">
+    <value>Master Hans: „Your crew needs attention - mood is critical!"</value>
+  </data>
+  <data name="OfflineEarningsCappedNotif" xml:space="preserve">
+    <value>Master Hans: „Your offline storage is full - come back and collect!"</value>
+  </data>
+  <data name="BattlePassExpiringNotif" xml:space="preserve">
+    <value>Master Hans: „Season ends soon - grab the last tiers!"</value>
+  </data>
+  <data name="LiveOrderAvailableNotif" xml:space="preserve">
+    <value>Master Hans: „A live order is ready - speed pays off!"</value>
+  </data>
   <data name="Leaderboard" xml:space="preserve">
     <value>Leaderboards</value>
   </data>
@@ -6066,6 +6080,12 @@
   <data name="AchievementsEmptyText" xml:space="preserve">
     <value>110 achievements are waiting. Complete orders, level up workshops, hire workers - every action gets you closer. Your first trophy is closer than you think.</value>
   </data>
+  <data name="CraftingInventoryEmptyTitle" xml:space="preserve">
+    <value>Nothing crafted yet</value>
+  </data>
+  <data name="CraftingInventoryEmptyText" xml:space="preserve">
+    <value>Start a recipe above &#8212; your finished items will land here and can be sold.</value>
+  </data>
   <!-- Cross-Promotion (AAA audit P1): Hooks for the 11 portfolio apps. -->
   <data name="CrossPromoSectionTitle" xml:space="preserve"><value>Liked this app? Try also:</value></data>
   <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calculator Plus</value></data>
@@ -6516,33 +6536,33 @@
   <data name="SeasonStory_Spring_Ch5_Title" xml:space="preserve"><value>Capstone: City Builder of the Year</value></data>
   <data name="SeasonStory_Spring_Ch5_Text" xml:space="preserve"><value>Tier 50! The city named you Builder of the Year! Your name is now on a bronze plaque in the town hall. What season comes next, master?</value></data>
   <data name="SeasonStory_Summer_Ch1_Title" xml:space="preserve"><value>Summer on the Island</value></data>
-  <data name="SeasonStory_Summer_Ch1_Text" xml:space="preserve"><value>An investor wants to build an island resort. Pack the tools, master!</value></data>
+  <data name="SeasonStory_Summer_Ch1_Text" xml:space="preserve"><value>It's happening, Master! A billionaire investor has bought an entire island and wants to build his dream resort there. Three competitors are in the running &#8212; but he wants you. He heard what we did for the city this spring. Pack the tools, the boat leaves at six!</value></data>
   <data name="SeasonStory_Summer_Ch2_Title" xml:space="preserve"><value>The Harbour Contract</value></data>
-  <data name="SeasonStory_Summer_Ch2_Text" xml:space="preserve"><value>Tier 10. The island harbour awaits our crew.</value></data>
+  <data name="SeasonStory_Summer_Ch2_Text" xml:space="preserve"><value>Tier 10! The old island harbour is rotted &#8212; wood crumbling, pilings wobbling, no berths for the resort yachts. The investor wants a yacht harbour for 50 boats, ready in 6 weeks. Sounds like a lot? Exactly &#8212; and exactly what we do. Round up the crew, Master!</value></data>
   <data name="SeasonStory_Summer_Ch3_Title" xml:space="preserve"><value>Storm Emergency</value></data>
-  <data name="SeasonStory_Summer_Ch3_Text" xml:space="preserve"><value>Tier 25. A storm tears through half the island — we rebuild it!</value></data>
+  <data name="SeasonStory_Summer_Ch3_Text" xml:space="preserve"><value>Tier 25 &#8212; and the worst news of the decade. A century hurricane has hit the island. Half the resort is gone, roofs like confetti, the harbour underwater. The investor is about to give up. But we don't give up, you hear? We have 14 days. Evacuate, map the damage, rebuild. Go, Master!</value></data>
   <data name="SeasonStory_Summer_Ch4_Title" xml:space="preserve"><value>The Island Spectacle</value></data>
-  <data name="SeasonStory_Summer_Ch4_Text" xml:space="preserve"><value>Tier 40. The opening with fireworks!</value></data>
+  <data name="SeasonStory_Summer_Ch4_Text" xml:space="preserve"><value>Tier 40! The resort opening becomes a spectacle. 2000 guests, international press, fireworks so big you can see them all the way to the mainland. You stand next to the investor on stage, golden Island-Lock certificate in hand. The world is watching, Master. Enjoy the moment &#8212; you earned it.</value></data>
   <data name="SeasonStory_Summer_Ch5_Title" xml:space="preserve"><value>Capstone: Island Architect</value></data>
-  <data name="SeasonStory_Summer_Ch5_Text" xml:space="preserve"><value>Tier 50! The resort now bears your name.</value></data>
+  <data name="SeasonStory_Summer_Ch5_Text" xml:space="preserve"><value>Tier 50! The investor has officially named the resort after you. „Master Resort&#8220; in glowing letters above the entrance. But that's not all &#8212; he offers us a multi-year contract for three more islands. What do you say, Master? Let's see autumn first &#8212; the guilds are calling for the annual tournament.</value></data>
   <data name="SeasonStory_Autumn_Ch1_Title" xml:space="preserve"><value>The Autumn Tournament Begins</value></data>
-  <data name="SeasonStory_Autumn_Ch1_Text" xml:space="preserve"><value>The guilds call for the annual tournament. Are you in, master?</value></data>
+  <data name="SeasonStory_Autumn_Ch1_Text" xml:space="preserve"><value>It's time, Master! The guilds are calling for the great annual tournament. 28 workshops from across the country compete in five disciplines: wood, stone, metal, glass and innovation. The winner takes the Golden Hammer plus a year of the kingdom's best contracts. Are you ready?</value></data>
   <data name="SeasonStory_Autumn_Ch2_Title" xml:space="preserve"><value>First Round</value></data>
-  <data name="SeasonStory_Autumn_Ch2_Text" xml:space="preserve"><value>Tier 10 — the first tasks come in.</value></data>
+  <data name="SeasonStory_Autumn_Ch2_Text" xml:space="preserve"><value>Tier 10! Qualifying is on. Three tasks in 72 hours: an oak table for 12, a fountain restoration on the market square, and a string of festival lights. Sounds doable? Maybe. But three rivals have the same orders. Whoever delivers faster and prettier moves on. Tempo, Master!</value></data>
   <data name="SeasonStory_Autumn_Ch3_Title" xml:space="preserve"><value>Semi-Final</value></data>
-  <data name="SeasonStory_Autumn_Ch3_Text" xml:space="preserve"><value>Tier 25. Only 4 guilds remain — and we are among them!</value></data>
+  <data name="SeasonStory_Autumn_Ch3_Text" xml:space="preserve"><value>Tier 25! We're in the semi-final, Master &#8212; four guilds, one winner. Our opponents: Iron-Hammer from the north, Glassblower-Guild South, and the Furniture Dynasty from the east. The task: A complete house in 14 days. Turn-key, premium, stylish. The competition has twice our workers. But they don't have you.</value></data>
   <data name="SeasonStory_Autumn_Ch4_Title" xml:space="preserve"><value>The Final</value></data>
-  <data name="SeasonStory_Autumn_Ch4_Text" xml:space="preserve"><value>Tier 40. Head-to-head race with the competition!</value></data>
+  <data name="SeasonStory_Autumn_Ch4_Text" xml:space="preserve"><value>Tier 40! We're in the final, Master! Last opponent: The Furniture Dynasty. Task: A royal showpiece. Just 7 days. The judges are strict, the audience expects a show. The Dynasty has 200 years of tradition &#8212; we have six months of experience. But experience isn't everything. Creativity beats tradition when the spark jumps. Let it jump.</value></data>
   <data name="SeasonStory_Autumn_Ch5_Title" xml:space="preserve"><value>Capstone: Tournament Winner</value></data>
-  <data name="SeasonStory_Autumn_Ch5_Text" xml:space="preserve"><value>Tier 50! Trophy in hand — and a city festival in our name.</value></data>
+  <data name="SeasonStory_Autumn_Ch5_Text" xml:space="preserve"><value>Tier 50! We won, Master! The Golden Hammer is ours. The whole kingdom knows our name now. The Furniture Dynasty bowed &#8212; old tradition before new energy. You took us where nobody expected us. Tonight: city festival, in our name. Tomorrow: First snow falls &#8212; and winter needs heroes.</value></data>
   <data name="SeasonStory_Winter_Ch1_Title" xml:space="preserve"><value>The First Snow</value></data>
-  <data name="SeasonStory_Winter_Ch1_Text" xml:space="preserve"><value>Winter has arrived! The city needs emergency craftsmen.</value></data>
+  <data name="SeasonStory_Winter_Ch1_Text" xml:space="preserve"><value>Winter is here, Master. 30 cm of fresh snow overnight, and now the phone rings every minute. Frozen pipes, broken gutters, dead heaters &#8212; the city is in emergency. The mayor has issued an official emergency contract. We're first on the list. Suit up, Master &#8212; today gets cold.</value></data>
   <data name="SeasonStory_Winter_Ch2_Title" xml:space="preserve"><value>Frost Damage</value></data>
-  <data name="SeasonStory_Winter_Ch2_Text" xml:space="preserve"><value>Tier 10. Pipes are bursting in droves.</value></data>
+  <data name="SeasonStory_Winter_Ch2_Text" xml:space="preserve"><value>Tier 10! Minus 20 for three nights &#8212; frost damage is exploding. In Oakwood district 47 houses have no water. In the west cast pipes burst like glass bottles. We have the only crew with enough plumber-workers to handle the emergency. Double shifts, Master. But the city pays &#8212; and pays well.</value></data>
   <data name="SeasonStory_Winter_Ch3_Title" xml:space="preserve"><value>The Great Storm</value></data>
-  <data name="SeasonStory_Winter_Ch3_Text" xml:space="preserve"><value>Tier 25. A century storm — everything stands still.</value></data>
+  <data name="SeasonStory_Winter_Ch3_Text" xml:space="preserve"><value>Tier 25! A century storm sweeps across the region. No power, no heat, no phones. Half the city sits in the dark, families freezing. The mayor calls a state of emergency and hands us the lead on reconstruction. That's more than a contract, Master &#8212; that's responsibility. But who else if not us?</value></data>
   <data name="SeasonStory_Winter_Ch4_Title" xml:space="preserve"><value>Reconstruction</value></data>
-  <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Tier 40. Beam by beam we rebuild the city.</value></data>
+  <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Tier 40! The storm is over, the rebuild is on. We work day and night. 80 houses need new roofs. 200 families need heat back. The competition helps out &#8212; never seen before. Today we don't fight, today we build. Beam by beam, as you'd say. This city won't forget.</value></data>
   <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: Hero of Winter</value></data>
-  <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Tier 50! The city honors you as the Hero of Winter.</value></data>
+  <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Tier 50! The city named you „Hero of Winter&#8220; today. A bronze statue on the market square, with your hammer and your name. The families we saved come to the unveiling. They bring candles, chocolate, cake. It's not the money, Master &#8212; it's this. This is exactly why we do it all. Here's to the next spring.</value></data>
 </root>

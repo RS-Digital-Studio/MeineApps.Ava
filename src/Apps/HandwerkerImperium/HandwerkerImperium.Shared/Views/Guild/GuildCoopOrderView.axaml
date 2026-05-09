@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:firebase="using:HandwerkerImperium.Models.Firebase"
+             x:Class="HandwerkerImperium.Views.Guild.GuildCoopOrderView"
+             x:DataType="vm:GuildCoopOrderViewModel"
+             x:CompileBindings="True"
+             AutomationProperties.AutomationId="CoopOrder_Root">
+
+  <Panel>
+  <Border Classes="Card" Padding="14,12">
+    <StackPanel Spacing="10">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Text="{loc:Translate CoopOrdersTitle}"
+                     FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="{loc:Translate CoopOrdersDescription}"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+        <Border Grid.Column="1"
+                Background="{StaticResource CraftPrimaryLightBrush}"
+                CornerRadius="10" Padding="8,4"
+                IsVisible="{Binding HasOrders}">
+          <TextBlock Text="{Binding BadgeText}"
+                     FontSize="12" FontWeight="Bold"
+                     Foreground="White" />
+        </Border>
+      </Grid>
+
+      <!-- Empty-State -->
+      <TextBlock Text="{loc:Translate CoopOrdersEmpty}"
+                 FontSize="13"
+                 Foreground="{DynamicResource TextMutedBrush}"
+                 IsVisible="{Binding !HasOrders}"
+                 HorizontalAlignment="Center"
+                 Padding="0,16" />
+
+      <!-- Order-Liste -->
+      <ItemsControl ItemsSource="{Binding OpenOrders}"
+                    IsVisible="{Binding HasOrders}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="firebase:CoopOrderState">
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="10" Padding="12" Margin="0,4">
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                <TextBlock Grid.ColumnSpan="2" Grid.Row="0"
+                           Text="{Binding OrderId}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Row="1" Grid.Column="0"
+                           Text="{Binding InvitedPlayer}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Row="1" Grid.Column="1"
+                           Text="{Binding Status}"
+                           FontSize="11"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+                <StackPanel Grid.Row="2" Grid.ColumnSpan="2"
+                            Orientation="Horizontal" Spacing="8">
+                  <Button Classes="Primary"
+                          MinHeight="44" Padding="12,6"
+                          Content="{loc:Translate CoopAccept}"
+                          Command="{Binding $parent[ItemsControl].((vm:GuildCoopOrderViewModel)DataContext).AcceptCommand}"
+                          CommandParameter="{Binding}" />
+                  <Button Classes="Text"
+                          MinHeight="44" Padding="12,6"
+                          Content="{loc:Translate CoopDecline}"
+                          Command="{Binding $parent[ItemsControl].((vm:GuildCoopOrderViewModel)DataContext).DeclineCommand}"
+                          CommandParameter="{Binding}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <Button Grid.Column="1"
+                Classes="Primary"
+                MinHeight="44" Padding="12,6"
+                Command="{Binding OpenPickerCommand}"
+                AutomationProperties.AutomationId="CoopOrder_Btn_OpenPicker">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <icons:GameIcon Kind="AccountMultiplePlus" Width="18" Height="18" />
+            <TextBlock Text="{loc:Translate CoopCreateInvite}" FontSize="13" FontWeight="SemiBold" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="2"
+                Classes="Text"
+                MinHeight="44" Padding="10,6"
+                Content="{loc:Translate Refresh}"
+                Command="{Binding RefreshCommand}" />
+      </Grid>
+    </StackPanel>
+  </Border>
+
+  <!-- v2.1.0: Player-Picker-Overlay -->
+  <Panel IsVisible="{Binding IsPickerOpen}"
+         AutomationProperties.AutomationId="CoopOrder_Panel_Picker">
+    <Border Background="{DynamicResource DialogOverlayBrush}" />
+    <Border Classes="Card" CornerRadius="14" Padding="16"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            MinWidth="280" MaxWidth="380">
+      <StackPanel Spacing="10">
+        <TextBlock Text="{loc:Translate CoopPickMemberTitle}"
+                   FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding PickerCandidates}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:CoopMemberPickItem">
+                <Button Classes="Text"
+                        Padding="10,8" Margin="0,2"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        MinHeight="44"
+                        Command="{Binding $parent[ItemsControl].((vm:GuildCoopOrderViewModel)DataContext).PickMemberCommand}"
+                        CommandParameter="{Binding}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <icons:GameIcon Kind="AccountHardHat" Width="22" Height="22"
+                                    Foreground="{StaticResource CraftPrimaryBrush}" />
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <Button Classes="Text"
+                HorizontalAlignment="Right"
+                MinHeight="44" Padding="14,8"
+                Content="{loc:Translate Cancel}"
+                Command="{Binding ClosePickerCommand}" />
+      </StackPanel>
+    </Border>
+  </Panel>
+  </Panel>
+</UserControl>

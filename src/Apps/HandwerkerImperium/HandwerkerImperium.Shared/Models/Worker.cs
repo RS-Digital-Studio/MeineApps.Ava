@@ -120,6 +120,28 @@ public class Worker
     public DateTime? TrainingStartedAt { get; set; }
 
     /// <summary>
+    /// v2.1.0: Praktikanten-System. F-Tier-Worker, kostenlos eingestellt; nach 24h aktivem
+    /// Training (siehe <see cref="InternProgressTicks"/>) wird er zu E-Tier-Worker
+    /// promoviert (Lohn-pflichtig) ODER verlaesst die Werkstatt.
+    /// </summary>
+    [JsonPropertyName("isIntern")]
+    public bool IsIntern { get; set; }
+
+    /// <summary>
+    /// v2.1.0: Akkumulierte aktive Tick-Zaehler fuer Praktikanten-Training.
+    /// 1 Tick = 1 Sekunde aktive Spielzeit (NICHT Echtzeit). Promotions-Schwelle: 86400 (24h).
+    /// </summary>
+    [JsonPropertyName("internProgressTicks")]
+    public int InternProgressTicks { get; set; }
+
+    /// <summary>
+    /// v2.1.0: True wenn der Praktikant die Promotion-Schwelle erreicht hat und auf
+    /// Spieler-Entscheidung wartet (behalten = E-Tier, ablehnen = quit).
+    /// </summary>
+    [JsonPropertyName("internAwaitingPromotion")]
+    public bool InternAwaitingPromotion { get; set; }
+
+    /// <summary>
     /// Total money this worker has earned (lifetime).
     /// </summary>
     [JsonPropertyName("totalEarned")]
@@ -163,6 +185,19 @@ public class Worker
     // CALCULATED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
 
+    // ───── EffectiveEfficiency-Cache (v2.0.36) ─────
+    // Im GameLoop wird EffectiveEfficiency 1x pro Sekunde fuer JEDEN Worker
+    // (~64 im Late-Game) gelesen — die Multi-Faktor-Decimal-Berechnung ist teuer.
+    // Mood/Fatigue/Experience aendern sich aber selten (nur bei Strike-Events,
+    // Lieferungen, Training, Stunden-Tick). Hash-basierter Cache liefert pro Tick
+    // einen Cache-Hit (O(1) Hash-Vergleich) statt 8 Decimal-Multiplikationen.
+    [JsonIgnore]
+    private decimal _cachedEffectiveEfficiency;
+    [JsonIgnore]
+    private int _cachedEfficiencyHash;
+    [JsonIgnore]
+    private bool _hasCachedEfficiency;
+
     /// <summary>
     /// Effective efficiency considering all factors.
     /// Formula: BaseEfficiency * XpBonus * MoodFactor * FatigueFactor * Specialization * Personality
@@ -175,6 +210,11 @@ public class Worker
         {
             if (IsResting || IsTraining) return 0m;
 
+            // Cache-Check: Hash aller relevanten Inputs vergleichen.
+            int currentHash = ComputeEfficiencyInputHash();
+            if (_hasCachedEfficiency && currentHash == _cachedEfficiencyHash)
+                return _cachedEffectiveEfficiency;
+
             decimal baseEff = Efficiency;
             decimal xpBonus = 1m + ExperienceLevel * 0.03m;
             decimal moodFactor = GetMoodFactor();
@@ -184,8 +224,31 @@ public class Worker
             decimal equipBonus = EquippedItem?.EfficiencyBonus ?? 0m;
             decimal talentBonus = 1m + (Talent - 1) * 0.05m; // 1★=1.0x, 3★=1.10x, 5★=1.20x
 
-            return Math.Max(0m, baseEff * xpBonus * moodFactor * fatigueFactor * (1m + specBonus + equipBonus) * personalityMult * talentBonus);
+            decimal result = Math.Max(0m, baseEff * xpBonus * moodFactor * fatigueFactor * (1m + specBonus + equipBonus) * personalityMult * talentBonus);
+
+            _cachedEffectiveEfficiency = result;
+            _cachedEfficiencyHash = currentHash;
+            _hasCachedEfficiency = true;
+            return result;
         }
+    }
+
+    /// <summary>
+    /// Stabiler Hash über alle EffectiveEfficiency-Inputs. Aenderung in einem Wert
+    /// invalidiert den Cache automatisch beim naechsten Get-Aufruf — kein
+    /// Setter-Hooking noetig (Worker ist ein Plain-Model mit auto-properties).
+    /// </summary>
+    private int ComputeEfficiencyInputHash()
+    {
+        return HashCode.Combine(
+            Mood,
+            Fatigue,
+            Efficiency,
+            ExperienceLevel,
+            Talent,
+            EquippedItem?.EfficiencyBonus ?? 0m,
+            (int)Personality,
+            Specialization);
     }
 
     /// <summary>

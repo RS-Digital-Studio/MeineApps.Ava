@@ -114,6 +114,13 @@ public class PrestigeData
     public HashSet<string> ClaimedMilestones { get; set; } = [];
 
     /// <summary>
+    /// v2.0.37: Wiederholbarer „Wochen-Meilenstein" — alle 7 Prestiges +5 GS.
+    /// Counter zaehlt pro Prestige hoch; bei Erreichen von 7 wird Bonus vergeben und Counter resettet.
+    /// </summary>
+    [JsonPropertyName("prestigesSinceLastWeeklyReward")]
+    public int PrestigesSinceLastWeeklyReward { get; set; }
+
+    /// <summary>
     /// Cumulative permanent income multiplier from all prestiges.
     /// Starts at 1.0 (no bonus).
     /// </summary>

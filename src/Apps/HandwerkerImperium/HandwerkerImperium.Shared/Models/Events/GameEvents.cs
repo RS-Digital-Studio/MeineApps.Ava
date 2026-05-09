@@ -163,6 +163,42 @@ public class MiniGameResultRecordedEventArgs(MiniGameRating rating) : EventArgs
 }
 
 /// <summary>
+/// Event fired when a Perfect-Rating increment happens (v2.0.36 Mastery-System).
+/// Trigger fuer den MasteryService — enthaelt den MiniGameType, der nicht in
+/// <see cref="MiniGameResultRecordedEventArgs"/> mitgegeben wird.
+/// </summary>
+public class PerfectRatingIncrementedEventArgs(Models.Enums.MiniGameType type, int newLifetimeCount) : EventArgs
+{
+    public Models.Enums.MiniGameType MiniGameType { get; } = type;
+    public int NewLifetimeCount { get; } = newLifetimeCount;
+}
+
+/// <summary>
+/// Event fired wenn der Reputation-Tier wechselt (v2.0.37).
+/// Liefert alten + neuen Tier — Aufrufer kann Up-Direction (newTier &gt; oldTier) detecten
+/// und Confetti/FloatingText nur bei Aufstieg triggern.
+/// </summary>
+public class ReputationTierChangedEventArgs(
+    Models.Enums.CustomerReputationTier oldTier,
+    Models.Enums.CustomerReputationTier newTier) : EventArgs
+{
+    public Models.Enums.CustomerReputationTier OldTier { get; } = oldTier;
+    public Models.Enums.CustomerReputationTier NewTier { get; } = newTier;
+    public bool IsUp => NewTier > OldTier;
+}
+
+/// <summary>
+/// Event fired bei neuer persoenlicher Speedrun-Bestzeit pro Tier (v2.0.36).
+/// Belohnung wurde bereits dem GameState gutgeschrieben.
+/// </summary>
+public class SpeedrunRecordEventArgs(Models.Enums.PrestigeTier tier, TimeSpan runDuration, int goldenScrewReward) : EventArgs
+{
+    public Models.Enums.PrestigeTier Tier { get; } = tier;
+    public TimeSpan RunDuration { get; } = runDuration;
+    public int GoldenScrewReward { get; } = goldenScrewReward;
+}
+
+/// <summary>
 /// Event fired on each game tick (once per second).
 /// </summary>
 public class GameTickEventArgs : EventArgs

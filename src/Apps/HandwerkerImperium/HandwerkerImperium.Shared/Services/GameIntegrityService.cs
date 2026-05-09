@@ -62,6 +62,15 @@ public sealed class GameIntegrityService : IGameIntegrityService
             Encoding.UTF8.GetBytes(expected));
     }
 
+    /// <inheritdoc/>
+    public string ComputeStringHmac(string payload)
+    {
+        var bytes = Encoding.UTF8.GetBytes(payload ?? string.Empty);
+        using var hmac = new HMACSHA256(_hmacKey);
+        var hash = hmac.ComputeHash(bytes);
+        return Convert.ToHexStringLower(hash);
+    }
+
     /// <summary>
     /// Berechnet den HMAC-SHA256 ueber die Gilden-relevanten Werte.
     /// Format: "Level|PrestigeCount|Money|GoldenScrews|OrdersCompleted"

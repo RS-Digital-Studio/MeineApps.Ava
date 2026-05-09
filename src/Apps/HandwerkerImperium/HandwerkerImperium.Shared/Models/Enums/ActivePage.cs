@@ -27,6 +27,7 @@ public enum ActivePage
     BattlePass,
     Crafting,
     Ascension,
+    Prestige,       // v2.0.37: Single-Page-View statt Modal-Stack
 
     // MiniGames
     SawingGame,

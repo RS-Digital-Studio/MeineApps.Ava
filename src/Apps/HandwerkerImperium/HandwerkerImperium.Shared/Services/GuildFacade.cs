@@ -10,6 +10,7 @@ namespace HandwerkerImperium.Services;
 public sealed class GuildFacade : IGuildFacade
 {
     public IGuildService Guild { get; }
+    public IGuildInviteService Invite { get; }
     public IGuildResearchService Research { get; }
     public IGuildChatService Chat { get; }
     public IGuildWarSeasonService WarSeason { get; }
@@ -20,6 +21,7 @@ public sealed class GuildFacade : IGuildFacade
 
     public GuildFacade(
         IGuildService guild,
+        IGuildInviteService invite,
         IGuildResearchService research,
         IGuildChatService chat,
         IGuildWarSeasonService warSeason,
@@ -29,6 +31,7 @@ public sealed class GuildFacade : IGuildFacade
         IGuildAchievementService achievement)
     {
         Guild = guild;
+        Invite = invite;
         Research = research;
         Chat = chat;
         WarSeason = warSeason;

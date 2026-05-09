@@ -107,6 +107,20 @@ public class Order : INotifyPropertyChanged
     public DateTime? Deadline { get; set; }
 
     /// <summary>
+    /// v2.0.37: Zeitpunkt zu dem die Order pausiert wurde (App im Hintergrund).
+    /// Null = nicht pausiert. Beim Resume wird die Differenz auf <see cref="AccumulatedPauseDuration"/> addiert.
+    /// </summary>
+    [JsonPropertyName("pausedAt")]
+    public DateTime? PausedAt { get; set; }
+
+    /// <summary>
+    /// v2.0.37: Akkumulierte Pause-Dauer (in TimeSpan). Wird zur ExpiresAt-Pruefung addiert,
+    /// damit Live-Orders nicht waehrend Hintergrund-Sessions ablaufen. Cap: 5 Minuten.
+    /// </summary>
+    [JsonPropertyName("accumulatedPauseDuration")]
+    public TimeSpan AccumulatedPauseDuration { get; set; }
+
+    /// <summary>
     /// Customer ID if this order is from a regular customer.
     /// </summary>
     [JsonPropertyName("customerId")]
@@ -205,12 +219,32 @@ public class Order : INotifyPropertyChanged
 
     /// <summary>
     /// Whether this order has a deadline and it has passed.
-    /// Beruecksichtigt auch <see cref="ExpiresAt"/> (Live-Orders, v2.0.35).
+    /// Beruecksichtigt <see cref="ExpiresAt"/> + <see cref="AccumulatedPauseDuration"/> (v2.0.35/37).
     /// </summary>
     [JsonIgnore]
     public bool IsExpired =>
         (Deadline != null && DateTime.UtcNow > Deadline) ||
-        (ExpiresAt != null && DateTime.UtcNow > ExpiresAt);
+        (ExpiresAt != null && GetEffectiveNow() > ExpiresAt);
+
+    /// <summary>
+    /// v2.0.37: „Effektive Jetzt-Zeit" fuer Live-Order-Ablauf — zieht akkumulierte Pause-Dauer ab,
+    /// sodass Hintergrund-Zeit nicht zaehlt. Bei aktivem Pause-State (PausedAt != null) wird
+    /// die laufende Pause zusaetzlich abgezogen (Cap 5 Minuten).
+    /// </summary>
+    private DateTime GetEffectiveNow()
+    {
+        var now = DateTime.UtcNow;
+        var pauseTotal = AccumulatedPauseDuration;
+        if (PausedAt.HasValue)
+        {
+            var currentPause = now - PausedAt.Value;
+            if (currentPause < TimeSpan.Zero) currentPause = TimeSpan.Zero;
+            pauseTotal += currentPause;
+        }
+        // Cap auf 5 Minuten — sonst koennten Spieler Live-Orders unbegrenzt „bunkern".
+        if (pauseTotal > TimeSpan.FromMinutes(5)) pauseTotal = TimeSpan.FromMinutes(5);
+        return now - pauseTotal;
+    }
 
     /// <summary>Verbleibende Sekunden bis <see cref="ExpiresAt"/>. Null wenn kein Live-Auftrag (v2.0.35).</summary>
     [JsonIgnore]
@@ -219,7 +253,7 @@ public class Order : INotifyPropertyChanged
         get
         {
             if (!IsLive || !ExpiresAt.HasValue) return null;
-            var remaining = (ExpiresAt.Value - DateTime.UtcNow).TotalSeconds;
+            var remaining = (ExpiresAt.Value - GetEffectiveNow()).TotalSeconds;
             return remaining < 0 ? 0 : remaining;
         }
     }

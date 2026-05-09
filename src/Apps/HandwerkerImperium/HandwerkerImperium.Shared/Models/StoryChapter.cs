@@ -1,3 +1,5 @@
+using HandwerkerImperium.Models.Enums;
+
 namespace HandwerkerImperium.Models;
 
 /// <summary>
@@ -30,6 +32,24 @@ public class StoryChapter
     public int RequiredWorkshopCount { get; init; }
     public int RequiredTotalOrders { get; init; }
     public int RequiredPrestige { get; init; }
+
+    /// <summary>
+    /// Mindestanzahl abgeschlossener QuickJobs. 0 = keine Anforderung.
+    /// Ab v2.0.36 fuer Story Ch.2 — Trigger nach erstem QuickJob (Onboarding-Beschleunigung).
+    /// </summary>
+    public int RequiredQuickJobsCompleted { get; init; }
+
+    /// <summary>
+    /// v2.1.0: Mindest-Battle-Pass-Tier. 0 = keine Anforderung.
+    /// Saison-Storyline-Kapitel binden sich an Tier 1/10/25/40/50.
+    /// </summary>
+    public int RequiredBattlePassTier { get; init; }
+
+    /// <summary>
+    /// v2.1.0: Erforderliche Saison (Spring/Summer/Autumn/Winter). null = keine Anforderung.
+    /// Saison-Kapitel sind nur in der jeweils aktiven Saison freischaltbar.
+    /// </summary>
+    public Season? RequiredSeasonTheme { get; init; }
 
     /// <summary>
     /// Mindest-Prestige-Tier (z.B. 4 = Platin). 0 = keine Anforderung.

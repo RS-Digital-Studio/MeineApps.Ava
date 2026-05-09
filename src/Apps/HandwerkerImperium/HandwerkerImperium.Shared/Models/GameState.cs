@@ -9,8 +9,14 @@ namespace HandwerkerImperium.Models;
 /// </summary>
 public class GameState
 {
+    /// <summary>
+    /// v2.0.37: Aktuelle SaveGame-Version. Wird sowohl als Default fuer neue States
+    /// als auch fuer Cloud-Save Version-Checks (App-Outdated-Erkennung) genutzt.
+    /// </summary>
+    public const int CurrentStateVersion = 6;
+
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 6;
+    public int Version { get; set; } = CurrentStateVersion;
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -364,6 +370,54 @@ public class GameState
     public DailyChallengeState DailyChallengeState { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
+    // NOTIFICATION CENTER (v2.0.36 — Bell-UI ersetzt Dialog-Stacking)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Persistierte Notification-Inbox fuer den Bell-Center im Dashboard-Header.
+    /// Sammelt nicht-kritische Benachrichtigungen (DailyReward, WelcomeBackOffer,
+    /// Achievement, StreakSaved, NewStoryChapter), waehrend OfflineEarnings als
+    /// einziges Modal direkt erscheint.
+    /// </summary>
+    [JsonPropertyName("notificationInbox")]
+    public List<NotificationItem> NotificationInbox { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REPUTATION-SHOP (v2.1.0)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>v2.1.0: Verbleibende Auftraege mit Stammkunden-Garantie (aus dem Reputation-Shop).</summary>
+    [JsonPropertyName("repShopRegularCustomerCharges")]
+    public int RepShopRegularCustomerCharges { get; set; }
+
+    /// <summary>v2.1.0: Bis zu welchem Zeitpunkt der „Schnelle Lieferung"-Boost aktiv ist.</summary>
+    [JsonPropertyName("repShopFasterDeliveryUntil")]
+    public DateTime RepShopFasterDeliveryUntil { get; set; } = DateTime.MinValue;
+
+    /// <summary>v2.1.0: True wenn Workshop-Skin „Holz-Premium" gekauft wurde.</summary>
+    [JsonPropertyName("repShopWoodPremiumSkinUnlocked")]
+    public bool RepShopWoodPremiumSkinUnlocked { get; set; }
+
+    /// <summary>v2.1.0: Anzahl verbleibender Reputation-Insurance-Verwendungen (Risk-Miss → keine Rep-Verluste).</summary>
+    [JsonPropertyName("repShopInsuranceCharges")]
+    public int RepShopInsuranceCharges { get; set; }
+
+    /// <summary>
+    /// v2.1.0: Bereits ausgezahlte Co-op-Auftrags-Rewards (Order-IDs).
+    /// Verhindert Double-Pay bei wiederholtem Polling und garantiert idempotente Auszahlung
+    /// auch fuer den ersten Score-Submitter (der seinen Anteil sonst verlieren wuerde).
+    /// </summary>
+    [JsonPropertyName("claimedCoopOrderIds")]
+    public List<string> ClaimedCoopOrderIds { get; set; } = [];
+
+    /// <summary>
+    /// v2.1.0: Bereits ausgezahlte Auktions-Refunds/Worker-Receptions (Auction-IDs).
+    /// Idempotenz-Schutz nach App-Restart wenn die Settled-Transition bereits passiert ist.
+    /// </summary>
+    [JsonPropertyName("claimedAuctionIds")]
+    public List<string> ClaimedAuctionIds { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
     // TOOLS
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -479,9 +533,28 @@ public class GameState
     /// <summary>
     /// Zähler für Perfect-Ratings pro MiniGame-Typ (Key = MiniGameType als int).
     /// Wird für Auto-Complete-Feature verwendet (30x Perfect → Auto-Ergebnis, Premium 15x).
+    /// Wird bei Ascension zurueckgesetzt, damit der Spieler sich Auto-Complete neu erarbeiten muss.
     /// </summary>
     [JsonPropertyName("perfectRatingCounts")]
     public Dictionary<int, int> PerfectRatingCounts { get; set; } = new();
+
+    /// <summary>
+    /// Lifetime-Zaehler fuer Perfect-Ratings pro MiniGame-Typ (v2.0.36 Mastery-System).
+    /// Im Gegensatz zu <see cref="PerfectRatingCounts"/> wird dieser NICHT bei Ascension/Prestige
+    /// resettet — er trackt das ECHTE Lifetime-Skill-Niveau des Spielers.
+    /// Basis fuer das Mini-Game-Mastery-Tier-System (Bronze 50 / Silver 200 / Gold 1000).
+    /// </summary>
+    [JsonPropertyName("lifetimePerfectRatingCounts")]
+    public Dictionary<int, int> LifetimePerfectRatingCounts { get; set; } = new();
+
+    /// <summary>
+    /// Hoechstes claimed Mastery-Tier pro MiniGame-Typ (v2.0.36).
+    /// Key = MiniGameType als int, Value = 0 (None) bis 3 (Gold).
+    /// Bei jedem Lifetime-Schwellen-Ueberschreiten wird die Belohnung im
+    /// <see cref="MiniGameMasteryService"/> ausgezahlt und der Eintrag aktualisiert.
+    /// </summary>
+    [JsonPropertyName("claimedMiniGameMasteryTiers")]
+    public Dictionary<int, int> ClaimedMiniGameMasteryTiers { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // MANAGERS (Welle 3)

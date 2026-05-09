@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:models="using:HandwerkerImperium.Models"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
+             x:Class="HandwerkerImperium.Views.PrestigeView"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
+             x:Name="PrestigeRoot"
+             AutomationProperties.AutomationId="Prestige_Root">
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- Header -->
+    <Border Grid.Row="0"
+            Classes="CardElevated"
+            Padding="16,12"
+            CornerRadius="0,0,12,12">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Classes="Text"
+                Command="{Binding DialogVM.ConfirmDialogCancelCommand}"
+                MinWidth="44" MinHeight="44"
+                AutomationProperties.AutomationId="Prestige_Btn_Back">
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" />
+        </Button>
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+          <icons:GameIcon Kind="Star" Width="26" Height="26"
+                          Foreground="{StaticResource CraftGoldBrush}" />
+          <TextBlock Text="{loc:Translate Prestige}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+        <Border Grid.Column="2" Width="44" />
+      </Grid>
+    </Border>
+
+    <!-- Content -->
+    <ScrollViewer Grid.Row="1"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  AutomationProperties.AutomationId="Prestige_Scroll">
+      <StackPanel Spacing="16" Margin="16,16,16,80">
+
+        <!-- Tier-Auswahl-Chips (immer sichtbar wenn mehrere Tiers verfuegbar) -->
+        <Border Classes="Card" Padding="14,12"
+                IsVisible="{Binding DialogVM.HasMultiplePrestigeTiers}"
+                AutomationProperties.AutomationId="Prestige_Border_TierSelection">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{loc:Translate PrestigeChooseTier}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding DialogVM.AvailablePrestigeTierOptions}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="8" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:PrestigeTierOption">
+                    <Button Classes="Text"
+                            Padding="12,8" CornerRadius="20"
+                            MinHeight="44"
+                            CommandParameter="{Binding TierKey}">
+                      <Button.Background>
+                        <SolidColorBrush Color="{Binding Color}" Opacity="0.15" />
+                      </Button.Background>
+                      <Button.Command>
+                        <Binding Path="((vm:MainViewModel)DataContext).DialogVM.SelectPrestigeTierCommand"
+                                 ElementName="PrestigeRoot" />
+                      </Button.Command>
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <icons:GameIcon Kind="{Binding Icon}" Width="18" Height="18">
+                          <icons:GameIcon.Foreground>
+                            <SolidColorBrush Color="{Binding Color}" />
+                          </icons:GameIcon.Foreground>
+                        </icons:GameIcon>
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="13" FontWeight="SemiBold">
+                          <TextBlock.Foreground>
+                            <SolidColorBrush Color="{Binding Color}" />
+                          </TextBlock.Foreground>
+                        </TextBlock>
+                        <TextBlock Text="{Binding PointsText}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </StackPanel>
+        </Border>
+
+        <!-- Live-Vorschau (nutzt PrestigeBannerVM) -->
+        <Border Classes="Card" Padding="14,12"
+                AutomationProperties.AutomationId="Prestige_Border_Preview">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding DialogVM.ConfirmDialogTitle}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{StaticResource CraftGoldBrush}" />
+            <TextBlock Text="{Binding DialogVM.ConfirmDialogMessage}"
+                       FontSize="13" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{Binding DialogVM.BonusPpPreview}"
+                       FontSize="12"
+                       Foreground="{StaticResource PrestigeGainsBrush}"
+                       FontWeight="SemiBold"
+                       IsVisible="{Binding DialogVM.BonusPpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding DialogVM.ChallengePpPreview}"
+                       FontSize="12"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       FontWeight="SemiBold"
+                       IsVisible="{Binding DialogVM.ChallengePpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding DialogVM.CurrentRunDurationText}"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       IsVisible="{Binding DialogVM.CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </Border>
+
+        <!-- CTA -->
+        <Button Classes="Primary"
+                Padding="16,14"
+                MinHeight="56"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Command="{Binding DialogVM.ConfirmDialogAcceptCommand}"
+                AutomationProperties.AutomationId="Prestige_Btn_Confirm">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <icons:GameIcon Kind="Star" Width="22" Height="22"
+                            Foreground="{DynamicResource PrimaryContrastBrush}" />
+            <TextBlock Text="{Binding DialogVM.ConfirmDialogAcceptText}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+          </StackPanel>
+        </Button>
+
+        <Button Classes="Text"
+                MinHeight="44"
+                HorizontalAlignment="Center"
+                Command="{Binding DialogVM.ConfirmDialogCancelCommand}"
+                Content="{loc:Translate Cancel}"
+                AutomationProperties.AutomationId="Prestige_Btn_Cancel" />
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

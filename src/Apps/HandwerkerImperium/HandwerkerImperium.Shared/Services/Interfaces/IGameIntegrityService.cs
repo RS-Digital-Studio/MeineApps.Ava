@@ -19,4 +19,11 @@ public interface IGameIntegrityService
     /// Gibt false zurueck wenn keine Signatur vorhanden oder manipuliert.
     /// </summary>
     bool VerifySignature(GameState state);
+
+    /// <summary>
+    /// v2.1.0: Generischer HMAC-SHA256 ueber einen beliebigen String. Wird von
+    /// Co-op-/Auktions-Services genutzt, um Score- und Bid-Daten manipulationssicher
+    /// in Firebase abzulegen.
+    /// </summary>
+    string ComputeStringHmac(string payload);
 }

@@ -15,22 +15,27 @@ public sealed class GuildTickService : IGuildTickService
     private readonly IGuildHallService? _hallService;
     private readonly IGuildAchievementService? _achievementService;
     private readonly IGuildWarSeasonService? _warSeasonService;
+    private readonly IWorkerAuctionService? _auctionService;
 
     private const int BossCheckInterval = 60;       // Offset 20
     private const int HallCheckInterval = 60;       // Offset 40
     private const int AchievementCheckInterval = 300; // Offset 250
     private const int WarSeasonCheckInterval = 300;  // Offset 260
+    private const int AuctionCheckInterval = 300;    // 5min — Spawn neue Auktion (Offset 90)
+    private const int AuctionBotTickInterval = 5;    // 5s — NPC-Bot-Bidding-Tick (Offset 1)
 
     public GuildTickService(
         IGuildBossService? bossService = null,
         IGuildHallService? hallService = null,
         IGuildAchievementService? achievementService = null,
-        IGuildWarSeasonService? warSeasonService = null)
+        IGuildWarSeasonService? warSeasonService = null,
+        IWorkerAuctionService? auctionService = null)
     {
         _bossService = bossService;
         _hallService = hallService;
         _achievementService = achievementService;
         _warSeasonService = warSeasonService;
+        _auctionService = auctionService;
     }
 
     public void ProcessTick(GameState state, int tickCount)
@@ -53,6 +58,33 @@ public sealed class GuildTickService : IGuildTickService
         // War-Saison Phasenwechsel + Saisonende (alle 5 Minuten, Offset 260)
         if (tickCount % WarSeasonCheckInterval == 260 && _warSeasonService != null)
             CheckWarSeasonSequentialAsync().FireAndForget();
+
+        // v2.1.0: Worker-Auktion alle 5 Minuten refreshen (CurrentAuction-Update + Settle)
+        // Offset 90 — anders als die anderen Checks, damit nicht alle gleichzeitig.
+        if (tickCount % AuctionCheckInterval == 90 && _auctionService != null)
+            AuctionRefreshAndSpawnAsync().FireAndForget();
+
+        // v2.1.0: NPC-Bot-Tick alle 5s waehrend einer aktiven Auktion (Master-Client).
+        // Bots bieten zufaellig hoeher — gibt Solo-Spieler Konkurrenz, stoesst auch in
+        // groesseren Gilden, wenn niemand sonst bietet, das Hoechstgebot weiter hoch.
+        if (tickCount % AuctionBotTickInterval == 1 && _auctionService != null)
+            _auctionService.RunNpcBotTickAsync().FireAndForget();
+    }
+
+    /// <summary>
+    /// Auction: Erst Refresh (Settle abgelaufene), dann Spawn (Master-Client) — sequentiell.
+    /// </summary>
+    private async Task AuctionRefreshAndSpawnAsync()
+    {
+        try
+        {
+            await _auctionService!.RefreshAuctionAsync();
+            await _auctionService.SpawnAuctionIfMasterAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[GuildTick] Auction-Spawn fehlgeschlagen: {ex.Message}");
+        }
     }
 
     /// <summary>

@@ -121,6 +121,18 @@ public static class GameBalanceConstants
     public const int MaxParallelOrders = 3;
 
     // ═══════════════════════════════════════════════════════════════════════
+    // PRESTIGE - DIMINISHING RETURNS (v2.0.36)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Faktor fuer Diminishing Returns auf Tier-Multiplikator-Bonus bei wiederholten
+    /// Prestiges desselben Tiers. Formel: bonus / (1 + DiminishingReturnsPerTierPrestige * tierCount).
+    /// Wert 0.2 bedeutet: nach 5 Same-Tier-Prestiges nur noch 50% Bonus.
+    /// (Game-Audit-Finding [BAL-1] v2.0.36: 0.1→0.2 angehoben — verhindert Bronze-Farm-Loop.)
+    /// </summary>
+    public const decimal DiminishingReturnsPerTierPrestige = 0.2m;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOP - REBIRTH
     // ═══════════════════════════════════════════════════════════════════════
 

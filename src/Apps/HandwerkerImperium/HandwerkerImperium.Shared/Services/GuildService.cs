@@ -102,7 +102,7 @@ public sealed class GuildService : IGuildService, IDisposable
             {
                 // Definitiv nicht in einer Gilde (Online bestätigt)
                 ClearLocalCache();
-                await RegisterAsAvailableAsync();
+                await RegisterAsAvailableInternalAsync();
             }
             // else: Offline → lokalen Cache beibehalten
         }
@@ -308,7 +308,7 @@ public sealed class GuildService : IGuildService, IDisposable
             UpdateLocalCache(guildId, guildData);
 
             // Verfügbarkeits-Registrierung entfernen (Spieler ist jetzt in einer Gilde)
-            await UnregisterAvailableAsync();
+            await UnregisterAvailableInternalAsync();
 
             GuildUpdated?.Invoke();
 
@@ -339,7 +339,7 @@ public sealed class GuildService : IGuildService, IDisposable
     public async Task<bool> JoinGuildAsync(string guildId)
     {
         var uid = _firebaseService.PlayerId;
-        if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(guildId)) return false;
+        if (string.IsNullOrEmpty(uid) || !FirebaseKeyValidator.IsValid(guildId)) return false;
 
         if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
             return false;
@@ -400,7 +400,7 @@ public sealed class GuildService : IGuildService, IDisposable
             UpdateLocalCache(guildId, guildData);
 
             // Aus verfügbaren Spielern entfernen
-            await UnregisterAvailableAsync();
+            await UnregisterAvailableInternalAsync();
 
             GuildUpdated?.Invoke();
 
@@ -863,142 +863,18 @@ public sealed class GuildService : IGuildService, IDisposable
         return BaseMaxGuildMembers + membership.ResearchMaxMembersBonus + membership.HallMaxMembersBonus;
     }
 
+    // Einladungs-System (Codes, Spieler-Browser, Inbox) → ausgelagert nach <see cref="GuildInviteService"/>.
+
     // ═══════════════════════════════════════════════════════════════════════
-    // EINLADUNGS-SYSTEM
+    // VERFUEGBARKEIT (intern, vermeidet Circular DI mit GuildInviteService)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Gibt den Einladungs-Code der aktuellen Gilde zurück.
-    /// Erstellt einen 6-stelligen Code bei Bedarf und speichert ihn in Firebase.
-    /// Pfade: /guild_invite_codes/{guildId} → Code, /invite_code_to_guild/{code} → GuildId
+    /// Interner Helfer: Registriert den Spieler als verfuegbar fuer Einladungen.
+    /// Bewusst privat dupliziert (vgl. <see cref="GuildInviteService.RegisterAsAvailableAsync"/>),
+    /// um Circular DI zu vermeiden — der GuildInviteService injiziert bereits den GuildService.
     /// </summary>
-    public async Task<string?> GetOrCreateInviteCodeAsync()
-    {
-        var uid = _firebaseService.PlayerId;
-        if (string.IsNullOrEmpty(uid)) return null;
-
-        var membership = _gameStateService.State.GuildMembership;
-        if (membership == null) return null;
-
-        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
-            return null;
-        try
-        {
-            var guildId = membership.GuildId;
-
-            // Bestehenden Code laden
-            var existingCode = await _firebaseService.GetAsync<string>($"guild_invite_codes/{guildId}");
-            if (!string.IsNullOrEmpty(existingCode))
-                return existingCode;
-
-            // Neuen 6-stelligen Code generieren (Kollisionsprüfung)
-            string code;
-            int attempts = 0;
-            do
-            {
-                code = GenerateInviteCode();
-                var existing = await _firebaseService.GetAsync<string>($"invite_code_to_guild/{code}");
-                if (string.IsNullOrEmpty(existing)) break;
-                attempts++;
-            } while (attempts < 5);
-
-            // Code speichern (bidirektionales Mapping)
-            await _firebaseService.SetAsync($"guild_invite_codes/{guildId}", code);
-            await _firebaseService.SetAsync($"invite_code_to_guild/{code}", guildId);
-
-            return code;
-        }
-        catch (Exception ex)
-        {
-            _log.Error("Einladungscode erstellen fehlgeschlagen", ex);
-            return null;
-        }
-        finally
-        {
-            _lock.Release();
-        }
-    }
-
-    /// <summary>
-    /// Tritt einer Gilde per 6-stelligem Einladungs-Code bei.
-    /// Sucht den Code im /invite_code_to_guild/-Pfad und ruft JoinGuildAsync auf.
-    /// </summary>
-    public async Task<bool> JoinByInviteCodeAsync(string code)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
-                return false;
-
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return false;
-
-            // Code→GuildId Lookup
-            var guildId = await _firebaseService.GetAsync<string>(
-                $"invite_code_to_guild/{code.ToUpperInvariant()}");
-            if (string.IsNullOrEmpty(guildId))
-                return false;
-
-            // Prüfen ob Gilde noch existiert
-            var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
-            if (guildData == null)
-                return false;
-
-            return await JoinGuildAsync(guildId);
-        }
-        catch (Exception ex)
-        {
-            _log.Error("Beitritt per Einladungscode fehlgeschlagen", ex);
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Lädt verfügbare Spieler ohne Gilde (max 50, nach Aktivität sortiert).
-    /// Pfad: /available_players/{uid} → { name, level, lastActive }
-    /// </summary>
-    public async Task<List<AvailablePlayerInfo>> BrowseAvailablePlayersAsync()
-    {
-        try
-        {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return [];
-
-            var playersRaw = await _firebaseService.GetAsync<Dictionary<string, AvailablePlayerInfo>>(
-                "available_players");
-
-            if (playersRaw == null || playersRaw.Count == 0)
-                return [];
-
-            var result = new List<AvailablePlayerInfo>();
-            foreach (var (playerUid, info) in playersRaw)
-            {
-                // Eigenen Spieler ausblenden
-                if (playerUid == uid) continue;
-
-                info.Uid = playerUid;
-                result.Add(info);
-            }
-
-            // Nach Aktivität sortieren (neueste zuerst), max 50
-            result.Sort((a, b) => string.Compare(b.LastActive, a.LastActive, StringComparison.Ordinal));
-            if (result.Count > 50)
-                result.RemoveRange(50, result.Count - 50);
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _log.Error("Verfügbare Spieler laden fehlgeschlagen", ex);
-            return [];
-        }
-    }
-
-    /// <summary>
-    /// Registriert den Spieler als verfügbar für Einladungen (wenn gildelos).
-    /// Wird automatisch aufgerufen wenn der Spieler keine Gilde hat.
-    /// </summary>
-    public async Task RegisterAsAvailableAsync()
+    private async Task RegisterAsAvailableInternalAsync()
     {
         try
         {
@@ -1006,7 +882,7 @@ public sealed class GuildService : IGuildService, IDisposable
             if (string.IsNullOrEmpty(uid)) return;
 
             var state = _gameStateService.State;
-            if (state.GuildMembership != null) return; // Hat bereits eine Gilde
+            if (state.GuildMembership != null) return;
 
             await _firebaseService.SetAsync($"available_players/{uid}", new AvailablePlayerInfo
             {
@@ -1017,14 +893,16 @@ public sealed class GuildService : IGuildService, IDisposable
         }
         catch (Exception ex)
         {
-            _log.Error("Verfügbarkeits-Registrierung fehlgeschlagen", ex);
+            _log.Error("Verfuegbarkeits-Registrierung fehlgeschlagen", ex);
         }
     }
 
     /// <summary>
-    /// Entfernt die Verfügbarkeits-Registrierung (wird bei Gilden-Beitritt aufgerufen).
+    /// Interner Helfer: Entfernt die Verfuegbarkeits-Registrierung beim Gilden-Beitritt.
+    /// Bewusst privat dupliziert (vgl. <see cref="GuildInviteService.UnregisterAvailableAsync"/>),
+    /// um Circular DI zu vermeiden.
     /// </summary>
-    public async Task UnregisterAvailableAsync()
+    private async Task UnregisterAvailableInternalAsync()
     {
         try
         {
@@ -1035,136 +913,7 @@ public sealed class GuildService : IGuildService, IDisposable
         }
         catch (Exception ex)
         {
-            _log.Error("Verfügbarkeits-Abmeldung fehlgeschlagen", ex);
-        }
-    }
-
-    private static string GenerateInviteCode()
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Span<char> code = stackalloc char[6];
-        for (int i = 0; i < 6; i++)
-            code[i] = chars[System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, chars.Length)];
-        return new string(code);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // EINLADUNGS-INBOX
-    // ═══════════════════════════════════════════════════════════════════════
-
-    public async Task<bool> SendInviteAsync(string targetUid)
-    {
-        try
-        {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
-
-            var membership = _gameStateService.State.GuildMembership;
-            if (membership == null) return false;
-
-            var guildId = membership.GuildId;
-
-            // Gilden-Daten für die Einladung laden
-            var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
-            if (guildData == null) return false;
-
-            var invite = new GuildInvitation
-            {
-                GuildName = guildData.Name,
-                GuildIcon = guildData.Icon,
-                GuildColor = guildData.Color,
-                GuildLevel = guildData.Level,
-                MemberCount = guildData.MemberCount,
-                InvitedBy = PlayerName ?? "Player",
-                InvitedAt = DateTime.UtcNow.ToString("O")
-            };
-
-            // Max 10 Einladungen pro Spieler prüfen
-            var existing = await _firebaseService.GetAsync<Dictionary<string, GuildInvitation>>(
-                $"player_invites/{targetUid}");
-            if (existing != null && existing.Count >= 10)
-            {
-                // Älteste Einladung löschen
-                var oldest = existing.OrderBy(e => e.Value.InvitedAt).First();
-                await _firebaseService.DeleteAsync($"player_invites/{targetUid}/{oldest.Key}");
-            }
-
-            await _firebaseService.SetAsync($"player_invites/{targetUid}/{guildId}", invite);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _log.Error("Einladung senden fehlgeschlagen", ex);
-            return false;
-        }
-    }
-
-    public async Task<List<(string guildId, GuildInvitation invite)>> GetReceivedInvitesAsync()
-    {
-        try
-        {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return [];
-
-            await _firebaseService.EnsureAuthenticatedAsync();
-
-            var invitesRaw = await _firebaseService.GetAsync<Dictionary<string, GuildInvitation>>(
-                $"player_invites/{uid}");
-            if (invitesRaw == null || invitesRaw.Count == 0) return [];
-
-            var result = new List<(string guildId, GuildInvitation invite)>();
-            foreach (var (guildId, invite) in invitesRaw)
-            {
-                result.Add((guildId, invite));
-            }
-
-            // Nach Datum sortieren (neueste zuerst)
-            result.Sort((a, b) => string.Compare(b.invite.InvitedAt, a.invite.InvitedAt, StringComparison.Ordinal));
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _log.Error("Einladungen laden fehlgeschlagen", ex);
-            return [];
-        }
-    }
-
-    public async Task<bool> AcceptInviteAsync(string guildId)
-    {
-        try
-        {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(guildId)) return false;
-
-            // Gilde beitreten
-            var success = await JoinGuildAsync(guildId);
-            if (!success) return false;
-
-            // Alle Einladungen löschen
-            await _firebaseService.DeleteAsync($"player_invites/{uid}");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _log.Error("Einladung annehmen fehlgeschlagen", ex);
-            return false;
-        }
-    }
-
-    public async Task<bool> DeclineInviteAsync(string guildId)
-    {
-        try
-        {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(guildId)) return false;
-
-            await _firebaseService.DeleteAsync($"player_invites/{uid}/{guildId}");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _log.Error("Einladung ablehnen fehlgeschlagen", ex);
-            return false;
+            _log.Error("Verfuegbarkeits-Abmeldung fehlgeschlagen", ex);
         }
     }
 
@@ -1177,7 +926,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !FirebaseKeyValidator.IsValid(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
             if (membership == null) return false;
@@ -1207,7 +956,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !FirebaseKeyValidator.IsValid(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
             if (membership == null) return false;
@@ -1237,7 +986,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !FirebaseKeyValidator.IsValid(targetUid)) return false;
             if (uid == targetUid) return false; // Sich selbst kann man nicht kicken
 
             var membership = _gameStateService.State.GuildMembership;
@@ -1279,7 +1028,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !FirebaseKeyValidator.IsValid(targetUid)) return false;
             if (uid == targetUid) return false; // Keine Übertragung an sich selbst
 
             var membership = _gameStateService.State.GuildMembership;
@@ -1528,24 +1277,6 @@ public sealed class GuildService : IGuildService, IDisposable
     private void ClearLocalCache()
     {
         _gameStateService.State.GuildMembership = null;
-    }
-
-    /// <summary>
-    /// Prueft ob ein Key fuer Firebase-Pfade gueltig ist.
-    /// Firebase verbietet: '.', '$', '#', '[', ']', '/' und leere Keys.
-    /// </summary>
-    private static bool IsValidFirebaseKey(string? key)
-    {
-        if (string.IsNullOrEmpty(key)) return false;
-
-        for (int i = 0; i < key.Length; i++)
-        {
-            var c = key[i];
-            if (c == '.' || c == '$' || c == '#' || c == '[' || c == ']' || c == '/')
-                return false;
-        }
-
-        return true;
     }
 
     private static DateTime GetCurrentMonday()

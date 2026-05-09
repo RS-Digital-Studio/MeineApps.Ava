@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.ReputationShopView"
+             x:DataType="vm:ReputationShopViewModel"
+             x:CompileBindings="True"
+             AutomationProperties.AutomationId="RepShop_Root">
+
+  <Border Classes="Card" Padding="14,12"
+          IsVisible="{Binding IsUnlocked}">
+    <StackPanel Spacing="10">
+      <!-- Header mit Reputation-Anzeige -->
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <icons:GameIcon Grid.Column="0" Kind="Star"
+                        Width="22" Height="22"
+                        Foreground="{StaticResource CraftGoldBrush}" />
+        <StackPanel Grid.Column="1" Margin="10,0" Spacing="2">
+          <TextBlock Text="{loc:Translate RepShopTitle}"
+                     FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="{loc:Translate RepShopDescription}"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+        <Border Grid.Column="2"
+                Background="{StaticResource CraftPrimaryLightBrush}"
+                CornerRadius="8" Padding="8,4">
+          <TextBlock Text="{Binding ReputationDisplay}"
+                     FontSize="12" FontWeight="Bold"
+                     Foreground="White" />
+        </Border>
+      </Grid>
+
+      <!-- Item-Liste -->
+      <ItemsControl ItemsSource="{Binding Items}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:ReputationShopItemDisplay">
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="10" Padding="12" Margin="0,4">
+              <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" RowSpacing="2">
+                <icons:GameIcon Grid.Column="0" Grid.RowSpan="2"
+                                Kind="{Binding IconKind}"
+                                Width="32" Height="32"
+                                VerticalAlignment="Center"
+                                Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Grid.Row="0" Grid.Column="1"
+                           Text="{Binding Name}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Margin="10,0,0,0"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Row="1" Grid.Column="1"
+                           Text="{Binding Description}"
+                           FontSize="11" TextWrapping="Wrap"
+                           Margin="10,0,0,0"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2"
+                        Classes="Primary"
+                        MinHeight="44" Padding="12,6"
+                        VerticalAlignment="Center"
+                        IsEnabled="{Binding CanAfford}"
+                        Content="{Binding CostText}"
+                        Command="{Binding $parent[ItemsControl].((vm:ReputationShopViewModel)DataContext).BuyCommand}"
+                        CommandParameter="{Binding}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </Border>
+</UserControl>

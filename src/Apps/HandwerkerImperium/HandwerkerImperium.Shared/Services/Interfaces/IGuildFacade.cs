@@ -17,8 +17,11 @@ namespace HandwerkerImperium.Services.Interfaces;
 /// </summary>
 public interface IGuildFacade
 {
-    /// <summary>Kern-Gildenservice (CRUD, Invites, Browse, Rollen).</summary>
+    /// <summary>Kern-Gildenservice (CRUD, Browse, Rollen, MemberCount).</summary>
     IGuildService Guild { get; }
+
+    /// <summary>Einladungs-Subsystem (Invite-Codes, Spieler-Browser, Inbox).</summary>
+    IGuildInviteService Invite { get; }
 
     /// <summary>Gilden-Forschungsbaum (18 Technologien, Timer, Effekt-Cache).</summary>
     IGuildResearchService Research { get; }

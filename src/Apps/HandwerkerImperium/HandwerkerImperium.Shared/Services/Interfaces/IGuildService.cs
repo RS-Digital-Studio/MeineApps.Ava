@@ -47,36 +47,7 @@ public interface IGuildService
     /// <summary>Berechnet max. Gilden-Mitglieder (20 + Forschungs-Boni aus GuildMembership-Cache).</summary>
     int GetMaxMembers();
 
-    // ── Einladungs-System ──
-
-    /// <summary>Gibt den Einladungs-Code der aktuellen Gilde zurück (erstellt einen bei Bedarf).</summary>
-    Task<string?> GetOrCreateInviteCodeAsync();
-
-    /// <summary>Tritt einer Gilde per Einladungs-Code bei.</summary>
-    Task<bool> JoinByInviteCodeAsync(string code);
-
-    /// <summary>Lädt verfügbare Spieler ohne Gilde (max 50, nach Aktivität sortiert).</summary>
-    Task<List<AvailablePlayerInfo>> BrowseAvailablePlayersAsync();
-
-    /// <summary>Registriert den Spieler als verfügbar (wenn gildelos).</summary>
-    Task RegisterAsAvailableAsync();
-
-    /// <summary>Entfernt die Verfügbarkeits-Registrierung (wenn Gilde beigetreten).</summary>
-    Task UnregisterAvailableAsync();
-
-    // ── Einladungs-Inbox ──
-
-    /// <summary>Sendet eine direkte Einladung an einen Spieler.</summary>
-    Task<bool> SendInviteAsync(string targetUid);
-
-    /// <summary>Lädt empfangene Einladungen für den aktuellen Spieler.</summary>
-    Task<List<(string guildId, GuildInvitation invite)>> GetReceivedInvitesAsync();
-
-    /// <summary>Nimmt eine Einladung an (beitritt Gilde, löscht alle anderen Einladungen).</summary>
-    Task<bool> AcceptInviteAsync(string guildId);
-
-    /// <summary>Lehnt eine einzelne Einladung ab.</summary>
-    Task<bool> DeclineInviteAsync(string guildId);
+    // Einladungs-System (Codes, Spieler-Browser, Inbox) → siehe <see cref="IGuildInviteService"/>.
 
     // ── Rollen-Management (3 Stufen: Leader/Officer/Member) ──
 

@@ -28,6 +28,9 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
     private float _hammerPhase; // 0-1 zyklisch
     private const float HammerCycleDuration = 1.5f;
 
+    // --- AAA-Audit P2 Mascot: Splash-Start-Zeit fuer Hans-Idle-Animation ---
+    private readonly DateTime _splashStart = DateTime.UtcNow;
+
     // --- Gecachte Paints (kein per-frame Allokation) ---
     private readonly SKPaint _bgPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _titlePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -244,6 +247,18 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
         RenderHammer(canvas, w, h);
         RenderImpactSparks(canvas, w, h);
         RenderEmbers(canvas, w, h);
+
+        // AAA-Audit P2 Mascot-Brand-Pass: Meister Hans als kleines Portrait
+        // unten rechts im Splash. Nutzt MeisterHansRenderer (AI-Bitmap mit
+        // prozeduralem Fallback) — schon im Game integriert.
+        var hansSize = Math.Min(w * 0.18f, 96f);
+        var hansBounds = new SKRect(
+            w - hansSize - 16f,
+            h - hansSize - 16f - h * 0.22f, // ueber dem Fortschrittsbalken
+            w - 16f,
+            h - 16f - h * 0.22f);
+        var hansElapsed = (float)((DateTime.UtcNow - _splashStart).TotalSeconds);
+        MeisterHansRenderer.Render(canvas, hansBounds, "excited", hansElapsed, isBlinking: false);
 
         // Fortschrittsbalken bei y ~ 72%
         var barWidth = Math.Min(260f, w * 0.6f);

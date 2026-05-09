@@ -90,6 +90,11 @@ public partial class App : Application
             gss.ChallengeConstraints = Services.GetService<IChallengeConstraintService>();
         }
 
+        // v2.0.36: MasteryService eager auflösen, damit er sich auf PerfectRatingIncremented
+        // subscribed (passiert im Constructor). Ohne expliziten Resolve waere er erst nach
+        // dem ersten MainViewModel-Resolve aktiv — und nur falls er injiziert wird.
+        _ = Services.GetService<IMiniGameMasteryService>();
+
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();
         locService.Initialize();
@@ -261,6 +266,9 @@ public partial class App : Application
         services.AddSingleton<ISaveGameService, SaveGameService>();
         services.AddSingleton<IGameLoopService, GameLoopService>();
         services.AddSingleton<IAchievementService, AchievementService>();
+        // v2.0.36: Mini-Game-Mastery (Bronze/Silver/Gold pro Mini-Game-Type) — subscribed
+        // direkt auf IGameStateService.PerfectRatingIncremented im Constructor.
+        services.AddSingleton<IMiniGameMasteryService, MiniGameMasteryService>();
         services.AddSingleton<IAudioService, AudioService>();
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IPlayGamesService, PlayGamesService>();
@@ -284,6 +292,19 @@ public partial class App : Application
         services.AddSingleton<IPrestigeService, PrestigeService>();
         services.AddSingleton<IChallengeConstraintService, ChallengeConstraintService>();
         services.AddSingleton<IContextualHintService, ContextualHintService>();
+        // v2.0.36: Notification-Center (Bell-UI) ersetzt Dialog-Stacking beim Re-Open.
+        services.AddSingleton<INotificationCenterService, NotificationCenterService>();
+        services.AddSingleton<NotificationCenterViewModel>();
+        // v2.0.39 Audit-Fix U1: WhatsNew-Dialog fuer Update-Spieler.
+        services.AddSingleton<IWhatsNewService, WhatsNewService>();
+        // v2.1.0: Reputation-Shop (3. Waehrung neben Geld + GS).
+        services.AddSingleton<IReputationShopService, ReputationShopService>();
+        services.AddSingleton<ReputationShopViewModel>();
+        // v2.1.0 Sprint-3 Big Bets: Co-op-Auftraege + Worker-Auktionen via Firebase.
+        services.AddSingleton<IGuildCoopOrderService, GuildCoopOrderService>();
+        services.AddSingleton<IWorkerAuctionService, WorkerAuctionService>();
+        services.AddSingleton<ViewModels.Guild.GuildCoopOrderViewModel>();
+        services.AddSingleton<ViewModels.Auctions.WorkerAuctionViewModel>();
 
         // New Game Services (v2.0)
         services.AddSingleton<IWorkerService, WorkerService>();
@@ -314,8 +335,11 @@ public partial class App : Application
         services.AddSingleton<IAnalyticsService, AnalyticsService>();
         services.AddSingleton<IRemoteConfigService, RemoteConfigService>();
         services.AddSingleton<ICloudSaveService, CloudSaveService>();
+        // P1.3 AAA-Audit: Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
+        services.AddSingleton<IDailyBundleService, DailyBundleService>();
 
         services.AddSingleton<IGuildService, GuildService>();
+        services.AddSingleton<IGuildInviteService, GuildInviteService>();
         services.AddSingleton<ICraftingService, CraftingService>();
         services.AddSingleton<IAutoProductionService, AutoProductionService>();
 

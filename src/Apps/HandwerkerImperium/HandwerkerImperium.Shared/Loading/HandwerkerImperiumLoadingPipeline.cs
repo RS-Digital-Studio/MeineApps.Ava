@@ -25,7 +25,7 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
         AddStep(new LoadingStep
         {
             Name = "Shader+ViewModel+Icons",
-            DisplayName = loc.GetString("SplashStep_Graphics") ?? "Grafik-Engine laden...",
+            DisplayName = loc.GetString("SplashStep_Graphics") ?? "Loading graphics",
             Weight = 40,
             ExecuteAsync = async () =>
             {
@@ -44,7 +44,7 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
         AddStep(new LoadingStep
         {
             Name = "GameInit",
-            DisplayName = loc.GetString("SplashStep_Workshops") ?? "Werkstätten einrichten...",
+            DisplayName = loc.GetString("SplashStep_Workshops") ?? "Loading workshops...",
             Weight = 35,
             ExecuteAsync = async () =>
             {
@@ -60,17 +60,48 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
         AddStep(new LoadingStep
         {
             Name = "RemoteConfig",
-            DisplayName = loc.GetString("SplashStep_Config") ?? "Konfiguration laden...",
+            DisplayName = loc.GetString("SplashStep_Config") ?? "Loading configuration...",
             Weight = 5,
             ExecuteAsync = async () =>
             {
                 var remoteConfig = services.GetService<IRemoteConfigService>();
+                bool remoteConfigReady = false;
                 if (remoteConfig != null)
                 {
                     // Max. 5 Sekunden warten — wenn Firebase offline ist, darf der App-Start nicht blockieren.
                     var fetchTask = remoteConfig.InitializeAsync();
                     var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5));
-                    await Task.WhenAny(fetchTask, timeoutTask);
+                    var winner = await Task.WhenAny(fetchTask, timeoutTask);
+                    remoteConfigReady = winner == fetchTask;
+
+                    // P1.3 AAA-Audit Code-Review-Fix [KRITISCH]: Falls RemoteConfig im Timeout
+                    // hängt, fetchTask im Hintergrund weiterlaufen lassen und DailyBundle nach
+                    // erfolgreichem Fetch nachträglich initialisieren. Verhindert dass der
+                    // Spieler das Bundle erst beim nächsten App-Start sieht.
+                    if (!remoteConfigReady)
+                    {
+                        _ = fetchTask.ContinueWith(async _ =>
+                        {
+                            var dailyBundleLate = services.GetService<IDailyBundleService>();
+                            if (dailyBundleLate != null)
+                            {
+                                try { await dailyBundleLate.InitializeAsync(); }
+                                catch { /* Bundle-Late-Init-Fehler ignorieren */ }
+                            }
+                        }, TaskScheduler.Default);
+                    }
+                }
+
+                // P1.3 AAA-Audit: DailyBundle nur initialisieren wenn RemoteConfig synchron bereit war.
+                // Sonst übernimmt der ContinueWith-Hook oben das (deferred Init).
+                if (remoteConfigReady)
+                {
+                    var dailyBundle = services.GetService<IDailyBundleService>();
+                    if (dailyBundle != null)
+                    {
+                        try { await dailyBundle.InitializeAsync(); }
+                        catch { /* Bundle-Init-Fehler darf App-Start nicht blockieren */ }
+                    }
                 }
             }
         });

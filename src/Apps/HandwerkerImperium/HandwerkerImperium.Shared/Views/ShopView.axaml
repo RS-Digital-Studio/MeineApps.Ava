@@ -4,6 +4,7 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
+             xmlns:views="using:HandwerkerImperium.Views"
              x:Class="HandwerkerImperium.Views.ShopView"
              x:DataType="vm:ShopViewModel"
              x:CompileBindings="True">
@@ -91,6 +92,58 @@
       <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
       <StackPanel Spacing="16" Margin="16,16,16,84"
                   AutomationProperties.AutomationId="Shop_Panel_Content">
+
+        <!-- ================================================================= -->
+        <!-- P1.3 AAA-Audit: DAILY BUNDLE (heutiges Tages-Angebot)              -->
+        <!-- ================================================================= -->
+        <Border Classes="CardElevated"
+                IsVisible="{Binding HasDailyBundle}"
+                Padding="16"
+                AutomationProperties.AutomationId="Shop_Border_DailyBundle">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#7C2D12" Offset="0" />
+              <GradientStop Color="#EA580C" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="10">
+            <!-- Header mit Heute-Badge -->
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="{loc:Translate DailyBundleTitle}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Text="{loc:Translate DailyBundleSubtitle}"
+                           FontSize="12"
+                           Foreground="White" />
+              </StackPanel>
+              <Border Grid.Column="1"
+                      Background="#22000000" CornerRadius="8" Padding="8,4">
+                <TextBlock Text="{loc:Translate DailyBundleToday}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+              </Border>
+            </Grid>
+
+            <!-- Bonus-Preview: Goldschrauben + (optional) Geld -->
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <icons:GameIcon Kind="Wrench" Width="20" Height="20"
+                                 Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Text="{Binding CurrentDailyBundle.BonusGoldenScrews}"
+                           FontWeight="Bold" Foreground="{StaticResource CraftGoldBrush}" />
+              </StackPanel>
+            </StackPanel>
+
+            <!-- Kauf-Button -->
+            <Button Classes="Primary"
+                    Command="{Binding PurchaseDailyBundleCommand}"
+                    Content="{Binding CurrentDailyBundle.DisplayPrice, FallbackValue='—'}"
+                    HorizontalAlignment="Stretch"
+                    MinHeight="44"
+                    AutomationProperties.AutomationId="Shop_Btn_DailyBundleBuy" />
+          </StackPanel>
+        </Border>
 
         <!-- PREMIUM STATUS (if premium) -->
         <Border Classes="CardElevated"
@@ -442,6 +495,10 @@
                        TextWrapping="Wrap" />
           </StackPanel>
         </Border>
+
+        <!-- v2.1.0: Reputation-Shop (sichtbar ab Reputation 60, IsUnlocked-gesteuert) -->
+        <views:ReputationShopView DataContext="{Binding ReputationShopVM}"
+                                  AutomationProperties.AutomationId="Shop_RepShop_Section" />
 
       </StackPanel>
     </ScrollViewer>

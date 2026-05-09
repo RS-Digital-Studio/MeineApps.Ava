@@ -89,9 +89,33 @@
       </StackPanel>
     </Border>
 
+    <!-- Empty-State (AAA-Audit P2): Wenn keine Achievements geladen sind. -->
+    <StackPanel Grid.Row="2"
+                IsVisible="{Binding IsEmpty}"
+                Spacing="12"
+                MaxWidth="320"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Margin="32,0,32,84"
+                AutomationProperties.AutomationId="Achievements_Panel_Empty">
+      <icons:GameIcon Kind="TrophyOutline" Width="64" Height="64" Opacity="0.6"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       HorizontalAlignment="Center" />
+      <TextBlock Text="{loc:Translate AchievementsEmptyTitle}"
+                 FontSize="18" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 HorizontalAlignment="Center"
+                 TextWrapping="Wrap" TextAlignment="Center" />
+      <TextBlock Text="{loc:Translate AchievementsEmptyText}"
+                 FontSize="13" LineHeight="20" Opacity="0.8"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 HorizontalAlignment="Center"
+                 TextWrapping="Wrap" TextAlignment="Center" />
+    </StackPanel>
+
     <!-- Achievement List (virtualisiert) - ListBox hat eigenen internen ScrollViewer -->
     <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
     <ListBox Grid.Row="2" ItemsSource="{Binding Achievements}" Margin="16,8,16,84"
+             IsVisible="{Binding !IsEmpty}"
              AutomationProperties.AutomationId="Achievements_Items_List"
              Background="Transparent" BorderThickness="0">
           <ListBox.ItemsPanel>

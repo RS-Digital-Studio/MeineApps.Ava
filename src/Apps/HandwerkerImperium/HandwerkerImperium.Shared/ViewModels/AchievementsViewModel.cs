@@ -52,6 +52,14 @@ public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
     [ObservableProperty]
     private AchievementCategory _selectedCategory = AchievementCategory.Orders;
 
+    /// <summary>AAA-Audit P2: Empty-State im UI sichtbar wenn keine Achievements geladen sind.</summary>
+    public bool IsEmpty => Achievements.Count == 0;
+
+    partial void OnAchievementsChanged(ObservableCollection<AchievementDisplayModel> value)
+    {
+        OnPropertyChanged(nameof(IsEmpty));
+    }
+
     public AchievementsViewModel(
         IAchievementService achievementService,
         ILocalizationService localizationService,

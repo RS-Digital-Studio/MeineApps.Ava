@@ -516,6 +516,231 @@ public sealed class TrailSystem : IDisposable
                 _trailPaint.MaskFilter = null;
                 break;
 
+            // === Phase 29b — Welt-thematische Trails ========================
+
+            case TrailStyle.Pumpkin:
+                // Halloween: Kürbis-Diamanten + violetter Glow
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                using (var path = new SKPath())
+                {
+                    path.MoveTo(t.X, t.Y - size * 0.5f);
+                    path.LineTo(t.X + size * 0.4f, t.Y);
+                    path.LineTo(t.X, t.Y + size * 0.5f);
+                    path.LineTo(t.X - size * 0.4f, t.Y);
+                    path.Close();
+                    canvas.DrawPath(path, _trailPaint);
+                }
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.Snowflake:
+                // Winter: 6-zackige Schneeflocke + weißer Glow
+                _trailPaint.Style = SKPaintStyle.Stroke;
+                _trailPaint.StrokeWidth = 1.5f;
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                for (int i = 0; i < 6; i++)
+                {
+                    var ang = i * MathF.PI / 3f;
+                    var dx = MathF.Cos(ang) * size * 0.5f;
+                    var dy = MathF.Sin(ang) * size * 0.5f;
+                    canvas.DrawLine(t.X, t.Y, t.X + dx, t.Y + dy, _trailPaint);
+                }
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.BeachWave:
+                // Summer: horizontale Wellen + Cyan-Schaum
+                _trailPaint.Style = SKPaintStyle.Stroke;
+                _trailPaint.StrokeWidth = 2f;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                using (var p = new SKPath())
+                {
+                    var y = t.Y + GameGrid.CELL_SIZE * 0.15f;
+                    p.MoveTo(t.X - size * 0.6f, y);
+                    p.QuadTo(t.X - size * 0.3f, y - size * 0.2f, t.X, y);
+                    p.QuadTo(t.X + size * 0.3f, y + size * 0.2f, t.X + size * 0.6f, y);
+                    canvas.DrawPath(p, _trailPaint);
+                }
+                _trailPaint.Style = SKPaintStyle.Fill;
+                break;
+
+            case TrailStyle.CherryBlossom:
+                // Sengoku: 5-Blüten-Blätter (rosa)
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                for (int i = 0; i < 5; i++)
+                {
+                    var ang = i * MathF.PI * 2 / 5 + timer * 2f;
+                    var dx = MathF.Cos(ang) * size * 0.3f;
+                    var dy = MathF.Sin(ang) * size * 0.3f;
+                    canvas.DrawCircle(t.X + dx, t.Y + dy, size * 0.18f, _trailPaint);
+                }
+                break;
+
+            case TrailStyle.Sunflare:
+                // Inferno: Lava-Tropfen + radiale Sonnen-Strahlen
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                canvas.DrawCircle(t.X, t.Y, size * 0.4f, _trailPaint);
+                _trailPaint.Style = SKPaintStyle.Stroke;
+                _trailPaint.StrokeWidth = 2f;
+                _trailPaint.Color = new SKColor(t.R2, t.G2, t.B2, (byte)(alpha * 0.7f));
+                for (int i = 0; i < 8; i++)
+                {
+                    var ang = i * MathF.PI / 4f;
+                    var x1 = t.X + MathF.Cos(ang) * size * 0.5f;
+                    var y1 = t.Y + MathF.Sin(ang) * size * 0.5f;
+                    var x2 = t.X + MathF.Cos(ang) * size * 0.85f;
+                    var y2 = t.Y + MathF.Sin(ang) * size * 0.85f;
+                    canvas.DrawLine(x1, y1, x2, y2, _trailPaint);
+                }
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.Hologram:
+                // Cyberpunk: RGB-Glitch — drei verschobene Rechtecke (CMY/RGB-Channel-Split)
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                var glitchOffset = MathF.Sin(timer * 30f) * 2f;
+                _trailPaint.Color = new SKColor(255, 0, 200, (byte)(alpha * 0.6f));
+                canvas.DrawRect(t.X - size * 0.4f + glitchOffset, t.Y - size * 0.15f,
+                    size * 0.8f, size * 0.3f, _trailPaint);
+                _trailPaint.Color = new SKColor(0, 220, 255, (byte)(alpha * 0.6f));
+                canvas.DrawRect(t.X - size * 0.4f - glitchOffset, t.Y - size * 0.15f,
+                    size * 0.8f, size * 0.3f, _trailPaint);
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.Bone:
+                // Dia de los Muertos: kleine Knochen-Rechtecke + Gold-Highlights
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                canvas.DrawRect(t.X - size * 0.35f, t.Y - size * 0.12f,
+                    size * 0.7f, size * 0.24f, _trailPaint);
+                _trailPaint.Color = new SKColor(t.R2, t.G2, t.B2, (byte)(alpha * 0.8f));
+                canvas.DrawCircle(t.X - size * 0.4f, t.Y, size * 0.15f, _trailPaint);
+                canvas.DrawCircle(t.X + size * 0.4f, t.Y, size * 0.15f, _trailPaint);
+                break;
+
+            case TrailStyle.Steam:
+                // Steampunk: Dampfwolken + Zahnrad-Funken
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, (byte)(alpha * 0.7f));
+                var puffSize = size * 0.3f * (1f + MathF.Sin(timer * 3f) * 0.2f);
+                canvas.DrawCircle(t.X - size * 0.2f, t.Y, puffSize, _trailPaint);
+                canvas.DrawCircle(t.X + size * 0.2f, t.Y - size * 0.1f, puffSize * 0.8f, _trailPaint);
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.NeonRain:
+                // Cyberpunk: vertikale Neon-Linien (Matrix-Style)
+                _trailPaint.Style = SKPaintStyle.Stroke;
+                _trailPaint.StrokeWidth = 1.5f;
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                for (int i = 0; i < 3; i++)
+                {
+                    var off = (i - 1) * size * 0.25f;
+                    canvas.DrawLine(t.X + off, t.Y - size * 0.4f, t.X + off, t.Y + size * 0.4f, _trailPaint);
+                }
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.OceanFoam:
+                // Underwater: Bubbles + blaue Wellen
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, (byte)(alpha * 0.5f));
+                canvas.DrawCircle(t.X, t.Y, size * 0.4f, _trailPaint);
+                _trailPaint.Style = SKPaintStyle.Stroke;
+                _trailPaint.StrokeWidth = 1.5f;
+                _trailPaint.Color = new SKColor(t.R2, t.G2, t.B2, alpha);
+                canvas.DrawCircle(t.X - size * 0.3f, t.Y - size * 0.2f, size * 0.15f, _trailPaint);
+                canvas.DrawCircle(t.X + size * 0.3f, t.Y + size * 0.2f, size * 0.12f, _trailPaint);
+                _trailPaint.Style = SKPaintStyle.Fill;
+                break;
+
+            // === Phase 29b — Karriere-Status-Trails (Reward-only) ============
+
+            case TrailStyle.Champion:
+                // Liga-Diamond: Gold-Kette + Pulsation
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                var champPulse = 0.85f + MathF.Sin(timer * 4f) * 0.15f;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, (byte)(alpha * champPulse));
+                canvas.DrawCircle(t.X - size * 0.3f, t.Y, size * 0.18f, _trailPaint);
+                canvas.DrawCircle(t.X, t.Y, size * 0.22f, _trailPaint);
+                canvas.DrawCircle(t.X + size * 0.3f, t.Y, size * 0.18f, _trailPaint);
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.PrestigeAura:
+                // Master-Mode 100x: Iridescente Aura mit hue-Shift
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                var prestigeHue = (timer * 60f + t.X * 0.3f) % 360f;
+                var (rr, gg, bb) = HsvToRgb(prestigeHue, 0.7f, 1.0f);
+                _trailPaint.Color = new SKColor(rr, gg, bb, alpha);
+                canvas.DrawCircle(t.X, t.Y, size * 0.45f, _trailPaint);
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.DungeonBlight:
+                // Dungeon-Endboss-Clear: schwarzer Rauch + grüne Glut
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                canvas.DrawCircle(t.X, t.Y, size * 0.5f, _trailPaint);
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R2, t.G2, t.B2, (byte)(alpha * 0.8f));
+                var glutOff = MathF.Sin(timer * 5f + t.X) * size * 0.15f;
+                canvas.DrawCircle(t.X + glutOff, t.Y, size * 0.18f, _trailPaint);
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.SeasonStreak:
+                // BP-Streak: pulsierende Pfeil-Form
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                using (var p2 = new SKPath())
+                {
+                    p2.MoveTo(t.X + size * 0.5f, t.Y);
+                    p2.LineTo(t.X - size * 0.3f, t.Y - size * 0.3f);
+                    p2.LineTo(t.X - size * 0.1f, t.Y);
+                    p2.LineTo(t.X - size * 0.3f, t.Y + size * 0.3f);
+                    p2.Close();
+                    canvas.DrawPath(p2, _trailPaint);
+                }
+                _trailPaint.MaskFilter = null;
+                break;
+
+            case TrailStyle.BPMastery:
+                // Battle-Pass T30: Krone (3 Spitzen) + Gold-Iridescent
+                _trailPaint.Style = SKPaintStyle.Fill;
+                _trailPaint.MaskFilter = _trailGlow;
+                _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
+                using (var crown = new SKPath())
+                {
+                    crown.MoveTo(t.X - size * 0.4f, t.Y + size * 0.2f);
+                    crown.LineTo(t.X - size * 0.3f, t.Y - size * 0.2f);
+                    crown.LineTo(t.X - size * 0.15f, t.Y + size * 0.05f);
+                    crown.LineTo(t.X, t.Y - size * 0.35f);
+                    crown.LineTo(t.X + size * 0.15f, t.Y + size * 0.05f);
+                    crown.LineTo(t.X + size * 0.3f, t.Y - size * 0.2f);
+                    crown.LineTo(t.X + size * 0.4f, t.Y + size * 0.2f);
+                    crown.Close();
+                    canvas.DrawPath(crown, _trailPaint);
+                }
+                _trailPaint.MaskFilter = null;
+                break;
+
             default: // GoldenPath und Fallback
                 // Goldener leuchtender Pfad
                 _trailPaint.Style = SKPaintStyle.Fill;
@@ -530,6 +755,22 @@ public sealed class TrailSystem : IDisposable
                 _trailPaint.MaskFilter = null;
                 break;
         }
+    }
+
+    /// <summary>HSV → RGB Konvertierung für PrestigeAura-Hue-Cycle.</summary>
+    private static (byte R, byte G, byte B) HsvToRgb(float h, float s, float v)
+    {
+        float c = v * s;
+        float x = c * (1f - MathF.Abs((h / 60f) % 2f - 1f));
+        float m = v - c;
+        float r1 = 0, g1 = 0, b1 = 0;
+        if (h < 60) { r1 = c; g1 = x; }
+        else if (h < 120) { r1 = x; g1 = c; }
+        else if (h < 180) { g1 = c; b1 = x; }
+        else if (h < 240) { g1 = x; b1 = c; }
+        else if (h < 300) { r1 = x; b1 = c; }
+        else { r1 = c; b1 = x; }
+        return ((byte)((r1 + m) * 255), (byte)((g1 + m) * 255), (byte)((b1 + m) * 255));
     }
 
     /// <summary>Hue (0-6) zu RGB konvertieren (für Regenbogen-Trail)</summary>

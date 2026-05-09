@@ -24,7 +24,26 @@ public enum FrameStyle : byte
     ArcaneFrame,  // Arkaner Rahmen (Runen)
     DragonFrame,  // Drachen-Rahmen (Schuppen + Hörner)
     PhoenixFrame, // Phönix-Rahmen (Flammen-Federn)
-    CrownFrame    // Kronen-Rahmen (Gold + Edelsteine)
+    CrownFrame,   // Kronen-Rahmen (Gold + Edelsteine)
+
+    // Phase 29 — Welt-/Saison-thematische Frames (prozedural via SkiaSharp)
+    PumpkinFrame,    // Halloween: Kürbis-Stachel-Rahmen
+    SnowflakeFrame,  // Winter: Schneeflocken + Eiszapfen
+    CherryFrame,     // Sengoku: Kirschblüten-Bordüre
+    SteampunkFrame,  // Steampunk: Zahnrad-Rahmen
+    NeonFrame,       // Cyberpunk: Glitch-Lines + RGB
+    BoneFrame,       // Dia de los Muertos: Knochen-Bordüre
+    OceanFrame,      // Underwater: Wellen + Korallen
+    SamuraiFrame,    // Sengoku: Schwerter + Kanji-Akzente
+    MechFrame,       // Mech: Stahl-Rivets + LED-Leuchten
+    BeachFrame,      // Summer: Muscheln + Palmen-Akzente
+
+    // Phase 29 — Karriere-Status-Frames (Reward-only)
+    DiamondFrame,    // Liga-Diamond-Saison-End
+    MasterFrame,     // Master-Mode 100x 3-Sterne
+    AscensionFrame,  // Dungeon-Ascension-5
+    BPFrame,         // Battle-Pass-T30-Reward
+    SeasonFrame      // Saison-Streak (5+ Saisons aktiv)
 }
 
 /// <summary>
@@ -235,11 +254,154 @@ public static class FrameDefinitions
         SecondaryColor = new SKColor(255, 180, 50)
     };
 
+    // === Phase 29 — Welt-/Saison-thematische Frames ===
+
+    public static readonly FrameDefinition Pumpkin = new()
+    {
+        Id = "frame_pumpkin", NameKey = "FramePumpkin", DescKey = "FramePumpkinDesc",
+        Rarity = Rarity.Rare, CoinPrice = 4500,
+        Style = FrameStyle.PumpkinFrame,
+        PrimaryColor = new SKColor(255, 130, 0),
+        SecondaryColor = new SKColor(110, 30, 150)
+    };
+
+    public static readonly FrameDefinition SnowflakeFrame = new()
+    {
+        Id = "frame_snowflake", NameKey = "FrameSnowflake", DescKey = "FrameSnowflakeDesc",
+        Rarity = Rarity.Rare, CoinPrice = 4000,
+        Style = FrameStyle.SnowflakeFrame,
+        PrimaryColor = new SKColor(220, 240, 255),
+        SecondaryColor = new SKColor(120, 200, 255)
+    };
+
+    public static readonly FrameDefinition Cherry = new()
+    {
+        Id = "frame_cherry", NameKey = "FrameCherry", DescKey = "FrameCherryDesc",
+        Rarity = Rarity.Rare, CoinPrice = 5000,
+        Style = FrameStyle.CherryFrame,
+        PrimaryColor = new SKColor(255, 180, 200),
+        SecondaryColor = new SKColor(255, 80, 120)
+    };
+
+    public static readonly FrameDefinition Steampunk = new()
+    {
+        Id = "frame_steampunk", NameKey = "FrameSteampunk", DescKey = "FrameSteampunkDesc",
+        Rarity = Rarity.Epic, CoinPrice = 9500,
+        Style = FrameStyle.SteampunkFrame,
+        PrimaryColor = new SKColor(150, 100, 50),
+        SecondaryColor = new SKColor(220, 180, 80)
+    };
+
+    public static readonly FrameDefinition Neon = new()
+    {
+        Id = "frame_neon", NameKey = "FrameNeon", DescKey = "FrameNeonDesc",
+        Rarity = Rarity.Epic, CoinPrice = 12000,
+        Style = FrameStyle.NeonFrame,
+        PrimaryColor = new SKColor(0, 220, 255),
+        SecondaryColor = new SKColor(255, 0, 200)
+    };
+
+    public static readonly FrameDefinition Bone = new()
+    {
+        Id = "frame_bone", NameKey = "FrameBone", DescKey = "FrameBoneDesc",
+        Rarity = Rarity.Epic, CoinPrice = 11000,
+        Style = FrameStyle.BoneFrame,
+        PrimaryColor = new SKColor(240, 230, 200),
+        SecondaryColor = new SKColor(255, 200, 60)
+    };
+
+    public static readonly FrameDefinition Ocean = new()
+    {
+        Id = "frame_ocean", NameKey = "FrameOcean", DescKey = "FrameOceanDesc",
+        Rarity = Rarity.Epic, CoinPrice = 9500,
+        Style = FrameStyle.OceanFrame,
+        PrimaryColor = new SKColor(40, 100, 180),
+        SecondaryColor = new SKColor(100, 200, 230)
+    };
+
+    public static readonly FrameDefinition Samurai = new()
+    {
+        Id = "frame_samurai", NameKey = "FrameSamurai", DescKey = "FrameSamuraiDesc",
+        Rarity = Rarity.Epic, CoinPrice = 14000,
+        Style = FrameStyle.SamuraiFrame,
+        PrimaryColor = new SKColor(180, 30, 30),
+        SecondaryColor = new SKColor(255, 215, 0)
+    };
+
+    public static readonly FrameDefinition Mech = new()
+    {
+        Id = "frame_mech", NameKey = "FrameMech", DescKey = "FrameMechDesc",
+        Rarity = Rarity.Epic, CoinPrice = 13000,
+        Style = FrameStyle.MechFrame,
+        PrimaryColor = new SKColor(120, 130, 140),
+        SecondaryColor = new SKColor(0, 220, 255)
+    };
+
+    public static readonly FrameDefinition Beach = new()
+    {
+        Id = "frame_beach", NameKey = "FrameBeach", DescKey = "FrameBeachDesc",
+        Rarity = Rarity.Rare, CoinPrice = 4500,
+        Style = FrameStyle.BeachFrame,
+        PrimaryColor = new SKColor(255, 200, 100),
+        SecondaryColor = new SKColor(80, 200, 220)
+    };
+
+    // === Phase 29 — Karriere-Status-Frames (Reward-only, kein Preis) ===
+
+    public static readonly FrameDefinition DiamondReward = new()
+    {
+        Id = "frame_diamond", NameKey = "FrameDiamond", DescKey = "FrameDiamondDesc",
+        Rarity = Rarity.Legendary, // Liga-Diamond-Saison-End
+        Style = FrameStyle.DiamondFrame,
+        PrimaryColor = new SKColor(180, 240, 255),
+        SecondaryColor = new SKColor(80, 200, 255)
+    };
+
+    public static readonly FrameDefinition MasterReward = new()
+    {
+        Id = "frame_master", NameKey = "FrameMaster", DescKey = "FrameMasterDesc",
+        Rarity = Rarity.Legendary, // Master 100x 3-Sterne
+        Style = FrameStyle.MasterFrame,
+        PrimaryColor = new SKColor(255, 100, 200),
+        SecondaryColor = new SKColor(255, 220, 100)
+    };
+
+    public static readonly FrameDefinition Ascension = new()
+    {
+        Id = "frame_ascension", NameKey = "FrameAscension", DescKey = "FrameAscensionDesc",
+        Rarity = Rarity.Legendary, // Dungeon-Ascension-5
+        Style = FrameStyle.AscensionFrame,
+        PrimaryColor = new SKColor(60, 30, 100),
+        SecondaryColor = new SKColor(140, 80, 220)
+    };
+
+    public static readonly FrameDefinition BPReward = new()
+    {
+        Id = "frame_bp", NameKey = "FrameBP", DescKey = "FrameBPDesc",
+        Rarity = Rarity.Legendary, // Battle-Pass T30
+        Style = FrameStyle.BPFrame,
+        PrimaryColor = new SKColor(255, 200, 50),
+        SecondaryColor = new SKColor(200, 100, 255)
+    };
+
+    public static readonly FrameDefinition Season = new()
+    {
+        Id = "frame_season", NameKey = "FrameSeason", DescKey = "FrameSeasonDesc",
+        Rarity = Rarity.Epic, GemPrice = 100,
+        Style = FrameStyle.SeasonFrame,
+        PrimaryColor = new SKColor(255, 100, 200),
+        SecondaryColor = new SKColor(255, 220, 100)
+    };
+
     public static readonly FrameDefinition[] All =
     [
         Simple, Rounded, SquareFrame, Dotted, Thin,
         Fire, Ice, ElectricFrame, Nature, Water,
         ShadowFrame, CrystalFrame, PlasmaFrame, Stellar, Arcane,
-        Dragon, PhoenixFrame, Crown
+        Dragon, PhoenixFrame, Crown,
+        // Phase 29 (15 neue) — gesamt 33 Frames
+        Pumpkin, SnowflakeFrame, Cherry, Steampunk, Neon,
+        Bone, Ocean, Samurai, Mech, Beach,
+        DiamondReward, MasterReward, Ascension, BPReward, Season
     ];
 }

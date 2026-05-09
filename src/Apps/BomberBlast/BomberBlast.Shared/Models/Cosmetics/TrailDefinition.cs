@@ -23,7 +23,28 @@ public enum TrailStyle : byte
     Stardust,     // Sternenstaub
     Phoenix,      // Phönix-Federn + Feuer
     Void,         // Schwarze Partikel mit violettem Glow
-    GoldenPath    // Goldener Pfad mit Shimmer
+    GoldenPath,   // Goldener Pfad mit Shimmer
+
+    // Phase 29 — Welt-Thematische Trails (CC0/prozedural via SkiaSharp)
+    Pumpkin,      // Halloween: Kürbis-Konfetti + violetter Glow
+    Snowflake,    // Winter: Schneeflocken + weißer Glitzer
+    BeachWave,    // Summer: Wellen-Streifen + Cyan-Schaum
+    CherryBlossom,// Sengoku: Rosa Blütenblätter
+    Sunflare,     // Inferno: Lava-Tropfen + Sonnen-Strahlen
+    Hologram,     // Cyberpunk: RGB-Glitch-Streifen
+    Bone,         // Dia de los Muertos: Knochen-Splitter + Gold
+    Steam,        // Steampunk: Dampf + Zahnrad-Funken
+    NeonRain,     // Cyberpunk: Vertikale Neon-Linien
+    OceanFoam,    // Underwater: Blaue Wellen + Bubbles
+
+    // Phase 29 — Karriere-Status-Trails
+    Champion,     // Liga-Diamond-Reward: Gold-Kette
+    PrestigeAura, // Master-Mode-100x: Iridescenter Aura
+    DungeonBlight,// Dungeon-Endboss-Clear: Schwarzer Rauch + Grüne Glut
+
+    // Phase 29 — Battle-Pass-Saison-Exclusives
+    SeasonStreak, // Saison-Streak: Pulsierende Pfeil-Form
+    BPMastery     // Battle-Pass T30: Animated Crown-Pattern
 }
 
 /// <summary>
@@ -225,11 +246,159 @@ public static class TrailDefinitions
         SecondaryColor = new SKColor(255, 180, 50)
     };
 
+    // === Phase 29 — Welt-thematische Trails (Common-Rare) ===
+
+    public static readonly TrailDefinition Pumpkin = new()
+    {
+        Id = "trail_pumpkin", NameKey = "TrailPumpkin", DescKey = "TrailPumpkinDesc",
+        Rarity = Rarity.Rare, CoinPrice = 4500,
+        Style = TrailStyle.Pumpkin,
+        PrimaryColor = new SKColor(255, 120, 0),
+        SecondaryColor = new SKColor(120, 40, 160)
+    };
+
+    public static readonly TrailDefinition Snowflake = new()
+    {
+        Id = "trail_snowflake", NameKey = "TrailSnowflake", DescKey = "TrailSnowflakeDesc",
+        Rarity = Rarity.Rare, CoinPrice = 4000,
+        Style = TrailStyle.Snowflake,
+        PrimaryColor = new SKColor(220, 240, 255),
+        SecondaryColor = new SKColor(255, 255, 255)
+    };
+
+    public static readonly TrailDefinition BeachWave = new()
+    {
+        Id = "trail_beach", NameKey = "TrailBeachWave", DescKey = "TrailBeachWaveDesc",
+        Rarity = Rarity.Rare, CoinPrice = 4500,
+        Style = TrailStyle.BeachWave,
+        PrimaryColor = new SKColor(60, 180, 220),
+        SecondaryColor = new SKColor(220, 240, 240)
+    };
+
+    public static readonly TrailDefinition CherryBlossom = new()
+    {
+        Id = "trail_cherry", NameKey = "TrailCherryBlossom", DescKey = "TrailCherryBlossomDesc",
+        Rarity = Rarity.Rare, CoinPrice = 5000,
+        Style = TrailStyle.CherryBlossom,
+        PrimaryColor = new SKColor(255, 180, 200),
+        SecondaryColor = new SKColor(255, 220, 230)
+    };
+
+    public static readonly TrailDefinition Sunflare = new()
+    {
+        Id = "trail_sunflare", NameKey = "TrailSunflare", DescKey = "TrailSunflareDesc",
+        Rarity = Rarity.Epic, CoinPrice = 9000,
+        Style = TrailStyle.Sunflare,
+        PrimaryColor = new SKColor(255, 200, 50),
+        SecondaryColor = new SKColor(255, 80, 30)
+    };
+
+    // === Phase 29 — Cyberpunk / Steampunk Epics ===
+
+    public static readonly TrailDefinition Hologram = new()
+    {
+        Id = "trail_hologram", NameKey = "TrailHologram", DescKey = "TrailHologramDesc",
+        Rarity = Rarity.Epic, CoinPrice = 12000,
+        Style = TrailStyle.Hologram,
+        PrimaryColor = new SKColor(0, 220, 255),
+        SecondaryColor = new SKColor(255, 0, 200)
+    };
+
+    public static readonly TrailDefinition NeonRain = new()
+    {
+        Id = "trail_neonrain", NameKey = "TrailNeonRain", DescKey = "TrailNeonRainDesc",
+        Rarity = Rarity.Epic, CoinPrice = 10000,
+        Style = TrailStyle.NeonRain,
+        PrimaryColor = new SKColor(255, 0, 200),
+        SecondaryColor = new SKColor(0, 255, 200)
+    };
+
+    public static readonly TrailDefinition Steam = new()
+    {
+        Id = "trail_steam", NameKey = "TrailSteam", DescKey = "TrailSteamDesc",
+        Rarity = Rarity.Epic, CoinPrice = 9500,
+        Style = TrailStyle.Steam,
+        PrimaryColor = new SKColor(180, 180, 200),
+        SecondaryColor = new SKColor(200, 150, 80)
+    };
+
+    public static readonly TrailDefinition Bone = new()
+    {
+        Id = "trail_bone", NameKey = "TrailBone", DescKey = "TrailBoneDesc",
+        Rarity = Rarity.Epic, CoinPrice = 11000,
+        Style = TrailStyle.Bone,
+        PrimaryColor = new SKColor(240, 230, 200),
+        SecondaryColor = new SKColor(255, 200, 60)
+    };
+
+    public static readonly TrailDefinition OceanFoam = new()
+    {
+        Id = "trail_ocean", NameKey = "TrailOceanFoam", DescKey = "TrailOceanFoamDesc",
+        Rarity = Rarity.Epic, CoinPrice = 9500,
+        Style = TrailStyle.OceanFoam,
+        PrimaryColor = new SKColor(40, 100, 180),
+        SecondaryColor = new SKColor(220, 240, 255)
+    };
+
+    // === Phase 29 — Karriere-Status-Legendaries (nur Reward, nicht kaufbar — GemPrice=0, CoinPrice=0) ===
+
+    public static readonly TrailDefinition Champion = new()
+    {
+        Id = "trail_champion", NameKey = "TrailChampion", DescKey = "TrailChampionDesc",
+        Rarity = Rarity.Legendary, // Liga-Diamond-Saison-Reward
+        Style = TrailStyle.Champion,
+        PrimaryColor = new SKColor(255, 215, 0),
+        SecondaryColor = new SKColor(180, 100, 30)
+    };
+
+    public static readonly TrailDefinition PrestigeAura = new()
+    {
+        Id = "trail_prestige", NameKey = "TrailPrestigeAura", DescKey = "TrailPrestigeAuraDesc",
+        Rarity = Rarity.Legendary, // Master-Mode 100x 3-Sterne
+        Style = TrailStyle.PrestigeAura,
+        PrimaryColor = new SKColor(180, 100, 255),
+        SecondaryColor = new SKColor(0, 220, 255)
+    };
+
+    public static readonly TrailDefinition DungeonBlight = new()
+    {
+        Id = "trail_dungeonblight", NameKey = "TrailDungeonBlight", DescKey = "TrailDungeonBlightDesc",
+        Rarity = Rarity.Legendary, // Dungeon-Floor-10-Boss-Clear
+        Style = TrailStyle.DungeonBlight,
+        PrimaryColor = new SKColor(40, 20, 30),
+        SecondaryColor = new SKColor(80, 240, 80)
+    };
+
+    // === Phase 29 — Battle-Pass-Saison-Exclusives ===
+
+    public static readonly TrailDefinition SeasonStreak = new()
+    {
+        Id = "trail_seasonstreak", NameKey = "TrailSeasonStreak", DescKey = "TrailSeasonStreakDesc",
+        Rarity = Rarity.Epic, GemPrice = 150,
+        Style = TrailStyle.SeasonStreak,
+        PrimaryColor = new SKColor(255, 100, 200),
+        SecondaryColor = new SKColor(255, 220, 100)
+    };
+
+    public static readonly TrailDefinition BPMastery = new()
+    {
+        Id = "trail_bpmastery", NameKey = "TrailBPMastery", DescKey = "TrailBPMasteryDesc",
+        Rarity = Rarity.Legendary, // BP-Tier-30-Reward
+        Style = TrailStyle.BPMastery,
+        PrimaryColor = new SKColor(255, 200, 50),
+        SecondaryColor = new SKColor(200, 100, 255)
+    };
+
     public static readonly TrailDefinition[] All =
     [
         Dust, Smoke, Footsteps, Sparkle,
         Flame, Frost, Electric, Leaves, Bubbles,
         Plasma, Rainbow, ShadowTrail, Crystal, Stardust,
-        Phoenix, VoidTrail, GoldenPath
+        Phoenix, VoidTrail, GoldenPath,
+        // Phase 29 (15 neue) — gesamt 32 Trails
+        Pumpkin, Snowflake, BeachWave, CherryBlossom, Sunflare,
+        Hologram, NeonRain, Steam, Bone, OceanFoam,
+        Champion, PrestigeAura, DungeonBlight,
+        SeasonStreak, BPMastery
     ];
 }

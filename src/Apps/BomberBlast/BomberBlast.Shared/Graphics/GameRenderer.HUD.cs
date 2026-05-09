@@ -141,20 +141,28 @@ public sealed partial class GameRenderer
             float comboAlphaFactor = ComboTimer < 0.5f ? ComboTimer / 0.5f : 1f;
 
             // Combo-Text (pulsierend, farbig nach Stärke)
-            float comboPulse = MathF.Sin(_globalTimer * 12f) * 0.15f;
+            // v2.0.37: Pulse staerker bei x10+ als visueller Belohnungs-Peak.
+            float pulseMultiplier = ComboCount >= 10 ? 0.30f : 0.15f;
+            float comboPulse = MathF.Sin(_globalTimer * 12f) * pulseMultiplier;
             float comboScale = 1f + comboPulse;
-            var comboColor = ComboCount >= 5
-                ? new SKColor(255, 50, 50)     // Rot ab x5 (MEGA)
-                : ComboCount >= 4
-                    ? new SKColor(255, 80, 30)  // Orange-Rot ab x4
-                    : new SKColor(255, 165, 0); // Orange x2-x3
+            var comboColor = ComboCount >= 10
+                ? new SKColor(255, 215, 0)     // Gold fuer ULTRA (x10+)
+                : ComboCount >= 7
+                    ? new SKColor(255, 0, 200)  // Magenta x7-x9
+                    : ComboCount >= 5
+                        ? new SKColor(255, 50, 50)     // Rot ab x5 (MEGA)
+                        : ComboCount >= 4
+                            ? new SKColor(255, 80, 30)  // Orange-Rot ab x4
+                            : new SKColor(255, 165, 0); // Orange x2-x3
             comboColor = comboColor.WithAlpha((byte)(255 * comboAlphaFactor));
 
-            // Combo-String gecacht
+            // Combo-String gecacht — Hierarchie ULTRA > MEGA > x{n}
             if (ComboCount != _lastComboCount)
             {
                 _lastComboCount = ComboCount;
-                _lastComboString = ComboCount >= 5 ? $"MEGA x{ComboCount}" : $"x{ComboCount}";
+                _lastComboString = ComboCount >= 10
+                    ? $"ULTRA x{ComboCount}"
+                    : ComboCount >= 5 ? $"MEGA x{ComboCount}" : $"x{ComboCount}";
             }
             _textPaint.Color = comboColor;
             _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : HudComboBlurEffective;

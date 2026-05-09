@@ -142,7 +142,19 @@ public class InputManager : IDisposable
         _joystickSize = (float)_preferences.Get("JoystickSize", 120.0);
         _joystickOpacity = (float)_preferences.Get("JoystickOpacity", 0.7);
         _hapticEnabled = _preferences.Get("HapticEnabled", true);
-        _joystickFixed = _preferences.Get("JoystickFixed", false);
+
+        // v2.0.37: Default fuer Neuinstallationen auf Fixed (passt besser zur 4-Wege-Bomberman-Mechanik).
+        // Bestand respektieren: ContainsKey-Check verhindert Override existierender Floating-Praeferenzen.
+        if (!_preferences.ContainsKey("JoystickFixed"))
+        {
+            _joystickFixed = true;
+            _preferences.Set("JoystickFixed", true);
+        }
+        else
+        {
+            _joystickFixed = _preferences.Get("JoystickFixed", true);
+        }
+
         _reducedEffects = _preferences.Get("ReducedEffects", false);
     }
 

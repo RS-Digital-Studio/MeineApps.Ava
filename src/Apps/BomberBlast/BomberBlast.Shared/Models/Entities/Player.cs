@@ -74,7 +74,10 @@ public class Player : Entity
     public CurseType ActiveCurse { get; set; } = CurseType.None;
     public float CurseTimer { get; set; }
     public bool IsCursed => ActiveCurse != CurseType.None;
-    private const float CURSE_DURATION = 10f;
+    // v2.0.37: Curse-Dauer von 10s auf 6s reduziert. 10s ReverseControls auf Mobile-Touch
+    // war Frust-Design (Spieler reagieren mit App-Schliessen, nicht "challenge accepted").
+    // Cure-PowerUp (Plan Task 2.5) entfernt aktiven Curse zusaetzlich vorzeitig.
+    private const float CURSE_DURATION = 6f;
     // Diarrhea: Auto-Bomben-Timer
     public float DiarrheaTimer { get; set; }
 
@@ -570,6 +573,17 @@ public class Player : Entity
 
             case PowerUpType.Skull:
                 ActivateCurse();
+                break;
+
+            case PowerUpType.Cure:
+                // v2.0.37: Heilt aktiven Curse sofort. Kein-Op wenn kein Curse aktiv ist
+                // (PowerUp wird trotzdem konsumiert + 250 Punkte Score, siehe GetPoints()).
+                if (IsCursed)
+                {
+                    ActiveCurse = CurseType.None;
+                    CurseTimer = 0f;
+                    DiarrheaTimer = 0f;
+                }
                 break;
         }
     }

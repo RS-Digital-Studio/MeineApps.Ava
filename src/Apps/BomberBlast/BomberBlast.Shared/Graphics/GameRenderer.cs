@@ -49,6 +49,12 @@ public sealed partial class GameRenderer : IDisposable
     public int PlayerGridX { get; set; }
     public int PlayerGridY { get; set; }
 
+    // Saisonales Event (v2.0.42, Plan Task 3.4): Welt-Skin-Override
+    // Wenn HasActiveEvent true: Tile-Tint-Overlay + Event-spezifische Particles werden gerendert.
+    public bool HasActiveEvent { get; set; }
+    public SKColor EventAccentColor { get; set; } = SKColors.Transparent;
+    public BomberBlast.Services.SeasonalEventType EventType { get; set; }
+
     // Dungeon-Buffs (gesetzt von GameEngine vor jedem Render im Dungeon-Modus)
     public bool IsDungeonRun { get; set; }
     public List<BomberBlast.Models.Dungeon.DungeonBuffType>? DungeonActiveBuffs { get; set; }
@@ -781,6 +787,9 @@ public sealed partial class GameRenderer : IDisposable
         // Hintergrund mit Welt-Gradient (statt canvas.Clear)
         RenderBackground(canvas, _screenWidth, _screenHeight);
 
+        // Saisonales Event-Tint subtil ueber Hintergrund (v2.0.42, Plan Task 3.4)
+        RenderEventTint(canvas, _screenWidth, _screenHeight);
+
         // Hintergrund-Elemente (Bäume, Zahnräder, Stalaktiten etc. am Rand)
         if (!SkipAtmosphere)
             RenderBackgroundElements(canvas, _screenWidth, _screenHeight);
@@ -860,6 +869,10 @@ public sealed partial class GameRenderer : IDisposable
         // Wetter-Partikel (über dem Grid, unter HUD)
         if (!SkipAtmosphere)
             _weatherSystem.Render(canvas);
+
+        // Saisonales Event-Overlay-Particles (v2.0.42, Plan Task 3.4)
+        // Schneeflocken/Pumpkin-Funken/Feuerwerk/Bubbles ueber dem Grid, unter HUD.
+        RenderEventOverlay(canvas, _screenWidth, _screenHeight, _lastDeltaTime);
 
         // Nebel-Overlay (Welt 10: Schattenwelt - einfacher Sichtkreis ohne Memory)
         if (_fogEnabled && player != null)
@@ -957,6 +970,8 @@ public sealed partial class GameRenderer : IDisposable
         _shaderEffects.Dispose();
         _trailSystem.Dispose();
         _fogOfWar.Dispose();
+        _eventPaint.Dispose();
+        _eventShapePath.Dispose();
         _floorCacheBitmap?.Dispose();
         _bgShader?.Dispose();
         _vignetteShader?.Dispose();

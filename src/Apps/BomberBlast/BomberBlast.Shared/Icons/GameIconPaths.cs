@@ -315,6 +315,7 @@ public static class GameIconPaths
         // =====================================================================
         [GameIconKind.Video] = "M2 6H16V10L22 6V18L16 14V18H2Z",
         [GameIconKind.Play] = "M7 4L20 12L7 20Z",
+        [GameIconKind.Pause] = "M6 5H10V19H6Z M14 5H18V19H14Z",
         [GameIconKind.SkipNext] = "M6 18L14 12L6 6V18Z M16 6V18H18V6Z",
         [GameIconKind.Repeat] =
             "M7 7H17V10L21 7L17 4V7H5V13H7Z" +

@@ -1173,6 +1173,21 @@ public sealed partial class GameRenderer
                 _fillPaint.Color = SKColors.White;
                 break;
 
+            case PowerUpType.Cure:
+                // v2.0.37: Heilungs-PowerUp — gruenes Kreuz auf weisser Kapsel mit Glow.
+                // Hintergrund-Kapsel (weiss) mit gruenem Rand fuer "Medizin"-Optik.
+                _fillPaint.Color = SKColors.White;
+                canvas.DrawRoundRect(cx - size * 0.32f, cy - size * 0.32f, size * 0.64f, size * 0.64f, size * 0.12f, size * 0.12f, _fillPaint);
+                // Gruenes Kreuz (vertikal + horizontal)
+                _fillPaint.Color = new SKColor(40, 200, 80);
+                canvas.DrawRect(cx - size * 0.06f, cy - size * 0.22f, size * 0.12f, size * 0.44f, _fillPaint);
+                canvas.DrawRect(cx - size * 0.22f, cy - size * 0.06f, size * 0.44f, size * 0.12f, _fillPaint);
+                // Highlight-Punkt oben links
+                _fillPaint.Color = new SKColor(255, 255, 255, 180);
+                canvas.DrawCircle(cx - size * 0.18f, cy - size * 0.18f, size * 0.05f, _fillPaint);
+                _fillPaint.Color = SKColors.White;
+                break;
+
             default:
                 _textPaint.Color = SKColors.White;
                 canvas.DrawText("?", cx, cy + size * 0.25f, SKTextAlign.Center, _powerUpFont, _textPaint);
@@ -1194,6 +1209,7 @@ public sealed partial class GameRenderer
         PowerUpType.LineBomb => new SKColor(0, 180, 255),
         PowerUpType.PowerBomb => new SKColor(255, 50, 50),
         PowerUpType.Skull => new SKColor(100, 0, 100),
+        PowerUpType.Cure => new SKColor(40, 200, 80),
         _ => SKColors.White
     };
 }

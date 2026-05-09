@@ -59,6 +59,12 @@ public class DungeonRunState
 
     /// <summary>Ascension-Level bei dem dieser Run gestartet wurde (0-5)</summary>
     public int RunAscension { get; set; }
+
+    /// <summary>
+    /// Lite-Run (v2.0.39, Plan Task 2.7): 3-Floor-Onboarding-Variante mit Auto-Buff-Auswahl + 50% Belohnungen.
+    /// Standard ist false (Pro-Run). Lite-Runs haben kein Reroll, keine Buff-Auswahl-UI und keinen Coin/Gem-Eintritt.
+    /// </summary>
+    public bool IsLiteRun { get; set; }
 }
 
 /// <summary>
@@ -95,6 +101,12 @@ public class DungeonStats
 
     /// <summary>Datum des letzten Ad-Runs (UTC, ISO 8601) - hier statt RunState um App-Restart-Exploit zu verhindern</summary>
     public string LastAdRunDate { get; set; } = "";
+
+    /// <summary>
+    /// True sobald der Spieler einen Lite-Run abgeschlossen hat (v2.0.39, Plan Task 2.7).
+    /// Bestimmt ob das Lite-Eintritts-Angebot beim Eintritt noch sichtbar ist.
+    /// </summary>
+    public bool LiteRunCompleted { get; set; }
 }
 
 /// <summary>

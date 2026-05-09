@@ -10,15 +10,17 @@ public sealed class ProgressService : IProgressService
 {
     private const string PROGRESS_KEY = "GameProgress";
     private readonly IPreferencesService _preferences;
+    private readonly IAppLogger _logger;
     private ProgressData _data = new();
     private int? _totalStarsCache; // Invalidiert bei Score-Änderung
 
     public int TotalLevels => 100;
     public int HighestCompletedLevel => _data.HighestCompleted;
 
-    public ProgressService(IPreferencesService preferences)
+    public ProgressService(IPreferencesService preferences, IAppLogger logger)
     {
         _preferences = preferences;
+        _logger = logger;
         LoadProgress();
     }
 
@@ -201,9 +203,10 @@ public sealed class ProgressService : IProgressService
             string json = JsonSerializer.Serialize(_data);
             _preferences.Set<string>(PROGRESS_KEY, json);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Save failed silently
+            // Save failed - wird beim naechsten Mal erneut versucht (Score-Aenderungen rufen Save erneut auf)
+            _logger.LogWarning($"ProgressService: SaveProgress fehlgeschlagen ({ex.GetType().Name}: {ex.Message})");
         }
     }
 

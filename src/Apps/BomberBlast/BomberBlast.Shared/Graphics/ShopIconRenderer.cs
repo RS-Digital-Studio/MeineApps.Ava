@@ -13,6 +13,8 @@ public static class ShopIconRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _glow = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    // v2.0.43 Audit-Fix A3: gepoolte SKFont mit mutierter Size — vermeidet pro-Render-Allokation.
+    private static readonly SKFont _sharedFont = new() { Size = 12f };
 
     // SKMaskFilter-Cache: Gleicher Radius = gleicher Filter. Shop-Scroll rendert 30fps ×
     // ~12 Icons × 9 Blur-Pfade = ~3200 CreateBlur/s ohne Cache. Mit Cache: max 10 Einträge
@@ -310,10 +312,10 @@ public static class ShopIconRenderer
         DrawStar(canvas, cx, cy, s, s * 0.45f, 5, _fill);
         _fill.Shader = null;
 
-        // "x2" im Zentrum
-        using var font = new SKFont { Size = s * 0.5f };
+        // "x2" im Zentrum — gepoolte Font
+        _sharedFont.Size = s * 0.5f;
         _fill.Color = SKColors.White;
-        canvas.DrawText("x2", cx, cy + s * 0.17f, SKTextAlign.Center, font, _fill);
+        canvas.DrawText("x2", cx, cy + s * 0.17f, SKTextAlign.Center, _sharedFont, _fill);
 
         // Funkeln-Punkte
         DrawSparkle(canvas, cx + s * 0.7f, cy - s * 0.6f, s * 0.12f, SKColors.White.WithAlpha(200));
@@ -456,10 +458,10 @@ public static class ShopIconRenderer
             canvas.DrawOval(coinX, coinY, s * 0.45f, s * 0.14f, _stroke);
         }
 
-        // "%" Symbol rechts oben
-        using var font = new SKFont { Size = s * 0.45f };
+        // "%" Symbol rechts oben — gepoolte Font
+        _sharedFont.Size = s * 0.45f;
         _fill.Color = Lighten(color, 40);
-        canvas.DrawText("+%", cx + s * 0.55f, cy - s * 0.45f, SKTextAlign.Center, font, _fill);
+        canvas.DrawText("+%", cx + s * 0.55f, cy - s * 0.45f, SKTextAlign.Center, _sharedFont, _fill);
 
         // Funkeln
         DrawSparkle(canvas, cx - s * 0.5f, cy - s * 0.55f, s * 0.1f, SKColors.White.WithAlpha(180));
@@ -602,10 +604,10 @@ public static class ShopIconRenderer
         // Feuer-Funke
         DrawSparkStar(canvas, cx + s * 0.2f, cy - s * 0.7f, s * 0.15f, new SKColor(255, 200, 50));
 
-        // "+2" Reichweite-Label
-        using var font = new SKFont { Size = s * 0.35f };
+        // "+2" Reichweite-Label — gepoolte Font
+        _sharedFont.Size = s * 0.35f;
         _fill.Color = new SKColor(255, 200, 50);
-        canvas.DrawText("+2", cx + s * 0.75f, cy + s * 0.7f, SKTextAlign.Center, font, _fill);
+        canvas.DrawText("+2", cx + s * 0.75f, cy + s * 0.7f, SKTextAlign.Center, _sharedFont, _fill);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -661,17 +663,16 @@ public static class ShopIconRenderer
     // HELPER METHODEN
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>Zeichnet ein "+1" Label</summary>
+    /// <summary>Zeichnet ein "+1" Label — gepoolte Font</summary>
     private static void DrawPlusOne(SKCanvas canvas, float x, float y, float size, SKColor color)
     {
-        using var font = new SKFont { Size = size * 2.5f };
-        _fill.Color = SKColors.White;
+        _sharedFont.Size = size * 2.5f;
         // Schatten
         _fill.Color = new SKColor(0, 0, 0, 80);
-        canvas.DrawText("+1", x + 1, y + 1, SKTextAlign.Center, font, _fill);
+        canvas.DrawText("+1", x + 1, y + 1, SKTextAlign.Center, _sharedFont, _fill);
         // Text
         _fill.Color = Lighten(color, 60);
-        canvas.DrawText("+1", x, y, SKTextAlign.Center, font, _fill);
+        canvas.DrawText("+1", x, y, SKTextAlign.Center, _sharedFont, _fill);
     }
 
     /// <summary>Zeichnet einen Funken-Stern (4-zackig)</summary>

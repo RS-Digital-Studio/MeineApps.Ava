@@ -31,10 +31,10 @@ public sealed class GameTimer
     public bool IsWarning => _remainingTime <= WARNING_THRESHOLD && _remainingTime > 0;
 
     /// <summary>Fires when timer enters warning zone</summary>
-    public event Action? OnWarning;
+    public event Action? Warning;
 
     /// <summary>Fires when timer expires</summary>
-    public event Action? OnExpired;
+    public event Action? Expired;
 
     /// <summary>
     /// Initialize timer with default time limit
@@ -93,7 +93,7 @@ public sealed class GameTimer
         if (!_warningTriggered && _remainingTime <= WARNING_THRESHOLD)
         {
             _warningTriggered = true;
-            OnWarning?.Invoke();
+            Warning?.Invoke();
         }
 
         // Check for expiration
@@ -101,7 +101,7 @@ public sealed class GameTimer
         {
             _remainingTime = 0;
             _isRunning = false;
-            OnExpired?.Invoke();
+            Expired?.Invoke();
         }
     }
 

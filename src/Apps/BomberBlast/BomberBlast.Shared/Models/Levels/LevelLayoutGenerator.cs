@@ -11,29 +11,41 @@ namespace BomberBlast.Models.Levels;
 /// </summary>
 public static class LevelLayoutGenerator
 {
-    // Layout-Rotation pro Welt (abwechslungsreich statt immer Classic)
+    // Layout-Rotation pro Welt (v2.0.37 erweitert auf 7-8 Layouts pro Welt gegen Wiederholungs-Gefuehl ab L60).
+    // Welt 1-2 bleiben einsteigerfreundlich (Classic/Cross/TwoRooms-lastig), Welt 5+ mischt alle 11 Layouts.
+    // Boss-Level (alle 10) und Bonus-Level (alle 5) ueberschreiben die Layout-Wahl in ConfigureBossLevel/ConfigureBonusLevel.
     private static readonly LevelLayout[][] WorldLayouts =
     [
-        // Welt 1 (Forest): Einfache Layouts zum Einlernen
-        [LevelLayout.Classic, LevelLayout.Classic, LevelLayout.Cross, LevelLayout.Classic],
-        // Welt 2 (Industrial): Enge Gänge + Eis
-        [LevelLayout.Classic, LevelLayout.TwoRooms, LevelLayout.Maze, LevelLayout.Cross],
-        // Welt 3 (Cavern): Labyrinth + Förderbänder
-        [LevelLayout.Maze, LevelLayout.Spiral, LevelLayout.Classic, LevelLayout.Diagonal],
-        // Welt 4 (Sky): Offene Räume + Teleporter
-        [LevelLayout.Arena, LevelLayout.Cross, LevelLayout.TwoRooms, LevelLayout.Classic],
-        // Welt 5 (Inferno): Alles kombiniert
-        [LevelLayout.Diagonal, LevelLayout.Arena, LevelLayout.Spiral, LevelLayout.Maze],
-        // Welt 6 (Ruinen): Labyrinthe und Symmetrie
-        [LevelLayout.Labyrinth, LevelLayout.Symmetry, LevelLayout.Maze, LevelLayout.Classic],
-        // Welt 7 (Ozean): Inseln und offene Flächen
-        [LevelLayout.Islands, LevelLayout.Arena, LevelLayout.Cross, LevelLayout.Symmetry],
-        // Welt 8 (Vulkan): Chaos und Spiralen
-        [LevelLayout.Chaos, LevelLayout.Spiral, LevelLayout.Labyrinth, LevelLayout.Diagonal],
-        // Welt 9 (Himmelsfestung): Symmetrie und Inseln
-        [LevelLayout.Symmetry, LevelLayout.Islands, LevelLayout.Arena, LevelLayout.Labyrinth],
-        // Welt 10 (Schattenwelt): Alles durcheinander
-        [LevelLayout.Chaos, LevelLayout.Labyrinth, LevelLayout.Islands, LevelLayout.Symmetry]
+        // Welt 1 (Forest): Einsteigerfreundlich — Classic-lastig, sanfte Variation, kein Maze/Spiral.
+        [LevelLayout.Classic, LevelLayout.Cross, LevelLayout.Classic, LevelLayout.TwoRooms,
+         LevelLayout.Classic, LevelLayout.Cross, LevelLayout.Diagonal, LevelLayout.Classic],
+        // Welt 2 (Industrial): Enge Gänge + erste Maze-Patterns + Symmetry.
+        [LevelLayout.Classic, LevelLayout.TwoRooms, LevelLayout.Maze, LevelLayout.Cross,
+         LevelLayout.Symmetry, LevelLayout.Classic, LevelLayout.TwoRooms, LevelLayout.Diagonal],
+        // Welt 3 (Cavern): Labyrinth + Förderbänder — mehr verzweigte Wege.
+        [LevelLayout.Maze, LevelLayout.Spiral, LevelLayout.Classic, LevelLayout.Diagonal,
+         LevelLayout.Labyrinth, LevelLayout.TwoRooms, LevelLayout.Maze, LevelLayout.Cross],
+        // Welt 4 (Sky): Offene Räume + Teleporter — Arena-lastig.
+        [LevelLayout.Arena, LevelLayout.Cross, LevelLayout.TwoRooms, LevelLayout.Classic,
+         LevelLayout.Symmetry, LevelLayout.Arena, LevelLayout.Diagonal, LevelLayout.Cross],
+        // Welt 5 (Inferno): Alles kombiniert — voller Mix aller 11 Layouts ab hier.
+        [LevelLayout.Diagonal, LevelLayout.Arena, LevelLayout.Spiral, LevelLayout.Maze,
+         LevelLayout.Labyrinth, LevelLayout.Chaos, LevelLayout.Islands, LevelLayout.Symmetry],
+        // Welt 6 (Ruinen): Labyrinthe und Symmetrie dominieren.
+        [LevelLayout.Labyrinth, LevelLayout.Symmetry, LevelLayout.Maze, LevelLayout.Classic,
+         LevelLayout.Spiral, LevelLayout.Cross, LevelLayout.Diagonal, LevelLayout.Chaos],
+        // Welt 7 (Ozean): Inseln und offene Flächen.
+        [LevelLayout.Islands, LevelLayout.Arena, LevelLayout.Cross, LevelLayout.Symmetry,
+         LevelLayout.Maze, LevelLayout.Spiral, LevelLayout.TwoRooms, LevelLayout.Diagonal],
+        // Welt 8 (Vulkan): Chaos und Spiralen.
+        [LevelLayout.Chaos, LevelLayout.Spiral, LevelLayout.Labyrinth, LevelLayout.Diagonal,
+         LevelLayout.Maze, LevelLayout.Symmetry, LevelLayout.Cross, LevelLayout.Arena],
+        // Welt 9 (Himmelsfestung): Symmetrie und Inseln + Chaos-Splash.
+        [LevelLayout.Symmetry, LevelLayout.Islands, LevelLayout.Arena, LevelLayout.Labyrinth,
+         LevelLayout.Spiral, LevelLayout.Chaos, LevelLayout.Maze, LevelLayout.Diagonal],
+        // Welt 10 (Schattenwelt): Alles durcheinander — Chaos-lastig.
+        [LevelLayout.Chaos, LevelLayout.Labyrinth, LevelLayout.Islands, LevelLayout.Symmetry,
+         LevelLayout.Spiral, LevelLayout.Maze, LevelLayout.Arena, LevelLayout.Diagonal]
     ];
 
     /// <summary>
@@ -700,7 +712,11 @@ public static class LevelLayoutGenerator
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Speed });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Kick });
             if (levelNumber >= 20)
+            {
                 level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Skull });
+                // v2.0.37: Cure-Heilung verfuegbar in Skull-Levels (Plan Task 2.5)
+                level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Cure });
+            }
         }
         else if (levelNumber <= 35)
         {
@@ -708,6 +724,7 @@ public static class LevelLayoutGenerator
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Wallpass });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.LineBomb });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Skull });
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Cure });
         }
         else if (levelNumber <= 50)
         {
@@ -715,6 +732,7 @@ public static class LevelLayoutGenerator
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.PowerBomb });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Flamepass });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Skull });
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Cure });
         }
         else if (levelNumber <= 70)
         {
@@ -724,6 +742,7 @@ public static class LevelLayoutGenerator
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Kick });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.PowerBomb });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Skull });
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Cure });
         }
         else if (levelNumber <= 90)
         {
@@ -733,16 +752,18 @@ public static class LevelLayoutGenerator
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.PowerBomb });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Flamepass });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Skull });
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Cure });
         }
         else
         {
-            // Welt 10: Alles, auch gefährlich
+            // Welt 10: Alles, auch gefährlich — 2 Skulls aber nur 1 Cure (Endgame-Risiko bleibt)
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.PowerBomb });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.LineBomb });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Flamepass });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Detonator });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Skull });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Skull });
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Cure });
         }
     }
 

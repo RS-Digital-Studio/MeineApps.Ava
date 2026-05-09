@@ -170,6 +170,10 @@ public sealed class AchievementService : IAchievementService
         if (comboCount >= 3) newUnlock ??= TryUnlock("combo3");
         if (comboCount >= 5) newUnlock ??= TryUnlock("combo5");
         if (comboCount >= 7) newUnlock ??= TryUnlock("combo7");
+        // v2.0.37: x10+ Combo-Zielsystem (siehe Plan Task 2.6)
+        if (comboCount >= 10) newUnlock ??= TryUnlock("combo10");
+        if (comboCount >= 15) newUnlock ??= TryUnlock("combo15");
+        if (comboCount >= 20) newUnlock ??= TryUnlock("combo20");
         return newUnlock;
     }
 
@@ -661,6 +665,11 @@ public sealed class AchievementService : IAchievementService
 
             // Geschick: 7er-Combo
             new() { Id = "combo7", NameKey = "AchCombo7", DescriptionKey = "AchCombo7Desc", Category = AchievementCategory.Skill, Target = 1, IconName = "Lightning", CoinReward = 3000 },
+
+            // Geschick: Combo-Eskalation x10/x15/x20 (v2.0.37, Plan Task 2.6)
+            new() { Id = "combo10", NameKey = "AchCombo10", DescriptionKey = "AchCombo10Desc", Category = AchievementCategory.Skill, Target = 1, IconName = "Lightning", CoinReward = 5000 },
+            new() { Id = "combo15", NameKey = "AchCombo15", DescriptionKey = "AchCombo15Desc", Category = AchievementCategory.Skill, Target = 1, IconName = "Lightning", CoinReward = 10000 },
+            new() { Id = "combo20", NameKey = "AchCombo20", DescriptionKey = "AchCombo20Desc", Category = AchievementCategory.Skill, Target = 1, IconName = "Lightning", CoinReward = 20000 },
 
             // Herausforderung: Survival
             new() { Id = "survival_60", NameKey = "AchSurvival60", DescriptionKey = "AchSurvival60Desc", Category = AchievementCategory.Challenge, Target = 1, IconName = "Skull", CoinReward = 1500 },

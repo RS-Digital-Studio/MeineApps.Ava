@@ -15,6 +15,9 @@ public static class HelpIconRenderer
     // Gecachte Paint-Objekte (GC-Optimierung, statt pro-Aufruf neue Instanzen)
     private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+    // v2.0.43 Audit-Fix A3: gepoolte SKFont mit mutierter Size — vermeidet pro-Render-Allokation.
+    private static readonly SKFont _sharedFont = new() { Size = 12f };
+    private static readonly SKPaint _whiteTextPaint = new() { IsAntialias = true, Color = SKColors.White };
 
     // Gecachte MaskFilter für Bomben-Glow (statt pro-DrawBombCard Allokation)
     private static readonly SKMaskFilter _bombGlowLarge = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
@@ -635,12 +638,9 @@ public static class HelpIconRenderer
                 break;
 
             case PowerUpType.Mystery:
-                // Fragezeichen
-                using (var font = new SKFont { Size = size * 1.4f })
-                using (var textPaint = new SKPaint { IsAntialias = true, Color = SKColors.White })
-                {
-                    canvas.DrawText("?", cx, cy + size * 0.25f, SKTextAlign.Center, font, textPaint);
-                }
+                // Fragezeichen — gepoolte Font/Paint
+                _sharedFont.Size = size * 1.4f;
+                canvas.DrawText("?", cx, cy + size * 0.25f, SKTextAlign.Center, _sharedFont, _whiteTextPaint);
                 break;
 
             case PowerUpType.Kick:
@@ -687,12 +687,19 @@ public static class HelpIconRenderer
                 fillPaint.Color = SKColors.White;
                 break;
 
+            case PowerUpType.Cure:
+                // v2.0.37: Heilungs-PowerUp — gruenes Kreuz auf weisser Kapsel.
+                fillPaint.Color = SKColors.White;
+                canvas.DrawRoundRect(cx - size * 0.32f, cy - size * 0.32f, size * 0.64f, size * 0.64f, size * 0.12f, size * 0.12f, fillPaint);
+                fillPaint.Color = new SKColor(40, 200, 80);
+                canvas.DrawRect(cx - size * 0.06f, cy - size * 0.22f, size * 0.12f, size * 0.44f, fillPaint);
+                canvas.DrawRect(cx - size * 0.22f, cy - size * 0.06f, size * 0.44f, size * 0.12f, fillPaint);
+                fillPaint.Color = SKColors.White;
+                break;
+
             default:
-                using (var font = new SKFont { Size = size * 1.4f })
-                using (var textPaint = new SKPaint { IsAntialias = true, Color = SKColors.White })
-                {
-                    canvas.DrawText("?", cx, cy + size * 0.25f, SKTextAlign.Center, font, textPaint);
-                }
+                _sharedFont.Size = size * 1.4f;
+                canvas.DrawText("?", cx, cy + size * 0.25f, SKTextAlign.Center, _sharedFont, _whiteTextPaint);
                 break;
         }
     }
@@ -714,6 +721,7 @@ public static class HelpIconRenderer
         PowerUpType.LineBomb => new SKColor(0, 180, 255),
         PowerUpType.PowerBomb => new SKColor(255, 50, 50),
         PowerUpType.Skull => new SKColor(100, 0, 100),
+        PowerUpType.Cure => new SKColor(40, 200, 80),
         _ => SKColors.White
     };
 

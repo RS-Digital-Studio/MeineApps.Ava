@@ -120,6 +120,7 @@ public enum GameIconKind
     // Media
     Video,
     Play,
+    Pause,
     SkipNext,
     Repeat,
     Refresh,

@@ -38,8 +38,15 @@ public enum PowerUpType
     /// <summary>Einzelne Mega-Bombe mit maximaler Reichweite - LOST ON DEATH</summary>
     PowerBomb,
 
-    /// <summary>Zufälliger Debuff (Diarrhea/Slow/Constipation) - 10s TEMPORARY</summary>
-    Skull
+    /// <summary>Zufälliger Debuff (Diarrhea/Slow/Constipation) - 6s TEMPORARY (v2.0.37: 10s→6s)</summary>
+    Skull,
+
+    /// <summary>
+    /// Heilt aktive Curses sofort (entfernt Diarrhea/Slow/Constipation/ReverseControls).
+    /// Spawn-Chance 5% in Welten mit Skull-Risiko (v2.0.37, Plan Task 2.5).
+    /// WICHTIG: Cure als LETZTER Wert anhaengen — Skull-Persistenz darf nicht durch Enum-Verschiebung kaputt gehen.
+    /// </summary>
+    Cure
 }
 
 /// <summary>
@@ -60,6 +67,26 @@ public enum CurseType
 
 public static class PowerUpExtensions
 {
+    // v2.0.43 Audit-Fix A1: String-LUT fuer Hot-Path (PowerUp-Pickup-Tracking).
+    // Vermeidet Enum.ToString()-Reflection-Allokation bei jedem Pickup.
+    // Index-Reihenfolge IDENTISCH zur Enum-Reihenfolge (BombUp=0, Fire=1, ...).
+    private static readonly string[] _typeNames =
+    {
+        "BombUp", "Fire", "Speed", "Wallpass", "Detonator",
+        "Bombpass", "Flamepass", "Mystery", "Kick", "LineBomb",
+        "PowerBomb", "Skull", "Cure"
+    };
+
+    /// <summary>
+    /// Allocation-free Konvertierung PowerUpType → string fuer Tracking/Telemetrie.
+    /// Falls Enum-Reihenfolge geaendert wird, ist die LUT manuell anzupassen.
+    /// </summary>
+    public static string ToFastString(this PowerUpType type)
+    {
+        int idx = (int)type;
+        return idx >= 0 && idx < _typeNames.Length ? _typeNames[idx] : type.ToString();
+    }
+
     /// <summary>
     /// Check if power-up is permanent (survives death)
     /// </summary>
@@ -121,6 +148,7 @@ public static class PowerUpExtensions
             PowerUpType.LineBomb => 400,
             PowerUpType.PowerBomb => 400,
             PowerUpType.Skull => 0, // Kein Score für negative Effekte
+            PowerUpType.Cure => 250, // v2.0.37: Heilung als Belohnung wert
             _ => 0
         };
     }
@@ -152,6 +180,7 @@ public static class PowerUpExtensions
         PowerUpType.Kick => 10,
         PowerUpType.Mystery => 15,
         PowerUpType.Skull => 20,
+        PowerUpType.Cure => 20,  // v2.0.37: gleichzeitig mit Skull verfuegbar — sonst gibt es keine Heilung
         PowerUpType.Wallpass => 20,
         PowerUpType.Detonator => 25,
         PowerUpType.Bombpass => 25,

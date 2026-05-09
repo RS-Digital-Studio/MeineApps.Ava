@@ -1,284 +1,322 @@
-# RechnerPlus Avalonia
+# RechnerPlus
 
-> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Build-Befehle, Conventions, Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
-## App-Übersicht
+Scientific Calculator mit Unit Converter — werbefrei, kostenlos, kein IAP.
 
-Scientific Calculator mit Unit Converter - werbefrei, kostenlos.
+**Version:** 2.0.7 (VersionCode 31) | **Package:** com.meineapps.rechnerplus | **Status:** Geschlossener Test
 
-**Version:** 2.0.6
-**Package:** com.meineapps.rechnerplus
-**Werbung:** Keine
-**Status:** Im geschlossenen Test
+---
 
-## App-spezifische Features
+## Architektur
 
-### Calculator
-- Basic + Scientific Mode (Trigonometrie, Logarithmen, Potenzen)
-- **INV-Button (2nd Function)**: Toggle im Mode-Selector, sin→sin⁻¹, cos→cos⁻¹, tan→tan⁻¹, log→10ˣ, ln→eˣ
-- Memory-Funktionen (M+, M-, MR, MC, MS) mit ToolTip-Anzeige des Werts, **persistent** (überlebt App-Neustart)
-- Berechnungsverlauf (Bottom-Sheet, Swipe-Up/Down, max 100 Einträge)
-- **Einzelne History-Einträge löschen** (X-Button pro Eintrag)
-- **Bestätigungsdialog** beim Löschen des gesamten Verlaufs
-- **ANS-Taste**: Letztes Ergebnis einfügen, implizite Multiplikation nach ")"
-- **Share-Button**: Teilen von Expression+Ergebnis (Ctrl+S, Share Intent auf Android)
-- **Undo/Redo**: Ctrl+Z/Ctrl+Y, Stack-basiert (max 50 Zustände), SaveState vor jeder zustandsändernden Operation
-- **Zahlenformat konfigurierbar**: US (1,234.56) oder EU (1.234,56) in Settings wählbar
-- Keyboard-Support (Desktop): Ziffern, Operatoren, Enter, Backspace, Escape, Shift+8/9/0, Ctrl+Z/Y
-- Floating Text Overlay (Game Juice): Ergebnis schwebt nach oben bei Berechnung
-- **Live-Preview**: Zeigt Zwischenergebnis grau unter dem Display bei jeder Eingabe
-- **Operator-Highlight**: Aktiver Operator (÷×−+) wird visuell hervorgehoben
-- **Swipe-to-Backspace**: Horizontaler Swipe nach links auf Display = Backspace
-- **Landscape = Scientific**: Automatisch Scientific Mode im Querformat, 2-Spalten-Layout (Display+Scientific links, BasicGrid rechts)
-- **Copy-Button im Display**: ContentCopy-Icon neben Backspace
-- Wiederholtes "=" wiederholt letzte Operation (z.B. 5+3=== → 8, 11, 14)
-- Implizite Multiplikation nach Klammern: (5+3)2 → (5+3) × 2 (sowohl im ViewModel als auch im ExpressionParser)
-- Kontextuelles Prozent: 100+10% = 110 (bei ×/÷: nur /100)
-- Auto-Close offener Klammern bei "="
-- Smart-Parenthesis-Button "( )" wählt automatisch ( oder ) je nach Kontext
-- **Klammer-Validierung**: ")" wird ignoriert wenn keine offene Klammer existiert
-- **Haptic Feedback (Android)**: Tick/Click/HeavyClick bei Button-Aktionen, **abschaltbar** in Settings (IHapticService.IsEnabled)
-- **Double-Back-to-Exit (Android)**: Zurücktaste navigiert intern (History→Tab→Rechner), erst 2x schnell drücken schließt App. Logik komplett im MainViewModel (`HandleBackPressed()` + `ExitHintRequested` Event), MainActivity ruft nur VM auf
-- **Tausender-Trennzeichen**: Display zeigt `1,000,000` statt `1000000` (RawDisplay ohne Kommas für Berechnungen)
-- **Responsive Schriftgröße**: DisplayFontSize passt sich an Zahlenlänge an (52→42→34→26→20)
-- **Startup-Modus persistent**: Basic/Scientific-Wahl wird gespeichert (nicht bei Auto-Landscape)
-- **Button-Press-Animation**: scale(0.92) mit TransformOperationsTransition (80ms) + BrushTransition (150ms)
-- **Dezimalstellen-Einstellung**: Auto oder 0-10 feste Stellen (in Settings konfigurierbar)
-- **Floating-Point-Rounding**: Math.Round(value, 10) verhindert `0.30000000000000004`
-- **Expression Syntax-Highlighting**: ExpressionHighlightControl (Zahlen: TextPrimary, Operatoren: Primary+Bold, Klammern: Muted)
-- **Ergebnis-Animation**: CalculationCompleted Event → Display Fade+Scale (0.3→1, 0.96→1) + Equals-Button Weiß-Flash (100ms)
-- **Display-Gradient**: Theme-spezifischer Gradient-Hintergrund (DisplayGradientBrush)
-- **Equals-Gradient**: Theme-spezifischer Gradient (EqualsGradientBrush) statt einfarbig
-- **Operator-Glow**: Aktiver Operator mit PrimaryBrush-Background + Border-Highlight
-- **Digit-Buttons**: Fast-transparente DigitButtonBrush (Glassmorphism-Effekt)
-- **Scientific-Panel Slide**: Opacity+MaxHeight Animation statt IsVisible (smooth Ein-/Ausblenden)
-- **Memory-Row Animation**: Opacity 0.4→1 wenn Memory aktiv (DoubleTransition)
-- **Mini-History**: Letzte 2 Berechnungen als Chips unter Display (tappbar)
-- **Gruppierter Verlauf**: Einträge nach Heute/Gestern/Älter gruppiert
-- **Onboarding**: 3 Tooltips beim ersten Start (Swipe-Delete, Swipe-History, Scientific-Mode)
-- **Converter Swap-Animation**: Swap-Button rotiert 180° bei jedem Klick
+### Datei-Struktur
 
-### Converter
-11 Kategorien mit offset-basierter Temperature-Konvertierung:
-1. Length (m, km, mi, ft, in, cm, mm, yd, nmi, µm)
-2. Mass (kg, g, lb, oz, mg, t, st)
-3. Temperature (C, F, K) - offset-basiert
-4. Time (s, min, h, d, wk)
-5. Volume (L, mL, gal, qt, pt, fl oz, cup, tbsp, tsp)
-6. Area (m², km², ha, ft², ac)
-7. Speed (m/s, km/h, mph, kn)
-8. Data (B, KB, MB, GB, TB, bit)
-9. Energy (J, kJ, cal, kcal, Wh, kWh, BTU)
-10. Pressure (Pa, kPa, bar, atm, psi, mmHg)
-11. Angle (°, rad, gon, tr, ′, ″)
-- **Copy-Button** neben Result-Anzeige
-
-## Besondere Implementierungen
-
-### Temperature-Konvertierung (Offset-Fix)
-```csharp
-// Offset-basierte Formel (nicht nur Faktor-basiert)
-baseValue = value * ToBase + Offset
-// Celsius: ToBase=1, Offset=0 (Referenz)
-// Fahrenheit: ToBase=5/9, Offset=-32*5/9
-// Kelvin: ToBase=1, Offset=-273.15
+```
+RechnerPlus.Shared/
+├── App.axaml.cs                          # DI-Root, Loading-Pipeline, HapticServiceFactory
+├── Loading/
+│   └── RechnerPlusLoadingPipeline.cs     # Sequentieller Start (CalcLib-Warm-Up, History-Load)
+├── ViewModels/
+│   ├── MainViewModel.cs                  # Tab-Navigation, Back-Press, FloatingText-Relay
+│   ├── CalculatorViewModel.cs            # Felder, Props, Events, Lifecycle, History-Caches
+│   ├── CalculatorViewModel.Calculations.cs # Eingabe, Berechnung, wissenschaftliche Funktionen
+│   ├── CalculatorViewModel.Display.cs    # RawDisplay, FormatResult, Preview, Klammern
+│   ├── CalculatorViewModel.History.cs    # Undo/Redo, History-Commands, Clipboard, Memory
+│   ├── ConverterViewModel.cs             # 11 Einheiten-Kategorien, Swap-Animation
+│   └── SettingsViewModel.cs              # Zahlenformat, Dezimalstellen, Haptic-Toggle
+├── Views/
+│   ├── MainView.axaml(.cs)               # Tab-Layout, Bottom-Sheet-Gesten, FloatingText
+│   ├── CalculatorView.axaml(.cs)         # VFD-Timer, Burst-Timer, Keyboard, Landscape-Layout
+│   ├── ConverterView.axaml(.cs)          # Swap-Animation
+│   └── SettingsView.axaml(.cs)
+├── Graphics/
+│   ├── VfdDisplayVisualization.cs        # 7-Segment VFD-Röhren-Simulation (SkiaSharp)
+│   ├── ResultBurstVisualization.cs       # Lichtring + 8 Partikel-Strahlen bei "="
+│   ├── FunctionGraphVisualization.cs     # Mini-Funktionsgraph mit Glow + Gradient
+│   ├── CalculatorBackgroundRenderer.cs   # "Digital Circuit Board"-Hintergrund (5fps)
+│   └── RechnerPlusSplashRenderer.cs      # Splash: Tasten-Matrix + LCD-Display
+└── Controls/
+    └── ExpressionHighlightControl.cs     # Syntax-Highlighting (Zahlen/Operatoren/Klammern)
 ```
 
-### History-Integration (persistent)
-- `IHistoryService` (aus MeineApps.CalcLib) als Singleton
-- **Persistenz**: Verlauf wird per IPreferencesService als JSON gespeichert und beim Start geladen
-- CalculatorViewModel: `IsHistoryVisible`, `HistoryEntries`, Show/Hide/Clear/Delete/SelectHistoryEntry Commands
-- MainView: Bottom-Sheet Overlay mit Backdrop, Slide-Animation (TransformOperationsTransition)
-- Swipe-Gesten in MainView.axaml.cs: Up=ShowHistory, Down=HideHistory (nur im Calculator-Tab)
-- **Gruppierung**: HistoryGroup record (Heute/Gestern/Älter), GroupedHistory Property
-- **Mini-History**: RecentHistory (letzte 2 Einträge) als Chips unter CalculatorView
-- "Verlauf löschen"-Button mit Bestätigungsdialog (ShowClearHistoryConfirm)
-
-### Floating Text (Game Juice)
-- CalculatorViewModel feuert `FloatingTextRequested` Event nach Calculate()
-- MainView.axaml.cs: `OnFloatingText` ruft `FloatingTextOverlay.ShowFloatingText` auf
-- Farbe: Indigo (#6366F1), FontSize 14, Position 30%/30% des Canvas
-
-### Clipboard (Event-basiert)
-- `ClipboardCopyRequested` / `ClipboardPasteRequested` vom VM
-- View nutzt `TopLevel.GetTopLevel(this)?.Clipboard` (Avalonia-API)
-- Ctrl+C / Ctrl+V via KeyDown-Handler
-- Sauberes Abmelden bei DataContext-Wechsel (kein Memory Leak)
-
-### Keyboard (CalculatorView.axaml.cs)
-- KeyDown-Handler auf UserControl (Focusable=true)
-- Mappings: Shift+8 = Multiplikation, Shift+9 = (, Shift+0 = ), OemPlus ohne Shift = Equals, OemComma/OemPeriod = Dezimalpunkt
-- Ctrl+C = Kopieren, Ctrl+V = Einfügen, Ctrl+S = Teilen, Ctrl+Z = Undo, Ctrl+Y = Redo
-
-### Haptic Feedback
-- `IHapticService` Interface in `Services/IHapticService.cs`
-- `NoOpHapticService` für Desktop (kein Feedback)
-- `AndroidHapticService` in MainActivity.cs (VibrationEffect.EffectTick/Click/HeavyClick)
-- Factory-Pattern: `App.HapticServiceFactory` wird von Android gesetzt
-
-### Live-Preview
-- `PreviewResult` Property, `UpdatePreview()` bei jeder Eingabe
-- Versucht Expression+Display auszuwerten, zeigt Zwischenergebnis grau an
-- Offene Klammern automatisch schließen, trailing Operatoren entfernen für Preview
-- Nur angezeigt wenn sich der Wert vom Display unterscheidet
-
-### Landscape-Layout (CalculatorView.axaml.cs, 13.02.2026, aktualisiert 28.02.2026)
-- `OnSizeChanged` prüft Width > Height
-- Automatischer Wechsel zu Scientific Mode mit `_autoSwitchedToScientific` Flag
-- Zurück zu Basic nur wenn automatisch gewechselt wurde (nicht manuell)
-- **2-Spalten-Layout**: Spalte 0 (40%): Display+FunctionGraph+ModeSelector+ScientificPanel+Memory | Spalte 1 (60%): BasicGrid (RowSpan=5)
-- RowDefinitions Portrait: `Auto,Auto,Auto,Auto,Auto,*` (Display, FunctionGraph, Mode, Scientific, Memory, BasicGrid)
-- RowDefinitions Landscape: `Auto,Auto,Auto,Auto,*` (Display, FunctionGraph, Mode, Scientific, Memory)
-- Memory-Row: `VerticalAlignment.Bottom` im Landscape (zurückgesetzt auf Stretch in Portrait)
-- FunctionGraph: 140px Portrait, 100px Landscape
-- Kompaktere Landscape-Styles: CalcButton MinHeight 36, Function MinHeight 32, Memory MinHeight 28
-- ModeSelector-Buttons: FontSize 11, Padding 8,3 im Landscape
-- Scientific: ColumnSpacing/RowSpacing 4 statt 6
-
-### CalculatorViewModel Partial-Class-Aufteilung
-- `CalculatorViewModel.cs` - Felder, Constructor, Properties, Events, Lifecycle, History-Caches, Funktionsgraph-Properties
-- `CalculatorViewModel.Calculations.cs` - Eingabe (Digit, Operator, Decimal, Klammern), Berechnung, Bearbeitung (Clear, Backspace, Negate, Percent), wissenschaftliche Funktionen (Sin, Cos, Tan, Log, Ln, Inverse-Varianten), Pi, Euler, Abs, Ans, Mode-Wechsel
-- `CalculatorViewModel.Display.cs` - RawDisplay, FormatResult, ShowError, ClearError, SetDisplayFromResult, TryParseDisplay, RefreshNumberFormat, UpdatePreview, OnDisplayChanged, CountOpenParentheses, IsOperatorChar, PasteValue, SetActiveFunction, ClearFunctionGraph
-- `CalculatorViewModel.History.cs` - Undo/Redo (SaveState, RestoreState, Undo, Redo), History-Commands (Show, Hide, Clear, Delete, Select, Copy), Clipboard-Commands (CopyDisplay, ShareDisplay, PasteFromClipboard), Verlauf-Persistenz (Load/Save), Memory-Persistenz (Load/Save), Memory-Commands (MC, MR, M+, M-, MS)
-
-### Code-Qualität
-- `TryParseDisplay()`: Zentrale Hilfsmethode, nutzt `RawDisplay` (ohne Tausender-Trennzeichen)
-- `SetDisplayFromResult(double/CalculationResult)`: Zentrale Methode für Display+Error-Handling
-- `RawDisplay`: Computed Property - entfernt Tausender-Trennzeichen und normalisiert Dezimaltrenner auf InvariantCulture
-- `FormatResult()`: Math.Round(10) → Dezimalstellen-Setting → locale-abhängige Tausender-/Dezimaltrenner
-- `RefreshNumberFormat()`: Aktualisiert Zahlenformat aus Preferences (aufgerufen beim Tab-Wechsel)
-- `CreateCurrentState()`: Zentrale Hilfsmethode für CalculatorState-Snapshots (verwendet in SaveState/Undo/Redo)
-- `CountOpenParentheses(string expr)`: Parametrisierte statische Methode, parameterlose Variante delegiert an Expression. In Percent() für baseExpr genutzt
-- Undo/Redo: `_undoList` (LinkedList<CalculatorState>, O(1) Overflow ohne Array-Umkopieren) + `_redoStack` (Stack). SaveState() vor JEDER zustandsändernden Operation inkl. Abs()
-- `DisplayFontSize`: Automatisch angepasst bei Display-Änderungen (52/42/34/26/20)
-- Wissenschaftliche Funktionen delegieren an `_engine` (besseres Error-Handling via CalculationResult)
-- `CalculatorEngine.Factorial()` gibt `CalculationResult` zurück (statt double)
-- `ExpressionParser.ProcessUnaryMinus()`: Konsekutive Minus-Zeichen (--5=5, ---5=-5)
-- Alle ViewModels: IDisposable mit sauberem Event-Unsubscribe
-- `ExpressionHighlightControl`: Brushes gecacht (`_cachedPrimary`/`_cachedText`/`_cachedMuted`), invalidiert bei `ActualThemeVariantChanged`-Event
-- `CalculatorView`: `FindControl`-Ergebnisse (`_burstOverlay`, `_displayBorder`, `_equalsButton`, `_functionGraphBorder`) in `OnAttachedToVisualTree` gecacht
-- `ConverterViewModel.Convert()`: Leere Eingabe → `OutputValue = ""` statt Fehlertext
-- `VfdDisplayVisualization`: `_glowPaint.MaskFilter` dauerhaft im Field-Initializer gesetzt. `_dotSegmentPaint` für Punkte ohne Glow
-- `FunctionGraphVisualization`: `xStep`/`yStep` einmal in `Render()` berechnet, an `DrawGrid()` + `DrawLabels()` übergeben (kein doppeltes `CalculateStep()`)
-
-### UI-Layout (12.02.2026)
-- **Display-Card**: Expression + Copy-Icon + Backspace-Icon (oben rechts) + Memory-Indikator mit ToolTip (oben links) + Live-Preview
-- **Mode-Selector**: Basic | Scientific | INV | RAD/DEG
-- **Basic Mode Grid (4×5)**: `C | () | % | ÷` / `789×` / `456−` / `123+` / `± 0 . =`
-- **Scientific Panel (4×5)**: Row 0: sin/cos/tan/log/ln (INV-abhängig), Row 1: ( ) x^y 1/x Ans, Row 2: π e x² √x x!, Row 3: |x| (Abs)
-- **Memory Row (5)**: MC MR M+ M- MS
-- CE entfernt (redundant mit C, nur noch per Delete-Taste)
-
-### Expression-Schutz
-- MaxExpressionLength = 200 Zeichen (verhindert Memory-Probleme)
-- Klammer-Validierung: ")" nur wenn offene Klammern existieren
-
 ### DI-Registrierung (alle Singleton)
-- CalculatorVM, ConverterVM, SettingsVM, MainViewModel → Singleton
-- CalculatorEngine, ExpressionParser, IHistoryService → Singleton
-- IHapticService → Singleton (Factory-Pattern für Android)
 
-### ConverterVM Dispose
-- IDisposable: Unsubscribe von LanguageChanged im Dispose()
-- Erweiterte Einheiten: NauticalMile, Micrometer (Length), Stone (Mass), Tablespoon, Teaspoon (Volume), 6 Angle-Einheiten
+```csharp
+// Core
+IPreferencesService → PreferencesService("RechnerPlus")
+ILocalizationService → LocalizationService(AppStrings.ResourceManager, ...)
+
+// CalcLib (externe Library)
+CalculatorEngine → Singleton
+ExpressionParser  → Singleton
+IHistoryService   → HistoryService (Singleton)
+
+// Platform
+IHapticService → HapticServiceFactory?.Invoke(sp) ?? NoOpHapticService  // Android setzt Factory
+
+// ViewModels
+CalculatorViewModel, ConverterViewModel, SettingsViewModel, MainViewModel → alle Singleton
+```
+
+### Loading-Pipeline
+
+```
+1. CalcLib-Warm-Up (ExpressionParser.Evaluate("1+1") im MainViewModel-Ctor)
+2. History-Persistenz laden (IHistoryService aus IPreferencesService JSON)
+3. Memory-Persistenz laden (M-Register aus Preferences)
+4. Mindestens 800ms Splash-Anzeige (damit Sweep-Wellen-Animation abläuft)
+```
+
+---
+
+## Feature-Patterns
+
+### CalcLib-Integration
+
+`MeineApps.CalcLib` liefert `CalculatorEngine` + `ExpressionParser` + `IHistoryService`.
+Das ViewModel delegiert wissenschaftliche Funktionen immer an `_engine` — nie selbst berechnen,
+weil `CalculatorEngine` `CalculationResult` mit Fehler-Semantik zurückgibt (kein Exception-Werfen).
+
+```csharp
+// Richtig: CalculationResult mit Fehler-Semantik
+var result = _engine.Factorial(n);
+if (!result.IsSuccess) { ShowError(result.ErrorMessage); return; }
+SetDisplayFromResult(result.Value);
+
+// Falsch: direkt Math.* aufrufen (kein Error-Handling, kein Formatting)
+display = Math.Sin(value).ToString();
+```
+
+### Display-Pipeline (KRITISCH)
+
+```
+Eingabe → Expression (string) → ExpressionParser.Evaluate() → double
+         → FormatResult() → Display-String
+              └─ Math.Round(value, 10)  ← verhindert 0.30000000000000004
+              └─ DecimalPlaces-Setting
+              └─ locale-abhängige Tausender-/Dezimaltrenner
+
+RawDisplay (computed) = Display ohne Tausender-Trennzeichen, InvariantCulture
+TryParseDisplay()     = IMMER auf RawDisplay operieren, nie auf Display
+```
+
+### Temperature-Konvertierung (Offset-Formel)
+
+Fahrenheit und Kelvin sind **offset-basiert**, nicht nur faktor-basiert.
+Nur Celsius hat Offset 0 (Referenz-Einheit).
+
+```csharp
+baseValue = value * ToBase + Offset;
+// Fahrenheit: ToBase = 5/9,  Offset = -32 * 5/9
+// Kelvin:     ToBase = 1.0,  Offset = -273.15
+// Celsius:    ToBase = 1.0,  Offset = 0 (Referenz)
+```
+
+### History-Persistenz
+
+`IHistoryService` aus CalcLib speichert die Einträge **nicht selbst**. Das ViewModel
+serialisiert per `IPreferencesService` als JSON. Beim Start `LoadHistoryFromPreferences()`,
+nach jeder Berechnung `SaveHistoryToPreferences()`.
+
+### Undo/Redo
+
+Stack-basiert: `_undoList` als `LinkedList<CalculatorState>` (O(1) Overflow ohne Array-Umkopieren),
+`_redoStack` als `Stack<CalculatorState>`. `SaveState()` IMMER vor jeder zustandsändernden
+Operation aufrufen — auch vor `Abs()`, `Negate()` und Memory-Operationen.
+
+### Landscape-Layout (CalculatorView.axaml.cs)
+
+```
+Portrait  → RowDefinitions: Auto,Auto,Auto,Auto,Auto,*
+Landscape → RowDefinitions: Auto,Auto,Auto,Auto,*
+            Spalte 0 (40%): Display + FunctionGraph + ModeSelector + Scientific + Memory
+            Spalte 1 (60%): BasicGrid (RowSpan=5)
+```
+
+`_autoSwitchedToScientific`-Flag verhindert, dass manueller Scientific-Modus beim
+Zurückdrehen überschrieben wird. Zurück zu Basic nur wenn auto-gewechselt wurde.
+
+### Back-Navigation (HandleBackPressed)
+
+```
+1. History-Panel offen         → schließen, return true
+2. ClearHistory-Dialog offen   → abbrechen, return true
+3. Nicht auf Rechner-Tab       → SelectedTabIndex = 0, return true
+4. Startseite                  → Double-Back-to-Exit via BackPressHelper
+```
+
+---
+
+## SkiaSharp-Visualisierungen
+
+### VFD-Display (`VfdDisplayVisualization.cs`)
+
+Retro-Tech-Charakter von RechnerPlus. Ersetzt TextBlock durch echte 7-Segment-Simulation:
+- Cyan-Grün (#00FFB0) normal, Rot (#FF4444) bei Fehler
+- Ghost-Segmente (alle 7 dezent sichtbar) wie bei echten VFD-Röhren
+- `_glowPaint.MaskFilter` dauerhaft im Field-Initializer gesetzt (kein Leak)
+- `_dotSegmentPaint` für Punkte ohne Glow (separater Paint)
+- Subtiles Flicker (±3%, ~7Hz sin-basiert), Hintergrund #0A0A0A
+- Timer: DispatcherTimer 33ms, startet in `OnAttachedToVisualTree`
+
+### Result-Burst (`ResultBurstVisualization.cs`)
+
+Expandierender Lichtring + 8 Partikel-Strahlen. Ausgelöst durch `CalculationCompleted`-Event.
+Cubic ease-out, 500ms, transparentes Overlay über Display-Bereich.
+
+### FunctionGraph (`FunctionGraphVisualization.cs`)
+
+Mini-Graph (140px Portrait / 100px Landscape) für sin, cos, tan, sqrt, log, ln, x², 1/x.
+- `xStep`/`yStep` einmal in `Render()` berechnen, an `DrawGrid()` + `DrawLabels()` übergeben
+- Asymptoten-Handling: NaN/Infinity/große Werte → Pfad-Unterbrechung (kein DrawLine)
+- Teilt den VFD-Timer (33ms), `_vfdAnimTime` als `animTime`-Parameter
+
+### Animierter Hintergrund (`CalculatorBackgroundRenderer.cs`)
+
+"Digital Circuit Board" — 4 Layer: 3-Farben-Gradient (#302A56→#221E40→#2C1850),
+Dot-Grid (32px Spacing, 2px/s Drift), 15 Math-Partikel (Indigo Alpha 8%), radiale Vignette.
+~5fps (DispatcherTimer 200ms). Gecachte Paints, Shader-Cache nur bei Größenänderung.
+
+### ExpressionHighlightControl
+
+Brushes (`_cachedPrimary`, `_cachedText`, `_cachedMuted`) gecacht, invalidiert bei
+`ActualThemeVariantChanged`. Zahlen: TextPrimary, Operatoren: Primary+Bold, Klammern: Muted.
+
+---
+
+## UI-Patterns
+
+### Button-Grid-Layout (Basic Mode 4×5)
+
+```
+C  | ()  | %  | ÷
+7    8     9    ×
+4    5     6    −
+1    2     3    +
+±    0     .    =
+```
+
+### Scientific-Panel (4×5)
+
+```
+Row 0: sin/cos/tan/log/ln  (INV-Varianten: sin⁻¹/cos⁻¹/tan⁻¹/10ˣ/eˣ)
+Row 1: ( ) x^y 1/x Ans
+Row 2: π e x² √x x!
+Row 3: |x|
+```
 
 ### Display-Card Header (5 Spalten)
-- Memory-Indikator (M) | Expression | Share-Icon | Copy-Icon | Backspace-Icon
 
-## SkiaSharp-Visualisierungen (16.02.2026)
+Memory-Indikator (M) | Expression | Share-Icon | Copy-Icon | Backspace-Icon
 
-### Graphics-Ordner: `RechnerPlus.Shared/Graphics/`
+### Keyboard-Mapping (Desktop)
 
-| Datei | Beschreibung |
-|-------|-------------|
-| `VfdDisplayVisualization.cs` | 7-Segment VFD (Vacuum Fluorescent Display) mit Glow, Ghost-Segmenten, Flicker-Effekt |
-| `ResultBurstVisualization.cs` | Expandierender Lichtring + 8 Partikel-Strahlen bei "="-Berechnung |
-| `FunctionGraphVisualization.cs` | Mini-Funktionsgraph mit Glow-Kurve, Gradient-Füllung, Grid, aktueller Punkt-Markierung |
-| `RechnerPlusSplashRenderer.cs` | App-spezifischer Splash: "Die saubere Gleichung" - 4x4 Tasten-Matrix mit diagonaler Sweep-Welle, Punkt-Grid, 16 Mathe-Partikel, LCD-Display-Stil |
-| `CalculatorBackgroundRenderer.cs` | Animierter "Digital Circuit Board"-Hintergrund: 3-Farben Gradient, Dot-Grid mit Drift, floating Math-Partikel, radiale Vignette. ~5fps Render-Loop, 0 GC pro Frame |
+| Taste | Funktion |
+|-------|----------|
+| Shift+8 | × |
+| Shift+9 / Shift+0 | ( / ) |
+| OemPlus (ohne Shift) | = |
+| OemComma/OemPeriod | Dezimalpunkt |
+| Ctrl+C/V/S/Z/Y | Kopieren/Einfügen/Teilen/Undo/Redo |
 
-### VFD-Display
-- Ersetzt das TextBlock-basierte Display durch SkiaSharp-gerenderte 7-Segment-Ziffern
-- Cyan-Grün (#00FFB0) im Normalzustand, Rot (#FF4444) bei Fehler
-- Ghost-Segmente (alle 7 Segmente dezent sichtbar) wie bei echten VFD-Röhren
-- Glow-Effekt (SKMaskFilter.CreateBlur) auf aktiven Segmenten
-- Subtiles Flicker (±3%, ~7Hz sin-basiert) simuliert echte Röhren-Schwankung
-- Hintergrund: Fast-schwarz (#0A0A0A)
-- Segment-Map: 0-9, Minus, E, r, Space; Punkt/Komma als leuchtender Dot
-- Rechtsbündige Darstellung, Tausender-Trennzeichen als Dezimalpunkte
+### Clipboard-Pattern (Event-basiert)
 
-### Result-Burst
-- Wird bei `CalculationCompleted` Event ausgelöst
-- Expandierender Ring mit Glow + 8 gleichmäßig verteilte Partikel
-- Cubic ease-out Easing, 500ms Dauer
-- Transparentes Overlay über dem gesamten Display-Bereich
+`ClipboardCopyRequested` / `ClipboardPasteRequested` vom VM → View nutzt
+`TopLevel.GetTopLevel(this)?.Clipboard`. Sauberes Abmelden bei DataContext-Wechsel nötig.
 
-### Integration (CalculatorView)
-- `xmlns:skia="using:Avalonia.Labs.Controls"` im AXAML
-- Display-Bereich in Panel gewrappt (für Burst-Overlay)
-- VFD-Canvas: Border mit `#0A0A0A` Hintergrund, 56px Höhe, CornerRadius 8
-- Original-TextBlock unsichtbar (Opacity=0, für Layout-Referenz)
-- VFD-Flicker-Timer: DispatcherTimer 33ms, startet bei OnAttachedToVisualTree (auch für FunctionGraph-Glow)
-- Burst-Timer: DispatcherTimer 33ms, startet bei CalculationCompleted, stoppt nach 500ms
-- PropertyChanged-Handler invalidiert VFD bei Display/HasError-Änderung
+---
 
-### FunctionGraph (28.02.2026 - in UI integriert)
-- Mini-Funktionsgraph (140px Portrait, 100px Landscape) für sin, cos, tan, sqrt, log, ln, x², 1/x
-- Smooth SKPath-Kurve mit Primary-Farbe + Glow-Effekt + Gradient-Füllung
-- Automatische X/Y-Achsen-Skalierung mit dezenten Grid-Linien
-- Aktueller Eingabewert als pulsierender Punkt auf der Kurve mit Tooltip "(x, y)"
-- Asymptoten-Handling: NaN/Infinity/große Werte → Pfad-Unterbrechung
-- Funktionsname als f(x)-Label oben links
-- `GetRange(functionName)` → vorkonfigurierte X-Bereiche pro Funktion
-- `Render(SKCanvas, SKRect, Func<float,float>, functionName, currentX, animTime)`
-- **ViewModel**: `ActiveFunctionName`, `ActiveFunction`, `FunctionGraphCurrentX`, `ShowFunctionGraph`, `FunctionGraphChanged` Event
-- **View**: FunctionGraphBorder (Row 1 im RootGrid, Auto), Opacity+MaxHeight Transition, 5s Auto-Hide-Timer
-- **Trigger**: Wird bei erfolgreicher Berechnung von sin/cos/tan/log/ln/sqrt/x²/1/x aktiviert
-- **Glow-Pulsierung**: Teilt den VFD-Timer (33ms Intervall), `_vfdAnimTime` als animTime
+## Gotchas
 
-### Animierter Hintergrund (05.03.2026)
-- "Digital Circuit Board"-Effekt in MainView (SKCanvasView, Grid.RowSpan=2, IsHitTestVisible=False)
-- 4 Layer: 3-Farben Gradient (#302A56→#221E40→#2C1850), Dot-Grid (32px Spacing, Drift 2px/s), Math-Partikel (15 Stück, Indigo Alpha 8%), radiale Vignette
-- DispatcherTimer 200ms (~5fps), Update+InvalidateSurface pro Tick
-- Gecachte Paints, Shader-Cache (nur bei Größenaenderung), SKFont gecacht (Size-Setter pro Partikel)
-- Start in OnAttachedToVisualTree, Stop+Dispose in OnDetachedFromVisualTree
+### RawDisplay vs. Display
 
-### Error-Shake (28.02.2026)
-- `ErrorShakeRequested` Event im ViewModel, gefeuert in `ShowError()`
-- TranslateTransform auf DisplayBorder: 0→4→-4→3→-3→2→-2→0 px über 300ms
-- DispatcherTimer-basiert (8 Schritte, ~37ms pro Schritt)
+`TryParseDisplay()` und alle Berechnungen IMMER auf `RawDisplay` operieren.
+`Display` enthält Tausender-Trennzeichen und locale-spezifische Dezimaltrenner —
+`double.Parse()` schlägt damit auf manchen Locales lautlos fehl.
 
-### Copy-Feedback (28.02.2026)
-- `CopyFeedbackRequested` Event im ViewModel, gefeuert in `CopyDisplay()`
-- CopyIcon Foreground kurz grün (#22C55E, volle Opacity), nach 500ms zurück
+### VFD-Timer und FunctionGraph teilen denselben Timer
 
-### Memory-Indikator Puls (28.02.2026)
-- "M" TextBlock mit XAML KeyFrame-Animation (nur Opacity, KEIN RenderTransform)
-- Opacity 0.6→1.0→0.6, 2s Dauer, INFINITE, Alternate, CubicEaseInOut
+Der DispatcherTimer 33ms in `CalculatorView.axaml.cs` wird von VFD-Flicker
+und FunctionGraph-Glow-Pulsierung gemeinsam genutzt (`_vfdAnimTime` als animTime).
+Separaten Timer für FunctionGraph erstellen würde doppelte CPU-Last verursachen.
 
-## App-spezifische Abhängigkeiten
+### Landscape-Auto-Switch Guard
 
-- **MeineApps.CalcLib** - Calculator Engine + ExpressionParser + IHistoryService
+`_autoSwitchedToScientific` nicht vergessen wenn neue Modus-Wechsel-Pfade eingebaut werden.
+Ohne Flag würde manueller Scientific-Modus beim Drehen zurückgesetzt.
 
-## Wichtige Fixes
+### MaxExpressionLength = 200
 
-- **Konsekutive Operatoren (11.02.2026)**: "5 + × 3" ersetzte Operator korrekt statt "0" einzufügen
-- **Operator nach Klammer (11.02.2026)**: "(5+3) × 2" fügt keinen "0" mehr zwischen ")" und "×" ein
-- **= nach Klammer (11.02.2026)**: "(5+3) =" evaluiert korrekt ohne "0" anzuhängen
-- **= nach Operator (11.02.2026)**: "5 + =" entfernt trailing Operator statt "0" als Operand zu nutzen
-- **Verlauf-Persistenz (11.02.2026)**: History wird per JSON in IPreferencesService gespeichert
-- **FormatResult lokalisiert**: "Error" durch `_localization.GetString("Error")` ersetzt
-- **SelectHistoryEntry**: ClearError() hinzugefügt - HasError-Flag wird beim History-Eintrag zurückgesetzt
-- **Tan() Validation**: Math.Tan()-Ergebnis > 1e15 wird als undefiniert erkannt (implementiert in CalculatorViewModel)
-- **km/h Precision**: Speed-Faktor von 0.277778 auf `1.0 / 3.6` (exakter)
-- **Lokalisierung (11.02.2026)**: 84 fehlende Akzente/Umlaute in ES/FR/IT/PT/DE resx korrigiert
-- **Process.Start Android-Fix (11.02.2026)**: UriLauncher statt Process.Start (PlatformNotSupportedException auf Android)
-- **Clipboard (11.02.2026)**: Copy/Paste via Event-Pattern + TopLevel.Clipboard API
-- **ConverterVM Dispose (11.02.2026)**: IDisposable für LanguageChanged Unsubscribe
-- **Expression-Altlast nach Fehler (12.02.2026)**: ShowError() leert jetzt Expression und setzt _isNewCalculation=true
-- **Klammer-Bugs (12.02.2026)**: "))" fügte "0" ein → Fix: bei _isNewCalculation nur ")" ohne Display-Wert
-- **Implizite Multiplikation (12.02.2026)**: Zahl/Dezimalpunkt/"(" nach ")" fügt automatisch "×" ein
-- **Kontextuelles Prozent (12.02.2026)**: Bei +/−: Prozent vom Basiswert (100+10%=110)
-- **Wiederholtes = (12.02.2026)**: _lastOperator/_lastOperand speichern letzte Operation
-- **Auto-Close Klammern (12.02.2026)**: Offene Klammern werden bei "=" automatisch geschlossen
-- **Power konsistent (12.02.2026)**: Power() delegiert an InputOperator("^")
+Verhindert Memory-Probleme bei langen verschachtelten Ausdrücken. Eingabe-Buttons
+prüfen `Expression.Length >= MaxExpressionLength` vor dem Anhängen.
+
+### Klammer-Validierung
+
+")" wird nur eingefügt wenn `CountOpenParentheses() > 0`. Smart-Parenthesis-Button
+`( )` entscheidet automatisch (kontextabhängig) ob "(" oder ")".
+
+### km/h Präzision
+
+Speed-Faktor ist `1.0 / 3.6` (nicht 0.277778). Bei Einheiten-Faktoren immer
+exakte Brüche bevorzugen statt gerundete Dezimalwerte.
+
+### Tan-Validation
+
+`Math.Tan()` gibt bei π/2 einen sehr großen Wert zurück, kein `Infinity`.
+Explizite Prüfung: `Math.Abs(result) > 1e15` → als undefiniert behandeln.
+
+### Memory-Persistenz
+
+M-Register überleben App-Neustart (in `IPreferencesService`). ToolTip zeigt aktuellen
+Wert. `MC` löscht auch aus Preferences. Memory-Row: Opacity 0.4→1 via DoubleTransition
+wenn Memory aktiv (XAML KeyFrame nur für Opacity, KEIN RenderTransform wegen Crash-Risiko).
+
+---
+
+## Converter-Kategorien (11)
+
+| Nr | Kategorie | Einheiten (Beispiele) |
+|----|-----------|----------------------|
+| 1 | Length | m, km, mi, ft, in, cm, mm, yd, nmi, µm |
+| 2 | Mass | kg, g, lb, oz, mg, t, st |
+| 3 | Temperature | C, F, K (offset-basiert) |
+| 4 | Time | s, min, h, d, wk |
+| 5 | Volume | L, mL, gal, qt, pt, fl oz, cup, tbsp, tsp |
+| 6 | Area | m², km², ha, ft², ac |
+| 7 | Speed | m/s, km/h, mph, kn |
+| 8 | Data | B, KB, MB, GB, TB, bit |
+| 9 | Energy | J, kJ, cal, kcal, Wh, kWh, BTU |
+| 10 | Pressure | Pa, kPa, bar, atm, psi, mmHg |
+| 11 | Angle | °, rad, gon, tr, ′, ″ |
+
+Leere Eingabe → `OutputValue = ""` (kein Fehlertext). Swap-Button rotiert 180° per Animation.
+
+---
+
+## Build / Test / Deploy
+
+```bash
+# Shared bauen
+dotnet build "F:\Meine_Apps_Ava\src\Apps\RechnerPlus\RechnerPlus.Shared"
+
+# Desktop starten (Entwicklung)
+dotnet run --project "F:\Meine_Apps_Ava\src\Apps\RechnerPlus\RechnerPlus.Desktop"
+
+# AppChecker
+dotnet run --project "F:\Meine_Apps_Ava\tools\AppChecker" RechnerPlus
+
+# Android AAB (nur auf explizite Anfrage)
+dotnet publish "F:\Meine_Apps_Ava\src\Apps\RechnerPlus\RechnerPlus.Android" -c Release
+```
+
+---
+
+## Verweise
+
+| Was | Wo |
+|-----|----|
+| Build, Conventions, Troubleshooting | [Haupt-CLAUDE.md](../../../CLAUDE.md) |
+| Calculator Engine, ExpressionParser, IHistoryService | `src/Libraries/MeineApps.CalcLib/` |
+| Theme-Tokens, IPreferencesService, BackPressHelper | `src/Libraries/MeineApps.Core.Ava/` |
+| IHapticService, FloatingTextOverlay, SkiaLoadingSplash | `src/UI/MeineApps.UI/` |

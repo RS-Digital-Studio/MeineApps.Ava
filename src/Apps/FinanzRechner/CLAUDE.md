@@ -1,231 +1,338 @@
-# FinanzRechner (Avalonia)
+# FinanzRechner — Vollwertiger Finanz-Manager
 
-> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+Vollwertiger Finanz-Manager mit Expense-Tracking, Multi-Konto, Budgets, Sparzielen,
+Schulden-Tracker, Finanz-Score, Prognosen, Daueraufträgen und 6 Finanz-Rechnern.
+Alle Charts vollständig in SkiaSharp (kein LiveCharts).
 
-## App-Beschreibung
+| Aspekt | Wert |
+|--------|------|
+| Aktuelle Version | v2.0.7 |
+| Package-ID | com.meineapps.finanzrechner |
+| Modus | Geschlossener Test |
+| Theme | Smaragd `#10B981` — Living Finance |
+| Ads | Banner + Rewarded |
+| Premium | 3,99 EUR `remove_ads` |
 
-Vollwertiger Finanz-Manager mit Multi-Konto, Ausgaben-Tracking, Budget-Verwaltung, Sparzielen, Schulden-Tracker, Finanz-Score, Prognosen, Daueraufträgen und 6 Finanz-Rechnern.
+---
 
-**Version:** 2.0.6 | **Package-ID:** com.meineapps.finanzrechner | **Status:** Geschlossener Test
+## Projekt-Struktur
+
+```
+src/Apps/FinanzRechner/
+├── FinanzRechner.Shared/
+│   ├── ViewModels/
+│   │   ├── MainViewModel.cs              # Constructor, Navigation, Tab, Back, Ads
+│   │   ├── MainViewModel.Home.cs         # Dashboard-Logik (Budget, Saldo, Quick-Add, Analyse)
+│   │   ├── ExpenseTrackerViewModel.cs    # Expense-CRUD, Filter, Sort, Undo
+│   │   ├── StatisticsViewModel.cs        # Charts, Monatsvergleich, Trend
+│   │   ├── BudgetsViewModel.cs           # Budget-Verwaltung, Alert-Levels
+│   │   ├── RecurringTransactionsViewModel.cs
+│   │   ├── AccountsViewModel.cs          # Multi-Konto + Überweisungen
+│   │   ├── SavingsGoalsViewModel.cs      # Sparziele + Einzahlungen
+│   │   ├── DebtTrackerViewModel.cs       # Schulden + Zahlungen
+│   │   ├── CustomCategoriesViewModel.cs
+│   │   ├── SettingsViewModel.cs          # Backup v2, Restore Merge/Replace, Währung
+│   │   └── Calculators/
+│   │       ├── CompoundInterestViewModel.cs
+│   │       ├── SavingsPlanViewModel.cs
+│   │       ├── LoanViewModel.cs
+│   │       ├── AmortizationViewModel.cs
+│   │       ├── YieldViewModel.cs
+│   │       └── InflationViewModel.cs
+│   ├── Services/
+│   │   ├── IExpenseService / ExpenseService          # JSON-CRUD (Expenses, Budgets, Recurring)
+│   │   ├── IAccountService / AccountService          # accounts.json
+│   │   ├── ISavingsGoalService / SavingsGoalService  # savings_goals.json
+│   │   ├── IDebtService / DebtService                # debts.json
+│   │   ├── ICustomCategoryService / CustomCategoryService  # custom_categories.json
+│   │   ├── IFinancialAnalysisService / FinancialAnalysisService  # Score, Prognose, Nettovermögen
+│   │   ├── IExportService / ExportService            # CSV + PDF (PdfSharpCore)
+│   │   ├── IFileDialogService / FileDialogService    # StorageProvider.SaveFilePickerAsync
+│   │   └── IFileShareService                         # Plattformspezifisch (Factory-Pattern)
+│   ├── Graphics/                                     # App-spezifische SkiaSharp-Renderer
+│   ├── Models/                                       # Expense, Account, Budget, SavingsGoal, DebtEntry, ...
+│   ├── Helpers/
+│   │   └── CategoryLocalizationHelper.cs             # Statische Kategorie-Namen/Icons/Farben pro Sprache
+│   └── Loading/
+│       └── FinanzRechnerLoadingPipeline.cs           # Alle Services + Shader parallel laden
+├── FinanzRechner.Android/
+└── FinanzRechner.Desktop/
+```
+
+---
 
 ## Features
 
-- **4 Tabs**: Home (Dashboard + Quick-Add), Tracker, Statistics, Settings
-- **Multi-Konto**: Girokonto, Sparkonto, Bargeld, Kreditkarte, Depot + Überweisungen zwischen Konten
-- **Expense Tracking**: CRUD mit Filter/Sort, Undo-Delete, Kategorie-Icons, Konto-Zuordnung
-- **Budget Management**: Budget-Limits pro Kategorie, Fortschrittsanzeige, Alert-Levels
-- **Sparziele**: Zielbetrag, Fortschritt, Deadline, Einzahlungen/Entnahmen, Celebration bei Zielerreichung
-- **Schulden-Tracker**: Kredite/Darlehen verfolgen, Zinssatz, monatliche Rate, Restlaufzeit-Berechnung
-- **Eigene Kategorien**: Benutzerdefinierte Ausgaben-/Einnahmen-Kategorien mit Icon und Farbe
-- **Finanz-Score**: Gesundheitsbewertung 0-100 (Sparquote, Budget-Einhaltung, Schulden, Regelmäßigkeit)
-- **Prognose**: Hochrechnung Monatsende-Saldo, Tagesbudget, Durchschn. Tagesausgabe
-- **Nettovermögen**: Berechnung aus allen Konten minus Schulden
-- **Monatsvergleich**: Ausgaben/Einnahmen-Veränderung zum Vormonat, Kategorie-Breakdown
-- **Konfigurierbare Währung**: 16 Presets (EUR, USD, GBP, CHF, JPY, etc.) mit korrekter Formatierung
-- **Split-Transaktionen**: Eine Rechnung auf mehrere Kategorien aufteilen (Model vorbereitet)
-- **Recurring Transactions**: Daueraufträge mit Auto-Processing bei App-Start
-- **6 Finanz-Rechner**: CompoundInterest, SavingsPlan, Loan, Amortization, Yield, Inflation
-- **Charts**: Komplett SkiaSharp-basiert (DonutChart, TrendLine, StackedArea, AmortizationBar, Sparkline, MiniRing, LinearProgress, BudgetGauge) - KEIN LiveCharts
-- **Export**: CSV + PDF (PdfSharpCore), plattformspezifisches File-Sharing
+### 4 Tabs
 
-## App-spezifische Services
+| Tab | Inhalt |
+|-----|--------|
+| **Home** | Dashboard (Saldo, Einnahmen/Ausgaben, Budget-Status, Prognose, Finanz-Score, Recent Transactions, Calculator-Grid, Quick-Add FAB) |
+| **Tracker** | Expense-CRUD mit Filter/Sort, Monatsnavigation, Undo-Delete, Swipe-to-Delete |
+| **Statistics** | Donut-Charts, TrendLine 6 Monate, Monatsvergleich, CSV/PDF-Export |
+| **Settings** | Währung, Backup v2, Restore Merge/Replace, Sprache, Premium, Feedback |
 
-### Bestehende Services
-- **IExpenseService / ExpenseService**: JSON-CRUD (Expense, Budget, RecurringTransaction Models)
-- **IExportService / ExportService**: CSV + PDF Export mit optionalem targetPath Parameter und Datum-Range-Filterung
-- **IFileDialogService / FileDialogService**: Avalonia StorageProvider.SaveFilePickerAsync
-- **IFileShareService**: Plattformspezifisch (Desktop: Process.Start, Android: FileProvider + Intent.ActionSend)
-- **CategoryLocalizationHelper**: Statische Kategorie-Namen/Icons/Farben pro Sprache
+### Sub-Pages (alle via GoBack `".."`)
 
-### Neue Services (März 2026)
-- **IAccountService / AccountService**: Kontoverwaltung, Saldo-Berechnung, Überweisungen. JSON: `accounts.json`
-- **ISavingsGoalService / SavingsGoalService**: Sparziel-CRUD, Betrag anpassen, Abschluss. JSON: `savings_goals.json`
-- **IDebtService / DebtService**: Schulden-CRUD, Zahlungen buchen, Tilgungsberechnung. JSON: `debts.json`
-- **ICustomCategoryService / CustomCategoryService**: Benutzerdefinierte Kategorien. JSON: `custom_categories.json`
-- **IFinancialAnalysisService / FinancialAnalysisService**: Score-Berechnung, Monatsvergleich, Prognose, Nettovermögen. Keine eigene Persistenz
+| Sub-Page | ViewModel |
+|----------|-----------|
+| AccountsView | Konten verwalten + Überweisungen zwischen Konten |
+| SavingsGoalsView | Sparziele + Einzahlungen/Entnahmen + Celebration bei 100% |
+| DebtTrackerView | Schulden verwalten + Zahlungen buchen + Tilgungsberechnung |
+| CustomCategoriesView | Benutzerdefinierte Kategorien mit Icon und Farbe |
+| BudgetsView | Budget-Limits pro Kategorie + Alert-Levels + ContextFlyout |
+| RecurringTransactionsView | Daueraufträge + Toggle aktiv/inaktiv |
 
-### CurrencyHelper (konfigurierbar)
-- `CurrencyHelper.Configure(CurrencySettings)` beim App-Start
-- 16 Währungs-Presets in `CurrencySettings.Presets`
-- Formatierung passt sich automatisch an (Symbol vor/nach Betrag, Dezimalformat)
+### 6 Finanz-Rechner (im Calculator-Grid auf der Home-View)
 
-### Expense Model Erweiterungen
-- `AccountId`: Konto-Zuordnung (nullable, rückwärtskompatibel)
-- `CustomCategoryId`: Benutzerdefinierte Kategorie (überschreibt Enum)
-- `TransferToAccountId` + `TransferId`: Für Überweisungen zwischen Konten
-- `SplitItems`: Split-Transaktionen (Liste von Kategorie+Betrag)
-- `TransactionType.Transfer`: Neuer Typ neben Expense/Income
+| Rechner | ViewModel | Chart |
+|---------|-----------|-------|
+| Zinseszins | CompoundInterestViewModel | StackedArea |
+| Sparplan | SavingsPlanViewModel | StackedArea |
+| Kredit | LoanViewModel | Donut |
+| Tilgungsplan | AmortizationViewModel | Stacked-Bar |
+| Rendite | YieldViewModel | Donut |
+| Inflation | InflationViewModel | StackedArea |
 
-### SubPage-Navigation (erweitert)
-- **AccountsPage**: Konten verwalten + Überweisungen
-- **SavingsGoalsPage**: Sparziele verwalten + Einzahlungen
-- **DebtTrackerPage**: Schulden verwalten + Zahlungen buchen
-- **CustomCategoriesPage**: Eigene Kategorien erstellen/bearbeiten
-- Alle SubPages: GoBack via NavigationRequested → ".."
-- Alle SubPages: Dialoge (Add/Edit/Payment) als modale Overlays
+Alle 6 Rechner: `XxxValue` (double) für CountUpBehavior + `XxxDisplay` (string) für Text.
+Gold-Flash (`ResultFlash` CSS-Klasse) nach Berechnung. CalculateCommand öffnet immer neu
+(auch wenn IsVisible false — damit PaintSurface nach Sichtbar-Werden feuert).
 
-## Premium & Ads
+---
 
-### Ad-Placements (Rewarded)
-1. **export_pdf**: PDF-Export (StatisticsView)
-2. **export_csv**: CSV-Export (ExpenseTrackerView + StatisticsView)
-3. **budget_analysis**: Monatsreport mit Kategorie-Breakdown + Spartipps (HomeView)
-4. **extended_stats**: 24h-Zugang zu Quartal/Halbjahr/Jahr Statistiken (StatisticsView)
+## Architektur-Patterns
 
-### Premium-Modell
-- **Preis**: 3,99 EUR (`remove_ads`)
-- **Vorteile**: Keine Ads, direkter Export, unbegrenzter Budget-Report, permanente erweiterte Statistiken
+### DI-Konfiguration (App.axaml.cs)
 
-## Besondere Architektur
+```csharp
+// Factory-Pattern für plattformspezifische Services
+public static Func<IFileShareService>? FileShareServiceFactory { get; set; }
+public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
+public static Func<IServiceProvider, IPurchaseService>? PurchaseServiceFactory { get; set; }
+```
 
-### Export-Logik
-- **ExportService**: `GetExportDirectory()` gibt Android external-files-path zurück
-- **ShareFileAsync**: Nach Export wird `IFileShareService.ShareFileAsync()` aufgerufen
-- **Fallback**: Android-Export fällt zurück auf hardcodierte Pfade wenn FileDialog nicht verfügbar
+Alle Services als Singleton. MainViewModel als Singleton. Child-VMs per Constructor-Injection.
 
-### Budget-Verwaltung
-- **BudgetDisplayItem**: ObservableObject mit CategoryName Property (Sprachwechsel-fähig)
-- **Auto-Processing**: `MainViewModel.OnAppearingAsync()` verarbeitet fällige Daueraufträge bei App-Start
-- **Über-Budget-Anzeige**: Prozent >100% erlaubt, ProgressBar+Text werden rot (CSS-Klasse `.overLimit`)
+### Lade-Pipeline (FinanzRechnerLoadingPipeline)
+
+Zwei-Stufen-Modell, damit die UI nicht blockiert:
+
+1. **DB+Shader** (Weight 40): ExpenseService + AccountService + SavingsGoalService +
+   DebtService + CustomCategoryService + PurchaseService + ShaderPreloader parallel mit
+   `Task.WhenAll`. Danach Währungs-Preset aus Preferences laden + CurrencyHelper konfigurieren.
+2. **ViewModel** (Weight 15): MainViewModel aus DI auflösen (bindet an bereits geladene Daten).
 
 ### Cache-Invalidierung (Tab-Wechsel)
-- **StatisticsViewModel**: `InvalidateCache()` + `_isDataStale` Flag → lädt nur bei Änderungen neu
-- **ExpenseTrackerViewModel**: `InvalidateCache()` + `DataChanged` Event → benachrichtigt MainViewModel
-- **BudgetsViewModel**: `DataChanged` Event nach Save/Delete → benachrichtigt MainViewModel
-- **RecurringTransactionsViewModel**: `DataChanged` Event nach Save/Delete → benachrichtigt MainViewModel
-- **MainViewModel**: `_isHomeDataStale` Flag, lauscht auf `DataChanged` von ExpenseTrackerVM, BudgetsVM, RecurringTransactionsVM
 
-### HomeView Dashboard
-- Hero-Header (Bilanz + Einnahmen/Ausgaben als Pill-Chips) mit animiertem SkiaSharp-Hintergrund (FinanceDashboardRenderer)
-- Budget-Status (Gesamt-ProgressBar + Top-3 Kategorien)
-- Quick-Add FAB (Overlay mit Betrag, Beschreibung, Kategorie-Chips)
-- Recent Transactions (3 neueste mit Kategorie-Icon)
-- Calculator-Grid (6 kompakte Karten im 2x3 Grid, farbiger Accent-Balken)
+Das ist der häufigste Punkt wo Bugs entstehen — jede VM hat ein eigenes Stale-Flag:
 
-### SettingsView Events
-- **BackupCreated**: Datei teilen via IFileShareService
-- **RestoreFileRequested**: StorageProvider.OpenFilePickerAsync für JSON-Restore → zeigt Merge/Replace-Dialog (ShowRestoreConfirmation Overlay)
-- **OpenUrlRequested**: URL im Standardbrowser öffnen (Process.Start)
-- **FeedbackRequested**: mailto-Link für Feedback-E-Mail
-
-### Restore Merge/Replace Dialog
-- Nach File-Picker wird `OnRestoreFileSelected(filePath)` aufgerufen → setzt ShowRestoreConfirmation=true
-- Dialog-Overlay in SettingsView.axaml mit Merge-Button (Primary) und Replace-Button (Secondary)
-- RestoreMergeCommand → ProcessRestoreFileAsync(path, merge:true)
-- RestoreReplaceCommand → ProcessRestoreFileAsync(path, merge:false)
-- CancelRestoreCommand → Dialog schließen, IsBackupInProgress zurücksetzen
-- RESX-Keys: RestoreQuestion, RestoreMerge, RestoreReplace, RestoreMergeDesc, RestoreReplaceDesc, TotalBudget
-
-### Backup-Format v2.0 (Maerz 2026)
-- Container-JSON mit Schlüsseln: `version`, `expenses`, `accounts`, `savings_goals`, `debts`, `custom_categories`
-- Jeder Schlüssel enthält den JSON-Export des jeweiligen Services
-- Rückwärtskompatibel: Restore erkennt altes Format (kein `version` Key) und importiert nur Expenses
-- SettingsViewModel injiziert alle 5 Services (IExpenseService, IAccountService, ISavingsGoalService, IDebtService, ICustomCategoryService)
+- `StatisticsViewModel.InvalidateCache()` + `_isDataStale` — lädt nur bei Änderungen neu
+- `ExpenseTrackerViewModel.InvalidateCache()` + `DataChanged` Event → MainViewModel
+- `BudgetsViewModel.DataChanged` + `RecurringTransactionsViewModel.DataChanged` → MainViewModel
+- `MainViewModel._isHomeDataStale` lauscht auf alle drei `DataChanged`-Events
 
 ### Transfer-Buchung (Kontoüberweisungen)
-- EINE Transfer-Transaktion pro Überweisung: `AccountId` = Quelle, `TransferToAccountId` = Ziel
-- Saldo-Berechnung: `transfersOut` = AccountId passt + Type==Transfer, `transfersIn` = TransferToAccountId passt + Type==Transfer
-- KEIN Doppel-Record (zweite Buchung würde Saldo verfälschen)
 
-### SkiaSharp-Visualisierungen (LiveCharts komplett ersetzt)
+**EINE** Transfer-Transaktion, KEIN Doppel-Record:
+
+- `AccountId` = Quell-Konto, `TransferToAccountId` = Ziel-Konto, `Type = Transfer`
+- Saldo-Berechnung: `transfersOut` wenn AccountId passt, `transfersIn` wenn TransferToAccountId passt
+- Doppel-Record würde Saldo verfälschen (beide Seiten als Ausgabe gezählt)
+
+### Backup-Format v2.0
+
+Container-JSON mit Schlüsseln: `version`, `expenses`, `accounts`, `savings_goals`,
+`debts`, `custom_categories`. Rückwärtskompatibel: fehlendes `version`-Feld = altes Format,
+nur Expenses importieren. SettingsViewModel injiziert alle 5 Services für Backup/Restore.
+
+Restore hat Merge/Replace-Dialog (modale Overlay in SettingsView):
+- `RestoreMergeCommand` → `ProcessRestoreFileAsync(path, merge:true)`
+- `RestoreReplaceCommand` → `ProcessRestoreFileAsync(path, merge:false)`
+
+### CurrencyHelper
+
+```csharp
+// Einmalig beim Start (LoadingPipeline Schritt 1)
+CurrencyHelper.Configure(CurrencySettings.Presets.First(p => p.CurrencyCode == currencyCode));
+```
+
+16 Währungs-Presets. Symbol-Position und Dezimalformat automatisch korrekt.
+Konfiguration ist global — kein Service, kein DI nötig.
+
+---
+
+## Daten-Modell
+
+### Expense-Erweiterungen (rückwärtskompatibel, alle nullable)
+
+| Property | Zweck |
+|----------|-------|
+| `AccountId` | Konto-Zuordnung |
+| `CustomCategoryId` | Überschreibt Standard-Kategorie-Enum |
+| `TransferToAccountId` + `TransferId` | Überweisungen zwischen Konten |
+| `SplitItems` | Split-Transaktionen (Liste Kategorie+Betrag, Model vorbereitet) |
+| `TransactionType.Transfer` | Dritter Typ neben Expense/Income |
+
+### Persistenz (JSON-Dateien)
+
+| Datei | Service |
+|-------|---------|
+| `expenses.json` | IExpenseService (inkl. Budgets + Recurring) |
+| `accounts.json` | IAccountService |
+| `savings_goals.json` | ISavingsGoalService |
+| `debts.json` | IDebtService |
+| `custom_categories.json` | ICustomCategoryService |
+
+IFinancialAnalysisService hat keine eigene Persistenz — berechnet aus den anderen Services.
+
+---
+
+## SkiaSharp-Visualisierungen
+
+### App-spezifische Renderer (`Graphics/`)
 
 | Datei | Zweck |
 |-------|-------|
-| `Graphics/BudgetGaugeVisualization.cs` | Halbkreis-Tachometer (Legacy, ersetzt durch SkiaGradientRing) |
-| `Graphics/SparklineVisualization.cs` | Mini-Sparkline mit Gradient-Füllung für 30-Tage-Ausgaben-Trend |
-| `Graphics/BudgetMiniRingVisualization.cs` | Kompakte Mini-Ringe für Budget-Kategorien-Übersicht |
-| `Graphics/TrendLineVisualization.cs` | 2 Spline-Kurven (Einnahmen/Ausgaben) mit Gradient-Füllung |
-| `Graphics/StackedAreaVisualization.cs` | 2 gestapelte Flächen (CompoundInterest, SavingsPlan, Inflation) |
-| `Graphics/AmortizationBarVisualization.cs` | Gestapelte Balken (Tilgung+Zinsen pro Jahr) |
-| `Graphics/FinanzRechnerSplashRenderer.cs` | Splash-Screen "Das wachsende Kapital" (Aktien-Chart, Münz-Stapel, Gold-Partikel) |
-| `Graphics/FinanceDashboardRenderer.cs` | Animierter Hero-Header-Hintergrund (Gradient-Mesh, Grid-Linien, Glow-Dots, Floating-Symbole) |
-| `Graphics/CalculatorHeaderRenderer.cs` | 6 individuelle animierte Header pro Rechner (Exponentialkurve, Stufen, etc.) |
-| `Graphics/CardGlowRenderer.cs` | Status-basierter Edge-Glow (Budget-Status, Bilanz, Berechnungs-Flash) |
-| `Graphics/FinanceBackgroundRenderer.cs` | Animierter "Financial Data Stream" Hintergrund (5 Layer: Smaragd-Gradient, Chart-Linien, Mini-Balken-Partikel, Sparkle-Punkte, Vignette). ~5fps Render-Loop in MainView |
+| `FinanceBackgroundRenderer.cs` | Animierter Background MainView (~5fps: Smaragd-Gradient, Chart-Linien, Mini-Balken, Sparkle, Vignette) |
+| `FinanceDashboardRenderer.cs` | Animierter Hero-Header-Hintergrund (Gradient-Mesh, Grid-Linien, Glow-Dots, Floating-Symbole) |
+| `CalculatorHeaderRenderer.cs` | 6 individuelle animierte Headers pro Rechner |
+| `CardGlowRenderer.cs` | Status-basierter Edge-Glow (Budget-Status, Bilanz, Berechnungs-Flash) |
+| `FinanzRechnerSplashRenderer.cs` | Splash "Das wachsende Kapital" (Aktien-Chart, Münz-Stapel, Gold-Partikel) |
+| `SparklineVisualization.cs` | Mini-Sparkline mit Gradient-Füllung (30-Tage-Ausgaben-Trend) |
+| `BudgetMiniRingVisualization.cs` | Kompakte Mini-Ringe für Budget-Kategorien-Übersicht |
+| `TrendLineVisualization.cs` | 2 Spline-Kurven (Einnahmen/Ausgaben) mit Gradient-Füllung |
+| `StackedAreaVisualization.cs` | 2 gestapelte Flächen (CompoundInterest, SavingsPlan, Inflation) |
+| `AmortizationBarVisualization.cs` | Gestapelte Balken (Tilgung+Zinsen pro Jahr) |
+| `BudgetGaugeVisualization.cs` | Halbkreis-Tachometer (Legacy, ersetzt durch SkiaGradientRing) |
+| `ChartHelper.cs` | Gemeinsame Y-Achsen-Skalierung und Label-Formatierung |
 
-Shared-Renderer aus `MeineApps.UI.SkiaSharp`:
-- **DonutChartVisualization**: Donut-Charts für HomeView, StatisticsView, ExpenseTrackerView, LoanView, YieldView
-- **LinearProgressVisualization**: Budget-Fortschrittsbalken in BudgetsView (ersetzt ProgressBar)
-- **SkiaGradientRing**: Gradient-Fortschrittsring für Gesamt-Budget in HomeView und BudgetsView (ersetzt BudgetGaugeVisualization)
+### Shared-Renderer aus `MeineApps.UI.SkiaSharp`
 
-View-Zuordnung:
-- **MainView**: FinanceBackgroundRenderer (animierter Hintergrund, ~5fps DispatcherTimer, Grid.RowSpan=3)
-- **HomeView**: FinanceDashboardRenderer (Hero-Header-BG) + SkiaGradientRing (Budget) + Sparkline (30-Tage-Trend) + MiniRing (Budget-Kategorien) + Expense-Donut
-- **StatisticsView**: 2x Donut (Einnahmen/Ausgaben) + TrendLine (6-Monats-Trend)
-- **ExpenseTrackerView**: Kategorie-Donut
-- **CompoundInterestView/SavingsPlanView/InflationView**: StackedArea-Chart
-- **AmortizationView**: Stacked-Bar-Chart
-- **LoanView/YieldView**: Donut-Chart
-- **BudgetsView**: SkiaGradientRing (Gesamt-Budget) + LinearProgress pro Kategorie
+- **DonutChartVisualization**: HomeView, StatisticsView, ExpenseTrackerView, LoanView, YieldView
+- **LinearProgressVisualization**: Budget-Fortschrittsbalken in BudgetsView
+- **SkiaGradientRing**: Gesamt-Budget in HomeView + BudgetsView
 
-### Game Juice
+### View → Renderer Zuordnung
+
+| View | Renderer |
+|------|---------|
+| MainView | FinanceBackgroundRenderer (Grid.RowSpan=3) |
+| HomeView | FinanceDashboardRenderer + SkiaGradientRing + Sparkline + MiniRing + Expense-Donut |
+| StatisticsView | 2× Donut + TrendLine |
+| ExpenseTrackerView | Kategorie-Donut |
+| BudgetsView | SkiaGradientRing + LinearProgress pro Kategorie |
+| CompoundInterest/SavingsPlan/InflationView | StackedArea |
+| AmortizationView | Stacked-Bar |
+| LoanView/YieldView | Donut |
+
+---
+
+## Behaviors & Game Juice
+
+### Behaviors pro View
+
+| View | Behaviors |
+|------|-----------|
+| **HomeView** | CountUpBehavior (Saldo, Einnahmen, Ausgaben, 800ms CubicEaseOut), StaggerFadeInBehavior (Recent-Items 40ms, Calculator-Karten 60ms FixedIndex 0-5), TapScaleBehavior (0.92–0.97) |
+| **ExpenseTrackerView** | FadeInBehavior (250ms SlideFromBottom), StaggerFadeInBehavior (Transaction-Items 40ms), SwipeToRevealBehavior (80px → roter Delete-Layer), TapScaleBehavior |
+| **BudgetsView** | FadeInBehavior, StaggerFadeInBehavior (50ms), CountUpBehavior (Spent/Remaining/Limit), TapScaleBehavior, AlertLevelToBoxShadowConverter (Safe=grün, Warning=gelb, Exceeded=rot), ContextFlyout |
+| **RecurringTransactionsView** | FadeInBehavior, StaggerFadeInBehavior (40ms), SwipeToRevealBehavior, TapScaleBehavior |
+| **Calculator-Views (alle 6)** | CountUpBehavior (Geldbeträge, 600ms), TapScaleBehavior (Berechnen-Button 0.95), Gold-Flash (ResultFlash CSS) |
+
+### Weitere Juice-Elemente
+
 - **FloatingText**: Quick-Add (+/- Betrag, income=grün, expense=rot)
-- **Celebration**: Confetti bei Budget-Analyse (CelebrationRequested Event in MainViewModel)
-- **Animationen (MainView.axaml Styles)**: DialogOverlay (Scale+Opacity 200ms), BouncingFab (Pulse 2s infinite), EmptyPulse (Opacity 2.5s), PremiumShimmer (Opacity 3s), SummaryCard (Hover translateY+BoxShadow), InputError (Shake 0.4s), AnimatedValue (Opacity-Fade 0.3s), MonthFade (Opacity 0.15s), UndoTimer (ScaleX 5s Countdown), ThemePreview (Hover Scale 1.03)
-- **Farbige Kategorie-Chips**: In QuickAdd, AddExpense, AddRecurring Dialogen (CategoryToColorBrushConverter mit Opacity)
-- **Gruppierte Transaktionen**: Date-Headers mit Tages-Summe, Notiz-Anzeige
-- **Recurring Display**: Farbiger Seitenstreifen, Countdown-Text, farbige Beträge, Inaktiv-Styling (Opacity+Strikethrough)
-- **Undo-Countdown**: Visueller Balken in Undo-Snackbars (Scale 1→0 über 5s)
+- **Celebration**: Confetti bei Budget-Analyse (CelebrationRequested Event)
+- **Kombination StaggerFadeIn + TapScale** auf Calculator-Karten: Panel-Wrapper (Stagger) + Button-Kind (TapScale) — weil beide verschiedene RenderTransform-Typen setzen
+- **Undo-Countdown**: ScaleX 1→0 über 5s als visueller Balken in Undo-Snackbars
+- **Farbige Kategorie-Chips**: QuickAdd, AddExpense, AddRecurring (CategoryToColorBrushConverter)
+- **Gruppierte Transaktionen**: Date-Headers mit Tages-Summe + Notiz-Anzeige
 
-### Behaviors (HomeView)
-- **CountUpBehavior**: Hero-Header Geldbeträge (Balance, Income, Expenses) zählen animiert von 0 hoch (800ms, CubicEaseOut, de-DE Formatierung)
-- **StaggerFadeInBehavior**: Recent Transactions Items (40ms Stagger) + Calculator-Grid Karten (60ms Stagger, FixedIndex 0-5)
-- **TapScaleBehavior**: Monatsreport-Button (0.97), Calculator-Buttons (0.95), ViewAll-Button (0.92), Premium-Button (0.97), Overlay-Buttons (0.95)
-- **Kombination StaggerFadeIn + TapScale**: Calculator-Karten nutzen Panel-Wrapper (StaggerFadeIn auf Panel, TapScale auf Button) weil beide Behaviors unterschiedliche RenderTransform-Typen setzen
+---
 
-### Behaviors (ExpenseTrackerView)
-- **FadeInBehavior**: Haupt-Content StackPanel (250ms, SlideFromBottom 12px)
-- **TapScaleBehavior**: Header-Buttons Recurring/Budgets/Export (0.92), Month-Nav Prev/Next (0.88), CurrentMonth-Button (0.95), ResetFilters-Button (0.95)
-- **StaggerFadeInBehavior**: Transaction-Items (40ms Stagger, 300ms Dauer) auf Panel-Wrapper
-- **SwipeToRevealBehavior**: Transaction-Items (Swipe links offenbart roten Delete-Layer, 80px). Nutzt bestehendes DeleteExpenseCommand. Inline-Delete-Button bleibt als Fallback erhalten
+## Ad-Placements (Rewarded)
 
-### Behaviors (BudgetsView)
-- **FadeInBehavior**: Haupt-Content StackPanel (250ms, SlideFromBottom 12px)
-- **StaggerFadeInBehavior**: Budget-Items (50ms Stagger, 300ms Dauer) auf Panel-Wrapper
-- **TapScaleBehavior**: Budget-Cards (0.97), FAB (0.92), Dialog-Buttons Save/Cancel (0.95), Undo-Button (0.95), Back-Button (0.88), Dismiss-Button (0.88)
-- **CountUpBehavior**: Spent/Remaining/Limit Geldbeträge pro Budget-Card (800ms, N2, de-DE, EUR-Suffix)
-- **AlertLevelToBoxShadowConverter**: Status-basierter BoxShadow auf Budget-Cards (Safe: grüner Glow #3022C55E, Warning: gelber Glow #30F59E0B, Exceeded: roter Glow #40EF4444)
-- **ContextFlyout**: Edit/Delete Menü auf Budget-Cards (Rechtsklick/Long-Press)
+| Placement-ID | Auslöser | View |
+|-------------|----------|------|
+| `export_pdf` | PDF-Export | StatisticsView |
+| `export_csv` | CSV-Export | ExpenseTrackerView + StatisticsView |
+| `budget_analysis` | Monatsreport mit Kategorie-Breakdown + Spartipps | HomeView |
+| `extended_stats` | 24h-Zugang zu Quartal/Halbjahr/Jahr Statistiken | StatisticsView |
 
-### Behaviors (RecurringTransactionsView)
-- **FadeInBehavior**: Empty-State StackPanel + Listen-Content StackPanel + Dialog-Content StackPanel (250ms, SlideFromBottom 12px)
-- **StaggerFadeInBehavior**: Transaction-Items (40ms Stagger, 300ms Dauer) auf Panel-Wrapper
-- **SwipeToRevealBehavior**: Transaction-Items (Swipe links offenbart roten Delete-Layer, 80px). Nutzt DeleteTransactionCommand. Inline-Delete-Button bleibt als Fallback erhalten
-- **TapScaleBehavior**: Back-Button (0.88), FAB (0.92), Edit/Delete/Toggle Buttons pro Item (0.88), Dialog-Buttons Save/Cancel (0.95), Undo-Button (0.95), Dismiss-Button (0.88)
+Premium-Nutzer (remove_ads 3,99 EUR): Keine Ads, direkter Export, unbegrenzter Budget-Report,
+permanente erweiterte Statistiken.
 
-### Behaviors (Calculator-Views, alle 6)
-- **CountUpBehavior**: Ergebnis-Geldbeträge zählen animiert von 0 hoch (600ms, N2, de-DE, EUR-Suffix). Nur auf Geldbeträge, nicht auf Prozentwerte
-  - CompoundInterest: FinalAmountValue, InterestEarnedValue
-  - SavingsPlan: FinalAmountValue, TotalDepositsValue, InterestEarnedValue
-  - Loan: MonthlyPaymentValue, TotalPaymentValue, TotalInterestValue
-  - Amortization: MonthlyPaymentValue, TotalInterestValue
-  - Yield: TotalReturnValue (EffectiveAnnualRate/TotalReturnPercent bleiben Text-Binding)
-  - Inflation: PurchasingPowerValue, PurchasingPowerLossValue, FutureValueValue (LossPercent bleibt Text-Binding)
-- **Gold-Flash Animation**: ResultFlash CSS-Klasse auf Result Card Border (0.8s, BorderBrush Transparent→#FFD700→Transparent)
-- **TapScaleBehavior**: Berechnen-Button (0.95)
-- **Numerische Value-Properties**: Jedes ViewModel exponiert `XxxValue` (double) neben `XxxDisplay` (string) für CountUpBehavior-Binding
+---
 
-### Neue Converter/Models
-- **AlertLevelToBoxShadowConverter**: `BudgetAlertLevel→BoxShadows` für status-basiertes Glow auf Budget-Cards
-- **BoolToDoubleConverter**: `bool→double` für Opacity-Binding (Parameter: "TrueValue,FalseValue")
-- **RecurringDisplayItem**: Wrapper mit DueDateDisplay, CategoryColor, CategoryColorHex
-- **CategoryDisplayItem.CategoryColorHex**: Hex-Farbe aus CategoryLocalizationHelper
+## Back-Navigation (Double-Back-to-Exit)
 
-### Back-Navigation (Double-Back-to-Exit)
-- **MainViewModel.HandleBackPressed()**: Plattformunabhängige Logik, gibt bool zurück (true=behandelt, false=App schließen)
-- **MainActivity.OnBackPressed()**: Android-Override, ruft HandleBackPressed(), bei false → base.OnBackPressed()
-- **ExitHintRequested Event**: Feuert bei erstem Back auf Home → Toast auf Android
-- **Overlay-Reihenfolge**: BudgetAnalysis → BudgetAd → QuickAdd → RestoreDialog (Settings) → AddExpense (Tracker) → SubPage-Dialoge (AddBudget/AddRecurring) → SubPage → Calculator → Tab→Home → Double-Back-Exit (2s)
-- **RESX-Key**: PressBackToExit (6 Sprachen)
+Reihenfolge in `HandleBackPressed()`:
 
-### Bekanntes Pattern: SKCanvasView in unsichtbaren Containern
+1. BudgetAnalysis-Overlay schließen
+2. BudgetAd-Overlay schließen
+3. QuickAdd-Overlay schließen
+4. RestoreDialog (Settings) schließen
+5. AddExpense-Overlay (Tracker) schließen
+6. SubPage-Dialoge (AddBudget/AddRecurring) schließen
+7. SubPage schließen (GoBack `".."`)
+8. Calculator schließen
+9. Tab → Home
+10. Double-Back-Exit (2s Fenster, RESX-Key `PressBackToExit`, BackPressHelper)
 
-Calculator-Views (CompoundInterest, SavingsPlan, Loan, etc.) liegen in `Border IsVisible="{Binding IsXxxActive}"` im MainView. Wenn `InvalidateSurface()` auf einer unsichtbaren SKCanvasView aufgerufen wird, wird PaintSurface NICHT gefeuert. Deshalb: Die `OpenXxx()` Commands im MainViewModel rufen IMMER `CalculateCommand.Execute(null)` auf (ohne HasResult-Check), damit nach dem Sichtbar-Werden ein frisches PropertyChanged → InvalidateSurface() → PaintSurface ausgelöst wird.
+---
 
-### Architektur
+## Bekannte Gotchas
+
+### SKCanvasView in unsichtbaren Containern
+
+Calculator-Views liegen in `Border IsVisible="{Binding IsXxxActive}"`. Wenn
+`InvalidateSurface()` auf einer unsichtbaren Canvas aufgerufen wird, feuert PaintSurface
+**nicht**. Deshalb rufen alle `OpenXxx()` Commands im MainViewModel immer
+`CalculateCommand.Execute(null)` auf (kein HasResult-Guard), damit nach dem Sichtbar-Werden
+ein frisches PropertyChanged → InvalidateSurface() → PaintSurface ausgelöst wird.
+
+### BudgetDisplayItem Sprachwechsel
+
+`BudgetDisplayItem` ist ObservableObject mit `CategoryName` Property. Bei Sprachwechsel
+muss `UpdateLocalizedTexts()` die Property neu setzen — direktes Enum-Binding gibt immer
+Englisch.
+
+### Export-Pfad Android
+
+`ExportService.GetExportDirectory()` gibt Android external-files-path zurück. Nach Export
+immer `IFileShareService.ShareFileAsync()` aufrufen. FileDialog-Fallback auf hardcodierte
+Pfade wenn StorageProvider nicht verfügbar.
+
+### Smaragd-Theme (#10B981)
+
+Alle DynamicResource-Keys identisch zu anderen Apps. App-spezifisches Palette in
+`Themes/AppPalette.axaml` (per `<StyleInclude />` in App.axaml). Design-Tokens aus
+`MeineApps.Core.Ava/Themes/ThemeColors.axaml`. Kein dynamischer Theme-Wechsel.
+
+---
+
+## Build / Test / Deploy
+
+```bash
+# Build
+dotnet build src/Apps/FinanzRechner/FinanzRechner.Shared
+dotnet run --project src/Apps/FinanzRechner/FinanzRechner.Desktop
+
+# Android Release (AAB)
+dotnet publish src/Apps/FinanzRechner/FinanzRechner.Android -c Release
+
+# AppChecker
+dotnet run --project tools/AppChecker FinanzRechner
+```
+
+---
+
+## Verweise
 
 | Datei | Zweck |
 |-------|-------|
-| `ViewModels/MainViewModel.cs` | Constructor, Navigation, Tab-Switching, Back-Button, Calculator-Nav, Sub-Pages, HomeView-Texte |
-| `ViewModels/MainViewModel.Home.cs` | Home-Dashboard (Daten laden, Budget-Status, Recent Transactions, Expense-Chart, Sparkline, Mini-Ringe, Quick-Add, Budget-Analyse) |
-| `Graphics/ChartHelper.cs` | Gemeinsame Y-Achsen-Skalierung und Label-Formatierung für Charts |
+| `F:\Meine_Apps_Ava\CLAUDE.md` | Build, Conventions, DI-Patterns, Ad-Banner-Layout, Troubleshooting |
+| `src/Libraries/MeineApps.Core.Ava/CLAUDE.md` | Themes, Services (BackPressHelper, UriLauncher, CurrencyHelper) |
+| `src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md` | AdMob, IAP, RewardedAdHelper |
+| `src/UI/MeineApps.UI/CLAUDE.md` | Shared Behaviors, DonutChart, SkiaGradientRing, LinearProgress |
+| `Releases/FinanzRechner/CHANGELOG_*.md` | Release-Notes |

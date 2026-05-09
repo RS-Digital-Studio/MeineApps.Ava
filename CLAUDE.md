@@ -1,6 +1,6 @@
 # Meine Apps Avalonia - Projektübersicht
 
-Multi-Plattform Apps (Android + Windows + Linux) mit Avalonia 11.3 + .NET 10.
+Multi-Plattform Apps (Android + Windows + Linux) mit Avalonia 12 + .NET 10.
 Migriert von MAUI mit verbesserter UX, modernem Design und behobenen MAUI-Bugs.
 
 ---
@@ -127,17 +127,18 @@ Implementierung: Jede App lädt `<StyleInclude Source="/Themes/AppPalette.axaml"
 
 ---
 
-## Packages (Avalonia 11.3.13)
+## Packages (Avalonia 12.0.2 + .NET 10)
 
 | Package | Version | Zweck |
 |---------|---------|-------|
-| Avalonia | 11.3.13 | UI Framework |
-| Material.Icons.Avalonia | 3.0.0 | 7000+ SVG Icons (Auto-Sizing, Caching) |
+| Avalonia | 12.0.2 | UI Framework |
+| Material.Icons.Avalonia | 3.0.2 | 7000+ SVG Icons (Auto-Sizing, Caching) |
 | CommunityToolkit.Mvvm | 8.4.2 | MVVM |
-| Xaml.Behaviors.Avalonia | 11.3.9.5 | Behaviors |
-| SkiaSharp | 3.119.2 | 2D Graphics + SkSL GPU-Shader |
-| SkiaSharp.Skottie | 3.119.2 | Lottie-Animations-Backend |
-| Avalonia.Labs.Lottie | 11.3.1 | Lottie-Animationen (JSON) |
+| Xaml.Behaviors.Avalonia | 12.0.0 | Behaviors |
+| SkiaSharp | 3.119.4-preview.1.1 | 2D Graphics + SkSL GPU-Shader (Preview von Avalonia 12 erzwungen) |
+| SkiaSharp.Skottie | 3.119.4-preview.1.1 | Lottie-Animations-Backend |
+| Avalonia.Labs.Lottie | 12.0.2 | Lottie-Animationen (JSON) |
+| AvaloniaUI.DiagnosticsSupport | 2.2.1 | DevTools (Debug-only, ersetzt Avalonia.Diagnostics) |
 | Xamarin.Android.Google.BillingClient | 8.3.0.2 | Google Play Billing v8 |
 | Xamarin.Google.Android.Play.Review | 2.0.2.7 | Google In-App Review |
 | sqlite-net-pcl | 1.9.172 | Database |
@@ -209,7 +210,62 @@ _childVM.NavigationRequested += route => CurrentPage = route;
 - `".."` = zurück zum Parent
 - `"../subpage"` = zum Parent, dann zu subpage
 
-### Android Back-Button Pattern (einheitlich, alle 9 Apps)
+### Avalonia 12 Android-Lifecycle-Pattern
+
+```csharp
+// {App}.Android/AndroidApp.cs (NEU pro App):
+[Application]
+public class AndroidApp : AvaloniaAndroidApplication<App>
+{
+    public AndroidApp(IntPtr javaReference, JniHandleOwnership transfer)
+        : base(javaReference, transfer) { }
+}
+
+// {App}.Android/MainActivity.cs:
+[Activity(...)]
+public class MainActivity : AvaloniaMainActivity   // KEIN <App>-Generic mehr!
+{
+    protected override void OnCreate(Bundle? savedInstanceState)
+    {
+        // Factory-Setups die `this` brauchen bleiben hier (vor base.OnCreate moeglich):
+        App.AppPathsFactory = () => new AndroidAppPaths(this);
+        base.OnCreate(savedInstanceState);
+    }
+}
+```
+
+`CustomizeAppBuilder()` zog von `MainActivity` in `AvaloniaAndroidApplication<TApp>.OnCreate` um.
+`ISingleViewApplicationLifetime` funktioniert in Avalonia 12 weiterhin als Fallback fuer
+Android — keine Pflicht, auf `IActivityApplicationLifetime + MainViewFactory` zu wechseln.
+
+### Avalonia 12 Clipboard-API
+
+```csharp
+// Vor (Avalonia 11):
+await clipboard.SetTextAsync(text);
+
+// Nach (Avalonia 12):
+var data = new Avalonia.Input.DataTransfer();
+data.Add(Avalonia.Input.DataTransferItem.CreateText(text));
+await clipboard.SetDataAsync(data);
+
+// GetText analog:
+var data = await clipboard.TryGetDataAsync();
+var text = await data.TryGetTextAsync();
+```
+
+`IDataObject` + `DataFormats` (Plural) entfernt → `DataTransfer` + `DataTransferItem` + `DataFormat` (Singular).
+**WICHTIG:** Niemals `Dispose()` auf `IAsyncDataTransfer` aufrufen — Avalonia uebernimmt das.
+
+### Avalonia 12 weitere API-Migrationen
+
+- `control.GetVisualRoot()` → `TopLevel.GetTopLevel(control)`
+- `Window.SystemDecorations` → `Window.WindowDecorations`
+- `Avalonia.Diagnostics`-Paket → `AvaloniaUI.DiagnosticsSupport`
+- `AttachDevTools()` → `AttachDeveloperTools()`
+- `FuncMultiValueConverter`-Parameter `IEnumerable<TIn>` → `IReadOnlyList<TIn>`
+
+### Android Back-Button Pattern (einheitlich, alle 12 Apps)
 
 ```csharp
 // MainViewModel: Double-Back-to-Exit via BackPressHelper (MeineApps.Core.Ava.Services)

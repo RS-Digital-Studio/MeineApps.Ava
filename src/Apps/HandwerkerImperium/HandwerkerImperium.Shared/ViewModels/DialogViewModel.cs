@@ -39,34 +39,8 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     /// <summary>Wird ausgelöst wenn ein FloatingText angezeigt werden soll.</summary>
     public event Action<string, string>? FloatingTextRequested;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // LEVEL-UP DIALOG
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isLevelUpDialogVisible;
-
-    [ObservableProperty]
-    private bool _isLevelUpPulsing;
-
-    [ObservableProperty]
-    private int _levelUpNewLevel;
-
-    [ObservableProperty]
-    private string _levelUpUnlockedText = "";
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ACHIEVEMENT DIALOG
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isAchievementDialogVisible;
-
-    [ObservableProperty]
-    private string _achievementName = "";
-
-    [ObservableProperty]
-    private string _achievementDescription = "";
+    // LEVEL-UP DIALOG → DialogViewModel.LevelUp.cs (v2.1.0 Aufspaltung)
+    // ACHIEVEMENT DIALOG → DialogViewModel.Achievement.cs (v2.1.0 Aufspaltung)
 
     // ═══════════════════════════════════════════════════════════════════════
     // STORY-DIALOG (Meister Hans NPC)
@@ -105,6 +79,10 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     [ObservableProperty]
     private string _storyChapterBadge = "";
 
+    /// <summary>P2.2 AAA-Audit: Skip-Button nur bei Onboarding-Story (Ch.1) sichtbar.</summary>
+    [ObservableProperty]
+    private bool _canSkipStory;
+
     // ═══════════════════════════════════════════════════════════════════════
     // KONTEXTUELLER HINT (Tooltip-Bubbles / Dialog)
     // ═══════════════════════════════════════════════════════════════════════
@@ -139,21 +117,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     [ObservableProperty]
     private string _hintDismissButtonText = "Verstanden";
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // ALERT DIALOG
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isAlertDialogVisible;
-
-    [ObservableProperty]
-    private string _alertDialogTitle = "";
-
-    [ObservableProperty]
-    private string _alertDialogMessage = "";
-
-    [ObservableProperty]
-    private string _alertDialogButtonText = "OK";
+    // ALERT DIALOG → DialogViewModel.Alert.cs (v2.1.0 Aufspaltung)
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONFIRM DIALOG
@@ -180,30 +144,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     [ObservableProperty]
     private bool _isPrestigeTierSelectionVisible;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // PRESTIGE-SUMMARY DIALOG
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isPrestigeSummaryVisible;
-
-    [ObservableProperty]
-    private string _prestigeSummaryTier = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryTierIcon = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryTierColor = "#FFD700";
-
-    [ObservableProperty]
-    private string _prestigeSummaryPoints = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryMultiplier = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryCount = "";
+    // PRESTIGE-SUMMARY DIALOG → DialogViewModel.PrestigeSummary.cs (v2.1.0 Aufspaltung)
 
     // ═══════════════════════════════════════════════════════════════════════
     // PRESTIGE-TIER AUSWAHL
@@ -284,36 +225,10 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     // DISMISS COMMANDS
     // ═══════════════════════════════════════════════════════════════════════
 
-    [RelayCommand]
-    private void DismissLevelUpDialog()
-    {
-        IsLevelUpDialogVisible = false;
-    }
-
-    [RelayCommand]
-    private void DismissAchievementDialog()
-    {
-        IsAchievementDialogVisible = false;
-    }
-
-    [RelayCommand]
-    private void DismissAlertDialog()
-    {
-        IsAlertDialogVisible = false;
-    }
-
-    [RelayCommand]
-    private void DismissPrestigeSummary()
-    {
-        IsPrestigeSummaryVisible = false;
-    }
-
-    [RelayCommand]
-    private void PrestigeSummaryGoToShop()
-    {
-        IsPrestigeSummaryVisible = false;
-        PrestigeSummaryGoToShopRequested?.Invoke();
-    }
+    // DismissLevelUpDialog → DialogViewModel.LevelUp.cs
+    // DismissAchievementDialog → DialogViewModel.Achievement.cs
+    // DismissAlertDialog → DialogViewModel.Alert.cs
+    // DismissPrestigeSummary + PrestigeSummaryGoToShop → DialogViewModel.PrestigeSummary.cs
 
     [RelayCommand]
     private void ConfirmDialogAccept()
@@ -349,7 +264,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     public void ShowLockedTabHint(int requiredLevel)
     {
         var text = string.Format(
-            _localizationService.GetString("TabLockedHint") ?? "Ab Level {0} verfügbar",
+            _localizationService.GetString("TabLockedHint") ?? "Unlocks at Level {0}",
             requiredLevel);
         FloatingTextRequested?.Invoke(text, "info");
     }
@@ -420,8 +335,8 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         // 1. GEWINNE (prominent, oben)
         var gains = new List<string>();
         gains.Add($"\u2b06 +{tierPoints} PP ({tierName} x{tier.GetPointMultiplier()})");
-        gains.Add($"\u2b06 +{tier.GetPermanentMultiplierBonus():P0} {_localizationService.GetString("PermanentIncomeBonus") ?? "permanenter Einkommens-Bonus"}");
-        gains.Add($"\u2b06 {_localizationService.GetString("StartMoney") ?? "Startgeld"}: {MoneyFormatter.FormatCompact(startMoney)}");
+        gains.Add($"\u2b06 +{tier.GetPermanentMultiplierBonus():P0} {_localizationService.GetString("PermanentIncomeBonus") ?? "permanent income bonus"}");
+        gains.Add($"\u2b06 {_localizationService.GetString("StartMoney") ?? "Start money"}: {MoneyFormatter.FormatCompact(startMoney)}");
 
         // Speed-Up Prognose
         decimal currentMult = state.Prestige.PermanentMultiplier;
@@ -429,40 +344,40 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         if (currentMult > 0)
         {
             int speedUp = (int)((newMult / currentMult - 1m) * 100);
-            gains.Add($"\u26a1 ~{speedUp}% {_localizationService.GetString("Faster") ?? "schneller als vorher"}");
+            gains.Add($"\u26a1 ~{speedUp}% {_localizationService.GetString("Faster") ?? "faster"}");
         }
 
         // 2. BEWAHRUNG (positiv formuliert)
         if (tier.KeepsResearch())
-            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsResearch") ?? "Forschung bleibt erhalten"}");
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsResearch") ?? "Research preserved!"}");
         if (tier.KeepsMasterTools())
-            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsTools") ?? "Meisterwerkzeuge bleiben"}");
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsTools") ?? "Master tools preserved!"}");
         if (tier.KeepsBuildings())
-            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsBuildings") ?? "Gebäude bleiben (Lv.1)"}");
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsBuildings") ?? "Buildings preserved (Lv.1)!"}");
         if (tier.KeepsManagers())
-            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben (Lv.1)"}");
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsManagers") ?? "Managers preserved (Lv.1)!"}");
         if (tier.KeepsBestWorkers())
-            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker pro Workshop bleiben"}");
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsWorkers") ?? "Best workers preserved!"}");
 
         // 3. VERLUSTE (detailliert, explizit benannt)
         var losses = new List<string>();
-        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossLevel") ?? "Level und XP"}");
-        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossMoney") ?? "Geld und Aufträge"}");
-        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossWorkshops") ?? "Workshops (nur Schreinerei bleibt)"}");
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossLevel") ?? "Level and XP"}");
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossMoney") ?? "Money and orders"}");
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossWorkshops") ?? "Workshops (only Carpenter remains)"}");
 
         if (!tier.KeepsResearch())
-            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossResearch") ?? "Forschung"}");
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossResearch") ?? "Research"}");
         if (!tier.KeepsMasterTools())
-            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossTools") ?? "Meisterwerkzeuge"}");
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossTools") ?? "Master tools"}");
         if (!tier.KeepsBuildings())
-            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossBuildings") ?? "Gebäude"}");
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossBuildings") ?? "Buildings"}");
         if (!tier.KeepsEquipment())
-            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossEquipment") ?? "Ausrüstung"}");
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossEquipment") ?? "Equipment"}");
         if (!tier.KeepsManagers())
-            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossManagers") ?? "Vorarbeiter"}");
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossManagers") ?? "Foremen"}");
 
         // Immer verloren (unabhängig vom Tier)
-        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossCrafting") ?? "Crafting-Inventar und Aufträge"}");
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossCrafting") ?? "Crafting inventory and orders"}");
 
         // 4. TIMING-WARNUNG (suboptimales Prestige erkennen)
         string timingWarning = "";
@@ -492,7 +407,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
             {
                 int nextTierPoints = CalculateEffectivePrestigePoints(state, nextTier);
                 timingWarning = $"\n\u26a0 {string.Format(
-                    _localizationService.GetString("PrestigeTimingWarning") ?? "Du bist schon Level {0} - ab Level {1} wäre {2} möglich (mehr PP)!",
+                    _localizationService.GetString("PrestigeTimingWarning") ?? "You are already level {0} - at level {1} you could do {2} (more PP)!",
                     currentLevel, nextTierLevel,
                     _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString())}";
             }
@@ -500,7 +415,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
             {
                 var nextTierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
                 timingWarning = $"\n\u2139 {string.Format(
-                    _localizationService.GetString("PrestigeNearNextTier") ?? "Noch {0} Level bis {1} (Level {2}) - weiterspielen lohnt sich!",
+                    _localizationService.GetString("PrestigeNearNextTier") ?? "Only {0} more levels until {1} (level {2}) - keep playing!",
                     nextTierLevel - currentLevel, nextTierName, nextTierLevel)}";
             }
         }
@@ -508,12 +423,12 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         // 5. BONUS-PP + CHALLENGES
         int bonusPp = _prestigeService.CalculateBonusPrestigePoints(tier);
         BonusPpPreview = bonusPp > 0
-            ? $"+{bonusPp} PP ({_localizationService.GetString("BonusPP") ?? "Bonus"})"
+            ? $"+{bonusPp} PP ({_localizationService.GetString("BonusPP") ?? "Bonus PP"})"
             : string.Empty;
 
         decimal challengeMult = _challengeConstraints?.GetChallengePpMultiplier() ?? 1.0m;
         ChallengePpPreview = challengeMult > 1.0m
-            ? $"x{challengeMult:F2} ({_localizationService.GetString("Challenges") ?? "Herausforderungen"})"
+            ? $"x{challengeMult:F2} ({_localizationService.GetString("Challenges") ?? "Challenges"})"
             : string.Empty;
 
         // 6. SPEEDRUN-TIMER
@@ -542,9 +457,9 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         {
             var minLevel = PrestigeTier.Bronze.GetRequiredLevel();
             ShowAlertDialog(
-                _localizationService.GetString("PrestigeNotAvailable") ?? "Prestige nicht verfügbar",
+                _localizationService.GetString("PrestigeNotAvailable") ?? "Prestige Not Available",
                 string.Format(
-                    _localizationService.GetString("PrestigeNotAvailableDesc") ?? "Du benötigst Level {0} (aktuell Level {1})",
+                    _localizationService.GetString("PrestigeNotAvailableDesc") ?? "You need at least Level {0} to prestige. You are currently Level {1}.",
                     minLevel, state.PlayerLevel),
                 _localizationService.GetString("OK") ?? "OK");
             return (false, PrestigeTier.None);
@@ -562,11 +477,11 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
             var tName = _localizationService.GetString(t.GetLocalizationKey()) ?? t.ToString();
             int tPoints = CalculateEffectivePrestigePoints(state, t);
             var preservations = new List<string>();
-            if (t.KeepsResearch()) preservations.Add(_localizationService.GetString("Research") ?? "Forschung");
-            if (t.KeepsMasterTools()) preservations.Add(_localizationService.GetString("MasterTools") ?? "Werkzeuge");
-            if (t.KeepsBuildings()) preservations.Add(_localizationService.GetString("Buildings") ?? "Gebäude");
-            if (t.KeepsManagers()) preservations.Add(_localizationService.GetString("Managers") ?? "Manager");
-            if (t.KeepsBestWorkers()) preservations.Add(_localizationService.GetString("Workers") ?? "Worker");
+            if (t.KeepsResearch()) preservations.Add(_localizationService.GetString("Research") ?? "Research");
+            if (t.KeepsMasterTools()) preservations.Add(_localizationService.GetString("MasterTools") ?? "Master Tools");
+            if (t.KeepsBuildings()) preservations.Add(_localizationService.GetString("Buildings") ?? "Buildings");
+            if (t.KeepsManagers()) preservations.Add(_localizationService.GetString("Managers") ?? "Foremen");
+            if (t.KeepsBestWorkers()) preservations.Add(_localizationService.GetString("Workers") ?? "Team");
 
             options.Add(new PrestigeTierOption
             {
@@ -590,8 +505,8 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         UpdatePrestigeDialogContent(highestTier);
 
         // Dialog anzeigen und auf Ergebnis warten
-        ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige durchführen";
-        ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Abbrechen";
+        ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
+        ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
         IsPrestigeTierSelectionVisible = HasMultiplePrestigeTiers;
 
         _confirmDialogTcs = new TaskCompletionSource<bool>();
@@ -601,6 +516,87 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         var confirmed = await _confirmDialogTcs.Task;
 
         // Tier-Optionen zurücksetzen
+        HasMultiplePrestigeTiers = false;
+        AvailablePrestigeTierOptions = [];
+
+        return (confirmed, _dialogSelectedTier);
+    }
+
+    /// <summary>
+    /// v2.1.0: Bereitet die Prestige-Page-Daten vor (Tier-Optionen, Confirm-Texte) und
+    /// gibt ein TCS zurueck, das beim Spieler-Confirm/Cancel via existierende DialogVM-Commands
+    /// (ConfirmDialogAccept/Cancel) gesetzt wird. KEIN Modal-Open — die Page wird vom Aufrufer
+    /// via ActivePage=Prestige sichtbar gemacht.
+    /// </summary>
+    public Task<(bool confirmed, PrestigeTier selectedTier)> PreparePrestigePageAsync()
+    {
+        var state = _gameStateService.State;
+        var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
+
+        if (availableTiers.Count == 0)
+        {
+            var minLevel = PrestigeTier.Bronze.GetRequiredLevel();
+            ShowAlertDialog(
+                _localizationService.GetString("PrestigeNotAvailable") ?? "Prestige Not Available",
+                string.Format(
+                    _localizationService.GetString("PrestigeNotAvailableDesc") ?? "You need at least Level {0} to prestige. You are currently Level {1}.",
+                    minLevel, state.PlayerLevel),
+                _localizationService.GetString("OK") ?? "OK");
+            return Task.FromResult((false, PrestigeTier.None));
+        }
+
+        var highestTier = availableTiers[^1];
+        _dialogSelectedTier = highestTier;
+
+        var options = new List<PrestigeTierOption>();
+        for (int i = 0; i < availableTiers.Count; i++)
+        {
+            var t = availableTiers[i];
+            var tName = _localizationService.GetString(t.GetLocalizationKey()) ?? t.ToString();
+            int tPoints = CalculateEffectivePrestigePoints(state, t);
+            var preservations = new List<string>();
+            if (t.KeepsResearch()) preservations.Add(_localizationService.GetString("Research") ?? "Research");
+            if (t.KeepsMasterTools()) preservations.Add(_localizationService.GetString("MasterTools") ?? "Master Tools");
+            if (t.KeepsBuildings()) preservations.Add(_localizationService.GetString("Buildings") ?? "Buildings");
+            if (t.KeepsManagers()) preservations.Add(_localizationService.GetString("Managers") ?? "Foremen");
+            if (t.KeepsBestWorkers()) preservations.Add(_localizationService.GetString("Workers") ?? "Team");
+
+            options.Add(new PrestigeTierOption
+            {
+                Tier = t,
+                Name = tName,
+                Icon = t.GetIcon(),
+                Color = t.GetColorKey(),
+                Points = tPoints,
+                PointsText = $"+{tPoints} PP",
+                BonusText = $"+{t.GetPermanentMultiplierBonus():P0}",
+                PreservationText = preservations.Count > 0 ? string.Join(", ", preservations) : "",
+                IsSelected = t == highestTier,
+                IsRecommended = t == highestTier,
+            });
+        }
+        AvailablePrestigeTierOptions = options;
+        SelectedPrestigeTierIndex = availableTiers.Count - 1;
+        HasMultiplePrestigeTiers = availableTiers.Count > 1;
+
+        UpdatePrestigeDialogContent(highestTier);
+
+        ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
+        ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
+        IsPrestigeTierSelectionVisible = HasMultiplePrestigeTiers;
+
+        // KEIN IsConfirmDialogVisible=true — Page-Modus statt Modal.
+        _confirmDialogTcs = new TaskCompletionSource<bool>();
+        _adService.HideBanner();
+
+        return WrapTcsAsync();
+    }
+
+    private async Task<(bool, PrestigeTier)> WrapTcsAsync()
+    {
+        if (_confirmDialogTcs == null) return (false, PrestigeTier.None);
+        var confirmed = await _confirmDialogTcs.Task;
+
         HasMultiplePrestigeTiers = false;
         AvailablePrestigeTierOptions = [];
 
@@ -673,7 +669,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
                     ?? rep.ReputationLevelKey;
         var multiplier = rep.ReputationMultiplier;
         AlertDialogTitle = _localizationService.GetString("Reputation") ?? "Reputation";
-        AlertDialogMessage = $"{level} ({rep.ReputationScore}/100)\n\u00d7{multiplier:F1} {_localizationService.GetString("IncomeBonus") ?? "Einkommensbonus"}";
+        AlertDialogMessage = $"{level} ({rep.ReputationScore}/100)\n\u00d7{multiplier:F1} {_localizationService.GetString("IncomeBonus") ?? "Income Bonus"}";
         AlertDialogButtonText = "OK";
         IsAlertDialogVisible = true;
     }
@@ -699,6 +695,19 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
             FloatingTextRequested?.Invoke(StoryRewardText, "golden_screws");
         }
     }
+
+    /// <summary>P2.2 AAA-Audit: Skip-Variante. Markiert Kapitel als gesehen, vergibt aber
+    /// die Belohnung trotzdem (Spieler wird nicht bestraft fuer Skip-Wahl).</summary>
+    [RelayCommand]
+    private void SkipStory()
+    {
+        StorySkipRequested?.Invoke(StoryChapterId);
+        DismissStoryDialog();
+    }
+
+    /// <summary>P2.2 AAA-Audit: Wird beim Skip gefeuert — MainViewModel
+    /// kann analytics_event "onboarding_story_skipped" tracken.</summary>
+    public event Action<string>? StorySkipRequested;
 
     /// <summary>
     /// Prüft ob ein neues Story-Kapitel freigeschaltet wurde.
@@ -734,8 +743,12 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         StoryTotalChapters = totalChapters;
         IsStoryTutorial = chapter.IsTutorial;
         StoryChapterBadge = chapter.IsTutorial
-            ? _localizationService.GetString("StoryTipFromHans") ?? "Tipp von Meister Hans"
+            ? _localizationService.GetString("StoryTipFromHans") ?? "Tip from Master Hans"
             : $"Kap. {chapter.ChapterNumber}/{totalChapters}";
+
+        // P2.2 AAA-Audit: Skip nur bei Onboarding-Tutorials (Ch.1 + Welcome-Story).
+        // Spaeter im Spiel ist Story Pacing-Element — kein Skip damit Spieler den Plot mitkriegt.
+        CanSkipStory = chapter.IsTutorial || chapter.ChapterNumber <= 1;
 
         // Belohnungs-Text zusammenstellen (skalierte Geldbelohnung anzeigen)
         var rewards = new List<string>();
@@ -747,7 +760,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         }
         if (chapter.GoldenScrewReward > 0)
         {
-            var screwsLabel = _localizationService.GetString("GoldenScrews") ?? "Goldschrauben";
+            var screwsLabel = _localizationService.GetString("GoldenScrews") ?? "Golden Screws";
             rewards.Add($"+{chapter.GoldenScrewReward} {screwsLabel}");
         }
         if (chapter.XpReward > 0)
@@ -812,7 +825,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
 
             ActiveHintTitle = _localizationService.GetString(hint.TitleKey) ?? hint.TitleKey;
             ActiveHintText = _localizationService.GetString(hint.TextKey) ?? hint.TextKey;
-            HintDismissButtonText = _localizationService.GetString("HintDismissButton") ?? "Verstanden";
+            HintDismissButtonText = _localizationService.GetString("HintDismissButton") ?? "Got it";
 
             IsHintDialog = hint.IsDialog;
             IsHintTooltipAbove = !hint.IsDialog && hint.Position == HintPosition.Below;

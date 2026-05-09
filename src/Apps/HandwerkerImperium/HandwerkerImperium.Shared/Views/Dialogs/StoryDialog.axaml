@@ -112,14 +112,25 @@
           </StackPanel>
         </Border>
 
-        <!-- Weiter-Button -->
-        <Button Content="{loc:Translate Continue}"
-                Classes="Primary"
-                Command="{Binding DismissStoryDialogCommand}"
-                HorizontalAlignment="Center"
-                MinWidth="160"
-                Margin="0,4,0,0"
-                AutomationProperties.AutomationId="Main_Btn_StoryContinue" />
+        <!-- P2.2 AAA-Audit: Weiter + Skip-Buttons (Skip nur bei Onboarding-Story Ch.1) -->
+        <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Center" Margin="0,4,0,0">
+          <Button Grid.Column="0"
+                  Content="{loc:Translate StorySkip}"
+                  Classes="Secondary"
+                  Command="{Binding SkipStoryCommand}"
+                  IsVisible="{Binding CanSkipStory}"
+                  HorizontalAlignment="Right"
+                  MinWidth="100" MinHeight="44"
+                  Margin="0,0,8,0"
+                  AutomationProperties.AutomationId="Main_Btn_StorySkip" />
+          <Button Grid.Column="1"
+                  Content="{loc:Translate Continue}"
+                  Classes="Primary"
+                  Command="{Binding DismissStoryDialogCommand}"
+                  HorizontalAlignment="Center"
+                  MinWidth="160" MinHeight="44"
+                  AutomationProperties.AutomationId="Main_Btn_StoryContinue" />
+        </Grid>
 
       </StackPanel>
     </Border>

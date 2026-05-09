@@ -21,19 +21,54 @@ public interface IAudioService
     Task PlaySoundAsync(GameSound sound);
 
     /// <summary>
-    /// Plays background music (loops).
+    /// Plays background music (loops). Legacy-Variante mit Asset-Dateinamen.
     /// </summary>
     Task PlayMusicAsync(string musicFile);
 
     /// <summary>
-    /// Stops the background music.
+    /// Plays background music (loops) mit MusicTrack-Enum + optionalem Crossfade (P2.3).
     /// </summary>
-    void StopMusic();
+    Task PlayMusicAsync(MusicTrack track, bool crossfade = true);
+
+    /// <summary>
+    /// Stops the background music. Mit optionalem Fade-Out (P2.3).
+    /// </summary>
+    void StopMusic(bool fadeOut = false);
+
+    /// <summary>
+    /// Pausiert die Musik (z.B. bei AudioFocus-Loss durch Telefonanruf). Resume via <see cref="ResumeMusic"/>.
+    /// </summary>
+    void PauseMusic();
+
+    /// <summary>
+    /// Setzt eine via <see cref="PauseMusic"/> pausierte Musik fort.
+    /// </summary>
+    void ResumeMusic();
 
     /// <summary>
     /// Triggers haptic feedback.
     /// </summary>
     void Vibrate(VibrationType type);
+}
+
+/// <summary>
+/// Stabile Identifier fuer Hintergrund-Musik-Loops (P2.3). Die Implementierung
+/// mappt jeden Track auf eine Datei in <c>Assets/Music/</c>. Lizenzpflichtige
+/// Asset-Dateien werden separat besorgt (Robert: ArtList/Epidemic Sound).
+/// </summary>
+public enum MusicTrack
+{
+    /// <summary>Kein aktiver Track — Aufruf entspricht <see cref="IAudioService.StopMusic"/>.</summary>
+    None,
+
+    /// <summary>Default-Loop fuer Werkstatt/Dashboard (warm, akustisch).</summary>
+    IdleWorkshop,
+
+    /// <summary>Energischer Loop fuer Mini-Games / Tournament.</summary>
+    BossOrTournament,
+
+    /// <summary>Kurzer Triumph-Loop fuer Prestige-Cinematic + Daily Reward.</summary>
+    Celebration
 }
 
 /// <summary>

@@ -47,10 +47,20 @@ public sealed class AudioService : IAudioService
         return Task.CompletedTask;
     }
 
-    public void StopMusic()
+    public Task PlayMusicAsync(MusicTrack track, bool crossfade = true)
+    {
+        // Stub: Desktop hat keine Musik-Wiedergabe
+        return Task.CompletedTask;
+    }
+
+    public void StopMusic(bool fadeOut = false)
     {
         // Stub: No music to stop
     }
+
+    public void PauseMusic() { /* Stub */ }
+
+    public void ResumeMusic() { /* Stub */ }
 
     public void Vibrate(VibrationType type)
     {

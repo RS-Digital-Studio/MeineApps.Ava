@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Android;
 /// Android-Implementierung für Audio-Wiedergabe und Haptik.
 /// Nutzt SoundPool für SFX (Assets/Sounds/*.ogg) und Vibrator für Haptik.
 /// </summary>
-public sealed class AndroidAudioService : IAudioService
+public sealed class AndroidAudioService : IAudioService, IDisposable
 {
     private readonly Activity _activity;
     private readonly AssetManager _assets;
@@ -23,7 +23,31 @@ public sealed class AndroidAudioService : IAudioService
 
     // Hintergrundmusik (MediaPlayer für Loop-Streaming)
     private MediaPlayer? _musicPlayer;
+    private MediaPlayer? _crossfadeOldPlayer;     // P2.3: Alter Player waehrend Crossfade
+    private MusicTrack _currentTrack = MusicTrack.None;
     private readonly object _musicLock = new();
+    private System.Timers.Timer? _crossfadeTimer; // 50ms-Tick fuer Volume-Ramp
+    private const float MusicMaxVolume = 0.5f;
+    private const int CrossfadeDurationMs = 800;
+    private DateTime _crossfadeStart;
+    private bool _crossfadeFadingOut;             // true = StopMusic mit Fade
+    private float _preFocusVolume = MusicMaxVolume; // P2.3: Volume vor AudioFocus-Loss
+    // Code-Review-Fix [Finding 7]: Aktueller Player-Volume mitfuehren, damit PauseMusic
+    // nach Duck-Modus nicht wieder auf Full springt. MediaPlayer hat keine GetVolume-API.
+    private float _currentMusicVolume = MusicMaxVolume;
+
+    /// <summary>P2.3: MusicTrack -> Asset-Dateiname (Loop-File in <c>Assets/Music/</c>).</summary>
+    private static readonly Dictionary<MusicTrack, string> MusicFileMap = new()
+    {
+        [MusicTrack.IdleWorkshop] = "music_idle_workshop.ogg",
+        [MusicTrack.BossOrTournament] = "music_boss_tournament.ogg",
+        [MusicTrack.Celebration] = "music_celebration.ogg",
+    };
+
+    // P2.3: AudioFocus — bei Telefonanruf / Bluetooth-Switch wird die Musik gemutet.
+    private AudioManager? _audioManager;
+    private AudioFocusRequestClass? _audioFocusRequest;
+    private AudioFocusListener? _audioFocusListener;
 
     /// <summary>Mapping GameSound → Dateiname (ohne Pfad/Extension)</summary>
     private static readonly Dictionary<GameSound, string> SoundFileMap = new()
@@ -75,6 +99,123 @@ public sealed class AndroidAudioService : IAudioService
         _assets = activity.Assets!;
         InitializeSoundPool();
         InitializeVibrator();
+        InitializeAudioFocus();
+    }
+
+    /// <summary>
+    /// P2.3: AudioFocus-Listener registrieren. Bei Loss → Pause, bei Gain → Resume.
+    /// API 26+ via <see cref="AudioFocusRequestClass"/>, davor Legacy-Pfad.
+    /// </summary>
+    private void InitializeAudioFocus()
+    {
+        try
+        {
+            _audioManager = (AudioManager?)_activity.GetSystemService(Context.AudioService);
+            if (_audioManager == null) return;
+
+            _audioFocusListener = new AudioFocusListener(this);
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            {
+                var attrs = new AudioAttributes.Builder()
+                    ?.SetUsage(AudioUsageKind.Game)
+                    ?.SetContentType(AudioContentType.Music)
+                    ?.Build();
+
+                _audioFocusRequest = new AudioFocusRequestClass.Builder(AudioFocus.Gain)
+                    ?.SetAudioAttributes(attrs!)
+                    ?.SetAcceptsDelayedFocusGain(false)
+                    ?.SetOnAudioFocusChangeListener(_audioFocusListener)
+                    ?.Build();
+            }
+        }
+        catch
+        {
+            // AudioFocus ist Best-Effort — wenn das nicht klappt, spielt die Musik trotzdem
+        }
+    }
+
+    /// <summary>P2.3: AudioFocus anfordern. true = bekommen, false = von System verweigert.</summary>
+    private bool RequestAudioFocus()
+    {
+        try
+        {
+            if (_audioManager == null) return true;
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            {
+                if (_audioFocusRequest == null) return true;
+                var result = _audioManager.RequestAudioFocus(_audioFocusRequest);
+                return result == AudioFocusRequest.Granted;
+            }
+#pragma warning disable CA1422 // Legacy-Pfad fuer API < 26
+            var legacyResult = _audioManager.RequestAudioFocus(_audioFocusListener, global::Android.Media.Stream.Music, AudioFocus.Gain);
+#pragma warning restore CA1422
+            return legacyResult == AudioFocusRequest.Granted;
+        }
+        catch
+        {
+            return true; // Best-Effort
+        }
+    }
+
+    private void AbandonAudioFocus()
+    {
+        try
+        {
+            if (_audioManager == null) return;
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            {
+                if (_audioFocusRequest != null) _audioManager.AbandonAudioFocusRequest(_audioFocusRequest);
+            }
+            else
+            {
+#pragma warning disable CA1422
+                _audioManager.AbandonAudioFocus(_audioFocusListener);
+#pragma warning restore CA1422
+            }
+        }
+        catch { }
+    }
+
+    /// <summary>P2.3: Listener-Klasse fuer AudioFocus-Aenderungen.</summary>
+    private sealed class AudioFocusListener : Java.Lang.Object, AudioManager.IOnAudioFocusChangeListener
+    {
+        private readonly AndroidAudioService _service;
+        public AudioFocusListener(AndroidAudioService service) { _service = service; }
+
+        public void OnAudioFocusChange(AudioFocus focusChange)
+        {
+            switch (focusChange)
+            {
+                case AudioFocus.Loss:
+                case AudioFocus.LossTransient:
+                    _service.PauseMusic();
+                    break;
+                case AudioFocus.LossTransientCanDuck:
+                    // Kurz andere App ueber uns — Volume halbieren statt pausieren
+                    _service.SetMusicVolume(MusicMaxVolume * 0.3f);
+                    break;
+                case AudioFocus.Gain:
+                    _service.ResumeMusic();
+                    _service.SetMusicVolume(MusicMaxVolume);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>P2.3: Volume direkt setzen (ohne Crossfade) — fuer Duck-Modus.</summary>
+    private void SetMusicVolume(float volume)
+    {
+        lock (_musicLock)
+        {
+            try
+            {
+                _musicPlayer?.SetVolume(volume, volume);
+                _currentMusicVolume = volume; // Code-Review-Fix [Finding 7]
+            }
+            catch { }
+        }
     }
 
     private void InitializeSoundPool()
@@ -191,10 +332,12 @@ public sealed class AndroidAudioService : IAudioService
                 afd.Close();
 
                 _musicPlayer.Looping = true;
-                _musicPlayer.SetVolume(0.5f, 0.5f);
+                _musicPlayer.SetVolume(MusicMaxVolume, MusicMaxVolume);
+                _currentMusicVolume = MusicMaxVolume; // Code-Review-Fix [Finding 7]
 
                 // Prepare() synchron (PrepareAsync() ist void im Java-Binding, kein Task)
                 _musicPlayer.Prepare();
+                RequestAudioFocus();
                 _musicPlayer.Start();
             }
         }
@@ -210,11 +353,165 @@ public sealed class AndroidAudioService : IAudioService
         return Task.CompletedTask;
     }
 
-    public void StopMusic()
+    /// <summary>P2.3: Track-basierte API mit Crossfade (~800ms).</summary>
+    public Task PlayMusicAsync(MusicTrack track, bool crossfade = true)
     {
+        if (!MusicEnabled || track == MusicTrack.None)
+        {
+            StopMusic(fadeOut: crossfade);
+            return Task.CompletedTask;
+        }
+        if (_currentTrack == track && _musicPlayer != null && _musicPlayer.IsPlaying) return Task.CompletedTask;
+        if (!MusicFileMap.TryGetValue(track, out var fileName)) return Task.CompletedTask;
+
+        try
+        {
+            MediaPlayer? newPlayer = null;
+            lock (_musicLock)
+            {
+                if (crossfade && _musicPlayer != null)
+                {
+                    // Alten Player als Crossfade-Out, neuen Player aufbauen
+                    _crossfadeOldPlayer?.Release();
+                    _crossfadeOldPlayer = _musicPlayer;
+                    _musicPlayer = null;
+                }
+                else
+                {
+                    StopMusicInternal();
+                }
+                newPlayer = new MediaPlayer();
+                _musicPlayer = newPlayer;
+            }
+
+            var afd = _assets.OpenFd($"Music/{fileName}");
+            if (afd == null) return Task.CompletedTask;
+
+            newPlayer.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
+            afd.Close();
+            newPlayer.Looping = true;
+            newPlayer.SetVolume(crossfade ? 0f : MusicMaxVolume, crossfade ? 0f : MusicMaxVolume);
+            _currentMusicVolume = crossfade ? 0f : MusicMaxVolume; // Code-Review-Fix [Finding 7]
+            newPlayer.Prepare();
+            RequestAudioFocus();
+            newPlayer.Start();
+            _currentTrack = track;
+
+            if (crossfade) StartCrossfade(fadingOut: false);
+        }
+        catch
+        {
+            lock (_musicLock) { StopMusicInternal(); }
+        }
+        return Task.CompletedTask;
+    }
+
+    public void StopMusic(bool fadeOut = false)
+    {
+        if (fadeOut && _musicPlayer != null)
+        {
+            lock (_musicLock)
+            {
+                _crossfadeOldPlayer?.Release();
+                _crossfadeOldPlayer = _musicPlayer;
+                _musicPlayer = null;
+            }
+            StartCrossfade(fadingOut: true);
+            return;
+        }
         lock (_musicLock)
         {
             StopMusicInternal();
+            AbandonAudioFocus();
+            _currentTrack = MusicTrack.None;
+        }
+    }
+
+    public void PauseMusic()
+    {
+        lock (_musicLock)
+        {
+            try
+            {
+                if (_musicPlayer != null && _musicPlayer.IsPlaying)
+                {
+                    // Code-Review-Fix [Finding 7]: Aktuellen (ggf. geduckten) Volume merken,
+                    // damit Resume nicht wieder auf Full springt.
+                    _preFocusVolume = _currentMusicVolume;
+                    _musicPlayer.Pause();
+                }
+            }
+            catch { }
+        }
+    }
+
+    public void ResumeMusic()
+    {
+        if (!MusicEnabled) return;
+        lock (_musicLock)
+        {
+            try
+            {
+                if (_musicPlayer != null && !_musicPlayer.IsPlaying)
+                {
+                    _musicPlayer.SetVolume(_preFocusVolume, _preFocusVolume);
+                    _musicPlayer.Start();
+                }
+            }
+            catch { }
+        }
+    }
+
+    /// <summary>P2.3: Startet den Volume-Ramp-Timer fuer Crossfade.</summary>
+    private void StartCrossfade(bool fadingOut)
+    {
+        StopCrossfadeTimer();
+        _crossfadeStart = DateTime.UtcNow;
+        _crossfadeFadingOut = fadingOut;
+        _crossfadeTimer = new System.Timers.Timer(50);
+        _crossfadeTimer.Elapsed += OnCrossfadeTick;
+        _crossfadeTimer.AutoReset = true;
+        _crossfadeTimer.Start();
+    }
+
+    private void StopCrossfadeTimer()
+    {
+        if (_crossfadeTimer == null) return;
+        _crossfadeTimer.Stop();
+        _crossfadeTimer.Elapsed -= OnCrossfadeTick;
+        _crossfadeTimer.Dispose();
+        _crossfadeTimer = null;
+    }
+
+    private void OnCrossfadeTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        var elapsed = (DateTime.UtcNow - _crossfadeStart).TotalMilliseconds;
+        var t = (float)Math.Clamp(elapsed / CrossfadeDurationMs, 0, 1);
+
+        lock (_musicLock)
+        {
+            try
+            {
+                _crossfadeOldPlayer?.SetVolume(MusicMaxVolume * (1f - t), MusicMaxVolume * (1f - t));
+                if (!_crossfadeFadingOut && _musicPlayer != null)
+                {
+                    _musicPlayer.SetVolume(MusicMaxVolume * t, MusicMaxVolume * t);
+                    _currentMusicVolume = MusicMaxVolume * t; // Code-Review-Fix [Finding 7]
+                }
+            }
+            catch { }
+
+            if (t >= 1f)
+            {
+                StopCrossfadeTimer();
+                try { _crossfadeOldPlayer?.Stop(); _crossfadeOldPlayer?.Release(); } catch { }
+                _crossfadeOldPlayer = null;
+                if (_crossfadeFadingOut)
+                {
+                    AbandonAudioFocus();
+                    _currentTrack = MusicTrack.None;
+                }
+            }
         }
     }
 
@@ -294,4 +591,41 @@ public sealed class AndroidAudioService : IAudioService
         VibrationType.MiniGameHit => ([15], [160]),
         _ => ([30], [128])
     };
+
+    private bool _disposed;
+
+    /// <summary>P2.3 AAA-Audit: Released Crossfade-Timer + AudioFocus-Listener + SoundPool.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Crossfade-Timer stoppen + freigeben
+        StopCrossfadeTimer();
+
+        // Musik fade-frei stoppen (Cleanup-Pfad — kein User mehr da)
+        lock (_musicLock)
+        {
+            try { _crossfadeOldPlayer?.Release(); } catch { }
+            _crossfadeOldPlayer = null;
+            StopMusicInternal();
+        }
+
+        // AudioFocus zurueckgeben
+        AbandonAudioFocus();
+        try { _audioFocusListener?.Dispose(); } catch { }
+        try { _audioFocusRequest?.Dispose(); } catch { }
+        _audioFocusListener = null;
+        _audioFocusRequest = null;
+        _audioManager = null;
+
+        // SoundPool freigeben (releast alle SFX-Puffer auf einen Schlag)
+        try { _soundPool?.Release(); } catch { }
+        try { _soundPool?.Dispose(); } catch { }
+        _soundPool = null;
+        _soundIds.Clear();
+
+        // Vibrator referenziert System-Service — kein eigener Dispose noetig
+        _vibrator = null;
+    }
 }

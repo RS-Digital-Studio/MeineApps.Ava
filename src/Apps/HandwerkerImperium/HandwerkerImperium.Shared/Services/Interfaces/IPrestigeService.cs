@@ -1,5 +1,6 @@
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Models.Events;
 
 namespace HandwerkerImperium.Services.Interfaces;
 
@@ -74,6 +75,12 @@ public interface IPrestigeService
     event EventHandler? PrestigeCompleted;
 
     /// <summary>
+    /// Feuert bei neuer persoenlicher Speedrun-Bestzeit pro Tier (v2.0.36).
+    /// MainViewModel kann FloatingText "Neuer Rekord! +X GS" triggern.
+    /// </summary>
+    event EventHandler<SpeedrunRecordEventArgs>? SpeedrunRecordSet;
+
+    /// <summary>
     /// Berechnet die Bonus-PP aus Spielleistung im aktuellen Run (flat, nach Tier-Multi).
     /// Quellen: Perfect Ratings, Research-Branches, Gebäude, Level-Überschuss.
     /// </summary>
@@ -90,6 +97,14 @@ public interface IPrestigeService
     /// EventArgs enthält Meilenstein-ID und GS-Belohnung.
     /// </summary>
     event EventHandler<PrestigeMilestoneEventArgs>? MilestoneReached;
+
+    /// <summary>
+    /// P0.3 AAA-Audit: Cinematic-Trigger fuer den 14s Prestige-Wow-Moment.
+    /// Wird zwischen Punkte-Vergabe und State-Reset gefeuert. MainViewModel
+    /// abonniert dies und forwarded an die View, die den
+    /// <see cref="HandwerkerImperium.Graphics.PrestigeCinematicRenderer"/> startet.
+    /// </summary>
+    event EventHandler<HandwerkerImperium.Models.PrestigeCinematicData>? CinematicReady;
 
     /// <summary>
     /// Gibt die aktuelle Run-Dauer zurück (seit letztem Prestige).

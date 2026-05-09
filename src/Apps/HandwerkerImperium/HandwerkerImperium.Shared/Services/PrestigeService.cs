@@ -1,5 +1,6 @@
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Models.Events;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
@@ -24,6 +25,13 @@ public sealed partial class PrestigeService : IPrestigeService
     private decimal _cachedXpMultiplier;
 
     public event EventHandler? PrestigeCompleted;
+
+    /// <summary>
+    /// Feuert wenn eine neue persoenliche Bestzeit fuer ein Tier aufgestellt wurde
+    /// (v2.0.36 Speedrun-System). Belohnung in GS wurde bereits gutgeschrieben,
+    /// Subscriber kann FloatingText/Toast/Sound triggern.
+    /// </summary>
+    public event EventHandler<SpeedrunRecordEventArgs>? SpeedrunRecordSet;
 
     public PrestigeService(
         IGameStateService gameStateService,
@@ -53,6 +61,9 @@ public sealed partial class PrestigeService : IPrestigeService
         // Basis-Punkte nur aus dem aktuellen Durchlauf (floor(sqrt(currentRunMoney / 100_000)))
         return PrestigeData.CalculatePrestigePoints(currentRunMoney);
     }
+
+    /// <summary>P0.3 AAA-Audit: Cinematic-Trigger-Event (siehe IPrestigeService).</summary>
+    public event EventHandler<HandwerkerImperium.Models.PrestigeCinematicData>? CinematicReady;
 
     public async Task<bool> DoPrestige(PrestigeTier tier)
     {
@@ -98,7 +109,9 @@ public sealed partial class PrestigeService : IPrestigeService
             ? DateTime.UtcNow - prestige.RunStartTime
             : TimeSpan.Zero;
 
-        // Bestzeit prüfen und aktualisieren
+        // Bestzeit prüfen + Speedrun-Belohnung bei neuer Best-Time (v2.0.36)
+        int speedrunReward = 0;
+        bool isNewPersonalBest = false;
         if (runDuration > TimeSpan.Zero)
         {
             var tierKey = tier.ToString();
@@ -106,6 +119,11 @@ public sealed partial class PrestigeService : IPrestigeService
                 || runDuration.Ticks < bestTicks)
             {
                 prestige.BestRunTimes[tierKey] = runDuration.Ticks;
+                isNewPersonalBest = true;
+
+                // Belohnung skaliert nach Tier + Speed (v2.0.36, Game-Audit-Empfehlung [DESIGN-2]).
+                // Verhindert dass Late-Game nach 3× Legende nur Multiplikator-Grind ist.
+                speedrunReward = SpeedrunRewards.CalculateReward(tier, runDuration);
             }
         }
 
@@ -139,9 +157,11 @@ public sealed partial class PrestigeService : IPrestigeService
         if (tier > prestige.CurrentTier)
             prestige.CurrentTier = tier;
 
-        // Diminishing Returns: Jeder weitere Prestige desselben Tiers gibt weniger Bonus
-        // Formel: baseBonus * 1/(1 + 0.1 * tierCount) - erster Prestige voller Bonus, 10. nur noch 50%
-        // tierCount ist NACH Inkrement (oben), daher -1 fuer den Wert VOR diesem Prestige
+        // Diminishing Returns: Jeder weitere Prestige desselben Tiers gibt weniger Bonus.
+        // Formel: baseBonus * 1/(1 + 0.2 * tierCount) — bereits nach 5 Same-Tier-Prestiges nur noch 50% Bonus.
+        // (v2.0.36: Faktor 0.1→0.2 verschärft nach Game-Audit-Finding [BAL-1] — verhindert dass
+        // F2P-Spieler endlos Bronze farmen statt zum nächsten Tier aufzusteigen.)
+        // tierCount ist NACH Inkrement (oben), daher -1 fuer den Wert VOR diesem Prestige.
         decimal baseBonus = tier.GetPermanentMultiplierBonus();
         int tierCount = tier switch
         {
@@ -155,7 +175,7 @@ public sealed partial class PrestigeService : IPrestigeService
             _ => 0
         };
         tierCount = Math.Max(0, tierCount);
-        decimal diminishedBonus = baseBonus * (1m / (1m + 0.1m * tierCount));
+        decimal diminishedBonus = baseBonus * (1m / (1m + GameBalanceConstants.DiminishingReturnsPerTierPrestige * tierCount));
         prestige.PermanentMultiplier += diminishedBonus;
         prestige.PermanentMultiplier = Math.Min(Math.Round(prestige.PermanentMultiplier, 3), MaxPermanentMultiplier);
 
@@ -182,6 +202,26 @@ public sealed partial class PrestigeService : IPrestigeService
         state.PrestigeLevel = prestige.TotalPrestigeCount;
         state.PrestigeMultiplier = prestige.PermanentMultiplier;
 
+        // P0.3 AAA-Audit: Cinematic-Daten zusammenstellen + Event feuern VOR Reset,
+        // damit MoneyAtPrestige + Tier-Daten korrekt sind. Renderer snappshot't die
+        // Werte beim Start (kein Live-Binding nach Reset).
+        var cinematicData = new HandwerkerImperium.Models.PrestigeCinematicData
+        {
+            MoneyAtPrestige = state.CurrentRunMoney,
+            Tier = tier,
+            BasePrestigePoints = tierPoints - bonusPp,
+            BonusPrestigePoints = bonusPp,
+            TierMultiplierRaw = (double)baseBonus,
+            DiminishingReturnsFactor = tierCount == 0 ? 1.0 : (double)(1m / (1m + GameBalanceConstants.DiminishingReturnsPerTierPrestige * tierCount)),
+            TierMultiplierEffective = (double)diminishedBonus,
+            TierCount = tierCount + 1, // +1 damit "X. Prestige" stimmt
+            RunDurationSeconds = runDuration.TotalSeconds,
+            ActiveChallengeCount = prestige.ActiveChallenges.Count,
+            // Tier-Name als RESX-Key — MainViewModel kann ihn vor View-Forward auflösen.
+            TierDisplayName = tier.ToString(),
+        };
+        CinematicReady?.Invoke(this, cinematicData);
+
         // Reset durchfuehren
         ResetProgress(state, tier);
 
@@ -190,6 +230,16 @@ public sealed partial class PrestigeService : IPrestigeService
         if (tier == PrestigeTier.Bronze)
         {
             state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes(15);
+        }
+
+        // v2.0.36: Speedrun-Belohnung bei neuer persoenlicher Bestzeit gutschreiben.
+        // Wird NACH dem Reset gutgeschrieben, damit die GS auch nach dem Reset bleiben
+        // (GoldenScrews ueberleben Prestige). Event SpeedrunRecordSet wird gefeuert,
+        // damit MainViewModel ein FloatingText/Toast triggern kann.
+        if (isNewPersonalBest && speedrunReward > 0)
+        {
+            _gameStateService.AddGoldenScrews(speedrunReward);
+            SpeedrunRecordSet?.Invoke(this, new SpeedrunRecordEventArgs(tier, runDuration, speedrunReward));
         }
 
         // KEIN ConfigureAwait(false): PrestigeCompleted-Event wird von MainViewModel
@@ -223,6 +273,9 @@ public sealed partial class PrestigeService : IPrestigeService
             ["prestige_pass"] = state.IsPrestigePassActive
         });
 
+        // v2.0.37: Wochen-Meilenstein-Counter erhoehen, dann Meilensteine pruefen.
+        // CheckAndAwardMilestones resettet den Counter wenn 7 erreicht ist.
+        IncrementWeeklyPrestigeCounter();
         // Meilensteine NACH dem Event prüfen (damit UI den Prestige-Erfolg zuerst zeigt)
         CheckAndAwardMilestones();
 

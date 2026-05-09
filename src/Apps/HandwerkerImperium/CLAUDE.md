@@ -710,6 +710,63 @@ Saison-Dauer 42 → 30 Tage (12 Saisons/Jahr statt 8.7). Premium-Spread auf ~3x 
 
 ---
 
+## MainView Lazy-Loading (AAA-Audit P0)
+
+`MainView.axaml` ist von 425 → 250 Zeilen geschrumpft. Statt 25+ einzelner ContentControls
+mit `IsVisible`-Bindings nutzt das ContentPanel jetzt:
+
+- 4 Direct-Bound-Views (DashboardView/ImperiumView/MissionenView/PrestigeView) mit
+  `DataContext = MainViewModel` und `IsVisible="{Binding IsXxxActive}"`.
+- Ein einzelnes `ContentControl Content="{Binding ActivePageContent}"` fuer alle anderen
+  Sub-Pages. Der ViewLocator findet die passende View automatisch.
+
+`ActivePageContent`-Switch im MainViewModel mappt 25+ ActivePage-Werte auf das passende VM
+(oder null fuer Direct-Bound). Beim Page-Switch feuern `OnActivePageChanged` die
+PropertyChanged-Notifies fuer `ActivePageContent` + `HasActivePageContent`.
+
+**Effekt:** Cold-Start vermeidet die Materialisierung von ~25 Sub-Views inkl. SkiaSharp-
+Renderer, View-Locator-DataTemplates rendern nur die aktive Seite.
+
+---
+
+## MainViewModel Zerlegungs-Sprint (AAA-Audit P0)
+
+MainViewModel war 2412 Zeilen + 6 Partials. Logik-Klumpen sind in dedizierte Services extrahiert:
+
+### CinematicCoordinator
+
+`ICinematicCoordinator` + `CinematicCoordinator` — subscribed auf `IPrestigeService.CinematicReady`,
+lokalisiert Tier-Namen, schaltet Music-Track auf `MusicTrack.Celebration` und feuert das
+View-Trigger-Event. MainViewModel ruft im Ctor `StartListening()` auf und delegiert
+`OnPrestigeCinematicSkipped/Dismissed` an den Coordinator.
+
+### ReputationTierEffects
+
+`IReputationTierEffects` + `ReputationTierEffects` — bündelt FloatingText + Celebration +
+LevelUp-Audio + Achievement-Dialog mit Tier-Effekten. MainViewModel.OnReputationTierChanged
+feuert nur noch die Property-Notifies und delegiert die Effekt-Logik an den Service.
+
+### Bereits vorher extrahiert
+
+- HeaderViewModel (16 Properties)
+- PrestigeBannerViewModel (18 Properties)
+- GoalBannerViewModel
+- WelcomeFlowViewModel (13 Properties)
+- MissionsFeatureViewModel (Daily Challenges + Weekly Missions + LuckySpin)
+- EconomyFeatureViewModel (Workshop-Kauf/Upgrade)
+- DialogViewModel + 6 Partial-Files (Story/Hint/Confirm/Achievement/LevelUp/Alert/PrestigeSummary)
+- NavigationService + DialogOrchestrator + MiniGameNavigator
+
+### Bewusste DEFER-Entscheidung
+
+- **Tab-Select-Commands extrahieren** — bewusst nicht umgesetzt: AXAML-Bindings auf
+  ~12 RelayCommands wuerden brechen, der strukturelle Gewinn waere minimal.
+- **Voll-Zerlegung in max-200-Zeilen-Klassen** — Audit-Schaetzung L = 3-5 Tage; bereits
+  Substanz extrahiert (siehe oben), restlicher Schnitt braucht dediziertes Refactor-Projekt
+  mit Architektur-Review.
+
+---
+
 ## Reset-Hierarchie-Pacing
 
 Drei Reset-Layer (Rebirth/Prestige/Ascension) sind UX-getrennt:

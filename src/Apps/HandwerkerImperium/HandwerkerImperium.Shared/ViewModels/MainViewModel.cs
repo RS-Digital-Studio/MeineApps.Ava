@@ -1404,9 +1404,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         FloatingTextRequested?.Invoke($"Prestige #{prestigeCount}!", "level");
 
-        // Ascension-Hint: Prüfen ob erstmals 3+ Legende-Prestiges erreicht
+        // Ascension-Hint-Kaskade (AAA-Audit P0 — Reset-Hierarchie-Vereinfachung):
+        //   1. Prestige        → AscensionPath-Hint (Foreshadowing: "So funktioniert Ascension")
+        //   3x Legende-Prestige → AscensionAvailable-Hint (Action: "Du kannst jetzt aufsteigen!")
+        // So sieht der Spieler den Ascension-Tab nicht erst nach 3x Legende erstmals — er kennt
+        // ihn vorher schon konzeptuell und arbeitet darauf hin.
         if (_gameStateService.Prestige.LegendeCount >= 3)
             _contextualHintService.TryShowHint(ContextualHints.AscensionAvailable);
+        else if (prestigeCount == 1)
+            _contextualHintService.TryShowHint(ContextualHints.AscensionPath);
 
         _reviewService?.OnMilestone("prestige", prestigeCount);
         CheckReviewPrompt();

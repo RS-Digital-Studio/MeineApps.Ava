@@ -185,6 +185,15 @@ public static class ContextualHints
         Position = HintPosition.Below, IsDialog = true
     };
 
+    // AAA-Audit P0 (Reset-Hierarchie-Vereinfachung): Foreshadowing-Hint nach 1. Prestige.
+    // Erklärt das Ascension-Konzept BEVOR der Spieler 3x Legende erreicht hat — Pacing-Hinweis
+    // statt einer dahingelokten Tab-Karte ohne Erklärung.
+    public static readonly ContextualHint AscensionPath = new()
+    {
+        Id = "ascension_path", TitleKey = "HintAscensionPathTitle", TextKey = "HintAscensionPathText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
     // Rebirth bereit (erster Workshop erreicht Level 1000)
     public static readonly ContextualHint RebirthReady = new()
     {

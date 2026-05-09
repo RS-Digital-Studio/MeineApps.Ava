@@ -34,6 +34,9 @@ public class SettingsViewModelTests
         var playGamesSvc = Substitute.For<IPlayGamesService>();
         var hintSvc = Substitute.For<IContextualHintService>();
         var dialogSvc = Substitute.For<IDialogService>();
+        var crossPromoSvc = Substitute.For<ICrossPromoService>();
+        crossPromoSvc.GetCurrentRotation(Arg.Any<int>()).Returns([]);
+        var crossPromoVm = new CrossPromoViewModel(crossPromoSvc, localizationSvc);
 
         // Lokalisierung: Gibt den Schlüssel als Fallback zurück
         localizationSvc.GetString(Arg.Any<string>()).Returns(callInfo => callInfo.Arg<string>());
@@ -68,7 +71,8 @@ public class SettingsViewModelTests
             purchaseSvc,
             playGamesSvc,
             hintSvc,
-            dialogSvc);
+            dialogSvc,
+            crossPromoVm);
 
         return (vm, stateSvc, purchaseSvc);
     }

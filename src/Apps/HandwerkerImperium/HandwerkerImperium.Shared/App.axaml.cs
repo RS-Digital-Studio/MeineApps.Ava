@@ -335,6 +335,14 @@ public partial class App : Application
         services.AddSingleton<IAnalyticsService, AnalyticsService>();
         services.AddSingleton<IRemoteConfigService, RemoteConfigService>();
         services.AddSingleton<ICloudSaveService, CloudSaveService>();
+
+        // AAA-Audit P1: Cross-Promotion zwischen den 11 eigenen Apps (House-Ads, zero-cost).
+        services.AddSingleton<ICrossPromoService, CrossPromoService>();
+        services.AddSingleton<CrossPromoViewModel>();
+
+        // AAA-Audit P0: FTUE-Service-Skelett (10-Step-Tutorial). UI-Spotlight-Overlay
+        // wird in einem Folge-Sprint implementiert — Foundation hier ist build-fest.
+        services.AddSingleton<IFtueService, FtueService>();
         // P1.3 AAA-Audit: Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
         services.AddSingleton<IDailyBundleService, DailyBundleService>();
 

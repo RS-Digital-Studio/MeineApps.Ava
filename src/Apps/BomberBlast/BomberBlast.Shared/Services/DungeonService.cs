@@ -39,11 +39,28 @@ public sealed class DungeonService : IDungeonService
     public int PaidRunGemCost => PAID_RUN_GEM_COST;
     public bool IsRunActive => _runState is { IsActive: true };
 
+    /// <summary>v2.0.39 Plan Task 2.7: Lite-Run-Onboarding.</summary>
+    public bool LiteRunCompleted => _stats.LiteRunCompleted;
+
+    /// <summary>v2.0.39 Plan Task 2.7: ist der aktuelle Run ein Lite-Run?</summary>
+    public bool IsCurrentRunLite => _runState is { IsActive: true, IsLiteRun: true };
+
+    /// <summary>Maximaler Floor des Lite-Runs (Floor-3 = Mini-Boss / Run-Ende).</summary>
+    private const int LITE_RUN_MAX_FLOOR = 3;
+
     public bool IsBuffFloorNext =>
         _runState != null && DungeonBuffCatalog.IsBuffFloor(_runState.CurrentFloor);
 
-    public bool IsCurrentFloorBoss =>
-        _runState != null && DungeonBuffCatalog.IsBossFloor(_runState.CurrentFloor);
+    public bool IsCurrentFloorBoss
+    {
+        get
+        {
+            if (_runState == null) return false;
+            // v2.0.39 Plan Task 2.7: Im Lite-Run ist Floor 3 der Mini-Boss + Run-Ende.
+            if (_runState.IsLiteRun) return _runState.CurrentFloor >= LITE_RUN_MAX_FLOOR;
+            return DungeonBuffCatalog.IsBossFloor(_runState.CurrentFloor);
+        }
+    }
 
     public int CurrentAscension => _stats.AscensionLevel;
 
@@ -140,6 +157,40 @@ public sealed class DungeonService : IDungeonService
     }
 
     // === Run-Management ===
+
+    /// <summary>
+    /// Lite-Run-Eintritt (v2.0.39, Plan Task 2.7).
+    /// Onboarding-Variante: 3 Floors, automatische Buff-Auswahl, 50% Belohnungen.
+    /// Kostenlos, einmal pro Spieler bevor LiteRunCompleted=true gesetzt wird; danach jederzeit verfuegbar.
+    /// </summary>
+    public bool StartLiteRun()
+    {
+        if (_runState is { IsActive: true }) return false;
+
+        var runSeed = Environment.TickCount;
+        var mapData = GenerateMap(runSeed);
+        var firstNode = mapData.Rows[0][0];
+
+        _runState = new DungeonRunState
+        {
+            CurrentFloor = 1,
+            Lives = 1,
+            IsActive = true,
+            IsLiteRun = true,
+            RunSeed = runSeed,
+            RunAscension = _stats.AscensionLevel,
+            CurrentRoomType = firstNode.RoomType,
+            CurrentModifier = firstNode.Modifier,
+            MapData = mapData,
+        };
+
+        if (_runState.CurrentRoomType == DungeonRoomType.Challenge)
+            _runState.CurrentChallengeMode = GenerateChallengeMode(1, runSeed);
+
+        SaveRunState();
+        RunStateChanged?.Invoke();
+        return true;
+    }
 
     public bool StartRun(DungeonEntryType entryType)
     {
@@ -275,6 +326,18 @@ public sealed class DungeonService : IDungeonService
             : 10 + floor * 2;               // Normal: 10-30 DC
         reward.DungeonCoins = dungeonCoins;
 
+        // v2.0.39 Plan Task 2.7: Lite-Run halbiert ALLE Belohnungen.
+        // Anwendung nach allen Multiplikatoren (Elite/Wealthy/Boss/Buffs/Ascension), damit der
+        // Spieler einen verhaeltnis-erhaltenen Vorgeschmack auf das Pro-Reward-System bekommt.
+        if (_runState.IsLiteRun)
+        {
+            reward.Coins /= 2;
+            reward.ChestBonus /= 2;
+            reward.Gems /= 2;
+            dungeonCoins /= 2;
+            reward.DungeonCoins = dungeonCoins;
+        }
+
         // Belohnungen zum Run-State hinzufügen
         _runState.CollectedCoins += reward.Coins + reward.ChestBonus;
         _runState.CollectedGems += reward.Gems;
@@ -362,9 +425,17 @@ public sealed class DungeonService : IDungeonService
         foreach (var cardType in _runState.CollectedCardDrops)
             _cardService.AddCard((BombType)cardType);
 
-        // Statistiken aktualisieren
-        _stats.TotalRuns++;
-        if (isNewBest) _stats.BestFloor = floorsCompleted;
+        // Statistiken aktualisieren — Lite-Runs zaehlen NICHT in TotalRuns/BestFloor (sind Onboarding).
+        if (!_runState.IsLiteRun)
+        {
+            _stats.TotalRuns++;
+            if (isNewBest) _stats.BestFloor = floorsCompleted;
+        }
+        else if (floorsCompleted >= LITE_RUN_MAX_FLOOR - 1)
+        {
+            // Lite-Run abgeschlossen (Mini-Boss auf Floor 3 geschafft) → Onboarding-Flag setzen.
+            _stats.LiteRunCompleted = true;
+        }
         _stats.TotalCoinsEarned += _runState.CollectedCoins;
         _stats.TotalGemsEarned += _runState.CollectedGems;
         _stats.TotalCardsEarned += _runState.CollectedCardDrops.Count;
@@ -431,6 +502,19 @@ public sealed class DungeonService : IDungeonService
     public List<DungeonBuffDefinition> GenerateBuffChoices()
     {
         if (_runState == null) return [];
+
+        // v2.0.39 Plan Task 2.7: Lite-Run liefert NUR 1 Common-Buff (kein Reroll-UI).
+        // ViewModel ruft GenerateBuffChoices()[0] direkt auf ApplyBuff(...) statt UI zu zeigen.
+        if (_runState.IsLiteRun)
+        {
+            var liteRandom = new Random(_runState.RunSeed + _runState.CurrentFloor * 100);
+            var commons = DungeonBuffCatalog.All
+                .Where(b => b.Rarity == DungeonBuffRarity.Common && !_runState.ActiveBuffs.Contains(b.Type))
+                .OrderBy(_ => liteRandom.Next())
+                .Take(1)
+                .ToList();
+            return commons;
+        }
 
         // Permanentes Upgrade: ExtraBuffChoice → 4 statt 3 Optionen
         int choiceCount = 3;

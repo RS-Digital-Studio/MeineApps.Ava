@@ -285,6 +285,87 @@ public sealed class CardService : ICardService
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // CRAFTING (v2.0.40, Plan Task 3.5)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public int CraftCardCount => 5;
+
+    public int GetCraftCoinCost(Rarity targetRarity) => targetRarity switch
+    {
+        Rarity.Rare => 2_000,
+        Rarity.Epic => 8_000,
+        Rarity.Legendary => 25_000,
+        _ => 0  // Common ist nicht craftbar (es gibt keine niedrigere Rarity)
+    };
+
+    public int GetCraftableCount(Rarity sourceRarity)
+    {
+        int total = 0;
+        foreach (var owned in _data.Cards)
+        {
+            var def = CardCatalog.GetCard(owned.BombType);
+            if (def == null) continue;
+            if (def.Rarity != sourceRarity) continue;
+            total += owned.Count;
+        }
+        return total;
+    }
+
+    public bool CanCraft(Rarity targetRarity, ICoinService coinService)
+    {
+        if (targetRarity == Rarity.Common) return false;
+        var sourceRarity = (Rarity)((int)targetRarity - 1);
+        int cost = GetCraftCoinCost(targetRarity);
+        if (cost <= 0) return false;
+        if (!coinService.CanAfford(cost)) return false;
+        return GetCraftableCount(sourceRarity) >= CraftCardCount;
+    }
+
+    public BombType? CraftCard(Rarity targetRarity, ICoinService coinService)
+    {
+        if (!CanCraft(targetRarity, coinService)) return null;
+        var sourceRarity = (Rarity)((int)targetRarity - 1);
+
+        // Kosten zahlen — TrySpend gibt false bei Race; das wuerde nur bei paralleler Mutation passieren.
+        int cost = GetCraftCoinCost(targetRarity);
+        if (!coinService.TrySpendCoins(cost)) return null;
+
+        // 5 Quell-Karten verbrauchen — bevorzugt von Karten mit hoechstem Count
+        // (verhindert dass eine seltene Karte komplett aufgebraucht wird waehrend andere haengen).
+        int remaining = CraftCardCount;
+        var sortedSources = _data.Cards
+            .Where(c => CardCatalog.GetCard(c.BombType)?.Rarity == sourceRarity)
+            .OrderByDescending(c => c.Count)
+            .ToList();
+        foreach (var owned in sortedSources)
+        {
+            if (remaining <= 0) break;
+            int take = Math.Min(remaining, owned.Count);
+            owned.Count -= take;
+            remaining -= take;
+        }
+        if (remaining > 0)
+        {
+            // Sollte durch CanCraft abgefangen sein — defensiv: Coins zurueckerstatten und abbrechen
+            coinService.AddCoins(cost);
+            return null;
+        }
+
+        // Ziel-Karte zufaellig aus dem Pool waehlen (deterministisch durch Time-Seed)
+        var pool = CardCatalog.All.Where(c => c.Rarity == targetRarity).ToList();
+        if (pool.Count == 0)
+        {
+            coinService.AddCoins(cost);
+            return null;
+        }
+        var random = new Random();
+        var picked = pool[random.Next(pool.Count)];
+        AddCard(picked.BombType);  // erhoeht den Count und persistiert via Save()/CollectionChanged
+
+        return picked.BombType;
+    }
+
     /// <summary>
     /// Persistenz-Datenstruktur für die Karten-Sammlung
     /// </summary>

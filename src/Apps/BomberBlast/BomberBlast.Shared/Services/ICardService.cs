@@ -53,4 +53,34 @@ public interface ICardService
 
     /// <summary>5. Deck-Slot für Gems freischalten. Gibt true zurück bei Erfolg</summary>
     bool TryUnlockSlot5(IGemService gemService);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CRAFTING (v2.0.40, Plan Task 3.5)
+    // ═══════════════════════════════════════════════════════════════════════
+    // 5 Karten der gleichen Rarity + Coins → 1 Karte naechsthoeherer Rarity.
+    // Reduziert Common-Stau (Spieler haben mit der Zeit zu viele Common-Duplikate).
+    // Cost-Tabelle:
+    //   5 Common  + 2.000 Coins  → 1 Rare      (Rare-Pool: 4 Karten Smoke/Lightning/Gravity/Poison)
+    //   5 Rare    + 8.000 Coins  → 1 Epic      (Epic-Pool: TimeWarp/Mirror/Vortex/Phantom)
+    //   5 Epic    + 25.000 Coins → 1 Legendary (Legendary-Pool: Nova/BlackHole)
+
+    /// <summary>Anzahl Quell-Karten die fuer ein Crafting benoetigt werden (5).</summary>
+    int CraftCardCount { get; }
+
+    /// <summary>Coin-Kosten fuer Crafting der angegebenen Ziel-Rarity. 0 = nicht craftbar.</summary>
+    int GetCraftCoinCost(Rarity targetRarity);
+
+    /// <summary>Wie viele Karten der angegebenen Rarity sind als Quelle verfuegbar (Stack-Summe).</summary>
+    int GetCraftableCount(Rarity sourceRarity);
+
+    /// <summary>
+    /// Pruef-Funktion: Hat der Spieler genug Quell-Karten und Coins fuer das angegebene Ziel-Crafting?
+    /// </summary>
+    bool CanCraft(Rarity targetRarity, ICoinService coinService);
+
+    /// <summary>
+    /// Crafted eine Karte der Ziel-Rarity. Verbraucht 5 Karten der niedrigeren Rarity + Coins.
+    /// </summary>
+    /// <returns>BombType der gecrafteten Karte oder null bei Fehler (zu wenig Quell-Karten oder Coins).</returns>
+    BombType? CraftCard(Rarity targetRarity, ICoinService coinService);
 }

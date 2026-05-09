@@ -30,11 +30,29 @@ public interface IDungeonService
     bool IsRunActive { get; }
 
     /// <summary>
+    /// Ob der Lite-Run bereits abgeschlossen wurde (v2.0.39, Plan Task 2.7).
+    /// Bestimmt die Sichtbarkeit der Lite-Run-Eintritts-Option.
+    /// </summary>
+    bool LiteRunCompleted { get; }
+
+    /// <summary>
+    /// Ob der aktuell laufende Run ein Lite-Run ist (v2.0.39, Plan Task 2.7).
+    /// </summary>
+    bool IsCurrentRunLite { get; }
+
+    /// <summary>
     /// Startet einen neuen Dungeon-Run.
     /// </summary>
     /// <param name="entryType">Art des Eintritts (Free/Coins/Gems/Ad)</param>
     /// <returns>true wenn erfolgreich gestartet</returns>
     bool StartRun(DungeonEntryType entryType);
+
+    /// <summary>
+    /// Startet einen Lite-Run (Onboarding-Variante, v2.0.39 Plan Task 2.7).
+    /// 3 Floors, automatische Buff-Auswahl, 50% Belohnungen, kostenlos und ohne Tageslimit.
+    /// </summary>
+    /// <returns>true wenn erfolgreich gestartet (false bei laufendem Run).</returns>
+    bool StartLiteRun();
 
     /// <summary>
     /// Berechnet Belohnungen für den aktuellen Floor und geht zum nächsten weiter.

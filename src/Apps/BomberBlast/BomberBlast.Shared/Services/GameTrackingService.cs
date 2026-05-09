@@ -89,8 +89,10 @@ public sealed class GameTrackingService : IGameTrackingService
     public void OnComboReached(int comboCount)
     {
         _achievements.OnComboReached(comboCount);
-        _weekly.TrackProgress(WeeklyMissionType.AchieveCombo);
-        _daily.TrackProgress(WeeklyMissionType.AchieveCombo);
+        // v2.0.37: Mission-Schwellen angehoben — Daily zaehlt ab x6, Weekly ab x8.
+        // Vorher zaehlte jeder x2-Combo, was die Mission trivial machte.
+        if (comboCount >= 6) _daily.TrackProgress(WeeklyMissionType.AchieveCombo);
+        if (comboCount >= 8) _weekly.TrackProgress(WeeklyMissionType.AchieveCombo);
     }
 
     // --- Items ---

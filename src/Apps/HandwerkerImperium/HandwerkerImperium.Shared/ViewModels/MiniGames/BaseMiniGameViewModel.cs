@@ -27,6 +27,8 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     protected readonly IAudioService _audioService;
     protected readonly IRewardedAdService _rewardedAdService;
     protected readonly ILocalizationService _localizationService;
+    /// <summary>AAA-Audit P1 Mini-Games-Telemetrie: optional injected via App.Services.</summary>
+    protected IAnalyticsService? _analyticsService;
     protected DispatcherTimer? _timer;
     protected bool _disposed;
     protected bool _isEnding;
@@ -453,6 +455,23 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         // Perfect-Rating für Auto-Complete zählen
         if (rating == MiniGameRating.Perfect)
             _gameStateService.RecordPerfectRating(GetCurrentMiniGameType());
+
+        // AAA-Audit P1 Mini-Games-Telemetrie: Welche Mini-Games werden gespielt?
+        // Ergebnisse landen via Analytics-Pipeline in Firebase und ermoeglichen den
+        // Bottom-50%-Audit (welche Mini-Games werden NICHT gespielt → killen oder polieren).
+        // Lazy-Load des Analytics-Service ueber App.Services, damit kein Constructor-Aufwand
+        // in jedem MiniGame-VM noetig ist.
+        try
+        {
+            _analyticsService ??= App.Services?.GetService(typeof(IAnalyticsService)) as IAnalyticsService;
+            _analyticsService?.TrackEvent("mini_game_played", new Dictionary<string, object?>
+            {
+                ["mini_game_type"] = GetCurrentMiniGameType().ToString(),
+                ["rating"] = rating.ToString(),
+                ["was_score_doubled"] = _gameStateService.GetActiveOrder()?.IsScoreDoubled ?? false,
+            });
+        }
+        catch { /* Analytics darf das Spiel nicht crashen */ }
 
         // Sound abspielen
         var sound = rating switch

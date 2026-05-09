@@ -86,8 +86,27 @@ public static class GameBalanceConstants
     // WORKSHOP - LEVEL & SLOTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Maximales Workshop-Level.</summary>
+    /// <summary>
+    /// Maximales Workshop-Level.
+    ///
+    /// AAA-Audit P1 Long-Term-Engagement: 1000 ist der aktuelle Hard-Cap und das
+    /// Rebirth-Trigger-Niveau. Eine Anhebung auf 2000+ braucht Side-Effect-Audit
+    /// (Achievements, Rebirth-Schwelle, Income-Formeln, Tests). Pragmatisch wird
+    /// Late-Game-Engagement aktuell ueber Workshop-Rebirth (5 Sterne) +
+    /// Prestige-Tiers (Bronze→Legende) + Ascension (Meta-Reset) abgedeckt.
+    ///
+    /// Ewige Prestige-Skalierung mit log-Wachstum ist als naechster Long-Term-Sprint
+    /// vorgemerkt — siehe Audit-Roadmap Q3.
+    /// </summary>
     public const int WorkshopMaxLevel = 1000;
+
+    /// <summary>
+    /// AAA-Audit P1 Long-Term-Engagement: Bonus-PP pro Ascension-Level (linear).
+    /// Sorgt dafuer dass jeder zusaetzliche Ascension einen sichtbaren Reward bringt,
+    /// auch nach „allen" Master-Tools. Wird in PrestigeService.CalculatePrestigePoints
+    /// addiert.
+    /// </summary>
+    public const decimal BonusPpPerAscensionLevel = 0.5m;
 
     /// <summary>Alle X Level ein zusätzlicher Worker-Slot.</summary>
     public const int WorkerSlotInterval = 50;

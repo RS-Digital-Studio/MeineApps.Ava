@@ -244,6 +244,27 @@
                      VerticalAlignment="Center" />
         </StackPanel>
 
+        <!-- AAA-Audit P2: Empty-State Inventar — zeigt liebevollen CTA statt nichts. -->
+        <Border Classes="Card" Padding="20"
+                IsVisible="{Binding !HasInventoryItems}"
+                AutomationProperties.AutomationId="Crafting_Border_InventoryEmpty">
+          <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <icons:GameIcon Kind="PackageVariant" Width="48" Height="48" Opacity="0.5"
+                            Foreground="{DynamicResource TextSecondaryBrush}"
+                            HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Translate CraftingInventoryEmptyTitle}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBlock Text="{loc:Translate CraftingInventoryEmptyText}"
+                       FontSize="11" Opacity="0.85"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center" />
+          </StackPanel>
+        </Border>
+
         <ItemsControl ItemsSource="{Binding InventoryItems}"
                       AutomationProperties.AutomationId="Crafting_Items_Inventory"
                       IsVisible="{Binding HasInventoryItems}">

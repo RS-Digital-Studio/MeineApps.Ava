@@ -196,11 +196,11 @@ public sealed partial class GameEngine
                 _tutorialService.CheckStepCompletion(TutorialStepType.CollectPowerUp);
 
                 _soundManager.PlaySound(SoundManager.SFX_POWERUP);
-                _vibration.VibrateLight();
+                _vibration.VibratePickUp();
                 ScoreChanged?.Invoke(_player.Score);
 
                 // Tracking: PowerUp eingesammelt (Missionen + Sammlung)
-                _tracking.OnPowerUpCollected(powerUp.Type.ToString());
+                _tracking.OnPowerUpCollected(powerUp.Type.ToFastString());
             }
         }
 
@@ -345,7 +345,13 @@ public sealed partial class GameEngine
         // Game-Feel: Stärkerer Shake + Hit-Pause + Vibration bei Spieler-Tod
         _screenShake.Trigger(5f, 0.3f);
         _hitPauseTimer = 0.1f;
-        _vibration.VibrateHeavy();
+        _vibration.VibrateDeath();
+
+        // v2.0.46 — Audio-Caption für gehörlose Spieler
+        if (_accessibility?.SubtitlesEnabled == true)
+        {
+            _subtitles.Show(_localizationService.GetString("SubtitlePlayerDeath") ?? "[YOU DIED]");
+        }
 
         // Tod-Partikel: Burst nach außen (orange/rot)
         _particleSystem.EmitShaped(_player.X, _player.Y, 16, new SKColor(255, 100, 30),
@@ -379,6 +385,13 @@ public sealed partial class GameEngine
             _particleSystem.EmitExplosionSparks(enemy.X, enemy.Y, 16, new SKColor(255, 200, 50), 180f);
             _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
 
+            // v2.0.47 — Audio-Caption: Boss-Defeat-Fanfare für gehörlose Spieler
+            if (_accessibility?.SubtitlesEnabled == true)
+            {
+                var subKey = _localizationService.GetString("SubtitleBossDefeat") ?? "[BOSS DEFEATED]";
+                _subtitles.Show(subKey);
+            }
+
             // Tracking: Boss-Kill (Achievement + Liga + BattlePass + Collection + Missionen)
             var bossFlag = deadBoss.BossKind switch
             {
@@ -398,30 +411,15 @@ public sealed partial class GameEngine
             _floatingText.Spawn(enemy.X, enemy.Y, $"+{points}", new SKColor(255, 215, 0), 14f);
         }
 
-        // Combo-System: Kills innerhalb des Zeitfensters zählen
-        if (_comboTimer > 0)
-        {
-            _comboCount++;
-        }
-        else
-        {
-            _comboCount = 1;
-        }
-        _comboTimer = COMBO_WINDOW;
+        // v2.0.54 — Phase 12: Combo-Logic in ComboSystem extrahiert (Pure-Logic, isoliert testbar).
+        _comboSystem.RegisterKill();
 
-        // Combo-Bonus bei Mehrfach-Kills
-        if (_comboCount >= 2)
+        if (_comboSystem.Count >= 2)
         {
-            int comboBonus = _comboCount switch
-            {
-                2 => 200,
-                3 => 500,
-                4 => 1000,
-                _ => 2000
-            };
+            int comboBonus = _comboSystem.GetScoreBonus();
 
             // Kettenreaktions-Bonus: Bei 3+ Combo wahrscheinlich eine Kette → 50% extra
-            bool isChainKill = _comboCount >= 3;
+            bool isChainKill = _comboSystem.IsChainKill;
             if (isChainKill)
             {
                 comboBonus = (int)(comboBonus * 1.5f);
@@ -443,12 +441,26 @@ public sealed partial class GameEngine
                 comboText = $"x{_comboCount}!";
                 comboColor = new SKColor(255, 150, 0); // Orange für niedrige Combos
             }
-            if (_comboCount >= 5)
+            // Hierarchie: ULTRA (x10+) > MEGA (x5+) > CHAIN (x3+) > x2
+            if (_comboCount >= 10)
+                comboText = string.Format(
+                    _localizationService.GetString("FloatUltra") ?? "ULTRA x{0}!", _comboCount);
+            else if (_comboCount >= 5)
                 comboText = string.Format(
                     _localizationService.GetString("FloatMega") ?? "MEGA x{0}!", _comboCount);
-            if (_comboCount >= 4) comboColor = new SKColor(255, 50, 0); // Rot für hohe Combos
+            // Farbverlauf: x4-x6 Rot, x7-x9 Magenta, x10+ Gold-Glow
+            if (_comboCount >= 10) comboColor = new SKColor(255, 215, 0);          // Gold fuer ULTRA
+            else if (_comboCount >= 7) comboColor = new SKColor(255, 0, 200);      // Magenta hoch
+            else if (_comboCount >= 4) comboColor = new SKColor(255, 50, 0);       // Rot fuer hohe Combos
 
             _floatingText.Spawn(enemy.X, enemy.Y - 12, comboText, comboColor, 18f, 1.5f);
+
+            // v2.0.48 — Audio-Caption für Ultra-Combo (x10+) — gehörlose Spieler bekommen Feedback
+            // Throttling: Nur alle 5 Combos einen Subtitle damit nicht spammt
+            if (_comboCount >= 10 && _comboCount % 5 == 0 && _accessibility?.SubtitlesEnabled == true)
+            {
+                _subtitles.Show(_localizationService.GetString("SubtitleUltraCombo") ?? "[ULTRA COMBO]");
+            }
 
             // Tracking: Combo erreicht (Achievement + Missionen)
             _tracking.OnComboReached(_comboCount);
@@ -488,9 +500,10 @@ public sealed partial class GameEngine
         }
         bool isBossLevel = _currentLevel?.BossKind != null;
         bool slowMotionWorthy = isLastEnemy && (_originalEnemyCount >= 4 || isBossLevel || _isSurvivalMode);
-        if ((slowMotionWorthy || _comboCount >= 4) && !_inputManager.ReducedEffects)
+        if ((slowMotionWorthy || _comboSystem.Count >= 4) && !_inputManager.ReducedEffects)
         {
-            _slowMotionTimer = SLOW_MOTION_DURATION;
+            // v2.0.37: ULTRA-Combo (x10+) verlaengert die Slow-Mo um 50% — visueller Belohnungs-Peak
+            _slowMotionTimer = _comboSystem.GetSlowMotionDuration(SLOW_MOTION_DURATION);
         }
 
         // Splitter-Logik: Beim Tod 2 Mini-Splitter spawnen
@@ -545,6 +558,7 @@ public sealed partial class GameEngine
         PowerUpType.LineBomb => _localizationService.GetString("FloatLineBomb") ?? "+LINE",
         PowerUpType.PowerBomb => _localizationService.GetString("FloatPowerBomb") ?? "+POWER",
         PowerUpType.Skull => _localizationService.GetString("FloatCursed") ?? "CURSED!",
+        PowerUpType.Cure => _localizationService.GetString("FloatCure") ?? "HEALED!",
         _ => "+???"
     };
 
@@ -562,6 +576,7 @@ public sealed partial class GameEngine
         PowerUpType.LineBomb => new SKColor(0, 200, 255),
         PowerUpType.PowerBomb => new SKColor(255, 50, 50),
         PowerUpType.Skull => new SKColor(100, 0, 100),
+        PowerUpType.Cure => new SKColor(40, 200, 80),
         _ => SKColors.White
     };
 }

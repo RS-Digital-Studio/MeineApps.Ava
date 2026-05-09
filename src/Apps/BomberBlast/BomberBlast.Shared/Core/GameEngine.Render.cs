@@ -113,8 +113,52 @@ public sealed partial class GameEngine
             return;
         }
 
+        // v2.0.45 — Performance-Telemetry: Frame-Time-Sampling für FPS-Bucket-Reporting.
+        // Alle 5s wird der gemessene Avg-FPS auf einen Bucket gerundet (15/30/45/60+) und
+        // als Crashlytics-Custom-Key gesetzt — ermöglicht Crash-Filterung nach Frame-Rate.
+        TrackFrameSample();
+
+        // v2.0.44 — Accessibility: Colorblind-Filter via SaveLayer + ColorMatrix.
+        // SKColorFilter wird gecacht und nur neu erzeugt wenn der Modus sich ändert.
+        bool colorblindActive = false;
+        if (_accessibility?.ColorblindMode is { } cbMode && cbMode != "Off")
+        {
+            if (cbMode != _lastColorblindMode)
+            {
+                _colorblindFilter?.Dispose();
+                var matrix = _accessibility.GetColorblindMatrix();
+                _colorblindFilter = matrix != null ? SKColorFilter.CreateColorMatrix(matrix) : null;
+                _lastColorblindMode = cbMode;
+            }
+            if (_colorblindFilter != null)
+            {
+                using var layerPaint = new SKPaint { ColorFilter = _colorblindFilter };
+                canvas.SaveLayer(layerPaint);
+                colorblindActive = true;
+            }
+        }
+        else if (_lastColorblindMode != "Off")
+        {
+            _colorblindFilter?.Dispose();
+            _colorblindFilter = null;
+            _lastColorblindMode = "Off";
+        }
+
         // Viewport aktualisieren
         _renderer.CalculateViewport(screenWidth, screenHeight, _grid.PixelWidth, _grid.PixelHeight);
+
+        // v2.0.47 — Cinematic-Director Phase 2: Camera-Zoom-Effekt
+        // Wenn aktive Sequence + Zoom > 0 wird Canvas auf Pivot skaliert (smoothstep-eased).
+        // Reihenfolge: ZUERST Zoom, dann ScreenShake — Shake bleibt auf Bildschirm-Bounds.
+        bool cinematicZoomActive = _cinematic.IsPlaying && _cinematic.CurrentZoomFactor > 0.001f;
+        if (cinematicZoomActive)
+        {
+            float zoom = 1f + _cinematic.CurrentZoomFactor;
+            float pivotScreenX = _cinematic.ZoomPivotX * _renderer.Scale + _renderer.OffsetX;
+            float pivotScreenY = _cinematic.ZoomPivotY * _renderer.Scale + _renderer.OffsetY;
+            canvas.Save();
+            canvas.Scale(zoom, zoom, pivotScreenX, pivotScreenY);
+        }
 
         // Screen-Shake: Canvas verschieben vor dem Spiel-Rendering
         if (_screenShake.IsActive)
@@ -139,6 +183,19 @@ public sealed partial class GameEngine
         _renderer.PlayerGridX = _player?.GridX ?? 0;
         _renderer.PlayerGridY = _player?.GridY ?? 0;
 
+        // Saisonales Event (v2.0.42, Plan Task 3.4): Welt-Skin-Override.
+        // Nicht im Dungeon (eigener Theme), nicht im BossRush (eigener Boss-Look).
+        var currentEvent = _eventService.CurrentEvent;
+        bool eventActive = currentEvent != null && !_isDungeonRun && !_isBossRushMode;
+        _renderer.HasActiveEvent = eventActive;
+        if (eventActive && currentEvent != null)
+        {
+            // SKColor.Parse fuer "#RRGGBB"-Hex-Format (z.B. Halloween "#FF6F00")
+            try { _renderer.EventAccentColor = SKColor.Parse(currentEvent.AccentColor); }
+            catch { _renderer.EventAccentColor = SKColors.Transparent; }
+            _renderer.EventType = currentEvent.Type;
+        }
+
         // Lokalisierte HUD-Labels übergeben (gecacht, nicht pro Frame laden)
         _renderer.HudLabelKills = _hudLabelKills;
         _renderer.HudLabelTime = _hudLabelTime;
@@ -150,7 +207,7 @@ public sealed partial class GameEngine
         _renderer.HudLabelBuffs = _hudLabelBuffs;
 
         // Survival-Modus: Verstrichene Zeit anzeigen statt Countdown
-        float displayTime = _isSurvivalMode ? _survivalTimeElapsed : _timer.RemainingTime;
+        float displayTime = _isSurvivalMode ? (SurvivalModeState?.TimeElapsed ?? 0f) : _timer.RemainingTime;
 
         // Spiel rendern (gecachte Exit-Zelle + Spezialeffekt-Zellen übergeben für Performance).
         // _player ist im Ctor initialisiert und nie null zur Render-Zeit → Null-Forgiving (!) zulaessig.
@@ -165,6 +222,8 @@ public sealed partial class GameEngine
         }
 
         // Floating Text rendern (Score-Popups, Combos, PowerUp-Texte)
+        // v2.0.46 — HighContrast: Outline-Stroke wird 2× verstärkt für bessere Lesbarkeit
+        _floatingText.HighContrast = _accessibility?.HighContrast == true;
         _floatingText.Render(canvas, _renderer.Scale, _renderer.OffsetX, _renderer.OffsetY);
 
         // Pontan-Spawn-Warnung rendern (pulsierendes "!" an vorberechneter Position)
@@ -175,6 +234,13 @@ public sealed partial class GameEngine
 
         // Screen-Shake Canvas wiederherstellen
         if (_screenShake.IsActive)
+        {
+            canvas.Restore();
+        }
+
+        // v2.0.47 — Cinematic-Camera-Zoom-Layer schließen (NACH Shake-Restore, VOR Input-Controls
+        // damit der Joystick nicht auch reingezoomt wird).
+        if (cinematicZoomActive)
         {
             canvas.Restore();
         }
@@ -215,10 +281,126 @@ public sealed partial class GameEngine
             _tutorialOverlay.Render(canvas, screenWidth, screenHeight,
                 _tutorialService.CurrentStep, _renderer.Scale, _renderer.OffsetX, _renderer.OffsetY);
         }
+
+        // v2.0.46 — Accessibility: Audio-Caption-Subtitles für gehörlose Spieler.
+        // Wird unten am Bildrand angezeigt, immer über allem (auch über Tutorial).
+        if (_accessibility?.SubtitlesEnabled == true)
+        {
+            _subtitles.Render(canvas, screenWidth, screenHeight);
+        }
+
+        // v2.0.44 — Colorblind-Layer wieder schließen (wenn aktiv)
+        if (colorblindActive)
+        {
+            canvas.Restore();
+        }
+    }
+
+    /// <summary>
+    /// v2.0.45 — Accessibility: UI-Scale für Overlay-Texte. Wird einmal pro Frame
+    /// vor Overlay-Rendering aus dem AccessibilityService geholt.
+    /// Wirkt nur auf Overlay-Texte (Stage X, Score Y, GameOver) — HUD-Layout-Boxes bleiben fest,
+    /// damit das Spielfeld nicht überlaufen wird.
+    /// </summary>
+    private float _overlayUiScale = 1.0f;
+
+    /// <summary>
+    /// v2.0.48 — Accessibility: HighContrast verstärkt Overlay-Backgrounds + Borders.
+    /// Bei aktiv: BG-Alpha 240 (statt 200), 2px weißer Border um Pause/GameOver/Victory-Boxen.
+    /// </summary>
+    private bool _overlayHighContrast;
+
+    /// <summary>Returnt verstärkten Background-Alpha bei HighContrast (sonst Default).</summary>
+    private byte GetOverlayBgAlpha(byte defaultAlpha) =>
+        _overlayHighContrast ? (byte)Math.Min(255, defaultAlpha + 40) : defaultAlpha;
+
+    /// <summary>
+    /// Zeichnet einen 2px weißen Border um eine Box wenn HighContrast aktiv.
+    /// Aufrufer rendert vorher das Background-Rect.
+    /// </summary>
+    private void RenderHighContrastBorder(SKCanvas canvas, float x, float y, float w, float h, byte alpha)
+    {
+        if (!_overlayHighContrast) return;
+        var prevColor = _overlayTextPaint.Color;
+        var prevStyle = _overlayTextPaint.Style;
+        var prevWidth = _overlayTextPaint.StrokeWidth;
+        _overlayTextPaint.Color = new SKColor(255, 255, 255, alpha);
+        _overlayTextPaint.Style = SKPaintStyle.Stroke;
+        _overlayTextPaint.StrokeWidth = 2f;
+        canvas.DrawRect(x, y, w, h, _overlayTextPaint);
+        _overlayTextPaint.Color = prevColor;
+        _overlayTextPaint.Style = prevStyle;
+        _overlayTextPaint.StrokeWidth = prevWidth;
+    }
+
+    /// <summary>
+    /// v2.0.45 — Frame-Time-Tracking: pro Render-Aufruf wird ein Tick-Sample gepusht,
+    /// alle ~5s wird der Avg-FPS auf einen Bucket gerundet und an Telemetry geschickt.
+    /// </summary>
+    private void TrackFrameSample()
+    {
+        var now = DateTime.UtcNow.Ticks;
+        _fpsFrameTicks.Enqueue(now);
+
+        // Älter als 5s entfernen
+        while (_fpsFrameTicks.Count > 0 && now - _fpsFrameTicks.Peek() > FpsReportIntervalTicks)
+            _fpsFrameTicks.Dequeue();
+
+        // Alle 5s reporten
+        if (now - _lastFpsReportTicks > FpsReportIntervalTicks && _fpsFrameTicks.Count > 10)
+        {
+            _lastFpsReportTicks = now;
+            float seconds = (now - _fpsFrameTicks.Peek()) / (float)TimeSpan.TicksPerSecond;
+            int fps = seconds > 0.1f ? (int)(_fpsFrameTicks.Count / seconds) : 0;
+
+            // Bucket: 15 / 30 / 45 / 60+
+            int bucket = fps switch
+            {
+                < 22 => 15,
+                < 37 => 30,
+                < 52 => 45,
+                _ => 60
+            };
+            _telemetry?.SetFpsBucket(bucket);
+            _telemetry?.SetCustomKey("game_mode", GetCurrentModeTag());
+            _telemetry?.SetCustomKey("level", _currentLevelNumber);
+        }
+
+        // v2.0.55 — Phase 15 P1-Fix: Memory-Sampling auf Background-Thread + 60s-Intervall.
+        // Vorher (UI-Thread, 30s): GC.GetTotalMemory(false) auf Mono-AOT-Android = 1-5ms Heap-Walk-Spike.
+        // Telemetry.SetCustomKey-Setter sind in Crashlytics thread-safe.
+        if (now - _lastMemoryReportTicks > MemoryReportIntervalTicks)
+        {
+            _lastMemoryReportTicks = now;
+            var localTelemetry = _telemetry;
+            if (localTelemetry != null)
+            {
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        long heapBytes = GC.GetTotalMemory(forceFullCollection: false);
+                        int memoryMb = (int)(heapBytes / (1024 * 1024));
+                        localTelemetry.SetCustomKey("memory_mb", memoryMb);
+                        localTelemetry.SetCustomKey("gc_gen0", GC.CollectionCount(0));
+                        localTelemetry.SetCustomKey("gc_gen1", GC.CollectionCount(1));
+                        localTelemetry.SetCustomKey("gc_gen2", GC.CollectionCount(2));
+                    }
+                    catch
+                    {
+                        // GC-API ist auf manchen AOT-Profilen restricted — silently fail
+                    }
+                });
+            }
+        }
     }
 
     private void RenderStateOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
     {
+        // UI-Scale holen (0.75 / 1.0 / 1.25 / 1.5)
+        _overlayUiScale = (float)(_accessibility?.UiScale ?? 1.0);
+        // v2.0.48 — HighContrast-Flag aus Accessibility (verstärkt Overlay-Backgrounds + Borders)
+        _overlayHighContrast = _accessibility?.HighContrast == true;
         switch (_state)
         {
             case GameState.Starting:
@@ -279,7 +461,7 @@ public sealed partial class GameEngine
         _overlayBgPaint.Color = new SKColor(irisColor.Red, irisColor.Green, irisColor.Blue, textBgAlpha);
         canvas.DrawRect(screenWidth / 2 - 200, screenHeight / 2 - 60, 400, 160, _overlayBgPaint);
 
-        _overlayFont.Size = 48;
+        _overlayFont.Size = 48 * _overlayUiScale;
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = _overlayGlowFilter;
 
@@ -287,7 +469,7 @@ public sealed partial class GameEngine
 
         // Countdown
         int countdown = (int)MathF.Ceiling(START_DELAY - _stateTimer);
-        _overlayFont.Size = 72;
+        _overlayFont.Size = 72 * _overlayUiScale;
         _overlayTextPaint.Color = SKColors.Yellow;
         var countdownText = countdown >= 0 && countdown < CountdownStrings.Length ? CountdownStrings[countdown] : countdown.ToString();
         canvas.DrawText(countdownText, screenWidth / 2, screenHeight / 2 + 80, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
@@ -295,16 +477,18 @@ public sealed partial class GameEngine
 
     private void RenderPausedOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
     {
-        _overlayBgPaint.Color = new SKColor(0, 0, 0, 200);
+        _overlayBgPaint.Color = new SKColor(0, 0, 0, GetOverlayBgAlpha(200));
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
+        // v2.0.48 — HighContrast: Weißer Frame um den Bildschirm
+        RenderHighContrastBorder(canvas, 4, 4, screenWidth - 8, screenHeight - 8, 200);
 
-        _overlayFont.Size = 48;
+        _overlayFont.Size = 48 * _overlayUiScale;
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = _overlayGlowFilter;
 
         canvas.DrawText(_overlayPaused, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
-        _overlayFont.Size = 24;
+        _overlayFont.Size = 24 * _overlayUiScale;
         _overlayTextPaint.MaskFilter = null;
         canvas.DrawText(_overlayTapToResume, screenWidth / 2, screenHeight / 2 + 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
@@ -338,7 +522,7 @@ public sealed partial class GameEngine
         // Celebration-Confetti (fallende bunte Rechtecke)
         RenderCelebrationParticles(canvas, screenWidth, screenHeight, _stateTimer, 25, false);
 
-        _overlayFont.Size = 48;
+        _overlayFont.Size = 48 * _overlayUiScale;
         _overlayTextPaint.Color = SKColors.Green;
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
 
@@ -347,7 +531,7 @@ public sealed partial class GameEngine
         // Erster Sieg: Extra goldener Text über "Level Complete"
         if (_isFirstVictory)
         {
-            _overlayFont.Size = 36;
+            _overlayFont.Size = 36 * _overlayUiScale;
             _overlayTextPaint.Color = new SKColor(255, 215, 0); // Gold
             float victoryPulse = 1f + MathF.Sin(_stateTimer * 6f) * 0.1f;
             canvas.Save();
@@ -359,11 +543,11 @@ public sealed partial class GameEngine
 
         _overlayTextPaint.Color = SKColors.Yellow;
         _overlayTextPaint.MaskFilter = null;
-        _overlayFont.Size = 32;
+        _overlayFont.Size = 32 * _overlayUiScale;
         canvas.DrawText(_overlayScoreText, screenWidth / 2, screenHeight / 2 + 20, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayTextPaint.Color = SKColors.Cyan;
-        _overlayFont.Size = 24;
+        _overlayFont.Size = 24 * _overlayUiScale;
         canvas.DrawText(_overlayTimeBonusText, screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         // Sterne-Anzeige (nur Story-Modus, mit Bounce-Animation)
@@ -437,7 +621,7 @@ public sealed partial class GameEngine
         _overlayBgPaint.Color = new SKColor(goR, goG, goB, 220);
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
 
-        _overlayFont.Size = 64;
+        _overlayFont.Size = 64 * _overlayUiScale;
         _overlayTextPaint.Color = SKColors.Red;
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
 
@@ -445,10 +629,10 @@ public sealed partial class GameEngine
 
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = null;
-        _overlayFont.Size = 32;
+        _overlayFont.Size = 32 * _overlayUiScale;
         canvas.DrawText(_overlayFinalScoreText, screenWidth / 2, screenHeight / 2 + 20, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
-        _overlayFont.Size = 24;
+        _overlayFont.Size = 24 * _overlayUiScale;
         canvas.DrawText(_overlayLevelText, screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
 
@@ -466,20 +650,20 @@ public sealed partial class GameEngine
         RenderFireworkBursts(canvas, screenWidth, screenHeight, _stateTimer);
         RenderCelebrationParticles(canvas, screenWidth, screenHeight, _stateTimer, 35, true);
 
-        _overlayFont.Size = 56;
+        _overlayFont.Size = 56 * _overlayUiScale;
         _overlayTextPaint.Color = new SKColor(255, 215, 0); // Gold
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
 
         canvas.DrawText(_overlayVictoryTitle, screenWidth / 2, screenHeight / 2 - 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
-        _overlayFont.Size = 28;
+        _overlayFont.Size = 28 * _overlayUiScale;
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = null;
 
         canvas.DrawText(_overlayAllComplete, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayTextPaint.Color = new SKColor(255, 215, 0);
-        _overlayFont.Size = 32;
+        _overlayFont.Size = 32 * _overlayUiScale;
         canvas.DrawText(_overlayFinalScoreText,
             screenWidth / 2, screenHeight / 2 + 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
@@ -730,7 +914,7 @@ public sealed partial class GameEngine
         canvas.DrawRect(0, bandY, screenWidth, bandHeight, _overlayBgPaint);
 
         // Grosser Text mit Glow
-        _overlayFont.Size = 48;
+        _overlayFont.Size = 48 * _overlayUiScale;
         _overlayTextPaint.Color = new SKColor(255, 215, 0, a); // Gold
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
         _overlayTextPaint.Style = SKPaintStyle.Fill;

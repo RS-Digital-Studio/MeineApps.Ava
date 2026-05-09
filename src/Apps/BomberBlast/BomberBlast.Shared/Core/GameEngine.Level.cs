@@ -24,14 +24,27 @@ public sealed partial class GameEngine
     /// </summary>
     public async Task StartStoryModeAsync(int levelNumber, bool masterMode = false)
     {
+        // v2.0.55 — Phase 15 P1-Fix: Cinematic-Sequencer bei Mode-Wechsel stoppen
+        // (sonst kann Boss-Reveal-Cinematic nach Mode-Wechsel weiterlaufen).
+        _cinematic?.Stop();
         _isDailyChallenge = false;
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
+        // v2.0.52 Code-Review-Fix: Auch BossRush + DailyRace explizit zuruecksetzen.
+        // Vorher: Bei Boss-Rush-Abort -> Story-Start blieb _isBossRushMode=true -> Stale-Bool-Path
+        // in CompleteLevel/Victory + falscher Render-Event-Block.
+        _isBossRushMode = false;
+        _isDailyRace = false;
         // Defense-in-Depth: Master-Mode nur wenn wirklich unlocked.
         // Downgrade auf Normal-Mode wird geloggt — hilft beim Debuggen falls Navigation
         // einen unerwarteten masterMode=true liefert (z.B. durch veraltete Preference).
         _isMasterMode = masterMode && _masterModeService.IsUnlocked;
+
+        // v2.0.49 — Mode-Plugin-Framework Phase 2: aktiver Mode setzen
+        _currentMode = _isMasterMode
+            ? new BomberBlast.Core.Modes.MasterMode()
+            : new BomberBlast.Core.Modes.StoryMode();
         if (masterMode && !_isMasterMode)
         {
             // IAppLogger statt Debug.WriteLine: Auch im Release-Build via LogCat sichtbar (Android),
@@ -47,6 +60,7 @@ public sealed partial class GameEngine
         _player.ResetForNewGame();
         ApplyUpgrades();
         MutatorEffects.Apply(_player, _activeMutator);
+        ApplyLoadoutBoosts(levelNumber);  // v2.0.41 Plan Task 3.2: Pre-Level-Boosts anwenden
         await LoadLevelAsync();
         if (_isMasterMode) ApplyMasterModeEnemyUpgrade();
 
@@ -60,8 +74,19 @@ public sealed partial class GameEngine
         // Welt-/Boss-/Mutator-Ankündigung
         if (_currentLevel.IsBossLevel)
         {
-            _worldAnnouncementText = _localizationService.GetString("AnnounceBossFight") ?? "BOSS FIGHT!";
+            // Typspezifischer Boss-Name (Stone Golem, Ice Dragon, ...) statt generischem "BOSS FIGHT!"
+            // Bei Duo-Boss-Encounter (BossKind2 != null): Beide Namen verbunden mit "&"
+            _worldAnnouncementText = ComposeBossBannerText(_currentLevel.BossKind, _currentLevel.BossKind2);
             _worldAnnouncementTimer = 2.5f;
+
+            // v2.0.46 — Audio-Caption: "[BOSS BRÜLLT]" für gehörlose Spieler
+            if (_accessibility?.SubtitlesEnabled == true)
+            {
+                _subtitles.Show(_localizationService.GetString("SubtitleBossRoar") ?? "[BOSS ROARS]", duration: 3f);
+            }
+
+            // v2.0.46 — Cinematic-Director Phase 1: Boss-Reveal-Sequenz (1.5s)
+            PlayBossRevealCinematic();
         }
         else if (_activeMutator != LevelMutator.None)
         {
@@ -80,15 +105,151 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
+    /// Liefert einen typspezifischen Boss-Banner-Text. Bei Duo-Bossen (Welt 9 = FinalBoss + ShadowMaster,
+    /// Welt 10 = 2x FinalBoss) werden beide Namen verbunden zurückgegeben.
+    /// Fallback bei fehlender Lokalisierung ist "BOSS FIGHT!".
+    /// </summary>
+    private string ComposeBossBannerText(BossType? primary, BossType? secondary)
+    {
+        if (primary == null)
+            return _localizationService.GetString("AnnounceBossFight") ?? "BOSS FIGHT!";
+
+        var primaryName = GetBossDisplayName(primary.Value);
+
+        if (secondary.HasValue && secondary.Value != primary.Value)
+        {
+            var secondaryName = GetBossDisplayName(secondary.Value);
+            return $"{primaryName} & {secondaryName}";
+        }
+
+        if (secondary.HasValue)
+        {
+            // Gleicher Boss zweimal → Plural-Form über RESX (z.B. "Final Bosses")
+            var pluralKey = $"BossNamePlural{primary.Value}";
+            var plural = _localizationService.GetString(pluralKey);
+            if (!string.IsNullOrEmpty(plural))
+                return plural;
+            return $"{primaryName} x2";
+        }
+
+        return primaryName;
+    }
+
+    /// <summary>Lokalisierter Anzeige-Name für einen Boss-Typ. Fallback ist der Enum-Name.</summary>
+    private string GetBossDisplayName(BossType bossType)
+    {
+        var key = $"BossName{bossType}";
+        return _localizationService.GetString(key) ?? bossType.ToString().ToUpperInvariant();
+    }
+
+    /// <summary>
+    /// v2.0.46 — Cinematic-Director Phase 1: Boss-Reveal-Sequenz.
+    /// Spielt 1.5s lang ein orchestriertes Effekt-Set ab: Particle-Bursts an Boss-Position,
+    /// Trauma-Shake-Spike, Floating-Text-Stinger.
+    /// Findet die Boss-Position über die Boss-Enemy-Liste (gespawnt in LoadLevelAsync).
+    /// Bei Duo-Boss werden beide Bosse mit Bursts versehen.
+    /// </summary>
+    private void PlayBossRevealCinematic()
+    {
+        // Boss-Position(en) ermitteln
+        var bossPositions = new List<(float x, float y, BossType type)>();
+        foreach (var enemy in _enemies)
+        {
+            if (enemy is BossEnemy boss)
+                bossPositions.Add((boss.X, boss.Y, boss.BossKind));
+        }
+
+        // Wenn (noch) keine Boss-Spawn-Daten verfügbar → Fallback auf Spielfeld-Mitte
+        if (bossPositions.Count == 0)
+        {
+            float cx = _grid.PixelWidth / 2f;
+            float cy = _grid.PixelHeight / 2f;
+            bossPositions.Add((cx, cy, BossType.StoneGolem));
+        }
+
+        // Sequence definieren — 1.5s gesamt
+        var events = new List<CinematicSequencer.TimedEvent>
+        {
+            // 0.0s: Initialer Particle-Burst um jeden Boss (Gold-Funken)
+            new(0.0f, () =>
+            {
+                foreach (var (x, y, _) in bossPositions)
+                {
+                    _particleSystem.EmitShaped(x, y, 14, new SKColor(255, 215, 0),
+                        ParticleShape.Circle, 110f, 0.7f, 3f, hasGlow: true);
+                }
+                _screenShake.AddTrauma(0.45f);
+            }),
+
+            // 0.25s: Zweiter Burst in welt-spezifischer Akzentfarbe (Boss-Theme)
+            new(0.25f, () =>
+            {
+                foreach (var (x, y, type) in bossPositions)
+                {
+                    var color = type switch
+                    {
+                        BossType.StoneGolem => new SKColor(150, 130, 100),
+                        BossType.IceDragon => new SKColor(80, 200, 255),
+                        BossType.FireDemon => new SKColor(255, 80, 30),
+                        BossType.ShadowMaster => new SKColor(180, 80, 220),
+                        BossType.FinalBoss => new SKColor(255, 50, 100),
+                        _ => new SKColor(255, 215, 0)
+                    };
+                    _particleSystem.EmitShaped(x, y, 18, color,
+                        ParticleShape.Circle, 130f, 0.8f, 4f, hasGlow: true);
+                }
+            }),
+
+            // 0.6s: Floating-Stinger ("BOSS!" oder Boss-Name) über erstem Boss
+            new(0.6f, () =>
+            {
+                if (bossPositions.Count > 0)
+                {
+                    var (x, y, type) = bossPositions[0];
+                    var stinger = GetBossDisplayName(type);
+                    _floatingText.Spawn(x, y - 48, stinger,
+                        new SKColor(255, 80, 80), fontSize: 28f, duration: 1.5f);
+                }
+                _screenShake.AddTrauma(0.3f);
+            }),
+
+            // 1.0s: Finaler Burst + Vibration
+            new(1.0f, () =>
+            {
+                foreach (var (x, y, _) in bossPositions)
+                {
+                    _particleSystem.EmitShaped(x, y, 22, new SKColor(255, 255, 220),
+                        ParticleShape.Circle, 90f, 0.6f, 2f, hasGlow: true);
+                }
+                _vibration.VibrateBossRoar();
+            })
+        };
+
+        // v2.0.47 — Cinematic-Director Phase 2: Camera-Zoom auf erste Boss-Position
+        if (bossPositions.Count > 0)
+        {
+            _cinematic.MaxCameraZoom = 0.35f;  // 35% Zoom-In auf Boss
+            _cinematic.ZoomPivotX = bossPositions[0].x;
+            _cinematic.ZoomPivotY = bossPositions[0].y;
+        }
+
+        _cinematic.Play(durationSeconds: 1.5f, events);
+    }
+
+    /// <summary>
     /// Daily-Challenge-Modus starten (einmaliges Level pro Tag)
     /// </summary>
     public async Task StartDailyChallengeModeAsync(int seed)
     {
+        _cinematic?.Stop();  // v2.0.55 P1-Fix
         _isDailyChallenge = true;
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
         _isMasterMode = false;
+        _isBossRushMode = false;
+        _isDailyRace = false;
+        _currentMode = new BomberBlast.Core.Modes.DailyChallengeMode();
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 99;
         _currentLevel = LevelLayoutGenerator.GenerateDailyChallengeLevel(seed);
@@ -109,13 +270,17 @@ public sealed partial class GameEngine
     /// </summary>
     public async Task StartQuickPlayModeAsync(int seed, int difficulty)
     {
+        _cinematic?.Stop();  // v2.0.55 P1-Fix
         _isDailyChallenge = false;
         _isSurvivalMode = false;
         _isQuickPlayMode = true;
         _isDungeonRun = false;
         _isMasterMode = false;
+        _isBossRushMode = false;
+        _isDailyRace = false;
+        // v2.0.50 — Phase 7: Difficulty wird in QuickPlayMode gehalten (im Konstruktor geclamped 1-10).
+        _currentMode = new BomberBlast.Core.Modes.QuickPlayMode(difficulty);
         _activeMutator = LevelMutator.None;
-        _quickPlayDifficulty = difficulty;
         _currentLevelNumber = difficulty * 10; // Für Welt-Palette
         _currentLevel = LevelLayoutGenerator.GenerateQuickPlayLevel(seed, difficulty);
         _continueUsed = true; // Kein Continue im Quick-Play
@@ -137,19 +302,26 @@ public sealed partial class GameEngine
     /// </summary>
     public async Task StartSurvivalModeAsync()
     {
+        _cinematic?.Stop();  // v2.0.55 P1-Fix
         _isDailyChallenge = false;
         _isSurvivalMode = true;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
         _isMasterMode = false;
+        _isBossRushMode = false;
+        _isDailyRace = false;
+        _currentMode = new BomberBlast.Core.Modes.SurvivalMode();
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 1;
         _currentLevel = LevelLayoutGenerator.GenerateSurvivalLevel();
         _continueUsed = true; // Kein Continue im Survival
 
-        _survivalTimeElapsed = 0;
-        _survivalSpawnTimer = 4f; // Erster Spawn nach 4s
-        _survivalSpawnInterval = 4f;
+        // v2.0.51 — Phase 8: State liegt in SurvivalMode (im _currentMode-Slot).
+        // SurvivalMode-Defaults: TimeElapsed=0, SpawnInterval=4s. Erster Spawn nach 4s setzen.
+        var survivalState = (BomberBlast.Core.Modes.SurvivalMode)_currentMode!;
+        survivalState.TimeElapsed = 0f;
+        survivalState.SpawnTimer = 4f;       // Erster Spawn nach 4s
+        survivalState.SpawnInterval = 4f;
 
         _player.ResetForNewGame();
         ApplyUpgrades();
@@ -164,15 +336,120 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
+    /// Daily-Race-Modus starten (v2.0.42, Plan Task 3.1): identisches Level fuer alle Spieler weltweit
+    /// (Seed via ILeagueService.GetDailyRaceSeed). Score wird nach GameOver via SubmitDailyRaceScoreAsync gepusht.
+    /// </summary>
+    public async Task StartDailyRaceModeAsync()
+    {
+        _cinematic?.Stop();  // v2.0.55 P1-Fix
+        _isDailyChallenge = false;
+        _isDailyRace = true;
+        _isSurvivalMode = false;
+        _isQuickPlayMode = false;
+        _isDungeonRun = false;
+        _isMasterMode = false;
+        _isBossRushMode = false;
+        // v2.0.50 — Phase 7: DailyRaceMode mit Submitted=false initialisiert (Default-Property)
+        _currentMode = new BomberBlast.Core.Modes.DailyRaceMode();
+        _activeMutator = LevelMutator.None;
+        _currentLevelNumber = 99;
+        var seed = _leagueService.GetDailyRaceSeed(DateTime.UtcNow);
+        _currentLevel = LevelLayoutGenerator.GenerateDailyChallengeLevel(seed);
+        _continueUsed = true; // Kein Continue im Daily Race
+
+        _player.ResetForNewGame();
+        ApplyUpgrades();
+        await LoadLevelAsync();
+
+        _soundManager.PlayMusic(SoundManager.MUSIC_GAMEPLAY);
+        _worldAnnouncementText = "DAILY RACE";
+        _worldAnnouncementTimer = 2.5f;
+    }
+
+    /// <summary>
+    /// Boss-Rush-Modus starten (v2.0.42, Plan Task 3.3): einen der 5 Bosse hintereinander.
+    /// bossIndex 0-4 mappt auf BossRushService.BossSequence (StoneGolem→IceDragon→FireDemon→ShadowMaster→FinalBoss).
+    /// Score wird in <c>_bossRushAccumulatedScore</c> aufaddiert. Bei Boss-Tod kommt der naechste,
+    /// bei Tod / 5. Boss-Clear wird via SubmitRun gemeldet.
+    /// </summary>
+    public async Task StartBossRushModeAsync(int bossIndex)
+    {
+        _isDailyChallenge = false;
+        _isSurvivalMode = false;
+        _isQuickPlayMode = false;
+        _isDungeonRun = false;
+        _isMasterMode = false;
+        _isBossRushMode = true;
+        // v2.0.49 — Boss-Rush-Mode setzen (bei Erst-Aufruf bossIndex=0 neuer Mode-State,
+        // bei Folge-Bossen wird der existing Mode beibehalten damit AccumulatedScore stimmt)
+        if (bossIndex <= 0 || _currentMode is not BomberBlast.Core.Modes.BossRushMode)
+            _currentMode = new BomberBlast.Core.Modes.BossRushMode();
+        _activeMutator = LevelMutator.None;
+        _continueUsed = true; // Kein Continue im Boss-Rush
+
+        if (bossIndex < 0 || bossIndex >= _bossRushService.BossSequence.Count)
+            bossIndex = 0;
+
+        // v2.0.50 — Phase 7: Mode-State liegt in BossRushMode-Instanz.
+        // _currentMode wurde bereits oben auf BossRushMode gesetzt.
+        var bossRushState = (BomberBlast.Core.Modes.BossRushMode)_currentMode!;
+        if (bossIndex == 0)
+        {
+            // Bei erstem Boss: State zuruecksetzen + Submit-Flag freigeben
+            bossRushState.BossIndex = 0;
+            bossRushState.AccumulatedScore = 0;
+            bossRushState.TotalTimeSeconds = 0f;
+            bossRushState.Submitted = false;
+            _player.ResetForNewGame();
+            ApplyUpgrades();
+        }
+        else
+        {
+            bossRushState.BossIndex = bossIndex;
+            // Score-Akkumulation passiert im UpdateLevelComplete-Branch BEVOR diese Methode aufgerufen wird
+            // (im Auto-Switch-Pfad). Bei Direkt-Aufruf von Aussen mit bossIndex > 0 (selten, z.B. Test):
+            // Score wuerde nicht akkumulieren — dokumentierter Edge-Case.
+            // Spieler heilen + Stats behalten (kein voller Reset).
+            _player.HasShield = true;
+        }
+
+        // Story-Boss-Level fuer den entsprechenden Boss-Typ generieren — boss-spezifischer Welt-Build
+        var bossType = _bossRushService.BossSequence[bossIndex];
+        int storyLevelForBoss = bossType switch
+        {
+            Models.Entities.BossType.StoneGolem => 10,
+            Models.Entities.BossType.IceDragon => 30,
+            Models.Entities.BossType.FireDemon => 50,
+            Models.Entities.BossType.ShadowMaster => 70,
+            Models.Entities.BossType.FinalBoss => 100,
+            _ => 10
+        };
+        _currentLevelNumber = storyLevelForBoss;
+        _currentLevel = LevelLayoutGenerator.GenerateLevel(storyLevelForBoss, int.MaxValue);
+
+        await LoadLevelAsync();
+
+        _soundManager.PlayMusic(SoundManager.MUSIC_BOSS);
+        _worldAnnouncementText = $"BOSS {bossIndex + 1} / 5";
+        _worldAnnouncementTimer = 2.5f;
+    }
+
+    /// <summary>
     /// Dungeon-Floor starten (Roguelike-Modus)
     /// </summary>
     public async Task StartDungeonFloorAsync(int floor, int seed)
     {
+        _cinematic?.Stop();  // v2.0.55 P1-Fix
         _isDailyChallenge = false;
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = true;
         _isMasterMode = false;
+        _isBossRushMode = false;
+        _isDailyRace = false;
+        // v2.0.49 — Dungeon-Mode setzen (nur beim ersten Floor; bei Folge-Floors bleibt der Mode)
+        if (_currentMode is not BomberBlast.Core.Modes.DungeonMode)
+            _currentMode = new BomberBlast.Core.Modes.DungeonMode();
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
 
@@ -293,6 +570,44 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
+    /// v2.0.41 Plan Task 3.2: Wendet das gespeicherte Loadout fuer das gegebene Level an.
+    /// Bezahlung ist bereits durch <see cref="ILoadoutService.Purchase"/> erfolgt — hier nur Effekt-Anwendung.
+    /// Loadout wird nicht hier konsumiert: erst nach erfolgreichem CompleteLevel via ClearLoadout.
+    /// </summary>
+    private void ApplyLoadoutBoosts(int levelNumber)
+    {
+        var loadout = _loadoutService.GetSavedLoadout(levelNumber);
+        if (loadout.Count == 0) return;
+
+        // Konstanten aus Player.cs gespiegelt (dort private). Aenderungen mitziehen.
+        const int MAX_BOMB_COUNT = 10;
+        const int MAX_FIRE_RANGE = 10;
+        const int MAX_SPEED_LEVEL = 3;
+
+        foreach (var boost in loadout)
+        {
+            switch (boost.Type)
+            {
+                case LoadoutBoostType.ExtraBomb:
+                    _player.MaxBombs = Math.Min(_player.MaxBombs + 1, MAX_BOMB_COUNT);
+                    break;
+                case LoadoutBoostType.ExtraFire:
+                    _player.FireRange = Math.Min(_player.FireRange + 1, MAX_FIRE_RANGE);
+                    break;
+                case LoadoutBoostType.SpeedBoost:
+                    _player.SpeedLevel = MAX_SPEED_LEVEL;
+                    break;
+                case LoadoutBoostType.Wallpass:
+                    _player.HasWallpass = true;
+                    break;
+                case LoadoutBoostType.Invincibility:
+                    _player.ActivateInvincibility(30f);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
     /// Wendet aktive Dungeon-Buffs auf den Spieler an
     /// </summary>
     private void ApplyDungeonBuffs()
@@ -359,44 +674,22 @@ public sealed partial class GameEngine
             }
         }
 
-        // Synergien prüfen (zwei bestimmte Buffs → Bonus-Effekt)
-        _synergyBlitzkriegActive = false;
-        _synergyFortressActive = false;
+        // Synergien per pure Resolver auswerten (v2.0.39: Logik in Core/Dungeon/DungeonSynergyResolver.cs)
+        var synergy = Dungeon.DungeonSynergyResolver.Resolve(state.ActiveBuffs);
+
+        _synergyBlitzkriegActive = synergy.Blitzkrieg;
+        _synergyFortressActive = synergy.Fortress;
         _fortressRegenTimer = 0;
-        _synergyMidasActive = false;
-        _synergyElementalActive = false;
+        _synergyMidasActive = synergy.Midas;
+        _synergyElementalActive = synergy.Elemental;
+        _dungeonBombFuseReduction = synergy.BombFuseReduction;
 
-        var buffs = state.ActiveBuffs;
-
-        // Bombardier: ExtraBomb + ExtraFire → nochmal +1 auf beides (sofort angewandt, kein Runtime-Flag).
-        if (buffs.Contains(DungeonBuffType.ExtraBomb) && buffs.Contains(DungeonBuffType.ExtraFire))
+        // Bombardier-Bonus: ExtraBomb + ExtraFire → nochmal +1 auf beides (sofort angewandt).
+        if (synergy.Bombardier)
         {
             _player.MaxBombs++;
             _player.FireRange++;
         }
-
-        // Blitzkrieg: SpeedBoost + BombTimer → Bomben-Timer -0.5s extra
-        if (buffs.Contains(DungeonBuffType.SpeedBoost) && buffs.Contains(DungeonBuffType.BombTimer))
-            _synergyBlitzkriegActive = true;
-
-        // Festung: Shield + ExtraLife → Shield regeneriert nach 20s ohne Schaden
-        if (buffs.Contains(DungeonBuffType.Shield) && buffs.Contains(DungeonBuffType.ExtraLife))
-            _synergyFortressActive = true;
-
-        // Midas: CoinBonus + GoldRush → Gegner droppen Mini-Coins bei Tod
-        if (buffs.Contains(DungeonBuffType.CoinBonus) && buffs.Contains(DungeonBuffType.GoldRush))
-            _synergyMidasActive = true;
-
-        // Elementar: EnemySlow + FireImmunity → Lava verlangsamt Gegner statt Spieler zu schaden
-        if (buffs.Contains(DungeonBuffType.EnemySlow) && buffs.Contains(DungeonBuffType.FireImmunity))
-            _synergyElementalActive = true;
-
-        // Kumulative Zündschnur-Reduktion berechnen (BombTimer-Buff + Blitzkrieg-Synergy)
-        _dungeonBombFuseReduction = 0;
-        if (buffs.Contains(DungeonBuffType.BombTimer))
-            _dungeonBombFuseReduction += 0.5f;
-        if (_synergyBlitzkriegActive)
-            _dungeonBombFuseReduction += 0.5f;
     }
 
     /// <summary>
@@ -437,8 +730,7 @@ public sealed partial class GameEngine
         _floatingText.Clear();
         _screenShake.Reset();
         _hitPauseTimer = 0;
-        _comboCount = 0;
-        _comboTimer = 0;
+        _comboSystem.Reset();
         _pontanPunishmentActive = false;
         _pontanSpawned = 0;
         _pontanInitialDelay = 0;
@@ -898,67 +1190,18 @@ public sealed partial class GameEngine
     // ═══════════════════════════════════════════════════════════════════════
     // SURVIVAL-MODUS: Kontinuierliches Gegner-Spawning
     // ═══════════════════════════════════════════════════════════════════════
+    // v2.0.39: Spawn-Logik in Modes/SurvivalSpawner.cs extrahiert (Context-Pattern).
+    // Felder bleiben hier (Mode-Init / Tracking-Reads). Diese Methode delegiert per ref.
 
     /// <summary>
     /// Survival: Gegner spawnen in steigender Frequenz. Schwierigkeit nimmt mit der Zeit zu.
+    /// v2.0.51 — Phase 8: SurvivalSpawner.Update nimmt SurvivalMode-Instanz statt ref-Parameter.
     /// </summary>
     private void UpdateSurvivalSpawning(float deltaTime)
     {
-        _survivalTimeElapsed += deltaTime;
-        _survivalSpawnTimer -= deltaTime;
-
-        if (_survivalSpawnTimer > 0)
-            return;
-
-        // Gegner spawnen
-        SpawnSurvivalEnemy();
-
-        // Intervall verringern (wird schwerer über Zeit)
-        _survivalSpawnInterval = MathF.Max(SURVIVAL_MIN_SPAWN_INTERVAL,
-            _survivalSpawnInterval - SURVIVAL_SPAWN_DECREASE);
-        _survivalSpawnTimer = _survivalSpawnInterval;
-    }
-
-    /// <summary>
-    /// Einzelnen Gegner im Survival-Modus spawnen. Typ basierend auf überlebter Zeit.
-    /// </summary>
-    private void SpawnSurvivalEnemy()
-    {
-        // Gegner-Typ basierend auf Überlebenszeit wählen
-        EnemyType type;
-        if (_survivalTimeElapsed < 20)
-            type = EnemyType.Ballom;
-        else if (_survivalTimeElapsed < 45)
-            type = _pontanRandom.Next(3) switch { 0 => EnemyType.Onil, 1 => EnemyType.Doll, _ => EnemyType.Ballom };
-        else if (_survivalTimeElapsed < 90)
-            type = _pontanRandom.Next(4) switch { 0 => EnemyType.Onil, 1 => EnemyType.Doll, 2 => EnemyType.Minvo, _ => EnemyType.Doll };
-        else if (_survivalTimeElapsed < 150)
-            type = _pontanRandom.Next(5) switch { 0 => EnemyType.Minvo, 1 => EnemyType.Ovapi, 2 => EnemyType.Tanker, 3 => EnemyType.Doll, _ => EnemyType.Kondoria };
-        else
-            type = _pontanRandom.Next(6) switch { 0 => EnemyType.Ovapi, 1 => EnemyType.Tanker, 2 => EnemyType.Ghost, 3 => EnemyType.Pontan, 4 => EnemyType.Splitter, _ => EnemyType.Mimic };
-
-        // Spawn-Position finden (weit vom Spieler, auf leerer Zelle)
-        for (int attempts = 0; attempts < 40; attempts++)
+        if (SurvivalModeState is { } survivalMode)
         {
-            int x = _pontanRandom.Next(2, GameGrid.WIDTH - 1);
-            int y = _pontanRandom.Next(2, GameGrid.HEIGHT - 1);
-
-            if (Math.Abs(x - _player.GridX) + Math.Abs(y - _player.GridY) < 4)
-                continue;
-
-            var cell = _grid.TryGetCell(x, y);
-            if (cell == null || cell.Type != CellType.Empty || cell.Bomb != null)
-                continue;
-
-            var enemy = Enemy.CreateAtGrid(x, y, type);
-            _enemies.Add(enemy);
-            _enemiesRemainingDirty = true;
-
-            // Spawn-Partikel
-            float spawnX = x * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            float spawnY = y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            _particleSystem.Emit(spawnX, spawnY, 6, new SKColor(255, 100, 50), 50f, 0.4f);
-            return;
+            Modes.SurvivalSpawner.Update(SurvivalCtx, deltaTime, survivalMode);
         }
     }
 
@@ -981,7 +1224,13 @@ public sealed partial class GameEngine
         _stateTimer = 0;
         _levelCompleteHandled = false;
         _timer.Pause();
-        _vibration.VibratePattern();
+        _vibration.VibrateLevelComplete();
+
+        // v2.0.46 — Audio-Caption für gehörlose Spieler
+        if (_accessibility?.SubtitlesEnabled == true)
+        {
+            _subtitles.Show(_localizationService.GetString("SubtitleLevelComplete") ?? "[LEVEL COMPLETE]");
+        }
 
         // Deck-Balancing-Telemetrie: Level-Erfolg mit allen eingesetzten Spezial-Bomben melden
         if (_specialBombTypesUsedInLevel.Count > 0)
@@ -1125,6 +1374,17 @@ public sealed partial class GameEngine
             return; // Kein Story-Progress im Dungeon
         }
 
+        // Boss-Rush: Score akkumulieren, nicht in Story-Tracking einspielen.
+        // Naechster Boss wird in UpdateLevelComplete (bzw. Auto-Switch ueber NextLevelAsync) gestartet.
+        // Bei 5. Boss-Clear (_bossRushIndex == 4) wird SubmitRun(completedAll=true) ausgefuehrt + Victory.
+        if (_isBossRushMode)
+        {
+            // Tracking: Boss-Kill als Story-Boss-Defeat zaehlen (Achievement-Pfad)
+            _tracking.OnBossLevelFirstComplete(_currentLevelNumber);
+            _tracking.FlushIfDirty();
+            return;
+        }
+
         // Achievements prüfen (G-R6-1)
         // Master Mode: Separater Pfad, kein Normal-Progress-Update (damit Story-Sterne
         // unverändert bleiben und Master-Clears isoliert getrackt werden).
@@ -1215,11 +1475,15 @@ public sealed partial class GameEngine
             // Rationale: Tracking-Loss waere irreversibel (kein Replay-Mechanismus),
             // CompleteLevel-Loss ist durch Replay reparierbar.
             _progressService.CompleteLevel(_currentLevelNumber);
+
+            // v2.0.41 Plan Task 3.2: Loadout-Boosts sind verbraucht (waren bereits beim Start angewandt
+            // + bezahlt). Bei Wiederholung des Levels muss der Spieler das Loadout neu kaufen.
+            _loadoutService.ClearLoadout(_currentLevelNumber);
         }
 
         // Tracking: Quick-Play (Achievement + Missionen)
         if (_isQuickPlayMode)
-            _tracking.OnQuickPlayCompleted(_quickPlayDifficulty);
+            _tracking.OnQuickPlayCompleted(QuickPlayModeState?.Difficulty ?? 1);
     }
 
     private void UpdateLevelComplete(float deltaTime)
@@ -1234,8 +1498,78 @@ public sealed partial class GameEngine
             // Hier nur noch Cleanup + Navigation-Event.
 
             _tracking.FlushIfDirty();
+
+            // Boss-Rush: Auto-Switch zum naechsten Boss oder Victory bei 5. Boss-Clear.
+            // v2.0.54 — Phase 11: Score-Akkumulation + Next-Index-Berechnung in BossRushMode
+            // (Pure-Logic, isoliert testbar). Engine triggert nur den Async-Switch + Victory-Event.
+            if (_isBossRushMode && BossRushModeState is { } brm)
+            {
+                int levelScore = _player.Score - _scoreAtLevelStart;
+                int nextIndex = brm.AccumulateScoreAndGetNextBossIndex(levelScore, _bossRushService.BossSequence.Count);
+
+                if (nextIndex >= 0)
+                {
+                    // Naechster Boss in der Sequenz: Fire-and-Forget StartBossRushModeAsync.
+                    _ = StartBossRushModeAsync(nextIndex).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            _logger?.LogError("BossRush transition failed", t.Exception?.GetBaseException() ?? new Exception("Unknown"));
+                            // Fallback: Game-Over + Submit was bisher akkumuliert wurde
+                            if (BossRushModeState?.TryGetSubmitArgs(completedAllBosses: false) is { } fa)
+                            {
+                                _bossRushService.SubmitRun(fa.Score, fa.Time, fa.CompletedAll);
+                            }
+                            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                            {
+                                _state = GameState.GameOver;
+                                GameOver?.Invoke();
+                            });
+                        }
+                    }, TaskScheduler.Default);
+                    return;
+                }
+                else
+                {
+                    // Alle 5 Bosse geschafft → Run abgeschlossen mit completedAll=true.
+                    if (brm.TryGetSubmitArgs(completedAllBosses: true) is { } args)
+                    {
+                        _bossRushService.SubmitRun(args.Score, args.Time, args.CompletedAll);
+                    }
+                    Victory?.Invoke();
+                    return;
+                }
+            }
+
+            // v2.0.44 — AAA-Audit: Funnel-Tracking für Live-Ops-Entscheidungen
+            _analytics?.LogEvent(AnalyticsEvents.LevelComplete, new Dictionary<string, object>
+            {
+                ["level"] = _currentLevelNumber,
+                ["score"] = _player.Score,
+                ["mode"] = GetCurrentModeTag(),
+                ["master_mode"] = _isMasterMode
+            });
             LevelComplete?.Invoke();
         }
+    }
+
+    /// <summary>
+    /// Liefert einen kurzen Mode-Tag für Telemetrie/Crash-Custom-Keys.
+    /// v2.0.49 — Phase 2: Bevorzugt CurrentMode.ModeTag, fällt auf Bool-Flag-Logic zurück
+    /// für Modi die noch nicht über StartXxxModeAsync den _currentMode setzen.
+    /// </summary>
+    private string GetCurrentModeTag()
+    {
+        if (_currentMode != null) return _currentMode.ModeTag;
+        // Fallback: Bool-Flag-Logic (Backward-Compat während der Migration)
+        if (_isDungeonRun) return "dungeon";
+        if (_isSurvivalMode) return "survival";
+        if (_isQuickPlayMode) return "quick";
+        if (_isDailyChallenge) return "daily_challenge";
+        if (_isDailyRace) return "daily_race";
+        if (_isBossRushMode) return "boss_rush";
+        if (_isMasterMode) return "master";
+        return "story";
     }
 
     private void UpdateVictory(float deltaTime)
@@ -1252,14 +1586,96 @@ public sealed partial class GameEngine
                 _highScoreService.AddScore("PLAYER", _player.Score, 100);
             }
 
+            // v2.0.44 — Funnel-Tracking: Story-Mode-Sieg ist eine Mega-Konversion
+            _analytics?.LogEvent(_isBossRushMode ? AnalyticsEvents.BossRushStart : "victory_story", new Dictionary<string, object>
+            {
+                ["score"] = _player.Score,
+                ["mode"] = GetCurrentModeTag()
+            });
+
+            // v2.0.48 — Audio-Caption für Sieges-Fanfare
+            if (_accessibility?.SubtitlesEnabled == true)
+            {
+                _subtitles.Show(_localizationService.GetString("SubtitleVictoryFanfare") ?? "[VICTORY FANFARE]", duration: 3f);
+            }
+
+            // v2.0.48 — Cinematic-Director: Victory-Big-Win-Sequence
+            PlayVictoryCinematic();
+
             // Coins wurden bereits in CompleteLevel (Level 50) gutgeschrieben → kein Doppel-Credit
             Victory?.Invoke();
         }
     }
 
+    /// <summary>
+    /// v2.0.48 — Victory-Big-Win-Cinematic. 4 Confetti-Wellen + finaler Gold-Burst über 2.5s.
+    /// Reuse von CinematicSequencer mit Camera-Punch-Out (Zoom 1.0 → 0.92 → 1.0 für Stinger-Feeling).
+    /// </summary>
+    private void PlayVictoryCinematic()
+    {
+        float cx = _grid.PixelWidth / 2f;
+        float cy = _grid.PixelHeight / 2f;
+
+        var events = new List<CinematicSequencer.TimedEvent>
+        {
+            // Welle 1: Initiale Konfetti-Explosion
+            new(0.0f, () =>
+            {
+                _particleSystem.EmitShaped(cx, cy, 30, new SKColor(255, 215, 0),
+                    ParticleShape.Circle, 200f, 1.5f, 4f, hasGlow: true);
+                _vibration.VibrateLevelComplete();
+            }),
+            // Welle 2: Multi-Color-Konfetti aus 4 Ecken
+            new(0.5f, () =>
+            {
+                var colors = new[]
+                {
+                    new SKColor(255, 100, 100),
+                    new SKColor(100, 255, 150),
+                    new SKColor(100, 180, 255),
+                    new SKColor(255, 200, 50)
+                };
+                for (int i = 0; i < 4; i++)
+                {
+                    var corner = i switch
+                    {
+                        0 => (cx - 200, cy - 100),
+                        1 => (cx + 200, cy - 100),
+                        2 => (cx - 200, cy + 100),
+                        _ => (cx + 200, cy + 100)
+                    };
+                    _particleSystem.EmitShaped(corner.Item1, corner.Item2, 18, colors[i],
+                        ParticleShape.Rectangle, 160f, 1.8f, 3f);
+                }
+            }),
+            // Welle 3: Mid-Burst zentral
+            new(1.2f, () =>
+            {
+                _particleSystem.EmitShaped(cx, cy - 40, 24, new SKColor(255, 255, 220),
+                    ParticleShape.Spark, 220f, 1.5f, 3.5f, hasGlow: true);
+                _screenShake.AddTrauma(0.4f);
+            }),
+            // Welle 4: Finale Gold-Explosion + Achievement-ähnlicher Stinger
+            new(2.0f, () =>
+            {
+                _particleSystem.EmitShaped(cx, cy, 40, new SKColor(255, 215, 0),
+                    ParticleShape.Circle, 280f, 2f, 5f, hasGlow: true);
+                _vibration.VibrateAchievement();
+            })
+        };
+
+        _cinematic.MaxCameraZoom = 0;  // Kein Zoom für Victory (Confetti soll voll sichtbar sein)
+        _cinematic.Play(durationSeconds: 2.5f, events);
+    }
+
     private void OnTimeWarning()
     {
         _soundManager.PlaySound(SoundManager.SFX_TIME_WARNING);
+        // v2.0.46 — Audio-Caption für gehörlose Spieler
+        if (_accessibility?.SubtitlesEnabled == true)
+        {
+            _subtitles.Show(_localizationService.GetString("SubtitleTimeWarning") ?? "[TIME WARNING]");
+        }
     }
 
     private void OnTimeExpired()
@@ -1402,10 +1818,10 @@ public sealed partial class GameEngine
         _currentLevel = LevelLayoutGenerator.GenerateLevel(_currentLevelNumber, _progressService.HighestCompletedLevel);
         _activeMutator = _currentLevel.Mutator;
 
-        // Welt-/Boss-/Mutator-Ankündigung
+        // Welt-/Boss-/Mutator-Ankündigung (typspezifischer Boss-Name statt generischem Banner)
         if (_currentLevel.IsBossLevel)
         {
-            _worldAnnouncementText = _localizationService.GetString("AnnounceBossFight") ?? "BOSS FIGHT!";
+            _worldAnnouncementText = ComposeBossBannerText(_currentLevel.BossKind, _currentLevel.BossKind2);
             _worldAnnouncementTimer = 2.5f;
         }
         else if (_activeMutator != LevelMutator.None)

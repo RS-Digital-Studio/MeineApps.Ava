@@ -49,8 +49,30 @@ public sealed partial class GameEngine : IDisposable
     private readonly IGameTrackingService _tracking;
     private readonly IDeckTelemetryService _deckTelemetry;
     private readonly IMasterModeService _masterModeService;
+    private readonly ILoadoutService _loadoutService;
+    private readonly IBossRushService _bossRushService;
+    private readonly ILeagueService _leagueService;
+    private readonly IEventService _eventService;
     private readonly IVibrationService _vibration;
     private readonly IAppLogger _logger;
+    // v2.0.44 — AAA-Audit: Accessibility-ColorMatrix wird vor jedem Frame ausgewertet
+    private readonly IAccessibilityService _accessibility;
+    // v2.0.44 — AAA-Audit: Funnel-Tracking
+    private readonly IAnalyticsService _analytics;
+    // v2.0.45 — AAA-Audit: Performance-Telemetry (FPS-Bucket für Crashlytics-Custom-Keys)
+    private readonly ITelemetryService _telemetry;
+    // FPS-Tracking: Wall-Clock Sample-Buffer (5s Window, ~150 Samples bei 30 FPS)
+    private readonly Queue<long> _fpsFrameTicks = new();
+    private long _lastFpsReportTicks;
+    private const long FpsReportIntervalTicks = 5 * TimeSpan.TicksPerSecond;
+    // v2.0.47 — Memory-Pressure-Tracking: 60s-Intervall für Heap-Größe + GC-Counts.
+    // v2.0.55 — Phase 15 P1-Fix: 30s → 60s + Background-Thread weil GC.GetTotalMemory auf
+    // Mono-AOT-Android 1-5ms Heap-Walk kostet (1-Frame-Spike alle 30s war messbar).
+    private long _lastMemoryReportTicks;
+    private const long MemoryReportIntervalTicks = 60 * TimeSpan.TicksPerSecond;
+    // Cached SKColorFilter wenn Colorblind-Modus aktiv (verhindert pro-Frame-Allokation).
+    private SKColorFilter? _colorblindFilter;
+    private string _lastColorblindMode = "Off";
 
     /// <summary>
     /// Während eines Levels eingesetzte Spezial-Bombentypen. Wird bei
@@ -98,9 +120,21 @@ public sealed partial class GameEngine : IDisposable
     private bool _isDailyChallenge;
     private bool _isSurvivalMode;
     private bool _isQuickPlayMode;
-    private int _quickPlayDifficulty;
+    // v2.0.50 — Phase 7: QuickPlayMode.Difficulty hält den Wert. Bool-Flag bleibt als Hot-Path-Convenience.
+    private BomberBlast.Core.Modes.QuickPlayMode? QuickPlayModeState => _currentMode as BomberBlast.Core.Modes.QuickPlayMode;
     private bool _isDungeonRun;
     private bool _isMasterMode;
+
+    /// <summary>
+    /// v2.0.49 — Mode-Plugin-Framework Phase 2: Aktiver Mode (kapselt Mode-spezifischen State).
+    /// Wird beim Start einer StartXxxModeAsync-Methode gesetzt.
+    /// Backward-Compat: Existierende Bool-Flags (_isSurvivalMode etc.) bleiben parallel als
+    /// Source-of-Truth, bis die Engine-Logic auf IGameMode-Hooks migriert ist (Folge-Iterationen).
+    /// </summary>
+    private BomberBlast.Core.Modes.IGameMode? _currentMode;
+
+    /// <summary>Public-Accessor für den aktiven Mode (Telemetrie + ggf. UI-Logic).</summary>
+    public BomberBlast.Core.Modes.IGameMode? CurrentMode => _currentMode;
 
     /// <summary>Ob der aktuelle Lauf im Master Mode ist (New Game+ ab L100-Clear).</summary>
     public bool IsMasterMode => _isMasterMode;
@@ -108,34 +142,127 @@ public sealed partial class GameEngine : IDisposable
     private bool _levelCompleteHandled;
     private bool _continueUsed;
 
-    // Dungeon Legendäre Buffs
-    private float _timeFreezeTimer;       // TimeFreeze: Alle Gegner eingefroren (3s bei Floor-Start)
-    private bool _phantomWalkAvailable;    // Phantom: Buff aktiv im Run
-    private bool _phantomWalkActive;       // Phantom: Gerade durch Wände laufend
-    private float _phantomWalkTimer;       // Phantom: Verbleibende Dauer (5s)
-    private float _phantomCooldownTimer;   // Phantom: Cooldown bis nächste Aktivierung (30s)
-    private bool _playerHadWallpassBeforePhantom; // Merkt ob Spieler echtes Wallpass hatte
+    // v2.0.52 — Phase 9: Dungeon-State liegt jetzt in DungeonMode (CurrentMode-Slot).
+    // Bool-Flag _isDungeonRun bleibt als Hot-Path-Convenience erhalten.
+    /// <summary>Hilfs-Property: Liefert die aktive DungeonMode-Instanz oder null.</summary>
+    private BomberBlast.Core.Modes.DungeonMode? DungeonModeState => _currentMode as BomberBlast.Core.Modes.DungeonMode;
 
-    // Dungeon-Synergien (B5)
-    // Bombardier (ExtraBomb+ExtraFire): +1 Max/Fire. Effekt sofort auf _player angewandt, daher kein Runtime-Flag noetig.
-    private bool _synergyBlitzkriegActive;  // SpeedBoost+BombTimer: -0.5s Zünd
-    private bool _synergyFortressActive;    // Shield+ExtraLife: Shield-Regen 20s
-    private float _fortressRegenTimer;      // Verstrichene Zeit ohne Schaden
-    private bool _synergyMidasActive;       // CoinBonus+GoldRush: Coins bei Kill
-    private bool _synergyElementalActive;   // EnemySlow+FireImmunity: Lava→Slow
-    private float _dungeonBombFuseReduction;// Kumulative Zündschnur-Reduktion (BombTimer + Blitzkrieg)
-    private bool _dungeonEnemySlowActive;   // EnemySlow Buff: 20% langsamere Gegner
+    // Backward-Compat-Felder als Property-Aliasse — gleicher Code, nur State-Lokation gewechselt.
+    // Liefert Default-Werte (0/false) wenn DungeonMode nicht aktiv ist.
+    private float _timeFreezeTimer
+    {
+        get => DungeonModeState?.TimeFreezeTimer ?? 0f;
+        set { if (DungeonModeState is { } d) d.TimeFreezeTimer = value; }
+    }
+    private bool _phantomWalkAvailable
+    {
+        get => DungeonModeState?.PhantomWalkAvailable ?? false;
+        set { if (DungeonModeState is { } d) d.PhantomWalkAvailable = value; }
+    }
+    private bool _phantomWalkActive
+    {
+        get => DungeonModeState?.PhantomWalkActive ?? false;
+        set { if (DungeonModeState is { } d) d.PhantomWalkActive = value; }
+    }
+    private float _phantomWalkTimer
+    {
+        get => DungeonModeState?.PhantomWalkTimer ?? 0f;
+        set { if (DungeonModeState is { } d) d.PhantomWalkTimer = value; }
+    }
+    private float _phantomCooldownTimer
+    {
+        get => DungeonModeState?.PhantomCooldownTimer ?? 0f;
+        set { if (DungeonModeState is { } d) d.PhantomCooldownTimer = value; }
+    }
+    private bool _playerHadWallpassBeforePhantom
+    {
+        get => DungeonModeState?.PlayerHadWallpassBeforePhantom ?? false;
+        set { if (DungeonModeState is { } d) d.PlayerHadWallpassBeforePhantom = value; }
+    }
+    private bool _synergyBlitzkriegActive
+    {
+        get => DungeonModeState?.SynergyBlitzkriegActive ?? false;
+        set { if (DungeonModeState is { } d) d.SynergyBlitzkriegActive = value; }
+    }
+    private bool _synergyFortressActive
+    {
+        get => DungeonModeState?.SynergyFortressActive ?? false;
+        set { if (DungeonModeState is { } d) d.SynergyFortressActive = value; }
+    }
+    private float _fortressRegenTimer
+    {
+        get => DungeonModeState?.FortressRegenTimer ?? 0f;
+        set { if (DungeonModeState is { } d) d.FortressRegenTimer = value; }
+    }
+    private bool _synergyMidasActive
+    {
+        get => DungeonModeState?.SynergyMidasActive ?? false;
+        set { if (DungeonModeState is { } d) d.SynergyMidasActive = value; }
+    }
+    private bool _synergyElementalActive
+    {
+        get => DungeonModeState?.SynergyElementalActive ?? false;
+        set { if (DungeonModeState is { } d) d.SynergyElementalActive = value; }
+    }
+    private float _dungeonBombFuseReduction
+    {
+        get => DungeonModeState?.DungeonBombFuseReduction ?? 0f;
+        set { if (DungeonModeState is { } d) d.DungeonBombFuseReduction = value; }
+    }
+    private bool _dungeonEnemySlowActive
+    {
+        get => DungeonModeState?.DungeonEnemySlowActive ?? false;
+        set { if (DungeonModeState is { } d) d.DungeonEnemySlowActive = value; }
+    }
+    private DungeonFloorModifier _dungeonFloorModifier
+    {
+        get => DungeonModeState?.FloorModifier ?? DungeonFloorModifier.None;
+        set { if (DungeonModeState is { } d) d.FloorModifier = value; }
+    }
+    private float _dungeonModifierRegenTimer
+    {
+        get => DungeonModeState?.ModifierRegenTimer ?? 0f;
+        set { if (DungeonModeState is { } d) d.ModifierRegenTimer = value; }
+    }
 
-    // Floor-Modifikatoren (B4)
-    private DungeonFloorModifier _dungeonFloorModifier; // Aktiver Modifikator auf diesem Floor
-    private float _dungeonModifierRegenTimer;           // Timer für Regeneration-Modifikator (Shield nach 15s)
+    // Daily Race (v2.0.42, Plan Task 3.1): Wie Daily Challenge mit Race-Flag,
+    // wird nach GameOver via ILeagueService.SubmitDailyRaceScoreAsync gepusht.
+    // v2.0.50 — Phase 7: Submitted-Flag liegt jetzt in DailyRaceMode (CurrentMode-Slot).
+    private bool _isDailyRace;
 
-    // Survival-Modus: Endloses Spawning mit steigender Schwierigkeit
-    private float _survivalSpawnTimer;
-    private float _survivalSpawnInterval = 5f;
-    private float _survivalTimeElapsed;
-    private const float SURVIVAL_MIN_SPAWN_INTERVAL = 0.8f;
-    private const float SURVIVAL_SPAWN_DECREASE = 0.12f; // Intervall schrumpft pro Spawn
+    /// <summary>Hilfs-Property: Liefert die aktive DailyRaceMode-Instanz oder null.</summary>
+    private BomberBlast.Core.Modes.DailyRaceMode? DailyRaceModeState => _currentMode as BomberBlast.Core.Modes.DailyRaceMode;
+
+    // Boss-Rush-Modus (v2.0.42, Plan Task 3.3): 5 sequenzielle Boss-Bosse mit Score-Akkumulation.
+    // Bei Boss-Tod automatisch naechster Boss. Bei Player-Tod Run-Ende mit SubmitRun(score, time, false).
+    // Bei 5. Boss-Clear: SubmitRun mit completedAll=true.
+    // v2.0.50 — Phase 7: Mode-spezifischer State liegt jetzt in BossRushMode (CurrentMode-Slot).
+    // Bool-Flag bleibt als Hot-Path-Convenience erhalten (Pattern-Match wäre teurer pro Frame).
+    private bool _isBossRushMode;
+
+    /// <summary>
+    /// Hilfs-Property: Liefert die aktive BossRushMode-Instanz oder null wenn nicht aktiv.
+    /// Wird genutzt um Mode-State (BossIndex/AccumulatedScore/TotalTimeSeconds/Submitted) zu lesen/schreiben.
+    /// </summary>
+    private BomberBlast.Core.Modes.BossRushMode? BossRushModeState => _currentMode as BomberBlast.Core.Modes.BossRushMode;
+
+    // Survival-Modus: Endloses Spawning mit steigender Schwierigkeit (v2.0.39: Logik in SurvivalSpawner extrahiert).
+    // Felder bleiben hier weil sie ueber StartSurvival-Mode-Init / OnSurvivalEnded-Tracking-Reads in der Engine gebraucht werden.
+    // v2.0.51 — Phase 8: State liegt in SurvivalMode (CurrentMode-Slot). Helper-Property für Read-Access.
+    private BomberBlast.Core.Modes.SurvivalMode? SurvivalModeState => _currentMode as BomberBlast.Core.Modes.SurvivalMode;
+
+    // Lazy-Init Context fuer den SurvivalSpawner (analog _explosionCtx).
+    private Modes.SurvivalSpawnContext? _survivalCtx;
+    private Modes.SurvivalSpawnContext SurvivalCtx => _survivalCtx ??= new Modes.SurvivalSpawnContext
+    {
+        Grid = _grid,
+        Enemies = _enemies,
+        ParticleSystem = _particleSystem,
+        PontanRandom = _pontanRandom,
+        GetPlayerGridX = () => _player.GridX,
+        GetPlayerGridY = () => _player.GridY,
+        OnEnemySpawned = () => _enemiesRemainingDirty = true,
+    };
 
     // Gecachte Mechanik-Zellen (vermeidet 150-Zellen-Grid-Scan pro Frame)
     private readonly List<Cell> _mechanicCells = new();
@@ -186,12 +313,19 @@ public sealed partial class GameEngine : IDisposable
     private readonly ScreenShake _screenShake = new();
     private readonly ParticleSystem _particleSystem = new();
     private readonly GameFloatingTextSystem _floatingText = new();
+    // v2.0.46 — Accessibility: Audio-Caption-System für gehörlose Spieler
+    private readonly SubtitleSystem _subtitles = new();
+    // v2.0.46 — AAA-Audit: Cinematic-Director Phase 1 für Boss-Reveal-Sequenzen
+    private readonly CinematicSequencer _cinematic = new();
     private float _hitPauseTimer;
 
     // Combo-System (Kettenexplosionen)
-    private int _comboCount;
-    private float _comboTimer;
-    private const float COMBO_WINDOW = 2f; // Sekunden
+    // v2.0.54 — Phase 12: Combo-Logic in ComboSystem extrahiert (Pure-Logic, isoliert testbar).
+    // Existierende Renderer-Reads nutzen die Read-only-Property-Aliasse.
+    private readonly BomberBlast.Core.Combat.ComboSystem _comboSystem = new();
+    private int _comboCount => _comboSystem.Count;
+    private float _comboTimer => _comboSystem.Timer;
+    private const float COMBO_WINDOW = 2f; // Legacy-Const für externe Reads (Renderer)
 
     // "DEFEAT ALL!" Cooldown (verhindert Spam bei jedem Frame)
     private float _defeatAllCooldown;
@@ -388,7 +522,7 @@ public sealed partial class GameEngine : IDisposable
     public float PhantomCooldownTimer => _phantomCooldownTimer;
     public bool CanActivatePhantom => _phantomWalkAvailable && !_phantomWalkActive && _phantomCooldownTimer <= 0;
     public int SurvivalKills => _enemiesKilled;
-    public float SurvivalTimeElapsed => _survivalTimeElapsed;
+    public float SurvivalTimeElapsed => SurvivalModeState?.TimeElapsed ?? 0f;
 
     /// <summary>Verbleibende aktive Gegner (für HUD-Anzeige, gecacht via Dirty-Flag)</summary>
     public int EnemiesRemaining
@@ -520,8 +654,15 @@ public sealed partial class GameEngine : IDisposable
         IGameTrackingService tracking,
         IDeckTelemetryService deckTelemetry,
         IMasterModeService masterModeService,
+        ILoadoutService loadoutService,
+        IBossRushService bossRushService,
+        ILeagueService leagueService,
+        IEventService eventService,
         IVibrationService vibrationService,
-        IAppLogger logger)
+        IAppLogger logger,
+        IAccessibilityService accessibility,
+        IAnalyticsService analytics,
+        ITelemetryService telemetry)
     {
         _soundManager = soundManager;
         _progressService = progressService;
@@ -541,8 +682,15 @@ public sealed partial class GameEngine : IDisposable
         _tracking = tracking;
         _deckTelemetry = deckTelemetry;
         _masterModeService = masterModeService;
+        _loadoutService = loadoutService;
+        _bossRushService = bossRushService;
+        _leagueService = leagueService;
+        _eventService = eventService;
         _vibration = vibrationService;
         _logger = logger;
+        _accessibility = accessibility;
+        _analytics = analytics;
+        _telemetry = telemetry;
         _tutorialOverlay = new TutorialOverlay(localizationService);
         _discoveryOverlay = new DiscoveryOverlay(localizationService);
         _grid = new GameGrid();
@@ -551,8 +699,8 @@ public sealed partial class GameEngine : IDisposable
         _player = new Player(0, 0);
 
         // Timer-Events abonnieren
-        _timer.OnWarning += OnTimeWarning;
-        _timer.OnExpired += OnTimeExpired;
+        _timer.Warning += OnTimeWarning;
+        _timer.Expired += OnTimeExpired;
 
         // Haptisches Feedback bei Richtungswechsel direkt via IVibrationService
         // (vorher Event-Subscription in MainActivity → das hat den PERF-6 Lazy-Refactor umgangen).
@@ -718,6 +866,8 @@ public sealed partial class GameEngine : IDisposable
         _screenShake.Update(deltaTime);
         _particleSystem.Update(deltaTime);
         _floatingText.Update(deltaTime);
+        _subtitles.Update(deltaTime);
+        _cinematic.Update(deltaTime);
         _soundManager.Update(deltaTime);
 
         // Hit-Pause: Update wird übersprungen, Rendering läuft weiter (Freeze-Effekt)
@@ -897,13 +1047,10 @@ public sealed partial class GameEngine : IDisposable
         // Collecting-PowerUp-Animationen aktualisieren
         UpdateCollectingPowerUps(deltaTime);
 
-        // Combo-Timer in Echtzeit aktualisieren (Slow-Motion verlängert keine Combos)
-        if (_comboTimer > 0)
-        {
-            _comboTimer -= realDeltaTime;
-            if (_comboTimer <= 0)
-                _comboCount = 0;
-        }
+        // v2.0.54 — Phase 12: Combo-Timer-Update in ComboSystem (Pure-Logic, Reset bei Timer<=0).
+        _comboSystem.Update(realDeltaTime);
+        if (_comboSystem.Timer <= 0 && _comboSystem.Count > 0)
+            _comboSystem.Reset();
 
         // "DEFEAT ALL!" Cooldown aktualisieren
         if (_defeatAllCooldown > 0)
@@ -1048,6 +1195,29 @@ public sealed partial class GameEngine : IDisposable
                 _soundManager.PlaySound(SoundManager.SFX_GAME_OVER);
                 _soundManager.StopMusic();
 
+                // v2.0.42 Plan Task 3.3: Boss-Rush bei Tod sofort submitten (completedAll=false).
+                // Akkumulierter Score aus vorherigen Bossen + aktueller Run-Score.
+                // v2.0.54 — Phase 11: TryGetSubmitArgs setzt Submitted=true atomar (Pure-Logic-Hook)
+                if (_isBossRushMode && BossRushModeState is { } brm)
+                {
+                    int finalScore = brm.AccumulatedScore + (_player.Score - _scoreAtLevelStart);
+                    if (brm.TryGetSubmitArgs(completedAllBosses: false) is { } sa)
+                    {
+                        _bossRushService.SubmitRun(finalScore, sa.Time, sa.CompletedAll);
+                    }
+                }
+
+                // v2.0.54 — Phase 11: DailyRaceMode.TrySubmit() ist Pure-Logic-Hook (mit State-Mutation)
+                if (_isDailyRace && DailyRaceModeState is { } drm)
+                {
+                    int finalScore = _player.Score - _scoreAtLevelStart;
+                    if (drm.TrySubmit(finalScore))
+                    {
+                        // Fire-and-forget — Firebase-Push laueft im Hintergrund, Spieler wartet nicht.
+                        _ = _leagueService.SubmitDailyRaceScoreAsync(finalScore);
+                    }
+                }
+
                 // Trost-Coins (Level-Score ÷ 6, abgerundet)
                 int coins = (_player.Score - _scoreAtLevelStart) / 6;
                 if (_purchaseService.IsPremium)
@@ -1063,7 +1233,7 @@ public sealed partial class GameEngine : IDisposable
 
                 // Survival-Runde beendet (Achievement + BattlePass)
                 if (_isSurvivalMode)
-                    _tracking.OnSurvivalEnded(_survivalTimeElapsed, _enemiesKilled);
+                    _tracking.OnSurvivalEnded(SurvivalModeState?.TimeElapsed ?? 0f, _enemiesKilled);
 
                 // Dungeon-Run beenden bei Tod
                 if (_isDungeonRun)
@@ -1075,6 +1245,14 @@ public sealed partial class GameEngine : IDisposable
                 }
 
                 _tracking.FlushIfDirty();
+
+                // v2.0.44 — AAA-Audit: GameOver-Telemetrie für Funnel-Drop-off-Analyse
+                _analytics?.LogEvent(AnalyticsEvents.LevelFailed, new Dictionary<string, object>
+                {
+                    ["level"] = _currentLevelNumber,
+                    ["score"] = _player.Score,
+                    ["mode"] = GetCurrentModeTag()
+                });
                 GameOver?.Invoke();
             }
             else
@@ -1865,8 +2043,8 @@ public sealed partial class GameEngine : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        _timer.OnWarning -= OnTimeWarning;
-        _timer.OnExpired -= OnTimeExpired;
+        _timer.Warning -= OnTimeWarning;
+        _timer.Expired -= OnTimeExpired;
         _inputManager.DirectionChanged -= _directionChangedHandler;
         _localizationService.LanguageChanged -= _languageChangedHandler;
 
@@ -1877,11 +2055,30 @@ public sealed partial class GameEngine : IDisposable
         _overlayGlowFilterLarge.Dispose();
         _particleSystem.Dispose();
         _floatingText.Dispose();
+        _subtitles.Dispose();
         _tutorialOverlay.Dispose();
         _discoveryOverlay.Dispose();
         _inputManager.Dispose();
         _soundManager.Dispose();
         _irisClipPath.Dispose();
         _starPath.Dispose();
+        _colorblindFilter?.Dispose();
+
+        // v2.0.53 — Phase 10 P1-Fix: Mode-Cleanup-Hook + State-Reset bei Dispose
+        if (_currentMode is { } m)
+        {
+            try
+            {
+                m.Cleanup(new BomberBlast.Core.Modes.GameModeContext
+                {
+                    Player = _player,
+                    Grid = _grid,
+                    LevelNumber = _currentLevelNumber,
+                    TimeElapsed = 0f
+                });
+            }
+            catch { /* Best-Effort Cleanup */ }
+            _currentMode = null;
+        }
     }
 }

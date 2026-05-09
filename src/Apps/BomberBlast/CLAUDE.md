@@ -6,10 +6,11 @@ eigenes Icon-System, AI-Pathfinding, Roguelike-Dungeon-Modus und Liga-System.
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v2.0.55 (VersionCode 65) |
+| Version | v2.0.55 (VersionCode 65) |
 | Package-ID | org.rsdigital.bomberblast |
 | Status | Produktion |
 | Premium-Modell | 1,99 EUR `remove_ads` |
+| Mandat | Code-only / CC0 / prozedural — keine externen Audio-/Art-Pipelines, keine Voice-Talents |
 
 ---
 
@@ -111,11 +112,11 @@ Score/Events/State-Machine und gehören nicht in eine Extract-Datei.
 ### IGameMode-Pattern
 
 ```csharp
-// Core/Modes/IGameMode.cs — Mode-Plugin-Framework Phase 1+2 (v2.0.46/v2.0.49, AAA-Audit P1/P6)
+// Core/Modes/IGameMode.cs — Mode-Plugin-Framework
 interface IGameMode {
     string ModeTag { get; }
     void Initialize(GameModeContext ctx);
-    void UpdateLogic(float deltaTime, GameModeContext ctx);  // Phase 2: parallel zu Bool-Flags
+    void UpdateLogic(float deltaTime, GameModeContext ctx);  // läuft parallel zu Bool-Flags
     bool OnLevelComplete(GameModeContext ctx);               // true → Engine feuert Event, false → Mode managed selbst
     void OnGameOver(GameModeContext ctx);
     void Cleanup(GameModeContext ctx);
@@ -127,9 +128,9 @@ interface IGameMode {
 `DungeonMode`, `BossRushMode`, `DailyRaceMode` — alle erben von `GameModeBase`
 (no-op-Defaults).
 
-**Aktueller Stand (v2.0.49)**: Mode-Klassen laufen parallel zu den existierenden Bool-Flags
+**Status**: Mode-Klassen laufen parallel zu den existierenden Bool-Flags
 (`_isStoryMode`, `_isSurvivalMode`, etc.). Tatsächliche Mode-Logic-Migration aus GameEngine
-in Mode-Klassen kommt in Phase 7+. Neue Modi MÜSSEN `IGameMode` implementieren — kein
+in Mode-Klassen ist ein eigener Sprint. Neue Modi MÜSSEN `IGameMode` implementieren — kein
 weiterer Bool-Flag in `GameEngine.cs`.
 
 **Property-Alias-Pattern für State-Migration**: DungeonMode-State (13 Felder) lebt in
@@ -267,6 +268,41 @@ float width = bounds.Width;
 float height = bounds.Height;
 // NIEMALS e.Info.Width/Height — das sind physische Pixel (DPI > 1 → Clipping)
 ```
+
+### BloomEffect (`Graphics/BloomEffect.cs`)
+
+GPU-Bloom via `SKRuntimeEffect` (SkSL). 2 Render-Pässe:
+1. Threshold-Pass — BT.601-Luminanz-Filter, isoliert helle Pixel
+2. 5×5-Box-Blur (SkSL-Loop) + Additive Blend (`SKBlendMode.Plus`) zurück auf Hauptbild
+
+`Preload` in `LoadingPipeline` — kompiliert die SkSL-Shader beim App-Start.
+`IsAvailable`, `InitErrors`, `DisposeSharedResources` analog `ShaderEffects`-Pattern.
+Tier-Gate: nur Ultra (deaktiviert bei Battery/Thermal).
+
+---
+
+## Hardware-Profile + Performance-Adaption
+
+**`HardwareTier`-Enum** (Low/Medium/High/Ultra) + `IHardwareProfileService`:
+- Auto-Detection via `ProcessorCount` + GC-Memory-Heuristik
+- User-Override mit Persistenz
+- `Battery-Save`-Toggle (persistiert, senkt Tier um 1)
+- `Thermal-Throttle`-Hook (transient)
+- `OnMemoryTrimRequested(trimLevel)` — bei Level ≥ 40 wird `MemoryPressure` aktiv (60s
+  transient). Senkt effektiven Tier um 1 Stufe + Bloom aus.
+- `IsNetworkAvailable` getter/setter + `NetworkStateChanged`-Event (für CloudSaveService-Subscription)
+
+**Tier-Auswirkungen**:
+
+| Tier | ParticleSystem-Cap | Bloom | AudioSpatial-Reverb |
+|------|-------------------|-------|---------------------|
+| Low | 300 | aus | aus |
+| Medium | 800 | aus | aus |
+| High | 1200 | aus | an |
+| Ultra | 1500 | an (außer Battery/Thermal) | an |
+
+`ShouldEnableBloom()` nur für Ultra. `ParticleSystem.EffectiveMaxParticles` wird dynamisch
+gesetzt. **Adaptives Frame-Skipping** (siehe Render-Pipeline) bleibt unabhängig orthogonal aktiv.
 
 ---
 
@@ -450,6 +486,9 @@ Property-Aliasse auf `_comboSystem` (Renderer-Kompatibilität).
 ### Liga-System (Firebase)
 
 - **5 Ligen**: Bronze → Diamant, 14-Tage-Saisons
+- **LeagueSubTier-Enum** (I/II/III): Bronze/Silver/Gold/Platinum jeweils 3 Sub-Tiers, Diamond
+  bleibt single (Endgame). Helper `GetSubTier(points)`, `GetDisplayName()`,
+  `GetSubTierThreshold()`, `GetSubTierCeiling()`.
 - **Firebase REST API**: Anonymous Auth, `league/s{saison}/{tier}/{uid}`
 - **Rate-Limit in Firebase-Rules**: Write nur alle 60s pro UID via Server-Timestamp `updatedMs`
   (`{".sv":"timestamp"}` — nicht client-manipulierbar)
@@ -460,6 +499,51 @@ Property-Aliasse auf `_comboSystem` (Renderer-Kompatibilität).
 **Daily-Race-Leaderboard**: deterministischer Seed via `yyyy * 10000 + MM * 100 + dd` —
 alle Spieler weltweit bekommen identisches Level. Schema: `league/s{saison}/daily_race/{date}/{tier}/{uid}`.
 Spezifische Firebase-Rule muss VOR `$tier`-Wildcard stehen (Firebase prefer specific over wildcard).
+
+### Live-Service-Patterns
+
+**EventCalendarService** (`IEventCalendarService`): Wöchentlicher Event-Calendar, deterministisch
+via ISO-Wochen-Seed (`(year × 7 + week) % poolSize`). Pool von 8 Wochen-Event-Typen
+(DoubleXp, DoubleCoins, CardRain, BossWeek, DungeonRush, LeagueRumble, MissionMadness,
+LuckyWeek). 12-Wochen-Vorschau-API + Server-Override-Hook.
+
+**BattlePass-Theme-Rotation**: `BattlePassTheme`-Enum (Classic/Cyberpunk/Halloween/Winter/
+Summer/Mech/Underwater/Sengoku/DiaDeLosMuertos/Steampunk). `BattlePassData.Theme` ist
+deterministisch aus `SeasonNumber` abgeleitet (Saison 1 = Classic, dann rotiert).
+`BattlePassThemeExtensions` mit Akzent-/Sekundär-Farben, Icon-Hints, RESX-Keys.
+
+**LuckySpin Pity-Counter** (Lootbox-Compliance UK/China): Nach 50 Spins ohne Jackpot
+garantierter Hit. `SpinsSinceLastJackpot` persistiert. `GetDropRates()`-API für
+Compliance-Disclosure.
+
+**FirstPurchase-Multiplier** (`IFirstPurchaseService`): ×2 Multiplier auf ersten IAP-Kauf,
+persistiert + Cloud-Save-synced (`FirstPurchaseClaimed`-Key). Anti-Reinstall-Exploit-Schutz.
+
+**Cosmetic-Volumen**: 98 Cosmetic-Definitionen total — 32 Trails (`TrailDefinitions.All`),
+33 Frames (`FrameDefinitions.All`), 33 Victories (`VictoryDefinitions.All`). Welt-thematisch
+(Pumpkin/Snowflake/CherryBlossom/Neon/Bone/Ocean/Samurai/Mech/Beach/Steampunk) +
+Karriere-Status-Rewards (Champion/PrestigeAura/Diamond/Master/Ascension) +
+BattlePass-Saison-Exclusives (SeasonStreak/BPMastery).
+
+### Retention & Onboarding (`IRetentionService`)
+
+- `RegisterFirstWin()` — idempotent (1× Trigger für First-Win-Cinematic, Anti-Reinstall-Re-Trigger)
+- FTUE-Skin-Tracking, `DaysSinceLastSession`, D1/D7-Window-Detection
+- `ComebackEligible`-Logik (≥ 3 Tage inaktiv + Cooldown gegen Multi-Comeback-Spam)
+- `TouchSession()` in `LoadingPipeline`
+- Cloud-Save-Sync für 5 Retention-Keys
+
+**First-Win-Cinematic** (`GameEngine.PlayFirstWinCinematic`, 4-stufig, 4s, Royal-Match-Pattern):
+1. Gold-Burst um Spieler + Pull-Back + Stinger + Achievement-Vibration
+2. Multi-Color-Konfetti aus 6 Punkten in elliptischem Muster
+3. Mid-Burst zentral + Subtitle "[FIRST VICTORY!]"
+4. Mega-Gold-Explosion + Pull-Back + Floating-Text "ERSTER SIEG!"
+
+### DSGVO-Datenexport (`IDataExportService`)
+
+DSGVO Art. 20 (Recht auf Datenübertragbarkeit). JSON + Human-Readable-Export.
+Profil, Fortschritt, Liga, Wirtschaft, Achievements, Consent-Flags, Shop-Upgrades.
+Account-Delete (`IAccountDeletionService`) deckt Art. 17 ab (siehe Dungeon-Modus oben).
 
 ### Cloud-Save-System
 
@@ -489,15 +573,35 @@ Spezifische Firebase-Rule muss VOR `$tier`-Wildcard stehen (Firebase prefer spec
 ### Audio-System
 
 - **AndroidSoundService**: SoundPool für SFX (12 + 6 Sounds) + MediaPlayer für Musik (4 + 6 Tracks)
-- **AudioBus-System** (`Core/Audio/`): Volume-Bus-Architektur mit Master/SFX/Music-Kanälen.
-  `AudioBusMixer` mischt Bus-Volumes. `SoundVariationPool` verwaltet Pitch/Volume-Variation-Parameter.
-  `AudioSpatial` berechnet Stereo-Pan aus Grid-Position.
+- **AudioBus 7-Kanal-System** (`Core/Audio/AudioBus.cs`): Master/Music/Ambient/Sfx/Ui/Voice/Cinematic.
+  `AudioBusMixer` mischt Bus-Volumes mit Persistenz, Sidechain-Ducking und Recovery-Hüllkurven.
+- **SoundVariationPool**: Anti-Repeat-Pool (Brawl-Stars-Pattern, Suffix `_a/_b/_c/_d`).
+  27 Pool-Variants + 5 Cinematic-Stinger-Files aus Kenney CC0 Packs gemapped auf Pool-Keys.
+- **AudioSpatial**: Distance-Falloff, Stereo-Pan, Equal-Power-Crossfade, Reverb-Preset-Mapping.
+  `PlaySoundPanned(key, pan)` mit Stereo-Pan via `bomb.GridX / Grid.Width` (Landscape-Achse).
+- **SoundManager-API**: `PlayPooled()`, `PlayAt(grid)`, `PlayStinger(key)`, `PlayVoice(key)`.
 - **Pitch-Variation**: `SoundManager.PlaySound` wendet ±5% Pitch-Random + ±10% Volume-Variation
   auf wiederholte SFX an — eliminiert akustisches Stutter bei Bomben-Spam
-- **Räumliches Audio**: `PlaySoundPanned(key, pan)` mit Stereo-Pan basierend auf `bomb.GridX / Grid.Width`
-  → Bomben-Klang folgt der Bombe auf der Landscape-Achse
 - **ISoundService**: `pitch` + `pan`-Parameter als Default-Interface-Methoden (backward-compat)
 - **Thread-Safety**: `lock(_musicLock)` für MediaPlayer
+
+**Stinger-Verkabelung** (Cinematic-Bus):
+
+| Konstante | Trigger |
+|-----------|---------|
+| `STINGER_BOSS_REVEAL` | Boss-Cinematic-Start |
+| `STINGER_COMBO_MEGA` | Combo ×5 |
+| `STINGER_COMBO_ULTRA` | Combo ×10 |
+| `STINGER_VICTORY` | Boss-Kill, Konami-Code-Reward |
+| `STINGER_DEFEAT` | GameOver |
+
+**Multi-Stage-Pontan-Warning**: 3-stufige Eskalation statt 1.5s allein. 3.0s Audio-Cue + Subtitle,
+1.5s Indicator-Bestand, 0.5s Trauma-Spike-Crescendo.
+
+**Externes Audio-Roadmap** (mit Mandat "kein Geld" abgewählt):
+- Hauseigener Composer + adaptive Layered Music pro Welt (€15k–€80k Budget-Item)
+- Voice-Talents (DE/EN/ES/FR/IT/PT) für Boss-Roar, Player-Reactions, Announcer-Lines
+- LUFS-Mastering aller Audio-Assets auf -16 LUFS Mobile-Standard
 
 ### Vibrations-System
 
@@ -519,6 +623,18 @@ Beispiel: `VibrateBombPlant = [0, 10, 20, 10]` (Doppel-Tick).
 // Distanz-Skalierung: TriggerAt(amount, distanceCells, falloffCells=4)
 // Bestand-API kompatibel: Trigger(intensity, duration) mappt auf Trauma
 ```
+
+**PullBackFactor** (`TriggerPullBack(magnitude, duration)`): Sin/Smoothstep-Hüllkurve, max 15%
+Zoom-Out. Renderer wendet via `canvas.Scale` um Spielfeld-Mitte. Trigger bei Boss-Reveal,
+Mega-Combo, First-Win-Cinematic.
+
+### Squash & Stretch + Crit-Indicator
+
+`Player.SquashScaleX` / `SquashScaleY` Computed-Properties (subtile Sprite-Skalierung beim
+Bewegen, ±5% Wobble bei 3 Hz, kollabiert auf 0.6 beim Tod). Renderer wendet via `canvas.Scale`.
+
+Crit-Indicator auf Combo-Floating-Text: Größen-Pop nach Combo-Stufe (×2-3 = 18f / ×4-6 = 22f /
+×7-9 = 26f / ×10+ = 32f) + längere Lifetime (1.5s → 2.5s bei ULTRA). Hades-Pattern.
 
 ### Cinematic-Director (`CinematicSequencer.cs`)
 
@@ -580,6 +696,86 @@ Setzt Crashlytics-Custom-Keys `memory_mb`, `gc_gen0/1/2` für Crash-Filterung na
 in `BomberBlast.Android/`. Alle erfüllen jeweilige Interfaces. Echte SDK-Aufrufe als
 `// TODO`-Kommentare — nach NuGet-Install + Console-Setup in ~1.5h aktivierbar.
 Setup-Anleitung: `src/Apps/BomberBlast/FIREBASE_SETUP.md`.
+
+---
+
+## Determinismus-Foundation
+
+**`Core/DeterministicRandom.cs`** (xoshiro256+, Public Domain, SplitMix64-Seed-Expansion):
+Plattform-unabhängig deterministisch — gleicher Seed = identische Bit-Sequenz auf x64/ARM64.
+`GetState/SetState` für Replay-Roundtrip. Schneller als `.NET-Random`.
+
+**`Core/ReplayCapture.cs`**: 1-Byte-pro-Tick Input-Stream (Direction/Bomb/Detonate, Schema-V1).
+`Serialize`/`Deserialize`. 108k-Tick-Soft-Cap = 30 min @ 60 Hz, ~36 KB Raw / ~5-10 KB nach RLE.
+
+**Status**: Foundation steht, GameEngine.Update-Integration ist ein eigener Sprint
+(alle engine-internen Random-Calls auf `DeterministicRandom` umstellen, Sim-Tick + Render-Pass
+trennen). `FixedTimestepRunner` als 60-Hz-Akkumulator existiert.
+
+## Multiplayer-Foundation
+
+**`Core/Multiplayer/MultiplayerMode.cs`** — Mode-Enum (Single/LocalCoop/LocalVersus/AsyncGhost/
+RealtimeServer) + `PlayerSlot` + `MultiplayerSpawnPositions` (P1=(1,1) / P2=(13,8) —
+gegenüberliegende Ecken).
+
+**`Core/Multiplayer/PlayerInputSnapshot.cs`** — struct mit 2-Byte-Wire-Format
+(Slot+Direction+Bomb+Detonate+ToggleSpecial). 1.4 KB/s @ 60 Hz × 2 Spieler.
+
+**`Core/Multiplayer/InputBuffer.cs`** — Ring-Buffer (120 Ticks Default) mit `Push` /
+`PeekLatest` / `PeekHistorical` / `Clear`. Foundation für Lag-Compensation + Rollback-Netcode.
+
+**`Core/Multiplayer/GameStateSnapshot.cs`** — struct mit P1+P2-State + RNG-State + FNV-1a-Hash.
+Anti-Cheat-Vergleich: Server-Hash != Client-Hash → Manipulation/Desync. `IsIdenticalTo`-Helper.
+
+**Status**: nur Foundation. Echte 2P-Lokal-Co-Op-Engine-Integration (dual Player-Spawning,
+dual Input-Routing, Co-Op-Camera, Game-Over-bei-beide-tot) und Pi-Server-Stack mit SignalR-Hub
++ Auth + Lobby-Matchmaking sind eigene multi-Wochen-Sprints.
+
+## Polish-Foundation
+
+**`LoadingTips.cs`**: 33 globale + 10 welt-spezifische Tipps mit Anti-Repeat-Picker.
+30%-Chance auf welt-spezifischen Tipp wenn `worldIndex` angegeben. Eindeutige Default-Hints
+pro Key (kein Spam-Risiko bei fehlender RESX). `LocalizationManager.GetString` als
+Resolve-Pfad. `TotalTipCount` für UI-Browser.
+
+**`KonamiCodeDetector.cs`**: Klassisches Easter-Egg
+(Up Up Down Down Left Right Left Right Bomb Detonate). 3s-Timeout zwischen Schritten,
+1× pro Session. `CodeTriggered`-Event → 1500 Coins-Bonus + Gold-Konfetti + Floating-Text +
+Vibration + Victory-Stinger. `InputManager.TickKonamiDetector(deltaTime)` im Engine-Update-Loop
+mit Edge-Detection für Direction (Movement-Wechsel), Bomb-Press, Detonate-Press.
+Subscription beim Dispose abgemeldet.
+
+## Diagnostik (`GameEngineEventSource`)
+
+`Core/Diagnostics/GameEngineEventSource.cs` — EventSource-Provider "BomberBlast-Engine".
+11 Event-Typen über 7 Keywords (Frame/Sim/Render/AI/Gameplay/Memory/Network).
+
+**Markers**: FrameStart/End, SimTickStart/End, RenderStart/End, AStarSearch, ExplosionTriggered,
+MemoryTrimRequested, HardwareTierChanged, NetworkStateChanged.
+
+Aktivierbar via `dotnet-trace collect --providers BomberBlast-Engine`.
+
+## Test-Foundation
+
+**Property-Based-Tests** (`PropertyBasedTests.cs`): randomisierte Iteration (1000-10000 Loops,
+deterministischer Seed=42 für CI-Reproduzierbarkeit). Validiert Invarianten:
+- ScreenShake-Trauma in [0,1]
+- AudioSpatial-Pan in [-1,1]
+- Distance-Volume monoton fallend
+- Equal-Power-Crossfade-Identität sin²+cos²=1
+- Sub-Tier-Roundtrip-Konsistenz
+- EventCalendar-Determinismus
+- Pool-Pick-Validität
+- HardwareProfile-Cap-Untergrenze
+- LuckySpin-Pity-Garantie
+
+**Performance-Smoke-Tests** (`PerformanceSmokeTests.cs`): Stopwatch-basierte Schwellwert-Checks
+(10k ComboSystem-Operations <1s, 60s-ScreenShake-Sim <500ms, 100k AudioSpatial-Calls <1s).
+
+**Visual-Regression** (`VisualRegressionHelper.cs`): SkiaSharp-basierte Screenshot-Vergleiche.
+`ComputeDiffRate(actual, baseline, tolerance)` → Pixel-Diff-Quote [0..1].
+`CreateDiffBitmap` → rotes Diff-Overlay für CI-Artifact.
+Tolerance-Strategie: 5 RGB-Units Default (Anti-Aliasing-typisch). 1% Pixel-Diff für robust.
 
 ---
 
@@ -700,7 +896,7 @@ Rule-Änderungen müssen in Firebase Console deployed werden — Datei lokal ist
 
 ### Splash-Versions-String manuell gepflegt
 
-`App.axaml.cs`: `AppVersion = "v2.0.42"` — diese Zeichenkette wird NICHT aus der csproj gelesen.
+`App.axaml.cs`: `AppVersion = "v2.0.55"` — diese Zeichenkette wird NICHT aus der csproj gelesen.
 Bei jedem Release manuell auf die aktuelle `ApplicationDisplayVersion` setzen.
 
 ---
@@ -740,7 +936,7 @@ Bei jedem Release manuell auf die aktuelle `ApplicationDisplayVersion` setzen.
 | `IAccessibilityService` | Colorblind-Mode, HighContrast, UiScale, Subtitles |
 | `IAccountDeletionService` | DSGVO Art. 17 Cascading-Delete (Local-First) |
 | `IEventService` | Saisonale Events: Halloween/Christmas/NewYear/Summer |
-| `IEventCalendarService` | Wöchentlicher Event-Calendar (deterministisch via ISO-Week, Phase 20) |
+| `IEventCalendarService` | Wöchentlicher Event-Calendar (deterministisch via ISO-Week) |
 | `IBossRushService` | 5-Boss-Sequenz, ISO-8601-Year-Week-Reset |
 | `ILoadoutService` | Pre-Run Boosts pro Story-Level (max 2 Boosts) |
 | `IMasterModeService` | Master-Mode-Status pro Level, IsActive-Toggle |
@@ -826,5 +1022,5 @@ Keine `SKPaint.TextSize/TextAlign/FakeBoldText` mehr (deprecated).
   Troubleshooting, Keystore, Ad-Pattern, DI-Pattern
 - `database.rules.json`: Firebase-Security-Rules (Liga + Daily-Race + Reports)
 - `src/Apps/BomberBlast/FIREBASE_SETUP.md`: Crashlytics/Analytics/FCM-Setup-Anleitung (~1.5h)
-- `src/Apps/BomberBlast/BOMBERBLAST_AAA_AUDIT.md`: Vollständiger Audit-Katalog
+- `src/Apps/BomberBlast/BOMBERBLAST_AAA_AUDIT.md`: Externer AAA-Audit-Katalog (Roadmap-Referenz)
 - `tests/BomberBlast.Tests/`: 286 Tests (xUnit)

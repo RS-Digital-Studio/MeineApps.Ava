@@ -1249,6 +1249,18 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string BossRushBossesLabel {
+            get {
+                return ResourceManager.GetString("BossRushBossesLabel", resourceCulture);
+            }
+        }
+
+        internal static string LoadoutCurrencySwitch {
+            get {
+                return ResourceManager.GetString("LoadoutCurrencySwitch", resourceCulture);
+            }
+        }
+
         internal static string WatchVideoBoost {
             get {
                 return ResourceManager.GetString("WatchVideoBoost", resourceCulture);

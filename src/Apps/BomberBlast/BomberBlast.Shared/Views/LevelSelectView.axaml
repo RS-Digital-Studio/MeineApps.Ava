@@ -393,7 +393,7 @@
                 <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14"
                                  Foreground="#FFD700"
                                  IsVisible="{Binding !UseGemsForLoadout}" />
-                <TextBlock Text="Switch" FontSize="11" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Translate LoadoutCurrencySwitch}" FontSize="11" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
           </Grid>

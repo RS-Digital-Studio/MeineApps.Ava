@@ -715,6 +715,12 @@
   <data name="SkipLevelInfo" xml:space="preserve">
     <value>Il livello sarà completato con 1 stella</value>
   </data>
+  <data name="BossRushBossesLabel" xml:space="preserve">
+    <value>Boss:</value>
+  </data>
+  <data name="LoadoutCurrencySwitch" xml:space="preserve">
+    <value>Cambia</value>
+  </data>
   <data name="WatchVideoBoost" xml:space="preserve">
     <value>Guardare video per boost iniziale?</value>
   </data>

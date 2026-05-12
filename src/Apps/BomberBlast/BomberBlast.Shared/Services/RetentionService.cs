@@ -18,6 +18,10 @@ public sealed class RetentionService : IRetentionService
     private const string KeyFirstSessionUtc = "Retention_FirstSessionUtc";
     private const string KeyLastSessionUtc = "Retention_LastSessionUtc";
     private const string KeyComebackLastClaimUtc = "Retention_ComebackLastClaim";
+    // Audit H14: Monotoner Tick-Anchor fuer Anti-Cheat (Comeback-Bonus nicht durch Datum-Manipulation farmbar)
+    private const string KeyComebackLastClaimTicks = "Retention_ComebackLastClaimTicks";
+    // 3 Tage minus 4h Puffer (Zeitzone/DST) als Tick-Schwellwert
+    private const long MinComebackUptimeTicks = (3L * 24 - 4) * 60 * 60 * 1000;
 
     private readonly IPreferencesService _prefs;
 
@@ -52,17 +56,27 @@ public sealed class RetentionService : IRetentionService
     {
         get
         {
-            // Mindestens 3 Tage inaktiv UND letzter Comeback-Claim ist auch >= 3 Tage her
-            // (verhindert Multi-Comeback-Spam wenn Spieler sporadisch zurückkommt)
+            // Audit H14: Hybrid-Check. Mindestens 3 Tage inaktiv UND letzter Comeback-Claim ist >= 3 Tage her
+            // (verhindert Multi-Comeback-Spam) UND monotone Tick-Differenz >= ~3 Tagen
+            // (verhindert Datum-Manipulation: vorstellen → claim → zurueck → re-claim).
             if (DaysSinceLastSession < 3) return false;
+
             var lastClaimRaw = _prefs.Get(KeyComebackLastClaimUtc, string.Empty);
             if (string.IsNullOrEmpty(lastClaimRaw)) return true;
+
             try
             {
                 var lastClaim = DateTime.Parse(lastClaimRaw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-                return (DateTime.UtcNow - lastClaim).TotalDays >= 3;
+                if ((DateTime.UtcNow - lastClaim).TotalDays < 3) return false;
             }
             catch { return true; }
+
+            // Monotone Tick-Check
+            var lastClaimTicks = _prefs.Get(KeyComebackLastClaimTicks, 0L);
+            long now = Environment.TickCount64;
+            // Bei Reboot/Counter-Wrap (now < lastClaimTicks) erlauben — das Datum hat die Last-Claim-Pruefung bereits bestanden.
+            if (lastClaimTicks > now) return true;
+            return (now - lastClaimTicks) >= MinComebackUptimeTicks;
         }
     }
 
@@ -75,7 +89,12 @@ public sealed class RetentionService : IRetentionService
 
     public void MarkFtueSkinClaimed() => _prefs.Set(KeyFtueSkin, true);
 
-    public void MarkComebackClaimed() => _prefs.Set(KeyComebackLastClaimUtc, DateTime.UtcNow.ToString("O"));
+    public void MarkComebackClaimed()
+    {
+        _prefs.Set(KeyComebackLastClaimUtc, DateTime.UtcNow.ToString("O"));
+        // Audit H14: Tick-Anchor speichern fuer Anti-Cheat-Hybrid.
+        _prefs.Set(KeyComebackLastClaimTicks, Environment.TickCount64);
+    }
 
     public void TouchSession()
     {

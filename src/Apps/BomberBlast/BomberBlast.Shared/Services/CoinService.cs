@@ -19,9 +19,30 @@ public sealed class CoinService : ICoinService
     public int TotalEarned => _data.TotalEarned;
     public int DailyBonusAmount => DAILY_BONUS;
 
-    public bool IsDailyBonusAvailable =>
-        _data.LastDailyBonusDate == null ||
-        _data.LastDailyBonusDate.Value.Date < DateTime.UtcNow.Date;
+    // Audit H14: Anti-Cheat-Hybrid — Daily-Bonus ist erst verfuegbar wenn BEIDE Bedingungen gelten:
+    // 1. UTC-Datum hat sich gegenueber LastDailyBonusDate veraendert (klassische Logik)
+    // 2. Monotoner Process-Uptime-Anchor (LastBonusTickCount) liegt >= 20h zurueck
+    //    → Verhindert "Datum vorstellen → claim → zurueck" weil TickCount64 monoton ist
+    //      und bei Reboot zwar zurueckspringt, aber dann nur in selten genug-Faellen unter 20h.
+    // 20h-Schwellwert statt 24h, damit Spieler in unterschiedlichen Zeitzonen + DST nicht
+    // versehentlich gelockt werden.
+    private const long MinDailyBonusUptimeTicks = 20L * 60 * 60 * 1000; // 20h in ms
+
+    public bool IsDailyBonusAvailable
+    {
+        get
+        {
+            if (_data.LastDailyBonusDate == null) return true;
+            if (_data.LastDailyBonusDate.Value.Date >= DateTime.UtcNow.Date) return false;
+
+            // Monotone Tick-Check: Wenn LastBonusTickCount > aktuellem Tick (Reboot oder Manipulation),
+            // dann ist die Differenz negativ — verlaesse uns nur auf das Datum.
+            // Andernfalls muessen mindestens 20h Tick-Differenz vergangen sein.
+            long now = Environment.TickCount64;
+            if (_data.LastBonusTickCount > now) return true; // Reboot/Counter-Wrap → erlauben (Datum bereits gewechselt)
+            return (now - _data.LastBonusTickCount) >= MinDailyBonusUptimeTicks;
+        }
+    }
 
     public event EventHandler? BalanceChanged;
 
@@ -37,6 +58,7 @@ public sealed class CoinService : ICoinService
             return false;
 
         _data.LastDailyBonusDate = DateTime.UtcNow.Date;
+        _data.LastBonusTickCount = Environment.TickCount64;
         AddCoins(DAILY_BONUS);
         return true;
     }
@@ -118,5 +140,7 @@ public sealed class CoinService : ICoinService
         public int Balance { get; set; }
         public int TotalEarned { get; set; }
         public DateTime? LastDailyBonusDate { get; set; }
+        // Audit H14: Monotoner Tick-Counter fuer Anti-Cheat-Hybrid (siehe IsDailyBonusAvailable).
+        public long LastBonusTickCount { get; set; }
     }
 }

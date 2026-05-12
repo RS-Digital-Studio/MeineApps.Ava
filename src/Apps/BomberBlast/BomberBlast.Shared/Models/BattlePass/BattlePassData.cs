@@ -32,6 +32,12 @@ public class BattlePassData
     /// <summary>Ablaufzeitpunkt des 2x XP-Boosts (ISO 8601 UTC, null wenn nicht aktiv)</summary>
     public string? XpBoostExpiresAt { get; set; }
 
+    /// <summary>
+    /// Audit H14: Monotoner Tick-Anchor (Environment.TickCount64) beim Boost-Start.
+    /// Anti-Cheat: Bei Datum-Manipulation kann Boost so nicht ueber 24h hinaus aktiv bleiben.
+    /// </summary>
+    public long XpBoostStartTicks { get; set; }
+
     // === Berechnete Properties (nicht serialisiert) ===
 
     /// <summary>

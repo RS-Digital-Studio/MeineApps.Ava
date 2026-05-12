@@ -36,8 +36,26 @@ public sealed class BattlePassService : IBattlePassService
 
     // Gecachtes XP-Boost-Ablaufdatum (vermeidet DateTime.Parse bei jedem Aufruf)
     private DateTime? _xpBoostExpires;
+    // Audit H14: Monotoner Tick-Anchor — Boost gilt zusaetzlich nur solange (now - StartTicks) < Duration.
+    // Verhindert Manipulation: Datum zurueckstellen → Boost wuerde sonst laenger als 24h aktiv bleiben.
+    private long _xpBoostStartTicks;
+    private const long XpBoostDurationTicks = (long)XP_BOOST_DURATION_HOURS * 60 * 60 * 1000;
 
-    public bool IsXpBoostActive => _xpBoostExpires.HasValue && DateTime.UtcNow < _xpBoostExpires.Value;
+    public bool IsXpBoostActive
+    {
+        get
+        {
+            if (!_xpBoostExpires.HasValue) return false;
+            // Klassischer DateTime-Check
+            if (DateTime.UtcNow >= _xpBoostExpires.Value) return false;
+            // Monotoner Tick-Check: Wenn Process laenger als Boost-Dauer laeuft seit StartTicks → abgelaufen.
+            // Bei Reboot/Counter-Wrap (now < StartTicks) verlasse uns auf DateTime-Check (Reboot = neue Session).
+            long now = Environment.TickCount64;
+            if (_xpBoostStartTicks <= now && (now - _xpBoostStartTicks) >= XpBoostDurationTicks)
+                return false;
+            return true;
+        }
+    }
 
     public DateTime? XpBoostExpiresAt => IsXpBoostActive ? _xpBoostExpires : null;
 
@@ -71,6 +89,9 @@ public sealed class BattlePassService : IBattlePassService
     /// <summary>Parst XpBoostExpiresAt einmalig und cacht als DateTime</summary>
     private void CacheXpBoostExpiry()
     {
+        // Audit H14: Tick-Anchor aus persistierten Daten uebernehmen.
+        _xpBoostStartTicks = _data.XpBoostStartTicks;
+
         if (string.IsNullOrEmpty(_data.XpBoostExpiresAt))
         {
             _xpBoostExpires = null;
@@ -89,12 +110,13 @@ public sealed class BattlePassService : IBattlePassService
         if (IsXpBoostActive) return false;
         if (!_gemService.TrySpendGems(XP_BOOST_GEM_COST)) return false;
 
-        // Ablaufdatum = jetzt + 24h. Kein Clock-Skew-Schutz noetig, da ActivateXpBoost nur
-        // "jetzt" verankert. Die IsXpBoostActive-Pruefung weiter unten verwendet DateTime.UtcNow,
-        // welches bei Zurueckstellen der Uhr laenger "aktiv" bleibt. Das ist akzeptabel fuer 1,99-EUR-App.
+        // Ablaufdatum = jetzt + 24h. Anti-Cheat-Hybrid (Audit H14): Zusaetzlich ein monotoner
+        // Tick-Anchor → bei Datum-Zurueckstellen wuerde der Tick-Check Boost beenden.
         var expiry = DateTime.UtcNow.AddHours(XP_BOOST_DURATION_HOURS);
         _data.XpBoostExpiresAt = expiry.ToString("O");
+        _data.XpBoostStartTicks = Environment.TickCount64;
         _xpBoostExpires = expiry;
+        _xpBoostStartTicks = _data.XpBoostStartTicks;
         SaveData();
         BattlePassChanged?.Invoke();
         return true;

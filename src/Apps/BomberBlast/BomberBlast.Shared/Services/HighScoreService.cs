@@ -35,8 +35,12 @@ public sealed class HighScoreService : IHighScoreService
         if (string.IsNullOrWhiteSpace(playerName))
             playerName = "PLAYER";
 
+        // Audit H12: Grapheme-aware Trimming — Substring(0, 10) zerlegt UTF-16 Surrogate-Pairs
+        // (Emojis) mittendrin → korruptes UTF-16 → JSON-Encoding-Exception bei SaveScores.
+        var trimmed = TrimByGraphemes(playerName, 10).ToUpper();
+
         var entry = new HighScoreEntry(
-            playerName.ToUpper().Substring(0, Math.Min(10, playerName.Length)),
+            trimmed,
             score,
             level,
             DateTime.UtcNow);
@@ -44,6 +48,28 @@ public sealed class HighScoreService : IHighScoreService
         _scores.Add(entry);
         _scores = _scores.OrderByDescending(s => s.Score).Take(MAX_SCORES).ToList();
         SaveScores();
+    }
+
+    /// <summary>
+    /// Schneidet einen String nach maximal <paramref name="maxGraphemes"/> Grapheme-Clusters ab.
+    /// Verhindert, dass Surrogate-Pairs (Emojis) oder kombinierende Zeichen mittendrin zerlegt werden.
+    /// </summary>
+    private static string TrimByGraphemes(string input, int maxGraphemes)
+    {
+        if (string.IsNullOrEmpty(input)) return input ?? string.Empty;
+        var enumerator = System.Globalization.StringInfo.GetTextElementEnumerator(input);
+        int count = 0;
+        int endIndex = input.Length;
+        while (enumerator.MoveNext())
+        {
+            count++;
+            if (count > maxGraphemes)
+            {
+                endIndex = enumerator.ElementIndex;
+                break;
+            }
+        }
+        return input.Substring(0, endIndex);
     }
 
     public bool IsHighScore(int score)

@@ -12,6 +12,7 @@
 
     "guilds": {
       ".read": "auth != null",
+      ".indexOn": ["level", "leaguePoints", "weeklyProgress"],
       "$guildId": {
         ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || !data.exists())",
         "level": {
@@ -101,6 +102,50 @@
               ".validate": "newData.isString() && newData.val().length <= 128"
             }
           }
+        },
+
+        "megaProjects": {
+          "$projectId": {
+            ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+            ".validate": "newData.hasChildren(['projectId', 'type', 'createdAt']) && newData.child('projectId').isString() && newData.child('projectId').val().length <= 64",
+            "projectId": {
+              ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
+            },
+            "type": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1 && (!data.exists() || newData.val() == data.val())"
+            },
+            "createdAt": {
+              ".validate": "newData.isString() && newData.val().length <= 40 && (!data.exists() || newData.val() == data.val())"
+            },
+            "completedAt": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 40 && (!data.exists() || newData.val() == data.val()))"
+            },
+            "contributions": {
+              "$productId": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000 && (!data.exists() || newData.val() >= data.val())"
+              }
+            },
+            "donations": {
+              "$donorId": {
+                ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $donorId",
+                "playerName": {
+                  ".validate": "newData.isString() && newData.val().length <= 32"
+                },
+                "totalValue": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e15 && (!data.exists() || newData.val() >= data.val())"
+                },
+                "itemCount": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000 && (!data.exists() || newData.val() >= data.val())"
+                },
+                "lastDonatedAt": {
+                  ".validate": "newData.isString() && newData.val().length <= 40"
+                }
+              }
+            },
+            "hmac": {
+              ".validate": "newData.isString() && newData.val().length <= 128 && (!data.exists() || newData.val() == data.val())"
+            }
+          }
         }
       }
     },
@@ -172,10 +217,12 @@
 
     "guild_war_seasons": {
       ".read": "auth != null",
+      ".indexOn": ["status"],
       "$seasonId": {
         ".write": "auth != null && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
         "leagues": {
           "$leagueKey": {
+            ".indexOn": ["points", "rank"],
             "$guildId": {
               ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
               "points": {

@@ -6275,6 +6275,21 @@
   <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× giro de roleta da sorte por dia</value></data>
   <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Reivindica&#231;&#227;o autom&#225;tica de recompensa di&#225;ria</value></data>
   <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% parafusos dourados do gameplay</value></data>
+  <data name="GuildMegaProjectTitle" xml:space="preserve"><value>Canteiro de Obras da Guilda</value></data>
+  <data name="GuildMegaProjectSubtitle" xml:space="preserve"><value>Juntem materiais com a guilda — recompensas permanentes para todos.</value></data>
+  <data name="GuildMegaProjectCathedral" xml:space="preserve"><value>Catedral da Guilda</value></data>
+  <data name="GuildMegaProjectCathedralHint" xml:space="preserve"><value>Projeto m&#233;dio (~2 semanas). Recompensa: +5% velocidade, +10% auto-venda, +3 slots — permanente.</value></data>
+  <data name="GuildMegaProjectHeadquarters" xml:space="preserve"><value>Sede da Guilda</value></data>
+  <data name="GuildMegaProjectHeadquartersHint" xml:space="preserve"><value>Projeto end-game (~4 semanas). Recompensa: +10% velocidade, +20% auto-venda, +5 slots — permanente.</value></data>
+  <data name="GuildMegaProjectStart" xml:space="preserve"><value>Iniciar Projeto</value></data>
+  <data name="GuildMegaProjectRequirements" xml:space="preserve"><value>Materiais necess&#225;rios</value></data>
+  <data name="GuildMegaProjectTopDonors" xml:space="preserve"><value>Maiores doadores</value></data>
+  <data name="MegaProjectRewardFormat" xml:space="preserve"><value>Recompensa: +{0}% velocidade, +{1}% auto-venda, +{2} slots</value></data>
+  <data name="Donate1" xml:space="preserve"><value>Doar 1</value></data>
+  <data name="Donate10" xml:space="preserve"><value>Doar 10</value></data>
+  <data name="DonateAll" xml:space="preserve"><value>Doar Tudo</value></data>
+  <data name="Available" xml:space="preserve"><value>dispon&#237;vel:</value></data>
+  <data name="TabBuildSite" xml:space="preserve"><value>Canteiro</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Entrega de material do fornecedor!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Vila de Luxo</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Arranha-c&#233;u</value></data>

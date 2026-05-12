@@ -515,6 +515,35 @@ Alle 10 Workshops produzieren passiv Tier-1 Items (Unlock ab WS-Level 50):
 Skalierender Verkaufspreis: `BaseValue × (1 + log₂(1 + Level/25)) × CraftingSellMultiplier`
 (kein Soft-Cap, kein Speed/Rush im Multiplier).
 
+### Gilden-Mega-Projekte (V7 — Phase 4 Ressourcen-Plan, Plan Section 3.9)
+
+`IGuildMegaProjectService` + `GuildMegaProjectService` — wochenlange Material-Spenden-Pipeline
+mit permanenter Gildenbonus-Belohnung.
+
+**2 Mega-Projekt-Templates** (`GuildMegaProjectTemplates`):
+- **Cathedral**: 50× luxury_furniture, 40× roof_structure, 30× artwork, 20× smart_home, 1× villa.
+  Belohnung: +5% Crafting-Speed, +10% Auto-Verkaufs-Preis, +3 Lager-Slots — permanent fuer alle Mitglieder.
+- **Headquarters**: 80× skyscraper_frame, 60× smart_home, 50× bathroom, 30× master_blueprint,
+  30× masterpiece_fittings, 2× villa, 1× skyscraper. Belohnung: +10% / +20% / +5 Slots.
+
+**Firebase-Pfad**: `guilds/{guildId}/megaProjects/active` (single-active per Gilde).
+- HMAC-signiert ueber stabile Felder (`ProjectId`, `Type`, `CreatedAt`).
+- Spende: `UpdateAsync` (PATCH) atomar — nur die Subpfade Contributions, Donations werden geschrieben.
+- Sunset-Regel (Plan Section 4 Risiken): Projekte aelter als 30 Tage werden geblockt
+  (`AbandonmentSunsetDays`), neue Spenden faellen ab.
+- `state.ClaimedGuildProjectIds` verhindert Doppel-Belohnung pro Spieler.
+
+**Boni-Integration**:
+- `GuildMembership.MegaProjectCraftingSpeedBonus` flieskt in `CraftingService.StartCrafting` ein.
+- `GuildMembership.MegaProjectAutoSellPriceBonus` modifiziert den Marktpreis im Overflow-Auto-Sell.
+- `GuildMembership.MegaProjectBonusWarehouseSlots` addiert sich zu `WarehouseService.EffectiveSlotCount`.
+
+**UI**:
+- `GuildBuildSiteView` als eigene Seite (ActivePage.GuildBuildSite, Route `guild_build_site`).
+- Erreichbar ueber neue Karte im Combat-Tab der GuildView.
+- Drei Donate-Stufen pro Material (1 / 10 / Alles), Top-Spender-Leaderboard (Top 5),
+  Fortschrittsbalken pro Anforderung + Gesamt-%, Bonus-Vorschau.
+
 ### Tier-4 + Erbstuecke + Worker-Affinitaet (V7 — Phase 4 Ressourcen-Plan)
 
 **Tier-4-Produkte** (Plan Section 3.2): 3 Imperiums-Manufaktur-Items am GeneralContractor
@@ -552,7 +581,7 @@ Auto-Verkaufs-Regeln, +1 Erbstueck-Slot (3 → 4), 2× Lucky-Spin/Tag, Auto-Clai
 *Implementation der UI-Repositionierung ist als getrennter Sprint vorgemerkt — Bundle-Boni
 sind in den Service-Layern bereits implementiert.*
 
-### Material-Markt (V7 — Phase 3 Ressourcen-Plan)
+### Material-Markt + Heatmap-Detail (V7 — Phase 3 Ressourcen-Plan)
 
 `IMarketService` + `MarketService` — deterministische Tagespreis-Logik pro Spieler.
 

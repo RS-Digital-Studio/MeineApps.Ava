@@ -284,7 +284,7 @@ public sealed class NavigationService : INavigationService
         // Gilden-Sub-Seiten
         if (route is "guild_research" or "guild_members" or "guild_invite" or
             "guild_war_season" or "guild_boss" or "guild_hall" or "guild_achievements" or
-            "guild_chat" or "guild_war")
+            "guild_chat" or "guild_war" or "guild_build_site")
         {
             if (_host.IsTabLocked(3)) { SelectDashboardTab(); return; }
 
@@ -316,6 +316,10 @@ public sealed class NavigationService : INavigationService
                 case "guild_war":
                     _host.ActivePage = ActivePage.GuildWar;
                     _host.GuildViewModel.LoadWarStatusAsync().SafeFireAndForget();
+                    break;
+                case "guild_build_site":
+                    // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Bauplatz
+                    _host.ActivePage = ActivePage.GuildBuildSite;
                     break;
             }
             return;

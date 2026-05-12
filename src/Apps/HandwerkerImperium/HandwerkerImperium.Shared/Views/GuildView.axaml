@@ -807,6 +807,37 @@
             <auctionViews:WorkerAuctionView DataContext="{Binding AuctionVM}"
                                              AutomationProperties.AutomationId="Guild_Combat_Auction" />
 
+            <!-- V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Bauplatz -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToBuildSiteCommand}"
+                    AutomationProperties.AutomationId="Guild_Combat_BuildSite">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="#D97706" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="OfficeBuilding" Width="26" Height="26"
+                                     Foreground="{StaticResource CraftGoldBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{loc:Translate GuildMegaProjectTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{loc:Translate GuildMegaProjectSubtitle}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
           </StackPanel>
 
           <!-- ═══════════════════════════════════════════════════ -->

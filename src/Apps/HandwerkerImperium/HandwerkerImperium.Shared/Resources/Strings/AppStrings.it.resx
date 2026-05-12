@@ -6282,6 +6282,21 @@
   <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× giro della ruota fortuna al giorno</value></data>
   <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Riscossione automatica ricompensa giornaliera</value></data>
   <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% viti dorate dal gameplay</value></data>
+  <data name="GuildMegaProjectTitle" xml:space="preserve"><value>Cantiere della Gilda</value></data>
+  <data name="GuildMegaProjectSubtitle" xml:space="preserve"><value>Mettete in comune materiali con la gilda — bonus permanenti per tutti.</value></data>
+  <data name="GuildMegaProjectCathedral" xml:space="preserve"><value>Cattedrale della Gilda</value></data>
+  <data name="GuildMegaProjectCathedralHint" xml:space="preserve"><value>Progetto medio (~2 settimane). Ricompensa: +5% velocit&#224;, +10% auto-vendita, +3 spazi — permanente.</value></data>
+  <data name="GuildMegaProjectHeadquarters" xml:space="preserve"><value>Sede della Gilda</value></data>
+  <data name="GuildMegaProjectHeadquartersHint" xml:space="preserve"><value>Progetto end-game (~4 settimane). Ricompensa: +10% velocit&#224;, +20% auto-vendita, +5 spazi — permanente.</value></data>
+  <data name="GuildMegaProjectStart" xml:space="preserve"><value>Avvia Progetto</value></data>
+  <data name="GuildMegaProjectRequirements" xml:space="preserve"><value>Materiali richiesti</value></data>
+  <data name="GuildMegaProjectTopDonors" xml:space="preserve"><value>Migliori donatori</value></data>
+  <data name="MegaProjectRewardFormat" xml:space="preserve"><value>Ricompensa: +{0}% velocit&#224;, +{1}% auto-vendita, +{2} spazi</value></data>
+  <data name="Donate1" xml:space="preserve"><value>Dona 1</value></data>
+  <data name="Donate10" xml:space="preserve"><value>Dona 10</value></data>
+  <data name="DonateAll" xml:space="preserve"><value>Dona Tutto</value></data>
+  <data name="Available" xml:space="preserve"><value>disponibile:</value></data>
+  <data name="TabBuildSite" xml:space="preserve"><value>Cantiere</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Consegna di materiale dal fornitore!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa di Lusso</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Grattacielo</value></data>

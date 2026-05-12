@@ -948,6 +948,10 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     [RelayCommand]
     private void NavigateToAchievements() => NavigationRequested?.Invoke("guild_achievements");
 
+    /// <summary>V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Bauplatz.</summary>
+    [RelayCommand]
+    private void NavigateToBuildSite() => NavigationRequested?.Invoke("guild_build_site");
+
     [RelayCommand]
     private void DismissTip()
     {

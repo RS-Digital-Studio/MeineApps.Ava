@@ -15,13 +15,13 @@ public class CraftingTests
     // ═══════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void GetAllRecipes_HatZwanzigRezepte()
+    public void GetAllRecipes_HatDreissigRezepte()
     {
         // Ausführung
         var rezepte = CraftingRecipe.GetAllRecipes();
 
-        // Prüfung: Laut CLAUDE.md 20 Rezepte
-        rezepte.Should().HaveCount(20);
+        // Prüfung: V7 (Phase 1 Ressourcen-Plan) — 10 Workshops × 3 Tiers = 30 Rezepte
+        rezepte.Should().HaveCount(30);
     }
 
     [Fact]

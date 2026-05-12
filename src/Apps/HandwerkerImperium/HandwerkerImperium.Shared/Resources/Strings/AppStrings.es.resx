@@ -6199,6 +6199,39 @@
   <data name="CraftPrototype" xml:space="preserve">
     <value>Construir Prototipo</value>
   </data>
+  <data name="ProductFoundation" xml:space="preserve"><value>Cimentaci&#243;n de Hormig&#243;n</value></data>
+  <data name="ProductFramework" xml:space="preserve"><value>M&#243;dulo Estructural</value></data>
+  <data name="ProductContractComplex" xml:space="preserve"><value>Contrato Complejo</value></data>
+  <data name="ProductMasterFittings" xml:space="preserve"><value>Herrajes Maestros</value></data>
+  <data name="ProductInnovation" xml:space="preserve"><value>Innovaci&#243;n</value></data>
+  <data name="ProductSkyscraperFrame" xml:space="preserve"><value>Estructura de Rascacielos</value></data>
+  <data name="ProductMasterBlueprint" xml:space="preserve"><value>Plano Maestro</value></data>
+  <data name="ProductGeneralContract" xml:space="preserve"><value>Contrato General</value></data>
+  <data name="ProductMasterpieceFittings" xml:space="preserve"><value>Herrajes Magistrales</value></data>
+  <data name="ProductPatent" xml:space="preserve"><value>Patente</value></data>
+  <data name="CraftFoundation" xml:space="preserve"><value>Verter Cimentaci&#243;n</value></data>
+  <data name="CraftFramework" xml:space="preserve"><value>Construir M&#243;dulo Estructural</value></data>
+  <data name="CraftContractComplex" xml:space="preserve"><value>Redactar Contrato Complejo</value></data>
+  <data name="CraftMasterFittings" xml:space="preserve"><value>Forjar Herrajes Maestros</value></data>
+  <data name="CraftInnovation" xml:space="preserve"><value>Desarrollar Innovaci&#243;n</value></data>
+  <data name="CraftSkyscraperFrame" xml:space="preserve"><value>Construir Estructura de Rascacielos</value></data>
+  <data name="CraftMasterBlueprint" xml:space="preserve"><value>Dibujar Plano Maestro</value></data>
+  <data name="CraftGeneralContract" xml:space="preserve"><value>Negociar Contrato General</value></data>
+  <data name="CraftMasterpieceFittings" xml:space="preserve"><value>Forjar Herrajes Magistrales</value></data>
+  <data name="CraftPatent" xml:space="preserve"><value>Registrar Patente</value></data>
+  <data name="ImperiumSubTabWarehouse" xml:space="preserve"><value>Almac&#233;n</value></data>
+  <data name="WarehouseTitle" xml:space="preserve"><value>Almac&#233;n</value></data>
+  <data name="WarehouseSubtitle" xml:space="preserve"><value>Gestiona tus materias primas y bienes fabricados.</value></data>
+  <data name="WarehouseSlotsFormat" xml:space="preserve"><value>{0} / {1} espacios</value></data>
+  <data name="WarehouseStackLimitFormat" xml:space="preserve"><value>M&#225;x. {0} por espacio</value></data>
+  <data name="WarehouseTotalValue" xml:space="preserve"><value>Valor Total</value></data>
+  <data name="WarehouseMaxSlots" xml:space="preserve"><value>L&#237;mite m&#225;x. alcanzado</value></data>
+  <data name="WarehouseUpgradeButton" xml:space="preserve"><value>+{0} espacios — {1}</value></data>
+  <data name="WarehouseEmptyTitle" xml:space="preserve"><value>Tu almac&#233;n est&#225; vac&#237;o</value></data>
+  <data name="WarehouseEmptyHint" xml:space="preserve"><value>Pon tus talleres a trabajar — la producci&#243;n autom&#225;tica llenar&#225; tu almac&#233;n con materias primas.</value></data>
+  <data name="WarehouseAutoSell" xml:space="preserve"><value>Venta autom&#225;tica</value></data>
+  <data name="Sell1" xml:space="preserve"><value>Vender 1</value></data>
+  <data name="Sell10" xml:space="preserve"><value>Vender 10</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Producci&#243;n Autom&#225;tica</value>
   </data>

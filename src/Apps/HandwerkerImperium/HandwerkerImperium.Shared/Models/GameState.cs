@@ -6,14 +6,16 @@ namespace HandwerkerImperium.Models;
 /// <summary>
 /// The complete game state, persisted between sessions.
 /// Version 5: Boosts, DailyProgress und Cosmetics in Sub-Objekte extrahiert.
+/// Version 7: Warehouse-Slots, Stack-Limits, ReservedInventory, AutoSellRules, HeirloomItems.
 /// </summary>
 public class GameState
 {
     /// <summary>
     /// v2.0.37: Aktuelle SaveGame-Version. Wird sowohl als Default fuer neue States
     /// als auch fuer Cloud-Save Version-Checks (App-Outdated-Erkennung) genutzt.
+    /// v7: Lager-System (Phase 1 Ressourcen-Plan).
     /// </summary>
-    public const int CurrentStateVersion = 6;
+    public const int CurrentStateVersion = 7;
 
     [JsonPropertyName("version")]
     public int Version { get; set; } = CurrentStateVersion;
@@ -637,6 +639,48 @@ public class GameState
 
     [JsonPropertyName("activeCraftingJobs")]
     public List<CraftingJob> ActiveCraftingJobs { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WAREHOUSE (V7 — Phase 1 Ressourcen-Plan)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// V7: Anzahl Lager-Slots (Default 20, ueber Forschung/Geld bis 200 upgradebar).
+    /// Ein Slot = ein Material-Typ. Spieler kann unterschiedliche Materialien parallel lagern.
+    /// </summary>
+    [JsonPropertyName("warehouseSlotCount")]
+    public int WarehouseSlotCount { get; set; } = 20;
+
+    /// <summary>
+    /// V7: Maximaler Stack pro Slot (Default 50, ueber Forschung bis 9999 upgradebar).
+    /// Sobald ein Stack voll ist, pausiert die Produktion oder wird ueber Auto-Verkauf konvertiert.
+    /// </summary>
+    [JsonPropertyName("warehouseStackLimit")]
+    public int WarehouseStackLimit { get; set; } = 50;
+
+    /// <summary>
+    /// V7 (Phase 2): Reservierte Material-Mengen fuer akzeptierte Auftraege mit
+    /// Material-Anforderung. Verhindert Doppelverbrauch — wird beim MiniGame-Complete
+    /// konsumiert, bei Abbruch zurueckgegeben.
+    /// Schluessel: productId, Wert: reservierte Anzahl. Wird in WarehouseService.GetAvailable()
+    /// vom CraftingInventory subtrahiert.
+    /// </summary>
+    [JsonPropertyName("reservedInventory")]
+    public Dictionary<string, int> ReservedInventory { get; set; } = new();
+
+    /// <summary>
+    /// V7: Auto-Verkaufs-Regeln pro Material (Phase 3 vollstaendig, Phase 1: nur Bool).
+    /// Schluessel: productId, Wert: Regel-Daten (Enabled, MinPrice, MaxPrice).
+    /// </summary>
+    [JsonPropertyName("autoSellRules")]
+    public Dictionary<string, AutoSellRule> AutoSellRules { get; set; } = new();
+
+    /// <summary>
+    /// V7 (Phase 4 vorbereitet): Erbstuecke (Tier-4-Items, max 3 pro Run, beim Prestige gewaehlt).
+    /// Phase 1: Feld vorhanden fuer SaveGame-Kompatibilitaet, Logik kommt in Phase 4.
+    /// </summary>
+    [JsonPropertyName("heirloomItems")]
+    public List<string> HeirloomItems { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
     // VIP (Welle 7)

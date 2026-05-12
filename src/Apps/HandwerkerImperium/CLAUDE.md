@@ -205,13 +205,13 @@ funktionieren unverändert. Neue Code-Stellen können optional die Facade injizi
 | Tab | Index | View | Inhalt |
 |-----|-------|------|--------|
 | Werkstatt | 0 | DashboardView | City-Szene, Workshop-Karten, Automation-Panel, Quick-Jobs |
-| Imperium | 1 | ImperiumView | Gebäude, Crafting+Research, Workers/Manager/MasterTools, Prestige |
+| Imperium | 1 | ImperiumView | Gebäude, Crafting+Research, Workers/Manager/MasterTools, Lager, Prestige |
 | Missionen | 2 | MissionenView | Heute (Daily, Quick-Jobs, Glücksrad) + Wettbewerbe (Weekly, Turnier, BattlePass) |
 | Gilde | 3 | GuildView | 5-Tab-Hub (Übersicht/Kampf/Forschung/Chat/Mitglieder) |
 | Shop | 4 | ShopView | IAP, Goldschrauben-Pakete, Ausrüstungs-Shop |
 
-**Imperium-Sub-Tabs** (ImperiumSubTab Enum): Workshops / Workers / Research / Equipment / Ascension.
-Ascension-Tab gesperrt bis `LegendeCount >= 3`, aber IMMER sichtbar (Lock-Icon-Overlay statt Ausblenden).
+**Imperium-Sub-Tabs** (ImperiumSubTab Enum, V7): Workshops / **Warehouse** / Workers / Research / Equipment / Ascension.
+Warehouse-Tab gesperrt bis Spielerlevel 50, Ascension-Tab gesperrt bis `LegendeCount >= 3` — beide IMMER sichtbar (Lock-Icon-Overlay statt Ausblenden).
 
 ### Game Loop (GameLoopService, 1s-Takt)
 
@@ -515,6 +515,30 @@ Alle 10 Workshops produzieren passiv Tier-1 Items (Unlock ab WS-Level 50):
 Skalierender Verkaufspreis: `BaseValue × (1 + log₂(1 + Level/25)) × CraftingSellMultiplier`
 (kein Soft-Cap, kein Speed/Rush im Multiplier).
 
+### Crafting & Warehouse (V7 — Phase 1 Ressourcen-Plan)
+
+**Rezept-Pool**: 30 Rezepte (10 Workshops × 3 Tiers). Jeder Workshop hat T1/T2/T3, freigeschaltet bei
+Workshop-Level 50/150/300. **Cross-Workshop-Inputs** an T2/T3-Rezepten greifen erst ab Spielerlevel
+100 (`GameBalanceConstants.MaterialOrderCrossWorkshopLevel`). Unter dem Schwellwert filtert
+`CraftingRecipe.GetEffectiveInputs()` Cross-Inputs raus (Onboarding-Schutz).
+
+**Lager-System** (`IWarehouseService`):
+- 20 Slots Start, Stack-Limit 50 pro Slot. Upgrade-Pfad +5 Slots, Basis-Kosten 50.000 €, Faktor 1.5x.
+- Max-Cap: 200 Slots (`WarehouseService.MaxSlots`).
+- Verfuegbarkeit-Berechnung: `Available = CraftingInventory[id] - ReservedInventory[id]` —
+  Phase 2 reserviert akzeptierte Auftraege gegen Doppelverbrauch.
+- Auto-Sell-Regel pro Slot: Bei Stack-Overflow Auto-Verkauf zum aktuellen Marktpreis statt Pause.
+- Ohne Auto-Sell: Workshop pausiert (Event `WorkshopPaused`), UI zeigt gelben Warn-Badge.
+
+**Stack-Safety**:
+- `CraftingService.StartCrafting()` prueft Output-Stack-Limit vor Job-Start (kein Material-Burn).
+- `CraftingService.CollectProduct()` prueft Stack-Limit bei Einsammeln (Job bleibt completed bei vollem Lager).
+- `AutoProductionService.AutoCraftHigherTiers()` prueft Output-Limit vor jedem Auto-Craft.
+- `SellProducts()` schliesst reservierte Mengen aus — Spieler kann nur freies Material verkaufen.
+
+**Save-Migration V6→V7**: Defaults setzen, ueberlaufende Stacks auf Limit kuerzen, Differenz × BaseValue
+als Geld auszahlen (kein Wert-Verlust).
+
 ### SaveGame-Versionen
 
 | Version | Beschreibung |
@@ -525,8 +549,9 @@ Skalierender Verkaufspreis: `BaseValue × (1 + log₂(1 + Level/25)) × Crafting
 | 4 | Settings, Statistics, Tutorial in Sub-Objekte extrahiert |
 | 5 | Boosts, DailyProgress, Cosmetics in Sub-Objekte extrahiert |
 | 6 | ParallelOrdersByWorkshop (Multi-Auftrag), PausedAt/AccumulatedPauseDuration |
+| 7 | Warehouse (SlotCount 20, StackLimit 50), ReservedInventory, AutoSellRules, HeirloomItems (Phase 1 Ressourcen-Plan). Migration kuerzt ueberlaufende Stacks und zahlt BaseValue als Geld aus. |
 
-`GameState.CurrentStateVersion = 6` (const) — Cloud-Save mit höherer Version triggert Alert statt Download.
+`GameState.CurrentStateVersion = 7` (const) — Cloud-Save mit höherer Version triggert Alert statt Download.
 
 ### Daily Challenge Tracking
 

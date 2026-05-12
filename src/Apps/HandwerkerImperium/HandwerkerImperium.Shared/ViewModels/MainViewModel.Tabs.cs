@@ -119,6 +119,7 @@ public sealed partial class MainViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsImperiumWorkshopsActive))]
+    [NotifyPropertyChangedFor(nameof(IsImperiumWarehouseActive))]
     [NotifyPropertyChangedFor(nameof(IsImperiumWorkersActive))]
     [NotifyPropertyChangedFor(nameof(IsImperiumResearchActive))]
     [NotifyPropertyChangedFor(nameof(IsImperiumEquipmentActive))]
@@ -126,10 +127,19 @@ public sealed partial class MainViewModel
     private ImperiumSubTab _imperiumSubTab = ImperiumSubTab.Workshops;
 
     public bool IsImperiumWorkshopsActive => ImperiumSubTab == ImperiumSubTab.Workshops;
+    /// <summary>V7 (Phase 1 Ressourcen-Plan): Lager-Sub-Tab im Imperium.</summary>
+    public bool IsImperiumWarehouseActive => ImperiumSubTab == ImperiumSubTab.Warehouse;
     public bool IsImperiumWorkersActive => ImperiumSubTab == ImperiumSubTab.Workers;
     public bool IsImperiumResearchActive => ImperiumSubTab == ImperiumSubTab.Research;
     public bool IsImperiumEquipmentActive => ImperiumSubTab == ImperiumSubTab.Equipment;
     public bool IsImperiumAscensionActive => ImperiumSubTab == ImperiumSubTab.Ascension;
+
+    /// <summary>
+    /// V7: Lager-Sub-Tab erst ab Spielerlevel 50 (analog zu Auto-Produktion).
+    /// Vorher gibt es nichts zu lagern.
+    /// </summary>
+    public bool IsImperiumWarehouseUnlocked
+        => HeaderVM.PlayerLevel >= GameBalanceConstants.AutoProductionUnlockLevel;
 
     /// <summary>
     /// Imperium-Sub-Tab waehlen (per RelayCommand aus AXAML).

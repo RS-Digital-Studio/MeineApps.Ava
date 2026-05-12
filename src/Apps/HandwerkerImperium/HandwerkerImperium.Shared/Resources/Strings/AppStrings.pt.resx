@@ -6200,6 +6200,39 @@
   <data name="CraftPrototype" xml:space="preserve">
     <value>Construir Prot&#243;tipo</value>
   </data>
+  <data name="ProductFoundation" xml:space="preserve"><value>Funda&#231;&#227;o de Concreto</value></data>
+  <data name="ProductFramework" xml:space="preserve"><value>M&#243;dulo Estrutural</value></data>
+  <data name="ProductContractComplex" xml:space="preserve"><value>Contrato Complexo</value></data>
+  <data name="ProductMasterFittings" xml:space="preserve"><value>Ferragens Mestras</value></data>
+  <data name="ProductInnovation" xml:space="preserve"><value>Inova&#231;&#227;o</value></data>
+  <data name="ProductSkyscraperFrame" xml:space="preserve"><value>Estrutura de Arranha-c&#233;u</value></data>
+  <data name="ProductMasterBlueprint" xml:space="preserve"><value>Planta Mestra</value></data>
+  <data name="ProductGeneralContract" xml:space="preserve"><value>Contrato Geral</value></data>
+  <data name="ProductMasterpieceFittings" xml:space="preserve"><value>Ferragens Obra-Prima</value></data>
+  <data name="ProductPatent" xml:space="preserve"><value>Patente</value></data>
+  <data name="CraftFoundation" xml:space="preserve"><value>Despejar Funda&#231;&#227;o</value></data>
+  <data name="CraftFramework" xml:space="preserve"><value>Construir M&#243;dulo Estrutural</value></data>
+  <data name="CraftContractComplex" xml:space="preserve"><value>Redigir Contrato Complexo</value></data>
+  <data name="CraftMasterFittings" xml:space="preserve"><value>Forjar Ferragens Mestras</value></data>
+  <data name="CraftInnovation" xml:space="preserve"><value>Desenvolver Inova&#231;&#227;o</value></data>
+  <data name="CraftSkyscraperFrame" xml:space="preserve"><value>Construir Estrutura de Arranha-c&#233;u</value></data>
+  <data name="CraftMasterBlueprint" xml:space="preserve"><value>Desenhar Planta Mestra</value></data>
+  <data name="CraftGeneralContract" xml:space="preserve"><value>Negociar Contrato Geral</value></data>
+  <data name="CraftMasterpieceFittings" xml:space="preserve"><value>Forjar Ferragens Obra-Prima</value></data>
+  <data name="CraftPatent" xml:space="preserve"><value>Registrar Patente</value></data>
+  <data name="ImperiumSubTabWarehouse" xml:space="preserve"><value>Armaz&#233;m</value></data>
+  <data name="WarehouseTitle" xml:space="preserve"><value>Armaz&#233;m</value></data>
+  <data name="WarehouseSubtitle" xml:space="preserve"><value>Gerencie suas mat&#233;rias-primas e bens fabricados.</value></data>
+  <data name="WarehouseSlotsFormat" xml:space="preserve"><value>{0} / {1} espa&#231;os</value></data>
+  <data name="WarehouseStackLimitFormat" xml:space="preserve"><value>M&#225;x. {0} por espa&#231;o</value></data>
+  <data name="WarehouseTotalValue" xml:space="preserve"><value>Valor Total</value></data>
+  <data name="WarehouseMaxSlots" xml:space="preserve"><value>Limite m&#225;x. alcan&#231;ado</value></data>
+  <data name="WarehouseUpgradeButton" xml:space="preserve"><value>+{0} espa&#231;os — {1}</value></data>
+  <data name="WarehouseEmptyTitle" xml:space="preserve"><value>Seu armaz&#233;m est&#225; vazio</value></data>
+  <data name="WarehouseEmptyHint" xml:space="preserve"><value>Coloque suas oficinas para trabalhar — a produ&#231;&#227;o autom&#225;tica encher&#225; seu armaz&#233;m com mat&#233;rias-primas.</value></data>
+  <data name="WarehouseAutoSell" xml:space="preserve"><value>Venda Autom&#225;tica</value></data>
+  <data name="Sell1" xml:space="preserve"><value>Vender 1</value></data>
+  <data name="Sell10" xml:space="preserve"><value>Vender 10</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Produ&#231;&#227;o Autom&#225;tica</value>
   </data>

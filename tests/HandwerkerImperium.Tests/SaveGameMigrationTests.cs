@@ -61,9 +61,16 @@ public class SaveGameMigrationTests
 
         var migrated = SaveGameService.MigrateState(state);
 
-        migrated.Version.Should().Be(6);
+        // V7 (Phase 1 Ressourcen-Plan): V5→V6 migriert ActiveOrder, V6→V7 ergaenzt Lager-Felder.
+        migrated.Version.Should().Be(7);
         migrated.ParallelOrdersByWorkshop.Should().ContainKey(WorkshopType.Carpenter);
         migrated.ParallelOrdersByWorkshop[WorkshopType.Carpenter].Id.Should().Be("test-order");
+        // V7-Felder sind nach Migration sauber initialisiert.
+        migrated.WarehouseSlotCount.Should().BeGreaterThanOrEqualTo(20);
+        migrated.WarehouseStackLimit.Should().BeGreaterThanOrEqualTo(50);
+        migrated.ReservedInventory.Should().NotBeNull();
+        migrated.AutoSellRules.Should().NotBeNull();
+        migrated.HeirloomItems.Should().NotBeNull();
     }
 
     [Theory]
@@ -90,8 +97,8 @@ public class SaveGameMigrationTests
     [Fact]
     public void Roundtrip_SerializeDeserialize_StatePreserved()
     {
-        // Property: JSON-Roundtrip mit V6-State erhaelt alle Pflicht-Werte.
-        var state = CreateMinimalState(6);
+        // Property: JSON-Roundtrip mit aktuellem State (CurrentStateVersion) erhaelt alle Pflicht-Werte.
+        var state = CreateMinimalState(GameState.CurrentStateVersion);
         state.Money = 12345.67m;
         state.GoldenScrews = 250;
         state.PlayerLevel = 42;

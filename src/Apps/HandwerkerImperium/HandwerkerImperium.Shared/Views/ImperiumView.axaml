@@ -57,11 +57,11 @@
         </Border>
       </Grid>
 
-      <!-- Sub-Tab-Leiste (Workshops/Workers/Research/Equipment/Ascension) -->
+      <!-- Sub-Tab-Leiste (Workshops/Lager/Workers/Research/Equipment/Ascension) -->
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="12" Padding="6,6"
               AutomationProperties.AutomationId="Imperium_Border_SubTabs">
-        <UniformGrid Columns="5" Rows="1">
+        <UniformGrid Columns="6" Rows="1">
           <Button Classes="Text"
                   Classes.SubTabActive="{Binding IsImperiumWorkshopsActive}"
                   Command="{Binding SelectImperiumSubTabCommand}"
@@ -73,6 +73,31 @@
                               HorizontalAlignment="Center"
                               Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate ImperiumSubTabWorkshops}"
+                         FontSize="10" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
+          <!-- V7 (Phase 1 Ressourcen-Plan): Lager-Sub-Tab. Gesperrt bis Spielerlevel 50. -->
+          <Button Classes="Text"
+                  Classes.SubTabActive="{Binding IsImperiumWarehouseActive}"
+                  IsEnabled="{Binding IsImperiumWarehouseUnlocked}"
+                  Command="{Binding SelectImperiumSubTabCommand}"
+                  CommandParameter="Warehouse"
+                  MinHeight="44" Padding="6,8" CornerRadius="8"
+                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Warehouse">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <Panel HorizontalAlignment="Center">
+                <icons:GameIcon Kind="Warehouse" Width="20" Height="20"
+                                HorizontalAlignment="Center"
+                                Foreground="{DynamicResource TextPrimaryBrush}" />
+                <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Margin="0,0,-4,-4"
+                                IsVisible="{Binding !IsImperiumWarehouseUnlocked}"
+                                Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Panel>
+              <TextBlock Text="{loc:Translate ImperiumSubTabWarehouse}"
                          FontSize="10" FontWeight="SemiBold"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -157,6 +182,7 @@
 
       <!-- Sub-Tab-Inhalte (eigenständige UserControls) -->
       <imp:WorkshopsSection IsVisible="{Binding IsImperiumWorkshopsActive}" />
+      <imp:WarehouseSection IsVisible="{Binding IsImperiumWarehouseActive}" />
       <imp:ResearchSection IsVisible="{Binding IsImperiumResearchActive}" />
       <imp:WorkersSection IsVisible="{Binding IsImperiumWorkersActive}" />
       <imp:EquipmentSection IsVisible="{Binding IsImperiumEquipmentActive}" />

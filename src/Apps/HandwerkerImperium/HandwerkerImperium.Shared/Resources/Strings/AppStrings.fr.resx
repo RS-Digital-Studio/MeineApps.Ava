@@ -6200,6 +6200,39 @@
   <data name="CraftPrototype" xml:space="preserve">
     <value>Construire Prototype</value>
   </data>
+  <data name="ProductFoundation" xml:space="preserve"><value>Fondation B&#233;ton</value></data>
+  <data name="ProductFramework" xml:space="preserve"><value>Module de Charpente</value></data>
+  <data name="ProductContractComplex" xml:space="preserve"><value>Contrat Complexe</value></data>
+  <data name="ProductMasterFittings" xml:space="preserve"><value>Ferrures de Ma&#238;tre</value></data>
+  <data name="ProductInnovation" xml:space="preserve"><value>Innovation</value></data>
+  <data name="ProductSkyscraperFrame" xml:space="preserve"><value>Structure de Gratte-Ciel</value></data>
+  <data name="ProductMasterBlueprint" xml:space="preserve"><value>Plan de Ma&#238;tre</value></data>
+  <data name="ProductGeneralContract" xml:space="preserve"><value>Contrat G&#233;n&#233;ral</value></data>
+  <data name="ProductMasterpieceFittings" xml:space="preserve"><value>Ferrures Chef-d&apos;&#338;uvre</value></data>
+  <data name="ProductPatent" xml:space="preserve"><value>Brevet</value></data>
+  <data name="CraftFoundation" xml:space="preserve"><value>Couler la Fondation</value></data>
+  <data name="CraftFramework" xml:space="preserve"><value>Construire la Charpente</value></data>
+  <data name="CraftContractComplex" xml:space="preserve"><value>R&#233;diger un Contrat Complexe</value></data>
+  <data name="CraftMasterFittings" xml:space="preserve"><value>Forger des Ferrures de Ma&#238;tre</value></data>
+  <data name="CraftInnovation" xml:space="preserve"><value>D&#233;velopper une Innovation</value></data>
+  <data name="CraftSkyscraperFrame" xml:space="preserve"><value>Construire la Structure du Gratte-Ciel</value></data>
+  <data name="CraftMasterBlueprint" xml:space="preserve"><value>Dessiner un Plan de Ma&#238;tre</value></data>
+  <data name="CraftGeneralContract" xml:space="preserve"><value>N&#233;gocier un Contrat G&#233;n&#233;ral</value></data>
+  <data name="CraftMasterpieceFittings" xml:space="preserve"><value>Forger des Ferrures Chef-d&apos;&#338;uvre</value></data>
+  <data name="CraftPatent" xml:space="preserve"><value>D&#233;poser un Brevet</value></data>
+  <data name="ImperiumSubTabWarehouse" xml:space="preserve"><value>Entrep&#244;t</value></data>
+  <data name="WarehouseTitle" xml:space="preserve"><value>Entrep&#244;t</value></data>
+  <data name="WarehouseSubtitle" xml:space="preserve"><value>G&#233;rez vos mati&#232;res premi&#232;res et produits finis.</value></data>
+  <data name="WarehouseSlotsFormat" xml:space="preserve"><value>{0} / {1} emplacements</value></data>
+  <data name="WarehouseStackLimitFormat" xml:space="preserve"><value>Max. {0} par emplacement</value></data>
+  <data name="WarehouseTotalValue" xml:space="preserve"><value>Valeur Totale</value></data>
+  <data name="WarehouseMaxSlots" xml:space="preserve"><value>Max. atteint</value></data>
+  <data name="WarehouseUpgradeButton" xml:space="preserve"><value>+{0} emplacements — {1}</value></data>
+  <data name="WarehouseEmptyTitle" xml:space="preserve"><value>Votre entrep&#244;t est vide</value></data>
+  <data name="WarehouseEmptyHint" xml:space="preserve"><value>Faites travailler vos ateliers — la production automatique remplit votre entrep&#244;t.</value></data>
+  <data name="WarehouseAutoSell" xml:space="preserve"><value>Vente Auto</value></data>
+  <data name="Sell1" xml:space="preserve"><value>Vendre 1</value></data>
+  <data name="Sell10" xml:space="preserve"><value>Vendre 10</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Production Automatique</value>
   </data>

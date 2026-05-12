@@ -6341,6 +6341,107 @@
   <data name="CraftPrototype" xml:space="preserve">
     <value>Prototyp bauen</value>
   </data>
+  <!-- ═══════ V7 (Phase 1 Ressourcen-Plan): Neue T2/T3-Produkte + Cross-Workshop-Rezepte ═══════ -->
+  <data name="ProductFoundation" xml:space="preserve">
+    <value>Beton-Fundament</value>
+  </data>
+  <data name="ProductFramework" xml:space="preserve">
+    <value>Tragwerk-Modul</value>
+  </data>
+  <data name="ProductContractComplex" xml:space="preserve">
+    <value>Komplex-Bauvertrag</value>
+  </data>
+  <data name="ProductMasterFittings" xml:space="preserve">
+    <value>Meister-Beschl&#228;ge</value>
+  </data>
+  <data name="ProductInnovation" xml:space="preserve">
+    <value>Innovation</value>
+  </data>
+  <data name="ProductSkyscraperFrame" xml:space="preserve">
+    <value>Hochhaus-Rohbau</value>
+  </data>
+  <data name="ProductMasterBlueprint" xml:space="preserve">
+    <value>Komplett-Bauplan</value>
+  </data>
+  <data name="ProductGeneralContract" xml:space="preserve">
+    <value>Generalauftrag</value>
+  </data>
+  <data name="ProductMasterpieceFittings" xml:space="preserve">
+    <value>Meisterwerk-Beschl&#228;ge</value>
+  </data>
+  <data name="ProductPatent" xml:space="preserve">
+    <value>Patent</value>
+  </data>
+  <data name="CraftFoundation" xml:space="preserve">
+    <value>Fundament gie&#223;en</value>
+  </data>
+  <data name="CraftFramework" xml:space="preserve">
+    <value>Tragwerk bauen</value>
+  </data>
+  <data name="CraftContractComplex" xml:space="preserve">
+    <value>Komplex-Vertrag aufsetzen</value>
+  </data>
+  <data name="CraftMasterFittings" xml:space="preserve">
+    <value>Meister-Beschl&#228;ge schmieden</value>
+  </data>
+  <data name="CraftInnovation" xml:space="preserve">
+    <value>Innovation entwickeln</value>
+  </data>
+  <data name="CraftSkyscraperFrame" xml:space="preserve">
+    <value>Hochhaus-Rohbau errichten</value>
+  </data>
+  <data name="CraftMasterBlueprint" xml:space="preserve">
+    <value>Komplett-Bauplan zeichnen</value>
+  </data>
+  <data name="CraftGeneralContract" xml:space="preserve">
+    <value>Generalauftrag verhandeln</value>
+  </data>
+  <data name="CraftMasterpieceFittings" xml:space="preserve">
+    <value>Meisterwerk-Beschl&#228;ge schmieden</value>
+  </data>
+  <data name="CraftPatent" xml:space="preserve">
+    <value>Patent anmelden</value>
+  </data>
+  <!-- ═══════ V7 (Phase 1 Ressourcen-Plan): Lager-UI ═══════ -->
+  <data name="ImperiumSubTabWarehouse" xml:space="preserve">
+    <value>Lager</value>
+  </data>
+  <data name="WarehouseTitle" xml:space="preserve">
+    <value>Lager</value>
+  </data>
+  <data name="WarehouseSubtitle" xml:space="preserve">
+    <value>Verwalte deine Rohstoffe und gefertigten Waren.</value>
+  </data>
+  <data name="WarehouseSlotsFormat" xml:space="preserve">
+    <value>{0} / {1} Pl&#228;tze</value>
+  </data>
+  <data name="WarehouseStackLimitFormat" xml:space="preserve">
+    <value>Max. {0} pro Platz</value>
+  </data>
+  <data name="WarehouseTotalValue" xml:space="preserve">
+    <value>Gesamtwert</value>
+  </data>
+  <data name="WarehouseMaxSlots" xml:space="preserve">
+    <value>Max. Pl&#228;tze erreicht</value>
+  </data>
+  <data name="WarehouseUpgradeButton" xml:space="preserve">
+    <value>+{0} Pl&#228;tze — {1}</value>
+  </data>
+  <data name="WarehouseEmptyTitle" xml:space="preserve">
+    <value>Dein Lager ist leer</value>
+  </data>
+  <data name="WarehouseEmptyHint" xml:space="preserve">
+    <value>Schicke deine Werkst&#228;tten an die Arbeit — Auto-Produktion f&#252;llt dein Lager mit Rohstoffen.</value>
+  </data>
+  <data name="WarehouseAutoSell" xml:space="preserve">
+    <value>Auto-Verkauf</value>
+  </data>
+  <data name="Sell1" xml:space="preserve">
+    <value>1 verkaufen</value>
+  </data>
+  <data name="Sell10" xml:space="preserve">
+    <value>10 verkaufen</value>
+  </data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Auto-Produktion</value>
   </data>

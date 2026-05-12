@@ -1,0 +1,178 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Imperium.WarehouseSection"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
+
+  <StackPanel Spacing="10"
+              AutomationProperties.AutomationId="Imperium_Section_Warehouse">
+
+    <!-- HEADER: Slot-Belegung + Gesamtwert + Upgrade-Button -->
+    <Border Classes="CardElevated" CornerRadius="12" Padding="14"
+            AutomationProperties.AutomationId="Imperium_Border_WarehouseHeader">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+        <Border CornerRadius="14" Width="48" Height="48" VerticalAlignment="Center"
+                Background="#1FD97706">
+          <icons:GameIcon Kind="Warehouse" Width="28" Height="28"
+                          Foreground="{StaticResource CraftPrimaryBrush}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+
+        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+          <TextBlock Text="{Binding WarehouseVM.Title}"
+                     FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="{Binding WarehouseVM.SlotDisplay}"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding WarehouseVM.StackLimitDisplay}"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+          <TextBlock Text="{loc:Translate WarehouseTotalValue}"
+                     FontSize="10" HorizontalAlignment="Right"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding WarehouseVM.TotalValueDisplay}"
+                     FontSize="16" FontWeight="Bold" HorizontalAlignment="Right"
+                     Foreground="{DynamicResource SuccessBrush}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- SLOT-UPGRADE-BUTTON -->
+    <Button Classes="Primary" Padding="14,10" CornerRadius="10"
+            HorizontalAlignment="Stretch" MinHeight="48"
+            Command="{Binding WarehouseVM.UpgradeSlotsCommand}"
+            IsEnabled="{Binding WarehouseVM.CanUpgradeSlots}"
+            AutomationProperties.AutomationId="Imperium_Btn_UpgradeWarehouse">
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+        <icons:GameIcon Kind="ArrowUpBold" Width="18" Height="18" />
+        <TextBlock Text="{Binding WarehouseVM.UpgradeButtonText}"
+                   FontSize="13" FontWeight="SemiBold" />
+      </StackPanel>
+    </Button>
+
+    <!-- EMPTY-STATE -->
+    <Border Classes="CardElevated" CornerRadius="12" Padding="20"
+            IsVisible="{Binding !WarehouseVM.HasItems}">
+      <StackPanel Spacing="8" HorizontalAlignment="Center">
+        <icons:GameIcon Kind="PackageVariant" Width="48" Height="48"
+                        Foreground="{DynamicResource TextSecondaryBrush}"
+                        HorizontalAlignment="Center" />
+        <TextBlock Text="{loc:Translate WarehouseEmptyTitle}"
+                   FontSize="14" FontWeight="SemiBold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="{loc:Translate WarehouseEmptyHint}"
+                   FontSize="12" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="280"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+      </StackPanel>
+    </Border>
+
+    <!-- SLOT-LISTE -->
+    <ItemsControl ItemsSource="{Binding WarehouseVM.Slots}"
+                  IsVisible="{Binding WarehouseVM.HasItems}"
+                  AutomationProperties.AutomationId="Imperium_Items_WarehouseSlots">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:WarehouseSlotDisplay">
+          <Border Classes="CardElevated" CornerRadius="10" Padding="10" Margin="0,4">
+            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+
+              <!-- Zeile 1: Icon + Name + Tier + Menge -->
+              <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <Border CornerRadius="10" Width="40" Height="40"
+                        Background="#1F3B82F6" VerticalAlignment="Center">
+                  <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                  Width="22" Height="22"
+                                  Foreground="{StaticResource CraftPrimaryBrush}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                    <Border CornerRadius="6" Padding="6,1"
+                            Background="#10D97706"
+                            IsVisible="{Binding TierLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                      <TextBlock Text="{Binding TierLabel}" FontSize="10" FontWeight="Bold"
+                                 Foreground="{StaticResource CraftGoldBrush}" />
+                    </Border>
+                  </StackPanel>
+                  <TextBlock Text="{Binding UnitValueDisplay}" FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                  <TextBlock Text="{Binding QuantityDisplay}"
+                             FontSize="16" FontWeight="Bold" HorizontalAlignment="Right"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding TotalValueDisplay}"
+                             FontSize="11" HorizontalAlignment="Right"
+                             Foreground="{DynamicResource SuccessBrush}" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Zeile 2: Stack-Fortschrittsbalken -->
+              <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <ProgressBar Grid.Column="0"
+                             Minimum="0" Maximum="1"
+                             Value="{Binding StackFillRatio}"
+                             Height="6" CornerRadius="3"
+                             Foreground="{StaticResource CraftPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding StackFillPercent}"
+                           FontSize="10" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Grid>
+
+              <!-- Zeile 3: Action-Buttons -->
+              <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="6">
+                <Button Grid.Column="0" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="32"
+                        IsEnabled="{Binding CanSell}"
+                        Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.SellOneCommand}"
+                        CommandParameter="{Binding}"
+                        AutomationProperties.AutomationId="Imperium_Btn_Sell1">
+                  <TextBlock Text="{loc:Translate Sell1}" FontSize="11" FontWeight="SemiBold" />
+                </Button>
+                <Button Grid.Column="1" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="32"
+                        IsEnabled="{Binding CanSell}"
+                        Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.SellTenCommand}"
+                        CommandParameter="{Binding}"
+                        AutomationProperties.AutomationId="Imperium_Btn_Sell10">
+                  <TextBlock Text="{loc:Translate Sell10}" FontSize="11" FontWeight="SemiBold" />
+                </Button>
+                <Button Grid.Column="2" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="32"
+                        IsEnabled="{Binding CanSell}"
+                        Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.SellAllOfSlotCommand}"
+                        CommandParameter="{Binding}"
+                        AutomationProperties.AutomationId="Imperium_Btn_SellAll">
+                  <TextBlock Text="{loc:Translate SellAll}" FontSize="11" FontWeight="SemiBold" />
+                </Button>
+
+                <ToggleButton Grid.Column="4"
+                              MinHeight="32" Padding="8,4" CornerRadius="6"
+                              IsChecked="{Binding AutoSellEnabled, Mode=OneWay}"
+                              Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.ToggleAutoSellCommand}"
+                              CommandParameter="{Binding}"
+                              AutomationProperties.AutomationId="Imperium_Btn_AutoSellToggle">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <icons:GameIcon Kind="CashMultiple" Width="14" Height="14" />
+                    <TextBlock Text="{loc:Translate WarehouseAutoSell}" FontSize="11" FontWeight="SemiBold" />
+                  </StackPanel>
+                </ToggleButton>
+              </Grid>
+
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+  </StackPanel>
+</UserControl>

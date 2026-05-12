@@ -380,6 +380,8 @@ public partial class App : Application
         services.AddSingleton<IGuildInviteService, GuildInviteService>();
         services.AddSingleton<ICraftingService, CraftingService>();
         services.AddSingleton<IAutoProductionService, AutoProductionService>();
+        // V7 (Phase 1 Ressourcen-Plan): Lager-Service mit Slots/Stack-Limits/Reservierung
+        services.AddSingleton<IWarehouseService, WarehouseService>();
 
         // Late-Game-Services (Ascension, Rebirth, VIP)
         services.AddSingleton<IAscensionService, AscensionService>();
@@ -452,6 +454,7 @@ public partial class App : Application
         // Thin-Wrapper-Sub-VMs (Phase 4 17.04.2026) werden im GuildViewModel-Ctor manuell erstellt
         // (zirkuläre DI vermieden: Sub-VM haelt Referenz auf Parent-GuildViewModel).
         services.AddSingleton<CraftingViewModel>();
+        services.AddSingleton<WarehouseSectionViewModel>();
         services.AddSingleton<LuckySpinViewModel>();
         services.AddSingleton<AscensionViewModel>();
     }

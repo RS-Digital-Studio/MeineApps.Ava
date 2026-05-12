@@ -478,6 +478,44 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         state.CompletedRecipeIds ??= [];
         state.PerfectMiniGameTypes ??= [];
 
+        // V7 (Phase 1 Ressourcen-Plan): Warehouse-Felder
+        state.ReservedInventory ??= new Dictionary<string, int>();
+        state.AutoSellRules ??= new Dictionary<string, AutoSellRule>();
+        state.HeirloomItems ??= [];
+        if (state.WarehouseSlotCount < 20) state.WarehouseSlotCount = 20;
+        if (state.WarehouseSlotCount > WarehouseService.MaxSlots) state.WarehouseSlotCount = WarehouseService.MaxSlots;
+        if (state.WarehouseStackLimit < 50) state.WarehouseStackLimit = 50;
+        if (state.WarehouseStackLimit > 9999) state.WarehouseStackLimit = 9999;
+
+        // CraftingInventory: Stack-Limit hart durchsetzen (Save-Editor-Schutz)
+        var inventoryKeys = state.CraftingInventory.Keys.ToList();
+        foreach (var productId in inventoryKeys)
+        {
+            int count = state.CraftingInventory[productId];
+            if (count <= 0)
+            {
+                state.CraftingInventory.Remove(productId);
+                continue;
+            }
+            if (count > state.WarehouseStackLimit)
+                state.CraftingInventory[productId] = state.WarehouseStackLimit;
+        }
+
+        // ReservedInventory darf nie groesser sein als CraftingInventory
+        var reservedKeys = state.ReservedInventory.Keys.ToList();
+        foreach (var productId in reservedKeys)
+        {
+            int reserved = state.ReservedInventory[productId];
+            int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            if (reserved <= 0 || available <= 0)
+            {
+                state.ReservedInventory.Remove(productId);
+                continue;
+            }
+            if (reserved > available)
+                state.ReservedInventory[productId] = available;
+        }
+
         // Workshop Rebirth Stars validieren (0-5 pro Workshop)
         state.WorkshopStars ??= new Dictionary<string, int>();
         var invalidStarKeys = state.WorkshopStars
@@ -617,6 +655,42 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                 state.ParallelOrdersByWorkshop[state.ActiveOrder.WorkshopType] = state.ActiveOrder;
             }
             state.Version = 6;
+        }
+
+        // V6 → V7 (Phase 1 Ressourcen-Plan): Lager-Slots, Stack-Limits, ReservedInventory.
+        // Defaults: 20 Slots, Stack-Limit 50. Vorhandene CraftingInventory-Eintraege werden
+        // ggf. auf das Stack-Limit gekuerzt; die Differenz wird als Geld gutgeschrieben
+        // (1:1 zu BaseValue, damit kein wertvoller Bestand verloren geht).
+        if (state.Version < 7)
+        {
+            if (state.WarehouseSlotCount <= 0) state.WarehouseSlotCount = 20;
+            if (state.WarehouseStackLimit <= 0) state.WarehouseStackLimit = 50;
+            state.ReservedInventory ??= new Dictionary<string, int>();
+            state.AutoSellRules ??= new Dictionary<string, AutoSellRule>();
+            state.HeirloomItems ??= [];
+
+            // Stack-Truncation: alte Saves konnten unbegrenzt stapeln.
+            // Ueberschuss wird zum BaseValue (kein Sell-Multiplier!) ausbezahlt damit der
+            // Spieler nichts verliert — der konservative Pfad ist intentional, weil die
+            // V6-Inventories oft Massen-Auto-Production gesammelt haben.
+            var allProducts = CraftingProduct.GetAllProducts();
+            decimal compensation = 0m;
+            var keys = state.CraftingInventory.Keys.ToList();
+            foreach (var productId in keys)
+            {
+                int count = state.CraftingInventory[productId];
+                if (count <= state.WarehouseStackLimit) continue;
+
+                int overflow = count - state.WarehouseStackLimit;
+                state.CraftingInventory[productId] = state.WarehouseStackLimit;
+
+                if (allProducts.TryGetValue(productId, out var product))
+                    compensation += product.BaseValue * overflow;
+            }
+            if (compensation > 0)
+                state.Money += compensation;
+
+            state.Version = 7;
         }
 
         return state;

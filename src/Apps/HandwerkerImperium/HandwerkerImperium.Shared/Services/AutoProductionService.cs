@@ -9,9 +9,19 @@ namespace HandwerkerImperium.Services;
 /// Jeder Workshop mit Level >= 50 produziert passiv Tier-1 Items
 /// basierend auf der Anzahl arbeitender Worker.
 /// Rate: 1 Item pro Worker alle 180s (Standard), 120s (InnovationLab), 60s (MasterSmith).
+///
+/// V7 (Phase 1 Ressourcen-Plan): Respektiert Lager-Slot/Stack-Limits ueber
+/// <see cref="IWarehouseService"/>. Bei vollem Stack greift Auto-Verkauf oder
+/// Pause-Logik (Workshop-Card zeigt gelben Warn-Badge).
+///
+/// Cross-Workshop-Auto-Crafting: Ab Spielerlevel 100 werden Cross-Workshop-Inputs
+/// gefordert (siehe <see cref="GameBalanceConstants.MaterialOrderCrossWorkshopLevel"/>).
 /// </summary>
 public sealed class AutoProductionService : IAutoProductionService
 {
+    private readonly IWarehouseService? _warehouse;
+    private readonly IGameStateService? _gameState;
+
     /// <summary>
     /// Mapping: WorkshopType → Tier-1 Produkt-ID für Auto-Produktion.
     /// </summary>
@@ -29,6 +39,20 @@ public sealed class AutoProductionService : IAutoProductionService
         [WorkshopType.InnovationLab] = "prototype",
     };
 
+    /// <summary>
+    /// Parameterloser Ctor — bewahrt Backward-Compat fuer Tests und alte DI-Setups.
+    /// </summary>
+    public AutoProductionService() { }
+
+    /// <summary>
+    /// Voller Ctor mit WarehouseService + GameStateService — DI nutzt diesen Ctor.
+    /// </summary>
+    public AutoProductionService(IWarehouseService warehouse, IGameStateService gameState)
+    {
+        _warehouse = warehouse;
+        _gameState = gameState;
+    }
+
     public void ProduceForAllWorkshops(GameState state)
     {
         state.CraftingInventory ??= new Dictionary<string, int>();
@@ -38,8 +62,6 @@ public sealed class AutoProductionService : IAutoProductionService
             var workshop = state.Workshops[i];
             if (!IsAutoProductionUnlocked(workshop)) continue;
 
-            // MasterSmith hat eigenen Tick im GameLoopService (ProduceMasterSmithMaterials),
-            // produziert aber zusätzlich sein eigenes Produkt "fittings" hier
             var productId = GetTier1ProductId(workshop.Type);
             if (productId == null) continue;
 
@@ -49,13 +71,21 @@ public sealed class AutoProductionService : IAutoProductionService
                 if (workshop.Workers[w].IsWorking) workingWorkers++;
             if (workingWorkers <= 0) continue;
 
-            // Items produzieren
-            for (int w = 0; w < workingWorkers; w++)
+            // V7: Stack-Limits via WarehouseService durchsetzen.
+            // Fallback (kein DI): direktes Inventar-Increment wie vorher.
+            if (_warehouse != null)
             {
-                if (state.CraftingInventory.ContainsKey(productId))
-                    state.CraftingInventory[productId]++;
-                else
-                    state.CraftingInventory[productId] = 1;
+                _warehouse.AddToInventory(productId, workingWorkers, workshop.Type);
+            }
+            else
+            {
+                for (int w = 0; w < workingWorkers; w++)
+                {
+                    if (state.CraftingInventory.ContainsKey(productId))
+                        state.CraftingInventory[productId]++;
+                    else
+                        state.CraftingInventory[productId] = 1;
+                }
             }
 
             state.Statistics.TotalItemsAutoProduced += workingWorkers;
@@ -79,12 +109,14 @@ public sealed class AutoProductionService : IAutoProductionService
     /// Automatisches Crafting: Konvertiert Tier-1→Tier-2 (ab WS-Level 200) und Tier-2→Tier-3 (ab WS-Level 400).
     /// Wird alle 360 Ticks (~6min) vom GameLoop aufgerufen.
     /// Pro Aufruf wird maximal 1 Rezept pro Workshop verarbeitet (verhindert sofortige Massen-Konvertierung).
+    /// V7: Respektiert Cross-Workshop-Inputs ab Spielerlevel 100 und Lager-Stack-Limits.
     /// </summary>
     public int AutoCraftHigherTiers(GameState state)
     {
         state.CraftingInventory ??= new Dictionary<string, int>();
         var allRecipes = CraftingRecipe.GetAllRecipes();
         int totalCrafted = 0;
+        int playerLevel = state.PlayerLevel;
 
         for (int i = 0; i < state.Workshops.Count; i++)
         {
@@ -93,7 +125,7 @@ public sealed class AutoProductionService : IAutoProductionService
             // Tier-3 zuerst prüfen (höherwertig, verbraucht Tier-2)
             if (workshop.Level >= GameBalanceConstants.AutoCraftTier3UnlockLevel)
             {
-                if (TryAutoCraftRecipe(state, allRecipes, workshop.Type, 3))
+                if (TryAutoCraftRecipe(state, allRecipes, workshop.Type, 3, playerLevel))
                 {
                     totalCrafted++;
                     continue; // Max 1 Rezept pro Workshop pro Tick
@@ -103,7 +135,7 @@ public sealed class AutoProductionService : IAutoProductionService
             // Dann Tier-2
             if (workshop.Level >= GameBalanceConstants.AutoCraftTier2UnlockLevel)
             {
-                if (TryAutoCraftRecipe(state, allRecipes, workshop.Type, 2))
+                if (TryAutoCraftRecipe(state, allRecipes, workshop.Type, 2, playerLevel))
                     totalCrafted++;
             }
         }
@@ -113,9 +145,12 @@ public sealed class AutoProductionService : IAutoProductionService
 
     /// <summary>
     /// Versucht ein Rezept eines bestimmten Tiers für einen Workshop-Typ automatisch herzustellen.
-    /// Prüft ob genug Input-Materialien vorhanden sind und erstellt das Output-Produkt.
+    /// Prüft ob genug Input-Materialien vorhanden sind, ob das Output-Stack-Limit eingehalten
+    /// wird, und erstellt das Output-Produkt.
+    /// V7: Cross-Workshop-Inputs werden ab Spielerlevel 100 gefordert.
     /// </summary>
-    private static bool TryAutoCraftRecipe(GameState state, List<CraftingRecipe> allRecipes, WorkshopType type, int tier)
+    private bool TryAutoCraftRecipe(GameState state, List<CraftingRecipe> allRecipes,
+        WorkshopType type, int tier, int playerLevel)
     {
         for (int r = 0; r < allRecipes.Count; r++)
         {
@@ -123,11 +158,19 @@ public sealed class AutoProductionService : IAutoProductionService
             if (recipe.WorkshopType != type || recipe.Tier != tier) continue;
             if (recipe.InputProducts.Count == 0) continue;
 
-            // Prüfe ob genug Input-Materialien vorhanden
+            // V7: Effektive Inputs nach Spielerlevel-Gate
+            var effectiveInputs = CraftingRecipe.GetEffectiveInputs(recipe, playerLevel);
+            if (effectiveInputs.Count == 0) continue;
+
+            // Prüfe ob genug Input-Materialien VERFUEGBAR sind (Reservierungen abgezogen).
+            // WarehouseService kennt Reservierungen; ohne DI bleiben wir bei CraftingInventory.
             bool canCraft = true;
-            foreach (var (productId, required) in recipe.InputProducts)
+            foreach (var (productId, required) in effectiveInputs)
             {
-                if (state.CraftingInventory.GetValueOrDefault(productId, 0) < required)
+                int available = _warehouse != null
+                    ? _warehouse.GetAvailable(productId)
+                    : state.CraftingInventory.GetValueOrDefault(productId, 0);
+                if (available < required)
                 {
                     canCraft = false;
                     break;
@@ -135,19 +178,31 @@ public sealed class AutoProductionService : IAutoProductionService
             }
             if (!canCraft) continue;
 
+            // V7: Stack-Limit fuer Output pruefen — sonst lieber NICHTS produzieren als
+            // Material zu verbrennen.
+            if (_warehouse != null && !_warehouse.CanAddToInventory(recipe.OutputProductId, recipe.OutputCount))
+                continue;
+
             // Materialien abziehen
-            foreach (var (productId, required) in recipe.InputProducts)
+            foreach (var (productId, required) in effectiveInputs)
             {
                 state.CraftingInventory[productId] -= required;
                 if (state.CraftingInventory[productId] <= 0)
                     state.CraftingInventory.Remove(productId);
             }
 
-            // Output-Produkt hinzufügen
-            if (state.CraftingInventory.ContainsKey(recipe.OutputProductId))
-                state.CraftingInventory[recipe.OutputProductId] += recipe.OutputCount;
+            // Output-Produkt hinzufügen (mit Stack-Validierung via WarehouseService)
+            if (_warehouse != null)
+            {
+                _warehouse.AddToInventory(recipe.OutputProductId, recipe.OutputCount, type);
+            }
             else
-                state.CraftingInventory[recipe.OutputProductId] = recipe.OutputCount;
+            {
+                if (state.CraftingInventory.ContainsKey(recipe.OutputProductId))
+                    state.CraftingInventory[recipe.OutputProductId] += recipe.OutputCount;
+                else
+                    state.CraftingInventory[recipe.OutputProductId] = recipe.OutputCount;
+            }
 
             state.Statistics.TotalItemsAutoProduced++;
             return true;
@@ -180,6 +235,13 @@ public sealed class AutoProductionService : IAutoProductionService
             int interval = GetProductionInterval(workshop.Type);
             int itemsProduced = (int)(effectiveSeconds / interval * workingWorkers);
             if (itemsProduced <= 0) continue;
+
+            // V7: Offline-Production darf nicht mehr Items produzieren als ins Lager passen.
+            // Cap = (Stack-Limit - current) wenn Slot existiert, sonst Stack-Limit.
+            int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            int cap = state.WarehouseStackLimit - current;
+            if (cap <= 0) continue;
+            if (itemsProduced > cap) itemsProduced = cap;
 
             if (produced.ContainsKey(productId))
                 produced[productId] += itemsProduced;

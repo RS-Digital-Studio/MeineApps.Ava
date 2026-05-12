@@ -6,8 +6,13 @@ namespace HandwerkerImperium.Services;
 
 /// <summary>
 /// Verwaltet das Crafting-System mit Produktionsketten.
-/// Rezepte haben 3 Tiers (ab Workshop-Level 50/150/300).
+/// Rezepte haben 3 Tiers (ab Workshop-Level 50/150/300), Phase 4 ergaenzt Tier 4.
 /// Höhere Tiers benötigen Produkte niedrigerer Tiers als Input.
+///
+/// V7 (Phase 1 Ressourcen-Plan):
+/// - Cross-Workshop-Inputs werden ab Spielerlevel 100 gefordert (Onboarding-Schutz).
+/// - Output-Stack-Limits werden vor StartCrafting validiert (kein Material-Burn).
+/// - Reservierungen aus <see cref="IWarehouseService"/> werden bei Input-Verfuegbarkeit beruecksichtigt.
 /// </summary>
 public sealed class CraftingService : ICraftingService
 {
@@ -60,9 +65,13 @@ public sealed class CraftingService : ICraftingService
             var recipe = CraftingRecipe.GetById(recipeId);
             if (recipe == null) return false;
 
+            // V7: Cross-Workshop-Inputs erst ab Spielerlevel 100. Casual-Spieler brauchen
+            // nur eigene Workshop-Inputs (Onboarding-Schutz, siehe Plan Section 5.3).
+            var effectiveInputs = CraftingRecipe.GetEffectiveInputs(recipe, state.PlayerLevel);
+
             // Tier-1 Rezepte: Materialkosten in Gold (20% des Basis-Verkaufspreises)
             // Verhindert kostenlose Geld-Generierung ohne Senke
-            if (recipe.Tier == 1 && recipe.InputProducts.Count == 0)
+            if (recipe.Tier == 1 && effectiveInputs.Count == 0)
             {
                 var product = CraftingProduct.GetAllProducts().GetValueOrDefault(recipe.OutputProductId);
                 if (product != null)
@@ -73,14 +82,32 @@ public sealed class CraftingService : ICraftingService
                 }
             }
 
-            // Input-Produkte prüfen und abziehen (atomar innerhalb des Locks)
-            foreach (var (productId, required) in recipe.InputProducts)
+            // V7: Output-Stack-Limit pruefen — kein Crafting starten, wenn das Output
+            // nicht ins Lager passt (sonst Material verschwendet).
+            int currentOutput = state.CraftingInventory.GetValueOrDefault(recipe.OutputProductId, 0);
+            if (currentOutput == 0)
             {
-                int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
+                // Neuer Slot noetig
+                int usedSlots = 0;
+                foreach (var kv in state.CraftingInventory)
+                    if (kv.Value > 0) usedSlots++;
+                if (usedSlots >= state.WarehouseSlotCount) return false;
+            }
+            else if (currentOutput + recipe.OutputCount > state.WarehouseStackLimit)
+            {
+                return false; // Stack-Limit wuerde gesprengt
+            }
+
+            // V7: Input-Produkte pruefen UND Reservierungen abziehen (atomar im Lock)
+            foreach (var (productId, required) in effectiveInputs)
+            {
+                int total = state.CraftingInventory.GetValueOrDefault(productId, 0);
+                int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
+                int available = total - reserved;
                 if (available < required) return false;
             }
 
-            foreach (var (productId, required) in recipe.InputProducts)
+            foreach (var (productId, required) in effectiveInputs)
             {
                 state.CraftingInventory[productId] -= required;
                 if (state.CraftingInventory[productId] <= 0)
@@ -141,6 +168,21 @@ public sealed class CraftingService : ICraftingService
         string outputId = recipe.OutputProductId;
         int outputCount = recipe.OutputCount;
 
+        // V7: Stack-Limit harter Check — wenn Lager voll, bleibt der Job auf "completed" stehen
+        // bis Spieler Platz schafft. Verhindert Material-Burn nach langer Crafting-Zeit.
+        int currentStock = state.CraftingInventory.GetValueOrDefault(outputId, 0);
+        if (currentStock == 0)
+        {
+            int usedSlots = 0;
+            foreach (var kv in state.CraftingInventory)
+                if (kv.Value > 0) usedSlots++;
+            if (usedSlots >= state.WarehouseSlotCount) return false; // Lager voll
+        }
+        else if (currentStock + outputCount > state.WarehouseStackLimit)
+        {
+            return false; // Stack-Limit
+        }
+
         if (state.CraftingInventory.ContainsKey(outputId))
             state.CraftingInventory[outputId] += outputCount;
         else
@@ -159,19 +201,23 @@ public sealed class CraftingService : ICraftingService
     /// <summary>
     /// Verkauft mehrere Einheiten eines Produkts. Gibt den Gesamterlös zurück (0 bei Fehler).
     /// Verkaufspreis skaliert mit Workshop-Level und allen Einkommens-Multiplikatoren.
+    /// V7: Reservierte Mengen (Order-Annahme) sind ausgeschlossen — der Spieler kann nur
+    /// das verkaufen was nicht fuer einen akzeptierten Auftrag gehalten wird.
     /// </summary>
     public decimal SellProducts(string productId, int count)
     {
         var state = _gameState.State;
 
-        int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
-        if (available <= 0 || count <= 0) return 0m;
+        int total = state.CraftingInventory.GetValueOrDefault(productId, 0);
+        int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
+        int sellable = Math.Max(0, total - reserved);
+        if (sellable <= 0 || count <= 0) return 0m;
 
         var allProducts = CraftingProduct.GetAllProducts();
         if (!allProducts.TryGetValue(productId, out var product)) return 0m;
 
         // Tatsächlich verkaufte Menge
-        int sellCount = Math.Min(count, available);
+        int sellCount = Math.Min(count, sellable);
 
         // Skalierenden Preis berechnen
         decimal pricePerUnit = GetSellPrice(productId);

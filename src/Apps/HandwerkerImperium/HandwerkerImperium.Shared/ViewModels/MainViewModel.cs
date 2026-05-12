@@ -208,6 +208,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         BattlePassViewModel battlePassViewModel,
         GuildViewModel guildViewModel,
         CraftingViewModel craftingViewModel,
+        WarehouseSectionViewModel warehouseSectionViewModel,
         AscensionViewModel ascensionViewModel,
         IWeeklyMissionService weeklyMissionService,
         IWelcomeBackService welcomeBackService,
@@ -328,6 +329,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         BattlePassViewModel = battlePassViewModel;
         GuildViewModel = guildViewModel;
         CraftingViewModel = craftingViewModel;
+        WarehouseVM = warehouseSectionViewModel;
         AscensionViewModel = ascensionViewModel;
         LuckySpinViewModel = luckySpinViewModel;
 

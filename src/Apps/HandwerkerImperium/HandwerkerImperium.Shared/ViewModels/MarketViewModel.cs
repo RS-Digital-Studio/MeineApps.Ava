@@ -9,6 +9,7 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
+using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -25,6 +26,9 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     // und Lager-Verkauf live aktualisieren (nicht nur bei Markt-Trades).
     private readonly IWarehouseService? _warehouse;
     private readonly ICraftingService? _crafting;
+    // V7 (Phase 4 Ressourcen-Plan, Imperium-Pass): Premium schaltet Markt sofort frei
+    // (Bypass auf logi_05). Nach Premium-Kauf muss die UI sofort den Locked-State verlassen.
+    private readonly IPurchaseService? _purchase;
 
     [ObservableProperty]
     private string _title = "";
@@ -68,13 +72,15 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
         IMarketService market,
         ILocalizationService localization,
         IWarehouseService? warehouse = null,
-        ICraftingService? crafting = null)
+        ICraftingService? crafting = null,
+        IPurchaseService? purchase = null)
     {
         _gameState = gameState;
         _market = market;
         _localization = localization;
         _warehouse = warehouse;
         _crafting = crafting;
+        _purchase = purchase;
 
         _market.MarketChanged += OnMarketChanged;
         _gameState.MoneyChanged += OnMoneyChanged;
@@ -82,10 +88,16 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
         // ausserhalb des Markts) und Crafting-Complete refresht die InStock-Anzeige.
         if (_warehouse != null) _warehouse.InventoryChanged += OnMarketChanged;
         if (_crafting != null) _crafting.CraftingUpdated += OnMarketChanged;
+        // V7 (Phase 4 Imperium-Pass): Premium-Kauf schaltet Markt sofort frei — UI muss
+        // sofort den Locked-State verlassen.
+        if (_purchase != null) _purchase.PremiumStatusChanged += OnPremiumStatusChanged;
 
         UpdateLocalizedTexts();
         Refresh();
     }
+
+    private void OnPremiumStatusChanged(object? sender, EventArgs e)
+        => Dispatcher.UIThread.Post(Refresh);
 
     private void OnMarketChanged() => Dispatcher.UIThread.Post(Refresh);
 
@@ -237,6 +249,7 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
         _gameState.MoneyChanged -= OnMoneyChanged;
         if (_warehouse != null) _warehouse.InventoryChanged -= OnMarketChanged;
         if (_crafting != null) _crafting.CraftingUpdated -= OnMarketChanged;
+        if (_purchase != null) _purchase.PremiumStatusChanged -= OnPremiumStatusChanged;
     }
 }
 

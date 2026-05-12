@@ -711,22 +711,44 @@ public sealed partial class PrestigeService : IPrestigeService
 
         // === RESET: Crafting (immer zurücksetzen, null-safe für alte Saves) ===
         // V7 (Phase 4 Ressourcen-Plan): Erbstuecke ueberleben Prestige — nur Tier-4-Items.
-        // Spieler kann beim Prestige-Confirm-Dialog bis zu MaxHeirloomsPerRun Items waehlen.
-        // HeirloomItems wurde dort befuellt; wir konsumieren die Items aus dem Inventar und
-        // entfernen alles andere.
+        // Solange der dedizierte Prestige-Confirm-Dialog noch keine UI-Wahl bietet, befuellen
+        // wir HeirloomItems automatisch mit den wertvollsten T4-Items aus dem Inventar (bis
+        // zum Cap). Pass-Spieler bekommen +1 Slot (3 → 4) via GetEffectiveHeirloomSlots.
+        var craftProducts = CraftingProduct.GetAllProducts();
+        int heirloomCap = GameBalanceConstants.GetEffectiveHeirloomSlots(state.IsPremium);
+
+        // Auto-Fuellen wenn der Spieler nichts manuell gewaehlt hat (HeirloomItems leer).
+        if (state.HeirloomItems.Count == 0)
+        {
+            var candidates = new List<(string id, decimal value)>();
+            foreach (var (productId, count) in state.CraftingInventory)
+            {
+                if (count <= 0) continue;
+                if (!craftProducts.TryGetValue(productId, out var product)) continue;
+                if (!product.IsHeirloomEligible) continue;
+                // Jedes vorhandene Stueck zaehlt als eigener Erbstueck-Kandidat (mehrfache T4 moeglich).
+                for (int i = 0; i < count; i++)
+                    candidates.Add((productId, product.BaseValue));
+            }
+            candidates.Sort((a, b) => b.value.CompareTo(a.value));
+            for (int i = 0; i < candidates.Count && state.HeirloomItems.Count < heirloomCap; i++)
+                state.HeirloomItems.Add(candidates[i].id);
+        }
+        else if (state.HeirloomItems.Count > heirloomCap)
+        {
+            // Pass abgelaufen oder reduzierter Cap — auf erlaubte Anzahl beschneiden.
+            state.HeirloomItems.RemoveRange(heirloomCap, state.HeirloomItems.Count - heirloomCap);
+        }
+
         if (state.HeirloomItems.Count > 0)
         {
-            var allProducts = CraftingProduct.GetAllProducts();
+            // Erbstuecke ins neue Inventar uebertragen; alles andere wird verworfen.
             var preservedInventory = new Dictionary<string, int>();
             foreach (var heirloomId in state.HeirloomItems)
             {
-                if (!allProducts.TryGetValue(heirloomId, out var product)) continue;
+                if (!craftProducts.TryGetValue(heirloomId, out var product)) continue;
                 if (!product.IsHeirloomEligible) continue;
-                int available = state.CraftingInventory.GetValueOrDefault(heirloomId, 0);
-                if (available > 0)
-                {
-                    preservedInventory[heirloomId] = 1; // ein Erbstueck pro Slot
-                }
+                preservedInventory[heirloomId] = preservedInventory.GetValueOrDefault(heirloomId, 0) + 1;
             }
             state.CraftingInventory = preservedInventory;
         }

@@ -21,6 +21,10 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     private readonly IGameStateService _gameState;
     private readonly IMarketService _market;
     private readonly ILocalizationService _localization;
+    // V7 (Phase 3 Ressourcen-Plan): Stock-Anzeige im Markt soll auch bei Auto-Production
+    // und Lager-Verkauf live aktualisieren (nicht nur bei Markt-Trades).
+    private readonly IWarehouseService? _warehouse;
+    private readonly ICraftingService? _crafting;
 
     [ObservableProperty]
     private string _title = "";
@@ -62,14 +66,22 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     public MarketViewModel(
         IGameStateService gameState,
         IMarketService market,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IWarehouseService? warehouse = null,
+        ICraftingService? crafting = null)
     {
         _gameState = gameState;
         _market = market;
         _localization = localization;
+        _warehouse = warehouse;
+        _crafting = crafting;
 
         _market.MarketChanged += OnMarketChanged;
         _gameState.MoneyChanged += OnMoneyChanged;
+        // V7 (Phase 3 Ressourcen-Plan): Auch Lager-Mutationen (Auto-Production, Verkauf
+        // ausserhalb des Markts) und Crafting-Complete refresht die InStock-Anzeige.
+        if (_warehouse != null) _warehouse.InventoryChanged += OnMarketChanged;
+        if (_crafting != null) _crafting.CraftingUpdated += OnMarketChanged;
 
         UpdateLocalizedTexts();
         Refresh();
@@ -223,6 +235,8 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     {
         _market.MarketChanged -= OnMarketChanged;
         _gameState.MoneyChanged -= OnMoneyChanged;
+        if (_warehouse != null) _warehouse.InventoryChanged -= OnMarketChanged;
+        if (_crafting != null) _crafting.CraftingUpdated -= OnMarketChanged;
     }
 }
 

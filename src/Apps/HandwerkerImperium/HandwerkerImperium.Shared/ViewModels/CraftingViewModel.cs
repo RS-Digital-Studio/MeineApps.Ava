@@ -22,6 +22,9 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
     private readonly ILocalizationService _localizationService;
     private readonly IDailyChallengeService? _dailyChallengeService;
     private readonly IWeeklyMissionService? _weeklyMissionService;
+    // V7 (Phase 1 Ressourcen-Plan): WarehouseService mutiert das Inventar bei Auto-Production
+    // und Material-Lieferungen. Ohne Subscription wuerde die Crafting-Inventar-Liste stale bleiben.
+    private readonly IWarehouseService? _warehouseService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -85,16 +88,22 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
         ICraftingService craftingService,
         ILocalizationService localizationService,
         IDailyChallengeService? dailyChallengeService = null,
-        IWeeklyMissionService? weeklyMissionService = null)
+        IWeeklyMissionService? weeklyMissionService = null,
+        IWarehouseService? warehouseService = null)
     {
         _gameStateService = gameStateService;
         _craftingService = craftingService;
         _localizationService = localizationService;
         _dailyChallengeService = dailyChallengeService;
         _weeklyMissionService = weeklyMissionService;
+        _warehouseService = warehouseService;
 
         // Auto-Refresh wenn Timer abläuft
         _craftingService.CraftingUpdated += OnCraftingUpdated;
+        // V7 (Phase 1 Ressourcen-Plan): Auto-Production / Material-Lieferungen / Lieferant-
+        // Material mutieren das Inventar via WarehouseService — auch dieses Event horchen.
+        if (_warehouseService != null)
+            _warehouseService.InventoryChanged += OnCraftingUpdated;
 
         BuildWorkshopOptions();
         UpdateLocalizedTexts();
@@ -451,6 +460,8 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
     public void Dispose()
     {
         _craftingService.CraftingUpdated -= OnCraftingUpdated;
+        if (_warehouseService != null)
+            _warehouseService.InventoryChanged -= OnCraftingUpdated;
     }
 }
 

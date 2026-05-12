@@ -26,6 +26,7 @@ SkiaSharp-Visualisierungen, GPU-Shader und das Loading-Pipeline-Framework.
 | `SkiaCelebrationOverlay.cs` | Custom Control | Confetti-System (SkiaSharp, Glow, Sternformen, Blitz-Flash) |
 | `CelebrationOverlay.cs` | Legacy | Border-basiertes Confetti — nicht mehr verwenden |
 | `LottieAnimationView.cs` | Custom Control | Lottie-Wrapper mit OneShot-Modus + AnimationCompleted Event |
+| `SvgIcon.cs` | Custom Control | SVG-Path-Icon mit StreamGeometry aus `Assets/Icons/AppIcons.axaml` (Kind-Property, ViewBox-Auto-Scale) |
 | `TooltipBubble.cs` | Custom Control | Onboarding-Tooltip (Tap-to-Dismiss, FadeIn/FadeOut via Transitions) |
 | `AnimatedNumberText.cs` | Custom Control | TextBlock mit CubicEaseOut-Interpolation bei Wertänderung |
 | `NotificationBadge.cs` | Custom Control | Runder Badge-Punkt (Count=0 unsichtbar, -1 = Punkt, >0 = Zahl + Bounce) |
@@ -88,6 +89,37 @@ SkiaSharp-Visualisierungen, GPU-Shader und das Loading-Pipeline-Framework.
 | `LoadingPipelineBase.cs` | Sequentielle Ausführung, gewichteter Fortschritt, Fehler-Toleranz |
 
 ---
+
+## Icon-Strategie (verbindlich fuer alle Apps)
+
+**Keine Unicode-Symbole als UI-Text** (z. B. ▼ ▲ ★ ← →). Symbole/Icons werden ueber eine der drei
+Quellen eingebunden:
+
+1. **Geteilte SVG-Library** (`MeineApps.UI/Assets/Icons/AppIcons.axaml`)
+   - StreamGeometry-Definitionen unter `Icon_{Name}`-Keys (z. B. `Icon_ChevronDown`).
+   - Verwendung via `<ui:SvgIcon Kind="ChevronDown" Width="16" Height="16" Foreground="..."/>`
+     (xmlns:ui="using:MeineApps.UI.Controls").
+   - **Erste Wahl** fuer einfache, geteilte Glyphen (Chevron, Arrow, Check, Star, Crown, Plus/Minus, …).
+   - Neue Icons werden hier ergaenzt, nicht pro App dupliziert.
+
+2. **Material.Icons.Avalonia** (Package, 7000+ Icons)
+   - Verwendung via `<materialIcons:MaterialIcon Kind="MagnifyClose" />`.
+   - Fuer Icons die nicht in `AppIcons.axaml` definiert sind und nicht App-spezifisch sein muessen.
+
+3. **App-spezifische Icon-Klasse** (nur fuer Apps mit eigenem Visual-Stil)
+   - `BomberBlast.Icons.GameIcon` (Neon-Arcade-Pfade) und `RebornSaga.Icons.SagaIcon`
+     (Isekai-System-Stil) bleiben app-eigen, weil die Pfade visuell auf die Stilrichtung
+     abgestimmt sind. Keine generischen Apps duerfen eigene Icon-Systeme einfuehren.
+
+**Generieren neuer SVG-Icons:**
+- Path-Data manuell schreiben (24x24 ViewBox-Standard) ODER bestehende Material/Tabler/Phosphor
+  SVGs als CC0-Vorlage importieren und in `AppIcons.axaml` als StreamGeometry eintragen.
+- Anschliessend in dieser CLAUDE.md unter der `SvgIcon`-Zeile dokumentieren falls erkennbar.
+
+**Niemals erlaubt:**
+- `<TextBlock Text="▼"/>` oder `Text="★"` als visueller Pfeil/Stern.
+- Apps die neu eigene GameIcon-Enums anlegen, ohne dass das visuelle Konzept (Neon-Arcade /
+  Anime / etc.) das rechtfertigt.
 
 ## Architektur-Patterns
 

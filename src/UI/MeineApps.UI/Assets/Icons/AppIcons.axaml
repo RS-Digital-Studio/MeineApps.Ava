@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       APP ICONS — Geteilte SVG-Path-Geometrien fuer alle Apps.
+       Verwendung:
+         <Path Data="{StaticResource Icon_ChevronDown}" Fill="..." Width="16" Height="16"/>
+       Oder via Helper-Control SvgIcon:
+         <ui:SvgIcon Kind="ChevronDown" Width="16"/>
+
+       Konvention (siehe MeineApps.UI/CLAUDE.md "Icon-Strategie"):
+         - Keine Unicode-Zeichen (▼ ▲ ★ ←) in UI-Text.
+         - BomberBlast/RebornSaga: eigene GameIcon-Pfade (Neon-Arcade / Anime).
+         - Andere Apps: Material.Icons.Avalonia ODER diese geteilte Lib.
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Navigation -->
+  <StreamGeometry x:Key="Icon_ChevronDown">M4 7L8 7L12 14L16 7L20 7L12 19Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_ChevronUp">M4 17L8 17L12 10L16 17L20 17L12 5Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_ChevronLeft">M17 4L13 4L6 12L13 20L17 20L10 12Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_ChevronRight">M7 4L11 4L18 12L11 20L7 20L14 12Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_ArrowLeft">M17 4L6 12L17 20V16L10 12L17 8Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_ArrowRight">M7 4L18 12L7 20V16L14 12L7 8Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_ArrowUp">M12 2L3 14H8V22H16V14H21Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_ArrowDown">M12 22L21 10H16V2H8V10H3Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Close">M6 2L2 6L9 12L2 18L6 22L12 15L18 22L22 18L15 12L22 6L18 2L12 9Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Menu">M3 6H21V8H3ZM3 11H21V13H3ZM3 16H21V18H3Z</StreamGeometry>
+
+  <!-- Status -->
+  <StreamGeometry x:Key="Icon_Check">M9 17L4 12L2 14L9 21L22 8L20 6Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_CheckCircle">M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2M10 17L5 12L6.4 10.6L10 14.2L17.6 6.6L19 8Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Info">M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2M13 17H11V11H13M13 9H11V7H13Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Warning">M12 2L1 21H23ZM12 8L19 19H5ZM11 13V16H13V13ZM11 17V19H13V17Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Error">M11 15H13V17H11ZM11 7H13V13H11ZM12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z</StreamGeometry>
+
+  <!-- Actions -->
+  <StreamGeometry x:Key="Icon_Plus">M19 13H13V19H11V13H5V11H11V5H13V11H19Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Minus">M19 13H5V11H19Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Settings">M19.14 12.94C19.18 12.64 19.2 12.33 19.2 12C19.2 11.68 19.18 11.36 19.13 11.06L21.16 9.48C21.34 9.34 21.39 9.07 21.28 8.87L19.36 5.55C19.24 5.33 18.99 5.26 18.77 5.33L16.38 6.29C15.88 5.91 15.35 5.59 14.76 5.35L14.4 2.81C14.36 2.57 14.16 2.4 13.92 2.4H10.08C9.84 2.4 9.65 2.57 9.61 2.81L9.25 5.35C8.66 5.59 8.12 5.92 7.63 6.29L5.24 5.33C5.02 5.25 4.77 5.33 4.65 5.55L2.74 8.87C2.62 9.08 2.66 9.34 2.86 9.48L4.89 11.06C4.84 11.36 4.8 11.69 4.8 12C4.8 12.31 4.82 12.64 4.87 12.94L2.84 14.52C2.66 14.66 2.61 14.93 2.72 15.13L4.64 18.45C4.76 18.67 5.01 18.74 5.23 18.67L7.62 17.71C8.12 18.09 8.65 18.41 9.24 18.65L9.6 21.19C9.65 21.43 9.84 21.6 10.08 21.6H13.92C14.16 21.6 14.36 21.43 14.39 21.19L14.75 18.65C15.34 18.41 15.88 18.09 16.37 17.71L18.76 18.67C18.98 18.75 19.23 18.67 19.35 18.45L21.27 15.13C21.39 14.91 21.34 14.66 21.15 14.52L19.14 12.94M12 15.6C10.02 15.6 8.4 13.98 8.4 12C8.4 10.02 10.02 8.4 12 8.4C13.98 8.4 15.6 10.02 15.6 12C15.6 13.98 13.98 15.6 12 15.6Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Search">M9.5 3A6.5 6.5 0 0 1 16 9.5C16 11.11 15.41 12.59 14.44 13.73L14.71 14H15.5L20.5 19L19 20.5L14 15.5V14.71L13.73 14.44C12.59 15.41 11.11 16 9.5 16A6.5 6.5 0 0 1 3 9.5A6.5 6.5 0 0 1 9.5 3M9.5 5C7 5 5 7 5 9.5C5 12 7 14 9.5 14C12 14 14 12 14 9.5C14 7 12 5 9.5 5Z</StreamGeometry>
+
+  <!-- Premium / Reward -->
+  <StreamGeometry x:Key="Icon_Star">M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.62L12 2L9.19 8.62L2 9.24L7.45 13.97L5.82 21Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_StarOutline">M12 15.4L8.24 17.67L9.23 13.39L5.91 10.51L10.29 10.13L12 6.09L13.71 10.13L18.09 10.51L14.77 13.39L15.76 17.67M22 9.24L14.81 8.62L12 2L9.19 8.62L2 9.24L7.45 13.97L5.82 21L12 17.27L18.18 21L16.54 13.97Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Crown">M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16ZM5 19V20A1 1 0 0 0 6 21H18A1 1 0 0 0 19 20V19Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon_Trophy">M20 2H17V0H7V2H4A2 2 0 0 0 2 4V5A5 5 0 0 0 5.8 9.86A6 6 0 0 0 11 15V18H9A2 2 0 0 0 7 20H5V22H19V20H17A2 2 0 0 0 15 18H13V15A6 6 0 0 0 18.2 9.86A5 5 0 0 0 22 5V4A2 2 0 0 0 20 2M4 4H7V8.8A3 3 0 0 1 4 5M20 5A3 3 0 0 1 17 8.8V4H20Z</StreamGeometry>
+
+</ResourceDictionary>

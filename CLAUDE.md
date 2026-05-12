@@ -170,6 +170,19 @@ Implementierung: Jede App lädt `<StyleInclude Source="/Themes/AppPalette.axaml"
 | Events (UI-Feedback) | `FloatingTextRequested` | `EventHandler<(string, string)>` |
 | Events (Celebration) | `CelebrationRequested` | `EventHandler` |
 
+### Icon-Strategie (verbindlich)
+
+**Keine Unicode-Symbole als UI-Text** (▼ ▲ ★ ← →). Drei zugelassene Quellen:
+
+1. `<ui:SvgIcon Kind="..."/>` aus `MeineApps.UI/Assets/Icons/AppIcons.axaml` (geteilt fuer alle Apps).
+2. `<materialIcons:MaterialIcon Kind="..."/>` via `Material.Icons.Avalonia` (7000+ Icons).
+3. App-spezifische Icon-Klassen (`BomberBlast.Icons.GameIcon`, `RebornSaga.Icons.SagaIcon`) —
+   nur wenn das visuelle Konzept (Neon-Arcade / Anime / etc.) das rechtfertigt. Generische Apps
+   duerfen keine eigenen Icon-Systeme einfuehren.
+
+Neue Glyphen werden zuerst in `MeineApps.UI/Assets/Icons/AppIcons.axaml` als StreamGeometry
+ergaenzt (24x24 ViewBox-Standard) und dort dokumentiert. Details: `src/UI/MeineApps.UI/CLAUDE.md`.
+
 ### DI-Pattern
 
 **Service Lifetimes:**

@@ -265,87 +265,71 @@ public sealed partial class MainViewModel : ViewModelBase
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public MainViewModel(
-        // Eager VMs (sofort gebraucht)
-        MainMenuViewModel menuVm,
-        LevelSelectViewModel levelSelectVm,
-        SettingsViewModel settingsVm,
-        HighScoresViewModel highScoresVm,
-        GameOverViewModel gameOverVm,
-        PauseViewModel pauseVm,
-        HelpViewModel helpVm,
-        VictoryViewModel victoryVm,
-        // Lazy VMs (erst bei progressivem Unlock gebraucht)
-        Lazy<GameViewModel> gameVmLazy,
-        Lazy<ShopViewModel> shopVmLazy,
-        Lazy<AchievementsViewModel> achievementsVmLazy,
-        Lazy<DailyChallengeViewModel> dailyChallengeVmLazy,
-        Lazy<LuckySpinViewModel> luckySpinVmLazy,
-        Lazy<WeeklyChallengeViewModel> weeklyChallengeVmLazy,
-        Lazy<StatisticsViewModel> statisticsVmLazy,
-        Lazy<QuickPlayViewModel> quickPlayVmLazy,
-        Lazy<DeckViewModel> deckVmLazy,
-        Lazy<DungeonViewModel> dungeonVmLazy,
-        Lazy<BattlePassViewModel> battlePassVmLazy,
-        Lazy<CollectionViewModel> collectionVmLazy,
-        Lazy<LeagueViewModel> leagueVmLazy,
-        Lazy<ProfileViewModel> profileVmLazy,
-        Lazy<GemShopViewModel> gemShopVmLazy,
-        // Boss-Rush VM (eager) — Modi-Strip-Tile im MainMenu zeigt WeeklyBest direkt
-        BossRushViewModel bossRushVm,
-        // Services
-        ILocalizationService localization,
-        IAdService adService,
-        IPurchaseService purchaseService,
-        IRewardedAdService rewardedAdService,
-        IAchievementService achievementService,
-        ICoinService coinService,
-        ICloudSaveService cloudSaveService,
-        SoundManager soundManager,
-        IAppLogger logger,
-        // Sprint 4.2 AAA-Audit #10: GameEventBus fuer Pub/Sub-Delegation.
-        // Bestehende Events bleiben (Backward-Compat), aber zusaetzlich werden
-        // alle UI-Events durch den Bus geroutet — neue Code kann den Bus direkt nutzen.
-        IGameEventBus eventBus)
+    /// <summary>
+    /// Audit M25: Konstruktor von 32 Parametern auf eine einzige Aggregat-Dependency reduziert.
+    /// Die <see cref="MainViewModelDependencies"/>-Record buendelt alle 8 Eager-VMs, 15 Lazy-VMs
+    /// und 10 Services.
+    /// </summary>
+    public MainViewModel(MainViewModelDependencies deps)
     {
-        MenuVm = menuVm;
-        LevelSelectVm = levelSelectVm;
-        SettingsVm = settingsVm;
-        HighScoresVm = highScoresVm;
-        GameOverVm = gameOverVm;
-        PauseVm = pauseVm;
-        HelpVm = helpVm;
-        VictoryVm = victoryVm;
+        MenuVm = deps.MenuVm;
+        LevelSelectVm = deps.LevelSelectVm;
+        SettingsVm = deps.SettingsVm;
+        HighScoresVm = deps.HighScoresVm;
+        GameOverVm = deps.GameOverVm;
+        PauseVm = deps.PauseVm;
+        HelpVm = deps.HelpVm;
+        VictoryVm = deps.VictoryVm;
 
-        _gameVmLazy = gameVmLazy;
-        _shopVmLazy = shopVmLazy;
-        _achievementsVmLazy = achievementsVmLazy;
-        _dailyChallengeVmLazy = dailyChallengeVmLazy;
-        _luckySpinVmLazy = luckySpinVmLazy;
-        _weeklyChallengeVmLazy = weeklyChallengeVmLazy;
-        _statisticsVmLazy = statisticsVmLazy;
-        _quickPlayVmLazy = quickPlayVmLazy;
-        _deckVmLazy = deckVmLazy;
-        _dungeonVmLazy = dungeonVmLazy;
-        _battlePassVmLazy = battlePassVmLazy;
-        _collectionVmLazy = collectionVmLazy;
-        _leagueVmLazy = leagueVmLazy;
-        _profileVmLazy = profileVmLazy;
-        _gemShopVmLazy = gemShopVmLazy;
+        _gameVmLazy = deps.GameVmLazy;
+        _shopVmLazy = deps.ShopVmLazy;
+        _achievementsVmLazy = deps.AchievementsVmLazy;
+        _dailyChallengeVmLazy = deps.DailyChallengeVmLazy;
+        _luckySpinVmLazy = deps.LuckySpinVmLazy;
+        _weeklyChallengeVmLazy = deps.WeeklyChallengeVmLazy;
+        _statisticsVmLazy = deps.StatisticsVmLazy;
+        _quickPlayVmLazy = deps.QuickPlayVmLazy;
+        _deckVmLazy = deps.DeckVmLazy;
+        _dungeonVmLazy = deps.DungeonVmLazy;
+        _battlePassVmLazy = deps.BattlePassVmLazy;
+        _collectionVmLazy = deps.CollectionVmLazy;
+        _leagueVmLazy = deps.LeagueVmLazy;
+        _profileVmLazy = deps.ProfileVmLazy;
+        _gemShopVmLazy = deps.GemShopVmLazy;
 
-        BossRushVm = bossRushVm;
-        WireCommon(bossRushVm);
+        BossRushVm = deps.BossRushVm;
+        WireCommon(deps.BossRushVm);
 
-        _localizationService = localization;
-        _adService = adService;
-        _purchaseService = purchaseService;
-        _rewardedAdService = rewardedAdService;
-        _achievementService = achievementService;
-        _coinService = coinService;
-        _cloudSaveService = cloudSaveService;
-        _soundManager = soundManager;
-        _logger = logger;
-        _eventBus = eventBus;
+        _localizationService = deps.Localization;
+        _adService = deps.AdService;
+        _purchaseService = deps.PurchaseService;
+        _rewardedAdService = deps.RewardedAdService;
+        _achievementService = deps.AchievementService;
+        _coinService = deps.CoinService;
+        _cloudSaveService = deps.CloudSaveService;
+        _soundManager = deps.SoundManager;
+        _logger = deps.Logger;
+        _eventBus = deps.EventBus;
+
+        // Lokale Aliase fuer den Konstruktor-Body (Variable bleiben unchanged von der Original-Logic).
+        var localization = deps.Localization;
+        var adService = deps.AdService;
+        var purchaseService = deps.PurchaseService;
+        var rewardedAdService = deps.RewardedAdService;
+        var achievementService = deps.AchievementService;
+        var coinService = deps.CoinService;
+        var cloudSaveService = deps.CloudSaveService;
+        var soundManager = deps.SoundManager;
+        var logger = deps.Logger;
+        var eventBus = deps.EventBus;
+        var menuVm = deps.MenuVm;
+        var settingsVm = deps.SettingsVm;
+        var gameOverVm = deps.GameOverVm;
+        var helpVm = deps.HelpVm;
+        var victoryVm = deps.VictoryVm;
+        var pauseVm = deps.PauseVm;
+        var highScoresVm = deps.HighScoresVm;
+        var levelSelectVm = deps.LevelSelectVm;
 
         // Sprint 4.2 AAA-Audit #10: GameEventBus → MainVM-Events forwarden.
         // Andere ViewModels koennen jetzt direkt _eventBus.RaiseFloatingText() rufen,

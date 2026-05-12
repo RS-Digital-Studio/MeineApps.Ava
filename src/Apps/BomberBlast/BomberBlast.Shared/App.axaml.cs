@@ -524,6 +524,8 @@ public partial class App : Application
         services.AddSingleton<GameEngine>();
 
         // ViewModels (alle Singleton: werden von MainViewModel gehalten, dürfen nicht doppelt existieren)
+        // Audit M25: Dependency-Aggregat fuer MainViewModel (32-Parameter-Ctor → 1).
+        services.AddSingleton<MainViewModelDependencies>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainMenuViewModel>();
         services.AddSingleton<GameViewModel>();

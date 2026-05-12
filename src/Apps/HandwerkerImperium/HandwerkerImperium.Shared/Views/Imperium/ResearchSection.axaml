@@ -1,0 +1,113 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Imperium.ResearchSection"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
+
+  <StackPanel Spacing="8"
+              AutomationProperties.AutomationId="Imperium_Section_Research">
+
+    <!-- Aktive Prozesse (Crafting + Forschung, ab Lv.8) -->
+    <TextBlock Text="{loc:Translate ActiveProcesses}"
+               FontSize="16" FontWeight="Bold"
+               Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0"
+               IsVisible="{Binding ShowCraftingResearch}"
+               AutomationProperties.AutomationId="Imperium_Txt_ProcessesHeader" />
+
+    <Grid ColumnDefinitions="*,8,*"
+          IsVisible="{Binding ShowCraftingResearch}"
+          AutomationProperties.AutomationId="Imperium_Grid_Processes">
+      <!-- Produktion/Crafting -->
+      <Button Grid.Column="0" Classes="Text" Padding="0" CornerRadius="10"
+              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              Command="{Binding NavigateToCraftingCommand}"
+              AutomationProperties.AutomationId="Imperium_Btn_Crafting">
+        <Border Classes="CardElevated" Padding="10" CornerRadius="10" MinHeight="70"
+                AutomationProperties.AutomationId="Imperium_Border_Crafting">
+          <StackPanel Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <icons:GameIcon Kind="Hammer" Width="20" Height="20"
+                               Foreground="{StaticResource CraftPrimaryDarkBrush}" />
+              <TextBlock Text="{loc:Translate CraftingTitle}" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <!-- Aktiver Job -->
+            <StackPanel IsVisible="{Binding CraftingViewModel.HasActiveJobs}">
+              <ItemsControl ItemsSource="{Binding CraftingViewModel.ActiveJobs}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Spacing="1">
+                      <TextBlock Text="{Binding OutputName}" FontSize="10"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding TimeRemainingDisplay}" FontSize="10"
+                                 Foreground="{StaticResource CraftPrimaryBrush}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <!-- Inaktiv: Einladung -->
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        Opacity="0.6">
+              <StackPanel.IsVisible>
+                <Binding Path="CraftingViewModel.HasActiveJobs" Converter="{x:Static BoolConverters.Not}" />
+              </StackPanel.IsVisible>
+              <TextBlock Text="{loc:Translate StartCrafting}" FontSize="10"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <icons:GameIcon Kind="ChevronRight" Width="12" Height="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Button>
+
+      <!-- Forschung -->
+      <Button Grid.Column="2" Classes="Text" Padding="0" CornerRadius="10"
+              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              Command="{Binding NavigateToResearchCommand}"
+              AutomationProperties.AutomationId="Imperium_Btn_Research">
+        <Border Classes="CardElevated" Padding="10" CornerRadius="10" MinHeight="70"
+                AutomationProperties.AutomationId="Imperium_Border_Research">
+          <StackPanel Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <icons:GameIcon Kind="FlaskOutline" Width="20" Height="20"
+                               Foreground="{StaticResource CraftPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ResearchTitle}" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <!-- Aktive Forschung -->
+            <StackPanel Spacing="2"
+                        IsVisible="{Binding ResearchViewModel.HasActiveResearch}">
+              <TextBlock Text="{Binding ResearchViewModel.ActiveResearchName}" FontSize="10"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         TextTrimming="CharacterEllipsis" />
+              <ProgressBar Value="{Binding ResearchViewModel.ActiveResearchProgress}"
+                           Maximum="1" MinHeight="3"
+                           Foreground="{StaticResource CraftPrimaryBrush}"
+                           Background="{DynamicResource SurfaceBrush}" />
+            </StackPanel>
+            <!-- Inaktiv: Einladung -->
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        Opacity="0.6">
+              <StackPanel.IsVisible>
+                <Binding Path="ResearchViewModel.HasActiveResearch" Converter="{x:Static BoolConverters.Not}" />
+              </StackPanel.IsVisible>
+              <TextBlock Text="{loc:Translate StartResearch}" FontSize="10"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <icons:GameIcon Kind="ChevronRight" Width="12" Height="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Button>
+    </Grid>
+  </StackPanel>
+</UserControl>

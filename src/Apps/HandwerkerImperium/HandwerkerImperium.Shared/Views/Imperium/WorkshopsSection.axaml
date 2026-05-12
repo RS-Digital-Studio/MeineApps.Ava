@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Imperium.WorkshopsSection"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
+
+  <StackPanel Spacing="8"
+              AutomationProperties.AutomationId="Imperium_Section_Workshops">
+
+    <!-- Freigeschaltete Gebäude (Full-Width Karten) -->
+    <TextBlock Text="{loc:Translate Buildings}" FontSize="16" FontWeight="Bold"
+               Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,0"
+               AutomationProperties.AutomationId="Imperium_Txt_BuildingsHeader" />
+
+    <ItemsControl ItemsSource="{Binding BuildingsViewModel.UnlockedBuildings}"
+                  AutomationProperties.AutomationId="Imperium_Items_UnlockedBuildings">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:BuildingDisplayItem">
+          <Border Classes="CardElevated" CornerRadius="12" Padding="12" Margin="0,4"
+                  AutomationProperties.AutomationId="Imperium_Border_BuildingCard">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <!-- Runder Icon-Container -->
+              <Border CornerRadius="14" Width="48" Height="48"
+                      VerticalAlignment="Center"
+                      AutomationProperties.AutomationId="Imperium_Border_BuildingIcon">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#25D97706" Offset="0" />
+                    <GradientStop Color="#10FFD700" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
+                <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                 Width="28" Height="28"
+                                 Foreground="{StaticResource CraftPrimaryBrush}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+
+              <!-- Info: Name, Level, Effekt -->
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             TextTrimming="CharacterEllipsis"
+                             AutomationProperties.AutomationId="Imperium_Txt_BuildingName" />
+                  <TextBlock Grid.Column="1" Text="{Binding LevelDisplay}" FontSize="11"
+                             FontWeight="SemiBold"
+                             Foreground="{StaticResource CraftPrimaryBrush}"
+                             IsVisible="{Binding IsBuilt}"
+                             VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Imperium_Txt_BuildingLevel" />
+                </Grid>
+                <TextBlock Text="{Binding DisplayText}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap" MaxLines="2"
+                           AutomationProperties.AutomationId="Imperium_Txt_BuildingEffect" />
+              </StackPanel>
+
+              <!-- Action: Build/Upgrade Button oder Max-Badge -->
+              <Panel Grid.Column="2" VerticalAlignment="Center">
+                <Button Classes="Primary" Padding="10,6" CornerRadius="8"
+                        MinWidth="80"
+                        IsVisible="{Binding ShowActionButton}"
+                        IsEnabled="{Binding CanAfford}"
+                        Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).BuildingsViewModel.BuildOrUpgradeCommand}"
+                        CommandParameter="{Binding Type}"
+                        AutomationProperties.AutomationId="Imperium_Btn_BuildUpgrade">
+                  <StackPanel Orientation="Horizontal" Spacing="4"
+                              HorizontalAlignment="Center">
+                    <icons:GameIcon Kind="HammerWrench" Width="18" Height="18"
+                                     IsVisible="{Binding !IsBuilt}" />
+                    <icons:GameIcon Kind="ArrowUpBold" Width="18" Height="18"
+                                     IsVisible="{Binding IsBuilt}" />
+                    <TextBlock Text="{Binding CostDisplay}" FontSize="11" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Button>
+                <Border CornerRadius="8" Padding="10,6"
+                        IsVisible="{Binding IsMaxLevel}"
+                        Background="#1522C55E"
+                        AutomationProperties.AutomationId="Imperium_Border_MaxLevel">
+                  <StackPanel Orientation="Horizontal" Spacing="4"
+                              HorizontalAlignment="Center">
+                    <icons:GameIcon Kind="CheckCircle" Width="18" Height="18"
+                                     Foreground="{DynamicResource SuccessBrush}" />
+                    <TextBlock Text="{loc:Translate PerkMaxLevel}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource SuccessBrush}" />
+                  </StackPanel>
+                </Border>
+              </Panel>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Gesperrte Gebäude (kompaktes 2-Spalten Grid) -->
+    <StackPanel Spacing="6"
+                IsVisible="{Binding BuildingsViewModel.HasLockedBuildings}"
+                AutomationProperties.AutomationId="Imperium_Panel_LockedBuildings">
+      <TextBlock Text="{loc:Translate Locked}" FontSize="12"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 Margin="0,4,0,0"
+                 AutomationProperties.AutomationId="Imperium_Txt_LockedHeader" />
+      <ItemsControl ItemsSource="{Binding BuildingsViewModel.LockedBuildings}"
+                    AutomationProperties.AutomationId="Imperium_Items_LockedBuildings">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="2" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:BuildingDisplayItem">
+            <Border Background="{DynamicResource CardBrush}" CornerRadius="8"
+                    Padding="8,6" Margin="3" Opacity="0.5"
+                    AutomationProperties.AutomationId="Imperium_Border_LockedCard">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                <icons:GameIcon Kind="Lock" Width="18" Height="18"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" FontSize="10"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center">
+                  <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding UnlockLevel}" />
+                </TextBlock>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

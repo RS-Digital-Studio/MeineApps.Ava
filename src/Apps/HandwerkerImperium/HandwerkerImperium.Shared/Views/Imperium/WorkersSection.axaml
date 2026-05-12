@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Imperium.WorkersSection"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
+
+  <StackPanel Spacing="8"
+              AutomationProperties.AutomationId="Imperium_Section_Workers">
+
+    <!-- Quick-Access (Team, Vorarbeiter, Meisterwerkzeuge) -->
+    <ItemsControl AutomationProperties.AutomationId="Imperium_Items_QuickAccess">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Columns="{Binding QuickAccessColumns}" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+
+      <!-- Team -->
+      <Button Classes="Text" Margin="3" Padding="0"
+              HorizontalAlignment="Stretch" VerticalAlignment="Top"
+              HorizontalContentAlignment="Stretch"
+              Command="{Binding NavigateToWorkerMarketCommand}"
+              AutomationProperties.AutomationId="Imperium_Btn_Workers">
+        <Border Classes="CardElevated" Padding="8,10" CornerRadius="10">
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#350E7490" Offset="0"/>
+                  <GradientStop Color="#1514B8A6" Offset="1"/>
+                </LinearGradientBrush>
+              </Border.Background>
+              <icons:GameIcon Kind="AccountHardHat" Width="24" Height="24"
+                               Foreground="{StaticResource PlumberBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{loc:Translate Workers}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding WorkersStatusText}" FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </Button>
+
+      <!-- Vorarbeiter (ab Lv.10) -->
+      <Button Classes="Text" Margin="3" Padding="0"
+              HorizontalAlignment="Stretch" VerticalAlignment="Top"
+              HorizontalContentAlignment="Stretch"
+              IsVisible="{Binding ShowManagerSection}"
+              Command="{Binding NavigateToManagerCommand}"
+              AutomationProperties.AutomationId="Imperium_Btn_Manager">
+        <Border Classes="CardElevated" Padding="8,10" CornerRadius="10">
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#35D97706" Offset="0"/>
+                  <GradientStop Color="#15FFD700" Offset="1"/>
+                </LinearGradientBrush>
+              </Border.Background>
+              <icons:GameIcon Kind="AccountGroup" Width="24" Height="24"
+                               Foreground="{StaticResource CraftPrimaryBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{loc:Translate ManagerTitle}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding ManagerStatusText}" FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </Button>
+
+      <!-- Meisterwerkzeuge (ab Lv.20) -->
+      <Button Classes="Text" Margin="3" Padding="0"
+              HorizontalAlignment="Stretch" VerticalAlignment="Top"
+              HorizontalContentAlignment="Stretch"
+              IsVisible="{Binding ShowMasterToolsSection}"
+              Command="{Binding MissionsVM.ShowMasterToolsInfoCommand}"
+              AutomationProperties.AutomationId="Imperium_Btn_MasterTools">
+        <Border Classes="CardElevated" Padding="8,10" CornerRadius="10">
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#35F59E0B" Offset="0"/>
+                  <GradientStop Color="#15FBBF24" Offset="1"/>
+                </LinearGradientBrush>
+              </Border.Background>
+              <icons:GameIcon Kind="Wrench" Width="24" Height="24"
+                               Foreground="{DynamicResource WarningBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{loc:Translate MasterTools}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+              <TextBlock FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}">
+                <Run Text="{Binding MissionsVM.MasterToolsCollected}" />/<Run Text="{Binding MissionsVM.MasterToolsTotal}" />
+              </TextBlock>
+              <TextBlock Text="{Binding MissionsVM.MasterToolsBonusDisplay}" FontSize="11"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         IsVisible="{Binding MissionsVM.MasterToolsCollected}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Button>
+
+      <!-- Prestige Quick-Access -->
+      <Button Classes="Text" Margin="3" Padding="0"
+              HorizontalAlignment="Stretch" VerticalAlignment="Top"
+              HorizontalContentAlignment="Stretch"
+              IsVisible="{Binding PrestigeBannerVM.IsPrestigeAvailable}"
+              Command="{Binding NavigateToPrestigeCommand}"
+              AutomationProperties.AutomationId="Imperium_Btn_PrestigeQuickAccess">
+        <Border Padding="8,10" CornerRadius="10">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#25D97706" Offset="0"/>
+              <GradientStop Color="#15FFD700" Offset="1"/>
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center" Background="#30FFD700">
+              <icons:GameIcon Kind="Creation" Width="24" Height="24" Foreground="{StaticResource CraftGoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource CraftGoldBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding PrestigeBannerVM.PrestigePointsPreview}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Border>
+      </Button>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

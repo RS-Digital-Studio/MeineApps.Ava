@@ -1,0 +1,218 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:conv="using:HandwerkerImperium.Converters"
+             x:Class="HandwerkerImperium.Views.Imperium.AscensionSection"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
+
+  <UserControl.Resources>
+    <conv:BoolToChallengeBackgroundConverter x:Key="ChallengeActiveBg" />
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <!-- Prestige-Banner Glow (Opacity statt BoxShadow - GPU-beschleunigt auf Android) -->
+    <Style Selector="Border.PrestigeBannerGlow">
+      <Style.Animations>
+        <Animation Duration="0:0:3" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.8"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.8"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="8"
+              AutomationProperties.AutomationId="Imperium_Section_Ascension">
+
+    <!-- Prestige-Banner (Gold-Gradient, nur wenn verfügbar) -->
+    <Button IsVisible="{Binding PrestigeBannerVM.IsPrestigeAvailable}"
+            Command="{Binding NavigateToPrestigeCommand}"
+            Classes="Text" Padding="0" CornerRadius="12"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            AutomationProperties.AutomationId="Imperium_Btn_Prestige">
+      <Border Classes="PrestigeBannerGlow" CornerRadius="12" Padding="14,10"
+              AutomationProperties.AutomationId="Imperium_Border_PrestigeBanner">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+            <GradientStop Color="#D97706" Offset="0" />
+            <GradientStop Color="#FFD700" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <icons:GameIcon Kind="Creation" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}"
+                           VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Spacing="1" Margin="10,0,0,0" VerticalAlignment="Center">
+            <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="15" FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+            <TextBlock Text="{Binding PrestigeBannerVM.PrestigePointsPreview}" FontSize="12"
+                       Foreground="{StaticResource TextWhiteHighBrush}" />
+            <Border Background="#35000000" CornerRadius="6" Padding="6,4" Margin="0,6,0,0"
+                    IsVisible="{Binding PrestigeBannerVM.IsPrestigeAvailable}">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding PrestigeBannerVM.PrestigePreviewGains}"
+                           FontSize="12" Foreground="{StaticResource PrestigeGainsBrush}" FontWeight="SemiBold"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding PrestigeBannerVM.PrestigePreviewLosses}"
+                           FontSize="12" Foreground="{StaticResource PrestigeLossesBrush}" FontWeight="SemiBold"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{Binding PrestigeBannerVM.PrestigePreviewSpeedUp}"
+                       FontSize="13" FontWeight="Bold"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       Margin="0,6,0,0"
+                       IsVisible="{Binding PrestigeBannerVM.IsPrestigeAvailable}" />
+          </StackPanel>
+          <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                           Foreground="{StaticResource TextWhiteMediumBrush}" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+    </Button>
+
+    <!-- Prestige-Herausforderungen (Challenge-Toggles, max 3) -->
+    <Border IsVisible="{Binding PrestigeBannerVM.IsPrestigeAvailable}"
+            CornerRadius="8" Padding="10,8" Margin="0,6,0,0"
+            Background="#12D97706">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{loc:Translate Challenges}" FontSize="13" FontWeight="SemiBold"
+                   Foreground="{StaticResource CraftGoldBrush}" />
+        <WrapPanel Orientation="Horizontal">
+          <Button Classes="Text" Padding="10,6" Margin="0,0,6,6" CornerRadius="12" MinHeight="48"
+                  Background="{Binding PrestigeBannerVM.IsChallengeSpartanerActive, Converter={StaticResource ChallengeActiveBg}}"
+                  Command="{Binding ToggleChallengeCommand}" CommandParameter="Spartaner"
+                  AutomationProperties.AutomationId="Prestige_Btn_Challenge_Spartaner">
+            <StackPanel Spacing="1">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="{loc:Translate Challenge_Spartaner}" /><Run Text=" +40%" />
+              </TextBlock>
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Text="{loc:Translate Challenge_Spartaner_Desc}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text" Padding="10,6" Margin="0,0,6,6" CornerRadius="12" MinHeight="48"
+                  Background="{Binding PrestigeBannerVM.IsChallengeOhneForschungActive, Converter={StaticResource ChallengeActiveBg}}"
+                  Command="{Binding ToggleChallengeCommand}" CommandParameter="OhneForschung"
+                  AutomationProperties.AutomationId="Prestige_Btn_Challenge_OhneForschung">
+            <StackPanel Spacing="1">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="{loc:Translate Challenge_OhneForschung}" /><Run Text=" +30%" />
+              </TextBlock>
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Text="{loc:Translate Challenge_OhneForschung_Desc}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text" Padding="10,6" Margin="0,0,6,6" CornerRadius="12" MinHeight="48"
+                  Background="{Binding PrestigeBannerVM.IsChallengeInflationszeitActive, Converter={StaticResource ChallengeActiveBg}}"
+                  Command="{Binding ToggleChallengeCommand}" CommandParameter="Inflationszeit"
+                  AutomationProperties.AutomationId="Prestige_Btn_Challenge_Inflationszeit">
+            <StackPanel Spacing="1">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="{loc:Translate Challenge_Inflationszeit}" /><Run Text=" +25%" />
+              </TextBlock>
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Text="{loc:Translate Challenge_Inflationszeit_Desc}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text" Padding="10,6" Margin="0,0,6,6" CornerRadius="12" MinHeight="48"
+                  Background="{Binding PrestigeBannerVM.IsChallengeSoloMeisterActive, Converter={StaticResource ChallengeActiveBg}}"
+                  Command="{Binding ToggleChallengeCommand}" CommandParameter="SoloMeister"
+                  AutomationProperties.AutomationId="Prestige_Btn_Challenge_SoloMeister">
+            <StackPanel Spacing="1">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="{loc:Translate Challenge_SoloMeister}" /><Run Text=" +60%" />
+              </TextBlock>
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Text="{loc:Translate Challenge_SoloMeister_Desc}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text" Padding="10,6" Margin="0,0,6,6" CornerRadius="12" MinHeight="48"
+                  Background="{Binding PrestigeBannerVM.IsChallengeSprintActive, Converter={StaticResource ChallengeActiveBg}}"
+                  Command="{Binding ToggleChallengeCommand}" CommandParameter="Sprint"
+                  AutomationProperties.AutomationId="Prestige_Btn_Challenge_Sprint">
+            <StackPanel Spacing="1">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="{loc:Translate Challenge_Sprint}" /><Run Text=" +35%" />
+              </TextBlock>
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Text="{loc:Translate Challenge_Sprint_Desc}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text" Padding="10,6" Margin="0,0,6,6" CornerRadius="12" MinHeight="48"
+                  Background="{Binding PrestigeBannerVM.IsChallengeKeinNetzActive, Converter={StaticResource ChallengeActiveBg}}"
+                  Command="{Binding ToggleChallengeCommand}" CommandParameter="KeinNetz"
+                  AutomationProperties.AutomationId="Prestige_Btn_Challenge_KeinNetz">
+            <StackPanel Spacing="1">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="{loc:Translate Challenge_KeinNetz}" /><Run Text=" +20%" />
+              </TextBlock>
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Text="{loc:Translate Challenge_KeinNetz_Desc}" />
+            </StackPanel>
+          </Button>
+        </WrapPanel>
+        <!-- Aktive Challenges Zusammenfassung -->
+        <TextBlock Text="{Binding PrestigeBannerVM.ActiveChallengesText}" FontSize="11"
+                   Foreground="{StaticResource TextWhiteMediumBrush}" TextWrapping="Wrap"
+                   IsVisible="{Binding PrestigeBannerVM.ActiveChallengeCount}" />
+        <!-- Challenge-Abbruch -->
+        <Button Classes="Danger"
+                AutomationProperties.AutomationId="Prestige_Btn_AbandonChallenge"
+                Command="{Binding AbandonChallengeRunCommand}"
+                IsVisible="{Binding PrestigeBannerVM.ActiveChallengeCount}"
+                Padding="12,8" MinHeight="44" Margin="0,4,0,0"
+                HorizontalAlignment="Left">
+          <TextBlock Text="{loc:Translate AbandonChallengeButton}"
+                     FontSize="11" FontWeight="SemiBold" />
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <!-- Kompakt-Info: Aktuelle Run-Dauer + Nächster Tier -->
+    <Grid IsVisible="{Binding PrestigeBannerVM.IsPrestigeAvailable}" ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,4,0,0">
+      <Border CornerRadius="6" Padding="8,4" Background="#25FFFFFF" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="4">
+          <icons:GameIcon Kind="TimerOutline" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"><Run Text="{Binding PrestigeBannerVM.CurrentRunDuration}" /></TextBlock>
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" IsVisible="{Binding PrestigeBannerVM.HasNextPrestigeTier}" CornerRadius="6" Padding="8,4" Background="#15FFD700" VerticalAlignment="Center">
+        <StackPanel Spacing="2">
+          <TextBlock Text="{Binding PrestigeBannerVM.NextPrestigeTierHint}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource CraftGoldBrush}" TextTrimming="CharacterEllipsis" />
+          <ProgressBar Minimum="0" Maximum="1" Value="{Binding PrestigeBannerVM.NextPrestigeTierProgress}" Height="4" CornerRadius="2" Foreground="{StaticResource CraftGoldBrush}">
+            <ProgressBar.Background><SolidColorBrush Color="#FFFFFF" Opacity="0.10" /></ProgressBar.Background>
+          </ProgressBar>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Prestige-Shop (nur wenn freigeschaltet) -->
+    <Button Classes="Text" Padding="0" CornerRadius="10"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            Command="{Binding NavigateToPrestigeCommand}"
+            IsVisible="{Binding IsPrestigeShopUnlocked}"
+            AutomationProperties.AutomationId="Imperium_Btn_PrestigeShop">
+      <Border Classes="CardElevated" Padding="10,8" CornerRadius="10">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+          <Border CornerRadius="10" Width="32" Height="32">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#30FFD700" Offset="0"/>
+                <GradientStop Color="#15FFF176" Offset="1"/>
+              </LinearGradientBrush>
+            </Border.Background>
+            <icons:GameIcon Kind="Creation" Width="24" Height="24"
+                             Foreground="{StaticResource CraftGoldBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Grid.Column="1" Text="{loc:Translate PrestigeShop}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     VerticalAlignment="Center" />
+          <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+    </Button>
+  </StackPanel>
+</UserControl>

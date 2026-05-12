@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Imperium.EquipmentSection"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
+
+  <StackPanel Spacing="8"
+              AutomationProperties.AutomationId="Imperium_Section_Equipment">
+    <Border Classes="CardElevated" CornerRadius="12" Padding="16">
+      <StackPanel Spacing="10" HorizontalAlignment="Center">
+        <Border CornerRadius="14" Width="56" Height="56" HorizontalAlignment="Center"
+                Background="#1F3B82F6">
+          <icons:GameIcon Kind="ShieldHalfFull" Width="32" Height="32"
+                          Foreground="{StaticResource CraftPrimaryBrush}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="{loc:Translate ImperiumSubTabEquipment}"
+                   FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="{loc:Translate EquipmentSectionHint}"
+                   FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+        <Button Classes="Primary" Padding="14,8" CornerRadius="8"
+                HorizontalAlignment="Center" MinHeight="44"
+                Command="{Binding NavigateToWorkerMarketCommand}"
+                AutomationProperties.AutomationId="Imperium_Btn_EquipmentToWorkers">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <icons:GameIcon Kind="AccountHardHat" Width="18" Height="18" />
+            <TextBlock Text="{loc:Translate Workers}" FontSize="13" FontWeight="SemiBold" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

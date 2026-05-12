@@ -47,7 +47,12 @@ HandwerkerImperium.Shared/
 │   └── MiniGames/                   # BaseMiniGameViewModel + 10 konkrete VMs
 ├── Views/
 │   ├── MainView.axaml               # 5-Tab-Navigation, Dialoge als UserControls
-│   ├── Dashboard/                   # DashboardView + UserControls (AutomationPanel, BannerStrip, ...)
+│   ├── DashboardView.axaml          # 423 Z., Header+City+Workshop-Grid (Code-Behind)
+│   ├── Dashboard/                   # AutomationPanel, BannerStrip, OrdersQuickJobsSection,
+│   │                                #   DailyChallengeSection, WeeklyMissionSection
+│   ├── ImperiumView.axaml           # 171 Z., Sub-Tab-Router (kein Code-Behind)
+│   ├── Imperium/                    # WorkshopsSection, ResearchSection, WorkersSection,
+│   │                                #   EquipmentSection, AscensionSection (5 Sub-Tabs)
 │   ├── Dialogs/                     # Dialog-UserControls (AchievementDialog, StoryDialog, ...)
 │   ├── Guild/                       # GuildView + Sub-Views (Research, Boss, Hall, War, ...)
 │   └── MiniGames/                   # 10 MiniGame-Views

@@ -74,13 +74,36 @@ HandwerkerImperium.Shared/
 
 | Datei | Inhalt |
 |-------|--------|
-| `MainViewModel.cs` | Felder, Konstruktor, `ActivePage`-Enum, Event-Handler, GameTick, Dispose |
+| `MainViewModel.cs` | Felder, Konstruktor, `ActivePage`-Enum, Event-Handler |
 | `MainViewModel.Navigation.cs` | Tab-Auswahl, HandleBackPressed, Child-Navigation-Routing |
 | `MainViewModel.Dialogs.cs` | Weiterleitungsmethoden an DialogVM, Prestige-Durchführungslogik |
 | `MainViewModel.Economy.cs` | Workshop-Kauf/Upgrade, Aufträge, Rush, Lieferant, BulkBuy |
 | `MainViewModel.Missions.cs` | LuckySpin-Overlay-Steuerung |
 | `MainViewModel.Init.cs` | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward |
-| `MainViewModel.Host.cs` | INavigationHost-Implementierung (115 Zeilen) |
+| `MainViewModel.Host.cs` | INavigationHost-Implementierung (116 Zeilen) |
+| `MainViewModel.GameTick.cs` | OnGameTick, RefreshCurrentGoal, CheckTabUnlockNotification (165 Z.) |
+| `MainViewModel.Helpers.cs` | FormatMoney, UpdateNetIncomeHeader, UpdateWorkerWarning, Money-Animation, Workshop-Icon-Mapping (160 Z.) |
+| `MainViewModel.Lifecycle.cs` | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose (170 Z.) |
+
+### DialogViewModel Partial-Split
+
+| Datei | Zeilen | Inhalt |
+|-------|--------|--------|
+| `DialogViewModel.cs` | 232 | Service-Felder, Konstruktor, Confirm-Dialog-Properties, ShowAlert/Confirm, IsAnyDialogVisible, ShowPrestigeSummary, Reputation-Info, Cleanup |
+| `DialogViewModel.Achievement.cs` | 25 | Achievement-Dialog |
+| `DialogViewModel.Alert.cs` | 29 | Alert-Dialog |
+| `DialogViewModel.Hint.cs` | 106 | Hint-Dialog |
+| `DialogViewModel.LevelUp.cs` | 30 | LevelUp-Dialog |
+| `DialogViewModel.PrestigeSummary.cs` | 45 | Post-Prestige-Summary |
+| `DialogViewModel.PrestigeTier.cs` | 365 | Prestige-Tier-Auswahl + Inhalt-Aufbau |
+| `DialogViewModel.Story.cs` | 152 | Story-Dialog |
+
+### IFrameClock (zentraler Render-Tick)
+
+Service `IFrameClock` + `FrameClockService` als 30Hz-Render-Tick fuer Visual-Renderer.
+Subscriber-Pattern (idempotent), Stopwatch-DeltaSeconds, Auto-Stop bei 0 Subscribern,
+Pause/Resume fuer App-Lifecycle. Foundation fuer schrittweise Migration der ~35
+existierenden Renderer-Timer auf den zentralen Clock.
 
 **ActivePage-Pattern**: Eine einzige `ActivePage`-Enum-Property ist Source-of-Truth. Alle
 `IsXxxActive`-Properties sind berechnete Properties, die darauf basieren. Kein `DeactivateAllTabs()`.

@@ -266,15 +266,12 @@ public partial class App : Application
         // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement): permanenter Bonus pro Prestige
         services.AddSingleton<IEternalMasteryService, EternalMasteryService>();
 
-        // Bounded-Context-Facaden (AAA-Audit P1 Service-Sprawl-Reduction, additiv):
-        // Worker, Progression, Missions, Content, Platform, Onboarding. Plus IGuildFacade.
-        // 7 Facaden bündeln 35+ Einzel-Services — Konsumenten können optional migrieren.
-        services.AddSingleton<IWorkerFacade, WorkerFacade>();
-        services.AddSingleton<IProgressionFacade, ProgressionFacade>();
+        // Bounded-Context-Facaden mit echten Konsumenten (AAA-Audit P1 Service-Sprawl).
+        // GuildFacade: 9 Subsysteme — Konsument GuildViewModel.
+        // MissionsFacade: 5 Subsysteme — Konsument MissionsFeatureViewModel.
+        // Weitere Facaden (Worker/Progression/Content/Platform/Onboarding) waren am
+        // 12.05.2026 spekulativ angelegt und ohne Konsument — geloescht im Review-Pass.
         services.AddSingleton<IMissionsFacade, MissionsFacade>();
-        services.AddSingleton<IContentFacade, ContentFacade>();
-        services.AddSingleton<IPlatformFacade, PlatformFacade>();
-        services.AddSingleton<IOnboardingFacade, OnboardingFacade>();
 
         // Game Services
         services.AddSingleton<IGameStateService, GameStateService>();

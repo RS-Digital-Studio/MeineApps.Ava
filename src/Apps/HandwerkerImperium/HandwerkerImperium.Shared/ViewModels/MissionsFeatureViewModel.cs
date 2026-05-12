@@ -20,10 +20,9 @@ namespace HandwerkerImperium.ViewModels;
 /// </summary>
 public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposable
 {
-    private readonly IWeeklyMissionService _weeklyMissionService;
-    private readonly ILuckySpinService _luckySpinService;
-    private readonly IQuickJobService _quickJobService;
-    private readonly IDailyChallengeService _dailyChallengeService;
+    // AAA-Audit P1 Review-Pass (12.05.2026): Echte Facade-Konsumierung statt Constructor-Cosmetic.
+    // Alle 4 Mission-Subsysteme jetzt durch _missions.Daily/Weekly/LuckySpin/QuickJob adressiert.
+    private readonly IMissionsFacade _missions;
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localizationService;
@@ -211,10 +210,9 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// AAA-Audit P1 Service-Sprawl-Pilot (12.05.2026): Statt 4 einzelner Mission-Services
-    /// wird die <see cref="IMissionsFacade"/> injiziert — reduziert die Constructor-Surface
-    /// um 3 Parameter (4 Services → 1 Facade). Die internen Felder bleiben (kein invasiver
-    /// Body-Refactor), die Facade-Pass-Through ist Init-only.
+    /// AAA-Audit P1 Service-Sprawl Pilot (12.05.2026): Vollmigration auf <see cref="IMissionsFacade"/>
+    /// — alle 4 Mission-Subsysteme (Daily/Weekly/LuckySpin/QuickJob) werden über _missions.X
+    /// adressiert (Body-Refactor). Konstruktor-Surface: 4 Services → 1 Facade.
     /// </summary>
     public MissionsFeatureViewModel(
         IMissionsFacade missions,
@@ -228,10 +226,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         IContextualHintService contextualHintService,
         LuckySpinViewModel luckySpinViewModel)
     {
-        _weeklyMissionService = missions.Weekly;
-        _luckySpinService = missions.LuckySpin;
-        _quickJobService = missions.QuickJob;
-        _dailyChallengeService = missions.Daily;
+        _missions = missions;
         _gameStateService = gameStateService;
         _audioService = audioService;
         _localizationService = localizationService;
@@ -243,8 +238,8 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         LuckySpinViewModel = luckySpinViewModel;
 
         // Service-Events subscriben
-        _dailyChallengeService.ChallengeProgressChanged += OnChallengeProgressChanged;
-        _weeklyMissionService.MissionProgressChanged += OnWeeklyMissionProgressChanged;
+        _missions.Daily.ChallengeProgressChanged += OnChallengeProgressChanged;
+        _missions.Weekly.MissionProgressChanged += OnWeeklyMissionProgressChanged;
         _welcomeBackService.OfferGenerated += OnWelcomeOfferGenerated;
     }
 
@@ -255,7 +250,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     [RelayCommand]
     private void ClaimWeeklyMission(string missionId)
     {
-        _weeklyMissionService.ClaimMission(missionId);
+        _missions.Weekly.ClaimMission(missionId);
         _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
         RefreshWeeklyMissions();
     }
@@ -263,10 +258,10 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     [RelayCommand]
     private void ClaimAllWeeklyBonus()
     {
-        _weeklyMissionService.ClaimAllCompletedBonus();
+        _missions.Weekly.ClaimAllCompletedBonus();
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         CelebrationRequested?.Invoke();
-        FloatingTextRequested?.Invoke($"+{_weeklyMissionService.AllCompletedBonusScrews} \u2699", "golden_screws");
+        FloatingTextRequested?.Invoke($"+{_missions.Weekly.AllCompletedBonusScrews} \u2699", "golden_screws");
         RefreshWeeklyMissions();
     }
 
@@ -463,9 +458,9 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         if (job == null || job.IsCompleted) return;
 
         // Tageslimit pruefen (verhindert Reward-Farming)
-        if (_quickJobService?.IsDailyLimitReached == true)
+        if (_missions.QuickJob?.IsDailyLimitReached == true)
         {
-            int maxDaily = _quickJobService?.MaxDailyJobs ?? 20;
+            int maxDaily = _missions.QuickJob?.MaxDailyJobs ?? 20;
             var template = _localizationService.GetString("QuickJobDailyLimit");
             var limitText = !string.IsNullOrEmpty(template)
                 ? string.Format(template, maxDaily)
@@ -549,14 +544,14 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     private void ClaimChallengeReward(DailyChallenge? challenge)
     {
         if (challenge == null) return;
-        _dailyChallengeService.ClaimReward(challenge.Id);
+        _missions.Daily.ClaimReward(challenge.Id);
         RefreshChallenges();
     }
 
     [RelayCommand]
     private void ClaimAllChallengesBonus()
     {
-        _dailyChallengeService.ClaimAllCompletedBonus();
+        _missions.Daily.ClaimAllCompletedBonus();
         RefreshChallenges();
     }
 
@@ -569,7 +564,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         var success = await _rewardedAdService.ShowAdAsync("daily_challenge_retry");
         if (success)
         {
-            _dailyChallengeService.RetryChallenge(challenge.Id);
+            _missions.Daily.RetryChallenge(challenge.Id);
             RefreshChallenges();
             _dialogService.ShowAlertDialog(
                 _localizationService.GetString("ChallengeRetried"),
@@ -584,7 +579,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
 
     public void RefreshQuickJobs()
     {
-        QuickJobs = _quickJobService.GetAvailableJobs();
+        QuickJobs = _missions.QuickJob.GetAvailableJobs();
         // Empty State fuer Quick Jobs
         AllQuickJobsDone = QuickJobs.Count == 0 || QuickJobs.All(j => j.IsCompleted);
         // EVENT-3: Tageslimit-Anzeige aktualisieren
@@ -597,11 +592,11 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         if (!_challengesDirty) return;
         _challengesDirty = false;
 
-        var state = _dailyChallengeService.GetState();
+        var state = _missions.Daily.GetState();
         // Neue Liste erstellen, damit PropertyChanged zuverlaessig feuert
         DailyChallenges = new List<DailyChallenge>(state.Challenges);
         HasDailyChallenges = state.Challenges.Count > 0;
-        CanClaimAllBonus = _dailyChallengeService.AreAllCompleted && !state.AllCompletedBonusClaimed;
+        CanClaimAllBonus = _missions.Daily.AreAllCompleted && !state.AllCompletedBonusClaimed;
         UpdateClaimableMissionsCount();
     }
 
@@ -648,13 +643,13 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     /// </summary>
     public void UpdateQuickJobTimer()
     {
-        if (_quickJobService.NeedsRotation())
+        if (_missions.QuickJob.NeedsRotation())
         {
-            _quickJobService.RotateIfNeeded();
+            _missions.QuickJob.RotateIfNeeded();
             RefreshQuickJobs();
         }
         // Int-Vergleich statt String-Allokation pro Tick
-        var remaining = _quickJobService.TimeUntilNextRotation;
+        var remaining = _missions.QuickJob.TimeUntilNextRotation;
         int qjMins = (int)remaining.TotalMinutes;
         int qjSecs = remaining.Seconds;
         if (qjMins != _lastQjMins || qjSecs != _lastQjSecs)
@@ -670,8 +665,8 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     /// </summary>
     private void UpdateQuickJobLimitText()
     {
-        int remaining = _quickJobService.RemainingJobsToday;
-        int max = _quickJobService.MaxDailyJobs;
+        int remaining = _missions.QuickJob.RemainingJobsToday;
+        int max = _missions.QuickJob.MaxDailyJobs;
         QuickJobLimitText = $"{remaining}/{max}";
     }
 
@@ -681,7 +676,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     /// </summary>
     public void UpdatePeriodicState()
     {
-        var newFreeSpin = _luckySpinService.HasFreeSpin;
+        var newFreeSpin = _missions.LuckySpin.HasFreeSpin;
         if (newFreeSpin != HasFreeSpin) HasFreeSpin = newFreeSpin;
 
         // Welcome Back Timer aktualisieren
@@ -721,8 +716,8 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     {
         if (_disposed) return;
 
-        _dailyChallengeService.ChallengeProgressChanged -= OnChallengeProgressChanged;
-        _weeklyMissionService.MissionProgressChanged -= OnWeeklyMissionProgressChanged;
+        _missions.Daily.ChallengeProgressChanged -= OnChallengeProgressChanged;
+        _missions.Weekly.MissionProgressChanged -= OnWeeklyMissionProgressChanged;
         _welcomeBackService.OfferGenerated -= OnWelcomeOfferGenerated;
 
         _disposed = true;

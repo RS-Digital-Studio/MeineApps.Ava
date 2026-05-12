@@ -400,14 +400,13 @@ public sealed class CloudSaveService : ICloudSaveService
             TotalCards = _cardService.OwnedCards.Count
         };
 
-        // Alle Sync-Keys aus Preferences sammeln
+        // Alle Sync-Keys aus Preferences sammeln — auch leere Werte explizit aufnehmen,
+        // damit ApplyCloudData lokale Sync-Keys zuruecksetzen kann (Cherry-Pick-Schutz, Audit C04).
+        // Sonst koennten Mischzustaende entstehen: Premium-Skin auf Gerät A + Coins auf Gerät B
+        // = beide Werte bleiben separat lokal stehen.
         foreach (var key in SyncKeys)
         {
-            var value = _preferences.Get(key, "");
-            if (!string.IsNullOrEmpty(value))
-            {
-                data.Keys[key] = value;
-            }
+            data.Keys[key] = _preferences.Get(key, "");
         }
 
         return data;
@@ -419,6 +418,15 @@ public sealed class CloudSaveService : ICloudSaveService
 
     private void ApplyCloudData(CloudSaveData cloudData)
     {
+        // SyncKeys[] zuerst lokal "leeren" — verhindert Mischzustaende wenn ein Cloud-Key
+        // fehlt, lokal aber noch ein alter Wert steht (Audit C04). Nur Keys aus SyncKeys
+        // werden gereset; andere Preferences-Keys bleiben unangetastet.
+        foreach (var key in SyncKeys)
+        {
+            if (!cloudData.Keys.ContainsKey(key))
+                _preferences.Set(key, "");
+        }
+
         foreach (var kvp in cloudData.Keys)
         {
             _preferences.Set(kvp.Key, kvp.Value);

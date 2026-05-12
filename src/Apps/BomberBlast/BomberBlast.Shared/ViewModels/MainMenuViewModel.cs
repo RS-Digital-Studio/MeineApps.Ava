@@ -765,37 +765,43 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     private void GoToGemShop() => NavigationRequested?.Invoke(new GoGemShop());
 
     /// <summary>
-    /// Starterpaket kaufen. Nutzt IPurchaseService wenn verfügbar, sonst Coins-Fallback (1999).
+    /// Starterpaket kaufen (Coin-Pack, kein IAP). Erfordert IsEligible (Level >= 5) + !IsAlreadyPurchased.
+    /// IPurchaseService-Flow waere ein neues Google-Play-Produkt — aktuell nur Coin-Pack (1999 Coins).
     /// </summary>
+    private const int STARTER_PACK_COIN_COST = 1999;
+
     [RelayCommand]
     private void BuyStarterPack()
     {
+        // Strenges Gate (Audit C10): IsAvailable prueft IsEligible (Level >= 5) UND !IsAlreadyPurchased.
+        // Verhindert Re-Claim via Cloud-Restore-Glitches oder Coin-Hoarding-Bugs.
+        if (!_starterPackService.IsAvailable) return;
         if (_starterPackService.IsAlreadyPurchased) return;
 
-        // Versuch: Coin-basierter Kauf als Fallback (1999 Coins)
-        if (_coinService.Balance >= 1999)
+        if (_coinService.Balance < STARTER_PACK_COIN_COST)
         {
-            _coinService.TrySpendCoins(1999);
-            _starterPackService.MarkAsPurchased();
-
-            var packTitle = _localizationService.GetString("StarterPackTitle") ?? "Starter Pack";
-            var packDesc = _localizationService.GetString("StarterPackDesc") ?? "2500 Coins + 10 Gems + 2 Rare Cards!";
-            FloatingTextRequested?.Invoke($"{packTitle}: {packDesc}", "gold");
-            CelebrationRequested?.Invoke();
-
-            IsStarterPackAvailable = false;
-
-            // Coin-/Gem-Anzeige aktualisieren
-            CoinBalance = _coinService.Balance;
-            CoinsText = _coinService.Balance.ToString("N0");
-            GemsText = _gemService.Balance.ToString("N0");
-        }
-        else
-        {
-            // Nicht genug Coins → Info anzeigen
             var insufficientText = _localizationService.GetString("ShopNotEnoughCoins") ?? "Not enough Coins!";
             FloatingTextRequested?.Invoke(insufficientText, "red");
+            return;
         }
+
+        // Atomare Reihenfolge: TrySpend prueft + zieht ab, danach MarkAsPurchased (das selbst Save() macht).
+        // Bei TrySpend=false (Race) wird nichts vergeben.
+        if (!_coinService.TrySpendCoins(STARTER_PACK_COIN_COST)) return;
+
+        _starterPackService.MarkAsPurchased();
+
+        var packTitle = _localizationService.GetString("StarterPackTitle") ?? "Starter Pack";
+        var packDesc = _localizationService.GetString("StarterPackDesc") ?? "5000 Coins + 20 Gems + 3 Rare Cards!";
+        FloatingTextRequested?.Invoke($"{packTitle}: {packDesc}", "gold");
+        CelebrationRequested?.Invoke();
+
+        IsStarterPackAvailable = false;
+
+        // Coin-/Gem-Anzeige aktualisieren
+        CoinBalance = _coinService.Balance;
+        CoinsText = _coinService.Balance.ToString("N0");
+        GemsText = _gemService.Balance.ToString("N0");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

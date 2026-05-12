@@ -394,11 +394,25 @@ public sealed partial class MainViewModel : ViewModelBase
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
         settingsVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
 
-        // LanguageChanged: Nur bereits instanziierte (lazy) VMs neu lokalisieren.
-        // Eager MenuVm + nicht-instanziierte VMs werden beim ersten OnAppearing() frisch geladen.
+        // LanguageChanged: Alle instanziierten VMs neu lokalisieren (Audit C13).
+        // Lazy-VMs nur wenn schon resolved (?). Eager-VMs immer.
+        // VMs ohne dedizierte UpdateLocalizedTexts laden via OnAppearing/SetParameters frisch —
+        // bei aktiver View muss aber explizit aktualisiert werden, sonst frieren Strings ein.
         localization.LanguageChanged += (_, _) =>
         {
-            MenuVm.OnAppearing();
+            // Eager VMs mit UpdateLocalizedTexts
+            BossRushVm.UpdateLocalizedTexts();
+
+            // Eager VMs ohne UpdateLocalizedTexts — OnAppearing setzt alle Texte neu.
+            // Hat keinen UI-Side-Effekt wenn die View gerade nicht aktiv ist (idempotent).
+            try { MenuVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"MenuVm.OnAppearing: {ex.Message}"); }
+            try { LevelSelectVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"LevelSelectVm.OnAppearing: {ex.Message}"); }
+            try { SettingsVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"SettingsVm.OnAppearing: {ex.Message}"); }
+            try { HighScoresVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"HighScoresVm.OnAppearing: {ex.Message}"); }
+            // HelpVm/GameOverVm/PauseVm/VictoryVm haben keine OnAppearing — Texte sind in XAML lokalisiert
+            // oder werden via SetParameters/SetScore bei Aufruf neu gesetzt.
+
+            // Lazy VMs mit UpdateLocalizedTexts (nur wenn resolved)
             ShopVm?.UpdateLocalizedTexts();
             QuickPlayVm?.UpdateLocalizedTexts();
             DeckVm?.UpdateLocalizedTexts();
@@ -411,7 +425,10 @@ public sealed partial class MainViewModel : ViewModelBase
             StatisticsVm?.UpdateLocalizedTexts();
             DailyChallengeVm?.UpdateLocalizedTexts();
             WeeklyChallengeVm?.UpdateLocalizedTexts();
-            BossRushVm.UpdateLocalizedTexts();
+
+            // Lazy VMs ohne UpdateLocalizedTexts (nur wenn resolved)
+            AchievementsVm?.OnAppearing();
+            LuckySpinVm?.OnAppearing();
         };
 
         // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)
@@ -632,9 +649,13 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <summary>
     /// Typsichere Navigation: Konvertiert NavigationRequest in Route-String
     /// und delegiert an die bestehende String-basierte NavigateTo-Methode.
+    /// Audit H09: async void mit try/catch — wird auch aus HandleBackPressed (synchron, fire-and-forget) gerufen,
+    /// ungefangene Exceptions wuerden sonst TaskScheduler.UnobservedTaskException ausloesen.
     /// </summary>
     public async void NavigateTo(NavigationRequest request)
     {
+        try
+        {
         var route = request switch
         {
             GoMainMenu => "MainMenu",
@@ -666,6 +687,11 @@ public sealed partial class MainViewModel : ViewModelBase
             _ => "MainMenu"
         };
         await NavigateToRouteAsync(route);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"NavigateTo(NavigationRequest) unbehandelte Exception fuer {request?.GetType().Name}", ex);
+        }
     }
 
     /// <summary>
@@ -710,6 +736,27 @@ public sealed partial class MainViewModel : ViewModelBase
         }
 
         var baseRoute = route.Contains('?') ? route[..route.IndexOf('?')] : route;
+
+        // Cloud-Save-Init MUSS abgeschlossen sein bevor wir in Game/LevelSelect navigieren —
+        // sonst kann ein "Continue"-Tap auf frischem Geraet den leeren lokalen State
+        // mit Cloud-Progress racen und die Cloud ueberschreiben.
+        if (baseRoute is "Game" or "LevelSelect" or "Dungeon" or "DailyChallenge" or "WeeklyChallenge" or "Deck" or "Collection")
+        {
+            if (_cloudSaveInitTask is { IsCompleted: false } task)
+            {
+                try
+                {
+                    // 3s-Cap: Bei Netzproblemen kein endloses Blocken — lokaler State wird genutzt
+                    var completed = await Task.WhenAny(task, Task.Delay(3000));
+                    if (completed != task)
+                        _logger?.LogWarning("CloudSave-Init dauert >3s - navigiere ohne Cloud-Sync");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning($"CloudSave-Init Fehler vor Navigation: {ex.Message}");
+                }
+            }
+        }
 
         // Aktuellen Zustand merken (für Zurück-Navigation)
         var wasGameActive = IsGameActive;
@@ -1044,7 +1091,11 @@ public sealed partial class MainViewModel : ViewModelBase
                 ActiveView = ActiveView.MainMenu;
                 MenuVm.OnAppearing();
             }
-            catch { /* Letzter Ausweg - App lebt weiter */ }
+            catch (Exception fallbackEx)
+            {
+                // Audit H09: Letzter Ausweg — App lebt weiter, aber Fehler wird geloggt (kein silent-fail).
+                _logger.LogError($"NavigateTo Fallback fehlgeschlagen fuer Route '{route}'", fallbackEx);
+            }
         }
     }
 

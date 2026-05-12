@@ -57,21 +57,25 @@ public sealed class StarterPackService : IStarterPackService
     {
         if (_data.IsPurchased) return;
 
-        // Belohnungen vergeben
+        // ZUERST als gekauft markieren + persistieren (Audit C05). Crash zwischen Reward-Vergabe
+        // und Save() wuerde sonst ein Re-Claim-Window oeffnen: User haette die Coins/Gems/Cards
+        // erhalten und der Pack waere weiterhin als available markiert.
+        // Verlust-Fall (Crash zwischen Save und Reward) ist akzeptabel — kein Money-Bug.
+        _data.IsPurchased = true;
+        _data.PurchaseDate = DateTime.UtcNow.ToString("O");
+        Save();
+
+        // Belohnungen vergeben (jede AddCoins/AddGems/AddCard triggert eigene Save-Calls)
         _coinService.AddCoins(PACK_COINS);
         _gemService.AddGems(PACK_GEMS);
 
-        // 2 Rare-Karten droppen (Welt 7 = höhere Rare-Drop-Rate)
+        // 3 Rare-Karten droppen (Welt 7 = höhere Rare-Drop-Rate)
         for (int i = 0; i < PACK_RARE_CARDS; i++)
         {
             var drop = _cardService.GenerateDrop(worldNumber: 7);
             if (drop.HasValue)
                 _cardService.AddCard(drop.Value);
         }
-
-        _data.IsPurchased = true;
-        _data.PurchaseDate = DateTime.UtcNow.ToString("O");
-        Save();
     }
 
     // === Persistenz ===

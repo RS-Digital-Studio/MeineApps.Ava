@@ -116,7 +116,10 @@ public sealed class AchievementService : IAchievementService
 
     public Achievement? OnEnemyKilled(int totalKills)
     {
-        // Kampf-Achievements: kumulativer Kill-Zähler
+        // Kampf-Achievements: kumulativer Kill-Zähler.
+        // Monoton steigend (Audit C09): Caller-Wert nur akzeptieren wenn >= aktueller Wert.
+        // Verhindert Cheats/Bugs die alle Kill-Achievements freischalten koennten.
+        totalKills = Math.Max(_data.TotalEnemyKills, totalKills);
         _data.TotalEnemyKills = totalKills;
         MarkDirty();
 

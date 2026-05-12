@@ -17,7 +17,11 @@ namespace BomberBlast.ViewModels;
 /// </summary>
 public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposable
 {
-    private const float MAX_DELTA_TIME = 0.05f;
+    // Audit H01: Spiral-of-Death-Schutz mit 10-FPS-Floor (statt frueher 0.05s = 20-FPS-Floor).
+    // 50ms-Cap war zu strikt fuer 30-FPS-Target: 80ms-GC-Spike kappte deltaTime auf 50ms,
+    // Sim verlor 30ms → Bombe mit Restfuse=0.06s ueberstand Stutter, Spieler starb unfair.
+    // FixedTimestepRunner waere die deterministische Alternative — bleibt fuer Replay/Anti-Cheat reserviert.
+    private const float MAX_DELTA_TIME = 0.1f;
 
     private readonly GameEngine _gameEngine;
     private readonly IRewardedAdService _rewardedAdService;
@@ -65,14 +69,24 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyOverlayOpen))]
     private bool _isLoading = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyOverlayOpen))]
     private bool _isPaused;
 
     // Score-Verdopplung nach Level-Complete
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyOverlayOpen))]
     private bool _showScoreDoubleOverlay;
+
+    /// <summary>
+    /// Audit H04: Aggregat-Flag fuer alle Overlays die Input blockieren sollen.
+    /// View bindet GameCanvas.IsHitTestVisible="{Binding !IsAnyOverlayOpen}" — verhindert
+    /// dass User waehrend Pause/ScoreDouble/ContextHelp Bomben legen oder den Joystick bewegen.
+    /// </summary>
+    public bool IsAnyOverlayOpen => IsPaused || ShowScoreDoubleOverlay || IsContextHelpVisible || IsLoading;
 
     [ObservableProperty]
     private int _levelCompleteScore;
@@ -88,6 +102,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     /// Modus-spezifische Tipps als Overlay; pausiert das Spiel waehrend offen.
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyOverlayOpen))]
     private bool _isContextHelpVisible;
 
     /// <summary>Erste modus-spezifische Tipp-Zeile fuer das ContextHelp-Overlay.</summary>
@@ -612,25 +627,41 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _gameEngine.Resume();
     }
 
+    // Gate gegen Double-Ad-Race: Tap zweimal auf Score-Verdoppeln-Button
+    // wuerde sonst zwei Ads laden + Score x4 statt x2 (Cheat-Window).
+    // Pattern aus GameOverViewModel._adInFlight.
+    private bool _doubleScoreAdInFlight;
+
     [RelayCommand]
     private async Task DoubleScoreAsync()
     {
         if (!CanDoubleScore) return;
+        if (_doubleScoreAdInFlight) return; // Zweiter Klick waehrend erster Ad laeuft
 
-        // Premium: Reward sofort gratis (kein Ad nötig)
-        bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("score_double");
-        if (rewarded)
+        // Sofort deaktivieren um Doppelklick waehrend async-Gap zu verhindern
+        CanDoubleScore = false;
+        _doubleScoreAdInFlight = true;
+        try
         {
-            if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();
-            // Score im Engine verdoppeln
-            _gameEngine.DoubleScore();
-            LevelCompleteScore = _gameEngine.Score;
-            LevelCompleteScoreText = LevelCompleteScore.ToString("N0");
-            CanDoubleScore = false;
-        }
+            // Premium: Reward sofort gratis (kein Ad nötig)
+            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("score_double");
+            if (rewarded)
+            {
+                if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();
+                // Score im Engine verdoppeln
+                _gameEngine.DoubleScore();
+                LevelCompleteScore = _gameEngine.Score;
+                LevelCompleteScoreText = LevelCompleteScore.ToString("N0");
+            }
+            // Bei rewarded=false bleibt CanDoubleScore=false (User hat Versuch verbraucht via Skip-Pfad)
 
-        // Overlay schliessen und zum naechsten Level
-        ShowScoreDoubleOverlay = false;
+            // Overlay schliessen und zum naechsten Level
+            ShowScoreDoubleOverlay = false;
+        }
+        finally
+        {
+            _doubleScoreAdInFlight = false;
+        }
         await ProceedToNextLevel();
     }
 

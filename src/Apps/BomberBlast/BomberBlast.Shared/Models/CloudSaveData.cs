@@ -34,7 +34,9 @@ public class CloudSaveData
 
     /// <summary>
     /// Vergleicht zwei Speicherstände und gibt den "besseren" zurück.
-    /// Reihenfolge: TotalStars → CoinBalance + GemBalance → Timestamp (neuer gewinnt).
+    /// Reihenfolge: TotalStars → CoinBalance + GemBalance → TotalCards → Keys.Count → Timestamp → Cloud (Default).
+    /// Tie-Default ist Cloud-authoritative, damit Erstlogin auf neuem Geraet keine
+    /// leere lokale Identitaet die Cloud ueberschreibt (siehe Audit C03).
     /// </summary>
     public static CloudSaveData ChooseBest(CloudSaveData local, CloudSaveData cloud)
     {
@@ -52,7 +54,17 @@ public class CloudSaveData
         if (local.TotalCards != cloud.TotalCards)
             return local.TotalCards > cloud.TotalCards ? local : cloud;
 
-        // 4. Neuerer Timestamp
-        return string.CompareOrdinal(local.TimestampUtc, cloud.TimestampUtc) >= 0 ? local : cloud;
+        // 4. Mehr Persistenz-Keys = mehr Inventar/Skins/Settings (Tie-Breaker fuer Cloud-Identitaet)
+        if (local.Keys.Count != cloud.Keys.Count)
+            return local.Keys.Count > cloud.Keys.Count ? local : cloud;
+
+        // 5. Neuerer Timestamp (strikt >, kein >=)
+        int timestampCmp = string.CompareOrdinal(local.TimestampUtc, cloud.TimestampUtc);
+        if (timestampCmp != 0)
+            return timestampCmp > 0 ? local : cloud;
+
+        // 6. Voller Gleichstand: Cloud-authoritative (verhindert Local-Empty-State-Win
+        //    beim Erstlogin auf neuem Geraet, wenn Cloud-Inventar nicht in Vergleich einfliesst)
+        return cloud;
     }
 }

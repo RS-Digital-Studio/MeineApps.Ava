@@ -96,6 +96,19 @@ public sealed class AscensionService : IAscensionService
         state.Ascension.TotalAscensionPoints += calculatedAP;
         state.Ascension.LastAscensionDate = DateTime.UtcNow;
 
+        // V7 (Phase 4 Ressourcen-Plan): Erbstuecke aus dem Inventar in den
+        // Ascension-Schrein ueberfuehren — sie geben permanenten +0.5%-Bonus.
+        var allProducts = CraftingProduct.GetAllProducts();
+        foreach (var (productId, count) in state.CraftingInventory)
+        {
+            if (count <= 0) continue;
+            if (!allProducts.TryGetValue(productId, out var product)) continue;
+            if (!product.IsHeirloomEligible) continue;
+            // Jedes Tier-4-Item wird zu einem permanenten Erbstueck (count Mal).
+            for (int i = 0; i < count; i++)
+                state.Ascension.PermanentHeirlooms.Add(productId);
+        }
+
         // --- EternalTools-Perk: Meisterwerkzeuge teilweise bewahren ---
         int eternalToolsLevel = GetEternalToolsLevel();
         var keptTools = new List<string>();

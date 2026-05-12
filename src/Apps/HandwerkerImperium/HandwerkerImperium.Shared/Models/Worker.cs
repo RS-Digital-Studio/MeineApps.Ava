@@ -35,6 +35,15 @@ public class Worker
     public WorkshopType? Specialization { get; set; }
 
     /// <summary>
+    /// V7 (Phase 4 Ressourcen-Plan): Sekundaere Material-Affinitaet (Holz/Metall/Stein/Kunst/Tech).
+    /// Match mit gecraftetem Material gibt +20% Crafting-Speed des Workshops.
+    /// Wird beim Hiring gerollt (gleichverteilt 20%). Alte Saves bekommen sie deterministisch
+    /// via WorkerId-Hash zugewiesen (SanitizeState in SaveGameService).
+    /// </summary>
+    [JsonPropertyName("materialAffinity")]
+    public MaterialAffinity MaterialAffinity { get; set; } = MaterialAffinity.None;
+
+    /// <summary>
     /// Worker assigned to this workshop. Can be transferred between workshops.
     /// </summary>
     [JsonPropertyName("assignedWorkshop")]
@@ -499,6 +508,9 @@ public class Worker
 
         bool isFemale = (id.GetHashCode() % 2 == 0);
 
+        // V7 (Phase 4 Ressourcen-Plan): Material-Affinitaet gleichverteilt rollen (5 Achsen).
+        var affinity = (MaterialAffinity)(random.Next(1, 6));
+
         var worker = new Worker
         {
             Id = id,
@@ -507,6 +519,7 @@ public class Worker
             Talent = talent,
             Personality = personality,
             Specialization = spec,
+            MaterialAffinity = affinity,
             Mood = 80m,
             Fatigue = 0m,
             ExperienceLevel = 1,

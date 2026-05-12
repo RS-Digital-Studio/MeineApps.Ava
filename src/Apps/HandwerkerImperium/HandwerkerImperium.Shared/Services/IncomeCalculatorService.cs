@@ -122,7 +122,24 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
             grossIncome *= (1m + _eternalMastery.IncomeBonus);
         }
 
+        // V7 (Phase 4 Ressourcen-Plan): Erbstuecke (+2% Globales Einkommen pro aktivem Erbstueck,
+        // +0.5% Globales Einkommen pro permanentem Erbstueck im Ascension-Schrein).
+        decimal heirloomBonus = GetTotalHeirloomBonus(state);
+        if (heirloomBonus > 0)
+            grossIncome *= (1m + heirloomBonus);
+
         return grossIncome;
+    }
+
+    /// <summary>
+    /// V7 (Phase 4): Summe aller Heirloom-Boni (aktiver Run + permanent).
+    /// Public-static damit andere Services (Header-Display, Achievements) den Bonus auch ablesen koennen.
+    /// </summary>
+    public static decimal GetTotalHeirloomBonus(GameState state)
+    {
+        decimal active = state.HeirloomItems.Count * GameBalanceConstants.HeirloomBonusPerItem;
+        decimal permanent = state.Ascension.PermanentHeirlooms.Count * GameBalanceConstants.PermanentHeirloomBonusPerItem;
+        return active + permanent;
     }
 
     public decimal CalculateCosts(GameState state, ResearchEffect? researchEffects = null, GameEventEffect? eventEffects = null)

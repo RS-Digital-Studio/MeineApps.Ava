@@ -400,6 +400,14 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                 var maxEff = worker.Tier.GetMaxEfficiency();
                 if (worker.Efficiency < minEff || worker.Efficiency > maxEff)
                     worker.Efficiency = Math.Clamp(worker.Efficiency, minEff, maxEff);
+
+                // V7 (Phase 4): Material-Affinity deterministisch fuer alte Saves zuweisen.
+                if (worker.MaterialAffinity == MaterialAffinity.None && !string.IsNullOrEmpty(worker.Id))
+                {
+                    // 5 Achsen (1-5), deterministisch per WorkerId-Hash
+                    int hash = Math.Abs(worker.Id.GetHashCode());
+                    worker.MaterialAffinity = (MaterialAffinity)((hash % 5) + 1);
+                }
             }
         }
 
@@ -556,8 +564,19 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         // Ascension-Daten validieren (reserviert für zukünftige Funktionalität, Save-Kompatibilität)
         state.Ascension ??= new AscensionData();
         state.Ascension.Perks ??= new Dictionary<string, int>();
+        state.Ascension.PermanentHeirlooms ??= [];
         if (state.Ascension.AscensionLevel < 0) state.Ascension.AscensionLevel = 0;
         if (state.Ascension.AscensionPoints < 0) state.Ascension.AscensionPoints = 0;
+
+        // V7 (Phase 4): HeirloomItems & PermanentHeirlooms validieren — nur Heirloom-faehige Produkt-IDs.
+        var allProductsForHeirlooms = CraftingProduct.GetAllProducts();
+        state.HeirloomItems.RemoveAll(id =>
+            !allProductsForHeirlooms.TryGetValue(id, out var p) || !p.IsHeirloomEligible);
+        if (state.HeirloomItems.Count > GameBalanceConstants.MaxHeirloomsPerRun)
+            state.HeirloomItems.RemoveRange(GameBalanceConstants.MaxHeirloomsPerRun,
+                state.HeirloomItems.Count - GameBalanceConstants.MaxHeirloomsPerRun);
+        state.Ascension.PermanentHeirlooms.RemoveAll(id =>
+            !allProductsForHeirlooms.TryGetValue(id, out var p) || !p.IsHeirloomEligible);
 
         if (state.Statistics.TotalWorkersTrained < 0) state.Statistics.TotalWorkersTrained = 0;
         if (state.Statistics.TotalItemsCrafted < 0) state.Statistics.TotalItemsCrafted = 0;

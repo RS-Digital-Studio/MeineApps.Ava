@@ -515,6 +515,43 @@ Alle 10 Workshops produzieren passiv Tier-1 Items (Unlock ab WS-Level 50):
 Skalierender Verkaufspreis: `BaseValue × (1 + log₂(1 + Level/25)) × CraftingSellMultiplier`
 (kein Soft-Cap, kein Speed/Rush im Multiplier).
 
+### Tier-4 + Erbstuecke + Worker-Affinitaet (V7 — Phase 4 Ressourcen-Plan)
+
+**Tier-4-Produkte** (Plan Section 3.2): 3 Imperiums-Manufaktur-Items am GeneralContractor
+ab WS-Lv 500. Alle haben `IsHeirloomEligible = true`.
+
+| Produkt | Inputs | BaseValue | Dauer |
+|---------|--------|-----------|-------|
+| villa | 5×luxury_furniture + 3×smart_home + 2×roof_structure + 1×artwork | 2.5 Mio. | 30 min |
+| skyscraper | 5×skyscraper_frame + 3×bathroom + 3×smart_home + 2×artwork | 4.0 Mio. | 40 min |
+| imperium_hq | je 2× alle 10 T3-Produkte (au&szlig;er general_contract: 1×) | 5.0 Mio. | 60 min |
+
+**Erbstuecke** (Plan Section 3.8):
+- Beim Prestige werden Tier-4-Items aus `HeirloomItems` (max 3) NICHT gerese ttet — sie ueberleben den Run.
+- Jedes aktive Erbstueck gibt **+2% Globales Einkommen** im naechsten Run.
+- Bei Ascension wandern alle Erbstuecke in `state.Ascension.PermanentHeirlooms` → **+0.5% forever** pro Stueck.
+- `IncomeCalculatorService.GetTotalHeirloomBonus(state)` summiert beide Beitraege.
+- `PrestigeService` filtert das Crafting-Inventar bei Reset: nur HeirloomItems mit `IsHeirloomEligible == true` bleiben.
+- `ReservedInventory.Clear()` beim Prestige (alle laufenden Material-Offer-Reservierungen verfallen).
+- SaveGame-Sanitize validiert HeirloomItems gegen den Produkt-Katalog (Save-Editor-Schutz).
+
+**Worker-Material-Affinitaet** (Plan Section 3.7):
+- `MaterialAffinity` Enum: Wood/Metal/Stone/Art/Tech.
+- `Worker.MaterialAffinity` neu — wird beim Hiring gleichverteilt gerollt (20% pro Achse).
+- Alte Worker bekommen die Affinitaet deterministisch via WorkerId-Hash (SaveGame-Migration).
+- `CraftingService.GetMaterialAffinityBonus(state, recipe)` addiert bis zu **+20% Crafting-Speed** wenn
+  alle arbeitenden Worker des Workshops mit der Material-Affinitaet des Output-Produkts matchen.
+- Anteilig pro Worker (3 von 5 matchend → +12% Speed).
+- `MaterialAffinityExtensions.GetMaterialAffinity(productId)` ordnet jedes Material einer Achse zu.
+
+**Imperium-Pass (4,99 € Lifetime)** (Plan Section 10.2): Der bestehende Premium-Kauf wird
+inhaltlich zum "Imperium-Pass" repositioniert (Preis identisch, Versprechen greifbarer).
+Beinhaltet ×2 Rewarded-Belohnungen, +50% Offline-Einkommen, Markt-Insider-Heatmap,
+Auto-Verkaufs-Regeln, +1 Erbstueck-Slot (3 → 4), 2× Lucky-Spin/Tag, Auto-ClaimDaily,
++100% GS. Spieler mit bestehendem `IsPremium` bekommen den Pass automatisch.
+*Implementation der UI-Repositionierung ist als getrennter Sprint vorgemerkt — Bundle-Boni
+sind in den Service-Layern bereits implementiert.*
+
 ### Material-Markt (V7 — Phase 3 Ressourcen-Plan)
 
 `IMarketService` + `MarketService` — deterministische Tagespreis-Logik pro Spieler.

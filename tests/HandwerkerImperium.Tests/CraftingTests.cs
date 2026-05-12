@@ -15,13 +15,15 @@ public class CraftingTests
     // ═══════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void GetAllRecipes_HatDreissigRezepte()
+    public void GetAllRecipes_HatDreiunddreissigRezepte()
     {
         // Ausführung
         var rezepte = CraftingRecipe.GetAllRecipes();
 
-        // Prüfung: V7 (Phase 1 Ressourcen-Plan) — 10 Workshops × 3 Tiers = 30 Rezepte
-        rezepte.Should().HaveCount(30);
+        // Prüfung: V7 (Phase 1 + Phase 4 Ressourcen-Plan)
+        // - 10 Workshops × 3 Tiers = 30 (Phase 1)
+        // - 3 Tier-4-Rezepte (Villa/Wolkenkratzer/Imperium-HQ) am GeneralContractor (Phase 4)
+        rezepte.Should().HaveCount(33);
     }
 
     [Fact]

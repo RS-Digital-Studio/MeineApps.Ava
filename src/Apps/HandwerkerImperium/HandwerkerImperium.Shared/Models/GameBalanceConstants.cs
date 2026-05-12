@@ -404,6 +404,19 @@ public static class GameBalanceConstants
     public const double MaterialOfferBonusWeekly = 0.60;
 
     // ═══════════════════════════════════════════════════════════════════════
+    // HEIRLOOM (V7 — Phase 4 Ressourcen-Plan, Plan Section 3.8)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Maximale Anzahl Erbstuecke die beim Prestige mitgenommen werden koennen.</summary>
+    public const int MaxHeirloomsPerRun = 3;
+
+    /// <summary>Globaler Einkommens-Bonus pro Run-Erbstueck (+2%).</summary>
+    public const decimal HeirloomBonusPerItem = 0.02m;
+
+    /// <summary>Globaler Einkommens-Bonus pro permanentem Erbstueck (+0.5% forever).</summary>
+    public const decimal PermanentHeirloomBonusPerItem = 0.005m;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // AUFTRAGS-BELOHNUNGEN - SOFT-CAP
     // ═══════════════════════════════════════════════════════════════════════
 

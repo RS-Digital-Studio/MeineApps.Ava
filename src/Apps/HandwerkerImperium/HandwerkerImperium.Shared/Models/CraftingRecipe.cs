@@ -182,6 +182,49 @@ public class CraftingRecipe
             RequiredWorkshopLevel = 300, Tier = 3,
             InputProducts = new() { { "innovation", 2 }, { "master_fittings", 1 } }, // +MasterSmith T2
             OutputProductId = "patent", DurationSeconds = 420 },
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // TIER 4 — IMPERIUMS-MANUFAKTUR (Phase 4, ab Workshop-Level 500 + logi_09 Research)
+        // ═══════════════════════════════════════════════════════════════════════
+        new() { Id = "r_villa", NameKey = "CraftVilla", WorkshopType = WorkshopType.GeneralContractor,
+            RequiredWorkshopLevel = 500, Tier = 4,
+            InputProducts = new()
+            {
+                { "luxury_furniture", 5 },        // Carpenter T3
+                { "smart_home", 3 },              // Electrician T3
+                { "roof_structure", 2 },          // Roofer T3
+                { "artwork", 1 }                  // Painter T3
+            },
+            OutputProductId = "villa", DurationSeconds = 1800 }, // 30 min
+
+        new() { Id = "r_skyscraper", NameKey = "CraftSkyscraper", WorkshopType = WorkshopType.GeneralContractor,
+            RequiredWorkshopLevel = 500, Tier = 4,
+            InputProducts = new()
+            {
+                { "skyscraper_frame", 5 },        // Contractor T3
+                { "bathroom_installation", 3 },   // Plumber T3
+                { "smart_home", 3 },              // Electrician T3
+                { "artwork", 2 }                  // Painter T3
+            },
+            OutputProductId = "skyscraper", DurationSeconds = 2400 }, // 40 min
+
+        new() { Id = "r_imperium_hq", NameKey = "CraftImperiumHq", WorkshopType = WorkshopType.GeneralContractor,
+            RequiredWorkshopLevel = 500, Tier = 4,
+            InputProducts = new()
+            {
+                // Imperiums-Komplex: mindestens 2x von JEDEM T3 (Plan Section 3.2)
+                { "luxury_furniture", 2 },
+                { "bathroom_installation", 2 },
+                { "smart_home", 2 },
+                { "artwork", 2 },
+                { "roof_structure", 2 },
+                { "skyscraper_frame", 2 },
+                { "master_blueprint", 2 },
+                { "general_contract", 1 },
+                { "masterpiece_fittings", 2 },
+                { "patent", 2 }
+            },
+            OutputProductId = "imperium_hq", DurationSeconds = 3600 }, // 60 min
     ];
 
     public static List<CraftingRecipe> GetAllRecipes() => AllRecipes;
@@ -307,6 +350,14 @@ public class CraftingProduct
         ["general_contract"] = new() { Id = "general_contract", NameKey = "ProductGeneralContract", Tier = 3, BaseValue = 80000m },
         ["masterpiece_fittings"] = new() { Id = "masterpiece_fittings", NameKey = "ProductMasterpieceFittings", Tier = 3, BaseValue = 60000m },
         ["patent"] = new() { Id = "patent", NameKey = "ProductPatent", Tier = 3, BaseValue = 75000m },
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // TIER 4 — Imperiums-Manufaktur (Phase 4 — Plan Section 3.2)
+        // BaseValue 1.5M–5M, alle Erbstueck-faehig.
+        // ═══════════════════════════════════════════════════════════════════════
+        ["villa"] = new() { Id = "villa", NameKey = "ProductVilla", Tier = 4, BaseValue = 2_500_000m, IsHeirloomEligible = true },
+        ["skyscraper"] = new() { Id = "skyscraper", NameKey = "ProductSkyscraper", Tier = 4, BaseValue = 4_000_000m, IsHeirloomEligible = true },
+        ["imperium_hq"] = new() { Id = "imperium_hq", NameKey = "ProductImperiumHq", Tier = 4, BaseValue = 5_000_000m, IsHeirloomEligible = true },
     };
 
     public static Dictionary<string, CraftingProduct> GetAllProducts() => AllProducts;

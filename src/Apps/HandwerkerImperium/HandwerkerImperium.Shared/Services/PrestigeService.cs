@@ -710,8 +710,32 @@ public sealed partial class PrestigeService : IPrestigeService
         state.CurrentTournament = null;
 
         // === RESET: Crafting (immer zurücksetzen, null-safe für alte Saves) ===
-        state.CraftingInventory = new Dictionary<string, int>();
+        // V7 (Phase 4 Ressourcen-Plan): Erbstuecke ueberleben Prestige — nur Tier-4-Items.
+        // Spieler kann beim Prestige-Confirm-Dialog bis zu MaxHeirloomsPerRun Items waehlen.
+        // HeirloomItems wurde dort befuellt; wir konsumieren die Items aus dem Inventar und
+        // entfernen alles andere.
+        if (state.HeirloomItems.Count > 0)
+        {
+            var allProducts = CraftingProduct.GetAllProducts();
+            var preservedInventory = new Dictionary<string, int>();
+            foreach (var heirloomId in state.HeirloomItems)
+            {
+                if (!allProducts.TryGetValue(heirloomId, out var product)) continue;
+                if (!product.IsHeirloomEligible) continue;
+                int available = state.CraftingInventory.GetValueOrDefault(heirloomId, 0);
+                if (available > 0)
+                {
+                    preservedInventory[heirloomId] = 1; // ein Erbstueck pro Slot
+                }
+            }
+            state.CraftingInventory = preservedInventory;
+        }
+        else
+        {
+            state.CraftingInventory = new Dictionary<string, int>();
+        }
         state.ActiveCraftingJobs = [];
+        state.ReservedInventory.Clear(); // V7: Reservierungen verfallen bei Prestige
 
         // === RESET: Daily Shop Offer (immer zurücksetzen) ===
         state.DailyShopOffer = null;

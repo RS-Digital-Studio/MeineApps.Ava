@@ -120,7 +120,8 @@ public sealed class CraftingService : ICraftingService
             // Crafting-Job erstellen (Prestige-Shop + Research CraftingSpeedBonus reduziert Dauer)
             int effectiveDuration = recipe.DurationSeconds;
             decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state)
-                                       + (_research?.GetTotalEffects().CraftingSpeedBonus ?? 0m);
+                                       + (_research?.GetTotalEffects().CraftingSpeedBonus ?? 0m)
+                                       + GetMaterialAffinityBonus(state, recipe);
             if (craftingSpeedBonus > 0)
                 effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
 
@@ -306,6 +307,44 @@ public sealed class CraftingService : ICraftingService
     /// </summary>
     private static CraftingRecipe? FindRecipeByProductId(string productId) =>
         CraftingRecipe.GetByOutputProduct(productId);
+
+    /// <summary>
+    /// V7 (Phase 4 Ressourcen-Plan): Material-Affinity-Bonus aus den Workern des
+    /// Workshop-Typs. Wenn Worker-Affinitaet zum Output-Material des Rezepts passt,
+    /// gibt es bis zu +20% Crafting-Speed (pro arbeitendem Worker mit Match, gecapped).
+    /// </summary>
+    private static decimal GetMaterialAffinityBonus(GameState state, CraftingRecipe recipe)
+    {
+        var targetAffinity = MaterialAffinityExtensions.GetMaterialAffinity(recipe.OutputProductId);
+        if (targetAffinity == MaterialAffinity.None) return 0m;
+
+        // Workshop suchen
+        Workshop? workshop = null;
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            if (state.Workshops[i].Type == recipe.WorkshopType)
+            {
+                workshop = state.Workshops[i];
+                break;
+            }
+        }
+        if (workshop == null || workshop.Workers.Count == 0) return 0m;
+
+        // Anteil der arbeitenden Worker mit Affinity-Match
+        int matchingWorking = 0;
+        int totalWorking = 0;
+        for (int i = 0; i < workshop.Workers.Count; i++)
+        {
+            var w = workshop.Workers[i];
+            if (!w.IsWorking) continue;
+            totalWorking++;
+            if (w.MaterialAffinity == targetAffinity) matchingWorking++;
+        }
+        if (totalWorking == 0) return 0m;
+
+        // Linear: 0 Match = 0%, alle Match = +20%
+        return 0.20m * matchingWorking / totalWorking;
+    }
 
     /// <summary>
     /// Berechnet den Crafting-Geschwindigkeitsbonus aus gekauften Prestige-Shop-Items.

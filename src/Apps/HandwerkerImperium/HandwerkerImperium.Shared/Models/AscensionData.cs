@@ -29,6 +29,14 @@ public class AscensionData
     [JsonPropertyName("lastAscensionDate")]
     public DateTime LastAscensionDate { get; set; } = DateTime.MinValue;
 
+    /// <summary>
+    /// V7 (Phase 4 Ressourcen-Plan): Permanente Erbstuecke aus dem Erbstueck-Schrein.
+    /// Jedes Erbstueck gibt +0.5% Globales Einkommen forever (Plan Section 3.8).
+    /// Wird bei jeder Ascension befuellt mit allen aktiven Erbstuecken des aktuellen Runs.
+    /// </summary>
+    [JsonPropertyName("permanentHeirlooms")]
+    public List<string> PermanentHeirlooms { get; set; } = [];
+
     /// <summary>Gibt die Stufe eines Perks zurück (0 = nicht gekauft).</summary>
     public int GetPerkLevel(string perkId)
     {

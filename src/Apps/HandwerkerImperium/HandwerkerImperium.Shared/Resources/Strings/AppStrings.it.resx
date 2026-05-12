@@ -6267,6 +6267,18 @@
   <data name="Buy10" xml:space="preserve"><value>Compra 10</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Apri Mercato</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Consegna di materiale dal fornitore!</value></data>
+  <data name="ProductVilla" xml:space="preserve"><value>Villa di Lusso</value></data>
+  <data name="ProductSkyscraper" xml:space="preserve"><value>Grattacielo</value></data>
+  <data name="ProductImperiumHq" xml:space="preserve"><value>Quartier Generale Imperiale</value></data>
+  <data name="CraftVilla" xml:space="preserve"><value>Costruire Villa di Lusso</value></data>
+  <data name="CraftSkyscraper" xml:space="preserve"><value>Costruire Grattacielo</value></data>
+  <data name="CraftImperiumHq" xml:space="preserve"><value>Costruire Quartier Generale</value></data>
+  <data name="AffinityNone" xml:space="preserve"><value>Nessuna specializzazione</value></data>
+  <data name="AffinityWood" xml:space="preserve"><value>Specialista del Legno</value></data>
+  <data name="AffinityMetal" xml:space="preserve"><value>Specialista del Metallo</value></data>
+  <data name="AffinityStone" xml:space="preserve"><value>Specialista della Pietra</value></data>
+  <data name="AffinityArt" xml:space="preserve"><value>Specialista dell'Arte</value></data>
+  <data name="AffinityTech" xml:space="preserve"><value>Specialista Tech</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Produzione Automatica</value>
   </data>

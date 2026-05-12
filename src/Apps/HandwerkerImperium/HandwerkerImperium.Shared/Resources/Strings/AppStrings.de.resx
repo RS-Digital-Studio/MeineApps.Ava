@@ -6472,6 +6472,19 @@
   <data name="Buy10" xml:space="preserve"><value>10 kaufen</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Markt &#246;ffnen</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material-Lieferung vom Lieferanten!</value></data>
+  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Tier-4 + Erbstuecke + Affinity ═══════ -->
+  <data name="ProductVilla" xml:space="preserve"><value>Luxusvilla</value></data>
+  <data name="ProductSkyscraper" xml:space="preserve"><value>Wolkenkratzer</value></data>
+  <data name="ProductImperiumHq" xml:space="preserve"><value>Imperiums-Hauptquartier</value></data>
+  <data name="CraftVilla" xml:space="preserve"><value>Luxusvilla errichten</value></data>
+  <data name="CraftSkyscraper" xml:space="preserve"><value>Wolkenkratzer bauen</value></data>
+  <data name="CraftImperiumHq" xml:space="preserve"><value>Imperiums-HQ erschaffen</value></data>
+  <data name="AffinityNone" xml:space="preserve"><value>Kein Spezialgebiet</value></data>
+  <data name="AffinityWood" xml:space="preserve"><value>Holz-Spezialist</value></data>
+  <data name="AffinityMetal" xml:space="preserve"><value>Metall-Spezialist</value></data>
+  <data name="AffinityStone" xml:space="preserve"><value>Stein-Spezialist</value></data>
+  <data name="AffinityArt" xml:space="preserve"><value>Kunst-Spezialist</value></data>
+  <data name="AffinityTech" xml:space="preserve"><value>Tech-Spezialist</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Auto-Produktion</value>
   </data>

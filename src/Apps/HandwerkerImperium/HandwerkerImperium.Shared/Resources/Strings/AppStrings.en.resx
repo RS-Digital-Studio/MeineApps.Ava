@@ -6259,6 +6259,18 @@
   <data name="Buy10" xml:space="preserve"><value>Buy 10</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Open Market</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material delivery from supplier!</value></data>
+  <data name="ProductVilla" xml:space="preserve"><value>Luxury Villa</value></data>
+  <data name="ProductSkyscraper" xml:space="preserve"><value>Skyscraper</value></data>
+  <data name="ProductImperiumHq" xml:space="preserve"><value>Imperial Headquarters</value></data>
+  <data name="CraftVilla" xml:space="preserve"><value>Build Luxury Villa</value></data>
+  <data name="CraftSkyscraper" xml:space="preserve"><value>Build Skyscraper</value></data>
+  <data name="CraftImperiumHq" xml:space="preserve"><value>Build Imperial HQ</value></data>
+  <data name="AffinityNone" xml:space="preserve"><value>No specialty</value></data>
+  <data name="AffinityWood" xml:space="preserve"><value>Wood specialist</value></data>
+  <data name="AffinityMetal" xml:space="preserve"><value>Metal specialist</value></data>
+  <data name="AffinityStone" xml:space="preserve"><value>Stone specialist</value></data>
+  <data name="AffinityArt" xml:space="preserve"><value>Art specialist</value></data>
+  <data name="AffinityTech" xml:space="preserve"><value>Tech specialist</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Auto Production</value>
   </data>

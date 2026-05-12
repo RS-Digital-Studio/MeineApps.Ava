@@ -759,30 +759,8 @@ public partial class DashboardView : UserControl
     // City-Tap-Handler entfernt: AI-Hintergrundbild hat keine interaktiven Gebäude-Zonen.
     // Navigation zu Workshops/Gebäuden erfolgt über Workshop-Karten und Imperium-Tab.
 
-    #region ProgressBar Paint-Handler
-
-    /// <summary>
-    /// Spieler XP-Level-Fortschritt (amber/gold Gradient).
-    /// </summary>
-    private void OnPaintLevelProgress(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        var bounds = canvas.LocalClipBounds;
-        if (_vm == null) return;
-
-        MeineApps.UI.SkiaSharp.LinearProgressVisualization.Render(canvas, bounds,
-            (float)_vm.HeaderVM.LevelProgress,
-            new SKColor(0xF5, 0x9E, 0x0B), // Amber Start
-            new SKColor(0xFF, 0xD7, 0x00), // Gold End
-            showText: false, glowEnabled: true);
-    }
-
+    // OnPaintLevelProgress → Views/Dashboard/DashboardHeader.axaml.cs
     // OnPaintChallengeProgress → Views/Dashboard/DailyChallengeSection.axaml.cs
     // OnPaintWeeklyMissionProgress → Views/Dashboard/WeeklyMissionSection.axaml.cs
-
-    // Workshop-Level- und Milestone-ProgressBars werden jetzt direkt
-    // im WorkshopGameCardRenderer gezeichnet (kein separater Handler nötig).
-
-    #endregion
+    // Workshop-Level- und Milestone-ProgressBars werden direkt im WorkshopGameCardRenderer gezeichnet.
 }

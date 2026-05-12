@@ -39,9 +39,9 @@
         <!-- Prestige Tier-Auswahl-Chips (nur bei mehreren verfügbaren Tiers) -->
         <ScrollViewer HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Disabled"
-                      IsVisible="{Binding IsPrestigeTierSelectionVisible}"
+                      IsVisible="{Binding PrestigeConfirmation.IsTierSelectionVisible}"
                       AutomationProperties.AutomationId="Main_Scroll_TierChips">
-          <ItemsControl ItemsSource="{Binding AvailablePrestigeTierOptions}"
+          <ItemsControl ItemsSource="{Binding PrestigeConfirmation.AvailableTierOptions}"
                         AutomationProperties.AutomationId="Main_Items_TierChips">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -58,7 +58,7 @@
                         AutomationProperties.AutomationId="Main_Btn_TierChip">
                   <!-- Command-Binding via $parent zum UserControl-DataContext (MainViewModel) -->
                   <Button.Command>
-                    <Binding Path="((vm:DialogViewModel)DataContext).SelectPrestigeTierCommand"
+                    <Binding Path="((vm:DialogViewModel)DataContext).PrestigeConfirmation.SelectTierCommand"
                              ElementName="ConfirmDialogRoot" />
                   </Button.Command>
                   <Button.Background>
@@ -97,17 +97,17 @@
                    AutomationProperties.AutomationId="Main_Txt_ConfirmMessage" />
 
         <!-- Prestige-Extras: Bonus-PP, Challenge-PP, Speedrun -->
-        <StackPanel Spacing="4" IsVisible="{Binding IsPrestigeTierSelectionVisible}"
+        <StackPanel Spacing="4" IsVisible="{Binding PrestigeConfirmation.IsTierSelectionVisible}"
                     AutomationProperties.AutomationId="Main_Panel_PrestigeExtras">
-          <TextBlock Text="{Binding BonusPpPreview}" FontSize="12"
+          <TextBlock Text="{Binding PrestigeConfirmation.BonusPpPreview}" FontSize="12"
                      Foreground="{StaticResource PrestigeGainsBrush}" FontWeight="SemiBold"
-                     IsVisible="{Binding BonusPpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <TextBlock Text="{Binding ChallengePpPreview}" FontSize="12"
+                     IsVisible="{Binding PrestigeConfirmation.BonusPpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding PrestigeConfirmation.ChallengePpPreview}" FontSize="12"
                      Foreground="{StaticResource CraftGoldBrush}" FontWeight="SemiBold"
-                     IsVisible="{Binding ChallengePpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <TextBlock Text="{Binding CurrentRunDurationText}" FontSize="11"
+                     IsVisible="{Binding PrestigeConfirmation.ChallengePpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding PrestigeConfirmation.CurrentRunDurationText}" FontSize="11"
                      Foreground="{StaticResource TextWhiteMediumBrush}"
-                     IsVisible="{Binding CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                     IsVisible="{Binding PrestigeConfirmation.CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
         <StackPanel Spacing="8" HorizontalAlignment="Stretch"

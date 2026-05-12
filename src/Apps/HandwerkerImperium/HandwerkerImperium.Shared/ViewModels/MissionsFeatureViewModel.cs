@@ -210,11 +210,14 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// AAA-Audit P1 Service-Sprawl-Pilot (12.05.2026): Statt 4 einzelner Mission-Services
+    /// wird die <see cref="IMissionsFacade"/> injiziert — reduziert die Constructor-Surface
+    /// um 3 Parameter (4 Services → 1 Facade). Die internen Felder bleiben (kein invasiver
+    /// Body-Refactor), die Facade-Pass-Through ist Init-only.
+    /// </summary>
     public MissionsFeatureViewModel(
-        IWeeklyMissionService weeklyMissionService,
-        ILuckySpinService luckySpinService,
-        IQuickJobService quickJobService,
-        IDailyChallengeService dailyChallengeService,
+        IMissionsFacade missions,
         IGameStateService gameStateService,
         IAudioService audioService,
         ILocalizationService localizationService,
@@ -225,10 +228,10 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         IContextualHintService contextualHintService,
         LuckySpinViewModel luckySpinViewModel)
     {
-        _weeklyMissionService = weeklyMissionService;
-        _luckySpinService = luckySpinService;
-        _quickJobService = quickJobService;
-        _dailyChallengeService = dailyChallengeService;
+        _weeklyMissionService = missions.Weekly;
+        _luckySpinService = missions.LuckySpin;
+        _quickJobService = missions.QuickJob;
+        _dailyChallengeService = missions.Daily;
         _gameStateService = gameStateService;
         _audioService = audioService;
         _localizationService = localizationService;

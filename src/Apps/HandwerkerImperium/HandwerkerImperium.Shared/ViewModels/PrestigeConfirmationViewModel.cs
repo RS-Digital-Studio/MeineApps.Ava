@@ -3,84 +3,108 @@ using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services.Interfaces;
+using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
+using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// Prestige-Tier-Auswahl-Dialog (Properties, Commands, Dialog-Inhalt-Aufbau).
-/// AAA-Audit P0: aus DialogViewModel.cs extrahiert (12.05.2026) — DialogViewModel.cs schrumpft
-/// von 618 auf ~290 Zeilen, Prestige-Tier-Logik ist eigenstaendig auffindbar.
+/// AAA-Audit P0 (12.05.2026): Echte VM-Trennung für die Prestige-Tier-Auswahl-Dialog-Logik.
+/// Aus <see cref="DialogViewModel"/>.PrestigeTier.cs (Partial) zu eigenständiger ViewModel-Klasse
+/// umgezogen — klarer Single-Responsibility-Schnitt.
+///
+/// Pattern: PrestigeConfirmation wird als Composition-Property von <see cref="DialogViewModel"/>
+/// gehalten. Die Confirm-Modal-Mechanik (IsConfirmDialogVisible, ConfirmDialogTitle/Message/Texts)
+/// bleibt auf DialogVM — diese Klasse setzt sie via Reference. XAML-Bindings nutzen den Pfad
+/// <c>DialogVM.PrestigeConfirmation.X</c>.
 /// </summary>
-public sealed partial class DialogViewModel
+public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 {
+    private readonly ILocalizationService _localizationService;
+    private readonly IGameStateService _gameStateService;
+    private readonly IPrestigeService _prestigeService;
+    private readonly IAdService _adService;
+    private readonly IChallengeConstraintService? _challengeConstraints;
+    private readonly DialogViewModel _dialogVm;
+
     /// <summary>Ob die Tier-Auswahl-Chips im Bestätigungsdialog sichtbar sind.</summary>
-    [ObservableProperty]
-    private bool _isPrestigeTierSelectionVisible;
+    [ObservableProperty] private bool _isTierSelectionVisible;
 
     /// <summary>Ob mehrere Prestige-Tiers verfügbar sind (für Tier-Auswahl im Dialog).</summary>
-    [ObservableProperty]
-    private bool _hasMultiplePrestigeTiers;
+    [ObservableProperty] private bool _hasMultipleTiers;
 
     /// <summary>Aktuell ausgewählter Tier im Bestätigungsdialog (Index in AvailableTiers).</summary>
-    [ObservableProperty]
-    private int _selectedPrestigeTierIndex;
+    [ObservableProperty] private int _selectedTierIndex;
 
     /// <summary>Tier-Auswahl-Chips für den Dialog.</summary>
-    [ObservableProperty]
-    private List<PrestigeTierOption> _availablePrestigeTierOptions = [];
-
-    /// <summary>Merkt sich den aktuell ausgewählten Tier im Prestige-Dialog.</summary>
-    private PrestigeTier _dialogSelectedTier = PrestigeTier.None;
-
-    /// <summary>Zugriff auf den gewählten Tier für MainViewModel nach Bestätigung.</summary>
-    public PrestigeTier DialogSelectedTier => _dialogSelectedTier;
+    [ObservableProperty] private List<PrestigeTierOption> _availableTierOptions = [];
 
     /// <summary>Bonus-PP-Vorschau aus Spielleistung (flat).</summary>
-    [ObservableProperty]
-    private string _bonusPpPreview = string.Empty;
+    [ObservableProperty] private string _bonusPpPreview = string.Empty;
 
     /// <summary>Challenge-PP-Vorschau (additiver Bonus).</summary>
-    [ObservableProperty]
-    private string _challengePpPreview = string.Empty;
+    [ObservableProperty] private string _challengePpPreview = string.Empty;
 
     /// <summary>Aktuelle Run-Dauer (für Speedrun-Anzeige im Dialog).</summary>
-    [ObservableProperty]
-    private string _currentRunDurationText = string.Empty;
+    [ObservableProperty] private string _currentRunDurationText = string.Empty;
+
+    /// <summary>Merkt sich den aktuell ausgewählten Tier im Prestige-Dialog.</summary>
+    private PrestigeTier _selectedTier = PrestigeTier.None;
+
+    /// <summary>Zugriff auf den gewählten Tier für MainViewModel nach Bestätigung.</summary>
+    public PrestigeTier SelectedTier => _selectedTier;
+
+    private TaskCompletionSource<bool>? _confirmTcs;
+
+    public PrestigeConfirmationViewModel(
+        ILocalizationService localizationService,
+        IGameStateService gameStateService,
+        IPrestigeService prestigeService,
+        IAdService adService,
+        DialogViewModel dialogVm,
+        IChallengeConstraintService? challengeConstraints = null)
+    {
+        _localizationService = localizationService;
+        _gameStateService = gameStateService;
+        _prestigeService = prestigeService;
+        _adService = adService;
+        _dialogVm = dialogVm;
+        _challengeConstraints = challengeConstraints;
+    }
 
     /// <summary>
     /// Tier-Auswahl im Prestige-Dialog: Aktualisiert die Vorschau beim Wechsel.
     /// Parameter ist der Tier-Name als String (z.B. "Bronze", "Silver").
     /// </summary>
     [RelayCommand]
-    private void SelectPrestigeTier(string tierName)
+    private void SelectTier(string tierName)
     {
         if (!Enum.TryParse<PrestigeTier>(tierName, out var tier)) return;
 
-        var idx = AvailablePrestigeTierOptions.FindIndex(o => o.Tier == tier);
+        var idx = AvailableTierOptions.FindIndex(o => o.Tier == tier);
         if (idx < 0) return;
 
-        SelectedPrestigeTierIndex = idx;
+        SelectedTierIndex = idx;
 
-        // IsSelected aktualisieren
-        for (int i = 0; i < AvailablePrestigeTierOptions.Count; i++)
-            AvailablePrestigeTierOptions[i].IsSelected = i == idx;
-        OnPropertyChanged(nameof(AvailablePrestigeTierOptions));
+        for (int i = 0; i < AvailableTierOptions.Count; i++)
+            AvailableTierOptions[i].IsSelected = i == idx;
+        OnPropertyChanged(nameof(AvailableTierOptions));
 
-        _dialogSelectedTier = tier;
-
-        // Dialog-Inhalt dynamisch aktualisieren
-        UpdatePrestigeDialogContent(tier);
+        _selectedTier = tier;
+        UpdateContent(tier);
     }
 
     /// <summary>
     /// Baut die Dialog-Texte für einen bestimmten Tier auf.
     /// Zeigt Gewinne, Bewahrung, detaillierte Verluste und Timing-Warnung.
     /// </summary>
-    public void UpdatePrestigeDialogContent(PrestigeTier tier)
+    public void UpdateContent(PrestigeTier tier)
     {
         var state = _gameStateService.State;
         var tierName = _localizationService.GetString(tier.GetLocalizationKey()) ?? tier.ToString();
-        int tierPoints = CalculateEffectivePrestigePoints(state, tier);
+        int tierPoints = CalculateEffectivePoints(state, tier);
 
         // Startgeld für den gewählten Tier (Tier-Basis + Shop-Boni, identisch mit ResetProgress)
         var startMoney = tier.GetTierStartMoney();
@@ -163,7 +187,7 @@ public sealed partial class DialogViewModel
 
             if (wouldNextTierBeAvailable)
             {
-                int nextTierPoints = CalculateEffectivePrestigePoints(state, nextTier);
+                int nextTierPoints = CalculateEffectivePoints(state, nextTier);
                 timingWarning = $"\n⚠ {string.Format(
                     _localizationService.GetString("PrestigeTimingWarning") ?? "You are already level {0} - at level {1} you could do {2} (more PP)!",
                     currentLevel, nextTierLevel,
@@ -195,8 +219,8 @@ public sealed partial class DialogViewModel
             ? $"{runDuration.Value.Hours}h {runDuration.Value.Minutes:D2}m"
             : string.Empty;
 
-        ConfirmDialogTitle = $"{_localizationService.GetString("Prestige") ?? "Prestige"} → {tierName}";
-        ConfirmDialogMessage = string.Join("\n", gains)
+        _dialogVm.ConfirmDialogTitle = $"{_localizationService.GetString("Prestige") ?? "Prestige"} → {tierName}";
+        _dialogVm.ConfirmDialogMessage = string.Join("\n", gains)
             + $"\n\n{string.Join("\n", losses)}"
             + timingWarning;
     }
@@ -204,9 +228,8 @@ public sealed partial class DialogViewModel
     /// <summary>
     /// Bereitet den Prestige-Bestätigungsdialog vor und zeigt ihn an.
     /// Liefert true bei Bestätigung, false bei Abbruch.
-    /// Die eigentliche Prestige-Durchführung bleibt im MainViewModel.
     /// </summary>
-    public async Task<(bool confirmed, PrestigeTier selectedTier)> ShowPrestigeConfirmationDialogAsync()
+    public async Task<(bool confirmed, PrestigeTier selectedTier)> ShowAsync()
     {
         var state = _gameStateService.State;
         var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
@@ -214,7 +237,7 @@ public sealed partial class DialogViewModel
         if (availableTiers.Count == 0)
         {
             var minLevel = PrestigeTier.Bronze.GetRequiredLevel();
-            ShowAlertDialog(
+            _dialogVm.ShowAlertDialog(
                 _localizationService.GetString("PrestigeNotAvailable") ?? "Prestige Not Available",
                 string.Format(
                     _localizationService.GetString("PrestigeNotAvailableDesc") ?? "You need at least Level {0} to prestige. You are currently Level {1}.",
@@ -223,40 +246,34 @@ public sealed partial class DialogViewModel
             return (false, PrestigeTier.None);
         }
 
-        // Höchster Tier als Standard vorauswählen
         var highestTier = availableTiers[^1];
-        _dialogSelectedTier = highestTier;
+        _selectedTier = highestTier;
 
         BuildTierOptions(state, availableTiers, highestTier);
+        UpdateContent(highestTier);
 
-        // Dialog-Inhalt für den höchsten Tier aufbauen
-        UpdatePrestigeDialogContent(highestTier);
+        _dialogVm.ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
+        _dialogVm.ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
+        IsTierSelectionVisible = HasMultipleTiers;
 
-        // Dialog anzeigen und auf Ergebnis warten
-        ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
-        ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
-        IsPrestigeTierSelectionVisible = HasMultiplePrestigeTiers;
-
-        _confirmDialogTcs = new TaskCompletionSource<bool>();
-        IsConfirmDialogVisible = true;
+        _confirmTcs = new TaskCompletionSource<bool>();
+        _dialogVm.AttachExternalConfirmTcs(_confirmTcs);
+        _dialogVm.IsConfirmDialogVisible = true;
         _adService.HideBanner();
 
-        var confirmed = await _confirmDialogTcs.Task;
+        var confirmed = await _confirmTcs.Task;
 
-        // Tier-Optionen zurücksetzen
-        HasMultiplePrestigeTiers = false;
-        AvailablePrestigeTierOptions = [];
+        HasMultipleTiers = false;
+        IsTierSelectionVisible = false;
+        AvailableTierOptions = [];
 
-        return (confirmed, _dialogSelectedTier);
+        return (confirmed, _selectedTier);
     }
 
     /// <summary>
-    /// v2.1.0: Bereitet die Prestige-Page-Daten vor (Tier-Optionen, Confirm-Texte) und
-    /// gibt ein TCS zurueck, das beim Spieler-Confirm/Cancel via existierende DialogVM-Commands
-    /// (ConfirmDialogAccept/Cancel) gesetzt wird. KEIN Modal-Open — die Page wird vom Aufrufer
-    /// via ActivePage=Prestige sichtbar gemacht.
+    /// Bereitet die Prestige-Page-Daten vor (Page-Modus statt Modal).
     /// </summary>
-    public Task<(bool confirmed, PrestigeTier selectedTier)> PreparePrestigePageAsync()
+    public Task<(bool confirmed, PrestigeTier selectedTier)> PreparePageAsync()
     {
         var state = _gameStateService.State;
         var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
@@ -264,7 +281,7 @@ public sealed partial class DialogViewModel
         if (availableTiers.Count == 0)
         {
             var minLevel = PrestigeTier.Bronze.GetRequiredLevel();
-            ShowAlertDialog(
+            _dialogVm.ShowAlertDialog(
                 _localizationService.GetString("PrestigeNotAvailable") ?? "Prestige Not Available",
                 string.Format(
                     _localizationService.GetString("PrestigeNotAvailableDesc") ?? "You need at least Level {0} to prestige. You are currently Level {1}.",
@@ -274,17 +291,18 @@ public sealed partial class DialogViewModel
         }
 
         var highestTier = availableTiers[^1];
-        _dialogSelectedTier = highestTier;
+        _selectedTier = highestTier;
 
         BuildTierOptions(state, availableTiers, highestTier);
-        UpdatePrestigeDialogContent(highestTier);
+        UpdateContent(highestTier);
 
-        ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
-        ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
-        IsPrestigeTierSelectionVisible = HasMultiplePrestigeTiers;
+        _dialogVm.ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
+        _dialogVm.ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
+        IsTierSelectionVisible = HasMultipleTiers;
 
         // KEIN IsConfirmDialogVisible=true — Page-Modus statt Modal.
-        _confirmDialogTcs = new TaskCompletionSource<bool>();
+        _confirmTcs = new TaskCompletionSource<bool>();
+        _dialogVm.AttachExternalConfirmTcs(_confirmTcs);
         _adService.HideBanner();
 
         return WrapTcsAsync();
@@ -292,18 +310,18 @@ public sealed partial class DialogViewModel
 
     private async Task<(bool, PrestigeTier)> WrapTcsAsync()
     {
-        if (_confirmDialogTcs == null) return (false, PrestigeTier.None);
-        var confirmed = await _confirmDialogTcs.Task;
+        if (_confirmTcs == null) return (false, PrestigeTier.None);
+        var confirmed = await _confirmTcs.Task;
 
-        HasMultiplePrestigeTiers = false;
-        AvailablePrestigeTierOptions = [];
+        HasMultipleTiers = false;
+        IsTierSelectionVisible = false;
+        AvailableTierOptions = [];
 
-        return (confirmed, _dialogSelectedTier);
+        return (confirmed, _selectedTier);
     }
 
     /// <summary>
-    /// Tier-Optionen fuer Auswahl-Chips aufbauen. Ehemaliger Code-Block aus
-    /// ShowPrestigeConfirmationDialogAsync + PreparePrestigePageAsync extrahiert (DRY).
+    /// Tier-Optionen fuer Auswahl-Chips aufbauen.
     /// </summary>
     private void BuildTierOptions(GameState state, IReadOnlyList<PrestigeTier> availableTiers, PrestigeTier highestTier)
     {
@@ -312,7 +330,7 @@ public sealed partial class DialogViewModel
         {
             var t = availableTiers[i];
             var tName = _localizationService.GetString(t.GetLocalizationKey()) ?? t.ToString();
-            int tPoints = CalculateEffectivePrestigePoints(state, t);
+            int tPoints = CalculateEffectivePoints(state, t);
             var preservations = new List<string>();
             if (t.KeepsResearch()) preservations.Add(_localizationService.GetString("Research") ?? "Research");
             if (t.KeepsMasterTools()) preservations.Add(_localizationService.GetString("MasterTools") ?? "Master Tools");
@@ -334,29 +352,26 @@ public sealed partial class DialogViewModel
                 IsRecommended = t == highestTier,
             });
         }
-        AvailablePrestigeTierOptions = options;
-        SelectedPrestigeTierIndex = availableTiers.Count - 1;
-        HasMultiplePrestigeTiers = availableTiers.Count > 1;
+        AvailableTierOptions = options;
+        SelectedTierIndex = availableTiers.Count - 1;
+        HasMultipleTiers = availableTiers.Count > 1;
     }
 
     /// <summary>
     /// Berechnet die effektiven Prestige-Punkte inklusive aller Boni (identisch mit DoPrestige-Logik).
     /// Bronze-Minimum, Prestige-Pass (+50%), Gilden-Forschung (+10%) werden berücksichtigt.
     /// </summary>
-    public int CalculateEffectivePrestigePoints(GameState state, PrestigeTier tier)
+    public int CalculateEffectivePoints(GameState state, PrestigeTier tier)
     {
         int basePoints = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
         int tierPoints = (int)(basePoints * tier.GetPointMultiplier());
 
-        // Bronze: Mindestens 10 PP
         if (tier == PrestigeTier.Bronze && tierPoints < 10)
             tierPoints = 10;
 
-        // Prestige-Pass: +50%
         if (state.IsPrestigePassActive)
             tierPoints = (int)(tierPoints * 1.5m);
 
-        // Gilden-Forschung: Prestige-Punkte-Bonus (+10%)
         if (state.GuildMembership?.ResearchPrestigePointBonus > 0)
             tierPoints = (int)(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
 

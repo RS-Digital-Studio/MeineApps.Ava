@@ -69,6 +69,23 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
 
     private TaskCompletionSource<bool>? _confirmDialogTcs;
 
+    /// <summary>
+    /// AAA-Audit P0 (12.05.2026): Prestige-Tier-Auswahl als eigenständige VM.
+    /// Composition-Pattern — diese Klasse ist Owner. XAML-Bindings nutzen den Pfad
+    /// <c>DialogVM.PrestigeConfirmation.X</c>.
+    /// </summary>
+    public PrestigeConfirmationViewModel PrestigeConfirmation { get; }
+
+    /// <summary>
+    /// Lässt PrestigeConfirmation eine externe TaskCompletionSource injizieren, die
+    /// von ConfirmDialogAccept/Cancel-Commands gesetzt wird. So bleibt die Modal-Mechanik
+    /// auf DialogVM, aber das Wartet auf das Ergebnis lebt im PrestigeConfirmation-VM.
+    /// </summary>
+    internal void AttachExternalConfirmTcs(TaskCompletionSource<bool> tcs)
+    {
+        _confirmDialogTcs = tcs;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -89,6 +106,11 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         _prestigeService = prestigeService;
         _adService = adService;
         _challengeConstraints = challengeConstraints;
+
+        // Prestige-Tier-Auswahl als eigene VM (AAA-Audit P0 — echter Strukturschnitt)
+        PrestigeConfirmation = new PrestigeConfirmationViewModel(
+            localizationService, gameStateService, prestigeService, adService,
+            this, challengeConstraints);
 
         // Kontextuelles Hint-System verdrahten
         _contextualHintService.HintChanged += OnHintChanged;
@@ -118,7 +140,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     private void ConfirmDialogAccept()
     {
         IsConfirmDialogVisible = false;
-        IsPrestigeTierSelectionVisible = false;
+        PrestigeConfirmation.IsTierSelectionVisible = false;
         _confirmDialogTcs?.TrySetResult(true);
     }
 
@@ -126,7 +148,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     private void ConfirmDialogCancel()
     {
         IsConfirmDialogVisible = false;
-        IsPrestigeTierSelectionVisible = false;
+        PrestigeConfirmation.IsTierSelectionVisible = false;
         _confirmDialogTcs?.TrySetResult(false);
     }
 
@@ -159,7 +181,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         ConfirmDialogMessage = message;
         ConfirmDialogAcceptText = acceptText;
         ConfirmDialogCancelText = cancelText;
-        IsPrestigeTierSelectionVisible = false;
+        PrestigeConfirmation.IsTierSelectionVisible = false;
         _confirmDialogTcs = new TaskCompletionSource<bool>();
         IsConfirmDialogVisible = true;
 
@@ -169,7 +191,22 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         return _confirmDialogTcs.Task;
     }
 
-    // PRESTIGE-TIER-LOGIK → DialogViewModel.PrestigeTier.cs (AAA-Audit P0, 12.05.2026)
+    /// <summary>
+    /// AAA-Audit P0 Aufspaltung — Delegiert an PrestigeConfirmation-VM für Backward-Compatibility.
+    /// </summary>
+    public Task<(bool confirmed, PrestigeTier selectedTier)> ShowPrestigeConfirmationDialogAsync()
+        => PrestigeConfirmation.ShowAsync();
+
+    /// <summary>Delegiert an PrestigeConfirmation-VM.</summary>
+    public Task<(bool confirmed, PrestigeTier selectedTier)> PreparePrestigePageAsync()
+        => PrestigeConfirmation.PreparePageAsync();
+
+    /// <summary>Delegiert an PrestigeConfirmation-VM.</summary>
+    public void UpdatePrestigeDialogContent(PrestigeTier tier)
+        => PrestigeConfirmation.UpdateContent(tier);
+
+    /// <summary>Delegiert an PrestigeConfirmation-VM.</summary>
+    public PrestigeTier DialogSelectedTier => PrestigeConfirmation.SelectedTier;
 
     /// <summary>
     /// Zeigt die Post-Prestige Zusammenfassung mit PP, Multiplikator und Shop-Link.

@@ -124,7 +124,7 @@ public sealed partial class MainViewModel
 
         var state = _gameStateService.State;
         var tierName = _localizationService.GetString(selectedTier.GetLocalizationKey()) ?? selectedTier.ToString();
-        int tierPoints = DialogVM.CalculateEffectivePrestigePoints(state, selectedTier);
+        int tierPoints = DialogVM.PrestigeConfirmation.CalculateEffectivePoints(state, selectedTier);
 
         // Alten höchsten Tier merken für Tier-Aufstieg-Celebration
         var oldHighestTier = state.Prestige.CurrentTier;

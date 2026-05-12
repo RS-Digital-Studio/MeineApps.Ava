@@ -4284,6 +4284,32 @@ namespace BomberBlast.Resources.Strings {
         internal static string WhatsNewLater => ResourceManager.GetString("WhatsNewLater", resourceCulture)!;
         internal static string WhatsNewUnderstood => ResourceManager.GetString("WhatsNewUnderstood", resourceCulture)!;
 
+        // Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner
+        internal static string TutorialPhaseMovement => ResourceManager.GetString("TutorialPhaseMovement", resourceCulture)!;
+        internal static string TutorialPhaseBombs => ResourceManager.GetString("TutorialPhaseBombs", resourceCulture)!;
+        internal static string TutorialPhasePowerUps => ResourceManager.GetString("TutorialPhasePowerUps", resourceCulture)!;
+
+        // Sprint 6.2 AAA-Audit #16: Mini-Story-Beats (10 Intros + 9 Outros)
+        internal static string WorldStoryIntro1 => ResourceManager.GetString("WorldStoryIntro1", resourceCulture)!;
+        internal static string WorldStoryIntro2 => ResourceManager.GetString("WorldStoryIntro2", resourceCulture)!;
+        internal static string WorldStoryIntro3 => ResourceManager.GetString("WorldStoryIntro3", resourceCulture)!;
+        internal static string WorldStoryIntro4 => ResourceManager.GetString("WorldStoryIntro4", resourceCulture)!;
+        internal static string WorldStoryIntro5 => ResourceManager.GetString("WorldStoryIntro5", resourceCulture)!;
+        internal static string WorldStoryIntro6 => ResourceManager.GetString("WorldStoryIntro6", resourceCulture)!;
+        internal static string WorldStoryIntro7 => ResourceManager.GetString("WorldStoryIntro7", resourceCulture)!;
+        internal static string WorldStoryIntro8 => ResourceManager.GetString("WorldStoryIntro8", resourceCulture)!;
+        internal static string WorldStoryIntro9 => ResourceManager.GetString("WorldStoryIntro9", resourceCulture)!;
+        internal static string WorldStoryIntro10 => ResourceManager.GetString("WorldStoryIntro10", resourceCulture)!;
+        internal static string WorldStoryOutro1 => ResourceManager.GetString("WorldStoryOutro1", resourceCulture)!;
+        internal static string WorldStoryOutro2 => ResourceManager.GetString("WorldStoryOutro2", resourceCulture)!;
+        internal static string WorldStoryOutro3 => ResourceManager.GetString("WorldStoryOutro3", resourceCulture)!;
+        internal static string WorldStoryOutro4 => ResourceManager.GetString("WorldStoryOutro4", resourceCulture)!;
+        internal static string WorldStoryOutro5 => ResourceManager.GetString("WorldStoryOutro5", resourceCulture)!;
+        internal static string WorldStoryOutro6 => ResourceManager.GetString("WorldStoryOutro6", resourceCulture)!;
+        internal static string WorldStoryOutro7 => ResourceManager.GetString("WorldStoryOutro7", resourceCulture)!;
+        internal static string WorldStoryOutro8 => ResourceManager.GetString("WorldStoryOutro8", resourceCulture)!;
+        internal static string WorldStoryOutro9 => ResourceManager.GetString("WorldStoryOutro9", resourceCulture)!;
+
         internal static string AchKickMaster => ResourceManager.GetString("AchKickMaster", resourceCulture)!;
 
         internal static string AchKickMasterDesc => ResourceManager.GetString("AchKickMasterDesc", resourceCulture)!;

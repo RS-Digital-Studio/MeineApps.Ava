@@ -40,4 +40,11 @@ public interface ITutorialService
 
     /// <summary>Wird beim Erreichen des letzten Tutorial-Schritts gefeuert.</summary>
     event Action? TutorialCompleted;
+
+    /// <summary>
+    /// Sprint 3.2 AAA-Audit #5: Wird gefeuert wenn das Tutorial in eine neue Phase
+    /// (T1 Movement / T2 Bombs / T3 PowerUps) wechselt. Tutorial-Overlay zeigt
+    /// einen Phase-Banner ("Phase 2: Bomben") fuer 1.5s als visuelle Trennung.
+    /// </summary>
+    event Action<TutorialPhase>? PhaseChanged;
 }

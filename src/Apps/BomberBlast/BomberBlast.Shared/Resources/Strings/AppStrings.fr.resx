@@ -809,6 +809,74 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>Compris !</value>
   </data>
+  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <data name="TutorialPhaseMovement" xml:space="preserve">
+    <value>Phase 1 : Mouvement</value>
+  </data>
+  <data name="TutorialPhaseBombs" xml:space="preserve">
+    <value>Phase 2 : Mécanique des bombes</value>
+  </data>
+  <data name="TutorialPhasePowerUps" xml:space="preserve">
+    <value>Phase 3 : Power-ups et combat</value>
+  </data>
+  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats par monde -->
+  <data name="WorldStoryIntro1" xml:space="preserve">
+    <value>La forêt murmure. Quelque chose d'obscur se cache dans l'ombre des arbres. Trouvez-le.</value>
+  </data>
+  <data name="WorldStoryIntro2" xml:space="preserve">
+    <value>Le désert scintille. Un vieux poseur de bombes dort ici depuis 100 ans. Ne le réveillez pas.</value>
+  </data>
+  <data name="WorldStoryIntro3" xml:space="preserve">
+    <value>La grotte est profonde. Des cristaux lumineux marquent un chemin oublié — mais qui les a placés ?</value>
+  </data>
+  <data name="WorldStoryIntro4" xml:space="preserve">
+    <value>La forteresse céleste flotte au-dessus des nuages. Ses gardiens attendent depuis des siècles.</value>
+  </data>
+  <data name="WorldStoryIntro5" xml:space="preserve">
+    <value>Le volcan s'éveille. La lave coule là où il y avait de la pierre. Le temps presse.</value>
+  </data>
+  <data name="WorldStoryIntro6" xml:space="preserve">
+    <value>Ruines antiques, ensevelies par le sable. Les murs se souviennent de chaque pas — et de chaque explosion.</value>
+  </data>
+  <data name="WorldStoryIntro7" xml:space="preserve">
+    <value>Les profondeurs de l'océan. La pression écrase les os de ceux qui sont venus avant. Vous ne serez pas l'un d'eux.</value>
+  </data>
+  <data name="WorldStoryIntro8" xml:space="preserve">
+    <value>Le cœur du volcan. La chaleur déforme l'air. Les bombes deviennent des armes de survie.</value>
+  </data>
+  <data name="WorldStoryIntro9" xml:space="preserve">
+    <value>La forteresse céleste couronne le monde. Des gardiens sacrés vous barrent la route — mais vous êtes allé trop loin.</value>
+  </data>
+  <data name="WorldStoryIntro10" xml:space="preserve">
+    <value>Le Royaume des Ombres. La réalité se déforme. Le boss final attend. Ne montrez aucune pitié.</value>
+  </data>
+  <data name="WorldStoryOutro1" xml:space="preserve">
+    <value>La forêt est à nouveau silencieuse. À l'horizon, le soleil du désert se lève. Quelque chose d'ancien s'agite là-bas.</value>
+  </data>
+  <data name="WorldStoryOutro2" xml:space="preserve">
+    <value>Vous avez réveillé le poseur de bombes. Il pointa plus profond. "Ce que vous cherchez est en bas", murmura-t-il.</value>
+  </data>
+  <data name="WorldStoryOutro3" xml:space="preserve">
+    <value>La lumière des cristaux s'éteint. Au-dessus de la grotte, vous entendez le bruissement des nuages — une forteresse au ciel.</value>
+  </data>
+  <data name="WorldStoryOutro4" xml:space="preserve">
+    <value>Les gardiens tombent. La forteresse s'effondre. D'en bas, vous sentez la fumée — le volcan vous appelle.</value>
+  </data>
+  <data name="WorldStoryOutro5" xml:space="preserve">
+    <value>La lave refroidit. Vous êtes sur une terre craquelée. Sous vos pieds, des ruines antiques promettent plus de secrets.</value>
+  </data>
+  <data name="WorldStoryOutro6" xml:space="preserve">
+    <value>Les ruines livrent leur secret : un passage vers l'océan profond. La pression fait déjà mal.</value>
+  </data>
+  <data name="WorldStoryOutro7" xml:space="preserve">
+    <value>Vous remontez. La vapeur siffle. Le volcan que vous aviez traversé — il a repris vie.</value>
+  </data>
+  <data name="WorldStoryOutro8" xml:space="preserve">
+    <value>La chaleur se dissipe. Au-dessus de vous, la forteresse céleste brille en doré. Les derniers gardiens attendent.</value>
+  </data>
+  <data name="WorldStoryOutro9" xml:space="preserve">
+    <value>La forteresse devient silencieuse. Le Royaume des Ombres ouvre ses portes. Êtes-vous prêt pour l'obscurité ?</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Monde 1 Terminé</value>
   </data>

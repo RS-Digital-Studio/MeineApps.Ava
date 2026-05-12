@@ -809,6 +809,74 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>Entendi!</value>
   </data>
+  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <data name="TutorialPhaseMovement" xml:space="preserve">
+    <value>Fase 1: Movimento</value>
+  </data>
+  <data name="TutorialPhaseBombs" xml:space="preserve">
+    <value>Fase 2: Mecânica das bombas</value>
+  </data>
+  <data name="TutorialPhasePowerUps" xml:space="preserve">
+    <value>Fase 3: Power-ups e combate</value>
+  </data>
+  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats por mundo -->
+  <data name="WorldStoryIntro1" xml:space="preserve">
+    <value>A floresta sussurra. Algo escuro se esconde nas sombras. Encontre-o.</value>
+  </data>
+  <data name="WorldStoryIntro2" xml:space="preserve">
+    <value>O deserto cintila. Um velho bombista dorme aqui há 100 anos. Não o acorde.</value>
+  </data>
+  <data name="WorldStoryIntro3" xml:space="preserve">
+    <value>A caverna é profunda. Cristais brilhantes marcam um caminho esquecido — mas quem os colocou?</value>
+  </data>
+  <data name="WorldStoryIntro4" xml:space="preserve">
+    <value>A fortaleza celeste flutua acima das nuvens. Seus guardiões esperam há séculos.</value>
+  </data>
+  <data name="WorldStoryIntro5" xml:space="preserve">
+    <value>O vulcão desperta. A lava flui onde antes havia pedra. O tempo está se esgotando.</value>
+  </data>
+  <data name="WorldStoryIntro6" xml:space="preserve">
+    <value>Ruínas antigas, soterradas pela areia. As paredes lembram cada passo — e cada explosão.</value>
+  </data>
+  <data name="WorldStoryIntro7" xml:space="preserve">
+    <value>As profundezas do oceano. A pressão esmaga os ossos dos que vieram antes. Você não será um deles.</value>
+  </data>
+  <data name="WorldStoryIntro8" xml:space="preserve">
+    <value>O núcleo do vulcão. O calor distorce o ar. As bombas tornam-se armas de sobrevivência.</value>
+  </data>
+  <data name="WorldStoryIntro9" xml:space="preserve">
+    <value>A fortaleza celeste coroa o mundo. Guardiões sagrados barram seu caminho — mas você foi longe demais.</value>
+  </data>
+  <data name="WorldStoryIntro10" xml:space="preserve">
+    <value>O Reino das Sombras. A realidade se dobra. O chefão final espera. Não mostre piedade.</value>
+  </data>
+  <data name="WorldStoryOutro1" xml:space="preserve">
+    <value>A floresta está silenciosa novamente. No horizonte nasce o sol do deserto. Algo antigo se mexe lá.</value>
+  </data>
+  <data name="WorldStoryOutro2" xml:space="preserve">
+    <value>Você acordou o bombista. Ele apontou mais fundo na caverna. "O que você procura está abaixo", sussurrou.</value>
+  </data>
+  <data name="WorldStoryOutro3" xml:space="preserve">
+    <value>A luz dos cristais se apaga. Sobre a caverna você ouve o som das nuvens — uma fortaleza no céu.</value>
+  </data>
+  <data name="WorldStoryOutro4" xml:space="preserve">
+    <value>Os guardiões caem. A fortaleza desmorona. Lá embaixo, você sente cheiro de fumaça — o vulcão chama.</value>
+  </data>
+  <data name="WorldStoryOutro5" xml:space="preserve">
+    <value>A lava esfria. Você está sobre terra rachada. Sob seus pés, ruínas antigas prometem mais segredos.</value>
+  </data>
+  <data name="WorldStoryOutro6" xml:space="preserve">
+    <value>As ruínas revelam seu segredo: uma passagem para o oceano profundo. A pressão já dói.</value>
+  </data>
+  <data name="WorldStoryOutro7" xml:space="preserve">
+    <value>Você emerge. O vapor sibila. O vulcão que você atravessou antes — voltou à vida.</value>
+  </data>
+  <data name="WorldStoryOutro8" xml:space="preserve">
+    <value>O calor se dissipa. Acima de você brilha a fortaleza celeste, dourada. Os últimos guardiões esperam.</value>
+  </data>
+  <data name="WorldStoryOutro9" xml:space="preserve">
+    <value>A fortaleza fica em silêncio. O Reino das Sombras abre seus portões. Você está pronto para a escuridão?</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Mundo 1 Completo</value>
   </data>

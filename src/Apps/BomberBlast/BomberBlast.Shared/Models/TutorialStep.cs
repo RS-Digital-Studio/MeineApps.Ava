@@ -16,6 +16,30 @@ public class TutorialStep
 
     /// <summary>Bereich den der Pfeil/Highlight zeigen soll</summary>
     public TutorialHighlight Highlight { get; init; }
+
+    /// <summary>
+    /// Sprint 3.2 AAA-Audit #5: Phase-Zuordnung (T1 Movement / T2 Bombs / T3 PowerUps).
+    /// Wird vor jedem ersten Schritt einer neuen Phase als Phase-Banner angezeigt.
+    /// </summary>
+    public TutorialPhase Phase { get; init; }
+
+    /// <summary>True wenn dieser Schritt der ERSTE seiner Phase ist (loest Phase-Banner aus).</summary>
+    public bool IsFirstOfPhase { get; init; }
+}
+
+/// <summary>
+/// Sprint 3.2 AAA-Audit #5: Tutorial-Phase ("3 Tutorial-Levels" laut Audit).
+/// Statt 3 separater Maps integriert in das bestehende 6-Schritte-Tutorial-System
+/// als logische Phasen-Gruppierung mit Phase-Banner-Anzeige.
+/// </summary>
+public enum TutorialPhase
+{
+    /// <summary>T1 Movement: D-Pad-Bewegung, Coins sammeln. Keine Bomben.</summary>
+    Movement = 0,
+    /// <summary>T2 Bomb-Mechanik: Bombe legen, sicheres Verstecken, Block-Zerstoerung.</summary>
+    Bombs = 1,
+    /// <summary>T3 Power-Ups: Pickup von Fire/Speed/Bomb, Boss-Lite-Encounter.</summary>
+    PowerUps = 2,
 }
 
 /// <summary>

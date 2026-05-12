@@ -809,6 +809,74 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>Verstanden!</value>
   </data>
+  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <data name="TutorialPhaseMovement" xml:space="preserve">
+    <value>Phase 1: Bewegung</value>
+  </data>
+  <data name="TutorialPhaseBombs" xml:space="preserve">
+    <value>Phase 2: Bomben-Mechanik</value>
+  </data>
+  <data name="TutorialPhasePowerUps" xml:space="preserve">
+    <value>Phase 3: Power-Ups &amp; Kampf</value>
+  </data>
+  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats pro Welt -->
+  <data name="WorldStoryIntro1" xml:space="preserve">
+    <value>Der Wald flüstert. Etwas Dunkles verbirgt sich im Schatten der Bäume. Finde es.</value>
+  </data>
+  <data name="WorldStoryIntro2" xml:space="preserve">
+    <value>Die Wüste flimmert. Ein alter Bombenleger ruht hier seit 100 Jahren. Wecke ihn nicht.</value>
+  </data>
+  <data name="WorldStoryIntro3" xml:space="preserve">
+    <value>Die Höhle reicht tief. Glühende Kristalle markieren einen vergessenen Pfad — aber wer hat sie platziert?</value>
+  </data>
+  <data name="WorldStoryIntro4" xml:space="preserve">
+    <value>Die Himmelsfestung schwebt über den Wolken. Ihre Wächter warten seit Jahrhunderten.</value>
+  </data>
+  <data name="WorldStoryIntro5" xml:space="preserve">
+    <value>Der Vulkan erwacht. Lava fließt, wo einst Stein war. Die Zeit läuft.</value>
+  </data>
+  <data name="WorldStoryIntro6" xml:space="preserve">
+    <value>Antike Ruinen, verschüttet vom Sand. Die Mauern erinnern sich an jeden Schritt — und jede Explosion.</value>
+  </data>
+  <data name="WorldStoryIntro7" xml:space="preserve">
+    <value>Die Tiefen des Ozeans. Der Druck zerquetscht die Knochen jener, die vor dir kamen. Du wirst keiner von ihnen sein.</value>
+  </data>
+  <data name="WorldStoryIntro8" xml:space="preserve">
+    <value>Der Vulkankern. Hitze verzerrt die Luft. Bomben werden zur Überlebenswaffe, nicht zur Zerstörung.</value>
+  </data>
+  <data name="WorldStoryIntro9" xml:space="preserve">
+    <value>Die Himmelsfestung krönt die Welt. Heilige Wächter stehen dir im Weg — doch du bist zu weit gekommen.</value>
+  </data>
+  <data name="WorldStoryIntro10" xml:space="preserve">
+    <value>Die Schattenwelt. Die Realität biegt sich. Der Endboss wartet. Zeige keine Gnade.</value>
+  </data>
+  <data name="WorldStoryOutro1" xml:space="preserve">
+    <value>Der Wald ist wieder still. Doch am Horizont steigt die Wüstensonne. Etwas Altes regt sich dort.</value>
+  </data>
+  <data name="WorldStoryOutro2" xml:space="preserve">
+    <value>Du hast den Bombenleger geweckt. Er deutete tiefer in die Höhle. "Was du suchst, ist unten", flüsterte er.</value>
+  </data>
+  <data name="WorldStoryOutro3" xml:space="preserve">
+    <value>Das Licht der Kristalle erlischt. Über der Höhle hörst du das Rauschen der Wolken — eine Festung am Himmel.</value>
+  </data>
+  <data name="WorldStoryOutro4" xml:space="preserve">
+    <value>Die Wächter fallen. Die Festung bröckelt. Von unten riechst du Rauch — der Vulkan ruft.</value>
+  </data>
+  <data name="WorldStoryOutro5" xml:space="preserve">
+    <value>Die Lava kühlt ab. Du stehst auf gerissener Erde. Unter deinen Füßen versprechen alte Ruinen mehr Geheimnisse.</value>
+  </data>
+  <data name="WorldStoryOutro6" xml:space="preserve">
+    <value>Die Ruinen geben ihr Geheimnis preis: ein Durchgang zum tiefen Ozean. Der Druck schmerzt schon jetzt.</value>
+  </data>
+  <data name="WorldStoryOutro7" xml:space="preserve">
+    <value>Du tauchst auf. Dampf zischt. Der Vulkan, den du zuvor durchquertest — er ist zu neuem Leben erwacht.</value>
+  </data>
+  <data name="WorldStoryOutro8" xml:space="preserve">
+    <value>Die Hitze schwindet. Über dir leuchtet die Himmelsfestung golden. Die letzten Wächter warten.</value>
+  </data>
+  <data name="WorldStoryOutro9" xml:space="preserve">
+    <value>Die Festung wird still. Die Schattenwelt öffnet ihre Tore. Bist du bereit für die Dunkelheit?</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Welt 1 Abgeschlossen</value>
   </data>

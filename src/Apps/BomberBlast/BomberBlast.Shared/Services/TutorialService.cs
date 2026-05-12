@@ -12,14 +12,35 @@ public sealed class TutorialService : ITutorialService
     private const string TUTORIAL_COMPLETED_KEY = "TutorialCompleted";
     private readonly IPreferencesService _preferences;
 
+    /// <summary>
+    /// Sprint 3.2 AAA-Audit #5: Schritte sind in 3 Phasen gruppiert.
+    /// IsFirstOfPhase=true loest beim Tutorial-Overlay einen Phase-Banner aus
+    /// ("Phase 1: Bewegung" / "Phase 2: Bomben" / "Phase 3: Power-Ups").
+    /// Soft-Onboarding-Curve: Erst Movement, dann Bomb-Risiken, dann komplexere Mechaniken.
+    /// </summary>
     private static readonly TutorialStep[] Steps =
     [
-        new() { Id = 0, TextKey = "TutorialMove", Type = TutorialStepType.Move, Highlight = TutorialHighlight.InputControl },
-        new() { Id = 1, TextKey = "TutorialBomb", Type = TutorialStepType.PlaceBomb, Highlight = TutorialHighlight.BombButton },
-        new() { Id = 2, TextKey = "TutorialHide", Type = TutorialStepType.Warning, Highlight = TutorialHighlight.GameField },
-        new() { Id = 3, TextKey = "TutorialPowerUp", Type = TutorialStepType.CollectPowerUp, Highlight = TutorialHighlight.PowerUp },
-        new() { Id = 4, TextKey = "TutorialDefeatEnemies", Type = TutorialStepType.DefeatEnemies, Highlight = TutorialHighlight.GameField },
-        new() { Id = 5, TextKey = "TutorialExit", Type = TutorialStepType.FindExit, Highlight = TutorialHighlight.Exit },
+        // Phase 1 — Movement (Genre-Neulinge): nur DPad, kein Bomben-Risiko
+        new() { Id = 0, TextKey = "TutorialMove", Type = TutorialStepType.Move,
+                Highlight = TutorialHighlight.InputControl,
+                Phase = TutorialPhase.Movement, IsFirstOfPhase = true },
+        // Phase 2 — Bomb-Mechanik: Bombe legen + sicheres Verstecken
+        new() { Id = 1, TextKey = "TutorialBomb", Type = TutorialStepType.PlaceBomb,
+                Highlight = TutorialHighlight.BombButton,
+                Phase = TutorialPhase.Bombs, IsFirstOfPhase = true },
+        new() { Id = 2, TextKey = "TutorialHide", Type = TutorialStepType.Warning,
+                Highlight = TutorialHighlight.GameField,
+                Phase = TutorialPhase.Bombs },
+        // Phase 3 — Power-Ups + Combat (Tiefe der Mechanik)
+        new() { Id = 3, TextKey = "TutorialPowerUp", Type = TutorialStepType.CollectPowerUp,
+                Highlight = TutorialHighlight.PowerUp,
+                Phase = TutorialPhase.PowerUps, IsFirstOfPhase = true },
+        new() { Id = 4, TextKey = "TutorialDefeatEnemies", Type = TutorialStepType.DefeatEnemies,
+                Highlight = TutorialHighlight.GameField,
+                Phase = TutorialPhase.PowerUps },
+        new() { Id = 5, TextKey = "TutorialExit", Type = TutorialStepType.FindExit,
+                Highlight = TutorialHighlight.Exit,
+                Phase = TutorialPhase.PowerUps },
     ];
 
     private int _currentStepIndex = -1;
@@ -36,6 +57,13 @@ public sealed class TutorialService : ITutorialService
     /// <summary>Wird beim Erreichen des letzten Schritts gefeuert.</summary>
     public event Action? TutorialCompleted;
 
+    /// <summary>
+    /// Sprint 3.2 AAA-Audit #5: Wird gefeuert wenn ein neuer Tutorial-Phase-Schritt aktiv wird
+    /// (T1 Movement / T2 Bombs / T3 PowerUps). Tutorial-Overlay zeigt dann einen
+    /// Phase-Banner ("Phase 2: Bomb-Mechanik") fuer 1.5s.
+    /// </summary>
+    public event Action<TutorialPhase>? PhaseChanged;
+
     public TutorialService(IPreferencesService preferences)
     {
         _preferences = preferences;
@@ -47,6 +75,9 @@ public sealed class TutorialService : ITutorialService
             return;
 
         _currentStepIndex = 0;
+        // Sprint 3.2 AAA-Audit #5: Erste Phase ankuendigen (Phase 1 Movement)
+        if (Steps[0].IsFirstOfPhase)
+            PhaseChanged?.Invoke(Steps[0].Phase);
     }
 
     public void NextStep()
@@ -66,6 +97,14 @@ public sealed class TutorialService : ITutorialService
             _currentStepIndex = -1;
             _preferences.Set(TUTORIAL_COMPLETED_KEY, true);
             TutorialCompleted?.Invoke();
+        }
+        else
+        {
+            // Sprint 3.2 AAA-Audit #5: Phase-Wechsel ankuendigen wenn der neue Step
+            // der erste seiner Phase ist (T1 → T2 → T3).
+            var newStep = Steps[_currentStepIndex];
+            if (newStep.IsFirstOfPhase)
+                PhaseChanged?.Invoke(newStep.Phase);
         }
     }
 

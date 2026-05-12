@@ -809,6 +809,74 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>¡Entendido!</value>
   </data>
+  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <data name="TutorialPhaseMovement" xml:space="preserve">
+    <value>Fase 1: Movimiento</value>
+  </data>
+  <data name="TutorialPhaseBombs" xml:space="preserve">
+    <value>Fase 2: Mecánica de bombas</value>
+  </data>
+  <data name="TutorialPhasePowerUps" xml:space="preserve">
+    <value>Fase 3: Power-ups y combate</value>
+  </data>
+  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats por mundo -->
+  <data name="WorldStoryIntro1" xml:space="preserve">
+    <value>El bosque susurra. Algo oscuro se esconde en las sombras. Encuéntralo.</value>
+  </data>
+  <data name="WorldStoryIntro2" xml:space="preserve">
+    <value>El desierto reluce. Un viejo bombero duerme aquí desde hace 100 años. No lo despiertes.</value>
+  </data>
+  <data name="WorldStoryIntro3" xml:space="preserve">
+    <value>La cueva es profunda. Cristales brillantes marcan un camino olvidado, ¿pero quién los puso allí?</value>
+  </data>
+  <data name="WorldStoryIntro4" xml:space="preserve">
+    <value>La fortaleza celeste flota sobre las nubes. Sus guardianes esperan desde hace siglos.</value>
+  </data>
+  <data name="WorldStoryIntro5" xml:space="preserve">
+    <value>El volcán despierta. La lava fluye donde antes había piedra. El tiempo se agota.</value>
+  </data>
+  <data name="WorldStoryIntro6" xml:space="preserve">
+    <value>Ruinas antiguas, sepultadas por la arena. Las paredes recuerdan cada paso — y cada explosión.</value>
+  </data>
+  <data name="WorldStoryIntro7" xml:space="preserve">
+    <value>Las profundidades del océano. La presión aplasta los huesos de los que vinieron antes. Tú no serás uno.</value>
+  </data>
+  <data name="WorldStoryIntro8" xml:space="preserve">
+    <value>El núcleo del volcán. El calor distorsiona el aire. Las bombas se vuelven armas de supervivencia.</value>
+  </data>
+  <data name="WorldStoryIntro9" xml:space="preserve">
+    <value>La fortaleza celeste corona el mundo. Guardianes sagrados se interponen — pero has llegado demasiado lejos.</value>
+  </data>
+  <data name="WorldStoryIntro10" xml:space="preserve">
+    <value>El Reino de las Sombras. La realidad se dobla. El jefe final espera. No muestres piedad.</value>
+  </data>
+  <data name="WorldStoryOutro1" xml:space="preserve">
+    <value>El bosque vuelve a estar en silencio. En el horizonte sale el sol del desierto. Algo viejo se mueve allí.</value>
+  </data>
+  <data name="WorldStoryOutro2" xml:space="preserve">
+    <value>Despertaste al bombero. Él señaló más profundo en la cueva. "Lo que buscas está abajo", susurró.</value>
+  </data>
+  <data name="WorldStoryOutro3" xml:space="preserve">
+    <value>La luz de los cristales se desvanece. Sobre la cueva oyes el sonido de las nubes — una fortaleza en el cielo.</value>
+  </data>
+  <data name="WorldStoryOutro4" xml:space="preserve">
+    <value>Los guardianes caen. La fortaleza se derrumba. Desde abajo huele a humo — el volcán llama.</value>
+  </data>
+  <data name="WorldStoryOutro5" xml:space="preserve">
+    <value>La lava se enfría. Estás sobre tierra agrietada. Bajo tus pies, antiguas ruinas prometen más secretos.</value>
+  </data>
+  <data name="WorldStoryOutro6" xml:space="preserve">
+    <value>Las ruinas revelan su secreto: un pasaje al océano profundo. La presión ya duele.</value>
+  </data>
+  <data name="WorldStoryOutro7" xml:space="preserve">
+    <value>Sales a la superficie. El vapor sisea. El volcán que cruzaste antes — ha cobrado vida nuevamente.</value>
+  </data>
+  <data name="WorldStoryOutro8" xml:space="preserve">
+    <value>El calor se disipa. Sobre ti brilla la fortaleza celeste, dorada. Los últimos guardianes esperan.</value>
+  </data>
+  <data name="WorldStoryOutro9" xml:space="preserve">
+    <value>La fortaleza enmudece. El Reino de las Sombras abre sus puertas. ¿Estás listo para la oscuridad?</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Mundo 1 Completado</value>
   </data>

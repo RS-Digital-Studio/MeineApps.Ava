@@ -809,6 +809,74 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>Capito!</value>
   </data>
+  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <data name="TutorialPhaseMovement" xml:space="preserve">
+    <value>Fase 1: Movimento</value>
+  </data>
+  <data name="TutorialPhaseBombs" xml:space="preserve">
+    <value>Fase 2: Meccanica delle bombe</value>
+  </data>
+  <data name="TutorialPhasePowerUps" xml:space="preserve">
+    <value>Fase 3: Power-up e combattimento</value>
+  </data>
+  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats per mondo -->
+  <data name="WorldStoryIntro1" xml:space="preserve">
+    <value>La foresta sussurra. Qualcosa di oscuro si nasconde nelle ombre. Trovalo.</value>
+  </data>
+  <data name="WorldStoryIntro2" xml:space="preserve">
+    <value>Il deserto luccica. Un vecchio bombarolo dorme qui da 100 anni. Non svegliarlo.</value>
+  </data>
+  <data name="WorldStoryIntro3" xml:space="preserve">
+    <value>La grotta è profonda. Cristalli luminosi segnano un sentiero dimenticato — ma chi li ha messi?</value>
+  </data>
+  <data name="WorldStoryIntro4" xml:space="preserve">
+    <value>La fortezza celeste fluttua sopra le nuvole. I suoi guardiani aspettano da secoli.</value>
+  </data>
+  <data name="WorldStoryIntro5" xml:space="preserve">
+    <value>Il vulcano si risveglia. La lava scorre dove c'era pietra. Il tempo sta per scadere.</value>
+  </data>
+  <data name="WorldStoryIntro6" xml:space="preserve">
+    <value>Antiche rovine, sepolte dalla sabbia. I muri ricordano ogni passo — e ogni esplosione.</value>
+  </data>
+  <data name="WorldStoryIntro7" xml:space="preserve">
+    <value>Le profondità dell'oceano. La pressione schiaccia le ossa di chi è venuto prima. Tu non sarai uno di loro.</value>
+  </data>
+  <data name="WorldStoryIntro8" xml:space="preserve">
+    <value>Il nucleo del vulcano. Il calore distorce l'aria. Le bombe diventano armi di sopravvivenza.</value>
+  </data>
+  <data name="WorldStoryIntro9" xml:space="preserve">
+    <value>La fortezza celeste corona il mondo. Sacri guardiani ti sbarrano la strada — ma sei arrivato troppo lontano.</value>
+  </data>
+  <data name="WorldStoryIntro10" xml:space="preserve">
+    <value>Il Regno delle Ombre. La realtà si deforma. Il boss finale aspetta. Non mostrare pietà.</value>
+  </data>
+  <data name="WorldStoryOutro1" xml:space="preserve">
+    <value>La foresta è di nuovo silenziosa. All'orizzonte sorge il sole del deserto. Qualcosa di antico si muove là.</value>
+  </data>
+  <data name="WorldStoryOutro2" xml:space="preserve">
+    <value>Hai svegliato il bombarolo. Indicò più in profondità nella grotta. "Ciò che cerchi è sotto", sussurrò.</value>
+  </data>
+  <data name="WorldStoryOutro3" xml:space="preserve">
+    <value>La luce dei cristalli si spegne. Sopra la grotta senti il fruscio delle nuvole — una fortezza nel cielo.</value>
+  </data>
+  <data name="WorldStoryOutro4" xml:space="preserve">
+    <value>I guardiani cadono. La fortezza crolla. Da sotto senti odore di fumo — il vulcano chiama.</value>
+  </data>
+  <data name="WorldStoryOutro5" xml:space="preserve">
+    <value>La lava si raffredda. Sei su terra screpolata. Sotto i tuoi piedi, antiche rovine promettono più segreti.</value>
+  </data>
+  <data name="WorldStoryOutro6" xml:space="preserve">
+    <value>Le rovine svelano il loro segreto: un passaggio verso l'oceano profondo. La pressione già fa male.</value>
+  </data>
+  <data name="WorldStoryOutro7" xml:space="preserve">
+    <value>Riemergi. Il vapore sibila. Il vulcano che hai attraversato prima — è tornato in vita.</value>
+  </data>
+  <data name="WorldStoryOutro8" xml:space="preserve">
+    <value>Il calore svanisce. Sopra di te brilla la fortezza celeste, dorata. Gli ultimi guardiani aspettano.</value>
+  </data>
+  <data name="WorldStoryOutro9" xml:space="preserve">
+    <value>La fortezza diventa silenziosa. Il Regno delle Ombre apre le sue porte. Sei pronto per l'oscurità?</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Mondo 1 Completato</value>
   </data>

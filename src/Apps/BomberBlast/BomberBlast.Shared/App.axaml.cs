@@ -472,6 +472,8 @@ public partial class App : Application
         services.AddSingleton<IWhatsNewService, WhatsNewService>();
         // Sprint 4.4 AAA-Audit #20 — Feature-Unlock-Choreographer (Queue + Pref-Flag).
         services.AddSingleton<IFeatureUnlockChoreographer, FeatureUnlockChoreographer>();
+        // Sprint 6.2 AAA-Audit #16 — Mini-Story-Beats pro Welt (Intro + Outro).
+        services.AddSingleton<IWorldStoryService, WorldStoryService>();
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)

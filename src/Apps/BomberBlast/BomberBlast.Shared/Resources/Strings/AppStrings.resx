@@ -809,6 +809,74 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>Got it!</value>
   </data>
+  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <data name="TutorialPhaseMovement" xml:space="preserve">
+    <value>Phase 1: Movement</value>
+  </data>
+  <data name="TutorialPhaseBombs" xml:space="preserve">
+    <value>Phase 2: Bomb mechanics</value>
+  </data>
+  <data name="TutorialPhasePowerUps" xml:space="preserve">
+    <value>Phase 3: Power-ups &amp; combat</value>
+  </data>
+  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats pro Welt (10 Intros + 9 Outros) -->
+  <data name="WorldStoryIntro1" xml:space="preserve">
+    <value>The forest whispers. Something dark hides in the shadows of the trees. Find it.</value>
+  </data>
+  <data name="WorldStoryIntro2" xml:space="preserve">
+    <value>The desert shimmers. An old bomber has slept here for 100 years. Don't wake him.</value>
+  </data>
+  <data name="WorldStoryIntro3" xml:space="preserve">
+    <value>The cave runs deep. Glowing crystals mark a forgotten path — but who placed them?</value>
+  </data>
+  <data name="WorldStoryIntro4" xml:space="preserve">
+    <value>The sky-fortress floats above the clouds. Its guardians have been waiting for centuries.</value>
+  </data>
+  <data name="WorldStoryIntro5" xml:space="preserve">
+    <value>The volcano awakens. Lava flows where there once was stone. Time is running out.</value>
+  </data>
+  <data name="WorldStoryIntro6" xml:space="preserve">
+    <value>Ancient ruins, buried by sand. The walls remember every footstep — and every explosion.</value>
+  </data>
+  <data name="WorldStoryIntro7" xml:space="preserve">
+    <value>The ocean depths. Pressure crushes the bones of those who came before. You won't be one of them.</value>
+  </data>
+  <data name="WorldStoryIntro8" xml:space="preserve">
+    <value>The volcanic core. Heat distorts the air. Bombs become weapons of survival, not destruction.</value>
+  </data>
+  <data name="WorldStoryIntro9" xml:space="preserve">
+    <value>The sky-fortress crowns the world. Holy guardians stand in your way — but you have come too far.</value>
+  </data>
+  <data name="WorldStoryIntro10" xml:space="preserve">
+    <value>The Shadow Realm. Reality bends. The final boss waits. Show no mercy.</value>
+  </data>
+  <data name="WorldStoryOutro1" xml:space="preserve">
+    <value>The forest is silent again. But on the horizon, the desert sun rises. Something old stirs there.</value>
+  </data>
+  <data name="WorldStoryOutro2" xml:space="preserve">
+    <value>You woke the bomber. He pointed deeper into the cave. "What you seek is below," he whispered.</value>
+  </data>
+  <data name="WorldStoryOutro3" xml:space="preserve">
+    <value>The crystals' light fades. Above the cave, you hear the rush of clouds — a fortress in the sky.</value>
+  </data>
+  <data name="WorldStoryOutro4" xml:space="preserve">
+    <value>The guardians fall. The fortress crumbles. From below, you smell smoke — the volcano calls.</value>
+  </data>
+  <data name="WorldStoryOutro5" xml:space="preserve">
+    <value>The lava cools. You stand on cracked earth. Below your feet, ancient ruins promise more secrets.</value>
+  </data>
+  <data name="WorldStoryOutro6" xml:space="preserve">
+    <value>The ruins surrender their secret: a passage to the deep ocean. The pressure already hurts.</value>
+  </data>
+  <data name="WorldStoryOutro7" xml:space="preserve">
+    <value>You surface. Steam hisses. The volcano you crossed before — it has come back to life.</value>
+  </data>
+  <data name="WorldStoryOutro8" xml:space="preserve">
+    <value>The heat clears. Above you, the sky-fortress shines golden. The final guardians wait.</value>
+  </data>
+  <data name="WorldStoryOutro9" xml:space="preserve">
+    <value>The fortress falls silent. The Shadow Realm opens its gates. Are you ready for the dark?</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>World 1 Complete</value>
   </data>

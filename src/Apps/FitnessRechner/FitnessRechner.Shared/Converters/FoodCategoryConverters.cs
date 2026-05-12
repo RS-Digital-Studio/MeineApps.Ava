@@ -46,19 +46,22 @@ public class FoodCategoryToIconConverter : IValueConverter
 /// </summary>
 public class FoodCategoryToColorConverter : IValueConverter
 {
-    private static readonly IBrush FruitBrush = FruitBrush;
-    private static readonly IBrush VegetableBrush = VegetableBrush;
-    private static readonly IBrush MeatBrush = MeatBrush;
-    private static readonly IBrush FishBrush = FishBrush;
-    private static readonly IBrush DairyBrush = DairyBrush;
-    private static readonly IBrush GrainBrush = GrainBrush;
-    private static readonly IBrush BeverageBrush = BeverageBrush;
-    private static readonly IBrush SnackBrush = SnackBrush;
-    private static readonly IBrush FastFoodBrush = FastFoodBrush;
-    private static readonly IBrush SweetBrush = SweetBrush;
-    private static readonly IBrush NutBrush = NutBrush;
-    private static readonly IBrush LegumeBrush = LegumeBrush;
-    private static readonly IBrush FoodDefaultBrush = FoodDefaultBrush;
+    // Bug-Fix: Vorherige Self-Assignments (FruitBrush = FruitBrush) erzeugten null-Brushes
+    // (CS1717-Warnings). Brushes werden jetzt einmalig im static-Constructor angelegt — gespart
+    // wird die SolidColorBrush-Allokation pro Convert-Aufruf bei haeufiger ListView-Nutzung.
+    private static readonly IBrush FruitBrush = new SolidColorBrush(Color.Parse("#22C55E"));
+    private static readonly IBrush VegetableBrush = new SolidColorBrush(Color.Parse("#84CC16"));
+    private static readonly IBrush MeatBrush = new SolidColorBrush(Color.Parse("#EF4444"));
+    private static readonly IBrush FishBrush = new SolidColorBrush(Color.Parse("#3B82F6"));
+    private static readonly IBrush DairyBrush = new SolidColorBrush(Color.Parse("#EAB308"));
+    private static readonly IBrush GrainBrush = new SolidColorBrush(Color.Parse("#D97706"));
+    private static readonly IBrush BeverageBrush = new SolidColorBrush(Color.Parse("#06B6D4"));
+    private static readonly IBrush SnackBrush = new SolidColorBrush(Color.Parse("#F59E0B"));
+    private static readonly IBrush FastFoodBrush = new SolidColorBrush(Color.Parse("#F97316"));
+    private static readonly IBrush SweetBrush = new SolidColorBrush(Color.Parse("#EC4899"));
+    private static readonly IBrush NutBrush = new SolidColorBrush(Color.Parse("#A16207"));
+    private static readonly IBrush LegumeBrush = new SolidColorBrush(Color.Parse("#65A30D"));
+    private static readonly IBrush FoodDefaultBrush = new SolidColorBrush(Color.Parse("#6B7280"));
 
     public static readonly FoodCategoryToColorConverter Instance = new();
 
@@ -66,23 +69,22 @@ public class FoodCategoryToColorConverter : IValueConverter
     {
         if (value is Models.FoodCategory category)
         {
-            var color = category switch
+            return category switch
             {
-                Models.FoodCategory.Fruit => Color.Parse("#22C55E"),      // Grün
-                Models.FoodCategory.Vegetable => Color.Parse("#84CC16"),  // Hellgrün
-                Models.FoodCategory.Meat => Color.Parse("#EF4444"),       // Rot
-                Models.FoodCategory.Fish => Color.Parse("#3B82F6"),       // Blau
-                Models.FoodCategory.Dairy => Color.Parse("#EAB308"),      // Gelb
-                Models.FoodCategory.Grain => Color.Parse("#D97706"),      // Amber
-                Models.FoodCategory.Beverage => Color.Parse("#06B6D4"),   // Cyan
-                Models.FoodCategory.Snack => Color.Parse("#F59E0B"),      // Orange
-                Models.FoodCategory.FastFood => Color.Parse("#F97316"),   // Dunkelorange
-                Models.FoodCategory.Sweet => Color.Parse("#EC4899"),      // Pink
-                Models.FoodCategory.Nut => Color.Parse("#A16207"),        // Braun
-                Models.FoodCategory.Legume => Color.Parse("#65A30D"),     // Limette
-                _ => Color.Parse("#6B7280")                               // Grau
+                Models.FoodCategory.Fruit => FruitBrush,
+                Models.FoodCategory.Vegetable => VegetableBrush,
+                Models.FoodCategory.Meat => MeatBrush,
+                Models.FoodCategory.Fish => FishBrush,
+                Models.FoodCategory.Dairy => DairyBrush,
+                Models.FoodCategory.Grain => GrainBrush,
+                Models.FoodCategory.Beverage => BeverageBrush,
+                Models.FoodCategory.Snack => SnackBrush,
+                Models.FoodCategory.FastFood => FastFoodBrush,
+                Models.FoodCategory.Sweet => SweetBrush,
+                Models.FoodCategory.Nut => NutBrush,
+                Models.FoodCategory.Legume => LegumeBrush,
+                _ => FoodDefaultBrush
             };
-            return new SolidColorBrush(color);
         }
         return FoodDefaultBrush;
     }

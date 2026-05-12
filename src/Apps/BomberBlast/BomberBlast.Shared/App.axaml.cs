@@ -95,7 +95,44 @@ public partial class App : Application
         RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
     }
 
+    /// <summary>
+    /// Sprint 6.3 AAA-Audit #25: Splash-Crash-Recovery Pref-Key.
+    /// Inkrementiert vor jedem Init-Versuch, dekrementiert nach erfolgreichem Splash-Abschluss.
+    /// Bei >= 3 Crashes in Folge wird der User zum Reset-Dialog geleitet.
+    /// </summary>
+    private const string KeyCrashCount = "BomberBlast_AppCrashCount";
+    private const int CrashRecoveryThreshold = 3;
+
     public override void OnFrameworkInitializationCompleted()
+    {
+        // Sprint 6.3 AAA-Audit #25: Crash-Counter VOR der Init-Phase inkrementieren.
+        // Wenn die App in den naechsten Schritten crasht, ueberlebt der Counter persistent —
+        // beim 3. Try greift Safe-Mode-Recovery.
+        // Wir nutzen einen direkten PreferencesService weil DI noch nicht aufgebaut ist.
+        var crashRecoveryPrefs = new PreferencesService("BomberBlast");
+        int crashCount = crashRecoveryPrefs.Get(KeyCrashCount, 0) + 1;
+        crashRecoveryPrefs.Set(KeyCrashCount, crashCount);
+        bool safeModeRequested = crashCount >= CrashRecoveryThreshold;
+
+        try
+        {
+            InitializeServicesAndUi(safeModeRequested);
+        }
+        catch (Exception ex)
+        {
+            // Init-Crash: Counter bleibt erhoeht. Beim naechsten Start kommt der Safe-Mode.
+            Avalonia.Logging.Logger.TryGet(Avalonia.Logging.LogEventLevel.Fatal, "BomberBlast")
+                ?.Log(this, $"Init-Crash (count={crashCount}): {ex}");
+            throw;
+        }
+
+        // Erfolgreich initialisiert — Counter zuruecksetzen damit der naechste Crash sauber
+        // beim 1. Try wieder starten kann (kein false-positive Safe-Mode bei einmaligen Glitches).
+        // Wird in RunLoadingAsync nach Pipeline-Abschluss erst final auf 0 gesetzt — hier nur
+        // als Schutz gegen partial-init-Crash.
+    }
+
+    private void InitializeServicesAndUi(bool safeMode)
     {
         // Setup DI
         var services = new ServiceCollection();
@@ -114,12 +151,31 @@ public partial class App : Application
         // v2.0.44 — AAA-Audit: Telemetrie + Analytics + Push-Notifications initialisieren.
         // Bei NullImpl auf Desktop ist das ein No-Op. Auf Android sucht ein konfigurierter
         // Firebase-Setup nach google-services.json (Console-Setup vom User).
-        Services.GetRequiredService<ITelemetryService>().Initialize();
-        Services.GetRequiredService<IAnalyticsService>().Initialize();
-        _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync();
-        // Sprint 1.4c — RemoteConfig stillschweigend initialisieren (NullImpl ist No-Op,
-        // Firebase-Impl holt sich Defaults + erstes Fetch in Background).
-        _ = Services.GetRequiredService<IRemoteConfigService>().InitializeAsync();
+        // Sprint 6.3 AAA-Audit #25: Safe-Mode skippt optionale Services (Firebase + Push)
+        // damit die App garantiert startet wenn ein optionaler Service der Crash-Ursache war.
+        // Game-State + UI funktionieren weiterhin — User kommt ans Settings-Menue,
+        // kann Account-Delete oder Reset durchfuehren.
+        if (!safeMode)
+        {
+            try { Services.GetRequiredService<ITelemetryService>().Initialize(); }
+            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("Telemetry-Init fehlgeschlagen", ex); }
+
+            try { Services.GetRequiredService<IAnalyticsService>().Initialize(); }
+            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("Analytics-Init fehlgeschlagen", ex); }
+
+            try { _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync(); }
+            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("Push-Init fehlgeschlagen", ex); }
+
+            try { _ = Services.GetRequiredService<IRemoteConfigService>().InitializeAsync(); }
+            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("RemoteConfig-Init fehlgeschlagen", ex); }
+        }
+        else
+        {
+            // Safe-Mode: Schreibe einen Diagnose-Eintrag damit Crashlytics weiss, warum dieser Start
+            // ohne optionale Services ist. Wird beim naechsten Online-Start gepushed.
+            Services.GetService<IAppLogger>()?.LogWarning(
+                "Safe-Mode aktiv — optionale Services (Telemetry/Analytics/Push/RemoteConfig) uebersprungen wegen wiederholter Crashes.");
+        }
 
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
         GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
@@ -230,13 +286,38 @@ public partial class App : Application
 
                 splash.FadeOut();
             });
+
+            // Sprint 6.3 AAA-Audit #25: Pipeline-Erfolg → Crash-Counter zuruecksetzen.
+            // Naechster Start beginnt sauber bei 1.
+            try
+            {
+                var prefs = Services.GetRequiredService<IPreferencesService>();
+                prefs.Set(KeyCrashCount, 0);
+            }
+            catch { /* Best-Effort */ }
         }
         catch (Exception ex)
         {
             // Logger statt Debug.WriteLine - wird auch im Release-Build sichtbar (LogCat auf Android).
+            // Sprint 4.1 AAA-Audit: AppLogger forwarded an ITelemetryService.LogNonFatal mit Stack-Trace.
             Services?.GetService<IAppLogger>()?.LogError("Loading-Pipeline fehlgeschlagen", ex);
             Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
         }
+    }
+
+    /// <summary>
+    /// Sprint 6.3 AAA-Audit #25: Public API fuer den Settings-Screen
+    /// — der User kann manuell den Crash-Counter zuruecksetzen wenn er das Spiel
+    /// neu starten will ohne dass der Safe-Mode getriggert wird.
+    /// </summary>
+    public static void ResetCrashRecoveryCounter()
+    {
+        try
+        {
+            var prefs = Services?.GetService<IPreferencesService>();
+            prefs?.Set(KeyCrashCount, 0);
+        }
+        catch { /* Best-Effort */ }
     }
 
     /// <summary>

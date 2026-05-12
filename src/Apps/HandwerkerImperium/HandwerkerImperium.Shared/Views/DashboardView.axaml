@@ -291,6 +291,28 @@
                              VerticalAlignment="Center"
                              AutomationProperties.AutomationId="Dashboard_Txt_Season" />
                 </Border>
+                <!-- Eternal Mastery Badge (AAA-Audit P1 Long-Term-Engagement, 12.05.2026) -->
+                <Border IsVisible="{Binding HeaderVM.HasEternalMastery}"
+                        CornerRadius="10" Padding="6,2"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Dashboard_Border_EternalMastery">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#FFD700" Offset="0" />
+                      <GradientStop Color="#D97706" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <StackPanel Orientation="Horizontal" Spacing="3">
+                    <icons:GameIcon Kind="Creation" Width="13" Height="13"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}"
+                                     AutomationProperties.AutomationId="Dashboard_Icon_EternalMastery" />
+                    <TextBlock Text="{Binding HeaderVM.EternalMasteryDisplay}"
+                               FontSize="11" FontWeight="Bold"
+                               Foreground="{DynamicResource PrimaryContrastBrush}"
+                               VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="Dashboard_Txt_EternalMastery" />
+                  </StackPanel>
+                </Border>
                 <!-- Reputation nur bei Warnung (<50) oder Highlight (>=80) -->
                 <Button Classes="Text" Padding="4,2"
                         MinHeight="44"

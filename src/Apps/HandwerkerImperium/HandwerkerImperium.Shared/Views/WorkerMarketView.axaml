@@ -190,17 +190,12 @@
           </StackPanel>
         </Border>
 
-        <!-- Empty State: Keine Arbeiter verfügbar -->
-        <StackPanel IsVisible="{Binding HasNoAvailableWorkers}" Spacing="8"
-                    HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,24"
-                    AutomationProperties.AutomationId="WorkerMarket_Panel_EmptyState">
-          <icons:GameIcon Kind="AccountSearch" Width="48" Height="48"
-                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"
-                           AutomationProperties.AutomationId="WorkerMarket_Icon_EmptyState" />
-          <TextBlock Text="{loc:Translate NoWorkersAvailable}" FontSize="14"
-                     Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"
-                     AutomationProperties.AutomationId="WorkerMarket_Txt_EmptyState" />
-        </StackPanel>
+        <!-- Empty State: Keine Arbeiter verfügbar — wiederverwendbares EmptyStateCard-Pattern -->
+        <controls:EmptyStateCard IsVisible="{Binding HasNoAvailableWorkers}"
+                                 Icon="AccountSearch"
+                                 Title="{loc:Translate NoWorkersAvailable}"
+                                 HorizontalAlignment="Center" Margin="0,24"
+                                 AutomationProperties.AutomationId="WorkerMarket_Panel_EmptyState" />
 
         <!-- WORKER CARDS (immer sichtbar, Hire-Button disabled wenn keine Plaetze) -->
         <ItemsControl ItemsSource="{Binding AvailableWorkers}">

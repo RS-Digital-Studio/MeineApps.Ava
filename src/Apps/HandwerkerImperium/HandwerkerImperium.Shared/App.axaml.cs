@@ -266,6 +266,12 @@ public partial class App : Application
         // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement): permanenter Bonus pro Prestige
         services.AddSingleton<IEternalMasteryService, EternalMasteryService>();
 
+        // Bounded-Context-Facaden (AAA-Audit P1 Service-Sprawl-Reduction, additiv):
+        // Worker, Progression, Missions. Bestehende Einzel-Services bleiben verfuegbar.
+        services.AddSingleton<IWorkerFacade, WorkerFacade>();
+        services.AddSingleton<IProgressionFacade, ProgressionFacade>();
+        services.AddSingleton<IMissionsFacade, MissionsFacade>();
+
         // Game Services
         services.AddSingleton<IGameStateService, GameStateService>();
         services.AddSingleton<IGameIntegrityService, GameIntegrityService>();

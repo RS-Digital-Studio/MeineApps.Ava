@@ -320,7 +320,7 @@ internal sealed class EconomyFeatureViewModel
     // ORDERS
     // ═══════════════════════════════════════════════════════════════════════
 
-    internal async Task StartOrderAsync(Order order)
+    internal async Task StartOrderAsync(Order order, bool acceptMaterialOffer = false)
     {
         // Lieferaufträge: Items direkt abgeben, kein MiniGame
         if (order.OrderType == OrderType.MaterialOrder)
@@ -340,6 +340,22 @@ internal sealed class EconomyFeatureViewModel
                     ?? "This workshop already has a running order or the global parallel limit has been reached.",
                 _localizationService.GetString("OK") ?? "OK");
             return;
+        }
+
+        // V7 (Phase 2 Ressourcen-Plan): Material-Offer-Annahme (optional). Muss VOR StartOrder
+        // erfolgen, damit Reservierungen atomar mit dem Auftrags-Start zusammenfallen.
+        if (acceptMaterialOffer && order.HasMaterialOffer)
+        {
+            if (!_gameStateService.TryAcceptMaterialOffer(order))
+            {
+                // Spieler hat nicht genug Material — Alert + abbruch ohne StartOrder.
+                ShowAlertDialog(
+                    _localizationService.GetString("MaterialOfferInsufficientTitle") ?? "Not enough material",
+                    _localizationService.GetString("MaterialOfferInsufficientMessage")
+                        ?? "Your warehouse doesn't have the materials this order asks for.",
+                    _localizationService.GetString("OK") ?? "OK");
+                return;
+            }
         }
 
         // Bestehenden Vordergrund-Auftrag pausieren (falls vorhanden) statt zu blockieren.
@@ -1364,6 +1380,29 @@ internal sealed class EconomyFeatureViewModel
                     parts.Add($"{name} {have}/{count}");
                 }
                 order.DisplayDescription = string.Join(", ", parts);
+            }
+
+            // V7 (Phase 2 Ressourcen-Plan): Material-Offer-Display
+            if (order.HasMaterialOffer)
+            {
+                var allProducts = CraftingProduct.GetAllProducts();
+                var parts = new List<string>();
+                foreach (var (productId, count) in order.MaterialOffer!)
+                {
+                    string name = allProducts.TryGetValue(productId, out var p)
+                        ? _localizationService.GetString(p.NameKey) ?? p.NameKey
+                        : productId;
+                    parts.Add($"{count}x {name}");
+                }
+                int bonusPct = (int)Math.Round(order.MaterialOfferBonusMultiplier * 100);
+                string bonusLabel = string.Format(
+                    _localizationService.GetString("MaterialOfferDisplayFormat") ?? "+{0}% with {1}",
+                    bonusPct, string.Join(", ", parts));
+                order.MaterialOfferDisplay = bonusLabel;
+            }
+            else
+            {
+                order.MaterialOfferDisplay = string.Empty;
             }
 
             newOrders.Add(order);

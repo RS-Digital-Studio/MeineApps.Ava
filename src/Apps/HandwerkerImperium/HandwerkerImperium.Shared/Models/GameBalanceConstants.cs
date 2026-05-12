@@ -379,6 +379,31 @@ public static class GameBalanceConstants
     public const int MaterialOrderCrossWorkshopLevel = 100;
 
     // ═══════════════════════════════════════════════════════════════════════
+    // MATERIAL-OFFER (V7 — Phase 2 Ressourcen-Plan, Plan Section 3.3)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Spielerlevel ab dem Material-Angebote in Auftraegen erscheinen (Onboarding-Schutz).</summary>
+    public const int MaterialOfferUnlockLevel = 30;
+
+    /// <summary>Wahrscheinlichkeit eines Material-Angebots beim Auftrags-Spawn (35%).</summary>
+    public const double MaterialOfferChance = 0.35;
+
+    /// <summary>Bonus-Reward bei Quick-Auftrag mit Material (+25%).</summary>
+    public const double MaterialOfferBonusQuick = 0.25;
+
+    /// <summary>Bonus-Reward bei Standard-Auftrag mit Material (+30%).</summary>
+    public const double MaterialOfferBonusStandard = 0.30;
+
+    /// <summary>Bonus-Reward bei Large-Auftrag mit Material (+40%).</summary>
+    public const double MaterialOfferBonusLarge = 0.40;
+
+    /// <summary>Bonus-Reward bei Cooperation-Auftrag mit Material (+50%).</summary>
+    public const double MaterialOfferBonusCooperation = 0.50;
+
+    /// <summary>Bonus-Reward bei Weekly-Auftrag mit Material (+60%).</summary>
+    public const double MaterialOfferBonusWeekly = 0.60;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // AUFTRAGS-BELOHNUNGEN - SOFT-CAP
     // ═══════════════════════════════════════════════════════════════════════
 

@@ -178,7 +178,7 @@
             <Border Classes="Card" Margin="0,0,0,12" Padding="16"
                     AutomationProperties.AutomationId="Dashboard_Border_OrderItem">
               <Grid ColumnDefinitions="*,Auto"
-                    RowDefinitions="Auto,Auto,Auto,Auto">
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <TextBlock Text="{Binding DisplayTitle}"
                              FontSize="14" FontWeight="Bold"
@@ -269,6 +269,30 @@
                         Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).StartOrderCommand}"
                         CommandParameter="{Binding .}"
                         IsEnabled="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).HasActiveOrder, Converter={x:Static BoolConverters.Not}}" />
+
+                <!-- V7 (Phase 2 Ressourcen-Plan): Material-Offer-Badge + zweiter Annahme-Button -->
+                <Border Grid.Row="4" Grid.ColumnSpan="2"
+                        IsVisible="{Binding HasMaterialOffer}"
+                        Margin="0,8,0,0"
+                        CornerRadius="8" Padding="10,6"
+                        Background="#10D97706"
+                        AutomationProperties.AutomationId="Dashboard_Border_MaterialOffer">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                      <icons:GameIcon Kind="PackageVariant" Width="16" Height="16"
+                                      Foreground="{StaticResource CraftGoldBrush}" />
+                      <TextBlock Text="{Binding MaterialOfferDisplay}" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{StaticResource CraftGoldBrush}"
+                                 TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Content="{loc:Translate StartWithMaterial}"
+                            Classes="Text" Padding="10,5" CornerRadius="6" MinHeight="32"
+                            Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).StartOrderWithMaterialCommand}"
+                            CommandParameter="{Binding .}"
+                            IsEnabled="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).HasActiveOrder, Converter={x:Static BoolConverters.Not}}" />
+                  </Grid>
+                </Border>
               </Grid>
             </Border>
           </DataTemplate>

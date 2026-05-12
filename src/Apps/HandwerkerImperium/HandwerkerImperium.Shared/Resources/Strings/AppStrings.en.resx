@@ -6232,6 +6232,10 @@
   <data name="WarehouseAutoSell" xml:space="preserve"><value>Auto-Sell</value></data>
   <data name="Sell1" xml:space="preserve"><value>Sell 1</value></data>
   <data name="Sell10" xml:space="preserve"><value>Sell 10</value></data>
+  <data name="MaterialOfferDisplayFormat" xml:space="preserve"><value>+{0}% with {1}</value></data>
+  <data name="StartWithMaterial" xml:space="preserve"><value>With Material</value></data>
+  <data name="MaterialOfferInsufficientTitle" xml:space="preserve"><value>Not enough material</value></data>
+  <data name="MaterialOfferInsufficientMessage" xml:space="preserve"><value>Your warehouse doesn't have the materials this order asks for.</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Auto Production</value>
   </data>

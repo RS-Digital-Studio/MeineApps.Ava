@@ -6442,6 +6442,11 @@
   <data name="Sell10" xml:space="preserve">
     <value>10 verkaufen</value>
   </data>
+  <!-- ═══════ V7 (Phase 2 Ressourcen-Plan): Material-Offer ═══════ -->
+  <data name="MaterialOfferDisplayFormat" xml:space="preserve"><value>+{0}% mit {1}</value></data>
+  <data name="StartWithMaterial" xml:space="preserve"><value>Mit Material</value></data>
+  <data name="MaterialOfferInsufficientTitle" xml:space="preserve"><value>Nicht genug Material</value></data>
+  <data name="MaterialOfferInsufficientMessage" xml:space="preserve"><value>Dein Lager hat nicht alle vom Auftrag verlangten Materialien.</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Auto-Produktion</value>
   </data>

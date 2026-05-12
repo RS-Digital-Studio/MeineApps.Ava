@@ -156,6 +156,14 @@ public interface IGameStateService
     /// <summary>Startet einen Auftrag (verschiebt ihn in den aktiven Status).</summary>
     void StartOrder(Order order);
 
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): Akzeptiert das Material-Angebot eines Auftrags.
+    /// Reserviert die benoetigten Materialien atomar in <see cref="GameState.ReservedInventory"/>
+    /// und setzt <see cref="Order.MaterialOfferAccepted"/> auf true.
+    /// Returnt false wenn der Auftrag kein Offer hat oder nicht genug Material vorhanden ist.
+    /// </summary>
+    bool TryAcceptMaterialOffer(Order order);
+
     /// <summary>Gibt den aktuell aktiven Auftrag zurueck.</summary>
     Order? GetActiveOrder();
 

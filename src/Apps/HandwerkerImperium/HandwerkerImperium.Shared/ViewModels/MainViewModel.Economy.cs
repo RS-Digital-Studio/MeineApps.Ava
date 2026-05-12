@@ -61,6 +61,14 @@ public sealed partial class MainViewModel
     private Task StartOrderAsync(Order order) => EconomyVM.StartOrderAsync(order);
 
     /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): Annimmt einen Auftrag MIT Material-Offer
+    /// (reserviert Material und aktiviert Bonus-Reward beim Complete).
+    /// </summary>
+    [RelayCommand]
+    private Task StartOrderWithMaterialAsync(Order order)
+        => EconomyVM.StartOrderAsync(order, acceptMaterialOffer: true);
+
+    /// <summary>
     /// Setzt einen parallelen Auftrag fort (v2.0.35 Feature A).
     /// Parameter ist der Workshop-Typ als object — akzeptiert sowohl Enum-Wert direkt
     /// (XAML-Binding auf WorkshopType-Property) als auch String ("Carpenter" etc.).

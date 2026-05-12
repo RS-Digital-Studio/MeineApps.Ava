@@ -515,6 +515,35 @@ Alle 10 Workshops produzieren passiv Tier-1 Items (Unlock ab WS-Level 50):
 Skalierender Verkaufspreis: `BaseValue × (1 + log₂(1 + Level/25)) × CraftingSellMultiplier`
 (kein Soft-Cap, kein Speed/Rush im Multiplier).
 
+### Material-Offer in Auftraegen (V7 — Phase 2 Ressourcen-Plan)
+
+**Mechanik**: Jeder regulaere Auftrag (ausser MaterialOrder) kann beim Spawn ein optionales
+Material-Angebot bekommen. Wenn der Spieler die geforderten Materialien liefert, gibt es einen
+Bonus-Multiplikator auf Reward + XP.
+
+**Spawn-Regeln** (in `OrderGeneratorService.TryRollMaterialOffer`):
+- Spielerlevel >= `GameBalanceConstants.MaterialOfferUnlockLevel` (= 30).
+- 35% Chance pro Auftrag (`MaterialOfferChance`).
+- Pool je nach OrderType (Plan Section 3.3): Quick 1×T1 +25%, Standard 2×T1 +30%, Large 1×T2+3×T1 +40%, Cooperation 2×T2 (Cross-Workshop) +50%, Weekly 1×T3+2×T2 +60%.
+- MaterialOrder hat eigene Logik (RequiredMaterials) — kein zusaetzliches Offer.
+
+**Lifecycle**:
+1. `Order.MaterialOffer` + `MaterialOfferBonusMultiplier` werden im Generator gesetzt.
+2. Spieler waehlt im UI zwischen "Start" und "Mit Material" (zweiter Button erscheint nur
+   wenn `HasMaterialOffer == true`).
+3. `IGameStateService.TryAcceptMaterialOffer(order)` reserviert die Materialien atomar in
+   `ReservedInventory` und setzt `MaterialOfferAccepted = true`. Bei nicht ausreichend
+   verfuegbarem Material wird Alert gezeigt und der Auftrag NICHT gestartet.
+4. Bei Order-Complete (`CompleteActiveOrder`):
+   - `MaterialOfferAccepted == true` → Bonus × (1 + Multiplier) auf Money/XP, Material wird
+     consumed (CraftingInventory + ReservedInventory atomar reduziert).
+   - Bei HardFail (Risk-Miss) bleibt der Bonus 0, aber Material wird trotzdem konsumiert
+     ("echtes Risiko", siehe Plan Section 3.3).
+5. Bei CancelActiveOrder: Reservierung wird freigegeben, kein Verbrauch.
+6. Bei Order-Expiry (GameLoop): Reservierung wird freigegeben.
+7. Bei SaveGame-Sanitize: Orphan-Reservierungen (Reserved > Summe ActiveOrder+ParallelOrders)
+   werden geloescht.
+
 ### Crafting & Warehouse (V7 — Phase 1 Ressourcen-Plan)
 
 **Rezept-Pool**: 30 Rezepte (10 Workshops × 3 Tiers). Jeder Workshop hat T1/T2/T3, freigeschaltet bei

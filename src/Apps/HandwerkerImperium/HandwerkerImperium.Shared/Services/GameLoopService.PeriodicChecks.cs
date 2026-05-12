@@ -92,6 +92,8 @@ public sealed partial class GameLoopService
                     var expiredOrder = state.ActiveOrder;
                     expiredOrder.CurrentTaskIndex = 0;
                     expiredOrder.TaskResults.Clear();
+                    // V7 (Phase 2): Reservierte Materialien bei Expiry zurueckgeben.
+                    ReleaseExpiredOrderReservation(state, expiredOrder);
                     state.ActiveOrder = null;
                     state.ParallelOrdersByWorkshop.Remove(expiredOrder.WorkshopType);
                     activeExpired = true;
@@ -109,7 +111,12 @@ public sealed partial class GameLoopService
                 if (expiredParallel != null)
                 {
                     for (int i = 0; i < expiredParallel.Count; i++)
+                    {
+                        // V7 (Phase 2): Reservierte Materialien zurueckgeben bevor der Order weg ist.
+                        if (state.ParallelOrdersByWorkshop.TryGetValue(expiredParallel[i], out var parallelExpired))
+                            ReleaseExpiredOrderReservation(state, parallelExpired);
                         state.ParallelOrdersByWorkshop.Remove(expiredParallel[i]);
+                    }
                 }
             });
 
@@ -331,5 +338,23 @@ public sealed partial class GameLoopService
             // BonusSeconds-Feld statt StartedAt-Manipulation (sauber, persistierbar)
             activeResearch.BonusSeconds += workingWorkers * 0.5;
         }
+    }
+
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): Gibt reservierte Materialien eines abgelaufenen Auftrags
+    /// zurueck (kein Verbrauch). MUSS unter dem State-Lock laufen (Aufrufer haelt ihn bereits).
+    /// </summary>
+    private static void ReleaseExpiredOrderReservation(Models.GameState state, Models.Order order)
+    {
+        if (!order.MaterialOfferAccepted || order.MaterialOffer == null) return;
+        foreach (var (productId, required) in order.MaterialOffer)
+        {
+            int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
+            int release = Math.Min(required, reserved);
+            state.ReservedInventory[productId] = reserved - release;
+            if (state.ReservedInventory[productId] <= 0)
+                state.ReservedInventory.Remove(productId);
+        }
+        order.MaterialOfferAccepted = false;
     }
 }

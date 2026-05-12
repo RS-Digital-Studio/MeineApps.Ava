@@ -275,6 +275,11 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             order.RequiredWorkshops = [workshopType, cooperationSecondType];
         }
 
+        // V7 (Phase 2 Ressourcen-Plan): Optionales Material-Angebot wuerfeln.
+        // Triggert nur bei Spieler-Level >= MaterialOfferUnlockLevel und nur fuer
+        // bestimmte OrderTypes (Standard/Large/Cooperation/Weekly — nicht Quick/MaterialOrder).
+        TryRollMaterialOffer(order, state);
+
         // Stammkunden-Zuordnung — Basis 20% + Reputation-Tier-Bonus (v2.0.37).
         // Tier-Boni: CityKnown +10%, RegionStar +20%, IndustryLegend +35% — additiv.
         // v2.1.0: Reputation-Shop „Stammkunden-Garantie" — naechste 5 Auftraege immer Stammkunde.
@@ -792,4 +797,115 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     /// Template for order generation.
     /// </summary>
     private record OrderTemplate(string TitleKey, string TitleFallback, params MiniGameType[] GameTypes);
+
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): Wuerfelt optional ein Material-Angebot fuer einen Auftrag.
+    /// Plan Section 3.3 Material-Anforderungs-Pool pro Tier:
+    ///   Quick:       1x T1, +25% Reward
+    ///   Standard:    2-3x T1, +30%
+    ///   Large:       1x T2 + 3x T1, +40%
+    ///   Cooperation: 2x T2 (verschiedene WS), +50%
+    ///   Weekly:      1x T3 + 2x T2, +60%
+    ///   MaterialOrder: skip (hat eigene RequiredMaterials-Logik).
+    /// Gate: Spielerlevel >= <see cref="GameBalanceConstants.MaterialOfferUnlockLevel"/>.
+    /// </summary>
+    private static void TryRollMaterialOffer(Order order, GameState state)
+    {
+        if (state.PlayerLevel < GameBalanceConstants.MaterialOfferUnlockLevel) return;
+        if (order.OrderType == OrderType.MaterialOrder) return; // hat eigene Logik
+        if (Random.Shared.NextDouble() > GameBalanceConstants.MaterialOfferChance) return;
+
+        var (sample, bonus) = order.OrderType switch
+        {
+            OrderType.Quick => (SampleMaterialOffer(state, order.WorkshopType, t1: 1, t2: 0, t3: 0),
+                                GameBalanceConstants.MaterialOfferBonusQuick),
+            OrderType.Standard => (SampleMaterialOffer(state, order.WorkshopType, t1: 2, t2: 0, t3: 0),
+                                GameBalanceConstants.MaterialOfferBonusStandard),
+            OrderType.Large => (SampleMaterialOffer(state, order.WorkshopType, t1: 3, t2: 1, t3: 0),
+                                GameBalanceConstants.MaterialOfferBonusLarge),
+            OrderType.Cooperation => (SampleMaterialOffer(state, order.WorkshopType, t1: 0, t2: 2, t3: 0, crossWorkshopT2: true),
+                                GameBalanceConstants.MaterialOfferBonusCooperation),
+            OrderType.Weekly => (SampleMaterialOffer(state, order.WorkshopType, t1: 0, t2: 2, t3: 1),
+                                GameBalanceConstants.MaterialOfferBonusWeekly),
+            _ => (null, 0.0)
+        };
+
+        if (sample is { Count: > 0 })
+        {
+            order.MaterialOffer = sample;
+            order.MaterialOfferBonusMultiplier = bonus;
+        }
+    }
+
+    /// <summary>
+    /// Sample-Logik fuer Material-Offer: zieht Tier-1/2/3-Produkte des Auftrags-Workshops.
+    /// Wenn nicht genug Produkte verfuegbar (z.B. Workshop hat keinen T3-Rezept) wird das Offer ausgelassen.
+    /// </summary>
+    /// <param name="crossWorkshopT2">Cooperation: T2-Inputs aus 2 verschiedenen Workshop-Typen.</param>
+    private static Dictionary<string, int>? SampleMaterialOffer(
+        GameState state, WorkshopType primaryWs, int t1, int t2, int t3, bool crossWorkshopT2 = false)
+    {
+        var allRecipes = CraftingRecipe.GetAllRecipes();
+        var result = new Dictionary<string, int>();
+
+        if (t1 > 0)
+        {
+            var t1Product = FindProductByTier(allRecipes, primaryWs, 1);
+            if (t1Product == null) return null;
+            result[t1Product] = t1;
+        }
+
+        if (t2 > 0)
+        {
+            var t2Product = FindProductByTier(allRecipes, primaryWs, 2);
+            if (t2Product == null) return null;
+            result[t2Product] = t2;
+
+            // Cooperation: zweiter T2 aus anderem Workshop
+            if (crossWorkshopT2 && t2 >= 2 && state.Workshops.Count > 1)
+            {
+                WorkshopType secondaryWs = primaryWs;
+                int eligibleCount = 0;
+                for (int i = 0; i < state.Workshops.Count; i++)
+                    if (state.Workshops[i].Type != primaryWs) eligibleCount++;
+                if (eligibleCount > 0)
+                {
+                    int pick = Random.Shared.Next(eligibleCount);
+                    int seen = 0;
+                    for (int i = 0; i < state.Workshops.Count; i++)
+                    {
+                        if (state.Workshops[i].Type == primaryWs) continue;
+                        if (seen == pick) { secondaryWs = state.Workshops[i].Type; break; }
+                        seen++;
+                    }
+                    var secondaryT2 = FindProductByTier(allRecipes, secondaryWs, 2);
+                    if (secondaryT2 != null)
+                    {
+                        result[t2Product] = 1; // Erste Haelfte vom primary WS
+                        result[secondaryT2] = 1;
+                    }
+                }
+            }
+        }
+
+        if (t3 > 0)
+        {
+            var t3Product = FindProductByTier(allRecipes, primaryWs, 3);
+            if (t3Product == null) return null;
+            result[t3Product] = t3;
+        }
+
+        return result.Count > 0 ? result : null;
+    }
+
+    private static string? FindProductByTier(List<CraftingRecipe> allRecipes, WorkshopType workshop, int tier)
+    {
+        for (int i = 0; i < allRecipes.Count; i++)
+        {
+            var r = allRecipes[i];
+            if (r.WorkshopType == workshop && r.Tier == tier)
+                return r.OutputProductId;
+        }
+        return null;
+    }
 }

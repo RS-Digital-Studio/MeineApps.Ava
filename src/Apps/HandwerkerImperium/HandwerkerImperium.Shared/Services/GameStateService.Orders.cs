@@ -35,6 +35,36 @@ public sealed partial class GameStateService
         }
     }
 
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): Akzeptiert das Material-Angebot eines Auftrags.
+    /// Atomar im Lock: Pruefung + Reservierung. Bei Nicht-Verfuegbarkeit false.
+    /// </summary>
+    public bool TryAcceptMaterialOffer(Order order)
+    {
+        if (order == null || !order.HasMaterialOffer || order.MaterialOfferAccepted) return false;
+
+        lock (_stateLock)
+        {
+            // Verfuegbarkeit pruefen: total - reserved >= required
+            foreach (var (productId, required) in order.MaterialOffer!)
+            {
+                int total = _state.CraftingInventory.GetValueOrDefault(productId, 0);
+                int reserved = _state.ReservedInventory.GetValueOrDefault(productId, 0);
+                if (total - reserved < required) return false;
+            }
+
+            // Reservieren (alle Materialien atomar)
+            foreach (var (productId, required) in order.MaterialOffer!)
+            {
+                int current = _state.ReservedInventory.GetValueOrDefault(productId, 0);
+                _state.ReservedInventory[productId] = current + required;
+            }
+
+            order.MaterialOfferAccepted = true;
+        }
+        return true;
+    }
+
     public Order? GetActiveOrder()
     {
         return _state.ActiveOrder;
@@ -369,6 +399,17 @@ public sealed partial class GameStateService
             moneyReward = order.FinalReward * CalculateOrderRewardMultiplierUnlocked(order);
             xpReward = order.FinalXp;
 
+            // V7 (Phase 2): Material-Offer-Bonus — gilt VOR Combo/Doppel-Boosts.
+            if (order.MaterialOfferAccepted && order.MaterialOfferBonusMultiplier > 0)
+            {
+                decimal bonusFactor = 1m + (decimal)order.MaterialOfferBonusMultiplier;
+                moneyReward *= bonusFactor;
+                xpReward = (int)(xpReward * bonusFactor);
+
+                // Reservierte Materialien konsumieren (atomar im selben Lock).
+                ConsumeOrderMaterialReservation(order);
+            }
+
             // Combo-Multiplikator (PaintingGame)
             if (order.ComboMultiplier > 1m)
             {
@@ -538,10 +579,61 @@ public sealed partial class GameStateService
             order.CurrentTaskIndex = 0;
             order.TaskResults.Clear();
 
+            // V7 (Phase 2): Beim Abbruch reservierte Materialien freigeben — kein Verbrauch.
+            // Material-Offer-Status wird zurueckgesetzt damit der Spieler beim erneuten Annehmen
+            // bewusst entscheiden kann.
+            if (order.MaterialOfferAccepted)
+            {
+                ReleaseOrderMaterialReservation(order);
+                order.MaterialOfferAccepted = false;
+            }
+
             _state.AvailableOrders.Add(order);
             _state.ActiveOrder = null;
             // v2.0.35 Feature A: Workshop auch aus Parallel-Slot entfernen.
             _state.ParallelOrdersByWorkshop.Remove(order.WorkshopType);
+        }
+    }
+
+    /// <summary>
+    /// V7 (Phase 2): Konsumiert reservierte Materialien eines Auftrags (MUSS unter _stateLock laufen).
+    /// Subtrahiert die Mengen sowohl aus CraftingInventory als auch aus ReservedInventory.
+    /// </summary>
+    private void ConsumeOrderMaterialReservation(Order order)
+    {
+        if (order.MaterialOffer == null) return;
+        foreach (var (productId, required) in order.MaterialOffer)
+        {
+            int current = _state.CraftingInventory.GetValueOrDefault(productId, 0);
+            int reserved = _state.ReservedInventory.GetValueOrDefault(productId, 0);
+
+            int consume = Math.Min(required, current);
+            int releaseReserved = Math.Min(required, reserved);
+
+            _state.CraftingInventory[productId] = current - consume;
+            if (_state.CraftingInventory[productId] <= 0)
+                _state.CraftingInventory.Remove(productId);
+
+            _state.ReservedInventory[productId] = reserved - releaseReserved;
+            if (_state.ReservedInventory[productId] <= 0)
+                _state.ReservedInventory.Remove(productId);
+        }
+    }
+
+    /// <summary>
+    /// V7 (Phase 2): Gibt reservierte Materialien zurueck (MUSS unter _stateLock laufen).
+    /// Verringert NUR ReservedInventory — Material bleibt im CraftingInventory verfuegbar.
+    /// </summary>
+    private void ReleaseOrderMaterialReservation(Order order)
+    {
+        if (order.MaterialOffer == null) return;
+        foreach (var (productId, required) in order.MaterialOffer)
+        {
+            int reserved = _state.ReservedInventory.GetValueOrDefault(productId, 0);
+            int releaseAmount = Math.Min(required, reserved);
+            _state.ReservedInventory[productId] = reserved - releaseAmount;
+            if (_state.ReservedInventory[productId] <= 0)
+                _state.ReservedInventory.Remove(productId);
         }
     }
 

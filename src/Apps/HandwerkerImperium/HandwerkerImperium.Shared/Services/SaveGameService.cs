@@ -516,6 +516,34 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                 state.ReservedInventory[productId] = available;
         }
 
+        // V7 (Phase 2): Orphan-Reservations erkennen — Reservierungen die zu keinem
+        // aktiven Auftrag (ActiveOrder + ParallelOrdersByWorkshop) mit MaterialOfferAccepted
+        // gehoeren. Solche Reservierungen werden freigegeben, damit der Spieler nichts blockiert hat.
+        var expectedReservations = new Dictionary<string, int>();
+        void AggregateReservations(Order? o)
+        {
+            if (o == null || !o.MaterialOfferAccepted || o.MaterialOffer == null) return;
+            foreach (var (id, count) in o.MaterialOffer)
+                expectedReservations[id] = expectedReservations.GetValueOrDefault(id, 0) + count;
+        }
+        AggregateReservations(state.ActiveOrder);
+        foreach (var kv in state.ParallelOrdersByWorkshop)
+            if (kv.Value != state.ActiveOrder) AggregateReservations(kv.Value);
+
+        var orphanKeys = state.ReservedInventory.Keys.ToList();
+        foreach (var productId in orphanKeys)
+        {
+            int reserved = state.ReservedInventory[productId];
+            int expected = expectedReservations.GetValueOrDefault(productId, 0);
+            if (reserved > expected)
+            {
+                if (expected <= 0)
+                    state.ReservedInventory.Remove(productId);
+                else
+                    state.ReservedInventory[productId] = expected;
+            }
+        }
+
         // Workshop Rebirth Stars validieren (0-5 pro Workshop)
         state.WorkshopStars ??= new Dictionary<string, int>();
         var invalidStarKeys = state.WorkshopStars

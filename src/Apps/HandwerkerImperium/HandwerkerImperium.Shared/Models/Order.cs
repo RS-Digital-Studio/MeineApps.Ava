@@ -152,6 +152,48 @@ public class Order : INotifyPropertyChanged
     public Dictionary<string, int>? RequiredMaterials { get; set; }
 
     /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): Optionales Material-Angebot.
+    /// Im Gegensatz zu <see cref="RequiredMaterials"/> NICHT Pflicht — der Spieler kann
+    /// den Auftrag auch OHNE Material annehmen (normales Reward) ODER mit Material
+    /// fuer einen Bonus-Multiplikator (<see cref="MaterialOfferBonusMultiplier"/>).
+    /// Key = Produkt-ID, Value = benoetigte Menge.
+    /// </summary>
+    [JsonPropertyName("materialOffer")]
+    public Dictionary<string, int>? MaterialOffer { get; set; }
+
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): Bonus-Reward-Multiplikator bei akzeptiertem Material-Angebot.
+    /// 0.0 = kein Offer. Beispielwerte (Plan Section 3.3): Quick 0.25, Standard 0.30,
+    /// Large 0.40, Cooperation 0.50, Weekly 0.60.
+    /// </summary>
+    [JsonPropertyName("materialOfferBonusMultiplier")]
+    public double MaterialOfferBonusMultiplier { get; set; }
+
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): True wenn der Spieler beim Annehmen entschieden hat,
+    /// Materialien zu liefern. Setzt eine Reservierung in <see cref="GameState.ReservedInventory"/>
+    /// und triggert die Bonus-Reward-Berechnung in <see cref="OrderType"/>-Completion.
+    /// Wird beim MiniGame-Complete via WarehouseService.ConsumeReserved konsumiert,
+    /// bei Cancel via ReleaseReserved zurueckgegeben. Bei Risk-Miss bleibt es konsumiert.
+    /// </summary>
+    [JsonPropertyName("materialOfferAccepted")]
+    public bool MaterialOfferAccepted { get; set; }
+
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan): True wenn dieser Auftrag ein Material-Angebot hat.
+    /// Computed-Property, ohne JSON-Persistenz.
+    /// </summary>
+    [JsonIgnore]
+    public bool HasMaterialOffer => MaterialOffer is { Count: > 0 };
+
+    /// <summary>
+    /// V7 (Phase 2): UI-Anzeige des Material-Angebots, z.B. "+30% mit 3x Holzbrett, 1x Beschlag".
+    /// Wird in OrderCard angezeigt um dem Spieler die Wahl transparent zu machen.
+    /// </summary>
+    [JsonIgnore]
+    public string MaterialOfferDisplay { get; set; } = string.Empty;
+
+    /// <summary>
     /// Reputation bonus/penalty on completion.
     /// </summary>
     [JsonPropertyName("reputationBonus")]

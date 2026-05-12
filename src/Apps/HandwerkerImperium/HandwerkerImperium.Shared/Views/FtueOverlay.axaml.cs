@@ -24,7 +24,7 @@ namespace HandwerkerImperium.Views;
 public partial class FtueOverlay : UserControl
 {
     private readonly Stopwatch _stopwatch = new();
-    private IFrameClock? _frameClock;
+    private readonly Helpers.FrameClockRenderLoop _renderLoop;
     private string? _lastResolvedAutomationId;
     private Avalonia.Labs.Controls.SKCanvasView? _spotlightCanvas;
     private static readonly TimeSpan PulseInterval = TimeSpan.FromMilliseconds(33); // ~30fps
@@ -32,22 +32,22 @@ public partial class FtueOverlay : UserControl
     public FtueOverlay()
     {
         InitializeComponent();
+        _renderLoop = new Helpers.FrameClockRenderLoop(() => _spotlightCanvas?.InvalidateSurface(), PulseInterval);
 
         DataContextChanged += (_, _) => ResolveSpotlightBoundsAsync();
         AttachedToVisualTree += (_, _) =>
         {
             _spotlightCanvas = this.FindControl<Avalonia.Labs.Controls.SKCanvasView>("SpotlightCanvas");
-            _frameClock ??= App.Services?.GetService(typeof(IFrameClock)) as IFrameClock;
             ResolveSpotlightBoundsAsync();
         };
         DetachedFromVisualTree += (_, _) =>
         {
-            _frameClock?.Unsubscribe(OnFrameTick);
+            _renderLoop.Stop();
             _stopwatch.Stop();
         };
         LayoutUpdated += (_, _) => ResolveSpotlightBoundsAsync();
 
-        // IsVisible-Toggle steuert Subscriber-Lifecycle. PropertyChanged-Listener fuer IsVisible.
+        // IsVisible-Toggle steuert Render-Loop-Lifecycle.
         PropertyChanged += (_, e) =>
         {
             if (e.Property == IsVisibleProperty)
@@ -55,23 +55,18 @@ public partial class FtueOverlay : UserControl
                 if (IsVisible)
                 {
                     _stopwatch.Restart();
-                    _frameClock?.Subscribe(OnFrameTick, PulseInterval);
+                    _renderLoop.Start();
                     ResolveSpotlightBoundsAsync();
                 }
                 else
                 {
-                    _frameClock?.Unsubscribe(OnFrameTick);
+                    _renderLoop.Stop();
                 }
             }
         };
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
-
-    private void OnFrameTick(object? sender, FrameTickEventArgs e)
-    {
-        _spotlightCanvas?.InvalidateSurface();
-    }
 
     /// <summary>
     /// Sucht im Visual-Tree nach dem Element mit AutomationId == VM.SpotlightAutomationId

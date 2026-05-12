@@ -792,6 +792,13 @@ public sealed partial class GameEngine
         else
             _grid.SetupClassicPattern();
 
+        // Sprint 5.2 AAA-Audit #12: Level-Seed wird zum Re-Seed des IRngProvider verwendet.
+        // Im Daily/Daily-Race-Mode bereits durch SetDeterministicSeed gesetzt; bei anderen
+        // Modi bleibt das hier als zusaetzliches Re-Seed pro Level fuer Generator-Reproduzierbarkeit.
+        if (_currentLevel.Seed.HasValue)
+        {
+            SetDeterministicSeed((ulong)_currentLevel.Seed.Value);
+        }
         var random = new Random(_currentLevel.Seed ?? Environment.TickCount);
 
         // Welt-Mechanik-Zellen platzieren (VOR Blöcken, damit Blöcke nur auf leere Zellen kommen)

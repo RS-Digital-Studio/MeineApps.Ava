@@ -71,6 +71,18 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
     [ObservableProperty]
     private string _specializationDisplay = string.Empty;
 
+    /// <summary>V7 (Phase 4 Ressourcen-Plan, Section 3.7): Material-Affinitaet als "Wood-Spezialist" etc.</summary>
+    [ObservableProperty]
+    private string _materialAffinityDisplay = string.Empty;
+
+    /// <summary>Icon-Key fuer die Material-Affinitaet (Wood=Forest, Metal=Anvil, ...).</summary>
+    [ObservableProperty]
+    private string _materialAffinityIcon = "AccountQuestion";
+
+    /// <summary>True wenn der Worker eine Affinitaet hat (= UI-Badge sichtbar).</summary>
+    [ObservableProperty]
+    private bool _hasMaterialAffinity;
+
     [ObservableProperty]
     private string _wageDisplay = string.Empty;
 
@@ -326,6 +338,21 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
         else
         {
             SpecializationDisplay = _localizationService.GetString("NoSpecialization");
+        }
+
+        // V7 (Phase 4 Ressourcen-Plan, Section 3.7): Material-Affinitaet-Anzeige.
+        if (Worker.MaterialAffinity != MaterialAffinity.None)
+        {
+            var affKey = Worker.MaterialAffinity.GetLocalizationKey();
+            MaterialAffinityDisplay = _localizationService.GetString(affKey) ?? affKey;
+            MaterialAffinityIcon = Worker.MaterialAffinity.GetIcon();
+            HasMaterialAffinity = true;
+        }
+        else
+        {
+            MaterialAffinityDisplay = string.Empty;
+            MaterialAffinityIcon = "AccountQuestion";
+            HasMaterialAffinity = false;
         }
 
         if (Worker.AssignedWorkshop != null)

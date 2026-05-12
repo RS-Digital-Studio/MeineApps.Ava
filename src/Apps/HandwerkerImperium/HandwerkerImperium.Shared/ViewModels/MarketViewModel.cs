@@ -29,6 +29,9 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     // V7 (Phase 4 Ressourcen-Plan, Imperium-Pass): Premium schaltet Markt sofort frei
     // (Bypass auf logi_05). Nach Premium-Kauf muss die UI sofort den Locked-State verlassen.
     private readonly IPurchaseService? _purchase;
+    // V7 (Phase 2 Ressourcen-Plan, Section 3.10): Markt-Verkauf zaehlt fuer SellItems-Mission.
+    private readonly IDailyChallengeService? _dailyChallenge;
+    private readonly IWeeklyMissionService? _weeklyMission;
 
     [ObservableProperty]
     private string _title = "";
@@ -73,7 +76,9 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
         ILocalizationService localization,
         IWarehouseService? warehouse = null,
         ICraftingService? crafting = null,
-        IPurchaseService? purchase = null)
+        IPurchaseService? purchase = null,
+        IDailyChallengeService? dailyChallenge = null,
+        IWeeklyMissionService? weeklyMission = null)
     {
         _gameState = gameState;
         _market = market;
@@ -81,6 +86,8 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
         _warehouse = warehouse;
         _crafting = crafting;
         _purchase = purchase;
+        _dailyChallenge = dailyChallenge;
+        _weeklyMission = weeklyMission;
 
         _market.MarketChanged += OnMarketChanged;
         _gameState.MoneyChanged += OnMoneyChanged;
@@ -198,14 +205,30 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     private void Sell1(MarketEntryDisplay? entry)
     {
         if (entry == null) return;
+        int before = _gameState.State.CraftingInventory.GetValueOrDefault(entry.ProductId, 0);
         _market.TrySell(entry.ProductId, 1);
+        int sold = before - _gameState.State.CraftingInventory.GetValueOrDefault(entry.ProductId, 0);
+        ReportItemsSold(sold);
     }
 
     [RelayCommand]
     private void Sell10(MarketEntryDisplay? entry)
     {
         if (entry == null) return;
+        int before = _gameState.State.CraftingInventory.GetValueOrDefault(entry.ProductId, 0);
         _market.TrySell(entry.ProductId, 10);
+        int sold = before - _gameState.State.CraftingInventory.GetValueOrDefault(entry.ProductId, 0);
+        ReportItemsSold(sold);
+    }
+
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan, Section 3.10): SellItems-Mission-Tracking.
+    /// </summary>
+    private void ReportItemsSold(int count)
+    {
+        if (count <= 0) return;
+        _dailyChallenge?.OnItemsSold(count);
+        _weeklyMission?.OnItemsSold(count);
     }
 
     private static GameIconKind GetProductIcon(string productId) => productId switch

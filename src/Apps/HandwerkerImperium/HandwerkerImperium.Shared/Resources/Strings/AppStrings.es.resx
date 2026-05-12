@@ -6289,6 +6289,7 @@
   <data name="DonateAll" xml:space="preserve"><value>Donar Todo</value></data>
   <data name="Available" xml:space="preserve"><value>disponible:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Obra</value></data>
+  <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Especialidad material</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>&#161;Entrega de material del proveedor!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa de Lujo</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Rascacielos</value></data>

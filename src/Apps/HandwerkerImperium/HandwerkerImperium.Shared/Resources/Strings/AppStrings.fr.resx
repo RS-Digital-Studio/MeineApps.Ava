@@ -6290,6 +6290,7 @@
   <data name="DonateAll" xml:space="preserve"><value>Tout donner</value></data>
   <data name="Available" xml:space="preserve"><value>disponible&#160;:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Chantier</value></data>
+  <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Sp&#233;cialit&#233; mat&#233;riau</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Livraison de mat&#233;riaux du fournisseur&#160;!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa de Luxe</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Gratte-Ciel</value></data>

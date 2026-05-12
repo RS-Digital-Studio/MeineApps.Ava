@@ -111,6 +111,30 @@
               </StackPanel>
             </Grid>
 
+            <!-- V7 (Phase 4 Ressourcen-Plan, Section 3.7): Material-Affinitaet -->
+            <Border CornerRadius="10" Padding="10,8"
+                    Background="#1FD97706"
+                    IsVisible="{Binding HasMaterialAffinity}"
+                    AutomationProperties.AutomationId="WorkerProfile_Border_MaterialAffinity">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <icons:GameIcon Grid.Column="0"
+                                Kind="{Binding MaterialAffinityIcon, Converter={StaticResource IconKindConverter}, FallbackValue=AccountQuestion}"
+                                Width="22" Height="22"
+                                Foreground="{StaticResource CraftGoldBrush}"
+                                VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate WorkerMaterialAffinity}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_AffinityLabel" />
+                  <TextBlock Text="{Binding MaterialAffinityDisplay}"
+                             FontSize="13" FontWeight="SemiBold"
+                             Foreground="{StaticResource CraftGoldBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_AffinityValue" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
             <!-- Efficiency + Income Contribution -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
               <StackPanel Spacing="4">

@@ -24,6 +24,9 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
     private readonly IWarehouseService _warehouseService;
     private readonly ICraftingService _craftingService;
     private readonly ILocalizationService _localizationService;
+    // V7 (Phase 2 Ressourcen-Plan, Section 3.10): Material-Verkauf-Missions-Tracking.
+    private readonly IDailyChallengeService? _dailyChallengeService;
+    private readonly IWeeklyMissionService? _weeklyMissionService;
 
     [ObservableProperty]
     private string _title = "";
@@ -66,12 +69,16 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
         IGameStateService gameStateService,
         IWarehouseService warehouseService,
         ICraftingService craftingService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IDailyChallengeService? dailyChallengeService = null,
+        IWeeklyMissionService? weeklyMissionService = null)
     {
         _gameStateService = gameStateService;
         _warehouseService = warehouseService;
         _craftingService = craftingService;
         _localizationService = localizationService;
+        _dailyChallengeService = dailyChallengeService;
+        _weeklyMissionService = weeklyMissionService;
 
         _warehouseService.InventoryChanged += OnInventoryChanged;
         // CraftingService mutiert das Inventar bei Verkaufen/Sammeln direkt — wir muessen
@@ -185,14 +192,20 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
     private void SellOne(WarehouseSlotDisplay? slot)
     {
         if (slot == null || string.IsNullOrEmpty(slot.ProductId)) return;
+        int before = _gameStateService.State.CraftingInventory.GetValueOrDefault(slot.ProductId, 0);
         _craftingService.SellProducts(slot.ProductId, 1);
+        int sold = before - _gameStateService.State.CraftingInventory.GetValueOrDefault(slot.ProductId, 0);
+        ReportItemsSold(sold);
     }
 
     [RelayCommand]
     private void SellTen(WarehouseSlotDisplay? slot)
     {
         if (slot == null || string.IsNullOrEmpty(slot.ProductId)) return;
+        int before = _gameStateService.State.CraftingInventory.GetValueOrDefault(slot.ProductId, 0);
         _craftingService.SellProducts(slot.ProductId, 10);
+        int sold = before - _gameStateService.State.CraftingInventory.GetValueOrDefault(slot.ProductId, 0);
+        ReportItemsSold(sold);
     }
 
     [RelayCommand]
@@ -201,7 +214,21 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
         if (slot == null || string.IsNullOrEmpty(slot.ProductId)) return;
         int sellable = slot.Quantity - slot.Reserved;
         if (sellable > 0)
+        {
             _craftingService.SellProducts(slot.ProductId, sellable);
+            ReportItemsSold(sellable);
+        }
+    }
+
+    /// <summary>
+    /// V7 (Phase 2 Ressourcen-Plan, Section 3.10): Mission-Hooks fuer DailyChallenge/WeeklyMission
+    /// — die SellItems-Mission braucht die Anzahl verkaufter Items.
+    /// </summary>
+    private void ReportItemsSold(int count)
+    {
+        if (count <= 0) return;
+        _dailyChallengeService?.OnItemsSold(count);
+        _weeklyMissionService?.OnItemsSold(count);
     }
 
     [RelayCommand]

@@ -6531,6 +6531,7 @@
   <data name="DonateAll" xml:space="preserve"><value>Donate All</value></data>
   <data name="Available" xml:space="preserve"><value>available:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Build Site</value></data>
+  <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Material specialty</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material delivery from supplier!</value></data>
   <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Tier-4-Produkte + Erbstuecke + Affinity ═══════ -->
   <data name="ProductVilla" xml:space="preserve"><value>Luxury Villa</value></data>

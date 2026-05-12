@@ -54,4 +54,22 @@ public sealed partial class MainMenuViewModel
         IsOnboardingVisible = false;
         _preferencesService.Set(OnboardingSeenPrefKey, true);
     }
+
+    /// <summary>
+    /// Audit M22: Re-Trigger des Onboarding-Modals (z.B. aus HelpView).
+    /// Setzt nur das Visible-Flag — Pref-Key bleibt true, damit es nicht erneut auto-erscheint.
+    /// </summary>
+    [RelayCommand]
+    private void RestartOnboarding()
+    {
+        OnboardingTitle = _localizationService.GetString("OnboardingTitle") ?? "New Layout!";
+        OnboardingHint1 = _localizationService.GetString("OnboardingHint1")
+            ?? "You'll find daily activities directly in the 'Today' panel.";
+        OnboardingHint2 = _localizationService.GetString("OnboardingHint2")
+            ?? "Profile, statistics and customize live behind your avatar.";
+        OnboardingHint3 = _localizationService.GetString("OnboardingHint3")
+            ?? "Game modes are tiles under Story Mode.";
+        OnboardingCloseText = _localizationService.GetString("OnboardingClose") ?? "Got it";
+        IsOnboardingVisible = true;
+    }
 }

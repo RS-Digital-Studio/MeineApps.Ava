@@ -101,6 +101,24 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <c>Classes.Active</c> und <c>IsVisible</c> der einzelnen PageView-Border.
     /// </summary>
     [ObservableProperty]
+    // Audit M01: NotifyPropertyChangedFor ersetzt 17 manuelle OnPropertyChanged() in partial OnActiveViewChanged.
+    [NotifyPropertyChangedFor(nameof(IsMainMenuActive))]
+    [NotifyPropertyChangedFor(nameof(IsGameActive))]
+    [NotifyPropertyChangedFor(nameof(IsLevelSelectActive))]
+    [NotifyPropertyChangedFor(nameof(IsSettingsActive))]
+    [NotifyPropertyChangedFor(nameof(IsHighScoresActive))]
+    [NotifyPropertyChangedFor(nameof(IsGameOverActive))]
+    [NotifyPropertyChangedFor(nameof(IsShopActive))]
+    [NotifyPropertyChangedFor(nameof(IsVictoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsStatisticsActive))]
+    [NotifyPropertyChangedFor(nameof(IsQuickPlayActive))]
+    [NotifyPropertyChangedFor(nameof(IsDungeonActive))]
+    [NotifyPropertyChangedFor(nameof(IsBattlePassActive))]
+    [NotifyPropertyChangedFor(nameof(IsLeagueActive))]
+    [NotifyPropertyChangedFor(nameof(IsProfileActive))]
+    [NotifyPropertyChangedFor(nameof(IsGemShopActive))]
+    [NotifyPropertyChangedFor(nameof(IsCardsActive))]
+    [NotifyPropertyChangedFor(nameof(IsChallengesActive))]
     private ActiveView _activeView = ActiveView.MainMenu;
 
     // Backward-compat Computed-Properties — werden von Logik in NavigateTo()/HandleBackPressed()
@@ -123,27 +141,8 @@ public sealed partial class MainViewModel : ViewModelBase
     public bool IsCardsActive => ActiveView == ActiveView.Cards;
     public bool IsChallengesActive => ActiveView == ActiveView.Challenges;
 
-    partial void OnActiveViewChanged(ActiveView value)
-    {
-        // Computed-Properties benachrichtigen, damit Bindings auf IsXxxActive (z.B. IsAdBannerVisible-Logik) feuern
-        OnPropertyChanged(nameof(IsMainMenuActive));
-        OnPropertyChanged(nameof(IsGameActive));
-        OnPropertyChanged(nameof(IsLevelSelectActive));
-        OnPropertyChanged(nameof(IsSettingsActive));
-        OnPropertyChanged(nameof(IsHighScoresActive));
-        OnPropertyChanged(nameof(IsGameOverActive));
-        OnPropertyChanged(nameof(IsShopActive));
-        OnPropertyChanged(nameof(IsVictoryActive));
-        OnPropertyChanged(nameof(IsStatisticsActive));
-        OnPropertyChanged(nameof(IsQuickPlayActive));
-        OnPropertyChanged(nameof(IsDungeonActive));
-        OnPropertyChanged(nameof(IsBattlePassActive));
-        OnPropertyChanged(nameof(IsLeagueActive));
-        OnPropertyChanged(nameof(IsProfileActive));
-        OnPropertyChanged(nameof(IsGemShopActive));
-        OnPropertyChanged(nameof(IsCardsActive));
-        OnPropertyChanged(nameof(IsChallengesActive));
-    }
+    // Audit M01: partial OnActiveViewChanged entfernt — NotifyPropertyChangedFor-Attribute am Field
+    // erledigen die Benachrichtigung der 17 IsXxxActive-Properties automatisch.
 
     // ═══════════════════════════════════════════════════════════════════════
     // TAB-STATE PROPERTIES (für kombinierte Views)
@@ -180,6 +179,7 @@ public sealed partial class MainViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyDialogOpen))]
     private bool _isAlertDialogVisible;
 
     [ObservableProperty]
@@ -192,7 +192,14 @@ public sealed partial class MainViewModel : ViewModelBase
     private string _alertDialogButtonText = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyDialogOpen))]
     private bool _isConfirmDialogVisible;
+
+    /// <summary>
+    /// Audit M18: Aggregat-Flag fuer alle modalen Dialoge. View bindet darunterliegende Page-Views
+    /// IsHitTestVisible="{Binding !IsAnyDialogOpen}" → Android-ZIndex-Hit-Test-Problem entschaerft.
+    /// </summary>
+    public bool IsAnyDialogOpen => IsAlertDialogVisible || IsConfirmDialogVisible;
 
     [ObservableProperty]
     private string _confirmDialogTitle = "";

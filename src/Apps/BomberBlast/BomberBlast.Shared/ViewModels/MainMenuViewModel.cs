@@ -99,22 +99,37 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     private void TriggerCoinsPulse()
     {
         IsCoinsPulse = true;
-        // Auto-Reset nach 250ms damit der Pulse ein 1-Shot-Trigger ist
-        _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
-        {
-            await Task.Delay(280);
-            IsCoinsPulse = false;
-        });
+        // Audit M27: DispatcherTimer statt fire-and-forget Task.Delay-Lambda.
+        // Bei Dispose waehrend Delay verschwand der Reset sonst silent.
+        _coinsPulseTimer?.Stop();
+        _coinsPulseTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(280) };
+        _coinsPulseTimer.Tick -= OnCoinsPulseTick;
+        _coinsPulseTimer.Tick += OnCoinsPulseTick;
+        _coinsPulseTimer.Start();
+    }
+
+    private Avalonia.Threading.DispatcherTimer? _coinsPulseTimer;
+    private void OnCoinsPulseTick(object? sender, EventArgs e)
+    {
+        _coinsPulseTimer?.Stop();
+        IsCoinsPulse = false;
     }
 
     private void TriggerGemsPulse()
     {
         IsGemsPulse = true;
-        _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
-        {
-            await Task.Delay(280);
-            IsGemsPulse = false;
-        });
+        _gemsPulseTimer?.Stop();
+        _gemsPulseTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(280) };
+        _gemsPulseTimer.Tick -= OnGemsPulseTick;
+        _gemsPulseTimer.Tick += OnGemsPulseTick;
+        _gemsPulseTimer.Start();
+    }
+
+    private Avalonia.Threading.DispatcherTimer? _gemsPulseTimer;
+    private void OnGemsPulseTick(object? sender, EventArgs e)
+    {
+        _gemsPulseTimer?.Stop();
+        IsGemsPulse = false;
     }
 
     /// <summary>Ob die heutige Daily Challenge noch nicht gespielt wurde</summary>
@@ -228,14 +243,23 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
         _gemService.BalanceChanged += OnBalanceChanged;
+        // Audit M09: Assembly.GetCustomAttribute (5-15ms) verschoben in OnAppearing — Startup-Win.
+    }
 
-        // Version aus dem eigenen Assembly lesen (GetEntryAssembly() gibt null auf Android)
+    /// <summary>
+    /// Audit M09: Versions-String wird erst beim ersten OnAppearing geladen (statt im Ctor).
+    /// Spart 5-15ms beim Startup, da MainMenuViewModel eager ist.
+    /// </summary>
+    private bool _versionLoaded;
+    private void LoadVersionTextLazy()
+    {
+        if (_versionLoaded) return;
+        _versionLoaded = true;
         var assembly = typeof(MainMenuViewModel).Assembly;
         var infoVersion = assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
             ?.InformationalVersion;
         if (infoVersion != null)
         {
-            // InformationalVersion kann "+commitHash" enthalten → nur den Teil vor '+' nehmen
             var plusIndex = infoVersion.IndexOf('+');
             if (plusIndex > 0) infoVersion = infoVersion[..plusIndex];
             VersionText = $"v{infoVersion} - RS-Digital";
@@ -259,6 +283,9 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     /// </summary>
     public void OnAppearing()
     {
+        // Audit M09: Versions-String erst hier laden (5-15ms aus Startup-Pfad geholt)
+        LoadVersionTextLazy();
+
         ShowContinueButton = _progressService.HighestCompletedLevel > 0;
 
         // 7-Tage Daily Reward: Popup anzeigen statt auto-claim

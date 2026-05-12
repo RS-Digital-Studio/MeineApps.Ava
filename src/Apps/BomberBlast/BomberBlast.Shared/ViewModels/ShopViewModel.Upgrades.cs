@@ -86,59 +86,72 @@ public sealed partial class ShopViewModel
         };
     }
 
+    // Audit M10: Gate gegen Double-Tap waehrend Confirm-Dialog offen ist.
+    // Stacking-Dialoge waren Telemetrie-Muell + UX-Bug.
+    private bool _purchaseInFlight;
+
     [RelayCommand]
     private async Task PurchaseAsync(ShopDisplayItem? item)
     {
         if (item == null || item.IsMaxed) return;
+        if (_purchaseInFlight) return;
 
-        // Gratis-Upgrade per Ad: Coins werden nicht abgezogen
-        if (FreeUpgradeActive)
+        _purchaseInFlight = true;
+        try
         {
-            if (_shopService.TryPurchaseFree(item.Type))
+            // Gratis-Upgrade per Ad: Coins werden nicht abgezogen
+            if (FreeUpgradeActive)
+            {
+                if (_shopService.TryPurchaseFree(item.Type))
+                {
+                    var upgradeName = _localizationService.GetString(item.NameKey);
+                    PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
+                    FreeUpgradeActive = false;
+                    RefreshItems();
+                    UpdateCoinDisplay();
+                }
+                return;
+            }
+
+            if (!_coinService.CanAfford(item.NextPrice))
+            {
+                // Detailliertes Fehler-Feedback: Wie viele Coins fehlen
+                var detail = string.Format(
+                    _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Coins, you have {1}",
+                    item.NextPrice.ToString("N0"), _coinService.Balance.ToString("N0"));
+                MessageRequested?.Invoke(
+                    _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
+                    detail);
+                InsufficientFunds?.Invoke();
+                return;
+            }
+
+            // Bestätigungsdialog bei teureren Käufen (ab 3000 Coins)
+            if (item.NextPrice >= 3000 && ConfirmationRequested != null)
+            {
+                var upgradeName = _localizationService.GetString(item.NameKey) ?? item.NameKey;
+                var msg = string.Format(
+                    _localizationService.GetString("ConfirmPurchaseMessage") ?? "Spend {0} Coins on {1}?",
+                    item.NextPrice.ToString("N0"), upgradeName);
+                var confirmed = await ConfirmationRequested.Invoke(
+                    _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
+                    msg,
+                    _localizationService.GetString("Buy") ?? "Buy",
+                    _localizationService.GetString("Cancel"));
+                if (!confirmed) return;
+            }
+
+            if (_shopService.TryPurchase(item.Type))
             {
                 var upgradeName = _localizationService.GetString(item.NameKey);
                 PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
-                FreeUpgradeActive = false;
                 RefreshItems();
                 UpdateCoinDisplay();
             }
-            return;
         }
-
-        if (!_coinService.CanAfford(item.NextPrice))
+        finally
         {
-            // Detailliertes Fehler-Feedback: Wie viele Coins fehlen
-            var detail = string.Format(
-                _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Coins, you have {1}",
-                item.NextPrice.ToString("N0"), _coinService.Balance.ToString("N0"));
-            MessageRequested?.Invoke(
-                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
-                detail);
-            InsufficientFunds?.Invoke();
-            return;
-        }
-
-        // Bestätigungsdialog bei teureren Käufen (ab 3000 Coins)
-        if (item.NextPrice >= 3000 && ConfirmationRequested != null)
-        {
-            var upgradeName = _localizationService.GetString(item.NameKey) ?? item.NameKey;
-            var msg = string.Format(
-                _localizationService.GetString("ConfirmPurchaseMessage") ?? "Spend {0} Coins on {1}?",
-                item.NextPrice.ToString("N0"), upgradeName);
-            var confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
-                msg,
-                _localizationService.GetString("Buy") ?? "Buy",
-                _localizationService.GetString("Cancel"));
-            if (!confirmed) return;
-        }
-
-        if (_shopService.TryPurchase(item.Type))
-        {
-            var upgradeName = _localizationService.GetString(item.NameKey);
-            PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
-            RefreshItems();
-            UpdateCoinDisplay();
+            _purchaseInFlight = false;
         }
     }
 

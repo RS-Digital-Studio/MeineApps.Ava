@@ -188,20 +188,32 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         // Welt-Hintergrund fire-and-forget preloaden (Countdown läuft ~3s,
         // WebP-Decode < 100ms auf Mid-Tier). Welt 1 ist bereits im Splash preloaded —
         // nur Welt 2-10 nachladen um erste-Frame-Fallback zu vermeiden.
+        // Audit M28: Vorherige Preloads cancelln bei rapidem Welt-Wechsel.
         if (mode == "story" && level > 0)
         {
             int worldIndex = _progressService.GetWorldForLevel(level) - 1; // 1-basiert → 0-basiert
             if (worldIndex > 0 && worldIndex != _lastPreloadedWorldIndex)
             {
                 _lastPreloadedWorldIndex = worldIndex;
+                _preloadCts?.Cancel();
+                _preloadCts = new CancellationTokenSource();
+                var token = _preloadCts.Token;
                 _ = Task.Run(async () =>
                 {
-                    try { await _assetService.PreloadAsync(GameAssetPaths.GetWorldPreloadAssets(worldIndex)); }
+                    try
+                    {
+                        if (token.IsCancellationRequested) return;
+                        await _assetService.PreloadAsync(GameAssetPaths.GetWorldPreloadAssets(worldIndex));
+                    }
+                    catch (OperationCanceledException) { /* User wechselte Welt vor Preload-Ende */ }
                     catch (Exception ex) { _logger?.LogWarning($"Welt-Preload fehlgeschlagen (World {worldIndex}): {ex.Message}"); }
-                });
+                }, token);
             }
         }
     }
+
+    // Audit M28: CTS fuer Welt-Preload — wird bei jedem neuen SetParameters cancellt.
+    private CancellationTokenSource? _preloadCts;
 
     /// <summary>
     /// Wird aufgerufen wenn die View erscheint. Initialisiert das Spiel und startet den Loop.

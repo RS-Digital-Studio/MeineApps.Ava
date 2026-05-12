@@ -119,10 +119,12 @@ public class NeonJoystick : IInputHandler, IDisposable
     private int _trailHead;
     private float _trailTimer;
 
-    // Trail mit Age=999f initialisieren, damit im ersten Frame keine Geister-Dots bei (0,0) sichtbar sind
+    // Trail mit Age=999f initialisieren, damit im ersten Frame keine Geister-Dots bei (0,0) sichtbar sind.
+    // Audit L10: 12 Punkte statt 8 → flüssigerer visueller Schweif (5-10% mehr Render-Aufwand, vernachlaessigbar).
+    private const int TRAIL_POINTS = 12;
     private static TrailPoint[] CreateInitialTrail()
     {
-        var t = new TrailPoint[8];
+        var t = new TrailPoint[TRAIL_POINTS];
         for (int i = 0; i < t.Length; i++)
             t[i].Age = 999f;
         return t;
@@ -183,6 +185,9 @@ public class NeonJoystick : IInputHandler, IDisposable
 
     /// <summary>Ob der Detonator-Button angezeigt wird</summary>
     public bool HasDetonator { get; set; }
+
+    /// <summary>Audit L11: Wenn true werden visuelle Pulsations deaktiviert (Accessibility / Mid-Tier-Perf).</summary>
+    public bool ReducedEffects { get; set; }
 
     /// <summary>Fixed-Modus: Joystick immer sichtbar an fester Position unten links</summary>
     public bool IsFixed
@@ -531,8 +536,11 @@ public class NeonJoystick : IInputHandler, IDisposable
 
     private void RenderJoystick(SKCanvas canvas, byte alpha, float fixedIdlePresence)
     {
-        // Idle-Pulsation (nur Fixed-Mode visuell relevant)
-        float idlePulse = 0.85f + MathF.Sin(_animTime * 2f) * 0.15f;
+        // Idle-Pulsation (nur Fixed-Mode visuell relevant).
+        // Audit L11: ReducedEffects-Flag deaktiviert Pulse (Accessibility/Performance).
+        float idlePulse = ReducedEffects
+            ? 1f
+            : 0.85f + MathF.Sin(_animTime * 2f) * 0.15f;
 
         // Presence: 1 im Floating-Mode, zwischen idle und activeGlow im Fixed
         float presence = _isFixed

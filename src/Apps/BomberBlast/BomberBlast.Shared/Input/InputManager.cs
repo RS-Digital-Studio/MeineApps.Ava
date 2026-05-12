@@ -171,7 +171,15 @@ public class InputManager : IDisposable
     public bool ReducedEffects
     {
         get => _reducedEffects;
-        set => _reducedEffects = value;
+        set
+        {
+            _reducedEffects = value;
+            // Audit L11: Joystick-IdlePulse mit dem Flag synchron halten
+            if (_handlers.TryGetValue(InputType.FloatingJoystick, out var handler) && handler is NeonJoystick joystick)
+            {
+                joystick.ReducedEffects = value;
+            }
+        }
     }
 
     /// <summary>Event bei Richtungswechsel im Joystick (für haptisches Feedback)</summary>

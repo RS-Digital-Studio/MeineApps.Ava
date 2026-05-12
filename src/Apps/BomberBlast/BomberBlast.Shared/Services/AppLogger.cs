@@ -49,8 +49,12 @@ public sealed class AppLogger : IAppLogger
     public void LogInfo(string message)
     {
         WriteLine("INFO", message);
-        // Info → Crashlytics-Breadcrumb (sichtbar im Crash-Stack)
+        // Audit L04: Info-Breadcrumbs nur im DEBUG-Build an Crashlytics weitergeben.
+        // Release: Crashlytics-Breadcrumb-Quota (max 64 Events pro Session) sollte fuer
+        // Warnings/Errors reserviert sein. Info-Logs sind im Release-Crash-Stack i.d.R. nicht hilfreich.
+#if DEBUG
         _telemetry?.Log(FormatMessage("INFO", message));
+#endif
     }
 
     public void LogWarning(string message)

@@ -464,11 +464,11 @@ public sealed partial class MainViewModel : ViewModelBase
     private void WireCommon(INavigable vm)
     {
         vm.NavigationRequested += NavigateTo;
-        if (vm is IGameJuiceEmitter emitter)
-        {
-            emitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
-            emitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
-        }
+        // Audit L23: Getrennte Interfaces — FloatingText und Celebration unabhaengig.
+        if (vm is IFloatingTextEmitter floatingEmitter)
+            floatingEmitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
+        if (vm is ICelebrationEmitter celebrationEmitter)
+            celebrationEmitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
     }
 
     /// <summary>

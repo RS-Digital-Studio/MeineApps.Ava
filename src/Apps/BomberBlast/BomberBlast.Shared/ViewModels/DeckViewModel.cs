@@ -766,6 +766,19 @@ public class CardDisplayItem
         _ => "#FFFFFF"
     };
 
+    /// <summary>
+    /// Audit L13: Material-Icon-Kind als Farbenblindheits-Backup zur RarityColorHex.
+    /// Common = CircleOutline, Rare = CircleDouble, Epic = Diamond, Legendary = Crown.
+    /// </summary>
+    public string RarityIconKind => Rarity switch
+    {
+        Rarity.Common => "CircleOutline",
+        Rarity.Rare => "CircleDouble",
+        Rarity.Epic => "Diamond",
+        Rarity.Legendary => "Crown",
+        _ => "CircleOutline"
+    };
+
     /// <summary>Raritäts-Glow-Farbe (heller)</summary>
     public string RarityGlowHex => Rarity switch
     {

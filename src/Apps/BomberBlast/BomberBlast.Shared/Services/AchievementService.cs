@@ -146,8 +146,12 @@ public sealed class AchievementService : IAchievementService
         _data.TotalStars = totalStars;
         Save();
 
-        // Sterne ans Leaderboard senden
-        _ = _playGames.SubmitScoreAsync(PlayGamesIds.LeaderboardTotalStars, totalStars);
+        // Sterne ans Leaderboard senden. Audit L05: try/catch um fire-and-forget (kein UnobservedTaskException).
+        _ = Task.Run(async () =>
+        {
+            try { await _playGames.SubmitScoreAsync(PlayGamesIds.LeaderboardTotalStars, totalStars); }
+            catch { /* Leaderboard-Submit ist best-effort */ }
+        });
 
         UpdateProgress("stars_50", totalStars);
         UpdateProgress("stars_100", totalStars);
@@ -481,10 +485,17 @@ public sealed class AchievementService : IAchievementService
         if (achievement.CoinReward > 0)
             _coinService.AddCoins(achievement.CoinReward);
 
-        // Google Play Games Achievement freischalten
+        // Google Play Games Achievement freischalten. Audit L05: try/catch um fire-and-forget.
         var gpgsId = PlayGamesIds.GetGpgsAchievementId(id);
         if (gpgsId != null)
-            _ = _playGames.UnlockAchievementAsync(gpgsId);
+        {
+            var capturedId = gpgsId;
+            _ = Task.Run(async () =>
+            {
+                try { await _playGames.UnlockAchievementAsync(capturedId); }
+                catch { /* GPGS-Unlock ist best-effort */ }
+            });
+        }
 
         // Event feuern für Toast-Anzeige
         AchievementUnlocked?.Invoke(this, achievement);

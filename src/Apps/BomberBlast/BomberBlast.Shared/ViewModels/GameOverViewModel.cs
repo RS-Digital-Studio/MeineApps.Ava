@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// Zeigt Score, Coins, Verdopplungs- und Continue-Option.
 /// Bei Level-Complete: Score-Aufschlüsselung und Sterne.
 /// </summary>
-public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IFloatingTextEmitter
 {
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
@@ -40,11 +40,8 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
 
-    // IGameJuiceEmitter-Pflichtevent. GameOver-Screen zeigt kein Confetti/Celebration
-    // (waere tonal unpassend nach Tod) — CS0067 bewusst unterdrueckt.
-#pragma warning disable CS0067
-    public event Action? CelebrationRequested;
-#pragma warning restore CS0067
+    // Audit L23: CelebrationRequested entfernt — GameOver-Screen zeigt kein Confetti.
+    // GameOverViewModel implementiert nun nur IFloatingTextEmitter (statt IGameJuiceEmitter).
 
     /// <summary>Bestätigungsdialog anfordern (Titel, Nachricht, Akzeptieren, Abbrechen)</summary>
     public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;

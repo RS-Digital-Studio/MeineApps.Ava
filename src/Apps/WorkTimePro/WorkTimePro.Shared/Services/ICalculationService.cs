@@ -43,6 +43,12 @@ public interface ICalculationService
     Task<double> GetWeekProgressAsync();
 
     /// <summary>
+    /// Variante mit bereits geladenen Settings — vermeidet doppelten DB-Round-Trip
+    /// wenn der Aufrufer die Settings sowieso schon hält.
+    /// </summary>
+    Task<double> GetWeekProgressAsync(WorkSettings settings);
+
+    /// <summary>
     /// Check legal compliance (German labor law)
     /// </summary>
     Task<List<string>> CheckLegalComplianceAsync(WorkDay workDay);

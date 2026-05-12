@@ -240,8 +240,12 @@ public sealed partial class StatisticsViewModel : ViewModelBase
             // Zeitraum berechnen
             CalculatePeriod();
 
-            // Daten laden
+            // WorkDays + Settings einmalig laden, an alle Helpers durchreichen.
+            // Vermeidet: doppeltes GetWorkDaysAsync in EmployerService und doppeltes
+            // GetSettingsAsync in CreateWeeklyChartDataAsync — beide würden auf der
+            // geteilten SQLite-Connection sequenziell laufen.
             var workDays = await _database.GetWorkDaysAsync(StartDate, EndDate);
+            var settings = await _database.GetSettingsAsync();
 
             // Statistiken berechnen
             CalculateStatistics(workDays);
@@ -251,10 +255,10 @@ public sealed partial class StatisticsViewModel : ViewModelBase
 
             // Charts erstellen (parallel)
             await Task.WhenAll(
-                CreateWeeklyChartDataAsync(workDays),
+                CreateWeeklyChartDataAsync(workDays, settings),
                 CreateOvertimeChartData(workDays),
-                CreateProjectChartDataAsync(),
-                CreateEmployerChartDataAsync(),
+                CreateProjectChartDataAsync(workDays),
+                CreateEmployerChartDataAsync(workDays),
                 CreateWeekdayChartData(workDays),
                 CreatePauseChartData(workDays)
             );
@@ -421,7 +425,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         var totalOvertime = workDays.Sum(w => w.BalanceMinutes);
 
         TotalWorkDisplay = TimeFormatter.FormatMinutes(totalMinutes);
-        TotalOvertimeDisplay = (totalOvertime >= 0 ? "+" : "") + TimeFormatter.FormatMinutes(totalOvertime);
+        TotalOvertimeDisplay = TimeFormatter.FormatBalance(totalOvertime);
         OvertimeColor = totalOvertime >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 
         WorkedDays = workDays.Count(w => w.ActualWorkMinutes > 0);
@@ -487,9 +491,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase
 
     // === Chart-Daten erstellen (SkiaSharp-Daten statt LiveCharts) ===
 
-    private async Task CreateWeeklyChartDataAsync(List<WorkDay> workDays)
+    private Task CreateWeeklyChartDataAsync(List<WorkDay> workDays, WorkSettings settings)
     {
-        var settings = await _database.GetSettingsAsync();
         var weeklyTarget = settings.WeeklyHours;
 
         var weeks = workDays
@@ -502,6 +505,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         WeeklyLabels = weeks.Select(g => string.Format(AppStrings.WeekNumberShort ?? "CW {0}", g.Key)).ToArray();
         WeeklyHoursData = weeks.Select(g => (float)(g.Sum(w => w.ActualWorkMinutes) / 60.0)).ToArray();
         WeeklyTargetHours = (float)weeklyTarget;
+
+        return Task.CompletedTask;
     }
 
     private Task CreateOvertimeChartData(List<WorkDay> workDays)
@@ -535,11 +540,12 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         return Task.CompletedTask;
     }
 
-    private async Task CreateProjectChartDataAsync()
+    private async Task CreateProjectChartDataAsync(IReadOnlyList<WorkDay> workDays)
     {
         try
         {
-            var projectHours = await _projectService.GetProjectHoursAsync(StartDate, EndDate);
+            // Wiederverwendung der WorkDays — TimeEntries werden intern nachgeladen
+            var projectHours = await _projectService.GetProjectHoursAsync(workDays);
             HasProjects = projectHours.Count > 0;
 
             if (!HasProjects)
@@ -581,11 +587,12 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         }
     }
 
-    private async Task CreateEmployerChartDataAsync()
+    private async Task CreateEmployerChartDataAsync(IReadOnlyList<WorkDay> workDays)
     {
         try
         {
-            var employerHours = await _employerService.GetEmployerHoursAsync(StartDate, EndDate);
+            // Wiederverwendung der bereits geladenen WorkDays statt neuer GetWorkDaysAsync-Query
+            var employerHours = await _employerService.GetEmployerHoursAsync(workDays);
             HasEmployers = employerHours.Count > 0;
 
             if (!HasEmployers)
@@ -711,7 +718,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
                 CheckOutTime = w.LastCheckOut?.ToString("HH:mm") ?? "--:--",
                 WorkTime = TimeFormatter.FormatMinutes(w.ActualWorkMinutes),
                 PauseTime = TimeFormatter.FormatMinutes(w.ManualPauseMinutes + w.AutoPauseMinutes),
-                Balance = (w.BalanceMinutes >= 0 ? "+" : "") + TimeFormatter.FormatMinutes(w.BalanceMinutes),
+                Balance = TimeFormatter.FormatBalance(w.BalanceMinutes),
                 BalanceColor = w.BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative,
                 HasAutoBreak = w.AutoPauseMinutes > 0,
                 IsSpecialDay = w.Status != DayStatus.WorkDay && w.Status != DayStatus.HomeOffice && w.Status != DayStatus.Weekend

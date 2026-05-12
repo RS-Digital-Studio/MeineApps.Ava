@@ -81,13 +81,13 @@ public sealed class BackupService : IBackupService
     private void LoadSettings()
     {
         var lastBackupStr = _preferences.Get(PREFERENCES_LAST_BACKUP, string.Empty);
-        if (!string.IsNullOrEmpty(lastBackupStr) && DateTime.TryParse(lastBackupStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var lastBackup))
+        if (!string.IsNullOrEmpty(lastBackupStr) && DateTime.TryParse(lastBackupStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var lastBackup))
         {
             LastBackupDate = lastBackup;
         }
 
         var lastSyncStr = _preferences.Get(PREFERENCES_LAST_SYNC, string.Empty);
-        if (!string.IsNullOrEmpty(lastSyncStr) && DateTime.TryParse(lastSyncStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var lastSync))
+        if (!string.IsNullOrEmpty(lastSyncStr) && DateTime.TryParse(lastSyncStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var lastSync))
         {
             LastSyncDate = lastSync;
         }
@@ -116,63 +116,20 @@ public sealed class BackupService : IBackupService
 
     // === Authentication ===
 
-    public async Task<bool> SignInWithGoogleAsync()
+    public Task<bool> SignInWithGoogleAsync()
     {
-        try
-        {
-            ProgressChanged?.Invoke(this, 10);
-
-            // Benötigt Google Sign-In mit Google.Apis.Auth (noch nicht integriert)
-            // Platzhalter für UI-Tests
-            await Task.Delay(1000).ConfigureAwait(false);
-
-            ProgressChanged?.Invoke(this, 50);
-
-            CurrentProvider = CloudProvider.GoogleDrive;
-            IsAuthenticated = false; // Cloud-API noch nicht integriert
-            UserEmail = "";
-
-            ProgressChanged?.Invoke(this, 100);
-
-            SaveSettings();
-            AuthStatusChanged?.Invoke(this, true);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"BackupService.SignInWithGoogle Fehler: {ex.Message}");
-            return false;
-        }
+        // Cloud-Auth ist nicht integriert (Google.Apis.Auth fehlt). Solange das so ist,
+        // muss SignIn ehrlich false zurückgeben — sonst zeigt die UI "angemeldet" an
+        // und ein nachfolgendes CreateBackupAsync schlägt mit "Not authenticated" fehl.
+        System.Diagnostics.Debug.WriteLine("BackupService.SignInWithGoogle: Cloud-Auth nicht integriert");
+        return Task.FromResult(false);
     }
 
-    public async Task<bool> SignInWithMicrosoftAsync()
+    public Task<bool> SignInWithMicrosoftAsync()
     {
-        try
-        {
-            ProgressChanged?.Invoke(this, 10);
-
-            // Benötigt Microsoft Sign-In mit MSAL (noch nicht integriert)
-            await Task.Delay(1000).ConfigureAwait(false);
-
-            ProgressChanged?.Invoke(this, 50);
-
-            CurrentProvider = CloudProvider.OneDrive;
-            IsAuthenticated = false; // Cloud-API noch nicht integriert
-            UserEmail = "";
-
-            ProgressChanged?.Invoke(this, 100);
-
-            SaveSettings();
-            AuthStatusChanged?.Invoke(this, true);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"BackupService.SignInWithMicrosoft Fehler: {ex.Message}");
-            return false;
-        }
+        // Cloud-Auth ist nicht integriert (MSAL fehlt). Siehe SignInWithGoogleAsync.
+        System.Diagnostics.Debug.WriteLine("BackupService.SignInWithMicrosoft: Cloud-Auth nicht integriert");
+        return Task.FromResult(false);
     }
 
     public async Task SignOutAsync()
@@ -263,7 +220,7 @@ public sealed class BackupService : IBackupService
         var employers = await _database.GetEmployersAsync(true).ConfigureAwait(false);
         var shiftPatterns = await _database.GetShiftPatternsAsync().ConfigureAwait(false);
 
-        return new BackupData
+        var data = new BackupData
         {
             Version = "1.0",
             CreatedAt = DateTime.UtcNow,
@@ -279,6 +236,21 @@ public sealed class BackupService : IBackupService
             Employers = employers,
             ShiftPatterns = shiftPatterns
         };
+
+        // WICHTIG: Deep-Clone via JSON-Roundtrip damit das Backup vollständig vom DB-Tracking
+        // entkoppelt ist. Ohne Clone würde sqlite-net beim Restore die Id der Settings/Entities
+        // auf dem Original-Objekt mutieren — beim Rollback wäre der Sicherheits-Backup verfälscht.
+        return DeepCloneViaJson(data);
+    }
+
+    /// <summary>
+    /// Deep-Clone via JSON-Roundtrip. Entkoppelt das Objekt von eventuellem
+    /// ORM-Tracking und verhindert Cross-Mutation zwischen Original- und Sicherungs-Backup.
+    /// </summary>
+    private static T DeepCloneViaJson<T>(T value)
+    {
+        var json = JsonSerializer.Serialize(value, s_jsonWriteOptions);
+        return JsonSerializer.Deserialize<T>(json, s_jsonReadOptions)!;
     }
 
     public async Task<List<BackupInfo>> GetAvailableBackupsAsync()

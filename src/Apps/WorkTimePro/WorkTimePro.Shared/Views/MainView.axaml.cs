@@ -73,6 +73,21 @@ public partial class MainView : UserControl
             _bgTimer = null;
         }
         _backgroundRenderer.Dispose();
+
+        // Symmetrische Abmeldung der VM-Events. Bei Singleton-VMs kein echtes Leak,
+        // aber konsistent zur Subscription in OnDataContextChanged und robust gegen
+        // zukünftige Änderungen am ViewModel-Lifetime.
+        if (_vm != null)
+        {
+            _vm.FloatingTextRequested -= OnFloatingText;
+            _vm.CelebrationRequested -= OnCelebration;
+            _vm.MessageRequested -= OnMessage;
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
+        DataContextChanged -= OnDataContextChanged;
+        KeyDown -= OnKeyDown;
     }
 
     // =====================================================================

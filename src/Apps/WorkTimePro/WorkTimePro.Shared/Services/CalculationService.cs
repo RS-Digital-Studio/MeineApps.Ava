@@ -336,13 +336,18 @@ public sealed class CalculationService : ICalculationService
 
     public async Task<double> GetWeekProgressAsync()
     {
+        var settings = await _database.GetSettingsAsync();
+        return await GetWeekProgressAsync(settings);
+    }
+
+    public async Task<double> GetWeekProgressAsync(WorkSettings settings)
+    {
         // Direkte Berechnung statt volle Woche laden
         var today = DateTime.Today;
         var dayOfWeek = ((int)today.DayOfWeek + 6) % 7;
         var monday = today.AddDays(-dayOfWeek);
         var sunday = monday.AddDays(6);
 
-        var settings = await _database.GetSettingsAsync();
         var workDays = await _database.GetWorkDaysAsync(monday, sunday);
 
         var actualMinutes = workDays.Sum(d => d.ActualWorkMinutes);
@@ -373,18 +378,31 @@ public sealed class CalculationService : ICalculationService
             warnings.Add(string.Format(AppStrings.WarningDailyWorkTimeExceeds, settings.MaxDailyHours));
         }
 
-        // §3 ArbZG: 6-Monats-Durchschnitt darf 8h/Tag nicht überschreiten
-        // (Nur prüfen wenn der aktuelle Tag über 8h liegt, sonst immer konform)
+        // §3 ArbZG: Durchschnitt der WERKTÄGLICHEN Arbeitszeit über 6 Monate
+        // (bzw. 24 Wochen) darf 8h nicht überschreiten. "Werktag" = Mo-Sa.
+        // Vacation, Sick, Feiertage zählen als Werktag mit 0h Arbeitszeit
+        // (Tage werden mitgezählt, gearbeitete Minuten = 0).
+        // Sonntage werden NICHT mitgezählt (kein Werktag im Sinne des ArbZG).
         if (workDay.ActualWorkMinutes > 8 * 60)
         {
             var sixMonthsAgo = workDay.Date.AddMonths(-6);
             var recentDays = await _database.GetWorkDaysAsync(sixMonthsAgo, workDay.Date);
-            var workingDays = recentDays.Where(w =>
-                w.Status == DayStatus.WorkDay || w.Status == DayStatus.HomeOffice).ToList();
+            var dayMap = recentDays.ToDictionary(d => d.Date.Date);
 
-            if (workingDays.Count >= 20) // Mindestens 20 Arbeitstage für aussagekräftigen Durchschnitt
+            long totalMinutes = 0;
+            int weekdayCount = 0;
+            for (var d = sixMonthsAgo.Date; d <= workDay.Date.Date; d = d.AddDays(1))
             {
-                var avgMinutes = workingDays.Average(w => (double)w.ActualWorkMinutes);
+                if (d.DayOfWeek == DayOfWeek.Sunday) continue; // §3 ArbZG: Werktage Mo-Sa
+                weekdayCount++;
+                if (dayMap.TryGetValue(d, out var entry))
+                    totalMinutes += entry.ActualWorkMinutes; // Bei Vacation/Sick = 0
+            }
+
+            // Mindest-Datengrundlage ~10 Wochen Werktage, sonst keine aussagekräftige Aussage
+            if (weekdayCount >= 60)
+            {
+                var avgMinutes = (double)totalMinutes / weekdayCount;
                 if (avgMinutes > 8 * 60)
                 {
                     var avgHours = avgMinutes / 60.0;

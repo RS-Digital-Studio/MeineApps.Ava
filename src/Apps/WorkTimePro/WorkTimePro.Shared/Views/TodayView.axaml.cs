@@ -23,8 +23,13 @@ public partial class TodayView : UserControl
     // ViewModel-Referenz fuer sauberes Event-Handling
     private MainViewModel? _viewModel;
 
-    // Gecachte TimeBlocks (vermeidet List + LINQ + ToArray bei jedem PaintSurface im 1s-Takt)
-    private DayTimelineVisualization.TimeBlock[]? _cachedTimeBlocks;
+    // Gecachte TimeBlocks (vermeidet List + LINQ + ToArray bei jedem PaintSurface im 1s-Takt).
+    // Wir cachen NUR die abgeschlossenen Blöcke (vollständige CheckIn/CheckOut-Paare und
+    // beendete Pausen). Die noch offenen Segmente werden pro Frame aus den gespeicherten
+    // Start-Timestamps + DateTime.Now zusammengesetzt — kein BuildTimeBlocks mehr pro Sekunde.
+    private DayTimelineVisualization.TimeBlock[]? _cachedClosedBlocks;
+    private DateTime? _openCheckInTimestamp;
+    private DateTime? _openPauseStartTimestamp;
     private bool _timeBlocksDirty = true;
 
     public TodayView()
@@ -59,19 +64,27 @@ public partial class TodayView : UserControl
     {
         if (_viewModel == null) return;
 
+        // Cache-Rebuild nur bei strukturellen Änderungen (Entries/Pauses/Status).
+        // CurrentWorkTime triggert nur einen Repaint — der laufende Block wird in
+        // GetCurrentBlocks() aus dem gespeicherten Start-Timestamp + jetzigem DateTime.Now
+        // dynamisch ergänzt, ohne den ganzen Cache neu zu bauen.
         if (args.PropertyName is nameof(MainViewModel.TodayEntries)
             or nameof(MainViewModel.TodayPauses)
-            or nameof(MainViewModel.CurrentStatus)
-            or nameof(MainViewModel.CurrentWorkTime))
+            or nameof(MainViewModel.CurrentStatus))
         {
             _timeBlocksDirty = true;
             TimelineCanvas?.InvalidateSurface();
         }
-
-        // Earnings CountUp Animation starten
-        if (args.PropertyName == nameof(MainViewModel.TodayEarnings))
+        else if (args.PropertyName == nameof(MainViewModel.CurrentWorkTime))
         {
-            StartEarningsCountUp(_viewModel.TodayEarnings);
+            TimelineCanvas?.InvalidateSurface();
+        }
+
+        // Earnings CountUp Animation starten (lauscht auf den double-Wert,
+        // nicht den formatierten String — kein Reparsing pro Sekunde mehr nötig)
+        if (args.PropertyName == nameof(MainViewModel.TodayEarningsValue))
+        {
+            StartEarningsCountUp(_viewModel.TodayEarningsValue);
         }
 
         // Balance-Puls bei negativer Balance
@@ -84,16 +97,28 @@ public partial class TodayView : UserControl
     /// <summary>
     /// Startet die CountUp-Animation fuer den Earnings-Wert.
     /// Interpoliert vom alten zum neuen Wert ueber ~800ms mit EaseOut.
+    /// Throttle: Bei kleinen Differenzen (&lt; 0.10 EUR) wird nicht animiert,
+    /// damit der 1s-Timer nicht jede Sekunde 30fps-Loops startet (GC-Druck).
     /// </summary>
-    private void StartEarningsCountUp(string newEarningsText)
+    private void StartEarningsCountUp(double newValue)
     {
-        // Neuen Zielwert parsen (Format: "12,34 EUR" oder "$12.34")
-        if (!TryParseEarnings(newEarningsText, out var newValue)) return;
+        var diff = Math.Abs(newValue - _displayedEarnings);
 
-        // Wenn die Differenz zu klein ist, keine Animation noetig
-        if (Math.Abs(newValue - _displayedEarnings) < 0.01)
+        // Bei sehr kleinen Differenzen: nichts tun — das Binding aktualisiert
+        // den Anzeigetext bereits in der nächsten Sekunde.
+        if (diff < 0.10)
         {
-            _displayedEarnings = newValue;
+            // Animation läuft? Dann beenden und Zielwert direkt darstellen.
+            if (_countUpTimer is { IsEnabled: true })
+            {
+                _countUpTimer.Stop();
+                _displayedEarnings = newValue;
+                UpdateEarningsDisplay(newValue);
+            }
+            else
+            {
+                _displayedEarnings = newValue;
+            }
             return;
         }
 
@@ -143,45 +168,6 @@ public partial class TodayView : UserControl
     }
 
     /// <summary>
-    /// Versucht einen Waehrungsstring zu parsen (unabhaengig von Kultur).
-    /// </summary>
-    private static bool TryParseEarnings(string text, out double value)
-    {
-        value = 0;
-        if (string.IsNullOrWhiteSpace(text)) return false;
-
-        // Alle nicht-numerischen Zeichen entfernen (ausser Komma, Punkt, Minus)
-        var cleaned = new string(text.Where(c => char.IsDigit(c) || c == ',' || c == '.' || c == '-').ToArray());
-
-        // Komma durch Punkt ersetzen fuer Double.TryParse
-        // Europaeisches Format: 12.345,67 -> 12345.67
-        // US-Format: 12,345.67 -> 12345.67
-        if (cleaned.Contains(',') && cleaned.Contains('.'))
-        {
-            // Beide vorhanden: Das letzte Trennzeichen ist der Dezimaltrenner
-            var lastComma = cleaned.LastIndexOf(',');
-            var lastDot = cleaned.LastIndexOf('.');
-            if (lastComma > lastDot)
-            {
-                // Europaeisch: Punkt als Tausender, Komma als Dezimal
-                cleaned = cleaned.Replace(".", "").Replace(",", ".");
-            }
-            else
-            {
-                // US: Komma als Tausender, Punkt als Dezimal
-                cleaned = cleaned.Replace(",", "");
-            }
-        }
-        else if (cleaned.Contains(','))
-        {
-            cleaned = cleaned.Replace(",", ".");
-        }
-
-        return double.TryParse(cleaned, System.Globalization.NumberStyles.Float,
-            System.Globalization.CultureInfo.InvariantCulture, out value);
-    }
-
-    /// <summary>
     /// Setzt oder entfernt die pulsierende Animation auf dem Balance-TextBlock.
     /// </summary>
     private void UpdateBalancePulse(bool isNegative)
@@ -211,63 +197,118 @@ public partial class TodayView : UserControl
 
         if (DataContext is not MainViewModel vm) return;
 
-        // TimeBlocks nur bei Datenänderung neu berechnen (nicht bei jedem 1s-Repaint)
-        if (_timeBlocksDirty || _cachedTimeBlocks == null)
+        // Cache nur bei strukturellen Datenänderungen neu bauen (Entries/Pauses/Status).
+        // Live-Segmente werden pro Frame angefügt — kein BuildTimeBlocks-LINQ pro Sekunde.
+        if (_timeBlocksDirty || _cachedClosedBlocks == null)
         {
-            _cachedTimeBlocks = BuildTimeBlocks(vm);
+            RebuildClosedBlockCache(vm);
             _timeBlocksDirty = false;
         }
-        var blocks = _cachedTimeBlocks;
+
+        var blocks = ComposeBlocksWithLiveSegments();
         float currentHour = DateTime.Now.Hour + DateTime.Now.Minute / 60f;
 
         DayTimelineVisualization.Render(canvas, bounds, blocks, currentHour);
     }
 
     /// <summary>
-    /// Konvertiert TodayEntries (CheckIn/CheckOut-Paare) + TodayPauses in TimeBlocks.
+    /// Baut das Cache-Array aus abgeschlossenen Segmenten (CheckIn/CheckOut-Paare und beendete Pausen).
+    /// Speichert die offenen Segment-Starts (offener CheckIn, aktive Pause) separat als Timestamps.
     /// </summary>
-    private static DayTimelineVisualization.TimeBlock[] BuildTimeBlocks(MainViewModel vm)
+    private void RebuildClosedBlockCache(MainViewModel vm)
     {
-        var blocks = new List<DayTimelineVisualization.TimeBlock>();
+        // Vorher zählen, dann ohne Zwischenliste in ein passend großes Array schreiben
+        var entries = vm.TodayEntries;
+        var pauses = vm.TodayPauses;
 
-        // 1. Arbeitsbloecke aus TimeEntry-Paaren (CheckIn -> CheckOut)
-        var entries = vm.TodayEntries.OrderBy(e => e.Timestamp).ToList();
+        int closedCount = 0;
         DateTime? lastCheckIn = null;
-
-        foreach (var entry in entries)
+        for (var i = 0; i < entries.Count; i++)
         {
+            var entry = entries[i];
+            if (entry.Type == EntryType.CheckIn) lastCheckIn = entry.Timestamp;
+            else if (entry.Type == EntryType.CheckOut && lastCheckIn != null) { closedCount++; lastCheckIn = null; }
+        }
+        _openCheckInTimestamp = (lastCheckIn != null && vm.CurrentStatus != TrackingStatus.Idle)
+            ? lastCheckIn : null;
+
+        DateTime? activePauseStart = null;
+        for (var i = 0; i < pauses.Count; i++)
+        {
+            var p = pauses[i];
+            if (p.EndTime.HasValue) closedCount++;
+            else activePauseStart = p.StartTime;
+        }
+        _openPauseStartTimestamp = activePauseStart;
+
+        var arr = new DayTimelineVisualization.TimeBlock[closedCount];
+        int idx = 0;
+
+        lastCheckIn = null;
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
             if (entry.Type == EntryType.CheckIn)
             {
                 lastCheckIn = entry.Timestamp;
             }
             else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
             {
-                float startH = lastCheckIn.Value.Hour + lastCheckIn.Value.Minute / 60f;
-                float endH = entry.Timestamp.Hour + entry.Timestamp.Minute / 60f;
-                blocks.Add(new DayTimelineVisualization.TimeBlock(startH, endH, false));
+                arr[idx++] = new DayTimelineVisualization.TimeBlock(
+                    lastCheckIn.Value.Hour + lastCheckIn.Value.Minute / 60f,
+                    entry.Timestamp.Hour + entry.Timestamp.Minute / 60f,
+                    false);
                 lastCheckIn = null;
             }
         }
-
-        // Offener CheckIn -> bis jetzt zeichnen
-        if (lastCheckIn != null && vm.CurrentStatus != TrackingStatus.Idle)
+        for (var i = 0; i < pauses.Count; i++)
         {
-            float startH = lastCheckIn.Value.Hour + lastCheckIn.Value.Minute / 60f;
-            float endH = DateTime.Now.Hour + DateTime.Now.Minute / 60f;
-            blocks.Add(new DayTimelineVisualization.TimeBlock(startH, endH, false));
+            var p = pauses[i];
+            if (!p.EndTime.HasValue) continue;
+            arr[idx++] = new DayTimelineVisualization.TimeBlock(
+                p.StartTime.Hour + p.StartTime.Minute / 60f,
+                p.EndTime.Value.Hour + p.EndTime.Value.Minute / 60f,
+                true);
         }
 
-        // 2. Pausen als separate Bloecke ueberlagern
-        foreach (var pause in vm.TodayPauses)
+        _cachedClosedBlocks = arr;
+    }
+
+    /// <summary>
+    /// Komponiert das finale TimeBlock-Array für den Renderer. Wenn keine offenen
+    /// Segmente vorhanden sind, wird der Cache direkt zurückgegeben (0 Allokationen).
+    /// Sonst wird ein Array mit den Live-Segmenten am Ende neu erstellt.
+    /// </summary>
+    private DayTimelineVisualization.TimeBlock[] ComposeBlocksWithLiveSegments()
+    {
+        var closed = _cachedClosedBlocks ?? Array.Empty<DayTimelineVisualization.TimeBlock>();
+
+        var liveCount = 0;
+        if (_openCheckInTimestamp != null) liveCount++;
+        if (_openPauseStartTimestamp != null) liveCount++;
+        if (liveCount == 0) return closed;
+
+        var result = new DayTimelineVisualization.TimeBlock[closed.Length + liveCount];
+        Array.Copy(closed, result, closed.Length);
+
+        var now = DateTime.Now;
+        var nowH = now.Hour + now.Minute / 60f;
+        var idx = closed.Length;
+
+        if (_openCheckInTimestamp != null)
         {
-            float startH = pause.StartTime.Hour + pause.StartTime.Minute / 60f;
-            float endH = pause.EndTime.HasValue
-                ? pause.EndTime.Value.Hour + pause.EndTime.Value.Minute / 60f
-                : DateTime.Now.Hour + DateTime.Now.Minute / 60f;
-            blocks.Add(new DayTimelineVisualization.TimeBlock(startH, endH, true));
+            var s = _openCheckInTimestamp.Value;
+            result[idx++] = new DayTimelineVisualization.TimeBlock(
+                s.Hour + s.Minute / 60f, nowH, false);
+        }
+        if (_openPauseStartTimestamp != null)
+        {
+            var s = _openPauseStartTimestamp.Value;
+            result[idx++] = new DayTimelineVisualization.TimeBlock(
+                s.Hour + s.Minute / 60f, nowH, true);
         }
 
-        return blocks.ToArray();
+        return result;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

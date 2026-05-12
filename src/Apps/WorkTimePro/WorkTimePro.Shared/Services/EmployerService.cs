@@ -58,51 +58,31 @@ public sealed class EmployerService : IEmployerService
 
     public async Task<Dictionary<Employer, double>> GetEmployerHoursAsync(DateTime start, DateTime end)
     {
+        var workDays = await _database.GetWorkDaysAsync(start, end);
+        return await GetEmployerHoursAsync(workDays);
+    }
+
+    public async Task<Dictionary<Employer, double>> GetEmployerHoursAsync(IReadOnlyList<WorkDay> workDays)
+    {
         var result = new Dictionary<Employer, double>();
         var employers = await GetEmployersAsync(true);
-        var workDays = await _database.GetWorkDaysAsync(start, end);
 
         foreach (var employer in employers)
         {
-            var employerDays = workDays.Where(w => w.EmployerId == employer.Id || (employer.IsDefault && w.EmployerId == null));
-            var hours = employerDays.Sum(w => w.ActualWorkMinutes) / 60.0;
-            if (hours > 0)
+            double minutes = 0;
+            for (var i = 0; i < workDays.Count; i++)
             {
-                result[employer] = hours;
+                var w = workDays[i];
+                if (w.EmployerId == employer.Id || (employer.IsDefault && w.EmployerId == null))
+                    minutes += w.ActualWorkMinutes;
             }
+
+            var hours = minutes / 60.0;
+            if (hours > 0)
+                result[employer] = hours;
         }
 
         return result;
     }
 
-    public async Task<EmployerStatistics> GetEmployerStatisticsAsync(int employerId)
-    {
-        var employer = (await GetEmployersAsync(true)).FirstOrDefault(e => e.Id == employerId);
-        if (employer == null)
-            throw new ArgumentException("Employer not found", nameof(employerId));
-
-        var now = DateTime.Today;
-        var thisMonthStart = new DateTime(now.Year, now.Month, 1);
-        var yearStart = new DateTime(now.Year, 1, 1);
-
-        var allWorkDays = await _database.GetWorkDaysAsync(yearStart, now);
-        var employerDays = allWorkDays.Where(w => w.EmployerId == employerId || (employer.IsDefault && w.EmployerId == null)).ToList();
-
-        var thisMonthDays = employerDays.Where(w => w.Date >= thisMonthStart).ToList();
-
-        var stats = new EmployerStatistics
-        {
-            EmployerId = employerId,
-            EmployerName = employer.Name,
-            TotalHours = employerDays.Sum(w => w.ActualWorkMinutes) / 60.0,
-            ThisMonthHours = thisMonthDays.Sum(w => w.ActualWorkMinutes) / 60.0,
-            TargetHoursWeekly = employer.WeeklyHours,
-            WorkDaysCount = employerDays.Count(w => w.ActualWorkMinutes > 0),
-            AverageHoursPerDay = employerDays.Count > 0
-                ? employerDays.Sum(w => w.ActualWorkMinutes) / 60.0 / employerDays.Count(w => w.ActualWorkMinutes > 0)
-                : 0
-        };
-
-        return stats;
-    }
 }

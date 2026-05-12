@@ -85,7 +85,7 @@
   <data name="EveningReminder" xml:space="preserve"><value>Fin de jornada</value></data>
   <data name="BreakReminder" xml:space="preserve"><value>Recordatorio de descanso</value></data>
   <data name="OvertimeWarning" xml:space="preserve"><value>Aviso de horas extras</value></data>
-  <data name="OvertimeWarningHours" xml:space="preserve"><value>Avisar a partir de horas/semana</value></data>
+  <data name="OvertimeWarningHours" xml:space="preserve"><value>Avisar a partir de horas/dia</value></data>
   <data name="Holidays" xml:space="preserve"><value>Festivos</value></data>
   <data name="Region" xml:space="preserve"><value>Region</value></data>
   <data name="LegalSources" xml:space="preserve"><value>Fuentes legales</value></data>

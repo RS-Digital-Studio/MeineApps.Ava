@@ -18,7 +18,13 @@ namespace WorkTimePro.ViewModels;
 public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     public event Action<string, string>? MessageRequested;
-    public event EventHandler? SettingsChanged;
+    /// <summary>
+    /// Bool-Argument: true wenn ein arbeitszeit-relevantes Setting geändert wurde
+    /// (DailyHours/WeeklyHours/Wochentage/AutoPause/HolidayRegion).
+    /// MainViewModel reloadet den aktiven Tab nur in diesem Fall — kosmetische
+    /// Settings (HourlyRate, Reminder-Zeiten) brauchen keinen Daten-Reload.
+    /// </summary>
+    public event EventHandler<bool>? SettingsChanged;
 
     private readonly IDatabaseService _database;
     private readonly ILocalizationService _localization;
@@ -156,9 +162,15 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
             try
             {
                 await Task.Delay(800, token);
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => SaveSettingsAsync());
+                // InvokeAsync<Task> awaiten damit der innere Save-Task wirklich abgeschlossen wird.
+                // Vorher wurde das Lambda-Task verworfen → Exceptions geschluckt + Race-Conditions möglich.
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => await SaveSettingsAsync());
             }
             catch (TaskCanceledException) { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SettingsViewModel.ScheduleAutoSave Fehler: {ex.Message}");
+            }
         });
     }
 
@@ -582,8 +594,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
             await _database.SaveSettingsAsync(_settings);
 
-            // Andere Tabs über Änderungen informieren
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
+            // Andere Tabs über Änderungen informieren — Bool signalisiert ob ein
+            // Daten-Reload nötig ist (nur bei arbeitszeit-relevanten Settings).
+            var requiresReload = _workTimeSettingsChanged;
+            SettingsChanged?.Invoke(this, requiresReload);
 
             // Warnung bei Arbeitszeit-relevanten Änderungen wenn bestehende Daten vorhanden
             if (_workTimeSettingsChanged)
@@ -766,7 +780,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
                 MessageRequested?.Invoke(
                     AppStrings.Backup ?? "Backup",
                     AppStrings.BackupImportSuccess ?? "Backup erfolgreich importiert");
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                // Backup-Import = strukturelle Datenänderung → vollständiger Tab-Reload nötig
+                SettingsChanged?.Invoke(this, true);
             }
             else
             {

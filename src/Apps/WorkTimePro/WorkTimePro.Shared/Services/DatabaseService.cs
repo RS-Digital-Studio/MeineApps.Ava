@@ -48,7 +48,6 @@ public sealed class DatabaseService : IDatabaseService
         await _database.CreateTableAsync<VacationQuota>();
         await _database.CreateTableAsync<HolidayEntry>();
         await _database.CreateTableAsync<Project>();
-        await _database.CreateTableAsync<ProjectTimeEntry>();
         await _database.CreateTableAsync<Employer>();
         await _database.CreateTableAsync<ShiftPattern>();
         await _database.CreateTableAsync<ShiftAssignment>();
@@ -59,6 +58,21 @@ public sealed class DatabaseService : IDatabaseService
         await _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_pauseentry_workdayid ON PauseEntries(WorkDayId)");
         await _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_vacation_year ON VacationEntries(Year)");
         await _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_shiftassignment_date ON ShiftAssignments(Date)");
+
+        // Defense-in-depth gegen doppelte CheckIn/CheckOut-Entries (z.B. bei Multi-Device-Restore
+        // oder Hintergrund-Restart). SemaphoreSlim schützt nur den aktuellen Prozess.
+        // Try/Catch: bei bestehenden Duplikaten in alten DBs nicht crashen — Index-Erstellung
+        // wird beim nächsten Start nach Cleanup erneut versucht.
+        try
+        {
+            await _database.ExecuteAsync(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_timeentry_workday_ts_type ON TimeEntries(WorkDayId, Timestamp, Type)");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"DatabaseService: UNIQUE-Index auf TimeEntries konnte nicht erstellt werden (vermutlich Altdaten-Duplikate): {ex.Message}");
+        }
 
         return _database;
     }
@@ -348,29 +362,6 @@ public sealed class DatabaseService : IDatabaseService
             .ToListAsync();
     }
 
-    public async Task<int> SaveVacationAsync(VacationEntry vacation)
-    {
-        var db = await GetDatabaseAsync();
-        if (vacation.Id == 0)
-        {
-            vacation.CreatedAt = DateTime.UtcNow;
-            // sqlite-net setzt die ID direkt auf dem Objekt
-            await db.InsertAsync(vacation);
-            return vacation.Id;
-        }
-        else
-        {
-            await db.UpdateAsync(vacation);
-            return vacation.Id;
-        }
-    }
-
-    public async Task DeleteVacationAsync(int id)
-    {
-        var db = await GetDatabaseAsync();
-        await db.DeleteAsync<VacationEntry>(id);
-    }
-
     public async Task<List<VacationEntry>> GetVacationEntriesAsync(DateTime start, DateTime end)
     {
         var db = await GetDatabaseAsync();
@@ -390,12 +381,25 @@ public sealed class DatabaseService : IDatabaseService
 
     public async Task<int> SaveVacationEntryAsync(VacationEntry entry)
     {
-        return await SaveVacationAsync(entry);
+        var db = await GetDatabaseAsync();
+        if (entry.Id == 0)
+        {
+            entry.CreatedAt = DateTime.UtcNow;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(entry);
+            return entry.Id;
+        }
+        else
+        {
+            await db.UpdateAsync(entry);
+            return entry.Id;
+        }
     }
 
     public async Task DeleteVacationEntryAsync(int id)
     {
-        await DeleteVacationAsync(id);
+        var db = await GetDatabaseAsync();
+        await db.DeleteAsync<VacationEntry>(id);
     }
 
     // ==================== VacationQuota ====================
@@ -508,51 +512,6 @@ public sealed class DatabaseService : IDatabaseService
     {
         var db = await GetDatabaseAsync();
         await db.DeleteAsync<Project>(id);
-    }
-
-    // ==================== ProjectTimeEntry ====================
-
-    public async Task<List<ProjectTimeEntry>> GetProjectTimeEntriesAsync(int projectId)
-    {
-        var db = await GetDatabaseAsync();
-        return await db.Table<ProjectTimeEntry>()
-            .Where(p => p.ProjectId == projectId)
-            .OrderByDescending(p => p.Date)
-            .ToListAsync();
-    }
-
-    public async Task<List<ProjectTimeEntry>> GetProjectTimeEntriesAsync(int projectId, DateTime startDate, DateTime endDate)
-    {
-        var db = await GetDatabaseAsync();
-        var start = startDate.Date;
-        var end = endDate.Date;
-        return await db.Table<ProjectTimeEntry>()
-            .Where(p => p.ProjectId == projectId && p.Date >= start && p.Date <= end)
-            .OrderBy(p => p.Date)
-            .ToListAsync();
-    }
-
-    public async Task<int> SaveProjectTimeEntryAsync(ProjectTimeEntry entry)
-    {
-        var db = await GetDatabaseAsync();
-        if (entry.Id == 0)
-        {
-            entry.CreatedAt = DateTime.UtcNow;
-            // sqlite-net setzt die ID direkt auf dem Objekt
-            await db.InsertAsync(entry);
-            return entry.Id;
-        }
-        else
-        {
-            await db.UpdateAsync(entry);
-            return entry.Id;
-        }
-    }
-
-    public async Task DeleteProjectTimeEntryAsync(int id)
-    {
-        var db = await GetDatabaseAsync();
-        await db.DeleteAsync<ProjectTimeEntry>(id);
     }
 
     // ==================== Employer ====================
@@ -791,28 +750,12 @@ public sealed class DatabaseService : IDatabaseService
         return workDays.Sum(w => w.BalanceMinutes);
     }
 
-    public async Task<Dictionary<int, double>> GetProjectHoursAsync(DateTime startDate, DateTime endDate)
-    {
-        var db = await GetDatabaseAsync();
-        var start = startDate.Date;
-        var end = endDate.Date;
-
-        var entries = await db.Table<ProjectTimeEntry>()
-            .Where(p => p.Date >= start && p.Date <= end)
-            .ToListAsync();
-
-        return entries
-            .GroupBy(e => e.ProjectId)
-            .ToDictionary(g => g.Key, g => g.Sum(e => e.Minutes) / 60.0);
-    }
-
     // ==================== Clear (für Restore) ====================
 
     public async Task ClearAllDataAsync()
     {
         var db = await GetDatabaseAsync();
         // Reihenfolge beachten: FK-abhängige Tabellen zuerst
-        await db.DeleteAllAsync<ProjectTimeEntry>();
         await db.DeleteAllAsync<TimeEntry>();
         await db.DeleteAllAsync<PauseEntry>();
         await db.DeleteAllAsync<ShiftAssignment>();
@@ -890,19 +833,6 @@ public sealed class DatabaseService : IDatabaseService
     {
         var db = await GetDatabaseAsync();
         return await db.Table<TimeEntry>().ToListAsync();
-    }
-
-    public async Task<List<TimeEntry>> GetTimeEntriesAsync(DateTime date)
-    {
-        var db = await GetDatabaseAsync();
-        var workDay = await GetWorkDayAsync(date);
-        if (workDay == null)
-            return [];
-
-        return await db.Table<TimeEntry>()
-            .Where(e => e.WorkDayId == workDay.Id)
-            .OrderBy(e => e.Timestamp)
-            .ToListAsync();
     }
 
     public async Task<List<PauseEntry>> GetAllPauseEntriesAsync()

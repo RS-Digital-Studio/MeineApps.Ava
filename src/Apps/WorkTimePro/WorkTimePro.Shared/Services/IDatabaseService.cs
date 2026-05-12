@@ -39,9 +39,7 @@ public interface IDatabaseService
     Task<List<VacationEntry>> GetVacationsAsync(int year);
     Task<List<VacationEntry>> GetVacationEntriesAsync(DateTime start, DateTime end);
     Task<VacationEntry?> GetVacationEntryAsync(int id);
-    Task<int> SaveVacationAsync(VacationEntry vacation);
     Task<int> SaveVacationEntryAsync(VacationEntry entry);
-    Task DeleteVacationAsync(int id);
     Task DeleteVacationEntryAsync(int id);
 
     // === VacationQuota ===
@@ -58,12 +56,6 @@ public interface IDatabaseService
     Task<Project?> GetProjectAsync(int id);
     Task<int> SaveProjectAsync(Project project);
     Task DeleteProjectAsync(int id);
-
-    // === ProjectTimeEntry ===
-    Task<List<ProjectTimeEntry>> GetProjectTimeEntriesAsync(int projectId);
-    Task<List<ProjectTimeEntry>> GetProjectTimeEntriesAsync(int projectId, DateTime startDate, DateTime endDate);
-    Task<int> SaveProjectTimeEntryAsync(ProjectTimeEntry entry);
-    Task DeleteProjectTimeEntryAsync(int id);
 
     // === Employer ===
     Task<List<Employer>> GetEmployersAsync(bool includeInactive = false);
@@ -92,7 +84,6 @@ public interface IDatabaseService
     Task<DateTime?> GetFirstWorkDayDateAsync();
     Task<int> GetTotalWorkMinutesAsync(DateTime startDate, DateTime endDate);
     Task<int> GetTotalOvertimeMinutesAsync(DateTime startDate, DateTime endDate);
-    Task<Dictionary<int, double>> GetProjectHoursAsync(DateTime startDate, DateTime endDate);
 
     // === Clear (für Restore) ===
     /// <summary>
@@ -118,7 +109,6 @@ public interface IDatabaseService
     // === Backup methods ===
     Task<List<WorkDay>> GetAllWorkDaysAsync();
     Task<List<TimeEntry>> GetAllTimeEntriesAsync();
-    Task<List<TimeEntry>> GetTimeEntriesAsync(DateTime date);
     Task<List<PauseEntry>> GetAllPauseEntriesAsync();
     Task<List<VacationEntry>> GetAllVacationEntriesAsync();
     Task<List<VacationQuota>> GetAllVacationQuotasAsync();

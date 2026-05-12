@@ -206,15 +206,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private Task EnsureInitializedAsync() => WaitForInitializationAsync();
 
     /// <summary>
-    /// Settings-Änderungen propagieren: aktiven Tab neu laden
+    /// Settings-Änderungen propagieren. requiresDataReload=true bei strukturellen
+    /// Änderungen (Arbeitszeit-Settings, Backup-Restore). Bei kosmetischen Änderungen
+    /// (Reminder-Zeit, Stundenlohn) reicht das Settings-Cache-Update.
     /// </summary>
-    private async void OnSettingsChanged(object? sender, EventArgs e)
+    private async void OnSettingsChanged(object? sender, bool requiresDataReload)
     {
         try
         {
             // Settings-Cache sofort invalidieren
             _cachedSettings = await _database.GetSettingsAsync();
-            await LoadTabDataAsync(CurrentTab);
+            if (requiresDataReload)
+                await LoadTabDataAsync(CurrentTab);
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Settings-Reload Fehler: {ex.Message}"); }
     }
@@ -322,7 +325,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _ = LoadTabDataAsync(value).ContinueWith(t =>
         {
             if (t.IsFaulted)
-                MessageRequested?.Invoke(AppStrings.Error, t.Exception?.InnerException?.Message ?? "Tab-Ladefehler");
+                MessageRequested?.Invoke(
+                    AppStrings.Error,
+                    t.Exception?.InnerException?.Message ?? AppStrings.ErrorLoading ?? "Tab load failed");
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
@@ -460,6 +465,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _todayEarnings = "";
+
+    /// <summary>
+    /// Roh-Wert des Tagesverdienst (double). Wird vom TodayView für die CountUp-Animation
+    /// genutzt — vermeidet das fehleranfällige String-Reparsing pro Sekunde.
+    /// </summary>
+    [ObservableProperty]
+    private double _todayEarningsValue;
 
     [ObservableProperty]
     private bool _hasEarnings;
@@ -652,12 +664,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 AutoPauseInfo = $"+{today.AutoPauseMinutes} min ({AppStrings.LegalSourceArbZG})";
             }
 
-            // Week progress
-            WeekProgress = await _calculation.GetWeekProgressAsync();
-            WeekProgressText = $"{WeekProgress:F0}%";
-
-            // Settings cachen (für UpdateLiveDataAsync, wird nur hier und bei OnSettingsChanged aktualisiert)
+            // Settings ZUERST holen + cachen, dann an Subroutinen durchreichen.
+            // (Vorher: GetWeekProgressAsync lädt Settings intern, danach erneutes
+            // GetSettingsAsync für den Cache → 2 unnötige Round-Trips.)
             _cachedSettings = await _database.GetSettingsAsync();
+
+            // Week progress
+            WeekProgress = await _calculation.GetWeekProgressAsync(_cachedSettings);
+            WeekProgressText = $"{WeekProgress:F0}%";
 
             // Premium status
             ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
@@ -993,6 +1007,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 if (settings.HourlyRate > 0)
                 {
                     var earnings = workTime.TotalHours * settings.HourlyRate;
+                    TodayEarningsValue = earnings;
                     // Explizit aktuelle Kultur verwenden (konsistent mit App-Spracheinstellung)
                     TodayEarnings = earnings.ToString("C2", System.Globalization.CultureInfo.CurrentCulture);
                     HasEarnings = true;

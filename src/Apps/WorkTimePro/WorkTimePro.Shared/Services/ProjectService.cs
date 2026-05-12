@@ -3,7 +3,9 @@ using WorkTimePro.Models;
 namespace WorkTimePro.Services;
 
 /// <summary>
-/// Implementation of the project tracking service
+/// Implementation of the project tracking service.
+/// Project-Stunden werden aus TimeEntry.ProjectId aggregiert (CheckIn/CheckOut-Paare),
+/// nicht aus einer separaten ProjectTimeEntry-Tabelle (entfällt seit v2.0.7).
 /// </summary>
 public sealed class ProjectService : IProjectService
 {
@@ -34,71 +36,61 @@ public sealed class ProjectService : IProjectService
         await _database.DeleteProjectAsync(id);
     }
 
-    public async Task<ProjectTimeEntry> AddProjectTimeAsync(int projectId, DateTime date, int minutes, string? note = null)
-    {
-        var entry = new ProjectTimeEntry
-        {
-            ProjectId = projectId,
-            Date = date.Date,
-            Minutes = minutes,
-            Description = note
-        };
-
-        await _database.SaveProjectTimeEntryAsync(entry);
-        return entry;
-    }
-
-    public async Task DeleteProjectTimeEntryAsync(int entryId)
-    {
-        await _database.DeleteProjectTimeEntryAsync(entryId);
-    }
-
     public async Task<Dictionary<Project, double>> GetProjectHoursAsync(DateTime start, DateTime end)
     {
-        var result = new Dictionary<Project, double>();
-        var projects = await GetProjectsAsync(true);
-        var hoursById = await _database.GetProjectHoursAsync(start, end);
+        var workDays = await _database.GetWorkDaysAsync(start, end);
+        return await GetProjectHoursAsync(workDays);
+    }
 
-        foreach (var project in projects)
+    public async Task<Dictionary<Project, double>> GetProjectHoursAsync(IReadOnlyList<WorkDay> workDays)
+    {
+        var result = new Dictionary<Project, double>();
+        if (workDays.Count == 0) return result;
+
+        var projects = await GetProjectsAsync(true);
+        var projectMap = projects.ToDictionary(p => p.Id);
+
+        // TimeEntries für alle WorkDays in einer Batch-Query laden (kein N+1)
+        var workDayIds = workDays.Select(w => w.Id).ToList();
+        var entriesByDay = await _database.GetTimeEntriesForWorkDaysAsync(workDayIds);
+
+        var minutesByProject = new Dictionary<int, double>();
+
+        // Pro WorkDay: CheckIn/CheckOut-Paare auflösen, Dauer dem Projekt der CheckIn-Buchung zuordnen
+        foreach (var (_, entries) in entriesByDay)
         {
-            if (hoursById.TryGetValue(project.Id, out var hours))
+            // Bereits nach Timestamp sortiert (DB-Index/OrderBy in GetTimeEntriesForWorkDaysAsync)
+            TimeEntry? lastCheckIn = null;
+            for (var i = 0; i < entries.Count; i++)
             {
-                result[project] = hours;
+                var e = entries[i];
+                if (e.Type == EntryType.CheckIn)
+                {
+                    lastCheckIn = e;
+                }
+                else if (e.Type == EntryType.CheckOut && lastCheckIn != null)
+                {
+                    if (lastCheckIn.ProjectId.HasValue)
+                    {
+                        var minutes = (e.Timestamp - lastCheckIn.Timestamp).TotalMinutes;
+                        if (minutes > 0)
+                        {
+                            var pid = lastCheckIn.ProjectId.Value;
+                            if (!minutesByProject.TryAdd(pid, minutes))
+                                minutesByProject[pid] += minutes;
+                        }
+                    }
+                    lastCheckIn = null;
+                }
             }
         }
 
-        return result;
-    }
-
-    public async Task<List<ProjectTimeEntry>> GetProjectTimeEntriesAsync(int projectId, DateTime start, DateTime end)
-    {
-        return await _database.GetProjectTimeEntriesAsync(projectId, start, end);
-    }
-
-    public async Task<ProjectStatistics> GetProjectStatisticsAsync(int projectId)
-    {
-        var project = await GetProjectAsync(projectId);
-        if (project == null)
-            throw new ArgumentException("Project not found", nameof(projectId));
-
-        var entries = await _database.GetProjectTimeEntriesAsync(projectId);
-
-        var now = DateTime.Today;
-        var thisMonthStart = new DateTime(now.Year, now.Month, 1);
-        var lastMonthStart = thisMonthStart.AddMonths(-1);
-
-        var stats = new ProjectStatistics
+        foreach (var (pid, minutes) in minutesByProject)
         {
-            ProjectId = projectId,
-            ProjectName = project.Name,
-            TotalHours = entries.Sum(e => e.Minutes) / 60.0,
-            ThisMonthHours = entries.Where(e => e.Date >= thisMonthStart).Sum(e => e.Minutes) / 60.0,
-            LastMonthHours = entries.Where(e => e.Date >= lastMonthStart && e.Date < thisMonthStart).Sum(e => e.Minutes) / 60.0,
-            EntryCount = entries.Count,
-            FirstEntry = entries.OrderBy(e => e.Date).FirstOrDefault()?.Date,
-            LastEntry = entries.OrderByDescending(e => e.Date).FirstOrDefault()?.Date
-        };
+            if (projectMap.TryGetValue(pid, out var project) && minutes > 0)
+                result[project] = minutes / 60.0;
+        }
 
-        return stats;
+        return result;
     }
 }

@@ -14,8 +14,10 @@ public sealed class TimeTrackingService : ITimeTrackingService
     private readonly ICalculationService _calculation;
     private readonly SemaphoreSlim _statusLock = new(1, 1);
 
-    // Cache for non-blocking GetCurrentSessionDuration()
-    private TimeSpan _cachedWorkTime = TimeSpan.Zero;
+    // Cache für non-blocking GetCurrentSessionDuration().
+    // Als long-Ticks gespeichert + Interlocked-Zugriff, da TimeSpan (8 Bytes)
+    // auf 32-Bit-Plattformen nicht atomar gelesen/geschrieben wird.
+    private long _cachedWorkTimeTicks;
 
     public TrackingStatus CurrentStatus { get; private set; } = TrackingStatus.Idle;
 
@@ -263,7 +265,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
 
         if (entries.Count == 0)
         {
-            _cachedWorkTime = TimeSpan.Zero;
+            Interlocked.Exchange(ref _cachedWorkTimeTicks, 0);
             return TimeSpan.Zero;
         }
 
@@ -305,7 +307,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
         // Negative Arbeitszeit verhindern (wenn Pausen > Arbeitszeit)
         if (result < TimeSpan.Zero)
             result = TimeSpan.Zero;
-        _cachedWorkTime = result;
+        Interlocked.Exchange(ref _cachedWorkTimeTicks, result.Ticks);
         return result;
     }
 
@@ -444,8 +446,8 @@ public sealed class TimeTrackingService : ITimeTrackingService
         if (CurrentStatus == TrackingStatus.Idle)
             return TimeSpan.Zero;
 
-        // Non-blocking: Return cached value (updated by GetLiveDataSnapshotAsync)
-        return _cachedWorkTime;
+        // Non-blocking: Atomic Read aus dem Cache (updated by GetLiveDataSnapshotAsync)
+        return new TimeSpan(Interlocked.Read(ref _cachedWorkTimeTicks));
     }
 
     /// <summary>
@@ -514,7 +516,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
         var workTime = totalWork - TimeSpan.FromMinutes(totalPauseMinutes);
         if (workTime < TimeSpan.Zero)
             workTime = TimeSpan.Zero;
-        _cachedWorkTime = workTime;
+        Interlocked.Exchange(ref _cachedWorkTimeTicks, workTime.Ticks);
 
         var pauseTime = TimeSpan.FromMinutes(manualPauseMinutes);
 

@@ -38,21 +38,8 @@ public interface IEmployerService
     Task<Dictionary<Employer, double>> GetEmployerHoursAsync(DateTime start, DateTime end);
 
     /// <summary>
-    /// Get statistics for an employer
+    /// Variante, die mit bereits geladenen WorkDays arbeitet — vermeidet doppelte
+    /// DB-Queries wenn der Aufrufer (z.B. StatisticsViewModel) die WorkDays sowieso schon hält.
     /// </summary>
-    Task<EmployerStatistics> GetEmployerStatisticsAsync(int employerId);
-}
-
-/// <summary>
-/// Employer statistics
-/// </summary>
-public class EmployerStatistics
-{
-    public int EmployerId { get; set; }
-    public string EmployerName { get; set; } = "";
-    public double TotalHours { get; set; }
-    public double ThisMonthHours { get; set; }
-    public double TargetHoursWeekly { get; set; }
-    public int WorkDaysCount { get; set; }
-    public double AverageHoursPerDay { get; set; }
+    Task<Dictionary<Employer, double>> GetEmployerHoursAsync(IReadOnlyList<WorkDay> workDays);
 }

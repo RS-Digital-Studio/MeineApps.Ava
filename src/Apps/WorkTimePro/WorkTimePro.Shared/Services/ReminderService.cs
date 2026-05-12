@@ -10,7 +10,7 @@ namespace WorkTimePro.Services;
 /// 1. Morgen-Erinnerung (Zeit einzustempeln)
 /// 2. Abend-Erinnerung (Noch am Arbeiten?)
 /// 3. Pausen-Erinnerung (Nach X Stunden ohne Pause)
-/// 4. Überstunden-Warnung (Über MaxDailyHours)
+/// 4. Überstunden-Warnung (Über OvertimeWarningHours pro Tag)
 /// 5. Wochenzusammenfassung (Montag Morgen)
 /// </summary>
 public sealed class ReminderService : IReminderService, IDisposable
@@ -255,17 +255,19 @@ public sealed class ReminderService : IReminderService, IDisposable
 
         StopOvertimeTimer();
 
-        var maxHours = settings.MaxDailyHours;
-        if (maxHours <= 0) return;
+        // OvertimeWarningHours ist die vom User in den Settings gepflegte Schwelle
+        // (double, Default 10.0). MaxDailyHours hingegen ist die ArbZG-Compliance-Grenze.
+        var thresholdHours = settings.OvertimeWarningHours;
+        if (thresholdHours <= 0) return;
 
         // Bisherige Arbeitszeit berücksichtigen
         var currentWorkTime = _tracking.GetCurrentSessionDuration();
-        var remainingDelay = TimeSpan.FromHours(maxHours) - currentWorkTime;
+        var remainingDelay = TimeSpan.FromHours(thresholdHours) - currentWorkTime;
 
         if (remainingDelay <= TimeSpan.Zero)
         {
             // Bereits überschritten → sofort benachrichtigen
-            _ = ShowOvertimeReminderAsync(maxHours);
+            _ = ShowOvertimeReminderAsync(thresholdHours);
             return;
         }
 
@@ -279,7 +281,7 @@ public sealed class ReminderService : IReminderService, IDisposable
                 await Task.Delay(remainingDelay, token);
                 if (!token.IsCancellationRequested)
                 {
-                    await ShowOvertimeReminderAsync(maxHours);
+                    await ShowOvertimeReminderAsync(thresholdHours);
                 }
             }
             catch (OperationCanceledException) { }
@@ -290,11 +292,11 @@ public sealed class ReminderService : IReminderService, IDisposable
         }, token);
     }
 
-    private async Task ShowOvertimeReminderAsync(int maxHours)
+    private async Task ShowOvertimeReminderAsync(double thresholdHours)
     {
         var title = _localization.GetString("ReminderOvertimeTitle");
         var bodyTemplate = _localization.GetString("ReminderOvertimeBody");
-        var body = string.Format(bodyTemplate, maxHours);
+        var body = string.Format(bodyTemplate, thresholdHours.ToString("0.#", CultureInfo.CurrentCulture));
 
         await _notification.ShowNotificationAsync(title, body, OvertimeReminderId);
     }

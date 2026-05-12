@@ -36,16 +36,18 @@ public partial class WeekOverviewView : UserControl
 
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
+        // Statische nameof-Auflösung über den Typ — konsistent zu allen anderen Views
+        // (StatisticsView, YearOverviewView, TodayView) und robust gegen Variablen-Renames.
         switch (args.PropertyName)
         {
-            case nameof(_vm.Days):
-            case nameof(_vm.WorkTimeDisplay):
-            case nameof(_vm.TargetTimeDisplay):
-            case nameof(_vm.IsLoading):
+            case nameof(WeekOverviewViewModel.Days):
+            case nameof(WeekOverviewViewModel.WorkTimeDisplay):
+            case nameof(WeekOverviewViewModel.TargetTimeDisplay):
+            case nameof(WeekOverviewViewModel.IsLoading):
                 WeekBarCanvas?.InvalidateSurface();
                 WeekProgressCanvas?.InvalidateSurface();
                 break;
-            case nameof(_vm.ProgressPercent):
+            case nameof(WeekOverviewViewModel.ProgressPercent):
                 WeekProgressCanvas?.InvalidateSurface();
                 break;
         }

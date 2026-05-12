@@ -240,7 +240,7 @@
     <value>Overtime warning</value>
   </data>
   <data name="OvertimeWarningHours" xml:space="preserve">
-    <value>Warn after hours/week</value>
+    <value>Warn after hours/day</value>
   </data>
   <data name="Holidays" xml:space="preserve">
     <value>Holidays</value>

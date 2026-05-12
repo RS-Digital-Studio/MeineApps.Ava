@@ -172,8 +172,19 @@ Thin-Wrapper-Pattern: Sub-VM hat nur `GuildViewModel Guild { get; }`, Bindings v
 - `EconomyFeatureViewModel` → per `new` in `MainViewModel.Economy.cs` erstellt (KEIN DI, braucht mainVM-Kontext)
 - Thin-Wrapper-VMs (GuildResearchVM, ...) → im GuildViewModel-Ctor erstellt (kein DI-Container)
 
-**IGuildFacade**: Service-Container-Facade bündelt 9 Gilden-Services über Properties.
-GuildViewModel bekommt nur `IGuildFacade` injiziert (7 Parameter statt 14).
+**Service-Container-Facaden** (AAA-Audit P1 Service-Sprawl-Reduction, 12.05.2026):
+Bündeln verwandte Services für Konsumenten die sonst 3-9 einzelne Dependencies
+injizieren müssten. Pure Pass-Through-Container, kein State.
+
+| Facade | Bündelt | Primärer Konsument |
+|--------|---------|---------------------|
+| `IGuildFacade` | 9 Gilden-Services (Guild, Invite, Research, Chat, WarSeason, Boss, Hall, Tip, Achievement) | GuildViewModel |
+| `IWorkerFacade` | Worker + WorkerAuction | (neu — additiv) |
+| `IProgressionFacade` | Prestige + Rebirth + Ascension + EternalMastery + ReputationShop | (neu — additiv) |
+| `IMissionsFacade` | DailyChallenge + WeeklyMission + LuckySpin + QuickJob + Goal | (neu — additiv, MissionsFeatureViewModel-Kandidat) |
+
+Worker/Progression/Missions sind additiv eingeführt — bestehende Konsumenten der Einzel-Services
+funktionieren unverändert. Neue Code-Stellen können optional die Facade injizieren.
 
 ---
 
@@ -914,8 +925,28 @@ npx firebase-tools deploy --only database --project handwerkerimperium-487917
 ```
 
 **Tests**: SaveGameMigrationTests, PerformanceBenchmarkTests, PrestigeCinematicRendererTests,
-DailyBundleServiceTests, CjkFontResolverTests, HeadlessSmokeTests (Avalonia.Headless + XUnit).
+DailyBundleServiceTests, CjkFontResolverTests, HeadlessSmokeTests (Avalonia.Headless + XUnit),
+EternalMasteryServiceTests (Long-Term-Engagement). 1058+ Tests, alle grün.
 CI: `.github/workflows/ci.yml` (Build + Test + Firebase-Rules-Lint).
+
+---
+
+## Eternal Mastery (Long-Term-Engagement post-Lv1000)
+
+`IEternalMasteryService` + `EternalMasteryService` — permanenter Einkommens-Bonus der mit
+jedem abgeschlossenen Prestige skaliert. Kein Cap, kein Reset bei Ascension. Adressiert
+den Audit-Befund „nach Ascension kommt nichts mehr — duenn".
+
+**Berechnung** (`GameBalanceConstants.EternalMastery*`):
+- Linear: +0.5% pro Prestige (jeder Tier zählt)
+- 5er-Stufen-Bonus: +2.5% alle 5 Prestiges
+- 10er-Mega-Stufen-Bonus: +5% alle 10 Prestiges
+
+Bei 100 Prestiges = +150% Income (50% linear + 50% 5er-Stufen + 50% 10er-Mega).
+
+**Integration**: `IncomeCalculatorService.CalculateGrossIncome` multipliziert nach Premium-Bonus.
+Header-Badge im DashboardView (gold-shimmer, sichtbar wenn `HeaderVM.HasEternalMastery`).
+Update via `MainViewModel.Helpers.RefreshEternalMastery()` bei OnPrestigeCompleted + OnStateLoaded.
 
 ---
 

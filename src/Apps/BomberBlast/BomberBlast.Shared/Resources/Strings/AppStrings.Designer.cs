@@ -4272,6 +4272,14 @@ namespace BomberBlast.Resources.Strings {
 
         internal static string AchievementsEmptyCta => ResourceManager.GetString("AchievementsEmptyCta", resourceCulture)!;
 
+        // Sprint 2.3 AAA-Audit #3: Re-Engagement Push-Notifications
+        internal static string ReEngagementD1Title => ResourceManager.GetString("ReEngagementD1Title", resourceCulture)!;
+        internal static string ReEngagementD1Body => ResourceManager.GetString("ReEngagementD1Body", resourceCulture)!;
+        internal static string ReEngagementD3Title => ResourceManager.GetString("ReEngagementD3Title", resourceCulture)!;
+        internal static string ReEngagementD3Body => ResourceManager.GetString("ReEngagementD3Body", resourceCulture)!;
+        internal static string ReEngagementD7Title => ResourceManager.GetString("ReEngagementD7Title", resourceCulture)!;
+        internal static string ReEngagementD7Body => ResourceManager.GetString("ReEngagementD7Body", resourceCulture)!;
+
         internal static string AchKickMaster => ResourceManager.GetString("AchKickMaster", resourceCulture)!;
 
         internal static string AchKickMasterDesc => ResourceManager.GetString("AchKickMasterDesc", resourceCulture)!;

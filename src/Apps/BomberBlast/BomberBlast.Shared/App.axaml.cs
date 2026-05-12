@@ -381,6 +381,10 @@ public partial class App : Application
             RemoteConfigServiceFactory?.Invoke(sp)
             ?? new DefaultsRemoteConfigService(sp.GetRequiredService<IAppLogger>()));
 
+        // Sprint 2.3 AAA-Audit #3 — Re-Engagement-Scheduler (D1/D3/D7-Notifications).
+        // Wird von MainActivity beim OnPause/OnResume aufgerufen.
+        services.AddSingleton<IReEngagementScheduler, ReEngagementScheduler>();
+
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)
             services.AddSingleton<IVibrationService>(sp => VibrationServiceFactory!(sp));

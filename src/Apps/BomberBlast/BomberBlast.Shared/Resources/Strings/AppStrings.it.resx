@@ -783,6 +783,25 @@
   <data name="AchievementsEmptyCta" xml:space="preserve">
     <value>Gioca il tuo primo livello</value>
   </data>
+  <!-- Sprint 2.3 AAA-Audit #3: Re-Engagement Push-Notifications -->
+  <data name="ReEngagementD1Title" xml:space="preserve">
+    <value>La tua ricompensa giornaliera ti aspetta!</value>
+  </data>
+  <data name="ReEngagementD1Body" xml:space="preserve">
+    <value>Tocca per riscattare il bonus prima che si reimposti.</value>
+  </data>
+  <data name="ReEngagementD3Title" xml:space="preserve">
+    <value>Il tuo Battle Pass termina tra {0} giorni</value>
+  </data>
+  <data name="ReEngagementD3Body" xml:space="preserve">
+    <value>Non perdere le ricompense del Battle Pass non riscattate!</value>
+  </data>
+  <data name="ReEngagementD7Title" xml:space="preserve">
+    <value>Ci manchi!</value>
+  </data>
+  <data name="ReEngagementD7Body" xml:space="preserve">
+    <value>Torna e riscatta 100 Gemme gratis come regalo di bentornato.</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Mondo 1 Completato</value>
   </data>

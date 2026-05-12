@@ -126,11 +126,28 @@ public class MainActivity : AvaloniaMainActivity
         EnableImmersiveMode();
 
         _adMobHelper?.Resume();
+
+        // Sprint 2.3 AAA-Audit #3: Re-Engagement-Notifications stornieren — User ist aktiv,
+        // Reminder waeren irritierend.
+        try
+        {
+            App.Services?.GetService<IReEngagementScheduler>()?.CancelAll();
+        }
+        catch { /* Best-Effort — Service evtl. noch nicht initialisiert */ }
     }
 
     protected override void OnPause()
     {
         _adMobHelper?.Pause();
+
+        // Sprint 2.3 AAA-Audit #3: Re-Engagement-Notifications planen.
+        // App geht in den Hintergrund, plane D1/D3/D7-Reminders fuer inaktive Spieler.
+        try
+        {
+            App.Services?.GetService<IReEngagementScheduler>()?.ScheduleAll();
+        }
+        catch { /* Best-Effort — Service evtl. noch nicht initialisiert */ }
+
         base.OnPause();
     }
 

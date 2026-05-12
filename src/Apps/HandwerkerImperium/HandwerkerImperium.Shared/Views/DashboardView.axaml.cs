@@ -53,7 +53,9 @@ public partial class DashboardView : UserControl
     private readonly AnimationManager _animationManager = new();
     private readonly CoinFlyAnimation _coinFlyAnimation = new();
     private GameJuiceEngine? _juiceEngine;
-    private DispatcherTimer? _renderTimer;
+    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    private Services.Interfaces.IFrameClock? _frameClock;
+    private bool _renderActive;
     private SKCanvasView? _cityCanvas;
     private ScrollViewer? _dashboardScrollViewer;
     private DateTime _lastRenderTime = DateTime.UtcNow;
@@ -133,8 +135,7 @@ public partial class DashboardView : UserControl
 
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        StopCityRenderLoop();
         _holdTimer?.Stop();
         _holdTimer = null;
         if (_liveCountdownTimer != null)
@@ -190,8 +191,8 @@ public partial class DashboardView : UserControl
             _vm = null;
         }
 
-        // Timer stoppen wenn kein neues VM kommt
-        _renderTimer?.Stop();
+        // Render-Loop stoppen wenn kein neues VM kommt
+        StopCityRenderLoop();
 
         // Neues VM abonnieren
         if (DataContext is MainViewModel vm)
@@ -625,12 +626,10 @@ public partial class DashboardView : UserControl
     /// </summary>
     private void StartCityRenderLoop()
     {
-        if (_renderTimer is { IsEnabled: true }) return;
-
-        _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.DashboardIdle() }; // 5/10fps je nach Quality
-        _renderTimer.Tick += OnCityRenderTick;
-        _renderTimer.Start();
+        if (_renderActive) return;
+        _frameClock ??= App.Services?.GetService(typeof(Services.Interfaces.IFrameClock)) as Services.Interfaces.IFrameClock;
+        _frameClock?.Subscribe(OnCityRenderTick, Graphics.FpsProfile.DashboardIdle()); // 5/10fps je nach Quality
+        _renderActive = true;
     }
 
     /// <summary>
@@ -638,7 +637,7 @@ public partial class DashboardView : UserControl
     /// Adaptives FPS: 10fps Basis, automatisch 30fps bei aktiven Effekten.
     /// Während Scroll werden ALLE Canvases pausiert (spart ~10 Repaints/s).
     /// </summary>
-    private void OnCityRenderTick(object? sender, EventArgs e)
+    private void OnCityRenderTick(object? sender, Services.Interfaces.FrameTickEventArgs e)
     {
         // Scroll-Ende erkennen (250ms ohne ScrollChanged - längere Ruhezeit für flüssiges Scroll)
         if (_isScrolling && (DateTime.UtcNow - _lastScrollTime).TotalMilliseconds > 250)
@@ -654,7 +653,8 @@ public partial class DashboardView : UserControl
         if (effectsActive != _hasActiveEffects)
         {
             _hasActiveEffects = effectsActive;
-            _renderTimer!.Interval = effectsActive ? Graphics.FpsProfile.DashboardActive() : Graphics.FpsProfile.DashboardIdle();
+            _frameClock?.UpdateInterval(OnCityRenderTick,
+                effectsActive ? Graphics.FpsProfile.DashboardActive() : Graphics.FpsProfile.DashboardIdle());
         }
 
         _cityCanvas?.InvalidateSurface();
@@ -663,7 +663,9 @@ public partial class DashboardView : UserControl
 
     private void StopCityRenderLoop()
     {
-        _renderTimer?.Stop();
+        if (!_renderActive) return;
+        _frameClock?.Unsubscribe(OnCityRenderTick);
+        _renderActive = false;
     }
 
     /// <summary>

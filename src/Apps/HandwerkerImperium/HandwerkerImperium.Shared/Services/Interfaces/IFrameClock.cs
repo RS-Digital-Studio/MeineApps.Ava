@@ -4,20 +4,24 @@ namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
 /// Zentraler Frame-Clock für visuell-orientierte Renderer (AAA-Audit P1).
-/// Ein einzelner Dispatcher-Timer treibt alle Subscriber, statt dass jeder Renderer
-/// einen eigenen Timer betreibt. Reduziert Timer-Overhead und ermöglicht einheitliche
-/// Drosselung (Scroll-Pause, Pause-State, FpsProfile-Wechsel).
+/// Ein einzelner Dispatcher-Timer treibt alle Subscriber statt 35 einzelner Timer pro
+/// Renderer. Pro Subscriber konfigurierbares Intervall — der Clock filtert Ticks
+/// transparent nach Subscriber-Frequenz.
 ///
-/// Pattern:
-/// - 30 Hz Standard-Tick (DashboardActive-FpsProfile).
-/// - Subscriber registrieren sich via <see cref="Subscribe"/> und bekommen <see cref="FrameTickEventArgs"/>
-///   mit Delta-Zeit für Animation. Idempotent: doppeltes Subscribe ist Noop.
-/// - Bei 0 Subscribern stoppt der Timer automatisch (Battery-Save).
+/// Vorteile:
+/// - 1 Timer-Ressource statt 35
+/// - Zentrale Pause-Möglichkeit für App-Lifecycle (Battery-Save im Hintergrund)
+/// - Auto-Stop bei 0 Subscribern
+/// - Stopwatch-basierte DeltaSeconds (genau, nicht Timer-Interval-driven)
 ///
-/// Migration: Bestehende Renderer-Timer können schrittweise auf <see cref="IFrameClock"/>
-/// umgestellt werden. Renderer mit eigenständigen Frequenzen (z.B. 1 Hz Logic-Ticks,
-/// Hold-Timer 120 ms) behalten ihren eigenen Timer — IFrameClock ist nur fuer visuelle
-/// Render-Loops.
+/// Konventionelle Intervalle (siehe <see cref="HandwerkerImperium.Graphics.FpsProfile"/>):
+/// - 30Hz Standard: Mini-Games, Dashboard-Effekte
+/// - 15-24Hz: Scroll-Views, Research-Tree, Guild-Research
+/// - 5-10Hz: Idle-Anzeigen, Worker-Avatare
+///
+/// Migration: Bestehende Renderer-DispatcherTimer können schrittweise auf IFrameClock
+/// umgestellt werden. Pro Renderer ~5 Zeilen weniger Code (Timer-Allokation +
+/// Tick-Verdrahtung entfaellt).
 /// </summary>
 public interface IFrameClock
 {
@@ -31,12 +35,23 @@ public interface IFrameClock
     /// Subscriber an den Clock anhaengen. Idempotent — doppeltes Subscribe wird ignoriert.
     /// Startet den Timer wenn dies der erste Subscriber ist.
     /// </summary>
-    void Subscribe(EventHandler<FrameTickEventArgs> handler);
+    /// <param name="handler">Tick-Callback. Wird nur aufgerufen wenn das Subscriber-eigene
+    /// Intervall seit dem letzten Aufruf verstrichen ist.</param>
+    /// <param name="interval">Frequenz für diesen Subscriber. Default: 30Hz (~33ms).
+    /// Niedrigere Frequenzen (z.B. 10Hz Idle) sparen Render-CPU.</param>
+    void Subscribe(EventHandler<FrameTickEventArgs> handler, TimeSpan? interval = null);
 
     /// <summary>
     /// Subscriber abmelden. Stoppt den Timer wenn dies der letzte Subscriber war.
     /// </summary>
     void Unsubscribe(EventHandler<FrameTickEventArgs> handler);
+
+    /// <summary>
+    /// Aendert das Intervall eines bereits registrierten Subscribers (z.B. wenn ein
+    /// Renderer von Idle 10Hz auf Effekt-aktiv 30Hz wechselt). Noop wenn handler nicht
+    /// registriert ist.
+    /// </summary>
+    void UpdateInterval(EventHandler<FrameTickEventArgs> handler, TimeSpan interval);
 
     /// <summary>
     /// Pausiert den Clock global (z.B. wenn App in den Hintergrund geht).
@@ -53,7 +68,7 @@ public interface IFrameClock
 /// </summary>
 public sealed class FrameTickEventArgs : EventArgs
 {
-    /// <summary>Sekunden seit dem letzten Tick (Stopwatch-basiert, nicht Timer-Interval).</summary>
+    /// <summary>Sekunden seit dem letzten Tick fuer diesen Subscriber (Stopwatch-basiert).</summary>
     public float DeltaSeconds { get; }
 
     /// <summary>Kumulierte Sekunden seit Clock-Start (fuer Shader-Time-Uniform).</summary>

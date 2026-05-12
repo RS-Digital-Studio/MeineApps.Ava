@@ -7,6 +7,7 @@ using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
+using HandwerkerImperium.Services.Interfaces;
 using HandwerkerImperium.ViewModels.MiniGames;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
@@ -17,7 +18,9 @@ public partial class PaintingGameView : UserControl
 {
     private PaintingGameViewModel? _vm;
     private readonly PaintingGameRenderer _renderer = new();
-    private DispatcherTimer? _renderTimer;
+    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    private IFrameClock? _frameClock;
+    private bool _renderActive;
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
@@ -40,12 +43,11 @@ public partial class PaintingGameView : UserControl
         {
             if (args.Property == IsVisibleProperty)
             {
-                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                if (IsVisible && _vm != null && _gameCanvas != null && !_renderActive)
                     StartRenderLoop();
-                else if (!IsVisible && _renderTimer != null)
+                else if (!IsVisible && _renderActive)
                 {
-                    _renderTimer.Stop();
-                    _renderTimer = null;
+                    StopRenderLoop();
                 }
             }
         };
@@ -125,10 +127,16 @@ public partial class PaintingGameView : UserControl
     /// </summary>
     private void StartRenderLoop()
     {
-        _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.MiniGame() }; // 24/30fps je nach Quality
-        _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
-        _renderTimer.Start();
+        if (_renderActive) return;
+        _frameClock ??= App.Services?.GetService(typeof(IFrameClock)) as IFrameClock;
+
+        _frameClock?.Subscribe(OnFrameTick, Graphics.FpsProfile.MiniGame()); // 24/30fps je nach Quality
+        _renderActive = true;
+    }
+
+    private void OnFrameTick(object? sender, FrameTickEventArgs e)
+    {
+        _gameCanvas?.InvalidateSurface();
     }
 
     /// <summary>
@@ -136,8 +144,9 @@ public partial class PaintingGameView : UserControl
     /// </summary>
     private void StopRenderLoop()
     {
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        if (!_renderActive) return;
+        _frameClock?.Unsubscribe(OnFrameTick);
+        _renderActive = false;
         _gameCanvas = null;
     }
 
@@ -188,10 +197,9 @@ public partial class PaintingGameView : UserControl
         _renderer.Render(canvas, _lastBounds, _cachedCells, _vm.GridSize, paintColor, _vm.IsPlaying, isAllPainted, deltaTime);
 
         // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
-        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        if (_vm is { IsResultShown: true } && _renderActive)
         {
-            _renderTimer.Stop();
-            _renderTimer = null;
+            StopRenderLoop();
         }
     }
 
@@ -310,7 +318,7 @@ public partial class PaintingGameView : UserControl
     private void OnGameRestarted(object? sender, EventArgs e)
     {
         if (_disposed) return;
-        if (_gameCanvas != null && _renderTimer == null)
+        if (_gameCanvas != null && !_renderActive)
             StartRenderLoop();
     }
 }

@@ -41,7 +41,9 @@ public partial class ResearchView : UserControl
     // STATE
     // ═══════════════════════════════════════════════════════════════════════
 
-    private DispatcherTimer? _renderTimer;
+    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    private Services.Interfaces.IFrameClock? _frameClock;
+    private bool _renderActive;
     private ResearchViewModel? _vm;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private float _currentDelta;
@@ -87,20 +89,19 @@ public partial class ResearchView : UserControl
         {
             if (args.Property == IsVisibleProperty)
             {
-                if (IsVisible && _vm != null && _renderTimer == null)
+                if (IsVisible && _vm != null && !_renderActive)
                 {
-                    // View wieder sichtbar → Timer neu starten, alle Canvases als dirty markieren
+                    // View wieder sichtbar → Render-Loop neu starten, alle Canvases als dirty markieren
                     _headerDirty = true;
                     _treeDataDirty = true;
                     _tabDirty = true;
                     _bannerDirty = true;
                     StartRenderLoop();
                 }
-                else if (!IsVisible && _renderTimer != null)
+                else if (!IsVisible && _renderActive)
                 {
-                    // View versteckt → Timer stoppen (spart bis zu ~30 InvalidateSurface/s)
-                    _renderTimer.Stop();
-                    _renderTimer = null;
+                    // View versteckt → Render-Loop stoppen (spart bis zu ~30 InvalidateSurface/s)
+                    StopRenderLoop();
                 }
             }
         };
@@ -108,8 +109,7 @@ public partial class ResearchView : UserControl
 
     private void OnDetachedFromVisualTree(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
     {
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        StopRenderLoop();
         _labRenderer.Dispose();
         _activeRenderer.Dispose();
         _tabRenderer.Dispose();
@@ -243,19 +243,20 @@ public partial class ResearchView : UserControl
 
     private void StartRenderLoop()
     {
-        _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.ScrollView() }; // 15/20/24fps je nach Quality
-        _renderTimer.Tick += OnRenderTick;
-        _renderTimer.Start();
+        if (_renderActive) return;
+        _frameClock ??= App.Services?.GetService(typeof(Services.Interfaces.IFrameClock)) as Services.Interfaces.IFrameClock;
+        _frameClock?.Subscribe(OnRenderTick, Graphics.FpsProfile.ScrollView()); // 15/20/24fps je nach Quality
+        _renderActive = true;
     }
 
     private void StopRenderLoop()
     {
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        if (!_renderActive) return;
+        _frameClock?.Unsubscribe(OnRenderTick);
+        _renderActive = false;
     }
 
-    private void OnRenderTick(object? sender, EventArgs e)
+    private void OnRenderTick(object? sender, Services.Interfaces.FrameTickEventArgs e)
     {
         // Delta einmal pro Tick berechnen, damit alle Canvas das gleiche Delta bekommen
         var now = DateTime.UtcNow;

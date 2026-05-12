@@ -33,7 +33,9 @@ public partial class MainView : UserControl
     private readonly LoadingScreenRenderer _loadingRenderer = new();
     private bool _loadingTipsInitialized;
 
-    private DispatcherTimer? _renderTimer;
+    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    private Services.Interfaces.IFrameClock? _frameClock;
+    private bool _renderActive;
     private float _renderTime;
     private float _lastTabSwitchTime;
     private SKRect _lastTabBarBounds;
@@ -71,8 +73,7 @@ public partial class MainView : UserControl
 
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        StopRenderTimer();
 
         if (_vm != null)
         {
@@ -131,17 +132,15 @@ public partial class MainView : UserControl
     /// </summary>
     private void OnPauseStateChanged(bool isPaused)
     {
+        // FrameClock kennt globale Pause/Resume — andere Views sind davon ebenfalls betroffen.
+        // Wir steuern hier nur unsere eigene Subscription, damit andere Subscriber
+        // (z.B. MiniGames) nicht ungewollt pausieren.
         if (isPaused)
         {
-            _renderTimer?.Stop();
+            StopRenderTimer();
         }
-        else if (_renderTimer != null)
+        else if (!_renderActive)
         {
-            _renderTimer.Start();
-        }
-        else
-        {
-            // Falls Timer via Dispose verloren: neu starten
             StartRenderTimer();
         }
     }
@@ -152,18 +151,21 @@ public partial class MainView : UserControl
 
     private void StartRenderTimer()
     {
-        if (_renderTimer != null) return;
-
-        _renderTimer = new DispatcherTimer
-        {
-            // Render-Intervall aus aktiver Grafikqualitaet (Low=10fps, Medium/High=15fps)
-            Interval = Graphics.FpsProfile.MainView()
-        };
-        _renderTimer.Tick += OnRenderTimerTick;
-        _renderTimer.Start();
+        if (_renderActive) return;
+        _frameClock ??= App.Services?.GetService(typeof(Services.Interfaces.IFrameClock)) as Services.Interfaces.IFrameClock;
+        // Render-Intervall aus aktiver Grafikqualitaet (Low=10fps, Medium/High=15fps)
+        _frameClock?.Subscribe(OnRenderTimerTick, Graphics.FpsProfile.MainView());
+        _renderActive = true;
     }
 
-    private void OnRenderTimerTick(object? sender, EventArgs e)
+    private void StopRenderTimer()
+    {
+        if (!_renderActive) return;
+        _frameClock?.Unsubscribe(OnRenderTimerTick);
+        _renderActive = false;
+    }
+
+    private void OnRenderTimerTick(object? sender, Services.Interfaces.FrameTickEventArgs e)
     {
         _renderTime += 0.066f; // 66ms Intervall (15fps)
 

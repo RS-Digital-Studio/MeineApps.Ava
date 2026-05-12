@@ -21,7 +21,9 @@ public partial class WorkshopView : UserControl
     // WorkshopInteriorRenderer entfernt - AI-Bilder ersetzen den prozeduralen Hintergrund komplett
     private readonly WorkshopSceneRenderer _sceneRenderer = new();
     private readonly AnimationManager _animationManager = new();
-    private DispatcherTimer? _renderTimer;
+    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    private Services.Interfaces.IFrameClock? _frameClock;
+    private bool _renderActive;
     private SKCanvasView? _workshopCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private bool _disposed;
@@ -43,16 +45,15 @@ public partial class WorkshopView : UserControl
         {
             if (args.Property == IsVisibleProperty)
             {
-                if (IsVisible && _workshopVm != null && _workshopCanvas != null && _renderTimer == null)
+                if (IsVisible && _workshopVm != null && _workshopCanvas != null && !_renderActive)
                 {
-                    // View wieder sichtbar → Timer neu starten
+                    // View wieder sichtbar → Render-Loop neu starten
                     StartRenderLoop();
                 }
-                else if (!IsVisible && _renderTimer != null)
+                else if (!IsVisible && _renderActive)
                 {
-                    // View versteckt → Timer stoppen (spart ~30 InvalidateSurface/s)
-                    _renderTimer.Stop();
-                    _renderTimer = null;
+                    // View versteckt → Render-Loop stoppen (spart ~30 InvalidateSurface/s)
+                    StopRenderLoop();
                 }
             }
         };
@@ -65,8 +66,7 @@ public partial class WorkshopView : UserControl
         if (_disposed) return;
         _disposed = true;
 
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        StopRenderLoop();
 
         // Event-Subscriptions abmelden
         if (_workshopVm != null)
@@ -96,8 +96,8 @@ public partial class WorkshopView : UserControl
             _workshopVm = null;
         }
 
-        // Timer stoppen wenn kein neues VM kommt
-        _renderTimer?.Stop();
+        // Render-Loop stoppen wenn kein neues VM kommt
+        StopRenderLoop();
 
         if (DataContext is WorkshopViewModel vm)
         {
@@ -122,13 +122,22 @@ public partial class WorkshopView : UserControl
 
     private void StartRenderLoop()
     {
-        _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.ScrollView() }; // 15/20/24fps je nach Quality
-        _renderTimer.Tick += (_, _) =>
-        {
-            _workshopCanvas?.InvalidateSurface();
-        };
-        _renderTimer.Start();
+        if (_renderActive) return;
+        _frameClock ??= App.Services?.GetService(typeof(Services.Interfaces.IFrameClock)) as Services.Interfaces.IFrameClock;
+        _frameClock?.Subscribe(OnFrameTick, Graphics.FpsProfile.ScrollView()); // 15/20/24fps je nach Quality
+        _renderActive = true;
+    }
+
+    private void OnFrameTick(object? sender, Services.Interfaces.FrameTickEventArgs e)
+    {
+        _workshopCanvas?.InvalidateSurface();
+    }
+
+    private void StopRenderLoop()
+    {
+        if (!_renderActive) return;
+        _frameClock?.Unsubscribe(OnFrameTick);
+        _renderActive = false;
     }
 
     private void OnWorkshopPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Automation;
@@ -6,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using HandwerkerImperium.Graphics;
+using HandwerkerImperium.Services.Interfaces;
 using HandwerkerImperium.ViewModels;
 using SkiaSharp;
 
@@ -15,31 +17,37 @@ namespace HandwerkerImperium.Views;
 /// AAA-Audit P0 FTUE-UI: Spotlight-Overlay-View. Code-Behind misst die Bounds des
 /// Spotlight-Targets (per AutomationId), gibt sie ans VM weiter und zeichnet das
 /// SkiaSharp-Spotlight per <see cref="FtueSpotlightRenderer"/>.
+///
+/// AAA-Audit P1 (12.05.2026): Render-Tick auf zentralen <see cref="IFrameClock"/>
+/// migriert — kein eigener DispatcherTimer mehr.
 /// </summary>
 public partial class FtueOverlay : UserControl
 {
-    private readonly DispatcherTimer _renderTimer;
     private readonly Stopwatch _stopwatch = new();
+    private IFrameClock? _frameClock;
     private string? _lastResolvedAutomationId;
     private Avalonia.Labs.Controls.SKCanvasView? _spotlightCanvas;
+    private static readonly TimeSpan PulseInterval = TimeSpan.FromMilliseconds(33); // ~30fps
 
     public FtueOverlay()
     {
         InitializeComponent();
 
-        // 30fps Pulse-Animation. Timer laeuft nur wenn Overlay sichtbar ist.
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
-        _renderTimer.Tick += (_, _) => _spotlightCanvas?.InvalidateSurface();
-
         DataContextChanged += (_, _) => ResolveSpotlightBoundsAsync();
         AttachedToVisualTree += (_, _) =>
         {
             _spotlightCanvas = this.FindControl<Avalonia.Labs.Controls.SKCanvasView>("SpotlightCanvas");
+            _frameClock ??= App.Services?.GetService(typeof(IFrameClock)) as IFrameClock;
             ResolveSpotlightBoundsAsync();
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            _frameClock?.Unsubscribe(OnFrameTick);
+            _stopwatch.Stop();
         };
         LayoutUpdated += (_, _) => ResolveSpotlightBoundsAsync();
 
-        // IsVisible-Toggle steuert Timer-Lifecycle. PropertyChanged-Listener fuer IsVisible.
+        // IsVisible-Toggle steuert Subscriber-Lifecycle. PropertyChanged-Listener fuer IsVisible.
         PropertyChanged += (_, e) =>
         {
             if (e.Property == IsVisibleProperty)
@@ -47,18 +55,23 @@ public partial class FtueOverlay : UserControl
                 if (IsVisible)
                 {
                     _stopwatch.Restart();
-                    _renderTimer.Start();
+                    _frameClock?.Subscribe(OnFrameTick, PulseInterval);
                     ResolveSpotlightBoundsAsync();
                 }
                 else
                 {
-                    _renderTimer.Stop();
+                    _frameClock?.Unsubscribe(OnFrameTick);
                 }
             }
         };
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
+
+    private void OnFrameTick(object? sender, FrameTickEventArgs e)
+    {
+        _spotlightCanvas?.InvalidateSurface();
+    }
 
     /// <summary>
     /// Sucht im Visual-Tree nach dem Element mit AutomationId == VM.SpotlightAutomationId

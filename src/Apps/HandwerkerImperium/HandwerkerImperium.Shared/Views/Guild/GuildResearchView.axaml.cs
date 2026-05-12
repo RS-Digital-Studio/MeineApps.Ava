@@ -22,7 +22,9 @@ public partial class GuildResearchView : UserControl
     // Gecachte Liste für Render-Loop (vermeidet ToList() pro Frame bei 30fps)
     private List<GuildResearchDisplay> _cachedItems = [];
     private object? _lastGuildResearchRef;
-    private DispatcherTimer? _renderTimer;
+    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    private Services.Interfaces.IFrameClock? _frameClock;
+    private bool _renderActive;
     private SKCanvasView? _treeCanvas;
     private SKCanvasView? _headerCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
@@ -64,18 +66,17 @@ public partial class GuildResearchView : UserControl
         {
             if (args.Property == IsVisibleProperty)
             {
-                if (IsVisible && _guildVm != null && _renderTimer == null)
+                if (IsVisible && _guildVm != null && !_renderActive)
                 {
                     // View wieder sichtbar: Dirty-Flags setzen fuer sofortigen Render
                     _headerDirty = true;
                     _treeDirty = true;
                     StartRenderLoop();
                 }
-                else if (!IsVisible && _renderTimer != null)
+                else if (!IsVisible && _renderActive)
                 {
                     // View versteckt: Timer stoppen
-                    _renderTimer.Stop();
-                    _renderTimer = null;
+                    StopRenderLoop();
                 }
             }
         };
@@ -83,13 +84,14 @@ public partial class GuildResearchView : UserControl
 
     private void StopRenderLoop()
     {
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        if (!_renderActive) return;
+        _frameClock?.Unsubscribe(OnRenderTick);
+        _renderActive = false;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        _renderTimer?.Stop();
+        StopRenderLoop();
 
         // Altes VM abmelden
         if (_guildVm != null)
@@ -159,11 +161,11 @@ public partial class GuildResearchView : UserControl
 
     private void StartRenderLoop()
     {
-        _renderTimer?.Stop();
+        if (_renderActive) return;
         _countdownRefreshCounter = 0;
-        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.ScrollView() }; // 15/20/24fps je nach Quality
-        _renderTimer.Tick += OnRenderTick;
-        _renderTimer.Start();
+        _frameClock ??= App.Services?.GetService(typeof(Services.Interfaces.IFrameClock)) as Services.Interfaces.IFrameClock;
+        _frameClock?.Subscribe(OnRenderTick, Graphics.FpsProfile.ScrollView()); // 15/20/24fps je nach Quality
+        _renderActive = true;
     }
 
     /// <summary>
@@ -171,7 +173,7 @@ public partial class GuildResearchView : UserControl
     /// Ohne aktive Forschung und ohne Daten-Änderung: KEIN Render → 0 InvalidateSurface()/s.
     /// Bei aktiver Forschung: Header wird für Fackel-Animationen kontinuierlich invalidiert.
     /// </summary>
-    private void OnRenderTick(object? sender, EventArgs e)
+    private void OnRenderTick(object? sender, Services.Interfaces.FrameTickEventArgs e)
     {
         bool hasActiveResearch = _guildVm?.HasActiveResearch == true;
 

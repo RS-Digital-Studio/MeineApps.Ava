@@ -99,8 +99,10 @@ public class WorkerAvatarControl : Control
         new SKColor(0x6E, 0x40, 0x20)
     ];
 
-    // Gemeinsamer Timer für ALLE Instanzen (statt pro-Instanz 20fps Timer)
-    private static DispatcherTimer? s_sharedTimer;
+    // AAA-Audit P1 Migration: Statischer DispatcherTimer durch zentralen IFrameClock
+    // ersetzt. Eine einzige Subscription fuer ALLE Worker-Avatar-Instanzen.
+    private static Services.Interfaces.IFrameClock? s_sharedFrameClock;
+    private static EventHandler<Services.Interfaces.FrameTickEventArgs>? s_sharedTickHandler;
     private static readonly List<WeakReference<WorkerAvatarControl>> s_instances = [];
     private static readonly object s_lock = new();
 
@@ -225,23 +227,26 @@ public class WorkerAvatarControl : Control
 
     private static void EnsureSharedTimerRunning()
     {
-        if (s_sharedTimer != null) return;
-        // 5/8/10fps je nach Grafikqualitaet (WorkerAvatar-Animation ist Atem+Blinzel — langsam)
-        s_sharedTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.WorkerAvatar() };
-        s_sharedTimer.Tick += OnSharedTimerTick;
-        s_sharedTimer.Start();
+        if (s_sharedTickHandler != null) return;
+        s_sharedFrameClock ??= App.Services?.GetService(typeof(Services.Interfaces.IFrameClock))
+            as Services.Interfaces.IFrameClock;
+        if (s_sharedFrameClock == null) return;
 
-        // Bei Quality-Wechsel: Neuer Timer mit neuem Intervall — alter wird entsorgt
+        // 5/8/10fps je nach Grafikqualitaet (WorkerAvatar-Animation ist Atem+Blinzel — langsam)
+        s_sharedTickHandler = OnSharedFrameTick;
+        s_sharedFrameClock.Subscribe(s_sharedTickHandler, Graphics.FpsProfile.WorkerAvatar());
+
+        // Bei Quality-Wechsel: Subscription-Intervall anpassen
         Graphics.FpsProfile.CurrentChanged += OnQualityChanged;
     }
 
     private static void OnQualityChanged(Models.Enums.GraphicsQuality _)
     {
-        if (s_sharedTimer == null) return;
-        s_sharedTimer.Interval = Graphics.FpsProfile.WorkerAvatar();
+        if (s_sharedFrameClock == null || s_sharedTickHandler == null) return;
+        s_sharedFrameClock.UpdateInterval(s_sharedTickHandler, Graphics.FpsProfile.WorkerAvatar());
     }
 
-    private static void OnSharedTimerTick(object? sender, EventArgs e)
+    private static void OnSharedFrameTick(object? sender, Services.Interfaces.FrameTickEventArgs e)
     {
         lock (s_lock)
         {
@@ -258,11 +263,12 @@ public class WorkerAvatarControl : Control
                 }
             }
 
-            // Timer stoppen wenn keine Instanzen mehr
-            if (s_instances.Count == 0 && s_sharedTimer != null)
+            // Subscription stoppen wenn keine Instanzen mehr — Battery-Save
+            if (s_instances.Count == 0 && s_sharedTickHandler != null && s_sharedFrameClock != null)
             {
-                s_sharedTimer.Stop();
-                s_sharedTimer = null;
+                s_sharedFrameClock.Unsubscribe(s_sharedTickHandler);
+                s_sharedTickHandler = null;
+                Graphics.FpsProfile.CurrentChanged -= OnQualityChanged;
             }
         }
     }

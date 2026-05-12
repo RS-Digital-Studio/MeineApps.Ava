@@ -6447,6 +6447,31 @@
   <data name="StartWithMaterial" xml:space="preserve"><value>Mit Material</value></data>
   <data name="MaterialOfferInsufficientTitle" xml:space="preserve"><value>Nicht genug Material</value></data>
   <data name="MaterialOfferInsufficientMessage" xml:space="preserve"><value>Dein Lager hat nicht alle vom Auftrag verlangten Materialien.</value></data>
+  <!-- ═══════ V7 (Phase 3 Ressourcen-Plan): Logistik-Forschung ═══════ -->
+  <data name="BranchLogistics" xml:space="preserve"><value>Logistik</value></data>
+  <data name="BranchLogisticsDesc" xml:space="preserve"><value>Lager-Erweiterung, Markt-Zugang, Lieferketten-Automation.</value></data>
+  <data name="ResearchLogiSlots1" xml:space="preserve"><value>Lager-Erweiterung I</value></data>
+  <data name="ResearchLogiSlots2" xml:space="preserve"><value>Lager-Erweiterung II</value></data>
+  <data name="ResearchLogiSlots3" xml:space="preserve"><value>Lager-Erweiterung III</value></data>
+  <data name="ResearchLogiStack2x" xml:space="preserve"><value>Stapelkisten</value></data>
+  <data name="ResearchLogiStack5x" xml:space="preserve"><value>Industrie-Palettenregale</value></data>
+  <data name="ResearchLogiMarket" xml:space="preserve"><value>Material-Markt-Zugang</value></data>
+  <data name="ResearchLogiSupplier" xml:space="preserve"><value>Lieferanten-Netzwerk</value></data>
+  <data name="ResearchLogiAutoSell" xml:space="preserve"><value>Auto-Verkaufs-Regeln</value></data>
+  <data name="ResearchLogiCraftSpeed" xml:space="preserve"><value>Optimierte Abl&#228;ufe</value></data>
+  <data name="ResearchLogiTier4" xml:space="preserve"><value>Imperiums-Manufaktur (T4)</value></data>
+  <data name="ResearchLogiHeirloom" xml:space="preserve"><value>Imperiums-Erbst&#252;cke</value></data>
+  <data name="ResearchLogiMaster" xml:space="preserve"><value>Meister-Logistiker</value></data>
+  <!-- ═══════ V7 (Phase 3 Ressourcen-Plan): Markt-UI ═══════ -->
+  <data name="MarketTitle" xml:space="preserve"><value>Material-Markt</value></data>
+  <data name="MarketSubtitle" xml:space="preserve"><value>Kaufe Rohstoffe g&#252;nstig, verkaufe teuer. Die Preise schwanken im Tagesverlauf.</value></data>
+  <data name="MarketLockedHint" xml:space="preserve"><value>Erforsche „Material-Markt-Zugang", um den Markt freizuschalten.</value></data>
+  <data name="MarketBuyLabel" xml:space="preserve"><value>Kauf</value></data>
+  <data name="MarketSellLabel" xml:space="preserve"><value>Verkauf</value></data>
+  <data name="Buy1" xml:space="preserve"><value>1 kaufen</value></data>
+  <data name="Buy10" xml:space="preserve"><value>10 kaufen</value></data>
+  <data name="OpenMarket" xml:space="preserve"><value>Markt &#246;ffnen</value></data>
+  <data name="DeliveryMaterial" xml:space="preserve"><value>Material-Lieferung vom Lieferanten!</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Auto-Produktion</value>
   </data>

@@ -382,6 +382,8 @@ public partial class App : Application
         services.AddSingleton<IAutoProductionService, AutoProductionService>();
         // V7 (Phase 1 Ressourcen-Plan): Lager-Service mit Slots/Stack-Limits/Reservierung
         services.AddSingleton<IWarehouseService, WarehouseService>();
+        // V7 (Phase 3 Ressourcen-Plan): Material-Markt
+        services.AddSingleton<IMarketService, MarketService>();
 
         // Late-Game-Services (Ascension, Rebirth, VIP)
         services.AddSingleton<IAscensionService, AscensionService>();
@@ -455,6 +457,8 @@ public partial class App : Application
         // (zirkuläre DI vermieden: Sub-VM haelt Referenz auf Parent-GuildViewModel).
         services.AddSingleton<CraftingViewModel>();
         services.AddSingleton<WarehouseSectionViewModel>();
+        // V7 (Phase 3 Ressourcen-Plan): Markt-Sub-Tab im Shop
+        services.AddSingleton<MarketViewModel>();
         services.AddSingleton<LuckySpinViewModel>();
         services.AddSingleton<AscensionViewModel>();
     }

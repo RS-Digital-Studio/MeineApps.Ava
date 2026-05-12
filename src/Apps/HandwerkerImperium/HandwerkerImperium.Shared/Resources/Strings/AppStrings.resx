@@ -6474,6 +6474,31 @@
   <data name="MaterialOfferInsufficientMessage" xml:space="preserve">
     <value>Your warehouse doesn't have the materials this order asks for.</value>
   </data>
+  <!-- ═══════ V7 (Phase 3 Ressourcen-Plan): Logistik-Forschung ═══════ -->
+  <data name="BranchLogistics" xml:space="preserve"><value>Logistics</value></data>
+  <data name="BranchLogisticsDesc" xml:space="preserve"><value>Warehouse expansion, market access, supply chain automation.</value></data>
+  <data name="ResearchLogiSlots1" xml:space="preserve"><value>Warehouse Expansion I</value></data>
+  <data name="ResearchLogiSlots2" xml:space="preserve"><value>Warehouse Expansion II</value></data>
+  <data name="ResearchLogiSlots3" xml:space="preserve"><value>Warehouse Expansion III</value></data>
+  <data name="ResearchLogiStack2x" xml:space="preserve"><value>Bulk Storage Crates</value></data>
+  <data name="ResearchLogiStack5x" xml:space="preserve"><value>Industrial Pallet Racks</value></data>
+  <data name="ResearchLogiMarket" xml:space="preserve"><value>Material Market Access</value></data>
+  <data name="ResearchLogiSupplier" xml:space="preserve"><value>Supplier Network</value></data>
+  <data name="ResearchLogiAutoSell" xml:space="preserve"><value>Smart Auto-Sell Rules</value></data>
+  <data name="ResearchLogiCraftSpeed" xml:space="preserve"><value>Optimized Workflows</value></data>
+  <data name="ResearchLogiTier4" xml:space="preserve"><value>Imperial Manufacture (T4)</value></data>
+  <data name="ResearchLogiHeirloom" xml:space="preserve"><value>Imperial Heirlooms</value></data>
+  <data name="ResearchLogiMaster" xml:space="preserve"><value>Master Logistician</value></data>
+  <!-- ═══════ V7 (Phase 3 Ressourcen-Plan): Markt-UI ═══════ -->
+  <data name="MarketTitle" xml:space="preserve"><value>Material Market</value></data>
+  <data name="MarketSubtitle" xml:space="preserve"><value>Buy raw materials low, sell high. Prices change throughout the day.</value></data>
+  <data name="MarketLockedHint" xml:space="preserve"><value>Research 'Material Market Access' to unlock the market.</value></data>
+  <data name="MarketBuyLabel" xml:space="preserve"><value>Buy</value></data>
+  <data name="MarketSellLabel" xml:space="preserve"><value>Sell</value></data>
+  <data name="Buy1" xml:space="preserve"><value>Buy 1</value></data>
+  <data name="Buy10" xml:space="preserve"><value>Buy 10</value></data>
+  <data name="OpenMarket" xml:space="preserve"><value>Open Market</value></data>
+  <data name="DeliveryMaterial" xml:space="preserve"><value>Material delivery from supplier!</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Auto Production</value>
   </data>

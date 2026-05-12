@@ -112,6 +112,8 @@ public sealed partial class MainViewModel
     public bool IsInventGameActive => ActivePage == ActivePage.InventGame;
     public bool IsAscensionActive => ActivePage == ActivePage.Ascension;
     public bool IsPrestigeActive => ActivePage == ActivePage.Prestige;
+    /// <summary>V7 (Phase 3 Ressourcen-Plan): Material-Markt-Seite.</summary>
+    public bool IsMarketActive => ActivePage == ActivePage.Market;
 
     // ═══════════════════════════════════════════════════════════════════════
     // IMPERIUM-SUB-TABS (v2.0.37)
@@ -207,6 +209,7 @@ public sealed partial class MainViewModel
         ActivePage.BattlePass => BattlePassViewModel,
         ActivePage.Crafting => CraftingViewModel,
         ActivePage.Ascension => AscensionViewModel,
+        ActivePage.Market => MarketVM,
         ActivePage.Guild => GuildViewModel,
 
         // Gilden-Sub-Pages (Thin-Wrapper-VMs ueber GuildViewModel)

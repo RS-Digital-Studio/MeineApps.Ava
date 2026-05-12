@@ -366,6 +366,9 @@ public sealed partial class MainViewModel
     public CraftingViewModel CraftingViewModel { get; }
     /// <summary>V7 (Phase 1 Ressourcen-Plan): Lager-Section im Imperium-Tab.</summary>
     public WarehouseSectionViewModel WarehouseVM { get; }
+
+    /// <summary>V7 (Phase 3 Ressourcen-Plan): Markt-Sub-Tab im Shop.</summary>
+    public MarketViewModel MarketVM { get; }
     public LuckySpinViewModel LuckySpinViewModel { get; }
     // ForgeGameVM + InventGameVM → in MiniGames Container
     public AscensionViewModel AscensionViewModel { get; }

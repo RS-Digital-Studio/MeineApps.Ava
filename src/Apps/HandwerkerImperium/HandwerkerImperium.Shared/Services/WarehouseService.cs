@@ -12,6 +12,7 @@ public sealed class WarehouseService : IWarehouseService
 {
     private readonly IGameStateService _gameState;
     private readonly ICraftingService _crafting;
+    private readonly IResearchService? _research;
     // Lock verhindert Race zwischen AddToInventory (Auto-Production) und Reservation
     // (Order-Annahme aus UI). Inventar wuerde sonst in Dictionary inkonsistent.
     private readonly object _warehouseLock = new();
@@ -32,12 +33,41 @@ public sealed class WarehouseService : IWarehouseService
     /// <summary>Exponent fuer Slot-Upgrade-Kosten.</summary>
     private const double SlotUpgradeExponent = 1.5;
 
-    public WarehouseService(IGameStateService gameState, ICraftingService crafting)
+    public WarehouseService(
+        IGameStateService gameState,
+        ICraftingService crafting,
+        IResearchService? research = null)
     {
         _gameState = gameState;
         _crafting = crafting;
+        _research = research;
         // Bei State-Wechsel (Prestige/Import/Reset): UI muss Inventar neu lesen
         _gameState.StateLoaded += (_, _) => InventoryChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): Bonus-Slots aus Logistik-Forschung.
+    /// </summary>
+    public int BonusSlotsFromResearch
+    {
+        get
+        {
+            var effects = _research?.GetTotalEffects();
+            return effects?.BonusWarehouseSlots ?? 0;
+        }
+    }
+
+    /// <summary>
+    /// V7 (Phase 3): Stack-Limit-Multiplikator aus Logistik-Forschung (Default 1.0).
+    /// </summary>
+    public decimal StackLimitMultiplierFromResearch
+    {
+        get
+        {
+            var effects = _research?.GetTotalEffects();
+            decimal mult = effects?.StackLimitMultiplier ?? 0m;
+            return mult > 1.0m ? mult : 1.0m;
+        }
     }
 
     public int UsedSlotCount
@@ -51,11 +81,25 @@ public sealed class WarehouseService : IWarehouseService
         }
     }
 
-    public int FreeSlotCount => Math.Max(0, _gameState.State.WarehouseSlotCount - UsedSlotCount);
+    public int FreeSlotCount => Math.Max(0, EffectiveSlotCount - UsedSlotCount);
 
     public bool IsWarehouseFull => FreeSlotCount == 0;
 
-    public int CurrentStackLimit => _gameState.State.WarehouseStackLimit;
+    public int CurrentStackLimit
+    {
+        get
+        {
+            decimal mult = StackLimitMultiplierFromResearch;
+            int boosted = (int)Math.Round(_gameState.State.WarehouseStackLimit * mult);
+            return Math.Min(9999, Math.Max(_gameState.State.WarehouseStackLimit, boosted));
+        }
+    }
+
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): Effektive Slot-Anzahl (Geld-Upgrade + Research-Bonus).
+    /// </summary>
+    public int EffectiveSlotCount =>
+        Math.Min(MaxSlots, _gameState.State.WarehouseSlotCount + BonusSlotsFromResearch);
 
     public int MaxSlotCount => MaxSlots;
 
@@ -75,13 +119,14 @@ public sealed class WarehouseService : IWarehouseService
         if (count <= 0) return true;
         var state = _gameState.State;
         int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
+        int effectiveLimit = CurrentStackLimit;
 
         // Bereits belegter Slot: nur Stack-Limit pruefen
         if (current > 0)
-            return current + count <= state.WarehouseStackLimit;
+            return current + count <= effectiveLimit;
 
         // Neuer Slot: Slot-Limit pruefen
-        return FreeSlotCount > 0 && count <= state.WarehouseStackLimit;
+        return FreeSlotCount > 0 && count <= effectiveLimit;
     }
 
     public int AddToInventory(string productId, int count, WorkshopType? sourceWorkshop = null)
@@ -106,7 +151,8 @@ public sealed class WarehouseService : IWarehouseService
             }
             else
             {
-                int spaceInStack = state.WarehouseStackLimit - current;
+                int effectiveLimit = CurrentStackLimit;
+                int spaceInStack = effectiveLimit - current;
                 actuallyAdded = Math.Max(0, Math.Min(count, spaceInStack));
                 overflow = count - actuallyAdded;
                 slotBlocked = false;

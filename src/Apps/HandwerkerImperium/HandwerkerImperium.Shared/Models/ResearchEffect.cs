@@ -89,6 +89,42 @@ public class ResearchEffect
     [JsonPropertyName("premiumOrderChance")]
     public decimal PremiumOrderChance { get; set; }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // V7 (Phase 3 Ressourcen-Plan): Logistik-Branch
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>V7: Zusaetzliche Lager-Slots (additiv zu Default 20 + Geld-Upgrades).</summary>
+    [JsonPropertyName("bonusWarehouseSlots")]
+    public int BonusWarehouseSlots { get; set; }
+
+    /// <summary>V7: Multiplikator auf Stack-Limit (z.B. 2.0 = doppelt so viel pro Slot).</summary>
+    [JsonPropertyName("stackLimitMultiplier")]
+    public decimal StackLimitMultiplier { get; set; }
+
+    /// <summary>V7: Markt-Verfuegbarkeit (logi_05).</summary>
+    [JsonPropertyName("unlocksMarket")]
+    public bool UnlocksMarket { get; set; }
+
+    /// <summary>V7: Auto-Verkaufs-Regeln (Min/Max pro Slot, logi_07).</summary>
+    [JsonPropertyName("unlocksAutoSellRules")]
+    public bool UnlocksAutoSellRules { get; set; }
+
+    /// <summary>V7: Tier-4-Rezepte (Phase 4 Trigger, logi_09).</summary>
+    [JsonPropertyName("unlocksTier4")]
+    public bool UnlocksTier4 { get; set; }
+
+    /// <summary>V7: Crafting-Speed-Bonus (logi_10, additiv mit Prestige-Speed-Bonus).</summary>
+    [JsonPropertyName("craftingSpeedBonus")]
+    public decimal CraftingSpeedBonus { get; set; }
+
+    /// <summary>V7: Lieferanten-Material-Lieferung Bonus (logi_08).</summary>
+    [JsonPropertyName("supplierMaterialBonus")]
+    public decimal SupplierMaterialBonus { get; set; }
+
+    /// <summary>V7: Erbstuecke ueberleben Prestige (Phase 4 Trigger, logi_12).</summary>
+    [JsonPropertyName("unlocksHeirloomSurvival")]
+    public bool UnlocksHeirloomSurvival { get; set; }
+
     /// <summary>
     /// Combines two research effects additively.
     /// </summary>
@@ -114,7 +150,16 @@ public class ResearchEffect
             UnlocksAutoTraining = a.UnlocksAutoTraining || b.UnlocksAutoTraining,
             UnlocksMassHiring = a.UnlocksMassHiring || b.UnlocksMassHiring,
             ReputationBonus = a.ReputationBonus + b.ReputationBonus,
-            PremiumOrderChance = a.PremiumOrderChance + b.PremiumOrderChance
+            PremiumOrderChance = a.PremiumOrderChance + b.PremiumOrderChance,
+            // V7 (Phase 3 Ressourcen-Plan)
+            BonusWarehouseSlots = a.BonusWarehouseSlots + b.BonusWarehouseSlots,
+            StackLimitMultiplier = Math.Max(a.StackLimitMultiplier, b.StackLimitMultiplier),
+            UnlocksMarket = a.UnlocksMarket || b.UnlocksMarket,
+            UnlocksAutoSellRules = a.UnlocksAutoSellRules || b.UnlocksAutoSellRules,
+            UnlocksTier4 = a.UnlocksTier4 || b.UnlocksTier4,
+            CraftingSpeedBonus = a.CraftingSpeedBonus + b.CraftingSpeedBonus,
+            SupplierMaterialBonus = a.SupplierMaterialBonus + b.SupplierMaterialBonus,
+            UnlocksHeirloomSurvival = a.UnlocksHeirloomSurvival || b.UnlocksHeirloomSurvival
         };
     }
 }

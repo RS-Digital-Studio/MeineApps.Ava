@@ -6236,6 +6236,29 @@
   <data name="StartWithMaterial" xml:space="preserve"><value>Con Material</value></data>
   <data name="MaterialOfferInsufficientTitle" xml:space="preserve"><value>Material insuficiente</value></data>
   <data name="MaterialOfferInsufficientMessage" xml:space="preserve"><value>Tu almac&#233;n no tiene los materiales que pide este pedido.</value></data>
+  <data name="BranchLogistics" xml:space="preserve"><value>Log&#237;stica</value></data>
+  <data name="BranchLogisticsDesc" xml:space="preserve"><value>Expansi&#243;n de almac&#233;n, acceso al mercado, automatizaci&#243;n.</value></data>
+  <data name="ResearchLogiSlots1" xml:space="preserve"><value>Expansi&#243;n de Almac&#233;n I</value></data>
+  <data name="ResearchLogiSlots2" xml:space="preserve"><value>Expansi&#243;n de Almac&#233;n II</value></data>
+  <data name="ResearchLogiSlots3" xml:space="preserve"><value>Expansi&#243;n de Almac&#233;n III</value></data>
+  <data name="ResearchLogiStack2x" xml:space="preserve"><value>Cajas de Almacenamiento</value></data>
+  <data name="ResearchLogiStack5x" xml:space="preserve"><value>Estanter&#237;as Industriales</value></data>
+  <data name="ResearchLogiMarket" xml:space="preserve"><value>Acceso al Mercado de Materiales</value></data>
+  <data name="ResearchLogiSupplier" xml:space="preserve"><value>Red de Proveedores</value></data>
+  <data name="ResearchLogiAutoSell" xml:space="preserve"><value>Reglas de Venta Autom&#225;tica</value></data>
+  <data name="ResearchLogiCraftSpeed" xml:space="preserve"><value>Flujos Optimizados</value></data>
+  <data name="ResearchLogiTier4" xml:space="preserve"><value>Manufactura Imperial (T4)</value></data>
+  <data name="ResearchLogiHeirloom" xml:space="preserve"><value>Reliquias Imperiales</value></data>
+  <data name="ResearchLogiMaster" xml:space="preserve"><value>Maestro Log&#237;stico</value></data>
+  <data name="MarketTitle" xml:space="preserve"><value>Mercado de Materiales</value></data>
+  <data name="MarketSubtitle" xml:space="preserve"><value>Compra materias primas baratas, vende caras. Los precios cambian durante el d&#237;a.</value></data>
+  <data name="MarketLockedHint" xml:space="preserve"><value>Investiga &quot;Acceso al Mercado de Materiales&quot; para desbloquearlo.</value></data>
+  <data name="MarketBuyLabel" xml:space="preserve"><value>Compra</value></data>
+  <data name="MarketSellLabel" xml:space="preserve"><value>Venta</value></data>
+  <data name="Buy1" xml:space="preserve"><value>Comprar 1</value></data>
+  <data name="Buy10" xml:space="preserve"><value>Comprar 10</value></data>
+  <data name="OpenMarket" xml:space="preserve"><value>Abrir Mercado</value></data>
+  <data name="DeliveryMaterial" xml:space="preserve"><value>&#161;Entrega de material del proveedor!</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Producci&#243;n Autom&#225;tica</value>
   </data>

@@ -209,6 +209,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         GuildViewModel guildViewModel,
         CraftingViewModel craftingViewModel,
         WarehouseSectionViewModel warehouseSectionViewModel,
+        MarketViewModel marketViewModel,
         AscensionViewModel ascensionViewModel,
         IWeeklyMissionService weeklyMissionService,
         IWelcomeBackService welcomeBackService,
@@ -330,6 +331,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         GuildViewModel = guildViewModel;
         CraftingViewModel = craftingViewModel;
         WarehouseVM = warehouseSectionViewModel;
+        WarehouseVM.OpenMarketRequested += () => ActivePage = ActivePage.Market;
+        MarketVM = marketViewModel;
         AscensionViewModel = ascensionViewModel;
         LuckySpinViewModel = luckySpinViewModel;
 

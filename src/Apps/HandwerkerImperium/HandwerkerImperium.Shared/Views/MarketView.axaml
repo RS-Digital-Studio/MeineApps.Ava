@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.MarketView"
+             x:DataType="vm:MarketViewModel"
+             x:CompileBindings="True">
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto"
+                AutomationProperties.AutomationId="Market_Scroll_Main">
+    <StackPanel Spacing="10" Margin="16,16,16,84"
+                AutomationProperties.AutomationId="Market_Panel_MainContent">
+
+      <!-- HEADER -->
+      <Border Classes="CardElevated" CornerRadius="12" Padding="14">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border CornerRadius="14" Width="48" Height="48" VerticalAlignment="Center"
+                  Background="#1F22C55E">
+            <icons:GameIcon Kind="CashMultiple" Width="28" Height="28"
+                            Foreground="{StaticResource CraftPrimaryBrush}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Title}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="{loc:Translate MarketSubtitle}"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- LOCKED-STATE -->
+      <Border Classes="CardElevated" CornerRadius="12" Padding="20"
+              IsVisible="{Binding !IsMarketAvailable}">
+        <StackPanel Spacing="8" HorizontalAlignment="Center">
+          <icons:GameIcon Kind="Lock" Width="48" Height="48"
+                          Foreground="{DynamicResource TextSecondaryBrush}"
+                          HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding EmptyMessage}"
+                     FontSize="12" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="280"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+        </StackPanel>
+      </Border>
+
+      <!-- MARKT-EINTRAEGE -->
+      <ItemsControl ItemsSource="{Binding Entries}"
+                    IsVisible="{Binding IsMarketAvailable}"
+                    AutomationProperties.AutomationId="Market_Items_Entries">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:MarketEntryDisplay">
+            <Border Classes="CardElevated" CornerRadius="10" Padding="10" Margin="0,4">
+              <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+
+                <!-- Zeile 1: Icon + Name + Tier + Trend + Bestand -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border CornerRadius="10" Width="40" Height="40"
+                          Background="#1F3B82F6" VerticalAlignment="Center">
+                    <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                    Width="22" Height="22"
+                                    Foreground="{StaticResource CraftPrimaryBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+
+                  <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <Border CornerRadius="6" Padding="6,1" Background="#10D97706">
+                        <TextBlock Text="{Binding TierLabel}" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource CraftGoldBrush}" />
+                      </Border>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{loc:Translate MarketBuyLabel}" FontSize="10"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <TextBlock Text="{Binding BuyPriceDisplay}" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="·" Margin="6,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <TextBlock Text="{loc:Translate MarketSellLabel}" FontSize="10" Margin="6,0,0,0"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <TextBlock Text="{Binding SellPriceDisplay}" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource SuccessBrush}" />
+                    </StackPanel>
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="2" Spacing="2" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding TrendDisplay}" FontSize="20" FontWeight="Bold"
+                               HorizontalAlignment="Right" />
+                    <TextBlock Text="{Binding StockDisplay}" FontSize="11" FontWeight="SemiBold"
+                               HorizontalAlignment="Right"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                </Grid>
+
+                <!-- Zeile 2: Kauf/Verkauf-Buttons -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                  <Button Grid.Column="0" Classes="Primary" Padding="6,4" CornerRadius="6" MinHeight="32"
+                          IsEnabled="{Binding CanAffordOne}"
+                          Command="{Binding $parent[ItemsControl].((vm:MarketViewModel)DataContext).Buy1Command}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                      <icons:GameIcon Kind="CartArrowDown" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Translate Buy1}" FontSize="11" FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Button>
+                  <Button Grid.Column="1" Classes="Primary" Padding="6,4" CornerRadius="6" MinHeight="32"
+                          Command="{Binding $parent[ItemsControl].((vm:MarketViewModel)DataContext).Buy10Command}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                      <icons:GameIcon Kind="CartArrowDown" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Translate Buy10}" FontSize="11" FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Button>
+                  <Button Grid.Column="2" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="32"
+                          IsEnabled="{Binding HasStock}"
+                          Command="{Binding $parent[ItemsControl].((vm:MarketViewModel)DataContext).Sell1Command}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                      <icons:GameIcon Kind="CashMultiple" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Translate Sell1}" FontSize="11" FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Button>
+                  <Button Grid.Column="3" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="32"
+                          IsEnabled="{Binding HasStock}"
+                          Command="{Binding $parent[ItemsControl].((vm:MarketViewModel)DataContext).Sell10Command}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                      <icons:GameIcon Kind="CashMultiple" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Translate Sell10}" FontSize="11" FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
+
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

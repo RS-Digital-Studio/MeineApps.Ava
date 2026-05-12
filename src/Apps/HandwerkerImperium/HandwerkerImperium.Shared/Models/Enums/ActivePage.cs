@@ -28,6 +28,7 @@ public enum ActivePage
     Crafting,
     Ascension,
     Prestige,       // v2.0.37: Single-Page-View statt Modal-Stack
+    Market,         // V7 (Phase 3 Ressourcen-Plan): Material-Markt
 
     // MiniGames
     SawingGame,

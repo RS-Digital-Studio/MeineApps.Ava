@@ -17,6 +17,12 @@ public sealed partial class MainViewModel
 
     private void InitializeEconomyVM()
     {
+        // V7 (Phase 3 Ressourcen-Plan): Material-Lieferungen + Stack-Limits brauchen
+        // Warehouse + Research zur Bonus-Berechnung. Beide optional injiziert via DI.
+        var serviceProvider = App.Services;
+        var warehouseService = serviceProvider?.GetService(typeof(IWarehouseService)) as IWarehouseService;
+        var researchService = serviceProvider?.GetService(typeof(IResearchService)) as IResearchService;
+
         EconomyVM = new EconomyFeatureViewModel(
             this,
             _gameStateService,
@@ -32,7 +38,9 @@ public sealed partial class MainViewModel
             _weeklyMissionService,
             _eventService,
             DialogVM,
-            _analyticsService);
+            _analyticsService,
+            warehouseService,
+            researchService);
 
         // Events verdrahten (benannte Delegates fuer Dispose-Unsubscribe)
         _economyFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);

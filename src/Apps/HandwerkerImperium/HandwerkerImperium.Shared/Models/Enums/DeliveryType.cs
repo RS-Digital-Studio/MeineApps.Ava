@@ -18,5 +18,11 @@ public enum DeliveryType
     MoodBoost,
 
     /// <summary>Kurzer Geschwindigkeits-Boost (30min 2x Einkommen)</summary>
-    SpeedBoost
+    SpeedBoost,
+
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): Tier-1-Material-Lieferung (1-10 Stueck eines zufaelligen
+    /// Materials). Plan Section 3.5 — verdraengt Geld-Lieferung mit 25% Wahrscheinlichkeit.
+    /// </summary>
+    Material
 }

@@ -78,6 +78,7 @@ internal static class PageNavigationHelper
         ActivePage.InventGame => "IsInventGameActive",
         ActivePage.Ascension => "IsAscensionActive",
         ActivePage.Prestige => "IsPrestigeActive",
+        ActivePage.Market => "IsMarketActive",
         _ => null
     };
 

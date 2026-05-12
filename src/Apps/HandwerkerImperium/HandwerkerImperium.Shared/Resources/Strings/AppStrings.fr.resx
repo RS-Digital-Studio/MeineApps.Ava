@@ -6237,6 +6237,29 @@
   <data name="StartWithMaterial" xml:space="preserve"><value>Avec Mat&#233;riel</value></data>
   <data name="MaterialOfferInsufficientTitle" xml:space="preserve"><value>Mat&#233;riel insuffisant</value></data>
   <data name="MaterialOfferInsufficientMessage" xml:space="preserve"><value>Votre entrep&#244;t n'a pas les mat&#233;riaux demand&#233;s par cette commande.</value></data>
+  <data name="BranchLogistics" xml:space="preserve"><value>Logistique</value></data>
+  <data name="BranchLogisticsDesc" xml:space="preserve"><value>Expansion de l'entrep&#244;t, acc&#232;s au march&#233;, automatisation.</value></data>
+  <data name="ResearchLogiSlots1" xml:space="preserve"><value>Expansion d'Entrep&#244;t I</value></data>
+  <data name="ResearchLogiSlots2" xml:space="preserve"><value>Expansion d'Entrep&#244;t II</value></data>
+  <data name="ResearchLogiSlots3" xml:space="preserve"><value>Expansion d'Entrep&#244;t III</value></data>
+  <data name="ResearchLogiStack2x" xml:space="preserve"><value>Caisses de Stockage</value></data>
+  <data name="ResearchLogiStack5x" xml:space="preserve"><value>Rayonnages Industriels</value></data>
+  <data name="ResearchLogiMarket" xml:space="preserve"><value>Acc&#232;s au March&#233; des Mat&#233;riaux</value></data>
+  <data name="ResearchLogiSupplier" xml:space="preserve"><value>R&#233;seau de Fournisseurs</value></data>
+  <data name="ResearchLogiAutoSell" xml:space="preserve"><value>R&#232;gles de Vente Automatique</value></data>
+  <data name="ResearchLogiCraftSpeed" xml:space="preserve"><value>Flux Optimis&#233;s</value></data>
+  <data name="ResearchLogiTier4" xml:space="preserve"><value>Manufacture Imp&#233;riale (T4)</value></data>
+  <data name="ResearchLogiHeirloom" xml:space="preserve"><value>Reliques Imp&#233;riales</value></data>
+  <data name="ResearchLogiMaster" xml:space="preserve"><value>Ma&#238;tre Logisticien</value></data>
+  <data name="MarketTitle" xml:space="preserve"><value>March&#233; des Mat&#233;riaux</value></data>
+  <data name="MarketSubtitle" xml:space="preserve"><value>Achetez bas, vendez haut. Les prix changent tout au long de la journ&#233;e.</value></data>
+  <data name="MarketLockedHint" xml:space="preserve"><value>Recherchez &quot;Acc&#232;s au March&#233; des Mat&#233;riaux&quot; pour le d&#233;bloquer.</value></data>
+  <data name="MarketBuyLabel" xml:space="preserve"><value>Achat</value></data>
+  <data name="MarketSellLabel" xml:space="preserve"><value>Vente</value></data>
+  <data name="Buy1" xml:space="preserve"><value>Acheter 1</value></data>
+  <data name="Buy10" xml:space="preserve"><value>Acheter 10</value></data>
+  <data name="OpenMarket" xml:space="preserve"><value>Ouvrir le March&#233;</value></data>
+  <data name="DeliveryMaterial" xml:space="preserve"><value>Livraison de mat&#233;riaux du fournisseur&#160;!</value></data>
   <data name="AutoProduction" xml:space="preserve">
     <value>Production Automatique</value>
   </data>

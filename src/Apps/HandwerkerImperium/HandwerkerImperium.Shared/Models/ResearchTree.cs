@@ -14,7 +14,56 @@ public static class ResearchTree
         all.AddRange(CreateToolsBranch());
         all.AddRange(CreateManagementBranch());
         all.AddRange(CreateMarketingBranch());
+        all.AddRange(CreateLogisticsBranch());
         return all;
+    }
+
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): 12 Logistik-Forschungen — Lager-Slots, Stack-Limit,
+    /// Markt-Verfuegbarkeit, Auto-Verkauf-Regeln, Crafting-Speed, T4-Trigger, Erbstueck-Survival.
+    /// Plan Section 3.6 Tabelle.
+    /// </summary>
+    private static List<Research> CreateLogisticsBranch()
+    {
+        return
+        [
+            // Zeile 0: Basis-Slots
+            Create("logi_01", ResearchBranch.Logistics, 1, "ResearchLogiSlots1", 50_000m, TimeSpan.FromMinutes(30),
+                new ResearchEffect { BonusWarehouseSlots = 5 }),
+            // Zeile 1: Stack-Verdoppelung
+            Create("logi_02", ResearchBranch.Logistics, 2, "ResearchLogiStack2x", 200_000m, TimeSpan.FromHours(1),
+                new ResearchEffect { StackLimitMultiplier = 2.0m }, ["logi_01"]),
+            // Zeile 2: Markt freischalten
+            Create("logi_05", ResearchBranch.Logistics, 3, "ResearchLogiMarket", 500_000m, TimeSpan.FromHours(2),
+                new ResearchEffect { UnlocksMarket = true }, ["logi_02"]),
+            // Zeile 3: Mehr Slots
+            Create("logi_04", ResearchBranch.Logistics, 4, "ResearchLogiSlots2", 1_500_000m, TimeSpan.FromHours(3),
+                new ResearchEffect { BonusWarehouseSlots = 10 }, ["logi_05"]),
+            // Zeile 4: Lieferanten-Material-Bonus
+            Create("logi_08", ResearchBranch.Logistics, 5, "ResearchLogiSupplier", 4_000_000m, TimeSpan.FromHours(6),
+                new ResearchEffect { SupplierMaterialBonus = 0.50m }, ["logi_04"]),
+            // Zeile 5: Auto-Verkauf-Regeln
+            Create("logi_07", ResearchBranch.Logistics, 6, "ResearchLogiAutoSell", 10_000_000m, TimeSpan.FromHours(8),
+                new ResearchEffect { UnlocksAutoSellRules = true }, ["logi_08"]),
+            // Zeile 6: Crafting-Speed
+            Create("logi_10", ResearchBranch.Logistics, 7, "ResearchLogiCraftSpeed", 25_000_000m, TimeSpan.FromHours(12),
+                new ResearchEffect { CraftingSpeedBonus = 0.20m }, ["logi_07"]),
+            // Zeile 7: Stack-Limit x5 (kombiniert mit logi_02 → x10)
+            Create("logi_11", ResearchBranch.Logistics, 8, "ResearchLogiStack5x", 60_000_000m, TimeSpan.FromHours(16),
+                new ResearchEffect { StackLimitMultiplier = 5.0m }, ["logi_10"]),
+            // Zeile 8: T4-Rezepte (Phase 4 trigger)
+            Create("logi_09", ResearchBranch.Logistics, 9, "ResearchLogiTier4", 150_000_000m, TimeSpan.FromHours(24),
+                new ResearchEffect { UnlocksTier4 = true }, ["logi_11"]),
+            // Zeile 9: Bonus-Slots Premium
+            Create("logi_03", ResearchBranch.Logistics, 10, "ResearchLogiSlots3", 400_000_000m, TimeSpan.FromHours(32),
+                new ResearchEffect { BonusWarehouseSlots = 25 }, ["logi_09"]),
+            // Zeile 10: Erbstueck-Survival (Phase 4)
+            Create("logi_12", ResearchBranch.Logistics, 11, "ResearchLogiHeirloom", 1_000_000_000m, TimeSpan.FromHours(48),
+                new ResearchEffect { UnlocksHeirloomSurvival = true }, ["logi_03"]),
+            // Zeile 11: Master-Logistik-Speedup
+            Create("logi_06", ResearchBranch.Logistics, 12, "ResearchLogiMaster", 5_000_000_000m, TimeSpan.FromHours(72),
+                new ResearchEffect { CraftingSpeedBonus = 0.30m, BonusWarehouseSlots = 25 }, ["logi_12"]),
+        ];
     }
 
     private static List<Research> CreateToolsBranch()

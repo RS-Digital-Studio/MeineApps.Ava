@@ -44,18 +44,31 @@
       </Grid>
     </Border>
 
-    <!-- SLOT-UPGRADE-BUTTON -->
-    <Button Classes="Primary" Padding="14,10" CornerRadius="10"
-            HorizontalAlignment="Stretch" MinHeight="48"
-            Command="{Binding WarehouseVM.UpgradeSlotsCommand}"
-            IsEnabled="{Binding WarehouseVM.CanUpgradeSlots}"
-            AutomationProperties.AutomationId="Imperium_Btn_UpgradeWarehouse">
-      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-        <icons:GameIcon Kind="ArrowUpBold" Width="18" Height="18" />
-        <TextBlock Text="{Binding WarehouseVM.UpgradeButtonText}"
-                   FontSize="13" FontWeight="SemiBold" />
-      </StackPanel>
-    </Button>
+    <!-- SLOT-UPGRADE + MARKT-NAVIGATION -->
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+      <Button Grid.Column="0" Classes="Primary" Padding="14,10" CornerRadius="10"
+              HorizontalAlignment="Stretch" MinHeight="48"
+              Command="{Binding WarehouseVM.UpgradeSlotsCommand}"
+              IsEnabled="{Binding WarehouseVM.CanUpgradeSlots}"
+              AutomationProperties.AutomationId="Imperium_Btn_UpgradeWarehouse">
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <icons:GameIcon Kind="ArrowUpBold" Width="18" Height="18" />
+          <TextBlock Text="{Binding WarehouseVM.UpgradeButtonText}"
+                     FontSize="13" FontWeight="SemiBold" />
+        </StackPanel>
+      </Button>
+
+      <!-- V7 (Phase 3 Ressourcen-Plan): Markt-Navigation -->
+      <Button Grid.Column="1" Classes="Text" Padding="12,10" CornerRadius="10" MinHeight="48"
+              Command="{Binding WarehouseVM.OpenMarketCommand}"
+              AutomationProperties.AutomationId="Imperium_Btn_OpenMarket">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <icons:GameIcon Kind="CashMultiple" Width="18" Height="18" />
+          <TextBlock Text="{loc:Translate OpenMarket}"
+                     FontSize="12" FontWeight="SemiBold" />
+        </StackPanel>
+      </Button>
+    </Grid>
 
     <!-- EMPTY-STATE -->
     <Border Classes="CardElevated" CornerRadius="12" Padding="20"

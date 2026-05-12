@@ -32,6 +32,9 @@ internal sealed class EconomyFeatureViewModel
     private readonly IEventService _eventService;
     private readonly IDialogService _dialogService;
     private readonly IAnalyticsService? _analyticsService;
+    // V7 (Phase 3 Ressourcen-Plan): optional injiziert — Lager + Research-Bonus fuer Lieferungen.
+    private readonly IWarehouseService? _warehouseService;
+    private readonly IResearchService? _researchService;
 
     /// <summary>FloatingText im Dashboard anzeigen.</summary>
     internal event Action<string, string>? FloatingTextRequested;
@@ -54,7 +57,9 @@ internal sealed class EconomyFeatureViewModel
         IWeeklyMissionService weeklyMissionService,
         IEventService eventService,
         IDialogService dialogService,
-        IAnalyticsService? analyticsService = null)
+        IAnalyticsService? analyticsService = null,
+        IWarehouseService? warehouseService = null,
+        IResearchService? researchService = null)
     {
         _host = host;
         _gameStateService = gameStateService;
@@ -71,6 +76,8 @@ internal sealed class EconomyFeatureViewModel
         _eventService = eventService;
         _dialogService = dialogService;
         _analyticsService = analyticsService;
+        _warehouseService = warehouseService;
+        _researchService = researchService;
     }
 
     private bool ShowAds => !_purchaseService.IsPremium;
@@ -593,6 +600,27 @@ internal sealed class EconomyFeatureViewModel
             case Models.Enums.DeliveryType.SpeedBoost:
                 state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
                 FloatingTextRequested?.Invoke($"2x ({(int)delivery.Amount}min)", "speed");
+                break;
+
+            case Models.Enums.DeliveryType.Material:
+                // V7 (Phase 3 Ressourcen-Plan): Material direkt ins Lager (mit Stack-Limit).
+                if (!string.IsNullOrEmpty(delivery.MaterialProductId))
+                {
+                    int requested = (int)Math.Round(delivery.Amount);
+                    // Research-Bonus: SupplierMaterialBonus erhoeht die Menge (Plan logi_08).
+                    int bonusMult = 1 + (int)Math.Round(_researchService?.GetTotalEffects().SupplierMaterialBonus * 1m ?? 0);
+                    int total = requested + Math.Max(0, (int)Math.Round(requested * (_researchService?.GetTotalEffects().SupplierMaterialBonus ?? 0m)));
+                    int added = _warehouseService?.AddToInventory(delivery.MaterialProductId, total) ?? 0;
+                    if (added > 0)
+                    {
+                        var allProducts = CraftingProduct.GetAllProducts();
+                        string name = allProducts.TryGetValue(delivery.MaterialProductId, out var p)
+                            ? _localizationService.GetString(p.NameKey) ?? p.NameKey
+                            : delivery.MaterialProductId;
+                        FloatingTextRequested?.Invoke($"+{added}x {name}", "material");
+                    }
+                    _ = bonusMult; // documentation only — Bonus ist in `total` enthalten
+                }
                 break;
         }
 

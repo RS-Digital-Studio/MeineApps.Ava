@@ -18,6 +18,7 @@ public sealed class CraftingService : ICraftingService
 {
     private readonly IGameStateService _gameState;
     private readonly IIncomeCalculatorService _incomeCalculator;
+    private readonly IResearchService? _research;
     // Lock verhindert Race Condition bei schnellem Doppelklick (Materialien doppelt verbraucht)
     private readonly object _craftingLock = new();
     // Gecachter Crafting-Speed-Bonus (Dirty-Flag statt Count-Vergleich)
@@ -36,10 +37,12 @@ public sealed class CraftingService : ICraftingService
 
     public CraftingService(
         IGameStateService gameState,
-        IIncomeCalculatorService incomeCalculator)
+        IIncomeCalculatorService incomeCalculator,
+        IResearchService? research = null)
     {
         _gameState = gameState;
         _incomeCalculator = incomeCalculator;
+        _research = research;
         // Bei State-Wechsel (Prestige/Import/Reset) und Prestige-Shop-Kauf Cache invalidieren
         _gameState.StateLoaded += (_, _) => _craftingSpeedCacheDirty = true;
         _gameState.PrestigeShopPurchased += (_, _) => _craftingSpeedCacheDirty = true;
@@ -114,9 +117,10 @@ public sealed class CraftingService : ICraftingService
                     state.CraftingInventory.Remove(productId);
             }
 
-            // Crafting-Job erstellen (Prestige-Shop CraftingSpeedBonus reduziert Dauer)
+            // Crafting-Job erstellen (Prestige-Shop + Research CraftingSpeedBonus reduziert Dauer)
             int effectiveDuration = recipe.DurationSeconds;
-            decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state);
+            decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state)
+                                       + (_research?.GetTotalEffects().CraftingSpeedBonus ?? 0m);
             if (craftingSpeedBonus > 0)
                 effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
 

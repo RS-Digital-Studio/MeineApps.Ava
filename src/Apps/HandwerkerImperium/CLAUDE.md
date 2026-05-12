@@ -515,6 +515,55 @@ Alle 10 Workshops produzieren passiv Tier-1 Items (Unlock ab WS-Level 50):
 Skalierender Verkaufspreis: `BaseValue × (1 + log₂(1 + Level/25)) × CraftingSellMultiplier`
 (kein Soft-Cap, kein Speed/Rush im Multiplier).
 
+### Material-Markt (V7 — Phase 3 Ressourcen-Plan)
+
+`IMarketService` + `MarketService` — deterministische Tagespreis-Logik pro Spieler.
+
+**Preis-Engine**:
+- Seed: `PlayerGuid.GetHashCode() ^ utcDay ^ productId.GetHashCode()` → pro Spieler/Tag/Material individuell.
+- Sinus-Welle ueber 24h mit ±50% Amplitude um den BaseValue. Phase-Offset aus dem Seed.
+- Event-Modulatoren: `MaterialShortage` ×3, `HighDemand` ×2 fuer Produkte aus dem `AffectedWorkshop`.
+- Spread: Verkauf = Kauf × 0.95 (5% Maklergebuehr — verhindert Sofort-Arbitrage).
+
+**Markt-Zugang**: Nur sichtbar wenn `logi_05` Research abgeschlossen. UI zeigt sonst Locked-Hint.
+
+**Lifecycle**:
+- `TryBuy(productId, count)`: Stack-Limit-Check via `WarehouseService.CanAddToInventory`,
+  Geld-Abzug, Inventar-Add. Bei Slot-Voll wird kein Kauf moeglich (kein Geld-Verlust).
+- `TrySell(productId, count)`: Verkauft nur nicht-reserviertes Material (ReservedInventory ausgeschlossen).
+
+### Logistik-Forschungsbranch (V7 — Phase 3)
+
+Neuer 4. `ResearchBranch.Logistics` (Amber #D97706, Package-Icon). 12 Nodes:
+
+| Node | Effekt | Voraussetzung |
+|------|--------|---------------|
+| logi_01 | +5 Lager-Slots | — |
+| logi_02 | Stack-Limit ×2 | logi_01 |
+| logi_05 | Markt freigeschaltet | logi_02 |
+| logi_04 | +10 Lager-Slots | logi_05 |
+| logi_08 | Lieferanten-Material-Bonus +50% | logi_04 |
+| logi_07 | Auto-Verkaufs-Regeln freigeschaltet | logi_08 |
+| logi_10 | Crafting-Speed +20% | logi_07 |
+| logi_11 | Stack-Limit ×5 | logi_10 |
+| logi_09 | T4-Rezepte freigeschaltet (Phase 4) | logi_11 |
+| logi_03 | +25 Lager-Slots | logi_09 |
+| logi_12 | Erbstuecke ueberleben Prestige (Phase 4) | logi_03 |
+| logi_06 | Crafting-Speed +30% + 25 Slots | logi_12 |
+
+**Integration**:
+- `WarehouseService.EffectiveSlotCount = state.WarehouseSlotCount + BonusWarehouseSlots` (aus Research).
+- `WarehouseService.CurrentStackLimit = state.WarehouseStackLimit × StackLimitMultiplier` (max 9999).
+- `CraftingService.StartCrafting` addiert `CraftingSpeedBonus` aus Research zu Prestige-Shop-Bonus.
+- Markt-Verfuegbarkeit: `MarketService.IsMarketAvailable` prueft `logi_05.IsResearched`.
+
+### Lieferant-Material-Variante (V7 — Phase 3)
+
+`SupplierDelivery.GenerateRandom` rollt mit 25% Chance (ab Spielerlevel 50) eine
+`DeliveryType.Material`-Lieferung statt Geld. 1–10 Stueck eines zufaelligen Tier-1-Materials
+aus den freigeschalteten Workshops. Research `logi_08` `SupplierMaterialBonus` erhoeht
+die Menge proportional.
+
 ### Material-Offer in Auftraegen (V7 — Phase 2 Ressourcen-Plan)
 
 **Mechanik**: Jeder regulaere Auftrag (ausser MaterialOrder) kann beim Spawn ein optionales

@@ -215,6 +215,15 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
         _warehouseService.TryUpgradeSlots();
     }
 
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): Event-Trigger fuer den Markt-Navigation-Button.
+    /// MainViewModel verdrahtet das auf <see cref="ActivePage.Market"/>.
+    /// </summary>
+    public event Action? OpenMarketRequested;
+
+    [RelayCommand]
+    private void OpenMarket() => OpenMarketRequested?.Invoke();
+
     // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════

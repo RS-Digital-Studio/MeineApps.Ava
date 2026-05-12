@@ -15,6 +15,13 @@ public class SupplierDelivery
     [JsonPropertyName("amount")]
     public decimal Amount { get; set; }
 
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): Bei <see cref="DeliveryType.Material"/> die Produkt-ID
+    /// des gelieferten Tier-1-Materials. Anzahl steht in <see cref="Amount"/>.
+    /// </summary>
+    [JsonPropertyName("materialProductId")]
+    public string? MaterialProductId { get; set; }
+
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
 
@@ -44,6 +51,7 @@ public class SupplierDelivery
         DeliveryType.Experience => "Star",
         DeliveryType.MoodBoost => "EmoticonHappy",
         DeliveryType.SpeedBoost => "LightningBolt",
+        DeliveryType.Material => "PackageVariant",
         _ => "PackageVariant"
     };
 
@@ -58,6 +66,7 @@ public class SupplierDelivery
         DeliveryType.Experience => "DeliveryExperience",
         DeliveryType.MoodBoost => "DeliveryMoodBoost",
         DeliveryType.SpeedBoost => "DeliverySpeedBoost",
+        DeliveryType.Material => "DeliveryMaterial",
         _ => "DeliveryMoney"
     };
 
@@ -68,15 +77,28 @@ public class SupplierDelivery
     {
         var random = Random.Shared;
 
-        // Gewichtete Auswahl: Geld häufiger, SpeedBoost seltener
-        var type = random.Next(100) switch
+        // V7 (Phase 3 Ressourcen-Plan): 25% Chance auf Material-Lieferung — verdraengt die
+        // Geld-Lieferung als haeufigsten Typ. Nur sinnvoll wenn Spieler den Auto-Production-Unlock
+        // bereits hat (Level >= 50), sonst kein Material-Sinn → faellt zurueck auf alte Logik.
+        bool eligibleForMaterial = state.PlayerLevel >= GameBalanceConstants.AutoProductionUnlockLevel;
+
+        // Gewichtete Auswahl: Geld haeufiger, SpeedBoost seltener
+        DeliveryType type;
+        if (eligibleForMaterial && random.NextDouble() < 0.25)
         {
-            < 35 => DeliveryType.Money,
-            < 55 => DeliveryType.GoldenScrews,
-            < 75 => DeliveryType.Experience,
-            < 90 => DeliveryType.MoodBoost,
-            _ => DeliveryType.SpeedBoost
-        };
+            type = DeliveryType.Material;
+        }
+        else
+        {
+            type = random.Next(100) switch
+            {
+                < 35 => DeliveryType.Money,
+                < 55 => DeliveryType.GoldenScrews,
+                < 75 => DeliveryType.Experience,
+                < 90 => DeliveryType.MoodBoost,
+                _ => DeliveryType.SpeedBoost
+            };
+        }
 
         decimal amount = type switch
         {
@@ -91,15 +113,36 @@ public class SupplierDelivery
             DeliveryType.MoodBoost => 10m,
             // 30min Speed-Boost
             DeliveryType.SpeedBoost => 30m,
+            // Material: 1-10 Tier-1-Items eines zufaelligen Workshops
+            DeliveryType.Material => random.Next(1, 11),
             _ => 50m
         };
 
-        return new SupplierDelivery
+        var delivery = new SupplierDelivery
         {
             Type = type,
             Amount = amount,
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddMinutes(2) // 2 Minuten zum Abholen
         };
+
+        // Material-Lieferung: zufaelliges Tier-1-Material eines freigeschalteten Workshops
+        if (type == DeliveryType.Material)
+        {
+            var allRecipes = CraftingRecipe.GetAllRecipes();
+            var tier1Candidates = new List<string>();
+            for (int i = 0; i < allRecipes.Count; i++)
+            {
+                var r = allRecipes[i];
+                if (r.Tier == 1 && state.UnlockedWorkshopTypes.Contains(r.WorkshopType))
+                    tier1Candidates.Add(r.OutputProductId);
+            }
+            if (tier1Candidates.Count > 0)
+                delivery.MaterialProductId = tier1Candidates[random.Next(tier1Candidates.Count)];
+            else
+                delivery.MaterialProductId = "planks"; // Fallback
+        }
+
+        return delivery;
     }
 }

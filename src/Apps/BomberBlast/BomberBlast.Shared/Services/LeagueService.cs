@@ -276,8 +276,12 @@ public sealed class LeagueService : ILeagueService
     {
         if (amount <= 0) return;
 
-        _data.Points += amount;
-        _stats.TotalPointsEarned += amount;
+        // Audit M07: Long-Cast + Clamp wie CoinService — verhindert silent-Negativ bei int-Overflow
+        // (theoretisch erreichbar bei kumulierten Boost-Stacks oder Bug-Loops).
+        long newPoints = (long)_data.Points + amount;
+        long newTotal = (long)_stats.TotalPointsEarned + amount;
+        _data.Points = newPoints > int.MaxValue ? int.MaxValue : (int)newPoints;
+        _stats.TotalPointsEarned = newTotal > int.MaxValue ? int.MaxValue : (int)newTotal;
 
         if (_data.Points > _stats.BestSeasonPoints)
             _stats.BestSeasonPoints = _data.Points;

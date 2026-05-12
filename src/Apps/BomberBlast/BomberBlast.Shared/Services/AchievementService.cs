@@ -563,17 +563,13 @@ public sealed class AchievementService : IAchievementService
         UpdateProgress("detonator_master", _data.TotalDetonations);
     }
 
-    /// <summary>Zählt gesetzte Bits in einem Integer (für Bit-Flags wie BossTypesDefeated, CurseTypesSurvived)</summary>
-    private static int CountBits(int value)
-    {
-        int count = 0;
-        while (value > 0)
-        {
-            count += value & 1;
-            value >>= 1;
-        }
-        return count;
-    }
+    /// <summary>
+    /// Zählt gesetzte Bits in einem Integer (für Bit-Flags wie BossTypesDefeated, CurseTypesSurvived).
+    /// Audit M03: BitOperations.PopCount statt arithmetic-shift-Schleife — robust gegen negative Werte
+    /// (Preferences-Korruption mit -1 fuehrte zu Endlosschleife wegen Sign-Extension).
+    /// </summary>
+    private static int CountBits(int value) =>
+        System.Numerics.BitOperations.PopCount((uint)value);
 
     private static List<Achievement> CreateAchievements()
     {

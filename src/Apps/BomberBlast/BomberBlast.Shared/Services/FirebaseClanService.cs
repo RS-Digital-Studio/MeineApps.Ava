@@ -183,8 +183,12 @@ public sealed class FirebaseClanService : IClanService
         try
         {
             var clanId = _currentClan.ClanId;
+            // Audit M15: Re-fetch fresh server state before mutation — Race-Schutz gegen
+            // gleichzeitige Beitritte (Read-Modify-Write ohne Transaction). Wenn Re-fetch
+            // fehlschlaegt verwenden wir lokalen Snapshot als Fallback.
+            var fresh = await _firebase.GetAsync<ClanData>($"clans/{clanId}") ?? _currentClan;
             // Remove member from Clan
-            var updatedMembers = _currentClan.Members.Where(m => m.MemberId != uid).ToList();
+            var updatedMembers = fresh.Members.Where(m => m.MemberId != uid).ToList();
 
             if (updatedMembers.Count == 0)
             {
@@ -194,15 +198,15 @@ public sealed class FirebaseClanService : IClanService
             }
             else
             {
-                // Andere Members bleiben — re-fetch + update
+                // Andere Members bleiben — Update mit fresh-Server-Snapshot
                 var updatedClan = new ClanData
                 {
-                    ClanId = _currentClan.ClanId,
-                    SixDigitCode = _currentClan.SixDigitCode,
-                    Name = _currentClan.Name,
+                    ClanId = fresh.ClanId,
+                    SixDigitCode = fresh.SixDigitCode,
+                    Name = fresh.Name,
                     Members = updatedMembers,
-                    WeeklyGoalProgress = _currentClan.WeeklyGoalProgress,
-                    WeeklyGoalTarget = _currentClan.WeeklyGoalTarget,
+                    WeeklyGoalProgress = fresh.WeeklyGoalProgress,
+                    WeeklyGoalTarget = fresh.WeeklyGoalTarget,
                 };
                 await _firebase.SetAsync($"clans/{clanId}", updatedClan);
             }
@@ -258,21 +262,26 @@ public sealed class FirebaseClanService : IClanService
 
         try
         {
-            var chatMsg = new ClanChatMessage
+            // Audit M05: ServerValue.TIMESTAMP-Sentinel statt Client-DateTime.UtcNow.
+            // Verhindert Rate-Limit-/Reihenfolge-Spoofing (LeagueService nutzt dasselbe Pattern).
+            var chatPayload = new Dictionary<string, object>
             {
-                MessageId = Guid.NewGuid().ToString(),
-                SenderId = uid,
-                SenderDisplayName = member.DisplayName,
-                Content = clean,
-                SentUtc = DateTime.UtcNow,
+                ["messageId"] = Guid.NewGuid().ToString(),
+                ["senderId"] = uid,
+                ["senderDisplayName"] = member.DisplayName,
+                ["content"] = clean,
+                ["sentUtc"] = FirebaseServerTimestamp,
             };
-            await _firebase.PushAsync($"clans/{_currentClan.ClanId}/chat", chatMsg);
+            await _firebase.PushAsync($"clans/{_currentClan.ClanId}/chat", chatPayload);
         }
         catch (Exception ex)
         {
             _logger.LogError("FirebaseClanService.SendChatAsync fehlgeschlagen", ex);
         }
     }
+
+    // Audit M05: Firebase-Sentinel-Konstante fuer ServerValue.TIMESTAMP (Anti-Spoofing).
+    private static readonly Dictionary<string, string> FirebaseServerTimestamp = new() { [".sv"] = "timestamp" };
 
     public async Task<IReadOnlyList<ClanData>> GetLeaderboardAsync()
     {

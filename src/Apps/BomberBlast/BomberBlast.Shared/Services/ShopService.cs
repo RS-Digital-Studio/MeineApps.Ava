@@ -109,6 +109,9 @@ public sealed class ShopService : IShopService
         catch
         {
             _coinService.AddCoins(price);
+            // Audit M02: In-Memory-State neu laden, sonst behaelt _upgrades den Upgrade-Effekt
+            // bis App-Restart (Coins refunded, aber Upgrade aktiv → Inkonsistenz).
+            _upgrades = Load();
             return false;
         }
 
@@ -128,6 +131,8 @@ public sealed class ShopService : IShopService
         }
         catch
         {
+            // Audit M02: In-Memory-Rollback wie TryPurchase
+            _upgrades = Load();
             return false;
         }
 

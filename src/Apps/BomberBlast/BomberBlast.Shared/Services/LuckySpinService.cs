@@ -12,7 +12,8 @@ public sealed class LuckySpinService : ILuckySpinService
 {
     private readonly IPreferencesService _preferences;
     private SpinData _data;
-    private readonly Random _random = new();
+    // Audit M06: Random.Shared statt new Random() — thread-safe, kein Time-Tick-Seed-Problem
+    // (mehrere new Random() in derselben Millisekunde lieferten identische Reihen).
 
     private static readonly SpinReward[] _rewards =
     [
@@ -86,7 +87,7 @@ public sealed class LuckySpinService : ILuckySpinService
         }
 
         // Gewichtete Zufallsauswahl
-        int roll = _random.Next(_totalWeight);
+        int roll = Random.Shared.Next(_totalWeight);
         int cumulative = 0;
         for (int i = 0; i < _rewards.Length; i++)
         {

@@ -112,7 +112,9 @@ public sealed class DailyRewardService : IDailyRewardService
             var lastClaim = DateTime.Parse(_data.LastClaimDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
             var daysSinceLastClaim = (DateTime.UtcNow.Date - lastClaim.Date).Days;
 
-            // Mehr als 3 Tage verpasst → Streak zurücksetzen (3 Tage Gnade statt sofortigem Reset)
+            // Audit M13: 3-Tage-Gnade ist absichtlich (Streak-Bewahrung bei Wochenend-Pausen).
+            // Streak ist daher faktisch "TotalClaims mit max 3 Tagen Pause" — nicht echte Konsekutiv-Streak.
+            // Acceptable Trade-off: bessere D7-Retention vs. strikte Wortbedeutung.
             if (daysSinceLastClaim > 3)
             {
                 _data.CurrentDay = 1;

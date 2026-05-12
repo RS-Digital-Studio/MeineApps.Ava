@@ -81,10 +81,11 @@ public sealed class GameAssetService : IGameAssetService
         if (_notFound.ContainsKey(assetPath))
             return null;
 
-        // Async Load triggern, nächster Frame hat das Bitmap
+        // Async Load triggern, nächster Frame hat das Bitmap.
+        // Audit M04: Faulted-Task wirft sonst AggregateException auf t.Result-Zugriff.
         _ = LoadBitmapAsync(assetPath).ContinueWith(t =>
         {
-            if (t.Result == null)
+            if (t.Status == TaskStatus.RanToCompletion && t.Result == null)
                 _notFound.TryAdd(assetPath, true);
         }, TaskContinuationOptions.ExecuteSynchronously);
 

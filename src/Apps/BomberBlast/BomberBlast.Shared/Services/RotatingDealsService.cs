@@ -24,6 +24,9 @@ public sealed class RotatingDealsService : IRotatingDealsService
     // Persistenz-Daten
     private RotatingDealsData _data;
 
+    // Audit M14: Pro-Spieler-Salt fuer Reward-Drops (verhindert dass alle Spieler die identische Karten-Drops bekommen).
+    private const string USER_DROP_SALT_KEY = "RotatingDealsUserSalt";
+
     public RotatingDealsService(
         IPreferencesService preferences,
         ICoinService coinService,
@@ -35,6 +38,12 @@ public sealed class RotatingDealsService : IRotatingDealsService
         _gemService = gemService;
         _cardService = cardService;
         _data = Load();
+
+        // Salt einmalig erzeugen + persistieren (stabil ueber Sessions)
+        if (_preferences.Get<int>(USER_DROP_SALT_KEY, 0) == 0)
+        {
+            _preferences.Set(USER_DROP_SALT_KEY, Random.Shared.Next(1, int.MaxValue));
+        }
     }
 
     public List<RotatingDeal> GetTodaysDeals()
@@ -122,7 +131,9 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 };
                 if (cardPool.Count > 0)
                 {
-                    var rng = new Random(dealId.GetHashCode());
+                    // Audit M14: User-spezifischer Salt XOR DealId → Spieler bekommen unterschiedliche Drops.
+                    var userSalt = _preferences.Get<int>(USER_DROP_SALT_KEY, 1);
+                    var rng = new Random(dealId.GetHashCode() ^ userSalt);
                     int drops = Math.Max(1, deal.RewardAmount);
                     for (int i = 0; i < drops; i++)
                     {

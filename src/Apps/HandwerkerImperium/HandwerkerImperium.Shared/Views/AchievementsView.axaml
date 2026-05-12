@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:ctrls="using:HandwerkerImperium.Controls"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:labs="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
@@ -89,28 +90,16 @@
       </StackPanel>
     </Border>
 
-    <!-- Empty-State (AAA-Audit P2): Wenn keine Achievements geladen sind. -->
-    <StackPanel Grid.Row="2"
-                IsVisible="{Binding IsEmpty}"
-                Spacing="12"
-                MaxWidth="320"
-                HorizontalAlignment="Center" VerticalAlignment="Center"
-                Margin="32,0,32,84"
-                AutomationProperties.AutomationId="Achievements_Panel_Empty">
-      <icons:GameIcon Kind="TrophyOutline" Width="64" Height="64" Opacity="0.6"
-                       Foreground="{StaticResource CraftGoldBrush}"
-                       HorizontalAlignment="Center" />
-      <TextBlock Text="{loc:Translate AchievementsEmptyTitle}"
-                 FontSize="18" FontWeight="Bold"
-                 Foreground="{DynamicResource TextPrimaryBrush}"
-                 HorizontalAlignment="Center"
-                 TextWrapping="Wrap" TextAlignment="Center" />
-      <TextBlock Text="{loc:Translate AchievementsEmptyText}"
-                 FontSize="13" LineHeight="20" Opacity="0.8"
-                 Foreground="{DynamicResource TextSecondaryBrush}"
-                 HorizontalAlignment="Center"
-                 TextWrapping="Wrap" TextAlignment="Center" />
-    </StackPanel>
+    <!-- Empty-State (AAA-Audit P2): Wiederverwendbarer EmptyStateCard-Pattern. -->
+    <ctrls:EmptyStateCard Grid.Row="2"
+                          IsVisible="{Binding IsEmpty}"
+                          Icon="TrophyOutline"
+                          Title="{loc:Translate AchievementsEmptyTitle}"
+                          Subtitle="{loc:Translate AchievementsEmptyText}"
+                          MaxWidth="380"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Margin="32,0,32,84"
+                          AutomationProperties.AutomationId="Achievements_Panel_Empty" />
 
     <!-- Achievement List (virtualisiert) - ListBox hat eigenen internen ScrollViewer -->
     <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->

@@ -56,6 +56,8 @@ HandwerkerImperium.Shared/
 │   ├── Dialogs/                     # Dialog-UserControls (AchievementDialog, StoryDialog, ...)
 │   ├── Guild/                       # GuildView + Sub-Views (Research, Boss, Hall, War, ...)
 │   └── MiniGames/                   # 10 MiniGame-Views
+├── Controls/
+│   └── EmptyStateCard.axaml         # Wiederverwendbarer Empty-State (Icon + Title + Subtitle + ActionButton)
 ├── Graphics/                        # ~35 SkiaSharp-Renderer (alle IDisposable)
 ├── Icons/
 │   ├── GameIconKind.cs              # Enum mit 224 Werten

@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             x:Class="HandwerkerImperium.Controls.EmptyStateCard"
+             AutomationProperties.AutomationId="EmptyState_Root">
+
+  <Border Classes="Card" Padding="24" CornerRadius="14"
+          HorizontalAlignment="Stretch">
+    <StackPanel Spacing="12" HorizontalAlignment="Center">
+
+      <!-- Icon mit weicher Gold-Aura (LinearGradient als Diagonal-Glow) -->
+      <Border CornerRadius="32" Width="64" Height="64"
+              HorizontalAlignment="Center">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#30D97706" Offset="0" />
+            <GradientStop Color="#15FFD700" Offset="0.5" />
+            <GradientStop Color="#00D97706" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <icons:GameIcon x:Name="IconElement"
+                        Width="40" Height="40"
+                        Foreground="{StaticResource CraftGoldBrush}"
+                        Opacity="0.85"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+      </Border>
+
+      <!-- Titel -->
+      <TextBlock x:Name="TitleText"
+                 FontSize="16" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 HorizontalAlignment="Center"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="280" />
+
+      <!-- Untertitel — Meister-Hans-Persona-Voice -->
+      <TextBlock x:Name="SubtitleText"
+                 FontSize="12"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 HorizontalAlignment="Center"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="320" />
+
+      <!-- Optionaler Action-Button -->
+      <Button x:Name="ActionButton"
+              Classes="Primary"
+              Padding="14,8" MinHeight="44"
+              CornerRadius="8"
+              HorizontalAlignment="Center"
+              IsVisible="False"
+              Margin="0,4,0,0" />
+
+    </StackPanel>
+  </Border>
+</UserControl>

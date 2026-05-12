@@ -515,11 +515,15 @@ public sealed class LeagueService : ILeagueService
     /// </summary>
     private static readonly Dictionary<string, string> FirebaseServerTimestamp = new() { [".sv"] = "timestamp" };
 
-    /// <summary>Debounced Firebase-Push: Wartet 3s nach letztem AddPoints, dann pusht.</summary>
+    /// <summary>
+    /// Debounced Firebase-Push: Wartet 3s nach letztem AddPoints, dann pusht.
+    /// Audit H07: KEIN Dispose() der alten CTS direkt nach Cancel() — Task.Run-Continuation
+    /// rennt sonst in ObjectDisposedException. Cancel() reicht; GC raeumt die alte CTS auf.
+    /// (Pattern wie DeckTelemetryService.ScheduleSave.)
+    /// </summary>
     private void ScheduleFirebasePush()
     {
         _pushDebounce?.Cancel();
-        _pushDebounce?.Dispose();
         _pushDebounce = new CancellationTokenSource();
         var token = _pushDebounce.Token;
 
@@ -536,6 +540,10 @@ public sealed class LeagueService : ILeagueService
             catch (TaskCanceledException)
             {
                 // Debounce abgebrochen → neuer Push kommt
+            }
+            catch (ObjectDisposedException)
+            {
+                // Backstop: CTS wurde im Dispose-Pfad freigegeben.
             }
         });
     }

@@ -51,7 +51,13 @@ public sealed class FirebaseClanService : IClanService
         _firebase = firebase;
         _prefs = prefs;
         _logger = logger;
-        _ = LoadCurrentClanAsync();
+        // Audit H10: try/catch im fire-and-forget — ungefangene Exceptions hier
+        // wuerden via TaskScheduler.UnobservedTaskException den Release-Process killen.
+        _ = Task.Run(async () =>
+        {
+            try { await LoadCurrentClanAsync(); }
+            catch (Exception ex) { _logger.LogWarning($"LoadCurrentClanAsync (Ctor) fehlgeschlagen: {ex.Message}"); }
+        });
     }
 
     public ClanData? CurrentClan => _currentClan;

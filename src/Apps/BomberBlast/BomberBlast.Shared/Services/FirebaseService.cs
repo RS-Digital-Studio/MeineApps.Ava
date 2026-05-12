@@ -76,13 +76,27 @@ public sealed class FirebaseService : IFirebaseService
                 _uid = savedUid;
                 _refreshToken = savedRefreshToken;
 
-                // Token refreshen
+                // Token refreshen (kein Exception-Wurf — TryRefreshTokenAsync hat eigenes try/catch)
                 if (await TryRefreshTokenAsync())
                     return;
             }
 
             // Neuen anonymen Account erstellen
-            await SignUpAnonymouslyAsync();
+            // Audit H10: try/catch um SignUp/Refresh — Captive-Portal/Offline darf nicht in
+            // ungefangener HttpRequestException muenden (TaskScheduler.UnobservedTaskException
+            // koennte den Release-Process killen). IsOnline=false signalisiert Offline-Status.
+            try
+            {
+                await SignUpAnonymouslyAsync();
+            }
+            catch (HttpRequestException)
+            {
+                IsOnline = false;
+            }
+            catch (TaskCanceledException)
+            {
+                IsOnline = false; // Timeout (5s) — Captive Portal oder Offline
+            }
         }
         finally
         {
@@ -152,22 +166,36 @@ public sealed class FirebaseService : IFirebaseService
     // ═══════════════════════════════════════════════════════════════════════
     // DATABASE OPERATIONS
     // ═══════════════════════════════════════════════════════════════════════
+    //
+    // Auth: Firebase REST API unterstuetzt Authorization: Bearer <token> Header
+    // (https://firebase.google.com/docs/database/rest/auth). Bearer-Header statt
+    // ?auth=<token>-Query-Parameter verhindert Token-Leak in Proxy-Logs, Crashlytics-
+    // Stacktraces (URL als Context) und Firebase-Audit-Logs (Audit C06).
+
+    /// <summary>Erstellt eine Request-Message mit Authorization-Bearer-Header (kein Token in URL).</summary>
+    private HttpRequestMessage BuildAuthenticatedRequest(HttpMethod method, string path, HttpContent? content = null)
+    {
+        var url = $"{DatabaseUrl}/{path}.json";
+        var request = new HttpRequestMessage(method, url);
+        if (!string.IsNullOrEmpty(_idToken))
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _idToken);
+        if (content != null)
+            request.Content = content;
+        return request;
+    }
 
     public async Task<T?> GetAsync<T>(string path) where T : class
     {
         try
         {
             await EnsureAuthenticatedAsync();
-            var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
-
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.SendAsync(BuildAuthenticatedRequest(HttpMethod.Get, path));
 
             // 401 → Token refreshen und nochmal versuchen
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth();
-                url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
-                response = await _httpClient.GetAsync(url);
+                response = await _httpClient.SendAsync(BuildAuthenticatedRequest(HttpMethod.Get, path));
             }
 
             if (!response.IsSuccessStatusCode)
@@ -195,17 +223,16 @@ public sealed class FirebaseService : IFirebaseService
         try
         {
             await EnsureAuthenticatedAsync();
-            var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
             var json = JsonSerializer.Serialize(data, JsonOptions);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PutAsync(url, content);
+            var response = await _httpClient.SendAsync(BuildAuthenticatedRequest(
+                HttpMethod.Put, path, new StringContent(json, Encoding.UTF8, "application/json")));
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth();
-                url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
-                response = await _httpClient.PutAsync(url, content);
+                // Neuer StringContent — HttpContent darf nicht zweimal gesendet werden (Audit H13)
+                response = await _httpClient.SendAsync(BuildAuthenticatedRequest(
+                    HttpMethod.Put, path, new StringContent(json, Encoding.UTF8, "application/json")));
             }
 
             IsOnline = response.IsSuccessStatusCode;
@@ -221,21 +248,17 @@ public sealed class FirebaseService : IFirebaseService
         try
         {
             await EnsureAuthenticatedAsync();
-            var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
             // PATCH-Updates: Dictionary-Keys werden 1:1 als JSON-Properties uebernommen
             // (kein NamingPolicy-Mapping noetig — Caller setzt bereits camelCase).
             var json = JsonSerializer.Serialize(updates);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var request = new HttpRequestMessage(new HttpMethod("PATCH"), url) { Content = content };
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(BuildAuthenticatedRequest(
+                new HttpMethod("PATCH"), path, new StringContent(json, Encoding.UTF8, "application/json")));
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth();
-                url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
-                request = new HttpRequestMessage(new HttpMethod("PATCH"), url) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
-                response = await _httpClient.SendAsync(request);
+                response = await _httpClient.SendAsync(BuildAuthenticatedRequest(
+                    new HttpMethod("PATCH"), path, new StringContent(json, Encoding.UTF8, "application/json")));
             }
 
             IsOnline = response.IsSuccessStatusCode;
@@ -251,17 +274,15 @@ public sealed class FirebaseService : IFirebaseService
         try
         {
             await EnsureAuthenticatedAsync();
-            var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
             var json = JsonSerializer.Serialize(data, JsonOptions);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync(url, content);
+            var response = await _httpClient.SendAsync(BuildAuthenticatedRequest(
+                HttpMethod.Post, path, new StringContent(json, Encoding.UTF8, "application/json")));
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth();
-                url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
-                response = await _httpClient.PostAsync(url, content);
+                response = await _httpClient.SendAsync(BuildAuthenticatedRequest(
+                    HttpMethod.Post, path, new StringContent(json, Encoding.UTF8, "application/json")));
             }
 
             if (!response.IsSuccessStatusCode)
@@ -288,15 +309,12 @@ public sealed class FirebaseService : IFirebaseService
         try
         {
             await EnsureAuthenticatedAsync();
-            var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
-
-            var response = await _httpClient.DeleteAsync(url);
+            var response = await _httpClient.SendAsync(BuildAuthenticatedRequest(HttpMethod.Delete, path));
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth();
-                url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
-                response = await _httpClient.DeleteAsync(url);
+                response = await _httpClient.SendAsync(BuildAuthenticatedRequest(HttpMethod.Delete, path));
             }
 
             IsOnline = response.IsSuccessStatusCode;

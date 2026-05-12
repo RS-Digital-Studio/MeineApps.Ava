@@ -1065,6 +1065,56 @@ Wochen-Inhalte sehen. RemoteConfig-Override via Sprint 2.1 moeglich.
 
 ---
 
+## Adaptive Music-Engine (Sprint 5.3 / #13)
+
+`AudioBusMixer.Boost(bus, multiplier, duration)` ergaenzt die bestehende Duck-API um
+einen Boost-Pfad (Multiplier &gt;= 1.0, Cap 1.5 — Distortion-Schutz). Update-Loop
+behandelt Recovery sowohl fuer Duck (Linear zu 1.0 mit 2.0/s) als auch Boost
+(Linear zurueck zu 1.0 mit 0.5/s).
+
+Engine-Trigger fuer Music-Boost:
+- Last-Enemy-Drama (>=3 Enemies / Boss-Level): Music +20% fuer 4s
+- ULTRA-Combo (x10+): Music +25% fuer 5s
+
+Echte EQ-Sidechain auf Drum-Frequenzen + Tempo-Pitch-Shift braucht externe
+Audio-DSP-Library (ManagedBass/SoundTouch) — deferred. LUFS-Mastering bleibt
+externer Build-Skript-Schritt (ffmpeg).
+
+---
+
+## Replay-Foundation (Sprint 5.2 / #12)
+
+`Core.IRngProvider` (vorhanden) jetzt als DI-Singleton registriert mit
+`DeterministicRngProvider` als Default (xoshiro256+ via DeterministicRandom).
+`SystemRngProvider` bleibt fuer Visual-Random (Partikel-Jitter, Screen-Shake-
+Offset — soll NICHT deterministisch sein, sonst sieht's kuenstlich aus).
+
+Foundation-Komplettheit:
+- `FixedTimestepRunner` (60Hz-Akkumulator) ist im Engine-Update verkabelt (opt-in via Flag)
+- `ReplayCapture` (1 Byte/Tick Input-Stream) hat Serialize/Deserialize
+- IRngProvider im DI
+
+Was bleibt fuer Replay-System: Migration der 50+ Random-Calls in LevelGenerator/
+EnemyAI/etc. auf injizierten IRngProvider. Eigener multi-Wochen-Sprint.
+
+---
+
+## Foundation-Services fuer geplante Refactors
+
+Diese Services sind als API + Default-Impl im DI registriert, aber die zugehoerige
+groesere Refactor-Arbeit (UI-Umbau / God-VM-Reduktion / Migration) bleibt eigener
+Sprint mit Test-Coverage-Voraussetzung:
+
+- `IGameEventBus` (Sprint 4.2 #10): Pub/Sub fuer UI-Events. Neue Code kann den
+  Service nutzen statt MainViewModel-Events; bestehende Logik bleibt.
+- `IBottomTabHub` (Sprint 3.1 #4): Tab-State + Pref-Persistenz. MainMenuView
+  UI-Refactor (974 LOC) bleibt Game-Design-Sprint.
+- Mode-Plugin-Foundation (Sprint 5.1 #11): GameEngine.Update ruft bereits
+  `_currentMode?.UpdateLogic` + `OnGameOver`. Bool-Flag-Wegfall + Property-
+  Aliasse-Aufloesung bleibt eigener Sprint mit Regression-Tests.
+
+---
+
 ## Aktive Gotcha-Patterns
 
 ### SKPath.Rewind() statt Reset()
@@ -1203,6 +1253,9 @@ gehalten werden (sonst zeigt Splash eine andere Version als die installierte App
 | `IMultiplayerSessionService` | Multiplayer-Mode-Verwaltung (Sprint 7.2 Foundation) |
 | `IClanService` | Clan-System (Sprint 7.3 Foundation, NullImpl bis Firebase live) |
 | `IWeeklyContentService` | Wochen-Content-Pipeline (Sprint 7.4, ISO-Week-deterministisch) |
+| `IRngProvider` | Deterministischer RNG (Sprint 5.2, Core-Namespace, Replay-Foundation) |
+| `IGameEventBus` | Pub/Sub-Hub fuer UI-Events (Sprint 4.2, FloatingText/Celebration/ExitHint/Message) |
+| `IBottomTabHub` | Bottom-Tab-Hub (Sprint 3.1 Foundation, 4 Tabs: Home/Play/Shop/Profile) |
 
 ---
 

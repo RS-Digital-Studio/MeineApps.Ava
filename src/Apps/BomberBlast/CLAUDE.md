@@ -979,6 +979,92 @@ Public API: `App.ResetCrashRecoveryCounter()` fuer Settings-Screen.
 
 ---
 
+## Tutorial-Phasen (Sprint 3.2 / #5)
+
+Tutorial-Schritte sind in 3 Phasen gruppiert: T1 Movement, T2 Bombs, T3 PowerUps.
+`TutorialPhase`-Enum + `TutorialStep.IsFirstOfPhase`-Flag.
+`ITutorialService.PhaseChanged`-Event feuert beim Phasen-Wechsel —
+Tutorial-Overlay kann einen Banner anzeigen ("Phase 2: Bomben-Mechanik").
+RESX-Texte fuer Phase-Banner in 6 Sprachen.
+
+---
+
+## Welt-Story-Beats (Sprint 6.2 / #16)
+
+`IWorldStoryService` liefert Cutscene-Daten fuer Welt-Start (Intro) und
+Welt-Boss-Sieg (Outro mit Cliffhanger). 10 Welt-Intros + 9 Welt-Outros
+(Welt 10 ist das Ende). Pref-Flags HasSeenIntro/HasSeenOutro pro Welt —
+Cutscenes one-shot pro Lebenszeit. Texte voll lokalisiert in 6 Sprachen.
+
+`StingerKey`-Field fuer Audio-Verkabelung (boss_reveal fuer Intros ab Welt 2,
+victory fuer alle Outros).
+
+---
+
+## Elite-Enemies + Boss-Modifier (Sprint 6.1 / #15)
+
+`Enemy.IsElite`-Property + Konstruktor-Parameter `isElite: false`. Elite-Modifier:
+1.2x Speed, 2x HitPoints, 3x Points, lila pulsierender Glow im Renderer.
+
+`BossEnemy.Modifier`-Property mit `BossModifier`-Enum (8 Modifier × 5 Bosse =
+40 Variationen). `BossModifierExtensions.RollForWorld(world, rng)` weist deterministisch
+zu (30% ab W5, 60% W10). `CurrentPhase`-Property wird beim Enrage-Threshold von 1 auf 2
+gewechselt — erlaubt Phase-2-Variant-Attack-Patterns.
+
+HINWEIS: Modifier-Effekte (Shielded/Healing/Summoner/...) sind separate Implementierungs-
+Sprints — Sprint 6.1 ist Foundation (Enum + Property + Spawn-Roll).
+
+---
+
+## Hero/Character-System (Sprint 7.1 / #21)
+
+`HeroDefinition` mit 5 hardcoded Heroes: Default, SpeedySam, BrickBoris, TwinTina,
+LuckyLola. Stats: StartMaxBombs/FireRange/SpeedLevel/Lives + Multiplier
+(Coin/PowerUp/BlockDrop) + `HeroTrait`-Enum.
+
+`IHeroService` mit ActiveHero + Unlock-API. Persistiert ActiveHeroId + Unlocked-Set.
+Default-Hero IMMER unlocked. Unlock-Conditions: Achievement-IDs oder "gems_NN"
+fuer Direct-Buy. RESX-Texte (Name + Desc) in 6 Sprachen.
+
+HINWEIS: Engine-Integration (Player.ApplyHero(activeHero) beim Spawn, Stat-Boni
+in Coin/PowerUp/Block-Calculations) ist deferred.
+
+---
+
+## Multiplayer-Foundation (Sprint 7.2 / #22)
+
+`IMultiplayerSessionService` verwaltet `MultiplayerMode` + Persistenz. `IsCoopEnabled`
+/ `IsVersusEnabled` fuer Engine-Abfrage. Foundation aufbaut auf bestehender
+`Core/Multiplayer/`-Klassen (PlayerInputSnapshot, InputBuffer, GameStateSnapshot).
+
+HINWEIS: Echte Engine-Integration (Player2-Spawn, Dual-Input-Routing,
+Co-Op-Camera, GameOver-bei-beide-tot, Splitscreen) ist eigener Multi-Wochen-Sprint.
+
+---
+
+## Clan-System Foundation (Sprint 7.3 / #23)
+
+`IClanService` mit `NullClanService` (Default). Domain-Models: ClanData, ClanMember,
+ClanChatMessage, ClanRole. API: Create/Join/Leave/Pull-Chat/Send/Leaderboard.
+Asynchron-Pattern (kein Live-Sync, alle 30s Pull).
+
+HINWEIS: Echte Firebase-Realtime-DB-Integration mit Security-Rules + Profanity-Filter
++ Rate-Limits ist eigener 4-6-Wochen-Sprint.
+
+---
+
+## Wochen-Content-Pipeline (Sprint 7.4 / #24)
+
+`IWeeklyContentService` deterministisch via ISO-Wochen-Seed. 8 WeeklyModifier-Pool
+(Ice+Speed, DoubleBombs, Phantom-Walls, ...) + 4 WeeklyReward-Pool (Cosmetic-
+Trails/Frames/Victories) + 3 wechselnde Boss-Modifier pro Woche aus dem 8er-Pool
+(Fisher-Yates-Shuffle).
+
+`ISOWeek.GetWeekOfYear` stellt sicher dass alle Spieler weltweit gleiche
+Wochen-Inhalte sehen. RemoteConfig-Override via Sprint 2.1 moeglich.
+
+---
+
 ## Aktive Gotcha-Patterns
 
 ### SKPath.Rewind() statt Reset()
@@ -1112,6 +1198,11 @@ gehalten werden (sonst zeigt Splash eine andere Version als die installierte App
 | `IReEngagementScheduler` | D1/D3/D7 lokale Push-Trigger (Sprint 2.3, MainActivity-OnPause/OnResume) |
 | `IWhatsNewService` | Versions-Aenderungs-Modal (Sprint 4.3) |
 | `IFeatureUnlockChoreographer` | Queue-basierte Feature-Unlock-Overlays (Sprint 4.4) |
+| `IWorldStoryService` | Welt-Intro/Outro-Cutscenes (Sprint 6.2) |
+| `IHeroService` | 5 spielbare Heroes mit Stats + Unlock (Sprint 7.1) |
+| `IMultiplayerSessionService` | Multiplayer-Mode-Verwaltung (Sprint 7.2 Foundation) |
+| `IClanService` | Clan-System (Sprint 7.3 Foundation, NullImpl bis Firebase live) |
+| `IWeeklyContentService` | Wochen-Content-Pipeline (Sprint 7.4, ISO-Week-deterministisch) |
 
 ---
 

@@ -211,6 +211,13 @@ public sealed partial class GameRenderer
                     bombGlow = bSkin.GlowColor;
                     bombFuse = bSkin.FuseColor;
                 }
+                else if (GetWorldBombFx() is { } wfx)
+                {
+                    // Sprint 1.1 AAA-Audit #6: Welt-spezifische Bomb-Farben
+                    bombBody = wfx.body;
+                    bombGlow = wfx.glow;
+                    bombFuse = wfx.fuse;
+                }
                 else
                 {
                     bombBody = _palette.BombBody;
@@ -248,10 +255,15 @@ public sealed partial class GameRenderer
         }
 
         // Gloss highlight (top-left) - Bomben-Skin Highlight wenn nicht Standard
+        // Sprint 1.1 AAA-Audit #6: Bei Default-Skin Welt-spezifisches Highlight verwenden.
         var hlSkin = _customizationService.BombSkin;
-        var hlColor = (bomb.Type == BombType.Normal && hlSkin.Id != "bomb_default")
-            ? hlSkin.HighlightColor
-            : _palette.BombHighlight.WithAlpha(120);
+        SKColor hlColor;
+        if (bomb.Type == BombType.Normal && hlSkin.Id != "bomb_default")
+            hlColor = hlSkin.HighlightColor;
+        else if (bomb.Type == BombType.Normal && GetWorldBombFx() is { } whl)
+            hlColor = whl.highlight.WithAlpha(120);
+        else
+            hlColor = _palette.BombHighlight.WithAlpha(120);
         _fillPaint.Color = hlColor;
         canvas.DrawCircle(bomb.X - radius * 0.3f, bomb.Y - radius * 0.3f, radius * 0.25f, _fillPaint);
 
@@ -350,6 +362,12 @@ public sealed partial class GameRenderer
                 {
                     sparkGlow = bsSkin.SparkColor.WithAlpha((byte)(80 + fuseProgress * 80));
                     sparkCore = bsSkin.SparkColor;
+                }
+                else if (GetWorldBombFx() is { } wsk)
+                {
+                    // Sprint 1.1 AAA-Audit #6: Welt-spezifische Funken-Farben
+                    sparkGlow = wsk.sparkGlow.WithAlpha((byte)(80 + fuseProgress * 80));
+                    sparkCore = wsk.sparkCore;
                 }
                 else
                 {

@@ -327,6 +327,192 @@ public sealed partial class GameRenderer : IDisposable
         public SKColor Accent;
     }
 
+    // ───────────────────────────────────────────────────────────────────────
+    // BombFxTheme — Welt-spezifische Bomb/Explosion-Farben (AAA-Audit #6)
+    // ───────────────────────────────────────────────────────────────────────
+    // Wird in RenderBomb (default-Branch ohne Custom-Skin) und im Explosion-
+    // Renderer als Override verwendet. Custom-Skins haben weiterhin Vorrang.
+    private sealed class BombFxTheme
+    {
+        public SKColor BombBody;        // Bombenkörper
+        public SKColor BombGlow;        // Pulse-Glow um Bombe
+        public SKColor BombFuse;        // Zündschnur-Farbe
+        public SKColor BombHighlight;   // Glanzpunkt oben links
+        public SKColor SparkGlow;       // Funken-Halo am Schnur-Ende
+        public SKColor SparkCore;       // Funken-Stern (innerer Punkt)
+        public SKColor ExplosionOuter;  // äußerer Explosion-Ring
+        public SKColor ExplosionInner;  // mittlerer Explosion-Ring
+        public SKColor ExplosionCore;   // innerer heißer Kern
+    }
+
+    // Classic Welt-Bomb-FX-Themes (10 Welten)
+    private static readonly BombFxTheme[] ClassicBombFx =
+    [
+        // Welt 1: Forest — klassisches Orange (Default)
+        new() { BombBody = new(30,30,35), BombGlow = new(255,100,0), BombFuse = new(230,140,40),
+                BombHighlight = new(200,200,210),
+                SparkGlow = new(255,180,50), SparkCore = SKColors.Yellow,
+                ExplosionOuter = new(255,150,50), ExplosionInner = new(255,220,100), ExplosionCore = new(255,255,230) },
+        // Welt 2: Industrial — kühles Blau-Stahl
+        new() { BombBody = new(28,32,42), BombGlow = new(80,180,255), BombFuse = new(120,200,255),
+                BombHighlight = new(180,200,230),
+                SparkGlow = new(100,200,255), SparkCore = new(220,240,255),
+                ExplosionOuter = new(80,160,255), ExplosionInner = new(180,220,255), ExplosionCore = new(240,250,255) },
+        // Welt 3: Cavern — mystisches Lila
+        new() { BombBody = new(35,25,45), BombGlow = new(180,80,255), BombFuse = new(200,120,255),
+                BombHighlight = new(210,180,230),
+                SparkGlow = new(200,100,255), SparkCore = new(230,180,255),
+                ExplosionOuter = new(160,80,240), ExplosionInner = new(220,160,255), ExplosionCore = new(255,230,255) },
+        // Welt 4: Sky — leuchtendes Cyan
+        new() { BombBody = new(35,45,55), BombGlow = new(0,220,255), BombFuse = new(80,230,255),
+                BombHighlight = new(200,235,245),
+                SparkGlow = new(0,240,255), SparkCore = new(220,250,255),
+                ExplosionOuter = new(0,200,240), ExplosionInner = new(150,230,255), ExplosionCore = new(240,255,255) },
+        // Welt 5: Inferno — tiefes Rot/Orange
+        new() { BombBody = new(40,15,15), BombGlow = new(255,40,20), BombFuse = new(255,80,20),
+                BombHighlight = new(220,140,100),
+                SparkGlow = new(255,80,0), SparkCore = new(255,200,80),
+                ExplosionOuter = new(220,40,20), ExplosionInner = new(255,140,40), ExplosionCore = new(255,230,150) },
+        // Welt 6: Ruinen — antikes Gold
+        new() { BombBody = new(45,35,20), BombGlow = new(255,200,40), BombFuse = new(255,220,80),
+                BombHighlight = new(220,200,140),
+                SparkGlow = new(255,210,60), SparkCore = new(255,240,180),
+                ExplosionOuter = new(220,170,40), ExplosionInner = new(255,220,120), ExplosionCore = new(255,250,200) },
+        // Welt 7: Ozean — Türkis/Aqua
+        new() { BombBody = new(20,35,45), BombGlow = new(0,200,220), BombFuse = new(60,220,230),
+                BombHighlight = new(180,220,230),
+                SparkGlow = new(0,220,240), SparkCore = new(200,250,255),
+                ExplosionOuter = new(0,180,210), ExplosionInner = new(150,230,240), ExplosionCore = new(230,255,255) },
+        // Welt 8: Vulkan — glühendes Magma-Orange
+        new() { BombBody = new(40,15,10), BombGlow = new(255,120,0), BombFuse = new(255,150,30),
+                BombHighlight = new(220,160,100),
+                SparkGlow = new(255,140,0), SparkCore = new(255,210,100),
+                ExplosionOuter = new(255,100,0), ExplosionInner = new(255,180,40), ExplosionCore = new(255,240,180) },
+        // Welt 9: Himmelsfestung — heiliges Weiß-Gold
+        new() { BombBody = new(40,35,25), BombGlow = new(255,230,120), BombFuse = new(255,240,180),
+                BombHighlight = new(240,230,200),
+                SparkGlow = new(255,240,150), SparkCore = SKColors.White,
+                ExplosionOuter = new(255,200,80), ExplosionInner = new(255,240,180), ExplosionCore = SKColors.White },
+        // Welt 10: Schattenwelt — dämonisches Violett
+        new() { BombBody = new(20,10,30), BombGlow = new(180,40,255), BombFuse = new(200,80,255),
+                BombHighlight = new(180,150,210),
+                SparkGlow = new(200,60,255), SparkCore = new(240,180,255),
+                ExplosionOuter = new(140,40,200), ExplosionInner = new(200,120,255), ExplosionCore = new(255,220,255) },
+    ];
+
+    // Neon Welt-Bomb-FX-Themes (gesättigter, leuchtender)
+    private static readonly BombFxTheme[] NeonBombFx =
+    [
+        // Welt 1: Forest — Neon-Lime
+        new() { BombBody = new(15,25,18), BombGlow = new(0,255,100), BombFuse = new(80,255,140),
+                BombHighlight = new(150,255,200),
+                SparkGlow = new(0,255,120), SparkCore = new(180,255,200),
+                ExplosionOuter = new(0,220,80), ExplosionInner = new(120,255,160), ExplosionCore = new(220,255,240) },
+        // Welt 2: Industrial — Neon-Blau (Cybertron)
+        new() { BombBody = new(15,18,30), BombGlow = new(0,160,255), BombFuse = new(80,200,255),
+                BombHighlight = new(150,210,255),
+                SparkGlow = new(0,180,255), SparkCore = new(180,230,255),
+                ExplosionOuter = new(0,140,255), ExplosionInner = new(120,200,255), ExplosionCore = new(230,245,255) },
+        // Welt 3: Cavern — Neon-Magenta
+        new() { BombBody = new(25,10,35), BombGlow = new(220,40,255), BombFuse = new(240,100,255),
+                BombHighlight = new(220,170,240),
+                SparkGlow = new(230,80,255), SparkCore = new(255,200,255),
+                ExplosionOuter = new(200,40,240), ExplosionInner = new(240,140,255), ExplosionCore = new(255,230,255) },
+        // Welt 4: Sky — Elektro-Cyan
+        new() { BombBody = new(15,28,35), BombGlow = new(0,240,255), BombFuse = new(100,250,255),
+                BombHighlight = new(200,245,255),
+                SparkGlow = new(0,250,255), SparkCore = SKColors.White,
+                ExplosionOuter = new(0,220,255), ExplosionInner = new(160,240,255), ExplosionCore = SKColors.White },
+        // Welt 5: Inferno — Plasma-Rot
+        new() { BombBody = new(30,8,8), BombGlow = new(255,30,40), BombFuse = new(255,60,60),
+                BombHighlight = new(220,140,140),
+                SparkGlow = new(255,40,40), SparkCore = new(255,200,180),
+                ExplosionOuter = new(255,40,30), ExplosionInner = new(255,140,80), ExplosionCore = new(255,240,200) },
+        // Welt 6: Ruinen — Neon-Gold
+        new() { BombBody = new(30,22,8), BombGlow = new(255,200,0), BombFuse = new(255,220,40),
+                BombHighlight = new(240,220,140),
+                SparkGlow = new(255,210,20), SparkCore = new(255,250,180),
+                ExplosionOuter = new(255,180,0), ExplosionInner = new(255,220,80), ExplosionCore = new(255,250,200) },
+        // Welt 7: Ozean — Aqua-Türkis
+        new() { BombBody = new(10,25,32), BombGlow = new(0,220,240), BombFuse = new(60,240,250),
+                BombHighlight = new(180,235,245),
+                SparkGlow = new(0,240,255), SparkCore = SKColors.White,
+                ExplosionOuter = new(0,200,230), ExplosionInner = new(150,235,250), ExplosionCore = new(230,255,255) },
+        // Welt 8: Vulkan — Glühendes Orange
+        new() { BombBody = new(35,10,5), BombGlow = new(255,120,0), BombFuse = new(255,150,20),
+                BombHighlight = new(220,160,80),
+                SparkGlow = new(255,140,0), SparkCore = new(255,220,120),
+                ExplosionOuter = new(255,100,0), ExplosionInner = new(255,180,40), ExplosionCore = new(255,240,180) },
+        // Welt 9: Himmelsfestung — Heiliges Weiß
+        new() { BombBody = new(30,28,18), BombGlow = new(255,240,180), BombFuse = new(255,250,210),
+                BombHighlight = new(245,240,210),
+                SparkGlow = new(255,250,200), SparkCore = SKColors.White,
+                ExplosionOuter = new(255,220,120), ExplosionInner = new(255,250,200), ExplosionCore = SKColors.White },
+        // Welt 10: Schattenwelt — Geisterhaftes Violett
+        new() { BombBody = new(15,8,25), BombGlow = new(200,60,255), BombFuse = new(220,100,255),
+                BombHighlight = new(200,170,230),
+                SparkGlow = new(220,80,255), SparkCore = new(255,200,255),
+                ExplosionOuter = new(160,40,220), ExplosionInner = new(220,140,255), ExplosionCore = new(255,230,255) },
+    ];
+
+    // Retro Welt-Bomb-FX-Themes (gedämpft, Pixel-Art-tauglich)
+    private static readonly BombFxTheme[] RetroBombFx =
+    [
+        // Welt 1: Forest
+        new() { BombBody = new(32,28,24), BombGlow = new(200,80,24), BombFuse = new(192,120,40),
+                BombHighlight = new(160,148,120),
+                SparkGlow = new(216,160,72), SparkCore = new(248,224,128),
+                ExplosionOuter = new(216,128,32), ExplosionInner = new(240,192,64), ExplosionCore = new(248,240,200) },
+        // Welt 2: Industrial — Stahl-Blau
+        new() { BombBody = new(28,32,40), BombGlow = new(80,140,200), BombFuse = new(120,168,216),
+                BombHighlight = new(168,184,208),
+                SparkGlow = new(100,160,216), SparkCore = new(208,232,248),
+                ExplosionOuter = new(72,128,184), ExplosionInner = new(176,200,232), ExplosionCore = new(232,240,248) },
+        // Welt 3: Cavern — Lila
+        new() { BombBody = new(32,24,36), BombGlow = new(160,80,200), BombFuse = new(184,120,216),
+                BombHighlight = new(192,168,200),
+                SparkGlow = new(180,100,216), SparkCore = new(232,200,240),
+                ExplosionOuter = new(144,72,192), ExplosionInner = new(208,160,232), ExplosionCore = new(240,224,248) },
+        // Welt 4: Sky — Hellblau
+        new() { BombBody = new(28,40,52), BombGlow = new(72,184,216), BombFuse = new(120,208,232),
+                BombHighlight = new(192,224,232),
+                SparkGlow = new(96,200,224), SparkCore = new(216,240,248),
+                ExplosionOuter = new(56,168,200), ExplosionInner = new(160,216,232), ExplosionCore = new(232,248,248) },
+        // Welt 5: Inferno — Dunkelrot
+        new() { BombBody = new(40,16,16), BombGlow = new(200,56,32), BombFuse = new(216,88,40),
+                BombHighlight = new(208,144,128),
+                SparkGlow = new(216,80,32), SparkCore = new(248,200,120),
+                ExplosionOuter = new(184,48,24), ExplosionInner = new(232,144,72), ExplosionCore = new(248,232,168) },
+        // Welt 6: Ruinen — Sand
+        new() { BombBody = new(40,32,20), BombGlow = new(200,168,72), BombFuse = new(216,184,96),
+                BombHighlight = new(208,192,144),
+                SparkGlow = new(216,176,80), SparkCore = new(248,232,168),
+                ExplosionOuter = new(184,144,48), ExplosionInner = new(232,200,120), ExplosionCore = new(248,240,200) },
+        // Welt 7: Ozean — Blaugrün
+        new() { BombBody = new(20,32,40), BombGlow = new(48,160,184), BombFuse = new(80,192,208),
+                BombHighlight = new(176,216,224),
+                SparkGlow = new(64,184,200), SparkCore = new(208,240,248),
+                ExplosionOuter = new(40,144,176), ExplosionInner = new(160,208,224), ExplosionCore = new(232,248,248) },
+        // Welt 8: Vulkan — Orange
+        new() { BombBody = new(36,16,8), BombGlow = new(216,88,24), BombFuse = new(232,120,40),
+                BombHighlight = new(208,160,112),
+                SparkGlow = new(232,112,32), SparkCore = new(248,208,128),
+                ExplosionOuter = new(200,80,16), ExplosionInner = new(232,160,80), ExplosionCore = new(248,232,176) },
+        // Welt 9: Himmelsfestung — Beige-Gold
+        new() { BombBody = new(40,36,24), BombGlow = new(216,184,48), BombFuse = new(232,208,96),
+                BombHighlight = new(232,216,176),
+                SparkGlow = new(224,196,72), SparkCore = new(248,240,208),
+                ExplosionOuter = new(200,168,40), ExplosionInner = new(232,216,128), ExplosionCore = new(248,240,208) },
+        // Welt 10: Schattenwelt — Dunkelviolett
+        new() { BombBody = new(24,16,36), BombGlow = new(152,72,200), BombFuse = new(184,112,216),
+                BombHighlight = new(184,160,200),
+                SparkGlow = new(176,96,216), SparkCore = new(232,200,240),
+                ExplosionOuter = new(136,56,192), ExplosionInner = new(200,152,232), ExplosionCore = new(240,224,248) },
+    ];
+
+    // Aktives Welt-Bomb-FX-Theme (wird bei Level-Wechsel gesetzt)
+    private BombFxTheme? _bombFxTheme;
+
     // Classic Welt-Paletten
     private static readonly WorldPalette[] ClassicWorldPalettes =
     [
@@ -496,7 +682,7 @@ public sealed partial class GameRenderer : IDisposable
     private WorldPalette? _worldPalette;
 
     /// <summary>
-    /// Welt-Theme setzen (0-4 für Welt 1-5)
+    /// Welt-Theme setzen (0-9 für Welt 1-10) — laedt Welt-Palette und Welt-Bomb-FX-Theme.
     /// </summary>
     public void SetWorldTheme(int worldIndex)
     {
@@ -506,8 +692,15 @@ public sealed partial class GameRenderer : IDisposable
             GameVisualStyle.Retro => RetroWorldPalettes,
             _ => ClassicWorldPalettes
         };
+        var bombFxThemes = _styleService.CurrentStyle switch
+        {
+            GameVisualStyle.Neon => NeonBombFx,
+            GameVisualStyle.Retro => RetroBombFx,
+            _ => ClassicBombFx
+        };
         worldIndex = Math.Clamp(worldIndex, 0, palettes.Length - 1);
         _worldPalette = palettes[worldIndex];
+        _bombFxTheme = bombFxThemes[Math.Clamp(worldIndex, 0, bombFxThemes.Length - 1)];
         _currentWorldIndex = worldIndex;
 
         // Boden-Cache invalidieren (wird beim nächsten RenderGrid neu aufgebaut)
@@ -533,7 +726,30 @@ public sealed partial class GameRenderer : IDisposable
         _palette.BlockMortar = _worldPalette.BlockMortar;
         _palette.BlockHighlight = _worldPalette.BlockHighlight;
         _palette.BlockShadow = _worldPalette.BlockShadow;
+
+        // Welt-Bomb-FX-Theme uebernehmen — Bombe + Explosion bekommen welt-spezifischen
+        // Look (Sprint 1.1 AAA-Audit #6). Nur greift wenn Default-Skin aktiv ist
+        // (Custom-Skins behalten ihre Farben).
+        UpdateExplosionSkinColors();
     }
+
+    /// <summary>
+    /// Liefert das aktive Welt-Bomb-FX-Theme (Sprint 1.1 AAA-Audit #6).
+    /// Wird in RenderBomb verwendet um Default-Skin-Bomben Welt-spezifisch zu faerben.
+    /// </summary>
+    internal (SKColor body, SKColor glow, SKColor fuse, SKColor highlight, SKColor sparkGlow, SKColor sparkCore)?
+        GetWorldBombFx() =>
+        _bombFxTheme is { } t
+            ? (t.BombBody, t.BombGlow, t.BombFuse, t.BombHighlight, t.SparkGlow, t.SparkCore)
+            : null;
+
+    /// <summary>
+    /// Liefert die aktuelle Welt-Akzent-Farbe (Sprint 1.2 AAA-Audit #7).
+    /// Wird vom UltraComboFlash + Cinematic-Director als Welt-Tint verwendet.
+    /// Default Gold wenn keine Welt aktiv ist.
+    /// </summary>
+    public SKColor GetWorldAccentColor() =>
+        _worldPalette?.Accent ?? new SKColor(255, 215, 0);
 
     // ═══════════════════════════════════════════════════════════════════════
     // POOLED PAINT OBJECTS
@@ -619,7 +835,7 @@ public sealed partial class GameRenderer : IDisposable
         _ => ClassicPalette
     };
 
-    /// <summary>Explosionsfarben aus Skin oder Palette aktualisieren</summary>
+    /// <summary>Explosionsfarben aus Skin oder Welt-BombFx-Theme aktualisieren (AAA-Audit #6).</summary>
     private void UpdateExplosionSkinColors()
     {
         var eSkin = _customizationService.ExplosionSkin;
@@ -637,6 +853,14 @@ public sealed partial class GameRenderer : IDisposable
             _explInner = eSkin.InnerColor;
             _explCore = eSkin.CoreColor;
         }
+        else if (_bombFxTheme is { } theme)
+        {
+            // Welt-spezifische Explosion-Farben (Sprint 1.1 AAA-Audit #6) — Wueste hat anderes
+            // Look als Vulkan, Schattenwelt anderes als Forest. Default-Skin ueberlasst der Welt das Theme.
+            _explOuter = theme.ExplosionOuter;
+            _explInner = theme.ExplosionInner;
+            _explCore = theme.ExplosionCore;
+        }
         else
         {
             _explOuter = _palette.ExplosionOuter;
@@ -648,6 +872,17 @@ public sealed partial class GameRenderer : IDisposable
     private void OnStyleChanged(GameVisualStyle style)
     {
         _palette = GetPaletteForStyle(style);
+        // Welt-Bomb-FX-Theme an neuen Style anpassen
+        if (_bombFxTheme != null)
+        {
+            var bombFxThemes = style switch
+            {
+                GameVisualStyle.Neon => NeonBombFx,
+                GameVisualStyle.Retro => RetroBombFx,
+                _ => ClassicBombFx
+            };
+            _bombFxTheme = bombFxThemes[Math.Clamp(_currentWorldIndex, 0, bombFxThemes.Length - 1)];
+        }
         UpdateExplosionSkinColors();
         // Gecachten HUD-Gradient invalidieren
         _hudGradientShader?.Dispose();

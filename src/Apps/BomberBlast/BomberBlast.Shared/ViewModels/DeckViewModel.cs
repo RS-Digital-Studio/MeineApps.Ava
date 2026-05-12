@@ -15,8 +15,9 @@ namespace BomberBlast.ViewModels;
 /// Karten upgraden. Landscape 2-Spalten-Layout (Sammlung links, Deck+Detail rechts).
 /// Zeigt ALLE 13 Karten (besessene + nicht-besessene als gesperrt).
 /// </summary>
-public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
+public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable, IDisposable
 {
+    private bool _disposed;
     private readonly ICardService _cardService;
     private readonly ICoinService _coinService;
     private readonly IGemService _gemService;
@@ -207,8 +208,23 @@ public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuic
         _localization = localization;
         _battlePassService = battlePassService;
 
-        _cardService.CollectionChanged += (_, _) => RefreshAll();
-        _coinService.BalanceChanged += (_, _) => UpdateCoins();
+        _cardService.CollectionChanged += OnCardsChanged;
+        _coinService.BalanceChanged += OnCoinBalanceChanged;
+    }
+
+    private void OnCardsChanged(object? sender, EventArgs e) => RefreshAll();
+    private void OnCoinBalanceChanged(object? sender, EventArgs e) => UpdateCoins();
+
+    /// <summary>
+    /// Audit (Event-Subscription-Lücke): Sauberes Unsubscribe der Service-Events.
+    /// Singleton-Lifetime nimmt das Leak meist auf, App.DisposeServices ruft das hier explizit.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cardService.CollectionChanged -= OnCardsChanged;
+        _coinService.BalanceChanged -= OnCoinBalanceChanged;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

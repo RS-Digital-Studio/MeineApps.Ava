@@ -23,7 +23,7 @@ namespace BomberBlast.ViewModels;
 ///
 /// Navigations-Events von Sub-VMs werden direkt durchgereicht (z. B. GoBack im Statistics-Tab).
 /// </summary>
-public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
+public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable, IDisposable
 {
     private readonly ILeagueService _leagueService;
     private readonly ICustomizationService _customizationService;
@@ -134,8 +134,20 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
         achievementsVm.NavigationRequested += request => NavigationRequested?.Invoke(request);
         collectionVm.NavigationRequested += request => NavigationRequested?.Invoke(request);
 
-        _coinService.BalanceChanged += (_, _) => UpdateStats();
-        _gemService.BalanceChanged += (_, _) => UpdateStats();
+        _coinService.BalanceChanged += OnBalanceChanged;
+        _gemService.BalanceChanged += OnBalanceChanged;
+    }
+
+    private void OnBalanceChanged(object? sender, EventArgs e) => UpdateStats();
+    private bool _disposed;
+
+    /// <summary>Audit (Event-Subscription-Lücke): Unsubscribe beim App-Shutdown.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _coinService.BalanceChanged -= OnBalanceChanged;
+        _gemService.BalanceChanged -= OnBalanceChanged;
     }
 
     public void OnAppearing()

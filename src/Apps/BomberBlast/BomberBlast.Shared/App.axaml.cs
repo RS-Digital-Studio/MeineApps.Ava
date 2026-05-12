@@ -352,6 +352,12 @@ public partial class App : Application
                 (mainVm.ShopVm as IDisposable)?.Dispose();
                 (mainVm.LevelSelectVm as IDisposable)?.Dispose();
                 (mainVm.MenuVm as IDisposable)?.Dispose();
+                // Event-Subscription-Cleanup fuer weitere Lazy-VMs (Audit Event-Subscription-Lücken).
+                (mainVm.DeckVm as IDisposable)?.Dispose();
+                (mainVm.DungeonVm as IDisposable)?.Dispose();
+                (mainVm.GemShopVm as IDisposable)?.Dispose();
+                (mainVm.LuckySpinVm as IDisposable)?.Dispose();
+                (mainVm.ProfileVm as IDisposable)?.Dispose();
             }
 
             // Audit L07: Pending Dirty-Saves von Achievements/Collection/Tracking ans Disk flushen

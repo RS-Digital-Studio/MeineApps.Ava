@@ -12,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Glücksrad (Lucky Spin).
 /// 9 Segmente (Coins + Gems), 1x gratis pro Tag, Extra-Spins per Rewarded Ad.
 /// </summary>
-public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly ILuckySpinService _spinService;
     private readonly ICoinService _coinService;
@@ -112,7 +112,18 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGam
         _weeklyService = weeklyService;
         _dailyMissionService = dailyMissionService;
 
-        _coinService.BalanceChanged += (_, _) => UpdateCoinsText();
+        _coinService.BalanceChanged += OnCoinBalanceChanged;
+    }
+
+    private void OnCoinBalanceChanged(object? sender, EventArgs e) => UpdateCoinsText();
+    private bool _disposed;
+
+    /// <summary>Audit (Event-Subscription-Lücke): Unsubscribe beim App-Shutdown.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _coinService.BalanceChanged -= OnCoinBalanceChanged;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

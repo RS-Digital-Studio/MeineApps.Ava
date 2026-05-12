@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für den Dungeon-Run Roguelike-Modus.
 /// 3 Zustände: PreRun (Start-Screen), BuffSelection (nach Floor-Abschluss), PostRun (Zusammenfassung).
 /// </summary>
-public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
+public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable, IDisposable
 {
     private readonly IDungeonService _dungeonService;
     private readonly IDungeonUpgradeService _dungeonUpgradeService;
@@ -133,7 +133,18 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
 
-        _dungeonUpgradeService.BalanceChanged += () => RefreshUpgrades();
+        _dungeonUpgradeService.BalanceChanged += OnUpgradeBalanceChanged;
+    }
+
+    private void OnUpgradeBalanceChanged() => RefreshUpgrades();
+    private bool _disposed;
+
+    /// <summary>Audit (Event-Subscription-Lücke): Unsubscribe beim App-Shutdown.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _dungeonUpgradeService.BalanceChanged -= OnUpgradeBalanceChanged;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

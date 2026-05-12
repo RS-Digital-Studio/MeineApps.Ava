@@ -255,6 +255,9 @@ public sealed partial class GameEngine : IDisposable
     // Cached SKColorFilter wenn Colorblind-Modus aktiv (verhindert pro-Frame-Allokation).
     private SKColorFilter? _colorblindFilter;
     private string _lastColorblindMode = "Off";
+    // Audit C11: Cached SKPaint fuer Colorblind-SaveLayer — wurde frueher pro Frame
+    // (30-60x/s) neu allokiert. ColorFilter wird bei Mode-Wechsel aktualisiert.
+    private readonly SKPaint _colorblindLayerPaint = new();
 
     /// <summary>
     /// Während eines Levels eingesetzte Spezial-Bombentypen. Wird bei
@@ -1155,7 +1158,10 @@ public sealed partial class GameEngine : IDisposable
         _cinematic.Update(deltaTime);
         _ultraFlash.Update(deltaTime);
         _damageFlash.Update(deltaTime);
-        _soundManager.Update(deltaTime);
+        // Audit H15: SoundManager nur ticken wenn nicht pausiert/im Menu — Music-Volume-Fade
+        // wuerde sonst auch im Paused-State laufen waehrend die Music selbst pausiert ist.
+        if (_state != GameState.Paused && _state != GameState.Menu)
+            _soundManager.Update(deltaTime);
 
         // Hit-Pause: Update wird übersprungen, Rendering läuft weiter (Freeze-Effekt)
         if (_hitPauseTimer > 0 && !reducedFx)
@@ -2411,8 +2417,10 @@ public sealed partial class GameEngine : IDisposable
         _damageFlash.Dispose();
         _tutorialOverlay.Dispose();
         _discoveryOverlay.Dispose();
-        _inputManager.Dispose();
+        // InputManager-Lifetime gehoert dem DI-Container (App.DisposeServices) — hier kein Dispose
+        // (Audit C07: doppeltes Dispose fuehrt zu Native-Double-Free bei SKPaint/SKPath).
         _soundManager.Dispose();
+        _colorblindLayerPaint.Dispose();
         _irisClipPath.Dispose();
         _starPath.Dispose();
         _colorblindFilter?.Dispose();

@@ -66,6 +66,11 @@ half4 main(float2 coord) {
 
     private bool _disposed;
 
+    // Audit H11: Cached SKPaint fuer Bloom-Apply (Plus-Blend mit Shader).
+    // SKRuntimeEffectUniforms/Children koennen nicht trivial gecacht werden — die API
+    // ist auf Per-Frame-Konstruktion ausgelegt. SKPaint laesst sich aber pro Instanz halten.
+    private readonly SKPaint _bloomPaint = new() { BlendMode = SKBlendMode.Plus };
+
     /// <summary>True wenn beide Shader erfolgreich kompiliert wurden.</summary>
     public static bool IsAvailable => _thresholdEffect != null && _blurEffect != null;
 
@@ -138,20 +143,19 @@ half4 main(float2 coord) {
         using var bloomShader = _blurEffect!.ToShader(blurUniforms, blurChildren);
 
         // Additive Blend: Bloom-Layer wird über das Hauptbild addiert
-        using var paint = new SKPaint
-        {
-            Shader = bloomShader,
-            BlendMode = SKBlendMode.Plus,
-            ColorF = new SKColorF(intensity, intensity, intensity, intensity),
-        };
-
-        canvas.DrawRect(bounds, paint);
+        // Audit H11: Cached _bloomPaint statt Pro-Frame-Allokation. Shader + ColorF werden pro Frame gesetzt.
+        _bloomPaint.Shader = bloomShader;
+        _bloomPaint.ColorF = new SKColorF(intensity, intensity, intensity, intensity);
+        canvas.DrawRect(bounds, _bloomPaint);
+        _bloomPaint.Shader = null; // Shader-Reference loslassen (Shader wird per `using` disposed)
     }
 
     public void Dispose()
     {
-        // Per-Instance disposen wir nichts — die statischen Effects leben app-weit.
+        // Per-Instance disposen wir nichts ausser dem Bloom-Paint — die statischen Effects leben app-weit.
+        if (_disposed) return;
         _disposed = true;
+        _bloomPaint.Dispose();
     }
 
     /// <summary>

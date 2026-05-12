@@ -13,6 +13,10 @@ public sealed partial class GameEngine
     // Gecachte Countdown-Strings (vermeidet ToString()-Allokation im Render-Loop)
     private static readonly string[] CountdownStrings = ["0", "1", "2", "3", "4", "5"];
 
+    // Audit H16: Cached Event-Accent-Farbe — vermeidet SKColor.Parse + try/catch pro Frame.
+    private string? _cachedAccentHex;
+    private SKColor _cachedAccentColor;
+
     // Gepoolter SKPath für Iris-Wipe Clip (statt pro-Frame new SKPath())
     private readonly SKPath _irisClipPath = new();
 
@@ -113,6 +117,15 @@ public sealed partial class GameEngine
             return;
         }
 
+        // Audit C12: SaveCount-Backstop. Wirft eine Sub-Render-Methode eine Exception,
+        // wuerden Colorblind/Zoom/Shake-Saves auf dem Canvas-Stack haengenbleiben →
+        // naechster Frame mit doppeltem Zoom + Shake. Im finally klappen wir auf den
+        // initialen Stand zurueck (idempotent: Restore-Calls die der Body schon erledigt
+        // hat sind no-ops auf hoeherem Level).
+        int initialSaveCount = canvas.SaveCount;
+        try
+        {
+
         // v2.0.45 — Performance-Telemetry: Frame-Time-Sampling für FPS-Bucket-Reporting.
         // Alle 5s wird der gemessene Avg-FPS auf einen Bucket gerundet (15/30/45/60+) und
         // als Crashlytics-Custom-Key gesetzt — ermöglicht Crash-Filterung nach Frame-Rate.
@@ -128,12 +141,13 @@ public sealed partial class GameEngine
                 _colorblindFilter?.Dispose();
                 var matrix = _accessibility.GetColorblindMatrix();
                 _colorblindFilter = matrix != null ? SKColorFilter.CreateColorMatrix(matrix) : null;
+                _colorblindLayerPaint.ColorFilter = _colorblindFilter;
                 _lastColorblindMode = cbMode;
             }
             if (_colorblindFilter != null)
             {
-                using var layerPaint = new SKPaint { ColorFilter = _colorblindFilter };
-                canvas.SaveLayer(layerPaint);
+                // Cached Paint statt Pro-Frame-Allokation (Audit C11)
+                canvas.SaveLayer(_colorblindLayerPaint);
                 colorblindActive = true;
             }
         }
@@ -199,9 +213,14 @@ public sealed partial class GameEngine
         _renderer.HasActiveEvent = eventActive;
         if (eventActive && currentEvent != null)
         {
-            // SKColor.Parse fuer "#RRGGBB"-Hex-Format (z.B. Halloween "#FF6F00")
-            try { _renderer.EventAccentColor = SKColor.Parse(currentEvent.AccentColor); }
-            catch { _renderer.EventAccentColor = SKColors.Transparent; }
+            // Audit H16: Hex-Parse nur bei Aenderung, nicht jeden Frame im try/catch (Hot-Path).
+            if (currentEvent.AccentColor != _cachedAccentHex)
+            {
+                _cachedAccentHex = currentEvent.AccentColor;
+                try { _cachedAccentColor = SKColor.Parse(currentEvent.AccentColor); }
+                catch { _cachedAccentColor = SKColors.Transparent; }
+            }
+            _renderer.EventAccentColor = _cachedAccentColor;
             _renderer.EventType = currentEvent.Type;
         }
 
@@ -315,6 +334,14 @@ public sealed partial class GameEngine
         if (colorblindActive)
         {
             canvas.Restore();
+        }
+        }
+        finally
+        {
+            // Audit C12: Backstop — falls eine Sub-Render-Methode geworfen hat,
+            // klappen wir alle uebrigen Save()-Frames auf den Eingangs-Stand zurueck.
+            while (canvas.SaveCount > initialSaveCount)
+                canvas.Restore();
         }
     }
 

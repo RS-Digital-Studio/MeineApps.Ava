@@ -337,7 +337,11 @@ public partial class App : Application
             if (mainVm?.GameVm is { } gameVm)
             {
                 (Services.GetService<GameEngine>() as IDisposable)?.Dispose();
-                (Services.GetService<GameRenderer>() as IDisposable)?.Dispose();
+                // GameRenderer NICHT hier disposen (Audit C08):
+                // Android-OnDestroy ist haeufig kein echter Process-Kill — der Renderer-Singleton
+                // wuerde beim naechsten OnCreate disposed weiter-resolved, mit invaliden SKPaint/SKMaskFilter,
+                // und der erste DrawText/DrawPaint-Call crasht. OS raeumt den nativen Heap beim echten
+                // Process-Kill ohnehin auf; auf Desktop ueberlebt das Prozess-Ende den ShutdownRequested.
                 (gameVm as IDisposable)?.Dispose();
             }
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();

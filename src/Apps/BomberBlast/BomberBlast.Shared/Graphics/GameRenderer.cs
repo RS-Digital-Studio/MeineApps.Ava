@@ -759,6 +759,8 @@ public sealed partial class GameRenderer : IDisposable
     private readonly SKPaint _strokePaint = new() { Style = SKPaintStyle.Stroke, IsAntialias = true };
     private readonly SKPaint _glowPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
     private readonly SKPaint _textPaint = new() { Color = SKColors.White, IsAntialias = true };
+    // Audit C11: Cached Paint fuer Player-Blink-SaveLayer (Spawn-Protection ~3-5s, 30-60x/s).
+    private readonly SKPaint _blinkLayerPaint = new();
     private readonly SKFont _hudFontLarge = new(SKTypeface.FromFamilyName("monospace", SKFontStyle.Bold), 22);
     private readonly SKFont _hudFontMedium = new(SKTypeface.FromFamilyName("monospace", SKFontStyle.Bold), 16);
     private readonly SKFont _hudFontCombo = new(SKTypeface.FromFamilyName("monospace", SKFontStyle.Bold), 16);
@@ -1215,5 +1217,6 @@ public sealed partial class GameRenderer : IDisposable
         _charPath1.Dispose();
         _charPath2.Dispose();
         _tilePath.Dispose();
+        _blinkLayerPaint.Dispose();
     }
 }

@@ -53,6 +53,9 @@ public sealed class TrailSystem : IDisposable
     // Gepoolte Paints
     private readonly SKPaint _trailPaint = new() { IsAntialias = true };
     private readonly SKMaskFilter _trailGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+    // Audit C11: Gepoolter SKPath fuer Trail-Partikel-Shapes (Pumpkin/BeachWave/SeasonStreak/BPMastery).
+    // Wird via Rewind() recycelt — vermeidet bis zu 600 Path-Allokationen/s bei Partikel-Spam.
+    private readonly SKPath _trailShapePath = new();
     private bool _disposed;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -523,15 +526,13 @@ public sealed class TrailSystem : IDisposable
                 _trailPaint.Style = SKPaintStyle.Fill;
                 _trailPaint.MaskFilter = _trailGlow;
                 _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(t.X, t.Y - size * 0.5f);
-                    path.LineTo(t.X + size * 0.4f, t.Y);
-                    path.LineTo(t.X, t.Y + size * 0.5f);
-                    path.LineTo(t.X - size * 0.4f, t.Y);
-                    path.Close();
-                    canvas.DrawPath(path, _trailPaint);
-                }
+                _trailShapePath.Rewind();
+                _trailShapePath.MoveTo(t.X, t.Y - size * 0.5f);
+                _trailShapePath.LineTo(t.X + size * 0.4f, t.Y);
+                _trailShapePath.LineTo(t.X, t.Y + size * 0.5f);
+                _trailShapePath.LineTo(t.X - size * 0.4f, t.Y);
+                _trailShapePath.Close();
+                canvas.DrawPath(_trailShapePath, _trailPaint);
                 _trailPaint.MaskFilter = null;
                 break;
 
@@ -557,14 +558,14 @@ public sealed class TrailSystem : IDisposable
                 _trailPaint.Style = SKPaintStyle.Stroke;
                 _trailPaint.StrokeWidth = 2f;
                 _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
-                using (var p = new SKPath())
+                _trailShapePath.Rewind();
                 {
                     var y = t.Y + GameGrid.CELL_SIZE * 0.15f;
-                    p.MoveTo(t.X - size * 0.6f, y);
-                    p.QuadTo(t.X - size * 0.3f, y - size * 0.2f, t.X, y);
-                    p.QuadTo(t.X + size * 0.3f, y + size * 0.2f, t.X + size * 0.6f, y);
-                    canvas.DrawPath(p, _trailPaint);
+                    _trailShapePath.MoveTo(t.X - size * 0.6f, y);
+                    _trailShapePath.QuadTo(t.X - size * 0.3f, y - size * 0.2f, t.X, y);
+                    _trailShapePath.QuadTo(t.X + size * 0.3f, y + size * 0.2f, t.X + size * 0.6f, y);
                 }
+                canvas.DrawPath(_trailShapePath, _trailPaint);
                 _trailPaint.Style = SKPaintStyle.Fill;
                 break;
 
@@ -709,15 +710,13 @@ public sealed class TrailSystem : IDisposable
                 _trailPaint.Style = SKPaintStyle.Fill;
                 _trailPaint.MaskFilter = _trailGlow;
                 _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
-                using (var p2 = new SKPath())
-                {
-                    p2.MoveTo(t.X + size * 0.5f, t.Y);
-                    p2.LineTo(t.X - size * 0.3f, t.Y - size * 0.3f);
-                    p2.LineTo(t.X - size * 0.1f, t.Y);
-                    p2.LineTo(t.X - size * 0.3f, t.Y + size * 0.3f);
-                    p2.Close();
-                    canvas.DrawPath(p2, _trailPaint);
-                }
+                _trailShapePath.Rewind();
+                _trailShapePath.MoveTo(t.X + size * 0.5f, t.Y);
+                _trailShapePath.LineTo(t.X - size * 0.3f, t.Y - size * 0.3f);
+                _trailShapePath.LineTo(t.X - size * 0.1f, t.Y);
+                _trailShapePath.LineTo(t.X - size * 0.3f, t.Y + size * 0.3f);
+                _trailShapePath.Close();
+                canvas.DrawPath(_trailShapePath, _trailPaint);
                 _trailPaint.MaskFilter = null;
                 break;
 
@@ -726,17 +725,17 @@ public sealed class TrailSystem : IDisposable
                 _trailPaint.Style = SKPaintStyle.Fill;
                 _trailPaint.MaskFilter = _trailGlow;
                 _trailPaint.Color = new SKColor(t.R, t.G, t.B, alpha);
-                using (var crown = new SKPath())
+                _trailShapePath.Rewind();
                 {
-                    crown.MoveTo(t.X - size * 0.4f, t.Y + size * 0.2f);
-                    crown.LineTo(t.X - size * 0.3f, t.Y - size * 0.2f);
-                    crown.LineTo(t.X - size * 0.15f, t.Y + size * 0.05f);
-                    crown.LineTo(t.X, t.Y - size * 0.35f);
-                    crown.LineTo(t.X + size * 0.15f, t.Y + size * 0.05f);
-                    crown.LineTo(t.X + size * 0.3f, t.Y - size * 0.2f);
-                    crown.LineTo(t.X + size * 0.4f, t.Y + size * 0.2f);
-                    crown.Close();
-                    canvas.DrawPath(crown, _trailPaint);
+                    _trailShapePath.MoveTo(t.X - size * 0.4f, t.Y + size * 0.2f);
+                    _trailShapePath.LineTo(t.X - size * 0.3f, t.Y - size * 0.2f);
+                    _trailShapePath.LineTo(t.X - size * 0.15f, t.Y + size * 0.05f);
+                    _trailShapePath.LineTo(t.X, t.Y - size * 0.35f);
+                    _trailShapePath.LineTo(t.X + size * 0.15f, t.Y + size * 0.05f);
+                    _trailShapePath.LineTo(t.X + size * 0.3f, t.Y - size * 0.2f);
+                    _trailShapePath.LineTo(t.X + size * 0.4f, t.Y + size * 0.2f);
+                    _trailShapePath.Close();
+                    canvas.DrawPath(_trailShapePath, _trailPaint);
                 }
                 _trailPaint.MaskFilter = null;
                 break;
@@ -798,5 +797,6 @@ public sealed class TrailSystem : IDisposable
 
         _trailPaint.Dispose();
         _trailGlow.Dispose();
+        _trailShapePath.Dispose();
     }
 }

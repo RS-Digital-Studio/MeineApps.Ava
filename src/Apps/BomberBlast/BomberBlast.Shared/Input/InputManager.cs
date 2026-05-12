@@ -409,11 +409,17 @@ public class InputManager : IDisposable
             ((GamepadHandler)handler).SetAnalogStick(x, y);
     }
 
+    private bool _disposed;
+
     /// <summary>
-    /// Handler-Ressourcen freigeben (SKPaint/SKPath in NeonJoystick)
+    /// Handler-Ressourcen freigeben (SKPaint/SKPath in NeonJoystick).
+    /// Idempotent — InputManager wird sowohl von GameEngine als auch DI-Container freigegeben (Audit C07).
     /// </summary>
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         foreach (var handler in _handlers.Values)
         {
             if (handler is IDisposable disposable)

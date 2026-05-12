@@ -38,11 +38,11 @@ public sealed partial class GameRenderer
             playerIsBlinking = ((int)(_globalTimer * blinkRate) % 2) == 0;
             if (playerIsBlinking) playerBlinkAlpha = 0.3f;
         }
-        // Per-Layer Alpha-SaveLayer wenn aktiv
+        // Per-Layer Alpha-SaveLayer wenn aktiv (Audit C11: cached Paint statt Pro-Frame-Allokation)
         if (playerIsBlinking)
         {
-            using var blinkPaint = new SKPaint { Color = SKColors.White.WithAlpha((byte)(255 * playerBlinkAlpha)) };
-            canvas.SaveLayer(blinkPaint);
+            _blinkLayerPaint.Color = SKColors.White.WithAlpha((byte)(255 * playerBlinkAlpha));
+            canvas.SaveLayer(_blinkLayerPaint);
         }
 
         // Sprint 3.4 AAA-Audit #19: Squash & Stretch Skalierung um den Player-Pivot.

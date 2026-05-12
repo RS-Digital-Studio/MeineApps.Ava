@@ -11,6 +11,7 @@
           "$date": {
             ".read": "auth != null",
             "$tier": {
+              ".indexOn": ["score"],
               ".read": "auth != null",
               "$uid": {
                 ".read": "auth != null",
@@ -34,6 +35,7 @@
         },
 
         "$tier": {
+          ".indexOn": ["points"],
           ".read": "auth != null",
           "$uid": {
             ".read": "auth != null",
@@ -43,7 +45,7 @@
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
             },
             "points": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999 && (data.val() == null || newData.val() >= data.val())"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 2000))"
             },
             "updatedMs": {
               ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now && (!data.exists() || newData.val() >= data.val() + 60000)"

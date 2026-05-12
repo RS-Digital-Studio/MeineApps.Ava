@@ -253,12 +253,16 @@ public sealed class LevelGenerator : ILevelGenerator
         {
             bool isDuoBoss = level.BossKind2.HasValue;
             var bossType1 = level.BossKind.Value;
+            // Sprint 6.1 AAA-Audit #15: Boss-Modifier nur fuer Single-Boss-Encounter
+            // (Duo-Boss = bereits Endgame-Schwierigkeit). Welt-ID aus Level.Number ableiten.
+            int worldId = level.Number > 0 ? Math.Max(1, (level.Number - 1) / 10 + 1) : 1;
+            var modifierRng = !isDuoBoss ? random : null;
 
             // Einzel-Boss: Mitte. Duo-Boss: Links und Rechts getrennt
             int boss1X = isDuoBoss ? GameGrid.WIDTH / 4 : GameGrid.WIDTH / 2;
             int boss1Y = GameGrid.HEIGHT / 2;
 
-            var boss1 = SpawnBossAtPosition(grid, boss1X, boss1Y, bossType1);
+            var boss1 = SpawnBossAtPosition(grid, boss1X, boss1Y, bossType1, worldId, modifierRng);
             if (boss1 != null) result.Add(boss1);
 
             // Zweiter Boss (Duo-Encounter Welt 9+10). isDuoBoss garantiert BossKind2.HasValue.
@@ -268,7 +272,7 @@ public sealed class LevelGenerator : ILevelGenerator
                 int boss2X = GameGrid.WIDTH * 3 / 4;
                 int boss2Y = GameGrid.HEIGHT / 2;
 
-                var boss2 = SpawnBossAtPosition(grid, boss2X, boss2Y, bossType2);
+                var boss2 = SpawnBossAtPosition(grid, boss2X, boss2Y, bossType2, worldId, rng: null);
                 if (boss2 != null) result.Add(boss2);
             }
         }
@@ -278,6 +282,14 @@ public sealed class LevelGenerator : ILevelGenerator
 
     /// <summary>Spawnt einen Boss an einer Grid-Position und räumt die Zellen frei.</summary>
     private static BossEnemy SpawnBossAtPosition(GameGrid grid, int gridX, int gridY, BossType bossType)
+        => SpawnBossAtPosition(grid, gridX, gridY, bossType, worldId: 1, rng: null);
+
+    /// <summary>
+    /// Sprint 6.1 AAA-Audit #15: Boss-Spawn mit Modifier-Roll basierend auf Welt-ID.
+    /// Welt 1-4 nie Modifier, Welt 5-9 30%, Welt 10 60%.
+    /// </summary>
+    private static BossEnemy SpawnBossAtPosition(GameGrid grid, int gridX, int gridY, BossType bossType,
+        int worldId, Random? rng)
     {
         int bossSize = bossType == BossType.FinalBoss ? 3 : 2;
 
@@ -296,6 +308,15 @@ public sealed class LevelGenerator : ILevelGenerator
             }
         }
 
-        return BossEnemy.CreateAtGrid(gridX, gridY, bossType);
+        var boss = BossEnemy.CreateAtGrid(gridX, gridY, bossType);
+
+        // Sprint 6.1 AAA-Audit #15: Boss-Modifier-Roll. NUR fuer Story-Bosse (BossSequenceLevel),
+        // nicht fuer BossRush oder Duo-Boss-Encounter (zu viel Komplexitaet bei x2 Bossen).
+        if (rng != null)
+        {
+            boss.Modifier = BomberBlast.Models.Entities.BossModifierExtensions.RollForWorld(worldId, rng);
+            boss.InitializeShieldIfNeeded();
+        }
+        return boss;
     }
 }

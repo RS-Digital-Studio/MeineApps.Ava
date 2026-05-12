@@ -59,7 +59,12 @@ public sealed partial class GameEngine
         _activeMutator = _currentLevel.Mutator;
         _continueUsed = false;
 
+        // Sprint 7.2 AAA-Audit #22: 2P-Co-Op aktivieren wenn vom MultiplayerSession-Service gesetzt.
+        // Player2 wird auf gegenueberliegender Spawn-Position erzeugt (siehe Multiplayer-Foundation).
+        EnableMultiplayer(_multiplayerSession.CurrentMode);
+
         _player.ResetForNewGame();
+        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         MutatorEffects.Apply(_player, _activeMutator);
         ApplyLoadoutBoosts(levelNumber);  // v2.0.41 Plan Task 3.2: Pre-Level-Boosts anwenden
@@ -293,6 +298,7 @@ public sealed partial class GameEngine
         SetDeterministicSeed((ulong)seed);
 
         _player.ResetForNewGame();
+        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         await LoadLevelAsync();
 
@@ -323,6 +329,7 @@ public sealed partial class GameEngine
         _continueUsed = true; // Kein Continue im Quick-Play
 
         _player.ResetForNewGame();
+        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         await LoadLevelAsync();
 
@@ -361,6 +368,7 @@ public sealed partial class GameEngine
         survivalState.SpawnInterval = 4f;
 
         _player.ResetForNewGame();
+        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         _player.Lives = 1; // Nur 1 Leben im Survival (kein Shop-Bonus)
 
@@ -398,6 +406,7 @@ public sealed partial class GameEngine
         SetDeterministicSeed((ulong)seed);
 
         _player.ResetForNewGame();
+        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         await LoadLevelAsync();
 
@@ -901,6 +910,18 @@ public sealed partial class GameEngine
     /// Im Dungeon: Nur Base-Stats (Shop-Bonuse gelten nicht, Dungeon-Buffs werden separat addiert).
     /// In Story/Daily/QuickPlay/Survival: Volle Shop-Bonuse.
     /// </summary>
+    private void ApplyHeroStats()
+    {
+        // Sprint 7.1 AAA-Audit #21: Hero-Definition vom aktiven Hero anwenden.
+        // Wird VOR ApplyUpgrades aufgerufen damit Shop-Bonuse die Hero-Werte erhoehen koennen.
+        // Im Dungeon werden Hero-Stats ueberschrieben (ApplyUpgrades setzt dort eigene Base-Stats).
+        var hero = _heroService.ActiveHero;
+        _player.MaxBombs = hero.StartMaxBombs;
+        _player.FireRange = hero.StartFireRange;
+        _player.SpeedLevel = hero.StartSpeedLevel;
+        _player.Lives = hero.StartLives;
+    }
+
     private void ApplyUpgrades()
     {
         if (_isDungeonRun)

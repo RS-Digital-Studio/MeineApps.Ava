@@ -61,6 +61,10 @@ public sealed partial class GameEngine : IDisposable
     private readonly IAnalyticsService _analytics;
     // v2.0.45 — AAA-Audit: Performance-Telemetry (FPS-Bucket für Crashlytics-Custom-Keys)
     private readonly ITelemetryService _telemetry;
+    /// <summary>Sprint 7.1 AAA-Audit #21: Hero/Character-Service fuer Stat-Anwendung beim Spawn.</summary>
+    private readonly IHeroService _heroService;
+    /// <summary>Sprint 7.2 AAA-Audit #22: Multiplayer-Session-Service fuer 2P-Co-Op-Toggle.</summary>
+    private readonly IMultiplayerSessionService _multiplayerSession;
     // Phase 24b — Optional Retention-Service (für First-Win-Cinematic-Trigger).
     // Kein Constructor-Param damit DI-Chain nicht angefasst werden muss; via Property-Injection
     // vom App-Layer gesetzt nach GameEngine-Construction.
@@ -882,7 +886,11 @@ public sealed partial class GameEngine : IDisposable
         IAppLogger logger,
         IAccessibilityService accessibility,
         IAnalyticsService analytics,
-        ITelemetryService telemetry)
+        ITelemetryService telemetry,
+        // Sprint 7.1 AAA-Audit #21: Hero/Character-System Engine-Integration.
+        IHeroService heroService,
+        // Sprint 7.2 AAA-Audit #22: 2P-Co-Op-Session-Service Engine-Integration.
+        IMultiplayerSessionService multiplayerSession)
     {
         _soundManager = soundManager;
         _progressService = progressService;
@@ -911,6 +919,8 @@ public sealed partial class GameEngine : IDisposable
         _accessibility = accessibility;
         _analytics = analytics;
         _telemetry = telemetry;
+        _heroService = heroService;
+        _multiplayerSession = multiplayerSession;
         _tutorialOverlay = new TutorialOverlay(localizationService);
         _discoveryOverlay = new DiscoveryOverlay(localizationService);
         _grid = new GameGrid();

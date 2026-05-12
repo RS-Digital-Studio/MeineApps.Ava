@@ -211,6 +211,44 @@ public class BossEnemy : Enemy
     // UPDATE
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Sprint 6.1 AAA-Audit #15: Boss-Modifier-Effekte
+    /// <summary>Healing-Modifier: HP/s Regeneration im Out-of-Combat-State.</summary>
+    private const float HEALING_REGEN_PER_SECOND = 5f;
+    /// <summary>Summoner-Modifier: Spawn-Cooldown fuer Mini-Enemies.</summary>
+    private const float SUMMONER_SPAWN_COOLDOWN = 8f;
+    private float _summonerSpawnTimer;
+    /// <summary>Shielded-Modifier: HitPoints werden um 1 Schicht erhoeht solange Schild aktiv.</summary>
+    public bool HasShield { get; private set; }
+    private const float SHIELD_RECHARGE_COOLDOWN = 15f;
+    private float _shieldRechargeTimer;
+    /// <summary>Burning-Modifier: Lava-Spur-Positionen mit Lebenszeit (3s).</summary>
+    public List<(int x, int y, float ttl)> BurningTrail { get; } = new();
+    private float _burningTrailEmitTimer;
+
+    /// <summary>Wird vom GameEngine angefordert: True wenn Boss einen Mini-Enemy spawnen will.</summary>
+    public bool TryConsumeSummonRequest()
+    {
+        if (Modifier != BossModifier.Summoner) return false;
+        if (_summonerSpawnTimer > 0) return false;
+        _summonerSpawnTimer = SUMMONER_SPAWN_COOLDOWN;
+        return true;
+    }
+
+    /// <summary>Wird beim Spawn aufgerufen: Initialer Shield wenn Shielded-Modifier aktiv.</summary>
+    public void InitializeShieldIfNeeded()
+    {
+        if (Modifier == BossModifier.Shielded) HasShield = true;
+    }
+
+    /// <summary>Wird bei Hit aufgerufen — Shielded absorbiert 1 Hit pro Cooldown.</summary>
+    public bool ConsumeShieldHit()
+    {
+        if (!HasShield) return false;
+        HasShield = false;
+        _shieldRechargeTimer = SHIELD_RECHARGE_COOLDOWN;
+        return true;
+    }
+
     public override void Update(float deltaTime)
     {
         base.Update(deltaTime);
@@ -226,14 +264,19 @@ public class BossEnemy : Enemy
             CurrentPhase = 2;
         }
 
+        // Sprint 6.1 AAA-Audit #15: Modifier-Effekte pro Frame anwenden.
+        ApplyModifierEffects(deltaTime);
+
         // Spezial-Angriff Timer
         if (!IsAttacking && !IsTelegraphing)
         {
             SpecialAttackTimer -= deltaTime;
             if (SpecialAttackTimer <= 0)
             {
-                // Telegraph starten (2s Warnung)
-                TelegraphTimer = TELEGRAPH_DURATION;
+                // Sprint 6.1: Berserk-Modifier halbiert Telegraph-Dauer (weniger Reaktionszeit).
+                TelegraphTimer = Modifier == BossModifier.Berserk
+                    ? TELEGRAPH_DURATION * 0.5f
+                    : TELEGRAPH_DURATION;
             }
         }
 
@@ -260,12 +303,64 @@ public class BossEnemy : Enemy
                 AttackDuration = 0;
                 AttackTargetCells.Clear();
                 float cd = IsEnraged ? SpecialAttackCooldown * 0.6f : SpecialAttackCooldown;
+                // Sprint 6.1: Frenzy-Modifier halbiert Cooldown zusaetzlich in Enrage-Phase.
+                if (Modifier == BossModifier.Frenzy && IsEnraged) cd *= 0.5f;
                 SpecialAttackTimer = cd;
 
                 // FinalBoss: Nächsten Angriff rotieren
                 if (BossKind == BossType.FinalBoss)
                     AttackRotationIndex = (AttackRotationIndex + 1) % 4;
             }
+        }
+    }
+
+    /// <summary>Sprint 6.1 AAA-Audit #15: Boss-Modifier-Effekte pro Frame.</summary>
+    private void ApplyModifierEffects(float deltaTime)
+    {
+        switch (Modifier)
+        {
+            case BossModifier.Healing:
+                // Heile HP/s waehrend des Cooldowns (Out-of-Combat). Cap bei MaxHitPoints.
+                if (!IsAttacking && !IsTelegraphing && HitPoints < MaxHitPoints)
+                {
+                    HitPoints = Math.Min(MaxHitPoints,
+                        HitPoints + (int)Math.Round(HEALING_REGEN_PER_SECOND * deltaTime));
+                }
+                break;
+
+            case BossModifier.Summoner:
+                _summonerSpawnTimer -= deltaTime;
+                if (_summonerSpawnTimer < 0) _summonerSpawnTimer = 0;
+                break;
+
+            case BossModifier.Shielded:
+                _shieldRechargeTimer -= deltaTime;
+                if (_shieldRechargeTimer <= 0 && !HasShield)
+                {
+                    HasShield = true;
+                    _shieldRechargeTimer = 0;
+                }
+                break;
+
+            case BossModifier.Burning:
+                _burningTrailEmitTimer -= deltaTime;
+                if (_burningTrailEmitTimer <= 0 && MovementDirection != Direction.None)
+                {
+                    BurningTrail.Add((GridX, GridY, 3.0f));  // 3s TTL
+                    _burningTrailEmitTimer = 0.3f;            // alle 0.3s emit
+                }
+                break;
+        }
+
+        // Burning-Trail TTL-Update + Cleanup (egal welcher Modifier — sicher gegen Stale-Trail)
+        for (int i = BurningTrail.Count - 1; i >= 0; i--)
+        {
+            var entry = BurningTrail[i];
+            entry.ttl -= deltaTime;
+            if (entry.ttl <= 0)
+                BurningTrail.RemoveAt(i);
+            else
+                BurningTrail[i] = entry;
         }
     }
 
@@ -279,7 +374,8 @@ public class BossEnemy : Enemy
 
         FacingDirection = MovementDirection;
 
-        float speed = BossSpeed;
+        // Sprint 6.1 AAA-Audit #15: Fast-Modifier gibt +25% Bewegungsgeschwindigkeit.
+        float speed = BossSpeed * (Modifier == BossModifier.Fast ? 1.25f : 1f);
         float dx = MovementDirection.GetDeltaX() * speed * deltaTime;
         float dy = MovementDirection.GetDeltaY() * speed * deltaTime;
 

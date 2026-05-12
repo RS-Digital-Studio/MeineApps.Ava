@@ -762,7 +762,9 @@ public class Player : Entity
     }
 
     /// <summary>
-    /// Reset all stats for new game
+    /// Reset all stats for new game.
+    /// Sprint 7.1 AAA-Audit #21: Optional Hero-Stats werden danach von GameEngine.ApplyHero
+    /// angewendet (ueberschreibt Default-Werte).
     /// </summary>
     public void ResetForNewGame()
     {

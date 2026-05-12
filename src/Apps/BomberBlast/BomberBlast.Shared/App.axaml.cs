@@ -478,8 +478,10 @@ public partial class App : Application
         services.AddSingleton<IHeroService, HeroService>();
         // Sprint 7.4 AAA-Audit #24 — Wochen-Content-Pipeline (deterministisch via ISO-Woche).
         services.AddSingleton<IWeeklyContentService, WeeklyContentService>();
-        // Sprint 7.3 AAA-Audit #23 — Clan-System Foundation (NullImpl bis Firebase-Backend live).
-        services.AddSingleton<IClanService, NullClanService>();
+        // Sprint 7.3 AAA-Audit #23 — Clan-System echte Firebase-Implementation.
+        // FirebaseClanService nutzt IFirebaseService (existierend) fuer Realtime-DB-Calls.
+        // Asynchron via Pull (alle 30s Chat) — kein Live-Sync, kein dedizierter Server.
+        services.AddSingleton<IClanService, FirebaseClanService>();
         // Sprint 7.2 AAA-Audit #22 — Multiplayer-Session-Service (Foundation, Engine-Integration deferred).
         services.AddSingleton<IMultiplayerSessionService, MultiplayerSessionService>();
         // Sprint 5.2 AAA-Audit #12 — IRngProvider (Core-Interface): DeterministicRngProvider als Default

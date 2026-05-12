@@ -70,20 +70,26 @@ HandwerkerImperium.Shared/
     └── WorkshopCardHitTester.cs     # Koordinaten-Mapping für Workshop-Card-Touches
 ```
 
-### MainViewModel Partial-Split
+### MainViewModel Partial-Split (12 Files)
 
-| Datei | Inhalt |
-|-------|--------|
-| `MainViewModel.cs` | Felder, Konstruktor, `ActivePage`-Enum, Event-Handler |
-| `MainViewModel.Navigation.cs` | Tab-Auswahl, HandleBackPressed, Child-Navigation-Routing |
-| `MainViewModel.Dialogs.cs` | Weiterleitungsmethoden an DialogVM, Prestige-Durchführungslogik |
-| `MainViewModel.Economy.cs` | Workshop-Kauf/Upgrade, Aufträge, Rush, Lieferant, BulkBuy |
-| `MainViewModel.Missions.cs` | LuckySpin-Overlay-Steuerung |
-| `MainViewModel.Init.cs` | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward |
-| `MainViewModel.Host.cs` | INavigationHost-Implementierung (116 Zeilen) |
-| `MainViewModel.GameTick.cs` | OnGameTick, RefreshCurrentGoal, CheckTabUnlockNotification (165 Z.) |
-| `MainViewModel.Helpers.cs` | FormatMoney, UpdateNetIncomeHeader, UpdateWorkerWarning, Money-Animation, Workshop-Icon-Mapping (160 Z.) |
-| `MainViewModel.Lifecycle.cs` | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose (170 Z.) |
+**MainViewModel.cs: 501 Zeilen** (AAA-Audit-Ziel <500 erreicht, ursprünglich 2483 Z.).
+Reine Composition: Service-Felder, Konstruktor (~320 Z.), INavigationHost-Stub. Alle
+Properties, Event-Handler, Lifecycle in Partials.
+
+| Datei | Z. | Inhalt |
+|-------|----|----|
+| `MainViewModel.cs` | 501 | Service-Felder, Konstruktor, INavigationHost |
+| `MainViewModel.Properties.cs` | 826 | ObservableProperties, Computed-Properties, Tab-Commands, Child-VM-Exposures |
+| `MainViewModel.EventHandlers.cs` | 739 | Service-Event-Handler (Money/Level/Order/Prestige/Cinematic/etc.) |
+| `MainViewModel.Init.cs` | 703 | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward |
+| `MainViewModel.Navigation.cs` | 296 | Tab-Auswahl, HandleBackPressed, Child-Navigation-Routing |
+| `MainViewModel.Helpers.cs` | 182 | FormatMoney, Worker-Warning, Money-Animation, EternalMastery-Refresh |
+| `MainViewModel.Lifecycle.cs` | 170 | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose |
+| `MainViewModel.Dialogs.cs` | 167 | Dialog-Weiterleitungen, Prestige-Durchführungslogik |
+| `MainViewModel.GameTick.cs` | 165 | OnGameTick, RefreshCurrentGoal, CheckTabUnlockNotification |
+| `MainViewModel.Economy.cs` | 145 | Workshop-Kauf/Upgrade, Aufträge, Rush, BulkBuy |
+| `MainViewModel.Host.cs` | 116 | INavigationHost-Implementierung |
+| `MainViewModel.Missions.cs` | 28 | LuckySpin-Overlay-Steuerung |
 
 ### DialogViewModel Struktur
 

@@ -173,7 +173,7 @@
                   Command="{Binding SelectTodayTabCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  MinHeight="44">
+                  MinHeight="48">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="ClockOutline" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -191,7 +191,7 @@
                   Command="{Binding SelectWeekTabCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  MinHeight="44">
+                  MinHeight="48">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="CalendarWeek" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -209,7 +209,7 @@
                   Command="{Binding SelectCalendarTabCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  MinHeight="44">
+                  MinHeight="48">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="CalendarMonth" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -227,7 +227,7 @@
                   Command="{Binding SelectStatisticsTabCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  MinHeight="44">
+                  MinHeight="48">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="ChartBar" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -245,7 +245,7 @@
                   Command="{Binding SelectSettingsTabCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  MinHeight="44">
+                  MinHeight="48">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"

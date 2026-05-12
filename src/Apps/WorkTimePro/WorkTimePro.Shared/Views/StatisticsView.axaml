@@ -160,7 +160,7 @@
       <Grid ColumnDefinitions="*,Auto,*,Auto,*,Auto,*">
         <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-            <Border Background="#201565C0" Width="18" Height="18" CornerRadius="9">
+            <Border Background="{DynamicResource StatsBlueBgBrush}" Width="18" Height="18" CornerRadius="9">
               <mi:MaterialIcon Kind="ClockOutline" Width="11" Height="11"
                                Foreground="{DynamicResource PrimaryBrush}" />
             </Border>
@@ -177,8 +177,8 @@
                 Background="{DynamicResource BorderSubtleBrush}" Margin="4,0" />
         <StackPanel Grid.Column="2" Spacing="2" HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-            <Border Background="#20FF9800" Width="18" Height="18" CornerRadius="9">
-              <mi:MaterialIcon Kind="TrendingUp" Width="11" Height="11" Foreground="#FF9800" />
+            <Border Background="{DynamicResource StatsOrangeBgBrush}" Width="18" Height="18" CornerRadius="9">
+              <mi:MaterialIcon Kind="TrendingUp" Width="11" Height="11" Foreground="{DynamicResource StatsOrangeBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate Overtime}" FontSize="10"
                        Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -193,8 +193,8 @@
                 Background="{DynamicResource BorderSubtleBrush}" Margin="4,0" />
         <StackPanel Grid.Column="4" Spacing="2" HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-            <Border Background="#204CAF50" Width="18" Height="18" CornerRadius="9">
-              <mi:MaterialIcon Kind="ChartTimelineVariant" Width="11" Height="11" Foreground="#4CAF50" />
+            <Border Background="{DynamicResource StatsGreenBgBrush}" Width="18" Height="18" CornerRadius="9">
+              <mi:MaterialIcon Kind="ChartTimelineVariant" Width="11" Height="11" Foreground="{DynamicResource StatsGreenBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate AvgPerDay}" FontSize="10"
                        Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -209,8 +209,8 @@
                 Background="{DynamicResource BorderSubtleBrush}" Margin="4,0" />
         <StackPanel Grid.Column="6" Spacing="2" HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-            <Border Background="#206A1B9A" Width="18" Height="18" CornerRadius="9">
-              <mi:MaterialIcon Kind="CalendarCheck" Width="11" Height="11" Foreground="#6A1B9A" />
+            <Border Background="{DynamicResource StatsPurpleBgBrush}" Width="18" Height="18" CornerRadius="9">
+              <mi:MaterialIcon Kind="CalendarCheck" Width="11" Height="11" Foreground="{DynamicResource StatsPurpleBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate WorkedDaysCount}" FontSize="10"
                        Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -236,14 +236,14 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_AbsenceCard" IsVisible="{Binding !ShowTable}">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#2000838F" Width="28" Height="28" CornerRadius="8">
-                <mi:MaterialIcon Kind="CalendarRemove" Width="16" Height="16" Foreground="#00838F" />
+              <Border Background="{DynamicResource StatsTealBgBrush}" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="CalendarRemove" Width="16" Height="16" Foreground="{DynamicResource StatsTealBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate AbsenceOverview}" Classes="SectionTitle" VerticalAlignment="Center" />
             </StackPanel>
             <Grid ColumnDefinitions="*,*,*,*">
               <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
-                <Border Background="#201565C0" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
+                <Border Background="{DynamicResource StatsBlueBgBrush}" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
                   <mi:MaterialIcon Kind="Beach" Width="18" Height="18" Foreground="{DynamicResource InfoBrush}" />
                 </Border>
                 <TextBlock Text="{Binding VacationDays}" AutomationProperties.AutomationId="Stats_TxtVacationDays" FontSize="18" FontWeight="Bold"
@@ -252,7 +252,7 @@
                            Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
               </StackPanel>
               <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
-                <Border Background="#20F44336" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
+                <Border Background="{DynamicResource StatsErrorBgBrush}" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
                   <mi:MaterialIcon Kind="Thermometer" Width="18" Height="18" Foreground="{DynamicResource ErrorBrush}" />
                 </Border>
                 <TextBlock Text="{Binding SickDays}" AutomationProperties.AutomationId="Stats_TxtSickDays" FontSize="18" FontWeight="Bold"
@@ -261,7 +261,7 @@
                            Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
               </StackPanel>
               <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="2">
-                <Border Background="#201565C0" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
+                <Border Background="{DynamicResource StatsBlueBgBrush}" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
                   <mi:MaterialIcon Kind="HomeAccount" Width="18" Height="18" Foreground="{DynamicResource PrimaryBrush}" />
                 </Border>
                 <TextBlock Text="{Binding HomeOfficeDays}" AutomationProperties.AutomationId="Stats_TxtHomeOfficeDays" FontSize="18" FontWeight="Bold"
@@ -270,7 +270,7 @@
                            Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
               </StackPanel>
               <StackPanel Grid.Column="3" HorizontalAlignment="Center" Spacing="2">
-                <Border Background="#20FF9800" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
+                <Border Background="{DynamicResource StatsOrangeBgBrush}" Width="32" Height="32" CornerRadius="16" HorizontalAlignment="Center">
                   <mi:MaterialIcon Kind="PartyPopper" Width="18" Height="18" Foreground="{DynamicResource WarningBrush}" />
                 </Border>
                 <TextBlock Text="{Binding HolidayDays}" AutomationProperties.AutomationId="Stats_TxtHolidayDays" FontSize="18" FontWeight="Bold"
@@ -286,7 +286,7 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_PauseCard" IsVisible="{Binding !ShowTable}">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#20FF9800" Width="28" Height="28" CornerRadius="8">
+              <Border Background="{DynamicResource StatsOrangeBgBrush}" Width="28" Height="28" CornerRadius="8">
                 <mi:MaterialIcon Kind="Coffee" Width="16" Height="16" Foreground="{DynamicResource WarningBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate PauseStats}" Classes="SectionTitle" VerticalAlignment="Center" />
@@ -324,7 +324,7 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_WeeklyChartCard" IsVisible="{Binding !ShowTable}">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#201565C0" Width="28" Height="28" CornerRadius="8">
+              <Border Background="{DynamicResource StatsBlueBgBrush}" Width="28" Height="28" CornerRadius="8">
                 <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16" Foreground="{DynamicResource PrimaryBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate WeeklyWorkTimeChart}" Classes="SectionTitle" VerticalAlignment="Center" />
@@ -339,8 +339,8 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_OvertimeChartCard" IsVisible="{Binding !ShowTable}">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#20FF9800" Width="28" Height="28" CornerRadius="8">
-                <mi:MaterialIcon Kind="TrendingUp" Width="16" Height="16" Foreground="#FF9800" />
+              <Border Background="{DynamicResource StatsOrangeBgBrush}" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="TrendingUp" Width="16" Height="16" Foreground="{DynamicResource StatsOrangeBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate OvertimeTrendChart}" Classes="SectionTitle" VerticalAlignment="Center" />
             </StackPanel>
@@ -354,8 +354,8 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_WeekdayRadialCard" IsVisible="{Binding !ShowTable}">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#204CAF50" Width="28" Height="28" CornerRadius="8">
-                <mi:MaterialIcon Kind="CalendarWeek" Width="16" Height="16" Foreground="#4CAF50" />
+              <Border Background="{DynamicResource StatsGreenBgBrush}" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="CalendarWeek" Width="16" Height="16" Foreground="{DynamicResource StatsGreenBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate WeekdayAverage}" Classes="SectionTitle" VerticalAlignment="Center" />
             </StackPanel>
@@ -369,8 +369,8 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_ProjectCard" IsVisible="{Binding HasProjects}">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#206A1B9A" Width="28" Height="28" CornerRadius="8">
-                <mi:MaterialIcon Kind="Briefcase" Width="16" Height="16" Foreground="#6A1B9A" />
+              <Border Background="{DynamicResource StatsPurpleBgBrush}" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="Briefcase" Width="16" Height="16" Foreground="{DynamicResource StatsPurpleBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate ProjectDistribution}" Classes="SectionTitle" VerticalAlignment="Center" />
             </StackPanel>
@@ -384,8 +384,8 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_EmployerCard" IsVisible="{Binding HasEmployers}">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#20C62828" Width="28" Height="28" CornerRadius="8">
-                <mi:MaterialIcon Kind="AccountGroup" Width="16" Height="16" Foreground="#C62828" />
+              <Border Background="{DynamicResource StatsRedBgBrush}" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="AccountGroup" Width="16" Height="16" Foreground="{DynamicResource StatsRedBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate EmployerDistribution}" Classes="SectionTitle" VerticalAlignment="Center" />
             </StackPanel>
@@ -399,7 +399,7 @@
         <Border Classes="StatsCard" AutomationProperties.AutomationId="Stats_TableCard" Padding="8" IsVisible="{Binding ShowTable}">
           <StackPanel Spacing="4">
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,4">
-              <Border Background="#201565C0" Width="28" Height="28" CornerRadius="8">
+              <Border Background="{DynamicResource StatsBlueBgBrush}" Width="28" Height="28" CornerRadius="8">
                 <mi:MaterialIcon Kind="FileDocument" Width="16" Height="16" Foreground="{DynamicResource PrimaryBrush}" />
               </Border>
               <TextBlock Text="{loc:Translate WorkTimeTable}" Classes="SectionTitle" VerticalAlignment="Center" />
@@ -469,7 +469,7 @@
         </Border>
 
         <ProgressBar AutomationProperties.AutomationId="Stats_LoadingBar" IsIndeterminate="True" IsVisible="{Binding IsLoading}" HorizontalAlignment="Center" />
-        <Border Height="60" />
+        <Border Height="64" />
       </StackPanel>
     </ScrollViewer>
 
@@ -477,7 +477,7 @@
     <Border Grid.RowSpan="4"
             AutomationProperties.AutomationId="Stats_AdOverlay"
             IsVisible="{Binding ShowRewardedAdOverlay}"
-            Background="#CC000000" ZIndex="100">
+            Background="{DynamicResource ModalBackdropBrush}" ZIndex="100">
       <Border Background="{DynamicResource CardBrush}" CornerRadius="16" Padding="24"
               AutomationProperties.AutomationId="Stats_AdOverlayCard"
               MaxWidth="340" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -513,7 +513,7 @@
     <Border Grid.RowSpan="4"
             AutomationProperties.AutomationId="Stats_ExportFormatOverlay"
             IsVisible="{Binding ShowExportFormatOverlay}"
-            Background="#CC000000" ZIndex="101">
+            Background="{DynamicResource ModalBackdropBrush}" ZIndex="101">
       <Border Background="{DynamicResource CardBrush}" CornerRadius="16" Padding="24"
               MaxWidth="340" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="16" HorizontalAlignment="Stretch">
@@ -525,7 +525,7 @@
                   Padding="16,14" CornerRadius="12"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="PDF">
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <mi:MaterialIcon Kind="FilePdfBox" Width="24" Height="24" Foreground="#E53935" />
+              <mi:MaterialIcon Kind="FilePdfBox" Width="24" Height="24" Foreground="{DynamicResource PdfAccentBrush}" />
               <StackPanel>
                 <TextBlock Text="PDF" FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -540,7 +540,7 @@
                   Padding="16,14" CornerRadius="12"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="Excel">
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <mi:MaterialIcon Kind="FileExcel" Width="24" Height="24" Foreground="#1B5E20" />
+              <mi:MaterialIcon Kind="FileExcel" Width="24" Height="24" Foreground="{DynamicResource ExcelAccentBrush}" />
               <StackPanel>
                 <TextBlock Text="Excel" FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -555,7 +555,7 @@
                   Padding="16,14" CornerRadius="12"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="CSV">
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <mi:MaterialIcon Kind="FileDelimited" Width="24" Height="24" Foreground="#1565C0" />
+              <mi:MaterialIcon Kind="FileDelimited" Width="24" Height="24" Foreground="{DynamicResource CsvAccentBrush}" />
               <StackPanel>
                 <TextBlock Text="CSV" FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -570,7 +570,7 @@
                   Padding="16,14" CornerRadius="12"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="ICS">
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <mi:MaterialIcon Kind="CalendarExport" Width="24" Height="24" Foreground="#FF6F00" />
+              <mi:MaterialIcon Kind="CalendarExport" Width="24" Height="24" Foreground="{DynamicResource IcsAccentBrush}" />
               <StackPanel>
                 <TextBlock Text="ICS" FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />

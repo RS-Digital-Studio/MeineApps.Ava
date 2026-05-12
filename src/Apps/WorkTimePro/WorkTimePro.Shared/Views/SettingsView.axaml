@@ -648,7 +648,7 @@
                  Margin="0,8" />
 
       <!-- Bottom Spacer (Ad-Banner) -->
-      <Border Height="60" />
+      <Border Height="64" />
 
     </StackPanel>
   </ScrollViewer>

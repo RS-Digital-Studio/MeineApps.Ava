@@ -16,6 +16,7 @@
       <Border Classes="CardElevated StatsCard" Padding="16" AutomationProperties.AutomationId="Week_NavCard">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <Button Grid.Column="0" Classes="Text"
+                  MinWidth="48" MinHeight="48"
                   AutomationProperties.AutomationId="Week_BtnPrevious"
                   Command="{Binding PreviousWeekCommand}">
             <mi:MaterialIcon Kind="ChevronLeft" Width="24" Height="24"
@@ -38,6 +39,7 @@
           </StackPanel>
 
           <Button Grid.Column="2" Classes="Text"
+                  MinWidth="48" MinHeight="48"
                   AutomationProperties.AutomationId="Week_BtnNext"
                   Command="{Binding NextWeekCommand}">
             <mi:MaterialIcon Kind="ChevronRight" Width="24" Height="24"
@@ -258,7 +260,7 @@
       </Border>
 
       <!-- Bottom Spacer (Ad-Banner) -->
-      <Border Height="60" />
+      <Border Height="64" />
 
     </StackPanel>
   </ScrollViewer>

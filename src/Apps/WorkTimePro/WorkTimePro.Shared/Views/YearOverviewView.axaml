@@ -25,12 +25,14 @@
                            Foreground="{DynamicResource PrimaryBrush}" />
         </Button>
         <Button Grid.Column="1" Classes="Text"
+                MinWidth="48" MinHeight="48"
                 AutomationProperties.AutomationId="Year_BtnPrevious"
                 Command="{Binding PreviousYearCommand}">
           <mi:MaterialIcon Kind="ChevronLeft" Width="24" Height="24"
                            Foreground="{DynamicResource PrimaryBrush}" />
         </Button>
         <Button Grid.Column="2" Classes="Text"
+                MinHeight="48"
                 AutomationProperties.AutomationId="Year_BtnCurrentYear"
                 Command="{Binding GoToCurrentYearCommand}"
                 HorizontalAlignment="Center">
@@ -40,6 +42,7 @@
                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </Button>
         <Button Grid.Column="3" Classes="Text"
+                MinWidth="48" MinHeight="48"
                 AutomationProperties.AutomationId="Year_BtnNext"
                 Command="{Binding NextYearCommand}">
           <mi:MaterialIcon Kind="ChevronRight" Width="24" Height="24"
@@ -238,7 +241,7 @@
         </ItemsControl>
 
         <!-- Bottom Spacer (Ad-Banner) -->
-        <Border Height="60" />
+        <Border Height="64" />
 
       </StackPanel>
     </ScrollViewer>

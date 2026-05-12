@@ -133,6 +133,35 @@
       <SolidColorBrush x:Key="DigitButtonBrush" Color="#15FFFFFF" />
       <SolidColorBrush x:Key="DigitButtonHoverBrush" Color="#25FFFFFF" />
 
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Statistik-Akzentfarben (kategorisch, theme-unabhängig)         -->
+      <!-- 20% Alpha-Background für Icon-Container, Voll-Brush für Icons -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+
+      <SolidColorBrush x:Key="StatsBlueBrush" Color="#1565C0" />
+      <SolidColorBrush x:Key="StatsBlueBgBrush" Color="#201565C0" />
+      <SolidColorBrush x:Key="StatsOrangeBrush" Color="#FF9800" />
+      <SolidColorBrush x:Key="StatsOrangeBgBrush" Color="#20FF9800" />
+      <SolidColorBrush x:Key="StatsGreenBrush" Color="#4CAF50" />
+      <SolidColorBrush x:Key="StatsGreenBgBrush" Color="#204CAF50" />
+      <SolidColorBrush x:Key="StatsPurpleBrush" Color="#6A1B9A" />
+      <SolidColorBrush x:Key="StatsPurpleBgBrush" Color="#206A1B9A" />
+      <SolidColorBrush x:Key="StatsRedBrush" Color="#C62828" />
+      <SolidColorBrush x:Key="StatsRedBgBrush" Color="#20C62828" />
+      <SolidColorBrush x:Key="StatsTealBrush" Color="#00838F" />
+      <SolidColorBrush x:Key="StatsTealBgBrush" Color="#2000838F" />
+      <SolidColorBrush x:Key="StatsErrorBrush" Color="#F44336" />
+      <SolidColorBrush x:Key="StatsErrorBgBrush" Color="#20F44336" />
+
+      <!-- Export-Format-Farben (PDF/Excel/CSV/ICS) -->
+      <SolidColorBrush x:Key="PdfAccentBrush" Color="#E53935" />
+      <SolidColorBrush x:Key="ExcelAccentBrush" Color="#1B5E20" />
+      <SolidColorBrush x:Key="CsvAccentBrush" Color="#1565C0" />
+      <SolidColorBrush x:Key="IcsAccentBrush" Color="#FF6F00" />
+
+      <!-- Modal-Hintergrund-Overlay (75% schwarz statt OverlayColor 50%) -->
+      <SolidColorBrush x:Key="ModalBackdropBrush" Color="#CC000000" />
+
       <!-- Theme Identifier -->
       <x:String x:Key="ThemeName">WorkTimePro</x:String>
       <x:Boolean x:Key="IsDarkTheme">True</x:Boolean>

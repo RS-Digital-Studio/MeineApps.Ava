@@ -282,7 +282,7 @@
         </Button>
 
         <!-- Bottom Spacer (Ad-Banner) -->
-        <Border Height="60" />
+        <Border Height="64" />
 
       </StackPanel>
     </ScrollViewer>

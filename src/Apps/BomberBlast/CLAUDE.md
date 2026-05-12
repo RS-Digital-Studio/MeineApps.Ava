@@ -47,13 +47,15 @@ src/Apps/BomberBlast/
 │   │   ├── SubtitleSystem.cs            # Struct-Pool-Captions (max 4 aktiv)
 │   │   ├── FogOfWarSystem.cs            # 3-Zustand Memory-FoW für L50+/Master-Mode
 │   │   ├── MenuBackgroundRenderer.cs    # 7 Themes, struct-Pool 60 Partikel
+│   │   ├── UltraComboFlash.cs           # Vignette-Flash (ULTRA-Combo + Damage-Flash, AAA-Audit #7/#18)
+│   │   ├── OutlineRenderHelper.cs       # Outline-Pass via Dilate-ImageFilter (AAA-Audit #14)
 │   │   └── ...weitere Renderer
 │   ├── Icons/                   # Eigenes Neon-Arcade Icon-System (152 Icons)
 │   ├── Input/                   # NeonJoystick, InputManager
 │   ├── Models/                  # Entities, Level, Dungeon, PowerUp, Bomb-Typen
 │   │   └── Levels/LevelLayoutGenerator.cs  # Static: Welt-Layout-Rotation, Boss/Bonus-Level-Config
-│   ├── Services/                # 37 Services (alle als Interface)
-│   └── ViewModels/              # 25 ViewModels (alle Singletons per Lazy<T>)
+│   ├── Services/                # 41 Services (alle als Interface) — +RemoteConfig +ReEngagement +WhatsNew +FeatureUnlock (Sprint 1.4c/2.3/4.3/4.4)
+│   └── ViewModels/              # 26 ViewModels (alle Singletons per Lazy<T>) — +WhatsNewViewModel
 ├── BomberBlast.Android/
 └── BomberBlast.Desktop/
 ```
@@ -828,6 +830,155 @@ CTA=0.5, Success=0.3, Danger=0.7, Gold=0.6, Secondary=0.2-0.3
 
 ---
 
+## Game-Juice-Patterns (Sprint 1-3 AAA-Audit)
+
+### Welt-Themed Bomb-FX (Sprint 1.1 / #6)
+
+`BombFxTheme[]` Lookup-Table im `GameRenderer` (10 Welten × 3 Visual-Styles = 30 Themes).
+Greift in `RenderBomb()` und `UpdateExplosionSkinColors()` nur wenn Default-Skin aktiv ist
+(Custom-Cosmetics behalten ihre Farben). Bei Welt-Wechsel wird `_bombFxTheme` in
+`SetWorldTheme()` neu gesetzt, anschliessend `UpdateExplosionSkinColors()` aufgerufen.
+Public `GetWorldAccentColor()` gibt die Welt-Akzent-Farbe zurueck (von UltraComboFlash genutzt).
+
+### Vignette-Flash (Sprint 1.2 + 3.3 / #7, #18)
+
+`UltraComboFlash`-Klasse als generischer RadialGradient-Flash (200ms Default-Dauer).
+Zwei Verwendungen:
+- `_ultraFlash`: Bei Combo == x10 mit Welt-Akzent-Farbe (200ms snap+fade).
+- `_damageFlash`: Bei Player-Hit mit Rot (50ms snap + 250ms decay) — kuerzer fuer Hit-Feedback.
+
+Bei `ReducedEffects` wird Flash unterdrueckt (Photosensitivity-Schutz). Render im
+GameEngine.Render-Loop nach allen Overlays, vor Subtitles.
+
+`TriggerWithDuration(color, attack, decay)` erlaubt individuelle Flash-Profile.
+SKShader gecacht solange Geometrie + Farbe stabil.
+
+### Player i-Frame Visualisierung (Sprint 3.3 / #18)
+
+Statt komplettem Verstecken (return) im Blink-Modus jetzt 30%-Alpha-SaveLayer im
+Player-Renderer. Spieler bleibt sichtbar, "fuehlt sich respektiert". Schnelleres
+Blinken in den letzten 0.5s als Feedback fuer auslaufenden Schutz.
+
+### Anticipation-Frames (Sprint 3.4 / #19)
+
+`Player.SquashScaleX/Y` werden im Player-Renderer via `canvas.Scale` angewandt
+(war als Property vorhanden, aber nicht verkabelt — jetzt aktiv).
+- Bomb-Place: 80ms Sin-Pop-Squash (X +20% / Y -15%) via `TriggerBombPlaceAnticipation()`.
+- Boss-Big-Attack: Letzte 120ms vor Attack-Trigger zieht sich Boss-Sprite auf 0.85x
+  zusammen — `BossEnemy.AnticipationScale` Computed-Property auf `TelegraphTimer`.
+
+### Outline-Pass (Sprint 5.4 / #14)
+
+`OutlineRenderHelper.RenderWithOutline(canvas, action, color, radius)` als statischer
+Helper. Mechanik: SaveLayer mit Dilate-ImageFilter + ColorFilter (SrcIn-Blend) macht
+Pass 1 (Outline-Ring), dann renderAction() fuer Pass 2 (Original-Sprite drueber).
+Cache: 1 Filter-Allokation pro Process.
+
+Verwendung in Player/Boss/Enemy-Renderern fuer Style-Vereinheitlichung
+(Vektor-Sprites + AI-WebP-Bitmaps bekommen den gleichen visuellen Anker).
+Performance: ~2x DrawCalls pro Outline-Entity → empfohlen fuer 5-10 Entities pro Frame.
+
+---
+
+## Live-Ops-Patterns (Sprint 2 + 4 AAA-Audit)
+
+### Remote Config (Sprint 2.1 / #1)
+
+`IRemoteConfigService` mit drei Implementierungen:
+- `NullRemoteConfigService`: Liefert immer Default-Werte (Sprint 1.4c Stub).
+- `DefaultsRemoteConfigService` (Standard): Laedt Werte aus eingebetteter
+  `Resources/remote_config_defaults.json`. App funktioniert vollstaendig ohne
+  Firebase-Backend, FirebaseRemoteConfigService kommt spaeter als Android-Override.
+- `FirebaseRemoteConfigService` (zukuenftig): Cloud-Fetch + ueberschreibt Defaults
+  via `SetOverride(key, value)`.
+
+`RemoteConfigKeys` (statische Klasse): 23 vordefinierte Keys fuer
+Event-Toggles / Drop-Raten / Preise / Combat-Tuning / Live-Ops.
+Initialisierung im App.axaml.cs `InitializeServicesAndUi()` parallel zu Telemetry/Push.
+
+### Funnel-Event-Telemetrie (Sprint 2.2 / #2)
+
+Erweiterte `AnalyticsEvents`-Konstanten (40+ Funnel-Events) + `AnalyticsParams`-Konstanten
+(Tipp-sicheres Param-Handling fuer Firebase-Dashboards).
+
+Verkabelte Events:
+- `level_start` / `level_complete` / `level_failed` (mit time_ms, stars, deaths, cause)
+- `boss_encounter` / `boss_defeated` (boss_type, time_ms, damage_taken)
+- `combo_tier_reached` (tier=5/10) bei MEGA + ULTRA
+- `tutorial_step_complete` / `tutorial_complete` via TutorialService.StepCompleted-Event
+- `daily_login` (consecutive_days, day, multiplier) in MainMenuVM.ApplyDailyReward
+- `rewarded_ad_request` / `rewarded_ad_completed` via `ShowAdWithTelemetryAsync` Extension
+- `feature_unlocked` via FeatureUnlockChoreographer (Sprint 4.4)
+
+GameEngine-Felder: `_levelElapsedSeconds` (tickt nur in Playing-State), `_deathsInLevel`
+(reset bei Level-Start, +1 bei jedem Player-Tod). Beide nullified in LoadLevelAsync().
+
+### Re-Engagement Push (Sprint 2.3 / #3)
+
+`IReEngagementScheduler` plant lokale D1/D3/D7-Notifications via existierendem
+`IPushNotificationService.ScheduleLocalNotification`. MainActivity ruft
+`ScheduleAll()` in OnPause + `CancelAll()` in OnResume — keine Reminder fuer
+aktive Spieler.
+
+Trigger-Logik:
+- D1 (24h): "Daily-Reward wartet" — nur wenn `IDailyRewardService.IsRewardAvailable`
+- D3 (72h): "Battle-Pass laeuft in N Tagen ab" — nur wenn CurrentTier < MaxTier
+- D7 (168h): "Wir vermissen dich" — one-shot pro 7-Tage-Cooldown via Pref-Flag
+
+DSGVO-konform: Respektiert POST_NOTIFICATIONS-Permission (Android 13+).
+Texte lokalisiert in 6 Sprachen via RESX.
+
+### What's-New-Modal (Sprint 4.3 / #17)
+
+`IWhatsNewService` + `WhatsNewService` mit hardcoded Eintraegen pro Version.
+`CurrentVersion` aus Assembly (Single-Source-of-Truth, Sprint 1.4a).
+`ShouldShow` true wenn neue Version + Eintraege vorhanden + Erstinstall-Schutz.
+`MarkSeen()` setzt `LastSeenVersion` Pref.
+
+`WhatsNewViewModel` mit `Closed`-Event + Spaeter/Verstanden-Commands.
+UI-Modal-View ist deferred — Service+VM-API stehen bereit.
+
+### Feature-Unlock-Choreographie (Sprint 4.4 / #20)
+
+`IFeatureUnlockChoreographer` mit Queue-basierter sequentieller Anzeige.
+Trigger: `OnLevelComplete(level)` und `OnAchievementUnlocked(id)`.
+Unlock-Schwellen: L10 → DailyChallenge, L20 → Dungeon, L30 → LineBomb,
+L40 → PowerBomb, L50 → BossRush, L100 → MasterMode. ach_master_100 → ChampionSkin.
+
+Pref-Flag pro `FeatureId`: jedes Feature wird nur einmal pro Lebenszeit gezeigt.
+Logged Funnel-Event `feature_unlocked` (Sprint 2.2). UI-Thread-Event
+`FeatureUnlocked` mit `FeatureUnlockEvent` (TitleKey/DescKey/HeroAssetPath/CtaNavTarget).
+
+---
+
+## Logging-Pattern (Sprint 4.1 / #9)
+
+`AppLogger` leitet jetzt `LogError(msg, ex)` automatisch an
+`ITelemetryService.LogNonFatal(ex, ctx)` weiter — sichtbar in Crashlytics
+mit Stack-Trace + Custom-Keys. `LogInfo` und `LogWarning` werden als Breadcrumbs
+geloggt.
+
+Build-Filtering: Im Debug-Build zeigt `LogTrace` Output, im Release nicht.
+
+`BeginScope("game={gameId}")` mit AsyncLocal-Stack — alle Logs in einem
+`using`-Block bekommen den Scope-Namen als Prefix. Thread-safe fuer parallele Sub-Tasks.
+
+Volle ILogger&lt;T&gt;-Migration der 53 Services bleibt eigener Sprint.
+
+---
+
+## Crash-Recovery (Sprint 6.3 / #25)
+
+`OnFrameworkInitializationCompleted` inkrementiert `BomberBlast_AppCrashCount`
+VOR der Init-Phase, `RunLoadingAsync` setzt nach Pipeline-Erfolg auf 0 zurueck.
+Bei `>= 3` Crashes in Folge greift Safe-Mode: optionale Services (Telemetry/
+Analytics/Push/RemoteConfig) werden mit Try/Catch uebersprungen damit die App
+garantiert startet — User kommt zumindest ans Settings-Menue.
+
+Public API: `App.ResetCrashRecoveryCounter()` fuer Settings-Screen.
+
+---
+
 ## Aktive Gotcha-Patterns
 
 ### SKPath.Rewind() statt Reset()
@@ -901,10 +1052,13 @@ Boss-Reveal-Cinematic kann sonst nach Mode-Wechsel weiterlaufen.
 Firebase-Rules prüfen `updatedUtc` nicht mehr in `hasChildren` (seit ServerTimestamp-Migration).
 Rule-Änderungen müssen in Firebase Console deployed werden — Datei lokal ist nicht automatisch live.
 
-### Splash-Versions-String manuell gepflegt
+### Splash-Versions-String automatisch (Sprint 1.4a)
 
-`App.axaml.cs`: `AppVersion = "v2.0.56"` — diese Zeichenkette wird NICHT aus der csproj gelesen.
-Bei jedem Release manuell auf die aktuelle `ApplicationDisplayVersion` setzen.
+`App.axaml.cs.GetAppVersionString()` liest die Version aus
+`typeof(App).Assembly.GetName().Version.ToString(3)`. Source-of-truth ist
+`<Version>X.Y.Z</Version>` in `BomberBlast.Shared.csproj` — diese muss bei jedem
+Release synchron mit `ApplicationDisplayVersion` in `BomberBlast.Android.csproj`
+gehalten werden (sonst zeigt Splash eine andere Version als die installierte App).
 
 ---
 
@@ -954,6 +1108,10 @@ Bei jedem Release manuell auf die aktuelle `ApplicationDisplayVersion` setzen.
 | `ITelemetryService` | Crashlytics-Wrapper (NullTelemetryService auf Desktop) |
 | `IAnalyticsService` | Firebase Analytics (NullAnalyticsService auf Desktop) |
 | `IPushNotificationService` | FCM + AlarmManager (NullPushNotificationService auf Desktop) |
+| `IRemoteConfigService` | Remote Config (DefaultsRemoteConfigService laedt embedded JSON, Sprint 2.1) |
+| `IReEngagementScheduler` | D1/D3/D7 lokale Push-Trigger (Sprint 2.3, MainActivity-OnPause/OnResume) |
+| `IWhatsNewService` | Versions-Aenderungs-Modal (Sprint 4.3) |
+| `IFeatureUnlockChoreographer` | Queue-basierte Feature-Unlock-Overlays (Sprint 4.4) |
 
 ---
 

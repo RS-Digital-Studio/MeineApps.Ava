@@ -191,22 +191,8 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         return _confirmDialogTcs.Task;
     }
 
-    /// <summary>
-    /// AAA-Audit P0 Aufspaltung — Delegiert an PrestigeConfirmation-VM für Backward-Compatibility.
-    /// </summary>
-    public Task<(bool confirmed, PrestigeTier selectedTier)> ShowPrestigeConfirmationDialogAsync()
-        => PrestigeConfirmation.ShowAsync();
-
-    /// <summary>Delegiert an PrestigeConfirmation-VM.</summary>
-    public Task<(bool confirmed, PrestigeTier selectedTier)> PreparePrestigePageAsync()
-        => PrestigeConfirmation.PreparePageAsync();
-
-    /// <summary>Delegiert an PrestigeConfirmation-VM.</summary>
-    public void UpdatePrestigeDialogContent(PrestigeTier tier)
-        => PrestigeConfirmation.UpdateContent(tier);
-
-    /// <summary>Delegiert an PrestigeConfirmation-VM.</summary>
-    public PrestigeTier DialogSelectedTier => PrestigeConfirmation.SelectedTier;
+    // AAA-Audit P0 Aufspaltung — direkter Zugriff über DialogVM.PrestigeConfirmation.X.
+    // Keine Pass-Through-Delegations mehr (12.05.2026 Review-Pass).
 
     /// <summary>
     /// Zeigt die Post-Prestige Zusammenfassung mit PP, Multiplikator und Shop-Link.

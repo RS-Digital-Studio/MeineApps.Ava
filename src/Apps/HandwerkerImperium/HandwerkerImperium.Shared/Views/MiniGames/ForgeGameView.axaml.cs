@@ -18,9 +18,8 @@ public partial class ForgeGameView : UserControl
 {
     private ForgeGameViewModel? _vm;
     private readonly ForgeGameRenderer _renderer = new();
-    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
-    private IFrameClock? _frameClock;
-    private bool _renderActive;
+    // AAA-Audit P1 Review-Pass (12.05.2026): FrameClockRenderLoop-Helper statt Inline-Subscribe.
+    private readonly Helpers.FrameClockRenderLoop _renderLoop;
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
@@ -36,9 +35,9 @@ public partial class ForgeGameView : UserControl
         {
             if (args.Property == IsVisibleProperty)
             {
-                if (IsVisible && _vm != null && _gameCanvas != null && !_renderActive)
+                if (IsVisible && _vm != null && _gameCanvas != null && !_renderLoop.IsActive)
                     StartRenderLoop();
-                else if (!IsVisible && _renderActive)
+                else if (!IsVisible && _renderLoop.IsActive)
                 {
                     StopRenderLoop();
                 }
@@ -122,28 +121,15 @@ public partial class ForgeGameView : UserControl
     /// <summary>
     /// Startet den 30fps Render-Loop fuer die SkiaSharp-Darstellung.
     /// </summary>
-    private void StartRenderLoop()
-    {
-        if (_renderActive) return;
-        _frameClock ??= App.Services?.GetService(typeof(IFrameClock)) as IFrameClock;
+    private void StartRenderLoop() => _renderLoop.Start();
 
-        _frameClock?.Subscribe(OnFrameTick, Graphics.FpsProfile.MiniGame()); // 24/30fps je nach Quality
-        _renderActive = true;
-    }
-
-    private void OnFrameTick(object? sender, FrameTickEventArgs e)
-    {
-        _gameCanvas?.InvalidateSurface();
-    }
 
     /// <summary>
     /// Stoppt den Render-Loop und gibt Canvas-Referenz frei.
     /// </summary>
     private void StopRenderLoop()
     {
-        if (!_renderActive) return;
-        _frameClock?.Unsubscribe(OnFrameTick);
-        _renderActive = false;
+        _renderLoop.Stop();
         _gameCanvas = null;
     }
 
@@ -179,7 +165,7 @@ public partial class ForgeGameView : UserControl
             deltaTime);
 
         // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
-        if (_vm is { IsResultShown: true } && _renderActive)
+        if (_vm is { IsResultShown: true } && _renderLoop.IsActive)
         {
             StopRenderLoop();
         }
@@ -289,7 +275,7 @@ public partial class ForgeGameView : UserControl
     private void OnGameRestarted(object? sender, EventArgs e)
     {
         if (_disposed) return;
-        if (_gameCanvas != null && !_renderActive)
+        if (_gameCanvas != null && !_renderLoop.IsActive)
             StartRenderLoop();
     }
 }

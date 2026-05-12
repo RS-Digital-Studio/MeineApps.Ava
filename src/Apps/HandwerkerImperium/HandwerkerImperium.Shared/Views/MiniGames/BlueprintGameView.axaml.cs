@@ -18,9 +18,8 @@ public partial class BlueprintGameView : UserControl
 {
     private BlueprintGameViewModel? _vm;
     private readonly BlueprintGameRenderer _renderer = new();
-    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
-    private IFrameClock? _frameClock;
-    private bool _renderActive;
+    // AAA-Audit P1 Review-Pass (12.05.2026): FrameClockRenderLoop-Helper statt Inline-Subscribe.
+    private readonly Helpers.FrameClockRenderLoop _renderLoop;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
     private SKCanvasView? _gameCanvas;
@@ -30,6 +29,7 @@ public partial class BlueprintGameView : UserControl
     public BlueprintGameView()
     {
         InitializeComponent();
+        _renderLoop = new Helpers.FrameClockRenderLoop(() => _gameCanvas?.InvalidateSurface(), Graphics.FpsProfile.MiniGame());
         DataContextChanged += OnDataContextChanged;
 
         // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
@@ -37,9 +37,9 @@ public partial class BlueprintGameView : UserControl
         {
             if (args.Property == IsVisibleProperty)
             {
-                if (IsVisible && _vm != null && _gameCanvas != null && !_renderActive)
+                if (IsVisible && _vm != null && _gameCanvas != null && !_renderLoop.IsActive)
                     StartRenderLoop();
-                else if (!IsVisible && _renderActive)
+                else if (!IsVisible && _renderLoop.IsActive)
                 {
                     StopRenderLoop();
                 }
@@ -111,29 +111,8 @@ public partial class BlueprintGameView : UserControl
         }
     }
 
-    /// <summary>
-    /// Startet den 30fps Render-Loop fuer Blaupausen-Animationen via zentralem IFrameClock
-    /// (statt eigener DispatcherTimer). Lazy-Init des Service via App.Services.
-    /// </summary>
-    private void StartRenderLoop()
-    {
-        if (_renderActive) return;
-        _frameClock ??= App.Services?.GetService(typeof(IFrameClock)) as IFrameClock;
-        _frameClock?.Subscribe(OnFrameTick, Graphics.FpsProfile.MiniGame()); // 24/30fps je nach Quality
-        _renderActive = true;
-    }
-
-    private void StopRenderLoop()
-    {
-        if (!_renderActive) return;
-        _frameClock?.Unsubscribe(OnFrameTick);
-        _renderActive = false;
-    }
-
-    private void OnFrameTick(object? sender, FrameTickEventArgs e)
-    {
-        _gameCanvas?.InvalidateSurface();
-    }
+    private void StartRenderLoop() => _renderLoop.Start();
+    private void StopRenderLoop() => _renderLoop.Stop();
 
     /// <summary>
     /// PaintSurface-Handler: Extrahiert BlueprintStepData aus dem ViewModel
@@ -186,7 +165,7 @@ public partial class BlueprintGameView : UserControl
             _vm.CompletedSteps, _vm.TotalSteps, deltaTime);
 
         // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
-        if (_vm is { IsResultShown: true } && _renderActive)
+        if (_vm is { IsResultShown: true } && _renderLoop.IsActive)
         {
             StopRenderLoop();
         }
@@ -307,7 +286,7 @@ public partial class BlueprintGameView : UserControl
     private void OnGameRestarted(object? sender, EventArgs e)
     {
         if (_disposed) return;
-        if (_gameCanvas != null && !_renderActive)
+        if (_gameCanvas != null && !_renderLoop.IsActive)
             StartRenderLoop();
     }
 }

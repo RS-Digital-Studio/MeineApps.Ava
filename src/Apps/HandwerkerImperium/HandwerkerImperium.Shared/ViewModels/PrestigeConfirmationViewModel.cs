@@ -231,6 +231,11 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
     /// </summary>
     public async Task<(bool confirmed, PrestigeTier selectedTier)> ShowAsync()
     {
+        // Reentrancy-Guard: doppelter Aufruf während aktiven Dialogs würde TCS überschreiben
+        // und den ersten Caller für immer im await hängen lassen.
+        if (_confirmTcs != null && !_confirmTcs.Task.IsCompleted)
+            return (false, PrestigeTier.None);
+
         var state = _gameStateService.State;
         var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
 
@@ -275,6 +280,10 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
     /// </summary>
     public Task<(bool confirmed, PrestigeTier selectedTier)> PreparePageAsync()
     {
+        // Reentrancy-Guard (analog zu ShowAsync)
+        if (_confirmTcs != null && !_confirmTcs.Task.IsCompleted)
+            return Task.FromResult((false, PrestigeTier.None));
+
         var state = _gameStateService.State;
         var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
 

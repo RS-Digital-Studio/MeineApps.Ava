@@ -111,7 +111,7 @@ public sealed partial class MainViewModel
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         // v2.1.0: Page-Modus — Properties vorbereiten + ActivePage wechseln.
-        var prepareTask = DialogVM.PreparePrestigePageAsync();
+        var prepareTask = DialogVM.PrestigeConfirmation.PreparePageAsync();
         ActivePage = ActivePage.Prestige;
 
         var (confirmed, selectedTier) = await prepareTask;

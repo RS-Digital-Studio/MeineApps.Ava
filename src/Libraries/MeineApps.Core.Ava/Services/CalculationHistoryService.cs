@@ -94,7 +94,7 @@ public sealed class CalculationHistoryService : ICalculationHistoryService, IDis
 
             await SaveHistoryInternalAsync(calculatorId, history);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fehler still ignorieren
         }
@@ -132,7 +132,7 @@ public sealed class CalculationHistoryService : ICalculationHistoryService, IDis
             }
             return null;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fehler still ignorieren
             return null;
@@ -165,7 +165,7 @@ public sealed class CalculationHistoryService : ICalculationHistoryService, IDis
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fehler still ignorieren
         }
@@ -184,7 +184,7 @@ public sealed class CalculationHistoryService : ICalculationHistoryService, IDis
             if (File.Exists(filePath))
                 File.Delete(filePath);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fehler still ignorieren
         }
@@ -216,7 +216,7 @@ public sealed class CalculationHistoryService : ICalculationHistoryService, IDis
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fehler still ignorieren
         }
@@ -286,7 +286,7 @@ public sealed class CalculationHistoryService : ICalculationHistoryService, IDis
             var history = JsonSerializer.Deserialize<List<CalculationHistoryItem>>(json) ?? [];
             return history.Take(maxItems).ToList();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fehler still ignorieren
             return [];

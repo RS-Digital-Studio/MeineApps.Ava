@@ -35,5 +35,9 @@ public sealed class RewardedAdService : IRewardedAdService
         _isDisabled = true;
     }
 
+    // Desktop-Stub: AdUnavailable wird nur in der Android-Implementierung gefeuert
+    // (siehe AndroidRewardedAdService). Hier dient es nur dem Interface-Vertrag.
+#pragma warning disable CS0067
     public event Action? AdUnavailable;
+#pragma warning restore CS0067
 }

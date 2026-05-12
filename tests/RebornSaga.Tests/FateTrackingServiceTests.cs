@@ -279,14 +279,17 @@ public class FateTrackingServiceTests
     // ─── RecordFateChange ─────────────────────────────────────────────────────
 
     [Fact]
-    public void RecordFateChange_SpeichertFlagMitPräfix()
+    public void RecordFateChange_SpeichertFlagOhnePraefix()
     {
+        // Aktuelles Verhalten (siehe FateTrackingService.RecordFateChange-Kommentar):
+        // Fate-Key wird OHNE "fate_"-Praefix gespeichert, damit StoryEngine.EvaluateCondition
+        // ueber Flags.Contains() konsistent matchen kann.
         var service = new FateTrackingService();
 
         service.RecordFateChange("dark_pact");
 
-        service.HasFlag("fate_dark_pact").Should().BeTrue(
-            "RecordFateChange speichert Flag mit 'fate_'-Präfix");
+        service.HasFlag("dark_pact").Should().BeTrue(
+            "RecordFateChange speichert Flag direkt (ohne 'fate_'-Praefix) fuer StoryEngine-Kompatibilitaet");
     }
 
     [Fact]

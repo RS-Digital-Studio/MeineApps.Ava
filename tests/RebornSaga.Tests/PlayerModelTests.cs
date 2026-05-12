@@ -172,13 +172,14 @@ public class PlayerModelTests
     // ─── ExpToNextLevel-Formel ───────────────────────────────────────────────
 
     [Fact]
-    public void ExpToNextLevel_Level1_Berechnet50()
+    public void ExpToNextLevel_Level1_Berechnet40()
     {
-        // Formel: 50 * Level^1.5 = 50 * 1^1.5 = 50
+        // Formel (aktuell): 40 * Level^1.35 = 40 * 1^1.35 = 40
+        // Vorherige Schwelle 50 wurde auf 40 gesenkt fuer flacheren Early-Game-Curve.
         var spieler = Player.Create(ClassName.Swordmaster);
 
-        spieler.ExpToNextLevel.Should().Be(50,
-            "EXP für Level 2: 50 * 1^1.5 = 50");
+        spieler.ExpToNextLevel.Should().Be(40,
+            "EXP für Level 2: 40 * 1^1.35 = 40 (Early-Game-Smoothing)");
     }
 
     [Fact]

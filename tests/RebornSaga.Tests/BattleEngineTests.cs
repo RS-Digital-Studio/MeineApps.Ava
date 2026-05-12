@@ -224,9 +224,9 @@ public class BattleEngineTests
     }
 
     [Fact]
-    public void TryDodge_DodgeChanceMaximum_NieÜber50Prozent()
+    public void TryDodge_DodgeChanceMaximum_NieÜber60Prozent()
     {
-        // Selbst bei extremem Geschwindigkeitsunterschied: max 50%
+        // Aktueller Cap (BattleEngine.TryDodge): max 60% (vorher 50%, BAL-Anpassung).
         int dodges = 0;
         int versuche = 1000;
 
@@ -236,14 +236,14 @@ public class BattleEngineTests
         }
 
         float rate = (float)dodges / versuche;
-        rate.Should().BeLessThanOrEqualTo(0.55f,
-            "Dodge-Chance darf nie signifikant über 50% liegen (Clamp bei 0.5)");
+        rate.Should().BeLessThanOrEqualTo(0.65f,
+            "Dodge-Chance darf nie signifikant über 60% liegen (Clamp bei 0.6)");
     }
 
     [Fact]
     public void TryDodge_GleicheGeschwindigkeit_BasischeDodgeChance()
     {
-        // Gleiche SPD → dodgeChance = 0 * 0.02 + 0.1 = 10%
+        // Gleiche SPD → dodgeChance = 0 * 0.02 + 0.25 = 25% (Basis hochgesetzt von 10%).
         int dodges = 0;
         int versuche = 1000;
 
@@ -253,8 +253,8 @@ public class BattleEngineTests
         }
 
         float rate = (float)dodges / versuche;
-        rate.Should().BeApproximately(0.1f, 0.04f,
-            "bei gleicher Geschwindigkeit sollte Dodge-Rate ~10% betragen");
+        rate.Should().BeApproximately(0.25f, 0.05f,
+            "bei gleicher Geschwindigkeit sollte Dodge-Rate ~25% betragen (BAL-Anpassung)");
     }
 
     // ─── CalculateDrops ───────────────────────────────────────────────────────

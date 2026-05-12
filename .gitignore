@@ -362,6 +362,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /.claude/settings.local.json
+# Per-App Claude-Code Permissions (lokale Tool-Konfiguration, nicht ins Repo)
+**/.claude/settings.local.json
 /nul
 
 # Claude Code Worktrees

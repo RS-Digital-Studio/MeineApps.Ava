@@ -102,6 +102,28 @@ public sealed partial class GameEngine
                 _localizationService.GetString("AnnounceWorld") ?? "WORLD {0}", world);
             _worldAnnouncementTimer = 2.0f;
         }
+
+        // Sprint 2.2 AAA-Audit #2: Funnel-Event level_start mit Welt + Lives + Master-Mode-Flag.
+        _analytics?.LogEvent(AnalyticsEvents.LevelStart, new Dictionary<string, object>
+        {
+            [AnalyticsParams.LevelId] = levelNumber,
+            [AnalyticsParams.WorldId] = world,
+            [AnalyticsParams.Lives] = _player.Lives,
+            ["master_mode"] = _isMasterMode ? 1 : 0,
+            ["mutator"] = _activeMutator.ToString(),
+        });
+
+        // Sprint 2.2: boss_encounter wenn das Level einen Boss hat (vor dem Kampf, fuer Drop-Off-Funnel).
+        if (_currentLevel.IsBossLevel && _currentLevel.BossKind is { } bossKind)
+        {
+            _analytics?.LogEvent(AnalyticsEvents.BossEncounter, new Dictionary<string, object>
+            {
+                [AnalyticsParams.BossType] = bossKind.ToString(),
+                [AnalyticsParams.Phase] = 1,
+                [AnalyticsParams.LevelId] = levelNumber,
+                [AnalyticsParams.WorldId] = world,
+            });
+        }
     }
 
     /// <summary>
@@ -713,6 +735,9 @@ public sealed partial class GameEngine
         _exitCell = null;
         _scoreAtLevelStart = _player.Score;
         _playerDamagedThisLevel = false;
+        // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie reset.
+        _levelElapsedSeconds = 0f;
+        _deathsInLevel = 0;
 
         // Deck-Telemetrie: Counter für dieses Level zurücksetzen
         _specialBombTypesUsedInLevel.Clear();
@@ -1569,14 +1594,34 @@ public sealed partial class GameEngine
                 }
             }
 
-            // v2.0.44 — AAA-Audit: Funnel-Tracking für Live-Ops-Entscheidungen
+            // v2.0.44 — AAA-Audit: Funnel-Tracking für Live-Ops-Entscheidungen.
+            // Sprint 2.2 AAA-Audit #2: erweiterte Parameter — time_ms, stars, deaths fuer
+            // praezisere Level-Difficulty-Auswertung in Firebase-Dashboards.
+            int worldForLevel = (_currentLevelNumber - 1) / 10 + 1;
+            int starsEarned = _progressService.GetLevelStars(_currentLevelNumber);
             _analytics?.LogEvent(AnalyticsEvents.LevelComplete, new Dictionary<string, object>
             {
                 ["level"] = _currentLevelNumber,
+                [AnalyticsParams.LevelId] = _currentLevelNumber,
+                [AnalyticsParams.WorldId] = worldForLevel,
+                [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
+                [AnalyticsParams.Stars] = starsEarned,
+                [AnalyticsParams.Deaths] = _deathsInLevel,
                 ["score"] = _player.Score,
                 ["mode"] = GetCurrentModeTag(),
                 ["master_mode"] = _isMasterMode
             });
+            // Sprint 2.2: boss_defeated wenn das Level einen Boss hatte (paired mit boss_encounter beim Start)
+            if (_currentLevel?.IsBossLevel == true && _currentLevel.BossKind is { } defeatedBoss)
+            {
+                _analytics?.LogEvent(AnalyticsEvents.BossDefeated, new Dictionary<string, object>
+                {
+                    [AnalyticsParams.BossType] = defeatedBoss.ToString(),
+                    [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
+                    [AnalyticsParams.DamageTaken] = _deathsInLevel,
+                    [AnalyticsParams.LevelId] = _currentLevelNumber,
+                });
+            }
             LevelComplete?.Invoke();
         }
     }

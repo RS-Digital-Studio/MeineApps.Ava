@@ -19,6 +19,8 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
     private readonly ILocalizationService _localizationService;
     private readonly ICoinService _coinService;
     private readonly IRewardedAdService _rewardedAdService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    private readonly IAnalyticsService _analytics;
     private readonly IProgressService _progressService;
     private readonly IWeeklyChallengeService _weeklyService;
     private readonly IDailyMissionService _dailyMissionService;
@@ -201,7 +203,9 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         IRewardedAdService rewardedAdService,
         IProgressService progressService,
         IWeeklyChallengeService weeklyService,
-        IDailyMissionService dailyMissionService)
+        IDailyMissionService dailyMissionService,
+        // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer 3 Rewarded-Ad-Placements (continue/coin_multiplier/revival)
+        IAnalyticsService analytics)
     {
         _purchaseService = purchaseService;
         _localizationService = localizationService;
@@ -210,6 +214,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         _progressService = progressService;
         _weeklyService = weeklyService;
         _dailyMissionService = dailyMissionService;
+        _analytics = analytics;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -361,7 +366,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         try
         {
             // Premium: Reward sofort gratis (kein Ad nötig)
-            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("continue");
+            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "continue");
             if (rewarded)
             {
                 if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();
@@ -401,7 +406,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
 
         CanTripleCoins = false;
 
-        bool rewarded = await _rewardedAdService.ShowAdAsync("coin_multiplier");
+        bool rewarded = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "coin_multiplier");
         if (rewarded)
         {
             RewardedAdCooldownTracker.RecordAdShown();
@@ -437,7 +442,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         CanContinue = false;
         try
         {
-            bool revived = await _rewardedAdService.ShowAdAsync("revival");
+            bool revived = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "revival");
             // Post-Ad Check: VM koennte bereits navigiert/disposed sein (User drueckt Back waehrend Ad).
             if (HasContinued) return;
 
@@ -535,7 +540,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         CanSkipLevel = false;
         try
         {
-            var success = await _rewardedAdService.ShowAdAsync("level_skip");
+            var success = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "level_skip");
             if (success)
             {
                 RewardedAdCooldownTracker.RecordAdShown();

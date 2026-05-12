@@ -374,8 +374,12 @@ public partial class App : Application
         services.AddSingleton<ITelemetryService>(sp => TelemetryServiceFactory?.Invoke(sp) ?? new NullTelemetryService());
         services.AddSingleton<IAnalyticsService>(sp => AnalyticsServiceFactory?.Invoke(sp) ?? new NullAnalyticsService());
         services.AddSingleton<IPushNotificationService>(sp => PushNotificationServiceFactory?.Invoke(sp) ?? new NullPushNotificationService());
-        // Sprint 1.4c — RemoteConfig-Stub (Sprint 2.1: Android-Override mit Firebase-Impl).
-        services.AddSingleton<IRemoteConfigService>(sp => RemoteConfigServiceFactory?.Invoke(sp) ?? new NullRemoteConfigService());
+        // Sprint 2.1 AAA-Audit #1 — RemoteConfig: Defaults aus eingebetteter JSON.
+        // Android-Override (FirebaseRemoteConfigService) ueberschreibt einzelne Keys spaeter
+        // via Cloud-Fetch — Defaults bleiben als Fallback fuer Offline + erste-Start-Szenarien.
+        services.AddSingleton<IRemoteConfigService>(sp =>
+            RemoteConfigServiceFactory?.Invoke(sp)
+            ?? new DefaultsRemoteConfigService(sp.GetRequiredService<IAppLogger>()));
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)

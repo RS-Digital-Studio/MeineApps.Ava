@@ -2,6 +2,7 @@ using BomberBlast.Graphics;
 using BomberBlast.Models;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
+using BomberBlast.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Core;
@@ -337,6 +338,7 @@ public sealed partial class GameEngine
 
         _playerDamagedThisLevel = true;
         _fortressRegenTimer = 0; // Festungs-Synergy: Timer bei Schaden zurücksetzen
+        _deathsInLevel++;        // Sprint 2.2 AAA-Audit #2: Tode pro Level fuer Funnel-Telemetrie
         _player.Kill();
         _timer.Pause();
         _state = GameState.PlayerDied;
@@ -503,11 +505,23 @@ public sealed partial class GameEngine
                 // photosensitive Spieler triggern).
                 if (!_inputManager.ReducedEffects)
                     _ultraFlash.Trigger(_renderer.GetWorldAccentColor());
+                // Sprint 2.2 AAA-Audit #2: Funnel-Event combo_tier_reached (ULTRA)
+                _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
+                {
+                    [AnalyticsParams.Tier] = 10,
+                    [AnalyticsParams.LevelId] = _currentLevelNumber,
+                });
             }
             else if (_comboCount == 5)
             {
                 _screenShake.TriggerPullBack(magnitude: 0.5f, durationSeconds: 0.35f);
                 _soundManager.PlayStinger(SoundManager.STINGER_COMBO_MEGA);
+                // Sprint 2.2 AAA-Audit #2: Funnel-Event combo_tier_reached (MEGA)
+                _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
+                {
+                    [AnalyticsParams.Tier] = 5,
+                    [AnalyticsParams.LevelId] = _currentLevelNumber,
+                });
             }
 
             // Tracking: Combo erreicht (Achievement + Missionen)

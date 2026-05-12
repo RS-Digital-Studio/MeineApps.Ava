@@ -1,0 +1,31 @@
+{
+  "$comment": "Sprint 2.1 AAA-Audit #1: Default-Werte für Remote-Config. Werden in DefaultsRemoteConfigService beim Init geladen und liefern Fallback-Werte wenn kein Firebase-Override aktiv ist. Bei Aenderungen: VersionCode in Android-csproj erhoehen (Defaults werden mit der App ausgeliefert).",
+  "$version": 1,
+  "$last_updated": "2026-05-12",
+
+  "event_active_halloween": false,
+  "event_active_christmas": false,
+  "event_active_newyear": false,
+  "event_active_summer": false,
+
+  "drop_rate_legendary_card": 0.03,
+  "drop_rate_epic_card": 0.12,
+  "drop_rate_rare_card": 0.25,
+  "drop_rate_gem_from_block": 0.005,
+
+  "gem_pack_small_price_cents": 199,
+  "gem_pack_medium_price_cents": 499,
+  "gem_pack_large_price_cents": 999,
+  "starter_pack_discount_pct": 50,
+  "first_purchase_multiplier": 2.0,
+
+  "combo_slowmo_threshold": 4,
+  "combo_ultra_threshold": 10,
+  "boss_telegraph_duration_ms": 2000,
+  "boss_enrage_hp_percent": 50,
+
+  "maintenance_mode": false,
+  "min_supported_version_code": 1,
+  "force_update_url": "",
+  "weekly_content_drop_enabled": false
+}

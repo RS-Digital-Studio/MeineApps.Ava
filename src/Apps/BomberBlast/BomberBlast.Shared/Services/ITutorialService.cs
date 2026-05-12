@@ -30,4 +30,14 @@ public interface ITutorialService
 
     /// <summary>Tutorial-Fortschritt zurücksetzen</summary>
     void Reset();
+
+    /// <summary>
+    /// Sprint 2.2 AAA-Audit #2: Wird beim Abschluss eines Tutorial-Schritts gefeuert
+    /// (Parameter = Index des gerade abgeschlossenen Schritts). Wird vom GameEngine
+    /// fuer Funnel-Telemetrie subscribed.
+    /// </summary>
+    event Action<int>? StepCompleted;
+
+    /// <summary>Wird beim Erreichen des letzten Tutorial-Schritts gefeuert.</summary>
+    event Action? TutorialCompleted;
 }

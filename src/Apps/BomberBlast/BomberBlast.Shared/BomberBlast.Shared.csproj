@@ -31,4 +31,10 @@
     <AvaloniaResource Remove="Assets\sounds\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Sprint 2.1 AAA-Audit #1: Remote-Config-Defaults als Embedded Resource.
+         Wird von DefaultsRemoteConfigService via Assembly.GetManifestResourceStream geladen. -->
+    <EmbeddedResource Include="Resources\remote_config_defaults.json" />
+  </ItemGroup>
+
 </Project>

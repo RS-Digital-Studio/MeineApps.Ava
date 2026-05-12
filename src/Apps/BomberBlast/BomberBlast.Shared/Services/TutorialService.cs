@@ -28,6 +28,14 @@ public sealed class TutorialService : ITutorialService
     public TutorialStep? CurrentStep => IsActive ? Steps[_currentStepIndex] : null;
     public bool IsCompleted => _preferences.Get(TUTORIAL_COMPLETED_KEY, false);
 
+    /// <summary>
+    /// Sprint 2.2 AAA-Audit #2: Wird vom GameEngine subscribed, feuert Funnel-Event
+    /// fuer jeden abgeschlossenen Tutorial-Schritt + ein Final-Complete-Event.
+    /// </summary>
+    public event Action<int>? StepCompleted;
+    /// <summary>Wird beim Erreichen des letzten Schritts gefeuert.</summary>
+    public event Action? TutorialCompleted;
+
     public TutorialService(IPreferencesService preferences)
     {
         _preferences = preferences;
@@ -46,13 +54,18 @@ public sealed class TutorialService : ITutorialService
         if (!IsActive)
             return;
 
+        // Sprint 2.2: Step-Index VOR dem Inkrement merken (das war der gerade abgeschlossene Schritt).
+        int completedStepIndex = _currentStepIndex;
         _currentStepIndex++;
+
+        StepCompleted?.Invoke(completedStepIndex);
 
         if (_currentStepIndex >= Steps.Length)
         {
             // Tutorial abgeschlossen
             _currentStepIndex = -1;
             _preferences.Set(TUTORIAL_COMPLETED_KEY, true);
+            TutorialCompleted?.Invoke();
         }
     }
 

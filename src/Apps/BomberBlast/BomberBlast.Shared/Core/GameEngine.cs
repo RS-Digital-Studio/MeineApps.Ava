@@ -488,6 +488,10 @@ public sealed partial class GameEngine : IDisposable
     private int _scoreAtLevelStart; // Score zu Beginn des Levels (für Coin-Berechnung)
     private bool _playerDamagedThisLevel; // Für NoDamage-Achievement
 
+    // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie — verstrichene Zeit + Tode pro Level.
+    private float _levelElapsedSeconds; // Wird in Update() inkrementiert (nur Playing-State)
+    private int _deathsInLevel;         // Reset bei Level-Start, +1 bei jedem Player-Tod im Level
+
     // Timing
     private float _stateTimer;
     private const float START_DELAY = 3f;
@@ -927,10 +931,30 @@ public sealed partial class GameEngine : IDisposable
         // Phase 28b — KonamiCode-Easter-Egg-Reward verkabeln
         _inputManager.KonamiDetector.CodeTriggered += OnKonamiCodeTriggered;
 
+        // Sprint 2.2 AAA-Audit #2: Tutorial-Funnel-Telemetrie (per-Step + Final-Complete).
+        _tutorialService.StepCompleted += OnTutorialStepCompleted;
+        _tutorialService.TutorialCompleted += OnTutorialCompleted;
+
         // HUD-Labels cachen und bei Sprachwechsel aktualisieren
         CacheHudLabels();
         _languageChangedHandler = (_, _) => CacheHudLabels();
         _localizationService.LanguageChanged += _languageChangedHandler;
+    }
+
+    private void OnTutorialStepCompleted(int stepIndex)
+    {
+        _analytics?.LogEvent(AnalyticsEvents.TutorialStepComplete, new Dictionary<string, object>
+        {
+            [AnalyticsParams.StepId] = stepIndex,
+        });
+    }
+
+    private void OnTutorialCompleted()
+    {
+        _analytics?.LogEvent(AnalyticsEvents.TutorialComplete, new Dictionary<string, object>
+        {
+            [AnalyticsParams.LevelId] = _currentLevelNumber,
+        });
     }
 
     /// <summary>
@@ -1133,6 +1157,8 @@ public sealed partial class GameEngine : IDisposable
                 break;
 
             case GameState.Playing:
+                // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie tickt Level-Zeit nur waehrend Playing.
+                _levelElapsedSeconds += deltaTime;
                 // Phase 18c — FixedTimestep opt-in:
                 // Wenn aktiv, wird UpdatePlaying mehrere Male pro Frame mit FIXED_TICK_SECONDS aufgerufen
                 // (deterministische Sim-Granularität). Im Variable-Mode bleibt der existierende Pfad.
@@ -1537,10 +1563,17 @@ public sealed partial class GameEngine : IDisposable
 
                 _tracking.FlushIfDirty();
 
-                // v2.0.44 — AAA-Audit: GameOver-Telemetrie für Funnel-Drop-off-Analyse
+                // v2.0.44 — AAA-Audit: GameOver-Telemetrie für Funnel-Drop-off-Analyse.
+                // Sprint 2.2 AAA-Audit #2: erweitert um cause + attempt_count fuer Drop-Off-Pattern.
                 _analytics?.LogEvent(AnalyticsEvents.LevelFailed, new Dictionary<string, object>
                 {
                     ["level"] = _currentLevelNumber,
+                    [AnalyticsParams.LevelId] = _currentLevelNumber,
+                    [AnalyticsParams.WorldId] = (_currentLevelNumber - 1) / 10 + 1,
+                    [AnalyticsParams.Cause] = _timer.IsExpired ? "time" : "enemy_or_bomb",
+                    // Tode innerhalb dieser GameOver-Sequenz (jedes Sterben = ein Attempt).
+                    [AnalyticsParams.AttemptCount] = _deathsInLevel,
+                    [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
                     ["score"] = _player.Score,
                     ["mode"] = GetCurrentModeTag()
                 });
@@ -2346,6 +2379,8 @@ public sealed partial class GameEngine : IDisposable
         _timer.Expired -= OnTimeExpired;
         _inputManager.DirectionChanged -= _directionChangedHandler;
         _inputManager.KonamiDetector.CodeTriggered -= OnKonamiCodeTriggered;
+        _tutorialService.StepCompleted -= OnTutorialStepCompleted;
+        _tutorialService.TutorialCompleted -= OnTutorialCompleted;
         _localizationService.LanguageChanged -= _languageChangedHandler;
 
         _overlayBgPaint.Dispose();

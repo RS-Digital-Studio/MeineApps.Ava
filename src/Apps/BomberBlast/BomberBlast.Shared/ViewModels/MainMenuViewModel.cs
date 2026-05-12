@@ -43,6 +43,8 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     private readonly IAchievementService _achievementService;
     private readonly ICollectionService _collectionService;
     private readonly ICardService _cardService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Daily-Login + Shop-Open Events.</summary>
+    private readonly IAnalyticsService _analytics;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -193,7 +195,9 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         ILuckySpinService luckySpinService, IRotatingDealsService rotatingDealsService,
         IBossRushService bossRushService, ICustomizationService customizationService,
         IMasterModeService masterModeService, IAchievementService achievementService,
-        ICollectionService collectionService, ICardService cardService)
+        ICollectionService collectionService, ICardService cardService,
+        // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie
+        IAnalyticsService analytics)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
@@ -219,6 +223,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         _achievementService = achievementService;
         _collectionService = collectionService;
         _cardService = cardService;
+        _analytics = analytics;
 
         // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
@@ -566,6 +571,14 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         // Battle Pass XP + Liga-Punkte für täglichen Login (immer 1x, kein Farming)
         _battlePassService.AddXp(BattlePassXpSources.DailyLogin, "daily_login");
         _leagueService.AddPoints(5);
+
+        // Sprint 2.2 AAA-Audit #2: Funnel-Event daily_login mit Streak-Counter.
+        _analytics?.LogEvent(AnalyticsEvents.DailyLogin, new Dictionary<string, object>
+        {
+            [AnalyticsParams.ConsecutiveDays] = _dailyRewardService.CurrentStreak,
+            ["day"] = reward.Day,
+            ["multiplier"] = multiplier,
+        });
 
         var dayText = string.Format(
             _localizationService.GetString("DailyRewardDay") ?? "Day {0}",

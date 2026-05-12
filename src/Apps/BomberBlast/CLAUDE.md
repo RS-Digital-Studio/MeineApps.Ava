@@ -572,6 +572,68 @@ Account-Delete (`IAccountDeletionService`) deckt Art. 17 ab (siehe Dungeon-Modus
 4. `score_double` — GameView: Score verdoppeln (nach Level-Complete)
 5. `revival` — GameOver: Wiederbelebung (1× pro Versuch)
 
+### Anti-Cheat-Hybridtimer (Date-Manipulation-Schutz)
+
+Das `RewardedAdCooldownTracker`-Pattern (Tick + persistierte UTC) wird auch von drei zeitbasierten
+Reward-Services genutzt, um "Datum vorstellen → claim → zurückstellen → re-claim"-Glitches zu blockieren:
+
+| Service | Reward | Tick-Key | Schwelle |
+|---------|--------|----------|----------|
+| `CoinService` | Daily-Bonus 500 Coins | `LastBonusTickCount` | 20 h |
+| `RetentionService` | Comeback-Pack (3-Tage-Abwesenheit) | `Retention_ComebackLastClaimTicks` | ~3 Tage |
+| `BattlePassService` | XP-Boost (24 h) | `BattlePassData.XpBoostStartTicks` | 24 h |
+
+Bei Process-Reboot (TickCount64 springt zurück) verlässt sich der Service auf das UTC-Datum
+allein — Reboot ist eine legitime neue Session.
+
+### Overlay-Hit-Test-Aggregate (Android-Sicherheit)
+
+Statt einzelner `IsHitTestVisible="{Binding !IsPaused}"`-Bindings nutzen die Hauptviews ein
+zentrales Aggregat-Flag pro Modal-Layer:
+
+- `GameViewModel.IsAnyOverlayOpen` = `IsPaused || ShowScoreDoubleOverlay || IsContextHelpVisible || IsLoading`
+  → `GameView.GameCanvas.IsHitTestVisible="{Binding !IsAnyOverlayOpen}"`
+- `MainViewModel.IsAnyDialogOpen` = `IsAlertDialogVisible || IsConfirmDialogVisible`
+  → `MainView.Pages-Panel.IsHitTestVisible="{Binding !IsAnyDialogOpen}"`
+
+Beide werden via `[NotifyPropertyChangedFor]` automatisch neu berechnet. Verhindert auf Android
+das ZIndex-Hit-Test-Problem (Taps gehen durch Overlay durch).
+
+### Firebase-REST-Sicherheit
+
+- **Bearer-Header statt URL-Query**: `FirebaseService.BuildAuthenticatedRequest()` setzt
+  `Authorization: Bearer <token>` als Header. Verhindert Token-Leak in Proxy-Logs, Crashlytics-
+  Stacktraces und Firebase-Audit-Logs.
+- **ServerValue.TIMESTAMP**: `LeagueService` + `FirebaseClanService.SendChatAsync` verwenden
+  die Firebase-Sentinel-Konstante `Dictionary<string,string> { [".sv"] = "timestamp" }` statt
+  Client-`DateTime.UtcNow` — verhindert Rate-Limit-/Reihenfolge-Spoofing.
+- **HttpContent-Reuse-Schutz**: 401-Retry erstellt neuen `StringContent` (HttpContent darf
+  nicht zweimal gesendet werden).
+- **Read-fresh-before-write**: `LeaveClanAsync` re-fetched den Server-Snapshot vor Mutation
+  (Race-Schutz gegen gleichzeitige Member-Beitritte).
+
+### Cloud-Save-Konfliktauflösung
+
+- `CloudSaveData.ChooseBest` Vergleichsreihenfolge: TotalStars → CoinBalance+GemBalance*100 →
+  TotalCards → **Keys.Count** → Timestamp → **Cloud-Default**. Tie-Default ist Cloud-authoritative,
+  damit Erstlogin auf neuem Gerät den leeren lokalen State nicht über Cloud schreibt.
+- `BuildCloudSaveData` schreibt **alle** SyncKeys (auch leere) → kein Cherry-Pick-Mischzustand.
+- `ApplyCloudData` reset Sync-Keys lokal vor Cloud-Apply für fehlende Keys.
+- **Init-Race-Schutz**: `NavigateToRouteAsync` `await`-et `_cloudSaveInitTask` (3s-Cap) bevor
+  in Game/LevelSelect/Dungeon/DailyChallenge/WeeklyChallenge/Deck/Collection navigiert wird.
+
+### Render-Lifecycle-Robustheit
+
+- `GameEngine.Render` ist mit `try/finally` + SaveCount-Backstop umschlossen → Sub-Render-
+  Exceptions hängen keine Save-Frames mehr auf dem Canvas-Stack (verhinderte doppelten
+  Zoom/Shake im Folge-Frame).
+- `InputManager.Dispose` ist **idempotent** (`_disposed`-Guard). GameEngine.Dispose disposed
+  InputManager **nicht** — Lifetime gehört dem DI-Container.
+- `GameRenderer` wird in `App.DisposeServices` **nicht** disposed — Android-OnDestroy ist oft
+  kein echter Process-Kill, Renderer-Reuse nach Resume würde sonst mit disposed SKPaint crashen.
+- `ListBox + VirtualizingStackPanel Horizontal`: `BattlePassView.Tiers` (60+ Items) ist die
+  einzige echt virtualisierte Liste (Avalonia 12 hat keinen VirtualizingWrapPanel).
+
 ### Audio-System
 
 - **AndroidSoundService**: SoundPool für SFX (12 + 6 Sounds) + MediaPlayer für Musik (4 + 6 Tracks)

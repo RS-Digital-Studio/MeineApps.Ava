@@ -14,18 +14,6 @@
       ".read": "auth != null",
       "$guildId": {
         ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || !data.exists())",
-        "name": {
-          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 30"
-        },
-        "description": {
-          ".validate": "newData.isString() && newData.val().length <= 200"
-        },
-        "icon": {
-          ".validate": "newData.isString() && newData.val().length <= 40"
-        },
-        "color": {
-          ".validate": "newData.isString() && newData.val().length <= 20"
-        },
         "level": {
           ".validate": "newData.isNumber() && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)"
         },
@@ -43,6 +31,76 @@
         },
         "weeklyProgress": {
           ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        "coopOrders": {
+          "$orderId": {
+            ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists())",
+            ".validate": "newData.hasChildren(['orderId', 'createdBy', 'invitedPlayer', 'status']) && newData.child('orderId').isString() && newData.child('orderId').val().length <= 64",
+            "createdBy": {
+              ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
+            },
+            "invitedPlayer": {
+              ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
+            },
+            "status": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+            },
+            "expiresAt": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "miniGameType": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20"
+            },
+            "player1Score": {
+              ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 100)"
+            },
+            "player2Score": {
+              ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 100)"
+            },
+            "rewardSplit": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+            },
+            "baseReward": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+            },
+            "hmac": {
+              ".validate": "newData.isString() && newData.val().length <= 128"
+            }
+          }
+        },
+
+        "auctions": {
+          "$auctionId": {
+            ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+            ".validate": "newData.hasChildren(['auctionId', 'workerTier', 'status']) && newData.child('auctionId').isString() && newData.child('auctionId').val().length <= 64",
+            "workerTier": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9"
+            },
+            "workerName": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
+            "status": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
+            },
+            "endsAt": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "highestBidderId": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 64)"
+            },
+            "highestBid": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+            },
+            "allBids": {
+              "$bidderId": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+              }
+            },
+            "hmac": {
+              ".validate": "newData.isString() && newData.val().length <= 128"
+            }
+          }
         }
       }
     },
@@ -63,18 +121,6 @@
       "$playerId": {
         ".read": "auth != null",
         ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
-      }
-    },
-
-    "leaderboards": {
-      "$boardId": {
-        ".read": "auth != null",
-        "entries": {
-          ".indexOn": ["score", "updatedAt"],
-          "$playerId": {
-            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
-          }
-        }
       }
     },
 
@@ -127,19 +173,23 @@
     "guild_war_seasons": {
       ".read": "auth != null",
       "$seasonId": {
-        ".write": false,
-        "standings": {
-          "$guildId": {
-            ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
-            ".validate": "newData.hasChildren(['guildName', 'leaguePoints'])",
-            "leaguePoints": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10000))"
-            },
-            "wins": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10))"
-            },
-            "losses": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10))"
+        ".write": "auth != null && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+        "leagues": {
+          "$leagueKey": {
+            "$guildId": {
+              ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+              "points": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10000))"
+              },
+              "wins": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10))"
+              },
+              "losses": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10))"
+              },
+              "rank": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+              }
             }
           }
         },
@@ -151,6 +201,9 @@
         },
         "endDate": {
           ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "week": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
         }
       }
     },
@@ -162,29 +215,6 @@
         "$entryId": {
           ".write": "auth != null && !data.exists() && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
           ".validate": "newData.hasChildren(['type', 'timestamp'])"
-        }
-      }
-    },
-
-    "bounties": {
-      ".read": "auth != null",
-      ".indexOn": ["endDate", "status"],
-      "$bountyId": {
-        ".write": false,
-        "status": {
-          ".validate": "newData.isString() && (newData.val() == 'active' || newData.val() == 'completed')"
-        },
-        "target": {
-          ".validate": "newData.isNumber() && newData.val() > 0 && (!data.exists() || newData.val() == data.val())"
-        },
-        "current": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 100000))"
-        },
-        "contributions": {
-          "$playerId": {
-            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
-            ".validate": "newData.isNumber() && newData.val() >= 0"
-          }
         }
       }
     },
@@ -202,13 +232,6 @@
       }
     },
 
-    "player_profiles": {
-      ".read": "auth != null",
-      "$playerId": {
-        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
-      }
-    },
-
     "guild_invite_codes": {
       "$guildId": {
         ".read": "auth != null",
@@ -220,15 +243,6 @@
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
-      }
-    },
-
-    "guild_invites": {
-      "$guildId": {
-        ".read": "auth != null",
-        "$recipientPlayerId": {
-          ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || root.child('auth_to_player/' + auth.uid).val() == $recipientPlayerId)"
-        }
       }
     },
 
@@ -245,22 +259,7 @@
       "$guildId": {
         ".read": "auth != null",
         "$researchId": {
-          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
-          "progress": {
-            ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() >= data.val())"
-          },
-          "completed": {
-            ".validate": "newData.isBoolean() && (!data.exists() || data.val() == false || newData.val() == true)"
-          },
-          "completedAt": {
-            ".validate": "newData.isString() && newData.val().length <= 40"
-          },
-          "researchStartedAt": {
-            ".validate": "newData.isString() && newData.val().length <= 40"
-          },
-          "$other": {
-            ".validate": false
-          }
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
         }
       }
     },
@@ -269,23 +268,22 @@
       "$guildId": {
         ".read": "auth != null",
         ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
-        "forge": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
-        },
-        "library": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
-        },
-        "workshop": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
-        },
-        "treasury": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
-        },
-        "barracks": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
-        },
-        "$other": {
-          ".validate": false
+        "buildings": {
+          "$buildingId": {
+            ".validate": "newData.hasChildren(['level'])",
+            "level": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+            },
+            "upgradingUntil": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "unlockedAt": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
         }
       }
     },
@@ -295,16 +293,21 @@
         ".read": "auth != null",
         ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
         "current_hp": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() <= data.val() || newData.parent().child('boss_id').val() != data.parent().child('boss_id').val())"
+          ".validate": "newData.isNumber() && newData.val() >= 0"
         },
         "max_hp": {
-          ".validate": "newData.isNumber() && newData.val() > 0 && (!data.exists() || newData.val() == data.val() || newData.parent().child('boss_id').val() != data.parent().child('boss_id').val())"
+          ".validate": "newData.isNumber() && newData.val() > 0 && (!data.exists() || newData.val() == data.val())"
         },
         "boss_id": {
-          ".validate": "newData.isString() && newData.val().length <= 40"
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
         },
         "boss_name": {
-          ".validate": "newData.isString() && newData.val().length <= 80"
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "damage_log": {
+          "$playerId": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && root.child('auth_to_player/' + auth.uid).val() == $playerId"
+          }
         }
       }
     },
@@ -323,19 +326,7 @@
       "$guildId": {
         ".read": "auth != null",
         "$achievementId": {
-          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
-          "progress": {
-            ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() >= data.val())"
-          },
-          "completed": {
-            ".validate": "newData.isBoolean() && (!data.exists() || data.val() == false || newData.val() == true)"
-          },
-          "completedAt": {
-            ".validate": "newData.isString() && newData.val().length <= 40"
-          },
-          "$other": {
-            ".validate": false
-          }
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
         }
       }
     },
@@ -345,6 +336,42 @@
         ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
         "$guildId": {
           ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || root.child('auth_to_player/' + auth.uid).val() == $playerId)"
+        }
+      }
+    },
+
+    "cloud_saves": {
+      "$playerId": {
+        ".read":  "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        "metadata": {
+          ".validate": "newData.hasChildren(['level', 'savedAt']) && newData.child('level').isNumber() && newData.child('savedAt').isString() && newData.child('savedAt').val().length <= 40",
+          "level": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"},
+          "money": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e15"},
+          "goldenScrews": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"},
+          "prestigePoints": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e9"},
+          "ascensionLevel": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"},
+          "savedAt": {".validate": "newData.isString() && newData.val().length <= 40"},
+          "version": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"},
+          "appVersion": {".validate": "newData.isString() && newData.val().length <= 20"}
+        },
+        "data": {
+          ".validate": "newData.isString() && newData.val().length <= 1048576"
+        }
+      }
+    },
+
+    "remote_config": {
+      ".read": "auth != null",
+      ".write": false
+    },
+
+    "analytics_events": {
+      "$dateKey": {
+        ".read": false,
+        "$pushId": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['eventName', 'timestamp', 'playerId']) && newData.child('eventName').isString() && newData.child('eventName').val().length <= 64 && newData.child('playerId').val() == root.child('auth_to_player/' + auth.uid).val() && newData.child('timestamp').isString()"
         }
       }
     }

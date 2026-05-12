@@ -460,16 +460,26 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         // Ergebnisse landen via Analytics-Pipeline in Firebase und ermoeglichen den
         // Bottom-50%-Audit (welche Mini-Games werden NICHT gespielt → killen oder polieren).
         // Lazy-Load des Analytics-Service ueber App.Services, damit kein Constructor-Aufwand
-        // in jedem MiniGame-VM noetig ist.
+        // in jedem MiniGame-VM noetig ist. Event-Name aus zentralem AnalyticsEvents-Katalog.
         try
         {
             _analyticsService ??= App.Services?.GetService(typeof(IAnalyticsService)) as IAnalyticsService;
-            _analyticsService?.TrackEvent("mini_game_played", new Dictionary<string, object?>
+            var miniGameType = GetCurrentMiniGameType().ToString();
+            _analyticsService?.TrackEvent(HandwerkerImperium.Models.AnalyticsEvents.MiniGamePlayed, new Dictionary<string, object?>
             {
-                ["mini_game_type"] = GetCurrentMiniGameType().ToString(),
+                ["mini_game_type"] = miniGameType,
                 ["rating"] = rating.ToString(),
                 ["was_score_doubled"] = _gameStateService.GetActiveOrder()?.IsScoreDoubled ?? false,
             });
+
+            // Perfect-Rating als separates Event (kuerzerer Funnel, einfacher zu auswerten)
+            if (rating == MiniGameRating.Perfect)
+            {
+                _analyticsService?.TrackEvent(HandwerkerImperium.Models.AnalyticsEvents.MiniGamePerfect, new Dictionary<string, object?>
+                {
+                    ["mini_game_type"] = miniGameType,
+                });
+            }
         }
         catch { /* Analytics darf das Spiel nicht crashen */ }
 

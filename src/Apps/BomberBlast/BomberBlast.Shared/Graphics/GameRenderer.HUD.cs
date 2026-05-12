@@ -146,7 +146,7 @@ public sealed partial class GameRenderer
             float comboPulse = MathF.Sin(_globalTimer * 12f) * pulseMultiplier;
             float comboScale = 1f + comboPulse;
             var comboColor = ComboCount >= 10
-                ? new SKColor(255, 215, 0)     // Gold fuer ULTRA (x10+)
+                ? BomberBlastColors.Gold     // Gold fuer ULTRA (x10+)
                 : ComboCount >= 7
                     ? new SKColor(255, 0, 200)  // Magenta x7-x9
                     : ComboCount >= 5
@@ -286,7 +286,7 @@ public sealed partial class GameRenderer
             if (player.HasDetonator) _activePowers.Add(("DET", new SKColor(240, 40, 40)));
             if (player.HasBombpass) _activePowers.Add(("BMP", new SKColor(50, 50, 150)));
             if (player.HasFlamepass) _activePowers.Add(("FLP", new SKColor(240, 190, 40)));
-            if (player.HasShield) _activePowers.Add(("SHIELD", new SKColor(0, 229, 255)));
+            if (player.HasShield) _activePowers.Add(("SHIELD", BomberBlastColors.PowerUpCyan));
             if (player.HasKick) _activePowers.Add(("KICK", new SKColor(255, 165, 0)));
             if (player.HasLineBomb) _activePowers.Add(("LINE", new SKColor(0, 180, 255)));
             if (player.HasPowerBomb) _activePowers.Add(("PWR", new SKColor(255, 50, 50)));
@@ -637,7 +637,7 @@ public sealed partial class GameRenderer
         Rarity.Common => SKColors.White,
         Rarity.Rare => new SKColor(33, 150, 243),    // #2196F3
         Rarity.Epic => new SKColor(156, 39, 176),     // #9C27B0
-        Rarity.Legendary => new SKColor(255, 215, 0), // #FFD700
+        Rarity.Legendary => BomberBlastColors.Gold, // #FFD700
         _ => SKColors.White
     };
 
@@ -698,7 +698,7 @@ public sealed partial class GameRenderer
     private static (string label, SKColor color) GetRoomTypeInfo(Models.Dungeon.DungeonRoomType type) => type switch
     {
         Models.Dungeon.DungeonRoomType.Elite => ("ELITE", new SKColor(244, 67, 54)),         // Rot
-        Models.Dungeon.DungeonRoomType.Treasure => ("TREASURE", new SKColor(255, 215, 0)),   // Gold
+        Models.Dungeon.DungeonRoomType.Treasure => ("TREASURE", BomberBlastColors.Gold),   // Gold
         Models.Dungeon.DungeonRoomType.Challenge => ("CHALLENGE", new SKColor(255, 152, 0)), // Orange
         Models.Dungeon.DungeonRoomType.Rest => ("REST", new SKColor(76, 175, 80)),           // Grün
         _ => ("", SKColors.White)
@@ -715,7 +715,7 @@ public sealed partial class GameRenderer
         Models.Dungeon.DungeonFloorModifier.FastBombs => ("FAST", new SKColor(255, 193, 7)),       // Gelb
         Models.Dungeon.DungeonFloorModifier.BigExplosions => ("+FIRE", new SKColor(255, 152, 0)),   // Orange
         Models.Dungeon.DungeonFloorModifier.Regeneration => ("REGEN", new SKColor(76, 175, 80)),    // Grün
-        Models.Dungeon.DungeonFloorModifier.Wealthy => ("x3 $", new SKColor(255, 215, 0)),          // Gold
+        Models.Dungeon.DungeonFloorModifier.Wealthy => ("x3 $", BomberBlastColors.Gold),          // Gold
         _ => ("", SKColors.White)
     };
 
@@ -727,8 +727,8 @@ public sealed partial class GameRenderer
         DungeonBuffType.ExtraBomb => ("B", new SKColor(100, 150, 255)),      // Blau (Bombe)
         DungeonBuffType.ExtraFire => ("F", new SKColor(255, 120, 40)),       // Orange (Feuer)
         DungeonBuffType.SpeedBoost => ("S", new SKColor(80, 220, 100)),      // Grün (Speed)
-        DungeonBuffType.Shield => ("SH", new SKColor(0, 229, 255)),          // Cyan (Schild)
-        DungeonBuffType.CoinBonus => ("$", new SKColor(255, 215, 0)),        // Gold (Münzen)
+        DungeonBuffType.Shield => ("SH", BomberBlastColors.PowerUpCyan),          // Cyan (Schild)
+        DungeonBuffType.CoinBonus => ("$", BomberBlastColors.Gold),        // Gold (Münzen)
         DungeonBuffType.ReloadSpecialBombs => ("R", new SKColor(200, 100, 255)), // Violett (Reload)
         DungeonBuffType.EnemySlow => ("ES", new SKColor(100, 200, 200)),     // Teal (Enemy Slow)
         DungeonBuffType.ExtraLife => ("L", new SKColor(240, 50, 60)),        // Rot (Leben)
@@ -739,7 +739,7 @@ public sealed partial class GameRenderer
         // Legendäre Buffs (goldener Rahmen)
         DungeonBuffType.Berserker => ("BK", new SKColor(255, 50, 50)),       // Rot (Berserker)
         DungeonBuffType.TimeFreeze => ("TF", new SKColor(100, 200, 255)),    // Hellblau (TimeFreeze)
-        DungeonBuffType.GoldRush => ("GR", new SKColor(255, 215, 0)),        // Gold (GoldRush)
+        DungeonBuffType.GoldRush => ("GR", BomberBlastColors.Gold),        // Gold (GoldRush)
         DungeonBuffType.Phantom => ("PH", new SKColor(160, 32, 240)),        // Violett (Phantom)
         _ => ("?", SKColors.White)
     };

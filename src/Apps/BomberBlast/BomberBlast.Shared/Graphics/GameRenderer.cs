@@ -749,7 +749,7 @@ public sealed partial class GameRenderer : IDisposable
     /// Default Gold wenn keine Welt aktiv ist.
     /// </summary>
     public SKColor GetWorldAccentColor() =>
-        _worldPalette?.Accent ?? new SKColor(255, 215, 0);
+        _worldPalette?.Accent ?? BomberBlastColors.Gold;
 
     // ═══════════════════════════════════════════════════════════════════════
     // POOLED PAINT OBJECTS

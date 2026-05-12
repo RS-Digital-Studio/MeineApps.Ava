@@ -1,3 +1,4 @@
+using BomberBlast.Graphics;
 using BomberBlast.Models;
 using BomberBlast.Models.Dungeon;
 using BomberBlast.Models.Levels;
@@ -581,7 +582,7 @@ public sealed partial class GameEngine
         if (_isFirstVictory)
         {
             _overlayFont.Size = 36 * _overlayUiScale;
-            _overlayTextPaint.Color = new SKColor(255, 215, 0); // Gold
+            _overlayTextPaint.Color = BomberBlastColors.Gold; // Gold
             float victoryPulse = 1f + MathF.Sin(_stateTimer * 6f) * 0.1f;
             canvas.Save();
             canvas.Translate(screenWidth / 2, screenHeight / 2 - 100);
@@ -700,7 +701,7 @@ public sealed partial class GameEngine
         RenderCelebrationParticles(canvas, screenWidth, screenHeight, _stateTimer, 35, true);
 
         _overlayFont.Size = 56 * _overlayUiScale;
-        _overlayTextPaint.Color = new SKColor(255, 215, 0); // Gold
+        _overlayTextPaint.Color = BomberBlastColors.Gold; // Gold
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
 
         canvas.DrawText(_overlayVictoryTitle, screenWidth / 2, screenHeight / 2 - 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
@@ -711,7 +712,7 @@ public sealed partial class GameEngine
 
         canvas.DrawText(_overlayAllComplete, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
-        _overlayTextPaint.Color = new SKColor(255, 215, 0);
+        _overlayTextPaint.Color = BomberBlastColors.Gold;
         _overlayFont.Size = 32 * _overlayUiScale;
         canvas.DrawText(_overlayFinalScoreText,
             screenWidth / 2, screenHeight / 2 + 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);

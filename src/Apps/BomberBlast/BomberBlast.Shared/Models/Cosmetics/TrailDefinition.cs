@@ -1,3 +1,4 @@
+using BomberBlast.Graphics;
 using SkiaSharp;
 
 namespace BomberBlast.Models.Cosmetics;
@@ -242,7 +243,7 @@ public static class TrailDefinitions
         Id = "trail_golden", NameKey = "TrailGoldenPath", DescKey = "TrailGoldenPathDesc",
         Rarity = Rarity.Legendary, GemPrice = 200,
         Style = TrailStyle.GoldenPath,
-        PrimaryColor = new SKColor(255, 215, 0),
+        PrimaryColor = BomberBlastColors.Gold,
         SecondaryColor = new SKColor(255, 180, 50)
     };
 
@@ -347,7 +348,7 @@ public static class TrailDefinitions
         Id = "trail_champion", NameKey = "TrailChampion", DescKey = "TrailChampionDesc",
         Rarity = Rarity.Legendary, // Liga-Diamond-Saison-Reward
         Style = TrailStyle.Champion,
-        PrimaryColor = new SKColor(255, 215, 0),
+        PrimaryColor = BomberBlastColors.Gold,
         SecondaryColor = new SKColor(180, 100, 30)
     };
 

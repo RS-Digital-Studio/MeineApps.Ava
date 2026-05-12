@@ -38,7 +38,7 @@ public sealed class DiscoveryOverlay : IDisposable
     };
     private readonly SKPaint _titlePaint = new()
     {
-        Color = new SKColor(255, 215, 0), // Gold
+        Color = BomberBlastColors.Gold, // Gold
         IsAntialias = true
     };
     private readonly SKPaint _descPaint = new()

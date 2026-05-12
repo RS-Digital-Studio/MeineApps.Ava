@@ -341,7 +341,7 @@ public static class DungeonMapRenderer
         DungeonFloorModifier.FastBombs => new SKColor(255, 193, 7),
         DungeonFloorModifier.BigExplosions => new SKColor(255, 152, 0),
         DungeonFloorModifier.Regeneration => new SKColor(76, 175, 80),
-        DungeonFloorModifier.Wealthy => new SKColor(255, 215, 0),
+        DungeonFloorModifier.Wealthy => BomberBlastColors.Gold,
         _ => new SKColor(150, 150, 150)
     };
 }

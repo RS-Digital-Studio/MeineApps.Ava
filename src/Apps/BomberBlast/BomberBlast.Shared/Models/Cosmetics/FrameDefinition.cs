@@ -1,3 +1,4 @@
+using BomberBlast.Graphics;
 using SkiaSharp;
 
 namespace BomberBlast.Models.Cosmetics;
@@ -250,7 +251,7 @@ public static class FrameDefinitions
         Id = "frame_crown", NameKey = "FrameCrown", DescKey = "FrameCrownDesc",
         Rarity = Rarity.Legendary, GemPrice = 200,
         Style = FrameStyle.CrownFrame,
-        PrimaryColor = new SKColor(255, 215, 0),
+        PrimaryColor = BomberBlastColors.Gold,
         SecondaryColor = new SKColor(255, 180, 50)
     };
 
@@ -325,7 +326,7 @@ public static class FrameDefinitions
         Rarity = Rarity.Epic, CoinPrice = 14000,
         Style = FrameStyle.SamuraiFrame,
         PrimaryColor = new SKColor(180, 30, 30),
-        SecondaryColor = new SKColor(255, 215, 0)
+        SecondaryColor = BomberBlastColors.Gold
     };
 
     public static readonly FrameDefinition Mech = new()

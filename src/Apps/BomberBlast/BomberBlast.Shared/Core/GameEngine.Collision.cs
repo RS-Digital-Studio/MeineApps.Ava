@@ -97,7 +97,7 @@ public sealed partial class GameEngine
                     // Schutzschild absorbiert 1 Gegnerkontakt (nicht Explosionen)
                     if (_player.HasShield)
                     {
-                        AbsorbShield(new SKColor(0, 229, 255));
+                        AbsorbShield(BomberBlastColors.PowerUpCyan);
                     }
                     else
                     {
@@ -412,12 +412,12 @@ public sealed partial class GameEngine
         {
             _floatingText.Spawn(enemy.X, enemy.Y,
                 string.Format(_localizationService.GetString("FloatBossDefeated") ?? "BOSS DEFEATED! +{0}", points),
-                new SKColor(255, 215, 0), 20f, 2.0f);
+                BomberBlastColors.Gold, 20f, 2.0f);
             _screenShake.Trigger(6f, 0.4f);
             // Phase 21 (V4) — Boss-Kill ist der ultimative Big-Hit: voller Camera-Pull-Back + Victory-Stinger
             _screenShake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.6f);
             _soundManager.PlayStinger(SoundManager.STINGER_VICTORY);
-            _particleSystem.EmitShaped(enemy.X, enemy.Y, 24, new SKColor(255, 215, 0),
+            _particleSystem.EmitShaped(enemy.X, enemy.Y, 24, BomberBlastColors.Gold,
                 ParticleShape.Circle, 140f, 1.0f, 3.5f, hasGlow: true);
             _particleSystem.EmitExplosionSparks(enemy.X, enemy.Y, 16, new SKColor(255, 200, 50), 180f);
             _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
@@ -445,7 +445,7 @@ public sealed partial class GameEngine
         else
         {
             // Score-Popup über dem Gegner (normal)
-            _floatingText.Spawn(enemy.X, enemy.Y, $"+{points}", new SKColor(255, 215, 0), 14f);
+            _floatingText.Spawn(enemy.X, enemy.Y, $"+{points}", BomberBlastColors.Gold, 14f);
         }
 
         // v2.0.54 — Phase 12: Combo-Logic in ComboSystem extrahiert (Pure-Logic, isoliert testbar).
@@ -487,7 +487,7 @@ public sealed partial class GameEngine
                 comboText = string.Format(
                     _localizationService.GetString("FloatMega") ?? "MEGA x{0}!", _comboCount);
             // Farbverlauf: x4-x6 Rot, x7-x9 Magenta, x10+ Gold-Glow
-            if (_comboCount >= 10) comboColor = new SKColor(255, 215, 0);          // Gold fuer ULTRA
+            if (_comboCount >= 10) comboColor = BomberBlastColors.Gold;          // Gold fuer ULTRA
             else if (_comboCount >= 7) comboColor = new SKColor(255, 0, 200);      // Magenta hoch
             else if (_comboCount >= 4) comboColor = new SKColor(255, 50, 0);       // Rot fuer hohe Combos
 
@@ -565,8 +565,8 @@ public sealed partial class GameEngine
             // Phase 30d — Midas-Coins an den scoring-Spieler
             scoringPlayer.Score += midasCoins;
             _floatingText.Spawn(enemy.X + 8, enemy.Y + 8, $"+{midasCoins}",
-                new SKColor(255, 215, 0), 11f, 0.8f);
-            _particleSystem.Emit(enemy.X, enemy.Y, 4, new SKColor(255, 215, 0), 40f, 0.4f);
+                BomberBlastColors.Gold, 11f, 0.8f);
+            _particleSystem.Emit(enemy.X, enemy.Y, 4, BomberBlastColors.Gold, 40f, 0.4f);
         }
 
         // Game-Feel: Hit-Pause + Partikel bei Enemy-Kill

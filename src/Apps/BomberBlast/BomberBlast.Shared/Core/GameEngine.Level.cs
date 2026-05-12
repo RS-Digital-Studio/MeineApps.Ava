@@ -209,7 +209,7 @@ public sealed partial class GameEngine
             {
                 foreach (var (x, y, _) in bossPositions)
                 {
-                    _particleSystem.EmitShaped(x, y, 14, new SKColor(255, 215, 0),
+                    _particleSystem.EmitShaped(x, y, 14, BomberBlastColors.Gold,
                         ParticleShape.Circle, 110f, 0.7f, 3f, hasGlow: true);
                 }
                 _screenShake.AddTrauma(0.45f);
@@ -230,7 +230,7 @@ public sealed partial class GameEngine
                         BossType.FireDemon => new SKColor(255, 80, 30),
                         BossType.ShadowMaster => new SKColor(180, 80, 220),
                         BossType.FinalBoss => new SKColor(255, 50, 100),
-                        _ => new SKColor(255, 215, 0)
+                        _ => BomberBlastColors.Gold
                     };
                     _particleSystem.EmitShaped(x, y, 18, color,
                         ParticleShape.Circle, 130f, 0.8f, 4f, hasGlow: true);
@@ -1063,7 +1063,7 @@ public sealed partial class GameEngine
 
                     // Goldener Floating-Text: Ausgang gefunden!
                     var exitText = _localizationService.GetString("ExitRevealed") ?? "EXIT!";
-                    _floatingText.Spawn(epx, epy - 20, exitText, new SKColor(255, 215, 0), 22f, 2.0f);
+                    _floatingText.Spawn(epx, epy - 20, exitText, BomberBlastColors.Gold, 22f, 2.0f);
                     _vibration.VibrateMedium();
                     return;
                 }
@@ -1116,7 +1116,7 @@ public sealed partial class GameEngine
 
             // Goldener Floating-Text: Ausgang gefunden!
             var exitText = _localizationService.GetString("ExitRevealed") ?? "EXIT!";
-            _floatingText.Spawn(epx, epy - 20, exitText, new SKColor(255, 215, 0), 22f, 2.0f);
+            _floatingText.Spawn(epx, epy - 20, exitText, BomberBlastColors.Gold, 22f, 2.0f);
             _vibration.VibrateMedium();
         }
     }
@@ -1424,7 +1424,7 @@ public sealed partial class GameEngine
         if (_isFirstVictory)
         {
             // Extra Gold-Partikel für ersten Sieg
-            _particleSystem.EmitShaped(_player.X, _player.Y, 24, new SKColor(255, 215, 0),
+            _particleSystem.EmitShaped(_player.X, _player.Y, 24, BomberBlastColors.Gold,
                 Graphics.ParticleShape.Circle, 150f, 1.0f, 3.5f, hasGlow: true);
             _particleSystem.EmitExplosionSparks(_player.X, _player.Y, 16, new SKColor(255, 200, 50), 180f);
 
@@ -1474,7 +1474,7 @@ public sealed partial class GameEngine
         {
             float coinX = _exitCell.X * Models.Grid.GameGrid.CELL_SIZE + Models.Grid.GameGrid.CELL_SIZE / 2f;
             float coinY = _exitCell.Y * Models.Grid.GameGrid.CELL_SIZE;
-            _floatingText.Spawn(coinX, coinY, $"+{coins} Coins", new SKColor(255, 215, 0), 18f, 1.5f);
+            _floatingText.Spawn(coinX, coinY, $"+{coins} Coins", BomberBlastColors.Gold, 18f, 1.5f);
         }
 
         // Boss-Level Erst-Abschluss: 5 Gems (L10, L20, ..., L100)
@@ -1781,7 +1781,7 @@ public sealed partial class GameEngine
             // Welle 1: Initiale Konfetti-Explosion
             new(0.0f, () =>
             {
-                _particleSystem.EmitShaped(cx, cy, 30, new SKColor(255, 215, 0),
+                _particleSystem.EmitShaped(cx, cy, 30, BomberBlastColors.Gold,
                     ParticleShape.Circle, 200f, 1.5f, 4f, hasGlow: true);
                 _vibration.VibrateLevelComplete();
             }),
@@ -1818,7 +1818,7 @@ public sealed partial class GameEngine
             // Welle 4: Finale Gold-Explosion + Achievement-ähnlicher Stinger
             new(2.0f, () =>
             {
-                _particleSystem.EmitShaped(cx, cy, 40, new SKColor(255, 215, 0),
+                _particleSystem.EmitShaped(cx, cy, 40, BomberBlastColors.Gold,
                     ParticleShape.Circle, 280f, 2f, 5f, hasGlow: true);
                 _vibration.VibrateAchievement();
             })
@@ -1844,7 +1844,7 @@ public sealed partial class GameEngine
             // Stufe 1 (0.0s): Initialer Gold-Burst um Spieler + Stinger + Camera-Pull-Back
             new(0.0f, () =>
             {
-                _particleSystem.EmitShaped(_player.X, _player.Y, 32, new SKColor(255, 215, 0),
+                _particleSystem.EmitShaped(_player.X, _player.Y, 32, BomberBlastColors.Gold,
                     ParticleShape.Circle, 220f, 1.5f, 4.5f, hasGlow: true);
                 _particleSystem.EmitExplosionSparks(_player.X, _player.Y, 20, new SKColor(255, 200, 50), 220f);
                 _screenShake.AddTrauma(0.4f);
@@ -1860,7 +1860,7 @@ public sealed partial class GameEngine
                     new SKColor(255, 100, 100),
                     new SKColor(100, 255, 150),
                     new SKColor(100, 180, 255),
-                    new SKColor(255, 215, 0),
+                    BomberBlastColors.Gold,
                     new SKColor(255, 100, 220),
                     new SKColor(100, 240, 220),
                 };
@@ -1888,7 +1888,7 @@ public sealed partial class GameEngine
             // Stufe 4 (2.5s): Finale Mega-Gold-Explosion + Floating-Text
             new(2.5f, () =>
             {
-                _particleSystem.EmitShaped(cx, cy, 50, new SKColor(255, 215, 0),
+                _particleSystem.EmitShaped(cx, cy, 50, BomberBlastColors.Gold,
                     ParticleShape.Circle, 300f, 2.2f, 5.5f, hasGlow: true);
                 _particleSystem.EmitExplosionSparks(cx, cy, 30, new SKColor(255, 240, 100), 280f);
                 _screenShake.TriggerPullBack(magnitude: 0.8f, durationSeconds: 0.5f);
@@ -1896,7 +1896,7 @@ public sealed partial class GameEngine
                 _vibration.VibrateLevelComplete();
                 _floatingText.Spawn(cx, cy - 60,
                     _localizationService.GetString("FloatFirstWin") ?? "ERSTER SIEG!",
-                    new SKColor(255, 215, 0), 28f, 3.5f);
+                    BomberBlastColors.Gold, 28f, 3.5f);
             })
         };
 

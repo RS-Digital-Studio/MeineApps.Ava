@@ -451,13 +451,13 @@ public static class SpecialExplosionEffects
             centerCell.PowerUp = powerUp;
         }
 
-        ctx.ParticleSystem.EmitShaped(bomb.X, bomb.Y, 30, new SKColor(255, 215, 0),
+        ctx.ParticleSystem.EmitShaped(bomb.X, bomb.Y, 30, BomberBlastColors.Gold,
             ParticleShape.Circle, 120f, 0.6f, 3f, hasGlow: true);
         ctx.ParticleSystem.EmitExplosionSparks(bomb.X, bomb.Y, 20, new SKColor(255, 255, 200), 160f);
         ctx.ParticleSystem.EmitEmbers(bomb.X, bomb.Y, 12, new SKColor(255, 200, 50));
 
         string novaText = ctx.LocalizationService.GetString("NovaEffect") ?? "NOVA!";
-        ctx.FloatingText.Spawn(bomb.X, bomb.Y - 16, novaText, new SKColor(255, 215, 0), 18f, 2f);
+        ctx.FloatingText.Spawn(bomb.X, bomb.Y - 16, novaText, BomberBlastColors.Gold, 18f, 2f);
     }
 
     /// <summary>Schwarzes-Loch: Saugt Gegner 3s ein, dann Explosion.</summary>

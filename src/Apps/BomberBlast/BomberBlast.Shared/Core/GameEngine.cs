@@ -559,7 +559,7 @@ public sealed partial class GameEngine : IDisposable
         _particleSystem.Emit(_player.X, _player.Y, particleCount, particleColor, spread, particleCount >= 16 ? 0.6f : 0.5f);
         _floatingText.Spawn(_player.X, _player.Y - 16,
             _localizationService.GetString("FloatShield") ?? "SHIELD!",
-            new SKColor(0, 229, 255), 16f, 1.2f);
+            BomberBlastColors.PowerUpCyan, 16f, 1.2f);
         if (playSound)
             _soundManager.PlaySound(SoundManager.SFX_POWERUP);
         _player.ActivateInvincibility(0.5f);
@@ -1327,9 +1327,9 @@ public sealed partial class GameEngine : IDisposable
                 _fortressRegenTimer = 0;
                 _floatingText.Spawn(_player.X, _player.Y - 16,
                     _localizationService.GetString("FloatShield") ?? "SHIELD!",
-                    new SKColor(0, 229, 255), 14f, 1.0f);
+                    BomberBlastColors.PowerUpCyan, 14f, 1.0f);
                 _particleSystem.Emit(_player.X, _player.Y, 8,
-                    new SKColor(0, 229, 255), 60f, 0.5f);
+                    BomberBlastColors.PowerUpCyan, 60f, 0.5f);
             }
         }
 

@@ -473,7 +473,7 @@ public sealed partial class GameEngine
                     cell.HiddenPowerUp = null;
 
                     // Gold-Partikel-Burst bei PowerUp-Erscheinung
-                    _particleSystem.Emit(bpx, bpy, 8, new SKColor(255, 215, 0), 50f, 0.4f);
+                    _particleSystem.Emit(bpx, bpy, 8, BomberBlastColors.Gold, 50f, 0.4f);
                     _particleSystem.Emit(bpx, bpy, 4, new SKColor(255, 255, 200), 30f, 0.3f);
 
                     _soundManager.PlaySound(SoundManager.SFX_POWERUP);

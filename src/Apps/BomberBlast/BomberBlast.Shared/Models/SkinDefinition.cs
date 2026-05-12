@@ -1,3 +1,4 @@
+using BomberBlast.Graphics;
 using SkiaSharp;
 
 namespace BomberBlast.Models;
@@ -235,7 +236,7 @@ public static class PlayerSkins
         NameKey = "SkinGold",
         Rarity = Rarity.Legendary,
         IsPremiumOnly = true,
-        PrimaryColor = new SKColor(255, 215, 0),
+        PrimaryColor = BomberBlastColors.Gold,
         SecondaryColor = new SKColor(218, 165, 32),
         GlowColor = new SKColor(255, 215, 0, 80)
     };
@@ -446,7 +447,7 @@ public static class BombSkins
         Id = "bomb_gold", NameKey = "BombSkinGold",
         Rarity = Rarity.Epic, CoinPrice = 5000,
         BodyColor = new SKColor(200, 170, 30),
-        GlowColor = new SKColor(255, 215, 0),
+        GlowColor = BomberBlastColors.Gold,
         FuseColor = new SKColor(218, 185, 50),
         SparkColor = new SKColor(255, 240, 120),
         HighlightColor = new SKColor(255, 255, 200, 150)

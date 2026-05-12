@@ -747,7 +747,7 @@ public sealed partial class GameRenderer
         _fillPaint.MaskFilter = null;
 
         // Goldene Krone: 5 Zacken mit Edelstein-Akzenten
-        _fillPaint.Color = new SKColor(255, 215, 0);
+        _fillPaint.Color = BomberBlastColors.Gold;
         float crownBase = cy - halfSize * 0.5f;
         float crownH = halfSize * 0.38f;
 
@@ -766,7 +766,7 @@ public sealed partial class GameRenderer
         }
 
         // Kronen-Basis mit Edelsteinen
-        _fillPaint.Color = new SKColor(255, 215, 0);
+        _fillPaint.Color = BomberBlastColors.Gold;
         canvas.DrawRect(cx - halfSize * 0.38f, crownBase, halfSize * 0.76f, halfSize * 0.07f, _fillPaint);
         // 3 Edelsteine auf der Krone
         for (int g = -1; g <= 1; g++)
@@ -802,7 +802,7 @@ public sealed partial class GameRenderer
         float eyeY = cy - halfSize * 0.12f;
         float eyeSpacing = halfSize * 0.2f;
         float eyeR = 4.5f;
-        _fillPaint.Color = new SKColor(255, 215, 0);
+        _fillPaint.Color = BomberBlastColors.Gold;
         _fillPaint.MaskFilter = isNeon ? _mediumGlow : _smallGlow;
         canvas.DrawCircle(cx - eyeSpacing, eyeY, eyeR, _fillPaint);
         canvas.DrawCircle(cx + eyeSpacing, eyeY, eyeR, _fillPaint);
@@ -900,7 +900,7 @@ public sealed partial class GameRenderer
         if (hpPercent > 0.66f)
             hpColor = new SKColor(0, 255, 0);       // Grün
         else if (hpPercent > 0.33f)
-            hpColor = new SKColor(255, 215, 0);      // Gelb
+            hpColor = BomberBlastColors.Gold;      // Gelb
         else
             hpColor = new SKColor(255, 0, 0);         // Rot
 

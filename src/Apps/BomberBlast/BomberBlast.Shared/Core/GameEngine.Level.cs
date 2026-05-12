@@ -27,15 +27,15 @@ public sealed partial class GameEngine
         // v2.0.55 — Phase 15 P1-Fix: Cinematic-Sequencer bei Mode-Wechsel stoppen
         // (sonst kann Boss-Reveal-Cinematic nach Mode-Wechsel weiterlaufen).
         _cinematic?.Stop();
-        _isDailyChallenge = false;
-        _isSurvivalMode = false;
-        _isQuickPlayMode = false;
-        _isDungeonRun = false;
+        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
+        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
         // v2.0.52 Code-Review-Fix: Auch BossRush + DailyRace explizit zuruecksetzen.
         // Vorher: Bei Boss-Rush-Abort -> Story-Start blieb _isBossRushMode=true -> Stale-Bool-Path
         // in CompleteLevel/Victory + falscher Render-Event-Block.
-        _isBossRushMode = false;
-        _isDailyRace = false;
+        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
         // Defense-in-Depth: Master-Mode nur wenn wirklich unlocked.
         // Downgrade auf Normal-Mode wird geloggt — hilft beim Debuggen falls Navigation
         // einen unerwarteten masterMode=true liefert (z.B. durch veraltete Preference).
@@ -274,13 +274,13 @@ public sealed partial class GameEngine
     public async Task StartDailyChallengeModeAsync(int seed)
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        _isDailyChallenge = true;
-        _isSurvivalMode = false;
-        _isQuickPlayMode = false;
-        _isDungeonRun = false;
+        // Sprint 5.1: _isDailyChallenge wird durch _currentMode = new DailyChallengeMode() unten gesetzt.
+        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
         // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        _isBossRushMode = false;
-        _isDailyRace = false;
+        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
         _currentMode = new BomberBlast.Core.Modes.DailyChallengeMode();
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 99;
@@ -308,13 +308,13 @@ public sealed partial class GameEngine
     public async Task StartQuickPlayModeAsync(int seed, int difficulty)
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        _isDailyChallenge = false;
-        _isSurvivalMode = false;
-        _isQuickPlayMode = true;
-        _isDungeonRun = false;
+        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
+        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isQuickPlayMode wird durch _currentMode = new QuickPlayMode() unten gesetzt.
+        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
         // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        _isBossRushMode = false;
-        _isDailyRace = false;
+        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
         // v2.0.50 — Phase 7: Difficulty wird in QuickPlayMode gehalten (im Konstruktor geclamped 1-10).
         _currentMode = new BomberBlast.Core.Modes.QuickPlayMode(difficulty);
         _activeMutator = LevelMutator.None;
@@ -340,13 +340,13 @@ public sealed partial class GameEngine
     public async Task StartSurvivalModeAsync()
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        _isDailyChallenge = false;
-        _isSurvivalMode = true;
-        _isQuickPlayMode = false;
-        _isDungeonRun = false;
+        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
+        // Sprint 5.1: _isSurvivalMode wird durch _currentMode = new SurvivalMode() unten gesetzt.
+        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
         // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        _isBossRushMode = false;
-        _isDailyRace = false;
+        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
         _currentMode = new BomberBlast.Core.Modes.SurvivalMode();
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 1;
@@ -379,13 +379,13 @@ public sealed partial class GameEngine
     public async Task StartDailyRaceModeAsync()
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        _isDailyChallenge = false;
-        _isDailyRace = true;
-        _isSurvivalMode = false;
-        _isQuickPlayMode = false;
-        _isDungeonRun = false;
+        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
+        // Sprint 5.1: _isDailyRace wird durch _currentMode = new DailyRaceMode() unten gesetzt.
+        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
         // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        _isBossRushMode = false;
+        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
         // v2.0.50 — Phase 7: DailyRaceMode mit Submitted=false initialisiert (Default-Property)
         _currentMode = new BomberBlast.Core.Modes.DailyRaceMode();
         _activeMutator = LevelMutator.None;
@@ -414,12 +414,12 @@ public sealed partial class GameEngine
     /// </summary>
     public async Task StartBossRushModeAsync(int bossIndex)
     {
-        _isDailyChallenge = false;
-        _isSurvivalMode = false;
-        _isQuickPlayMode = false;
-        _isDungeonRun = false;
+        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
+        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
         // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        _isBossRushMode = true;
+        // Sprint 5.1: _isBossRushMode wird durch _currentMode = new BossRushMode() unten gesetzt.
         // v2.0.49 — Boss-Rush-Mode setzen (bei Erst-Aufruf bossIndex=0 neuer Mode-State,
         // bei Folge-Bossen wird der existing Mode beibehalten damit AccumulatedScore stimmt)
         if (bossIndex <= 0 || _currentMode is not BomberBlast.Core.Modes.BossRushMode)
@@ -480,13 +480,13 @@ public sealed partial class GameEngine
     public async Task StartDungeonFloorAsync(int floor, int seed)
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        _isDailyChallenge = false;
-        _isSurvivalMode = false;
-        _isQuickPlayMode = false;
-        _isDungeonRun = true;
+        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
+        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDungeonRun wird durch _currentMode = new DungeonMode() unten gesetzt.
         // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        _isBossRushMode = false;
-        _isDailyRace = false;
+        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
+        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
         // v2.0.49 — Dungeon-Mode setzen (nur beim ersten Floor; bei Folge-Floors bleibt der Mode)
         if (_currentMode is not BomberBlast.Core.Modes.DungeonMode)
             _currentMode = new BomberBlast.Core.Modes.DungeonMode();

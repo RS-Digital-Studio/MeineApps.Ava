@@ -295,14 +295,15 @@ public sealed partial class GameEngine : IDisposable
     // Level info
     private Level? _currentLevel;
     private int _currentLevelNumber;
-    private bool _isDailyChallenge;
-    private bool _isSurvivalMode;
-    private bool _isQuickPlayMode;
-    // v2.0.50 — Phase 7: QuickPlayMode.Difficulty hält den Wert. Bool-Flag bleibt als Hot-Path-Convenience.
+    // Sprint 5.1 AAA-Audit #11: Bool-Flags sind jetzt Computed-Properties auf _currentMode.
+    // Mode-Plugin-Migration komplett — Source-of-Truth ist _currentMode, Bools nur Read-View.
+    // Set-Operationen (_isXxx = true/false) wurden entfernt; _currentMode wird in jeder
+    // StartXxxModeAsync-Methode explizit gesetzt.
+    private bool _isDailyChallenge => _currentMode is BomberBlast.Core.Modes.DailyChallengeMode;
+    private bool _isSurvivalMode => _currentMode is BomberBlast.Core.Modes.SurvivalMode;
+    private bool _isQuickPlayMode => _currentMode is BomberBlast.Core.Modes.QuickPlayMode;
     private BomberBlast.Core.Modes.QuickPlayMode? QuickPlayModeState => _currentMode as BomberBlast.Core.Modes.QuickPlayMode;
-    private bool _isDungeonRun;
-    // Sprint 5.1 AAA-Audit #11: _isMasterMode auf _currentMode-Computed-Property migriert.
-    // Mode-Plugin-Migration erste Welle — Bool ist nur noch Read-View auf den IGameMode.
+    private bool _isDungeonRun => _currentMode is BomberBlast.Core.Modes.DungeonMode;
     private bool _isMasterMode => _currentMode is BomberBlast.Core.Modes.MasterMode;
 
     /// <summary>
@@ -428,8 +429,8 @@ public sealed partial class GameEngine : IDisposable
 
     // Daily Race (v2.0.42, Plan Task 3.1): Wie Daily Challenge mit Race-Flag,
     // wird nach GameOver via ILeagueService.SubmitDailyRaceScoreAsync gepusht.
-    // v2.0.50 — Phase 7: Submitted-Flag liegt jetzt in DailyRaceMode (CurrentMode-Slot).
-    private bool _isDailyRace;
+    // Sprint 5.1 AAA-Audit #11: Computed-Property auf _currentMode.
+    private bool _isDailyRace => _currentMode is BomberBlast.Core.Modes.DailyRaceMode;
 
     /// <summary>Hilfs-Property: Liefert die aktive DailyRaceMode-Instanz oder null.</summary>
     private BomberBlast.Core.Modes.DailyRaceMode? DailyRaceModeState => _currentMode as BomberBlast.Core.Modes.DailyRaceMode;
@@ -437,9 +438,8 @@ public sealed partial class GameEngine : IDisposable
     // Boss-Rush-Modus (v2.0.42, Plan Task 3.3): 5 sequenzielle Boss-Bosse mit Score-Akkumulation.
     // Bei Boss-Tod automatisch naechster Boss. Bei Player-Tod Run-Ende mit SubmitRun(score, time, false).
     // Bei 5. Boss-Clear: SubmitRun mit completedAll=true.
-    // v2.0.50 — Phase 7: Mode-spezifischer State liegt jetzt in BossRushMode (CurrentMode-Slot).
-    // Bool-Flag bleibt als Hot-Path-Convenience erhalten (Pattern-Match wäre teurer pro Frame).
-    private bool _isBossRushMode;
+    // Sprint 5.1 AAA-Audit #11: Computed-Property auf _currentMode.
+    private bool _isBossRushMode => _currentMode is BomberBlast.Core.Modes.BossRushMode;
 
     /// <summary>
     /// Hilfs-Property: Liefert die aktive BossRushMode-Instanz oder null wenn nicht aktiv.
@@ -1562,7 +1562,8 @@ public sealed partial class GameEngine : IDisposable
                 {
                     _tracking.OnDungeonRunCompleted();
                     var summary = _dungeonService.EndRun();
-                    _isDungeonRun = false;
+                    // Sprint 5.1: _currentMode = null beendet auch _isDungeonRun (Computed).
+                    _currentMode = null;
                     DungeonRunEnd?.Invoke(summary);
                 }
 

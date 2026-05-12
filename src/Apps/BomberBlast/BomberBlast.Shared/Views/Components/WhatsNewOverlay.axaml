@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
+             x:Class="BomberBlast.Views.Components.WhatsNewOverlay"
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
+             IsVisible="{Binding IsWhatsNewVisible}"
+             AutomationProperties.AutomationId="MainView_WhatsNewOverlay">
+  <!--
+    What's-New-Modal (Sprint 4.3 AAA-Audit #17). Zeigt nach App-Update die
+    wichtigsten Aenderungen — DataContext erbt vom MainViewModel, das WhatsNewVm haelt.
+    -->
+  <Border Background="#DD000000"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24"
+            MaxWidth="540" MaxHeight="420"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 8 24 0 #60000000"
+            BorderThickness="2"
+            BorderBrush="{DynamicResource AccentBrush}"
+            DataContext="{Binding WhatsNewVm}"
+            x:DataType="vm:WhatsNewViewModel">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Titel-Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10"
+                    HorizontalAlignment="Center" Margin="0,0,0,16">
+          <icons:GameIcon Kind="Gift" Width="28" Height="28"
+                          Foreground="{DynamicResource AccentBrush}" />
+          <StackPanel Spacing="2">
+            <TextBlock Text="{loc:Translate WhatsNewTitle}"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBrush}"
+                       AutomationProperties.AutomationId="MainView_WhatsNewTitle" />
+            <TextBlock Text="{Binding VersionTitle}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Scrollbare Liste der Entries -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding Entries}"
+                        AutomationProperties.AutomationId="MainView_WhatsNewEntries">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:WhatsNewEntryItem">
+                <Border Background="#10FFFFFF" CornerRadius="10"
+                        Padding="14,10" Margin="0,0,0,10">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding Title}"
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <ItemsControl ItemsSource="{Binding Bullets}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                            <Border Width="6" Height="6" CornerRadius="3"
+                                    Background="{DynamicResource AccentBrush}"
+                                    VerticalAlignment="Top" Margin="0,7,0,0" />
+                            <TextBlock Text="{Binding}"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Footer: Later + Understood -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10"
+                    HorizontalAlignment="Center" Margin="0,16,0,0">
+          <Panel Height="44" MinWidth="120">
+            <controls:GameButtonCanvas ButtonColor="#666666" DamageLevel="0.3" ButtonSeed="180" />
+            <Button Command="{Binding LaterCommand}"
+                    Classes="Secondary GameButton"
+                    Background="Transparent" Foreground="White"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="MainView_BtnWhatsNewLater">
+              <TextBlock Text="{Binding LaterText}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="White" />
+            </Button>
+          </Panel>
+          <Panel Height="44" MinWidth="140">
+            <controls:GameButtonCanvas ButtonColor="#22D3EE" DamageLevel="0.3" ButtonSeed="181" />
+            <Button Command="{Binding UnderstoodCommand}"
+                    Classes="Primary GameButton"
+                    Background="Transparent" Foreground="White"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="MainView_BtnWhatsNewOk">
+              <TextBlock Text="{Binding UnderstoodText}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="White" />
+            </Button>
+          </Panel>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Border>
+</UserControl>

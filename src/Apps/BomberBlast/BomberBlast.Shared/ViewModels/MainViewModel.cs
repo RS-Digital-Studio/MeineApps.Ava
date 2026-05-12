@@ -47,9 +47,15 @@ public sealed partial class MainViewModel : ViewModelBase
     public SettingsViewModel SettingsVm { get; }
     public HighScoresViewModel HighScoresVm { get; }
     public GameOverViewModel GameOverVm { get; }
-    public PauseViewModel PauseVm { get; }
     public HelpViewModel HelpVm { get; }
     public VictoryViewModel VictoryVm { get; }
+
+    /// <summary>What's-New-Modal-VM (wird einmal pro App-Update angezeigt).</summary>
+    public WhatsNewViewModel WhatsNewVm { get; }
+
+    /// <summary>True solange das What's-New-Modal sichtbar ist (gesteuert vom Closed-Event des VMs).</summary>
+    [ObservableProperty]
+    private bool _isWhatsNewVisible;
 
     /// <summary>
     /// Game-VM ist nullable + Lazy: spart 100-200ms Startup auf Mid-Tier-Android,
@@ -277,9 +283,9 @@ public sealed partial class MainViewModel : ViewModelBase
         SettingsVm = deps.SettingsVm;
         HighScoresVm = deps.HighScoresVm;
         GameOverVm = deps.GameOverVm;
-        PauseVm = deps.PauseVm;
         HelpVm = deps.HelpVm;
         VictoryVm = deps.VictoryVm;
+        WhatsNewVm = deps.WhatsNewVm;
 
         _gameVmLazy = deps.GameVmLazy;
         _shopVmLazy = deps.ShopVmLazy;
@@ -327,7 +333,6 @@ public sealed partial class MainViewModel : ViewModelBase
         var gameOverVm = deps.GameOverVm;
         var helpVm = deps.HelpVm;
         var victoryVm = deps.VictoryVm;
-        var pauseVm = deps.PauseVm;
         var highScoresVm = deps.HighScoresVm;
         var levelSelectVm = deps.LevelSelectVm;
 
@@ -347,7 +352,6 @@ public sealed partial class MainViewModel : ViewModelBase
         WireCommon(settingsVm);
         WireCommon(highScoresVm);
         WireCommon(gameOverVm);
-        WireCommon(pauseVm);
         WireCommon(helpVm);
         WireCommon(victoryVm);
 
@@ -375,11 +379,8 @@ public sealed partial class MainViewModel : ViewModelBase
         // Back-Press Helper verdrahten
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
-        // PauseVM Resume/Restart Events mit GameVM verbinden.
-        // Lambda triggert Lazy-Resolution erst beim Pause-Event — zu dem Zeitpunkt
-        // ist GameVm immer schon initialisiert (User pausiert nur waehrend des Spiels).
-        pauseVm.ResumeRequested += () => GameVm?.ResumeCommand.Execute(null);
-        pauseVm.RestartRequested += () => GameVm?.RestartCommand.Execute(null);
+        // PauseViewModel entfernt — Resume/Restart laufen direkt ueber GameVm.{Resume,Restart}Command,
+        // gebunden im GameView.axaml Pause-Overlay. SkiaSharp-Canvas rendert die Pause-Anzeige.
 
         // Dialog-Events von SettingsVM verdrahten (SettingsVm ist eager)
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
@@ -396,6 +397,12 @@ public sealed partial class MainViewModel : ViewModelBase
             try { await _cloudSaveService.TryLoadFromCloudAsync(); }
             catch (Exception ex) { _logger?.LogWarning($"CloudSave Init fehlgeschlagen: {ex.Message}"); }
         });
+
+        // What's-New-Modal: Closed-Event verdrahten + Initial-Check ob anzeigen.
+        // ShouldShow prueft Service-State (CurrentVersion > LastSeenVersion + Eintraege vorhanden).
+        WhatsNewVm.Closed += () => IsWhatsNewVisible = false;
+        if (deps.WhatsNewService.ShouldShow)
+            IsWhatsNewVisible = true;
 
         // Menü initialisieren
         menuVm.OnAppearing();
@@ -437,7 +444,7 @@ public sealed partial class MainViewModel : ViewModelBase
         InvokeLocalizable(SettingsVm, fallback: () => SettingsVm.OnAppearing());
         InvokeLocalizable(HighScoresVm, fallback: () => HighScoresVm.OnAppearing());
         InvokeLocalizable(BossRushVm, fallback: null);
-        // HelpVm/GameOverVm/PauseVm/VictoryVm: keine OnAppearing, XAML-only / SetParameters
+        // HelpVm/GameOverVm/VictoryVm: keine OnAppearing, XAML-only / SetParameters
 
         // Lazy-VMs (nur wenn resolved)
         InvokeLocalizable(ShopVm, fallback: null);

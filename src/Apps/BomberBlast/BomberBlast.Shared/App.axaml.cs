@@ -539,7 +539,8 @@ public partial class App : Application
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<HighScoresViewModel>();
         services.AddSingleton<GameOverViewModel>();
-        services.AddSingleton<PauseViewModel>();
+        // PauseViewModel entfernt — Pause-UI ist im SkiaSharp-Canvas (GameEngine.RenderPausedOverlay),
+        // VM war ungenutzt (keine View, keine Bindings, kein Render-Pfad).
         services.AddSingleton<HelpViewModel>();
         services.AddSingleton<ShopViewModel>();
         services.AddSingleton<AchievementsViewModel>();

@@ -823,7 +823,10 @@
   <data name="ReEngagementD7Body" xml:space="preserve">
     <value>Revenez et réclamez 100 Gemmes gratuites en cadeau de bienvenue.</value>
   </data>
-  <!-- Sprint 4.3 AAA-Audit #17: What's-New-Modal Buttons -->
+  <!-- Sprint 4.3 AAA-Audit #17: What's-New-Modal -->
+  <data name="WhatsNewTitle" xml:space="preserve">
+    <value>Nouveautés</value>
+  </data>
   <data name="WhatsNewLater" xml:space="preserve">
     <value>Plus tard</value>
   </data>

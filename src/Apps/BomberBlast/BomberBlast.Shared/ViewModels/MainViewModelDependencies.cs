@@ -32,10 +32,10 @@ public sealed record MainViewModelDependencies(
     SettingsViewModel SettingsVm,
     HighScoresViewModel HighScoresVm,
     GameOverViewModel GameOverVm,
-    PauseViewModel PauseVm,
     HelpViewModel HelpVm,
     VictoryViewModel VictoryVm,
     BossRushViewModel BossRushVm,
+    WhatsNewViewModel WhatsNewVm,
 
     // Lazy VMs (erst bei progressivem Unlock gebraucht)
     Lazy<GameViewModel> GameVmLazy,
@@ -64,4 +64,5 @@ public sealed record MainViewModelDependencies(
     ICloudSaveService CloudSaveService,
     SoundManager SoundManager,
     IAppLogger Logger,
-    IGameEventBus EventBus);
+    IGameEventBus EventBus,
+    IWhatsNewService WhatsNewService);

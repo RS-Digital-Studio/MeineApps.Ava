@@ -345,6 +345,10 @@
                               VerticalAlignment="Bottom"
                               ZIndex="14"
                               AutomationProperties.AutomationId="MainView_BottomTabBar" />
+
+    <!-- What's-New-Modal: erscheint einmal nach App-Update (Sprint 4.3 AAA-Audit #17).
+         MainViewModel.IsWhatsNewVisible wird im Ctor gesetzt wenn IWhatsNewService.ShouldShow=true. -->
+    <components:WhatsNewOverlay ZIndex="120" />
   </Grid>
 
   <!-- Ladebildschirm (Shader-Preloading) -->

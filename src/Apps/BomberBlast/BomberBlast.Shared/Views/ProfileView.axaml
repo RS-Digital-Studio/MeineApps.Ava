@@ -157,7 +157,7 @@
                 <StackPanel Spacing="6">
                   <TextBox Text="{Binding PlayerName, Mode=TwoWay}"
                            MaxLength="16"
-                           Watermark="{Binding NameHintText}"
+                           PlaceholderText="{Binding NameHintText}"
                            FontSize="16" FontWeight="SemiBold"
                            HorizontalAlignment="Stretch" />
                   <Panel MinHeight="44">

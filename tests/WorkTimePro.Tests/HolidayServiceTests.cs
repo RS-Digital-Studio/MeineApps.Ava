@@ -254,7 +254,7 @@ public class HolidayServiceTests
     }
 
     [Fact]
-    public void GetAvailableRegions_Gibt16Bundeslaender()
+    public void GetAvailableRegions_Liefert16Bundeslaender_9Bundeslaender_Und12Kantone()
     {
         // Vorbereitung
         var db = ErstelleDbMockFuerRegion("DE-BY");
@@ -263,12 +263,15 @@ public class HolidayServiceTests
         // Ausführung
         var regionen = sut.GetAvailableRegions();
 
-        // Prüfung: 16 Bundesländer
-        regionen.Should().HaveCount(16);
+        // Prüfung: 16 (DE) + 9 (AT) + 12 (CH) = 37
+        regionen.Should().HaveCount(37);
+        regionen.Where(r => r.Code.StartsWith("DE-")).Should().HaveCount(16);
+        regionen.Where(r => r.Code.StartsWith("AT-")).Should().HaveCount(9);
+        regionen.Where(r => r.Code.StartsWith("CH-")).Should().HaveCount(12);
     }
 
     [Fact]
-    public void GetAvailableRegions_AlleRegionenHabenDEPräfix()
+    public void GetAvailableRegions_AlleCodesHabenLandesPraefix()
     {
         // Vorbereitung
         var db = ErstelleDbMockFuerRegion("DE-BY");
@@ -277,8 +280,9 @@ public class HolidayServiceTests
         // Ausführung
         var regionen = sut.GetAvailableRegions();
 
-        // Prüfung: Alle Codes beginnen mit "DE-"
-        regionen.Should().AllSatisfy(r => r.Code.Should().StartWith("DE-"));
+        // Prüfung: Alle Codes beginnen mit "DE-", "AT-" oder "CH-"
+        regionen.Should().AllSatisfy(r =>
+            r.Code.Should().Match(c => c.StartsWith("DE-") || c.StartsWith("AT-") || c.StartsWith("CH-")));
     }
 
     // ═══════════════════════════════════════════════════════════════════

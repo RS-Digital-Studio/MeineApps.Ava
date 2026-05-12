@@ -13,6 +13,7 @@ public sealed class WarehouseService : IWarehouseService
     private readonly IGameStateService _gameState;
     private readonly ICraftingService _crafting;
     private readonly IResearchService? _research;
+    private readonly IAnalyticsService? _analytics;
     // Lock verhindert Race zwischen AddToInventory (Auto-Production) und Reservation
     // (Order-Annahme aus UI). Inventar wuerde sonst in Dictionary inkonsistent.
     private readonly object _warehouseLock = new();
@@ -36,11 +37,13 @@ public sealed class WarehouseService : IWarehouseService
     public WarehouseService(
         IGameStateService gameState,
         ICraftingService crafting,
-        IResearchService? research = null)
+        IResearchService? research = null,
+        IAnalyticsService? analytics = null)
     {
         _gameState = gameState;
         _crafting = crafting;
         _research = research;
+        _analytics = analytics;
         // Bei State-Wechsel (Prestige/Import/Reset): UI muss Inventar neu lesen
         _gameState.StateLoaded += (_, _) => InventoryChanged?.Invoke();
     }
@@ -192,6 +195,14 @@ public sealed class WarehouseService : IWarehouseService
             {
                 // Pause-Signal an UI (Workshop-Card zeigt gelben Warn-Badge).
                 WorkshopPaused?.Invoke(sourceWorkshop.Value, productId);
+                // V7 (Telemetrie, Plan Section 8.1): warehouse_full_pause
+                _analytics?.TrackEvent("warehouse_full_pause", new Dictionary<string, object?>
+                {
+                    ["workshop"] = sourceWorkshop.Value.ToString(),
+                    ["product_id"] = productId,
+                    ["slot_count"] = _gameState.State.WarehouseSlotCount,
+                    ["used_slots"] = UsedSlotCount
+                });
             }
             // sonst: stilles Verwerfen (z.B. Offline-Earnings — nicht-kritisch).
         }

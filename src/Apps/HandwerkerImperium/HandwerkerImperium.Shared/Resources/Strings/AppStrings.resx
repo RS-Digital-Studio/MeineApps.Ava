@@ -6532,6 +6532,18 @@
   <data name="Available" xml:space="preserve"><value>available:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Build Site</value></data>
   <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Material specialty</value></data>
+  <!-- ═══════ V7 (Plan Section 7.4): Story-Dialoge fuer Lager / Lieferketten / Logistik ═══════ -->
+  <data name="Story_ResWarehouse_Title" xml:space="preserve"><value>Your first warehouse</value></data>
+  <data name="Story_ResWarehouse_Text" xml:space="preserve"><value>Auto-production is running, apprentice — and now materials are flooding your warehouse! Each slot holds one material type with a stack limit. When a slot fills up, the workshop auto-pauses (yellow warn badge). Toggle auto-sell per slot and the overflow goes straight to your account instead of starving your workshops. Expand your warehouse with money or logistics research!</value></data>
+  <data name="Story_ResSupplyChain_Title" xml:space="preserve"><value>Supply chains — the empire thinks!</value></data>
+  <data name="Story_ResSupplyChain_Text" xml:space="preserve"><value>Things get interesting now: Tier-2 and Tier-3 recipes now demand materials from OTHER workshops. A furniture piece needs planks AND paint from the painter. A luxury piece additionally requires fittings from the smith. Suddenly every workshop becomes part of a great machine. Plan ahead, stock wisely, and your orders can accept bonus material for +30-60% reward!</value></data>
+  <data name="Story_ResLogistics_Title" xml:space="preserve"><value>Research &amp; Market!</value></data>
+  <data name="Story_ResLogistics_Text" xml:space="preserve"><value>The research tree now has a fourth branch — Logistics! More warehouse slots, bigger stacks, faster crafting. Most importantly: 'Material Market Access' (logi_05) unlocks the trading market. Prices fluctuate hourly in a sine wave (±50%), and events like 'Material Shortage' can explode them to 3x. Buy low, hoard, sell high — and if you have the Imperium Pass, the market is open from day one!</value></data>
+  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl ═══════ -->
+  <data name="HeirloomSlotsFormat" xml:space="preserve"><value>{0} / {1} heirlooms selected</value></data>
+  <data name="HeirloomSectionTitle" xml:space="preserve"><value>Choose your heirlooms</value></data>
+  <data name="HeirloomSectionHint" xml:space="preserve"><value>Tier-4 items survive prestige (+2% income per heirloom in the next run).</value></data>
+  <data name="HeirloomNoCandidates" xml:space="preserve"><value>No Tier-4 items in your warehouse — craft a villa, skyscraper or imperium HQ to unlock heirlooms.</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material delivery from supplier!</value></data>
   <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Tier-4-Produkte + Erbstuecke + Affinity ═══════ -->
   <data name="ProductVilla" xml:space="preserve"><value>Luxury Villa</value></data>

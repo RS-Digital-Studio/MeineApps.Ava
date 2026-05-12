@@ -6291,6 +6291,16 @@
   <data name="Available" xml:space="preserve"><value>dispon&#237;vel:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Canteiro</value></data>
   <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Especialidade de material</value></data>
+  <data name="Story_ResWarehouse_Title" xml:space="preserve"><value>Seu primeiro armaz&#233;m</value></data>
+  <data name="Story_ResWarehouse_Text" xml:space="preserve"><value>A produ&#231;&#227;o autom&#225;tica est&#225; rodando e materiais inundam seu armaz&#233;m! Cada espa&#231;o guarda um tipo de material com limite. Quando um espa&#231;o enche, a oficina pausa automaticamente. Ative venda auto por espa&#231;o — o excesso vai direto para sua conta. Expanda o armaz&#233;m com dinheiro ou pesquisa log&#237;stica!</value></data>
+  <data name="Story_ResSupplyChain_Title" xml:space="preserve"><value>Cadeias de suprimentos!</value></data>
+  <data name="Story_ResSupplyChain_Text" xml:space="preserve"><value>Agora receitas T2/T3 exigem materiais de OUTRAS oficinas. Um m&#243;vel precisa de t&#225;buas E tinta. Um m&#243;vel de luxo precisa de ferragens do ferreiro. Cada oficina &#233; parte de uma grande m&#225;quina. Planeje, estoque e seus pedidos aceitam material b&#244;nus para +30-60% recompensa!</value></data>
+  <data name="Story_ResLogistics_Title" xml:space="preserve"><value>Pesquisa e Mercado!</value></data>
+  <data name="Story_ResLogistics_Text" xml:space="preserve"><value>Quarto ramo de pesquisa — Log&#237;stica! Mais espa&#231;os, stacks maiores, crafting mais r&#225;pido. O mais importante: 'Acesso ao Mercado de Materiais' (logi_05) desbloqueia a bolsa. Pre&#231;os flutuam por hora (±50%), e 'Escassez' pode explodir para 3x. Compre barato, venda caro!</value></data>
+  <data name="HeirloomSlotsFormat" xml:space="preserve"><value>{0} / {1} heran&#231;as selecionadas</value></data>
+  <data name="HeirloomSectionTitle" xml:space="preserve"><value>Escolha suas heran&#231;as</value></data>
+  <data name="HeirloomSectionHint" xml:space="preserve"><value>Itens T4 sobrevivem ao prestige (+2% de renda por heran&#231;a na pr&#243;xima partida).</value></data>
+  <data name="HeirloomNoCandidates" xml:space="preserve"><value>Nenhum item T4 no armaz&#233;m — construa uma vila, arranha-c&#233;u ou quartel imperial para desbloquear heran&#231;as.</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Entrega de material do fornecedor!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Vila de Luxo</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Arranha-c&#233;u</value></data>

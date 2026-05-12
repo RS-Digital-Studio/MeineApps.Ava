@@ -749,6 +749,16 @@ public sealed partial class PrestigeService : IPrestigeService
                 if (!craftProducts.TryGetValue(heirloomId, out var product)) continue;
                 if (!product.IsHeirloomEligible) continue;
                 preservedInventory[heirloomId] = preservedInventory.GetValueOrDefault(heirloomId, 0) + 1;
+
+                // V7 (Telemetrie, Plan Section 8.1): heirloom_chosen
+                _analyticsService?.TrackEvent("heirloom_chosen", new Dictionary<string, object?>
+                {
+                    ["item_id"] = heirloomId,
+                    ["tier"] = product.Tier,
+                    ["base_value"] = (double)product.BaseValue,
+                    ["is_premium"] = state.IsPremium,
+                    ["heirloom_cap"] = heirloomCap
+                });
             }
             state.CraftingInventory = preservedInventory;
         }

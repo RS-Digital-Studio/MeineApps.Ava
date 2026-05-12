@@ -6505,6 +6505,17 @@
   <data name="Available" xml:space="preserve"><value>verf&#252;gbar:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Bauplatz</value></data>
   <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Material-Spezialgebiet</value></data>
+  <!-- ═══════ V7 (Plan Section 7.4): Story-Dialoge fuer Lager / Lieferketten / Logistik ═══════ -->
+  <data name="Story_ResWarehouse_Title" xml:space="preserve"><value>Dein erstes Lager</value></data>
+  <data name="Story_ResWarehouse_Text" xml:space="preserve"><value>Auto-Produktion l&#228;uft, Lehrling — und jetzt fluten Materialien dein Lager! Jeder Lager-Platz fasst einen Material-Typ, mit Stack-Limit. Wird ein Platz voll, pausiert die Werkstatt automatisch (gelbes Warn-Badge). Pro Slot kannst du Auto-Verkauf aktivieren — dann landet der &#220;berlauf direkt auf deinem Konto statt deinen Werkst&#228;tten den Saft abzudrehen. Erweitere dein Lager mit Geld oder durch Logistik-Forschung!</value></data>
+  <data name="Story_ResSupplyChain_Title" xml:space="preserve"><value>Lieferketten — das Imperium denkt mit!</value></data>
+  <data name="Story_ResSupplyChain_Text" xml:space="preserve"><value>Jetzt wird es interessant: Tier-2- und Tier-3-Rezepte verlangen ab sofort Materialien aus ANDEREN Werkst&#228;tten. Ein M&#246;belst&#252;ck braucht Holzbretter UND Klebstoff vom Maler. Ein Luxusm&#246;bel verlangt zus&#228;tzlich Beschl&#228;ge vom Schmied. Pl&#246;tzlich wird jede Werkstatt Teil einer gro&#223;en Maschine. Plane vor, lagere klug, und deine Auftr&#228;ge nehmen Bonus-Material an f&#252;r +30-60% Reward!</value></data>
+  <data name="Story_ResLogistics_Title" xml:space="preserve"><value>Forschung &amp; Markt!</value></data>
+  <data name="Story_ResLogistics_Text" xml:space="preserve"><value>Im Forschungsbaum gibt es jetzt einen vierten Branch — Logistik! Mehr Lager-Slots, gr&#246;&#223;ere Stacks, schnelleres Crafting. Das wichtigste: „Material-Markt-Zugang" (logi_05) schaltet die Markt-B&#246;rse frei. Preise schwanken st&#252;ndlich nach Sinus-Welle (±50%), und Events wie „Material-Mangel" lassen sie auf 3x explodieren. Kaufe billig, lagere, verkaufe teuer — und wenn du den Imperium-Pass hast, ist der Markt sofort offen!</value></data>
+  <data name="HeirloomSlotsFormat" xml:space="preserve"><value>{0} / {1} Erbst&#252;cke gew&#228;hlt</value></data>
+  <data name="HeirloomSectionTitle" xml:space="preserve"><value>W&#228;hle deine Erbst&#252;cke</value></data>
+  <data name="HeirloomSectionHint" xml:space="preserve"><value>Tier-4-Items &#252;berleben Prestige (+2% Einkommen pro Erbst&#252;ck im n&#228;chsten Run).</value></data>
+  <data name="HeirloomNoCandidates" xml:space="preserve"><value>Keine Tier-4-Items im Lager — baue eine Villa, einen Wolkenkratzer oder ein Imperium-HQ, um Erbst&#252;cke zu erhalten.</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material-Lieferung vom Lieferanten!</value></data>
   <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Tier-4 + Erbstuecke + Affinity ═══════ -->
   <data name="ProductVilla" xml:space="preserve"><value>Luxusvilla</value></data>

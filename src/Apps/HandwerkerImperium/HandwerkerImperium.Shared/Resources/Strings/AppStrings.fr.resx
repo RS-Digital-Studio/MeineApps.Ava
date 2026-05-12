@@ -6291,6 +6291,16 @@
   <data name="Available" xml:space="preserve"><value>disponible&#160;:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Chantier</value></data>
   <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Sp&#233;cialit&#233; mat&#233;riau</value></data>
+  <data name="Story_ResWarehouse_Title" xml:space="preserve"><value>Ton premier entrep&#244;t</value></data>
+  <data name="Story_ResWarehouse_Text" xml:space="preserve"><value>La production automatique tourne et les mat&#233;riaux inondent ton entrep&#244;t&#160;! Chaque emplacement contient un type de mat&#233;riau avec une limite. Quand un emplacement est plein, l'atelier pause automatiquement. Active la vente auto par emplacement — le surplus va direct sur ton compte. Agrandis l'entrep&#244;t avec de l'argent ou la recherche logistique&#160;!</value></data>
+  <data name="Story_ResSupplyChain_Title" xml:space="preserve"><value>Cha&#238;nes d'approvisionnement&#160;!</value></data>
+  <data name="Story_ResSupplyChain_Text" xml:space="preserve"><value>Maintenant les recettes T2/T3 exigent des mat&#233;riaux d'AUTRES ateliers. Un meuble a besoin de planches ET de peinture. Un meuble de luxe demande des ferrures du forgeron. Chaque atelier devient une pi&#232;ce d'une grande machine. Planifie, stocke et tes commandes acceptent du mat&#233;riau bonus pour +30-60%&#160;!</value></data>
+  <data name="Story_ResLogistics_Title" xml:space="preserve"><value>Recherche &amp; March&#233;&#160;!</value></data>
+  <data name="Story_ResLogistics_Text" xml:space="preserve"><value>Quatri&#232;me branche de recherche — Logistique&#160;! Plus d'emplacements, stacks plus grands, crafting plus rapide. Le plus important&#160;: 'Acc&#232;s au March&#233; des Mat&#233;riaux' (logi_05) ouvre la bourse. Les prix fluctuent toutes les heures (±50%), et 'P&#233;nurie' peut les faire grimper &#224; 3x. Ach&#232;te bas, vends haut&#160;!</value></data>
+  <data name="HeirloomSlotsFormat" xml:space="preserve"><value>{0} / {1} reliques s&#233;lectionn&#233;es</value></data>
+  <data name="HeirloomSectionTitle" xml:space="preserve"><value>Choisis tes reliques</value></data>
+  <data name="HeirloomSectionHint" xml:space="preserve"><value>Les objets T4 survivent au prestige (+2% de revenu par relique dans la prochaine partie).</value></data>
+  <data name="HeirloomNoCandidates" xml:space="preserve"><value>Aucun objet T4 dans ton entrep&#244;t — fabrique une villa, un gratte-ciel ou un si&#232;ge imp&#233;rial pour d&#233;bloquer des reliques.</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Livraison de mat&#233;riaux du fournisseur&#160;!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa de Luxe</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Gratte-Ciel</value></data>

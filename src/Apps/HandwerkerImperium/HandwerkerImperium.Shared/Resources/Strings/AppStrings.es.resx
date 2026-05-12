@@ -6290,6 +6290,16 @@
   <data name="Available" xml:space="preserve"><value>disponible:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Obra</value></data>
   <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Especialidad material</value></data>
+  <data name="Story_ResWarehouse_Title" xml:space="preserve"><value>Tu primer almac&#233;n</value></data>
+  <data name="Story_ResWarehouse_Text" xml:space="preserve"><value>La producci&#243;n autom&#225;tica est&#225; en marcha y los materiales llenan tu almac&#233;n. Cada espacio guarda un tipo de material con l&#237;mite. Cuando un espacio se llena, el taller se pausa autom&#225;ticamente. Activa venta autom&#225;tica por espacio y el excedente va directo a tu cuenta. ¡Ampl&#237;a el almac&#233;n con dinero o investigaci&#243;n!</value></data>
+  <data name="Story_ResSupplyChain_Title" xml:space="preserve"><value>¡Cadenas de suministro!</value></data>
+  <data name="Story_ResSupplyChain_Text" xml:space="preserve"><value>Ahora las recetas T2/T3 exigen materiales de OTROS talleres. Un mueble necesita tablas Y pintura. Un mueble de lujo necesita herrajes del herrero. Cada taller es parte de una gran m&#225;quina. ¡Planea, almacena y tus pedidos aceptan material extra para +30-60% recompensa!</value></data>
+  <data name="Story_ResLogistics_Title" xml:space="preserve"><value>¡Investigaci&#243;n y Mercado!</value></data>
+  <data name="Story_ResLogistics_Text" xml:space="preserve"><value>Cuarta rama de investigaci&#243;n — &#161;Log&#237;stica! M&#225;s espacios, stacks m&#225;s grandes, crafting m&#225;s r&#225;pido. Lo m&#225;s importante: 'Acceso al Mercado de Materiales' desbloquea la bolsa. Los precios fluct&#250;an cada hora (±50%), y eventos como 'Escasez' los pueden disparar a 3x. ¡Compra barato, vende caro!</value></data>
+  <data name="HeirloomSlotsFormat" xml:space="preserve"><value>{0} / {1} reliquias seleccionadas</value></data>
+  <data name="HeirloomSectionTitle" xml:space="preserve"><value>Elige tus reliquias</value></data>
+  <data name="HeirloomSectionHint" xml:space="preserve"><value>Los items T4 sobreviven al prestige (+2% de ingresos por reliquia en la siguiente partida).</value></data>
+  <data name="HeirloomNoCandidates" xml:space="preserve"><value>No hay items T4 en tu almac&#233;n — fabrica una villa, rascacielos o cuartel imperial para desbloquear reliquias.</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>&#161;Entrega de material del proveedor!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa de Lujo</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Rascacielos</value></data>

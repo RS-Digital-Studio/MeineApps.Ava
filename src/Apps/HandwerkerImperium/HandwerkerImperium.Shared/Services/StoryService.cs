@@ -720,6 +720,56 @@ public sealed class StoryService : IStoryService
             GoldenScrewReward = 750,
             XpReward = 100_000,
             Mood = "excited"
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        // V7 (Phase 1-3 Ressourcen-Plan, Section 7.4): Lager / Lieferketten / Logistik
+        // ═══════════════════════════════════════════════════════════════
+
+        new()
+        {
+            Id = "resources_warehouse",
+            ChapterNumber = 38,
+            TitleKey = "Story_ResWarehouse_Title",
+            TextKey = "Story_ResWarehouse_Text",
+            TitleFallback = "Dein erstes Lager",
+            TextFallback = "Auto-Produktion läuft, Lehrling – und jetzt fluten Materialien dein Lager! Jeder Lager-Platz fasst einen Material-Typ, mit Stack-Limit. Wird ein Platz voll, pausiert die Werkstatt automatisch (gelbes Warn-Badge). Pro Slot kannst du Auto-Verkauf aktivieren — dann landet der Überlauf direkt auf deinem Konto statt deinen Werkstätten den Saft abzudrehen. Erweitere dein Lager mit Geld oder durch Logistik-Forschung!",
+            RequiredPlayerLevel = 50,
+            MoneyReward = 100_000,
+            GoldenScrewReward = 5,
+            XpReward = 250,
+            Mood = "proud",
+            IsTutorial = true
+        },
+        new()
+        {
+            Id = "resources_supply_chain",
+            ChapterNumber = 39,
+            TitleKey = "Story_ResSupplyChain_Title",
+            TextKey = "Story_ResSupplyChain_Text",
+            TitleFallback = "Lieferketten — das Imperium denkt mit!",
+            TextFallback = "Jetzt wird es interessant: Tier-2- und Tier-3-Rezepte verlangen ab sofort Materialien aus ANDEREN Werkstätten. Ein Möbelstück braucht Holzbretter UND Klebstoff vom Maler. Ein Luxusmöbel verlangt zusätzlich Beschläge vom Schmied. Plötzlich wird jede Werkstatt Teil einer großen Maschine. Plane vor, lagere klug, und deine Aufträge nehmen Bonus-Material an für +30-60% Reward!",
+            RequiredPlayerLevel = 100,
+            MoneyReward = 500_000,
+            GoldenScrewReward = 8,
+            XpReward = 500,
+            Mood = "excited",
+            IsTutorial = true
+        },
+        new()
+        {
+            Id = "resources_logistics_research",
+            ChapterNumber = 40,
+            TitleKey = "Story_ResLogistics_Title",
+            TextKey = "Story_ResLogistics_Text",
+            TitleFallback = "Forschung & Markt!",
+            TextFallback = "Im Forschungsbaum gibt es jetzt einen vierten Branch — Logistik! Mehr Lager-Slots, größere Stacks, schnelleres Crafting. Das wichtigste: 'Material-Markt-Zugang' (logi_05) schaltet die Markt-Börse frei. Preise schwanken stündlich nach Sinus-Welle (±50%), und Events wie 'Material-Mangel' lassen sie auf 3x explodieren. Kaufe billig, lagere, verkaufe teuer — und wenn du den Imperium-Pass hast, ist der Markt sofort offen!",
+            RequiredPlayerLevel = 150,
+            MoneyReward = 2_000_000,
+            GoldenScrewReward = 10,
+            XpReward = 1_000,
+            Mood = "happy",
+            IsTutorial = true
         }
     ];
 }

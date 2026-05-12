@@ -363,6 +363,14 @@ internal sealed class EconomyFeatureViewModel
                     _localizationService.GetString("OK") ?? "OK");
                 return;
             }
+
+            // V7 (Telemetrie, Plan Section 8.1): order_accepted_with_material
+            _analyticsService?.TrackEvent("order_accepted_with_material", new Dictionary<string, object?>
+            {
+                ["order_type"] = order.OrderType.ToString(),
+                ["bonus_multiplier"] = order.MaterialOfferBonusMultiplier,
+                ["material_count"] = order.MaterialOffer?.Sum(kv => kv.Value) ?? 0
+            });
         }
 
         // Bestehenden Vordergrund-Auftrag pausieren (falls vorhanden) statt zu blockieren.

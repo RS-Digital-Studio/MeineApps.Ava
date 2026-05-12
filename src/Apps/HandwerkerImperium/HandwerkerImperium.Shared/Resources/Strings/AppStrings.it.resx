@@ -6298,6 +6298,16 @@
   <data name="Available" xml:space="preserve"><value>disponibile:</value></data>
   <data name="TabBuildSite" xml:space="preserve"><value>Cantiere</value></data>
   <data name="WorkerMaterialAffinity" xml:space="preserve"><value>Specializzazione materiale</value></data>
+  <data name="Story_ResWarehouse_Title" xml:space="preserve"><value>Il tuo primo magazzino</value></data>
+  <data name="Story_ResWarehouse_Text" xml:space="preserve"><value>La produzione automatica gira e i materiali inondano il magazzino! Ogni spazio contiene un tipo di materiale con limite. Quando uno spazio si riempie, l'officina si mette in pausa. Attiva vendita auto per spazio — l'eccesso va dritto sul conto. Espandi il magazzino con denaro o ricerca logistica!</value></data>
+  <data name="Story_ResSupplyChain_Title" xml:space="preserve"><value>Catene di approvvigionamento!</value></data>
+  <data name="Story_ResSupplyChain_Text" xml:space="preserve"><value>Ora le ricette T2/T3 richiedono materiali da ALTRE officine. Un mobile richiede tavole E vernice. Un mobile di lusso richiede ferramenta dal fabbro. Ogni officina diventa parte di una grande macchina. Pianifica, immagazzina, e i tuoi ordini accettano materiale bonus per +30-60%!</value></data>
+  <data name="Story_ResLogistics_Title" xml:space="preserve"><value>Ricerca e Mercato!</value></data>
+  <data name="Story_ResLogistics_Text" xml:space="preserve"><value>Quarto ramo di ricerca — Logistica! Pi&#249; spazi, stack maggiori, crafting pi&#249; veloce. Il pi&#249; importante: 'Accesso al Mercato dei Materiali' (logi_05) sblocca la borsa. I prezzi fluttuano ogni ora (±50%), e 'Carenza' li pu&#242; far esplodere a 3x. Compra basso, vendi alto!</value></data>
+  <data name="HeirloomSlotsFormat" xml:space="preserve"><value>{0} / {1} cimeli selezionati</value></data>
+  <data name="HeirloomSectionTitle" xml:space="preserve"><value>Scegli i tuoi cimeli</value></data>
+  <data name="HeirloomSectionHint" xml:space="preserve"><value>Gli oggetti T4 sopravvivono al prestige (+2% reddito per cimelio nella prossima partita).</value></data>
+  <data name="HeirloomNoCandidates" xml:space="preserve"><value>Nessun oggetto T4 nel magazzino — costruisci una villa, un grattacielo o un quartier generale per sbloccare cimeli.</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Consegna di materiale dal fornitore!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa di Lusso</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Grattacielo</value></data>

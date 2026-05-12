@@ -21,6 +21,7 @@ public sealed class MarketService : IMarketService
     private readonly IWarehouseService _warehouse;
     private readonly IResearchService? _research;
     private readonly IEventService? _events;
+    private readonly IAnalyticsService? _analytics;
 
     /// <summary>Spread Faktor — Verkaufspreis = Kauf × (1 - Spread).</summary>
     public const decimal SpreadFactor = 0.05m;
@@ -37,12 +38,14 @@ public sealed class MarketService : IMarketService
         IGameStateService gameState,
         IWarehouseService warehouse,
         IResearchService? research = null,
-        IEventService? events = null)
+        IEventService? events = null,
+        IAnalyticsService? analytics = null)
     {
         _gameState = gameState;
         _warehouse = warehouse;
         _research = research;
         _events = events;
+        _analytics = analytics;
     }
 
     public bool IsMarketAvailable
@@ -144,6 +147,16 @@ public sealed class MarketService : IMarketService
             _gameState.AddMoney(pricePer * shortfall);
         }
 
+        // V7 (Telemetrie, Plan Section 8.1): material_market_trade (buy)
+        _analytics?.TrackEvent("material_market_trade", new Dictionary<string, object?>
+        {
+            ["product_id"] = productId,
+            ["side"] = "buy",
+            ["count"] = actuallyAdded,
+            ["price_per_unit"] = (double)pricePer,
+            ["total"] = (double)(pricePer * actuallyAdded)
+        });
+
         MarketChanged?.Invoke();
         return true;
     }
@@ -166,6 +179,17 @@ public sealed class MarketService : IMarketService
             state.CraftingInventory.Remove(productId);
 
         _gameState.AddMoney(revenue);
+
+        // V7 (Telemetrie, Plan Section 8.1): material_market_trade (sell)
+        _analytics?.TrackEvent("material_market_trade", new Dictionary<string, object?>
+        {
+            ["product_id"] = productId,
+            ["side"] = "sell",
+            ["count"] = sellCount,
+            ["price_per_unit"] = (double)pricePer,
+            ["total"] = (double)revenue
+        });
+
         MarketChanged?.Invoke();
         return revenue;
     }

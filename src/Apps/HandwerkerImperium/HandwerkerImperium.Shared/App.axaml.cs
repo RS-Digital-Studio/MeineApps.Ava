@@ -388,6 +388,8 @@ public partial class App : Application
         services.AddSingleton<IMarketService, MarketService>();
         // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekte
         services.AddSingleton<IGuildMegaProjectService, GuildMegaProjectService>();
+        // V7 (Plan Section 7.2): Procedural Material-Icon-Renderer (ersetzt externe AI-Assets)
+        services.AddSingleton<HandwerkerImperium.Graphics.MaterialIconRenderer>();
 
         // Late-Game-Services (Ascension, Rebirth, VIP)
         services.AddSingleton<IAscensionService, AscensionService>();

@@ -1,6 +1,8 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
+using HandwerkerImperium.Icons;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
@@ -40,6 +42,31 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 
     /// <summary>Tier-Auswahl-Chips für den Dialog.</summary>
     [ObservableProperty] private List<PrestigeTierOption> _availableTierOptions = [];
+
+    // ═══════════════════════════════════════════════════════════════════
+    // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>True wenn der Spieler T4-Items im Inventar hat — UI zeigt Erbstueck-Sektion.</summary>
+    [ObservableProperty] private bool _hasHeirloomCandidates;
+
+    /// <summary>Wahlbare Tier-4-Items aus dem aktuellen Inventar.</summary>
+    [ObservableProperty] private ObservableCollection<HeirloomCandidateOption> _heirloomCandidates = new();
+
+    /// <summary>Max-Cap der Heirloom-Slots fuer den aktuellen Run (3 Free, 4 Premium).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HeirloomSelectionStatus))]
+    private int _maxHeirloomSlots;
+
+    /// <summary>Aktuell gewaehlte Anzahl Erbstuecke (live updated bei Toggle).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HeirloomSelectionStatus))]
+    private int _selectedHeirloomCount;
+
+    /// <summary>UI-Anzeige: "2 / 3 Erbstuecke gewaehlt".</summary>
+    public string HeirloomSelectionStatus => string.Format(
+        _localizationService.GetString("HeirloomSlotsFormat") ?? "{0} / {1} heirlooms selected",
+        SelectedHeirloomCount, MaxHeirloomSlots);
 
     /// <summary>Bonus-PP-Vorschau aus Spielleistung (flat).</summary>
     [ObservableProperty] private string _bonusPpPreview = string.Empty;
@@ -256,6 +283,8 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 
         BuildTierOptions(state, availableTiers, highestTier);
         UpdateContent(highestTier);
+        // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl vorbereiten.
+        BuildHeirloomCandidates();
 
         _dialogVm.ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
         _dialogVm.ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
@@ -304,6 +333,8 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 
         BuildTierOptions(state, availableTiers, highestTier);
         UpdateContent(highestTier);
+        // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl vorbereiten.
+        BuildHeirloomCandidates();
 
         _dialogVm.ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
         _dialogVm.ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Cancel";
@@ -386,4 +417,118 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 
         return tierPoints;
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Selection
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Sammelt alle Tier-4-Items im aktuellen Inventar als Heirloom-Kandidaten und befuellt
+    /// die UI-Liste. Top-N wird automatisch vorselektiert (Pass-Cap berueksichtigt).
+    /// Muss VOR ShowAsync/PreparePageAsync aufgerufen werden.
+    /// </summary>
+    public void BuildHeirloomCandidates()
+    {
+        var state = _gameStateService.State;
+        MaxHeirloomSlots = GameBalanceConstants.GetEffectiveHeirloomSlots(state.IsPremium);
+
+        var allProducts = CraftingProduct.GetAllProducts();
+        var candidates = new List<HeirloomCandidateOption>();
+        foreach (var (productId, count) in state.CraftingInventory)
+        {
+            if (count <= 0) continue;
+            if (!allProducts.TryGetValue(productId, out var product)) continue;
+            if (!product.IsHeirloomEligible) continue;
+
+            // Jedes Stueck im Inventar = ein eigener Kandidat (Spieler kann das gleiche T4
+            // mehrfach als Erbstueck mitnehmen, wenn er es mehrfach besitzt).
+            for (int i = 0; i < count; i++)
+            {
+                candidates.Add(new HeirloomCandidateOption
+                {
+                    InstanceId = $"{productId}#{i}",
+                    ProductId = productId,
+                    Name = _localizationService.GetString(product.NameKey) ?? product.NameKey,
+                    BaseValue = product.BaseValue,
+                    ValueDisplay = MoneyFormatter.Format(product.BaseValue, 0),
+                    Icon = GetHeirloomIcon(productId),
+                    IsSelected = false
+                });
+            }
+        }
+
+        // Top-N nach BaseValue vorselektieren — Spieler sieht sinnvolle Default-Wahl.
+        var sorted = candidates.OrderByDescending(c => c.BaseValue).ToList();
+        for (int i = 0; i < sorted.Count && i < MaxHeirloomSlots; i++)
+            sorted[i].IsSelected = true;
+
+        HeirloomCandidates = new ObservableCollection<HeirloomCandidateOption>(sorted);
+        SelectedHeirloomCount = HeirloomCandidates.Count(h => h.IsSelected);
+        HasHeirloomCandidates = HeirloomCandidates.Count > 0;
+    }
+
+    /// <summary>
+    /// Toggle-Command fuer einen Heirloom-Kandidaten. Respektiert MaxHeirloomSlots —
+    /// wenn das Maximum schon erreicht ist und der Spieler einen weiteren waehlen will,
+    /// blockt der Toggle (UI-Hint zeigt SelectionStatus).
+    /// </summary>
+    [RelayCommand]
+    private void ToggleHeirloom(HeirloomCandidateOption? candidate)
+    {
+        if (candidate == null) return;
+
+        if (candidate.IsSelected)
+        {
+            candidate.IsSelected = false;
+            SelectedHeirloomCount = Math.Max(0, SelectedHeirloomCount - 1);
+        }
+        else
+        {
+            if (SelectedHeirloomCount >= MaxHeirloomSlots) return; // Cap erreicht
+            candidate.IsSelected = true;
+            SelectedHeirloomCount++;
+        }
+
+        // ObservableCollection feuert kein PropertyChanged auf Sub-Properties — Refresh erzwingen.
+        var idx = HeirloomCandidates.IndexOf(candidate);
+        if (idx >= 0)
+        {
+            HeirloomCandidates.RemoveAt(idx);
+            HeirloomCandidates.Insert(idx, candidate);
+        }
+    }
+
+    /// <summary>
+    /// Wird vom PrestigeService aufgerufen VOR ResetProgress — schreibt die gewaehlten
+    /// Heirloom-Items in <see cref="GameState.HeirloomItems"/>, sodass der Reset sie bewahrt.
+    /// </summary>
+    public void ApplyHeirloomSelection()
+    {
+        var state = _gameStateService.State;
+        state.HeirloomItems.Clear();
+        foreach (var candidate in HeirloomCandidates.Where(c => c.IsSelected))
+            state.HeirloomItems.Add(candidate.ProductId);
+    }
+
+    private static GameIconKind GetHeirloomIcon(string productId) => productId switch
+    {
+        "villa" => GameIconKind.HomeCity,
+        "skyscraper" => GameIconKind.OfficeBuilding,
+        "imperium_hq" => GameIconKind.Bank,
+        _ => GameIconKind.Crown
+    };
+}
+
+/// <summary>
+/// V7 (Phase 4): Auswahl-Option fuer ein Heirloom-Kandidat-Item im Prestige-Confirm-Dialog.
+/// </summary>
+public sealed partial class HeirloomCandidateOption : ObservableObject
+{
+    public string InstanceId { get; set; } = "";
+    public string ProductId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public decimal BaseValue { get; set; }
+    public string ValueDisplay { get; set; } = "";
+    public GameIconKind Icon { get; set; } = GameIconKind.Crown;
+    [ObservableProperty] private bool _isSelected;
 }

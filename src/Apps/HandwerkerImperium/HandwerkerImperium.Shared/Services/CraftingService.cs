@@ -19,6 +19,8 @@ public sealed class CraftingService : ICraftingService
     private readonly IGameStateService _gameState;
     private readonly IIncomeCalculatorService _incomeCalculator;
     private readonly IResearchService? _research;
+    // V7 (Phase 1-4 Ressourcen-Plan, Section 8.1): Telemetrie-Events fuer Material-Loop.
+    private readonly IAnalyticsService? _analytics;
     // Lock verhindert Race Condition bei schnellem Doppelklick (Materialien doppelt verbraucht)
     private readonly object _craftingLock = new();
     // Gecachter Crafting-Speed-Bonus (Dirty-Flag statt Count-Vergleich)
@@ -38,11 +40,13 @@ public sealed class CraftingService : ICraftingService
     public CraftingService(
         IGameStateService gameState,
         IIncomeCalculatorService incomeCalculator,
-        IResearchService? research = null)
+        IResearchService? research = null,
+        IAnalyticsService? analytics = null)
     {
         _gameState = gameState;
         _incomeCalculator = incomeCalculator;
         _research = research;
+        _analytics = analytics;
         // Bei State-Wechsel (Prestige/Import/Reset) und Prestige-Shop-Kauf Cache invalidieren
         _gameState.StateLoaded += (_, _) => _craftingSpeedCacheDirty = true;
         _gameState.PrestigeShopPurchased += (_, _) => _craftingSpeedCacheDirty = true;
@@ -198,6 +202,15 @@ public sealed class CraftingService : ICraftingService
         // Job entfernen
         state.ActiveCraftingJobs.Remove(job);
 
+        // V7 (Phase 1-4 Telemetrie, Plan Section 8.1): material_crafted
+        _analytics?.TrackEvent("material_crafted", new Dictionary<string, object?>
+        {
+            ["product_id"] = outputId,
+            ["tier"] = CraftingProduct.GetAllProducts().GetValueOrDefault(outputId)?.Tier ?? 0,
+            ["workshop"] = recipe.WorkshopType.ToString(),
+            ["count"] = outputCount
+        });
+
         CraftingUpdated?.Invoke();
         CraftingProductCollected?.Invoke();
         return true;
@@ -237,6 +250,17 @@ public sealed class CraftingService : ICraftingService
 
         // Geld gutschreiben
         _gameState.AddMoney(totalRevenue);
+
+        // V7 (Phase 1-4 Telemetrie, Plan Section 8.1): material_sold
+        _analytics?.TrackEvent("material_sold", new Dictionary<string, object?>
+        {
+            ["product_id"] = productId,
+            ["tier"] = product.Tier,
+            ["count"] = sellCount,
+            ["price_per_unit"] = (double)pricePerUnit,
+            ["total_revenue"] = (double)totalRevenue,
+            ["source"] = "warehouse"
+        });
 
         CraftingUpdated?.Invoke();
         return totalRevenue;

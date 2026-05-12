@@ -20,6 +20,7 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
     private readonly IGameIntegrityService _integrity;
     private readonly IWarehouseService _warehouse;
     private readonly ICraftingService _crafting;
+    private readonly IAnalyticsService? _analytics;
 
     private const string MegaHmacSalt = "guild-mega-project-v1";
 
@@ -31,13 +32,15 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
         IGameStateService gameStateService,
         IGameIntegrityService integrity,
         IWarehouseService warehouse,
-        ICraftingService crafting)
+        ICraftingService crafting,
+        IAnalyticsService? analytics = null)
     {
         _firebase = firebase;
         _gameStateService = gameStateService;
         _integrity = integrity;
         _warehouse = warehouse;
         _crafting = crafting;
+        _analytics = analytics;
     }
 
     private string? CurrentGuildId => _gameStateService.State.GuildMembership?.GuildId;
@@ -169,6 +172,16 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
         }
 
         ProjectUpdated?.Invoke(project);
+
+        // V7 (Telemetrie, Plan Section 8.1): guild_mega_project_donation
+        _analytics?.TrackEvent("guild_mega_project_donation", new Dictionary<string, object?>
+        {
+            ["project_id"] = project.ProjectId,
+            ["project_type"] = (int)project.Type,
+            ["item_id"] = productId,
+            ["count"] = actualCount,
+            ["donation_value"] = (double)donationValue
+        });
 
         if (isNowComplete)
         {

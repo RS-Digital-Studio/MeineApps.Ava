@@ -581,6 +581,18 @@ Auto-Verkaufs-Regeln, +1 Erbstueck-Slot (3 → 4), 2× Lucky-Spin/Tag, Auto-Clai
 *Implementation der UI-Repositionierung ist als getrennter Sprint vorgemerkt — Bundle-Boni
 sind in den Service-Layern bereits implementiert.*
 
+**Heirloom-Wahl-UI** (Plan Section 3.8): PrestigeView zeigt ueber dem Confirm-CTA eine
+Heirloom-Selection-Sektion mit ItemsControl + Toggle-Buttons + IsSelected-Indikator. Top-N
+nach BaseValue wird automatisch vorselektiert (Cap aus `GetEffectiveHeirloomSlots(IsPremium)`).
+`PrestigeConfirmationViewModel.ApplyHeirloomSelection()` schreibt die Wahl in
+`state.HeirloomItems` VOR `_prestigeService.DoPrestige(...)`, sodass der Reset sie bewahrt.
+RESX-Keys: `HeirloomSlotsFormat`, `HeirloomSectionTitle`, `HeirloomSectionHint` (6 Sprachen).
+XAML-Bindings nutzen `ElementName=PrestigeRoot` + `((vm:MainViewModel)DataContext).` Cast
+fuer das Command (analog zur Tier-Auswahl). Background/Border werden ueber zwei dedizierte
+`BoolToBrushConverter`-Resourcen in `App.axaml` gestyled (`HeirloomSelectedBgConverter`,
+`HeirloomSelectedBorderConverter`) — der Core-Library-Converter unterstuetzt keinen
+ConverterParameter, daher pro Use-Case eine Resource-Instanz.
+
 ### Material-Markt + Heatmap-Detail (V7 — Phase 3 Ressourcen-Plan)
 
 `IMarketService` + `MarketService` — deterministische Tagespreis-Logik pro Spieler.
@@ -763,6 +775,7 @@ Gecachte Instanz- oder Klassenfelder statt `using var` pro Frame:
 | LuckySpinWheelRenderer | 11 SKPaint + 1 SKFont + 13 gecachte SKShader + 2 SKMaskFilter |
 | ResearchIconRenderer | _cachedPath + _labelFont + _crownFont (static, alle Icons sequenziell) |
 | GuildResearchIconRenderer | _cachedPath (static, alle Icons sequenziell) |
+| MaterialIconRenderer | 3 SKPaint + 1 SKFont + Bitmap-Cache pro ProductId (DI-Singleton, IDisposable, 128×128 procedural) |
 
 **Shader-Cache-Pattern**: Nur bei Bounds-Änderung neu erstellen (ForgeGame, Wiring, Sawing, CraftTextures).
 
@@ -927,6 +940,26 @@ Server-seitiges Anti-Cheat (Geraete-Fingerprint gegen Self-Referral) als separat
 
 Saison-Dauer 42 → 30 Tage (12 Saisons/Jahr statt 8.7). Premium-Spread auf ~3x Free
 (baseMoney *120→*180, Capstone-GS 100→150, Milestone-40 30→50, Tier-0-29 GS 10/2→12/3).
+
+### Telemetrie-Events (V7 — Material-Loop, Plan Section 8.1)
+
+`IAnalyticsService.TrackEvent(name, props)` ist die einzige Schnittstelle — Services injizieren
+das Interface als optionales Konstruktor-Argument (`IAnalyticsService? analytics = null`), damit
+bestehende Tests/DI-Setups ohne Mock funktionieren.
+
+| Event | Trigger | Properties |
+|-------|---------|-----------|
+| `material_crafted` | `CraftingService.CollectProduct` | product_id, tier, workshop, count |
+| `material_sold` | `CraftingService.SellProducts` | product_id, tier, count, price_per_unit, total_revenue, source |
+| `warehouse_full_pause` | `WarehouseService.RegisterStackOverflow` | product_id, slot_count, stack_limit |
+| `material_market_trade` | `MarketService.TryBuy/TrySell` | product_id, direction, count, unit_price, total |
+| `guild_mega_project_donation` | `GuildMegaProjectService.DonateAsync` | project_id, material_id, donated_count, total_progress_percent |
+| `heirloom_chosen` | `PrestigeService.ApplyHeirloomSelection` (indirekt via PrestigeService) | product_id, base_value, slot_count |
+| `order_accepted_with_material` | `EconomyFeatureViewModel.AcceptMaterialOfferAsync` | order_id, order_type, bonus_multiplier, materials_count |
+
+Story-Chapter (38/39/40) sind ebenfalls Telemetrie-getrieben — beim Anzeigen feuert
+`StoryService.MarkChapterRead` → kein eigenes Event, sondern Reuse des bestehenden
+`story_chapter_completed`.
 
 ---
 

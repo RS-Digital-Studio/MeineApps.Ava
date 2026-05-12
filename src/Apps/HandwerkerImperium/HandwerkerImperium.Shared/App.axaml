@@ -126,6 +126,14 @@
         TrueBrush="{StaticResource CraftPrimaryLightBrush}"
         FalseBrush="{StaticResource TierFBrush}" />
 
+    <!-- Erbstück-Wahl Converter (Phase 4 V7 Heirloom-Selection in PrestigeView) -->
+    <converters:BoolToBrushConverter x:Key="HeirloomSelectedBgConverter"
+        TrueBrush="#1FD97706"
+        FalseBrush="Transparent" />
+    <converters:BoolToBrushConverter x:Key="HeirloomSelectedBorderConverter"
+        TrueBrush="{StaticResource CraftPrimaryBrush}"
+        FalseBrush="#33FFFFFF" />
+
     <!-- Converter: String → GameIconKind (fuer Icon-Bindings in Shop, BattlePass, etc.) -->
     <localConverters:StringToGameIconKindConverter x:Key="IconKindConverter" />
 

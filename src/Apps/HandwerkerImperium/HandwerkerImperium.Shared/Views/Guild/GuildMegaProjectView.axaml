@@ -3,7 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
-             x:Class="HandwerkerImperium.Views.Guild.GuildBuildSiteView"
+             x:Class="HandwerkerImperium.Views.Guild.GuildMegaProjectView"
              x:DataType="vm:GuildMegaProjectViewModel"
              x:CompileBindings="True">
 

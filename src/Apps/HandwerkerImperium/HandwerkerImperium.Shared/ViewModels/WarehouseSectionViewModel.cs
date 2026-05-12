@@ -74,6 +74,9 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
         _localizationService = localizationService;
 
         _warehouseService.InventoryChanged += OnInventoryChanged;
+        // CraftingService mutiert das Inventar bei Verkaufen/Sammeln direkt — wir muessen
+        // auf beide Events hoeren, sonst bleibt die Lager-UI nach einem Verkauf stale.
+        _craftingService.CraftingUpdated += OnInventoryChanged;
         _gameStateService.MoneyChanged += OnMoneyChanged;
 
         UpdateLocalizedTexts();
@@ -276,6 +279,7 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
     public void Dispose()
     {
         _warehouseService.InventoryChanged -= OnInventoryChanged;
+        _craftingService.CraftingUpdated -= OnInventoryChanged;
         _gameStateService.MoneyChanged -= OnMoneyChanged;
     }
 }

@@ -260,6 +260,9 @@ public partial class App : Application
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
+        // Frame-Clock (AAA-Audit P1): zentraler 30Hz-Render-Tick fuer Visual-Renderer
+        services.AddSingleton<IFrameClock, FrameClockService>();
+
         // Game Services
         services.AddSingleton<IGameStateService, GameStateService>();
         services.AddSingleton<IGameIntegrityService, GameIntegrityService>();

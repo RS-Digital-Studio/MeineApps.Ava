@@ -16,6 +16,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
     private readonly IPrestigeService? _prestigeService;
     private readonly IVipService? _vipService;
     private readonly IManagerService? _managerService;
+    private readonly IEternalMasteryService? _eternalMastery;
 
     private const decimal SoftCapThreshold = 8.0m;
 
@@ -24,13 +25,15 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         IResearchService? researchService = null,
         IPrestigeService? prestigeService = null,
         IVipService? vipService = null,
-        IManagerService? managerService = null)
+        IManagerService? managerService = null,
+        IEternalMasteryService? eternalMastery = null)
     {
         _eventService = eventService;
         _researchService = researchService;
         _prestigeService = prestigeService;
         _vipService = vipService;
         _managerService = managerService;
+        _eternalMastery = eternalMastery;
     }
 
     public decimal CalculateGrossIncome(GameState state, decimal prestigeIncomeBonus, decimal masterToolBonus = -1m,
@@ -112,6 +115,12 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         // Premium: +50% Einkommensbonus
         if (state.IsPremium)
             grossIncome *= 1.5m;
+
+        // AAA-Audit P1 Long-Term-Engagement: Eternal Mastery (permanenter Bonus pro Prestige)
+        if (_eternalMastery != null && _eternalMastery.IsActive)
+        {
+            grossIncome *= (1m + _eternalMastery.IncomeBonus);
+        }
 
         return grossIncome;
     }

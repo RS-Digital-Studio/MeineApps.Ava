@@ -108,6 +108,31 @@ public static class GameBalanceConstants
     /// </summary>
     public const decimal BonusPpPerAscensionLevel = 0.5m;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // ETERNAL MASTERY — Long-Term-Engagement post-Lv1000 (AAA-Audit P1, 12.05.2026)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Permanenter Einkommens-Bonus pro abgeschlossenem Prestige (jeder Tier).
+    /// Skaliert linear ewig weiter — kein Cap, kein Reset. Bei 100 Prestiges = +50% Income
+    /// (zusaetzlich zu allen anderen Bonus-Quellen). Niedrig genug damit early-game
+    /// nicht trivialisiert wird, sichtbar genug fuer late-game Belohnung.
+    /// </summary>
+    public const decimal EternalMasteryBonusPerPrestige = 0.005m; // +0.5%
+
+    /// <summary>
+    /// Zusaetzlicher Stufen-Bonus alle 5 abgeschlossenen Prestiges. Schafft sichtbare
+    /// Meilensteine ("nur noch 2 Prestiges bis zum naechsten Sprung"). Bei 50 Prestiges
+    /// = 10 Stufen = +25% (kumuliert mit linearem Bonus).
+    /// </summary>
+    public const decimal EternalMasteryBonusPer5Prestiges = 0.025m; // +2.5%
+
+    /// <summary>
+    /// Zusaetzlicher Mega-Stufen-Bonus alle 10 Prestiges. Schafft groessere "Wow"-Spruenge
+    /// fuer Late-Game-Whales. Bei 100 Prestiges = 10 Mega-Stufen = +50% extra.
+    /// </summary>
+    public const decimal EternalMasteryBonusPer10Prestiges = 0.05m; // +5%
+
     /// <summary>Alle X Level ein zusätzlicher Worker-Slot.</summary>
     public const int WorkerSlotInterval = 50;
 

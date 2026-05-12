@@ -263,6 +263,9 @@ public partial class App : Application
         // Frame-Clock (AAA-Audit P1): zentraler 30Hz-Render-Tick fuer Visual-Renderer
         services.AddSingleton<IFrameClock, FrameClockService>();
 
+        // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement): permanenter Bonus pro Prestige
+        services.AddSingleton<IEternalMasteryService, EternalMasteryService>();
+
         // Game Services
         services.AddSingleton<IGameStateService, GameStateService>();
         services.AddSingleton<IGameIntegrityService, GameIntegrityService>();

@@ -85,7 +85,10 @@
           </Grid>
         </Border>
 
-        <!-- Karten-Grid -->
+        <!-- Karten-Grid — Audit H06: WrapPanel-Layout, keine native Virtualisierung in Avalonia 12 verfuegbar.
+             ItemsRepeater + UniformGridLayout existieren in Avalonia.Labs.Panels nicht (nur FlexPanel),
+             VirtualizingWrapPanel ist nicht in Avalonia.Controls. Bei <100 Karten ist ItemsControl OK,
+             Tracked als Backlog falls Karten-Liste auf 200+ waechst. -->
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding CollectionCards}" Margin="0,0,0,60"
                         AutomationProperties.AutomationId="Deck_CardGrid">

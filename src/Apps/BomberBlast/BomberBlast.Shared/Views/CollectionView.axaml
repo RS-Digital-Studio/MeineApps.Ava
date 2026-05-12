@@ -261,7 +261,8 @@
                        HorizontalAlignment="Center" />
           </StackPanel>
 
-          <!-- Items-Grid (Premium-Karten-Design wie DeckView) -->
+          <!-- Items-Grid (Premium-Karten-Design wie DeckView).
+               Audit H06: WrapPanel ohne native Virtualisierung in Avalonia 12 (siehe DeckView-Kommentar). -->
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                         IsVisible="{Binding HasItems}">
             <ItemsControl ItemsSource="{Binding Items}"

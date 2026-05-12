@@ -2,6 +2,7 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Icons;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -13,6 +14,27 @@ namespace HandwerkerImperium.ViewModels;
 public sealed partial class MainViewModel
 {
     internal static string FormatMoney(decimal amount) => MoneyFormatter.FormatCompact(amount);
+
+    /// <summary>
+    /// Lazy-Init des Eternal-Mastery-Service (AAA-Audit P1 Long-Term-Engagement, 12.05.2026).
+    /// Wird via App.Services aufgeloest damit der MainViewModel-Konstruktor nicht erweitert
+    /// werden muss (haette das DI-Schema von ~50 anderen Apps gebrochen).
+    /// </summary>
+    private IEternalMasteryService? _eternalMasteryServiceLazy;
+
+    /// <summary>
+    /// Aktualisiert das Eternal-Mastery-Badge im Header. Wird bei OnPrestigeCompleted +
+    /// OnStateLoaded aufgerufen.
+    /// </summary>
+    internal void RefreshEternalMastery()
+    {
+        _eternalMasteryServiceLazy ??= App.Services?.GetService(typeof(IEternalMasteryService))
+            as IEternalMasteryService;
+        if (_eternalMasteryServiceLazy == null) return;
+
+        HeaderVM.HasEternalMastery = _eternalMasteryServiceLazy.IsActive;
+        HeaderVM.EternalMasteryDisplay = _eternalMasteryServiceLazy.DisplayText;
+    }
 
     /// <summary>Interner Wrapper fuer PropertyChanged-Benachrichtigung (EconomyFeatureVM Zugriff).</summary>
     internal new void OnPropertyChanged(string? propertyName = null)

@@ -198,12 +198,26 @@ public sealed partial class MainViewModel
     {
         var prestigeCount = _gameStateService.Prestige.TotalPrestigeCount;
 
+        // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement): Header-Badge aktualisieren
+        RefreshEternalMastery();
+
         // Zeremonie: Feuerwerk + Confetti + Sound
         CelebrationRequested?.Invoke();
         var tierName = _localizationService.GetString("PrestigeCompleted") ?? "Prestige!";
         CeremonyRequested?.Invoke(CeremonyType.Prestige, tierName, $"#{prestigeCount}");
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         FloatingTextRequested?.Invoke($"Prestige #{prestigeCount}!", "level");
+
+        // Floating-Hint mit aktuellem Eternal-Mastery-Bonus
+        if (prestigeCount >= 1)
+        {
+            var bonusPct = GameBalanceConstants.EternalMasteryBonusPerPrestige * prestigeCount
+                         + GameBalanceConstants.EternalMasteryBonusPer5Prestiges * (prestigeCount / 5)
+                         + GameBalanceConstants.EternalMasteryBonusPer10Prestiges * (prestigeCount / 10);
+            FloatingTextRequested?.Invoke(
+                $"Eternal Mastery: +{bonusPct * 100m:F1}%",
+                "level");
+        }
 
         // Ascension-Hint-Kaskade (AAA-Audit P0 — Reset-Hierarchie-Vereinfachung):
         //   1. Prestige        → AscensionPath-Hint (Foreshadowing: "So funktioniert Ascension")
@@ -603,6 +617,7 @@ public sealed partial class MainViewModel
     {
         _achievementService.Reset();
         RefreshFromState();
+        RefreshEternalMastery();
     }
 
     /// <summary>

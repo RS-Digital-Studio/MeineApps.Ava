@@ -49,4 +49,8 @@ public sealed partial class HeaderViewModel : ViewModelBase
     [ObservableProperty] private string _rushTimeRemaining = "";
     [ObservableProperty] private bool _hasPendingDelivery;
     [ObservableProperty] private string _deliveryTimeRemaining = "";
+
+    // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement, 12.05.2026)
+    [ObservableProperty] private bool _hasEternalMastery;
+    [ObservableProperty] private string _eternalMasteryDisplay = "";
 }

@@ -279,8 +279,10 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Logging
-        services.AddSingleton<IAppLogger, AppLogger>();
+        // Logging — Sprint 4.1 AAA-Audit #9: AppLogger leitet Errors/Warnings an Crashlytics weiter.
+        // ITelemetryService kommt unten — Lazy-Resolution noetig damit der Logger waehrend
+        // der DI-Aufbauphase nicht in eine Zirkularitaet faellt.
+        services.AddSingleton<IAppLogger>(sp => new AppLogger(sp.GetService<ITelemetryService>()));
 
         // Lazy<T>-Auflösung für zirkuläre Dependencies (statt manueller SetXxxService()-Verdrahtung)
         services.AddLazyResolution();
@@ -385,6 +387,11 @@ public partial class App : Application
         // Wird von MainActivity beim OnPause/OnResume aufgerufen.
         services.AddSingleton<IReEngagementScheduler, ReEngagementScheduler>();
 
+        // Sprint 4.3 AAA-Audit #17 — What's-New-Modal-Service.
+        services.AddSingleton<IWhatsNewService, WhatsNewService>();
+        // Sprint 4.4 AAA-Audit #20 — Feature-Unlock-Choreographer (Queue + Pref-Flag).
+        services.AddSingleton<IFeatureUnlockChoreographer, FeatureUnlockChoreographer>();
+
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)
             services.AddSingleton<IVibrationService>(sp => VibrationServiceFactory!(sp));
@@ -423,5 +430,7 @@ public partial class App : Application
         services.AddSingleton<ProfileViewModel>();
         services.AddSingleton<GemShopViewModel>();
         services.AddSingleton<BossRushViewModel>();
+        // Sprint 4.3 AAA-Audit #17: What's-New-Modal — Transient (wird bei Bedarf neu erstellt).
+        services.AddTransient<WhatsNewViewModel>();
     }
 }

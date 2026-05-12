@@ -4280,6 +4280,10 @@ namespace BomberBlast.Resources.Strings {
         internal static string ReEngagementD7Title => ResourceManager.GetString("ReEngagementD7Title", resourceCulture)!;
         internal static string ReEngagementD7Body => ResourceManager.GetString("ReEngagementD7Body", resourceCulture)!;
 
+        // Sprint 4.3 AAA-Audit #17: What's-New-Modal Buttons
+        internal static string WhatsNewLater => ResourceManager.GetString("WhatsNewLater", resourceCulture)!;
+        internal static string WhatsNewUnderstood => ResourceManager.GetString("WhatsNewUnderstood", resourceCulture)!;
+
         internal static string AchKickMaster => ResourceManager.GetString("AchKickMaster", resourceCulture)!;
 
         internal static string AchKickMasterDesc => ResourceManager.GetString("AchKickMasterDesc", resourceCulture)!;

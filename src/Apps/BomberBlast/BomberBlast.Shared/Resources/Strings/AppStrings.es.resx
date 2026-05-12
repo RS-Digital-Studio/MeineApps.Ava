@@ -802,6 +802,13 @@
   <data name="ReEngagementD7Body" xml:space="preserve">
     <value>Vuelve y reclama 100 Gemas gratis como regalo de bienvenida.</value>
   </data>
+  <!-- Sprint 4.3 AAA-Audit #17: What's-New-Modal Buttons -->
+  <data name="WhatsNewLater" xml:space="preserve">
+    <value>Más tarde</value>
+  </data>
+  <data name="WhatsNewUnderstood" xml:space="preserve">
+    <value>¡Entendido!</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Mundo 1 Completado</value>
   </data>

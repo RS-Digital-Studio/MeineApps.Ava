@@ -291,6 +291,13 @@ public sealed partial class GameEngine
                 _tutorialService.CurrentStep, _renderer.Scale, _renderer.OffsetX, _renderer.OffsetY);
         }
 
+        // Sprint 1.2 AAA-Audit #7: ULTRA-Combo Vollbild-Vignette-Flash.
+        // Vor den Subtitles, ueber Tutorial-Overlay — Flash sind <200ms und blocken nichts.
+        if (_ultraFlash.IsActive)
+        {
+            _ultraFlash.Render(canvas, screenWidth, screenHeight);
+        }
+
         // v2.0.46 — Accessibility: Audio-Caption-Subtitles für gehörlose Spieler.
         // Wird unten am Bildrand angezeigt, immer über allem (auch über Tutorial).
         if (_accessibility?.SubtitlesEnabled == true)

@@ -497,6 +497,12 @@ public sealed partial class GameEngine
             {
                 _screenShake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.5f);
                 _soundManager.PlayStinger(SoundManager.STINGER_COMBO_ULTRA);
+                // Sprint 1.2 AAA-Audit #7: Vollbild-Vignette-Flash beim Erreichen von ULTRA.
+                // Welt-Akzent-Farbe als Vignette-Tint (Schattenwelt violett, Vulkan orange, ...).
+                // Bei ReducedEffects-Toggle stillschweigend uebersprungen (Flash kann
+                // photosensitive Spieler triggern).
+                if (!_inputManager.ReducedEffects)
+                    _ultraFlash.Trigger(_renderer.GetWorldAccentColor());
             }
             else if (_comboCount == 5)
             {

@@ -516,6 +516,8 @@ public sealed partial class GameEngine : IDisposable
     private readonly SubtitleSystem _subtitles = new();
     // v2.0.46 — AAA-Audit: Cinematic-Director Phase 1 für Boss-Reveal-Sequenzen
     private readonly CinematicSequencer _cinematic = new();
+    // Sprint 1.2 AAA-Audit #7: ULTRA-Combo Vollbild-Vignette-Flash (Trigger bei Combo ≥ x10)
+    private readonly UltraComboFlash _ultraFlash = new();
     private float _hitPauseTimer;
 
     // Combo-System (Kettenexplosionen)
@@ -1113,6 +1115,7 @@ public sealed partial class GameEngine : IDisposable
         _floatingText.Update(deltaTime);
         _subtitles.Update(deltaTime);
         _cinematic.Update(deltaTime);
+        _ultraFlash.Update(deltaTime);
         _soundManager.Update(deltaTime);
 
         // Hit-Pause: Update wird übersprungen, Rendering läuft weiter (Freeze-Effekt)
@@ -2353,6 +2356,7 @@ public sealed partial class GameEngine : IDisposable
         _particleSystem.Dispose();
         _floatingText.Dispose();
         _subtitles.Dispose();
+        _ultraFlash.Dispose();
         _tutorialOverlay.Dispose();
         _discoveryOverlay.Dispose();
         _inputManager.Dispose();

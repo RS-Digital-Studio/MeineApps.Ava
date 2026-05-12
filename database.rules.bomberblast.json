@@ -165,7 +165,7 @@
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
             },
             "sentUtc": {
-              ".validate": "newData.isString() && newData.val().length <= 40"
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
             },
             "$other": {
               ".validate": false

@@ -90,7 +90,17 @@ public sealed class ClanChatMessage
     public required string SenderId { get; init; }
     public required string SenderDisplayName { get; init; }
     public required string Content { get; init; }
-    public required DateTime SentUtc { get; init; }
+
+    /// <summary>
+    /// Sendezeit als Unix-Millisekunden (Server-Timestamp via Firebase ServerValue.TIMESTAMP).
+    /// Audit M05: war frueher String/DateTime (Client-Time, spoofbar). Jetzt long ms ab Epoch,
+    /// serverseitig vom Firebase gesetzt — Rate-Limit/Reihenfolge nicht mehr manipulierbar.
+    /// JSON-Property-Name <c>sentUtc</c> (camelCase aus JsonOptions) — passt zur Firebase-Rule.
+    /// </summary>
+    public required long SentUtc { get; init; }
+
+    /// <summary>Konvertiert SentUtc (Unix-ms) in DateTime fuer Anzeige.</summary>
+    public DateTime SentUtcAsDateTime => DateTimeOffset.FromUnixTimeMilliseconds(SentUtc).UtcDateTime;
 }
 
 /// <summary>NullImpl: Clan-Feature deaktiviert. Fuer Desktop oder Pre-Firebase-Setup.</summary>

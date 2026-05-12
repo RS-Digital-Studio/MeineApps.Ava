@@ -721,6 +721,9 @@
   <data name="LoadoutCurrencySwitch" xml:space="preserve">
     <value>Cambiar</value>
   </data>
+  <data name="PauseButtonTooltip" xml:space="preserve">
+    <value>Pausar juego</value>
+  </data>
   <data name="WatchVideoBoost" xml:space="preserve">
     <value>¿Ver video para impulso inicial?</value>
   </data>

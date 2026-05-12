@@ -344,6 +344,15 @@ public partial class App : Application
                 // Process-Kill ohnehin auf; auf Desktop ueberlebt das Prozess-Ende den ShutdownRequested.
                 (gameVm as IDisposable)?.Dispose();
             }
+            // Audit M24: Weitere IDisposable-Singleton-VMs (MainMenu/Shop/LevelSelect) sind Subscriber
+            // auf BalanceChanged/LanguageChanged-Events und nutzen DispatcherTimer. Dispose stoppt Timer
+            // und unsubscribes — wichtig auf Desktop. Auf Android laeuft das via ShutdownRequested/OnDestroy.
+            if (mainVm != null)
+            {
+                (mainVm.ShopVm as IDisposable)?.Dispose();
+                (mainVm.LevelSelectVm as IDisposable)?.Dispose();
+                (mainVm.MenuVm as IDisposable)?.Dispose();
+            }
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
             (Services.GetService<IGameAssetService>() as IDisposable)?.Dispose();
             // InputManager haelt NeonJoystick (20 SKPaint + 5 SKPath) - muss auch disposed werden

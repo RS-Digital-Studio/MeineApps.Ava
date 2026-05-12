@@ -45,9 +45,16 @@ public sealed partial class GameRenderer
     /// <summary>
     /// Alle Floor-Tiles einmalig in ein SKBitmap rendern (Schachbrett + Welt-Details + Grid-Linien).
     /// Spart ~750 Draw-Calls pro Frame → 1 DrawBitmap.
+    /// Audit M08: Muss auf UI-Thread laufen — Skia ist nicht thread-safe. DEBUG-Assert prueft.
     /// </summary>
     private void RebuildFloorCache(GameGrid grid, bool isNeon)
     {
+#if DEBUG
+        // Wir sind hier nicht zwingend Avalonia-Dispatcher-bound, aber Render lebt im DispatcherTimer.
+        System.Diagnostics.Debug.Assert(
+            Avalonia.Threading.Dispatcher.UIThread.CheckAccess(),
+            "RebuildFloorCache must run on UI thread (Skia thread-safety).");
+#endif
         int w = grid.PixelWidth;
         int h = grid.PixelHeight;
 

@@ -244,7 +244,9 @@ public sealed partial class GameEngine : IDisposable
     public int CombinedScore => _player.Score + (_player2?.Score ?? 0);
 
     // FPS-Tracking: Wall-Clock Sample-Buffer (5s Window, ~150 Samples bei 30 FPS)
-    private readonly Queue<long> _fpsFrameTicks = new();
+    // Audit M12: Initial-Capacity 400 verhindert Queue-Internal-Resize bei 60 FPS x 5s = 300 Items.
+    // Queue<T> ist bereits ein Ringbuffer intern; Capacity-Pre-Sizing eliminiert die einzige Allokation.
+    private readonly Queue<long> _fpsFrameTicks = new(400);
     private long _lastFpsReportTicks;
     private const long FpsReportIntervalTicks = 5 * TimeSpan.TicksPerSecond;
     // v2.0.47 — Memory-Pressure-Tracking: 60s-Intervall für Heap-Größe + GC-Counts.
@@ -2073,6 +2075,8 @@ public sealed partial class GameEngine : IDisposable
     /// <summary>
     /// Boss-Spezial-Angriffe: Telegraph → Angriff → Effekt.
     /// Wird nach UpdateEnemies aufgerufen, damit BossEnemy.Update() bereits Timer aktualisiert hat.
+    /// Audit M29: Iteration ueber _enemies + Pattern-Match akzeptiert — pro Level max. 1-2 Bosses,
+    /// kein Hot-Path. Separate _bosses-Liste waere strukturell sauberer, lohnt sich aber nicht.
     /// </summary>
     private void UpdateBossAttacks(float deltaTime)
     {
@@ -2287,8 +2291,11 @@ public sealed partial class GameEngine : IDisposable
             new SKColor(100, 200, 255), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
 
-        // Eis nach 3s wieder entfernen (Frame-basierter Timer statt Task.Delay → Thread-sicher)
-        _pendingIceCleanups.Add((boss.AttackTargetCells.ToList(), 3f));
+        // Eis nach 3s wieder entfernen (Frame-basierter Timer statt Task.Delay → Thread-sicher).
+        // Audit M11: Defensive Copy via new List<>(capacity) statt .ToList() (LINQ-Allokation).
+        var iceCells = new List<(int gx, int gy)>(boss.AttackTargetCells.Count);
+        iceCells.AddRange(boss.AttackTargetCells);
+        _pendingIceCleanups.Add((iceCells, 3f));
     }
 
     /// <summary>

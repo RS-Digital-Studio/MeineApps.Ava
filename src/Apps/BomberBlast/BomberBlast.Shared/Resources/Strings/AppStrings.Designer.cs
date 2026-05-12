@@ -1261,6 +1261,12 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string PauseButtonTooltip {
+            get {
+                return ResourceManager.GetString("PauseButtonTooltip", resourceCulture);
+            }
+        }
+
         internal static string WatchVideoBoost {
             get {
                 return ResourceManager.GetString("WatchVideoBoost", resourceCulture);

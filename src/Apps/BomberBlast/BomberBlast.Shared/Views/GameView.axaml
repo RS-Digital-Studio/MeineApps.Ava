@@ -55,7 +55,8 @@
             Command="{Binding PauseCommand}"
             IsVisible="{Binding !IsContextHelpVisible}"
             AutomationProperties.AutomationId="Game_BtnPause"
-            ToolTip.Tip="{loc:Translate Paused}">
+            AutomationProperties.Name="{loc:Translate PauseButtonTooltip}"
+            ToolTip.Tip="{loc:Translate PauseButtonTooltip}">
       <icons:GameIcon Kind="Pause" Width="22" Height="22" Foreground="White" />
     </Button>
 

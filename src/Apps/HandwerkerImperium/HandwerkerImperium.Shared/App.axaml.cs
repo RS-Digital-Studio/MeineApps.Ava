@@ -267,10 +267,14 @@ public partial class App : Application
         services.AddSingleton<IEternalMasteryService, EternalMasteryService>();
 
         // Bounded-Context-Facaden (AAA-Audit P1 Service-Sprawl-Reduction, additiv):
-        // Worker, Progression, Missions. Bestehende Einzel-Services bleiben verfuegbar.
+        // Worker, Progression, Missions, Content, Platform, Onboarding. Plus IGuildFacade.
+        // 7 Facaden bündeln 35+ Einzel-Services — Konsumenten können optional migrieren.
         services.AddSingleton<IWorkerFacade, WorkerFacade>();
         services.AddSingleton<IProgressionFacade, ProgressionFacade>();
         services.AddSingleton<IMissionsFacade, MissionsFacade>();
+        services.AddSingleton<IContentFacade, ContentFacade>();
+        services.AddSingleton<IPlatformFacade, PlatformFacade>();
+        services.AddSingleton<IOnboardingFacade, OnboardingFacade>();
 
         // Game Services
         services.AddSingleton<IGameStateService, GameStateService>();

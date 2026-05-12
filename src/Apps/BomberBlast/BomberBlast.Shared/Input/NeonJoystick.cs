@@ -413,8 +413,10 @@ public class NeonJoystick : IInputHandler, IDisposable
 
     private void UpdateFixedPosition(float screenWidth, float screenHeight)
     {
+        // Audit H03: Safe-Area-Puffer 32dp gegen Gesture-Bar / Bottom-Cutout (Pixel 4+/S10+).
+        // 30dp Left fuer Notch-Buffer (Camera-Cutout im Landscape rechts oder links).
         _baseX = 30 + _joystickRadius;
-        _baseY = screenHeight - 20 - _joystickRadius;
+        _baseY = screenHeight - 32 - _joystickRadius;
         if (!_isPressed)
         {
             _stickX = _baseX;
@@ -425,8 +427,9 @@ public class NeonJoystick : IInputHandler, IDisposable
 
     private void UpdateBombButtonPosition(float screenWidth, float screenHeight)
     {
+        // Audit H03: Bomb-Button 32dp Bottom-Safe-Area + 80dp Right-Cutout-Buffer.
         _bombButtonX = screenWidth - _bombButtonRadius - 80;
-        _bombButtonY = screenHeight - _bombButtonRadius - 10;
+        _bombButtonY = screenHeight - _bombButtonRadius - 32;
         _detonatorButtonX = _bombButtonX;
         _detonatorButtonY = _bombButtonY - _bombButtonRadius - _detonatorButtonRadius - 15;
     }

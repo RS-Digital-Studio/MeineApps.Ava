@@ -46,7 +46,9 @@
   <Panel AutomationProperties.AutomationId="MainMenu_Root">
     <controls:MenuBackgroundCanvas />
 
-    <Grid RowDefinitions="Auto,*,Auto" Margin="14,8,14,8">
+    <!-- Audit H02: Bottom-Margin 72dp reserviert Platz fuer die BottomTabBar (64dp + 8dp Puffer),
+         damit untere Inhalte (Modi-Strip, KARRIERE-Cards) nicht von der Tab-Bar verdeckt werden. -->
+    <Grid RowDefinitions="Auto,*,Auto" Margin="14,8,14,72">
 
       <!-- ═══ TOP-BAR: Logo + Coin/Gem + Avatar + Settings ═══ -->
       <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="0,0,0,8">

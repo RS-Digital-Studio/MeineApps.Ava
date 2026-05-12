@@ -355,14 +355,19 @@
         </StackPanel>
         </ScrollViewer>
 
-        <!-- Rechts: Buttons (Primary CTA oben, optionale Aktionen Mitte, Exit unten) -->
-        <StackPanel Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Spacing="14"
-                    Margin="16,0">
+        <!-- Rechts: Buttons (Primary CTA oben, optionale Aktionen Mitte, Exit unten).
+             Audit H05: ScrollViewer als Backup fuer Mid-Tier-Geraete mit knapper Landscape-Hoehe.
+             5 Buttons + Spacing kann ueber 340dp gehen — auf 5.5"-Phones in Landscape verschwand
+             der unterste Button. ScrollViewer ist transparent wenn Inhalt passt. -->
+        <ScrollViewer Grid.Column="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Margin="16,0">
+        <StackPanel VerticalAlignment="Center"
+                    Spacing="14">
 
           <!-- 1. Try Again = Primary CTA (immer sichtbar, groesster Button) -->
-          <Panel MinHeight="56">
+          <Panel MinHeight="72">
             <ctrl:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.3" ButtonSeed="40" />
             <Button AutomationProperties.AutomationId="GameOver_BtnTryAgain"
                     Content="{loc:Translate TryAgain}"
@@ -463,6 +468,7 @@
                     VerticalContentAlignment="Center" />
           </Panel>
         </StackPanel>
+        </ScrollViewer>
       </Grid>
 
     </Grid>

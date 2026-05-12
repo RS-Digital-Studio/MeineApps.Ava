@@ -10,14 +10,18 @@
              Focusable="True">
 
   <Panel AutomationProperties.AutomationId="Game_Root">
-    <!-- SkiaSharp Game Canvas -->
+    <!-- SkiaSharp Game Canvas — Audit H04: Hit-Test blockieren wenn Overlay offen (Pause/ScoreDouble/ContextHelp/Loading).
+         Verhindert dass User waehrend Pause Bomben legt oder den Joystick bewegt. -->
     <Border Background="Black">
-      <skia:SKCanvasView x:Name="GameCanvas" AutomationProperties.AutomationId="Game_Canvas" />
+      <skia:SKCanvasView x:Name="GameCanvas" AutomationProperties.AutomationId="Game_Canvas"
+                         IsHitTestVisible="{Binding !IsAnyOverlayOpen}" />
     </Border>
 
-    <!-- Tutorial-Replay-Pin: kontext-sensitive Hilfe waehrend Gameplay (v2.0.37) -->
+    <!-- Tutorial-Replay-Pin: kontext-sensitive Hilfe waehrend Gameplay (v2.0.37).
+         Audit H03: 24dp Top-Margin + 24dp Right-Margin als Safe-Area-Puffer gegen Notch/Cutout
+         auf Pixel 4+/Galaxy S10+ Landscape. -->
     <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-            Margin="0,12,12,0"
+            Margin="0,24,24,0"
             Width="44" Height="44"
             Background="#80000000"
             Foreground="White"
@@ -35,9 +39,10 @@
     </Button>
 
     <!-- Pause-Button (v2.0.43, Audit-Fix C1): Mobile-Pause-Trigger neben dem ?-Button.
+         Audit H03: 24dp Top-Margin + 80dp Right-Margin (Cutout-Safe).
          Sichtbar nur waehrend Gameplay (nicht im ContextHelp / nicht bereits pausiert). -->
     <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-            Margin="0,12,68,0"
+            Margin="0,24,80,0"
             Width="44" Height="44"
             Background="#80000000"
             Foreground="White"

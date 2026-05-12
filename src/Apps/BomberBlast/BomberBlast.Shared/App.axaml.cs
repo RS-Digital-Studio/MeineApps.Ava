@@ -482,6 +482,14 @@ public partial class App : Application
         services.AddSingleton<IClanService, NullClanService>();
         // Sprint 7.2 AAA-Audit #22 — Multiplayer-Session-Service (Foundation, Engine-Integration deferred).
         services.AddSingleton<IMultiplayerSessionService, MultiplayerSessionService>();
+        // Sprint 5.2 AAA-Audit #12 — IRngProvider (Core-Interface): DeterministicRngProvider als Default
+        // fuer Replay-Foundation. SystemRngProvider bleibt fuer Visual-Random (Partikel, Wackel).
+        services.AddSingleton<BomberBlast.Core.IRngProvider>(_ =>
+            new BomberBlast.Core.DeterministicRngProvider((ulong)DateTime.UtcNow.Ticks));
+        // Sprint 4.2 AAA-Audit #10 — GameEventBus (Foundation, MainViewModel-Reduktion).
+        services.AddSingleton<IGameEventBus, GameEventBus>();
+        // Sprint 3.1 AAA-Audit #4 — BottomTabHub (Foundation, UI-Refactor deferred).
+        services.AddSingleton<IBottomTabHub, BottomTabHub>();
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)

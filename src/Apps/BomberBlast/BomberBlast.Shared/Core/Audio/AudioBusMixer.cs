@@ -112,8 +112,34 @@ public sealed class AudioBusMixer
     }
 
     /// <summary>
-    /// Pro-Frame-Update: löst Duck-Hüllkurven auf.
-    /// Während Duck-Phase ist Multiplier auf Target. Nach Ablauf: Linear-Recovery zu 1.0.
+    /// Sprint 5.3 AAA-Audit #13: Adaptive-Music-Boost — verstaerkt einen Bus
+    /// (typisch Music) ueber den Default hinaus. Multiplier > 1.0 erlaubt.
+    /// Verwendung: Combat-Intensifier (Music +15% bei Boss-Telegraph),
+    /// Last-Stand-Drama (Music +25% bei Last-Enemy / Last-10s).
+    /// Stuerzt nicht ab wenn Wert > 1 ist (Audio-Treiber clampt selbst).
+    /// </summary>
+    /// <param name="targetBus">Welcher Bus geboostet werden soll.</param>
+    /// <param name="boostMultiplier">Faktor &gt;= 1.0 (1.15 = +15%). Cap bei 1.5 (Distortion-Schutz).</param>
+    /// <param name="durationSeconds">Dauer des Boosts. Recovery 1.0s linear zurueck.</param>
+    public void Boost(AudioBus targetBus, float boostMultiplier, float durationSeconds)
+    {
+        var idx = (int)targetBus;
+        var clamp = Math.Clamp(boostMultiplier, 1.0f, 1.5f);
+        // Staerkster aktiver Boost gewinnt
+        if (clamp > _duckTargets[idx])
+            _duckTargets[idx] = clamp;
+        if (durationSeconds > _duckDurations[idx])
+        {
+            _duckDurations[idx] = durationSeconds;
+            _duckTimers[idx] = durationSeconds;
+        }
+    }
+
+    /// <summary>
+    /// Pro-Frame-Update: löst Duck-Hüllkurven UND Boost-Recovery auf.
+    /// Während Duck/Boost-Phase ist Multiplier auf Target. Nach Ablauf: Linear-Recovery zu 1.0.
+    /// Sprint 5.3 AAA-Audit #13: Recovery handelt jetzt sowohl Duck (zurueck nach oben) als
+    /// auch Boost (zurueck nach unten) zur 1.0-Grundlinie.
     /// </summary>
     public void Update(float deltaTime)
     {
@@ -125,17 +151,28 @@ public sealed class AudioBusMixer
                 _duckMultipliers[i] = _duckTargets[i];
                 if (_duckTimers[i] <= 0f)
                 {
-                    // Recovery starten — 0.5s Linear zu 1.0
+                    // Recovery starten — Linear zu 1.0 (Duck und Boost gleichermassen)
                     _duckTimers[i] = 0f;
                     _duckDurations[i] = 0f;
                 }
             }
-            else if (_duckMultipliers[i] < 1f)
+            else if (Math.Abs(_duckMultipliers[i] - 1f) > 0.001f)
             {
-                // Linear-Recovery (0.5s)
-                _duckMultipliers[i] = Math.Min(1f, _duckMultipliers[i] + deltaTime * 2f);
-                if (_duckMultipliers[i] >= 1f)
+                // Linear-Recovery zu 1.0 — egal ob aus Duck (< 1) oder Boost (> 1).
+                // Geschwindigkeit 2.0/s = 0.5s fuer Duck-Range, 1.0s fuer Boost-Range.
+                if (_duckMultipliers[i] < 1f)
+                {
+                    _duckMultipliers[i] = Math.Min(1f, _duckMultipliers[i] + deltaTime * 2f);
+                }
+                else
+                {
+                    _duckMultipliers[i] = Math.Max(1f, _duckMultipliers[i] - deltaTime * 0.5f);
+                }
+                if (Math.Abs(_duckMultipliers[i] - 1f) < 0.001f)
+                {
+                    _duckMultipliers[i] = 1f;
                     _duckTargets[i] = 1f;
+                }
             }
         }
     }

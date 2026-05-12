@@ -513,6 +513,8 @@ public sealed partial class GameEngine
                 // photosensitive Spieler triggern).
                 if (!_inputManager.ReducedEffects)
                     _ultraFlash.Trigger(_renderer.GetWorldAccentColor());
+                // Sprint 5.3 AAA-Audit #13: Music-Boost bei ULTRA — der epische Moment.
+                _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.25f, 5.0f);
                 // Sprint 2.2 AAA-Audit #2: Funnel-Event combo_tier_reached (ULTRA)
                 _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
                 {
@@ -575,6 +577,13 @@ public sealed partial class GameEngine
         {
             // v2.0.37: ULTRA-Combo (x10+) verlaengert die Slow-Mo um 50% — visueller Belohnungs-Peak
             _slowMotionTimer = _comboSystem.GetSlowMotionDuration(SLOW_MOTION_DURATION);
+        }
+
+        // Sprint 5.3 AAA-Audit #13: Adaptive-Music-Boost bei Last-Enemy-Drama (+20% Music fuer 4s).
+        // Last-Enemy-Moment ist filmisch wertvoll — Music-Boost macht den Kill-Shot epischer.
+        if (isLastEnemy && (_originalEnemyCount >= 3 || isBossLevel))
+        {
+            _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.20f, 4.0f);
         }
 
         // Splitter-Logik: Beim Tod 2 Mini-Splitter spawnen

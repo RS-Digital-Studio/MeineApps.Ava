@@ -877,6 +877,37 @@
   <data name="WorldStoryOutro9" xml:space="preserve">
     <value>The fortress falls silent. The Shadow Realm opens its gates. Are you ready for the dark?</value>
   </data>
+  <!-- Sprint 7.1 AAA-Audit #21: Hero/Character-System -->
+  <data name="HeroDefaultName" xml:space="preserve">
+    <value>Default Bomber</value>
+  </data>
+  <data name="HeroDefaultDesc" xml:space="preserve">
+    <value>Balanced stats. The classic bomber experience.</value>
+  </data>
+  <data name="HeroSpeedySamName" xml:space="preserve">
+    <value>Speedy Sam</value>
+  </data>
+  <data name="HeroSpeedySamDesc" xml:space="preserve">
+    <value>Faster moves, smaller blast. +5% coin pickup. Hard to slow.</value>
+  </data>
+  <data name="HeroBrickBorisName" xml:space="preserve">
+    <value>Brick Boris</value>
+  </data>
+  <data name="HeroBrickBorisDesc" xml:space="preserve">
+    <value>Slow but powerful. +1 bomb, +1 fire, +10% block drops. -1 heart.</value>
+  </data>
+  <data name="HeroTwinTinaName" xml:space="preserve">
+    <value>Twin Tina</value>
+  </data>
+  <data name="HeroTwinTinaDesc" xml:space="preserve">
+    <value>Bombs detonate twice in quick succession. Chain reactions galore.</value>
+  </data>
+  <data name="HeroLuckyLolaName" xml:space="preserve">
+    <value>Lucky Lola</value>
+  </data>
+  <data name="HeroLuckyLolaDesc" xml:space="preserve">
+    <value>+20% power-up drop chance. Fortune favors the bold.</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>World 1 Complete</value>
   </data>

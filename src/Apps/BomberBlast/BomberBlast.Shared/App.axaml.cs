@@ -474,6 +474,14 @@ public partial class App : Application
         services.AddSingleton<IFeatureUnlockChoreographer, FeatureUnlockChoreographer>();
         // Sprint 6.2 AAA-Audit #16 — Mini-Story-Beats pro Welt (Intro + Outro).
         services.AddSingleton<IWorldStoryService, WorldStoryService>();
+        // Sprint 7.1 AAA-Audit #21 — Hero/Character-System (5 spielbare Charaktere).
+        services.AddSingleton<IHeroService, HeroService>();
+        // Sprint 7.4 AAA-Audit #24 — Wochen-Content-Pipeline (deterministisch via ISO-Woche).
+        services.AddSingleton<IWeeklyContentService, WeeklyContentService>();
+        // Sprint 7.3 AAA-Audit #23 — Clan-System Foundation (NullImpl bis Firebase-Backend live).
+        services.AddSingleton<IClanService, NullClanService>();
+        // Sprint 7.2 AAA-Audit #22 — Multiplayer-Session-Service (Foundation, Engine-Integration deferred).
+        services.AddSingleton<IMultiplayerSessionService, MultiplayerSessionService>();
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)

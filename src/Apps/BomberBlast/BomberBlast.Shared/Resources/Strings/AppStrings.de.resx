@@ -877,6 +877,37 @@
   <data name="WorldStoryOutro9" xml:space="preserve">
     <value>Die Festung wird still. Die Schattenwelt öffnet ihre Tore. Bist du bereit für die Dunkelheit?</value>
   </data>
+  <!-- Sprint 7.1 AAA-Audit #21: Hero/Character-System -->
+  <data name="HeroDefaultName" xml:space="preserve">
+    <value>Standard-Bomber</value>
+  </data>
+  <data name="HeroDefaultDesc" xml:space="preserve">
+    <value>Ausgewogene Werte. Der klassische Bomber.</value>
+  </data>
+  <data name="HeroSpeedySamName" xml:space="preserve">
+    <value>Flotter Felix</value>
+  </data>
+  <data name="HeroSpeedySamDesc" xml:space="preserve">
+    <value>Schnellere Bewegung, kleinere Explosion. +5% Coin-Pickup. Schwer zu verlangsamen.</value>
+  </data>
+  <data name="HeroBrickBorisName" xml:space="preserve">
+    <value>Brecher Boris</value>
+  </data>
+  <data name="HeroBrickBorisDesc" xml:space="preserve">
+    <value>Langsam aber stark. +1 Bombe, +1 Feuer, +10% Block-Drops. -1 Herz.</value>
+  </data>
+  <data name="HeroTwinTinaName" xml:space="preserve">
+    <value>Zwilling Tina</value>
+  </data>
+  <data name="HeroTwinTinaDesc" xml:space="preserve">
+    <value>Bomben zünden zweimal kurz hintereinander. Massive Kettenreaktionen.</value>
+  </data>
+  <data name="HeroLuckyLolaName" xml:space="preserve">
+    <value>Glücks-Lola</value>
+  </data>
+  <data name="HeroLuckyLolaDesc" xml:space="preserve">
+    <value>+20% Power-Up-Drop-Chance. Glück ist auf deiner Seite.</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Welt 1 Abgeschlossen</value>
   </data>

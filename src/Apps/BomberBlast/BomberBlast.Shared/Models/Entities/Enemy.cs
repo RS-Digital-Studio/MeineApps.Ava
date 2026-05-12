@@ -10,6 +10,13 @@ public class Enemy : Entity
     /// <summary>Type of this enemy</summary>
     public EnemyType Type { get; }
 
+    /// <summary>
+    /// Sprint 6.1 AAA-Audit #15: Elite-Variante (1.2x Speed, 2x HitPoints, 3x Points,
+    /// lila Outline beim Rendern). Wird beim Spawn random mit ~10% Chance gesetzt
+    /// (skaliert mit Welt fuer Difficulty-Curve). Boss-Enemies bleiben non-Elite.
+    /// </summary>
+    public bool IsElite { get; }
+
     /// <summary>Current facing/movement direction</summary>
     public Direction FacingDirection { get; set; } = Direction.Down;
 
@@ -118,14 +125,16 @@ public class Enemy : Entity
         }
     }
 
-    public Enemy(float x, float y, EnemyType type) : base(x, y)
+    public Enemy(float x, float y, EnemyType type, bool isElite = false) : base(x, y)
     {
         Type = type;
-        Speed = type.GetSpeed();
+        IsElite = isElite;
+        // Sprint 6.1 AAA-Audit #15: Elite-Modifier multiplikativ.
+        Speed = type.GetSpeed() * (isElite ? 1.2f : 1f);
         Intelligence = type.GetIntelligence();
         CanPassWalls = type.CanPassWalls();
-        Points = type.GetPoints();
-        HitPoints = type.GetHitPoints();
+        Points = type.GetPoints() * (isElite ? 3 : 1);
+        HitPoints = type.GetHitPoints() * (isElite ? 2 : 1);
         LastGridPosition = (GridX, GridY);
 
         // Decision-Timer-Jitter: Wenn mehrere Gegner gleichzeitig spawnen, würde ein

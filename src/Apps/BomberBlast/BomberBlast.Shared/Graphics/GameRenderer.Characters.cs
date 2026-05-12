@@ -380,6 +380,17 @@ public sealed partial class GameRenderer
             return;
         }
 
+        // Sprint 6.1 AAA-Audit #15: Elite-Glow (lila pulsierender Halo) BEVOR der Sprite gezeichnet wird.
+        if (enemy.IsElite)
+        {
+            float elitePulse = MathF.Sin(_globalTimer * 4f) * 0.25f + 0.75f;
+            byte eliteAlpha = (byte)(80 * elitePulse);
+            _glowPaint.Color = new SKColor(180, 80, 255, eliteAlpha);  // Lila — Standard-Elite-Farbe
+            _glowPaint.MaskFilter = _mediumGlow;
+            canvas.DrawCircle(enemy.X, enemy.Y, cs * 0.4f, _glowPaint);
+            _glowPaint.MaskFilter = null;
+        }
+
         // Ghost unsichtbar
         if (enemy.Type == EnemyType.Ghost && enemy.IsInvisible)
         {

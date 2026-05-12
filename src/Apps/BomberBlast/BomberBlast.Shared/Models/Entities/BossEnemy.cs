@@ -41,6 +41,20 @@ public class BossEnemy : Enemy
     /// <summary>Ob Boss in Enrage-Phase ist (unter 50% HP → schneller, aggressiver)</summary>
     public bool IsEnraged { get; private set; }
 
+    /// <summary>
+    /// Sprint 6.1 AAA-Audit #15: Boss-Modifier-System. 8 Modifier × 5 Bosse = 40 Variationen.
+    /// Wird beim Spawn random zugewiesen (ab Welt 5+, 30% Chance). Modifier-Effekte werden
+    /// von BossEnemy.Update + EnemyAI ausgewertet (z.B. Healing regeneriert HP, Shielded blockt
+    /// 1 Hit pro Cooldown). Phase-2-Variante via Phase-Tracking erlaubt verschiedene Attack-Patterns.
+    /// </summary>
+    public BossModifier Modifier { get; set; } = BossModifier.None;
+
+    /// <summary>
+    /// Sprint 6.1 AAA-Audit #15: Aktuelle Boss-Phase (1=Default, 2=Enraged-Mode-Variant).
+    /// Phase 2 wird beim Enrage-Threshold aktiv und schaltet Attack-Pattern um.
+    /// </summary>
+    public int CurrentPhase { get; private set; } = 1;
+
     // ═══════════════════════════════════════════════════════════════════════
     // SPEZIAL-ANGRIFF
     // ═══════════════════════════════════════════════════════════════════════
@@ -207,6 +221,9 @@ public class BossEnemy : Enemy
         if (!IsEnraged && HitPoints <= MaxHitPoints / 2)
         {
             IsEnraged = true;
+            // Sprint 6.1 AAA-Audit #15: Phase-Wechsel beim Enrage — Boss bekommt Phase 2.
+            // Renderer/AI koennen darauf reagieren (z.B. anderes Attack-Pattern).
+            CurrentPhase = 2;
         }
 
         // Spezial-Angriff Timer

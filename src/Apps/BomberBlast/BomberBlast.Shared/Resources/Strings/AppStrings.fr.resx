@@ -877,6 +877,37 @@
   <data name="WorldStoryOutro9" xml:space="preserve">
     <value>La forteresse devient silencieuse. Le Royaume des Ombres ouvre ses portes. Êtes-vous prêt pour l'obscurité ?</value>
   </data>
+  <!-- Sprint 7.1 AAA-Audit #21: Hero/Character-System -->
+  <data name="HeroDefaultName" xml:space="preserve">
+    <value>Bombardier Standard</value>
+  </data>
+  <data name="HeroDefaultDesc" xml:space="preserve">
+    <value>Statistiques équilibrées. L'expérience classique du bombardier.</value>
+  </data>
+  <data name="HeroSpeedySamName" xml:space="preserve">
+    <value>Sam Rapide</value>
+  </data>
+  <data name="HeroSpeedySamDesc" xml:space="preserve">
+    <value>Plus rapide, explosion plus petite. +5% ramassage de pièces. Difficile à ralentir.</value>
+  </data>
+  <data name="HeroBrickBorisName" xml:space="preserve">
+    <value>Boris Briquet</value>
+  </data>
+  <data name="HeroBrickBorisDesc" xml:space="preserve">
+    <value>Lent mais puissant. +1 bombe, +1 feu, +10% drops de blocs. -1 cœur.</value>
+  </data>
+  <data name="HeroTwinTinaName" xml:space="preserve">
+    <value>Tina Jumelle</value>
+  </data>
+  <data name="HeroTwinTinaDesc" xml:space="preserve">
+    <value>Les bombes explosent deux fois en succession rapide. Réactions en chaîne massives.</value>
+  </data>
+  <data name="HeroLuckyLolaName" xml:space="preserve">
+    <value>Lola Chanceuse</value>
+  </data>
+  <data name="HeroLuckyLolaDesc" xml:space="preserve">
+    <value>+20% chance de drop de power-up. La fortune sourit aux audacieux.</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Monde 1 Terminé</value>
   </data>

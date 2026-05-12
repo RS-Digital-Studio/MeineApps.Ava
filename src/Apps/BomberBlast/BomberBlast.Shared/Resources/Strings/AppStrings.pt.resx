@@ -877,6 +877,37 @@
   <data name="WorldStoryOutro9" xml:space="preserve">
     <value>A fortaleza fica em silêncio. O Reino das Sombras abre seus portões. Você está pronto para a escuridão?</value>
   </data>
+  <!-- Sprint 7.1 AAA-Audit #21: Hero/Character-System -->
+  <data name="HeroDefaultName" xml:space="preserve">
+    <value>Bombista Padrão</value>
+  </data>
+  <data name="HeroDefaultDesc" xml:space="preserve">
+    <value>Estatísticas equilibradas. A experiência clássica do bombista.</value>
+  </data>
+  <data name="HeroSpeedySamName" xml:space="preserve">
+    <value>Sam Veloz</value>
+  </data>
+  <data name="HeroSpeedySamDesc" xml:space="preserve">
+    <value>Mais rápido, explosão menor. +5% coleta de moedas. Difícil de atrasar.</value>
+  </data>
+  <data name="HeroBrickBorisName" xml:space="preserve">
+    <value>Boris Tijolo</value>
+  </data>
+  <data name="HeroBrickBorisDesc" xml:space="preserve">
+    <value>Lento mas poderoso. +1 bomba, +1 fogo, +10% drops de blocos. -1 coração.</value>
+  </data>
+  <data name="HeroTwinTinaName" xml:space="preserve">
+    <value>Tina Gêmea</value>
+  </data>
+  <data name="HeroTwinTinaDesc" xml:space="preserve">
+    <value>Bombas detonam duas vezes em rápida sucessão. Reações em cadeia massivas.</value>
+  </data>
+  <data name="HeroLuckyLolaName" xml:space="preserve">
+    <value>Lola Sortuda</value>
+  </data>
+  <data name="HeroLuckyLolaDesc" xml:space="preserve">
+    <value>+20% chance de drop de power-up. A sorte favorece os audazes.</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Mundo 1 Completo</value>
   </data>

@@ -4310,6 +4310,18 @@ namespace BomberBlast.Resources.Strings {
         internal static string WorldStoryOutro8 => ResourceManager.GetString("WorldStoryOutro8", resourceCulture)!;
         internal static string WorldStoryOutro9 => ResourceManager.GetString("WorldStoryOutro9", resourceCulture)!;
 
+        // Sprint 7.1 AAA-Audit #21: Hero/Character-System
+        internal static string HeroDefaultName => ResourceManager.GetString("HeroDefaultName", resourceCulture)!;
+        internal static string HeroDefaultDesc => ResourceManager.GetString("HeroDefaultDesc", resourceCulture)!;
+        internal static string HeroSpeedySamName => ResourceManager.GetString("HeroSpeedySamName", resourceCulture)!;
+        internal static string HeroSpeedySamDesc => ResourceManager.GetString("HeroSpeedySamDesc", resourceCulture)!;
+        internal static string HeroBrickBorisName => ResourceManager.GetString("HeroBrickBorisName", resourceCulture)!;
+        internal static string HeroBrickBorisDesc => ResourceManager.GetString("HeroBrickBorisDesc", resourceCulture)!;
+        internal static string HeroTwinTinaName => ResourceManager.GetString("HeroTwinTinaName", resourceCulture)!;
+        internal static string HeroTwinTinaDesc => ResourceManager.GetString("HeroTwinTinaDesc", resourceCulture)!;
+        internal static string HeroLuckyLolaName => ResourceManager.GetString("HeroLuckyLolaName", resourceCulture)!;
+        internal static string HeroLuckyLolaDesc => ResourceManager.GetString("HeroLuckyLolaDesc", resourceCulture)!;
+
         internal static string AchKickMaster => ResourceManager.GetString("AchKickMaster", resourceCulture)!;
 
         internal static string AchKickMasterDesc => ResourceManager.GetString("AchKickMasterDesc", resourceCulture)!;

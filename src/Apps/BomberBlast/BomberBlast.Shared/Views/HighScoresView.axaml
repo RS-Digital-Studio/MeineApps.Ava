@@ -39,10 +39,10 @@
                       HorizontalAlignment="Center"
                       Spacing="8">
             <icons:GameIcon Kind="Trophy" Width="28" Height="28"
-                             Foreground="#FFD700" />
+                             Foreground="{DynamicResource GoldAccentBrush}" />
             <TextBlock Text="{loc:Translate HighScores}"
                        FontSize="22" FontWeight="Bold"
-                       Foreground="#FFD700"
+                       Foreground="{DynamicResource GoldAccentBrush}"
                        AutomationProperties.AutomationId="HighScores_TxtTitle" />
           </StackPanel>
 
@@ -68,7 +68,7 @@
                           BoxShadow="0 2 8 0 #25000000"
                           IsVisible="{Binding IsRank1}">
                     <Border BorderThickness="3,0,0,0"
-                            BorderBrush="#FFD700"
+                            BorderBrush="{DynamicResource GoldAccentBrush}"
                             CornerRadius="8"
                             Padding="12,10">
                       <Border.Background>
@@ -80,7 +80,7 @@
                       <Grid ColumnDefinitions="48,*,Auto">
                         <Panel VerticalAlignment="Center" Width="36" Height="36">
                           <icons:GameIcon Kind="Trophy" Width="30" Height="30"
-                                           Foreground="#FFD700"
+                                           Foreground="{DynamicResource GoldAccentBrush}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
                         </Panel>
@@ -95,7 +95,7 @@
                         <TextBlock Grid.Column="2"
                                    Text="{Binding ScoreText}"
                                    FontSize="22" FontWeight="Bold"
-                                   Foreground="#FFD700"
+                                   Foreground="{DynamicResource GoldAccentBrush}"
                                    VerticalAlignment="Center" />
                       </Grid>
                     </Border>

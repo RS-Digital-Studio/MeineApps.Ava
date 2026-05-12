@@ -37,7 +37,7 @@
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              IsVisible="{Binding !IsMasterModeActive}" />
             <icons:GameIcon Kind="Crown" Width="24" Height="24"
-                             Foreground="#FFD700"
+                             Foreground="{DynamicResource GoldAccentBrush}"
                              IsVisible="{Binding IsMasterModeActive}" />
             <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtTitle"
                        Text="{loc:Translate SelectLevel}"
@@ -49,7 +49,7 @@
                        Text="{loc:Translate MasterModeTitle}"
                        FontSize="22" FontWeight="Bold"
                        VerticalAlignment="Center"
-                       Foreground="#FFD700"
+                       Foreground="{DynamicResource GoldAccentBrush}"
                        IsVisible="{Binding IsMasterModeActive}" />
             <!-- Master-Mode-Toggle (nur sichtbar nach L100-Unlock) -->
             <Button Classes="Text"
@@ -79,11 +79,11 @@
                   BorderThickness="1" BorderBrush="#40FFD700">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <icons:GameIcon Kind="CircleMultiple" Width="18" Height="18"
-                               Foreground="#FFD700" />
+                               Foreground="{DynamicResource GoldAccentBrush}" />
               <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtCoins"
                          Text="{Binding CoinsText}"
                          FontSize="15" FontWeight="SemiBold"
-                         Foreground="#FFD700"
+                         Foreground="{DynamicResource GoldAccentBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
           </Border>
@@ -199,7 +199,7 @@
                                    im Master-Modus geclear wurde, unabhängig vom aktiven Toggle -->
                               <icons:GameIcon Kind="Crown"
                                                Width="11" Height="11"
-                                               Foreground="#FFD700"
+                                               Foreground="{DynamicResource GoldAccentBrush}"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Top"
                                                Margin="0,2,2,0"
@@ -226,7 +226,7 @@
                                      Foreground="#888888" />
                     <TextBlock Text="{Binding WorldLockText}"
                                FontSize="14" FontWeight="SemiBold"
-                               Foreground="#FFD700"
+                               Foreground="{DynamicResource GoldAccentBrush}"
                                HorizontalAlignment="Center" />
                     <!-- Welt-Gate-Hint (v2.0.36): Empfehlung welches Level zu wiederholen ist -->
                     <TextBlock Text="{Binding WorldLockHint}"
@@ -335,7 +335,7 @@
                     Command="{Binding OpenLoadoutCommand}"
                     AutomationProperties.AutomationId="LevelSelect_BtnOpenLoadout">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14" Foreground="#FFD700" />
+                <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14" Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock Text="{loc:Translate LoadoutTitle}" FontSize="13" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
@@ -391,7 +391,7 @@
                                  Foreground="#00BCD4"
                                  IsVisible="{Binding UseGemsForLoadout}" />
                 <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14"
-                                 Foreground="#FFD700"
+                                 Foreground="{DynamicResource GoldAccentBrush}"
                                  IsVisible="{Binding !UseGemsForLoadout}" />
                 <TextBlock Text="{loc:Translate LoadoutCurrencySwitch}" FontSize="11" VerticalAlignment="Center" />
               </StackPanel>
@@ -435,7 +435,7 @@
 
                       <TextBlock Grid.Column="2" Text="{Binding DisplayCost}"
                                  FontSize="12" FontWeight="SemiBold"
-                                 Foreground="#FFD700"
+                                 Foreground="{DynamicResource GoldAccentBrush}"
                                  VerticalAlignment="Center" />
                     </Grid>
                   </Border>

@@ -64,7 +64,7 @@
                          AutomationProperties.AutomationId="DailyChallenge_TxtBestScoreLabel" />
               <TextBlock Text="{Binding TodayBestScoreText}"
                          FontSize="36" FontWeight="Bold"
-                         Foreground="#FFD700"
+                         Foreground="{DynamicResource GoldAccentBrush}"
                          HorizontalAlignment="Center"
                          AutomationProperties.AutomationId="DailyChallenge_TxtBestScore" />
             </StackPanel>
@@ -142,11 +142,11 @@
                   CornerRadius="12" Padding="16,12"
                   Margin="0,0,0,8" MinWidth="180"
                   BoxShadow="0 2 8 0 #25000000"
-                  BorderBrush="#FFD700" BorderThickness="3,0,0,0"
+                  BorderBrush="{DynamicResource GoldAccentBrush}" BorderThickness="3,0,0,0"
                   AutomationProperties.AutomationId="DailyChallenge_LongestStreakCard">
             <Grid ColumnDefinitions="Auto,*">
               <icons:GameIcon Grid.Column="0" Kind="Trophy" Width="28" Height="28"
-                               Foreground="#FFD700" Margin="0,0,12,0" />
+                               Foreground="{DynamicResource GoldAccentBrush}" Margin="0,0,12,0" />
               <StackPanel Grid.Column="1">
                 <TextBlock Text="{Binding LongestStreakLabel}"
                            FontSize="12"

@@ -49,10 +49,11 @@ public sealed class MarketService : IMarketService
     {
         get
         {
-            // Phase 3: Markt erfordert Forschung logi_05. Wenn ResearchService noch keine
-            // logi_-Nodes hat (Migration noch nicht ausgerollt), faellt es zurueck auf "verfuegbar".
-            if (_research == null) return true;
             var state = _gameState.State;
+            // V7 (Phase 4 Ressourcen-Plan, Imperium-Pass): Premium-Spieler haben Markt-
+            // Insider-Heatmap sofort frei (Plan Section 10.2). Ohne Pass: Forschung logi_05.
+            if (state.IsPremium) return true;
+            if (_research == null) return true;
             for (int i = 0; i < state.Researches.Count; i++)
             {
                 if (state.Researches[i].Id == MarketUnlockResearchId && state.Researches[i].IsResearched)

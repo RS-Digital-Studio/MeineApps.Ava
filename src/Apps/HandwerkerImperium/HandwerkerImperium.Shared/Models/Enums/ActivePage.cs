@@ -29,6 +29,7 @@ public enum ActivePage
     Ascension,
     Prestige,       // v2.0.37: Single-Page-View statt Modal-Stack
     Market,         // V7 (Phase 3 Ressourcen-Plan): Material-Markt
+    GuildBuildSite, // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekt-Bauplatz
 
     // MiniGames
     SawingGame,

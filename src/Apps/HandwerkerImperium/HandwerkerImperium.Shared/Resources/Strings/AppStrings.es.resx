@@ -6258,6 +6258,37 @@
   <data name="Buy1" xml:space="preserve"><value>Comprar 1</value></data>
   <data name="Buy10" xml:space="preserve"><value>Comprar 10</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Abrir Mercado</value></data>
+  <data name="MarketShowHeatmap" xml:space="preserve"><value>Mostrar gr&#225;fico de precios 24h</value></data>
+  <data name="MarketHeatmapSubtitle" xml:space="preserve"><value>Historial de precios de 24 h (UTC). Punto pulsante = hora actual.</value></data>
+  <data name="ImperiumPassName" xml:space="preserve"><value>Pase Imperial</value></data>
+  <data name="ImperiumPassDesc" xml:space="preserve"><value>Mejora vitalicia con 8 bonificaciones permanentes. Detalles abajo.</value></data>
+  <data name="ImperiumPassActiveTitle" xml:space="preserve"><value>Pase Imperial activo</value></data>
+  <data name="ImperiumPassActiveSubtitle" xml:space="preserve"><value>Todas las bonificaciones est&#225;n activas.</value></data>
+  <data name="ImperiumPassActiveBenefitsHeader" xml:space="preserve"><value>Tus bonificaciones activas</value></data>
+  <data name="ImperiumPassPitchTitle" xml:space="preserve"><value>Mejora al Pase Imperial</value></data>
+  <data name="ImperiumPassBenefit1" xml:space="preserve"><value>★ ×3 recompensas con anuncio (en lugar de ×2)</value></data>
+  <data name="ImperiumPassBenefit2" xml:space="preserve"><value>★ +50% ingresos offline</value></data>
+  <data name="ImperiumPassBenefit3" xml:space="preserve"><value>★ Acceso al mercado desde el primer d&#237;a</value></data>
+  <data name="ImperiumPassBenefit4" xml:space="preserve"><value>★ Reglas de venta autom&#225;tica por espacio</value></data>
+  <data name="ImperiumPassBenefit5" xml:space="preserve"><value>★ +1 ranura de reliquia (3 → 4)</value></data>
+  <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× giro de la ruleta de la suerte al d&#237;a</value></data>
+  <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Auto-cobro de recompensa diaria</value></data>
+  <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% tornillos dorados de juego</value></data>
+  <data name="GuildMegaProjectTitle" xml:space="preserve"><value>Obra de la Hermandad</value></data>
+  <data name="GuildMegaProjectSubtitle" xml:space="preserve"><value>Aportad materiales con vuestro gremio para desbloquear bonificaciones permanentes para todos.</value></data>
+  <data name="GuildMegaProjectCathedral" xml:space="preserve"><value>Catedral del Gremio</value></data>
+  <data name="GuildMegaProjectCathedralHint" xml:space="preserve"><value>Proyecto medio (~2 semanas). Recompensa: +5% velocidad, +10% auto-venta, +3 espacios — permanente.</value></data>
+  <data name="GuildMegaProjectHeadquarters" xml:space="preserve"><value>Cuartel General del Gremio</value></data>
+  <data name="GuildMegaProjectHeadquartersHint" xml:space="preserve"><value>Proyecto final (~4 semanas). Recompensa: +10% velocidad, +20% auto-venta, +5 espacios — permanente.</value></data>
+  <data name="GuildMegaProjectStart" xml:space="preserve"><value>Iniciar Proyecto</value></data>
+  <data name="GuildMegaProjectRequirements" xml:space="preserve"><value>Materiales necesarios</value></data>
+  <data name="GuildMegaProjectTopDonors" xml:space="preserve"><value>Principales donantes</value></data>
+  <data name="MegaProjectRewardFormat" xml:space="preserve"><value>Recompensa: +{0}% velocidad, +{1}% auto-venta, +{2} espacios</value></data>
+  <data name="Donate1" xml:space="preserve"><value>Donar 1</value></data>
+  <data name="Donate10" xml:space="preserve"><value>Donar 10</value></data>
+  <data name="DonateAll" xml:space="preserve"><value>Donar Todo</value></data>
+  <data name="Available" xml:space="preserve"><value>disponible:</value></data>
+  <data name="TabBuildSite" xml:space="preserve"><value>Obra</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>&#161;Entrega de material del proveedor!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa de Lujo</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Rascacielos</value></data>

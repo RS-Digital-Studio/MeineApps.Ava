@@ -1267,6 +1267,18 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string GameOverShowDetails {
+            get {
+                return ResourceManager.GetString("GameOverShowDetails", resourceCulture);
+            }
+        }
+
+        internal static string GameOverHideDetails {
+            get {
+                return ResourceManager.GetString("GameOverHideDetails", resourceCulture);
+            }
+        }
+
         internal static string WatchVideoBoost {
             get {
                 return ResourceManager.GetString("WatchVideoBoost", resourceCulture);

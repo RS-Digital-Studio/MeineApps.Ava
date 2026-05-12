@@ -6259,6 +6259,22 @@
   <data name="Buy1" xml:space="preserve"><value>Comprar 1</value></data>
   <data name="Buy10" xml:space="preserve"><value>Comprar 10</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Abrir Mercado</value></data>
+  <data name="MarketShowHeatmap" xml:space="preserve"><value>Mostrar gr&#225;fico de pre&#231;os 24h</value></data>
+  <data name="MarketHeatmapSubtitle" xml:space="preserve"><value>Hist&#243;rico de pre&#231;os de 24h (UTC). Ponto pulsante = hora atual.</value></data>
+  <data name="ImperiumPassName" xml:space="preserve"><value>Passe Imperial</value></data>
+  <data name="ImperiumPassDesc" xml:space="preserve"><value>Upgrade vital&#237;cio com 8 b&#244;nus permanentes. Detalhes abaixo.</value></data>
+  <data name="ImperiumPassActiveTitle" xml:space="preserve"><value>Passe Imperial ativo</value></data>
+  <data name="ImperiumPassActiveSubtitle" xml:space="preserve"><value>Todos os b&#244;nus permanentes est&#227;o ativos.</value></data>
+  <data name="ImperiumPassActiveBenefitsHeader" xml:space="preserve"><value>Seus b&#244;nus ativos</value></data>
+  <data name="ImperiumPassPitchTitle" xml:space="preserve"><value>Atualize para o Passe Imperial</value></data>
+  <data name="ImperiumPassBenefit1" xml:space="preserve"><value>★ ×3 recompensas com an&#250;ncio (em vez de ×2)</value></data>
+  <data name="ImperiumPassBenefit2" xml:space="preserve"><value>★ +50% ganhos offline</value></data>
+  <data name="ImperiumPassBenefit3" xml:space="preserve"><value>★ Acesso ao mercado desde o primeiro dia</value></data>
+  <data name="ImperiumPassBenefit4" xml:space="preserve"><value>★ Regras de venda autom&#225;tica por espa&#231;o</value></data>
+  <data name="ImperiumPassBenefit5" xml:space="preserve"><value>★ +1 slot de heran&#231;a no prestige (3 → 4)</value></data>
+  <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× giro de roleta da sorte por dia</value></data>
+  <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Reivindica&#231;&#227;o autom&#225;tica de recompensa di&#225;ria</value></data>
+  <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% parafusos dourados do gameplay</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Entrega de material do fornecedor!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Vila de Luxo</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Arranha-c&#233;u</value></data>

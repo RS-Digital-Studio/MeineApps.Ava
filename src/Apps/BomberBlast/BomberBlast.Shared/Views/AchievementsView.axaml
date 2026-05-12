@@ -169,11 +169,11 @@
                                     CornerRadius="4" Padding="6,2" Margin="0,2,0,0"
                                     HorizontalAlignment="Left">
                               <Border.Background>
-                                <SolidColorBrush Color="#FFD700" Opacity="0.15" />
+                                <SolidColorBrush Color="{DynamicResource GoldAccentColor}" Opacity="0.15" />
                               </Border.Background>
                               <TextBlock Text="{Binding CoinRewardText}"
                                          FontSize="11" FontWeight="Bold"
-                                         Foreground="#FFD700" />
+                                         Foreground="{DynamicResource GoldAccentBrush}" />
                             </Border>
                           </StackPanel>
 

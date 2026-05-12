@@ -417,11 +417,13 @@ public sealed partial class GameStateService
                 xpReward = (int)(xpReward * order.ComboMultiplier);
             }
 
-            // Rewarded-Ad-Verdopplung
+            // Rewarded-Ad-Verdopplung — V7 (Phase 4 Imperium-Pass): Premium-Spieler bekommen
+            // statt ×2 nun ×3 (Plan Section 10.2 "Rewarded-Belohnungen ×2 obendrauf").
             if (order.IsScoreDoubled)
             {
-                moneyReward *= 2m;
-                xpReward *= 2;
+                decimal factor = _state.IsPremium ? 3m : 2m;
+                moneyReward *= factor;
+                xpReward = (int)(xpReward * factor);
             }
 
             var workshop = GetWorkshop(order.WorkshopType);

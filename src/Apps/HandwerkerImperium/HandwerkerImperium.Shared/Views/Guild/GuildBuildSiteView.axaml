@@ -1,0 +1,194 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Guild.GuildBuildSiteView"
+             x:DataType="vm:GuildMegaProjectViewModel"
+             x:CompileBindings="True">
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto"
+                AutomationProperties.AutomationId="GuildBuildSite_Scroll">
+    <StackPanel Spacing="12" Margin="16,16,16,32">
+
+      <!-- HEADER -->
+      <Border Classes="CardElevated" CornerRadius="12" Padding="14">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border CornerRadius="14" Width="48" Height="48" VerticalAlignment="Center"
+                  Background="#1FD97706">
+            <icons:GameIcon Kind="OfficeBuilding" Width="28" Height="28"
+                            Foreground="{StaticResource CraftGoldBrush}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="{loc:Translate GuildMegaProjectTitle}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="{loc:Translate GuildMegaProjectSubtitle}"
+                       FontSize="11" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- START-CARDS (kein aktives Projekt) -->
+      <StackPanel Spacing="10" IsVisible="{Binding !HasActiveProject}">
+        <Border Classes="Card" CornerRadius="12" Padding="14">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{loc:Translate GuildMegaProjectCathedral}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="{loc:Translate GuildMegaProjectCathedralHint}"
+                       FontSize="11" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Button Classes="Primary" Padding="14,10" CornerRadius="10"
+                    HorizontalAlignment="Stretch" MinHeight="44"
+                    IsEnabled="{Binding !IsStarting}"
+                    Command="{Binding StartCathedralCommand}"
+                    AutomationProperties.AutomationId="GuildBuildSite_Btn_StartCathedral">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <icons:GameIcon Kind="Hammer" Width="16" Height="16" />
+                <TextBlock Text="{loc:Translate GuildMegaProjectStart}" FontSize="12" FontWeight="SemiBold" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="Card" CornerRadius="12" Padding="14">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{loc:Translate GuildMegaProjectHeadquarters}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="{loc:Translate GuildMegaProjectHeadquartersHint}"
+                       FontSize="11" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Button Classes="Primary" Padding="14,10" CornerRadius="10"
+                    HorizontalAlignment="Stretch" MinHeight="44"
+                    IsEnabled="{Binding !IsStarting}"
+                    Command="{Binding StartHeadquartersCommand}"
+                    AutomationProperties.AutomationId="GuildBuildSite_Btn_StartHeadquarters">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <icons:GameIcon Kind="Hammer" Width="16" Height="16" />
+                <TextBlock Text="{loc:Translate GuildMegaProjectStart}" FontSize="12" FontWeight="SemiBold" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <!-- AKTIVES PROJEKT -->
+      <StackPanel Spacing="10" IsVisible="{Binding HasActiveProject}">
+
+        <!-- Fortschritt -->
+        <Border Classes="CardElevated" CornerRadius="12" Padding="14">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding ProjectName}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding ProgressText}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         VerticalAlignment="Center" />
+            </Grid>
+            <ProgressBar Minimum="0" Maximum="1" Value="{Binding ProgressRatio}"
+                         Height="10" CornerRadius="5"
+                         Foreground="{StaticResource CraftPrimaryBrush}" />
+            <TextBlock Text="{Binding BonusText}" FontSize="11" FontStyle="Italic"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <!-- Material-Anforderungen -->
+        <TextBlock Text="{loc:Translate GuildMegaProjectRequirements}"
+                   FontSize="13" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,4,0,2" />
+
+        <ItemsControl ItemsSource="{Binding Requirements}"
+                      AutomationProperties.AutomationId="GuildBuildSite_Items_Requirements">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:MegaProjectRequirementDisplay">
+              <Border Classes="Card" CornerRadius="10" Padding="10" Margin="0,3">
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
+                  <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                    <Border CornerRadius="10" Width="36" Height="36"
+                            Background="#1F3B82F6" VerticalAlignment="Center">
+                      <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                      Width="20" Height="20"
+                                      Foreground="{StaticResource CraftPrimaryBrush}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="{Binding ProgressText}" />
+                        <Run Text="·" />
+                        <Run Text="{loc:Translate Available}" />
+                        <Run Text="{Binding Available}" />
+                      </TextBlock>
+                    </StackPanel>
+                    <ProgressBar Grid.Column="2" Width="60" Height="6" Minimum="0" Maximum="1"
+                                 Value="{Binding ProgressRatio}" VerticalAlignment="Center"
+                                 Foreground="{StaticResource CraftPrimaryBrush}" />
+                  </Grid>
+
+                  <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                    <Button Grid.Column="0" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="32"
+                            IsEnabled="{Binding CanDonate}"
+                            Command="{Binding $parent[ItemsControl].((vm:GuildMegaProjectViewModel)DataContext).Donate1Command}"
+                            CommandParameter="{Binding}">
+                      <TextBlock Text="{loc:Translate Donate1}" FontSize="11" FontWeight="SemiBold" />
+                    </Button>
+                    <Button Grid.Column="1" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="32"
+                            IsEnabled="{Binding CanDonate}"
+                            Command="{Binding $parent[ItemsControl].((vm:GuildMegaProjectViewModel)DataContext).Donate10Command}"
+                            CommandParameter="{Binding}">
+                      <TextBlock Text="{loc:Translate Donate10}" FontSize="11" FontWeight="SemiBold" />
+                    </Button>
+                    <Button Grid.Column="2" Classes="Primary" Padding="6,4" CornerRadius="6" MinHeight="32"
+                            IsEnabled="{Binding CanDonate}"
+                            Command="{Binding $parent[ItemsControl].((vm:GuildMegaProjectViewModel)DataContext).DonateAllCommand}"
+                            CommandParameter="{Binding}">
+                      <TextBlock Text="{loc:Translate DonateAll}" FontSize="11" FontWeight="SemiBold" />
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Top-Spender-Leaderboard -->
+        <TextBlock Text="{loc:Translate GuildMegaProjectTopDonors}"
+                   FontSize="13" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,8,0,2" />
+
+        <Border Classes="Card" CornerRadius="10" Padding="8">
+          <ItemsControl ItemsSource="{Binding TopDonors}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:MegaProjectDonationDisplay">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" Margin="0,4">
+                  <TextBlock Grid.Column="0" Text="{Binding Rank, StringFormat='#{0}'}"
+                             FontSize="12" FontWeight="Bold" Width="32"
+                             Foreground="{StaticResource CraftGoldBrush}" />
+                  <TextBlock Grid.Column="1" Text="{Binding PlayerName}" FontSize="12"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding ItemCount, StringFormat='{}{0}x'}"
+                             FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Grid.Column="3" Text="{Binding ValueDisplay}" FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource SuccessBrush}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

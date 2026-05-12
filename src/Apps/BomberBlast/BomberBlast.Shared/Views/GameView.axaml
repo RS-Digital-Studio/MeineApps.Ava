@@ -173,7 +173,7 @@
             <TextBlock Text="{Binding LevelCompleteScoreText}"
                        FontSize="36"
                        FontWeight="Bold"
-                       Foreground="#FFD700"
+                       Foreground="{DynamicResource GoldAccentBrush}"
                        HorizontalAlignment="Center"
                        AutomationProperties.AutomationId="Game_TxtScore" />
           </StackPanel>

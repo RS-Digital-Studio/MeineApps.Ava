@@ -113,6 +113,24 @@ public class GuildMembership
     [JsonPropertyName("hallMaxMembersBonus")]
     public int HallMaxMembersBonus { get; set; }
 
+    // ── V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Boni ──
+
+    /// <summary>Permanenter Crafting-Speed-Bonus aus abgeschlossenen Mega-Projekten.</summary>
+    [JsonPropertyName("megaProjectCraftingSpeedBonus")]
+    public decimal MegaProjectCraftingSpeedBonus { get; set; }
+
+    /// <summary>Permanenter Bonus auf Auto-Verkaufs-Preis aus Mega-Projekten.</summary>
+    [JsonPropertyName("megaProjectAutoSellPriceBonus")]
+    public decimal MegaProjectAutoSellPriceBonus { get; set; }
+
+    /// <summary>Permanenter Bonus-Lager-Slots aus Mega-Projekten.</summary>
+    [JsonPropertyName("megaProjectBonusWarehouseSlots")]
+    public int MegaProjectBonusWarehouseSlots { get; set; }
+
+    /// <summary>Liste der abgeschlossenen Mega-Projekt-Typen (verhindert Doppel-Belohnung).</summary>
+    [JsonPropertyName("completedMegaProjectTypes")]
+    public List<int> CompletedMegaProjectTypes { get; set; } = [];
+
     /// <summary>
     /// Aktualisiert alle gecachten Hall-Effekte aus berechneten Effekten.
     /// </summary>

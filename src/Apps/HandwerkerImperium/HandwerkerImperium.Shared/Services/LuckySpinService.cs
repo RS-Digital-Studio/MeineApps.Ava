@@ -34,7 +34,22 @@ public sealed class LuckySpinService : ILuckySpinService
         _gameStateService = gameStateService;
     }
 
-    public bool HasFreeSpin => _gameStateService.State.LuckySpin.HasFreeSpin;
+    /// <summary>
+    /// V7 (Phase 4 — Imperium-Pass): Gratis-Spin ist verfuegbar, wenn der reguläre erste-Spin
+    /// heute noch nicht genutzt wurde ODER der Spieler Premium hat und der Bonus-Spin (2/Tag)
+    /// heute noch frei ist. Plan Section 10.2.
+    /// </summary>
+    public bool HasFreeSpin
+    {
+        get
+        {
+            var state = _gameStateService.State;
+            var luckySpin = state.LuckySpin;
+            if (luckySpin.HasFreeSpin) return true;
+            if (state.IsPremium && luckySpin.HasBonusFreeSpin) return true;
+            return false;
+        }
+    }
     public bool HasAdSpin => _gameStateService.State.LuckySpin.HasAdSpin;
 
     private const int FlatSpinCost = 5;
@@ -42,12 +57,19 @@ public sealed class LuckySpinService : ILuckySpinService
 
     public LuckySpinPrizeType? Spin()
     {
-        var spinState = _gameStateService.State.LuckySpin;
+        var state = _gameStateService.State;
+        var spinState = state.LuckySpin;
         spinState.ResetDailyIfNeeded();
 
-        if (HasFreeSpin)
+        // Erste Stufe: regulaerer Gratis-Spin (existiert seit Welle 2).
+        if (spinState.HasFreeSpin)
         {
             spinState.LastFreeSpinDate = DateTime.UtcNow;
+        }
+        // Zweite Stufe: Premium-Bonus-Spin (Imperium-Pass, Plan Section 10.2).
+        else if (state.IsPremium && spinState.HasBonusFreeSpin)
+        {
+            spinState.LastBonusFreeSpinDate = DateTime.UtcNow;
         }
         else
         {

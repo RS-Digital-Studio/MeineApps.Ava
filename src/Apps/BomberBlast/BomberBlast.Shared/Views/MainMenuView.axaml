@@ -96,10 +96,10 @@
             </Style>
           </Button.Styles>
           <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-            <icons:GameIcon Kind="CircleMultiple" Width="16" Height="16" Foreground="#FFD700" />
+            <icons:GameIcon Kind="CircleMultiple" Width="16" Height="16" Foreground="{DynamicResource GoldAccentBrush}" />
             <TextBlock Text="{Binding CoinsText}"
                        FontSize="13" FontWeight="SemiBold"
-                       Foreground="#FFD700" VerticalAlignment="Center"
+                       Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center"
                        AutomationProperties.AutomationId="MainMenu_TxtCoins" />
           </StackPanel>
         </Button>
@@ -199,7 +199,7 @@
               <!-- Sterne -->
               <TextBlock Text="{Binding HeroStarsText}"
                          FontSize="22" FontWeight="Bold"
-                         Foreground="#FFD700"
+                         Foreground="{DynamicResource GoldAccentBrush}"
                          HorizontalAlignment="Center"
                          AutomationProperties.AutomationId="MainMenu_HeroStars" />
               <!-- Primary CTA: WEITER SPIELEN -->
@@ -342,7 +342,7 @@
                         Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                         Command="{Binding OpenMasterModeCommand}">
                   <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <icons:GameIcon Kind="Crown" Width="22" Height="22" Foreground="#FFD700" />
+                    <icons:GameIcon Kind="Crown" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" />
                     <TextBlock Text="{loc:Translate MasterModeTitle}"
                                FontSize="11" FontWeight="SemiBold"
                                Foreground="White"
@@ -350,7 +350,7 @@
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding MasterModeStatusText}"
                                FontSize="9"
-                               Foreground="#FFD700"
+                               Foreground="{DynamicResource GoldAccentBrush}"
                                HorizontalAlignment="Center" />
                   </StackPanel>
                 </Button>
@@ -378,7 +378,7 @@
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding BossRushStatusText}"
                                FontSize="9"
-                               Foreground="#FFD700"
+                               Foreground="{DynamicResource GoldAccentBrush}"
                                HorizontalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
@@ -407,7 +407,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
                           Background="#33FFD700" VerticalAlignment="Center">
-                    <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700"
+                    <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="{DynamicResource GoldAccentBrush}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="1">
@@ -422,7 +422,7 @@
                   </StackPanel>
                   <Border Grid.Column="2" VerticalAlignment="Center"
                           IsVisible="{Binding TodayRewardClaimable}"
-                          Background="#FFD700" CornerRadius="8" Padding="6,2">
+                          Background="{DynamicResource GoldAccentBrush}" CornerRadius="8" Padding="6,2">
                     <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="#1A1A1A" />
                   </Border>
                 </Grid>
@@ -611,7 +611,7 @@
                 <Grid ColumnDefinitions="Auto,*">
                   <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
                           Background="#33FFD700" VerticalAlignment="Center">
-                    <icons:GameIcon Kind="Shield" Width="18" Height="18" Foreground="#FFD700"
+                    <icons:GameIcon Kind="Shield" Width="18" Height="18" Foreground="{DynamicResource GoldAccentBrush}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="1">
@@ -692,7 +692,7 @@
                 <Grid ColumnDefinitions="Auto,*">
                   <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
                           Background="#33FFD700" VerticalAlignment="Center">
-                    <icons:GameIcon Kind="Star" Width="18" Height="18" Foreground="#FFD700"
+                    <icons:GameIcon Kind="Star" Width="18" Height="18" Foreground="{DynamicResource GoldAccentBrush}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="1">
@@ -777,10 +777,10 @@
         <Grid RowDefinitions="Auto,*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="8"
                       HorizontalAlignment="Center" Margin="0,0,0,12">
-            <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="#FFD700" />
+            <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="{DynamicResource GoldAccentBrush}" />
             <TextBlock Text="{Binding RewardPopupTitle}"
                        FontSize="20" FontWeight="Bold"
-                       Foreground="#FFD700"
+                       Foreground="{DynamicResource GoldAccentBrush}"
                        AutomationProperties.AutomationId="MainMenu_TxtRewardTitle" />
           </StackPanel>
 
@@ -815,7 +815,7 @@
                                          Foreground="#22C55E"
                                          IsVisible="{Binding IsClaimed}" />
                         <icons:GameIcon Kind="Gift" Width="20" Height="20"
-                                         Foreground="#FFD700"
+                                         Foreground="{DynamicResource GoldAccentBrush}"
                                          IsVisible="{Binding IsCurrentDay}" />
                         <icons:GameIcon Kind="Lock" Width="20" Height="20"
                                          Foreground="#666666"
@@ -823,7 +823,7 @@
                       </Panel>
                       <TextBlock Text="{Binding CoinsText}"
                                  FontSize="11" FontWeight="Bold"
-                                 Foreground="#FFD700"
+                                 Foreground="{DynamicResource GoldAccentBrush}"
                                  HorizontalAlignment="Center" />
                       <icons:GameIcon Kind="HeartPlus" Width="14" Height="14"
                                        Foreground="#FF4444"
@@ -939,7 +939,7 @@
               <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
                       Background="#33FFD700" VerticalAlignment="Top">
                 <TextBlock Text="3" FontSize="16" FontWeight="Bold"
-                           Foreground="#FFD700"
+                           Foreground="{DynamicResource GoldAccentBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <TextBlock Grid.Column="1" Text="{Binding OnboardingHint3}"

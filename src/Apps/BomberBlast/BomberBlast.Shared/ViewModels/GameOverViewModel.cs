@@ -153,6 +153,16 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IFloa
     [ObservableProperty]
     private bool _hasSummary;
 
+    /// <summary>
+    /// Audit M16: Score-Bonus-Rows (Gegner/Zeit/Effizienz/Multiplikator) klapp-/ausklappbar.
+    /// Default: ausgeblendet — entlastet die UI und fokussiert TryAgain-CTA + Sterne.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isScoreDetailsExpanded;
+
+    [ObservableProperty]
+    private string _scoreDetailsToggleText = "";
+
     // Near-Miss (knapp am nächsten Stern vorbei)
     [ObservableProperty]
     private string _nearMissText = "";
@@ -302,7 +312,10 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IFloa
             ? _localizationService.GetString("ContinueFree") ?? "Continue"
             : _localizationService.GetString("ContinueGame");
 
-        // Score-Aufschlüsselung (nur bei Level-Complete)
+        // Score-Aufschlüsselung (nur bei Level-Complete). Audit M16: Default eingeklappt.
+        IsScoreDetailsExpanded = false;
+        ScoreDetailsToggleText = _localizationService.GetString("GameOverShowDetails") ?? "Show breakdown";
+
         HasSummary = isLevelComplete;
         if (HasSummary)
         {
@@ -569,6 +582,16 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IFloa
 
         ClaimCoins();
         NavigationRequested?.Invoke(new GoLevelSelect());
+    }
+
+    /// <summary>Audit M16: Score-Details Auf-/Zuklapp-Toggle.</summary>
+    [RelayCommand]
+    private void ToggleScoreDetails()
+    {
+        IsScoreDetailsExpanded = !IsScoreDetailsExpanded;
+        ScoreDetailsToggleText = IsScoreDetailsExpanded
+            ? _localizationService.GetString("GameOverHideDetails") ?? "Hide breakdown"
+            : _localizationService.GetString("GameOverShowDetails") ?? "Show breakdown";
     }
 
     [RelayCommand]

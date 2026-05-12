@@ -41,6 +41,8 @@ public static class GameIconPaths
         [GameIconKind.ChevronDoubleUp] =
             "M12 3L5 10L8 10L12 6L16 10L19 10Z" +
             " M12 11L5 18L8 18L12 14L16 18L19 18Z",
+        [GameIconKind.ChevronDown] = "M4 7L8 7L12 14L16 7L20 7L12 19Z",
+        [GameIconKind.ChevronUp] = "M4 17L8 17L12 10L16 17L20 17L12 5Z",
         [GameIconKind.Close] = "M6 2L2 6L9 12L2 18L6 22L12 15L18 22L22 18L15 12L22 6L18 2L12 9Z",
 
         // =====================================================================

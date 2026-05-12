@@ -724,6 +724,12 @@
   <data name="PauseButtonTooltip" xml:space="preserve">
     <value>Metti in pausa</value>
   </data>
+  <data name="GameOverShowDetails" xml:space="preserve">
+    <value>Mostra dettagli</value>
+  </data>
+  <data name="GameOverHideDetails" xml:space="preserve">
+    <value>Nascondi dettagli</value>
+  </data>
   <data name="WatchVideoBoost" xml:space="preserve">
     <value>Guardare video per boost iniziale?</value>
   </data>

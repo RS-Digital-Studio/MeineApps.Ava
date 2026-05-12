@@ -202,9 +202,11 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             new ShopItem
             {
                 Id = "premium",
-                Name = _localizationService.GetString("ShopPremiumName"),
-                Description = _localizationService.GetString("ShopPremiumDesc"),
-                Icon = "Star",
+                // V7 (Phase 4 Ressourcen-Plan, Section 10): Premium-Kauf wird zum "Imperium-Pass"
+                // repositioniert — bestehender Preis 4,99 €, klare Bundle-Boni-Liste in der Detail-Card.
+                Name = _localizationService.GetString("ImperiumPassName") ?? _localizationService.GetString("ShopPremiumName"),
+                Description = _localizationService.GetString("ImperiumPassDesc") ?? _localizationService.GetString("ShopPremiumDesc"),
+                Icon = "Crown",
                 Price = "4,99 €",
                 IsPremiumItem = true,
                 IsPurchased = state.IsPremium

@@ -145,7 +145,7 @@
           </StackPanel>
         </Border>
 
-        <!-- PREMIUM STATUS (if premium) -->
+        <!-- IMPERIUM-PASS STATUS (if owned) — V7 (Phase 4, Plan Section 10) -->
         <Border Classes="CardElevated"
                 AutomationProperties.AutomationId="Shop_Border_PremiumStatus"
                 IsVisible="{Binding IsPremium}"
@@ -156,30 +156,49 @@
               <GradientStop Color="#D97706" Offset="1" />
             </LinearGradientBrush>
           </Border.Background>
-          <StackPanel Orientation="Horizontal"
-                      Spacing="12"
-                      HorizontalAlignment="Center">
-            <icons:GameIcon Kind="Crown" Width="32" Height="32"
-                             AutomationProperties.AutomationId="Shop_Icon_PremiumCrown"
-                             Foreground="{StaticResource CraftGoldBrush}" />
-            <StackPanel>
-              <TextBlock Text="{loc:Translate YouArePremium}"
-                         AutomationProperties.AutomationId="Shop_Txt_PremiumTitle"
-                         FontSize="18" FontWeight="Bold"
-                         Foreground="{StaticResource CraftGoldBrush}" />
-              <TextBlock Text="{loc:Translate PremiumBenefits}"
-                         AutomationProperties.AutomationId="Shop_Txt_PremiumBenefits"
-                         FontSize="12"
-                         Foreground="{StaticResource CraftPrimaryLightBrush}" Opacity="0.85" />
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+              <icons:GameIcon Kind="Crown" Width="32" Height="32"
+                               AutomationProperties.AutomationId="Shop_Icon_PremiumCrown"
+                               Foreground="{StaticResource CraftGoldBrush}" />
+              <StackPanel>
+                <TextBlock Text="{loc:Translate ImperiumPassActiveTitle}"
+                           AutomationProperties.AutomationId="Shop_Txt_PremiumTitle"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassActiveSubtitle}"
+                           AutomationProperties.AutomationId="Shop_Txt_PremiumBenefits"
+                           FontSize="12"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" Opacity="0.85" />
+              </StackPanel>
             </StackPanel>
+
+            <!-- Bundle-Boni-Liste (8 Punkte aus Plan Section 10.2) -->
+            <Border Background="#22000000" CornerRadius="10" Padding="12,10">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Translate ImperiumPassActiveBenefitsHeader}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit1}" FontSize="11" Foreground="White" />
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit2}" FontSize="11" Foreground="White" />
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit3}" FontSize="11" Foreground="White" />
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit4}" FontSize="11" Foreground="White" />
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit5}" FontSize="11" Foreground="White" />
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit6}" FontSize="11" Foreground="White" />
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit7}" FontSize="11" Foreground="White" />
+                  <TextBlock Text="{loc:Translate ImperiumPassBenefit8}" FontSize="11" Foreground="White" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
 
-        <!-- PREMIUM EINKOMMENSVERGLEICH (nur für Nicht-Premium-Spieler) -->
+        <!-- IMPERIUM-PASS PITCH (für Nicht-Pass-Spieler) — V7 (Phase 4, Plan Section 10) -->
         <Border Classes="Card"
                 AutomationProperties.AutomationId="Shop_Border_PremiumCompare"
                 IsVisible="{Binding !IsPremium}"
-                Padding="12"
+                Padding="14"
                 Margin="0,0,0,4">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -187,15 +206,31 @@
               <GradientStop Color="#1A92400E" Offset="1" />
             </LinearGradientBrush>
           </Border.Background>
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <icons:GameIcon Kind="TrendingUp" Width="18" Height="18"
-                             AutomationProperties.AutomationId="Shop_Icon_PremiumCompare"
-                             Foreground="{StaticResource CraftGoldBrush}" />
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <icons:GameIcon Kind="Crown" Width="22" Height="22"
+                              Foreground="{StaticResource CraftGoldBrush}" />
+              <TextBlock Text="{loc:Translate ImperiumPassPitchTitle}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}" />
+            </StackPanel>
             <TextBlock Text="{Binding PremiumIncomeComparison}"
                        AutomationProperties.AutomationId="Shop_Txt_PremiumCompare"
-                       FontSize="12" FontWeight="SemiBold"
-                       Foreground="{StaticResource CraftGoldBrush}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
                        TextWrapping="Wrap" />
+            <Border Background="#22000000" CornerRadius="8" Padding="10,8">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit1}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit2}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit3}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit4}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit5}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit6}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit7}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ImperiumPassBenefit8}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
 

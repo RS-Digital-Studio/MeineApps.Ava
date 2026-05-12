@@ -97,10 +97,10 @@
                 </Border>
                 <!-- BestFloor -->
                 <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
-                        BorderBrush="#FFD700" BorderThickness="3,0,0,0">
+                        BorderBrush="{DynamicResource GoldAccentBrush}" BorderThickness="3,0,0,0">
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <icons:GameIcon Kind="Trophy" Width="22" Height="22"
-                                     Foreground="#FFD700" />
+                                     Foreground="{DynamicResource GoldAccentBrush}" />
                     <TextBlock Text="{Binding BestFloorText}"
                                FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
@@ -150,7 +150,7 @@
                       CornerRadius="10">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <icons:GameIcon Kind="Crown" Width="18" Height="18"
-                                   Foreground="#FFD700" />
+                                   Foreground="{DynamicResource GoldAccentBrush}" />
                   <TextBlock Text="{Binding DungeonMasterPassText}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="White"
@@ -226,7 +226,7 @@
                                   Background="#30FFD700" CornerRadius="6" Padding="6,2"
                                   VerticalAlignment="Center">
                             <TextBlock Text="{loc:Translate ShopMaxed}" FontSize="10" FontWeight="Bold"
-                                       Foreground="#FFD700" />
+                                       Foreground="{DynamicResource GoldAccentBrush}" />
                           </Border>
                         </Grid>
                       </Border>
@@ -313,10 +313,10 @@
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
                 <icons:GameIcon Kind="CircleMultiple" Width="20" Height="20"
-                                 Foreground="#FFD700" />
+                                 Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock Text="{Binding CoinEntryText}"
                            FontSize="16" FontWeight="SemiBold"
-                           Foreground="#FFD700"
+                           Foreground="{DynamicResource GoldAccentBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -546,10 +546,10 @@
                         BorderBrush="#40FFD700" BorderThickness="1">
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <icons:GameIcon Kind="LinkVariant" Width="16" Height="16"
-                                     Foreground="#FFD700" />
+                                     Foreground="{DynamicResource GoldAccentBrush}" />
                     <TextBlock Text="{Binding Name}"
                                FontSize="12" FontWeight="Bold"
-                               Foreground="#FFD700"
+                               Foreground="{DynamicResource GoldAccentBrush}"
                                VerticalAlignment="Center" />
                   </StackPanel>
                 </Border>
@@ -631,9 +631,9 @@
               <!-- Treasure -->
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="14" Height="14" CornerRadius="7"
-                        Background="#FFD700" />
+                        Background="{DynamicResource GoldAccentBrush}" />
                 <TextBlock Text="{loc:Translate DungeonRoomTreasure}" FontSize="11"
-                           Foreground="#FFD700"
+                           Foreground="{DynamicResource GoldAccentBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
               <!-- Challenge -->
@@ -699,13 +699,13 @@
 
             <!-- Coins -->
             <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
-                    BorderBrush="#FFD700" BorderThickness="3,0,0,0">
+                    BorderBrush="{DynamicResource GoldAccentBrush}" BorderThickness="3,0,0,0">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <icons:GameIcon Kind="CircleMultiple" Width="20" Height="20"
-                                 Foreground="#FFD700" />
+                                 Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock Text="{Binding SummaryCoinsText}"
                            FontSize="15" FontWeight="Bold"
-                           Foreground="#FFD700"
+                           Foreground="{DynamicResource GoldAccentBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
             </Border>
@@ -762,7 +762,7 @@
           <TextBlock Text="{Binding SummaryNewBestText}"
                      IsVisible="{Binding SummaryNewBestText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                      FontSize="24" FontWeight="Bold"
-                     Foreground="#FFD700"
+                     Foreground="{DynamicResource GoldAccentBrush}"
                      HorizontalAlignment="Center"
                      Margin="0,0,0,8" />
 

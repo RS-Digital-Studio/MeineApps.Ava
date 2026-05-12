@@ -123,7 +123,7 @@
 
           <!-- Power-Ups - Goldener Akzent -->
           <Border Classes="Card StatsCard"
-                  BorderThickness="3,0,0,0" BorderBrush="#FFD700"
+                  BorderThickness="3,0,0,0" BorderBrush="{DynamicResource GoldAccentBrush}"
                   BoxShadow="0 2 8 0 #25000000"
                   AutomationProperties.AutomationId="Help_PowerUpsSection">
             <StackPanel Spacing="8">
@@ -136,11 +136,11 @@
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <icons:GameIcon Kind="StarCircleOutline" Width="22" Height="22"
-                                   Foreground="#FFD700" />
+                                   Foreground="{DynamicResource GoldAccentBrush}" />
                   <TextBlock AutomationProperties.AutomationId="Help_TxtPowerUpsTitle"
                              Text="{loc:Translate PowerUps}"
                              FontSize="17" FontWeight="Bold"
-                             Foreground="#FFD700" />
+                             Foreground="{DynamicResource GoldAccentBrush}" />
                 </StackPanel>
               </Border>
 

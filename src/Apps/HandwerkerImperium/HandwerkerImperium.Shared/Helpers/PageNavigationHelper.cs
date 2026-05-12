@@ -79,6 +79,7 @@ internal static class PageNavigationHelper
         ActivePage.Ascension => "IsAscensionActive",
         ActivePage.Prestige => "IsPrestigeActive",
         ActivePage.Market => "IsMarketActive",
+        ActivePage.GuildBuildSite => "IsGuildBuildSiteActive",
         _ => null
     };
 

@@ -419,6 +419,14 @@ public class GameState
     [JsonPropertyName("claimedAuctionIds")]
     public List<string> ClaimedAuctionIds { get; set; } = [];
 
+    /// <summary>
+    /// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Bereits beanspruchte Mega-Projekt-Belohnungen.
+    /// Idempotenz-Schutz — verhindert dass eine Spieler-Session den Bonus doppelt erhaelt
+    /// (z.B. nach App-Restart wenn Server schon completed war).
+    /// </summary>
+    [JsonPropertyName("claimedGuildProjectIds")]
+    public List<string> ClaimedGuildProjectIds { get; set; } = [];
+
     // ═══════════════════════════════════════════════════════════════════════
     // TOOLS
     // ═══════════════════════════════════════════════════════════════════════

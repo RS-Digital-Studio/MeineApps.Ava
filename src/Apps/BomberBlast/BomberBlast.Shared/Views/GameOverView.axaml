@@ -144,10 +144,10 @@
                     BorderThickness="1">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <icons:GameIcon Kind="Trophy" Width="18" Height="18"
-                                 Foreground="#FFD700" />
+                                 Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock Text="{Binding SurvivalMilestoneText}"
                            FontSize="13" FontWeight="SemiBold"
-                           Foreground="#FFD700" />
+                           Foreground="{DynamicResource GoldAccentBrush}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -169,7 +169,9 @@
             </StackPanel>
           </Border>
 
-          <!-- Score-Aufschlüsselung (nur bei Level-Complete) -->
+          <!-- Score-Aufschlüsselung (nur bei Level-Complete).
+               Audit M16: 4 Bonus-Rows in collapsable Section, default eingeklappt.
+               Sterne/Medal/NearMiss/Premium-Badge bleiben sichtbar (Hauptfeedback fuer Spieler). -->
           <Border AutomationProperties.AutomationId="GameOver_Summary"
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="10"
@@ -178,74 +180,102 @@
                   BoxShadow="0 4 12 0 #40000000"
                   IsVisible="{Binding HasSummary}">
             <StackPanel Spacing="6">
-              <!-- Gegner-Punkte -->
-              <Border Padding="10,6" CornerRadius="6"
-                      BorderThickness="3,0,0,0" BorderBrush="#F44336">
-                <Border.Background>
-                  <SolidColorBrush Color="#F44336" Opacity="0.06" />
-                </Border.Background>
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{loc:Translate EnemyPoints}"
-                             FontSize="14"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock AutomationProperties.AutomationId="GameOver_TxtEnemyPoints"
-                             Grid.Column="1"
-                             Text="{Binding EnemyKillPointsText}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                </Grid>
-              </Border>
-              <!-- Zeitbonus -->
-              <Border Padding="10,6" CornerRadius="6"
-                      BorderThickness="3,0,0,0" BorderBrush="#2196F3">
-                <Border.Background>
-                  <SolidColorBrush Color="#2196F3" Opacity="0.06" />
-                </Border.Background>
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{loc:Translate SummaryTimeBonus}"
-                             FontSize="14"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock AutomationProperties.AutomationId="GameOver_TxtTimeBonus"
-                             Grid.Column="1"
-                             Text="{Binding TimeBonusText}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="#2196F3" />
-                </Grid>
-              </Border>
-              <!-- Effizienzbonus -->
-              <Border Padding="10,6" CornerRadius="6"
-                      BorderThickness="3,0,0,0" BorderBrush="#FF9800">
-                <Border.Background>
-                  <SolidColorBrush Color="#FF9800" Opacity="0.06" />
-                </Border.Background>
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{loc:Translate SummaryEfficiencyBonus}"
-                             FontSize="14"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock AutomationProperties.AutomationId="GameOver_TxtEfficiency"
-                             Grid.Column="1"
-                             Text="{Binding EfficiencyBonusText}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="#FF9800" />
-                </Grid>
-              </Border>
-              <!-- Score-Multiplikator -->
-              <Border Padding="10,6" CornerRadius="6"
-                      BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
-                <Border.Background>
-                  <SolidColorBrush Color="#9C27B0" Opacity="0.06" />
-                </Border.Background>
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{loc:Translate SummaryScoreMultiplier}"
-                             FontSize="14"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock AutomationProperties.AutomationId="GameOver_TxtMultiplier"
-                             Grid.Column="1"
-                             Text="{Binding ScoreMultiplierText}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="#9C27B0" />
-                </Grid>
-              </Border>
+              <!-- Toggle-Button fuer Score-Details (Audit M16) -->
+              <Button AutomationProperties.AutomationId="GameOver_BtnToggleDetails"
+                      Command="{Binding ToggleScoreDetailsCommand}"
+                      Classes="Text"
+                      Background="Transparent"
+                      Padding="6,2"
+                      HorizontalAlignment="Center"
+                      HorizontalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding ScoreDetailsToggleText}"
+                             FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             VerticalAlignment="Center" />
+                  <icons:GameIcon Kind="ChevronDown" Width="12" Height="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{Binding !IsScoreDetailsExpanded}" />
+                  <icons:GameIcon Kind="ChevronUp" Width="12" Height="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{Binding IsScoreDetailsExpanded}" />
+                </StackPanel>
+              </Button>
+
+              <!-- Collapsable Bonus-Rows -->
+              <StackPanel Spacing="6"
+                          IsVisible="{Binding IsScoreDetailsExpanded}">
+                <!-- Gegner-Punkte -->
+                <Border Padding="10,6" CornerRadius="6"
+                        BorderThickness="3,0,0,0" BorderBrush="#F44336">
+                  <Border.Background>
+                    <SolidColorBrush Color="#F44336" Opacity="0.06" />
+                  </Border.Background>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{loc:Translate EnemyPoints}"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock AutomationProperties.AutomationId="GameOver_TxtEnemyPoints"
+                               Grid.Column="1"
+                               Text="{Binding EnemyKillPointsText}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                  </Grid>
+                </Border>
+                <!-- Zeitbonus -->
+                <Border Padding="10,6" CornerRadius="6"
+                        BorderThickness="3,0,0,0" BorderBrush="#2196F3">
+                  <Border.Background>
+                    <SolidColorBrush Color="#2196F3" Opacity="0.06" />
+                  </Border.Background>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{loc:Translate SummaryTimeBonus}"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock AutomationProperties.AutomationId="GameOver_TxtTimeBonus"
+                               Grid.Column="1"
+                               Text="{Binding TimeBonusText}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="#2196F3" />
+                  </Grid>
+                </Border>
+                <!-- Effizienzbonus -->
+                <Border Padding="10,6" CornerRadius="6"
+                        BorderThickness="3,0,0,0" BorderBrush="#FF9800">
+                  <Border.Background>
+                    <SolidColorBrush Color="#FF9800" Opacity="0.06" />
+                  </Border.Background>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{loc:Translate SummaryEfficiencyBonus}"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock AutomationProperties.AutomationId="GameOver_TxtEfficiency"
+                               Grid.Column="1"
+                               Text="{Binding EfficiencyBonusText}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="#FF9800" />
+                  </Grid>
+                </Border>
+                <!-- Score-Multiplikator -->
+                <Border Padding="10,6" CornerRadius="6"
+                        BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
+                  <Border.Background>
+                    <SolidColorBrush Color="#9C27B0" Opacity="0.06" />
+                  </Border.Background>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{loc:Translate SummaryScoreMultiplier}"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock AutomationProperties.AutomationId="GameOver_TxtMultiplier"
+                               Grid.Column="1"
+                               Text="{Binding ScoreMultiplierText}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="#9C27B0" />
+                  </Grid>
+                </Border>
+              </StackPanel>
               <!-- Sterne + Medaille -->
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center" Margin="0,4,0,0">
@@ -305,7 +335,7 @@
                   HorizontalAlignment="Center"
                   BoxShadow="0 4 12 0 #40000000"
                   BorderThickness="3,0,0,0"
-                  BorderBrush="#FFD700">
+                  BorderBrush="{DynamicResource GoldAccentBrush}">
             <StackPanel Spacing="6">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">

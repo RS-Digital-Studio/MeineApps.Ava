@@ -460,6 +460,9 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     /// <summary>Worker-Auktion ViewModel (v2.1.0). Polling laeuft beim Combat-Tab.</summary>
     public ViewModels.Auctions.WorkerAuctionViewModel AuctionVM { get; }
 
+    /// <summary>V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-ViewModel.</summary>
+    public GuildMegaProjectViewModel MegaProjectVM { get; }
+
     public GuildViewModel(
         IGameStateService gameStateService,
         IGuildFacade facade,
@@ -469,7 +472,8 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         GuildBossViewModel bossViewModel,
         GuildHallViewModel hallViewModel,
         GuildCoopOrderViewModel coopOrderViewModel,
-        ViewModels.Auctions.WorkerAuctionViewModel auctionViewModel)
+        ViewModels.Auctions.WorkerAuctionViewModel auctionViewModel,
+        GuildMegaProjectViewModel megaProjectViewModel)
     {
         _gameStateService = gameStateService;
         _facade = facade;
@@ -481,6 +485,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         HallViewModel = hallViewModel;
         CoopOrderVM = coopOrderViewModel;
         AuctionVM = auctionViewModel;
+        MegaProjectVM = megaProjectViewModel;
 
         // v2.1.0: Co-op-Picker-Provider verdrahten — liefert alle Gildenmitglieder ausser dem Spieler selbst.
         // Member-Liste wird vom GuildViewModel verwaltet (RefreshGuildDetails) — Provider wird zur

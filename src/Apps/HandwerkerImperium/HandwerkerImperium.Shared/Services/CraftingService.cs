@@ -117,11 +117,13 @@ public sealed class CraftingService : ICraftingService
                     state.CraftingInventory.Remove(productId);
             }
 
-            // Crafting-Job erstellen (Prestige-Shop + Research CraftingSpeedBonus reduziert Dauer)
+            // Crafting-Job erstellen (Prestige-Shop + Research + Material-Affinity + Mega-Projekt
+            // reduzieren die Dauer kumulativ, mit Cap 50%).
             int effectiveDuration = recipe.DurationSeconds;
             decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state)
                                        + (_research?.GetTotalEffects().CraftingSpeedBonus ?? 0m)
-                                       + GetMaterialAffinityBonus(state, recipe);
+                                       + GetMaterialAffinityBonus(state, recipe)
+                                       + (state.GuildMembership?.MegaProjectCraftingSpeedBonus ?? 0m);
             if (craftingSpeedBonus > 0)
                 effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
 

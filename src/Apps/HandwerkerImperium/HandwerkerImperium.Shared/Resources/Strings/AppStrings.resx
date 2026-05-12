@@ -6498,6 +6498,39 @@
   <data name="Buy1" xml:space="preserve"><value>Buy 1</value></data>
   <data name="Buy10" xml:space="preserve"><value>Buy 10</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Open Market</value></data>
+  <data name="MarketShowHeatmap" xml:space="preserve"><value>Show 24h price chart</value></data>
+  <data name="MarketHeatmapSubtitle" xml:space="preserve"><value>24-hour price history (UTC). Pulsing dot = current hour.</value></data>
+  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Imperium-Pass ═══════ -->
+  <data name="ImperiumPassName" xml:space="preserve"><value>Imperium Pass</value></data>
+  <data name="ImperiumPassDesc" xml:space="preserve"><value>Lifetime upgrade with 8 permanent bonuses. See details below.</value></data>
+  <data name="ImperiumPassActiveTitle" xml:space="preserve"><value>Imperium Pass active</value></data>
+  <data name="ImperiumPassActiveSubtitle" xml:space="preserve"><value>All permanent bonuses are running.</value></data>
+  <data name="ImperiumPassActiveBenefitsHeader" xml:space="preserve"><value>Your active bonuses</value></data>
+  <data name="ImperiumPassPitchTitle" xml:space="preserve"><value>Upgrade to the Imperium Pass</value></data>
+  <data name="ImperiumPassBenefit1" xml:space="preserve"><value>★ ×3 Rewarded order rewards (instead of ×2)</value></data>
+  <data name="ImperiumPassBenefit2" xml:space="preserve"><value>★ +50% offline income</value></data>
+  <data name="ImperiumPassBenefit3" xml:space="preserve"><value>★ Market access from day one (no research needed)</value></data>
+  <data name="ImperiumPassBenefit4" xml:space="preserve"><value>★ Auto-sell rules per slot</value></data>
+  <data name="ImperiumPassBenefit5" xml:space="preserve"><value>★ +1 heirloom slot at prestige (3 → 4)</value></data>
+  <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× Lucky Spin per day</value></data>
+  <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Auto-claim daily reward</value></data>
+  <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% golden screws from gameplay</value></data>
+  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekt ═══════ -->
+  <data name="GuildMegaProjectTitle" xml:space="preserve"><value>Guild Build Site</value></data>
+  <data name="GuildMegaProjectSubtitle" xml:space="preserve"><value>Pool materials with your guild to unlock permanent bonuses for everyone.</value></data>
+  <data name="GuildMegaProjectCathedral" xml:space="preserve"><value>Guild Cathedral</value></data>
+  <data name="GuildMegaProjectCathedralHint" xml:space="preserve"><value>Mid-tier project (~2 weeks). Rewards: +5% craft speed, +10% auto-sell price, +3 warehouse slots — permanent for all members.</value></data>
+  <data name="GuildMegaProjectHeadquarters" xml:space="preserve"><value>Guild Headquarters</value></data>
+  <data name="GuildMegaProjectHeadquartersHint" xml:space="preserve"><value>End-game project (~4 weeks). Rewards: +10% craft speed, +20% auto-sell price, +5 warehouse slots — permanent for all members.</value></data>
+  <data name="GuildMegaProjectStart" xml:space="preserve"><value>Start Project</value></data>
+  <data name="GuildMegaProjectRequirements" xml:space="preserve"><value>Material Requirements</value></data>
+  <data name="GuildMegaProjectTopDonors" xml:space="preserve"><value>Top Donors</value></data>
+  <data name="MegaProjectRewardFormat" xml:space="preserve"><value>Reward: +{0}% craft speed, +{1}% auto-sell, +{2} slots</value></data>
+  <data name="Donate1" xml:space="preserve"><value>Donate 1</value></data>
+  <data name="Donate10" xml:space="preserve"><value>Donate 10</value></data>
+  <data name="DonateAll" xml:space="preserve"><value>Donate All</value></data>
+  <data name="Available" xml:space="preserve"><value>available:</value></data>
+  <data name="TabBuildSite" xml:space="preserve"><value>Build Site</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material delivery from supplier!</value></data>
   <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Tier-4-Produkte + Erbstuecke + Affinity ═══════ -->
   <data name="ProductVilla" xml:space="preserve"><value>Luxury Villa</value></data>

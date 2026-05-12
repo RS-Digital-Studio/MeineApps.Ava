@@ -114,6 +114,8 @@ public sealed partial class MainViewModel
     public bool IsPrestigeActive => ActivePage == ActivePage.Prestige;
     /// <summary>V7 (Phase 3 Ressourcen-Plan): Material-Markt-Seite.</summary>
     public bool IsMarketActive => ActivePage == ActivePage.Market;
+    /// <summary>V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekt-Bauplatz.</summary>
+    public bool IsGuildBuildSiteActive => ActivePage == ActivePage.GuildBuildSite;
 
     // ═══════════════════════════════════════════════════════════════════════
     // IMPERIUM-SUB-TABS (v2.0.37)
@@ -210,6 +212,7 @@ public sealed partial class MainViewModel
         ActivePage.Crafting => CraftingViewModel,
         ActivePage.Ascension => AscensionViewModel,
         ActivePage.Market => MarketVM,
+        ActivePage.GuildBuildSite => GuildViewModel.MegaProjectVM,
         ActivePage.Guild => GuildViewModel,
 
         // Gilden-Sub-Pages (Thin-Wrapper-VMs ueber GuildViewModel)
@@ -332,7 +335,8 @@ public sealed partial class MainViewModel
         ActivePage.Statistics or ActivePage.Achievements => _localizationService.GetString("TabMissions") ?? "Missions",
         ActivePage.GuildResearch or ActivePage.GuildMembers or ActivePage.GuildInvite or
         ActivePage.GuildWarSeason or ActivePage.GuildBoss or ActivePage.GuildHall or
-        ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar => _localizationService.GetString("TabGuild") ?? "Guild",
+        ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar or
+        ActivePage.GuildBuildSite => _localizationService.GetString("TabGuild") ?? "Guild",
         ActivePage.Settings => _localizationService.GetString("Settings") ?? "Settings",
         _ => ""
     };

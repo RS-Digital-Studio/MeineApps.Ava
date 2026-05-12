@@ -99,7 +99,16 @@ public sealed class WarehouseService : IWarehouseService
     /// V7 (Phase 3 Ressourcen-Plan): Effektive Slot-Anzahl (Geld-Upgrade + Research-Bonus).
     /// </summary>
     public int EffectiveSlotCount =>
-        Math.Min(MaxSlots, _gameState.State.WarehouseSlotCount + BonusSlotsFromResearch);
+        Math.Min(MaxSlots, _gameState.State.WarehouseSlotCount
+                          + BonusSlotsFromResearch
+                          + BonusSlotsFromGuildMegaProject);
+
+    /// <summary>
+    /// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Bonus-Slots aus abgeschlossenen
+    /// Gilden-Mega-Projekten (Kathedrale +3, Hauptquartier +5, beide gestapelt +8).
+    /// </summary>
+    public int BonusSlotsFromGuildMegaProject
+        => _gameState.State.GuildMembership?.MegaProjectBonusWarehouseSlots ?? 0;
 
     public int MaxSlotCount => MaxSlots;
 
@@ -169,7 +178,12 @@ public sealed class WarehouseService : IWarehouseService
             if (rule.Enabled)
             {
                 // Auto-Verkauf zum aktuellen Marktpreis (greift auch wenn Slot blockiert).
+                // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekte
+                // koennen +10/+20% Auto-Verkaufs-Preis-Bonus geben.
                 decimal price = _crafting.GetSellPrice(productId);
+                decimal megaBonus = _gameState.State.GuildMembership?.MegaProjectAutoSellPriceBonus ?? 0m;
+                if (megaBonus > 0)
+                    price *= (1m + megaBonus);
                 decimal revenue = price * overflow;
                 _gameState.AddMoney(revenue);
                 OverflowAutoSold?.Invoke(productId, overflow, revenue);

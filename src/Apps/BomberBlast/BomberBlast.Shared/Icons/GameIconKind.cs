@@ -14,6 +14,8 @@ public enum GameIconKind
     ArrowUpBoldCircle,
     ChevronRight,
     ChevronDoubleUp,
+    ChevronDown,
+    ChevronUp,
     Close,
 
     // Status

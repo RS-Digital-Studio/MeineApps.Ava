@@ -83,6 +83,17 @@ public class LuckySpinState
     [JsonPropertyName("lastAdSpinDate")]
     public DateTime LastAdSpinDate { get; set; } = DateTime.MinValue;
 
+    /// <summary>
+    /// V7 (Phase 4 — Imperium-Pass): Datum des Bonus-Free-Spins (zweiter Gratis-Spin pro Tag,
+    /// nur fuer Premium-Spieler). Plan Section 10.2.
+    /// </summary>
+    [JsonPropertyName("lastBonusFreeSpinDate")]
+    public DateTime LastBonusFreeSpinDate { get; set; } = DateTime.MinValue;
+
+    /// <summary>True wenn der Premium-Bonus-Spin heute noch nicht genutzt wurde.</summary>
+    [JsonIgnore]
+    public bool HasBonusFreeSpin => LastBonusFreeSpinDate.Date < DateTime.UtcNow.Date;
+
     /// <summary>Ad-Spin verfügbar wenn Gratis-Spin verbraucht und Ad-Spin heute noch nicht genutzt.</summary>
     [JsonIgnore]
     public bool HasAdSpin => !HasFreeSpin && LastAdSpinDate.Date < DateTime.UtcNow.Date;

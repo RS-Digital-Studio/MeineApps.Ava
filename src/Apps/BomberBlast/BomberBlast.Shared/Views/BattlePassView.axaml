@@ -87,7 +87,7 @@
                          HorizontalAlignment="Center" />
               <TextBlock Text="{Binding CurrentTierDisplay}"
                          FontSize="40" FontWeight="Bold"
-                         Foreground="#FFD700"
+                         Foreground="{DynamicResource GoldAccentBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
 
@@ -139,10 +139,10 @@
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
                 <icons:GameIcon Kind="Crown" Width="18" Height="18"
-                                 Foreground="#FFD700" />
+                                 Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock Text="{loc:Translate PremiumSection}"
                            FontSize="14" FontWeight="Bold"
-                           Foreground="#FFD700"
+                           Foreground="{DynamicResource GoldAccentBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
             </Border>
@@ -353,12 +353,12 @@
                               Padding="6"
                               MinHeight="52">
                         <Border.Background>
-                          <SolidColorBrush Color="#FFD700" Opacity="0.10" />
+                          <SolidColorBrush Color="{DynamicResource GoldAccentColor}" Opacity="0.10" />
                         </Border.Background>
                         <StackPanel Spacing="3" HorizontalAlignment="Center">
                           <TextBlock Text="{Binding PremiumRewardText}"
                                      FontSize="11" FontWeight="SemiBold"
-                                     Foreground="#FFD700"
+                                     Foreground="{DynamicResource GoldAccentBrush}"
                                      TextAlignment="Center"
                                      TextWrapping="Wrap"
                                      HorizontalAlignment="Center" />
@@ -384,7 +384,7 @@
 
                           <!-- Haekchen wenn bereits beansprucht -->
                           <icons:GameIcon Kind="CheckCircle" Width="18" Height="18"
-                                           Foreground="#FFD700"
+                                           Foreground="{DynamicResource GoldAccentBrush}"
                                            HorizontalAlignment="Center"
                                            IsVisible="{Binding IsPremiumClaimed}" />
 

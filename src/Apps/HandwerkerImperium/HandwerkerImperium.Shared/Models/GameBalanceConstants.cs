@@ -407,8 +407,22 @@ public static class GameBalanceConstants
     // HEIRLOOM (V7 — Phase 4 Ressourcen-Plan, Plan Section 3.8)
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Maximale Anzahl Erbstuecke die beim Prestige mitgenommen werden koennen.</summary>
+    /// <summary>
+    /// Maximale Anzahl Erbstuecke die beim Prestige mitgenommen werden koennen (Free-Tier).
+    /// Imperium-Pass-Spieler bekommen +1 Slot ueber <see cref="MaxHeirloomsPerRunPremium"/>.
+    /// </summary>
     public const int MaxHeirloomsPerRun = 3;
+
+    /// <summary>
+    /// Maximale Anzahl Erbstuecke fuer Imperium-Pass-Spieler (Plan Section 10.2).
+    /// </summary>
+    public const int MaxHeirloomsPerRunPremium = 4;
+
+    /// <summary>
+    /// Hilfsmethode: liefert den effektiven Erbstueck-Slot-Cap je nach Premium-Status.
+    /// </summary>
+    public static int GetEffectiveHeirloomSlots(bool isPremium)
+        => isPremium ? MaxHeirloomsPerRunPremium : MaxHeirloomsPerRun;
 
     /// <summary>Globaler Einkommens-Bonus pro Run-Erbstueck (+2%).</summary>
     public const decimal HeirloomBonusPerItem = 0.02m;

@@ -317,6 +317,8 @@ public partial class App : Application
         services.AddSingleton<IGuildCoopOrderService, GuildCoopOrderService>();
         services.AddSingleton<IWorkerAuctionService, WorkerAuctionService>();
         services.AddSingleton<ViewModels.Guild.GuildCoopOrderViewModel>();
+        // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-VM
+        services.AddSingleton<ViewModels.Guild.GuildMegaProjectViewModel>();
         services.AddSingleton<ViewModels.Auctions.WorkerAuctionViewModel>();
 
         // New Game Services (v2.0)
@@ -384,6 +386,8 @@ public partial class App : Application
         services.AddSingleton<IWarehouseService, WarehouseService>();
         // V7 (Phase 3 Ressourcen-Plan): Material-Markt
         services.AddSingleton<IMarketService, MarketService>();
+        // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekte
+        services.AddSingleton<IGuildMegaProjectService, GuildMegaProjectService>();
 
         // Late-Game-Services (Ascension, Rebirth, VIP)
         services.AddSingleton<IAscensionService, AscensionService>();

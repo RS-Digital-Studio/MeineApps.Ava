@@ -6266,6 +6266,22 @@
   <data name="Buy1" xml:space="preserve"><value>Compra 1</value></data>
   <data name="Buy10" xml:space="preserve"><value>Compra 10</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Apri Mercato</value></data>
+  <data name="MarketShowHeatmap" xml:space="preserve"><value>Mostra grafico prezzi 24h</value></data>
+  <data name="MarketHeatmapSubtitle" xml:space="preserve"><value>Storico prezzi delle ultime 24 ore (UTC). Punto pulsante = ora attuale.</value></data>
+  <data name="ImperiumPassName" xml:space="preserve"><value>Pass Imperiale</value></data>
+  <data name="ImperiumPassDesc" xml:space="preserve"><value>Aggiornamento a vita con 8 bonus permanenti. Dettagli sotto.</value></data>
+  <data name="ImperiumPassActiveTitle" xml:space="preserve"><value>Pass Imperiale attivo</value></data>
+  <data name="ImperiumPassActiveSubtitle" xml:space="preserve"><value>Tutti i bonus permanenti sono attivi.</value></data>
+  <data name="ImperiumPassActiveBenefitsHeader" xml:space="preserve"><value>I tuoi bonus attivi</value></data>
+  <data name="ImperiumPassPitchTitle" xml:space="preserve"><value>Passa al Pass Imperiale</value></data>
+  <data name="ImperiumPassBenefit1" xml:space="preserve"><value>★ ×3 ricompense pubblicitarie (invece di ×2)</value></data>
+  <data name="ImperiumPassBenefit2" xml:space="preserve"><value>★ +50% guadagni offline</value></data>
+  <data name="ImperiumPassBenefit3" xml:space="preserve"><value>★ Accesso al mercato dal giorno 1</value></data>
+  <data name="ImperiumPassBenefit4" xml:space="preserve"><value>★ Regole di vendita automatica per spazio</value></data>
+  <data name="ImperiumPassBenefit5" xml:space="preserve"><value>★ +1 slot cimelio al prestige (3 → 4)</value></data>
+  <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× giro della ruota fortuna al giorno</value></data>
+  <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Riscossione automatica ricompensa giornaliera</value></data>
+  <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% viti dorate dal gameplay</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Consegna di materiale dal fornitore!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa di Lusso</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Grattacielo</value></data>

@@ -100,8 +100,8 @@
                         <TextBlock Text="{Binding ProgressText}" FontSize="12" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Right" />
                         <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right">
-                          <icons:GameIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
-                          <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="#FFD700" />
+                          <icons:GameIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="{DynamicResource GoldAccentBrush}" />
+                          <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource GoldAccentBrush}" />
                         </StackPanel>
                       </StackPanel>
                     </Grid>
@@ -173,8 +173,8 @@
                         <TextBlock Text="{Binding ProgressText}" FontSize="12" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Right" />
                         <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right">
-                          <icons:GameIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
-                          <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="#FFD700" />
+                          <icons:GameIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="{DynamicResource GoldAccentBrush}" />
+                          <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource GoldAccentBrush}" />
                         </StackPanel>
                       </StackPanel>
                     </Grid>
@@ -211,12 +211,12 @@
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
+                  <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="{DynamicResource GoldAccentBrush}" />
                   <TextBlock Text="{Binding DailyBonusLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Text="{Binding DailyBonusText}" FontSize="16" FontWeight="Bold"
-                           Foreground="#FFD700" HorizontalAlignment="Center" />
+                           Foreground="{DynamicResource GoldAccentBrush}" HorizontalAlignment="Center" />
                 <Panel MinHeight="44" IsVisible="{Binding CanClaimDailyBonus}">
                   <controls:GameButtonCanvas ButtonColor="#FF9800" DamageLevel="0.4" ButtonSeed="155" />
                   <Button Classes="Primary GameButton"
@@ -269,12 +269,12 @@
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
+                  <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="{DynamicResource GoldAccentBrush}" />
                   <TextBlock Text="{Binding BonusLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Text="{Binding BonusText}" FontSize="16" FontWeight="Bold"
-                           Foreground="#FFD700" HorizontalAlignment="Center" />
+                           Foreground="{DynamicResource GoldAccentBrush}" HorizontalAlignment="Center" />
                 <Panel MinHeight="44" IsVisible="{Binding CanClaimBonus}">
                   <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.4" ButtonSeed="156" />
                   <Button Classes="Primary GameButton"

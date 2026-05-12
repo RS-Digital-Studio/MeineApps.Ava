@@ -6259,6 +6259,37 @@
   <data name="Buy1" xml:space="preserve"><value>Acheter 1</value></data>
   <data name="Buy10" xml:space="preserve"><value>Acheter 10</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Ouvrir le March&#233;</value></data>
+  <data name="MarketShowHeatmap" xml:space="preserve"><value>Afficher l'historique 24h</value></data>
+  <data name="MarketHeatmapSubtitle" xml:space="preserve"><value>Historique des prix sur 24h (UTC). Point pulsant = heure actuelle.</value></data>
+  <data name="ImperiumPassName" xml:space="preserve"><value>Passe Imp&#233;rial</value></data>
+  <data name="ImperiumPassDesc" xml:space="preserve"><value>Mise &#224; niveau &#224; vie avec 8 bonus permanents. D&#233;tails ci-dessous.</value></data>
+  <data name="ImperiumPassActiveTitle" xml:space="preserve"><value>Passe Imp&#233;rial actif</value></data>
+  <data name="ImperiumPassActiveSubtitle" xml:space="preserve"><value>Tous les bonus permanents sont actifs.</value></data>
+  <data name="ImperiumPassActiveBenefitsHeader" xml:space="preserve"><value>Vos bonus actifs</value></data>
+  <data name="ImperiumPassPitchTitle" xml:space="preserve"><value>Passer au Passe Imp&#233;rial</value></data>
+  <data name="ImperiumPassBenefit1" xml:space="preserve"><value>★ ×3 r&#233;compenses publicitaires (au lieu de ×2)</value></data>
+  <data name="ImperiumPassBenefit2" xml:space="preserve"><value>★ +50% revenus hors ligne</value></data>
+  <data name="ImperiumPassBenefit3" xml:space="preserve"><value>★ Acc&#232;s au march&#233; d&#232;s le premier jour</value></data>
+  <data name="ImperiumPassBenefit4" xml:space="preserve"><value>★ R&#232;gles de vente automatique par emplacement</value></data>
+  <data name="ImperiumPassBenefit5" xml:space="preserve"><value>★ +1 emplacement de relique au prestige (3 → 4)</value></data>
+  <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× spin de la roue par jour</value></data>
+  <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Collecte automatique r&#233;compense quotidienne</value></data>
+  <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% vis dor&#233;es du gameplay</value></data>
+  <data name="GuildMegaProjectTitle" xml:space="preserve"><value>Chantier de la Guilde</value></data>
+  <data name="GuildMegaProjectSubtitle" xml:space="preserve"><value>Mettez en commun des mat&#233;riaux avec votre guilde — bonus permanents pour tous &#224; la cl&#233;.</value></data>
+  <data name="GuildMegaProjectCathedral" xml:space="preserve"><value>Cath&#233;drale de la Guilde</value></data>
+  <data name="GuildMegaProjectCathedralHint" xml:space="preserve"><value>Projet interm&#233;diaire (~2 semaines). R&#233;compense&#160;: +5% vitesse, +10% vente auto, +3 emplacements — permanent.</value></data>
+  <data name="GuildMegaProjectHeadquarters" xml:space="preserve"><value>Si&#232;ge de la Guilde</value></data>
+  <data name="GuildMegaProjectHeadquartersHint" xml:space="preserve"><value>Projet end-game (~4 semaines). R&#233;compense&#160;: +10% vitesse, +20% vente auto, +5 emplacements — permanent.</value></data>
+  <data name="GuildMegaProjectStart" xml:space="preserve"><value>D&#233;marrer le projet</value></data>
+  <data name="GuildMegaProjectRequirements" xml:space="preserve"><value>Mat&#233;riaux requis</value></data>
+  <data name="GuildMegaProjectTopDonors" xml:space="preserve"><value>Meilleurs donateurs</value></data>
+  <data name="MegaProjectRewardFormat" xml:space="preserve"><value>R&#233;compense&#160;: +{0}% vitesse, +{1}% vente auto, +{2} emplacements</value></data>
+  <data name="Donate1" xml:space="preserve"><value>Donner 1</value></data>
+  <data name="Donate10" xml:space="preserve"><value>Donner 10</value></data>
+  <data name="DonateAll" xml:space="preserve"><value>Tout donner</value></data>
+  <data name="Available" xml:space="preserve"><value>disponible&#160;:</value></data>
+  <data name="TabBuildSite" xml:space="preserve"><value>Chantier</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Livraison de mat&#233;riaux du fournisseur&#160;!</value></data>
   <data name="ProductVilla" xml:space="preserve"><value>Villa de Luxe</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Gratte-Ciel</value></data>

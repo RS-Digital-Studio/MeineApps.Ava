@@ -6471,6 +6471,39 @@
   <data name="Buy1" xml:space="preserve"><value>1 kaufen</value></data>
   <data name="Buy10" xml:space="preserve"><value>10 kaufen</value></data>
   <data name="OpenMarket" xml:space="preserve"><value>Markt &#246;ffnen</value></data>
+  <data name="MarketShowHeatmap" xml:space="preserve"><value>24-h-Preisverlauf zeigen</value></data>
+  <data name="MarketHeatmapSubtitle" xml:space="preserve"><value>Preisverlauf der letzten 24 h (UTC). Pulsierender Punkt = aktuelle Stunde.</value></data>
+  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Imperium-Pass ═══════ -->
+  <data name="ImperiumPassName" xml:space="preserve"><value>Imperium-Pass</value></data>
+  <data name="ImperiumPassDesc" xml:space="preserve"><value>Lifetime-Upgrade mit 8 dauerhaften Boni. Details unten.</value></data>
+  <data name="ImperiumPassActiveTitle" xml:space="preserve"><value>Imperium-Pass aktiv</value></data>
+  <data name="ImperiumPassActiveSubtitle" xml:space="preserve"><value>Alle Boni laufen permanent.</value></data>
+  <data name="ImperiumPassActiveBenefitsHeader" xml:space="preserve"><value>Deine aktiven Boni</value></data>
+  <data name="ImperiumPassPitchTitle" xml:space="preserve"><value>Upgrade auf den Imperium-Pass</value></data>
+  <data name="ImperiumPassBenefit1" xml:space="preserve"><value>★ ×3 Rewarded-Auftragsbelohnungen (statt ×2)</value></data>
+  <data name="ImperiumPassBenefit2" xml:space="preserve"><value>★ +50% Offline-Einkommen</value></data>
+  <data name="ImperiumPassBenefit3" xml:space="preserve"><value>★ Markt-Zugang ab Tag 1 (ohne Forschung)</value></data>
+  <data name="ImperiumPassBenefit4" xml:space="preserve"><value>★ Auto-Verkaufs-Regeln pro Lager-Platz</value></data>
+  <data name="ImperiumPassBenefit5" xml:space="preserve"><value>★ +1 Erbst&#252;ck-Slot beim Prestige (3 → 4)</value></data>
+  <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× Gl&#252;cksrad-Spin pro Tag</value></data>
+  <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Auto-Daily-Belohnung</value></data>
+  <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% Goldschrauben aus Gameplay</value></data>
+  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekt ═══════ -->
+  <data name="GuildMegaProjectTitle" xml:space="preserve"><value>Gilden-Bauplatz</value></data>
+  <data name="GuildMegaProjectSubtitle" xml:space="preserve"><value>Sammelt mit eurer Gilde Materialien — bei Abschluss erhalten alle Mitglieder permanente Boni.</value></data>
+  <data name="GuildMegaProjectCathedral" xml:space="preserve"><value>Gilden-Kathedrale</value></data>
+  <data name="GuildMegaProjectCathedralHint" xml:space="preserve"><value>Mittleres Projekt (~2 Wochen). Belohnung: +5% Craft-Speed, +10% Auto-Verkaufs-Preis, +3 Lager-Pl&#228;tze — permanent fuer alle Mitglieder.</value></data>
+  <data name="GuildMegaProjectHeadquarters" xml:space="preserve"><value>Gilden-Hauptquartier</value></data>
+  <data name="GuildMegaProjectHeadquartersHint" xml:space="preserve"><value>End-Game-Projekt (~4 Wochen). Belohnung: +10% Craft-Speed, +20% Auto-Verkaufs-Preis, +5 Lager-Pl&#228;tze — permanent fuer alle Mitglieder.</value></data>
+  <data name="GuildMegaProjectStart" xml:space="preserve"><value>Projekt starten</value></data>
+  <data name="GuildMegaProjectRequirements" xml:space="preserve"><value>Material-Anforderungen</value></data>
+  <data name="GuildMegaProjectTopDonors" xml:space="preserve"><value>Top-Spender</value></data>
+  <data name="MegaProjectRewardFormat" xml:space="preserve"><value>Belohnung: +{0}% Craft-Speed, +{1}% Auto-Verkauf, +{2} Pl&#228;tze</value></data>
+  <data name="Donate1" xml:space="preserve"><value>1 spenden</value></data>
+  <data name="Donate10" xml:space="preserve"><value>10 spenden</value></data>
+  <data name="DonateAll" xml:space="preserve"><value>Alles spenden</value></data>
+  <data name="Available" xml:space="preserve"><value>verf&#252;gbar:</value></data>
+  <data name="TabBuildSite" xml:space="preserve"><value>Bauplatz</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material-Lieferung vom Lieferanten!</value></data>
   <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Tier-4 + Erbstuecke + Affinity ═══════ -->
   <data name="ProductVilla" xml:space="preserve"><value>Luxusvilla</value></data>

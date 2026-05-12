@@ -3,6 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MarketView"
              x:DataType="vm:MarketViewModel"
              x:CompileBindings="True">
@@ -43,6 +44,37 @@
           <TextBlock Text="{Binding EmptyMessage}"
                      FontSize="12" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="280"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
+        </StackPanel>
+      </Border>
+
+      <!-- HEATMAP-DETAIL: 24h Preisverlauf des ausgewaehlten Materials -->
+      <Border Classes="CardElevated" CornerRadius="12" Padding="12"
+              IsVisible="{Binding HasSelectedEntry}"
+              AutomationProperties.AutomationId="Market_Border_HeatmapDetail">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <icons:GameIcon Grid.Column="0"
+                            Kind="{Binding SelectedEntry.Icon, Converter={StaticResource IconKindConverter}, FallbackValue=PackageVariant}"
+                            Width="24" Height="24" VerticalAlignment="Center"
+                            Foreground="{StaticResource CraftPrimaryBrush}" />
+            <StackPanel Grid.Column="1" Spacing="0" VerticalAlignment="Center">
+              <TextBlock Text="{Binding SelectedEntry.Name}" FontSize="14" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate MarketHeatmapSubtitle}" FontSize="10"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="Text" Padding="6" CornerRadius="6" MinHeight="32"
+                    Command="{Binding CloseDetailCommand}"
+                    AutomationProperties.AutomationId="Market_Btn_CloseDetail">
+              <icons:GameIcon Kind="Close" Width="16" Height="16" />
+            </Button>
+          </Grid>
+          <Border Height="160" CornerRadius="8" ClipToBounds="True"
+                  Background="#1F2937">
+            <skia:SKCanvasView Name="HeatmapCanvas"
+                               PaintSurface="OnPaintHeatmap"
+                               AutomationProperties.AutomationId="Market_Canvas_Heatmap" />
+          </Border>
         </StackPanel>
       </Border>
 
@@ -88,8 +120,19 @@
                   </StackPanel>
 
                   <StackPanel Grid.Column="2" Spacing="2" HorizontalAlignment="Right">
-                    <TextBlock Text="{Binding TrendDisplay}" FontSize="20" FontWeight="Bold"
-                               HorizontalAlignment="Right" />
+                    <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="4">
+                      <TextBlock Grid.Column="0" Text="{Binding TrendDisplay}" FontSize="20" FontWeight="Bold"
+                                 VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="Text" Padding="4" CornerRadius="6" MinHeight="28" MinWidth="28"
+                              VerticalAlignment="Center"
+                              Command="{Binding $parent[ItemsControl].((vm:MarketViewModel)DataContext).SelectEntryCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="{loc:Translate MarketShowHeatmap}"
+                              AutomationProperties.AutomationId="Market_Btn_ShowHeatmap">
+                        <icons:GameIcon Kind="ChartBar" Width="16" Height="16"
+                                        Foreground="{StaticResource CraftPrimaryBrush}" />
+                      </Button>
+                    </Grid>
                     <TextBlock Text="{Binding StockDisplay}" FontSize="11" FontWeight="SemiBold"
                                HorizontalAlignment="Right"
                                Foreground="{DynamicResource TextSecondaryBrush}" />

@@ -34,6 +34,31 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private ObservableCollection<MarketEntryDisplay> _entries = [];
 
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): Aktuell im Detail-Panel ausgewaehlter Markt-Eintrag
+    /// (zeigt 24h-Heatmap). Default = null, kein Detail.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedEntry))]
+    [NotifyPropertyChangedFor(nameof(SelectedEntryPriceSeries))]
+    [NotifyPropertyChangedFor(nameof(SelectedEntryCurrentHour))]
+    private MarketEntryDisplay? _selectedEntry;
+
+    public bool HasSelectedEntry => SelectedEntry != null;
+
+    /// <summary>24-Werte-Array fuer den ausgewaehlten Eintrag (UTC-Stunden 0-23).</summary>
+    public decimal[]? SelectedEntryPriceSeries =>
+        SelectedEntry != null ? _market.Get24hPriceSeries(SelectedEntry.ProductId) : null;
+
+    /// <summary>Aktuelle UTC-Stunde (fuer Now-Indikator im Chart).</summary>
+    public int SelectedEntryCurrentHour => DateTime.UtcNow.Hour;
+
+    /// <summary>
+    /// Wird vom Chart-Control beim DataContextChanged gesetzt, damit der Renderer ueber
+    /// Refreshes informiert wird. Nicht persistiert.
+    /// </summary>
+    public event Action? ChartInvalidated;
+
     public MarketViewModel(
         IGameStateService gameState,
         IMarketService market,
@@ -54,6 +79,20 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
 
     private void OnMoneyChanged(object? sender, Models.Events.MoneyChangedEventArgs e)
         => Dispatcher.UIThread.Post(Refresh);
+
+    /// <summary>
+    /// V7 (Phase 3 Ressourcen-Plan): Spieler hat im Detail-Panel auf einen Eintrag getippt
+    /// — Heatmap-Detail oeffnet sich. Tippen auf den gleichen Eintrag schliesst das Detail.
+    /// </summary>
+    [RelayCommand]
+    private void SelectEntry(MarketEntryDisplay? entry)
+    {
+        SelectedEntry = (SelectedEntry == entry) ? null : entry;
+        ChartInvalidated?.Invoke();
+    }
+
+    [RelayCommand]
+    private void CloseDetail() => SelectedEntry = null;
 
     public void UpdateLocalizedTexts()
     {
@@ -105,6 +144,16 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
         // Tier absteigend, dann Name
         var sorted = entries.OrderBy(e => e.Tier).ThenBy(e => e.Name).ToList();
         Entries = new ObservableCollection<MarketEntryDisplay>(sorted);
+
+        // SelectedEntry resynchronisieren (Refresh ersetzt die Objekte, alter Ref-Pointer ist tot)
+        if (SelectedEntry != null)
+        {
+            var refreshed = sorted.FirstOrDefault(e => e.ProductId == SelectedEntry.ProductId);
+            if (refreshed != null && !ReferenceEquals(refreshed, SelectedEntry))
+                SelectedEntry = refreshed;
+            else if (refreshed == null)
+                SelectedEntry = null;
+        }
     }
 
     [RelayCommand]

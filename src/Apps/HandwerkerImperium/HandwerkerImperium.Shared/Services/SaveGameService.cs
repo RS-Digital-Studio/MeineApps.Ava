@@ -572,9 +572,12 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         var allProductsForHeirlooms = CraftingProduct.GetAllProducts();
         state.HeirloomItems.RemoveAll(id =>
             !allProductsForHeirlooms.TryGetValue(id, out var p) || !p.IsHeirloomEligible);
-        if (state.HeirloomItems.Count > GameBalanceConstants.MaxHeirloomsPerRun)
-            state.HeirloomItems.RemoveRange(GameBalanceConstants.MaxHeirloomsPerRun,
-                state.HeirloomItems.Count - GameBalanceConstants.MaxHeirloomsPerRun);
+        // Imperium-Pass-Spieler bekommen +1 Slot (Plan Section 10.2). Sanitize wendet den
+        // SaveGame-State an, aber Premium kann sich aendern → wir clampen auf den Pass-Cap,
+        // das ist der hoechste; bei Prestige clamped der PrestigeService dann strenger.
+        int heirloomCap = GameBalanceConstants.MaxHeirloomsPerRunPremium;
+        if (state.HeirloomItems.Count > heirloomCap)
+            state.HeirloomItems.RemoveRange(heirloomCap, state.HeirloomItems.Count - heirloomCap);
         state.Ascension.PermanentHeirlooms.RemoveAll(id =>
             !allProductsForHeirlooms.TryGetValue(id, out var p) || !p.IsHeirloomEligible);
 

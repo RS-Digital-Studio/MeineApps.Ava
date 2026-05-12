@@ -28,6 +28,10 @@
       <Color x:Key="PowerUpAccentColor">#38E8FF</Color>
       <Color x:Key="CoinAccentColor">#F59E0B</Color>
       <Color x:Key="GemAccentColor">#00BCD4</Color>
+      <!-- Audit L14: Gold-Accent fuer Premium/Legendary/Highlight (war 50+ hardcoded #FFD700 in Views) -->
+      <Color x:Key="GoldAccentColor">#FFD700</Color>
+      <Color x:Key="GoldAccentGlowColor">#FFE082</Color>
+      <Color x:Key="GoldAccentMutedColor">#33FFD700</Color>
 
       <!-- Background Colors -->
       <Color x:Key="BackgroundColor">#141422</Color>
@@ -82,6 +86,9 @@
       <SolidColorBrush x:Key="PowerUpAccentBrush" Color="{DynamicResource PowerUpAccentColor}" />
       <SolidColorBrush x:Key="CoinAccentBrush" Color="{DynamicResource CoinAccentColor}" />
       <SolidColorBrush x:Key="GemAccentBrush" Color="{DynamicResource GemAccentColor}" />
+      <SolidColorBrush x:Key="GoldAccentBrush" Color="{DynamicResource GoldAccentColor}" />
+      <SolidColorBrush x:Key="GoldAccentGlowBrush" Color="{DynamicResource GoldAccentGlowColor}" />
+      <SolidColorBrush x:Key="GoldAccentMutedBrush" Color="{DynamicResource GoldAccentMutedColor}" />
 
       <!-- Card Border -->
       <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource BorderColor}" />

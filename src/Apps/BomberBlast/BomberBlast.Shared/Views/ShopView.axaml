@@ -290,11 +290,11 @@
                   BoxShadow="0 2 8 0 #20FFD700">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <icons:GameIcon Kind="CircleMultiple" Width="18" Height="18"
-                               Foreground="#FFD700" />
+                               Foreground="{DynamicResource GoldAccentBrush}" />
               <TextBlock AutomationProperties.AutomationId="Shop_TxtCoins"
                          Text="{Binding CoinsText}"
                          FontSize="15" FontWeight="SemiBold"
-                         Foreground="#FFD700"
+                         Foreground="{DynamicResource GoldAccentBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
           </Border>
@@ -407,7 +407,7 @@
                                 Padding="8,6">
                           <StackPanel Orientation="Horizontal" Spacing="6">
                             <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14"
-                                             Foreground="#FFD700" />
+                                             Foreground="{DynamicResource GoldAccentBrush}" />
                             <TextBlock Text="{Binding NextPrice, StringFormat='{}{0:N0}'}"
                                        FontSize="13" FontWeight="SemiBold"
                                        Foreground="White" />
@@ -429,9 +429,9 @@
                   Padding="14,10"
                   Margin="0,8,0,0"
                   BorderThickness="3,0,0,0"
-                  BorderBrush="#FFD700">
+                  BorderBrush="{DynamicResource GoldAccentBrush}">
             <Border.Background>
-              <SolidColorBrush Color="#FFD700" Opacity="0.08" />
+              <SolidColorBrush Color="{DynamicResource GoldAccentColor}" Opacity="0.08" />
             </Border.Background>
             <TextBlock AutomationProperties.AutomationId="Shop_TxtPowerUpsSection"
                        Text="{Binding SectionPowerUpsText}"

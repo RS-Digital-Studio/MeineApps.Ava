@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für den Gem-Shop - ermöglicht den Kauf von Gems per In-App-Purchase.
 /// 4 Pakete: Small (100G/0,99€), Medium (600G/3,99€), Large (1500G/7,99€), Mega (5000G/14,99€).
 /// </summary>
-public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
 {
     private readonly IGemService _gemService;
     private readonly IPurchaseService _purchaseService;

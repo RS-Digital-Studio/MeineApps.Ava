@@ -108,7 +108,7 @@
           </Panel>
 
           <TextBlock Text="{Binding TotalCompletionsText, StringFormat='Lifetime Completions: {0}'}"
-                     FontSize="11"
+                     FontSize="12"
                      Foreground="{DynamicResource TextMutedBrush}"
                      HorizontalAlignment="Center" />
         </StackPanel>

@@ -22,7 +22,7 @@ namespace BomberBlast.ViewModels;
 /// </list>
 /// </para>
 /// </summary>
-public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
+public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable, ILocalizable
 {
     private readonly IShopService _shopService;
     private readonly ICoinService _coinService;

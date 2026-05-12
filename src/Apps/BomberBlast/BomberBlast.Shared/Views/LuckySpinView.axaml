@@ -131,7 +131,7 @@
 
         <!-- Total Spins -->
         <TextBlock Text="{Binding TotalSpinsText}"
-                   FontSize="11"
+                   FontSize="12"
                    Foreground="{DynamicResource TextMutedBrush}"
                    HorizontalAlignment="Center"
                    AutomationProperties.AutomationId="LuckySpin_TxtTotal" />

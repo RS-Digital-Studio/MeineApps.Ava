@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// Ermöglicht dem Spieler ein zufälliges Level mit einstellbarer Schwierigkeit zu starten.
 /// Unterstützt "Challenge a Friend" via Seed-Sharing.
 /// </summary>
-public sealed partial class QuickPlayViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class QuickPlayViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
 {
     private readonly ILocalizationService _localizationService;
 

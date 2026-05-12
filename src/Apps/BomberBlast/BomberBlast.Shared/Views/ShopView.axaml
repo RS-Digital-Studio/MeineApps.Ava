@@ -202,7 +202,7 @@
           <!-- Beschreibung -->
           <TextBlock Grid.Row="1" Grid.Column="1"
                      Text="{Binding DisplayDescription}"
-                     FontSize="11"
+                     FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextWrapping="Wrap" />
 
@@ -354,7 +354,7 @@
                     <!-- Beschreibung -->
                     <TextBlock Grid.Row="1" Grid.Column="1"
                                Text="{Binding DisplayDescription}"
-                               FontSize="11"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap" />
 

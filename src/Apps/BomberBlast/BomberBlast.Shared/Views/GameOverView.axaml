@@ -104,7 +104,7 @@
               <StackPanel Orientation="Horizontal" Spacing="16">
                 <StackPanel Spacing="2" HorizontalAlignment="Center">
                   <TextBlock Text="{loc:Translate SurvivalKillsLabel}"
-                             FontSize="11"
+                             FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
                   <StackPanel Orientation="Horizontal" Spacing="4"
@@ -118,7 +118,7 @@
                 </StackPanel>
                 <StackPanel Spacing="2" HorizontalAlignment="Center">
                   <TextBlock Text="{loc:Translate SurvivalTimeLabel}"
-                             FontSize="11"
+                             FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
                   <StackPanel Orientation="Horizontal" Spacing="4"
@@ -476,7 +476,7 @@
                              Foreground="White" />
                 </StackPanel>
                 <TextBlock Text="{Binding SkipLevelInfoText}"
-                           FontSize="10"
+                           FontSize="12"
                            Foreground="#CCFFFFFF"
                            HorizontalAlignment="Center" />
               </StackPanel>

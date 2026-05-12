@@ -110,7 +110,7 @@
                 </Border>
               </Border>
               <TextBlock Text="{Binding XpProgressDisplay}"
-                         FontSize="11"
+                         FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -219,7 +219,7 @@
                                VerticalAlignment="Center" />
                   </StackPanel>
                   <TextBlock Text="{Binding XpBoostTimeText}"
-                             FontSize="11"
+                             FontSize="12"
                              Foreground="#B0FFFFFF"
                              HorizontalAlignment="Center"
                              IsVisible="{Binding IsXpBoostActive}" />
@@ -304,7 +304,7 @@
                               MinHeight="52">
                         <StackPanel Spacing="3" HorizontalAlignment="Center">
                           <TextBlock Text="{Binding FreeRewardText}"
-                                     FontSize="11" FontWeight="SemiBold"
+                                     FontSize="12" FontWeight="SemiBold"
                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                      TextAlignment="Center"
                                      TextWrapping="Wrap"
@@ -324,7 +324,7 @@
                                     Padding="6,4"
                                     CornerRadius="6">
                               <TextBlock Text="{Binding ClaimText}"
-                                         FontSize="11" FontWeight="Bold"
+                                         FontSize="12" FontWeight="Bold"
                                          Foreground="White" />
                             </Button>
                           </Panel>
@@ -357,7 +357,7 @@
                         </Border.Background>
                         <StackPanel Spacing="3" HorizontalAlignment="Center">
                           <TextBlock Text="{Binding PremiumRewardText}"
-                                     FontSize="11" FontWeight="SemiBold"
+                                     FontSize="12" FontWeight="SemiBold"
                                      Foreground="{DynamicResource GoldAccentBrush}"
                                      TextAlignment="Center"
                                      TextWrapping="Wrap"
@@ -377,7 +377,7 @@
                                     Padding="6,4"
                                     CornerRadius="6">
                               <TextBlock Text="{Binding ClaimText}"
-                                         FontSize="11" FontWeight="Bold"
+                                         FontSize="12" FontWeight="Bold"
                                          Foreground="White" />
                             </Button>
                           </Panel>

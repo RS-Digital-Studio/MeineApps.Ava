@@ -154,7 +154,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_BombUp_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -169,7 +169,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Fire_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -184,7 +184,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Speed_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -199,7 +199,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Wallpass_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -214,7 +214,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Detonator_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -229,7 +229,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Bombpass_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -244,7 +244,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Flamepass_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -259,7 +259,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Mystery_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -274,7 +274,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Kick_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -289,7 +289,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_LineBomb_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -304,7 +304,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_PowerBomb_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -319,7 +319,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource ErrorBrush}" />
                       <TextBlock Text="{loc:Translate PowerUp_Skull_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -370,7 +370,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource WarningBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Ballom_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -385,7 +385,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource WarningBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Onil_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -400,7 +400,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource WarningBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Doll_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -415,7 +415,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource ErrorBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Minvo_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -430,7 +430,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource ErrorBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Kondoria_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -445,7 +445,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource ErrorBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Ovapi_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -460,7 +460,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource ErrorBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Pass_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
@@ -475,7 +475,7 @@
                                  FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource ErrorBrush}" />
                       <TextBlock Text="{loc:Translate Enemy_Pontan_Desc}"
-                                 FontSize="11" TextWrapping="Wrap"
+                                 FontSize="12" TextWrapping="Wrap"
                                  MaxLines="2" TextTrimming="CharacterEllipsis"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>

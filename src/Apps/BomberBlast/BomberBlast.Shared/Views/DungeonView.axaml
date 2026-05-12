@@ -199,7 +199,7 @@
                                        FontSize="13" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                             <TextBlock Text="{Binding LevelText}"
-                                       FontSize="11"
+                                       FontSize="12"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                           </StackPanel>
                           <!-- Preis -->
@@ -225,7 +225,7 @@
                                   IsVisible="{Binding IsMaxed}"
                                   Background="#30FFD700" CornerRadius="6" Padding="6,2"
                                   VerticalAlignment="Center">
-                            <TextBlock Text="{loc:Translate ShopMaxed}" FontSize="10" FontWeight="Bold"
+                            <TextBlock Text="{loc:Translate ShopMaxed}" FontSize="12" FontWeight="Bold"
                                        Foreground="{DynamicResource GoldAccentBrush}" />
                           </Border>
                         </Grid>
@@ -269,7 +269,7 @@
                 </Button>
               </Panel>
               <TextBlock Text="{Binding LiteRunHintText}"
-                         FontSize="11"
+                         FontSize="12"
                          Foreground="#CCBBC8FF"
                          TextWrapping="Wrap"
                          TextAlignment="Center" />
@@ -416,7 +416,7 @@
             <Border.Background>
               <SolidColorBrush Color="{Binding CurrentRoomTypeColor}" Opacity="0.2" />
             </Border.Background>
-            <TextBlock Text="{Binding CurrentRoomTypeText}" FontSize="11" FontWeight="SemiBold"
+            <TextBlock Text="{Binding CurrentRoomTypeText}" FontSize="12" FontWeight="SemiBold"
                        Foreground="{Binding CurrentRoomTypeColor}" />
           </Border>
           <Border CornerRadius="10" Padding="10,4" Margin="4,0"
@@ -424,7 +424,7 @@
             <Border.Background>
               <SolidColorBrush Color="{Binding CurrentModifierColor}" Opacity="0.15" />
             </Border.Background>
-            <TextBlock Text="{Binding CurrentModifierText}" FontSize="11" FontWeight="SemiBold"
+            <TextBlock Text="{Binding CurrentModifierText}" FontSize="12" FontWeight="SemiBold"
                        Foreground="{Binding CurrentModifierColor}" />
           </Border>
         </WrapPanel>
@@ -499,7 +499,7 @@
                                  TextAlignment="Center" />
                       <!-- RarityText mit Raritätsfarbe -->
                       <TextBlock Text="{Binding RarityText}"
-                                 FontSize="11" FontWeight="SemiBold"
+                                 FontSize="12" FontWeight="SemiBold"
                                  HorizontalAlignment="Center">
                         <TextBlock.Foreground>
                           <SolidColorBrush Color="{Binding RarityColor}" />
@@ -616,7 +616,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="14" Height="14" CornerRadius="7"
                         Background="#9E9E9E" />
-                <TextBlock Text="{loc:Translate DungeonRoomNormal}" FontSize="11"
+                <TextBlock Text="{loc:Translate DungeonRoomNormal}" FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -624,7 +624,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="14" Height="14" CornerRadius="7"
                         Background="#F44336" />
-                <TextBlock Text="{loc:Translate DungeonRoomElite}" FontSize="11"
+                <TextBlock Text="{loc:Translate DungeonRoomElite}" FontSize="12"
                            Foreground="#F44336"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -632,7 +632,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="14" Height="14" CornerRadius="7"
                         Background="{DynamicResource GoldAccentBrush}" />
-                <TextBlock Text="{loc:Translate DungeonRoomTreasure}" FontSize="11"
+                <TextBlock Text="{loc:Translate DungeonRoomTreasure}" FontSize="12"
                            Foreground="{DynamicResource GoldAccentBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -640,7 +640,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="14" Height="14" CornerRadius="7"
                         Background="#FF9800" />
-                <TextBlock Text="{loc:Translate DungeonRoomChallenge}" FontSize="11"
+                <TextBlock Text="{loc:Translate DungeonRoomChallenge}" FontSize="12"
                            Foreground="#FF9800"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -648,7 +648,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="14" Height="14" CornerRadius="7"
                         Background="#4CAF50" />
-                <TextBlock Text="{loc:Translate DungeonRoomRest}" FontSize="11"
+                <TextBlock Text="{loc:Translate DungeonRoomRest}" FontSize="12"
                            Foreground="#4CAF50"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -656,7 +656,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="14" Height="14" CornerRadius="7"
                         Background="#9C27B0" />
-                <TextBlock Text="{loc:Translate DungeonRoomBoss}" FontSize="11"
+                <TextBlock Text="{loc:Translate DungeonRoomBoss}" FontSize="12"
                            Foreground="#9C27B0"
                            VerticalAlignment="Center" />
               </StackPanel>

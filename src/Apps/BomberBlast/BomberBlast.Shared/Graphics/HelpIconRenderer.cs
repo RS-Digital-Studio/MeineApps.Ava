@@ -945,7 +945,7 @@ public static class HelpIconRenderer
         float w = s * 0.42f, h = s * 0.48f;
 
         // Goldkrone oben
-        fill.Color = new SKColor(255, 215, 0);
+        fill.Color = BomberBlastColors.Gold;
         using var crown = new SKPath();
         float crownY = cy - h * 0.9f;
         crown.MoveTo(cx - w * 0.6f, crownY + s * 0.12f);
@@ -1336,7 +1336,7 @@ public static class HelpIconRenderer
         BombType.Mirror => new SKColor(220, 220, 255),
         BombType.Vortex => new SKColor(170, 50, 255),
         BombType.Phantom => new SKColor(200, 220, 255),
-        BombType.Nova => new SKColor(255, 215, 0),
+        BombType.Nova => BomberBlastColors.Gold,
         BombType.BlackHole => new SKColor(100, 0, 200),
         _ => new SKColor(255, 160, 50) // Normal: warmer orangener Glow
     };

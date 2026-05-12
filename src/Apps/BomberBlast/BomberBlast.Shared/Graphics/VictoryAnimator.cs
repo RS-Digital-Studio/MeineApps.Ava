@@ -240,7 +240,7 @@ public static class VictoryAnimator
         var bounce = MathF.Sin(t * MathF.PI * 2) * 0.1f;
         return new(1f + bounce, 1f - bounce * 0.3f, 0, -MathF.Sin(t * MathF.PI) * 8,
             particleTrigger: (t * 8) % 1 < 0.15f,
-            particleColor: new SKColor(255, 215, 0));
+            particleColor: BomberBlastColors.Gold);
     }
 
     // === Phase 29 — Welt-thematisch ======================================
@@ -357,7 +357,7 @@ public static class VictoryAnimator
         var pose = t < 0.3f ? t / 0.3f : 1f;
         return new(1f + pose * 0.1f, 1f + pose * 0.1f, 0, -pose * 5,
             particleTrigger: t > 0.32f && t < 0.4f,
-            particleColor: new SKColor(255, 215, 0));
+            particleColor: BomberBlastColors.Gold);
     }
 
     private static VictoryFrame GetSeasonFinaleFrame(float t)

@@ -81,7 +81,7 @@
 
                 <!-- Rahmen-Name -->
                 <TextBlock Text="{Binding ActiveFrameName}"
-                           FontSize="11"
+                           FontSize="12"
                            Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Center" />
 
@@ -114,11 +114,11 @@
                 <!-- Liga-Punkte + Saison -->
                 <StackPanel Spacing="2" HorizontalAlignment="Center">
                   <TextBlock Text="{Binding LeaguePointsFormatted}"
-                             FontSize="11"
+                             FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
                   <TextBlock Text="{Binding LeagueSeasonText}"
-                             FontSize="10"
+                             FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
                 </StackPanel>
@@ -198,7 +198,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <icons:GameIcon Grid.Column="0" Kind="Star" Width="16" Height="16"
                                    Foreground="#FFC107" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{loc:Translate StatsTotalStars}" FontSize="11"
+                  <TextBlock Grid.Column="1" Text="{loc:Translate StatsTotalStars}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
                              VerticalAlignment="Center" Margin="8,0,0,0" />
                   <TextBlock Grid.Column="2" Text="{Binding TotalStarsOverview}"
@@ -209,7 +209,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <icons:GameIcon Grid.Column="0" Kind="CardsPlaying" Width="16" Height="16"
                                    Foreground="#2196F3" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{loc:Translate CollectionCards}" FontSize="11"
+                  <TextBlock Grid.Column="1" Text="{loc:Translate CollectionCards}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
                              VerticalAlignment="Center" Margin="8,0,0,0" />
                   <TextBlock Grid.Column="2" Text="{Binding CardsOwnedText}"
@@ -220,7 +220,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <icons:GameIcon Grid.Column="0" Kind="Sword" Width="16" Height="16"
                                    Foreground="#9C27B0" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{loc:Translate StatsDungeonBest}" FontSize="11"
+                  <TextBlock Grid.Column="1" Text="{loc:Translate StatsDungeonBest}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
                              VerticalAlignment="Center" Margin="8,0,0,0" />
                   <TextBlock Grid.Column="2" Text="{Binding DungeonBestFloorText}"
@@ -272,7 +272,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#4CAF50">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding LevelsCompletedLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding LevelsCompletedLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding LevelsCompletedText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -283,7 +283,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#4CAF50">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding TotalStarsLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding TotalStarsLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding TotalStarsText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -294,7 +294,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#4CAF50">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding StarsPercentLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding StarsPercentLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding StarsPercentText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -329,7 +329,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#F44336">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding TotalKillsLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding TotalKillsLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding TotalKillsText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -340,7 +340,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#F44336">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding BombsKickedLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding BombsKickedLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding BombsKickedText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -351,7 +351,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#F44336">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding PowerBombsLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding PowerBombsLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding PowerBombsText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -386,7 +386,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding DungeonRunsLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding DungeonRunsLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding DungeonRunsText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -397,7 +397,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding DungeonBestLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding DungeonBestLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding DungeonBestText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -408,7 +408,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding DungeonCoinsLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding DungeonCoinsLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding DungeonCoinsText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -439,7 +439,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding DailyStreakLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding DailyStreakLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding DailyStreakText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -450,7 +450,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding LongestStreakLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding LongestStreakLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding LongestStreakText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -461,7 +461,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding DailyChallengesCompletedLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding DailyChallengesCompletedLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
                              TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="1" Text="{Binding DailyChallengesCompletedText}" FontSize="15" FontWeight="Bold"
@@ -473,7 +473,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding WeeksCompletedLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding WeeksCompletedLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
                              TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="1" Text="{Binding WeeksCompletedText}" FontSize="15" FontWeight="Bold"
@@ -485,7 +485,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding DailyMissionDaysLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding DailyMissionDaysLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
                              TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="1" Text="{Binding DailyMissionDaysText}" FontSize="15" FontWeight="Bold"
@@ -521,7 +521,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="{DynamicResource GoldAccentBrush}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding CoinBalanceLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding CoinBalanceLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding CoinBalanceText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -532,7 +532,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="{DynamicResource GoldAccentBrush}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding TotalEarnedLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding TotalEarnedLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding TotalEarnedText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -543,7 +543,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="{DynamicResource GoldAccentBrush}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding AchievementsLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding AchievementsLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding AchievementsText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -554,7 +554,7 @@
                       BoxShadow="0 1 4 0 #20000000"
                       BorderThickness="3,0,0,0" BorderBrush="{DynamicResource GoldAccentBrush}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{Binding TotalSpinsLabel}" FontSize="11"
+                  <TextBlock Grid.Column="0" Text="{Binding TotalSpinsLabel}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding TotalSpinsText}" FontSize="15" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />

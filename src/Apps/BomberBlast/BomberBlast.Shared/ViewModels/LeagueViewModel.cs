@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Liga-System mit Firebase Online-Rangliste.
 /// Zeigt echte Spieler + NPC-Backfill, Saison-Countdown, Belohnungen.
 /// </summary>
-public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
 {
     private readonly ILeagueService _leagueService;
     private readonly ILocalizationService _localization;

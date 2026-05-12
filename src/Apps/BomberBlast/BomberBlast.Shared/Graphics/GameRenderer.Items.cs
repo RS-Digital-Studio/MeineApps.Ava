@@ -195,7 +195,7 @@ public sealed partial class GameRenderer
                 break;
             case BombType.Nova:
                 bombBody = new SKColor(255, 200, 0);
-                bombGlow = new SKColor(255, 215, 0);
+                bombGlow = BomberBlastColors.Gold;
                 bombFuse = new SKColor(255, 230, 80);
                 break;
             case BombType.BlackHole:

@@ -19,7 +19,7 @@ public sealed class TutorialOverlay : IDisposable
     {
         Style = SKPaintStyle.Stroke,
         StrokeWidth = 3,
-        Color = new SKColor(255, 215, 0), // Gold
+        Color = BomberBlastColors.Gold, // Gold
         IsAntialias = true
     };
     private readonly SKPaint _bubblePaint = new()

@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// Spieler sieht Wochen-Best-Score + Lifetime-Stats + "Start"-Button.
 /// Beim Tap auf Start wird via GoGame mit Mode="bossrush" das erste Boss-Level gestartet.
 /// </summary>
-public sealed partial class BossRushViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class BossRushViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
 {
     private readonly IBossRushService _bossRushService;
     private readonly ILocalizationService _localization;

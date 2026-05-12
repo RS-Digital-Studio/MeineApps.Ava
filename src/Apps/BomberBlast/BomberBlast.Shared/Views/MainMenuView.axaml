@@ -275,7 +275,7 @@
                   <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <icons:GameIcon Kind="Skull" Width="22" Height="22" Foreground="#FF5252" />
                     <TextBlock Text="{loc:Translate SurvivalMode}"
-                               FontSize="11" FontWeight="SemiBold"
+                               FontSize="12" FontWeight="SemiBold"
                                Foreground="White"
                                HorizontalAlignment="Center" />
                   </StackPanel>
@@ -298,7 +298,7 @@
                   <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <icons:GameIcon Kind="Lightning" Width="22" Height="22" Foreground="#FFC107" />
                     <TextBlock Text="{loc:Translate QuickPlay}"
-                               FontSize="11" FontWeight="SemiBold"
+                               FontSize="12" FontWeight="SemiBold"
                                Foreground="White"
                                HorizontalAlignment="Center" />
                   </StackPanel>
@@ -321,7 +321,7 @@
                   <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <icons:GameIcon Kind="Sword" Width="22" Height="22" Foreground="#E040FB" />
                     <TextBlock Text="{loc:Translate DungeonButton}"
-                               FontSize="11" FontWeight="SemiBold"
+                               FontSize="12" FontWeight="SemiBold"
                                Foreground="White"
                                HorizontalAlignment="Center" />
                   </StackPanel>
@@ -344,12 +344,12 @@
                   <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <icons:GameIcon Kind="Crown" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" />
                     <TextBlock Text="{loc:Translate MasterModeTitle}"
-                               FontSize="11" FontWeight="SemiBold"
+                               FontSize="12" FontWeight="SemiBold"
                                Foreground="White"
                                HorizontalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding MasterModeStatusText}"
-                               FontSize="9"
+                               FontSize="12"
                                Foreground="{DynamicResource GoldAccentBrush}"
                                HorizontalAlignment="Center" />
                   </StackPanel>
@@ -372,12 +372,12 @@
                   <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <icons:GameIcon Kind="Trophy" Width="22" Height="22" Foreground="#FF5252" />
                     <TextBlock Text="{loc:Translate BossRushTitle}"
-                               FontSize="11" FontWeight="SemiBold"
+                               FontSize="12" FontWeight="SemiBold"
                                Foreground="White"
                                HorizontalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding BossRushStatusText}"
-                               FontSize="9"
+                               FontSize="12"
                                Foreground="{DynamicResource GoldAccentBrush}"
                                HorizontalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
@@ -416,14 +416,14 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding TodayRewardSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                   <Border Grid.Column="2" VerticalAlignment="Center"
                           IsVisible="{Binding TodayRewardClaimable}"
                           Background="{DynamicResource GoldAccentBrush}" CornerRadius="8" Padding="6,2">
-                    <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="#1A1A1A" />
+                    <TextBlock Text="!" FontSize="12" FontWeight="Bold" Foreground="#1A1A1A" />
                   </Border>
                 </Grid>
               </Button>
@@ -449,14 +449,14 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding TodayChallengeSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                   <Border Grid.Column="2" VerticalAlignment="Center"
                           IsVisible="{Binding TodayChallengeAvailable}"
                           Background="#FF6B00" CornerRadius="8" Padding="6,2">
-                    <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="!" FontSize="12" FontWeight="Bold" Foreground="White" />
                   </Border>
                 </Grid>
               </Button>
@@ -482,7 +482,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding TodayMissionsSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
@@ -490,7 +490,7 @@
                           IsVisible="{Binding TodayMissionsAvailable}"
                           Background="#00BCD4" CornerRadius="8" Padding="6,2">
                     <TextBlock Text="{Binding TodayMissionsCompleted}"
-                               FontSize="11" FontWeight="Bold" Foreground="White" />
+                               FontSize="12" FontWeight="Bold" Foreground="White" />
                   </Border>
                 </Grid>
               </Button>
@@ -516,14 +516,14 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding TodaySpinSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                   <Border Grid.Column="2" VerticalAlignment="Center"
                           IsVisible="{Binding TodaySpinAvailable}"
                           Background="#E040FB" CornerRadius="8" Padding="6,2">
-                    <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="!" FontSize="12" FontWeight="Bold" Foreground="White" />
                   </Border>
                 </Grid>
               </Button>
@@ -548,14 +548,14 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding TodayDealsSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                   <Border Grid.Column="2" VerticalAlignment="Center"
                           Background="#22D3EE" CornerRadius="8" Padding="6,2">
                     <TextBlock Text="{Binding TodayDealsCount}"
-                               FontSize="11" FontWeight="Bold" Foreground="#1A1A1A" />
+                               FontSize="12" FontWeight="Bold" Foreground="#1A1A1A" />
                   </Border>
                 </Grid>
               </Button>
@@ -593,7 +593,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding CareerLeagueSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
@@ -620,7 +620,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding CareerBattlePassSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
@@ -647,7 +647,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding CareerDeckSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
@@ -674,7 +674,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding CareerCollectionSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
@@ -701,7 +701,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding CareerStarsSubtitle}"
-                               FontSize="10"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
@@ -749,12 +749,12 @@
                 </TextBlock.Foreground>
               </TextBlock>
               <TextBlock Text="{Binding EventBannerDescription}"
-                         FontSize="11"
+                         FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          TextTrimming="CharacterEllipsis" />
             </StackPanel>
             <TextBlock Grid.Column="2" Text="{Binding EventBannerDaysLeftText}"
-                       FontSize="11" FontWeight="SemiBold"
+                       FontSize="12" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        VerticalAlignment="Center" />
           </Grid>
@@ -807,7 +807,7 @@
                     </Border.Background>
                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                       <TextBlock Text="{Binding DayText}"
-                                 FontSize="10" FontWeight="SemiBold"
+                                 FontSize="12" FontWeight="SemiBold"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  HorizontalAlignment="Center" />
                       <Panel Height="20" HorizontalAlignment="Center">
@@ -822,7 +822,7 @@
                                          IsVisible="{Binding IsFuture}" />
                       </Panel>
                       <TextBlock Text="{Binding CoinsText}"
-                                 FontSize="11" FontWeight="Bold"
+                                 FontSize="12" FontWeight="Bold"
                                  Foreground="{DynamicResource GoldAccentBrush}"
                                  HorizontalAlignment="Center" />
                       <icons:GameIcon Kind="HeartPlus" Width="14" Height="14"

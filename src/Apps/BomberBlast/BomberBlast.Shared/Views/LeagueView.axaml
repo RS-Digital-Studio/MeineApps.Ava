@@ -81,7 +81,7 @@
                        HorizontalAlignment="Center" />
             <!-- Nächste Liga -->
             <TextBlock Text="{Binding NextTierText}"
-                       FontSize="11"
+                       FontSize="12"
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center" />
           </StackPanel>

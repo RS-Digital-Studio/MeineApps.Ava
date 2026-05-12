@@ -218,7 +218,7 @@
                             </TextBlock>
                           </Border>
                           <TextBlock Grid.Column="1"
-                                     FontSize="11" FontWeight="SemiBold"
+                                     FontSize="12" FontWeight="SemiBold"
                                      Foreground="{DynamicResource TextMutedBrush}"
                                      HorizontalAlignment="Right"
                                      VerticalAlignment="Center">
@@ -234,7 +234,7 @@
                         <TextBlock Grid.Row="3"
                                    IsVisible="{Binding !IsOwned}"
                                    Text="{Binding RarityLabel}"
-                                   FontSize="10" FontWeight="SemiBold"
+                                   FontSize="12" FontWeight="SemiBold"
                                    TextAlignment="Center"
                                    HorizontalAlignment="Center"
                                    Margin="0,3,0,2">
@@ -320,7 +320,7 @@
                                      TextTrimming="CharacterEllipsis" />
                           <TextBlock IsVisible="{Binding !IsEmpty}"
                                      Text="{Binding UsesText}"
-                                     FontSize="10"
+                                     FontSize="12"
                                      Foreground="{DynamicResource TextSecondaryBrush}" />
                           <TextBlock Text="---"
                                      IsVisible="{Binding IsEmpty}"
@@ -388,13 +388,13 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                                     HorizontalAlignment="Center" VerticalAlignment="Center">
                           <TextBlock Text="{loc:Translate CraftRareButton}"
-                                     FontSize="11" FontWeight="SemiBold" Foreground="White"
+                                     FontSize="12" FontWeight="SemiBold" Foreground="White"
                                      VerticalAlignment="Center" />
                           <TextBlock Text="{Binding CraftRareStatusText}"
-                                     FontSize="10" Foreground="#E0E0E0" VerticalAlignment="Center" />
+                                     FontSize="12" Foreground="#E0E0E0" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{Binding CraftRareCostText}"
-                                   FontSize="10" Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center"
                                    Margin="6,0,0,0" />
                       </Grid>
                     </Button>
@@ -415,13 +415,13 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                                     HorizontalAlignment="Center" VerticalAlignment="Center">
                           <TextBlock Text="{loc:Translate CraftEpicButton}"
-                                     FontSize="11" FontWeight="SemiBold" Foreground="White"
+                                     FontSize="12" FontWeight="SemiBold" Foreground="White"
                                      VerticalAlignment="Center" />
                           <TextBlock Text="{Binding CraftEpicStatusText}"
-                                     FontSize="10" Foreground="#E0E0E0" VerticalAlignment="Center" />
+                                     FontSize="12" Foreground="#E0E0E0" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{Binding CraftEpicCostText}"
-                                   FontSize="10" Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center"
                                    Margin="6,0,0,0" />
                       </Grid>
                     </Button>
@@ -442,13 +442,13 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                                     HorizontalAlignment="Center" VerticalAlignment="Center">
                           <TextBlock Text="{loc:Translate CraftLegendaryButton}"
-                                     FontSize="11" FontWeight="SemiBold" Foreground="White"
+                                     FontSize="12" FontWeight="SemiBold" Foreground="White"
                                      VerticalAlignment="Center" />
                           <TextBlock Text="{Binding CraftLegendaryStatusText}"
-                                     FontSize="10" Foreground="#E0E0E0" VerticalAlignment="Center" />
+                                     FontSize="12" Foreground="#E0E0E0" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{Binding CraftLegendaryCostText}"
-                                   FontSize="10" Foreground="#1A1A1A" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="#1A1A1A" VerticalAlignment="Center"
                                    Margin="6,0,0,0" FontWeight="Bold" />
                       </Grid>
                     </Button>
@@ -495,7 +495,7 @@
                   <SolidColorBrush Color="{Binding SelectedCardRarityColor}" Opacity="0.15" />
                 </Border.Background>
                 <TextBlock Text="{Binding SelectedCardRarityText}"
-                           FontSize="11" FontWeight="Bold">
+                           FontSize="12" FontWeight="Bold">
                   <TextBlock.Foreground>
                     <SolidColorBrush Color="{Binding SelectedCardRarityColor}" />
                   </TextBlock.Foreground>
@@ -504,7 +504,7 @@
 
               <!-- Beschreibung -->
               <TextBlock Text="{Binding SelectedCardDescription}"
-                         FontSize="11"
+                         FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          TextWrapping="Wrap" MaxLines="3" />
 
@@ -522,13 +522,13 @@
                 <Grid ColumnDefinitions="*,*">
                   <StackPanel Grid.Column="0" Spacing="2">
                     <TextBlock Text="{loc:Translate Level}"
-                               FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                               FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
                     <TextBlock Text="{Binding SelectedCardLevelText}"
                                FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource GoldAccentBrush}" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="2">
                     <TextBlock Text="{Binding StrengthLabel}"
-                               FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                               FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
                     <TextBlock Text="{Binding SelectedCardStrengthText}"
                                FontSize="12" FontWeight="SemiBold" Foreground="#4CAF50" />
                   </StackPanel>
@@ -536,7 +536,7 @@
 
                 <!-- Einsätze -->
                 <TextBlock Text="{Binding SelectedCardUsesText}"
-                           FontSize="11"
+                           FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
                 <!-- Upgrade-Sektion -->
@@ -547,12 +547,12 @@
                   </Border.Background>
                   <StackPanel Spacing="4">
                     <TextBlock Text="{Binding UpgradeLabel}"
-                               FontSize="10" FontWeight="SemiBold"
+                               FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextMutedBrush}" />
                     <ProgressBar Value="{Binding UpgradeProgressPercent}" Maximum="100"
                                  Foreground="#4CAF50" Height="12" CornerRadius="6" />
                     <TextBlock Text="{Binding SelectedCardUpgradeText}"
-                               FontSize="11"
+                               FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
 
                     <!-- Upgrade-Benefit: Was bringt das nächste Level? -->
@@ -565,7 +565,7 @@
                         <icons:GameIcon Kind="ArrowUpBold" Width="12" Height="12"
                                          Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding SelectedCardUpgradeBenefitText}"
-                                   FontSize="10" FontWeight="SemiBold"
+                                   FontSize="12" FontWeight="SemiBold"
                                    Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center" />
                       </StackPanel>
                     </Border>
@@ -577,28 +577,28 @@
                   <Button Grid.Column="0" Classes="GameButton" Padding="0" MinHeight="44" Margin="0,0,3,0"
                           Command="{Binding EquipToSlotCommand}" CommandParameter="0"
                           HorizontalContentAlignment="Center">
-                    <TextBlock Text="#1" FontSize="11" FontWeight="Bold" />
+                    <TextBlock Text="#1" FontSize="12" FontWeight="Bold" />
                   </Button>
                   <Button Grid.Column="1" Classes="GameButton" Padding="0" MinHeight="44" Margin="0,0,3,0"
                           Command="{Binding EquipToSlotCommand}" CommandParameter="1"
                           HorizontalContentAlignment="Center">
-                    <TextBlock Text="#2" FontSize="11" FontWeight="Bold" />
+                    <TextBlock Text="#2" FontSize="12" FontWeight="Bold" />
                   </Button>
                   <Button Grid.Column="2" Classes="GameButton" Padding="0" MinHeight="44" Margin="0,0,3,0"
                           Command="{Binding EquipToSlotCommand}" CommandParameter="2"
                           HorizontalContentAlignment="Center">
-                    <TextBlock Text="#3" FontSize="11" FontWeight="Bold" />
+                    <TextBlock Text="#3" FontSize="12" FontWeight="Bold" />
                   </Button>
                   <Button Grid.Column="3" Classes="GameButton" Padding="0" MinHeight="44" Margin="0,0,3,0"
                           Command="{Binding EquipToSlotCommand}" CommandParameter="3"
                           HorizontalContentAlignment="Center">
-                    <TextBlock Text="#4" FontSize="11" FontWeight="Bold" />
+                    <TextBlock Text="#4" FontSize="12" FontWeight="Bold" />
                   </Button>
                   <Button Grid.Column="4" Classes="GameButton" Padding="0" MinHeight="44"
                           IsVisible="{Binding IsSlot5Unlocked}"
                           Command="{Binding EquipToSlotCommand}" CommandParameter="4"
                           HorizontalContentAlignment="Center">
-                    <TextBlock Text="#5" FontSize="11" FontWeight="Bold" Foreground="#00BCD4" />
+                    <TextBlock Text="#5" FontSize="12" FontWeight="Bold" Foreground="#00BCD4" />
                   </Button>
                 </Grid>
 
@@ -637,7 +637,7 @@
 
                 <!-- Basis-Einsätze -->
                 <TextBlock Text="{Binding SelectedCardUsesText}"
-                           FontSize="11"
+                           FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
 
@@ -651,11 +651,11 @@
                     <icons:GameIcon Kind="MapMarker" Width="14" Height="14"
                                      Foreground="{DynamicResource AccentBrush}" />
                     <TextBlock Text="{Binding DropSourceLabel}"
-                               FontSize="10" FontWeight="SemiBold"
+                               FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextMutedBrush}" />
                   </StackPanel>
                   <TextBlock Text="{Binding SelectedCardDropSourceText}"
-                             FontSize="11"
+                             FontSize="12"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              TextWrapping="Wrap" />
                 </StackPanel>

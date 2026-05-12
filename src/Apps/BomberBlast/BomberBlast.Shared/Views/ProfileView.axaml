@@ -70,7 +70,7 @@
                   Classes.Active="{Binding IsOverviewTab}">
             <Button Command="{Binding SelectTabCommand}" CommandParameter="Overview"
                     AutomationProperties.AutomationId="Profile_TabOverview">
-              <TextBlock Text="{Binding TabOverviewText}" FontSize="11" FontWeight="SemiBold"
+              <TextBlock Text="{Binding TabOverviewText}" FontSize="12" FontWeight="SemiBold"
                          Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
             </Button>
@@ -80,7 +80,7 @@
                   Classes.Active="{Binding IsStatisticsTab}">
             <Button Command="{Binding SelectTabCommand}" CommandParameter="Statistics"
                     AutomationProperties.AutomationId="Profile_TabStatistics">
-              <TextBlock Text="{Binding TabStatisticsText}" FontSize="11" FontWeight="SemiBold"
+              <TextBlock Text="{Binding TabStatisticsText}" FontSize="12" FontWeight="SemiBold"
                          Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
             </Button>
@@ -90,7 +90,7 @@
                   Classes.Active="{Binding IsAchievementsTab}">
             <Button Command="{Binding SelectTabCommand}" CommandParameter="Achievements"
                     AutomationProperties.AutomationId="Profile_TabAchievements">
-              <TextBlock Text="{Binding TabAchievementsText}" FontSize="11" FontWeight="SemiBold"
+              <TextBlock Text="{Binding TabAchievementsText}" FontSize="12" FontWeight="SemiBold"
                          Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
             </Button>
@@ -100,7 +100,7 @@
                   Classes.Active="{Binding IsCollectionTab}">
             <Button Command="{Binding SelectTabCommand}" CommandParameter="Collection"
                     AutomationProperties.AutomationId="Profile_TabCollection">
-              <TextBlock Text="{Binding TabCollectionText}" FontSize="11" FontWeight="SemiBold"
+              <TextBlock Text="{Binding TabCollectionText}" FontSize="12" FontWeight="SemiBold"
                          Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
             </Button>
@@ -110,7 +110,7 @@
                   Classes.Active="{Binding IsCustomizeTab}">
             <Button Command="{Binding SelectTabCommand}" CommandParameter="Customize"
                     AutomationProperties.AutomationId="Profile_TabCustomize">
-              <TextBlock Text="{Binding TabCustomizeText}" FontSize="11" FontWeight="SemiBold"
+              <TextBlock Text="{Binding TabCustomizeText}" FontSize="12" FontWeight="SemiBold"
                          Foreground="White" TextTrimming="CharacterEllipsis"
                          HorizontalAlignment="Center" />
             </Button>
@@ -177,7 +177,7 @@
                 </StackPanel>
                 <Grid ColumnDefinitions="*,*">
                   <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
-                    <TextBlock Text="{Binding SkinLabel}" FontSize="10"
+                    <TextBlock Text="{Binding SkinLabel}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}"
                                HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding ActiveSkinName}" FontSize="12" FontWeight="SemiBold"
@@ -185,7 +185,7 @@
                                HorizontalAlignment="Center" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
-                    <TextBlock Text="{Binding FrameLabel}" FontSize="10"
+                    <TextBlock Text="{Binding FrameLabel}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}"
                                HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding ActiveFrameName}" FontSize="12" FontWeight="SemiBold"
@@ -207,7 +207,7 @@
                     <icons:GameIcon Kind="Star" Width="28" Height="28" Foreground="{DynamicResource GoldAccentBrush}" HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding StarsText}" FontSize="20" FontWeight="Bold"
                                Foreground="{DynamicResource GoldAccentBrush}" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding StarsLabel}" FontSize="11"
+                    <TextBlock Text="{Binding StarsLabel}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
                   </StackPanel>
                 </Border>
@@ -219,7 +219,7 @@
                     <icons:GameIcon Kind="CircleMultiple" Width="28" Height="28" Foreground="{DynamicResource GoldAccentBrush}" HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding CoinsText}" FontSize="20" FontWeight="Bold"
                                Foreground="{DynamicResource GoldAccentBrush}" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding CoinsLabel}" FontSize="11"
+                    <TextBlock Text="{Binding CoinsLabel}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
                   </StackPanel>
                 </Border>
@@ -231,7 +231,7 @@
                     <icons:GameIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#00BCD4" HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding GemsText}" FontSize="20" FontWeight="Bold"
                                Foreground="#00BCD4" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding GemsLabel}" FontSize="11"
+                    <TextBlock Text="{Binding GemsLabel}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
                   </StackPanel>
                 </Border>
@@ -247,7 +247,7 @@
                         <SolidColorBrush Color="{Binding LeagueColor}" />
                       </TextBlock.Foreground>
                     </TextBlock>
-                    <TextBlock Text="{Binding LeagueLabel}" FontSize="11"
+                    <TextBlock Text="{Binding LeagueLabel}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
                   </StackPanel>
                 </Border>
@@ -263,7 +263,7 @@
                     <ProgressBar Value="{Binding AchievementPercent}" Maximum="100"
                                  Foreground="{DynamicResource GoldAccentBrush}" Height="6" CornerRadius="3"
                                  HorizontalAlignment="Stretch" Margin="10,0" />
-                    <TextBlock Text="{Binding AchievementsLabel}" FontSize="11"
+                    <TextBlock Text="{Binding AchievementsLabel}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
                   </StackPanel>
                 </Border>
@@ -311,7 +311,7 @@
                       <icons:GameIcon Kind="Store" Width="14" Height="14"
                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                       <TextBlock Text="{Binding CustomizeShopHintText}"
-                                 FontSize="11"
+                                 FontSize="12"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
                                  VerticalAlignment="Center" />
                     </StackPanel>
@@ -352,7 +352,7 @@
                                 </Border.Background>
                               </Border>
                               <TextBlock Text="{Binding DisplayName}"
-                                         FontSize="10" FontWeight="SemiBold"
+                                         FontSize="12" FontWeight="SemiBold"
                                          Foreground="{DynamicResource TextPrimaryBrush}"
                                          HorizontalAlignment="Center" TextWrapping="Wrap"
                                          TextAlignment="Center" />
@@ -406,7 +406,7 @@
                                 </icons:GameIcon.Foreground>
                               </icons:GameIcon>
                               <TextBlock Text="{Binding DisplayName}"
-                                         FontSize="10" FontWeight="SemiBold"
+                                         FontSize="12" FontWeight="SemiBold"
                                          Foreground="{DynamicResource TextPrimaryBrush}"
                                          HorizontalAlignment="Center" TextWrapping="Wrap"
                                          TextAlignment="Center" />
@@ -460,7 +460,7 @@
                                 </icons:GameIcon.Foreground>
                               </icons:GameIcon>
                               <TextBlock Text="{Binding DisplayName}"
-                                         FontSize="10" FontWeight="SemiBold"
+                                         FontSize="12" FontWeight="SemiBold"
                                          Foreground="{DynamicResource TextPrimaryBrush}"
                                          HorizontalAlignment="Center" TextWrapping="Wrap"
                                          TextAlignment="Center" />
@@ -514,7 +514,7 @@
                                 </icons:GameIcon.Foreground>
                               </icons:GameIcon>
                               <TextBlock Text="{Binding DisplayName}"
-                                         FontSize="10" FontWeight="SemiBold"
+                                         FontSize="12" FontWeight="SemiBold"
                                          Foreground="{DynamicResource TextPrimaryBrush}"
                                          HorizontalAlignment="Center" TextWrapping="Wrap"
                                          TextAlignment="Center" />
@@ -568,7 +568,7 @@
                                 </icons:GameIcon.Foreground>
                               </icons:GameIcon>
                               <TextBlock Text="{Binding DisplayName}"
-                                         FontSize="10" FontWeight="SemiBold"
+                                         FontSize="12" FontWeight="SemiBold"
                                          Foreground="{DynamicResource TextPrimaryBrush}"
                                          HorizontalAlignment="Center" TextWrapping="Wrap"
                                          TextAlignment="Center" />
@@ -622,7 +622,7 @@
                                 </Border.BorderBrush>
                               </Border>
                               <TextBlock Text="{Binding DisplayName}"
-                                         FontSize="10" FontWeight="SemiBold"
+                                         FontSize="12" FontWeight="SemiBold"
                                          Foreground="{DynamicResource TextPrimaryBrush}"
                                          HorizontalAlignment="Center" TextWrapping="Wrap"
                                          TextAlignment="Center" />

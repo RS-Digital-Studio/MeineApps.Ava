@@ -23,7 +23,7 @@ namespace BomberBlast.ViewModels;
 ///
 /// Navigations-Events von Sub-VMs werden direkt durchgereicht (z. B. GoBack im Statistics-Tab).
 /// </summary>
-public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, ILocalizable
 {
     private readonly ILeagueService _leagueService;
     private readonly ICustomizationService _customizationService;

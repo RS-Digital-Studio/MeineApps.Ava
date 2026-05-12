@@ -63,7 +63,7 @@
                 <icons:GameIcon Kind="SwapHorizontal" Width="14" Height="14"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding MasterModeStatusText}"
-                           FontSize="11"
+                           FontSize="12"
                            VerticalAlignment="Center"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
@@ -173,7 +173,7 @@
                                   <!-- Sterne oder Schloss -->
                                   <TextBlock Grid.Row="1"
                                              Text="{Binding StarsDisplay}"
-                                             FontSize="10"
+                                             FontSize="12"
                                              Foreground="Gold"
                                              HorizontalAlignment="Center"
                                              IsVisible="{Binding IsCompleted}" />
@@ -188,7 +188,7 @@
                                   <!-- Best Score (klein, unter den Sternen) -->
                                   <TextBlock Grid.Row="2"
                                              Text="{Binding BestScoreText}"
-                                             FontSize="10"
+                                             FontSize="12"
                                              Foreground="{DynamicResource TextSecondaryBrush}"
                                              HorizontalAlignment="Center"
                                              Margin="0,0,0,1"
@@ -393,7 +393,7 @@
                 <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14"
                                  Foreground="{DynamicResource GoldAccentBrush}"
                                  IsVisible="{Binding !UseGemsForLoadout}" />
-                <TextBlock Text="{loc:Translate LoadoutCurrencySwitch}" FontSize="11" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Translate LoadoutCurrencySwitch}" FontSize="12" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
           </Grid>

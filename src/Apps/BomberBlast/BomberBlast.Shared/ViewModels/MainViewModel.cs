@@ -401,42 +401,10 @@ public sealed partial class MainViewModel : ViewModelBase
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
         settingsVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
 
-        // LanguageChanged: Alle instanziierten VMs neu lokalisieren (Audit C13).
-        // Lazy-VMs nur wenn schon resolved (?). Eager-VMs immer.
-        // VMs ohne dedizierte UpdateLocalizedTexts laden via OnAppearing/SetParameters frisch —
-        // bei aktiver View muss aber explizit aktualisiert werden, sonst frieren Strings ein.
-        localization.LanguageChanged += (_, _) =>
-        {
-            // Eager VMs mit UpdateLocalizedTexts
-            BossRushVm.UpdateLocalizedTexts();
-
-            // Eager VMs ohne UpdateLocalizedTexts — OnAppearing setzt alle Texte neu.
-            // Hat keinen UI-Side-Effekt wenn die View gerade nicht aktiv ist (idempotent).
-            try { MenuVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"MenuVm.OnAppearing: {ex.Message}"); }
-            try { LevelSelectVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"LevelSelectVm.OnAppearing: {ex.Message}"); }
-            try { SettingsVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"SettingsVm.OnAppearing: {ex.Message}"); }
-            try { HighScoresVm.OnAppearing(); } catch (Exception ex) { _logger?.LogWarning($"HighScoresVm.OnAppearing: {ex.Message}"); }
-            // HelpVm/GameOverVm/PauseVm/VictoryVm haben keine OnAppearing — Texte sind in XAML lokalisiert
-            // oder werden via SetParameters/SetScore bei Aufruf neu gesetzt.
-
-            // Lazy VMs mit UpdateLocalizedTexts (nur wenn resolved)
-            ShopVm?.UpdateLocalizedTexts();
-            QuickPlayVm?.UpdateLocalizedTexts();
-            DeckVm?.UpdateLocalizedTexts();
-            DungeonVm?.UpdateLocalizedTexts();
-            BattlePassVm?.UpdateLocalizedTexts();
-            CollectionVm?.UpdateLocalizedTexts();
-            LeagueVm?.UpdateLocalizedTexts();
-            ProfileVm?.UpdateLocalizedTexts();
-            GemShopVm?.UpdateLocalizedTexts();
-            StatisticsVm?.UpdateLocalizedTexts();
-            DailyChallengeVm?.UpdateLocalizedTexts();
-            WeeklyChallengeVm?.UpdateLocalizedTexts();
-
-            // Lazy VMs ohne UpdateLocalizedTexts (nur wenn resolved)
-            AchievementsVm?.OnAppearing();
-            LuckySpinVm?.OnAppearing();
-        };
+        // LanguageChanged: Auto-Discovery via ILocalizable (Audit M23 + C13).
+        // Iteriert alle instanziierten (lazy resolved) VMs, ruft UpdateLocalizedTexts.
+        // VMs ohne ILocalizable bekommen OnAppearing() (fallback) — idempotent fuer inaktive Views.
+        localization.LanguageChanged += (_, _) => RefreshAllLocalizedTexts();
 
         // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)
         _cloudSaveInitTask = Task.Run(async () =>
@@ -469,6 +437,59 @@ public sealed partial class MainViewModel : ViewModelBase
             floatingEmitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
         if (vm is ICelebrationEmitter celebrationEmitter)
             celebrationEmitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Audit M23: Sprachwechsel-Forwarder. Iteriert alle instanziierten (resolved) VMs:
+    /// - Implementiert <see cref="ILocalizable"/> → UpdateLocalizedTexts().
+    /// - Sonst: OnAppearing() falls vorhanden (fallback fuer VMs ohne dediziertes Interface).
+    /// Idempotent fuer inaktive Views.
+    /// </summary>
+    private void RefreshAllLocalizedTexts()
+    {
+        // Eager-VMs (immer instanziiert)
+        InvokeLocalizable(MenuVm, fallback: () => MenuVm.OnAppearing());
+        InvokeLocalizable(LevelSelectVm, fallback: () => LevelSelectVm.OnAppearing());
+        InvokeLocalizable(SettingsVm, fallback: () => SettingsVm.OnAppearing());
+        InvokeLocalizable(HighScoresVm, fallback: () => HighScoresVm.OnAppearing());
+        InvokeLocalizable(BossRushVm, fallback: null);
+        // HelpVm/GameOverVm/PauseVm/VictoryVm: keine OnAppearing, XAML-only / SetParameters
+
+        // Lazy-VMs (nur wenn resolved)
+        InvokeLocalizable(ShopVm, fallback: null);
+        InvokeLocalizable(QuickPlayVm, fallback: null);
+        InvokeLocalizable(DeckVm, fallback: null);
+        InvokeLocalizable(DungeonVm, fallback: null);
+        InvokeLocalizable(BattlePassVm, fallback: null);
+        InvokeLocalizable(CollectionVm, fallback: null);
+        InvokeLocalizable(LeagueVm, fallback: null);
+        InvokeLocalizable(ProfileVm, fallback: null);
+        InvokeLocalizable(GemShopVm, fallback: null);
+        InvokeLocalizable(StatisticsVm, fallback: null);
+        InvokeLocalizable(DailyChallengeVm, fallback: null);
+        InvokeLocalizable(WeeklyChallengeVm, fallback: null);
+        InvokeLocalizable(AchievementsVm, fallback: () => AchievementsVm?.OnAppearing());
+        InvokeLocalizable(LuckySpinVm, fallback: () => LuckySpinVm?.OnAppearing());
+    }
+
+    /// <summary>
+    /// Audit M23-Helper: ruft <see cref="ILocalizable.UpdateLocalizedTexts"/> wenn implementiert,
+    /// sonst optionalen Fallback. try/catch verhindert dass ein VM-Fehler andere blockiert.
+    /// </summary>
+    private void InvokeLocalizable(object? vm, Action? fallback)
+    {
+        if (vm == null) return;
+        try
+        {
+            if (vm is ILocalizable localizable)
+                localizable.UpdateLocalizedTexts();
+            else
+                fallback?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning($"RefreshAllLocalizedTexts: {vm.GetType().Name} fehlgeschlagen — {ex.Message}");
+        }
     }
 
     /// <summary>

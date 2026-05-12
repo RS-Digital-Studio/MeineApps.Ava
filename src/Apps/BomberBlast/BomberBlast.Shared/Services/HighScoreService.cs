@@ -150,9 +150,17 @@ public sealed class HighScoreService : IHighScoreService
         if (string.IsNullOrEmpty(dateStr))
             return DateTime.UtcNow;
 
-        // RoundtripKind bewahrt DateTimeKind.Utc aus dem "O"-Format
+        // RoundtripKind bewahrt DateTimeKind.Utc aus dem "O"-Format.
+        // Audit L05: Pre-v2.0-Saves haben evtl. Kind=Unspecified ohne Z-Suffix (kein "O"-Format).
+        // → Bei Unspecified als UTC interpretieren statt Local (sonst 1-2h Drift beim Anzeigen).
         if (DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result))
+        {
+            if (result.Kind == DateTimeKind.Unspecified)
+                result = DateTime.SpecifyKind(result, DateTimeKind.Utc);
+            else if (result.Kind == DateTimeKind.Local)
+                result = result.ToUniversalTime();
             return result;
+        }
 
         return DateTime.UtcNow;
     }

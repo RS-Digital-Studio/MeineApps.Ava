@@ -353,6 +353,11 @@ public partial class App : Application
                 (mainVm.LevelSelectVm as IDisposable)?.Dispose();
                 (mainVm.MenuVm as IDisposable)?.Dispose();
             }
+
+            // Audit L07: Pending Dirty-Saves von Achievements/Collection/Tracking ans Disk flushen
+            // bevor Process stirbt. Wird sonst nur ueber GameEngine-Lifecycle gefluscht — bei
+            // OnDestroy ohne Game-Session blieben Dirty-Achievements im Memory liegen.
+            Services.GetService<IGameTrackingService>()?.FlushIfDirty();
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
             (Services.GetService<IGameAssetService>() as IDisposable)?.Dispose();
             // InputManager haelt NeonJoystick (20 SKPaint + 5 SKPath) - muss auch disposed werden

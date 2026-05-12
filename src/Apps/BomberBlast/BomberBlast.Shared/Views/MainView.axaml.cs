@@ -66,25 +66,27 @@ public partial class MainView : UserControl
     {
         base.OnAttachedToVisualTree(e);
 
-        // Preload-Pipeline: Shader + Renderer vorkompilieren während Splash angezeigt wird
+        // Preload-Pipeline: Shader + Renderer vorkompilieren während Splash angezeigt wird.
+        // Audit L12: Granularere Progress-Reports verhindern "Freeze"-Eindruck zwischen Steps.
         Splash.PreloadAction = async (reportProgress) =>
         {
             // Schritt 1: SkSL-GPU-Shader kompilieren (12 Shader, 600-2400ms auf Android)
-            reportProgress(0.0f, "Grafik-Engine wird vorbereitet...");
+            reportProgress(0.05f, "Grafik-Engine wird vorbereitet...");
             await Task.Run(() => ShaderPreloader.PreloadAll());
+            reportProgress(0.55f, "Shader bereit");
 
             // Schritt 2: Statische Renderer-Klassen initialisieren
             // (SKPaint/SKFont/SKMaskFilter/SKPath + Noise-LUT vorallokieren,
             //  verhindert Jank beim ersten Frame/View-Öffnen)
-            reportProgress(0.7f, "Effekte werden geladen...");
-            await Task.Run(() =>
-            {
-                ExplosionShaders.Preload();
-                HelpIconRenderer.Preload();
-                TornMetalRenderer.Preload();
-                RarityRenderer.Preload();
-                MenuBackgroundRenderer.Preload();
-            });
+            await Task.Run(() => { ExplosionShaders.Preload(); });
+            reportProgress(0.65f, "Effekte werden geladen...");
+            await Task.Run(() => { HelpIconRenderer.Preload(); });
+            reportProgress(0.75f, "Icons werden geladen...");
+            await Task.Run(() => { TornMetalRenderer.Preload(); });
+            reportProgress(0.85f, "Buttons werden geladen...");
+            await Task.Run(() => { RarityRenderer.Preload(); });
+            reportProgress(0.92f, "Kartensystem wird geladen...");
+            await Task.Run(() => { MenuBackgroundRenderer.Preload(); });
 
             reportProgress(1.0f, "Fertig");
         };

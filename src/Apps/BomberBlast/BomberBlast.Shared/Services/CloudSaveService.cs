@@ -21,6 +21,10 @@ public sealed class CloudSaveService : ICloudSaveService
     };
 
     private const string EnabledKey = "CloudSaveEnabled";
+    // Audit L06: LastSyncKey ist BEWUSST nicht in SyncKeys[] — er ist ein lokales
+    // Telemetrie-Feld ("wann zuletzt synced?") und darf nicht via Cloud-Pull ueberschrieben werden.
+    // Sonst wuerde der "Pulling from Cloud"-Vorgang den eigenen LastSync-Stempel mit dem Cloud-Stempel
+    // ersetzen → Settings-Anzeige zeigt falsches Datum nach Erstlogin auf neuem Geraet.
     private const string LastSyncKey = "CloudSaveLastSync";
     private const int DebounceMs = 5000; // 5 Sekunden Debounce für Push
 

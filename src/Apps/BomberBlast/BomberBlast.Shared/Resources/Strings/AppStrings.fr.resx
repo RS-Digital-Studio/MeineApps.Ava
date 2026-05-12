@@ -730,6 +730,12 @@
   <data name="GameOverHideDetails" xml:space="preserve">
     <value>Masquer le détail</value>
   </data>
+  <data name="ConfirmGemPurchaseMessage" xml:space="preserve">
+    <value>Dépenser {0} Gemmes pour {1} ?</value>
+  </data>
+  <data name="PurchaseFailedDetailGems" xml:space="preserve">
+    <value>Nécessite {0} Gemmes, tu en as {1}</value>
+  </data>
   <data name="WatchVideoBoost" xml:space="preserve">
     <value>Regarder une vidéo pour un boost de départ ?</value>
   </data>

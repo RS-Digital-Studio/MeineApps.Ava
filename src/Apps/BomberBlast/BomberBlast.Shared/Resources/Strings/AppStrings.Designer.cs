@@ -1279,6 +1279,18 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string ConfirmGemPurchaseMessage {
+            get {
+                return ResourceManager.GetString("ConfirmGemPurchaseMessage", resourceCulture);
+            }
+        }
+
+        internal static string PurchaseFailedDetailGems {
+            get {
+                return ResourceManager.GetString("PurchaseFailedDetailGems", resourceCulture);
+            }
+        }
+
         internal static string WatchVideoBoost {
             get {
                 return ResourceManager.GetString("WatchVideoBoost", resourceCulture);

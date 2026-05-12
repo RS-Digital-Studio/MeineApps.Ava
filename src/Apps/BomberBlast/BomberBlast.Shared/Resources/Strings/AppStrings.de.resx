@@ -730,6 +730,12 @@
   <data name="GameOverHideDetails" xml:space="preserve">
     <value>Aufschlüsselung ausblenden</value>
   </data>
+  <data name="ConfirmGemPurchaseMessage" xml:space="preserve">
+    <value>{0} Edelsteine ausgeben für {1}?</value>
+  </data>
+  <data name="PurchaseFailedDetailGems" xml:space="preserve">
+    <value>Benötigt {0} Edelsteine, du hast {1}</value>
+  </data>
   <data name="WatchVideoBoost" xml:space="preserve">
     <value>Video schauen für Startboost?</value>
   </data>

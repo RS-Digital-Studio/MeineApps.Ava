@@ -4268,6 +4268,10 @@ namespace BomberBlast.Resources.Strings {
 
         internal static string AchievementsTitle => ResourceManager.GetString("AchievementsTitle", resourceCulture)!;
 
+        internal static string AchievementsEmptyHeadline => ResourceManager.GetString("AchievementsEmptyHeadline", resourceCulture)!;
+
+        internal static string AchievementsEmptyCta => ResourceManager.GetString("AchievementsEmptyCta", resourceCulture)!;
+
         internal static string AchKickMaster => ResourceManager.GetString("AchKickMaster", resourceCulture)!;
 
         internal static string AchKickMasterDesc => ResourceManager.GetString("AchKickMasterDesc", resourceCulture)!;

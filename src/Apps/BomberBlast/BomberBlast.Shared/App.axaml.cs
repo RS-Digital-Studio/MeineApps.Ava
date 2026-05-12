@@ -83,6 +83,12 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, IPushNotificationService>? PushNotificationServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen IRemoteConfigService (Android setzt FirebaseRemoteConfigService — Sprint 2.1).
+    /// Bis dahin: NullRemoteConfigService liefert Defaults (Sprint 1.4c Stub).
+    /// </summary>
+    public static Func<IServiceProvider, IRemoteConfigService>? RemoteConfigServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -111,6 +117,9 @@ public partial class App : Application
         Services.GetRequiredService<ITelemetryService>().Initialize();
         Services.GetRequiredService<IAnalyticsService>().Initialize();
         _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync();
+        // Sprint 1.4c — RemoteConfig stillschweigend initialisieren (NullImpl ist No-Op,
+        // Firebase-Impl holt sich Defaults + erstes Fetch in Background).
+        _ = Services.GetRequiredService<IRemoteConfigService>().InitializeAsync();
 
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
         GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
@@ -172,9 +181,21 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.56",
+            // Sprint 1.4a AAA-Audit: Splash-Version aus Assembly auslesen statt hardcoded.
+            // BomberBlast.Shared.csproj <Version> wird zur Assembly-Version → ToString(3) = "X.Y.Z".
+            AppVersion = "v" + GetAppVersionString(),
             Renderer = new BomberBlastSplashRenderer()
         };
+    }
+
+    /// <summary>
+    /// Liefert die App-Version aus dem Shared-Assembly als "X.Y.Z" (3 Komponenten).
+    /// Fallback "0.0.0" wenn Assembly-Version aus irgendeinem Grund nicht lesbar.
+    /// </summary>
+    private static string GetAppVersionString()
+    {
+        var version = typeof(App).Assembly.GetName().Version;
+        return version is null ? "0.0.0" : version.ToString(3);
     }
 
     private async Task RunLoadingAsync(SkiaLoadingSplash splash)
@@ -353,6 +374,8 @@ public partial class App : Application
         services.AddSingleton<ITelemetryService>(sp => TelemetryServiceFactory?.Invoke(sp) ?? new NullTelemetryService());
         services.AddSingleton<IAnalyticsService>(sp => AnalyticsServiceFactory?.Invoke(sp) ?? new NullAnalyticsService());
         services.AddSingleton<IPushNotificationService>(sp => PushNotificationServiceFactory?.Invoke(sp) ?? new NullPushNotificationService());
+        // Sprint 1.4c — RemoteConfig-Stub (Sprint 2.1: Android-Override mit Firebase-Impl).
+        services.AddSingleton<IRemoteConfigService>(sp => RemoteConfigServiceFactory?.Invoke(sp) ?? new NullRemoteConfigService());
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)

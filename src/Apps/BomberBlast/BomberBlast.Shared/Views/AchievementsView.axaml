@@ -52,26 +52,53 @@
         </Grid>
       </Border>
 
-      <!-- Empty State (keine Achievements geladen) -->
+      <!-- Empty State Sprint 1.4b: 0/N freigeschaltet → illustriertes Empty-State + CTA -->
       <StackPanel Grid.Row="1"
-                  IsVisible="{Binding !CategoryGroups.Count}"
+                  IsVisible="{Binding ShowEmptyState}"
                   VerticalAlignment="Center"
                   HorizontalAlignment="Center"
-                  Spacing="12">
-        <icons:GameIcon Kind="TrophyBroken" Width="48" Height="48"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding EmptyStateText, FallbackValue='Noch keine Achievements verfügbar'}"
-                   FontSize="15"
-                   Foreground="{DynamicResource TextMutedBrush}"
+                  Spacing="20"
+                  Margin="32,0">
+        <!-- Illustriertes Trophy-Shelf via SkiaSharp (Phase 28c-Hookup) -->
+        <ctrl:EmptyStateCanvas StateType="Achievements"
+                                Width="200" Height="200"
+                                HorizontalAlignment="Center" />
+        <!-- Headline -->
+        <TextBlock Text="{Binding EmptyStateHeadline, FallbackValue='Noch keine Achievements freigeschaltet'}"
+                   FontSize="20" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   MaxWidth="320" />
+        <!-- Sub-Hint -->
+        <TextBlock Text="{Binding ProgressText, StringFormat='{}{0}'}"
+                   FontSize="32" FontWeight="Bold"
+                   Foreground="{DynamicResource AccentBrush}"
                    HorizontalAlignment="Center" />
+        <!-- CTA Button — primaerer Akzent-Look, direkt aus DynamicResource (theme-konsistent) -->
+        <Button Command="{Binding StartFirstLevelCommand}"
+                AutomationProperties.AutomationId="Achievements_BtnStartFirstLevel"
+                Background="{DynamicResource AccentBrush}"
+                Foreground="{DynamicResource OnAccentBrush}"
+                CornerRadius="12"
+                MinHeight="56" MinWidth="240"
+                HorizontalAlignment="Center"
+                Padding="24,12">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <icons:GameIcon Kind="Play" Width="22" Height="22" />
+            <TextBlock Text="{Binding EmptyStateCtaText, FallbackValue='Spiele dein erstes Level'}"
+                       FontSize="16" FontWeight="Bold"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
       </StackPanel>
 
-      <!-- Achievement List (nach Kategorie gruppiert) -->
+      <!-- Achievement List (nach Kategorie gruppiert) — verborgen bei Empty-State -->
       <ScrollViewer Grid.Row="1"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto"
-                    IsVisible="{Binding CategoryGroups.Count}">
+                    IsVisible="{Binding !ShowEmptyState}">
         <ItemsControl AutomationProperties.AutomationId="Achievements_CategoryList"
                       ItemsSource="{Binding CategoryGroups}" Margin="12,8,12,80">
           <ItemsControl.ItemsPanel>

@@ -776,6 +776,13 @@
   <data name="AchievementsTitle" xml:space="preserve">
     <value>Succès</value>
   </data>
+  <!-- Sprint 1.4b AAA-Audit Polish: Empty-State + CTA -->
+  <data name="AchievementsEmptyHeadline" xml:space="preserve">
+    <value>Aucun succès débloqué pour l'instant</value>
+  </data>
+  <data name="AchievementsEmptyCta" xml:space="preserve">
+    <value>Jouez votre premier niveau</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Monde 1 Terminé</value>
   </data>

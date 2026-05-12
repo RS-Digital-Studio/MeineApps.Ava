@@ -27,6 +27,20 @@ public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
     [ObservableProperty]
     private string _emptyStateText = "";
 
+    /// <summary>
+    /// Sprint 1.4b AAA-Audit Polish: Zeigt illustrierten Empty-State + CTA wenn 0/N freigeschaltet.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showEmptyState;
+
+    /// <summary>Headline im Empty-State ("Du hast noch keine Achievements freigeschaltet").</summary>
+    [ObservableProperty]
+    private string _emptyStateHeadline = "";
+
+    /// <summary>CTA-Button-Text ("Spiele dein erstes Level").</summary>
+    [ObservableProperty]
+    private string _emptyStateCtaText = "";
+
     public ObservableCollection<AchievementCategoryGroup> CategoryGroups { get; } = [];
 
     public AchievementsViewModel(IAchievementService achievementService, ILocalizationService localizationService)
@@ -39,6 +53,14 @@ public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
     {
         TitleText = _localizationService.GetString("AchievementsTitle") ?? "Achievements";
         ProgressText = $"{_achievementService.UnlockedCount}/{_achievementService.TotalCount}";
+
+        // Sprint 1.4b AAA-Audit Polish: Empty-State wenn 0 freigeschaltet — Spieler bekommt
+        // klare Handlungsaufforderung statt leerer Liste.
+        ShowEmptyState = _achievementService.UnlockedCount == 0;
+        EmptyStateHeadline = _localizationService.GetString("AchievementsEmptyHeadline")
+            ?? "Noch keine Achievements freigeschaltet";
+        EmptyStateCtaText = _localizationService.GetString("AchievementsEmptyCta")
+            ?? "Spiele dein erstes Level";
 
         CategoryGroups.Clear();
 
@@ -100,6 +122,12 @@ public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
 
     [RelayCommand]
     private void Back() => NavigationRequested?.Invoke(new GoBack());
+
+    /// <summary>
+    /// Sprint 1.4b AAA-Audit Polish: CTA aus Empty-State navigiert zur Level-Auswahl.
+    /// </summary>
+    [RelayCommand]
+    private void StartFirstLevel() => NavigationRequested?.Invoke(new GoLevelSelect());
 }
 
 /// <summary>

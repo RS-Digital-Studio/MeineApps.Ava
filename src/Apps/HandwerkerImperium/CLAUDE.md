@@ -85,18 +85,22 @@ HandwerkerImperium.Shared/
 | `MainViewModel.Helpers.cs` | FormatMoney, UpdateNetIncomeHeader, UpdateWorkerWarning, Money-Animation, Workshop-Icon-Mapping (160 Z.) |
 | `MainViewModel.Lifecycle.cs` | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose (170 Z.) |
 
-### DialogViewModel Partial-Split
+### DialogViewModel Struktur
+
+`DialogViewModel.cs` ist der Coordinator + Confirm-Dialog-Properties. Pro Dialog-Typ
+gibt es eine Partial-Datei. Prestige-Tier-Auswahl ist als **eigenständige VM**
+herausgezogen (AAA-Audit P0, 12.05.2026, "echter Strukturschnitt").
 
 | Datei | Zeilen | Inhalt |
 |-------|--------|--------|
-| `DialogViewModel.cs` | 232 | Service-Felder, Konstruktor, Confirm-Dialog-Properties, ShowAlert/Confirm, IsAnyDialogVisible, ShowPrestigeSummary, Reputation-Info, Cleanup |
-| `DialogViewModel.Achievement.cs` | 25 | Achievement-Dialog |
-| `DialogViewModel.Alert.cs` | 29 | Alert-Dialog |
-| `DialogViewModel.Hint.cs` | 106 | Hint-Dialog |
-| `DialogViewModel.LevelUp.cs` | 30 | LevelUp-Dialog |
-| `DialogViewModel.PrestigeSummary.cs` | 45 | Post-Prestige-Summary |
-| `DialogViewModel.PrestigeTier.cs` | 365 | Prestige-Tier-Auswahl + Inhalt-Aufbau |
-| `DialogViewModel.Story.cs` | 152 | Story-Dialog |
+| `DialogViewModel.cs` | 269 | Service-Felder, Konstruktor, Confirm-Dialog-Properties, ShowAlert/Confirm, IsAnyDialogVisible, ShowPrestigeSummary, Reputation-Info, Cleanup, Delegations an PrestigeConfirmation |
+| `DialogViewModel.Achievement.cs` | 25 | Achievement-Dialog (Partial) |
+| `DialogViewModel.Alert.cs` | 29 | Alert-Dialog (Partial) |
+| `DialogViewModel.Hint.cs` | 106 | Hint-Dialog (Partial) |
+| `DialogViewModel.LevelUp.cs` | 30 | LevelUp-Dialog (Partial) |
+| `DialogViewModel.PrestigeSummary.cs` | 45 | Post-Prestige-Summary (Partial) |
+| `DialogViewModel.Story.cs` | 152 | Story-Dialog (Partial) |
+| **`PrestigeConfirmationViewModel.cs`** | **380** | **Eigenständige VM (kein Partial)** — Prestige-Tier-Auswahl, Composition-Property auf DialogVM. XAML-Bindings: `DialogVM.PrestigeConfirmation.X` |
 
 ### IFrameClock (zentraler Render-Tick)
 

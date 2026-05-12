@@ -4,6 +4,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:conv="using:BomberBlast.Converters"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:components="using:BomberBlast.Views.Components"
              x:Class="BomberBlast.Views.MainView"
              x:DataType="vm:MainViewModel"
              x:CompileBindings="True">
@@ -327,6 +328,15 @@
                                       AutomationProperties.AutomationId="MainView_Celebration"
                                       ZIndex="16"
                                       IsHitTestVisible="False" />
+
+    <!-- Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar — wird angezeigt im MainMenu-Modus.
+         Konsolidiert 15+ Navigations-Punkte auf 4 Tabs (Home/Play/Shop/Profile).
+         Die existierenden Page-Views bleiben — BottomTabBar dient zukünftig
+         als zentrale Navigation, MainMenuView-Refactor folgt in eigenem Sprint. -->
+    <components:BottomTabBar IsVisible="{Binding IsMainMenuActive}"
+                              VerticalAlignment="Bottom"
+                              ZIndex="14"
+                              AutomationProperties.AutomationId="MainView_BottomTabBar" />
   </Grid>
 
   <!-- Ladebildschirm (Shader-Preloading) -->

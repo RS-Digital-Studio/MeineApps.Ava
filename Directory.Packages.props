@@ -71,6 +71,17 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Xamarin.GooglePlayServices.Games.V2" Version="121.0.0.3" />
 
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- FIREBASE (Crashlytics / Analytics / Cloud Messaging)              -->
+    <!-- Analytics 123.x passt zur Measurement-Base 123.x die ueber        -->
+    <!-- Xamarin.GooglePlayServices.Ads.Lite 124.x transitiv reinkommt —   -->
+    <!-- sonst zerbricht der R8-Dexer an duplicate measurement-classes.    -->
+    <!-- Tasks kommt transitiv ueber Crashlytics/Messaging.                -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="Xamarin.Firebase.Crashlytics" Version="119.4.4" />
+    <PackageVersion Include="Xamarin.Firebase.Analytics" Version="123.2.0" />
+    <PackageVersion Include="Xamarin.Firebase.Messaging" Version="124.1.2" />
+
     <!-- Transitive dependency von Ads.Lite: JVM-Variante muss excluded werden,
          da .android-Variante dieselben Klassen enthaelt (D8 duplicate type error) -->
     <PackageVersion Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm" Version="1.10.4.1" />

@@ -6,7 +6,7 @@ eigenes Icon-System, AI-Pathfinding, Roguelike-Dungeon-Modus und Liga-System.
 
 | Aspekt | Wert |
 |--------|------|
-| Version | v2.0.55 (VersionCode 65) |
+| Version | v2.0.56 (VersionCode 66) |
 | Package-ID | org.rsdigital.bomberblast |
 | Status | Produktion |
 | Premium-Modell | 1,99 EUR `remove_ads` |
@@ -691,10 +691,17 @@ Position-Cache: Update-Pass wird übersprungen wenn Grid-Position seit letztem F
 **Memory-Telemetrie**: `GC.GetTotalMemory(false)` alle 60s auf Background-Thread via `Task.Run`.
 Setzt Crashlytics-Custom-Keys `memory_mb`, `gc_gen0/1/2` für Crash-Filterung nach Memory-Pressure.
 
-**Firebase-Service-Stubs** (bereit für Aktivierung nach Console-Setup):
-`AndroidTelemetryService`, `AndroidAnalyticsService`, `AndroidPushNotificationService`
-in `BomberBlast.Android/`. Alle erfüllen jeweilige Interfaces. Echte SDK-Aufrufe als
-`// TODO`-Kommentare — nach NuGet-Install + Console-Setup in ~1.5h aktivierbar.
+**Firebase-Integration aktiv ab v2.0.56**:
+
+- `AndroidTelemetryService` ruft `Firebase.Crashlytics.FirebaseCrashlytics.Instance` — `SetCrashlyticsCollectionEnabled` braucht `Java.Lang.Boolean.True` (Java-Binding-Quirk), .NET-Exception wird via `new Java.Lang.Throwable($"...")` in eine Java-Throwable gewrappt. User-ID = SHA256-Hash der `Android.Provider.Settings.Secure.ANDROID_ID` (DSGVO-konform, nicht reversibel auf User-Identitaet).
+- `AndroidAnalyticsService` ruft `Firebase.Analytics.FirebaseAnalytics.GetInstance(context)`. `LogEvent` konvertiert `IReadOnlyDictionary<string,object>` zu `Android.OS.Bundle` (PutString/PutInt/PutLong/PutDouble/PutFloat; bool → 1/0). Consent-Check via `IPreferencesService.Get("AnalyticsConsent", false)`.
+- `AndroidPushNotificationService` braucht `Activity`-Referenz (RequestPermissions auf Android 13+). FCM-Token via `FirebaseMessaging.Instance.GetToken()` + `Android.Gms.Tasks.IOnCompleteListener`. Permission-Resolution via `TaskCompletionSource`, das `MainActivity.OnRequestPermissionsResult` aufloest. AlarmManager mit `SetExactAndAllowWhileIdle` (Android 12+ Fallback: `SetAndAllowWhileIdle` wenn `CanScheduleExactAlarms() == false`).
+- `BomberBlastMessagingService` (FirebaseMessagingService-Subclass, im Manifest unter `org.rsdigital.bomberblast.BomberBlastMessagingService`): OnNewToken → `AndroidPushNotificationService.RaiseTokenRefresh()` (internal static, weil Events nur in der Definitions-Klasse gefeuert werden koennen). OnMessageReceived ignoriert Notification-Payload (System zeigt), behandelt nur Data-Payload (eigene Notification.Builder).
+- `NotificationReceiver` (BroadcastReceiver) postet Local-Notifications mit `Notification.BigTextStyle` aus AlarmManager-PendingIntent-Extras.
+- 3 Notification-Channels: `bomberblast_daily` (Low), `bomberblast_liveops` (Default, Manifest-Default), `bomberblast_important` (High mit Vibration).
+
+NuGet-Versionen (BOM 33.5-konform): `Xamarin.Firebase.Crashlytics 119.4.4` + `Xamarin.Firebase.Analytics 123.2.0` (musste auf 123.x weil Measurement-Base 123.x transitiv aus Ads.Lite 124.x kommt — sonst R8-Dexer-Crash an `zzov`-Duplicate) + `Xamarin.Firebase.Messaging 124.1.2`. Tasks-Paket kommt transitiv.
+
 Setup-Anleitung: `src/Apps/BomberBlast/FIREBASE_SETUP.md`.
 
 ---
@@ -896,7 +903,7 @@ Rule-Änderungen müssen in Firebase Console deployed werden — Datei lokal ist
 
 ### Splash-Versions-String manuell gepflegt
 
-`App.axaml.cs`: `AppVersion = "v2.0.55"` — diese Zeichenkette wird NICHT aus der csproj gelesen.
+`App.axaml.cs`: `AppVersion = "v2.0.56"` — diese Zeichenkette wird NICHT aus der csproj gelesen.
 Bei jedem Release manuell auf die aktuelle `ApplicationDisplayVersion` setzen.
 
 ---

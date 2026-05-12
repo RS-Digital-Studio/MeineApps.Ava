@@ -60,6 +60,13 @@ public class MainActivity : AvaloniaMainActivity
             new MeineApps.Core.Premium.Ava.Droid.AndroidPlayGamesService(
                 this, sp.GetRequiredService<IPreferencesService>());
 
+        // Firebase Telemetrie/Analytics/Push (v2.0.56): Factories vor base.OnCreate setzen,
+        // damit DI sie statt der Null-Implementierungen einbindet. AndroidPushNotificationService
+        // braucht die Activity-Referenz fuer RequestPermissions auf Android 13+.
+        App.TelemetryServiceFactory = _ => new AndroidTelemetryService(this);
+        App.AnalyticsServiceFactory = _ => new AndroidAnalyticsService(this);
+        App.PushNotificationServiceFactory = _ => new AndroidPushNotificationService(this);
+
         // AI-Asset-Loader: WebP-Bilder aus Android Assets laden
         GameAssetService.PlatformAssetLoader = path =>
         {
@@ -144,6 +151,18 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnWindowFocusChanged(hasFocus);
         if (hasFocus) EnableImmersiveMode();
+    }
+
+    /// <summary>
+    /// Permission-Callback. Aktuell nur fuer POST_NOTIFICATIONS (Android 13+) relevant —
+    /// das Resultat geht an den PushNotificationService, der seine TCS-Promise aufloest.
+    /// </summary>
+    public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+    {
+        base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (App.Services?.GetService<IPushNotificationService>() is AndroidPushNotificationService pushService)
+            pushService.OnPermissionResult(requestCode, grantResults);
     }
 
     /// <summary>

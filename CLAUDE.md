@@ -96,7 +96,7 @@ F:\Meine_Apps_Ava\
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
 | HandwerkerImperium | v2.1.0 | Banner + Rewarded | 4,99 Premium | Produktion |
-| BomberBlast | v2.0.55 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion |
+| BomberBlast | v2.0.56 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 | BingXBot | v1.8.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |

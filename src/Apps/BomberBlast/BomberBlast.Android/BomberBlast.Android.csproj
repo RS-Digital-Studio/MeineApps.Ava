@@ -5,8 +5,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>BomberBlast</RootNamespace>
     <ApplicationId>org.rsdigital.bomberblast</ApplicationId>
-    <ApplicationVersion>65</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0.55</ApplicationDisplayVersion>
+    <ApplicationVersion>66</ApplicationVersion>
+    <ApplicationDisplayVersion>2.0.56</ApplicationDisplayVersion>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
   </PropertyGroup>
@@ -25,6 +25,18 @@
     <PackageReference Include="Xamarin.Google.UserMessagingPlatform" />
     <PackageReference Include="Xamarin.Android.Google.BillingClient" />
     <PackageReference Include="Xamarin.GooglePlayServices.Games.V2" />
+    <!-- Firebase: Crashlytics + Analytics + Cloud Messaging (v2.0.56) -->
+    <PackageReference Include="Xamarin.Firebase.Crashlytics" />
+    <PackageReference Include="Xamarin.Firebase.Analytics" />
+    <PackageReference Include="Xamarin.Firebase.Messaging" />
+  </ItemGroup>
+
+  <!-- google-services.json: wird vom Xamarin.Android Build-Task verarbeitet,
+       extrahiert API-Key / Project-ID / App-ID in generierte Resource-Strings.
+       Datei selbst gehoert NICHT in Source-Control wenn sie SHA-1/256 + API-Keys enthaelt,
+       hier aber okay weil das Repo privat ist und der Keystore eh hier liegt. -->
+  <ItemGroup>
+    <GoogleServicesJson Include="google-services.json" />
   </ItemGroup>
 
   <ItemGroup>

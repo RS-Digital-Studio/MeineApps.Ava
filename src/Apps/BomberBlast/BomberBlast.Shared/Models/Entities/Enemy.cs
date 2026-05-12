@@ -263,10 +263,18 @@ public class Enemy : Entity
     /// <summary>
     /// Schadenstreffer. Gibt true zurück wenn der Gegner stirbt.
     /// Tanker brauchen 2 Hits.
+    /// Sprint 6.1 AAA-Audit #15: BossEnemy mit Shielded-Modifier absorbiert 1 Hit
+    /// pro Cooldown (Shield wird in BossEnemy.ConsumeShieldHit verwaltet).
     /// </summary>
     public bool TakeDamage()
     {
         if (IsDying) return false;
+
+        // Sprint 6.1: Shielded-Boss absorbiert den Hit komplett (kein HP-Verlust).
+        if (this is BossEnemy boss && boss.ConsumeShieldHit())
+        {
+            return false;  // Boss bleibt am Leben, Shield ist weg
+        }
 
         HitPoints--;
         if (HitPoints <= 0)

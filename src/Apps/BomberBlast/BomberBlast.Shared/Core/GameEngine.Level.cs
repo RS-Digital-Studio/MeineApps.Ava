@@ -910,6 +910,42 @@ public sealed partial class GameEngine
     /// Im Dungeon: Nur Base-Stats (Shop-Bonuse gelten nicht, Dungeon-Buffs werden separat addiert).
     /// In Story/Daily/QuickPlay/Survival: Volle Shop-Bonuse.
     /// </summary>
+    /// <summary>
+    /// Sprint 6.1 AAA-Audit #15: Boss-Modifier Summoner spawnt einen Mini-Enemy (Ballom)
+    /// in der Naehe des Bosses. Wird alle 8s aufgerufen, max 4 Minions gleichzeitig.
+    /// </summary>
+    private void SpawnSummonerMinion(BossEnemy boss)
+    {
+        // Cap bei 4 lebenden Minions vom Summoner — keine Spam-Spawn-Spirale.
+        int liveMinions = 0;
+        foreach (var e in _enemies)
+            if (e.Type == EnemyType.Ballom && e.IsActive && !e.IsDying)
+                liveMinions++;
+        if (liveMinions >= 4) return;
+
+        // Spawn-Position: Eine der 4 Nachbar-Zellen vom Boss (free + not blocked).
+        var rng = new Random();
+        var offsets = new (int dx, int dy)[] { (-1, 0), (1, 0), (0, -1), (0, 1) };
+        for (int i = 0; i < 4; i++) (offsets[i], offsets[rng.Next(4)]) = (offsets[rng.Next(4)], offsets[i]);
+
+        foreach (var (dx, dy) in offsets)
+        {
+            int tx = boss.GridX + dx;
+            int ty = boss.GridY + dy;
+            var cell = _grid.TryGetCell(tx, ty);
+            if (cell?.Type != CellType.Empty || cell.Bomb != null) continue;
+            // Mini-Ballom spawnen (1x Speed, kein Elite — bewusst schwach).
+            var minion = new Enemy(
+                tx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f,
+                ty * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f,
+                EnemyType.Ballom);
+            _enemies.Add(minion);
+            // Visueller Spawn-Effekt: kleine Lila-Partikel (Summoner-Theme).
+            _particleSystem.Emit(minion.X, minion.Y, 8, new SKColor(200, 100, 255), 60f, 0.5f);
+            return;
+        }
+    }
+
     private void ApplyHeroStats()
     {
         // Sprint 7.1 AAA-Audit #21: Hero-Definition vom aktiven Hero anwenden.
@@ -1174,6 +1210,14 @@ public sealed partial class GameEngine
                     boss.MoveBoss(bossDt, _grid);
                 }
                 boss.Update(deltaTime);
+
+                // Sprint 6.1 AAA-Audit #15: Boss-Modifier Summoner — wenn der Cooldown abgelaufen ist,
+                // spawnt der Boss einen Mini-Enemy in der Naehe. Engine-side weil Enemy-Liste mutiert.
+                if (boss.TryConsumeSummonRequest())
+                {
+                    SpawnSummonerMinion(boss);
+                }
+
                 continue;
             }
 

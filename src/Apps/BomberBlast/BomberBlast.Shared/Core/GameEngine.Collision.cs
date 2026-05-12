@@ -34,6 +34,26 @@ public sealed partial class GameEngine
         // Double-Trigger-Schutz ist stattdessen in KillPlayer() (IsDying-Guard) und
         // CompleteLevel() (State-Guard) selbst implementiert.
 
+        // Sprint 6.1 AAA-Audit #15: Boss-Modifier Burning — Lava-Spur tötet Spieler.
+        if (!_player.IsDying && !_player.HasFlamepass && !_player.IsInvincible && !_player.HasSpawnProtection)
+        {
+            foreach (var enemy in _enemies)
+            {
+                if (enemy is BossEnemy boss && boss.BurningTrail.Count > 0)
+                {
+                    foreach (var (tx, ty, _) in boss.BurningTrail)
+                    {
+                        if (_player.GridX == tx && _player.GridY == ty)
+                        {
+                            KillPlayer();
+                            break;
+                        }
+                    }
+                    if (_player.IsDying) break;
+                }
+            }
+        }
+
         // Spieler-Kollision mit Explosionen
         foreach (var explosion in _explosions)
         {

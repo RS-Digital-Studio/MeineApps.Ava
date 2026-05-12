@@ -39,13 +39,15 @@ public sealed partial class GameEngine
         // Defense-in-Depth: Master-Mode nur wenn wirklich unlocked.
         // Downgrade auf Normal-Mode wird geloggt — hilft beim Debuggen falls Navigation
         // einen unerwarteten masterMode=true liefert (z.B. durch veraltete Preference).
-        _isMasterMode = masterMode && _masterModeService.IsUnlocked;
+        // Sprint 5.1 AAA-Audit #11: Mode-Selection bestimmt _currentMode direkt;
+        // _isMasterMode ist jetzt Computed-Property auf _currentMode.
+        bool effectiveMaster = masterMode && _masterModeService.IsUnlocked;
 
         // v2.0.49 — Mode-Plugin-Framework Phase 2: aktiver Mode setzen
-        _currentMode = _isMasterMode
+        _currentMode = effectiveMaster
             ? new BomberBlast.Core.Modes.MasterMode()
             : new BomberBlast.Core.Modes.StoryMode();
-        if (masterMode && !_isMasterMode)
+        if (masterMode && !effectiveMaster)
         {
             // IAppLogger statt Debug.WriteLine: Auch im Release-Build via LogCat sichtbar (Android),
             // hilft beim Debuggen wenn ein veralteter Deep-Link masterMode=true setzt.
@@ -189,6 +191,11 @@ public sealed partial class GameEngine
             bossPositions.Add((cx, cy, BossType.StoneGolem));
         }
 
+        // Sprint 5.3 AAA-Audit #13: Music-Boost waehrend Boss-Reveal-Cinematic (+15% Music fuer 8s).
+        // Verstaerkt die Atmosphaere — der Boss-Encounter ist filmisch wertvoll, Music-Boost
+        // macht den Moment epischer. 8s = Cinematic-Dauer + Initial-Phase nach Spielstart.
+        _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.15f, 8.0f);
+
         // Sequence definieren — 1.5s gesamt
         var events = new List<CinematicSequencer.TimedEvent>
         {
@@ -271,7 +278,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
-        _isMasterMode = false;
+        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
         _isBossRushMode = false;
         _isDailyRace = false;
         _currentMode = new BomberBlast.Core.Modes.DailyChallengeMode();
@@ -279,6 +286,11 @@ public sealed partial class GameEngine
         _currentLevelNumber = 99;
         _currentLevel = LevelLayoutGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = false;
+
+        // Sprint 5.2 AAA-Audit #12: Daily-Challenge → deterministischer Seed fuer ALLE Spieler weltweit.
+        // Pontan-Spawns, Drop-Positionen, AI-Random-Movement-Fallback laufen jetzt synchron auf
+        // allen Geraeten (x64/ARM64) — Voraussetzung fuer Daily-Leaderboard-Fairness.
+        SetDeterministicSeed((ulong)seed);
 
         _player.ResetForNewGame();
         ApplyUpgrades();
@@ -300,7 +312,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = true;
         _isDungeonRun = false;
-        _isMasterMode = false;
+        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
         _isBossRushMode = false;
         _isDailyRace = false;
         // v2.0.50 — Phase 7: Difficulty wird in QuickPlayMode gehalten (im Konstruktor geclamped 1-10).
@@ -332,7 +344,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = true;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
-        _isMasterMode = false;
+        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
         _isBossRushMode = false;
         _isDailyRace = false;
         _currentMode = new BomberBlast.Core.Modes.SurvivalMode();
@@ -372,7 +384,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
-        _isMasterMode = false;
+        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
         _isBossRushMode = false;
         // v2.0.50 — Phase 7: DailyRaceMode mit Submitted=false initialisiert (Default-Property)
         _currentMode = new BomberBlast.Core.Modes.DailyRaceMode();
@@ -381,6 +393,9 @@ public sealed partial class GameEngine
         var seed = _leagueService.GetDailyRaceSeed(DateTime.UtcNow);
         _currentLevel = LevelLayoutGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = true; // Kein Continue im Daily Race
+
+        // Sprint 5.2 AAA-Audit #12: Daily-Race → deterministisch fuer alle Spieler.
+        SetDeterministicSeed((ulong)seed);
 
         _player.ResetForNewGame();
         ApplyUpgrades();
@@ -403,7 +418,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
-        _isMasterMode = false;
+        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
         _isBossRushMode = true;
         // v2.0.49 — Boss-Rush-Mode setzen (bei Erst-Aufruf bossIndex=0 neuer Mode-State,
         // bei Folge-Bossen wird der existing Mode beibehalten damit AccumulatedScore stimmt)
@@ -469,7 +484,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = true;
-        _isMasterMode = false;
+        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
         _isBossRushMode = false;
         _isDailyRace = false;
         // v2.0.49 — Dungeon-Mode setzen (nur beim ersten Floor; bei Folge-Floors bleibt der Mode)

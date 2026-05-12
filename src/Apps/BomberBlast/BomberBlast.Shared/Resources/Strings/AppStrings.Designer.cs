@@ -4322,6 +4322,12 @@ namespace BomberBlast.Resources.Strings {
         internal static string HeroLuckyLolaName => ResourceManager.GetString("HeroLuckyLolaName", resourceCulture)!;
         internal static string HeroLuckyLolaDesc => ResourceManager.GetString("HeroLuckyLolaDesc", resourceCulture)!;
 
+        // Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar
+        internal static string BottomTabHome => ResourceManager.GetString("BottomTabHome", resourceCulture)!;
+        internal static string BottomTabPlay => ResourceManager.GetString("BottomTabPlay", resourceCulture)!;
+        internal static string BottomTabShop => ResourceManager.GetString("BottomTabShop", resourceCulture)!;
+        internal static string BottomTabProfile => ResourceManager.GetString("BottomTabProfile", resourceCulture)!;
+
         internal static string AchKickMaster => ResourceManager.GetString("AchKickMaster", resourceCulture)!;
 
         internal static string AchKickMasterDesc => ResourceManager.GetString("AchKickMasterDesc", resourceCulture)!;

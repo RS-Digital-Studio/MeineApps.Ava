@@ -908,6 +908,19 @@
   <data name="HeroLuckyLolaDesc" xml:space="preserve">
     <value>+20% probabilità di drop power-up. La fortuna favorisce gli audaci.</value>
   </data>
+  <!-- Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar -->
+  <data name="BottomTabHome" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="BottomTabPlay" xml:space="preserve">
+    <value>Gioca</value>
+  </data>
+  <data name="BottomTabShop" xml:space="preserve">
+    <value>Negozio</value>
+  </data>
+  <data name="BottomTabProfile" xml:space="preserve">
+    <value>Profilo</value>
+  </data>
   <data name="AchWorld1" xml:space="preserve">
     <value>Mondo 1 Completato</value>
   </data>

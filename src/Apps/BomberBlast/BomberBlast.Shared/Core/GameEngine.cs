@@ -301,7 +301,9 @@ public sealed partial class GameEngine : IDisposable
     // v2.0.50 — Phase 7: QuickPlayMode.Difficulty hält den Wert. Bool-Flag bleibt als Hot-Path-Convenience.
     private BomberBlast.Core.Modes.QuickPlayMode? QuickPlayModeState => _currentMode as BomberBlast.Core.Modes.QuickPlayMode;
     private bool _isDungeonRun;
-    private bool _isMasterMode;
+    // Sprint 5.1 AAA-Audit #11: _isMasterMode auf _currentMode-Computed-Property migriert.
+    // Mode-Plugin-Migration erste Welle — Bool ist nur noch Read-View auf den IGameMode.
+    private bool _isMasterMode => _currentMode is BomberBlast.Core.Modes.MasterMode;
 
     /// <summary>
     /// v2.0.49 — Mode-Plugin-Framework Phase 2: Aktiver Mode (kapselt Mode-spezifischen State).

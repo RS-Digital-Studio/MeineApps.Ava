@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="BomberBlast.Views.Components.BottomTabBar"
+             x:DataType="vm:BottomTabBarViewModel"
+             x:CompileBindings="True">
+  <!--
+    Sprint 3.1 AAA-Audit #4: 4-Tab Bottom-Navigation (Home / Play / Shop / Profile).
+
+    Wird im MainView eingebunden als persistente Bottom-Bar fuer die konsolidierte
+    Navigation. Ersetzt 15+ einzelne Buttons im MainMenuView (UI-Refactor des
+    MainMenuView selbst bleibt eigener Game-Design-Sprint).
+
+    Tab-Wechsel wird ueber IBottomTabHub propagiert — andere Views koennen darauf
+    subscriben und ihren Content anpassen.
+  -->
+  <Grid Height="64"
+        Background="{DynamicResource SurfaceBrush}"
+        ColumnDefinitions="*,*,*,*">
+
+    <!-- Tab 1: Home -->
+    <Button Grid.Column="0"
+            Classes="TabButton"
+            Command="{Binding SwitchTabCommand}"
+            CommandParameter="Home"
+            Background="Transparent"
+            BorderThickness="0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            AutomationProperties.AutomationId="BottomTab_Home">
+      <StackPanel Orientation="Vertical" Spacing="2" VerticalAlignment="Center">
+        <icons:GameIcon Kind="Home" Width="24" Height="24"
+                         HorizontalAlignment="Center"
+                         Foreground="{Binding HomeIconBrush}" />
+        <TextBlock Text="{loc:Translate BottomTabHome}"
+                   FontSize="10"
+                   HorizontalAlignment="Center"
+                   Foreground="{Binding HomeTextBrush}" />
+      </StackPanel>
+    </Button>
+
+    <!-- Tab 2: Play -->
+    <Button Grid.Column="1"
+            Classes="TabButton"
+            Command="{Binding SwitchTabCommand}"
+            CommandParameter="Play"
+            Background="Transparent"
+            BorderThickness="0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            AutomationProperties.AutomationId="BottomTab_Play">
+      <StackPanel Orientation="Vertical" Spacing="2" VerticalAlignment="Center">
+        <icons:GameIcon Kind="Play" Width="24" Height="24"
+                         HorizontalAlignment="Center"
+                         Foreground="{Binding PlayIconBrush}" />
+        <TextBlock Text="{loc:Translate BottomTabPlay}"
+                   FontSize="10"
+                   HorizontalAlignment="Center"
+                   Foreground="{Binding PlayTextBrush}" />
+      </StackPanel>
+    </Button>
+
+    <!-- Tab 3: Shop -->
+    <Button Grid.Column="2"
+            Classes="TabButton"
+            Command="{Binding SwitchTabCommand}"
+            CommandParameter="Shop"
+            Background="Transparent"
+            BorderThickness="0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            AutomationProperties.AutomationId="BottomTab_Shop">
+      <StackPanel Orientation="Vertical" Spacing="2" VerticalAlignment="Center">
+        <icons:GameIcon Kind="Store" Width="24" Height="24"
+                         HorizontalAlignment="Center"
+                         Foreground="{Binding ShopIconBrush}" />
+        <TextBlock Text="{loc:Translate BottomTabShop}"
+                   FontSize="10"
+                   HorizontalAlignment="Center"
+                   Foreground="{Binding ShopTextBrush}" />
+      </StackPanel>
+    </Button>
+
+    <!-- Tab 4: Profile -->
+    <Button Grid.Column="3"
+            Classes="TabButton"
+            Command="{Binding SwitchTabCommand}"
+            CommandParameter="Profile"
+            Background="Transparent"
+            BorderThickness="0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            AutomationProperties.AutomationId="BottomTab_Profile">
+      <StackPanel Orientation="Vertical" Spacing="2" VerticalAlignment="Center">
+        <icons:GameIcon Kind="Account" Width="24" Height="24"
+                         HorizontalAlignment="Center"
+                         Foreground="{Binding ProfileIconBrush}" />
+        <TextBlock Text="{loc:Translate BottomTabProfile}"
+                   FontSize="10"
+                   HorizontalAlignment="Center"
+                   Foreground="{Binding ProfileTextBrush}" />
+      </StackPanel>
+    </Button>
+  </Grid>
+</UserControl>

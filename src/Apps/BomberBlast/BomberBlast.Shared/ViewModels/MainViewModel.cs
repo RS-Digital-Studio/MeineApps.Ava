@@ -222,6 +222,8 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ICloudSaveService _cloudSaveService;
     private readonly SoundManager _soundManager;
     private readonly IAppLogger _logger;
+    /// <summary>Sprint 4.2 AAA-Audit #10: GameEventBus — neue Code nutzt diesen statt durch MainVM zu routen.</summary>
+    private readonly IGameEventBus _eventBus;
 
     // Lazy-VM-Factories (werden beim ersten EnsureXxxVm() resolved)
     private readonly Lazy<GameViewModel> _gameVmLazy;
@@ -293,7 +295,11 @@ public sealed partial class MainViewModel : ViewModelBase
         ICoinService coinService,
         ICloudSaveService cloudSaveService,
         SoundManager soundManager,
-        IAppLogger logger)
+        IAppLogger logger,
+        // Sprint 4.2 AAA-Audit #10: GameEventBus fuer Pub/Sub-Delegation.
+        // Bestehende Events bleiben (Backward-Compat), aber zusaetzlich werden
+        // alle UI-Events durch den Bus geroutet — neue Code kann den Bus direkt nutzen.
+        IGameEventBus eventBus)
     {
         MenuVm = menuVm;
         LevelSelectVm = levelSelectVm;
@@ -332,6 +338,14 @@ public sealed partial class MainViewModel : ViewModelBase
         _cloudSaveService = cloudSaveService;
         _soundManager = soundManager;
         _logger = logger;
+        _eventBus = eventBus;
+
+        // Sprint 4.2 AAA-Audit #10: GameEventBus → MainVM-Events forwarden.
+        // Andere ViewModels koennen jetzt direkt _eventBus.RaiseFloatingText() rufen,
+        // ohne durch MainViewModel routen zu muessen — God-VM-Abhaengigkeit reduziert.
+        _eventBus.FloatingTextRequested += (t, s) => FloatingTextRequested?.Invoke(t, s);
+        _eventBus.CelebrationRequested += () => CelebrationRequested?.Invoke();
+        _eventBus.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         // ───────────────────────────────────────────────────────────────────
         // Eager-VMs verdrahten (Navigation + Game-Juice)

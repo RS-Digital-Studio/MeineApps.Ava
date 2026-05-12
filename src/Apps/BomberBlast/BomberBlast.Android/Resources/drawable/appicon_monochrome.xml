@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sprint 1.3 AAA-Audit #8: Themed-Icon Monochrome-Variante (Android 13+).
+  Android toent diese Silhouette in der gewaehlten System-Theme-Farbe.
+
+  Geometrie: Klassische runde Bombe mit Zuendschnur + Funke (BomberBlast-Identitaet).
+  Canvas 108x108 (Standard fuer Adaptive Icons), zentrierter 72x72 Safe-Area.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Bomben-Koerper: zentriertes Kreis-Bombenoid mit leichtem Stretch -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,82 m-26,0 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 z" />
+
+    <!-- Glanzpunkt oben links — leichte Aufhellung (in Monochrome bleibt weiss) -->
+    <path
+        android:fillColor="#80FFFFFF"
+        android:pathData="M44,68 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 z" />
+
+    <!-- Zuendschnur-Halterung (kleines Rechteck oben mittig) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M50,52 L58,52 L58,58 L50,58 Z" />
+
+    <!-- Zuendschnur als geschwungene Linie (als gefuelltes Polygon nachgezeichnet) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M58,55
+                          C 64,50 70,46 74,38
+                          L 76,40
+                          C 71,49 65,53 60,57 Z" />
+
+    <!-- Funke am Ende der Zuendschnur — 4-zackiger Stern -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M75,35
+                          L 78,30
+                          L 81,35
+                          L 86,38
+                          L 81,41
+                          L 78,46
+                          L 75,41
+                          L 70,38 Z" />
+</vector>

@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:icons="using:BomberBlast.Icons"
+             x:Class="BomberBlast.Views.Components.SeasonBanner"
+             x:DataType="vm:MainMenuViewModel"
+             x:CompileBindings="True"
+             IsVisible="{Binding IsEventBannerVisible}"
+             AutomationProperties.AutomationId="MainMenu_EventBanner">
+  <!--
+    Audit M20: Extrahiert aus MainMenuView.axaml. Saisonales Event-Banner (Halloween/Christmas/etc.)
+    mit Accent-Farbe aus VM. DataContext erbt vom MainMenuViewModel.
+    -->
+  <Border CornerRadius="10" Padding="14,8"
+          BorderThickness="2">
+    <Border.BorderBrush>
+      <SolidColorBrush Color="{Binding EventBannerAccentColor}" Opacity="0.7" />
+    </Border.BorderBrush>
+    <Border.Background>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="{Binding EventBannerAccentColor}" Offset="0" />
+        <GradientStop Color="{DynamicResource SurfaceColor}" Offset="0.6" />
+      </LinearGradientBrush>
+    </Border.Background>
+    <Button Background="Transparent" BorderThickness="0"
+            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"
+            Command="{Binding OpenEventCommand}">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <icons:GameIcon Grid.Column="0" Kind="Star" Width="20" Height="20"
+                        VerticalAlignment="Center">
+          <icons:GameIcon.Foreground>
+            <SolidColorBrush Color="{Binding EventBannerAccentColor}" />
+          </icons:GameIcon.Foreground>
+        </icons:GameIcon>
+        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="1">
+          <TextBlock Text="{Binding EventBannerName}"
+                     FontSize="13" FontWeight="Bold">
+            <TextBlock.Foreground>
+              <SolidColorBrush Color="{Binding EventBannerAccentColor}" />
+            </TextBlock.Foreground>
+          </TextBlock>
+          <TextBlock Text="{Binding EventBannerDescription}"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <TextBlock Grid.Column="2" Text="{Binding EventBannerDaysLeftText}"
+                   FontSize="12" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   VerticalAlignment="Center" />
+      </Grid>
+    </Button>
+  </Border>
+</UserControl>

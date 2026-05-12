@@ -1,0 +1,130 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
+             xmlns:models="using:BomberBlast.Models"
+             x:Class="BomberBlast.Views.Components.DailyRewardOverlay"
+             x:DataType="vm:MainMenuViewModel"
+             x:CompileBindings="True"
+             IsVisible="{Binding IsRewardPopupVisible}"
+             AutomationProperties.AutomationId="MainMenu_RewardOverlay">
+  <!--
+    Audit M20: Extrahiert aus MainMenuView.axaml. Daily-Reward-Popup mit 7-Tage-Strip,
+    Claim/Doubled/Dismiss-Buttons. DataContext erbt vom MainMenu (gleicher VM-Typ).
+    -->
+  <Border Background="#CC000000"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="20"
+            MaxWidth="520" MaxHeight="300"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 8 24 0 #60000000">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center" Margin="0,0,0,12">
+          <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="{DynamicResource GoldAccentBrush}" />
+          <TextBlock Text="{Binding RewardPopupTitle}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource GoldAccentBrush}"
+                     AutomationProperties.AutomationId="MainMenu_TxtRewardTitle" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding RewardDays}"
+                        AutomationProperties.AutomationId="MainMenu_RewardDays">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6"
+                            HorizontalAlignment="Center" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:DailyRewardDisplayItem">
+                <Border Width="58" CornerRadius="8"
+                        Padding="4,6"
+                        Opacity="{Binding CardOpacity}"
+                        BorderThickness="2"
+                        BorderBrush="{Binding BorderColor}">
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding BackgroundColor}" />
+                  </Border.Background>
+                  <StackPanel Spacing="4" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding DayText}"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center" />
+                    <Panel Height="20" HorizontalAlignment="Center">
+                      <icons:GameIcon Kind="CheckCircle" Width="20" Height="20"
+                                       Foreground="#22C55E"
+                                       IsVisible="{Binding IsClaimed}" />
+                      <icons:GameIcon Kind="Gift" Width="20" Height="20"
+                                       Foreground="{DynamicResource GoldAccentBrush}"
+                                       IsVisible="{Binding IsCurrentDay}" />
+                      <icons:GameIcon Kind="Lock" Width="20" Height="20"
+                                       Foreground="#666666"
+                                       IsVisible="{Binding IsFuture}" />
+                    </Panel>
+                    <TextBlock Text="{Binding CoinsText}"
+                               FontSize="12" FontWeight="Bold"
+                               Foreground="{DynamicResource GoldAccentBrush}"
+                               HorizontalAlignment="Center" />
+                    <icons:GameIcon Kind="HeartPlus" Width="14" Height="14"
+                                     Foreground="#FF4444"
+                                     IsVisible="{Binding HasExtraLife}"
+                                     HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center" Margin="0,12,0,0">
+          <Panel Height="44" MinWidth="120">
+            <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.5" ButtonSeed="33" />
+            <Button Command="{Binding ClaimDailyRewardCommand}"
+                    Classes="Primary GameButton"
+                    Height="44" MinWidth="120"
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="MainMenu_BtnClaimReward">
+              <TextBlock Text="{Binding RewardClaimText}"
+                         FontSize="15" FontWeight="Bold"
+                         Foreground="White" />
+            </Button>
+          </Panel>
+          <Panel Height="44" MinWidth="120">
+            <controls:GameButtonCanvas ButtonColor="#10B981" DamageLevel="0.4" ButtonSeed="35" />
+            <Button Command="{Binding ClaimDailyRewardDoubledCommand}"
+                    Classes="Primary GameButton"
+                    Height="44" MinWidth="120"
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="MainMenu_BtnClaimRewardDoubled">
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <icons:GameIcon Kind="Video" Width="16" Height="16" Foreground="White" />
+                <TextBlock Text="{loc:Translate DailyRewardDoubleViaAd}"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="White" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Panel>
+          <Panel Height="44" MinWidth="56">
+            <controls:GameButtonCanvas ButtonColor="#666666" DamageLevel="0.3" ButtonSeed="34" />
+            <Button Command="{Binding DismissRewardPopupCommand}"
+                    Classes="Secondary GameButton"
+                    Height="44" MinWidth="56"
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="MainMenu_BtnDismissReward">
+              <icons:GameIcon Kind="Close" Width="20" Height="20"
+                               Foreground="White" />
+            </Button>
+          </Panel>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Border>
+</UserControl>

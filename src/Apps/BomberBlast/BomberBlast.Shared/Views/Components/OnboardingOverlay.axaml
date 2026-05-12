@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
+             x:Class="BomberBlast.Views.Components.OnboardingOverlay"
+             x:DataType="vm:MainMenuViewModel"
+             x:CompileBindings="True"
+             IsVisible="{Binding IsOnboardingVisible}"
+             AutomationProperties.AutomationId="MainMenu_OnboardingOverlay">
+  <!--
+    Audit M20: Extrahiert aus MainMenuView.axaml. Onboarding-Modal mit 3 nummerierten Hints.
+    DataContext erbt vom MainMenuViewModel.
+    -->
+  <Border Background="#DD000000"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24"
+            MaxWidth="480" MaxHeight="360"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 8 24 0 #60000000"
+            BorderThickness="2"
+            BorderBrush="{DynamicResource AccentBrush}">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Titel -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center" Margin="0,0,0,16">
+          <icons:GameIcon Kind="Star" Width="28" Height="28"
+                          Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock Text="{Binding OnboardingTitle}"
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource AccentBrush}"
+                     VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="MainMenu_OnboardingTitle" />
+        </StackPanel>
+
+        <!-- 3 Hinweise -->
+        <StackPanel Grid.Row="1" Spacing="12" VerticalAlignment="Center">
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto">
+            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
+                    Background="#33FF6B00" VerticalAlignment="Top">
+              <TextBlock Text="1" FontSize="16" FontWeight="Bold"
+                         Foreground="#FF6B00"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{Binding OnboardingHint1}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="12,4,0,0" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto">
+            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
+                    Background="#3300BCD4" VerticalAlignment="Top">
+              <TextBlock Text="2" FontSize="16" FontWeight="Bold"
+                         Foreground="#00BCD4"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{Binding OnboardingHint2}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="12,4,0,0" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto">
+            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
+                    Background="#33FFD700" VerticalAlignment="Top">
+              <TextBlock Text="3" FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource GoldAccentBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{Binding OnboardingHint3}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="12,4,0,0" />
+          </Grid>
+        </StackPanel>
+
+        <!-- Schliessen-Button -->
+        <Panel Grid.Row="2" Height="48" HorizontalAlignment="Center"
+               MinWidth="180" Margin="0,16,0,0">
+          <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.4" ButtonSeed="40" />
+          <Button Classes="Primary GameButton"
+                  Background="Transparent"
+                  Command="{Binding DismissOnboardingCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  FontSize="15" FontWeight="Bold"
+                  Foreground="White"
+                  AutomationProperties.AutomationId="MainMenu_BtnOnboardingDismiss">
+            <TextBlock Text="{Binding OnboardingCloseText}"
+                       FontSize="15" FontWeight="Bold"
+                       Foreground="White" />
+          </Button>
+        </Panel>
+      </Grid>
+    </Border>
+  </Border>
+</UserControl>

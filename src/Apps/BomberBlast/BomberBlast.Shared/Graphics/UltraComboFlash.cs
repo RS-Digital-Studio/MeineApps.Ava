@@ -3,13 +3,15 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Vollbild-Vignette-Flash fuer ULTRA-Combos (Sprint 1.2 AAA-Audit #7).
-/// Trigger: Bei Combo ≥ x10 (genau einmal beim Erreichen, nicht pro Kill).
+/// Vollbild-Vignette-Flash fuer Game-Feel-Momente (Sprint 1.2 + Sprint 3.3 AAA-Audit #7/#18).
+///
+/// Verwendet als:
+/// - <b>UltraCombo-Flash</b>: Bei Combo ≥ x10, Welt-Akzent-Farbe, 200ms (Default-Trigger).
+/// - <b>Damage-Flash</b>: Bei Player-Hit, rote Vignette, kuerzer (siehe TriggerWithDuration).
 ///
 /// Mechanik:
-/// - 200ms Animation: Alpha 0→1 in 80ms (Attack), dann 1→0 in 120ms (Decay)
+/// - Default 200ms: Alpha 0→1 in 80ms (Attack), dann 1→0 in 120ms (Decay)
 /// - RadialGradient mit transparentem Mittelpunkt + voll-farbigem Rand (Vignette-Bruellen)
-/// - Welt-Theme-Farbe (in Schattenwelt violett, in Vulkan orange)
 /// - Frame-rate-unabhaengig (deltaTime-basiert)
 /// - Kein Allocations pro Frame (SKShader gecacht solange Farbe gleich)
 ///
@@ -17,9 +19,14 @@ namespace BomberBlast.Graphics;
 /// </summary>
 public sealed class UltraComboFlash : IDisposable
 {
-    private const float ATTACK_TIME = 0.08f;   // 80ms hoch
-    private const float DECAY_TIME = 0.12f;    // 120ms runter
-    private const float TOTAL_DURATION = ATTACK_TIME + DECAY_TIME;
+    /// <summary>Default-Attack-Time (80ms).</summary>
+    public const float DEFAULT_ATTACK_TIME = 0.08f;
+    /// <summary>Default-Decay-Time (120ms).</summary>
+    public const float DEFAULT_DECAY_TIME = 0.12f;
+
+    private float _attackTime = DEFAULT_ATTACK_TIME;
+    private float _decayTime = DEFAULT_DECAY_TIME;
+    private float TotalDuration => _attackTime + _decayTime;
 
     private float _timer;             // verbleibende Zeit
     private SKColor _color = SKColors.White;
@@ -41,14 +48,22 @@ public sealed class UltraComboFlash : IDisposable
     public bool IsActive => _timer > 0;
 
     /// <summary>
-    /// Loest einen Vollbild-Flash aus. Aufruf bei Combo ≥ x10 (idempotent — Re-Trigger
-    /// ueberschreibt den laufenden Flash).
+    /// Loest einen Vollbild-Flash mit Default-Dauer (200ms) aus.
+    /// Aufruf z.B. bei Combo ≥ x10 (idempotent — Re-Trigger ueberschreibt laufenden Flash).
     /// </summary>
     /// <param name="color">Vignette-Farbe (typisch Welt-Akzent oder Combo-Farbe).</param>
-    public void Trigger(SKColor color)
+    public void Trigger(SKColor color) => TriggerWithDuration(color, DEFAULT_ATTACK_TIME, DEFAULT_DECAY_TIME);
+
+    /// <summary>
+    /// Loest einen Vollbild-Flash mit individuellen Attack/Decay-Zeiten aus.
+    /// Beispiel: Damage-Flash mit (color: Rot, attack: 0.05f, decay: 0.25f) = 50ms snap + 250ms fade.
+    /// </summary>
+    public void TriggerWithDuration(SKColor color, float attackSeconds, float decaySeconds)
     {
         _color = color;
-        _timer = TOTAL_DURATION;
+        _attackTime = Math.Max(0.001f, attackSeconds);
+        _decayTime = Math.Max(0.001f, decaySeconds);
+        _timer = TotalDuration;
     }
 
     /// <summary>Pro Frame: Timer dekrementieren.</summary>
@@ -69,13 +84,13 @@ public sealed class UltraComboFlash : IDisposable
     {
         if (_timer <= 0 || screenWidth <= 0 || screenHeight <= 0) return;
 
-        // Alpha-Hüllkurve: Attack 80ms → Hoch, Decay 120ms → runter
-        float elapsed = TOTAL_DURATION - _timer;
+        // Alpha-Hüllkurve: Attack → Hoch, Decay → runter
+        float elapsed = TotalDuration - _timer;
         float alpha;
-        if (elapsed < ATTACK_TIME)
-            alpha = elapsed / ATTACK_TIME;          // 0 → 1
+        if (elapsed < _attackTime)
+            alpha = elapsed / _attackTime;          // 0 → 1
         else
-            alpha = 1f - (elapsed - ATTACK_TIME) / DECAY_TIME; // 1 → 0
+            alpha = 1f - (elapsed - _attackTime) / _decayTime; // 1 → 0
         alpha = Math.Clamp(alpha, 0f, 1f);
 
         byte effectiveAlpha = (byte)(alpha * 220);  // Cap bei 220 — kein totales Whiteout

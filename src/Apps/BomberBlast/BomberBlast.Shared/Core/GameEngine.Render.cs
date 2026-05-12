@@ -298,6 +298,12 @@ public sealed partial class GameEngine
             _ultraFlash.Render(canvas, screenWidth, screenHeight);
         }
 
+        // Sprint 3.3 AAA-Audit #18: Roter Damage-Flash bei Player-Hit.
+        if (_damageFlash.IsActive)
+        {
+            _damageFlash.Render(canvas, screenWidth, screenHeight);
+        }
+
         // v2.0.46 — Accessibility: Audio-Caption-Subtitles für gehörlose Spieler.
         // Wird unten am Bildrand angezeigt, immer über allem (auch über Tutorial).
         if (_accessibility?.SubtitlesEnabled == true)

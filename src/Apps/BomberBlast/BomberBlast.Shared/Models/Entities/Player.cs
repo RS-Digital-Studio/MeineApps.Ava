@@ -146,6 +146,13 @@ public class Player : Entity
     // Renderer multipliziert Sprite-Width/Height mit dem aus dieser Phase abgeleiteten Faktor.
     private float _squashStretchPhase;
 
+    // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation. Wenn > 0, zieht sich der Spieler
+    // visuell zusammen (vertikal stauchen / horizontal strecken) — Hades-Pattern fuer
+    // "schwere" Aktionen. Reset auf 0 nach BOMB_SQUASH_DURATION (~80ms).
+    private float _bombSquashTimer;
+    /// <summary>Dauer der Bomb-Place-Anticipation in Sekunden (80ms = AAA-Sweet-Spot).</summary>
+    public const float BOMB_SQUASH_DURATION = 0.08f;
+
     /// <summary>
     /// X-Skalierungsfaktor für Sprite-Render (Squash & Stretch).
     /// Beim Bewegen subtiles Wobble (±5%), im Ruhezustand 1.0. Beim Tod 0.6 (kollabiert).
@@ -156,6 +163,14 @@ public class Player : Entity
         get
         {
             if (IsDying) return 0.6f + (1f - 0.6f) * (1f - DeathTimer / 0.5f); // Kollaps
+            // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation. Spieler zieht sich
+            // horizontal in die Breite (1.20×) waehrend er sich vertikal staucht.
+            if (_bombSquashTimer > 0)
+            {
+                float t = _bombSquashTimer / BOMB_SQUASH_DURATION;  // 1 → 0
+                float pop = MathF.Sin(t * MathF.PI);                // 0 → 1 → 0 Hubschwingung
+                return 1f + pop * 0.20f;
+            }
             if (!IsMoving) return 1f;
             // Horizontal-Bewegung → mehr X-Stretch (gestreckt in Richtung), Vertikal → mehr Squash
             var wobble = MathF.Sin(_squashStretchPhase) * 0.05f;
@@ -173,6 +188,13 @@ public class Player : Entity
         get
         {
             if (IsDying) return 0.6f + (1f - 0.6f) * (1f - DeathTimer / 0.5f);
+            // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation. Komplementaer zu X.
+            if (_bombSquashTimer > 0)
+            {
+                float t = _bombSquashTimer / BOMB_SQUASH_DURATION;
+                float pop = MathF.Sin(t * MathF.PI);
+                return 1f - pop * 0.15f;  // Vertikal stauchen (Volumen-Erhaltung)
+            }
             if (!IsMoving) return 1f;
             var wobble = MathF.Sin(_squashStretchPhase) * 0.05f;
             return MovementDirection == Direction.Up || MovementDirection == Direction.Down
@@ -180,6 +202,13 @@ public class Player : Entity
                 : 1f - wobble * 0.5f;
         }
     }
+
+    /// <summary>
+    /// Sprint 3.4 AAA-Audit #19: Triggert Bomb-Place-Anticipation-Animation (80ms).
+    /// Wird aus GameEngine.Explosion.PlaceBombForOwner aufgerufen.
+    /// Idempotent — Re-Trigger setzt Timer zurueck (Spammen geht).
+    /// </summary>
+    public void TriggerBombPlaceAnticipation() => _bombSquashTimer = BOMB_SQUASH_DURATION;
 
     public override void Update(float deltaTime)
     {
@@ -194,6 +223,13 @@ public class Player : Entity
         else
         {
             _squashStretchPhase = 0f;
+        }
+
+        // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation Timer-Tick.
+        if (_bombSquashTimer > 0)
+        {
+            _bombSquashTimer -= deltaTime;
+            if (_bombSquashTimer < 0) _bombSquashTimer = 0;
         }
 
         // Update invincibility timer

@@ -57,6 +57,24 @@ public class BossEnemy : Enemy
     /// <summary>Ob gerade ein Angriff telegraphiert wird</summary>
     public bool IsTelegraphing => TelegraphTimer > 0;
 
+    /// <summary>
+    /// Sprint 3.4 AAA-Audit #19: Anticipation-Scale fuer Big-Attacks.
+    /// In den letzten 120ms vor Attack-Trigger zieht sich der Boss-Sprite zusammen
+    /// (0.85x scale) — Hades-Pattern fuer "Wind-Up". 1.0 wenn nicht in Wind-Up-Phase.
+    /// Renderer wendet via canvas.Scale auf Boss-Sprite an.
+    /// </summary>
+    public float AnticipationScale
+    {
+        get
+        {
+            if (TelegraphTimer <= 0 || TelegraphTimer > 0.12f) return 1f;
+            // 120ms → 0ms: linear von 1.0 auf 0.85 → wieder zurueck (Sin-Pop)
+            float t = TelegraphTimer / 0.12f;       // 1 → 0
+            float pop = MathF.Sin((1f - t) * MathF.PI);  // 0 → 1 → 0
+            return 1f - pop * 0.15f;                // 1.0 → 0.85 → 1.0
+        }
+    }
+
     /// <summary>Ob der Spezial-Angriff gerade ausgeführt wird</summary>
     public bool IsAttacking { get; set; }
 

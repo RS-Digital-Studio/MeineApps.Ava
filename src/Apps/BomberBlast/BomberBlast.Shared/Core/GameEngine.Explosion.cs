@@ -32,6 +32,11 @@ public sealed partial class GameEngine
         if (cell.Bomb != null)
             return;
 
+        // Sprint 3.4 AAA-Audit #19: Anticipation-Frame — Spieler-Sprite zieht sich
+        // 80ms zusammen waehrend die Bombe gespawnt wird. Pure visuelle Wirkung,
+        // kein Gameplay-Delay (Bombe wird unten weiterhin sofort platziert).
+        owner.TriggerBombPlaceAnticipation();
+
         // Power-Bomb: Einzelne Mega-Bombe mit maximaler Reichweite, verbraucht alle Slots
         if (owner.HasPowerBomb && owner.ActiveBombs == 0)
         {

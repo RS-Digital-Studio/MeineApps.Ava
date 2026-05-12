@@ -23,16 +23,38 @@ public sealed partial class GameRenderer
         float cs = GameGrid.CELL_SIZE;
         bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
 
-        // Blink-Effekt bei Unverwundbarkeit / Spawn-Schutz
-        // Schnelleres Blinken in den letzten 0.5s als visuelles Feedback fuer auslaufenden Schutz
+        // Blink-Effekt bei Unverwundbarkeit / Spawn-Schutz.
+        // Sprint 3.3 AAA-Audit #18: Statt komplettem Verstecken (return) auf 30% Alpha
+        // — Spieler bleibt sichtbar, fuehlt sich respektiert. Schnelleres Blinken in
+        // den letzten 0.5s als Feedback fuer auslaufenden Schutz.
+        bool playerIsBlinking = false;
+        float playerBlinkAlpha = 1f;
         if (player.IsInvincible || player.HasSpawnProtection)
         {
             float remainingTimer = player.IsInvincible
                 ? player.InvincibilityTimer
                 : player.SpawnProtectionTimer;
             float blinkRate = remainingTimer <= 0.5f ? 20f : 10f;
-            if (((int)(_globalTimer * blinkRate) % 2) == 0)
-                return;
+            playerIsBlinking = ((int)(_globalTimer * blinkRate) % 2) == 0;
+            if (playerIsBlinking) playerBlinkAlpha = 0.3f;
+        }
+        // Per-Layer Alpha-SaveLayer wenn aktiv
+        if (playerIsBlinking)
+        {
+            using var blinkPaint = new SKPaint { Color = SKColors.White.WithAlpha((byte)(255 * playerBlinkAlpha)) };
+            canvas.SaveLayer(blinkPaint);
+        }
+
+        // Sprint 3.4 AAA-Audit #19: Squash & Stretch Skalierung um den Player-Pivot.
+        // Aktiv waehrend Bewegung (subtiles Wobble) UND waehrend der 80ms Bomb-Place-Anticipation.
+        // Sprite wird gestaucht/gestreckt — Volumen-Erhaltung via SquashScaleY-Komplement.
+        float sx = player.SquashScaleX;
+        float sy = player.SquashScaleY;
+        bool playerHasSquash = MathF.Abs(sx - 1f) > 0.001f || MathF.Abs(sy - 1f) > 0.001f;
+        if (playerHasSquash)
+        {
+            canvas.Save();
+            canvas.Scale(sx, sy, player.X, player.Y);
         }
 
         if (player.IsDying)
@@ -232,6 +254,20 @@ public sealed partial class GameRenderer
         _fusePath.MoveTo(player.X - 2.5f, mouthY);
         _fusePath.QuadTo(player.X, mouthY + 2, player.X + 2.5f, mouthY);
         canvas.DrawPath(_fusePath, _strokePaint);
+
+        // Sprint 3.4 AAA-Audit #19: Squash-Scale-Restore (vor Blink-Layer-Restore).
+        if (playerHasSquash)
+        {
+            canvas.Restore();
+        }
+
+        // Sprint 3.3 AAA-Audit #18: SaveLayer schliessen wenn der Spieler im Blink-Modus ist.
+        // playerIsBlinking-Variable wurde am Anfang der Methode gesetzt — dort wurde das Layer
+        // geoeffnet wenn aktuell ein "Schwach-Sichtbar"-Frame ist (i-Frame-Visualisierung).
+        if (playerIsBlinking)
+        {
+            canvas.Restore();
+        }
     }
 
     /// <summary>

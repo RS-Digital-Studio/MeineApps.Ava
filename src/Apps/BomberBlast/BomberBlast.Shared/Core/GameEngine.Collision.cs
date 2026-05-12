@@ -339,6 +339,14 @@ public sealed partial class GameEngine
         _playerDamagedThisLevel = true;
         _fortressRegenTimer = 0; // Festungs-Synergy: Timer bei Schaden zurücksetzen
         _deathsInLevel++;        // Sprint 2.2 AAA-Audit #2: Tode pro Level fuer Funnel-Telemetrie
+
+        // Sprint 3.3 AAA-Audit #18: Roter Damage-Flash am Bildschirmrand fuer Hit-Feedback.
+        // Snappy 50ms Attack + 250ms Decay = 300ms total — kuerzer als ULTRA-Combo-Flash
+        // damit Spieler nicht von Vignette ueberlagert wird waehrend er reagiert.
+        // Bei ReducedEffects-Toggle uebersprungen (Photosensitivity-Schutz).
+        if (!_inputManager.ReducedEffects)
+            _damageFlash.TriggerWithDuration(new SKColor(220, 40, 40), 0.05f, 0.25f);
+
         _player.Kill();
         _timer.Pause();
         _state = GameState.PlayerDied;

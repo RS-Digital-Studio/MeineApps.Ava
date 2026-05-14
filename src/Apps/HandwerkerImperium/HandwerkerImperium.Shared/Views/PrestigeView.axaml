@@ -123,6 +123,28 @@
                        FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}"
                        IsVisible="{Binding DialogVM.PrestigeConfirmation.CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <!-- v2.1.1 (Audit U-C06): Verlust-Liste prominent rot anzeigen. Frueher war der
+                 Confirm-Bereich komplett in Gains-Gruen — der Spieler sah die rote
+                 Verlust-Liste nur im Banner, NICHT im finalen Confirm. Schwerer
+                 Frust-Trigger nach dem ersten Prestige. -->
+            <Border Padding="10,8"
+                    Margin="0,4,0,0"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="{StaticResource PrestigeLossesBrush}"
+                    Background="#1AEF9A9A"
+                    AutomationProperties.AutomationId="Prestige_Border_Losses"
+                    IsVisible="{Binding PrestigeBannerVM.PrestigePreviewLosses, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Translate PrestigeWhatYouLose}"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{StaticResource PrestigeLossesBrush}" />
+                <TextBlock Text="{Binding PrestigeBannerVM.PrestigePreviewLosses}"
+                           FontSize="12" TextWrapping="Wrap"
+                           Foreground="{StaticResource PrestigeLossesBrush}" />
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
 

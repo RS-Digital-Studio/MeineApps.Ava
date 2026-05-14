@@ -19,12 +19,22 @@
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
-        <!-- Back Button -->
-        <Button Classes="Text"
+        <!-- Back Button — v2.1.1 (Audit U-C01): Prominent gestylter Pill-Button mit Pfeil + Label.
+             Frueher nur ein "Text"-Button mit ArrowLeft-Icon, kaum sichtbar. Settings versteckt
+             die Tab-Bar — der Spieler braucht hier eine eindeutige Zurueck-Affordance. -->
+        <Button Classes="Primary"
                 AutomationProperties.AutomationId="Settings_Btn_Back"
-                Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
-                           AutomationProperties.AutomationId="Settings_Icon_Back" />
+                Command="{Binding GoBackCommand}"
+                Padding="14,8"
+                MinHeight="44"
+                CornerRadius="12">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <icons:GameIcon Kind="ArrowLeft" Width="22" Height="22"
+                             AutomationProperties.AutomationId="Settings_Icon_Back" />
+            <TextBlock Text="{loc:Translate Back}"
+                       FontSize="14" FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+          </StackPanel>
         </Button>
 
         <!-- Title (centered) -->

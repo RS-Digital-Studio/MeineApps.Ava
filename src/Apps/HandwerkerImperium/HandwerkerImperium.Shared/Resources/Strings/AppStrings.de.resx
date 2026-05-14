@@ -6952,4 +6952,8 @@
   <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Tier 40! Der Sturm ist vorbei, der Wiederaufbau l&#228;uft. Wir bauen Tag und Nacht. 80 H&#228;user brauchen neue D&#228;cher. 200 Familien brauchen wieder Heizung. Die Konkurrenz hilft mit &#8212; das hat es noch nie gegeben. Heute streiten wir nicht, heute bauen wir. Stuhlbein an Stuhlbein, wie du sagen w&#252;rdest. Diese Stadt vergisst das nie.</value></data>
   <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: Held des Winters</value></data>
   <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Tier 50! Die Stadt hat dich heute zum „Helden des Winters&#8220; ernannt. Eine Bronze-Statue auf dem Marktplatz, mit deinem Hammer und deinem Namen. Die Familien, die wir gerettet haben, kommen zur Einweihung. Sie bringen Kerzen, Schokolade, Kuchen. Es ist nicht das Geld, Meister &#8212; es ist das hier. Genau das ist es, wof&#252;r wir das alles machen. Auf den n&#228;chsten Fr&#252;hling.</value></data>
+  <data name="Back" xml:space="preserve"><value>Zurück</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>Was du verlierst:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>3× Legende-Prestige nötig, um Ascension freizuschalten</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>Spieler-Level 50 nötig, um das Lager freizuschalten</value></data>
 </root>

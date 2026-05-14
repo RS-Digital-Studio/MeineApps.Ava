@@ -6608,4 +6608,8 @@
   <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>N&#237;vel 40! A tempestade passou, a reconstru&#231;&#227;o est&#225; em marcha. Trabalhamos dia e noite. 80 casas precisam de novos telhados. 200 fam&#237;lias precisam de calor de volta. A concorr&#234;ncia ajuda &#8212; nunca antes visto. Hoje n&#227;o brigamos, hoje constru&#237;mos. Viga a viga, como dirias. Esta cidade n&#227;o esquece.</value></data>
   <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: Her&#243;i do inverno</value></data>
   <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>N&#237;vel 50! A cidade nomeou-te hoje „Her&#243;i do Inverno&#8220;. Uma est&#225;tua de bronze na pra&#231;a do mercado, com o teu martelo e o teu nome. As fam&#237;lias que salvamos vieram &#224; inaugura&#231;&#227;o. Trazem velas, chocolate, bolo. N&#227;o &#233; o dinheiro, Mestre &#8212; &#233; isto. &#201; exatamente para isto que fazemos tudo. &#192; pr&#243;xima primavera.</value></data>
+  <data name="Back" xml:space="preserve"><value>Voltar</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>O que você perde:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>Alcance Lenda 3 vezes para desbloquear a Ascensão</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>Alcance o nível 50 para desbloquear o armazém</value></data>
 </root>

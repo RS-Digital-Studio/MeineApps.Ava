@@ -6593,4 +6593,8 @@
   <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Niveau 40&#160;! La temp&#234;te est pass&#233;e, la reconstruction est lanc&#233;e. Nous travaillons jour et nuit. 80 maisons ont besoin de nouveaux toits. 200 familles veulent retrouver le chauffage. La concurrence aide &#8212; du jamais vu. Aujourd&#8217;hui on ne se bat pas, on construit. Poutre apr&#232;s poutre, comme tu dirais. Cette ville n&#8217;oubliera pas.</value></data>
   <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone&#160;: H&#233;ros de l&#8217;hiver</value></data>
   <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Niveau 50&#160;! La ville t&#8217;a nomm&#233; aujourd&#8217;hui „H&#233;ros de l&#8217;hiver&#8220;. Une statue en bronze sur la place du march&#233;, avec ton marteau et ton nom. Les familles que nous avons sauv&#233;es viennent &#224; l&#8217;inauguration. Elles apportent des bougies, du chocolat, des g&#226;teaux. Ce n&#8217;est pas l&#8217;argent, Ma&#238;tre &#8212; c&#8217;est &#231;a. C&#8217;est exactement pour &#231;a qu&#8217;on fait tout. Au prochain printemps.</value></data>
+  <data name="Back" xml:space="preserve"><value>Retour</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>Ce que tu perds :</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>Atteins Légende 3 fois pour débloquer l'Ascension</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>Atteins le niveau 50 pour débloquer l'entrepôt</value></data>
 </root>

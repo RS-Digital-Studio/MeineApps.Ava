@@ -548,6 +548,8 @@ public sealed partial class MainViewModel
             WelcomeFlowVM.DailyRewardAmountText = todaysReward != null
                 ? MoneyFormatter.FormatCompact(todaysReward.Money)
                 : "";
+            // v2.1.1 (Audit U-C05): Streak-Dots datengebunden — siehe DailyRewardDialog.axaml.
+            WelcomeFlowVM.UpdateStreakDays(currentDay, currentStreak);
             WelcomeFlowVM.IsDailyRewardDialogVisible = true;
         }
     }

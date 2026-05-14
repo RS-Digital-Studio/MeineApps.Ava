@@ -42,4 +42,8 @@
   <data name="Settings" xml:space="preserve">
     <value>설정</value>
   </data>
+  <data name="Back" xml:space="preserve"><value>뒤로</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>잃는 것:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>레전드 프레스티지를 3번 달성하면 어센션 해제</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>창고를 해제하려면 플레이어 레벨 50 필요</value></data>
 </root>

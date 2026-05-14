@@ -457,7 +457,9 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
             }
         }
 
-        // Top-N nach BaseValue vorselektieren — Spieler sieht sinnvolle Default-Wahl.
+        // v2.1.1 (Audit U-H08): Top-N nach BaseValue automatisch vorselektieren — Spieler
+        // verliert keine Erbstuecke mehr wenn er ohne Auswahl auf Confirm tippt (frueher
+        // ging der +8%/Run-Bonus permanent verloren).
         var sorted = candidates.OrderByDescending(c => c.BaseValue).ToList();
         for (int i = 0; i < sorted.Count && i < MaxHeirloomSlots; i++)
             sorted[i].IsSelected = true;

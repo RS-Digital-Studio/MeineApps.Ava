@@ -6600,4 +6600,8 @@
   <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Livello 40! La tempesta &#232; passata, la ricostruzione &#232; in corso. Lavoriamo giorno e notte. 80 case necessitano nuovi tetti. 200 famiglie aspettano il calore. La concorrenza aiuta &#8212; mai visto prima. Oggi non litighiamo, oggi costruiamo. Trave per trave, come diresti tu. Questa citt&#224; non dimenticher&#224;.</value></data>
   <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: Eroe dell&#8217;inverno</value></data>
   <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Livello 50! La citt&#224; ti ha nominato oggi „Eroe dell&#8217;inverno&#8220;. Una statua di bronzo nella piazza del mercato, con il tuo martello e il tuo nome. Le famiglie che abbiamo salvato vengono all&#8217;inaugurazione. Portano candele, cioccolato, torte. Non sono i soldi, Mastro &#8212; &#232; questo. &#200; esattamente per questo che facciamo tutto. Alla prossima primavera.</value></data>
+  <data name="Back" xml:space="preserve"><value>Indietro</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>Cosa perdi:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>Raggiungi Leggenda 3 volte per sbloccare l'Ascensione</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>Raggiungi il livello 50 per sbloccare il magazzino</value></data>
 </root>

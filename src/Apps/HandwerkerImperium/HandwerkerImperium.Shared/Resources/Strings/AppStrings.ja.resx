@@ -42,4 +42,8 @@
   <data name="Settings" xml:space="preserve">
     <value>設定</value>
   </data>
+  <data name="Back" xml:space="preserve"><value>戻る</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>失うもの:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>アセンションを解除するにはレジェンドプレステージを3回達成</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>倉庫を解除するにはプレイヤーレベル50が必要</value></data>
 </root>

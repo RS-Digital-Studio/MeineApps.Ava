@@ -45,4 +45,8 @@
   <data name="Settings" xml:space="preserve">
     <value>设置</value>
   </data>
+  <data name="Back" xml:space="preserve"><value>返回</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>你将失去:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>完成3次传奇转生即可解锁飞升</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>达到玩家等级50解锁仓库</value></data>
 </root>

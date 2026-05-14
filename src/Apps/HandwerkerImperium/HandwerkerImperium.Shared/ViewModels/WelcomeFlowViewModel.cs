@@ -41,4 +41,36 @@ public sealed partial class WelcomeFlowViewModel : ViewModelBase
     [ObservableProperty] private string _dailyRewardDayText = "";
     [ObservableProperty] private string _dailyRewardStreakText = "";
     [ObservableProperty] private string _dailyRewardAmountText = "";
+
+    // v2.1.1 (Audit U-C05): Streak-Dots als Datengebundene Sammlung statt 7 hardcodierter
+    // Border-Elemente. StreakDays[i].IsCurrent = true beim aktuellen Tag, IsClaimed = true
+    // fuer schon erhaltene Tage. Tag-1-Spieler sieht jetzt einen echten Status, kein
+    // statisches alternierendes Muster.
+    public System.Collections.ObjectModel.ObservableCollection<StreakDayItem> StreakDays { get; } = new();
+
+    public void UpdateStreakDays(int currentDay, int streakCount)
+    {
+        StreakDays.Clear();
+        for (int i = 1; i <= 7; i++)
+        {
+            StreakDays.Add(new StreakDayItem
+            {
+                Day = i,
+                IsCurrent = i == currentDay,
+                IsClaimed = i < currentDay || (i == currentDay && i <= streakCount),
+                IsMilestone = i == 7
+            });
+        }
+    }
+}
+
+/// <summary>
+/// v2.1.1 (Audit U-C05): Datenklasse fuer einen Streak-Dot im DailyRewardDialog.
+/// </summary>
+public sealed class StreakDayItem
+{
+    public int Day { get; init; }
+    public bool IsCurrent { get; init; }
+    public bool IsClaimed { get; init; }
+    public bool IsMilestone { get; init; }
 }

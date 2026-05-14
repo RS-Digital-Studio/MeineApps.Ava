@@ -148,12 +148,33 @@ public sealed partial class MainViewModel
     /// <summary>
     /// Imperium-Sub-Tab waehlen (per RelayCommand aus AXAML).
     /// Ascension-Sub-Tab nur sichtbar wenn Ascension verfuegbar (PrestigeData.LegendeCount &gt;= 3).
+    /// v2.1.1 (Audit U-C03): Bei locked Sub-Tabs zeigen wir einen Toast statt stillem No-Op,
+    /// damit der Spieler versteht WAS er noch tun muss. Frueher tippte er auf den disabled-
+    /// Tab und nichts geschah — die Late-Game-Hauptbelohnung blieb unsichtbar.
     /// </summary>
     [RelayCommand]
     private void SelectImperiumSubTab(string subTabName)
     {
-        if (Enum.TryParse<ImperiumSubTab>(subTabName, ignoreCase: true, out var tab))
-            ImperiumSubTab = tab;
+        if (!Enum.TryParse<ImperiumSubTab>(subTabName, ignoreCase: true, out var tab))
+            return;
+
+        // U-C03: Locked-Tabs zeigen einen FloatingText mit Anforderung statt stiller No-Op.
+        if (tab == ImperiumSubTab.Ascension && !IsImperiumAscensionUnlocked)
+        {
+            var msg = _localizationService.GetString("AscensionLockedHint")
+                ?? "Reach Legende prestige 3 times to unlock Ascension";
+            FloatingTextRequested?.Invoke(msg, "info");
+            return;
+        }
+        if (tab == ImperiumSubTab.Warehouse && !IsImperiumWarehouseUnlocked)
+        {
+            var msg = _localizationService.GetString("WarehouseLockedHint")
+                ?? "Reach player level 50 to unlock the warehouse";
+            FloatingTextRequested?.Invoke(msg, "info");
+            return;
+        }
+
+        ImperiumSubTab = tab;
     }
 
     /// <summary>True wenn Ascension-Sub-Tab freigeschaltet (3x Legende-Prestige).</summary>

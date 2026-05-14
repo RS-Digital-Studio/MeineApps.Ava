@@ -6963,4 +6963,8 @@
   <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Tier 40! The storm is over, the rebuild is on. We work day and night. 80 houses need new roofs. 200 families need heat back. The competition helps out &#8212; never seen before. Today we don't fight, today we build. Beam by beam, as you'd say. This city won't forget.</value></data>
   <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: Hero of Winter</value></data>
   <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Tier 50! The city named you „Hero of Winter&#8220; today. A bronze statue on the market square, with your hammer and your name. The families we saved come to the unveiling. They bring candles, chocolate, cake. It's not the money, Master &#8212; it's this. This is exactly why we do it all. Here's to the next spring.</value></data>
+  <data name="Back" xml:space="preserve"><value>Back</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>What you lose:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>Reach Legende prestige 3 times to unlock Ascension</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>Reach player level 50 to unlock the warehouse</value></data>
 </root>

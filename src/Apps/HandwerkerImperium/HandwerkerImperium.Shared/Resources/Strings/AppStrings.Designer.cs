@@ -263,6 +263,12 @@ namespace HandwerkerImperium.Resources.Strings {
 
         public static string Cancel => ResourceManager.GetString("Cancel", resourceCulture) ?? "";
 
+        // v2.1.1 (Audit U-C01): "Back" Key fuer Settings-Back-Button (10 Sprachen).
+        public static string Back => ResourceManager.GetString("Back", resourceCulture) ?? "";
+
+        // v2.1.1 (Audit U-C06): "Was du verlierst:"-Label fuer Prestige-Confirm-Verlustliste (10 Sprachen).
+        public static string PrestigeWhatYouLose => ResourceManager.GetString("PrestigeWhatYouLose", resourceCulture) ?? "";
+
         public static string Prestige => ResourceManager.GetString("Prestige", resourceCulture) ?? "";
 
         public static string PrestigeDescription => ResourceManager.GetString("PrestigeDescription", resourceCulture) ?? "";

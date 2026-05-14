@@ -24,6 +24,11 @@
     <Style Selector="Button.SubTabActive">
       <Setter Property="Background" Value="{StaticResource CraftPrimaryLightBrush}" />
     </Style>
+    <!-- v2.1.1 (Audit U-C03): Locked-Style fuer Sub-Tabs (Ascension, Warehouse).
+         IsEnabled bleibt true (Hint-Tap kommt im Command an), aber visuell gedimmt. -->
+    <Style Selector="Button.Locked">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
   </UserControl.Styles>
 
   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
@@ -78,10 +83,12 @@
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
           </Button>
-          <!-- V7 (Phase 1 Ressourcen-Plan): Lager-Sub-Tab. Gesperrt bis Spielerlevel 50. -->
+          <!-- V7 (Phase 1 Ressourcen-Plan): Lager-Sub-Tab. Gesperrt bis Spielerlevel 50.
+               v2.1.1 (Audit U-C03): IsEnabled=True statt false — der Tap zeigt jetzt einen
+               Hint-Toast via SelectImperiumSubTabCommand statt stiller No-Op. -->
           <Button Classes="Text"
                   Classes.SubTabActive="{Binding IsImperiumWarehouseActive}"
-                  IsEnabled="{Binding IsImperiumWarehouseUnlocked}"
+                  Classes.Locked="{Binding !IsImperiumWarehouseUnlocked}"
                   Command="{Binding SelectImperiumSubTabCommand}"
                   CommandParameter="Warehouse"
                   MinHeight="44" Padding="6,8" CornerRadius="8"
@@ -153,9 +160,13 @@
           </Button>
           <!-- Ascension-Tab IMMER sichtbar (kein Layout-Sprung beim Unlock). -->
           <!-- Vor Unlock: gedimmt + Lock-Icon, NICHT klickbar. Nach Unlock: voll sichtbar + klickbar. -->
+          <!-- v2.1.1 (Audit U-C03): IsEnabled=True lassen, damit der Tap ankommt und der
+               SelectImperiumSubTabCommand einen Hint-Toast zeigen kann. Vorher disabled
+               + stiller No-Op → Spieler wusste nicht warum nichts passiert.
+               Locked-State visuell durch die "Locked"-Klasse + Lock-Icon dargestellt. -->
           <Button Classes="Text"
                   Classes.SubTabActive="{Binding IsImperiumAscensionActive}"
-                  IsEnabled="{Binding IsImperiumAscensionUnlocked}"
+                  Classes.Locked="{Binding !IsImperiumAscensionUnlocked}"
                   Command="{Binding SelectImperiumSubTabCommand}"
                   CommandParameter="Ascension"
                   MinHeight="44" Padding="6,8" CornerRadius="8"

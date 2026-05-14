@@ -6592,4 +6592,8 @@
   <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>&#161;Nivel 40! La tormenta pas&#243;, la reconstrucci&#243;n est&#225; en marcha. Trabajamos d&#237;a y noche. 80 casas necesitan techos nuevos. 200 familias necesitan calor. La competencia ayuda &#8212; nunca antes visto. Hoy no peleamos, hoy construimos. Viga a viga, como dir&#237;as. Esta ciudad no lo olvidar&#225;.</value></data>
   <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: H&#233;roe del invierno</value></data>
   <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>&#161;Nivel 50! La ciudad te ha nombrado hoy „H&#233;roe del Invierno&#8220;. Una estatua de bronce en la plaza, con tu martillo y tu nombre. Las familias que salvamos vienen a la inauguraci&#243;n. Traen velas, chocolate, tarta. No es el dinero, Maestro &#8212; es esto. Por esto hacemos todo. Por la pr&#243;xima primavera.</value></data>
+  <data name="Back" xml:space="preserve"><value>Atrás</value></data>
+  <data name="PrestigeWhatYouLose" xml:space="preserve"><value>Lo que pierdes:</value></data>
+  <data name="AscensionLockedHint" xml:space="preserve"><value>Alcanza Legenda 3 veces para desbloquear la Ascensión</value></data>
+  <data name="WarehouseLockedHint" xml:space="preserve"><value>Alcanza el nivel 50 para desbloquear el almacén</value></data>
 </root>

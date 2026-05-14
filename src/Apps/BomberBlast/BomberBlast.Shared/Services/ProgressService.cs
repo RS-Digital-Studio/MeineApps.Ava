@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -10,14 +11,14 @@ public sealed class ProgressService : IProgressService
 {
     private const string PROGRESS_KEY = "GameProgress";
     private readonly IPreferencesService _preferences;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<ProgressService> _logger;
     private ProgressData _data = new();
     private int? _totalStarsCache; // Invalidiert bei Score-Änderung
 
     public int TotalLevels => 100;
     public int HighestCompletedLevel => _data.HighestCompleted;
 
-    public ProgressService(IPreferencesService preferences, IAppLogger logger)
+    public ProgressService(IPreferencesService preferences, ILogger<ProgressService> logger)
     {
         _preferences = preferences;
         _logger = logger;
@@ -206,7 +207,7 @@ public sealed class ProgressService : IProgressService
         catch (Exception ex)
         {
             // Save failed - wird beim naechsten Mal erneut versucht (Score-Aenderungen rufen Save erneut auf)
-            _logger.LogWarning($"ProgressService: SaveProgress fehlgeschlagen ({ex.GetType().Name}: {ex.Message})");
+            _logger.LogWarning(ex, "ProgressService: SaveProgress fehlgeschlagen");
         }
     }
 

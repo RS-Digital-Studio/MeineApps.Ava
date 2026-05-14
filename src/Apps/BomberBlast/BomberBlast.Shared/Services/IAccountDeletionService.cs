@@ -1,4 +1,5 @@
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -38,7 +39,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
     private readonly IPreferencesService _preferences;
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<AccountDeletionService> _logger;
 
     public AccountDeletionService(
         ILeagueService leagueService,
@@ -47,7 +48,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
         IPreferencesService preferences,
         IProgressService progressService,
         IHighScoreService highScoreService,
-        IAppLogger logger)
+        ILogger<AccountDeletionService> logger)
     {
         _leagueService = leagueService;
         _cloudSaveService = cloudSaveService;
@@ -82,7 +83,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
         }
         catch (Exception ex)
         {
-            _logger.LogError("AccountDeletion: Local data delete failed", ex);
+            _logger.LogError(ex, "AccountDeletion: Local data delete failed");
             error = $"Local: {ex.Message}";
         }
 
@@ -94,7 +95,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
         }
         catch (Exception ex)
         {
-            _logger.LogError("AccountDeletion: Cloud-Save delete failed", ex);
+            _logger.LogError(ex, "AccountDeletion: Cloud-Save delete failed");
             error ??= $"CloudSave: {ex.Message}";
         }
 
@@ -107,7 +108,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
         }
         catch (Exception ex)
         {
-            _logger.LogError("AccountDeletion: Firebase delete failed", ex);
+            _logger.LogError(ex, "AccountDeletion: Firebase delete failed");
             error ??= $"Firebase: {ex.Message}";
         }
 

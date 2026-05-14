@@ -7,6 +7,7 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.ViewModels;
 
@@ -292,7 +293,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly IPurchaseService _purchaseService;
     private readonly ICloudSaveService _cloudSaveService;
     private readonly SoundManager _soundManager;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<MainViewModel> _logger;
     /// <summary>Sprint 4.2 AAA-Audit #10: GameEventBus — neue Code nutzt diesen statt durch MainVM zu routen.</summary>
     private readonly IGameEventBus _eventBus;
     /// <summary>Sprint 3.1 AAA-Audit #4: Bottom-Tab-Hub — zentrale 4-Tab-Navigation.</summary>
@@ -716,7 +717,7 @@ public sealed partial class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"NavigateTo(NavigationRequest) unbehandelte Exception fuer {request?.GetType().Name}", ex);
+            _logger.LogError(ex, "NavigateTo(NavigationRequest) unbehandelte Exception fuer {RequestType}", request?.GetType().Name);
         }
     }
 
@@ -1025,7 +1026,7 @@ public sealed partial class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"NavigateTo Fehler bei Route '{route}'", ex);
+            _logger.LogError(ex, "NavigateTo Fehler bei Route '{Route}'", route);
             // Fallback: Zurück zum Hauptmenü damit die App nicht hängt
             try
             {
@@ -1036,7 +1037,7 @@ public sealed partial class MainViewModel : ViewModelBase
             catch (Exception fallbackEx)
             {
                 // Audit H09: Letzter Ausweg — App lebt weiter, aber Fehler wird geloggt (kein silent-fail).
-                _logger.LogError($"NavigateTo Fallback fehlgeschlagen fuer Route '{route}'", fallbackEx);
+                _logger.LogError(fallbackEx, "NavigateTo Fallback fehlgeschlagen fuer Route '{Route}'", route);
             }
         }
     }

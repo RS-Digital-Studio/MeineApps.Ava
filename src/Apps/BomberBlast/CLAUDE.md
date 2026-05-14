@@ -1013,19 +1013,37 @@ Logged Funnel-Event `feature_unlocked` (Sprint 2.2). UI-Thread-Event
 
 ---
 
-## Logging-Pattern (Sprint 4.1 / #9)
+## Logging-Pattern (Welle 6 — voll auf Microsoft.Extensions.Logging)
 
-`AppLogger` leitet jetzt `LogError(msg, ex)` automatisch an
-`ITelemetryService.LogNonFatal(ex, ctx)` weiter — sichtbar in Crashlytics
-mit Stack-Trace + Custom-Keys. `LogInfo` und `LogWarning` werden als Breadcrumbs
-geloggt.
+Alle Services, Engine-Klassen und ViewModels nutzen `ILogger<T>` per Constructor Injection
+(`IAppLogger`/`AppLogger`-Fassade ist entfernt). Die `LoggerFactory` haengt drei eigene
+Provider an (Code-only, keine NuGet-Sinks):
 
-Build-Filtering: Im Debug-Build zeigt `LogTrace` Output, im Release nicht.
+- `Services.Logging.TraceLoggerProvider` — LogCat auf Android, Debug-Output auf Desktop
+- `Services.Logging.FileLoggerProvider` — rollende Log-Datei `{LocalAppData}/BomberBlast/logs/app.log`
+  (512 KB Cap, 1 Backup). Ueberlebt App-Crashes.
+- `Services.Logging.CrashlyticsLoggerProvider` — Bridge zu `ITelemetryService`:
+  - `LogError(ex, msg)` → `telemetry.LogNonFatal(ex, ctx)` (non-fatal Crash-Report mit Stack-Trace)
+  - `LogWarning` / `LogError` ohne Exception → `telemetry.Log(...)` (Breadcrumb)
+  - `LogInformation` → Breadcrumb nur im DEBUG-Build (Quota fuer Warnings/Errors reservieren)
+  - `Trace`/`Debug`-Eintraege werden in Crashlytics nie weitergegeben (Noise-Schutz)
 
-`BeginScope("game={gameId}")` mit AsyncLocal-Stack — alle Logs in einem
-`using`-Block bekommen den Scope-Namen als Prefix. Thread-safe fuer parallele Sub-Tasks.
+`ITelemetryService` wird im `CrashlyticsLoggerProvider` lazy via `IServiceProvider` aufgeloest —
+verhindert Zirkularitaeten waehrend der DI-Aufbauphase. Bei fehlendem Telemetry-Service bleibt
+der Bridge inaktiv, Trace + File loggen unabhaengig weiter.
 
-Volle ILogger&lt;T&gt;-Migration der 53 Services bleibt eigener Sprint.
+Build-Filtering: `LogLevel.Trace` im DEBUG, `LogLevel.Information` im Release
+(`SetMinimumLevel` in `LoggerFactory.Create`).
+
+**Statische Logger-Sinks** (`ShaderEffects.Logger`, `PersistenceHealth.Logger`): werden in
+`App.axaml.cs` nach `Services.BuildServiceProvider()` gesetzt — `ShaderEffects` ueber
+`GetRequiredService<ILogger<ShaderEffects>>()`, `PersistenceHealth` (static class)
+ueber `ILoggerFactory.CreateLogger(nameof(PersistenceHealth))`.
+
+**Strukturierte Logs**: Templates statt String-Interpolation verwenden, damit Crashlytics
++ File-Logs aussagekraeftige Custom-Keys bekommen.
+- Falsch: `_logger.LogError($"Fehler bei Route '{route}'", ex)`
+- Richtig: `_logger.LogError(ex, "Fehler bei Route '{Route}'", route)`
 
 ---
 
@@ -1264,7 +1282,7 @@ gehalten werden (sonst zeigt Splash eine andere Version als die installierte App
 
 | Service | Zweck |
 |---------|-------|
-| `IAppLogger` | Logging-Wrapper (AppLogger-Impl., LogCat auf Android) |
+| `ILogger<T>` (M.E.L.) | Standard Logging — drei Provider (Trace/File/Crashlytics), siehe Logging-Pattern oben |
 | `ISoundService` | Audio (Pitch/Pan-Variation, räumliches Audio) |
 | `IProgressService` | Level-Fortschritt, Sterne, Fail-Counter, World-Gating |
 | `IHighScoreService` | Top-10 Scores (sqlite-net-pcl) |

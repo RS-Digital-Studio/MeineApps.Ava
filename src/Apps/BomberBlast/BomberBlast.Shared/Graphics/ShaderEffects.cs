@@ -1,4 +1,5 @@
 using BomberBlast.Services;
+using Microsoft.Extensions.Logging;
 using SkiaSharp;
 using System;
 
@@ -14,7 +15,7 @@ public sealed class ShaderEffects : IDisposable
     /// <summary>
     /// Statischer Logger, wird nach DI-Build von App.axaml.cs gesetzt.
     /// </summary>
-    public static IAppLogger? Logger { get; set; }
+    public static ILogger? Logger { get; set; }
 
     private bool _disposed;
 
@@ -145,7 +146,7 @@ half4 main(float2 coord) {
             _waterRippleEffect = _sharedWaterRippleEffect;
             _gpuRipplesAvailable = _waterRippleEffect != null;
             if (!_gpuRipplesAvailable)
-                Logger?.LogWarning($"SkSL Kompilierung fehlgeschlagen: {_sharedWaterRippleErrors}");
+                Logger?.LogWarning("SkSL Kompilierung fehlgeschlagen: {Errors}", _sharedWaterRippleErrors);
 
             // Uniforms eager initialisieren (statt lazy in RenderWaterRipples).
             // Vermeidet einmaligen Kaltstart-Jitter beim ersten Ocean-Frame, wenn der
@@ -156,7 +157,7 @@ half4 main(float2 coord) {
         catch (Exception ex)
         {
             _gpuRipplesAvailable = false;
-            Logger?.LogWarning($"SkSL nicht verfügbar: {ex.Message}");
+            Logger?.LogWarning(ex, "SkSL nicht verfügbar");
         }
     }
 

@@ -1,5 +1,6 @@
 using BomberBlast.Services;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -25,7 +26,7 @@ public class AccountDeletionServiceTests
         prefs = new InMemoryPreferences();
         progress = Substitute.For<IProgressService>();
         scores = Substitute.For<IHighScoreService>();
-        var logger = Substitute.For<IAppLogger>();
+        var logger = Substitute.For<ILogger<AccountDeletionService>>();
 
         league.DeleteOwnEntryAsync().Returns(Task.CompletedTask);
         cloud.DeleteCloudSaveAsync().Returns(Task.CompletedTask);

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using BomberBlast.Models.Entities;
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -17,7 +18,7 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
     private const int SaveDebounceMs = 1000;
     private readonly IPreferencesService _preferences;
     private readonly IFirebaseService _firebase;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<DeckTelemetryService> _logger;
     private readonly ICloudSaveService _cloudSave;
     private readonly Dictionary<BombType, DeckTelemetryEntry> _entries = new();
     private readonly object _sync = new();
@@ -27,7 +28,7 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
     public DeckTelemetryService(
         IPreferencesService preferences,
         IFirebaseService firebase,
-        IAppLogger logger,
+        ILogger<DeckTelemetryService> logger,
         ICloudSaveService cloudSave)
     {
         _preferences = preferences;
@@ -145,7 +146,7 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"DeckTelemetry Firebase-Upload fehlgeschlagen: {ex.Message}");
+            _logger.LogWarning(ex, "DeckTelemetry Firebase-Upload fehlgeschlagen");
         }
     }
 
@@ -177,7 +178,7 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"DeckTelemetry Load fehlgeschlagen: {ex.Message}");
+            _logger.LogWarning(ex, "DeckTelemetry Load fehlgeschlagen");
         }
     }
 
@@ -214,7 +215,7 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"DeckTelemetry Debounced-Save Fehler: {ex.Message}");
+                _logger.LogWarning(ex, "DeckTelemetry Debounced-Save Fehler");
             }
         });
     }
@@ -234,7 +235,7 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"DeckTelemetry Save fehlgeschlagen: {ex.Message}");
+            _logger.LogWarning(ex, "DeckTelemetry Save fehlgeschlagen");
         }
     }
 }

@@ -9,6 +9,7 @@ using BomberBlast.Input;
 using BomberBlast.Services;
 using BomberBlast.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
@@ -76,7 +77,7 @@ public class MainActivity : AvaloniaMainActivity
         const bool isDebugBuild = false;
 #endif
         App.RemoteConfigServiceFactory = sp =>
-            new FirebaseRemoteConfigService(sp.GetRequiredService<IAppLogger>(), isDebugBuild);
+            new FirebaseRemoteConfigService(sp.GetRequiredService<ILogger<FirebaseRemoteConfigService>>(), isDebugBuild);
 
         // AI-Asset-Loader: WebP-Bilder aus Android Assets laden
         GameAssetService.PlatformAssetLoader = path =>

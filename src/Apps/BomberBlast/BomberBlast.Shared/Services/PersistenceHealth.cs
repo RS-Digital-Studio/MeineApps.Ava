@@ -1,4 +1,5 @@
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -12,15 +13,15 @@ namespace BomberBlast.Services;
 /// 1. CloudSaveService beim naechsten Sync Cloud-Pull BEVORZUGT (statt Local-First),
 ///    um zu verhindern, dass ein einzelner Parse-Fehler die Cloud mit Leer-State
 ///    ueberschreibt → Total-Data-Loss auf allen Geraeten.
-/// 2. Der Fehler in LogCat / IAppLogger sichtbar ist (nicht silent).
+/// 2. Der Fehler in LogCat / ILogger sichtbar ist (nicht silent).
 ///
-/// Statisch, damit Services ohne DI-Abhaengigkeit auf IAppLogger ihre Corruption melden koennen.
+/// Statisch, damit Services ohne DI-Abhaengigkeit auf einen Logger ihre Corruption melden koennen.
 /// Logger wird zentral in App.axaml.cs nach DI-Build gesetzt (analog ShaderEffects.Logger).
 /// </summary>
 public static class PersistenceHealth
 {
     /// <summary>Wird zentral in App.axaml.cs nach DI-Build gesetzt.</summary>
-    public static IAppLogger? Logger { get; set; }
+    public static ILogger? Logger { get; set; }
 
     /// <summary>True wenn seit App-Start mindestens eine Corruption erkannt wurde.</summary>
     public static bool WasCorruptionDetected { get; private set; }
@@ -32,9 +33,9 @@ public static class PersistenceHealth
     {
         WasCorruptionDetected = true;
         if (ex != null)
-            Logger?.LogError($"[PersistenceHealth] Korrupte Daten in {serviceName} erkannt. Cloud-Pull wird bevorzugt.", ex);
+            Logger?.LogError(ex, "[PersistenceHealth] Korrupte Daten in {Service} erkannt. Cloud-Pull wird bevorzugt.", serviceName);
         else
-            Logger?.LogWarning($"[PersistenceHealth] Korrupte/leere Daten in {serviceName} erkannt. Cloud-Pull wird bevorzugt.");
+            Logger?.LogWarning("[PersistenceHealth] Korrupte/leere Daten in {Service} erkannt. Cloud-Pull wird bevorzugt.", serviceName);
     }
 
     /// <summary>Nach erfolgreichem Cloud-Pull zuruecksetzen.</summary>

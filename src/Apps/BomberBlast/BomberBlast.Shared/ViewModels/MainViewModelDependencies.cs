@@ -3,6 +3,7 @@ using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.ViewModels;
 
@@ -66,7 +67,7 @@ public sealed record MainViewModelDependencies(
     ICoinService CoinService,
     ICloudSaveService CloudSaveService,
     SoundManager SoundManager,
-    IAppLogger Logger,
+    ILogger<MainViewModel> Logger,
     IGameEventBus EventBus,
     IWhatsNewService WhatsNewService,
     IAnalyticsService Analytics,

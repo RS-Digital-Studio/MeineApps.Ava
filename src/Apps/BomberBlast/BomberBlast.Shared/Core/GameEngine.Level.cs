@@ -6,6 +6,7 @@ using BomberBlast.Models.Grid;
 using BomberBlast.Core.LevelGeneration;
 using BomberBlast.Models.Levels;
 using BomberBlast.Services;
+using Microsoft.Extensions.Logging;
 using SkiaSharp;
 
 namespace BomberBlast.Core;
@@ -49,10 +50,10 @@ public sealed partial class GameEngine
             : new BomberBlast.Core.Modes.StoryMode();
         if (masterMode && !effectiveMaster)
         {
-            // IAppLogger statt Debug.WriteLine: Auch im Release-Build via LogCat sichtbar (Android),
+            // ILogger statt Debug.WriteLine: Auch im Release-Build via LogCat sichtbar (Android),
             // hilft beim Debuggen wenn ein veralteter Deep-Link masterMode=true setzt.
             _logger.LogWarning(
-                $"[GameEngine] Master-Mode für L{levelNumber} angefordert aber !IsUnlocked → Normal-Mode-Fallback");
+                "[GameEngine] Master-Mode für L{Level} angefordert aber !IsUnlocked → Normal-Mode-Fallback", levelNumber);
         }
         _currentLevelNumber = levelNumber;
         _currentLevel = LevelLayoutGenerator.GenerateLevel(levelNumber, _progressService.HighestCompletedLevel);
@@ -1808,7 +1809,7 @@ public sealed partial class GameEngine
                     {
                         if (t.IsFaulted)
                         {
-                            _logger?.LogError("BossRush transition failed", t.Exception?.GetBaseException() ?? new Exception("Unknown"));
+                            _logger?.LogError(t.Exception?.GetBaseException() ?? new Exception("Unknown"), "BossRush transition failed");
                             // Fallback: Game-Over + Submit was bisher akkumuliert wurde
                             if (BossRushModeState?.TryGetSubmitArgs(completedAllBosses: false) is { } fa)
                             {

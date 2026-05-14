@@ -1,6 +1,7 @@
 using BomberBlast.Models.BattlePass;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -16,7 +17,7 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
     private readonly IDailyRewardService _dailyReward;
     private readonly IBattlePassService _battlePass;
     private readonly IPreferencesService _prefs;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<ReEngagementScheduler> _logger;
 
     private const string KeyLastD7Schedule = "ReEngagement_LastD7ScheduleUtc";
     /// <summary>D7-Reminder soll nur 1x pro 7 Tage gefeuert werden (kein Spam).</summary>
@@ -28,7 +29,7 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
         IDailyRewardService dailyReward,
         IBattlePassService battlePass,
         IPreferencesService prefs,
-        IAppLogger logger)
+        ILogger<ReEngagementScheduler> logger)
     {
         _push = push;
         _localization = localization;
@@ -42,7 +43,7 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
     {
         if (!_push.ArePermissionsGranted)
         {
-            _logger.LogInfo("ReEngagement: Notification-Permission verweigert, plane nichts.");
+            _logger.LogInformation("ReEngagement: Notification-Permission verweigert, plane nichts.");
             return;
         }
 
@@ -54,7 +55,7 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
         }
         catch (Exception ex)
         {
-            _logger.LogError("ReEngagement: Fehler beim Planen der Reminder", ex);
+            _logger.LogError(ex, "ReEngagement: Fehler beim Planen der Reminder");
         }
     }
 
@@ -68,7 +69,7 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
         }
         catch (Exception ex)
         {
-            _logger.LogError("ReEngagement: Fehler beim Cancelen der Reminder", ex);
+            _logger.LogError(ex, "ReEngagement: Fehler beim Cancelen der Reminder");
         }
     }
 

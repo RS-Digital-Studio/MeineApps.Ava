@@ -7,6 +7,7 @@ using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Core;
 using BomberBlast.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using Microsoft.Extensions.Logging;
 using SkiaSharp;
 
 namespace BomberBlast.ViewModels;
@@ -32,7 +33,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     private readonly IProgressService _progressService;
     private readonly IReviewService _reviewService;
     private readonly IGameAssetService _assetService;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<GameViewModel> _logger;
     // Vermeidet doppelte Preload-Triggerings pro Welt (fire-and-forget Task schmeisst sonst Warnings)
     private int _lastPreloadedWorldIndex = -1;
     private readonly Stopwatch _frameStopwatch = new();
@@ -150,7 +151,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IProgressService progressService,
         IReviewService reviewService,
         IGameAssetService assetService,
-        IAppLogger logger,
+        ILogger<GameViewModel> logger,
         IRetentionService retentionService,
         IAnalyticsService analytics,
         IWorldStoryService worldStoryService,
@@ -826,7 +827,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         }
         catch (Exception ex)
         {
-            _logger.LogError("HandleGameOver Fehler", ex);
+            _logger.LogError(ex, "HandleGameOver Fehler");
         }
     }
 
@@ -877,7 +878,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         }
         catch (Exception ex)
         {
-            _logger.LogError("HandleLevelComplete Fehler", ex);
+            _logger.LogError(ex, "HandleLevelComplete Fehler");
         }
     }
 

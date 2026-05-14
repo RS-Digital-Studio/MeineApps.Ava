@@ -1,5 +1,6 @@
 using BomberBlast.Services;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -17,7 +18,7 @@ public class MasterModeServiceTests
     {
         var prefs = new InMemoryPreferences();
         var progress = Substitute.For<IProgressService>();
-        var logger = Substitute.For<IAppLogger>();
+        var logger = Substitute.For<ILogger<MasterModeService>>();
         var cloud = Substitute.For<ICloudSaveService>();
 
         progress.HighestCompletedLevel.Returns(highestCompletedLevel);

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -12,10 +13,10 @@ public sealed class HighScoreService : IHighScoreService
     private const string SCORES_KEY = "HighScores";
     private const int MAX_SCORES = 10;
     private readonly IPreferencesService _preferences;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<HighScoreService> _logger;
     private List<HighScoreEntry> _scores = [];
 
-    public HighScoreService(IPreferencesService preferences, IAppLogger logger)
+    public HighScoreService(IPreferencesService preferences, ILogger<HighScoreService> logger)
     {
         _preferences = preferences;
         _logger = logger;
@@ -137,7 +138,7 @@ public sealed class HighScoreService : IHighScoreService
         catch (Exception ex)
         {
             // Speichern fehlgeschlagen - wird beim naechsten Mal erneut versucht (AddScore ruft Save erneut auf)
-            _logger.LogWarning($"HighScoreService: SaveScores fehlgeschlagen ({ex.GetType().Name}: {ex.Message})");
+            _logger.LogWarning(ex, "HighScoreService: SaveScores fehlgeschlagen");
         }
     }
 

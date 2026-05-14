@@ -8,20 +8,22 @@ namespace BomberBlast.Services.Logging;
 /// Eigene <see cref="ILoggerProvider"/>-Implementierungen fuer BomberBlast (Sprint 4.1 AAA-Audit #6).
 ///
 /// <para>
-/// Statt eines <see cref="Trace"/>-Wrappers nutzt <see cref="AppLogger"/> jetzt die echte
-/// <c>Microsoft.Extensions.Logging</c>-Infrastruktur — Level-Filterung, mehrere Sinks,
-/// strukturierte Logs. Zwei eigene Provider statt externer NuGet-Pakete (Code-only-Mandat):
+/// Microsoft.Extensions.Logging-Infrastruktur mit drei eigenen Providern (Code-only-Mandat,
+/// keine externen NuGet-Sinks):
 /// </para>
 /// <list type="bullet">
 /// <item><see cref="TraceLoggerProvider"/> — schreibt nach <see cref="Trace"/> (LogCat auf
-///       Android, Debug-Output auf Desktop). Ersetzt den alten Trace.WriteLine-Pfad.</item>
+///       Android, Debug-Output auf Desktop).</item>
 /// <item><see cref="FileLoggerProvider"/> — rollende Log-Datei im App-Daten-Verzeichnis.
 ///       Ueberlebt App-Crashes → Bug-Reproduktion aus dem Log statt aus dem Gedaechtnis.</item>
+/// <item><see cref="CrashlyticsLoggerProvider"/> — Bridge zu ITelemetryService
+///       (LogError(ex) → non-fatal Crash-Report, LogWarning/Error → Breadcrumb).</item>
 /// </list>
 ///
 /// <para>
-/// Scope-Handling bleibt in <see cref="AppLogger"/> (AsyncLocal-String-Prefix) — die Provider
-/// sind bewusst "dumm" und formatieren nur Timestamp + Level + bereits scope-praefixte Message.
+/// Standard-ILogger&lt;T&gt;-API ueber alle Services. <see cref="ILogger.BeginScope{TState}(TState)"/>
+/// landet aktuell als No-Op-Scope — falls strukturierte Scopes spaeter gebraucht werden, kann
+/// jeder Provider einen eigenen Scope-Stack hinzufuegen.
 /// </para>
 /// </summary>
 internal static class LoggerFormat
@@ -158,10 +160,118 @@ public sealed class FileLoggerProvider : ILoggerProvider
     }
 }
 
-/// <summary>No-Op-Scope-Disposable — Scopes werden in AppLogger via AsyncLocal-Prefix gehandhabt.</summary>
+/// <summary>No-Op-Scope-Disposable — die Provider geben das hier zurueck wenn BeginScope unsupported ist.</summary>
 internal sealed class NullScope : IDisposable
 {
     public static readonly NullScope Instance = new();
     private NullScope() { }
     public void Dispose() { }
+}
+
+/// <summary>
+/// Provider: Bridge zu <see cref="ITelemetryService"/> (Crashlytics) — uebersetzt
+/// <c>ILogger</c>-Eintraege in Firebase-Non-Fatals + Breadcrumbs.
+///
+/// <para>
+/// Migration-Pfad (Welle 5+ / Sprint 4.1 #14): Ersetzt die manuelle Telemetry-Bridge des alten
+/// <c>AppLogger</c>. Alle Services nutzen jetzt <c>ILogger&lt;T&gt;</c>; dieser Provider
+/// dockt automatisch an die Microsoft.Extensions.Logging-Pipeline an. Errors mit Exception
+/// landen als non-fatal Crash-Report mit Stack-Trace in Crashlytics, Warnings/Errors ohne
+/// Exception werden als Breadcrumbs gespeichert (sichtbar im naechsten Real-Crash-Stack).
+/// </para>
+///
+/// <para>
+/// Info-Breadcrumbs werden nur im DEBUG-Build weitergereicht — im Release wird die
+/// Crashlytics-Breadcrumb-Quota (max 64 Events pro Session) fuer Warnings/Errors reserviert.
+/// </para>
+///
+/// <para>
+/// ITelemetryService wird lazy ueber den ServiceProvider aufgeloest — Race-frei waehrend
+/// der DI-Aufbauphase. Wenn der Telemetry-Service noch nicht verfuegbar ist, ist der Bridge
+/// ein No-Op (Trace + File-Sink loggen unabhaengig weiter).
+/// </para>
+/// </summary>
+public sealed class CrashlyticsLoggerProvider : ILoggerProvider
+{
+    private const string Tag = "BomberBlast";
+
+    private readonly IServiceProvider _serviceProvider;
+    private ITelemetryService? _cachedTelemetry;
+
+    public CrashlyticsLoggerProvider(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public ILogger CreateLogger(string categoryName) => new CrashlyticsLogger(this, categoryName);
+
+    public void Dispose() { }
+
+    private ITelemetryService? ResolveTelemetry()
+    {
+        // Lazy-Cache — beim ersten Call den Service holen, danach ist die Referenz stabil.
+        // Race-Conditions sind unkritisch: ITelemetryService ist ein Singleton, mehrfache
+        // Auflösung ergibt dieselbe Instanz.
+        if (_cachedTelemetry != null) return _cachedTelemetry;
+        try
+        {
+            _cachedTelemetry = _serviceProvider.GetService(typeof(ITelemetryService)) as ITelemetryService;
+        }
+        catch
+        {
+            // Bei DI-Lookup-Fehlern während des Build-Up bleibt der Bridge inaktiv — Trace+File
+            // loggen ungestoert weiter.
+        }
+        return _cachedTelemetry;
+    }
+
+    private sealed class CrashlyticsLogger : ILogger
+    {
+        private readonly CrashlyticsLoggerProvider _provider;
+        private readonly string _category;
+
+        public CrashlyticsLogger(CrashlyticsLoggerProvider provider, string category)
+        {
+            _provider = provider;
+            _category = category;
+        }
+
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+
+        public bool IsEnabled(LogLevel logLevel)
+            => logLevel >= LogLevel.Information;  // Trace/Debug zu noisy fuer Crashlytics-Quota
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (!IsEnabled(logLevel)) return;
+            var telemetry = _provider.ResolveTelemetry();
+            if (telemetry is null) return;
+
+            var message = formatter(state, exception);
+            var level = LoggerFormat.ShortLevel(logLevel);
+            var formatted = $"[{Tag}] {level}: {message}";
+
+            switch (logLevel)
+            {
+                case LogLevel.Information:
+                    // Audit L04: Info-Breadcrumbs nur im DEBUG-Build an Crashlytics weitergeben.
+                    // Release: Quota fuer Warnings/Errors reserviert.
+#if DEBUG
+                    telemetry.Log(formatted);
+#endif
+                    break;
+                case LogLevel.Warning:
+                    telemetry.Log(formatted);
+                    break;
+                case LogLevel.Error:
+                case LogLevel.Critical:
+                    if (exception != null)
+                        telemetry.LogNonFatal(exception, formatted);
+                    else
+                        telemetry.Log(formatted);
+                    break;
+            }
+        }
+    }
 }

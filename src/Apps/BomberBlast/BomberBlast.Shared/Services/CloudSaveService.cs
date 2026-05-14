@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using BomberBlast.Models;
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -133,7 +134,7 @@ public sealed class CloudSaveService : ICloudSaveService
     private readonly ICoinService _coinService;
     private readonly IGemService _gemService;
     private readonly ICardService _cardService;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<CloudSaveService> _logger;
 
     private CancellationTokenSource? _debounceCts;
     private bool _isSyncing;
@@ -151,7 +152,7 @@ public sealed class CloudSaveService : ICloudSaveService
         ICoinService coinService,
         IGemService gemService,
         ICardService cardService,
-        IAppLogger logger)
+        ILogger<CloudSaveService> logger)
     {
         _preferences = preferences;
         _playGames = playGames;
@@ -196,7 +197,7 @@ public sealed class CloudSaveService : ICloudSaveService
             // v2.0.44: Schema-Migration auf aktuelle Version anheben + Validation.
             if (!CloudSaveSchemaMigrator.TryMigrateAndValidate(cloudData, out var migrationError))
             {
-                _logger.LogWarning($"CloudSave: Migration/Validation fehlgeschlagen — Cloud-Daten verworfen. Grund: {migrationError}");
+                _logger.LogWarning("CloudSave: Migration/Validation fehlgeschlagen — Cloud-Daten verworfen. Grund: {Reason}", migrationError);
                 return false;
             }
 
@@ -233,7 +234,7 @@ public sealed class CloudSaveService : ICloudSaveService
         }
         catch (Exception ex)
         {
-            _logger.LogError("CloudSave Load Fehler", ex);
+            _logger.LogError(ex, "CloudSave Load Fehler");
             return false;
         }
         finally
@@ -305,7 +306,7 @@ public sealed class CloudSaveService : ICloudSaveService
         }
         catch (Exception ex)
         {
-            _logger.LogError("CloudSave Upload Fehler", ex);
+            _logger.LogError(ex, "CloudSave Upload Fehler");
         }
         finally
         {
@@ -340,11 +341,11 @@ public sealed class CloudSaveService : ICloudSaveService
             };
             var emptyJson = JsonSerializer.Serialize(emptyData, JsonOptions);
             await _playGames.SaveToCloudAsync(emptyJson);
-            _logger.LogInfo("CloudSave: DSGVO Account-Löschung — Snapshot mit leeren Daten überschrieben.");
+            _logger.LogInformation("CloudSave: DSGVO Account-Löschung — Snapshot mit leeren Daten überschrieben.");
         }
         catch (Exception ex)
         {
-            _logger.LogError("CloudSave DeleteCloudSaveAsync Fehler", ex);
+            _logger.LogError(ex, "CloudSave DeleteCloudSaveAsync Fehler");
         }
     }
 
@@ -368,7 +369,7 @@ public sealed class CloudSaveService : ICloudSaveService
             // v2.0.44: Schema-Migration auf aktuelle Version anheben + Validation.
             if (!CloudSaveSchemaMigrator.TryMigrateAndValidate(cloudData, out var migrationError))
             {
-                _logger.LogWarning($"CloudSave ForceDownload: Migration/Validation fehlgeschlagen. Grund: {migrationError}");
+                _logger.LogWarning("CloudSave ForceDownload: Migration/Validation fehlgeschlagen. Grund: {Reason}", migrationError);
                 return false;
             }
 
@@ -379,7 +380,7 @@ public sealed class CloudSaveService : ICloudSaveService
         }
         catch (Exception ex)
         {
-            _logger.LogError("CloudSave ForceDownload Fehler", ex);
+            _logger.LogError(ex, "CloudSave ForceDownload Fehler");
             return false;
         }
         finally

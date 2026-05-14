@@ -1,4 +1,5 @@
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -40,13 +41,13 @@ public sealed class FirebaseClanService : IClanService
 
     private readonly IFirebaseService _firebase;
     private readonly IPreferencesService _prefs;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<FirebaseClanService> _logger;
 
     private ClanData? _currentClan;
 
     public event Action? ClanChanged;
 
-    public FirebaseClanService(IFirebaseService firebase, IPreferencesService prefs, IAppLogger logger)
+    public FirebaseClanService(IFirebaseService firebase, IPreferencesService prefs, ILogger<FirebaseClanService> logger)
     {
         _firebase = firebase;
         _prefs = prefs;
@@ -56,7 +57,7 @@ public sealed class FirebaseClanService : IClanService
         _ = Task.Run(async () =>
         {
             try { await LoadCurrentClanAsync(); }
-            catch (Exception ex) { _logger.LogWarning($"LoadCurrentClanAsync (Ctor) fehlgeschlagen: {ex.Message}"); }
+            catch (Exception ex) { _logger.LogWarning(ex, "LoadCurrentClanAsync (Ctor) fehlgeschlagen"); }
         });
     }
 
@@ -78,7 +79,7 @@ public sealed class FirebaseClanService : IClanService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"FirebaseClanService: Konnte Clan {clanId} nicht laden — {ex.Message}");
+            _logger.LogWarning(ex, "FirebaseClanService: Konnte Clan {ClanId} nicht laden", clanId);
         }
     }
 
@@ -213,7 +214,7 @@ public sealed class FirebaseClanService : IClanService
         }
         catch (Exception ex)
         {
-            _logger.LogError("FirebaseClanService.LeaveClanAsync fehlgeschlagen", ex);
+            _logger.LogError(ex, "FirebaseClanService.LeaveClanAsync fehlgeschlagen");
         }
         finally
         {
@@ -242,7 +243,7 @@ public sealed class FirebaseClanService : IClanService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"FirebaseClanService.PullChatAsync fehlgeschlagen — {ex.Message}");
+            _logger.LogWarning(ex, "FirebaseClanService.PullChatAsync fehlgeschlagen");
             return Array.Empty<ClanChatMessage>();
         }
     }
@@ -288,7 +289,7 @@ public sealed class FirebaseClanService : IClanService
         }
         catch (Exception ex)
         {
-            _logger.LogError("FirebaseClanService.SendChatAsync fehlgeschlagen", ex);
+            _logger.LogError(ex, "FirebaseClanService.SendChatAsync fehlgeschlagen");
         }
     }
 
@@ -314,7 +315,7 @@ public sealed class FirebaseClanService : IClanService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"FirebaseClanService.GetLeaderboardAsync fehlgeschlagen — {ex.Message}");
+            _logger.LogWarning(ex, "FirebaseClanService.GetLeaderboardAsync fehlgeschlagen");
             return Array.Empty<ClanData>();
         }
     }

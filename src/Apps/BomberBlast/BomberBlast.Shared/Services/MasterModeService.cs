@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -15,7 +16,7 @@ public sealed class MasterModeService : IMasterModeService, IDisposable
 
     private readonly IPreferencesService _preferences;
     private readonly IProgressService _progressService;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<MasterModeService> _logger;
     private readonly ICloudSaveService _cloudSave;
     private readonly Dictionary<int, int> _levelStars = new(); // level → stars (0-3)
     // Lock für _levelStars: OnCloudStateLoaded kann vom Background-Thread kommen
@@ -27,7 +28,7 @@ public sealed class MasterModeService : IMasterModeService, IDisposable
     public MasterModeService(
         IPreferencesService preferences,
         IProgressService progressService,
-        IAppLogger logger,
+        ILogger<MasterModeService> logger,
         ICloudSaveService cloudSave)
     {
         _preferences = preferences;
@@ -177,7 +178,7 @@ public sealed class MasterModeService : IMasterModeService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"MasterMode Load fehlgeschlagen: {ex.Message}");
+            _logger.LogWarning(ex, "MasterMode Load fehlgeschlagen");
         }
     }
 
@@ -192,7 +193,7 @@ public sealed class MasterModeService : IMasterModeService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"MasterMode Save fehlgeschlagen: {ex.Message}");
+            _logger.LogWarning(ex, "MasterMode Save fehlgeschlagen");
         }
     }
 }

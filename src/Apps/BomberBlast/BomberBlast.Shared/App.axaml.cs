@@ -140,10 +140,12 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        // Statischer Logger für ShaderEffects (nicht DI-verwaltet)
-        ShaderEffects.Logger = Services.GetRequiredService<IAppLogger>();
-        // PersistenceHealth: Logger setzen fuer Corrupt-Preferences-Meldungen (CoinService, GemService, ProgressService, DailyRewardService)
-        PersistenceHealth.Logger = Services.GetRequiredService<IAppLogger>();
+        // Statischer Logger für ShaderEffects (nicht DI-verwaltet) — generic ILogger<T>.
+        ShaderEffects.Logger = Services.GetRequiredService<ILogger<ShaderEffects>>();
+        // PersistenceHealth ist eine statische Klasse — kein ILogger<T> moeglich.
+        // Logger via Factory mit Kategorie-Name erzeugen (Standard-Pattern fuer statische Sinks).
+        PersistenceHealth.Logger = Services.GetRequiredService<ILoggerFactory>()
+            .CreateLogger(nameof(PersistenceHealth));
         // RewardedAdCooldownTracker: Preferences-Hook fuer persistierten Cooldown (Schutz gegen App-Restart-Bypass)
         RewardedAdCooldownTracker.Preferences = Services.GetRequiredService<IPreferencesService>();
         // GameLoopSettings: Persistierten TargetFps-Wert laden (30/60 FPS, default 30 Battery-Mode)
@@ -159,22 +161,22 @@ public partial class App : Application
         if (!safeMode)
         {
             try { Services.GetRequiredService<ITelemetryService>().Initialize(); }
-            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("Telemetry-Init fehlgeschlagen", ex); }
+            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Telemetry-Init fehlgeschlagen"); }
 
             try { Services.GetRequiredService<IAnalyticsService>().Initialize(); }
-            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("Analytics-Init fehlgeschlagen", ex); }
+            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Analytics-Init fehlgeschlagen"); }
 
             try { _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync(); }
-            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("Push-Init fehlgeschlagen", ex); }
+            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Push-Init fehlgeschlagen"); }
 
             try { _ = Services.GetRequiredService<IRemoteConfigService>().InitializeAsync(); }
-            catch (Exception ex) { Services.GetService<IAppLogger>()?.LogError("RemoteConfig-Init fehlgeschlagen", ex); }
+            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "RemoteConfig-Init fehlgeschlagen"); }
         }
         else
         {
             // Safe-Mode: Schreibe einen Diagnose-Eintrag damit Crashlytics weiss, warum dieser Start
             // ohne optionale Services ist. Wird beim naechsten Online-Start gepushed.
-            Services.GetService<IAppLogger>()?.LogWarning(
+            Services.GetService<ILogger<App>>()?.LogWarning(
                 "Safe-Mode aktiv — optionale Services (Telemetry/Analytics/Push/RemoteConfig) uebersprungen wegen wiederholter Crashes.");
         }
 
@@ -300,8 +302,8 @@ public partial class App : Application
         catch (Exception ex)
         {
             // Logger statt Debug.WriteLine - wird auch im Release-Build sichtbar (LogCat auf Android).
-            // Sprint 4.1 AAA-Audit: AppLogger forwarded an ITelemetryService.LogNonFatal mit Stack-Trace.
-            Services?.GetService<IAppLogger>()?.LogError("Loading-Pipeline fehlgeschlagen", ex);
+            // CrashlyticsLoggerProvider forwarded an ITelemetryService.LogNonFatal mit Stack-Trace.
+            Services?.GetService<ILogger<App>>()?.LogError(ex, "Loading-Pipeline fehlgeschlagen");
             Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
         }
     }
@@ -385,30 +387,25 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Logging — Sprint 4.1 AAA-Audit #6: AppLogger ist eine Fassade ueber
-        // Microsoft.Extensions.Logging. ILoggerFactory mit eigenen Providern (Trace + File) —
-        // Code-only, keine externen NuGet-Sinks. Build-Filter: Trace im Debug, Info im Release.
-        services.AddSingleton<ILoggerFactory>(_ => LoggerFactory.Create(builder =>
+        // Logging — Sprint 4.1 AAA-Audit #6 (Welle 6: AppLogger-Fassade abgeloest).
+        // Microsoft.Extensions.Logging mit drei eigenen Providern (Code-only, keine NuGet-Sinks):
+        //   - TraceLoggerProvider  → LogCat auf Android / Debug-Output auf Desktop
+        //   - FileLoggerProvider   → rollende Log-Datei (App-intern, ueberlebt App-Crashes)
+        //   - CrashlyticsLoggerProvider → Bridge zu ITelemetryService.LogNonFatal/Log
+        // Build-Filter: Trace im Debug, Info im Release.
+        services.AddSingleton<ILoggerFactory>(sp => LoggerFactory.Create(builder =>
         {
             builder.AddProvider(new Services.Logging.TraceLoggerProvider());
             builder.AddProvider(new Services.Logging.FileLoggerProvider());
+            builder.AddProvider(new Services.Logging.CrashlyticsLoggerProvider(sp));
 #if DEBUG
             builder.SetMinimumLevel(LogLevel.Trace);
 #else
             builder.SetMinimumLevel(LogLevel.Information);
 #endif
         }));
-        // Welle 5 v2.0.58 AAA-Audit #14: ILogger<T> Open-Generic-Resolver registrieren.
-        // Damit koennen neue Services direkt ILogger<MyService> per ctor injecten — die
-        // bestehenden 53 IAppLogger-Sites bleiben unveraendert. Migration ist Opt-In pro Klasse.
+        // ILogger<T> Open-Generic-Resolver: Services injizieren ILogger<MyService> per Ctor.
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
-
-        // AppLogger leitet zusaetzlich Errors/Warnings an Crashlytics weiter.
-        // ITelemetryService kommt unten — Lazy-Resolution noetig damit der Logger waehrend
-        // der DI-Aufbauphase nicht in eine Zirkularitaet faellt.
-        services.AddSingleton<IAppLogger>(sp => new AppLogger(
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetService<ITelemetryService>()));
 
         // Lazy<T>-Auflösung für zirkuläre Dependencies (statt manueller SetXxxService()-Verdrahtung)
         services.AddLazyResolution();
@@ -507,7 +504,7 @@ public partial class App : Application
         // via Cloud-Fetch — Defaults bleiben als Fallback fuer Offline + erste-Start-Szenarien.
         services.AddSingleton<IRemoteConfigService>(sp =>
             RemoteConfigServiceFactory?.Invoke(sp)
-            ?? new DefaultsRemoteConfigService(sp.GetRequiredService<IAppLogger>()));
+            ?? new DefaultsRemoteConfigService(sp.GetRequiredService<ILogger<DefaultsRemoteConfigService>>()));
 
         // Sprint 2.3 AAA-Audit #3 — Re-Engagement-Scheduler (D1/D3/D7-Notifications).
         // Wird von MainActivity beim OnPause/OnResume aufgerufen.

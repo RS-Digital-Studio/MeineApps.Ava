@@ -10,6 +10,7 @@ using BomberBlast.Models.Levels;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
+using Microsoft.Extensions.Logging;
 using SkiaSharp;
 // ReSharper disable InconsistentNaming
 
@@ -54,7 +55,7 @@ public sealed partial class GameEngine : IDisposable
     private readonly ILeagueService _leagueService;
     private readonly IEventService _eventService;
     private readonly IVibrationService _vibration;
-    private readonly IAppLogger _logger;
+    private readonly ILogger<GameEngine> _logger;
     // v2.0.44 — AAA-Audit: Accessibility-ColorMatrix wird vor jedem Frame ausgewertet
     private readonly IAccessibilityService _accessibility;
     // v2.0.44 — AAA-Audit: Funnel-Tracking
@@ -902,7 +903,7 @@ public sealed partial class GameEngine : IDisposable
         ILeagueService leagueService,
         IEventService eventService,
         IVibrationService vibrationService,
-        IAppLogger logger,
+        ILogger<GameEngine> logger,
         IAccessibilityService accessibility,
         IAnalyticsService analytics,
         ITelemetryService telemetry,
@@ -1019,7 +1020,7 @@ public sealed partial class GameEngine : IDisposable
         _vibration.VibrateAchievement();
         _soundManager.PlayStinger(SoundManager.STINGER_VICTORY);
 
-        _logger?.LogInfo($"[KonamiCode] Easter-Egg ausgeloest, +{konamiCoins} Coins");
+        _logger?.LogInformation("[KonamiCode] Easter-Egg ausgeloest, +{Coins} Coins", konamiCoins);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

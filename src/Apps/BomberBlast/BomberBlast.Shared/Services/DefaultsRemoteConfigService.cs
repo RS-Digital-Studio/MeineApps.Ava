@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
@@ -32,12 +33,25 @@ public class DefaultsRemoteConfigService : IRemoteConfigService
     private readonly Dictionary<string, JsonElement> _values = new(StringComparer.Ordinal);
     private readonly object _writeLock = new();
 
-    /// <summary>Logger — auch fuer abgeleitete Implementierungen (FirebaseRemoteConfigService).</summary>
-    protected IAppLogger Logger { get; }
+    /// <summary>
+    /// Logger — auch fuer abgeleitete Implementierungen (FirebaseRemoteConfigService).
+    /// Non-generic <see cref="ILogger"/> damit Subclasses ihren eigenen typisierten Logger
+    /// durchreichen koennen (z.B. <c>ILogger&lt;FirebaseRemoteConfigService&gt;</c>).
+    /// </summary>
+    protected ILogger Logger { get; }
 
     public event Action? ConfigChanged;
 
-    public DefaultsRemoteConfigService(IAppLogger logger)
+    public DefaultsRemoteConfigService(ILogger<DefaultsRemoteConfigService> logger)
+    {
+        Logger = logger;
+    }
+
+    /// <summary>
+    /// Geschuetzter Ctor fuer abgeleitete Klassen (z.B. FirebaseRemoteConfigService),
+    /// die einen typisierten Logger fuer ihren eigenen Typ durchreichen wollen.
+    /// </summary>
+    protected DefaultsRemoteConfigService(ILogger logger)
     {
         Logger = logger;
     }
@@ -50,7 +64,7 @@ public class DefaultsRemoteConfigService : IRemoteConfigService
             using var stream = asm.GetManifestResourceStream(DefaultsResourceName);
             if (stream is null)
             {
-                Logger.LogWarning($"RemoteConfig: Embedded-Resource '{DefaultsResourceName}' nicht gefunden — laufe mit Hard-Defaults.");
+                Logger.LogWarning("RemoteConfig: Embedded-Resource '{Resource}' nicht gefunden — laufe mit Hard-Defaults.", DefaultsResourceName);
                 return Task.CompletedTask;
             }
 
@@ -64,7 +78,7 @@ public class DefaultsRemoteConfigService : IRemoteConfigService
         }
         catch (Exception ex)
         {
-            Logger.LogError("RemoteConfig: Defaults-JSON konnte nicht geparst werden — laufe mit Hard-Defaults.", ex);
+            Logger.LogError(ex, "RemoteConfig: Defaults-JSON konnte nicht geparst werden — laufe mit Hard-Defaults.");
         }
 
         return Task.CompletedTask;
@@ -190,7 +204,7 @@ public class DefaultsRemoteConfigService : IRemoteConfigService
         }
         catch (Exception ex)
         {
-            Logger.LogError($"RemoteConfig: Override-Wert fuer '{key}' nicht parsebar ('{jsonLiteral}').", ex);
+            Logger.LogError(ex, "RemoteConfig: Override-Wert fuer '{Key}' nicht parsebar ('{Literal}').", key, jsonLiteral);
         }
     }
 

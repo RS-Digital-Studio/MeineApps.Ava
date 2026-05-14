@@ -1,5 +1,6 @@
 using BomberBlast.Services;
 using Firebase.RemoteConfig;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Droid;
 
@@ -29,7 +30,7 @@ public sealed class FirebaseRemoteConfigService : DefaultsRemoteConfigService
     private readonly bool _isDebugBuild;
     private FirebaseRemoteConfig? _firebase;
 
-    public FirebaseRemoteConfigService(IAppLogger logger, bool isDebugBuild)
+    public FirebaseRemoteConfigService(ILogger<FirebaseRemoteConfigService> logger, bool isDebugBuild)
         : base(logger)
     {
         _isDebugBuild = isDebugBuild;
@@ -61,7 +62,7 @@ public sealed class FirebaseRemoteConfigService : DefaultsRemoteConfigService
         }
         catch (Exception ex)
         {
-            Logger.LogError("FirebaseRemoteConfig: Init fehlgeschlagen — laufe mit eingebetteten Defaults.", ex);
+            Logger.LogError(ex, "FirebaseRemoteConfig: Init fehlgeschlagen — laufe mit eingebetteten Defaults.");
             _firebase = null;
         }
     }
@@ -79,7 +80,7 @@ public sealed class FirebaseRemoteConfigService : DefaultsRemoteConfigService
         }
         catch (Exception ex)
         {
-            Logger.LogError("FirebaseRemoteConfig: FetchAndActivate fehlgeschlagen.", ex);
+            Logger.LogError(ex, "FirebaseRemoteConfig: FetchAndActivate fehlgeschlagen.");
             tcs.TrySetResult(false);
         }
         return tcs.Task;
@@ -113,13 +114,13 @@ public sealed class FirebaseRemoteConfigService : DefaultsRemoteConfigService
             catch (Exception ex)
             {
                 // Ein einzelner kaputter Key darf den Rest des Imports nicht stoppen.
-                Logger.LogError($"FirebaseRemoteConfig: Key '{key}' konnte nicht uebernommen werden.", ex);
+                Logger.LogError(ex, "FirebaseRemoteConfig: Key '{Key}' konnte nicht uebernommen werden.", key);
             }
         }
 
         if (applied > 0)
         {
-            Logger.LogInfo($"FirebaseRemoteConfig: {applied} Remote-Werte uebernommen.");
+            Logger.LogInformation("FirebaseRemoteConfig: {Count} Remote-Werte uebernommen.", applied);
             RaiseConfigChanged();
         }
     }
@@ -137,7 +138,7 @@ public sealed class FirebaseRemoteConfigService : DefaultsRemoteConfigService
         }
         catch (Exception ex)
         {
-            Logger.LogError("FirebaseRemoteConfig: SetConfigSettings fehlgeschlagen.", ex);
+            Logger.LogError(ex, "FirebaseRemoteConfig: SetConfigSettings fehlgeschlagen.");
             tcs.TrySetResult(false);
         }
         return tcs.Task;

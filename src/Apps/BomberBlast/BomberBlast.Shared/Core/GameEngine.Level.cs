@@ -1510,6 +1510,10 @@ public sealed partial class GameEngine
 
         if (_purchaseService.IsPremium)
             coins *= 2;
+        // Sprint 7.1 AAA-Audit #14: Hero-Coin-Pickup-Multiplier (z.B. SpeedySam: +5%).
+        var heroForCoins = _heroService.ActiveHero;
+        if (Math.Abs(heroForCoins.CoinPickupMultiplier - 1.0f) > 0.001f)
+            coins = (int)Math.Round(coins * heroForCoins.CoinPickupMultiplier);
         CoinsEarned?.Invoke(coins, _player.Score, true);
 
         // Coin-Floating-Text über dem Exit (gold, groß)

@@ -1569,6 +1569,10 @@ public sealed partial class GameEngine : IDisposable
                 int coins = (_player.Score - _scoreAtLevelStart) / 6;
                 if (_purchaseService.IsPremium)
                     coins *= 3;
+                // Sprint 7.1 AAA-Audit #14: Hero-Coin-Pickup-Multiplier auch bei Trost-Coins.
+                var heroForTrost = _heroService.ActiveHero;
+                if (Math.Abs(heroForTrost.CoinPickupMultiplier - 1.0f) > 0.001f)
+                    coins = (int)Math.Round(coins * heroForTrost.CoinPickupMultiplier);
                 if (coins > 0)
                 {
                     CoinsEarned?.Invoke(coins, _player.Score, false);

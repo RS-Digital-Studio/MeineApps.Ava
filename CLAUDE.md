@@ -95,7 +95,7 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.1.0 | Banner + Rewarded | 4,99 Premium | Produktion |
+| HandwerkerImperium | v2.1.1 | Banner + Rewarded | 4,99 Premium | Produktion |
 | BomberBlast | v2.0.56 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 | BingXBot | v1.8.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote) |
@@ -492,6 +492,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | SKCanvasView updatet nicht | `InvalidateVisual()` verwendet | `InvalidateSurface()` verwenden |
 | SKCanvasView leer bei IsVisible-Toggle | `InvalidateSurface()` auf unsichtbare Canvas wird ignoriert | Nach Sichtbar-Werden erneut Daten setzen/Calculate() aufrufen, damit PropertyChanged → InvalidateSurface() feuert |
 | SKCanvasView Render-Loop tot nach StartRenderLoop() | `StartRenderLoop()` ruft `StopRenderLoop()` auf, das `_gameCanvas = null` setzt. Timer-Lambda captured `this._gameCanvas` → immer null | In `StartRenderLoop()` NUR `_renderTimer?.Stop()` aufrufen, NICHT `StopRenderLoop()` (das nullt die Canvas-Referenz) |
+| Render-Crash "calling thread cannot access this object" | VM-Graph auf Background-Thread instanziiert (z.B. `Task.Run(() => GetRequiredService<MainViewModel>())` in Lade-Pipeline). ViewModels erzeugen im Ctor UI-Objekte (`new SolidColorBrush`, `[ObservableProperty] IBrush`) → falsche Thread-Affinity → Crash beim 1. Render (`Brush.get_Transform` → `VerifyAccess`) | VM-Erzeugung IMMER auf dem UI-Thread: `Dispatcher.UIThread.InvokeAsync(() => GetRequiredService<MainViewModel>()).GetTask()`. Schwere Background-Arbeit (Shader/Asset-Preload) bleibt parallel auf `Task.Run` |
 | CSS translate() Exception | Fehlende px-Einheiten | `translate(0px, 400px)` statt `translate(0, 400)` |
 | AAPT2260 Fehler | grantUriPermissions ohne 's' | `android:grantUriPermissions="true"` (mit 's') |
 | ${applicationId} geht nicht | .NET Android kennt keine Gradle-Placeholder | Hardcodierte Package-Namen verwenden |

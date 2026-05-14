@@ -854,6 +854,22 @@ public sealed partial class GameEngine
             if (e is BossEnemy boss)
                 _tracking.OnBossEncountered(boss.BossKind);
         }
+
+        // Sprint 3.2 AAA-Audit #5: Soft-Onboarding-Curve — die ersten 2 Story-Level nach
+        // dem Tutorial spawnen ~40% weniger Gegner. Genre-Neulinge bekommen einen sanften
+        // Einstieg statt sofort voller Gegner-Dichte. Nur regulaere Story-Level (kein Boss,
+        // kein Master, keine Sondermodi), und nie Level 1 (das ist das Tutorial-Level selbst).
+        bool isStorySoftOnboardingCandidate = _currentLevelNumber > 1
+            && !_isDailyChallenge && !_isSurvivalMode && !_isQuickPlayMode
+            && !_isDungeonRun && !_isBossRushMode && !_isDailyRace && !_isMasterMode
+            && !_currentLevel.IsBossLevel;
+        if (isStorySoftOnboardingCandidate && _tutorialService.ConsumeSoftOnboardingLevel())
+        {
+            int targetCount = Math.Max(1, (int)(_enemies.Count * 0.6f));
+            while (_enemies.Count > targetCount)
+                _enemies.RemoveAt(_enemies.Count - 1);
+            _enemiesRemainingDirty = true;
+        }
         _originalEnemyCount = _enemies.Count;
 
         // Welt-Theme setzen (basierend auf Level-Nummer)

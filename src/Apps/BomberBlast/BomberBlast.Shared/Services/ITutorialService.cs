@@ -13,10 +13,34 @@ public interface ITutorialService
     /// <summary>Aktueller Schritt (null wenn nicht aktiv)</summary>
     TutorialStep? CurrentStep { get; }
 
-    /// <summary>Ob das Tutorial bereits abgeschlossen wurde</summary>
+    /// <summary>Ob das gesamte Tutorial (alle 3 Phasen) abgeschlossen wurde</summary>
     bool IsCompleted { get; }
 
-    /// <summary>Tutorial starten (nur wenn noch nicht abgeschlossen)</summary>
+    /// <summary>
+    /// Sprint 3.2 AAA-Audit #5: Aktuell laufende Phase (T1 Movement / T2 Bombs / T3 PowerUps).
+    /// Bei inaktivem Tutorial: letzte erreichte bzw. Movement als Default.
+    /// </summary>
+    TutorialPhase CurrentPhase { get; }
+
+    /// <summary>
+    /// Sprint 3.2 AAA-Audit #5: Ob eine einzelne Tutorial-Phase abgeschlossen ist.
+    /// Die 3 Phasen sind "geschuetzte Tutorial-Levels" — granulare Persistenz erlaubt
+    /// Resume bei der naechsten offenen Phase statt Neustart bei Movement.
+    /// </summary>
+    bool IsPhaseCompleted(TutorialPhase phase);
+
+    /// <summary>
+    /// Sprint 3.2 AAA-Audit #5: Soft-Onboarding-Curve. Nach Tutorial-Abschluss liefern
+    /// die ersten 2 Story-Level reduzierte Schwierigkeit. Jeder Aufruf verbraucht einen
+    /// Soft-Onboarding-Level (dekrementiert den persistierten Counter) und gibt true
+    /// zurueck solange noch welche uebrig sind. GameEngine ruft das bei Level-Start.
+    /// </summary>
+    bool ConsumeSoftOnboardingLevel();
+
+    /// <summary>
+    /// Tutorial starten — resumed bei der ersten noch nicht abgeschlossenen Phase
+    /// (nicht zwingend bei Movement). Bei vollstaendig abgeschlossenem Tutorial: No-Op.
+    /// </summary>
     void Start();
 
     /// <summary>Zum nächsten Schritt wechseln</summary>

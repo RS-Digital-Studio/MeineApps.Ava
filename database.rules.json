@@ -36,7 +36,7 @@
 
         "coopOrders": {
           "$orderId": {
-            ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists())",
+            ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() && (root.child('auth_to_player/' + auth.uid).val() == newData.child('createdBy').val() || root.child('auth_to_player/' + auth.uid).val() == newData.child('invitedPlayer').val())",
             ".validate": "newData.hasChildren(['orderId', 'createdBy', 'invitedPlayer', 'status']) && newData.child('orderId').isString() && newData.child('orderId').val().length <= 64",
             "createdBy": {
               ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
@@ -67,6 +67,12 @@
             },
             "hmac": {
               ".validate": "newData.isString() && newData.val().length <= 128"
+            },
+            "claimedBy": {
+              "$playerId": {
+                ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId && !data.exists() && newData.val() == true",
+                ".validate": "newData.isBoolean() && newData.val() == true"
+              }
             }
           }
         },
@@ -75,27 +81,35 @@
           "$auctionId": {
             ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
             ".validate": "newData.hasChildren(['auctionId', 'workerTier', 'status']) && newData.child('auctionId').isString() && newData.child('auctionId').val().length <= 64",
+            "auctionId": {
+              ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
+            },
             "workerTier": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9 && (!data.exists() || newData.val() == data.val())"
             },
             "workerName": {
-              ".validate": "newData.isString() && newData.val().length <= 64"
+              ".validate": "newData.isString() && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())"
             },
             "status": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2 && (!data.exists() || newData.val() >= data.val())"
             },
             "endsAt": {
-              ".validate": "newData.isString() && newData.val().length <= 40"
+              ".validate": "newData.isString() && newData.val().length <= 40 && (!data.exists() || newData.val() == data.val())"
             },
             "highestBidderId": {
               ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 64)"
             },
             "highestBid": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12 && (!data.exists() || newData.val() >= data.val())"
             },
             "allBids": {
               "$bidderId": {
-                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12"
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e12 && ((data.exists() && newData.val() == data.val()) || $bidderId.beginsWith('npc_bot_') || (root.child('auth_to_player/' + auth.uid).val() == $bidderId && (!data.exists() || newData.val() >= data.val())))"
+              }
+            },
+            "bidTimestamps": {
+              "$bidderId": {
+                ".validate": "newData.isNumber() && ($bidderId.beginsWith('npc_bot_') || (root.child('auth_to_player/' + auth.uid).val() == $bidderId && (!data.exists() || newData.val() - data.val() >= 1000)))"
               }
             },
             "hmac": {
@@ -319,7 +333,7 @@
           "$buildingId": {
             ".validate": "newData.hasChildren(['level'])",
             "level": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50 && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)"
             },
             "upgradingUntil": {
               ".validate": "newData.isString() && newData.val().length <= 40"
@@ -398,8 +412,8 @@
           "goldenScrews": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"},
           "prestigePoints": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e9"},
           "ascensionLevel": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"},
-          "savedAt": {".validate": "newData.isString() && newData.val().length <= 40"},
-          "version": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"},
+          "savedAt": {".validate": "newData.isString() && newData.val().length <= 40 && (!data.exists() || newData.val() >= data.val())"},
+          "version": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100 && (!data.exists() || newData.val() >= data.val())"},
           "appVersion": {".validate": "newData.isString() && newData.val().length <= 20"}
         },
         "data": {

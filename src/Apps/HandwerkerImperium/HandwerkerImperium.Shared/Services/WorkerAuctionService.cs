@@ -25,8 +25,16 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
 
     private const string AuctionHmacSalt = "worker-auction-v1";
 
-    /// <summary>1s-Cooldown gegen Spam-Bidding — pro Spieler.</summary>
+    /// <summary>1s-Cooldown gegen Spam-Bidding — pro Spieler (Client-Seite). Die harte
+    /// Grenze ist die serverseitige bidTimestamps-Rule (FB-H10).</summary>
     private DateTime _lastBidAt = DateTime.MinValue;
+
+    /// <summary>
+    /// FB-H10: Firebase-Server-Timestamp-Sentinel. Firebase loest <c>{".sv":"timestamp"}</c>
+    /// serverseitig in einen ms-Timestamp auf — die bidTimestamps-Rule kann darauf ein
+    /// Rate-Limit setzen, das ein gerooteter Client nicht umgehen kann.
+    /// </summary>
+    private static readonly Dictionary<string, string> FirebaseServerTimestamp = new() { [".sv"] = "timestamp" };
 
     public event Action<WorkerAuctionState>? AuctionUpdated;
     public event Action<WorkerAuctionState>? AuctionSettled;
@@ -49,13 +57,20 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
 
     public async Task<bool> PlaceBidAsync(decimal amount)
     {
-        var auction = CurrentAuction;
-        if (auction == null || auction.Status != WorkerAuctionStatus.Active) return false;
+        var local = CurrentAuction;
+        if (local == null || local.Status != WorkerAuctionStatus.Active) return false;
         if (string.IsNullOrEmpty(_firebase.PlayerId) || string.IsNullOrEmpty(CurrentGuildId)) return false;
-        if (DateTime.UtcNow > auction.EndsAt) return false;
 
-        // 1s-Cooldown gegen Spam-Bidding.
+        // 1s-Cooldown gegen Spam-Bidding (Client-Seite; serverseitig hart via bidTimestamps-Rule).
         if ((DateTime.UtcNow - _lastBidAt).TotalSeconds < 1) return false;
+
+        var path = IWorkerAuctionService.GetFirebasePath(CurrentGuildId, local.AuctionId);
+
+        // FB-C03: Frischen Server-State holen — minimiert das Bid-Race-Fenster und liefert
+        // die aktuellen AllBids fuer eine korrekte HMAC-Berechnung.
+        var auction = await _firebase.GetAsync<WorkerAuctionState>(path).ConfigureAwait(false) ?? local;
+        if (auction.Status != WorkerAuctionStatus.Active) return false;
+        if (DateTime.UtcNow > auction.EndsAt) return false;
 
         // Mindest-Erhoehung: 10% des Hoechstgebots, mindestens 100 EUR.
         var minBid = auction.HighestBid > 0
@@ -69,18 +84,40 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         // Lokales Geld-Locking: Nur das Delta zum bisherigen Eigen-Bid wird abgezogen.
         decimal myPrevious = auction.AllBids.TryGetValue(_firebase.PlayerId!, out var prev) ? prev : 0m;
         decimal delta = amount - myPrevious;
-        if (!_gameStateService.TrySpendMoney(delta)) return false;
+        if (delta > 0 && !_gameStateService.TrySpendMoney(delta)) return false;
 
+        // Modell aktualisieren + HMAC ueber den gemergten Stand berechnen.
         auction.HighestBid = amount;
         auction.HighestBidderId = _firebase.PlayerId;
         auction.AllBids[_firebase.PlayerId!] = amount;
         auction.Hmac = ComputeHmac(auction);
-        _lastBidAt = DateTime.UtcNow;
 
-        var path = IWorkerAuctionService.GetFirebasePath(CurrentGuildId, auction.AuctionId);
-        var ok = await _firebase.SetAsync(path, auction).ConfigureAwait(false);
-        if (ok) AuctionUpdated?.Invoke(auction);
-        return ok;
+        // v2.1.1 (Audit FB-C03/FB-H10): Multi-Path-PATCH statt PUT. Schreibt atomar nur die
+        // Bid-Felder — ein paralleles Bid eines anderen Spielers (anderer allBids-Subpfad) geht
+        // nicht verloren. Die highestBid-Monotonie-Rule lehnt Verlierer-Bids ab; bidTimestamps
+        // ist das serverseitige 1s-Rate-Limit gegen Spam-Bidding.
+        var updates = new Dictionary<string, object>
+        {
+            [$"allBids/{_firebase.PlayerId}"] = amount,
+            ["highestBid"] = amount,
+            ["highestBidderId"] = _firebase.PlayerId!,
+            ["hmac"] = auction.Hmac!,
+            [$"bidTimestamps/{_firebase.PlayerId}"] = FirebaseServerTimestamp
+        };
+        var ok = await _firebase.UpdateAsync(path, updates).ConfigureAwait(false);
+
+        if (!ok)
+        {
+            // FB-C03: Bid abgelehnt (ueberboten / Rate-Limit) oder Netzwerkfehler →
+            // gelocktes Geld zurueckgeben, damit kein Geld ohne Bid verlorengeht.
+            if (delta > 0) _gameStateService.AddMoney(delta);
+            return false;
+        }
+
+        _lastBidAt = DateTime.UtcNow;
+        CurrentAuction = auction;
+        AuctionUpdated?.Invoke(auction);
+        return true;
     }
 
     public async Task<WorkerAuctionState?> RefreshAuctionAsync()
@@ -355,8 +392,17 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         auction.AllBids[botId] = bid;
         auction.Hmac = ComputeHmac(auction);
 
+        // FB-C03: NPC-Bot-Bid ebenfalls als Multi-Path-PATCH — sonst wuerde ein PUT die
+        // bidTimestamps echter Spieler loeschen und das Rate-Limit zuruecksetzen.
         var path = IWorkerAuctionService.GetFirebasePath(CurrentGuildId, auction.AuctionId);
-        var ok = await _firebase.SetAsync(path, auction).ConfigureAwait(false);
+        var updates = new Dictionary<string, object>
+        {
+            [$"allBids/{botId}"] = bid,
+            ["highestBid"] = bid,
+            ["highestBidderId"] = botId,
+            ["hmac"] = auction.Hmac!
+        };
+        var ok = await _firebase.UpdateAsync(path, updates).ConfigureAwait(false);
         if (ok) AuctionUpdated?.Invoke(auction);
     }
 

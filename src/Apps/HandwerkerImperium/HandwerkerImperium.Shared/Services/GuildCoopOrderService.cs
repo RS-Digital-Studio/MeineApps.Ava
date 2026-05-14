@@ -143,29 +143,50 @@ public sealed class GuildCoopOrderService : IGuildCoopOrderService
             fresh.Status = CoopOrderStatus.Completed;
         }
 
-        // Reward-Auszahlung POLLING-BASIERT auf BEIDEN Clients via TryClaimCompletedReward
-        // (idempotent ueber GameState.ClaimedCoopOrderIds).
+        // Reward-Auszahlung POLLING-BASIERT auf BEIDEN Clients via TryClaimCompletedRewardAsync
+        // (idempotent ueber GameState.ClaimedCoopOrderIds + Server-Marker claimedBy).
         if (fresh.Status == CoopOrderStatus.Completed)
-            TryClaimCompletedReward(fresh);
+            await TryClaimCompletedRewardAsync(fresh).ConfigureAwait(false);
 
         CoopOrderUpdated?.Invoke(fresh);
         return true;
     }
 
     /// <summary>
-    /// v2.1.0: Idempotente Reward-Auszahlung. Wird auf JEDEM Client beim Polling/SubmitScore
-    /// aufgerufen — die GameState.ClaimedCoopOrderIds-Liste verhindert Double-Pay.
+    /// v2.1.0/FB-C01: Idempotente Reward-Auszahlung. Wird auf JEDEM Client beim Polling/SubmitScore
+    /// aufgerufen. Doppel-Pay wird zweifach verhindert: lokal ueber GameState.ClaimedCoopOrderIds
+    /// (Schnell-Check) UND serverseitig ueber den Write-once-Marker <c>claimedBy/{playerId}</c> —
+    /// letzterer schuetzt auch ueber Geraetewechsel / Cloud-Restore aelterer Saves hinweg.
     /// </summary>
-    private void TryClaimCompletedReward(CoopOrderState state)
+    private async Task TryClaimCompletedRewardAsync(CoopOrderState state)
     {
         if (state.Status != CoopOrderStatus.Completed) return;
         if (string.IsNullOrEmpty(_firebase.PlayerId)) return;
+        if (string.IsNullOrEmpty(CurrentGuildId)) return;
         bool isPlayer1 = state.CreatedBy == _firebase.PlayerId;
         bool isPlayer2 = state.InvitedPlayer == _firebase.PlayerId;
         if (!isPlayer1 && !isPlayer2) return;
 
         var claimed = _gameStateService.State.ClaimedCoopOrderIds;
-        if (claimed.Contains(state.OrderId)) return; // bereits ausgezahlt
+        if (claimed.Contains(state.OrderId)) return; // lokaler Schnell-Check
+
+        // v2.1.1 (Audit FB-C01): Server-seitiger Write-once-Claim-Marker. Die Rule erlaubt den
+        // Write nur, wenn claimedBy/{playerId} noch nicht existiert. Verhindert Doppelauszahlung
+        // beim Geraetewechsel, weil die lokale ClaimedCoopOrderIds-Liste durch Cloud-Restore
+        // eines aelteren Saves verlorengehen kann.
+        var claimPath = $"{IGuildCoopOrderService.GetFirebasePath(CurrentGuildId, state.OrderId)}/claimedBy";
+        var claimPatch = new Dictionary<string, object> { [_firebase.PlayerId!] = true };
+        var claimOk = await _firebase.UpdateAsync(claimPath, claimPatch).ConfigureAwait(false);
+        if (!claimOk)
+        {
+            // Write abgelehnt ODER Netzwerkfehler. Pruefen welcher Fall: existiert der Marker
+            // schon auf dem Server? Dann wurde bereits ausgezahlt → lokal nachziehen.
+            // Bei Netzwerkfehler (Marker fehlt) NICHT markieren → naechstes Polling versucht erneut.
+            var existing = await _firebase.GetAsync<Dictionary<string, object>>(claimPath).ConfigureAwait(false);
+            if (existing != null && existing.ContainsKey(_firebase.PlayerId!))
+                claimed.Add(state.OrderId);
+            return;
+        }
 
         bool bothPerfect = state.Player1Score >= 95 && state.Player2Score >= 95;
         decimal multiplier = bothPerfect ? 1.25m : 1.0m;
@@ -212,11 +233,11 @@ public sealed class GuildCoopOrderService : IGuildCoopOrderService
             if (state.CreatedBy != _firebase.PlayerId && state.InvitedPlayer != _firebase.PlayerId) continue;
 
             // v2.1.0: Completed-Auftraege durchlaufen einen Reward-Claim-Pass
-            // (idempotent ueber GameState.ClaimedCoopOrderIds). Erster Submitter holt
-            // hier seinen Anteil, der sonst verloren ginge.
+            // (idempotent ueber GameState.ClaimedCoopOrderIds + Server-Marker claimedBy).
+            // Erster Submitter holt hier seinen Anteil, der sonst verloren ginge.
             if (state.Status == CoopOrderStatus.Completed)
             {
-                TryClaimCompletedReward(state);
+                await TryClaimCompletedRewardAsync(state).ConfigureAwait(false);
                 continue; // nicht in OpenOrders anzeigen
             }
             if (state.Status == CoopOrderStatus.Expired) continue;

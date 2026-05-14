@@ -1,79 +1,81 @@
-using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.Services;
 
 /// <summary>
-/// AppLogger mit Crashlytics-Sink (Sprint 4.1 AAA-Audit #9).
+/// AppLogger — Fassade ueber <c>Microsoft.Extensions.Logging.ILogger</c> (Sprint 4.1 AAA-Audit #6).
 ///
 /// <para>
-/// Schreibt Logs nach <see cref="Trace"/> (LogCat auf Android, Debug-Output auf Desktop)
-/// UND leitet Warnings + Errors an <see cref="ITelemetryService"/> weiter — Errors als
-/// non-fatal Exceptions, Warnings als Breadcrumbs.
+/// Die 53 Services injizieren weiterhin <see cref="IAppLogger"/> — unveraendert. Intern delegiert
+/// der AppLogger jetzt aber an die echte <c>Microsoft.Extensions.Logging</c>-Infrastruktur:
+/// Level-Filterung ueber die <see cref="ILoggerFactory"/>, mehrere Sinks
+/// (<see cref="Logging.TraceLoggerProvider"/> + <see cref="Logging.FileLoggerProvider"/>),
+/// strukturierte Logs. So profitieren alle Call-Sites sofort, ohne einzeln auf
+/// <c>ILogger&lt;T&gt;</c> umgestellt werden zu muessen.
 /// </para>
 ///
 /// <para>
-/// Build-Filtering:
-/// <list type="bullet">
-/// <item>Debug-Build: alle Levels werden ausgegeben (Trace/Info/Warning/Error)</item>
-/// <item>Release-Build: nur Info/Warning/Error (Trace wird unterdrueckt)</item>
-/// </list>
+/// Zusaetzlich zur ILogger-Pipeline werden Warnings + Errors an <see cref="ITelemetryService"/>
+/// weitergereicht — Errors mit Exception als non-fatal Crash-Report (Stack-Trace in Crashlytics),
+/// Warnings als Breadcrumbs.
 /// </para>
 ///
 /// <para>
-/// Scope-Pattern: <c>using (_logger.BeginScope("game={gameId}"))</c> — alle Logs in
-/// diesem Block bekommen den Scope-Namen als Prefix. AsyncLocal-basiert (thread-safe
-/// fuer parallele Sub-Tasks).
+/// Build-Filtering uebernimmt die LoggerFactory (SetMinimumLevel: Trace im Debug, Info im Release).
+/// </para>
+///
+/// <para>
+/// Scope-Pattern: <c>using (_logger.BeginScope("game={gameId}"))</c> — AsyncLocal-basiert
+/// (thread-safe fuer parallele Sub-Tasks). Der Scope wird als Message-Prefix mitgeschrieben.
 /// </para>
 /// </summary>
 public sealed class AppLogger : IAppLogger
 {
     private const string Tag = "BomberBlast";
 
+    private readonly ILogger _logger;
     private readonly ITelemetryService? _telemetry;
 
     /// <summary>AsyncLocal-Scope-Stack — folgt der aktuellen Async-Operation.</summary>
     private static readonly System.Threading.AsyncLocal<string?> _scope = new();
 
-    public AppLogger(ITelemetryService? telemetry = null)
+    public AppLogger(ILoggerFactory loggerFactory, ITelemetryService? telemetry = null)
     {
+        _logger = loggerFactory.CreateLogger(Tag);
         _telemetry = telemetry;
     }
 
     public void LogTrace(string message)
-    {
-#if DEBUG
-        WriteLine("TRACE", message);
-#endif
-    }
+        => _logger.LogTrace("{Message}", ApplyScope(message));
 
     public void LogInfo(string message)
     {
-        WriteLine("INFO", message);
+        _logger.LogInformation("{Message}", ApplyScope(message));
         // Audit L04: Info-Breadcrumbs nur im DEBUG-Build an Crashlytics weitergeben.
         // Release: Crashlytics-Breadcrumb-Quota (max 64 Events pro Session) sollte fuer
         // Warnings/Errors reserviert sein. Info-Logs sind im Release-Crash-Stack i.d.R. nicht hilfreich.
 #if DEBUG
-        _telemetry?.Log(FormatMessage("INFO", message));
+        _telemetry?.Log(FormatForTelemetry("INFO", message));
 #endif
     }
 
     public void LogWarning(string message)
     {
-        WriteLine("WARN", message);
-        _telemetry?.Log(FormatMessage("WARN", message));
+        _logger.LogWarning("{Message}", ApplyScope(message));
+        _telemetry?.Log(FormatForTelemetry("WARN", message));
     }
 
     public void LogError(string message)
     {
-        WriteLine("ERROR", message);
-        _telemetry?.Log(FormatMessage("ERROR", message));
+        _logger.LogError("{Message}", ApplyScope(message));
+        _telemetry?.Log(FormatForTelemetry("ERROR", message));
     }
 
     public void LogError(string message, Exception ex)
     {
-        WriteLine("ERROR", $"{message} - {ex.Message}");
-        // Error mit Exception → non-fatal Crash-Report mit Stack-Trace
-        _telemetry?.LogNonFatal(ex, FormatMessage("ERROR", message));
+        _logger.LogError(ex, "{Message}", ApplyScope(message));
+        // Error mit Exception → non-fatal Crash-Report mit Stack-Trace.
+        _telemetry?.LogNonFatal(ex, FormatForTelemetry("ERROR", message));
     }
 
     public IDisposable BeginScope(string scopeName)
@@ -83,16 +85,21 @@ public sealed class AppLogger : IAppLogger
         return new ScopeRestorer(previous);
     }
 
-    private static string FormatMessage(string level, string message)
+    /// <summary>Praefixt die Message mit dem aktuellen AsyncLocal-Scope (falls vorhanden).</summary>
+    private static string ApplyScope(string message)
+    {
+        var s = _scope.Value;
+        return string.IsNullOrEmpty(s) ? message : $"[{s}] {message}";
+    }
+
+    /// <summary>Telemetrie-Breadcrumb-Format (Tag + Level + Scope) — fuer Crashlytics-Lesbarkeit.</summary>
+    private static string FormatForTelemetry(string level, string message)
     {
         var s = _scope.Value;
         return string.IsNullOrEmpty(s)
             ? $"[{Tag}] {level}: {message}"
             : $"[{Tag}] {level} [{s}]: {message}";
     }
-
-    private static void WriteLine(string level, string message)
-        => Trace.WriteLine(FormatMessage(level, message));
 
     private sealed class ScopeRestorer : IDisposable
     {

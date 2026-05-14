@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Extensions;
@@ -384,10 +385,25 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Logging — Sprint 4.1 AAA-Audit #9: AppLogger leitet Errors/Warnings an Crashlytics weiter.
+        // Logging — Sprint 4.1 AAA-Audit #6: AppLogger ist eine Fassade ueber
+        // Microsoft.Extensions.Logging. ILoggerFactory mit eigenen Providern (Trace + File) —
+        // Code-only, keine externen NuGet-Sinks. Build-Filter: Trace im Debug, Info im Release.
+        services.AddSingleton<ILoggerFactory>(_ => LoggerFactory.Create(builder =>
+        {
+            builder.AddProvider(new Services.Logging.TraceLoggerProvider());
+            builder.AddProvider(new Services.Logging.FileLoggerProvider());
+#if DEBUG
+            builder.SetMinimumLevel(LogLevel.Trace);
+#else
+            builder.SetMinimumLevel(LogLevel.Information);
+#endif
+        }));
+        // AppLogger leitet zusaetzlich Errors/Warnings an Crashlytics weiter.
         // ITelemetryService kommt unten — Lazy-Resolution noetig damit der Logger waehrend
         // der DI-Aufbauphase nicht in eine Zirkularitaet faellt.
-        services.AddSingleton<IAppLogger>(sp => new AppLogger(sp.GetService<ITelemetryService>()));
+        services.AddSingleton<IAppLogger>(sp => new AppLogger(
+            sp.GetRequiredService<ILoggerFactory>(),
+            sp.GetService<ITelemetryService>()));
 
         // Lazy<T>-Auflösung für zirkuläre Dependencies (statt manueller SetXxxService()-Verdrahtung)
         services.AddLazyResolution();

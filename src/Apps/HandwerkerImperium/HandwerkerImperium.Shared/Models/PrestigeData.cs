@@ -135,13 +135,18 @@ public class PrestigeData
         + PlatinCount + DiamantCount + MeisterCount + LegendeCount;
 
     /// <summary>
-    /// Calculates prestige points from total money earned.
-    /// Formula: floor(sqrt(TotalMoneyEarned / 100_000))
+    /// Berechnet die Prestige-Punkte fuer den AKTUELLEN Durchlauf.
+    /// Formel: floor(sqrt(currentRunMoney / 100_000)).
+    /// v2.1.1 (Audit B-H04): Parameter-Name korrigiert — frueher hiess der Parameter "totalMoneyEarned",
+    /// aber der Aufrufer uebergibt <see cref="GameState.CurrentRunMoney"/>
+    /// (siehe <c>PrestigeService.GetPrestigePoints</c>). Wer das versehentlich auf
+    /// <see cref="GameState.TotalMoneyEarned"/> umstellt, bricht die Run-basierte PP-Logik.
     /// </summary>
-    public static int CalculatePrestigePoints(decimal totalMoneyEarned)
+    /// <param name="currentRunMoney">Im aktuellen Durchlauf verdientes Geld (nicht kumulativ).</param>
+    public static int CalculatePrestigePoints(decimal currentRunMoney)
     {
-        if (totalMoneyEarned <= 0) return 0;
-        return (int)Math.Floor(Math.Sqrt((double)(totalMoneyEarned / 100_000m)));
+        if (currentRunMoney <= 0) return 0;
+        return (int)Math.Floor(Math.Sqrt((double)(currentRunMoney / 100_000m)));
     }
 
     /// <summary>

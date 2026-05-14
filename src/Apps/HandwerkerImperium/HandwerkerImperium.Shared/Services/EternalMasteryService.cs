@@ -59,15 +59,26 @@ public sealed class EternalMasteryService : IEternalMasteryService
     {
         if (completedPrestiges <= 0) return 0m;
 
+        // v2.1.1 (Audit B-H02): Soft-Cap ab EternalMasterySoftCapThreshold Prestiges. Frueher skalierte der
+        // Bonus unbegrenzt (N=1000 → +1500% Income, multiplikativ mit Premium → game-breaking).
+        // Bis zur Schwelle voller Bonus, der Ueberschuss wird logarithmisch gedaempft.
+        int effectivePrestiges = completedPrestiges;
+        if (completedPrestiges > GameBalanceConstants.EternalMasterySoftCapThreshold)
+        {
+            int excess = completedPrestiges - GameBalanceConstants.EternalMasterySoftCapThreshold;
+            effectivePrestiges = GameBalanceConstants.EternalMasterySoftCapThreshold
+                + (int)(Math.Log10(excess + 1) * 10);
+        }
+
         // Linear: 0.5% pro Prestige
-        decimal linear = completedPrestiges * GameBalanceConstants.EternalMasteryBonusPerPrestige;
+        decimal linear = effectivePrestiges * GameBalanceConstants.EternalMasteryBonusPerPrestige;
 
         // 5er-Stufen-Bonus: alle 5 Prestiges +2.5% zusaetzlich
-        int tiers5 = completedPrestiges / 5;
+        int tiers5 = effectivePrestiges / 5;
         decimal tier5Bonus = tiers5 * GameBalanceConstants.EternalMasteryBonusPer5Prestiges;
 
         // 10er-Mega-Stufen-Bonus: alle 10 Prestiges +5% zusaetzlich
-        int tiers10 = completedPrestiges / 10;
+        int tiers10 = effectivePrestiges / 10;
         decimal tier10Bonus = tiers10 * GameBalanceConstants.EternalMasteryBonusPer10Prestiges;
 
         return linear + tier5Bonus + tier10Bonus;

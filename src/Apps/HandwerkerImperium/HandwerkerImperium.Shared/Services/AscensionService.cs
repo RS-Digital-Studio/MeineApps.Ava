@@ -72,8 +72,10 @@ public sealed class AscensionService : IAscensionService
         // Premium-Bonus: +1 AP
         int premiumBonus = state.IsPremium ? 1 : 0;
 
-        // Skalierungs-Bonus: +2 AP pro bereits durchgeführte Ascension (belohnt Langzeitspieler)
-        int apFromScaling = state.Ascension.AscensionLevel * 2;
+        // Skalierungs-Bonus: belohnt Langzeitspieler. B-H03: Wurzel-Skalierung statt linear —
+        // frueher gab AL=50 schon +100 AP geschenkt (alle 6 Perks trivial maxbar). Sqrt
+        // haelt die Late-Whale-Inflation in Schach: AL=50 → +14 AP, AL=100 → +20 AP.
+        int apFromScaling = (int)Math.Sqrt(state.Ascension.AscensionLevel) * 2;
 
         // Minimum 5 AP damit sich Ascension immer lohnt
         return Math.Max(5, apFromPP + apFromLegende + apFromMaxLevel + apFromTools + premiumBonus + apFromScaling);
@@ -98,15 +100,29 @@ public sealed class AscensionService : IAscensionService
 
         // V7 (Phase 4 Ressourcen-Plan): Erbstuecke aus dem Inventar in den
         // Ascension-Schrein ueberfuehren — sie geben permanenten +0.5%-Bonus.
+        // v2.1.1 (Audit B-C01): Hard-Cap auf MaxPermanentHeirlooms — frueher wuchs die Liste pro Ascension
+        // unbegrenzt (T4-Item-Farming vor Ascension → Income-Explosion). Es werden nur die
+        // WERTVOLLSTEN Erbstuecke bis zum Cap uebernommen.
         var allProducts = CraftingProduct.GetAllProducts();
-        foreach (var (productId, count) in state.CraftingInventory)
+        int permanentHeirloomCap = GameBalanceConstants.MaxPermanentHeirlooms;
+        if (state.Ascension.PermanentHeirlooms.Count < permanentHeirloomCap)
         {
-            if (count <= 0) continue;
-            if (!allProducts.TryGetValue(productId, out var product)) continue;
-            if (!product.IsHeirloomEligible) continue;
-            // Jedes Tier-4-Item wird zu einem permanenten Erbstueck (count Mal).
-            for (int i = 0; i < count; i++)
-                state.Ascension.PermanentHeirlooms.Add(productId);
+            var heirloomCandidates = new List<(string id, decimal value)>();
+            foreach (var (productId, count) in state.CraftingInventory)
+            {
+                if (count <= 0) continue;
+                if (!allProducts.TryGetValue(productId, out var product)) continue;
+                if (!product.IsHeirloomEligible) continue;
+                // Jedes Tier-4-Item ist ein eigener Erbstueck-Kandidat (count Mal).
+                for (int i = 0; i < count; i++)
+                    heirloomCandidates.Add((productId, product.BaseValue));
+            }
+            heirloomCandidates.Sort((a, b) => b.value.CompareTo(a.value));
+            for (int i = 0; i < heirloomCandidates.Count
+                 && state.Ascension.PermanentHeirlooms.Count < permanentHeirloomCap; i++)
+            {
+                state.Ascension.PermanentHeirlooms.Add(heirloomCandidates[i].id);
+            }
         }
 
         // --- EternalTools-Perk: Meisterwerkzeuge teilweise bewahren ---

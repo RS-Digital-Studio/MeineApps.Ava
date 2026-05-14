@@ -124,17 +124,17 @@ public class OrderTests
     [Fact]
     public void FinalReward_MissRating_GibtReduzierteBelohnung()
     {
-        // Vorbereitung
+        // Vorbereitung — v2.1.1 (Audit B-H07): Miss-Spread auf 0.20x verschaerft.
         var order = new Order
         {
             BaseReward = 1000m,
             Difficulty = OrderDifficulty.Easy,
             OrderType = OrderType.Standard,
-            TaskResults = [MiniGameRating.Miss]  // 0.5x
+            TaskResults = [MiniGameRating.Miss]  // 0.20x (B-H07: vorher 0.50x)
         };
 
-        // Prüfung: 1000 * 0.5 * 1.0 * 1.0 = 500
-        order.FinalReward.Should().Be(500m);
+        // Prüfung: 1000 * 0.20 * 1.0 * 1.0 = 200
+        order.FinalReward.Should().Be(200m);
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public class OrderTests
     [Fact]
     public void FinalReward_MehrereTasks_NutztDurchschnitt()
     {
-        // Vorbereitung: Perfect (1.5) + Miss (0.5) = Durchschnitt 1.0
+        // Vorbereitung — v2.1.1 (Audit B-H07): Perfect (1.5) + Miss (0.20) = Durchschnitt 0.85
         var order = new Order
         {
             BaseReward = 1000m,
@@ -181,8 +181,8 @@ public class OrderTests
             TaskResults = [MiniGameRating.Perfect, MiniGameRating.Miss]
         };
 
-        // Prüfung: 1000 * 1.0 * 1.0 * 1.0 = 1000
-        order.FinalReward.Should().Be(1000m);
+        // Prüfung: 1000 * 0.85 * 1.0 * 1.0 = 850
+        order.FinalReward.Should().Be(850m);
     }
 
     // ═══════════════════════════════════════════════════════════════════

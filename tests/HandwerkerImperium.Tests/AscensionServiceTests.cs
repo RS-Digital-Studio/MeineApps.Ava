@@ -192,9 +192,9 @@ public class AscensionServiceTests
     [Fact]
     public void CalculateAscensionPoints_AscensionLevelSkaliert()
     {
-        // Vorbereitung: 2500 PP → apFromPP=5, 3 Legendes → apFromLegende=1 → Sum=6
-        // AscensionLevel=0: Math.Max(5, 6)=6
-        // AscensionLevel=3: apFromScaling=3*2=6 → Sum=12 → Math.Max(5,12)=12 → Delta=+6
+        // Vorbereitung: 2500 PP → apFromPP=5, 3 Legendes → apFromLegende=1 → Sum=6.
+        // v2.1.1 (Audit B-H03): Skalierungs-Bonus von linear (level*2) auf sqrt(level)*2
+        // umgestellt. AscensionLevel=3 → sqrt(3)*2 = 1.73 → int = 2 → apFromScaling=2.
         var (service, _, state) = ErstelleService();
         state.Prestige.TotalPrestigePoints = 2500;
         state.Prestige.LegendeCount = 3;
@@ -204,8 +204,24 @@ public class AscensionServiceTests
         state.Ascension.AscensionLevel = 3;
         int apLevel3 = service.CalculateAscensionPoints();
 
-        // Prüfung: +6 AP für 3 Ascension-Levels (sichtbar weil Basis > Minimum)
-        apLevel3.Should().Be(apLevel0 + 6);
+        // Prüfung: +2 AP für 3 Ascension-Levels (gedaempft via sqrt)
+        apLevel3.Should().Be(apLevel0 + 2);
+    }
+
+    [Fact]
+    public void CalculateAscensionPoints_AscensionLevelHundert_BleibtUnterAlterLinearerFormel()
+    {
+        // B-H03: Bei AscensionLevel=100 hat die alte lineare Formel +200 AP geschenkt
+        // (alle 6 Perks 3x kaufbar = 54 AP → Late-Whale-Inflation). Neue Formel:
+        // sqrt(100)*2 = 20 AP. Sichtbar belohnt, aber kein Trivialisieren.
+        var (service, _, state) = ErstelleService();
+        state.Prestige.TotalPrestigePoints = 2500;
+        state.Prestige.LegendeCount = 3;
+        state.Ascension.AscensionLevel = 100;
+        int ap = service.CalculateAscensionPoints();
+
+        // Komponenten: apFromPP=5 + apFromLegende=1 + apFromScaling=20 = 26
+        ap.Should().Be(26);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

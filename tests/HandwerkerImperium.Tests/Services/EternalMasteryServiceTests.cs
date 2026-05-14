@@ -55,8 +55,29 @@ public sealed class EternalMasteryServiceTests
     public void IncomeBonus_HundredPrestiges_ScalesEternal()
     {
         var svc = CreateService(100);
-        // 100 * 0.5% + 20 * 2.5% + 10 * 5% = 50% + 50% + 50% = 150%
-        Assert.Equal(1.5m, svc.IncomeBonus);
+        // v2.1.1 (Audit B-H02): Soft-Cap ab 50 Prestiges. Ueberschuss wird logarithmisch
+        // gedaempft: effective = 50 + log10(50+1)*10 ≈ 67
+        // 67 * 0.5% + 13 * 2.5% + 6 * 5% = 33.5% + 32.5% + 30% = 96%
+        Assert.Equal(0.960m, svc.IncomeBonus);
+    }
+
+    [Fact]
+    public void IncomeBonus_FiftyPrestiges_ReachesSoftCap()
+    {
+        // B-H02: Genau an der Soft-Cap-Schwelle — voller Bonus, noch keine Daempfung.
+        // 50 * 0.5% + 10 * 2.5% + 5 * 5% = 25% + 25% + 25% = 75%
+        var svc = CreateService(50);
+        Assert.Equal(0.75m, svc.IncomeBonus);
+    }
+
+    [Fact]
+    public void IncomeBonus_ThousandPrestiges_StaysBoundedBySoftCap()
+    {
+        // B-H02: Bei 1000 Prestiges greift der Soft-Cap stark — frueher waeren das +1500%
+        // gewesen (game-breaking, multiplikativ mit Premium 5-10x). Mit Soft-Cap bleiben
+        // wir unter 200% statt 1500%. Das ist die ganze Pointe des Caps.
+        var svc = CreateService(1000);
+        Assert.InRange(svc.IncomeBonus, 1.0m, 2.0m);
     }
 
     [Fact]

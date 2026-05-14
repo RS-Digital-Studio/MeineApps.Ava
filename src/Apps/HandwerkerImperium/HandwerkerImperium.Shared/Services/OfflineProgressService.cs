@@ -138,13 +138,16 @@ public sealed class OfflineProgressService : IOfflineProgressService
         }
 
         // RushBoost: 2-3x Multiplikator (Prestige-Shop Rush-Verstärker)
+        // v2.1.1 (Audit B-M06): rushMultiplier wird hart bei 4x gecappt — vorher konnte der Spieler durch
+        // Prestige-Shop-Items >5x erreichen, multiplikativ mit SpeedBoost 2x = >10x auf
+        // Offline-Earnings. Mit dem Cap maximal 4x * 2x = 8x (kontrollierbar).
         decimal rushBoostSeconds = 0m;
         decimal rushMultiplier = 2m;
         if (state.RushBoostEndTime > lastPlayed)
         {
             var boostRemaining = state.RushBoostEndTime - lastPlayed;
             rushBoostSeconds = Math.Min((decimal)boostRemaining.TotalSeconds, totalSeconds);
-            rushMultiplier += GetPrestigeRushBonus(state);
+            rushMultiplier = Math.Min(rushMultiplier + GetPrestigeRushBonus(state), 4m);
         }
 
         // Multiplikatives Stacking (identisch mit GameLoopService):

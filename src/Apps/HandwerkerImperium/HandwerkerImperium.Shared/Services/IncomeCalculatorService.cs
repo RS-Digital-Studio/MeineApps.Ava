@@ -192,7 +192,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         //   Meister:      16x
         //   Legende:      20x  (knapp 2x ueber Tier-Multi → Late-Game-Upgrades wirken wieder)
         var tier = state.Prestige?.CurrentTier ?? PrestigeTier.None;
-        decimal threshold = tier switch
+        decimal tierThreshold = tier switch
         {
             PrestigeTier.None    => 4.0m,
             PrestigeTier.Bronze  => 6.0m,
@@ -204,6 +204,15 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
             PrestigeTier.Legende => 20.0m,
             _ => 8.0m,
         };
+
+        // v2.1.1 (Audit B-H01): Ascension setzt Prestige.CurrentTier auf None zurueck → der tier-basierte
+        // Threshold faellt nach jeder Ascension brutal von 20x auf 4x (gefuehlte Income-
+        // Halbierung post-Ascension). Ein Ascension-basierter Floor kompensiert das:
+        // AscensionLevel 1 haelt mindestens das Legende-Niveau (20x), danach +2x pro Level.
+        decimal ascensionThreshold = state.Ascension.AscensionLevel > 0
+            ? Math.Min(18.0m + state.Ascension.AscensionLevel * 2.0m, 30.0m)
+            : 0m;
+        decimal threshold = Math.Max(tierThreshold, ascensionThreshold);
 
         decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
         if (effectiveMultiplier > threshold)
@@ -310,7 +319,17 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (state.IsPremium)
             mult *= 1.5m;
 
-        // KEIN Soft-Cap, KEIN Speed/Rush → bewusst weggelassen (Crafting nutzt andere Dynamik)
-        return mult;
+        // v2.1.1 (Audit B-C03): Soft-Cap auf den Crafting-Sell-Multiplikator. Frueher gab es KEIN Cap —
+        // der Multiplikator konnte im Late-Game >20x werden. Da T4-Items im Lager hortbar
+        // sind, konnte der Spieler einen exponentiellen Geld-Pump aufbauen, der die
+        // currentRunMoney-basierte PP-Formel untergraebt. Ueberschuss wird logarithmisch
+        // gedaempft (analog ApplySoftCap), hart gedeckelt bei CraftingSellMultiplierHardCap.
+        if (mult > GameBalanceConstants.CraftingSellMultiplierSoftCap)
+        {
+            decimal excess = mult - GameBalanceConstants.CraftingSellMultiplierSoftCap;
+            mult = GameBalanceConstants.CraftingSellMultiplierSoftCap
+                   + (decimal)Math.Log(1.0 + (double)excess, 2.0);
+        }
+        return Math.Min(mult, GameBalanceConstants.CraftingSellMultiplierHardCap);
     }
 }

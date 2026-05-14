@@ -98,7 +98,7 @@ public sealed partial class PrestigeService
 
     public int CheckAndAwardMilestones()
     {
-        // B-C02: State-Mutation (ClaimedMilestones, PrestigesSinceLastWeeklyReward) laeuft
+        // v2.1.1 (Audit B-C02): State-Mutation (ClaimedMilestones, PrestigesSinceLastWeeklyReward) laeuft
         // unter dem zentralen State-Lock — race-frei gegen den Background-Serializer.
         // AddGoldenScrews (nimmt erneut den Lock + feuert Event) und das MilestoneReached-Event
         // werden gesammelt und bewusst NACH dem Lock abgearbeitet.

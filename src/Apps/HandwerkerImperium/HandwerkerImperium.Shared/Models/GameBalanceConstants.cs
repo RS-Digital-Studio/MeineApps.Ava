@@ -114,11 +114,18 @@ public static class GameBalanceConstants
 
     /// <summary>
     /// Permanenter Einkommens-Bonus pro abgeschlossenem Prestige (jeder Tier).
-    /// Skaliert linear ewig weiter — kein Cap, kein Reset. Bei 100 Prestiges = +50% Income
-    /// (zusaetzlich zu allen anderen Bonus-Quellen). Niedrig genug damit early-game
-    /// nicht trivialisiert wird, sichtbar genug fuer late-game Belohnung.
+    /// v2.1.1 (Audit B-H02): Ab <see cref="EternalMasterySoftCapThreshold"/> Prestiges greift ein
+    /// logarithmischer Soft-Cap auf den Ueberschuss (siehe EternalMasteryService.CalculateBonus) —
+    /// frueher skalierte der Bonus unbegrenzt und wurde im Late-Game game-breaking.
+    /// Niedrig genug damit early-game nicht trivialisiert wird, sichtbar genug fuer late-game.
     /// </summary>
     public const decimal EternalMasteryBonusPerPrestige = 0.005m; // +0.5%
+
+    /// <summary>
+    /// v2.1.1 (Audit B-H02): Ab so vielen abgeschlossenen Prestiges greift der logarithmische Soft-Cap
+    /// fuer den Eternal-Mastery-Bonus. Bis zur Schwelle voller Bonus, darueber gedaempft.
+    /// </summary>
+    public const int EternalMasterySoftCapThreshold = 50;
 
     /// <summary>
     /// Zusaetzlicher Stufen-Bonus alle 5 abgeschlossenen Prestiges. Schafft sichtbare
@@ -430,6 +437,13 @@ public static class GameBalanceConstants
     /// <summary>Globaler Einkommens-Bonus pro permanentem Erbstueck (+0.5% forever).</summary>
     public const decimal PermanentHeirloomBonusPerItem = 0.005m;
 
+    /// <summary>
+    /// v2.1.1 (Audit B-C01): Hard-Cap fuer permanente Ascension-Erbstuecke. Ohne Cap wuchs die Liste pro
+    /// Ascension unbegrenzt (Spieler farmt T4-Items vor der Ascension → +250% Income nach
+    /// 5 Ascensions). 50 × 0.5% = +25% permanent ist die harte Obergrenze.
+    /// </summary>
+    public const int MaxPermanentHeirlooms = 50;
+
     // ═══════════════════════════════════════════════════════════════════════
     // AUFTRAGS-BELOHNUNGEN - SOFT-CAP
     // ═══════════════════════════════════════════════════════════════════════
@@ -441,6 +455,16 @@ public static class GameBalanceConstants
     /// Beispiel: Raw 15x → 10 + sqrt(5) ≈ 12.24x
     /// </summary>
     public const decimal OrderRewardMultiplierSoftCap = 10.0m;
+
+    /// <summary>
+    /// v2.1.1 (Audit B-C03): Soft-Cap-Schwelle fuer den Crafting-Sell-Multiplikator. Ab diesem Wert wird der
+    /// Ueberschuss logarithmisch gedaempft (analog IncomeCalculatorService.ApplySoftCap).
+    /// Verhindert den exponentiellen Geld-Pump durch gehortete T4-Items.
+    /// </summary>
+    public const decimal CraftingSellMultiplierSoftCap = 8.0m;
+
+    /// <summary>B-C03: Harte Obergrenze fuer den Crafting-Sell-Multiplikator (auch nach Soft-Cap).</summary>
+    public const decimal CraftingSellMultiplierHardCap = 12.0m;
 
     // ═══════════════════════════════════════════════════════════════════════
     // UI-ANIMATION & TIMING

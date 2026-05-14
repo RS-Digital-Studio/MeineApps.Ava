@@ -73,7 +73,7 @@ public sealed partial class PrestigeService : IPrestigeService
 
     public async Task<bool> DoPrestige(PrestigeTier tier)
     {
-        // B-C02: Doppel-Tap-Guard VOR CanPrestige. CompareExchange ist atomar — nur der
+        // v2.1.1 (Audit B-C02): Doppel-Tap-Guard VOR CanPrestige. CompareExchange ist atomar — nur der
         // erste Aufruf gewinnt, jeder weitere bricht sofort ab. Verhindert PP-Verdopplung
         // bei Render-Lag waehrend der Prestige-Cinematic.
         if (Interlocked.CompareExchange(ref _prestigeInProgress, 1, 0) != 0)
@@ -83,7 +83,7 @@ public sealed partial class PrestigeService : IPrestigeService
         {
             if (!CanPrestige(tier)) return false;
 
-            // B-C02: Alle State-Mutationen laufen unter dem zentralen State-Lock —
+            // v2.1.1 (Audit B-C02): Alle State-Mutationen laufen unter dem zentralen State-Lock —
             // verhindert "Collection was modified"-Races mit dem Background-Serializer
             // (SaveGameService serialisiert den State auf einem ThreadPool-Thread unter
             // demselben Lock). Events, Cloud-Save und AddGoldenScrews laufen bewusst
@@ -717,8 +717,10 @@ public sealed partial class PrestigeService : IPrestigeService
         state.Statistics.PerfectRatings = 0;
         state.Statistics.PerfectStreak = 0;
         // BestPerfectStreak bewahren (All-Time-Rekord, motivational wie TotalPlayTimeSeconds)
-        // PerfectRatingCounts resetten (Auto-Complete-Mastery muss neu erarbeitet werden)
-        state.PerfectRatingCounts?.Clear();
+        // v2.1.1 (Audit B-H08): PerfectRatingCounts NICHT mehr in Prestige reseten — die Auto-Complete-
+        // Mastery (30 Perfects fuer Free / 15 fuer Premium) war frueher der angeblich
+        // beste Premium-Benefit, wurde aber jedes Prestige entwertet. Reset jetzt nur
+        // noch in Ascension (siehe AscensionService.DoAscension).
 
         // === RESET: Boosts ===
         state.SpeedBoostEndTime = DateTime.MinValue;

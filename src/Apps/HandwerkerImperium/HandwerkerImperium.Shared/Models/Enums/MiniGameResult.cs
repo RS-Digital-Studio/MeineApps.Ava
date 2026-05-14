@@ -28,8 +28,11 @@ public static class MiniGameRatingExtensions
     /// </summary>
     public static decimal GetRewardPercentage(this MiniGameRating rating) => rating switch
     {
-        MiniGameRating.Miss => 0.50m,    // 50% of base reward
-        MiniGameRating.Ok => 0.75m,      // 75% of base reward
+        // v2.1.1 (Audit B-H07): Spread auf 7.5x verschaerft (vorher 3x: 0.50→1.50). Ein Auto-Tap-Miss
+        // brachte vorher noch 50% — das untergrub den Skill-Loop UND den Wert des
+        // Premium-Auto-Complete. Jetzt lohnt sich gutes Spielen wieder spuerbar.
+        MiniGameRating.Miss => 0.20m,    // 20% of base reward
+        MiniGameRating.Ok => 0.50m,      // 50% of base reward
         MiniGameRating.Good => 1.00m,    // 100% of base reward
         MiniGameRating.Perfect => 1.50m, // 150% of base reward (bonus!)
         _ => 1.0m
@@ -40,10 +43,12 @@ public static class MiniGameRatingExtensions
     /// </summary>
     public static decimal GetXpPercentage(this MiniGameRating rating) => rating switch
     {
-        MiniGameRating.Miss => 0.25m,    // 25% XP
+        // v2.1.1 (Audit B-L06): XP-Spread an den Reward-Spread (B-H07) angeglichen — vorher inkonsistent
+        // (Reward 3x, XP 6x). Jetzt beide identisch 7.5x.
+        MiniGameRating.Miss => 0.20m,    // 20% XP
         MiniGameRating.Ok => 0.50m,      // 50% XP
         MiniGameRating.Good => 1.00m,    // 100% XP
-        MiniGameRating.Perfect => 1.50m, // 150% XP (increased from 125% for better reward)
+        MiniGameRating.Perfect => 1.50m, // 150% XP (bonus!)
         _ => 1.0m
     };
 

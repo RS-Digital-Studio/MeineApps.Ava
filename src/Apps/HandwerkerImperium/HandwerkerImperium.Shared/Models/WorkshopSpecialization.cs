@@ -3,15 +3,18 @@ using System.Text.Json.Serialization;
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// Spezialisierungstyp für Workshops (ab Level 100).
+/// Spezialisierungstyp für Workshops (ab Level 50, vorher Doc-Bug "Level 100").
+/// v2.1.1 (Audit B-L01): Korrekter Unlock-Level ist 50.
+/// v2.1.1 (Audit B-H05): Quality + Economy haben jetzt sichtbare Eigen-Vorteile (Aura-Verdopplung
+/// bzw. Order-Reward-Bonus) — vorher gewann Efficiency immer und Re-Spec war toter Code.
 /// </summary>
 public enum SpecializationType
 {
-    /// <summary>+30% Einkommen, -10% Worker-Kapazität.</summary>
+    /// <summary>+30% Einkommen, -1 Worker-Slot.</summary>
     Efficiency,
-    /// <summary>+20% Worker-Effizienz, +15% Kosten.</summary>
+    /// <summary>+20% Worker-Effizienz, +15% Kosten, +100% Aura-Bonus. (B-H05: Aura-Verdopplung neu)</summary>
     Quality,
-    /// <summary>-25% Kosten, -5% Einkommen.</summary>
+    /// <summary>-25% Kosten, -5% Einkommen, +15% Auftragsbelohnung. (B-H05: Reward-Bonus neu)</summary>
     Economy
 }
 
@@ -55,6 +58,29 @@ public class WorkshopSpecialization
     {
         SpecializationType.Efficiency => -1,  // -10% → ca. 1 weniger
         _ => 0
+    };
+
+    /// <summary>
+    /// v2.1.1 (Audit B-H05): Multiplikator auf den Aura-Bonus von S+-Tier-Workern (siehe GameBalanceConstants.MaxAuraBonus).
+    /// Quality verdoppelt die effektive Aura ueber den Standard-Cap hinweg → echter Eigen-Vorteil
+    /// neben "20% Effizienz". Ohne Spezialisierung: 1.0m (kein Modifier).
+    /// </summary>
+    [JsonIgnore]
+    public decimal AuraBonusMultiplier => Type switch
+    {
+        SpecializationType.Quality => 2.0m,
+        _ => 1.0m
+    };
+
+    /// <summary>
+    /// v2.1.1 (Audit B-H05): Bonus auf Auftrags-Belohnungen aus diesem Workshop. Economy bekommt jetzt einen
+    /// sichtbaren positiven Effekt jenseits "Kosten -25%" — kompensiert die -5% Einkommen.
+    /// </summary>
+    [JsonIgnore]
+    public decimal OrderRewardBonus => Type switch
+    {
+        SpecializationType.Economy => 0.15m,
+        _ => 0m
     };
 
     [JsonIgnore]

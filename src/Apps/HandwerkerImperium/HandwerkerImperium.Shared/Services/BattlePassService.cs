@@ -124,6 +124,12 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
         var bp = _gameState.State.BattlePass;
         if (bp.IsPremium) return;
 
+        // v2.1.1 (Audit B-M07): Lock-in-Schutz — ab Tag 27 (3 Tage Restdauer) wird der Kauf blockiert.
+        // Frueher konnte der Spieler am letzten Saisontag Premium kaufen und nur 1 Tag
+        // Wert bekommen, bevor die Saison ihn auf 0 zurueckdrueckte. Die UI disabled
+        // den Button vorher; hier ist die harte Last-Line-of-Defense.
+        if (bp.DaysRemaining <= 3) return;
+
         // Echten IAP-Kauf durchführen
         var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_season");
         if (!success) return;
@@ -132,6 +138,13 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 
         BattlePassUpdated?.Invoke();
     }
+
+    /// <summary>
+    /// v2.1.1 (Audit B-M07): True wenn der Premium-Pass-Kauf wegen Saison-Ende blockiert ist. Die UI nutzt
+    /// das, um den Kauf-Button zu disablen + eine Warnung anzuzeigen.
+    /// </summary>
+    public bool IsPremiumLockedDueToSeasonEnd =>
+        _gameState.State.BattlePass.DaysRemaining <= 3 && !_gameState.State.BattlePass.IsPremium;
 
     /// <summary>
     /// Wendet eine Battle-Pass-Belohnung an.

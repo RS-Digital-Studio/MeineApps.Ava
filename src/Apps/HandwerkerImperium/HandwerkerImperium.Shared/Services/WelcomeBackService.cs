@@ -56,8 +56,11 @@ public sealed class WelcomeBackService : IWelcomeBackService
         // Premium: 72h+ Abwesenheit
         else if (absence.TotalHours >= 72)
         {
-            // 1h Einkommen als Geld-Belohnung
+            // 1h Einkommen als Geld-Belohnung — B-M02: Hart bei 1 Mrd. EUR gecappt,
+            // sonst farmt der Spieler durch 72h+ Pausen exponentielle Belohnungen
+            // (3.6T+ bei voll ausgebauten Late-Game-Saves).
             var moneyReward = Math.Round(netPerSecond * 3600m, 0);
+            moneyReward = Math.Min(moneyReward, 1_000_000_000m);
 
             offer = new WelcomeBackOffer
             {
@@ -72,8 +75,9 @@ public sealed class WelcomeBackService : IWelcomeBackService
         // Standard: 24-72h Abwesenheit
         else if (absence.TotalHours >= 24)
         {
-            // 30min Einkommen als Geld-Belohnung
+            // 30min Einkommen als Geld-Belohnung — B-M02: Hart bei 500 Mio. gecappt.
             var moneyReward = Math.Round(netPerSecond * 1800m, 0);
+            moneyReward = Math.Min(moneyReward, 500_000_000m);
 
             offer = new WelcomeBackOffer
             {

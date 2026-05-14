@@ -398,6 +398,11 @@ public partial class App : Application
             builder.SetMinimumLevel(LogLevel.Information);
 #endif
         }));
+        // Welle 5 v2.0.58 AAA-Audit #14: ILogger<T> Open-Generic-Resolver registrieren.
+        // Damit koennen neue Services direkt ILogger<MyService> per ctor injecten — die
+        // bestehenden 53 IAppLogger-Sites bleiben unveraendert. Migration ist Opt-In pro Klasse.
+        services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+
         // AppLogger leitet zusaetzlich Errors/Warnings an Crashlytics weiter.
         // ITelemetryService kommt unten — Lazy-Resolution noetig damit der Logger waehrend
         // der DI-Aufbauphase nicht in eine Zirkularitaet faellt.

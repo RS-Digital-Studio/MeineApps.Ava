@@ -98,57 +98,62 @@ public sealed partial class PrestigeService
 
     public int CheckAndAwardMilestones()
     {
-        var prestige = _gameStateService.State.Prestige;
-        int totalCount = prestige.TotalPrestigeCount;
+        // B-C02: State-Mutation (ClaimedMilestones, PrestigesSinceLastWeeklyReward) laeuft
+        // unter dem zentralen State-Lock — race-frei gegen den Background-Serializer.
+        // AddGoldenScrews (nimmt erneut den Lock + feuert Event) und das MilestoneReached-Event
+        // werden gesammelt und bewusst NACH dem Lock abgearbeitet.
+        var pending = new List<PrestigeMilestoneEventArgs>();
         int totalGsAwarded = 0;
 
-        for (int i = 0; i < GameBalanceConstants.PrestigeMilestones.Length; i++)
+        _gameStateService.ExecuteWithLock(() =>
         {
-            var (requiredCount, id, gsReward) = GameBalanceConstants.PrestigeMilestones[i];
+            var prestige = _gameStateService.State.Prestige;
+            int totalCount = prestige.TotalPrestigeCount;
 
-            if (totalCount >= requiredCount && !prestige.ClaimedMilestones.Contains(id))
+            for (int i = 0; i < GameBalanceConstants.PrestigeMilestones.Length; i++)
             {
-                prestige.ClaimedMilestones.Add(id);
-                _gameStateService.AddGoldenScrews(gsReward, fromPurchase: false);
-                totalGsAwarded += gsReward;
+                var (requiredCount, id, gsReward) = GameBalanceConstants.PrestigeMilestones[i];
 
-                MilestoneReached?.Invoke(this, new PrestigeMilestoneEventArgs
+                if (totalCount >= requiredCount && !prestige.ClaimedMilestones.Contains(id))
                 {
-                    MilestoneId = id,
-                    GoldenScrewReward = gsReward,
-                    RequiredPrestigeCount = requiredCount,
+                    prestige.ClaimedMilestones.Add(id);
+                    totalGsAwarded += gsReward;
+
+                    pending.Add(new PrestigeMilestoneEventArgs
+                    {
+                        MilestoneId = id,
+                        GoldenScrewReward = gsReward,
+                        RequiredPrestigeCount = requiredCount,
+                    });
+                }
+            }
+
+            // v2.0.37: Wiederholbarer Wochen-Meilenstein — alle 7 Prestiges +5 GS.
+            // Der Counter wird im DoPrestige-Pfad (ApplyPrestige) hochgezaehlt;
+            // diese Methode resettet ihn, wenn 7 erreicht ist.
+            if (prestige.PrestigesSinceLastWeeklyReward >= 7)
+            {
+                const int weeklyReward = 5;
+                prestige.PrestigesSinceLastWeeklyReward -= 7;
+                totalGsAwarded += weeklyReward;
+
+                pending.Add(new PrestigeMilestoneEventArgs
+                {
+                    MilestoneId = "pm_weekly",
+                    GoldenScrewReward = weeklyReward,
+                    RequiredPrestigeCount = 7,
                 });
             }
-        }
+        });
 
-        // v2.0.37: Wiederholbarer Wochen-Meilenstein — alle 7 Prestiges +5 GS.
-        // Counter wird bei jedem Prestige hochgezaehlt (per IncrementWeeklyPrestigeCounter).
-        // Diese Methode resettet den Counter, wenn 7 erreicht ist.
-        if (prestige.PrestigesSinceLastWeeklyReward >= 7)
+        // GS-Gutschrift + MilestoneReached-Event AUSSERHALB des Locks abarbeiten.
+        foreach (var args in pending)
         {
-            const int weeklyReward = 5;
-            prestige.PrestigesSinceLastWeeklyReward -= 7;
-            _gameStateService.AddGoldenScrews(weeklyReward, fromPurchase: false);
-            totalGsAwarded += weeklyReward;
-
-            MilestoneReached?.Invoke(this, new PrestigeMilestoneEventArgs
-            {
-                MilestoneId = "pm_weekly",
-                GoldenScrewReward = weeklyReward,
-                RequiredPrestigeCount = 7,
-            });
+            _gameStateService.AddGoldenScrews(args.GoldenScrewReward, fromPurchase: false);
+            MilestoneReached?.Invoke(this, args);
         }
 
         return totalGsAwarded;
-    }
-
-    /// <summary>
-    /// v2.0.37: Erhoeht den Counter fuer den wiederholbaren Wochen-Meilenstein.
-    /// Wird vom DoPrestige-Pfad aufgerufen, BEVOR <see cref="CheckAndAwardMilestones"/> laeuft.
-    /// </summary>
-    public void IncrementWeeklyPrestigeCounter()
-    {
-        _gameStateService.State.Prestige.PrestigesSinceLastWeeklyReward++;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

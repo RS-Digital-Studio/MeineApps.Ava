@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Services;
 public sealed class ReputationShopService : IReputationShopService
 {
     private readonly IGameStateService _gameStateService;
-    private readonly object _lock = new();
+    // v2.1.1 (Audit C-C03): Eigener Lock entfernt — Mutationen via IGameStateService.ExecuteWithLock.
 
     public event Action<ReputationShopItem>? ItemPurchased;
 
@@ -91,15 +91,16 @@ public sealed class ReputationShopService : IReputationShopService
         }
         if (item == null) return false;
 
-        var state = _gameStateService.State;
-        lock (_lock)
+        var purchased = _gameStateService.ExecuteWithLock(() =>
         {
+            var state = _gameStateService.State;
             if (state.Reputation.ReputationScore < item.ReputationCost) return false;
             state.Reputation.ReputationScore -= item.ReputationCost;
             ApplyEffect(item.Effect, state);
-        }
-        ItemPurchased?.Invoke(item);
-        return true;
+            return true;
+        });
+        if (purchased) ItemPurchased?.Invoke(item);
+        return purchased;
     }
 
     private static void ApplyEffect(ReputationShopEffect effect, GameState state)

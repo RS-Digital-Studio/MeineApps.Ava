@@ -1,4 +1,5 @@
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
@@ -11,7 +12,7 @@ public sealed class EquipmentService : IEquipmentService
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAnalyticsService? _analyticsService;
-    private readonly object _lock = new();
+    // v2.1.1 (Audit C-C03): Eigener Lock entfernt — Mutationen via IGameStateService.ExecuteWithLock.
 
     /// <summary>
     /// Basis-Drop-Chance nach einem MiniGame (skaliert nach Schwierigkeit).
@@ -35,7 +36,10 @@ public sealed class EquipmentService : IEquipmentService
 
     public void EquipItem(string workerId, Equipment equipment)
     {
-        lock (_lock)
+        Equipment? equippedItem = null;
+        WorkerTier? workerTier = null;
+
+        _gameStateService.ExecuteWithLock(() =>
         {
             var state = _gameStateService.State;
 
@@ -67,20 +71,25 @@ public sealed class EquipmentService : IEquipmentService
             inventory.Remove(inventoryItem);
 
             state.InvalidateIncomeCache();
+            equippedItem = inventoryItem;
+            workerTier = worker.Tier;
+        });
 
-            // P1.1 AAA-Audit: Equipment-Equip-Tracking fuer Engagement-Analyse.
+        // Telemetrie ausserhalb des Locks
+        if (equippedItem != null && workerTier != null)
+        {
             _analyticsService?.TrackEvent(AnalyticsEvents.EquipmentEquipped, new System.Collections.Generic.Dictionary<string, object?>
             {
-                ["equipment_id"] = inventoryItem.Id,
-                ["rarity"] = inventoryItem.Rarity.ToString(),
-                ["worker_tier"] = worker.Tier.ToString()
+                ["equipment_id"] = equippedItem.Id,
+                ["rarity"] = equippedItem.Rarity.ToString(),
+                ["worker_tier"] = workerTier.ToString()
             });
         }
     }
 
     public void UnequipItem(string workerId)
     {
-        lock (_lock)
+        _gameStateService.ExecuteWithLock(() =>
         {
             var state = _gameStateService.State;
 
@@ -92,22 +101,22 @@ public sealed class EquipmentService : IEquipmentService
             worker.EquippedItem = null;
 
             state.InvalidateIncomeCache();
-        }
+        });
     }
 
     public Equipment? TryGenerateDrop(int difficulty, bool isPerfect = false)
     {
-        Equipment? result;
-        lock (_lock)
-        {
-            // Drop-Chance skaliert nach Schwierigkeit: +5% pro Stufe, Perfect +5%
-            double dropChance = BaseDropChance + difficulty * 0.05 + (isPerfect ? 0.05 : 0.0);
-            if (Random.Shared.NextDouble() >= dropChance)
-                return null;
+        // Drop-Chance skaliert nach Schwierigkeit: +5% pro Stufe, Perfect +5%
+        double dropChance = BaseDropChance + difficulty * 0.05 + (isPerfect ? 0.05 : 0.0);
+        if (Random.Shared.NextDouble() >= dropChance)
+            return null;
 
-            result = Equipment.GenerateRandom(difficulty);
+        var result = Equipment.GenerateRandom(difficulty);
+
+        _gameStateService.ExecuteWithLock(() =>
+        {
             _gameStateService.State.EquipmentInventory.Add(result);
-        }
+        });
 
         // Event AUSSERHALB des Locks aufrufen (Deadlock-Prävention)
         EquipmentDropped?.Invoke();
@@ -140,7 +149,7 @@ public sealed class EquipmentService : IEquipmentService
 
     public void BuyEquipment(Equipment equipment)
     {
-        lock (_lock)
+        _gameStateService.ExecuteWithLock(() =>
         {
             int cost = equipment.ShopPrice;
 
@@ -148,7 +157,7 @@ public sealed class EquipmentService : IEquipmentService
                 return;
 
             _gameStateService.State.EquipmentInventory.Add(equipment);
-        }
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════════

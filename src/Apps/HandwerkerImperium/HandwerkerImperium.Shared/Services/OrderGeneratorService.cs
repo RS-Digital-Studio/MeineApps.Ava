@@ -460,6 +460,10 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
 
     public void RefreshOrders()
     {
+        // v2.1.1 (Audit C-C02): Lock-frei generierte Order-Listen werden unter
+        // ExecuteWithLock geswapt — sonst Race mit SaveAsync-Serializer auf AvailableOrders.
+        // GenerateOrder/GenerateMaterialOrder lesen State, mutieren ihn aber nicht — sicher
+        // ausserhalb des Locks ausfuehrbar.
         var state = _gameStateService.State;
 
         // Bestehende Lieferaufträge beibehalten (nicht bei Refresh löschen)
@@ -470,24 +474,26 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
                 existingMaterialOrders.Add(state.AvailableOrders[i]);
         }
 
-        // Alte normale Orders entfernen
-        state.AvailableOrders.Clear();
-
-        // Bestehende Lieferaufträge zurück hinzufügen
-        state.AvailableOrders.AddRange(existingMaterialOrders);
-
-        // Neue normale Orders generieren
+        // Neue normale Orders generieren (lock-frei, mutiert nicht den State)
         var newOrders = GenerateAvailableOrders(3);
-        state.AvailableOrders.AddRange(newOrders);
 
         // Lieferauftrag generieren (1 pro Refresh wenn unter Tageslimit)
-        if (existingMaterialOrders.Count == 0)
+        Order? materialOrder = existingMaterialOrders.Count == 0 ? GenerateMaterialOrder() : null;
+
+        _gameStateService.ExecuteWithLock(() =>
         {
-            var materialOrder = GenerateMaterialOrder();
+            // Alte normale Orders entfernen
+            state.AvailableOrders.Clear();
+
+            // Bestehende Lieferaufträge zurück hinzufügen
+            state.AvailableOrders.AddRange(existingMaterialOrders);
+
+            // Neue Orders einfuegen
+            state.AvailableOrders.AddRange(newOrders);
+
             if (materialOrder != null)
                 state.AvailableOrders.Add(materialOrder);
-        }
-
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════════

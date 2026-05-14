@@ -21,65 +21,84 @@ public sealed partial class GameLoopService
 
     /// <summary>
     /// Verarbeitet AutoCollect und AutoAccept Automation.
+    /// v2.1.1 (Audit C-C01/M-M09): Mutationen unter <see cref="IGameStateService.ExecuteWithLock"/>
+    /// schuetzen vor Race mit SaveAsync-Serializer (Task.Run auf ThreadPool). Events werden NACH
+    /// Lock-Release gefeuert (Deadlock-Praevention bei UI-Subscribern, die wieder ExecuteWithLock
+    /// aufrufen koennten).
     /// </summary>
     private void ProcessAutomation(GameState state)
     {
-        var auto = state.Automation;
+        SupplierDelivery? collectedDelivery = null;
+        Order? acceptedOrder = null;
 
-        // AutoCollect: Lieferung einsammeln wenn vorhanden
-        if (auto.AutoCollectDelivery && _gameStateService.IsAutoCollectUnlocked && state.PendingDelivery != null && !state.PendingDelivery.IsExpired)
+        _gameStateService.ExecuteWithLock(() =>
         {
-            var delivery = state.PendingDelivery;
-            state.PendingDelivery = null;
-            state.Statistics.TotalDeliveriesClaimed++;
+            var auto = state.Automation;
 
-            // Lieferungs-Effekt anwenden
-            switch (delivery.Type)
+            // AutoCollect: Lieferung einsammeln wenn vorhanden
+            if (auto.AutoCollectDelivery && _gameStateService.IsAutoCollectUnlocked && state.PendingDelivery != null && !state.PendingDelivery.IsExpired)
             {
-                case DeliveryType.Money:
-                    _gameStateService.AddMoney(delivery.Amount);
-                    break;
-                case DeliveryType.GoldenScrews:
-                    _gameStateService.AddGoldenScrews((int)Math.Round(delivery.Amount));
-                    break;
-                case DeliveryType.Experience:
-                    _gameStateService.AddXp((int)delivery.Amount);
-                    break;
-                case DeliveryType.MoodBoost:
-                    foreach (var ws in state.Workshops)
-                    foreach (var w in ws.Workers)
-                        w.Mood = Math.Min(100m, w.Mood + delivery.Amount);
-                    break;
-                case DeliveryType.SpeedBoost:
-                    state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
-                    break;
+                var delivery = state.PendingDelivery;
+                state.PendingDelivery = null;
+                state.Statistics.TotalDeliveriesClaimed++;
+
+                // Lieferungs-Effekt anwenden
+                switch (delivery.Type)
+                {
+                    case DeliveryType.Money:
+                        _gameStateService.AddMoney(delivery.Amount);
+                        break;
+                    case DeliveryType.GoldenScrews:
+                        _gameStateService.AddGoldenScrews((int)Math.Round(delivery.Amount));
+                        break;
+                    case DeliveryType.Experience:
+                        _gameStateService.AddXp((int)delivery.Amount);
+                        break;
+                    case DeliveryType.MoodBoost:
+                        foreach (var ws in state.Workshops)
+                        foreach (var w in ws.Workers)
+                            w.Mood = Math.Min(100m, w.Mood + delivery.Amount);
+                        break;
+                    case DeliveryType.SpeedBoost:
+                        state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
+                        // Income-Cache invalidieren (H-H10 Audit-Fix), damit Doppel-Boost-Stacking
+                        // im Income-Calculator sofort wirksam wird.
+                        state.InvalidateIncomeCache();
+                        break;
+                }
+
+                collectedDelivery = delivery;
             }
 
-            AutoCollectedDelivery?.Invoke(this, delivery);
-        }
-
-        // AutoAccept: Besten Auftrag annehmen wenn kein aktiver vorhanden
-        if (auto.AutoAcceptOrder && _gameStateService.IsAutoAcceptUnlocked && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
-        {
-            // Besten Auftrag waehlen (hoechste Belohnung) - ohne LINQ um Allokationen zu vermeiden
-            // v2.0.36: Wenn AutoAcceptOnlyStandard aktiv, werden Live-/Premium-Auftraege uebersprungen.
-            Order? bestOrder = null;
-            for (int i = 0; i < state.AvailableOrders.Count; i++)
+            // AutoAccept: Besten Auftrag annehmen wenn kein aktiver vorhanden
+            if (auto.AutoAcceptOrder && _gameStateService.IsAutoAcceptUnlocked && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
             {
-                var order = state.AvailableOrders[i];
-                if (auto.AutoAcceptOnlyStandard && (order.IsLive || order.IsPremium))
-                    continue;
-                if (bestOrder == null || order.BaseReward > bestOrder.BaseReward)
-                    bestOrder = order;
-            }
+                // Besten Auftrag waehlen (hoechste Belohnung) - ohne LINQ um Allokationen zu vermeiden
+                // v2.0.36: Wenn AutoAcceptOnlyStandard aktiv, werden Live-/Premium-Auftraege uebersprungen.
+                Order? bestOrder = null;
+                for (int i = 0; i < state.AvailableOrders.Count; i++)
+                {
+                    var order = state.AvailableOrders[i];
+                    if (auto.AutoAcceptOnlyStandard && (order.IsLive || order.IsPremium))
+                        continue;
+                    if (bestOrder == null || order.BaseReward > bestOrder.BaseReward)
+                        bestOrder = order;
+                }
 
-            if (bestOrder != null)
-            {
-                state.ActiveOrder = bestOrder;
-                state.AvailableOrders.Remove(bestOrder);
-                AutoAcceptedOrder?.Invoke(this, bestOrder);
+                if (bestOrder != null)
+                {
+                    state.ActiveOrder = bestOrder;
+                    state.AvailableOrders.Remove(bestOrder);
+                    acceptedOrder = bestOrder;
+                }
             }
-        }
+        });
+
+        // Events ausserhalb des Locks feuern (Deadlock-Praevention)
+        if (collectedDelivery != null)
+            AutoCollectedDelivery?.Invoke(this, collectedDelivery);
+        if (acceptedOrder != null)
+            AutoAcceptedOrder?.Invoke(this, acceptedOrder);
     }
 
     /// <summary>

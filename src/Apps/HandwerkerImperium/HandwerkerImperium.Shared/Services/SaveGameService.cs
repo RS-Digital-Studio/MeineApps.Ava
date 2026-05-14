@@ -27,8 +27,11 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     private readonly IPlayGamesService? _playGamesService;
     // Firebase-basierter Cloud-Save — ersetzt den nicht-funktionalen Play-Games-Snapshots-Stub.
     private readonly ICloudSaveService? _cloudSaveService;
-    private DateTime _lastCloudUploadAttempt = DateTime.MinValue;
-    private static readonly TimeSpan CloudUploadMinInterval = TimeSpan.FromMinutes(2);
+    // v2.1.1 (Audit C-C05): Lock-frei via Interlocked — DateTime.UtcNow.Ticks des letzten
+    // Cloud-Upload-Versuchs (0 = noch nie). CompareExchange stellt sicher, dass bei parallelen
+    // Saves nur ein Thread den Upload-Slot pro Rate-Limit-Fenster gewinnt.
+    private long _lastCloudUploadTicks;
+    private static readonly long CloudUploadMinIntervalTicks = TimeSpan.FromMinutes(2).Ticks;
     private readonly SemaphoreSlim _ioLock = new(1, 1);
 
     public event Action<string, string>? ErrorOccurred;
@@ -156,10 +159,14 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         // Der Save ist lokal immer konsistent — Cloud ist nur Backup.
         if (_cloudSaveService?.IsAvailable == true && cloudSaveEnabled)
         {
-            var now = DateTime.UtcNow;
-            if (now - _lastCloudUploadAttempt >= CloudUploadMinInterval)
+            // C-C05: Rate-Limit lock-frei. CompareExchange gewinnt den Upload-Slot nur,
+            // wenn _lastCloudUploadTicks seit dem Lesen unveraendert blieb — verhindert
+            // doppelten Cloud-Upload bei parallelen Saves.
+            long nowTicks = DateTime.UtcNow.Ticks;
+            long lastTicks = Interlocked.Read(ref _lastCloudUploadTicks);
+            if (nowTicks - lastTicks >= CloudUploadMinIntervalTicks
+                && Interlocked.CompareExchange(ref _lastCloudUploadTicks, nowTicks, lastTicks) == lastTicks)
             {
-                _lastCloudUploadAttempt = now;
                 var cloudSvc = _cloudSaveService;
                 // Race-frei: JSON + Metadata sind bereits "frozen" (kein State-Zugriff im Background).
                 // Vermeidet "JsonSerializer.Serialize auf Background-Thread → Collection-modified-Crash".

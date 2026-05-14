@@ -24,6 +24,12 @@ public sealed partial class PrestigeService : IPrestigeService
     private decimal _cachedMoodDecayReduction;
     private decimal _cachedXpMultiplier;
 
+    // v2.1.1 (Audit B-C02): Doppel-Tap-Guard fuer DoPrestige. 0 = frei, 1 = Prestige laeuft.
+    // Interlocked-Zugriff macht den Guard atomar ueber UI- und GameLoop-Thread hinweg —
+    // verhindert, dass zwei parallele Aufrufe (Render-Lag waehrend Cinematic) beide
+    // CanPrestige==true sehen und Punkte/Tier-Counts doppelt gutschreiben.
+    private int _prestigeInProgress;
+
     public event EventHandler? PrestigeCompleted;
 
     /// <summary>
@@ -67,8 +73,67 @@ public sealed partial class PrestigeService : IPrestigeService
 
     public async Task<bool> DoPrestige(PrestigeTier tier)
     {
-        if (!CanPrestige(tier)) return false;
+        // B-C02: Doppel-Tap-Guard VOR CanPrestige. CompareExchange ist atomar — nur der
+        // erste Aufruf gewinnt, jeder weitere bricht sofort ab. Verhindert PP-Verdopplung
+        // bei Render-Lag waehrend der Prestige-Cinematic.
+        if (Interlocked.CompareExchange(ref _prestigeInProgress, 1, 0) != 0)
+            return false;
 
+        try
+        {
+            if (!CanPrestige(tier)) return false;
+
+            // B-C02: Alle State-Mutationen laufen unter dem zentralen State-Lock —
+            // verhindert "Collection was modified"-Races mit dem Background-Serializer
+            // (SaveGameService serialisiert den State auf einem ThreadPool-Thread unter
+            // demselben Lock). Events, Cloud-Save und AddGoldenScrews laufen bewusst
+            // AUSSERHALB des Locks, weil sie UI-Events feuern bzw. erneut Locks nehmen.
+            var result = _gameStateService.ExecuteWithLock(() => ApplyPrestige(tier));
+
+            // Cinematic-Trigger: Die Daten sind bereits gesnapshottet, der Renderer liest
+            // keinen Live-State — daher ist das Feuern nach abgeschlossenem Reset unbedenklich.
+            CinematicReady?.Invoke(this, result.CinematicData);
+
+            // v2.0.36: Speedrun-Belohnung bei neuer persoenlicher Bestzeit gutschreiben.
+            // AddGoldenScrews nimmt selbst den State-Lock und feuert ein Event — daher
+            // bewusst ausserhalb des Mutations-Locks.
+            if (result.IsNewPersonalBest && result.SpeedrunReward > 0)
+            {
+                _gameStateService.AddGoldenScrews(result.SpeedrunReward);
+                SpeedrunRecordSet?.Invoke(this, new SpeedrunRecordEventArgs(tier, result.RunDuration, result.SpeedrunReward));
+            }
+
+            // KEIN ConfigureAwait(false): PrestigeCompleted-Event wird von MainViewModel
+            // subscribed und feuert UI-Events (Celebration, Ceremony, FloatingText).
+            // Muss auf dem Aufrufer-Thread (UI-Thread) bleiben.
+            await _saveGameService.SaveAsync();
+
+            PrestigeCompleted?.Invoke(this, EventArgs.Empty);
+
+            // Telemetrie: Prestige ist einer der wichtigsten Retention-Events.
+            // Properties wurden im Lock-Snapshot gebaut (race-frei).
+            _analyticsService?.TrackEvent(AnalyticsEvents.PrestigeDone, result.AnalyticsProps);
+
+            // v2.0.37: Meilensteine NACH dem Event pruefen (UI zeigt zuerst den Prestige-Erfolg).
+            // CheckAndAwardMilestones ist selbst thread-safe (mutiert unter Lock, Events ausserhalb).
+            CheckAndAwardMilestones();
+
+            return true;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _prestigeInProgress, 0);
+        }
+    }
+
+    /// <summary>
+    /// Fuehrt die eigentliche Prestige-Mutation durch. MUSS unter
+    /// <see cref="IGameStateService.ExecuteWithLock"/> aufgerufen werden — die Methode
+    /// mutiert ausschliesslich State und sammelt alle fuer Events/Save/Telemetrie
+    /// benoetigten Werte in einem <see cref="PrestigeMutationResult"/>.
+    /// </summary>
+    private PrestigeMutationResult ApplyPrestige(PrestigeTier tier)
+    {
         var state = _gameStateService.State;
         var prestige = state.Prestige;
 
@@ -232,26 +297,13 @@ public sealed partial class PrestigeService : IPrestigeService
             state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes(15);
         }
 
-        // v2.0.36: Speedrun-Belohnung bei neuer persoenlicher Bestzeit gutschreiben.
-        // Wird NACH dem Reset gutgeschrieben, damit die GS auch nach dem Reset bleiben
-        // (GoldenScrews ueberleben Prestige). Event SpeedrunRecordSet wird gefeuert,
-        // damit MainViewModel ein FloatingText/Toast triggern kann.
-        if (isNewPersonalBest && speedrunReward > 0)
-        {
-            _gameStateService.AddGoldenScrews(speedrunReward);
-            SpeedrunRecordSet?.Invoke(this, new SpeedrunRecordEventArgs(tier, runDuration, speedrunReward));
-        }
+        // v2.0.37: Wochen-Meilenstein-Counter erhoehen (frueher: IncrementWeeklyPrestigeCounter()).
+        // Laeuft im Lock — CheckAndAwardMilestones (ausserhalb) resettet den Counter bei 7.
+        prestige.PrestigesSinceLastWeeklyReward++;
 
-        // KEIN ConfigureAwait(false): PrestigeCompleted-Event wird von MainViewModel
-        // subscribed und feuert UI-Events (Celebration, Ceremony, FloatingText).
-        // Muss auf dem Aufrufer-Thread (UI-Thread) bleiben.
-        await _saveGameService.SaveAsync();
-
-        PrestigeCompleted?.Invoke(this, EventArgs.Empty);
-
-        // Telemetrie: Prestige ist einer der wichtigsten Retention-Events.
-        // Enthaelt Dauer + Tier + aktive Challenges fuer Balance-Analyse.
-        _analyticsService?.TrackEvent(AnalyticsEvents.PrestigeDone, new Dictionary<string, object?>
+        // Telemetrie-Properties im Lock-Snapshot bauen — sonst kann der GameLoop zwischen
+        // Mutation und TrackEvent (laeuft ausserhalb des Locks) einen Wert veraendern.
+        var analyticsProps = new Dictionary<string, object?>
         {
             ["tier"] = tier.ToString(),
             ["points_earned"] = tierPoints,
@@ -271,16 +323,26 @@ public sealed partial class PrestigeService : IPrestigeService
             ["run_minutes"] = (int)runDuration.TotalMinutes,
             ["challenges_active"] = prestige.ActiveChallenges.Count,
             ["prestige_pass"] = state.IsPrestigePassActive
-        });
+        };
 
-        // v2.0.37: Wochen-Meilenstein-Counter erhoehen, dann Meilensteine pruefen.
-        // CheckAndAwardMilestones resettet den Counter wenn 7 erreicht ist.
-        IncrementWeeklyPrestigeCounter();
-        // Meilensteine NACH dem Event prüfen (damit UI den Prestige-Erfolg zuerst zeigt)
-        CheckAndAwardMilestones();
-
-        return true;
+        return new PrestigeMutationResult(
+            cinematicData,
+            isNewPersonalBest,
+            speedrunReward,
+            runDuration,
+            analyticsProps);
     }
+
+    /// <summary>
+    /// Snapshot der Prestige-Mutation: alle Werte, die NACH dem State-Lock fuer
+    /// Cinematic-Event, Speedrun-Belohnung und Telemetrie gebraucht werden.
+    /// </summary>
+    private readonly record struct PrestigeMutationResult(
+        HandwerkerImperium.Models.PrestigeCinematicData CinematicData,
+        bool IsNewPersonalBest,
+        int SpeedrunReward,
+        TimeSpan RunDuration,
+        Dictionary<string, object?> AnalyticsProps);
 
     /// <summary>
     /// Prestige-Pass aktivieren (nach erfolgreichem IAP-Kauf).
@@ -350,41 +412,53 @@ public sealed partial class PrestigeService : IPrestigeService
 
     public bool BuyShopItem(string itemId)
     {
-        var prestige = _gameStateService.State.Prestige;
         var allItems = PrestigeShop.GetAllItems();
-
         var item = allItems.FirstOrDefault(i => i.Id == itemId);
         if (item == null) return false;
 
-        if (item.IsRepeatable)
+        // v2.1.1 (Audit B-M05): Check-and-Mutate atomar unter dem State-Lock — ohne Lock konnte
+        // ein Doppel-Tap PrestigePoints negativ ziehen oder den Item-Count zweimal erhoehen.
+        // InvalidatePrestigeBonusCache feuert ein Event und laeuft daher ausserhalb.
+        bool purchased = _gameStateService.ExecuteWithLock(() =>
         {
-            // Wiederholbar: Steigende Kosten, GAME-10: Max 10 Käufe pro Item
-            prestige.RepeatableItemCounts.TryGetValue(itemId, out var count);
+            var prestige = _gameStateService.State.Prestige;
 
-            if (count >= GameBalanceConstants.MaxRepeatableShopPurchases)
-                return false; // Maximum erreicht
+            if (item.IsRepeatable)
+            {
+                // Wiederholbar: Steigende Kosten, GAME-10: Max 10 Käufe pro Item
+                prestige.RepeatableItemCounts.TryGetValue(itemId, out var count);
 
-            int cost = GetRepeatableItemCost(item, count);
+                if (count >= GameBalanceConstants.MaxRepeatableShopPurchases)
+                    return false; // Maximum erreicht
 
-            if (prestige.PrestigePoints < cost) return false;
+                int cost = GetRepeatableItemCost(item, count);
 
-            prestige.PrestigePoints -= cost;
-            prestige.RepeatableItemCounts[itemId] = count + 1;
-            // PurchaseCount nicht auf statischem Item setzen (UI-Kopien werden in GetShopItems erstellt)
-        }
-        else
-        {
-            // Einmalig: Standard-Logik
-            if (prestige.PurchasedShopItems.Contains(itemId)) return false;
-            if (prestige.PrestigePoints < item.Cost) return false;
+                if (prestige.PrestigePoints < cost) return false;
 
-            prestige.PrestigePoints -= item.Cost;
-            prestige.PurchasedShopItems.Add(itemId);
-        }
+                prestige.PrestigePoints -= cost;
+                prestige.RepeatableItemCounts[itemId] = count + 1;
+                // PurchaseCount nicht auf statischem Item setzen (UI-Kopien werden in GetShopItems erstellt)
+            }
+            else
+            {
+                // Einmalig: Standard-Logik
+                if (prestige.PurchasedShopItems.Contains(itemId)) return false;
+                if (prestige.PrestigePoints < item.Cost) return false;
 
-        // Caches invalidieren (Shop-Effekte, MaxOfflineHours, GameStateService-Boni)
-        _effectCacheDirty = true;
-        _gameStateService.State.InvalidateMaxOfflineHoursCache();
+                prestige.PrestigePoints -= item.Cost;
+                prestige.PurchasedShopItems.Add(itemId);
+            }
+
+            // State-interne Caches invalidieren (kein Event) — bleibt im Lock
+            _effectCacheDirty = true;
+            _gameStateService.State.InvalidateMaxOfflineHoursCache();
+            return true;
+        });
+
+        if (!purchased) return false;
+
+        // GameStateService-Bonus-Cache invalidieren — feuert PrestigeShopPurchased-Event,
+        // daher bewusst AUSSERHALB des State-Locks.
         _gameStateService.InvalidatePrestigeBonusCache();
         return true;
     }

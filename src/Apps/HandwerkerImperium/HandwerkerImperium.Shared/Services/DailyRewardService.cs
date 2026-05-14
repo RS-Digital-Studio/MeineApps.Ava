@@ -87,30 +87,61 @@ public sealed class DailyRewardService : IDailyRewardService
 
     public DailyReward? ClaimReward()
     {
-        if (!IsRewardAvailable)
-            return null;
+        // v2.1.1 (Audit B-M03): Check-and-Mutate atomar unter dem State-Lock. Ohne Lock konnte
+        // ein Doppel-Tap (UI- + GameLoop-Thread) zweimal IsRewardAvailable==true sehen und
+        // die Belohnung doppelt gutschreiben. Die Geld-/XP-/GS-Gutschrift laeuft bewusst
+        // AUSSERHALB des Locks — AddMoney/AddXp/AddGoldenScrews nehmen eigene Locks und
+        // feuern UI-Events.
+        DailyReward? reward = null;
+        decimal scaledMoney = 0m;
 
-        var reward = TodaysReward;
+        _gameStateService.ExecuteWithLock(() =>
+        {
+            if (!IsRewardAvailable)
+                return;
+
+            var todaysReward = TodaysReward;
+            if (todaysReward == null)
+                return;
+
+            var state = _gameStateService.State;
+
+            // Check if streak was broken (missed more than 1 day)
+            if (WasStreakBroken())
+            {
+                // Alten Streak-Wert für Streak-Rettung speichern
+                state.StreakBeforeBreak = state.DailyRewardStreak;
+                state.StreakRescueUsed = false;
+                state.DailyRewardStreak = 1;
+            }
+            else
+            {
+                state.DailyRewardStreak++;
+            }
+
+            // Skaliertes Geld im Lock-Snapshot berechnen (NetIncomePerSecond ist State-abhaengig)
+            scaledMoney = todaysReward.GetScaledMoney(state.NetIncomePerSecond);
+
+            // Apply bonus if any
+            if (todaysReward.BonusType == DailyBonusType.SpeedBoost)
+            {
+                state.SpeedBoostEndTime = DateTime.UtcNow.AddHours(1);
+            }
+            else if (todaysReward.BonusType == DailyBonusType.XpBoost)
+            {
+                state.XpBoostEndTime = DateTime.UtcNow.AddHours(1);
+            }
+
+            // Update last claim time — schliesst das Doppel-Tap-Fenster
+            state.LastDailyRewardClaim = DateTime.UtcNow;
+
+            reward = todaysReward;
+        });
+
         if (reward == null)
             return null;
 
-        var state = _gameStateService.State;
-
-        // Check if streak was broken (missed more than 1 day)
-        if (WasStreakBroken())
-        {
-            // Alten Streak-Wert für Streak-Rettung speichern
-            state.StreakBeforeBreak = state.DailyRewardStreak;
-            state.StreakRescueUsed = false;
-            state.DailyRewardStreak = 1;
-        }
-        else
-        {
-            state.DailyRewardStreak++;
-        }
-
         // Apply rewards (dynamisch skaliert basierend auf aktuellem Einkommen)
-        var scaledMoney = reward.GetScaledMoney(state.NetIncomePerSecond);
         _gameStateService.AddMoney(scaledMoney);
 
         if (reward.Xp > 0)
@@ -122,19 +153,6 @@ public sealed class DailyRewardService : IDailyRewardService
         {
             _gameStateService.AddGoldenScrews(reward.GoldenScrews);
         }
-
-        // Apply bonus if any
-        if (reward.BonusType == DailyBonusType.SpeedBoost)
-        {
-            state.SpeedBoostEndTime = DateTime.UtcNow.AddHours(1);
-        }
-        else if (reward.BonusType == DailyBonusType.XpBoost)
-        {
-            state.XpBoostEndTime = DateTime.UtcNow.AddHours(1);
-        }
-
-        // Update last claim time
-        state.LastDailyRewardClaim = DateTime.UtcNow;
 
         return reward;
     }

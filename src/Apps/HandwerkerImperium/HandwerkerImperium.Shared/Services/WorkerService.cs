@@ -6,6 +6,8 @@ namespace HandwerkerImperium.Services;
 
 /// <summary>
 /// Manages worker lifecycle: hiring, firing, training, resting, mood, fatigue.
+/// v2.1.1 (Audit C-C03): Eigener Lock entfernt — alle State-Mutationen unter
+/// <see cref="IGameStateService.ExecuteWithLock"/> (sonst Race mit SaveAsync-Serializer).
 /// </summary>
 public sealed class WorkerService : IWorkerService
 {
@@ -14,7 +16,6 @@ public sealed class WorkerService : IWorkerService
     private readonly IResearchService? _researchService;
     private readonly IManagerService? _managerService;
     private readonly IAnalyticsService? _analyticsService;
-    private readonly object _lock = new();
 
     // Wiederverwendbare Liste für Kündigungen (vermeidet Allokation pro Tick)
     private readonly List<(Workshop ws, Worker worker)> _workersToRemove = new();
@@ -37,7 +38,7 @@ public sealed class WorkerService : IWorkerService
 
     public bool HireWorker(Worker worker, WorkshopType workshop)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             var ws = state.GetOrCreateWorkshop(workshop);
@@ -65,12 +66,12 @@ public sealed class WorkerService : IWorkerService
             state.Statistics.TotalWorkersHired++;
             state.InvalidateIncomeCache();
             return true;
-        }
+        });
     }
 
     public bool FireWorker(string workerId)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             // Doppelte For-Schleife statt LINQ FirstOrDefault (konsistent mit GetWorker)
@@ -89,12 +90,12 @@ public sealed class WorkerService : IWorkerService
                 }
             }
             return false;
-        }
+        });
     }
 
     public bool ReinstateWorker(Worker worker, WorkshopType workshop)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             var ws = state.GetOrCreateWorkshop(workshop);
@@ -109,12 +110,12 @@ public sealed class WorkerService : IWorkerService
             if (state.Statistics.TotalWorkersFired > 0) state.Statistics.TotalWorkersFired--;
             state.InvalidateIncomeCache();
             return true;
-        }
+        });
     }
 
     public bool TransferWorker(string workerId, WorkshopType targetWorkshop)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             var targetWs = state.GetOrCreateWorkshop(targetWorkshop);
@@ -152,14 +153,14 @@ public sealed class WorkerService : IWorkerService
             targetWs.Workers.Add(worker);
             state.InvalidateIncomeCache();
             return true;
-        }
+        });
     }
 
     public bool StartTraining(string workerId, TrainingType trainingType = TrainingType.Efficiency)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
-            var worker = GetWorker(workerId);
+            var worker = GetWorkerInternal(workerId);
             if (worker == null || worker.IsTraining || worker.IsResting) return false;
 
             // Effizienz-Training nur bis Level 10
@@ -173,52 +174,52 @@ public sealed class WorkerService : IWorkerService
             worker.ActiveTrainingType = trainingType;
             worker.TrainingStartedAt = DateTime.UtcNow;
             return true;
-        }
+        });
     }
 
     public void StopTraining(string workerId)
     {
-        lock (_lock)
+        _gameState.ExecuteWithLock(() =>
         {
-            var worker = GetWorker(workerId);
+            var worker = GetWorkerInternal(workerId);
             if (worker == null || !worker.IsTraining) return;
 
             worker.IsTraining = false;
             worker.TrainingStartedAt = null;
             worker.ResumeTrainingType = null; // Manuell gestoppt → kein Auto-Resume
-        }
+        });
     }
 
     public bool StartResting(string workerId)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
-            var worker = GetWorker(workerId);
+            var worker = GetWorkerInternal(workerId);
             if (worker == null || worker.IsResting || worker.IsTraining) return false;
 
             worker.IsResting = true;
             worker.RestStartedAt = DateTime.UtcNow;
             return true;
-        }
+        });
     }
 
     public void StopResting(string workerId)
     {
-        lock (_lock)
+        _gameState.ExecuteWithLock(() =>
         {
-            var worker = GetWorker(workerId);
+            var worker = GetWorkerInternal(workerId);
             if (worker == null || !worker.IsResting) return;
 
             worker.IsResting = false;
             worker.RestStartedAt = null;
-        }
+        });
     }
 
     public bool GiveBonus(string workerId)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
-            var worker = GetWorker(workerId);
+            var worker = GetWorkerInternal(workerId);
             if (worker == null) return false;
 
             // Bonus costs 1 day's wage (8h)
@@ -229,12 +230,18 @@ public sealed class WorkerService : IWorkerService
             worker.Mood = Math.Min(100m, worker.Mood + 30m);
             worker.QuitDeadline = null; // Cancel quit timer
             return true;
-        }
+        });
     }
 
     public void UpdateWorkerStates(double deltaSeconds)
     {
-        lock (_lock)
+        // v2.1.1 (Audit C-C03): State-Mutation + Events trennen, Events ausserhalb Lock feuern.
+        var moodWarningWorkers = new List<Worker>();
+        var levelUpWorkers = new List<Worker>();
+        var promotionReadyWorkers = new List<Worker>();
+        var quitWorkers = new List<(Worker worker, WorkshopType workshopType)>();
+
+        _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             var deltaHours = (decimal)deltaSeconds / 3600m;
@@ -260,18 +267,24 @@ public sealed class WorkerService : IWorkerService
 
                 foreach (var worker in ws.Workers)
                 {
+                    int levelBefore = worker.ExperienceLevel;
+
                     if (worker.IsResting)
                     {
                         UpdateResting(worker, deltaHours, canteen);
                     }
                     else if (worker.IsTraining)
                     {
-                        UpdateTraining(worker, deltaHours, trainingCenter, guildTrainingSpeedBonus + wsMgrTraining);
+                        UpdateTrainingLockHeld(worker, deltaHours, trainingCenter, guildTrainingSpeedBonus + wsMgrTraining);
                     }
                     else
                     {
-                        UpdateWorking(worker, deltaHours, moodDecayReduction, guildFatigueReduction + wsMgrFatigue, canteen, wsMgrMood);
+                        UpdateWorkingLockHeld(worker, deltaHours, moodDecayReduction, guildFatigueReduction + wsMgrFatigue, canteen, wsMgrMood);
                     }
+
+                    // Level-Up-Event sammeln (statt direkt feuern)
+                    if (worker.ExperienceLevel > levelBefore)
+                        levelUpWorkers.Add(worker);
 
                     // v2.1.0: Praktikanten-Training — aktive Ticks akkumulieren, Promotion bei 86400.
                     if (worker.IsIntern && !worker.InternAwaitingPromotion && !worker.IsResting)
@@ -281,7 +294,7 @@ public sealed class WorkerService : IWorkerService
                         if (worker.InternProgressTicks >= promotionThreshold)
                         {
                             worker.InternAwaitingPromotion = true;
-                            InternReadyForPromotion?.Invoke(this, worker);
+                            promotionReadyWorkers.Add(worker);
                         }
                     }
 
@@ -291,7 +304,7 @@ public sealed class WorkerService : IWorkerService
                         if (worker.QuitDeadline == null)
                         {
                             worker.QuitDeadline = DateTime.UtcNow.AddHours(24);
-                            WorkerMoodWarning?.Invoke(this, worker);
+                            moodWarningWorkers.Add(worker);
                         }
                         else if (DateTime.UtcNow >= worker.QuitDeadline)
                         {
@@ -305,21 +318,33 @@ public sealed class WorkerService : IWorkerService
                 }
             }
 
-            // Gekündigte Worker entfernen
+            // Gekündigte Worker entfernen (innerhalb Lock — mutiert State!)
             foreach (var (ws, worker) in _workersToRemove)
             {
                 ws.Workers.Remove(worker);
                 state.Statistics.TotalWorkersFired++;
-                WorkerQuit?.Invoke(this, worker);
-                // P1.1 AAA-Audit: Mood-Quit ist Retention-relevantes Signal.
-                _analyticsService?.TrackEvent(AnalyticsEvents.WorkerQuit, new Dictionary<string, object?>
-                {
-                    ["worker_id"] = worker.Id,
-                    ["tier"] = worker.Tier.ToString(),
-                    ["mood"] = (int)worker.Mood,
-                    ["workshop"] = ws.Type.ToString()
-                });
+                quitWorkers.Add((worker, ws.Type));
             }
+        });
+
+        // Events ausserhalb des Locks feuern (Deadlock-Praevention)
+        foreach (var w in levelUpWorkers)
+            WorkerLevelUp?.Invoke(this, w);
+        foreach (var w in moodWarningWorkers)
+            WorkerMoodWarning?.Invoke(this, w);
+        foreach (var w in promotionReadyWorkers)
+            InternReadyForPromotion?.Invoke(this, w);
+        foreach (var (w, wsType) in quitWorkers)
+        {
+            WorkerQuit?.Invoke(this, w);
+            // P1.1 AAA-Audit: Mood-Quit ist Retention-relevantes Signal.
+            _analyticsService?.TrackEvent(AnalyticsEvents.WorkerQuit, new Dictionary<string, object?>
+            {
+                ["worker_id"] = w.Id,
+                ["tier"] = w.Tier.ToString(),
+                ["mood"] = (int)w.Mood,
+                ["workshop"] = wsType.ToString()
+            });
         }
     }
 
@@ -373,7 +398,7 @@ public sealed class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateTraining(Worker worker, decimal deltaHours, Building? trainingCenter, decimal guildTrainingSpeedBonus)
+    private void UpdateTrainingLockHeld(Worker worker, decimal deltaHours, Building? trainingCenter, decimal guildTrainingSpeedBonus)
     {
         // Training-Kosten pro Tick
         var trainingCost = worker.TrainingCostPerHour * deltaHours;
@@ -422,7 +447,7 @@ public sealed class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateEfficiencyTraining(Worker worker, decimal deltaHours, decimal trainingMultiplier)
+    private static void UpdateEfficiencyTraining(Worker worker, decimal deltaHours, decimal trainingMultiplier)
     {
         // XP-Gewinn (mit Gebäude-Multiplikator, Akkumulator für fraktionale XP)
         decimal xpGain = worker.TrainingXpPerHour * deltaHours * worker.Personality.GetXpMultiplier() * trainingMultiplier;
@@ -434,7 +459,7 @@ public sealed class WorkerService : IWorkerService
             worker.TrainingXpAccumulator -= wholeXp;
         }
 
-        // Level up check
+        // Level up check — Event wird zentral in UpdateWorkerStates gefeuert (gesammelte Liste)
         if (worker.ExperienceXp >= worker.XpForNextLevel && worker.ExperienceLevel < 10)
         {
             worker.ExperienceXp -= worker.XpForNextLevel;
@@ -444,8 +469,6 @@ public sealed class WorkerService : IWorkerService
             var tierMax = worker.Tier.GetMaxEfficiency();
             var tierMin = worker.Tier.GetMinEfficiency();
             worker.Efficiency = Math.Min(tierMax, worker.Efficiency + (tierMax - tierMin) * 0.05m);
-
-            WorkerLevelUp?.Invoke(this, worker);
         }
     }
 
@@ -479,7 +502,7 @@ public sealed class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateWorking(Worker worker, decimal deltaHours, decimal moodDecayReduction, decimal guildFatigueReduction, Building? canteen, decimal managerMoodBonus = 0m)
+    private void UpdateWorkingLockHeld(Worker worker, decimal deltaHours, decimal moodDecayReduction, decimal guildFatigueReduction, Building? canteen, decimal managerMoodBonus = 0m)
     {
         // Stimmungsabfall beim Arbeiten (gecachte Prestige-Shop MoodDecayReduction)
         var moodDecay = worker.MoodDecayPerHour;
@@ -534,7 +557,7 @@ public sealed class WorkerService : IWorkerService
             worker.WorkingXpAccumulator -= wholeXp;
         }
 
-        // Level up check
+        // Level up check — Event wird zentral in UpdateWorkerStates gefeuert (gesammelte Liste)
         if (worker.ExperienceXp >= worker.XpForNextLevel && worker.ExperienceLevel < 10)
         {
             worker.ExperienceXp -= worker.XpForNextLevel;
@@ -543,14 +566,12 @@ public sealed class WorkerService : IWorkerService
             var tierMax = worker.Tier.GetMaxEfficiency();
             var tierMin = worker.Tier.GetMinEfficiency();
             worker.Efficiency = Math.Min(tierMax, worker.Efficiency + (tierMax - tierMin) * 0.05m);
-
-            WorkerLevelUp?.Invoke(this, worker);
         }
     }
 
     public WorkerMarketPool GetWorkerMarket()
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             var effects = _researchService?.GetTotalEffects();
@@ -567,12 +588,12 @@ public sealed class WorkerService : IWorkerService
                 state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0, hasHeadhunter, hasSTier);
             }
             return state.WorkerMarket;
-        }
+        });
     }
 
     public WorkerMarketPool RefreshMarket()
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             state.WorkerMarket ??= new WorkerMarketPool();
@@ -586,12 +607,12 @@ public sealed class WorkerService : IWorkerService
             state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0, hasHeadhunter, hasSTier);
             state.WorkerMarket.FreeRefreshUsedThisRotation = freeRefreshUsed;
             return state.WorkerMarket;
-        }
+        });
     }
 
     public Worker? GetWorker(string id)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             // Doppelte For-Schleife statt LINQ SelectMany (vermeidet Enumerator-Allokation)
             var workshops = _gameState.State.Workshops;
@@ -604,8 +625,8 @@ public sealed class WorkerService : IWorkerService
                         return workers[j];
                 }
             }
-            return null;
-        }
+            return (Worker?)null;
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -614,7 +635,7 @@ public sealed class WorkerService : IWorkerService
 
     public bool HireIntern(WorkshopType workshop)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             if (GetInternCountInternal() >= ((IWorkerService)this).MaxInterns) return false;
@@ -639,12 +660,12 @@ public sealed class WorkerService : IWorkerService
             ws.Workers.Add(intern);
             state.InvalidateIncomeCache();
             return true;
-        }
+        });
     }
 
     public bool PromoteIntern(string workerId)
     {
-        lock (_lock)
+        var promoted = _gameState.ExecuteWithLock(() =>
         {
             var w = GetWorkerInternal(workerId);
             if (w == null || !w.IsIntern || !w.InternAwaitingPromotion) return false;
@@ -656,7 +677,11 @@ public sealed class WorkerService : IWorkerService
             // Standard E-Tier-Lohn-Skalierung — Tier-Default wird beim naechsten Lohn-Tick angewandt.
             w.WagePerHour = WorkerTier.E.GetWagePerHour();
             _gameState.State.InvalidateIncomeCache();
+            return true;
+        });
 
+        if (promoted)
+        {
             // P1.1 AAA-Audit: Praktikanten-Promotion ist Onboarding-Funnel-Signal.
             _analyticsService?.TrackEvent(AnalyticsEvents.WorkerPromoted, new Dictionary<string, object?>
             {
@@ -664,13 +689,13 @@ public sealed class WorkerService : IWorkerService
                 ["from_tier"] = "F-Intern",
                 ["to_tier"] = "E"
             });
-            return true;
         }
+        return promoted;
     }
 
     public bool DeclineInternPromotion(string workerId)
     {
-        lock (_lock)
+        return _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             for (int i = 0; i < state.Workshops.Count; i++)
@@ -688,12 +713,12 @@ public sealed class WorkerService : IWorkerService
                 }
             }
             return false;
-        }
+        });
     }
 
     public int GetInternCount()
     {
-        lock (_lock) { return GetInternCountInternal(); }
+        return _gameState.ExecuteWithLock(() => GetInternCountInternal());
     }
 
     private int GetInternCountInternal()
@@ -709,7 +734,7 @@ public sealed class WorkerService : IWorkerService
         return count;
     }
 
-    /// <summary>Lock-frei — Aufrufer haelt _lock.</summary>
+    /// <summary>Lock-frei — Aufrufer haelt State-Lock via ExecuteWithLock.</summary>
     private Worker? GetWorkerInternal(string id)
     {
         var workshops = _gameState.State.Workshops;

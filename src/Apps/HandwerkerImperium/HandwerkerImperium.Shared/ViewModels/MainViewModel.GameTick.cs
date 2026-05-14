@@ -101,7 +101,7 @@ public sealed partial class MainViewModel
                 // Einmaliger Hinweis beim ersten Erreichen des Soft-Caps
                 if (state.IsSoftCapActive && !HeaderVM.IsSoftCapActive)
                 {
-                    FloatingTextRequested?.Invoke(
+                    _uiEffectBus.RaiseFloatingText(
                         _localizationService.GetString("SoftCapReached") ?? "Bonus cap reached!",
                         "warning");
                 }
@@ -158,7 +158,7 @@ public sealed partial class MainViewModel
                 var unlockText = string.Format(
                     _localizationService.GetString("TabUnlocked") ?? "{0} freigeschaltet!",
                     tabNames[i]);
-                FloatingTextRequested?.Invoke(unlockText, "golden_screws");
+                _uiEffectBus.RaiseFloatingText(unlockText, "golden_screws");
             }
         }
     }

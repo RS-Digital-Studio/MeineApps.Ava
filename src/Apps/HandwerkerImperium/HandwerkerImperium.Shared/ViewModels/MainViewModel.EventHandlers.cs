@@ -96,9 +96,9 @@ public sealed partial class MainViewModel
         // PP-3: FloatingText bei Goldschrauben-Ausgaben
         int diff = e.NewAmount - e.OldAmount;
         if (diff < 0)
-            FloatingTextRequested?.Invoke($"{diff} GS", "warning");
+            _uiEffectBus.RaiseFloatingText($"{diff} GS", "warning");
         else if (diff > 0)
-            FloatingTextRequested?.Invoke($"+{diff} GS", "goldscrews");
+            _uiEffectBus.RaiseFloatingText($"+{diff} GS", "goldscrews");
     }
 
     // Milestone-Level mit Goldschrauben-Belohnung
@@ -131,7 +131,7 @@ public sealed partial class MainViewModel
 
         // Sound + FloatingText bei jedem Level-Up
         _audioService.PlaySoundAsync(GameSound.ButtonTap).FireAndForget();
-        FloatingTextRequested?.Invoke($"Level {e.NewLevel}!", "level");
+        _uiEffectBus.RaiseFloatingText($"Level {e.NewLevel}!", "level");
 
         // Milestone-Bonus prüfen (10/25/50/100/250/500/1000)
         foreach (var (level, screws) in _milestones)
@@ -143,12 +143,12 @@ public sealed partial class MainViewModel
                 // Sound + Celebration nur bei Milestones
                 _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
                 _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-                CelebrationRequested?.Invoke();
-                CeremonyRequested?.Invoke(CeremonyType.LevelMilestone,
+                _uiEffectBus.RaiseCelebration();
+                _uiEffectBus.RaiseCeremony(CeremonyType.LevelMilestone,
                     $"Level {e.NewLevel}!", $"+{screws} Goldschrauben");
 
                 // FloatingText mit Level + Goldschrauben-Bonus
-                FloatingTextRequested?.Invoke(
+                _uiEffectBus.RaiseFloatingText(
                     $"Level {e.NewLevel}! +{screws} \u2699", "level");
                 break;
             }
@@ -202,11 +202,11 @@ public sealed partial class MainViewModel
         RefreshEternalMastery();
 
         // Zeremonie: Feuerwerk + Confetti + Sound
-        CelebrationRequested?.Invoke();
+        _uiEffectBus.RaiseCelebration();
         var tierName = _localizationService.GetString("PrestigeCompleted") ?? "Prestige!";
-        CeremonyRequested?.Invoke(CeremonyType.Prestige, tierName, $"#{prestigeCount}");
+        _uiEffectBus.RaiseCeremony(CeremonyType.Prestige, tierName, $"#{prestigeCount}");
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-        FloatingTextRequested?.Invoke($"Prestige #{prestigeCount}!", "level");
+        _uiEffectBus.RaiseFloatingText($"Prestige #{prestigeCount}!", "level");
 
         // Floating-Hint mit aktuellem Eternal-Mastery-Bonus
         if (prestigeCount >= 1)
@@ -214,7 +214,7 @@ public sealed partial class MainViewModel
             var bonusPct = GameBalanceConstants.EternalMasteryBonusPerPrestige * prestigeCount
                          + GameBalanceConstants.EternalMasteryBonusPer5Prestiges * (prestigeCount / 5)
                          + GameBalanceConstants.EternalMasteryBonusPer10Prestiges * (prestigeCount / 10);
-            FloatingTextRequested?.Invoke(
+            _uiEffectBus.RaiseFloatingText(
                 $"Eternal Mastery: +{bonusPct * 100m:F1}%",
                 "level");
         }
@@ -279,8 +279,8 @@ public sealed partial class MainViewModel
         var text = string.Format(
             _localizationService.GetString("PrestigeMilestoneReached") ?? "Prestige milestone! +{0} golden screws",
             e.GoldenScrewReward);
-        FloatingTextRequested?.Invoke(text, "currency");
-        CelebrationRequested?.Invoke();
+        _uiEffectBus.RaiseFloatingText(text, "currency");
+        _uiEffectBus.RaiseCelebration();
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
     }
 
@@ -309,7 +309,7 @@ public sealed partial class MainViewModel
             var levelUpText = string.Format(
                 _localizationService.GetString("WorkerLevelUp") ?? "{0} ist jetzt Level {1}!",
                 worker.Name, worker.ExperienceLevel);
-            FloatingTextRequested?.Invoke(levelUpText, "level");
+            _uiEffectBus.RaiseFloatingText(levelUpText, "level");
             _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
         });
     }
@@ -352,13 +352,13 @@ public sealed partial class MainViewModel
             var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
             string boostText = $"x{milestoneMultiplier:0.#} {_localizationService.GetString("IncomeBoost") ?? "Income Boost"}!";
 
-            FloatingTextRequested?.Invoke(boostText, "golden_screws");
+            _uiEffectBus.RaiseFloatingText(boostText, "golden_screws");
             _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
             // Größere Zeremonien bei höheren Meilensteinen
             if (e.NewLevel >= LevelThresholds.WorkshopCeremonyThreshold)
             {
-                CeremonyRequested?.Invoke(CeremonyType.WorkshopMilestone,
+                _uiEffectBus.RaiseCeremony(CeremonyType.WorkshopMilestone,
                     $"{workshopName} Lv.{e.NewLevel}",
                     boostText);
             }
@@ -374,10 +374,10 @@ public sealed partial class MainViewModel
                 {
                     _gameStateService.AddGoldenScrews(screws);
                     var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
-                    FloatingTextRequested?.Invoke(
+                    _uiEffectBus.RaiseFloatingText(
                         $"{workshopName} Lv.{e.NewLevel}! +{screws} \u2699", "level");
-                    CelebrationRequested?.Invoke();
-                    CeremonyRequested?.Invoke(CeremonyType.WorkshopMilestone,
+                    _uiEffectBus.RaiseCelebration();
+                    _uiEffectBus.RaiseCeremony(CeremonyType.WorkshopMilestone,
                         $"{workshopName} Lv.{e.NewLevel}!", $"+{screws} Goldschrauben");
                     _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
                     break;
@@ -453,9 +453,9 @@ public sealed partial class MainViewModel
         {
             var name = _localizationService.GetString(tool.NameKey);
             if (string.IsNullOrEmpty(name)) name = tool.Id;
-            FloatingTextRequested?.Invoke($"{tool.Icon} {name}!", "MasterTool");
-            CelebrationRequested?.Invoke();
-            CeremonyRequested?.Invoke(CeremonyType.MasterTool, name, $"+{(int)(tool.IncomeBonus * 100)}% Einkommen");
+            _uiEffectBus.RaiseFloatingText($"{tool.Icon} {name}!", "MasterTool");
+            _uiEffectBus.RaiseCelebration();
+            _uiEffectBus.RaiseCeremony(CeremonyType.MasterTool, name, $"+{(int)(tool.IncomeBonus * 100)}% Einkommen");
             _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
             MissionsVM.MasterToolsCollected = _gameStateService.State.CollectedMasterTools.Count;
@@ -467,7 +467,7 @@ public sealed partial class MainViewModel
         Dispatcher.UIThread.Post(() =>
         {
             UpdateDeliveryDisplay();
-            FloatingTextRequested?.Invoke(
+            _uiEffectBus.RaiseFloatingText(
                 $"{_localizationService.GetString("DeliveryArrived")}!", "Delivery");
         });
     }
@@ -483,7 +483,7 @@ public sealed partial class MainViewModel
             HasActiveOrder = false;
             ActiveOrder = null;
             var msg = _localizationService.GetString("OrderExpiredNotification") ?? "Order expired!";
-            FloatingTextRequested?.Invoke(msg, "warning");
+            _uiEffectBus.RaiseFloatingText(msg, "warning");
             _audioService.PlaySoundAsync(GameSound.Miss).FireAndForget();
             RefreshOrders();
         });
@@ -498,7 +498,7 @@ public sealed partial class MainViewModel
         Dispatcher.UIThread.Post(() =>
         {
             HasPendingDelivery = false;
-            FloatingTextRequested?.Invoke(
+            _uiEffectBus.RaiseFloatingText(
                 $"{_localizationService.GetString("DeliveryCollected") ?? "Delivery collected"}!", "Delivery");
         });
     }
@@ -528,7 +528,7 @@ public sealed partial class MainViewModel
             UpdateEventTimer();
 
             // FloatingText-Benachrichtigung anzeigen
-            FloatingTextRequested?.Invoke(
+            _uiEffectBus.RaiseFloatingText(
                 $"{evt.Icon} {ActiveEventName}", "Event");
         });
     }
@@ -640,7 +640,7 @@ public sealed partial class MainViewModel
             if (confirmed)
             {
                 _workerService.PromoteIntern(intern.Id);
-                FloatingTextRequested?.Invoke($"{intern.Name}: E-Tier!", "level");
+                _uiEffectBus.RaiseFloatingText($"{intern.Name}: E-Tier!", "level");
             }
             else
             {
@@ -671,8 +671,8 @@ public sealed partial class MainViewModel
             // Effekt-Logik in IReputationTierEffects extrahiert.
             _reputationTierEffects?.HandleTierChanged(
                 e,
-                floatingTextRaiser: (text, kind) => FloatingTextRequested?.Invoke(text, kind),
-                celebrationRaiser: () => CelebrationRequested?.Invoke(),
+                floatingTextRaiser: (text, kind) => _uiEffectBus.RaiseFloatingText(text, kind),
+                celebrationRaiser: () => _uiEffectBus.RaiseCelebration(),
                 achievementDialog: (name, desc) =>
                 {
                     DialogVM.AchievementName = name;
@@ -694,7 +694,7 @@ public sealed partial class MainViewModel
         var desc = _localizationService.GetString(achievement.DescriptionKey);
         DialogVM.AchievementDescription = string.IsNullOrEmpty(desc) ? achievement.DescriptionFallback : desc;
         DialogVM.IsAchievementDialogVisible = true;
-        CelebrationRequested?.Invoke();
+        _uiEffectBus.RaiseCelebration();
     }
 
     private void OnPremiumStatusChanged(object? sender, EventArgs e)

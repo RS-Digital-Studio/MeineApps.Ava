@@ -36,6 +36,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly Services.Interfaces.INavigationService? _navigationService;
     private readonly Services.Interfaces.IDialogOrchestrator? _dialogOrchestrator;
     private readonly Services.Interfaces.IMiniGameNavigator? _miniGameNavigator;
+    /// <summary>Zentraler UI-Effekt-Bus (FloatingText/Celebration/Ceremony).</summary>
+    private readonly Services.Interfaces.IUiEffectBus _uiEffectBus;
 
     // INavigationHost-Implementierung: siehe MainViewModel.Host.cs ()
 
@@ -228,6 +230,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         WelcomeFlowViewModel welcomeFlowViewModel,
         NotificationCenterViewModel notificationCenterViewModel,
         INotificationCenterService notificationCenterService,
+        Services.Interfaces.IUiEffectBus uiEffectBus,
         ITournamentService? tournamentService = null,
         IRebirthService? rebirthService = null,
         IStoryService? storyService = null,
@@ -250,6 +253,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _navigationService = navigationService;
         _dialogOrchestrator = dialogOrchestrator;
         _miniGameNavigator = miniGameNavigator;
+        _uiEffectBus = uiEffectBus;
+        // Bus → MainViewModel-Events weiterleiten. Die Views abonnieren vorerst weiter die
+        // MainViewModel-Events; in Task 2 wechseln sie direkt auf den Bus und diese Bruecke entfaellt.
+        _uiEffectBus.FloatingTextRequested += OnBusFloatingTextRequested;
+        _uiEffectBus.CelebrationRequested += OnBusCelebrationRequested;
+        _uiEffectBus.CeremonyRequested += OnBusCeremonyRequested;
         _analyticsService = analyticsService;
         _cloudSaveService = cloudSaveService;
         _remoteConfigService = remoteConfigService;
@@ -368,12 +377,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
             child.NavigationRequested += OnChildNavigation;
 
         // Child-VM Events verdrahten (benannte Delegates fuer Dispose-Unsubscribe)
-        _guildCelebrationHandler = () => CelebrationRequested?.Invoke();
-        _guildFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _workerProfileFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _buildingsFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _ascensionFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _ascensionCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _guildCelebrationHandler = () => _uiEffectBus.RaiseCelebration();
+        _guildFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
+        _workerProfileFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
+        _buildingsFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
+        _ascensionFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
+        _ascensionCelebrationHandler = () => _uiEffectBus.RaiseCelebration();
 
         WorkerProfileViewModel.FloatingTextRequested += _workerProfileFloatingTextHandler;
         BuildingsViewModel.FloatingTextRequested += _buildingsFloatingTextHandler;
@@ -419,8 +428,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
         // MissionsFeatureViewModel per DI injiziert und Events verdrahten (benannte Delegates fuer Dispose)
         MissionsVM = missionsFeatureViewModel;
-        _missionsFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _missionsCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _missionsFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
+        _missionsCelebrationHandler = () => _uiEffectBus.RaiseCelebration();
         _missionsStreakRescuedHandler = () =>
         {
             OnPropertyChanged(nameof(LoginStreak));
@@ -444,7 +453,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
             AnalyticsEvents.OnboardingStorySkipped,
             new Dictionary<string, object?> { ["chapter_id"] = chapterId });
         _dialogPrestigeSummaryGoToShopHandler = () => SelectBuildingsTab();
-        _dialogFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        _dialogFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
         DialogVM.PrestigeSummaryGoToShopRequested += _dialogPrestigeSummaryGoToShopHandler;
         DialogVM.FloatingTextRequested += _dialogFloatingTextHandler;
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;

@@ -163,14 +163,14 @@ public sealed partial class MainViewModel
         {
             var msg = _localizationService.GetString("AscensionLockedHint")
                 ?? "Reach Legende prestige 3 times to unlock Ascension";
-            FloatingTextRequested?.Invoke(msg, "info");
+            _uiEffectBus.RaiseFloatingText(msg, "info");
             return;
         }
         if (tab == ImperiumSubTab.Warehouse && !IsImperiumWarehouseUnlocked)
         {
             var msg = _localizationService.GetString("WarehouseLockedHint")
                 ?? "Reach player level 50 to unlock the warehouse";
-            FloatingTextRequested?.Invoke(msg, "info");
+            _uiEffectBus.RaiseFloatingText(msg, "info");
             return;
         }
 

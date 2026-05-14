@@ -448,7 +448,7 @@ public sealed partial class MainViewModel
         if (_pendingOfflineEarnings > 0)
         {
             _gameStateService.AddMoney(_pendingOfflineEarnings);
-            FloatingTextRequested?.Invoke($"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}", "money");
+            _uiEffectBus.RaiseFloatingText($"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}", "money");
             _pendingOfflineEarnings = 0;
         }
 
@@ -456,7 +456,7 @@ public sealed partial class MainViewModel
         _welcomeBackService.ClaimOffer();
 
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-        CelebrationRequested?.Invoke();
+        _uiEffectBus.RaiseCelebration();
 
         WelcomeFlowVM.IsCombinedWelcomeDialogVisible = false;
         CheckDeferredDialogs();
@@ -472,7 +472,7 @@ public sealed partial class MainViewModel
         if (_pendingOfflineEarnings > 0)
         {
             _gameStateService.AddMoney(_pendingOfflineEarnings);
-            FloatingTextRequested?.Invoke($"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}", "money");
+            _uiEffectBus.RaiseFloatingText($"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}", "money");
             _pendingOfflineEarnings = 0;
         }
 
@@ -494,7 +494,7 @@ public sealed partial class MainViewModel
 
         // Muenz-Partikel Burst im Dashboard ausloesen
         if (amount > 0)
-            FloatingTextRequested?.Invoke($"+{MoneyFormatter.FormatCompact(amount)}", "money");
+            _uiEffectBus.RaiseFloatingText($"+{MoneyFormatter.FormatCompact(amount)}", "money");
 
         _pendingOfflineEarnings = 0;
     }
@@ -574,8 +574,8 @@ public sealed partial class MainViewModel
                     var streakText = string.Format(
                         _localizationService.GetString("StreakMilestone") ?? "{0} Tage Streak!",
                         currentStreak);
-                    CelebrationRequested?.Invoke();
-                    CeremonyRequested?.Invoke(CeremonyType.Achievement, streakText,
+                    _uiEffectBus.RaiseCelebration();
+                    _uiEffectBus.RaiseCeremony(CeremonyType.Achievement, streakText,
                         $"{currentStreak} {_localizationService.GetString("Days") ?? "Days"}");
                     _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
                     break;

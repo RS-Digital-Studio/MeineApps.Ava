@@ -146,7 +146,7 @@ public sealed partial class MainViewModel
             OnStateLoaded(this, EventArgs.Empty);
 
             // Celebration
-            FloatingTextRequested?.Invoke($"{selectedTier.GetIcon()} {tierName}!", "level");
+            _uiEffectBus.RaiseFloatingText($"{selectedTier.GetIcon()} {tierName}!", "level");
 
             // Tier-Aufstieg-Celebration: Wenn ein neuer höchster Tier erreicht wurde
             var newHighestTier = _gameStateService.Prestige.CurrentTier;
@@ -157,7 +157,7 @@ public sealed partial class MainViewModel
                 var prestigeTierUpText = string.Format(
                     _localizationService.GetString("PrestigeTierUp") ?? "New rank: {0}!",
                     newTierName);
-                CeremonyRequested?.Invoke(CeremonyType.Achievement, prestigeTierUpText, newHighestTier.GetIcon());
+                _uiEffectBus.RaiseCeremony(CeremonyType.Achievement, prestigeTierUpText, newHighestTier.GetIcon());
                 _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
             }
 

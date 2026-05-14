@@ -263,6 +263,10 @@ public partial class App : Application
         // Frame-Clock (P1): zentraler 30Hz-Render-Tick fuer Visual-Renderer
         services.AddSingleton<IFrameClock, FrameClockService>();
 
+        // UI-Effekt-Bus: entkoppelt FloatingText/Celebration/Ceremony-Ausloeser von den
+        // View-Sinks. Auslöser injizieren IUiEffectBus, Views abonnieren ihn im Code-Behind.
+        services.AddSingleton<IUiEffectBus, UiEffectBus>();
+
         // Eternal Mastery (Long-Term-Engagement): permanenter Bonus pro Prestige
         services.AddSingleton<IEternalMasteryService, EternalMasteryService>();
 

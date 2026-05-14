@@ -43,8 +43,8 @@ public sealed partial class MainViewModel
             researchService);
 
         // Events verdrahten (benannte Delegates fuer Dispose-Unsubscribe)
-        _economyFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _economyCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _economyFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
+        _economyCelebrationHandler = () => _uiEffectBus.RaiseCelebration();
         EconomyVM.FloatingTextRequested += _economyFloatingTextHandler;
         EconomyVM.CelebrationRequested += _economyCelebrationHandler;
     }

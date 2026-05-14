@@ -327,21 +327,25 @@ public sealed class GameTabBarRenderer : IDisposable
     /// Zeichnet Holz-Hintergrund mit CraftTextures-Maserung (Wellenlinien, Astlöcher, Gradient).
     /// Clippt auf abgerundete Ecken oben.
     /// </summary>
+    // v2.1.1 (Audit P-H01): Statisches Radii-Array + wiederverwendbares SKRoundRect-Feld —
+    // spart pro Frame eine SKPoint[4]-Allokation + SKRoundRect-Allokation (90 Heap-Allocs/s
+    // bei 15fps und den weiteren Rivet-Allokationen unten).
+    private static readonly SKPoint[] s_clipCornerRadii =
+    [
+        new(CornerRadius, CornerRadius),   // oben-links
+        new(CornerRadius, CornerRadius),   // oben-rechts
+        new(0, 0),                          // unten-rechts
+        new(0, 0)                           // unten-links
+    ];
+    private readonly SKRoundRect _clipRRect = new();
+
     private void DrawWoodWithCraftTexture(SKCanvas canvas, SKRect barBounds)
     {
         canvas.Save();
 
-        // Clip auf abgerundete Ecken oben
-        SKPoint[] radii =
-        [
-            new(CornerRadius, CornerRadius),   // oben-links
-            new(CornerRadius, CornerRadius),   // oben-rechts
-            new(0, 0),                          // unten-rechts
-            new(0, 0)                           // unten-links
-        ];
-        using var rrect = new SKRoundRect();
-        rrect.SetRectRadii(barBounds, radii);
-        canvas.ClipRoundRect(rrect);
+        // P-H01: Wiederverwendetes SKRoundRect + statisches Radii-Array → 0 Allokationen pro Frame.
+        _clipRRect.SetRectRadii(barBounds, s_clipCornerRadii);
+        canvas.ClipRoundRect(_clipRRect);
 
         // Reiche Holztextur via CraftTextures (Gradient, Sinus-Wellenlinien, Astlöcher)
         CraftTextures.DrawWoodGrain(canvas, barBounds, WoodBase, 0.5f);
@@ -353,31 +357,31 @@ public sealed class GameTabBarRenderer : IDisposable
     /// Zeichnet 4 Metall-Nieten in den Ecken der Tab-Bar.
     /// Jede Niete hat Highlight oben-links und Schatten unten-rechts.
     /// </summary>
+    // v2.1.1 (Audit P-H01): wiederverwendbare Rivet-Position-Buffers — frueher float[4]
+    // zweimal pro Frame allokiert (60 Allocs/s bei 15fps).
+    private readonly float[] _rivetX = new float[4];
+    private readonly float[] _rivetY = new float[4];
+
     private void DrawRivets(SKCanvas canvas, SKRect barBounds)
     {
         float rivetRadius = 3f;
         float margin = 8f;
 
-        // 4 Positionen: oben-links, oben-rechts, unten-links, unten-rechts
-        float[] rivetX =
-        [
-            barBounds.Left + margin,
-            barBounds.Right - margin,
-            barBounds.Left + margin,
-            barBounds.Right - margin
-        ];
-        float[] rivetY =
-        [
-            barBounds.Top + margin,
-            barBounds.Top + margin,
-            barBounds.Bottom - margin,
-            barBounds.Bottom - margin
-        ];
+        // 4 Positionen: oben-links, oben-rechts, unten-links, unten-rechts.
+        // P-H01: Werte in instanz-gecachte float[]-Buffer schreiben statt neu zu allokieren.
+        _rivetX[0] = barBounds.Left + margin;
+        _rivetX[1] = barBounds.Right - margin;
+        _rivetX[2] = barBounds.Left + margin;
+        _rivetX[3] = barBounds.Right - margin;
+        _rivetY[0] = barBounds.Top + margin;
+        _rivetY[1] = barBounds.Top + margin;
+        _rivetY[2] = barBounds.Bottom - margin;
+        _rivetY[3] = barBounds.Bottom - margin;
 
         for (int i = 0; i < 4; i++)
         {
-            float cx = rivetX[i];
-            float cy = rivetY[i];
+            float cx = _rivetX[i];
+            float cy = _rivetY[i];
 
             // Nieten-Körper
             _fillPaint.Color = RivetBase;

@@ -46,9 +46,12 @@ public sealed class WiringGameRenderer : IDisposable
     private readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
 
     // Gecachte MaskFilter (haeufigste Blur-Radien)
-    private readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
-    private readonly SKMaskFilter _blur4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
-    private readonly SKMaskFilter _blur5 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5);
+    // v2.1.1 (Audit P-C03): SKMaskFilter static — pro Mini-Game-Restart wurde sonst eine neue
+    // Filter-Instanz allokiert, die alte hing am Finalizer (Native-Memory-Leak auf Android,
+    // bekanntes OOM-Pattern aus Haupt-CLAUDE.md).
+    private static readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+    private static readonly SKMaskFilter _blur4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
+    private static readonly SKMaskFilter _blur5 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5);
 
     // ═══════════════════════════════════════════════════════════════════
     // FARBEN
@@ -997,9 +1000,8 @@ public sealed class WiringGameRenderer : IDisposable
         _textPaint.Dispose();
         _shaderPaint.Dispose();
         _glowPaint.Dispose();
-        _blur3.Dispose();
-        _blur4.Dispose();
-        _blur5.Dispose();
+        // v2.1.1 (Audit P-C03): _blur3/4/5 sind jetzt static — NICHT mehr disposen,
+        // sonst werden sie nach erstem Renderer-Dispose unbrauchbar.
         _cachedPath.Dispose();
         _cachedFont.Dispose();
 

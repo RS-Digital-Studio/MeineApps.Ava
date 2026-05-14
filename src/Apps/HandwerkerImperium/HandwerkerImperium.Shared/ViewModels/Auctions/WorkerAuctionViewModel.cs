@@ -56,7 +56,9 @@ public sealed partial class WorkerAuctionViewModel : ViewModelBase, IDisposable
         _auctionService.AuctionUpdated += OnAuctionUpdated;
         _auctionService.AuctionSettled += OnAuctionSettled;
 
-        _pollingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        // v2.1.1 (Audit P-H04): Polling-Intervall 1s → 5s. 60 Requests/min waren Firebase-
+        // Bandbreite + Battery-Killer; 12 Requests/min reichen fuer eine 30s-Auktion locker.
+        _pollingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _pollingTimer.Tick += async (_, _) => await PollAsync().ConfigureAwait(false);
 
         _countdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };

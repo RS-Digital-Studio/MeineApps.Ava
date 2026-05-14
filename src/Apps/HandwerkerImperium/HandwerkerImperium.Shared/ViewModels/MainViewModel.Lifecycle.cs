@@ -37,6 +37,10 @@ public sealed partial class MainViewModel
         // Game-Loop pausieren (Timer stoppen) + Save synchron abwarten.
         if (_gameLoopService.IsRunning)
             await _gameLoopService.PauseAsync().ConfigureAwait(false);
+
+        // v2.1.1 (Audit P-C02): Bei App-Pause sind keine Worker-Renders aktiv → die gepruneten
+        // Bitmaps koennen sicher Native-Memory freigeben.
+        Graphics.WorkerAvatarRenderer.FlushPendingDispose();
     }
 
     /// <summary>

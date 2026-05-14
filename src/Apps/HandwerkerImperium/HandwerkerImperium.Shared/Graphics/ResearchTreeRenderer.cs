@@ -99,6 +99,14 @@ public sealed class ResearchTreeRenderer : IDisposable
     private SKColor _lastProgressBarColor;
     private float _lastProgressBarX, _lastProgressBarFillW;
 
+    // v2.1.1 (Audit P-H03): Cache fuer Node-Positionen analog GuildResearchTreeRenderer.
+    // Frueher pro Frame eine neue List<SKPoint> + n SKPoint-Allokationen — bei
+    // 24fps × 45 Nodes = >1000 Heap-Allocs/s nur fuer Positionen.
+    private readonly List<SKPoint> _cachedPositions = new(16);
+    private int _cachedPositionsItemCount = -1;
+    private float _cachedPositionsCenterX;
+    private float _cachedPositionsStartY;
+
     /// <summary>
     /// Berechnet die Gesamthöhe des Baums.
     /// </summary>
@@ -143,13 +151,23 @@ public sealed class ResearchTreeRenderer : IDisposable
     /// <summary>
     /// Berechnet die (x,y)-Position für jeden Node im Baum.
     /// Alternierendes Layout: Zentriert → 2er-Reihe → Zentriert → 2er-Reihe...
+    /// v2.1.1 (Audit P-H03): Cache pro Instanz — Layout ist deterministisch aus (count, centerX, startY).
+    /// Wird nur neu berechnet, wenn sich ein Parameter aendert.
     /// </summary>
-    private static List<SKPoint> CalculateNodePositions(List<ResearchDisplayItem> items,
+    private List<SKPoint> CalculateNodePositions(List<ResearchDisplayItem> items,
         float centerX, float startY)
     {
-        var positions = new List<SKPoint>();
-        float horizontalSpread = NodeSize * 1.5f; // Abstand zwischen 2er-Reihen
+        if (_cachedPositionsItemCount == items.Count
+            && MathF.Abs(_cachedPositionsCenterX - centerX) < 0.5f
+            && MathF.Abs(_cachedPositionsStartY - startY) < 0.5f)
+            return _cachedPositions;
 
+        _cachedPositions.Clear();
+        _cachedPositionsItemCount = items.Count;
+        _cachedPositionsCenterX = centerX;
+        _cachedPositionsStartY = startY;
+
+        float horizontalSpread = NodeSize * 1.5f; // Abstand zwischen 2er-Reihen
         int itemIndex = 0;
         int row = 0;
 
@@ -160,7 +178,7 @@ public sealed class ResearchTreeRenderer : IDisposable
             if (row % 2 == 0)
             {
                 // Ungerade Zeile: 1 Item zentriert
-                positions.Add(new SKPoint(centerX, rowY));
+                _cachedPositions.Add(new SKPoint(centerX, rowY));
                 itemIndex++;
             }
             else
@@ -168,12 +186,12 @@ public sealed class ResearchTreeRenderer : IDisposable
                 // Gerade Zeile: 2 Items nebeneinander
                 if (itemIndex < items.Count)
                 {
-                    positions.Add(new SKPoint(centerX - horizontalSpread, rowY));
+                    _cachedPositions.Add(new SKPoint(centerX - horizontalSpread, rowY));
                     itemIndex++;
                 }
                 if (itemIndex < items.Count)
                 {
-                    positions.Add(new SKPoint(centerX + horizontalSpread, rowY));
+                    _cachedPositions.Add(new SKPoint(centerX + horizontalSpread, rowY));
                     itemIndex++;
                 }
             }
@@ -181,7 +199,7 @@ public sealed class ResearchTreeRenderer : IDisposable
             row++;
         }
 
-        return positions;
+        return _cachedPositions;
     }
 
     private static int GetRowCount(int itemCount)

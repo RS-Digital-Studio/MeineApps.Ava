@@ -58,6 +58,9 @@ public sealed class MarketChartRenderer : IDisposable
     private readonly SKFont _valueFont = new() { Size = 11f, Edging = SKFontEdging.Antialias, Embolden = true };
     private readonly SKPath _bezierPath = new();
     private readonly SKPath _fillPath = new();
+    // v2.1.1 (Audit P-H02): wiederverwendbarer Bezier-Punkte-Buffer — frueher SKPoint[24] pro
+    // Frame allokiert (360 Heap-Allocs/s bei 15fps).
+    private readonly SKPoint[] _pointsBuffer = new SKPoint[24];
 
     /// <summary>
     /// Rendert den 24-Punkte-Preisverlauf in <paramref name="bounds"/>.
@@ -108,8 +111,8 @@ public sealed class MarketChartRenderer : IDisposable
             canvas.DrawText(label, xPos - tw * 0.5f, plot.Bottom + AxisHeight, _axisFont, _fillPaint);
         }
 
-        // Bezier-Punkte berechnen
-        var points = new SKPoint[24];
+        // Bezier-Punkte berechnen — P-H02: in den wiederverwendbaren Instanz-Buffer schreiben.
+        var points = _pointsBuffer;
         for (int i = 0; i < 24; i++)
         {
             float x = plot.Left + plot.Width * i / 23f;

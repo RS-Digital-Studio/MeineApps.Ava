@@ -847,17 +847,47 @@ public sealed class WorkerAvatarRenderer
     }
 
     /// <summary>
+    /// v2.1.1 (Audit P-C02): Bucket fuer Bitmaps die aus dem Cache evicted wurden, aber noch
+    /// von einem WorkerAvatarControl-Render-Pass referenziert sein koennen. Werden bei
+    /// <see cref="FlushPendingDispose"/> (App-Pause/Shutdown) explizit disposed — sonst
+    /// bleibt das Native-Memory bis zum Finalizer-Lauf des SKBitmaps liegen, auf Android
+    /// nicht zeitnah genug (jeder Prune-Cycle = ~13 MB Native-Leak bei 128x128 Premul).
+    /// </summary>
+    private static readonly List<SKBitmap> _pendingDispose = new();
+
+    /// <summary>
+    /// v2.1.1 (Audit P-C02): Disposes alle gepruneten Bitmaps. Vom App-Lifecycle (Pause/Shutdown)
+    /// aufgerufen, wenn kein Rendering mehr stattfindet. UI-Thread-only, damit kein laufender
+    /// Render-Pass das Bitmap noch nutzt.
+    /// </summary>
+    public static void FlushPendingDispose()
+    {
+        lock (_cacheLock)
+        {
+            foreach (var bmp in _pendingDispose)
+            {
+                try { bmp.Dispose(); } catch { /* Already disposed — best effort */ }
+            }
+            _pendingDispose.Clear();
+        }
+    }
+
+    /// <summary>
     /// Entfernt die aelteste Haelfte des Caches wenn er zu gross wird.
+    /// Caller MUSS den _cacheLock halten.
     /// </summary>
     private static void PruneCache()
     {
-        // Haelfte der Eintraege entfernen (FIFO-aehnlich via Dictionary-Reihenfolge)
-        // NICHT disposen! Bitmaps koennten noch von WorkerAvatarControls referenziert werden.
-        // GC finalisiert sie wenn keine Referenzen mehr bestehen.
+        // Haelfte der Eintraege entfernen (FIFO-aehnlich via Dictionary-Reihenfolge).
+        // P-C02: Bitmaps wandern in den _pendingDispose-Bucket — FlushPendingDispose()
+        // im App-Lifecycle disposed sie, sobald sicher kein Render-Pass mehr laeuft.
+        // GC-Fallback bleibt erhalten falls FlushPendingDispose nie gerufen wird.
         int toRemove = _cache.Count / 2;
         var keysToRemove = _cache.Keys.Take(toRemove).ToList();
         foreach (var key in keysToRemove)
         {
+            if (_cache.TryGetValue(key, out var bmp))
+                _pendingDispose.Add(bmp);
             _cache.Remove(key);
         }
     }

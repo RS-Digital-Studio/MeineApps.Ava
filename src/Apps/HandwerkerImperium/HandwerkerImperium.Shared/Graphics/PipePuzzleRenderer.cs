@@ -68,10 +68,11 @@ public sealed class PipePuzzleRenderer : IDisposable
     private bool _splashFired;
     private float _splashTime;
 
-    // Gecachte Filter
-    private readonly SKMaskFilter _indicatorGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
-    private readonly SKMaskFilter _waterGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
-    private readonly SKMaskFilter _completionGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
+    // Gecachte Filter — v2.1.1 (Audit P-C03): static, sonst Native-Memory-Leak pro
+    // Mini-Game-Restart (bekanntes OOM-Pattern auf Android).
+    private static readonly SKMaskFilter _indicatorGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
+    private static readonly SKMaskFilter _waterGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+    private static readonly SKMaskFilter _completionGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
 
     // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
     private readonly SKPath _cachedPath = new();
@@ -850,9 +851,7 @@ public sealed class PipePuzzleRenderer : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        _indicatorGlow?.Dispose();
-        _waterGlow?.Dispose();
-        _completionGlow?.Dispose();
+        // v2.1.1 (Audit P-C03): _indicatorGlow/_waterGlow/_completionGlow sind static — NICHT disposen.
         _cachedPath?.Dispose();
         _fillPaint?.Dispose();
         _fillPaintAA?.Dispose();

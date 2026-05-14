@@ -15,7 +15,12 @@ public sealed class MaterialIconRenderer : IDisposable
     private bool _disposed;
     private const int CanvasSize = 128;
 
+    // v2.1.1 (Audit P-M01): LRU-Bound — max 60 gecachte Icons (es gibt ~35 Produkt-IDs +
+    // 5 Affinitaeten = ~40 max, 60 gibt Headroom). Bei Ueberschreitung wird der aelteste
+    // Eintrag disposed + entfernt, damit das Native-Memory der SKBitmaps frei wird.
+    private const int MaxCacheSize = 60;
     private readonly Dictionary<string, SKBitmap> _cache = new();
+    private readonly LinkedList<string> _lruOrder = new();
 
     // Gecachte Paints
     private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -44,13 +49,29 @@ public sealed class MaterialIconRenderer : IDisposable
     /// </summary>
     public SKBitmap GetIcon(string productId)
     {
-        if (_cache.TryGetValue(productId, out var cached)) return cached;
+        if (_cache.TryGetValue(productId, out var cached))
+        {
+            // LRU-Update: Zugriff verschiebt den Eintrag ans Ende der Liste.
+            _lruOrder.Remove(productId);
+            _lruOrder.AddLast(productId);
+            return cached;
+        }
 
         var bitmap = new SKBitmap(CanvasSize, CanvasSize);
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
         DrawProductIcon(canvas, productId);
+
+        // P-M01: LRU-Evict bei Ueberlauf — aeltester Eintrag fliegt raus und wird disposed.
+        if (_cache.Count >= MaxCacheSize)
+        {
+            var oldest = _lruOrder.First!.Value;
+            _lruOrder.RemoveFirst();
+            if (_cache.Remove(oldest, out var oldBitmap))
+                oldBitmap.Dispose();
+        }
         _cache[productId] = bitmap;
+        _lruOrder.AddLast(productId);
         return bitmap;
     }
 

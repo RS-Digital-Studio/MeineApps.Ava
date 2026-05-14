@@ -950,16 +950,20 @@ public sealed class BlueprintGameRenderer : IDisposable
         var shadowRect = SKRect.Create(rect.Left + 2, rect.Top + 3, rect.Width, rect.Height);
         canvas.DrawRoundRect(shadowRect, cr, cr, _tileShadowPaint);
 
-        // Kachel-Hintergrund mit Gradient
-        // Perf: Shader aendert sich pro Kachel (Farbe variiert), nicht cachebar
-        using var bgShader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.Top),
-            new SKPoint(rect.Right, rect.Bottom),
-            new[] { bgColor, bgColor.WithAlpha((byte)(bgColor.Alpha * 0.7f)) },
-            null, SKShaderTileMode.Clamp);
+        // Kachel-Hintergrund mit Gradient.
+        // v2.1.1 (Audit P-H07): Shader-Cache pro (bgColor, Width, Height). Frueher 16 Kacheln
+        // × 30fps × neue Allokation = 480 SKShader-Allocs/s + 480 SKColor[2]-Heap-Allocs/s.
+        // Der gecachte Shader ist origin-relativ (0,0 → Width,Height) — Canvas wird vor
+        // DrawRoundRect translatiert, damit der Gradient korrekt ueber die Tile-Bounds laeuft,
+        // unabhaengig von der Tile-Position.
+        var bgShader = GetCachedTileBgShader(rect, bgColor);
+        canvas.Save();
+        canvas.Translate(rect.Left, rect.Top);
+        var localRect = new SKRect(0, 0, rect.Width, rect.Height);
         _tileBgPaint.Shader = bgShader;
-        canvas.DrawRoundRect(rect, cr, cr, _tileBgPaint);
+        canvas.DrawRoundRect(localRect, cr, cr, _tileBgPaint);
         _tileBgPaint.Shader = null;
+        canvas.Restore();
 
         // Oberer Highlight-Streifen (Glaseffekt) — gecachter Shader + Canvas-Translate
         if (s_tileHighlightShader == null || MathF.Abs(rect.Height - s_cachedTileHeight) > 0.1f)
@@ -1755,6 +1759,12 @@ public sealed class BlueprintGameRenderer : IDisposable
         _bgShaderCache?.Dispose();
         _bgShaderCache = null;
 
+        // v2.1.1 (Audit P-H07): Tile-BG-Shader-Cache disposen — die gecachten Linear-Gradients
+        // halten Native-Memory bis sie freigegeben werden.
+        foreach (var shader in _tileBgShaderCache.Values)
+            shader.Dispose();
+        _tileBgShaderCache.Clear();
+
         // Instanz-Paints (mit dynamischen Properties pro Frame)
         _bgPaint?.Dispose();
         _dotPaint?.Dispose();
@@ -1790,5 +1800,27 @@ public sealed class BlueprintGameRenderer : IDisposable
     {
         _blur3?.Dispose();
         _blur4?.Dispose();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // v2.1.1 (Audit P-H07): TILE-BG-SHADER-CACHE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private readonly Dictionary<(uint argb, int w, int h), SKShader> _tileBgShaderCache = new();
+
+    private SKShader GetCachedTileBgShader(SKRect rect, SKColor bgColor)
+    {
+        var key = ((uint)bgColor, (int)rect.Width, (int)rect.Height);
+        if (_tileBgShaderCache.TryGetValue(key, out var cached))
+            return cached;
+
+        // Origin-relativ — Caller translatiert den Canvas auf rect.Left/Top vor DrawRoundRect.
+        var shader = SKShader.CreateLinearGradient(
+            new SKPoint(0, 0),
+            new SKPoint(rect.Width, rect.Height),
+            new[] { bgColor, bgColor.WithAlpha((byte)(bgColor.Alpha * 0.7f)) },
+            null, SKShaderTileMode.Clamp);
+        _tileBgShaderCache[key] = shader;
+        return shader;
     }
 }

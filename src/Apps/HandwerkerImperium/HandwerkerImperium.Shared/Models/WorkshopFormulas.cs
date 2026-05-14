@@ -176,15 +176,44 @@ public static class WorkshopFormulas
 
     /// <summary>
     /// Maximale leistbare Upgrades bei gegebenem Budget.
+    /// v2.1.1 (Audit P-M02): Math.Pow wird nicht mehr pro Step aufgerufen, sondern einmal
+    /// initial — der Folge-Cost ergibt sich aus Multiplikation mit dem Exponent. Bei
+    /// MaxLevel=1000 spart das ~999 Math.Pow-Calls pro Aufruf (Bulk-Buy-Hot-Path im
+    /// Dashboard: bis zu 9990 Math.Pow/s auf 10 Workshops im Max-Modus).
     /// </summary>
     public static (int count, decimal cost) CalculateMaxAffordableUpgrades(int currentLevel, decimal budget, decimal discountFactor)
     {
         if (budget <= 0 || currentLevel >= Workshop.MaxLevel) return (0, 0);
+
         decimal total = 0;
         int count = 0;
-        for (int i = 0; i < Workshop.MaxLevel - currentLevel; i++)
+        int maxIter = Workshop.MaxLevel - currentLevel;
+
+        // Initial-Berechnung des ersten Levels (einmaliger Math.Pow). Folge-Levels
+        // werden inkrementell durch Multiplikation mit dem passenden Exponenten abgeleitet.
+        decimal currentRawCost = CalculateRawLevelCost(currentLevel);
+        decimal expNormal = (decimal)GameBalanceConstants.UpgradeCostExponent;
+        decimal expReduced = (decimal)GameBalanceConstants.UpgradeCostReducedExponent;
+
+        for (int i = 0; i < maxIter; i++)
         {
-            decimal lvlCost = CalculateRawLevelCost(currentLevel + i) * discountFactor;
+            int level = currentLevel + i;
+
+            // Knick bei Lv500 → ab dort reduzierter Exponent. Wir rekalibrieren via Math.Pow
+            // genau einmal beim Uebergang, danach laeuft wieder die inkrementelle Kette.
+            if (i > 0)
+            {
+                if (level == 501)
+                    currentRawCost = CalculateRawLevelCost(level);
+                else if (level > 500)
+                    currentRawCost *= expReduced;
+                else if (level == 1)
+                    currentRawCost = CalculateRawLevelCost(level);
+                else
+                    currentRawCost *= expNormal;
+            }
+
+            decimal lvlCost = currentRawCost * discountFactor;
             if (total + lvlCost > budget) break;
             total += lvlCost;
             count++;

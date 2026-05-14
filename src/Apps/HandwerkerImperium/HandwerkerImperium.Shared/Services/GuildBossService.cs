@@ -478,10 +478,13 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
         var uid = _firebase.PlayerId;
         if (string.IsNullOrEmpty(uid)) return;
 
-        // Duplikat-Schutz: Fester Key mit Boss-Identifier als Wert
-        // Verhindert doppelte Belohnung und wachsende Preferences (ein Key statt unbegrenzt viele)
+        // Duplikat-Schutz: Pref-Key inkl. guildId — v2.1.1 (Audit FB-M06): frueher teilte sich
+        // ein einziger Key ueber alle Gilden, sodass nach Gilden-Wechsel die Belohnung fuer
+        // den ersten Boss der neuen Gilde stillschweigend ausblieb wenn die Boss-StartedAt
+        // zufaellig identisch zur alten Gilde war (Race im Wochenstart).
         var bossIdentifier = _cachedBoss?.StartedAt ?? DateTime.UtcNow.ToString("O");
-        var lastClaimedBoss = _preferences.Get(PrefKeyLastBossRewardWeek, "");
+        var prefKey = $"{PrefKeyLastBossRewardWeek}_{guildId}";
+        var lastClaimedBoss = _preferences.Get(prefKey, "");
         if (lastClaimedBoss == bossIdentifier) return;
 
         try
@@ -504,7 +507,7 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
             };
 
             _gameStateService.AddGoldenScrews(gsReward);
-            _preferences.Set(PrefKeyLastBossRewardWeek, bossIdentifier);
+            _preferences.Set(prefKey, bossIdentifier); // FB-M06: pro guildId
         }
         catch (Exception ex)
         {

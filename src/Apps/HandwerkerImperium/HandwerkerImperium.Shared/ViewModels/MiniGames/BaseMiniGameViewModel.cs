@@ -296,13 +296,18 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
         ILocalizationService localizationService,
-        IGuildCoopOrderService? coopOrderService = null)
+        IGuildCoopOrderService? coopOrderService = null,
+        IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
         _rewardedAdService = rewardedAdService;
         _localizationService = localizationService;
         _coopOrderService = coopOrderService;
+        // v2.1.1 (Audit FB-M03): Analytics per Constructor-Injection statt App.Services-Lookup.
+        // DI-Resolution beim VM-Build statt String-getypt zur Laufzeit — keine versteckte
+        // Abhaengigkeit zum statischen App.Services-Singleton mehr.
+        _analyticsService = analyticsService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -473,11 +478,11 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         // AAA-Audit P1 Mini-Games-Telemetrie: Welche Mini-Games werden gespielt?
         // Ergebnisse landen via Analytics-Pipeline in Firebase und ermoeglichen den
         // Bottom-50%-Audit (welche Mini-Games werden NICHT gespielt → killen oder polieren).
-        // Lazy-Load des Analytics-Service ueber App.Services, damit kein Constructor-Aufwand
-        // in jedem MiniGame-VM noetig ist. Event-Name aus zentralem AnalyticsEvents-Katalog.
+        // v2.1.1 (Audit FB-M03): _analyticsService kommt jetzt per Constructor-Injection
+        // (siehe Ctor). Frueher hier App.Services.GetService — der Service-Locator-Antipattern
+        // koppelte die VM an das statische App-Singleton.
         try
         {
-            _analyticsService ??= App.Services?.GetService(typeof(IAnalyticsService)) as IAnalyticsService;
             var miniGameType = GetCurrentMiniGameType().ToString();
             _analyticsService?.TrackEvent(HandwerkerImperium.Models.AnalyticsEvents.MiniGamePlayed, new Dictionary<string, object?>
             {

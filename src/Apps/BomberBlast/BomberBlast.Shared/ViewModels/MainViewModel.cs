@@ -55,6 +55,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     /// <summary>True solange das What's-New-Modal sichtbar ist (gesteuert vom Closed-Event des VMs).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyDialogOpen))]
     private bool _isWhatsNewVisible;
 
     /// <summary>
@@ -260,7 +261,7 @@ public sealed partial class MainViewModel : ViewModelBase
     /// Audit M18: Aggregat-Flag fuer alle modalen Dialoge. View bindet darunterliegende Page-Views
     /// IsHitTestVisible="{Binding !IsAnyDialogOpen}" → Android-ZIndex-Hit-Test-Problem entschaerft.
     /// </summary>
-    public bool IsAnyDialogOpen => IsAlertDialogVisible || IsConfirmDialogVisible;
+    public bool IsAnyDialogOpen => IsAlertDialogVisible || IsConfirmDialogVisible || IsWhatsNewVisible;
 
     [ObservableProperty]
     private string _confirmDialogTitle = "";

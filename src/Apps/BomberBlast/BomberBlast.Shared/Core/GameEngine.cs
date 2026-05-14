@@ -2154,19 +2154,52 @@ public sealed partial class GameEngine : IDisposable
     }
 
     /// <summary>
-    /// StoneGolem: 3-4 zufällige leere Zellen werden zu Blöcken
+    /// StoneGolem: 3-4 zufällige leere Zellen werden zu Blöcken.
+    /// Phase 2 (Enraged): 5-7 Zellen + bevorzugt rund um den Spieler (max 3 Zellen Abstand).
     /// </summary>
     private void CalculateStoneGolemTargets(BossEnemy boss)
     {
-        int count = EngineRngNext(3, 5);
-        int attempts = 40;
+        bool phase2 = boss.CurrentPhase >= 2;
+        int count = phase2 ? EngineRngNext(5, 8) : EngineRngNext(3, 5);
+        int attempts = phase2 ? 60 : 40;
+
+        // Phase 2: Ersten Hit garantiert nah am Spieler (1 Zelle daneben).
+        if (phase2)
+        {
+            int px = _player.GridX;
+            int py = _player.GridY;
+            (int dx, int dy)[] offsets = { (-1, 0), (1, 0), (0, -1), (0, 1) };
+            foreach (var (dx, dy) in offsets)
+            {
+                var nearCell = _grid.TryGetCell(px + dx, py + dy);
+                if (nearCell != null && nearCell.Type == CellType.Empty && nearCell.Bomb == null
+                    && !boss.OccupiesCell(px + dx, py + dy))
+                {
+                    boss.AttackTargetCells.Add((px + dx, py + dy));
+                    break;
+                }
+            }
+        }
+
         while (boss.AttackTargetCells.Count < count && attempts-- > 0)
         {
-            int gx = EngineRngNext(1, _grid.Width - 1);
-            int gy = EngineRngNext(1, _grid.Height - 1);
+            int gx, gy;
+            if (phase2 && attempts > 30)
+            {
+                // Phase 2: Erste Hälfte bevorzugt nahe Spieler (3-Zellen-Umkreis)
+                gx = Math.Clamp(_player.GridX + EngineRngNext(-3, 4), 1, _grid.Width - 2);
+                gy = Math.Clamp(_player.GridY + EngineRngNext(-3, 4), 1, _grid.Height - 2);
+            }
+            else
+            {
+                gx = EngineRngNext(1, _grid.Width - 1);
+                gy = EngineRngNext(1, _grid.Height - 1);
+            }
+
             var cell = _grid.TryGetCell(gx, gy);
             if (cell != null && cell.Type == CellType.Empty && cell.Bomb == null &&
-                !boss.OccupiesCell(gx, gy))
+                !boss.OccupiesCell(gx, gy) &&
+                !boss.AttackTargetCells.Contains((gx, gy)))
             {
                 boss.AttackTargetCells.Add((gx, gy));
             }
@@ -2174,11 +2207,33 @@ public sealed partial class GameEngine : IDisposable
     }
 
     /// <summary>
-    /// IceDragon: Zufällige horizontale Reihe wird eingefroren
+    /// IceDragon: Zufällige horizontale Reihe wird eingefroren.
+    /// Phase 2 (Enraged): 2 Reihen — eine über und eine unter dem Spieler (Sandwich-Pattern).
     /// </summary>
     private void CalculateIceDragonTargets(BossEnemy boss)
     {
-        // Zufällige Reihe (nicht die äußersten Ränder)
+        if (boss.CurrentPhase >= 2)
+        {
+            // Sandwich: Reihe über + unter Spieler. Engt Bewegungsfreiheit ein.
+            int rowAbove = Math.Max(1, _player.GridY - 1);
+            int rowBelow = Math.Min(_grid.Height - 2, _player.GridY + 1);
+            for (int x = 1; x < _grid.Width - 1; x++)
+            {
+                var cellAbove = _grid.TryGetCell(x, rowAbove);
+                if (cellAbove != null && (cellAbove.Type == CellType.Empty || cellAbove.Type == CellType.Ice))
+                    boss.AttackTargetCells.Add((x, rowAbove));
+
+                if (rowBelow != rowAbove)
+                {
+                    var cellBelow = _grid.TryGetCell(x, rowBelow);
+                    if (cellBelow != null && (cellBelow.Type == CellType.Empty || cellBelow.Type == CellType.Ice))
+                        boss.AttackTargetCells.Add((x, rowBelow));
+                }
+            }
+            return;
+        }
+
+        // Phase 1: Zufällige Reihe (nicht die äußersten Ränder)
         int row = EngineRngNext(1, _grid.Height - 1);
         for (int x = 1; x < _grid.Width - 1; x++)
         {
@@ -2191,11 +2246,35 @@ public sealed partial class GameEngine : IDisposable
     }
 
     /// <summary>
-    /// FireDemon: Obere oder untere Hälfte des Bodens wird gefährlich
+    /// FireDemon: Obere oder untere Hälfte des Bodens wird gefährlich.
+    /// Phase 2 (Enraged): 3/4 des Bodens — nur ein 1/4-Streifen bleibt als Safe-Zone.
     /// </summary>
     private void CalculateFireDemonTargets(BossEnemy boss)
     {
-        // Zufällig obere oder untere Hälfte
+        if (boss.CurrentPhase >= 2)
+        {
+            // Phase 2: 3 von 4 Quadranten = Lava. Quadrant wird zufällig ausgespart.
+            int safeQuadrant = EngineRngNext(4); // 0=oben-links, 1=oben-rechts, 2=unten-links, 3=unten-rechts
+            int midX = _grid.Width / 2;
+            int midY = _grid.Height / 2;
+            for (int y = 1; y < _grid.Height - 1; y++)
+            {
+                for (int x = 1; x < _grid.Width - 1; x++)
+                {
+                    bool right = x >= midX;
+                    bool bottom = y >= midY;
+                    int quadrant = (bottom ? 2 : 0) + (right ? 1 : 0);
+                    if (quadrant == safeQuadrant) continue;
+
+                    var cell = _grid.TryGetCell(x, y);
+                    if (cell != null && cell.Type == CellType.Empty)
+                        boss.AttackTargetCells.Add((x, y));
+                }
+            }
+            return;
+        }
+
+        // Phase 1: Zufällig obere oder untere Hälfte
         bool upperHalf = EngineRngNext(2) == 0;
         int startY = upperHalf ? 1 : _grid.Height / 2;
         int endY = upperHalf ? _grid.Height / 2 : _grid.Height - 1;
@@ -2214,26 +2293,56 @@ public sealed partial class GameEngine : IDisposable
     }
 
     /// <summary>
-    /// Boss-Angriff ausführen (einmalig beim Wechsel von Telegraph → Angriff)
+    /// Boss-Angriff ausführen (einmalig beim Wechsel von Telegraph → Angriff).
+    /// FinalBoss Phase 2 (Enraged): Führt 2 Attacks gleichzeitig aus (Rotation + Rotation+1).
     /// </summary>
     private void ExecuteBossAttack(BossEnemy boss)
     {
         // Flag setzen damit Angriff nur einmal ausgeführt wird
         // (AttackDuration sinkt unter 1.4f nach dem ersten Frame)
 
-        var attackType = boss.BossKind;
-        if (boss.BossKind == BossType.FinalBoss)
+        if (boss.BossKind == BossType.FinalBoss && boss.CurrentPhase >= 2)
         {
-            attackType = boss.AttackRotationIndex switch
-            {
-                0 => BossType.StoneGolem,
-                1 => BossType.IceDragon,
-                2 => BossType.FireDemon,
-                3 => BossType.ShadowMaster,
-                _ => BossType.StoneGolem
-            };
+            // Phase 2: Doppel-Angriff. Erst aktueller Rotation-Index, dann der nächste.
+            var first = BossKindForRotation(boss.AttackRotationIndex);
+            var second = BossKindForRotation((boss.AttackRotationIndex + 1) % 4);
+            ExecuteSingleBossAttack(boss, first);
+
+            // Für zweite Attack neue Target-Cells berechnen (sonst bleibt die Liste vom ersten Attack stehen).
+            boss.AttackTargetCells.Clear();
+            CalculateBossAttackTargetsForType(boss, second);
+            ExecuteSingleBossAttack(boss, second);
+            return;
         }
 
+        var attackType = boss.BossKind == BossType.FinalBoss
+            ? BossKindForRotation(boss.AttackRotationIndex)
+            : boss.BossKind;
+        ExecuteSingleBossAttack(boss, attackType);
+    }
+
+    private static BossType BossKindForRotation(int rotationIndex) => rotationIndex switch
+    {
+        0 => BossType.StoneGolem,
+        1 => BossType.IceDragon,
+        2 => BossType.FireDemon,
+        3 => BossType.ShadowMaster,
+        _ => BossType.StoneGolem
+    };
+
+    private void CalculateBossAttackTargetsForType(BossEnemy boss, BossType attackType)
+    {
+        switch (attackType)
+        {
+            case BossType.StoneGolem: CalculateStoneGolemTargets(boss); break;
+            case BossType.IceDragon: CalculateIceDragonTargets(boss); break;
+            case BossType.FireDemon: CalculateFireDemonTargets(boss); break;
+            case BossType.ShadowMaster: /* ShadowMaster braucht keine Target-Cells */ break;
+        }
+    }
+
+    private void ExecuteSingleBossAttack(BossEnemy boss, BossType attackType)
+    {
         switch (attackType)
         {
             case BossType.StoneGolem:
@@ -2329,12 +2438,22 @@ public sealed partial class GameEngine : IDisposable
     }
 
     /// <summary>
-    /// ShadowMaster-Angriff: Boss teleportiert sich zu zufälliger Position
+    /// ShadowMaster-Angriff: Boss teleportiert sich zu zufälliger Position.
+    /// Phase 2 (Enraged): Spawnt zusätzlich 2 Schatten-Ballom am alten Standort
+    /// (kurze Lebenszeit als Mini-Enemies, harassen den Spieler während der Boss neu positioniert).
     /// </summary>
     private void ExecuteShadowMasterAttack(BossEnemy boss)
     {
+        bool phase2 = boss.CurrentPhase >= 2;
+
+        // Alte Position für Phase-2-Schatten merken
+        float oldX = boss.X;
+        float oldY = boss.Y;
+        int oldGridX = boss.GridX;
+        int oldGridY = boss.GridY;
+
         // Partikel am alten Standort
-        _particleSystem.Emit(boss.X, boss.Y, 12, new SKColor(100, 0, 180), 80f, 0.5f);
+        _particleSystem.Emit(oldX, oldY, 12, new SKColor(100, 0, 180), 80f, 0.5f);
 
         // Zufällige neue Position suchen (mit genug Platz für BossSize)
         int attempts = 30;
@@ -2372,6 +2491,36 @@ public sealed partial class GameEngine : IDisposable
             _localizationService.GetString("FloatBossTeleport") ?? "TELEPORT!",
             new SKColor(150, 0, 255), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_ENEMY_DEATH);
+
+        // Phase 2: 2 Schatten-Ballom am alten Standort spawnen (Harass-Wave).
+        if (phase2)
+        {
+            (int dx, int dy)[] offsets = { (-1, 0), (1, 0), (0, -1), (0, 1) };
+            int spawned = 0;
+            foreach (var (dx, dy) in offsets)
+            {
+                if (spawned >= 2) break;
+                int sx = oldGridX + dx;
+                int sy = oldGridY + dy;
+                var cell = _grid.TryGetCell(sx, sy);
+                if (cell == null || cell.Type != CellType.Empty || cell.Bomb != null) continue;
+
+                var shadow = new Enemy(
+                    sx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f,
+                    sy * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f,
+                    EnemyType.Ballom);
+                _enemies.Add(shadow);
+                _particleSystem.Emit(shadow.X, shadow.Y, 8, new SKColor(180, 0, 255), 70f, 0.5f);
+                spawned++;
+            }
+
+            if (spawned > 0)
+            {
+                _floatingText.Spawn(oldX, oldY - 16,
+                    _localizationService.GetString("FloatShadowClone") ?? "SHADOW CLONE!",
+                    new SKColor(180, 0, 255), 16f, 1.2f);
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

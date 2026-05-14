@@ -930,6 +930,7 @@ public sealed partial class GameEngine
         // Sprint 6.2 AAA-Audit #13: Welt-Intro-Cutscene beim ERSTEN Level einer Welt
         // (Level 1, 11, 21, ..., 91) — wenn der User die Welt noch nie betreten hat.
         // One-shot pro Welt via HasSeenIntro/MarkIntroSeen.
+        // Story-Beats brauchen Lesbarkeit: 6s Dauer + dezenter PullBack + Stinger-Stinger.
         if (WorldStoryService is { } story && _currentLevelNumber > 0 && _currentLevelNumber % 10 == 1)
         {
             int introWorldId = (_currentLevelNumber - 1) / 10 + 1;
@@ -938,9 +939,10 @@ public sealed partial class GameEngine
                 var introText = _localizationService.GetString(intro.TextKey);
                 if (!string.IsNullOrEmpty(introText))
                 {
-                    _subtitles.Show(introText);
+                    _subtitles.Show(introText, 6.0f);
                     if (!string.IsNullOrEmpty(intro.StingerKey))
                         _soundManager.PlayStinger(intro.StingerKey!);
+                    _screenShake.TriggerPullBack(0.08f, 1.2f);  // Dezente Ein-Ausatmung, kein aggressives Shake
                     story.MarkIntroSeen(introWorldId);
                 }
             }
@@ -1762,6 +1764,7 @@ public sealed partial class GameEngine
                 // Sprint 6.2 AAA-Audit #13: Welt-Outro-Cutscene beim Welt-Boss-Sieg
                 // (Level 10/20/.../90 — Endboss hat kein Outro, da kein "naechste Welt"-Cliffhanger).
                 // One-shot pro Welt via HasSeenOutro/MarkOutroSeen.
+                // Outro nach Boss-Sieg: 7s damit Cliffhanger gelesen werden kann + PullBack als Cinematic-Akzent.
                 if (WorldStoryService is { } outroStory
                     && _currentLevelNumber > 0 && _currentLevelNumber % 10 == 0
                     && _currentLevelNumber < 100)
@@ -1772,9 +1775,10 @@ public sealed partial class GameEngine
                         var outroText = _localizationService.GetString(outro.TextKey);
                         if (!string.IsNullOrEmpty(outroText))
                         {
-                            _subtitles.Show(outroText);
+                            _subtitles.Show(outroText, 7.0f);
                             if (!string.IsNullOrEmpty(outro.StingerKey))
                                 _soundManager.PlayStinger(outro.StingerKey!);
+                            _screenShake.TriggerPullBack(0.12f, 1.5f);
                             outroStory.MarkOutroSeen(outroWorldId);
                         }
                     }

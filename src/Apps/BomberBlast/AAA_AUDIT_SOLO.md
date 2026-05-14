@@ -1,540 +1,409 @@
 # BomberBlast — AAA-Quality-Audit (Solo-Dev / Code-Only)
 
-**Version analysiert:** v2.0.56 (Produktion)
-**Datum:** 2026-05-12
-**Scope:** Ausschliesslich Verbesserungen, die du als Solo-Dev ohne externes Budget und ohne Server-Infrastruktur umsetzen kannst. Kein Composer, kein Artist, kein Voice-Actor, kein Pi-Server, kein Live-PvP.
+**Version analysiert:** v2.0.57 (Produktion)
+**Datum:** 2026-05-14
+**Scope:** Ausschließlich Verbesserungen, die als Solo-Dev ohne externes Budget und ohne Server-Infrastruktur umsetzbar sind. Kein Composer, kein Artist, kein Voice-Actor, kein Pi-Server, kein Live-PvP.
+**Verifikation:** Jede Behauptung wurde gegen den Stand v2.0.57 abgeglichen. Bereits umgesetzte Punkte sind im Abschnitt „Erledigt in v2.0.56–v2.0.57" aufgeführt und nicht mehr Teil der offenen Punkte.
 
 ---
 
-## Kern-Befund
+## Erledigt in v2.0.56–v2.0.57 (nicht mehr zu tun)
 
-Die Codebase ist auf einem Indie-Level, das viele bezahlte Studios nicht erreichen. Engine-Architektur, Performance-Optimierung und Game-Feel sind bereits Pro-Niveau. Was zu AAA fehlt, ist primär **Content-Volumen, Live-Ops-Reife und UX-Konsolidierung** — alles Felder, die du ohne externe Hilfe weiter ausbauen kannst.
+Diese Punkte aus früheren Audit-Fassungen sind in v2.0.56 / v2.0.57 vollständig oder im Wesentlichen umgesetzt — nur als Referenz, damit Claude Code sie nicht erneut anfasst:
 
-**Realistische Decke mit Code-only-Ansatz: ~7-7.5/10.** Das ist "Premium Indie" — eine Stufe ueber dem aktuellen Stand und deutlich ueber dem, was 90% der Mobile-Indies erreichen.
+| Bereich | Status | Beleg |
+|---------|--------|-------|
+| Welt-Themed Bomb-FX | erledigt v2.0.56 | `GameRenderer` + `_gameStyleService.GetWorldTheme()` |
+| ULTRA-Combo Vollbild-Vignette-Flash | erledigt v2.0.56 | `UltraComboFlash.cs`, Trigger ab `ComboSystem.ULTRA_THRESHOLD=10` |
+| Player i-Frame + Damage-Flash | erledigt v2.0.56 | `Player.IsInvincible`, `InvincibilityTimer`, `HasSpawnProtection` |
+| Anticipation-Frames Bomb-Place + Boss-Attack | erledigt v2.0.56 | `Player.TriggerBombPlaceAnticipation()`, `_bombSquashTimer` 80ms |
+| Feature-Unlock-Choreographie | erledigt v2.0.56 | `FeatureUnlockChoreographer.cs` mit Analytics-Call-Site |
+| „What's New"-Service + Version-Auto-Lookup | erledigt v2.0.56 | `WhatsNewService.cs`, `Assembly.GetName().Version` |
+| Splash-Crash-Recovery | erledigt v2.0.56 | `App.axaml.cs` mit Crash-Counter + Safe-Mode-Switch bei ≥ 3 Crashes |
+| Adaptive-Icon-Layers + Monochrome-Icon | erledigt v2.0.56 | `BomberBlast.Android/Resources/mipmap-anydpi-v26/appicon.xml` |
+| IGameEventBus (Pub/Sub-Fundament) | erledigt v2.0.56 | `IGameEventBus.cs` + `GameEventBus.cs` |
+| Mode-Bool-Flags entkoppeln | erledigt v2.0.56 | `_isStoryMode` etc. sind Computed Properties auf `_currentMode` |
+| IAnalyticsService Event-Definitionen | erledigt v2.0.56 | 40+ Event-Konstanten, Call-Sites in GameEngine/MainMenu/Choreographer |
+| Tutorial-Engine (Foundation) | erledigt v2.0.56 | `TutorialService.cs` mit 6 Schritten in 3 Phasen |
+| D1-Daily-Reminder-Push | erledigt v2.0.56 | WhatsNew-Bullet „Daily reminder notifications" |
+| Boss-Modifier-Enum + RollForWorld | erledigt v2.0.56 | `BossModifier.cs` mit 8 Modifiern, Spawn-Roll je Welt |
+| CinematicSequencer | erledigt v2.0.56 | `BomberBlast.Shared/Graphics/CinematicSequencer.cs` |
+| FixedTimestep-/Replay-/RNG-Foundation | erledigt v2.0.56 | `Core/FixedTimestepRunner.cs`, `Core/DeterministicRandom.cs`, `Core/ReplayCapture.cs` |
+| **Boss-Modifier-Effekte alle 8** | **erledigt v2.0.57** | `BossEnemy.ApplyModifierEffects` (Healing/Summoner/Shielded/Burning), `MoveBoss` (Fast), Update (Berserk/Frenzy), `GameEngine.Collision` (Reflective 30%-Chance, Burning-Trail-Damage am Spieler) |
+| **Elite-Enemy-Varianten** | **erledigt v2.0.57** | `Enemy.IsElite` ctor-Param, 1.2x Speed / 2x HP / 3x Points multiplikativ; `LevelGenerator` 8% Roll ab Welt 3 |
+| **Hero/Character-Stats** | **erledigt v2.0.57** | `GameEngine.ApplyHeroStats()` aus 5 Mode-Starts (Story/Survival/Dungeon/BossRush/QuickPlay). Player.MaxBombs/FireRange/SpeedLevel/Lives vom aktiven Hero |
+| **Summoner-Minion-Spawn** | **erledigt v2.0.57** | `GameEngine.Level.SpawnSummonerMinion`, `boss.TryConsumeSummonRequest` jeden Frame |
+| **Outline-Pass im Renderer** | **erledigt v2.0.57** | `OutlineRenderHelper.RenderWithOutline`. Enemy + Player setzen `RenderOutline = true` im ctor — Boss erbt von Enemy |
+| **Cosmetic-Volumen 98 Items** | **erledigt v2.0.57** | 32 Trails + 33 Frames + 33 Victories über Welt-Themes + BP-Saisons |
+| Re-Engagement D1/D3/D7 | erledigt v2.0.57 | `IReEngagementScheduler.ScheduleAll/CancelAll` via MainActivity-OnPause/Resume |
+| AppLogger NonFatal-Sink | erledigt v2.0.57 | `AppLogger.LogError(msg, ex)` → `ITelemetryService.LogNonFatal` |
 
 ---
 
-## Bewertung pro Achse (Code-only-Sicht)
+## Kern-Befund (Stand v2.0.57)
 
-| Achse | Status | Potenzial (Code-only) | Hebel |
-|-------|--------|------------------------|-------|
-| Engine-Architektur | 8.5/10 | 9.5/10 | Mode-Plugin-Migration abschliessen |
+Die Codebase ist auf einem Indie-Level, das viele bezahlte Studios nicht erreichen. Engine-Architektur, Performance-Optimierung und Game-Feel sind bereits Pro-Niveau. v2.0.57 hat die Content-Verkabelung (Boss-Modifier-Effekte, Elite-Enemies, Hero-Stats, Outline-Pass) komplettiert und die Re-Engagement-Push-Trigger D3/D7 aktiviert. Was zu AAA fehlt, ist primär **Live-Ops-Reife (Firebase Remote Config), UX-Konsolidierung (Tab-Konsolidierung, Tutorial-Splits), Architektur-Hygiene (MainViewModel-Reduktion, ILogger-Migration) und Engine-Reife (FixedTimestep-Integration, Mode-Hooks-Verkabelung)** — alles Felder, die ohne externe Hilfe weiter ausbaubar sind.
+
+**Realistische Decke mit Code-only-Ansatz: ~7.5–8/10.** Eine Stufe über „Premium Indie".
+
+---
+
+## Bewertung pro Achse (Code-only-Sicht, v2.0.57)
+
+| Achse | Status v2.0.57 | Potenzial (Code-only) | Hebel |
+|-------|----------------|------------------------|-------|
+| Engine-Architektur | 8.5/10 | 9.5/10 | NavigationHub + LazyVmRegistry, Mode-Hook-Verkabelung |
 | Performance | 9/10 | 9.5/10 | FixedTimestep integrieren |
-| Game Feel / Juice | 8.5/10 | 9.5/10 | Welt-Themed FX + Ultra-Combo-Flash |
-| Audio (technisch) | 6/10 | 7.5/10 | Adaptive Layered Logic + LUFS-Mastering |
-| Visuals (Engine) | 6/10 | 7.5/10 | Outline-Pass + Style-Lookup |
-| Content-Volumen | 5/10 | 7/10 | Mehr Bosse/Enemies aus existierender Engine |
-| Live-Ops | 6/10 | 9/10 | Remote Config + Funnel-Events + Push |
-| UX/UI | 6/10 | 8.5/10 | Tab-Konsolidierung + Tutorial-Erweiterung |
-| Architektur-Hygiene | 8/10 | 9/10 | God-VM aufloesen, Logging modernisieren |
+| Game Feel / Juice | 9/10 | 9.5/10 | Audio-Layering (Tempo-Pitch), Phase-2-Attack-Varianten |
+| Audio (technisch) | 6.5/10 | 7.5/10 | EQ-Sidechain + Layered Stinger + LUFS-Mastering |
+| Visuals (Engine) | 7/10 | 7.5/10 | Outline-Pass ist da — bleibt nur Konsistenz-Audit über alle Sprites |
+| Content-Volumen | 6/10 | 7/10 | Mini-Bosse zwischen Welten + Phase-2-Pattern |
+| Live-Ops | 7/10 | 9/10 | Firebase Remote Config + Funnel-Lücken + D3/D7 |
+| UX/UI | 6/10 | 8.5/10 | Tab-Konsolidierung + 3 Tutorial-Levels |
+| Architektur-Hygiene | 8/10 | 9/10 | God-VM auflösen, Logging modernisieren |
 
 ---
 
-## Tier 1 — Sofort (4 Wochen, hoechster ROI)
+## Offene Punkte (Stand v2.0.57)
 
-### 1. Firebase Remote Config integrieren
+### Tier 1 — Live-Ops + UX-Konsolidierung
 
-**Problem:** Du kannst nichts in Production tunen ohne App-Update. Preise, Drop-Rates, Event-Toggles, Difficulty-Werte — alles hardcoded.
+#### 1. Firebase Remote Config integrieren
 
-**Loesung:**
-- `Xamarin.Firebase.Config` Paket hinzufuegen
-- `IRemoteConfigService` Interface + `FirebaseRemoteConfigService` + `NullRemoteConfigService` (Desktop-Fallback)
-- Werte: `event_active_halloween`, `drop_rate_legendary_card`, `gem_pack_small_price`, `combo_slowmo_threshold`, `boss_telegraph_duration_ms`
-- Default-Werte in lokaler JSON, Remote ueberschreibt nach `FetchAndActivateAsync`
-- Cache 1h in Production, 5 Min in Debug
+**Status:** `IRemoteConfigService` + `DefaultsRemoteConfigService` aus embedded JSON aktiv. `Xamarin.Firebase.Config` fehlt in `Directory.Packages.props`. `FirebaseRemoteConfigService` als Android-Override fehlt.
 
-**Aufwand:** 1 Tag
-**Impact:** Riesig. Schaltet alle weiteren Live-Ops-Verbesserungen frei.
+**Lösung:**
+- `Xamarin.Firebase.Config` Paket in `Directory.Packages.props` ergänzen
+- `AndroidFirebaseRemoteConfigService.cs` in Premium-Library `Android/`-Ordner via Linked-File-Pattern
+- App.axaml.cs `RemoteConfigServiceFactory` mit MainActivity-Setup
+- `FetchAndActivateAsync` mit Cache 1h Production / 5min Debug
+- Override-Pattern: Firebase überschreibt Default-Werte aus JSON via `SetOverride(key, value)`
 
----
-
-### 2. Funnel-Event-Telemetrie
-
-**Problem:** Du weisst nicht, wo Spieler abbrechen. Aktuelle Telemetrie deckt FPS + Memory ab — keine Game-Funnel-Events.
-
-**Loesung:** 30 Events via `IAnalyticsService`:
-- `level_start` (level_id, world_id, lives, deck_id)
-- `level_complete` (level_id, time_ms, stars, deaths)
-- `level_fail` (level_id, cause: enemy/bomb/time, attempt_count)
-- `boss_encounter` (boss_type, phase)
-- `boss_defeated` (boss_type, time_ms, damage_taken)
-- `shop_opened` (entry_point)
-- `purchase_flow_start` (sku, price, currency)
-- `purchase_success` / `purchase_cancel` / `purchase_fail`
-- `rewarded_ad_request` / `rewarded_ad_completed` (placement)
-- `tutorial_step_complete` (step_id)
-- `feature_unlocked` (feature_id, session_count)
-- `daily_login` (consecutive_days)
-- `combo_tier_reached` (tier, level_id)
-
-**Aufwand:** 1 Sprint (3-5 Tage)
-**Impact:** Datenbasis fuer alle weiteren Balancing-Entscheidungen.
+**Impact:** Schaltet alle weiteren Live-Ops-Verbesserungen frei (z.B. Boss-Modifier-Chance je Welt ohne Update tunen, Drop-Rate-Adjustments).
 
 ---
 
-### 3. Re-Engagement Push-Trigger
+#### 2. Funnel-Lücken-Audit der Analytics-Calls
 
-**Problem:** Push-Service ist verdrahtet, aber keine Auto-Trigger fuer inaktive Spieler.
+**Status:** 40+ Event-Konstanten in `IAnalyticsService` definiert, Call-Sites in `GameEngine.Level.cs`, `GameEngine.Collision.cs`, `MainMenuViewModel.cs`, `FeatureUnlockChoreographer.cs`, `RewardedAdAnalyticsExtensions.cs`. Vollständigkeit aber nicht durchgängig verifiziert.
 
-**Loesung:** Lokale `NotificationScheduler` (kein Server noetig — Android `AlarmManager` + iOS local-notif-Schedule):
-- **D1-no-return:** "Deine taegliche Belohnung wartet" (24h nach letztem Login, wenn DailyReward nicht abgeholt)
-- **D3-no-return:** "Dein Battle-Pass laeuft in {days} Tagen ab" (nur wenn BP-Tier < Max)
-- **D7-no-return:** "Wir haben dich vermisst! Hier sind 100 Gems" (one-shot, einmal pro Saison)
-- Trigger werden beim App-Background gesetzt, beim Foreground gecancelt
-- Respekt fuer Notification-Settings (DSGVO: Opt-in beim Onboarding)
+**Lösung:** Pro Event prüfen, ob er an allen Game-States feuert:
+- `LevelStart` / `LevelComplete` / `LevelFailed`: in jedem Mode (Story, Survival, Dungeon, BossRush, QuickPlay, Daily, Master) verdrahtet?
+- `BossEncounter` / `BossDefeated`: feuert auch bei Mini-Bossen und Boss-Phase-2?
+- `PurchaseFlowStart/Success/Cancel/Fail`: alle Branches in `AndroidPurchaseService` abgedeckt?
+- `RewardedAdRequest` / `RewardedAdCompleted`: für jede der 28 Placement-IDs?
+- `TutorialStepComplete`: für alle 6 Schritte (später für T1/T2/T3 aus #5)
+- `ComboTierReached`: feuert genau einmal pro Combo-Stufe (kein Spam pro Frame)?
 
-**Aufwand:** 2-3 Tage
-**Impact:** D1-Retention typischerweise +10-15% durch Push.
+**Impact:** Datenbasis für Balancing und Conversion-Analyse wird belastbar.
 
 ---
 
-### 4. Bottom-Tab-Konsolidierung 15 -> 4
+#### 3. Tutorial auf 3 separate Tutorial-Levels
 
-**Problem:** 15 sichtbare Tabs (Modi + Shop + GemShop + BP + League + Collection + Profile + Achievements + Daily + Weekly + Race + Dungeon + LuckySpin). Brawl Stars hat 4 Tabs.
+**Status:** `TutorialService` mit 6 Steps in 3 Phasen (Movement → Bombs → PowerUps) auf Level 1. `TutorialPhase`-Enum + `PhaseChanged`-Event vorhanden.
 
-**Loesung:** 4 Bottom-Tabs:
-- **Home** — Story-Progression + Daily-Dashboard mit Karten (Daily-Challenge, Daily-Race, Lucky-Spin als Cards)
+**Problem:** 6 Schritte in einem Level überfordern Genre-Neulinge.
+
+**Lösung:** 3 geschützte Tutorial-Levels — die 3 Phasen werden zu eigenständigen Mini-Leveln:
+- **T1: Movement** — Nur DPad, keine Bomben. Sammle 5 Coins. Erkläre Tab-Bar.
+- **T2: Bomb-Mechanik** — Bombe legen, Timing, Explosion-Reichweite. Zerstöre 3 Bricks, töte 1 Enemy.
+- **T3: Power-Ups** — Pick-up von Fire+1, Speed+1, Bomb+1. Boss-Lite-Encounter mit telegraphed Attack.
+
+Persistenz: `tutorial_t1_done`, `tutorial_t2_done`, `tutorial_t3_done` Preferences. Nach T3 erster Story-Level. `TutorialStepComplete`-Event pro Schritt prüfen.
+
+**Impact:** D0–D1-Conversion für Genre-Neulinge spürbar besser.
+
+---
+
+#### 4. Bottom-Tab-Konsolidierung 19 → 4
+
+**Status:** `ActiveView`-Enum hat 19 Werte. `IBottomTabHub` Foundation existiert (`IBottomTabHub.cs`), aber MainMenuView (974 LOC) wurde noch nicht refaktoriert.
+
+**Lösung:** 4 sichtbare Bottom-Tabs:
+- **Home** — Story-Progression + Daily-Dashboard mit Karten (Daily-Challenge, Daily-Race, Lucky-Spin)
 - **Spielen** — Quick / Survival / Dungeon / Boss-Rush / Master als Liste mit Hero-Image
 - **Shop** — Coin-Shop / Gem-Shop / Battle-Pass als horizontale Sub-Tabs
 - **Profil** — Achievements / Collection / League / Statistics / Settings als ListView
 
-Side-Loops (Daily-Race, Lucky-Spin, Weekly) bleiben erreichbar, aber als **Karten im Home-Dashboard** statt als eigene Tabs. Mental-Load des Spielers sinkt drastisch.
+`ActiveView`-Enum bleibt für die interne Navigation, nur die sichtbare Tab-Bar wird reduziert.
 
-**Aufwand:** 3-5 Tage (UI-Refactoring)
-**Impact:** Spielbarkeit fuer Neulinge signifikant besser, Conversion-Rate steigt.
-
----
-
-### 5. Tutorial auf 3 Tutorial-Levels
-
-**Problem:** Aktuell 6 Tutorial-Schritte auf Level 1. Genre-Neulinge (nicht-Bomberman-Spieler) verstehen die Tiefe nicht.
-
-**Loesung:** 3 geschuetzte Tutorial-Levels mit Force-Direction-Hints:
-- **T1: Movement** — Nur DPad, keine Bomben. Sammle 5 Coins. Erklaere Tab-Bar.
-- **T2: Bomb-Mechanik** — Bombe legen, Timing, Explosion-Reichweite. Zerstoere 3 Bricks, toete 1 Enemy.
-- **T3: Power-Ups** — Pick-up von Fire+1, Speed+1, Bomb+1. Boss-Lite-Encounter mit telegraphed Attack.
-
-Nach T3: Erster Story-Level mit deutlich reduzierter Schwierigkeit (Soft-Onboarding-Curve).
-
-**Aufwand:** 3-4 Tage (Level-Design + Tutorial-Step-Erweiterung)
-**Impact:** D0-D1-Conversion fuer Genre-Neulinge typisch +20-30%.
+**Impact:** Spielbarkeit für Neulinge signifikant besser, Conversion-Rate steigt.
 
 ---
 
-### 6. Welt-Themed Bomb-FX
+### Tier 2 — Architektur-Hygiene + Engine-Reife
 
-**Problem:** Bombe in Welt 10 (Shadow Realm) hat selben orangen Explosion-Look wie Welt 1.
+#### 5. Microsoft.Extensions.Logging + Crashlytics-Sink
 
-**Loesung:** Lookup-Table im `BombRenderer`:
-```csharp
-private static readonly Dictionary<int, BombFxTheme> WorldFx = new()
-{
-    [1] = new(Inner: 0xFFFF6B35, Outer: 0xFFFFD93D, Spark: 0xFFFFFFFF), // Default
-    [2] = new(Inner: 0xFF8B4513, Outer: 0xFFA0522D, Spark: 0xFFDEB887), // Desert
-    // ... 10 Welten
-};
-```
+**Status:** `AppLogger.LogError(msg, ex)` leitet bereits an `ITelemetryService.LogNonFatal(ex, ctx)` weiter, `BeginScope` mit AsyncLocal-Stack vorhanden. Vollmigration der 53 Services auf `ILogger<T>` per DI fehlt aber.
 
-Jedes Bomb-Place-Event holt sich Theme per `_world.CurrentWorldId`. Same SkSL-Shader, andere Uniforms.
-
-**Aufwand:** 1 Tag
-**Impact:** Welt-Wechsel fuehlt sich endlich neu an, nicht nur ein anderer Hintergrund.
-
----
-
-### 7. ULTRA-Combo Vollbild-Vignette-Flash
-
-**Problem:** Ultra-Combo (x10+) hat Stinger + SlowMo + Subtitle, aber kein "Bildschirm-Bruellen". Bei Vampire Survivors / Risk of Rain ist das der ikonische Moment.
-
-**Loesung:** `UltraComboFlash` Renderer:
-- 1 SkPaint mit RadialGradient (Mitte transparent, Rand voll Farbe)
-- 200ms Animation: Alpha 0 -> 1 in 80ms, dann 1 -> 0 in 120ms
-- Farbe via Welt-Theme (in Shadow-Realm violett, in Desert orange)
-- Trigger ueber `IGameJuiceEmitter.RequestUltraFlash()`
-
-**Aufwand:** Halber Tag (~50 LOC)
-**Impact:** Combo-System fuehlt sich endlich "fertig" an.
-
----
-
-### 8. Adaptive-Icon-Layers + Monochrome-Icon
-
-**Problem:** App-Icon ist single PNG. Android 8+ (alle modernen Geraete) erwarten Foreground+Background separat. Android 13+ Themed Icons brauchen Monochrome-Variante.
-
-**Loesung:**
-- `Resources/mipmap-anydpi-v26/ic_launcher.xml` — Adaptive Layers
-- `mipmap-*/ic_launcher_foreground.png` (alle DPI-Buckets)
-- `mipmap-*/ic_launcher_background.png` (oder XML-Color)
-- `drawable/ic_launcher_monochrome.xml` — Vektor-only, single-color
-
-Tool: Android Studio Image Asset Wizard oder dein eigener `StoreAssetGenerator` erweitert.
-
-**Aufwand:** Halber Tag
-**Impact:** App sieht auf modernen Geraeten endlich nicht mehr "alt" aus.
-
----
-
-### 9. Microsoft.Extensions.Logging + Crashlytics-Sink
-
-**Problem:** `AppLogger` ist 24-LOC `Trace.WriteLine`-Wrapper. Keine Levels, keine Scopes, keine File-Persistierung, keine Filterung.
-
-**Loesung:**
-- `ILogger<T>` ueberall per DI injizieren
+**Lösung:**
+- `ILogger<T>` überall per DI injizieren
 - `LoggerFactory.Create` mit:
   - Android: `Crashlytics`-Sink (Custom-Sink, ~50 LOC)
-  - Desktop: Console + RollingFile (`Serilog.Extensions.Logging` oder `Microsoft.Extensions.Logging.File`)
+  - Desktop: Console + RollingFile (`Microsoft.Extensions.Logging.File`)
 - LogLevels: Trace/Debug nur Debug-Build, Info+ in Production
-- Scopes fuer GameSession (`using (_logger.BeginScope("game={id}", gameId))`)
+- `AppLogger` bleibt als Fassade über `ILogger`, damit existierende Call-Sites schrittweise migrieren
 
-**Aufwand:** 1-2 Tage (53 Services zum Migrieren)
-**Impact:** Crash-Reports endlich mit Kontext. Bug-Reproduktion deutlich schneller.
+**Impact:** Crash-Reports mit Kontext, Bug-Reproduktion deutlich schneller.
 
 ---
 
-### 10. MainViewModel reduzieren (1218 -> 600 LOC)
+#### 6. MainViewModel reduzieren (1302 → ~600 LOC)
 
-**Problem:** `MainViewModel.cs` ist God-VM. Navigation-Hub + Event-Bus + Wirings + Lazy-VM-Management in einer Klasse.
+**Status:** `MainViewModel.cs` 1302 LOC. `GameEventBus` existiert. Onboarding + Dashboard sind Partial-Class-Splits, aber nicht als eigene VMs extrahiert. `NavigationHub` und `LazyVmRegistry` fehlen.
 
-**Loesung:**
-- `NavigationHub` (eigene Klasse, nur Routing-Logik + ActiveView-Enum)
-- `GameEventBus` (Pub/Sub fuer FloatingText/Celebration/ExitHint/Message)
+**Lösung:**
+- `NavigationHub` (eigene Klasse, nur Routing-Logik + `ActiveView`-Enum-Übergänge)
 - `LazyVmRegistry` (verwaltet `EnsureXxxVm()`-Methoden, public Property-Bag)
-- `MainViewModel` bleibt nur als Komposit + INavigable + Constructor-Injection
-- Onboarding + Dashboard sind bereits extrahiert — gleichen Pattern fuer alle anderen Bereiche
+- `DashboardViewModel` + `OnboardingViewModel` als echte Klassen aus den Partial-Splits extrahieren
+- `MainViewModel` bleibt nur als Komposit + INavigable + Constructor-Injection für NavigationHub/EventBus/LazyVmRegistry
 
-**Aufwand:** 2-3 Tage
-**Impact:** Weniger Bug-Risiko bei Aenderungen, neue Features ohne God-VM-Anfassen.
-
----
-
-## Tier 2 — Mittelfristig (1-3 Monate, Code-only)
-
-### 11. GameEngine Mode-Plugin-Migration abschliessen
-
-**Problem:** `_isStoryMode`, `_isSurvivalMode`, `_isDungeonMode` etc. laufen parallel zu `_currentMode`. IGameMode-Pattern angelegt, aber Logik noch verstreut. 30+ Property-Aliasse fuer DungeonMode-State sind technische Schuld.
-
-**Loesung:**
-- Jeder Mode (`StoryMode`, `SurvivalMode`, `DungeonMode`, `BossRushMode`, `QuickPlayMode`, `DailyChallengeMode`, `DailyRaceMode`, `MasterMode`) wird volle `IGameMode`-Implementierung
-- `IGameMode` Interface bekommt: `Initialize`, `OnLevelStart`, `OnEnemyKilled`, `OnBombExploded`, `OnPlayerHit`, `OnLevelComplete`, `OnGameOver`, `GetScoreModifier`
-- GameEngine ruft nur `_currentMode.OnXxx()` auf, kein `if (_isStoryMode) ... else if (_isDungeon)` mehr
-- Mode-spezifische State-Properties wandern in den Mode
-
-**Aufwand:** 2-3 Wochen (Risiko: Regression-Tests muessen ueberall durchlaufen)
-**Impact:** Neue Modi ohne Engine-Touch hinzufuegen, technische Schuld weg.
+**Impact:** Weniger Bug-Risiko bei Änderungen, neue Features ohne God-VM-Anfassen.
 
 ---
 
-### 12. FixedTimestep + DeterministicRandom integrieren
+#### 7. GameEngine Mode-State-Properties verlagern
 
-**Problem:** Foundation steht (`FixedTimestepRunner.cs`, `DeterministicRandom.cs`, `ReplayCapture.cs`), aber nicht integriert. Replay-System und Anti-Cheat bleiben blockiert.
+**Status:** Mode-Bool-Flags sind bereits Computed Properties auf `_currentMode`. DungeonMode-Aliasse via `DungeonModeState`-Property delegieren. **Restschuld:** `IGameMode.UpdateLogic` und `OnLevelComplete`-Hooks werden NICHT aus dem Engine-Loop gerufen — Bool-Flag-Branches sind live.
 
-**Loesung:**
-- GameEngine.Update mit Accumulator: `while (accumulator >= FixedDt) { Tick(FixedDt); accumulator -= FixedDt; }`
-- Render-Interpolation: `float alpha = accumulator / FixedDt;` fuer Sprite-Position-Smoothing
-- Alle `Random.Next` durch `_rng.Next` ersetzen (RngProvider zentral)
-- Replay-Capture: 1 Byte pro Tick (Input-Bitmask) + Seed → vollstaendig deterministisch reproduzierbar
-- Replay-Replay-Validation als Test: 100 zufaellige Replays werden 100x abgespielt und muessen identisches Ergebnis liefern
+**Lösung:**
+- `_currentMode?.UpdateLogic(deltaTime, ctx)` in `GameEngine.Update`
+- `_currentMode?.OnLevelComplete(ctx)` in `GameEngine.CompleteLevel`
+- `_currentMode?.OnGameOver(ctx)` in `GameEngine.GameOver`
+- Jeder Mode bekommt eigene State-Felder (analog DungeonMode-Pattern)
+- GameEngine-Branches `if (_isStoryMode) ...` durch `_currentMode.OnXxx()`-Dispatch ablösen
 
-**Aufwand:** 2 Wochen
-**Impact:** Replay-System (Best-of-Day-Replays als Spielanreiz), Anti-Cheat-Validierung fuer League moeglich.
-
----
-
-### 13. Adaptive Music-Engine (mit existierenden Tracks)
-
-**Problem:** Audio-Engine kann adaptive Layered Music, aber Tracks sind komplett (kein Stem-Splitting). Du kannst keinen externen Composer beauftragen.
-
-**Loesung mit Bordmitteln:**
-- **EQ-Sidechain auf Drum-Frequenzen:** Bei Combat lass Sub-Bass + Drum-Frequenzen (60-200 Hz) lauter, bei Erkundung leiser. Funktioniert via `AudioBus` EQ.
-- **Layered Stinger:** Wenn Combat startet, layer ein Drum-Loop (kurzer Kenney-Loop) UEBER die Welt-Musik. Bei Combat-Ende: Drum-Loop fadet aus.
-- **Tempo-Pitch-Shift:** Bei Last-Enemy/Last-10-Seconds: Welt-Musik wird via `SoundTouch` (NuGet) +1 Semitone und +5% BPM gepitcht. Spannungseffekt.
-- **LUFS-Mastering-Pass:** `ffmpeg -i in.ogg -af loudnorm=I=-16:TP=-1:LRA=11 out.ogg` als Bash-Skript fuer alle Tracks. Loest Lautstaerke-Spruenge.
-
-**Aufwand:** 3-5 Tage
-**Impact:** Auch ohne Composer fuehlt sich Musik dynamischer an. LUFS-Pass loest hoerbares Welt-Wechsel-Problem.
+**Impact:** Neue Modi ohne Engine-Touch, technische Schuld weg.
 
 ---
 
-### 14. Outline-Pass im Renderer
+#### 8. FixedTimestep + DeterministicRandom in den Haupt-Tick integrieren
 
-**Problem:** Inkonsistente Art-Styles (Vektor-Player + AI-WebP-Bosse + AI-WebP-Enemies) sehen aus wie drei verschiedene Spiele in einem Frame.
+**Status:** `FixedTimestepRunner`, `DeterministicRandom`, `ReplayCapture` als Klassen vorhanden. `IRngProvider` DI-registriert mit `DeterministicRngProvider`. **GameEngine.Update nutzt sie noch nicht für den Haupt-Tick.**
 
-**Loesung:** SkSL-Shader `outline.sksl`:
-- Sample Alpha bei 8 Pixel-Offsets um aktuelles Pixel
-- Wenn aktuelles Pixel transparent UND mindestens 1 Nachbar opak → Outline-Color
-- Outline-Color = `0xFF0A0A0F` (sehr dunkel), Outline-Breite konfigurierbar via Uniform
+**Lösung:**
+- `GameEngine.Update` mit Accumulator-Pattern: `while (accumulator >= FixedDt) { Tick(FixedDt); accumulator -= FixedDt; }`
+- Render-Interpolation: `float alpha = accumulator / FixedDt;` für Sprite-Position-Smoothing
+- Alle engine-internen `Random.Shared` durch `_rng.Next` ersetzen (LevelGenerator/EnemyAI haben noch viele Direct-Calls)
+- Replay-Capture: 1 Byte pro Tick (Input-Bitmask) + Seed → vollständig deterministisch reproduzierbar
+- Replay-Validation als Test: 100 zufällige Replays werden 100 × abgespielt und müssen identisches Ergebnis liefern
 
-Anwendung: Per-Entity-Toggle `Entity.RenderOutline = true`. PowerUps + Bosse + Enemies + Player bekommen Outline → vereinheitlicht.
-
-**Aufwand:** 1-2 Tage
-**Impact:** Optische Konsistenz signifikant besser, ohne Assets neu zu zeichnen.
-
----
-
-### 15. Mehr Bosse und Enemies aus existierender Engine
-
-**Problem:** 5 Boss-Typen, 12 Enemy-Typen. Brawl Stars hat ~30 in einem Showdown-Event-Run.
-
-**Loesung (Code-only, vorhandene Art-Assets recyceln):**
-- **Elite-Varianten:** Jeder bestehende Enemy bekommt eine Elite-Version (1.5x HP, +20% Speed, lila Outline, 3x Coins). 12 -> 24 Enemy-Typen.
-- **Boss-Varianten:** Jeder Boss-Typ bekommt Phase-2-Variante mit anderem Attack-Pattern (gleiche Sprite, andere Telegraph-Color). 5 -> 10 Bosse.
-- **Mini-Bosse zwischen Welten:** L10/L20/L30 etc. — Mini-Boss mit reskinned-Enemy-Sprite und neuer AI. Statt 10 → 20 Encounter.
-- **Boss-Modifier-System:** Boss bekommt 1 von 8 Modifiern (Shielded, Fast, Healing, Summoner, …). 5 Bosse x 8 Modifier = 40 Boss-Variationen.
-
-**Aufwand:** 2-3 Wochen
-**Impact:** Gefuehltes Content-Volumen verdoppelt, ohne neue Assets.
+**Impact:** Replay-System (Best-of-Day-Replays als Spielanreiz), Anti-Cheat-Validierung für League.
 
 ---
 
-### 16. Mini-Story-Beats pro Welt
+### Tier 3 — Content + Erweiterungen
 
-**Problem:** "Welt freischalten" ist keine Motivation. Wo ist das Why?
+#### 9. Boss-Phase-2 Attack-Pattern-Variation
 
-**Loesung (Code-only):**
-- 1 Cutscene pro Welt-Start (Welt 1-10): 2 Saetze Text + Standbild aus existierenden Asset-Bitmaps + Stinger-SFX
-- Cutscene-Engine = `CinematicSequencer` (existiert bereits)
-- Texte lokalisiert in RESX (6 Sprachen)
-- Beispiel: "Die Wueste flimmert. Ein alter Bombenleger ruht hier seit 100 Jahren. Wecke ihn nicht."
-- Nach Welt-Boss: 1 Outro-Cutscene mit Cliffhanger zur naechsten Welt
+**Status:** `BossEnemy.CurrentPhase = 2` wird beim Enrage gesetzt. Aber Attack-Patterns sind identisch zu Phase 1 (keine Variation in Telegraph-Farbe, AttackTargetCells-Muster).
 
-**Aufwand:** 1 Woche (Schreiben + Lokalisierung + Integration)
-**Impact:** Spieler bekommen Story-Kontext. Skip-Button respektiert Hardcore-Spieler.
+**Lösung pro Boss-Typ:**
+- StoneGolem: Phase 2 wirft 2 Blöcke statt 1
+- IceDragon: Phase 2 friert 2 Reihen (eine vor, eine nach Spieler-Position)
+- FireDemon: Phase 2 Lava auf 3/4 statt halben Boden
+- ShadowMaster: Phase 2 Teleport + 2 Schattenklone statt 1
+- FinalBoss: Phase 2 rotiert alle 4 Angriffe in halber Zeit
 
----
-
-### 17. "What's New"-Modal nach App-Update
-
-**Problem:** Spieler sehen nicht, was du veroeffentlicht hast.
-
-**Loesung:**
-- `WhatsNewService` mit lokaler JSON `WhatsNew_2.0.57.json` (Title + 3-5 Bullets + Hero-Image-Path)
-- Beim App-Start: Vergleiche `LastSeenVersion` Pref mit aktueller Version → wenn neuer, zeige Modal
-- Modal hat "Spaeter" + "Verstanden" Buttons, deaktiviert durch Tap-Outside
-- Auto-Version aus `Assembly.GetExecutingAssembly().GetName().Version` (loest auch das `AppVersion = "v2.0.56"`-Hardcoded-Problem)
-
-**Aufwand:** 2 Tage
-**Impact:** Spieler wissen, dass das Spiel lebt. Update-Conversion + Retention besser.
+**Impact:** Bosse fühlen sich nach Enrage wirklich anders an, nicht nur schneller.
 
 ---
 
-### 18. Player i-Frame Visualisierung
+#### 10. Mini-Bosse zwischen Welten (L5/L15/L25/...)
 
-**Problem:** Player wird getroffen → harter Cut. AAA-Standard ist 200ms i-Frames mit Sprite-Blink + Vignette-Flash.
+**Status:** Aktuell Boss nur alle 10 Level (L10, L20, ..., L100). Dazwischen Standard-Level.
 
-**Loesung:**
-- `Player.IsInvincible = true` fuer 800ms nach Hit
-- `Player.RenderAlpha` toggelt zwischen 0.3 und 1.0 alle 80ms (10 Blinks)
-- Roter Vignette-Flash am Bildschirmrand (gleiche Mechanik wie Ultra-Combo-Flash, andere Farbe)
-- Sound: "hurt.ogg" + leichtes Hit-Pause (80ms)
-- Bei Re-Hit waehrend i-Frame: ignoriert (kein Insta-Death durch Doppel-Explosion)
+**Lösung:**
+- Mid-World Mini-Boss bei L5, L15, ..., L95
+- Reskinned bestehende BossEnemy mit 50% HP + neuer Modifier-Roll
+- Halbierte Boss-Points
+- `LevelLayoutGenerator.IsMiniBossLevel(n)` mit Modulo-5-und-nicht-10-Check
+- `LevelGenerator.SpawnBossAtPosition` mit `miniBoss: true`-Param
 
-**Aufwand:** 1 Tag
-**Impact:** Spieler fuehlen sich respektiert, weniger frustrierende Death-Loops.
-
----
-
-### 19. Anticipation-Frames fuer Big-Actions
-
-**Problem:** Bomb-Place geht sofort. AAA-Pattern: 80ms "wind-up" wo Player-Sprite sich zusammenzieht, bevor Bomb-Place auslöst.
-
-**Loesung:**
-- Bomb-Place: 80ms Player-Squash-Animation (vertikal stauchen, horizontal strecken) -> dann Bomb spawnt
-- Boss-Big-Attack: 120ms Anticipation (Boss-Sprite zieht sich zurueck) -> dann Attack
-- Beide via existierende Easing-Library
-
-**Aufwand:** Halber Tag
-**Impact:** Spiel fuehlt sich "schwerer" und befriedigender an.
+**Impact:** Gefühltes Content-Volumen verdoppelt — 10 Boss-Encounter → 20 pro Story.
 
 ---
 
-### 20. Feature-Unlock-Choreographie
+#### 11. WhatsNew + WorldStory UI-Modals bauen
 
-**Problem:** Spieler sieht nicht, wann welcher Tab freigeschaltet wird.
+**Status:**
+- `IWhatsNewService` + `WhatsNewViewModel` fertig — **View fehlt**
+- `IWorldStoryService` mit 10 Intros + 9 Outros + RESX in 6 Sprachen — **Renderer/Modal fehlt**
 
-**Loesung:**
-- `IFeatureUnlockChoreographer` mit Events: `OnLevelComplete`, `OnAchievementUnlocked`
-- Bei Trigger (z.B. L20 erreicht): Vollbild-Overlay "NEU: Dungeon Mode freigeschaltet!" mit grossem Icon + Stinger-SFX + 1500ms Auto-Close + "Jetzt entdecken"-CTA
-- Feature-Unlock-Queue (wenn 2 Features gleichzeitig freischalten, hintereinander zeigen)
-- Per Pref-Flag: jedes Feature-Unlock-Overlay wird nur einmal gezeigt
+**Lösung:**
+- `WhatsNewView.axaml` (Avalonia UserControl, Compiled Bindings, x:DataType=WhatsNewViewModel) in MainView eingebettet via Overlay-Aggregat
+- `WorldStoryView.axaml` mit Skip-Button + Standbild + 2 Sätze Text + Stinger-SFX-Trigger
+- GameEngine.Level.cs triggert Intro vor WorldAnnouncement, Outro nach Boss-Kill
+- `IsAnyOverlayOpen`-Aggregat um WhatsNew + WorldStory erweitern (Hit-Test)
 
-**Aufwand:** 2-3 Tage
-**Impact:** Progressives Reveal statt Information-Overload am Tag 1.
-
----
-
-## Tier 3 — Langfristig (3-6 Monate, Code-only)
-
-### 21. Hero/Character-System
-
-**Konzept:** 3-5 spielbare Charaktere mit unterschiedlichen Start-Stats. Mit existierender Player-Engine moeglich, nur Sprite-Variation + Stat-Sheets.
-
-**Charaktere (Beispiel):**
-- **Default-Bomber:** Stats: Speed 2, Fire 2, Bombs 1 (Status quo)
-- **Speedy Sam:** Speed 3, Fire 1, Bombs 1, +5% Coin-Pickup
-- **Brick-Boris:** Speed 1, Fire 3, Bombs 2, -1 Start-Heart, +10% Block-Drop
-- **Twin-Tina:** Speed 2, Fire 1, Bombs 2, Bombs zuenden ein-zweimal nacheinander
-- **Lucky-Lola:** Speed 2, Fire 2, Bombs 1, +20% PowerUp-Drop-Chance
-
-Jeder Charakter hat eigene Combo-Quote + eigene Cosmetic-Slots. Unlock via Achievement oder Gem-Kauf.
-
-**Aufwand:** 3-4 Wochen
-**Impact:** Replayability + Monetization + Identifikations-Anker.
+**Impact:** WhatsNew zeigt Patch-Notes nach Update. WorldStory gibt Story-Kontext pro Welt.
 
 ---
 
-### 22. 2P-Local-Co-Op
+#### 12. Card-Crafting UI
 
-**Konzept:** Foundation steht in `Core/Multiplayer/` (Player2, InputBuffer, GameStateSnapshot). Lokal-Splitscreen oder Shared-Screen-Co-Op.
+**Status:** Service-API für Crafting (5C+2.000C→1R, 5R+8.000C→1E, 5E+25.000C→1L) im `CardService` als Coin-Sink dokumentiert, UI fehlt.
 
-**Modi:**
-- **Splitscreen** (Desktop): Linker Player WASD+Space, rechter Player Pfeiltasten+Enter
-- **Shared-Screen** (Mobile): Beide Spieler auf einem Geraet (P1 linke Bildschirm-Haelfte, P2 rechte), wenn beide ein Gamepad anschliessen
-- **Co-Op-Modi:** Story-Co-Op (geteilte Hearts), Survival-Co-Op (geteiltes Score-Leaderboard), Dungeon-Co-Op
-- **PvP-Modus:** Klassischer Bomberman-PvP, last-bomber-standing
+**Lösung:**
+- `CraftingView.axaml` als Sub-View in DeckView mit Slot-Vorschau, Cost-Anzeige, Recipe-Buttons
+- RESX-Keys in 6 Sprachen
+- Bestätigungs-Dialog vor Crafting (Coin-Konsum + Karten-Konsum)
 
-**Aufwand:** 4-6 Wochen
-**Impact:** Social-Loop ohne Server. Lokal-Multiplayer ist USP vs. den meisten Mobile-Games.
+**Impact:** Coin-Sink für Endgame, Common-/Rare-Cards bekommen Wert.
 
 ---
 
-### 23. Clan-System (Asynchron, Firebase-basiert)
+#### 13. Hero/Character-Trait-Effekte verkabeln
 
-**Konzept:** Keine Live-Sync, keine Server-Infrastruktur. Nur Firebase-Realtime-Database wie League.
+**Status:** `IHeroService` + 5 Heroes + `ApplyHeroStats()` für Start-Stats aktiv. Spezial-Traits (DoubleDetonation/LuckyDrops/DemolitionExpert/QuickPocket) wirken noch nicht im Gameplay.
 
-**Features:**
-- Spieler erstellt Clan (10 Member max) oder tritt bei (via 6-stelliger Code)
-- Clan-Wochenziel: "Sammelt 10.000 Coins gemeinsam" → Belohnung fuer alle Member
-- Clan-Leaderboard (Top 10 globale Clans)
-- Clan-Chat **asynchron** (alle 30s Pull, kein Realtime-Sync) — 50 letzte Messages, Profanity-Filter
-- Clan-Helfen: Member kann Bomb-Card "spenden" (1x pro Tag)
-- Profanity-Filter + Report-Button (existiert bereits aus League)
+**Lösung:**
+- `Trait == DoubleDetonation`: Bomb explodiert + spawnt nach 0.5s Sekundär-Explosion am selben Ort
+- `Trait == LuckyDrops`: Drop-Roll in `BlockDestroyed` × `PowerUpDropMultiplier`
+- `Trait == DemolitionExpert`: Block-Drop-Chance + `BlockDropChanceBonus` (additiv)
+- `Trait == QuickPocket`: CoinService.AddCoins × `CoinPickupMultiplier`, kein Speed-Penalty bei Curse.Slow
 
-**Aufwand:** 4-6 Wochen
-**Impact:** Retention-Multiplier (Spieler kommen wieder, weil Clan-Goal laeuft).
+**Impact:** Heroes bekommen mechanische Differenzierung, nicht nur Start-Stats.
 
 ---
 
-### 24. Wochentlicher Content-Drop-Pipeline
+#### 14. Clan-System (Firebase scharfschalten)
 
-**Konzept:** Du allein als Solo-Dev kannst keinen woechentlichen Drop in Asset-Volumen schaffen. Aber du kannst die Pipeline + Tooling so bauen, dass jede Woche etwas Neues lebt.
+**Status:** `NullClanService` aktiver Default. `FirebaseClanService` existiert teilweise, ist aber nicht als Default registriert. Domain-Models (ClanData, ClanMember, ClanChatMessage) komplett.
 
-**Loesung:**
-- **Wochen-Modifier:** Jede Woche eine neue Mutator-Kombination (z.B. Woche 23: "Ice + Speed-Drain"). Existierende Mutatoren randomisiert.
-- **Wochen-Layout:** 1 hand-designed Map pro Woche (du selbst, in 1-2h). 52 Maps/Jahr.
-- **Wochen-Lucky-Spin-Reward:** 1 limitiertes Cosmetic pro Woche (recyceltes Frame mit neuer Farb-Variation, Code-generiert).
-- **Wochen-Boss-Encounter:** Existierender Boss mit neuem Modifier-Set + reskinned Color.
-- Alles ueber **Remote Config + JSON-Definitionen** auslieferbar, ohne App-Update.
+**Lösung:**
+- App.axaml.cs `ClanServiceFactory` auf `FirebaseClanService` umstellen (Android-only, Desktop bleibt Null)
+- Profanity-Filter aus `LeagueService` recyceln
+- `database.rules.json` um `/clans/{clanId}` mit Rate-Limit + Member-Cap
+- Multi-Path-Updates für Member-Beitritte (atomar)
+- Asynchroner Pull (30s) wie geplant
 
-**Aufwand:** Initial 2 Wochen (Pipeline), dann 2-4h/Woche
-**Impact:** Spiel wirkt lebendig, Daily-Active-User-Rate steigt.
-
----
-
-### 25. Splash-Crash-Recovery
-
-**Problem:** Wenn `App.axaml.cs` crasht, sieht User Black-Screen. Spielt nicht mehr.
-
-**Loesung:**
-- `app_crash_count` Preference, inkrementiert vor jeder Initialisierung, decrementiert nach erfolgreichem Splash
-- Bei `crash_count >= 3` → Reset-Dialog: "Es scheint ein Problem zu geben. Spielfortschritt zuruecksetzen?" mit "Nein, weiter versuchen" + "Ja, zuruecksetzen"
-- Try/Catch um `InitializeAsync` mit Crashlytics-Report bei Exception
-- Safe-Mode: Minimal-Initialisierung ohne optional Services (Firebase, Ads, Audio) → mindestens Settings + Account-Delete erreichbar
-
-**Aufwand:** 2 Tage
-**Impact:** Spiel ist nach Crash-Loop noch rettbar statt deinstalliert.
+**Impact:** Retention-Multiplier durch Clan-Goals.
 
 ---
 
-## Sofort-Backlog (Pre-Commit-Hygiene)
+### Tier 4 — Audio + Premium-Erweiterungen
 
-Diese Punkte sind klein genug fuer einen einzigen Sprint und kosten dich Stunden, nicht Tage:
+#### 15. Adaptive Music komplett (SoundTouch + LUFS + Layered Stinger)
 
-- **Splash-Versions-String automatisieren:** `Assembly.GetExecutingAssembly().GetName().Version.ToString(3)` statt `"v2.0.56"` hardcoded
-- **`AppLogger.cs` durch `ILogger<T>` ersetzen** (Tier 1 Punkt 9)
-- **30+ DungeonMode-Property-Aliasse aufloesen** (Teil von Tier 2 Punkt 11)
-- **`RemoteConfig` als `NullRemoteConfigService` Stub anlegen**, schon mal die Properties definieren — auch wenn Firebase-Integration spaeter kommt
-- **Empty-State-Polish:** Achievements-Tab "0/66" sollte illustriertes Empty-State mit "Spiele dein erstes Level"-CTA haben
-- **MaterialIconStyles-Registry-Check:** Stelle sicher, dass alle 6 Sprachen RESX-Komplett sind (du hast den Skill `localize-check` dafuer)
+**Status:** `AudioBusMixer.Boost(bus, multiplier, duration)` Pfad da. Music-Boost-Trigger bei Last-Enemy-Drama und ULTRA-Combo. **Fehlt:** EQ-Sidechain auf Drum-Frequenzen, Tempo-Pitch-Shift bei Last-10s, LUFS-Mastering.
+
+**Lösung mit Bordmitteln:**
+- **EQ-Sidechain auf Drum-Frequenzen** (60–200 Hz): Bei Combat lauter, bei Erkundung leiser. Über `AudioBusMixer`-EQ ergänzen.
+- **SoundTouch.Net** NuGet: Bei Last-Enemy / Last-10-Seconds +1 Semitone und +5% BPM.
+- **Layered Stinger:** Combat-Start layer ein Drum-Loop (Kenney CC0) über die Welt-Musik. Bei Combat-Ende fadet Drum-Loop aus.
+- **LUFS-Mastering-Pass:** `ffmpeg -i in.ogg -af loudnorm=I=-16:TP=-1:LRA=11 out.ogg` als Bash-Skript für alle Tracks.
+
+**Impact:** Musik dynamischer. LUFS-Pass löst hörbares Welt-Wechsel-Problem.
+
+---
+
+#### 16. BattlePassPlus + VIP-Subscription-IAP scharfschalten
+
+**Status:** `IBattlePassPlusService` + `IVipSubscriptionService` Code-Foundation. IAP-Console-Setup (Product-IDs `battle_pass_plus_season`, `vip_monthly`) + Server-Validation deferred.
+
+**Lösung:**
+- Google Play Console: SKUs anlegen
+- BillingClient-Wiring in AndroidPurchaseService um Subscription-Branch erweitern (Subscriptions API v3)
+- Server-Validation deferred (kein eigener Server) — nutze stattdessen Google Play Receipt-Verification offline (`InAppPurchase.purchaseState`)
+
+**Impact:** Premium-Revenue-Stream zusätzlich zu remove_ads.
+
+---
+
+#### 17. 2P-Co-Op (echte Engine-Integration)
+
+**Status:** Engine-Foundation komplett (`Player2`, `UpdatePlayer2Movement`, `MultiplayerSpawnPositions`, `MultiplayerSessionService`). **Fehlt:** UI/Joystick für Spieler 2 (Split-Screen-Control oder Dual-Stick), Co-Op-Camera-Zoom, GameOver-Bedingung „beide tot", Co-Op-Score-Aggregat.
+
+**Lösung:**
+- Avalonia-View mit 2 NeonJoystick-Instanzen (oben rechts für P2)
+- Bomb-Button-Layout an Touch-Verteilung anpassen (P1 unten links, P2 unten rechts)
+- `GameViewModel.CoopActive` Property + UI-Toggle
+- 2P-Score-HUD im rechten Panel
+
+**Impact:** Couch-Co-Op = großer Marketing-Hook für Friends-Mode.
 
 ---
 
 ## Was bewusst NICHT in diesem Audit ist
 
-Aufgrund deiner Vorgabe (Solo-Dev, kein externes Budget, kein Server):
+Aufgrund der Vorgabe (Solo-Dev, kein externes Budget, kein Server):
 
-- ~~Composer-Beauftragung~~ (-> stattdessen: Adaptive Music-Engine mit existierenden Tracks, Punkt 13)
-- ~~Voice-Acting~~ (-> kein adaequater Code-only-Ersatz, akzeptiere "kein Voice")
-- ~~Art-Direction-Audit durch Artist~~ (-> stattdessen: Outline-Pass-Shader, Punkt 14)
-- ~~Hand-pixel-Sprite-Animation~~ (-> stattdessen: bestehende prozedurale Sin-Wippe behalten, Squash & Stretch ausbauen)
-- ~~Live-PvP via Pi-Server~~ (-> stattdessen: 2P-Local-Co-Op, Punkt 22)
-- ~~Server-side-Anti-Cheat~~ (-> stattdessen: Client-side Determinismus via FixedTimestep, Punkt 12)
-
----
-
-## Priorisierte Roadmap
-
-### Sprint 1 (1 Woche)
-- Welt-Themed Bomb-FX (#6)
-- Ultra-Combo-Flash (#7)
-- Adaptive-Icon-Layers (#8)
-- Splash-Version-Auto + Empty-State-Polish (Backlog)
-
-### Sprint 2 (2 Wochen)
-- Firebase Remote Config (#1)
-- Funnel-Event-Telemetrie (#2)
-- Re-Engagement-Push (#3)
-
-### Sprint 3 (1-2 Wochen)
-- Bottom-Tab-Konsolidierung (#4)
-- Tutorial-Erweiterung (#5)
-- Player i-Frame + Anticipation-Frames (#18, #19)
-
-### Sprint 4 (2 Wochen)
-- ILogger-Migration (#9)
-- MainViewModel-Reduktion (#10)
-- "What's New"-Modal (#17)
-- Feature-Unlock-Choreographie (#20)
-
-### Sprint 5-7 (4-6 Wochen)
-- GameEngine Mode-Plugin-Migration (#11)
-- FixedTimestep + DeterministicRandom (#12)
-- Adaptive Music-Engine (#13)
-- Outline-Pass (#14)
-
-### Sprint 8-10 (6-8 Wochen)
-- Mehr Bosse/Enemies (#15)
-- Mini-Story-Beats (#16)
-- Splash-Crash-Recovery (#25)
-
-### Sprint 11+ (3-6 Monate)
-- Hero/Character-System (#21)
-- 2P-Local-Co-Op (#22)
-- Clan-System (#23)
-- Wochen-Content-Pipeline (#24)
+- ~~Composer-Beauftragung~~ → Adaptive Music-Engine mit existierenden Tracks (#15)
+- ~~Voice-Acting~~ → kein adäquater Code-only-Ersatz, akzeptiere „kein Voice"
+- ~~Art-Direction-Audit durch Artist~~ → Outline-Pass-Shader (erledigt v2.0.57)
+- ~~Hand-pixel-Sprite-Animation~~ → prozedurale Squash & Stretch (erledigt)
+- ~~Server-side-Anti-Cheat~~ → Client-side Determinismus via FixedTimestep (#8)
 
 ---
 
-## Erwartete Bewertung nach voller Roadmap-Umsetzung
+## Abarbeitungs-Reihenfolge (v2.0.58 → v2.0.62)
 
-| Achse | Heute | Nach Tier 1 | Nach Tier 2 | Nach Tier 3 |
-|-------|-------|-------------|-------------|-------------|
-| Engine-Architektur | 8.5 | 8.5 | 9.5 | 9.5 |
-| Performance | 9 | 9 | 9.5 | 9.5 |
-| Game Feel / Juice | 8.5 | 9 | 9.5 | 9.5 |
-| Audio (technisch) | 6 | 6 | 7.5 | 7.5 |
-| Visuals (Engine) | 6 | 6.5 | 7.5 | 8 |
-| Content-Volumen | 5 | 5 | 6.5 | 8 |
-| Live-Ops | 6 | 9 | 9 | 9.5 |
-| UX/UI | 6 | 8 | 8.5 | 9 |
-| Architektur-Hygiene | 8 | 8.5 | 9 | 9 |
-| **Gesamt** | **7.0** | **7.7** | **8.4** | **8.8** |
+**Block A — Content + UI-Polish (Release-Kandidat v2.0.58)**
+1. Boss-Phase-2 Attack-Pattern-Variation (#9)
+2. WhatsNew + WorldStory UI-Modals (#11)
+3. Mini-Bosse zwischen Welten (#10)
+4. Card-Crafting UI (#12)
+5. Hero-Trait-Effekte verkabeln (#13)
+6. Outline-Pass Konsistenz-Check (alle Sprites)
 
-**Ehrliche Decke ohne externes Budget: 8.5-8.8/10.** Das ist eine Stufe ueber "Premium Indie" und in Sichtweite von AAA-Mobile-Mid-Tier. Den Sprung auf 9.5+ (Brawl-Stars-Niveau) gibt es nicht ohne Audio/Art-Investment — und das ist auf deinem Wunsch ausgeklammert.
+**Block B — Engine-Reife (Release-Kandidat v2.0.59)**
+7. FixedTimestep + DeterministicRandom-Migration (#8)
+8. IGameMode-Hooks aus Engine-Loop (#7)
+9. ILogger-Pilot-Migration 10 Services (#5)
+
+**Block C — Live-Ops (Release-Kandidat v2.0.60)**
+10. Firebase Remote Config (#1)
+11. Funnel-Lücken-Audit (#2)
+12. 3 separate Tutorial-Levels (#3)
+
+**Block D — UX-Refactor (Release-Kandidat v2.0.61)**
+13. Bottom-Tab-Konsolidierung (#4)
+14. MainViewModel-Reduktion (#6)
+
+**Block E — Audio + Premium (Release-Kandidat v2.0.62)**
+15. Adaptive Music komplett (#15)
+16. BattlePassPlus + VIP-IAP (#16)
+17. Clan-System Firebase scharfschalten (#14)
+
+**Block F — Major-Feature (separate Release-Reihe)**
+18. 2P-Co-Op Engine-Integration (#17)
 
 ---
 
-## Schluss-Empfehlung
+## Erwartete Bewertung nach voller Umsetzung
 
-**Starte mit Sprint 1 sofort.** Die 4 Punkte sind alle <1 Tag und liefern sichtbare Verbesserung in der naechsten Production-Version. Danach Sprint 2 (Remote Config + Telemetry) — das gibt dir Datenbasis, um Sprint 3 (Tab-Konsolidierung) datengestuetzt zu entscheiden statt aus dem Bauch.
+| Achse | v2.0.57 heute | Nach Block A+B | Nach Block C+D | Nach Block E+F |
+|-------|---------------|----------------|----------------|----------------|
+| Engine-Architektur | 8.5 | 9.5 | 9.5 | 9.5 |
+| Performance | 9 | 9.5 | 9.5 | 9.5 |
+| Game Feel / Juice | 9 | 9.5 | 9.5 | 9.5 |
+| Audio (technisch) | 6.5 | 6.5 | 6.5 | 7.5 |
+| Visuals (Engine) | 7 | 7.5 | 7.5 | 8 |
+| Content-Volumen | 6 | 8 | 8 | 8.5 |
+| Live-Ops | 7 | 7 | 9 | 9.5 |
+| UX/UI | 6 | 7 | 9 | 9 |
+| Architektur-Hygiene | 8 | 9 | 9.5 | 9.5 |
+| **Gesamt** | **7.4** | **8.2** | **8.7** | **9.0** |
 
-Nach 4 Wochen Tier-1-Arbeit hast du das Spiel von 7.0 auf 7.7 geschoben — das ist die Stufe, die viele bezahlte Studios nie erreichen. Tier 2 + Tier 3 baust du dann mit ruhiger Hand ueber die naechsten 6-12 Monate.
+**Ehrliche Decke ohne externes Budget: 8.8–9.0/10.** In Sichtweite von AAA-Mobile-Mid-Tier. Der Sprung auf 9.5+ (Brawl-Stars-Niveau) gibt es nicht ohne Audio-/Art-Investment.
+
+---
+
+## Definition of Done (pro Block)
+
+Bevor ein Block als „erledigt" markiert und ein Release rausgeht, muss zwingend gelten:
+
+- Build grün auf Solution-Ebene (`dotnet build F:\Meine_Apps_Ava\MeineApps.Ava.sln`)
+- AppChecker grün für BomberBlast (`dotnet run --project tools/AppChecker BomberBlast`)
+- MVVM-Check sauber (kein Code-Behind außer Generated, Compiled-Bindings, keine View→VM-Direct-Refs)
+- RESX-Vollständigkeit über alle 6 Sprachen für neue Strings (`/skill localize-check`)
+- Manuelle Smoke-Tests auf Android-Gerät: Startup, Tutorial, Story-Level 1, Bomb-Place, Shop öffnen, Settings
+- Crashlytics-Counter unverändert nach Smoke-Tests
+- Telemetry-/Analytics-Events feuern wie spezifiziert (über Logcat verifiziert)
+- Version-Bump in `BomberBlast.Shared.csproj` (`<Version>`) und Android-Manifest (`versionCode` / `versionName`)
+- `WhatsNewService.GetEntries()` um den neuen `switch`-Branch für die neue Version erweitert
+- Changelog-Eintrag und Social-Posts (`/skill changelog`)
+- Geschlossener-Test-Upload nur, wenn alle obigen Punkte abgehakt

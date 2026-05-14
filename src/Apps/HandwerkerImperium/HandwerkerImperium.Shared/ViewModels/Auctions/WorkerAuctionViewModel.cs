@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.ViewModels;
@@ -59,7 +60,11 @@ public sealed partial class WorkerAuctionViewModel : ViewModelBase, IDisposable
         // v2.1.1 (Audit P-H04): Polling-Intervall 1s → 5s. 60 Requests/min waren Firebase-
         // Bandbreite + Battery-Killer; 12 Requests/min reichen fuer eine 30s-Auktion locker.
         _pollingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _pollingTimer.Tick += async (_, _) => await PollAsync().ConfigureAwait(false);
+        // Tick via RunHandlerSafely — Firebase-Exceptions im async-Lambda haetten sonst den
+        // Prozess gekillt (async-void auf SynchronizationContext, analog Audit H-H03).
+        _pollingTimer.Tick += (_, _) => Helpers.AsyncExtensions
+            .RunHandlerSafely(PollAsync)
+            .SafeFireAndForget();
 
         _countdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _countdownTimer.Tick += (_, _) => UpdateCountdown();

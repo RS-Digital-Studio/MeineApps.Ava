@@ -3,6 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:models="using:HandwerkerImperium.Models"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.ConfirmDialog"
              x:DataType="vm:DialogViewModel"
              x:CompileBindings="True"
@@ -106,6 +107,29 @@
                      Foreground="{StaticResource TextWhiteMediumBrush}"
                      IsVisible="{Binding PrestigeConfirmation.CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
+
+        <!-- v2.1.1 (Audit U-C06): Verlust-Liste prominent rot. Frueher waren Verluste nur Teil
+             der grauen Confirm-Message und wurden uebersehen — kritisch beim ersten Prestige
+             (Spieler verliert 200 Worker etc. ohne klare Vorwarnung). -->
+        <Border IsVisible="{Binding PrestigeConfirmation.LossesPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                Background="{StaticResource PrestigeLossesBrush}"
+                Opacity="0.18"
+                CornerRadius="10"
+                Padding="14,10"
+                BorderBrush="{StaticResource PrestigeLossesBrush}"
+                BorderThickness="1"
+                AutomationProperties.AutomationId="Main_Border_PrestigeLosses">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="13" FontWeight="Bold"
+                       Foreground="{StaticResource PrestigeLossesBrush}"
+                       Text="{loc:Translate PrestigeWhatYouLose}"
+                       AutomationProperties.AutomationId="Main_Txt_PrestigeLossesHeader" />
+            <TextBlock Text="{Binding PrestigeConfirmation.LossesPreview}"
+                       FontSize="12" TextWrapping="Wrap"
+                       Foreground="{StaticResource PrestigeLossesBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_PrestigeLosses" />
+          </StackPanel>
+        </Border>
 
         <StackPanel Spacing="8" HorizontalAlignment="Stretch"
                     AutomationProperties.AutomationId="Main_Panel_ConfirmButtons">

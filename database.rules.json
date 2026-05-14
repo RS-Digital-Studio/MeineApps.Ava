@@ -378,7 +378,7 @@
         ".read": "auth != null",
         ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
         "$playerId": {
-          ".validate": "root.child('auth_to_player/' + auth.uid).val() == $playerId || !newData.exists()"
+          ".validate": "(root.child('auth_to_player/' + auth.uid).val() == $playerId || !newData.exists()) && (!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 1e15 && (!data.exists() || newData.val() >= data.val())))"
         }
       }
     },

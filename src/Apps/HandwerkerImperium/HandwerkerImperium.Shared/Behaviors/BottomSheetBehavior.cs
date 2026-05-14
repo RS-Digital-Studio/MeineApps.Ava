@@ -32,6 +32,13 @@ public static class BottomSheetBehavior
     public static readonly AttachedProperty<double> SlideDistanceProperty =
         AvaloniaProperty.RegisterAttached<Control, double>("SlideDistance", typeof(BottomSheetBehavior), 800.0);
 
+    // v2.1.1 (Audit H-H04): Pro-Element CancellationToken — wenn der User waehrend einer laufenden
+    // Animation neu toggled (Open→Close→Open in unter 300ms), wird die vorherige Animation
+    // abgebrochen. Ohne Cancellation konnte ein laufender "Close"-Task das Element auf
+    // IsVisible=false setzen, obwohl der User es gerade wieder geoeffnet hatte.
+    private static readonly AttachedProperty<CancellationTokenSource?> AnimationCtsProperty =
+        AvaloniaProperty.RegisterAttached<Control, CancellationTokenSource?>("AnimationCts", typeof(BottomSheetBehavior));
+
     public static bool GetIsOpen(Control element) => element.GetValue(IsOpenProperty);
     public static void SetIsOpen(Control element, bool value) => element.SetValue(IsOpenProperty, value);
 
@@ -46,67 +53,86 @@ public static class BottomSheetBehavior
     private static async void OnIsOpenChanged(Control element, AvaloniaPropertyChangedEventArgs e)
         => await HandwerkerImperium.Helpers.AsyncExtensions.RunHandlerSafely(async () =>
         {
+            // Vorherige Animation abbrechen — letzter Toggle gewinnt.
+            var oldCts = element.GetValue(AnimationCtsProperty);
+            oldCts?.Cancel();
+            oldCts?.Dispose();
+
+            var cts = new CancellationTokenSource();
+            element.SetValue(AnimationCtsProperty, cts);
+            var ct = cts.Token;
+
             var isOpen = (bool)e.NewValue!;
             var distance = GetSlideDistance(element);
 
-            if (isOpen)
+            try
             {
-                // Startposition: Unterhalb des sichtbaren Bereichs (OHNE Transition)
-                element.Transitions = null;
-                element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
-                element.Opacity = 0;
-                element.IsVisible = true;
+                if (isOpen)
+                {
+                    // Startposition: Unterhalb des sichtbaren Bereichs (OHNE Transition)
+                    element.Transitions = null;
+                    element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
+                    element.Opacity = 0;
+                    element.IsVisible = true;
 
-                // Frame abwarten, damit Startposition gerendert wird
-                await Task.Delay(16);
+                    // Frame abwarten, damit Startposition gerendert wird
+                    await Task.Delay(16, ct);
 
-                // Transition aktivieren
-                element.Transitions =
-                [
-                    new TransformOperationsTransition
-                    {
-                        Property = Visual.RenderTransformProperty,
-                        Duration = TimeSpan.FromMilliseconds(300),
-                        Easing = new CubicEaseOut()
-                    },
+                    // Transition aktivieren
+                    element.Transitions =
+                    [
+                        new TransformOperationsTransition
+                        {
+                            Property = Visual.RenderTransformProperty,
+                            Duration = TimeSpan.FromMilliseconds(300),
+                            Easing = new CubicEaseOut()
+                        },
 
-                    new DoubleTransition
-                    {
-                        Property = Visual.OpacityProperty,
-                        Duration = TimeSpan.FromMilliseconds(200)
-                    }
-                ];
+                        new DoubleTransition
+                        {
+                            Property = Visual.OpacityProperty,
+                            Duration = TimeSpan.FromMilliseconds(200)
+                        }
+                    ];
 
-                // Zielposition → Transition animiert automatisch
-                element.RenderTransform = TransformOperations.Parse("translate(0px, 0px)");
-                element.Opacity = 1;
+                    // Zielposition → Transition animiert automatisch
+                    element.RenderTransform = TransformOperations.Parse("translate(0px, 0px)");
+                    element.Opacity = 1;
+                }
+                else
+                {
+                    // Transition sicherstellen fuer Slide-Down
+                    element.Transitions ??=
+                    [
+                        new TransformOperationsTransition
+                        {
+                            Property = Visual.RenderTransformProperty,
+                            Duration = TimeSpan.FromMilliseconds(250),
+                            Easing = new CubicEaseIn()
+                        },
+
+                        new DoubleTransition
+                        {
+                            Property = Visual.OpacityProperty,
+                            Duration = TimeSpan.FromMilliseconds(200)
+                        }
+                    ];
+
+                    // Nach unten schieben
+                    element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
+                    element.Opacity = 0;
+
+                    // Warten bis Animation fertig, dann ausblenden — nur wenn nicht
+                    // zwischendurch ein neuer Toggle reinkam.
+                    await Task.Delay(300, ct);
+                    if (!ct.IsCancellationRequested)
+                        element.IsVisible = false;
+                }
             }
-            else
+            catch (TaskCanceledException)
             {
-                // Transition sicherstellen fuer Slide-Down
-                element.Transitions ??=
-                [
-                    new TransformOperationsTransition
-                    {
-                        Property = Visual.RenderTransformProperty,
-                        Duration = TimeSpan.FromMilliseconds(250),
-                        Easing = new CubicEaseIn()
-                    },
-
-                    new DoubleTransition
-                    {
-                        Property = Visual.OpacityProperty,
-                        Duration = TimeSpan.FromMilliseconds(200)
-                    }
-                ];
-
-                // Nach unten schieben
-                element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
-                element.Opacity = 0;
-
-                // Warten bis Animation fertig, dann ausblenden
-                await Task.Delay(300);
-                element.IsVisible = false;
+                // Erwartet: neuer Toggle hat diesen Task gestoppt — Element-State wird vom
+                // neuen Task richtig gesetzt. Nichts zu tun.
             }
         });
 }

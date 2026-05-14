@@ -124,12 +124,16 @@ public partial class FtueOverlay : UserControl
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
 
+        // v2.1.1: LocalClipBounds statt e.Info.Width/Height — bei DPI > 1 liefert e.Info physische
+        // Pixel, die groesser als der sichtbare Bereich sind. Bekanntes Rechts-Clipping-Pattern
+        // aus Haupt-CLAUDE.md (Troubleshooting-Tabelle).
+        var clipBounds = canvas.LocalClipBounds;
         var dpi = (float)(e.Info.Width / Math.Max(1, Bounds.Width));
         var elapsedSeconds = (float)_stopwatch.Elapsed.TotalSeconds;
 
         FtueSpotlightRenderer.Render(
             canvas,
-            e.Info.Width, e.Info.Height,
+            clipBounds.Width, clipBounds.Height,
             dpi,
             vm.SpotlightX, vm.SpotlightY, vm.SpotlightRadius,
             elapsedSeconds);

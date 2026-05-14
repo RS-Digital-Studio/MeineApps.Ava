@@ -77,6 +77,13 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
     /// <summary>Aktuelle Run-Dauer (für Speedrun-Anzeige im Dialog).</summary>
     [ObservableProperty] private string _currentRunDurationText = string.Empty;
 
+    /// <summary>
+    /// v2.1.1 (Audit U-C06): Verlust-Liste fuer den Prestige-Confirm-Dialog (newline-getrennt).
+    /// Wird im ConfirmDialog als eigenstaendiger roter Block neben den Gewinnen angezeigt —
+    /// vorher waren Verluste nur Teil der Confirm-Message in grauem Text und wurden uebersehen.
+    /// </summary>
+    [ObservableProperty] private string _lossesPreview = string.Empty;
+
     /// <summary>Merkt sich den aktuell ausgewählten Tier im Prestige-Dialog.</summary>
     private PrestigeTier _selectedTier = PrestigeTier.None;
 
@@ -247,9 +254,11 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
             : string.Empty;
 
         _dialogVm.ConfirmDialogTitle = $"{_localizationService.GetString("Prestige") ?? "Prestige"} → {tierName}";
-        _dialogVm.ConfirmDialogMessage = string.Join("\n", gains)
-            + $"\n\n{string.Join("\n", losses)}"
-            + timingWarning;
+        // v2.1.1 (Audit U-C06): Gewinne weiterhin in ConfirmDialogMessage, Verluste in separate
+        // LossesPreview-Property — das XAML rendert sie als roten Block, damit Spieler vor dem
+        // ersten Prestige nicht uebersehen was sie wirklich verlieren.
+        _dialogVm.ConfirmDialogMessage = string.Join("\n", gains) + timingWarning;
+        LossesPreview = string.Join("\n", losses);
     }
 
     /// <summary>

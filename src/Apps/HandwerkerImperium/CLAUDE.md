@@ -5,7 +5,7 @@ forschen, Gilden beitreten. Idle-Einkommen läuft passiv weiter, Mini-Games brin
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v2.1.0 (VersionCode 50) |
+| Aktuelle Version | v2.1.1 (VersionCode 51) |
 | Status | Produktion |
 | Package-ID | com.meineapps.handwerkerimperium |
 | Ads | Banner + Rewarded (13 Placements) |

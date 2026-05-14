@@ -1,4 +1,5 @@
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 
@@ -38,7 +39,7 @@ public sealed class GuildCoopOrderService : IGuildCoopOrderService
 
     private string? CurrentGuildId => _gameStateService.State.GuildMembership?.GuildId;
 
-    public async Task<CoopOrderState?> CreateInviteAsync(string invitedPlayerId)
+    public async Task<CoopOrderState?> CreateInviteAsync(string invitedPlayerId, MiniGameType miniGameType)
     {
         if (string.IsNullOrEmpty(_firebase.PlayerId)) return null;
         if (string.IsNullOrEmpty(CurrentGuildId)) return null;
@@ -53,9 +54,9 @@ public sealed class GuildCoopOrderService : IGuildCoopOrderService
             InvitedPlayer = invitedPlayerId,
             Status = CoopOrderStatus.Pending,
             ExpiresAt = DateTime.UtcNow.AddMinutes(5),
-            // MiniGameType wird aus dem Workshop des Initiators abgeleitet —
-            // hier Sawing als Default, das ViewModel waehlt vor dem Aufruf passend.
-            MiniGameType = Models.Enums.MiniGameType.Sawing,
+            // v2.1.1 (Audit FB-H04): Mini-Game-Typ kommt jetzt vom Aufrufer — frueher hier hart Sawing,
+            // wodurch JEDER Co-op-Auftrag fuer alle Spieler immer Sawing war.
+            MiniGameType = miniGameType,
             BaseReward = 100_000m,
             RewardSplit = 0.5
         };

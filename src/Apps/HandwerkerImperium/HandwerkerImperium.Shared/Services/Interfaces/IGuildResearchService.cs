@@ -22,4 +22,10 @@ public interface IGuildResearchService
 
     /// <summary>Aktualisiert den Forschungs-Effekt-Cache von Firebase.</summary>
     Task RefreshResearchCacheAsync();
+
+    /// <summary>
+    /// FB-H07: Invalidiert den lokalen Forschungs-Effekt-Cache. Wird beim Gilden-Verlassen
+    /// aufgerufen — sonst behaelt der Spieler die Forschungs-Boni der alten Gilde.
+    /// </summary>
+    void InvalidateCache();
 }

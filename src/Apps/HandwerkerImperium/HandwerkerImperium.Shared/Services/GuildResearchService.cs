@@ -42,6 +42,16 @@ public sealed class GuildResearchService : IGuildResearchService, IDisposable
         _firebaseService = firebaseService;
     }
 
+    /// <summary>
+    /// FB-H07: Setzt den gecachten Forschungs-Effekt-Cache zurueck. Wird von
+    /// <see cref="GuildService"/> beim Gilden-Verlassen aufgerufen — sonst behaelt der
+    /// Spieler die Forschungs-Boni der alten Gilde nach dem Austritt.
+    /// </summary>
+    public void InvalidateCache()
+    {
+        _cachedEffects = new GuildResearchEffects();
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // FORSCHUNGEN LADEN
     // ═══════════════════════════════════════════════════════════════════════

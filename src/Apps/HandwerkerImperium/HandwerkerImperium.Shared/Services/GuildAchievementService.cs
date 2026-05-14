@@ -234,13 +234,16 @@ public sealed class GuildAchievementService : IGuildAchievementService, IDisposa
                 $"guild_research/{guildId}");
             var buildingTask = _firebase.GetAsync<Dictionary<string, GuildBuildingState>>(
                 $"guild_hall/{guildId}/buildings");
-            await Task.WhenAll(guildDataTask, researchTask, buildingTask).ConfigureAwait(false);
+            // v2.1.1 (Audit C-C04): Tasks laufen ab der Zuweisung parallel. Einzelnes await statt
+            // Task.WhenAll + .Result — wirft die echte Exception statt einer AggregateException.
+            var guildDataJson = await guildDataTask.ConfigureAwait(false);
+            var researchStates = await researchTask.ConfigureAwait(false);
+            var buildingStates = await buildingTask.ConfigureAwait(false);
 
             // Gildendaten parsen
             long totalContrib = 0;
             int memberCount = 0;
             int hallLevel = 1;
-            var guildDataJson = guildDataTask.Result;
             if (!string.IsNullOrEmpty(guildDataJson))
             {
                 var guildData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(guildDataJson);
@@ -256,11 +259,9 @@ public sealed class GuildAchievementService : IGuildAchievementService, IDisposa
             }
 
             // Abgeschlossene Forschungen zählen
-            var researchStates = researchTask.Result;
             var completedResearch = researchStates?.Values.Count(s => s.Completed) ?? 0;
 
             // Gebäude auf Max-Level zählen
-            var buildingStates = buildingTask.Result;
             var maxLevelBuildings = 0;
             if (buildingStates != null)
             {

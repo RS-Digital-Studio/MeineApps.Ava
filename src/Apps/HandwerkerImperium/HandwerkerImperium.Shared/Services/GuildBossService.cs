@@ -26,6 +26,9 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
     private FirebaseGuildBoss? _cachedBoss;
     private GuildBossDefinition? _cachedDefinition;
     private DateTime _lastBossCheck = DateTime.MinValue;
+    // FB-H08: guildId zum letzten Boss-Check — verhindert, dass der 30s-Throttle nach
+    // einem Gildenwechsel faelschlich die Boss-Daten der neuen Gilde blockiert.
+    private string? _lastBossCheckGuildId;
 
     // Belohnungen
     private const int MvpRewardGs = 30;
@@ -218,10 +221,13 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        // Nicht zu oft prüfen (max alle 30 Sekunden)
-        if (DateTime.UtcNow - _lastBossCheck < TimeSpan.FromSeconds(30))
+        // v2.1.1 (Audit FB-H08): Throttle pro guildId. Nach einem Gildenwechsel zeigt _lastBossCheck sonst
+        // auf die alte Gilde → 30s lang werden die Boss-Daten der neuen Gilde nicht geladen.
+        if (membership.GuildId == _lastBossCheckGuildId
+            && DateTime.UtcNow - _lastBossCheck < TimeSpan.FromSeconds(30))
             return;
         _lastBossCheck = DateTime.UtcNow;
+        _lastBossCheckGuildId = membership.GuildId;
 
         if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
             return; // Timeout: Lock nicht erhalten

@@ -24,6 +24,8 @@ public sealed class GuildService : IGuildService, IDisposable
     private readonly IGameIntegrityService _integrityService;
     private readonly IPreferencesService _preferences;
     private readonly ILogService _log;
+    // FB-H07: Beim Gilden-Verlassen wird der Forschungs-Effekt-Cache invalidiert.
+    private readonly IGuildResearchService _guildResearchService;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     public event Action? GuildUpdated;
@@ -35,13 +37,15 @@ public sealed class GuildService : IGuildService, IDisposable
         IFirebaseService firebaseService,
         IGameIntegrityService integrityService,
         IPreferencesService preferences,
-        ILogService log)
+        ILogService log,
+        IGuildResearchService guildResearchService)
     {
         _gameStateService = gameStateService;
         _firebaseService = firebaseService;
         _integrityService = integrityService;
         _preferences = preferences;
         _log = log;
+        _guildResearchService = guildResearchService;
 
         // Spielernamen aus Preferences laden (mit Längenbegrenzung für Legacy-Daten)
         var savedName = _preferences.Get<string?>(PrefKeyPlayerName, null);
@@ -134,26 +138,18 @@ public sealed class GuildService : IGuildService, IDisposable
         // Gilden-Zuordnung migrieren
         await _firebaseService.SetAsync($"player_guilds/{playerId}", oldGuildId);
 
-        // Mitglieds-Eintrag migrieren (Set + Delete mit Retry)
+        // Mitglieds-Eintrag migrieren — v2.1.1 (Audit FB-H06): Set neuer + Delete alter Eintrag atomar als
+        // Multi-Path-Update. Frueher waren das zwei Operationen; bei Delete-Failure blieb der
+        // alte Eintrag als Geister-Member stehen und zaehlte weiter in memberCount.
         var memberData = await _firebaseService.GetAsync<FirebaseGuildMember>(
             $"guild_members/{oldGuildId}/{firebaseUid}");
         if (memberData != null)
         {
-            await _firebaseService.SetAsync($"guild_members/{oldGuildId}/{playerId}", memberData);
-
-            // Delete mit Retry — wenn das fehlschlägt, existieren beide Einträge (Duplikat)
-            for (int attempt = 0; attempt < 3; attempt++)
+            await _firebaseService.UpdateAsync($"guild_members/{oldGuildId}", new Dictionary<string, object>
             {
-                try
-                {
-                    await _firebaseService.DeleteAsync($"guild_members/{oldGuildId}/{firebaseUid}");
-                    break; // Erfolgreich
-                }
-                catch when (attempt < 2)
-                {
-                    await Task.Delay(500 * (attempt + 1)); // 500ms, 1000ms Backoff
-                }
-            }
+                [playerId] = memberData,
+                [firebaseUid] = null!  // Firebase: null-Wert loescht den Pfad — atomar mit dem Set
+            });
         }
 
         // Einladungen migrieren
@@ -1277,6 +1273,9 @@ public sealed class GuildService : IGuildService, IDisposable
     private void ClearLocalCache()
     {
         _gameStateService.State.GuildMembership = null;
+        // v2.1.1 (Audit FB-H07): Forschungs-Effekt-Cache mit invalidieren — sonst behaelt der Spieler
+        // die Gilden-Forschungs-Boni der gerade verlassenen Gilde.
+        _guildResearchService.InvalidateCache();
     }
 
     private static DateTime GetCurrentMonday()

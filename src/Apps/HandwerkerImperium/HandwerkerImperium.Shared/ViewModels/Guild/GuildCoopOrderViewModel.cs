@@ -148,7 +148,10 @@ public sealed partial class GuildCoopOrderViewModel : ViewModelBase, IDisposable
     public async Task CreateInviteAsync(string invitedPlayerId)
     {
         if (string.IsNullOrEmpty(invitedPlayerId)) return;
-        var state = await _coopService.CreateInviteAsync(invitedPlayerId).ConfigureAwait(true);
+        // FB-H04: Zufaelligen Mini-Game-Typ waehlen — sonst waere jeder Co-op-Auftrag Sawing.
+        var miniGameTypes = Enum.GetValues<MiniGameType>();
+        var miniGameType = miniGameTypes[Random.Shared.Next(miniGameTypes.Length)];
+        var state = await _coopService.CreateInviteAsync(invitedPlayerId, miniGameType).ConfigureAwait(true);
         if (state != null)
         {
             await RefreshAsync().ConfigureAwait(true);

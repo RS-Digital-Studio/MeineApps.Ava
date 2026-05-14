@@ -39,6 +39,11 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     private string? _idToken;
     private string? _refreshToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
+    // v2.1.1 (Audit FB-H03/P-M08): Dediziertes Auth-Cooldown-Feld. Nach einem dauerhaft fehlgeschlagenen
+    // Token-Refresh nicht bei jedem Request erneut versuchen — frueher wurde dafuer ein
+    // Fake-Token ("expired_cooldown") in _idToken missbraucht, der einen Infinite-401-Loop
+    // ausloeste, weil er als gueltiger Token an Firebase gesendet wurde.
+    private DateTime _authCooldownUntil = DateTime.MinValue;
 
     public string? Uid => _uid;
     public string? PlayerId => _playerId;
@@ -93,6 +98,14 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             // Token noch gültig?
             if (_idToken != null && DateTime.UtcNow < _tokenExpiry)
                 return;
+
+            // FB-H03/P-M08: Auth-Cooldown — nach dauerhaft fehlgeschlagenem Refresh nicht
+            // bei jedem Request erneut versuchen (sonst Bandbreiten-Verschwendung + 401-Loop).
+            if (DateTime.UtcNow < _authCooldownUntil)
+            {
+                IsOnline = false;
+                throw new InvalidOperationException("Firebase Auth im Cooldown");
+            }
 
             // Gespeicherte Credentials laden
             var savedUid = _preferences.Get<string?>(PrefKeyUid, null);
@@ -150,6 +163,24 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
     private async Task SignUpAnonymouslyAsync()
     {
+        // v2.1.1 (Audit FB-H01): Wenn noch ein gueltiger alter Account existiert (z.B. manueller Wechsel),
+        // den verwaisten auth_to_player-Eintrag mit dem ALTEN Token loeschen — sonst mappen
+        // zwei UIDs auf dieselbe PlayerId (doppelte Schreibrechte). Bei abgelaufenem Token
+        // ist das Loeschen nicht moeglich (Rule erlaubt nur den Owner) — dann bleibt der
+        // Eintrag verwaist, was unkritisch ist, weil der alte Token niemandem mehr gehoert.
+        if (!string.IsNullOrEmpty(_uid) && !string.IsNullOrEmpty(_idToken) && DateTime.UtcNow < _tokenExpiry)
+        {
+            try
+            {
+                var deleteUrl = $"{DatabaseUrl}/auth_to_player/{_uid}.json?auth={_idToken}";
+                await _httpClient.DeleteAsync(deleteUrl).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.Error("Alten auth_to_player-Eintrag loeschen fehlgeschlagen", ex);
+            }
+        }
+
         var requestBody = JsonSerializer.Serialize(new { returnSecureToken = true });
         var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
@@ -249,17 +280,18 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
             var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
 
-            // Jede HTTP-Antwort beweist: Server erreichbar
-            IsOnline = true;
-
             // 401 → Token refreshen und nochmal versuchen
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 response = await _httpClient.GetAsync(url);
-                IsOnline = true;
             }
+
+            // v2.1.1 (Audit FB-H02): IsOnline spiegelt den TATSAECHLICHEN Erfolg — ein 401/500 darf
+            // nicht faelschlich "online" signalisieren, sonst loescht z.B. GuildService die lokale
+            // Gilden-Membership trotz echter Mitgliedschaft.
+            IsOnline = response.IsSuccessStatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
@@ -291,7 +323,6 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PutAsync(url, content).ConfigureAwait(false);
-            IsOnline = true;
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -299,8 +330,10 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 content = new StringContent(json, Encoding.UTF8, "application/json");
                 response = await _httpClient.PutAsync(url, content);
-                IsOnline = true;
             }
+
+            // FB-H02: IsOnline nur bei tatsaechlichem Erfolg.
+            IsOnline = response.IsSuccessStatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
@@ -329,7 +362,6 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
             var request = new HttpRequestMessage(new HttpMethod("PATCH"), url) { Content = content };
             var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
-            IsOnline = true;
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -337,8 +369,10 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 request = new HttpRequestMessage(new HttpMethod("PATCH"), url) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
                 response = await _httpClient.SendAsync(request);
-                IsOnline = true;
             }
+
+            // FB-H02: IsOnline nur bei tatsaechlichem Erfolg.
+            IsOnline = response.IsSuccessStatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
@@ -366,15 +400,16 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync(url, content).ConfigureAwait(false);
-            IsOnline = true;
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 response = await _httpClient.PostAsync(url, content);
-                IsOnline = true;
             }
+
+            // FB-H02: IsOnline nur bei tatsaechlichem Erfolg.
+            IsOnline = response.IsSuccessStatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
@@ -402,15 +437,16 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
 
             var response = await _httpClient.DeleteAsync(url).ConfigureAwait(false);
-            IsOnline = true;
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 response = await _httpClient.DeleteAsync(url);
-                IsOnline = true;
             }
+
+            // FB-H02: IsOnline nur bei tatsaechlichem Erfolg.
+            IsOnline = response.IsSuccessStatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
@@ -436,7 +472,6 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}&{queryParams}";
 
             var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
-            IsOnline = true;
 
             // 401 → Token refreshen und nochmal versuchen
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -444,8 +479,10 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}&{queryParams}";
                 response = await _httpClient.GetAsync(url);
-                IsOnline = true;
             }
+
+            // FB-H02: IsOnline nur bei tatsaechlichem Erfolg.
+            IsOnline = response.IsSuccessStatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
@@ -473,7 +510,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
     private async Task ForceRefreshAndRetryAuth()
     {
-        // Cooldown: Nicht bei jedem Request den Token refreshen wenn der Refresh fehlschlägt
+        // Token-Guard ungueltig machen, damit EnsureAuthenticatedAsync wirklich refresht.
         _tokenExpiry = DateTime.UtcNow.AddMinutes(-1);
         _idToken = null;
 
@@ -483,12 +520,12 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
         }
         catch (InvalidOperationException)
         {
-            // Token-Refresh dauerhaft fehlgeschlagen → Cooldown setzen damit nicht jeder
-            // Request den Refresh erneut triggert (sonst sind alle Firebase-Features tot).
-            // _idToken muss gesetzt sein, sonst greift der Guard in EnsureAuthenticatedAsync
-            // (Zeile: _idToken != null && UtcNow < _tokenExpiry) nicht und der Cooldown ist wirkungslos.
-            _idToken = "expired_cooldown";
-            _tokenExpiry = DateTime.UtcNow.AddMinutes(5);
+            // FB-H03/P-M08: Token-Refresh dauerhaft fehlgeschlagen → dediziertes Cooldown-Feld
+            // setzen. _idToken bleibt null (kein Fake-Token mehr) — der naechste Request laeuft
+            // nicht in einen Infinite-401-Loop, sondern EnsureAuthenticatedAsync wirft sofort
+            // wegen des Cooldowns. Nach 5min wird ein erneuter Auth-Versuch erlaubt.
+            _idToken = null;
+            _authCooldownUntil = DateTime.UtcNow.AddMinutes(5);
             IsOnline = false;
         }
     }

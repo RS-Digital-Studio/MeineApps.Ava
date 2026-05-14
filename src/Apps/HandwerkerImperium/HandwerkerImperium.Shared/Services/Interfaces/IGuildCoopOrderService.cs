@@ -1,3 +1,4 @@
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Models.Firebase;
 
 namespace HandwerkerImperium.Services.Interfaces;
@@ -17,8 +18,10 @@ public interface IGuildCoopOrderService
     /// <summary>
     /// Erstellt einen neuen Co-op-Auftrag und ladet einen Mitspieler ein.
     /// Status startet auf Pending mit 5min Annahme-Frist.
+    /// FB-H04: <paramref name="miniGameType"/> ist verpflichtend — der Aufrufer waehlt das
+    /// Mini-Game, sonst waere jeder Co-op-Auftrag immer Sawing.
     /// </summary>
-    Task<CoopOrderState?> CreateInviteAsync(string invitedPlayerId);
+    Task<CoopOrderState?> CreateInviteAsync(string invitedPlayerId, MiniGameType miniGameType);
 
     /// <summary>
     /// Eingeladener Spieler nimmt den Auftrag an. Status wechselt auf Active.

@@ -54,12 +54,23 @@ public sealed class GameIntegrityService : IGameIntegrityService
         if (string.IsNullOrEmpty(state.IntegritySignature))
             return false;
 
-        var expected = CalculateHmac(state);
+        // v2.1.1 (Audit FB-H05): Die rohen HMAC-Bytes timing-sicher vergleichen — unabhaengig von der
+        // Hex-String-Repraesentation (Lower/Upper-Case, Trimming). Frueher wurden die
+        // UTF-8-Bytes der Hex-STRINGS verglichen, was bei einer Format-Migration
+        // (z.B. Upper-Case oder Base64) still gebrochen waere.
+        byte[] storedBytes;
+        try
+        {
+            storedBytes = Convert.FromHexString(state.IntegritySignature);
+        }
+        catch (FormatException)
+        {
+            // Ungueltiges Hex-Format (manipuliert / fremdes Format) → Signatur ungueltig.
+            return false;
+        }
 
-        // Timing-sicherer Vergleich gegen Timing-Attacken
-        return CryptographicOperations.FixedTimeEquals(
-            Encoding.UTF8.GetBytes(state.IntegritySignature),
-            Encoding.UTF8.GetBytes(expected));
+        var expectedBytes = CalculateHmacBytes(state);
+        return CryptographicOperations.FixedTimeEquals(storedBytes, expectedBytes);
     }
 
     /// <inheritdoc/>
@@ -72,10 +83,18 @@ public sealed class GameIntegrityService : IGameIntegrityService
     }
 
     /// <summary>
-    /// Berechnet den HMAC-SHA256 ueber die Gilden-relevanten Werte.
+    /// Berechnet den HMAC-SHA256 ueber die Gilden-relevanten Werte als Hex-String
+    /// (fuer die Persistenz in <see cref="GameState.IntegritySignature"/>).
     /// Format: "Level|PrestigeCount|Money|GoldenScrews|OrdersCompleted"
     /// </summary>
     private string CalculateHmac(GameState state)
+        => Convert.ToHexStringLower(CalculateHmacBytes(state));
+
+    /// <summary>
+    /// FB-H05: Berechnet die rohen HMAC-SHA256-Bytes — Basis fuer den timing-sicheren
+    /// Vergleich in <see cref="VerifySignature"/>, unabhaengig von der String-Kodierung.
+    /// </summary>
+    private byte[] CalculateHmacBytes(GameState state)
     {
         // Deterministische String-Repraesentation der signierten Werte.
         // Dezimalzahlen mit festem Format (keine Kultur-Abhaengigkeit).
@@ -85,7 +104,6 @@ public sealed class GameIntegrityService : IGameIntegrityService
         var payloadBytes = Encoding.UTF8.GetBytes(payload);
 
         using var hmac = new HMACSHA256(_hmacKey);
-        var hash = hmac.ComputeHash(payloadBytes);
-        return Convert.ToHexStringLower(hash);
+        return hmac.ComputeHash(payloadBytes);
     }
 }

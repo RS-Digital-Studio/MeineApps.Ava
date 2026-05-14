@@ -292,6 +292,9 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
     /// Master-Client-Pattern: Pruefe ob *dieser* Client der Master ist. Master = Spieler mit
     /// lexikografisch kleinster PlayerId in der Mitgliederliste. Deterministisch ohne Server-Logik.
     /// In Solo-Gilden ist man immer Master.
+    /// v2.1.1 (Audit FB-H13): Nur AKTIVE Mitglieder (LastActiveAt &lt; 30 Tage) zaehlen — ein verwaister
+    /// "Geister-Member" mit kleiner PlayerId wuerde sonst Master werden, aber nie Auktionen
+    /// spawnen (DoS fuer die ganze Gilde).
     /// </summary>
     private async Task<bool> IsMasterClientAsync()
     {
@@ -302,9 +305,13 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
             var members = await _firebase.GetAsync<Dictionary<string, FirebaseGuildMember>>(
                 $"guild_members/{CurrentGuildId}").ConfigureAwait(false);
             if (members == null || members.Count == 0) return true; // Solo-Master
+
+            var cutoff = DateTime.UtcNow.AddDays(-30);
             string smallestId = _firebase.PlayerId!;
-            foreach (var key in members.Keys)
+            foreach (var (key, member) in members)
             {
+                if (key == _firebase.PlayerId) continue;       // mich selbst zaehlt immer
+                if (!IsActiveMember(member, cutoff)) continue; // FB-H13: Geister-Member ignorieren
                 if (string.CompareOrdinal(key, smallestId) < 0) smallestId = key;
             }
             return smallestId == _firebase.PlayerId;
@@ -316,6 +323,18 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         }
     }
 
+    /// <summary>
+    /// FB-H13: Ein Mitglied gilt als aktiv, wenn LastActiveAt juenger als <paramref name="cutoff"/>
+    /// ist. Founder/Leader zaehlen immer als aktiv (analog GuildService.IsStaleMember).
+    /// </summary>
+    private static bool IsActiveMember(FirebaseGuildMember member, DateTime cutoff)
+    {
+        if (member.Role is "founder" or "leader") return true;
+        if (string.IsNullOrEmpty(member.LastActiveAt)) return false;
+        return DateTime.TryParse(member.LastActiveAt, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.RoundtripKind, out var dt) && dt >= cutoff;
+    }
+
     public async Task<bool> SpawnAuctionIfMasterAsync()
     {
         if (string.IsNullOrEmpty(CurrentGuildId)) return false;
@@ -325,7 +344,7 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         if (!await IsMasterClientAsync().ConfigureAwait(false)) return false;
 
         // S/SS/SSS-Tier-Worker generieren — gewichtet (S 70%, SS 25%, SSS 5%).
-        var rng = new Random();
+        var rng = Random.Shared; // v2.1.1 (Audit FB-H12): Random.Shared statt new Random() — kein RNG-Bias
         int roll = rng.Next(0, 100);
         WorkerTier tier = roll < 70 ? WorkerTier.S : roll < 95 ? WorkerTier.SS : WorkerTier.SSS;
 
@@ -360,7 +379,7 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         // Nur Master simuliert die Bots — andere Clients lesen das Resultat ueber Polling.
         if (!await IsMasterClientAsync().ConfigureAwait(false)) return;
 
-        var rng = new Random();
+        var rng = Random.Shared; // v2.1.1 (Audit FB-H12): Random.Shared statt new Random() — kein RNG-Bias
         // 35% Chance pro Tick — fuehrt zu mehreren Bot-Bids in einer 30s-Auktion.
         if (rng.Next(0, 100) >= 35) return;
 

@@ -64,15 +64,26 @@ public sealed class GuildInviteService : IGuildInviteService, IDisposable
                 return existingCode;
 
             // Neuen 6-stelligen Code generieren (Kollisionspruefung)
-            string code;
-            int attempts = 0;
-            do
+            string? code = null;
+            for (int attempt = 0; attempt < 5; attempt++)
             {
-                code = GenerateInviteCode();
-                var existing = await _firebaseService.GetAsync<string>($"invite_code_to_guild/{code}");
-                if (string.IsNullOrEmpty(existing)) break;
-                attempts++;
-            } while (attempts < 5);
+                var candidate = GenerateInviteCode();
+                var existing = await _firebaseService.GetAsync<string>($"invite_code_to_guild/{candidate}");
+                if (string.IsNullOrEmpty(existing))
+                {
+                    code = candidate;
+                    break;
+                }
+            }
+
+            // v2.1.1 (Audit FB-H11): Bei dauerhafter Kollision Error-Result statt blindem Ueberschreiben.
+            // Frueher wurde der letzte (kollidierende) Code trotzdem gespeichert und haette
+            // das Mapping einer fremden Gilde ueberschrieben.
+            if (code == null)
+            {
+                _log.Error("Einladungscode-Generierung: 5 Kollisionen — kein freier Code gefunden");
+                return null;
+            }
 
             // Code speichern (bidirektionales Mapping)
             await _firebaseService.SetAsync($"guild_invite_codes/{guildId}", code);

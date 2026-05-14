@@ -1,7 +1,7 @@
 namespace BomberBlast.Navigation;
 
 /// <summary>
-/// Verwaltet den State der Bottom-Tab-Bar (.1 : Home / Play / Shop / Profile,
+/// Verwaltet den State der Bottom-Tab-Bar: Home / Play / Shop / Profile,
 /// plus die 5 horizontalen Sub-Tabs (Shop/Spin, Profile/Achievements, Settings/Help,
 /// Cards/Collection, Challenges/Missions).
 ///

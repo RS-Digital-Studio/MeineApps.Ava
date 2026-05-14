@@ -3,10 +3,10 @@ using BomberBlast.ViewModels;
 namespace BomberBlast.Navigation;
 
 /// <summary>
-/// Default-Implementation von <see cref="INavigationCoordinator"/> (Welle 6 MainViewModel-Refactor).
+/// Default-Implementation von <see cref="INavigationCoordinator"/>.
 ///
 /// <para>
-/// : Leeres Geruest. Die Logik wird in Phase 5 (NavigationCoordinator-Migration) aus
+/// Leeres Geruest. Die Routing-Logik wird noch aus
 /// <see cref="MainViewModel.NavigateToRouteAsync"/> hier hin verschoben.
 /// </para>
 /// </summary>
@@ -20,16 +20,13 @@ public sealed class NavigationCoordinator : INavigationCoordinator
 
     public Task NavigateToRouteAsync(string route)
         => throw new NotImplementedException(
-            "NavigationCoordinator wird in Phase 5 mit Logik gefuellt. " +
-            "Bis dahin haelt MainViewModel die Routing-Logik selbst.");
+            "Routing-Logik liegt aktuell noch in MainViewModel.NavigateToRouteAsync — wird hier hin migriert.");
 
     public void NavigateTo(NavigationRequest request)
-        => throw new NotImplementedException(
-            "NavigationCoordinator wird in Phase 5 mit Logik gefuellt.");
+        => throw new NotImplementedException("Migration aus MainViewModel ausstehend.");
 
     public void HideAll()
-        => throw new NotImplementedException(
-            "NavigationCoordinator wird in Phase 5 mit Logik gefuellt.");
+        => throw new NotImplementedException("Migration aus MainViewModel ausstehend.");
 
     /// <summary>Helper damit die Subscription-Verkabelung waehrend der Migration nicht crasht.</summary>
     internal void SetActiveView(ActiveView view)

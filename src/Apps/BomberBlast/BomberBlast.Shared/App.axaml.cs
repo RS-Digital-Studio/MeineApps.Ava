@@ -551,8 +551,9 @@ public partial class App : Application
         // Audit M25: Dependency-Aggregat fuer MainViewModel (32-Parameter-Ctor → 1).
         services.AddSingleton<MainViewModelDependencies>();
 
-        // Welle 6 MainViewModel-Refactor: 5 Feature-Module fuer Navigation/Tabs/Dialogs/VM-Registry/Lifecycle.
-        //  — Foundation: Interfaces + leere Impls registriert. Logik-Migration in -6.
+        // MainViewModel-Feature-Module: Navigation/Tabs/Dialogs/VM-Registry/Lifecycle.
+        // Schrittweise Migration aus MainViewModel — Module sind als Singletons registriert,
+        // damit Constructor-Injection moeglich wird und Tests die Module direkt instanziieren koennen.
         services.AddSingleton<BomberBlast.Services.IDialogPresenter, BomberBlast.Services.DialogPresenter>();
         services.AddSingleton<BomberBlast.ViewModels.IChildViewModelRegistry, BomberBlast.ViewModels.ChildViewModelRegistry>();
         services.AddSingleton<BomberBlast.ViewModels.ILifecycleHub, BomberBlast.ViewModels.LifecycleHub>();

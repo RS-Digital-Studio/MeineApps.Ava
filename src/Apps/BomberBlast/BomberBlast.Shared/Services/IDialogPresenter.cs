@@ -5,7 +5,7 @@ namespace BomberBlast.Services;
 ///
 /// <para>
 /// MainViewModel-Properties (<c>IsAlertDialogVisible</c>, <c>AlertDialogTitle</c>,
-/// <c>ConfirmDialogMessage</c>, <c>IsAnyDialogOpen</c> usw.) sind ab Welle 6.1 nur noch Forwarder
+/// <c>ConfirmDialogMessage</c>, <c>IsAnyDialogOpen</c> usw.) sind nur noch Forwarder
 /// auf diesen Service. Bindings im MainView.axaml bleiben unveraendert.
 /// </para>
 ///

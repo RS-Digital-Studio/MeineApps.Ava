@@ -43,68 +43,46 @@ public sealed partial class MainViewModel : ViewModelBase
     // GameOver, Settings). Sie bleiben Konstruktor-Parameter und werden sofort
     // verdrahtet.
 
-    public MainMenuViewModel MenuVm { get; }
-    public LevelSelectViewModel LevelSelectVm { get; }
-    public SettingsViewModel SettingsVm { get; }
-    public HighScoresViewModel HighScoresVm { get; }
-    public GameOverViewModel GameOverVm { get; }
-    public HelpViewModel HelpVm { get; }
-    public VictoryViewModel VictoryVm { get; }
+    // VM-Properties sind Forwarder auf den IChildViewModelRegistry. Die Registry
+    // verwaltet Eager + Lazy + Sub-Wirings. MainView.axaml bindet weiterhin direkt
+    // auf MainViewModel.{Vm-Name} — kein AXAML-Change noetig.
 
-    /// <summary>What's-New-Modal-VM (wird einmal pro App-Update angezeigt).</summary>
-    public WhatsNewViewModel WhatsNewVm { get; }
+    public MainMenuViewModel MenuVm => _registry.MenuVm;
+    public LevelSelectViewModel LevelSelectVm => _registry.LevelSelectVm;
+    public SettingsViewModel SettingsVm => _registry.SettingsVm;
+    public HighScoresViewModel HighScoresVm => _registry.HighScoresVm;
+    public GameOverViewModel GameOverVm => _registry.GameOverVm;
+    public HelpViewModel HelpVm => _registry.HelpVm;
+    public VictoryViewModel VictoryVm => _registry.VictoryVm;
+    public WhatsNewViewModel WhatsNewVm => _registry.WhatsNewVm;
+    public BossRushViewModel BossRushVm => _registry.BossRushVm;
+    public PlayHubViewModel PlayHubVm => _registry.PlayHubVm;
+    public BottomTabBarViewModel BottomTabVm => _registry.BottomTabVm;
 
     /// <summary>
     /// True solange das What's-New-Modal sichtbar ist (gesteuert vom Closed-Event des VMs).
-    /// Welle 6 : State liegt im DialogPresenter (Aggregat-Beitrag fuer IsAnyDialogOpen).
+    /// State liegt im DialogPresenter (Aggregat-Beitrag fuer IsAnyDialogOpen).
     /// </summary>
     public bool IsWhatsNewVisible => _dialogPresenter.IsWhatsNewVisible;
 
-    /// <summary>
-    /// Game-VM ist nullable + Lazy: spart 100-200ms Startup auf Mid-Tier-Android,
-    /// weil GameEngine + GameRenderer (mit allen SkPaint/SkFont/SkMaskFilter-Allokationen)
-    /// erst beim ersten Game-Start aufgeloest werden — nicht waehrend Splash + MainMenu.
-    /// EnsureGameVm() sorgt fuer idempotente Initialisierung samt Event-Wirings.
-    /// </summary>
-    [ObservableProperty] private GameViewModel? _gameVm;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // CHILD VIEWMODELS (Lazy - spät unlocked)
-    // ═══════════════════════════════════════════════════════════════════════
-    // Diese VMs werden erst bei progressivem Feature-Unlock (Level 3-30) gebraucht.
-    // Sie werden über Lazy<T> injiziert und erst beim ersten Navigations-Ziel
-    // instanziiert + verdrahtet (siehe EnsureXxxVm()-Methoden). Public Properties
-    // sind nullable und feuern OnPropertyChanged bei erstem Zugriff → XAML
-    // ContentControl bindet den VM erst dann ein.
-    //
-    // Startup-Ersparnis: ShopViewModel (~900 Zeilen), BattlePass, League,
-    // Collection, Dungeon und ihre Services werden nicht beim App-Start geladen.
-
-    [ObservableProperty] private ShopViewModel? _shopVm;
-    [ObservableProperty] private AchievementsViewModel? _achievementsVm;
-    [ObservableProperty] private DailyChallengeViewModel? _dailyChallengeVm;
-    [ObservableProperty] private LuckySpinViewModel? _luckySpinVm;
-    [ObservableProperty] private WeeklyChallengeViewModel? _weeklyChallengeVm;
-    [ObservableProperty] private StatisticsViewModel? _statisticsVm;
-    [ObservableProperty] private QuickPlayViewModel? _quickPlayVm;
-    [ObservableProperty] private DeckViewModel? _deckVm;
-    [ObservableProperty] private DungeonViewModel? _dungeonVm;
-    [ObservableProperty] private BattlePassViewModel? _battlePassVm;
-    [ObservableProperty] private CollectionViewModel? _collectionVm;
-    [ObservableProperty] private LeagueViewModel? _leagueVm;
-    [ObservableProperty] private ProfileViewModel? _profileVm;
-    [ObservableProperty] private GemShopViewModel? _gemShopVm;
-
-    // Boss-Rush (v2.0.42, Plan Task 3.3): Eager-Singleton — Modi-Strip-Tile im MainMenu zeigt
-    // Wochen-Best direkt; BossRushView ist die Pre-Run-Page.
-    // Daily-Hub aufgeloest (v2.0.43, Menu-Redesign) — Inhalte direkt im MainMenu-Dashboard.
-    public BossRushViewModel BossRushVm { get; }
-
-    /// <summary>.1 : Play-Hub-VM ("Spielen"-Tab — alle Spielmodi als Karten).</summary>
-    public PlayHubViewModel PlayHubVm { get; }
-
-    /// <summary>.1 : Bottom-Tab-Bar-VM (4-Tab-Navigation Home/Play/Shop/Profile).</summary>
-    public BottomTabBarViewModel BottomTabVm { get; }
+    // Lazy-VMs (spaet-unlocked). Forwarder auf die Registry — bei Lazy-Resolve feuert
+    // Registry.VmInstantiated den Property-Namen, MainViewModel ruft daraufhin
+    // OnPropertyChanged(name) damit XAML-ContentControls den neuen VM einbinden.
+    public GameViewModel? GameVm => _registry.GameVm;
+    public ShopViewModel? ShopVm => _registry.ShopVm;
+    public AchievementsViewModel? AchievementsVm => _registry.AchievementsVm;
+    public DailyChallengeViewModel? DailyChallengeVm => _registry.DailyChallengeVm;
+    public LuckySpinViewModel? LuckySpinVm => _registry.LuckySpinVm;
+    public WeeklyChallengeViewModel? WeeklyChallengeVm => _registry.WeeklyChallengeVm;
+    public StatisticsViewModel? StatisticsVm => _registry.StatisticsVm;
+    public QuickPlayViewModel? QuickPlayVm => _registry.QuickPlayVm;
+    public DeckViewModel? DeckVm => _registry.DeckVm;
+    public DungeonViewModel? DungeonVm => _registry.DungeonVm;
+    public BattlePassViewModel? BattlePassVm => _registry.BattlePassVm;
+    public CollectionViewModel? CollectionVm => _registry.CollectionVm;
+    public LeagueViewModel? LeagueVm => _registry.LeagueVm;
+    public ProfileViewModel? ProfileVm => _registry.ProfileVm;
+    public GemShopViewModel? GemShopVm => _registry.GemShopVm;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -239,7 +217,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private bool _isAdBannerVisible;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // DIALOG PROPERTIES (Welle 6 : Forwarder auf IDialogPresenter)
+    // DIALOG PROPERTIES (Forwarder auf IDialogPresenter)
     // ═══════════════════════════════════════════════════════════════════════
     // State + Logik liegen im DialogPresenter. PropertyChanged-Notifications
     // werden ueber dialogPresenter.StateChanged geroutet (im Ctor verdrahtet).
@@ -282,25 +260,11 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly IGameEventBus _eventBus;
     /// <summary>.1 : Bottom-Tab-Hub — zentrale 4-Tab-Navigation.</summary>
     private readonly IBottomTabHub _bottomTabHub;
-    /// <summary>Welle 6 : Dialog-State liegt im DialogPresenter, MainVM nur noch Forwarder.</summary>
+    /// <summary>Dialog-State liegt im DialogPresenter — MainVM ist nur noch Forwarder.</summary>
     private readonly IDialogPresenter _dialogPresenter;
 
-    // Lazy-VM-Factories (werden beim ersten EnsureXxxVm() resolved)
-    private readonly Lazy<GameViewModel> _gameVmLazy;
-    private readonly Lazy<ShopViewModel> _shopVmLazy;
-    private readonly Lazy<AchievementsViewModel> _achievementsVmLazy;
-    private readonly Lazy<DailyChallengeViewModel> _dailyChallengeVmLazy;
-    private readonly Lazy<LuckySpinViewModel> _luckySpinVmLazy;
-    private readonly Lazy<WeeklyChallengeViewModel> _weeklyChallengeVmLazy;
-    private readonly Lazy<StatisticsViewModel> _statisticsVmLazy;
-    private readonly Lazy<QuickPlayViewModel> _quickPlayVmLazy;
-    private readonly Lazy<DeckViewModel> _deckVmLazy;
-    private readonly Lazy<DungeonViewModel> _dungeonVmLazy;
-    private readonly Lazy<BattlePassViewModel> _battlePassVmLazy;
-    private readonly Lazy<CollectionViewModel> _collectionVmLazy;
-    private readonly Lazy<LeagueViewModel> _leagueVmLazy;
-    private readonly Lazy<ProfileViewModel> _profileVmLazy;
-    private readonly Lazy<GemShopViewModel> _gemShopVmLazy;
+    /// <summary>Verwaltet alle Child-VMs (Eager + Lazy + Sub-Wirings).</summary>
+    private readonly IChildViewModelRegistry _registry;
 
     /// <summary>
     /// Task für Cloud-Save-Initialisierung (kein Fire-and-Forget, vermeidet Race Conditions)
@@ -323,44 +287,19 @@ public sealed partial class MainViewModel : ViewModelBase
     /// Die <see cref="MainViewModelDependencies"/>-Record buendelt alle 8 Eager-VMs, 15 Lazy-VMs
     /// und 10 Services.
     /// </summary>
-    public MainViewModel(MainViewModelDependencies deps)
+    public MainViewModel(MainViewModelDependencies deps, IChildViewModelRegistry registry)
     {
-        MenuVm = deps.MenuVm;
-        LevelSelectVm = deps.LevelSelectVm;
-        SettingsVm = deps.SettingsVm;
-        HighScoresVm = deps.HighScoresVm;
-        GameOverVm = deps.GameOverVm;
-        HelpVm = deps.HelpVm;
-        VictoryVm = deps.VictoryVm;
-        WhatsNewVm = deps.WhatsNewVm;
+        // Registry haelt alle Child-VMs + Sub-Wirings. Events routen Navigation + VM-Lazy-Instantiation
+        // an MainViewModel zurueck, damit AXAML-Bindings (ContentControl auf MenuVm/GameVm/ShopVm etc.)
+        // beim ersten Resolve eine PropertyChanged-Notification bekommen.
+        _registry = registry;
+        _registry.NavigationRequested += NavigateTo;
+        _registry.VmInstantiated += OnRegistryVmInstantiated;
 
-        _gameVmLazy = deps.GameVmLazy;
-        _shopVmLazy = deps.ShopVmLazy;
-        _achievementsVmLazy = deps.AchievementsVmLazy;
-        _dailyChallengeVmLazy = deps.DailyChallengeVmLazy;
-        _luckySpinVmLazy = deps.LuckySpinVmLazy;
-        _weeklyChallengeVmLazy = deps.WeeklyChallengeVmLazy;
-        _statisticsVmLazy = deps.StatisticsVmLazy;
-        _quickPlayVmLazy = deps.QuickPlayVmLazy;
-        _deckVmLazy = deps.DeckVmLazy;
-        _dungeonVmLazy = deps.DungeonVmLazy;
-        _battlePassVmLazy = deps.BattlePassVmLazy;
-        _collectionVmLazy = deps.CollectionVmLazy;
-        _leagueVmLazy = deps.LeagueVmLazy;
-        _profileVmLazy = deps.ProfileVmLazy;
-        _gemShopVmLazy = deps.GemShopVmLazy;
-
-        BossRushVm = deps.BossRushVm;
-        WireCommon(deps.BossRushVm);
-
-        //.1 : Play-Hub + Bottom-Tab-Bar verdrahten.
-        PlayHubVm = deps.PlayHubVm;
-        WireCommon(deps.PlayHubVm);
-        BottomTabVm = deps.BottomTabVm;
         _bottomTabHub = deps.BottomTabHub;
         _bottomTabHub.ActiveTabChanged += OnBottomTabChanged;
 
-        // Welle 6 : DialogPresenter haelt den Dialog-State.
+        // DialogPresenter haelt den Dialog-State.
         // StateChanged → alle Dialog-Properties + IsAnyDialogOpen neu feuern, damit Bindings reagieren.
         _dialogPresenter = deps.DialogPresenter;
         _dialogPresenter.StateChanged += OnDialogPresenterStateChanged;
@@ -380,43 +319,36 @@ public sealed partial class MainViewModel : ViewModelBase
         // Lokale Aliase fuer den Konstruktor-Body (Variable bleiben unchanged von der Original-Logic).
         var localization = deps.Localization;
         var adService = deps.AdService;
-        var purchaseService = deps.PurchaseService;
         var rewardedAdService = deps.RewardedAdService;
         var achievementService = deps.AchievementService;
-        var coinService = deps.CoinService;
-        var cloudSaveService = deps.CloudSaveService;
-        var soundManager = deps.SoundManager;
-        var logger = deps.Logger;
         var eventBus = deps.EventBus;
-        var menuVm = deps.MenuVm;
-        var settingsVm = deps.SettingsVm;
-        var gameOverVm = deps.GameOverVm;
-        var helpVm = deps.HelpVm;
-        var victoryVm = deps.VictoryVm;
-        var highScoresVm = deps.HighScoresVm;
-        var levelSelectVm = deps.LevelSelectVm;
+        var menuVm = registry.MenuVm;
+        var settingsVm = registry.SettingsVm;
 
-        //.2 : GameEventBus → MainVM-Events forwarden.
-        // Andere ViewModels koennen jetzt direkt _eventBus.RaiseFloatingText() rufen,
+        // GameEventBus → MainVM-Events forwarden.
+        // Andere ViewModels koennen direkt _eventBus.RaiseFloatingText() rufen,
         // ohne durch MainViewModel routen zu muessen — God-VM-Abhaengigkeit reduziert.
         _eventBus.FloatingTextRequested += (t, s) => FloatingTextRequested?.Invoke(t, s);
         _eventBus.CelebrationRequested += () => CelebrationRequested?.Invoke();
         _eventBus.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         // ───────────────────────────────────────────────────────────────────
-        // Eager-VMs verdrahten (Navigation + Game-Juice)
-        // GameVm wird in EnsureGameVm() verdrahtet — siehe oben.
+        // Eager-VMs verdrahten — Registry.WireCommon haengt Navigation + Game-Juice
+        // (FloatingText + Celebration ueber EventBus) pro VM ein. Lazy-VMs werden in
+        // den Ensure-Methoden der Registry verdrahtet beim ersten Zugriff.
         // ───────────────────────────────────────────────────────────────────
-        WireCommon(menuVm);
-        WireCommon(levelSelectVm);
-        WireCommon(settingsVm);
-        WireCommon(highScoresVm);
-        WireCommon(gameOverVm);
-        WireCommon(helpVm);
-        WireCommon(victoryVm);
+        registry.WireCommon(menuVm);
+        registry.WireCommon(registry.LevelSelectVm);
+        registry.WireCommon(settingsVm);
+        registry.WireCommon(registry.HighScoresVm);
+        registry.WireCommon(registry.GameOverVm);
+        registry.WireCommon(registry.HelpVm);
+        registry.WireCommon(registry.VictoryVm);
+        registry.WireCommon(registry.BossRushVm);
+        registry.WireCommon(registry.PlayHubVm);
 
         // GameOverVm-spezifische Events (Confirmation Dialog)
-        GameOverVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
+        registry.GameOverVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
 
         // Achievement-Toast bei Unlock (mit Coin-Belohnung)
         _achievementService.AchievementUnlocked += (_, achievement) =>
@@ -446,10 +378,8 @@ public sealed partial class MainViewModel : ViewModelBase
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
         settingsVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
 
-        // LanguageChanged: Auto-Discovery via ILocalizable (Audit M23 + C13).
-        // Iteriert alle instanziierten (lazy resolved) VMs, ruft UpdateLocalizedTexts.
-        // VMs ohne ILocalizable bekommen OnAppearing() (fallback) — idempotent fuer inaktive Views.
-        localization.LanguageChanged += (_, _) => RefreshAllLocalizedTexts();
+        // LanguageChanged: Registry routet an alle instanziierten VMs.
+        localization.LanguageChanged += (_, _) => registry.RefreshAllLocalizedTexts();
 
         // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)
         _cloudSaveInitTask = Task.Run(async () =>
@@ -460,7 +390,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
         // What's-New-Modal: Closed-Event verdrahten + Initial-Check ob anzeigen.
         // ShouldShow prueft Service-State (CurrentVersion > LastSeenVersion + Eintraege vorhanden).
-        // Welle 6 : WhatsNew-Sichtbarkeit lebt im DialogPresenter (Aggregat-Beitrag).
+        // Sichtbarkeit lebt im DialogPresenter (Aggregat-Beitrag).
         WhatsNewVm.Closed += () => _dialogPresenter.SetWhatsNewVisible(false);
         if (deps.WhatsNewService.ShouldShow)
             _dialogPresenter.SetWhatsNewVisible(true);
@@ -478,217 +408,25 @@ public sealed partial class MainViewModel : ViewModelBase
     // XAML ContentControl bindet den VM dann ein). Idempotent: Mehrfach-Aufrufe
     // liefern dieselbe Instanz.
 
-    /// <summary>
-    /// Gemeinsame Verdrahtung (Navigation + Game-Juice) für alle VMs.
-    /// </summary>
-    private void WireCommon(INavigable vm)
-    {
-        vm.NavigationRequested += NavigateTo;
-        // Audit L23: Getrennte Interfaces — FloatingText und Celebration unabhaengig.
-        if (vm is IFloatingTextEmitter floatingEmitter)
-            floatingEmitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
-        if (vm is ICelebrationEmitter celebrationEmitter)
-            celebrationEmitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
-    }
-
-    /// <summary>
-    ///.x : Generischer Lazy-VM-Resolver fuer die trivialen
-    /// EnsureXxxVm()-Methoden (nur WireCommon + Property-Set, kein VM-spezifisches Wiring).
-    /// Setter-Delegate statt <c>ref field</c> — damit der ObservableProperty-Setter
-    /// laeuft und OnPropertyChanged feuert (XAML-ContentControl bindet den VM dann ein).
-    /// </summary>
-    private T EnsureLazyVm<T>(Func<T?> getter, Action<T> setter, Lazy<T> lazy)
-        where T : class, INavigable
-    {
-        if (getter() is { } existing) return existing;
-        var vm = lazy.Value;
-        WireCommon(vm);
-        setter(vm);
-        return vm;
-    }
-
-    /// <summary>
-    /// Audit M23: Sprachwechsel-Forwarder. Iteriert alle instanziierten (resolved) VMs:
-    /// - Implementiert <see cref="ILocalizable"/> → UpdateLocalizedTexts().
-    /// - Sonst: OnAppearing() falls vorhanden (fallback fuer VMs ohne dediziertes Interface).
-    /// Idempotent fuer inaktive Views.
-    /// </summary>
-    private void RefreshAllLocalizedTexts()
-    {
-        // Eager-VMs (immer instanziiert)
-        InvokeLocalizable(MenuVm, fallback: () => MenuVm.OnAppearing());
-        InvokeLocalizable(LevelSelectVm, fallback: () => LevelSelectVm.OnAppearing());
-        InvokeLocalizable(SettingsVm, fallback: () => SettingsVm.OnAppearing());
-        InvokeLocalizable(HighScoresVm, fallback: () => HighScoresVm.OnAppearing());
-        InvokeLocalizable(BossRushVm, fallback: null);
-        // HelpVm/GameOverVm/VictoryVm: keine OnAppearing, XAML-only / SetParameters
-
-        // Lazy-VMs (nur wenn resolved)
-        InvokeLocalizable(ShopVm, fallback: null);
-        InvokeLocalizable(QuickPlayVm, fallback: null);
-        InvokeLocalizable(DeckVm, fallback: null);
-        InvokeLocalizable(DungeonVm, fallback: null);
-        InvokeLocalizable(BattlePassVm, fallback: null);
-        InvokeLocalizable(CollectionVm, fallback: null);
-        InvokeLocalizable(LeagueVm, fallback: null);
-        InvokeLocalizable(ProfileVm, fallback: null);
-        InvokeLocalizable(GemShopVm, fallback: null);
-        InvokeLocalizable(StatisticsVm, fallback: null);
-        InvokeLocalizable(DailyChallengeVm, fallback: null);
-        InvokeLocalizable(WeeklyChallengeVm, fallback: null);
-        InvokeLocalizable(AchievementsVm, fallback: () => AchievementsVm?.OnAppearing());
-        InvokeLocalizable(LuckySpinVm, fallback: () => LuckySpinVm?.OnAppearing());
-    }
-
-    /// <summary>
-    /// Audit M23-Helper: ruft <see cref="ILocalizable.UpdateLocalizedTexts"/> wenn implementiert,
-    /// sonst optionalen Fallback. try/catch verhindert dass ein VM-Fehler andere blockiert.
-    /// </summary>
-    private void InvokeLocalizable(object? vm, Action? fallback)
-    {
-        if (vm == null) return;
-        try
-        {
-            if (vm is ILocalizable localizable)
-                localizable.UpdateLocalizedTexts();
-            else
-                fallback?.Invoke();
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning($"RefreshAllLocalizedTexts: {vm.GetType().Name} fehlgeschlagen — {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Loest GameViewModel lazy auf und verdrahtet Navigation + Game-Juice-Events.
-    /// Wird beim ersten Game-Start aufgerufen (NavigateToGame, OnAppearing) — spart
-    /// 100-200ms Startup-Zeit, weil GameEngine + GameRenderer (mit zahlreichen
-    /// SkPaint/SkFont/SkMaskFilter-Allokationen) erst dann erzeugt werden.
-    /// </summary>
-    private GameViewModel EnsureGameVm()
-        => EnsureLazyVm(() => GameVm, vm => GameVm = vm, _gameVmLazy);
-
-    private ShopViewModel EnsureShopVm()
-    {
-        if (ShopVm is { } existing) return existing;
-        var vm = _shopVmLazy.Value;
-        WireCommon(vm);
-        vm.PurchaseSucceeded += name =>
-        {
-            FloatingTextRequested?.Invoke(name, "success");
-            CelebrationRequested?.Invoke();
-        };
-        vm.InsufficientFunds += () =>
-        {
-            var msg = _localizationService.GetString("ShopNotEnoughCoins") ?? "Not enough coins!";
-            FloatingTextRequested?.Invoke(msg, "error");
-        };
-        vm.MessageRequested += (t, m) => ShowAlertDialog(t, m, "OK");
-        vm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
-        ShopVm = vm;
-        return vm;
-    }
-
-    private AchievementsViewModel EnsureAchievementsVm()
-        => EnsureLazyVm(() => AchievementsVm, vm => AchievementsVm = vm, _achievementsVmLazy);
-
-    private DailyChallengeViewModel EnsureDailyChallengeVm()
-        => EnsureLazyVm(() => DailyChallengeVm, vm => DailyChallengeVm = vm, _dailyChallengeVmLazy);
-
-    private LuckySpinViewModel EnsureLuckySpinVm()
-        => EnsureLazyVm(() => LuckySpinVm, vm => LuckySpinVm = vm, _luckySpinVmLazy);
-
-    private WeeklyChallengeViewModel EnsureWeeklyChallengeVm()
-        => EnsureLazyVm(() => WeeklyChallengeVm, vm => WeeklyChallengeVm = vm, _weeklyChallengeVmLazy);
-
-    private StatisticsViewModel EnsureStatisticsVm()
-        => EnsureLazyVm(() => StatisticsVm, vm => StatisticsVm = vm, _statisticsVmLazy);
-
-    private QuickPlayViewModel EnsureQuickPlayVm()
-        => EnsureLazyVm(() => QuickPlayVm, vm => QuickPlayVm = vm, _quickPlayVmLazy);
-
-    private DeckViewModel EnsureDeckVm()
-        => EnsureLazyVm(() => DeckVm, vm => DeckVm = vm, _deckVmLazy);
-
-    private DungeonViewModel EnsureDungeonVm()
-    {
-        if (DungeonVm is { } existing) return existing;
-        var vm = _dungeonVmLazy.Value;
-        WireCommon(vm);
-        // Dungeon Ad-Run: Rewarded Ad zeigen und bei Erfolg melden (Cooldown beachten)
-        vm.AdRunRequested += async () =>
-        {
-            var result = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "dungeon_run");
-            if (result)
-            {
-                RewardedAdCooldownTracker.RecordAdShown();
-                vm.OnAdRunRewarded();
-            }
-        };
-        // Dungeon Master Pass: IAP-Kauf (permanenter 2x DungeonCoin-Boost)
-        vm.DungeonMasterPassRequested += async () =>
-        {
-            var success = await _purchaseService.PurchaseConsumableAsync("dungeon_master_pass");
-            if (success)
-                vm.OnDungeonMasterPassPurchased();
-        };
-        DungeonVm = vm;
-        return vm;
-    }
-
-    private BattlePassViewModel EnsureBattlePassVm()
-    {
-        if (BattlePassVm is { } existing) return existing;
-        var vm = _battlePassVmLazy.Value;
-        WireCommon(vm);
-        // Battle Pass Premium-Kauf anfordern
-        vm.PremiumPurchaseRequested += async () =>
-        {
-            //.2 : IAP-Funnel fuer den Battle-Pass-Premium-Kauf.
-            _analytics?.LogEvent(AnalyticsEvents.PurchaseFlowStart, new Dictionary<string, object>
-            {
-                [AnalyticsParams.Sku] = "battle_pass_premium",
-            });
-            var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_premium");
-            if (success)
-            {
-                _analytics?.LogEvent(AnalyticsEvents.PurchaseSuccess, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.Sku] = "battle_pass_premium",
-                });
-                vm.OnPremiumPurchaseConfirmed();
-            }
-            else
-            {
-                _analytics?.LogEvent(AnalyticsEvents.PurchaseFail, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.Sku] = "battle_pass_premium",
-                });
-            }
-        };
-        BattlePassVm = vm;
-        return vm;
-    }
-
-    private CollectionViewModel EnsureCollectionVm()
-        => EnsureLazyVm(() => CollectionVm, vm => CollectionVm = vm, _collectionVmLazy);
-
-    private LeagueViewModel EnsureLeagueVm()
-        => EnsureLazyVm(() => LeagueVm, vm => LeagueVm = vm, _leagueVmLazy);
-
-    private ProfileViewModel EnsureProfileVm()
-        => EnsureLazyVm(() => ProfileVm, vm => ProfileVm = vm, _profileVmLazy);
-
-    private GemShopViewModel EnsureGemShopVm()
-    {
-        if (GemShopVm is { } existing) return existing;
-        var vm = _gemShopVmLazy.Value;
-        WireCommon(vm);
-        vm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
-        GemShopVm = vm;
-        return vm;
-    }
+    // EnsureXxxVm-Methoden delegieren an die Registry. Bleibt als duenne private Member
+    // damit alle bestehenden Aufruf-Stellen (Navigation, Tab-Switch, BackPress) unveraendert
+    // funktionieren — und Registry's VmInstantiated-Event triggert OnPropertyChanged hier
+    // (siehe OnRegistryVmInstantiated).
+    private GameViewModel EnsureGameVm() => _registry.EnsureGame();
+    private ShopViewModel EnsureShopVm() => _registry.EnsureShop();
+    private AchievementsViewModel EnsureAchievementsVm() => _registry.EnsureAchievements();
+    private DailyChallengeViewModel EnsureDailyChallengeVm() => _registry.EnsureDailyChallenge();
+    private LuckySpinViewModel EnsureLuckySpinVm() => _registry.EnsureLuckySpin();
+    private WeeklyChallengeViewModel EnsureWeeklyChallengeVm() => _registry.EnsureWeeklyChallenge();
+    private StatisticsViewModel EnsureStatisticsVm() => _registry.EnsureStatistics();
+    private QuickPlayViewModel EnsureQuickPlayVm() => _registry.EnsureQuickPlay();
+    private DeckViewModel EnsureDeckVm() => _registry.EnsureDeck();
+    private DungeonViewModel EnsureDungeonVm() => _registry.EnsureDungeon();
+    private BattlePassViewModel EnsureBattlePassVm() => _registry.EnsureBattlePass();
+    private CollectionViewModel EnsureCollectionVm() => _registry.EnsureCollection();
+    private LeagueViewModel EnsureLeagueVm() => _registry.EnsureLeague();
+    private ProfileViewModel EnsureProfileVm() => _registry.EnsureProfile();
+    private GemShopViewModel EnsureGemShopVm() => _registry.EnsureGemShop();
 
     // ═══════════════════════════════════════════════════════════════════════
     // NAVIGATION
@@ -1169,7 +907,7 @@ public sealed partial class MainViewModel : ViewModelBase
     // DIALOGS
     // ═══════════════════════════════════════════════════════════════════════
 
-    // Welle 6 : Diese Methoden delegieren an den IDialogPresenter.
+    // Diese Methoden delegieren an den IDialogPresenter.
     // Sie bleiben als private Member damit die bestehenden Subscriptions im Ctor
     // (settingsVm.AlertRequested, GameOverVm.ConfirmationRequested usw.) sowie die
     // RelayCommand-Bindings in MainView.axaml (DismissAlertCommand, AcceptConfirmCommand,
@@ -1199,7 +937,17 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Welle 6 Phase 2: <see cref="IDialogPresenter.StateChanged"/>-Handler.
+    /// Wird vom <see cref="IChildViewModelRegistry.VmInstantiated"/>-Event gerufen wenn ein Lazy-VM
+    /// gerade aufgeloest wurde. Triggert OnPropertyChanged auf der entsprechenden MainViewModel-Property
+    /// damit AXAML-ContentControl den neuen VM einbindet.
+    /// </summary>
+    private void OnRegistryVmInstantiated(string propertyName)
+    {
+        OnPropertyChanged(propertyName);
+    }
+
+    /// <summary>
+    /// <see cref="IDialogPresenter.StateChanged"/>-Handler.
     /// Feuert alle Dialog-Bindings + Aggregat neu — MainView-Bindings reagieren.
     /// </summary>
     private void OnDialogPresenterStateChanged()

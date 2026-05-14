@@ -1,12 +1,12 @@
 namespace BomberBlast.Navigation;
 
 /// <summary>
-/// Default-Implementation von <see cref="IBottomTabController"/> (Welle 6 MainViewModel-Refactor).
+/// Default-Implementation von <see cref="IBottomTabController"/>.
 ///
 /// <para>
-/// : Leeres Geruest mit minimalem State (alle Bools = false). Die Logik wird in 
-/// (BottomTabController-Migration) aus <see cref="BomberBlast.ViewModels.MainViewModel"/> hier
-/// hin verschoben.
+/// Aktuell minimaler State (alle Bools = false, ResetTabStates funktional) — die
+/// SwitchToXxxTab-Methoden und IsBottomTabBarVisible werden noch aus
+/// <see cref="BomberBlast.ViewModels.MainViewModel"/> hier hin verschoben.
 /// </para>
 /// </summary>
 public sealed class BottomTabController : IBottomTabController
@@ -26,18 +26,18 @@ public sealed class BottomTabController : IBottomTabController
     public bool IsChallengesMissionsTab { get => _isChallengesMissionsTab; set { _isChallengesMissionsTab = value; StateChanged?.Invoke(); } }
 
     public bool IsBottomTabBarVisible
-        => throw new NotImplementedException("Wird in  gefuellt.");
+        => throw new NotImplementedException("Wird noch aus MainViewModel migriert.");
 
-    public void SwitchToShopTab() => throw new NotImplementedException(".");
-    public void SwitchToSpinTab() => throw new NotImplementedException(".");
-    public void SwitchToProfileTab() => throw new NotImplementedException(".");
-    public void SwitchToAchievementsTab() => throw new NotImplementedException(".");
-    public void SwitchToSettingsTab() => throw new NotImplementedException(".");
-    public void SwitchToHelpTab() => throw new NotImplementedException(".");
-    public void SwitchToDeckTab() => throw new NotImplementedException(".");
-    public void SwitchToCollectionTab() => throw new NotImplementedException(".");
-    public void SwitchToDailyChallengeTab() => throw new NotImplementedException(".");
-    public void SwitchToMissionsTab() => throw new NotImplementedException(".");
+    public void SwitchToShopTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToSpinTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToProfileTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToAchievementsTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToSettingsTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToHelpTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToDeckTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToCollectionTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToDailyChallengeTab() => throw new NotImplementedException("Migration ausstehend.");
+    public void SwitchToMissionsTab() => throw new NotImplementedException("Migration ausstehend.");
 
     public void ResetTabStates()
     {

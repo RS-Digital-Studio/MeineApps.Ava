@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IDialogPresenter"/> (Welle 6 MainViewModel-Refactor, ).
+/// Default-Implementation von <see cref="IDialogPresenter"/>.
 ///
 /// <para>
 /// Haelt den Dialog-State (Alert + Confirm) plus den WhatsNew-Flag fuer das

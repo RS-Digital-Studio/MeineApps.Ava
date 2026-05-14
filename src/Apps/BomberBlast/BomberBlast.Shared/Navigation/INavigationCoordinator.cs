@@ -14,8 +14,8 @@ namespace BomberBlast.Navigation;
 /// <para>
 /// CloudSave-Init-Race-Guard: NavigateToRouteAsync awaitet (mit 3s-Cap) den im
 /// <see cref="LifecycleHub"/> gestarteten Init-Task bevor Routen wie "game"/"levelselect"/"dungeon"
-/// freigegeben werden — schuetzt vor dem Pre-2.0.34-Bug "Erstlogin auf neuem Geraet
-/// ueberschreibt Cloud-State mit Leerwerten".
+/// freigegeben werden — verhindert dass der lokale Leer-State beim Erstlogin auf einem neuen
+/// Geraet ueber den noch nicht geladenen Cloud-State geschoben wird.
 /// </para>
 /// </summary>
 public interface INavigationCoordinator

@@ -68,6 +68,14 @@ public interface IChildViewModelRegistry
     event Action<string>? VmInstantiated;
 
     /// <summary>
+    /// Wird gefeuert wenn ein Child-VM ueber seinen <c>INavigable.NavigationRequested</c>-Event
+    /// navigieren moechte. <see cref="MainViewModel"/> hoert hier zu und routet an
+    /// <see cref="BomberBlast.Navigation.INavigationCoordinator.NavigateTo"/> bzw.
+    /// die bestehende NavigateTo-Methode.
+    /// </summary>
+    event Action<NavigationRequest>? NavigationRequested;
+
+    /// <summary>
     /// Routet die Locale-Aenderung an alle bereits instanziierten VMs (Eager + Lazy).
     /// Wird vom <see cref="MeineApps.Core.Ava.Localization.ILocalizationService.LanguageChanged"/> gefeuert.
     /// </summary>

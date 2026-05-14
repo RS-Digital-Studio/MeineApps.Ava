@@ -52,4 +52,11 @@ public sealed class LevelGenerationContext
 
     /// <summary>PowerUpLuck-Upgrade-Level des Spielers (0-2), aus ShopService.</summary>
     public int PowerUpLuckLevel { get; init; }
+
+    /// <summary>
+    /// Sprint 7.1 AAA-Audit #14: Hero-PowerUp-Drop-Multiplier (Default 1.0).
+    /// Skaliert die Anzahl der vom PowerUpLuck-Upgrade gewuerfelten Extra-PowerUps —
+    /// z.B. LuckyLola (1.20) gibt 20% mehr PowerUps. Default 1.0 = kein Effekt.
+    /// </summary>
+    public float HeroPowerUpMultiplier { get; init; } = 1.0f;
 }

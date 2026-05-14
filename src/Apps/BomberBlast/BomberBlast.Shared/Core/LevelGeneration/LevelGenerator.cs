@@ -102,6 +102,11 @@ public sealed class LevelGenerator : ILevelGenerator
 
         // PowerUpLuck-Upgrade: Zusätzliche zufällige PowerUps
         int extraPowerUps = context.PowerUpLuckLevel;
+        // Sprint 7.1 AAA-Audit #14: Hero-PowerUp-Multiplier — LuckyLola (1.20) gibt 20% mehr PowerUps.
+        if (extraPowerUps > 0 && Math.Abs(context.HeroPowerUpMultiplier - 1.0f) > 0.001f)
+        {
+            extraPowerUps = (int)Math.Round(extraPowerUps * context.HeroPowerUpMultiplier);
+        }
         if (extraPowerUps > 0)
         {
             var basicPowerUps = new[] { PowerUpType.BombUp, PowerUpType.Fire, PowerUpType.Speed };

@@ -1060,7 +1060,9 @@ public sealed partial class GameEngine
             Grid = _grid,
             CurrentLevel = _currentLevel!,
             Random = random,
-            PowerUpLuckLevel = _shopService.Upgrades.GetLevel(UpgradeType.PowerUpLuck)
+            PowerUpLuckLevel = _shopService.Upgrades.GetLevel(UpgradeType.PowerUpLuck),
+            // Sprint 7.1 AAA-Audit #14: Hero-PowerUp-Drop-Multiplier durchreichen.
+            HeroPowerUpMultiplier = _heroService.ActiveHero.PowerUpDropMultiplier,
         };
     }
 

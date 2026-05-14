@@ -231,9 +231,13 @@ public sealed partial class MainViewModel
             }
 
             // Cloud neuer als lokal? Toleranz 5s gegen Clock-Skew.
+            // H-H09: Wenn der lokale Save beschaedigt war (LastLoadFailedCorrupt → CreateNew lief),
+            // die SavedAt-Heuristik ueberspringen — der Cloud-Stand ist IMMER besser als der
+            // frische Leer-State, auch wenn sein Zeitstempel aelter aussieht.
             var localSavedAt = _gameStateService.State.LastSavedAt;
             var cloudSavedAt = metadata.SavedAtUtc;
-            if (cloudSavedAt <= localSavedAt.AddSeconds(5))
+            bool localWasCorrupt = _saveGameService.LastLoadFailedCorrupt;
+            if (!localWasCorrupt && cloudSavedAt <= localSavedAt.AddSeconds(5))
                 return;
 
             // Konflikt-Dialog: zeigt Level + Money beider Stände

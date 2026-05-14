@@ -35,9 +35,11 @@ public interface IGameLoopService
     void Stop();
 
     /// <summary>
-    /// Pauses the game loop (e.g., when app is backgrounded).
+    /// Pausiert den Game-Loop (z.B. wenn die App in den Hintergrund geht) und speichert
+    /// synchron. H-H05: gibt einen Task zurueck, damit Android OnPause den Save abwarten
+    /// kann, bevor das OS die App eventuell killt — sonst gehen Offline-Earnings verloren.
     /// </summary>
-    void Pause();
+    Task PauseAsync();
 
     /// <summary>
     /// Resumes the game loop.

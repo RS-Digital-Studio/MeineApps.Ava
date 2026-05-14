@@ -2,6 +2,7 @@ using System.Text.Json;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
+using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.Services;
 
@@ -27,6 +28,10 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     private readonly IPlayGamesService? _playGamesService;
     // Firebase-basierter Cloud-Save — ersetzt den nicht-funktionalen Play-Games-Snapshots-Stub.
     private readonly ICloudSaveService? _cloudSaveService;
+    // M-M08: Premium-Status-Quelle. SanitizeState setzt state.IsPremium nicht mehr blind auf
+    // false, sondern liest IPurchaseService.IsPremium (kaufgesichert via Preference-Cache,
+    // getrennt vom Save-File) — so sieht ein Premium-Spieler bei kaputtem Netz keine Werbung.
+    private readonly IPurchaseService? _purchaseService;
     // v2.1.1 (Audit C-C05): Lock-frei via Interlocked — DateTime.UtcNow.Ticks des letzten
     // Cloud-Upload-Versuchs (0 = noch nie). CompareExchange stellt sicher, dass bei parallelen
     // Saves nur ein Thread den Upload-Slot pro Rate-Limit-Fenster gewinnt.
@@ -56,16 +61,25 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     private string TempFilePath => SaveFilePath + ".tmp";
     public bool SaveExists => File.Exists(SaveFilePath);
 
+    /// <summary>
+    /// v2.1.1 (Audit H-H09): True, wenn der letzte <see cref="LoadAsync"/>-Aufruf zwar Save-Dateien
+    /// vorfand, aber alle beschaedigt waren (Haupt- UND Backup-Datei). Der Aufrufer kann darauf einen
+    /// Cloud-Recovery-Flow anbieten, statt den Spieler kommentarlos mit CreateNew() zu starten.
+    /// </summary>
+    public bool LastLoadFailedCorrupt { get; private set; }
+
     public SaveGameService(
         IGameStateService gameStateService,
         IGameIntegrityService integrityService,
         IPlayGamesService? playGamesService = null,
-        ICloudSaveService? cloudSaveService = null)
+        ICloudSaveService? cloudSaveService = null,
+        IPurchaseService? purchaseService = null)
     {
         _gameStateService = gameStateService;
         _integrityService = integrityService;
         _playGamesService = playGamesService;
         _cloudSaveService = cloudSaveService;
+        _purchaseService = purchaseService;
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -76,14 +90,17 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
 
     public async Task SaveAsync()
     {
-        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)))
+        // H-H05: ConfigureAwait(false) durchgehend — erlaubt deadlock-freies synchrones
+        // Warten in Android OnPause (PauseGameLoopAsync().GetAwaiter().GetResult()).
+        // ErrorOccurred-Handler dispatcht selbst auf den UI-Thread (MainViewModel.cs).
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)).ConfigureAwait(false))
         {
             System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] SaveAsync: IO-Lock Timeout - Save übersprungen");
             return;
         }
         try
         {
-            await SaveInternalAsync();
+            await SaveInternalAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -107,20 +124,26 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     {
         var state = _gameStateService.State;
 
-        // v2.1.0: Snapshot-Pattern — Lock-Hold-Zeit minimieren.
-        // - Lock: nur LastSavedAt setzen + Signature berechnen + Serialize (~5-20ms)
+        // v2.1.0/P-C01: Snapshot-Pattern — Lock-Hold-Zeit minimieren.
+        // - Lock: nur LastSavedAt setzen + Signature berechnen + Serialize
         // - Off-Lock: File-IO, Cloud-Upload (alles auf ThreadPool)
         // - Der Background-Thread blockiert UI-Thread nur kurz waehrend Lock-Aequisition;
         //   GameLoop tickt NUR unter dem gleichen Lock und kann nicht mit Save kollidieren.
+        // v2.1.1 (Audit P-C01): SerializeToUtf8Bytes statt Serialize(string) — spart die intermediate
+        // UTF-16-String-Allokation UND die spaetere UTF-16→UTF-8-Konvertierung beim File-Write.
+        // Reduziert Lock-Hold-Zeit + GC-Druck spuerbar bei grossen Late-Game-Saves. Ein echter
+        // Deep-Clone-Snapshot ausserhalb des Locks waere fehleranfaellig (jedes neue GameState-
+        // Feld muesste mitgepflegt werden → Daten-Loss-Risiko) — die Serialisierung IST der
+        // konsistente Snapshot, sie nur effizienter zu machen ist der sichere Weg.
 #if DEBUG
         var sw = System.Diagnostics.Stopwatch.StartNew();
 #endif
-        var (json, cloudLevel, cloudMetadata, cloudSaveEnabled) = await Task.Run(() =>
+        var (jsonBytes, cloudLevel, cloudMetadata, cloudSaveEnabled) = await Task.Run(() =>
             _gameStateService.ExecuteWithLock(() =>
         {
             state.LastSavedAt = DateTime.UtcNow;
             _integrityService.ComputeSignature(state);
-            var serialized = JsonSerializer.Serialize(state, _jsonOptions);
+            var serialized = JsonSerializer.SerializeToUtf8Bytes(state, _jsonOptions);
             // Metadaten aus dem gleichen Lock-Snapshot — sonst kann GameLoop zwischen
             // Serialize und Metadata-Bau einen Level-Up oder Goldene-Schraube-Add ticken.
             var meta = new CloudSaveMetadata
@@ -138,18 +161,21 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                     cloudLevel: state.PlayerLevel,
                     metadata: meta,
                     cloudEnabled: state.Settings.CloudSaveEnabled);
-        }));
+        })).ConfigureAwait(false);
 #if DEBUG
         sw.Stop();
         if (sw.ElapsedMilliseconds > 50)
             System.Diagnostics.Debug.WriteLine($"[SaveGameService] Slow save snapshot: {sw.ElapsedMilliseconds}ms");
 #endif
 
-        await File.WriteAllTextAsync(TempFilePath, json);
+        await File.WriteAllBytesAsync(TempFilePath, jsonBytes).ConfigureAwait(false);
 
+        // v2.1.1 (Audit M-M13): Atomares Move statt Copy fuer das Backup. File.Move ist auf demselben Volume
+        // atomar (Rename) — nach dem Move ist das Backup garantiert die vollstaendige alte Datei.
+        // File.Copy konnte bei einem Crash mittendrin ein halb geschriebenes Backup hinterlassen.
         if (File.Exists(SaveFilePath))
         {
-            File.Copy(SaveFilePath, BackupFilePath, overwrite: true);
+            File.Move(SaveFilePath, BackupFilePath, overwrite: true);
         }
 
         File.Move(TempFilePath, SaveFilePath, overwrite: true);
@@ -170,7 +196,8 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                 var cloudSvc = _cloudSaveService;
                 // Race-frei: JSON + Metadata sind bereits "frozen" (kein State-Zugriff im Background).
                 // Vermeidet "JsonSerializer.Serialize auf Background-Thread → Collection-modified-Crash".
-                var jsonForCloud = json;
+                // byte[] → string fuer den Cloud-Upload: einmalige Konvertierung ausserhalb des Locks.
+                var jsonForCloud = System.Text.Encoding.UTF8.GetString(jsonBytes);
                 var metadataForCloud = cloudMetadata;
                 _ = Task.Run(async () =>
                 {
@@ -179,10 +206,11 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                         var ok = await cloudSvc.UploadJsonAsync(jsonForCloud, metadataForCloud).ConfigureAwait(false);
                         if (ok)
                         {
-                            // LastCloudSaveTime ist nur ein Anzeige-Wert — Schreiben ohne Lock akzeptabel,
-                            // beim naechsten Save ueberschreiben wir den Wert sowieso atomar.
-                            _gameStateService.ExecuteWithLock(() =>
-                                state.Settings.LastCloudSaveTime = DateTime.UtcNow);
+                            // v2.1.1 (Audit P-H09): LastCloudSaveTime ist ein reiner Anzeige-Wert (SettingsView).
+                            // Direktes Schreiben ohne State-Lock — eine DateTime-Zuweisung ist atomar
+                            // genug, und der naechste regulaere Save ueberschreibt den Wert ohnehin.
+                            // Spart eine unnoetige Lock-Uebernahme im Cloud-Upload-Hot-Path.
+                            state.Settings.LastCloudSaveTime = DateTime.UtcNow;
                         }
                     }
                     catch (Exception ex)
@@ -196,32 +224,39 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
 
     public async Task<GameState?> LoadAsync()
     {
-        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)))
+        LastLoadFailedCorrupt = false;
+
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)).ConfigureAwait(false))
         {
             System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] LoadAsync: IO-Lock Timeout - Load übersprungen");
             return null;
         }
         try
         {
-            if (!SaveExists)
-            {
-                // Try loading from backup if main save is missing
-                if (File.Exists(BackupFilePath))
-                {
-                    return await LoadFromFileAsync(BackupFilePath);
-                }
+            bool mainExists = SaveExists;
+            bool backupExists = File.Exists(BackupFilePath);
+
+            // Gar kein Spielstand vorhanden → legitimer neuer Spieler (kein Corrupt-Signal).
+            if (!mainExists && !backupExists)
                 return null;
-            }
 
-            var state = await LoadFromFileAsync(SaveFilePath);
-            if (state != null) return state;
-
-            // Main save is corrupted, try backup
-            if (File.Exists(BackupFilePath))
+            // Haupt-Datei zuerst versuchen.
+            if (mainExists)
             {
-                return await LoadFromFileAsync(BackupFilePath);
+                var state = await LoadFromFileAsync(SaveFilePath).ConfigureAwait(false);
+                if (state != null) return state;
             }
 
+            // Haupt-Datei fehlte oder war beschaedigt → Backup versuchen.
+            if (backupExists)
+            {
+                var backupState = await LoadFromFileAsync(BackupFilePath).ConfigureAwait(false);
+                if (backupState != null) return backupState;
+            }
+
+            // H-H09: Es GAB Save-Dateien, aber alle waren beschaedigt — Signal fuer den
+            // Aufrufer, einen Cloud-Recovery-Flow anzubieten statt kommentarlos CreateNew().
+            LastLoadFailedCorrupt = true;
             return null;
         }
         finally
@@ -324,8 +359,9 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     /// <summary>
     /// Korrigiert ungültige Werte im geladenen State.
     /// Repariert statt abzulehnen - so gehen keine Savegames verloren.
+    /// M-M08: Nicht mehr static — liest <see cref="IPurchaseService"/> fuer den Premium-Status.
     /// </summary>
-    private static void SanitizeState(GameState state)
+    private void SanitizeState(GameState state)
     {
         // Sub-Objekte (V5): null-Safety vor allen anderen Zugriffen
         state.Boosts ??= new BoostData();
@@ -336,7 +372,11 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (state.PlayerLevel < LevelThresholds.MinPlayerLevel) state.PlayerLevel = LevelThresholds.MinPlayerLevel;
         if (state.PlayerLevel > LevelThresholds.MaxPlayerLevel) state.PlayerLevel = LevelThresholds.MaxPlayerLevel;
         if (state.Money < 0) state.Money = 0;
-        if (state.Money > 100_000_000_000m) state.Money = 100_000_000_000m;
+        // v2.1.1 (Audit M-M07): Money-Cap dynamisch — Geld kann nie mehr sein als je verdient wurde (logisch
+        // korrekt), mit 1e15-Floor fuer Late-Game-Spieler (Prestige x20 + Rush erreicht 100B
+        // in ~50h). Der alte feste Cap (100B) hat valide Late-Game-Saves verschluckt.
+        decimal moneyCap = Math.Max(1_000_000_000_000_000m, state.TotalMoneyEarned);
+        if (state.Money > moneyCap) state.Money = moneyCap;
         if (state.CurrentXp < 0) state.CurrentXp = 0;
         if (state.GoldenScrews < 0) state.GoldenScrews = 0;
         if (state.GoldenScrews > 100_000) state.GoldenScrews = 100_000;
@@ -592,9 +632,14 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (state.Statistics.TotalItemsCrafted < 0) state.Statistics.TotalItemsCrafted = 0;
         if (state.Statistics.TotalTournamentsWon < 0) state.Statistics.TotalTournamentsWon = 0;
 
-        // Premium-Status zurücksetzen (Exploit-Schutz gegen Save-Editing)
-        // RestorePurchasesAsync() beim App-Start stellt den echten Status via Google Play wieder her
-        state.IsPremium = false;
+        // v2.1.1 (Audit M-M08): Premium-Status aus IPurchaseService statt blind auf false. Der Wert kommt
+        // aus dem kaufgesicherten Preference-Cache (is_premium/has_subscription/has_lifetime),
+        // der getrennt vom Save-File liegt — Save-Editing kann ihn nicht manipulieren. So sieht
+        // ein Premium-Spieler auch bei kaputtem Netz keine Werbung; RestorePurchasesAsync beim
+        // App-Start ist dann nur noch eine Auffrischung.
+        state.IsPremium = _purchaseService?.IsPremium ?? false;
+        // BattlePass-Saison-Premium + Prestige-Pass haben eigene Restore-Pfade — bleiben false
+        // (Exploit-Schutz gegen Save-Editing).
         if (state.BattlePass != null)
             state.BattlePass.IsPremium = false;
         state.IsPrestigePassActive = false;

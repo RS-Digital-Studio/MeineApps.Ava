@@ -143,7 +143,10 @@ public class MainActivity : AvaloniaMainActivity
 
     protected override void OnPause()
     {
-        _mainVm?.PauseGameLoop();
+        // H-H05: Save synchron abwarten, bevor das OS die App eventuell killt — sonst gehen
+        // Offline-Earnings verloren (basieren auf LastPlayedAt). PauseGameLoopAsync nutzt
+        // durchgehend ConfigureAwait(false), daher kein UI-Thread-Deadlock beim GetResult().
+        _mainVm?.PauseGameLoopAsync().GetAwaiter().GetResult();
         _adMobHelper?.Pause();
         base.OnPause();
     }

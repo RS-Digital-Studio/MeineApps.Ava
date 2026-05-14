@@ -230,7 +230,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         _saveGameService.SaveAsync().FireAndForget();
     }
 
-    public void Pause()
+    public async Task PauseAsync()
     {
         _isPaused = true;
         _timer?.Stop();
@@ -242,7 +242,10 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         // Session-Start auf jetzt setzen, damit Stop() danach nicht die gleiche Zeitspanne nochmal zaehlt
         _sessionStart = DateTime.UtcNow;
 
-        _saveGameService.SaveAsync().FireAndForget();
+        // v2.1.1 (Audit H-H05): Save synchron abwarten statt FireAndForget. Bei Android OnPause/Kill kann ein
+        // Background-Save sonst abgebrochen werden, bevor er im Dateisystem landet — fuer ein
+        // Idle-Game fatal, weil Offline-Earnings auf LastPlayedAt basieren.
+        await _saveGameService.SaveAsync().ConfigureAwait(false);
     }
 
     public void Resume()

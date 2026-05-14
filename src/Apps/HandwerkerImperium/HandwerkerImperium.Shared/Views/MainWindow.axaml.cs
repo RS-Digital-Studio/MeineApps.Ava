@@ -20,10 +20,12 @@ public partial class MainWindow : Window
             vm.ResumeGameLoop();
     }
 
-    private void OnWindowDeactivated(object? sender, EventArgs e)
+    private async void OnWindowDeactivated(object? sender, EventArgs e)
     {
+        // H-H05: PauseGameLoopAsync wartet den Save ab. async void ist hier korrekt
+        // (Event-Handler) — RunHandlerSafely faengt etwaige Save-Exceptions ab.
         if (DataContext is MainViewModel vm)
-            vm.PauseGameLoop();
+            await Helpers.AsyncExtensions.RunHandlerSafely(vm.PauseGameLoopAsync);
     }
 
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)

@@ -19,6 +19,13 @@ public interface ISaveGameService
     bool SaveExists { get; }
 
     /// <summary>
+    /// H-H09: True, wenn der letzte <see cref="LoadAsync"/>-Aufruf Save-Dateien vorfand,
+    /// aber alle beschaedigt waren (Haupt- UND Backup-Datei) — Signal fuer einen
+    /// Cloud-Recovery-Flow statt eines kommentarlosen CreateNew().
+    /// </summary>
+    bool LastLoadFailedCorrupt { get; }
+
+    /// <summary>
     /// Path to the save file.
     /// </summary>
     string SaveFilePath { get; }

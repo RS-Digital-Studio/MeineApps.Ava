@@ -15,12 +15,14 @@ public sealed partial class MainViewModel
     public event Action<bool>? PauseStateChanged;
 
     /// <summary>
-    /// Pauses the game loop (e.g., when app is backgrounded).
+    /// Pausiert den Game-Loop (z.B. wenn die App in den Hintergrund geht) und speichert
+    /// synchron. H-H05: async, damit Android OnPause den Save abwarten kann.
     /// </summary>
-    public void PauseGameLoop()
+    public async Task PauseGameLoopAsync()
     {
-        if (_gameLoopService.IsRunning)
-            _gameLoopService.Pause();
+        // H-H05: UI- und State-Operationen zuerst synchron auf dem UI-Thread, dann den
+        // Save abwarten. Diese Methode laeuft komplett synchron bis zum await — der
+        // DispatcherTimer kann in der Zeit nicht ticken (gleicher Thread).
 
         // v2.0.37: Live-Orders pausieren — Countdown laeuft im Background nicht weiter (Cap 5min).
         _gameStateService.PauseAllLiveOrders();
@@ -31,6 +33,10 @@ public sealed partial class MainViewModel
 
         // Render-Timer der MainView ebenfalls pausieren (Battery-Saving)
         PauseStateChanged?.Invoke(true);
+
+        // Game-Loop pausieren (Timer stoppen) + Save synchron abwarten.
+        if (_gameLoopService.IsRunning)
+            await _gameLoopService.PauseAsync().ConfigureAwait(false);
     }
 
     /// <summary>

@@ -501,6 +501,32 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
             // Fallback auf Play-Games-Snapshots wenn Firebase offline und Play Games verfuegbar.
             if (_cloudSaveService != null && _cloudSaveService.IsAvailable)
             {
+                // v2.1.1 (Audit FB-C02): Vor dem Upload pruefen, ob der Cloud-Stand bereits neuer oder staerker
+                // ist — sonst ueberschreibt ein manueller Upload kommentarlos einen Fortschritt
+                // von einem anderen Geraet. Bei Konflikt: Diff-Dialog, Spieler entscheidet.
+                var cloudMeta = await _cloudSaveService.GetMetadataAsync();
+                if (cloudMeta != null)
+                {
+                    var local = _gameStateService.State;
+                    bool cloudIsNewer = cloudMeta.SavedAtUtc > local.LastSavedAt.AddSeconds(5);
+                    bool cloudIsStronger = cloudMeta.PlayerLevel > local.PlayerLevel;
+                    if (cloudIsNewer || cloudIsStronger)
+                    {
+                        var localLine = string.Format(
+                            _localizationService.GetString("CloudSaveLocalSummary") ?? "Local: Level {0} ({1})",
+                            local.PlayerLevel, Helpers.MoneyFormatter.FormatCompact(local.Money));
+                        var cloudLine = string.Format(
+                            _localizationService.GetString("CloudSaveCloudSummary") ?? "Cloud: Level {0} ({1})",
+                            cloudMeta.PlayerLevel, Helpers.MoneyFormatter.FormatCompact(cloudMeta.Money));
+                        var overwriteConfirmed = await _dialogService.ShowConfirmDialog(
+                            _localizationService.GetString("CloudSave"),
+                            $"{localLine}\n{cloudLine}",
+                            _localizationService.GetString("Continue"),
+                            _localizationService.GetString("Cancel"));
+                        if (!overwriteConfirmed) return;
+                    }
+                }
+
                 await _saveGameService.SaveAsync(); // Lokal erst sichern
                 var ok = await _cloudSaveService.UploadAsync(_gameStateService.State);
                 if (ok)
@@ -580,17 +606,36 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         {
             await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
-            // Bestaetigungsdialog: Lokaler Spielstand wird ueberschrieben
-            var confirmed = await _dialogService.ShowConfirmDialog(
-                _localizationService.GetString("RestoreFromCloud"),
-                _localizationService.GetString("RestoreFromCloudConfirmation"),
-                _localizationService.GetString("YesRestore"),
-                _localizationService.GetString("Cancel"));
-            if (!confirmed) return;
-
             // Bevorzugt Firebase-Cloud-Save
             if (_cloudSaveService != null && _cloudSaveService.IsAvailable)
             {
+                // FB-C02: Metadaten zuerst holen → Diff-Confirm statt generischem
+                // "wird ueberschrieben"-Hinweis. So sieht der Spieler, ob sein lokaler
+                // Stand evtl. staerker ist und er durch den Restore Fortschritt verlieren wuerde.
+                var cloudMeta = await _cloudSaveService.GetMetadataAsync();
+                if (cloudMeta == null)
+                {
+                    ShowAlert(
+                        _localizationService.GetString("Error"),
+                        _localizationService.GetString("CloudRestoreFailed"),
+                        _localizationService.GetString("OK"));
+                    return;
+                }
+
+                var local = _gameStateService.State;
+                var localLine = string.Format(
+                    _localizationService.GetString("CloudSaveLocalSummary") ?? "Local: Level {0} ({1})",
+                    local.PlayerLevel, Helpers.MoneyFormatter.FormatCompact(local.Money));
+                var cloudLine = string.Format(
+                    _localizationService.GetString("CloudSaveCloudSummary") ?? "Cloud: Level {0} ({1})",
+                    cloudMeta.PlayerLevel, Helpers.MoneyFormatter.FormatCompact(cloudMeta.Money));
+                var confirmed = await _dialogService.ShowConfirmDialog(
+                    _localizationService.GetString("RestoreFromCloud"),
+                    $"{localLine}\n{cloudLine}",
+                    _localizationService.GetString("YesRestore"),
+                    _localizationService.GetString("Cancel"));
+                if (!confirmed) return;
+
                 var cloudState = await _cloudSaveService.DownloadAsync();
                 if (cloudState == null)
                 {
@@ -620,6 +665,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
                 }
                 return;
             }
+
+            // Play-Games-Fallback: kein Metadaten-Read moeglich → generischer Confirm.
+            var legacyConfirmed = await _dialogService.ShowConfirmDialog(
+                _localizationService.GetString("RestoreFromCloud"),
+                _localizationService.GetString("RestoreFromCloudConfirmation"),
+                _localizationService.GetString("YesRestore"),
+                _localizationService.GetString("Cancel"));
+            if (!legacyConfirmed) return;
 
             if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
             {

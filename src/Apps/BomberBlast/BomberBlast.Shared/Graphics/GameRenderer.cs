@@ -1063,7 +1063,7 @@ public sealed partial class GameRenderer : IDisposable
         foreach (var powerUp in powerUps)
         {
             if (powerUp.IsActive && powerUp.IsVisible)
-                RenderPowerUp(canvas, powerUp);
+                RenderEntityWithOptionalOutline(canvas, powerUp, c => RenderPowerUp(c, powerUp));
         }
 
         foreach (var bomb in bombs)
@@ -1079,7 +1079,7 @@ public sealed partial class GameRenderer : IDisposable
         }
 
         foreach (var enemy in enemies)
-            RenderEnemy(canvas, enemy, grid);
+            RenderEntityWithOptionalOutline(canvas, enemy, c => RenderEnemy(c, enemy, grid));
 
         // Boss Angriffs-Warnung und HP-Balken (über den Gegnern, unter dem Spieler)
         foreach (var enemy in enemies)
@@ -1093,7 +1093,7 @@ public sealed partial class GameRenderer : IDisposable
         }
 
         if (player != null)
-            RenderPlayer(canvas, player);
+            RenderEntityWithOptionalOutline(canvas, player, c => RenderPlayer(c, player));
 
         // Dynamische Beleuchtung (Lichtquellen aus Bomben, Explosionen, Lava etc.)
         if (!SkipAtmosphere)
@@ -1149,6 +1149,26 @@ public sealed partial class GameRenderer : IDisposable
 
         // HUD zeichnen (nicht mit Spiel skaliert)
         RenderHUD(canvas, remainingTime, score, lives, player);
+    }
+
+    /// <summary>
+    /// Sprint 5.4 AAA-Audit #11: Rendert eine Entity mit optionalem Outline-Pass.
+    /// Wenn <see cref="BomberBlast.Models.Entities.Entity.RenderOutline"/> gesetzt ist
+    /// (und keine Performance-Drosselung aktiv), wird der Sprite ueber den
+    /// <see cref="OutlineRenderHelper"/> mit dunklem Outline-Ring gezeichnet —
+    /// vereinheitlicht Vektor-Sprites und AI-WebP-Bitmaps optisch.
+    /// Bei <see cref="SkipAtmosphere"/> faellt es auf den normalen Single-Pass zurueck
+    /// (Outline kostet 2x DrawCalls — bei Stutter ist der Frame-Gewinn wichtiger).
+    /// </summary>
+    private void RenderEntityWithOptionalOutline(
+        SKCanvas canvas,
+        BomberBlast.Models.Entities.Entity entity,
+        Action<SKCanvas> render)
+    {
+        if (entity.RenderOutline && !SkipAtmosphere)
+            OutlineRenderHelper.RenderWithOutline(canvas, render);
+        else
+            render(canvas);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

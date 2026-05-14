@@ -25,6 +25,14 @@ public abstract class Entity
     /// <summary>Whether entity should be removed from game</summary>
     public bool IsMarkedForRemoval { get; set; }
 
+    /// <summary>
+    /// Sprint 5.4 AAA-Audit #11: Per-Entity-Toggle fuer den Outline-Pass.
+    /// Vereinheitlicht den Look ueber inkonsistente Art-Styles (Vektor-Player +
+    /// AI-WebP-Bosse/Enemies). Renderer prueft das Flag und zeichnet ggf. ueber
+    /// <see cref="BomberBlast.Graphics.OutlineRenderHelper"/>. Default je Entity-Typ gesetzt.
+    /// </summary>
+    public bool RenderOutline { get; set; }
+
     /// <summary>Current animation frame</summary>
     public int AnimationFrame { get; set; }
 

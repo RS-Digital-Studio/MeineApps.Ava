@@ -138,6 +138,8 @@ public class Player : Entity
 
     public Player(float x, float y) : base(x, y)
     {
+        // Sprint 5.4 AAA-Audit #11: Outline-Pass vereinheitlicht Vektor-Player + AI-WebP-Gegner.
+        RenderOutline = true;
     }
 
     // === Phase 22b — Squash & Stretch (G2 aus AAA-Audit) =====================

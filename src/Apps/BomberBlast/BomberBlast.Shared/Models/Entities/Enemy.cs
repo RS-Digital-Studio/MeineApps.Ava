@@ -129,6 +129,8 @@ public class Enemy : Entity
     {
         Type = type;
         IsElite = isElite;
+        // Sprint 5.4 AAA-Audit #11: Outline-Pass — gilt auch fuer BossEnemy (erbt von Enemy).
+        RenderOutline = true;
         // Sprint 6.1 AAA-Audit #15: Elite-Modifier multiplikativ.
         Speed = type.GetSpeed() * (isElite ? 1.2f : 1f);
         Intelligence = type.GetIntelligence();

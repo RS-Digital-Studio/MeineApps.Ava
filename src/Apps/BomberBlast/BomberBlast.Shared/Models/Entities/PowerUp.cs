@@ -49,6 +49,8 @@ public class PowerUp : Entity
     {
         Type = type;
         RemainingTime = DEFAULT_LIFETIME;
+        // Sprint 5.4 AAA-Audit #11: Outline-Pass hebt PowerUps optisch vom Grid ab.
+        RenderOutline = true;
     }
 
     public override void Update(float deltaTime)

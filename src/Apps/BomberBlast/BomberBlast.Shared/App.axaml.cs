@@ -556,7 +556,6 @@ public partial class App : Application
         // damit Constructor-Injection moeglich wird und Tests die Module direkt instanziieren koennen.
         services.AddSingleton<BomberBlast.Services.IDialogPresenter, BomberBlast.Services.DialogPresenter>();
         services.AddSingleton<BomberBlast.ViewModels.IChildViewModelRegistry, BomberBlast.ViewModels.ChildViewModelRegistry>();
-        services.AddSingleton<BomberBlast.ViewModels.ILifecycleHub, BomberBlast.ViewModels.LifecycleHub>();
         // BottomTabController braucht einen Callback an die Navigation. Wird lazy via
         // INavigationCoordinator aufgeloest (Lambda laeuft erst zur Laufzeit — kein Zirkel
         // beim Container-Aufbau).
@@ -565,8 +564,7 @@ public partial class App : Application
             sp.GetRequiredService<BomberBlast.ViewModels.IChildViewModelRegistry>(),
             request => sp.GetRequiredService<BomberBlast.Navigation.INavigationCoordinator>().NavigateTo(request)));
         // NavigationCoordinator haelt ActiveView + die komplette Routing-Logik.
-        // Der CloudSaveInitTask-Provider zeigt auf MainViewModel (lazy) — bis der Task in einen
-        // eigenen Lifecycle-Service umzieht.
+        // Der CloudSaveInitTask-Provider zeigt lazy auf den LifecycleHub (kein Container-Zirkel).
         services.AddSingleton<BomberBlast.Navigation.INavigationCoordinator>(sp => new BomberBlast.Navigation.NavigationCoordinator(
             sp.GetRequiredService<BomberBlast.ViewModels.IChildViewModelRegistry>(),
             sp.GetRequiredService<BomberBlast.Navigation.IBottomTabController>(),
@@ -575,7 +573,16 @@ public partial class App : Application
             sp.GetRequiredService<BomberBlast.Core.SoundManager>(),
             sp.GetRequiredService<MeineApps.Core.Ava.Localization.ILocalizationService>(),
             sp.GetRequiredService<ILogger<BomberBlast.Navigation.NavigationCoordinator>>(),
-            () => sp.GetRequiredService<Lazy<BomberBlast.ViewModels.MainViewModel>>().Value.CloudSaveInitTask));
+            () => sp.GetRequiredService<BomberBlast.ViewModels.ILifecycleHub>().CloudSaveInitTask));
+        // LifecycleHub: BackPress + CloudSave-Init + Rewarded-Ad-Unavailable-Handling.
+        services.AddSingleton<BomberBlast.ViewModels.ILifecycleHub>(sp => new BomberBlast.ViewModels.LifecycleHub(
+            sp.GetRequiredService<BomberBlast.Services.ICloudSaveService>(),
+            sp.GetRequiredService<BomberBlast.Services.IDialogPresenter>(),
+            sp.GetRequiredService<BomberBlast.ViewModels.IChildViewModelRegistry>(),
+            sp.GetRequiredService<BomberBlast.Navigation.INavigationCoordinator>(),
+            sp.GetRequiredService<MeineApps.Core.Ava.Localization.ILocalizationService>(),
+            sp.GetRequiredService<MeineApps.Core.Premium.Ava.Services.IRewardedAdService>(),
+            sp.GetRequiredService<ILogger<BomberBlast.ViewModels.LifecycleHub>>()));
 
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainMenuViewModel>();

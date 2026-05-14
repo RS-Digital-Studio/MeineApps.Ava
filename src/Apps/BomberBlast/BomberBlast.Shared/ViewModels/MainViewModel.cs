@@ -13,15 +13,19 @@ using Microsoft.Extensions.Logging;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// Haupt-ViewModel für Navigation zwischen Views (MainMenu, Game, LevelSelect, etc.).
-/// Zeigt jeweils nur eine Child-View an.
-/// Hält alle Child-ViewModels für den korrekten DataContext.
+/// Haupt-Compositor-ViewModel. Buendelt die fuenf Feature-Module
+/// (<see cref="IChildViewModelRegistry"/>, <see cref="BomberBlast.Navigation.IBottomTabController"/>,
+/// <see cref="BomberBlast.Navigation.INavigationCoordinator"/>,
+/// <see cref="BomberBlast.Services.IDialogPresenter"/>, <see cref="ILifecycleHub"/>) und
+/// forwarded deren State an die AXAML-Bindings von MainView.axaml.
+///
+/// <para>Eigene Logik beschraenkt sich auf: Event-Forwarding (FloatingText/Celebration/ExitHint),
+/// Property-Forwarder mit PropertyChanged-Routing, RelayCommand-Delegation und das
+/// Achievement-Toast-Wiring.</para>
 ///
 /// <para><b>Lifetime-Hinweis:</b> Singleton mit App-Lifetime. Alle Event-Subscriptions
 /// im Konstruktor sind bewusst per Lambda registriert — Unsubscribe ist nicht nötig,
-/// weil Child-ViewModels (ebenfalls Singleton) und Services gemeinsam bis Prozess-Ende
-/// leben. <see cref="OnAdUnavailable"/> ist als benannter Handler ausgelegt als Referenz,
-/// falls in Zukunft eine View- oder VM-Recycling-Strategie eingeführt wird.</para>
+/// weil Module + Child-ViewModels (ebenfalls Singleton) gemeinsam bis Prozess-Ende leben.</para>
 /// </summary>
 public sealed partial class MainViewModel : ViewModelBase
 {
@@ -206,10 +210,7 @@ public sealed partial class MainViewModel : ViewModelBase
     /// </summary>
     public bool IsAnyDialogOpen => _dialogPresenter.IsAnyDialogOpen;
 
-    private readonly ILocalizationService _localizationService;
-    private readonly IRewardedAdService _rewardedAdService;
     private readonly IAchievementService _achievementService;
-    private readonly ICloudSaveService _cloudSaveService;
     private readonly ILogger<MainViewModel> _logger;
     /// <summary>GameEventBus — VMs ueber den Service routen statt durch MainVM.</summary>
     private readonly IGameEventBus _eventBus;
@@ -225,29 +226,25 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <summary>Haelt ActiveView + die komplette Routing-Logik.</summary>
     private readonly INavigationCoordinator _navigationCoordinator;
 
-    /// <summary>
-    /// Task fuer Cloud-Save-Initialisierung (kein Fire-and-Forget, vermeidet Race Conditions).
-    /// Wird im Ctor gestartet. Der NavigationCoordinator awaitet ihn (3s-Cap) vor Game-Routen
-    /// — daher public exponiert (Provider-Callback in der DI-Registrierung).
-    /// </summary>
-    public Task? CloudSaveInitTask { get; private set; }
-
-    private readonly BackPressHelper _backPressHelper = new();
+    /// <summary>Haelt BackPress, CloudSave-Init und Rewarded-Ad-Unavailable-Handling.</summary>
+    private readonly ILifecycleHub _lifecycleHub;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Audit M25: Konstruktor von 32 Parametern auf eine einzige Aggregat-Dependency reduziert.
-    /// Die <see cref="MainViewModelDependencies"/>-Record buendelt alle 8 Eager-VMs, 15 Lazy-VMs
-    /// und 10 Services.
+    /// MainViewModel ist ein Compositor: er buendelt die fuenf Feature-Module
+    /// (Registry, BottomTabController, NavigationCoordinator, DialogPresenter, LifecycleHub)
+    /// plus die MainViewModelDependencies-Aggregat-Dependency und forwarded deren State an
+    /// die AXAML-Bindings.
     /// </summary>
     public MainViewModel(
         MainViewModelDependencies deps,
         IChildViewModelRegistry registry,
         IBottomTabController tabController,
-        INavigationCoordinator navigationCoordinator)
+        INavigationCoordinator navigationCoordinator,
+        ILifecycleHub lifecycleHub)
     {
         // Registry haelt alle Child-VMs + Sub-Wirings. Events routen Navigation + VM-Lazy-Instantiation
         // an MainViewModel zurueck, damit AXAML-Bindings (ContentControl auf MenuVm/GameVm/ShopVm etc.)
@@ -266,15 +263,17 @@ public sealed partial class MainViewModel : ViewModelBase
         _navigationCoordinator = navigationCoordinator;
         _navigationCoordinator.ActiveViewChanged += OnNavigationActiveViewChanged;
 
+        // LifecycleHub haelt BackPress + CloudSave-Init + Rewarded-Ad-Unavailable.
+        // ExitHintRequested wird an das MainViewModel-Event geforwarded (MainActivity-Subscription).
+        _lifecycleHub = lifecycleHub;
+        _lifecycleHub.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+
         // DialogPresenter haelt den Dialog-State.
         // StateChanged → alle Dialog-Properties + IsAnyDialogOpen neu feuern, damit Bindings reagieren.
         _dialogPresenter = deps.DialogPresenter;
         _dialogPresenter.StateChanged += OnDialogPresenterStateChanged;
 
-        _localizationService = deps.Localization;
-        _rewardedAdService = deps.RewardedAdService;
         _achievementService = deps.AchievementService;
-        _cloudSaveService = deps.CloudSaveService;
         _logger = deps.Logger;
         _eventBus = deps.EventBus;
 
@@ -324,12 +323,6 @@ public sealed partial class MainViewModel : ViewModelBase
         if (adService.AdsEnabled)
             adService.HideBanner();
 
-        // Ad-Unavailable Meldung anzeigen (benannte Methode statt Lambda fuer Unsubscribe)
-        _rewardedAdService.AdUnavailable += OnAdUnavailable;
-
-        // Back-Press Helper verdrahten
-        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
-
         // PauseViewModel entfernt — Resume/Restart laufen direkt ueber GameVm.{Resume,Restart}Command,
         // gebunden im GameView.axaml Pause-Overlay. SkiaSharp-Canvas rendert die Pause-Anzeige.
 
@@ -339,14 +332,6 @@ public sealed partial class MainViewModel : ViewModelBase
 
         // LanguageChanged: Registry routet an alle instanziierten VMs.
         localization.LanguageChanged += (_, _) => registry.RefreshAllLocalizedTexts();
-
-        // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget).
-        // Der NavigationCoordinator awaitet diesen Task vor Game-Routen via CloudSaveInitTask-Provider.
-        CloudSaveInitTask = Task.Run(async () =>
-        {
-            try { await _cloudSaveService.TryLoadFromCloudAsync(); }
-            catch (Exception ex) { _logger?.LogWarning(ex, "CloudSave Init fehlgeschlagen"); }
-        });
 
         // What's-New-Modal: Closed-Event verdrahten + Initial-Check ob anzeigen.
         // ShouldShow prueft Service-State (CurrentVersion > LastSeenVersion + Eintraege vorhanden).
@@ -430,74 +415,7 @@ public sealed partial class MainViewModel : ViewModelBase
     /// Hierarchische Back-Navigation. Gibt true zurück wenn das Event behandelt wurde,
     /// false wenn die App geschlossen werden soll.
     /// </summary>
-    public bool HandleBackPressed()
-    {
-        // 1. Offene Dialoge schließen (höchste Priorität)
-        if (IsConfirmDialogVisible)
-        {
-            CancelConfirm();
-            return true;
-        }
-        if (IsAlertDialogVisible)
-        {
-            DismissAlert();
-            return true;
-        }
-
-        // 2. Score-Double Overlay → überspringen
-        // GameVm ist nur initialisiert wenn der User im Spiel war/ist; Score-Double
-        // erscheint ausschliesslich nach LevelComplete, also IST GameVm dann garantiert nicht null.
-        if (GameVm is { ShowScoreDoubleOverlay: true })
-        {
-            GameVm.SkipDoubleScoreCommand.Execute(null);
-            return true;
-        }
-
-        // 3. Im Spiel: Pause/Resume
-        if (IsGameActive && GameVm is not null)
-        {
-            if (GameVm.IsPaused)
-            {
-                // Pause → Resume
-                GameVm.ResumeCommand.Execute(null);
-            }
-            else if (GameVm.State == Core.GameState.Playing)
-            {
-                // Spielend → Pause
-                GameVm.PauseCommand.Execute(null);
-            }
-            else
-            {
-                // Andere Game-States (Starting, PlayerDied etc.) → zum Menü.
-                // NavigateTo(GoMainMenu) stoppt den Game-Loop intern (OnDisappearing) + HideAll.
-                NavigateTo(new GoMainMenu());
-            }
-            return true;
-        }
-
-        // 4. Settings → zurück (zum Spiel oder Menü)
-        if (IsSettingsActive)
-        {
-            NavigateTo(new GoBack());
-            return true;
-        }
-
-        // 5. Alle anderen Sub-Views → zurück zum Hauptmenü
-        if (ActiveView is not ActiveView.MainMenu and not ActiveView.None and not ActiveView.Game and not ActiveView.Settings)
-        {
-            NavigateTo(new GoMainMenu());
-            return true;
-        }
-
-        // 6. Hauptmenü → Double-Back-to-Exit
-        if (IsMainMenuActive)
-        {
-            var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Press back again to exit";
-            return _backPressHelper.HandleDoubleBack(msg);
-        }
-
-        return false;
-    }
+    public bool HandleBackPressed() => _lifecycleHub.HandleBackPressed();
 
     // ═══════════════════════════════════════════════════════════════════════
     // DIALOGS
@@ -523,14 +441,6 @@ public sealed partial class MainViewModel : ViewModelBase
 
     [RelayCommand]
     private void CancelConfirm() => _dialogPresenter.CancelConfirm();
-
-    /// <summary>
-    /// Benannter Handler fuer AdUnavailable (statt Lambda, damit Unsubscribe moeglich)
-    /// </summary>
-    private void OnAdUnavailable()
-    {
-        ShowAlertDialog(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage, AppStrings.OK);
-    }
 
     /// <summary>
     /// Wird vom <see cref="IChildViewModelRegistry.VmInstantiated"/>-Event gerufen wenn ein Lazy-VM

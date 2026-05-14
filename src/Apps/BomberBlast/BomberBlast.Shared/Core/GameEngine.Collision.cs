@@ -372,6 +372,10 @@ public sealed partial class GameEngine
         _state = GameState.PlayerDied;
         _stateTimer = 0;
 
+        // Sprint 5.x AAA-Audit #8: OnPlayerHit-Hook — Modi koennen z.B. Run-Abbruch-Logik anhaengen.
+        try { _currentMode?.OnPlayerHit(BuildModeContext()); }
+        catch { /* Best-Effort, no-op-Default in GameModeBase */ }
+
         // Game-Feel: Stärkerer Shake + Hit-Pause + Vibration bei Spieler-Tod
         _screenShake.Trigger(5f, 0.3f);
         _hitPauseTimer = 0.1f;
@@ -399,8 +403,18 @@ public sealed partial class GameEngine
         _enemiesRemainingDirty = true;
         _enemiesKilled++;
 
+        // Sprint 5.x AAA-Audit #8: OnEnemyKilled-Hook — Modi koennen Spawn-Eskalation o.ae. anhaengen.
+        try { _currentMode?.OnEnemyKilled(BuildModeContext()); }
+        catch { /* Best-Effort, no-op-Default in GameModeBase */ }
+
         // Boss: Eigene Punkte statt EnemyType-Points
         int points = enemy is BossEnemy bossKilled ? bossKilled.BossPoints : enemy.Points;
+
+        // Sprint 5.x AAA-Audit #8: Mode-Score-Modifier (Default 1.0 = kein Effekt).
+        // Auf `points` selbst angewandt → Score UND FloatingText-Anzeige bleiben konsistent.
+        float scoreModifier = _currentMode?.GetScoreModifier(BuildModeContext()) ?? 1.0f;
+        if (Math.Abs(scoreModifier - 1.0f) > 0.001f)
+            points = (int)Math.Round(points * scoreModifier);
 
         // Phase 30d — Co-Op: Score an den Spieler der die Bombe gelegt hat.
         // Default (Single-Player oder Source-unbekannt): Player 1.

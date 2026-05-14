@@ -918,7 +918,13 @@ public sealed partial class GameEngine
         // Reihenfolge ist wichtig: NACH Player-Reset, NACH Grid-Setup, NACH Timer-Reset.
         // Modi können hier ihren initialen State setzen (Survival-SpawnTimer, BossRush-StartTime, ...).
         _modeTimeElapsed = 0f;
-        try { _currentMode?.Initialize(BuildModeContext()); }
+        try
+        {
+            var modeCtx = BuildModeContext();
+            _currentMode?.Initialize(modeCtx);
+            // Sprint 5.x AAA-Audit #8: OnLevelStart-Hook — pro Level (nach Initialize).
+            _currentMode?.OnLevelStart(modeCtx);
+        }
         catch { /* Best-Effort, no-op-Default in GameModeBase */ }
     }
 

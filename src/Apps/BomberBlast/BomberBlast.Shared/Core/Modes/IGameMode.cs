@@ -23,10 +23,40 @@ public interface IGameMode
     void Initialize(GameModeContext ctx);
 
     /// <summary>
+    /// Sprint 5.x AAA-Audit #8: Wird bei jedem Level-Start aufgerufen (nach <see cref="Initialize"/>).
+    /// Modi können hier level-spezifischen State zurücksetzen oder den Spawn anpassen.
+    /// </summary>
+    void OnLevelStart(GameModeContext ctx);
+
+    /// <summary>
     /// Pro Frame während <see cref="GameState.Playing"/> aufgerufen.
     /// Hier kommt die mode-spezifische Logik rein (Survival-Spawn, Dungeon-Buff-Update, etc.).
     /// </summary>
     void UpdateLogic(float deltaTime, GameModeContext ctx);
+
+    /// <summary>
+    /// Sprint 5.x AAA-Audit #8: Wird gerufen wenn ein Gegner besiegt wurde (zentral in KillEnemy).
+    /// Modi können z.B. eigene Spawn-Eskalation oder Reward-Logik anhängen.
+    /// </summary>
+    void OnEnemyKilled(GameModeContext ctx);
+
+    /// <summary>
+    /// Sprint 5.x AAA-Audit #8: Wird gerufen wenn eine Bombe explodiert (zentral in TriggerExplosion).
+    /// </summary>
+    void OnBombExploded(GameModeContext ctx);
+
+    /// <summary>
+    /// Sprint 5.x AAA-Audit #8: Wird gerufen wenn der Spieler getroffen wird / stirbt
+    /// (zentral in KillPlayer). Modi können hier z.B. Run-Abbruch-Logik triggern.
+    /// </summary>
+    void OnPlayerHit(GameModeContext ctx);
+
+    /// <summary>
+    /// Sprint 5.x AAA-Audit #8: Score-Multiplikator des Modus (Default 1.0).
+    /// Wird bei der zentralen Enemy-Kill-Score-Vergabe angewandt — Modi können
+    /// Score skalieren ohne die Engine-Score-Logik anzufassen.
+    /// </summary>
+    float GetScoreModifier(GameModeContext ctx);
 
     /// <summary>
     /// Wird gerufen wenn Spieler ein Level erfolgreich beendet (vor Engine-Defaults).

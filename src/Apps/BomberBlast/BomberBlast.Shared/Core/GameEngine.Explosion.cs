@@ -287,6 +287,10 @@ public sealed partial class GameEngine
     {
         bomb.Explode();
 
+        // Sprint 5.x AAA-Audit #8: OnBombExploded-Hook fuer Mode-Plugins.
+        try { _currentMode?.OnBombExploded(BuildModeContext()); }
+        catch { /* Best-Effort, no-op-Default in GameModeBase */ }
+
         // Bombe aus Grid entfernen
         var cell = _grid.TryGetCell(bomb.GridX, bomb.GridY);
         if (cell != null)

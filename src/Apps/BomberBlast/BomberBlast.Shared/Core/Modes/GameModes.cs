@@ -19,7 +19,12 @@ public abstract class GameModeBase : IGameMode
 {
     public abstract string ModeTag { get; }
     public virtual void Initialize(GameModeContext ctx) { }
+    public virtual void OnLevelStart(GameModeContext ctx) { }
     public virtual void UpdateLogic(float deltaTime, GameModeContext ctx) { }
+    public virtual void OnEnemyKilled(GameModeContext ctx) { }
+    public virtual void OnBombExploded(GameModeContext ctx) { }
+    public virtual void OnPlayerHit(GameModeContext ctx) { }
+    public virtual float GetScoreModifier(GameModeContext ctx) => 1.0f;
     public virtual bool OnLevelComplete(GameModeContext ctx) => true;
     public virtual void OnGameOver(GameModeContext ctx) { }
     public virtual void Cleanup(GameModeContext ctx) { }

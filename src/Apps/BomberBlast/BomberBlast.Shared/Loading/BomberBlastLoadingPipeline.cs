@@ -39,7 +39,14 @@ public sealed class BomberBlastLoadingPipeline : LoadingPipelineBase
                     ShaderEffects.Preload();        // WaterRipple SkSL (Ocean-Welt)
                     BloomEffect.Preload();          // Phase 21b — SkSL Threshold + Box-Blur (Ultra-Tier-Gate)
                 });
-                var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
+                // VM-Graph MUSS auf dem UI-Thread instanziiert werden: ViewModels erzeugen im
+                // Ctor UI-Objekte (z.B. BottomTabBarViewModel → SolidColorBrush). Auf einem
+                // Background-Thread erzeugte Brushes bekommen die falsche Thread-Affinity und
+                // crashen beim ersten Render (Avalonia VerifyAccess). Der UI-Thread ist waehrend
+                // des Splash idle — der Splash rendert auf dem Render-Thread.
+                var vmTask = Avalonia.Threading.Dispatcher.UIThread
+                    .InvokeAsync(() => services.GetRequiredService<MainViewModel>())
+                    .GetTask();
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
 
                 // AI-Assets vorladen (Splash, Menü-Hintergründe, Bosse)

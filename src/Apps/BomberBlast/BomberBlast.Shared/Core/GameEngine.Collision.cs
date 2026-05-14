@@ -536,6 +536,7 @@ public sealed partial class GameEngine
                 // Sprint 5.3 AAA-Audit #13: Music-Boost bei ULTRA — der epische Moment.
                 _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.25f, 5.0f);
                 // Sprint 2.2 AAA-Audit #2: Funnel-Event combo_tier_reached (ULTRA)
+                _comboTiersInLevel++;
                 _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
                 {
                     [AnalyticsParams.Tier] = 10,
@@ -547,6 +548,7 @@ public sealed partial class GameEngine
                 _screenShake.TriggerPullBack(magnitude: 0.5f, durationSeconds: 0.35f);
                 _soundManager.PlayStinger(SoundManager.STINGER_COMBO_MEGA);
                 // Sprint 2.2 AAA-Audit #2: Funnel-Event combo_tier_reached (MEGA)
+                _comboTiersInLevel++;
                 _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
                 {
                     [AnalyticsParams.Tier] = 5,

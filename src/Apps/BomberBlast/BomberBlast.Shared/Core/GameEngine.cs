@@ -502,6 +502,7 @@ public sealed partial class GameEngine : IDisposable
     // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie — verstrichene Zeit + Tode pro Level.
     private float _levelElapsedSeconds; // Wird in Update() inkrementiert (nur Playing-State)
     private int _deathsInLevel;         // Reset bei Level-Start, +1 bei jedem Player-Tod im Level
+    private int _comboTiersInLevel;     // Reset bei Level-Start, +1 bei jedem MEGA/ULTRA-Combo-Tier
 
     // Timing
     private float _stateTimer;

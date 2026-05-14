@@ -18,6 +18,8 @@ public sealed partial class VictoryViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
     private readonly IGemService _gemService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    private readonly IAnalyticsService _analytics;
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
@@ -53,13 +55,15 @@ public sealed partial class VictoryViewModel : ViewModelBase, INavigable, IGameJ
         IProgressService progressService,
         IRewardedAdService rewardedAdService,
         IPurchaseService purchaseService,
-        IGemService gemService)
+        IGemService gemService,
+        IAnalyticsService analytics)
     {
         _localizationService = localizationService;
         _progressService = progressService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
         _gemService = gemService;
+        _analytics = analytics;
     }
 
     public void OnAppearing()
@@ -101,7 +105,7 @@ public sealed partial class VictoryViewModel : ViewModelBase, INavigable, IGameJ
         CanWatchAdForGems = false;
 
         // Premium: Reward sofort gratis (kein Ad nötig)
-        var success = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("gem_bonus");
+        var success = _purchaseService.IsPremium || await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "gem_bonus");
         if (success)
         {
             if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();

@@ -21,6 +21,8 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IGemService _gemService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    private readonly IAnalyticsService _analytics;
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
@@ -124,7 +126,8 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
         ICoinService coinService,
         IGemService gemService,
         ILocalizationService localizationService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IAnalyticsService analytics)
     {
         _dungeonService = dungeonService;
         _dungeonUpgradeService = dungeonUpgradeService;
@@ -132,6 +135,7 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
         _gemService = gemService;
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
+        _analytics = analytics;
 
         _dungeonUpgradeService.BalanceChanged += OnUpgradeBalanceChanged;
     }
@@ -433,7 +437,7 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
 
         CanWatchAdForExtraBuff = false;
 
-        var success = await _rewardedAdService.ShowAdAsync("dungeon_extra_buff");
+        var success = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "dungeon_extra_buff");
         if (success)
         {
             RewardedAdCooldownTracker.RecordAdShown();

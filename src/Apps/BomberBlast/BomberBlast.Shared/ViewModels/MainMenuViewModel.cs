@@ -566,7 +566,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
             return;
         }
 
-        var adSuccess = await _rewardedAdService.ShowAdAsync("double_daily_reward");
+        var adSuccess = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "double_daily_reward");
         if (adSuccess)
         {
             RewardedAdCooldownTracker.RecordAdShown();

@@ -65,4 +65,5 @@ public sealed record MainViewModelDependencies(
     SoundManager SoundManager,
     IAppLogger Logger,
     IGameEventBus EventBus,
-    IWhatsNewService WhatsNewService);
+    IWhatsNewService WhatsNewService,
+    IAnalyticsService Analytics);

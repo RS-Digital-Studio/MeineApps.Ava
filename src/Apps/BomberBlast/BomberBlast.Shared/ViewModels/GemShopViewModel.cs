@@ -18,6 +18,8 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IGemService _gemService;
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: IAP-Funnel-Telemetrie (Start/Success/Cancel/Fail).</summary>
+    private readonly IAnalyticsService _analytics;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -54,11 +56,12 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     // ═══════════════════════════════════════════════════════════════════════
 
     public GemShopViewModel(IGemService gemService, IPurchaseService purchaseService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService, IAnalyticsService analytics)
     {
         _gemService = gemService;
         _purchaseService = purchaseService;
         _localizationService = localizationService;
+        _analytics = analytics;
 
         // Balance-Änderungen live verfolgen
         _gemService.BalanceChanged += OnGemBalanceChanged;
@@ -121,6 +124,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 DisplayName = smallName,
                 GemAmount = 100,
                 PriceText = "0,99 \u20ac",
+                PriceCents = 99,
                 IconKind = GameIconKind.DiamondStone,
                 IconColor = "#00BCD4",
                 BadgeText = null,
@@ -136,6 +140,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 DisplayName = mediumName,
                 GemAmount = 600,
                 PriceText = "3,99 \u20ac",
+                PriceCents = 399,
                 IconKind = GameIconKind.Diamond,
                 IconColor = "#2196F3",
                 BadgeText = popularBadge,
@@ -148,6 +153,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 DisplayName = largeName,
                 GemAmount = 1500,
                 PriceText = "7,99 \u20ac",
+                PriceCents = 799,
                 IconKind = GameIconKind.TreasureChest,
                 IconColor = "#FFD700",
                 BadgeText = bestValueBadge,
@@ -160,6 +166,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 DisplayName = megaName,
                 GemAmount = 5000,
                 PriceText = "14,99 \u20ac",
+                PriceCents = 1499,
                 IconKind = GameIconKind.Crown,
                 IconColor = "#FF6B35",
                 BadgeText = _localizationService.GetString("GemPackWhale") ?? "3.3x Value!",
@@ -182,6 +189,14 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     {
         if (item == null) return;
 
+        // Sprint 2.2 AAA-Audit #2: Funnel-Start — der User hat Kauf-Intent gezeigt.
+        _analytics?.LogEvent(AnalyticsEvents.PurchaseFlowStart, new Dictionary<string, object>
+        {
+            [AnalyticsParams.Sku] = item.ProductId,
+            [AnalyticsParams.PriceCents] = item.PriceCents,
+            [AnalyticsParams.Currency] = "EUR",
+        });
+
         // Bestätigungsdialog vor Echtgeld-Kauf
         if (ConfirmationRequested != null)
         {
@@ -193,7 +208,15 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 msg,
                 _localizationService.GetString("Buy") ?? "Buy",
                 _localizationService.GetString("Cancel") ?? "Cancel");
-            if (!confirmed) return;
+            if (!confirmed)
+            {
+                // Funnel-Drop-off: User bricht im Bestätigungsdialog ab.
+                _analytics?.LogEvent(AnalyticsEvents.PurchaseCancel, new Dictionary<string, object>
+                {
+                    [AnalyticsParams.Sku] = item.ProductId,
+                });
+                return;
+            }
         }
 
         var success = await _purchaseService.PurchaseConsumableAsync(item.ProductId);
@@ -202,12 +225,29 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
             _gemService.AddGems(item.GemAmount);
             UpdateGemBalance();
 
+            // Funnel-Conversion: Echtgeld-Kauf abgeschlossen.
+            _analytics?.LogEvent(AnalyticsEvents.PurchaseSuccess, new Dictionary<string, object>
+            {
+                [AnalyticsParams.Sku] = item.ProductId,
+                [AnalyticsParams.PriceCents] = item.PriceCents,
+                [AnalyticsParams.Currency] = "EUR",
+            });
+
             // Erfolgs-Feedback
             var msg = string.Format(
                 _localizationService.GetString("GemPurchaseSuccess") ?? "+{0} Gems!",
                 item.GemAmount);
             FloatingTextRequested?.Invoke(msg, "gold");
             CelebrationRequested?.Invoke();
+        }
+        else
+        {
+            // Funnel-Drop-off: Google-Play-Kauf fehlgeschlagen oder vom User im
+            // Play-Billing-Sheet abgebrochen (PurchaseConsumableAsync unterscheidet das nicht).
+            _analytics?.LogEvent(AnalyticsEvents.PurchaseFail, new Dictionary<string, object>
+            {
+                [AnalyticsParams.Sku] = item.ProductId,
+            });
         }
     }
 
@@ -234,6 +274,9 @@ public class GemPackageItem
 
     /// <summary>Preis-Text (z.B. "0,99 EUR")</summary>
     public string PriceText { get; init; } = "";
+
+    /// <summary>Preis in Cents (z.B. 99 fuer 0,99 EUR) — fuer Funnel-Telemetrie.</summary>
+    public int PriceCents { get; init; }
 
     /// <summary>GameIcon-Art fuer das Icon</summary>
     public GameIconKind IconKind { get; init; }

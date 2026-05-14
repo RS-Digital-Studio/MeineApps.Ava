@@ -18,6 +18,8 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGam
     private readonly ICoinService _coinService;
     private readonly IGemService _gemService;
     private readonly IRewardedAdService _rewardedAdService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    private readonly IAnalyticsService _analytics;
     private readonly ILocalizationService _localizationService;
     private readonly IBattlePassService _battlePassService;
     private readonly IAchievementService _achievementService;
@@ -100,12 +102,14 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGam
         IBattlePassService battlePassService,
         IAchievementService achievementService,
         IWeeklyChallengeService weeklyService,
-        IDailyMissionService dailyMissionService)
+        IDailyMissionService dailyMissionService,
+        IAnalyticsService analytics)
     {
         _spinService = spinService;
         _coinService = coinService;
         _gemService = gemService;
         _rewardedAdService = rewardedAdService;
+        _analytics = analytics;
         _localizationService = localizationService;
         _battlePassService = battlePassService;
         _achievementService = achievementService;
@@ -163,7 +167,7 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGam
         {
             // Rewarded Ad für Extra-Spin
             CanSpin = false;
-            var result = await _rewardedAdService.ShowAdAsync("lucky_spin");
+            var result = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "lucky_spin");
             if (result)
             {
                 RewardedAdCooldownTracker.RecordAdShown();
@@ -186,7 +190,7 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGam
         if (IsSpinning || !CanWatchAdForSpin) return;
 
         CanWatchAdForSpin = false;
-        var success = await _rewardedAdService.ShowAdAsync("extra_daily_spin");
+        var success = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "extra_daily_spin");
         if (success)
         {
             RewardedAdCooldownTracker.RecordAdShown();

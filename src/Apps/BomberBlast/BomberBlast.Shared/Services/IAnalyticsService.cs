@@ -122,6 +122,8 @@ public static class AnalyticsParams
     public const string SessionCount = "session_count";
     public const string ConsecutiveDays = "consecutive_days";
     public const string Tier = "tier";                 // combo tier
+    public const string Mode = "mode";                 // Story/Survival/Dungeon/BossRush/QuickPlay/Daily/Master
+    public const string TotalComboCount = "total_combo_count"; // MEGA/ULTRA-Combos in einem Level
 }
 
 /// <summary>No-Op für Desktop / nicht konfigurierte Firebase-Setup.</summary>

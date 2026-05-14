@@ -25,6 +25,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
 
     private readonly GameEngine _gameEngine;
     private readonly IRewardedAdService _rewardedAdService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    private readonly IAnalyticsService _analytics;
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
     private readonly IProgressService _progressService;
@@ -149,10 +151,12 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IReviewService reviewService,
         IGameAssetService assetService,
         IAppLogger logger,
-        IRetentionService retentionService)
+        IRetentionService retentionService,
+        IAnalyticsService analytics)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
+        _analytics = analytics;
         _purchaseService = purchaseService;
         _adService = adService;
         _progressService = progressService;
@@ -656,7 +660,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         try
         {
             // Premium: Reward sofort gratis (kein Ad nötig)
-            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("score_double");
+            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "score_double");
             if (rewarded)
             {
                 if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();

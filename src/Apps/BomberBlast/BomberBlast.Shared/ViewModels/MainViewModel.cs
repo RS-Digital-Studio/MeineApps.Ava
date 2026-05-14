@@ -229,6 +229,8 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ILocalizationService _localizationService;
     private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
+    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    private readonly IAnalyticsService _analytics;
     private readonly IAchievementService _achievementService;
     private readonly ICoinService _coinService;
     private readonly IPurchaseService _purchaseService;
@@ -310,6 +312,7 @@ public sealed partial class MainViewModel : ViewModelBase
         _adService = deps.AdService;
         _purchaseService = deps.PurchaseService;
         _rewardedAdService = deps.RewardedAdService;
+        _analytics = deps.Analytics;
         _achievementService = deps.AchievementService;
         _coinService = deps.CoinService;
         _cloudSaveService = deps.CloudSaveService;
@@ -590,7 +593,7 @@ public sealed partial class MainViewModel : ViewModelBase
         // Dungeon Ad-Run: Rewarded Ad zeigen und bei Erfolg melden (Cooldown beachten)
         vm.AdRunRequested += async () =>
         {
-            var result = await _rewardedAdService.ShowAdAsync("dungeon_run");
+            var result = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "dungeon_run");
             if (result)
             {
                 RewardedAdCooldownTracker.RecordAdShown();
@@ -616,9 +619,27 @@ public sealed partial class MainViewModel : ViewModelBase
         // Battle Pass Premium-Kauf anfordern
         vm.PremiumPurchaseRequested += async () =>
         {
+            // Sprint 2.2 AAA-Audit #2: IAP-Funnel fuer den Battle-Pass-Premium-Kauf.
+            _analytics?.LogEvent(AnalyticsEvents.PurchaseFlowStart, new Dictionary<string, object>
+            {
+                [AnalyticsParams.Sku] = "battle_pass_premium",
+            });
             var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_premium");
             if (success)
+            {
+                _analytics?.LogEvent(AnalyticsEvents.PurchaseSuccess, new Dictionary<string, object>
+                {
+                    [AnalyticsParams.Sku] = "battle_pass_premium",
+                });
                 vm.OnPremiumPurchaseConfirmed();
+            }
+            else
+            {
+                _analytics?.LogEvent(AnalyticsEvents.PurchaseFail, new Dictionary<string, object>
+                {
+                    [AnalyticsParams.Sku] = "battle_pass_premium",
+                });
+            }
         };
         BattlePassVm = vm;
         return vm;

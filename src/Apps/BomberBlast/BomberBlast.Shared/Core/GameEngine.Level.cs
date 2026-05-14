@@ -762,6 +762,7 @@ public sealed partial class GameEngine
         // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie reset.
         _levelElapsedSeconds = 0f;
         _deathsInLevel = 0;
+        _comboTiersInLevel = 0;
 
         // Deck-Telemetrie: Counter für dieses Level zurücksetzen
         _specialBombTypesUsedInLevel.Clear();
@@ -1694,8 +1695,9 @@ public sealed partial class GameEngine
                 [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
                 [AnalyticsParams.Stars] = starsEarned,
                 [AnalyticsParams.Deaths] = _deathsInLevel,
+                [AnalyticsParams.TotalComboCount] = _comboTiersInLevel,
                 ["score"] = _player.Score,
-                ["mode"] = GetCurrentModeTag(),
+                [AnalyticsParams.Mode] = GetCurrentModeTag(),
                 ["master_mode"] = _isMasterMode
             });
             // Sprint 2.2: boss_defeated wenn das Level einen Boss hatte (paired mit boss_encounter beim Start)

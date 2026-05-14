@@ -210,7 +210,7 @@ public sealed partial class ShopViewModel
 
         CanWatchAdForFreeUpgrade = false;
 
-        var success = await _rewardedAdService.ShowAdAsync("free_shop_upgrade");
+        var success = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "free_shop_upgrade");
         if (success)
         {
             RewardedAdCooldownTracker.RecordAdShown();

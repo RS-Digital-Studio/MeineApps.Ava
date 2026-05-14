@@ -12,9 +12,10 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// Event-Handler-Subscriptions (Money, Level, Order, Worker, Prestige, Cinematic, BattlePass,
-/// Language, Premium, State-Loaded, Master-Tool, Event-System).
-/// aus MainViewModel.cs extrahiert (12.05.2026).
+/// Service-Event-Handler die im MainViewModel verbleiben: Money/Order/Lieferant/Event-System,
+/// Cinematic, Reputation-Tier, State-Loaded, Premium, Sprachwechsel.
+/// Progression-Feedback (Level/Prestige/Workshop/Worker/MasterTool/Achievement) liegt im
+/// ProgressionFeedbackCoordinator.
 /// </summary>
 public sealed partial class MainViewModel
 {
@@ -85,157 +86,6 @@ public sealed partial class MainViewModel
         }
     }
 
-    private void OnGoldenScrewsChanged(object? sender, GoldenScrewsChangedEventArgs e)
-    {
-        HeaderVM.GoldenScrewsDisplay = e.NewAmount.ToString("N0");
-
-        // Goldschrauben-Erklärung beim allerersten Erhalt
-        if (e.OldAmount == 0 && e.NewAmount > 0)
-            _contextualHintService.TryShowHint(ContextualHints.GoldenScrews);
-
-        // PP-3: FloatingText bei Goldschrauben-Ausgaben
-        int diff = e.NewAmount - e.OldAmount;
-        if (diff < 0)
-            _uiEffectBus.RaiseFloatingText($"{diff} GS", "warning");
-        else if (diff > 0)
-            _uiEffectBus.RaiseFloatingText($"+{diff} GS", "goldscrews");
-    }
-
-    // Milestone-Level mit Goldschrauben-Belohnung
-    private static readonly (int level, int screws)[] _milestones =
-    [
-        (10, 3), (25, 5), (50, 10), (100, 20), (250, 50), (500, 100), (1000, 200)
-    ];
-
-    private void OnLevelUp(object? sender, LevelUpEventArgs e)
-    {
-        HeaderVM.PlayerLevel = e.NewLevel;
-        HeaderVM.LevelProgress = _gameStateService.State.LevelProgress;
-
-        RefreshWorkshops();
-
-        // Automation-Unlock-Properties aktualisieren (Level-Gates können sich ändern)
-        OnPropertyChanged(nameof(IsAutoCollectUnlocked));
-        OnPropertyChanged(nameof(IsAutoAcceptUnlocked));
-        OnPropertyChanged(nameof(IsAutoAssignUnlocked));
-
-        // Progressive Disclosure: Wird automatisch via [NotifyPropertyChangedFor] auf _playerLevel ausgelöst
-
-        // Pulse-Animation bei JEDEM Level-Up (dezent, kein Dialog)
-        DialogVM.IsLevelUpPulsing = true;
-        _levelPulseTimer?.Stop();
-        _levelPulseTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        _levelPulseTimer.Tick -= OnLevelPulseTimeout;
-        _levelPulseTimer.Tick += OnLevelPulseTimeout;
-        _levelPulseTimer.Start();
-
-        // Sound + FloatingText bei jedem Level-Up
-        _audioService.PlaySoundAsync(GameSound.ButtonTap).FireAndForget();
-        _uiEffectBus.RaiseFloatingText($"Level {e.NewLevel}!", "level");
-
-        // Milestone-Bonus prüfen (10/25/50/100/250/500/1000)
-        foreach (var (level, screws) in _milestones)
-        {
-            if (e.NewLevel == level)
-            {
-                _gameStateService.AddGoldenScrews(screws);
-
-                // Sound + Celebration nur bei Milestones
-                _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
-                _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-                _uiEffectBus.RaiseCelebration();
-                _uiEffectBus.RaiseCeremony(CeremonyType.LevelMilestone,
-                    $"Level {e.NewLevel}!", $"+{screws} Goldschrauben");
-
-                // FloatingText mit Level + Goldschrauben-Bonus
-                _uiEffectBus.RaiseFloatingText(
-                    $"Level {e.NewLevel}! +{screws} \u2699", "level");
-                break;
-            }
-        }
-
-        // Tab-Freischaltung: Hinweis wenn ein neuer Tab verfügbar wird
-        CheckTabUnlockNotification(e.NewLevel);
-
-        // Kontextuelle Hints bei Level-Meilensteinen (passend zu Progressive Disclosure)
-        // Nicht anzeigen wenn ein anderer Dialog offen ist (z.B. Prestige-Summary)
-        if (IsAnyDialogVisible) return;
-
-        if (e.NewLevel == LevelThresholds.HintWorkerUnlock)
-            _contextualHintService.TryShowHint(ContextualHints.WorkerUnlock);
-        else if (e.NewLevel == LevelThresholds.HintQuickJobs)
-            _contextualHintService.TryShowHint(ContextualHints.QuickJobs);
-        else if (e.NewLevel == LevelThresholds.HintCrafting)
-            _contextualHintService.TryShowHint(ContextualHints.CraftingHint);
-        else if (e.NewLevel == LevelThresholds.HintManagerUnlock)
-            _contextualHintService.TryShowHint(ContextualHints.ManagerUnlock);
-        else if (e.NewLevel == LevelThresholds.HintAutomation)
-            _contextualHintService.TryShowHint(ContextualHints.Automation);
-        else if (e.NewLevel == LevelThresholds.HintMasterTools)
-            _contextualHintService.TryShowHint(ContextualHints.MasterToolsUnlock);
-        else if (e.NewLevel == LevelThresholds.HintPrestige)
-            _contextualHintService.TryShowHint(ContextualHints.PrestigeHint);
-
-        // Story-Kapitel prüfen
-        CheckForNewStoryChapter();
-
-        // Review-Milestone prüfen
-        _reviewService?.OnMilestone("level", e.NewLevel);
-        CheckReviewPrompt();
-
-        // Leaderboard-Score aktualisieren (fire-and-forget)
-        if (_playGamesService?.IsSignedIn == true)
-            _playGamesService.SubmitScoreAsync("leaderboard_player_level", e.NewLevel).SafeFireAndForget();
-    }
-
-    private void OnLevelPulseTimeout(object? sender, EventArgs e)
-    {
-        DialogVM.IsLevelUpPulsing = false;
-        _levelPulseTimer?.Stop();
-    }
-
-    private void OnPrestigeCompleted(object? sender, EventArgs e)
-    {
-        var prestigeCount = _gameStateService.Prestige.TotalPrestigeCount;
-
-        // Eternal Mastery (Long-Term-Engagement): Header-Badge aktualisieren
-        RefreshEternalMastery();
-
-        // Zeremonie: Feuerwerk + Confetti + Sound
-        _uiEffectBus.RaiseCelebration();
-        var tierName = _localizationService.GetString("PrestigeCompleted") ?? "Prestige!";
-        _uiEffectBus.RaiseCeremony(CeremonyType.Prestige, tierName, $"#{prestigeCount}");
-        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-        _uiEffectBus.RaiseFloatingText($"Prestige #{prestigeCount}!", "level");
-
-        // Floating-Hint mit aktuellem Eternal-Mastery-Bonus
-        if (prestigeCount >= 1)
-        {
-            var bonusPct = GameBalanceConstants.EternalMasteryBonusPerPrestige * prestigeCount
-                         + GameBalanceConstants.EternalMasteryBonusPer5Prestiges * (prestigeCount / 5)
-                         + GameBalanceConstants.EternalMasteryBonusPer10Prestiges * (prestigeCount / 10);
-            _uiEffectBus.RaiseFloatingText(
-                $"Eternal Mastery: +{bonusPct * 100m:F1}%",
-                "level");
-        }
-
-        // Ascension-Hint-Kaskade (— Reset-Hierarchie-Vereinfachung):
-        //   1. Prestige → AscensionPath-Hint (Foreshadowing: "So funktioniert Ascension")
-        //   3x Legende-Prestige → AscensionAvailable-Hint (Action: "Du kannst jetzt aufsteigen!")
-        // So sieht der Spieler den Ascension-Tab nicht erst nach 3x Legende erstmals — er kennt
-        // ihn vorher schon konzeptuell und arbeitet darauf hin.
-        if (_gameStateService.Prestige.LegendeCount >= 3)
-            _contextualHintService.TryShowHint(ContextualHints.AscensionAvailable);
-        else if (prestigeCount == 1)
-            _contextualHintService.TryShowHint(ContextualHints.AscensionPath);
-
-        _reviewService?.OnMilestone("prestige", prestigeCount);
-        CheckReviewPrompt();
-
-        // Story-Kapitel prüfen (Prestige-bezogene Kapitel sofort triggern)
-        CheckForNewStoryChapter();
-    }
-
     /// <summary>
     /// Coordinator hat Daten lokalisiert + Audio-Track
     /// gesetzt — wir leiten nur noch das View-Trigger-Event weiter.
@@ -274,133 +124,6 @@ public sealed partial class MainViewModel
         });
     }
 
-    private void OnPrestigeMilestoneReached(object? sender, PrestigeMilestoneEventArgs e)
-    {
-        var text = string.Format(
-            _localizationService.GetString("PrestigeMilestoneReached") ?? "Prestige milestone! +{0} golden screws",
-            e.GoldenScrewReward);
-        _uiEffectBus.RaiseFloatingText(text, "currency");
-        _uiEffectBus.RaiseCelebration();
-        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-    }
-
-    private void OnRebirthCompleted(object? sender, WorkshopType type)
-    {
-        // Erster-Stern-Hint nach erstem Rebirth (erklärt Stern-Boni)
-        _contextualHintService.TryShowHint(ContextualHints.FirstStar);
-    }
-
-    private void CheckReviewPrompt()
-    {
-        if (_reviewService?.ShouldPromptReview() == true)
-        {
-            _reviewService.MarkReviewPrompted();
-            App.ReviewPromptRequested?.Invoke();
-        }
-    }
-
-    /// <summary>
-    /// Worker-Level-Up: FloatingText mit Name + neuem Level und Sound.
-    /// </summary>
-    private void OnWorkerLevelUp(object? sender, Worker worker)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            var levelUpText = string.Format(
-                _localizationService.GetString("WorkerLevelUp") ?? "{0} ist jetzt Level {1}!",
-                worker.Name, worker.ExperienceLevel);
-            _uiEffectBus.RaiseFloatingText(levelUpText, "level");
-            _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
-        });
-    }
-
-    private void OnXpGained(object? sender, XpGainedEventArgs e)
-    {
-        HeaderVM.CurrentXp = e.CurrentXp;
-        HeaderVM.XpForNextLevel = e.XpForNextLevel;
-        // Korrekte Formel aus GameState verwenden (berücksichtigt XP-Basis des aktuellen Levels)
-        HeaderVM.LevelProgress = _gameStateService.State.LevelProgress;
-    }
-
-    private void OnWorkshopUpgraded(object? sender, WorkshopUpgradedEventArgs e)
-    {
-        // Nur den betroffenen Workshop aktualisieren statt alle
-        RefreshSingleWorkshop(e.WorkshopType);
-
-        // Workshop-Detail-Hint nach erstem Upgrade zeigen
-        if (!_contextualHintService.HasSeenHint(ContextualHints.WorkshopDetail.Id))
-        {
-            ShowTutorialHint = false;
-            _contextualHintService.TryShowHint(ContextualHints.WorkshopDetail);
-        }
-        // Long-Press-Hint nach 2. Upgrade — Spieler hat erstes Tap-Upgrade
-        // erlebt, jetzt ist der Discoverability-Moment fuer "Halten = x10 / x100 Bulk".
-        // Bei aktivem Hold-to-Upgrade zeigen wir den Hint NICHT (er kennt das Feature dann schon).
-        else if (!IsHoldingUpgrade && !_contextualHintService.HasSeenHint(ContextualHints.LongPressBulk.Id))
-        {
-            _contextualHintService.TryShowHint(ContextualHints.LongPressBulk);
-        }
-
-        // Rebirth-Hint: Erster Workshop erreicht Level 1000
-        if (e.NewLevel >= Workshop.MaxLevel)
-            _contextualHintService.TryShowHint(ContextualHints.RebirthReady);
-
-        // Multiplikator-Meilensteine (Bumpy Progression)
-        if (!IsHoldingUpgrade && Workshop.IsMilestoneLevel(e.NewLevel))
-        {
-            decimal milestoneMultiplier = Workshop.GetMilestoneMultiplierForLevel(e.NewLevel);
-            var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
-            string boostText = $"x{milestoneMultiplier:0.#} {_localizationService.GetString("IncomeBoost") ?? "Income Boost"}!";
-
-            _uiEffectBus.RaiseFloatingText(boostText, "golden_screws");
-            _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
-
-            // Größere Zeremonien bei höheren Meilensteinen
-            if (e.NewLevel >= LevelThresholds.WorkshopCeremonyThreshold)
-            {
-                _uiEffectBus.RaiseCeremony(CeremonyType.WorkshopMilestone,
-                    $"{workshopName} Lv.{e.NewLevel}",
-                    boostText);
-            }
-        }
-
-        // Workshop-Level-Milestone prüfen (nicht während Hold-to-Upgrade)
-        // Schwellen weiter auseinander damit nicht bei jedem frühen Level Benachrichtigungen kommen
-        if (!IsHoldingUpgrade)
-        {
-            foreach (var (level, screws) in s_workshopMilestones)
-            {
-                if (e.NewLevel == level)
-                {
-                    _gameStateService.AddGoldenScrews(screws);
-                    var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
-                    _uiEffectBus.RaiseFloatingText(
-                        $"{workshopName} Lv.{e.NewLevel}! +{screws} \u2699", "level");
-                    _uiEffectBus.RaiseCelebration();
-                    _uiEffectBus.RaiseCeremony(CeremonyType.WorkshopMilestone,
-                        $"{workshopName} Lv.{e.NewLevel}!", $"+{screws} Goldschrauben");
-                    _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
-                    break;
-                }
-            }
-
-            // Story-Kapitel prüfen
-            CheckForNewStoryChapter();
-        }
-
-        // Ziel-Cache invalidieren (Workshop-Level könnte Ziel erfüllen)
-        _goalService.Invalidate();
-    }
-
-    private void OnWorkerHired(object? sender, WorkerHiredEventArgs e)
-    {
-        // Nur den betroffenen Workshop aktualisieren statt alle
-        RefreshSingleWorkshop(e.WorkshopType);
-
-        // Ziel-Cache invalidieren (Worker-Einstellung könnte Ziel erfüllen)
-        _goalService.Invalidate();
-    }
-
     private void OnOrderCompleted(object? sender, OrderCompletedEventArgs e)
     {
         HasActiveOrder = false;
@@ -421,15 +144,13 @@ public sealed partial class MainViewModel
         // Story-Kapitel prüfen
         CheckForNewStoryChapter();
 
-        // Review-Milestone prüfen
+        // Review-Milestone prüfen (CheckReviewPrompt liegt im ProgressionFeedbackCoordinator)
         _reviewService?.OnMilestone("orders", _gameStateService.Statistics.TotalOrdersCompleted);
-        CheckReviewPrompt();
+        _progressionFeedbackCoordinator.CheckReviewPrompt();
 
         // Ziel-Cache invalidieren (Auftragsabschluss könnte Ziel erfüllen)
         _goalService.Invalidate();
     }
-
-    // OnChallengeProgressChanged → extrahiert nach MissionsFeatureViewModel
 
     private async void OnShowPrestigeDialog(object? sender, EventArgs e)
         => await Helpers.AsyncExtensions.RunHandlerSafely(ShowPrestigeConfirmationAsync);
@@ -445,21 +166,6 @@ public sealed partial class MainViewModel
             int score = (int)(e.Rating.GetRewardPercentage() * 100);
             _tournamentService?.RecordScore(score);
         }
-    }
-
-    private void OnMasterToolUnlocked(object? sender, MasterToolDefinition tool)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            var name = _localizationService.GetString(tool.NameKey);
-            if (string.IsNullOrEmpty(name)) name = tool.Id;
-            _uiEffectBus.RaiseFloatingText($"{tool.Icon} {name}!", "MasterTool");
-            _uiEffectBus.RaiseCelebration();
-            _uiEffectBus.RaiseCeremony(CeremonyType.MasterTool, name, $"+{(int)(tool.IncomeBonus * 100)}% Einkommen");
-            _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
-
-            MissionsVM.MasterToolsCollected = _gameStateService.State.CollectedMasterTools.Count;
-        });
     }
 
     private void OnDeliveryArrived(object? sender, SupplierDelivery delivery)
@@ -621,35 +327,6 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>
-    /// v2.1.0: Praktikant hat 24h aktiv trainiert — Spieler bekommt Promotion-Dialog.
-    /// Bei Annahme wird er zu E-Tier promoviert (kostenpflichtig), bei Ablehnung verlaesst er.
-    /// </summary>
-    private void OnInternReadyForPromotion(object? sender, Worker intern)
-    {
-        Dispatcher.UIThread.Post(async () =>
-        {
-            var title = _localizationService.GetString("InternPromotionTitle") ?? "Praktikant bereit zur Promotion";
-            var msgFormat = _localizationService.GetString("InternPromotionMessage")
-                            ?? "{0} hat 24h Training abgeschlossen. Behalten (E-Tier, Lohn) oder gehen lassen?";
-            var keep = _localizationService.GetString("InternPromotionKeep") ?? "Behalten";
-            var let = _localizationService.GetString("InternPromotionLet") ?? "Gehen lassen";
-
-            var confirmed = await DialogVM.ShowConfirmDialog(
-                title, string.Format(msgFormat, intern.Name), keep, let);
-
-            if (confirmed)
-            {
-                _workerService.PromoteIntern(intern.Id);
-                _uiEffectBus.RaiseFloatingText($"{intern.Name}: E-Tier!", "level");
-            }
-            else
-            {
-                _workerService.DeclineInternPromotion(intern.Id);
-            }
-        });
-    }
-
-    /// <summary>
     /// v2.0.37: Reputation-Tier-Wechsel — bei Aufstieg Confetti + FloatingText, bei Abstieg
     /// stille Aktualisierung der Header-Properties (Spieler soll nicht zusaetzlich frustriert
     /// werden, wenn Reputation faellt).
@@ -680,21 +357,6 @@ public sealed partial class MainViewModel
                     DialogVM.IsAchievementDialogVisible = true;
                 });
         });
-    }
-
-    private void OnAchievementUnlocked(object? sender, Achievement achievement)
-    {
-        // Während Hold-to-Upgrade keine Dialoge anzeigen
-        if (IsHoldingUpgrade) return;
-
-        _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
-
-        var title = _localizationService.GetString(achievement.TitleKey);
-        DialogVM.AchievementName = string.IsNullOrEmpty(title) ? achievement.TitleFallback : title;
-        var desc = _localizationService.GetString(achievement.DescriptionKey);
-        DialogVM.AchievementDescription = string.IsNullOrEmpty(desc) ? achievement.DescriptionFallback : desc;
-        DialogVM.IsAchievementDialogVisible = true;
-        _uiEffectBus.RaiseCelebration();
     }
 
     private void OnPremiumStatusChanged(object? sender, EventArgs e)

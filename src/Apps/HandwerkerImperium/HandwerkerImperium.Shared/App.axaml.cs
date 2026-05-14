@@ -383,6 +383,10 @@ public partial class App : Application
         // Spielstart-Sequenz (Load, Cloud-Save, Welcome-Flow, GameLoop-Start)
         // aus MainViewModel.Init.cs extrahiert.
         services.AddSingleton<IGameStartupCoordinator, GameStartupCoordinator>();
+
+        // Progression-Feedback (Level/Prestige/Workshop/Worker/MasterTool/Achievement)
+        // aus MainViewModel.EventHandlers.cs extrahiert — subscribed selbst auf die Service-Events.
+        services.AddSingleton<IProgressionFeedbackCoordinator, ProgressionFeedbackCoordinator>();
         // Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
         services.AddSingleton<IDailyBundleService, DailyBundleService>();
 

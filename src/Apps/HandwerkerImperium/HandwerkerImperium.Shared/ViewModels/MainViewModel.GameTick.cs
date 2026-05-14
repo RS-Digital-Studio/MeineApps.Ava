@@ -138,28 +138,5 @@ public sealed partial class MainViewModel
     /// </summary>
     private void RefreshCurrentGoal() => GoalBannerVM.Refresh();
 
-    /// <summary>
-    /// Prüft ob beim neuen Level ein Tab freigeschaltet wird und zeigt einen Hinweis.
-    /// </summary>
-    private void CheckTabUnlockNotification(int newLevel)
-    {
-        string[] tabNames = [
-            _localizationService.GetString("TabWerkstatt") ?? "Workshop",
-            _localizationService.GetString("TabImperium") ?? "Empire",
-            _localizationService.GetString("TabMissionen") ?? "Missions",
-            _localizationService.GetString("TabGilde") ?? "Guild",
-            _localizationService.GetString("TabShop") ?? "Shop"
-        ];
-
-        for (int i = 0; i < TabUnlockLevels.Length; i++)
-        {
-            if (TabUnlockLevels[i] == newLevel)
-            {
-                var unlockText = string.Format(
-                    _localizationService.GetString("TabUnlocked") ?? "{0} freigeschaltet!",
-                    tabNames[i]);
-                _uiEffectBus.RaiseFloatingText(unlockText, "golden_screws");
-            }
-        }
-    }
+    // CheckTabUnlockNotification → ProgressionFeedbackCoordinator (vom OnLevelUp-Handler genutzt).
 }

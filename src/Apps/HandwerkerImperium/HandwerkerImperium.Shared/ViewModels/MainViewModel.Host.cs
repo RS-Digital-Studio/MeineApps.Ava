@@ -127,4 +127,20 @@ public sealed partial class MainViewModel
     }
     void Services.Interfaces.IStartupHost.RefreshFromState() => RefreshFromState();
     void Services.Interfaces.IStartupHost.RefreshOrders() => RefreshOrders();
+
+    // ── IProgressionFeedbackHost (schmale Bruecke fuer ProgressionFeedbackCoordinator) ──
+    bool Services.Interfaces.IProgressionFeedbackHost.IsHoldingUpgrade => IsHoldingUpgrade;
+    bool Services.Interfaces.IProgressionFeedbackHost.IsAnyDialogVisible => IsAnyDialogVisible;
+    void Services.Interfaces.IProgressionFeedbackHost.RefreshWorkshops() => RefreshWorkshops();
+    void Services.Interfaces.IProgressionFeedbackHost.RefreshSingleWorkshop(Models.Enums.WorkshopType type)
+        => RefreshSingleWorkshop(type);
+    void Services.Interfaces.IProgressionFeedbackHost.RefreshEternalMastery() => RefreshEternalMastery();
+    void Services.Interfaces.IProgressionFeedbackHost.NotifyAutomationUnlockChanged()
+    {
+        OnPropertyChanged(nameof(IsAutoCollectUnlocked));
+        OnPropertyChanged(nameof(IsAutoAcceptUnlocked));
+        OnPropertyChanged(nameof(IsAutoAssignUnlocked));
+    }
+    void Services.Interfaces.IProgressionFeedbackHost.SetTutorialHintVisible(bool visible)
+        => ShowTutorialHint = visible;
 }

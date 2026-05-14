@@ -29,7 +29,7 @@ namespace HandwerkerImperium.ViewModels;
 ///   MainViewModel.Init.cs - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// Dialog-Logik extrahiert nach DialogViewModel.cs (Alert, Confirm, Story, Hint, Achievement, Prestige-Dialog).
 /// </summary>
-public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost, Services.Interfaces.IWelcomeFlowHost, Services.Interfaces.IStartupHost
+public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost, Services.Interfaces.IWelcomeFlowHost, Services.Interfaces.IStartupHost, Services.Interfaces.IProgressionFeedbackHost
 {
     // Phase-1-Services (Refactoring 17.04.2026 — Plan velvety-booping-peacock).
     // Delegieren vorerst zurueck an MainViewModel. /3 zieht Logik in die Services um.
@@ -40,6 +40,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly Services.Interfaces.IUiEffectBus _uiEffectBus;
     /// <summary>Spielstart-Sequenz (Load, Cloud-Save, Welcome-Flow, GameLoop-Start).</summary>
     private readonly Services.Interfaces.IGameStartupCoordinator _startupCoordinator;
+    /// <summary>Progression-Feedback (Level/Prestige/Workshop/Worker/MasterTool/Achievement).</summary>
+    private readonly Services.Interfaces.IProgressionFeedbackCoordinator _progressionFeedbackCoordinator;
 
     // INavigationHost-Implementierung: siehe MainViewModel.Host.cs ()
 
@@ -62,7 +64,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IPrestigeService _prestigeService;
     private readonly IChallengeConstraintService? _challengeConstraints;
     private readonly INotificationService? _notificationService;
-    private readonly IPlayGamesService? _playGamesService;
     // Telemetrie (REST via FirebaseService, keine nativen SDKs noetig)
     private readonly IAnalyticsService? _analyticsService;
     /// <summary>Cinematic-Logik aus MainViewModel extrahiert.</summary>
@@ -75,8 +76,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IWeeklyMissionService _weeklyMissionService;
     private readonly IEquipmentService _equipmentService;
     private readonly IGoalService _goalService;
-    private readonly IWorkerService _workerService;
-    private readonly IRebirthService? _rebirthService;
     private readonly ITournamentService? _tournamentService;
     private readonly INotificationCenterService _notificationCenterService;
     private bool _disposed;
@@ -89,10 +88,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
     internal static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
-
-    // Workshop-Level-Meilensteine (statisch, vermeidet Array-Allokation pro Workshop-Upgrade)
-    private static readonly (int level, int screws)[] s_workshopMilestones =
-        [(50, 2), (100, 5), (250, 10), (500, 25), (1000, 50)];
 
     // Zaehler fuer FloatingText-Anzeige (nur alle 3 Ticks, nicht jeden)
     private int _floatingTextCounter;
@@ -112,9 +107,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     internal decimal _targetMoney;
     private bool _moneyAnimActive;
     private const decimal MoneyAnimSpeed = GameBalanceConstants.MoneyAnimationInterpolationFactor;
-
-    // Wiederverwendbarer Timer für Level-Up Pulse (verhindert Timer-Leak bei rapidem Level-Up)
-    private DispatcherTimer? _levelPulseTimer;
 
     // Cache für saisonalen Modifikator (ändert sich nur monatlich)
     private int _cachedSeasonMonth;
@@ -205,7 +197,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         LuckySpinViewModel luckySpinViewModel,
         GameJuiceEngine gameJuiceEngine,
         IGoalService goalService,
-        IWorkerService workerService,
         IContextualHintService contextualHintService,
         DialogViewModel dialogViewModel,
         MissionsFeatureViewModel missionsFeatureViewModel,
@@ -217,13 +208,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         INotificationCenterService notificationCenterService,
         Services.Interfaces.IUiEffectBus uiEffectBus,
         Services.Interfaces.IGameStartupCoordinator startupCoordinator,
+        Services.Interfaces.IProgressionFeedbackCoordinator progressionFeedbackCoordinator,
         ITournamentService? tournamentService = null,
-        IRebirthService? rebirthService = null,
         IStoryService? storyService = null,
         IReviewService? reviewService = null,
         IPrestigeService? prestigeService = null,
         INotificationService? notificationService = null,
-        IPlayGamesService? playGamesService = null,
         IChallengeConstraintService? challengeConstraints = null,
         Services.Interfaces.INavigationService? navigationService = null,
         Services.Interfaces.IDialogOrchestrator? dialogOrchestrator = null,
@@ -242,6 +232,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // Startup-Sequenz an GameStartupCoordinator delegiert — MainViewModel ist nur noch
         // die schmale IStartupHost-Bruecke (IsLoading + EconomyVM-Refreshes).
         _startupCoordinator.AttachHost(this);
+        _progressionFeedbackCoordinator = progressionFeedbackCoordinator;
         _analyticsService = analyticsService;
         _remoteConfigService = remoteConfigService;
         _cinematicCoordinator = cinematicCoordinator;
@@ -275,8 +266,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _weeklyMissionService = weeklyMissionService;
         _equipmentService = equipmentService;
         _goalService = goalService;
-        _workerService = workerService;
-        _rebirthService = rebirthService;
         _tournamentService = tournamentService;
         GameJuiceEngine = gameJuiceEngine;
         // ReduceMotion an GameJuiceEngine durchreichen,
@@ -374,22 +363,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
 
-        // Subscribe to achievement events
-        _achievementService.AchievementUnlocked += OnAchievementUnlocked;
+        // Progression-Feedback (Level/Prestige/Workshop/Worker/MasterTool/Achievement)
+        // subscribed der ProgressionFeedbackCoordinator selbst — siehe StartListening() unten.
 
         // Subscribe to events
         _gameStateService.MoneyChanged += OnMoneyChanged;
-        _gameStateService.GoldenScrewsChanged += OnGoldenScrewsChanged;
-        _gameStateService.LevelUp += OnLevelUp;
-        _gameStateService.XpGained += OnXpGained;
-        _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
-        _gameStateService.WorkerHired += OnWorkerHired;
         _gameStateService.OrderCompleted += OnOrderCompleted;
         _gameStateService.StateLoaded += OnStateLoaded;
         _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
         _gameStateService.ReputationTierChanged += OnReputationTierChanged;
         _gameLoopService.OnTick += OnGameTick;
-        _gameLoopService.MasterToolUnlocked += OnMasterToolUnlocked;
         _gameLoopService.DeliveryArrived += OnDeliveryArrived;
         _gameLoopService.OrderExpired += OnOrderExpired;
         _gameLoopService.AutoCollectedDelivery += OnAutoCollectedDelivery;
@@ -436,8 +419,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _dialogFloatingTextHandler = (text, cat) => _uiEffectBus.RaiseFloatingText(text, cat);
         DialogVM.PrestigeSummaryGoToShopRequested += _dialogPrestigeSummaryGoToShopHandler;
         DialogVM.FloatingTextRequested += _dialogFloatingTextHandler;
-        _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
-        _prestigeService.MilestoneReached += OnPrestigeMilestoneReached;
+
         // Cinematic-Subscription an Coordinator delegiert.
         // CinematicCoordinator broadcastet die UI-thread-resolvte Daten an den hier registrierten Hook.
         if (_cinematicCoordinator != null)
@@ -451,17 +433,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
             _prestigeService.CinematicReady += OnPrestigeCinematicReady;
         }
 
-        // Rebirth-Event fuer First-Star-Hint
-        if (_rebirthService != null)
-            _rebirthService.RebirthCompleted += OnRebirthCompleted;
+        // Progression-Feedback (Level-Up, Prestige, Workshop-Upgrade, Worker-Events,
+        // Master-Tools, Achievements) liegt im ProgressionFeedbackCoordinator. Er subscribed
+        // selbst auf die Service-Events; MainViewModel ist nur die IProgressionFeedbackHost-Bruecke.
+        _progressionFeedbackCoordinator.AttachHost(this);
+        _progressionFeedbackCoordinator.StartListening();
 
-        // Worker-Level-Up Feedback (Sound + FloatingText)
-        _workerService.WorkerLevelUp += OnWorkerLevelUp;
-        _workerService.InternReadyForPromotion += OnInternReadyForPromotion;
-
-        // Notification + PlayGames Services (per Constructor Injection)
+        // Notification-Service (per Constructor Injection)
         _notificationService = notificationService;
-        _playGamesService = playGamesService;
         _challengeConstraints = challengeConstraints;
 
         // Back-Press Helper verdrahten (benannte Methode statt Lambda fuer Dispose-Abmeldung)

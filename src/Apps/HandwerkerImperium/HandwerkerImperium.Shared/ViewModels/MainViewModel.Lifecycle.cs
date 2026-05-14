@@ -83,7 +83,6 @@ public sealed partial class MainViewModel
 
         // Phase 9: Money-Animation Flag zurücksetzen
         _moneyAnimActive = false;
-        _levelPulseTimer?.Stop();
 
         // v2.0.35 Feature D: OrderSpawned-Subscribe abmelden
         _orderGeneratorService.OrderSpawned -= OnLiveOrderSpawned;
@@ -109,23 +108,18 @@ public sealed partial class MainViewModel
         _rewardedAdService.AdUnavailable -= _adUnavailableHandler;
         _saveGameService.ErrorOccurred -= _saveGameErrorHandler;
 
+        // Progression-Feedback-Subscriptions liegen im ProgressionFeedbackCoordinator
+        // (Level/GoldenScrews/Xp/Workshop/Worker/MasterTool/Achievement/Prestige/Rebirth).
         _gameStateService.MoneyChanged -= OnMoneyChanged;
-        _gameStateService.GoldenScrewsChanged -= OnGoldenScrewsChanged;
-        _gameStateService.LevelUp -= OnLevelUp;
-        _gameStateService.XpGained -= OnXpGained;
-        _gameStateService.WorkshopUpgraded -= OnWorkshopUpgraded;
-        _gameStateService.WorkerHired -= OnWorkerHired;
         _gameStateService.OrderCompleted -= OnOrderCompleted;
         _gameStateService.StateLoaded -= OnStateLoaded;
         _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
         _gameStateService.ReputationTierChanged -= OnReputationTierChanged;
         _gameLoopService.OnTick -= OnGameTick;
-        _gameLoopService.MasterToolUnlocked -= OnMasterToolUnlocked;
         _gameLoopService.DeliveryArrived -= OnDeliveryArrived;
         _gameLoopService.OrderExpired -= OnOrderExpired;
         _gameLoopService.AutoCollectedDelivery -= OnAutoCollectedDelivery;
         _gameLoopService.AutoAcceptedOrder -= OnAutoAcceptedOrder;
-        _achievementService.AchievementUnlocked -= OnAchievementUnlocked;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         _localizationService.LanguageChanged -= OnLanguageChanged;
         _eventService.EventStarted -= OnEventStarted;
@@ -143,18 +137,14 @@ public sealed partial class MainViewModel
         // v2.1.0: BP-Tier-Up Event abmelden
         BattlePassViewModel.Service.TierUpReached -= OnBattlePassTierUp;
 
-        _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
-        _prestigeService.MilestoneReached -= OnPrestigeMilestoneReached;
         // Cinematic-Subscription via Coordinator
         if (_cinematicCoordinator != null)
             _cinematicCoordinator.CinematicReady -= OnCinematicReadyFromCoordinator;
         else
             _prestigeService.CinematicReady -= OnPrestigeCinematicReady;
-        if (_rebirthService != null)
-            _rebirthService.RebirthCompleted -= OnRebirthCompleted;
-        _workerService.WorkerLevelUp -= OnWorkerLevelUp;
-        _workerService.InternReadyForPromotion -= OnInternReadyForPromotion;
         _backPressHelper.ExitHintRequested -= OnBackPressExitHint;
+        // ProgressionFeedbackCoordinator unsubscribed seine eigenen Service-Events selbst —
+        // er ist ein DI-Singleton und wird von App.DisposeServices() kaskadiert disposed.
 
         // EconomyFeatureVM Events abmelden
         EconomyVM.FloatingTextRequested -= _economyFloatingTextHandler;

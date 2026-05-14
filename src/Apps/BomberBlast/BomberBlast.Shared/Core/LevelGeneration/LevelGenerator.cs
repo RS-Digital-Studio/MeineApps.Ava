@@ -243,7 +243,16 @@ public sealed class LevelGenerator : ILevelGenerator
                     if (!placed) continue; // Nur nach 40 Fehlversuchen aufgeben
                 }
 
-                var enemy = Enemy.CreateAtGrid(pos.x, pos.y, spawn.Type);
+                // Sprint 6.1 AAA-Audit #12: Elite-Modifier — ab Welt 3, 8% Chance.
+                // Elites haben 1.2x Speed, 2x HP, 3x Points (Enemy-Konstruktor multiplikativ).
+                bool isElite = false;
+                if (level.Number > 0)
+                {
+                    int eliteWorldId = (level.Number - 1) / 10 + 1;
+                    if (eliteWorldId >= 3 && random.Next(100) < 8)
+                        isElite = true;
+                }
+                var enemy = Enemy.CreateAtGrid(pos.x, pos.y, spawn.Type, isElite);
                 result.Add(enemy);
             }
         }

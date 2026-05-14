@@ -332,11 +332,11 @@ public class Enemy : Entity
     /// <summary>
     /// Create enemy at grid position
     /// </summary>
-    public static Enemy CreateAtGrid(int gridX, int gridY, EnemyType type)
+    public static Enemy CreateAtGrid(int gridX, int gridY, EnemyType type, bool isElite = false)
     {
         float x = gridX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
         float y = gridY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-        return new Enemy(x, y, type);
+        return new Enemy(x, y, type, isElite);
     }
 
     /// <summary>

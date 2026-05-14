@@ -298,6 +298,18 @@ public sealed partial class GameEngine
                     if (enemy.IsInvisible)
                         continue;
 
+                    // Sprint 6.1 AAA-Audit #12: Shielded-Modifier — Schild absorbiert 1 Hit pro
+                    // Recharge-Cooldown. Kein Schaden, sichtbares Feedback, Schild-Recharge laeuft an.
+                    if (enemy is BossEnemy bossShield && bossShield.ConsumeShieldHit())
+                    {
+                        _floatingText.Spawn(enemy.X, enemy.Y - 16,
+                            _localizationService.GetString("FloatShieldBlock") ?? "SHIELDED!",
+                            new SKColor(120, 200, 255), 16f, 1.2f);
+                        _particleSystem.Emit(enemy.X, enemy.Y, 10, new SKColor(120, 200, 255), 80f, 0.4f);
+                        _vibration.VibrateShieldHit();
+                        continue;
+                    }
+
                     // Tanker/Boss: Multi-Hit - TakeDamage gibt true zurück wenn tot
                     if (enemy.HitPoints > 1)
                     {
@@ -310,6 +322,19 @@ public sealed partial class GameEngine
                             // Überlebt - visuelles Feedback
                             var (hr, hg, hb) = enemy.Type.GetColor();
                             _particleSystem.Emit(enemy.X, enemy.Y, 6, new SKColor(hr, hg, hb), 60f, 0.3f);
+
+                            // Sprint 6.1 AAA-Audit #12: Reflective-Modifier — 30% Chance dass der Boss
+                            // den Hit auf den Spieler zurueckspiegelt. Deterministisch via EngineRngNext.
+                            if (enemy is BossEnemy bossReflect
+                                && bossReflect.Modifier == Models.Entities.BossModifier.Reflective
+                                && !_player.IsInvincible && !_player.HasSpawnProtection && !_player.HasFlamepass
+                                && EngineRngNext(100) < 30)
+                            {
+                                _floatingText.Spawn(_player.X, _player.Y - 16,
+                                    _localizationService.GetString("FloatReflected") ?? "REFLECTED!",
+                                    new SKColor(255, 80, 80), 14f, 1.0f);
+                                KillPlayer();
+                            }
 
                             // Boss: HP-Anzeige + stärkerer Shake
                             if (enemy is BossEnemy bossHit)

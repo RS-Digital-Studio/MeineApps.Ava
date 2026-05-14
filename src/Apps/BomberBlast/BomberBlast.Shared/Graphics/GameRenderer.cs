@@ -1078,6 +1078,10 @@ public sealed partial class GameRenderer : IDisposable
                 RenderExplosion(canvas, explosion);
         }
 
+        // Sprint 6.1 AAA-Audit #12: Burning-Modifier — Lava-Trail UNTER den Bossen rendern
+        // (vor Enemies, damit der Trail von Boss-Sprite ueberlagert wird).
+        RenderBurningTrails(canvas, enemies);
+
         foreach (var enemy in enemies)
             RenderEntityWithOptionalOutline(canvas, enemy, c => RenderEnemy(c, enemy, grid));
 
@@ -1149,6 +1153,40 @@ public sealed partial class GameRenderer : IDisposable
 
         // HUD zeichnen (nicht mit Spiel skaliert)
         RenderHUD(canvas, remainingTime, score, lives, player);
+    }
+
+    /// <summary>
+    /// Sprint 6.1 AAA-Audit #12: Rendert die Burning-Trail-Lava-Spuren aller Bosse mit
+    /// Burning-Modifier. Trail-Eintraege haben TTL (3s) und fade-en linear aus —
+    /// orange-roter Lava-Glow mit Anti-Spam-Pulse.
+    /// </summary>
+    private void RenderBurningTrails(SKCanvas canvas, IReadOnlyList<BomberBlast.Models.Entities.Enemy> enemies)
+    {
+        float cs = BomberBlast.Models.Grid.GameGrid.CELL_SIZE;
+        const float trailMaxTtl = 3.0f;
+        foreach (var enemy in enemies)
+        {
+            if (enemy is not BomberBlast.Models.Entities.BossEnemy boss || boss.BurningTrail.Count == 0)
+                continue;
+            foreach (var (tx, ty, ttl) in boss.BurningTrail)
+            {
+                float alpha = Math.Clamp(ttl / trailMaxTtl, 0f, 1f);
+                byte a = (byte)(alpha * 200);  // bis ~0.8 Alpha am Anfang, fade zu 0
+                // Lava-Glow: orange-rot mit warmer Mitte.
+                float px = tx * cs;
+                float py = ty * cs;
+                using (var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill })
+                {
+                    // Aussere Halo
+                    paint.Color = new SKColor(255, 80, 30, (byte)(a * 0.55f));
+                    canvas.DrawRect(px, py, cs, cs, paint);
+                    // Innere heisse Mitte (kleineres Rect, gelblicher)
+                    paint.Color = new SKColor(255, 180, 60, a);
+                    float inset = cs * 0.25f;
+                    canvas.DrawRect(px + inset, py + inset, cs - 2 * inset, cs - 2 * inset, paint);
+                }
+            }
+        }
     }
 
     /// <summary>

@@ -29,7 +29,7 @@ namespace HandwerkerImperium.ViewModels;
 ///   MainViewModel.Init.cs - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// Dialog-Logik extrahiert nach DialogViewModel.cs (Alert, Confirm, Story, Hint, Achievement, Prestige-Dialog).
 /// </summary>
-public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost, Services.Interfaces.IWelcomeFlowHost
+public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost, Services.Interfaces.IWelcomeFlowHost, Services.Interfaces.IStartupHost
 {
     // Phase-1-Services (Refactoring 17.04.2026 — Plan velvety-booping-peacock).
     // Delegieren vorerst zurueck an MainViewModel. /3 zieht Logik in die Services um.
@@ -38,6 +38,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly Services.Interfaces.IMiniGameNavigator? _miniGameNavigator;
     /// <summary>Zentraler UI-Effekt-Bus (FloatingText/Celebration/Ceremony).</summary>
     private readonly Services.Interfaces.IUiEffectBus _uiEffectBus;
+    /// <summary>Spielstart-Sequenz (Load, Cloud-Save, Welcome-Flow, GameLoop-Start).</summary>
+    private readonly Services.Interfaces.IGameStartupCoordinator _startupCoordinator;
 
     // INavigationHost-Implementierung: siehe MainViewModel.Host.cs ()
 
@@ -51,7 +53,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly ISaveGameService _saveGameService;
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
-    private readonly IQuickJobService _quickJobService;
     private readonly IDailyChallengeService _dailyChallengeService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IEventService _eventService;
@@ -70,18 +71,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IReputationTierEffects? _reputationTierEffects;
     /// <summary>Optionales Spotlight-Overlay-VM (per DI injiziert).</summary>
     public FtueOverlayViewModel? FtueOverlayVM { get; }
-    private readonly ICloudSaveService? _cloudSaveService;
     private readonly IRemoteConfigService? _remoteConfigService;
     private readonly IWeeklyMissionService _weeklyMissionService;
-    private readonly ILuckySpinService _luckySpinService;
     private readonly IEquipmentService _equipmentService;
     private readonly IGoalService _goalService;
     private readonly IWorkerService _workerService;
     private readonly IRebirthService? _rebirthService;
     private readonly ITournamentService? _tournamentService;
     private readonly INotificationCenterService _notificationCenterService;
-    // WhatsNew-Dialog beim ersten Start nach Update.
-    private readonly IWhatsNewService? _whatsNewService;
     private bool _disposed;
     private QuickJob? _activeQuickJob;
     private bool _quickJobMiniGamePlayed;
@@ -180,7 +177,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         IPurchaseService purchaseService,
         IAdService adService,
         ISaveGameService saveGameService,
-        IQuickJobService quickJobService,
         IDailyChallengeService dailyChallengeService,
         IRewardedAdService rewardedAdService,
         IEventService eventService,
@@ -205,7 +201,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         MarketViewModel marketViewModel,
         AscensionViewModel ascensionViewModel,
         IWeeklyMissionService weeklyMissionService,
-        ILuckySpinService luckySpinService,
         IEquipmentService equipmentService,
         LuckySpinViewModel luckySpinViewModel,
         GameJuiceEngine gameJuiceEngine,
@@ -221,6 +216,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         NotificationCenterViewModel notificationCenterViewModel,
         INotificationCenterService notificationCenterService,
         Services.Interfaces.IUiEffectBus uiEffectBus,
+        Services.Interfaces.IGameStartupCoordinator startupCoordinator,
         ITournamentService? tournamentService = null,
         IRebirthService? rebirthService = null,
         IStoryService? storyService = null,
@@ -233,9 +229,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         Services.Interfaces.IDialogOrchestrator? dialogOrchestrator = null,
         Services.Interfaces.IMiniGameNavigator? miniGameNavigator = null,
         IAnalyticsService? analyticsService = null,
-        ICloudSaveService? cloudSaveService = null,
         IRemoteConfigService? remoteConfigService = null,
-        IWhatsNewService? whatsNewService = null,
         ICinematicCoordinator? cinematicCoordinator = null,
         IReputationTierEffects? reputationTierEffects = null,
         FtueOverlayViewModel? ftueOverlayVm = null)
@@ -244,10 +238,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _dialogOrchestrator = dialogOrchestrator;
         _miniGameNavigator = miniGameNavigator;
         _uiEffectBus = uiEffectBus;
+        _startupCoordinator = startupCoordinator;
+        // Startup-Sequenz an GameStartupCoordinator delegiert — MainViewModel ist nur noch
+        // die schmale IStartupHost-Bruecke (IsLoading + EconomyVM-Refreshes).
+        _startupCoordinator.AttachHost(this);
         _analyticsService = analyticsService;
-        _cloudSaveService = cloudSaveService;
         _remoteConfigService = remoteConfigService;
-        _whatsNewService = whatsNewService;
         _cinematicCoordinator = cinematicCoordinator;
         _reputationTierEffects = reputationTierEffects;
         FtueOverlayVM = ftueOverlayVm;
@@ -272,13 +268,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _purchaseService = purchaseService;
         _adService = adService;
         _saveGameService = saveGameService;
-        _quickJobService = quickJobService;
         _dailyChallengeService = dailyChallengeService;
         _rewardedAdService = rewardedAdService;
         _eventService = eventService;
         _storyService = storyService;
         _weeklyMissionService = weeklyMissionService;
-        _luckySpinService = luckySpinService;
         _equipmentService = equipmentService;
         _goalService = goalService;
         _workerService = workerService;

@@ -379,6 +379,10 @@ public partial class App : Application
         // Reputation-Tier-Up-Effekte (FloatingText/Celebration/Audio/Achievement-Dialog)
         // aus MainViewModel.OnReputationTierChanged extrahiert.
         services.AddSingleton<IReputationTierEffects, ReputationTierEffects>();
+
+        // Spielstart-Sequenz (Load, Cloud-Save, Welcome-Flow, GameLoop-Start)
+        // aus MainViewModel.Init.cs extrahiert.
+        services.AddSingleton<IGameStartupCoordinator, GameStartupCoordinator>();
         // Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
         services.AddSingleton<IDailyBundleService, DailyBundleService>();
 

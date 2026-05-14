@@ -118,4 +118,13 @@ public sealed partial class MainViewModel
     // ── IWelcomeFlowHost (schmale Bruecke fuer WelcomeFlowViewModel) ──
     bool Services.Interfaces.IWelcomeFlowHost.IsHoldingUpgrade => IsHoldingUpgrade;
     void Services.Interfaces.IWelcomeFlowHost.NavigateToShop() => NavigateToShop();
+
+    // ── IStartupHost (schmale Bruecke fuer GameStartupCoordinator) ──
+    bool Services.Interfaces.IStartupHost.IsLoading
+    {
+        get => IsLoading;
+        set => IsLoading = value;
+    }
+    void Services.Interfaces.IStartupHost.RefreshFromState() => RefreshFromState();
+    void Services.Interfaces.IStartupHost.RefreshOrders() => RefreshOrders();
 }

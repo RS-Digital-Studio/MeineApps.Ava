@@ -2096,6 +2096,11 @@ public sealed partial class GameEngine
         {
             _subtitles.Show(_localizationService.GetString("SubtitleTimeWarning") ?? "[TIME WARNING]");
         }
+
+        // Welle 4 v2.0.58 AAA-Audit #15: Adaptive-Music-Boost in den letzten 10 Sekunden.
+        // +25% Music fuer 12s = Spannungseskalation ohne externe Pitch-Shift-Library
+        // (psychoakustisch wirkt ein lauter werdender Track wie schneller).
+        _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.25f, 12f);
     }
 
     private void OnTimeExpired()
@@ -2110,6 +2115,11 @@ public sealed partial class GameEngine
         _pontanSpawned = 0;
         _pontanInitialDelay = GetPontanInitialDelay();
         _pontanSpawnTimer = _pontanInitialDelay > 0 ? _pontanInitialDelay : 0; // Gnadenfrist oder sofort
+
+        // Welle 4 v2.0.58 AAA-Audit #15: Pontan-Hunt-Drama — Music-Boost 1.30 fuer 15s
+        // (psychoakustische Eskalation, simuliert das "Schnellere-Musik-bei-Tod-Drama"
+        // ohne externe Pitch-Shift-Library).
+        _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.30f, 15f);
     }
 
     /// <summary>

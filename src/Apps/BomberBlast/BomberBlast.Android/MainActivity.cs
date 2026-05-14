@@ -67,6 +67,17 @@ public class MainActivity : AvaloniaMainActivity
         App.AnalyticsServiceFactory = _ => new AndroidAnalyticsService(this);
         App.PushNotificationServiceFactory = _ => new AndroidPushNotificationService(this);
 
+        // Firebase Remote Config (v2.0.57, Sprint 2.1 AAA-Audit #1): Live-Tuning ohne App-Update.
+        // FirebaseRemoteConfigService erbt von DefaultsRemoteConfigService — eingebettete
+        // JSON-Defaults bleiben Fallback fuer Offline/Erststart.
+#if DEBUG
+        const bool isDebugBuild = true;
+#else
+        const bool isDebugBuild = false;
+#endif
+        App.RemoteConfigServiceFactory = sp =>
+            new FirebaseRemoteConfigService(sp.GetRequiredService<IAppLogger>(), isDebugBuild);
+
         // AI-Asset-Loader: WebP-Bilder aus Android Assets laden
         GameAssetService.PlatformAssetLoader = path =>
         {
@@ -132,6 +143,14 @@ public class MainActivity : AvaloniaMainActivity
         try
         {
             App.Services?.GetService<IReEngagementScheduler>()?.CancelAll();
+        }
+        catch { /* Best-Effort — Service evtl. noch nicht initialisiert */ }
+
+        // Sprint 2.1 AAA-Audit #1: Frische Live-Ops-Config beim Wiedereinstieg holen.
+        // Das Min-Fetch-Interval (1h Prod) drosselt — kein Quota-Risiko bei haeufigem Resume.
+        try
+        {
+            _ = App.Services?.GetService<IRemoteConfigService>()?.FetchAndActivateAsync();
         }
         catch { /* Best-Effort — Service evtl. noch nicht initialisiert */ }
     }

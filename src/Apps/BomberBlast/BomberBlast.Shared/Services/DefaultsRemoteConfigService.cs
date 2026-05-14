@@ -25,22 +25,24 @@ namespace BomberBlast.Services;
 /// FirebaseRemoteConfigService einzelne Keys zu ueberschreiben ohne diese Klasse zu erweitern.
 /// </para>
 /// </summary>
-public sealed class DefaultsRemoteConfigService : IRemoteConfigService
+public class DefaultsRemoteConfigService : IRemoteConfigService
 {
     private const string DefaultsResourceName = "BomberBlast.Resources.remote_config_defaults.json";
 
     private readonly Dictionary<string, JsonElement> _values = new(StringComparer.Ordinal);
     private readonly object _writeLock = new();
-    private readonly IAppLogger _logger;
+
+    /// <summary>Logger — auch fuer abgeleitete Implementierungen (FirebaseRemoteConfigService).</summary>
+    protected IAppLogger Logger { get; }
 
     public event Action? ConfigChanged;
 
     public DefaultsRemoteConfigService(IAppLogger logger)
     {
-        _logger = logger;
+        Logger = logger;
     }
 
-    public Task InitializeAsync()
+    public virtual Task InitializeAsync()
     {
         try
         {
@@ -48,7 +50,7 @@ public sealed class DefaultsRemoteConfigService : IRemoteConfigService
             using var stream = asm.GetManifestResourceStream(DefaultsResourceName);
             if (stream is null)
             {
-                _logger.LogWarning($"RemoteConfig: Embedded-Resource '{DefaultsResourceName}' nicht gefunden — laufe mit Hard-Defaults.");
+                Logger.LogWarning($"RemoteConfig: Embedded-Resource '{DefaultsResourceName}' nicht gefunden — laufe mit Hard-Defaults.");
                 return Task.CompletedTask;
             }
 
@@ -62,7 +64,7 @@ public sealed class DefaultsRemoteConfigService : IRemoteConfigService
         }
         catch (Exception ex)
         {
-            _logger.LogError("RemoteConfig: Defaults-JSON konnte nicht geparst werden — laufe mit Hard-Defaults.", ex);
+            Logger.LogError("RemoteConfig: Defaults-JSON konnte nicht geparst werden — laufe mit Hard-Defaults.", ex);
         }
 
         return Task.CompletedTask;
@@ -72,7 +74,7 @@ public sealed class DefaultsRemoteConfigService : IRemoteConfigService
     /// NullImpl fuer Defaults-only-Service: kein Server-Fetch moeglich. Liefert immer false.
     /// FirebaseRemoteConfigService ueberschreibt diese Methode mit echtem Firebase-Fetch.
     /// </summary>
-    public Task<bool> FetchAndActivateAsync() => Task.FromResult(false);
+    public virtual Task<bool> FetchAndActivateAsync() => Task.FromResult(false);
 
     public bool GetBool(string key, bool defaultValue)
     {
@@ -158,6 +160,81 @@ public sealed class DefaultsRemoteConfigService : IRemoteConfigService
         }
     }
 
+    /// <summary>Typsicherer Override fuer Boolean-Werte (Event-Toggles, Feature-Flags).</summary>
+    public void SetOverride(string key, bool value)
+        => SetOverrideRaw(key, value ? "true" : "false");
+
+    /// <summary>Typsicherer Override fuer Long-Werte (Schwellenwerte, Preise in Cents).</summary>
+    public void SetOverride(string key, long value)
+        => SetOverrideRaw(key, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+    /// <summary>Typsicherer Override fuer Double-Werte (Drop-Raten, Multiplikatoren).</summary>
+    public void SetOverride(string key, double value)
+        => SetOverrideRaw(key, value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+
+    /// <summary>Typsicherer Override fuer String-Werte (URLs, Konfigurations-IDs).</summary>
+    public void SetOverride(string key, string value)
+        => SetOverrideRaw(key, JsonSerializer.Serialize(value));
+
+    /// <summary>
+    /// Parst einen rohen JSON-Literal-String zu einem JsonElement und speichert ihn.
+    /// <see cref="SetOverride(string, JsonElement)"/> klont das Element — der temporaere
+    /// JsonDocument darf danach disposed werden.
+    /// </summary>
+    private void SetOverrideRaw(string key, string jsonLiteral)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonLiteral);
+            SetOverride(key, doc.RootElement);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"RemoteConfig: Override-Wert fuer '{key}' nicht parsebar ('{jsonLiteral}').", ex);
+        }
+    }
+
+    /// <summary>
+    /// Uebernimmt einen rohen Remote-Wert (String, wie ihn Firebase Remote Config liefert) und
+    /// konvertiert ihn anhand des Typs des bestehenden Default-Werts. Der Override-Provider
+    /// (FirebaseRemoteConfigService) muss so keine eigene Typ-Map pflegen — die eingebetteten
+    /// JSON-Defaults sind die Single-Source-of-Truth fuer den Typ jedes Keys.
+    /// </summary>
+    protected void ApplyRawRemoteValue(string key, string rawValue)
+    {
+        if (string.IsNullOrEmpty(key) || rawValue is null) return;
+
+        JsonValueKind defaultKind;
+        lock (_writeLock)
+        {
+            defaultKind = _values.TryGetValue(key, out var existing)
+                ? existing.ValueKind
+                : JsonValueKind.Undefined;
+        }
+
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        switch (defaultKind)
+        {
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+                if (bool.TryParse(rawValue, out var b)) SetOverride(key, b);
+                break;
+
+            case JsonValueKind.Number:
+                // Ganzzahl bevorzugen (Preise/Schwellen), sonst Double (Drop-Raten/Multiplikatoren).
+                if (long.TryParse(rawValue, System.Globalization.NumberStyles.Integer, inv, out var l))
+                    SetOverride(key, l);
+                else if (double.TryParse(rawValue, System.Globalization.NumberStyles.Float, inv, out var d))
+                    SetOverride(key, d);
+                break;
+
+            default:
+                // String-Default oder unbekannter Key → als String uebernehmen (best-effort).
+                SetOverride(key, rawValue);
+                break;
+        }
+    }
+
     /// <summary>Loest <see cref="ConfigChanged"/> aus — von FirebaseImpl nach Bulk-Update aufgerufen.</summary>
-    internal void RaiseConfigChanged() => ConfigChanged?.Invoke();
+    protected void RaiseConfigChanged() => ConfigChanged?.Invoke();
 }

@@ -25,10 +25,11 @@
     <PackageReference Include="Xamarin.Google.UserMessagingPlatform" />
     <PackageReference Include="Xamarin.Android.Google.BillingClient" />
     <PackageReference Include="Xamarin.GooglePlayServices.Games.V2" />
-    <!-- Firebase: Crashlytics + Analytics + Cloud Messaging (v2.0.56) -->
+    <!-- Firebase: Crashlytics + Analytics + Cloud Messaging (v2.0.56) + Remote Config (v2.0.57) -->
     <PackageReference Include="Xamarin.Firebase.Crashlytics" />
     <PackageReference Include="Xamarin.Firebase.Analytics" />
     <PackageReference Include="Xamarin.Firebase.Messaging" />
+    <PackageReference Include="Xamarin.Firebase.Config" />
   </ItemGroup>
 
   <!-- google-services.json: wird vom Xamarin.Android Build-Task verarbeitet,

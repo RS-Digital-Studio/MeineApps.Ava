@@ -83,6 +83,21 @@ public static class RemoteConfigKeys
     public const string MinSupportedVersionCode      = "min_supported_version_code";   // Default 1
     public const string ForceUpdateUrl               = "force_update_url";             // Default ""
     public const string WeeklyContentDropEnabled     = "weekly_content_drop_enabled";  // Default false
+
+    /// <summary>
+    /// Alle definierten Keys — der Android-Override (FirebaseRemoteConfigService) iteriert
+    /// darueber, um nach einem erfolgreichen Fetch nur die bekannten Keys zu uebernehmen.
+    /// Bei neuen Keys hier ergaenzen.
+    /// </summary>
+    public static readonly string[] All =
+    {
+        EventActiveHalloween, EventActiveChristmas, EventActiveNewYear, EventActiveSummer,
+        DropRateLegendaryCard, DropRateEpicCard, DropRateRareCard, DropRateGemFromBlock,
+        GemPackSmallPriceCents, GemPackMediumPriceCents, GemPackLargePriceCents,
+        StarterPackDiscountPct, FirstPurchaseMultiplier,
+        ComboSlowMotionThreshold, ComboUltraThreshold, BossTelegraphDurationMs, BossEnrageHpPercent,
+        MaintenanceMode, MinSupportedVersionCode, ForceUpdateUrl, WeeklyContentDropEnabled,
+    };
 }
 
 /// <summary>

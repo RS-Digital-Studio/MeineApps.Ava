@@ -90,35 +90,18 @@ public sealed partial class MainViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Aktiv sichtbare Page (v2.0.37). Ersetzt 17 frueher separate IsXxxActive-Booleans.
+    /// Aktiv sichtbare Page. Ersetzt 17 frueher separate IsXxxActive-Booleans.
     /// MainView.axaml bindet ueber <see cref="Converters.ActiveViewEqualsConverter"/> auf
     /// <c>Classes.Active</c> und <c>IsVisible</c> der einzelnen PageView-Border.
+    ///
+    /// <para>Source-of-Truth liegt im <see cref="INavigationCoordinator"/> — diese Property ist
+    /// nur ein Forwarder. PropertyChanged-Notifications laufen ueber
+    /// <see cref="OnNavigationActiveViewChanged"/> (Subscription auf ActiveViewChanged).</para>
     /// </summary>
-    [ObservableProperty]
-    // Audit M01: NotifyPropertyChangedFor ersetzt 17 manuelle OnPropertyChanged() in partial OnActiveViewChanged.
-    [NotifyPropertyChangedFor(nameof(IsMainMenuActive))]
-    [NotifyPropertyChangedFor(nameof(IsGameActive))]
-    [NotifyPropertyChangedFor(nameof(IsLevelSelectActive))]
-    [NotifyPropertyChangedFor(nameof(IsSettingsActive))]
-    [NotifyPropertyChangedFor(nameof(IsHighScoresActive))]
-    [NotifyPropertyChangedFor(nameof(IsGameOverActive))]
-    [NotifyPropertyChangedFor(nameof(IsShopActive))]
-    [NotifyPropertyChangedFor(nameof(IsVictoryActive))]
-    [NotifyPropertyChangedFor(nameof(IsStatisticsActive))]
-    [NotifyPropertyChangedFor(nameof(IsQuickPlayActive))]
-    [NotifyPropertyChangedFor(nameof(IsDungeonActive))]
-    [NotifyPropertyChangedFor(nameof(IsBattlePassActive))]
-    [NotifyPropertyChangedFor(nameof(IsLeagueActive))]
-    [NotifyPropertyChangedFor(nameof(IsProfileActive))]
-    [NotifyPropertyChangedFor(nameof(IsGemShopActive))]
-    [NotifyPropertyChangedFor(nameof(IsCardsActive))]
-    [NotifyPropertyChangedFor(nameof(IsChallengesActive))]
-    [NotifyPropertyChangedFor(nameof(IsPlayHubActive))]
-    // IsBottomTabBarVisible wird ueber BottomTabController.StateChanged geroutet (siehe OnTabControllerStateChanged).
-    private ActiveView _activeView = ActiveView.MainMenu;
+    public ActiveView ActiveView => _navigationCoordinator.ActiveView;
 
-    // Backward-compat Computed-Properties — werden von Logik in NavigateTo()/HandleBackPressed()
-    // weiter genutzt (Tab-Status, Game-Lifecycle). Feuern OnPropertyChanged via partial method.
+    // Backward-compat Computed-Properties — werden von Logik in HandleBackPressed()
+    // weiter genutzt (Game-Lifecycle). Notifications via OnNavigationActiveViewChanged.
     public bool IsMainMenuActive => ActiveView == ActiveView.MainMenu;
     public bool IsGameActive => ActiveView == ActiveView.Game;
     public bool IsLevelSelectActive => ActiveView == ActiveView.LevelSelect;
@@ -145,9 +128,34 @@ public sealed partial class MainViewModel : ViewModelBase
     /// </summary>
     public bool IsBottomTabBarVisible => _tabController.IsBottomTabBarVisible;
 
-    // Bidirektionale ActiveView ↔ BottomTab-Sync laeuft jetzt ueber den BottomTabController.
-    partial void OnActiveViewChanged(ActiveView value)
-        => _tabController.OnActiveViewChanged(value);
+    /// <summary>
+    /// <see cref="INavigationCoordinator.ActiveViewChanged"/>-Handler. Synct den
+    /// BottomTabController und feuert OnPropertyChanged fuer ActiveView + alle 18
+    /// IsXxxActive-Computed-Properties.
+    /// </summary>
+    private void OnNavigationActiveViewChanged(ActiveView view)
+    {
+        _tabController.OnActiveViewChanged(view);
+        OnPropertyChanged(nameof(ActiveView));
+        OnPropertyChanged(nameof(IsMainMenuActive));
+        OnPropertyChanged(nameof(IsGameActive));
+        OnPropertyChanged(nameof(IsLevelSelectActive));
+        OnPropertyChanged(nameof(IsSettingsActive));
+        OnPropertyChanged(nameof(IsHighScoresActive));
+        OnPropertyChanged(nameof(IsGameOverActive));
+        OnPropertyChanged(nameof(IsShopActive));
+        OnPropertyChanged(nameof(IsVictoryActive));
+        OnPropertyChanged(nameof(IsStatisticsActive));
+        OnPropertyChanged(nameof(IsQuickPlayActive));
+        OnPropertyChanged(nameof(IsDungeonActive));
+        OnPropertyChanged(nameof(IsBattlePassActive));
+        OnPropertyChanged(nameof(IsLeagueActive));
+        OnPropertyChanged(nameof(IsProfileActive));
+        OnPropertyChanged(nameof(IsGemShopActive));
+        OnPropertyChanged(nameof(IsCardsActive));
+        OnPropertyChanged(nameof(IsChallengesActive));
+        OnPropertyChanged(nameof(IsPlayHubActive));
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // TAB-STATE PROPERTIES (Forwarder auf IBottomTabController)
@@ -198,21 +206,10 @@ public sealed partial class MainViewModel : ViewModelBase
     /// </summary>
     public bool IsAnyDialogOpen => _dialogPresenter.IsAnyDialogOpen;
 
-    /// <summary>
-    /// Merkt ob Einstellungen aus dem Spiel geöffnet wurden (für Zurück-Navigation).
-    /// </summary>
-    private bool _returnToGameFromSettings;
-
     private readonly ILocalizationService _localizationService;
-    private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
-    private readonly IAnalyticsService _analytics;
     private readonly IAchievementService _achievementService;
-    private readonly ICoinService _coinService;
-    private readonly IPurchaseService _purchaseService;
     private readonly ICloudSaveService _cloudSaveService;
-    private readonly SoundManager _soundManager;
     private readonly ILogger<MainViewModel> _logger;
     /// <summary>GameEventBus — VMs ueber den Service routen statt durch MainVM.</summary>
     private readonly IGameEventBus _eventBus;
@@ -225,17 +222,17 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <summary>Verwaltet Bottom-Tab-State und Sub-Tab-Switching.</summary>
     private readonly IBottomTabController _tabController;
 
+    /// <summary>Haelt ActiveView + die komplette Routing-Logik.</summary>
+    private readonly INavigationCoordinator _navigationCoordinator;
+
     /// <summary>
-    /// Task für Cloud-Save-Initialisierung (kein Fire-and-Forget, vermeidet Race Conditions)
+    /// Task fuer Cloud-Save-Initialisierung (kein Fire-and-Forget, vermeidet Race Conditions).
+    /// Wird im Ctor gestartet. Der NavigationCoordinator awaitet ihn (3s-Cap) vor Game-Routen
+    /// — daher public exponiert (Provider-Callback in der DI-Registrierung).
     /// </summary>
-    private Task? _cloudSaveInitTask;
+    public Task? CloudSaveInitTask { get; private set; }
 
     private readonly BackPressHelper _backPressHelper = new();
-
-    /// <summary>
-    /// Zaehlt Fehlversuche pro Level (fuer Level-Skip nach 3x Game Over)
-    /// </summary>
-    private readonly Dictionary<int, int> _levelFailCounts = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -249,7 +246,8 @@ public sealed partial class MainViewModel : ViewModelBase
     public MainViewModel(
         MainViewModelDependencies deps,
         IChildViewModelRegistry registry,
-        IBottomTabController tabController)
+        IBottomTabController tabController,
+        INavigationCoordinator navigationCoordinator)
     {
         // Registry haelt alle Child-VMs + Sub-Wirings. Events routen Navigation + VM-Lazy-Instantiation
         // an MainViewModel zurueck, damit AXAML-Bindings (ContentControl auf MenuVm/GameVm/ShopVm etc.)
@@ -263,29 +261,26 @@ public sealed partial class MainViewModel : ViewModelBase
         _tabController = tabController;
         _tabController.StateChanged += OnTabControllerStateChanged;
 
+        // NavigationCoordinator haelt ActiveView + Routing-Logik. ActiveViewChanged routet
+        // OnPropertyChanged fuer ActiveView + alle IsXxxActive-Computed-Properties.
+        _navigationCoordinator = navigationCoordinator;
+        _navigationCoordinator.ActiveViewChanged += OnNavigationActiveViewChanged;
+
         // DialogPresenter haelt den Dialog-State.
         // StateChanged → alle Dialog-Properties + IsAnyDialogOpen neu feuern, damit Bindings reagieren.
         _dialogPresenter = deps.DialogPresenter;
         _dialogPresenter.StateChanged += OnDialogPresenterStateChanged;
 
         _localizationService = deps.Localization;
-        _adService = deps.AdService;
-        _purchaseService = deps.PurchaseService;
         _rewardedAdService = deps.RewardedAdService;
-        _analytics = deps.Analytics;
         _achievementService = deps.AchievementService;
-        _coinService = deps.CoinService;
         _cloudSaveService = deps.CloudSaveService;
-        _soundManager = deps.SoundManager;
         _logger = deps.Logger;
         _eventBus = deps.EventBus;
 
-        // Lokale Aliase fuer den Konstruktor-Body (Variable bleiben unchanged von der Original-Logic).
+        // Lokale Aliase fuer den Konstruktor-Body.
         var localization = deps.Localization;
         var adService = deps.AdService;
-        var rewardedAdService = deps.RewardedAdService;
-        var achievementService = deps.AchievementService;
-        var eventBus = deps.EventBus;
         var menuVm = registry.MenuVm;
         var settingsVm = registry.SettingsVm;
 
@@ -345,11 +340,12 @@ public sealed partial class MainViewModel : ViewModelBase
         // LanguageChanged: Registry routet an alle instanziierten VMs.
         localization.LanguageChanged += (_, _) => registry.RefreshAllLocalizedTexts();
 
-        // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)
-        _cloudSaveInitTask = Task.Run(async () =>
+        // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget).
+        // Der NavigationCoordinator awaitet diesen Task vor Game-Routen via CloudSaveInitTask-Provider.
+        CloudSaveInitTask = Task.Run(async () =>
         {
             try { await _cloudSaveService.TryLoadFromCloudAsync(); }
-            catch (Exception ex) { _logger?.LogWarning($"CloudSave Init fehlgeschlagen: {ex.Message}"); }
+            catch (Exception ex) { _logger?.LogWarning(ex, "CloudSave Init fehlgeschlagen"); }
         });
 
         // What's-New-Modal: Closed-Event verdrahten + Initial-Check ob anzeigen.
@@ -402,355 +398,13 @@ public sealed partial class MainViewModel : ViewModelBase
     /// Audit H09: async void mit try/catch — wird auch aus HandleBackPressed (synchron, fire-and-forget) gerufen,
     /// ungefangene Exceptions wuerden sonst TaskScheduler.UnobservedTaskException ausloesen.
     /// </summary>
-    public async void NavigateTo(NavigationRequest request)
-    {
-        try
-        {
-            //.x : Request→Route-Mapping in NavigationRouteMapper extrahiert.
-            await NavigateToRouteAsync(Navigation.NavigationRouteMapper.ToRoute(request));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "NavigateTo(NavigationRequest) unbehandelte Exception fuer {RequestType}", request?.GetType().Name);
-        }
-    }
+    // Navigation delegiert komplett an den INavigationCoordinator. Diese Methoden bleiben
+    // als public/private Member damit alle bestehenden Aufruf-Stellen (Registry-Events,
+    // HandleBackPressed, MainView.axaml-Bindings auf NavigateToRouteAsync) unveraendert sind.
 
-    /// <summary>
-    /// Navigiert zu einer bestimmten View. Versteckt alle anderen.
-    /// Unterstützt Routen wie "Game?mode=story&amp;level=5" und
-    /// zusammengesetzte Routen wie "//MainMenu/Game?mode=story".
-    /// </summary>
-    public async Task NavigateToRouteAsync(string route)
-    {
-        try
-        {
-        // Zusammengesetzte Routen behandeln (z.B. "//MainMenu/Game?mode=story")
-        if (route.StartsWith("//"))
-        {
-            var withoutPrefix = route[2..];
-            var slashIndex = withoutPrefix.IndexOf('/');
-            if (slashIndex >= 0)
-                route = withoutPrefix[(slashIndex + 1)..];
-            else
-                route = withoutPrefix;
-        }
+    public void NavigateTo(NavigationRequest request) => _navigationCoordinator.NavigateTo(request);
 
-        var baseRoute = route.Contains('?') ? route[..route.IndexOf('?')] : route;
-
-        // Cloud-Save-Init MUSS abgeschlossen sein bevor wir in Game/LevelSelect navigieren —
-        // sonst kann ein "Continue"-Tap auf frischem Geraet den leeren lokalen State
-        // mit Cloud-Progress racen und die Cloud ueberschreiben.
-        if (baseRoute is "Game" or "LevelSelect" or "Dungeon" or "DailyChallenge" or "WeeklyChallenge" or "Deck" or "Collection")
-        {
-            if (_cloudSaveInitTask is { IsCompleted: false } task)
-            {
-                try
-                {
-                    // 3s-Cap: Bei Netzproblemen kein endloses Blocken — lokaler State wird genutzt
-                    var completed = await Task.WhenAny(task, Task.Delay(3000));
-                    if (completed != task)
-                        _logger?.LogWarning("CloudSave-Init dauert >3s - navigiere ohne Cloud-Sync");
-                }
-                catch (Exception ex)
-                {
-                    _logger?.LogWarning($"CloudSave-Init Fehler vor Navigation: {ex.Message}");
-                }
-            }
-        }
-
-        // Aktuellen Zustand merken (für Zurück-Navigation)
-        var wasGameActive = IsGameActive;
-
-        // Lifecycle: Game-Loop stoppen beim Verlassen der Game-View.
-        // GameVm? — nullable wegen Lazy-Resolution; bei wasGameActive=true existiert GameVm garantiert.
-        if (wasGameActive && baseRoute != "Game")
-        {
-            GameVm?.OnDisappearing();
-        }
-
-        HideAll();
-
-        // Navigations-Sound (nicht beim Game-Start, das hat eigene Sounds)
-        if (baseRoute != "Game")
-            _soundManager.PlaySound(SoundManager.SFX_MENU_SELECT);
-
-        // Kein Banner in BomberBlast (Landscape) - nur Rewarded Ads
-        IsAdBannerVisible = false;
-
-        switch (baseRoute)
-        {
-            case "MainMenu":
-                _returnToGameFromSettings = false;
-                ActiveView = ActiveView.MainMenu;
-                MenuVm.OnAppearing();
-                break;
-
-            case "Game":
-                // EnsureGameVm zuerst laden (loest Lazy<GameViewModel> auf + setzt GameVm),
-                // erst DANACH ActiveView=Game setzen — sonst ein Frame mit IsGameActive=true + GameVm=null,
-                // ContentControl-Binding wuerde einen leeren GameBorder zeigen.
-                var gameVm = EnsureGameVm();
-                ActiveView = ActiveView.Game;
-                // Spiel-Parameter parsen (.x — Parser extrahiert)
-                if (route.Contains('?'))
-                {
-                    var p = Navigation.NavigationQueryParser.ParseGame(route[(route.IndexOf('?') + 1)..]);
-                    gameVm.SetParameters(p.Mode, p.Level, p.Continue, p.Boost, p.Difficulty, p.Floor, p.Seed, p.Master);
-                }
-                // Spiel starten (Engine initialisieren + Render-Loop starten)
-                await gameVm.OnAppearingAsync();
-                break;
-
-            case "LevelSelect":
-                ActiveView = ActiveView.LevelSelect;
-                LevelSelectVm.OnAppearing();
-                break;
-
-            case "HighScores":
-                ActiveView = ActiveView.HighScores;
-                HighScoresVm.OnAppearing();
-                break;
-
-            case "GameOver":
-                ActiveView = ActiveView.GameOver;
-                if (route.Contains('?'))
-                {
-                    //.x  — Query-Parsing extrahiert, VM-Logik bleibt hier.
-                    var p = Navigation.NavigationQueryParser.ParseGameOver(route[(route.IndexOf('?') + 1)..]);
-
-                    // Fehlversuche pro Level tracken (fuer Level-Skip)
-                    var fails = 0;
-                    if (!p.LevelComplete && p.Mode == "story" && p.Level > 0)
-                    {
-                        fails = _levelFailCounts.GetValueOrDefault(p.Level) + 1;
-                        _levelFailCounts[p.Level] = fails;
-                    }
-                    else if (p.LevelComplete && p.Level > 0)
-                    {
-                        _levelFailCounts.Remove(p.Level);
-                    }
-
-                    GameOverVm.SetParameters(p.Score, p.Level, p.IsHighScore, p.Mode, p.Coins, p.LevelComplete, p.CanContinue, fails,
-                        p.EnemyPoints, p.TimeBonus, p.EfficiencyBonus, p.Multiplier, p.Kills, p.SurvivalTime);
-
-                    // Quick-Play Score an QuickPlayVM für Challenge-Sharing weiterreichen
-                    if (p.Mode == "quick" && p.Score > 0)
-                        EnsureQuickPlayVm().SetLastScore(p.Score);
-
-                    // Daily Challenge: Score melden + Streak-Bonus vergeben
-                    if (p.Mode == "daily" && p.Score > 0)
-                    {
-                        EnsureDailyChallengeVm().SubmitScore(p.Score);
-                    }
-
-                    // Level Complete → Confetti + Floating Text
-                    if (p.LevelComplete)
-                    {
-                        CelebrationRequested?.Invoke();
-                        FloatingTextRequested?.Invoke(
-                            _localizationService.GetString("LevelComplete") ?? "Level Complete!",
-                            "success");
-                    }
-                }
-                break;
-
-            // Shop (kombiniert mit Glücksrad)
-            case "Shop":
-                ActiveView = ActiveView.Shop;
-                IsShopSpinTab = false;
-                EnsureShopVm().OnAppearing();
-                break;
-
-            case "LuckySpin":
-                ActiveView = ActiveView.Shop;
-                IsShopSpinTab = true;
-                EnsureLuckySpinVm().OnAppearing();
-                break;
-
-            // Profile-Hub (v2.0.43): 5 Tabs intern (Übersicht/Statistik/Achievements/Sammlung/Customize)
-            case "Profile":
-                ActiveView = ActiveView.Profile;
-                EnsureProfileVm().OnAppearing();
-                break;
-
-            case "Achievements":
-                ActiveView = ActiveView.Profile;
-                {
-                    var p = EnsureProfileVm();
-                    p.OnAppearing();
-                    p.SelectTabCommand.Execute("Achievements");
-                }
-                break;
-
-            // Einstellungen (kombiniert mit Hilfe)
-            case "Settings":
-                _returnToGameFromSettings = wasGameActive;
-                ActiveView = ActiveView.Settings;
-                IsSettingsHelpTab = false;
-                SettingsVm.OnAppearing();
-                break;
-
-            case "Help":
-                ActiveView = ActiveView.Settings;
-                IsSettingsHelpTab = true;
-                break;
-
-            // Karten/Deck (v2.0.43): Sammlung lebt jetzt im Profile-Hub
-            case "Cards":
-            case "Deck":
-                ActiveView = ActiveView.Cards;
-                EnsureDeckVm().OnAppearing();
-                break;
-
-            case "Collection":
-                // Collection wandert in den Profile-Hub als Sammlung-Tab.
-                ActiveView = ActiveView.Profile;
-                {
-                    var p = EnsureProfileVm();
-                    p.OnAppearing();
-                    p.SelectTabCommand.Execute("Collection");
-                }
-                break;
-
-            // Herausforderungen (Daily + Missions kombiniert)
-            case "Challenges":
-            case "DailyChallenge":
-                ActiveView = ActiveView.Challenges;
-                IsChallengesMissionsTab = false;
-                EnsureDailyChallengeVm().OnAppearing();
-                break;
-
-            case "WeeklyChallenge":
-                ActiveView = ActiveView.Challenges;
-                IsChallengesMissionsTab = true;
-                EnsureWeeklyChallengeVm().OnAppearing();
-                break;
-
-            case "Statistics":
-                // Statistics wandert in den Profile-Hub als Statistik-Tab.
-                ActiveView = ActiveView.Profile;
-                {
-                    var p = EnsureProfileVm();
-                    p.OnAppearing();
-                    p.SelectTabCommand.Execute("Statistics");
-                }
-                break;
-
-            case "QuickPlay":
-                ActiveView = ActiveView.QuickPlay;
-                EnsureQuickPlayVm().OnAppearing();
-                break;
-
-            //.1 : Play-Hub — "Spielen"-Tab mit allen Spielmodi.
-            case "PlayHub":
-                ActiveView = ActiveView.PlayHub;
-                PlayHubVm.OnAppearing();
-                break;
-
-            case "Dungeon":
-                ActiveView = ActiveView.Dungeon;
-                EnsureDungeonVm().OnAppearing();
-                break;
-
-            case "BattlePass":
-                ActiveView = ActiveView.BattlePass;
-                EnsureBattlePassVm().OnAppearing();
-                break;
-
-            case "League":
-                ActiveView = ActiveView.League;
-                EnsureLeagueVm().OnAppearing();
-                break;
-
-            case "GemShop":
-                ActiveView = ActiveView.GemShop;
-                EnsureGemShopVm().OnAppearing();
-                break;
-
-            case "BossRush":
-                ActiveView = ActiveView.BossRush;
-                BossRushVm.OnAppearing();
-                break;
-
-            case "DailyRace":
-                // Daily Race nutzt Daily-Challenge-Tab in der Liga-View, daher leite via League
-                ActiveView = ActiveView.League;
-                EnsureLeagueVm().OnAppearing();
-                break;
-
-            case "Victory":
-                ActiveView = ActiveView.Victory;
-                VictoryVm.OnAppearing();
-                // Query-Parameter parsen (.x — Parser extrahiert)
-                if (route.Contains('?'))
-                {
-                    var p = Navigation.NavigationQueryParser.ParseVictory(route[(route.IndexOf('?') + 1)..]);
-                    VictoryVm.SetScore(p.Score);
-                    // Coins gutschreiben
-                    if (p.Coins > 0) _coinService.AddCoins(p.Coins);
-                }
-                CelebrationRequested?.Invoke();
-                FloatingTextRequested?.Invoke(
-                    _localizationService.GetString("VictoryTitle") ?? "Victory!",
-                    "gold");
-                break;
-
-            case "..":
-                // Zurück-Navigation: zum Spiel zurückkehren wenn Einstellungen aus dem Spiel geöffnet wurden.
-                // EnsureGameVm() statt GameVm direkt — robuster falls Lazy-Resolution noch nicht passiert ist.
-                if (_returnToGameFromSettings)
-                {
-                    _returnToGameFromSettings = false;
-                    ActiveView = ActiveView.Game;
-                    IsAdBannerVisible = false;
-                    await EnsureGameVm().OnAppearingAsync();
-                }
-                else
-                {
-                    ActiveView = ActiveView.MainMenu;
-                    MenuVm.OnAppearing();
-                }
-                break;
-
-            default:
-                ActiveView = ActiveView.MainMenu;
-                MenuVm.OnAppearing();
-                break;
-        }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "NavigateTo Fehler bei Route '{Route}'", route);
-            // Fallback: Zurück zum Hauptmenü damit die App nicht hängt
-            try
-            {
-                HideAll();
-                ActiveView = ActiveView.MainMenu;
-                MenuVm.OnAppearing();
-            }
-            catch (Exception fallbackEx)
-            {
-                // Audit H09: Letzter Ausweg — App lebt weiter, aber Fehler wird geloggt (kein silent-fail).
-                _logger.LogError(fallbackEx, "NavigateTo Fallback fehlgeschlagen fuer Route '{Route}'", route);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Setzt alle View-States auf inaktiv. Mit der ActiveView-Enum reicht ein Setter,
-    /// die Tab-States werden zusaetzlich zurueckgesetzt damit auf re-entry der Default greift.
-    /// </summary>
-    private void HideAll()
-    {
-        ActiveView = ActiveView.None;
-
-        // Tab-States zurücksetzen
-        IsShopSpinTab = false;
-        IsProfileAchievementsTab = false;
-        IsSettingsHelpTab = false;
-        IsCardsCollectionTab = false;
-        IsChallengesMissionsTab = false;
-    }
+    public Task NavigateToRouteAsync(string route) => _navigationCoordinator.NavigateToRouteAsync(route);
 
     // ═══════════════════════════════════════════════════════════════════════
     // TAB-SWITCHING (für kombinierte Views)
@@ -814,11 +468,9 @@ public sealed partial class MainViewModel : ViewModelBase
             }
             else
             {
-                // Andere Game-States (Starting, PlayerDied etc.) → zum Menü
-                GameVm.OnDisappearing();
-                HideAll();
-                ActiveView = ActiveView.MainMenu;
-                MenuVm.OnAppearing();
+                // Andere Game-States (Starting, PlayerDied etc.) → zum Menü.
+                // NavigateTo(GoMainMenu) stoppt den Game-Loop intern (OnDisappearing) + HideAll.
+                NavigateTo(new GoMainMenu());
             }
             return true;
         }
@@ -833,9 +485,7 @@ public sealed partial class MainViewModel : ViewModelBase
         // 5. Alle anderen Sub-Views → zurück zum Hauptmenü
         if (ActiveView is not ActiveView.MainMenu and not ActiveView.None and not ActiveView.Game and not ActiveView.Settings)
         {
-            HideAll();
-            ActiveView = ActiveView.MainMenu;
-            MenuVm.OnAppearing();
+            NavigateTo(new GoMainMenu());
             return true;
         }
 

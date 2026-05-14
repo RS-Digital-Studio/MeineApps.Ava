@@ -557,14 +557,25 @@ public partial class App : Application
         services.AddSingleton<BomberBlast.Services.IDialogPresenter, BomberBlast.Services.DialogPresenter>();
         services.AddSingleton<BomberBlast.ViewModels.IChildViewModelRegistry, BomberBlast.ViewModels.ChildViewModelRegistry>();
         services.AddSingleton<BomberBlast.ViewModels.ILifecycleHub, BomberBlast.ViewModels.LifecycleHub>();
-        // BottomTabController braucht einen Callback an die Compositor-Navigation
-        // (NavigationCoordinator existiert noch leer — bis Phase 5 routen Tab-Wechsel ueber
-        // MainViewModel.NavigateTo via Lazy<MainViewModel>.NavigateTo).
+        // BottomTabController braucht einen Callback an die Navigation. Wird lazy via
+        // INavigationCoordinator aufgeloest (Lambda laeuft erst zur Laufzeit — kein Zirkel
+        // beim Container-Aufbau).
         services.AddSingleton<BomberBlast.Navigation.IBottomTabController>(sp => new BomberBlast.Navigation.BottomTabController(
             sp.GetRequiredService<BomberBlast.Services.IBottomTabHub>(),
             sp.GetRequiredService<BomberBlast.ViewModels.IChildViewModelRegistry>(),
-            request => sp.GetRequiredService<Lazy<BomberBlast.ViewModels.MainViewModel>>().Value.NavigateTo(request)));
-        services.AddSingleton<BomberBlast.Navigation.INavigationCoordinator, BomberBlast.Navigation.NavigationCoordinator>();
+            request => sp.GetRequiredService<BomberBlast.Navigation.INavigationCoordinator>().NavigateTo(request)));
+        // NavigationCoordinator haelt ActiveView + die komplette Routing-Logik.
+        // Der CloudSaveInitTask-Provider zeigt auf MainViewModel (lazy) — bis der Task in einen
+        // eigenen Lifecycle-Service umzieht.
+        services.AddSingleton<BomberBlast.Navigation.INavigationCoordinator>(sp => new BomberBlast.Navigation.NavigationCoordinator(
+            sp.GetRequiredService<BomberBlast.ViewModels.IChildViewModelRegistry>(),
+            sp.GetRequiredService<BomberBlast.Navigation.IBottomTabController>(),
+            sp.GetRequiredService<BomberBlast.Services.IGameEventBus>(),
+            sp.GetRequiredService<BomberBlast.Services.ICoinService>(),
+            sp.GetRequiredService<BomberBlast.Core.SoundManager>(),
+            sp.GetRequiredService<MeineApps.Core.Ava.Localization.ILocalizationService>(),
+            sp.GetRequiredService<ILogger<BomberBlast.Navigation.NavigationCoordinator>>(),
+            () => sp.GetRequiredService<Lazy<BomberBlast.ViewModels.MainViewModel>>().Value.CloudSaveInitTask));
 
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainMenuViewModel>();

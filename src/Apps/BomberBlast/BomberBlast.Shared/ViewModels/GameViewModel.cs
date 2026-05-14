@@ -152,7 +152,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IGameAssetService assetService,
         IAppLogger logger,
         IRetentionService retentionService,
-        IAnalyticsService analytics)
+        IAnalyticsService analytics,
+        IWorldStoryService worldStoryService)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
@@ -167,6 +168,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         // Phase 24b — RetentionService property-injecten damit GameEngine.PlayFirstWinCinematic
         // beim ECHTEN ersten Sieg getriggert werden kann.
         _gameEngine.RetentionService = retentionService;
+        // Sprint 6.2 AAA-Audit #13: WorldStoryService — fuer Welt-Intro/Outro-Cutscenes.
+        _gameEngine.WorldStoryService = worldStoryService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

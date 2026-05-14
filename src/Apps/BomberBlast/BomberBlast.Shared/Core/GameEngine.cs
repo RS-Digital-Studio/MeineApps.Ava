@@ -70,6 +70,12 @@ public sealed partial class GameEngine : IDisposable
     // vom App-Layer gesetzt nach GameEngine-Construction.
     public IRetentionService? RetentionService { get; set; }
 
+    /// <summary>
+    /// Sprint 6.2 AAA-Audit #13: Mini-Story-Beats-Service fuer Welt-Intro/Outro-Cutscenes.
+    /// Property-Injection (kein Constructor-Param) — GameViewModel setzt es nach Construction.
+    /// </summary>
+    public IWorldStoryService? WorldStoryService { get; set; }
+
     // === Phase 18c — FixedTimestep als opt-in Engine-Mode ===================
     // Pragmatischer Ansatz: Wenn FixedTimestepEnabled=true, wird UpdatePlaying mehrmals pro Wall-Clock-Frame
     // mit FIXED_TICK_SECONDS (16.67ms) aufgerufen statt einmal mit variable deltaTime. Das gibt

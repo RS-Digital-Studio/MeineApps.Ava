@@ -926,6 +926,25 @@ public sealed partial class GameEngine
             _currentMode?.OnLevelStart(modeCtx);
         }
         catch { /* Best-Effort, no-op-Default in GameModeBase */ }
+
+        // Sprint 6.2 AAA-Audit #13: Welt-Intro-Cutscene beim ERSTEN Level einer Welt
+        // (Level 1, 11, 21, ..., 91) — wenn der User die Welt noch nie betreten hat.
+        // One-shot pro Welt via HasSeenIntro/MarkIntroSeen.
+        if (WorldStoryService is { } story && _currentLevelNumber > 0 && _currentLevelNumber % 10 == 1)
+        {
+            int introWorldId = (_currentLevelNumber - 1) / 10 + 1;
+            if (!story.HasSeenIntro(introWorldId) && story.GetIntro(introWorldId) is { } intro)
+            {
+                var introText = _localizationService.GetString(intro.TextKey);
+                if (!string.IsNullOrEmpty(introText))
+                {
+                    _subtitles.Show(introText);
+                    if (!string.IsNullOrEmpty(intro.StingerKey))
+                        _soundManager.PlayStinger(intro.StingerKey!);
+                    story.MarkIntroSeen(introWorldId);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -1733,6 +1752,27 @@ public sealed partial class GameEngine
                     [AnalyticsParams.DamageTaken] = _deathsInLevel,
                     [AnalyticsParams.LevelId] = _currentLevelNumber,
                 });
+
+                // Sprint 6.2 AAA-Audit #13: Welt-Outro-Cutscene beim Welt-Boss-Sieg
+                // (Level 10/20/.../90 — Endboss hat kein Outro, da kein "naechste Welt"-Cliffhanger).
+                // One-shot pro Welt via HasSeenOutro/MarkOutroSeen.
+                if (WorldStoryService is { } outroStory
+                    && _currentLevelNumber > 0 && _currentLevelNumber % 10 == 0
+                    && _currentLevelNumber < 100)
+                {
+                    int outroWorldId = _currentLevelNumber / 10;
+                    if (!outroStory.HasSeenOutro(outroWorldId) && outroStory.GetOutro(outroWorldId) is { } outro)
+                    {
+                        var outroText = _localizationService.GetString(outro.TextKey);
+                        if (!string.IsNullOrEmpty(outroText))
+                        {
+                            _subtitles.Show(outroText);
+                            if (!string.IsNullOrEmpty(outro.StingerKey))
+                                _soundManager.PlayStinger(outro.StingerKey!);
+                            outroStory.MarkOutroSeen(outroWorldId);
+                        }
+                    }
+                }
             }
             LevelComplete?.Invoke();
         }

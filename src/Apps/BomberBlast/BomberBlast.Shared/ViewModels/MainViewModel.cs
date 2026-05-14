@@ -1,6 +1,4 @@
-using BomberBlast.Core;
 using BomberBlast.Navigation;
-using BomberBlast.Resources.Strings;
 using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,7 +6,6 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
-using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.ViewModels;
 
@@ -211,7 +208,6 @@ public sealed partial class MainViewModel : ViewModelBase
     public bool IsAnyDialogOpen => _dialogPresenter.IsAnyDialogOpen;
 
     private readonly IAchievementService _achievementService;
-    private readonly ILogger<MainViewModel> _logger;
     /// <summary>GameEventBus — VMs ueber den Service routen statt durch MainVM.</summary>
     private readonly IGameEventBus _eventBus;
     /// <summary>Dialog-State liegt im DialogPresenter — MainVM ist nur noch Forwarder.</summary>
@@ -274,7 +270,6 @@ public sealed partial class MainViewModel : ViewModelBase
         _dialogPresenter.StateChanged += OnDialogPresenterStateChanged;
 
         _achievementService = deps.AchievementService;
-        _logger = deps.Logger;
         _eventBus = deps.EventBus;
 
         // Lokale Aliase fuer den Konstruktor-Body.
@@ -345,47 +340,11 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // LAZY-VM-ENSURE-METHODEN
-    // ═══════════════════════════════════════════════════════════════════════
-    // Jede EnsureXxxVm() löst Lazy<T>.Value auf (instanziiert den VM), verdrahtet
-    // Navigation + Game-Juice-Events sowie VM-spezifische Dialog/IAP-Events,
-    // setzt anschliessend die ObservableProperty (feuert OnPropertyChanged →
-    // XAML ContentControl bindet den VM dann ein). Idempotent: Mehrfach-Aufrufe
-    // liefern dieselbe Instanz.
-
-    // EnsureXxxVm-Methoden delegieren an die Registry. Bleibt als duenne private Member
-    // damit alle bestehenden Aufruf-Stellen (Navigation, Tab-Switch, BackPress) unveraendert
-    // funktionieren — und Registry's VmInstantiated-Event triggert OnPropertyChanged hier
-    // (siehe OnRegistryVmInstantiated).
-    private GameViewModel EnsureGameVm() => _registry.EnsureGame();
-    private ShopViewModel EnsureShopVm() => _registry.EnsureShop();
-    private AchievementsViewModel EnsureAchievementsVm() => _registry.EnsureAchievements();
-    private DailyChallengeViewModel EnsureDailyChallengeVm() => _registry.EnsureDailyChallenge();
-    private LuckySpinViewModel EnsureLuckySpinVm() => _registry.EnsureLuckySpin();
-    private WeeklyChallengeViewModel EnsureWeeklyChallengeVm() => _registry.EnsureWeeklyChallenge();
-    private StatisticsViewModel EnsureStatisticsVm() => _registry.EnsureStatistics();
-    private QuickPlayViewModel EnsureQuickPlayVm() => _registry.EnsureQuickPlay();
-    private DeckViewModel EnsureDeckVm() => _registry.EnsureDeck();
-    private DungeonViewModel EnsureDungeonVm() => _registry.EnsureDungeon();
-    private BattlePassViewModel EnsureBattlePassVm() => _registry.EnsureBattlePass();
-    private CollectionViewModel EnsureCollectionVm() => _registry.EnsureCollection();
-    private LeagueViewModel EnsureLeagueVm() => _registry.EnsureLeague();
-    private ProfileViewModel EnsureProfileVm() => _registry.EnsureProfile();
-    private GemShopViewModel EnsureGemShopVm() => _registry.EnsureGemShop();
-
-    // ═══════════════════════════════════════════════════════════════════════
     // NAVIGATION
     // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Typsichere Navigation: Konvertiert NavigationRequest in Route-String
-    /// und delegiert an die bestehende String-basierte NavigateTo-Methode.
-    /// Audit H09: async void mit try/catch — wird auch aus HandleBackPressed (synchron, fire-and-forget) gerufen,
-    /// ungefangene Exceptions wuerden sonst TaskScheduler.UnobservedTaskException ausloesen.
-    /// </summary>
-    // Navigation delegiert komplett an den INavigationCoordinator. Diese Methoden bleiben
-    // als public/private Member damit alle bestehenden Aufruf-Stellen (Registry-Events,
-    // HandleBackPressed, MainView.axaml-Bindings auf NavigateToRouteAsync) unveraendert sind.
+    // Navigation delegiert komplett an den INavigationCoordinator. Die Methoden bleiben
+    // public damit MainView.axaml-Bindings auf NavigateToRouteAsync + die Registry-
+    // NavigationRequested-Subscription unveraendert funktionieren.
 
     public void NavigateTo(NavigationRequest request) => _navigationCoordinator.NavigateTo(request);
 

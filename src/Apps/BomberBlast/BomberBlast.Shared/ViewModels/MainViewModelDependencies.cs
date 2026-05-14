@@ -1,30 +1,25 @@
-using BomberBlast.Core;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
-using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
-using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// DI-Aggregat fuer <see cref="MainViewModel"/>-Dependencies (Audit M25).
+/// DI-Transport-Aggregat fuer die 11 Eager-VMs, 15 Lazy-VM-Wrapper und die wenigen
+/// Cross-Cutting-Services, die der <see cref="MainViewModel"/>-Compositor und der
+/// <see cref="ChildViewModelRegistry"/> gemeinsam brauchen.
 ///
-/// <para>Buendelt die 9 Service- und 8 Eager-VM-Dependencies plus 15 Lazy-VM-Wrapper, damit
-/// der MainViewModel-Konstruktor von 32 Parametern auf einen einzigen reduziert wird.
-/// Die DI-Registrierung erzeugt diese Klasse via Auto-Construction (alle Properties sind
-/// Constructor-Parameter, kein Setter).</para>
+/// <para>
+/// Die DI-Registrierung erzeugt das Record via Auto-Construction (alle Properties sind
+/// Constructor-Parameter). Beide Consumer (Compositor + Registry) sind Singletons —
+/// das Aggregat wird einmal aufgeloest und geteilt.
+/// </para>
 ///
-/// <para>Vorteile gegenueber dem alten 32-Parameter-Konstruktor:</para>
-/// <list type="bullet">
-///   <item>Auto-Refactoring: neuer Dependency = neue Property hier, MainViewModel-Ctor unveraendert.</item>
-///   <item>Test-Setup leichter: ein Mock-Aggregat statt 32 Mock-Parameter.</item>
-///   <item>Compile-Time-Sicherheit bleibt (kein Service-Locator-Pattern wie sp.GetService).</item>
-/// </list>
-///
-/// <para>Code-Smell-Hinweis aus dem Audit: 31 Deps sind ein Code-Smell, der hier durch
-/// Buendelung kaschiert wird statt eliminiert. Strukturelle Aufloesung (z. B. Feature-Module
-/// statt Mega-MainViewModel) waere ein eigener Sprint.</para>
+/// <para>
+/// Die fruehere God-VM-Logik liegt jetzt in den Feature-Modulen (NavigationCoordinator,
+/// BottomTabController, DialogPresenter, ChildViewModelRegistry, LifecycleHub) — diese
+/// holen ihre Service-Dependencies direkt aus dem Container, nicht aus diesem Aggregat.
+/// </para>
 /// </summary>
 public sealed record MainViewModelDependencies(
     // Eager VMs (sofort gebraucht)
@@ -37,7 +32,6 @@ public sealed record MainViewModelDependencies(
     VictoryViewModel VictoryVm,
     BossRushViewModel BossRushVm,
     WhatsNewViewModel WhatsNewVm,
-    //.1 : Play-Hub + Bottom-Tab-Bar (Eager — Kern-Navigation)
     PlayHubViewModel PlayHubVm,
     BottomTabBarViewModel BottomTabVm,
 
@@ -58,19 +52,13 @@ public sealed record MainViewModelDependencies(
     Lazy<ProfileViewModel> ProfileVmLazy,
     Lazy<GemShopViewModel> GemShopVmLazy,
 
-    // Services
+    // Services — nur was Compositor + Registry direkt brauchen.
     ILocalizationService Localization,
     IAdService AdService,
     IPurchaseService PurchaseService,
     IRewardedAdService RewardedAdService,
     IAchievementService AchievementService,
-    ICoinService CoinService,
-    ICloudSaveService CloudSaveService,
-    SoundManager SoundManager,
-    ILogger<MainViewModel> Logger,
     IGameEventBus EventBus,
     IWhatsNewService WhatsNewService,
     IAnalyticsService Analytics,
-    IBottomTabHub BottomTabHub,
-    // Welle 6 MainViewModel-Refactor — DialogPresenter haelt Dialog-State.
     IDialogPresenter DialogPresenter);

@@ -54,8 +54,9 @@ src/Apps/BomberBlast/
 │   ├── Input/                   # NeonJoystick, InputManager
 │   ├── Models/                  # Entities, Level, Dungeon, PowerUp, Bomb-Typen
 │   │   └── Levels/LevelLayoutGenerator.cs  # Static: Welt-Layout-Rotation, Boss/Bonus-Level-Config
-│   ├── Services/                # 41 Services (alle als Interface) — +RemoteConfig +ReEngagement +WhatsNew +FeatureUnlock (.4c/2.3/4.3/4.4)
-│   └── ViewModels/              # 26 ViewModels (alle Singletons per Lazy<T>) — +WhatsNewViewModel
+│   ├── Navigation/              # NavigationCoordinator, BottomTabController, NavigationRouteParser (MainViewModel-Feature-Module)
+│   ├── Services/                # Services (alle als Interface), inkl. DialogPresenter, ILogger-Provider
+│   └── ViewModels/              # ViewModels (Singletons), inkl. ChildViewModelRegistry + LifecycleHub (MainViewModel-Feature-Module)
 ├── BomberBlast.Android/
 └── BomberBlast.Desktop/
 ```
@@ -170,13 +171,73 @@ DispatcherTimer (16ms) → GameView.OnTimerTick()
 ### DI-Konfiguration
 
 - **25 ViewModels** (alle Singleton), **37 Services** (alle Singleton)
-- **14 spät-unlocked Child-VMs** als `Lazy<T>` injiziert (ShopVM, AchievementsVM, DeckVM usw.)
-  → `EnsureXxxVm()`-Methode mit idempotentem Guard, erst beim ersten Navigations-Ziel instanziiert
-- **9 Eager-VMs** für frühe Interaktion: MainMenu, Game, LevelSelect, Settings, Help,
-  HighScores, GameOver, Pause, Victory
+- **15 spät-unlocked Child-VMs** als `Lazy<T>` injiziert (ShopVM, AchievementsVM, DeckVM usw.)
+  → verwaltet vom `ChildViewModelRegistry` (siehe MainViewModel-Kompositor unten)
+- **11 Eager-VMs** für frühe Interaktion: MainMenu, Game, LevelSelect, Settings, Help,
+  HighScores, GameOver, Victory, BossRush, PlayHub, BottomTabBar
 - **Zirkuläre Abhängigkeiten** via `Lazy<T>` + `LazyServiceExtensions.cs`
-- **GameEngine**, **GameRenderer**, **GameViewModel** als `Lazy<GameViewModel>` in MainViewModel
+- **GameEngine**, **GameRenderer**, **GameViewModel** als `Lazy<GameViewModel>`
   → Startup-Ersparnis 200-500ms (schwere SKPaint/SKFont-Allokationen erst beim ersten Game-Start)
+
+---
+
+## MainViewModel-Kompositor + Feature-Module
+
+`MainViewModel` ist ein **Compositor** (~480 LOC), keine God-VM. Die fünf Feature-Module sind
+eigenständige Singletons, MainViewModel bündelt sie und forwarded ihren State an die
+`MainView.axaml`-Bindings. Kein einziger AXAML-Change war für die Aufteilung nötig — alle
+bestehenden Bindings (`{Binding MenuVm}`, `{Binding ActiveView}`, `{Binding IsAnyDialogOpen}`,
+`{Binding IsShopSpinTab}` usw.) treffen weiterhin auf MainViewModel-Forwarder-Properties.
+
+| Modul | Pfad | Verantwortung |
+|-------|------|---------------|
+| `INavigationCoordinator` | `Navigation/NavigationCoordinator.cs` | `ActiveView` (Source-of-Truth) + komplettes Routing (`NavigateToRouteAsync` mit 26 Routen-Cases, `NavigateTo(NavigationRequest)`, `HideAll`). CloudSave-Init-Race-Guard mit 3s-Cap. |
+| `IBottomTabController` | `Navigation/BottomTabController.cs` | 5 Sub-Tab-Bools, `IsBottomTabBarVisible`, 10 `SwitchToXxxTab`-Methoden, bidirektionale `ActiveView ↔ BottomTab`-Sync mit `IBottomTabHub`. |
+| `IDialogPresenter` | `Services/DialogPresenter.cs` | Alert + Confirm (`ShowConfirmAsync` mit `TaskCompletionSource`-Roundtrip) + `IsAnyDialogOpen`-Aggregat (inkl. WhatsNew-Flag). |
+| `IChildViewModelRegistry` | `ViewModels/ChildViewModelRegistry.cs` | 11 Eager + 15 Lazy VMs, idempotente `EnsureXxx()`-Methoden, VM-spezifische Sub-Wirings (Shop/Dungeon/BattlePass/GemShop), `RefreshAllLocalizedTexts`, `WireCommon`. |
+| `ILifecycleHub` | `ViewModels/LifecycleHub.cs` | `HandleBackPressed` (hierarchische Android-Back-Navigation), `CloudSaveInitTask` (Ctor-gestarteter Cloud-Pull), `OnAdUnavailable`. |
+
+### Kommunikations-Pattern
+
+- **State-Sync**: Jedes Modul feuert ein `StateChanged`/`ActiveViewChanged`/`VmInstantiated`-Event.
+  MainViewModel subscribt und ruft `OnPropertyChanged` für die betroffenen Forwarder-Properties.
+- **Navigation-Routing**: Child-VMs feuern `INavigable.NavigationRequested` → `ChildViewModelRegistry`
+  aggregiert das in sein eigenes `NavigationRequested`-Event → MainViewModel routet an
+  `NavigationCoordinator.NavigateTo`.
+- **Game-Juice**: `IFloatingTextEmitter`/`ICelebrationEmitter` der VMs laufen über `IGameEventBus`
+  (`RaiseFloatingText`/`RaiseCelebration`), nicht mehr durch MainViewModel.
+- **Abhängigkeits-Richtung** (gerichtet, kein Zirkel beim Container-Aufbau):
+  `ChildViewModelRegistry` → (keine Modul-Deps) ·
+  `BottomTabController` → `ChildViewModelRegistry` ·
+  `NavigationCoordinator` → `ChildViewModelRegistry` + `BottomTabController` ·
+  `LifecycleHub` → alle vier anderen.
+  Die zwei Zirkel (`BottomTabController`↔`NavigationCoordinator`,
+  `NavigationCoordinator`↔`LifecycleHub`) werden über **lazy Provider-Lambdas** in der
+  DI-Factory aufgelöst — das Lambda läuft erst zur Laufzeit, nicht beim Container-Aufbau.
+
+### Testbarkeits-Helfer
+
+VM-Typen sind `sealed` → NSubstitute kann sie nicht mocken. Damit die fehleranfällige Logik
+trotzdem unit-testbar bleibt, sind zwei reine Helfer extrahiert:
+- `ChildViewModelWiring.Wire(vm, onNavigate, eventBus)` — die `WireCommon`-Logik isoliert.
+- `NavigationRouteParser.Parse(route)` / `RequiresCloudSaveInit(baseRoute)` — Compound-Route-Auflösung
+  + BaseRoute/Query-Trennung + CloudSave-Gating.
+
+### `EnsureXxxVm`-Pattern (jetzt in der Registry)
+
+```csharp
+// ChildViewModelRegistry — idempotente Lazy-Init pro Child-VM
+public ShopViewModel EnsureShop()
+{
+    if (_shopVm is { } existing) return existing;
+    var vm = _shopVmLazy.Value;
+    WireCommon(vm);                          // Navigation + Game-Juice
+    vm.PurchaseSucceeded += ...;             // VM-spezifisches Sub-Wiring
+    _shopVm = vm;
+    VmInstantiated?.Invoke(nameof(ShopVm));  // → MainViewModel.OnPropertyChanged(name)
+    return vm;
+}
+```
 
 ---
 
@@ -593,11 +654,12 @@ zentrales Aggregat-Flag pro Modal-Layer:
 
 - `GameViewModel.IsAnyOverlayOpen` = `IsPaused || ShowScoreDoubleOverlay || IsContextHelpVisible || IsLoading`
   → `GameView.GameCanvas.IsHitTestVisible="{Binding !IsAnyOverlayOpen}"`
-- `MainViewModel.IsAnyDialogOpen` = `IsAlertDialogVisible || IsConfirmDialogVisible`
-  → `MainView.Pages-Panel.IsHitTestVisible="{Binding !IsAnyDialogOpen}"`
+  → via `[NotifyPropertyChangedFor]` automatisch neu berechnet.
+- `IDialogPresenter.IsAnyDialogOpen` = `IsAlertDialogVisible || IsConfirmDialogVisible || IsWhatsNewVisible`
+  → `MainViewModel.IsAnyDialogOpen` ist ein Forwarder darauf, `MainView.Pages-Panel.IsHitTestVisible="{Binding !IsAnyDialogOpen}"`
+  → `DialogPresenter.StateChanged` triggert `MainViewModel.OnPropertyChanged(nameof(IsAnyDialogOpen))`.
 
-Beide werden via `[NotifyPropertyChangedFor]` automatisch neu berechnet. Verhindert auf Android
-das ZIndex-Hit-Test-Problem (Taps gehen durch Overlay durch).
+Verhindert auf Android das ZIndex-Hit-Test-Problem (Taps gehen durch Overlay durch).
 
 ### Firebase-REST-Sicherheit
 
@@ -1182,16 +1244,16 @@ EnemyAI/etc. auf injizierten IRngProvider. Eigener multi-Wochen-Sprint.
 ## Foundation-Services fuer geplante Refactors
 
 Diese Services sind als API + Default-Impl im DI registriert, aber die zugehoerige
-groesere Refactor-Arbeit (UI-Umbau / God-VM-Reduktion / Migration) bleibt eigener
-Sprint mit Test-Coverage-Voraussetzung:
+groesere Refactor-Arbeit (UI-Umbau / Migration) bleibt offen:
 
-- `IGameEventBus` (.2 #10): Pub/Sub fuer UI-Events. Neue Code kann den
-  Service nutzen statt MainViewModel-Events; bestehende Logik bleibt.
-- `IBottomTabHub` (.1 #4): Tab-State + Pref-Persistenz. MainMenuView
-  UI-Refactor (974 LOC) bleibt Game-Design-Sprint.
-- Mode-Plugin-Foundation (.1 #11): GameEngine.Update ruft bereits
-  `_currentMode?.UpdateLogic` + `OnGameOver`. Bool-Flag-Wegfall + Property-
-  Aliasse-Aufloesung bleibt eigener Sprint mit Regression-Tests.
+- `IGameEventBus`: Pub/Sub fuer UI-Events (FloatingText/Celebration/ExitHint/Message).
+  Wird vom `ChildViewModelRegistry.WireCommon` aktiv genutzt — VMs routen Game-Juice
+  über den Bus statt durch MainViewModel.
+- `IBottomTabHub`: Tab-State + Pref-Persistenz. Vom `BottomTabController` genutzt.
+  Der MainMenuView UI-Refactor (974 LOC) bleibt Game-Design-Sprint.
+- Mode-Plugin-Foundation: GameEngine.Update ruft bereits `_currentMode?.UpdateLogic`
+  + `OnGameOver`. Bool-Flag-Wegfall + Property-Aliasse-Aufloesung bleibt eigener
+  Sprint mit Regression-Tests.
 
 ---
 
@@ -1370,9 +1432,10 @@ NavigationRequested?.Invoke(new GoGame(Mode: "bossrush", Floor: 0));
 
 ### ViewModels-Lifecycle
 
-- `MainViewModel.EnsureXxxVm()` als idempotenter Guard vor jeder Navigation
+- `ChildViewModelRegistry.EnsureXxx()` als idempotenter Guard — instanziiert den Lazy-VM
+  beim ersten Zugriff, verdrahtet Common-Events + Sub-Wirings (siehe MainViewModel-Kompositor).
 - `IGameJuiceEmitter`: Einheitliches Interface für FloatingText + Celebration (implementiert
-  von LevelSelectVM, MainMenuVM, ShopVM, GameOverVM, ProfileVM)
+  von LevelSelectVM, MainMenuVM, ShopVM, GameOverVM, ProfileVM). Routing über `IGameEventBus`.
 - `GameEngine.Dispose()`: Via `App.DisposeServices()` (Desktop: ShutdownRequested, Android: OnDestroy)
 
 ---
@@ -1412,4 +1475,4 @@ Keine `SKPaint.TextSize/TextAlign/FakeBoldText` mehr (deprecated).
 - `database.rules.json`: Firebase-Security-Rules (Liga + Daily-Race + Reports)
 - `src/Apps/BomberBlast/FIREBASE_SETUP.md`: Crashlytics/Analytics/FCM-Setup-Anleitung (~1.5h)
 - `src/Apps/BomberBlast/BOMBERBLAST_AAA_AUDIT.md`: Externer -Katalog (Roadmap-Referenz)
-- `tests/BomberBlast.Tests/`: 286 Tests (xUnit)
+- `tests/BomberBlast.Tests/`: 643 Tests (xUnit)

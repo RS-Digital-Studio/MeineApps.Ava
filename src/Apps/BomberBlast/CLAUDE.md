@@ -1312,7 +1312,7 @@ Version = CloudSaveSchemaMigrator.CurrentSchemaVersion
 
 ### Firebase-Rules — Spezifisch vor Wildcard
 
-`daily_race`-Rule MUSS vor `$tier`-Wildcard in `bomberblast-league.rules.json` stehen.
+`daily_race`-Rule MUSS vor `$tier`-Wildcard in `database.rules.bomberblast.json` stehen.
 Ohne das wird `daily_race` als Tier-Name interpretiert → Permission-Denied.
 
 ### GC.GetTotalMemory auf Background-Thread
@@ -1460,6 +1460,9 @@ dotnet run --project tools/AppChecker BomberBlast
 
 # Test-Suite
 dotnet test tests/BomberBlast.Tests/
+
+# Firebase RTDB-Rules deployen (Repo-Root, Projekt bomberblast-league)
+npx firebase deploy --only database --project bomberblast-league --config firebase.bomberblast.json
 ```
 
 **Build-Hygiene**: 0 Warnungen in Shared + Android. SkiaSharp 3.x Text-Rendering:
@@ -1472,7 +1475,10 @@ Keine `SKPaint.TextSize/TextAlign/FakeBoldText` mehr (deprecated).
 
 - Haupt-CLAUDE.md (`F:\Meine_Apps_Ava\CLAUDE.md`): Build-System, allgemeine Conventions,
   Troubleshooting, Keystore, Ad-Pattern, DI-Pattern
-- `database.rules.json`: Firebase-Security-Rules (Liga + Daily-Race + Reports)
+- `database.rules.bomberblast.json` (Repo-Root): Firebase-RTDB-Security-Rules (Liga + Daily-Race +
+  Reports + Clans). Deployt via `firebase.bomberblast.json` (Repo-Root) auf Projekt `bomberblast-league`.
+  Firebase-CLI verlangt dass `firebase.json` + Rules-Datei im selben Verzeichnis liegen — daher beide
+  im Repo-Root, nicht im App-Ordner.
 - `src/Apps/BomberBlast/FIREBASE_SETUP.md`: Crashlytics/Analytics/FCM-Setup-Anleitung (~1.5h)
 - `src/Apps/BomberBlast/BOMBERBLAST_AAA_AUDIT.md`: Externer -Katalog (Roadmap-Referenz)
 - `tests/BomberBlast.Tests/`: 643 Tests (xUnit)

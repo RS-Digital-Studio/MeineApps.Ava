@@ -6,7 +6,7 @@ eigenes Icon-System, AI-Pathfinding, Roguelike-Dungeon-Modus und Liga-System.
 
 | Aspekt | Wert |
 |--------|------|
-| Version | v2.0.56 (VersionCode 66) |
+| Version | v2.0.59 (VersionCode 69) |
 | Package-ID | org.rsdigital.bomberblast |
 | Status | Produktion |
 | Premium-Modell | 1,99 EUR `remove_ads` |

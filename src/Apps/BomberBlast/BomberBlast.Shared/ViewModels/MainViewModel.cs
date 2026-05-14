@@ -54,10 +54,11 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <summary>What's-New-Modal-VM (wird einmal pro App-Update angezeigt).</summary>
     public WhatsNewViewModel WhatsNewVm { get; }
 
-    /// <summary>True solange das What's-New-Modal sichtbar ist (gesteuert vom Closed-Event des VMs).</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAnyDialogOpen))]
-    private bool _isWhatsNewVisible;
+    /// <summary>
+    /// True solange das What's-New-Modal sichtbar ist (gesteuert vom Closed-Event des VMs).
+    /// Welle 6 : State liegt im DialogPresenter (Aggregat-Beitrag fuer IsAnyDialogOpen).
+    /// </summary>
+    public bool IsWhatsNewVisible => _dialogPresenter.IsWhatsNewVisible;
 
     /// <summary>
     /// Game-VM ist nullable + Lazy: spart 100-200ms Startup auf Mid-Tier-Android,
@@ -99,10 +100,10 @@ public sealed partial class MainViewModel : ViewModelBase
     // Daily-Hub aufgeloest (v2.0.43, Menu-Redesign) — Inhalte direkt im MainMenu-Dashboard.
     public BossRushViewModel BossRushVm { get; }
 
-    /// <summary>Sprint 3.1 AAA-Audit #4: Play-Hub-VM ("Spielen"-Tab — alle Spielmodi als Karten).</summary>
+    /// <summary>.1 : Play-Hub-VM ("Spielen"-Tab — alle Spielmodi als Karten).</summary>
     public PlayHubViewModel PlayHubVm { get; }
 
-    /// <summary>Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar-VM (4-Tab-Navigation Home/Play/Shop/Profile).</summary>
+    /// <summary>.1 : Bottom-Tab-Bar-VM (4-Tab-Navigation Home/Play/Shop/Profile).</summary>
     public BottomTabBarViewModel BottomTabVm { get; }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -159,7 +160,7 @@ public sealed partial class MainViewModel : ViewModelBase
     public bool IsPlayHubActive => ActiveView == ActiveView.PlayHub;
 
     /// <summary>
-    /// Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar ist sichtbar auf den 4 konsolidierten
+    ///.1 : Bottom-Tab-Bar ist sichtbar auf den 4 konsolidierten
     /// Tab-Haupt-Views (Home/Play/Shop/Profile) — nicht im Game, LevelSelect, Dialogen etc.
     /// </summary>
     public bool IsBottomTabBarVisible =>
@@ -167,7 +168,7 @@ public sealed partial class MainViewModel : ViewModelBase
             or ActiveView.Shop or ActiveView.Profile;
 
     // Audit M01: NotifyPropertyChangedFor-Attribute am Field erledigen die Benachrichtigung
-    // der IsXxxActive-Properties automatisch. Sprint 3.1: partial OnActiveViewChanged
+    // der IsXxxActive-Properties automatisch. partial OnActiveViewChanged
     // wieder aktiv fuer die Bottom-Tab-Bidirektional-Sync.
     partial void OnActiveViewChanged(ActiveView value)
     {
@@ -238,45 +239,28 @@ public sealed partial class MainViewModel : ViewModelBase
     private bool _isAdBannerVisible;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // DIALOG PROPERTIES
+    // DIALOG PROPERTIES (Welle 6 : Forwarder auf IDialogPresenter)
     // ═══════════════════════════════════════════════════════════════════════
+    // State + Logik liegen im DialogPresenter. PropertyChanged-Notifications
+    // werden ueber dialogPresenter.StateChanged geroutet (im Ctor verdrahtet).
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAnyDialogOpen))]
-    private bool _isAlertDialogVisible;
+    public bool IsAlertDialogVisible => _dialogPresenter.IsAlertDialogVisible;
+    public string AlertDialogTitle => _dialogPresenter.AlertDialogTitle;
+    public string AlertDialogMessage => _dialogPresenter.AlertDialogMessage;
+    public string AlertDialogButtonText => _dialogPresenter.AlertDialogButtonText;
 
-    [ObservableProperty]
-    private string _alertDialogTitle = "";
-
-    [ObservableProperty]
-    private string _alertDialogMessage = "";
-
-    [ObservableProperty]
-    private string _alertDialogButtonText = "";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAnyDialogOpen))]
-    private bool _isConfirmDialogVisible;
+    public bool IsConfirmDialogVisible => _dialogPresenter.IsConfirmDialogVisible;
+    public string ConfirmDialogTitle => _dialogPresenter.ConfirmDialogTitle;
+    public string ConfirmDialogMessage => _dialogPresenter.ConfirmDialogMessage;
+    public string ConfirmDialogAcceptText => _dialogPresenter.ConfirmDialogAcceptText;
+    public string ConfirmDialogCancelText => _dialogPresenter.ConfirmDialogCancelText;
 
     /// <summary>
     /// Audit M18: Aggregat-Flag fuer alle modalen Dialoge. View bindet darunterliegende Page-Views
     /// IsHitTestVisible="{Binding !IsAnyDialogOpen}" → Android-ZIndex-Hit-Test-Problem entschaerft.
+    /// Aggregat lebt jetzt im DialogPresenter (inkl. WhatsNew-Flag).
     /// </summary>
-    public bool IsAnyDialogOpen => IsAlertDialogVisible || IsConfirmDialogVisible || IsWhatsNewVisible;
-
-    [ObservableProperty]
-    private string _confirmDialogTitle = "";
-
-    [ObservableProperty]
-    private string _confirmDialogMessage = "";
-
-    [ObservableProperty]
-    private string _confirmDialogAcceptText = "";
-
-    [ObservableProperty]
-    private string _confirmDialogCancelText = "";
-
-    private TaskCompletionSource<bool>? _confirmDialogTcs;
+    public bool IsAnyDialogOpen => _dialogPresenter.IsAnyDialogOpen;
 
     /// <summary>
     /// Merkt ob Einstellungen aus dem Spiel geöffnet wurden (für Zurück-Navigation).
@@ -286,7 +270,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ILocalizationService _localizationService;
     private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
     private readonly IAchievementService _achievementService;
     private readonly ICoinService _coinService;
@@ -294,10 +278,12 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ICloudSaveService _cloudSaveService;
     private readonly SoundManager _soundManager;
     private readonly ILogger<MainViewModel> _logger;
-    /// <summary>Sprint 4.2 AAA-Audit #10: GameEventBus — neue Code nutzt diesen statt durch MainVM zu routen.</summary>
+    /// <summary>.2 : GameEventBus — neue Code nutzt diesen statt durch MainVM zu routen.</summary>
     private readonly IGameEventBus _eventBus;
-    /// <summary>Sprint 3.1 AAA-Audit #4: Bottom-Tab-Hub — zentrale 4-Tab-Navigation.</summary>
+    /// <summary>.1 : Bottom-Tab-Hub — zentrale 4-Tab-Navigation.</summary>
     private readonly IBottomTabHub _bottomTabHub;
+    /// <summary>Welle 6 : Dialog-State liegt im DialogPresenter, MainVM nur noch Forwarder.</summary>
+    private readonly IDialogPresenter _dialogPresenter;
 
     // Lazy-VM-Factories (werden beim ersten EnsureXxxVm() resolved)
     private readonly Lazy<GameViewModel> _gameVmLazy;
@@ -367,12 +353,17 @@ public sealed partial class MainViewModel : ViewModelBase
         BossRushVm = deps.BossRushVm;
         WireCommon(deps.BossRushVm);
 
-        // Sprint 3.1 AAA-Audit #4: Play-Hub + Bottom-Tab-Bar verdrahten.
+        //.1 : Play-Hub + Bottom-Tab-Bar verdrahten.
         PlayHubVm = deps.PlayHubVm;
         WireCommon(deps.PlayHubVm);
         BottomTabVm = deps.BottomTabVm;
         _bottomTabHub = deps.BottomTabHub;
         _bottomTabHub.ActiveTabChanged += OnBottomTabChanged;
+
+        // Welle 6 : DialogPresenter haelt den Dialog-State.
+        // StateChanged → alle Dialog-Properties + IsAnyDialogOpen neu feuern, damit Bindings reagieren.
+        _dialogPresenter = deps.DialogPresenter;
+        _dialogPresenter.StateChanged += OnDialogPresenterStateChanged;
 
         _localizationService = deps.Localization;
         _adService = deps.AdService;
@@ -405,7 +396,7 @@ public sealed partial class MainViewModel : ViewModelBase
         var highScoresVm = deps.HighScoresVm;
         var levelSelectVm = deps.LevelSelectVm;
 
-        // Sprint 4.2 AAA-Audit #10: GameEventBus → MainVM-Events forwarden.
+        //.2 : GameEventBus → MainVM-Events forwarden.
         // Andere ViewModels koennen jetzt direkt _eventBus.RaiseFloatingText() rufen,
         // ohne durch MainViewModel routen zu muessen — God-VM-Abhaengigkeit reduziert.
         _eventBus.FloatingTextRequested += (t, s) => FloatingTextRequested?.Invoke(t, s);
@@ -469,9 +460,10 @@ public sealed partial class MainViewModel : ViewModelBase
 
         // What's-New-Modal: Closed-Event verdrahten + Initial-Check ob anzeigen.
         // ShouldShow prueft Service-State (CurrentVersion > LastSeenVersion + Eintraege vorhanden).
-        WhatsNewVm.Closed += () => IsWhatsNewVisible = false;
+        // Welle 6 : WhatsNew-Sichtbarkeit lebt im DialogPresenter (Aggregat-Beitrag).
+        WhatsNewVm.Closed += () => _dialogPresenter.SetWhatsNewVisible(false);
         if (deps.WhatsNewService.ShouldShow)
-            IsWhatsNewVisible = true;
+            _dialogPresenter.SetWhatsNewVisible(true);
 
         // Menü initialisieren
         menuVm.OnAppearing();
@@ -500,7 +492,7 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Sprint 4.x AAA-Audit #7: Generischer Lazy-VM-Resolver fuer die trivialen
+    ///.x : Generischer Lazy-VM-Resolver fuer die trivialen
     /// EnsureXxxVm()-Methoden (nur WireCommon + Property-Set, kein VM-spezifisches Wiring).
     /// Setter-Delegate statt <c>ref field</c> — damit der ObservableProperty-Setter
     /// laeuft und OnPropertyChanged feuert (XAML-ContentControl bindet den VM dann ein).
@@ -653,7 +645,7 @@ public sealed partial class MainViewModel : ViewModelBase
         // Battle Pass Premium-Kauf anfordern
         vm.PremiumPurchaseRequested += async () =>
         {
-            // Sprint 2.2 AAA-Audit #2: IAP-Funnel fuer den Battle-Pass-Premium-Kauf.
+            //.2 : IAP-Funnel fuer den Battle-Pass-Premium-Kauf.
             _analytics?.LogEvent(AnalyticsEvents.PurchaseFlowStart, new Dictionary<string, object>
             {
                 [AnalyticsParams.Sku] = "battle_pass_premium",
@@ -712,7 +704,7 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         try
         {
-            // Sprint 4.x AAA-Audit #7: Request→Route-Mapping in NavigationRouteMapper extrahiert.
+            //.x : Request→Route-Mapping in NavigationRouteMapper extrahiert.
             await NavigateToRouteAsync(Navigation.NavigationRouteMapper.ToRoute(request));
         }
         catch (Exception ex)
@@ -797,7 +789,7 @@ public sealed partial class MainViewModel : ViewModelBase
                 // ContentControl-Binding wuerde einen leeren GameBorder zeigen.
                 var gameVm = EnsureGameVm();
                 ActiveView = ActiveView.Game;
-                // Spiel-Parameter parsen (Sprint 4.x AAA-Audit #7 — Parser extrahiert)
+                // Spiel-Parameter parsen (.x — Parser extrahiert)
                 if (route.Contains('?'))
                 {
                     var p = Navigation.NavigationQueryParser.ParseGame(route[(route.IndexOf('?') + 1)..]);
@@ -821,7 +813,7 @@ public sealed partial class MainViewModel : ViewModelBase
                 ActiveView = ActiveView.GameOver;
                 if (route.Contains('?'))
                 {
-                    // Sprint 4.x AAA-Audit #7 — Query-Parsing extrahiert, VM-Logik bleibt hier.
+                    //.x  — Query-Parsing extrahiert, VM-Logik bleibt hier.
                     var p = Navigation.NavigationQueryParser.ParseGameOver(route[(route.IndexOf('?') + 1)..]);
 
                     // Fehlversuche pro Level tracken (fuer Level-Skip)
@@ -947,7 +939,7 @@ public sealed partial class MainViewModel : ViewModelBase
                 EnsureQuickPlayVm().OnAppearing();
                 break;
 
-            // Sprint 3.1 AAA-Audit #4: Play-Hub — "Spielen"-Tab mit allen Spielmodi.
+            //.1 : Play-Hub — "Spielen"-Tab mit allen Spielmodi.
             case "PlayHub":
                 ActiveView = ActiveView.PlayHub;
                 PlayHubVm.OnAppearing();
@@ -987,7 +979,7 @@ public sealed partial class MainViewModel : ViewModelBase
             case "Victory":
                 ActiveView = ActiveView.Victory;
                 VictoryVm.OnAppearing();
-                // Query-Parameter parsen (Sprint 4.x AAA-Audit #7 — Parser extrahiert)
+                // Query-Parameter parsen (.x — Parser extrahiert)
                 if (route.Contains('?'))
                 {
                     var p = Navigation.NavigationQueryParser.ParseVictory(route[(route.IndexOf('?') + 1)..]);
@@ -1177,44 +1169,26 @@ public sealed partial class MainViewModel : ViewModelBase
     // DIALOGS
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Welle 6 : Diese Methoden delegieren an den IDialogPresenter.
+    // Sie bleiben als private Member damit die bestehenden Subscriptions im Ctor
+    // (settingsVm.AlertRequested, GameOverVm.ConfirmationRequested usw.) sowie die
+    // RelayCommand-Bindings in MainView.axaml (DismissAlertCommand, AcceptConfirmCommand,
+    // CancelConfirmCommand) unveraendert weiter funktionieren.
+
     private void ShowAlertDialog(string title, string message, string buttonText)
-    {
-        AlertDialogTitle = title;
-        AlertDialogMessage = message;
-        AlertDialogButtonText = buttonText;
-        IsAlertDialogVisible = true;
-    }
+        => _dialogPresenter.ShowAlert(title, message, buttonText);
 
     [RelayCommand]
-    private void DismissAlert()
-    {
-        IsAlertDialogVisible = false;
-    }
+    private void DismissAlert() => _dialogPresenter.DismissAlert();
 
     private Task<bool> ShowConfirmDialog(string title, string message, string acceptText, string cancelText)
-    {
-        ConfirmDialogTitle = title;
-        ConfirmDialogMessage = message;
-        ConfirmDialogAcceptText = acceptText;
-        ConfirmDialogCancelText = cancelText;
-        _confirmDialogTcs = new TaskCompletionSource<bool>();
-        IsConfirmDialogVisible = true;
-        return _confirmDialogTcs.Task;
-    }
+        => _dialogPresenter.ShowConfirmAsync(title, message, acceptText, cancelText);
 
     [RelayCommand]
-    private void AcceptConfirm()
-    {
-        IsConfirmDialogVisible = false;
-        _confirmDialogTcs?.TrySetResult(true);
-    }
+    private void AcceptConfirm() => _dialogPresenter.AcceptConfirm();
 
     [RelayCommand]
-    private void CancelConfirm()
-    {
-        IsConfirmDialogVisible = false;
-        _confirmDialogTcs?.TrySetResult(false);
-    }
+    private void CancelConfirm() => _dialogPresenter.CancelConfirm();
 
     /// <summary>
     /// Benannter Handler fuer AdUnavailable (statt Lambda, damit Unsubscribe moeglich)
@@ -1222,5 +1196,24 @@ public sealed partial class MainViewModel : ViewModelBase
     private void OnAdUnavailable()
     {
         ShowAlertDialog(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage, AppStrings.OK);
+    }
+
+    /// <summary>
+    /// Welle 6 Phase 2: <see cref="IDialogPresenter.StateChanged"/>-Handler.
+    /// Feuert alle Dialog-Bindings + Aggregat neu — MainView-Bindings reagieren.
+    /// </summary>
+    private void OnDialogPresenterStateChanged()
+    {
+        OnPropertyChanged(nameof(IsAlertDialogVisible));
+        OnPropertyChanged(nameof(AlertDialogTitle));
+        OnPropertyChanged(nameof(AlertDialogMessage));
+        OnPropertyChanged(nameof(AlertDialogButtonText));
+        OnPropertyChanged(nameof(IsConfirmDialogVisible));
+        OnPropertyChanged(nameof(ConfirmDialogTitle));
+        OnPropertyChanged(nameof(ConfirmDialogMessage));
+        OnPropertyChanged(nameof(ConfirmDialogAcceptText));
+        OnPropertyChanged(nameof(ConfirmDialogCancelText));
+        OnPropertyChanged(nameof(IsWhatsNewVisible));
+        OnPropertyChanged(nameof(IsAnyDialogOpen));
     }
 }

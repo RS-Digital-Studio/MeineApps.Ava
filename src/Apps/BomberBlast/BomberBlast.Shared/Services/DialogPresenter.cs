@@ -1,41 +1,103 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IDialogPresenter"/> (Welle 6 MainViewModel-Refactor).
+/// Default-Implementation von <see cref="IDialogPresenter"/> (Welle 6 MainViewModel-Refactor, ).
 ///
 /// <para>
-/// Phase 1: Leeres Geruest. Die Alert/Confirm-Logik wird in Phase 2 aus
-/// <see cref="BomberBlast.ViewModels.MainViewModel"/> hier hin verschoben.
+/// Haelt den Dialog-State (Alert + Confirm) plus den WhatsNew-Flag fuer das
+/// <see cref="IsAnyDialogOpen"/>-Aggregat. Feuert pro Mutation einmal <see cref="StateChanged"/>
+/// — MainViewModel-Forwarder ruft daraufhin alle <c>OnPropertyChanged</c> der bindbaren Properties.
+/// </para>
+///
+/// <para>
+/// <c>ShowConfirmAsync</c> nutzt einen <see cref="TaskCompletionSource{TResult}"/>:
+/// <c>AcceptConfirm</c>/<c>CancelConfirm</c> resolven den Task mit <c>true</c>/<c>false</c>.
+/// Aufrufer warten via <c>await</c>.
 /// </para>
 /// </summary>
 public sealed class DialogPresenter : IDialogPresenter
 {
-    public bool IsAlertDialogVisible { get; private set; }
-    public string AlertDialogTitle { get; private set; } = "";
-    public string AlertDialogMessage { get; private set; } = "";
-    public string AlertDialogButtonText { get; private set; } = "";
+    // Alert-State
+    private bool _isAlertDialogVisible;
+    private string _alertDialogTitle = "";
+    private string _alertDialogMessage = "";
+    private string _alertDialogButtonText = "";
 
-    public bool IsConfirmDialogVisible { get; private set; }
-    public string ConfirmDialogTitle { get; private set; } = "";
-    public string ConfirmDialogMessage { get; private set; } = "";
-    public string ConfirmDialogAcceptText { get; private set; } = "";
-    public string ConfirmDialogCancelText { get; private set; } = "";
+    // Confirm-State
+    private bool _isConfirmDialogVisible;
+    private string _confirmDialogTitle = "";
+    private string _confirmDialogMessage = "";
+    private string _confirmDialogAcceptText = "";
+    private string _confirmDialogCancelText = "";
+    private TaskCompletionSource<bool>? _confirmDialogTcs;
 
+    // WhatsNew-Flag (Aggregat-Beitrag, externer Lifecycle ueber WhatsNewVm)
     private bool _isWhatsNewVisible;
 
-    public bool IsAnyDialogOpen => IsAlertDialogVisible || IsConfirmDialogVisible || _isWhatsNewVisible;
+    public bool IsWhatsNewVisible => _isWhatsNewVisible;
+
+    public bool IsAlertDialogVisible => _isAlertDialogVisible;
+    public string AlertDialogTitle => _alertDialogTitle;
+    public string AlertDialogMessage => _alertDialogMessage;
+    public string AlertDialogButtonText => _alertDialogButtonText;
+
+    public bool IsConfirmDialogVisible => _isConfirmDialogVisible;
+    public string ConfirmDialogTitle => _confirmDialogTitle;
+    public string ConfirmDialogMessage => _confirmDialogMessage;
+    public string ConfirmDialogAcceptText => _confirmDialogAcceptText;
+    public string ConfirmDialogCancelText => _confirmDialogCancelText;
+
+    public bool IsAnyDialogOpen => _isAlertDialogVisible || _isConfirmDialogVisible || _isWhatsNewVisible;
 
     public event Action? StateChanged;
 
     public void ShowAlert(string title, string message, string buttonText)
-        => throw new NotImplementedException("Wird in Phase 2 gefuellt.");
+    {
+        _alertDialogTitle = title ?? "";
+        _alertDialogMessage = message ?? "";
+        _alertDialogButtonText = buttonText ?? "";
+        _isAlertDialogVisible = true;
+        StateChanged?.Invoke();
+    }
 
     public Task<bool> ShowConfirmAsync(string title, string message, string acceptText, string cancelText)
-        => throw new NotImplementedException("Wird in Phase 2 gefuellt.");
+    {
+        _confirmDialogTitle = title ?? "";
+        _confirmDialogMessage = message ?? "";
+        _confirmDialogAcceptText = acceptText ?? "";
+        _confirmDialogCancelText = cancelText ?? "";
+        _confirmDialogTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _isConfirmDialogVisible = true;
+        StateChanged?.Invoke();
+        return _confirmDialogTcs.Task;
+    }
 
-    public void DismissAlert() => throw new NotImplementedException("Phase 2.");
-    public void AcceptConfirm() => throw new NotImplementedException("Phase 2.");
-    public void CancelConfirm() => throw new NotImplementedException("Phase 2.");
+    public void DismissAlert()
+    {
+        if (!_isAlertDialogVisible) return;
+        _isAlertDialogVisible = false;
+        StateChanged?.Invoke();
+    }
+
+    public void AcceptConfirm()
+    {
+        if (!_isConfirmDialogVisible) return;
+        _isConfirmDialogVisible = false;
+        var tcs = _confirmDialogTcs;
+        _confirmDialogTcs = null;
+        StateChanged?.Invoke();
+        tcs?.TrySetResult(true);
+    }
+
+    public void CancelConfirm()
+    {
+        if (!_isConfirmDialogVisible) return;
+        _isConfirmDialogVisible = false;
+        var tcs = _confirmDialogTcs;
+        _confirmDialogTcs = null;
+        StateChanged?.Invoke();
+        tcs?.TrySetResult(false);
+    }
 
     public void SetWhatsNewVisible(bool visible)
     {

@@ -30,6 +30,12 @@ public interface IDialogPresenter
     /// <summary>Aggregat: Alert ODER Confirm ODER WhatsNew offen. Steuert HitTest-Schutz im MainView.</summary>
     bool IsAnyDialogOpen { get; }
 
+    /// <summary>
+    /// True solange das WhatsNew-Modal sichtbar sein soll. Wird ueber
+    /// <see cref="SetWhatsNewVisible"/> gesteuert und fliesst in <see cref="IsAnyDialogOpen"/> ein.
+    /// </summary>
+    bool IsWhatsNewVisible { get; }
+
     /// <summary>Wird gefeuert wenn sich der Sichtbarkeits-State eines Dialogs aendert.</summary>
     event Action? StateChanged;
 

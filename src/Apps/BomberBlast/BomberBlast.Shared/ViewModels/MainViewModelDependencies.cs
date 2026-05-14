@@ -37,7 +37,7 @@ public sealed record MainViewModelDependencies(
     VictoryViewModel VictoryVm,
     BossRushViewModel BossRushVm,
     WhatsNewViewModel WhatsNewVm,
-    // Sprint 3.1 AAA-Audit #4: Play-Hub + Bottom-Tab-Bar (Eager — Kern-Navigation)
+    //.1 : Play-Hub + Bottom-Tab-Bar (Eager — Kern-Navigation)
     PlayHubViewModel PlayHubVm,
     BottomTabBarViewModel BottomTabVm,
 
@@ -71,4 +71,6 @@ public sealed record MainViewModelDependencies(
     IGameEventBus EventBus,
     IWhatsNewService WhatsNewService,
     IAnalyticsService Analytics,
-    IBottomTabHub BottomTabHub);
+    IBottomTabHub BottomTabHub,
+    // Welle 6 MainViewModel-Refactor — DialogPresenter haelt Dialog-State.
+    IDialogPresenter DialogPresenter);

@@ -143,4 +143,21 @@ public sealed partial class MainViewModel
     }
     void Services.Interfaces.IProgressionFeedbackHost.SetTutorialHintVisible(bool visible)
         => ShowTutorialHint = visible;
+
+    // ── IGameTickHost (Bruecke fuer GameTickCoordinator) ──
+    Models.Enums.ActivePage Services.Interfaces.IGameTickHost.ActivePage => ActivePage;
+    bool Services.Interfaces.IGameTickHost.IsWorkerProfileActive => IsWorkerProfileActive;
+    bool Services.Interfaces.IGameTickHost.IsRushActive => IsRushActive;
+    bool Services.Interfaces.IGameTickHost.CanActivateRush => CanActivateRush;
+    bool Services.Interfaces.IGameTickHost.ShowBoostIndicator => ShowBoostIndicator;
+    bool Services.Interfaces.IGameTickHost.HasActiveEvent => HasActiveEvent;
+    void Services.Interfaces.IGameTickHost.UpdateNetIncomeHeader(Models.GameState state) => UpdateNetIncomeHeader(state);
+    void Services.Interfaces.IGameTickHost.UpdateRushDisplay() => UpdateRushDisplay();
+    void Services.Interfaces.IGameTickHost.UpdateBoostIndicator() => UpdateBoostIndicator();
+    void Services.Interfaces.IGameTickHost.UpdateDeliveryDisplay() => UpdateDeliveryDisplay();
+    void Services.Interfaces.IGameTickHost.UpdateEventDisplay() => UpdateEventDisplay();
+    void Services.Interfaces.IGameTickHost.UpdateEventTimer() => UpdateEventTimer();
+    void Services.Interfaces.IGameTickHost.RefreshReputation(Models.GameState state) => RefreshReputation(state);
+    void Services.Interfaces.IGameTickHost.RefreshPrestigeBanner(Models.GameState state) => RefreshPrestigeBanner(state);
+    void Services.Interfaces.IGameTickHost.UpdateWorkerWarning(Models.GameState state) => UpdateWorkerWarning(state);
 }

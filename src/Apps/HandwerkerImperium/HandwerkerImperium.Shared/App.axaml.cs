@@ -387,6 +387,9 @@ public partial class App : Application
         // Progression-Feedback (Level/Prestige/Workshop/Worker/MasterTool/Achievement)
         // aus MainViewModel.EventHandlers.cs extrahiert — subscribed selbst auf die Service-Events.
         services.AddSingleton<IProgressionFeedbackCoordinator, ProgressionFeedbackCoordinator>();
+
+        // Per-Tick-UI-Orchestrierung (1 Hz) aus MainViewModel.GameTick.cs extrahiert.
+        services.AddSingleton<IGameTickCoordinator, GameTickCoordinator>();
         // Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
         services.AddSingleton<IDailyBundleService, DailyBundleService>();
 

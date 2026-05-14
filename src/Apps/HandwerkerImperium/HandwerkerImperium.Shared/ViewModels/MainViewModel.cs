@@ -29,7 +29,7 @@ namespace HandwerkerImperium.ViewModels;
 ///   MainViewModel.Init.cs - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// Dialog-Logik extrahiert nach DialogViewModel.cs (Alert, Confirm, Story, Hint, Achievement, Prestige-Dialog).
 /// </summary>
-public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost, Services.Interfaces.IWelcomeFlowHost, Services.Interfaces.IStartupHost, Services.Interfaces.IProgressionFeedbackHost
+public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost, Services.Interfaces.IWelcomeFlowHost, Services.Interfaces.IStartupHost, Services.Interfaces.IProgressionFeedbackHost, Services.Interfaces.IGameTickHost
 {
     // Phase-1-Services (Refactoring 17.04.2026 — Plan velvety-booping-peacock).
     // Delegieren vorerst zurueck an MainViewModel. /3 zieht Logik in die Services um.
@@ -42,6 +42,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly Services.Interfaces.IGameStartupCoordinator _startupCoordinator;
     /// <summary>Progression-Feedback (Level/Prestige/Workshop/Worker/MasterTool/Achievement).</summary>
     private readonly Services.Interfaces.IProgressionFeedbackCoordinator _progressionFeedbackCoordinator;
+    /// <summary>Per-Tick-UI-Orchestrierung (1 Hz vom GameLoopService).</summary>
+    private readonly Services.Interfaces.IGameTickCoordinator _gameTickCoordinator;
 
     // INavigationHost-Implementierung: siehe MainViewModel.Host.cs ()
 
@@ -89,11 +91,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
     internal static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
 
-    // Zaehler fuer FloatingText-Anzeige (nur alle 3 Ticks, nicht jeden)
-    private int _floatingTextCounter;
-
-    // Zaehler fuer Ziel-Aktualisierung (alle 60 Ticks)
-    private int _tickForGoal;
+    // Per-Tick-Zaehler (_floatingTextCounter, _tickForGoal) → extrahiert nach GameTickCoordinator
 
     // QuickJob-Timer → extrahiert nach MissionsFeatureViewModel
 
@@ -209,6 +207,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         Services.Interfaces.IUiEffectBus uiEffectBus,
         Services.Interfaces.IGameStartupCoordinator startupCoordinator,
         Services.Interfaces.IProgressionFeedbackCoordinator progressionFeedbackCoordinator,
+        Services.Interfaces.IGameTickCoordinator gameTickCoordinator,
         ITournamentService? tournamentService = null,
         IStoryService? storyService = null,
         IReviewService? reviewService = null,
@@ -233,6 +232,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // die schmale IStartupHost-Bruecke (IsLoading + EconomyVM-Refreshes).
         _startupCoordinator.AttachHost(this);
         _progressionFeedbackCoordinator = progressionFeedbackCoordinator;
+        _gameTickCoordinator = gameTickCoordinator;
         _analyticsService = analyticsService;
         _remoteConfigService = remoteConfigService;
         _cinematicCoordinator = cinematicCoordinator;
@@ -372,7 +372,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _gameStateService.StateLoaded += OnStateLoaded;
         _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
         _gameStateService.ReputationTierChanged += OnReputationTierChanged;
-        _gameLoopService.OnTick += OnGameTick;
         _gameLoopService.DeliveryArrived += OnDeliveryArrived;
         _gameLoopService.OrderExpired += OnOrderExpired;
         _gameLoopService.AutoCollectedDelivery += OnAutoCollectedDelivery;
@@ -438,6 +437,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // selbst auf die Service-Events; MainViewModel ist nur die IProgressionFeedbackHost-Bruecke.
         _progressionFeedbackCoordinator.AttachHost(this);
         _progressionFeedbackCoordinator.StartListening();
+
+        // Per-Tick-UI-Orchestrierung liegt im GameTickCoordinator. Er subscribed selbst
+        // auf IGameLoopService.OnTick; MainViewModel ist nur die IGameTickHost-Bruecke.
+        _gameTickCoordinator.AttachHost(this);
+        _gameTickCoordinator.StartListening();
 
         // Notification-Service (per Constructor Injection)
         _notificationService = notificationService;

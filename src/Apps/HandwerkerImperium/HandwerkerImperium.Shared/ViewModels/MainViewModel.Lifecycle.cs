@@ -115,7 +115,6 @@ public sealed partial class MainViewModel
         _gameStateService.StateLoaded -= OnStateLoaded;
         _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
         _gameStateService.ReputationTierChanged -= OnReputationTierChanged;
-        _gameLoopService.OnTick -= OnGameTick;
         _gameLoopService.DeliveryArrived -= OnDeliveryArrived;
         _gameLoopService.OrderExpired -= OnOrderExpired;
         _gameLoopService.AutoCollectedDelivery -= OnAutoCollectedDelivery;

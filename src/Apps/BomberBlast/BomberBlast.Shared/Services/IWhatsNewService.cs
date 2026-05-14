@@ -1,10 +1,10 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// "What's New"-Service (Sprint 4.3 AAA-Audit #17).
-/// Liefert die aktuellste, noch nicht gesehene Version-Whats-New-Liste.
-/// Wird beim App-Start gepruft — wenn die Assembly-Version neuer als die
-/// LastSeenVersion-Pref ist, wird das Modal mit den neuen Eintraegen angezeigt.
+/// "What's New"-Service. Sammelt Eintraege pro Versions-Bump kumulativ — auch fuer
+/// nicht released Zwischenversionen. Beim Store-Update sieht der Spieler alle
+/// Eintraege seit seiner zuletzt installierten Version (nicht nur die aktuelle).
+/// Damit gehen lange Develop-Phasen ohne Release nicht verloren.
 /// </summary>
 public interface IWhatsNewService
 {
@@ -18,8 +18,11 @@ public interface IWhatsNewService
     bool ShouldShow { get; }
 
     /// <summary>
-    /// Liefert die Liste der Whats-New-Eintraege fuer die aktuelle Version.
-    /// Leer wenn keine vorhanden sind.
+    /// Liefert die Liste der Whats-New-Eintraege fuer alle Versionen seit
+    /// <see cref="LastSeenVersion"/> bis einschliesslich <see cref="CurrentVersion"/>.
+    /// Bei Erstinstall (LastSeenVersion leer) wird die Liste ohnehin nicht angezeigt
+    /// (siehe <see cref="ShouldShow"/>) — der Aufrufer bekommt aber den korrekt
+    /// gefilterten Bestand fuer Debug-/Test-Zwecke.
     /// </summary>
     IReadOnlyList<WhatsNewEntry> GetEntries();
 

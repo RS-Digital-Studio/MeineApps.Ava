@@ -60,19 +60,21 @@ public sealed class WhatsNewService : IWhatsNewService
         // (Single-Source-of-Truth), VersionCode in Android-csproj auf das Major.Minor.Patch erhoehen.
         return CurrentVersion switch
         {
-            "2.0.56" => new[]
+            "2.0.57" => new[]
             {
                 new WhatsNewEntry
                 {
-                    Title = _localization.GetString("WhatsNew_2_0_56_Title")
-                        ?? "Bigger, better, more polished",
+                    Title = _localization.GetString("WhatsNew_2_0_57_Title")
+                        ?? "Live-Ops, Polish & Pacing",
                     Bullets = new[]
                     {
-                        _localization.GetString("WhatsNew_2_0_56_BulletWorld") ?? "World-themed bombs and explosions — every world feels different now",
-                        _localization.GetString("WhatsNew_2_0_56_BulletUltra") ?? "ULTRA-Combo (x10+) now triggers a full-screen flash — the iconic moment",
-                        _localization.GetString("WhatsNew_2_0_56_BulletDamage") ?? "Damage-Flash + better player blink — feels respected, not punished",
-                        _localization.GetString("WhatsNew_2_0_56_BulletAnticipation") ?? "Bomb-place + boss attacks have anticipation frames — Hades-style feel",
-                        _localization.GetString("WhatsNew_2_0_56_BulletPush") ?? "Daily reminder notifications — never miss a daily reward again",
+                        _localization.GetString("WhatsNew_2_0_57_BulletStory") ?? "Mini-Story-Beats — every world starts with a 2-line intro, every boss-clear has a cliffhanger outro",
+                        _localization.GetString("WhatsNew_2_0_57_BulletBoss") ?? "Boss-Modifier complete — Reflective spiegelt 30% Schaden zurueck, Shielded blockt Hits, Burning hinterlaesst Lava-Spuren",
+                        _localization.GetString("WhatsNew_2_0_57_BulletElite") ?? "Elite-Gegner ab Welt 3 — lila pulsierender Glow, mehr HP, mehr Punkte",
+                        _localization.GetString("WhatsNew_2_0_57_BulletTutorial") ?? "Tutorial in 3 geschuetzte Phasen aufgeteilt — Movement, Bomben, Power-Ups jetzt mit Resume-Punkt",
+                        _localization.GetString("WhatsNew_2_0_57_BulletAudio") ?? "Musik konsistent gemastered (-16 LUFS, EBU R128) — keine Lautstaerke-Spruenge zwischen Welten",
+                        _localization.GetString("WhatsNew_2_0_57_BulletOutline") ?? "Outline-Pass auf allen Entities — Sprites + AI-Assets sehen jetzt aus einem Guss aus",
+                        _localization.GetString("WhatsNew_2_0_57_BulletHero") ?? "Hero-System aktiv — Coin- und PowerUp-Multiplier wirken im Spiel",
                     }
                 }
             },

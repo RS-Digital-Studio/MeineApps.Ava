@@ -60,6 +60,21 @@ public sealed class WhatsNewService : IWhatsNewService
         // (Single-Source-of-Truth), VersionCode in Android-csproj auf das Major.Minor.Patch erhoehen.
         return CurrentVersion switch
         {
+            "2.0.58" => new[]
+            {
+                new WhatsNewEntry
+                {
+                    Title = _localization.GetString("WhatsNew_2_0_58_Title")
+                        ?? "Mini-Bosses, Phase-2 Attacks & Hero Powers",
+                    Bullets = new[]
+                    {
+                        _localization.GetString("WhatsNew_2_0_58_BulletMiniBoss") ?? "Mini-Bosses zwischen den Welten — alle 10 Level taucht ein Trainings-Boss mit halber HP auf",
+                        _localization.GetString("WhatsNew_2_0_58_BulletPhase2") ?? "Boss-Phase-2 — wenn Bosse enraged sind, schalten sie auf staerkere Attack-Patterns um (mehr Bloecke, doppelte Reihen, Schatten-Klone)",
+                        _localization.GetString("WhatsNew_2_0_58_BulletHero") ?? "Hero-Traits wirken jetzt — TwinTina's Bomben explodieren doppelt, SpeedySam ist immun gegen Slow-Curse, BrickBoris findet mehr PowerUps",
+                        _localization.GetString("WhatsNew_2_0_58_BulletStory") ?? "World-Story-Beats jetzt cinematischer — 6-7s Lesezeit + dezenter Pull-Back-Effekt",
+                    }
+                }
+            },
             "2.0.57" => new[]
             {
                 new WhatsNewEntry

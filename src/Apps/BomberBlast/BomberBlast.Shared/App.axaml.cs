@@ -557,7 +557,13 @@ public partial class App : Application
         services.AddSingleton<BomberBlast.Services.IDialogPresenter, BomberBlast.Services.DialogPresenter>();
         services.AddSingleton<BomberBlast.ViewModels.IChildViewModelRegistry, BomberBlast.ViewModels.ChildViewModelRegistry>();
         services.AddSingleton<BomberBlast.ViewModels.ILifecycleHub, BomberBlast.ViewModels.LifecycleHub>();
-        services.AddSingleton<BomberBlast.Navigation.IBottomTabController, BomberBlast.Navigation.BottomTabController>();
+        // BottomTabController braucht einen Callback an die Compositor-Navigation
+        // (NavigationCoordinator existiert noch leer — bis Phase 5 routen Tab-Wechsel ueber
+        // MainViewModel.NavigateTo via Lazy<MainViewModel>.NavigateTo).
+        services.AddSingleton<BomberBlast.Navigation.IBottomTabController>(sp => new BomberBlast.Navigation.BottomTabController(
+            sp.GetRequiredService<BomberBlast.Services.IBottomTabHub>(),
+            sp.GetRequiredService<BomberBlast.ViewModels.IChildViewModelRegistry>(),
+            request => sp.GetRequiredService<Lazy<BomberBlast.ViewModels.MainViewModel>>().Value.NavigateTo(request)));
         services.AddSingleton<BomberBlast.Navigation.INavigationCoordinator, BomberBlast.Navigation.NavigationCoordinator>();
 
         services.AddSingleton<MainViewModel>();

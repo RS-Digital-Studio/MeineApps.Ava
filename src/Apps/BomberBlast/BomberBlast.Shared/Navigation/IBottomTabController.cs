@@ -37,4 +37,10 @@ public interface IBottomTabController
 
     /// <summary>Setzt alle Tab-Bools auf false (Reset). Wird von HideAll-Pfaden gerufen.</summary>
     void ResetTabStates();
+
+    /// <summary>
+    /// Wird vom Compositor bei jeder ActiveView-Aenderung aufgerufen. Synchronisiert den
+    /// IBottomTabHub-State und berechnet <see cref="IsBottomTabBarVisible"/> neu.
+    /// </summary>
+    void OnActiveViewChanged(BomberBlast.ViewModels.ActiveView view);
 }

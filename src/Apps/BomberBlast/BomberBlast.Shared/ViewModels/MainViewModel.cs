@@ -1,4 +1,5 @@
 using BomberBlast.Core;
+using BomberBlast.Navigation;
 using BomberBlast.Resources.Strings;
 using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -113,7 +114,7 @@ public sealed partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsCardsActive))]
     [NotifyPropertyChangedFor(nameof(IsChallengesActive))]
     [NotifyPropertyChangedFor(nameof(IsPlayHubActive))]
-    [NotifyPropertyChangedFor(nameof(IsBottomTabBarVisible))]
+    // IsBottomTabBarVisible wird ueber BottomTabController.StateChanged geroutet (siehe OnTabControllerStateChanged).
     private ActiveView _activeView = ActiveView.MainMenu;
 
     // Backward-compat Computed-Properties — werden von Logik in NavigateTo()/HandleBackPressed()
@@ -138,77 +139,34 @@ public sealed partial class MainViewModel : ViewModelBase
     public bool IsPlayHubActive => ActiveView == ActiveView.PlayHub;
 
     /// <summary>
-    ///.1 : Bottom-Tab-Bar ist sichtbar auf den 4 konsolidierten
-    /// Tab-Haupt-Views (Home/Play/Shop/Profile) — nicht im Game, LevelSelect, Dialogen etc.
+    /// Bottom-Tab-Bar ist sichtbar auf den 4 konsolidierten Tab-Haupt-Views
+    /// (Home/Play/Shop/Profile) — nicht im Game, LevelSelect, Dialogen etc.
+    /// Wird vom <see cref="IBottomTabController"/> berechnet und ueber StateChanged propagiert.
     /// </summary>
-    public bool IsBottomTabBarVisible =>
-        ActiveView is ActiveView.MainMenu or ActiveView.PlayHub
-            or ActiveView.Shop or ActiveView.Profile;
+    public bool IsBottomTabBarVisible => _tabController.IsBottomTabBarVisible;
 
-    // Audit M01: NotifyPropertyChangedFor-Attribute am Field erledigen die Benachrichtigung
-    // der IsXxxActive-Properties automatisch. partial OnActiveViewChanged
-    // wieder aktiv fuer die Bottom-Tab-Bidirektional-Sync.
+    // Bidirektionale ActiveView ↔ BottomTab-Sync laeuft jetzt ueber den BottomTabController.
     partial void OnActiveViewChanged(ActiveView value)
-    {
-        // Hub-State an die aktive View angleichen — haelt das Tab-Highlight korrekt,
-        // egal ob die Navigation ueber die Tab-Bar oder einen MainMenu-Button kam.
-        var tab = TabForActiveView(value);
-        if (tab.HasValue)
-            _bottomTabHub?.SetActiveTab(tab.Value);
-    }
-
-    /// <summary>Mappt eine ActiveView auf ihren Bottom-Tab — null wenn die View zu keinem Tab gehoert.</summary>
-    private static BottomTab? TabForActiveView(ActiveView view) => view switch
-    {
-        ActiveView.MainMenu => BottomTab.Home,
-        ActiveView.PlayHub => BottomTab.Play,
-        ActiveView.Shop => BottomTab.Shop,
-        ActiveView.Profile => BottomTab.Profile,
-        _ => null,
-    };
-
-    /// <summary>
-    /// Reagiert auf Tab-Wechsel via Bottom-Tab-Bar. Idempotent: wenn die aktuelle View
-    /// schon zum Tab gehoert, passiert nichts (vermeidet Re-Navigation bei der
-    /// bidirektionalen Sync ActiveView → Tab → ActiveView).
-    /// </summary>
-    private void OnBottomTabChanged(BottomTab tab)
-    {
-        if (TabForActiveView(ActiveView) == tab)
-            return;
-
-        switch (tab)
-        {
-            case BottomTab.Home: NavigateTo(new GoMainMenu()); break;
-            case BottomTab.Play: NavigateTo(new GoPlayHub()); break;
-            case BottomTab.Shop: NavigateTo(new GoShop()); break;
-            case BottomTab.Profile: NavigateTo(new GoProfile()); break;
-        }
-    }
+        => _tabController.OnActiveViewChanged(value);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // TAB-STATE PROPERTIES (für kombinierte Views)
+    // TAB-STATE PROPERTIES (Forwarder auf IBottomTabController)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Shop: false=Shop-Tab, true=Glücksrad-Tab</summary>
-    [ObservableProperty]
-    private bool _isShopSpinTab;
+    public bool IsShopSpinTab { get => _tabController.IsShopSpinTab; set => _tabController.IsShopSpinTab = value; }
 
     /// <summary>Profil: false=Profil-Tab, true=Erfolge-Tab</summary>
-    [ObservableProperty]
-    private bool _isProfileAchievementsTab;
+    public bool IsProfileAchievementsTab { get => _tabController.IsProfileAchievementsTab; set => _tabController.IsProfileAchievementsTab = value; }
 
     /// <summary>Einstellungen: false=Settings-Tab, true=Hilfe-Tab</summary>
-    [ObservableProperty]
-    private bool _isSettingsHelpTab;
+    public bool IsSettingsHelpTab { get => _tabController.IsSettingsHelpTab; set => _tabController.IsSettingsHelpTab = value; }
 
     /// <summary>Karten: false=Deck-Tab, true=Sammlung-Tab</summary>
-    [ObservableProperty]
-    private bool _isCardsCollectionTab;
+    public bool IsCardsCollectionTab { get => _tabController.IsCardsCollectionTab; set => _tabController.IsCardsCollectionTab = value; }
 
     /// <summary>Herausforderungen: false=Daily-Tab, true=Missions-Tab</summary>
-    [ObservableProperty]
-    private bool _isChallengesMissionsTab;
+    public bool IsChallengesMissionsTab { get => _tabController.IsChallengesMissionsTab; set => _tabController.IsChallengesMissionsTab = value; }
 
     /// <summary>
     /// Ad-Banner-Spacer: sichtbar in Menü-Views, versteckt im Game-View
@@ -256,15 +214,16 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ICloudSaveService _cloudSaveService;
     private readonly SoundManager _soundManager;
     private readonly ILogger<MainViewModel> _logger;
-    /// <summary>.2 : GameEventBus — neue Code nutzt diesen statt durch MainVM zu routen.</summary>
+    /// <summary>GameEventBus — VMs ueber den Service routen statt durch MainVM.</summary>
     private readonly IGameEventBus _eventBus;
-    /// <summary>.1 : Bottom-Tab-Hub — zentrale 4-Tab-Navigation.</summary>
-    private readonly IBottomTabHub _bottomTabHub;
     /// <summary>Dialog-State liegt im DialogPresenter — MainVM ist nur noch Forwarder.</summary>
     private readonly IDialogPresenter _dialogPresenter;
 
     /// <summary>Verwaltet alle Child-VMs (Eager + Lazy + Sub-Wirings).</summary>
     private readonly IChildViewModelRegistry _registry;
+
+    /// <summary>Verwaltet Bottom-Tab-State und Sub-Tab-Switching.</summary>
+    private readonly IBottomTabController _tabController;
 
     /// <summary>
     /// Task für Cloud-Save-Initialisierung (kein Fire-and-Forget, vermeidet Race Conditions)
@@ -287,7 +246,10 @@ public sealed partial class MainViewModel : ViewModelBase
     /// Die <see cref="MainViewModelDependencies"/>-Record buendelt alle 8 Eager-VMs, 15 Lazy-VMs
     /// und 10 Services.
     /// </summary>
-    public MainViewModel(MainViewModelDependencies deps, IChildViewModelRegistry registry)
+    public MainViewModel(
+        MainViewModelDependencies deps,
+        IChildViewModelRegistry registry,
+        IBottomTabController tabController)
     {
         // Registry haelt alle Child-VMs + Sub-Wirings. Events routen Navigation + VM-Lazy-Instantiation
         // an MainViewModel zurueck, damit AXAML-Bindings (ContentControl auf MenuVm/GameVm/ShopVm etc.)
@@ -296,8 +258,10 @@ public sealed partial class MainViewModel : ViewModelBase
         _registry.NavigationRequested += NavigateTo;
         _registry.VmInstantiated += OnRegistryVmInstantiated;
 
-        _bottomTabHub = deps.BottomTabHub;
-        _bottomTabHub.ActiveTabChanged += OnBottomTabChanged;
+        // BottomTabController haelt Tab-State + Sub-Tab-Switching. StateChanged routet
+        // OnPropertyChanged auf MainViewModel — Forwarder-Properties reagieren auf Tab-Toggles.
+        _tabController = tabController;
+        _tabController.StateChanged += OnTabControllerStateChanged;
 
         // DialogPresenter haelt den Dialog-State.
         // StateChanged → alle Dialog-Properties + IsAnyDialogOpen neu feuern, damit Bindings reagieren.
@@ -792,35 +756,17 @@ public sealed partial class MainViewModel : ViewModelBase
     // TAB-SWITCHING (für kombinierte Views)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [RelayCommand]
-    private void SwitchToShopTab() { IsShopSpinTab = false; EnsureShopVm().OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToSpinTab() { IsShopSpinTab = true; EnsureLuckySpinVm().OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToProfileTab() { IsProfileAchievementsTab = false; EnsureProfileVm().OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToAchievementsTab() { IsProfileAchievementsTab = true; EnsureAchievementsVm().OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToSettingsTab() { IsSettingsHelpTab = false; SettingsVm.OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToHelpTab() { IsSettingsHelpTab = true; }
-
-    [RelayCommand]
-    private void SwitchToDeckTab() { IsCardsCollectionTab = false; EnsureDeckVm().OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToCollectionTab() { IsCardsCollectionTab = true; EnsureCollectionVm().OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToDailyChallengeTab() { IsChallengesMissionsTab = false; EnsureDailyChallengeVm().OnAppearing(); }
-
-    [RelayCommand]
-    private void SwitchToMissionsTab() { IsChallengesMissionsTab = true; EnsureWeeklyChallengeVm().OnAppearing(); }
+    // Tab-Switch-RelayCommands delegieren an den IBottomTabController.
+    [RelayCommand] private void SwitchToShopTab() => _tabController.SwitchToShopTab();
+    [RelayCommand] private void SwitchToSpinTab() => _tabController.SwitchToSpinTab();
+    [RelayCommand] private void SwitchToProfileTab() => _tabController.SwitchToProfileTab();
+    [RelayCommand] private void SwitchToAchievementsTab() => _tabController.SwitchToAchievementsTab();
+    [RelayCommand] private void SwitchToSettingsTab() => _tabController.SwitchToSettingsTab();
+    [RelayCommand] private void SwitchToHelpTab() => _tabController.SwitchToHelpTab();
+    [RelayCommand] private void SwitchToDeckTab() => _tabController.SwitchToDeckTab();
+    [RelayCommand] private void SwitchToCollectionTab() => _tabController.SwitchToCollectionTab();
+    [RelayCommand] private void SwitchToDailyChallengeTab() => _tabController.SwitchToDailyChallengeTab();
+    [RelayCommand] private void SwitchToMissionsTab() => _tabController.SwitchToMissionsTab();
 
     // ═══════════════════════════════════════════════════════════════════════
     // BACK-NAVIGATION (Android Hardware-Zurücktaste)
@@ -944,6 +890,20 @@ public sealed partial class MainViewModel : ViewModelBase
     private void OnRegistryVmInstantiated(string propertyName)
     {
         OnPropertyChanged(propertyName);
+    }
+
+    /// <summary>
+    /// <see cref="IBottomTabController.StateChanged"/>-Handler.
+    /// Feuert alle Tab-Forwarder-Properties + IsBottomTabBarVisible neu.
+    /// </summary>
+    private void OnTabControllerStateChanged()
+    {
+        OnPropertyChanged(nameof(IsShopSpinTab));
+        OnPropertyChanged(nameof(IsProfileAchievementsTab));
+        OnPropertyChanged(nameof(IsSettingsHelpTab));
+        OnPropertyChanged(nameof(IsCardsCollectionTab));
+        OnPropertyChanged(nameof(IsChallengesMissionsTab));
+        OnPropertyChanged(nameof(IsBottomTabBarVisible));
     }
 
     /// <summary>

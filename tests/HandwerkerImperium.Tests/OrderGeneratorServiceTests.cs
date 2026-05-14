@@ -29,25 +29,13 @@ public class OrderGeneratorServiceTests
     }
 
     /// <summary>
-    /// Erstellt einen gemockten IGameStateService der den übergebenen State zurückgibt.
-    /// IsWorkshopUnlocked wird aus UnlockedWorkshopTypes abgeleitet.
+    /// Erstellt eine echte GameStateService-Instanz um den uebergebenen State.
+    /// v2.1.1 (Audit C-C02): OrderGeneratorService.RefreshOrders mutiert jetzt unter
+    /// ExecuteWithLock, das ein NSubstitute-Mock nicht ausfuehren wuerde. Die echte
+    /// Implementierung liefert IsWorkshopUnlocked + Default-Interface-Member automatisch.
     /// </summary>
     private static IGameStateService ErstelleMockStateService(GameState state)
-    {
-        var mock = Substitute.For<IGameStateService>();
-        mock.State.Returns(state);
-        // Default-Interface-Member-Umleitung (Law of Demeter Properties)
-        mock.Prestige.Returns(state.Prestige);
-        mock.Settings.Returns(state.Settings);
-        mock.Statistics.Returns(state.Statistics);
-        mock.Tutorial.Returns(state.Tutorial);
-        mock.Boosts.Returns(state.Boosts);
-        mock.DailyProgress.Returns(state.DailyProgress);
-        mock.Automation.Returns(state.Automation);
-        mock.IsWorkshopUnlocked(Arg.Any<WorkshopType>()).Returns(ci =>
-            state.UnlockedWorkshopTypes.Contains(ci.Arg<WorkshopType>()));
-        return mock;
-    }
+        => GameStateTestFactory.Create(state);
 
     private static OrderGeneratorService ErstelleService(IGameStateService stateService)
         => new(stateService);
@@ -348,10 +336,9 @@ public class OrderGeneratorServiceTests
         // Vorbereitung: Keine freigeschalteten Workshops
         var state = GameState.CreateNew();
         state.UnlockedWorkshopTypes.Clear();
-        var stateService = Substitute.For<IGameStateService>();
-        stateService.State.Returns(state);
-        stateService.IsWorkshopUnlocked(Arg.Any<WorkshopType>()).Returns(false);
-        var service = ErstelleService(stateService);
+        // Echte GameStateService-Instanz: IsWorkshopUnlocked ist bei leerem
+        // UnlockedWorkshopTypes automatisch false.
+        var service = ErstelleService(ErstelleMockStateService(state));
 
         // Ausführung
         var auftraege = service.GenerateAvailableOrders(3);

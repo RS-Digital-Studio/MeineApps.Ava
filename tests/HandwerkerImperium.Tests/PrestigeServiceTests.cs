@@ -15,25 +15,18 @@ public class PrestigeServiceTests
     // Hilfsmethoden (Test-Setup)
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Erstellt einen PrestigeService mit gemockten Abhängigkeiten und frischem GameState.</summary>
-    private static (PrestigeService service, IGameStateService gameStateMock, GameState state) ErstelleService()
+    /// <summary>Erstellt einen PrestigeService mit echtem GameStateService und gemockten externen Abhängigkeiten.</summary>
+    private static (PrestigeService service, IGameStateService gameState, GameState state) ErstelleService()
     {
-        var gameStateMock = Substitute.For<IGameStateService>();
         var saveGameMock = Substitute.For<ISaveGameService>();
         var ascensionMock = Substitute.For<IAscensionService>();
 
         var state = GameState.CreateNew();
-        gameStateMock.State.Returns(state);
-        // NSubstitute ueberschreibt Default-Interface-Member — Komfort-Properties
-        // (Prestige/Settings/Tutorial/...) muessen explizit an state umgeleitet werden,
-        // sonst liefern sie null und verursachen NullReferenceException.
-        gameStateMock.Prestige.Returns(state.Prestige);
-        gameStateMock.Settings.Returns(state.Settings);
-        gameStateMock.Statistics.Returns(state.Statistics);
-        gameStateMock.Tutorial.Returns(state.Tutorial);
-        gameStateMock.Boosts.Returns(state.Boosts);
-        gameStateMock.DailyProgress.Returns(state.DailyProgress);
-        gameStateMock.Automation.Returns(state.Automation);
+        // v2.1.1 (Audit B-C02/B-M05): Echte GameStateService-Instanz statt Mock — DoPrestige
+        // und BuyShopItem mutieren jetzt unter ExecuteWithLock, das ein NSubstitute-Mock nicht
+        // ausfuehren wuerde. Die Default-Interface-Member (Prestige/Settings/...) leiten
+        // automatisch korrekt an den State weiter.
+        var gameState = GameStateTestFactory.Create(state);
 
         // Standard: Keine Ascension-Boni
         ascensionMock.GetStartCapitalMultiplier().Returns(1.0m);
@@ -44,8 +37,8 @@ public class PrestigeServiceTests
         // SaveAsync gibt sofort eine fertige Task zurück
         saveGameMock.SaveAsync().Returns(Task.CompletedTask);
 
-        var service = new PrestigeService(gameStateMock, saveGameMock, ascensionMock);
-        return (service, gameStateMock, state);
+        var service = new PrestigeService(gameState, saveGameMock, ascensionMock);
+        return (service, gameState, state);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -208,23 +201,22 @@ public class PrestigeServiceTests
     public async Task DoPrestige_Bronze_GibtTrueUndSpeichert()
     {
         // Vorbereitung: Alle Voraussetzungen erfüllt
-        var (service, gameStateMock, state) = ErstelleService();
+        var (_, gameState, state) = ErstelleService();
         state.PlayerLevel = 30;
         state.CurrentRunMoney = 1_000_000m;
+
+        // Eigene Service-Instanz mit kontrollierbarem SaveGame-Mock,
+        // um Received(1).SaveAsync() verifizieren zu koennen.
         var saveGameMock = Substitute.For<ISaveGameService>();
         saveGameMock.SaveAsync().Returns(Task.CompletedTask);
-
-        // Neue Service-Instanz mit kontrollierbarem SaveGame-Mock
-        var service2 = new PrestigeService(gameStateMock, saveGameMock, Substitute.For<IAscensionService>());
-        gameStateMock.State.Returns(state);
         var ascMock = Substitute.For<IAscensionService>();
         ascMock.GetStartCapitalMultiplier().Returns(1.0m);
         ascMock.GetQuickStartWorkshops().Returns(0);
         ascMock.GetStartReputation().Returns(50);
-        var s = new PrestigeService(gameStateMock, saveGameMock, ascMock);
+        var service = new PrestigeService(gameState, saveGameMock, ascMock);
 
         // Ausführung
-        var ergebnis = await s.DoPrestige(PrestigeTier.Bronze);
+        var ergebnis = await service.DoPrestige(PrestigeTier.Bronze);
 
         // Prüfung
         ergebnis.Should().BeTrue();
@@ -708,31 +700,33 @@ public class PrestigeServiceTests
     public void CheckAndAwardMilestones_ErsterPrestige_VergibtGoldenScrews()
     {
         // Vorbereitung: 1 Prestige = Meilenstein pm_first
-        var (service, gameStateMock, state) = ErstelleService();
+        var (service, _, state) = ErstelleService();
         state.Prestige.BronzeCount = 1; // TotalPrestigeCount = 1
+        var gsBefore = state.GoldenScrews;
 
         // Ausführung
         int gsVerdient = service.CheckAndAwardMilestones();
 
-        // Prüfung: GS wurden vergeben
+        // Prüfung: GS wurden vergeben und dem State gutgeschrieben
         gsVerdient.Should().BeGreaterThan(0);
-        gameStateMock.Received().AddGoldenScrews(Arg.Any<int>(), false);
+        state.GoldenScrews.Should().BeGreaterThan(gsBefore);
     }
 
     [Fact]
     public void CheckAndAwardMilestones_BereitsGemeldet_NichtNochmal()
     {
         // Vorbereitung: Meilenstein bereits beansprucht
-        var (service, gameStateMock, state) = ErstelleService();
+        var (service, _, state) = ErstelleService();
         state.Prestige.BronzeCount = 1;
         state.Prestige.ClaimedMilestones.Add("pm_first");
+        var gsBefore = state.GoldenScrews;
 
         // Ausführung
         int gsVerdient = service.CheckAndAwardMilestones();
 
         // Prüfung: Keine GS nochmal vergeben
         gsVerdient.Should().Be(0);
-        gameStateMock.DidNotReceive().AddGoldenScrews(Arg.Any<int>(), Arg.Any<bool>());
+        state.GoldenScrews.Should().Be(gsBefore);
     }
 
     [Fact]

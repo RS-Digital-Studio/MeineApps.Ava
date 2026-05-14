@@ -14,13 +14,14 @@ public class DailyRewardServiceTests
     // Hilfsmethoden
     // ═══════════════════════════════════════════════════════════════════
 
-    private static (DailyRewardService service, IGameStateService mockState, GameState state) ErstelleService()
+    private static (DailyRewardService service, IGameStateService gameState, GameState state) ErstelleService()
     {
-        var mockState = Substitute.For<IGameStateService>();
         var state = GameState.CreateNew();
-        mockState.State.Returns(state);
-        var service = new DailyRewardService(mockState);
-        return (service, mockState, state);
+        // v2.1.1 (Audit B-M03): Echte GameStateService-Instanz statt Mock — ClaimReward
+        // mutiert jetzt unter ExecuteWithLock, das ein NSubstitute-Mock nicht ausfuehren wuerde.
+        var gameState = GameStateTestFactory.Create(state);
+        var service = new DailyRewardService(gameState);
+        return (service, gameState, state);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -271,18 +272,19 @@ public class DailyRewardServiceTests
     }
 
     [Fact]
-    public void ClaimReward_GeldBelohnung_RuftAddMoneyAuf()
+    public void ClaimReward_GeldBelohnung_SchreibtGeldGut()
     {
         // Vorbereitung
-        var (service, mockState, state) = ErstelleService();
+        var (service, _, state) = ErstelleService();
         state.LastDailyRewardClaim = DateTime.MinValue;
         state.DailyRewardStreak = 0;
+        var moneyBefore = state.Money;
 
         // Ausführung
         service.ClaimReward();
 
-        // Prüfung: AddMoney wurde aufgerufen
-        mockState.Received().AddMoney(Arg.Any<decimal>());
+        // Prüfung: Tag-1-Belohnung (500 EUR Basis) wurde dem State gutgeschrieben
+        state.Money.Should().BeGreaterThan(moneyBefore);
     }
 
     // ═══════════════════════════════════════════════════════════════════

@@ -3655,6 +3655,16 @@
   <data name="AnnounceBossFight" xml:space="preserve">
     <value>BOSS FIGHT!</value>
   </data>
+  <!-- Welle 1 v2.0.58: Mini-Boss-Banner -->
+  <data name="AnnounceMiniBoss" xml:space="preserve">
+    <value>MINI-BOSS</value>
+  </data>
+  <data name="SubtitleMiniBossRoar" xml:space="preserve">
+    <value>[MINI-BOSS APPROACHES]</value>
+  </data>
+  <data name="FloatShadowClone" xml:space="preserve">
+    <value>SHADOW CLONE!</value>
+  </data>
   <!-- Typ-spezifische Boss-Banner (v2.0.44 — AAA-Audit) -->
   <data name="BossNameStoneGolem" xml:space="preserve">
     <value>STONE GOLEM</value>

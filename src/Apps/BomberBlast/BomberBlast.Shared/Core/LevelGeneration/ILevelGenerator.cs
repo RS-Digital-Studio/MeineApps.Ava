@@ -59,4 +59,11 @@ public sealed class LevelGenerationContext
     /// z.B. LuckyLola (1.20) gibt 20% mehr PowerUps. Default 1.0 = kein Effekt.
     /// </summary>
     public float HeroPowerUpMultiplier { get; init; } = 1.0f;
+
+    /// <summary>
+    /// Welle 1 v2.0.58 AAA-Audit #19: Hero-Block-Drop-Chance-Bonus (Default 0.0).
+    /// Additiv — pro Bonus-Prozent (z.B. 0.10) wird ein zusaetzlicher Block mit einem
+    /// versteckten PowerUp belegt (Round-to-Int). BrickBoris (0.10) gibt ~10% mehr PowerUps.
+    /// </summary>
+    public float HeroBlockDropChanceBonus { get; init; } = 0.0f;
 }

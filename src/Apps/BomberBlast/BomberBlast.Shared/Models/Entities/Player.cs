@@ -124,14 +124,20 @@ public class Player : Entity
     }
 
     /// <summary>
-    /// Aktuelle Bewegungsgeschwindigkeit (staffelbar mit SpeedLevel 0-3, halbiert bei Slow-Curse)
+    /// Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait QuickPocket (SpeedySam) immunisiert gegen Slow-Curse.
+    /// Wird beim Spawn vom GameEngine.ApplyHeroStats gesetzt.
+    /// </summary>
+    public bool HeroImmuneToSlowCurse { get; set; }
+
+    /// <summary>
+    /// Aktuelle Bewegungsgeschwindigkeit (staffelbar mit SpeedLevel 0-3, halbiert bei Slow-Curse außer QuickPocket-Trait).
     /// </summary>
     public float Speed
     {
         get
         {
             float speed = BASE_SPEED + SpeedLevel * SPEED_BOOST;
-            if (ActiveCurse == CurseType.Slow) speed *= 0.5f;
+            if (ActiveCurse == CurseType.Slow && !HeroImmuneToSlowCurse) speed *= 0.5f;
             return speed;
         }
     }

@@ -55,6 +55,12 @@ public class BossEnemy : Enemy
     /// </summary>
     public int CurrentPhase { get; private set; } = 1;
 
+    /// <summary>
+    /// Welle 1 v2.0.58 AAA-Audit #10: Mini-Boss-Flag — Boss spawnt mit 50% HP + 50% Punkte.
+    /// Wird auf L7/L17/.../L97 als Mid-World-Encounter eingesetzt.
+    /// </summary>
+    public bool IsMiniBoss { get; init; }
+
     // ═══════════════════════════════════════════════════════════════════════
     // SPEZIAL-ANGRIFF
     // ═══════════════════════════════════════════════════════════════════════
@@ -155,9 +161,10 @@ public class BossEnemy : Enemy
     // KONSTRUKTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public BossEnemy(float x, float y, BossType bossType) : base(x, y, EnemyType.Pontan)
+    public BossEnemy(float x, float y, BossType bossType, bool miniBoss = false) : base(x, y, EnemyType.Pontan)
     {
         BossKind = bossType;
+        IsMiniBoss = miniBoss;
 
         // Boss-Stats basierend auf Typ
         (BossSize, int hp, float cooldown, float speed) = bossType switch
@@ -169,6 +176,12 @@ public class BossEnemy : Enemy
             BossType.FinalBoss => (3, 8, 12f, 35f),
             _ => (2, 3, 18f, 30f)
         };
+
+        // Welle 1 v2.0.58: Mini-Boss hat halbe HP (mindestens 1).
+        if (miniBoss)
+        {
+            hp = Math.Max(1, hp / 2);
+        }
 
         MaxHitPoints = hp;
         HitPoints = hp;
@@ -195,17 +208,24 @@ public class BossEnemy : Enemy
     };
 
     /// <summary>
-    /// Boss-Punkte beim Besiegen
+    /// Boss-Punkte beim Besiegen. Mini-Bosse geben 50%.
     /// </summary>
-    public int BossPoints => BossKind switch
+    public int BossPoints
     {
-        BossType.StoneGolem => 10000,
-        BossType.IceDragon => 15000,
-        BossType.FireDemon => 20000,
-        BossType.ShadowMaster => 25000,
-        BossType.FinalBoss => 50000,
-        _ => 10000
-    };
+        get
+        {
+            int basePoints = BossKind switch
+            {
+                BossType.StoneGolem => 10000,
+                BossType.IceDragon => 15000,
+                BossType.FireDemon => 20000,
+                BossType.ShadowMaster => 25000,
+                BossType.FinalBoss => 50000,
+                _ => 10000
+            };
+            return IsMiniBoss ? basePoints / 2 : basePoints;
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // UPDATE
@@ -445,9 +465,10 @@ public class BossEnemy : Enemy
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Boss an Grid-Position erstellen (Mitte des BossSize-Bereichs)
+    /// Boss an Grid-Position erstellen (Mitte des BossSize-Bereichs).
+    /// Welle 1 v2.0.58 AAA-Audit #10: Optional miniBoss-Flag fuer Mid-World-Encounter (halbe HP/Punkte).
     /// </summary>
-    public static BossEnemy CreateAtGrid(int gridX, int gridY, BossType bossType)
+    public static BossEnemy CreateAtGrid(int gridX, int gridY, BossType bossType, bool miniBoss = false)
     {
         // Boss-Zentrum: Mitte des Bereichs
         int size = bossType switch
@@ -457,6 +478,6 @@ public class BossEnemy : Enemy
         };
         float x = gridX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE * size / 2f;
         float y = gridY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE * size / 2f;
-        return new BossEnemy(x, y, bossType);
+        return new BossEnemy(x, y, bossType, miniBoss);
     }
 }

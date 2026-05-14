@@ -95,6 +95,23 @@ public sealed partial class GameEngine
             // v2.0.46 — Cinematic-Director Phase 1: Boss-Reveal-Sequenz (1.5s)
             PlayBossRevealCinematic();
         }
+        else if (_currentLevel.IsMiniBossLevel)
+        {
+            // Welle 1 v2.0.58 AAA-Audit #10: Mini-Boss-Banner — typspezifischer Name mit Mini-Prefix.
+            var bossName = _currentLevel.BossKind is { } bk ? GetBossDisplayName(bk) : "BOSS";
+            var miniPrefix = _localizationService.GetString("AnnounceMiniBoss") ?? "MINI-BOSS";
+            _worldAnnouncementText = $"{miniPrefix}: {bossName}";
+            _worldAnnouncementTimer = 2.2f;
+
+            if (_accessibility?.SubtitlesEnabled == true)
+            {
+                _subtitles.Show(_localizationService.GetString("SubtitleMiniBossRoar") ?? "[MINI-BOSS APPROACHES]", duration: 2.5f);
+            }
+
+            // Kein voller PlayBossRevealCinematic — nur kurzer Trauma-Spike + Stinger.
+            _screenShake.AddTrauma(0.3f);
+            _soundManager.PlayStinger(SoundManager.STINGER_BOSS_REVEAL);
+        }
         else if (_activeMutator != LevelMutator.None)
         {
             // Mutator-Ankündigung (z.B. "MUTATOR: Double Speed")
@@ -121,7 +138,8 @@ public sealed partial class GameEngine
         });
 
         // Sprint 2.2: boss_encounter wenn das Level einen Boss hat (vor dem Kampf, fuer Drop-Off-Funnel).
-        if (_currentLevel.IsBossLevel && _currentLevel.BossKind is { } bossKind)
+        // Welle 1 v2.0.58: Mini-Boss-Levels feuern auch boss_encounter mit is_mini=1.
+        if ((_currentLevel.IsBossLevel || _currentLevel.IsMiniBossLevel) && _currentLevel.BossKind is { } bossKind)
         {
             _analytics?.LogEvent(AnalyticsEvents.BossEncounter, new Dictionary<string, object>
             {
@@ -129,6 +147,7 @@ public sealed partial class GameEngine
                 [AnalyticsParams.Phase] = 1,
                 [AnalyticsParams.LevelId] = levelNumber,
                 [AnalyticsParams.WorldId] = world,
+                ["is_mini"] = _currentLevel.IsMiniBossLevel ? 1 : 0,
             });
         }
     }
@@ -779,6 +798,7 @@ public sealed partial class GameEngine
         _afterglowCells.Clear();
         _specialEffectCells.Clear();
         _pendingIceCleanups.Clear();
+        _pendingDoubleDetonations.Clear();
         _particleSystem.Clear();
         _floatingText.Clear();
         _screenShake.Reset();
@@ -1001,6 +1021,9 @@ public sealed partial class GameEngine
         _player.FireRange = hero.StartFireRange;
         _player.SpeedLevel = hero.StartSpeedLevel;
         _player.Lives = hero.StartLives;
+
+        // Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait QuickPocket — Speed-Curse-Immunitaet.
+        _player.HeroImmuneToSlowCurse = hero.Trait == BomberBlast.Models.HeroTrait.QuickPocket;
     }
 
     private void ApplyUpgrades()
@@ -1065,6 +1088,8 @@ public sealed partial class GameEngine
             PowerUpLuckLevel = _shopService.Upgrades.GetLevel(UpgradeType.PowerUpLuck),
             // Sprint 7.1 AAA-Audit #14: Hero-PowerUp-Drop-Multiplier durchreichen.
             HeroPowerUpMultiplier = _heroService.ActiveHero.PowerUpDropMultiplier,
+            // Welle 1 v2.0.58 AAA-Audit #19: Hero-Block-Drop-Chance-Bonus (BrickBoris).
+            HeroBlockDropChanceBonus = _heroService.ActiveHero.BlockDropChanceBonus,
         };
     }
 
@@ -1751,7 +1776,9 @@ public sealed partial class GameEngine
                 ["master_mode"] = _isMasterMode
             });
             // Sprint 2.2: boss_defeated wenn das Level einen Boss hatte (paired mit boss_encounter beim Start)
-            if (_currentLevel?.IsBossLevel == true && _currentLevel.BossKind is { } defeatedBoss)
+            // Welle 1 v2.0.58: Mini-Boss-Levels feuern auch boss_defeated mit is_mini=1.
+            if ((_currentLevel?.IsBossLevel == true || _currentLevel?.IsMiniBossLevel == true)
+                && _currentLevel.BossKind is { } defeatedBoss)
             {
                 _analytics?.LogEvent(AnalyticsEvents.BossDefeated, new Dictionary<string, object>
                 {
@@ -1759,6 +1786,7 @@ public sealed partial class GameEngine
                     [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
                     [AnalyticsParams.DamageTaken] = _deathsInLevel,
                     [AnalyticsParams.LevelId] = _currentLevelNumber,
+                    ["is_mini"] = _currentLevel.IsMiniBossLevel ? 1 : 0,
                 });
 
                 // Sprint 6.2 AAA-Audit #13: Welt-Outro-Cutscene beim Welt-Boss-Sieg

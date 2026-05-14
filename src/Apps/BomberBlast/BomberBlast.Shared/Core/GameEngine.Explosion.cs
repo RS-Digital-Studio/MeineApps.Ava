@@ -291,6 +291,16 @@ public sealed partial class GameEngine
         try { _currentMode?.OnBombExploded(BuildModeContext()); }
         catch { /* Best-Effort, no-op-Default in GameModeBase */ }
 
+        // Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait DoubleDetonation (TwinTina).
+        // Spieler-Bombe ohne Chain-Depth bekommt eine Sekundaer-Explosion 0.5s spaeter.
+        if (bomb.ChainDepth == 0
+            && ReferenceEquals(bomb.Owner, _player)
+            && _heroService.ActiveHero.Trait == BomberBlast.Models.HeroTrait.DoubleDetonation)
+        {
+            int secondaryRange = Math.Max(1, (int)Math.Round(bomb.Range * 0.75f));
+            _pendingDoubleDetonations.Add((bomb.GridX, bomb.GridY, secondaryRange, 0.5f));
+        }
+
         // Bombe aus Grid entfernen
         var cell = _grid.TryGetCell(bomb.GridX, bomb.GridY);
         if (cell != null)

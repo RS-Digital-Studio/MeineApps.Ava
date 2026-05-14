@@ -40,6 +40,13 @@ public class Level
     /// <summary>Ob dieses Level ein Boss-Level ist</summary>
     public bool IsBossLevel { get; set; }
 
+    /// <summary>
+    /// Sprint Welle-1 v2.0.58: Mini-Boss-Level (L7, L17, ..., L97 — 9 zusaetzliche Encounter).
+    /// Mini-Boss = gleicher Boss-Typ wie der Welt-Hauptboss, aber 50% HP und 50% Punkte.
+    /// Wirkt als Trainings-Encounter vor dem Welt-Boss.
+    /// </summary>
+    public bool IsMiniBossLevel { get; set; }
+
     /// <summary>Welcher Boss in diesem Level spawnt (null = kein Boss)</summary>
     public BossType? BossKind { get; set; }
 

@@ -497,6 +497,13 @@ public sealed partial class GameEngine : IDisposable
     // Ausstehende Eis-Cleanups (Frame-basiert statt Task.Delay → Thread-Race vermeiden)
     private readonly List<(List<(int x, int y)> cells, float timer)> _pendingIceCleanups = new();
 
+    /// <summary>
+    /// Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait DoubleDetonation (TwinTina).
+    /// Wenn eine Spieler-Bombe explodiert, wird 0.5s spaeter eine Sekundaer-Explosion
+    /// am selben Spot gespawnt (75% Range, kein Bomb-Cycle, keine Chain-Reaktion).
+    /// </summary>
+    private readonly List<(int gridX, int gridY, int range, float timer)> _pendingDoubleDetonations = new();
+
     // Statistics
     private int _bombsUsed;
     private int _enemiesKilled;
@@ -2528,7 +2535,8 @@ public sealed partial class GameEngine : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Ausstehende Eis-Cleanups pro Frame aktualisieren (Timer dekrementieren, bei 0 → CellType.Empty)
+    /// Ausstehende Eis-Cleanups pro Frame aktualisieren (Timer dekrementieren, bei 0 → CellType.Empty).
+    /// Welle 1 v2.0.58: Auch DoubleDetonation-Sekundaer-Explosionen werden hier getickt.
     /// </summary>
     private void UpdatePendingIceCleanups(float deltaTime)
     {
@@ -2553,6 +2561,49 @@ public sealed partial class GameEngine : IDisposable
                 _pendingIceCleanups[i] = (cells, timer);
             }
         }
+
+        // Welle 1 v2.0.58 AAA-Audit #19: TwinTina-DoubleDetonation Sekundaer-Explosionen.
+        for (int i = _pendingDoubleDetonations.Count - 1; i >= 0; i--)
+        {
+            var (gridX, gridY, range, timer) = _pendingDoubleDetonations[i];
+            timer -= deltaTime;
+            if (timer <= 0)
+            {
+                SpawnDoubleDetonationSecondary(gridX, gridY, range);
+                _pendingDoubleDetonations.RemoveAt(i);
+            }
+            else
+            {
+                _pendingDoubleDetonations[i] = (gridX, gridY, range, timer);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Welle 1 v2.0.58 AAA-Audit #19: Spawnt eine standalone Explosion ohne Bomb-Lifecycle.
+    /// Wird vom DoubleDetonation-Trait getriggert (TwinTina). Loest KEINE Kettenreaktion aus
+    /// (keine vorhandenen Bomben in Reichweite zuenden), damit der Trait nicht zu maechtig wird.
+    /// </summary>
+    private void SpawnDoubleDetonationSecondary(int gridX, int gridY, int range)
+    {
+        // Pseudo-Bombe nur als Source-Holder, wird sofort nach Explosion verworfen.
+        float px = gridX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+        float py = gridY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+        var pseudoBomb = new Bomb(px, py, _player, range);
+        pseudoBomb.Explode();  // setzt IsExploded → Explosion-Spread funktioniert
+
+        var explosion = new Explosion(pseudoBomb);
+        explosion.CalculateSpread(_grid, range);
+        _explosions.Add(explosion);
+
+        // Audio + Visual-Feedback (gedaempft, kein Mega-Shake)
+        _soundManager.PlaySoundPanned(SoundManager.SFX_EXPLOSION, 0f);
+        _particleSystem.EmitShaped(px, py, 8, ParticleColors.Explosion,
+            ParticleShape.Circle, 60f, 0.4f, 2f, hasGlow: true);
+        _screenShake.AddTrauma(0.2f);
+
+        // Effekte sofort verarbeiten (Block/Enemy-Damage).
+        ProcessExplosion(explosion);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

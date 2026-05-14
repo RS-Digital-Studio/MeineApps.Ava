@@ -95,6 +95,16 @@ public static class LevelLayoutGenerator
             return level;
         }
 
+        // Welle 1 v2.0.58 AAA-Audit #10: Mini-Boss-Level auf L7, L17, ..., L97
+        // 9 Mid-World-Encounter zusaetzlich zu den 10 Hauptbossen. Trainings-Encounter:
+        // gleicher Boss-Typ wie der Welt-Hauptboss, aber halbe HP und halbe Punkte.
+        if (levelNumber % 10 == 7 && levelNumber <= 97)
+        {
+            ConfigureMiniBossLevel(level, levelNumber, world);
+            FilterLockedPowerUps(level, highestCompleted);
+            return level;
+        }
+
         // Normales Level
         ConfigureEnemies(level, levelNumber);
         ConfigurePowerUps(level, levelNumber);
@@ -492,6 +502,90 @@ public static class LevelLayoutGenerator
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Detonator });
         if (world >= 7)
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.PowerBomb });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MINI-BOSS-LEVEL (L7, L17, ..., L97 — Welle 1 v2.0.58 AAA-Audit #10)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Mini-Boss-Level: Reskinned Welt-Boss mit 50% HP, kein Duo-Encounter, keine Modifier-Rolle.
+    /// Wirkt als Trainings-Encounter VOR dem Welt-Hauptboss (L10/L20/.../L100).
+    /// </summary>
+    private static void ConfigureMiniBossLevel(Level level, int levelNumber, int world)
+    {
+        level.IsMiniBossLevel = true;
+        level.Layout = LevelLayout.BossArena;
+        level.TimeLimit = 200;        // Mehr als normales Level (180), weniger als Boss (240)
+        level.BlockDensity = 0.30f;   // Etwas mehr Blöcke als Boss (Kampf nicht ganz so offen)
+        level.MusicTrack = "boss";
+        level.Name = $"Mini-Boss - L{levelNumber}";
+
+        // Welt-Mechanik bleibt aktiv (Lava/Ice/etc.)
+        level.Mechanic = world switch
+        {
+            2 => WorldMechanic.Ice,
+            3 => WorldMechanic.Conveyor,
+            4 => WorldMechanic.Teleporter,
+            5 => WorldMechanic.LavaCrack,
+            6 => WorldMechanic.FallingCeiling,
+            7 => WorldMechanic.Current,
+            8 => WorldMechanic.Earthquake,
+            9 => WorldMechanic.PlatformGap,
+            10 => WorldMechanic.Fog,
+            _ => WorldMechanic.None
+        };
+
+        // Mini-Boss-Typ: Gleicher Boss wie der Welt-Hauptboss (Trainings-Effekt).
+        level.BossKind = world switch
+        {
+            1 or 2 => BossType.StoneGolem,
+            3 or 4 => BossType.IceDragon,
+            5 or 6 => BossType.FireDemon,
+            7 or 8 => BossType.ShadowMaster,
+            9 or 10 => BossType.FinalBoss,
+            _ => BossType.StoneGolem
+        };
+
+        // 1-2 leichte Begleitgegner (kein Schwarm).
+        level.Enemies.Clear();
+        switch (world)
+        {
+            case 1:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 1 });
+                break;
+            case 2:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Onil, Count = 1 });
+                break;
+            case 3:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Doll, Count = 1 });
+                break;
+            case 4:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Minvo, Count = 1 });
+                break;
+            case 5:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Kondoria, Count = 1 });
+                break;
+            case 6:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ovapi, Count = 1 });
+                break;
+            case 7:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ghost, Count = 1 });
+                break;
+            case 8:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Mimic, Count = 1 });
+                break;
+            case 9:
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Splitter, Count = 1 });
+                break;
+        }
+
+        // PowerUp-Loot: Basis + 1 fortgeschrittenes ab Welt 3.
+        level.PowerUps.Clear();
+        level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.BombUp });
+        level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Fire });
+        if (world >= 3)
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Speed });
     }
 
     // ═══════════════════════════════════════════════════════════════════════

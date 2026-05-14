@@ -29,7 +29,7 @@ namespace HandwerkerImperium.ViewModels;
 ///   MainViewModel.Init.cs - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// Dialog-Logik extrahiert nach DialogViewModel.cs (Alert, Confirm, Story, Hint, Achievement, Prestige-Dialog).
 /// </summary>
-public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost
+public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost, Services.Interfaces.IWelcomeFlowHost
 {
     // Phase-1-Services (Refactoring 17.04.2026 — Plan velvety-booping-peacock).
     // Delegieren vorerst zurueck an MainViewModel. /3 zieht Logik in die Services um.
@@ -46,7 +46,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IOrderGeneratorService _orderGeneratorService;
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localizationService;
-    private readonly IOfflineProgressService _offlineProgressService;
     private readonly IDailyRewardService _dailyRewardService;
     private readonly IAchievementService _achievementService;
     private readonly ISaveGameService _saveGameService;
@@ -74,7 +73,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly ICloudSaveService? _cloudSaveService;
     private readonly IRemoteConfigService? _remoteConfigService;
     private readonly IWeeklyMissionService _weeklyMissionService;
-    private readonly IWelcomeBackService _welcomeBackService;
     private readonly ILuckySpinService _luckySpinService;
     private readonly IEquipmentService _equipmentService;
     private readonly IGoalService _goalService;
@@ -85,15 +83,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     // WhatsNew-Dialog beim ersten Start nach Update.
     private readonly IWhatsNewService? _whatsNewService;
     private bool _disposed;
-    private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
     private bool _quickJobMiniGamePlayed;
     private bool _isTournamentRound;
-
-    // Dialog-Kaskaden-Begrenzung: Verzögerte Dialoge nach Startup
-    private bool _hasDeferredDailyReward;
-    private bool _hasDeferredStory;
-    private bool _hasDeferredWelcomeHint;
 
     // Gecachtes Dictionary vermeidet Allokation bei jedem MoneyChanged-Tick im Max-Modus
     private readonly Dictionary<WorkshopType, Workshop> _workshopLookupCache = new(10);
@@ -183,7 +175,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         IOrderGeneratorService orderGeneratorService,
         IAudioService audioService,
         ILocalizationService localizationService,
-        IOfflineProgressService offlineProgressService,
         IDailyRewardService dailyRewardService,
         IAchievementService achievementService,
         IPurchaseService purchaseService,
@@ -214,7 +205,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         MarketViewModel marketViewModel,
         AscensionViewModel ascensionViewModel,
         IWeeklyMissionService weeklyMissionService,
-        IWelcomeBackService welcomeBackService,
         ILuckySpinService luckySpinService,
         IEquipmentService equipmentService,
         LuckySpinViewModel luckySpinViewModel,
@@ -268,7 +258,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
         _gameStateService = gameStateService;
         _gameLoopService = gameLoopService;
-        _offlineProgressService = offlineProgressService;
         _orderGeneratorService = orderGeneratorService;
 
         // v2.0.35 Feature D: Toast/FloatingText bei neuem Live-Auftrag (OrderSpawned).
@@ -289,7 +278,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _eventService = eventService;
         _storyService = storyService;
         _weeklyMissionService = weeklyMissionService;
-        _welcomeBackService = welcomeBackService;
         _luckySpinService = luckySpinService;
         _equipmentService = equipmentService;
         _goalService = goalService;
@@ -345,6 +333,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         PrestigeBannerVM = prestigeBannerViewModel;
         GoalBannerVM = goalBannerViewModel;
         WelcomeFlowVM = welcomeFlowViewModel;
+        // WelcomeFlowVM haelt die gesamte Welcome-Flow-Logik — MainViewModel ist nur noch
+        // die schmale IWelcomeFlowHost-Bruecke (IsHoldingUpgrade + NavigateToShop).
+        WelcomeFlowVM.AttachHost(this);
 
         // PropertyChanged-Forward: HeaderVM.PlayerLevel triggert computed Properties auf MainViewModel.
         // Delegaten werden in Feldern gehalten (in Dispose() abmeldbar, keine Lambda-Leaks).
@@ -434,7 +425,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         MissionsVM.FloatingTextRequested += _missionsFloatingTextHandler;
         MissionsVM.CelebrationRequested += _missionsCelebrationHandler;
         MissionsVM.NavigateToMiniGameRequested += OnMissionsNavigateToMiniGame;
-        MissionsVM.CheckDeferredDialogsRequested += CheckDeferredDialogs;
+        MissionsVM.CheckDeferredDialogsRequested += WelcomeFlowVM.CheckDeferredDialogs;
         MissionsVM.StreakRescued += _missionsStreakRescuedHandler;
 
         // DialogViewModel per DI injiziert und Events verdrahten (benannte Delegates fuer Dispose)
@@ -442,7 +433,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
         // EconomyFeatureViewModel initialisieren (nach DialogVM, da es DialogVM als IDialogService nutzt)
         InitializeEconomyVM();
-        DialogVM.DeferredDialogCheckRequested += CheckDeferredDialogs;
+        DialogVM.DeferredDialogCheckRequested += WelcomeFlowVM.CheckDeferredDialogs;
         // Story-Skip-Tracking fuer Onboarding-Funnel-Analyse.
         DialogVM.StorySkipRequested += chapterId => _analyticsService?.TrackEvent(
             AnalyticsEvents.OnboardingStorySkipped,

@@ -37,6 +37,8 @@ public sealed partial class WelcomeFlowViewModel : ViewModelBase
     [ObservableProperty] private string _offlineGoalText = "";
 
     // Daily-Reward-Dialog
+    /// <summary>True wenn ein Daily-Reward verfügbar ist (Header-Badge + Dialog-Trigger).</summary>
+    [ObservableProperty] private bool _hasDailyReward;
     [ObservableProperty] private bool _isDailyRewardDialogVisible;
     [ObservableProperty] private string _dailyRewardDayText = "";
     [ObservableProperty] private string _dailyRewardStreakText = "";

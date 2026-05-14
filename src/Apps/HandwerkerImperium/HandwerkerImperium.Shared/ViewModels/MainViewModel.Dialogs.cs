@@ -55,8 +55,8 @@ public sealed partial class MainViewModel
             case NotificationKind.DailyReward:
                 if (_dailyRewardService.IsRewardAvailable)
                 {
-                    HasDailyReward = true;
-                    CheckDailyReward();
+                    WelcomeFlowVM.HasDailyReward = true;
+                    WelcomeFlowVM.CheckDailyReward();
                 }
                 _notificationCenterService.Dismiss(item.Id);
                 NotificationCenterVM.ClosePopupCommand.Execute(null);

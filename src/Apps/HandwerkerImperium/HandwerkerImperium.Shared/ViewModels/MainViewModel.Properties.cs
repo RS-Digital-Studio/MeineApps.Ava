@@ -83,8 +83,7 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private bool _isLoading = true;
 
-    [ObservableProperty]
-    private bool _hasDailyReward;
+    // HasDailyReward + alle Welcome-Flow-Dialog-States liegen in WelcomeFlowVM.
 
     // GoldenScrewsDisplay: HeaderVM ist Source-of-Truth ().
 
@@ -274,13 +273,10 @@ public sealed partial class MainViewModel
     // Offline/DailyReward/StarterOffer sind in WelcomeFlowVM (Source-of-Truth, ).
 
     /// <summary>
-    /// True wenn irgendein Overlay-Dialog sichtbar ist.
-    /// Kombiniert MainViewModel-eigene Dialoge mit DialogVM.IsAnyDialogVisible.
+    /// True wenn irgendein Overlay-Dialog sichtbar ist. Delegiert an WelcomeFlowVM,
+    /// das die Welcome-Flow-Dialoge + MissionsVM + DialogVM kombiniert.
     /// </summary>
-    private bool IsAnyDialogVisible =>
-        WelcomeFlowVM.IsOfflineEarningsDialogVisible || WelcomeFlowVM.IsCombinedWelcomeDialogVisible ||
-        MissionsVM.IsWelcomeOfferVisible || WelcomeFlowVM.IsDailyRewardDialogVisible ||
-        WelcomeFlowVM.IsStarterOfferVisible || DialogVM.IsAnyDialogVisible;
+    private bool IsAnyDialogVisible => WelcomeFlowVM.IsAnyDialogVisible;
 
     /// <summary>
     /// Indicates whether ads should be shown (not premium).

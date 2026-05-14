@@ -68,8 +68,8 @@
                   Padding="8,4"
                   MinHeight="44"
                   Background="#FFFFFF30"
-                  IsVisible="{Binding HasDailyReward}"
-                  Command="{Binding ClaimDailyRewardCommand}"
+                  IsVisible="{Binding WelcomeFlowVM.HasDailyReward}"
+                  Command="{Binding WelcomeFlowVM.ClaimDailyRewardCommand}"
                   AutomationProperties.AutomationId="Dashboard_Btn_DailyReward">
             <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="{StaticResource CraftDarkBrownBrush}"
                              AutomationProperties.AutomationId="Dashboard_Icon_DailyReward" />

@@ -200,14 +200,14 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
           </Border>
           <Button Classes="Primary" Padding="24,12"
                   HorizontalAlignment="Center"
-                  Command="{Binding AcceptStarterOfferCommand}">
+                  Command="{Binding WelcomeFlowVM.AcceptStarterOfferCommand}">
             <TextBlock Text="{loc:Translate StarterOfferButton}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryContrastBrush}" />
           </Button>
           <Button Classes="Text" Padding="16,8"
                   HorizontalAlignment="Center"
-                  Command="{Binding DismissStarterOfferCommand}">
+                  Command="{Binding WelcomeFlowVM.DismissStarterOfferCommand}">
             <TextBlock Text="{loc:Translate Later}"
                        FontSize="12" Opacity="0.7"
                        Foreground="{DynamicResource PrimaryContrastBrush}" />

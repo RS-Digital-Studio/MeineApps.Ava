@@ -97,7 +97,7 @@
                    AutomationProperties.AutomationId="Main_Txt_DailyRewardStreak" />
         <Button Classes="Primary" Content="{loc:Translate ClaimReward}"
                 Background="{StaticResource CraftPrimaryBrush}"
-                Command="{Binding ClaimDailyRewardCommand}"
+                Command="{Binding WelcomeFlowVM.ClaimDailyRewardCommand}"
                 HorizontalAlignment="Center" MinWidth="160"
                 AutomationProperties.AutomationId="Main_Btn_ClaimDailyReward" />
 

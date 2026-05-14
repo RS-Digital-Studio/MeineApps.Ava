@@ -90,11 +90,11 @@
         </Border>
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
           <Button Classes="Outlined" Content="{loc:Translate Collect}"
-                  Command="{Binding CollectOfflineEarningsNormalCommand}" MinWidth="100"
+                  Command="{Binding WelcomeFlowVM.CollectOfflineEarningsNormalCommand}" MinWidth="100"
                   AutomationProperties.AutomationId="Main_Btn_OfflineCollect" />
           <Button Classes="Primary" MinWidth="140"
                   Background="{StaticResource CraftGoldBrush}"
-                  Command="{Binding CollectOfflineEarningsWithAdCommand}"
+                  Command="{Binding WelcomeFlowVM.CollectOfflineEarningsWithAdCommand}"
                   AutomationProperties.AutomationId="Main_Btn_OfflineDoubleWithAd">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <icons:GameIcon Kind="PlayCircle" Width="24" Height="24"

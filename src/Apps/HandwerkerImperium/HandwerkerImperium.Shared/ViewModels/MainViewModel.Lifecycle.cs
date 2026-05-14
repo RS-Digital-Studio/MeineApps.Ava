@@ -132,7 +132,7 @@ public sealed partial class MainViewModel
         _eventService.EventEnded -= OnEventEnded;
         // Daily/Weekly/WelcomeBack Event-Unsubscribes sind in MissionsFeatureViewModel.Dispose()
 
-        DialogVM.DeferredDialogCheckRequested -= CheckDeferredDialogs;
+        DialogVM.DeferredDialogCheckRequested -= WelcomeFlowVM.CheckDeferredDialogs;
         DialogVM.PrestigeSummaryGoToShopRequested -= _dialogPrestigeSummaryGoToShopHandler;
         DialogVM.FloatingTextRequested -= _dialogFloatingTextHandler;
         DialogVM.Cleanup();
@@ -165,7 +165,7 @@ public sealed partial class MainViewModel
         MissionsVM.CelebrationRequested -= _missionsCelebrationHandler;
         MissionsVM.StreakRescued -= _missionsStreakRescuedHandler;
         MissionsVM.NavigateToMiniGameRequested -= OnMissionsNavigateToMiniGame;
-        MissionsVM.CheckDeferredDialogsRequested -= CheckDeferredDialogs;
+        MissionsVM.CheckDeferredDialogsRequested -= WelcomeFlowVM.CheckDeferredDialogs;
         MissionsVM.Dispose();
 
         GuildViewModel.Dispose();

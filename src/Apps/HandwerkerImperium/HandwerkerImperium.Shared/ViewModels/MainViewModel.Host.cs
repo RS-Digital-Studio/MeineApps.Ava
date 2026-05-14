@@ -102,9 +102,10 @@ public sealed partial class MainViewModel
         => _localizationService.GetString(key) ?? fallback;
 
     // ── Dialog-Dismiss-Hilfen (werden vom DialogOrchestrator benutzt) ──
-    void INavigationHost.CollectOfflineEarningsNormal() => CollectOfflineEarningsNormal();
-    void INavigationHost.DismissCombinedDialog() => DismissCombinedDialog();
-    void INavigationHost.CheckDeferredDialogs() => CheckDeferredDialogs();
+    // Welcome-Flow-Dialoge liegen in WelcomeFlowVM — hier nur Weiterleitung.
+    void INavigationHost.CollectOfflineEarningsNormal() => WelcomeFlowVM.CollectOfflineEarningsNormal();
+    void INavigationHost.DismissCombinedDialog() => WelcomeFlowVM.DismissCombinedDialog();
+    void INavigationHost.CheckDeferredDialogs() => WelcomeFlowVM.CheckDeferredDialogs();
     void INavigationHost.HideLuckySpinOverlay() => HideLuckySpinOverlay();
 
     // ── Double-Back-to-Exit ──────────────────────────────────────────
@@ -113,4 +114,8 @@ public sealed partial class MainViewModel
         var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Press back again to exit";
         return _backPressHelper.HandleDoubleBack(msg);
     }
+
+    // ── IWelcomeFlowHost (schmale Bruecke fuer WelcomeFlowViewModel) ──
+    bool Services.Interfaces.IWelcomeFlowHost.IsHoldingUpgrade => IsHoldingUpgrade;
+    void Services.Interfaces.IWelcomeFlowHost.NavigateToShop() => NavigateToShop();
 }

@@ -264,6 +264,13 @@
               AutomationProperties.AutomationId="MainView_PageBossRush">
         <ContentControl Content="{Binding BossRushVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
+
+      <!-- Play-Hub (Sprint 3.1 AAA-Audit #4): "Spielen"-Tab mit allen Spielmodi als Karten -->
+      <Border Classes="PageView"
+              Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=PlayHub}"
+              AutomationProperties.AutomationId="MainView_PagePlayHub">
+        <ContentControl Content="{Binding PlayHubVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+      </Border>
     </Panel>
 
     <!-- Kein Ad-Banner in BomberBlast (Landscape-Spiel, nur Rewarded Ads) -->
@@ -337,14 +344,17 @@
                                       ZIndex="16"
                                       IsHitTestVisible="False" />
 
-    <!-- Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar — wird angezeigt im MainMenu-Modus.
-         Konsolidiert 15+ Navigations-Punkte auf 4 Tabs (Home/Play/Shop/Profile).
-         Die existierenden Page-Views bleiben — BottomTabBar dient zukünftig
-         als zentrale Navigation, MainMenuView-Refactor folgt in eigenem Sprint. -->
-    <components:BottomTabBar IsVisible="{Binding IsMainMenuActive}"
-                              VerticalAlignment="Bottom"
-                              ZIndex="14"
-                              AutomationProperties.AutomationId="MainView_BottomTabBar" />
+    <!-- Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar — zentrale 4-Tab-Navigation.
+         Sichtbar auf den 4 konsolidierten Tab-Haupt-Views (Home/Play/Shop/Profile).
+         Wrapper-Panel haelt MainViewModel-DataContext fuer die Visibility; die
+         BottomTabBar darin bekommt BottomTabVm als eigenen DataContext.
+         Tab-Wechsel laeuft ueber IBottomTabHub, MainViewModel navigiert + synct das Highlight. -->
+    <Panel IsVisible="{Binding IsBottomTabBarVisible}"
+           VerticalAlignment="Bottom"
+           ZIndex="14">
+      <components:BottomTabBar DataContext="{Binding BottomTabVm}"
+                                AutomationProperties.AutomationId="MainView_BottomTabBar" />
+    </Panel>
 
     <!-- What's-New-Modal: erscheint einmal nach App-Update (Sprint 4.3 AAA-Audit #17).
          MainViewModel.IsWhatsNewVisible wird im Ctor gesetzt wenn IWhatsNewService.ShouldShow=true. -->

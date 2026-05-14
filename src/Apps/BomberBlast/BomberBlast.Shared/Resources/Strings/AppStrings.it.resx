@@ -4208,4 +4208,13 @@
   <data name="ProfileCustomizeVictory" xml:space="preserve"><value>Vittoria</value></data>
   <data name="ProfileCustomizeFrame" xml:space="preserve"><value>Cornice</value></data>
   <data name="ProfileCustomizeApplied" xml:space="preserve"><value>Attivato!</value></data>
+  <data name="PlayHubTitle" xml:space="preserve"><value>Gioca</value></data>
+  <data name="PlayHubUnlockAtLevel" xml:space="preserve"><value>Si sblocca al livello {0}</value></data>
+  <data name="PlayHubStoryDesc" xml:space="preserve"><value>100 livelli in 10 mondi</value></data>
+  <data name="PlayHubQuickDesc" xml:space="preserve"><value>Salta dritto in un livello casuale</value></data>
+  <data name="PlayHubSurvivalDesc" xml:space="preserve"><value>Ondate infinite - quanto riesci a resistere?</value></data>
+  <data name="PlayHubDungeonDesc" xml:space="preserve"><value>Run roguelike con potenziamenti e sinergie</value></data>
+  <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Sconfiggi tutti e 5 i boss di fila</value></data>
+  <data name="PlayHubMasterDesc" xml:space="preserve"><value>La campagna da 100 livelli - più difficile, nemici più veloci</value></data>
+  <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Completa il livello 100 per sbloccare</value></data>
 </root>

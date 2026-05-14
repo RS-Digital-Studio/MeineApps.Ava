@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
+             x:Class="BomberBlast.Views.PlayHubView"
+             x:DataType="vm:PlayHubViewModel"
+             x:CompileBindings="True">
+
+  <!-- Sprint 3.1 AAA-Audit #4: "Spielen"-Tab — alle Spielmodi als Karten-Liste.
+       Landscape-Layout, 3x2-Grid. Gesperrte Modi mit Schloss-Overlay. -->
+  <Panel x:Name="PlayHub_Root" AutomationProperties.AutomationId="PlayHub_Root">
+    <controls:MenuBackgroundCanvas />
+
+    <Grid RowDefinitions="Auto,*" Margin="16,12,16,80">
+
+      <!-- Header -->
+      <TextBlock Grid.Row="0"
+                 Text="{Binding TitleText}"
+                 FontSize="22" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 HorizontalAlignment="Center"
+                 Margin="0,0,0,12"
+                 AutomationProperties.AutomationId="PlayHub_Title" />
+
+      <!-- Modus-Karten als 3x2-Grid -->
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding Modes}"
+                      AutomationProperties.AutomationId="PlayHub_ModeList">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="3" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:PlayModeCard">
+              <Panel Margin="6" MinHeight="120">
+                <controls:GameButtonCanvas ButtonColor="{Binding AccentColor}"
+                                            DamageLevel="0.3"
+                                            ButtonSeed="{Binding ButtonSeed}" />
+                <Button Command="{Binding #PlayHub_Root.((vm:PlayHubViewModel)DataContext).SelectModeCommand}"
+                        CommandParameter="{Binding}"
+                        Classes="GameButton"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Padding="14,12"
+                        AutomationProperties.AutomationId="PlayHub_ModeButton">
+                  <Grid RowDefinitions="Auto,Auto,*">
+                    <!-- Icon + optionales Schloss -->
+                    <Panel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,8">
+                      <icons:GameIcon Kind="{Binding Icon}" Width="40" Height="40">
+                        <icons:GameIcon.Foreground>
+                          <SolidColorBrush Color="{Binding AccentColor}" />
+                        </icons:GameIcon.Foreground>
+                      </icons:GameIcon>
+                      <Border IsVisible="{Binding IsLocked}"
+                              Background="#CC0D0D1A"
+                              CornerRadius="20"
+                              Width="40" Height="40">
+                        <icons:GameIcon Kind="Lock" Width="22" Height="22"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </Border>
+                    </Panel>
+
+                    <!-- Titel -->
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding Title}"
+                               FontSize="15" FontWeight="Bold"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Margin="0,0,0,4" />
+
+                    <!-- Beschreibung -->
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding Description}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                  </Grid>
+                </Button>
+              </Panel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+    </Grid>
+  </Panel>
+
+</UserControl>

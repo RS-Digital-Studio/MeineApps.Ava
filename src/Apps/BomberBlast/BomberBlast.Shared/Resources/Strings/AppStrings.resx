@@ -4574,4 +4574,13 @@
   <data name="ProfileCustomizeVictory" xml:space="preserve"><value>Victory</value></data>
   <data name="ProfileCustomizeFrame" xml:space="preserve"><value>Frame</value></data>
   <data name="ProfileCustomizeApplied" xml:space="preserve"><value>Applied!</value></data>
+  <data name="PlayHubTitle" xml:space="preserve"><value>Play</value></data>
+  <data name="PlayHubUnlockAtLevel" xml:space="preserve"><value>Unlocks at level {0}</value></data>
+  <data name="PlayHubStoryDesc" xml:space="preserve"><value>100 levels across 10 worlds</value></data>
+  <data name="PlayHubQuickDesc" xml:space="preserve"><value>Jump straight into a random level</value></data>
+  <data name="PlayHubSurvivalDesc" xml:space="preserve"><value>Endless waves - how long can you last?</value></data>
+  <data name="PlayHubDungeonDesc" xml:space="preserve"><value>Roguelike run with buffs and synergies</value></data>
+  <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Fight all 5 bosses back to back</value></data>
+  <data name="PlayHubMasterDesc" xml:space="preserve"><value>The 100-level campaign - harder, faster enemies</value></data>
+  <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Complete level 100 to unlock</value></data>
 </root>

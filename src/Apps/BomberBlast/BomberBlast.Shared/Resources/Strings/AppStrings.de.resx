@@ -4562,4 +4562,13 @@
   <data name="ProfileCustomizeVictory" xml:space="preserve"><value>Sieges-Pose</value></data>
   <data name="ProfileCustomizeFrame" xml:space="preserve"><value>Rahmen</value></data>
   <data name="ProfileCustomizeApplied" xml:space="preserve"><value>Aktiviert!</value></data>
+  <data name="PlayHubTitle" xml:space="preserve"><value>Spielen</value></data>
+  <data name="PlayHubUnlockAtLevel" xml:space="preserve"><value>Ab Level {0} verfügbar</value></data>
+  <data name="PlayHubStoryDesc" xml:space="preserve"><value>100 Level in 10 Welten</value></data>
+  <data name="PlayHubQuickDesc" xml:space="preserve"><value>Direkt in ein Zufalls-Level springen</value></data>
+  <data name="PlayHubSurvivalDesc" xml:space="preserve"><value>Endlose Wellen - wie lange hältst du durch?</value></data>
+  <data name="PlayHubDungeonDesc" xml:space="preserve"><value>Roguelike-Run mit Buffs und Synergien</value></data>
+  <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Besiege alle 5 Bosse hintereinander</value></data>
+  <data name="PlayHubMasterDesc" xml:space="preserve"><value>Die 100-Level-Kampagne - härter, schnellere Gegner</value></data>
+  <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Schließe Level 100 ab zum Freischalten</value></data>
 </root>

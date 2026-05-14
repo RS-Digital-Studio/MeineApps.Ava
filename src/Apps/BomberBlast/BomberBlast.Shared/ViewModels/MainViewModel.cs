@@ -97,6 +97,12 @@ public sealed partial class MainViewModel : ViewModelBase
     // Daily-Hub aufgeloest (v2.0.43, Menu-Redesign) — Inhalte direkt im MainMenu-Dashboard.
     public BossRushViewModel BossRushVm { get; }
 
+    /// <summary>Sprint 3.1 AAA-Audit #4: Play-Hub-VM ("Spielen"-Tab — alle Spielmodi als Karten).</summary>
+    public PlayHubViewModel PlayHubVm { get; }
+
+    /// <summary>Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar-VM (4-Tab-Navigation Home/Play/Shop/Profile).</summary>
+    public BottomTabBarViewModel BottomTabVm { get; }
+
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -125,6 +131,8 @@ public sealed partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsGemShopActive))]
     [NotifyPropertyChangedFor(nameof(IsCardsActive))]
     [NotifyPropertyChangedFor(nameof(IsChallengesActive))]
+    [NotifyPropertyChangedFor(nameof(IsPlayHubActive))]
+    [NotifyPropertyChangedFor(nameof(IsBottomTabBarVisible))]
     private ActiveView _activeView = ActiveView.MainMenu;
 
     // Backward-compat Computed-Properties — werden von Logik in NavigateTo()/HandleBackPressed()
@@ -146,9 +154,56 @@ public sealed partial class MainViewModel : ViewModelBase
     public bool IsGemShopActive => ActiveView == ActiveView.GemShop;
     public bool IsCardsActive => ActiveView == ActiveView.Cards;
     public bool IsChallengesActive => ActiveView == ActiveView.Challenges;
+    public bool IsPlayHubActive => ActiveView == ActiveView.PlayHub;
 
-    // Audit M01: partial OnActiveViewChanged entfernt — NotifyPropertyChangedFor-Attribute am Field
-    // erledigen die Benachrichtigung der 17 IsXxxActive-Properties automatisch.
+    /// <summary>
+    /// Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar ist sichtbar auf den 4 konsolidierten
+    /// Tab-Haupt-Views (Home/Play/Shop/Profile) — nicht im Game, LevelSelect, Dialogen etc.
+    /// </summary>
+    public bool IsBottomTabBarVisible =>
+        ActiveView is ActiveView.MainMenu or ActiveView.PlayHub
+            or ActiveView.Shop or ActiveView.Profile;
+
+    // Audit M01: NotifyPropertyChangedFor-Attribute am Field erledigen die Benachrichtigung
+    // der IsXxxActive-Properties automatisch. Sprint 3.1: partial OnActiveViewChanged
+    // wieder aktiv fuer die Bottom-Tab-Bidirektional-Sync.
+    partial void OnActiveViewChanged(ActiveView value)
+    {
+        // Hub-State an die aktive View angleichen — haelt das Tab-Highlight korrekt,
+        // egal ob die Navigation ueber die Tab-Bar oder einen MainMenu-Button kam.
+        var tab = TabForActiveView(value);
+        if (tab.HasValue)
+            _bottomTabHub?.SetActiveTab(tab.Value);
+    }
+
+    /// <summary>Mappt eine ActiveView auf ihren Bottom-Tab — null wenn die View zu keinem Tab gehoert.</summary>
+    private static BottomTab? TabForActiveView(ActiveView view) => view switch
+    {
+        ActiveView.MainMenu => BottomTab.Home,
+        ActiveView.PlayHub => BottomTab.Play,
+        ActiveView.Shop => BottomTab.Shop,
+        ActiveView.Profile => BottomTab.Profile,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Reagiert auf Tab-Wechsel via Bottom-Tab-Bar. Idempotent: wenn die aktuelle View
+    /// schon zum Tab gehoert, passiert nichts (vermeidet Re-Navigation bei der
+    /// bidirektionalen Sync ActiveView → Tab → ActiveView).
+    /// </summary>
+    private void OnBottomTabChanged(BottomTab tab)
+    {
+        if (TabForActiveView(ActiveView) == tab)
+            return;
+
+        switch (tab)
+        {
+            case BottomTab.Home: NavigateTo(new GoMainMenu()); break;
+            case BottomTab.Play: NavigateTo(new GoPlayHub()); break;
+            case BottomTab.Shop: NavigateTo(new GoShop()); break;
+            case BottomTab.Profile: NavigateTo(new GoProfile()); break;
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // TAB-STATE PROPERTIES (für kombinierte Views)
@@ -239,6 +294,8 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly IAppLogger _logger;
     /// <summary>Sprint 4.2 AAA-Audit #10: GameEventBus — neue Code nutzt diesen statt durch MainVM zu routen.</summary>
     private readonly IGameEventBus _eventBus;
+    /// <summary>Sprint 3.1 AAA-Audit #4: Bottom-Tab-Hub — zentrale 4-Tab-Navigation.</summary>
+    private readonly IBottomTabHub _bottomTabHub;
 
     // Lazy-VM-Factories (werden beim ersten EnsureXxxVm() resolved)
     private readonly Lazy<GameViewModel> _gameVmLazy;
@@ -307,6 +364,13 @@ public sealed partial class MainViewModel : ViewModelBase
 
         BossRushVm = deps.BossRushVm;
         WireCommon(deps.BossRushVm);
+
+        // Sprint 3.1 AAA-Audit #4: Play-Hub + Bottom-Tab-Bar verdrahten.
+        PlayHubVm = deps.PlayHubVm;
+        WireCommon(deps.PlayHubVm);
+        BottomTabVm = deps.BottomTabVm;
+        _bottomTabHub = deps.BottomTabHub;
+        _bottomTabHub.ActiveTabChanged += OnBottomTabChanged;
 
         _localizationService = deps.Localization;
         _adService = deps.AdService;
@@ -719,6 +783,7 @@ public sealed partial class MainViewModel : ViewModelBase
             GoGemShop => "GemShop",
             GoBossRush => "BossRush",
             GoDailyRace => "DailyRace",
+            GoPlayHub => "PlayHub",
             GoBack => "..",
             GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}&master={g.MasterMode}",
             GoGameOver go => $"GameOver?score={go.Score}&level={go.Level}&highscore={go.IsHighScore}&mode={go.Mode}&coins={go.Coins}&levelcomplete={go.LevelComplete}&cancontinue={go.CanContinue}&enemypts={go.EnemyPoints}&timebonus={go.TimeBonus}&effbonus={go.EfficiencyBonus}&multiplier={go.Multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture)}&kills={go.Kills}&survivaltime={go.SurvivalTime.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
@@ -1037,6 +1102,12 @@ public sealed partial class MainViewModel : ViewModelBase
             case "QuickPlay":
                 ActiveView = ActiveView.QuickPlay;
                 EnsureQuickPlayVm().OnAppearing();
+                break;
+
+            // Sprint 3.1 AAA-Audit #4: Play-Hub — "Spielen"-Tab mit allen Spielmodi.
+            case "PlayHub":
+                ActiveView = ActiveView.PlayHub;
+                PlayHubVm.OnAppearing();
                 break;
 
             case "Dungeon":

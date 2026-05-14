@@ -27,4 +27,6 @@ public enum ActiveView
     Challenges,
     BossRush,
     DailyRace,
+    /// <summary>Sprint 3.1 AAA-Audit #4: "Spielen"-Tab — Hub fuer alle Spielmodi.</summary>
+    PlayHub,
 }

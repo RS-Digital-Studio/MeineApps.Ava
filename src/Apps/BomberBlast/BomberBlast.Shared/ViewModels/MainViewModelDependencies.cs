@@ -36,6 +36,9 @@ public sealed record MainViewModelDependencies(
     VictoryViewModel VictoryVm,
     BossRushViewModel BossRushVm,
     WhatsNewViewModel WhatsNewVm,
+    // Sprint 3.1 AAA-Audit #4: Play-Hub + Bottom-Tab-Bar (Eager — Kern-Navigation)
+    PlayHubViewModel PlayHubVm,
+    BottomTabBarViewModel BottomTabVm,
 
     // Lazy VMs (erst bei progressivem Unlock gebraucht)
     Lazy<GameViewModel> GameVmLazy,
@@ -66,4 +69,5 @@ public sealed record MainViewModelDependencies(
     IAppLogger Logger,
     IGameEventBus EventBus,
     IWhatsNewService WhatsNewService,
-    IAnalyticsService Analytics);
+    IAnalyticsService Analytics,
+    IBottomTabHub BottomTabHub);

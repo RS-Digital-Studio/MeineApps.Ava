@@ -27,6 +27,7 @@ public record GoLeague : NavigationRequest;
 public record GoGemShop : NavigationRequest;
 public record GoBossRush : NavigationRequest;
 public record GoDailyRace : NavigationRequest;
+public record GoPlayHub : NavigationRequest;
 
 // ── Zurück-Navigation ──
 public record GoBack : NavigationRequest;

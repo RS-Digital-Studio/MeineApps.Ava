@@ -558,6 +558,8 @@ public partial class App : Application
         services.AddSingleton<ProfileViewModel>();
         services.AddSingleton<GemShopViewModel>();
         services.AddSingleton<BossRushViewModel>();
+        // Sprint 3.1 AAA-Audit #4: Play-Hub — Eager-VM (Kern-Navigation, Bottom-Tab "Spielen").
+        services.AddSingleton<PlayHubViewModel>();
         // Sprint 4.3 AAA-Audit #17: What's-New-Modal — Transient (wird bei Bedarf neu erstellt).
         services.AddTransient<WhatsNewViewModel>();
         // Sprint 3.1 AAA-Audit #4: BottomTabBar-VM — Transient (View hat eigene Instanz).

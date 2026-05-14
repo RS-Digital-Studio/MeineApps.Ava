@@ -247,6 +247,12 @@ public sealed class FirebaseClanService : IClanService
         }
     }
 
+    // Sprint 7.3 AAA-Audit #15: Client-seitiges Anti-Spam-Cooldown — 3s zwischen Chat-Sends
+    // pro Clan-Member. Schuetzt vor versehentlichen Doppel-Sends + dummen Spam-Versuchen.
+    // (Server-seitig waere defense-in-depth, braucht aber Multi-Path-Updates — deferred.)
+    private const double ChatSendCooldownSeconds = 3.0;
+    private DateTime _lastChatSentUtc = DateTime.MinValue;
+
     public async Task SendChatAsync(string message)
     {
         if (_currentClan == null || string.IsNullOrWhiteSpace(message)) return;
@@ -255,6 +261,11 @@ public sealed class FirebaseClanService : IClanService
 
         var member = _currentClan.Members.FirstOrDefault(m => m.MemberId == uid);
         if (member == null) return;
+
+        // Sprint 7.3 AAA-Audit #15: Rate-Limit gegen Chat-Spam.
+        var since = (DateTime.UtcNow - _lastChatSentUtc).TotalSeconds;
+        if (since >= 0 && since < ChatSendCooldownSeconds)
+            return;
 
         // Profanity-Filter wird in Production via Server-Side-Rules erzwungen.
         // Client-Side: einfache Length-Limit (max 200 Zeichen).
@@ -273,6 +284,7 @@ public sealed class FirebaseClanService : IClanService
                 ["sentUtc"] = FirebaseServerTimestamp,
             };
             await _firebase.PushAsync($"clans/{_currentClan.ClanId}/chat", chatPayload);
+            _lastChatSentUtc = DateTime.UtcNow;
         }
         catch (Exception ex)
         {

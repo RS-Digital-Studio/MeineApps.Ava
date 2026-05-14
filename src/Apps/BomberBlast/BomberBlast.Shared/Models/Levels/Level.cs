@@ -53,6 +53,16 @@ public class Level
     /// <summary>Zweiter Boss für Duo-Encounter (Welt 9+10, null = Einzel-Boss)</summary>
     public BossType? BossKind2 { get; set; }
 
+    /// <summary>
+    /// Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Phase 1-3 (T1 Movement / T2 Bombs / T3 PowerUps).
+    /// Null = kein Tutorial-Level. Tutorial-Levels haben eigene Layouts, eigene Spawn-Regeln und
+    /// blenden die Tab-Bar aus. ProgressService traegt KEINEN Star fuer Tutorial-Completion ein.
+    /// </summary>
+    public int? TutorialPhase { get; set; }
+
+    /// <summary>True wenn dieses Level ein Tutorial-Level ist (T1/T2/T3).</summary>
+    public bool IsTutorialLevel => TutorialPhase.HasValue;
+
     /// <summary>Background music track</summary>
     public string MusicTrack { get; set; } = "gameplay";
 

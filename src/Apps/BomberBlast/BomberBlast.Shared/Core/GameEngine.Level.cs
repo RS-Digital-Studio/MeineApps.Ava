@@ -368,6 +368,43 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
+    /// Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Phase als eigenstaendiges Level starten.
+    /// phase 1 = T1 Movement, 2 = T2 Bombs, 3 = T3 PowerUps.
+    /// Nutzt QuickPlayMode als Container (kein Story-Star, kein Coin-Reward).
+    /// Tutorial-Service wird parallel gestartet — Steps laufen via Player-Actions.
+    /// </summary>
+    public async Task StartTutorialPhaseAsync(int phase)
+    {
+        _cinematic?.Stop();
+        phase = Math.Clamp(phase, 1, 3);
+
+        // Tutorial laeuft im QuickPlayMode-Container — keine Story-Progression-Side-Effects.
+        _currentMode = new BomberBlast.Core.Modes.QuickPlayMode(difficulty: 1);
+        _activeMutator = LevelMutator.None;
+        _currentLevelNumber = -phase;        // Negative Nummer markiert Tutorial in Tracking
+        _currentLevel = LevelLayoutGenerator.GenerateTutorialLevel(phase);
+        _continueUsed = true;                // Kein Continue im Tutorial
+
+        _player.ResetForNewGame();
+        ApplyHeroStats();
+        // Tutorial-Stats: Phase 1 hat KEINE Bombs (Spieler kann nicht legen), Phase 2/3 hat 1 Bomb.
+        _player.MaxBombs = phase == 1 ? 0 : 1;
+        _player.FireRange = 2;
+        _player.Lives = 3;
+        // Karten-Deck deaktiviert im Tutorial (Vereinfachung fuer Neulinge).
+        _player.EquippedCards.Clear();
+        _player.ActiveCardSlot = -1;
+
+        await LoadLevelAsync();
+
+        _soundManager.PlayMusic(SoundManager.MUSIC_GAMEPLAY);
+
+        // Tutorial-Service wird vom GameViewModel gestartet (er kennt UI-Overlay).
+        _worldAnnouncementText = $"TUTORIAL {phase} / 3";
+        _worldAnnouncementTimer = 2.5f;
+    }
+
+    /// <summary>
     /// Survival-Modus starten (endlos, ohne Exit, Kill-basiertes Scoring)
     /// </summary>
     public async Task StartSurvivalModeAsync()
@@ -961,15 +998,19 @@ public sealed partial class GameEngine
         // Spieler aktivieren
         _player.IsActive = true;
 
-        // Tutorial starten bei Level 1 wenn noch nicht abgeschlossen
-        if (_currentLevelNumber == 1 && !_tutorialService.IsCompleted)
+        // Welle 3 v2.0.58 AAA-Audit #12: Tutorial in 3 separaten Levels (TutorialPhase=1/2/3).
+        // Tutorial laeuft jetzt im eigenen Tutorial-Level (Number < 0) statt in Story-L1.
+        // L1 startet Tutorial nur noch als Legacy-Fallback (alte Spielstaende, neue Spieler
+        // werden ueber MainViewModel.StartGame() direkt in StartTutorialPhaseAsync geroutet).
+        bool isTutorialLevel = _currentLevel?.IsTutorialLevel == true;
+        if ((isTutorialLevel || _currentLevelNumber == 1) && !_tutorialService.IsCompleted)
         {
             _tutorialService.Start();
             _tutorialWarningTimer = 0;
         }
 
         // Discovery-Hint für Welt-Mechanik (bei erstem Kontakt)
-        if (_currentLevel.Mechanic != WorldMechanic.None)
+        if (_currentLevel!.Mechanic != WorldMechanic.None)
         {
             TryShowDiscoveryHint("mechanic_" + _currentLevel.Mechanic.ToString().ToLower());
         }

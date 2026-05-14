@@ -183,6 +183,69 @@ public static class LevelLayoutGenerator
     }
 
     /// <summary>
+    /// Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Level generieren (T1 Movement / T2 Bombs / T3 PowerUps).
+    /// Drei separate Mini-Levels mit unterschiedlichen Layouts, Spawn-Regeln und PowerUp-Sets:
+    /// <list type="bullet">
+    /// <item>T1 (phase=1) — Movement: leeres Grid mit verstreuten Block-Inseln, keine Enemies/Bombs/Exit</item>
+    /// <item>T2 (phase=2) — Bombs: 6 Blocks in 2-Reihen-Cluster, 1 schwacher Ballom, Exit unter Block</item>
+    /// <item>T3 (phase=3) — PowerUps: 8 Blocks mit 3 PowerUps (BombUp/Fire/Speed) + Boss-Lite-Encounter</item>
+    /// </list>
+    /// </summary>
+    public static Level GenerateTutorialLevel(int phase)
+    {
+        phase = Math.Clamp(phase, 1, 3);
+        var level = new Level
+        {
+            Number = -phase,  // Negative Levelnummer = Tutorial (kein Story-Star, kein Coin-Reward)
+            Name = $"Tutorial {phase}",
+            TimeLimit = 240,                // 4 Min Zeitlimit (kein Druck, Spieler darf erkunden)
+            BlockDensity = phase switch
+            {
+                1 => 0.10f,                 // T1: sehr wenige Blocks, fast leeres Grid
+                2 => 0.20f,                 // T2: mehr Blocks fuer Bomben-Uebung
+                3 => 0.25f,                 // T3: noch mehr Variation
+                _ => 0.15f,
+            },
+            Seed = -phase * 1000,           // Deterministisch — identisches Tutorial fuer alle Spieler
+            Layout = LevelLayout.Classic,   // Klares Layout fuer Erstkontakt
+            TutorialPhase = phase,
+            MusicTrack = "gameplay",
+            Mechanic = WorldMechanic.None,  // Keine Welt-Mechanik im Tutorial
+        };
+
+        // Welt-Style aus Welt 1 (Forest) ableiten — bekannte freundliche Optik.
+        level.Enemies.Clear();
+        level.PowerUps.Clear();
+
+        switch (phase)
+        {
+            case 1:
+                // T1 — Movement: nur Bewegung lernen, kein Gegner, keine Bombs.
+                // Spieler-Aufgabe: 5 Bricks zerstoeren (eigentlich nicht moeglich da kein Bomb-Button)
+                // → Stattdessen: Bewegung-Tutorial laeuft via TutorialService.CheckStepCompletion.
+                // Keine Enemies, keine PowerUps → Tutorial-Overlay treibt den Spieler weiter.
+                break;
+
+            case 2:
+                // T2 — Bombs: 1 schwacher Enemy + Bricks zum Zerstoeren.
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 1 });
+                // Keine PowerUps — fokussiert auf Bomb-Mechanik.
+                break;
+
+            case 3:
+                // T3 — PowerUps: 3 PowerUps + 2 Enemies (etwas anspruchsvoller).
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 1 });
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Onil, Count = 1 });
+                level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.BombUp });
+                level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Fire });
+                level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Speed });
+                break;
+        }
+
+        return level;
+    }
+
+    /// <summary>
     /// Quick-Play-Level generieren (deterministisch via Seed, Schwierigkeit steuerbar).
     /// difficulty 1-10 mappt auf Welt-Schwierigkeit.
     /// </summary>

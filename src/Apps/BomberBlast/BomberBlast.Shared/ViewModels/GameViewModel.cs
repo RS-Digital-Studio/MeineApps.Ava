@@ -153,7 +153,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IAppLogger logger,
         IRetentionService retentionService,
         IAnalyticsService analytics,
-        IWorldStoryService worldStoryService)
+        IWorldStoryService worldStoryService,
+        ITutorialService tutorialService)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
@@ -164,6 +165,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _reviewService = reviewService;
         _assetService = assetService;
         _logger = logger;
+        _tutorialService = tutorialService;
 
         // Phase 24b — RetentionService property-injecten damit GameEngine.PlayFirstWinCinematic
         // beim ECHTEN ersten Sieg getriggert werden kann.
@@ -171,6 +173,10 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         // Sprint 6.2 AAA-Audit #13: WorldStoryService — fuer Welt-Intro/Outro-Cutscenes.
         _gameEngine.WorldStoryService = worldStoryService;
     }
+
+    // Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Routing — Story-Mode startet automatisch
+    // mit der naechsten offenen Tutorial-Phase wenn der Spieler noch nicht alle 3 abgeschlossen hat.
+    private readonly ITutorialService _tutorialService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // INITIALIZATION
@@ -329,9 +335,27 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
                 await _gameEngine.StartDailyRaceModeAsync();
                 break;
 
+            case "tutorial":
+                // Welle 3 v2.0.58 AAA-Audit #12: Direkt-Aufruf einer Tutorial-Phase (1/2/3 als _level).
+                await _gameEngine.StartTutorialPhaseAsync(Math.Clamp(_level, 1, 3));
+                break;
+
             case "story":
             default:
-                await _gameEngine.StartStoryModeAsync(_level, _masterMode);
+                // Welle 3 v2.0.58 AAA-Audit #12: Wenn Tutorial nicht komplett UND Spieler startet
+                // Story-L1, route auf naechste offene Tutorial-Phase. Schuetzt Genre-Neulinge davor,
+                // dass sie das Tutorial im Story-L1 erleiden — sie bekommen eigene Mini-Levels.
+                if (_level <= 1 && !_tutorialService.IsCompleted)
+                {
+                    int phase = _tutorialService.IsPhaseCompleted(Models.TutorialPhase.Movement)
+                        ? (_tutorialService.IsPhaseCompleted(Models.TutorialPhase.Bombs) ? 3 : 2)
+                        : 1;
+                    await _gameEngine.StartTutorialPhaseAsync(phase);
+                }
+                else
+                {
+                    await _gameEngine.StartStoryModeAsync(_level, _masterMode);
+                }
                 break;
         }
 
@@ -707,6 +731,24 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         var timeBonus = _gameEngine.LastTimeBonus;
         var effBonus = _gameEngine.LastEfficiencyBonus;
         var multiplier = _gameEngine.LastScoreMultiplier;
+
+        // Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Level (Number < 0) → naechste Phase oder Story-L1.
+        // Kein Victory/GameOver-Screen, kein Score-Submit — direkt weiter im Onboarding-Flow.
+        if (level < 0)
+        {
+            int completedPhase = -level;  // -1 → Phase 1, -2 → Phase 2, -3 → Phase 3
+            if (completedPhase < 3 && !_tutorialService.IsCompleted)
+            {
+                // Naechste Tutorial-Phase
+                await _gameEngine.StartTutorialPhaseAsync(completedPhase + 1);
+                StartGameLoop();
+                return;
+            }
+            // Letzte Phase abgeschlossen ODER Skip → starte Story-L1 mit Soft-Onboarding.
+            await _gameEngine.StartStoryModeAsync(1, masterMode: false);
+            StartGameLoop();
+            return;
+        }
 
         if (_gameEngine.CurrentLevel >= 100 && !_gameEngine.IsDailyChallenge && !_gameEngine.IsQuickPlayMode)
         {

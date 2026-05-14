@@ -55,6 +55,8 @@ public partial class DashboardView : UserControl
     private GameJuiceEngine? _juiceEngine;
     // DispatcherTimer durch IFrameClock-Subscription ersetzt.
     private Services.Interfaces.IFrameClock? _frameClock;
+    // Zentraler UI-Effekt-Bus (FloatingText). Singleton — einmal im Ctor geholt.
+    private Services.Interfaces.IUiEffectBus? _uiEffectBus;
     private bool _renderActive;
     private SKCanvasView? _cityCanvas;
     private ScrollViewer? _dashboardScrollViewer;
@@ -112,6 +114,16 @@ public partial class DashboardView : UserControl
         _liveCountdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _liveCountdownTimer.Tick += OnLiveCountdownTick;
         _liveCountdownTimer.Start();
+
+        // UI-Effekt-Bus (Singleton) abonnieren — FloatingText + Partikel-/Confetti-Effekte.
+        // Analog zur IFrameClock-Aufloesung, vom VM-Lifecycle entkoppelt.
+        _uiEffectBus = App.Services?.GetService(typeof(Services.Interfaces.IUiEffectBus))
+            as Services.Interfaces.IUiEffectBus;
+        if (_uiEffectBus != null)
+        {
+            _uiEffectBus.FloatingTextRequested += OnFloatingTextRequested;
+            _uiEffectBus.FloatingTextRequested += OnFloatingTextForParticles;
+        }
     }
 
     private DispatcherTimer? _liveCountdownTimer;
@@ -145,10 +157,14 @@ public partial class DashboardView : UserControl
             _liveCountdownTimer = null;
         }
 
+        if (_uiEffectBus != null)
+        {
+            _uiEffectBus.FloatingTextRequested -= OnFloatingTextRequested;
+            _uiEffectBus.FloatingTextRequested -= OnFloatingTextForParticles;
+        }
+
         if (_vm != null)
         {
-            _vm.FloatingTextRequested -= OnFloatingTextRequested;
-            _vm.FloatingTextRequested -= OnFloatingTextForParticles;
             _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm = null;
         }
@@ -185,8 +201,6 @@ public partial class DashboardView : UserControl
         // Altes VM abmelden
         if (_vm != null)
         {
-            _vm.FloatingTextRequested -= OnFloatingTextRequested;
-            _vm.FloatingTextRequested -= OnFloatingTextForParticles;
             _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm = null;
         }
@@ -198,8 +212,6 @@ public partial class DashboardView : UserControl
         if (DataContext is MainViewModel vm)
         {
             _vm = vm;
-            _vm.FloatingTextRequested += OnFloatingTextRequested;
-            _vm.FloatingTextRequested += OnFloatingTextForParticles;
             _vm.PropertyChanged += OnVmPropertyChanged;
 
             // GameJuiceEngine über MainViewModel (kein Service Locator)

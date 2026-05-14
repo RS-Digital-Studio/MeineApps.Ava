@@ -38,6 +38,8 @@ public partial class MainView : UserControl
 
     // DispatcherTimer durch IFrameClock-Subscription ersetzt.
     private Services.Interfaces.IFrameClock? _frameClock;
+    // Zentraler UI-Effekt-Bus (Celebration/Ceremony). Singleton — einmal im Ctor geholt.
+    private Services.Interfaces.IUiEffectBus? _uiEffectBus;
     private bool _renderActive;
     private float _renderTime;
     private float _lastTabSwitchTime;
@@ -60,6 +62,16 @@ public partial class MainView : UserControl
         // Escape schliesst den obersten Dialog (Desktop-Komfort).
         // Tunnel-Phase damit das vor evtl. Dialog-internen Handlern triggert.
         AddHandler(KeyDownEvent, OnGlobalKeyDown, RoutingStrategies.Tunnel);
+
+        // UI-Effekt-Bus (Singleton) abonnieren — Confetti-Celebration + Reward-Zeremonie.
+        // Analog zur IFrameClock-Aufloesung, vom VM-Lifecycle entkoppelt.
+        _uiEffectBus = App.Services?.GetService(typeof(Services.Interfaces.IUiEffectBus))
+            as Services.Interfaces.IUiEffectBus;
+        if (_uiEffectBus != null)
+        {
+            _uiEffectBus.CelebrationRequested += OnCelebrationRequested;
+            _uiEffectBus.CeremonyRequested += OnCeremonyRequested;
+        }
     }
 
     /// <summary>
@@ -78,12 +90,16 @@ public partial class MainView : UserControl
     {
         StopRenderTimer();
 
+        if (_uiEffectBus != null)
+        {
+            _uiEffectBus.CelebrationRequested -= OnCelebrationRequested;
+            _uiEffectBus.CeremonyRequested -= OnCeremonyRequested;
+        }
+
         if (_vm != null)
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm.PageTransitionStarting -= OnPageTransitionStarting;
-            _vm.CelebrationRequested -= OnCelebrationRequested;
-            _vm.CeremonyRequested -= OnCeremonyRequested;
             _vm.PrestigeCinematicRequested -= OnPrestigeCinematicRequested;
             _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
@@ -106,8 +122,6 @@ public partial class MainView : UserControl
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm.PageTransitionStarting -= OnPageTransitionStarting;
-            _vm.CelebrationRequested -= OnCelebrationRequested;
-            _vm.CeremonyRequested -= OnCeremonyRequested;
             _vm.PrestigeCinematicRequested -= OnPrestigeCinematicRequested;
             _vm.PauseStateChanged -= OnPauseStateChanged;
         }
@@ -118,8 +132,6 @@ public partial class MainView : UserControl
         {
             _vm.PropertyChanged += OnVmPropertyChanged;
             _vm.PageTransitionStarting += OnPageTransitionStarting;
-            _vm.CelebrationRequested += OnCelebrationRequested;
-            _vm.CeremonyRequested += OnCeremonyRequested;
             _vm.PrestigeCinematicRequested += OnPrestigeCinematicRequested;
             _vm.PauseStateChanged += OnPauseStateChanged;
 

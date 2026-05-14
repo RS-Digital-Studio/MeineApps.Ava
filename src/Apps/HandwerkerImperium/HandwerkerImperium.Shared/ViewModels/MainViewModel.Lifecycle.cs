@@ -88,11 +88,6 @@ public sealed partial class MainViewModel
         // v2.0.35 Feature D: OrderSpawned-Subscribe abmelden
         _orderGeneratorService.OrderSpawned -= OnLiveOrderSpawned;
 
-        // UI-Effekt-Bus-Bruecke abmelden (Task 1, additiv — entfaellt mit Task 2)
-        _uiEffectBus.FloatingTextRequested -= OnBusFloatingTextRequested;
-        _uiEffectBus.CelebrationRequested -= OnBusCelebrationRequested;
-        _uiEffectBus.CeremonyRequested -= OnBusCeremonyRequested;
-
         // Stop the game loop and save
         _gameLoopService.Stop();
 

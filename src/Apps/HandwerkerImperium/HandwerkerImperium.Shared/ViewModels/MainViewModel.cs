@@ -254,11 +254,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _dialogOrchestrator = dialogOrchestrator;
         _miniGameNavigator = miniGameNavigator;
         _uiEffectBus = uiEffectBus;
-        // Bus → MainViewModel-Events weiterleiten. Die Views abonnieren vorerst weiter die
-        // MainViewModel-Events; in Task 2 wechseln sie direkt auf den Bus und diese Bruecke entfaellt.
-        _uiEffectBus.FloatingTextRequested += OnBusFloatingTextRequested;
-        _uiEffectBus.CelebrationRequested += OnBusCelebrationRequested;
-        _uiEffectBus.CeremonyRequested += OnBusCeremonyRequested;
         _analyticsService = analyticsService;
         _cloudSaveService = cloudSaveService;
         _remoteConfigService = remoteConfigService;

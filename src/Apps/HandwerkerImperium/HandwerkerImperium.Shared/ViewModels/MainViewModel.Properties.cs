@@ -309,23 +309,9 @@ public sealed partial class MainViewModel
     public bool ShowBannerStrip => HasEverPrestiged || HeaderVM.PlayerLevel >= LevelThresholds.BannerStrip;
     public int QuickAccessColumns => 1 + (ShowManagerSection ? 1 : 0) + (ShowMasterToolsSection ? 1 : 0);
 
-    // FloatingText Event fuer Dashboard-Animationen
-    public event Action<string, string>? FloatingTextRequested;
-
-    // Celebration Event fuer Confetti-Overlay (Level-Up, Achievement, Prestige)
-    public event Action? CelebrationRequested;
-
-    // Full-Screen Reward-Zeremonie (nur große Meilensteine)
-    public event Action<CeremonyType, string, string>? CeremonyRequested;
-
-    // Bruecke IUiEffectBus → MainViewModel-Events (Task 1, additiv). Wird in Task 2 entfernt,
-    // sobald die Views (DashboardView/MainView) den IUiEffectBus direkt abonnieren.
-    private void OnBusFloatingTextRequested(string text, string category)
-        => FloatingTextRequested?.Invoke(text, category);
-    private void OnBusCelebrationRequested()
-        => CelebrationRequested?.Invoke();
-    private void OnBusCeremonyRequested(CeremonyType type, string title, string subtitle)
-        => CeremonyRequested?.Invoke(type, title, subtitle);
+    // FloatingText/Celebration/Ceremony laufen ueber den IUiEffectBus (Singleton-Service).
+    // MainViewModel und Coordinators feuern via _uiEffectBus.RaiseXxx(...), die Views
+    // (DashboardView/MainView) abonnieren den Bus direkt im Code-Behind.
 
     /// <summary>Prestige-Cinematic-Trigger. View startet daraufhin den 14s-Renderer.</summary>
     public event Action<HandwerkerImperium.Models.PrestigeCinematicData>? PrestigeCinematicRequested;

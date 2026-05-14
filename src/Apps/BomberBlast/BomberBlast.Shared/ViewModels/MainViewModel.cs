@@ -498,6 +498,22 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Sprint 4.x AAA-Audit #7: Generischer Lazy-VM-Resolver fuer die trivialen
+    /// EnsureXxxVm()-Methoden (nur WireCommon + Property-Set, kein VM-spezifisches Wiring).
+    /// Setter-Delegate statt <c>ref field</c> — damit der ObservableProperty-Setter
+    /// laeuft und OnPropertyChanged feuert (XAML-ContentControl bindet den VM dann ein).
+    /// </summary>
+    private T EnsureLazyVm<T>(Func<T?> getter, Action<T> setter, Lazy<T> lazy)
+        where T : class, INavigable
+    {
+        if (getter() is { } existing) return existing;
+        var vm = lazy.Value;
+        WireCommon(vm);
+        setter(vm);
+        return vm;
+    }
+
+    /// <summary>
     /// Audit M23: Sprachwechsel-Forwarder. Iteriert alle instanziierten (resolved) VMs:
     /// - Implementiert <see cref="ILocalizable"/> → UpdateLocalizedTexts().
     /// - Sonst: OnAppearing() falls vorhanden (fallback fuer VMs ohne dediziertes Interface).
@@ -557,13 +573,7 @@ public sealed partial class MainViewModel : ViewModelBase
     /// SkPaint/SkFont/SkMaskFilter-Allokationen) erst dann erzeugt werden.
     /// </summary>
     private GameViewModel EnsureGameVm()
-    {
-        if (GameVm is { } existing) return existing;
-        var vm = _gameVmLazy.Value;
-        WireCommon(vm);
-        GameVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => GameVm, vm => GameVm = vm, _gameVmLazy);
 
     private ShopViewModel EnsureShopVm()
     {
@@ -587,67 +597,25 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     private AchievementsViewModel EnsureAchievementsVm()
-    {
-        if (AchievementsVm is { } existing) return existing;
-        var vm = _achievementsVmLazy.Value;
-        WireCommon(vm);
-        AchievementsVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => AchievementsVm, vm => AchievementsVm = vm, _achievementsVmLazy);
 
     private DailyChallengeViewModel EnsureDailyChallengeVm()
-    {
-        if (DailyChallengeVm is { } existing) return existing;
-        var vm = _dailyChallengeVmLazy.Value;
-        WireCommon(vm);
-        DailyChallengeVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => DailyChallengeVm, vm => DailyChallengeVm = vm, _dailyChallengeVmLazy);
 
     private LuckySpinViewModel EnsureLuckySpinVm()
-    {
-        if (LuckySpinVm is { } existing) return existing;
-        var vm = _luckySpinVmLazy.Value;
-        WireCommon(vm);
-        LuckySpinVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => LuckySpinVm, vm => LuckySpinVm = vm, _luckySpinVmLazy);
 
     private WeeklyChallengeViewModel EnsureWeeklyChallengeVm()
-    {
-        if (WeeklyChallengeVm is { } existing) return existing;
-        var vm = _weeklyChallengeVmLazy.Value;
-        WireCommon(vm);
-        WeeklyChallengeVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => WeeklyChallengeVm, vm => WeeklyChallengeVm = vm, _weeklyChallengeVmLazy);
 
     private StatisticsViewModel EnsureStatisticsVm()
-    {
-        if (StatisticsVm is { } existing) return existing;
-        var vm = _statisticsVmLazy.Value;
-        WireCommon(vm);
-        StatisticsVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => StatisticsVm, vm => StatisticsVm = vm, _statisticsVmLazy);
 
     private QuickPlayViewModel EnsureQuickPlayVm()
-    {
-        if (QuickPlayVm is { } existing) return existing;
-        var vm = _quickPlayVmLazy.Value;
-        WireCommon(vm);
-        QuickPlayVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => QuickPlayVm, vm => QuickPlayVm = vm, _quickPlayVmLazy);
 
     private DeckViewModel EnsureDeckVm()
-    {
-        if (DeckVm is { } existing) return existing;
-        var vm = _deckVmLazy.Value;
-        WireCommon(vm);
-        DeckVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => DeckVm, vm => DeckVm = vm, _deckVmLazy);
 
     private DungeonViewModel EnsureDungeonVm()
     {
@@ -710,31 +678,13 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     private CollectionViewModel EnsureCollectionVm()
-    {
-        if (CollectionVm is { } existing) return existing;
-        var vm = _collectionVmLazy.Value;
-        WireCommon(vm);
-        CollectionVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => CollectionVm, vm => CollectionVm = vm, _collectionVmLazy);
 
     private LeagueViewModel EnsureLeagueVm()
-    {
-        if (LeagueVm is { } existing) return existing;
-        var vm = _leagueVmLazy.Value;
-        WireCommon(vm);
-        LeagueVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => LeagueVm, vm => LeagueVm = vm, _leagueVmLazy);
 
     private ProfileViewModel EnsureProfileVm()
-    {
-        if (ProfileVm is { } existing) return existing;
-        var vm = _profileVmLazy.Value;
-        WireCommon(vm);
-        ProfileVm = vm;
-        return vm;
-    }
+        => EnsureLazyVm(() => ProfileVm, vm => ProfileVm = vm, _profileVmLazy);
 
     private GemShopViewModel EnsureGemShopVm()
     {
@@ -760,63 +710,12 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         try
         {
-        var route = request switch
-        {
-            GoMainMenu => "MainMenu",
-            GoLevelSelect => "LevelSelect",
-            GoSettings => "Settings",
-            GoShop => "Shop",
-            GoAchievements => "Achievements",
-            GoHighScores => "HighScores",
-            GoHelp => "Help",
-            GoStatistics => "Statistics",
-            GoProfile => "Profile",
-            GoDailyChallenge => "DailyChallenge",
-            GoLuckySpin => "LuckySpin",
-            GoQuickPlay => "QuickPlay",
-            GoWeeklyChallenge => "WeeklyChallenge",
-            GoCollection => "Collection",
-            GoDeck => "Deck",
-            GoDungeon => "Dungeon",
-            GoBattlePass => "BattlePass",
-            GoLeague => "League",
-            GoGemShop => "GemShop",
-            GoBossRush => "BossRush",
-            GoDailyRace => "DailyRace",
-            GoPlayHub => "PlayHub",
-            GoBack => "..",
-            GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}&master={g.MasterMode}",
-            GoGameOver go => $"GameOver?score={go.Score}&level={go.Level}&highscore={go.IsHighScore}&mode={go.Mode}&coins={go.Coins}&levelcomplete={go.LevelComplete}&cancontinue={go.CanContinue}&enemypts={go.EnemyPoints}&timebonus={go.TimeBonus}&effbonus={go.EfficiencyBonus}&multiplier={go.Multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture)}&kills={go.Kills}&survivaltime={go.SurvivalTime.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
-            GoVictory v => $"Victory?score={v.Score}&coins={v.Coins}",
-            GoResetThen r => $"//MainMenu/{NavigationRequestToRoute(r.Then)}",
-            _ => "MainMenu"
-        };
-        await NavigateToRouteAsync(route);
+            // Sprint 4.x AAA-Audit #7: Request→Route-Mapping in NavigationRouteMapper extrahiert.
+            await NavigateToRouteAsync(Navigation.NavigationRouteMapper.ToRoute(request));
         }
         catch (Exception ex)
         {
             _logger.LogError($"NavigateTo(NavigationRequest) unbehandelte Exception fuer {request?.GetType().Name}", ex);
-        }
-    }
-
-    /// <summary>
-    /// Hilfsmethode für GoResetThen: Konvertiert inneren Request in Route-String.
-    /// </summary>
-    private string NavigationRequestToRoute(NavigationRequest request)
-    {
-        // Rekursiv: gleiche Logik wie NavigateTo, aber gibt String zurück.
-        // Aktuell wird GoResetThen nur mit GoGame/GoMainMenu aufgerufen.
-        // Bei Erweiterung um neue Inner-Requests muss diese Methode mit-erweitert werden
-        // — Logging fängt silent-fallbacks ab.
-        switch (request)
-        {
-            case GoGame g:
-                return $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}&master={g.MasterMode}";
-            case GoMainMenu:
-                return "MainMenu";
-            default:
-                _logger.LogWarning($"NavigationRequestToRoute: Unsupported inner request {request.GetType().Name} → fallback MainMenu");
-                return "MainMenu";
         }
     }
 
@@ -896,34 +795,11 @@ public sealed partial class MainViewModel : ViewModelBase
                 // ContentControl-Binding wuerde einen leeren GameBorder zeigen.
                 var gameVm = EnsureGameVm();
                 ActiveView = ActiveView.Game;
-                // Spiel-Parameter parsen
+                // Spiel-Parameter parsen (Sprint 4.x AAA-Audit #7 — Parser extrahiert)
                 if (route.Contains('?'))
                 {
-                    var query = route[(route.IndexOf('?') + 1)..];
-                    var mode = "quick";
-                    var level = 1;
-                    var difficulty = 5;
-                    var continueMode = false;
-                    var boost = "";
-                    var floor = 0;
-                    var seed = 0;
-                    var master = false;
-                    foreach (var param in query.Split('&'))
-                    {
-                        var parts = param.Split('=');
-                        if (parts.Length == 2)
-                        {
-                            if (parts[0] == "mode") mode = parts[1];
-                            if (parts[0] == "level") int.TryParse(parts[1], out level);
-                            if (parts[0] == "difficulty") int.TryParse(parts[1], out difficulty);
-                            if (parts[0] == "continue") bool.TryParse(parts[1], out continueMode);
-                            if (parts[0] == "boost") boost = parts[1];
-                            if (parts[0] == "floor") int.TryParse(parts[1], out floor);
-                            if (parts[0] == "seed") int.TryParse(parts[1], out seed);
-                            if (parts[0] == "master") bool.TryParse(parts[1], out master);
-                        }
-                    }
-                    gameVm.SetParameters(mode, level, continueMode, boost, difficulty, floor, seed, master);
+                    var p = Navigation.NavigationQueryParser.ParseGame(route[(route.IndexOf('?') + 1)..]);
+                    gameVm.SetParameters(p.Mode, p.Level, p.Continue, p.Boost, p.Difficulty, p.Floor, p.Seed, p.Master);
                 }
                 // Spiel starten (Engine initialisieren + Render-Loop starten)
                 await gameVm.OnAppearingAsync();
@@ -943,71 +819,36 @@ public sealed partial class MainViewModel : ViewModelBase
                 ActiveView = ActiveView.GameOver;
                 if (route.Contains('?'))
                 {
-                    var query = route[(route.IndexOf('?') + 1)..];
-                    var score = 0;
-                    var level = 0;
-                    var isHighScore = false;
-                    var mode = "story";
-                    var coins = 0;
-                    var levelComplete = false;
-                    var canContinue = false;
-                    var enemyPts = 0;
-                    var timeBonus = 0;
-                    var effBonus = 0;
-                    var multiplier = 1f;
-                    var survivalKills = 0;
-                    var survivalTime = 0f;
-                    foreach (var param in query.Split('&'))
-                    {
-                        var parts = param.Split('=');
-                        if (parts.Length == 2)
-                        {
-                            switch (parts[0])
-                            {
-                                case "score": int.TryParse(parts[1], out score); break;
-                                case "level": int.TryParse(parts[1], out level); break;
-                                case "highscore": bool.TryParse(parts[1], out isHighScore); break;
-                                case "mode": mode = parts[1]; break;
-                                case "coins": int.TryParse(parts[1], out coins); break;
-                                case "levelcomplete": bool.TryParse(parts[1], out levelComplete); break;
-                                case "cancontinue": bool.TryParse(parts[1], out canContinue); break;
-                                case "enemypts": int.TryParse(parts[1], out enemyPts); break;
-                                case "timebonus": int.TryParse(parts[1], out timeBonus); break;
-                                case "effbonus": int.TryParse(parts[1], out effBonus); break;
-                                case "multiplier": float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out multiplier); break;
-                                case "kills": int.TryParse(parts[1], out survivalKills); break;
-                                case "survivaltime": float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out survivalTime); break;
-                            }
-                        }
-                    }
+                    // Sprint 4.x AAA-Audit #7 — Query-Parsing extrahiert, VM-Logik bleibt hier.
+                    var p = Navigation.NavigationQueryParser.ParseGameOver(route[(route.IndexOf('?') + 1)..]);
 
                     // Fehlversuche pro Level tracken (fuer Level-Skip)
                     var fails = 0;
-                    if (!levelComplete && mode == "story" && level > 0)
+                    if (!p.LevelComplete && p.Mode == "story" && p.Level > 0)
                     {
-                        fails = _levelFailCounts.GetValueOrDefault(level) + 1;
-                        _levelFailCounts[level] = fails;
+                        fails = _levelFailCounts.GetValueOrDefault(p.Level) + 1;
+                        _levelFailCounts[p.Level] = fails;
                     }
-                    else if (levelComplete && level > 0)
+                    else if (p.LevelComplete && p.Level > 0)
                     {
-                        _levelFailCounts.Remove(level);
+                        _levelFailCounts.Remove(p.Level);
                     }
 
-                    GameOverVm.SetParameters(score, level, isHighScore, mode, coins, levelComplete, canContinue, fails,
-                        enemyPts, timeBonus, effBonus, multiplier, survivalKills, survivalTime);
+                    GameOverVm.SetParameters(p.Score, p.Level, p.IsHighScore, p.Mode, p.Coins, p.LevelComplete, p.CanContinue, fails,
+                        p.EnemyPoints, p.TimeBonus, p.EfficiencyBonus, p.Multiplier, p.Kills, p.SurvivalTime);
 
                     // Quick-Play Score an QuickPlayVM für Challenge-Sharing weiterreichen
-                    if (mode == "quick" && score > 0)
-                        EnsureQuickPlayVm().SetLastScore(score);
+                    if (p.Mode == "quick" && p.Score > 0)
+                        EnsureQuickPlayVm().SetLastScore(p.Score);
 
                     // Daily Challenge: Score melden + Streak-Bonus vergeben
-                    if (mode == "daily" && score > 0)
+                    if (p.Mode == "daily" && p.Score > 0)
                     {
-                        EnsureDailyChallengeVm().SubmitScore(score);
+                        EnsureDailyChallengeVm().SubmitScore(p.Score);
                     }
 
                     // Level Complete → Confetti + Floating Text
-                    if (levelComplete)
+                    if (p.LevelComplete)
                     {
                         CelebrationRequested?.Invoke();
                         FloatingTextRequested?.Invoke(
@@ -1144,24 +985,13 @@ public sealed partial class MainViewModel : ViewModelBase
             case "Victory":
                 ActiveView = ActiveView.Victory;
                 VictoryVm.OnAppearing();
-                // Query-Parameter parsen (score, coins)
+                // Query-Parameter parsen (Sprint 4.x AAA-Audit #7 — Parser extrahiert)
                 if (route.Contains('?'))
                 {
-                    var vQuery = route[(route.IndexOf('?') + 1)..];
-                    var vScore = 0;
-                    var vCoins = 0;
-                    foreach (var param in vQuery.Split('&'))
-                    {
-                        var parts = param.Split('=');
-                        if (parts.Length == 2)
-                        {
-                            if (parts[0] == "score") int.TryParse(parts[1], out vScore);
-                            if (parts[0] == "coins") int.TryParse(parts[1], out vCoins);
-                        }
-                    }
-                    VictoryVm.SetScore(vScore);
+                    var p = Navigation.NavigationQueryParser.ParseVictory(route[(route.IndexOf('?') + 1)..]);
+                    VictoryVm.SetScore(p.Score);
                     // Coins gutschreiben
-                    if (vCoins > 0) _coinService.AddCoins(vCoins);
+                    if (p.Coins > 0) _coinService.AddCoins(p.Coins);
                 }
                 CelebrationRequested?.Invoke();
                 FloatingTextRequested?.Invoke(

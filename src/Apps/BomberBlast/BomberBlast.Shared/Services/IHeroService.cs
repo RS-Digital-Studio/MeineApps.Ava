@@ -3,7 +3,7 @@ using BomberBlast.Models;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Hero/Character-Service (Sprint 7.1 AAA-Audit #21).
+/// Hero/Character-Service (.1 .
 ///
 /// <para>
 /// Verwaltet die 5 spielbaren Charaktere: Unlock-Status, aktiver Hero,

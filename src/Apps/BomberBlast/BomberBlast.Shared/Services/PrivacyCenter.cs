@@ -3,7 +3,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IPrivacyCenter"/> (Phase 25b — AAA-Audit Compliance).
+/// Default-Implementation von <see cref="IPrivacyCenter"/> (Phase 25b — Compliance).
 ///
 /// <para>Bestehende Consent-Keys (CrashlyticsConsent, AnalyticsConsent) bleiben kompatibel —
 /// PrivacyCenter ist eine Façade über IPreferencesService mit zusätzlichen DSGVO/COPPA-Toggles

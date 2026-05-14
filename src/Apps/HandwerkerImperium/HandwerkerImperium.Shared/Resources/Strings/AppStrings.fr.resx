@@ -3324,7 +3324,7 @@
     <value>Grève : Seuls les niveaux jusqu'à C disponibles !</value>
   </data>
 
-  <!-- Phase 1: General + SaveGame -->
+  <!-- : General + SaveGame -->
   <data name="SaveErrorMessage" xml:space="preserve">
     <value>Impossible de sauvegarder la partie.</value>
   </data>

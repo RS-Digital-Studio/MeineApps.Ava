@@ -8,7 +8,7 @@ using BomberBlast.Services;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// ViewModel fuer das What's-New-Modal (Sprint 4.3 AAA-Audit #17).
+/// ViewModel fuer das What's-New-Modal (.3 .
 /// Wird einmal nach App-Update angezeigt — zeigt die wichtigsten Aenderungen
 /// gegenueber der vorherigen Installation. "Spaeter" + "Verstanden" Buttons.
 /// </summary>

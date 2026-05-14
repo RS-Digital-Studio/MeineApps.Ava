@@ -18,7 +18,7 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGam
     private readonly ICoinService _coinService;
     private readonly IGemService _gemService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
     private readonly ILocalizationService _localizationService;
     private readonly IBattlePassService _battlePassService;

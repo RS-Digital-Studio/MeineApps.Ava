@@ -30,7 +30,7 @@ public class OrderGeneratorServiceTests
 
     /// <summary>
     /// Erstellt eine echte GameStateService-Instanz um den uebergebenen State.
-    /// v2.1.1 (Audit C-C02): OrderGeneratorService.RefreshOrders mutiert jetzt unter
+    /// OrderGeneratorService.RefreshOrders mutiert jetzt unter
     /// ExecuteWithLock, das ein NSubstitute-Mock nicht ausfuehren wuerde. Die echte
     /// Implementierung liefert IsWorkshopUnlocked + Default-Interface-Member automatisch.
     /// </summary>

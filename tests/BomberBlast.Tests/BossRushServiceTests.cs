@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für BossRushService (v2.0.41 + v2.0.45 — AAA-Audit).
+/// Tests für BossRushService (v2.0.41 + v2.0.45 — ).
 /// Validiert Wochen-Reset, Best-Score-Tiebreaker (Time bei gleichem Score),
 /// Total-Completions-Lifetime, ISO-8601-Year-Week-Logic.
 /// </summary>

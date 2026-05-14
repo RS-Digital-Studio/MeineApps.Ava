@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  AAA-Audit P2: Coverage-Reporting fuer HandwerkerImperium-Tests.
+  Coverage-Reporting fuer HandwerkerImperium-Tests.
   Sammelt nur den HandwerkerImperium-Domain-Layer; Avalonia/Skia/View-Code
   ist UI-Layer, dort macht Test-Coverage wenig Sinn.
 -->

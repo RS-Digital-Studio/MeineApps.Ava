@@ -24,7 +24,7 @@ public sealed partial class GameRenderer
         bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
 
         // Blink-Effekt bei Unverwundbarkeit / Spawn-Schutz.
-        // Sprint 3.3 AAA-Audit #18: Statt komplettem Verstecken (return) auf 30% Alpha
+        //.3 : Statt komplettem Verstecken (return) auf 30% Alpha
         // — Spieler bleibt sichtbar, fuehlt sich respektiert. Schnelleres Blinken in
         // den letzten 0.5s als Feedback fuer auslaufenden Schutz.
         bool playerIsBlinking = false;
@@ -45,7 +45,7 @@ public sealed partial class GameRenderer
             canvas.SaveLayer(_blinkLayerPaint);
         }
 
-        // Sprint 3.4 AAA-Audit #19: Squash & Stretch Skalierung um den Player-Pivot.
+        //.4 : Squash & Stretch Skalierung um den Player-Pivot.
         // Aktiv waehrend Bewegung (subtiles Wobble) UND waehrend der 80ms Bomb-Place-Anticipation.
         // Sprite wird gestaucht/gestreckt — Volumen-Erhaltung via SquashScaleY-Komplement.
         float sx = player.SquashScaleX;
@@ -255,13 +255,13 @@ public sealed partial class GameRenderer
         _fusePath.QuadTo(player.X, mouthY + 2, player.X + 2.5f, mouthY);
         canvas.DrawPath(_fusePath, _strokePaint);
 
-        // Sprint 3.4 AAA-Audit #19: Squash-Scale-Restore (vor Blink-Layer-Restore).
+        //.4 : Squash-Scale-Restore (vor Blink-Layer-Restore).
         if (playerHasSquash)
         {
             canvas.Restore();
         }
 
-        // Sprint 3.3 AAA-Audit #18: SaveLayer schliessen wenn der Spieler im Blink-Modus ist.
+        //.3 : SaveLayer schliessen wenn der Spieler im Blink-Modus ist.
         // playerIsBlinking-Variable wurde am Anfang der Methode gesetzt — dort wurde das Layer
         // geoeffnet wenn aktuell ein "Schwach-Sichtbar"-Frame ist (i-Frame-Visualisierung).
         if (playerIsBlinking)
@@ -380,7 +380,7 @@ public sealed partial class GameRenderer
             return;
         }
 
-        // Sprint 6.1 AAA-Audit #15: Elite-Glow (lila pulsierender Halo) BEVOR der Sprite gezeichnet wird.
+        //.1 : Elite-Glow (lila pulsierender Halo) BEVOR der Sprite gezeichnet wird.
         if (enemy.IsElite)
         {
             float elitePulse = MathF.Sin(_globalTimer * 4f) * 0.25f + 0.75f;

@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// First-Time-Purchase-Bonus (Phase 23 — AAA-Audit M5).
+/// First-Time-Purchase-Bonus (Phase 23 — M5).
 ///
 /// <para>Industry-Standard: Beim ersten echten Kauf bekommt der Spieler +100% auf den Inhalt.
 /// Konkret: Wenn der Spieler ein Gem-Pack kauft (4,99 EUR / 600 Gems), bekommt er beim

@@ -552,7 +552,7 @@ public partial class App : Application
         services.AddSingleton<MainViewModelDependencies>();
 
         // Welle 6 MainViewModel-Refactor: 5 Feature-Module fuer Navigation/Tabs/Dialogs/VM-Registry/Lifecycle.
-        // Phase 1 — Foundation: Interfaces + leere Impls registriert. Logik-Migration in Phase 2-6.
+        //  — Foundation: Interfaces + leere Impls registriert. Logik-Migration in -6.
         services.AddSingleton<BomberBlast.Services.IDialogPresenter, BomberBlast.Services.DialogPresenter>();
         services.AddSingleton<BomberBlast.ViewModels.IChildViewModelRegistry, BomberBlast.ViewModels.ChildViewModelRegistry>();
         services.AddSingleton<BomberBlast.ViewModels.ILifecycleHub, BomberBlast.ViewModels.LifecycleHub>();

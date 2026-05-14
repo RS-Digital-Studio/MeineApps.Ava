@@ -387,7 +387,7 @@ public sealed class EnemyAI
         _dangerZone.Clear();
         _processedBombs.Clear();
 
-        // Phase 1: Alle aktiven Bomben und ihre Explosionsbereiche berechnen
+        // : Alle aktiven Bomben und ihre Explosionsbereiche berechnen
         foreach (var bomb in bombs)
         {
             if (!bomb.IsActive)
@@ -397,8 +397,8 @@ public sealed class EnemyAI
             _processedBombs.Add((bomb.GridX, bomb.GridY));
         }
 
-        // Phase 2: Kettenreaktionen (Sicherheitsnetz für zukünftige Mechaniken)
-        // Da Phase 1 ALLE aktiven Bomben verarbeitet, terminiert Phase 2 sofort in O(1)
+        // : Kettenreaktionen (Sicherheitsnetz für zukünftige Mechaniken)
+        // Da ALLE aktiven Bomben verarbeitet, terminiert sofort in O(1)
         bool changed = true;
         int iterations = 0;
         while (changed && iterations < 3)

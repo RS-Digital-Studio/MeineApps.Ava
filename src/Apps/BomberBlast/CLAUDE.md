@@ -47,14 +47,14 @@ src/Apps/BomberBlast/
 │   │   ├── SubtitleSystem.cs            # Struct-Pool-Captions (max 4 aktiv)
 │   │   ├── FogOfWarSystem.cs            # 3-Zustand Memory-FoW für L50+/Master-Mode
 │   │   ├── MenuBackgroundRenderer.cs    # 7 Themes, struct-Pool 60 Partikel
-│   │   ├── UltraComboFlash.cs           # Vignette-Flash (ULTRA-Combo + Damage-Flash, AAA-Audit #7/#18)
-│   │   ├── OutlineRenderHelper.cs       # Outline-Pass via Dilate-ImageFilter (AAA-Audit #14)
+│   │   ├── UltraComboFlash.cs           # Vignette-Flash (ULTRA-Combo + Damage-Flash, /#18)
+│   │   ├── OutlineRenderHelper.cs       # Outline-Pass via Dilate-ImageFilter (
 │   │   └── ...weitere Renderer
 │   ├── Icons/                   # Eigenes Neon-Arcade Icon-System (152 Icons)
 │   ├── Input/                   # NeonJoystick, InputManager
 │   ├── Models/                  # Entities, Level, Dungeon, PowerUp, Bomb-Typen
 │   │   └── Levels/LevelLayoutGenerator.cs  # Static: Welt-Layout-Rotation, Boss/Bonus-Level-Config
-│   ├── Services/                # 41 Services (alle als Interface) — +RemoteConfig +ReEngagement +WhatsNew +FeatureUnlock (Sprint 1.4c/2.3/4.3/4.4)
+│   ├── Services/                # 41 Services (alle als Interface) — +RemoteConfig +ReEngagement +WhatsNew +FeatureUnlock (.4c/2.3/4.3/4.4)
 │   └── ViewModels/              # 26 ViewModels (alle Singletons per Lazy<T>) — +WhatsNewViewModel
 ├── BomberBlast.Android/
 └── BomberBlast.Desktop/
@@ -682,7 +682,7 @@ Beispiel: `VibrateBombPlant = [0, 10, 20, 10]` (Doppel-Tick).
 ```csharp
 // Akkumulierendes Trauma-Modell (nicht intensity/duration)
 // Trauma akkumuliert sich (mehrere Explosionen → stärkerer Shake)
-// Shake = MaxAmplitude * trauma²  (quadratisch — kleine Werte kaum spürbar)
+// Shake = MaxAmplitude * trauma² (quadratisch — kleine Werte kaum spürbar)
 // TraumaDecay = 1.5/s linear
 // Distanz-Skalierung: TriggerAt(amount, distanceCells, falloffCells=4)
 // Bestand-API kompatibel: Trigger(intensity, duration) mappt auf Trauma
@@ -892,9 +892,9 @@ CTA=0.5, Success=0.3, Danger=0.7, Gold=0.6, Secondary=0.2-0.3
 
 ---
 
-## Game-Juice-Patterns (Sprint 1-3 AAA-Audit)
+## Game-Juice-Patterns (-3 )
 
-### Welt-Themed Bomb-FX (Sprint 1.1 / #6)
+### Welt-Themed Bomb-FX 
 
 `BombFxTheme[]` Lookup-Table im `GameRenderer` (10 Welten × 3 Visual-Styles = 30 Themes).
 Greift in `RenderBomb()` und `UpdateExplosionSkinColors()` nur wenn Default-Skin aktiv ist
@@ -902,7 +902,7 @@ Greift in `RenderBomb()` und `UpdateExplosionSkinColors()` nur wenn Default-Skin
 `SetWorldTheme()` neu gesetzt, anschliessend `UpdateExplosionSkinColors()` aufgerufen.
 Public `GetWorldAccentColor()` gibt die Welt-Akzent-Farbe zurueck (von UltraComboFlash genutzt).
 
-### Vignette-Flash (Sprint 1.2 + 3.3 / #7, #18)
+### Vignette-Flash (.2 + 3.3 / #7, #18)
 
 `UltraComboFlash`-Klasse als generischer RadialGradient-Flash (200ms Default-Dauer).
 Zwei Verwendungen:
@@ -915,13 +915,13 @@ GameEngine.Render-Loop nach allen Overlays, vor Subtitles.
 `TriggerWithDuration(color, attack, decay)` erlaubt individuelle Flash-Profile.
 SKShader gecacht solange Geometrie + Farbe stabil.
 
-### Player i-Frame Visualisierung (Sprint 3.3 / #18)
+### Player i-Frame Visualisierung 
 
 Statt komplettem Verstecken (return) im Blink-Modus jetzt 30%-Alpha-SaveLayer im
 Player-Renderer. Spieler bleibt sichtbar, "fuehlt sich respektiert". Schnelleres
 Blinken in den letzten 0.5s als Feedback fuer auslaufenden Schutz.
 
-### Anticipation-Frames (Sprint 3.4 / #19)
+### Anticipation-Frames 
 
 `Player.SquashScaleX/Y` werden im Player-Renderer via `canvas.Scale` angewandt
 (war als Property vorhanden, aber nicht verkabelt — jetzt aktiv).
@@ -929,7 +929,7 @@ Blinken in den letzten 0.5s als Feedback fuer auslaufenden Schutz.
 - Boss-Big-Attack: Letzte 120ms vor Attack-Trigger zieht sich Boss-Sprite auf 0.85x
   zusammen — `BossEnemy.AnticipationScale` Computed-Property auf `TelegraphTimer`.
 
-### Outline-Pass (Sprint 5.4 / #14)
+### Outline-Pass 
 
 `OutlineRenderHelper.RenderWithOutline(canvas, action, color, radius)` als statischer
 Helper. Mechanik: SaveLayer mit Dilate-ImageFilter + ColorFilter (SrcIn-Blend) macht
@@ -942,12 +942,12 @@ Performance: ~2x DrawCalls pro Outline-Entity → empfohlen fuer 5-10 Entities p
 
 ---
 
-## Live-Ops-Patterns (Sprint 2 + 4 AAA-Audit)
+## Live-Ops-Patterns ( + 4 )
 
-### Remote Config (Sprint 2.1 / #1)
+### Remote Config 
 
 `IRemoteConfigService` mit drei Implementierungen:
-- `NullRemoteConfigService`: Liefert immer Default-Werte (Sprint 1.4c Stub).
+- `NullRemoteConfigService`: Liefert immer Default-Werte (.4c Stub).
 - `DefaultsRemoteConfigService` (Standard): Laedt Werte aus eingebetteter
   `Resources/remote_config_defaults.json`. App funktioniert vollstaendig ohne
   Firebase-Backend, FirebaseRemoteConfigService kommt spaeter als Android-Override.
@@ -958,7 +958,7 @@ Performance: ~2x DrawCalls pro Outline-Entity → empfohlen fuer 5-10 Entities p
 Event-Toggles / Drop-Raten / Preise / Combat-Tuning / Live-Ops.
 Initialisierung im App.axaml.cs `InitializeServicesAndUi()` parallel zu Telemetry/Push.
 
-### Funnel-Event-Telemetrie (Sprint 2.2 / #2)
+### Funnel-Event-Telemetrie 
 
 Erweiterte `AnalyticsEvents`-Konstanten (40+ Funnel-Events) + `AnalyticsParams`-Konstanten
 (Tipp-sicheres Param-Handling fuer Firebase-Dashboards).
@@ -970,12 +970,12 @@ Verkabelte Events:
 - `tutorial_step_complete` / `tutorial_complete` via TutorialService.StepCompleted-Event
 - `daily_login` (consecutive_days, day, multiplier) in MainMenuVM.ApplyDailyReward
 - `rewarded_ad_request` / `rewarded_ad_completed` via `ShowAdWithTelemetryAsync` Extension
-- `feature_unlocked` via FeatureUnlockChoreographer (Sprint 4.4)
+- `feature_unlocked` via FeatureUnlockChoreographer 
 
 GameEngine-Felder: `_levelElapsedSeconds` (tickt nur in Playing-State), `_deathsInLevel`
 (reset bei Level-Start, +1 bei jedem Player-Tod). Beide nullified in LoadLevelAsync().
 
-### Re-Engagement Push (Sprint 2.3 / #3)
+### Re-Engagement Push 
 
 `IReEngagementScheduler` plant lokale D1/D3/D7-Notifications via existierendem
 `IPushNotificationService.ScheduleLocalNotification`. MainActivity ruft
@@ -990,17 +990,17 @@ Trigger-Logik:
 DSGVO-konform: Respektiert POST_NOTIFICATIONS-Permission (Android 13+).
 Texte lokalisiert in 6 Sprachen via RESX.
 
-### What's-New-Modal (Sprint 4.3 / #17)
+### What's-New-Modal 
 
 `IWhatsNewService` + `WhatsNewService` mit hardcoded Eintraegen pro Version.
-`CurrentVersion` aus Assembly (Single-Source-of-Truth, Sprint 1.4a).
+`CurrentVersion` aus Assembly (Single-Source-of-Truth.4a).
 `ShouldShow` true wenn neue Version + Eintraege vorhanden + Erstinstall-Schutz.
 `MarkSeen()` setzt `LastSeenVersion` Pref.
 
 `WhatsNewViewModel` mit `Closed`-Event + Spaeter/Verstanden-Commands.
 UI-Modal-View ist deferred — Service+VM-API stehen bereit.
 
-### Feature-Unlock-Choreographie (Sprint 4.4 / #20)
+### Feature-Unlock-Choreographie 
 
 `IFeatureUnlockChoreographer` mit Queue-basierter sequentieller Anzeige.
 Trigger: `OnLevelComplete(level)` und `OnAchievementUnlocked(id)`.
@@ -1008,7 +1008,7 @@ Unlock-Schwellen: L10 → DailyChallenge, L20 → Dungeon, L30 → LineBomb,
 L40 → PowerBomb, L50 → BossRush, L100 → MasterMode. ach_master_100 → ChampionSkin.
 
 Pref-Flag pro `FeatureId`: jedes Feature wird nur einmal pro Lebenszeit gezeigt.
-Logged Funnel-Event `feature_unlocked` (Sprint 2.2). UI-Thread-Event
+Logged Funnel-Event `feature_unlocked` . UI-Thread-Event
 `FeatureUnlocked` mit `FeatureUnlockEvent` (TitleKey/DescKey/HeroAssetPath/CtaNavTarget).
 
 ---
@@ -1047,7 +1047,7 @@ ueber `ILoggerFactory.CreateLogger(nameof(PersistenceHealth))`.
 
 ---
 
-## Crash-Recovery (Sprint 6.3 / #25)
+## Crash-Recovery 
 
 `OnFrameworkInitializationCompleted` inkrementiert `BomberBlast_AppCrashCount`
 VOR der Init-Phase, `RunLoadingAsync` setzt nach Pipeline-Erfolg auf 0 zurueck.
@@ -1059,17 +1059,17 @@ Public API: `App.ResetCrashRecoveryCounter()` fuer Settings-Screen.
 
 ---
 
-## Tutorial-Phasen (Sprint 3.2 / #5)
+## Tutorial-Phasen 
 
 Tutorial-Schritte sind in 3 Phasen gruppiert: T1 Movement, T2 Bombs, T3 PowerUps.
 `TutorialPhase`-Enum + `TutorialStep.IsFirstOfPhase`-Flag.
 `ITutorialService.PhaseChanged`-Event feuert beim Phasen-Wechsel —
-Tutorial-Overlay kann einen Banner anzeigen ("Phase 2: Bomben-Mechanik").
+Tutorial-Overlay kann einen Banner anzeigen (": Bomben-Mechanik").
 RESX-Texte fuer Phase-Banner in 6 Sprachen.
 
 ---
 
-## Welt-Story-Beats (Sprint 6.2 / #16)
+## Welt-Story-Beats 
 
 `IWorldStoryService` liefert Cutscene-Daten fuer Welt-Start (Intro) und
 Welt-Boss-Sieg (Outro mit Cliffhanger). 10 Welt-Intros + 9 Welt-Outros
@@ -1081,7 +1081,7 @@ victory fuer alle Outros).
 
 ---
 
-## Elite-Enemies + Boss-Modifier (Sprint 6.1 / #15)
+## Elite-Enemies + Boss-Modifier 
 
 `Enemy.IsElite`-Property + Konstruktor-Parameter `isElite: false`. Elite-Modifier:
 1.2x Speed, 2x HitPoints, 3x Points, lila pulsierender Glow im Renderer.
@@ -1092,11 +1092,11 @@ zu (30% ab W5, 60% W10). `CurrentPhase`-Property wird beim Enrage-Threshold von 
 gewechselt — erlaubt Phase-2-Variant-Attack-Patterns.
 
 HINWEIS: Modifier-Effekte (Shielded/Healing/Summoner/...) sind separate Implementierungs-
-Sprints — Sprint 6.1 ist Foundation (Enum + Property + Spawn-Roll).
+Sprints —.1 ist Foundation (Enum + Property + Spawn-Roll).
 
 ---
 
-## Hero/Character-System (Sprint 7.1 / #21)
+## Hero/Character-System 
 
 `HeroDefinition` mit 5 hardcoded Heroes: Default, SpeedySam, BrickBoris, TwinTina,
 LuckyLola. Stats: StartMaxBombs/FireRange/SpeedLevel/Lives + Multiplier
@@ -1111,7 +1111,7 @@ in Coin/PowerUp/Block-Calculations) ist deferred.
 
 ---
 
-## Multiplayer-Foundation (Sprint 7.2 / #22)
+## Multiplayer-Foundation 
 
 `IMultiplayerSessionService` verwaltet `MultiplayerMode` + Persistenz. `IsCoopEnabled`
 / `IsVersusEnabled` fuer Engine-Abfrage. Foundation aufbaut auf bestehender
@@ -1122,7 +1122,7 @@ Co-Op-Camera, GameOver-bei-beide-tot, Splitscreen) ist eigener Multi-Wochen-Spri
 
 ---
 
-## Clan-System Foundation (Sprint 7.3 / #23)
+## Clan-System Foundation 
 
 `IClanService` mit `NullClanService` (Default). Domain-Models: ClanData, ClanMember,
 ClanChatMessage, ClanRole. API: Create/Join/Leave/Pull-Chat/Send/Leaderboard.
@@ -1133,7 +1133,7 @@ HINWEIS: Echte Firebase-Realtime-DB-Integration mit Security-Rules + Profanity-F
 
 ---
 
-## Wochen-Content-Pipeline (Sprint 7.4 / #24)
+## Wochen-Content-Pipeline 
 
 `IWeeklyContentService` deterministisch via ISO-Wochen-Seed. 8 WeeklyModifier-Pool
 (Ice+Speed, DoubleBombs, Phantom-Walls, ...) + 4 WeeklyReward-Pool (Cosmetic-
@@ -1141,11 +1141,11 @@ Trails/Frames/Victories) + 3 wechselnde Boss-Modifier pro Woche aus dem 8er-Pool
 (Fisher-Yates-Shuffle).
 
 `ISOWeek.GetWeekOfYear` stellt sicher dass alle Spieler weltweit gleiche
-Wochen-Inhalte sehen. RemoteConfig-Override via Sprint 2.1 moeglich.
+Wochen-Inhalte sehen. RemoteConfig-Override via.1 moeglich.
 
 ---
 
-## Adaptive Music-Engine (Sprint 5.3 / #13)
+## Adaptive Music-Engine 
 
 `AudioBusMixer.Boost(bus, multiplier, duration)` ergaenzt die bestehende Duck-API um
 einen Boost-Pfad (Multiplier &gt;= 1.0, Cap 1.5 — Distortion-Schutz). Update-Loop
@@ -1162,7 +1162,7 @@ externer Build-Skript-Schritt (ffmpeg).
 
 ---
 
-## Replay-Foundation (Sprint 5.2 / #12)
+## Replay-Foundation 
 
 `Core.IRngProvider` (vorhanden) jetzt als DI-Singleton registriert mit
 `DeterministicRngProvider` als Default (xoshiro256+ via DeterministicRandom).
@@ -1185,11 +1185,11 @@ Diese Services sind als API + Default-Impl im DI registriert, aber die zugehoeri
 groesere Refactor-Arbeit (UI-Umbau / God-VM-Reduktion / Migration) bleibt eigener
 Sprint mit Test-Coverage-Voraussetzung:
 
-- `IGameEventBus` (Sprint 4.2 #10): Pub/Sub fuer UI-Events. Neue Code kann den
+- `IGameEventBus` (.2 #10): Pub/Sub fuer UI-Events. Neue Code kann den
   Service nutzen statt MainViewModel-Events; bestehende Logik bleibt.
-- `IBottomTabHub` (Sprint 3.1 #4): Tab-State + Pref-Persistenz. MainMenuView
+- `IBottomTabHub` (.1 #4): Tab-State + Pref-Persistenz. MainMenuView
   UI-Refactor (974 LOC) bleibt Game-Design-Sprint.
-- Mode-Plugin-Foundation (Sprint 5.1 #11): GameEngine.Update ruft bereits
+- Mode-Plugin-Foundation (.1 #11): GameEngine.Update ruft bereits
   `_currentMode?.UpdateLogic` + `OnGameOver`. Bool-Flag-Wegfall + Property-
   Aliasse-Aufloesung bleibt eigener Sprint mit Regression-Tests.
 
@@ -1243,7 +1243,7 @@ die Cloud mit Leer-State überschreiben (Data-Loss).
 ### DeleteCloudSaveAsync — Version nicht hardcoden
 
 ```csharp
-// FALSCH: Version = 1  (triggert V1→V3-Migration auf leerem Snapshot → Default-Auffüllung)
+// FALSCH: Version = 1 (triggert V1→V3-Migration auf leerem Snapshot → Default-Auffüllung)
 // RICHTIG:
 Version = CloudSaveSchemaMigrator.CurrentSchemaVersion
 ```
@@ -1268,7 +1268,7 @@ Boss-Reveal-Cinematic kann sonst nach Mode-Wechsel weiterlaufen.
 Firebase-Rules prüfen `updatedUtc` nicht mehr in `hasChildren` (seit ServerTimestamp-Migration).
 Rule-Änderungen müssen in Firebase Console deployed werden — Datei lokal ist nicht automatisch live.
 
-### Splash-Versions-String automatisch (Sprint 1.4a)
+### Splash-Versions-String automatisch 
 
 `App.axaml.cs.GetAppVersionString()` liest die Version aus
 `typeof(App).Assembly.GetName().Version.ToString(3)`. Source-of-truth ist
@@ -1324,18 +1324,18 @@ gehalten werden (sonst zeigt Splash eine andere Version als die installierte App
 | `ITelemetryService` | Crashlytics-Wrapper (NullTelemetryService auf Desktop) |
 | `IAnalyticsService` | Firebase Analytics (NullAnalyticsService auf Desktop) |
 | `IPushNotificationService` | FCM + AlarmManager (NullPushNotificationService auf Desktop) |
-| `IRemoteConfigService` | Remote Config (DefaultsRemoteConfigService laedt embedded JSON, Sprint 2.1) |
-| `IReEngagementScheduler` | D1/D3/D7 lokale Push-Trigger (Sprint 2.3, MainActivity-OnPause/OnResume) |
-| `IWhatsNewService` | Versions-Aenderungs-Modal (Sprint 4.3) |
-| `IFeatureUnlockChoreographer` | Queue-basierte Feature-Unlock-Overlays (Sprint 4.4) |
-| `IWorldStoryService` | Welt-Intro/Outro-Cutscenes (Sprint 6.2) |
-| `IHeroService` | 5 spielbare Heroes mit Stats + Unlock (Sprint 7.1) |
-| `IMultiplayerSessionService` | Multiplayer-Mode-Verwaltung (Sprint 7.2 Foundation) |
-| `IClanService` | Clan-System (Sprint 7.3 Foundation, NullImpl bis Firebase live) |
-| `IWeeklyContentService` | Wochen-Content-Pipeline (Sprint 7.4, ISO-Week-deterministisch) |
-| `IRngProvider` | Deterministischer RNG (Sprint 5.2, Core-Namespace, Replay-Foundation) |
-| `IGameEventBus` | Pub/Sub-Hub fuer UI-Events (Sprint 4.2, FloatingText/Celebration/ExitHint/Message) |
-| `IBottomTabHub` | Bottom-Tab-Hub (Sprint 3.1 Foundation, 4 Tabs: Home/Play/Shop/Profile) |
+| `IRemoteConfigService` | Remote Config (DefaultsRemoteConfigService laedt embedded JSON.1) |
+| `IReEngagementScheduler` | D1/D3/D7 lokale Push-Trigger (.3, MainActivity-OnPause/OnResume) |
+| `IWhatsNewService` | Versions-Aenderungs-Modal  |
+| `IFeatureUnlockChoreographer` | Queue-basierte Feature-Unlock-Overlays  |
+| `IWorldStoryService` | Welt-Intro/Outro-Cutscenes  |
+| `IHeroService` | 5 spielbare Heroes mit Stats + Unlock  |
+| `IMultiplayerSessionService` | Multiplayer-Mode-Verwaltung (.2 Foundation) |
+| `IClanService` | Clan-System (.3 Foundation, NullImpl bis Firebase live) |
+| `IWeeklyContentService` | Wochen-Content-Pipeline (.4, ISO-Week-deterministisch) |
+| `IRngProvider` | Deterministischer RNG (.2, Core-Namespace, Replay-Foundation) |
+| `IGameEventBus` | Pub/Sub-Hub fuer UI-Events (.2, FloatingText/Celebration/ExitHint/Message) |
+| `IBottomTabHub` | Bottom-Tab-Hub (.1 Foundation, 4 Tabs: Home/Play/Shop/Profile) |
 
 ---
 
@@ -1411,5 +1411,5 @@ Keine `SKPaint.TextSize/TextAlign/FakeBoldText` mehr (deprecated).
   Troubleshooting, Keystore, Ad-Pattern, DI-Pattern
 - `database.rules.json`: Firebase-Security-Rules (Liga + Daily-Race + Reports)
 - `src/Apps/BomberBlast/FIREBASE_SETUP.md`: Crashlytics/Analytics/FCM-Setup-Anleitung (~1.5h)
-- `src/Apps/BomberBlast/BOMBERBLAST_AAA_AUDIT.md`: Externer AAA-Audit-Katalog (Roadmap-Referenz)
+- `src/Apps/BomberBlast/BOMBERBLAST_AAA_AUDIT.md`: Externer -Katalog (Roadmap-Referenz)
 - `tests/BomberBlast.Tests/`: 286 Tests (xUnit)

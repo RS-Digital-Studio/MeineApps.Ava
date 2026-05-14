@@ -11,7 +11,7 @@ public class Enemy : Entity
     public EnemyType Type { get; }
 
     /// <summary>
-    /// Sprint 6.1 AAA-Audit #15: Elite-Variante (1.2x Speed, 2x HitPoints, 3x Points,
+    ///.1 : Elite-Variante (1.2x Speed, 2x HitPoints, 3x Points,
     /// lila Outline beim Rendern). Wird beim Spawn random mit ~10% Chance gesetzt
     /// (skaliert mit Welt fuer Difficulty-Curve). Boss-Enemies bleiben non-Elite.
     /// </summary>
@@ -129,9 +129,9 @@ public class Enemy : Entity
     {
         Type = type;
         IsElite = isElite;
-        // Sprint 5.4 AAA-Audit #11: Outline-Pass — gilt auch fuer BossEnemy (erbt von Enemy).
+        //.4 : Outline-Pass — gilt auch fuer BossEnemy (erbt von Enemy).
         RenderOutline = true;
-        // Sprint 6.1 AAA-Audit #15: Elite-Modifier multiplikativ.
+        //.1 : Elite-Modifier multiplikativ.
         Speed = type.GetSpeed() * (isElite ? 1.2f : 1f);
         Intelligence = type.GetIntelligence();
         CanPassWalls = type.CanPassWalls();
@@ -265,14 +265,14 @@ public class Enemy : Entity
     /// <summary>
     /// Schadenstreffer. Gibt true zurück wenn der Gegner stirbt.
     /// Tanker brauchen 2 Hits.
-    /// Sprint 6.1 AAA-Audit #15: BossEnemy mit Shielded-Modifier absorbiert 1 Hit
+    ///.1 : BossEnemy mit Shielded-Modifier absorbiert 1 Hit
     /// pro Cooldown (Shield wird in BossEnemy.ConsumeShieldHit verwaltet).
     /// </summary>
     public bool TakeDamage()
     {
         if (IsDying) return false;
 
-        // Sprint 6.1: Shielded-Boss absorbiert den Hit komplett (kein HP-Verlust).
+        // Shielded-Boss absorbiert den Hit komplett (kein HP-Verlust).
         if (this is BossEnemy boss && boss.ConsumeShieldHit())
         {
             return false;  // Boss bleibt am Leben, Shield ist weg

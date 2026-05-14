@@ -3,7 +3,7 @@ using System.Globalization;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Wochen-Content-Drop-Pipeline (Sprint 7.4 AAA-Audit #24).
+/// Wochen-Content-Drop-Pipeline (.4 .
 ///
 /// <para>
 /// Liefert deterministische Wochen-spezifische Inhalte ohne App-Update:
@@ -12,7 +12,7 @@ namespace BomberBlast.Services;
 ///
 /// <para>
 /// Determinismus via ISO-Wochen-Seed: gleiche Woche = gleiche Inhalte fuer alle Spieler weltweit.
-/// Per Remote-Config (Sprint 2.1) kann der Wochen-Plan ueberschrieben werden — Pipeline-Code
+/// Per Remote-Config kann der Wochen-Plan ueberschrieben werden — Pipeline-Code
 /// bleibt unveraendert, neue Inhalte kommen per RemoteConfig + JSON-Definition.
 /// </para>
 ///
@@ -36,7 +36,7 @@ public interface IWeeklyContentService
 
     /// <summary>
     /// Wochen-Boss-Modifier-Pool. Aus diesem Pool wird der Boss-Encounter der Woche
-    /// modifiziert (siehe Sprint 6.1 BossModifier).
+    /// modifiziert (siehe.1 BossModifier).
     /// </summary>
     string[] GetCurrentWeekBossModifiers();
 }

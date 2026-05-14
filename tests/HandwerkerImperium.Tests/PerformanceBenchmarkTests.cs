@@ -8,7 +8,7 @@ using HandwerkerImperium.Services;
 namespace HandwerkerImperium.Tests;
 
 /// <summary>
-/// P1.4 AAA-Audit (08.05.2026): Performance-Budget Late-Game-Benchmark.
+/// (08.05.2026): Performance-Budget Late-Game-Benchmark.
 ///
 /// Drei Risiko-Szenarien aus dem Audit:
 /// 1. 200 Worker-Avatare auf einer Seite (10 WS × Lv1000 × 20 Worker)

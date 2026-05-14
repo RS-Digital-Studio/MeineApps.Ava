@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Clan-System (Sprint 7.3 AAA-Audit #23).
+/// Clan-System (.3 .
 ///
 /// <para>
 /// Asynchron, Firebase-basiert (wie League). Keine Live-Sync, kein dedizierter Server.
@@ -19,7 +19,7 @@ namespace BomberBlast.Services;
 /// </para>
 ///
 /// <para>
-/// HINWEIS: Sprint 7.3 ist Foundation-Layer (Interface + NullImpl + Domain-Models).
+/// HINWEIS:.3 ist Foundation-Layer (Interface + NullImpl + Domain-Models).
 /// Echte Firebase-Realtime-DB-Integration ist eigener 4-6-Wochen-Sprint inkl.
 /// Security-Rules + Profanity-Filter + Rate-Limits.
 /// </para>

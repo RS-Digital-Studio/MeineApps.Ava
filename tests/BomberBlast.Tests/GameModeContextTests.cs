@@ -7,7 +7,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für IGameMode-Skeleton (v2.0.46 — AAA-Audit Phase 3).
+/// Tests für IGameMode-Skeleton (v2.0.46 — ).
 /// Validiert Compile-Vertrag + Required-Properties.
 /// Tatsächliche Mode-Implementierungen kommen in Phase 5+ (separater Sprint).
 /// </summary>

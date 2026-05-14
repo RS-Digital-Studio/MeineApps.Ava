@@ -4,7 +4,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation für <see cref="IRetentionService"/> (Phase 24 — AAA-Audit O3-O5).
+/// Default-Implementation für <see cref="IRetentionService"/> (Phase 24 — O3-O5).
 ///
 /// <para>Pure Date-Logic + Preferences-Persistenz. Kein Firebase, kein Backend.
 /// FirstSession-Datum wird beim ersten <see cref="TouchSession"/>-Aufruf gesetzt und nie wieder

@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für ComboSystem (v2.0.54 — AAA-Audit Phase 12).
+/// Tests für ComboSystem (v2.0.54 — Phase 12).
 /// Pure-Logic-Klasse — testbar ohne Engine-Mocks. Validiert Counter, Timer-Window-Verlängerung,
 /// Score-Tabelle, ULTRA/MEGA/CHAIN-Schwellen, Reset-Verhalten.
 /// </summary>

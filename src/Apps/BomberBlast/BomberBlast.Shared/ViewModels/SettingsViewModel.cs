@@ -27,14 +27,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private readonly ICloudSaveService _cloudSaveService;
     private readonly InputManager _inputManager;
     private readonly SoundManager _soundManager;
-    // v2.0.44 — AAA-Audit: Accessibility + Performance + Privacy
+    // v2.0.44 — : Accessibility + Performance + Privacy
     private readonly IPreferencesService _preferences;
     private readonly IAccessibilityService _accessibilityService;
     private readonly IAccountDeletionService? _accountDeletionService;
     // Phase 23b — Premium-Tier-Status für Settings-Anzeige
     private readonly IBattlePassPlusService? _battlePassPlus;
     private readonly IVipSubscriptionService? _vipSubscription;
-    // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking fuer Accessibility-Toggles.
+    // Welle 2 v2.0.58 : Funnel-Tracking fuer Accessibility-Toggles.
     private readonly IAnalyticsService? _analytics;
 
     private bool _isInitializing = true;
@@ -427,7 +427,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     {
         if (_isInitializing) return;
         _accessibilityService.ColorblindMode = value;
-        // Welle 2 v2.0.58 AAA-Audit #13: Accessibility-Funnel-Event.
+        // Welle 2 v2.0.58 : Accessibility-Funnel-Event.
         _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
         {
             ["feature"] = "colorblind_mode",

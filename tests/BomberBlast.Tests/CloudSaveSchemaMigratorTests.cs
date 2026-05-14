@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für CloudSaveSchemaMigrator (v2.0.44 — AAA-Audit).
+/// Tests für CloudSaveSchemaMigrator (v2.0.44 — ).
 /// Validiert: V1→V2 Migration füllt fehlende Keys mit Defaults,
 /// Validation erkennt korrupte Werte (negativ / unplausibel hoch),
 /// CurrentSchemaVersion wird beim Build verwendet.

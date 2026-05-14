@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests.Visual;
 
 /// <summary>
-/// Tests für VisualRegressionHelper (Phase 26b — AAA-Audit T4).
+/// Tests für VisualRegressionHelper (Phase 26b — T4).
 /// Validiert die Helper-Methoden ohne echte Renderer-Output abhängig zu machen.
 /// </summary>
 public class VisualRegressionHelperTests

@@ -7,7 +7,7 @@ using HandwerkerImperium.Services;
 namespace HandwerkerImperium.Tests;
 
 /// <summary>
-/// P0.1 AAA-Audit (08.05.2026): Property-Based-aehnliche Tests fuer SaveGame-Migration V1→V6.
+/// (08.05.2026): Property-Based-aehnliche Tests fuer SaveGame-Migration V1→V6.
 ///
 /// Strategie ohne FsCheck:
 /// - Theory mit InlineData-Versionsstufen
@@ -61,7 +61,7 @@ public class SaveGameMigrationTests
 
         var migrated = SaveGameService.MigrateState(state);
 
-        // V7 (Phase 1 Ressourcen-Plan): V5→V6 migriert ActiveOrder, V6→V7 ergaenzt Lager-Felder.
+        // V7 (): V5→V6 migriert ActiveOrder, V6→V7 ergaenzt Lager-Felder.
         migrated.Version.Should().Be(7);
         migrated.ParallelOrdersByWorkshop.Should().ContainKey(WorkshopType.Carpenter);
         migrated.ParallelOrdersByWorkshop[WorkshopType.Carpenter].Id.Should().Be("test-order");

@@ -265,7 +265,7 @@
         <ContentControl Content="{Binding BossRushVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
-      <!-- Play-Hub (Sprint 3.1 AAA-Audit #4): "Spielen"-Tab mit allen Spielmodi als Karten -->
+      <!-- Play-Hub (.1 : "Spielen"-Tab mit allen Spielmodi als Karten -->
       <Border Classes="PageView"
               Classes.Active="{Binding ActiveView, Converter={x:Static conv:ActiveViewEqualsConverter.Instance}, ConverterParameter=PlayHub}"
               AutomationProperties.AutomationId="MainView_PagePlayHub">
@@ -344,7 +344,7 @@
                                       ZIndex="16"
                                       IsHitTestVisible="False" />
 
-    <!-- Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar — zentrale 4-Tab-Navigation.
+    <!--.1 : Bottom-Tab-Bar — zentrale 4-Tab-Navigation.
          Sichtbar auf den 4 konsolidierten Tab-Haupt-Views (Home/Play/Shop/Profile).
          Wrapper-Panel haelt MainViewModel-DataContext fuer die Visibility; die
          BottomTabBar darin bekommt BottomTabVm als eigenen DataContext.
@@ -356,7 +356,7 @@
                                 AutomationProperties.AutomationId="MainView_BottomTabBar" />
     </Panel>
 
-    <!-- What's-New-Modal: erscheint einmal nach App-Update (Sprint 4.3 AAA-Audit #17).
+    <!-- What's-New-Modal: erscheint einmal nach App-Update (.3 .
          MainViewModel.IsWhatsNewVisible wird im Ctor gesetzt wenn IWhatsNewService.ShouldShow=true. -->
     <components:WhatsNewOverlay ZIndex="120" />
   </Grid>

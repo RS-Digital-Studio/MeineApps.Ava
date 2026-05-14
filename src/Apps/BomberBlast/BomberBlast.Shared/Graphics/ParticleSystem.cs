@@ -9,7 +9,7 @@ namespace BomberBlast.Graphics;
 /// </summary>
 public sealed class ParticleSystem : IDisposable
 {
-    // Phase 21 (AAA-Audit V2): Cap auf 1500 erhöht (vorher 300).
+    // Phase 21 (V2): Cap auf 1500 erhöht (vorher 300).
     // Phase 27 (P2): EffectiveMaxParticles wird vom HardwareProfileService dynamisch geliefert
     // (300/800/1500 je nach Tier + Battery/Thermal-Override). MAX_PARTICLES bleibt als Hard-Limit
     // (Array-Größe — Renderer wird nie über diesen Wert hinaus emittieren, auch bei Ultra-Tier).

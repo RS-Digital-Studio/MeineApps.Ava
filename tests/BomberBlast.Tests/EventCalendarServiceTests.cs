@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für EventCalendarService (Phase 20 — AAA-Audit L2).
+/// Tests für EventCalendarService (Phase 20 — L2).
 /// Validiert ISO-Wochen-Berechnung, deterministische Pool-Rotation, Multiplier-Mapping
 /// und Wochen-Range-Berechnung.
 /// </summary>

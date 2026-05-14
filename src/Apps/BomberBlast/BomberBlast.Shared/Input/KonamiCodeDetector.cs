@@ -3,7 +3,7 @@ using BomberBlast.Models.Entities;
 namespace BomberBlast.Input;
 
 /// <summary>
-/// Konami-Code-Detector (Phase 28 — AAA-Audit PR5).
+/// Konami-Code-Detector (Phase 28 — PR5).
 ///
 /// <para>Klassisches Easter-Egg: Spieler-Input <c>Up Up Down Down Left Right Left Right Bomb Detonate</c>
 /// (statt B+A wie im Original) löst einen Bonus-Effekt aus. Funktioniert auf allen Input-Methoden

@@ -1,7 +1,7 @@
 namespace BomberBlast.Models.Entities;
 
 /// <summary>
-/// Boss-Modifier (Sprint 6.1 AAA-Audit #15). 8 Modifier × 5 Boss-Typen = 40 Variationen.
+/// Boss-Modifier (.1 . 8 Modifier × 5 Boss-Typen = 40 Variationen.
 ///
 /// <para>
 /// Wird beim Spawn random zugewiesen (ab Welt 5+, 30% Chance — vorher None).
@@ -19,7 +19,7 @@ namespace BomberBlast.Models.Entities;
 /// </para>
 ///
 /// <para>
-/// HINWEIS: Sprint 6.1 setzt nur die Foundation (Enum + Property). Die einzelnen
+/// HINWEIS:.1 setzt nur die Foundation (Enum + Property). Die einzelnen
 /// Modifier-Effekte sind separate Implementierungs-Sprints — die Spawn-Logik weist
 /// einen Modifier zu, aber Effects greifen erst wenn die jeweilige Update-Logik
 /// in BossEnemy.Update bzw. EnemyAI implementiert ist.

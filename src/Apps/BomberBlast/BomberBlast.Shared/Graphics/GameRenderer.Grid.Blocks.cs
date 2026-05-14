@@ -503,13 +503,13 @@ public sealed partial class GameRenderer
         float cx = px + cs * 0.5f;
         float cy = py + cs * 0.5f;
 
-        // Phase 1 (0-0.3): Risse erscheinen, Block vibriert
-        // Phase 2 (0.3-0.7): Block zerbricht, Fragmente fliegen
-        // Phase 3 (0.7-1.0): Fragmente verblassen
+        //  (0-0.3): Risse erscheinen, Block vibriert
+        //  (0.3-0.7): Block zerbricht, Fragmente fliegen
+        //  (0.7-1.0): Fragmente verblassen
 
         if (progress < 0.3f)
         {
-            // Phase 1: Block mit zunehmenden Rissen + Vibration
+            // : Block mit zunehmenden Rissen + Vibration
             float p1 = progress / 0.3f; // 0→1
             float vibrate = MathF.Sin(p1 * 40f) * p1 * 2f;
             byte alpha = 255;
@@ -539,7 +539,7 @@ public sealed partial class GameRenderer
         }
         else if (progress < 0.7f)
         {
-            // Phase 2: 4 Fragmente fliegen auseinander + rotieren
+            // : 4 Fragmente fliegen auseinander + rotieren
             float p2 = (progress - 0.3f) / 0.4f; // 0→1
             byte alpha = (byte)(255 * (1f - p2 * 0.6f));
             float spread = p2 * cs * 0.5f;
@@ -575,7 +575,7 @@ public sealed partial class GameRenderer
         }
         else
         {
-            // Phase 3: Kleine Trümmer verblassen + fallen
+            // : Kleine Trümmer verblassen + fallen
             float p3 = (progress - 0.7f) / 0.3f; // 0→1
             byte alpha = (byte)(100 * (1f - p3));
             if (alpha < 5) return;

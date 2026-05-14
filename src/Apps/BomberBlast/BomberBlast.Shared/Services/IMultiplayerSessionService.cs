@@ -4,7 +4,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Multiplayer-Session-Service (Sprint 7.2 AAA-Audit #22).
+/// Multiplayer-Session-Service (.2 .
 ///
 /// <para>
 /// Verwaltet den aktuellen Multiplayer-Modus + Player-Slot-Konfiguration.
@@ -13,7 +13,7 @@ namespace BomberBlast.Services;
 /// </para>
 ///
 /// <para>
-/// Sprint 7.2 ist Foundation-Layer: Mode-Selection-API + Persistenz. Die echte
+///.2 ist Foundation-Layer: Mode-Selection-API + Persistenz. Die echte
 /// Engine-Integration (Player2-Spawn, Dual-Input-Routing, Co-Op-Camera, GameOver
 /// bei beide-tot, Splitscreen-Render) ist eigener Multi-Wochen-Sprint.
 /// </para>

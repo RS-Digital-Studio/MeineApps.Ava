@@ -455,7 +455,7 @@ public sealed class DungeonService : IDungeonService
                 _stats.HighestAscension = _stats.AscensionLevel;
         }
 
-        // Fix 18.04.2026 Game-Audit: Floor-10-Repeat-Gems. Vorher gab es nur beim ersten
+        // Floor-10-Repeat-Gems. Vorher gab es nur beim ersten
         // Floor-10-Clear Gems (via Run-Meilenstein), Repeat-Clears belohnten nur Coins/DungeonCoins.
         // Free-Player waren nach ~315G Lifetime gesperrt. Jetzt: 5G fuer jeden Floor-10-Clear
         // (darf auch repeaten), plus +2G pro Ascension-Level-Up (bis max 5 = insgesamt 10G extra).

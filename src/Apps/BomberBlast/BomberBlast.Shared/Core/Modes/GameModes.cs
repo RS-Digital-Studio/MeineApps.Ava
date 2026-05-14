@@ -1,7 +1,7 @@
 namespace BomberBlast.Core.Modes;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MODE-PLUGIN-FRAMEWORK PHASE 2 (v2.0.49 — AAA-Audit Phase 6)
+// MODE-PLUGIN-FRAMEWORK PHASE 2 (v2.0.49 — Phase 6)
 // ═══════════════════════════════════════════════════════════════════════════
 // 8 konkrete IGameMode-Implementierungen — jede kapselt den Mode-spezifischen
 // State + bietet eindeutigen ModeTag für Telemetrie / Crashlytics-Custom-Keys.

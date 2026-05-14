@@ -17,7 +17,7 @@ public class DailyRewardServiceTests
     private static (DailyRewardService service, IGameStateService gameState, GameState state) ErstelleService()
     {
         var state = GameState.CreateNew();
-        // v2.1.1 (Audit B-M03): Echte GameStateService-Instanz statt Mock — ClaimReward
+        // Echte GameStateService-Instanz statt Mock — ClaimReward
         // mutiert jetzt unter ExecuteWithLock, das ein NSubstitute-Mock nicht ausfuehren wuerde.
         var gameState = GameStateTestFactory.Create(state);
         var service = new DailyRewardService(gameState);

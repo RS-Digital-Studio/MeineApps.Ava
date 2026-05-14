@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Prozeduraler Profilrahmen-Renderer (Phase 29c — AAA-Audit Cosmetic-Integration).
+/// Prozeduraler Profilrahmen-Renderer (Phase 29c — Cosmetic-Integration).
 ///
 /// <para>Rendert alle 33 <see cref="FrameStyle"/>-Werte rein per SkiaSharp — keine externen Bitmaps.
 /// Wird im Profile-Hub, Liga-Leaderboard, GameOver-Screen genutzt.</para>

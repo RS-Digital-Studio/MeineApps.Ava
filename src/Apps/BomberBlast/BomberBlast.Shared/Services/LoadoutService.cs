@@ -99,7 +99,7 @@ public sealed class LoadoutService : ILoadoutService
             if (!_coinService.TrySpendCoins(totalCoins)) return null;
         }
 
-        // Loadout speichern. v2.0.43 Audit-Fix B3: Bei Save-Failure Coin/Gem-Refund
+        // Loadout speichern. Bei Save-Failure Coin/Gem-Refund
         // damit Spieler nicht waehrungsverlust hat ohne Loadout-Persistenz.
         var loadoutList = boosts.Select(t => new LoadoutBoost { Type = t, PaidWithGems = useGems }).ToList();
         if (!TrySaveLoadout(level, loadoutList))

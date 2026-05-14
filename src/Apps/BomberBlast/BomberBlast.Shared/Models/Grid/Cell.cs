@@ -80,7 +80,7 @@ public class Cell
     /// <summary>Verbleibende Lava-Dauer in Sekunden</summary>
     public float LavaTimer { get; set; }
 
-    // === Neue Bomben-Effekte (Phase 1) ===
+    // === Neue Bomben-Effekte () ===
 
     /// <summary>Ob die Zelle von einer Rauchwolke bedeckt ist (Smoke-Bombe: verwirrt Gegner-AI)</summary>
     public bool IsSmokeCloud { get; set; }

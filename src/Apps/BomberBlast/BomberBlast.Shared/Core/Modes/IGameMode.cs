@@ -1,7 +1,7 @@
 namespace BomberBlast.Core.Modes;
 
 /// <summary>
-/// Mode-Plugin-Framework Phase 1 (v2.0.46 — AAA-Audit P1, siehe `BOMBERBLAST_AAA_AUDIT.md` Sektion 1.1).
+/// Mode-Plugin-Framework (v2.0.46 — P1, siehe `BOMBERBLAST_AAA_AUDIT.md` Sektion 1.1).
 ///
 /// AKTUELLER STAND: Skeleton-Interface. KEINE existierende Mode-Logic ist bereits umgezogen.
 ///
@@ -9,7 +9,7 @@ namespace BomberBlast.Core.Modes;
 /// `_isQuickPlayMode`/`_isDailyChallenge`/`_isDungeonRun`/`_isBossRushMode`/`_isDailyRace`/`_isMasterMode`).
 /// Jede neue Mode-Erweiterung touchiert 8-12 Stellen quer durch die Engine. Mit diesem Skeleton
 /// ist der Migrations-Vertrag dokumentiert; tatsächliches Refactoring der existierenden Modi auf
-/// IGameMode kommt in einem separaten Sprint (Phase 2).
+/// IGameMode kommt in einem separaten Sprint ().
 ///
 /// Wenn ein NEUER Mode hinzukommt (z.B. "Endless Ascension"), MUSS er IGameMode implementieren —
 /// statt einen weiteren Bool-Flag in GameEngine.cs anzulegen.
@@ -23,7 +23,7 @@ public interface IGameMode
     void Initialize(GameModeContext ctx);
 
     /// <summary>
-    /// Sprint 5.x AAA-Audit #8: Wird bei jedem Level-Start aufgerufen (nach <see cref="Initialize"/>).
+    ///.x : Wird bei jedem Level-Start aufgerufen (nach <see cref="Initialize"/>).
     /// Modi können hier level-spezifischen State zurücksetzen oder den Spawn anpassen.
     /// </summary>
     void OnLevelStart(GameModeContext ctx);
@@ -35,24 +35,24 @@ public interface IGameMode
     void UpdateLogic(float deltaTime, GameModeContext ctx);
 
     /// <summary>
-    /// Sprint 5.x AAA-Audit #8: Wird gerufen wenn ein Gegner besiegt wurde (zentral in KillEnemy).
+    ///.x : Wird gerufen wenn ein Gegner besiegt wurde (zentral in KillEnemy).
     /// Modi können z.B. eigene Spawn-Eskalation oder Reward-Logik anhängen.
     /// </summary>
     void OnEnemyKilled(GameModeContext ctx);
 
     /// <summary>
-    /// Sprint 5.x AAA-Audit #8: Wird gerufen wenn eine Bombe explodiert (zentral in TriggerExplosion).
+    ///.x : Wird gerufen wenn eine Bombe explodiert (zentral in TriggerExplosion).
     /// </summary>
     void OnBombExploded(GameModeContext ctx);
 
     /// <summary>
-    /// Sprint 5.x AAA-Audit #8: Wird gerufen wenn der Spieler getroffen wird / stirbt
+    ///.x : Wird gerufen wenn der Spieler getroffen wird / stirbt
     /// (zentral in KillPlayer). Modi können hier z.B. Run-Abbruch-Logik triggern.
     /// </summary>
     void OnPlayerHit(GameModeContext ctx);
 
     /// <summary>
-    /// Sprint 5.x AAA-Audit #8: Score-Multiplikator des Modus (Default 1.0).
+    ///.x : Score-Multiplikator des Modus (Default 1.0).
     /// Wird bei der zentralen Enemy-Kill-Score-Vergabe angewandt — Modi können
     /// Score skalieren ohne die Engine-Score-Logik anzufassen.
     /// </summary>

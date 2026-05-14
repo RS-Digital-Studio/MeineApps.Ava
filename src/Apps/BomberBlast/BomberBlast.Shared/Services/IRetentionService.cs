@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Retention-Service (Phase 24 — AAA-Audit O3, O4, O5).
+/// Retention-Service (Phase 24 — O3, O4, O5).
 ///
 /// <para>Zentralisiert die Code-Foundation für Onboarding/FTUE-Pass:</para>
 /// <list type="bullet">

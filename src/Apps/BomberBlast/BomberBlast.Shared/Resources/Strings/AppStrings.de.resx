@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -797,14 +797,14 @@
   <data name="AchievementsTitle" xml:space="preserve">
     <value>Erfolge</value>
   </data>
-  <!-- Sprint 1.4b AAA-Audit Polish: Empty-State + CTA -->
+  <!--.4b Polish: Empty-State + CTA -->
   <data name="AchievementsEmptyHeadline" xml:space="preserve">
     <value>Noch keine Erfolge freigeschaltet</value>
   </data>
   <data name="AchievementsEmptyCta" xml:space="preserve">
     <value>Spiele dein erstes Level</value>
   </data>
-  <!-- Sprint 2.3 AAA-Audit #3: Re-Engagement Push-Notifications -->
+  <!--.3 : Re-Engagement Push-Notifications -->
   <data name="ReEngagementD1Title" xml:space="preserve">
     <value>Deine tägliche Belohnung wartet!</value>
   </data>
@@ -823,7 +823,7 @@
   <data name="ReEngagementD7Body" xml:space="preserve">
     <value>Komm zurück und schnapp dir 100 Gems als Willkommens-Geschenk.</value>
   </data>
-  <!-- Sprint 4.3 AAA-Audit #17: What's-New-Modal -->
+  <!--.3 : What's-New-Modal -->
   <data name="WhatsNewTitle" xml:space="preserve">
     <value>Neuigkeiten</value>
   </data>
@@ -833,17 +833,17 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>Verstanden!</value>
   </data>
-  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <!--.2 : Tutorial-Phase-Banner -->
   <data name="TutorialPhaseMovement" xml:space="preserve">
-    <value>Phase 1: Bewegung</value>
+    <value>: Bewegung</value>
   </data>
   <data name="TutorialPhaseBombs" xml:space="preserve">
-    <value>Phase 2: Bomben-Mechanik</value>
+    <value>: Bomben-Mechanik</value>
   </data>
   <data name="TutorialPhasePowerUps" xml:space="preserve">
-    <value>Phase 3: Power-Ups &amp; Kampf</value>
+    <value>: Power-Ups &amp; Kampf</value>
   </data>
-  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats pro Welt -->
+  <!--.2 : Mini-Story-Beats pro Welt -->
   <data name="WorldStoryIntro1" xml:space="preserve">
     <value>Der Wald flüstert. Etwas Dunkles verbirgt sich im Schatten der Bäume. Finde es.</value>
   </data>
@@ -901,7 +901,7 @@
   <data name="WorldStoryOutro9" xml:space="preserve">
     <value>Die Festung wird still. Die Schattenwelt öffnet ihre Tore. Bist du bereit für die Dunkelheit?</value>
   </data>
-  <!-- Sprint 7.1 AAA-Audit #21: Hero/Character-System -->
+  <!--.1 : Hero/Character-System -->
   <data name="HeroDefaultName" xml:space="preserve">
     <value>Standard-Bomber</value>
   </data>
@@ -932,7 +932,7 @@
   <data name="HeroLuckyLolaDesc" xml:space="preserve">
     <value>+20% Power-Up-Drop-Chance. Glück ist auf deiner Seite.</value>
   </data>
-  <!-- Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar -->
+  <!--.1 : Bottom-Tab-Bar -->
   <data name="BottomTabHome" xml:space="preserve">
     <value>Start</value>
   </data>
@@ -3639,7 +3639,7 @@
     <value>BUFFS</value>
   </data>
 
-  <!-- v2.0.44 AAA-Audit: Accessibility / Performance / Privacy -->
+  <!-- v2.0.44 : Accessibility / Performance / Privacy -->
   <data name="HighFrameRate" xml:space="preserve">
     <value>60-FPS-Modus (höherer Akkuverbrauch)</value>
   </data>
@@ -3719,7 +3719,7 @@
   <data name="AnnounceBossFight" xml:space="preserve">
     <value>BOSSKAMPF!</value>
   </data>
-  <!-- Typ-spezifische Boss-Banner (v2.0.44 — AAA-Audit) -->
+  <!-- Typ-spezifische Boss-Banner (v2.0.44 — ) -->
   <data name="BossNameStoneGolem" xml:space="preserve">
     <value>STEINGOLEM</value>
   </data>

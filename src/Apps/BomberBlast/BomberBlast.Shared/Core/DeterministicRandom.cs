@@ -1,7 +1,7 @@
 namespace BomberBlast.Core;
 
 /// <summary>
-/// Deterministischer Random-Generator (Phase 18b — AAA-Audit E4).
+/// Deterministischer Random-Generator (Phase 18b — E4).
 ///
 /// <para>Implementierung: <see href="https://prng.di.unimi.it/xoshiro256plus.c">xoshiro256+</see> —
 /// Public Domain (Sebastiano Vigna). Schneller, statistisch hochwertiger PRNG mit 256-Bit-State.

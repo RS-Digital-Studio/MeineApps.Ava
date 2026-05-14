@@ -21,7 +21,7 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IGemService _gemService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
 
     public event Action<NavigationRequest>? NavigationRequested;
@@ -966,7 +966,7 @@ public class DungeonBuffDisplayItem
     /// <summary>Glow-Opacity basierend auf Rarität (Common=0.3, Rare=0.5, Epic=0.7)</summary>
     public double RarityGlowOpacity { get; init; }
 
-    /// <summary>AutomationId fuer UI-Tests (v2.0.43 Audit-Fix C-Q3): "Buff_{Type}".</summary>
+    /// <summary>AutomationId fuer UI-Tests (C-Q3): "Buff_{Type}".</summary>
     public string AutomationId => $"Buff_{Type}";
 }
 

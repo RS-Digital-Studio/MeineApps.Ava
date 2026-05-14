@@ -19,7 +19,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IFloa
     private readonly ILocalizationService _localizationService;
     private readonly ICoinService _coinService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
     private readonly IProgressService _progressService;
     private readonly IWeeklyChallengeService _weeklyService;
@@ -211,7 +211,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IFloa
         IProgressService progressService,
         IWeeklyChallengeService weeklyService,
         IDailyMissionService dailyMissionService,
-        // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer 3 Rewarded-Ad-Placements (continue/coin_multiplier/revival)
+        //.2 : Funnel-Telemetrie fuer 3 Rewarded-Ad-Placements (continue/coin_multiplier/revival)
         IAnalyticsService analytics)
     {
         _purchaseService = purchaseService;

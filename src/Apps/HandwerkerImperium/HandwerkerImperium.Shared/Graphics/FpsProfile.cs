@@ -16,11 +16,11 @@ namespace HandwerkerImperium.Graphics;
 ///
 /// Referenz (v2.0.34):
 /// <code>
-/// | View / Renderer | Low | Medium       | High         |
+/// | View / Renderer | Low | Medium | High         |
 /// |------------------------|--------------|--------------|--------------|
 /// | MiniGame (10 Views) | 24fps (42ms) | 30fps (33ms) | 30fps (33ms) |
 /// | Research/Workshop- | 15fps (66ms) | 20fps (50ms) | 24fps (42ms) |
-/// | Guild-Research |              |              |              |
+/// | Guild-Research | |              |              |
 /// | Dashboard Basis | 5fps (200ms) | 10fps (100ms)| 10fps (100ms)|
 /// | Dashboard bei Effekten | 15fps (66ms) | 24fps (42ms) | 30fps (33ms) |
 /// | WorkerAvatar shared | 5fps (200ms) | 8fps (125ms) | 10fps (100ms)|

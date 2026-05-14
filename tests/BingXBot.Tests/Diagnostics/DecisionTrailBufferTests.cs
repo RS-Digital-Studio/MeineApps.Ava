@@ -5,7 +5,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Diagnostics;
 
-// v1.5.2 Phase 4 — Decision-Trail / Rejection-Log.
+// v1.5.2 — Decision-Trail / Rejection-Log.
 //
 // In-Memory-Ringpuffer-Tests: Append, Trim bei Capacity, Filter, Disable-Pfad.
 // Hot-Path-Integration in der Strategy ist via Backtest-Suite getestet — hier liegt der

@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für PrivacyCenter (Phase 25b — AAA-Audit Compliance).
+/// Tests für PrivacyCenter (Phase 25b — Compliance).
 /// </summary>
 public class PrivacyCenterTests
 {

@@ -28,7 +28,7 @@ public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
     private string _emptyStateText = "";
 
     /// <summary>
-    /// Sprint 1.4b AAA-Audit Polish: Zeigt illustrierten Empty-State + CTA wenn 0/N freigeschaltet.
+    ///.4b Polish: Zeigt illustrierten Empty-State + CTA wenn 0/N freigeschaltet.
     /// </summary>
     [ObservableProperty]
     private bool _showEmptyState;
@@ -54,7 +54,7 @@ public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
         TitleText = _localizationService.GetString("AchievementsTitle") ?? "Achievements";
         ProgressText = $"{_achievementService.UnlockedCount}/{_achievementService.TotalCount}";
 
-        // Sprint 1.4b AAA-Audit Polish: Empty-State wenn 0 freigeschaltet — Spieler bekommt
+        //.4b Polish: Empty-State wenn 0 freigeschaltet — Spieler bekommt
         // klare Handlungsaufforderung statt leerer Liste.
         ShowEmptyState = _achievementService.UnlockedCount == 0;
         EmptyStateHeadline = _localizationService.GetString("AchievementsEmptyHeadline")
@@ -124,7 +124,7 @@ public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
     private void Back() => NavigationRequested?.Invoke(new GoBack());
 
     /// <summary>
-    /// Sprint 1.4b AAA-Audit Polish: CTA aus Empty-State navigiert zur Level-Auswahl.
+    ///.4b Polish: CTA aus Empty-State navigiert zur Level-Auswahl.
     /// </summary>
     [RelayCommand]
     private void StartFirstLevel() => NavigationRequested?.Invoke(new GoLevelSelect());

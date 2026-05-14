@@ -4,7 +4,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Tutorial-Service: 6 interaktive Schritte in 3 geschuetzten Phasen (Sprint 3.2 AAA-Audit #5).
+/// Tutorial-Service: 6 interaktive Schritte in 3 geschuetzten Phasen (.2 .
 ///
 /// <para>
 /// Die 3 Phasen (T1 Movement / T2 Bombs / T3 PowerUps) verhalten sich wie eigenstaendige
@@ -20,10 +20,10 @@ namespace BomberBlast.Services;
 /// </summary>
 public sealed class TutorialService : ITutorialService
 {
-    // Legacy-Key (vor Sprint 3.2) — fuer Migration alter Spielstaende.
+    // Legacy-Key (vor.2) — fuer Migration alter Spielstaende.
     private const string LegacyCompletedKey = "TutorialCompleted";
 
-    // Sprint 3.2: Phasen-granulare Persistenz ("3 geschuetzte Tutorial-Levels").
+    // Phasen-granulare Persistenz ("3 geschuetzte Tutorial-Levels").
     private const string PhaseT1DoneKey = "tutorial_t1_done";
     private const string PhaseT2DoneKey = "tutorial_t2_done";
     private const string PhaseT3DoneKey = "tutorial_t3_done";
@@ -36,25 +36,25 @@ public sealed class TutorialService : ITutorialService
     private readonly IPreferencesService _preferences;
 
     /// <summary>
-    /// Sprint 3.2 AAA-Audit #5: Schritte sind in 3 Phasen gruppiert.
+    ///.2 : Schritte sind in 3 Phasen gruppiert.
     /// IsFirstOfPhase=true loest beim Tutorial-Overlay einen Phase-Banner aus
-    /// ("Phase 1: Bewegung" / "Phase 2: Bomben" / "Phase 3: Power-Ups").
+    /// (": Bewegung" / ": Bomben" / ": Power-Ups").
     /// Soft-Onboarding-Curve: Erst Movement, dann Bomb-Risiken, dann komplexere Mechaniken.
     /// </summary>
     private static readonly TutorialStep[] Steps =
     [
-        // Phase 1 — Movement (Genre-Neulinge): nur DPad, kein Bomben-Risiko
+        //  — Movement (Genre-Neulinge): nur DPad, kein Bomben-Risiko
         new() { Id = 0, TextKey = "TutorialMove", Type = TutorialStepType.Move,
                 Highlight = TutorialHighlight.InputControl,
                 Phase = TutorialPhase.Movement, IsFirstOfPhase = true },
-        // Phase 2 — Bomb-Mechanik: Bombe legen + sicheres Verstecken
+        //  — Bomb-Mechanik: Bombe legen + sicheres Verstecken
         new() { Id = 1, TextKey = "TutorialBomb", Type = TutorialStepType.PlaceBomb,
                 Highlight = TutorialHighlight.BombButton,
                 Phase = TutorialPhase.Bombs, IsFirstOfPhase = true },
         new() { Id = 2, TextKey = "TutorialHide", Type = TutorialStepType.Warning,
                 Highlight = TutorialHighlight.GameField,
                 Phase = TutorialPhase.Bombs },
-        // Phase 3 — Power-Ups + Combat (Tiefe der Mechanik)
+        //  — Power-Ups + Combat (Tiefe der Mechanik)
         new() { Id = 3, TextKey = "TutorialPowerUp", Type = TutorialStepType.CollectPowerUp,
                 Highlight = TutorialHighlight.PowerUp,
                 Phase = TutorialPhase.PowerUps, IsFirstOfPhase = true },
@@ -81,7 +81,7 @@ public sealed class TutorialService : ITutorialService
         IsActive ? Steps[_currentStepIndex].Phase : TutorialPhase.Movement;
 
     /// <summary>
-    /// Sprint 2.2 AAA-Audit #2: Wird vom GameEngine subscribed, feuert Funnel-Event
+    ///.2 : Wird vom GameEngine subscribed, feuert Funnel-Event
     /// fuer jeden abgeschlossenen Tutorial-Schritt + ein Final-Complete-Event.
     /// </summary>
     public event Action<int>? StepCompleted;
@@ -89,9 +89,9 @@ public sealed class TutorialService : ITutorialService
     public event Action? TutorialCompleted;
 
     /// <summary>
-    /// Sprint 3.2 AAA-Audit #5: Wird gefeuert wenn ein neuer Tutorial-Phase-Schritt aktiv wird
+    ///.2 : Wird gefeuert wenn ein neuer Tutorial-Phase-Schritt aktiv wird
     /// (T1 Movement / T2 Bombs / T3 PowerUps). Tutorial-Overlay zeigt dann einen
-    /// Phase-Banner ("Phase 2: Bomb-Mechanik") fuer 1.5s.
+    /// Phase-Banner (": Bomb-Mechanik") fuer 1.5s.
     /// </summary>
     public event Action<TutorialPhase>? PhaseChanged;
 

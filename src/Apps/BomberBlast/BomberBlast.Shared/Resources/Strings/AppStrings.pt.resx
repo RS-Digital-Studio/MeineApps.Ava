@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -797,14 +797,14 @@
   <data name="AchievementsTitle" xml:space="preserve">
     <value>Conquistas</value>
   </data>
-  <!-- Sprint 1.4b AAA-Audit Polish: Empty-State + CTA -->
+  <!--.4b Polish: Empty-State + CTA -->
   <data name="AchievementsEmptyHeadline" xml:space="preserve">
     <value>Nenhuma conquista desbloqueada ainda</value>
   </data>
   <data name="AchievementsEmptyCta" xml:space="preserve">
     <value>Jogue seu primeiro nível</value>
   </data>
-  <!-- Sprint 2.3 AAA-Audit #3: Re-Engagement Push-Notifications -->
+  <!--.3 : Re-Engagement Push-Notifications -->
   <data name="ReEngagementD1Title" xml:space="preserve">
     <value>Sua recompensa diária está esperando!</value>
   </data>
@@ -823,7 +823,7 @@
   <data name="ReEngagementD7Body" xml:space="preserve">
     <value>Volte e reivindique 100 Gemas grátis como presente de boas-vindas.</value>
   </data>
-  <!-- Sprint 4.3 AAA-Audit #17: What's-New-Modal -->
+  <!--.3 : What's-New-Modal -->
   <data name="WhatsNewTitle" xml:space="preserve">
     <value>Novidades</value>
   </data>
@@ -833,7 +833,7 @@
   <data name="WhatsNewUnderstood" xml:space="preserve">
     <value>Entendi!</value>
   </data>
-  <!-- Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner -->
+  <!--.2 : Tutorial-Phase-Banner -->
   <data name="TutorialPhaseMovement" xml:space="preserve">
     <value>Fase 1: Movimento</value>
   </data>
@@ -843,7 +843,7 @@
   <data name="TutorialPhasePowerUps" xml:space="preserve">
     <value>Fase 3: Power-ups e combate</value>
   </data>
-  <!-- Sprint 6.2 AAA-Audit #16: Mini-Story-Beats por mundo -->
+  <!--.2 : Mini-Story-Beats por mundo -->
   <data name="WorldStoryIntro1" xml:space="preserve">
     <value>A floresta sussurra. Algo escuro se esconde nas sombras. Encontre-o.</value>
   </data>
@@ -901,7 +901,7 @@
   <data name="WorldStoryOutro9" xml:space="preserve">
     <value>A fortaleza fica em silêncio. O Reino das Sombras abre seus portões. Você está pronto para a escuridão?</value>
   </data>
-  <!-- Sprint 7.1 AAA-Audit #21: Hero/Character-System -->
+  <!--.1 : Hero/Character-System -->
   <data name="HeroDefaultName" xml:space="preserve">
     <value>Bombista Padrão</value>
   </data>
@@ -932,7 +932,7 @@
   <data name="HeroLuckyLolaDesc" xml:space="preserve">
     <value>+20% chance de drop de power-up. A sorte favorece os audazes.</value>
   </data>
-  <!-- Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar -->
+  <!--.1 : Bottom-Tab-Bar -->
   <data name="BottomTabHome" xml:space="preserve">
     <value>Início</value>
   </data>
@@ -3715,7 +3715,7 @@
   <data name="FloatPowerBomb" xml:space="preserve">
     <value>+FORCA</value>
   </data>
-  <!-- v2.0.44 AAA-Audit: Accessibility / Performance / Privacy -->
+  <!-- v2.0.44 : Accessibility / Performance / Privacy -->
   <data name="HighFrameRate" xml:space="preserve">
     <value>Modo 60 FPS (maior consumo)</value>
   </data>
@@ -3794,7 +3794,7 @@
   <data name="AnnounceBossFight" xml:space="preserve">
     <value>LUTA DE CHEFE!</value>
   </data>
-  <!-- Typ-spezifische Boss-Banner (v2.0.44 — AAA-Audit) -->
+  <!-- Typ-spezifische Boss-Banner (v2.0.44 — ) -->
   <data name="BossNameStoneGolem" xml:space="preserve">
     <value>GOLEM DE PEDRA</value>
   </data>

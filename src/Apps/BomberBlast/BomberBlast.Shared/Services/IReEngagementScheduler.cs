@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Re-Engagement-Notification-Scheduler (Sprint 2.3 AAA-Audit #3).
+/// Re-Engagement-Notification-Scheduler (.3 .
 ///
 /// <para>
 /// Plant lokale Notifications fuer inaktive Spieler. Wird beim App-Background gesetzt,

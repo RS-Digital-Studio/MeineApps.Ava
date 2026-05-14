@@ -7,7 +7,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Diagnostics;
 
-// v1.5.2 Phase 4 Plan-Test "Disabled_NoOverheadOnHotPath".
+// v1.5.2 Plan-Test "Disabled_NoOverheadOnHotPath".
 // Wenn BotSettings.EnableDecisionTrail = false, darf der Hot-Path KEIN PublishEvaluationDecision
 // auf den BotEventBus auslosen. Verifizieren wir ueber Event-Subscriber-Counter.
 public class DecisionTrailHotPathDisabledTests

@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Audio-Caption-Anzeige für gehörlose Spieler (Accessibility, AAA-Audit Section 6).
+/// Audio-Caption-Anzeige für gehörlose Spieler (Accessibility, Section 6).
 /// Wird vom GameEngine bei wichtigen Audio-Events aufgerufen (Boss-Roar, Time-Warning,
 /// Death-Sound, LevelComplete). Captions erscheinen am unteren Bildrand für 2s mit Fade-In/Out.
 /// Nur aktiv wenn IAccessibilityService.SubtitlesEnabled == true.

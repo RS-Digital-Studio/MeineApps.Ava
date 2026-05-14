@@ -17,20 +17,20 @@ public interface ITutorialService
     bool IsCompleted { get; }
 
     /// <summary>
-    /// Sprint 3.2 AAA-Audit #5: Aktuell laufende Phase (T1 Movement / T2 Bombs / T3 PowerUps).
+    ///.2 : Aktuell laufende Phase (T1 Movement / T2 Bombs / T3 PowerUps).
     /// Bei inaktivem Tutorial: letzte erreichte bzw. Movement als Default.
     /// </summary>
     TutorialPhase CurrentPhase { get; }
 
     /// <summary>
-    /// Sprint 3.2 AAA-Audit #5: Ob eine einzelne Tutorial-Phase abgeschlossen ist.
+    ///.2 : Ob eine einzelne Tutorial-Phase abgeschlossen ist.
     /// Die 3 Phasen sind "geschuetzte Tutorial-Levels" — granulare Persistenz erlaubt
     /// Resume bei der naechsten offenen Phase statt Neustart bei Movement.
     /// </summary>
     bool IsPhaseCompleted(TutorialPhase phase);
 
     /// <summary>
-    /// Sprint 3.2 AAA-Audit #5: Soft-Onboarding-Curve. Nach Tutorial-Abschluss liefern
+    ///.2 : Soft-Onboarding-Curve. Nach Tutorial-Abschluss liefern
     /// die ersten 2 Story-Level reduzierte Schwierigkeit. Jeder Aufruf verbraucht einen
     /// Soft-Onboarding-Level (dekrementiert den persistierten Counter) und gibt true
     /// zurueck solange noch welche uebrig sind. GameEngine ruft das bei Level-Start.
@@ -56,7 +56,7 @@ public interface ITutorialService
     void Reset();
 
     /// <summary>
-    /// Sprint 2.2 AAA-Audit #2: Wird beim Abschluss eines Tutorial-Schritts gefeuert
+    ///.2 : Wird beim Abschluss eines Tutorial-Schritts gefeuert
     /// (Parameter = Index des gerade abgeschlossenen Schritts). Wird vom GameEngine
     /// fuer Funnel-Telemetrie subscribed.
     /// </summary>
@@ -66,9 +66,9 @@ public interface ITutorialService
     event Action? TutorialCompleted;
 
     /// <summary>
-    /// Sprint 3.2 AAA-Audit #5: Wird gefeuert wenn das Tutorial in eine neue Phase
+    ///.2 : Wird gefeuert wenn das Tutorial in eine neue Phase
     /// (T1 Movement / T2 Bombs / T3 PowerUps) wechselt. Tutorial-Overlay zeigt
-    /// einen Phase-Banner ("Phase 2: Bomben") fuer 1.5s als visuelle Trennung.
+    /// einen Phase-Banner (": Bomben") fuer 1.5s als visuelle Trennung.
     /// </summary>
     event Action<TutorialPhase>? PhaseChanged;
 }

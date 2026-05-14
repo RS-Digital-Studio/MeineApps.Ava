@@ -1,7 +1,7 @@
 namespace BomberBlast.Core;
 
 /// <summary>
-/// RNG-Abstraktion (Phase 18d — AAA-Audit E4).
+/// RNG-Abstraktion (Phase 18d — E4).
 ///
 /// <para>Erlaubt Engine-Code, mit System.Random ODER <see cref="DeterministicRandom"/> zu arbeiten
 /// ohne Code-Verzweigung. Variable-Timestep-Mode: System.Random-Wrapper für Performance + Bestand-Verhalten.

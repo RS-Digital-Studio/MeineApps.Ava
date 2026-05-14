@@ -3,7 +3,7 @@ using System.Diagnostics.Tracing;
 namespace BomberBlast.Core.Diagnostics;
 
 /// <summary>
-/// EventSource-Tracing-Provider (Phase 27b — AAA-Audit P1).
+/// EventSource-Tracing-Provider (Phase 27b — P1).
 ///
 /// <para>Liefert Event-Markers pro Engine-Subsystem für <c>dotnet-trace</c> und Visual-Studio-Diagnostic-Tools.
 /// Ermöglicht Frame-Budget-Profiling: <c>dotnet-trace collect --providers BomberBlast-Engine</c>

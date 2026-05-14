@@ -2,7 +2,7 @@ namespace BomberBlast.Services;
 
 /// <summary>
 /// FCM Push-Notifications + lokale Daily-Reminder.
-/// Code-Hooks vorbereitet (v2.0.44 — AAA-Audit). FCM-Console-Setup macht Robert.
+/// Code-Hooks vorbereitet (v2.0.44 — ). FCM-Console-Setup macht Robert.
 ///
 /// Topics werden serverseitig gesteuert (Saison-Ende, Daily-Race-Reset),
 /// lokale Notifications kommen aus AlarmManager (Daily-Reward-Reminder).

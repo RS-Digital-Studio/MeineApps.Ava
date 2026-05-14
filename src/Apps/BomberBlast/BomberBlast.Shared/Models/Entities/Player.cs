@@ -60,7 +60,7 @@ public class Player : Entity
     /// <summary>Verbleibende Spezial-Bomben in diesem Level</summary>
     public int SpecialBombCount { get; set; }
 
-    // Karten-Deck (Phase 2: Karten-System)
+    // Karten-Deck (: Karten-System)
     /// <summary>Ausgerüstete Karten für dieses Level (mit verbleibenden Uses)</summary>
     public List<EquippedCard> EquippedCards { get; set; } = new();
     /// <summary>Aktiver Karten-Slot (-1 = Normalbombe, 0-3 = Deck-Slot)</summary>
@@ -124,7 +124,7 @@ public class Player : Entity
     }
 
     /// <summary>
-    /// Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait QuickPocket (SpeedySam) immunisiert gegen Slow-Curse.
+    /// Welle 1 v2.0.58 : Hero-Trait QuickPocket (SpeedySam) immunisiert gegen Slow-Curse.
     /// Wird beim Spawn vom GameEngine.ApplyHeroStats gesetzt.
     /// </summary>
     public bool HeroImmuneToSlowCurse { get; set; }
@@ -144,17 +144,17 @@ public class Player : Entity
 
     public Player(float x, float y) : base(x, y)
     {
-        // Sprint 5.4 AAA-Audit #11: Outline-Pass vereinheitlicht Vektor-Player + AI-WebP-Gegner.
+        //.4 : Outline-Pass vereinheitlicht Vektor-Player + AI-WebP-Gegner.
         RenderOutline = true;
     }
 
-    // === Phase 22b — Squash & Stretch (G2 aus AAA-Audit) =====================
+    // === Phase 22b — Squash & Stretch (G2 aus ) =====================
     // Subtile Sprite-Skalierung beim Bewegen — gibt das "Brawl-Stars-Wackel-Gefühl".
     // SquashStretchPhase ist ein Sinus-Wert [0..2π], inkrementiert proportional zur Geschwindigkeit.
     // Renderer multipliziert Sprite-Width/Height mit dem aus dieser Phase abgeleiteten Faktor.
     private float _squashStretchPhase;
 
-    // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation. Wenn > 0, zieht sich der Spieler
+    //.4 : Bomb-Place-Anticipation. Wenn > 0, zieht sich der Spieler
     // visuell zusammen (vertikal stauchen / horizontal strecken) — Hades-Pattern fuer
     // "schwere" Aktionen. Reset auf 0 nach BOMB_SQUASH_DURATION (~80ms).
     private float _bombSquashTimer;
@@ -171,7 +171,7 @@ public class Player : Entity
         get
         {
             if (IsDying) return 0.6f + (1f - 0.6f) * (1f - DeathTimer / 0.5f); // Kollaps
-            // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation. Spieler zieht sich
+            //.4 : Bomb-Place-Anticipation. Spieler zieht sich
             // horizontal in die Breite (1.20×) waehrend er sich vertikal staucht.
             if (_bombSquashTimer > 0)
             {
@@ -196,7 +196,7 @@ public class Player : Entity
         get
         {
             if (IsDying) return 0.6f + (1f - 0.6f) * (1f - DeathTimer / 0.5f);
-            // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation. Komplementaer zu X.
+            //.4 : Bomb-Place-Anticipation. Komplementaer zu X.
             if (_bombSquashTimer > 0)
             {
                 float t = _bombSquashTimer / BOMB_SQUASH_DURATION;
@@ -212,7 +212,7 @@ public class Player : Entity
     }
 
     /// <summary>
-    /// Sprint 3.4 AAA-Audit #19: Triggert Bomb-Place-Anticipation-Animation (80ms).
+    ///.4 : Triggert Bomb-Place-Anticipation-Animation (80ms).
     /// Wird aus GameEngine.Explosion.PlaceBombForOwner aufgerufen.
     /// Idempotent — Re-Trigger setzt Timer zurueck (Spammen geht).
     /// </summary>
@@ -233,7 +233,7 @@ public class Player : Entity
             _squashStretchPhase = 0f;
         }
 
-        // Sprint 3.4 AAA-Audit #19: Bomb-Place-Anticipation Timer-Tick.
+        //.4 : Bomb-Place-Anticipation Timer-Tick.
         if (_bombSquashTimer > 0)
         {
             _bombSquashTimer -= deltaTime;
@@ -771,7 +771,7 @@ public class Player : Entity
 
     /// <summary>
     /// Reset all stats for new game.
-    /// Sprint 7.1 AAA-Audit #21: Optional Hero-Stats werden danach von GameEngine.ApplyHero
+    ///.1 : Optional Hero-Stats werden danach von GameEngine.ApplyHero
     /// angewendet (ueberschreibt Default-Werte).
     /// </summary>
     public void ResetForNewGame()

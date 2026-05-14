@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Hardware-Quality-Tier (Phase 27 — AAA-Audit P2).
+/// Hardware-Quality-Tier (Phase 27 — P2).
 /// Skaliert visuelle Effekte je nach Geräte-Klasse. Auto-Detection via Geräte-RAM-Heuristik
 /// (Android), explicit-Override per Settings.
 /// </summary>
@@ -18,7 +18,7 @@ public enum HardwareTier
 }
 
 /// <summary>
-/// Hardware-Profil-Service (Phase 27 — AAA-Audit P2/P3/P4).
+/// Hardware-Profil-Service (Phase 27 — P2/P3/P4).
 ///
 /// <para>Zentralisiert die Quality-Tier-Logik plus Battery-Profile (Akku-Sparen) und
 /// Thermal-Throttle-Status (wenn Android Thermal API verfügbar). Wird vom Renderer

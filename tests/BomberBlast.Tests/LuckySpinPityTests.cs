@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für LuckySpin Pity-Counter (Phase 23 — AAA-Audit, Lootbox-Compliance UK/China).
+/// Tests für LuckySpin Pity-Counter (Phase 23 — , Lootbox-Compliance UK/China).
 /// Validiert dass nach 50 Spins ohne Jackpot der nächste Spin garantiert ein Jackpot wird,
 /// und dass die Drop-Rate-Tabelle für Compliance-Disclosure korrekt summiert.
 /// </summary>

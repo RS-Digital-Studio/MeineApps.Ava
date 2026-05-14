@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für DeterministicRandom (Phase 18b — AAA-Audit E4).
+/// Tests für DeterministicRandom (Phase 18b — E4).
 /// Validiert: Same-Seed-Determinismus, Verteilungs-Plausibilität, State-Roundtrip.
 /// </summary>
 public class DeterministicRandomTests

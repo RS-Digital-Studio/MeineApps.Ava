@@ -23,7 +23,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     private readonly ICoinService _coinService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
     private readonly IMasterModeService _masterModeService;
 
@@ -157,7 +157,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         _masterModeService.IsActive = !_masterModeService.IsActive;
         IsMasterModeActive = _masterModeService.IsActive;
 
-        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Master-Mode-Aktivierung.
+        // Welle 2 v2.0.58 : Funnel-Tracking — Master-Mode-Aktivierung.
         _analytics.LogEvent(AnalyticsEvents.MasterModeToggle, new Dictionary<string, object>
         {
             ["active"] = _masterModeService.IsActive ? 1 : 0,

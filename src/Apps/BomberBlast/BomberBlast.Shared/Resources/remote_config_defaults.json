@@ -1,5 +1,5 @@
 {
-  "$comment": "Sprint 2.1 AAA-Audit #1: Default-Werte für Remote-Config. Werden in DefaultsRemoteConfigService beim Init geladen und liefern Fallback-Werte wenn kein Firebase-Override aktiv ist. Bei Aenderungen: VersionCode in Android-csproj erhoehen (Defaults werden mit der App ausgeliefert).",
+  "$comment": ".1 : Default-Werte für Remote-Config. Werden in DefaultsRemoteConfigService beim Init geladen und liefern Fallback-Werte wenn kein Firebase-Override aktiv ist. Bei Aenderungen: VersionCode in Android-csproj erhoehen (Defaults werden mit der App ausgeliefert).",
   "$version": 1,
   "$last_updated": "2026-05-12",
 

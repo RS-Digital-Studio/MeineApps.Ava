@@ -38,7 +38,7 @@
       <icons:GameIcon Kind="HelpCircle" Width="22" Height="22" Foreground="White" />
     </Button>
 
-    <!-- Pause-Button (v2.0.43, Audit-Fix C1): Mobile-Pause-Trigger neben dem ?-Button.
+    <!-- Pause-Button : Mobile-Pause-Trigger neben dem ?-Button.
          Audit H03: 24dp Top-Margin + 80dp Right-Margin (Cutout-Safe).
          Sichtbar nur waehrend Gameplay (nicht im ContextHelp / nicht bereits pausiert). -->
     <Button HorizontalAlignment="Right" VerticalAlignment="Top"

@@ -193,7 +193,7 @@ public class AscensionServiceTests
     public void CalculateAscensionPoints_AscensionLevelSkaliert()
     {
         // Vorbereitung: 2500 PP → apFromPP=5, 3 Legendes → apFromLegende=1 → Sum=6.
-        // v2.1.1 (Audit B-H03): Skalierungs-Bonus von linear (level*2) auf sqrt(level)*2
+        // Skalierungs-Bonus von linear (level*2) auf sqrt(level)*2
         // umgestellt. AscensionLevel=3 → sqrt(3)*2 = 1.73 → int = 2 → apFromScaling=2.
         var (service, _, state) = ErstelleService();
         state.Prestige.TotalPrestigePoints = 2500;

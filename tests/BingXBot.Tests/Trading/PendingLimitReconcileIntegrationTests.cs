@@ -10,7 +10,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Trading;
 
-// v1.5.1 Phase 3 — Pending-Limit-Reconcile-Integration-Tests gegen LiveTradingService +
+// v1.5.1 — Pending-Limit-Reconcile-Integration-Tests gegen LiveTradingService +
 // FakeExchangeClient. Plan-Vorgabe (5 Szenarien):
 //   1. Pending-Limit gefuellt → TP1/TP2-LIMIT werden platziert (TP-Bug von 24.04.2026).
 //   2. Pending-Limit extern gecancelt → State sauber entfernt.

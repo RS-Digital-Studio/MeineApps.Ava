@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für RetentionService (Phase 24 — AAA-Audit O3-O5).
+/// Tests für RetentionService (Phase 24 — O3-O5).
 /// Validiert FirstWin-Idempotenz, FTUE-Skin-Tracking, Inactive-Detection und D1/D7-Windows.
 /// </summary>
 public class RetentionServiceTests

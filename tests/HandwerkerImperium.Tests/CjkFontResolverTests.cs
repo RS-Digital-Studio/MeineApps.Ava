@@ -4,7 +4,7 @@ using HandwerkerImperium.Graphics;
 namespace HandwerkerImperium.Tests;
 
 /// <summary>
-/// P1.2 AAA-Audit Phase 1 (08.05.2026): CJK-Font-Resolver-Tests.
+///  (08.05.2026): CJK-Font-Resolver-Tests.
 ///
 /// Diese Tests laufen auf dem CI-Runner — sie verifizieren NICHT, ob die System-Fonts
 /// vorhanden sind (das hängt vom Runner ab), sondern dass der Resolver mindestens

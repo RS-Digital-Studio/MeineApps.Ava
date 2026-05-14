@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für SubtitleSystem (v2.0.46 — AAA-Audit Phase 3).
+/// Tests für SubtitleSystem (v2.0.46 — ).
 /// Validiert Show/Update-Lifecycle, Pool-Overflow-Verhalten (max 4 Captions),
 /// Empty-String-Schutz, Clear-Funktion.
 /// </summary>

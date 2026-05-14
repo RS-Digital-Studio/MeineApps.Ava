@@ -76,7 +76,7 @@ Stinger laufen über den Cinematic-Bus und triggern automatisches Music-Ducking 
 | music_victory.ogg | Victory Loop | (Bestand) | opengameart.org | CC0 |
 
 > **Audit-Hinweis (BOMBERBLAST_AAA_AUDIT_2026-05-09 Kapitel 5):** Die Welt-Tracks stammen aus
-> heterogenen Open-Game-Art-Bundles und sind als "Asset-Bundle"-erkennbar. Für AAA-Niveau
+> heterogenen Open-Game-Art-Bundles und sind als "Asset-Bundle"-erkennbar. Für Premium-Niveau
 > wäre ein hauseigener Komponist + adaptive Layering nötig (~6.000–15.000 € Indie-Composer,
 > ~30.000–80.000 € etablierter Mobile-Game-Composer). Phase 17 hat die Audio-Pipeline-
 > Foundation gebaut (Bus-System, Pool, Spatial, Ducking), aber die Komponisten-Beauftragung

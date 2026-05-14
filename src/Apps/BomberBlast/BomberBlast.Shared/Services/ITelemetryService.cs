@@ -2,7 +2,7 @@ namespace BomberBlast.Services;
 
 /// <summary>
 /// Crash-Reporting + Performance-Monitoring (Firebase Crashlytics).
-/// Code-Hooks vorbereitet (v2.0.44 — AAA-Audit). Console-Setup macht Robert.
+/// Code-Hooks vorbereitet (v2.0.44 — ). Console-Setup macht Robert.
 /// Custom-Keys werden bei jedem Crash mit aufgezeichnet → erlauben Crash-Filter
 /// nach Modus / Level / FPS-Bucket / Memory-Pressure.
 /// </summary>

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Trading;
 
-// v1.4.0 Phase 0.2/0.3 (Findings 0.2/0.3) — Doppel-Close-Race verhindern.
+// v1.4.0 .2/0.3 (Findings 0.2/0.3) — Doppel-Close-Race verhindern.
 //
 // Bot-platzierte TP1/TP2 als Reduce-Only-LIMIT auf BingX. Sobald die OrderIds im
 // PositionExitState gesetzt sind, skippt der PriceTickerLoop den TP-Hit-Check (BingX fuellt

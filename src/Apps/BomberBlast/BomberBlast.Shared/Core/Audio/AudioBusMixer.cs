@@ -112,7 +112,7 @@ public sealed class AudioBusMixer
     }
 
     /// <summary>
-    /// Sprint 5.3 AAA-Audit #13: Adaptive-Music-Boost — verstaerkt einen Bus
+    ///.3 : Adaptive-Music-Boost — verstaerkt einen Bus
     /// (typisch Music) ueber den Default hinaus. Multiplier > 1.0 erlaubt.
     /// Verwendung: Combat-Intensifier (Music +15% bei Boss-Telegraph),
     /// Last-Stand-Drama (Music +25% bei Last-Enemy / Last-10s).
@@ -138,7 +138,7 @@ public sealed class AudioBusMixer
     /// <summary>
     /// Pro-Frame-Update: löst Duck-Hüllkurven UND Boost-Recovery auf.
     /// Während Duck/Boost-Phase ist Multiplier auf Target. Nach Ablauf: Linear-Recovery zu 1.0.
-    /// Sprint 5.3 AAA-Audit #13: Recovery handelt jetzt sowohl Duck (zurueck nach oben) als
+    ///.3 : Recovery handelt jetzt sowohl Duck (zurueck nach oben) als
     /// auch Boost (zurueck nach unten) zur 1.0-Grundlinie.
     /// </summary>
     public void Update(float deltaTime)

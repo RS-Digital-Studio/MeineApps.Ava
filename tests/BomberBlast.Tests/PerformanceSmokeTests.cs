@@ -8,7 +8,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Performance-Smoke-Tests (Phase 26 — AAA-Audit T3).
+/// Performance-Smoke-Tests (Phase 26 — T3).
 ///
 /// <para>BenchmarkDotNet wäre ideal, ist aber Multi-Project-Setup mit eigenem CI-Runner.
 /// Smoke-Tests sind ein einfacher Stopwatch-basierter Schwellwert-Check pro Hot-Path:

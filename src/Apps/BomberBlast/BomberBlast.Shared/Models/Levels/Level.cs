@@ -54,7 +54,7 @@ public class Level
     public BossType? BossKind2 { get; set; }
 
     /// <summary>
-    /// Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Phase 1-3 (T1 Movement / T2 Bombs / T3 PowerUps).
+    /// Welle 3 v2.0.58 : Tutorial--3 (T1 Movement / T2 Bombs / T3 PowerUps).
     /// Null = kein Tutorial-Level. Tutorial-Levels haben eigene Layouts, eigene Spawn-Regeln und
     /// blenden die Tab-Bar aus. ProgressService traegt KEINEN Star fuer Tutorial-Completion ein.
     /// </summary>

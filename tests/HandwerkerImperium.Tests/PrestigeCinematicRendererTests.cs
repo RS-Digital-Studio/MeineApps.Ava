@@ -6,7 +6,7 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Tests;
 
 /// <summary>
-/// P0.3 AAA-Audit (08.05.2026): Tests für den 4-Phasen-Cinematic-Renderer.
+/// (08.05.2026): Tests für den 4-Phasen-Cinematic-Renderer.
 /// Verifiziert Phasen-Übergänge, Skip-Logik, Auto-Dismiss und Daten-Snapshot.
 /// </summary>
 public class PrestigeCinematicRendererTests
@@ -46,19 +46,19 @@ public class PrestigeCinematicRendererTests
 
         renderer.CurrentPhase.Should().Be(0);
 
-        // Phase 1: Money (0-3s)
+        // : Money (0-3s)
         renderer.Update(2.0f);
         renderer.CurrentPhase.Should().Be(0);
 
-        // Phase 2: Badge (3-6s)
+        // : Badge (3-6s)
         renderer.Update(2.0f); // Total 4s
         renderer.CurrentPhase.Should().Be(1);
 
-        // Phase 3: Multiplier (6-11s)
+        // : Multiplier (6-11s)
         renderer.Update(4.0f); // Total 8s
         renderer.CurrentPhase.Should().Be(2);
 
-        // Phase 4: Reward (11-14s)
+        // : Reward (11-14s)
         renderer.Update(4.0f); // Total 12s
         renderer.CurrentPhase.Should().Be(3);
         renderer.IsReadyForDismiss.Should().BeTrue();
@@ -107,15 +107,15 @@ public class PrestigeCinematicRendererTests
         var renderer = new PrestigeCinematicRenderer();
         renderer.Start(TestData());
 
-        // Bis Phase 4 vorspulen (14s + 8s Auto-Dismiss-Window)
-        renderer.Update(11.5f); // Phase 4 erreicht
+        // Bis vorspulen (14s + 8s Auto-Dismiss-Window)
+        renderer.Update(11.5f); //  erreicht
         renderer.IsActive.Should().BeTrue();
 
         renderer.Update(3.0f); // PhaseRewardEnd erreicht (14s gesamt)
         renderer.IsActive.Should().BeTrue();
 
         renderer.Update(8.5f); // > PhaseRewardEnd + 8s Auto-Dismiss
-        renderer.IsActive.Should().BeFalse("Auto-Dismiss greift 8s nach Phase 4");
+        renderer.IsActive.Should().BeFalse("Auto-Dismiss greift 8s nach ");
     }
 
     [Theory]

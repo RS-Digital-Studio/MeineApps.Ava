@@ -6,7 +6,7 @@ using BomberBlast.Services;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// ViewModel fuer die BottomTabBar (Sprint 3.1 AAA-Audit #4).
+/// ViewModel fuer die BottomTabBar (.1 .
 /// Subscribt auf IBottomTabHub, propagiert Tab-Wechsel-Commands an den Hub
 /// und liefert pro-Tab Brushes (Active = AccentBrush, Inactive = TextMutedBrush).
 /// </summary>
@@ -33,7 +33,7 @@ public sealed partial class BottomTabBarViewModel : ObservableObject
 
     private void RefreshBrushes()
     {
-        // Vereinfachte Implementation: Active = Cyan (AAA-Audit-Akzent), Inactive = Grau.
+        // Vereinfachte Implementation: Active = Cyan (-Akzent), Inactive = Grau.
         // In Production-Use sollten die Farben aus DynamicResource kommen — diese sind
         // aber in einem ViewModel-Kontext nicht ohne Avalonia-Resource-Resolver greifbar.
         // Hier inline-Farben als Fallback.

@@ -31,17 +31,17 @@ public class SequenceStateMachineTests
     private static List<Candle> BuildActivatedLongSequence(decimal retracementRatio = 0.5m)
     {
         var candles = new List<Candle>();
-        // Phase 1: Point0-Bildung (Kerzen 0-1, Low = 100)
+        // : Point0-Bildung (Kerzen 0-1, Low = 100)
         candles.Add(C(0, 100m, 100m, 100m, 100m));
         candles.Add(C(1, 100m, 100.1m, 100m, 100.05m));
-        // Phase 2: Impuls bis PointA=108 (Kerzen 2-10)
+        // : Impuls bis PointA=108 (Kerzen 2-10)
         for (int i = 2; i <= 10; i++)
         {
             var p = 100m + (i - 1) * 0.9m;
             candles.Add(C(i, p, p + 0.1m, p - 0.05m, p + 0.05m));
         }
-        // Phase 3: Korrektur auf Retracement-Level (Kerzen 11-20)
-        var pointA = 108.1m; // ~ letzte High in Phase 2
+        // : Korrektur auf Retracement-Level (Kerzen 11-20)
+        var pointA = 108.1m; // ~ letzte High in 
         var range = pointA - 100m;
         var target = pointA - range * retracementRatio;
         for (int i = 11; i <= 20; i++)
@@ -50,7 +50,7 @@ public class SequenceStateMachineTests
             var p = pointA - (pointA - target) * progress;
             candles.Add(C(i, p, p + 0.05m, p - 0.05m, p));
         }
-        // Phase 4: Breakout (Kerze 21)
+        // : Breakout (Kerze 21)
         candles.Add(C(21, pointA + 0.1m, pointA + 0.5m, pointA, pointA + 0.4m));
         // Buffer
         for (int i = 22; i < 30; i++)

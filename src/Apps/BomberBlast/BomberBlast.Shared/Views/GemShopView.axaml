@@ -77,7 +77,7 @@
                    AutomationProperties.AutomationId="GemShop_TxtDesc" />
       </StackPanel>
 
-      <!-- ═══ Rechte Spalte: 4 Gem-Pakete responsive (v2.0.43 Audit-Fix C2) ═══
+      <!-- ═══ Rechte Spalte: 4 Gem-Pakete responsive () ═══
            UniformGrid 2x2 statt horizontaler StackPanel — verhindert Overflow auf <800dp Phones.
            Auf grossen Tablets wirkt 2x2 strukturiert + lesbar. -->
       <ItemsControl Grid.Column="1"

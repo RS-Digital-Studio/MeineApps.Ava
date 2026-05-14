@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Prozeduraler Victory-Animator (Phase 29c — AAA-Audit Cosmetic-Integration).
+/// Prozeduraler Victory-Animator (Phase 29c — Cosmetic-Integration).
 ///
 /// <para>Liefert pro Frame ein <see cref="VictoryFrame"/>-Struct mit Sprite-Transformation
 /// (Scale-X, Scale-Y, Rotation, Y-Offset) und optionalen Effekt-Hooks (Particle-Burst-Trigger,

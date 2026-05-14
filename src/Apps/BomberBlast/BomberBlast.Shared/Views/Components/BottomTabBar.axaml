@@ -6,8 +6,7 @@
              x:Class="BomberBlast.Views.Components.BottomTabBar"
              x:DataType="vm:BottomTabBarViewModel"
              x:CompileBindings="True">
-  <!--
-    Sprint 3.1 AAA-Audit #4: 4-Tab Bottom-Navigation (Home / Play / Shop / Profile).
+  <!--.1 : 4-Tab Bottom-Navigation (Home / Play / Shop / Profile).
 
     Wird im MainView eingebunden als persistente Bottom-Bar fuer die konsolidierte
     Navigation. Ersetzt 15+ einzelne Buttons im MainMenuView (UI-Refactor des

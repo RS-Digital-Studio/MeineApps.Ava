@@ -6,7 +6,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Trading;
 
-// v1.5.1 Phase 3 (Finding "Missing-Stop-Detektion") — neue Drift-Kategorie MissingStopLoss.
+// v1.5.1 (Finding "Missing-Stop-Detektion") — neue Drift-Kategorie MissingStopLoss.
 //
 // Ein offener Trade auf BingX MUSS eine STOP_MARKET-Reduce-Only-Order in der Schliess-Seite
 // haben, sonst ist die Position bei plötzlicher Bewegung ungeschuetzt. Der Reconcile-Loop

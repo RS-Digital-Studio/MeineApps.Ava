@@ -18,7 +18,7 @@ public sealed partial class VictoryViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
     private readonly IGemService _gemService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
 
     public event Action<NavigationRequest>? NavigationRequested;

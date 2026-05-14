@@ -22,7 +22,7 @@ public class PrestigeServiceTests
         var ascensionMock = Substitute.For<IAscensionService>();
 
         var state = GameState.CreateNew();
-        // v2.1.1 (Audit B-C02/B-M05): Echte GameStateService-Instanz statt Mock — DoPrestige
+        // v2.1.1 Echte GameStateService-Instanz statt Mock — DoPrestige
         // und BuyShopItem mutieren jetzt unter ExecuteWithLock, das ein NSubstitute-Mock nicht
         // ausfuehren wuerde. Die Default-Interface-Member (Prestige/Settings/...) leiten
         // automatisch korrekt an den State weiter.

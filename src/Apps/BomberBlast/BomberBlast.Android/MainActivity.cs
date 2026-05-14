@@ -68,7 +68,7 @@ public class MainActivity : AvaloniaMainActivity
         App.AnalyticsServiceFactory = _ => new AndroidAnalyticsService(this);
         App.PushNotificationServiceFactory = _ => new AndroidPushNotificationService(this);
 
-        // Firebase Remote Config (v2.0.57, Sprint 2.1 AAA-Audit #1): Live-Tuning ohne App-Update.
+        // Firebase Remote Config (v2.0.57.1 : Live-Tuning ohne App-Update.
         // FirebaseRemoteConfigService erbt von DefaultsRemoteConfigService — eingebettete
         // JSON-Defaults bleiben Fallback fuer Offline/Erststart.
 #if DEBUG
@@ -139,7 +139,7 @@ public class MainActivity : AvaloniaMainActivity
 
         _adMobHelper?.Resume();
 
-        // Sprint 2.3 AAA-Audit #3: Re-Engagement-Notifications stornieren — User ist aktiv,
+        //.3 : Re-Engagement-Notifications stornieren — User ist aktiv,
         // Reminder waeren irritierend.
         try
         {
@@ -147,7 +147,7 @@ public class MainActivity : AvaloniaMainActivity
         }
         catch { /* Best-Effort — Service evtl. noch nicht initialisiert */ }
 
-        // Sprint 2.1 AAA-Audit #1: Frische Live-Ops-Config beim Wiedereinstieg holen.
+        //.1 : Frische Live-Ops-Config beim Wiedereinstieg holen.
         // Das Min-Fetch-Interval (1h Prod) drosselt — kein Quota-Risiko bei haeufigem Resume.
         try
         {
@@ -160,7 +160,7 @@ public class MainActivity : AvaloniaMainActivity
     {
         _adMobHelper?.Pause();
 
-        // Sprint 2.3 AAA-Audit #3: Re-Engagement-Notifications planen.
+        //.3 : Re-Engagement-Notifications planen.
         // App geht in den Hintergrund, plane D1/D3/D7-Reminders fuer inaktive Spieler.
         try
         {

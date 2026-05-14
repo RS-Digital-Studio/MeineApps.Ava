@@ -102,12 +102,12 @@ public sealed class LevelGenerator : ILevelGenerator
 
         // PowerUpLuck-Upgrade: Zusätzliche zufällige PowerUps
         int extraPowerUps = context.PowerUpLuckLevel;
-        // Sprint 7.1 AAA-Audit #14: Hero-PowerUp-Multiplier — LuckyLola (1.20) gibt 20% mehr PowerUps.
+        //.1 : Hero-PowerUp-Multiplier — LuckyLola (1.20) gibt 20% mehr PowerUps.
         if (extraPowerUps > 0 && Math.Abs(context.HeroPowerUpMultiplier - 1.0f) > 0.001f)
         {
             extraPowerUps = (int)Math.Round(extraPowerUps * context.HeroPowerUpMultiplier);
         }
-        // Welle 1 v2.0.58 AAA-Audit #19: BlockDropChanceBonus addiert pauschale Extra-PowerUps.
+        // Welle 1 v2.0.58 : BlockDropChanceBonus addiert pauschale Extra-PowerUps.
         // BrickBoris (0.10) auf 30 Block-Cells = +3 Extra-PowerUps.
         if (context.HeroBlockDropChanceBonus > 0.001f)
         {
@@ -256,7 +256,7 @@ public sealed class LevelGenerator : ILevelGenerator
                     if (!placed) continue; // Nur nach 40 Fehlversuchen aufgeben
                 }
 
-                // Sprint 6.1 AAA-Audit #12: Elite-Modifier — ab Welt 3, 8% Chance.
+                //.1 : Elite-Modifier — ab Welt 3, 8% Chance.
                 // Elites haben 1.2x Speed, 2x HP, 3x Points (Enemy-Konstruktor multiplikativ).
                 bool isElite = false;
                 if (level.Number > 0)
@@ -276,7 +276,7 @@ public sealed class LevelGenerator : ILevelGenerator
             bool isDuoBoss = level.BossKind2.HasValue;
             bool isMiniBoss = level.IsMiniBossLevel;
             var bossType1 = level.BossKind.Value;
-            // Sprint 6.1 AAA-Audit #15: Boss-Modifier nur fuer Single-Boss-Encounter
+            //.1 : Boss-Modifier nur fuer Single-Boss-Encounter
             // (Duo-Boss = bereits Endgame-Schwierigkeit). Welt-ID aus Level.Number ableiten.
             // Mini-Bosse bekommen KEINE Modifier (Trainings-Encounter, kein Twist).
             int worldId = level.Number > 0 ? Math.Max(1, (level.Number - 1) / 10 + 1) : 1;
@@ -309,9 +309,9 @@ public sealed class LevelGenerator : ILevelGenerator
         => SpawnBossAtPosition(grid, gridX, gridY, bossType, worldId: 1, rng: null, miniBoss: false);
 
     /// <summary>
-    /// Sprint 6.1 AAA-Audit #15: Boss-Spawn mit Modifier-Roll basierend auf Welt-ID.
+    ///.1 : Boss-Spawn mit Modifier-Roll basierend auf Welt-ID.
     /// Welt 1-4 nie Modifier, Welt 5-9 30%, Welt 10 60%.
-    /// Welle 1 v2.0.58 AAA-Audit #10: miniBoss-Flag fuer Mid-World-Encounter (halbe HP/Punkte, kein Modifier).
+    /// Welle 1 v2.0.58 : miniBoss-Flag fuer Mid-World-Encounter (halbe HP/Punkte, kein Modifier).
     /// </summary>
     private static BossEnemy SpawnBossAtPosition(GameGrid grid, int gridX, int gridY, BossType bossType,
         int worldId, Random? rng, bool miniBoss)
@@ -335,7 +335,7 @@ public sealed class LevelGenerator : ILevelGenerator
 
         var boss = BossEnemy.CreateAtGrid(gridX, gridY, bossType, miniBoss);
 
-        // Sprint 6.1 AAA-Audit #15: Boss-Modifier-Roll. NUR fuer Story-Bosse (BossSequenceLevel),
+        //.1 : Boss-Modifier-Roll. NUR fuer Story-Bosse (BossSequenceLevel),
         // nicht fuer BossRush oder Duo-Boss-Encounter (zu viel Komplexitaet bei x2 Bossen).
         // Mini-Bosse bewusst ohne Modifier (Trainings-Encounter, soll lesbar bleiben).
         if (rng != null)

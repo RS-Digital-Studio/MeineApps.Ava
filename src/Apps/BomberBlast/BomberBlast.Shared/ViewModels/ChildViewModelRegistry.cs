@@ -4,7 +4,7 @@ namespace BomberBlast.ViewModels;
 /// Default-Implementation von <see cref="IChildViewModelRegistry"/> (Welle 6 MainViewModel-Refactor).
 ///
 /// <para>
-/// Phase 1: Leeres Geruest. Die 22 VM-Felder + EnsureXxxVm-Methoden werden in Phase 3 aus
+/// : Leeres Geruest. Die 22 VM-Felder + EnsureXxxVm-Methoden werden in aus
 /// <see cref="MainViewModel"/> hier hin verschoben.
 /// </para>
 /// </summary>
@@ -12,18 +12,18 @@ public sealed class ChildViewModelRegistry : IChildViewModelRegistry
 {
     public event Action<string>? VmInstantiated;
 
-    // Phase 1: Alle Properties werfen NotImplementedException — werden in Phase 3 mit Backing-Fields versehen.
-    public MainMenuViewModel MenuVm => throw new NotImplementedException("Phase 3.");
-    public LevelSelectViewModel LevelSelectVm => throw new NotImplementedException("Phase 3.");
-    public SettingsViewModel SettingsVm => throw new NotImplementedException("Phase 3.");
-    public HighScoresViewModel HighScoresVm => throw new NotImplementedException("Phase 3.");
-    public GameOverViewModel GameOverVm => throw new NotImplementedException("Phase 3.");
-    public HelpViewModel HelpVm => throw new NotImplementedException("Phase 3.");
-    public VictoryViewModel VictoryVm => throw new NotImplementedException("Phase 3.");
-    public BossRushViewModel BossRushVm => throw new NotImplementedException("Phase 3.");
-    public WhatsNewViewModel WhatsNewVm => throw new NotImplementedException("Phase 3.");
-    public PlayHubViewModel PlayHubVm => throw new NotImplementedException("Phase 3.");
-    public BottomTabBarViewModel BottomTabVm => throw new NotImplementedException("Phase 3.");
+    // : Alle Properties werfen NotImplementedException — werden in mit Backing-Fields versehen.
+    public MainMenuViewModel MenuVm => throw new NotImplementedException(".");
+    public LevelSelectViewModel LevelSelectVm => throw new NotImplementedException(".");
+    public SettingsViewModel SettingsVm => throw new NotImplementedException(".");
+    public HighScoresViewModel HighScoresVm => throw new NotImplementedException(".");
+    public GameOverViewModel GameOverVm => throw new NotImplementedException(".");
+    public HelpViewModel HelpVm => throw new NotImplementedException(".");
+    public VictoryViewModel VictoryVm => throw new NotImplementedException(".");
+    public BossRushViewModel BossRushVm => throw new NotImplementedException(".");
+    public WhatsNewViewModel WhatsNewVm => throw new NotImplementedException(".");
+    public PlayHubViewModel PlayHubVm => throw new NotImplementedException(".");
+    public BottomTabBarViewModel BottomTabVm => throw new NotImplementedException(".");
 
     public GameViewModel? GameVm => null;
     public ShopViewModel? ShopVm => null;
@@ -41,24 +41,24 @@ public sealed class ChildViewModelRegistry : IChildViewModelRegistry
     public ProfileViewModel? ProfileVm => null;
     public GemShopViewModel? GemShopVm => null;
 
-    public GameViewModel EnsureGame() => throw new NotImplementedException("Phase 3.");
-    public ShopViewModel EnsureShop() => throw new NotImplementedException("Phase 3.");
-    public AchievementsViewModel EnsureAchievements() => throw new NotImplementedException("Phase 3.");
-    public DailyChallengeViewModel EnsureDailyChallenge() => throw new NotImplementedException("Phase 3.");
-    public LuckySpinViewModel EnsureLuckySpin() => throw new NotImplementedException("Phase 3.");
-    public WeeklyChallengeViewModel EnsureWeeklyChallenge() => throw new NotImplementedException("Phase 3.");
-    public StatisticsViewModel EnsureStatistics() => throw new NotImplementedException("Phase 3.");
-    public QuickPlayViewModel EnsureQuickPlay() => throw new NotImplementedException("Phase 3.");
-    public DeckViewModel EnsureDeck() => throw new NotImplementedException("Phase 3.");
-    public DungeonViewModel EnsureDungeon() => throw new NotImplementedException("Phase 3.");
-    public BattlePassViewModel EnsureBattlePass() => throw new NotImplementedException("Phase 3.");
-    public CollectionViewModel EnsureCollection() => throw new NotImplementedException("Phase 3.");
-    public LeagueViewModel EnsureLeague() => throw new NotImplementedException("Phase 3.");
-    public ProfileViewModel EnsureProfile() => throw new NotImplementedException("Phase 3.");
-    public GemShopViewModel EnsureGemShop() => throw new NotImplementedException("Phase 3.");
+    public GameViewModel EnsureGame() => throw new NotImplementedException(".");
+    public ShopViewModel EnsureShop() => throw new NotImplementedException(".");
+    public AchievementsViewModel EnsureAchievements() => throw new NotImplementedException(".");
+    public DailyChallengeViewModel EnsureDailyChallenge() => throw new NotImplementedException(".");
+    public LuckySpinViewModel EnsureLuckySpin() => throw new NotImplementedException(".");
+    public WeeklyChallengeViewModel EnsureWeeklyChallenge() => throw new NotImplementedException(".");
+    public StatisticsViewModel EnsureStatistics() => throw new NotImplementedException(".");
+    public QuickPlayViewModel EnsureQuickPlay() => throw new NotImplementedException(".");
+    public DeckViewModel EnsureDeck() => throw new NotImplementedException(".");
+    public DungeonViewModel EnsureDungeon() => throw new NotImplementedException(".");
+    public BattlePassViewModel EnsureBattlePass() => throw new NotImplementedException(".");
+    public CollectionViewModel EnsureCollection() => throw new NotImplementedException(".");
+    public LeagueViewModel EnsureLeague() => throw new NotImplementedException(".");
+    public ProfileViewModel EnsureProfile() => throw new NotImplementedException(".");
+    public GemShopViewModel EnsureGemShop() => throw new NotImplementedException(".");
 
-    public void RefreshAllLocalizedTexts() => throw new NotImplementedException("Phase 3.");
-    public void WireCommon(INavigable vm) => throw new NotImplementedException("Phase 3.");
+    public void RefreshAllLocalizedTexts() => throw new NotImplementedException(".");
+    public void WireCommon(INavigable vm) => throw new NotImplementedException(".");
 
     /// <summary>Helper-Schutz damit Event-Subscriber waehrend der Migration nicht crashen.</summary>
     internal void RaiseVmInstantiated(string propertyName) => VmInstantiated?.Invoke(propertyName);

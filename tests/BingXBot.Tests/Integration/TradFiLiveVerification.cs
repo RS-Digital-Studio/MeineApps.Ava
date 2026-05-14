@@ -20,7 +20,7 @@ namespace BingXBot.Tests.Integration;
 ///
 /// Diese Tests brauchen Internet-Zugang, aber KEINE API-Keys (nur Public-Endpoints).
 ///
-/// Ausführung:  dotnet test --filter "FullyQualifiedName~TradFiLiveVerification"
+/// Ausführung: dotnet test --filter "FullyQualifiedName~TradFiLiveVerification"
 /// </summary>
 [Trait("Category", "Integration")]
 public class TradFiLiveVerification

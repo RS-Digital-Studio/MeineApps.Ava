@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LUFS-Mastering-Skript fuer BomberBlast (Welle 4 v2.0.58 AAA-Audit #15).
+# LUFS-Mastering-Skript fuer BomberBlast.
 #
 # Normalisiert alle Audio-Assets (Background-Musik + langlebige Stinger) auf
 # -16 LUFS (EBU R128 / Mobile-Standard). Loest hoerbare Lautstaerke-Spruenge

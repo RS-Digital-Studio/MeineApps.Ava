@@ -8,7 +8,7 @@
              x:DataType="vm:PlayHubViewModel"
              x:CompileBindings="True">
 
-  <!-- Sprint 3.1 AAA-Audit #4: "Spielen"-Tab — alle Spielmodi als Karten-Liste.
+  <!--.1 : "Spielen"-Tab — alle Spielmodi als Karten-Liste.
        Landscape-Layout, 3x2-Grid. Gesperrte Modi mit Schloss-Overlay. -->
   <Panel x:Name="PlayHub_Root" AutomationProperties.AutomationId="PlayHub_Root">
     <controls:MenuBackgroundCanvas />

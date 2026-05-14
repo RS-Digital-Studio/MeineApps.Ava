@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Feature-Unlock-Choreographer (Sprint 4.4 AAA-Audit #20).
+/// Feature-Unlock-Choreographer (.4 .
 ///
 /// <para>
 /// Spielt eine kurze, prominente Animation ab wenn der Spieler ein neues Feature

@@ -17,7 +17,7 @@ public class EquipmentServiceTests
     private static (IGameStateService gameState, GameState state) ErstelleMock()
     {
         var state = new GameState();
-        // v2.1.1 (Audit C-C03): Echte GameStateService-Instanz statt Mock — EquipmentService
+        // Echte GameStateService-Instanz statt Mock — EquipmentService
         // mutiert jetzt unter ExecuteWithLock, das ein NSubstitute-Mock nicht ausfuehren wuerde.
         var gameState = GameStateTestFactory.Create(state);
         return (gameState, state);

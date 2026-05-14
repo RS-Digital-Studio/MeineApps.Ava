@@ -60,9 +60,9 @@ public interface ICardService
     // 5 Karten der gleichen Rarity + Coins → 1 Karte naechsthoeherer Rarity.
     // Reduziert Common-Stau (Spieler haben mit der Zeit zu viele Common-Duplikate).
     // Cost-Tabelle:
-    //   5 Common  + 2.000 Coins  → 1 Rare      (Rare-Pool: 4 Karten Smoke/Lightning/Gravity/Poison)
-    //   5 Rare    + 8.000 Coins  → 1 Epic      (Epic-Pool: TimeWarp/Mirror/Vortex/Phantom)
-    //   5 Epic    + 25.000 Coins → 1 Legendary (Legendary-Pool: Nova/BlackHole)
+    //   5 Common + 2.000 Coins → 1 Rare      (Rare-Pool: 4 Karten Smoke/Lightning/Gravity/Poison)
+    //   5 Rare + 8.000 Coins → 1 Epic      (Epic-Pool: TimeWarp/Mirror/Vortex/Phantom)
+    //   5 Epic + 25.000 Coins → 1 Legendary (Legendary-Pool: Nova/BlackHole)
 
     /// <summary>Anzahl Quell-Karten die fuer ein Crafting benoetigt werden (5).</summary>
     int CraftCardCount { get; }

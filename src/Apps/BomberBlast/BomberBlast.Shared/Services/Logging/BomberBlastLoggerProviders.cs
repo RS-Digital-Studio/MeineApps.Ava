@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace BomberBlast.Services.Logging;
 
 /// <summary>
-/// Eigene <see cref="ILoggerProvider"/>-Implementierungen fuer BomberBlast (Sprint 4.1 AAA-Audit #6).
+/// Eigene <see cref="ILoggerProvider"/>-Implementierungen fuer BomberBlast (.1 .
 ///
 /// <para>
 /// Microsoft.Extensions.Logging-Infrastruktur mit drei eigenen Providern (Code-only-Mandat,
@@ -173,7 +173,7 @@ internal sealed class NullScope : IDisposable
 /// <c>ILogger</c>-Eintraege in Firebase-Non-Fatals + Breadcrumbs.
 ///
 /// <para>
-/// Migration-Pfad (Welle 5+ / Sprint 4.1 #14): Ersetzt die manuelle Telemetry-Bridge des alten
+/// Migration-Pfad (Welle 5+ /.1 #14): Ersetzt die manuelle Telemetry-Bridge des alten
 /// <c>AppLogger</c>. Alle Services nutzen jetzt <c>ILogger&lt;T&gt;</c>; dieser Provider
 /// dockt automatisch an die Microsoft.Extensions.Logging-Pipeline an. Errors mit Exception
 /// landen als non-fatal Crash-Report mit Stack-Trace in Crashlytics, Warnings/Errors ohne

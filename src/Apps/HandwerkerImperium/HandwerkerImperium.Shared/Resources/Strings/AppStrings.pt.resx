@@ -3329,7 +3329,7 @@
     <value>Greve: Apenas níveis até C disponíveis!</value>
   </data>
 
-  <!-- Phase 1: General + SaveGame -->
+  <!-- : General + SaveGame -->
   <data name="SaveErrorMessage" xml:space="preserve">
     <value>Não foi possível salvar o jogo.</value>
   </data>

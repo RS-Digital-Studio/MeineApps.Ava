@@ -57,7 +57,7 @@ public sealed partial class GameRenderer
         else if (boss.IsAttacking)
             attackPulse = 1f + MathF.Sin(_globalTimer * 18f) * 0.08f;
 
-        // Sprint 3.4 AAA-Audit #19: Anticipation-Frames in den letzten 120ms vor Attack-Trigger.
+        //.4 : Anticipation-Frames in den letzten 120ms vor Attack-Trigger.
         // Boss-Sprite zieht sich zurueck (0.85x) → Sin-Pop. Multipliziert mit attackPulse —
         // bewusst kombinierbar (Wind-Up + Pulse gleichzeitig).
         float anticipation = boss.AnticipationScale;

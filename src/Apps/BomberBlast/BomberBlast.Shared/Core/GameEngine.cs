@@ -56,15 +56,15 @@ public sealed partial class GameEngine : IDisposable
     private readonly IEventService _eventService;
     private readonly IVibrationService _vibration;
     private readonly ILogger<GameEngine> _logger;
-    // v2.0.44 — AAA-Audit: Accessibility-ColorMatrix wird vor jedem Frame ausgewertet
+    // v2.0.44 — : Accessibility-ColorMatrix wird vor jedem Frame ausgewertet
     private readonly IAccessibilityService _accessibility;
-    // v2.0.44 — AAA-Audit: Funnel-Tracking
+    // v2.0.44 — : Funnel-Tracking
     private readonly IAnalyticsService _analytics;
-    // v2.0.45 — AAA-Audit: Performance-Telemetry (FPS-Bucket für Crashlytics-Custom-Keys)
+    // v2.0.45 — : Performance-Telemetry (FPS-Bucket für Crashlytics-Custom-Keys)
     private readonly ITelemetryService _telemetry;
-    /// <summary>Sprint 7.1 AAA-Audit #21: Hero/Character-Service fuer Stat-Anwendung beim Spawn.</summary>
+    /// <summary>.1 : Hero/Character-Service fuer Stat-Anwendung beim Spawn.</summary>
     private readonly IHeroService _heroService;
-    /// <summary>Sprint 7.2 AAA-Audit #22: Multiplayer-Session-Service fuer 2P-Co-Op-Toggle.</summary>
+    /// <summary>.2 : Multiplayer-Session-Service fuer 2P-Co-Op-Toggle.</summary>
     private readonly IMultiplayerSessionService _multiplayerSession;
     // Phase 24b — Optional Retention-Service (für First-Win-Cinematic-Trigger).
     // Kein Constructor-Param damit DI-Chain nicht angefasst werden muss; via Property-Injection
@@ -72,7 +72,7 @@ public sealed partial class GameEngine : IDisposable
     public IRetentionService? RetentionService { get; set; }
 
     /// <summary>
-    /// Sprint 6.2 AAA-Audit #13: Mini-Story-Beats-Service fuer Welt-Intro/Outro-Cutscenes.
+    ///.2 : Mini-Story-Beats-Service fuer Welt-Intro/Outro-Cutscenes.
     /// Property-Injection (kein Constructor-Param) — GameViewModel setzt es nach Construction.
     /// </summary>
     public IWorldStoryService? WorldStoryService { get; set; }
@@ -311,7 +311,7 @@ public sealed partial class GameEngine : IDisposable
     // Level info
     private Level? _currentLevel;
     private int _currentLevelNumber;
-    // Sprint 5.1 AAA-Audit #11: Bool-Flags sind jetzt Computed-Properties auf _currentMode.
+    //.1 : Bool-Flags sind jetzt Computed-Properties auf _currentMode.
     // Mode-Plugin-Migration komplett — Source-of-Truth ist _currentMode, Bools nur Read-View.
     // Set-Operationen (_isXxx = true/false) wurden entfernt; _currentMode wird in jeder
     // StartXxxModeAsync-Methode explizit gesetzt.
@@ -323,7 +323,7 @@ public sealed partial class GameEngine : IDisposable
     private bool _isMasterMode => _currentMode is BomberBlast.Core.Modes.MasterMode;
 
     /// <summary>
-    /// v2.0.49 — Mode-Plugin-Framework Phase 2: Aktiver Mode (kapselt Mode-spezifischen State).
+    /// v2.0.49 — Mode-Plugin-Framework : Aktiver Mode (kapselt Mode-spezifischen State).
     /// Wird beim Start einer StartXxxModeAsync-Methode gesetzt.
     /// Backward-Compat: Existierende Bool-Flags (_isSurvivalMode etc.) bleiben parallel als
     /// Source-of-Truth, bis die Engine-Logic auf IGameMode-Hooks migriert ist (Folge-Iterationen).
@@ -445,7 +445,7 @@ public sealed partial class GameEngine : IDisposable
 
     // Daily Race (v2.0.42, Plan Task 3.1): Wie Daily Challenge mit Race-Flag,
     // wird nach GameOver via ILeagueService.SubmitDailyRaceScoreAsync gepusht.
-    // Sprint 5.1 AAA-Audit #11: Computed-Property auf _currentMode.
+    //.1 : Computed-Property auf _currentMode.
     private bool _isDailyRace => _currentMode is BomberBlast.Core.Modes.DailyRaceMode;
 
     /// <summary>Hilfs-Property: Liefert die aktive DailyRaceMode-Instanz oder null.</summary>
@@ -454,7 +454,7 @@ public sealed partial class GameEngine : IDisposable
     // Boss-Rush-Modus (v2.0.42, Plan Task 3.3): 5 sequenzielle Boss-Bosse mit Score-Akkumulation.
     // Bei Boss-Tod automatisch naechster Boss. Bei Player-Tod Run-Ende mit SubmitRun(score, time, false).
     // Bei 5. Boss-Clear: SubmitRun mit completedAll=true.
-    // Sprint 5.1 AAA-Audit #11: Computed-Property auf _currentMode.
+    //.1 : Computed-Property auf _currentMode.
     private bool _isBossRushMode => _currentMode is BomberBlast.Core.Modes.BossRushMode;
 
     /// <summary>
@@ -499,7 +499,7 @@ public sealed partial class GameEngine : IDisposable
     private readonly List<(List<(int x, int y)> cells, float timer)> _pendingIceCleanups = new();
 
     /// <summary>
-    /// Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait DoubleDetonation (TwinTina).
+    /// Welle 1 v2.0.58 : Hero-Trait DoubleDetonation (TwinTina).
     /// Wenn eine Spieler-Bombe explodiert, wird 0.5s spaeter eine Sekundaer-Explosion
     /// am selben Spot gespawnt (75% Range, kein Bomb-Cycle, keine Chain-Reaktion).
     /// </summary>
@@ -513,7 +513,7 @@ public sealed partial class GameEngine : IDisposable
     private int _scoreAtLevelStart; // Score zu Beginn des Levels (für Coin-Berechnung)
     private bool _playerDamagedThisLevel; // Für NoDamage-Achievement
 
-    // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie — verstrichene Zeit + Tode pro Level.
+    //.2 : Funnel-Telemetrie — verstrichene Zeit + Tode pro Level.
     private float _levelElapsedSeconds; // Wird in Update() inkrementiert (nur Playing-State)
     private int _deathsInLevel;         // Reset bei Level-Start, +1 bei jedem Player-Tod im Level
     private int _comboTiersInLevel;     // Reset bei Level-Start, +1 bei jedem MEGA/ULTRA-Combo-Tier
@@ -544,11 +544,11 @@ public sealed partial class GameEngine : IDisposable
     private readonly GameFloatingTextSystem _floatingText = new();
     // v2.0.46 — Accessibility: Audio-Caption-System für gehörlose Spieler
     private readonly SubtitleSystem _subtitles = new();
-    // v2.0.46 — AAA-Audit: Cinematic-Director Phase 1 für Boss-Reveal-Sequenzen
+    // v2.0.46 — : Cinematic-Director für Boss-Reveal-Sequenzen
     private readonly CinematicSequencer _cinematic = new();
-    // Sprint 1.2 AAA-Audit #7: ULTRA-Combo Vollbild-Vignette-Flash (Trigger bei Combo ≥ x10)
+    //.2 : ULTRA-Combo Vollbild-Vignette-Flash (Trigger bei Combo ≥ x10)
     private readonly UltraComboFlash _ultraFlash = new();
-    // Sprint 3.3 AAA-Audit #18: Damage-Flash (rote Vignette bei Player-Hit, 300ms snap+fade)
+    //.3 : Damage-Flash (rote Vignette bei Player-Hit, 300ms snap+fade)
     private readonly UltraComboFlash _damageFlash = new();
     private float _hitPauseTimer;
 
@@ -633,7 +633,7 @@ public sealed partial class GameEngine : IDisposable
     //  3.0s vor Spawn → Audio-Cue + Bildschirmrand-Glow + Subtitle "[ZEIT-WARNUNG]"
     //  1.5s vor Spawn → Pulsierendes "!"-Indicator (existing)
     //  0.5s vor Spawn → Trauma-Spike + roter Flash
-    // Begründung: 1.5s allein war im Audit als zu schwach markiert. Drei Stufen geben dem Spieler
+    // Begründung: 1.5s allein war als zu schwach markiert. Drei Stufen geben dem Spieler
     // Reaktionszeit auf Mobile (Tap-Latenz) ohne Pontan völlig vorhersehbar zu machen.
     private const float PONTAN_WARNING_TIME = 1.5f; // Stage-2: Position + "!"-Indicator (Bestand)
     private const float PONTAN_EARLY_WARNING_TIME = 3.0f; // Stage-1: Audio-Cue + Subtitle
@@ -907,9 +907,9 @@ public sealed partial class GameEngine : IDisposable
         IAccessibilityService accessibility,
         IAnalyticsService analytics,
         ITelemetryService telemetry,
-        // Sprint 7.1 AAA-Audit #21: Hero/Character-System Engine-Integration.
+        //.1 : Hero/Character-System Engine-Integration.
         IHeroService heroService,
-        // Sprint 7.2 AAA-Audit #22: 2P-Co-Op-Session-Service Engine-Integration.
+        //.2 : 2P-Co-Op-Session-Service Engine-Integration.
         IMultiplayerSessionService multiplayerSession)
     {
         _soundManager = soundManager;
@@ -965,7 +965,7 @@ public sealed partial class GameEngine : IDisposable
         // Phase 28b — KonamiCode-Easter-Egg-Reward verkabeln
         _inputManager.KonamiDetector.CodeTriggered += OnKonamiCodeTriggered;
 
-        // Sprint 2.2 AAA-Audit #2: Tutorial-Funnel-Telemetrie (per-Step + Final-Complete).
+        //.2 : Tutorial-Funnel-Telemetrie (per-Step + Final-Complete).
         _tutorialService.StepCompleted += OnTutorialStepCompleted;
         _tutorialService.TutorialCompleted += OnTutorialCompleted;
 
@@ -1195,7 +1195,7 @@ public sealed partial class GameEngine : IDisposable
                 break;
 
             case GameState.Playing:
-                // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie tickt Level-Zeit nur waehrend Playing.
+                //.2 : Funnel-Telemetrie tickt Level-Zeit nur waehrend Playing.
                 _levelElapsedSeconds += deltaTime;
                 // Phase 18c — FixedTimestep opt-in:
                 // Wenn aktiv, wird UpdatePlaying mehrere Male pro Frame mit FIXED_TICK_SECONDS aufgerufen
@@ -1577,7 +1577,7 @@ public sealed partial class GameEngine : IDisposable
                 int coins = (_player.Score - _scoreAtLevelStart) / 6;
                 if (_purchaseService.IsPremium)
                     coins *= 3;
-                // Sprint 7.1 AAA-Audit #14: Hero-Coin-Pickup-Multiplier auch bei Trost-Coins.
+                //.1 : Hero-Coin-Pickup-Multiplier auch bei Trost-Coins.
                 var heroForTrost = _heroService.ActiveHero;
                 if (Math.Abs(heroForTrost.CoinPickupMultiplier - 1.0f) > 0.001f)
                     coins = (int)Math.Round(coins * heroForTrost.CoinPickupMultiplier);
@@ -1599,15 +1599,15 @@ public sealed partial class GameEngine : IDisposable
                 {
                     _tracking.OnDungeonRunCompleted();
                     var summary = _dungeonService.EndRun();
-                    // Sprint 5.1: _currentMode = null beendet auch _isDungeonRun (Computed).
+                    // _currentMode = null beendet auch _isDungeonRun (Computed).
                     _currentMode = null;
                     DungeonRunEnd?.Invoke(summary);
                 }
 
                 _tracking.FlushIfDirty();
 
-                // v2.0.44 — AAA-Audit: GameOver-Telemetrie für Funnel-Drop-off-Analyse.
-                // Sprint 2.2 AAA-Audit #2: erweitert um cause + attempt_count fuer Drop-Off-Pattern.
+                // v2.0.44 — : GameOver-Telemetrie für Funnel-Drop-off-Analyse.
+                //.2 : erweitert um cause + attempt_count fuer Drop-Off-Pattern.
                 _analytics?.LogEvent(AnalyticsEvents.LevelFailed, new Dictionary<string, object>
                 {
                     ["level"] = _currentLevelNumber,
@@ -2163,7 +2163,7 @@ public sealed partial class GameEngine : IDisposable
 
     /// <summary>
     /// StoneGolem: 3-4 zufällige leere Zellen werden zu Blöcken.
-    /// Phase 2 (Enraged): 5-7 Zellen + bevorzugt rund um den Spieler (max 3 Zellen Abstand).
+    ///  (Enraged): 5-7 Zellen + bevorzugt rund um den Spieler (max 3 Zellen Abstand).
     /// </summary>
     private void CalculateStoneGolemTargets(BossEnemy boss)
     {
@@ -2171,7 +2171,7 @@ public sealed partial class GameEngine : IDisposable
         int count = phase2 ? EngineRngNext(5, 8) : EngineRngNext(3, 5);
         int attempts = phase2 ? 60 : 40;
 
-        // Phase 2: Ersten Hit garantiert nah am Spieler (1 Zelle daneben).
+        // : Ersten Hit garantiert nah am Spieler (1 Zelle daneben).
         if (phase2)
         {
             int px = _player.GridX;
@@ -2194,7 +2194,7 @@ public sealed partial class GameEngine : IDisposable
             int gx, gy;
             if (phase2 && attempts > 30)
             {
-                // Phase 2: Erste Hälfte bevorzugt nahe Spieler (3-Zellen-Umkreis)
+                // : Erste Hälfte bevorzugt nahe Spieler (3-Zellen-Umkreis)
                 gx = Math.Clamp(_player.GridX + EngineRngNext(-3, 4), 1, _grid.Width - 2);
                 gy = Math.Clamp(_player.GridY + EngineRngNext(-3, 4), 1, _grid.Height - 2);
             }
@@ -2216,7 +2216,7 @@ public sealed partial class GameEngine : IDisposable
 
     /// <summary>
     /// IceDragon: Zufällige horizontale Reihe wird eingefroren.
-    /// Phase 2 (Enraged): 2 Reihen — eine über und eine unter dem Spieler (Sandwich-Pattern).
+    ///  (Enraged): 2 Reihen — eine über und eine unter dem Spieler (Sandwich-Pattern).
     /// </summary>
     private void CalculateIceDragonTargets(BossEnemy boss)
     {
@@ -2241,7 +2241,7 @@ public sealed partial class GameEngine : IDisposable
             return;
         }
 
-        // Phase 1: Zufällige Reihe (nicht die äußersten Ränder)
+        // : Zufällige Reihe (nicht die äußersten Ränder)
         int row = EngineRngNext(1, _grid.Height - 1);
         for (int x = 1; x < _grid.Width - 1; x++)
         {
@@ -2255,13 +2255,13 @@ public sealed partial class GameEngine : IDisposable
 
     /// <summary>
     /// FireDemon: Obere oder untere Hälfte des Bodens wird gefährlich.
-    /// Phase 2 (Enraged): 3/4 des Bodens — nur ein 1/4-Streifen bleibt als Safe-Zone.
+    ///  (Enraged): 3/4 des Bodens — nur ein 1/4-Streifen bleibt als Safe-Zone.
     /// </summary>
     private void CalculateFireDemonTargets(BossEnemy boss)
     {
         if (boss.CurrentPhase >= 2)
         {
-            // Phase 2: 3 von 4 Quadranten = Lava. Quadrant wird zufällig ausgespart.
+            // : 3 von 4 Quadranten = Lava. Quadrant wird zufällig ausgespart.
             int safeQuadrant = EngineRngNext(4); // 0=oben-links, 1=oben-rechts, 2=unten-links, 3=unten-rechts
             int midX = _grid.Width / 2;
             int midY = _grid.Height / 2;
@@ -2282,7 +2282,7 @@ public sealed partial class GameEngine : IDisposable
             return;
         }
 
-        // Phase 1: Zufällig obere oder untere Hälfte
+        // : Zufällig obere oder untere Hälfte
         bool upperHalf = EngineRngNext(2) == 0;
         int startY = upperHalf ? 1 : _grid.Height / 2;
         int endY = upperHalf ? _grid.Height / 2 : _grid.Height - 1;
@@ -2302,7 +2302,7 @@ public sealed partial class GameEngine : IDisposable
 
     /// <summary>
     /// Boss-Angriff ausführen (einmalig beim Wechsel von Telegraph → Angriff).
-    /// FinalBoss Phase 2 (Enraged): Führt 2 Attacks gleichzeitig aus (Rotation + Rotation+1).
+    /// FinalBoss (Enraged): Führt 2 Attacks gleichzeitig aus (Rotation + Rotation+1).
     /// </summary>
     private void ExecuteBossAttack(BossEnemy boss)
     {
@@ -2311,7 +2311,7 @@ public sealed partial class GameEngine : IDisposable
 
         if (boss.BossKind == BossType.FinalBoss && boss.CurrentPhase >= 2)
         {
-            // Phase 2: Doppel-Angriff. Erst aktueller Rotation-Index, dann der nächste.
+            // : Doppel-Angriff. Erst aktueller Rotation-Index, dann der nächste.
             var first = BossKindForRotation(boss.AttackRotationIndex);
             var second = BossKindForRotation((boss.AttackRotationIndex + 1) % 4);
             ExecuteSingleBossAttack(boss, first);
@@ -2447,7 +2447,7 @@ public sealed partial class GameEngine : IDisposable
 
     /// <summary>
     /// ShadowMaster-Angriff: Boss teleportiert sich zu zufälliger Position.
-    /// Phase 2 (Enraged): Spawnt zusätzlich 2 Schatten-Ballom am alten Standort
+    ///  (Enraged): Spawnt zusätzlich 2 Schatten-Ballom am alten Standort
     /// (kurze Lebenszeit als Mini-Enemies, harassen den Spieler während der Boss neu positioniert).
     /// </summary>
     private void ExecuteShadowMasterAttack(BossEnemy boss)
@@ -2500,7 +2500,7 @@ public sealed partial class GameEngine : IDisposable
             new SKColor(150, 0, 255), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_ENEMY_DEATH);
 
-        // Phase 2: 2 Schatten-Ballom am alten Standort spawnen (Harass-Wave).
+        // : 2 Schatten-Ballom am alten Standort spawnen (Harass-Wave).
         if (phase2)
         {
             (int dx, int dy)[] offsets = { (-1, 0), (1, 0), (0, -1), (0, 1) };
@@ -2563,7 +2563,7 @@ public sealed partial class GameEngine : IDisposable
             }
         }
 
-        // Welle 1 v2.0.58 AAA-Audit #19: TwinTina-DoubleDetonation Sekundaer-Explosionen.
+        // Welle 1 v2.0.58 : TwinTina-DoubleDetonation Sekundaer-Explosionen.
         for (int i = _pendingDoubleDetonations.Count - 1; i >= 0; i--)
         {
             var (gridX, gridY, range, timer) = _pendingDoubleDetonations[i];
@@ -2581,7 +2581,7 @@ public sealed partial class GameEngine : IDisposable
     }
 
     /// <summary>
-    /// Welle 1 v2.0.58 AAA-Audit #19: Spawnt eine standalone Explosion ohne Bomb-Lifecycle.
+    /// Welle 1 v2.0.58 : Spawnt eine standalone Explosion ohne Bomb-Lifecycle.
     /// Wird vom DoubleDetonation-Trait getriggert (TwinTina). Loest KEINE Kettenreaktion aus
     /// (keine vorhandenen Bomben in Reichweite zuenden), damit der Trait nicht zu maechtig wird.
     /// </summary>

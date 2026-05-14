@@ -4,7 +4,7 @@ namespace BomberBlast.Services;
 
 /// <summary>
 /// Extension fuer <see cref="IRewardedAdService"/> die Funnel-Telemetrie ergaenzt
-/// (Sprint 2.2 AAA-Audit #2).
+/// (.2 .
 ///
 /// Verwendung statt direktem <c>ShowAdAsync(placement)</c>:
 /// <code>

@@ -6,7 +6,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Trading;
 
-// v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder im PendingLimitOrderState.
+// v1.4.0 .7 (Finding 0.7) — Strategy-Felder im PendingLimitOrderState.
 //
 // Vor v1.4.0 wurden NavPointA / IsGklSetup / GklTimeframe / RunnerHardCap /
 // IsCounterTrendScalp / PositionScaleOverride beim Snapshot/Restore nicht mit-persistiert.

@@ -48,7 +48,7 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
-  <!-- P0.1 AAA-Audit: Tests duerfen interne Helper (Migration, Sanitize) sehen. -->
+  <!-- Tests duerfen interne Helper (Migration, Sanitize) sehen. -->
   <ItemGroup>
     <InternalsVisibleTo Include="HandwerkerImperium.Tests" />
   </ItemGroup>

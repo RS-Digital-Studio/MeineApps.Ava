@@ -55,7 +55,7 @@ public sealed class EternalMasteryServiceTests
     public void IncomeBonus_HundredPrestiges_ScalesEternal()
     {
         var svc = CreateService(100);
-        // v2.1.1 (Audit B-H02): Soft-Cap ab 50 Prestiges. Ueberschuss wird logarithmisch
+        // Soft-Cap ab 50 Prestiges. Ueberschuss wird logarithmisch
         // gedaempft: effective = 50 + log10(50+1)*10 ≈ 67
         // 67 * 0.5% + 13 * 2.5% + 6 * 5% = 33.5% + 32.5% + 30% = 96%
         Assert.Equal(0.960m, svc.IncomeBonus);

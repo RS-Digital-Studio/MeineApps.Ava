@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Cinematic-Director Phase 1: Zeitgesteuerter Effekt-Sequenzer für AAA-Boss-Reveals
+/// Cinematic-Director : Zeitgesteuerter Effekt-Sequenzer für AAA-Boss-Reveals
 /// und Big-Win-Sequenzen. Wird in GameEngine.Update mit deltaTime tick'ed,
 /// erlaubt ein-Frame-Effekte (Particle-Burst), Continuous-Effekte (Camera-Zoom)
 /// und Audio-Cues über Action-Callbacks.

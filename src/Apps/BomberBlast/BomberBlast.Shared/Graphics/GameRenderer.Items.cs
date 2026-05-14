@@ -213,7 +213,7 @@ public sealed partial class GameRenderer
                 }
                 else if (GetWorldBombFx() is { } wfx)
                 {
-                    // Sprint 1.1 AAA-Audit #6: Welt-spezifische Bomb-Farben
+                    //.1 : Welt-spezifische Bomb-Farben
                     bombBody = wfx.body;
                     bombGlow = wfx.glow;
                     bombFuse = wfx.fuse;
@@ -255,7 +255,7 @@ public sealed partial class GameRenderer
         }
 
         // Gloss highlight (top-left) - Bomben-Skin Highlight wenn nicht Standard
-        // Sprint 1.1 AAA-Audit #6: Bei Default-Skin Welt-spezifisches Highlight verwenden.
+        //.1 : Bei Default-Skin Welt-spezifisches Highlight verwenden.
         var hlSkin = _customizationService.BombSkin;
         SKColor hlColor;
         if (bomb.Type == BombType.Normal && hlSkin.Id != "bomb_default")
@@ -365,7 +365,7 @@ public sealed partial class GameRenderer
                 }
                 else if (GetWorldBombFx() is { } wsk)
                 {
-                    // Sprint 1.1 AAA-Audit #6: Welt-spezifische Funken-Farben
+                    //.1 : Welt-spezifische Funken-Farben
                     sparkGlow = wsk.sparkGlow.WithAlpha((byte)(80 + fuseProgress * 80));
                     sparkCore = wsk.sparkCore;
                 }

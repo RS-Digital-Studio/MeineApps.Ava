@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für AccessibilityService (v2.0.44 — AAA-Audit).
+/// Tests für AccessibilityService (v2.0.44 — ).
 /// Validiert Persistenz-Roundtrip, Event-Firing bei Property-Change,
 /// ColorblindMatrix-Validation für alle 4 Modi, UiScale-Clamping.
 /// </summary>

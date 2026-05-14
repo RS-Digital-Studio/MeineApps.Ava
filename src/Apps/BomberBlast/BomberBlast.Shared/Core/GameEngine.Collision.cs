@@ -34,7 +34,7 @@ public sealed partial class GameEngine
         // Double-Trigger-Schutz ist stattdessen in KillPlayer() (IsDying-Guard) und
         // CompleteLevel() (State-Guard) selbst implementiert.
 
-        // Sprint 6.1 AAA-Audit #15: Boss-Modifier Burning — Lava-Spur tötet Spieler.
+        //.1 : Boss-Modifier Burning — Lava-Spur tötet Spieler.
         if (!_player.IsDying && !_player.HasFlamepass && !_player.IsInvincible && !_player.HasSpawnProtection)
         {
             foreach (var enemy in _enemies)
@@ -298,7 +298,7 @@ public sealed partial class GameEngine
                     if (enemy.IsInvisible)
                         continue;
 
-                    // Sprint 6.1 AAA-Audit #12: Shielded-Modifier — Schild absorbiert 1 Hit pro
+                    //.1 : Shielded-Modifier — Schild absorbiert 1 Hit pro
                     // Recharge-Cooldown. Kein Schaden, sichtbares Feedback, Schild-Recharge laeuft an.
                     if (enemy is BossEnemy bossShield && bossShield.ConsumeShieldHit())
                     {
@@ -323,7 +323,7 @@ public sealed partial class GameEngine
                             var (hr, hg, hb) = enemy.Type.GetColor();
                             _particleSystem.Emit(enemy.X, enemy.Y, 6, new SKColor(hr, hg, hb), 60f, 0.3f);
 
-                            // Sprint 6.1 AAA-Audit #12: Reflective-Modifier — 30% Chance dass der Boss
+                            //.1 : Reflective-Modifier — 30% Chance dass der Boss
                             // den Hit auf den Spieler zurueckspiegelt. Deterministisch via EngineRngNext.
                             if (enemy is BossEnemy bossReflect
                                 && bossReflect.Modifier == Models.Entities.BossModifier.Reflective
@@ -383,9 +383,9 @@ public sealed partial class GameEngine
 
         _playerDamagedThisLevel = true;
         _fortressRegenTimer = 0; // Festungs-Synergy: Timer bei Schaden zurücksetzen
-        _deathsInLevel++;        // Sprint 2.2 AAA-Audit #2: Tode pro Level fuer Funnel-Telemetrie
+        _deathsInLevel++;        //.2 : Tode pro Level fuer Funnel-Telemetrie
 
-        // Sprint 3.3 AAA-Audit #18: Roter Damage-Flash am Bildschirmrand fuer Hit-Feedback.
+        //.3 : Roter Damage-Flash am Bildschirmrand fuer Hit-Feedback.
         // Snappy 50ms Attack + 250ms Decay = 300ms total — kuerzer als ULTRA-Combo-Flash
         // damit Spieler nicht von Vignette ueberlagert wird waehrend er reagiert.
         // Bei ReducedEffects-Toggle uebersprungen (Photosensitivity-Schutz).
@@ -397,7 +397,7 @@ public sealed partial class GameEngine
         _state = GameState.PlayerDied;
         _stateTimer = 0;
 
-        // Sprint 5.x AAA-Audit #8: OnPlayerHit-Hook — Modi koennen z.B. Run-Abbruch-Logik anhaengen.
+        //.x : OnPlayerHit-Hook — Modi koennen z.B. Run-Abbruch-Logik anhaengen.
         try { _currentMode?.OnPlayerHit(BuildModeContext()); }
         catch { /* Best-Effort, no-op-Default in GameModeBase */ }
 
@@ -428,14 +428,14 @@ public sealed partial class GameEngine
         _enemiesRemainingDirty = true;
         _enemiesKilled++;
 
-        // Sprint 5.x AAA-Audit #8: OnEnemyKilled-Hook — Modi koennen Spawn-Eskalation o.ae. anhaengen.
+        //.x : OnEnemyKilled-Hook — Modi koennen Spawn-Eskalation o.ae. anhaengen.
         try { _currentMode?.OnEnemyKilled(BuildModeContext()); }
         catch { /* Best-Effort, no-op-Default in GameModeBase */ }
 
         // Boss: Eigene Punkte statt EnemyType-Points
         int points = enemy is BossEnemy bossKilled ? bossKilled.BossPoints : enemy.Points;
 
-        // Sprint 5.x AAA-Audit #8: Mode-Score-Modifier (Default 1.0 = kein Effekt).
+        //.x : Mode-Score-Modifier (Default 1.0 = kein Effekt).
         // Auf `points` selbst angewandt → Score UND FloatingText-Anzeige bleiben konsistent.
         float scoreModifier = _currentMode?.GetScoreModifier(BuildModeContext()) ?? 1.0f;
         if (Math.Abs(scoreModifier - 1.0f) > 0.001f)
@@ -535,7 +535,7 @@ public sealed partial class GameEngine
             //   x2-x3: 18f, 1.5s (Standard)
             //   x4-x6: 22f, 1.8s (CHAIN/MEGA-Edge)
             //   x7-x9: 26f, 2.0s
-            //   x10+:  32f, 2.5s (ULTRA — Größen-Pop ×1.78, dauert deutlich länger)
+            //   x10+: 32f, 2.5s (ULTRA — Größen-Pop ×1.78, dauert deutlich länger)
             float comboFontSize = _comboCount switch
             {
                 >= 10 => 32f,
@@ -560,21 +560,21 @@ public sealed partial class GameEngine
             }
 
             // Phase 21 (V4) — Camera-Pull-Back bei Big-Combos. Stinger-Trigger über SoundManager:
-            //  - MEGA (x5+):    leichter Pull-Back, MEGA-Stinger
-            //  - ULTRA (x10+):  starker Pull-Back, ULTRA-Stinger
+            //  - MEGA (x5+): leichter Pull-Back, MEGA-Stinger
+            //  - ULTRA (x10+): starker Pull-Back, ULTRA-Stinger
             if (_comboCount == 10)
             {
                 _screenShake.TriggerPullBack(magnitude: 1.0f, durationSeconds: 0.5f);
                 _soundManager.PlayStinger(SoundManager.STINGER_COMBO_ULTRA);
-                // Sprint 1.2 AAA-Audit #7: Vollbild-Vignette-Flash beim Erreichen von ULTRA.
+                //.2 : Vollbild-Vignette-Flash beim Erreichen von ULTRA.
                 // Welt-Akzent-Farbe als Vignette-Tint (Schattenwelt violett, Vulkan orange, ...).
                 // Bei ReducedEffects-Toggle stillschweigend uebersprungen (Flash kann
                 // photosensitive Spieler triggern).
                 if (!_inputManager.ReducedEffects)
                     _ultraFlash.Trigger(_renderer.GetWorldAccentColor());
-                // Sprint 5.3 AAA-Audit #13: Music-Boost bei ULTRA — der epische Moment.
+                //.3 : Music-Boost bei ULTRA — der epische Moment.
                 _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.25f, 5.0f);
-                // Sprint 2.2 AAA-Audit #2: Funnel-Event combo_tier_reached (ULTRA)
+                //.2 : Funnel-Event combo_tier_reached (ULTRA)
                 _comboTiersInLevel++;
                 _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
                 {
@@ -586,7 +586,7 @@ public sealed partial class GameEngine
             {
                 _screenShake.TriggerPullBack(magnitude: 0.5f, durationSeconds: 0.35f);
                 _soundManager.PlayStinger(SoundManager.STINGER_COMBO_MEGA);
-                // Sprint 2.2 AAA-Audit #2: Funnel-Event combo_tier_reached (MEGA)
+                //.2 : Funnel-Event combo_tier_reached (MEGA)
                 _comboTiersInLevel++;
                 _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
                 {
@@ -640,7 +640,7 @@ public sealed partial class GameEngine
             _slowMotionTimer = _comboSystem.GetSlowMotionDuration(SLOW_MOTION_DURATION);
         }
 
-        // Sprint 5.3 AAA-Audit #13: Adaptive-Music-Boost bei Last-Enemy-Drama (+20% Music fuer 4s).
+        //.3 : Adaptive-Music-Boost bei Last-Enemy-Drama (+20% Music fuer 4s).
         // Last-Enemy-Moment ist filmisch wertvoll — Music-Boost macht den Kill-Shot epischer.
         if (isLastEnemy && (_originalEnemyCount >= 3 || isBossLevel))
         {

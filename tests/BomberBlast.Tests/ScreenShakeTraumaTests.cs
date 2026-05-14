@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für Trauma-Decay-Modell des ScreenShake (v2.0.44 — AAA-Audit).
+/// Tests für Trauma-Decay-Modell des ScreenShake (v2.0.44 — ).
 /// Validiert: Trauma akkumuliert sich, klingt linear ab, Distanz-Skalierung wirkt,
 /// Enabled=false ignoriert Trigger.
 /// </summary>

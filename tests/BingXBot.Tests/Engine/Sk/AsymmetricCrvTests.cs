@@ -7,7 +7,7 @@ using Xunit;
 namespace BingXBot.Tests.Engine.Sk;
 
 /// <summary>
-/// v1.5.0 Phase 2 — Asymmetrisches CRV (SL aus LTF, TP aus HTF).
+/// v1.5.0 — Asymmetrisches CRV (SL aus LTF, TP aus HTF).
 ///
 /// Voll integrierte Strategy-Tests sind in der Backtest-Suite (FiveMonthLiveBacktest)
 /// abgedeckt. Hier liegt der Fokus auf:

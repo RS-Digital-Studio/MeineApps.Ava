@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════
-# LUFS-Mastering-Pass fuer BomberBlast-Musik (Sprint 5.3 AAA-Audit #10)
+# LUFS-Mastering-Pass fuer BomberBlast-Musik
 # ═══════════════════════════════════════════════════════════════════════════
 # Normalisiert alle music_*.ogg auf -16 LUFS (Mobile-Standard, EBU R128).
 # Loest hoerbares Lautstaerke-Spring-Problem beim Welt-Wechsel — die 10 Tracks

@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für Sub-Tier-Logik (Phase 19 — AAA-Audit L1).
+/// Tests für Sub-Tier-Logik (Phase 19 — L1).
 /// Validiert dass die Sub-Tier-Berechnung innerhalb der Punkte-Schwellen korrekt ist
 /// und Edge-Cases (Diamond hat kein Sub-Tier, Promotion-Grenzen) abgedeckt sind.
 /// </summary>

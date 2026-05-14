@@ -82,7 +82,7 @@ public class InputManager : IDisposable
         _lastTrackedDetonatePressed = det;
     }
 
-    // === Phase 22 — Input-Buffer (Coyote-Time-Pattern, AAA-Audit G1) =========
+    // === Phase 22 — Input-Buffer (Coyote-Time-Pattern, G1) =========
     // Bomberman-Variant: Wenn der Spieler eine Bombe drückt aber NICHT auf Cell-Center steht,
     // pufferte das alte System NICHT — Tap wurde verworfen. Mit Buffer wird der Press 6 Frames
     // gespeichert (~100ms bei 60fps) und automatisch ausgelöst sobald Cell-Center erreicht.

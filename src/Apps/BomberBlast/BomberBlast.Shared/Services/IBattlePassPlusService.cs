@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Battle-Pass-Plus-Tier (Phase 23b — AAA-Audit M1).
+/// Battle-Pass-Plus-Tier (Phase 23b — M1).
 ///
 /// <para>Premium-Premium-Stufe oberhalb des Standard-BattlePass. Brawl-Stars-Pattern:
 /// Brawl Pass (9,99 €) und Brawl Pass Plus (19,99 €). Plus enthält:</para>

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace BomberBlast.Tests;
 
-/// <summary>Tests für VipSubscriptionService (Phase 23b — AAA-Audit M2).</summary>
+/// <summary>Tests für VipSubscriptionService (Phase 23b — M2).</summary>
 public class VipSubscriptionServiceTests
 {
     [Fact]

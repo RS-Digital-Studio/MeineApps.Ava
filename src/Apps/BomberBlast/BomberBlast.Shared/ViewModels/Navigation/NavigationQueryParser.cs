@@ -4,7 +4,7 @@ namespace BomberBlast.ViewModels.Navigation;
 
 /// <summary>
 /// Parst Query-String-Parameter aus Routen wie <c>"Game?mode=story&amp;level=5"</c>
-/// (Sprint 4.x AAA-Audit #7 — MainViewModel-Reduktion).
+/// (.x — MainViewModel-Reduktion).
 ///
 /// <para>
 /// Reine Funktionen ohne State, ViewModel-Bezug oder Seiteneffekte — aus dem

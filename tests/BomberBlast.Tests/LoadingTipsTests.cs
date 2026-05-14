@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für LoadingTips (Phase 28 — AAA-Audit PR4).
+/// Tests für LoadingTips (Phase 28 — PR4).
 /// </summary>
 public class LoadingTipsTests
 {

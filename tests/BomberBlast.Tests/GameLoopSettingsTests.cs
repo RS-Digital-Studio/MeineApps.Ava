@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für GameLoopSettings (v2.0.44 — AAA-Audit Phase 1).
+/// Tests für GameLoopSettings (v2.0.44 — ).
 /// Validiert TickIntervalMs-Berechnung, SetTargetFps-Persistenz, TargetFpsChanged-Event-Firing.
 ///
 /// HINWEIS: GameLoopSettings ist eine static-Klasse — Tests müssen vorsichtig sein und

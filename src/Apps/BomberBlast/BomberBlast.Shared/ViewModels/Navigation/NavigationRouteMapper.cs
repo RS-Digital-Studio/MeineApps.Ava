@@ -4,7 +4,7 @@ namespace BomberBlast.ViewModels.Navigation;
 
 /// <summary>
 /// Wandelt typsichere <see cref="NavigationRequest"/>-Records in String-Routen um
-/// (Sprint 4.x AAA-Audit #7 — MainViewModel-Reduktion).
+/// (.x — MainViewModel-Reduktion).
 ///
 /// <para>
 /// Reine Funktion ohne State — aus <c>MainViewModel.NavigateTo</c> +

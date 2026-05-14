@@ -13,7 +13,7 @@ public static class ShopIconRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _glow = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    // v2.0.43 Audit-Fix A3: gepoolte SKFont mit mutierter Size — vermeidet pro-Render-Allokation.
+    // gepoolte SKFont mit mutierter Size — vermeidet pro-Render-Allokation.
     private static readonly SKFont _sharedFont = new() { Size = 12f };
 
     // SKMaskFilter-Cache: Gleicher Radius = gleicher Filter. Shop-Scroll rendert 30fps ×

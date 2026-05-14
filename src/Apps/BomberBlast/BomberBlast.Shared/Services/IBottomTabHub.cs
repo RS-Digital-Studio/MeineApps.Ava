@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Bottom-Tab-Hub (Sprint 3.1 AAA-Audit #4).
+/// Bottom-Tab-Hub (.1 .
 ///
 /// <para>
 /// Konsolidiert 15+ sichtbare Navigationspunkte auf 4 Bottom-Tabs:
@@ -19,7 +19,7 @@ namespace BomberBlast.Services;
 /// </para>
 ///
 /// <para>
-/// HINWEIS: Sprint 3.1 ist Foundation-Service. Echte UI-Refactor der 974-LOC MainMenuView
+/// HINWEIS:.1 ist Foundation-Service. Echte UI-Refactor der 974-LOC MainMenuView
 /// (Buttons → Hero-Tiles + Card-Dashboard) ist eigener Game-Design-Sprint und braucht
 /// User-Input was wo gruppiert wird. Service-Layer + Tab-Enum stehen bereit.
 /// </para>

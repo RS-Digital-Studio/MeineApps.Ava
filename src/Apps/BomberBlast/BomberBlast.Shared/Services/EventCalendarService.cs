@@ -3,7 +3,7 @@ using System.Globalization;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Implementierung von <see cref="IEventCalendarService"/> (Phase 20 — AAA-Audit L2).
+/// Implementierung von <see cref="IEventCalendarService"/> (Phase 20 — L2).
 ///
 /// <para>Deterministisch via ISO-Wochen-Seed: Alle Spieler weltweit sehen dasselbe Wochen-Event.
 /// Pool von 8 Event-Typen rotiert sequenziell durch (gleicher Spread, kein Häufungs-Bias bei zufälliger

@@ -6,7 +6,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für BloomEffect (Phase 21b — AAA-Audit V3).
+/// Tests für BloomEffect (Phase 21b — V3).
 /// Validiert Preload-Idempotenz, Apply-No-Crash bei nicht-initialisiertem Effect.
 /// Echter Pixel-Output-Test ist Visual-Regression (Phase 26b) vorbehalten.
 /// </summary>

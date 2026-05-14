@@ -32,7 +32,7 @@ public sealed partial class GameEngine
         if (cell.Bomb != null)
             return;
 
-        // Sprint 3.4 AAA-Audit #19: Anticipation-Frame — Spieler-Sprite zieht sich
+        //.4 : Anticipation-Frame — Spieler-Sprite zieht sich
         // 80ms zusammen waehrend die Bombe gespawnt wird. Pure visuelle Wirkung,
         // kein Gameplay-Delay (Bombe wird unten weiterhin sofort platziert).
         owner.TriggerBombPlaceAnticipation();
@@ -287,11 +287,11 @@ public sealed partial class GameEngine
     {
         bomb.Explode();
 
-        // Sprint 5.x AAA-Audit #8: OnBombExploded-Hook fuer Mode-Plugins.
+        //.x : OnBombExploded-Hook fuer Mode-Plugins.
         try { _currentMode?.OnBombExploded(BuildModeContext()); }
         catch { /* Best-Effort, no-op-Default in GameModeBase */ }
 
-        // Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait DoubleDetonation (TwinTina).
+        // Welle 1 v2.0.58 : Hero-Trait DoubleDetonation (TwinTina).
         // Spieler-Bombe ohne Chain-Depth bekommt eine Sekundaer-Explosion 0.5s spaeter.
         if (bomb.ChainDepth == 0
             && ReferenceEquals(bomb.Owner, _player)

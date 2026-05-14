@@ -95,7 +95,7 @@ public static class LevelLayoutGenerator
             return level;
         }
 
-        // Welle 1 v2.0.58 AAA-Audit #10: Mini-Boss-Level auf L7, L17, ..., L97
+        // Welle 1 v2.0.58 : Mini-Boss-Level auf L7, L17, ..., L97
         // 9 Mid-World-Encounter zusaetzlich zu den 10 Hauptbossen. Trainings-Encounter:
         // gleicher Boss-Typ wie der Welt-Hauptboss, aber halbe HP und halbe Punkte.
         if (levelNumber % 10 == 7 && levelNumber <= 97)
@@ -183,7 +183,7 @@ public static class LevelLayoutGenerator
     }
 
     /// <summary>
-    /// Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Level generieren (T1 Movement / T2 Bombs / T3 PowerUps).
+    /// Welle 3 v2.0.58 : Tutorial-Level generieren (T1 Movement / T2 Bombs / T3 PowerUps).
     /// Drei separate Mini-Levels mit unterschiedlichen Layouts, Spawn-Regeln und PowerUp-Sets:
     /// <list type="bullet">
     /// <item>T1 (phase=1) — Movement: leeres Grid mit verstreuten Block-Inseln, keine Enemies/Bombs/Exit</item>
@@ -568,7 +568,7 @@ public static class LevelLayoutGenerator
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MINI-BOSS-LEVEL (L7, L17, ..., L97 — Welle 1 v2.0.58 AAA-Audit #10)
+    // MINI-BOSS-LEVEL (L7, L17, ..., L97 — Welle 1 v2.0.58 
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>

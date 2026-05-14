@@ -20,9 +20,9 @@ public class CraftingTests
         // Ausführung
         var rezepte = CraftingRecipe.GetAllRecipes();
 
-        // Prüfung: V7 (Phase 1 + Phase 4 Ressourcen-Plan)
-        // - 10 Workshops × 3 Tiers = 30 (Phase 1)
-        // - 3 Tier-4-Rezepte (Villa/Wolkenkratzer/Imperium-HQ) am GeneralContractor (Phase 4)
+        // Prüfung: V7 ( + )
+        // - 10 Workshops × 3 Tiers = 30 ()
+        // - 3 Tier-4-Rezepte (Villa/Wolkenkratzer/Imperium-HQ) am GeneralContractor ()
         rezepte.Should().HaveCount(33);
     }
 

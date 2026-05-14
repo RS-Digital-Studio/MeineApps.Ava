@@ -3,7 +3,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IWorldStoryService"/> (Sprint 6.2 AAA-Audit #16).
+/// Default-Implementation von <see cref="IWorldStoryService"/> (.2 .
 ///
 /// <para>
 /// Hardcoded Story-Beats fuer 10 Welten — RESX-Keys folgen dem Pattern

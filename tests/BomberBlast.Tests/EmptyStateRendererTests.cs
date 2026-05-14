@@ -6,7 +6,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für EmptyStateRenderer (Phase 28c — AAA-Audit PR3).
+/// Tests für EmptyStateRenderer (Phase 28c — PR3).
 /// </summary>
 public class EmptyStateRendererTests
 {

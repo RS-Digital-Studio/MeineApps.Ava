@@ -6,7 +6,7 @@ namespace BomberBlast.Navigation;
 /// Default-Implementation von <see cref="INavigationCoordinator"/> (Welle 6 MainViewModel-Refactor).
 ///
 /// <para>
-/// Phase 1: Leeres Geruest. Die Logik wird in Phase 5 (NavigationCoordinator-Migration) aus
+/// : Leeres Geruest. Die Logik wird in Phase 5 (NavigationCoordinator-Migration) aus
 /// <see cref="MainViewModel.NavigateToRouteAsync"/> hier hin verschoben.
 /// </para>
 /// </summary>

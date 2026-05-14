@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Tests.Visual;
 
 /// <summary>
-/// Visual-Regression-Helper (Phase 26b — AAA-Audit T4).
+/// Visual-Regression-Helper (Phase 26b — T4).
 ///
 /// <para>SkiaSharp-basiertes Screenshot-Diffing für CI-Visual-Regression.
 /// Pattern: Renderer-Output in SKBitmap, Vergleich gegen Baseline-PNG, Pixel-Diff-Quote.

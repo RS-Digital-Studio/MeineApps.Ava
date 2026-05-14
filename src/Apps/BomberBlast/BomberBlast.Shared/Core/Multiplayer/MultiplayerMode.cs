@@ -1,7 +1,7 @@
 namespace BomberBlast.Core.Multiplayer;
 
 /// <summary>
-/// Multiplayer-Modus-Typ (Phase 30 — AAA-Audit C1).
+/// Multiplayer-Modus-Typ (Phase 30 — C1).
 /// Foundation für künftige Co-Op- / PvP- / Async-Replay-Spielformen.
 /// </summary>
 public enum MultiplayerMode

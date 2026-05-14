@@ -6,7 +6,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für KonamiCodeDetector (Phase 28 — AAA-Audit PR5 Easter-Egg).
+/// Tests für KonamiCodeDetector (Phase 28 — PR5 Easter-Egg).
 /// </summary>
 public class KonamiCodeDetectorTests
 {

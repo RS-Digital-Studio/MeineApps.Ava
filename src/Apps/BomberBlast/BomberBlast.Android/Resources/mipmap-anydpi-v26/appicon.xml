@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Adaptive Icon (Android 8+) mit Monochrome-Themed-Icon (Android 13+).
-  Sprint 1.3 AAA-Audit #8: monochrome zeigt jetzt eine echte Bomben-Silhouette
+  Adaptive Icon (Android 8+) mit Monochrome-Themed-Icon (Android 13+)..3 : monochrome zeigt jetzt eine echte Bomben-Silhouette
   als Vector-Drawable (NICHT mehr das Farb-Foreground recyceln).
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">

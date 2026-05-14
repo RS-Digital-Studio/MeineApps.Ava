@@ -3,7 +3,7 @@ using Xunit;
 namespace HandwerkerImperium.Tests;
 
 /// <summary>
-/// P0.1 Layer 3 AAA-Audit (08.05.2026): Skelett für tiefere Avalonia-Headless-Tests.
+/// P0.1 Layer 3 (08.05.2026): Skelett für tiefere Avalonia-Headless-Tests.
 ///
 /// Smoke-Tests laufen live (siehe <see cref="HeadlessSmokeTests"/>). Diese Klasse
 /// dokumentiert die nächsten Critical-Path-Szenarien, die **App-DI-Mocking** brauchen

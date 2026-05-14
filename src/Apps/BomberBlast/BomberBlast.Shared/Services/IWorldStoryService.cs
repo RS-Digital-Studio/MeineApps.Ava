@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Mini-Story-Beats pro Welt (Sprint 6.2 AAA-Audit #16).
+/// Mini-Story-Beats pro Welt (.2 .
 ///
 /// <para>
 /// Liefert Cutscene-Daten fuer Welt-Start (Welcome) und Welt-Ende (Outro mit Cliffhanger).

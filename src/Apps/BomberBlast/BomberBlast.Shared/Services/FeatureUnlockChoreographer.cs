@@ -3,7 +3,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IFeatureUnlockChoreographer"/> (Sprint 4.4 AAA-Audit #20).
+/// Default-Implementation von <see cref="IFeatureUnlockChoreographer"/> (.4 .
 ///
 /// <para>
 /// Verwaltet eine interne Queue von Feature-Unlocks — feuert <see cref="FeatureUnlocked"/>
@@ -101,7 +101,7 @@ public sealed class FeatureUnlockChoreographer : IFeatureUnlockChoreographer
         // selbst wenn die Anzeige aus irgendeinem Grund versagt (App-Crash, View nicht montiert).
         _prefs.Set(prefKey, true);
 
-        // Sprint 2.2 AAA-Audit #2: Funnel-Event feature_unlocked
+        //.2 : Funnel-Event feature_unlocked
         _analytics?.LogEvent(AnalyticsEvents.FeatureUnlocked, new Dictionary<string, object>
         {
             [AnalyticsParams.FeatureId] = featureId,

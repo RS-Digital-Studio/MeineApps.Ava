@@ -18,7 +18,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IGemService _gemService;
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: IAP-Funnel-Telemetrie (Start/Success/Cancel/Fail).</summary>
+    /// <summary>.2 : IAP-Funnel-Telemetrie (Start/Success/Cancel/Fail).</summary>
     private readonly IAnalyticsService _analytics;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -189,7 +189,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     {
         if (item == null) return;
 
-        // Sprint 2.2 AAA-Audit #2: Funnel-Start — der User hat Kauf-Intent gezeigt.
+        //.2 : Funnel-Start — der User hat Kauf-Intent gezeigt.
         _analytics?.LogEvent(AnalyticsEvents.PurchaseFlowStart, new Dictionary<string, object>
         {
             [AnalyticsParams.Sku] = item.ProductId,

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Firebase-basierte Implementation von <see cref="IClanService"/> (Sprint 7.3 AAA-Audit #23).
+/// Firebase-basierte Implementation von <see cref="IClanService"/> (.3 .
 ///
 /// <para>
 /// Asynchron via Firebase Realtime Database — kein Live-Sync. Pull-Pattern:
@@ -248,7 +248,7 @@ public sealed class FirebaseClanService : IClanService
         }
     }
 
-    // Sprint 7.3 AAA-Audit #15: Client-seitiges Anti-Spam-Cooldown — 3s zwischen Chat-Sends
+    //.3 : Client-seitiges Anti-Spam-Cooldown — 3s zwischen Chat-Sends
     // pro Clan-Member. Schuetzt vor versehentlichen Doppel-Sends + dummen Spam-Versuchen.
     // (Server-seitig waere defense-in-depth, braucht aber Multi-Path-Updates — deferred.)
     private const double ChatSendCooldownSeconds = 3.0;
@@ -263,7 +263,7 @@ public sealed class FirebaseClanService : IClanService
         var member = _currentClan.Members.FirstOrDefault(m => m.MemberId == uid);
         if (member == null) return;
 
-        // Sprint 7.3 AAA-Audit #15: Rate-Limit gegen Chat-Spam.
+        //.3 : Rate-Limit gegen Chat-Spam.
         var since = (DateTime.UtcNow - _lastChatSentUtc).TotalSeconds;
         if (since >= 0 && since < ChatSendCooldownSeconds)
             return;

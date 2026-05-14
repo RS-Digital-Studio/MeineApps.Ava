@@ -26,7 +26,7 @@ public sealed class ProgressService : IProgressService
     }
 
     // Stern-Anforderungen pro Welt (Index = Welt-Nummer)
-    // Fix 18.04.2026 Game-Audit: Welt 9+10 weiter entschaerft (war 200/220):
+    // Welt 9+10 weiter entschaerft (war 200/220):
     // - 220/270 = 81% hatten Spieler noch als harte Mauer bei Mutator-Leveln (L63/66/69/73/76/79)
     // - Neu: 180/200 → 2.0-2.2 Sterne/Level-Schnitt reicht. 2-Sterne ist fuer mittelmaessige
     //   Spieler erreichbar ohne Perfektion-Grind. Endgame bleibt fordernd aber nicht blockiert.

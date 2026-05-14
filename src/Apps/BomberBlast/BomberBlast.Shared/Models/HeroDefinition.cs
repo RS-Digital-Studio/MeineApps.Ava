@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Models;
 
 /// <summary>
-/// Hero/Character-Definition (Sprint 7.1 AAA-Audit #21).
+/// Hero/Character-Definition (.1 .
 ///
 /// <para>
 /// 5 spielbare Charaktere mit unterschiedlichen Start-Stats. Mit existierender

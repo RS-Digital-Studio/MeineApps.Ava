@@ -22,7 +22,7 @@ public interface IVibrationService
     void VibratePattern();
 
     // ═══════════════════════════════════════════════════════════════════════
-    // v2.0.45 — Haptic-Library (12 Pattern-Definitionen, AAA-Audit P1)
+    // v2.0.45 — Haptic-Library (12 Pattern-Definitionen, P1)
     // ═══════════════════════════════════════════════════════════════════════
     // Default-Implementations delegieren an die 4 Basis-Methoden, sodass
     // existing Implementations (NullVibrationService) automatisch greifen.

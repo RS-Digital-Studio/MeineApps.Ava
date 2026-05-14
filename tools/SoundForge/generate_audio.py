@@ -996,7 +996,7 @@ def sfx_celebration_horn(out: Path) -> None:
 
 
 # ----------------------------------------------------------------------
-# Erweiterung 100-Pack (AAA-Audit-Ziel)
+# Erweiterung 100-Pack
 # ----------------------------------------------------------------------
 def sfx_button_tap_alt(out: Path) -> None:
     """Alternative Button-Tap (UI-Variation gegen Repetition-Fatigue)."""
@@ -1690,7 +1690,7 @@ SFX_REGISTRY: dict[str, callable] = {
     # Misc
     "sfx_celebration_horn": sfx_celebration_horn,
 
-    # Erweiterung 100-Pack (AAA-Audit)
+    # Erweiterung 100-Pack
     "sfx_button_tap_alt": sfx_button_tap_alt,
     "sfx_button_tap_negative": sfx_button_tap_negative,
     "sfx_close_dialog_subtle": sfx_close_dialog_subtle,

@@ -8,7 +8,7 @@ using NSubstitute;
 namespace HandwerkerImperium.Tests;
 
 /// <summary>
-/// P1.3 AAA-Audit (08.05.2026): Tests für DailyBundleService.
+/// (08.05.2026): Tests für DailyBundleService.
 /// Verifiziert JSON-Parsing, DayOfWeek-Mapping (Mo=0, So=6), Disabled-Pfade
 /// und Bonus-Verbuchung.
 /// </summary>

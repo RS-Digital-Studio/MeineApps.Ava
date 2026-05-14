@@ -104,7 +104,7 @@ public sealed class AdMobHelper : IDisposable
     }
 
     /// <summary>
-    /// AAA-Audit P1: Spieler kann den Consent-Status jederzeit zuruecksetzen.
+    /// Spieler kann den Consent-Status jederzeit zuruecksetzen.
     /// Play-Store-DSGVO-Pflicht: 'Withdraw consent at any time'.
     /// Setzt UMP-State zurueck und zeigt das Consent-Form sofort wieder.
     /// </summary>
@@ -125,7 +125,7 @@ public sealed class AdMobHelper : IDisposable
     }
 
     /// <summary>
-    /// AAA-Audit P1: Privacy-Options-Form zeigen (UMP "Manage Options"-Flow).
+    /// Privacy-Options-Form zeigen (UMP "Manage Options"-Flow).
     /// Wird vom Settings-Button aufgerufen, wenn der Spieler seine Auswahl aendern will,
     /// ohne den State komplett zurueckzusetzen.
     /// </summary>

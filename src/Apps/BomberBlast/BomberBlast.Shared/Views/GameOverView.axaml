@@ -48,7 +48,7 @@
           </Style>
         </Grid.Styles>
 
-        <!-- Links: Score + Coins Info — v2.0.43 Audit-Fix C4: Top-Alignment fuer natuerliches Scrollen
+        <!-- Links: Score + Coins Info — Top-Alignment fuer natuerliches Scrollen
              (vorher Center-Alignment hat bei Overflow den Score nach oben weggeschoben). -->
         <ScrollViewer Grid.Column="0"
                       VerticalScrollBarVisibility="Auto"

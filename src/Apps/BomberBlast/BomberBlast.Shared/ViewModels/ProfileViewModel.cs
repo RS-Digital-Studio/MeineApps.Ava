@@ -9,7 +9,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// Profile-Hub (v2.0.43, Plan Phase 4 — Menu-Redesign).
+/// Profile-Hub (v2.0.43, Plan — Menu-Redesign).
 ///
 /// Konsolidiert die fünf Spieler-Bereiche:
 /// <list type="number">

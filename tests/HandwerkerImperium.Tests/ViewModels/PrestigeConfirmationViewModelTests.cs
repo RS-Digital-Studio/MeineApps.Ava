@@ -9,7 +9,7 @@ using NSubstitute;
 namespace HandwerkerImperium.Tests.ViewModels;
 
 /// <summary>
-/// AAA-Audit Review-Pass (12.05.2026): Tests fuer die Balance-Logik
+/// Review-Pass (12.05.2026): Tests fuer die Balance-Logik
 /// <see cref="PrestigeConfirmationViewModel.CalculateEffectivePoints"/> —
 /// Bronze-Mindestmenge, Prestige-Pass (+50%), Gilden-Forschung (+10%) und Kombinationen.
 /// </summary>

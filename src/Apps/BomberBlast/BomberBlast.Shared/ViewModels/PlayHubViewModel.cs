@@ -9,7 +9,7 @@ using MeineApps.Core.Ava.ViewModels;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// ViewModel fuer den "Spielen"-Tab (Sprint 3.1 AAA-Audit #4).
+/// ViewModel fuer den "Spielen"-Tab (.1 .
 ///
 /// <para>
 /// Konsolidiert alle Spielmodi (Story / Quick Play / Survival / Dungeon / Boss-Rush / Master)

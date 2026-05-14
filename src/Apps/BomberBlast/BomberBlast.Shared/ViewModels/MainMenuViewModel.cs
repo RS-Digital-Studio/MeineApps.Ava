@@ -43,7 +43,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     private readonly IAchievementService _achievementService;
     private readonly ICollectionService _collectionService;
     private readonly ICardService _cardService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Daily-Login + Shop-Open Events.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Daily-Login + Shop-Open Events.</summary>
     private readonly IAnalyticsService _analytics;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -211,7 +211,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         IBossRushService bossRushService, ICustomizationService customizationService,
         IMasterModeService masterModeService, IAchievementService achievementService,
         ICollectionService collectionService, ICardService cardService,
-        // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie
+        //.2 : Funnel-Telemetrie
         IAnalyticsService analytics)
     {
         _progressService = progressService;
@@ -339,7 +339,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         // Saisonales Event-Greeting (v2.0.42, Plan Task 3.4) — einmal pro Tag pro Event
         TryShowEventGreeting();
 
-        // Onboarding-Modal (v2.0.43, Plan Phase 4) — einmal pro Installation,
+        // Onboarding-Modal (v2.0.43, Plan ) — einmal pro Installation,
         // erklaert das neue Dashboard-Layout fuer Bestand-Spieler.
         TryShowOnboarding();
 
@@ -599,7 +599,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         _battlePassService.AddXp(BattlePassXpSources.DailyLogin, "daily_login");
         _leagueService.AddPoints(5);
 
-        // Sprint 2.2 AAA-Audit #2: Funnel-Event daily_login mit Streak-Counter.
+        //.2 : Funnel-Event daily_login mit Streak-Counter.
         _analytics?.LogEvent(AnalyticsEvents.DailyLogin, new Dictionary<string, object>
         {
             [AnalyticsParams.ConsecutiveDays] = _dailyRewardService.CurrentStreak,
@@ -690,7 +690,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [RelayCommand]
     private void Settings()
     {
-        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Settings-Entry.
+        // Welle 2 v2.0.58 : Funnel-Tracking — Settings-Entry.
         _analytics?.LogEvent(AnalyticsEvents.SettingsOpen, new Dictionary<string, object>
         {
             [AnalyticsParams.EntryPoint] = "main_menu",

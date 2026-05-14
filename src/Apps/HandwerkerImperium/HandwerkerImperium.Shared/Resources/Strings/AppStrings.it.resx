@@ -3329,7 +3329,7 @@
     <value>Sciopero: Solo livelli fino a C disponibili!</value>
   </data>
 
-  <!-- Phase 1: General + SaveGame -->
+  <!-- : General + SaveGame -->
   <data name="SaveErrorMessage" xml:space="preserve">
     <value>Impossibile salvare la partita.</value>
   </data>

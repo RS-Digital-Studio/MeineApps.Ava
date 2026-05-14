@@ -10,7 +10,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Trading;
 
-// v1.4.0 Phase 0.4 (Finding 0.4) — OrphanSignal-Cleanup beachtet jetzt Side.
+// v1.4.0 .4 (Finding 0.4) — OrphanSignal-Cleanup beachtet jetzt Side.
 //
 // Vor v1.4.0: _pendingLimitOrders.Values.Any(v => v.Symbol == symbol) verhinderte das
 // Entfernen jedes Orphan-Signals fuer das Symbol — egal ob die Pending-Order in dieselbe
@@ -52,7 +52,7 @@ public class OrphanSignalSideFilterTests
         await service.PublicOnBeforePriceTickerIterationForTestAsync(Array.Empty<Position>());
 
         service._positionSignals.ContainsKey("BTC-USDT_Buy").Should().BeFalse(
-            "Long-Orphan muss entfernt werden, Short-Pending schuetzt es nicht (Phase 0.4)");
+            "Long-Orphan muss entfernt werden, Short-Pending schuetzt es nicht (.4)");
     }
 
     [Fact]

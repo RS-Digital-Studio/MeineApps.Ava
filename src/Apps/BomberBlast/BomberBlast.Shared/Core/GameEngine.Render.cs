@@ -162,7 +162,7 @@ public sealed partial class GameEngine
         // Viewport aktualisieren
         _renderer.CalculateViewport(screenWidth, screenHeight, _grid.PixelWidth, _grid.PixelHeight);
 
-        // v2.0.47 — Cinematic-Director Phase 2: Camera-Zoom-Effekt
+        // v2.0.47 — Cinematic-Director : Camera-Zoom-Effekt
         // Wenn aktive Sequence + Zoom > 0 wird Canvas auf Pivot skaliert (smoothstep-eased).
         // Reihenfolge: ZUERST Zoom, dann ScreenShake — Shake bleibt auf Bildschirm-Bounds.
         bool cinematicZoomActive = _cinematic.IsPlaying && _cinematic.CurrentZoomFactor > 0.001f;
@@ -311,14 +311,14 @@ public sealed partial class GameEngine
                 _tutorialService.CurrentStep, _renderer.Scale, _renderer.OffsetX, _renderer.OffsetY);
         }
 
-        // Sprint 1.2 AAA-Audit #7: ULTRA-Combo Vollbild-Vignette-Flash.
+        //.2 : ULTRA-Combo Vollbild-Vignette-Flash.
         // Vor den Subtitles, ueber Tutorial-Overlay — Flash sind <200ms und blocken nichts.
         if (_ultraFlash.IsActive)
         {
             _ultraFlash.Render(canvas, screenWidth, screenHeight);
         }
 
-        // Sprint 3.3 AAA-Audit #18: Roter Damage-Flash bei Player-Hit.
+        //.3 : Roter Damage-Flash bei Player-Hit.
         if (_damageFlash.IsActive)
         {
             _damageFlash.Render(canvas, screenWidth, screenHeight);

@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>BomberBlast</RootNamespace>
     <!-- WICHTIG: Bei jedem Release synchron mit ApplicationDisplayVersion in BomberBlast.Android.csproj halten.
-         Splash-Screen liest diese Version automatisch aus Assembly.GetName().Version (Sprint 1.4a AAA-Audit). -->
+         Splash-Screen liest diese Version automatisch aus Assembly.GetName().Version (.4a ). -->
     <Version>2.0.58</Version>
   </PropertyGroup>
 
@@ -33,7 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Sprint 2.1 AAA-Audit #1: Remote-Config-Defaults als Embedded Resource.
+    <!--.1 : Remote-Config-Defaults als Embedded Resource.
          Wird von DefaultsRemoteConfigService via Assembly.GetManifestResourceStream geladen. -->
     <EmbeddedResource Include="Resources\remote_config_defaults.json" />
   </ItemGroup>

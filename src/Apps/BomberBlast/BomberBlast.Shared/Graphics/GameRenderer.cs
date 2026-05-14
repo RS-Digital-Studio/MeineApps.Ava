@@ -328,7 +328,7 @@ public sealed partial class GameRenderer : IDisposable
     }
 
     // ───────────────────────────────────────────────────────────────────────
-    // BombFxTheme — Welt-spezifische Bomb/Explosion-Farben (AAA-Audit #6)
+    // BombFxTheme — Welt-spezifische Bomb/Explosion-Farben (
     // ───────────────────────────────────────────────────────────────────────
     // Wird in RenderBomb (default-Branch ohne Custom-Skin) und im Explosion-
     // Renderer als Override verwendet. Custom-Skins haben weiterhin Vorrang.
@@ -728,13 +728,13 @@ public sealed partial class GameRenderer : IDisposable
         _palette.BlockShadow = _worldPalette.BlockShadow;
 
         // Welt-Bomb-FX-Theme uebernehmen — Bombe + Explosion bekommen welt-spezifischen
-        // Look (Sprint 1.1 AAA-Audit #6). Nur greift wenn Default-Skin aktiv ist
+        // Look (.1 . Nur greift wenn Default-Skin aktiv ist
         // (Custom-Skins behalten ihre Farben).
         UpdateExplosionSkinColors();
     }
 
     /// <summary>
-    /// Liefert das aktive Welt-Bomb-FX-Theme (Sprint 1.1 AAA-Audit #6).
+    /// Liefert das aktive Welt-Bomb-FX-Theme (.1 .
     /// Wird in RenderBomb verwendet um Default-Skin-Bomben Welt-spezifisch zu faerben.
     /// </summary>
     internal (SKColor body, SKColor glow, SKColor fuse, SKColor highlight, SKColor sparkGlow, SKColor sparkCore)?
@@ -744,7 +744,7 @@ public sealed partial class GameRenderer : IDisposable
             : null;
 
     /// <summary>
-    /// Liefert die aktuelle Welt-Akzent-Farbe (Sprint 1.2 AAA-Audit #7).
+    /// Liefert die aktuelle Welt-Akzent-Farbe (.2 .
     /// Wird vom UltraComboFlash + Cinematic-Director als Welt-Tint verwendet.
     /// Default Gold wenn keine Welt aktiv ist.
     /// </summary>
@@ -837,7 +837,7 @@ public sealed partial class GameRenderer : IDisposable
         _ => ClassicPalette
     };
 
-    /// <summary>Explosionsfarben aus Skin oder Welt-BombFx-Theme aktualisieren (AAA-Audit #6).</summary>
+    /// <summary>Explosionsfarben aus Skin oder Welt-BombFx-Theme aktualisieren (.</summary>
     private void UpdateExplosionSkinColors()
     {
         var eSkin = _customizationService.ExplosionSkin;
@@ -857,7 +857,7 @@ public sealed partial class GameRenderer : IDisposable
         }
         else if (_bombFxTheme is { } theme)
         {
-            // Welt-spezifische Explosion-Farben (Sprint 1.1 AAA-Audit #6) — Wueste hat anderes
+            // Welt-spezifische Explosion-Farben (.1 — Wueste hat anderes
             // Look als Vulkan, Schattenwelt anderes als Forest. Default-Skin ueberlasst der Welt das Theme.
             _explOuter = theme.ExplosionOuter;
             _explInner = theme.ExplosionInner;
@@ -1078,7 +1078,7 @@ public sealed partial class GameRenderer : IDisposable
                 RenderExplosion(canvas, explosion);
         }
 
-        // Sprint 6.1 AAA-Audit #12: Burning-Modifier — Lava-Trail UNTER den Bossen rendern
+        //.1 : Burning-Modifier — Lava-Trail UNTER den Bossen rendern
         // (vor Enemies, damit der Trail von Boss-Sprite ueberlagert wird).
         RenderBurningTrails(canvas, enemies);
 
@@ -1156,7 +1156,7 @@ public sealed partial class GameRenderer : IDisposable
     }
 
     /// <summary>
-    /// Sprint 6.1 AAA-Audit #12: Rendert die Burning-Trail-Lava-Spuren aller Bosse mit
+    ///.1 : Rendert die Burning-Trail-Lava-Spuren aller Bosse mit
     /// Burning-Modifier. Trail-Eintraege haben TTL (3s) und fade-en linear aus —
     /// orange-roter Lava-Glow mit Anti-Spam-Pulse.
     /// </summary>
@@ -1190,7 +1190,7 @@ public sealed partial class GameRenderer : IDisposable
     }
 
     /// <summary>
-    /// Sprint 5.4 AAA-Audit #11: Rendert eine Entity mit optionalem Outline-Pass.
+    ///.4 : Rendert eine Entity mit optionalem Outline-Pass.
     /// Wenn <see cref="BomberBlast.Models.Entities.Entity.RenderOutline"/> gesetzt ist
     /// (und keine Performance-Drosselung aktiv), wird der Sprite ueber den
     /// <see cref="OutlineRenderHelper"/> mit dunklem Outline-Ring gezeichnet —

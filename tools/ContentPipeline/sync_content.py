@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-P2.1 AAA-Audit (08.05.2026): Content-Pipeline Skelett — Google Sheets als Source-of-Truth.
+Content-Pipeline Skelett — Google Sheets als Source-of-Truth.
 
 Game-Designer und Übersetzer arbeiten in einer Spreadsheet-Tabelle. Dieses Skript
 synchronisiert:
@@ -104,7 +104,7 @@ def generate_seasonstoryline_cs(rows, output_path: Path) -> None:
 
     lines = [
         "// AUTO-GENERATED — DO NOT EDIT MANUALLY. Sync via tools/ContentPipeline/sync_content.py",
-        "// P2.1 AAA-Audit (08.05.2026): Source-of-Truth ist Google Sheets.",
+        "// Source-of-Truth ist Google Sheets.",
         "namespace HandwerkerImperium.Models;",
         "",
         "public partial class SeasonStorylineCatalog",

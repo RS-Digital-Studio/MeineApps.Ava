@@ -36,7 +36,7 @@ public sealed class ScreenShake
     public float RotationDegrees { get; private set; }
 
     /// <summary>
-    /// Phase 21 (AAA-Audit V4): Camera-Pull-Back-Faktor [0.85, 1.0].
+    /// Phase 21 (V4): Camera-Pull-Back-Faktor [0.85, 1.0].
     /// 1.0 = normaler Zoom, 0.95 = leichter Pull-Back, 0.85 = starker Pull-Back (Big-Hit).
     /// Der Renderer multipliziert canvas.Scale mit diesem Wert um Big-Hits visuell zu unterstreichen
     /// (God-of-War-Pattern: Camera reagiert auf Action). Sin-Kurve mit Ease-Out (peak in 1/3 Dauer).
@@ -89,7 +89,7 @@ public sealed class ScreenShake
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // CAMERA-PULL-BACK (Phase 21 — AAA-Audit V4)
+    // CAMERA-PULL-BACK (Phase 21 — V4)
     // ═══════════════════════════════════════════════════════════════════════
 
     private float _pullBackTimer;

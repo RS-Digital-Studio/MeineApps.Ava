@@ -3324,7 +3324,7 @@
     <value>¡Huelga: Solo niveles hasta C disponibles!</value>
   </data>
 
-  <!-- Phase 1: General + SaveGame -->
+  <!-- : General + SaveGame -->
   <data name="SaveErrorMessage" xml:space="preserve">
     <value>No se pudo guardar la partida.</value>
   </data>

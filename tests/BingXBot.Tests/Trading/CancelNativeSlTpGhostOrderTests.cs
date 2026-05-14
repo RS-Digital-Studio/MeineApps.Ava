@@ -10,7 +10,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Trading;
 
-// v1.4.0 Phase 0.1 (Finding 0.1) — Ghost-TP-Orders nach Position-Close
+// v1.4.0 .1 (Finding 0.1) — Ghost-TP-Orders nach Position-Close
 //
 // Vorher cancelte der Cancel-Filter nur StopMarket / TakeProfitMarket / TakeProfitLimit.
 // Bot-platzierte TP1/TP2 werden aber als plain LIMIT mit reduceOnly=true platziert

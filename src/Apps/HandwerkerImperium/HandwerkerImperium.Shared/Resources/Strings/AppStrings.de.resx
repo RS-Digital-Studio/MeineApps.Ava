@@ -2264,7 +2264,7 @@
   <data name="ShopGoldenScrews450Desc" xml:space="preserve">
     <value>450 Goldschrauben</value>
   </data>
-  <!-- Whale-Bundles (AAA-Audit P0): drei Premium-Stufen ueber dem alten 4,99-Limit. -->
+  <!-- Whale-Bundles (P0): drei Premium-Stufen ueber dem alten 4,99-Limit. -->
   <data name="ShopBundleMidName" xml:space="preserve">
     <value>Imperium-Paket</value>
   </data>
@@ -3452,7 +3452,7 @@
     <value>Arbeiterstreik: Nur Stufen bis C verfügbar!</value>
   </data>
 
-  <!-- Phase 1: General + SaveGame -->
+  <!-- : General + SaveGame -->
   <data name="SaveErrorMessage" xml:space="preserve">
     <value>Spielstand konnte nicht gespeichert werden.</value>
   </data>
@@ -3482,8 +3482,8 @@
   <data name="DailyRewardNotif" xml:space="preserve">
     <value>Deine tägliche Belohnung wartet! Nicht verpassen.</value>
   </data>
-  <!-- AAA-Audit P1: 4 neue Re-Engagement-Trigger -->
-  <!-- AAA-Audit P2 Mascot-Brand: Hans-Persona in Notifications. -->
+  <!-- 4 neue Re-Engagement-Trigger -->
+  <!-- Hans-Persona in Notifications. -->
   <data name="WorkerMoodCriticalNotif" xml:space="preserve">
     <value>Meister Hans: „Die Truppe braucht Aufmerksamkeit — Stimmung kritisch!"</value>
   </data>
@@ -3557,7 +3557,7 @@
   <data name="HintLongPressBulkTitle" xml:space="preserve">
     <value>Schneller upgraden</value>
   </data>
-  <!-- v2.1.1 (Audit U-H04): Hint korrigiert auf den Cycle-Button-Workflow (kein Long-Press im SkiaSharp-Canvas). -->
+  <!-- Hint korrigiert auf den Cycle-Button-Workflow (kein Long-Press im SkiaSharp-Canvas). -->
   <data name="HintLongPressBulkText" xml:space="preserve">
     <value>Tippe auf den x1-Button über den Upgrades, um auf x10, x100 oder Max zu wechseln — dann kauft ein einzelner Tipp gleich mehrere Level.</value>
   </data>
@@ -6218,7 +6218,7 @@
   <data name="CraftingInventoryEmptyText" xml:space="preserve">
     <value>Starte oben ein Rezept &#8212; deine fertigen Items landen hier und k&#246;nnen verkauft werden.</value>
   </data>
-  <!-- Cross-Promotion (AAA-Audit P1): Hooks fuer die 11 Apps. -->
+  <!-- Cross-Promotion (P1): Hooks fuer die 11 Apps. -->
   <data name="CrossPromoSectionTitle" xml:space="preserve">
     <value>Magst du diese App? Probier auch:</value>
   </data>
@@ -6244,7 +6244,7 @@
   <data name="CrossPromo_BingXBot_Hook" xml:space="preserve"><value>Trading-Bot mit Pi-Server &#8212; voll automatisiert.</value></data>
   <data name="CrossPromo_GardenControl_Name" xml:space="preserve"><value>GardenControl</value></data>
   <data name="CrossPromo_GardenControl_Hook" xml:space="preserve"><value>Bew&#228;sserung steuern &#8212; auch im Urlaub.</value></data>
-  <!-- FTUE (AAA-Audit P0) - 10-Schritt-Onboarding-Tour -->
+  <!-- FTUE (P0) - 10-Schritt-Onboarding-Tour -->
   <data name="FtueWelcomeTitle" xml:space="preserve"><value>Willkommen in deinem Imperium!</value></data>
   <data name="FtueWelcomeText" xml:space="preserve"><value>Hi, ich bin Meister Hans. In den n&#228;chsten 60 Sekunden zeige ich dir das Wichtigste. Bereit?</value></data>
   <data name="FtueFirstUpgradeTitle" xml:space="preserve"><value>Werte deine Werkstatt auf!</value></data>
@@ -6342,7 +6342,7 @@
   <data name="CraftPrototype" xml:space="preserve">
     <value>Prototyp bauen</value>
   </data>
-  <!-- ═══════ V7 (Phase 1 Ressourcen-Plan): Neue T2/T3-Produkte + Cross-Workshop-Rezepte ═══════ -->
+  <!-- ═══════ V7 (): Neue T2/T3-Produkte + Cross-Workshop-Rezepte ═══════ -->
   <data name="ProductFoundation" xml:space="preserve">
     <value>Beton-Fundament</value>
   </data>
@@ -6403,7 +6403,7 @@
   <data name="CraftPatent" xml:space="preserve">
     <value>Patent anmelden</value>
   </data>
-  <!-- ═══════ V7 (Phase 1 Ressourcen-Plan): Lager-UI ═══════ -->
+  <!-- ═══════ V7 (): Lager-UI ═══════ -->
   <data name="ImperiumSubTabWarehouse" xml:space="preserve">
     <value>Lager</value>
   </data>
@@ -6443,12 +6443,12 @@
   <data name="Sell10" xml:space="preserve">
     <value>10 verkaufen</value>
   </data>
-  <!-- ═══════ V7 (Phase 2 Ressourcen-Plan): Material-Offer ═══════ -->
+  <!-- ═══════ V7 (): Material-Offer ═══════ -->
   <data name="MaterialOfferDisplayFormat" xml:space="preserve"><value>+{0}% mit {1}</value></data>
   <data name="StartWithMaterial" xml:space="preserve"><value>Mit Material</value></data>
   <data name="MaterialOfferInsufficientTitle" xml:space="preserve"><value>Nicht genug Material</value></data>
   <data name="MaterialOfferInsufficientMessage" xml:space="preserve"><value>Dein Lager hat nicht alle vom Auftrag verlangten Materialien.</value></data>
-  <!-- ═══════ V7 (Phase 3 Ressourcen-Plan): Logistik-Forschung ═══════ -->
+  <!-- ═══════ V7 (): Logistik-Forschung ═══════ -->
   <data name="BranchLogistics" xml:space="preserve"><value>Logistik</value></data>
   <data name="BranchLogisticsDesc" xml:space="preserve"><value>Lager-Erweiterung, Markt-Zugang, Lieferketten-Automation.</value></data>
   <data name="ResearchLogiSlots1" xml:space="preserve"><value>Lager-Erweiterung I</value></data>
@@ -6463,7 +6463,7 @@
   <data name="ResearchLogiTier4" xml:space="preserve"><value>Imperiums-Manufaktur (T4)</value></data>
   <data name="ResearchLogiHeirloom" xml:space="preserve"><value>Imperiums-Erbst&#252;cke</value></data>
   <data name="ResearchLogiMaster" xml:space="preserve"><value>Meister-Logistiker</value></data>
-  <!-- ═══════ V7 (Phase 3 Ressourcen-Plan): Markt-UI ═══════ -->
+  <!-- ═══════ V7 (): Markt-UI ═══════ -->
   <data name="MarketTitle" xml:space="preserve"><value>Material-Markt</value></data>
   <data name="MarketSubtitle" xml:space="preserve"><value>Kaufe Rohstoffe g&#252;nstig, verkaufe teuer. Die Preise schwanken im Tagesverlauf.</value></data>
   <data name="MarketLockedHint" xml:space="preserve"><value>Erforsche „Material-Markt-Zugang", um den Markt freizuschalten.</value></data>
@@ -6474,7 +6474,7 @@
   <data name="OpenMarket" xml:space="preserve"><value>Markt &#246;ffnen</value></data>
   <data name="MarketShowHeatmap" xml:space="preserve"><value>24-h-Preisverlauf zeigen</value></data>
   <data name="MarketHeatmapSubtitle" xml:space="preserve"><value>Preisverlauf der letzten 24 h (UTC). Pulsierender Punkt = aktuelle Stunde.</value></data>
-  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Imperium-Pass ═══════ -->
+  <!-- ═══════ V7 (): Imperium-Pass ═══════ -->
   <data name="ImperiumPassName" xml:space="preserve"><value>Imperium-Pass</value></data>
   <data name="ImperiumPassDesc" xml:space="preserve"><value>Lifetime-Upgrade mit 8 dauerhaften Boni. Details unten.</value></data>
   <data name="ImperiumPassActiveTitle" xml:space="preserve"><value>Imperium-Pass aktiv</value></data>
@@ -6489,7 +6489,7 @@
   <data name="ImperiumPassBenefit6" xml:space="preserve"><value>★ 2× Gl&#252;cksrad-Spin pro Tag</value></data>
   <data name="ImperiumPassBenefit7" xml:space="preserve"><value>★ Auto-Daily-Belohnung</value></data>
   <data name="ImperiumPassBenefit8" xml:space="preserve"><value>★ +100% Goldschrauben aus Gameplay</value></data>
-  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekt ═══════ -->
+  <!-- ═══════ V7 (, Plan Section 3.9): Gilden-Mega-Projekt ═══════ -->
   <data name="GuildMegaProjectTitle" xml:space="preserve"><value>Gilden-Bauplatz</value></data>
   <data name="GuildMegaProjectSubtitle" xml:space="preserve"><value>Sammelt mit eurer Gilde Materialien — bei Abschluss erhalten alle Mitglieder permanente Boni.</value></data>
   <data name="GuildMegaProjectCathedral" xml:space="preserve"><value>Gilden-Kathedrale</value></data>
@@ -6518,7 +6518,7 @@
   <data name="HeirloomSectionHint" xml:space="preserve"><value>Tier-4-Items &#252;berleben Prestige (+2% Einkommen pro Erbst&#252;ck im n&#228;chsten Run).</value></data>
   <data name="HeirloomNoCandidates" xml:space="preserve"><value>Keine Tier-4-Items im Lager — baue eine Villa, einen Wolkenkratzer oder ein Imperium-HQ, um Erbst&#252;cke zu erhalten.</value></data>
   <data name="DeliveryMaterial" xml:space="preserve"><value>Material-Lieferung vom Lieferanten!</value></data>
-  <!-- ═══════ V7 (Phase 4 Ressourcen-Plan): Tier-4 + Erbstuecke + Affinity ═══════ -->
+  <!-- ═══════ V7 (): Tier-4 + Erbstuecke + Affinity ═══════ -->
   <data name="ProductVilla" xml:space="preserve"><value>Luxusvilla</value></data>
   <data name="ProductSkyscraper" xml:space="preserve"><value>Wolkenkratzer</value></data>
   <data name="ProductImperiumHq" xml:space="preserve"><value>Imperiums-Hauptquartier</value></data>

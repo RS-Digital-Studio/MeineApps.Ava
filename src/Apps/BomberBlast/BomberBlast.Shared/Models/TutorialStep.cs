@@ -18,7 +18,7 @@ public class TutorialStep
     public TutorialHighlight Highlight { get; init; }
 
     /// <summary>
-    /// Sprint 3.2 AAA-Audit #5: Phase-Zuordnung (T1 Movement / T2 Bombs / T3 PowerUps).
+    ///.2 : Phase-Zuordnung (T1 Movement / T2 Bombs / T3 PowerUps).
     /// Wird vor jedem ersten Schritt einer neuen Phase als Phase-Banner angezeigt.
     /// </summary>
     public TutorialPhase Phase { get; init; }
@@ -28,7 +28,7 @@ public class TutorialStep
 }
 
 /// <summary>
-/// Sprint 3.2 AAA-Audit #5: Tutorial-Phase ("3 Tutorial-Levels" laut Audit).
+///.2 : Tutorial-Phase ("3 Tutorial-Levels" laut Audit).
 /// Statt 3 separater Maps integriert in das bestehende 6-Schritte-Tutorial-System
 /// als logische Phasen-Gruppierung mit Phase-Banner-Anzeige.
 /// </summary>

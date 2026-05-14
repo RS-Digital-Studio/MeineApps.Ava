@@ -10,7 +10,7 @@
              IsVisible="{Binding IsWhatsNewVisible}"
              AutomationProperties.AutomationId="MainView_WhatsNewOverlay">
   <!--
-    What's-New-Modal (Sprint 4.3 AAA-Audit #17). Zeigt nach App-Update die
+    What's-New-Modal (.3 . Zeigt nach App-Update die
     wichtigsten Aenderungen — DataContext erbt vom MainViewModel, das WhatsNewVm haelt.
     -->
   <Border Background="#DD000000"

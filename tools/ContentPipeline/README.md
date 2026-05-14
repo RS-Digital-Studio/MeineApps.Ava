@@ -1,4 +1,4 @@
-# Content-Pipeline (P2.1 AAA-Audit)
+# Content-Pipeline
 
 Ziel: Game-Designer und Übersetzer arbeiten in **Google Sheets**, nicht im Code.
 

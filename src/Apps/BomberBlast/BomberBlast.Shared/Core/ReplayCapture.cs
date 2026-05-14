@@ -3,7 +3,7 @@ using BomberBlast.Models.Entities;
 namespace BomberBlast.Core;
 
 /// <summary>
-/// Replay-Capture-System (Phase 18b — AAA-Audit Replay-Foundation).
+/// Replay-Capture-System (Phase 18b — Replay-Foundation).
 ///
 /// <para>Zeichnet pro Sim-Tick die Spieler-Inputs als kompaktes Frame-Stream auf. Reicht zusammen
 /// mit dem RNG-Seed aus, um das gesamte Spielgeschehen deterministisch zu reproduzieren —
@@ -62,13 +62,13 @@ public sealed class ReplayCapture
     public byte[] Serialize()
     {
         // Layout:
-        //   [0]   Schema-Version (1 Byte)
+        //   [0] Schema-Version (1 Byte)
         //   [1-8] Seed (UInt64 LE)
-        //   [9]   LevelNumber (1 Byte, 0-100)
-        //   [10]  ModeTag-Length (1 Byte)
+        //   [9] LevelNumber (1 Byte, 0-100)
+        //   [10] ModeTag-Length (1 Byte)
         //   [11-...] ModeTag (UTF-8)
-        //   [...]  TickCount (Int32 LE)
-        //   [...]  Tick-Bytes (1 Byte pro Tick)
+        //   [...] TickCount (Int32 LE)
+        //   [...] Tick-Bytes (1 Byte pro Tick)
         var modeBytes = System.Text.Encoding.UTF8.GetBytes(ModeTag ?? string.Empty);
         var headerSize = 1 + 8 + 1 + 1 + modeBytes.Length + 4;
         var buf = new byte[headerSize + _ticks.Count];

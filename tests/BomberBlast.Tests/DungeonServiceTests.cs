@@ -7,7 +7,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für DungeonService (v2.0.46 — AAA-Audit Phase 4).
+/// Tests für DungeonService (v2.0.46 — ).
 /// Validiert Free-Run-pro-Tag-Limit, Coin-/Gem-Eintritts-Logik, Lite-Run-Cap,
 /// Stats-Persistenz, Run-State-Lifecycle.
 /// </summary>

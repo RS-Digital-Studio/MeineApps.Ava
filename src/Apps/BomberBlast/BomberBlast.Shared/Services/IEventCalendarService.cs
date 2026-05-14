@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Wöchentlicher Event-Calendar (Phase 20 — AAA-Audit L2).
+/// Wöchentlicher Event-Calendar (Phase 20 — L2).
 ///
 /// <para>Im Gegensatz zu <see cref="IEventService"/> (4 fixe Saison-Events) liefert dieser Service
 /// für JEDE ISO-Woche ein deterministisches Event aus einem rotierenden Pool. Vorbild: Brawl Stars

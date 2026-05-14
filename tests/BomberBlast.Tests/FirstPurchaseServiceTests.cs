@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für FirstPurchaseService (Phase 23 — AAA-Audit M5).
+/// Tests für FirstPurchaseService (Phase 23 — M5).
 /// Validiert First-Time-Purchase-Bonus-Logik (×2 Multiplier vor erstem Kauf, ×1 danach),
 /// Persistenz und Cloud-Save-Konsistenz.
 /// </summary>

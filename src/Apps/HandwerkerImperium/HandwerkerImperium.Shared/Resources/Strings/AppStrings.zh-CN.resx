@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- P1.2 AAA-Audit Phase 1 (08.05.2026): CJK-Stub fuer Simplified Chinese.
+  <!--  (08.05.2026): CJK-Stub fuer Simplified Chinese.
        Volle Translation kommt mit Crowdin-Setup + Native-QA (~3 Wochen, ~5k EUR Budget).
        Bis dahin fallen nicht-uebersetzte Keys auf Englisch zurueck (LocalizationService-Fallback). -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">

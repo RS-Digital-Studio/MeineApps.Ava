@@ -147,7 +147,7 @@ public sealed class FogOfWarSystem : IDisposable
 
         int cs = GameGrid.CELL_SIZE;
 
-        // Phase 1: Run-Length-Encoding pro Zeile.
+        // : Run-Length-Encoding pro Zeile.
         // Statt 150 einzelne DrawRect-Calls (15x10 Grid) werden zusammen-
         // haengende Zellen mit gleichem Alpha-Wert zu einem DrawRect gemerged.
         // Bei typischer FoW-Verteilung (Spieler in der Mitte) spart das
@@ -191,7 +191,7 @@ public sealed class FogOfWarSystem : IDisposable
             }
         }
 
-        // Phase 2: Soft-Edge radial um Spieler. Zentrum 0 alpha, Radius-Edge 40 alpha.
+        // : Soft-Edge radial um Spieler. Zentrum 0 alpha, Radius-Edge 40 alpha.
         // Gibt weichen Übergang zwischen Visible-Kern und Explored/Unknown-Umgebung.
         float softEdgeRadius = _revealRadius * cs * 0.9f;
         fillPaint.Color = new SKColor(0, 0, 0, 40);

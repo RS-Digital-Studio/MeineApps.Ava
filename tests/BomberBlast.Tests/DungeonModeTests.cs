@@ -6,7 +6,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für DungeonMode-State (v2.0.52 — AAA-Audit Phase 9).
+/// Tests für DungeonMode-State (v2.0.52 — Phase 9).
 /// Validiert Defaults für alle 13 migrierten Properties + Mutability + ModeTag-Konsistenz.
 /// </summary>
 public class DungeonModeTests

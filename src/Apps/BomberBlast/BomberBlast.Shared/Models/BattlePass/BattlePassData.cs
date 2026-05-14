@@ -41,7 +41,7 @@ public class BattlePassData
     // === Berechnete Properties (nicht serialisiert) ===
 
     /// <summary>
-    /// Saison-Theme (Phase 19 — AAA-Audit L1). Deterministisch aus SeasonNumber.
+    /// Saison-Theme (Phase 19 — L1). Deterministisch aus SeasonNumber.
     /// Saison 1 = Classic, Saison 2+ rotiert durch Cyberpunk → Halloween → Winter → ...
     /// </summary>
     public BattlePassTheme Theme => BattlePassThemeExtensions.GetThemeForSeason(SeasonNumber);

@@ -4,7 +4,7 @@ namespace BomberBlast.ViewModels;
 /// Default-Implementation von <see cref="ILifecycleHub"/> (Welle 6 MainViewModel-Refactor).
 ///
 /// <para>
-/// Phase 1: Leeres Geruest. <c>CloudSaveInitTask</c> ist erstmal <c>Task.CompletedTask</c>
+/// : Leeres Geruest. <c>CloudSaveInitTask</c> ist erstmal <c>Task.CompletedTask</c>
 /// damit Subscriber waehrend der Migration nicht haengen bleiben. Die echte Init-Logik wird
 /// in Phase 6 aus <see cref="MainViewModel"/> hier hin verschoben.
 /// </para>

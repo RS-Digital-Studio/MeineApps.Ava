@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Vollbild-Vignette-Flash fuer Game-Feel-Momente (Sprint 1.2 + Sprint 3.3 AAA-Audit #7/#18).
+/// Vollbild-Vignette-Flash fuer Game-Feel-Momente (.2 +.3 /#18).
 ///
 /// Verwendet als:
 /// - <b>UltraCombo-Flash</b>: Bei Combo ≥ x10, Welt-Akzent-Farbe, 200ms (Default-Trigger).

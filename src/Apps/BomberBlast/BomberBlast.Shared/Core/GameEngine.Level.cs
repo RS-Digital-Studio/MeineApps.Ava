@@ -28,23 +28,23 @@ public sealed partial class GameEngine
         // v2.0.55 — Phase 15 P1-Fix: Cinematic-Sequencer bei Mode-Wechsel stoppen
         // (sonst kann Boss-Reveal-Cinematic nach Mode-Wechsel weiterlaufen).
         _cinematic?.Stop();
-        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
-        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
+        // _isDailyChallenge ist Computed auf _currentMode.
+        // _isSurvivalMode ist Computed auf _currentMode.
+        // _isQuickPlayMode ist Computed auf _currentMode.
+        // _isDungeonRun ist Computed auf _currentMode.
         // v2.0.52 Code-Review-Fix: Auch BossRush + DailyRace explizit zuruecksetzen.
         // Vorher: Bei Boss-Rush-Abort -> Story-Start blieb _isBossRushMode=true -> Stale-Bool-Path
         // in CompleteLevel/Victory + falscher Render-Event-Block.
-        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
+        // _isBossRushMode ist Computed auf _currentMode.
+        // _isDailyRace ist Computed auf _currentMode.
         // Defense-in-Depth: Master-Mode nur wenn wirklich unlocked.
         // Downgrade auf Normal-Mode wird geloggt — hilft beim Debuggen falls Navigation
         // einen unerwarteten masterMode=true liefert (z.B. durch veraltete Preference).
-        // Sprint 5.1 AAA-Audit #11: Mode-Selection bestimmt _currentMode direkt;
+        //.1 : Mode-Selection bestimmt _currentMode direkt;
         // _isMasterMode ist jetzt Computed-Property auf _currentMode.
         bool effectiveMaster = masterMode && _masterModeService.IsUnlocked;
 
-        // v2.0.49 — Mode-Plugin-Framework Phase 2: aktiver Mode setzen
+        // v2.0.49 — Mode-Plugin-Framework : aktiver Mode setzen
         _currentMode = effectiveMaster
             ? new BomberBlast.Core.Modes.MasterMode()
             : new BomberBlast.Core.Modes.StoryMode();
@@ -60,12 +60,12 @@ public sealed partial class GameEngine
         _activeMutator = _currentLevel.Mutator;
         _continueUsed = false;
 
-        // Sprint 7.2 AAA-Audit #22: 2P-Co-Op aktivieren wenn vom MultiplayerSession-Service gesetzt.
+        //.2 : 2P-Co-Op aktivieren wenn vom MultiplayerSession-Service gesetzt.
         // Player2 wird auf gegenueberliegender Spawn-Position erzeugt (siehe Multiplayer-Foundation).
         EnableMultiplayer(_multiplayerSession.CurrentMode);
 
         _player.ResetForNewGame();
-        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
+        ApplyHeroStats();   //.1 : Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         MutatorEffects.Apply(_player, _activeMutator);
         ApplyLoadoutBoosts(levelNumber);  // v2.0.41 Plan Task 3.2: Pre-Level-Boosts anwenden
@@ -93,12 +93,12 @@ public sealed partial class GameEngine
                 _subtitles.Show(_localizationService.GetString("SubtitleBossRoar") ?? "[BOSS ROARS]", duration: 3f);
             }
 
-            // v2.0.46 — Cinematic-Director Phase 1: Boss-Reveal-Sequenz (1.5s)
+            // v2.0.46 — Cinematic-Director : Boss-Reveal-Sequenz (1.5s)
             PlayBossRevealCinematic();
         }
         else if (_currentLevel.IsMiniBossLevel)
         {
-            // Welle 1 v2.0.58 AAA-Audit #10: Mini-Boss-Banner — typspezifischer Name mit Mini-Prefix.
+            // Welle 1 v2.0.58 : Mini-Boss-Banner — typspezifischer Name mit Mini-Prefix.
             var bossName = _currentLevel.BossKind is { } bk ? GetBossDisplayName(bk) : "BOSS";
             var miniPrefix = _localizationService.GetString("AnnounceMiniBoss") ?? "MINI-BOSS";
             _worldAnnouncementText = $"{miniPrefix}: {bossName}";
@@ -128,7 +128,7 @@ public sealed partial class GameEngine
             _worldAnnouncementTimer = 2.0f;
         }
 
-        // Sprint 2.2 AAA-Audit #2: Funnel-Event level_start mit Welt + Lives + Master-Mode-Flag.
+        //.2 : Funnel-Event level_start mit Welt + Lives + Master-Mode-Flag.
         _analytics?.LogEvent(AnalyticsEvents.LevelStart, new Dictionary<string, object>
         {
             [AnalyticsParams.LevelId] = levelNumber,
@@ -138,7 +138,7 @@ public sealed partial class GameEngine
             ["mutator"] = _activeMutator.ToString(),
         });
 
-        // Sprint 2.2: boss_encounter wenn das Level einen Boss hat (vor dem Kampf, fuer Drop-Off-Funnel).
+        // boss_encounter wenn das Level einen Boss hat (vor dem Kampf, fuer Drop-Off-Funnel).
         // Welle 1 v2.0.58: Mini-Boss-Levels feuern auch boss_encounter mit is_mini=1.
         if ((_currentLevel.IsBossLevel || _currentLevel.IsMiniBossLevel) && _currentLevel.BossKind is { } bossKind)
         {
@@ -192,7 +192,7 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
-    /// v2.0.46 — Cinematic-Director Phase 1: Boss-Reveal-Sequenz.
+    /// v2.0.46 — Cinematic-Director : Boss-Reveal-Sequenz.
     /// Spielt 1.5s lang ein orchestriertes Effekt-Set ab: Particle-Bursts an Boss-Position,
     /// Trauma-Shake-Spike, Floating-Text-Stinger.
     /// Findet die Boss-Position über die Boss-Enemy-Liste (gespawnt in LoadLevelAsync).
@@ -216,7 +216,7 @@ public sealed partial class GameEngine
             bossPositions.Add((cx, cy, BossType.StoneGolem));
         }
 
-        // Sprint 5.3 AAA-Audit #13: Music-Boost waehrend Boss-Reveal-Cinematic (+15% Music fuer 8s).
+        //.3 : Music-Boost waehrend Boss-Reveal-Cinematic (+15% Music fuer 8s).
         // Verstaerkt die Atmosphaere — der Boss-Encounter ist filmisch wertvoll, Music-Boost
         // macht den Moment epischer. 8s = Cinematic-Dauer + Initial-Phase nach Spielstart.
         _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.15f, 8.0f);
@@ -282,7 +282,7 @@ public sealed partial class GameEngine
             })
         };
 
-        // v2.0.47 — Cinematic-Director Phase 2: Camera-Zoom auf erste Boss-Position
+        // v2.0.47 — Cinematic-Director : Camera-Zoom auf erste Boss-Position
         if (bossPositions.Count > 0)
         {
             _cinematic.MaxCameraZoom = 0.35f;  // 35% Zoom-In auf Boss
@@ -299,26 +299,26 @@ public sealed partial class GameEngine
     public async Task StartDailyChallengeModeAsync(int seed)
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        // Sprint 5.1: _isDailyChallenge wird durch _currentMode = new DailyChallengeMode() unten gesetzt.
-        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
-        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
+        // _isDailyChallenge wird durch _currentMode = new DailyChallengeMode() unten gesetzt.
+        // _isSurvivalMode ist Computed auf _currentMode.
+        // _isQuickPlayMode ist Computed auf _currentMode.
+        // _isDungeonRun ist Computed auf _currentMode.
+        //.1 : _isMasterMode ist jetzt Computed auf _currentMode.
+        // _isBossRushMode ist Computed auf _currentMode.
+        // _isDailyRace ist Computed auf _currentMode.
         _currentMode = new BomberBlast.Core.Modes.DailyChallengeMode();
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 99;
         _currentLevel = LevelLayoutGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = false;
 
-        // Sprint 5.2 AAA-Audit #12: Daily-Challenge → deterministischer Seed fuer ALLE Spieler weltweit.
+        //.2 : Daily-Challenge → deterministischer Seed fuer ALLE Spieler weltweit.
         // Pontan-Spawns, Drop-Positionen, AI-Random-Movement-Fallback laufen jetzt synchron auf
         // allen Geraeten (x64/ARM64) — Voraussetzung fuer Daily-Leaderboard-Fairness.
         SetDeterministicSeed((ulong)seed);
 
         _player.ResetForNewGame();
-        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
+        ApplyHeroStats();   //.1 : Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         await LoadLevelAsync();
 
@@ -327,7 +327,7 @@ public sealed partial class GameEngine
         _worldAnnouncementText = "DAILY CHALLENGE";
         _worldAnnouncementTimer = 2.5f;
 
-        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Mode-Entry-Events.
+        // Welle 2 v2.0.58 : Funnel-Tracking — Mode-Entry-Events.
         _analytics?.LogEvent(AnalyticsEvents.DailyChallengeStart, new Dictionary<string, object>
         {
             ["seed"] = seed,
@@ -341,13 +341,13 @@ public sealed partial class GameEngine
     public async Task StartQuickPlayModeAsync(int seed, int difficulty)
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
-        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isQuickPlayMode wird durch _currentMode = new QuickPlayMode() unten gesetzt.
-        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
-        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
+        // _isDailyChallenge ist Computed auf _currentMode.
+        // _isSurvivalMode ist Computed auf _currentMode.
+        // _isQuickPlayMode wird durch _currentMode = new QuickPlayMode() unten gesetzt.
+        // _isDungeonRun ist Computed auf _currentMode.
+        //.1 : _isMasterMode ist jetzt Computed auf _currentMode.
+        // _isBossRushMode ist Computed auf _currentMode.
+        // _isDailyRace ist Computed auf _currentMode.
         // v2.0.50 — Phase 7: Difficulty wird in QuickPlayMode gehalten (im Konstruktor geclamped 1-10).
         _currentMode = new BomberBlast.Core.Modes.QuickPlayMode(difficulty);
         _activeMutator = LevelMutator.None;
@@ -356,7 +356,7 @@ public sealed partial class GameEngine
         _continueUsed = true; // Kein Continue im Quick-Play
 
         _player.ResetForNewGame();
-        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
+        ApplyHeroStats();   //.1 : Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         await LoadLevelAsync();
 
@@ -369,7 +369,7 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
-    /// Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Phase als eigenstaendiges Level starten.
+    /// Welle 3 v2.0.58 : Tutorial-Phase als eigenstaendiges Level starten.
     /// phase 1 = T1 Movement, 2 = T2 Bombs, 3 = T3 PowerUps.
     /// Nutzt QuickPlayMode als Container (kein Story-Star, kein Coin-Reward).
     /// Tutorial-Service wird parallel gestartet — Steps laufen via Player-Actions.
@@ -388,7 +388,7 @@ public sealed partial class GameEngine
 
         _player.ResetForNewGame();
         ApplyHeroStats();
-        // Tutorial-Stats: Phase 1 hat KEINE Bombs (Spieler kann nicht legen), Phase 2/3 hat 1 Bomb.
+        // Tutorial-Stats: hat KEINE Bombs (Spieler kann nicht legen), /3 hat 1 Bomb.
         _player.MaxBombs = phase == 1 ? 0 : 1;
         _player.FireRange = 2;
         _player.Lives = 3;
@@ -411,13 +411,13 @@ public sealed partial class GameEngine
     public async Task StartSurvivalModeAsync()
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
-        // Sprint 5.1: _isSurvivalMode wird durch _currentMode = new SurvivalMode() unten gesetzt.
-        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
-        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
+        // _isDailyChallenge ist Computed auf _currentMode.
+        // _isSurvivalMode wird durch _currentMode = new SurvivalMode() unten gesetzt.
+        // _isQuickPlayMode ist Computed auf _currentMode.
+        // _isDungeonRun ist Computed auf _currentMode.
+        //.1 : _isMasterMode ist jetzt Computed auf _currentMode.
+        // _isBossRushMode ist Computed auf _currentMode.
+        // _isDailyRace ist Computed auf _currentMode.
         _currentMode = new BomberBlast.Core.Modes.SurvivalMode();
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 1;
@@ -432,7 +432,7 @@ public sealed partial class GameEngine
         survivalState.SpawnInterval = 4f;
 
         _player.ResetForNewGame();
-        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
+        ApplyHeroStats();   //.1 : Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         _player.Lives = 1; // Nur 1 Leben im Survival (kein Shop-Bonus)
 
@@ -443,7 +443,7 @@ public sealed partial class GameEngine
         _worldAnnouncementText = "SURVIVAL!";
         _worldAnnouncementTimer = 2.5f;
 
-        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Mode-Entry-Events.
+        // Welle 2 v2.0.58 : Funnel-Tracking — Mode-Entry-Events.
         _analytics?.LogEvent(AnalyticsEvents.SurvivalStart, new Dictionary<string, object>
         {
             [AnalyticsParams.Lives] = _player.Lives,
@@ -457,13 +457,13 @@ public sealed partial class GameEngine
     public async Task StartDailyRaceModeAsync()
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
-        // Sprint 5.1: _isDailyRace wird durch _currentMode = new DailyRaceMode() unten gesetzt.
-        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
-        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
+        // _isDailyChallenge ist Computed auf _currentMode.
+        // _isDailyRace wird durch _currentMode = new DailyRaceMode() unten gesetzt.
+        // _isSurvivalMode ist Computed auf _currentMode.
+        // _isQuickPlayMode ist Computed auf _currentMode.
+        // _isDungeonRun ist Computed auf _currentMode.
+        //.1 : _isMasterMode ist jetzt Computed auf _currentMode.
+        // _isBossRushMode ist Computed auf _currentMode.
         // v2.0.50 — Phase 7: DailyRaceMode mit Submitted=false initialisiert (Default-Property)
         _currentMode = new BomberBlast.Core.Modes.DailyRaceMode();
         _activeMutator = LevelMutator.None;
@@ -472,11 +472,11 @@ public sealed partial class GameEngine
         _currentLevel = LevelLayoutGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = true; // Kein Continue im Daily Race
 
-        // Sprint 5.2 AAA-Audit #12: Daily-Race → deterministisch fuer alle Spieler.
+        //.2 : Daily-Race → deterministisch fuer alle Spieler.
         SetDeterministicSeed((ulong)seed);
 
         _player.ResetForNewGame();
-        ApplyHeroStats();   // Sprint 7.1 AAA-Audit #21: Hero-Stats VOR Upgrades anwenden.
+        ApplyHeroStats();   //.1 : Hero-Stats VOR Upgrades anwenden.
         ApplyUpgrades();
         await LoadLevelAsync();
 
@@ -484,7 +484,7 @@ public sealed partial class GameEngine
         _worldAnnouncementText = "DAILY RACE";
         _worldAnnouncementTimer = 2.5f;
 
-        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Mode-Entry-Events.
+        // Welle 2 v2.0.58 : Funnel-Tracking — Mode-Entry-Events.
         _analytics?.LogEvent(AnalyticsEvents.DailyRaceStart, new Dictionary<string, object>
         {
             ["seed"] = seed,
@@ -499,12 +499,12 @@ public sealed partial class GameEngine
     /// </summary>
     public async Task StartBossRushModeAsync(int bossIndex)
     {
-        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
-        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDungeonRun ist Computed auf _currentMode.
-        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        // Sprint 5.1: _isBossRushMode wird durch _currentMode = new BossRushMode() unten gesetzt.
+        // _isDailyChallenge ist Computed auf _currentMode.
+        // _isSurvivalMode ist Computed auf _currentMode.
+        // _isQuickPlayMode ist Computed auf _currentMode.
+        // _isDungeonRun ist Computed auf _currentMode.
+        //.1 : _isMasterMode ist jetzt Computed auf _currentMode.
+        // _isBossRushMode wird durch _currentMode = new BossRushMode() unten gesetzt.
         // v2.0.49 — Boss-Rush-Mode setzen (bei Erst-Aufruf bossIndex=0 neuer Mode-State,
         // bei Folge-Bossen wird der existing Mode beibehalten damit AccumulatedScore stimmt)
         if (bossIndex <= 0 || _currentMode is not BomberBlast.Core.Modes.BossRushMode)
@@ -558,7 +558,7 @@ public sealed partial class GameEngine
         _worldAnnouncementText = $"BOSS {bossIndex + 1} / 5";
         _worldAnnouncementTimer = 2.5f;
 
-        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — nur fuer erste Boss-Encounter,
+        // Welle 2 v2.0.58 : Funnel-Tracking — nur fuer erste Boss-Encounter,
         // sonst wuerde der Event 5x pro Run feuern.
         if (bossIndex == 0)
         {
@@ -575,19 +575,19 @@ public sealed partial class GameEngine
     public async Task StartDungeonFloorAsync(int floor, int seed)
     {
         _cinematic?.Stop();  // v2.0.55 P1-Fix
-        // Sprint 5.1: _isDailyChallenge ist Computed auf _currentMode.
-        // Sprint 5.1: _isSurvivalMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isQuickPlayMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDungeonRun wird durch _currentMode = new DungeonMode() unten gesetzt.
-        // Sprint 5.1 AAA-Audit #11: _isMasterMode ist jetzt Computed auf _currentMode.
-        // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
-        // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
+        // _isDailyChallenge ist Computed auf _currentMode.
+        // _isSurvivalMode ist Computed auf _currentMode.
+        // _isQuickPlayMode ist Computed auf _currentMode.
+        // _isDungeonRun wird durch _currentMode = new DungeonMode() unten gesetzt.
+        //.1 : _isMasterMode ist jetzt Computed auf _currentMode.
+        // _isBossRushMode ist Computed auf _currentMode.
+        // _isDailyRace ist Computed auf _currentMode.
         // v2.0.49 — Dungeon-Mode setzen (nur beim ersten Floor; bei Folge-Floors bleibt der Mode)
         bool isFirstFloor = _currentMode is not BomberBlast.Core.Modes.DungeonMode;
         if (isFirstFloor)
             _currentMode = new BomberBlast.Core.Modes.DungeonMode();
 
-        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — DungeonRunStart nur beim ersten Floor.
+        // Welle 2 v2.0.58 : Funnel-Tracking — DungeonRunStart nur beim ersten Floor.
         if (isFirstFloor)
         {
             _analytics?.LogEvent(AnalyticsEvents.DungeonRunStart, new Dictionary<string, object>
@@ -856,7 +856,7 @@ public sealed partial class GameEngine
         _exitCell = null;
         _scoreAtLevelStart = _player.Score;
         _playerDamagedThisLevel = false;
-        // Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie reset.
+        //.2 : Funnel-Telemetrie reset.
         _levelElapsedSeconds = 0f;
         _deathsInLevel = 0;
         _comboTiersInLevel = 0;
@@ -900,7 +900,7 @@ public sealed partial class GameEngine
         else
             _grid.SetupClassicPattern();
 
-        // Sprint 5.2 AAA-Audit #12: Level-Seed wird zum Re-Seed des IRngProvider verwendet.
+        //.2 : Level-Seed wird zum Re-Seed des IRngProvider verwendet.
         // Im Daily/Daily-Race-Mode bereits durch SetDeterministicSeed gesetzt; bei anderen
         // Modi bleibt das hier als zusaetzliches Re-Seed pro Level fuer Generator-Reproduzierbarkeit.
         if (_currentLevel.Seed.HasValue)
@@ -953,7 +953,7 @@ public sealed partial class GameEngine
                 _tracking.OnBossEncountered(boss.BossKind);
         }
 
-        // Sprint 3.2 AAA-Audit #5: Soft-Onboarding-Curve — die ersten 2 Story-Level nach
+        //.2 : Soft-Onboarding-Curve — die ersten 2 Story-Level nach
         // dem Tutorial spawnen ~40% weniger Gegner. Genre-Neulinge bekommen einen sanften
         // Einstieg statt sofort voller Gegner-Dichte. Nur regulaere Story-Level (kein Boss,
         // kein Master, keine Sondermodi), und nie Level 1 (das ist das Tutorial-Level selbst).
@@ -999,7 +999,7 @@ public sealed partial class GameEngine
         // Spieler aktivieren
         _player.IsActive = true;
 
-        // Welle 3 v2.0.58 AAA-Audit #12: Tutorial in 3 separaten Levels (TutorialPhase=1/2/3).
+        // Welle 3 v2.0.58 : Tutorial in 3 separaten Levels (TutorialPhase=1/2/3).
         // Tutorial laeuft jetzt im eigenen Tutorial-Level (Number < 0) statt in Story-L1.
         // L1 startet Tutorial nur noch als Legacy-Fallback (alte Spielstaende, neue Spieler
         // werden ueber MainViewModel.StartGame() direkt in StartTutorialPhaseAsync geroutet).
@@ -1024,12 +1024,12 @@ public sealed partial class GameEngine
         {
             var modeCtx = BuildModeContext();
             _currentMode?.Initialize(modeCtx);
-            // Sprint 5.x AAA-Audit #8: OnLevelStart-Hook — pro Level (nach Initialize).
+            //.x : OnLevelStart-Hook — pro Level (nach Initialize).
             _currentMode?.OnLevelStart(modeCtx);
         }
         catch { /* Best-Effort, no-op-Default in GameModeBase */ }
 
-        // Sprint 6.2 AAA-Audit #13: Welt-Intro-Cutscene beim ERSTEN Level einer Welt
+        //.2 : Welt-Intro-Cutscene beim ERSTEN Level einer Welt
         // (Level 1, 11, 21, ..., 91) — wenn der User die Welt noch nie betreten hat.
         // One-shot pro Welt via HasSeenIntro/MarkIntroSeen.
         // Story-Beats brauchen Lesbarkeit: 6s Dauer + dezenter PullBack + Stinger-Stinger.
@@ -1057,7 +1057,7 @@ public sealed partial class GameEngine
     /// In Story/Daily/QuickPlay/Survival: Volle Shop-Bonuse.
     /// </summary>
     /// <summary>
-    /// Sprint 6.1 AAA-Audit #15: Boss-Modifier Summoner spawnt einen Mini-Enemy (Ballom)
+    ///.1 : Boss-Modifier Summoner spawnt einen Mini-Enemy (Ballom)
     /// in der Naehe des Bosses. Wird alle 8s aufgerufen, max 4 Minions gleichzeitig.
     /// </summary>
     private void SpawnSummonerMinion(BossEnemy boss)
@@ -1070,7 +1070,7 @@ public sealed partial class GameEngine
         if (liveMinions >= 4) return;
 
         // Spawn-Position: Eine der 4 Nachbar-Zellen vom Boss (free + not blocked).
-        // Sprint 5.2 AAA-Audit #9: EngineRngNext statt new Random() — im FixedTimestep-Mode
+        //.2 : EngineRngNext statt new Random() — im FixedTimestep-Mode
         // deterministisch (sim-relevant: bestimmt Spawn-Position), im Variable-Mode identisch.
         var offsets = new (int dx, int dy)[] { (-1, 0), (1, 0), (0, -1), (0, 1) };
         for (int i = 0; i < 4; i++) (offsets[i], offsets[EngineRngNext(4)]) = (offsets[EngineRngNext(4)], offsets[i]);
@@ -1095,7 +1095,7 @@ public sealed partial class GameEngine
 
     private void ApplyHeroStats()
     {
-        // Sprint 7.1 AAA-Audit #21: Hero-Definition vom aktiven Hero anwenden.
+        //.1 : Hero-Definition vom aktiven Hero anwenden.
         // Wird VOR ApplyUpgrades aufgerufen damit Shop-Bonuse die Hero-Werte erhoehen koennen.
         // Im Dungeon werden Hero-Stats ueberschrieben (ApplyUpgrades setzt dort eigene Base-Stats).
         var hero = _heroService.ActiveHero;
@@ -1104,7 +1104,7 @@ public sealed partial class GameEngine
         _player.SpeedLevel = hero.StartSpeedLevel;
         _player.Lives = hero.StartLives;
 
-        // Welle 1 v2.0.58 AAA-Audit #19: Hero-Trait QuickPocket — Speed-Curse-Immunitaet.
+        // Welle 1 v2.0.58 : Hero-Trait QuickPocket — Speed-Curse-Immunitaet.
         _player.HeroImmuneToSlowCurse = hero.Trait == BomberBlast.Models.HeroTrait.QuickPocket;
     }
 
@@ -1168,9 +1168,9 @@ public sealed partial class GameEngine
             CurrentLevel = _currentLevel!,
             Random = random,
             PowerUpLuckLevel = _shopService.Upgrades.GetLevel(UpgradeType.PowerUpLuck),
-            // Sprint 7.1 AAA-Audit #14: Hero-PowerUp-Drop-Multiplier durchreichen.
+            //.1 : Hero-PowerUp-Drop-Multiplier durchreichen.
             HeroPowerUpMultiplier = _heroService.ActiveHero.PowerUpDropMultiplier,
-            // Welle 1 v2.0.58 AAA-Audit #19: Hero-Block-Drop-Chance-Bonus (BrickBoris).
+            // Welle 1 v2.0.58 : Hero-Block-Drop-Chance-Bonus (BrickBoris).
             HeroBlockDropChanceBonus = _heroService.ActiveHero.BlockDropChanceBonus,
         };
     }
@@ -1365,7 +1365,7 @@ public sealed partial class GameEngine
                 }
                 boss.Update(deltaTime);
 
-                // Sprint 6.1 AAA-Audit #15: Boss-Modifier Summoner — wenn der Cooldown abgelaufen ist,
+                //.1 : Boss-Modifier Summoner — wenn der Cooldown abgelaufen ist,
                 // spawnt der Boss einen Mini-Enemy in der Naehe. Engine-side weil Enemy-Liste mutiert.
                 if (boss.TryConsumeSummonRequest())
                 {
@@ -1621,7 +1621,7 @@ public sealed partial class GameEngine
 
         if (_purchaseService.IsPremium)
             coins *= 2;
-        // Sprint 7.1 AAA-Audit #14: Hero-Coin-Pickup-Multiplier (z.B. SpeedySam: +5%).
+        //.1 : Hero-Coin-Pickup-Multiplier (z.B. SpeedySam: +5%).
         var heroForCoins = _heroService.ActiveHero;
         if (Math.Abs(heroForCoins.CoinPickupMultiplier - 1.0f) > 0.001f)
             coins = (int)Math.Round(coins * heroForCoins.CoinPickupMultiplier);
@@ -1839,8 +1839,8 @@ public sealed partial class GameEngine
                 }
             }
 
-            // v2.0.44 — AAA-Audit: Funnel-Tracking für Live-Ops-Entscheidungen.
-            // Sprint 2.2 AAA-Audit #2: erweiterte Parameter — time_ms, stars, deaths fuer
+            // v2.0.44 — : Funnel-Tracking für Live-Ops-Entscheidungen.
+            //.2 : erweiterte Parameter — time_ms, stars, deaths fuer
             // praezisere Level-Difficulty-Auswertung in Firebase-Dashboards.
             int worldForLevel = (_currentLevelNumber - 1) / 10 + 1;
             int starsEarned = _progressService.GetLevelStars(_currentLevelNumber);
@@ -1857,7 +1857,7 @@ public sealed partial class GameEngine
                 [AnalyticsParams.Mode] = GetCurrentModeTag(),
                 ["master_mode"] = _isMasterMode
             });
-            // Sprint 2.2: boss_defeated wenn das Level einen Boss hatte (paired mit boss_encounter beim Start)
+            // boss_defeated wenn das Level einen Boss hatte (paired mit boss_encounter beim Start)
             // Welle 1 v2.0.58: Mini-Boss-Levels feuern auch boss_defeated mit is_mini=1.
             if ((_currentLevel?.IsBossLevel == true || _currentLevel?.IsMiniBossLevel == true)
                 && _currentLevel.BossKind is { } defeatedBoss)
@@ -1871,7 +1871,7 @@ public sealed partial class GameEngine
                     ["is_mini"] = _currentLevel.IsMiniBossLevel ? 1 : 0,
                 });
 
-                // Sprint 6.2 AAA-Audit #13: Welt-Outro-Cutscene beim Welt-Boss-Sieg
+                //.2 : Welt-Outro-Cutscene beim Welt-Boss-Sieg
                 // (Level 10/20/.../90 — Endboss hat kein Outro, da kein "naechste Welt"-Cliffhanger).
                 // One-shot pro Welt via HasSeenOutro/MarkOutroSeen.
                 // Outro nach Boss-Sieg: 7s damit Cliffhanger gelesen werden kann + PullBack als Cinematic-Akzent.
@@ -1900,7 +1900,7 @@ public sealed partial class GameEngine
 
     /// <summary>
     /// Liefert einen kurzen Mode-Tag für Telemetrie/Crash-Custom-Keys.
-    /// v2.0.49 — Phase 2: Bevorzugt CurrentMode.ModeTag, fällt auf Bool-Flag-Logic zurück
+    /// v2.0.49 — : Bevorzugt CurrentMode.ModeTag, fällt auf Bool-Flag-Logic zurück
     /// für Modi die noch nicht über StartXxxModeAsync den _currentMode setzen.
     /// </summary>
     private string GetCurrentModeTag()
@@ -2098,7 +2098,7 @@ public sealed partial class GameEngine
             _subtitles.Show(_localizationService.GetString("SubtitleTimeWarning") ?? "[TIME WARNING]");
         }
 
-        // Welle 4 v2.0.58 AAA-Audit #15: Adaptive-Music-Boost in den letzten 10 Sekunden.
+        // Welle 4 v2.0.58 : Adaptive-Music-Boost in den letzten 10 Sekunden.
         // +25% Music fuer 12s = Spannungseskalation ohne externe Pitch-Shift-Library
         // (psychoakustisch wirkt ein lauter werdender Track wie schneller).
         _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.25f, 12f);
@@ -2117,7 +2117,7 @@ public sealed partial class GameEngine
         _pontanInitialDelay = GetPontanInitialDelay();
         _pontanSpawnTimer = _pontanInitialDelay > 0 ? _pontanInitialDelay : 0; // Gnadenfrist oder sofort
 
-        // Welle 4 v2.0.58 AAA-Audit #15: Pontan-Hunt-Drama — Music-Boost 1.30 fuer 15s
+        // Welle 4 v2.0.58 : Pontan-Hunt-Drama — Music-Boost 1.30 fuer 15s
         // (psychoakustische Eskalation, simuliert das "Schnellere-Musik-bei-Tod-Drama"
         // ohne externe Pitch-Shift-Library).
         _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.30f, 15f);

@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Empty-State-Illustrationen (Phase 28c — AAA-Audit PR3).
+/// Empty-State-Illustrationen (Phase 28c — PR3).
 ///
 /// <para>Prozedurale SkiaSharp-Illustrationen für leere Zustände — kein externes Asset.
 /// Royal-Match-Pattern: jeder leere Zustand hat ein eigenes Bild + Hint-Text. Statt

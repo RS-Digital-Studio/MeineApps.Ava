@@ -7,7 +7,7 @@ using Xunit;
 namespace BingXBot.Tests.Engine.Sk;
 
 /// <summary>
-/// v1.5.0 Phase 1 — "Heiliger Gral als Hard-Gate".
+/// v1.5.0 — "Heiliger Gral als Hard-Gate".
 ///
 /// Verifiziert die Mikro-Touch-Schwelle und den W1/D1-Spezialfall der Hard-Gate-Logik.
 /// Die Strategy-Integration ist via SequenzKonzeptStrategy.Evaluate getestet (Backtest-Suite),
@@ -78,7 +78,7 @@ public class HtfConfluenceHardGateTests
     [Fact]
     public void RoundTrip_FlagPersistsThroughDb()
     {
-        // Phase 1 — RequireHtfConfluenceForEntry muss durch die Settings-Persistenz erhalten bleiben.
+        //  — RequireHtfConfluenceForEntry muss durch die Settings-Persistenz erhalten bleiben.
         // Das ist in App.axaml.cs::RestoreSettingsFromDb + Server::ApplySettingsToSingletons gemappt.
         // Dieser Test verifiziert nur, dass das Property auf RiskSettings existiert und einen
         // Default-Wert hat — die echte Roundtrip-Persistenz wird durch die Settings-Tests abgedeckt.

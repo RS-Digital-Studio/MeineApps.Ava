@@ -13,7 +13,7 @@ public enum BombType
     /// <summary>Klebt an Wänden/Gegnern, 5s Timer</summary>
     Sticky,
 
-    // === Neue Bomben-Typen (Phase 1) ===
+    // === Neue Bomben-Typen () ===
 
     /// <summary>3x3 Nebelwolke, Gegner-AI läuft 4s zufällig (Rare)</summary>
     Smoke,

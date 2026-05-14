@@ -1,7 +1,7 @@
 namespace BomberBlast.Models.BattlePass;
 
 /// <summary>
-/// Saison-Theme fuer einen Battle-Pass (Phase 19 — AAA-Audit L1).
+/// Saison-Theme fuer einen Battle-Pass (Phase 19 — L1).
 /// Vorbild: Brawl Stars Brawl-Pass-Themen (Halloween, Robotik, Pirates, Mech etc.).
 /// Jede Saison erzaehlt eine eigene Lore + bringt thematische Cosmetics.
 /// </summary>

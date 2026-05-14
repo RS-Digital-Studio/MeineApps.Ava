@@ -1,7 +1,7 @@
 namespace BomberBlast.Core;
 
 /// <summary>
-/// Fixed-Timestep-Foundation (v2.0.54 — AAA-Audit Phase 13).
+/// Fixed-Timestep-Foundation (v2.0.54 — Phase 13).
 ///
 /// Implementiert das klassische Akkumulator-Pattern für deterministische Sim-Ticks:
 /// - Wall-Clock-DeltaTime wird im Akkumulator gesammelt

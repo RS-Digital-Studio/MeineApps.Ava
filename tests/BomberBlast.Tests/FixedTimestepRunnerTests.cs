@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für FixedTimestepRunner (v2.0.54 — AAA-Audit Phase 13).
+/// Tests für FixedTimestepRunner (v2.0.54 — Phase 13).
 /// Validiert Akkumulator-Pattern, Tick-Anzahl-Berechnung, Spiral-of-Death-Schutz,
 /// Interpolation-Alpha, Enabled-Toggle.
 /// </summary>

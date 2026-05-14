@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace BomberBlast.Droid;
 
 /// <summary>
-/// Android-Implementation von <see cref="IRemoteConfigService"/> (Sprint 2.1 AAA-Audit #1).
+/// Android-Implementation von <see cref="IRemoteConfigService"/> (.1 .
 ///
 /// <para>
 /// Erbt von <see cref="DefaultsRemoteConfigService"/> — die eingebetteten JSON-Defaults bleiben

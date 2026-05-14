@@ -1440,7 +1440,7 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
-        // v2.0.44 — AAA-Audit: Accessibility / Performance / Privacy
+        // v2.0.44 — : Accessibility / Performance / Privacy
         internal static string HighFrameRate => ResourceManager.GetString("HighFrameRate", resourceCulture)!;
         internal static string AccessibilitySection => ResourceManager.GetString("AccessibilitySection", resourceCulture)!;
         internal static string ColorblindMode => ResourceManager.GetString("ColorblindMode", resourceCulture)!;
@@ -4314,7 +4314,7 @@ namespace BomberBlast.Resources.Strings {
 
         internal static string AchievementsEmptyCta => ResourceManager.GetString("AchievementsEmptyCta", resourceCulture)!;
 
-        // Sprint 2.3 AAA-Audit #3: Re-Engagement Push-Notifications
+        //.3 : Re-Engagement Push-Notifications
         internal static string ReEngagementD1Title => ResourceManager.GetString("ReEngagementD1Title", resourceCulture)!;
         internal static string ReEngagementD1Body => ResourceManager.GetString("ReEngagementD1Body", resourceCulture)!;
         internal static string ReEngagementD3Title => ResourceManager.GetString("ReEngagementD3Title", resourceCulture)!;
@@ -4322,17 +4322,17 @@ namespace BomberBlast.Resources.Strings {
         internal static string ReEngagementD7Title => ResourceManager.GetString("ReEngagementD7Title", resourceCulture)!;
         internal static string ReEngagementD7Body => ResourceManager.GetString("ReEngagementD7Body", resourceCulture)!;
 
-        // Sprint 4.3 AAA-Audit #17: What's-New-Modal Buttons
+        //.3 : What's-New-Modal Buttons
         internal static string WhatsNewTitle => ResourceManager.GetString("WhatsNewTitle", resourceCulture)!;
         internal static string WhatsNewLater => ResourceManager.GetString("WhatsNewLater", resourceCulture)!;
         internal static string WhatsNewUnderstood => ResourceManager.GetString("WhatsNewUnderstood", resourceCulture)!;
 
-        // Sprint 3.2 AAA-Audit #5: Tutorial-Phase-Banner
+        //.2 : Tutorial-Phase-Banner
         internal static string TutorialPhaseMovement => ResourceManager.GetString("TutorialPhaseMovement", resourceCulture)!;
         internal static string TutorialPhaseBombs => ResourceManager.GetString("TutorialPhaseBombs", resourceCulture)!;
         internal static string TutorialPhasePowerUps => ResourceManager.GetString("TutorialPhasePowerUps", resourceCulture)!;
 
-        // Sprint 6.2 AAA-Audit #16: Mini-Story-Beats (10 Intros + 9 Outros)
+        //.2 : Mini-Story-Beats (10 Intros + 9 Outros)
         internal static string WorldStoryIntro1 => ResourceManager.GetString("WorldStoryIntro1", resourceCulture)!;
         internal static string WorldStoryIntro2 => ResourceManager.GetString("WorldStoryIntro2", resourceCulture)!;
         internal static string WorldStoryIntro3 => ResourceManager.GetString("WorldStoryIntro3", resourceCulture)!;
@@ -4353,7 +4353,7 @@ namespace BomberBlast.Resources.Strings {
         internal static string WorldStoryOutro8 => ResourceManager.GetString("WorldStoryOutro8", resourceCulture)!;
         internal static string WorldStoryOutro9 => ResourceManager.GetString("WorldStoryOutro9", resourceCulture)!;
 
-        // Sprint 7.1 AAA-Audit #21: Hero/Character-System
+        //.1 : Hero/Character-System
         internal static string HeroDefaultName => ResourceManager.GetString("HeroDefaultName", resourceCulture)!;
         internal static string HeroDefaultDesc => ResourceManager.GetString("HeroDefaultDesc", resourceCulture)!;
         internal static string HeroSpeedySamName => ResourceManager.GetString("HeroSpeedySamName", resourceCulture)!;
@@ -4365,7 +4365,7 @@ namespace BomberBlast.Resources.Strings {
         internal static string HeroLuckyLolaName => ResourceManager.GetString("HeroLuckyLolaName", resourceCulture)!;
         internal static string HeroLuckyLolaDesc => ResourceManager.GetString("HeroLuckyLolaDesc", resourceCulture)!;
 
-        // Sprint 3.1 AAA-Audit #4: Bottom-Tab-Bar
+        //.1 : Bottom-Tab-Bar
         internal static string BottomTabHome => ResourceManager.GetString("BottomTabHome", resourceCulture)!;
         internal static string BottomTabPlay => ResourceManager.GetString("BottomTabPlay", resourceCulture)!;
         internal static string BottomTabShop => ResourceManager.GetString("BottomTabShop", resourceCulture)!;
@@ -5288,7 +5288,7 @@ namespace BomberBlast.Resources.Strings {
         internal static string ContextHelpMaster1 => ResourceManager.GetString("ContextHelpMaster1", resourceCulture)!;
         internal static string ContextHelpMaster2 => ResourceManager.GetString("ContextHelpMaster2", resourceCulture)!;
 
-        // Menu-Redesign v2.0.43 (Plan Phase 4)
+        // Menu-Redesign v2.0.43 (Plan )
         internal static string MenuHeroReadyToStart => ResourceManager.GetString("MenuHeroReadyToStart", resourceCulture)!;
         internal static string MenuHeroWorldStage => ResourceManager.GetString("MenuHeroWorldStage", resourceCulture)!;
         internal static string MenuHeroContinue => ResourceManager.GetString("MenuHeroContinue", resourceCulture)!;

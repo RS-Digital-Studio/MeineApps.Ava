@@ -6,7 +6,7 @@ namespace BomberBlast.Services;
 
 /// <summary>
 /// Standard-Implementation von <see cref="IRemoteConfigService"/> die Werte aus einer
-/// eingebetteten JSON-Datei laedt (Sprint 2.1 AAA-Audit #1).
+/// eingebetteten JSON-Datei laedt (.1 .
 ///
 /// <para>
 /// Liefert produktionsreife Defaults — App funktioniert vollstaendig auch ohne Firebase-Backend.

@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für CinematicSequencer (v2.0.46 — AAA-Audit Phase 3).
+/// Tests für CinematicSequencer (v2.0.46 — ).
 /// Validiert Play/Update/Stop-Lifecycle, Event-Trigger-at-Time, ordered Sortierung,
 /// Action-Exception-Resilience.
 /// </summary>

@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// DSGVO Art. 20 — Recht auf Datenuebertragbarkeit (Phase 25 — AAA-Audit Compliance).
+/// DSGVO Art. 20 — Recht auf Datenuebertragbarkeit (Phase 25 — Compliance).
 ///
 /// <para>Liefert alle vom Spieler gespeicherten Daten als strukturiertes JSON-Dokument zur
 /// Ausgabe an den Spieler. Im Gegensatz zu <see cref="IAccountDeletionService"/> (DSGVO Art. 17 —

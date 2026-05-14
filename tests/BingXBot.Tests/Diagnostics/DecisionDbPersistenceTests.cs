@@ -8,7 +8,7 @@ using Xunit;
 
 namespace BingXBot.Tests.Diagnostics;
 
-// v1.5.2 Phase 4 — Decision-Trail DB-Persistenz (Migration v11).
+// v1.5.2 — Decision-Trail DB-Persistenz (Migration v11).
 //
 // Tests gegen eine temporaere SQLite-DB. Verifizieren Save/Load-Roundtrip + Filter +
 // Migration-Marker. Trim-Verhalten ist via Cleanup-Threshold abgedeckt.

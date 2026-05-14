@@ -198,14 +198,14 @@ Persistenz: `tutorial_t1_done`, `tutorial_t2_done`, `tutorial_t3_done` Preferenc
 
 #### 9. Boss-Phase-2 Attack-Pattern-Variation
 
-**Status:** `BossEnemy.CurrentPhase = 2` wird beim Enrage gesetzt. Aber Attack-Patterns sind identisch zu Phase 1 (keine Variation in Telegraph-Farbe, AttackTargetCells-Muster).
+**Status:** `BossEnemy.CurrentPhase = 2` wird beim Enrage gesetzt. Aber Attack-Patterns sind identisch zu  (keine Variation in Telegraph-Farbe, AttackTargetCells-Muster).
 
 **Lösung pro Boss-Typ:**
-- StoneGolem: Phase 2 wirft 2 Blöcke statt 1
-- IceDragon: Phase 2 friert 2 Reihen (eine vor, eine nach Spieler-Position)
-- FireDemon: Phase 2 Lava auf 3/4 statt halben Boden
-- ShadowMaster: Phase 2 Teleport + 2 Schattenklone statt 1
-- FinalBoss: Phase 2 rotiert alle 4 Angriffe in halber Zeit
+- StoneGolem:  wirft 2 Blöcke statt 1
+- IceDragon:  friert 2 Reihen (eine vor, eine nach Spieler-Position)
+- FireDemon:  Lava auf 3/4 statt halben Boden
+- ShadowMaster:  Teleport + 2 Schattenklone statt 1
+- FinalBoss:  rotiert alle 4 Angriffe in halber Zeit
 
 **Impact:** Bosse fühlen sich nach Enrage wirklich anders an, nicht nur schneller.
 

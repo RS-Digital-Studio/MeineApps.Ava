@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Remote-Config-Service (Sprint 1.4c Stub + Sprint 2.1 AAA-Audit #1).
+/// Remote-Config-Service (.4c Stub +.1 .
 ///
 /// Erlaubt Live-Tuning von Werten ohne App-Update:
 /// - Event-Aktivierung (event_active_halloween, event_active_christmas, ...)
@@ -14,7 +14,7 @@ namespace BomberBlast.Services;
 ///
 /// IMPLEMENTIERUNGEN:
 /// - <see cref="NullRemoteConfigService"/> — Desktop/Test-Default, liefert nur lokale Werte
-/// - FirebaseRemoteConfigService — Android, sucht google-services.json + Firebase Remote Config (Sprint 2.1)
+/// - FirebaseRemoteConfigService — Android, sucht google-services.json + Firebase Remote Config 
 /// </summary>
 public interface IRemoteConfigService
 {
@@ -103,7 +103,7 @@ public static class RemoteConfigKeys
 /// <summary>
 /// No-Op-Implementierung (Desktop + Test).
 /// Liefert immer Default-Werte. <see cref="FetchAndActivateAsync"/> ist No-Op.
-/// FirebaseRemoteConfigService kommt im Android-Override (Sprint 2.1).
+/// FirebaseRemoteConfigService kommt im Android-Override .
 /// </summary>
 public sealed class NullRemoteConfigService : IRemoteConfigService
 {

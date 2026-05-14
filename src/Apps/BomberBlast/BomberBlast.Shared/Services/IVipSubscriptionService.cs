@@ -3,7 +3,7 @@ using System.Globalization;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// VIP-Subscription (Phase 23b — AAA-Audit M2).
+/// VIP-Subscription (Phase 23b — M2).
 ///
 /// <para>Royal-Match-Pattern: 4,99€/Monat als Subscription mit täglichen Boni:</para>
 /// <list type="bullet">

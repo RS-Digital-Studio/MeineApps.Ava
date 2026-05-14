@@ -7,7 +7,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für MasterModeService (v2.0.48 — AAA-Audit Phase 5).
+/// Tests für MasterModeService (v2.0.48 — Phase 5).
 /// Validiert IsUnlocked-Gating (HighestCompletedLevel >= 100), IsActive-Setter-Guard,
 /// RecordLevelCompleted-Persistenz, TotalMasterClears + TotalMaster3Stars.
 /// </summary>

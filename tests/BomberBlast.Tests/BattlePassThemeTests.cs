@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für BattlePass-Saison-Theme-System (Phase 19 — AAA-Audit L1).
+/// Tests für BattlePass-Saison-Theme-System (Phase 19 — L1).
 /// Validiert Theme-Rotation, Akzent-Farben, deterministische Saison-Zuordnung.
 /// </summary>
 public class BattlePassThemeTests

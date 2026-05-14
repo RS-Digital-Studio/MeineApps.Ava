@@ -32,7 +32,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
     private readonly ICustomizationService _customizationService;
     private readonly IPurchaseService _purchaseService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
     private readonly MeineApps.Core.Ava.Services.IPreferencesService _preferencesService;
     private readonly IRotatingDealsService _rotatingDealsService;

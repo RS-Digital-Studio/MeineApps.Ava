@@ -13,7 +13,7 @@ public enum LeagueTier
 }
 
 /// <summary>
-/// Sub-Tiers innerhalb eines LeagueTiers (Phase 19 — AAA-Audit L1).
+/// Sub-Tiers innerhalb eines LeagueTiers (Phase 19 — L1).
 /// Bronze/Silver/Gold/Platinum sind in I/II/III unterteilt → 12 Sub-Stufen total + Diamond.
 /// Diamond bleibt single-tier (Endgame-Slot, kein Sub-Reset). Spieler steigen innerhalb
 /// eines Tiers von I → II → III auf, bevor sie in den nächsten Tier promoviert werden.
@@ -102,7 +102,7 @@ public static class LeagueTierExtensions
         _ => 0.20f
     };
 
-    // === Phase 19 — Sub-Tier-Logik (AAA-Audit L1) ============================
+    // === Phase 19 — Sub-Tier-Logik (L1) ============================
 
     /// <summary>
     /// Berechnet den Sub-Tier (I/II/III) innerhalb eines Tiers basierend auf den Punkten.

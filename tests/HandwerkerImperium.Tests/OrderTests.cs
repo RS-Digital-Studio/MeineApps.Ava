@@ -124,7 +124,7 @@ public class OrderTests
     [Fact]
     public void FinalReward_MissRating_GibtReduzierteBelohnung()
     {
-        // Vorbereitung — v2.1.1 (Audit B-H07): Miss-Spread auf 0.20x verschaerft.
+        // Vorbereitung — Miss-Spread auf 0.20x verschaerft.
         var order = new Order
         {
             BaseReward = 1000m,
@@ -172,7 +172,7 @@ public class OrderTests
     [Fact]
     public void FinalReward_MehrereTasks_NutztDurchschnitt()
     {
-        // Vorbereitung — v2.1.1 (Audit B-H07): Perfect (1.5) + Miss (0.20) = Durchschnitt 0.85
+        // Vorbereitung — Perfect (1.5) + Miss (0.20) = Durchschnitt 0.85
         var order = new Order
         {
             BaseReward = 1000m,

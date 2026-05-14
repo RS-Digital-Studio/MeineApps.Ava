@@ -52,7 +52,7 @@
         </Grid>
       </Border>
 
-      <!-- Empty State Sprint 1.4b: 0/N freigeschaltet → illustriertes Empty-State + CTA -->
+      <!-- Empty State 0/N freigeschaltet → illustriertes Empty-State + CTA -->
       <StackPanel Grid.Row="1"
                   IsVisible="{Binding ShowEmptyState}"
                   VerticalAlignment="Center"

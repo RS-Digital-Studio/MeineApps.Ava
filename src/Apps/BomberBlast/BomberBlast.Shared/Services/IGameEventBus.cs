@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Game-Event-Bus (Sprint 4.2 AAA-Audit #10).
+/// Game-Event-Bus (.2 .
 ///
 /// <para>
 /// Zentraler Pub/Sub-Hub fuer UI-Events (FloatingText, Celebration, ExitHint, Message).
@@ -10,7 +10,7 @@ namespace BomberBlast.Services;
 /// </para>
 ///
 /// <para>
-/// HINWEIS: Sprint 4.2 ist Foundation-Layer. Bestehende MainViewModel-Events bleiben
+/// HINWEIS:.2 ist Foundation-Layer. Bestehende MainViewModel-Events bleiben
 /// unveraendert (Backwards-Compat) — neue Features koennen aber direkt diesen Service
 /// nutzen statt eine MainViewModel-Abhaengigkeit zu schaffen.
 /// </para>

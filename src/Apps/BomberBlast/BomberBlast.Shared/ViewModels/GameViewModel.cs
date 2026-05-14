@@ -26,7 +26,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
 
     private readonly GameEngine _gameEngine;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>Sprint 2.2 AAA-Audit #2: Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
+    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
     private readonly IAnalyticsService _analytics;
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
@@ -171,11 +171,11 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         // Phase 24b — RetentionService property-injecten damit GameEngine.PlayFirstWinCinematic
         // beim ECHTEN ersten Sieg getriggert werden kann.
         _gameEngine.RetentionService = retentionService;
-        // Sprint 6.2 AAA-Audit #13: WorldStoryService — fuer Welt-Intro/Outro-Cutscenes.
+        //.2 : WorldStoryService — fuer Welt-Intro/Outro-Cutscenes.
         _gameEngine.WorldStoryService = worldStoryService;
     }
 
-    // Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Routing — Story-Mode startet automatisch
+    // Welle 3 v2.0.58 : Tutorial-Routing — Story-Mode startet automatisch
     // mit der naechsten offenen Tutorial-Phase wenn der Spieler noch nicht alle 3 abgeschlossen hat.
     private readonly ITutorialService _tutorialService;
 
@@ -337,13 +337,13 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
                 break;
 
             case "tutorial":
-                // Welle 3 v2.0.58 AAA-Audit #12: Direkt-Aufruf einer Tutorial-Phase (1/2/3 als _level).
+                // Welle 3 v2.0.58 : Direkt-Aufruf einer Tutorial-Phase (1/2/3 als _level).
                 await _gameEngine.StartTutorialPhaseAsync(Math.Clamp(_level, 1, 3));
                 break;
 
             case "story":
             default:
-                // Welle 3 v2.0.58 AAA-Audit #12: Wenn Tutorial nicht komplett UND Spieler startet
+                // Welle 3 v2.0.58 : Wenn Tutorial nicht komplett UND Spieler startet
                 // Story-L1, route auf naechste offene Tutorial-Phase. Schuetzt Genre-Neulinge davor,
                 // dass sie das Tutorial im Story-L1 erleiden — sie bekommen eigene Mini-Levels.
                 if (_level <= 1 && !_tutorialService.IsCompleted)
@@ -733,11 +733,11 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         var effBonus = _gameEngine.LastEfficiencyBonus;
         var multiplier = _gameEngine.LastScoreMultiplier;
 
-        // Welle 3 v2.0.58 AAA-Audit #12: Tutorial-Level (Number < 0) → naechste Phase oder Story-L1.
+        // Welle 3 v2.0.58 : Tutorial-Level (Number < 0) → naechste Phase oder Story-L1.
         // Kein Victory/GameOver-Screen, kein Score-Submit — direkt weiter im Onboarding-Flow.
         if (level < 0)
         {
-            int completedPhase = -level;  // -1 → Phase 1, -2 → Phase 2, -3 → Phase 3
+            int completedPhase = -level;  // -1 → , -2 → , -3 → 
             if (completedPhase < 3 && !_tutorialService.IsCompleted)
             {
                 // Naechste Tutorial-Phase

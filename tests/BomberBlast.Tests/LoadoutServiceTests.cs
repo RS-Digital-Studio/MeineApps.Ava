@@ -7,7 +7,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für LoadoutService (v2.0.41 + v2.0.45 — AAA-Audit).
+/// Tests für LoadoutService (v2.0.41 + v2.0.45 — ).
 /// Validiert Cost-Tabellen, Max-2-Boosts-Limit, Coin-vs-Gem-Pfade, atomare Buchung.
 /// </summary>
 public class LoadoutServiceTests

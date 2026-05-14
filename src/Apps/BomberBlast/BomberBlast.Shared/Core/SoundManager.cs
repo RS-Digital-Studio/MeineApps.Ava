@@ -5,7 +5,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Core;
 
 /// <summary>
-/// Verwaltet Spiel-Audio (Soundeffekte und Musik). Phase 16 (AAA-Audit) erweitert um:
+/// Verwaltet Spiel-Audio (Soundeffekte und Musik). Phase 16 () erweitert um:
 /// <list type="bullet">
 /// <item>7-Kanal Bus-System (Master/Music/Ambient/SFX/UI/Voice/Cinematic) via <see cref="AudioBusMixer"/>.</item>
 /// <item>Multi-Sample-Pool mit Anti-Repeat (Brawl-Stars-Pattern) via <see cref="SoundVariationPool"/>.</item>

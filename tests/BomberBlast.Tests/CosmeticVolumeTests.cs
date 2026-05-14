@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für Cosmetic-Volumen (Phase 29 — AAA-Audit Content-Lücke).
+/// Tests für Cosmetic-Volumen (Phase 29 — Content-Lücke).
 /// Validiert dass die definierten Cosmetic-Pools die geforderte AAA-Mindestmenge erreichen
 /// und dass alle definierten Items eine eindeutige Id, RESX-Keys und gültige Rarität haben.
 /// </summary>

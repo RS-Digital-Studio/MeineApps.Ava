@@ -1,7 +1,7 @@
 namespace BomberBlast.Core.Combat;
 
 /// <summary>
-/// Combo-System (v2.0.54 — AAA-Audit Phase 12, Subsystem-Extraktion aus GameEngine.Collision.cs).
+/// Combo-System (v2.0.54 — Phase 12, Subsystem-Extraktion aus GameEngine.Collision.cs).
 /// Pure-Logic-Klasse: Counter + Timer + Score-Bonus-Berechnung. Keine Engine-Referenzen.
 /// Macht die Combo-Mechanik isoliert testbar (Window-Verlängerung, Score-Tabelle, ULTRA-Schwelle).
 /// </summary>

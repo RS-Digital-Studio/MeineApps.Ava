@@ -4,7 +4,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IHeroService"/> (Sprint 7.1 AAA-Audit #21).
+/// Default-Implementation von <see cref="IHeroService"/> (.1 .
 /// Persistiert ActiveHeroId + Unlocked-Set in Preferences.
 /// </summary>
 public sealed class HeroService : IHeroService

@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Bloom-Pass via <see cref="SKRuntimeEffect"/> (Phase 21b — AAA-Audit V3).
+/// Bloom-Pass via <see cref="SKRuntimeEffect"/> (Phase 21b — V3).
 ///
 /// <para>Echter GPU-Bloom statt SKMaskFilter-Software-Blur:</para>
 /// <list type="bullet">

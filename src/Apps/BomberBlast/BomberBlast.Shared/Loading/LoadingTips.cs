@@ -3,7 +3,7 @@ using MeineApps.Core.Ava.Localization;
 namespace BomberBlast.Loading;
 
 /// <summary>
-/// Loading-Tipps-System (Phase 28 — AAA-Audit PR4).
+/// Loading-Tipps-System (Phase 28 — PR4).
 ///
 /// <para>Vorbild: Genshin Impact / Royal Match — während des Loading-Screens werden zufällige
 /// Spiel-Tipps angezeigt damit der Spieler nicht "Loading..." stiert.</para>

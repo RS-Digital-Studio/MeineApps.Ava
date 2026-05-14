@@ -4,7 +4,7 @@ using Xunit;
 
 namespace BomberBlast.Tests;
 
-/// <summary>Tests für BattlePassPlusService (Phase 23b — AAA-Audit M1).</summary>
+/// <summary>Tests für BattlePassPlusService (Phase 23b — M1).</summary>
 public class BattlePassPlusServiceTests
 {
     [Fact]

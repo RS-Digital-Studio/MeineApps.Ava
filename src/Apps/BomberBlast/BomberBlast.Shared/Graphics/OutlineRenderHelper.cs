@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Outline-Pass-Helper (Sprint 5.4 AAA-Audit #14).
+/// Outline-Pass-Helper (.4 .
 ///
 /// <para>
 /// Vereinheitlicht den Look ueber inkonsistente Art-Styles (Vektor-Player + AI-WebP-Bosse +

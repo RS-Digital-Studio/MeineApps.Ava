@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Privacy-Center (Phase 25b — AAA-Audit Compliance).
+/// Privacy-Center (Phase 25b — Compliance).
 ///
 /// <para>Zentralisiert ALLE DSGVO-relevanten Toggles in einem Service. Vorher waren die
 /// Settings auf SettingsViewModel + IAccessibilityService verteilt (CrashlyticsConsent,

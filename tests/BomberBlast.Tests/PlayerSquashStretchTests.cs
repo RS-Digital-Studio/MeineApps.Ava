@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für Phase 22b — Player Squash & Stretch (G2 aus AAA-Audit).
+/// Tests für Phase 22b — Player Squash & Stretch (G2 aus ).
 /// Validiert dass die Sprite-Skalierung in plausiblen Grenzen bleibt und korrekt
 /// auf Direction/IsMoving/IsDying reagiert.
 /// </summary>

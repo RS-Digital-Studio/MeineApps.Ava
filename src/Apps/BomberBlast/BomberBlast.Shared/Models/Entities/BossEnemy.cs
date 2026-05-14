@@ -42,7 +42,7 @@ public class BossEnemy : Enemy
     public bool IsEnraged { get; private set; }
 
     /// <summary>
-    /// Sprint 6.1 AAA-Audit #15: Boss-Modifier-System. 8 Modifier × 5 Bosse = 40 Variationen.
+    ///.1 : Boss-Modifier-System. 8 Modifier × 5 Bosse = 40 Variationen.
     /// Wird beim Spawn random zugewiesen (ab Welt 5+, 30% Chance). Modifier-Effekte werden
     /// von BossEnemy.Update + EnemyAI ausgewertet (z.B. Healing regeneriert HP, Shielded blockt
     /// 1 Hit pro Cooldown). Phase-2-Variante via Phase-Tracking erlaubt verschiedene Attack-Patterns.
@@ -50,13 +50,13 @@ public class BossEnemy : Enemy
     public BossModifier Modifier { get; set; } = BossModifier.None;
 
     /// <summary>
-    /// Sprint 6.1 AAA-Audit #15: Aktuelle Boss-Phase (1=Default, 2=Enraged-Mode-Variant).
-    /// Phase 2 wird beim Enrage-Threshold aktiv und schaltet Attack-Pattern um.
+    ///.1 : Aktuelle Boss-Phase (1=Default, 2=Enraged-Mode-Variant).
+    ///  wird beim Enrage-Threshold aktiv und schaltet Attack-Pattern um.
     /// </summary>
     public int CurrentPhase { get; private set; } = 1;
 
     /// <summary>
-    /// Welle 1 v2.0.58 AAA-Audit #10: Mini-Boss-Flag — Boss spawnt mit 50% HP + 50% Punkte.
+    /// Welle 1 v2.0.58 : Mini-Boss-Flag — Boss spawnt mit 50% HP + 50% Punkte.
     /// Wird auf L7/L17/.../L97 als Mid-World-Encounter eingesetzt.
     /// </summary>
     public bool IsMiniBoss { get; init; }
@@ -78,7 +78,7 @@ public class BossEnemy : Enemy
     public bool IsTelegraphing => TelegraphTimer > 0;
 
     /// <summary>
-    /// Sprint 3.4 AAA-Audit #19: Anticipation-Scale fuer Big-Attacks.
+    ///.4 : Anticipation-Scale fuer Big-Attacks.
     /// In den letzten 120ms vor Attack-Trigger zieht sich der Boss-Sprite zusammen
     /// (0.85x scale) — Hades-Pattern fuer "Wind-Up". 1.0 wenn nicht in Wind-Up-Phase.
     /// Renderer wendet via canvas.Scale auf Boss-Sprite an.
@@ -231,7 +231,7 @@ public class BossEnemy : Enemy
     // UPDATE
     // ═══════════════════════════════════════════════════════════════════════
 
-    // Sprint 6.1 AAA-Audit #15: Boss-Modifier-Effekte
+    //.1 : Boss-Modifier-Effekte
     /// <summary>Healing-Modifier: HP/s Regeneration im Out-of-Combat-State.</summary>
     private const float HEALING_REGEN_PER_SECOND = 5f;
     /// <summary>Summoner-Modifier: Spawn-Cooldown fuer Mini-Enemies.</summary>
@@ -279,12 +279,12 @@ public class BossEnemy : Enemy
         if (!IsEnraged && HitPoints <= MaxHitPoints / 2)
         {
             IsEnraged = true;
-            // Sprint 6.1 AAA-Audit #15: Phase-Wechsel beim Enrage — Boss bekommt Phase 2.
+            //.1 : Phase-Wechsel beim Enrage — Boss bekommt .
             // Renderer/AI koennen darauf reagieren (z.B. anderes Attack-Pattern).
             CurrentPhase = 2;
         }
 
-        // Sprint 6.1 AAA-Audit #15: Modifier-Effekte pro Frame anwenden.
+        //.1 : Modifier-Effekte pro Frame anwenden.
         ApplyModifierEffects(deltaTime);
 
         // Spezial-Angriff Timer
@@ -293,7 +293,7 @@ public class BossEnemy : Enemy
             SpecialAttackTimer -= deltaTime;
             if (SpecialAttackTimer <= 0)
             {
-                // Sprint 6.1: Berserk-Modifier halbiert Telegraph-Dauer (weniger Reaktionszeit).
+                // Berserk-Modifier halbiert Telegraph-Dauer (weniger Reaktionszeit).
                 TelegraphTimer = Modifier == BossModifier.Berserk
                     ? TELEGRAPH_DURATION * 0.5f
                     : TELEGRAPH_DURATION;
@@ -323,7 +323,7 @@ public class BossEnemy : Enemy
                 AttackDuration = 0;
                 AttackTargetCells.Clear();
                 float cd = IsEnraged ? SpecialAttackCooldown * 0.6f : SpecialAttackCooldown;
-                // Sprint 6.1: Frenzy-Modifier halbiert Cooldown zusaetzlich in Enrage-Phase.
+                // Frenzy-Modifier halbiert Cooldown zusaetzlich in Enrage-Phase.
                 if (Modifier == BossModifier.Frenzy && IsEnraged) cd *= 0.5f;
                 SpecialAttackTimer = cd;
 
@@ -334,7 +334,7 @@ public class BossEnemy : Enemy
         }
     }
 
-    /// <summary>Sprint 6.1 AAA-Audit #15: Boss-Modifier-Effekte pro Frame.</summary>
+    /// <summary>.1 : Boss-Modifier-Effekte pro Frame.</summary>
     private void ApplyModifierEffects(float deltaTime)
     {
         switch (Modifier)
@@ -394,7 +394,7 @@ public class BossEnemy : Enemy
 
         FacingDirection = MovementDirection;
 
-        // Sprint 6.1 AAA-Audit #15: Fast-Modifier gibt +25% Bewegungsgeschwindigkeit.
+        //.1 : Fast-Modifier gibt +25% Bewegungsgeschwindigkeit.
         float speed = BossSpeed * (Modifier == BossModifier.Fast ? 1.25f : 1f);
         float dx = MovementDirection.GetDeltaX() * speed * deltaTime;
         float dy = MovementDirection.GetDeltaY() * speed * deltaTime;
@@ -466,7 +466,7 @@ public class BossEnemy : Enemy
 
     /// <summary>
     /// Boss an Grid-Position erstellen (Mitte des BossSize-Bereichs).
-    /// Welle 1 v2.0.58 AAA-Audit #10: Optional miniBoss-Flag fuer Mid-World-Encounter (halbe HP/Punkte).
+    /// Welle 1 v2.0.58 : Optional miniBoss-Flag fuer Mid-World-Encounter (halbe HP/Punkte).
     /// </summary>
     public static BossEnemy CreateAtGrid(int gridX, int gridY, BossType bossType, bool miniBoss = false)
     {

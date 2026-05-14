@@ -4,7 +4,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation für <see cref="IHardwareProfileService"/> (Phase 27 — AAA-Audit P2/P3/P4).
+/// Default-Implementation für <see cref="IHardwareProfileService"/> (Phase 27 — P2/P3/P4).
 ///
 /// <para>Auto-Detection-Heuristik: ProcessorCount + GC.GetTotalMemory(false). Funktioniert auf
 /// Android via Mono.Runtime und auf Desktop. Default-Tier ist Medium wenn Detection fehlschlägt.</para>

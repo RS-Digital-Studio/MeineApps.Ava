@@ -15,7 +15,7 @@ public static class HelpIconRenderer
     // Gecachte Paint-Objekte (GC-Optimierung, statt pro-Aufruf neue Instanzen)
     private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
-    // v2.0.43 Audit-Fix A3: gepoolte SKFont mit mutierter Size — vermeidet pro-Render-Allokation.
+    // gepoolte SKFont mit mutierter Size — vermeidet pro-Render-Allokation.
     private static readonly SKFont _sharedFont = new() { Size = 12f };
     private static readonly SKPaint _whiteTextPaint = new() { IsAntialias = true, Color = SKColors.White };
 

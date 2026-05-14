@@ -7,7 +7,7 @@ using BomberBlast.Models.Cosmetics;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// Customize-Picker-Partial des ProfileViewModel (v2.0.43, Plan Phase 4).
+/// Customize-Picker-Partial des ProfileViewModel (v2.0.43, Plan ).
 ///
 /// Zeigt die sechs Cosmetic-Slots des Spielers als Quick-Switcher direkt im Profile-Hub.
 /// Fuer jeden Slot gibt es eine ObservableCollection&lt;CustomizationItem&gt; mit allen

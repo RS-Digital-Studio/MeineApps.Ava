@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IReEngagementScheduler"/> (Sprint 2.3 AAA-Audit #3).
+/// Default-Implementation von <see cref="IReEngagementScheduler"/> (.3 .
 /// Plant D1/D3/D7-Notifications via <see cref="IPushNotificationService"/>.
 /// Texte sind lokalisiert ueber <see cref="ILocalizationService"/>.
 /// </summary>

@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für HardwareProfileService (Phase 27 — AAA-Audit P2/P3/P4).
+/// Tests für HardwareProfileService (Phase 27 — P2/P3/P4).
 /// Validiert User-Override, Particle-Cap-Skalierung pro Tier, Battery-Save + Thermal-Throttle-Override.
 /// </summary>
 public class HardwareProfileServiceTests

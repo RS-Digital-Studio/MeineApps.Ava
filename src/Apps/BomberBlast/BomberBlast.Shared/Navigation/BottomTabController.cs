@@ -4,7 +4,7 @@ namespace BomberBlast.Navigation;
 /// Default-Implementation von <see cref="IBottomTabController"/> (Welle 6 MainViewModel-Refactor).
 ///
 /// <para>
-/// Phase 1: Leeres Geruest mit minimalem State (alle Bools = false). Die Logik wird in Phase 4
+/// : Leeres Geruest mit minimalem State (alle Bools = false). Die Logik wird in 
 /// (BottomTabController-Migration) aus <see cref="BomberBlast.ViewModels.MainViewModel"/> hier
 /// hin verschoben.
 /// </para>
@@ -26,18 +26,18 @@ public sealed class BottomTabController : IBottomTabController
     public bool IsChallengesMissionsTab { get => _isChallengesMissionsTab; set { _isChallengesMissionsTab = value; StateChanged?.Invoke(); } }
 
     public bool IsBottomTabBarVisible
-        => throw new NotImplementedException("Wird in Phase 4 gefuellt.");
+        => throw new NotImplementedException("Wird in  gefuellt.");
 
-    public void SwitchToShopTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToSpinTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToProfileTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToAchievementsTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToSettingsTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToHelpTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToDeckTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToCollectionTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToDailyChallengeTab() => throw new NotImplementedException("Phase 4.");
-    public void SwitchToMissionsTab() => throw new NotImplementedException("Phase 4.");
+    public void SwitchToShopTab() => throw new NotImplementedException(".");
+    public void SwitchToSpinTab() => throw new NotImplementedException(".");
+    public void SwitchToProfileTab() => throw new NotImplementedException(".");
+    public void SwitchToAchievementsTab() => throw new NotImplementedException(".");
+    public void SwitchToSettingsTab() => throw new NotImplementedException(".");
+    public void SwitchToHelpTab() => throw new NotImplementedException(".");
+    public void SwitchToDeckTab() => throw new NotImplementedException(".");
+    public void SwitchToCollectionTab() => throw new NotImplementedException(".");
+    public void SwitchToDailyChallengeTab() => throw new NotImplementedException(".");
+    public void SwitchToMissionsTab() => throw new NotImplementedException(".");
 
     public void ResetTabStates()
     {

@@ -8,7 +8,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Property-Based-Style-Tests (Phase 26 — AAA-Audit T1).
+/// Property-Based-Style-Tests (Phase 26 — T1).
 ///
 /// <para>Alternative zu FsCheck: Manuell randomisierte Test-Loops mit hoher Iteration-Count
 /// (1.000–10.000). Validiert mathematische Invarianten der Pure-Logic-Klassen.</para>

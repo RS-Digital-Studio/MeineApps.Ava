@@ -67,7 +67,7 @@ public enum CurseType
 
 public static class PowerUpExtensions
 {
-    // v2.0.43 Audit-Fix A1: String-LUT fuer Hot-Path (PowerUp-Pickup-Tracking).
+    // String-LUT fuer Hot-Path (PowerUp-Pickup-Tracking).
     // Vermeidet Enum.ToString()-Reflection-Allokation bei jedem Pickup.
     // Index-Reihenfolge IDENTISCH zur Enum-Reihenfolge (BombUp=0, Fire=1, ...).
     private static readonly string[] _typeNames =

@@ -690,6 +690,11 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [RelayCommand]
     private void Settings()
     {
+        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Settings-Entry.
+        _analytics?.LogEvent(AnalyticsEvents.SettingsOpen, new Dictionary<string, object>
+        {
+            [AnalyticsParams.EntryPoint] = "main_menu",
+        });
         NavigationRequested?.Invoke(new GoSettings());
     }
 

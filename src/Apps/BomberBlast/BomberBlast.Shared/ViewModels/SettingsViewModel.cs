@@ -34,6 +34,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     // Phase 23b — Premium-Tier-Status für Settings-Anzeige
     private readonly IBattlePassPlusService? _battlePassPlus;
     private readonly IVipSubscriptionService? _vipSubscription;
+    // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking fuer Accessibility-Toggles.
+    private readonly IAnalyticsService? _analytics;
 
     private bool _isInitializing = true;
 
@@ -326,7 +328,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         IAccessibilityService accessibilityService,
         IAccountDeletionService? accountDeletionService = null,
         IBattlePassPlusService? battlePassPlus = null,
-        IVipSubscriptionService? vipSubscription = null)
+        IVipSubscriptionService? vipSubscription = null,
+        IAnalyticsService? analytics = null)
     {
         _progressService = progressService;
         _highScoreService = highScoreService;
@@ -342,6 +345,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _accountDeletionService = accountDeletionService;
         _battlePassPlus = battlePassPlus;
         _vipSubscription = vipSubscription;
+        _analytics = analytics;
 
         // Version info
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
@@ -423,24 +427,45 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     {
         if (_isInitializing) return;
         _accessibilityService.ColorblindMode = value;
+        // Welle 2 v2.0.58 AAA-Audit #13: Accessibility-Funnel-Event.
+        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
+        {
+            ["feature"] = "colorblind_mode",
+            ["value"] = value ?? "Off",
+        });
     }
 
     partial void OnHighContrastChanged(bool value)
     {
         if (_isInitializing) return;
         _accessibilityService.HighContrast = value;
+        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
+        {
+            ["feature"] = "high_contrast",
+            ["value"] = value ? 1 : 0,
+        });
     }
 
     partial void OnUiScaleChanged(double value)
     {
         if (_isInitializing) return;
         _accessibilityService.UiScale = value;
+        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
+        {
+            ["feature"] = "ui_scale",
+            ["value"] = value,
+        });
     }
 
     partial void OnSubtitlesEnabledChanged(bool value)
     {
         if (_isInitializing) return;
         _accessibilityService.SubtitlesEnabled = value;
+        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
+        {
+            ["feature"] = "subtitles",
+            ["value"] = value ? 1 : 0,
+        });
     }
 
     partial void OnUseHighFrameRateChanged(bool value)

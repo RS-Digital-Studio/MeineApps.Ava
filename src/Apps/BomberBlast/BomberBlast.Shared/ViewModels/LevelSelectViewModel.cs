@@ -156,6 +156,13 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         // während des Toggle den Service abfragen.
         _masterModeService.IsActive = !_masterModeService.IsActive;
         IsMasterModeActive = _masterModeService.IsActive;
+
+        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Master-Mode-Aktivierung.
+        _analytics.LogEvent(AnalyticsEvents.MasterModeToggle, new Dictionary<string, object>
+        {
+            ["active"] = _masterModeService.IsActive ? 1 : 0,
+        });
+
         // Level-Liste neu laden damit Thumbnails Master-Sterne zeigen
         OnAppearing();
     }

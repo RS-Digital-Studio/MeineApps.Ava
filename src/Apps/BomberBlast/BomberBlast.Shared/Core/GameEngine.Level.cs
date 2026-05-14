@@ -325,6 +325,13 @@ public sealed partial class GameEngine
 
         _worldAnnouncementText = "DAILY CHALLENGE";
         _worldAnnouncementTimer = 2.5f;
+
+        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Mode-Entry-Events.
+        _analytics?.LogEvent(AnalyticsEvents.DailyChallengeStart, new Dictionary<string, object>
+        {
+            ["seed"] = seed,
+            [AnalyticsParams.LevelId] = _currentLevelNumber,
+        });
     }
 
     /// <summary>
@@ -397,6 +404,12 @@ public sealed partial class GameEngine
 
         _worldAnnouncementText = "SURVIVAL!";
         _worldAnnouncementTimer = 2.5f;
+
+        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Mode-Entry-Events.
+        _analytics?.LogEvent(AnalyticsEvents.SurvivalStart, new Dictionary<string, object>
+        {
+            [AnalyticsParams.Lives] = _player.Lives,
+        });
     }
 
     /// <summary>
@@ -432,6 +445,12 @@ public sealed partial class GameEngine
         _soundManager.PlayMusic(SoundManager.MUSIC_GAMEPLAY);
         _worldAnnouncementText = "DAILY RACE";
         _worldAnnouncementTimer = 2.5f;
+
+        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — Mode-Entry-Events.
+        _analytics?.LogEvent(AnalyticsEvents.DailyRaceStart, new Dictionary<string, object>
+        {
+            ["seed"] = seed,
+        });
     }
 
     /// <summary>
@@ -500,6 +519,16 @@ public sealed partial class GameEngine
         _soundManager.PlayMusic(SoundManager.MUSIC_BOSS);
         _worldAnnouncementText = $"BOSS {bossIndex + 1} / 5";
         _worldAnnouncementTimer = 2.5f;
+
+        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — nur fuer erste Boss-Encounter,
+        // sonst wuerde der Event 5x pro Run feuern.
+        if (bossIndex == 0)
+        {
+            _analytics?.LogEvent(AnalyticsEvents.BossRushStart, new Dictionary<string, object>
+            {
+                [AnalyticsParams.BossType] = bossType.ToString(),
+            });
+        }
     }
 
     /// <summary>
@@ -516,8 +545,19 @@ public sealed partial class GameEngine
         // Sprint 5.1: _isBossRushMode ist Computed auf _currentMode.
         // Sprint 5.1: _isDailyRace ist Computed auf _currentMode.
         // v2.0.49 — Dungeon-Mode setzen (nur beim ersten Floor; bei Folge-Floors bleibt der Mode)
-        if (_currentMode is not BomberBlast.Core.Modes.DungeonMode)
+        bool isFirstFloor = _currentMode is not BomberBlast.Core.Modes.DungeonMode;
+        if (isFirstFloor)
             _currentMode = new BomberBlast.Core.Modes.DungeonMode();
+
+        // Welle 2 v2.0.58 AAA-Audit #13: Funnel-Tracking — DungeonRunStart nur beim ersten Floor.
+        if (isFirstFloor)
+        {
+            _analytics?.LogEvent(AnalyticsEvents.DungeonRunStart, new Dictionary<string, object>
+            {
+                ["floor"] = floor,
+                ["seed"] = seed,
+            });
+        }
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
 

@@ -807,7 +807,7 @@
             <auctionViews:WorkerAuctionView DataContext="{Binding AuctionVM}"
                                              AutomationProperties.AutomationId="Guild_Combat_Auction" />
 
-            <!-- V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Bauplatz -->
+            <!-- V7 (, Plan Section 3.9): Mega-Projekt-Bauplatz -->
             <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding NavigateToBuildSiteCommand}"

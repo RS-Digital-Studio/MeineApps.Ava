@@ -113,7 +113,7 @@ public class GuildMembership
     [JsonPropertyName("hallMaxMembersBonus")]
     public int HallMaxMembersBonus { get; set; }
 
-    // ── V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Boni ──
+    // ── V7 (, Plan Section 3.9): Mega-Projekt-Boni ──
 
     /// <summary>Permanenter Crafting-Speed-Bonus aus abgeschlossenen Mega-Projekten.</summary>
     [JsonPropertyName("megaProjectCraftingSpeedBonus")]

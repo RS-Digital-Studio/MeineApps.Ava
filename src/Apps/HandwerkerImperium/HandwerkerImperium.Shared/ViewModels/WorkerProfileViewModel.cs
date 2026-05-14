@@ -71,7 +71,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
     [ObservableProperty]
     private string _specializationDisplay = string.Empty;
 
-    /// <summary>V7 (Phase 4 Ressourcen-Plan, Section 3.7): Material-Affinitaet als "Wood-Spezialist" etc.</summary>
+    /// <summary>V7 (, Section 3.7): Material-Affinitaet als "Wood-Spezialist" etc.</summary>
     [ObservableProperty]
     private string _materialAffinityDisplay = string.Empty;
 
@@ -340,7 +340,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
             SpecializationDisplay = _localizationService.GetString("NoSpecialization");
         }
 
-        // V7 (Phase 4 Ressourcen-Plan, Section 3.7): Material-Affinitaet-Anzeige.
+        // V7 (, Section 3.7): Material-Affinitaet-Anzeige.
         if (Worker.MaterialAffinity != MaterialAffinity.None)
         {
             var affKey = Worker.MaterialAffinity.GetLocalizationKey();
@@ -377,7 +377,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
         IsResting = Worker.IsResting;
         IsWorking = Worker.IsWorking;
 
-        // v2.0.39 Audit-Fix U9: Praktikanten-Promotion ueberlagert alle anderen Status —
+        // Praktikanten-Promotion ueberlagert alle anderen Status —
         // der Spieler soll im Profil sofort sehen, dass eine Entscheidung ansteht.
         if (Worker.IsIntern && Worker.InternAwaitingPromotion)
             StatusDisplay = _localizationService.GetString("StatusInternReadyForPromotion") ?? "Ready for promotion";
@@ -664,7 +664,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
                 _localizationService.GetString("WorkerFiredUndo") ?? "{0} fired - Undo?",
                 firedWorker.Name ?? $"Tier-{firedWorker.Tier}");
 
-            // v2.1.1 (Audit H-H01): Benannte Tick-Methode + explizites Unsubscribe. Frueher
+            // Benannte Tick-Methode + explizites Unsubscribe. Frueher
             // Lambda — der alte Lambda-Subscriber konnte beim Re-Start nicht abgemeldet werden
             // und feuerte weiter, was den Worker mehrfach gekuendigt hat.
             UnsubscribeUndoTimer();
@@ -686,7 +686,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
     /// Macht die letzte Worker-Entlassung rückgängig (innerhalb von 5 Sekunden).
     /// </summary>
     /// <summary>
-    /// v2.1.1 (Audit H-H01): Benannter Tick-Handler statt Lambda — kann beim Re-Start
+    /// Benannter Tick-Handler statt Lambda — kann beim Re-Start
     /// und im Dispose explizit abgemeldet werden. Verhindert Multi-Fire-Bug bei
     /// schnellem Re-Use des Undo-Timers.
     /// </summary>
@@ -917,7 +917,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
     /// </summary>
     public void Dispose()
     {
-        // v2.1.1 (Audit H-H01): Explizites Tick-Unsubscribe + Stop, dann Referenz nullen.
+        // Explizites Tick-Unsubscribe + Stop, dann Referenz nullen.
         UnsubscribeUndoTimer();
         _undoTimer = null;
     }

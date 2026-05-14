@@ -137,7 +137,7 @@ public class PrestigeData
     /// <summary>
     /// Berechnet die Prestige-Punkte fuer den AKTUELLEN Durchlauf.
     /// Formel: floor(sqrt(currentRunMoney / 100_000)).
-    /// v2.1.1 (Audit B-H04): Parameter-Name korrigiert — frueher hiess der Parameter "totalMoneyEarned",
+    /// Parameter-Name korrigiert — frueher hiess der Parameter "totalMoneyEarned",
     /// aber der Aufrufer uebergibt <see cref="GameState.CurrentRunMoney"/>
     /// (siehe <c>PrestigeService.GetPrestigePoints</c>). Wer das versehentlich auf
     /// <see cref="GameState.TotalMoneyEarned"/> umstellt, bricht die Run-basierte PP-Logik.

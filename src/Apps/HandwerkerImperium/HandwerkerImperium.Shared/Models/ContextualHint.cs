@@ -185,7 +185,7 @@ public static class ContextualHints
         Position = HintPosition.Below, IsDialog = true
     };
 
-    // AAA-Audit P0 (Reset-Hierarchie-Vereinfachung): Foreshadowing-Hint nach 1. Prestige.
+    // (Reset-Hierarchie-Vereinfachung): Foreshadowing-Hint nach 1. Prestige.
     // Erklärt das Ascension-Konzept BEVOR der Spieler 3x Legende erreicht hat — Pacing-Hinweis
     // statt einer dahingelokten Tab-Karte ohne Erklärung.
     public static readonly ContextualHint AscensionPath = new()
@@ -236,7 +236,7 @@ public static class ContextualHints
         Position = HintPosition.Below, IsDialog = true
     };
 
-    // U10 (v2.0.39 Audit-Fix): Long-Press auf Workshop-Karte fuer Bulk-Upgrade.
+    // U10 (): Long-Press auf Workshop-Karte fuer Bulk-Upgrade.
     // Triggert nach dem 2. erfolgreichen Workshop-Upgrade — der Spieler kennt das normale Tap,
     // jetzt ist der Discoverability-Moment fuer "Halten = x10/x100".
     public static readonly ContextualHint LongPressBulk = new()

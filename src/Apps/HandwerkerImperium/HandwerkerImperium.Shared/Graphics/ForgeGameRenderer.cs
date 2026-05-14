@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// AAA SkiaSharp-Renderer fuer das Schmiede-Minigame.
+/// SkiaSharp-Renderer fuer das Schmiede-Minigame.
 /// Metallischer Amboss mit Gradienten, gluehnendes Werkstueck mit Heat-Shimmer,
 /// Schmiedehammer mit Impact-Schockwelle, Esse mit Glut-Partikeln und mehrstufigen Flammen,
 /// zonenabhaengige Funkenfarben (Gold/Orange/Gelb/Rot), Dampf vom heissen Werkstueck,

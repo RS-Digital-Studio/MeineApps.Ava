@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// AAA-Audit P1 (Friend-Invite Reward-Loop): Persistenter Tracking-State fuer das
+/// (Friend-Invite Reward-Loop): Persistenter Tracking-State fuer das
 /// Empfehlungs-System. Ein eingeladener Spieler ist "referred" wenn er den Invite-
 /// Code beim ersten Start eingibt; nach 24h Aktivitaet zaehlt er zur SuccessfulReferrals.
 ///

@@ -7,7 +7,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// AAA-Audit P0 (DialogViewModel-Strukturschnitt): Alle Story-Dialog-Properties + -Methoden
+/// (DialogViewModel-Strukturschnitt): Alle Story-Dialog-Properties + -Methoden
 /// fuer Meister Hans NPC. Wurde aus DialogViewModel.cs herausgezogen, um die Klasse von
 /// 849 auf ~700 Zeilen zu reduzieren und die Single-Responsibility-Lesbarkeit zu erhoehen.
 /// </summary>
@@ -50,11 +50,11 @@ public sealed partial class DialogViewModel
     [ObservableProperty]
     private string _storyChapterBadge = "";
 
-    /// <summary>P2.2 AAA-Audit: Skip-Button nur bei Onboarding-Story (Ch.1) sichtbar.</summary>
+    /// <summary>Skip-Button nur bei Onboarding-Story (Ch.1) sichtbar.</summary>
     [ObservableProperty]
     private bool _canSkipStory;
 
-    /// <summary>P2.2 AAA-Audit: Wird beim Skip gefeuert — MainViewModel kann
+    /// <summary>Wird beim Skip gefeuert — MainViewModel kann
     /// analytics_event "onboarding_story_skipped" tracken.</summary>
     public event Action<string>? StorySkipRequested;
 
@@ -80,7 +80,7 @@ public sealed partial class DialogViewModel
         }
     }
 
-    /// <summary>P2.2 AAA-Audit: Skip-Variante. Markiert Kapitel als gesehen, vergibt aber
+    /// <summary>Skip-Variante. Markiert Kapitel als gesehen, vergibt aber
     /// die Belohnung trotzdem (Spieler wird nicht bestraft fuer Skip-Wahl).</summary>
     [RelayCommand]
     private void SkipStory()
@@ -126,7 +126,7 @@ public sealed partial class DialogViewModel
             ? _localizationService.GetString("StoryTipFromHans") ?? "Tip from Master Hans"
             : $"Kap. {chapter.ChapterNumber}/{totalChapters}";
 
-        // P2.2 AAA-Audit: Skip nur bei Onboarding-Tutorials (Ch.1 + Welcome-Story).
+        // Skip nur bei Onboarding-Tutorials (Ch.1 + Welcome-Story).
         // Spaeter im Spiel ist Story Pacing-Element — kein Skip damit Spieler den Plot mitkriegt.
         CanSkipStory = chapter.IsTutorial || chapter.ChapterNumber <= 1;
 

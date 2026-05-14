@@ -4,7 +4,7 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Models.Firebase;
 
 /// <summary>
-/// Status einer Worker-Markt-Auktion (v2.1.0, Sprint 3 Big Bet).
+/// Status einer Worker-Markt-Auktion .
 /// </summary>
 public enum WorkerAuctionStatus
 {

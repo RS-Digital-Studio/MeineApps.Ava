@@ -24,7 +24,7 @@
     <Style Selector="Button.SubTabActive">
       <Setter Property="Background" Value="{StaticResource CraftPrimaryLightBrush}" />
     </Style>
-    <!-- v2.1.1 (Audit U-C03): Locked-Style fuer Sub-Tabs (Ascension, Warehouse).
+    <!-- Locked-Style fuer Sub-Tabs (Ascension, Warehouse).
          IsEnabled bleibt true (Hint-Tap kommt im Command an), aber visuell gedimmt. -->
     <Style Selector="Button.Locked">
       <Setter Property="Opacity" Value="0.5" />
@@ -83,8 +83,8 @@
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
           </Button>
-          <!-- V7 (Phase 1 Ressourcen-Plan): Lager-Sub-Tab. Gesperrt bis Spielerlevel 50.
-               v2.1.1 (Audit U-C03): IsEnabled=True statt false — der Tap zeigt jetzt einen
+          <!-- V7 (): Lager-Sub-Tab. Gesperrt bis Spielerlevel 50.
+               IsEnabled=True statt false — der Tap zeigt jetzt einen
                Hint-Toast via SelectImperiumSubTabCommand statt stiller No-Op. -->
           <Button Classes="Text"
                   Classes.SubTabActive="{Binding IsImperiumWarehouseActive}"
@@ -160,7 +160,7 @@
           </Button>
           <!-- Ascension-Tab IMMER sichtbar (kein Layout-Sprung beim Unlock). -->
           <!-- Vor Unlock: gedimmt + Lock-Icon, NICHT klickbar. Nach Unlock: voll sichtbar + klickbar. -->
-          <!-- v2.1.1 (Audit U-C03): IsEnabled=True lassen, damit der Tap ankommt und der
+          <!-- IsEnabled=True lassen, damit der Tap ankommt und der
                SelectImperiumSubTabCommand einen Hint-Toast zeigen kann. Vorher disabled
                + stiller No-Op → Spieler wusste nicht warum nichts passiert.
                Locked-State visuell durch die "Locked"-Klasse + Lock-Icon dargestellt. -->

@@ -11,25 +11,25 @@ namespace HandwerkerImperium.Graphics;
 /// verbunden durch geschwungene Pfeile, mit Fortschrittsbalken und Prozentanzeige.
 ///
 /// Layout-Schema (15 Items pro Branch, 3 Spalten):
-///   [1]           → Zeile 0: Startforschung (zentriert)
+///   [1] → Zeile 0: Startforschung (zentriert)
 ///    ↓
-///  [2] [3]        → Zeile 1: Verzweigung (2 nebeneinander)
+///  [2] [3] → Zeile 1: Verzweigung (2 nebeneinander)
 ///    ↘ ↙
-///   [4]           → Zeile 2: Zusammenführung (zentriert)
+///   [4] → Zeile 2: Zusammenführung (zentriert)
 ///    ↓
-///  [5] [6]        → Zeile 3: Verzweigung
+///  [5] [6] → Zeile 3: Verzweigung
 ///    ↘ ↙
-///   [7]           → Zeile 4: Zusammenführung
+///   [7] → Zeile 4: Zusammenführung
 ///    ↓
-///  [8] [9]        → Zeile 5: Verzweigung
+///  [8] [9] → Zeile 5: Verzweigung
 ///    ↘ ↙
-///  [10]           → Zeile 6: Zusammenführung
+///  [10] → Zeile 6: Zusammenführung
 ///    ↓
-/// [11] [12]       → Zeile 7: Verzweigung
+/// [11] [12] → Zeile 7: Verzweigung
 ///    ↘ ↙
-///  [13]           → Zeile 8: Zusammenführung
+///  [13] → Zeile 8: Zusammenführung
 ///    ↓
-/// [14] [15]       → Zeile 9: Letzte Verzweigung (Meisterforschungen)
+/// [14] [15] → Zeile 9: Letzte Verzweigung (Meisterforschungen)
 /// </summary>
 public sealed class ResearchTreeRenderer : IDisposable
 {
@@ -99,7 +99,7 @@ public sealed class ResearchTreeRenderer : IDisposable
     private SKColor _lastProgressBarColor;
     private float _lastProgressBarX, _lastProgressBarFillW;
 
-    // v2.1.1 (Audit P-H03): Cache fuer Node-Positionen analog GuildResearchTreeRenderer.
+    // Cache fuer Node-Positionen analog GuildResearchTreeRenderer.
     // Frueher pro Frame eine neue List<SKPoint> + n SKPoint-Allokationen — bei
     // 24fps × 45 Nodes = >1000 Heap-Allocs/s nur fuer Positionen.
     private readonly List<SKPoint> _cachedPositions = new(16);
@@ -151,7 +151,7 @@ public sealed class ResearchTreeRenderer : IDisposable
     /// <summary>
     /// Berechnet die (x,y)-Position für jeden Node im Baum.
     /// Alternierendes Layout: Zentriert → 2er-Reihe → Zentriert → 2er-Reihe...
-    /// v2.1.1 (Audit P-H03): Cache pro Instanz — Layout ist deterministisch aus (count, centerX, startY).
+    /// Cache pro Instanz — Layout ist deterministisch aus (count, centerX, startY).
     /// Wird nur neu berechnet, wenn sich ein Parameter aendert.
     /// </summary>
     private List<SKPoint> CalculateNodePositions(List<ResearchDisplayItem> items,

@@ -5,7 +5,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// V7 (Phase 3 Ressourcen-Plan): Material-Markt mit deterministischer Preis-Dynamik.
+/// V7 (): Material-Markt mit deterministischer Preis-Dynamik.
 /// Pro Spieler + UTC-Tag deterministisch — verhindert Save-Scumming. Innerhalb des Tages
 /// oszilliert der Preis in einer Sinus-Welle (+/-50%) um den Basis-Preis.
 ///
@@ -53,7 +53,7 @@ public sealed class MarketService : IMarketService
         get
         {
             var state = _gameState.State;
-            // V7 (Phase 4 Ressourcen-Plan, Imperium-Pass): Premium-Spieler haben Markt-
+            // V7 (, Imperium-Pass): Premium-Spieler haben Markt-
             // Insider-Heatmap sofort frei (Plan Section 10.2). Ohne Pass: Forschung logi_05.
             if (state.IsPremium) return true;
             if (_research == null) return true;

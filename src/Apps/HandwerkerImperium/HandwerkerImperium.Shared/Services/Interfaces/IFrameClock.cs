@@ -3,7 +3,7 @@ using System;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Zentraler Frame-Clock für visuell-orientierte Renderer (AAA-Audit P1).
+/// Zentraler Frame-Clock für visuell-orientierte Renderer (P1).
 /// Ein einzelner Dispatcher-Timer treibt alle Subscriber statt 35 einzelner Timer pro
 /// Renderer. Pro Subscriber konfigurierbares Intervall — der Clock filtert Ticks
 /// transparent nach Subscriber-Frequenz.

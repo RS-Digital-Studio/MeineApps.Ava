@@ -16,7 +16,7 @@ public class SupplierDelivery
     public decimal Amount { get; set; }
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): Bei <see cref="DeliveryType.Material"/> die Produkt-ID
+    /// V7 (): Bei <see cref="DeliveryType.Material"/> die Produkt-ID
     /// des gelieferten Tier-1-Materials. Anzahl steht in <see cref="Amount"/>.
     /// </summary>
     [JsonPropertyName("materialProductId")]
@@ -77,7 +77,7 @@ public class SupplierDelivery
     {
         var random = Random.Shared;
 
-        // V7 (Phase 3 Ressourcen-Plan): 25% Chance auf Material-Lieferung — verdraengt die
+        // V7 (): 25% Chance auf Material-Lieferung — verdraengt die
         // Geld-Lieferung als haeufigsten Typ. Nur sinnvoll wenn Spieler den Auto-Production-Unlock
         // bereits hat (Level >= 50), sonst kein Material-Sinn → faellt zurueck auf alte Logik.
         bool eligibleForMaterial = state.PlayerLevel >= GameBalanceConstants.AutoProductionUnlockLevel;

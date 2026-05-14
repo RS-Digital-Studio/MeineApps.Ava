@@ -99,7 +99,7 @@ public class WorkerAvatarControl : Control
         new SKColor(0x6E, 0x40, 0x20)
     ];
 
-    // AAA-Audit P1 Migration: Statischer DispatcherTimer durch zentralen IFrameClock
+    // Statischer DispatcherTimer durch zentralen IFrameClock
     // ersetzt. Eine einzige Subscription fuer ALLE Worker-Avatar-Instanzen.
     private static Services.Interfaces.IFrameClock? s_sharedFrameClock;
     private static EventHandler<Services.Interfaces.FrameTickEventArgs>? s_sharedTickHandler;

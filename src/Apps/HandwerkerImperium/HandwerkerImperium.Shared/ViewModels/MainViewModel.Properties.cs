@@ -12,7 +12,7 @@ using HandwerkerImperium.ViewModels.MiniGames;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// MainViewModel Properties-Cluster (AAA-Audit P0, 12.05.2026): ObservableProperties,
+/// MainViewModel Properties-Cluster (P0, 12.05.2026): ObservableProperties,
 /// computed Properties, Tab-State-Bindings, Child-VM-Exposures. Aus MainViewModel.cs
 /// extrahiert um die Haupt-Datei auf <500 Z. zu reduzieren.
 /// </summary>
@@ -30,7 +30,7 @@ public sealed partial class MainViewModel
 
     // Header-Properties (Money/Level/XP/GoldenScrews etc.) sind in HeaderVM (Source-of-Truth).
     // Interner Code verwendet direkt HeaderVM.X. AXAML bindet direkt an HeaderVM.X.
-    // (Phase 3 Migration 17.04.2026 - Delegate-Properties entfernt, echter Refactor.)
+    // ( Migration 17.04.2026 - Delegate-Properties entfernt, echter Refactor.)
 
     /// <summary>ID des schlimmsten Workers (fuer Direktnavigation aus Warning-Chip).</summary>
     private string _worstWorkerId = "";
@@ -86,7 +86,7 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private bool _hasDailyReward;
 
-    // GoldenScrewsDisplay: HeaderVM ist Source-of-Truth (Phase 3).
+    // GoldenScrewsDisplay: HeaderVM ist Source-of-Truth ().
 
     // Quick Jobs + Daily Challenges → extrahiert nach MissionsFeatureViewModel
 
@@ -120,7 +120,7 @@ public sealed partial class MainViewModel
     // PRESTIGE-BANNER (Task #14)
     // ═══════════════════════════════════════════════════════════════════════
 
-    // Prestige-Banner-Properties sind in PrestigeBannerVM (Source-of-Truth, Phase 3).
+    // Prestige-Banner-Properties sind in PrestigeBannerVM (Source-of-Truth, ).
 
     // Prestige-Tier-Dialog Properties sind jetzt in DialogVM
 
@@ -128,7 +128,7 @@ public sealed partial class MainViewModel
     // NÄCHSTES ZIEL (GoalService)
     // ═══════════════════════════════════════════════════════════════════════
 
-    // CurrentGoal-Properties sind nach GoalBannerViewModel umgezogen (Phase 3 Schritt 9, 17.04.2026).
+    // CurrentGoal-Properties sind nach GoalBannerViewModel umgezogen ( Schritt 9, 17.04.2026).
     // AXAML-Bindings in DashboardView.axaml wurden auf `GoalBannerVM.X` aktualisiert.
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -169,7 +169,7 @@ public sealed partial class MainViewModel
     // KOMBINIERTER WELCOME-BACK-DIALOG (Offline + Welcome in einem)
     // ═══════════════════════════════════════════════════════════════════════
 
-    // Combined-Welcome-Properties sind in WelcomeFlowVM (Source-of-Truth, Phase 3).
+    // Combined-Welcome-Properties sind in WelcomeFlowVM (Source-of-Truth, ).
 
     // Lucky Spin, Streak-Rettung → extrahiert nach MissionsFeatureViewModel
 
@@ -271,7 +271,7 @@ public sealed partial class MainViewModel
     /// <summary>Eigenständiges ViewModel für Alert, Confirm, Story, Achievement, LevelUp, Hint, Prestige-Dialoge.</summary>
     public DialogViewModel DialogVM { get; private set; } = null!;
 
-    // Offline/DailyReward/StarterOffer sind in WelcomeFlowVM (Source-of-Truth, Phase 3).
+    // Offline/DailyReward/StarterOffer sind in WelcomeFlowVM (Source-of-Truth, ).
 
     /// <summary>
     /// True wenn irgendein Overlay-Dialog sichtbar ist.
@@ -292,7 +292,7 @@ public sealed partial class MainViewModel
     public bool HasLoginStreak => LoginStreak >= 2;
 
     // Dashboard-Header: Nur bei relevantem Status anzeigen (Entschlackung)
-    // v2.1.1 (Audit U-M04): Streak-Badge ab Tag 1 sichtbar — die kritische Retention-Phase
+    // Streak-Badge ab Tag 1 sichtbar — die kritische Retention-Phase
     // (Tag 1-4) hatte sonst kein visuelles Feedback fuer den Streak-Aufbau.
     public bool ShowStreakBadge => LoginStreak >= 1;
     public bool ShowReputationBadge => ReputationScore < LevelThresholds.ReputationWarningThreshold
@@ -318,16 +318,16 @@ public sealed partial class MainViewModel
     // Full-Screen Reward-Zeremonie (nur große Meilensteine)
     public event Action<CeremonyType, string, string>? CeremonyRequested;
 
-    /// <summary>P0.3 AAA-Audit: Prestige-Cinematic-Trigger. View startet daraufhin den 14s-Renderer.</summary>
+    /// <summary>Prestige-Cinematic-Trigger. View startet daraufhin den 14s-Renderer.</summary>
     public event Action<HandwerkerImperium.Models.PrestigeCinematicData>? PrestigeCinematicRequested;
 
     /// <summary>
-    /// P0.3 AAA-Audit + Zerlegungs-Sprint: View meldet Tap-to-Skip — delegiert an Coordinator.
+    /// + Zerlegungs-Sprint: View meldet Tap-to-Skip — delegiert an Coordinator.
     /// </summary>
     public void OnPrestigeCinematicSkipped() => _cinematicCoordinator?.OnSkipped();
 
     /// <summary>
-    /// P0.3 AAA-Audit + Zerlegungs-Sprint: View meldet Cinematic-Ende — delegiert an Coordinator.
+    /// + Zerlegungs-Sprint: View meldet Cinematic-Ende — delegiert an Coordinator.
     /// </summary>
     public void OnPrestigeCinematicDismissed() => _cinematicCoordinator?.OnDismissed();
 
@@ -366,10 +366,10 @@ public sealed partial class MainViewModel
     public BattlePassViewModel BattlePassViewModel { get; }
     public GuildViewModel GuildViewModel { get; }
     public CraftingViewModel CraftingViewModel { get; }
-    /// <summary>V7 (Phase 1 Ressourcen-Plan): Lager-Section im Imperium-Tab.</summary>
+    /// <summary>V7 (): Lager-Section im Imperium-Tab.</summary>
     public WarehouseSectionViewModel WarehouseVM { get; }
 
-    /// <summary>V7 (Phase 3 Ressourcen-Plan): Markt-Sub-Tab im Shop.</summary>
+    /// <summary>V7 (): Markt-Sub-Tab im Shop.</summary>
     public MarketViewModel MarketVM { get; }
     public LuckySpinViewModel LuckySpinViewModel { get; }
     // ForgeGameVM + InventGameVM → in MiniGames Container
@@ -379,7 +379,7 @@ public sealed partial class MainViewModel
     public MissionsFeatureViewModel MissionsVM { get; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // FEATURE-VMs (Phase 3 der MainViewModel-Zerlegung, 17.04.2026)
+    // FEATURE-VMs ( der MainViewModel-Zerlegung, 17.04.2026)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Dashboard-Header-Daten: Geld, Einkommen, Level, GoldenScrews, Prestige-Badge, Boost/Rush/Delivery.</summary>

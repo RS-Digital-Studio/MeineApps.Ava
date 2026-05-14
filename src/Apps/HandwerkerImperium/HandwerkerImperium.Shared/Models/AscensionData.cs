@@ -30,7 +30,7 @@ public class AscensionData
     public DateTime LastAscensionDate { get; set; } = DateTime.MinValue;
 
     /// <summary>
-    /// V7 (Phase 4 Ressourcen-Plan): Permanente Erbstuecke aus dem Erbstueck-Schrein.
+    /// V7 (): Permanente Erbstuecke aus dem Erbstueck-Schrein.
     /// Jedes Erbstueck gibt +0.5% Globales Einkommen forever (Plan Section 3.8).
     /// Wird bei jeder Ascension befuellt mit allen aktiven Erbstuecken des aktuellen Runs.
     /// </summary>

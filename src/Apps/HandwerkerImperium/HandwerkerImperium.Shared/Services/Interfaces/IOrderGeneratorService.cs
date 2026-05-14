@@ -45,7 +45,7 @@ public interface IOrderGeneratorService
     int ExpireOldLiveOrders();
 
     /// <summary>
-    /// v2.0.39 Audit-Fix P5: Schneller Lock-freier Lese-Counter — wie viele Live-Auftraege
+    /// Schneller Lock-freier Lese-Counter — wie viele Live-Auftraege
     /// sind aktuell im AvailableOrders-Pool. Vermeidet einen vollstaendigen RemoveAll-Iter
     /// in <see cref="ExpireOldLiveOrders"/> wenn es nichts zu tun gibt (Early-Exit-Guard).
     /// </summary>

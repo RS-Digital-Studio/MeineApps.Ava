@@ -13,7 +13,7 @@ using MeineApps.Core.Ava.ViewModels;
 namespace HandwerkerImperium.ViewModels.Guild;
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): ViewModel fuer den Mega-Projekt-Bauplatz
+/// V7 (, Plan Section 3.9): ViewModel fuer den Mega-Projekt-Bauplatz
 /// in der GuildView. Zeigt Material-Anforderungen, Fortschritt, Top-Spender-Leaderboard
 /// und Spende-UI fuer einzelne Materialien.
 /// </summary>
@@ -68,7 +68,7 @@ public sealed partial class GuildMegaProjectViewModel : ViewModelBase, IDisposab
         _megaService.ProjectCompleted += OnProjectCompleted;
 
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-        // v2.1.1 (Audit H-H03): async-void Lambda via RunHandlerSafely abgesichert. Frueher
+        // async-void Lambda via RunHandlerSafely abgesichert. Frueher
         // konnte eine Firebase-Exception im Tick den Prozess killen, weil async-void-Ausnahmen
         // direkt aufs SynchronizationContext propagieren.
         _refreshTimer.Tick += (_, _) => Helpers.AsyncExtensions

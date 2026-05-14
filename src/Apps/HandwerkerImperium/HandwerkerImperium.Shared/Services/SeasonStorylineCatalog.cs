@@ -135,7 +135,7 @@ public static class SeasonStorylineCatalog
             Mood = "proud"
         };
 
-        // ───────────── Summer: „Die Insel-Auftrag" — voll ausgeschrieben (AAA-Audit P1) ─────────────
+        // ───────────── Summer: „Die Insel-Auftrag" — voll ausgeschrieben (P1) ─────────────
         yield return new StoryChapter
         {
             Id = "season_summer_ch1", ChapterNumber = 105,

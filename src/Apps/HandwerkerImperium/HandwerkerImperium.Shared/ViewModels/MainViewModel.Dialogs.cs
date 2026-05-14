@@ -129,7 +129,7 @@ public sealed partial class MainViewModel
         // Alten höchsten Tier merken für Tier-Aufstieg-Celebration
         var oldHighestTier = state.Prestige.CurrentTier;
 
-        // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl uebernehmen — schreibt
+        // V7 (, Section 3.8): Heirloom-Wahl uebernehmen — schreibt
         // state.HeirloomItems VOR DoPrestige/ResetProgress, sodass die Auswahl bewahrt wird.
         DialogVM.PrestigeConfirmation.ApplyHeirloomSelection();
 

@@ -5,7 +5,7 @@ namespace HandwerkerImperium.Graphics;
 
 /// <summary>
 /// SkiaSharp-Renderer fuer das Saege-Minigame.
-/// AAA-Qualitaet: Realistisches Holz mit Bezier-Maserung, 3D-Astloecher mit
+/// Realistisches Holz mit Bezier-Maserung, 3D-Astloecher mit
 /// Jahresringen, Rinden-Textur, Schneide-Animation mit Holzspaltung,
 /// Saegemehl-Explosion und Stirnholz-Sicht.
 /// </summary>
@@ -58,7 +58,7 @@ public sealed class SawingGameRenderer : IDisposable
     // Weichgezeichnete Formen (Astloch-Schatten mit MaskFilter)
     private readonly SKPaint _blurPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     // Gecachter MaskFilter fuer Astloch-Schatten (vermeidet Native Memory Leak pro DrawKnot-Aufruf).
-    // v2.1.1 (Audit P-C03): static, sonst pro Mini-Game-Restart neue Filter-Instanz allokiert.
+    // static, sonst pro Mini-Game-Restart neue Filter-Instanz allokiert.
     private static readonly SKMaskFilter _knotBlurFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2);
     // Holzmaserung: Hauptlinien (dick, 1.5px)
     private readonly SKPaint _grainPaint1 = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };

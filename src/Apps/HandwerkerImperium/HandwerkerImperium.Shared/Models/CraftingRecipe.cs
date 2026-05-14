@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Models;
 /// Tier 1: Rohstoff (keine Inputs, Tier-1 Materialkosten in Gold).
 /// Tier 2: Halbzeug (eigene T1 × 3 + Cross-Workshop T1 × 1 ab Spielerlevel 100).
 /// Tier 3: Endprodukt (eigene T2 × 2 + Cross-Workshop T1/T2 × 1 ab Spielerlevel 100).
-/// Tier 4: Imperiums-Manufaktur (reserviert für Phase 4, Plan-Section 3.2).
+/// Tier 4: Imperiums-Manufaktur (reserviert für , Plan-Section 3.2).
 /// </summary>
 public class CraftingRecipe
 {
@@ -184,7 +184,7 @@ public class CraftingRecipe
             OutputProductId = "patent", DurationSeconds = 420 },
 
         // ═══════════════════════════════════════════════════════════════════════
-        // TIER 4 — IMPERIUMS-MANUFAKTUR (Phase 4, ab Workshop-Level 500 + logi_09 Research)
+        // TIER 4 — IMPERIUMS-MANUFAKTUR (, ab Workshop-Level 500 + logi_09 Research)
         // ═══════════════════════════════════════════════════════════════════════
         new() { Id = "r_villa", NameKey = "CraftVilla", WorkshopType = WorkshopType.GeneralContractor,
             RequiredWorkshopLevel = 500, Tier = 4,
@@ -297,7 +297,7 @@ public class CraftingProduct
     public decimal BaseValue { get; set; }
 
     /// <summary>
-    /// Phase 4: True wenn das Produkt beim Prestige als Erbstueck mitgenommen werden kann.
+    /// : True wenn das Produkt beim Prestige als Erbstueck mitgenommen werden kann.
     /// Nur Tier-4-Items qualifizieren — siehe Ressourcen-Plan Section 3.8.
     /// </summary>
     public bool IsHeirloomEligible { get; set; }
@@ -328,7 +328,7 @@ public class CraftingProduct
         ["circuit"] = new() { Id = "circuit", NameKey = "ProductCircuit", Tier = 2, BaseValue = 2500m },
         ["wall_design"] = new() { Id = "wall_design", NameKey = "ProductWallDesign", Tier = 2, BaseValue = 2000m },
         ["roofing_system"] = new() { Id = "roofing_system", NameKey = "ProductRoofing", Tier = 2, BaseValue = 3000m },
-        // Neu (Phase 1):
+        // Neu ():
         ["concrete_foundation"] = new() { Id = "concrete_foundation", NameKey = "ProductFoundation", Tier = 2, BaseValue = 4000m },
         ["framework"] = new() { Id = "framework", NameKey = "ProductFramework", Tier = 2, BaseValue = 5000m },
         ["contract_complex"] = new() { Id = "contract_complex", NameKey = "ProductContractComplex", Tier = 2, BaseValue = 6000m },
@@ -344,7 +344,7 @@ public class CraftingProduct
         ["smart_home"] = new() { Id = "smart_home", NameKey = "ProductSmartHome", Tier = 3, BaseValue = 50000m },
         ["artwork"] = new() { Id = "artwork", NameKey = "ProductArtwork", Tier = 3, BaseValue = 40000m },
         ["roof_structure"] = new() { Id = "roof_structure", NameKey = "ProductRoofStructure", Tier = 3, BaseValue = 60000m },
-        // Neu (Phase 1):
+        // Neu ():
         ["skyscraper_frame"] = new() { Id = "skyscraper_frame", NameKey = "ProductSkyscraperFrame", Tier = 3, BaseValue = 60000m },
         ["master_blueprint"] = new() { Id = "master_blueprint", NameKey = "ProductMasterBlueprint", Tier = 3, BaseValue = 70000m },
         ["general_contract"] = new() { Id = "general_contract", NameKey = "ProductGeneralContract", Tier = 3, BaseValue = 80000m },
@@ -352,7 +352,7 @@ public class CraftingProduct
         ["patent"] = new() { Id = "patent", NameKey = "ProductPatent", Tier = 3, BaseValue = 75000m },
 
         // ═══════════════════════════════════════════════════════════════════════
-        // TIER 4 — Imperiums-Manufaktur (Phase 4 — Plan Section 3.2)
+        // TIER 4 — Imperiums-Manufaktur ( — Plan Section 3.2)
         // BaseValue 1.5M–5M, alle Erbstueck-faehig.
         // ═══════════════════════════════════════════════════════════════════════
         ["villa"] = new() { Id = "villa", NameKey = "ProductVilla", Tier = 4, BaseValue = 2_500_000m, IsHeirloomEligible = true },

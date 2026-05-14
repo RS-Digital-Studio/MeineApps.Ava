@@ -116,13 +116,13 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (state.IsPremium)
             grossIncome *= 1.5m;
 
-        // AAA-Audit P1 Long-Term-Engagement: Eternal Mastery (permanenter Bonus pro Prestige)
+        // Eternal Mastery (permanenter Bonus pro Prestige)
         if (_eternalMastery != null && _eternalMastery.IsActive)
         {
             grossIncome *= (1m + _eternalMastery.IncomeBonus);
         }
 
-        // V7 (Phase 4 Ressourcen-Plan): Erbstuecke (+2% Globales Einkommen pro aktivem Erbstueck,
+        // V7 (): Erbstuecke (+2% Globales Einkommen pro aktivem Erbstueck,
         // +0.5% Globales Einkommen pro permanentem Erbstueck im Ascension-Schrein).
         decimal heirloomBonus = GetTotalHeirloomBonus(state);
         if (heirloomBonus > 0)
@@ -132,7 +132,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
     }
 
     /// <summary>
-    /// V7 (Phase 4): Summe aller Heirloom-Boni (aktiver Run + permanent).
+    /// V7 (): Summe aller Heirloom-Boni (aktiver Run + permanent).
     /// Public-static damit andere Services (Header-Display, Achievements) den Bonus auch ablesen koennen.
     /// </summary>
     public static decimal GetTotalHeirloomBonus(GameState state)
@@ -179,18 +179,18 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
     {
         if (state.TotalIncomePerSecond <= 0) return grossIncome;
 
-        // Fix 18.04.2026 Game-Audit: Tier-skalierender Soft-Cap. Der bisherige harte 8x-Cap
+        // Tier-skalierender Soft-Cap. Der bisherige harte 8x-Cap
         // kollidierte bereits mit dem Legende-Tier-Multi (+800% = 9x) — alle Prestige-Shop-,
         // Rebirth- und Premium-Upgrades waren danach komprimiert und fuehlten sich wertlos an.
         // Jetzt skaliert die Schwelle mit dem erreichten Prestige-Tier:
-        //   Kein Prestige: 4x  (Early-Game soll nicht ueber Balance schiessen)
-        //   Bronze:        6x
-        //   Silver:        8x
-        //   Gold:         10x
-        //   Platin:       12x
-        //   Diamant:      14x
-        //   Meister:      16x
-        //   Legende:      20x  (knapp 2x ueber Tier-Multi → Late-Game-Upgrades wirken wieder)
+        //   Kein Prestige: 4x (Early-Game soll nicht ueber Balance schiessen)
+        //   Bronze: 6x
+        //   Silver: 8x
+        //   Gold: 10x
+        //   Platin: 12x
+        //   Diamant: 14x
+        //   Meister: 16x
+        //   Legende: 20x (knapp 2x ueber Tier-Multi → Late-Game-Upgrades wirken wieder)
         var tier = state.Prestige?.CurrentTier ?? PrestigeTier.None;
         decimal tierThreshold = tier switch
         {
@@ -205,7 +205,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
             _ => 8.0m,
         };
 
-        // v2.1.1 (Audit B-H01): Ascension setzt Prestige.CurrentTier auf None zurueck → der tier-basierte
+        // Ascension setzt Prestige.CurrentTier auf None zurueck → der tier-basierte
         // Threshold faellt nach jeder Ascension brutal von 20x auf 4x (gefuehlte Income-
         // Halbierung post-Ascension). Ein Ascension-basierter Floor kompensiert das:
         // AscensionLevel 1 haelt mindestens das Legende-Niveau (20x), danach +2x pro Level.
@@ -319,7 +319,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (state.IsPremium)
             mult *= 1.5m;
 
-        // v2.1.1 (Audit B-C03): Soft-Cap auf den Crafting-Sell-Multiplikator. Frueher gab es KEIN Cap —
+        // Soft-Cap auf den Crafting-Sell-Multiplikator. Frueher gab es KEIN Cap —
         // der Multiplikator konnte im Late-Game >20x werden. Da T4-Items im Lager hortbar
         // sind, konnte der Spieler einen exponentiellen Geld-Pump aufbauen, der die
         // currentRunMoney-basierte PP-Formel untergraebt. Ueberschuss wird logarithmisch

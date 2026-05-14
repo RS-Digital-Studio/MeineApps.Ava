@@ -72,7 +72,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
     <!-- ============================================ -->
     <!-- Row 0: Content Area                           -->
     <!--                                               -->
-    <!-- AAA-Audit P0 Lazy-View-Loading (09.05.2026):  -->
+    <!-- Lazy-View-Loading (09.05.2026):  -->
     <!--                                               -->
     <!-- 4 Direct-Bound-Views (Dashboard/Imperium/      -->
     <!-- Missionen/Prestige) binden direkt auf         -->
@@ -303,7 +303,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                        PointerPressed="OnCeremonyTapped"
                        AutomationProperties.AutomationId="Main_Canvas_Ceremony" />
 
-    <!-- P0.3 AAA-Audit: Prestige-Cinematic (4 Phasen, 14s, Skip+TapToContinue) -->
+    <!-- Prestige-Cinematic (4 Phasen, 14s, Skip+TapToContinue) -->
     <skia:SKCanvasView x:Name="PrestigeCinematicCanvas"
                        Grid.RowSpan="2"
                        ZIndex="115"
@@ -312,7 +312,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                        PointerPressed="OnPrestigeCinematicTapped"
                        AutomationProperties.AutomationId="Main_Canvas_PrestigeCinematic" />
 
-    <!-- AAA-Audit P0 FTUE-UI: Spotlight-Overlay (DataContext = FtueOverlayViewModel via DI). -->
+    <!-- Spotlight-Overlay (DataContext = FtueOverlayViewModel via DI). -->
     <views:FtueOverlay x:Name="FtueOverlayInstance"
                         Grid.RowSpan="2"
                         ZIndex="120"

@@ -21,7 +21,7 @@ public sealed partial class GameLoopService
 
     /// <summary>
     /// Verarbeitet AutoCollect und AutoAccept Automation.
-    /// v2.1.1 (Audit C-C01/M-M09): Mutationen unter <see cref="IGameStateService.ExecuteWithLock"/>
+    /// v2.1.1 Mutationen unter <see cref="IGameStateService.ExecuteWithLock"/>
     /// schuetzen vor Race mit SaveAsync-Serializer (Task.Run auf ThreadPool). Events werden NACH
     /// Lock-Release gefeuert (Deadlock-Praevention bei UI-Subscribern, die wieder ExecuteWithLock
     /// aufrufen koennten).
@@ -61,7 +61,7 @@ public sealed partial class GameLoopService
                         break;
                     case DeliveryType.SpeedBoost:
                         state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
-                        // Income-Cache invalidieren (H-H10 Audit-Fix), damit Doppel-Boost-Stacking
+                        // Income-Cache invalidieren , damit Doppel-Boost-Stacking
                         // im Income-Calculator sofort wirksam wird.
                         state.InvalidateIncomeCache();
                         break;

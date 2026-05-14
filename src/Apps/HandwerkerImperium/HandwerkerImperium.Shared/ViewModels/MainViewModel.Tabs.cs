@@ -10,7 +10,7 @@ namespace HandwerkerImperium.ViewModels;
 
 
 /// <summary>
-/// MainViewModel Tab-State (AAA-Audit Review-Pass 12.05.2026): ActivePage-Enum +
+/// MainViewModel Tab-State (Review-Pass 12.05.2026): ActivePage-Enum +
 /// IsXxxActive-Computed-Properties + Imperium-Sub-Tabs + Progressive-Tab-Unlock-Logic.
 /// Aus MainViewModel.Properties.cs extrahiert um Themen-Cluster zu trennen.
 /// </summary>
@@ -48,7 +48,7 @@ public sealed partial class MainViewModel
     /// </summary>
     partial void OnActivePageChanged(ActivePage oldValue, ActivePage newValue)
     {
-        // P1.5 AAA-Audit: Stack-Management an Helper delegiert (Sprint A — Helper-Variante).
+        // Stack-Management an Helper delegiert (— Helper-Variante).
         Helpers.PageNavigationHelper.ManageStack(_navigationStack, oldValue, newValue, _isNavigatingBack);
 
         // GuildChat-Polling stoppen wenn Chat verlassen wird
@@ -67,7 +67,7 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(ActiveMiniGameViewModel));
         OnPropertyChanged(nameof(IsAnyMiniGameActive));
 
-        // AAA-Audit P0 Lazy-View-Loading: Zentrales ActivePageContent feuern, damit das
+        // Zentrales ActivePageContent feuern, damit das
         // einzelne ContentControl in MainView die richtige Sub-View materialisiert.
         OnPropertyChanged(nameof(ActivePageContent));
         OnPropertyChanged(nameof(HasActivePageContent));
@@ -112,9 +112,9 @@ public sealed partial class MainViewModel
     public bool IsInventGameActive => ActivePage == ActivePage.InventGame;
     public bool IsAscensionActive => ActivePage == ActivePage.Ascension;
     public bool IsPrestigeActive => ActivePage == ActivePage.Prestige;
-    /// <summary>V7 (Phase 3 Ressourcen-Plan): Material-Markt-Seite.</summary>
+    /// <summary>V7 (): Material-Markt-Seite.</summary>
     public bool IsMarketActive => ActivePage == ActivePage.Market;
-    /// <summary>V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekt-Bauplatz.</summary>
+    /// <summary>V7 (, Plan Section 3.9): Gilden-Mega-Projekt-Bauplatz.</summary>
     public bool IsGuildBuildSiteActive => ActivePage == ActivePage.GuildBuildSite;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -131,7 +131,7 @@ public sealed partial class MainViewModel
     private ImperiumSubTab _imperiumSubTab = ImperiumSubTab.Workshops;
 
     public bool IsImperiumWorkshopsActive => ImperiumSubTab == ImperiumSubTab.Workshops;
-    /// <summary>V7 (Phase 1 Ressourcen-Plan): Lager-Sub-Tab im Imperium.</summary>
+    /// <summary>V7 (): Lager-Sub-Tab im Imperium.</summary>
     public bool IsImperiumWarehouseActive => ImperiumSubTab == ImperiumSubTab.Warehouse;
     public bool IsImperiumWorkersActive => ImperiumSubTab == ImperiumSubTab.Workers;
     public bool IsImperiumResearchActive => ImperiumSubTab == ImperiumSubTab.Research;
@@ -148,7 +148,7 @@ public sealed partial class MainViewModel
     /// <summary>
     /// Imperium-Sub-Tab waehlen (per RelayCommand aus AXAML).
     /// Ascension-Sub-Tab nur sichtbar wenn Ascension verfuegbar (PrestigeData.LegendeCount &gt;= 3).
-    /// v2.1.1 (Audit U-C03): Bei locked Sub-Tabs zeigen wir einen Toast statt stillem No-Op,
+    /// Bei locked Sub-Tabs zeigen wir einen Toast statt stillem No-Op,
     /// damit der Spieler versteht WAS er noch tun muss. Frueher tippte er auf den disabled-
     /// Tab und nichts geschah — die Late-Game-Hauptbelohnung blieb unsichtbar.
     /// </summary>
@@ -203,7 +203,7 @@ public sealed partial class MainViewModel
     public bool IsAnyMiniGameActive => ActiveMiniGameViewModel != null;
 
     /// <summary>
-    /// AAA-Audit P0 Lazy-View-Loading: Liefert das ViewModel der aktuell aktiven Seite,
+    /// Liefert das ViewModel der aktuell aktiven Seite,
     /// oder null fuer Direct-Bound-Views (Dashboard/Imperium/Missionen/Prestige), die im
     /// MainView weiter via IsVisible toggle’n.
     ///
@@ -333,7 +333,7 @@ public sealed partial class MainViewModel
     /// <summary>
     /// Haupt-Tabs bei denen die Tab-Bar sichtbar ist (5 Hauptseiten).
     /// </summary>
-    // P1.5 AAA-Audit: s_mainTabs wandert als statisches Set in den Helper.
+    // s_mainTabs wandert als statisches Set in den Helper.
 
     /// <summary>
     /// Tab-Bar sichtbar nur auf den 5 Haupt-Tabs und wenn kein Overlay aktiv ist.
@@ -362,7 +362,7 @@ public sealed partial class MainViewModel
         _ => ""
     };
 
-    // P1.5 AAA-Audit: ActivePagePropertyName ist als Helper extrahiert
+    // ActivePagePropertyName ist als Helper extrahiert
     // (Helpers/PageNavigationHelper.GetPropertyNameFor). 41 Zeilen weniger im MainViewModel.
 
 }

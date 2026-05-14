@@ -4,8 +4,8 @@ namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
 /// MiniGame-Navigation + Abbruch-Bestaetigung.
-/// Phase 2: s_miniGameRoutes + NavigateToMiniGame + IsAnyMiniGamePlaying + StopCurrentMiniGame
-/// + ConfirmMiniGameAbortAsync leben hier.  Der Host (MainViewModel) liefert nur noch
+/// : s_miniGameRoutes + NavigateToMiniGame + IsAnyMiniGamePlaying + StopCurrentMiniGame
+/// + ConfirmMiniGameAbortAsync leben hier. Der Host (MainViewModel) liefert nur noch
 /// Zustandszugriffe.
 /// </summary>
 public interface IMiniGameNavigator

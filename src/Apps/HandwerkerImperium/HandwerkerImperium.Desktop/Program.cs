@@ -11,7 +11,7 @@ class Program
     public static void Main(string[] args)
     {
         // Plattformspezifischer Audio-Service (NAudio auf Windows, ffplay-Fallback auf Linux/macOS).
-        // AAA-Audit P2: Desktop war bisher Stub, ist jetzt voll funktional.
+        // Desktop war bisher Stub, ist jetzt voll funktional.
         App.AudioServiceFactory = sp =>
             new DesktopAudioService(sp.GetRequiredService<IGameStateService>());
 

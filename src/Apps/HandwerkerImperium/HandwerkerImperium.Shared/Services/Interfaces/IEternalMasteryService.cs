@@ -1,7 +1,7 @@
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// AAA-Audit P1 Long-Term-Engagement post-Lv1000 (12.05.2026).
+/// Long-Term-Engagement post-Lv1000 (12.05.2026).
 ///
 /// Eternal Mastery System: dauerhafter Einkommens-Bonus der mit jedem abgeschlossenen
 /// Prestige skaliert. Kein Cap, kein Reset bei Ascension — der Bonus akkumuliert ueber

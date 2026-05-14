@@ -54,7 +54,7 @@ public sealed class GameIntegrityService : IGameIntegrityService
         if (string.IsNullOrEmpty(state.IntegritySignature))
             return false;
 
-        // v2.1.1 (Audit FB-H05): Die rohen HMAC-Bytes timing-sicher vergleichen — unabhaengig von der
+        // Die rohen HMAC-Bytes timing-sicher vergleichen — unabhaengig von der
         // Hex-String-Repraesentation (Lower/Upper-Case, Trimming). Frueher wurden die
         // UTF-8-Bytes der Hex-STRINGS verglichen, was bei einer Format-Migration
         // (z.B. Upper-Case oder Base64) still gebrochen waere.

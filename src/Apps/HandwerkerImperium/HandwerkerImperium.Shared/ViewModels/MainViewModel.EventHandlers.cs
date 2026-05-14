@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// Event-Handler-Subscriptions (Money, Level, Order, Worker, Prestige, Cinematic, BattlePass,
 /// Language, Premium, State-Loaded, Master-Tool, Event-System).
-/// AAA-Audit P0 Aufspaltung: aus MainViewModel.cs extrahiert (12.05.2026).
+/// aus MainViewModel.cs extrahiert (12.05.2026).
 /// </summary>
 public sealed partial class MainViewModel
 {
@@ -198,7 +198,7 @@ public sealed partial class MainViewModel
     {
         var prestigeCount = _gameStateService.Prestige.TotalPrestigeCount;
 
-        // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement): Header-Badge aktualisieren
+        // Eternal Mastery (Long-Term-Engagement): Header-Badge aktualisieren
         RefreshEternalMastery();
 
         // Zeremonie: Feuerwerk + Confetti + Sound
@@ -219,8 +219,8 @@ public sealed partial class MainViewModel
                 "level");
         }
 
-        // Ascension-Hint-Kaskade (AAA-Audit P0 — Reset-Hierarchie-Vereinfachung):
-        //   1. Prestige        → AscensionPath-Hint (Foreshadowing: "So funktioniert Ascension")
+        // Ascension-Hint-Kaskade (— Reset-Hierarchie-Vereinfachung):
+        //   1. Prestige → AscensionPath-Hint (Foreshadowing: "So funktioniert Ascension")
         //   3x Legende-Prestige → AscensionAvailable-Hint (Action: "Du kannst jetzt aufsteigen!")
         // So sieht der Spieler den Ascension-Tab nicht erst nach 3x Legende erstmals — er kennt
         // ihn vorher schon konzeptuell und arbeitet darauf hin.
@@ -237,7 +237,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>
-    /// AAA-Audit P0 Zerlegungs-Sprint: Coordinator hat Daten lokalisiert + Audio-Track
+    /// Coordinator hat Daten lokalisiert + Audio-Track
     /// gesetzt — wir leiten nur noch das View-Trigger-Event weiter.
     /// </summary>
     private void OnCinematicReadyFromCoordinator(HandwerkerImperium.Models.PrestigeCinematicData resolved)
@@ -246,7 +246,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>
-    /// P0.3 AAA-Audit: Fallback-Pfad fuer Tests ohne Coordinator. Production-Code laeuft
+    /// Fallback-Pfad fuer Tests ohne Coordinator. Production-Code laeuft
     /// ueber <see cref="OnCinematicReadyFromCoordinator"/>.
     /// </summary>
     private void OnPrestigeCinematicReady(object? sender, HandwerkerImperium.Models.PrestigeCinematicData data)
@@ -333,7 +333,7 @@ public sealed partial class MainViewModel
             ShowTutorialHint = false;
             _contextualHintService.TryShowHint(ContextualHints.WorkshopDetail);
         }
-        // v2.0.39 Audit-Fix U10: Long-Press-Hint nach 2. Upgrade — Spieler hat erstes Tap-Upgrade
+        // Long-Press-Hint nach 2. Upgrade — Spieler hat erstes Tap-Upgrade
         // erlebt, jetzt ist der Discoverability-Moment fuer "Halten = x10 / x100 Bulk".
         // Bei aktivem Hold-to-Upgrade zeigen wir den Hint NICHT (er kennt das Feature dann schon).
         else if (!IsHoldingUpgrade && !_contextualHintService.HasSeenHint(ContextualHints.LongPressBulk.Id))
@@ -654,7 +654,7 @@ public sealed partial class MainViewModel
     /// stille Aktualisierung der Header-Properties (Spieler soll nicht zusaetzlich frustriert
     /// werden, wenn Reputation faellt).
     ///
-    /// v2.0.39 Audit-Fix U7: Zusaetzlich Achievement-Dialog mit Tier-Effekten (Stammkunden-Bonus
+    /// Zusaetzlich Achievement-Dialog mit Tier-Effekten (Stammkunden-Bonus
     /// + Live-Order-Spawn-Chance), damit der Spieler die Bedeutung des Aufstiegs erkennt — nicht
     /// nur einen Floating-Text. Dialog erscheint NUR bei Aufstieg, nicht bei Abstieg.
     /// </summary>
@@ -668,7 +668,7 @@ public sealed partial class MainViewModel
             OnPropertyChanged(nameof(ReputationTierName));
             OnPropertyChanged(nameof(ReputationTierColor));
 
-            // AAA-Audit P0 Zerlegungs-Sprint: Effekt-Logik in IReputationTierEffects extrahiert.
+            // Effekt-Logik in IReputationTierEffects extrahiert.
             _reputationTierEffects?.HandleTierChanged(
                 e,
                 floatingTextRaiser: (text, kind) => FloatingTextRequested?.Invoke(text, kind),

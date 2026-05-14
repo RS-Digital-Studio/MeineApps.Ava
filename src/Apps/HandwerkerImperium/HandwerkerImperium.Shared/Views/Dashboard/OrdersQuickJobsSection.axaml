@@ -270,7 +270,7 @@
                         CommandParameter="{Binding .}"
                         IsEnabled="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).HasActiveOrder, Converter={x:Static BoolConverters.Not}}" />
 
-                <!-- V7 (Phase 2 Ressourcen-Plan): Material-Offer-Badge + zweiter Annahme-Button -->
+                <!-- V7 (): Material-Offer-Badge + zweiter Annahme-Button -->
                 <Border Grid.Row="4" Grid.ColumnSpan="2"
                         IsVisible="{Binding HasMaterialOffer}"
                         Margin="0,8,0,0"

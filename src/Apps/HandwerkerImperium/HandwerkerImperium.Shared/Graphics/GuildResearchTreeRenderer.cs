@@ -7,23 +7,23 @@ namespace HandwerkerImperium.Graphics;
 /// Rendert die Gilden-Forschung als 2-Spalten-Layout.
 /// 18 Items in 6 unabhängigen Kategorien (3 Paare à 2 Spalten):
 ///
-/// [Infra 1]   [Wirt 1]
-///     ↓           ↓
-/// [Infra 2]   [Wirt 2]
-///     ↓           ↓
-/// [Infra 3]   [Wirt 3]
+/// [Infra 1] [Wirt 1]
+///     ↓ ↓
+/// [Infra 2] [Wirt 2]
+///     ↓ ↓
+/// [Infra 3] [Wirt 3]
 ///                 ↓
 ///             [Wirt 4]
 ///    ─ ─ ─ ─ ─ ─ ─ ─ ─
-/// [Wiss 1]    [Log 1]
-///     ↓           ↓
-/// [Wiss 2]    [Log 2]
-///     ↓           ↓
-/// [Wiss 3]    [Log 3]
+/// [Wiss 1] [Log 1]
+///     ↓ ↓
+/// [Wiss 2] [Log 2]
+///     ↓ ↓
+/// [Wiss 3] [Log 3]
 ///    ─ ─ ─ ─ ─ ─ ─ ─ ─
-/// [Arbeit 1]  [Meister 1]
-///     ↓           ↓
-/// [Arbeit 2]  [Meister 2]
+/// [Arbeit 1] [Meister 1]
+///     ↓ ↓
+/// [Arbeit 2] [Meister 2]
 ///     ↓
 /// [Arbeit 3]
 /// </summary>

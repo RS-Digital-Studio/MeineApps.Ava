@@ -9,7 +9,7 @@ using MeineApps.Core.Ava.Services;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// AAA-Audit P0 Zerlegungs-Sprint: Reputation-Tier-Up-Effekte aus dem MainViewModel
+/// Reputation-Tier-Up-Effekte aus dem MainViewModel
 /// extrahiert. ~40 Zeilen Logik + Lokalisierungs-Map liegt jetzt isoliert.
 /// </summary>
 public sealed class ReputationTierEffects : IReputationTierEffects
@@ -40,7 +40,7 @@ public sealed class ReputationTierEffects : IReputationTierEffects
         celebrationRaiser();
         _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
-        // v2.0.39 Audit-Fix U7: Modal-Dialog mit Tier-Effekten (nur bei Tier-Aufstieg
+        // Modal-Dialog mit Tier-Effekten (nur bei Tier-Aufstieg
         // ueber Beginner — Beginner ist der Default-Start-Tier und braucht keine Erklaerung).
         if (achievementDialog == null) return;
         if (e.NewTier <= CustomerReputationTier.Beginner) return;

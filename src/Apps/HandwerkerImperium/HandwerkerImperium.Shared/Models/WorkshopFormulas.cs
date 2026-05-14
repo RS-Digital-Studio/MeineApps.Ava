@@ -176,7 +176,7 @@ public static class WorkshopFormulas
 
     /// <summary>
     /// Maximale leistbare Upgrades bei gegebenem Budget.
-    /// v2.1.1 (Audit P-M02): Math.Pow wird nicht mehr pro Step aufgerufen, sondern einmal
+    /// Math.Pow wird nicht mehr pro Step aufgerufen, sondern einmal
     /// initial — der Folge-Cost ergibt sich aus Multiplikation mit dem Exponent. Bei
     /// MaxLevel=1000 spart das ~999 Math.Pow-Calls pro Aufruf (Bulk-Buy-Hot-Path im
     /// Dashboard: bis zu 9990 Math.Pow/s auf 10 Workshops im Max-Modus).

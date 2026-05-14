@@ -7,7 +7,7 @@ using MeineApps.Core.Ava.Services;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// AAA-Audit P0 (MainViewModel-Zerlegung): Cinematic-Coordinator. Subscribed auf
+/// (MainViewModel-Zerlegung): Cinematic-Coordinator. Subscribed auf
 /// <see cref="IPrestigeService.CinematicReady"/>, lokalisiert die Tier-Namen, spielt
 /// die Celebration-Music ab und triggert die View ueber das <see cref="CinematicReady"/>-Event.
 ///

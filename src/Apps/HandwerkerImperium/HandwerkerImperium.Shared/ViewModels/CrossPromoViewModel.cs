@@ -10,7 +10,7 @@ using MeineApps.Core.Ava.ViewModels;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// AAA-Audit P1: ViewModel fuer die Cross-Promotion-Card. Wird in SettingsView („Mehr"-Tab)
+/// ViewModel fuer die Cross-Promotion-Card. Wird in SettingsView („Mehr"-Tab)
 /// und ggf. in WelcomeBackOffer eingeblendet.
 /// </summary>
 public sealed partial class CrossPromoViewModel : ViewModelBase

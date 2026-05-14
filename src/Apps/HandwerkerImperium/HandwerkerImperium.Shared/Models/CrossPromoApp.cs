@@ -1,7 +1,7 @@
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// AAA-Audit P1: Cross-Promotion zwischen den 11 eigenen Apps. Daten-Modell fuer
+/// Cross-Promotion zwischen den 11 eigenen Apps. Daten-Modell fuer
 /// eine kontextuelle Promo-Karte (Icon, Name, Beschreibung, Play-Store-Link).
 ///
 /// Wirtschaftliche Begruendung: Voodoo / Lion Studios machen 30% ihrer Installs

@@ -4,7 +4,7 @@ using MeineApps.Core.Ava.Localization;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// v2.0.39 Audit-Fix U1: Zeigt Bestandsspielern beim Update einen kumulativen
+/// Zeigt Bestandsspielern beim Update einen kumulativen
 /// Hinweis-Dialog mit den neuen Features seit ihrer letzten App-Version.
 /// Vermeidet dass Reputation-Tiers, Notification-Bell, Strategy-EV, Imperium-
 /// Sub-Tabs etc. ohne Erklaerung im UI auftauchen.

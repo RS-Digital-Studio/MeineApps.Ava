@@ -206,9 +206,9 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
     /// statt einer konkreten Zahl.
     ///
     /// Erwartungswert-Modell (vereinfacht, lineare Belohnungs-Skalierung):
-    ///   Safe:     ~95% Trefferquote × 0,75x Reward (kleines Risiko, kleiner Reward)
+    ///   Safe: ~95% Trefferquote × 0,75x Reward (kleines Risiko, kleiner Reward)
     ///   Standard: persoenliche Trefferquote × 1,0x Reward (Miss → 50% Teil-Reward)
-    ///   Risk:     persoenliche Trefferquote × 0,7 × 2,0x Reward (Miss → 0)
+    ///   Risk: persoenliche Trefferquote × 0,7 × 2,0x Reward (Miss → 0)
     /// </summary>
     private void UpdateStrategyStats(Order order)
     {

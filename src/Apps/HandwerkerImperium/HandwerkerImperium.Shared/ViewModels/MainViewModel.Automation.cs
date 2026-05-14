@@ -9,7 +9,7 @@ namespace HandwerkerImperium.ViewModels;
 
 
 /// <summary>
-/// MainViewModel Automation-State (AAA-Audit Review-Pass 12.05.2026):
+/// MainViewModel Automation-State (Review-Pass 12.05.2026):
 /// Forwarding zu GameState.Automation — AutoCollect, AutoAccept, AutoAssign.
 /// Aus MainViewModel.Properties.cs extrahiert um Themen-Cluster zu trennen.
 /// </summary>

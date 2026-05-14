@@ -22,7 +22,7 @@ public sealed class RebirthService : IRebirthService
     /// Kosten-Tabelle pro nächstem Stern: (Goldschrauben, Geld-Prozent).
     /// Stern 1 = günstig (Einstieg), Stern 5 = sehr teuer (Endgame-Ziel).
     ///
-    /// Fix 18.04.2026 Game-Audit: Gesamt-GS halbiert von 2350 auf 1175 pro Workshop
+    /// Gesamt-GS halbiert von 2350 auf 1175 pro Workshop
     /// (10 Workshops: 23.500 → 11.750 GS). Mit best-case ~110 GS/Tag F2P: 210 Tage → 107 Tage.
     ///
     /// v2.0.37 (05.05.2026): Stern 4+5 weiter reduziert (250→200, 500→400). Senkt

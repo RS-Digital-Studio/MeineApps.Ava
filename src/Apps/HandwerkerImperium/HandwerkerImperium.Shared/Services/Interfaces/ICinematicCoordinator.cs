@@ -3,7 +3,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// AAA-Audit P0 (MainViewModel-Zerlegung): Koordiniert die Prestige-Cinematic
+/// (MainViewModel-Zerlegung): Koordiniert die Prestige-Cinematic
 /// (4-Phasen-Renderer, 14s, Skip+TapToContinue). Aus MainViewModel extrahiert.
 ///
 /// Verantwortlichkeiten:

@@ -7,13 +7,13 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// 4-Phasen Prestige-Cinematic (P0.3 — AAA-Audit 2026-05-08).
+/// 4-Phasen Prestige-Cinematic (P0.3 — 2026-05-08).
 /// Verwandelt den Prestige-Reset von einer Tabellen-Ansicht in einen 14-Sekunden Wow-Moment.
 ///
-/// Phase 1 (0-3s):  Money-Reverse-Counter — Geld rollt von <see cref="PrestigeCinematicData.MoneyAtPrestige"/> auf 0
-/// Phase 2 (3-6s):  Tier-Badge mit Glow-Pulse + Confetti-Burst
-/// Phase 3 (6-11s): Staggered Multiplier-Aufbau (Tier-Bonus → Diminishing → Bonus-PP → Final-Score)
-/// Phase 4 (11-14s): Reward-Card "Tap to Continue"
+/// (0-3s): Money-Reverse-Counter — Geld rollt von <see cref="PrestigeCinematicData.MoneyAtPrestige"/> auf 0
+///  (3-6s): Tier-Badge mit Glow-Pulse + Confetti-Burst
+///  (6-11s): Staggered Multiplier-Aufbau (Tier-Bonus → Diminishing → Bonus-PP → Final-Score)
+///  (11-14s): Reward-Card "Tap to Continue"
 ///
 /// Skip-Button wird vom ViewModel bei <see cref="IsSkipEnabled"/> sichtbar geschaltet.
 /// </summary>
@@ -143,11 +143,11 @@ public sealed class PrestigeCinematicRenderer : IDisposable
 
         // Code-Review-Fix [Finding 3]: SkipButtonBounds nullen sobald wir die Skip-Phase verlassen
         // — auch wenn der Render-Loop pausiert ist (z.B. App-Pause). Verhindert dass Tap-Handler
-        // mit stale Bounds einen Skip triggert nachdem Phase 4 begonnen hat.
+        // mit stale Bounds einen Skip triggert nachdem begonnen hat.
         if (!IsSkipEnabled || _elapsed >= PhaseMultiEnd)
             SkipButtonBounds = null;
 
-        // Confetti-Burst beim Eintritt in Phase 2 (Badge-Reveal)
+        // Confetti-Burst beim Eintritt in (Badge-Reveal)
         if (!_confettiSpawned && _elapsed >= PhaseMoneyEnd)
         {
             SpawnConfettiBurst();
@@ -208,7 +208,7 @@ public sealed class PrestigeCinematicRenderer : IDisposable
             RenderConfetti(canvas);
         }
 
-        // Skip-Button oben rechts ab 2s — verschwindet in Phase 4 (Reward-Phase, dort gilt Tap=Dismiss)
+        // Skip-Button oben rechts ab 2s — verschwindet in (Reward-Phase, dort gilt Tap=Dismiss)
         if (IsSkipEnabled && _elapsed < PhaseMultiEnd)
             RenderSkipButton(canvas, bounds);
         else
@@ -240,7 +240,7 @@ public sealed class PrestigeCinematicRenderer : IDisposable
         SkipButtonBounds = rect;
     }
 
-    // ----------------- Phase 1: Reverse-Money-Counter -----------------
+    // ----------------- : Reverse-Money-Counter -----------------
     private void RenderPhaseMoney(SKCanvas canvas, float cx, float cy)
     {
         // Rückwärts-Roll: 0..1 → Money..0
@@ -266,7 +266,7 @@ public sealed class PrestigeCinematicRenderer : IDisposable
         canvas.Restore();
     }
 
-    // ----------------- Phase 2: Tier-Badge mit Glow -----------------
+    // ----------------- : Tier-Badge mit Glow -----------------
     private void RenderPhaseBadge(SKCanvas canvas, float cx, float cy)
     {
         var local = _elapsed - PhaseMoneyEnd;
@@ -302,7 +302,7 @@ public sealed class PrestigeCinematicRenderer : IDisposable
         }
     }
 
-    // ----------------- Phase 3: Staggered Multiplier-Stack -----------------
+    // ----------------- : Staggered Multiplier-Stack -----------------
     private void RenderPhaseMultiplier(SKCanvas canvas, float cx, float cy, SKRect bounds)
     {
         var local = _elapsed - PhaseBadgeEnd;
@@ -348,7 +348,7 @@ public sealed class PrestigeCinematicRenderer : IDisposable
         canvas.DrawText(text, x + slide, y, SKTextAlign.Center, s_mediumFont, s_textPaint);
     }
 
-    // ----------------- Phase 4: Reward-Card -----------------
+    // ----------------- : Reward-Card -----------------
     private void RenderPhaseReward(SKCanvas canvas, float cx, float cy, SKRect bounds)
     {
         var local = _elapsed - PhaseMultiEnd;

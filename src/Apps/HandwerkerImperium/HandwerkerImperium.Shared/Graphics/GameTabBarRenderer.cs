@@ -327,7 +327,7 @@ public sealed class GameTabBarRenderer : IDisposable
     /// Zeichnet Holz-Hintergrund mit CraftTextures-Maserung (Wellenlinien, Astlöcher, Gradient).
     /// Clippt auf abgerundete Ecken oben.
     /// </summary>
-    // v2.1.1 (Audit P-H01): Statisches Radii-Array + wiederverwendbares SKRoundRect-Feld —
+    // Statisches Radii-Array + wiederverwendbares SKRoundRect-Feld —
     // spart pro Frame eine SKPoint[4]-Allokation + SKRoundRect-Allokation (90 Heap-Allocs/s
     // bei 15fps und den weiteren Rivet-Allokationen unten).
     private static readonly SKPoint[] s_clipCornerRadii =
@@ -357,7 +357,7 @@ public sealed class GameTabBarRenderer : IDisposable
     /// Zeichnet 4 Metall-Nieten in den Ecken der Tab-Bar.
     /// Jede Niete hat Highlight oben-links und Schatten unten-rechts.
     /// </summary>
-    // v2.1.1 (Audit P-H01): wiederverwendbare Rivet-Position-Buffers — frueher float[4]
+    // wiederverwendbare Rivet-Position-Buffers — frueher float[4]
     // zweimal pro Frame allokiert (60 Allocs/s bei 15fps).
     private readonly float[] _rivetX = new float[4];
     private readonly float[] _rivetY = new float[4];

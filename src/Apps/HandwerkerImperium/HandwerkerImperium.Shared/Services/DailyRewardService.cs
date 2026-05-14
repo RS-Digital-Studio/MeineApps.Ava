@@ -87,7 +87,7 @@ public sealed class DailyRewardService : IDailyRewardService
 
     public DailyReward? ClaimReward()
     {
-        // v2.1.1 (Audit B-M03): Check-and-Mutate atomar unter dem State-Lock. Ohne Lock konnte
+        // Check-and-Mutate atomar unter dem State-Lock. Ohne Lock konnte
         // ein Doppel-Tap (UI- + GameLoop-Thread) zweimal IsRewardAvailable==true sehen und
         // die Belohnung doppelt gutschreiben. Die Geld-/XP-/GS-Gutschrift laeuft bewusst
         // AUSSERHALB des Locks — AddMoney/AddXp/AddGoldenScrews nehmen eigene Locks und

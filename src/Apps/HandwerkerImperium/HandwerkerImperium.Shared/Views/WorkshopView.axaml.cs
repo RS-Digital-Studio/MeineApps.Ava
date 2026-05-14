@@ -21,7 +21,7 @@ public partial class WorkshopView : UserControl
     // WorkshopInteriorRenderer entfernt - AI-Bilder ersetzen den prozeduralen Hintergrund komplett
     private readonly WorkshopSceneRenderer _sceneRenderer = new();
     private readonly AnimationManager _animationManager = new();
-    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    // DispatcherTimer durch IFrameClock-Subscription ersetzt.
     private Services.Interfaces.IFrameClock? _frameClock;
     private bool _renderActive;
     private SKCanvasView? _workshopCanvas;
@@ -39,7 +39,7 @@ public partial class WorkshopView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        // v2.1.1 (Audit M-M02): Lambda → benannter Handler, damit Unsubscribe in
+        // Lambda → benannter Handler, damit Unsubscribe in
         // OnDetachedFromVisualTree symmetrisch moeglich ist.
         PropertyChanged += OnViewPropertyChanged;
     }
@@ -70,7 +70,7 @@ public partial class WorkshopView : UserControl
 
         StopRenderLoop();
 
-        // v2.1.1 (Audit M-M02): View-PropertyChanged-Handler abmelden — symmetrisch zum Ctor.
+        // View-PropertyChanged-Handler abmelden — symmetrisch zum Ctor.
         DataContextChanged -= OnDataContextChanged;
         PropertyChanged -= OnViewPropertyChanged;
 

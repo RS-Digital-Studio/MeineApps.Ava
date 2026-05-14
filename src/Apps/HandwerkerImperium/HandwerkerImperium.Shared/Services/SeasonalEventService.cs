@@ -243,7 +243,7 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
             }
         };
 
-        // 2 saison-einzigartige Items (Phase 2.9)
+        // 2 saison-einzigartige Items (.9)
         // Effekte werden in GameLoopService/OfflineProgressService ausgewertet
         items.AddRange(GetUniqueSeasonItems(season, icon));
 
@@ -377,7 +377,7 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
 
         // IncomeBonus wird passiv vom GameLoop berücksichtigt wenn das Item gekauft ist
 
-        // --- Saison-einzigartige Effekte (Phase 2.9) ---
+        // --- Saison-einzigartige Effekte (.9) ---
 
         // Sofort: Goldschrauben-Belohnung (z.B. Herbst: 500 GS)
         if (effect.InstantGoldenScrews > 0)

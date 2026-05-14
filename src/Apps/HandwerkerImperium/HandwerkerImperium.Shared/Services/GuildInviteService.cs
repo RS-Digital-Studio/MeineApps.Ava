@@ -76,7 +76,7 @@ public sealed class GuildInviteService : IGuildInviteService, IDisposable
                 }
             }
 
-            // v2.1.1 (Audit FB-H11): Bei dauerhafter Kollision Error-Result statt blindem Ueberschreiben.
+            // Bei dauerhafter Kollision Error-Result statt blindem Ueberschreiben.
             // Frueher wurde der letzte (kollidierende) Code trotzdem gespeichert und haette
             // das Mapping einer fremden Gilde ueberschrieben.
             if (code == null)

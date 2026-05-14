@@ -6,7 +6,7 @@ using HandwerkerImperium.ViewModels.MiniGames;
 
 namespace HandwerkerImperium.ViewModels;
 
-// INavigationHost-Implementierung (Phase 2 — velvety-booping-peacock).
+// INavigationHost-Implementierung ( — velvety-booping-peacock).
 // Explizite Implementierung: Die Services rufen MainViewModel ausschliesslich ueber
 // diesen Contract. Haelt MainViewModel public-API sauber und verhindert ungewolltes
 // Leaken von internen Details.

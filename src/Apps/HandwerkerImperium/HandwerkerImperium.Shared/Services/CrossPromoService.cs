@@ -4,7 +4,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// AAA-Audit P1: House-Ads zwischen den 11 eigenen Apps. Zero-Cost, statisch konfiguriert.
+/// House-Ads zwischen den 11 eigenen Apps. Zero-Cost, statisch konfiguriert.
 ///
 /// Architektur:
 /// - Static Catalog der 11 Apps (Hardcoded — Apps wechseln nur sehr selten, RemoteConfig-

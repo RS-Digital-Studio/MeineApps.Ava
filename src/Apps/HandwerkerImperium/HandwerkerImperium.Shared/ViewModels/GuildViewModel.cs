@@ -446,7 +446,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     /// <summary>Sub-ViewModel für das Gilden-Hauptquartier.</summary>
     public GuildHallViewModel HallViewModel { get; }
 
-    // Thin-Wrapper-Sub-VMs fuer ViewLocator-Mapping der 6 Sub-Seiten (Phase 4 17.04.2026)
+    // Thin-Wrapper-Sub-VMs fuer ViewLocator-Mapping der 6 Sub-Seiten ( 17.04.2026)
     public GuildResearchViewModel ResearchVM { get; private set; } = null!;
     public GuildMembersViewModel MembersVM { get; private set; } = null!;
     public GuildInviteViewModel InviteVM { get; private set; } = null!;
@@ -460,7 +460,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     /// <summary>Worker-Auktion ViewModel (v2.1.0). Polling laeuft beim Combat-Tab.</summary>
     public ViewModels.Auctions.WorkerAuctionViewModel AuctionVM { get; }
 
-    /// <summary>V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-ViewModel.</summary>
+    /// <summary>V7 (, Plan Section 3.9): Mega-Projekt-ViewModel.</summary>
     public GuildMegaProjectViewModel MegaProjectVM { get; }
 
     public GuildViewModel(
@@ -505,7 +505,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         // v2.1.0: Co-op-NavigationRequested an Parent weiterleiten (MainViewModel routet zum MiniGame).
         CoopOrderVM.NavigationRequested += route => NavigationRequested?.Invoke(route);
 
-        // Thin-Wrapper-Sub-VMs fuer ViewLocator (Phase 4 17.04.2026)
+        // Thin-Wrapper-Sub-VMs fuer ViewLocator ( 17.04.2026)
         ResearchVM = new GuildResearchViewModel(this);
         MembersVM = new GuildMembersViewModel(this);
         InviteVM = new GuildInviteViewModel(this);
@@ -948,7 +948,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     [RelayCommand]
     private void NavigateToAchievements() => NavigationRequested?.Invoke("guild_achievements");
 
-    /// <summary>V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Bauplatz.</summary>
+    /// <summary>V7 (, Plan Section 3.9): Mega-Projekt-Bauplatz.</summary>
     [RelayCommand]
     private void NavigateToBuildSite() => NavigationRequested?.Invoke("guild_build_site");
 

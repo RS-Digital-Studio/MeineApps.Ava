@@ -6,7 +6,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// ViewModel fuer das Prestige-Banner (Imperium-Tab Ende). Properties fuer Tier-Verfuegbarkeit,
 /// PP-Vorschau, aktive Challenges, naechste Tier-Schwelle und Speedrun-Timer.
-/// Extrahiert aus MainViewModel (17.04.2026, Phase 3 Schritt 8).
+/// Extrahiert aus MainViewModel (17.04.2026, Schritt 8).
 /// Wird ueber <see cref="MainViewModel.PrestigeBannerVM"/> in den Views referenziert.
 /// MainViewModel bietet Delegate-Properties fuer Rueckwaertskompatibilitaet mit bestehenden Bindings.
 /// </summary>

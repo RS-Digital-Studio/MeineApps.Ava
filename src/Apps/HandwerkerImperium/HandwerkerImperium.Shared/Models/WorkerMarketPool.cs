@@ -34,7 +34,7 @@ public class WorkerMarketPool
     public bool FreeRefreshUsedThisRotation { get; set; }
 
     /// <summary>
-    /// v2.1.1 (Audit B-H06): Zeitpunkt der letzten Legendary-Sichtung im Markt. Nach einer Sichtung
+    /// Zeitpunkt der letzten Legendary-Sichtung im Markt. Nach einer Sichtung
     /// 7 Tage Cooldown — verhindert Legendary-Farming via Pool-Rotation (8 Slots × 6 Rotationen
     /// = ~5% Chance/Tag = bei 10 Workshops eskaliert das im Late-Game).
     /// </summary>
@@ -74,7 +74,7 @@ public class WorkerMarketPool
         var availableTiers = Worker.GetAvailableTiers(playerLevel, prestigeLevel, hasSTierResearch);
         if (availableTiers.Count == 0) return;
 
-        // v2.1.1 (Audit B-H06): Legendary-Cooldown — 7 Tage nach letzter Sichtung kein Legendary mehr im Pool.
+        // Legendary-Cooldown — 7 Tage nach letzter Sichtung kein Legendary mehr im Pool.
         var legendaryOnCooldown = LastLegendarySpawn != DateTime.MinValue
             && DateTime.UtcNow - LastLegendarySpawn < TimeSpan.FromDays(7);
         var effectiveTiers = legendaryOnCooldown

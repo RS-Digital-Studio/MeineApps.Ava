@@ -9,7 +9,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel fuer das dynamische "Naechstes Ziel"-Banner auf dem Dashboard.
 /// Liest den aktuellen GoalService-State und stellt ihn via Properties bereit.
 /// Navigation erfolgt ueber den <see cref="INavigationService"/>.
-/// Extrahiert aus MainViewModel (17.04.2026, Phase 3 Schritt 9).
+/// Extrahiert aus MainViewModel (17.04.2026, Schritt 9).
 /// </summary>
 public sealed partial class GoalBannerViewModel : ViewModelBase
 {

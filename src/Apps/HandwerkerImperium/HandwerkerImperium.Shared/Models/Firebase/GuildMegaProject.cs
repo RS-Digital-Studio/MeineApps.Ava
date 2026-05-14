@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace HandwerkerImperium.Models.Firebase;
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Template.
+/// V7 (, Plan Section 3.9): Mega-Projekt-Template.
 /// </summary>
 public enum GuildMegaProjectType
 {
@@ -15,7 +15,7 @@ public enum GuildMegaProjectType
 }
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan): Statisches Template einer Mega-Projekt-Anforderung.
+/// V7 (): Statisches Template einer Mega-Projekt-Anforderung.
 /// Verbraucht Materialien aller Tiers ueber Wochen, belohnt mit permanentem Gildenbonus.
 /// </summary>
 public static class GuildMegaProjectTemplates
@@ -93,7 +93,7 @@ public sealed class GuildMegaProjectReward
 }
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan): Aktuelles Mega-Projekt einer Gilde (Firebase-Pfad
+/// V7 (): Aktuelles Mega-Projekt einer Gilde (Firebase-Pfad
 /// <c>guilds/{guildId}/megaProjects/{projectId}</c>).
 /// </summary>
 public sealed class GuildMegaProject

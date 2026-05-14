@@ -24,7 +24,7 @@ public sealed partial class PrestigeService : IPrestigeService
     private decimal _cachedMoodDecayReduction;
     private decimal _cachedXpMultiplier;
 
-    // v2.1.1 (Audit B-C02): Doppel-Tap-Guard fuer DoPrestige. 0 = frei, 1 = Prestige laeuft.
+    // Doppel-Tap-Guard fuer DoPrestige. 0 = frei, 1 = Prestige laeuft.
     // Interlocked-Zugriff macht den Guard atomar ueber UI- und GameLoop-Thread hinweg —
     // verhindert, dass zwei parallele Aufrufe (Render-Lag waehrend Cinematic) beide
     // CanPrestige==true sehen und Punkte/Tier-Counts doppelt gutschreiben.
@@ -68,12 +68,12 @@ public sealed partial class PrestigeService : IPrestigeService
         return PrestigeData.CalculatePrestigePoints(currentRunMoney);
     }
 
-    /// <summary>P0.3 AAA-Audit: Cinematic-Trigger-Event (siehe IPrestigeService).</summary>
+    /// <summary>Cinematic-Trigger-Event (siehe IPrestigeService).</summary>
     public event EventHandler<HandwerkerImperium.Models.PrestigeCinematicData>? CinematicReady;
 
     public async Task<bool> DoPrestige(PrestigeTier tier)
     {
-        // v2.1.1 (Audit B-C02): Doppel-Tap-Guard VOR CanPrestige. CompareExchange ist atomar — nur der
+        // Doppel-Tap-Guard VOR CanPrestige. CompareExchange ist atomar — nur der
         // erste Aufruf gewinnt, jeder weitere bricht sofort ab. Verhindert PP-Verdopplung
         // bei Render-Lag waehrend der Prestige-Cinematic.
         if (Interlocked.CompareExchange(ref _prestigeInProgress, 1, 0) != 0)
@@ -83,7 +83,7 @@ public sealed partial class PrestigeService : IPrestigeService
         {
             if (!CanPrestige(tier)) return false;
 
-            // v2.1.1 (Audit B-C02): Alle State-Mutationen laufen unter dem zentralen State-Lock —
+            // Alle State-Mutationen laufen unter dem zentralen State-Lock —
             // verhindert "Collection was modified"-Races mit dem Background-Serializer
             // (SaveGameService serialisiert den State auf einem ThreadPool-Thread unter
             // demselben Lock). Events, Cloud-Save und AddGoldenScrews laufen bewusst
@@ -186,7 +186,7 @@ public sealed partial class PrestigeService : IPrestigeService
                 prestige.BestRunTimes[tierKey] = runDuration.Ticks;
                 isNewPersonalBest = true;
 
-                // Belohnung skaliert nach Tier + Speed (v2.0.36, Game-Audit-Empfehlung [DESIGN-2]).
+                // Belohnung skaliert nach Tier + Speed (v2.0.36, Empfehlung: ).
                 // Verhindert dass Late-Game nach 3× Legende nur Multiplikator-Grind ist.
                 speedrunReward = SpeedrunRewards.CalculateReward(tier, runDuration);
             }
@@ -224,7 +224,7 @@ public sealed partial class PrestigeService : IPrestigeService
 
         // Diminishing Returns: Jeder weitere Prestige desselben Tiers gibt weniger Bonus.
         // Formel: baseBonus * 1/(1 + 0.2 * tierCount) — bereits nach 5 Same-Tier-Prestiges nur noch 50% Bonus.
-        // (v2.0.36: Faktor 0.1→0.2 verschärft nach Game-Audit-Finding [BAL-1] — verhindert dass
+        // (v2.0.36: Faktor 0.1→0.2 verschärft nach Finding — verhindert dass
         // F2P-Spieler endlos Bronze farmen statt zum nächsten Tier aufzusteigen.)
         // tierCount ist NACH Inkrement (oben), daher -1 fuer den Wert VOR diesem Prestige.
         decimal baseBonus = tier.GetPermanentMultiplierBonus();
@@ -267,7 +267,7 @@ public sealed partial class PrestigeService : IPrestigeService
         state.PrestigeLevel = prestige.TotalPrestigeCount;
         state.PrestigeMultiplier = prestige.PermanentMultiplier;
 
-        // P0.3 AAA-Audit: Cinematic-Daten zusammenstellen + Event feuern VOR Reset,
+        // Cinematic-Daten zusammenstellen + Event feuern VOR Reset,
         // damit MoneyAtPrestige + Tier-Daten korrekt sind. Renderer snappshot't die
         // Werte beim Start (kein Live-Binding nach Reset).
         var cinematicData = new HandwerkerImperium.Models.PrestigeCinematicData
@@ -416,7 +416,7 @@ public sealed partial class PrestigeService : IPrestigeService
         var item = allItems.FirstOrDefault(i => i.Id == itemId);
         if (item == null) return false;
 
-        // v2.1.1 (Audit B-M05): Check-and-Mutate atomar unter dem State-Lock — ohne Lock konnte
+        // Check-and-Mutate atomar unter dem State-Lock — ohne Lock konnte
         // ein Doppel-Tap PrestigePoints negativ ziehen oder den Item-Count zweimal erhoehen.
         // InvalidatePrestigeBonusCache feuert ein Event und laeuft daher ausserhalb.
         bool purchased = _gameStateService.ExecuteWithLock(() =>
@@ -717,7 +717,7 @@ public sealed partial class PrestigeService : IPrestigeService
         state.Statistics.PerfectRatings = 0;
         state.Statistics.PerfectStreak = 0;
         // BestPerfectStreak bewahren (All-Time-Rekord, motivational wie TotalPlayTimeSeconds)
-        // v2.1.1 (Audit B-H08): PerfectRatingCounts NICHT mehr in Prestige reseten — die Auto-Complete-
+        // PerfectRatingCounts NICHT mehr in Prestige reseten — die Auto-Complete-
         // Mastery (30 Perfects fuer Free / 15 fuer Premium) war frueher der angeblich
         // beste Premium-Benefit, wurde aber jedes Prestige entwertet. Reset jetzt nur
         // noch in Ascension (siehe AscensionService.DoAscension).
@@ -786,7 +786,7 @@ public sealed partial class PrestigeService : IPrestigeService
         state.CurrentTournament = null;
 
         // === RESET: Crafting (immer zurücksetzen, null-safe für alte Saves) ===
-        // V7 (Phase 4 Ressourcen-Plan): Erbstuecke ueberleben Prestige — nur Tier-4-Items.
+        // V7 (): Erbstuecke ueberleben Prestige — nur Tier-4-Items.
         // Solange der dedizierte Prestige-Confirm-Dialog noch keine UI-Wahl bietet, befuellen
         // wir HeirloomItems automatisch mit den wertvollsten T4-Items aus dem Inventar (bis
         // zum Cap). Pass-Spieler bekommen +1 Slot (3 → 4) via GetEffectiveHeirloomSlots.

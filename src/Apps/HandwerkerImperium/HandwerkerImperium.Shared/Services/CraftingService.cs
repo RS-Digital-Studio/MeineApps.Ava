@@ -6,10 +6,10 @@ namespace HandwerkerImperium.Services;
 
 /// <summary>
 /// Verwaltet das Crafting-System mit Produktionsketten.
-/// Rezepte haben 3 Tiers (ab Workshop-Level 50/150/300), Phase 4 ergaenzt Tier 4.
+/// Rezepte haben 3 Tiers (ab Workshop-Level 50/150/300), ergaenzt Tier 4.
 /// Höhere Tiers benötigen Produkte niedrigerer Tiers als Input.
 ///
-/// V7 (Phase 1 Ressourcen-Plan):
+/// V7 ():
 /// - Cross-Workshop-Inputs werden ab Spielerlevel 100 gefordert (Onboarding-Schutz).
 /// - Output-Stack-Limits werden vor StartCrafting validiert (kein Material-Burn).
 /// - Reservierungen aus <see cref="IWarehouseService"/> werden bei Input-Verfuegbarkeit beruecksichtigt.
@@ -19,7 +19,7 @@ public sealed class CraftingService : ICraftingService
     private readonly IGameStateService _gameState;
     private readonly IIncomeCalculatorService _incomeCalculator;
     private readonly IResearchService? _research;
-    // V7 (Phase 1-4 Ressourcen-Plan, Section 8.1): Telemetrie-Events fuer Material-Loop.
+    // V7 (-4 Ressourcen-Plan, Section 8.1): Telemetrie-Events fuer Material-Loop.
     private readonly IAnalyticsService? _analytics;
     // Lock verhindert Race Condition bei schnellem Doppelklick (Materialien doppelt verbraucht)
     private readonly object _craftingLock = new();
@@ -202,7 +202,7 @@ public sealed class CraftingService : ICraftingService
         // Job entfernen
         state.ActiveCraftingJobs.Remove(job);
 
-        // V7 (Phase 1-4 Telemetrie, Plan Section 8.1): material_crafted
+        // V7 (-4 Telemetrie, Plan Section 8.1): material_crafted
         _analytics?.TrackEvent("material_crafted", new Dictionary<string, object?>
         {
             ["product_id"] = outputId,
@@ -251,7 +251,7 @@ public sealed class CraftingService : ICraftingService
         // Geld gutschreiben
         _gameState.AddMoney(totalRevenue);
 
-        // V7 (Phase 1-4 Telemetrie, Plan Section 8.1): material_sold
+        // V7 (-4 Telemetrie, Plan Section 8.1): material_sold
         _analytics?.TrackEvent("material_sold", new Dictionary<string, object?>
         {
             ["product_id"] = productId,
@@ -335,7 +335,7 @@ public sealed class CraftingService : ICraftingService
         CraftingRecipe.GetByOutputProduct(productId);
 
     /// <summary>
-    /// V7 (Phase 4 Ressourcen-Plan): Material-Affinity-Bonus aus den Workern des
+    /// V7 (): Material-Affinity-Bonus aus den Workern des
     /// Workshop-Typs. Wenn Worker-Affinitaet zum Output-Material des Rezepts passt,
     /// gibt es bis zu +20% Crafting-Speed (pro arbeitendem Worker mit Match, gecapped).
     /// </summary>

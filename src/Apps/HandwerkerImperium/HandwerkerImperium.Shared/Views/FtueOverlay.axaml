@@ -10,7 +10,7 @@
              IsVisible="{Binding IsVisible}"
              AutomationProperties.AutomationId="Ftue_Overlay_Root">
 
-  <!-- AAA-Audit P0 FTUE-UI: Spotlight-Overlay zeichnet sich ueber den ganzen Screen.
+  <!-- Spotlight-Overlay zeichnet sich ueber den ganzen Screen.
        Touch-Events durch das Overlay zum Spotlight-Target werden via IsHitTestVisible-False
        am Backdrop ermoeglicht — die Bubble + Continue/Skip-Buttons sind hit-testable. -->
 

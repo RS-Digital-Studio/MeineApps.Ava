@@ -244,7 +244,7 @@
                      VerticalAlignment="Center" />
         </StackPanel>
 
-        <!-- AAA-Audit P2: Empty-State Inventar — zeigt liebevollen CTA statt nichts. -->
+        <!-- Empty-State Inventar — zeigt liebevollen CTA statt nichts. -->
         <Border Classes="Card" Padding="20"
                 IsVisible="{Binding !HasInventoryItems}"
                 AutomationProperties.AutomationId="Crafting_Border_InventoryEmpty">

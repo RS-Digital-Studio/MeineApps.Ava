@@ -21,23 +21,23 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// Haupt-ViewModel für den Spielbildschirm.
 /// Aufgeteilt in Partial Classes:
-///   MainViewModel.cs          - Felder, Constructor, Properties, Event-Handlers, Helpers, Dispose
+///   MainViewModel.cs - Felder, Constructor, Properties, Event-Handlers, Helpers, Dispose
 ///   MainViewModel.Navigation.cs - Tab-Auswahl, Child-Navigation, Back-Button
-///   MainViewModel.Dialogs.cs    - Weiterleitungen an DialogVM, Prestige-Durchführung
-///   MainViewModel.Economy.cs    - Workshop-Kauf/Upgrade, Orders, Rush, Delivery, Prestige-Banner
-///   MainViewModel.Missions.cs   - Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin
-///   MainViewModel.Init.cs       - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
+///   MainViewModel.Dialogs.cs - Weiterleitungen an DialogVM, Prestige-Durchführung
+///   MainViewModel.Economy.cs - Workshop-Kauf/Upgrade, Orders, Rush, Delivery, Prestige-Banner
+///   MainViewModel.Missions.cs - Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin
+///   MainViewModel.Init.cs - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// Dialog-Logik extrahiert nach DialogViewModel.cs (Alert, Confirm, Story, Hint, Achievement, Prestige-Dialog).
 /// </summary>
 public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost
 {
     // Phase-1-Services (Refactoring 17.04.2026 — Plan velvety-booping-peacock).
-    // Delegieren vorerst zurueck an MainViewModel. Phase 2/3 zieht Logik in die Services um.
+    // Delegieren vorerst zurueck an MainViewModel. /3 zieht Logik in die Services um.
     private readonly Services.Interfaces.INavigationService? _navigationService;
     private readonly Services.Interfaces.IDialogOrchestrator? _dialogOrchestrator;
     private readonly Services.Interfaces.IMiniGameNavigator? _miniGameNavigator;
 
-    // INavigationHost-Implementierung: siehe MainViewModel.Host.cs (Phase 2)
+    // INavigationHost-Implementierung: siehe MainViewModel.Host.cs ()
 
     private readonly IGameStateService _gameStateService;
     private readonly IGameLoopService _gameLoopService;
@@ -63,11 +63,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IPlayGamesService? _playGamesService;
     // Telemetrie (REST via FirebaseService, keine nativen SDKs noetig)
     private readonly IAnalyticsService? _analyticsService;
-    /// <summary>AAA-Audit P0 Zerlegungs-Sprint: Cinematic-Logik aus MainViewModel extrahiert.</summary>
+    /// <summary>Cinematic-Logik aus MainViewModel extrahiert.</summary>
     private readonly ICinematicCoordinator? _cinematicCoordinator;
-    /// <summary>AAA-Audit P0 Zerlegungs-Sprint: Reputation-Tier-Up-Effekte extrahiert.</summary>
+    /// <summary>Reputation-Tier-Up-Effekte extrahiert.</summary>
     private readonly IReputationTierEffects? _reputationTierEffects;
-    /// <summary>AAA-Audit P0 FTUE-UI: Optionales Spotlight-Overlay-VM (per DI injiziert).</summary>
+    /// <summary>Optionales Spotlight-Overlay-VM (per DI injiziert).</summary>
     public FtueOverlayViewModel? FtueOverlayVM { get; }
     private readonly ICloudSaveService? _cloudSaveService;
     private readonly IRemoteConfigService? _remoteConfigService;
@@ -80,7 +80,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IRebirthService? _rebirthService;
     private readonly ITournamentService? _tournamentService;
     private readonly INotificationCenterService _notificationCenterService;
-    // v2.0.39 Audit-Fix U1: WhatsNew-Dialog beim ersten Start nach Update.
+    // WhatsNew-Dialog beim ersten Start nach Update.
     private readonly IWhatsNewService? _whatsNewService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
@@ -293,7 +293,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _rebirthService = rebirthService;
         _tournamentService = tournamentService;
         GameJuiceEngine = gameJuiceEngine;
-        // AAA-Audit P2 Accessibility: ReduceMotion an GameJuiceEngine durchreichen,
+        // ReduceMotion an GameJuiceEngine durchreichen,
         // damit Confetti/CoinFly/Sparkle/RadialBurst gedaempft werden.
         GameJuiceEngine.ReduceMotion = ReduceMotion;
 
@@ -336,7 +336,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         AscensionViewModel = ascensionViewModel;
         LuckySpinViewModel = luckySpinViewModel;
 
-        // Feature-VMs (Phase 3 der MainViewModel-Zerlegung, 17.04.2026)
+        // Feature-VMs ( der MainViewModel-Zerlegung, 17.04.2026)
         HeaderVM = headerViewModel;
         PrestigeBannerVM = prestigeBannerViewModel;
         GoalBannerVM = goalBannerViewModel;
@@ -439,7 +439,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // EconomyFeatureViewModel initialisieren (nach DialogVM, da es DialogVM als IDialogService nutzt)
         InitializeEconomyVM();
         DialogVM.DeferredDialogCheckRequested += CheckDeferredDialogs;
-        // P2.2 AAA-Audit: Story-Skip-Tracking fuer Onboarding-Funnel-Analyse.
+        // Story-Skip-Tracking fuer Onboarding-Funnel-Analyse.
         DialogVM.StorySkipRequested += chapterId => _analyticsService?.TrackEvent(
             AnalyticsEvents.OnboardingStorySkipped,
             new Dictionary<string, object?> { ["chapter_id"] = chapterId });
@@ -449,7 +449,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         DialogVM.FloatingTextRequested += _dialogFloatingTextHandler;
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
         _prestigeService.MilestoneReached += OnPrestigeMilestoneReached;
-        // AAA-Audit P0 Zerlegungs-Sprint: Cinematic-Subscription an Coordinator delegiert.
+        // Cinematic-Subscription an Coordinator delegiert.
         // CinematicCoordinator broadcastet die UI-thread-resolvte Daten an den hier registrierten Hook.
         if (_cinematicCoordinator != null)
         {

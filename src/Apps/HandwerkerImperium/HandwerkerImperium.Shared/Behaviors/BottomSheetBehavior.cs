@@ -32,7 +32,7 @@ public static class BottomSheetBehavior
     public static readonly AttachedProperty<double> SlideDistanceProperty =
         AvaloniaProperty.RegisterAttached<Control, double>("SlideDistance", typeof(BottomSheetBehavior), 800.0);
 
-    // v2.1.1 (Audit H-H04): Pro-Element CancellationToken — wenn der User waehrend einer laufenden
+    // Pro-Element CancellationToken — wenn der User waehrend einer laufenden
     // Animation neu toggled (Open→Close→Open in unter 300ms), wird die vorherige Animation
     // abgebrochen. Ohne Cancellation konnte ein laufender "Close"-Task das Element auf
     // IsVisible=false setzen, obwohl der User es gerade wieder geoeffnet hatte.

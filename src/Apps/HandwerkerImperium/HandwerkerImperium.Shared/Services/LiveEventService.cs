@@ -5,7 +5,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// AAA-Audit P1: LiveEventService — Foundation. RemoteConfig liefert Event-Daten,
+/// LiveEventService — Foundation. RemoteConfig liefert Event-Daten,
 /// Service tracked Score + Reward-Auszahlungen.
 ///
 /// RemoteConfig-Schluessel:
@@ -27,7 +27,7 @@ public sealed class LiveEventService : ILiveEventService
     public LiveEvent? CurrentEvent { get; private set; }
     public LiveEventTemplate? CurrentTemplate { get; private set; }
 
-    /// <summary>Standard-Reward-Tiers (Audit: 3-Stufen).</summary>
+    /// <summary>Standard-Reward-Tiers .</summary>
     public IReadOnlyList<int> RewardTierThresholds { get; } = new[] { 100, 500, 2000 };
 
     public bool IsActive

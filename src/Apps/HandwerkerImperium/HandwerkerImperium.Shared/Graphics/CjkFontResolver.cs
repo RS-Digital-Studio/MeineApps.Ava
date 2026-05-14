@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// P1.2 AAA-Audit Phase 1 (08.05.2026): CJK-Font-Resolver.
+///  (08.05.2026): CJK-Font-Resolver.
 ///
 /// Problem: Wenn die App-Sprache zh-CN/zh-TW/ja/ko ist, rendern unsere Skia-Renderer
 /// CJK-Glyphen als ☐☐☐ Tofu-Boxes weil <see cref="SKFont"/> ohne expliziten Typeface
@@ -14,8 +14,8 @@ namespace HandwerkerImperium.Graphics;
 /// (oder Bundled-Font wenn beigelegt). Renderer holen sich beim ersten Render-Call
 /// das passende Typeface und cachen es.
 ///
-/// Phase 1 (diese Klasse): Resolver + System-Fallback. Renderer-Updates folgen iterativ.
-/// Phase 2 (zukünftig): Bundled-Font (NotoSansCJK ~10MB) für Glyph-Vollständigkeit.
+/// (diese Klasse): Resolver + System-Fallback. Renderer-Updates folgen iterativ.
+///  (zukünftig): Bundled-Font (NotoSansCJK ~10MB) für Glyph-Vollständigkeit.
 /// </summary>
 public static class CjkFontResolver
 {
@@ -104,8 +104,8 @@ public static class CjkFontResolver
     }
 
     /// <summary>
-    /// Diagnose-Helper: Listet die geladenen CJK-Faces fuer eine Audit-Tabelle.
-    /// Wird vom CJK-Audit-Test in der Test-Suite genutzt.
+    /// Diagnose-Helper: Listet die geladenen CJK-Faces fuer eine Tabelle.
+    /// Wird vom CJK-Test in der Test-Suite genutzt.
     /// </summary>
     public static (string Lang, string? FamilyName)[] AuditAvailableFaces()
     {

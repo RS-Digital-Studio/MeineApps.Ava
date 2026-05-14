@@ -21,7 +21,7 @@ public enum DeliveryType
     SpeedBoost,
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): Tier-1-Material-Lieferung (1-10 Stueck eines zufaelligen
+    /// V7 (): Tier-1-Material-Lieferung (1-10 Stueck eines zufaelligen
     /// Materials). Plan Section 3.5 — verdraengt Geld-Lieferung mit 25% Wahrscheinlichkeit.
     /// </summary>
     Material

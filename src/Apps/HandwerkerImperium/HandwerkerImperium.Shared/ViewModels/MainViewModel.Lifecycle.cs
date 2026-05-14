@@ -4,7 +4,7 @@ namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
 /// App-Lifecycle (Pause/Resume), Live-Order-Spawn-Handler, Dispose.
-/// AAA-Audit P0 Aufspaltung: aus MainViewModel.cs extrahiert (12.05.2026).
+/// aus MainViewModel.cs extrahiert (12.05.2026).
 /// </summary>
 public sealed partial class MainViewModel
 {
@@ -38,7 +38,7 @@ public sealed partial class MainViewModel
         if (_gameLoopService.IsRunning)
             await _gameLoopService.PauseAsync().ConfigureAwait(false);
 
-        // v2.1.1 (Audit P-C02): Bei App-Pause sind keine Worker-Renders aktiv → die gepruneten
+        // Bei App-Pause sind keine Worker-Renders aktiv → die gepruneten
         // Bitmaps koennen sicher Native-Memory freigeben.
         Graphics.WorkerAvatarRenderer.FlushPendingDispose();
     }
@@ -145,7 +145,7 @@ public sealed partial class MainViewModel
 
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
         _prestigeService.MilestoneReached -= OnPrestigeMilestoneReached;
-        // AAA-Audit P0 Zerlegungs-Sprint: Cinematic-Subscription via Coordinator
+        // Cinematic-Subscription via Coordinator
         if (_cinematicCoordinator != null)
             _cinematicCoordinator.CinematicReady -= OnCinematicReadyFromCoordinator;
         else

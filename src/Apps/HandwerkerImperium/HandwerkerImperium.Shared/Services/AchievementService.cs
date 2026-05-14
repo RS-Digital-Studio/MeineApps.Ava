@@ -47,7 +47,7 @@ public sealed class AchievementService : IAchievementService, IDisposable
         _ascensionService.AscensionCompleted += OnAscensionCompleted;
         _rebirthService.RebirthCompleted += OnRebirthCompleted;
 
-        // v2.1.1 (Audit H-H08): Bei State-Wechsel (Save-Import / Cloud-Restore / Reset) den
+        // Bei State-Wechsel (Save-Import / Cloud-Restore / Reset) den
         // Cache neu laden. Frueher zeigte _unlockedCount + _achievements[*].IsUnlocked auf
         // verwaiste Objekte aus dem ALTEN State, weil LoadFromGameState nur im Ctor + Reset() lief.
         _gameStateService.StateLoaded += (_, _) => Reset();
@@ -260,7 +260,7 @@ public sealed class AchievementService : IAchievementService, IDisposable
                 "worker_sss_tier" => hasSSS ? 1 : 0,
                 "worker_legendary" => hasLegendary ? 1 : 0,
 
-                // === NEUE ACHIEVEMENTS (Phase 2.2) ===
+                // === NEUE ACHIEVEMENTS (.2) ===
 
                 // Prestige-Tier (erste Stufe jedes Tiers)
                 "prestige_bronze" => state.Prestige.BronzeCount,
@@ -309,19 +309,19 @@ public sealed class AchievementService : IAchievementService, IDisposable
                 "all_mastertools" => state.CollectedMasterTools?.Count ?? 0,
                 "equipment_all_rarities" => distinctRarities,
 
-                // === ASCENSION-ACHIEVEMENTS (Phase 4) ===
+                // === ASCENSION-ACHIEVEMENTS () ===
                 "asc_first" or "asc_5" or "asc_10"
                     => state.Ascension.AscensionLevel,
                 "asc_perk_first" => state.Ascension.Perks.Count > 0 ? 1 : 0,
                 "asc_perks_max" => CountMaxedPerks(state),
 
-                // === REBIRTH-ACHIEVEMENTS (Phase 4) ===
+                // === REBIRTH-ACHIEVEMENTS () ===
                 "rebirth_first" => totalRebirthStars > 0 ? 1 : 0,
                 "rebirth_stars_10" => totalRebirthStars,
                 "rebirth_ws_5stars" => maxRebirthStars,
                 "rebirth_all_ws" => wsWithAtLeast1Star,
 
-                // === LATE-GAME (Phase 4) ===
+                // === LATE-GAME () ===
                 "all_ws_level1000" => wsLevel1000Count,
 
                 // === AUTO-PRODUKTION & CRAFTING ===

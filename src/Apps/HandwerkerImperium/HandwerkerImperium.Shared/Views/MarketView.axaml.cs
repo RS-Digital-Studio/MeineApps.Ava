@@ -10,7 +10,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Views;
 
 /// <summary>
-/// V7 (Phase 3 Ressourcen-Plan): Material-Markt-Seite.
+/// V7 (): Material-Markt-Seite.
 /// ViewLocator findet diese ueber Namespace-Konvention (.Views.MarketView fuer .ViewModels.MarketViewModel).
 ///
 /// Render-Loop (15 fps fuer Pulse-Animation des "Jetzt"-Indikators) wird nur aktiv wenn das

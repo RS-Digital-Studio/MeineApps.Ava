@@ -37,7 +37,7 @@ public sealed class TutorialState
     public bool HasSeenTutorialHint { get; set; }
 
     /// <summary>
-    /// AAA-Audit P0: Scripted FTUE-State (10-Schritt-Tutorial). Default-init reicht —
+    /// Scripted FTUE-State (10-Schritt-Tutorial). Default-init reicht —
     /// SaveGame-Migration nicht noetig, weil das Sub-Objekt bei aelteren Saves frisch
     /// erzeugt wird.
     /// </summary>

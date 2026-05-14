@@ -3,7 +3,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// V7 (Phase 3 Ressourcen-Plan): Material-Markt mit deterministischer Preis-Dynamik.
+/// V7 (): Material-Markt mit deterministischer Preis-Dynamik.
 /// Pro Spieler + UTC-Tag deterministisch (Seed = PlayerId.GetHashCode() ^ UtcDay),
 /// damit Save-Scumming verhindert wird. Innerhalb eines Tages oszilliert der Preis
 /// in einer Sinus-Welle (+/-50%) um den Basis-Preis.

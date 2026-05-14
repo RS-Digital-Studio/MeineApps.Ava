@@ -221,7 +221,7 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        // v2.1.1 (Audit FB-H08): Throttle pro guildId. Nach einem Gildenwechsel zeigt _lastBossCheck sonst
+        // Throttle pro guildId. Nach einem Gildenwechsel zeigt _lastBossCheck sonst
         // auf die alte Gilde → 30s lang werden die Boss-Daten der neuen Gilde nicht geladen.
         if (membership.GuildId == _lastBossCheckGuildId
             && DateTime.UtcNow - _lastBossCheck < TimeSpan.FromSeconds(30))
@@ -478,7 +478,7 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
         var uid = _firebase.PlayerId;
         if (string.IsNullOrEmpty(uid)) return;
 
-        // Duplikat-Schutz: Pref-Key inkl. guildId — v2.1.1 (Audit FB-M06): frueher teilte sich
+        // Duplikat-Schutz: Pref-Key inkl. guildId — frueher teilte sich
         // ein einziger Key ueber alle Gilden, sodass nach Gilden-Wechsel die Belohnung fuer
         // den ersten Boss der neuen Gilde stillschweigend ausblieb wenn die Boss-StartedAt
         // zufaellig identisch zur alten Gilde war (Race im Wochenstart).

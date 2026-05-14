@@ -7,7 +7,7 @@
              x:DataType="vm:CrossPromoViewModel"
              x:CompileBindings="True">
 
-  <!-- AAA-Audit P1: House-Ad-Karte fuer Cross-Promotion zwischen den 11 eigenen Apps. -->
+  <!-- House-Ad-Karte fuer Cross-Promotion zwischen den 11 eigenen Apps. -->
   <!-- Tages-Rotation, klickbar, Play-Store-Deep-Link. Keine externe Abhaengigkeit.   -->
   <StackPanel Spacing="8">
     <TextBlock Text="{loc:Translate CrossPromoSectionTitle}"

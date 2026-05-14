@@ -18,7 +18,7 @@ namespace HandwerkerImperium.Desktop;
 /// Sounds liegen unter <c>Assets/Sounds/{name}.ogg</c> bzw. <c>Assets/Music/{name}.ogg</c>
 /// im Output-Verzeichnis (kopiert via AvaloniaResource → bin/...).
 ///
-/// Behebt AAA-Audit-Befund "Desktop-AudioService ist Stub" (P2).
+/// Behebt Befund "Desktop-AudioService ist Stub" (P2).
 /// </summary>
 public sealed class DesktopAudioService : IAudioService, IDisposable
 {

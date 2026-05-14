@@ -27,7 +27,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     protected readonly IAudioService _audioService;
     protected readonly IRewardedAdService _rewardedAdService;
     protected readonly ILocalizationService _localizationService;
-    /// <summary>AAA-Audit P1 Mini-Games-Telemetrie: optional injected via App.Services.</summary>
+    /// <summary>optional injected via App.Services.</summary>
     protected IAnalyticsService? _analyticsService;
     protected DispatcherTimer? _timer;
     protected bool _disposed;
@@ -208,7 +208,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
             System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] MiniGame Timer-Tick-Exception ({GetType().Name}): {ex}");
             try { _timer?.Stop(); } catch { /* Timer-Stop Fehler ignorieren */ }
 
-            // v2.1.1 (Audit H-H07): Bei Exception das Spiel als Miss abschliessen, damit der
+            // Bei Exception das Spiel als Miss abschliessen, damit der
             // Spieler kein "stehengebliebenes Spiel" ohne Result-Anzeige bekommt. Result-Setter
             // darf nicht erneut werfen — sonst sieht der Spieler die UI nicht.
             try
@@ -304,7 +304,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         _rewardedAdService = rewardedAdService;
         _localizationService = localizationService;
         _coopOrderService = coopOrderService;
-        // v2.1.1 (Audit FB-M03): Analytics per Constructor-Injection statt App.Services-Lookup.
+        // Analytics per Constructor-Injection statt App.Services-Lookup.
         // DI-Resolution beim VM-Build statt String-getypt zur Laufzeit — keine versteckte
         // Abhaengigkeit zum statischen App.Services-Singleton mehr.
         _analyticsService = analyticsService;
@@ -475,10 +475,10 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         if (rating == MiniGameRating.Perfect)
             _gameStateService.RecordPerfectRating(GetCurrentMiniGameType());
 
-        // AAA-Audit P1 Mini-Games-Telemetrie: Welche Mini-Games werden gespielt?
-        // Ergebnisse landen via Analytics-Pipeline in Firebase und ermoeglichen den
-        // Bottom-50%-Audit (welche Mini-Games werden NICHT gespielt → killen oder polieren).
-        // v2.1.1 (Audit FB-M03): _analyticsService kommt jetzt per Constructor-Injection
+        // Welche Mini-Games werden gespielt?
+        // Ergebnisse landen via Analytics-Pipeline in Firebase und zeigen, welche
+        // Mini-Games unterproportional gespielt werden (Kandidaten zum Polieren oder Killen).
+        // _analyticsService kommt jetzt per Constructor-Injection
         // (siehe Ctor). Frueher hier App.Services.GetService — der Service-Locator-Antipattern
         // koppelte die VM an das statische App-Singleton.
         try

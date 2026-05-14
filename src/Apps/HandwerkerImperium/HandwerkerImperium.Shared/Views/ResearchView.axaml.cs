@@ -41,7 +41,7 @@ public partial class ResearchView : UserControl
     // STATE
     // ═══════════════════════════════════════════════════════════════════════
 
-    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    // DispatcherTimer durch IFrameClock-Subscription ersetzt.
     private Services.Interfaces.IFrameClock? _frameClock;
     private bool _renderActive;
     private ResearchViewModel? _vm;

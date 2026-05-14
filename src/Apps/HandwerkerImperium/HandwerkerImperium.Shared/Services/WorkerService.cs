@@ -6,7 +6,7 @@ namespace HandwerkerImperium.Services;
 
 /// <summary>
 /// Manages worker lifecycle: hiring, firing, training, resting, mood, fatigue.
-/// v2.1.1 (Audit C-C03): Eigener Lock entfernt — alle State-Mutationen unter
+/// Eigener Lock entfernt — alle State-Mutationen unter
 /// <see cref="IGameStateService.ExecuteWithLock"/> (sonst Race mit SaveAsync-Serializer).
 /// </summary>
 public sealed class WorkerService : IWorkerService
@@ -235,7 +235,7 @@ public sealed class WorkerService : IWorkerService
 
     public void UpdateWorkerStates(double deltaSeconds)
     {
-        // v2.1.1 (Audit C-C03): State-Mutation + Events trennen, Events ausserhalb Lock feuern.
+        // State-Mutation + Events trennen, Events ausserhalb Lock feuern.
         var moodWarningWorkers = new List<Worker>();
         var levelUpWorkers = new List<Worker>();
         var promotionReadyWorkers = new List<Worker>();
@@ -337,7 +337,7 @@ public sealed class WorkerService : IWorkerService
         foreach (var (w, wsType) in quitWorkers)
         {
             WorkerQuit?.Invoke(this, w);
-            // P1.1 AAA-Audit: Mood-Quit ist Retention-relevantes Signal.
+            // Mood-Quit ist Retention-relevantes Signal.
             _analyticsService?.TrackEvent(AnalyticsEvents.WorkerQuit, new Dictionary<string, object?>
             {
                 ["worker_id"] = w.Id,
@@ -682,7 +682,7 @@ public sealed class WorkerService : IWorkerService
 
         if (promoted)
         {
-            // P1.1 AAA-Audit: Praktikanten-Promotion ist Onboarding-Funnel-Signal.
+            // Praktikanten-Promotion ist Onboarding-Funnel-Signal.
             _analyticsService?.TrackEvent(AnalyticsEvents.WorkerPromoted, new Dictionary<string, object?>
             {
                 ["worker_id"] = workerId,

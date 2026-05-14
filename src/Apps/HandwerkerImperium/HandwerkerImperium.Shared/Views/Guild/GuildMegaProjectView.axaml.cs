@@ -4,7 +4,7 @@ using HandwerkerImperium.ViewModels.Guild;
 namespace HandwerkerImperium.Views.Guild;
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Bauplatz-View.
+/// V7 (, Plan Section 3.9): Mega-Projekt-Bauplatz-View.
 /// ViewLocator findet diese ueber Namespace-Konvention:
 /// .ViewModels.Guild.GuildMegaProjectViewModel → .Views.Guild.GuildMegaProjectView.
 ///

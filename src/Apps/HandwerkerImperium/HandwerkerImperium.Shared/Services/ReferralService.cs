@@ -3,7 +3,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// AAA-Audit P1: Friend-Invite-Reward-Loop. Verwaltet Codes + Tier-Auszahlungen.
+/// Friend-Invite-Reward-Loop. Verwaltet Codes + Tier-Auszahlungen.
 ///
 /// Datenfluss:
 /// - Beim ersten Start wird via <see cref="EnsureOwnCode"/> ein 6-stelliger Code generiert.

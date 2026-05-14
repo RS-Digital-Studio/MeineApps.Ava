@@ -100,7 +100,7 @@ public class BattlePass
     /// <summary>
     /// Saison-Dauer in Tagen.
     ///
-    /// AAA-Audit P2 (09.05.2026): Reduziert von 42 → 30 Tage. State-of-the-Art
+    /// (09.05.2026): Reduziert von 42 → 30 Tage. State-of-the-Art
     /// Mobile-Idle-Standard (Fortnite Battle Pass, Habby): kuerzere Saisons erzeugen
     /// staerkeren Daily-Drive-Loop, weil 90/42-Tage-Rhythmen den Spieler zum Aufschieben
     /// ermutigen. 30 Tage = 12 Saisons/Jahr statt 8.7, jede mit eigenem Theme.
@@ -264,8 +264,7 @@ public class BattlePass
     public static List<BattlePassReward> GeneratePremiumRewards(decimal baseIncome, int seasonNumber = 1)
     {
         var rewards = new List<BattlePassReward>();
-        // AAA-Audit P2 (09.05.2026): Premium-Spread war bei ~2.4x Free, Audit-Empfehlung 3.5x.
-        // baseMoney von *120 → *180 + GS-Boosts unten (Capstone 100→150, Milestone 30→50,
+        // (09.05.2026): Premium-Spread war bei ~2.4x Free, Empfehlung // baseMoney von *120 → *180 + GS-Boosts unten (Capstone 100→150, Milestone 30→50,
         // Tier 0-29 GS von 10/2 → 12/3) bringen den Premium-Spread auf ~3x — der Sweet-Spot
         // damit Premium-Kauf klar lohnt, ohne Free-Spieler zu frustrieren.
         decimal baseMoney = Math.Max(1500m, baseIncome * 180m);
@@ -291,12 +290,12 @@ public class BattlePass
                     IsFree = false,
                     MoneyReward = baseMoney * (1 + i * 0.75m),
                     XpReward = 100 + i * 50,
-                    // AAA-Audit P2: 10/2 → 12/3 GS fuer engeren Premium-Spread.
+                    // 10/2 → 12/3 GS fuer engeren Premium-Spread.
                     GoldenScrewReward = (i + 1) % 3 == 0 ? 12 : 3,
                     DescriptionKey = $"BPPremium_{i}"
                 });
             }
-            // Tier 49 (Premium Capstone): 150 GS + saisonaler Reward (Audit P2: 100→150)
+            // Tier 49 (Premium Capstone): 150 GS + saisonaler Reward 
             else if (i == MaxTier - 1)
             {
                 rewards.Add(new BattlePassReward
@@ -324,7 +323,7 @@ public class BattlePass
                     DescriptionKey = "BPPremiumSpeedBoost2h"
                 });
             }
-            // Tier 39 (40): 50 GS Meilenstein (Audit P2: 30→50 fuer 3x Spread)
+            // Tier 39 (40): 50 GS Meilenstein 
             else if (i == 39)
             {
                 rewards.Add(new BattlePassReward

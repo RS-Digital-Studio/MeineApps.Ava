@@ -1,7 +1,7 @@
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// P1.3 AAA-Audit (08.05.2026, Foundation): Tagesabhängiges IAP-Bundle.
+/// (08.05.2026, Foundation): Tagesabhängiges IAP-Bundle.
 ///
 /// Robert hat hier nur die Foundation. Volle Umsetzung:
 /// - 7 Slots (Mo–So) mit jeweils SKU + Bonus-Items
@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Models;
 /// - Server-getrieben via <see cref="RemoteConfigKeys.DailyBundleSkus"/> (JSON-Array)
 ///
 /// Aktiver Block: <see cref="IDailyBundleService"/> +
-/// <c>ShopViewModel</c>-Integration als zukünftiger Sprint (~2 Wochen).
+/// <c>ShopViewModel</c>-Integration als noch offen.
 /// </summary>
 public sealed class DailyBundleOffer
 {

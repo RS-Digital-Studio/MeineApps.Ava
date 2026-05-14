@@ -22,7 +22,7 @@ public partial class GuildResearchView : UserControl
     // Gecachte Liste für Render-Loop (vermeidet ToList() pro Frame bei 30fps)
     private List<GuildResearchDisplay> _cachedItems = [];
     private object? _lastGuildResearchRef;
-    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    // DispatcherTimer durch IFrameClock-Subscription ersetzt.
     private Services.Interfaces.IFrameClock? _frameClock;
     private bool _renderActive;
     private SKCanvasView? _treeCanvas;

@@ -58,7 +58,7 @@
         </StackPanel>
       </Button>
 
-      <!-- V7 (Phase 3 Ressourcen-Plan): Markt-Navigation -->
+      <!-- V7 (): Markt-Navigation -->
       <Button Grid.Column="1" Classes="Text" Padding="12,10" CornerRadius="10" MinHeight="48"
               Command="{Binding WarehouseVM.OpenMarketCommand}"
               AutomationProperties.AutomationId="Imperium_Btn_OpenMarket">

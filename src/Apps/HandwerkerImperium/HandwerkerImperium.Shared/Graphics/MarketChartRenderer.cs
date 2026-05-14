@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// V7 (Phase 3 Ressourcen-Plan): SkiaSharp-Renderer fuer den 24h-Preisverlauf eines Materials.
+/// V7 (): SkiaSharp-Renderer fuer den 24h-Preisverlauf eines Materials.
 ///
 /// Zeichnet eine geglaettete Bezier-Linie ueber 24 Stunden mit Min/Max-Annotation, der aktuellen
 /// Stunde als pulsierender Punkt, einem grid und Gradient-Fuellung unter der Kurve.
@@ -58,7 +58,7 @@ public sealed class MarketChartRenderer : IDisposable
     private readonly SKFont _valueFont = new() { Size = 11f, Edging = SKFontEdging.Antialias, Embolden = true };
     private readonly SKPath _bezierPath = new();
     private readonly SKPath _fillPath = new();
-    // v2.1.1 (Audit P-H02): wiederverwendbarer Bezier-Punkte-Buffer — frueher SKPoint[24] pro
+    // wiederverwendbarer Bezier-Punkte-Buffer — frueher SKPoint[24] pro
     // Frame allokiert (360 Heap-Allocs/s bei 15fps).
     private readonly SKPoint[] _pointsBuffer = new SKPoint[24];
 

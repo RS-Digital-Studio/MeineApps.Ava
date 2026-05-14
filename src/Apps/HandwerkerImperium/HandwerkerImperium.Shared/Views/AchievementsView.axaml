@@ -90,7 +90,7 @@
       </StackPanel>
     </Border>
 
-    <!-- Empty-State (AAA-Audit P2): Wiederverwendbarer EmptyStateCard-Pattern. -->
+    <!-- Empty-State (P2): Wiederverwendbarer EmptyStateCard-Pattern. -->
     <ctrls:EmptyStateCard Grid.Row="2"
                           IsVisible="{Binding IsEmpty}"
                           Icon="TrophyOutline"

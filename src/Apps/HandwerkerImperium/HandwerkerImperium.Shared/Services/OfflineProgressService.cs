@@ -138,7 +138,7 @@ public sealed class OfflineProgressService : IOfflineProgressService
         }
 
         // RushBoost: 2-3x Multiplikator (Prestige-Shop Rush-Verstärker)
-        // v2.1.1 (Audit B-M06): rushMultiplier wird hart bei 4x gecappt — vorher konnte der Spieler durch
+        // rushMultiplier wird hart bei 4x gecappt — vorher konnte der Spieler durch
         // Prestige-Shop-Items >5x erreichen, multiplikativ mit SpeedBoost 2x = >10x auf
         // Offline-Earnings. Mit dem Cap maximal 4x * 2x = 8x (kontrollierbar).
         decimal rushBoostSeconds = 0m;
@@ -212,8 +212,8 @@ public sealed class OfflineProgressService : IOfflineProgressService
     /// <summary>
     /// Simuliert Worker-Stimmung, Erschöpfung, Training und XP während Offline-Zeit.
     /// 2-Phasen-Architektur pro Worker:
-    /// Phase 1: Aktivität simulieren (Training/Arbeit) → restHours berechnen
-    /// Phase 2: Rest-Recovery für alle Worker die am Ende ruhen
+    /// : Aktivität simulieren (Training/Arbeit) → restHours berechnen
+    /// : Rest-Recovery für alle Worker die am Ende ruhen
     /// Berücksichtigt alle Modifikatoren identisch mit WorkerService/GameLoopService.
     /// </summary>
     private void SimulateWorkerStatesOffline(GameState state, TimeSpan offlineDuration)
@@ -272,7 +272,7 @@ public sealed class OfflineProgressService : IOfflineProgressService
         {
             foreach (var worker in ws.Workers)
             {
-                // Phase 1: Aktivität simulieren, restHours für anschließende Ruhe berechnen
+                // : Aktivität simulieren, restHours für anschließende Ruhe berechnen
                 decimal restHours = 0m;
 
                 if (worker.IsTraining)
@@ -291,7 +291,7 @@ public sealed class OfflineProgressService : IOfflineProgressService
                         prestigeMoodReduction, passiveMoodRecovery, out restHours);
                 }
 
-                // Phase 2: Rest-Recovery für ALLE Worker die jetzt ruhen
+                // : Rest-Recovery für ALLE Worker die jetzt ruhen
                 if (worker.IsResting && restHours > 0)
                     SimulateRestRecovery(worker, restHours, canteen);
 

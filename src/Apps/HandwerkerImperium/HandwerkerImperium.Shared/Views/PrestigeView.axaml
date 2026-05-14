@@ -124,7 +124,7 @@
                        Foreground="{DynamicResource TextMutedBrush}"
                        IsVisible="{Binding DialogVM.PrestigeConfirmation.CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-            <!-- v2.1.1 (Audit U-C06): Verlust-Liste prominent rot anzeigen. Frueher war der
+            <!-- Verlust-Liste prominent rot anzeigen. Frueher war der
                  Confirm-Bereich komplett in Gains-Gruen — der Spieler sah die rote
                  Verlust-Liste nur im Banner, NICHT im finalen Confirm. Schwerer
                  Frust-Trigger nach dem ersten Prestige. -->
@@ -149,7 +149,7 @@
         </Border>
 
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl    -->
+        <!-- V7 (, Section 3.8): Heirloom-Wahl    -->
         <!-- ═══════════════════════════════════════════════════════════ -->
         <Border Classes="CardElevated" CornerRadius="12" Padding="14"
                 IsVisible="{Binding DialogVM.PrestigeConfirmation.HasHeirloomCandidates}"

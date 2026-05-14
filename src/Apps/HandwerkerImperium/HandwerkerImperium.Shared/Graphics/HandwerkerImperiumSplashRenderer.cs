@@ -28,7 +28,7 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
     private float _hammerPhase; // 0-1 zyklisch
     private const float HammerCycleDuration = 1.5f;
 
-    // --- AAA-Audit P2 Mascot: Splash-Start-Zeit fuer Hans-Idle-Animation ---
+    // --- Splash-Start-Zeit fuer Hans-Idle-Animation ---
     private readonly DateTime _splashStart = DateTime.UtcNow;
 
     // --- Gecachte Paints (kein per-frame Allokation) ---
@@ -248,7 +248,7 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
         RenderImpactSparks(canvas, w, h);
         RenderEmbers(canvas, w, h);
 
-        // AAA-Audit P2 Mascot-Brand-Pass: Meister Hans als kleines Portrait
+        // Meister Hans als kleines Portrait
         // unten rechts im Splash. Nutzt MeisterHansRenderer (AI-Bitmap mit
         // prozeduralem Fallback) — schon im Game integriert.
         var hansSize = Math.Min(w * 0.18f, 96f);
@@ -503,19 +503,19 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
         float rotation;
         if (_hammerPhase < 0.4f)
         {
-            // Phase 0-0.4: Hammer hebt sich (0° → -30°)
+            // -0.4: Hammer hebt sich (0° → -30°)
             float t = _hammerPhase / 0.4f;
             rotation = -30f * t;
         }
         else if (_hammerPhase < 0.6f)
         {
-            // Phase 0.4-0.6: Hammer schlägt runter (-30° → +5°)
+            // .4-0.6: Hammer schlägt runter (-30° → +5°)
             float t = (_hammerPhase - 0.4f) / 0.2f;
             rotation = -30f + 35f * t;
         }
         else
         {
-            // Phase 0.6-1.0: Pause bei +5° → 0°
+            // .6-1.0: Pause bei +5° → 0°
             float t = (_hammerPhase - 0.6f) / 0.4f;
             rotation = 5f * (1f - t);
         }

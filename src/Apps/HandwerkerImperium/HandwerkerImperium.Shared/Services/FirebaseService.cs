@@ -39,7 +39,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     private string? _idToken;
     private string? _refreshToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
-    // v2.1.1 (Audit FB-H03/P-M08): Dediziertes Auth-Cooldown-Feld. Nach einem dauerhaft fehlgeschlagenen
+    // v2.1.1 Dediziertes Auth-Cooldown-Feld. Nach einem dauerhaft fehlgeschlagenen
     // Token-Refresh nicht bei jedem Request erneut versuchen — frueher wurde dafuer ein
     // Fake-Token ("expired_cooldown") in _idToken missbraucht, der einen Infinite-401-Loop
     // ausloeste, weil er als gueltiger Token an Firebase gesendet wurde.
@@ -163,7 +163,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
     private async Task SignUpAnonymouslyAsync()
     {
-        // v2.1.1 (Audit FB-H01): Wenn noch ein gueltiger alter Account existiert (z.B. manueller Wechsel),
+        // Wenn noch ein gueltiger alter Account existiert (z.B. manueller Wechsel),
         // den verwaisten auth_to_player-Eintrag mit dem ALTEN Token loeschen — sonst mappen
         // zwei UIDs auf dieselbe PlayerId (doppelte Schreibrechte). Bei abgelaufenem Token
         // ist das Loeschen nicht moeglich (Rule erlaubt nur den Owner) — dann bleibt der
@@ -288,7 +288,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 response = await _httpClient.GetAsync(url);
             }
 
-            // v2.1.1 (Audit FB-H02): IsOnline spiegelt den TATSAECHLICHEN Erfolg — ein 401/500 darf
+            // IsOnline spiegelt den TATSAECHLICHEN Erfolg — ein 401/500 darf
             // nicht faelschlich "online" signalisieren, sonst loescht z.B. GuildService die lokale
             // Gilden-Membership trotz echter Mitgliedschaft.
             IsOnline = response.IsSuccessStatusCode;

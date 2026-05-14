@@ -20,7 +20,7 @@ namespace HandwerkerImperium.ViewModels;
 /// </summary>
 public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposable
 {
-    // AAA-Audit P1 Review-Pass (12.05.2026): Echte Facade-Konsumierung statt Constructor-Cosmetic.
+    // Review-Pass (12.05.2026): Echte Facade-Konsumierung statt Constructor-Cosmetic.
     // Alle 4 Mission-Subsysteme jetzt durch _missions.Daily/Weekly/LuckySpin/QuickJob adressiert.
     private readonly IMissionsFacade _missions;
     private readonly IGameStateService _gameStateService;
@@ -210,7 +210,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// AAA-Audit P1 Service-Sprawl Pilot (12.05.2026): Vollmigration auf <see cref="IMissionsFacade"/>
+    /// Service-Sprawl Pilot (12.05.2026): Vollmigration auf <see cref="IMissionsFacade"/>
     /// — alle 4 Mission-Subsysteme (Daily/Weekly/LuckySpin/QuickJob) werden über _missions.X
     /// adressiert (Body-Refactor). Konstruktor-Surface: 4 Services → 1 Facade.
     /// </summary>

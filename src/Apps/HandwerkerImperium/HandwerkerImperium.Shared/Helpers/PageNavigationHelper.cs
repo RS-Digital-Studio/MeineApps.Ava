@@ -4,7 +4,7 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Helpers;
 
 /// <summary>
-/// P1.5 AAA-Audit (08.05.2026 Sprint A — Helper-Variante):
+/// (08.05.2026 — Helper-Variante):
 ///
 /// Sicherheits-konservative Variante der PageNavigationViewModel-Extraktion. Statt
 /// die kompletten 38 IsXxxActive-Properties zu extrahieren (was 49 AXAML-Files
@@ -17,7 +17,7 @@ namespace HandwerkerImperium.Helpers;
 /// - <see cref="ManageStack"/>: Push/Pop/Clear-Logik mit Cap
 ///
 /// Effekt: ~70 Zeilen aus MainViewModel raus, AXAML unverändert, kein Regressions-Risiko.
-/// Die volle MainViewModel-Reduktion (Sprint A im Audit) ist ein eigener 3-5-Tage-Sprint.
+/// Die volle MainViewModel-Reduktion (separater Schritt) ist ein eigener 3-5-Tage-Sprint.
 /// </summary>
 internal static class PageNavigationHelper
 {

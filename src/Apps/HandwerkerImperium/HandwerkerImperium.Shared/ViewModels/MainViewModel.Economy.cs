@@ -17,7 +17,7 @@ public sealed partial class MainViewModel
 
     private void InitializeEconomyVM()
     {
-        // V7 (Phase 3 Ressourcen-Plan): Material-Lieferungen + Stack-Limits brauchen
+        // V7 (): Material-Lieferungen + Stack-Limits brauchen
         // Warehouse + Research zur Bonus-Berechnung. Beide optional injiziert via DI.
         var serviceProvider = App.Services;
         var warehouseService = serviceProvider?.GetService(typeof(IWarehouseService)) as IWarehouseService;
@@ -69,7 +69,7 @@ public sealed partial class MainViewModel
     private Task StartOrderAsync(Order order) => EconomyVM.StartOrderAsync(order);
 
     /// <summary>
-    /// V7 (Phase 2 Ressourcen-Plan): Annimmt einen Auftrag MIT Material-Offer
+    /// V7 (): Annimmt einen Auftrag MIT Material-Offer
     /// (reserviert Material und aktiviert Bonus-Reward beim Complete).
     /// </summary>
     [RelayCommand]

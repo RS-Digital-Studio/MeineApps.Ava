@@ -19,7 +19,7 @@
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
-        <!-- Back Button — v2.1.1 (Audit U-C01): Prominent gestylter Pill-Button mit Pfeil + Label.
+        <!-- Back Button — Prominent gestylter Pill-Button mit Pfeil + Label.
              Frueher nur ein "Text"-Button mit ArrowLeft-Icon, kaum sichtbar. Settings versteckt
              die Tab-Bar — der Spieler braucht hier eine eindeutige Zurueck-Affordance. -->
         <Button Classes="Primary"
@@ -421,7 +421,7 @@
           </StackPanel>
         </Border>
 
-        <!-- AAA-Audit P1: Cross-Promotion zwischen den 11 eigenen Apps. -->
+        <!-- Cross-Promotion zwischen den 11 eigenen Apps. -->
         <!-- Tagesrotation; eine Karte pro Tag aus dem CrossPromoService.            -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_Border_CrossPromoCard">

@@ -13,7 +13,7 @@ public class GameState
     /// <summary>
     /// v2.0.37: Aktuelle SaveGame-Version. Wird sowohl als Default fuer neue States
     /// als auch fuer Cloud-Save Version-Checks (App-Outdated-Erkennung) genutzt.
-    /// v7: Lager-System (Phase 1 Ressourcen-Plan).
+    /// v7: Lager-System ().
     /// </summary>
     public const int CurrentStateVersion = 7;
 
@@ -420,7 +420,7 @@ public class GameState
     public List<string> ClaimedAuctionIds { get; set; } = [];
 
     /// <summary>
-    /// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Bereits beanspruchte Mega-Projekt-Belohnungen.
+    /// V7 (, Plan Section 3.9): Bereits beanspruchte Mega-Projekt-Belohnungen.
     /// Idempotenz-Schutz — verhindert dass eine Spieler-Session den Bonus doppelt erhaelt
     /// (z.B. nach App-Restart wenn Server schon completed war).
     /// </summary>
@@ -484,7 +484,7 @@ public class GameState
     public string? PendingStoryId { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // AUTOMATION (Welle 1)
+    // AUTOMATION ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("automation")]
@@ -508,21 +508,21 @@ public class GameState
     public bool StreakRescueUsed { get => DailyProgress.StreakRescueUsed; set => DailyProgress.StreakRescueUsed = value; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // LUCKY SPIN (Welle 2)
+    // LUCKY SPIN ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("luckySpin")]
     public LuckySpinState LuckySpin { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
-    // EQUIPMENT (Welle 2)
+    // EQUIPMENT ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("equipmentInventory")]
     public List<Equipment> EquipmentInventory { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
-    // TOURNAMENTS (Welle 2)
+    // TOURNAMENTS ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("currentTournament")]
@@ -567,21 +567,21 @@ public class GameState
     public Dictionary<int, int> ClaimedMiniGameMasteryTiers { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MANAGERS (Welle 3)
+    // MANAGERS ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("managers")]
     public List<Manager> Managers { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
-    // SEASONAL EVENTS (Welle 4)
+    // SEASONAL EVENTS ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("currentSeasonalEvent")]
     public SeasonalEvent? CurrentSeasonalEvent { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // BATTLE PASS (Welle 4)
+    // BATTLE PASS ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("battlePass")]
@@ -595,7 +595,7 @@ public class GameState
     public bool IsPrestigePassActive { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // CONTEXTUAL OFFERS (Welle 5)
+    // CONTEXTUAL OFFERS ()
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -621,7 +621,7 @@ public class GameState
     public DateTime? StarterOfferTimestamp { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // GUILD (Welle 6)
+    // GUILD ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("guildMembership")]
@@ -639,7 +639,7 @@ public class GameState
     public string? IntegritySignature { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // CRAFTING (Welle 7)
+    // CRAFTING ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("craftingInventory")]
@@ -649,7 +649,7 @@ public class GameState
     public List<CraftingJob> ActiveCraftingJobs { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
-    // WAREHOUSE (V7 — Phase 1 Ressourcen-Plan)
+    // WAREHOUSE (V7 — )
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -667,7 +667,7 @@ public class GameState
     public int WarehouseStackLimit { get; set; } = 50;
 
     /// <summary>
-    /// V7 (Phase 2): Reservierte Material-Mengen fuer akzeptierte Auftraege mit
+    /// V7 (): Reservierte Material-Mengen fuer akzeptierte Auftraege mit
     /// Material-Anforderung. Verhindert Doppelverbrauch — wird beim MiniGame-Complete
     /// konsumiert, bei Abbruch zurueckgegeben.
     /// Schluessel: productId, Wert: reservierte Anzahl. Wird in WarehouseService.GetAvailable()
@@ -677,21 +677,21 @@ public class GameState
     public Dictionary<string, int> ReservedInventory { get; set; } = new();
 
     /// <summary>
-    /// V7: Auto-Verkaufs-Regeln pro Material (Phase 3 vollstaendig, Phase 1: nur Bool).
+    /// V7: Auto-Verkaufs-Regeln pro Material ( vollstaendig, : nur Bool).
     /// Schluessel: productId, Wert: Regel-Daten (Enabled, MinPrice, MaxPrice).
     /// </summary>
     [JsonPropertyName("autoSellRules")]
     public Dictionary<string, AutoSellRule> AutoSellRules { get; set; } = new();
 
     /// <summary>
-    /// V7 (Phase 4 vorbereitet): Erbstuecke (Tier-4-Items, max 3 pro Run, beim Prestige gewaehlt).
-    /// Phase 1: Feld vorhanden fuer SaveGame-Kompatibilitaet, Logik kommt in Phase 4.
+    /// V7 ( vorbereitet): Erbstuecke (Tier-4-Items, max 3 pro Run, beim Prestige gewaehlt).
+    /// : Feld vorhanden fuer SaveGame-Kompatibilitaet, Logik kommt in .
     /// </summary>
     [JsonPropertyName("heirloomItems")]
     public List<string> HeirloomItems { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
-    // VIP (Welle 7)
+    // VIP ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("totalPurchaseAmount")]
@@ -701,14 +701,14 @@ public class GameState
     public VipTier VipLevel { get; set; } = VipTier.None;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STARTER PACK (Welle 8)
+    // STARTER PACK ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("hasPurchasedStarterPack")]
     public bool HasPurchasedStarterPack { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // BOSS ORDERS (Welle 8)
+    // BOSS ORDERS ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("lastBossOrderDate")]
@@ -718,21 +718,21 @@ public class GameState
     public int BossOrdersCompleted { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // FRIENDS (Welle 8)
+    // FRIENDS ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("friends")]
     public List<Friend> Friends { get; set; } = [];
 
     /// <summary>
-    /// AAA-Audit P1: Referral-Tracking (Friend-Invite Reward-Loop).
+    /// Referral-Tracking (Friend-Invite Reward-Loop).
     /// Default-Init reicht — keine Migration noetig, weil Sub-Objekt bei aelteren Saves frisch erzeugt wird.
     /// </summary>
     [JsonPropertyName("referral")]
     public ReferralProgress Referral { get; set; } = new();
 
     /// <summary>
-    /// AAA-Audit P1: Aktuelles Live-Event (RemoteConfig-getrieben). Null wenn kein Event aktiv.
+    /// Aktuelles Live-Event (RemoteConfig-getrieben). Null wenn kein Event aktiv.
     /// </summary>
     [JsonPropertyName("liveEvent")]
     public LiveEvent? LiveEvent { get; set; }
@@ -750,7 +750,7 @@ public class GameState
     public string? PlayerName { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // DAILY SHOP OFFER (Welle 8)
+    // DAILY SHOP OFFER ()
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("dailyShopOffer")]

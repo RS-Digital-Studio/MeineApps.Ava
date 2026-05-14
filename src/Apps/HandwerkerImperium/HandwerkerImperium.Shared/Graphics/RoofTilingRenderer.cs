@@ -18,7 +18,7 @@ public struct RoofTileData
 }
 
 /// <summary>
-/// AAA SkiaSharp-Renderer fuer das Dachdecken-Minigame.
+/// SkiaSharp-Renderer fuer das Dachdecken-Minigame.
 /// Zeichnet ein realistisches Dach mit Sparren-Struktur, gebogene Dachziegel,
 /// Hint-Markierungen (Schloss), Fehler-Blinken und Dachfirst.
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.

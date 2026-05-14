@@ -138,7 +138,7 @@ public sealed class GuildService : IGuildService, IDisposable
         // Gilden-Zuordnung migrieren
         await _firebaseService.SetAsync($"player_guilds/{playerId}", oldGuildId);
 
-        // Mitglieds-Eintrag migrieren — v2.1.1 (Audit FB-H06): Set neuer + Delete alter Eintrag atomar als
+        // Mitglieds-Eintrag migrieren — Set neuer + Delete alter Eintrag atomar als
         // Multi-Path-Update. Frueher waren das zwei Operationen; bei Delete-Failure blieb der
         // alte Eintrag als Geister-Member stehen und zaehlte weiter in memberCount.
         var memberData = await _firebaseService.GetAsync<FirebaseGuildMember>(
@@ -1273,7 +1273,7 @@ public sealed class GuildService : IGuildService, IDisposable
     private void ClearLocalCache()
     {
         _gameStateService.State.GuildMembership = null;
-        // v2.1.1 (Audit FB-H07): Forschungs-Effekt-Cache mit invalidieren — sonst behaelt der Spieler
+        // Forschungs-Effekt-Cache mit invalidieren — sonst behaelt der Spieler
         // die Gilden-Forschungs-Boni der gerade verlassenen Gilde.
         _guildResearchService.InvalidateCache();
     }

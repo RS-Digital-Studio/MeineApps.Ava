@@ -111,7 +111,7 @@
               </StackPanel>
             </Grid>
 
-            <!-- V7 (Phase 4 Ressourcen-Plan, Section 3.7): Material-Affinitaet -->
+            <!-- V7 (, Section 3.7): Material-Affinitaet -->
             <Border CornerRadius="10" Padding="10,8"
                     Background="#1FD97706"
                     IsVisible="{Binding HasMaterialAffinity}"

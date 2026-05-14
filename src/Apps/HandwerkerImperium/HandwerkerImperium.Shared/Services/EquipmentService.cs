@@ -12,7 +12,7 @@ public sealed class EquipmentService : IEquipmentService
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAnalyticsService? _analyticsService;
-    // v2.1.1 (Audit C-C03): Eigener Lock entfernt — Mutationen via IGameStateService.ExecuteWithLock.
+    // Eigener Lock entfernt — Mutationen via IGameStateService.ExecuteWithLock.
 
     /// <summary>
     /// Basis-Drop-Chance nach einem MiniGame (skaliert nach Schwierigkeit).
@@ -121,7 +121,7 @@ public sealed class EquipmentService : IEquipmentService
         // Event AUSSERHALB des Locks aufrufen (Deadlock-Prävention)
         EquipmentDropped?.Invoke();
 
-        // P1.1 AAA-Audit: Equipment-Drop-Rate-Tracking fuer Difficulty-Tuning.
+        // Equipment-Drop-Rate-Tracking fuer Difficulty-Tuning.
         _analyticsService?.TrackEvent(AnalyticsEvents.EquipmentDropped, new System.Collections.Generic.Dictionary<string, object?>
         {
             ["equipment_id"] = result.Id,

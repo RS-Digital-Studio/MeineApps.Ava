@@ -111,7 +111,7 @@ public sealed class StoryService : IStoryService
 
     private bool IsChapterUnlocked(StoryChapter chapter, GameState state)
     {
-        // v2.1.1 (Audit U-C02): Tutorial-Kapitel (chapter.IsTutorial) erst freischalten, wenn
+        // Tutorial-Kapitel (chapter.IsTutorial) erst freischalten, wenn
         // die FTUE komplett ist. Vorher konkurrierten ftue_welcome (Meister Hans) und
         // tutorial_welcome (Meister Hans) am ersten Start parallel — beide forderten
         // "Weiter" mit identischer Persona, das Onboarding wirkte schwer und redundant.
@@ -731,7 +731,7 @@ public sealed class StoryService : IStoryService
         },
 
         // ═══════════════════════════════════════════════════════════════
-        // V7 (Phase 1-3 Ressourcen-Plan, Section 7.4): Lager / Lieferketten / Logistik
+        // V7 (-3 Ressourcen-Plan, Section 7.4): Lager / Lieferketten / Logistik
         // ═══════════════════════════════════════════════════════════════
 
         new()

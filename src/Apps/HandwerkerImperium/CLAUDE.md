@@ -72,7 +72,7 @@ HandwerkerImperium.Shared/
 
 ### MainViewModel Partial-Split (12 Files)
 
-**MainViewModel.cs: 501 Zeilen** (AAA-Audit-Ziel <500 erreicht, ursprünglich 2483 Z.).
+**MainViewModel.cs: 501 Zeilen** (Ziel <500 erreicht, ursprünglich 2483 Z.).
 Reine Composition: Service-Felder, Konstruktor (~320 Z.), INavigationHost-Stub. Alle
 Properties, Event-Handler, Lifecycle in Partials.
 
@@ -95,7 +95,7 @@ Properties, Event-Handler, Lifecycle in Partials.
 
 `DialogViewModel.cs` ist der Coordinator + Confirm-Dialog-Properties. Pro Dialog-Typ
 gibt es eine Partial-Datei. Prestige-Tier-Auswahl ist als **eigenständige VM**
-herausgezogen (AAA-Audit P0, 12.05.2026, "echter Strukturschnitt").
+herausgezogen (P0, 12.05.2026, "echter Strukturschnitt").
 
 | Datei | Zeilen | Inhalt |
 |-------|--------|--------|
@@ -182,7 +182,7 @@ Thin-Wrapper-Pattern: Sub-VM hat nur `GuildViewModel Guild { get; }`, Bindings v
 - `EconomyFeatureViewModel` → per `new` in `MainViewModel.Economy.cs` erstellt (KEIN DI, braucht mainVM-Kontext)
 - Thin-Wrapper-VMs (GuildResearchVM, ...) → im GuildViewModel-Ctor erstellt (kein DI-Container)
 
-**Service-Container-Facaden** (AAA-Audit P1 Service-Sprawl-Reduction, 12.05.2026):
+**Service-Container-Facaden** (Service-Sprawl-Reduction, 12.05.2026):
 Bündeln verwandte Services für Konsumenten die sonst 3-9 einzelne Dependencies
 injizieren müssten. Pure Pass-Through-Container, kein State.
 
@@ -515,7 +515,7 @@ Alle 10 Workshops produzieren passiv Tier-1 Items (Unlock ab WS-Level 50):
 Skalierender Verkaufspreis: `BaseValue × (1 + log₂(1 + Level/25)) × CraftingSellMultiplier`
 (kein Soft-Cap, kein Speed/Rush im Multiplier).
 
-### Gilden-Mega-Projekte (V7 — Phase 4 Ressourcen-Plan, Plan Section 3.9)
+### Gilden-Mega-Projekte (V7 — , Plan Section 3.9)
 
 `IGuildMegaProjectService` + `GuildMegaProjectService` — wochenlange Material-Spenden-Pipeline
 mit permanenter Gildenbonus-Belohnung.
@@ -544,7 +544,7 @@ mit permanenter Gildenbonus-Belohnung.
 - Drei Donate-Stufen pro Material (1 / 10 / Alles), Top-Spender-Leaderboard (Top 5),
   Fortschrittsbalken pro Anforderung + Gesamt-%, Bonus-Vorschau.
 
-### Tier-4 + Erbstuecke + Worker-Affinitaet (V7 — Phase 4 Ressourcen-Plan)
+### Tier-4 + Erbstuecke + Worker-Affinitaet (V7 — )
 
 **Tier-4-Produkte** (Plan Section 3.2): 3 Imperiums-Manufaktur-Items am GeneralContractor
 ab WS-Lv 500. Alle haben `IsHeirloomEligible = true`.
@@ -578,7 +578,7 @@ inhaltlich zum "Imperium-Pass" repositioniert (Preis identisch, Versprechen grei
 Beinhaltet ×2 Rewarded-Belohnungen, +50% Offline-Einkommen, Markt-Insider-Heatmap,
 Auto-Verkaufs-Regeln, +1 Erbstueck-Slot (3 → 4), 2× Lucky-Spin/Tag, Auto-ClaimDaily,
 +100% GS. Spieler mit bestehendem `IsPremium` bekommen den Pass automatisch.
-*Implementation der UI-Repositionierung ist als getrennter Sprint vorgemerkt — Bundle-Boni
+*Implementation der UI-Repositionierung ist als naechster Schritt — Bundle-Boni
 sind in den Service-Layern bereits implementiert.*
 
 **Heirloom-Wahl-UI** (Plan Section 3.8): PrestigeView zeigt ueber dem Confirm-CTA eine
@@ -593,7 +593,7 @@ fuer das Command (analog zur Tier-Auswahl). Background/Border werden ueber zwei 
 `HeirloomSelectedBorderConverter`) — der Core-Library-Converter unterstuetzt keinen
 ConverterParameter, daher pro Use-Case eine Resource-Instanz.
 
-### Material-Markt + Heatmap-Detail (V7 — Phase 3 Ressourcen-Plan)
+### Material-Markt + Heatmap-Detail (V7 — )
 
 `IMarketService` + `MarketService` — deterministische Tagespreis-Logik pro Spieler.
 
@@ -610,7 +610,7 @@ ConverterParameter, daher pro Use-Case eine Resource-Instanz.
   Geld-Abzug, Inventar-Add. Bei Slot-Voll wird kein Kauf moeglich (kein Geld-Verlust).
 - `TrySell(productId, count)`: Verkauft nur nicht-reserviertes Material (ReservedInventory ausgeschlossen).
 
-### Logistik-Forschungsbranch (V7 — Phase 3)
+### Logistik-Forschungsbranch (V7 — )
 
 Neuer 4. `ResearchBranch.Logistics` (Amber #D97706, Package-Icon). 12 Nodes:
 
@@ -624,9 +624,9 @@ Neuer 4. `ResearchBranch.Logistics` (Amber #D97706, Package-Icon). 12 Nodes:
 | logi_07 | Auto-Verkaufs-Regeln freigeschaltet | logi_08 |
 | logi_10 | Crafting-Speed +20% | logi_07 |
 | logi_11 | Stack-Limit ×5 | logi_10 |
-| logi_09 | T4-Rezepte freigeschaltet (Phase 4) | logi_11 |
+| logi_09 | T4-Rezepte freigeschaltet () | logi_11 |
 | logi_03 | +25 Lager-Slots | logi_09 |
-| logi_12 | Erbstuecke ueberleben Prestige (Phase 4) | logi_03 |
+| logi_12 | Erbstuecke ueberleben Prestige () | logi_03 |
 | logi_06 | Crafting-Speed +30% + 25 Slots | logi_12 |
 
 **Integration**:
@@ -635,14 +635,14 @@ Neuer 4. `ResearchBranch.Logistics` (Amber #D97706, Package-Icon). 12 Nodes:
 - `CraftingService.StartCrafting` addiert `CraftingSpeedBonus` aus Research zu Prestige-Shop-Bonus.
 - Markt-Verfuegbarkeit: `MarketService.IsMarketAvailable` prueft `logi_05.IsResearched`.
 
-### Lieferant-Material-Variante (V7 — Phase 3)
+### Lieferant-Material-Variante (V7 — )
 
 `SupplierDelivery.GenerateRandom` rollt mit 25% Chance (ab Spielerlevel 50) eine
 `DeliveryType.Material`-Lieferung statt Geld. 1–10 Stueck eines zufaelligen Tier-1-Materials
 aus den freigeschalteten Workshops. Research `logi_08` `SupplierMaterialBonus` erhoeht
 die Menge proportional.
 
-### Material-Offer in Auftraegen (V7 — Phase 2 Ressourcen-Plan)
+### Material-Offer in Auftraegen (V7 — )
 
 **Mechanik**: Jeder regulaere Auftrag (ausser MaterialOrder) kann beim Spawn ein optionales
 Material-Angebot bekommen. Wenn der Spieler die geforderten Materialien liefert, gibt es einen
@@ -671,7 +671,7 @@ Bonus-Multiplikator auf Reward + XP.
 7. Bei SaveGame-Sanitize: Orphan-Reservierungen (Reserved > Summe ActiveOrder+ParallelOrders)
    werden geloescht.
 
-### Crafting & Warehouse (V7 — Phase 1 Ressourcen-Plan)
+### Crafting & Warehouse (V7 — )
 
 **Rezept-Pool**: 30 Rezepte (10 Workshops × 3 Tiers). Jeder Workshop hat T1/T2/T3, freigeschaltet bei
 Workshop-Level 50/150/300. **Cross-Workshop-Inputs** an T2/T3-Rezepten greifen erst ab Spielerlevel
@@ -682,7 +682,7 @@ Workshop-Level 50/150/300. **Cross-Workshop-Inputs** an T2/T3-Rezepten greifen e
 - 20 Slots Start, Stack-Limit 50 pro Slot. Upgrade-Pfad +5 Slots, Basis-Kosten 50.000 €, Faktor 1.5x.
 - Max-Cap: 200 Slots (`WarehouseService.MaxSlots`).
 - Verfuegbarkeit-Berechnung: `Available = CraftingInventory[id] - ReservedInventory[id]` —
-  Phase 2 reserviert akzeptierte Auftraege gegen Doppelverbrauch.
+   reserviert akzeptierte Auftraege gegen Doppelverbrauch.
 - Auto-Sell-Regel pro Slot: Bei Stack-Overflow Auto-Verkauf zum aktuellen Marktpreis statt Pause.
 - Ohne Auto-Sell: Workshop pausiert (Event `WorkshopPaused`), UI zeigt gelben Warn-Badge.
 
@@ -705,7 +705,7 @@ als Geld auszahlen (kein Wert-Verlust).
 | 4 | Settings, Statistics, Tutorial in Sub-Objekte extrahiert |
 | 5 | Boosts, DailyProgress, Cosmetics in Sub-Objekte extrahiert |
 | 6 | ParallelOrdersByWorkshop (Multi-Auftrag), PausedAt/AccumulatedPauseDuration |
-| 7 | Warehouse (SlotCount 20, StackLimit 50), ReservedInventory, AutoSellRules, HeirloomItems (Phase 1 Ressourcen-Plan). Migration kuerzt ueberlaufende Stacks und zahlt BaseValue als Geld aus. |
+| 7 | Warehouse (SlotCount 20, StackLimit 50), ReservedInventory, AutoSellRules, HeirloomItems (). Migration kuerzt ueberlaufende Stacks und zahlt BaseValue als Geld aus. |
 
 `GameState.CurrentStateVersion = 7` (const) — Cloud-Save mit höherer Version triggert Alert statt Download.
 
@@ -903,7 +903,7 @@ RESX-Keys pro App: `CrossPromo_{AppId}_Name` + `CrossPromo_{AppId}_Hook` (DE/EN/
 
 ## FTUE (`IFtueService`)
 
-State-Machine + Analytics-Hooks. UI-Spotlight-Overlay separat als eigener Sprint geplant.
+State-Machine + Analytics-Hooks. UI-Spotlight-Overlay separat als naechster Schritt.
 
 10-Step-Default-Sequenz: Welcome → ErstesUpgrade → ErsterAuftrag → ErstesMiniGame →
 MoneyExplained → ErsterWorker → XpExplained → ScrewsExplained → ImperiumIntro → Complete.
@@ -1146,8 +1146,9 @@ CI: `.github/workflows/ci.yml` (Build + Test + Firebase-Rules-Lint).
 ## Eternal Mastery (Long-Term-Engagement post-Lv1000)
 
 `IEternalMasteryService` + `EternalMasteryService` — permanenter Einkommens-Bonus der mit
-jedem abgeschlossenen Prestige skaliert. Kein Cap, kein Reset bei Ascension. Adressiert
-den Audit-Befund „nach Ascension kommt nichts mehr — duenn".
+jedem abgeschlossenen Prestige skaliert. Soft-Cap ab `EternalMasterySoftCapThreshold`
+Prestiges (logarithmische Daempfung), kein Reset bei Ascension. Stellt Late-Game-Progression
+post-Lv1000 sicher, damit Spieler nach Ascension nicht auf einer Plateau-Phase stehen.
 
 **Berechnung** (`GameBalanceConstants.EternalMastery*`):
 - Linear: +0.5% pro Prestige (jeder Tier zählt)

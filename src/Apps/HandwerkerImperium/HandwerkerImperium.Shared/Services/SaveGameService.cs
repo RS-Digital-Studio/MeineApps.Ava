@@ -32,7 +32,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     // false, sondern liest IPurchaseService.IsPremium (kaufgesichert via Preference-Cache,
     // getrennt vom Save-File) — so sieht ein Premium-Spieler bei kaputtem Netz keine Werbung.
     private readonly IPurchaseService? _purchaseService;
-    // v2.1.1 (Audit C-C05): Lock-frei via Interlocked — DateTime.UtcNow.Ticks des letzten
+    // Lock-frei via Interlocked — DateTime.UtcNow.Ticks des letzten
     // Cloud-Upload-Versuchs (0 = noch nie). CompareExchange stellt sicher, dass bei parallelen
     // Saves nur ein Thread den Upload-Slot pro Rate-Limit-Fenster gewinnt.
     private long _lastCloudUploadTicks;
@@ -62,7 +62,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     public bool SaveExists => File.Exists(SaveFilePath);
 
     /// <summary>
-    /// v2.1.1 (Audit H-H09): True, wenn der letzte <see cref="LoadAsync"/>-Aufruf zwar Save-Dateien
+    /// True, wenn der letzte <see cref="LoadAsync"/>-Aufruf zwar Save-Dateien
     /// vorfand, aber alle beschaedigt waren (Haupt- UND Backup-Datei). Der Aufrufer kann darauf einen
     /// Cloud-Recovery-Flow anbieten, statt den Spieler kommentarlos mit CreateNew() zu starten.
     /// </summary>
@@ -129,7 +129,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         // - Off-Lock: File-IO, Cloud-Upload (alles auf ThreadPool)
         // - Der Background-Thread blockiert UI-Thread nur kurz waehrend Lock-Aequisition;
         //   GameLoop tickt NUR unter dem gleichen Lock und kann nicht mit Save kollidieren.
-        // v2.1.1 (Audit P-C01): SerializeToUtf8Bytes statt Serialize(string) — spart die intermediate
+        // SerializeToUtf8Bytes statt Serialize(string) — spart die intermediate
         // UTF-16-String-Allokation UND die spaetere UTF-16→UTF-8-Konvertierung beim File-Write.
         // Reduziert Lock-Hold-Zeit + GC-Druck spuerbar bei grossen Late-Game-Saves. Ein echter
         // Deep-Clone-Snapshot ausserhalb des Locks waere fehleranfaellig (jedes neue GameState-
@@ -170,7 +170,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
 
         await File.WriteAllBytesAsync(TempFilePath, jsonBytes).ConfigureAwait(false);
 
-        // v2.1.1 (Audit M-M13): Atomares Move statt Copy fuer das Backup. File.Move ist auf demselben Volume
+        // Atomares Move statt Copy fuer das Backup. File.Move ist auf demselben Volume
         // atomar (Rename) — nach dem Move ist das Backup garantiert die vollstaendige alte Datei.
         // File.Copy konnte bei einem Crash mittendrin ein halb geschriebenes Backup hinterlassen.
         if (File.Exists(SaveFilePath))
@@ -206,7 +206,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                         var ok = await cloudSvc.UploadJsonAsync(jsonForCloud, metadataForCloud).ConfigureAwait(false);
                         if (ok)
                         {
-                            // v2.1.1 (Audit P-H09): LastCloudSaveTime ist ein reiner Anzeige-Wert (SettingsView).
+                            // LastCloudSaveTime ist ein reiner Anzeige-Wert (SettingsView).
                             // Direktes Schreiben ohne State-Lock — eine DateTime-Zuweisung ist atomar
                             // genug, und der naechste regulaere Save ueberschreibt den Wert ohnehin.
                             // Spart eine unnoetige Lock-Uebernahme im Cloud-Upload-Hot-Path.
@@ -372,7 +372,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (state.PlayerLevel < LevelThresholds.MinPlayerLevel) state.PlayerLevel = LevelThresholds.MinPlayerLevel;
         if (state.PlayerLevel > LevelThresholds.MaxPlayerLevel) state.PlayerLevel = LevelThresholds.MaxPlayerLevel;
         if (state.Money < 0) state.Money = 0;
-        // v2.1.1 (Audit M-M07): Money-Cap dynamisch — Geld kann nie mehr sein als je verdient wurde (logisch
+        // Money-Cap dynamisch — Geld kann nie mehr sein als je verdient wurde (logisch
         // korrekt), mit 1e15-Floor fuer Late-Game-Spieler (Prestige x20 + Rush erreicht 100B
         // in ~50h). Der alte feste Cap (100B) hat valide Late-Game-Saves verschluckt.
         decimal moneyCap = Math.Max(1_000_000_000_000_000m, state.TotalMoneyEarned);
@@ -448,7 +448,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                 if (worker.Efficiency < minEff || worker.Efficiency > maxEff)
                     worker.Efficiency = Math.Clamp(worker.Efficiency, minEff, maxEff);
 
-                // V7 (Phase 4): Material-Affinity deterministisch fuer alte Saves zuweisen.
+                // V7 (): Material-Affinity deterministisch fuer alte Saves zuweisen.
                 if (worker.MaterialAffinity == MaterialAffinity.None && !string.IsNullOrEmpty(worker.Id))
                 {
                     // 5 Achsen (1-5), deterministisch per WorkerId-Hash
@@ -521,7 +521,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         state.Tutorial.SeenMiniGameTutorials ??= [];
         state.Tutorial.SeenHints ??= [];
 
-        // Welle 1-8 Migrationen: Neue Properties null-safe initialisieren
+        // 8 Migrationen: Neue Properties null-safe initialisieren
         state.LuckySpin ??= new LuckySpinState();
         state.WeeklyMissionState ??= new WeeklyMissionState();
         state.EquipmentInventory ??= [];
@@ -533,7 +533,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         state.CompletedRecipeIds ??= [];
         state.PerfectMiniGameTypes ??= [];
 
-        // V7 (Phase 1 Ressourcen-Plan): Warehouse-Felder
+        // V7 (): Warehouse-Felder
         state.ReservedInventory ??= new Dictionary<string, int>();
         state.AutoSellRules ??= new Dictionary<string, AutoSellRule>();
         state.HeirloomItems ??= [];
@@ -571,7 +571,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                 state.ReservedInventory[productId] = available;
         }
 
-        // V7 (Phase 2): Orphan-Reservations erkennen — Reservierungen die zu keinem
+        // V7 (): Orphan-Reservations erkennen — Reservierungen die zu keinem
         // aktiven Auftrag (ActiveOrder + ParallelOrdersByWorkshop) mit MaterialOfferAccepted
         // gehoeren. Solche Reservierungen werden freigegeben, damit der Spieler nichts blockiert hat.
         var expectedReservations = new Dictionary<string, int>();
@@ -615,7 +615,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (state.Ascension.AscensionLevel < 0) state.Ascension.AscensionLevel = 0;
         if (state.Ascension.AscensionPoints < 0) state.Ascension.AscensionPoints = 0;
 
-        // V7 (Phase 4): HeirloomItems & PermanentHeirlooms validieren — nur Heirloom-faehige Produkt-IDs.
+        // V7 (): HeirloomItems & PermanentHeirlooms validieren — nur Heirloom-faehige Produkt-IDs.
         var allProductsForHeirlooms = CraftingProduct.GetAllProducts();
         state.HeirloomItems.RemoveAll(id =>
             !allProductsForHeirlooms.TryGetValue(id, out var p) || !p.IsHeirloomEligible);
@@ -632,7 +632,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (state.Statistics.TotalItemsCrafted < 0) state.Statistics.TotalItemsCrafted = 0;
         if (state.Statistics.TotalTournamentsWon < 0) state.Statistics.TotalTournamentsWon = 0;
 
-        // v2.1.1 (Audit M-M08): Premium-Status aus IPurchaseService statt blind auf false. Der Wert kommt
+        // Premium-Status aus IPurchaseService statt blind auf false. Der Wert kommt
         // aus dem kaufgesicherten Preference-Cache (is_premium/has_subscription/has_lifetime),
         // der getrennt vom Save-File liegt — Save-Editing kann ihn nicht manipulieren. So sieht
         // ein Premium-Spieler auch bei kaputtem Netz keine Werbung; RestorePurchasesAsync beim
@@ -715,7 +715,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     /// Führt alle notwendigen Versionsmigrationen durch (v1→v2→v3→v5).
     /// Zentrale Methode für LoadFromFileAsync und ImportSaveAsync.
     /// </summary>
-    // P0.1 AAA-Audit: internal damit Property-Based Tests die Migration durch alle Stufen pruefen koennen.
+    // internal damit Property-Based Tests die Migration durch alle Stufen pruefen koennen.
     internal static GameState MigrateState(GameState state)
     {
         if (state.Version < 2)
@@ -744,9 +744,9 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         // V5 → V6 (v2.0.35): Multi-Order-System. Bei alten Saves mit ActiveOrder
         // wird dieser in das neue ParallelOrdersByWorkshop-Dictionary migriert.
         //
-        // v2.0.37 Audit-Fix K5: Audit hat „IsAccepted"-Flag in V5 angenommen — das gibt es
+        // Vorlage hatte „IsAccepted"-Flag in V5 angenommen — das gibt es
         // aber nicht. In V5 war ActiveOrder die einzige Quelle fuer „in Bearbeitung". Pause-
-        // Mechanik (Order.PausedAt) wurde erst in V6 (Sprint 2) eingefuehrt. Damit ist die
+        // Mechanik (Order.PausedAt) wurde erst in V6 () eingefuehrt. Damit ist die
         // urspruengliche Migration korrekt — kein Datenverlust-Pfad fuer V5-Saves.
         if (state.Version < 6)
         {
@@ -759,7 +759,7 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
             state.Version = 6;
         }
 
-        // V6 → V7 (Phase 1 Ressourcen-Plan): Lager-Slots, Stack-Limits, ReservedInventory.
+        // V6 → V7 (): Lager-Slots, Stack-Limits, ReservedInventory.
         // Defaults: 20 Slots, Stack-Limit 50. Vorhandene CraftingInventory-Eintraege werden
         // ggf. auf das Stack-Limit gekuerzt; die Differenz wird als Geld gutgeschrieben
         // (1:1 zu BaseValue, damit kein wertvoller Bestand verloren geht).

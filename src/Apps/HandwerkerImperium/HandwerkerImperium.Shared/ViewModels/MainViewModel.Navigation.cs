@@ -9,7 +9,7 @@ using MeineApps.Core.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
 
-// Partial Class: Navigation-Forwarder (Phase 2 — velvety-booping-peacock).
+// Partial Class: Navigation-Forwarder ( — velvety-booping-peacock).
 // Die eigentliche Route-/Tab-Logik lebt in NavigationService, DialogOrchestrator, MiniGameNavigator.
 // Hier verbleiben nur RelayCommand-Wrapper + ActivePage-Setter-Side-Effects (Back-Stack,
 // GuildChat-Stop) und Host-Interface-Implementierung fuer Zugriffe der Services.

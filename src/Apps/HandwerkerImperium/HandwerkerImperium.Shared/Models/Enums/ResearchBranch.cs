@@ -15,7 +15,7 @@ public enum ResearchBranch
     /// <summary>Improves marketing, reputation, and order rewards</summary>
     Marketing = 2,
 
-    /// <summary>V7 (Phase 3 Ressourcen-Plan): Lager-Slots, Stack-Limit, Markt, Auto-Verkauf.</summary>
+    /// <summary>V7 (): Lager-Slots, Stack-Limit, Markt, Auto-Verkauf.</summary>
     Logistics = 3
 }
 
@@ -29,7 +29,7 @@ public static class ResearchBranchExtensions
         ResearchBranch.Tools => "\ud83d\udd27",       // Wrench
         ResearchBranch.Management => "\ud83d\udcbc",   // Briefcase
         ResearchBranch.Marketing => "\ud83d\udce3",    // Megaphone
-        ResearchBranch.Logistics => "\ud83d\udce6",    // Package (V7 Phase 3)
+        ResearchBranch.Logistics => "\ud83d\udce6",    // Package (V7 )
         _ => "\ud83d\udd27"
     };
 
@@ -51,7 +51,7 @@ public static class ResearchBranchExtensions
         ResearchBranch.Tools => "#FF9800",       // Orange
         ResearchBranch.Management => "#2196F3",  // Blue
         ResearchBranch.Marketing => "#4CAF50",   // Green
-        ResearchBranch.Logistics => "#D97706",   // Amber (V7 Phase 3)
+        ResearchBranch.Logistics => "#D97706",   // Amber (V7 )
         _ => "#FF9800"
     };
 }

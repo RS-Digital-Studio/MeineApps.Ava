@@ -3,7 +3,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// P1.3 AAA-Audit (08.05.2026, Foundation): Daily-Bundle-Rotation.
+/// (08.05.2026, Foundation): Daily-Bundle-Rotation.
 ///
 /// Lifecycle:
 /// 1. <see cref="InitializeAsync"/> beim App-Start — RemoteConfig laden, aktuelles Bundle berechnen

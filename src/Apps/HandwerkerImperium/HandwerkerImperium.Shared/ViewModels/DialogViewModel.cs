@@ -40,13 +40,13 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     public event Action<string, string>? FloatingTextRequested;
 
     // Dialog-Type-spezifische Properties + Commands liegen in Partial-Files:
-    // - DialogViewModel.LevelUp.cs       — LevelUp-Dialog
-    // - DialogViewModel.Achievement.cs   — Achievement-Dialog
-    // - DialogViewModel.Story.cs         — Story-Dialog (AAA-Audit P0)
-    // - DialogViewModel.Hint.cs          — Hint-Dialog (AAA-Audit P0)
-    // - DialogViewModel.Alert.cs         — Alert-Dialog
+    // - DialogViewModel.LevelUp.cs — LevelUp-Dialog
+    // - DialogViewModel.Achievement.cs — Achievement-Dialog
+    // - DialogViewModel.Story.cs — Story-Dialog (P0)
+    // - DialogViewModel.Hint.cs — Hint-Dialog (P0)
+    // - DialogViewModel.Alert.cs — Alert-Dialog
     // - DialogViewModel.PrestigeSummary.cs — Post-Prestige-Summary
-    // - DialogViewModel.PrestigeTier.cs  — Prestige-Tier-Auswahl (AAA-Audit P0, 12.05.2026)
+    // - DialogViewModel.PrestigeTier.cs — Prestige-Tier-Auswahl (P0, 12.05.2026)
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONFIRM DIALOG (geteilt zwischen generischem Confirm und Prestige-Tier)
@@ -70,7 +70,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
     private TaskCompletionSource<bool>? _confirmDialogTcs;
 
     /// <summary>
-    /// AAA-Audit P0 (12.05.2026): Prestige-Tier-Auswahl als eigenständige VM.
+    /// (12.05.2026): Prestige-Tier-Auswahl als eigenständige VM.
     /// Composition-Pattern — diese Klasse ist Owner. XAML-Bindings nutzen den Pfad
     /// <c>DialogVM.PrestigeConfirmation.X</c>.
     /// </summary>
@@ -107,7 +107,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         _adService = adService;
         _challengeConstraints = challengeConstraints;
 
-        // Prestige-Tier-Auswahl als eigene VM (AAA-Audit P0 — echter Strukturschnitt)
+        // Prestige-Tier-Auswahl als eigene VM (— echter Strukturschnitt)
         PrestigeConfirmation = new PrestigeConfirmationViewModel(
             localizationService, gameStateService, prestigeService, adService,
             this, challengeConstraints);
@@ -191,7 +191,7 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         return _confirmDialogTcs.Task;
     }
 
-    // AAA-Audit P0 Aufspaltung — direkter Zugriff über DialogVM.PrestigeConfirmation.X.
+    // Aufspaltung — direkter Zugriff über DialogVM.PrestigeConfirmation.X.
     // Keine Pass-Through-Delegations mehr (12.05.2026 Review-Pass).
 
     /// <summary>

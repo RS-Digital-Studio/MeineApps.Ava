@@ -18,7 +18,7 @@ public partial class PaintingGameView : UserControl
 {
     private PaintingGameViewModel? _vm;
     private readonly PaintingGameRenderer _renderer = new();
-    // AAA-Audit P1 Review-Pass (12.05.2026): FrameClockRenderLoop-Helper statt Inline-Subscribe.
+    // Review-Pass (12.05.2026): FrameClockRenderLoop-Helper statt Inline-Subscribe.
     private readonly Helpers.FrameClockRenderLoop _renderLoop;
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;

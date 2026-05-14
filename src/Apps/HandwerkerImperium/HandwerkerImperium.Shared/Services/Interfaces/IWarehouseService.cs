@@ -4,7 +4,7 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// V7 (Phase 1 Ressourcen-Plan): Lager-Verwaltung mit Slots + Stack-Limits + Reservierung.
+/// V7 (): Lager-Verwaltung mit Slots + Stack-Limits + Reservierung.
 /// Wird von <see cref="IAutoProductionService"/>, <see cref="ICraftingService"/> und der
 /// Lager-UI im Imperium-Tab konsumiert.
 /// </summary>
@@ -66,7 +66,7 @@ public interface IWarehouseService
     int AddToInventory(string productId, int count, WorkshopType? sourceWorkshop = null);
 
     /// <summary>
-    /// Reserviert Material fuer akzeptierte Auftraege (Phase 2). Verhindert dass die gleiche
+    /// Reserviert Material fuer akzeptierte Auftraege (). Verhindert dass die gleiche
     /// Menge ein zweites Mal verbraucht wird. Gibt false zurueck wenn nicht genug verfuegbar.
     /// </summary>
     bool TryReserve(string productId, int count);
@@ -117,7 +117,7 @@ public interface IWarehouseService
     /// </summary>
     bool TryUpgradeSlots();
 
-    /// <summary>Aktuelle Stack-Limit-Stufe (1 = 50, 2 = 100, ...). Phase 1: nur statisch.</summary>
+    /// <summary>Aktuelle Stack-Limit-Stufe (1 = 50, 2 = 100, ...). : nur statisch.</summary>
     int CurrentStackLimit { get; }
 
     /// <summary>Maximale Slot-Anzahl (Hard-Cap).</summary>

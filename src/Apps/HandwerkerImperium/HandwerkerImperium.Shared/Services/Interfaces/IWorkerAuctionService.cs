@@ -3,7 +3,7 @@ using HandwerkerImperium.Models.Firebase;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Worker-Markt-Auktionen (v2.1.0, Sprint 3 Big Bet).
+/// Worker-Markt-Auktionen .
 ///
 /// Phase-1-Status: Foundation — Service-Skelett + Firebase-Pfad. Echtzeit-Bidding,
 /// 1s-Polling, NPC-Bots, 5min-Spawn-Cron, Refund-Logik sind „Phase B".

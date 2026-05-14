@@ -260,13 +260,13 @@ public partial class App : Application
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
-        // Frame-Clock (AAA-Audit P1): zentraler 30Hz-Render-Tick fuer Visual-Renderer
+        // Frame-Clock (P1): zentraler 30Hz-Render-Tick fuer Visual-Renderer
         services.AddSingleton<IFrameClock, FrameClockService>();
 
-        // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement): permanenter Bonus pro Prestige
+        // Eternal Mastery (Long-Term-Engagement): permanenter Bonus pro Prestige
         services.AddSingleton<IEternalMasteryService, EternalMasteryService>();
 
-        // Bounded-Context-Facaden mit echten Konsumenten (AAA-Audit P1 Service-Sprawl).
+        // Bounded-Context-Facaden mit echten Konsumenten (Service-Sprawl).
         // GuildFacade: 9 Subsysteme — Konsument GuildViewModel.
         // MissionsFacade: 5 Subsysteme — Konsument MissionsFeatureViewModel.
         // Weitere Facaden (Worker/Progression/Content/Platform/Onboarding) waren am
@@ -308,7 +308,7 @@ public partial class App : Application
         // v2.0.36: Notification-Center (Bell-UI) ersetzt Dialog-Stacking beim Re-Open.
         services.AddSingleton<INotificationCenterService, NotificationCenterService>();
         services.AddSingleton<NotificationCenterViewModel>();
-        // v2.0.39 Audit-Fix U1: WhatsNew-Dialog fuer Update-Spieler.
+        // WhatsNew-Dialog fuer Update-Spieler.
         services.AddSingleton<IWhatsNewService, WhatsNewService>();
         // v2.1.0: Reputation-Shop (3. Waehrung neben Geld + GS).
         services.AddSingleton<IReputationShopService, ReputationShopService>();
@@ -317,7 +317,7 @@ public partial class App : Application
         services.AddSingleton<IGuildCoopOrderService, GuildCoopOrderService>();
         services.AddSingleton<IWorkerAuctionService, WorkerAuctionService>();
         services.AddSingleton<ViewModels.Guild.GuildCoopOrderViewModel>();
-        // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-VM
+        // V7 (, Plan Section 3.9): Mega-Projekt-VM
         services.AddSingleton<ViewModels.Guild.GuildMegaProjectViewModel>();
         services.AddSingleton<ViewModels.Auctions.WorkerAuctionViewModel>();
 
@@ -334,7 +334,7 @@ public partial class App : Application
         // Visual Effects Engine
         services.AddSingleton<GameJuiceEngine>();
 
-        // Neue Feature-Services (Welle 1-8)
+        // Neue Feature-Services (8)
         services.AddSingleton<IWeeklyMissionService, WeeklyMissionService>();
         services.AddSingleton<IWelcomeBackService, WelcomeBackService>();
         services.AddSingleton<ILuckySpinService, LuckySpinService>();
@@ -351,23 +351,23 @@ public partial class App : Application
         services.AddSingleton<IRemoteConfigService, RemoteConfigService>();
         services.AddSingleton<ICloudSaveService, CloudSaveService>();
 
-        // AAA-Audit P1: Cross-Promotion zwischen den 11 eigenen Apps (House-Ads, zero-cost).
+        // Cross-Promotion zwischen den 11 eigenen Apps (House-Ads, zero-cost).
         services.AddSingleton<ICrossPromoService, CrossPromoService>();
         services.AddSingleton<CrossPromoViewModel>();
 
-        // AAA-Audit P0: FTUE-Service + UI-Spotlight-Overlay (10-Step-Tutorial).
+        // FTUE-Service + UI-Spotlight-Overlay (10-Step-Tutorial).
         services.AddSingleton<IFtueService, FtueService>();
         services.AddSingleton<FtueOverlayViewModel>();
 
-        // AAA-Audit P1: Friend-Invite Reward-Loop (K-Factor-Driver, ~30% Free-Installs bei
+        // Friend-Invite Reward-Loop (K-Factor-Driver, ~30% Free-Installs bei
         // Voodoo / Lion). Server-Endpoint fuer Anti-Cheat ist Folge-Sprint.
         services.AddSingleton<IReferralService, ReferralService>();
 
-        // AAA-Audit P1: Limited-Time-Events (FOMO + Re-Engagement). 4 Templates:
+        // Limited-Time-Events (FOMO + Re-Engagement). 4 Templates:
         // DoubleReward, BossRush, CoopMarathon, MiniGameMastery.
         services.AddSingleton<ILiveEventService, LiveEventService>();
 
-        // AAA-Audit P0 Zerlegungs-Sprint (09.05.2026): Cinematic-Logik aus
+        // Cinematic-Logik aus
         // MainViewModel extrahiert. Eigener Coordinator subscribed auf PrestigeService
         // und hat die Lokalisierung + Audio-Track-Steuerung.
         services.AddSingleton<ICinematicCoordinator, CinematicCoordinator>();
@@ -375,18 +375,18 @@ public partial class App : Application
         // Reputation-Tier-Up-Effekte (FloatingText/Celebration/Audio/Achievement-Dialog)
         // aus MainViewModel.OnReputationTierChanged extrahiert.
         services.AddSingleton<IReputationTierEffects, ReputationTierEffects>();
-        // P1.3 AAA-Audit: Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
+        // Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
         services.AddSingleton<IDailyBundleService, DailyBundleService>();
 
         services.AddSingleton<IGuildService, GuildService>();
         services.AddSingleton<IGuildInviteService, GuildInviteService>();
         services.AddSingleton<ICraftingService, CraftingService>();
         services.AddSingleton<IAutoProductionService, AutoProductionService>();
-        // V7 (Phase 1 Ressourcen-Plan): Lager-Service mit Slots/Stack-Limits/Reservierung
+        // V7 (): Lager-Service mit Slots/Stack-Limits/Reservierung
         services.AddSingleton<IWarehouseService, WarehouseService>();
-        // V7 (Phase 3 Ressourcen-Plan): Material-Markt
+        // V7 (): Material-Markt
         services.AddSingleton<IMarketService, MarketService>();
-        // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekte
+        // V7 (, Plan Section 3.9): Gilden-Mega-Projekte
         services.AddSingleton<IGuildMegaProjectService, GuildMegaProjectService>();
         // V7 (Plan Section 7.2): Procedural Material-Icon-Renderer (ersetzt externe AI-Assets)
         services.AddSingleton<HandwerkerImperium.Graphics.MaterialIconRenderer>();
@@ -401,7 +401,7 @@ public partial class App : Application
         services.AddSingleton<IGuildChatService, GuildChatService>();
         services.AddSingleton<IGoalService, GoalService>();
 
-        // Gilden-Overhaul Services (AAA-System)
+        // Gilden-Overhaul Services 
         services.AddSingleton<IGuildResearchService, GuildResearchService>();
         services.AddSingleton<IGuildWarSeasonService, GuildWarSeasonService>();
         services.AddSingleton<IGuildHallService, GuildHallService>();
@@ -424,7 +424,7 @@ public partial class App : Application
         services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<DialogViewModel>());
         services.AddSingleton<MissionsFeatureViewModel>();
 
-        // Feature-VMs (Phase 3 der MainViewModel-Zerlegung, 17.04.2026)
+        // Feature-VMs ( der MainViewModel-Zerlegung, 17.04.2026)
         services.AddSingleton<GoalBannerViewModel>();
         services.AddSingleton<HeaderViewModel>();
         services.AddSingleton<PrestigeBannerViewModel>();
@@ -459,11 +459,11 @@ public partial class App : Application
         services.AddSingleton<GuildWarSeasonViewModel>();
         services.AddSingleton<GuildBossViewModel>();
         services.AddSingleton<GuildHallViewModel>();
-        // Thin-Wrapper-Sub-VMs (Phase 4 17.04.2026) werden im GuildViewModel-Ctor manuell erstellt
+        // Thin-Wrapper-Sub-VMs ( 17.04.2026) werden im GuildViewModel-Ctor manuell erstellt
         // (zirkuläre DI vermieden: Sub-VM haelt Referenz auf Parent-GuildViewModel).
         services.AddSingleton<CraftingViewModel>();
         services.AddSingleton<WarehouseSectionViewModel>();
-        // V7 (Phase 3 Ressourcen-Plan): Markt-Sub-Tab im Shop
+        // V7 (): Markt-Sub-Tab im Shop
         services.AddSingleton<MarketViewModel>();
         services.AddSingleton<LuckySpinViewModel>();
         services.AddSingleton<AscensionViewModel>();

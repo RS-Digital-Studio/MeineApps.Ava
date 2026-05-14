@@ -92,7 +92,7 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         auction.AllBids[_firebase.PlayerId!] = amount;
         auction.Hmac = ComputeHmac(auction);
 
-        // v2.1.1 (Audit FB-C03/FB-H10): Multi-Path-PATCH statt PUT. Schreibt atomar nur die
+        // v2.1.1 Multi-Path-PATCH statt PUT. Schreibt atomar nur die
         // Bid-Felder — ein paralleles Bid eines anderen Spielers (anderer allBids-Subpfad) geht
         // nicht verloren. Die highestBid-Monotonie-Rule lehnt Verlierer-Bids ab; bidTimestamps
         // ist das serverseitige 1s-Rate-Limit gegen Spam-Bidding.
@@ -292,7 +292,7 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
     /// Master-Client-Pattern: Pruefe ob *dieser* Client der Master ist. Master = Spieler mit
     /// lexikografisch kleinster PlayerId in der Mitgliederliste. Deterministisch ohne Server-Logik.
     /// In Solo-Gilden ist man immer Master.
-    /// v2.1.1 (Audit FB-H13): Nur AKTIVE Mitglieder (LastActiveAt &lt; 30 Tage) zaehlen — ein verwaister
+    /// Nur AKTIVE Mitglieder (LastActiveAt &lt; 30 Tage) zaehlen — ein verwaister
     /// "Geister-Member" mit kleiner PlayerId wuerde sonst Master werden, aber nie Auktionen
     /// spawnen (DoS fuer die ganze Gilde).
     /// </summary>
@@ -344,7 +344,7 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         if (!await IsMasterClientAsync().ConfigureAwait(false)) return false;
 
         // S/SS/SSS-Tier-Worker generieren — gewichtet (S 70%, SS 25%, SSS 5%).
-        var rng = Random.Shared; // v2.1.1 (Audit FB-H12): Random.Shared statt new Random() — kein RNG-Bias
+        var rng = Random.Shared; // Random.Shared statt new Random() — kein RNG-Bias
         int roll = rng.Next(0, 100);
         WorkerTier tier = roll < 70 ? WorkerTier.S : roll < 95 ? WorkerTier.SS : WorkerTier.SSS;
 
@@ -379,7 +379,7 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         // Nur Master simuliert die Bots — andere Clients lesen das Resultat ueber Polling.
         if (!await IsMasterClientAsync().ConfigureAwait(false)) return;
 
-        var rng = Random.Shared; // v2.1.1 (Audit FB-H12): Random.Shared statt new Random() — kein RNG-Bias
+        var rng = Random.Shared; // Random.Shared statt new Random() — kein RNG-Bias
         // 35% Chance pro Tick — fuehrt zu mehreren Bot-Bids in einer 30s-Auktion.
         if (rng.Next(0, 100) >= 35) return;
 

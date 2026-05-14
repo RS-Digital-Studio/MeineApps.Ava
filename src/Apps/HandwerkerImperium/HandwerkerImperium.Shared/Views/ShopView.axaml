@@ -94,7 +94,7 @@
                   AutomationProperties.AutomationId="Shop_Panel_Content">
 
         <!-- ================================================================= -->
-        <!-- P1.3 AAA-Audit: DAILY BUNDLE (heutiges Tages-Angebot)              -->
+        <!-- DAILY BUNDLE (heutiges Tages-Angebot)              -->
         <!-- ================================================================= -->
         <Border Classes="CardElevated"
                 IsVisible="{Binding HasDailyBundle}"
@@ -145,7 +145,7 @@
           </StackPanel>
         </Border>
 
-        <!-- IMPERIUM-PASS STATUS (if owned) — V7 (Phase 4, Plan Section 10) -->
+        <!-- IMPERIUM-PASS STATUS (if owned) — V7 (, Plan Section 10) -->
         <Border Classes="CardElevated"
                 AutomationProperties.AutomationId="Shop_Border_PremiumStatus"
                 IsVisible="{Binding IsPremium}"
@@ -194,7 +194,7 @@
           </StackPanel>
         </Border>
 
-        <!-- IMPERIUM-PASS PITCH (für Nicht-Pass-Spieler) — V7 (Phase 4, Plan Section 10) -->
+        <!-- IMPERIUM-PASS PITCH (für Nicht-Pass-Spieler) — V7 (, Plan Section 10) -->
         <Border Classes="Card"
                 AutomationProperties.AutomationId="Shop_Border_PremiumCompare"
                 IsVisible="{Binding !IsPremium}"

@@ -4,7 +4,7 @@ using HandwerkerImperium.Models.Events;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// AAA-Audit P0 (MainViewModel-Zerlegung): Bündelt die Effekt-Logik beim Reputation-Tier-Up
+/// (MainViewModel-Zerlegung): Bündelt die Effekt-Logik beim Reputation-Tier-Up
 /// (FloatingText + Celebration + Audio-Stinger + Achievement-Dialog mit Tier-Effekten).
 ///
 /// MainViewModel ruft <see cref="HandleTierChanged"/> auf seinem UI-Thread-Handler auf —

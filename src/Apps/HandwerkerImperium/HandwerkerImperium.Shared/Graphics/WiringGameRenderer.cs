@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// AAA SkiaSharp-Renderer fuer das Verkabelungs-Minigame.
+/// SkiaSharp-Renderer fuer das Verkabelungs-Minigame.
 /// Sicherungskasten mit Bezier-Kabelverbindungen, Strom-Puls-Animation,
 /// Funken-Explosion bei Verbindung, Kurzschluss-Effekt bei Fehler,
 /// Completion-Blitz-Flash wenn alle Kabel verbunden sind.
@@ -46,7 +46,7 @@ public sealed class WiringGameRenderer : IDisposable
     private readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
 
     // Gecachte MaskFilter (haeufigste Blur-Radien)
-    // v2.1.1 (Audit P-C03): SKMaskFilter static — pro Mini-Game-Restart wurde sonst eine neue
+    // SKMaskFilter static — pro Mini-Game-Restart wurde sonst eine neue
     // Filter-Instanz allokiert, die alte hing am Finalizer (Native-Memory-Leak auf Android,
     // bekanntes OOM-Pattern aus Haupt-CLAUDE.md).
     private static readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
@@ -160,7 +160,7 @@ public sealed class WiringGameRenderer : IDisposable
     }
 
     /// <summary>
-    /// Rendert das Verkabelungs-Spielfeld mit AAA-Effekten.
+    /// Rendert das Verkabelungs-Spielfeld mit Effekten.
     /// isAllConnected und connectedCount werden fuer Completion/Burst-Erkennung benoetigt.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, WireRenderData[] leftWires, WireRenderData[] rightWires,
@@ -888,7 +888,7 @@ public sealed class WiringGameRenderer : IDisposable
     {
         if (_completionTime > 1.5f) return;
 
-        // Phase 1 (0-0.3s): Weisser Flash (quick in, slow out)
+        //  (0-0.3s): Weisser Flash (quick in, slow out)
         if (_completionTime < 0.3f)
         {
             float flashAlpha = _completionTime < 0.08f
@@ -900,7 +900,7 @@ public sealed class WiringGameRenderer : IDisposable
             canvas.DrawRect(bounds, _fillPaint);
         }
 
-        // Phase 2 (0.1-1.5s): Gruener Rand-Glow (pulsierend, abklingend)
+        //  (0.1-1.5s): Gruener Rand-Glow (pulsierend, abklingend)
         if (_completionTime > 0.1f)
         {
             float fade = Math.Clamp(1 - (_completionTime - 0.1f) / 1.4f, 0, 1);
@@ -1000,7 +1000,7 @@ public sealed class WiringGameRenderer : IDisposable
         _textPaint.Dispose();
         _shaderPaint.Dispose();
         _glowPaint.Dispose();
-        // v2.1.1 (Audit P-C03): _blur3/4/5 sind jetzt static — NICHT mehr disposen,
+        // _blur3/4/5 sind jetzt static — NICHT mehr disposen,
         // sonst werden sie nach erstem Renderer-Dispose unbrauchbar.
         _cachedPath.Dispose();
         _cachedFont.Dispose();
@@ -1019,7 +1019,7 @@ public sealed class WiringGameRenderer : IDisposable
             _rightPlugShaders[i] = null;
         }
 
-        // v2.0.37 Audit-Fix P2: Background-Reference nullen — die SKBitmap selbst gehoert
+        // Background-Reference nullen — die SKBitmap selbst gehoert
         // dem GameAssetService (LRU-Cache), nicht dem Renderer. Wir disposen sie nicht,
         // aber nullen die Reference damit der Renderer bei einem Re-Use-Szenario
         // (Cache-Eviction + erneutes Render) eine frische Bitmap aus dem Cache holt.

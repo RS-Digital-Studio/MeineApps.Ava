@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// Partial Class: Prestige-Summary-Dialog (v2.1.0 Aufspaltung Phase 1).
+/// Partial Class: Prestige-Summary-Dialog (v2.1.0 Aufspaltung ).
 /// Zeigt nach erfolgreichem Prestige Tier + PP + Multiplikator + Count.
 /// </summary>
 public sealed partial class DialogViewModel

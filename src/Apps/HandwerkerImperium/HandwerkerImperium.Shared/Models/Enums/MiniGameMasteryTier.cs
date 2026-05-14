@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Models.Enums;
 /// </summary>
 /// <remarks>
 /// Belohnt manuelles Mini-Game-Spielen auch nach Auto-Complete-Threshold (30 Perfects).
-/// Game-Audit-Empfehlung [DESIGN-1]: Mini-Game-Loop-Lifetime auf AAA-Niveau halten.
+/// Empfehlung: Mini-Game-Loop-Lifetime auf Premium-Niveau halten.
 /// </remarks>
 public enum MiniGameMasteryTier
 {

@@ -139,7 +139,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private bool _isInitializing;
     private bool _isBusy;
 
-    /// <summary>AAA-Audit P1: Cross-Promotion-Karte (House-Ad zwischen den 11 eigenen Apps).</summary>
+    /// <summary>Cross-Promotion-Karte (House-Ad zwischen den 11 eigenen Apps).</summary>
     public CrossPromoViewModel CrossPromoVM { get; }
 
     public SettingsViewModel(
@@ -327,7 +327,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         // der WorkerAvatar-Shared-Timer reagiert sofort via CurrentChanged-Event.
         Graphics.FpsProfile.SetCurrent(value.Quality);
 
-        // AAA-Audit P2 A11y: ReduceMotion sofort an GameJuiceEngine durchreichen,
+        // ReduceMotion sofort an GameJuiceEngine durchreichen,
         // damit Confetti/CoinFly/Sparkle/RadialBurst sofort respektiert werden —
         // ohne App-Neustart.
         var juice = App.Services?.GetService(typeof(Graphics.GameJuiceEngine)) as Graphics.GameJuiceEngine;
@@ -501,7 +501,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
             // Fallback auf Play-Games-Snapshots wenn Firebase offline und Play Games verfuegbar.
             if (_cloudSaveService != null && _cloudSaveService.IsAvailable)
             {
-                // v2.1.1 (Audit FB-C02): Vor dem Upload pruefen, ob der Cloud-Stand bereits neuer oder staerker
+                // Vor dem Upload pruefen, ob der Cloud-Stand bereits neuer oder staerker
                 // ist — sonst ueberschreibt ein manueller Upload kommentarlos einen Fortschritt
                 // von einem anderen Geraet. Bei Konflikt: Diff-Dialog, Spieler entscheidet.
                 var cloudMeta = await _cloudSaveService.GetMetadataAsync();

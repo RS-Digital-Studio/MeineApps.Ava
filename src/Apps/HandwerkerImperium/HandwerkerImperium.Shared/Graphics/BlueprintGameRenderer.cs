@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// AAA SkiaSharp-Renderer fuer das Bauplan-Minigame.
+/// SkiaSharp-Renderer fuer das Bauplan-Minigame.
 /// Blaupausen-Atmosphaere mit technischem Grid, Schaltkreis-Ecken an den Kacheln,
 /// Circuit-Verbindungslinien zwischen erledigten Schritten mit fliessenden Pulsen,
 /// Completion-Burst-Partikel pro Kachel, goldene Celebration bei komplettem Bauplan,
@@ -951,7 +951,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         canvas.DrawRoundRect(shadowRect, cr, cr, _tileShadowPaint);
 
         // Kachel-Hintergrund mit Gradient.
-        // v2.1.1 (Audit P-H07): Shader-Cache pro (bgColor, Width, Height). Frueher 16 Kacheln
+        // Shader-Cache pro (bgColor, Width, Height). Frueher 16 Kacheln
         // × 30fps × neue Allokation = 480 SKShader-Allocs/s + 480 SKColor[2]-Heap-Allocs/s.
         // Der gecachte Shader ist origin-relativ (0,0 → Width,Height) — Canvas wird vor
         // DrawRoundRect translatiert, damit der Gradient korrekt ueber die Tile-Bounds laeuft,
@@ -1759,7 +1759,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         _bgShaderCache?.Dispose();
         _bgShaderCache = null;
 
-        // v2.1.1 (Audit P-H07): Tile-BG-Shader-Cache disposen — die gecachten Linear-Gradients
+        // Tile-BG-Shader-Cache disposen — die gecachten Linear-Gradients
         // halten Native-Memory bis sie freigegeben werden.
         foreach (var shader in _tileBgShaderCache.Values)
             shader.Dispose();
@@ -1803,7 +1803,7 @@ public sealed class BlueprintGameRenderer : IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // v2.1.1 (Audit P-H07): TILE-BG-SHADER-CACHE
+    // TILE-BG-SHADER-CACHE
     // ═══════════════════════════════════════════════════════════════════════
 
     private readonly Dictionary<(uint argb, int w, int h), SKShader> _tileBgShaderCache = new();

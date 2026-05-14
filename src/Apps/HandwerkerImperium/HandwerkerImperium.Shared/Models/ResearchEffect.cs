@@ -90,7 +90,7 @@ public class ResearchEffect
     public decimal PremiumOrderChance { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // V7 (Phase 3 Ressourcen-Plan): Logistik-Branch
+    // V7 (): Logistik-Branch
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>V7: Zusaetzliche Lager-Slots (additiv zu Default 20 + Geld-Upgrades).</summary>
@@ -109,7 +109,7 @@ public class ResearchEffect
     [JsonPropertyName("unlocksAutoSellRules")]
     public bool UnlocksAutoSellRules { get; set; }
 
-    /// <summary>V7: Tier-4-Rezepte (Phase 4 Trigger, logi_09).</summary>
+    /// <summary>V7: Tier-4-Rezepte ( Trigger, logi_09).</summary>
     [JsonPropertyName("unlocksTier4")]
     public bool UnlocksTier4 { get; set; }
 
@@ -121,7 +121,7 @@ public class ResearchEffect
     [JsonPropertyName("supplierMaterialBonus")]
     public decimal SupplierMaterialBonus { get; set; }
 
-    /// <summary>V7: Erbstuecke ueberleben Prestige (Phase 4 Trigger, logi_12).</summary>
+    /// <summary>V7: Erbstuecke ueberleben Prestige ( Trigger, logi_12).</summary>
     [JsonPropertyName("unlocksHeirloomSurvival")]
     public bool UnlocksHeirloomSurvival { get; set; }
 
@@ -151,7 +151,7 @@ public class ResearchEffect
             UnlocksMassHiring = a.UnlocksMassHiring || b.UnlocksMassHiring,
             ReputationBonus = a.ReputationBonus + b.ReputationBonus,
             PremiumOrderChance = a.PremiumOrderChance + b.PremiumOrderChance,
-            // V7 (Phase 3 Ressourcen-Plan)
+            // V7 ()
             BonusWarehouseSlots = a.BonusWarehouseSlots + b.BonusWarehouseSlots,
             StackLimitMultiplier = Math.Max(a.StackLimitMultiplier, b.StackLimitMultiplier),
             UnlocksMarket = a.UnlocksMarket || b.UnlocksMarket,

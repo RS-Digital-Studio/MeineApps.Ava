@@ -77,7 +77,7 @@ public static class CustomerReputationTierExtensions
     };
 
     /// <summary>
-    /// v2.0.37 Audit-Fix L5: Tier-Berechnung mit Hysterese — der Tier-Down-Threshold liegt
+    /// Tier-Berechnung mit Hysterese — der Tier-Down-Threshold liegt
     /// 3 Punkte unter dem Tier-Up-Threshold. Beispiel: bei 61 Punkten steigt man zu RegionStar
     /// auf, faellt aber erst bei 58 Punkten zurueck zu CityKnown. Verhindert UI-Flackern an
     /// der Boundary (z.B. Stammkunden-Reputation bei +1 / Reputation-Decay -1 abwechselnd).

@@ -15,7 +15,7 @@ public sealed class MaterialIconRenderer : IDisposable
     private bool _disposed;
     private const int CanvasSize = 128;
 
-    // v2.1.1 (Audit P-M01): LRU-Bound — max 60 gecachte Icons (es gibt ~35 Produkt-IDs +
+    // LRU-Bound — max 60 gecachte Icons (es gibt ~35 Produkt-IDs +
     // 5 Affinitaeten = ~40 max, 60 gibt Headroom). Bei Ueberschreitung wird der aelteste
     // Eintrag disposed + entfernt, damit das Native-Memory der SKBitmaps frei wird.
     private const int MaxCacheSize = 60;

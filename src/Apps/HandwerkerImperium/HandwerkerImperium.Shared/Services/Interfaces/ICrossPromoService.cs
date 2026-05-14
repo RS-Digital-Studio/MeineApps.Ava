@@ -3,7 +3,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// AAA-Audit P1: Liefert House-Ad-Karten fuer die 11 eigenen Apps des Portfolios.
+/// Liefert House-Ad-Karten fuer die 11 eigenen Apps des Portfolios.
 /// </summary>
 public interface ICrossPromoService
 {

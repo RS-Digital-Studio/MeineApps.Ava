@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Services;
 /// <see cref="GameState.NotificationInbox"/> und feuert <see cref="Changed"/>
 /// bei jeder Aenderung.
 ///
-/// v2.0.37 Audit-Fixes (K4 + NC2 + NC4 + P1):
+/// es (K4 + NC2 + NC4 + P1):
 /// - Mutationen laufen unter <see cref="IGameStateService.ExecuteWithLock"/>
 ///   (gleicher Lock wie SaveGameService) — verhindert „Collection was modified"
 ///   beim JSON-Serialize wenn AutoSave und Add/Dismiss kollidieren.

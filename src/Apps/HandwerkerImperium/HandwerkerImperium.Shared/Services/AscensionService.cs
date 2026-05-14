@@ -98,9 +98,9 @@ public sealed class AscensionService : IAscensionService
         state.Ascension.TotalAscensionPoints += calculatedAP;
         state.Ascension.LastAscensionDate = DateTime.UtcNow;
 
-        // V7 (Phase 4 Ressourcen-Plan): Erbstuecke aus dem Inventar in den
+        // V7 (): Erbstuecke aus dem Inventar in den
         // Ascension-Schrein ueberfuehren — sie geben permanenten +0.5%-Bonus.
-        // v2.1.1 (Audit B-C01): Hard-Cap auf MaxPermanentHeirlooms — frueher wuchs die Liste pro Ascension
+        // Hard-Cap auf MaxPermanentHeirlooms — frueher wuchs die Liste pro Ascension
         // unbegrenzt (T4-Item-Farming vor Ascension → Income-Explosion). Es werden nur die
         // WERTVOLLSTEN Erbstuecke bis zum Cap uebernommen.
         var allProducts = CraftingProduct.GetAllProducts();

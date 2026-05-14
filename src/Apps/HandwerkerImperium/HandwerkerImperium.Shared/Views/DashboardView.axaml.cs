@@ -53,7 +53,7 @@ public partial class DashboardView : UserControl
     private readonly AnimationManager _animationManager = new();
     private readonly CoinFlyAnimation _coinFlyAnimation = new();
     private GameJuiceEngine? _juiceEngine;
-    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    // DispatcherTimer durch IFrameClock-Subscription ersetzt.
     private Services.Interfaces.IFrameClock? _frameClock;
     private bool _renderActive;
     private SKCanvasView? _cityCanvas;

@@ -3,8 +3,8 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Zentrale Navigations-API. Phase 2: Logik aus MainViewModel.OnChildNavigation und allen
-/// SelectXxxTab-Methoden lebt hier.  MainViewModel behaelt nur RelayCommand-Wrapper + ActivePage-Setter
+/// Zentrale Navigations-API. : Logik aus MainViewModel.OnChildNavigation und allen
+/// SelectXxxTab-Methoden lebt hier. MainViewModel behaelt nur RelayCommand-Wrapper + ActivePage-Setter
 /// (wegen Side-Effects im OnActivePageChanged-Partial).
 /// </summary>
 public interface INavigationService

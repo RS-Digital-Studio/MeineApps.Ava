@@ -9,12 +9,12 @@ namespace HandwerkerImperium.Services.Interfaces;
 /// Struktur in Firebase:
 /// <code>
 /// cloud_saves/{playerId}/
-///   data:      &lt;JSON-State&gt;       (HMAC-signiert via IGameIntegrityService)
-///   level:     int                   (fuer UI/Konflikt-Anzeige)
-///   money:     decimal               (fuer UI/Konflikt-Anzeige)
-///   savedAt:   ISO-8601 UTC          (Newest-Wins-Entscheidung)
-///   version:   int                   (GameState.Version)
-///   appVersion:string                (Client-App-Version)
+///   data: &lt;JSON-State&gt; (HMAC-signiert via IGameIntegrityService)
+///   level: int (fuer UI/Konflikt-Anzeige)
+///   money: decimal (fuer UI/Konflikt-Anzeige)
+///   savedAt: ISO-8601 UTC (Newest-Wins-Entscheidung)
+///   version: int (GameState.Version)
+///   appVersion:string (Client-App-Version)
 /// </code>
 ///
 /// Die Strategie beim App-Start:

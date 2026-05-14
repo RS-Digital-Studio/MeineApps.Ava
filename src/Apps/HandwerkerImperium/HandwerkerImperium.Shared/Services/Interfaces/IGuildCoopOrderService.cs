@@ -4,7 +4,7 @@ using HandwerkerImperium.Models.Firebase;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Co-op-Auftraege zwischen zwei Gildenmitgliedern (v2.1.0, Sprint 3 Big Bet).
+/// Co-op-Auftraege zwischen zwei Gildenmitgliedern .
 ///
 /// Phase-1-Status: Foundation — Service-Skelett + Firebase-Pfad-Struktur. Echtzeit-Sync,
 /// Polling-Loop, HMAC-Signierung und UI sind „Phase B" in einer dedizierten Branch.

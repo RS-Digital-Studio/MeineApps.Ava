@@ -19,7 +19,7 @@ public static class ResearchTree
     }
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): 12 Logistik-Forschungen — Lager-Slots, Stack-Limit,
+    /// V7 (): 12 Logistik-Forschungen — Lager-Slots, Stack-Limit,
     /// Markt-Verfuegbarkeit, Auto-Verkauf-Regeln, Crafting-Speed, T4-Trigger, Erbstueck-Survival.
     /// Plan Section 3.6 Tabelle.
     /// </summary>
@@ -51,13 +51,13 @@ public static class ResearchTree
             // Zeile 7: Stack-Limit x5 (kombiniert mit logi_02 → x10)
             Create("logi_11", ResearchBranch.Logistics, 8, "ResearchLogiStack5x", 60_000_000m, TimeSpan.FromHours(16),
                 new ResearchEffect { StackLimitMultiplier = 5.0m }, ["logi_10"]),
-            // Zeile 8: T4-Rezepte (Phase 4 trigger)
+            // Zeile 8: T4-Rezepte ( trigger)
             Create("logi_09", ResearchBranch.Logistics, 9, "ResearchLogiTier4", 150_000_000m, TimeSpan.FromHours(24),
                 new ResearchEffect { UnlocksTier4 = true }, ["logi_11"]),
             // Zeile 9: Bonus-Slots Premium
             Create("logi_03", ResearchBranch.Logistics, 10, "ResearchLogiSlots3", 400_000_000m, TimeSpan.FromHours(32),
                 new ResearchEffect { BonusWarehouseSlots = 25 }, ["logi_09"]),
-            // Zeile 10: Erbstueck-Survival (Phase 4)
+            // Zeile 10: Erbstueck-Survival ()
             Create("logi_12", ResearchBranch.Logistics, 11, "ResearchLogiHeirloom", 1_000_000_000m, TimeSpan.FromHours(48),
                 new ResearchEffect { UnlocksHeirloomSurvival = true }, ["logi_03"]),
             // Zeile 11: Master-Logistik-Speedup

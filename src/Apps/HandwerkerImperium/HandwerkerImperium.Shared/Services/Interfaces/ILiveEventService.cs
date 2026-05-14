@@ -3,7 +3,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// AAA-Audit P1: 7-Tage-Limited-Time-Events. RemoteConfig-getrieben, mit eigenem
+/// 7-Tage-Limited-Time-Events. RemoteConfig-getrieben, mit eigenem
 /// Reward-Track. Erzeugt FOMO + Re-Engagement.
 ///
 /// Lifecycle:

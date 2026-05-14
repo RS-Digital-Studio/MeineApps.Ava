@@ -14,7 +14,7 @@ using MeineApps.Core.Premium.Ava.Services;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// V7 (Phase 3 Ressourcen-Plan): Markt-Sub-Tab im Shop.
+/// V7 (): Markt-Sub-Tab im Shop.
 /// Zeigt alle Materialien mit aktuellem Kauf-/Verkaufspreis, Trend und Buttons fuer Kauf/Verkauf.
 /// </summary>
 public sealed partial class MarketViewModel : ViewModelBase, IDisposable
@@ -22,14 +22,14 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     private readonly IGameStateService _gameState;
     private readonly IMarketService _market;
     private readonly ILocalizationService _localization;
-    // V7 (Phase 3 Ressourcen-Plan): Stock-Anzeige im Markt soll auch bei Auto-Production
+    // V7 (): Stock-Anzeige im Markt soll auch bei Auto-Production
     // und Lager-Verkauf live aktualisieren (nicht nur bei Markt-Trades).
     private readonly IWarehouseService? _warehouse;
     private readonly ICraftingService? _crafting;
-    // V7 (Phase 4 Ressourcen-Plan, Imperium-Pass): Premium schaltet Markt sofort frei
+    // V7 (, Imperium-Pass): Premium schaltet Markt sofort frei
     // (Bypass auf logi_05). Nach Premium-Kauf muss die UI sofort den Locked-State verlassen.
     private readonly IPurchaseService? _purchase;
-    // V7 (Phase 2 Ressourcen-Plan, Section 3.10): Markt-Verkauf zaehlt fuer SellItems-Mission.
+    // V7 (, Section 3.10): Markt-Verkauf zaehlt fuer SellItems-Mission.
     private readonly IDailyChallengeService? _dailyChallenge;
     private readonly IWeeklyMissionService? _weeklyMission;
 
@@ -46,7 +46,7 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     private ObservableCollection<MarketEntryDisplay> _entries = [];
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): Aktuell im Detail-Panel ausgewaehlter Markt-Eintrag
+    /// V7 (): Aktuell im Detail-Panel ausgewaehlter Markt-Eintrag
     /// (zeigt 24h-Heatmap). Default = null, kein Detail.
     /// </summary>
     [ObservableProperty]
@@ -91,11 +91,11 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
 
         _market.MarketChanged += OnMarketChanged;
         _gameState.MoneyChanged += OnMoneyChanged;
-        // V7 (Phase 3 Ressourcen-Plan): Auch Lager-Mutationen (Auto-Production, Verkauf
+        // V7 (): Auch Lager-Mutationen (Auto-Production, Verkauf
         // ausserhalb des Markts) und Crafting-Complete refresht die InStock-Anzeige.
         if (_warehouse != null) _warehouse.InventoryChanged += OnMarketChanged;
         if (_crafting != null) _crafting.CraftingUpdated += OnMarketChanged;
-        // V7 (Phase 4 Imperium-Pass): Premium-Kauf schaltet Markt sofort frei — UI muss
+        // V7 ( Imperium-Pass): Premium-Kauf schaltet Markt sofort frei — UI muss
         // sofort den Locked-State verlassen.
         if (_purchase != null) _purchase.PremiumStatusChanged += OnPremiumStatusChanged;
 
@@ -112,7 +112,7 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
         => Dispatcher.UIThread.Post(Refresh);
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): Spieler hat im Detail-Panel auf einen Eintrag getippt
+    /// V7 (): Spieler hat im Detail-Panel auf einen Eintrag getippt
     /// — Heatmap-Detail oeffnet sich. Tippen auf den gleichen Eintrag schliesst das Detail.
     /// </summary>
     [RelayCommand]
@@ -222,7 +222,7 @@ public sealed partial class MarketViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// V7 (Phase 2 Ressourcen-Plan, Section 3.10): SellItems-Mission-Tracking.
+    /// V7 (, Section 3.10): SellItems-Mission-Tracking.
     /// </summary>
     private void ReportItemsSold(int count)
     {

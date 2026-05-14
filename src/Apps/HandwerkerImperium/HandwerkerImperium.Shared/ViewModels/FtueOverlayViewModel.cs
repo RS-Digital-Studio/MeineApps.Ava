@@ -8,7 +8,7 @@ using MeineApps.Core.Ava.ViewModels;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// AAA-Audit P0 FTUE-UI: ViewModel fuer das Spotlight-Overlay-Control.
+/// ViewModel fuer das Spotlight-Overlay-Control.
 /// Subscribed auf <see cref="IFtueService.CurrentStepChanged"/> und exponiert
 /// die UI-Properties (Title/Text/CanSkip + IsVisible).
 ///

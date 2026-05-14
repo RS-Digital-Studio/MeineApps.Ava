@@ -58,7 +58,7 @@ public sealed class ScreenTransitionRenderer : IDisposable
     };
 
     // Gecachter MaskFilter fuer Glow-Effekte an Trennkanten (vermeidet Native Memory Leak).
-    // v2.1.1 (Audit P-C03): static, sonst pro Transition-Instanz neue Filter-Instanz allokiert.
+    // static, sonst pro Transition-Instanz neue Filter-Instanz allokiert.
     private static readonly SKMaskFilter _lineGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
 
     /// <summary>
@@ -326,6 +326,6 @@ public sealed class ScreenTransitionRenderer : IDisposable
         _overlayPaint?.Dispose();
         _linePaint?.Dispose();
         _vignettePaint?.Dispose();
-        // v2.1.1 (Audit P-C03): _lineGlowFilter ist static — NICHT disposen.
+        // _lineGlowFilter ist static — NICHT disposen.
     }
 }

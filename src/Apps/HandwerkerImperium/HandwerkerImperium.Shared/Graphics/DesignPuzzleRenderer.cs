@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// AAA SkiaSharp-Renderer fuer das Grundriss-Raetsel Mini-Game.
+/// SkiaSharp-Renderer fuer das Grundriss-Raetsel Mini-Game.
 /// Zeichnet einen Architektenplan: Weisses Papier, blaue Grundrisslinien,
 /// Slots mit Hint-Icons, gefuellte Slots mit Label, Korrekt-Haekchen,
 /// Fehler-Blinken, Massstab-Linien am Rand.

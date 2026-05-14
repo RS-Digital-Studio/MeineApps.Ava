@@ -4,14 +4,14 @@ namespace HandwerkerImperium.Models.Enums;
 /// Sub-Tabs im Imperium-Hauptbereich (v2.0.37 / V7).
 /// Statt einer langen Scrollseite werden Werkstaetten / Lager / Worker / Forschung /
 /// Ausruestung / Ascension in 6 Sub-Tabs aufgeteilt — analog zur GuildView.
-/// V7 (Phase 1 Ressourcen-Plan): Lager-Sub-Tab eingefuegt (Plan Section 7.1).
+/// V7 (): Lager-Sub-Tab eingefuegt (Plan Section 7.1).
 /// </summary>
 public enum ImperiumSubTab
 {
     /// <summary>Workshops + Gebaeude.</summary>
     Workshops = 0,
 
-    /// <summary>V7: Lager-Slots, Stack-Limits, Auto-Verkauf-Regeln (Phase 1 Ressourcen-Plan).</summary>
+    /// <summary>V7: Lager-Slots, Stack-Limits, Auto-Verkauf-Regeln ().</summary>
     Warehouse = 1,
 
     /// <summary>Worker-Markt + Manager.</summary>

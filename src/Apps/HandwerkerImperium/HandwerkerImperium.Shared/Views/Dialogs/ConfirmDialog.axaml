@@ -25,7 +25,7 @@
             PointerPressed="OnDialogContentPressed"
             AutomationProperties.AutomationId="Main_Border_ConfirmSheet">
       <StackPanel Spacing="16" HorizontalAlignment="Stretch">
-        <!-- v2.1.1 (Audit U-M01): Drag-Handle entfernt — suggerierte Swipe-Dismiss-Funktion
+        <!-- Drag-Handle entfernt — suggerierte Swipe-Dismiss-Funktion
              ohne dass diese implementiert war. Confirm-Dialoge sollten bewusst tap-bestaetigt
              werden (Cancel/Confirm-Buttons), nicht versehentlich weggewischt. -->
         <TextBlock Text="{Binding ConfirmDialogTitle}"
@@ -108,7 +108,7 @@
                      IsVisible="{Binding PrestigeConfirmation.CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
-        <!-- v2.1.1 (Audit U-C06): Verlust-Liste prominent rot. Frueher waren Verluste nur Teil
+        <!-- Verlust-Liste prominent rot. Frueher waren Verluste nur Teil
              der grauen Confirm-Message und wurden uebersehen — kritisch beim ersten Prestige
              (Spieler verliert 200 Worker etc. ohne klare Vorwarnung). -->
         <Border IsVisible="{Binding PrestigeConfirmation.LossesPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

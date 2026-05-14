@@ -9,14 +9,14 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// Hilfs-Methoden: Geld-Formatierung, Property-Notify, Header-Updates, Worker-Warnung,
 /// Money-Animation, Workshop-Icon-Mapping.
-/// AAA-Audit P0 Aufspaltung: aus MainViewModel.cs extrahiert (12.05.2026).
+/// aus MainViewModel.cs extrahiert (12.05.2026).
 /// </summary>
 public sealed partial class MainViewModel
 {
     internal static string FormatMoney(decimal amount) => MoneyFormatter.FormatCompact(amount);
 
     /// <summary>
-    /// Lazy-Init des Eternal-Mastery-Service (AAA-Audit P1 Long-Term-Engagement, 12.05.2026).
+    /// Lazy-Init des Eternal-Mastery-Service (Long-Term-Engagement, 12.05.2026).
     /// Wird via App.Services aufgeloest damit der MainViewModel-Konstruktor nicht erweitert
     /// werden muss (haette das DI-Schema von ~50 anderen Apps gebrochen).
     /// </summary>

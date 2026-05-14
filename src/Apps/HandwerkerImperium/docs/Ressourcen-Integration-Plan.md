@@ -293,7 +293,7 @@ Bestehende Services (`IDailyChallengeService`, `IWeeklyMissionService`, `IBattle
 
 Vier Releases mit klaren Schnitten, damit jede Phase unabhaengig shippbar ist.
 
-### Phase 1 — Foundation (v2.2.0)
+###  — Foundation (v2.2.0)
 
 **Ziel:** Cross-Workshop-Lieferkette aktivieren, ohne UI-Umbau. Lager mit Limits einfuehren.
 
@@ -323,10 +323,10 @@ Vier Releases mit klaren Schnitten, damit jede Phase unabhaengig shippbar ist.
 - Cross-Workshop-Inputs koennen Casual-Spieler ueberfordern → Tier-2 nur mit *eigenen* T1-Inputs bis Lv 100, ab Lv 100 Cross-Workshop.
 
 **KPIs:**
-- Crafting-Tab-Sessions: Baseline messen vorher, +50% nach Phase 1.
+- Crafting-Tab-Sessions: Baseline messen vorher, +50% nach .
 - AutoProduction-Pause-Rate: < 30% der Workshops in einem 24h-Fenster.
 
-### Phase 2 — Aufträge & Material-Anforderungen (v2.3.0)
+###  — Aufträge & Material-Anforderungen (v2.3.0)
 
 **Ziel:** Aufträge konsumieren Materialien fuer Bonus-Reward.
 
@@ -356,7 +356,7 @@ Vier Releases mit klaren Schnitten, damit jede Phase unabhaengig shippbar ist.
 - Annahmequote mit Material: > 60% bei Lv 50–200, > 80% bei Lv 200+.
 - Material-Anforderung-Bonus-Reward-Anteil am Gesamteinkommen: 15–25%.
 
-### Phase 3 — Markt & Logistik-Forschung (v2.4.0)
+###  — Markt & Logistik-Forschung (v2.4.0)
 
 **Ziel:** Material-Markt mit Preis-Dynamik. Logistik-Forschungsbranch.
 
@@ -385,7 +385,7 @@ Vier Releases mit klaren Schnitten, damit jede Phase unabhaengig shippbar ist.
 - Markt-Sessions/Spieler/Tag: 0.7 (durchschn.).
 - Markt-Profit-Anteil am Gesamteinkommen: 5–15% (gesund), > 30% waere Imbalance.
 
-### Phase 4 — Tier-4 & Sozial-Sink (v2.5.0)
+###  — Tier-4 & Sozial-Sink (v2.5.0)
 
 **Ziel:** Imperiums-Manufaktur (T4) + Erbstuecke + Gilden-Material-Mega-Projekte.
 
@@ -614,7 +614,7 @@ Falls langfristig recurring Revenue gewollt: **Saison-Pass** (90 Tage, 4,99 EUR 
 
 - Spieler, die heute den 4,99-EUR-Premium-Kauf bereits haben, bekommen **automatisch** den vollen Imperium-Pass (Detection via `IPurchaseService.HasPremium`).
 - Keine zusaetzliche Zahlung, kein Re-Entitlement noetig.
-- Marketing-Push beim ersten Launch nach Phase 1: "Dein Premium ist jetzt der Imperium-Pass — hier sind deine neuen Vorteile."
+- Marketing-Push beim ersten Launch nach : "Dein Premium ist jetzt der Imperium-Pass — hier sind deine neuen Vorteile."
 
 ---
 
@@ -632,7 +632,7 @@ Falls langfristig recurring Revenue gewollt: **Saison-Pass** (90 Tage, 4,99 EUR 
 
 1. **Stakeholder-Review** dieses Plans (Robert).
 2. **Spike:** Cross-Workshop-Recipe-Validation in `CraftingService` durchspielen, Performance-Profil.
-3. **Phase 1 Detail-Spec:** File-by-File Implementation-Plan + Test-Strategie.
+3. ** Detail-Spec:** File-by-File Implementation-Plan + Test-Strategie.
 4. **UI-Mockups:** Lager-Sub-Tab (Slot-Grid), Markt-Heatmap.
 5. **Asset-Pipeline:** 22 neue Material-Icons in Asset-Backlog.
 6. **Tickets in Linear/Asana** (falls genutzt) pro Phase.
@@ -641,7 +641,7 @@ Falls langfristig recurring Revenue gewollt: **Saison-Pass** (90 Tage, 4,99 EUR 
 
 ## 13. Anhang: Beispiel-Datenstruktur
 
-### 13.1 Erweitertes CraftingRecipe-Beispiel (Phase 1)
+### 13.1 Erweitertes CraftingRecipe-Beispiel ()
 
 ```csharp
 new() {
@@ -684,7 +684,7 @@ new() {
     NameKey = "ProductVilla",
     Tier = 4,
     BaseValue = 2_500_000m,
-    IsHeirloomEligible = true             // NEU in Phase 4
+    IsHeirloomEligible = true             // NEU in 
 }
 ```
 

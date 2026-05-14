@@ -57,11 +57,11 @@ public sealed partial class WorkerAuctionViewModel : ViewModelBase, IDisposable
         _auctionService.AuctionUpdated += OnAuctionUpdated;
         _auctionService.AuctionSettled += OnAuctionSettled;
 
-        // v2.1.1 (Audit P-H04): Polling-Intervall 1s → 5s. 60 Requests/min waren Firebase-
+        // Polling-Intervall 1s → 5s. 60 Requests/min waren Firebase-
         // Bandbreite + Battery-Killer; 12 Requests/min reichen fuer eine 30s-Auktion locker.
         _pollingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         // Tick via RunHandlerSafely — Firebase-Exceptions im async-Lambda haetten sonst den
-        // Prozess gekillt (async-void auf SynchronizationContext, analog Audit H-H03).
+        // Prozess gekillt (async-void auf SynchronizationContext).
         _pollingTimer.Tick += (_, _) => Helpers.AsyncExtensions
             .RunHandlerSafely(PollAsync)
             .SafeFireAndForget();

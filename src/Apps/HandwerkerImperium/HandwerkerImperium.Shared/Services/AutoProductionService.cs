@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// basierend auf der Anzahl arbeitender Worker.
 /// Rate: 1 Item pro Worker alle 180s (Standard), 120s (InnovationLab), 60s (MasterSmith).
 ///
-/// V7 (Phase 1 Ressourcen-Plan): Respektiert Lager-Slot/Stack-Limits ueber
+/// V7 (): Respektiert Lager-Slot/Stack-Limits ueber
 /// <see cref="IWarehouseService"/>. Bei vollem Stack greift Auto-Verkauf oder
 /// Pause-Logik (Workshop-Card zeigt gelben Warn-Badge).
 ///

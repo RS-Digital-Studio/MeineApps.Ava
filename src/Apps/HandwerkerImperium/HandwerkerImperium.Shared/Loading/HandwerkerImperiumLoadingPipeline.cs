@@ -74,7 +74,7 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
                     var winner = await Task.WhenAny(fetchTask, timeoutTask);
                     remoteConfigReady = winner == fetchTask;
 
-                    // P1.3 AAA-Audit Code-Review-Fix [KRITISCH]: Falls RemoteConfig im Timeout
+                    // Code-Review-Fix [KRITISCH]: Falls RemoteConfig im Timeout
                     // hängt, fetchTask im Hintergrund weiterlaufen lassen und DailyBundle nach
                     // erfolgreichem Fetch nachträglich initialisieren. Verhindert dass der
                     // Spieler das Bundle erst beim nächsten App-Start sieht.
@@ -92,7 +92,7 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
                     }
                 }
 
-                // P1.3 AAA-Audit: DailyBundle nur initialisieren wenn RemoteConfig synchron bereit war.
+                // DailyBundle nur initialisieren wenn RemoteConfig synchron bereit war.
                 // Sonst übernimmt der ContinueWith-Hook oben das (deferred Init).
                 if (remoteConfigReady)
                 {

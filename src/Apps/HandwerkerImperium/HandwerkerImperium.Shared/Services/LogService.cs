@@ -45,7 +45,7 @@ public sealed class LogService : ILogService
         var timestamp = DateTime.UtcNow.ToString("HH:mm:ss.fff");
         var entry = $"[{timestamp}] [{level}] {message}";
 
-        // AAA-Audit P2: Im Release-Build keine Console-/Debug-Schreibvorgaenge mehr —
+        // Im Release-Build keine Console-/Debug-Schreibvorgaenge mehr —
         // sie kosten Frame-Time und Battery. Der In-Memory-Ringbuffer bleibt aktiv,
         // damit der „/diagnostics"-Pfad im Release weiterhin Logs liefern kann.
         WriteToConsole(entry);

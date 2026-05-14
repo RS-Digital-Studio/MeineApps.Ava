@@ -11,7 +11,7 @@ using MeineApps.Core.Premium.Ava.Services;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// P1.3 AAA-Audit (08.05.2026, Foundation): Daily-Bundle-Rotation.
+/// (08.05.2026, Foundation): Daily-Bundle-Rotation.
 ///
 /// Liest die 7 Slots aus <see cref="RemoteConfigKeys.DailyBundleSkus"/> als JSON-Array.
 /// Format pro Slot: <c>{"sku": "bundle_x", "title_key": "...", "desc_key": "...",

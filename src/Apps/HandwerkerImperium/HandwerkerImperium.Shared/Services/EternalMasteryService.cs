@@ -4,7 +4,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// AAA-Audit P1 Long-Term-Engagement post-Lv1000 (12.05.2026).
+/// Long-Term-Engagement post-Lv1000 (12.05.2026).
 /// Implementierung von <see cref="IEternalMasteryService"/>. Liest TotalPrestigeCount aus
 /// dem GameState und liefert den akkumulierten Bonus. Konstanten leben in
 /// <see cref="GameBalanceConstants"/> fuer zentrales Balancing.
@@ -59,7 +59,7 @@ public sealed class EternalMasteryService : IEternalMasteryService
     {
         if (completedPrestiges <= 0) return 0m;
 
-        // v2.1.1 (Audit B-H02): Soft-Cap ab EternalMasterySoftCapThreshold Prestiges. Frueher skalierte der
+        // Soft-Cap ab EternalMasterySoftCapThreshold Prestiges. Frueher skalierte der
         // Bonus unbegrenzt (N=1000 → +1500% Income, multiplikativ mit Premium → game-breaking).
         // Bis zur Schwelle voller Bonus, der Ueberschuss wird logarithmisch gedaempft.
         int effectivePrestiges = completedPrestiges;

@@ -4,8 +4,8 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// Spezialisierungstyp für Workshops (ab Level 50, vorher Doc-Bug "Level 100").
-/// v2.1.1 (Audit B-L01): Korrekter Unlock-Level ist 50.
-/// v2.1.1 (Audit B-H05): Quality + Economy haben jetzt sichtbare Eigen-Vorteile (Aura-Verdopplung
+/// Korrekter Unlock-Level ist 50.
+/// Quality + Economy haben jetzt sichtbare Eigen-Vorteile (Aura-Verdopplung
 /// bzw. Order-Reward-Bonus) — vorher gewann Efficiency immer und Re-Spec war toter Code.
 /// </summary>
 public enum SpecializationType
@@ -61,7 +61,7 @@ public class WorkshopSpecialization
     };
 
     /// <summary>
-    /// v2.1.1 (Audit B-H05): Multiplikator auf den Aura-Bonus von S+-Tier-Workern (siehe GameBalanceConstants.MaxAuraBonus).
+    /// Multiplikator auf den Aura-Bonus von S+-Tier-Workern (siehe GameBalanceConstants.MaxAuraBonus).
     /// Quality verdoppelt die effektive Aura ueber den Standard-Cap hinweg → echter Eigen-Vorteil
     /// neben "20% Effizienz". Ohne Spezialisierung: 1.0m (kein Modifier).
     /// </summary>
@@ -73,7 +73,7 @@ public class WorkshopSpecialization
     };
 
     /// <summary>
-    /// v2.1.1 (Audit B-H05): Bonus auf Auftrags-Belohnungen aus diesem Workshop. Economy bekommt jetzt einen
+    /// Bonus auf Auftrags-Belohnungen aus diesem Workshop. Economy bekommt jetzt einen
     /// sichtbaren positiven Effekt jenseits "Kosten -25%" — kompensiert die -5% Einkommen.
     /// </summary>
     [JsonIgnore]

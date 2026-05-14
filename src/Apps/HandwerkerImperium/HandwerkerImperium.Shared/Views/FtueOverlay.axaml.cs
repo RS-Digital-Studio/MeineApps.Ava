@@ -14,11 +14,11 @@ using SkiaSharp;
 namespace HandwerkerImperium.Views;
 
 /// <summary>
-/// AAA-Audit P0 FTUE-UI: Spotlight-Overlay-View. Code-Behind misst die Bounds des
+/// Spotlight-Overlay-View. Code-Behind misst die Bounds des
 /// Spotlight-Targets (per AutomationId), gibt sie ans VM weiter und zeichnet das
 /// SkiaSharp-Spotlight per <see cref="FtueSpotlightRenderer"/>.
 ///
-/// AAA-Audit P1 (12.05.2026): Render-Tick auf zentralen <see cref="IFrameClock"/>
+/// (12.05.2026): Render-Tick auf zentralen <see cref="IFrameClock"/>
 /// migriert — kein eigener DispatcherTimer mehr.
 /// </summary>
 public partial class FtueOverlay : UserControl

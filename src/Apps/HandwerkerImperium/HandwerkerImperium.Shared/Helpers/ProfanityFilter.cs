@@ -33,7 +33,7 @@ public static class ProfanityFilter
     };
 
     /// <summary>
-    /// v2.1.1 (Audit FB-M04): Leetspeak-Mapping fuer typische Bypass-Versuche
+    /// Leetspeak-Mapping fuer typische Bypass-Versuche
     /// (f@ck, sh1t, b1tch, etc.). Wird vor dem Wort-Vergleich angewendet.
     /// </summary>
     private static readonly (char from, char to)[] LeetMapping =
@@ -47,7 +47,7 @@ public static class ProfanityFilter
     };
 
     /// <summary>
-    /// v2.1.1 (Audit FB-M04): Normalisiert Text — Unicode-Diakritika (FormD + IsNonSpacingMark)
+    /// Normalisiert Text — Unicode-Diakritika (FormD + IsNonSpacingMark)
     /// strippen, dann Leetspeak-Mapping anwenden. Ergebnis ist die Vergleichs-Form, die
     /// gegen die Blockliste geprueft wird.
     /// </summary>
@@ -79,7 +79,7 @@ public static class ProfanityFilter
     /// <summary>
     /// Ersetzt bekannte Beleidigungen im Text durch "***".
     /// Prüft ganze Wörter und mehrteilige Phrasen.
-    /// v2.1.1 (Audit FB-M04): Vergleich gegen normalisierte Form (Diakritika strippen +
+    /// Vergleich gegen normalisierte Form (Diakritika strippen +
     /// Leetspeak). Replace passiert im Original-Text, sodass die Anzeige Diakritika
     /// behaelt — nur die Match-Logik ist robuster gegen Bypass-Versuche.
     /// </summary>

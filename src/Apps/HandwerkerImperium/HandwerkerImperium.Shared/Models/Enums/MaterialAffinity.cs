@@ -1,13 +1,13 @@
 namespace HandwerkerImperium.Models.Enums;
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan): Worker-Material-Affinitaet (Plan Section 3.7).
+/// V7 (): Worker-Material-Affinitaet (Plan Section 3.7).
 /// Eine von 5 Achsen wird beim Hiring gerollt (gleichverteilt 20%).
 /// Match mit Material-Kategorie gibt +20% Crafting-Speed des Workshops.
 /// </summary>
 public enum MaterialAffinity
 {
-    /// <summary>Keine Affinitaet (Default fuer alte Saves vor V7 Phase 4).</summary>
+    /// <summary>Keine Affinitaet (Default fuer alte Saves vor V7 ).</summary>
     None = 0,
 
     /// <summary>Holz: Holzbrett, Moebel, Luxusmoebel, Schalung.</summary>
@@ -29,7 +29,7 @@ public enum MaterialAffinity
 public static class MaterialAffinityExtensions
 {
     /// <summary>
-    /// V7 (Phase 4): Ordnet eine Produkt-ID einer Material-Affinitaet zu.
+    /// V7 (): Ordnet eine Produkt-ID einer Material-Affinitaet zu.
     /// Wird im CraftingService genutzt um den +20%-Speed-Match zu berechnen.
     /// </summary>
     public static MaterialAffinity GetMaterialAffinity(string productId) => productId switch

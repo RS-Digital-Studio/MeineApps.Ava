@@ -847,7 +847,7 @@ public sealed class WorkerAvatarRenderer
     }
 
     /// <summary>
-    /// v2.1.1 (Audit P-C02): Bucket fuer Bitmaps die aus dem Cache evicted wurden, aber noch
+    /// Bucket fuer Bitmaps die aus dem Cache evicted wurden, aber noch
     /// von einem WorkerAvatarControl-Render-Pass referenziert sein koennen. Werden bei
     /// <see cref="FlushPendingDispose"/> (App-Pause/Shutdown) explizit disposed — sonst
     /// bleibt das Native-Memory bis zum Finalizer-Lauf des SKBitmaps liegen, auf Android
@@ -856,7 +856,7 @@ public sealed class WorkerAvatarRenderer
     private static readonly List<SKBitmap> _pendingDispose = new();
 
     /// <summary>
-    /// v2.1.1 (Audit P-C02): Disposes alle gepruneten Bitmaps. Vom App-Lifecycle (Pause/Shutdown)
+    /// Disposes alle gepruneten Bitmaps. Vom App-Lifecycle (Pause/Shutdown)
     /// aufgerufen, wenn kein Rendering mehr stattfindet. UI-Thread-only, damit kein laufender
     /// Render-Pass das Bitmap noch nutzt.
     /// </summary>

@@ -3,7 +3,7 @@ using HandwerkerImperium.Models.Firebase;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekte.
+/// V7 (, Plan Section 3.9): Gilden-Mega-Projekte.
 /// Mitglieder spenden Materialien aus ihrem Lager, das Mega-Projekt schreitet voran,
 /// bei Abschluss erhalten alle Mitglieder einen permanenten Gilden-Bonus.
 ///

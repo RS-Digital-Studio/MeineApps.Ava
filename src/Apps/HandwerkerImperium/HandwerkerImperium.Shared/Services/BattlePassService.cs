@@ -6,7 +6,7 @@ using MeineApps.Core.Premium.Ava.Services;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Verwaltet den Battle Pass (50 Tiers, Free + Premium Track, 30-Tage-Saison — AAA-Audit P2).
+/// Verwaltet den Battle Pass (50 Tiers, Free + Premium Track, 30-Tage-Saison — P2).
 /// Automatische XP-Vergabe bei Aufträgen, MiniGames und Workshop-Upgrades.
 /// Premium-Track kann per IAP freigeschaltet werden.
 /// </summary>
@@ -124,7 +124,7 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
         var bp = _gameState.State.BattlePass;
         if (bp.IsPremium) return;
 
-        // v2.1.1 (Audit B-M07): Lock-in-Schutz — ab Tag 27 (3 Tage Restdauer) wird der Kauf blockiert.
+        // Lock-in-Schutz — ab Tag 27 (3 Tage Restdauer) wird der Kauf blockiert.
         // Frueher konnte der Spieler am letzten Saisontag Premium kaufen und nur 1 Tag
         // Wert bekommen, bevor die Saison ihn auf 0 zurueckdrueckte. Die UI disabled
         // den Button vorher; hier ist die harte Last-Line-of-Defense.
@@ -140,7 +140,7 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
     }
 
     /// <summary>
-    /// v2.1.1 (Audit B-M07): True wenn der Premium-Pass-Kauf wegen Saison-Ende blockiert ist. Die UI nutzt
+    /// True wenn der Premium-Pass-Kauf wegen Saison-Ende blockiert ist. Die UI nutzt
     /// das, um den Kauf-Button zu disablen + eine Warnung anzuzeigen.
     /// </summary>
     public bool IsPremiumLockedDueToSeasonEnd =>

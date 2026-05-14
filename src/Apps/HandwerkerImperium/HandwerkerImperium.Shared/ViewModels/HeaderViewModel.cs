@@ -6,7 +6,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// Dashboard-Header ViewModel: Geld, Einkommen, Netto, GoldenScrews, Level/XP, Prestige-Badge,
 /// Boost-Indikator, Rush, Delivery, Reputation, Soft-Cap, Worker-Warning.
-/// Extrahiert aus MainViewModel (17.04.2026, Phase 3 Schritt 7).
+/// Extrahiert aus MainViewModel (17.04.2026, Schritt 7).
 /// Wird ueber <see cref="MainViewModel.HeaderVM"/> in den Views referenziert.
 /// </summary>
 public sealed partial class HeaderViewModel : ViewModelBase
@@ -50,7 +50,7 @@ public sealed partial class HeaderViewModel : ViewModelBase
     [ObservableProperty] private bool _hasPendingDelivery;
     [ObservableProperty] private string _deliveryTimeRemaining = "";
 
-    // Eternal Mastery (AAA-Audit P1 Long-Term-Engagement, 12.05.2026)
+    // Eternal Mastery (Long-Term-Engagement, 12.05.2026)
     [ObservableProperty] private bool _hasEternalMastery;
     [ObservableProperty] private string _eternalMasteryDisplay = "";
 }

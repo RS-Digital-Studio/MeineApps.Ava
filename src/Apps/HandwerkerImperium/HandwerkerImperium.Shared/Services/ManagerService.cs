@@ -55,7 +55,7 @@ public sealed class ManagerService : IManagerService
 
             ManagerUnlocked?.Invoke(def.Id);
 
-            // P1.1 AAA-Audit: Manager-Unlock ist Mid-Game-Meilenstein.
+            // Manager-Unlock ist Mid-Game-Meilenstein.
             _analyticsService?.TrackEvent(AnalyticsEvents.ManagerUnlocked, new Dictionary<string, object?>
             {
                 ["manager_id"] = def.Id,

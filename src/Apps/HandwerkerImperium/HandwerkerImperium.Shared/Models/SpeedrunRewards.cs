@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Models;
 ///
 /// Spielmechanisch lockt das Late-Game-Spieler dazu, jeden Run zu optimieren —
 /// ein zweiter Loop neben Multiplikator-Grind nach 3× Legende.
-/// (Game-Audit-Empfehlung [DESIGN-2]: "Speedrun-Tournaments fuellen Late-Game-Vakuum".)
+/// (Empfehlung: "Speedrun-Tournaments fuellen Late-Game-Vakuum".)
 /// </summary>
 public static class SpeedrunRewards
 {

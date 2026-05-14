@@ -1,14 +1,14 @@
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// AAA-Audit P0 (FTUE-System): Definition eines einzelnen Tutorial-Schritts.
+/// (FTUE-System): Definition eines einzelnen Tutorial-Schritts.
 ///
 /// Inspiration: Supercell/Habby haben 30+ FTUE-Schritte mit Hand-Animation, Spotlight-Overlay,
 /// Cooldown-Skip-Block und Dopamine-Trigger nach jedem Click. Dieses Modell bildet die
 /// Grundlage fuer einen vergleichbaren First-Run-Flow.
 ///
 /// Aktuell als Foundation: Daten-Modell + Service-Skelett. Volle Spotlight-Overlay-
-/// Implementierung ist in einem Folge-Sprint angesiedelt (laut Audit ~2-3 Wochen).
+/// Implementierung ist noch offen (geschaetzt).
 /// </summary>
 public sealed class FtueStep
 {
@@ -65,7 +65,7 @@ public enum FtueExpectedAction
 }
 
 /// <summary>
-/// AAA-Audit P0: Persistenter FTUE-State. Lebt im GameState.Tutorial.Ftue (V7-Migration).
+/// Persistenter FTUE-State. Lebt im GameState.Tutorial.Ftue (V7-Migration).
 /// </summary>
 public sealed class FtueState
 {

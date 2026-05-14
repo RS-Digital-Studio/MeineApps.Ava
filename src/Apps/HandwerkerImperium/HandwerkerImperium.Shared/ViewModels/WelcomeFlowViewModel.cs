@@ -6,7 +6,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// ViewModel fuer den Welcome-Flow: CombinedWelcome (Offline-Earnings + DailyReward kombiniert),
 /// Starter-Offer (Premium-Sonderangebot fuer neue Spieler), Offline-Earnings-Dialog, Daily-Reward-Dialog.
-/// Extrahiert aus MainViewModel.Init.cs (17.04.2026, Phase 3 Schritt 10).
+/// Extrahiert aus MainViewModel.Init.cs (17.04.2026, Schritt 10).
 /// Wird ueber <see cref="MainViewModel.WelcomeFlowVM"/> in den Views referenziert.
 /// MainViewModel bietet Delegate-Properties fuer Rueckwaertskompatibilitaet mit bestehenden Bindings.
 /// </summary>
@@ -42,7 +42,7 @@ public sealed partial class WelcomeFlowViewModel : ViewModelBase
     [ObservableProperty] private string _dailyRewardStreakText = "";
     [ObservableProperty] private string _dailyRewardAmountText = "";
 
-    // v2.1.1 (Audit U-C05): Streak-Dots als Datengebundene Sammlung statt 7 hardcodierter
+    // Streak-Dots als Datengebundene Sammlung statt 7 hardcodierter
     // Border-Elemente. StreakDays[i].IsCurrent = true beim aktuellen Tag, IsClaimed = true
     // fuer schon erhaltene Tage. Tag-1-Spieler sieht jetzt einen echten Status, kein
     // statisches alternierendes Muster.
@@ -65,7 +65,7 @@ public sealed partial class WelcomeFlowViewModel : ViewModelBase
 }
 
 /// <summary>
-/// v2.1.1 (Audit U-C05): Datenklasse fuer einen Streak-Dot im DailyRewardDialog.
+/// Datenklasse fuer einen Streak-Dot im DailyRewardDialog.
 /// </summary>
 public sealed class StreakDayItem
 {

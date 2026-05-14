@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Services.Interfaces;
 ///
 /// Das System belohnt manuelles Mini-Game-Spielen ueber den Auto-Complete-Threshold
 /// (30 Perfects) hinaus — sonst werden die zehn aufwendig gebauten Mini-Games nach
-/// kurzer Zeit zur Skip-Pflicht (Game-Audit [DESIGN-1]).
+/// kurzer Zeit zur Skip-Pflicht .
 /// </summary>
 public interface IMiniGameMasteryService
 {

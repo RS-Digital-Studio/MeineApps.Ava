@@ -78,7 +78,7 @@ public sealed partial class PrestigeService
             GameBalanceConstants.BonusPpExtraLevelCap);
         bonusPp += levelBonus;
 
-        // Fix 18.04.2026 Game-Audit: Tier-skalierender Bonus-PP. Vorher war der flat-Bonus
+        // Tier-skalierender Bonus-PP. Vorher war der flat-Bonus
         // (max +16) bei Legende-Runs (×9 Tier-Multi) nur +18% Uplift — unerheblich.
         // Bei Bronze (×1.2) waren die gleichen +16 noch +133% Uplift. Design bestrafte Vielspieler.
         // Loesung: Bonus-PP werden mit einem Tier-Faktor multipliziert, sodass die relative Wirkung
@@ -98,7 +98,7 @@ public sealed partial class PrestigeService
 
     public int CheckAndAwardMilestones()
     {
-        // v2.1.1 (Audit B-C02): State-Mutation (ClaimedMilestones, PrestigesSinceLastWeeklyReward) laeuft
+        // State-Mutation (ClaimedMilestones, PrestigesSinceLastWeeklyReward) laeuft
         // unter dem zentralen State-Lock — race-frei gegen den Background-Serializer.
         // AddGoldenScrews (nimmt erneut den Lock + feuert Event) und das MilestoneReached-Event
         // werden gesammelt und bewusst NACH dem Lock abgearbeitet.

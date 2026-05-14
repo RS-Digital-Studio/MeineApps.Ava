@@ -18,7 +18,7 @@ public struct InspectionCellData
 }
 
 /// <summary>
-/// AAA SkiaSharp-Renderer fuer das Bauabnahme-Minigame (Inspection).
+/// SkiaSharp-Renderer fuer das Bauabnahme-Minigame (Inspection).
 /// Baustellen-Optik: Betongrau mit Rissen, Kacheln mit Baustellen-Elementen,
 /// Staub-Partikel, Lupe als Deko, Mangel-Hinweis per subtiles Schimmern.
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.

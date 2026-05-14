@@ -22,7 +22,7 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
     private readonly ILocalizationService _localizationService;
     private readonly IDailyChallengeService? _dailyChallengeService;
     private readonly IWeeklyMissionService? _weeklyMissionService;
-    // V7 (Phase 1 Ressourcen-Plan): WarehouseService mutiert das Inventar bei Auto-Production
+    // V7 (): WarehouseService mutiert das Inventar bei Auto-Production
     // und Material-Lieferungen. Ohne Subscription wuerde die Crafting-Inventar-Liste stale bleiben.
     private readonly IWarehouseService? _warehouseService;
 
@@ -100,7 +100,7 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
 
         // Auto-Refresh wenn Timer abläuft
         _craftingService.CraftingUpdated += OnCraftingUpdated;
-        // V7 (Phase 1 Ressourcen-Plan): Auto-Production / Material-Lieferungen / Lieferant-
+        // V7 (): Auto-Production / Material-Lieferungen / Lieferant-
         // Material mutieren das Inventar via WarehouseService — auch dieses Event horchen.
         if (_warehouseService != null)
             _warehouseService.InventoryChanged += OnCraftingUpdated;

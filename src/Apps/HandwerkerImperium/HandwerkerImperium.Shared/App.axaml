@@ -126,7 +126,7 @@
         TrueBrush="{StaticResource CraftPrimaryLightBrush}"
         FalseBrush="{StaticResource TierFBrush}" />
 
-    <!-- Erbstück-Wahl Converter (Phase 4 V7 Heirloom-Selection in PrestigeView) -->
+    <!-- Erbstück-Wahl Converter ( V7 Heirloom-Selection in PrestigeView) -->
     <converters:BoolToBrushConverter x:Key="HeirloomSelectedBgConverter"
         TrueBrush="#1FD97706"
         FalseBrush="Transparent" />
@@ -163,7 +163,7 @@
     <StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />
 
     <!-- HandwerkerImperium: Button-Farben auf Craft-Palette ueberschreiben -->
-    <!-- v2.0.37 Audit-Fix U3: Disabled-State sichtbar (Opacity 0.45 + muted Foreground) — -->
+    <!-- Disabled-State sichtbar (Opacity 0.45 + muted Foreground) — -->
     <!-- vorher wirkte ein deaktivierter Button wie Render-Bug. -->
     <Style Selector="Button:disabled">
       <Setter Property="Opacity" Value="0.45" />

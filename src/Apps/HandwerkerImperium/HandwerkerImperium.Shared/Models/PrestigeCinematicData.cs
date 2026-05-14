@@ -3,7 +3,7 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// Eingabe-Daten für die Prestige-Cinematic (P0.3 — AAA-Audit 2026-05-08).
+/// Eingabe-Daten für die Prestige-Cinematic (P0.3 — 2026-05-08).
 /// Wird beim Prestige-Reset vom <see cref="Services.IPrestigeService"/> erzeugt
 /// und an die Cinematic-View übergeben.
 ///
@@ -15,7 +15,7 @@ namespace HandwerkerImperium.Models;
 /// </summary>
 public sealed class PrestigeCinematicData
 {
-    /// <summary>Geld zum Zeitpunkt des Prestiges (für Reverse-Counter Phase 1).</summary>
+    /// <summary>Geld zum Zeitpunkt des Prestiges (für Reverse-Counter ).</summary>
     public decimal MoneyAtPrestige { get; init; }
 
     /// <summary>Erreichte Tier (Bronze/Silver/...).</summary>
@@ -39,10 +39,10 @@ public sealed class PrestigeCinematicData
     /// <summary>Anzahl bereits durchgeführter Prestiges in diesem Tier (für Diminishing).</summary>
     public int TierCount { get; init; }
 
-    /// <summary>Run-Dauer als Sekunden (für Speedrun-Anzeige in Phase 4).</summary>
+    /// <summary>Run-Dauer als Sekunden (für Speedrun-Anzeige in ).</summary>
     public double RunDurationSeconds { get; init; }
 
-    /// <summary>Anzahl aktive Challenges (für Challenge-Bonus-Anzeige in Phase 3).</summary>
+    /// <summary>Anzahl aktive Challenges (für Challenge-Bonus-Anzeige in ).</summary>
     public int ActiveChallengeCount { get; init; }
 
     /// <summary>Lokalisierter Tier-Name (z.B. "Silber"). Wird vom Service via RESX gesetzt.</summary>

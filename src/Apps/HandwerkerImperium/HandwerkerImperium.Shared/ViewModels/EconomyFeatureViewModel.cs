@@ -32,7 +32,7 @@ internal sealed class EconomyFeatureViewModel
     private readonly IEventService _eventService;
     private readonly IDialogService _dialogService;
     private readonly IAnalyticsService? _analyticsService;
-    // V7 (Phase 3 Ressourcen-Plan): optional injiziert — Lager + Research-Bonus fuer Lieferungen.
+    // V7 (): optional injiziert — Lager + Research-Bonus fuer Lieferungen.
     private readonly IWarehouseService? _warehouseService;
     private readonly IResearchService? _researchService;
 
@@ -349,7 +349,7 @@ internal sealed class EconomyFeatureViewModel
             return;
         }
 
-        // V7 (Phase 2 Ressourcen-Plan): Material-Offer-Annahme (optional). Muss VOR StartOrder
+        // V7 (): Material-Offer-Annahme (optional). Muss VOR StartOrder
         // erfolgen, damit Reservierungen atomar mit dem Auftrags-Start zusammenfallen.
         if (acceptMaterialOffer && order.HasMaterialOffer)
         {
@@ -611,7 +611,7 @@ internal sealed class EconomyFeatureViewModel
                 break;
 
             case Models.Enums.DeliveryType.Material:
-                // V7 (Phase 3 Ressourcen-Plan): Material direkt ins Lager (mit Stack-Limit).
+                // V7 (): Material direkt ins Lager (mit Stack-Limit).
                 if (!string.IsNullOrEmpty(delivery.MaterialProductId))
                 {
                     int requested = (int)Math.Round(delivery.Amount);
@@ -1418,7 +1418,7 @@ internal sealed class EconomyFeatureViewModel
                 order.DisplayDescription = string.Join(", ", parts);
             }
 
-            // V7 (Phase 2 Ressourcen-Plan): Material-Offer-Display
+            // V7 (): Material-Offer-Display
             if (order.HasMaterialOffer)
             {
                 var allProducts = CraftingProduct.GetAllProducts();

@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// Partial Class: Level-Up-Dialog (v2.1.0 Aufspaltung Phase 1).
+/// Partial Class: Level-Up-Dialog (v2.1.0 Aufspaltung ).
 /// Eigene Datei fuer Wartbarkeit — Bindings bleiben auf DialogViewModel,
 /// keine UI-Aenderung noetig.
 /// </summary>

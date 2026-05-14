@@ -30,7 +30,7 @@ public class SeasonalItemEffect
     [JsonPropertyName("speedBoostMinutes")]
     public int SpeedBoostMinutes { get; set; }
 
-    // Saison-einzigartige Effekte (Phase 2.9)
+    // Saison-einzigartige Effekte (.9)
     // Effekt wird in GameLoopService/OfflineProgressService ausgewertet
 
     /// <summary>Temporaerer Extra-Worker-Slot (Dauer in Tagen).</summary>

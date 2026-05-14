@@ -5,7 +5,7 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Helpers;
 
 /// <summary>
-/// P1.5 AAA-Audit Code-Review-Fix [Finding 5]: Cap-getriebener LIFO-Stack ohne O(n)-Rebuild.
+/// Code-Review-Fix [Finding 5]: Cap-getriebener LIFO-Stack ohne O(n)-Rebuild.
 ///
 /// Vorher: <see cref="Stack{T}"/> mit ToArray + Clear + n*Push bei jeder Cap-Ueberschreitung.
 /// Jetzt: Ringbuffer mit Push/Pop in O(1). Aelteste Eintraege werden bei Cap-Ueberlauf

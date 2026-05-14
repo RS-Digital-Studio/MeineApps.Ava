@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Services;
 /// Struktur in Firebase:
 /// <list type="bullet">
 ///   <item><c>cloud_saves/{playerId}/metadata</c> — kleine Preview (Level, Money, SavedAt, Version)</item>
-///   <item><c>cloud_saves/{playerId}/data</c>     — der kompakte State-JSON</item>
+///   <item><c>cloud_saves/{playerId}/data</c> — der kompakte State-JSON</item>
 /// </list>
 ///
 /// Der Save wird beim Download fuer das aktuelle Geraet neu HMAC-signiert (Integrity-Key

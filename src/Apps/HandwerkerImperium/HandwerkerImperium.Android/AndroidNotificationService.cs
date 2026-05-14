@@ -24,7 +24,7 @@ public sealed class AndroidNotificationService : INotificationService
     internal const int RushAvailableId = 1003;
     internal const int DailyRewardId = 1004;
 
-    // AAA-Audit P1: 4 zusaetzliche Trigger fuer Re-Engagement (Top-2 nach FTUE).
+    // 4 zusaetzliche Trigger fuer Re-Engagement (Top-2 nach FTUE).
     internal const int WorkerMoodCriticalId = 1005;     // Worker-Stimmung < 25
     internal const int OfflineEarningsCappedId = 1006;  // Offline-Cap erreicht (4h)
     internal const int BattlePassExpiringId = 1007;     // Saison endet in 3 Tagen
@@ -94,7 +94,7 @@ public sealed class AndroidNotificationService : INotificationService
         var rushDelay = rushTime - rushNow;
         ScheduleNotification(RushAvailableId, "RushAvailableNotif", (long)rushDelay.TotalMilliseconds);
 
-        // ────────── AAA-Audit P1: 4 neue Re-Engagement-Trigger ──────────
+        // ────────── 4 neue Re-Engagement-Trigger ──────────
 
         // 5. Worker-Mood-Critical: Trigger 30min nach App-Close, wenn ein Worker Mood < 25 hatte.
         var anyLowMood = state.Workshops?.Any(ws => ws.Workers.Any(w => w.Mood < 25)) ?? false;

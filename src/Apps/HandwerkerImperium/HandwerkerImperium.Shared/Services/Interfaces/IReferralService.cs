@@ -3,7 +3,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// AAA-Audit P1: Friend-Invite Reward-Loop. K-Factor-Driver — Voodoo / Lion erreichen
+/// Friend-Invite Reward-Loop. K-Factor-Driver — Voodoo / Lion erreichen
 /// 30% ihrer Installs ueber solche Empfehlungssysteme.
 /// </summary>
 public interface IReferralService

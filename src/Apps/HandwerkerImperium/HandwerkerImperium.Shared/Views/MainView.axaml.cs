@@ -16,12 +16,12 @@ namespace HandwerkerImperium.Views;
 public partial class MainView : UserControl
 {
     private MainViewModel? _vm;
-    // v2.1.1 (Audit M-M04): Enum statt String. Frueher allokierte ActivePage.ToString() einen
+    // Enum statt String. Frueher allokierte ActivePage.ToString() einen
     // neuen String pro PropertyChanged-Event — 15 PropertyChanged/s × ~10 bytes/String = 150 b/s
     // GC-Druck plus String-Equality-Compare statt enum-Compare im PropertyChanged-Handler.
     private HandwerkerImperium.Models.Enums.ActivePage? _lastActiveTab;
 
-    // SkiaSharp Tab-Bar + Screen-Transitions + Background (Phase 3+4)
+    // SkiaSharp Tab-Bar + Screen-Transitions + Background (+4)
     private readonly GameTabBarRenderer _tabBarRenderer = new();
     private readonly ScreenTransitionRenderer _transitionRenderer = new();
     private readonly GameBackgroundRenderer _backgroundRenderer = new();
@@ -29,14 +29,14 @@ public partial class MainView : UserControl
     // Full-Screen Reward-Zeremonie (Phase 7)
     private readonly RewardCeremonyRenderer _ceremonyRenderer = new();
 
-    // P0.3 AAA-Audit: Prestige-Cinematic-Renderer (4 Phasen, 14s)
+    // Prestige-Cinematic-Renderer (4 Phasen, 14s)
     private readonly PrestigeCinematicRenderer _prestigeCinematicRenderer = new();
 
     // Animierter Loading-Screen (Phase 10)
     private readonly LoadingScreenRenderer _loadingRenderer = new();
     private bool _loadingTipsInitialized;
 
-    // AAA-Audit P1 Migration: DispatcherTimer durch IFrameClock-Subscription ersetzt.
+    // DispatcherTimer durch IFrameClock-Subscription ersetzt.
     private Services.Interfaces.IFrameClock? _frameClock;
     private bool _renderActive;
     private float _renderTime;
@@ -57,13 +57,13 @@ public partial class MainView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
-        // v2.0.39 Audit-Fix U5: Escape schliesst den obersten Dialog (Desktop-Komfort).
+        // Escape schliesst den obersten Dialog (Desktop-Komfort).
         // Tunnel-Phase damit das vor evtl. Dialog-internen Handlern triggert.
         AddHandler(KeyDownEvent, OnGlobalKeyDown, RoutingStrategies.Tunnel);
     }
 
     /// <summary>
-    /// v2.0.39 Audit-Fix U5: Auf Desktop schliesst Escape den obersten sichtbaren Dialog.
+    /// Auf Desktop schliesst Escape den obersten sichtbaren Dialog.
     /// Aequivalent zum Android-Back-Button (HandleBackPressed). Auf Android ist Escape
     /// kein nativer Key — der Handler ist daher reine Desktop-UX.
     /// </summary>
@@ -89,7 +89,7 @@ public partial class MainView : UserControl
             _vm = null;
         }
 
-        // v2.1.1 (Audit H-H11): try/catch um jeden Renderer-Dispose. Frueher hat eine
+        // try/catch um jeden Renderer-Dispose. Frueher hat eine
         // Exception bei einem Dispose-Call den Rest der Kaskade abgebrochen, wodurch andere
         // Renderer ihr Native-Memory nicht freigaben.
         try { _tabBarRenderer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainView] TabBar.Dispose: {ex.Message}"); }
@@ -218,7 +218,7 @@ public partial class MainView : UserControl
             }
         }
 
-        // P0.3 AAA-Audit: Prestige-Cinematic
+        // Prestige-Cinematic
         if (_prestigeCinematicRenderer.IsActive)
         {
             _prestigeCinematicRenderer.Update(0.066f);
@@ -244,7 +244,7 @@ public partial class MainView : UserControl
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Animierter Hintergrund (Phase 4)
+    // Animierter Hintergrund ()
     // ═══════════════════════════════════════════════════════════════════════
 
     private void OnBackgroundPaintSurface(object? sender, Avalonia.Labs.Controls.SKPaintSurfaceEventArgs e)
@@ -526,7 +526,7 @@ public partial class MainView : UserControl
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // P0.3 AAA-Audit: Prestige-Cinematic (Render + Tap-Handling)
+    // Prestige-Cinematic (Render + Tap-Handling)
     // ═══════════════════════════════════════════════════════════════════════
 
     private void OnPrestigeCinematicRequested(HandwerkerImperium.Models.PrestigeCinematicData data)
@@ -551,8 +551,8 @@ public partial class MainView : UserControl
     private void OnPrestigeCinematicTapped(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         // 3-Stufen-Logik:
-        //  (a) Tap im Skip-Button-Bereich (Phase 1-3) = Skip
-        //  (b) Tap irgendwo waehrend Phase 1-3 = Skip (groesserer Touch-Bereich)
+        //  (a) Tap im Skip-Button-Bereich (-3) = Skip
+        //  (b) Tap irgendwo waehrend -3 = Skip (groesserer Touch-Bereich)
         //  (c) Tap in Reward-Phase = Dismiss (Tap-to-Continue)
         if (_prestigeCinematicRenderer.IsReadyForDismiss)
         {

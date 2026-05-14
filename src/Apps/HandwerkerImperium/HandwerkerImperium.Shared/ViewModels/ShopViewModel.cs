@@ -73,7 +73,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     [ObservableProperty]
     private string _premiumIncomeComparison = string.Empty;
 
-    /// <summary>P1.3 AAA-Audit: Aktuelles Tages-Bundle (null wenn deaktiviert).</summary>
+    /// <summary>Aktuelles Tages-Bundle (null wenn deaktiviert).</summary>
     [ObservableProperty]
     private DailyBundleOffer? _currentDailyBundle;
 
@@ -138,7 +138,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         _gameStateService.MoneyChanged += OnMoneyChanged;
         _gameStateService.GoldenScrewsChanged += OnGoldenScrewsChanged;
 
-        // P1.3 AAA-Audit: Bundle live aktualisieren bei Tageswechsel
+        // Bundle live aktualisieren bei Tageswechsel
         if (_dailyBundleService != null)
             _dailyBundleService.BundleRotated += OnDailyBundleRotated;
 
@@ -153,13 +153,13 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         Avalonia.Threading.Dispatcher.UIThread.Post(RefreshDailyBundle);
     }
 
-    /// <summary>P1.3 AAA-Audit: Aktualisiert <see cref="CurrentDailyBundle"/> aus dem Service.</summary>
+    /// <summary>Aktualisiert <see cref="CurrentDailyBundle"/> aus dem Service.</summary>
     public void RefreshDailyBundle()
     {
         CurrentDailyBundle = _dailyBundleService?.GetCurrentBundle();
     }
 
-    /// <summary>P1.3 AAA-Audit: Kauft das aktuelle Bundle (Service verbucht Bonus-Items).</summary>
+    /// <summary>Kauft das aktuelle Bundle (Service verbucht Bonus-Items).</summary>
     [RelayCommand]
     private async Task PurchaseDailyBundleAsync()
     {
@@ -202,7 +202,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             new ShopItem
             {
                 Id = "premium",
-                // V7 (Phase 4 Ressourcen-Plan, Section 10): Premium-Kauf wird zum "Imperium-Pass"
+                // V7 (, Section 10): Premium-Kauf wird zum "Imperium-Pass"
                 // repositioniert — bestehender Preis 4,99 €, klare Bundle-Boni-Liste in der Detail-Card.
                 Name = _localizationService.GetString("ImperiumPassName") ?? _localizationService.GetString("ShopPremiumName"),
                 Description = _localizationService.GetString("ImperiumPassDesc") ?? _localizationService.GetString("ShopPremiumDesc"),
@@ -312,7 +312,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                 Price = "4,99 €",
                 IsPremiumItem = true
             },
-            // ── Whale-Tier-Bundles (AAA-Audit P0 — Revenue-Hardcap durchbrechen) ──
+            // ── Whale-Tier-Bundles (— Revenue-Hardcap durchbrechen) ──
             // Zielgruppe: Top-10%-Spieler, die aktuell maximal ~24 EUR ausgeben koennen.
             // Erwartung: ARPU +30-60% in der Whale-Cohort.
             new ShopItem
@@ -714,7 +714,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                         }
                     }
                 }
-                // ── Whale-Bundles (AAA-Audit P0): Mid/Big/Mega-Tier (9,99/19,99/49,99 EUR) ──
+                // ── Whale-Bundles (P0): Mid/Big/Mega-Tier (9,99/19,99/49,99 EUR) ──
                 else if (item.Id is "bundle_mid" or "bundle_big" or "bundle_mega")
                 {
                     success = await _purchaseService.PurchaseConsumableAsync(item.Id);
@@ -847,7 +847,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             "golden_screws_150" => 2.49m,
             "golden_screws_450" => 4.99m,
             "starter_pack" => 2.99m,
-            // Whale-Bundles (AAA-Audit P0): Top-VIP-Tier-Schub.
+            // Whale-Bundles (P0): Top-VIP-Tier-Schub.
             "bundle_mid" => 9.99m,
             "bundle_big" => 19.99m,
             "bundle_mega" => 49.99m,

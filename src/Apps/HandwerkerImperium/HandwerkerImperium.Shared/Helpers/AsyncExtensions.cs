@@ -69,7 +69,7 @@ public static class AsyncExtensions
     /// Wrapper für async void Event-Handler (v2.0.36). Fängt ALLE Exceptions zentral —
     /// ein unbehandelter Throw in einem async void Handler würde sonst den Prozess zerreißen
     /// (siehe <see cref="HandwerkerImperium.ViewModels.MiniGames.BaseMiniGameViewModel"/>
-    /// HandleTimerTick als Vorbild, dort wurde das Pattern in Phase 1 etabliert).
+    /// HandleTimerTick als Vorbild, dort wurde das Pattern in etabliert).
     /// </summary>
     /// <example>
     /// <code>

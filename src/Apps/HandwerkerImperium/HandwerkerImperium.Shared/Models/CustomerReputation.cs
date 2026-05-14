@@ -52,7 +52,7 @@ public class CustomerReputation
     };
 
     /// <summary>
-    /// v2.0.37 Audit-Fix L5: Letzter berechneter Tier-Stand. Persistiert damit Hysterese
+    /// Letzter berechneter Tier-Stand. Persistiert damit Hysterese
     /// ueber App-Restarts hinweg konsistent bleibt. Default Beginner — wird beim ersten
     /// <see cref="RecomputeTier"/>-Call auf den korrekten Tier gesetzt.
     /// </summary>
@@ -60,7 +60,7 @@ public class CustomerReputation
     public CustomerReputationTier CurrentTier { get; set; } = CustomerReputationTier.Beginner;
 
     /// <summary>
-    /// v2.0.37 Audit-Fix L5: Berechnet den Tier mit Hysterese und aktualisiert
+    /// Berechnet den Tier mit Hysterese und aktualisiert
     /// <see cref="CurrentTier"/> bei Aenderung. Liefert true wenn ein Tier-Wechsel
     /// stattgefunden hat (Caller kann TierChanged-Event ausloesen).
     /// </summary>

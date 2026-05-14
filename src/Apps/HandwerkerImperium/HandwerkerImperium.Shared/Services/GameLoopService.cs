@@ -242,7 +242,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         // Session-Start auf jetzt setzen, damit Stop() danach nicht die gleiche Zeitspanne nochmal zaehlt
         _sessionStart = DateTime.UtcNow;
 
-        // v2.1.1 (Audit H-H05): Save synchron abwarten statt FireAndForget. Bei Android OnPause/Kill kann ein
+        // Save synchron abwarten statt FireAndForget. Bei Android OnPause/Kill kann ein
         // Background-Save sonst abgebrochen werden, bevor er im Dateisystem landet — fuer ein
         // Idle-Game fatal, weil Offline-Earnings auf LastPlayedAt basieren.
         await _saveGameService.SaveAsync().ConfigureAwait(false);
@@ -269,7 +269,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         RefreshPrestigeEffectsIfNeeded(state);
 
         // 0. Research- und Gebaeude-Effekte sammeln
-        // v2.1.1 (Audit M-M12): _researchService ist non-nullable im Ctor — kein ?. mehr.
+        // _researchService ist non-nullable im Ctor — kein ?. mehr.
         var researchEffects = _researchService.GetTotalEffects();
         UpdateExtraWorkerSlots(state, researchEffects);
 
@@ -377,7 +377,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         }
 
         // 7. Update worker states (mood, fatigue, XP)
-        // v2.1.1 (Audit M-M12): _workerService + _researchService sind non-nullable — kein ?.
+        // _workerService + _researchService sind non-nullable — kein ?.
         _workerService.UpdateWorkerStates(1.0);
 
         // 8. Update research timer

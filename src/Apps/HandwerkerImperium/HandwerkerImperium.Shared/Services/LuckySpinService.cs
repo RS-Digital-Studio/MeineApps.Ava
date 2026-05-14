@@ -35,7 +35,7 @@ public sealed class LuckySpinService : ILuckySpinService
     }
 
     /// <summary>
-    /// V7 (Phase 4 — Imperium-Pass): Gratis-Spin ist verfuegbar, wenn der reguläre erste-Spin
+    /// V7 ( — Imperium-Pass): Gratis-Spin ist verfuegbar, wenn der reguläre erste-Spin
     /// heute noch nicht genutzt wurde ODER der Spieler Premium hat und der Bonus-Spin (2/Tag)
     /// heute noch frei ist. Plan Section 10.2.
     /// </summary>
@@ -61,7 +61,7 @@ public sealed class LuckySpinService : ILuckySpinService
         var spinState = state.LuckySpin;
         spinState.ResetDailyIfNeeded();
 
-        // Erste Stufe: regulaerer Gratis-Spin (existiert seit Welle 2).
+        // Erste Stufe: regulaerer Gratis-Spin (existiert seit ).
         if (spinState.HasFreeSpin)
         {
             spinState.LastFreeSpinDate = DateTime.UtcNow;

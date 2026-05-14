@@ -36,7 +36,7 @@ public sealed partial class GameStateService
     }
 
     /// <summary>
-    /// V7 (Phase 2 Ressourcen-Plan): Akzeptiert das Material-Angebot eines Auftrags.
+    /// V7 (): Akzeptiert das Material-Angebot eines Auftrags.
     /// Atomar im Lock: Pruefung + Reservierung. Bei Nicht-Verfuegbarkeit false.
     /// </summary>
     public bool TryAcceptMaterialOffer(Order order)
@@ -248,7 +248,7 @@ public sealed partial class GameStateService
     /// eines Locks — Subscriber laufen auf dem aufrufenden Thread und koennen lange Operationen
     /// haben.
     ///
-    /// Audit-Fix L5: Nutzt jetzt RecomputeTier mit Hysterese (3-Punkte-Buffer) statt direkter
+    /// Nutzt jetzt RecomputeTier mit Hysterese (3-Punkte-Buffer) statt direkter
     /// Score-zu-Tier-Berechnung. Verhindert UI-Flackern an Tier-Boundaries (z.B. bei +1/-1
     /// Score-Schwankungen durch Stammkunden-Reputation und Decay).
     /// </summary>
@@ -399,7 +399,7 @@ public sealed partial class GameStateService
             moneyReward = order.FinalReward * CalculateOrderRewardMultiplierUnlocked(order);
             xpReward = order.FinalXp;
 
-            // V7 (Phase 2): Material-Offer-Bonus — gilt VOR Combo/Doppel-Boosts.
+            // V7 (): Material-Offer-Bonus — gilt VOR Combo/Doppel-Boosts.
             if (order.MaterialOfferAccepted && order.MaterialOfferBonusMultiplier > 0)
             {
                 decimal bonusFactor = 1m + (decimal)order.MaterialOfferBonusMultiplier;
@@ -417,7 +417,7 @@ public sealed partial class GameStateService
                 xpReward = (int)(xpReward * order.ComboMultiplier);
             }
 
-            // Rewarded-Ad-Verdopplung — V7 (Phase 4 Imperium-Pass): Premium-Spieler bekommen
+            // Rewarded-Ad-Verdopplung — V7 ( Imperium-Pass): Premium-Spieler bekommen
             // statt ×2 nun ×3 (Plan Section 10.2 "Rewarded-Belohnungen ×2 obendrauf").
             if (order.IsScoreDoubled)
             {
@@ -581,7 +581,7 @@ public sealed partial class GameStateService
             order.CurrentTaskIndex = 0;
             order.TaskResults.Clear();
 
-            // V7 (Phase 2): Beim Abbruch reservierte Materialien freigeben — kein Verbrauch.
+            // V7 (): Beim Abbruch reservierte Materialien freigeben — kein Verbrauch.
             // Material-Offer-Status wird zurueckgesetzt damit der Spieler beim erneuten Annehmen
             // bewusst entscheiden kann.
             if (order.MaterialOfferAccepted)
@@ -598,7 +598,7 @@ public sealed partial class GameStateService
     }
 
     /// <summary>
-    /// V7 (Phase 2): Konsumiert reservierte Materialien eines Auftrags (MUSS unter _stateLock laufen).
+    /// V7 (): Konsumiert reservierte Materialien eines Auftrags (MUSS unter _stateLock laufen).
     /// Subtrahiert die Mengen sowohl aus CraftingInventory als auch aus ReservedInventory.
     /// </summary>
     private void ConsumeOrderMaterialReservation(Order order)
@@ -623,7 +623,7 @@ public sealed partial class GameStateService
     }
 
     /// <summary>
-    /// V7 (Phase 2): Gibt reservierte Materialien zurueck (MUSS unter _stateLock laufen).
+    /// V7 (): Gibt reservierte Materialien zurueck (MUSS unter _stateLock laufen).
     /// Verringert NUR ReservedInventory — Material bleibt im CraftingInventory verfuegbar.
     /// </summary>
     private void ReleaseOrderMaterialReservation(Order order)

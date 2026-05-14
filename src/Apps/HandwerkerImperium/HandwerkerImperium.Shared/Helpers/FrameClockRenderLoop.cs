@@ -4,7 +4,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Helpers;
 
 /// <summary>
-/// AAA-Audit P1 (12.05.2026): Wiederverwendbare Render-Loop-Subscription auf den zentralen
+/// (12.05.2026): Wiederverwendbare Render-Loop-Subscription auf den zentralen
 /// <see cref="IFrameClock"/>. Ersetzt das gleiche DispatcherTimer-Pattern in 12+ MiniGame-
 /// und Renderer-Views.
 ///

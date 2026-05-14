@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Services;
 public sealed class ReputationShopService : IReputationShopService
 {
     private readonly IGameStateService _gameStateService;
-    // v2.1.1 (Audit C-C03): Eigener Lock entfernt — Mutationen via IGameStateService.ExecuteWithLock.
+    // Eigener Lock entfernt — Mutationen via IGameStateService.ExecuteWithLock.
 
     public event Action<ReputationShopItem>? ItemPurchased;
 

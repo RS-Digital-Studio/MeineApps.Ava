@@ -594,7 +594,7 @@ public sealed class AndroidAudioService : IAudioService, IDisposable
 
     private bool _disposed;
 
-    /// <summary>P2.3 AAA-Audit: Released Crossfade-Timer + AudioFocus-Listener + SoundPool.</summary>
+    /// <summary>Released Crossfade-Timer + AudioFocus-Listener + SoundPool.</summary>
     public void Dispose()
     {
         if (_disposed) return;

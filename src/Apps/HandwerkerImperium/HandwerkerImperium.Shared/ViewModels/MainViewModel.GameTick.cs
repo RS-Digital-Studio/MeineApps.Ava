@@ -6,7 +6,7 @@ namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
 /// Per-Tick UI-Aktualisierungen (1 Hz vom GameLoopService getrieben).
-/// AAA-Audit P0 Aufspaltung: aus MainViewModel.cs extrahiert (12.05.2026).
+/// aus MainViewModel.cs extrahiert (12.05.2026).
 /// Optimierung: tab-spezifische Refreshes nur wenn sichtbar (spart ~20 PropertyChanged-Notifications/Tick).
 /// </summary>
 public sealed partial class MainViewModel

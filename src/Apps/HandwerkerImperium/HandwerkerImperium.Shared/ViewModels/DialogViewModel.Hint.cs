@@ -6,7 +6,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// AAA-Audit P0 (DialogViewModel-Strukturschnitt): Kontextuelle Hints (Tooltip-Bubble / Dialog)
+/// (DialogViewModel-Strukturschnitt): Kontextuelle Hints (Tooltip-Bubble / Dialog)
 /// inkl. Hint-Verkettung im DismissHint-Command. Aus DialogViewModel.cs herausgezogen.
 /// </summary>
 public sealed partial class DialogViewModel

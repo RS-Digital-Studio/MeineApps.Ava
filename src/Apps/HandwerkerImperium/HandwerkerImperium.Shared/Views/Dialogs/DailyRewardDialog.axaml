@@ -39,7 +39,7 @@
                    HorizontalAlignment="Center"
                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                    AutomationProperties.AutomationId="Main_Txt_DailyRewardTitle" />
-        <!-- 7-Tage Streak Dots — v2.1.1 (Audit U-C05): ItemsControl mit StreakDays-Binding.
+        <!-- 7-Tage Streak Dots — ItemsControl mit StreakDays-Binding.
              Frueher 7 hardcodierte Borders ohne Bezug zum aktuellen Streak — Tag-1-Spieler
              sahen ein alternierendes Muster, das nichts mit ihrem Fortschritt zu tun hatte.
              Visual via Class-Selectors statt Converter (siehe Style-Block oben). -->

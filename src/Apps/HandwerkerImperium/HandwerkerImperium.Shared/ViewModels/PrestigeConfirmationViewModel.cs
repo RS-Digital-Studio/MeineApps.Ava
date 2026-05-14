@@ -13,7 +13,7 @@ using MeineApps.Core.Premium.Ava.Services;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// AAA-Audit P0 (12.05.2026): Echte VM-Trennung für die Prestige-Tier-Auswahl-Dialog-Logik.
+/// (12.05.2026): Echte VM-Trennung für die Prestige-Tier-Auswahl-Dialog-Logik.
 /// Aus <see cref="DialogViewModel"/>.PrestigeTier.cs (Partial) zu eigenständiger ViewModel-Klasse
 /// umgezogen — klarer Single-Responsibility-Schnitt.
 ///
@@ -44,7 +44,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
     [ObservableProperty] private List<PrestigeTierOption> _availableTierOptions = [];
 
     // ═══════════════════════════════════════════════════════════════════
-    // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl
+    // V7 (, Section 3.8): Heirloom-Wahl
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>True wenn der Spieler T4-Items im Inventar hat — UI zeigt Erbstueck-Sektion.</summary>
@@ -78,7 +78,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
     [ObservableProperty] private string _currentRunDurationText = string.Empty;
 
     /// <summary>
-    /// v2.1.1 (Audit U-C06): Verlust-Liste fuer den Prestige-Confirm-Dialog (newline-getrennt).
+    /// Verlust-Liste fuer den Prestige-Confirm-Dialog (newline-getrennt).
     /// Wird im ConfirmDialog als eigenstaendiger roter Block neben den Gewinnen angezeigt —
     /// vorher waren Verluste nur Teil der Confirm-Message in grauem Text und wurden uebersehen.
     /// </summary>
@@ -254,7 +254,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
             : string.Empty;
 
         _dialogVm.ConfirmDialogTitle = $"{_localizationService.GetString("Prestige") ?? "Prestige"} → {tierName}";
-        // v2.1.1 (Audit U-C06): Gewinne weiterhin in ConfirmDialogMessage, Verluste in separate
+        // Gewinne weiterhin in ConfirmDialogMessage, Verluste in separate
         // LossesPreview-Property — das XAML rendert sie als roten Block, damit Spieler vor dem
         // ersten Prestige nicht uebersehen was sie wirklich verlieren.
         _dialogVm.ConfirmDialogMessage = string.Join("\n", gains) + timingWarning;
@@ -292,7 +292,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 
         BuildTierOptions(state, availableTiers, highestTier);
         UpdateContent(highestTier);
-        // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl vorbereiten.
+        // V7 (, Section 3.8): Heirloom-Wahl vorbereiten.
         BuildHeirloomCandidates();
 
         _dialogVm.ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
@@ -342,7 +342,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 
         BuildTierOptions(state, availableTiers, highestTier);
         UpdateContent(highestTier);
-        // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Wahl vorbereiten.
+        // V7 (, Section 3.8): Heirloom-Wahl vorbereiten.
         BuildHeirloomCandidates();
 
         _dialogVm.ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige now";
@@ -428,7 +428,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // V7 (Phase 4 Ressourcen-Plan, Section 3.8): Heirloom-Selection
+    // V7 (, Section 3.8): Heirloom-Selection
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -466,7 +466,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
             }
         }
 
-        // v2.1.1 (Audit U-H08): Top-N nach BaseValue automatisch vorselektieren — Spieler
+        // Top-N nach BaseValue automatisch vorselektieren — Spieler
         // verliert keine Erbstuecke mehr wenn er ohne Auswahl auf Confirm tippt (frueher
         // ging der +8%/Run-Bonus permanent verloren).
         var sorted = candidates.OrderByDescending(c => c.BaseValue).ToList();
@@ -531,7 +531,7 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
 }
 
 /// <summary>
-/// V7 (Phase 4): Auswahl-Option fuer ein Heirloom-Kandidat-Item im Prestige-Confirm-Dialog.
+/// V7 (): Auswahl-Option fuer ein Heirloom-Kandidat-Item im Prestige-Confirm-Dialog.
 /// </summary>
 public sealed partial class HeirloomCandidateOption : ObservableObject
 {

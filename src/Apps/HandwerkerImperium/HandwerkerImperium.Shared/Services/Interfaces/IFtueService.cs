@@ -3,7 +3,7 @@ using HandwerkerImperium.Models;
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// AAA-Audit P0: First-Time-User-Experience-Service. Foundation fuer einen scripted
+/// First-Time-User-Experience-Service. Foundation fuer einen scripted
 /// 8-12-Schritt-Tutorial-Flow mit Spotlight-Overlay.
 ///
 /// Aktuell: Daten-Modell + State-Machine + Analytics-Hooks.

@@ -48,7 +48,7 @@ public sealed class SettingsData
     public bool AnalyticsConsentShown { get; set; }
 
     /// <summary>
-    /// v2.0.39 Audit-Fix U1: Letzte App-Version, fuer die der "Was ist neu"-Dialog gezeigt wurde.
+    /// Letzte App-Version, fuer die der "Was ist neu"-Dialog gezeigt wurde.
     /// Default "0.0.0" damit Bestandsspieler beim ersten Start mit dieser Version den
     /// kumulativen Update-Hinweis bekommen. Format SemVer (Major.Minor.Patch).
     /// </summary>

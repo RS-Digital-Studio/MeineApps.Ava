@@ -99,7 +99,7 @@ public interface IPrestigeService
     event EventHandler<PrestigeMilestoneEventArgs>? MilestoneReached;
 
     /// <summary>
-    /// P0.3 AAA-Audit: Cinematic-Trigger fuer den 14s Prestige-Wow-Moment.
+    /// Cinematic-Trigger fuer den 14s Prestige-Wow-Moment.
     /// Wird zwischen Punkte-Vergabe und State-Reset gefeuert. MainViewModel
     /// abonniert dies und forwarded an die View, die den
     /// <see cref="HandwerkerImperium.Graphics.PrestigeCinematicRenderer"/> startet.

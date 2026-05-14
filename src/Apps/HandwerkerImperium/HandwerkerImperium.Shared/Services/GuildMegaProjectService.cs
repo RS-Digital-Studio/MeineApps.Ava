@@ -5,7 +5,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekte.
+/// V7 (, Plan Section 3.9): Gilden-Mega-Projekte.
 /// Mitglieder spenden Materialien aus ihrem Lager → permanenter Gilden-Bonus bei Abschluss.
 ///
 /// Firebase-Pfad: <c>guilds/{guildId}/megaProjects/active</c>. Spende-Operationen via

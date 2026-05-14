@@ -234,7 +234,7 @@ public sealed class GuildAchievementService : IGuildAchievementService, IDisposa
                 $"guild_research/{guildId}");
             var buildingTask = _firebase.GetAsync<Dictionary<string, GuildBuildingState>>(
                 $"guild_hall/{guildId}/buildings");
-            // v2.1.1 (Audit C-C04): Tasks laufen ab der Zuweisung parallel. Einzelnes await statt
+            // Tasks laufen ab der Zuweisung parallel. Einzelnes await statt
             // Task.WhenAll + .Result — wirft die echte Exception statt einer AggregateException.
             var guildDataJson = await guildDataTask.ConfigureAwait(false);
             var researchStates = await researchTask.ConfigureAwait(false);

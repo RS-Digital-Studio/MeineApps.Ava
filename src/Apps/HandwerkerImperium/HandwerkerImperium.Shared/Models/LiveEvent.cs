@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// AAA-Audit P1: Limited-Time-Event-Datenmodell. RemoteConfig-getrieben, dauert
+/// Limited-Time-Event-Datenmodell. RemoteConfig-getrieben, dauert
 /// 7 Tage, hat eigenen Reward-Track. Habby/Coin Master leben von solchen Events.
 /// </summary>
 public sealed class LiveEvent
@@ -29,7 +29,7 @@ public sealed class LiveEvent
     public List<int> ClaimedRewardTiers { get; set; } = [];
 }
 
-/// <summary>4 Event-Templates (Audit-Empfehlung).</summary>
+/// <summary>4 Event-Templates (Empfehlung ).</summary>
 public enum LiveEventTemplate
 {
     /// <summary>Doppelte Auftrags-Belohnungen.</summary>

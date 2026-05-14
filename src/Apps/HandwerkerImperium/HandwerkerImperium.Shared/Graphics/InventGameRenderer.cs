@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// AAA SkiaSharp-Renderer fuer das Erfinder-Puzzle-Minigame.
+/// SkiaSharp-Renderer fuer das Erfinder-Puzzle-Minigame.
 /// Tech-Labor-Atmosphaere mit Neon-Grid, holographische Kacheln mit Schaltkreis-Rahmen,
 /// Circuit-Verbindungslinien zwischen erledigten Teilen mit fliessenden Pulsen,
 /// Completion-Burst-Partikel pro Kachel, goldene Celebration bei Komplett-Montage,

@@ -275,7 +275,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             order.RequiredWorkshops = [workshopType, cooperationSecondType];
         }
 
-        // V7 (Phase 2 Ressourcen-Plan): Optionales Material-Angebot wuerfeln.
+        // V7 (): Optionales Material-Angebot wuerfeln.
         // Triggert nur bei Spieler-Level >= MaterialOfferUnlockLevel und nur fuer
         // bestimmte OrderTypes (Standard/Large/Cooperation/Weekly — nicht Quick/MaterialOrder).
         TryRollMaterialOffer(order, state);
@@ -460,7 +460,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
 
     public void RefreshOrders()
     {
-        // v2.1.1 (Audit C-C02): Lock-frei generierte Order-Listen werden unter
+        // Lock-frei generierte Order-Listen werden unter
         // ExecuteWithLock geswapt — sonst Race mit SaveAsync-Serializer auf AvailableOrders.
         // GenerateOrder/GenerateMaterialOrder lesen State, mutieren ihn aber nicht — sicher
         // ausserhalb des Locks ausfuehrbar.
@@ -592,7 +592,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     /// <inheritdoc />
     public int ExpireOldLiveOrders()
     {
-        // v2.0.39 Audit-Fix P5: Early-Exit wenn keine Live-Orders existieren — vermeidet die
+        // Early-Exit wenn keine Live-Orders existieren — vermeidet die
         // RemoveAll-Iteration ueber die volle AvailableOrders-Liste alle 3 Ticks (typisch leer).
         // LiveOrderCount ist ein O(n)-Lock-freier Scan, aber lebensfreundlicher als der
         // RemoveAt-Pfad inkl. Lock-Aequisition.
@@ -622,7 +622,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     {
         get
         {
-            // v2.0.39 Audit-Fix P5: Schneller Lese-Counter ohne Lock.
+            // Schneller Lese-Counter ohne Lock.
             // Race ist akzeptabel — bei +/-1 Diskrepanz fuehrt der naechste Tick die korrekte
             // Bereinigung im LockedExpire-Pfad durch.
             var orders = _gameStateService.State.AvailableOrders;
@@ -805,13 +805,13 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     private record OrderTemplate(string TitleKey, string TitleFallback, params MiniGameType[] GameTypes);
 
     /// <summary>
-    /// V7 (Phase 2 Ressourcen-Plan): Wuerfelt optional ein Material-Angebot fuer einen Auftrag.
+    /// V7 (): Wuerfelt optional ein Material-Angebot fuer einen Auftrag.
     /// Plan Section 3.3 Material-Anforderungs-Pool pro Tier:
-    ///   Quick:       1x T1, +25% Reward
-    ///   Standard:    2-3x T1, +30%
-    ///   Large:       1x T2 + 3x T1, +40%
+    ///   Quick: 1x T1, +25% Reward
+    ///   Standard: 2-3x T1, +30%
+    ///   Large: 1x T2 + 3x T1, +40%
     ///   Cooperation: 2x T2 (verschiedene WS), +50%
-    ///   Weekly:      1x T3 + 2x T2, +60%
+    ///   Weekly: 1x T3 + 2x T2, +60%
     ///   MaterialOrder: skip (hat eigene RequiredMaterials-Logik).
     /// Gate: Spielerlevel >= <see cref="GameBalanceConstants.MaterialOfferUnlockLevel"/>.
     /// </summary>

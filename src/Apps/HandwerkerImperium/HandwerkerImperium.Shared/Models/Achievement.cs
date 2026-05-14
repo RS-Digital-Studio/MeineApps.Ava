@@ -233,7 +233,7 @@ public static class Achievements
             new() { Id = "prestige_points_1000", TitleKey = "AchPrestigePoints1000", TitleFallback = "Point Hoarder", DescriptionKey = "AchPrestigePoints1000Desc", DescriptionFallback = "Spend 1000 prestige points in the shop", Category = AchievementCategory.Prestige, Icon = "\ud83d\udcab", TargetValue = 1000, MoneyReward = 1_000_000, XpReward = 5000, GoldenScrewReward = 150 },
 
             // ═══════════════════════════════════════════════════════════════
-            // NEUE ACHIEVEMENTS (Phase 2.2 Endgame-Expansion)
+            // NEUE ACHIEVEMENTS (.2 Endgame-Expansion)
             // ═══════════════════════════════════════════════════════════════
 
             // Prestige-Tier Achievements
@@ -272,7 +272,7 @@ public static class Achievements
             new() { Id = "equipment_all_rarities", TitleKey = "AchEquipmentAllRarities", TitleFallback = "Rarity Collector", DescriptionKey = "AchEquipmentAllRaritiesDesc", DescriptionFallback = "Collect equipment of all 4 rarity levels", Category = AchievementCategory.Collection, Icon = "DiamondOutline", TargetValue = 4, MoneyReward = 100_000, XpReward = 1500, GoldenScrewReward = 30 },
 
             // ═══════════════════════════════════════════════════════════════
-            // ASCENSION-ACHIEVEMENTS (Phase 4 Late-Game)
+            // ASCENSION-ACHIEVEMENTS ( Late-Game)
             // ═══════════════════════════════════════════════════════════════
             new() { Id = "asc_first", TitleKey = "AchAscFirst", TitleFallback = "First Ascension", DescriptionKey = "AchAscFirstDesc", DescriptionFallback = "Perform your first ascension", Category = AchievementCategory.Ascension, Icon = "Creation", TargetValue = 1, MoneyReward = 500_000, XpReward = 5000, GoldenScrewReward = 100 },
             new() { Id = "asc_5", TitleKey = "AchAsc5", TitleFallback = "Master Ascender", DescriptionKey = "AchAsc5Desc", DescriptionFallback = "Perform 5 ascensions", Category = AchievementCategory.Ascension, Icon = "Creation", TargetValue = 5, MoneyReward = 5_000_000, XpReward = 12500, GoldenScrewReward = 250 },
@@ -281,7 +281,7 @@ public static class Achievements
             new() { Id = "asc_perks_max", TitleKey = "AchAscPerksMax", TitleFallback = "Fully Upgraded", DescriptionKey = "AchAscPerksMaxDesc", DescriptionFallback = "Upgrade all 6 ascension perks to maximum level", Category = AchievementCategory.Ascension, Icon = "CheckDecagram", TargetValue = 6, MoneyReward = 100_000_000, XpReward = 50000, GoldenScrewReward = 1000 },
 
             // ═══════════════════════════════════════════════════════════════
-            // REBIRTH-ACHIEVEMENTS (Phase 4 Late-Game)
+            // REBIRTH-ACHIEVEMENTS ( Late-Game)
             // ═══════════════════════════════════════════════════════════════
             new() { Id = "rebirth_first", TitleKey = "AchRebirthFirst", TitleFallback = "First Star", DescriptionKey = "AchRebirthFirstDesc", DescriptionFallback = "Perform your first workshop rebirth", Category = AchievementCategory.Rebirth, Icon = "StarFourPoints", TargetValue = 1, MoneyReward = 1_000_000, XpReward = 5000, GoldenScrewReward = 100 },
             new() { Id = "rebirth_stars_10", TitleKey = "AchRebirthStars10", TitleFallback = "Star Collector", DescriptionKey = "AchRebirthStars10Desc", DescriptionFallback = "Collect 10 rebirth stars across all workshops", Category = AchievementCategory.Rebirth, Icon = "StarCircle", TargetValue = 10, MoneyReward = 10_000_000, XpReward = 15000, GoldenScrewReward = 300 },
@@ -289,7 +289,7 @@ public static class Achievements
             new() { Id = "rebirth_all_ws", TitleKey = "AchRebirthAllWs", TitleFallback = "Galaxy", DescriptionKey = "AchRebirthAllWsDesc", DescriptionFallback = "Get at least 1 rebirth star on all 8 workshops", Category = AchievementCategory.Rebirth, Icon = "Orbit", TargetValue = 8, MoneyReward = 50_000_000, XpReward = 25000, GoldenScrewReward = 750 },
 
             // ═══════════════════════════════════════════════════════════════
-            // LATE-GAME ACHIEVEMENT (Phase 4)
+            // LATE-GAME ACHIEVEMENT ()
             // ═══════════════════════════════════════════════════════════════
             new() { Id = "all_ws_level1000", TitleKey = "AchAllWsLevel1000", TitleFallback = "On the Summit", DescriptionKey = "AchAllWsLevel1000Desc", DescriptionFallback = "Upgrade all 8 workshops to level 1000", Category = AchievementCategory.Workshops, Icon = "Crown", TargetValue = 8, MoneyReward = 100_000_000, XpReward = 50000, GoldenScrewReward = 1000 },
 

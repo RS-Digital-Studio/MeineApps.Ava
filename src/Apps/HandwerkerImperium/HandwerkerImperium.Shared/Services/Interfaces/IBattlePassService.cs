@@ -28,7 +28,7 @@ public interface IBattlePassService
     Task UpgradeToPremiumAsync();
 
     /// <summary>
-    /// v2.1.1 (Audit B-M07): True wenn der Premium-Pass-Kauf wegen Saison-Ende (Tag 27+) blockiert ist.
+    /// True wenn der Premium-Pass-Kauf wegen Saison-Ende (Tag 27+) blockiert ist.
     /// UI nutzt das fuer Disable + Warn-Hint, damit Spieler nicht am letzten Tag Premium
     /// kaufen und nur 1 Tag Wert bekommen.
     /// </summary>

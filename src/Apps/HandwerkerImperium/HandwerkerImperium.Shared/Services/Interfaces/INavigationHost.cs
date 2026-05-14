@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services.Interfaces;
 /// Host-Facade fuer NavigationService, DialogOrchestrator und MiniGameNavigator.
 /// Der MainViewModel implementiert dieses Interface explizit; die Services greifen
 /// auf MainViewModel-Properties/-Methoden ausschliesslich ueber diesen Contract zu.
-/// Ziel (Phase 2/3): Die Logik lebt in den Services, MainViewModel haelt nur noch
+/// Ziel (/3): Die Logik lebt in den Services, MainViewModel haelt nur noch
 /// Zustand + Child-VM-Properties. Das Host-Interface bleibt bewusst klein und
 /// ist unit-testbar (Mock-Host moeglich).
 /// </summary>

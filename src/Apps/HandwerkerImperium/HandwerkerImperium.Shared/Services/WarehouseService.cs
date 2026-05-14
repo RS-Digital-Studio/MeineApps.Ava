@@ -5,7 +5,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// V7 (Phase 1 Ressourcen-Plan): Lager-Verwaltung mit Slots + Stack-Limits + Reservierung.
+/// V7 (): Lager-Verwaltung mit Slots + Stack-Limits + Reservierung.
 /// Wird von AutoProductionService, CraftingService und der Lager-UI im Imperium-Tab konsumiert.
 /// </summary>
 public sealed class WarehouseService : IWarehouseService
@@ -49,7 +49,7 @@ public sealed class WarehouseService : IWarehouseService
     }
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): Bonus-Slots aus Logistik-Forschung.
+    /// V7 (): Bonus-Slots aus Logistik-Forschung.
     /// </summary>
     public int BonusSlotsFromResearch
     {
@@ -61,7 +61,7 @@ public sealed class WarehouseService : IWarehouseService
     }
 
     /// <summary>
-    /// V7 (Phase 3): Stack-Limit-Multiplikator aus Logistik-Forschung (Default 1.0).
+    /// V7 (): Stack-Limit-Multiplikator aus Logistik-Forschung (Default 1.0).
     /// </summary>
     public decimal StackLimitMultiplierFromResearch
     {
@@ -99,7 +99,7 @@ public sealed class WarehouseService : IWarehouseService
     }
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): Effektive Slot-Anzahl (Geld-Upgrade + Research-Bonus).
+    /// V7 (): Effektive Slot-Anzahl (Geld-Upgrade + Research-Bonus).
     /// </summary>
     public int EffectiveSlotCount =>
         Math.Min(MaxSlots, _gameState.State.WarehouseSlotCount
@@ -107,7 +107,7 @@ public sealed class WarehouseService : IWarehouseService
                           + BonusSlotsFromGuildMegaProject);
 
     /// <summary>
-    /// V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Bonus-Slots aus abgeschlossenen
+    /// V7 (, Plan Section 3.9): Bonus-Slots aus abgeschlossenen
     /// Gilden-Mega-Projekten (Kathedrale +3, Hauptquartier +5, beide gestapelt +8).
     /// </summary>
     public int BonusSlotsFromGuildMegaProject
@@ -181,7 +181,7 @@ public sealed class WarehouseService : IWarehouseService
             if (rule.Enabled)
             {
                 // Auto-Verkauf zum aktuellen Marktpreis (greift auch wenn Slot blockiert).
-                // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Gilden-Mega-Projekte
+                // V7 (, Plan Section 3.9): Gilden-Mega-Projekte
                 // koennen +10/+20% Auto-Verkaufs-Preis-Bonus geben.
                 decimal price = _crafting.GetSellPrice(productId);
                 decimal megaBonus = _gameState.State.GuildMembership?.MegaProjectAutoSellPriceBonus ?? 0m;

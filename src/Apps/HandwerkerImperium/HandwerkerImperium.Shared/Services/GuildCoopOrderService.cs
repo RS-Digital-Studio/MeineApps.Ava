@@ -54,7 +54,7 @@ public sealed class GuildCoopOrderService : IGuildCoopOrderService
             InvitedPlayer = invitedPlayerId,
             Status = CoopOrderStatus.Pending,
             ExpiresAt = DateTime.UtcNow.AddMinutes(5),
-            // v2.1.1 (Audit FB-H04): Mini-Game-Typ kommt jetzt vom Aufrufer — frueher hier hart Sawing,
+            // Mini-Game-Typ kommt jetzt vom Aufrufer — frueher hier hart Sawing,
             // wodurch JEDER Co-op-Auftrag fuer alle Spieler immer Sawing war.
             MiniGameType = miniGameType,
             BaseReward = 100_000m,
@@ -171,7 +171,7 @@ public sealed class GuildCoopOrderService : IGuildCoopOrderService
         var claimed = _gameStateService.State.ClaimedCoopOrderIds;
         if (claimed.Contains(state.OrderId)) return; // lokaler Schnell-Check
 
-        // v2.1.1 (Audit FB-C01): Server-seitiger Write-once-Claim-Marker. Die Rule erlaubt den
+        // Server-seitiger Write-once-Claim-Marker. Die Rule erlaubt den
         // Write nur, wenn claimedBy/{playerId} noch nicht existiert. Verhindert Doppelauszahlung
         // beim Geraetewechsel, weil die lokale ClaimedCoopOrderIds-Liste durch Cloud-Restore
         // eines aelteren Saves verlorengehen kann.

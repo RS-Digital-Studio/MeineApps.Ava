@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// Partial Class: Alert-Dialog (v2.1.0 Aufspaltung Phase 1).
+/// Partial Class: Alert-Dialog (v2.1.0 Aufspaltung ).
 /// Generischer „OK"-Dialog mit Titel, Message, Button-Text.
 /// </summary>
 public sealed partial class DialogViewModel

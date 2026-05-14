@@ -89,19 +89,19 @@ public static class GameBalanceConstants
     /// <summary>
     /// Maximales Workshop-Level.
     ///
-    /// AAA-Audit P1 Long-Term-Engagement: 1000 ist der aktuelle Hard-Cap und das
-    /// Rebirth-Trigger-Niveau. Eine Anhebung auf 2000+ braucht Side-Effect-Audit
+    /// 1000 ist der aktuelle Hard-Cap und das
+    /// Rebirth-Trigger-Niveau. Eine Anhebung auf 2000+ braucht Side-Effect-Pruefung
     /// (Achievements, Rebirth-Schwelle, Income-Formeln, Tests). Pragmatisch wird
     /// Late-Game-Engagement aktuell ueber Workshop-Rebirth (5 Sterne) +
     /// Prestige-Tiers (Bronze→Legende) + Ascension (Meta-Reset) abgedeckt.
     ///
     /// Ewige Prestige-Skalierung mit log-Wachstum ist als naechster Long-Term-Sprint
-    /// vorgemerkt — siehe Audit-Roadmap Q3.
+    /// vorgemerkt — noch offen.
     /// </summary>
     public const int WorkshopMaxLevel = 1000;
 
     /// <summary>
-    /// AAA-Audit P1 Long-Term-Engagement: Bonus-PP pro Ascension-Level (linear).
+    /// Bonus-PP pro Ascension-Level (linear).
     /// Sorgt dafuer dass jeder zusaetzliche Ascension einen sichtbaren Reward bringt,
     /// auch nach „allen" Master-Tools. Wird in PrestigeService.CalculatePrestigePoints
     /// addiert.
@@ -109,12 +109,12 @@ public static class GameBalanceConstants
     public const decimal BonusPpPerAscensionLevel = 0.5m;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // ETERNAL MASTERY — Long-Term-Engagement post-Lv1000 (AAA-Audit P1, 12.05.2026)
+    // ETERNAL MASTERY — Long-Term-Engagement post-Lv1000 (P1, 12.05.2026)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Permanenter Einkommens-Bonus pro abgeschlossenem Prestige (jeder Tier).
-    /// v2.1.1 (Audit B-H02): Ab <see cref="EternalMasterySoftCapThreshold"/> Prestiges greift ein
+    /// Ab <see cref="EternalMasterySoftCapThreshold"/> Prestiges greift ein
     /// logarithmischer Soft-Cap auf den Ueberschuss (siehe EternalMasteryService.CalculateBonus) —
     /// frueher skalierte der Bonus unbegrenzt und wurde im Late-Game game-breaking.
     /// Niedrig genug damit early-game nicht trivialisiert wird, sichtbar genug fuer late-game.
@@ -122,7 +122,7 @@ public static class GameBalanceConstants
     public const decimal EternalMasteryBonusPerPrestige = 0.005m; // +0.5%
 
     /// <summary>
-    /// v2.1.1 (Audit B-H02): Ab so vielen abgeschlossenen Prestiges greift der logarithmische Soft-Cap
+    /// Ab so vielen abgeschlossenen Prestiges greift der logarithmische Soft-Cap
     /// fuer den Eternal-Mastery-Bonus. Bis zur Schwelle voller Bonus, darueber gedaempft.
     /// </summary>
     public const int EternalMasterySoftCapThreshold = 50;
@@ -179,7 +179,7 @@ public static class GameBalanceConstants
     /// Faktor fuer Diminishing Returns auf Tier-Multiplikator-Bonus bei wiederholten
     /// Prestiges desselben Tiers. Formel: bonus / (1 + DiminishingReturnsPerTierPrestige * tierCount).
     /// Wert 0.2 bedeutet: nach 5 Same-Tier-Prestiges nur noch 50% Bonus.
-    /// (Game-Audit-Finding [BAL-1] v2.0.36: 0.1→0.2 angehoben — verhindert Bronze-Farm-Loop.)
+    /// (Finding v2.0.36: 0.1→0.2 angehoben — verhindert Bronze-Farm-Loop.)
     /// </summary>
     public const decimal DiminishingReturnsPerTierPrestige = 0.2m;
 
@@ -386,7 +386,7 @@ public static class GameBalanceConstants
     public const int MaterialOrderCrossWorkshopLevel = 100;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MATERIAL-OFFER (V7 — Phase 2 Ressourcen-Plan, Plan Section 3.3)
+    // MATERIAL-OFFER (V7 — , Plan Section 3.3)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Spielerlevel ab dem Material-Angebote in Auftraegen erscheinen (Onboarding-Schutz).</summary>
@@ -411,7 +411,7 @@ public static class GameBalanceConstants
     public const double MaterialOfferBonusWeekly = 0.60;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // HEIRLOOM (V7 — Phase 4 Ressourcen-Plan, Plan Section 3.8)
+    // HEIRLOOM (V7 — , Plan Section 3.8)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -438,7 +438,7 @@ public static class GameBalanceConstants
     public const decimal PermanentHeirloomBonusPerItem = 0.005m;
 
     /// <summary>
-    /// v2.1.1 (Audit B-C01): Hard-Cap fuer permanente Ascension-Erbstuecke. Ohne Cap wuchs die Liste pro
+    /// Hard-Cap fuer permanente Ascension-Erbstuecke. Ohne Cap wuchs die Liste pro
     /// Ascension unbegrenzt (Spieler farmt T4-Items vor der Ascension → +250% Income nach
     /// 5 Ascensions). 50 × 0.5% = +25% permanent ist die harte Obergrenze.
     /// </summary>
@@ -457,7 +457,7 @@ public static class GameBalanceConstants
     public const decimal OrderRewardMultiplierSoftCap = 10.0m;
 
     /// <summary>
-    /// v2.1.1 (Audit B-C03): Soft-Cap-Schwelle fuer den Crafting-Sell-Multiplikator. Ab diesem Wert wird der
+    /// Soft-Cap-Schwelle fuer den Crafting-Sell-Multiplikator. Ab diesem Wert wird der
     /// Ueberschuss logarithmisch gedaempft (analog IncomeCalculatorService.ApplySoftCap).
     /// Verhindert den exponentiellen Geld-Pump durch gehortete T4-Items.
     /// </summary>

@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// Partial Class: Achievement-Dialog (v2.1.0 Aufspaltung Phase 1).
+/// Partial Class: Achievement-Dialog (v2.1.0 Aufspaltung ).
 /// </summary>
 public sealed partial class DialogViewModel
 {

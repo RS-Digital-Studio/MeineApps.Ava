@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// AAA-Audit P0 FTUE-UI: SkiaSharp-Renderer für das Spotlight-Overlay.
+/// SkiaSharp-Renderer für das Spotlight-Overlay.
 /// Zeichnet ein dunkles semi-transparentes Overlay mit ausgespartem Hot-Spot
 /// (Kreis um Spotlight-Target) plus pulsierendem Glow-Ring.
 ///

@@ -161,7 +161,7 @@ public sealed partial class MainViewModel
         // Start the game loop for idle earnings
         _gameLoopService.Start();
 
-        // v2.0.39 Audit-Fix U1: WhatsNew-Dialog fuer Bestandsspieler nach App-Update.
+        // WhatsNew-Dialog fuer Bestandsspieler nach App-Update.
         // Wird verzoegert ausgespielt, damit Offline-Earnings/Daily-Reward/Story zuerst durchgehen.
         // Fire-and-forget — Spielstart darf darauf nicht warten.
         if (_whatsNewService != null)
@@ -215,7 +215,7 @@ public sealed partial class MainViewModel
             var metadata = await _cloudSaveService.GetMetadataAsync();
             if (metadata == null) return;
 
-            // v2.0.37 Audit-Fix K6: App-Outdated-Schutz. Wenn der Cloud-Save mit einer
+            // App-Outdated-Schutz. Wenn der Cloud-Save mit einer
             // neueren App-Version geschrieben wurde (z.B. Spieler hat 2 Geraete, aktuelles
             // Geraet ist alte App-Version), KEIN Download — sonst wuerde Migration auf
             // bereits-aktuelle Daten den State korrumpieren. Nutzer sieht stattdessen
@@ -280,7 +280,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>
-    /// v2.0.39 Audit-Fix U1: Wartet kurz und zeigt dann den WhatsNew-Dialog wenn er
+    /// Wartet kurz und zeigt dann den WhatsNew-Dialog wenn er
     /// gebraucht wird. Wartet zusaetzlich falls beim Start andere Dialoge offen sind
     /// (Offline/DailyReward/Story/Welcome/Starter-Offer) — Bestandsspieler haben nach
     /// einem Update meist mehrere Dialog-Kandidaten.
@@ -548,7 +548,7 @@ public sealed partial class MainViewModel
             WelcomeFlowVM.DailyRewardAmountText = todaysReward != null
                 ? MoneyFormatter.FormatCompact(todaysReward.Money)
                 : "";
-            // v2.1.1 (Audit U-C05): Streak-Dots datengebunden — siehe DailyRewardDialog.axaml.
+            // Streak-Dots datengebunden — siehe DailyRewardDialog.axaml.
             WelcomeFlowVM.UpdateStreakDays(currentDay, currentStreak);
             WelcomeFlowVM.IsDailyRewardDialogVisible = true;
         }

@@ -14,7 +14,7 @@ using MeineApps.Core.Ava.ViewModels;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// V7 (Phase 1 Ressourcen-Plan): ViewModel fuer den Lager-Sub-Tab im Imperium.
+/// V7 (): ViewModel fuer den Lager-Sub-Tab im Imperium.
 /// Zeigt Slot-Belegung, Lagerwert, alle Materialien mit Anzahl/Preis/Auto-Verkauf-Toggle
 /// und den Slot-Upgrade-Button.
 /// </summary>
@@ -24,7 +24,7 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
     private readonly IWarehouseService _warehouseService;
     private readonly ICraftingService _craftingService;
     private readonly ILocalizationService _localizationService;
-    // V7 (Phase 2 Ressourcen-Plan, Section 3.10): Material-Verkauf-Missions-Tracking.
+    // V7 (, Section 3.10): Material-Verkauf-Missions-Tracking.
     private readonly IDailyChallengeService? _dailyChallengeService;
     private readonly IWeeklyMissionService? _weeklyMissionService;
 
@@ -221,7 +221,7 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
     }
 
     /// <summary>
-    /// V7 (Phase 2 Ressourcen-Plan, Section 3.10): Mission-Hooks fuer DailyChallenge/WeeklyMission
+    /// V7 (, Section 3.10): Mission-Hooks fuer DailyChallenge/WeeklyMission
     /// — die SellItems-Mission braucht die Anzahl verkaufter Items.
     /// </summary>
     private void ReportItemsSold(int count)
@@ -246,7 +246,7 @@ public sealed partial class WarehouseSectionViewModel : ViewModelBase, IDisposab
     }
 
     /// <summary>
-    /// V7 (Phase 3 Ressourcen-Plan): Event-Trigger fuer den Markt-Navigation-Button.
+    /// V7 (): Event-Trigger fuer den Markt-Navigation-Button.
     /// MainViewModel verdrahtet das auf <see cref="ActivePage.Market"/>.
     /// </summary>
     public event Action? OpenMarketRequested;

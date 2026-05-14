@@ -2,7 +2,7 @@ namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
 /// Bounded-Context "Missions": Alle Daily/Weekly/Goal-Loops + Random-Reward-Loops.
-/// AAA-Audit P1 Service-Sprawl-Reduction (12.05.2026).
+/// Service-Sprawl-Reduction (12.05.2026).
 ///
 /// Bündelt die fünf Mission-Subsysteme die heute einzeln im MainViewModel injiziert sind.
 /// MissionsFeatureViewModel könnte diese Facade nutzen statt fünf Einzel-Dependencies.

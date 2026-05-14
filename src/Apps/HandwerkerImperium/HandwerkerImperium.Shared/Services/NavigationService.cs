@@ -7,7 +7,7 @@ using MeineApps.Core.Ava.Services;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Zentrale Navigations-Implementierung (Phase 2 — Schritte 4+5 aus velvety-booping-peacock-Plan).
+/// Zentrale Navigations-Implementierung ( — Schritte 4+5 aus velvety-booping-peacock-Plan).
 /// Die gesamte Route-Parsing-Logik und alle SelectXxxTab-Methoden leben hier. MainViewModel
 /// haelt nur noch RelayCommand-Wrapper + partielle OnActivePageChanged-Seiteneffekte
 /// (Back-Stack-Push, GuildChat-Stop, PropertyChanged-Fan-Out).
@@ -318,7 +318,7 @@ public sealed class NavigationService : INavigationService
                     _host.GuildViewModel.LoadWarStatusAsync().SafeFireAndForget();
                     break;
                 case "guild_build_site":
-                    // V7 (Phase 4 Ressourcen-Plan, Plan Section 3.9): Mega-Projekt-Bauplatz
+                    // V7 (, Plan Section 3.9): Mega-Projekt-Bauplatz
                     _host.ActivePage = ActivePage.GuildBuildSite;
                     break;
             }

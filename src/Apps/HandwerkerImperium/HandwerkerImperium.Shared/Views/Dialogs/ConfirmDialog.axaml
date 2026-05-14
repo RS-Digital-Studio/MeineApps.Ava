@@ -24,12 +24,9 @@
             PointerPressed="OnDialogContentPressed"
             AutomationProperties.AutomationId="Main_Border_ConfirmSheet">
       <StackPanel Spacing="16" HorizontalAlignment="Stretch">
-        <!-- Drag Handle -->
-        <Border Width="40" Height="4" CornerRadius="2"
-                Background="{DynamicResource TextMutedBrush}"
-                Opacity="0.4"
-                HorizontalAlignment="Center" Margin="0,0,0,4"
-                AutomationProperties.AutomationId="Main_Border_ConfirmDragHandle" />
+        <!-- v2.1.1 (Audit U-M01): Drag-Handle entfernt — suggerierte Swipe-Dismiss-Funktion
+             ohne dass diese implementiert war. Confirm-Dialoge sollten bewusst tap-bestaetigt
+             werden (Cancel/Confirm-Buttons), nicht versehentlich weggewischt. -->
         <TextBlock Text="{Binding ConfirmDialogTitle}"
                    FontSize="20" FontWeight="Bold"
                    HorizontalAlignment="Center"

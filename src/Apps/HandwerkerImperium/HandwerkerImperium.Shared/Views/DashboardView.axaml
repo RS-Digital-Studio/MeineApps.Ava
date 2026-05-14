@@ -24,8 +24,8 @@
 
   <!-- Animationen -->
   <UserControl.Styles>
-    <!-- Income-Puls -->
-    <Style Selector="TextBlock.IncomePulse">
+    <!-- Income-Puls — v2.1.1 (Audit U-L04): :not(.NoMotion)-Gate respektiert ReduceMotion. -->
+    <Style Selector="TextBlock.IncomePulse:not(.NoMotion)">
       <Style.Animations>
         <Animation Duration="0:0:2" IterationCount="Infinite">
           <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.6"/></KeyFrame>
@@ -133,10 +133,21 @@
         <Grid ColumnDefinitions="*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_WorkshopsHeader">
           <TextBlock Text="{loc:Translate Workshops}" FontSize="18" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Classes="Text" Padding="10,6" MinHeight="44" CornerRadius="12"
-                  Background="{StaticResource CraftPrimaryBrush}"
-                  Command="{Binding CycleBulkBuyCommand}">
-            <TextBlock Text="{Binding BulkBuyLabel}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
+          <!-- v2.1.1 (Audit U-M03/U-H04): Bulk-Buy-Button prominenter mit Icon + Label.
+               Frueher nur kleine Zahl ohne Hinweis auf die Bulk-Buy-Funktion. -->
+          <Button Grid.Column="1"
+                  Classes="Primary"
+                  Padding="14,8" MinHeight="44" CornerRadius="14"
+                  Command="{Binding CycleBulkBuyCommand}"
+                  ToolTip.Tip="{loc:Translate HintLongPressBulkTitle}"
+                  AutomationProperties.AutomationId="Dashboard_Btn_BulkBuy">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <icons:GameIcon Kind="CashMultiple" Width="18" Height="18"
+                               Foreground="{DynamicResource PrimaryContrastBrush}" />
+              <TextBlock Text="{Binding BulkBuyLabel}" FontSize="14" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource PrimaryContrastBrush}" />
+            </StackPanel>
           </Button>
         </Grid>
 

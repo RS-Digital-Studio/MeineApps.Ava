@@ -292,7 +292,9 @@ public sealed partial class MainViewModel
     public bool HasLoginStreak => LoginStreak >= 2;
 
     // Dashboard-Header: Nur bei relevantem Status anzeigen (Entschlackung)
-    public bool ShowStreakBadge => LoginStreak >= 5;
+    // v2.1.1 (Audit U-M04): Streak-Badge ab Tag 1 sichtbar — die kritische Retention-Phase
+    // (Tag 1-4) hatte sonst kein visuelles Feedback fuer den Streak-Aufbau.
+    public bool ShowStreakBadge => LoginStreak >= 1;
     public bool ShowReputationBadge => ReputationScore < LevelThresholds.ReputationWarningThreshold
                                       || ReputationScore >= LevelThresholds.ReputationHighlightThreshold;
 

@@ -3579,8 +3579,11 @@
   <data name="HintLongPressBulkTitle" xml:space="preserve">
     <value>Upgrade faster</value>
   </data>
+  <!-- v2.1.1 (Audit U-H04): Hint korrigiert — frueher versprochen "Hold to buy several levels",
+       aber im SkiaSharp-Canvas gibt es nur Click-Hit-Test, kein Long-Press. Stattdessen
+       verweisen wir auf den Cycle-Button (x1/x10/x100/Max), der diese Funktion liefert. -->
   <data name="HintLongPressBulkText" xml:space="preserve">
-    <value>Hold the upgrade button to buy several levels at once — perfect for the x10/x100/Max thresholds.</value>
+    <value>Tap the x1 button above the upgrades to switch to x10, x100 or Max — then a single tap buys several levels at once.</value>
   </data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Ready for promotion</value>

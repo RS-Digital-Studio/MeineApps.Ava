@@ -3557,8 +3557,9 @@
   <data name="HintLongPressBulkTitle" xml:space="preserve">
     <value>Schneller upgraden</value>
   </data>
+  <!-- v2.1.1 (Audit U-H04): Hint korrigiert auf den Cycle-Button-Workflow (kein Long-Press im SkiaSharp-Canvas). -->
   <data name="HintLongPressBulkText" xml:space="preserve">
-    <value>Halte den Upgrade-Button gedrückt um schnell mehrere Level auf einmal zu kaufen — perfekt für die x10/x100/Max-Schwellen.</value>
+    <value>Tippe auf den x1-Button über den Upgrades, um auf x10, x100 oder Max zu wechseln — dann kauft ein einzelner Tipp gleich mehrere Level.</value>
   </data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Bereit zur Promotion</value>

@@ -111,6 +111,14 @@ public sealed class StoryService : IStoryService
 
     private bool IsChapterUnlocked(StoryChapter chapter, GameState state)
     {
+        // v2.1.1 (Audit U-C02): Tutorial-Kapitel (chapter.IsTutorial) erst freischalten, wenn
+        // die FTUE komplett ist. Vorher konkurrierten ftue_welcome (Meister Hans) und
+        // tutorial_welcome (Meister Hans) am ersten Start parallel — beide forderten
+        // "Weiter" mit identischer Persona, das Onboarding wirkte schwer und redundant.
+        // Nicht-Tutorial-Kapitel laufen unabhaengig.
+        if (chapter.IsTutorial && !state.Tutorial.Ftue.IsCompleted)
+            return false;
+
         // Alle gesetzten Bedingungen müssen erfüllt sein
         if (chapter.RequiredPlayerLevel > 0 && state.PlayerLevel < chapter.RequiredPlayerLevel)
             return false;

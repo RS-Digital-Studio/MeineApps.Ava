@@ -16,7 +16,10 @@ namespace HandwerkerImperium.Views;
 public partial class MainView : UserControl
 {
     private MainViewModel? _vm;
-    private string _lastActiveTab = "";
+    // v2.1.1 (Audit M-M04): Enum statt String. Frueher allokierte ActivePage.ToString() einen
+    // neuen String pro PropertyChanged-Event — 15 PropertyChanged/s × ~10 bytes/String = 150 b/s
+    // GC-Druck plus String-Equality-Compare statt enum-Compare im PropertyChanged-Handler.
+    private HandwerkerImperium.Models.Enums.ActivePage? _lastActiveTab;
 
     // SkiaSharp Tab-Bar + Screen-Transitions + Background (Phase 3+4)
     private readonly GameTabBarRenderer _tabBarRenderer = new();
@@ -86,11 +89,14 @@ public partial class MainView : UserControl
             _vm = null;
         }
 
-        _tabBarRenderer.Dispose();
-        _transitionRenderer.Dispose();
-        _backgroundRenderer.Dispose();
-        _ceremonyRenderer.Dispose();
-        _prestigeCinematicRenderer.Dispose();
+        // v2.1.1 (Audit H-H11): try/catch um jeden Renderer-Dispose. Frueher hat eine
+        // Exception bei einem Dispose-Call den Rest der Kaskade abgebrochen, wodurch andere
+        // Renderer ihr Native-Memory nicht freigaben.
+        try { _tabBarRenderer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainView] TabBar.Dispose: {ex.Message}"); }
+        try { _transitionRenderer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainView] Transition.Dispose: {ex.Message}"); }
+        try { _backgroundRenderer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainView] Background.Dispose: {ex.Message}"); }
+        try { _ceremonyRenderer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainView] Ceremony.Dispose: {ex.Message}"); }
+        try { _prestigeCinematicRenderer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainView] PrestigeCinematic.Dispose: {ex.Message}"); }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -420,9 +426,9 @@ public partial class MainView : UserControl
             // Hintergrund-Typ aktualisieren
             _currentScreenType = GetCurrentScreenType();
 
-            // Fade-Animation auslösen
-            var newTab = _vm?.ActivePage.ToString() ?? "";
-            if (!string.IsNullOrEmpty(newTab) && newTab != _lastActiveTab)
+            // Fade-Animation auslösen — M-M04: Enum-Compare statt String-Allokation pro Event.
+            var newTab = _vm?.ActivePage;
+            if (newTab != null && newTab != _lastActiveTab)
             {
                 _lastActiveTab = newTab;
                 FadeInContentPanel();

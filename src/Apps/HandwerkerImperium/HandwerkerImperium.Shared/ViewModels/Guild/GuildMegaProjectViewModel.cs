@@ -68,7 +68,12 @@ public sealed partial class GuildMegaProjectViewModel : ViewModelBase, IDisposab
         _megaService.ProjectCompleted += OnProjectCompleted;
 
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-        _refreshTimer.Tick += async (_, _) => await RefreshAsync().ConfigureAwait(false);
+        // v2.1.1 (Audit H-H03): async-void Lambda via RunHandlerSafely abgesichert. Frueher
+        // konnte eine Firebase-Exception im Tick den Prozess killen, weil async-void-Ausnahmen
+        // direkt aufs SynchronizationContext propagieren.
+        _refreshTimer.Tick += (_, _) => Helpers.AsyncExtensions
+            .RunHandlerSafely(RefreshAsync)
+            .SafeFireAndForget();
     }
 
     public void Start()

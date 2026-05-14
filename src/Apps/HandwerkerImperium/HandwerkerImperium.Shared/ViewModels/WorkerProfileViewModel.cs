@@ -664,13 +664,12 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
                 _localizationService.GetString("WorkerFiredUndo") ?? "{0} fired - Undo?",
                 firedWorker.Name ?? $"Tier-{firedWorker.Tier}");
 
-            _undoTimer?.Stop();
+            // v2.1.1 (Audit H-H01): Benannte Tick-Methode + explizites Unsubscribe. Frueher
+            // Lambda — der alte Lambda-Subscriber konnte beim Re-Start nicht abgemeldet werden
+            // und feuerte weiter, was den Worker mehrfach gekuendigt hat.
+            UnsubscribeUndoTimer();
             _undoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-            _undoTimer.Tick += (_, _) =>
-            {
-                ConfirmFireWorker();
-                _undoTimer?.Stop();
-            };
+            _undoTimer.Tick += OnUndoTimerTick;
             _undoTimer.Start();
 
             // Zurück navigieren (Undo-Leiste wird im Parent-View angezeigt)
@@ -686,11 +685,29 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
     /// <summary>
     /// Macht die letzte Worker-Entlassung rückgängig (innerhalb von 5 Sekunden).
     /// </summary>
+    /// <summary>
+    /// v2.1.1 (Audit H-H01): Benannter Tick-Handler statt Lambda — kann beim Re-Start
+    /// und im Dispose explizit abgemeldet werden. Verhindert Multi-Fire-Bug bei
+    /// schnellem Re-Use des Undo-Timers.
+    /// </summary>
+    private void OnUndoTimerTick(object? sender, EventArgs e)
+    {
+        UnsubscribeUndoTimer();
+        ConfirmFireWorker();
+    }
+
+    private void UnsubscribeUndoTimer()
+    {
+        if (_undoTimer == null) return;
+        _undoTimer.Stop();
+        _undoTimer.Tick -= OnUndoTimerTick;
+    }
+
     [RelayCommand]
     private void UndoFireWorker()
     {
         if (_pendingFireWorker == null || _pendingFireWorkshop == null) return;
-        _undoTimer?.Stop();
+        UnsubscribeUndoTimer();
 
         // Worker zurück in Workshop
         _workerService.ReinstateWorker(_pendingFireWorker, _pendingFireWorkshop.Value);
@@ -900,7 +917,8 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
     /// </summary>
     public void Dispose()
     {
-        _undoTimer?.Stop();
+        // v2.1.1 (Audit H-H01): Explizites Tick-Unsubscribe + Stop, dann Referenz nullen.
+        UnsubscribeUndoTimer();
         _undoTimer = null;
     }
 }

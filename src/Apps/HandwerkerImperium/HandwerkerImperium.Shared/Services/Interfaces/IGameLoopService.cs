@@ -6,8 +6,10 @@ namespace HandwerkerImperium.Services.Interfaces;
 /// <summary>
 /// Manages the game loop timer that handles idle earnings.
 /// Ticks once per second while the game is active.
+/// v2.1.1 (Audit M-M05): IDisposable im Interface — die DI-Container-Kaskade
+/// (App.DisposeServices) kann jetzt korrekt typisiert disposen.
 /// </summary>
-public interface IGameLoopService
+public interface IGameLoopService : IDisposable
 {
     /// <summary>
     /// Whether the game loop is currently running.

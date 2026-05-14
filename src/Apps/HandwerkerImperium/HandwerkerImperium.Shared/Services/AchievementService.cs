@@ -46,6 +46,11 @@ public sealed class AchievementService : IAchievementService, IDisposable
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
         _ascensionService.AscensionCompleted += OnAscensionCompleted;
         _rebirthService.RebirthCompleted += OnRebirthCompleted;
+
+        // v2.1.1 (Audit H-H08): Bei State-Wechsel (Save-Import / Cloud-Restore / Reset) den
+        // Cache neu laden. Frueher zeigte _unlockedCount + _achievements[*].IsUnlocked auf
+        // verwaiste Objekte aus dem ALTEN State, weil LoadFromGameState nur im Ctor + Reset() lief.
+        _gameStateService.StateLoaded += (_, _) => Reset();
     }
 
     private int _unlockedCount;

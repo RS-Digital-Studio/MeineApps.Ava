@@ -309,6 +309,12 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, IDisposable
     /// </summary>
     public void StartCountdownTimer()
     {
+        // v2.1.1 (Audit H-H02): Alten Timer stoppen + nullen vor Re-Init. Mehrfache Aufrufe
+        // (z.B. schnelle Tab-Wechsel) haben sonst mehrere Tick-Subscriber parallel laufen
+        // lassen → Countdown lief 2-3× schneller als erwartet.
+        _countdownTimer?.Stop();
+        _countdownTimer = null;
+
         _countdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _countdownTimer.Tick += (_, _) => UpdateCountdown();
         _countdownTimer.Start();

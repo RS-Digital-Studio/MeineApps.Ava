@@ -207,6 +207,20 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         {
             System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] MiniGame Timer-Tick-Exception ({GetType().Name}): {ex}");
             try { _timer?.Stop(); } catch { /* Timer-Stop Fehler ignorieren */ }
+
+            // v2.1.1 (Audit H-H07): Bei Exception das Spiel als Miss abschliessen, damit der
+            // Spieler kein "stehengebliebenes Spiel" ohne Result-Anzeige bekommt. Result-Setter
+            // darf nicht erneut werfen — sonst sieht der Spieler die UI nicht.
+            try
+            {
+                if (!IsResultShown)
+                {
+                    Result = MiniGameRating.Miss;
+                    CalculateAndSetRewards();
+                    IsResultShown = true;
+                }
+            }
+            catch { /* Best-Effort — Spieler hat trotzdem den Cancel-Button */ }
         }
     }
 

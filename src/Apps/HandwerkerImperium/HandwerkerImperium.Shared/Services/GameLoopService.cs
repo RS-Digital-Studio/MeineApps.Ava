@@ -269,7 +269,8 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         RefreshPrestigeEffectsIfNeeded(state);
 
         // 0. Research- und Gebaeude-Effekte sammeln
-        var researchEffects = _researchService?.GetTotalEffects();
+        // v2.1.1 (Audit M-M12): _researchService ist non-nullable im Ctor — kein ?. mehr.
+        var researchEffects = _researchService.GetTotalEffects();
         UpdateExtraWorkerSlots(state, researchEffects);
 
         // 1-3. Einkommen + Kosten via IncomeCalculatorService (eliminiert Duplikation mit OfflineProgress)
@@ -376,10 +377,11 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         }
 
         // 7. Update worker states (mood, fatigue, XP)
-        _workerService?.UpdateWorkerStates(1.0);
+        // v2.1.1 (Audit M-M12): _workerService + _researchService sind non-nullable — kein ?.
+        _workerService.UpdateWorkerStates(1.0);
 
         // 8. Update research timer
-        _researchService?.UpdateTimer(1.0);
+        _researchService.UpdateTimer(1.0);
 
         // Periodische Checks (gestaffelte Intervalle mit Offsets, vermeidet Lastspitzen)
         _tickCount++;

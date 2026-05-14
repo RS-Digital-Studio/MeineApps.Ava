@@ -39,24 +39,26 @@ public partial class WorkshopView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        // v2.1.1 (Audit M-M02): Lambda → benannter Handler, damit Unsubscribe in
+        // OnDetachedFromVisualTree symmetrisch moeglich ist.
+        PropertyChanged += OnViewPropertyChanged;
+    }
 
-        // Timer pausieren wenn View nicht sichtbar ist (Tab-Wechsel)
-        PropertyChanged += (_, args) =>
+    private void OnViewPropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs args)
+    {
+        if (args.Property == IsVisibleProperty)
         {
-            if (args.Property == IsVisibleProperty)
+            if (IsVisible && _workshopVm != null && _workshopCanvas != null && !_renderActive)
             {
-                if (IsVisible && _workshopVm != null && _workshopCanvas != null && !_renderActive)
-                {
-                    // View wieder sichtbar → Render-Loop neu starten
-                    StartRenderLoop();
-                }
-                else if (!IsVisible && _renderActive)
-                {
-                    // View versteckt → Render-Loop stoppen (spart ~30 InvalidateSurface/s)
-                    StopRenderLoop();
-                }
+                // View wieder sichtbar → Render-Loop neu starten
+                StartRenderLoop();
             }
-        };
+            else if (!IsVisible && _renderActive)
+            {
+                // View versteckt → Render-Loop stoppen (spart ~30 InvalidateSurface/s)
+                StopRenderLoop();
+            }
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -67,6 +69,10 @@ public partial class WorkshopView : UserControl
         _disposed = true;
 
         StopRenderLoop();
+
+        // v2.1.1 (Audit M-M02): View-PropertyChanged-Handler abmelden — symmetrisch zum Ctor.
+        DataContextChanged -= OnDataContextChanged;
+        PropertyChanged -= OnViewPropertyChanged;
 
         // Event-Subscriptions abmelden
         if (_workshopVm != null)

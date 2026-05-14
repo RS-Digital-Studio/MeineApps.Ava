@@ -37,7 +37,7 @@ HandwerkerImperium.Shared/
 │   ├── SaveGameService.cs           # JSON-Load/Save mit V1→V6-Migration, IO-Lock
 │   └── ...                          # 40+ weitere Services
 ├── ViewModels/
-│   ├── MainViewModel.cs             # Partial-Split über 7 Dateien
+│   ├── MainViewModel.cs             # Partial-Split über 13 Dateien (Routing-/Composition-Layer)
 │   ├── HeaderViewModel.cs           # Source-of-Truth: Money, Level, GoldenScrews, ...
 │   ├── PrestigeBannerViewModel.cs   # Prestige-Banner-Properties (18)
 │   ├── DialogViewModel.cs           # Alle Dialog-States, implementiert IDialogService
@@ -70,26 +70,30 @@ HandwerkerImperium.Shared/
     └── WorkshopCardHitTester.cs     # Koordinaten-Mapping für Workshop-Card-Touches
 ```
 
-### MainViewModel Partial-Split (12 Files)
+### MainViewModel Partial-Split (13 Files)
 
-**MainViewModel.cs: 501 Zeilen** (Ziel <500 erreicht, ursprünglich 2483 Z.).
-Reine Composition: Service-Felder, Konstruktor (~320 Z.), INavigationHost-Stub. Alle
-Properties, Event-Handler, Lifecycle in Partials.
+**MainViewModel.cs: 478 Zeilen**, gesamter Partial-Split ~2960 Z. (urspruenglich 2483 Z.,
+zwischenzeitlich auf 4161 Z. ueber 14 Files angewachsen). Die echte Feature-Logik (Startup,
+Progression-Feedback, Welcome-Flow, Per-Tick-Orchestrierung, UI-Effekte) liegt in
+eigenstaendigen Coordinator-Services + Feature-VMs — siehe "MainViewModel-Extraktion" unten.
+Was im MainViewModel bleibt: Composition (Ctor + Service-Wiring), Binding-Anker (Properties,
+Tab-State, RelayCommand-Forwarder) und 5 Host-Interface-Implementierungen.
 
 | Datei | Z. | Inhalt |
 |-------|----|----|
-| `MainViewModel.cs` | 501 | Service-Felder, Konstruktor, INavigationHost |
-| `MainViewModel.Properties.cs` | 826 | ObservableProperties, Computed-Properties, Tab-Commands, Child-VM-Exposures |
-| `MainViewModel.EventHandlers.cs` | 739 | Service-Event-Handler (Money/Level/Order/Prestige/Cinematic/etc.) |
-| `MainViewModel.Init.cs` | 703 | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward |
-| `MainViewModel.Navigation.cs` | 296 | Tab-Auswahl, HandleBackPressed, Child-Navigation-Routing |
-| `MainViewModel.Helpers.cs` | 182 | FormatMoney, Worker-Warning, Money-Animation, EternalMastery-Refresh |
-| `MainViewModel.Lifecycle.cs` | 170 | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose |
-| `MainViewModel.Dialogs.cs` | 167 | Dialog-Weiterleitungen, Prestige-Durchführungslogik |
-| `MainViewModel.GameTick.cs` | 165 | OnGameTick, RefreshCurrentGoal, CheckTabUnlockNotification |
-| `MainViewModel.Economy.cs` | 145 | Workshop-Kauf/Upgrade, Aufträge, Rush, BulkBuy |
-| `MainViewModel.Host.cs` | 116 | INavigationHost-Implementierung |
+| `MainViewModel.cs` | 478 | Service-Felder, Konstruktor, Coordinator-/Host-Wiring |
+| `MainViewModel.EventHandlers.cs` | 401 | Verbleibende Handler: Money, Order, Lieferant, Event-System, Cinematic, Reputation, State-Loaded, Premium, Sprachwechsel |
+| `MainViewModel.Properties.cs` | 399 | ObservableProperties, Computed-Properties, Events, Child-VM-Exposures |
+| `MainViewModel.Tabs.cs` | 368 | ActivePage-Enum, IsXxxActive, ActivePageContent, Imperium-Sub-Tabs |
+| `MainViewModel.Navigation.cs` | 296 | Tab-Auswahl-Commands, HandleBackPressed, Child-Navigation-Routing |
+| `MainViewModel.Helpers.cs` | 182 | FormatMoney, UpdateNetIncomeHeader, UpdateWorkerWarning, Money-Animation, EternalMastery-Refresh |
+| `MainViewModel.Dialogs.cs` | 171 | Dialog-Weiterleitungen, Prestige-Durchfuehrung, Notification-Center-Routing |
+| `MainViewModel.Lifecycle.cs` | 169 | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose |
+| `MainViewModel.Host.cs` | 163 | 5 Host-Interface-Implementierungen (Navigation/WelcomeFlow/Startup/ProgressionFeedback/GameTick) |
+| `MainViewModel.Economy.cs` | 161 | RelayCommand-Forwarder zu EconomyFeatureViewModel |
+| `MainViewModel.Automation.cs` | 132 | Automation-Property-Wrapper (GameState.Automation), Reputation-Tier-Properties |
 | `MainViewModel.Missions.cs` | 28 | LuckySpin-Overlay-Steuerung |
+| `MainViewModel.Init.cs` | 15 | InitializeAsync-Forwarder an GameStartupCoordinator |
 
 ### DialogViewModel Struktur
 
@@ -159,7 +163,7 @@ Thin-Wrapper-Pattern: Sub-VM hat nur `GuildViewModel Guild { get; }`, Bindings v
 | `HeaderViewModel` | 16 (Money, Level, GoldenScrews, XP, ...) | PropertyChanged-Forward in MainVM | DI Singleton |
 | `PrestigeBannerViewModel` | 18 (IsPrestigeAvailable, Preview-Props, ...) | dito | DI Singleton |
 | `GoalBannerViewModel` | CurrentGoal + NavigateToGoalCommand | INavigationService direkt | DI Singleton |
-| `WelcomeFlowViewModel` | 13 (Dialog-Sichtbarkeiten, Texte) | Events an MainViewModel | DI Singleton |
+| `WelcomeFlowViewModel` | 14 Props + Welcome-Flow-Logik (Offline-Earnings, Daily-Reward, Starter-Offer, verzoegerte Dialog-Kaskade) — `WelcomeFlowViewModel.Logic.cs` | `IWelcomeFlowHost`-Bruecke (IsHoldingUpgrade + NavigateToShop) | DI Singleton |
 | `MissionsFeatureViewModel` | Daily/Weekly/QuickJobs/LuckySpin-Props | NavigateToMiniGameRequested | DI Singleton |
 | `EconomyFeatureViewModel` | Workshop/Order/Rush-Commands | FloatingTextRequested, CelebrationRequested | `new` in MainViewModel.Economy.cs (KEIN DI) |
 | `DialogViewModel` | 45 Props, implementiert IDialogService | Events an MainViewModel | DI Singleton |
@@ -983,8 +987,46 @@ Renderer, View-Locator-DataTemplates rendern nur die aktive Seite.
 
 ## MainViewModel-Extraktion (Logik-Klumpen-Auslagerung)
 
-Logik-Klumpen sind in dedizierte Services und Feature-VMs extrahiert, MainViewModel bleibt
-Routing- und Lifecycle-Layer.
+Die echte Feature-Logik liegt in eigenstaendigen Coordinator-Services und Feature-VMs.
+MainViewModel ist Composition-, Binding-Anker- und Host-Layer.
+
+### Host-Pattern (Coordinator ↔ MainViewModel)
+
+Coordinator-Services greifen auf MainViewModel ausschliesslich ueber schmale, explizit
+implementierte Host-Interfaces zu (`AttachHost(this)` im MainViewModel-Ctor). Jeder
+Coordinator subscribed selbst auf seine Service-Events (analog `CinematicCoordinator`) und
+ist dadurch isoliert unit-testbar (Mock-Host). MainViewModel implementiert 5 Host-Interfaces:
+`INavigationHost`, `IWelcomeFlowHost`, `IStartupHost`, `IProgressionFeedbackHost`, `IGameTickHost`.
+
+### IUiEffectBus + UiEffectBus
+
+Zentraler Singleton-Bus fuer FloatingText / Celebration / Ceremony. Ausloeser (MainViewModel,
+Coordinators, Feature-VMs) injizieren `IUiEffectBus` und rufen `RaiseXxx(...)`. Die Views
+(`DashboardView`, `MainView`) abonnieren den Bus direkt im Code-Behind (analog `IFrameClock`)
+— die frueheren `FloatingTextRequested/CelebrationRequested/CeremonyRequested`-Events am
+MainViewModel entfallen.
+
+### GameStartupCoordinator
+
+`IGameStartupCoordinator` + `GameStartupCoordinator` — die komplette Startup-Sequenz
+(Spielstand laden, Cloud-Save-Abgleich, Sprach-Sync, Order-/Mission-Init, GameLoop-Start,
+verzoegerte WhatsNew-/Analytics-Consent-Dialoge). `MainViewModel.InitializeAsync()` ist nur
+noch ein Forwarder; `IStartupHost` liefert `IsLoading` + die EconomyVM-Refreshes.
+
+### ProgressionFeedbackCoordinator
+
+`IProgressionFeedbackCoordinator` + `ProgressionFeedbackCoordinator` — subscribed selbst auf
+Level/GoldenScrews/Xp/Workshop/Worker/MasterTool/Achievement/Prestige/Rebirth-Events und feuert
+FloatingText/Celebration/Zeremonie/Sound/Hints ueber den `IUiEffectBus`. Haelt den Level-Up-
+Pulse-Timer. `IProgressionFeedbackHost` liefert EconomyVM-Refreshes + Property-Notifies.
+`CheckReviewPrompt()` ist public — `MainViewModel.OnOrderCompleted` nutzt es ueber das Interface.
+
+### GameTickCoordinator
+
+`IGameTickCoordinator` + `GameTickCoordinator` — subscribed auf `IGameLoopService.OnTick` und
+verteilt die Per-Tick-UI-Updates an die Feature-VMs (tab-spezifisch gated). `IGameTickHost`
+ist bewusst breiter (~15 Member) — Per-Tick-Orchestrierung beruehrt inhaerent den ganzen
+UI-State; der explizite Contract macht das aber sichtbar + testbar.
 
 ### CinematicCoordinator
 
@@ -1004,16 +1046,19 @@ feuert nur die Property-Notifies und delegiert die Effekt-Logik an den Service.
 - HeaderViewModel (16 Properties)
 - PrestigeBannerViewModel (18 Properties)
 - GoalBannerViewModel
-- WelcomeFlowViewModel (13 Properties)
+- WelcomeFlowViewModel (14 Props + Welcome-Flow-Logik in `WelcomeFlowViewModel.Logic.cs`)
 - MissionsFeatureViewModel (Daily Challenges + Weekly Missions + LuckySpin)
 - EconomyFeatureViewModel (Workshop-Kauf/Upgrade)
 - DialogViewModel + 6 Partial-Files (Story/Hint/Confirm/Achievement/LevelUp/Alert/PrestigeSummary)
 - NavigationService + DialogOrchestrator + MiniGameNavigator
 
-### Bewusst beibehalten
+### Bewusst beibehalten im MainViewModel
 
-- **Tab-Select-Commands** bleiben am MainViewModel: AXAML-Bindings auf ~12 RelayCommands —
-  Auslagerung würde bestehende Bindings brechen ohne strukturellen Gewinn.
+- **Tab-Select-Commands** + RelayCommand-Forwarder (`Navigation.cs`, `Economy.cs`): AXAML-Bindings
+  zeigen direkt darauf — Auslagerung wuerde Bindings brechen ohne strukturellen Gewinn.
+- **EventHandlers.cs** (`OnMoneyChanged`, Order-Handler, Event-System-Display, `OnLanguageChanged`,
+  `OnReputationTierChanged`, `OnStateLoaded`): setzen AXAML-gebundene MainViewModel-Properties
+  direkt — bleiben Teil des Binding-Layers.
 
 ---
 

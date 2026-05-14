@@ -85,8 +85,8 @@ public partial class App : Application
     public static Func<IServiceProvider, IPushNotificationService>? PushNotificationServiceFactory { get; set; }
 
     /// <summary>
-    /// Factory fuer plattformspezifischen IRemoteConfigService (Android setzt FirebaseRemoteConfigService — Sprint 2.1).
-    /// Bis dahin: NullRemoteConfigService liefert Defaults (Sprint 1.4c Stub).
+    /// Factory fuer plattformspezifischen IRemoteConfigService (Android setzt FirebaseRemoteConfigService —.1).
+    /// Bis dahin: NullRemoteConfigService liefert Defaults (.4c Stub).
     /// </summary>
     public static Func<IServiceProvider, IRemoteConfigService>? RemoteConfigServiceFactory { get; set; }
 
@@ -97,7 +97,7 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Sprint 6.3 AAA-Audit #25: Splash-Crash-Recovery Pref-Key.
+    ///.3 : Splash-Crash-Recovery Pref-Key.
     /// Inkrementiert vor jedem Init-Versuch, dekrementiert nach erfolgreichem Splash-Abschluss.
     /// Bei >= 3 Crashes in Folge wird der User zum Reset-Dialog geleitet.
     /// </summary>
@@ -106,7 +106,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Sprint 6.3 AAA-Audit #25: Crash-Counter VOR der Init-Phase inkrementieren.
+        //.3 : Crash-Counter VOR der Init-Phase inkrementieren.
         // Wenn die App in den naechsten Schritten crasht, ueberlebt der Counter persistent —
         // beim 3. Try greift Safe-Mode-Recovery.
         // Wir nutzen einen direkten PreferencesService weil DI noch nicht aufgebaut ist.
@@ -151,10 +151,10 @@ public partial class App : Application
         // GameLoopSettings: Persistierten TargetFps-Wert laden (30/60 FPS, default 30 Battery-Mode)
         GameLoopSettings.Initialize(Services.GetRequiredService<IPreferencesService>());
 
-        // v2.0.44 — AAA-Audit: Telemetrie + Analytics + Push-Notifications initialisieren.
+        // v2.0.44 — : Telemetrie + Analytics + Push-Notifications initialisieren.
         // Bei NullImpl auf Desktop ist das ein No-Op. Auf Android sucht ein konfigurierter
         // Firebase-Setup nach google-services.json (Console-Setup vom User).
-        // Sprint 6.3 AAA-Audit #25: Safe-Mode skippt optionale Services (Firebase + Push)
+        //.3 : Safe-Mode skippt optionale Services (Firebase + Push)
         // damit die App garantiert startet wenn ein optionaler Service der Crash-Ursache war.
         // Game-State + UI funktionieren weiterhin — User kommt ans Settings-Menue,
         // kann Account-Delete oder Reset durchfuehren.
@@ -240,7 +240,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            // Sprint 1.4a AAA-Audit: Splash-Version aus Assembly auslesen statt hardcoded.
+            //.4a : Splash-Version aus Assembly auslesen statt hardcoded.
             // BomberBlast.Shared.csproj <Version> wird zur Assembly-Version → ToString(3) = "X.Y.Z".
             AppVersion = "v" + GetAppVersionString(),
             Renderer = new BomberBlastSplashRenderer()
@@ -290,7 +290,7 @@ public partial class App : Application
                 splash.FadeOut();
             });
 
-            // Sprint 6.3 AAA-Audit #25: Pipeline-Erfolg → Crash-Counter zuruecksetzen.
+            //.3 : Pipeline-Erfolg → Crash-Counter zuruecksetzen.
             // Naechster Start beginnt sauber bei 1.
             try
             {
@@ -309,7 +309,7 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Sprint 6.3 AAA-Audit #25: Public API fuer den Settings-Screen
+    ///.3 : Public API fuer den Settings-Screen
     /// — der User kann manuell den Crash-Counter zuruecksetzen wenn er das Spiel
     /// neu starten will ohne dass der Safe-Mode getriggert wird.
     /// </summary>
@@ -387,10 +387,10 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Logging — Sprint 4.1 AAA-Audit #6 (Welle 6: AppLogger-Fassade abgeloest).
+        // Logging —.1 (Welle 6: AppLogger-Fassade abgeloest).
         // Microsoft.Extensions.Logging mit drei eigenen Providern (Code-only, keine NuGet-Sinks):
-        //   - TraceLoggerProvider  → LogCat auf Android / Debug-Output auf Desktop
-        //   - FileLoggerProvider   → rollende Log-Datei (App-intern, ueberlebt App-Crashes)
+        //   - TraceLoggerProvider → LogCat auf Android / Debug-Output auf Desktop
+        //   - FileLoggerProvider → rollende Log-Datei (App-intern, ueberlebt App-Crashes)
         //   - CrashlyticsLoggerProvider → Bridge zu ITelemetryService.LogNonFatal/Log
         // Build-Filter: Trace im Debug, Info im Release.
         services.AddSingleton<ILoggerFactory>(sp => LoggerFactory.Create(builder =>
@@ -478,61 +478,61 @@ public partial class App : Application
         services.AddSingleton<ILoadoutService, LoadoutService>();
         services.AddSingleton<IBossRushService, BossRushService>();
         services.AddSingleton<IEventService, EventService>();
-        // Phase 20 — AAA-Audit L2: Wöchentlicher Event-Calendar (deterministisch via ISO-Week)
+        // Phase 20 — L2: Wöchentlicher Event-Calendar (deterministisch via ISO-Week)
         services.AddSingleton<IEventCalendarService, EventCalendarService>();
-        // Phase 23 — AAA-Audit M5: First-Time-Purchase-Bonus (×2 auf ersten Kauf)
+        // Phase 23 — M5: First-Time-Purchase-Bonus (×2 auf ersten Kauf)
         services.AddSingleton<IFirstPurchaseService, FirstPurchaseService>();
         // Phase 25 — DSGVO Art. 20: Datenexport-Service (Account-Holder können ihre Daten als JSON beziehen)
         services.AddSingleton<IDataExportService, DataExportService>();
-        // Phase 27 — AAA-Audit P2/P3/P4: Hardware-Profile-Service (Quality-Tier + Battery + Thermal)
+        // Phase 27 — P2/P3/P4: Hardware-Profile-Service (Quality-Tier + Battery + Thermal)
         services.AddSingleton<IHardwareProfileService, HardwareProfileService>();
-        // Phase 24 — AAA-Audit O3-O5: Retention-Service (FirstWin / FTUE / Inactive-Detection)
+        // Phase 24 — O3-O5: Retention-Service (FirstWin / FTUE / Inactive-Detection)
         services.AddSingleton<IRetentionService, RetentionService>();
-        // Phase 25b — AAA-Audit Compliance: Privacy-Center (DSGVO/COPPA-Toggles)
+        // Phase 25b — Compliance: Privacy-Center (DSGVO/COPPA-Toggles)
         services.AddSingleton<IPrivacyCenter, PrivacyCenter>();
-        // Phase 23b — AAA-Audit M1+M2: Premium-Pass-Plus + VIP-Subscription
+        // Phase 23b — M1+M2: Premium-Pass-Plus + VIP-Subscription
         services.AddSingleton<IBattlePassPlusService, BattlePassPlusService>();
         services.AddSingleton<IVipSubscriptionService, VipSubscriptionService>();
-        // v2.0.44 — AAA-Audit: Accessibility + DSGVO Account-Löschung + Telemetrie
+        // v2.0.44 — : Accessibility + DSGVO Account-Löschung + Telemetrie
         services.AddSingleton<IAccessibilityService, AccessibilityService>();
         services.AddSingleton<IAccountDeletionService, AccountDeletionService>();
         services.AddSingleton<ITelemetryService>(sp => TelemetryServiceFactory?.Invoke(sp) ?? new NullTelemetryService());
         services.AddSingleton<IAnalyticsService>(sp => AnalyticsServiceFactory?.Invoke(sp) ?? new NullAnalyticsService());
         services.AddSingleton<IPushNotificationService>(sp => PushNotificationServiceFactory?.Invoke(sp) ?? new NullPushNotificationService());
-        // Sprint 2.1 AAA-Audit #1 — RemoteConfig: Defaults aus eingebetteter JSON.
+        //.1  — RemoteConfig: Defaults aus eingebetteter JSON.
         // Android-Override (FirebaseRemoteConfigService) ueberschreibt einzelne Keys spaeter
         // via Cloud-Fetch — Defaults bleiben als Fallback fuer Offline + erste-Start-Szenarien.
         services.AddSingleton<IRemoteConfigService>(sp =>
             RemoteConfigServiceFactory?.Invoke(sp)
             ?? new DefaultsRemoteConfigService(sp.GetRequiredService<ILogger<DefaultsRemoteConfigService>>()));
 
-        // Sprint 2.3 AAA-Audit #3 — Re-Engagement-Scheduler (D1/D3/D7-Notifications).
+        //.3  — Re-Engagement-Scheduler (D1/D3/D7-Notifications).
         // Wird von MainActivity beim OnPause/OnResume aufgerufen.
         services.AddSingleton<IReEngagementScheduler, ReEngagementScheduler>();
 
-        // Sprint 4.3 AAA-Audit #17 — What's-New-Modal-Service.
+        //.3  — What's-New-Modal-Service.
         services.AddSingleton<IWhatsNewService, WhatsNewService>();
-        // Sprint 4.4 AAA-Audit #20 — Feature-Unlock-Choreographer (Queue + Pref-Flag).
+        //.4  — Feature-Unlock-Choreographer (Queue + Pref-Flag).
         services.AddSingleton<IFeatureUnlockChoreographer, FeatureUnlockChoreographer>();
-        // Sprint 6.2 AAA-Audit #16 — Mini-Story-Beats pro Welt (Intro + Outro).
+        //.2  — Mini-Story-Beats pro Welt (Intro + Outro).
         services.AddSingleton<IWorldStoryService, WorldStoryService>();
-        // Sprint 7.1 AAA-Audit #21 — Hero/Character-System (5 spielbare Charaktere).
+        //.1  — Hero/Character-System (5 spielbare Charaktere).
         services.AddSingleton<IHeroService, HeroService>();
-        // Sprint 7.4 AAA-Audit #24 — Wochen-Content-Pipeline (deterministisch via ISO-Woche).
+        //.4  — Wochen-Content-Pipeline (deterministisch via ISO-Woche).
         services.AddSingleton<IWeeklyContentService, WeeklyContentService>();
-        // Sprint 7.3 AAA-Audit #23 — Clan-System echte Firebase-Implementation.
+        //.3  — Clan-System echte Firebase-Implementation.
         // FirebaseClanService nutzt IFirebaseService (existierend) fuer Realtime-DB-Calls.
         // Asynchron via Pull (alle 30s Chat) — kein Live-Sync, kein dedizierter Server.
         services.AddSingleton<IClanService, FirebaseClanService>();
-        // Sprint 7.2 AAA-Audit #22 — Multiplayer-Session-Service (Foundation, Engine-Integration deferred).
+        //.2  — Multiplayer-Session-Service (Foundation, Engine-Integration deferred).
         services.AddSingleton<IMultiplayerSessionService, MultiplayerSessionService>();
-        // Sprint 5.2 AAA-Audit #12 — IRngProvider (Core-Interface): DeterministicRngProvider als Default
+        //.2  — IRngProvider (Core-Interface): DeterministicRngProvider als Default
         // fuer Replay-Foundation. SystemRngProvider bleibt fuer Visual-Random (Partikel, Wackel).
         services.AddSingleton<BomberBlast.Core.IRngProvider>(_ =>
             new BomberBlast.Core.DeterministicRngProvider((ulong)DateTime.UtcNow.Ticks));
-        // Sprint 4.2 AAA-Audit #10 — GameEventBus (Foundation, MainViewModel-Reduktion).
+        //.2  — GameEventBus (Foundation, MainViewModel-Reduktion).
         services.AddSingleton<IGameEventBus, GameEventBus>();
-        // Sprint 3.1 AAA-Audit #4 — BottomTabHub (Foundation, UI-Refactor deferred).
+        //.1  — BottomTabHub (Foundation, UI-Refactor deferred).
         services.AddSingleton<IBottomTabHub, BottomTabHub>();
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
@@ -550,6 +550,15 @@ public partial class App : Application
         // ViewModels (alle Singleton: werden von MainViewModel gehalten, dürfen nicht doppelt existieren)
         // Audit M25: Dependency-Aggregat fuer MainViewModel (32-Parameter-Ctor → 1).
         services.AddSingleton<MainViewModelDependencies>();
+
+        // Welle 6 MainViewModel-Refactor: 5 Feature-Module fuer Navigation/Tabs/Dialogs/VM-Registry/Lifecycle.
+        // Phase 1 — Foundation: Interfaces + leere Impls registriert. Logik-Migration in Phase 2-6.
+        services.AddSingleton<BomberBlast.Services.IDialogPresenter, BomberBlast.Services.DialogPresenter>();
+        services.AddSingleton<BomberBlast.ViewModels.IChildViewModelRegistry, BomberBlast.ViewModels.ChildViewModelRegistry>();
+        services.AddSingleton<BomberBlast.ViewModels.ILifecycleHub, BomberBlast.ViewModels.LifecycleHub>();
+        services.AddSingleton<BomberBlast.Navigation.IBottomTabController, BomberBlast.Navigation.BottomTabController>();
+        services.AddSingleton<BomberBlast.Navigation.INavigationCoordinator, BomberBlast.Navigation.NavigationCoordinator>();
+
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainMenuViewModel>();
         services.AddSingleton<GameViewModel>();
@@ -576,11 +585,11 @@ public partial class App : Application
         services.AddSingleton<ProfileViewModel>();
         services.AddSingleton<GemShopViewModel>();
         services.AddSingleton<BossRushViewModel>();
-        // Sprint 3.1 AAA-Audit #4: Play-Hub — Eager-VM (Kern-Navigation, Bottom-Tab "Spielen").
+        //.1 : Play-Hub — Eager-VM (Kern-Navigation, Bottom-Tab "Spielen").
         services.AddSingleton<PlayHubViewModel>();
-        // Sprint 4.3 AAA-Audit #17: What's-New-Modal — Transient (wird bei Bedarf neu erstellt).
+        //.3 : What's-New-Modal — Transient (wird bei Bedarf neu erstellt).
         services.AddTransient<WhatsNewViewModel>();
-        // Sprint 3.1 AAA-Audit #4: BottomTabBar-VM — Transient (View hat eigene Instanz).
+        //.1 : BottomTabBar-VM — Transient (View hat eigene Instanz).
         services.AddTransient<BottomTabBarViewModel>();
     }
 }

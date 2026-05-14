@@ -947,9 +947,10 @@ public sealed partial class GameEngine
         if (liveMinions >= 4) return;
 
         // Spawn-Position: Eine der 4 Nachbar-Zellen vom Boss (free + not blocked).
-        var rng = new Random();
+        // Sprint 5.2 AAA-Audit #9: EngineRngNext statt new Random() — im FixedTimestep-Mode
+        // deterministisch (sim-relevant: bestimmt Spawn-Position), im Variable-Mode identisch.
         var offsets = new (int dx, int dy)[] { (-1, 0), (1, 0), (0, -1), (0, 1) };
-        for (int i = 0; i < 4; i++) (offsets[i], offsets[rng.Next(4)]) = (offsets[rng.Next(4)], offsets[i]);
+        for (int i = 0; i < 4; i++) (offsets[i], offsets[EngineRngNext(4)]) = (offsets[EngineRngNext(4)], offsets[i]);
 
         foreach (var (dx, dy) in offsets)
         {

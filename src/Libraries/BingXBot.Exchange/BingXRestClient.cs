@@ -560,17 +560,22 @@ public class BingXRestClient : IExchangeClient
                 ["workingType"] = "MARK_PRICE"
             };
 
-            // Echte Positionsgröße verwenden wenn verfügbar, sonst reduceOnly als Fallback
-            if (positionQty > 0)
+            // NF29 Fix — Wenn keine Position abrufbar ist (positionQty==0), darf NICHT mit
+            // closePosition=true gesendet werden. BingX V2 unterstuetzt closePosition nicht
+            // zuverlaessig — bei Ignorierung oder Error bleibt die Position ohne SL ungeschuetzt.
+            // Vorher: blind closePosition=true → Position konnte still ohne SL bleiben. Jetzt:
+            // expliziter Throw, sodass der Caller darauf reagieren kann (z.B. Position-Refresh +
+            // Retry oder User-Notification).
+            if (positionQty <= 0)
             {
-                slParams["quantity"] = positionQty.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                _logger.LogError(
+                    "SL-Place abgebrochen: Position fuer {Symbol} {Side} nicht abrufbar — Position bleibt UNGESCHUETZT! Reconcile wird Re-Place versuchen.",
+                    symbol, positionSide);
+                throw new InvalidOperationException(
+                    $"SL-Place fuer {symbol} {positionSide}: Position-Quantity konnte nicht ermittelt werden (Aborted statt unsicherer closePosition=true).");
             }
-            else
-            {
-                // Fallback: reduceOnly statt closePosition (BingX V2 unterstützt closePosition nicht zuverlässig)
-                slParams["quantity"] = "0";
-                slParams["closePosition"] = "true";
-            }
+
+            slParams["quantity"] = positionQty.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
             // Exception NICHT verschlucken: Wenn alte SL gecancelt aber neue fehlschlägt,
             // ist die Position ungeschützt. Caller muss das wissen.

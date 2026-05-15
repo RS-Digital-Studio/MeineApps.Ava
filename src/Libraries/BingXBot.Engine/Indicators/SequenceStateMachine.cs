@@ -49,16 +49,6 @@ public class SequenceStateMachine
     public decimal Ret618 { get; private set; }
     public decimal Ret667 { get; private set; }
 
-    // SK-VERIFY: [BC-Zone-Guard] BC-Zone-Invalid-Flag (138.2% Extension erreicht)
-    /// <summary>
-    /// True wenn der Preis die 138.2% Extension mindestens einmal erreicht hat. SK-Buch:
-    /// Die 50-66.7% BC-Zone ist dann als Re-Entry unbrauchbar (Preis zu nahe am 161.8%-TP).
-    /// State bleibt Aktiviert (laufende Trades behalten ihr TP), aber die Strategy-Schicht
-    /// soll dieses Flag prüfen um keine neuen Pending-Orders gegen eine tote BC-Zone zu platzieren.
-    /// Spiegelbild des Strategy-seitigen OverExtension-Guards in LiveTradingService.
-    /// </summary>
-    public bool IsBcZoneInvalid { get; private set; }
-
     // SK-VERIFY: [2.1] Trailing High/Low nach Aktivierung — für dynamische BC-Zone
     /// <summary>Höchstes High seit Aktivierung (Long). Basis für BC-Korrekturlevel.</summary>
     public decimal CurrentHigh { get; private set; }
@@ -68,13 +58,16 @@ public class SequenceStateMachine
     /// <summary>Impuls-Range (0→A) in Preis-Einheiten. Für Proportions-Vergleich mit Sub-Wellen.</summary>
     public decimal ImpulseRange => Math.Abs(PointA - Point0);
 
-    // SK-VERIFY: [3b.2] Gescheiterte → Größere Sequenz
-    // Wenn eine Sequenz invalidiert wird, können deren Punkte eine größere Sequenz bilden.
-    /// <summary>Point0 der letzten gescheiterten Sequenz (als möglicher Startpunkt einer größeren).</summary>
+    // Test-Observability-Hooks (Promote-Tracking — nicht im Production-Pfad gelesen).
+    // BiasFlipTests + PointIdentificationFixTests prüfen das Verhalten der Promote-Logik
+    // gegen diese Felder. Beim Verbrauch in Tests stellen sie sicher, dass nach Point0-Bruch
+    // (a) FailedPoint0 den alten P0 behaelt, (b) PromotedToLarger=true gesetzt wurde,
+    // (c) der neue Point0 das Bruch-Extrem ist.
+    /// <summary>Test-Hook: Point0 der zuletzt invalidierten Sequenz.</summary>
     public decimal FailedPoint0 { get; private set; }
-    /// <summary>PointA der letzten gescheiterten Sequenz (als mögliches neues A einer größeren).</summary>
+    /// <summary>Test-Hook: PointA der zuletzt invalidierten Sequenz.</summary>
     public decimal FailedPointA { get; private set; }
-    /// <summary>True wenn bei der letzten Invalidierung eine größere Sequenz erkannt wurde.</summary>
+    /// <summary>Test-Hook: True nach Promote (Invalidate→neues P0=Bruch-Extrem) oder BiasFlip-Init.</summary>
     public bool PromotedToLarger { get; private set; }
 
     /// <summary>
@@ -101,7 +94,10 @@ public class SequenceStateMachine
         LastActivatedExtreme = 0m;
     }
 
-    /// <summary>B-Retracement als Ratio (0.0-1.0). Elliott: Ideal 0.382-0.618, max 0.886.</summary>
+    /// <summary>
+    /// Test-Hook: B-Retracement als Ratio (0.0-1.0) zum Zeitpunkt der Aktivierung.
+    /// SequenceStateMachineTests verifiziert, dass aktivierte Sequenzen in [0.382, 0.786] liegen.
+    /// </summary>
     public decimal BRetracementRatio { get; private set; }
 
     /// <summary>
@@ -155,8 +151,11 @@ public class SequenceStateMachine
     /// <summary>GKL-Zonen aller abgearbeiteten Sequenzen (50/66.7% von Point0 bis Extension200).</summary>
     public List<CompletedGklEntry> CompletedGkls { get; } = new();
 
-    // SK-VERIFY: [2.4] 100er Extension als Minimum-Gate
-    /// <summary>True wenn der Preis die 100% Extension seit Aktivierung mindestens einmal erreicht hat.</summary>
+    /// <summary>
+    /// Test-Hook: True wenn die 100%-Extension seit Aktivierung erreicht wurde.
+    /// PointIdentificationFixTests verifiziert, dass nach Ext1.0-Touch das Flag gesetzt bleibt
+    /// (Hysterese-Check).
+    /// </summary>
     public bool Has100ExtensionReached { get; private set; }
 
     // SK-VERIFY: [2.2] Dynamische BC-Korrekturzone (Golden Pocket) basierend auf CurrentHigh/CurrentLow
@@ -181,12 +180,6 @@ public class SequenceStateMachine
             return (CurrentLow + range * 0.667m, CurrentLow + range * 0.500m);
         }
     }
-
-    /// <summary>
-    /// Elliott-Fibonacci-Confidence (0.0-1.0). Misst wie nah der B-Punkt an idealen Fib-Leveln liegt.
-    /// 1.0 = exakt 61.8% (ideal), 0.0 = weit entfernt von allen Fib-Leveln.
-    /// </summary>
-    public decimal FibConfidence { get; private set; }
 
     // Konfiguration (von Strategy per ATR-basiertem Wert gesetzt)
     //
@@ -543,8 +536,7 @@ public class SequenceStateMachine
             Extension100 = ext100,
             Extension1618 = ext1618, Extension200 = ext200,
             Extension2618 = ext2618, Extension4236 = ext4236,
-            CreatedAtCandleIndex = Point0Index,
-            IsBcZoneInvalid = IsBcZoneInvalid
+            CreatedAtCandleIndex = Point0Index
         };
     }
 
@@ -573,7 +565,6 @@ public class SequenceStateMachine
         FailedPoint0 = 0;
         FailedPointA = 0;
         Has100ExtensionReached = false;
-        IsBcZoneInvalid = false;
         ActivationCandleIndex = -1; // Strukturpunkte-Doku §5A: Neue Sequenz noch nicht aktiviert.
         // Strukturpunkte-Doku §3: BiasFlip verwirft den bisherigen BOS-Anker. Der Orchestrator soll beim
         // nächsten Candle-Tick für die neue Richtung einen frischen Anchor berechnen.
@@ -589,7 +580,6 @@ public class SequenceStateMachine
         Point0 = 0; PointA = 0; PotentialB = 0; LockedB = 0;
         CurrentHigh = 0; CurrentLow = 0;
         Has100ExtensionReached = false;
-        IsBcZoneInvalid = false; // SK-VERIFY: [BC-Zone-Guard] Flag zurücksetzen
         _point0CandleCount = 0; // SK-FIX: Counter zurücksetzen
         ActivationCandleIndex = -1; // Strukturpunkte-Doku §5A: Volume-Filter-Index auch resetten
         // Strukturpunkte-Doku §3: BOS-Anker verwerfen, damit er beim nächsten Point0-Kandidaten neu berechnet wird.
@@ -855,7 +845,6 @@ public class SequenceStateMachine
         // SK-System: Punkt B muss eine signifikante Korrektur sein (ideal 50-66.7%, akzeptabel 38.2-78.6%).
         // Ohne Filter wurden "Sequenzen" mit 5% Retracement (= kein echtes B) oder 90% (= fast Invalidierung) aktiviert.
         // Defaults sind jetzt SK-konform: _minBRetracement=0.382, _maxBRetracement=0.786.
-        // FibConfidence bleibt als Qualitäts-Score für die Nähe zu idealen Fib-Leveln.
         if (bRetrace < _minBRetracement || bRetrace > _maxBRetracement)
         {
             // Retracement außerhalb des gültigen Bereichs → State bleibt SucheB, B wird weiter getrailed
@@ -899,7 +888,6 @@ public class SequenceStateMachine
         LockedB = PotentialB;
         LockedBIndex = PotentialBIndex;
         BRetracementRatio = bRetrace;
-        FibConfidence = CalculateFibConfidence(bRetrace);
         CalculateExtensions();
         // SK-VERIFY: [2.1] Trailing High/Low initialisieren (Breakout-Kerze als Startwert)
         CurrentHigh = candle.High;
@@ -908,19 +896,6 @@ public class SequenceStateMachine
         ActivationCandleIndex = index;
         State = SmState.Aktiviert;
         return true;
-    }
-
-    /// <summary>
-    /// Berechnet wie nah der B-Punkt an idealen Elliott-Fibonacci-Leveln liegt.
-    /// 61.8% = ideal (Score 1.0), je weiter entfernt desto niedriger.
-    /// </summary>
-    private static decimal CalculateFibConfidence(decimal retracementRatio)
-    {
-        // Ideale Fib-Level für Welle 2 (B-Punkt): 38.2%, 50%, 61.8%, 78.6%
-        decimal[] idealLevels = [0.382m, 0.500m, 0.559m, 0.618m, 0.667m, 0.786m];
-        var minDist = idealLevels.Min(level => Math.Abs(retracementRatio - level));
-        // Score: 1.0 bei exaktem Treffer, 0.0 bei > 10% Abweichung
-        return Math.Max(0m, 1.0m - minDist / 0.10m);
     }
 
     private bool ProcessAktiviert(Candle candle, int index)
@@ -998,7 +973,6 @@ public class SequenceStateMachine
         PointA = 0; PotentialB = 0; LockedB = 0;
         CurrentHigh = 0; CurrentLow = 0;
         Has100ExtensionReached = false;
-        IsBcZoneInvalid = false; // SK-VERIFY: [BC-Zone-Guard] Flag für neue Sequenz zurücksetzen
         ActivationCandleIndex = -1; // Strukturpunkte-Doku §5A: Aktivierung der alten Sequenz ist nichtig.
         _point0CandleCount = _minPoint0Candles; // SK-Promote: P0 sofort bestätigt
         PromotedToLarger = true;
@@ -1051,7 +1025,6 @@ public class SequenceStateMachine
         CurrentHigh = 0;
         CurrentLow = 0;
         Has100ExtensionReached = false;
-        IsBcZoneInvalid = false; // SK-VERIFY: [BC-Zone-Guard] Flag für neue Sequenz zurücksetzen
         ActivationCandleIndex = -1; // Strukturpunkte-Doku §5A: Aktivierung der abgearbeiteten Sequenz ist verbraucht.
         _point0CandleCount = 0; // SK-FIX: Counter zurücksetzen
         State = SmState.Suche0;

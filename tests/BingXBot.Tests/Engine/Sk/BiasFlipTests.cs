@@ -25,7 +25,6 @@ public class BiasFlipTests
         var sm = new SequenceStateMachine(0.3m, 0.2m, 0.382m, 0.786m, minPoint0Candles: 1);
         sm.InitAsBiasFlip(100m, 90m, 5);
         sm.Has100ExtensionReached.Should().BeFalse();
-        sm.IsBcZoneInvalid.Should().BeFalse();
     }
 
     [Fact]

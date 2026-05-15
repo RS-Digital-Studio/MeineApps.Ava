@@ -105,14 +105,6 @@ public class Sequence
         }
     }
 
-    /// <summary>
-    /// SK-VERIFY: [BC-Zone-Guard] True wenn die BC-Zone als Re-Entry unbrauchbar ist
-    /// (Preis hat mindestens einmal die 138.2% Extension erreicht seit Aktivierung).
-    /// Wird von der State Machine gesetzt und durch ToSequence() propagiert. Persistenter
-    /// Flag (Hysterese): Sobald 138.2% erreicht, bleibt BC-Zone invalid auch wenn Preis zurückkommt.
-    /// </summary>
-    public bool IsBcZoneInvalid { get; set; }
-
     // === Berechnete Properties ===
 
     /// <summary>Range der A→B Bewegung in Preis-Einheiten.</summary>

@@ -6,11 +6,10 @@ using Xunit;
 namespace BingXBot.Tests.Engine.Sk;
 
 /// <summary>
-/// Regressions-Tests für die vier SK-State-Machine-Fixes (19.04.2026):
+/// Regressions-Tests für die SK-State-Machine-Fixes (19.04.2026):
 /// 1. PointA-Locking in ProcessSucheA
 /// 2. IsInvalidated mit Overtracing-Toleranz
 /// 3. BRetracementRatio Sanity-Check (PotentialB auf richtiger Seite von PointA)
-/// 4. 138.2%-Flag IsBcZoneInvalid in ProcessAktiviert
 ///
 /// Alle Tests nutzen FromCandlesBoth() (realer Pfad) mit gebauten Candle-Sequenzen.
 /// </summary>

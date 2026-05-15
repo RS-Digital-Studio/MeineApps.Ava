@@ -24,10 +24,11 @@ public class ScannerSettings
 
     /// <summary>
     /// Strukturpunkte-Doku §2: Impuls-Distanz-Filter. |PointA - Point0| muss ≥ <see cref="ImpulseAtrMultiplier"/> × ATR_14 sein,
-    /// sonst wird die Sequenz verworfen. Doku-Wert: 3.0 (Default). Schützt vor Rauschen in toten
-    /// Seitwärtsmärkten — echter Impuls = mindestens dreimal so groß wie eine Durchschnittskerze.
+    /// sonst wird die Sequenz verworfen. Doku-Spanne erlaubt 2.0-3.0 — Default 2.0 (mehr handelbare
+    /// Sequenzen in liquiden BingX-Perps, ohne den Rausch-Schutz aufzugeben). 3.0 bleibt für sehr
+    /// strenge Filterung per UI einstellbar.
     /// </summary>
-    public decimal ImpulseAtrMultiplier { get; set; } = 3.0m;
+    public decimal ImpulseAtrMultiplier { get; set; } = 2.0m;
 
     /// <summary>
     /// Strukturpunkte-Doku §5A: Hart-Filter für BOS-Volumen. Aktivierungs-Kerze (Close > PointA bei Long,
@@ -105,17 +106,20 @@ public class ScannerSettings
 
     /// <summary>
     /// Strukturpunkte-Doku §3: Bei true muss der BODY-Close die Last-Swing-Grenze überschreiten (striktes BOS).
-    /// Bei false reicht ein Docht darüber (loser BOS). Default: true (Doku-Default, "Close über dem Level").
+    /// Bei false reicht ein Docht darüber (loser BOS). Default: false — die Strukturpunkte-Doku formuliert
+    /// die Regel nicht eindeutig als reinen Body-Close, ein Docht-Bruch reicht für die meisten Setups.
+    /// Wer Buch-strikt fahren will, schaltet das per UI auf true.
     /// </summary>
-    public bool RequireBosCloseBreak { get; set; } = true;
+    public bool RequireBosCloseBreak { get; set; } = false;
 
     /// <summary>
     /// Spec §7 (MTA): Blockiere LTF-Entry wenn HTF-Sequenz in ihrer Zielzone (EXT_1618-EXT_2000) steht.
     /// Doku-Zitat: "Führe Long-Trades auf dem Lower Timeframe (LTF) nur aus, wenn sich der Preis nicht in der
     /// Zielzone (EXT_1618-EXT_2000) des Higher Timeframes (HTF) befindet."
-    /// Default: true (Buch-konformer MTA-Schutz).
+    /// Default: false — bewusste User-Lockerung: in HTF-Zielzonen finden sich häufig die besten
+    /// Counter-Setups. Wer Buch-konform MTA fahren möchte, schaltet das per UI auf true.
     /// </summary>
-    public bool BlockLtfEntryWhenHtfInTargetZone { get; set; } = true;
+    public bool BlockLtfEntryWhenHtfInTargetZone { get; set; } = false;
 
     /// <summary>
     /// Spec §7 (Confluence Engine / "Heiliger Gral"): Aktiviert den geometrischen Overlap-Check zwischen
@@ -187,13 +191,17 @@ public class ScannerSettings
         TimeFrame.D1, TimeFrame.H4, TimeFrame.H1, TimeFrame.M15
     };
 
-    /// <summary>Per-TF Min-Volume24h-Filter für Krypto (24/7 hohe Liquidität).</summary>
+    /// <summary>
+    /// Per-TF Min-Volume24h-Filter für Krypto (24/7 hohe Liquidität).
+    /// M15 wurde auf H1-Niveau gesenkt (10M), damit Mid-Cap-Alts (Rank 50-100) auf M15
+    /// handelbar bleiben — höhere Schwelle filterte zu viele Kandidaten vor der Strategy.
+    /// </summary>
     public Dictionary<TimeFrame, decimal> MinVolume24hByTf { get; set; } = new()
     {
         { TimeFrame.D1, 10_000_000m },
         { TimeFrame.H4, 10_000_000m },
         { TimeFrame.H1, 20_000_000m },
-        { TimeFrame.M15, 25_000_000m },
+        { TimeFrame.M15, 10_000_000m },
     };
 
     /// <summary>
@@ -263,7 +271,12 @@ public class ScannerSettings
 
     /// <summary>Top-N Coins nach Volume/Market-Cap.</summary>
     public bool OnlyTopByVolume { get; set; } = true;
-    public int TopCoinsCount { get; set; } = 100;
+    /// <summary>
+    /// Anzahl der Top-Coins nach Market-Cap (Fallback Volume), die in den Live-Scan einfließen.
+    /// 100 schnitt rund 80 % der BingX-Perps vor den Filtern ab. Default 200 holt Mid-Caps zurück,
+    /// die nachgelagerten Volume-/Volatility-Filter sortieren weiterhin schwache Kandidaten aus.
+    /// </summary>
+    public int TopCoinsCount { get; set; } = 200;
 
     /// <summary>Scan-Intervall in Sekunden. Einheitlich 60s für alle TFs (M15 erfordert regelmäßige Reaktion,
     /// langsame TFs schaden nicht durch häufigere Prüfung — Kerzen-Cache verhindert Overhead).</summary>

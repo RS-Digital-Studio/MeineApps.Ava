@@ -280,15 +280,18 @@ GklMasterZone und HighProbabilityZone zählen +2, alle anderen +1.
 | `PriceAction`, `FibonacciGoldenPocket`, `FahrplanAlignment`, `HigherTfSequence`, `VolumeSpike`, `BcklReEntry`, `FavorableFundingRate` | 1 |
 | `GklMasterZone`, `HighProbabilityZone` | 2 |
 
-### Aktive Buch-Hardfilter (alle Default = on)
+### Aktive Buch-Hardfilter (Default-Stand)
 
-- `ImpulseAtrMultiplier = 3.0` (Strukturpunkte §2)
-- `RequireBosOnActivation = true` (Strukturpunkte §3, asymmetrische Pivots Left=5/Right=3)
-- `AdaptiveSwingStrength = true`, `PivotLeftBars = 5`, `PivotRightBars = 3` (§5B)
-- `RequireWickRejectionInBZone = true` (§5C, Pinbar/Engulfing-Pflicht in B-Zone)
-- `BlockLtfEntryWhenHtfInTargetZone = true` (Spec §7 MTA)
-- `EnableConfluenceOverlapDetection = true` (Spec §7 Heiliger Gral)
-- News-Filter via `HttpEconomicCalendarService` (opt-in via `News:Endpoint`-Config)
+| Setting | Default | Buch-Stand | Bemerkung |
+|---------|---------|------------|-----------|
+| `ImpulseAtrMultiplier` | `2.0` | 3.0 | Doku-Spanne erlaubt 2.0; mehr Sequenzen in liquiden Perps |
+| `RequireBosOnActivation` | `true` | true | BOS bleibt Pflicht (Strukturpunkte §3) |
+| `RequireBosCloseBreak` | `false` | true (§3) | Docht-Bruch reicht; Buch-strikter Body-Close per UI aktivierbar |
+| `AdaptiveSwingStrength` / `PivotLeftBars=5` / `PivotRightBars=3` | `true/5/3` | §5B | Asymmetrische Pivots aktiv |
+| `RequireWickRejectionInBZone` | `false` | true (§5C) | Buch §7 lässt drei gleichwertige Reversal-Wege zu |
+| `BlockLtfEntryWhenHtfInTargetZone` | `false` | true (Spec §7) | MTA als opt-in; Counter-Setups in HTF-Targets bleiben handelbar |
+| `EnableConfluenceOverlapDetection` | `true` | true | "Heiliger Gral" Bonus-Confluence |
+| News-Filter (`HttpEconomicCalendarService`) | opt-in | empfohlen | Via `News:Endpoint`-Config aktivieren |
 
 ### Bewusste User-Abweichungen vom Buch
 

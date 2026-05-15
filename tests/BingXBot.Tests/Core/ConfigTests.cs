@@ -11,19 +11,21 @@ namespace BingXBot.Tests.Core;
 public class ConfigTests
 {
     [Fact]
-    public void RiskSettings_ShouldHaveBuchCompliantDefaults()
+    public void RiskSettings_ShouldHaveUserDefaults()
     {
-        // SK-Buch-Refactoring 12.04.2026: 1% Risiko/Trade (Buch S.13), max 3 offene Positionen
+        // User-Defaults (bewusste Buch-Abweichung): 5 % Risiko/Trade, 10 % Margin-Spielraum.
         var s = new RiskSettings();
-        s.MaxPositionSizePercent.Should().Be(3m);           // Buch: 3% Margin-Limit
-        s.MaxMarginPerTradePercent.Should().Be(1m);         // Buch: 1% Risiko pro Trade
+        s.MaxPositionSizePercent.Should().Be(10m);          // User: 10 % Margin-Spielraum
+        s.MaxMarginPerTradePercent.Should().Be(5m);         // User: 5 % aliged mit MaxRiskPercentPerTrade
+        s.MaxRiskPercentPerTrade.Should().Be(5m);           // User: 5 % Risk-Cap (Buch 1-3 %)
         s.MaxDailyDrawdownPercent.Should().Be(0m);          // Deaktiviert (User-Entscheidung)
         s.MaxTotalDrawdownPercent.Should().Be(10m);
         s.MaxOpenPositions.Should().Be(3);                  // Buch: max 3 Trades gleichzeitig
         s.MaxLeverage.Should().Be(10m);
-        s.Tp1CloseRatio.Should().Be(0.5m);                  // Buch: 50% bei TP1
-        s.Tp2CloseRatio.Should().Be(0.5m);                  // Buch: 50% Rest bei TP2
+        s.Tp1CloseRatio.Should().Be(0.5m);                  // Buch: 50 % bei TP1
+        s.Tp2CloseRatio.Should().Be(0.5m);                  // Buch: 50 % Rest bei TP2
         s.MinRiskRewardRatio.Should().Be(0m);               // Strategy hat eigenen 1:1-Check
+        s.RequireWickRejectionInBZone.Should().BeFalse();   // Buch §7: drei gleichwertige Reversal-Wege
     }
 
     [Fact]
@@ -45,16 +47,21 @@ public class ConfigTests
     }
 
     [Fact]
-    public void ScannerSettings_ShouldHaveBuchCompliantDefaults()
+    public void ScannerSettings_ShouldHaveUserDefaults()
     {
-        // SK-Buch: H4 Navigator, Reversal-Modus, breites Screening, niedrige Min-Volume für Stabilisierungsphasen
+        // User-Defaults: H4 Navigator, Reversal-Modus, breites Screening (TopCoinsCount=200).
         var s = new ScannerSettings();
-        s.MinVolume24h.Should().Be(1_000_000m);
+        s.MinVolume24h.Should().Be(1_000_000m);             // Legacy-Single-TF (unverändert)
         s.ScanTimeFrame.Should().Be(TimeFrame.H4);
-        s.MaxResults.Should().Be(100);
-        s.ScanIntervalSeconds.Should().Be(60);              // H4 nutzt 60s für schnelle M30-Reaktion
+        s.MaxResults.Should().Be(100);                      // Legacy-Single-TF (unverändert)
+        s.TopCoinsCount.Should().Be(200);                   // Erweiterte Marktabdeckung (vorher 100)
+        s.ScanIntervalSeconds.Should().Be(60);
         s.Mode.Should().Be(ScanMode.Reversal);              // SK = Mean-Reversion
         s.EnableTradFi.Should().BeTrue();
+        s.ImpulseAtrMultiplier.Should().Be(2.0m);           // Vorher 3.0 — Doku-Spanne erlaubt 2.0
+        s.RequireBosCloseBreak.Should().BeFalse();          // Docht-Bruch reicht
+        s.BlockLtfEntryWhenHtfInTargetZone.Should().BeFalse(); // MTA-Lockerung
+        s.MinVolume24hByTf[TimeFrame.M15].Should().Be(10_000_000m); // Vorher 25M — Mid-Caps zurück
     }
 
     [Fact]

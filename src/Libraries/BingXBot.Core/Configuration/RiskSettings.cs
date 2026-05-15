@@ -32,9 +32,10 @@ public enum BCZoneEntryStrategy
 public record MarketCategorySettings
 {
     public decimal MaxLeverage { get; init; } = 3m;
-    public decimal MaxPositionSizePercent { get; init; } = 3m;
-    /// <summary>SK-Buch S.13: 1% Risiko pro Trade (1-3% Tagesrisiko, bei mehreren Trades aufteilen).</summary>
-    public decimal MaxMarginPerTradePercent { get; init; } = 1m;
+    /// <summary>Margin-Anteil je Trade in % der Balance. Default 10 % (bewusste User-Lockerung).</summary>
+    public decimal MaxPositionSizePercent { get; init; } = 10m;
+    /// <summary>Anzeige-Wert max. Margin pro Trade. Default 5 % (aliged mit MaxRiskPercentPerTrade).</summary>
+    public decimal MaxMarginPerTradePercent { get; init; } = 5m;
     /// <summary>Minimales RRR pro Kategorie. SK-Buch S.13 fordert 1:1 (Buch-strikt).</summary>
     public decimal MinRiskRewardRatio { get; init; } = 1.0m;
 }
@@ -45,10 +46,18 @@ public record MarketCategorySettings
 /// </summary>
 public class RiskSettings
 {
-    /// <summary>Max. Margin pro Trade in % der Balance. SK-Buch: 1-3%, konservativ 1%.</summary>
-    public decimal MaxPositionSizePercent { get; set; } = 3m;
-    /// <summary>Max. Risiko (Verlust bei SL-Hit) pro Trade in % der Balance. SK-Buch S.13: 1%.</summary>
-    public decimal MaxMarginPerTradePercent { get; set; } = 1m;
+    /// <summary>
+    /// Max. Margin (Risikokapital) pro Trade in % der Balance. SK-Buch: 1-3 % konservativ.
+    /// Bewusste User-Lockerung: 10 % als Default, damit das 5 %-Risk-Profil bei moderatem Leverage
+    /// genug Margin-Spielraum hat. UI kann zurück auf Buch-Default 3 % stellen.
+    /// </summary>
+    public decimal MaxPositionSizePercent { get; set; } = 10m;
+    /// <summary>
+    /// UI-Anzeige-Wert für max. Margin pro Trade (in % der Balance). Wird in der Engine nicht direkt
+    /// als Cap angewendet — der echte Risiko-Cap kommt aus <see cref="MaxRiskPercentPerTrade"/>.
+    /// Default 5 % — aliged mit MaxRiskPercentPerTrade (bewusste User-Abweichung vom Buch).
+    /// </summary>
+    public decimal MaxMarginPerTradePercent { get; set; } = 5m;
     /// <summary>Max. Tages-Drawdown in %. 0 = deaktiviert (Buch-konform: MaxDailyLossPercent übernimmt).</summary>
     public decimal MaxDailyDrawdownPercent { get; set; } = 0m;
     /// <summary>Max. Total-Drawdown in % (Safety-Net gegen Bot-Crash).</summary>
@@ -107,12 +116,12 @@ public class RiskSettings
     /// Strukturpunkte-Doku §5C: Wenn true wird auch in Modus <see cref="EntryMode.Both"/> und
     /// <see cref="EntryMode.Aggressive"/> eine Pinbar- ODER Engulfing-Bestätigung in der B-Zone erzwungen
     /// und Micro-Sequence als Reversal-Trigger verworfen.
-    /// Default: true (25.04.2026 — Buch-strikter Schutz vor "Falling Knife" beim 50%-Limit-Entry).
-    /// Algorithmus-Dok §5C: "Erzeuge erst ein Kaufsignal, wenn Lower_Wick > (Body * 2)." Wer Micro-Sequence
-    /// als dritten Reversal-Trigger zulassen will (Buch §7 konservativer Einstieg, drei gleichwertige Wege),
-    /// schaltet das ab — der Default schützt aber den Default-EntryMode.Both vor Kauf in fallendes Messer.
+    /// Default: false — Buch §7 lässt drei gleichwertige Reversal-Wege zu (Pinbar/Engulfing/Micro-Sequence).
+    /// Der frühere True-Default war eine strikte Profi-Erweiterung; standardmäßig deaktiviert lockert er
+    /// die Trade-Frequenz spürbar in liquiden Märkten, ohne den Conservative-Mode zu schwächen
+    /// (Conservative erzwingt LtfReversal sowieso, dann reicht eine Reversal-Variante).
     /// </summary>
-    public bool RequireWickRejectionInBZone { get; set; } = true;
+    public bool RequireWickRejectionInBZone { get; set; } = false;
 
     /// <summary>
     /// Spec §4 Confirmation-Mode: Die Trigger-Kerze muss mit dem Body INNERHALB oder ÜBER der Korrekturbox
@@ -234,10 +243,11 @@ public class RiskSettings
     public decimal MinRiskRewardRatio { get; set; } = 0m;
 
     /// <summary>
-    /// Hard-Cap für Risiko pro Trade (|Entry-SL|*Qty / Equity). SK-Buch: 1-3%. 0 = deaktiviert.
-    /// Wirkt ZUSÄTZLICH zu MaxMarginPerTradePercent als Schutz gegen unerwartete Sizing-Kombinationen.
+    /// Hard-Cap für Risiko pro Trade (|Entry-SL|*Qty / Equity). SK-Buch: 1-3 %. 0 = deaktiviert.
+    /// Bewusste User-Abweichung vom Buch: 5 % (aggressivere Sizing-Wahl, dokumentiert in
+    /// <c>src/Apps/BingXBot/CLAUDE.md</c>). MaxDailyRiskPercent dient als Tages-Gesamtschirm.
     /// </summary>
-    public decimal MaxRiskPercentPerTrade { get; set; } = 3m;
+    public decimal MaxRiskPercentPerTrade { get; set; } = 5m;
 
     /// <summary>
     /// Max Daily Loss Circuit-Breaker in % der Equity. Nach Überschreitung keine neuen Entries bis UTC-00:00.
@@ -316,15 +326,18 @@ public class RiskSettings
     };
 
     // === Per-Markt Risk-Overrides ===
-    /// <summary>Marktspezifische Risk-Settings. SK-Buch: einheitlich 1% Risiko für alle Kategorien.</summary>
+    /// <summary>
+    /// Marktspezifische Risk-Settings. MinRRR = 1:1 (Buch S.13).
+    /// MaxPositionSizePercent/MaxMarginPerTradePercent sind an die globalen User-Defaults (10 %/5 %) angeglichen;
+    /// MaxLeverage bleibt asset-typisch unterschiedlich (Crypto 5×, Forex 20×, …).
+    /// </summary>
     public Dictionary<MarketCategory, MarketCategorySettings> CategorySettings { get; set; } = new()
     {
-        // SK-Buch S.13: MinRRR = 1:1 fuer alle Kategorien (Buch-konform).
-        { MarketCategory.Crypto,    new() { MaxLeverage = 5m,  MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
-        { MarketCategory.Commodity, new() { MaxLeverage = 10m, MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
-        { MarketCategory.Index,     new() { MaxLeverage = 10m, MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
-        { MarketCategory.Forex,     new() { MaxLeverage = 20m, MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
-        { MarketCategory.Stock,     new() { MaxLeverage = 5m,  MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Crypto,    new() { MaxLeverage = 5m,  MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 5m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Commodity, new() { MaxLeverage = 10m, MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 5m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Index,     new() { MaxLeverage = 10m, MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 5m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Forex,     new() { MaxLeverage = 20m, MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 5m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Stock,     new() { MaxLeverage = 5m,  MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 5m, MinRiskRewardRatio = 1.0m } },
     };
 
     public MarketCategorySettings GetCategorySettings(MarketCategory category)

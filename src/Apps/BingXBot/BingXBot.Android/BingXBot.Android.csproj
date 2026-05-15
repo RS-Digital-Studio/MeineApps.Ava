@@ -6,8 +6,8 @@
     <RootNamespace>BingXBot</RootNamespace>
     <AssemblyName>BingXBot</AssemblyName>
     <ApplicationId>com.rsdigital.bingxbot</ApplicationId>
-    <ApplicationVersion>24</ApplicationVersion>
-    <ApplicationDisplayVersion>1.8.0</ApplicationDisplayVersion>
+    <ApplicationVersion>25</ApplicationVersion>
+    <ApplicationDisplayVersion>1.8.1</ApplicationDisplayVersion>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
   </PropertyGroup>

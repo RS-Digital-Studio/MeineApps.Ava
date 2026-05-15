@@ -17,6 +17,13 @@ public interface IRiskManager
     /// <summary>Setzt alle Statistiken zurück inkl. Peak-Equity (für kompletten Bot-Reset).</summary>
     void ResetAll();
 
+    /// <summary>
+    /// Setzt die Summe der offenen Trade-Risiken (Σ |Entry - SL| × Qty aller offenen Positionen)
+    /// fuer den MaxDailyRiskPercent-Check. Wird vom TradingServiceBase (Live) bzw. BacktestEngine
+    /// pro Scan-Tick aufgefrischt.
+    /// </summary>
+    void SetOpenRiskEstimate(decimal openRiskUsd);
+
     /// <summary>Berechnet den Liquidationspreis für eine Position (Isolated Margin).</summary>
     decimal CalculateLiquidationPrice(decimal entryPrice, decimal leverage, Side side);
 

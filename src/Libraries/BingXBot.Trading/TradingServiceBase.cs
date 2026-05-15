@@ -237,6 +237,11 @@ public abstract class TradingServiceBase : IDisposable
             // ExitState existiert: Signal-Referenz aktualisieren damit neue SL/TP-Werte greifen
             existingState!.Signal = signal;
         }
+
+        // NF15 Fix — Recovery-Signale muessen auch im _signalCreatedAt/_positionOpenTimes-Tracking
+        // landen, sonst funktioniert der Reconcile-Grace-Window-Check (Orphan/MissingStop) nicht
+        // und kann in den ersten 30-90 s nach Restart faelschlich triggern.
+        OnSignalCreated(key);
     }
 
     /// <summary>
@@ -888,6 +893,30 @@ public abstract class TradingServiceBase : IDisposable
         // 3. Account + Positionen holen
         var account = await GetAccountAsync().ConfigureAwait(false);
         var positions = await GetPositionsForScanAsync().ConfigureAwait(false);
+
+        // NF8 Fix — RiskManager._openRiskEstimate pro Scan-Tick aus den offenen Positionen
+        // aktualisieren. Vor diesem Fix war _openRiskEstimate immer 0, sodass MaxDailyRiskPercent
+        // offene Positionen ignoriert hat (nur realisierte Verluste + geplanter neuer Trade-Risk).
+        // Wir summieren |Entry - SL| * Qty pro Position; ohne bekannten SL faellt das Symbol weg
+        // (besser Unterschaetzung als Ueberschaetzung — Recovery-Pfade setzen SL beim ersten Tick).
+        if (_riskManager != null && positions.Count > 0)
+        {
+            decimal openRiskUsd = 0m;
+            for (var i = 0; i < positions.Count; i++)
+            {
+                var p = positions[i];
+                var key = $"{p.Symbol}_{p.Side}";
+                if (!_positionSignals.TryGetValue(key, out var sig)) continue;
+                if (!sig.StopLoss.HasValue || sig.StopLoss.Value <= 0) continue;
+                var slDist = Math.Abs(p.EntryPrice - sig.StopLoss.Value);
+                openRiskUsd += slDist * p.Quantity;
+            }
+            _riskManager.SetOpenRiskEstimate(openRiskUsd);
+        }
+        else
+        {
+            _riskManager?.SetOpenRiskEstimate(0m);
+        }
 
         // 4. Multi-TF Standalone: Klines pro Navigator-TF × Symbol laden.
         //    W1 + D1 einmal pro Symbol (shared über alle Navigator-TF-Evaluierungen).

@@ -229,6 +229,13 @@ public class BacktestEngine
         var dailyIdx = InitIdx(dailyCandles);
         var weeklyIdx = InitIdx(weeklyCandles);
 
+        // NF9 Fix — Backtest streamt RiskManager-Updates live statt nur am Ende. Vorher war
+        // riskManager._dailyPnl waehrend des Runs immer 0 → LossStreakDampening, EquityCurve-
+        // Scaling und MaxDailyLoss-Circuit haben im Backtest nie gefeuert. Trades liefen mit
+        // voller Position, Backtest-Ergebnisse waren systematisch zu optimistisch.
+        var lastBacktestDate = allCandles[warmupSize].CloseTime.Date;
+        var lastCompletedTradeCount = 0;
+
         var iterationCount = allCandles.Count - warmupSize;
         for (int i = warmupSize; i < allCandles.Count; i++)
         {
@@ -286,8 +293,40 @@ public class BacktestEngine
             // Indikator-Cache periodisch leeren um unbegrenztes Wachstum zu verhindern
             if ((i - warmupSize) % 500 == 0 && i > warmupSize)
                 IndicatorHelper.ClearCache();
+
+            // NF9 Fix — Tageswechsel-Reset (analog Live-TradingServiceBase). Verhindert dass
+            // DailyPnl ueber das gesamte Backtest-Fenster akkumuliert und MaxDailyLoss-Circuit
+            // dauerhaft blockiert wird.
+            var currentDate = currentCandle.CloseTime.Date;
+            if (currentDate != lastBacktestDate)
+            {
+                riskManager.ResetDailyStats();
+                lastBacktestDate = currentDate;
+            }
+
             var positions = await simExchange.GetPositionsAsync().ConfigureAwait(false);
             var account = await simExchange.GetAccountInfoAsync().ConfigureAwait(false);
+
+            // NF8 Fix (Backtest-Variante) — OpenRisk pro Tick auffrischen, damit MaxDailyRiskPercent
+            // offene Positionen sieht. Im Live macht das TradingServiceBase.ScanAndTradeAsync, hier
+            // analog vor dem RiskManager.ValidateTrade-Aufruf.
+            if (positions.Count > 0)
+            {
+                decimal openRiskBacktest = 0m;
+                for (var p = 0; p < positions.Count; p++)
+                {
+                    var pos = positions[p];
+                    var posKey = $"{pos.Symbol}_{pos.Side}";
+                    if (!positionSignals.TryGetValue(posKey, out var posSig)) continue;
+                    if (!posSig.StopLoss.HasValue || posSig.StopLoss.Value <= 0) continue;
+                    openRiskBacktest += Math.Abs(pos.EntryPrice - posSig.StopLoss.Value) * pos.Quantity;
+                }
+                riskManager.SetOpenRiskEstimate(openRiskBacktest);
+            }
+            else
+            {
+                riskManager.SetOpenRiskEstimate(0m);
+            }
             // Realistischer Bid/Ask-Spread statt Candle Low/High
             // (Low/High ist der Candle-Range, nicht der Spread → wäre massiv überzeichnet)
             var halfSpread = currentCandle.Close * settings.SpreadPercent / 100m / 2m;
@@ -606,6 +645,17 @@ public class BacktestEngine
                 }
             }
 
+            // NF9 Fix — Neu abgeschlossene Trades dieser Iteration in den RiskManager streamen,
+            // damit LossStreakDampening, EquityCurveScaling und MaxDailyLoss-Circuit korrekt
+            // ueber die Backtest-Laufzeit greifen (vorher: nur final-Loop am Ende → keinerlei
+            // dynamische Reaktion waehrend des Runs).
+            var completedAfterTick = simExchange.GetCompletedTrades();
+            while (lastCompletedTradeCount < completedAfterTick.Count)
+            {
+                riskManager.UpdateDailyStats(completedAfterTick[lastCompletedTradeCount]);
+                lastCompletedTradeCount++;
+            }
+
             // Equity Snapshot (alle 10 Candles)
             if (i % 10 == 0)
             {
@@ -633,9 +683,15 @@ public class BacktestEngine
             .Select(t => t with { Mode = TradingMode.Backtest })
             .ToList();
 
-        // RiskManager Stats updaten
-        foreach (var trade in completedTrades)
-            riskManager.UpdateDailyStats(trade);
+        // NF9 Fix — Verbleibende Trades aus CloseAllPositionsAsync (Final-Close am Backtest-Ende)
+        // nachholen. Diese kamen erst nach der letzten Iteration herein und sind im Stream-Update
+        // noch nicht gezaehlt. Vorher wurde hier eine komplette Re-Iteration ueber alle Trades
+        // gemacht — das hat alle bereits gestreamten Trades doppelt aktualisiert.
+        while (lastCompletedTradeCount < completedTrades.Count)
+        {
+            riskManager.UpdateDailyStats(completedTrades[lastCompletedTradeCount]);
+            lastCompletedTradeCount++;
+        }
 
         var report = PerformanceReport.FromTrades(completedTrades, equityCurve, settings.InitialBalance);
         _logger.LogInformation("Backtest abgeschlossen: {Trades} Trades, P&L: {Pnl:F2}, WinRate: {WR:F1}%",

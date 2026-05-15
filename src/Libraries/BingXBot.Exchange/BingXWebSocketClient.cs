@@ -58,6 +58,15 @@ public class BingXWebSocketClient : IAsyncDisposable
     public bool IsConnected => _ws?.State == WebSocketState.Open;
     public bool IsUserDataConnected => _userWs?.State == WebSocketState.Open;
 
+    /// <summary>
+    /// NF21 Fix — Refresher fuer den ListenKey. Wenn gesetzt, ruft der Reconnect-Loop diesen Callback
+    /// vor jedem Versuch auf, um einen frischen ListenKey von der Exchange zu holen. Ohne Refresher
+    /// nutzt der Reconnect den letzten bekannten Key — bei abgelaufenem Key schlaegt der Reconnect
+    /// fehl, der User-Data-Stream bleibt bis zum naechsten Renewal-Tick (30 min) tot.
+    /// LiveTradingService verdrahtet das auf <c>RestClient.CreateListenKeyAsync</c>.
+    /// </summary>
+    public Func<CancellationToken, Task<string>>? ListenKeyRefresher { get; set; }
+
     public BingXWebSocketClient(ILogger<BingXWebSocketClient> logger)
     {
         _logger = logger;
@@ -497,8 +506,25 @@ public class BingXWebSocketClient : IAsyncDisposable
                 _userWs = new ClientWebSocket();
                 _userWs.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
 
-                // ListenKey könnte abgelaufen sein — neuer wird vom LiveTradingService erstellt
-                // Hier verwenden wir den bestehenden (Renewal läuft extern)
+                // NF21 Fix — ListenKey vor jedem Reconnect-Versuch refreshen, sofern Refresher
+                // gesetzt ist. BingX invalidiert den ListenKey 60 min nach letztem Renew + bei
+                // Server-Side-Disconnects (Wartungsfenster) oft sofort. Ohne Refresh laufen wir
+                // bei abgelaufenem Key in N×30s Backoff — User-Data-Stream bis zu 10 min tot.
+                if (ListenKeyRefresher != null)
+                {
+                    try
+                    {
+                        var freshKey = await ListenKeyRefresher(ct).ConfigureAwait(false);
+                        if (!string.IsNullOrEmpty(freshKey))
+                            _listenKey = freshKey;
+                    }
+                    catch (Exception refreshEx)
+                    {
+                        _logger.LogWarning(refreshEx,
+                            "User-Data-Stream Reconnect: ListenKey-Refresh fehlgeschlagen, fallback auf alten Key");
+                    }
+                }
+
                 var uri = new Uri($"{WsBaseUrl}?listenKey={_listenKey}");
                 await _userWs.ConnectAsync(uri, ct);
                 _logger.LogInformation("User-Data-Stream Reconnect erfolgreich");

@@ -52,7 +52,15 @@ public partial class LiveTradingService
         try
         {
             _listenKey = await _restClient.CreateListenKeyAsync().ConfigureAwait(false);
-            await _wsClient!.ConnectUserDataStreamAsync(_listenKey, ct).ConfigureAwait(false);
+
+            // NF21 Fix — Refresher beim WS-Client verdrahten. Bei WS-Disconnect ruft der interne
+            // Reconnect-Loop diesen Callback auf, um einen frischen ListenKey zu holen. Vorher
+            // versuchte der Reconnect den alten Key zu verwenden — bei abgelaufenem Key blieb
+            // der User-Data-Stream bis zum naechsten 30-min-Renewal-Tick tot.
+            _wsClient!.ListenKeyRefresher = async (refreshCt) =>
+                await _restClient.CreateListenKeyAsync().ConfigureAwait(false);
+
+            await _wsClient.ConnectUserDataStreamAsync(_listenKey, ct).ConfigureAwait(false);
 
             _wsClient.UserDataReceived += OnUserDataReceived;
 

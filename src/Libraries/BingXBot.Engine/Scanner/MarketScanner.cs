@@ -75,22 +75,22 @@ public class MarketScanner : IMarketScanner
         }
 
         // Basis-Filter (Volumen, Preis, Black/Whitelist).
-        // Legacy-Single-TF-Pfad: nutzt die Obsolete-Properties bewusst — Migration auf
-        // ByTf-Maps in v1.4.x.
-#pragma warning disable CS0618 // Legacy-Single-TF-Pfad — siehe MinVolume24hByTf für Multi-TF.
+        // Multi-TF-Maps haben Priorität, ScanTimeFrame ist der Schlüssel. Legacy-Single-TF-Felder
+        // dienen nur noch als Fallback wenn die Map keinen Eintrag für ScanTimeFrame hat.
+        var (minVolCrypto, minVolTradFi, minChgCrypto, minChgTradFi) = ResolveScanThresholds(settings);
+
         var filteredCrypto = cryptoTickers
             .Where(t => !settings.Blacklist.Contains(t.Symbol))
             .Where(t => settings.Whitelist.Count == 0 || settings.Whitelist.Contains(t.Symbol))
-            .Where(t => t.Volume24h >= settings.MinVolume24h)
-            .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChange)
+            .Where(t => t.Volume24h >= minVolCrypto)
+            .Where(t => minChgCrypto <= 0m || Math.Abs(t.PriceChangePercent24h) >= minChgCrypto)
             .ToList();
 
         var filteredTradFi = tradfiTickers
             .Where(t => !settings.Blacklist.Contains(t.Symbol))
-            .Where(t => t.Volume24h >= settings.MinVolume24hTradFi)
-            .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChangeTradFi)
+            .Where(t => t.Volume24h >= Math.Max(100_000m, minVolTradFi))
+            .Where(t => minChgTradFi <= 0m || Math.Abs(t.PriceChangePercent24h) >= minChgTradFi)
             .ToList();
-#pragma warning restore CS0618
 
         var filtered = filteredCrypto.Concat(filteredTradFi).ToList();
 
@@ -132,14 +132,42 @@ public class MarketScanner : IMarketScanner
             }
         }
 
-        // Nach Score sortiert zurückgeben — Legacy-Single-TF-Cap.
-#pragma warning disable CS0618
-        var maxResults = settings.MaxResults;
-#pragma warning restore CS0618
+        // Nach Score sortiert zurückgeben — MaxResultsByTf hat Priorität, Legacy als Fallback.
+        var maxResults = ResolveMaxResults(settings);
         foreach (var result in scored.OrderByDescending(r => r.Score).Take(maxResults))
         {
             yield return result;
         }
+    }
+
+    /// <summary>
+    /// Liefert die Volumen-/PriceChange-Schwellen für den manuellen Single-TF-Scan.
+    /// ByTf-Maps haben Priorität (Key = <see cref="ScannerSettings.ScanTimeFrame"/>),
+    /// Legacy-Felder dienen als Fallback bis die Maps vollständig migriert sind.
+    /// </summary>
+    private static (decimal minVolCrypto, decimal minVolTradFi, decimal minChgCrypto, decimal minChgTradFi)
+        ResolveScanThresholds(ScannerSettings settings)
+    {
+#pragma warning disable CS0618 // Legacy-Single-TF-Felder als Fallback
+        var minVolCrypto = settings.MinVolume24hByTf.TryGetValue(settings.ScanTimeFrame, out var vc) && vc > 0
+            ? vc : settings.MinVolume24h;
+        var minVolTradFi = settings.MinVolume24hTradFiByTf.TryGetValue(settings.ScanTimeFrame, out var vt) && vt > 0
+            ? vt : settings.MinVolume24hTradFi;
+        var minChgCrypto = settings.MinPriceChangeByTf.TryGetValue(settings.ScanTimeFrame, out var pc) && pc >= 0
+            ? pc : settings.MinPriceChange;
+        var minChgTradFi = settings.MinPriceChangeTradFiByTf.TryGetValue(settings.ScanTimeFrame, out var pt) && pt >= 0
+            ? pt : settings.MinPriceChangeTradFi;
+#pragma warning restore CS0618
+        return (minVolCrypto, minVolTradFi, minChgCrypto, minChgTradFi);
+    }
+
+    private static int ResolveMaxResults(ScannerSettings settings)
+    {
+        if (settings.MaxResultsByTf.TryGetValue(settings.ScanTimeFrame, out var mr) && mr > 0)
+            return mr;
+#pragma warning disable CS0618
+        return settings.MaxResults > 0 ? settings.MaxResults : 100;
+#pragma warning restore CS0618
     }
 
     /// <summary>

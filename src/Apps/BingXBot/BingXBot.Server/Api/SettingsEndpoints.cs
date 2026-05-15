@@ -126,6 +126,15 @@ public static class SettingsEndpoints
         if (dto.ImpulseAtrMultiplier < 0 || dto.ImpulseAtrMultiplier > 100) { reason = "ImpulseAtrMultiplier muss 0..100 sein."; return false; }
         if (dto.PivotLeftBars < 1 || dto.PivotLeftBars > 50) { reason = "PivotLeftBars muss 1..50 sein."; return false; }
         if (dto.PivotRightBars < 1 || dto.PivotRightBars > 50) { reason = "PivotRightBars muss 1..50 sein."; return false; }
+        if (dto.MaxSlippagePercent < 0m || dto.MaxSlippagePercent > 10m) { reason = "MaxSlippagePercent muss 0..10 sein."; return false; }
+        if (dto.MaxSlippagePercentByCategory != null)
+        {
+            foreach (var kv in dto.MaxSlippagePercentByCategory)
+            {
+                if (kv.Value < 0m || kv.Value > 10m)
+                { reason = $"MaxSlippagePercentByCategory[{kv.Key}] muss 0..10 sein."; return false; }
+            }
+        }
         return true;
     }
 

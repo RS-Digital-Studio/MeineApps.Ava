@@ -420,6 +420,8 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     // v1.6.2 Phase 12 — Slippage-Guard
     scanner.SlippageGuardEnabled = saved.Scanner.SlippageGuardEnabled;
     scanner.MaxSlippagePercent = saved.Scanner.MaxSlippagePercent;
+    if (saved.Scanner.MaxSlippagePercentByCategory is { Count: > 0 })
+        scanner.MaxSlippagePercentByCategory = saved.Scanner.MaxSlippagePercentByCategory;
     // v1.6.6 Phase 17 — Adaptive TF-Disable
     scanner.EnableAdaptiveTfDisable = saved.Scanner.EnableAdaptiveTfDisable;
     scanner.AdaptiveTfMinTrades = saved.Scanner.AdaptiveTfMinTrades;

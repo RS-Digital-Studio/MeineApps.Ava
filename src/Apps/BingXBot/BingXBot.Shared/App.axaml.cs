@@ -275,9 +275,11 @@ public partial class App : Application
         // v1.5.4 Phase 7 — Funding-Rate Soft-Bonus
         scanner.EnableFundingRateBonus = saved.Scanner.EnableFundingRateBonus;
         scanner.FundingRateBonusThresholdPercent = saved.Scanner.FundingRateBonusThresholdPercent;
-        // v1.6.2 Phase 12 — Slippage-Guard
+        // v1.6.2 Phase 12 — Slippage-Guard (per-Kategorie + globaler Fallback)
         scanner.SlippageGuardEnabled = saved.Scanner.SlippageGuardEnabled;
         scanner.MaxSlippagePercent = saved.Scanner.MaxSlippagePercent;
+        if (saved.Scanner.MaxSlippagePercentByCategory is { Count: > 0 })
+            scanner.MaxSlippagePercentByCategory = saved.Scanner.MaxSlippagePercentByCategory;
         // v1.6.6 Phase 17 — Adaptive TF-Disable
         scanner.EnableAdaptiveTfDisable = saved.Scanner.EnableAdaptiveTfDisable;
         scanner.AdaptiveTfMinTrades = saved.Scanner.AdaptiveTfMinTrades;

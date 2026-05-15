@@ -56,6 +56,7 @@ public partial class LiveTradingService
             // Pragmatisch ohne dediziertes OrderBook-API: nutzen Ticker.AskPrice/BidPrice als
             // Best-Level-Proxy. Spread (Ask - Last) / Last ist eine konservative Slippage-Schaetzung.
             // Bei Limit-Orders kein Check (Limit definiert Worst-Case-Fill selbst).
+            // Schwelle per-Kategorie (Forex 0.05 %, Crypto 0.10 %, Stock 0.30 %), Fallback global.
             if (!useLimit && _scannerSettings.SlippageGuardEnabled
                 && ticker.LastPrice > 0 && ticker.AskPrice > 0 && ticker.BidPrice > 0)
             {
@@ -63,10 +64,11 @@ public partial class LiveTradingService
                 var spreadPct = side == Side.Buy
                     ? (ticker.AskPrice - refPrice) / refPrice * 100m
                     : (refPrice - ticker.BidPrice) / refPrice * 100m;
-                if (spreadPct > _scannerSettings.MaxSlippagePercent)
+                var slippageThreshold = _scannerSettings.GetMaxSlippagePercent(category);
+                if (spreadPct > slippageThreshold)
                 {
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                        $"{ticker.Symbol}: Order geblockt — Slippage-Estimate {spreadPct:F3}% > Threshold {_scannerSettings.MaxSlippagePercent:F3}% (Phase 12 SlippageGuard)",
+                        $"{ticker.Symbol} [{category}]: Order geblockt — Slippage-Estimate {spreadPct:F3}% > Threshold {slippageThreshold:F3}% (SlippageGuard)",
                         ticker.Symbol));
                     return false;
                 }

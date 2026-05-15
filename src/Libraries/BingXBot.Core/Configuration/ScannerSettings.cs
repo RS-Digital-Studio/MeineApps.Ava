@@ -154,10 +154,30 @@ public class ScannerSettings
     public bool SlippageGuardEnabled { get; set; } = true;
 
     /// <summary>
-    /// v1.6.2 Phase 12 — Globale Default-Slippage-Schwelle in % wenn die Kategorie keinen
-    /// eigenen Wert hat. Crypto 0.10 %, Forex 0.05 %, Stock 0.30 % sind die Plan-Vorgaben.
+    /// v1.6.2 Phase 12 — Globale Default-Slippage-Schwelle in % (Fallback wenn die Kategorie
+    /// keinen eigenen Wert in <see cref="MaxSlippagePercentByCategory"/> hat).
+    /// Crypto 0.10 %, Forex 0.05 %, Stock 0.30 % sind die Plan-Vorgaben — siehe Dictionary.
     /// </summary>
     public decimal MaxSlippagePercent { get; set; } = 0.10m;
+
+    /// <summary>
+    /// Per-Kategorie-Override für die Slippage-Schwelle (Default-Werte sind die Plan-Vorgaben
+    /// aus dem Code-Kommentar zu <see cref="MaxSlippagePercent"/>). Memecoins und illiquide
+    /// TradFi-Symbole haben strukturell breitere Spreads — der globale Default 0.10 % blockte
+    /// diese systematisch. Wer die Schwelle global lassen möchte, leert das Dictionary.
+    /// </summary>
+    public Dictionary<MarketCategory, decimal> MaxSlippagePercentByCategory { get; set; } = new()
+    {
+        { MarketCategory.Crypto,    0.10m },
+        { MarketCategory.Forex,     0.05m },
+        { MarketCategory.Index,     0.20m },
+        { MarketCategory.Commodity, 0.20m },
+        { MarketCategory.Stock,     0.30m },
+    };
+
+    /// <summary>Liefert die Slippage-Schwelle für eine Kategorie (Fallback: globaler Wert).</summary>
+    public decimal GetMaxSlippagePercent(MarketCategory category)
+        => MaxSlippagePercentByCategory.TryGetValue(category, out var v) && v > 0 ? v : MaxSlippagePercent;
 
     // === v1.6.6 Phase 17 — Adaptive TF-Disable ===
     /// <summary>

@@ -766,6 +766,14 @@ MinRRR per Kategorie: 1.0 (SK-Buch S.13).
 - **`PiCredentialStore.GetOrCreateMasterKey`**: Lock um Check+Read+Write (sonst zwei parallele Save/Load erzeugen zwei Master-Keys, zweiter überschreibt → credentials.bin nicht mehr entschlüsselbar)
 - **`AuthTokenStore.Save`**: Atomic-Write (Tmp + Move) — Power-Loss mid-write würde sonst 0-byte-Datei = alle Tokens weg
 
+### Scan-Loop Watchdog (Silent-Death-Schutz)
+
+- **Per-Iteration-Timeout**: `TradingServiceBase.RunLoopAsync` umschliesst `ScanAndTradeAsync` mit `LinkedTokenSource.CancelAfter(4 min)`. Bei Hang in HTTP/Klines/Task.WhenAll wird die Iteration hart gecancelled → catch → naechster Versuch. Verhindert das beobachtete „Silent Death"-Pattern (Bot meldet Running, Loop tot, Heartbeat-DB-Writes laufen weiter)
+- **`BotEventBus.ScanCycleCompleted`**: feuert pro `RunLoopAsync`-Iteration (Success oder Failure) mit `(UtcTimestamp, Success, ErrorMessage, DurationSeconds)`. Zuverlaessiger Activity-Indikator — feuert auch bei leeren Scans (im Gegensatz zu ScannerResult/TradeOpened)
+- **Diagnose-Properties** in `TradingServiceBase`: `LastSuccessfulScanUtc`, `LastScanError`, `LastScanErrorUtc`, `CurrentScanStartedUtc`, `ScanIterationInProgress` — public Getter fuer Watchdog + UI-Debug
+- **`StaleEngineDetector` subscribed `ScanCycleCompleted`**: erkennt jetzt auch Hangs zwischen Scanner-Events. Logge `LastScanCycle` + `LastScanError` im Stale-Alert
+- **Auto-Restart**: `BotSettings.EnableAutoRestartOnStale` (Default true) + `AutoRestartAfterStaleAlertCount` (Default 2). Nach N×Stale-Alert wird die Engine via `IBotControlService.Stop+Start` automatisch neu gestartet. Reset nach erfolgreicher Recovery
+
 ### Server-Bootstrap-Race
 
 - **`BotAutoResumeService.InitialDelay = 15s`**: NTP-Drift (3-10s) + Tailscale-Connect (5-15s) + BingX-DNS nach Pi-Boot brauchen Zeit

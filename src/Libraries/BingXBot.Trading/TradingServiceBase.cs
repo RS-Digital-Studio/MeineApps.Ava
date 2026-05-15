@@ -387,10 +387,44 @@ public abstract class TradingServiceBase : IDisposable
     // Hauptschleife: Alle 30 Sekunden scannen und handeln
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Watchdog-Diagnostik: Per-Iteration-Hard-Cap. Wenn eine ScanAndTradeAsync-Iteration laenger
+    /// als dieser Wert braucht, wird sie via LinkedTokenSource hart gecancelled. Verhindert
+    /// "silent death"-Hangs in HTTP-Calls oder Task.WhenAll-Subkomponenten. 4 min ist deutlich
+    /// ueber dem typischen Scan-Zyklus (~10-30 s mit 100 Kandidaten), aber unter dem 6h-Stale-
+    /// Detection-Threshold — bei echten BingX-Outages greift OnScanErrorAsync danach normal.
+    /// </summary>
+    protected static readonly TimeSpan ScanIterationTimeout = TimeSpan.FromMinutes(4);
+
+    /// <summary>Watchdog-Diagnostik: UTC-Zeitpunkt des letzten erfolgreich abgeschlossenen Scan-Zyklus.</summary>
+    public DateTime LastSuccessfulScanUtc { get; private set; } = DateTime.MinValue;
+
+    /// <summary>Watchdog-Diagnostik: UTC-Zeitpunkt der letzten Exception in der Scan-Loop.</summary>
+    public DateTime LastScanErrorUtc { get; private set; } = DateTime.MinValue;
+
+    /// <summary>Watchdog-Diagnostik: Nachricht der letzten Scan-Loop-Exception (null wenn nie gefailt).</summary>
+    public string? LastScanError { get; private set; }
+
+    /// <summary>Watchdog-Diagnostik: True wenn aktuell eine Scan-Iteration laeuft.</summary>
+    public bool ScanIterationInProgress { get; private set; }
+
+    /// <summary>Watchdog-Diagnostik: UTC-Zeitpunkt zu dem die aktuelle Scan-Iteration gestartet wurde.</summary>
+    public DateTime CurrentScanStartedUtc { get; private set; } = DateTime.MinValue;
+
     private async Task RunLoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
+            var iterationStart = DateTime.UtcNow;
+            CurrentScanStartedUtc = iterationStart;
+            ScanIterationInProgress = true;
+            // Per-Iteration-Hard-Cap: verhindert "silent death" bei haengenden Sub-Awaits
+            // (z.B. HTTP-Call der weder respondiert noch ct respektiert). Nach 4 min wird die
+            // gesamte ScanAndTradeAsync hart gecancelled → catch → naechster Iteration-Versuch.
+            using var iterationCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            iterationCts.CancelAfter(ScanIterationTimeout);
+            var iterationCt = iterationCts.Token;
+
             try
             {
                 // Tageswechsel: Daily-Drawdown + Consecutive-Losses zurücksetzen
@@ -407,18 +441,46 @@ public abstract class TradingServiceBase : IDisposable
 
                 // Bei Pause: Loop läuft weiter, überspringt aber den Scan
                 if (!_isPaused)
-                    await ScanAndTradeAsync(ct).ConfigureAwait(false);
+                    await ScanAndTradeAsync(iterationCt).ConfigureAwait(false);
+
+                var elapsed = (DateTime.UtcNow - iterationStart).TotalSeconds;
+                LastSuccessfulScanUtc = DateTime.UtcNow;
+                _eventBus.PublishScanCycle(success: true, durationSeconds: elapsed, errorMessage: null);
             }
-            catch (OperationCanceledException) { break; }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // Echter Shutdown — Loop beenden.
+                ScanIterationInProgress = false;
+                break;
+            }
+            catch (OperationCanceledException)
+            {
+                // Per-Iteration-Timeout ausgeloest (iterationCts hat ct nicht). 4 min hat nicht gereicht.
+                var elapsed = (DateTime.UtcNow - iterationStart).TotalSeconds;
+                LastScanError = $"Scan-Iteration Timeout nach {elapsed:F0}s — Hard-Cancel ausgeloest";
+                LastScanErrorUtc = DateTime.UtcNow;
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Engine",
+                    $"{LogPrefix}{LastScanError}. Naechster Versuch im normalen Tick."));
+                _eventBus.PublishScanCycle(success: false, durationSeconds: elapsed, errorMessage: LastScanError);
+                try { await OnScanErrorAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { ScanIterationInProgress = false; break; }
+            }
             catch (Exception ex)
             {
+                var elapsed = (DateTime.UtcNow - iterationStart).TotalSeconds;
+                LastScanError = ex.Message;
+                LastScanErrorUtc = DateTime.UtcNow;
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Engine",
                     $"Fehler in der {ModeName}-Loop: {ex.Message}"));
+                _eventBus.PublishScanCycle(success: false, durationSeconds: elapsed, errorMessage: ex.Message);
 
                 // Subklasse kann zusätzliche Wartezeit definieren (z.B. 60s bei API-Fehler)
                 try { await OnScanErrorAsync(ct).ConfigureAwait(false); }
-                catch (OperationCanceledException) { break; }
-                continue;
+                catch (OperationCanceledException) { ScanIterationInProgress = false; break; }
+            }
+            finally
+            {
+                ScanIterationInProgress = false;
             }
 
             // 30 Sekunden warten bis zum nächsten Scan

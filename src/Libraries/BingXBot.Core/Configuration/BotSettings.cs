@@ -71,6 +71,21 @@ public class BotSettings
     /// Crypto kann nun auch zeitlich beschraenkt werden.
     /// </summary>
     public TradingSessions EnabledSessions { get; set; } = TradingSessions.All;
+
+    /// <summary>
+    /// Watchdog: Auto-Restart der Engine wenn der <c>StaleEngineDetector</c> meldet, dass der
+    /// Scan-Loop seit &gt;= 6 h keine Aktivitaet mehr zeigt. Schuetzt vor "silent death" der
+    /// RunLoopAsync (real beobachtet 09.-15.05.2026: Bot meldete Running, Heartbeat lief, aber
+    /// ScanAndTradeAsync wurde nicht mehr aufgerufen). Default true. Opt-out fuer Debugging.
+    /// </summary>
+    public bool EnableAutoRestartOnStale { get; set; } = true;
+
+    /// <summary>
+    /// Watchdog: Nach wie vielen aufeinanderfolgenden Stale-Alerts ohne Recovery (12 h zwischen
+    /// Alerts) wird der Auto-Restart ausgeloest. Default 2 = nach 2× Stale-Alert = ~24 h
+    /// Bot-Stillstand. Wirkt nur wenn <see cref="EnableAutoRestartOnStale"/>.
+    /// </summary>
+    public int AutoRestartAfterStaleAlertCount { get; set; } = 2;
 }
 
 /// <summary>UI-Theme-Optionen fuer die BingXBot-Clients (Desktop + Mobile).</summary>

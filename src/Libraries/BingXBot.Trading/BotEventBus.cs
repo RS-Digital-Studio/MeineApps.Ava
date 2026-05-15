@@ -76,6 +76,18 @@ public class BotEventBus
     /// </summary>
     public event EventHandler<(bool IsDegraded, int FailureCount, string? Reason)>? NewsServiceHealthChanged;
 
+    /// <summary>
+    /// Watchdog-Event: pro Scan-Iteration (Success oder Failure) gefeuert. Subscriber:
+    /// <c>StaleEngineDetector</c> nutzt das als zuverlaessigen Activity-Indikator (statt
+    /// nur ScannerResult/TradeOpened) — entdeckt auch Hangs in denen der Scan-Loop selbst
+    /// stillschweigend stehenbleibt.
+    /// </summary>
+    public event EventHandler<ScanCycleEventArgs>? ScanCycleCompleted;
+
+    /// <summary>Publiziert einen Scan-Cycle-Abschluss (success + duration + optionaler error).</summary>
+    public void PublishScanCycle(bool success, double durationSeconds, string? errorMessage) =>
+        ScanCycleCompleted?.Invoke(this, new ScanCycleEventArgs(DateTime.UtcNow, success, errorMessage, durationSeconds));
+
     /// <summary>Phase 18 / H2 — Publish-Helper fuer den News-Service-Health-Event.</summary>
     public void PublishNewsServiceHealthChanged(bool isDegraded, int failureCount, string? reason)
         => NewsServiceHealthChanged?.Invoke(this, (isDegraded, failureCount, reason));
@@ -147,6 +159,18 @@ public class BacktestCompletedArgs
 
 /// <summary>Desktop-Benachrichtigung.</summary>
 public record NotificationArgs(string Title, string Message);
+
+/// <summary>
+/// Argumente fuer <see cref="BotEventBus.ScanCycleCompleted"/>. Wird einmal pro
+/// <c>RunLoopAsync</c>-Iteration gefeuert — auch bei Exceptions (Success=false + ErrorMessage).
+/// Damit kann der <c>StaleEngineDetector</c> Hangs auf der Scan-Loop-Ebene direkt erkennen,
+/// statt indirekt ueber ausbleibende ScannerResult-/TradeOpened-Events zu schliessen.
+/// </summary>
+public record ScanCycleEventArgs(
+    DateTime UtcTimestamp,
+    bool Success,
+    string? ErrorMessage,
+    double DurationSeconds);
 
 /// <summary>
 /// Argumente fuer <see cref="BotEventBus.TradeOpened"/>: Position + Navigator-TF des ausloesenden Signals.

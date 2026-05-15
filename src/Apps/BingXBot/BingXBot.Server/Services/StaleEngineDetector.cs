@@ -1,24 +1,41 @@
 using BingXBot.Contracts.Dto;
 using BingXBot.Contracts.Services;
+using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Trading;
 
 namespace BingXBot.Server.Services;
 
 /// <summary>
-/// HostedService: Warnt per FCM wenn der Bot laut State "Running" ist, aber seit >6 h keine
-/// Aktivitaet mehr zeigt (weder ScannerResult noch TradeOpened).
+/// Watchdog-HostedService: Erkennt wenn der Bot laut State "Running" ist, aber der Scan-Loop
+/// in Wahrheit stillschweigend stehengeblieben ist. Symptom (real beobachtet 09.-15.05.2026):
+/// Service laeuft seit Tagen, isRunning=true, Heartbeat-DB-Writes laufen weiter, aber
+/// <c>ScanAndTradeAsync</c> wird nicht mehr aufgerufen — Counter <c>strategy_evaluations</c>
+/// eingefroren, keine Trade-Activity, kein Reconcile.
 ///
-/// Symptom das heute aufgefallen ist: Pi-Server sagt Running, aber Engine hat seit Tagen nichts
-/// gescannt → UI sieht Daten vom 20.04., Bot trades nichts. Der UI-Watchdog deckt den Fall lokal,
-/// aber nicht push-basiert. Dieser Service pinged Robert aktiv wenn es passiert.
+/// Aktivitaets-Tracking (priorisiert):
+/// <list type="number">
+/// <item><c>BotEventBus.ScanCycleCompleted</c> — Watchdog-Event, gefeuert pro RunLoopAsync-
+///   Iteration (Success oder Failure). Zuverlaessigster Indikator: feuert auch bei Scans
+///   die keine Kandidaten finden oder bei API-Errors. Stagniert NUR wenn der Loop selbst tot ist.</item>
+/// <item><c>ScannerResult</c>/<c>TradeOpened</c> als Backup (alte Events).</item>
+/// </list>
 ///
-/// Anti-Spam: Nach einem Push wird 12 h nicht erneut gepusht fuer denselben Incident
-/// (ausser der Bot kommt wieder in Bewegung und kriegt dann erneut Still-Stand).
+/// Eskalations-Pfad:
+/// <list type="bullet">
+/// <item>Erste Schwelle (Default 6 h): Warning-Log + FCM-Push (Anti-Spam 12 h zwischen Pushes).</item>
+/// <item>Auto-Restart-Schwelle (Default 2 Push-Aktionen in Folge ohne Erholung): Engine wird via
+///   <see cref="IBotControlService.StopAsync"/> + <see cref="IBotControlService.StartAsync"/>
+///   automatisch neu gestartet. Opt-out via <see cref="BotSettings.EnableAutoRestartOnStale"/>.</item>
+/// </list>
 /// </summary>
 public sealed class StaleEngineDetector : IHostedService, IDisposable
 {
     private readonly IBotEventStream _stream;
+    private readonly BotEventBus _bus;
     private readonly FcmDeviceStore _store;
+    private readonly IBotControlService _botControl;
+    private readonly BotSettings _botSettings;
     private readonly ILogger<StaleEngineDetector> _logger;
 
     private readonly TimeSpan _staleAfter = TimeSpan.FromHours(6);
@@ -26,16 +43,28 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
     private readonly TimeSpan _minTimeBetweenPushes = TimeSpan.FromHours(12);
 
     private DateTime _lastActivityUtc = DateTime.UtcNow;
+    private DateTime? _lastScanCycleUtc;
+    private string? _lastScanCycleError;
     private BotState _currentState = BotState.Stopped;
     private DateTime _lastPushUtc = DateTime.MinValue;
+    private int _consecutiveAlertsWithoutRecovery;
 
     private Timer? _timer;
     private readonly object _gate = new();
 
-    public StaleEngineDetector(IBotEventStream stream, FcmDeviceStore store, ILogger<StaleEngineDetector> logger)
+    public StaleEngineDetector(
+        IBotEventStream stream,
+        BotEventBus bus,
+        FcmDeviceStore store,
+        IBotControlService botControl,
+        BotSettings botSettings,
+        ILogger<StaleEngineDetector> logger)
     {
         _stream = stream;
+        _bus = bus;
         _store = store;
+        _botControl = botControl;
+        _botSettings = botSettings;
         _logger = logger;
     }
 
@@ -44,11 +73,14 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         _stream.BotStateChanged += OnBotStateChanged;
         _stream.ScannerResult += OnActivity;
         _stream.TradeOpened += OnActivity;
+        // Primaerer Activity-Indikator: ScanCycleCompleted feuert pro RunLoopAsync-Iteration,
+        // auch bei Scans ohne Kandidaten oder bei Exceptions. Stagniert NUR wenn der Scan-Loop
+        // selbst stillschweigend tot ist — genau der Fall den dieser Detector erkennen muss.
+        _bus.ScanCycleCompleted += OnScanCycleCompleted;
 
-        // Erster Check nach 10 min (nicht sofort, Bot muss Zeit zum Aufwaermen haben)
         _timer = new Timer(_ => CheckStale(), null, _checkInterval, _checkInterval);
-        _logger.LogInformation("StaleEngineDetector gestartet (Schwelle {Hours} h, Check alle {Min} min)",
-            _staleAfter.TotalHours, _checkInterval.TotalMinutes);
+        _logger.LogInformation("StaleEngineDetector gestartet (Schwelle {Hours} h, Check alle {Min} min, AutoRestart={AutoRestart})",
+            _staleAfter.TotalHours, _checkInterval.TotalMinutes, _botSettings.EnableAutoRestartOnStale);
         return Task.CompletedTask;
     }
 
@@ -59,6 +91,7 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         _stream.BotStateChanged -= OnBotStateChanged;
         _stream.ScannerResult -= OnActivity;
         _stream.TradeOpened -= OnActivity;
+        _bus.ScanCycleCompleted -= OnScanCycleCompleted;
         return Task.CompletedTask;
     }
 
@@ -73,6 +106,9 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
             {
                 // Reset Stale-Timer bei Start/Resume — erst ab jetzt wieder counting.
                 _lastActivityUtc = DateTime.UtcNow;
+                _consecutiveAlertsWithoutRecovery = 0;
+                _lastScanCycleUtc = null;
+                _lastScanCycleError = null;
             }
         }
     }
@@ -80,30 +116,117 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
     private void OnActivity(ScannerResultDto _) { lock (_gate) _lastActivityUtc = DateTime.UtcNow; }
     private void OnActivity(TradeDto _) { lock (_gate) _lastActivityUtc = DateTime.UtcNow; }
 
+    private void OnScanCycleCompleted(object? sender, ScanCycleEventArgs args)
+    {
+        lock (_gate)
+        {
+            _lastScanCycleUtc = args.UtcTimestamp;
+            _lastScanCycleError = args.Success ? null : args.ErrorMessage;
+            // Auch ein erfolgloser Scan-Cycle ist "Activity" im Sinne von "Loop laeuft noch".
+            // Wenn Exceptions wiederholt feuern, sieht der User das im LastScanError; aber die
+            // Engine ist eindeutig nicht im "Silent Death"-Zustand.
+            _lastActivityUtc = args.UtcTimestamp;
+            _consecutiveAlertsWithoutRecovery = 0;
+        }
+    }
+
     private void CheckStale()
     {
         BotState state;
         TimeSpan idle;
         bool canPush;
+        DateTime? lastCycle;
+        string? lastError;
+        int alertsBefore;
 
         lock (_gate)
         {
             state = _currentState;
             idle = DateTime.UtcNow - _lastActivityUtc;
             canPush = (DateTime.UtcNow - _lastPushUtc) >= _minTimeBetweenPushes;
+            lastCycle = _lastScanCycleUtc;
+            lastError = _lastScanCycleError;
+            alertsBefore = _consecutiveAlertsWithoutRecovery;
         }
 
         if (state != BotState.Running) return;
         if (idle < _staleAfter) return;
         if (!canPush) return;
 
-        // Push ausloesen (loggt aktuell nur, echter FCM-Send kommt mit FirebaseAdmin-NuGet)
-        _logger.LogWarning(
-            "[FCM-Stub] Stale-Engine-Alert: Bot ist {Hours:F1} h ohne Scanner/Trade-Aktivitaet im Running-State. " +
-            "Moegliche Ursachen: Scanner-TF leer, alle Symbole blacklisted, BingX-API-Quota, News-Blackout festgeklemmt. " +
-            "{DeviceCount} Ziel-Geraete.",
-            idle.TotalHours, _store.AllDevices.Count);
+        // Eskalations-Log: zeigt alles was die Diagnose braucht
+        var cycleInfo = lastCycle.HasValue
+            ? $"LastScanCycle={lastCycle.Value:O}"
+            : "LastScanCycle=NIE";
+        var errorInfo = string.IsNullOrEmpty(lastError) ? "" : $", LastScanError=\"{lastError}\"";
 
-        lock (_gate) _lastPushUtc = DateTime.UtcNow;
+        _logger.LogWarning(
+            "[FCM-Stub] Stale-Engine-Alert (#{Count}): Bot ist {Hours:F1} h ohne Scanner/Trade-Aktivitaet im Running-State. " +
+            "Diagnose: {CycleInfo}{ErrorInfo}. " +
+            "Moegliche Ursachen: Scanner-TF leer, alle Symbole blacklisted, BingX-API-Quota, News-Blackout festgeklemmt, Scan-Loop-Hang. " +
+            "{DeviceCount} Ziel-Geraete.",
+            alertsBefore + 1, idle.TotalHours, cycleInfo, errorInfo, _store.AllDevices.Count);
+
+        int alertsNow;
+        lock (_gate)
+        {
+            _lastPushUtc = DateTime.UtcNow;
+            _consecutiveAlertsWithoutRecovery++;
+            alertsNow = _consecutiveAlertsWithoutRecovery;
+        }
+
+        // Auto-Recovery: nach N aufeinanderfolgenden Alerts ohne ScanCycle-Activity wird die Engine
+        // hart neu gestartet (Stop + Start). Setting kann das deaktivieren (z.B. fuer Debugging).
+        var threshold = Math.Max(1, _botSettings.AutoRestartAfterStaleAlertCount);
+        if (_botSettings.EnableAutoRestartOnStale && alertsNow >= threshold)
+        {
+            _ = TryAutoRestartAsync(alertsNow);
+        }
+    }
+
+    private async Task TryAutoRestartAsync(int alertCount)
+    {
+        try
+        {
+            _logger.LogError(
+                "Auto-Restart: {Alerts}× Stale-Alert in Folge ohne Recovery — Engine wird neu gestartet (Stop → Start). " +
+                "Opt-out via BotSettings.EnableAutoRestartOnStale=false.",
+                alertCount);
+
+            var lastMode = _botSettings.LastMode;
+            var activeTfs = new List<TimeFrame>();
+            // Active-TFs werden nicht direkt aus den Settings hier gelesen (LocalBotControlService
+            // hat den scannerSettings-Singleton). Wir uebergeben null → er nutzt die aktuellen
+            // ScannerSettings.ActiveTimeframes.
+            // BotStartRequest mit InitialBalance=null + leerem ActiveTimeframes-List signalisiert
+            // "nimm die persistierten Werte". Siehe LocalBotControlService.StartAsync.
+
+            await _botControl.StopAsync(CancellationToken.None).ConfigureAwait(false);
+
+            // Kurze Pause, damit StopBase + Dispose abgeschlossen sind
+            await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+
+            var request = new BotStartRequest(lastMode, InitialBalance: null, ActiveTimeframes: activeTfs);
+            var status = await _botControl.StartAsync(request, CancellationToken.None).ConfigureAwait(false);
+
+            if (status.State == BotState.Running)
+            {
+                _logger.LogWarning("Auto-Restart erfolgreich. State=Running, Mode={Mode}.", status.Mode);
+                lock (_gate)
+                {
+                    _consecutiveAlertsWithoutRecovery = 0;
+                    _lastActivityUtc = DateTime.UtcNow;
+                    _lastPushUtc = DateTime.MinValue; // Damit naechster Alert nicht 12 h blockiert ist
+                }
+            }
+            else
+            {
+                _logger.LogError("Auto-Restart fehlgeschlagen. State={State}, LastError={Error}.",
+                    status.State, status.LastError ?? "(kein Fehler)");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Auto-Restart wurde von Exception unterbrochen — manueller Eingriff noetig.");
+        }
     }
 }

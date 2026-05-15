@@ -78,6 +78,27 @@ public partial class LiveTradingService
 
             if (useLimit)
             {
+                // F9 Fix — Distance-Guard fuer Limit-Orders: Limit-Preis darf maximal
+                // GetMaxLimitOrderDistancePercent (kategorienspezifisch) vom aktuellen Markt
+                // entfernt sein. Schuetzt vor Fills auf "Geister-Levels" wenn der Markt
+                // zwischen Signal-Generation und Order-Place stark gelaufen ist.
+                // Sequence-Levels (Retracement 50/66.7%) liegen typischerweise <5% vom
+                // aktuellen Preis — groessere Distanzen sind ein Indikator fuer eine
+                // bereits gelaufene Sequenz oder veraltete Daten.
+                if (_scannerSettings.LimitDistanceGuardEnabled
+                    && ticker.LastPrice > 0 && limitPrice.HasValue && limitPrice.Value > 0)
+                {
+                    var distancePct = Math.Abs(limitPrice.Value - ticker.LastPrice) / ticker.LastPrice * 100m;
+                    var threshold = _scannerSettings.GetMaxLimitOrderDistancePercent(category);
+                    if (distancePct > threshold)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                            $"{ticker.Symbol} [{category}]: Limit-Order geblockt — Distanz {distancePct:F2}% > Threshold {threshold:F2}% (Limit @ {limitPrice:F8}, Markt @ {ticker.LastPrice:F8})",
+                            ticker.Symbol));
+                        return false;
+                    }
+                }
+
                 // Stale-Sequence-Cleanup (19.04.2026): pending Orders auf veralteten Sequenzen
                 // fuer (Symbol, Seite) cancelln bevor die neue Limit-Order platziert wird.
                 // Schuetzt vor Fills auf alten Fib-Levels nach PointA-Shift.
@@ -256,8 +277,13 @@ public partial class LiveTradingService
                 // Skip-Block im PriceTickerLoop nicht und der Doppel-Close-Race entsteht hier.
                 if (_exitStates.TryGetValue(posKeyStage2, out var esStage2))
                 {
-                    if (!string.IsNullOrEmpty(s2Tp1)) esStage2.Tp1LimitOrderId = s2Tp1;
-                    if (!string.IsNullOrEmpty(s2Tp2)) esStage2.Tp2LimitOrderId = s2Tp2;
+                    var stage2Mutated = false;
+                    if (!string.IsNullOrEmpty(s2Tp1)) { esStage2.Tp1LimitOrderId = s2Tp1; stage2Mutated = true; }
+                    if (!string.IsNullOrEmpty(s2Tp2)) { esStage2.Tp2LimitOrderId = s2Tp2; stage2Mutated = true; }
+                    // F10 Fix — TP-OrderId synchron persistieren, damit ein Hot-Crash zwischen
+                    // hier und naechstem StopAsync die Zuordnung nicht verliert.
+                    if (stage2Mutated)
+                        await PersistExitStatesAsync().ConfigureAwait(false);
                 }
 
                 // Stage 3 vorbereiten: nur retry-Marker, wenn beide Stage-2-Versuche fehlschlugen.
@@ -351,8 +377,12 @@ public partial class LiveTradingService
             var posKeyExit = $"{symbol}_{side}";
             if (_exitStates.TryGetValue(posKeyExit, out var esTp))
             {
-                if (!string.IsNullOrEmpty(tp1OrderId)) esTp.Tp1LimitOrderId = tp1OrderId;
-                if (!string.IsNullOrEmpty(tp2OrderId)) esTp.Tp2LimitOrderId = tp2OrderId;
+                var stage1Mutated = false;
+                if (!string.IsNullOrEmpty(tp1OrderId)) { esTp.Tp1LimitOrderId = tp1OrderId; stage1Mutated = true; }
+                if (!string.IsNullOrEmpty(tp2OrderId)) { esTp.Tp2LimitOrderId = tp2OrderId; stage1Mutated = true; }
+                // F10 Fix — TP-OrderIds synchron persistieren (Crash-Recovery).
+                if (stage1Mutated)
+                    await PersistExitStatesAsync().ConfigureAwait(false);
             }
 
             // v1.4.0 Phase 0.6 (Finding 0.6): Erfolgreicher Stage-1-Place setzt PendingTpRetry=false
@@ -600,6 +630,8 @@ public partial class LiveTradingService
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
                     $"LIVE: {symbol} SL/TP-Update nach TP1-Fill fehlgeschlagen: {slEx.Message}", symbol));
             }
+            // F10 Fix — Phase-Transition Initial→Tp1Hit + Tp1LimitOrderId=null synchron persistieren.
+            await PersistExitStatesAsync().ConfigureAwait(false);
             return true;
         }
 
@@ -640,6 +672,8 @@ public partial class LiveTradingService
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
                 $"LIVE: {symbol} TP{(es.Phase == ExitPhase.Tp1Hit ? "2" : "")} Limit-Fill via WebSocket erkannt → Position vollstaendig geschlossen",
                 symbol));
+            // F10 Fix — Vollstaendiger Close synchron persistieren, damit DB-Snapshot den Remove kennt.
+            await PersistExitStatesAsync().ConfigureAwait(false);
             return true;
         }
 

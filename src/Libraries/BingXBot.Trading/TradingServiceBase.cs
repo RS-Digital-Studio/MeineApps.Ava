@@ -528,6 +528,7 @@ public abstract class TradingServiceBase : IDisposable
                                 $"{LogPrefix}{pos.Symbol}: SK Breakeven ({decision.Value.NewStopLoss:F8}) — {decision.Value.TriggerName}",
                                 pos.Symbol));
                             await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, decision.Value.NewStopLoss).ConfigureAwait(false);
+                            await PersistExitStatesAsync().ConfigureAwait(false);
                         }
                     }
 
@@ -571,6 +572,7 @@ public abstract class TradingServiceBase : IDisposable
                                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
                                         $"{LogPrefix}{pos.Symbol}: TP1 (161.8%) erreicht → {_riskSettings.Tp1CloseRatio:P0} geschlossen, Rest läuft bis 200%+Buffer",
                                         pos.Symbol));
+                                    await PersistExitStatesAsync().ConfigureAwait(false);
                                     continue;
                                 }
                             }
@@ -724,6 +726,7 @@ public abstract class TradingServiceBase : IDisposable
                                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
                                     $"{LogPrefix}{pos.Symbol}: TP2 (200%) erreicht → Runner aktiv ({_riskSettings.RunnerPercent:P0} weiterlaufen, Trail ATR×{_riskSettings.RunnerTrailingAtrMultiplier})",
                                     pos.Symbol));
+                                await PersistExitStatesAsync().ConfigureAwait(false);
                                 // Standard-TP-Hit überspringen, Runner übernimmt
                                 hit = false;
                                 reason = "";
@@ -1556,6 +1559,15 @@ public abstract class TradingServiceBase : IDisposable
     /// LiveTradingService überschreibt dies und aktualisiert den nativen SL auf BingX.
     /// </summary>
     protected virtual Task OnStopLossAdjustedAsync(string symbol, Side side, decimal newStopLoss) => Task.CompletedTask;
+
+    /// <summary>
+    /// Hook: Synchrone Persistierung der ExitStates nach kritischen Mutationen (TP-OrderId set/null,
+    /// Phase-Transition Initial→Tp1Hit, RunnerActive=true, BreakevenSet=true).
+    /// LiveTradingService überschreibt mit DB-Write — schützt vor Hot-Crash zwischen Mutation
+    /// und nächstem Stop-Zyklus (vor diesem Fix wurden ExitStates nur in StopAsync/EmergencyStopAsync
+    /// persistiert → TP-OrderId-Zuordnung ging bei Hot-Crash verloren). PaperTradingService no-op.
+    /// </summary>
+    protected virtual Task PersistExitStatesAsync() => Task.CompletedTask;
 
 
     /// <summary>Hook: Zusätzliche Dispose-Logik für Subklassen (z.B. WebSocket-Cleanup).</summary>

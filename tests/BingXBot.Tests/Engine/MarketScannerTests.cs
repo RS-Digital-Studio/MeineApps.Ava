@@ -61,8 +61,16 @@ public class MarketScannerTests
             .ToList());
         var scanner = new MarketScanner(client, NullLogger<MarketScanner>.Instance);
 
+        // MaxResultsByTf hat Priorität gegenüber dem Legacy-MaxResults-Feld.
+        var settings = new ScannerSettings
+        {
+            MinVolume24h = 1m,
+            MaxResults = 5,
+            OnlyTopByVolume = false,
+            MaxResultsByTf = new() { { TimeFrame.H4, 5 } },
+        };
         var results = new List<ScanResult>();
-        await foreach (var r in scanner.ScanAsync(new ScannerSettings { MinVolume24h = 1m, MaxResults = 5, OnlyTopByVolume = false }, CancellationToken.None))
+        await foreach (var r in scanner.ScanAsync(settings, CancellationToken.None))
             results.Add(r);
 
         results.Should().HaveCount(5);

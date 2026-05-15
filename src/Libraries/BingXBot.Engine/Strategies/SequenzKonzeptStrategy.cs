@@ -353,7 +353,15 @@ public class SequenzKonzeptStrategy : IStrategy
         // (ersetzt den alten M30-Block: Navigator ist jetzt zugleich Trigger-Chart)
         // ───────────────────────────────────────────────────────────
 
-        if (navMachine.State != SmState.Aktiviert)
+        // Aktiviert ist das Standard-Gate. EntryMode.Conservative darf zusätzlich in SucheB
+        // einsteigen, sofern später ein LTF-Reversal bestätigt wird (mustHaveReversal=true).
+        // Hintergrund: Conservative-Trader handeln am Reversal-Pattern, nicht am State-Promotion-
+        // Zeitpunkt — der Lag zwischen "Preis in Korrekturbox + Reversal" und "State-Machine
+        // bestätigt Aktivierung" kostete bisher viele saubere Setups.
+        var conservativeMode = (context.RiskSettings?.EntryMode ?? EntryMode.Both) == EntryMode.Conservative;
+        var allowsCorrectionZoneEntry = conservativeMode && navMachine.State == SmState.SucheB;
+        var isCorrectionZoneEntry = allowsCorrectionZoneEntry;
+        if (navMachine.State != SmState.Aktiviert && !allowsCorrectionZoneEntry)
             return Blocked(navTf, $"{navTf} nicht aktiviert (State={navMachine.State})", BingXBot.Core.Diagnostics.RejectionReasons.StateNotActivated);
 
         // ───────────────────────────────────────────────────────────
@@ -463,9 +471,14 @@ public class SequenzKonzeptStrategy : IStrategy
         // Bei A7 (RequireWickRejectionInBZone) verlangen wir ausschließlich Pinbar/Engulfing — keine Micro-Sequence.
         var onlyPinbarOrEngulfing = requireWickRejection;
 
+        // Conservative-Mode darf auch in der CorrectionZone (SucheB) prüfen, weil dort der Entry
+        // ohnehin durch das Reversal-Pattern bestätigt wird (siehe State-Gate oben).
+        var reversalEligibleState = navSeq.State == SequenceState.Active
+            || (isCorrectionZoneEntry && navSeq.State == SequenceState.CorrectionZone);
+
         LtfReversalHit? ltfReversal = null;
         if (entryMode != EntryMode.Aggressive
-            && navSeq.State == SequenceState.Active
+            && reversalEligibleState
             && (navSeq.IsInBuyZone(currentPrice) || navSeq.IsInGklZone(currentPrice)))
         {
             ltfReversal = LtfReversalDetector.Detect(
@@ -476,9 +489,14 @@ public class SequenzKonzeptStrategy : IStrategy
         }
 
         // Conservative-Only oder Wick-Rejection-Pflicht → ohne Reversal kein Entry.
-        if (mustHaveReversal && ltfReversal == null)
+        // Bei CorrectionZone-Entry ist Reversal eine Pflicht (sonst hat das State-Gate
+        // sinnlos aufgeweicht); deshalb explizit erzwingen.
+        var requireReversalForCorrectionZone = isCorrectionZoneEntry;
+        if ((mustHaveReversal || requireReversalForCorrectionZone) && ltfReversal == null)
         {
-            var reasonPrefix = entryMode == EntryMode.Conservative ? "Konservativer Modus" : "Wick-Rejection-Pflicht";
+            var reasonPrefix = isCorrectionZoneEntry
+                ? "Konservativer Modus (SucheB)"
+                : entryMode == EntryMode.Conservative ? "Konservativer Modus" : "Wick-Rejection-Pflicht";
             var suffix = requireBoxClose ? " + Box-Close" : "";
             var patterns = onlyPinbarOrEngulfing ? "Pinbar/Engulfing" : "Pinbar/Engulfing/Micro-Seq";
             return Blocked(navTf, $"{reasonPrefix}: Kein LTF-Reversal ({patterns}){suffix}");
@@ -618,36 +636,47 @@ public class SequenzKonzeptStrategy : IStrategy
         // Multi-Entry Staffelung nach SK-Buch (Cheat 37 + 49):
         //   Primary = Entry bei 50% Retracement (15 Pips SL, Cheat 37).
         //   Additional = Entry bei 66.7% Retracement (20 Pips SL, Cheat 49) — einmalig pro Sequenz.
+        // CorrectionZone-Entries (Conservative + SucheB) sind grundsätzlich Single-Entries:
+        // PotentialB ist noch nicht gelocked, also kein additional bei 66.7 % möglich; der
+        // Staffel-State wird durch sie nicht "verbraucht", damit ein Primary @ 50 % nach
+        // Promotion zu Aktiviert weiterhin möglich bleibt (falls noch keine Position offen ist).
         // ───────────────────────────────────────────────────────────
-        var seqChanged = _entrySeqA != navMachine.PointA
-                         || _entrySeqB != navMachine.LockedB
-                         || _entrySeqIsLong != tradeIsLong;
-        if (seqChanged)
-        {
-            _entrySeqA = navMachine.PointA;
-            _entrySeqB = navMachine.LockedB;
-            _entrySeqIsLong = tradeIsLong;
-            _triggeredPrimary = false;
-            _triggeredAdditional = false;
-        }
-
-        // Buch-konforme Entry-Staffelung: Single (nur 50%) oder Dual (50% + 66.7%).
-        var entryStrategy = context.RiskSettings?.BCZoneEntryStrategy ?? BCZoneEntryStrategy.Dual;
         bool isAdditionalEntry;
-
-        if (!_triggeredPrimary)
+        if (isCorrectionZoneEntry)
         {
-            // Primary-Entry: 50% Retracement (Buch Masterclass §5: aggressiv @ 50%).
             isAdditionalEntry = false;
-        }
-        else if (entryStrategy == BCZoneEntryStrategy.Dual && !_triggeredAdditional)
-        {
-            // Additional-Entry: 66.7% Retracement (unteres Ende der Korrekturbox).
-            isAdditionalEntry = true;
         }
         else
         {
-            return Blocked(navTf, "Entries fuer diese Sequenz bereits gesetzt");
+            var seqChanged = _entrySeqA != navMachine.PointA
+                             || _entrySeqB != navMachine.LockedB
+                             || _entrySeqIsLong != tradeIsLong;
+            if (seqChanged)
+            {
+                _entrySeqA = navMachine.PointA;
+                _entrySeqB = navMachine.LockedB;
+                _entrySeqIsLong = tradeIsLong;
+                _triggeredPrimary = false;
+                _triggeredAdditional = false;
+            }
+
+            // Buch-konforme Entry-Staffelung: Single (nur 50%) oder Dual (50% + 66.7%).
+            var entryStrategy = context.RiskSettings?.BCZoneEntryStrategy ?? BCZoneEntryStrategy.Dual;
+
+            if (!_triggeredPrimary)
+            {
+                // Primary-Entry: 50% Retracement (Buch Masterclass §5: aggressiv @ 50%).
+                isAdditionalEntry = false;
+            }
+            else if (entryStrategy == BCZoneEntryStrategy.Dual && !_triggeredAdditional)
+            {
+                // Additional-Entry: 66.7% Retracement (unteres Ende der Korrekturbox).
+                isAdditionalEntry = true;
+            }
+            else
+            {
+                return Blocked(navTf, "Entries fuer diese Sequenz bereits gesetzt");
+            }
         }
 
         // ───────────────────────────────────────────────────────────
@@ -669,6 +698,16 @@ public class SequenzKonzeptStrategy : IStrategy
             sl = PipStopLossCalculator.CalculateBcklStopLoss(
                 context.Symbol, context.Category, entry, tradeIsLong,
                 pointB,
+                isSingleTrade: true, pipScale: pipScale, bufferPips: slBufferPips);
+        }
+        else if (isCorrectionZoneEntry)
+        {
+            // Conservative-Mode-Entry in SucheB: Reversal-Signal hat den Einstieg bestätigt,
+            // also direkt am aktuellen Preis (Market-Order). SL weiterhin am 78.6 % Retracement.
+            entry = currentPrice;
+            sl = PipStopLossCalculator.CalculateBookStopLoss(
+                context.Symbol, context.Category, entry, tradeIsLong,
+                navSeq.Retracement786, navSeq.Point0.Price,
                 isSingleTrade: true, pipScale: pipScale, bufferPips: slBufferPips);
         }
         else
@@ -777,11 +816,17 @@ public class SequenzKonzeptStrategy : IStrategy
         // BUCH-ONLY (24.04.2026): Signal-Cooldown + Dedup-Tracking sind entfernt. Invalidation
         // am Point0 und Navigator-Sequenz-Promote/Reset via StateMachine reichen als Dedup.
 
-        // Flag-Setzen entsprechend dem gewählten Entry-Level
-        if (isAdditionalEntry) _triggeredAdditional = true;
-        else _triggeredPrimary = true;
+        // Flag-Setzen entsprechend dem gewählten Entry-Level. CorrectionZone-Entries (SucheB)
+        // verändern den Staffel-State nicht — siehe Kommentar oben bei der Multi-Entry-Logik.
+        if (!isCorrectionZoneEntry)
+        {
+            if (isAdditionalEntry) _triggeredAdditional = true;
+            else _triggeredPrimary = true;
+        }
 
-        var entryLabel = isAdditionalEntry ? " [Additional 66.7%]" : " [Primary 50%]";
+        var entryLabel = isCorrectionZoneEntry
+            ? " [Conservative SucheB]"
+            : isAdditionalEntry ? " [Additional 66.7%]" : " [Primary 50%]";
         LastStatus = $"SIGNAL! [{navTf}] {(tradeIsLong ? "Long" : "Short")} Score={score} RRR={rrr:F1}:1"
                    + entryLabel
                    + (isBcklReEntry ? " [BCKL]" : "");
@@ -804,10 +849,12 @@ public class SequenzKonzeptStrategy : IStrategy
                 entryAtr = fAtrSeries[^1]!.Value;
         }
 
-        // Sequenz-ID inkl. Navigator-TF-Suffix, damit D1-Long und 5m-Long parallel möglich sind
+        // Sequenz-ID inkl. Navigator-TF-Suffix, damit D1-Long und 5m-Long parallel möglich sind.
+        // Conservative-SucheB hat ein eigenes Suffix, damit ein späterer Primary-Entry nach
+        // Promotion zu Aktiviert nicht als Re-Reconciliation derselben Order gesehen wird.
         var tick = Math.Max(currentPrice * 0.0001m, 1e-8m);
         decimal RoundToTick(decimal v) => Math.Round(v / tick) * tick;
-        var entrySuffix = isAdditionalEntry ? "_Add" : "_Prim";
+        var entrySuffix = isCorrectionZoneEntry ? "_CzCons" : isAdditionalEntry ? "_Add" : "_Prim";
         var seqId = $"{context.Symbol}_{navTf}_{RoundToTick(navSeq.Point0.Price):G8}_{RoundToTick(navSeq.PointA.Price):G8}{entrySuffix}";
 
         // v1.5.2 Phase 4 — Erfolgsentscheidung im Decision-Trail.
@@ -833,7 +880,9 @@ public class SequenzKonzeptStrategy : IStrategy
             Reason: reasonText,
             TakeProfit2: tp2,
             ConfluenceScore: score,
-            PreferLimitOrder: true,
+            // Conservative-SucheB-Entry feuert am bestätigten Reversal → Market-Order;
+            // klassische Fib-Entries warten weiter via Limit auf das Retracement-Level.
+            PreferLimitOrder: !isCorrectionZoneEntry,
             DisableSmartBreakeven: DisableSmartBreakeven,
             IsAdditionalEntry: isAdditionalEntry,
             EntryAtr: entryAtr,

@@ -85,6 +85,17 @@ public partial class LiveTradingService
         // PositionOpenedAt-Lookup (fuer 30-s-Grace-Window).
         var positionOpenedAt = (IReadOnlyDictionary<string, DateTime>)_positionOpenTimes;
 
+        // NF1 Fix — Set der Signale die einen TakeProfit erwarten (fuer MissingTakeProfit-Detection).
+        // Ohne dieses Set war der DriftKind.MissingTakeProfit-Branch im Analyzer toter Code; Bot
+        // konnte nach Restart Positionen ohne TP-Order behalten und lief bis SL/manuellem Close.
+        var signalsExpectingTp = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var kv in _positionSignals)
+        {
+            var sig = kv.Value;
+            if (sig.TakeProfit.HasValue && sig.TakeProfit.Value > 0)
+                signalsExpectingTp.Add(kv.Key);
+        }
+
         var actions = PositionDriftAnalyzer.Analyze(
             positions,
             botKeys,
@@ -93,7 +104,8 @@ public partial class LiveTradingService
             signalCreatedAt: _signalCreatedAt,
             openOrders: openOrders,
             positionOpenedAt: positionOpenedAt,
-            missingStopGraceWindow: TimeSpan.FromSeconds(30));
+            missingStopGraceWindow: TimeSpan.FromSeconds(30),
+            signalsExpectingTakeProfit: signalsExpectingTp);
 
         if (actions.Count == 0) return;
 
@@ -118,7 +130,52 @@ public partial class LiveTradingService
                 case PositionDriftAnalyzer.DriftKind.MissingStopLoss:
                     await ReplaceMissingStopAsync(action, key).ConfigureAwait(false);
                     break;
+
+                case PositionDriftAnalyzer.DriftKind.MissingTakeProfit:
+                    await ReplaceMissingTakeProfitAsync(action, key, positions).ConfigureAwait(false);
+                    break;
             }
+        }
+    }
+
+    /// <summary>
+    /// NF1 Fix — Re-platziert fehlende TP-Reduce-Only-LIMIT-Orders fuer eine offene Position.
+    /// Tritt auf wenn Bot zwischen Limit-Entry-Fill und PlaceTpLimitOrdersAfterFillAsync crasht
+    /// (oder Stage-3-Retry den 30s-Timeout ueberschritten hat). Nutzt das Original-Signal
+    /// (TakeProfit + TakeProfit2) und die echte Position-Quantity von BingX.
+    /// </summary>
+    private async Task ReplaceMissingTakeProfitAsync(PositionDriftAnalyzer.DriftAction action, string posKey,
+        IReadOnlyList<Position> positions)
+    {
+        if (!_positionSignals.TryGetValue(posKey, out var signal) || !signal.TakeProfit.HasValue)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Reconcile",
+                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-TP gemeldet, aber kein Signal-TP bekannt — uebersprungen",
+                action.Symbol));
+            return;
+        }
+
+        var pos = positions.FirstOrDefault(p => p.Symbol == action.Symbol && p.Side == action.Side && p.Quantity > 0);
+        if (pos == null)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Reconcile",
+                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-TP gemeldet, aber Position nicht mehr offen — uebersprungen",
+                action.Symbol));
+            return;
+        }
+
+        try
+        {
+            await PlaceTpLimitOrdersAfterFillAsync(action.Symbol, action.Side, pos.Quantity, signal).ConfigureAwait(false);
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-TP → re-placed (Qty={pos.Quantity:F8}, TP1={signal.TakeProfit:F8}, TP2={signal.TakeProfit2?.ToString("F8") ?? "---"})",
+                action.Symbol));
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
+                $"{LogPrefix}{action.Symbol} {action.Side}: TP-Re-Place fehlgeschlagen ({ex.Message}) — Position ohne TP bis naechster Reconcile",
+                action.Symbol));
         }
     }
 

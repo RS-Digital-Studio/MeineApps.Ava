@@ -852,9 +852,5 @@ public class BacktestEngine
         public bool BreakevenSet { get; set; }
         /// <summary>Navigator-PointA für den A-Bruch-BE-Trigger. 0 = unbekannt (kein BE möglich).</summary>
         public decimal NavPointA { get; init; }
-        /// <summary>SK-Plan 4.6: Anchor fuer Trailing-Stop (hoechstes High/tiefstes Low seit TP1-Hit).</summary>
-        public decimal TrailingAnchor { get; set; }
-        /// <summary>SK-Plan 4.6: Aktueller Trailing-SL-Preis (0 = Trailing inaktiv).</summary>
-        public decimal TrailingStopPrice { get; set; }
     }
 }

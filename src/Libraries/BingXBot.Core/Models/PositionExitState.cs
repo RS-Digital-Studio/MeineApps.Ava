@@ -64,20 +64,6 @@ public class PositionExitState
     public bool IsRecovered { get; set; }
 
     /// <summary>
-    /// SK-Plan 4.6: Aktueller Trailing-Stop-Preis nach TP1 (opt-in, bei EnableTrailingStopAfterTp1).
-    /// Wird pro Tick mit 1.5× ATR(H1) Abstand zum aktuellen Extrem nachgezogen.
-    /// 0 = Trailing-Stop inaktiv. Nach Aktivierung ersetzt er den BE-SL aus Workflow 4.2.
-    /// WIDERSPRUCH zu Buch 4.3 — daher default aus, nur via Settings opt-in aktivierbar.
-    /// </summary>
-    public decimal TrailingStopPrice { get; set; }
-
-    /// <summary>
-    /// SK-Plan 4.6: Bestes Extrem seit TP1 (Long: höchstes High, Short: tiefstes Low).
-    /// Basis für Trailing-Stop-Nachzug.
-    /// </summary>
-    public decimal TrailingAnchor { get; set; }
-
-    /// <summary>
     /// SK-Plan 5.5: Sequenz-Identifier (symbol_point0_pointA) für Re-Entry-Budget.
     /// Nach SL: Wenn diese Sequenz noch intakt (Point 0 nicht überschritten) und BC-Zone wieder erreicht,
     /// max. 1 Re-Entry mit halber Position erlaubt.

@@ -702,10 +702,12 @@ MinRRR per Kategorie: 1.0 (SK-Buch S.13).
 - **`AmendOrderAsync`**: `RoundPrice`/`TruncateQuantity` anwenden (BingX lehnt zu viele Dezimalstellen ab)
 - **Limit-Order TP**: NICHT sofort platzieren (Position existiert noch nicht). Fill-Detection im PriceTickerLoop, TP mit Qty aus `GetPositionsAsync` (BingX truncated auf Symbol-Precision)
 - **WebSocket `SendAsync` nicht thread-safe** — `_sendLock` SemaphoreSlim für alle Sends
+- **WebSocket User-Data-Reconnect mit ListenKey-Refresh**: `BingXWebSocketClient.ListenKeyRefresher`-Callback (Default `RestClient.CreateListenKeyAsync`) → bei Reconnect wird ein frischer Key geholt. Vorher: Reconnect nutzte den alten Key, der bei Server-Side-Disconnect oft schon abgelaufen war → bis 10 min User-Data-Stream tot
 - **Position-Retry nach Market-Order**: 3 Versuche × 1s Delay bis `GetPositionsAsync` neue Position listet (Hedge-Mode-Rejection ohne Position)
 - **TP-Retry + Verify**: `GetOpenOrdersAsync(symbol)` nach Platzierung prüft ob OrderIds tatsächlich existieren
 - **Idempotency-Check vor Retry**: `TpOrderMatcher.FindMatchingTpOrder` prüft mit Toleranz, ob die TP-Limit bereits liegt — verhindert Doppel-Place nach `TaskCanceledException`
 - **OrderTypes**: BingX gibt Bot-Limit-TPs (`Type=Limit + ReduceOnly=true`) NICHT als `TakeProfitMarket`/`TakeProfitLimit` zurück. Cancel-Filter in `BingxNativeSlTpManager` und Recovery-Logik berücksichtigen das
+- **`SetPositionSlTpAsync` ohne Position-Qty**: Wenn `GetPositionsAsync` keine Position liefert (z.B. gerade geschlossen), wird ein `InvalidOperationException` geworfen statt `closePosition=true` mit `quantity=0` (BingX V2 ignoriert das unzuverlaessig → Position konnte sonst still ohne SL bleiben)
 
 ### Trading-Logik
 

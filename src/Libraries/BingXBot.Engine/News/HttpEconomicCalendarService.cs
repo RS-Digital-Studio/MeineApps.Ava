@@ -83,7 +83,12 @@ public sealed class HttpEconomicCalendarService : IEconomicCalendarService, IDis
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "News-Refresh fehlgeschlagen — alter Cache bleibt aktiv (graceful degradation)");
+            // NF16 Fix — Failure-Zeitstempel setzen, damit der naechste Aufruf nicht sofort
+            // erneut probiert. Bei dauerhaftem API-Ausfall liefen sonst pro Scan-Tick (~60 s)
+            // ein neuer HTTP-Call → unnoetiger Spam. Mit gesetzem _lastRefreshUtc gilt das
+            // RefreshInterval-Backoff (Default 4 h) auch fuer Failure-Pfade.
+            _lastRefreshUtc = now;
+            _logger.LogWarning(ex, "News-Refresh fehlgeschlagen — alter Cache bleibt aktiv (graceful degradation), naechster Versuch nach RefreshInterval");
         }
         finally
         {

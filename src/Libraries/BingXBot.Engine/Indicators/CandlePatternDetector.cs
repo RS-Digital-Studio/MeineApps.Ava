@@ -12,6 +12,10 @@ public static class CandlePatternDetector
     /// Pinbar: Docht in die Gegenrichtung >= 2× Körper, Schlusskurs in Trend-Richtung.
     /// Long-Pinbar: Unterer Wick >= 2× Body, Close im oberen Drittel.
     /// Short-Pinbar: Oberer Wick >= 2× Body, Close im unteren Drittel.
+    /// Doji (body=0) wird BEWUSST nicht akzeptiert — Pinbar ist die strikte Reversal-Definition
+    /// fuer LtfReversalDetector (Trigger-Bestaetigung); die lockerere HammerOrPin-Erkennung in
+    /// <c>SequenceDetector.DetectEntryConfirmation</c> (ohne Close-Lokalisations-Pflicht) deckt
+    /// Doji-Hammer als Confluence-Bonus ab — gewuenschte Schwellen-Differenz, kein Bug.
     /// </summary>
     public static bool IsPinbar(Candle candle, bool bullish)
     {

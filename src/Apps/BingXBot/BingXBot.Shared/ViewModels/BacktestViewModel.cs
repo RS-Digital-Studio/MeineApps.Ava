@@ -304,6 +304,12 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
         MaxLeverage = Leverage,
         MaxPositionSizePercent = _riskSettings.MaxPositionSizePercent,
         MaxMarginPerTradePercent = _riskSettings.MaxMarginPerTradePercent,
+        MaxRiskPercentPerTrade = _riskSettings.MaxRiskPercentPerTrade,
+        MaxTotalMarginPercent = _riskSettings.MaxTotalMarginPercent,
+        LossStreakHalveAtCount = _riskSettings.LossStreakHalveAtCount,
+        LossStreakPauseAtCount = _riskSettings.LossStreakPauseAtCount,
+        EnableLossStreakDampening = _riskSettings.EnableLossStreakDampening,
+        MinPositionSizeRetentionPercent = _riskSettings.MinPositionSizeRetentionPercent,
         Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
         Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
         MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
@@ -365,20 +371,7 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
             var strategy = CreateStrategy();
 
             // Multi-TF Standalone: RiskSettings direkt aus dem globalen Settings-Snapshot verwenden.
-            var riskSettings = new RiskSettings
-            {
-                MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent,
-                MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent,
-                MaxOpenPositions = _riskSettings.MaxOpenPositions,
-                MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol,
-                MaxLeverage = Leverage,
-                MaxPositionSizePercent = _riskSettings.MaxPositionSizePercent,
-                MaxMarginPerTradePercent = _riskSettings.MaxMarginPerTradePercent,
-                Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
-                Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
-                MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
-                PipScalingByTf = _riskSettings.PipScalingByTf,
-            };
+            var riskSettings = BuildRiskSettings();
 
             var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
 

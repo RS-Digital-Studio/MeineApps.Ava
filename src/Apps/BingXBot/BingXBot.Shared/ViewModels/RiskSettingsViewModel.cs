@@ -51,6 +51,12 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private int _pyramidMaxAddOns;
     [ObservableProperty] private decimal _pyramidScalePercent;
 
+    // === Konfigurierbare Risk-Schwellen (vorher hardcoded) ===
+    [ObservableProperty] private decimal _maxTotalMarginPercent;
+    [ObservableProperty] private int _lossStreakHalveAtCount;
+    [ObservableProperty] private int _lossStreakPauseAtCount;
+    [ObservableProperty] private decimal _minPositionSizeRetentionPercent;
+
     // === Marktspezifische Hebel (mappen auf RiskSettings.CategorySettings) ===
     public decimal CryptoMaxLeverage
     {
@@ -146,6 +152,12 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
             PyramidMaxAddOns = _riskSettings.PyramidMaxAddOns;
             PyramidScalePercent = _riskSettings.PyramidScalePercent;
 
+            // Konfigurierbare Risk-Schwellen
+            MaxTotalMarginPercent = _riskSettings.MaxTotalMarginPercent;
+            LossStreakHalveAtCount = _riskSettings.LossStreakHalveAtCount;
+            LossStreakPauseAtCount = _riskSettings.LossStreakPauseAtCount;
+            MinPositionSizeRetentionPercent = _riskSettings.MinPositionSizeRetentionPercent;
+
             // Marktspezifische Hebel: Diese Properties haben keinen Backing-Field-Setter (sie lesen
             // direkt aus _riskSettings.CategorySettings), brauchen also explizite Notification.
             OnPropertyChanged(nameof(CryptoMaxLeverage));
@@ -181,6 +193,10 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
         _riskSettings.EnableCrossTfPyramiding = EnableCrossTfPyramiding;
         _riskSettings.PyramidMaxAddOns = PyramidMaxAddOns;
         _riskSettings.PyramidScalePercent = PyramidScalePercent;
+        _riskSettings.MaxTotalMarginPercent = MaxTotalMarginPercent;
+        _riskSettings.LossStreakHalveAtCount = LossStreakHalveAtCount;
+        _riskSettings.LossStreakPauseAtCount = LossStreakPauseAtCount;
+        _riskSettings.MinPositionSizeRetentionPercent = MinPositionSizeRetentionPercent;
 
         SaveStatus = "Gespeichert";
         HasUnsavedChanges = false;
@@ -205,6 +221,10 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
         Tp1CloseRatio = defaults.Tp1CloseRatio;
         Tp2CloseRatio = defaults.Tp2CloseRatio;
         MinRiskRewardRatio = defaults.MinRiskRewardRatio;
+        MaxTotalMarginPercent = defaults.MaxTotalMarginPercent;
+        LossStreakHalveAtCount = defaults.LossStreakHalveAtCount;
+        LossStreakPauseAtCount = defaults.LossStreakPauseAtCount;
+        MinPositionSizeRetentionPercent = defaults.MinPositionSizeRetentionPercent;
         _ = SaveAsync();
         SaveStatus = "Zurückgesetzt";
     }
@@ -232,6 +252,10 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
     partial void OnEnableCrossTfPyramidingChanged(bool value) => MarkDirty();
     partial void OnPyramidMaxAddOnsChanged(int value) => MarkDirty();
     partial void OnPyramidScalePercentChanged(decimal value) => MarkDirty();
+    partial void OnMaxTotalMarginPercentChanged(decimal value) => MarkDirty();
+    partial void OnLossStreakHalveAtCountChanged(int value) => MarkDirty();
+    partial void OnLossStreakPauseAtCountChanged(int value) => MarkDirty();
+    partial void OnMinPositionSizeRetentionPercentChanged(decimal value) => MarkDirty();
 
     public void Dispose()
     {

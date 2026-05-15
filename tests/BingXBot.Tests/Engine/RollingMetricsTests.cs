@@ -89,13 +89,15 @@ public class RollingMetricsTests
     }
 
     [Fact]
-    public void StrategyHealth_5Verluste_GibtWarning()
+    public void StrategyHealth_PauseSchwelle_GibtWarning()
     {
-        var rm = CreateManager();
-        // 10 Gewinne + 5 Verluste in Folge
+        // Health-Check meldet ab LossStreakPauseAtCount (User-Default 7).
+        var settings = new RiskSettings();
+        var rm = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        // 10 Gewinne + Pause-Schwelle Verluste in Folge
         for (int i = 0; i < 10; i++)
             rm.UpdateDailyStats(MakeTrade(50m));
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < settings.LossStreakPauseAtCount; i++)
             rm.UpdateDailyStats(MakeTrade(-50m));
 
         var warning = rm.CheckStrategyHealth();

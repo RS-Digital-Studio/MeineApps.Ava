@@ -266,11 +266,44 @@ public class RiskSettings
     // === Phase 18 / SK-Plan 4.8 + 5.1 — Adaptive Position-Scaling ===
     /// <summary>
     /// SK-Plan 4.8 (Buch S.13) — Loss-Streak-Dampening.
-    /// Wenn aktiv: ≥3 aufeinanderfolgende Verluste → Position auf 50 % skalieren,
-    /// ≥5 Verluste → Pause (Faktor 0). Wirkt in <see cref="GetPositionScalingFactor"/> als
-    /// Multiplikator vor dem MaxRisk-Cap. Default true — Buch-empfohlener Standard-Schutz.
+    /// Wenn aktiv: ab <see cref="LossStreakHalveAtCount"/> Verlusten in Folge → Position auf 50 %
+    /// skalieren, ab <see cref="LossStreakPauseAtCount"/> → Pause (Faktor 0). Wirkt in
+    /// <see cref="GetPositionScalingFactor"/> als Multiplikator vor dem MaxRisk-Cap.
+    /// Default true — Buch-empfohlener Standard-Schutz.
     /// </summary>
     public bool EnableLossStreakDampening { get; set; } = true;
+
+    /// <summary>
+    /// Schwelle (in aufeinanderfolgenden Verlust-Trades), ab der die Position halbiert wird.
+    /// Wirkt nur wenn <see cref="EnableLossStreakDampening"/> = true.
+    /// Buch S.13 nennt 3; bei 5 %-Risk lockern wir auf 4 (mehr Recovery-Trades).
+    /// </summary>
+    public int LossStreakHalveAtCount { get; set; } = 4;
+
+    /// <summary>
+    /// Schwelle (in aufeinanderfolgenden Verlust-Trades), ab der eine Trading-Pause greift
+    /// (Position-Scaling-Faktor 0). Wirkt nur wenn <see cref="EnableLossStreakDampening"/> = true.
+    /// Buch S.13 nennt 5; bei 5 %-Risk lockern wir auf 7 (Bot-Pause erst bei schwerer Drawdown-Phase).
+    /// </summary>
+    public int LossStreakPauseAtCount { get; set; } = 7;
+
+    /// <summary>
+    /// Margin-Cap (Σ aller offenen Margins + neue Margin) in % der Wallet-Balance.
+    /// Schützt vor Cross-Margin-Liquidation bei mehreren parallelen Trades mit hohem Hebel.
+    /// Default 80 % (bewusste Lockerung gegenüber dem früheren Hardcode 60 %). 0 = deaktiviert.
+    /// Bei Überschreitung wird die Position-Size reduziert; bei vollständig genutztem Cap wird
+    /// der Trade abgelehnt mit Reason "Margin-Cap erreicht".
+    /// </summary>
+    public decimal MaxTotalMarginPercent { get; set; } = 80m;
+
+    /// <summary>
+    /// Minimaler Rest-Anteil der Position-Size nach dem MaxRiskPercentPerTrade-Cap, unter dem das
+    /// Setup komplett verworfen wird (statt mit Mini-Position zu traden). Range 0..1.
+    /// Default 0.1 (= 10 % der originalen Größe). Früherer Hardcode war 0.01 (= 1 %), was bei
+    /// weiten SLs zu vielen unnötigen Rejects führte. 0 = Reject-Schwelle deaktiviert (Trade
+    /// läuft mit beliebig kleiner Größe weiter).
+    /// </summary>
+    public decimal MinPositionSizeRetentionPercent { get; set; } = 0.1m;
 
     /// <summary>
     /// SK-Plan 5.1 — Equity-Curve-Scaling (opt-in).

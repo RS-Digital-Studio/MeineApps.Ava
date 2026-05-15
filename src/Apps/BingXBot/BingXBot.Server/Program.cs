@@ -440,6 +440,12 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     risk.MaxRiskPercentPerTrade = saved.Risk.MaxRiskPercentPerTrade;
     risk.MaxDailyLossPercent = saved.Risk.MaxDailyLossPercent;
     risk.MaxDailyRiskPercent = saved.Risk.MaxDailyRiskPercent;          // ← war 24.04.2026 ungemappt → User-Wert ging verloren
+    // Konfigurierbare Risk-Schwellen (vorher hardcoded)
+    risk.MaxTotalMarginPercent = saved.Risk.MaxTotalMarginPercent;
+    risk.LossStreakHalveAtCount = saved.Risk.LossStreakHalveAtCount;
+    risk.LossStreakPauseAtCount = saved.Risk.LossStreakPauseAtCount;
+    risk.MinPositionSizeRetentionPercent = saved.Risk.MinPositionSizeRetentionPercent;
+    risk.EnableLossStreakDampening = saved.Risk.EnableLossStreakDampening;
     // Dictionaries: nur uebernehmen wenn nicht-leer (Schutz vor Default-Reset bei alten Migration-Snapshots).
     if (saved.Risk.CategorySettings is { Count: > 0 })
         risk.CategorySettings = saved.Risk.CategorySettings;

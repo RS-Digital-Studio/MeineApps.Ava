@@ -190,10 +190,12 @@ public class RiskManager : IRiskManager
                 {
                     var originalPosSize = posSize;
                     posSize = maxRiskUsdt / slDistance;
-                    // Wenn das Cap die Position auf unter 1% der Original-Size drückt → Setup verwerfen
-                    if (posSize <= originalPosSize * 0.01m)
+                    // Wenn das Cap die Position auf unter MinPositionSizeRetentionPercent der Original-Size drückt → Setup verwerfen.
+                    // 0 = Schwelle aus (Trade läuft mit jeder Größe weiter).
+                    var minRetention = Math.Clamp(_settings.MinPositionSizeRetentionPercent, 0m, 1m);
+                    if (minRetention > 0m && posSize <= originalPosSize * minRetention)
                         return new RiskCheckResult(false,
-                            $"SL zu weit für MaxRisk={_settings.MaxRiskPercentPerTrade}% (Risk={riskUsdt:F2} > {maxRiskUsdt:F2} USDT)", 0m);
+                            $"SL zu weit für MaxRisk={_settings.MaxRiskPercentPerTrade}% (Risk={riskUsdt:F2} > {maxRiskUsdt:F2} USDT, Rest={posSize / originalPosSize:P0} < {minRetention:P0})", 0m);
                 }
             }
         }
@@ -202,13 +204,15 @@ public class RiskManager : IRiskManager
         // Risk-Per-Trade (1-3%) und Positionsgroesse, nicht ueber Liquidationsdistanz.
         var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
 
-        // 04.05.2026 — Margin-Aware-Cap (TradFi-Schutz):
+        // Margin-Aware-Cap (TradFi-Schutz, konfigurierbar):
         // Bei hohem Hebel (NCFX 20×, NCSI 10×) kann ein einzelner 5%-Risk-Trade trotz korrekter
         // Risk-Distanz fast die gesamte verfügbare Margin binden. Ohne Cap würde ein zweiter
         // paralleler Trade auf einem zweiten TradFi-Symbol die Cross-Margin sprengen.
-        // Regel: Summe aller Margins (offene Positionen + neue) darf 60% der Wallet-Balance nicht
-        // überschreiten. Der posSize wird ggf. reduziert, statt den Trade abzulehnen.
-        if (context.Account.Balance > 0 && entryPrice > 0 && leverage > 0)
+        // Cap = Σ aller Margins (offene + neue) ≤ MaxTotalMarginPercent der Wallet-Balance.
+        // posSize wird ggf. reduziert; bei vollständig genutztem Cap → Reject.
+        // MaxTotalMarginPercent = 0 → Filter aus.
+        var marginCapPercent = _settings.MaxTotalMarginPercent;
+        if (marginCapPercent > 0m && context.Account.Balance > 0 && entryPrice > 0 && leverage > 0)
         {
             // Phase 18 / C1 — for-Loop statt LINQ Sum mit Closure (Hot-Path-Allocation eliminieren).
             decimal openMargins = 0m;
@@ -217,14 +221,14 @@ public class RiskManager : IRiskManager
                 var p = context.OpenPositions[i];
                 openMargins += p.Leverage > 0 ? p.EntryPrice * p.Quantity / p.Leverage : p.EntryPrice * p.Quantity;
             }
-            var marginCap = context.Account.Balance * 0.6m;
+            var marginCap = context.Account.Balance * marginCapPercent / 100m;
             var newMargin = entryPrice * posSize / leverage;
             if (openMargins + newMargin > marginCap)
             {
                 var available = marginCap - openMargins;
                 if (available <= 0)
                     return new RiskCheckResult(false,
-                        $"Margin-Cap erreicht ({openMargins:F2}/{marginCap:F2} USDT durch offene Positionen blockiert)", 0m);
+                        $"Margin-Cap erreicht ({openMargins:F2}/{marginCap:F2} USDT durch offene Positionen blockiert, {marginCapPercent:F0}% der Balance)", 0m);
                 var maxPosSize = available * leverage / entryPrice;
                 if (maxPosSize < posSize)
                     posSize = maxPosSize;
@@ -270,39 +274,28 @@ public class RiskManager : IRiskManager
                 .Where(p => p.UnrealizedPnl < 0)
                 .Sum(p => p.UnrealizedPnl); // Ist negativ oder 0
 
-            // Worst-Case-Risiko der NEUEN Position berechnen:
-            // Wenn SL gesetzt: Verlust = SL-Distanz * Quantity
-            // Ohne SL: Verlust = MaxPositionSizePercent vom Konto (konservative Schätzung)
-            var newPositionRisk = 0m;
-            if (signal.StopLoss.HasValue && signal.StopLoss.Value > 0)
-            {
-                var slDistance = Math.Abs(entryPrice - signal.StopLoss.Value);
-                newPositionRisk = slDistance * posSize; // Maximaler Verlust bei SL-Hit
-            }
-            else
-            {
-                // Ohne SL: Worst-Case = gesamte Margin (MaxPositionSizePercent der Wallet-Balance)
-                newPositionRisk = context.Account.Balance * _settings.MaxPositionSizePercent / 100m;
-            }
-
-            // Daily-Drawdown: Tagesbasiert wie bisher (PnL-basiert)
-            var effectiveDailyPnl = _dailyPnl + unrealizedLoss - newPositionRisk;
+            // Drawdown-Aggregation OHNE planned-newPositionRisk:
+            // MaxRiskPercentPerTrade-Cap (oben) hat das Trade-Risiko bereits hart begrenzt — wenn wir den
+            // gleichen Betrag noch einmal in beide DD-Schwellen einrechnen, ist der Risiko-Schirm dreifach
+            // aufgespannt. Resultat: realisierte + unrealisierte Verluste reichen weiterhin, neue Setups
+            // werden aber nicht mehr für Worst-Case-Szenarien doppelt bestraft.
+            var effectiveDailyPnl = _dailyPnl + unrealizedLoss;
             dailyDrawdownPercent = context.Account.Balance > 0 && effectiveDailyPnl < 0
                 ? Math.Abs(effectiveDailyPnl) / context.Account.Balance * 100m
                 : 0m;
 
             // Total-Drawdown: Peak-to-Trough basiert (echte Equity-Kurve)
             totalDrawdownPercent = _peakEquity > 0
-                ? Math.Max(0m, (_peakEquity - currentEquity + newPositionRisk) / _peakEquity * 100m)
+                ? Math.Max(0m, (_peakEquity - currentEquity) / _peakEquity * 100m)
                 : 0m;
         }
 
         if (_settings.MaxDailyDrawdownPercent > 0 && dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
-            return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
+            return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}%", 0m);
 
         // 10. Gesamt-Drawdown pruefen
         if (totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
-            return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
+            return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}%", 0m);
 
         return new RiskCheckResult(true, null, posSize);
     }
@@ -355,13 +348,17 @@ public class RiskManager : IRiskManager
     {
         decimal factor = 1m;
 
-        // 4.8 Loss-Streak-Dampening (Buch S.13)
+        // 4.8 Loss-Streak-Dampening (Buch S.13). Schwellen sind konfigurierbar
+        // (LossStreakHalveAtCount / LossStreakPauseAtCount) — Buch-Werte 3/5 als Default;
+        // gelockerter User-Default 4/7 in den Settings dokumentiert.
         if (_settings.EnableLossStreakDampening)
         {
             int losses;
             lock (_lock) losses = CurrentConsecutiveLosses;
-            if (losses >= 5) return 0m;          // Pause — keine neue Position
-            if (losses >= 3) factor *= 0.5m;     // Position halbieren
+            var pauseAt = Math.Max(1, _settings.LossStreakPauseAtCount);
+            var halveAt = Math.Max(1, _settings.LossStreakHalveAtCount);
+            if (losses >= pauseAt) return 0m;            // Pause — keine neue Position
+            if (losses >= halveAt) factor *= 0.5m;       // Position halbieren
         }
 
         // 5.1 Equity-Curve-Scaling (linear)
@@ -625,8 +622,9 @@ public class RiskManager : IRiskManager
             return $"Rolling Sharpe {RollingSharpeRatio:F2} < 0.3 (degradiert)";
         if (RollingWinRate < 0.25m)
             return $"Rolling WinRate {RollingWinRate:P0} < 25% (kritisch)";
-        if (CurrentConsecutiveLosses >= 5)
-            return $"{CurrentConsecutiveLosses} Verluste in Folge (Auto-Pause empfohlen)";
+        var lossPauseAt = Math.Max(1, _settings.LossStreakPauseAtCount);
+        if (CurrentConsecutiveLosses >= lossPauseAt)
+            return $"{CurrentConsecutiveLosses} Verluste in Folge (≥ {lossPauseAt} → Auto-Pause empfohlen)";
 
         return null;
     }

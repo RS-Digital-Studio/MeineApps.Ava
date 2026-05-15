@@ -298,6 +298,12 @@ public partial class App : Application
         risk.MaxRiskPercentPerTrade = saved.Risk.MaxRiskPercentPerTrade;
         risk.MaxDailyLossPercent = saved.Risk.MaxDailyLossPercent;
         risk.MaxDailyRiskPercent = saved.Risk.MaxDailyRiskPercent;          // war 24.04.2026 ungemappt
+        // Konfigurierbare Risk-Schwellen (vorher hardcoded)
+        risk.MaxTotalMarginPercent = saved.Risk.MaxTotalMarginPercent;
+        risk.LossStreakHalveAtCount = saved.Risk.LossStreakHalveAtCount;
+        risk.LossStreakPauseAtCount = saved.Risk.LossStreakPauseAtCount;
+        risk.MinPositionSizeRetentionPercent = saved.Risk.MinPositionSizeRetentionPercent;
+        risk.EnableLossStreakDampening = saved.Risk.EnableLossStreakDampening;
         if (saved.Risk.CategorySettings != null && saved.Risk.CategorySettings.Count > 0)
             risk.CategorySettings = saved.Risk.CategorySettings;
         if (saved.Risk.PipScalingByTf is { Count: > 0 })

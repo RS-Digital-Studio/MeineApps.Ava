@@ -107,6 +107,11 @@ public static class SettingsEndpoints
         if (dto.MinRiskRewardRatio < 0m || dto.MinRiskRewardRatio > 20m) { reason = "MinRiskRewardRatio muss 0..20 sein."; return false; }
         if (dto.MaxOpenPositions < 1 || dto.MaxOpenPositions > 100) { reason = "MaxOpenPositions muss 1..100 sein."; return false; }
         if (dto.MaxOpenPositionsPerSymbol < 1 || dto.MaxOpenPositionsPerSymbol > 10) { reason = "MaxOpenPositionsPerSymbol muss 1..10 sein."; return false; }
+        if (dto.MaxTotalMarginPercent < 0 || dto.MaxTotalMarginPercent > 100) { reason = "MaxTotalMarginPercent muss 0..100 sein."; return false; }
+        if (dto.LossStreakHalveAtCount < 1 || dto.LossStreakHalveAtCount > 50) { reason = "LossStreakHalveAtCount muss 1..50 sein."; return false; }
+        if (dto.LossStreakPauseAtCount < 1 || dto.LossStreakPauseAtCount > 50) { reason = "LossStreakPauseAtCount muss 1..50 sein."; return false; }
+        if (dto.LossStreakPauseAtCount < dto.LossStreakHalveAtCount) { reason = "LossStreakPauseAtCount muss >= LossStreakHalveAtCount sein."; return false; }
+        if (dto.MinPositionSizeRetentionPercent < 0m || dto.MinPositionSizeRetentionPercent > 1m) { reason = "MinPositionSizeRetentionPercent muss 0..1 sein."; return false; }
         return true;
     }
 

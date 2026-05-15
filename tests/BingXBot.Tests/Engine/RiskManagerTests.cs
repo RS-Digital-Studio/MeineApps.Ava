@@ -381,19 +381,19 @@ public class RiskManagerTests
     }
 
     [Fact]
-    public void GetPositionScalingFactor_3ConsecutiveLosses_ReturnsHalf()
+    public void GetPositionScalingFactor_3ConsecutiveLosses_NochVollePosition()
     {
-        // SK-Buch S.13: ab 3 Verlusten in Folge soll die Position halbiert werden.
+        // User-Default: HalveAt=4, PauseAt=7 → 3 Losses liegen unter der Halbierungs-Schwelle.
         var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
         risk.SetConsecutiveLosses(3);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
-        risk.GetPositionScalingFactor(account).Should().Be(0.5m);
+        risk.GetPositionScalingFactor(account).Should().Be(1m);
     }
 
     [Fact]
     public void GetPositionScalingFactor_4ConsecutiveLosses_ReturnsHalf()
     {
-        // 4 Verluste liegen weiterhin in der Halbierungs-Stufe (3-4 Losses).
+        // User-Default: HalveAt=4 → ab 4 Losses Position halbieren.
         var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
         risk.SetConsecutiveLosses(4);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
@@ -401,10 +401,34 @@ public class RiskManagerTests
     }
 
     [Fact]
-    public void GetPositionScalingFactor_5ConsecutiveLosses_ReturnsZero()
+    public void GetPositionScalingFactor_BuchStrikt3Losses_ReturnsHalf()
     {
-        // SK-Buch S.13: ab 5 Verlusten in Folge — Pause (Faktor 0).
+        // Buch-strikt: HalveAt=3 → identisches Verhalten zum SK-Buch S.13.
+        var risk = new RiskManager(
+            CreateTestSettings(s => { s.LossStreakHalveAtCount = 3; s.LossStreakPauseAtCount = 5; }),
+            NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(3);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(0.5m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_7ConsecutiveLosses_ReturnsZero()
+    {
+        // User-Default: PauseAt=7 → ab 7 Losses harte Pause (Faktor 0).
         var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(7);
+        var account = new AccountInfo(10000m, 10000m, 0m, 0m);
+        risk.GetPositionScalingFactor(account).Should().Be(0m);
+    }
+
+    [Fact]
+    public void GetPositionScalingFactor_BuchStrikt5Losses_ReturnsZero()
+    {
+        // Buch-strikt: PauseAt=5 → identisches Verhalten zum SK-Buch S.13.
+        var risk = new RiskManager(
+            CreateTestSettings(s => { s.LossStreakHalveAtCount = 3; s.LossStreakPauseAtCount = 5; }),
+            NullLogger<RiskManager>.Instance);
         risk.SetConsecutiveLosses(5);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
         risk.GetPositionScalingFactor(account).Should().Be(0m);
@@ -486,7 +510,7 @@ public class RiskManagerTests
     [Fact]
     public void GetPositionScalingFactor_LossStreakAndEquityScaling_Multiplies()
     {
-        // 3 Losses → 0.5×, plus Drawdown auf threshold+10 → weitere 0.5× → final 0.25×
+        // 4 Losses → 0.5× (HalveAt=4), plus Drawdown auf threshold+10 → weitere 0.5× → final 0.25×
         var settings = CreateTestSettings(s =>
         {
             s.EnableEquityCurveScaling = true;
@@ -495,13 +519,13 @@ public class RiskManagerTests
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
         risk.ValidateTrade(signal, CreateContext(balance: 10000m));
-        risk.SetConsecutiveLosses(3);
+        risk.SetConsecutiveLosses(4);
         var account = new AccountInfo(8500m, 8500m, 0m, 0m); // 15% DD
         risk.GetPositionScalingFactor(account).Should().BeApproximately(0.25m, 1e-8m);
     }
 
     [Fact]
-    public void CalculatePositionSize_5LossesInRow_ReturnsZero()
+    public void CalculatePositionSize_AtPauseThreshold_ReturnsZero()
     {
         // Integrations-Test: GetPositionScalingFactor=0 muss qty auf 0 ziehen → Trade-Block.
         var settings = CreateTestSettings(s =>
@@ -510,18 +534,19 @@ public class RiskManagerTests
             s.MaxLeverage = 10m;
         });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
-        risk.SetConsecutiveLosses(5);
+        risk.SetConsecutiveLosses(settings.LossStreakPauseAtCount);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
         var qty = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account);
         qty.Should().Be(0m);
     }
 
     [Fact]
-    public void ValidateTrade_With5LossesInRow_BlocksTrade()
+    public void ValidateTrade_AtPauseThreshold_BlocksTrade()
     {
-        // Trade darf nach 5 Losses nicht mehr durch — posSize wird auf 0 geclamped.
-        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
-        risk.SetConsecutiveLosses(5);
+        // Trade darf bei Erreichen der Pause-Schwelle nicht mehr durch — posSize wird auf 0 geclamped.
+        var settings = CreateTestSettings();
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        risk.SetConsecutiveLosses(settings.LossStreakPauseAtCount);
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
         var result = risk.ValidateTrade(signal, CreateContext());
         result.IsAllowed.Should().BeFalse();

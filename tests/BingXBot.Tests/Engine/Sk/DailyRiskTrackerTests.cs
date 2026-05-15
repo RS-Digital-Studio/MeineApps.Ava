@@ -52,10 +52,12 @@ public class DailyRiskTrackerTests
     }
 
     [Fact]
-    public void RiskSettings_MaxRiskPercentPerTrade_DefaultDrei()
+    public void RiskSettings_MaxRiskPercentPerTrade_HatUserDefault5()
     {
+        // Bewusste User-Abweichung vom Buch (5 % statt 1-3 %), dokumentiert in
+        // src/Apps/BingXBot/CLAUDE.md → "Bewusste User-Abweichungen vom Buch".
         var settings = new RiskSettings();
-        settings.MaxRiskPercentPerTrade.Should().Be(3m);
+        settings.MaxRiskPercentPerTrade.Should().Be(5m);
     }
 
     [Fact]

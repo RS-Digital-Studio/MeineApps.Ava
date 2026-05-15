@@ -722,6 +722,8 @@ MinRRR per Kategorie: 1.0 (SK-Buch S.13).
 - **Sync-over-Async im Hot-Path verboten** — News-Blackout per `MarketContext.ResolvedNewsBlackoutEvent` pre-resolved 1× pro Scan-Tick
 - **Margin-Aware-Cap (TradFi)**: bei Hebel 20×/10× würde 5%-Risk-Trade fast gesamte verfügbare Margin binden — `RiskManager` cappt Σ(Margins) ≤ 60% × Wallet-Balance
 - **Runner-Trail-SL MUSS an Exchange gepusht werden**: `PositionExitState.RunnerLastPushedSl` + `RunnerLastPushUtc` (0.15% Delta UND 10s seit letztem Push), sonst lebt SL nur im Memory und Crash verliert Runner-Gewinn
+- **ExitState-Persist nach kritischen Mutationen**: `PersistExitStatesAsync`-Hook in `TradingServiceBase` (no-op) + Override in `LiveTradingService` (SQLite-WAL-Write). Aufruf-Punkte: TP1/TP2-LimitOrderId set/null (Stage-1+Stage-2+WS-Fill), Phase Initial→Tp1Hit, RunnerActive=true, BreakevenSet=true. Vorher: Persist nur in `LiveTradingManager.StopAsync`/`EmergencyStopAsync` — Hot-Crash zwischen TP-Place und Stop verlor die OrderId-Zuordnung
+- **Limit-Distance-Guard analog SlippageGuard**: `ScannerSettings.LimitDistanceGuardEnabled` + `MaxLimitOrderDistanceByCategory` (Crypto 5 %, Forex 1.5 %, Stock 3 %, Index 2 %, Commodity 2.5 %). Limit-Preis weiter als Schwelle vom aktuellen Markt → Order geblockt (Schutz vor stale Fib-Levels nach grossen Bewegungen zwischen Signal und Place)
 
 ### Pending-Limit-Orders + Recovery
 

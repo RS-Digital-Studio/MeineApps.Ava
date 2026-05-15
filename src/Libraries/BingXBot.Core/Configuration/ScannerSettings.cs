@@ -179,6 +179,39 @@ public class ScannerSettings
     public decimal GetMaxSlippagePercent(MarketCategory category)
         => MaxSlippagePercentByCategory.TryGetValue(category, out var v) && v > 0 ? v : MaxSlippagePercent;
 
+    /// <summary>
+    /// F9 Fix — Distance-Guard fuer Limit-Orders (Default true). Wenn aktiv: vor jedem Limit-Entry
+    /// wird geprueft, ob der gewuenschte Limit-Preis maximal <see cref="MaxLimitOrderDistanceFromCurrentPercent"/>
+    /// vom aktuellen Marktpreis entfernt ist. Schuetzt vor Fills auf "Geister-Levels" wenn der Markt
+    /// zwischen Signal-Generation und Order-Place stark gelaufen ist (Sequence-Levels sind kein
+    /// absolutes Ziel, sondern muessen zum aktuellen Preis passen).
+    /// </summary>
+    public bool LimitDistanceGuardEnabled { get; set; } = true;
+
+    /// <summary>
+    /// F9 Fix — Globaler Default-Distance-Threshold in % (Fallback wenn die Kategorie keinen
+    /// eigenen Wert in <see cref="MaxLimitOrderDistanceByCategory"/> hat). 5 % entspricht einer
+    /// typischen Crypto-BC-Korrektur-Tiefe; engere Werte koennen valide Pullback-Entries verpassen.
+    /// </summary>
+    public decimal MaxLimitOrderDistanceFromCurrentPercent { get; set; } = 5.0m;
+
+    /// <summary>
+    /// F9 Fix — Per-Kategorie-Distance-Threshold fuer Limit-Entries. Crypto 5 % (BC-Korrektur),
+    /// Forex 1.5 % (enge Ranges), Stock 3 %, Index 2 %, Commodity 2.5 %. Leere Map = globaler Default.
+    /// </summary>
+    public Dictionary<MarketCategory, decimal> MaxLimitOrderDistanceByCategory { get; set; } = new()
+    {
+        { MarketCategory.Crypto,    5.0m },
+        { MarketCategory.Forex,     1.5m },
+        { MarketCategory.Index,     2.0m },
+        { MarketCategory.Commodity, 2.5m },
+        { MarketCategory.Stock,     3.0m },
+    };
+
+    /// <summary>Liefert die Limit-Distance-Schwelle für eine Kategorie (Fallback: globaler Wert).</summary>
+    public decimal GetMaxLimitOrderDistancePercent(MarketCategory category)
+        => MaxLimitOrderDistanceByCategory.TryGetValue(category, out var v) && v > 0 ? v : MaxLimitOrderDistanceFromCurrentPercent;
+
     // === v1.6.6 Phase 17 — Adaptive TF-Disable ===
     /// <summary>
     /// True = TFs mit schlechter WinRate werden automatisch fuer 24 h aus dem Scanner-Pfad

@@ -297,13 +297,19 @@ GklMasterZone und HighProbabilityZone zählen +2, alle anderen +1.
 
 | Regel | Buch | Projekt |
 |-------|------|---------|
-| Risiko pro Trade | 1-2% | **5%** (Hard-Cap, im RiskManager validiert) |
+| Risiko pro Trade | 1-3 % | **5 %** (`MaxRiskPercentPerTrade`, RiskManager-Cap) |
+| Margin-Anteil je Trade | 1-3 % | **10 %** (`MaxPositionSizePercent`) |
+| Loss-Streak-Halve | 3 Losses | **4 Losses** (`LossStreakHalveAtCount`) |
+| Loss-Streak-Pause | 5 Losses | **7 Losses** (`LossStreakPauseAtCount`) |
+| Margin-Cap (Σ aller offenen Margins) | — | **80 %** (`MaxTotalMarginPercent`, 0 = aus) |
+| Conservative-Mode darf in SucheB einsteigen | nicht spezifiziert | aktiv bei LTF-Reversal |
 | Counter-Trend-Scalper | "manche Trader" (hochriskant) | Default `false`, opt-in |
-| Runner-TP (5-10% über 200%) | "manche Trader" | Default `false`, opt-in |
-| TP-Toleranz Krypto | 5 Pips (~0.005%) | 0.03% |
+| Runner-TP (5-10 % über 200 %) | "manche Trader" | Default `false`, opt-in |
+| TP-Toleranz Krypto | 5 Pips (~0.005 %) | 0.03 % |
 | `EntryMode.Both` (Aggressive-Limit + LTF-Bonus) | Strikt entweder/oder | Mischmodus |
 | `MaxDailyDrawdownPercent`/`MaxDailyLossPercent`/`MaxDailyRiskPercent` | Nicht im Buch | User-Safety-Net, beibehalten |
 | Cross-TF-Pyramiding (`EnableCrossTfPyramiding`) | Nicht im Buch | Default false, opt-in |
+| Per-Kategorie-Slippage (`MaxSlippagePercentByCategory`) | Nicht im Buch | Crypto 0.10 % / Forex 0.05 % / Stock 0.30 % / Index+Commodity 0.20 % |
 
 ### Plan-Dokumente
 
@@ -323,19 +329,23 @@ GklMasterZone und HighProbabilityZone zählen +2, alle anderen +1.
 - **Drawdown-Limits**: Täglich + gesamt. Peak-Equity-Tracking für Total-Drawdown.
 - **Liquidation-Check**: Isolated-Margin-Formel `(1 - MMR) / Leverage`. Bei ≤ 2x Leverage
   deaktiviert (kein Liquidations-Risiko).
-- **Margin-Cap**: Σ aller offenen Margins + neue Margin ≤ 60% der Wallet-Balance
-  (TradFi-Schutz bei Hebel 20×/10×).
+- **Margin-Cap**: Σ aller offenen Margins + neue Margin ≤ `MaxTotalMarginPercent`
+  (Default 80 %) der Wallet-Balance — TradFi-Schutz bei Hebel 20×/10×. 0 = Filter aus.
 - **Daily-Loss-Circuit**: Nach Überschreitung keine neuen Entries bis UTC-00:00.
 - **Daily-Risk-Budget**: Realisierte + offene + geplante Risiken ≤ `MaxDailyRiskPercent`
   (SK-Buch S.13: 1-3%).
 
 ### Adaptive Position-Scaling (`GetPositionScalingFactor`)
 
-- **Loss-Streak-Dampening** (SK-Buch S.13, Default on):
-  ≥ 3 Verluste → 0.5×, ≥ 5 → 0 (Pause).
+- **Loss-Streak-Dampening** (Default on, Schwellen einstellbar):
+  ≥ `LossStreakHalveAtCount` (Default 4) Verluste → 0.5×, ≥ `LossStreakPauseAtCount`
+  (Default 7) → 0 (Pause). Buch S.13 nennt 3/5; User-Default 4/7 lockert bewusst.
 - **Equity-Curve-Scaling** (opt-in): Drawdown vom Peak ab `EquityCurveScalingThresholdPercent`
   → linear runter bis 0.5×.
-- Beide Faktoren multiplizieren sich.
+- **Position-Retention-Cap**: Wenn das `MaxRiskPercentPerTrade`-Cap die Position unter
+  `MinPositionSizeRetentionPercent` (Default 10 %) der Original-Größe drückt, wird der
+  Trade verworfen statt mit Mini-Position einzusteigen.
+- Alle Faktoren multiplizieren sich.
 
 ### Korrelations-Filter (`AssetClusterClassifier`)
 

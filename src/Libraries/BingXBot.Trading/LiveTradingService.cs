@@ -336,6 +336,20 @@ public partial class LiveTradingService : TradingServiceBase
             var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
             var pos = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
 
+            // Auch Pending-Limit-Entries fuer (Symbol, Side) cancellen — sonst bleibt eine
+            // alte Limit-Entry-Order auf BingX und wird beim naechsten Reconcile-Tick gefuellt,
+            // direkt nachdem der User die Position manuell zugemacht hat.
+            var matchingPending = _pendingLimitOrders
+                .Where(kvp => kvp.Value.Symbol == symbol && kvp.Value.IsLong == (side == Side.Buy))
+                .Select(kvp => (kvp.Key, kvp.Value.OrderId, kvp.Value.SequenceId))
+                .ToList();
+            foreach (var (pKey, pOrderId, _) in matchingPending)
+            {
+                try { await _restClient.CancelOrderAsync(pOrderId, symbol).ConfigureAwait(false); }
+                catch { /* moeglicherweise schon gefuellt/gecancelt */ }
+                _pendingLimitOrders.TryRemove(pKey, out _);
+            }
+
             // Erst Close, dann Cancel (sicherer: bei Close-Fehler bleibt nativer SL als Schutz)
             await _restClient.ClosePositionAsync(symbol, side).ConfigureAwait(false);
             RemoveSignalByKey($"{symbol}_{side}");
@@ -355,12 +369,20 @@ public partial class LiveTradingService : TradingServiceBase
                     : (pos.EntryPrice - exitPrice) * pos.Quantity;
                 var posKey = $"{symbol}_{side}";
                 var entryTime = _positionOpenTimes.GetValueOrDefault(posKey, pos.OpenTime);
+                var navTf = GetNavigatorTimeframeForKey(posKey);
                 var trade = new CompletedTrade(symbol, side, pos.EntryPrice, exitPrice,
                     pos.Quantity, rawPnl - totalFee, totalFee, entryTime, DateTime.UtcNow,
-                    "Close-Signal", TradingMode.Live);
+                    "Close-Signal", TradingMode.Live, navTf);
                 ProcessCompletedTrade(trade);
                 _eventBus.PublishTrade(trade);
             }
+
+            // Persistenz nachziehen: ExitState + Pending-Snapshot auf Platte,
+            // sonst kommen die Eintraege beim naechsten Pi-Restart aus der DB zurueck.
+            try { await PersistExitStatesAsync().ConfigureAwait(false); }
+            catch { /* best-effort */ }
+            try { await PersistPendingLimitOrdersAsync().ConfigureAwait(false); }
+            catch { /* best-effort */ }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
                 $"LIVE: {symbol} {side} geschlossen", symbol));

@@ -275,6 +275,23 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
 
     public async Task ClosePositionAsync(string symbol, Side side, CancellationToken ct = default)
     {
+        // Bevorzugter Pfad: ueber den TradingService selber, damit der ganze CompletedTrade-Flow
+        // (DB-Persist, RiskManager-Stats, EventBus.PublishTrade, ExitState-Cleanup) durchlaeuft.
+        // Vorher ging das via _restClient.ClosePositionAsync direkt an BingX vorbei — Bot blieb
+        // im Dunklen, Trade landete weder in der DB noch im SignalR-Stream.
+        if (_liveManager.IsRunning && _liveManager.Service is { } liveSvc)
+        {
+            await liveSvc.ClosePositionExternalAsync(symbol, side).ConfigureAwait(false);
+            return;
+        }
+
+        if (_paperService.IsRunning)
+        {
+            await _paperService.ClosePositionExternalAsync(symbol, side).ConfigureAwait(false);
+            return;
+        }
+
+        // Fallback: Bot laeuft nicht, aber Position muss trotzdem zu (z.B. nach Stop manuell zumachen).
         if (_liveManager.IsConnected && _liveManager.RestClient is { } rest)
         {
             await rest.ClosePositionAsync(symbol, side).ConfigureAwait(false);

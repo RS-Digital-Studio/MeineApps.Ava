@@ -1737,6 +1737,19 @@ public abstract class TradingServiceBase : IDisposable
         }
     }
 
+    /// <summary>
+    /// Manueller Close-Aufruf von aussen (Dashboard-UI oder /api/v1/position/{symbol}/close).
+    /// Geht durch den vollen <see cref="ClosePositionAndPublishAsync"/>-Pfad, sodass
+    /// CompletedTrade gebaut wird, ProcessCompletedTrade laeuft (DB-Persist + RiskManager-Stats)
+    /// und EventBus.PublishTrade feuert.
+    ///
+    /// Vorher rief <c>LocalBotControlService.ClosePositionAsync</c> direkt
+    /// <c>IExchangeClient.ClosePositionAsync</c> auf — Bot wusste vom Close nichts,
+    /// Trade landete weder in der DB noch in den Stats, ExitState blieb stehen.
+    /// </summary>
+    public Task ClosePositionExternalAsync(string symbol, Side side)
+        => ClosePositionAndPublishAsync(symbol, side);
+
     // ═══════════════════════════════════════════════════════════════
     // Dispose
     // ═══════════════════════════════════════════════════════════════

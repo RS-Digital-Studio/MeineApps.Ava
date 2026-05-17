@@ -83,6 +83,7 @@ Wenn `ServerProfile` gesetzt ist, registriert die DI Remote-Service-Impls; sonst
 | Auth | `/auth/logout`, `/auth/logout-others` |
 | Status | `/status`, `/account`, `/positions`, `/open-orders`, `/equity` |
 | Bot-Control | `/bot/start`, `/bot/stop`, `/bot/emergency-stop`, `/position/{symbol}/close` |
+| Admin | `/admin/backfill-trades` (POST, Trade-Backfill aus BingX-Income, Body `{ fromUtc, toUtc? }`) |
 | Settings | `/settings`, `/settings/risk`, `/settings/scanner`, `/settings/bot`, `/settings/backtest`, `/settings/history` |
 | Trades & Logs | `/trades`, `/trades/summary`, `/scanner/results`, `/logs` |
 | Backtest | `/backtest/start`, `/backtest/{jobId}`, `/backtest/{jobId}/result`, `/backtest/{jobId}/cancel`, `/backtest/replay-trade/{tradeId}` |
@@ -155,8 +156,10 @@ Daten-Pfad: `/var/lib/bingxbot`. SSH-Passwort `qwer`.
 
 | Service | Tick | Zweck |
 |---------|------|-------|
-| `BotAutoResumeService` | Once @ Start (15s Delay) | Reaktiviert Engine nach Crash/Reboot wenn `WasRunningOnShutdown=true`. Trade-Replay-Backfill aus Income-Records bei Heartbeat-Drift > 5 min |
+| `BotAutoResumeService` | Once @ Start (15s Delay) | Reaktiviert Engine nach Crash/Reboot wenn `WasRunningOnShutdown=true`. Trade-Replay-Backfill aus Income-Records bei Heartbeat-Drift > 5 min. Public `BackfillFromBingxAsync` für Admin-Endpoint |
 | `BotHubEventForwarder` | Event-getrieben | Forward `IBotEventStream` → SignalR-Hub mit Log-Batching (250ms) und Throttling |
+| `EquitySnapshotService` | 5 min + Event | Persistiert Equity-Snapshot periodisch + sofort nach Trade-Close (2 s Debounce). Publiziert `EquityUpdate` an SignalR-Clients |
+| `DbLogPersistenceService` | 250 ms-Batch | Subscribed `LogEmitted`, schreibt im Batch in `LogEntries`. Toggle `EnableDbLogPersistence`, MinLevel-Filter |
 | `ServerHealthWatchdog` | 30s | BingX `GetServerTimeAsync`-Probe + Clock-Drift-Detection (warn 2s, degrade 4s — recvWindow 5s) |
 | `DbBackupService` | Daily @ 03:00 UTC | SQLite VACUUM + File.Copy nach `{DataDir}/backups/bot-YYYY-MM-DD.db`, 7-Tage-Retention |
 | `DbArchiveService` | Monthly @ 1. 04:00 UTC | Trades > 90d in `bot-archive-{YYYY-MM}.db`, Decisions-/SettingsChanges-Purge |
@@ -334,6 +337,12 @@ GklMasterZone und HighProbabilityZone zählen +2, alle anderen +1.
 - **Daily-Loss-Circuit**: Nach Überschreitung keine neuen Entries bis UTC-00:00.
 - **Daily-Risk-Budget**: Realisierte + offene + geplante Risiken ≤ `MaxDailyRiskPercent`
   (SK-Buch S.13: 1-3%).
+- **StopLossSanityGuard** (`BingXBot.Core/Services/`): Pure-Function-Validator vor jedem
+  SL-Push (BE-Trigger, Runner-Trail, Partial-Close-SL/TP, Recovery-BE,
+  `BingxNativeSlTpManager.UpdateNativeStopLossAsync`). Reject = WARNING + Push verweigert.
+  Schuetzt vor "Long-SL ueber Entry" (DOGE-Bug aus dem Snapshot vom 2026-05-17).
+  Buffer `MaxBreakevenBufferPercent=0.5 %` ueber/unter Entry erlaubt — Werte darueber nur
+  mit `RunnerActive=true`.
 
 ### Adaptive Position-Scaling (`GetPositionScalingFactor`)
 
@@ -436,6 +445,40 @@ JSON-Blob-Toleranz).
    `RiskManager.UpdateDailyStats` für heutige Trades.
 4. `IBotControlService.StartAsync` reaktiviert Engine im zuletzt aktiven Mode.
 
+### Live-Trade-Persistenz (Pflicht-Pfad)
+
+`TradingServiceBase.ProcessCompletedTrade` ruft Fire-and-Forget
+`_dbService.SaveTradeAsync(trade)` auf — **alle** TP1/TP2/SL/Manual-Close-Pfade laufen
+darüber. Ohne diesen Hook (vor Mai 2026) sah die DB **keine** Live-Trades; SignalR-Push
+hielt sie nur im Client-RAM. Bei Fehler wird `LogLevel.Error` mit Trade-Kontext geloggt.
+
+`PostTradePersistHook` (optional) wird nach erfolgreichem `SaveTradeAsync` aufgerufen —
+verwendet für `EquitySnapshotService` (separater Equity-Punkt nach Close).
+
+### Server-HostedServices fuer Persistenz (Remote-Mode)
+
+| Service | Was |
+|---------|-----|
+| `EquitySnapshotService` | Schreibt Equity-Snapshot alle 5 min (`Server:EquitySnapshotIntervalMinutes`) + sofort nach jedem Trade-Close (2 s Debounce). Publiziert `BotEventBus.EquityUpdate` für SignalR-Clients. Vorher schrieb nur `DashboardViewModel`-Timer (lief im Remote-Mode nicht). |
+| `DbLogPersistenceService` | Subscribed `BotEventBus.LogEmitted`, schreibt im 250-ms-Batch in `LogEntries`. Settings-gated via `BotSettings.EnableDbLogPersistence` (Default true) + `DbLogPersistenceMinLevel` (Default Info). Queue-Hard-Cap 10.000 schützt vor DB-Slowness. |
+| `BotAutoResumeService` (erweitert) | Public `BackfillFromBingxAsync(fromUtc, toUtc?)`-Methode für `POST /api/v1/admin/backfill-trades` — Admin-Endpoint zum Nachholen verlorener Trades aus BingX-Income-History. Dedup-aware (Reason="Backfilled (Pi offline)"). |
+
+### ExitStates-Stale-Cleanup (`ReconcileLoopAsync`)
+
+`LiveTradingService.CleanupStaleExitStatesAsync` läuft pro Reconcile-Tick und entfernt
+ExitStates, die weder einer offenen BingX-Position noch einem Pending-Limit noch einer
+Reduce-Only-Order (Tp1/Tp2-OrderId in OpenOrders) zugeordnet sind. Grace-Window:
+Recovery 1 h, normal 5 min. Bei fehlenden OpenOrders (Rate-Limit) konservativ 24 h.
+`PersistExitStatesAsync` schreibt jetzt auch leere Snapshots — sonst hielt Restart die
+gerade entfernten States in der DB fest.
+
+### Pending-Limit-Cleanup (verschaerft)
+
+`CancelExpiredPendingLimitOrdersAsync(openOrders?)` entfernt Pending-Limits nicht nur
+nach `PendingLimitOrderMaxAgeHours` (Default 6 h), sondern **sofort** wenn die OrderId
+nicht mehr in den BingX-Open-Orders erscheint. Zusätzlich wird der zugehörige
+Recovery-ExitState (`IsRecovered=true, OriginalQuantity=0`) im selben Schritt entfernt.
+
 ---
 
 ## Telemetry & Monitoring
@@ -494,7 +537,23 @@ UI-View `DecisionTrailView` mit Filter nach Symbol/TF/Reject-Reason/OnlyRejected
 | `correlation_limit_exceeded` | Cluster-Margin > Limit |
 | `outside_allowed_session` | Trade ausserhalb erlaubter Session |
 | `news_service_unavailable` | News-Service degradiert + RequireNewsFilter aktiv |
-| `other` | Generischer Reject |
+| `insufficient_data` | Nicht genug Candles im Navigator-TF |
+| `no_sequence` | State &lt; SucheB — typisch in Seitwärts-Phasen |
+| `sequence_not_constructable` | ToSequence liefert null (defensiv) |
+| `bos_volume_below_threshold` | BOS-Kerze unter Volumen-SMA (`RequireBosVolumeBreakout`) |
+| `sl_geometry_error` | SL- oder TP-Geometrie falsch |
+| `sl_distance_zero` | SL-Distanz = 0 (Position-Sizing-Schutz) |
+| `other` | Generischer Reject — sollte nach A1.2 kaum noch auftreten |
+
+### Decision-Trail-Hygiene (Snapshot-Report A1.x)
+
+`TradingServiceBase` filtert vor `PublishEvaluationDecision`:
+- `BotSettings.DecisionTrailIncludeNotActivated` (Default false) blockt
+  `state_not_activated`-Eintraege (vorher 81 % Rauschen).
+- `BotSettings.DecisionTrailDeduplicateTriggers` (Default true) loggt Triggered-Decisions
+  fuer dieselbe Sequenz nur einmal pro Bot-Laufzeit (verhindert ZEC-60×-Cluster).
+  Dedup-Key = `Symbol|TF|SequenceState|Point0|PointA|PointB`. Set wird bei Stop/Start
+  geleert.
 
 ### Trade-Stats (`TradeStatsAggregator`)
 

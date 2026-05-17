@@ -6596,4 +6596,24 @@
   <data name="PrestigeWhatYouLose" xml:space="preserve"><value>Lo que pierdes:</value></data>
   <data name="AscensionLockedHint" xml:space="preserve"><value>Alcanza Legenda 3 veces para desbloquear la Ascensión</value></data>
   <data name="WarehouseLockedHint" xml:space="preserve"><value>Alcanza el nivel 50 para desbloquear el almacén</value></data>
+  <data name="BattlePassExpiringNotif" xml:space="preserve"><value>Maestro Hans: „¡La temporada termina pronto - consigue los últimos niveles!"</value></data>
+  <data name="LiveOrderAvailableNotif" xml:space="preserve"><value>Maestro Hans: „¡Un pedido en vivo está listo - la velocidad paga!"</value></data>
+  <data name="OfflineEarningsCappedNotif" xml:space="preserve"><value>Maestro Hans: „¡Tu almacenamiento offline está lleno - vuelve y recoge!"</value></data>
+  <data name="WorkerMoodCriticalNotif" xml:space="preserve"><value>Maestro Hans: „¡Tu equipo necesita atención - el ánimo es crítico!"</value></data>
+  <data name="CraftingInventoryEmptyTitle" xml:space="preserve"><value>Nada fabricado aún</value></data>
+  <data name="CraftingInventoryEmptyText" xml:space="preserve"><value>Inicia una receta arriba &#8212; tus artículos terminados aparecerán aquí y se pueden vender.</value></data>
+  <data name="RepShopTitle" xml:space="preserve"><value>Tienda de Reputación</value></data>
+  <data name="RepShopDescription" xml:space="preserve"><value>Gasta reputación en ventajas especiales. La reputación se gana con los pedidos.</value></data>
+  <data name="RepShopBuyFailedTitle" xml:space="preserve"><value>No hay suficiente reputación</value></data>
+  <data name="RepShopBuyFailedDesc" xml:space="preserve"><value>Necesitas más reputación para comprar este artículo.</value></data>
+  <data name="RepShopRegularCustomerName" xml:space="preserve"><value>Garantía de Cliente Habitual</value></data>
+  <data name="RepShopRegularCustomerDesc" xml:space="preserve"><value>Los próximos 5 pedidos son de clientes habituales — hasta 1,5x recompensa.</value></data>
+  <data name="RepShopFasterDeliveryName" xml:space="preserve"><value>Entrega Más Rápida</value></data>
+  <data name="RepShopFasterDeliveryDesc" xml:space="preserve"><value>El próximo proveedor llega 50% más rápido durante 1 hora.</value></data>
+  <data name="RepShopWorkerMoodBoostName" xml:space="preserve"><value>Refuerzo de Ánimo del Equipo</value></data>
+  <data name="RepShopWorkerMoodBoostDesc" xml:space="preserve"><value>Todos los trabajadores obtienen +30 ánimo (al instante).</value></data>
+  <data name="RepShopSkinWoodName" xml:space="preserve"><value>Aspecto de Taller "Madera Premium"</value></data>
+  <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Aspecto cosmético permanente para todos los talleres.</value></data>
+  <data name="RepShopInsuranceName" xml:space="preserve"><value>Seguro de Reputación</value></data>
+  <data name="RepShopInsuranceDesc" xml:space="preserve"><value>El próximo fallo de riesgo no cuesta reputación.</value></data>
 </root>

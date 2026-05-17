@@ -4217,4 +4217,7 @@
   <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Sconfiggi tutti e 5 i boss di fila</value></data>
   <data name="PlayHubMasterDesc" xml:space="preserve"><value>La campagna da 100 livelli - più difficile, nemici più veloci</value></data>
   <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Completa il livello 100 per sbloccare</value></data>
+  <data name="AnnounceMiniBoss" xml:space="preserve"><value>MINI-BOSS</value></data>
+  <data name="SubtitleMiniBossRoar" xml:space="preserve"><value>[MINI-BOSS IN ARRIVO]</value></data>
+  <data name="FloatShadowClone" xml:space="preserve"><value>CLONE OMBRA!</value></data>
 </root>

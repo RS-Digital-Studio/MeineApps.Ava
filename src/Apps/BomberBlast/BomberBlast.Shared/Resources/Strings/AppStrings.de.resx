@@ -4571,4 +4571,7 @@
   <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Besiege alle 5 Bosse hintereinander</value></data>
   <data name="PlayHubMasterDesc" xml:space="preserve"><value>Die 100-Level-Kampagne - härter, schnellere Gegner</value></data>
   <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Schließe Level 100 ab zum Freischalten</value></data>
+  <data name="AnnounceMiniBoss" xml:space="preserve"><value>MINI-BOSS</value></data>
+  <data name="SubtitleMiniBossRoar" xml:space="preserve"><value>[MINI-BOSS NÄHERT SICH]</value></data>
+  <data name="FloatShadowClone" xml:space="preserve"><value>SCHATTEN-KLON!</value></data>
 </root>

@@ -4217,4 +4217,7 @@
   <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Derrote todos os 5 chefes seguidos</value></data>
   <data name="PlayHubMasterDesc" xml:space="preserve"><value>A campanha de 100 níveis - mais difícil, inimigos mais rápidos</value></data>
   <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Complete o nível 100 para desbloquear</value></data>
+  <data name="AnnounceMiniBoss" xml:space="preserve"><value>MINI-CHEFE</value></data>
+  <data name="SubtitleMiniBossRoar" xml:space="preserve"><value>[MINI-CHEFE SE APROXIMA]</value></data>
+  <data name="FloatShadowClone" xml:space="preserve"><value>CLONE SOMBRA!</value></data>
 </root>

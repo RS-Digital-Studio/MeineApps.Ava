@@ -4217,4 +4217,7 @@
   <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Affrontez les 5 boss à la suite</value></data>
   <data name="PlayHubMasterDesc" xml:space="preserve"><value>La campagne de 100 niveaux - plus dure, ennemis plus rapides</value></data>
   <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Terminez le niveau 100 pour débloquer</value></data>
+  <data name="AnnounceMiniBoss" xml:space="preserve"><value>MINI-BOSS</value></data>
+  <data name="SubtitleMiniBossRoar" xml:space="preserve"><value>[MINI-BOSS APPROCHE]</value></data>
+  <data name="FloatShadowClone" xml:space="preserve"><value>CLONE FANTÔME!</value></data>
 </root>

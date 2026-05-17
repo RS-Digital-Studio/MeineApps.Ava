@@ -6597,4 +6597,24 @@
   <data name="PrestigeWhatYouLose" xml:space="preserve"><value>Ce que tu perds :</value></data>
   <data name="AscensionLockedHint" xml:space="preserve"><value>Atteins Légende 3 fois pour débloquer l'Ascension</value></data>
   <data name="WarehouseLockedHint" xml:space="preserve"><value>Atteins le niveau 50 pour débloquer l'entrepôt</value></data>
+  <data name="BattlePassExpiringNotif" xml:space="preserve"><value>Maître Hans : « La saison se termine bientôt - prends les derniers paliers ! »</value></data>
+  <data name="LiveOrderAvailableNotif" xml:space="preserve"><value>Maître Hans : « Une commande live est prête - la vitesse paie ! »</value></data>
+  <data name="OfflineEarningsCappedNotif" xml:space="preserve"><value>Maître Hans : « Ton stockage hors-ligne est plein - reviens et récolte ! »</value></data>
+  <data name="WorkerMoodCriticalNotif" xml:space="preserve"><value>Maître Hans : « Ton équipe a besoin d'attention - le moral est critique ! »</value></data>
+  <data name="CraftingInventoryEmptyTitle" xml:space="preserve"><value>Rien fabriqué encore</value></data>
+  <data name="CraftingInventoryEmptyText" xml:space="preserve"><value>Lance une recette en haut &#8212; tes objets finis apparaîtront ici et peuvent être vendus.</value></data>
+  <data name="RepShopTitle" xml:space="preserve"><value>Boutique de Réputation</value></data>
+  <data name="RepShopDescription" xml:space="preserve"><value>Dépense de la réputation pour des avantages spéciaux. La réputation s'obtient par les commandes.</value></data>
+  <data name="RepShopBuyFailedTitle" xml:space="preserve"><value>Pas assez de réputation</value></data>
+  <data name="RepShopBuyFailedDesc" xml:space="preserve"><value>Tu as besoin de plus de réputation pour acheter cet article.</value></data>
+  <data name="RepShopRegularCustomerName" xml:space="preserve"><value>Garantie Client Régulier</value></data>
+  <data name="RepShopRegularCustomerDesc" xml:space="preserve"><value>Les 5 prochaines commandes sont de clients réguliers — jusqu'à 1,5x récompense.</value></data>
+  <data name="RepShopFasterDeliveryName" xml:space="preserve"><value>Livraison Plus Rapide</value></data>
+  <data name="RepShopFasterDeliveryDesc" xml:space="preserve"><value>Le prochain fournisseur arrive 50% plus vite pendant 1 heure.</value></data>
+  <data name="RepShopWorkerMoodBoostName" xml:space="preserve"><value>Boost de Moral d'Équipe</value></data>
+  <data name="RepShopWorkerMoodBoostDesc" xml:space="preserve"><value>Tous les ouvriers gagnent +30 moral (instantané).</value></data>
+  <data name="RepShopSkinWoodName" xml:space="preserve"><value>Skin d'Atelier « Bois Premium »</value></data>
+  <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Skin cosmétique permanent pour tous les ateliers.</value></data>
+  <data name="RepShopInsuranceName" xml:space="preserve"><value>Assurance Réputation</value></data>
+  <data name="RepShopInsuranceDesc" xml:space="preserve"><value>Le prochain risque raté ne coûte pas de réputation.</value></data>
 </root>

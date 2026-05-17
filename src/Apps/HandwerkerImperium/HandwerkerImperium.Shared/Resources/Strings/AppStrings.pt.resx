@@ -6612,4 +6612,10 @@
   <data name="PrestigeWhatYouLose" xml:space="preserve"><value>O que você perde:</value></data>
   <data name="AscensionLockedHint" xml:space="preserve"><value>Alcance Lenda 3 vezes para desbloquear a Ascensão</value></data>
   <data name="WarehouseLockedHint" xml:space="preserve"><value>Alcance o nível 50 para desbloquear o armazém</value></data>
+  <data name="BattlePassExpiringNotif" xml:space="preserve"><value>Mestre Hans: „A temporada termina em breve - pegue os últimos níveis!"</value></data>
+  <data name="LiveOrderAvailableNotif" xml:space="preserve"><value>Mestre Hans: „Um pedido ao vivo está pronto - a velocidade compensa!"</value></data>
+  <data name="OfflineEarningsCappedNotif" xml:space="preserve"><value>Mestre Hans: „Seu armazenamento offline está cheio - volte e colete!"</value></data>
+  <data name="WorkerMoodCriticalNotif" xml:space="preserve"><value>Mestre Hans: „Sua equipe precisa de atenção - o humor está crítico!"</value></data>
+  <data name="CraftingInventoryEmptyTitle" xml:space="preserve"><value>Nada fabricado ainda</value></data>
+  <data name="CraftingInventoryEmptyText" xml:space="preserve"><value>Inicie uma receita acima &#8212; seus itens prontos aparecerão aqui e podem ser vendidos.</value></data>
 </root>

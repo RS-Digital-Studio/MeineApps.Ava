@@ -4217,4 +4217,7 @@
   <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Derrota a los 5 jefes seguidos</value></data>
   <data name="PlayHubMasterDesc" xml:space="preserve"><value>La campaña de 100 niveles: más difícil, enemigos más rápidos</value></data>
   <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Completa el nivel 100 para desbloquear</value></data>
+  <data name="AnnounceMiniBoss" xml:space="preserve"><value>MINI-JEFE</value></data>
+  <data name="SubtitleMiniBossRoar" xml:space="preserve"><value>[MINI-JEFE SE ACERCA]</value></data>
+  <data name="FloatShadowClone" xml:space="preserve"><value>¡CLON SOMBRA!</value></data>
 </root>

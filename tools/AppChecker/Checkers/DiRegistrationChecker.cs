@@ -3,7 +3,11 @@ using AppChecker.Helpers;
 
 namespace AppChecker.Checkers;
 
-/// <summary>Prueft DI-Registrierung: ConfigureServices, Services, MainViewModel, Constructor Cross-Check</summary>
+/// <summary>
+/// Prueft DI-Registrierung: ConfigureServices, AppName-Konsistenz, MainViewModel,
+/// Constructor-Cross-Check und seit Erweiterung auch ungenutzte Registrierungen
+/// (Service registriert, aber kein Ctor-Parameter und kein GetService-Aufruf).
+/// </summary>
 class DiRegistrationChecker : IChecker
 {
     public string Category => "DI-Registrierung";
@@ -67,11 +71,12 @@ class DiRegistrationChecker : IChecker
         // Cross-Check: MainVM Constructor-Parameter vs. DI-Registrierungen
         var mainVmFile = ctx.SharedCsFiles.FirstOrDefault(f =>
             f.FullPath.EndsWith("MainViewModel.cs") && f.FullPath.Contains("ViewModels"));
+
+        var diRegistrations = DiHelpers.ExtractDiRegistrations(content);
+
         if (mainVmFile != null)
         {
             var constructorParams = DiHelpers.ExtractConstructorVmParameters(mainVmFile.FullPath);
-            var diRegistrations = DiHelpers.ExtractDiRegistrations(content);
-
             foreach (var param in constructorParams)
             {
                 if (diRegistrations.Contains(param))
@@ -81,6 +86,51 @@ class DiRegistrationChecker : IChecker
             }
         }
 
+        // NEUE PRUEFUNG: Ungenutzte DI-Registrierungen
+        CheckUnusedRegistrations(results, ctx, diRegistrations);
+
         return results;
+    }
+
+    void CheckUnusedRegistrations(List<CheckResult> results, CheckContext ctx, HashSet<string> diRegistrations)
+    {
+        if (diRegistrations.Count == 0) return;
+
+        // Alle Ctor-Params + GetService<T>-Typen aus der gesamten Shared+Android-Codebase sammeln
+        var allFiles = ctx.SharedCsFiles.Concat(ctx.AndroidCsFiles);
+        var usedTypes = new HashSet<string>(DiHelpers.ExtractAllConstructorParameterTypes(allFiles));
+        foreach (var t in DiHelpers.ExtractGetServiceTypes(allFiles))
+            usedTypes.Add(t);
+
+        // Allow-List: Typen die selbst-aufloesend sind (z.B. IServiceProvider) oder
+        // ueber Factory-Pattern verwendet werden
+        var alwaysUsed = new HashSet<string>
+        {
+            "IServiceProvider", "MainViewModel", "App",
+            // Premium-Library registriert intern - wird nicht direkt im App-Code referenziert
+            "IRewardedAdService", "IPurchaseService", "IAdService",
+            "IFileShareService", "IUriLauncher",
+            // Lokalisierung wird oft via App.axaml.cs-Hook genutzt
+            "ILocalizationService", "IPreferencesService",
+            // Cross-Promo, Trial werden teilweise nur ueber Premium-Lib genutzt
+            "ITrialService", "ICrossPromoService"
+        };
+
+        var unused = diRegistrations
+            .Where(t => !usedTypes.Contains(t))
+            .Where(t => !alwaysUsed.Contains(t))
+            // Interfaces, deren Impl-Klasse genutzt wird, koennten "unused" wirken - tolerieren
+            .Where(t => !(t.StartsWith('I') && t.Length > 1 && char.IsUpper(t[1]) && usedTypes.Contains(t[1..])))
+            .ToList();
+
+        if (unused.Count == 0)
+            results.Add(new(Severity.Pass, Category, "Alle DI-Registrierungen werden verwendet"));
+        else
+        {
+            foreach (var t in unused.Take(10))
+                results.Add(new(Severity.Info, Category, $"DI-Registrierung '{t}' wird nirgendwo per Ctor/GetService verwendet (evtl. toter Code oder Factory-Pattern)"));
+            if (unused.Count > 10)
+                results.Add(new(Severity.Info, Category, $"...und {unused.Count - 10} weitere potenziell ungenutzte Registrierungen"));
+        }
     }
 }

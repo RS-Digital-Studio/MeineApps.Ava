@@ -23,9 +23,12 @@ dotnet publish src/Apps/{App}/{App}.Desktop -c Release -r linux-x64
 # Android Release (AAB)
 dotnet publish src/Apps/{App}/{App}.Android -c Release
 
-# AppChecker v2.0 (22 Checker, 150+ Prüfungen) - Alle 9 Apps / Einzelne App
+# AppChecker v2.1 (33 Checker, 200+ Prüfungen) - Alle 9 Apps / Einzelne App / CI-Modi
 dotnet run --project tools/AppChecker
 dotnet run --project tools/AppChecker {App}
+dotnet run --project tools/AppChecker --quiet      # Nur WARN + FAIL
+dotnet run --project tools/AppChecker --fail-only  # Nur FAIL
+dotnet run --project tools/AppChecker --json       # JSON-Output für CI
 
 # StoreAssetGenerator - Alle / Gefiltert
 dotnet run --project tools/StoreAssetGenerator

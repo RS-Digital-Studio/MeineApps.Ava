@@ -3,7 +3,7 @@ using AppChecker.Helpers;
 
 namespace AppChecker.Checkers;
 
-/// <summary>Prueft Code-Qualitaet: Debug.WriteLine, ungenutzte Exception-Variablen</summary>
+/// <summary>Prueft Code-Qualitaet: Debug.WriteLine, Console.WriteLine, ungenutzte Exception-Variablen</summary>
 class CodeQualityChecker : IChecker
 {
     public string Category => "Code Quality";
@@ -13,10 +13,18 @@ class CodeQualityChecker : IChecker
         var results = new List<CheckResult>();
 
         int debugWriteLineCount = 0;
+        int consoleWriteLineCount = 0;
         int unusedExCount = 0;
 
         foreach (var file in ctx.CsFiles)
         {
+            // Console.WriteLine im Desktop-Programmcode (Program.cs / .Desktop) ist legitim
+            bool isDesktopMain = file.FullPath.Contains(".Desktop")
+                              && (Path.GetFileName(file.FullPath) == "Program.cs"
+                                  || file.FullPath.EndsWith(".Desktop.cs"));
+            // Server/Pi-Console-Apps: BingXBot.Server, GardenControl.Server haben echte Console-Output
+            bool isServerApp = file.FullPath.Contains(".Server") && Path.GetFileName(file.FullPath) == "Program.cs";
+
             for (int i = 0; i < file.Lines.Length; i++)
             {
                 var trimmed = file.Lines[i].TrimStart();
@@ -30,6 +38,13 @@ class CodeQualityChecker : IChecker
                 {
                     debugWriteLineCount++;
                     results.Add(new(Severity.Warn, Category, $"Debug.WriteLine in {file.RelativePath}:{i + 1}"));
+                }
+
+                // Console.WriteLine (nicht in Desktop-Program.cs / Server-Program.cs)
+                if (!isDesktopMain && !isServerApp && Regex.IsMatch(trimmed, @"\bConsole\.(WriteLine|Write|Error\.WriteLine)\b"))
+                {
+                    consoleWriteLineCount++;
+                    results.Add(new(Severity.Warn, Category, $"Console.WriteLine in {file.RelativePath}:{i + 1} → ILogger oder Debug.WriteLine verwenden"));
                 }
 
                 // catch (Exception ex) mit ungenutztem ex
@@ -64,6 +79,8 @@ class CodeQualityChecker : IChecker
 
         if (debugWriteLineCount == 0)
             results.Add(new(Severity.Pass, Category, "Keine Debug.WriteLine Reste gefunden"));
+        if (consoleWriteLineCount == 0)
+            results.Add(new(Severity.Pass, Category, "Keine Console.WriteLine in App-Code (Desktop/Server Program.cs ausgenommen)"));
         if (unusedExCount == 0)
             results.Add(new(Severity.Pass, Category, "Keine ungenutzten Exception-Variablen"));
 

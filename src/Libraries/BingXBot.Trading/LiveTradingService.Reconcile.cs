@@ -124,6 +124,15 @@ public partial class LiveTradingService
         // Reconcile-Drift-Analyzer rauscht im Log, Stats sind falsch.
         await CleanupStaleExitStatesAsync(positions, openOrders, ct).ConfigureAwait(false);
 
+        // Snapshot-Report-Fix 2026-05-17 (TP-Duplicate-Loop, LTC/SUI/ETHFI): doppelte Reduce-Only-
+        // Limit-Orders gleichen Preises pro (Symbol, Side) cancellen. Entstehen wenn der
+        // Missing-TP-Re-Place vor dem Idempotenz-Fix mehrfach lief und jeden Tick ein neues
+        // TP1-Limit dazustellte (Position-Reduce-Only-Pool wird ueber-belegt → naechstes TP2
+        // failed mit "insufficient amount" → Endlos-Spam). Cleanup ist defensiv: behaelt immer
+        // den juengsten Eintrag pro (Symbol, Side, Preis-Bucket).
+        if (openOrders != null && openOrders.Count > 0)
+            await CleanupDuplicateReduceOnlyOrdersAsync(openOrders).ConfigureAwait(false);
+
         if (actions.Count == 0) return;
 
         foreach (var action in actions)
@@ -158,8 +167,18 @@ public partial class LiveTradingService
     /// <summary>
     /// NF1 Fix — Re-platziert fehlende TP-Reduce-Only-LIMIT-Orders fuer eine offene Position.
     /// Tritt auf wenn Bot zwischen Limit-Entry-Fill und PlaceTpLimitOrdersAfterFillAsync crasht
-    /// (oder Stage-3-Retry den 30s-Timeout ueberschritten hat). Nutzt das Original-Signal
-    /// (TakeProfit + TakeProfit2) und die echte Position-Quantity von BingX.
+    /// (oder Stage-3-Retry den 30s-Timeout ueberschritten hat).
+    ///
+    /// Snapshot-Report-Fix 2026-05-17 (TP-Duplicate-Loop): vorher rief diese Methode
+    /// <c>PlaceTpLimitOrdersAfterFillAsync</c> auf, das IMMER beide TPs neu setzte. Wenn TP1
+    /// erfolgreich plaziert, TP2 fehlschlaegt (z.B. "available amount insufficient" weil ein
+    /// TP1-Duplikat den Reduce-Only-Pool fast voll macht), feuert der naechste Reconcile-Tick
+    /// die gleiche Logik nochmal → TP1-Duplikat-2, TP2 fails wieder, usw. Bei LTC/SUI wurden so
+    /// 3 TP1-Duplikate pro Position aufgebaut und ~50 Trade-Errors pro Minute erzeugt.
+    ///
+    /// Idempotente Variante: Pruefe EXAKT pro TP-Seite ob die OrderId aus dem ExitState noch
+    /// in den OpenOrders existiert. Nur fehlende Seite re-placen, mit der Restmenge die nach
+    /// der bereits existierenden TP-Seite uebrig bleibt.
     /// </summary>
     private async Task ReplaceMissingTakeProfitAsync(PositionDriftAnalyzer.DriftAction action, string posKey,
         IReadOnlyList<Position> positions)
@@ -183,9 +202,88 @@ public partial class LiveTradingService
 
         try
         {
-            await PlaceTpLimitOrdersAfterFillAsync(action.Symbol, action.Side, pos.Quantity, signal).ConfigureAwait(false);
+            // Aktuelle Open-Orders pro Symbol ziehen, um zu sehen welche TP-Seiten bereits leben.
+            IReadOnlyList<Order> openOrders;
+            try
+            {
+                openOrders = await _restClient.GetOpenOrdersAsync(action.Symbol).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                    $"{LogPrefix}{action.Symbol} {action.Side}: OpenOrders-Probe vor TP-Re-Place fehlgeschlagen ({ex.Message}) — uebersprungen, naechster Tick versucht es",
+                    action.Symbol));
+                return;
+            }
+
+            _exitStates.TryGetValue(posKey, out var exitState);
+            var closeSide = action.Side == Side.Buy ? Side.Sell : Side.Buy;
+
+            // Pro Position kann es mehrere Reduce-Only-LIMITs geben (idealerweise TP1 + TP2).
+            // Wir matchen zwei Wege: per OrderId aus ExitState (zuverlaessig) oder per Preis-Naehe
+            // (Fallback, wenn ExitState-OrderId nicht mehr matched z.B. nach Re-Place).
+            var tp1Price = signal.TakeProfit!.Value;
+            var hasTp2Signal = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
+                              && signal.TakeProfit2.Value != tp1Price;
+            decimal? tp2Price = hasTp2Signal ? signal.TakeProfit2 : null;
+
+            bool tp1Alive = false, tp2Alive = false;
+            foreach (var o in openOrders)
+            {
+                if (o.Side != closeSide) continue;
+                if (o.Type != OrderType.Limit) continue;
+                // ReduceOnly NICHT als Filter benutzen: im Hedge-Mode wird das Flag von BingX
+                // nicht akzeptiert (PlaceTpReduceOnlyLimitAsync laesst es im Hedge-Mode weg) und
+                // kommt beim Read als false zurueck. Im Hedge-Mode reicht (Symbol, Side=closeSide,
+                // Type=Limit) als TP-Indikator, weil eine Long-Position andere Side+PositionSide hat.
+                // Match auf ExitState-OrderId hat hoechste Prioritaet.
+                if (exitState != null)
+                {
+                    if (!string.IsNullOrEmpty(exitState.Tp1LimitOrderId) && o.OrderId == exitState.Tp1LimitOrderId) { tp1Alive = true; continue; }
+                    if (!string.IsNullOrEmpty(exitState.Tp2LimitOrderId) && o.OrderId == exitState.Tp2LimitOrderId) { tp2Alive = true; continue; }
+                }
+                // Fallback: Preis-Naehe (0.05 % Toleranz fuer Tick-Rounding).
+                var p = o.Price;
+                if (p <= 0) continue;
+                if (Math.Abs(p - tp1Price) / tp1Price < 0.0005m) { tp1Alive = true; continue; }
+                if (tp2Price.HasValue && Math.Abs(p - tp2Price.Value) / tp2Price.Value < 0.0005m) tp2Alive = true;
+            }
+
+            if (tp1Alive && (!hasTp2Signal || tp2Alive))
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Reconcile",
+                    $"{LogPrefix}{action.Symbol} {action.Side}: Missing-TP gemeldet, aber TP-Orders existieren bereits ({(hasTp2Signal ? "TP1+TP2" : "TP1")}) — kein Re-Place",
+                    action.Symbol));
+                return;
+            }
+
+            // Mengen-Aufteilung wie in PlaceTpLimitOrdersAfterFillAsync, aber nur die FEHLENDE
+            // Seite wird wirklich platziert. Wenn TP1 bereits liegt, kalkuliert sich die TP2-Qty
+            // aus dem Rest (Position - Tp1-Reservierung).
+            var tp1Ratio = _riskSettings.Tp1CloseRatio;
+            var tp1Qty = hasTp2Signal
+                ? Math.Round(pos.Quantity * tp1Ratio, 6)
+                : Math.Round(pos.Quantity, 6);
+            var tp2Qty = hasTp2Signal ? Math.Round(pos.Quantity - tp1Qty, 6) : 0m;
+
+            string? placedTp1 = null, placedTp2 = null;
+            if (!tp1Alive && tp1Qty > 0)
+                placedTp1 = await PlaceTpWithRetryAsync(action.Symbol, action.Side, tp1Qty, tp1Price, "TP1 Re-Place").ConfigureAwait(false);
+            if (hasTp2Signal && !tp2Alive && tp2Qty > 0)
+                placedTp2 = await PlaceTpWithRetryAsync(action.Symbol, action.Side, tp2Qty, tp2Price!.Value, "TP2 Re-Place").ConfigureAwait(false);
+
+            // ExitState mit den frischen OrderIds aktualisieren + synchron persistieren.
+            if (exitState != null)
+            {
+                var mutated = false;
+                if (!string.IsNullOrEmpty(placedTp1)) { exitState.Tp1LimitOrderId = placedTp1; mutated = true; }
+                if (!string.IsNullOrEmpty(placedTp2)) { exitState.Tp2LimitOrderId = placedTp2; mutated = true; }
+                if (mutated)
+                    try { await PersistExitStatesAsync().ConfigureAwait(false); } catch { /* best-effort */ }
+            }
+
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
-                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-TP → re-placed (Qty={pos.Quantity:F8}, TP1={signal.TakeProfit:F8}, TP2={signal.TakeProfit2?.ToString("F8") ?? "---"})",
+                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-TP re-placed — TP1Alive={tp1Alive} TP2Alive={tp2Alive} → placedTp1={(placedTp1 != null)} placedTp2={(placedTp2 != null)} (Qty={pos.Quantity:F8})",
                 action.Symbol));
         }
         catch (Exception ex)
@@ -193,6 +291,67 @@ public partial class LiveTradingService
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
                 $"{LogPrefix}{action.Symbol} {action.Side}: TP-Re-Place fehlgeschlagen ({ex.Message}) — Position ohne TP bis naechster Reconcile",
                 action.Symbol));
+        }
+    }
+
+    /// <summary>
+    /// Snapshot-Report-Fix 2026-05-17 — Duplikat-Reduce-Only-Limits pro (Symbol, Side, Preis)
+    /// cancellen. Schuetzt vor dem TP-Duplicate-Loop, in dem das alte ReplaceMissingTakeProfit
+    /// jeden Reconcile-Tick ein neues TP1-Limit auflegte und damit den Reduce-Only-Pool ueber-
+    /// belegte. Behaelt pro Bucket den juengsten Eintrag (groesste OrderId).
+    /// </summary>
+    private async Task CleanupDuplicateReduceOnlyOrdersAsync(IReadOnlyList<Order> openOrders)
+    {
+        // Gruppieren nach (Symbol, Side, Preis-Bucket). Preis-Bucket = Preis auf 6 Nachkommastellen
+        // gerundet, deckt typische Tick-Rounding-Toleranz ab.
+        // ReduceOnly NICHT als Filter: im Hedge-Mode kommt das Flag immer als false zurueck
+        // (BingX akzeptiert es dort nicht beim Place). Wir betrachten alle gleichpreisigen
+        // Limit-Orders einer Side als Duplikate — die TP-Orders haben pro Position eindeutige
+        // Preise (TP1 != TP2 != Entry-Limit).
+        var groups = new Dictionary<(string Sym, Side Side, decimal Bucket), List<Order>>();
+        foreach (var o in openOrders)
+        {
+            if (o.Type != OrderType.Limit) continue;
+            if (o.Price <= 0) continue;
+            var bucket = Math.Round(o.Price, 6);
+            var key = (o.Symbol, o.Side, bucket);
+            if (!groups.TryGetValue(key, out var list))
+                groups[key] = list = new List<Order>();
+            list.Add(o);
+        }
+
+        foreach (var ((sym, side, bucket), list) in groups)
+        {
+            if (list.Count <= 1) continue;
+            // Behalten: juengster Eintrag (= groesste numerische OrderId, BingX vergibt monoton).
+            // Cancel-Kandidaten: alle anderen.
+            list.Sort((a, b) => string.CompareOrdinal(b.OrderId, a.OrderId));
+            for (var i = 1; i < list.Count; i++)
+            {
+                var killId = list[i].OrderId;
+                try
+                {
+                    await _restClient.CancelOrderAsync(killId, sym).ConfigureAwait(false);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                        $"{LogPrefix}{sym} {side}: Duplikat-Reduce-Only @{bucket} gecancelt (OrderId={killId}; behalten={list[0].OrderId})",
+                        sym));
+
+                    // ExitState-OrderIds nachpflegen, falls die OrderId dort referenziert war —
+                    // sonst denkt der Bot beim naechsten Reconcile-Tick wieder TP fehlt.
+                    var posKey = $"{sym}_{(side == Side.Sell ? Side.Buy : Side.Sell)}";
+                    if (_exitStates.TryGetValue(posKey, out var es))
+                    {
+                        if (es.Tp1LimitOrderId == killId) es.Tp1LimitOrderId = list[0].OrderId;
+                        else if (es.Tp2LimitOrderId == killId) es.Tp2LimitOrderId = list[0].OrderId;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Reconcile",
+                        $"{LogPrefix}{sym} {side}: Duplikat-Cancel fehlgeschlagen ({killId}): {ex.Message}",
+                        sym));
+                }
+            }
         }
     }
 

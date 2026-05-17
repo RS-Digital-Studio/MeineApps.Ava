@@ -2,6 +2,7 @@ using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Core.Services;
 using BingXBot.Engine;
 using BingXBot.Engine.Strategies;
 using BingXBot.Exchange;
@@ -327,18 +328,34 @@ public class LiveTradingManager : IDisposable
                             var beSl = pos.Side == Side.Buy
                                 ? pos.EntryPrice * 1.0015m
                                 : pos.EntryPrice * 0.9985m;
-                            try
-                            {
-                                await _restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, beSl, null);
-                                slPrice = beSl; // Signal-Registrierung unten nutzt den neuen SL
-                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Recovery",
-                                    $"{pos.Symbol}: SK-Buch BE gesetzt (Gewinn >= 2× SL-Distanz, Workflow 4.2) → SL={beSl:F8}",
-                                    pos.Symbol));
-                            }
-                            catch (Exception ex)
+                            // Snapshot-Report-Fix Befund 3 / A0.6 — Sanity-Guard auch im Recovery-Pfad.
+                            // breakevenSet=true weil wir hier bewusst auf BE gehen; verhindert exotische
+                            // Pi-Floating-Point-Faelle in denen 1.0015 × Tick-Rounding den Buffer reisst.
+                            // Bei Reject NUR den Push ueberspringen, NICHT die Signal-Registrierung darunter.
+                            var beSanity = StopLossSanityGuard.Validate(
+                                pos.Side, pos.EntryPrice, beSl,
+                                breakevenSet: true, partialClosed: false, runnerActive: false);
+                            if (!beSanity.IsAcceptable)
                             {
                                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
-                                    $"{pos.Symbol}: BE-SL fehlgeschlagen: {ex.Message}", pos.Symbol));
+                                    $"{pos.Symbol}: BE-Push abgelehnt — {beSanity.RejectReason}",
+                                    pos.Symbol));
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    await _restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, beSl, null);
+                                    slPrice = beSl; // Signal-Registrierung unten nutzt den neuen SL
+                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Recovery",
+                                        $"{pos.Symbol}: SK-Buch BE gesetzt (Gewinn >= 2× SL-Distanz, Workflow 4.2) → SL={beSl:F8}",
+                                        pos.Symbol));
+                                }
+                                catch (Exception ex)
+                                {
+                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                                        $"{pos.Symbol}: BE-SL fehlgeschlagen: {ex.Message}", pos.Symbol));
+                                }
                             }
                         }
                     }

@@ -2,6 +2,7 @@ using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Core.Services;
 using BingXBot.Engine;
 using BingXBot.Engine.Risk;
 using BingXBot.Exchange;
@@ -23,7 +24,8 @@ public partial class LiveTradingService : TradingServiceBase
     // (FakeExchangeClient in Tests). Umgestellt 24.04.2026 (P0-2 Audit).
     private readonly IExchangeClient _restClient;
     private readonly BingXWebSocketClient? _wsClient;
-    private readonly BotDatabaseService? _dbService;
+    // _dbService liegt jetzt in TradingServiceBase, damit ProcessCompletedTrade die Trade-Persistenz
+    // direkt aus Base anstoßen kann (vorher schrieb der Live-Pfad keine Trades in die DB).
 
     /// <summary>BingX Taker Fee — wird beim Start via API gelesen, Fallback 0.05%.</summary>
     private decimal _takerFeeRate = 0.0005m;
@@ -168,7 +170,7 @@ public partial class LiveTradingService : TradingServiceBase
     {
         _restClient = restClient;
         _wsClient = wsClient;
-        _dbService = dbService;
+        _dbService = dbService;  // Property aus TradingServiceBase — Trade-/Equity-Persistenz im Live-Pfad
     }
 
     /// <summary>Startet das Live-Trading.</summary>
@@ -467,6 +469,22 @@ public partial class LiveTradingService : TradingServiceBase
             var posKey = $"{pos.Symbol}_{pos.Side}";
             if (_exitStates.TryGetValue(posKey, out var exitState) && _positionSignals.TryGetValue(posKey, out var updatedSignal))
             {
+                // Snapshot-Report-Fix Befund 3 / A0.6 — SL-Sanity-Pruefung nach Partial-Close.
+                // Hier ist PartialClosed=true frisch gesetzt → BE-Buffer ist erlaubt. Ein SL kilometerweit
+                // ueber/unter Entry wuerde aber trotzdem abgelehnt.
+                if (updatedSignal.StopLoss.HasValue)
+                {
+                    var partialSanity = StopLossSanityGuard.Validate(
+                        pos.Side, pos.EntryPrice, updatedSignal.StopLoss.Value,
+                        breakevenSet: exitState.BreakevenSet, partialClosed: true, runnerActive: exitState.RunnerActive);
+                    if (!partialSanity.IsAcceptable)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
+                            $"LIVE: {pos.Symbol} SL/TP-Push nach Partial-Close abgelehnt — {partialSanity.RejectReason}",
+                            pos.Symbol));
+                        return;
+                    }
+                }
                 try
                 {
                     await _restClient.SetPositionSlTpAsync(

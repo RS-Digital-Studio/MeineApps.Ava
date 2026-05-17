@@ -2,6 +2,7 @@ using BingXBot.Contracts.Dto;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Core.Services;
 
 namespace BingXBot.Trading.NativeSlTpManager;
 
@@ -62,6 +63,20 @@ public sealed class BingxNativeSlTpManager : INativeSlTpManager
 
     public async Task UpdateNativeStopLossAsync(string symbol, Side side, decimal newStopLoss)
     {
+        // Snapshot-Report-Fix Befund 3 / A0.6 — Sanity-Guard:
+        // Validierung mit BE/Partial/Runner=null fuehrt zu Reject sobald SL falsch herum vom Entry liegt.
+        // Im BE/Trail-Pfad rufen die Caller (TradingServiceBase / LiveTradingManager) den Validator
+        // bereits mit den korrekten Flags auf — hier passiert eine zusaetzliche Floor-Pruefung ohne
+        // Entry-Wissen. Da der Manager keinen Entry-Preis kennt, kann er nur Sentinel/Negative-Werte
+        // ablehnen.
+        if (newStopLoss <= 0m)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
+                $"LIVE: {symbol} SL-Update abgelehnt — newStopLoss <= 0 ({newStopLoss}). Sentinel-Wert, kein Push.",
+                symbol));
+            return;
+        }
+
         for (int attempt = 1; attempt <= 3; attempt++)
         {
             try

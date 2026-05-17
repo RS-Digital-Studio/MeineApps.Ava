@@ -61,7 +61,8 @@ public sealed class LogService : ILogService
     [System.Diagnostics.Conditional("DEBUG")]
     private static void WriteToConsole(string entry)
     {
-        Console.WriteLine(entry);
+        // AppChecker:ignore
+        Console.WriteLine(entry); // Nur in DEBUG-Builds (Conditional)
         System.Diagnostics.Debug.WriteLine(entry);
     }
 }

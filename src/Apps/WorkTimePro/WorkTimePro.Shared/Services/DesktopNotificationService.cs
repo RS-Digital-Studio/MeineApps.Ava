@@ -116,7 +116,8 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
         }
         catch
         {
-            Console.Write('\a');
+            // AppChecker:ignore
+            Console.Write('\a'); // Beep als Notification-Fallback
         }
     }
 
@@ -137,7 +138,8 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
         }
         catch
         {
-            Console.Write('\a');
+            // AppChecker:ignore
+            Console.Write('\a'); // Beep als Notification-Fallback
         }
     }
 

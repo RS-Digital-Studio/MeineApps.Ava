@@ -31,7 +31,8 @@ public static class AsyncExtensions
                 if (Logger != null)
                     Logger.Error(msg, ex);
                 else
-                    Console.WriteLine($"[HandwerkerImperium] {msg}");
+                    // AppChecker:ignore
+                    Console.WriteLine($"[HandwerkerImperium] {msg}"); // Logger-Fallback vor DI-Aufbau
             }
         }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
     }
@@ -50,7 +51,8 @@ public static class AsyncExtensions
                 if (Logger != null)
                     Logger.Error(msg, exception);
                 else
-                    Console.WriteLine($"[HandwerkerImperium] {msg}");
+                    // AppChecker:ignore
+                    Console.WriteLine($"[HandwerkerImperium] {msg}"); // Logger-Fallback vor DI-Aufbau
 
                 onError?.Invoke(exception);
             }

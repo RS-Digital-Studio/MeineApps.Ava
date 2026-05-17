@@ -165,7 +165,8 @@ public class SequenzKonzeptStrategy : IStrategy
         var navSwingStrength = scannerSettings?.NavigatorSwingStrength is > 0 ? scannerSettings.NavigatorSwingStrength : _swingStrength;
         var minCandlesOffset = scannerSettings?.NavigatorMinCandlesOffset is > 0 ? scannerSettings.NavigatorMinCandlesOffset : 20;
         if (navCandles.Count < navSwingStrength * 2 + minCandlesOffset)
-            return Blocked(navTf, $"Zu wenig {navTf}-Daten");
+            return Blocked(navTf, $"Zu wenig {navTf}-Daten",
+                BingXBot.Core.Diagnostics.RejectionReasons.InsufficientData);
 
         // ───────────────────────────────────────────────────────────
         // News-Blackout (Buch S.7: "Wirtschaftskalender checken — stehen große News an?")
@@ -268,11 +269,13 @@ public class SequenzKonzeptStrategy : IStrategy
         }
 
         if (navMachine == null || navMachine.State < SmState.SucheB)
-            return Blocked(navTf, $"Keine {navTf}-Sequenz (State={navMachine?.State})");
+            return Blocked(navTf, $"Keine {navTf}-Sequenz (State={navMachine?.State})",
+                BingXBot.Core.Diagnostics.RejectionReasons.NoSequence);
 
         var navSeq = navMachine.ToSequence(navCandles);
         if (navSeq == null)
-            return Blocked(navTf, $"{navTf}-Sequenz nicht konstruierbar");
+            return Blocked(navTf, $"{navTf}-Sequenz nicht konstruierbar",
+                BingXBot.Core.Diagnostics.RejectionReasons.SequenceNotConstructable);
 
         AmpelStatus[navTf] = $"GELB {(navSeq.IsLong ? "Long" : "Short")} ({navMachine.State})";
 
@@ -379,7 +382,8 @@ public class SequenzKonzeptStrategy : IStrategy
         {
             var volMul = scannerSettings.BosVolumeMultiplier > 0 ? scannerSettings.BosVolumeMultiplier : 1.5m;
             if (!HasBosVolumeBreakout(navCandles, navMachine.ActivationCandleIndex, volMul))
-                return Blocked(navTf, $"Volumen-Filter: BOS-Kerze unter {volMul:F1}× SMA20 (Fakeout-Schutz)");
+                return Blocked(navTf, $"Volumen-Filter: BOS-Kerze unter {volMul:F1}× SMA20 (Fakeout-Schutz)",
+                    BingXBot.Core.Diagnostics.RejectionReasons.BosVolumeBelowThreshold);
         }
 
         // ───────────────────────────────────────────────────────────
@@ -499,7 +503,8 @@ public class SequenzKonzeptStrategy : IStrategy
                 : entryMode == EntryMode.Conservative ? "Konservativer Modus" : "Wick-Rejection-Pflicht";
             var suffix = requireBoxClose ? " + Box-Close" : "";
             var patterns = onlyPinbarOrEngulfing ? "Pinbar/Engulfing" : "Pinbar/Engulfing/Micro-Seq";
-            return Blocked(navTf, $"{reasonPrefix}: Kein LTF-Reversal ({patterns}){suffix}");
+            return Blocked(navTf, $"{reasonPrefix}: Kein LTF-Reversal ({patterns}){suffix}",
+                BingXBot.Core.Diagnostics.RejectionReasons.MissingWickRejection);
         }
 
         // BUCH-ONLY (21.04.2026): Kein BC-Tiefen-Warnsignal. Das Buch bewertet die BC-Korrektur nicht
@@ -675,7 +680,8 @@ public class SequenzKonzeptStrategy : IStrategy
             }
             else
             {
-                return Blocked(navTf, "Entries fuer diese Sequenz bereits gesetzt");
+                return Blocked(navTf, "Entries fuer diese Sequenz bereits gesetzt",
+                    BingXBot.Core.Diagnostics.RejectionReasons.EntriesAlreadyTriggered);
             }
         }
 
@@ -723,11 +729,13 @@ public class SequenzKonzeptStrategy : IStrategy
         // Sanity: SL auf richtiger Seite (Buch-SL plus Pip-Cap plus Point0-Clamp sollte das sicherstellen).
         var slOnWrongSide = (tradeIsLong && sl >= entry) || (!tradeIsLong && sl <= entry);
         if (slOnWrongSide)
-            return Blocked(navTf, "SL auf falscher Seite (Geometrie-Fehler)");
+            return Blocked(navTf, "SL auf falscher Seite (Geometrie-Fehler)",
+                BingXBot.Core.Diagnostics.RejectionReasons.SlGeometryError);
 
         var slDistance = Math.Abs(entry - sl);
         if (slDistance <= 0)
-            return Blocked(navTf, "SL-Distanz = 0");
+            return Blocked(navTf, "SL-Distanz = 0",
+                BingXBot.Core.Diagnostics.RejectionReasons.SlDistanceZero);
 
         // ───────────────────────────────────────────────────────────
         // TAKE-PROFIT (SK-Buch S.16, Workflow 4.5)

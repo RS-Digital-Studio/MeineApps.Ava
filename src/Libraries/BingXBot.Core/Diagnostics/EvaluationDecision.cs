@@ -85,6 +85,32 @@ public static class RejectionReasons
     public const string OutsideAllowedSession = "outside_allowed_session";
     /// <summary>Phase 18 / B4 — News-Service degradiert und RequireNewsFilter aktiv.</summary>
     public const string NewsServiceUnavailable = "news_service_unavailable";
+
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    // Snapshot-Report-Fix Befund 2 / A1.2 — granulare Reject-Codes statt 18 % "other".
+    // Vorher landeten 8.876 von 48.326 Decisions im Catch-all-"other"-Bucket — fuer die
+    // "Warum greift mein Setup nicht?"-Diagnose unbrauchbar. Diese Codes decken die wichtigsten
+    // Blocked()-Pfade in SequenzKonzeptStrategy ab.
+    // ════════════════════════════════════════════════════════════════════════════════════════
+
+    /// <summary>Nicht genug Candles im Navigator-TF, um eine Sequenz zu bauen.</summary>
+    public const string InsufficientData = "insufficient_data";
+
+    /// <summary>Keine Sequenz erkennbar (State &lt; SucheB) — typisch in Seitwaerts-Phasen.</summary>
+    public const string NoSequence = "no_sequence";
+
+    /// <summary>Sequenz erkannt, aber Konstruktion (ToSequence) liefert null — defensive Fehlerklasse.</summary>
+    public const string SequenceNotConstructable = "sequence_not_constructable";
+
+    /// <summary>BOS-Kerze unter Volumen-SMA-Threshold (RequireBosVolumeBreakout-Filter).</summary>
+    public const string BosVolumeBelowThreshold = "bos_volume_below_threshold";
+
+    /// <summary>SL- oder TP-Geometrie falsch (z.B. Long-SL ueber Entry).</summary>
+    public const string SlGeometryError = "sl_geometry_error";
+
+    /// <summary>SL-Distanz = 0 → Position-Sizing wuerde durch Null teilen.</summary>
+    public const string SlDistanceZero = "sl_distance_zero";
+
     /// <summary>Sonstiger generischer Reject — Detail im Reason-Text.</summary>
     public const string Other = "other";
 }

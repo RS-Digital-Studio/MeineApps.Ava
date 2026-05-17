@@ -107,6 +107,43 @@ public abstract class TradingServiceBase : IDisposable
     // Bot-Einstellungen (für Notifications etc.)
     protected readonly BotSettings _botSettings;
 
+    /// <summary>
+    /// Optionaler DB-Service: persistiert abgeschlossene Trades und Log-Entries.
+    /// Live-Mode setzt das im Konstruktor; Paper-Mode laesst es null (oder setzt es per Property).
+    /// Vorher lebte das Field nur in <c>LiveTradingService</c> — dadurch konnte
+    /// <c>ProcessCompletedTrade</c> nicht persistieren, und der Live-Pfad hat NULL Trades in die
+    /// DB geschrieben (Snapshot-Report Befund 1).
+    /// </summary>
+    protected internal BotDatabaseService? _dbService { get; set; }
+
+    /// <summary>
+    /// Snapshot-Report-Fix Befund 2 / A1.3 — Set bereits geloggter Triggered-Sequenz-Keys.
+    /// Verhindert dass dieselbe Setup-Triggered-Decision in jedem Scan-Tick erneut persistiert
+    /// wird (im Snapshot vom 2026-05-17 stand ZEC-USDT_M15 60× drin, obwohl die Order genau einmal
+    /// platziert wurde). Set bleibt fuer die Bot-Laufzeit — nach Stop/Start ist es leer (neue
+    /// Sequenz, neue Logs).
+    /// </summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _loggedTriggeredSequences = new();
+
+    /// <summary>
+    /// Helper fuer A1.3: baut den Dedup-Key aus Symbol + TF + SequenceState + Point0/PointA/PointB.
+    /// Wenn Sequenz-Punkte fehlen (NULL), wird kein Key gebaut — dann wird nicht dedupliziert
+    /// (Fail-Open: lieber doppelt loggen als gar nicht).
+    /// </summary>
+    private static string? BuildDecisionDedupKey(BingXBot.Core.Diagnostics.EvaluationDecision d)
+    {
+        if (string.IsNullOrEmpty(d.Symbol)) return null;
+        if (d.Point0 is null && d.PointA is null && d.PointB is null) return null;
+        return string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"{d.Symbol}|{d.Tf}|{d.SequenceState}|{d.Point0}|{d.PointA}|{d.PointB}");
+    }
+
+    /// <summary>
+    /// Optionaler Hook: wird nach erfolgreicher Trade-Persistenz aufgerufen.
+    /// Server nutzt das, um den Equity-Snapshot in derselben Transaktionsgrenze zu schreiben.
+    /// </summary>
+    public Func<CompletedTrade, Task>? PostTradePersistHook { get; set; }
+
     // Optional: Multi-TF Standalone — Scanner-Cache für /api/v1/scanner/results
     protected ScannerResultsCache? _scannerCache;
 
@@ -589,13 +626,28 @@ public abstract class TradingServiceBase : IDisposable
 
                         if (decision.HasValue)
                         {
-                            _positionSignals[key] = signal with { StopLoss = decision.Value.NewStopLoss };
-                            skState.BreakevenSet = true;
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
-                                $"{LogPrefix}{pos.Symbol}: SK Breakeven ({decision.Value.NewStopLoss:F8}) — {decision.Value.TriggerName}",
-                                pos.Symbol));
-                            await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, decision.Value.NewStopLoss).ConfigureAwait(false);
-                            await PersistExitStatesAsync().ConfigureAwait(false);
+                            // Snapshot-Report-Fix Befund 3 / A0.6 — SL-Sanity-Pruefung bevor wir BE pushen.
+                            // BreakevenSet ist hier (noch) false — der Validator akzeptiert nur Werte bis
+                            // Entry × (1 + MaxBreakevenBufferPercent). Verhindert Long-SL kilometerweit ueber Entry.
+                            var sanity = StopLossSanityGuard.Validate(
+                                pos.Side, skState.EntryPrice, decision.Value.NewStopLoss,
+                                breakevenSet: true, partialClosed: skState.PartialClosed, runnerActive: skState.RunnerActive);
+                            if (!sanity.IsAcceptable)
+                            {
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: BE-Push abgelehnt — {sanity.RejectReason}. NewSL={decision.Value.NewStopLoss:F8}, Entry={skState.EntryPrice:F8}",
+                                    pos.Symbol));
+                            }
+                            else
+                            {
+                                _positionSignals[key] = signal with { StopLoss = decision.Value.NewStopLoss };
+                                skState.BreakevenSet = true;
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: SK Breakeven ({decision.Value.NewStopLoss:F8}) — {decision.Value.TriggerName}",
+                                    pos.Symbol));
+                                await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, decision.Value.NewStopLoss).ConfigureAwait(false);
+                                await PersistExitStatesAsync().ConfigureAwait(false);
+                            }
                         }
                     }
 
@@ -711,6 +763,20 @@ public abstract class TradingServiceBase : IDisposable
                         if (needsInitialPush
                             || (slDelta >= pushThreshold && timeSinceLastPush >= TimeSpan.FromSeconds(10)))
                         {
+                            // Snapshot-Report-Fix Befund 3 / A0.6 — Runner-Trail-SL durch den Sanity-Guard.
+                            // Runner darf SL in Gewinn-Richtung trailen, aber NIE in die falsche Richtung
+                            // (z.B. Long-SL ueber Entry waehrend Runner gerade negativ scrolled).
+                            var trailSanity = StopLossSanityGuard.Validate(
+                                pos.Side, runnerState.EntryPrice, trailSl,
+                                breakevenSet: runnerState.BreakevenSet, partialClosed: runnerState.PartialClosed,
+                                runnerActive: true);
+                            if (!trailSanity.IsAcceptable)
+                            {
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: Runner-Trail-Push abgelehnt — {trailSanity.RejectReason}. TrailSL={trailSl:F8}",
+                                    pos.Symbol));
+                                continue;
+                            }
                             try
                             {
                                 await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, trailSl).ConfigureAwait(false);
@@ -1171,11 +1237,35 @@ public abstract class TradingServiceBase : IDisposable
                     // v1.5.2 Phase 4 — Decision-Trail-Eintrag publishen.
                     // Nur wenn EnableDecisionTrail=true UND mindestens ein Subscriber existiert
                     // (typisch DecisionTrailBuffer). Hot-Path-Schutz: bei null kein Allocation-Overhead.
+                    //
+                    // Snapshot-Report-Fix Befund 2 / A1.1: state_not_activated-Eintraege standardmaessig
+                    // unterdruecken (Default 81 % Rauschen). Robert kann via DecisionTrailIncludeNotActivated
+                    // wieder einschalten wenn er die State-Machine selbst tunt.
+                    //
+                    // Snapshot-Report-Fix Befund 2 / A1.3: Idempotenz-Check fuer Trigger-Decisions —
+                    // dieselbe Sequenz nur einmal pro Bot-Laufzeit loggen (verhindert ZEC-60×-Spam).
                     if (_botSettings.EnableDecisionTrail
                         && strategy is Engine.Strategies.SequenzKonzeptStrategy decSk
                         && decSk.LastEvaluationDecision != null)
                     {
-                        _eventBus.PublishEvaluationDecision(decSk.LastEvaluationDecision);
+                        var decision = decSk.LastEvaluationDecision;
+                        var shouldPublish = true;
+
+                        if (!_botSettings.DecisionTrailIncludeNotActivated
+                            && string.Equals(decision.RejectionReason,
+                                BingXBot.Core.Diagnostics.RejectionReasons.StateNotActivated, StringComparison.Ordinal))
+                        {
+                            shouldPublish = false;
+                        }
+                        else if (decision.Triggered && _botSettings.DecisionTrailDeduplicateTriggers)
+                        {
+                            var seqKey = BuildDecisionDedupKey(decision);
+                            if (seqKey != null && !_loggedTriggeredSequences.TryAdd(seqKey, 1))
+                                shouldPublish = false;
+                        }
+
+                        if (shouldPublish)
+                            _eventBus.PublishEvaluationDecision(decision);
                     }
 
                     // Scanner-Ergebnis pro TF sammeln (auch für Signal.None — zeigt Status im UI)
@@ -1613,6 +1703,37 @@ public abstract class TradingServiceBase : IDisposable
             _eventBus.PublishNotification(
                 $"{LogPrefix}{trade.Symbol} geschlossen",
                 $"{direction}: {trade.Pnl:F2} USDT ({trade.Side}, {trade.EntryPrice:F4} → {trade.ExitPrice:F4})");
+        }
+
+        // Snapshot-Report-Fix Befund 1: Trade-Persistenz im Live-Pfad reaktivieren.
+        // Vorher rief KEIN Pfad SaveTradeAsync waehrend des Live-Trade-Closes auf — Pi-DB war blind,
+        // alle abgeschlossenen Trades existierten nur im SignalR-RAM und gingen beim Reload verloren.
+        // Fire-and-Forget mit try/catch + Log: Fill-Pfad hat strenge Timing-Constraints und darf nicht
+        // durch DB-IO blockiert werden, aber DB-Fehler werden sichtbar geloggt.
+        if (_dbService != null)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _dbService.SaveTradeAsync(trade).ConfigureAwait(false);
+                    if (PostTradePersistHook != null)
+                    {
+                        try { await PostTradePersistHook(trade).ConfigureAwait(false); }
+                        catch (Exception hookEx)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "DB",
+                                $"PostTradePersistHook fehlgeschlagen: {hookEx.Message}", trade.Symbol));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "DB",
+                        $"SaveTradeAsync fehlgeschlagen ({trade.Symbol} {trade.Side} PnL {trade.Pnl:F2}): {ex.Message}",
+                        trade.Symbol));
+                }
+            });
         }
     }
 

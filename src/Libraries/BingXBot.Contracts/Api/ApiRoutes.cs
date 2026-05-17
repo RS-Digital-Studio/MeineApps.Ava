@@ -74,6 +74,11 @@ public static class ApiRoutes
     // v1.6.4 Phase 13 — Trade-Replay
     public const string BacktestReplayTrade = ApiPrefix + "/backtest/replay-trade/{tradeId}";
 
+    // Snapshot-Report-Fix Befund 1 / A0.4 — Admin-One-Shot-Backfill der Trade-History aus
+    // BingX-Income-Records. Nur fuer authentifizierte Clients; ohne diesen Endpoint mussten
+    // verlorene Trades manuell ueber den Auto-Resume-Drift-Pfad eingespielt werden.
+    public const string AdminBackfillTrades = ApiPrefix + "/admin/backfill-trades";
+
     // SignalR-Hub
     public const string BotHubPath = "/hubs/bot";
 }

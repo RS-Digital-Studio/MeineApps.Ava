@@ -134,7 +134,11 @@ services.AddHostedService<BotHubEventForwarder>();
 // Shutdown der Bot lief (BotSettings.WasRunningOnShutdown=true). Verhindert "stiller-Bot"-
 // Szenarien nach update.sh / Pi-Reboot. Reihenfolge wichtig: NACH BotHubEventForwarder
 // registrieren, damit SignalR die ersten Resume-Logs/State-Events ueberhaupt forwarden kann.
-services.AddHostedService<BingXBot.Server.Services.BotAutoResumeService>();
+// Snapshot-Report-Fix A0.4: Auch als Singleton registrieren, damit AdminEndpoints den Service
+// per DI bekommen und ein One-Shot-Backfill triggern koennen. Der HostedService nutzt dieselbe
+// Instanz (factory-Pattern), sonst wuerde Auto-Resume doppelt feuern.
+services.AddSingleton<BingXBot.Server.Services.BotAutoResumeService>();
+services.AddHostedService(sp => sp.GetRequiredService<BingXBot.Server.Services.BotAutoResumeService>());
 
 // v1.6.1 Phase 11 — DB-Archivierung (monatlich 04:00 UTC nach DbBackupService).
 services.AddHostedService<BingXBot.Server.Services.DbArchiveService>();
@@ -168,6 +172,19 @@ services.AddHostedService<BingXBot.Server.Services.ServerHealthWatchdog>(sp =>
 // DB-Backup-Service: Taegliches Backup der bot.db (03:00 UTC, 7 Tage rotierend).
 // Schuetzt vor Pi-SD-Karten-Korruption — ohne Backup = Total-Wissensverlust bei SD-Ausfall.
 services.AddHostedService<BingXBot.Server.Services.DbBackupService>();
+
+// Snapshot-Report-Fix Befund 1 / A0.2: Equity-Snapshot-Tracker fuer Remote-Mode.
+// Im Remote-Mode laeuft der DashboardViewModel-Timer nicht — Pi hat keine UI. Ohne diesen Service
+// wuerde die EquitySnapshots-Tabelle leer bleiben und Remote-Clients saehen keine Equity-Kurve.
+// Schreibt periodisch (5 min Default) + sofort nach jedem Trade-Close, publiziert via EventBus
+// an SignalR-Clients.
+services.AddHostedService<BingXBot.Server.Services.EquitySnapshotService>();
+
+// Snapshot-Report-Fix Befund 1 / A0.3: Server-seitige Log-Persistenz in die DB.
+// Subscribed BotEventBus.LogEmitted und persistiert die Eintraege im 250-ms-Batch in LogEntries.
+// Ohne diesen Service haelt der Server-Log nur den In-Memory-Ringpuffer (LogBufferService) und
+// alles vor dem letzten Restart ist verloren. Settings-gated via BotSettings.EnableDbLogPersistence.
+services.AddHostedService<BingXBot.Server.Services.DbLogPersistenceService>();
 
 // Stale-Engine-Detector: FCM-Push wenn Bot "Running" sagt aber seit 6h kein Scanner/Trade.
 // Deckt das "stiller-Bot"-Szenario das UI-Watchdog nur lokal sieht — jetzt push-aktiv.
@@ -314,6 +331,8 @@ app.UseMiddleware<BearerAuthMiddleware>();
 app.MapAuthEndpoints();
 app.MapStatusEndpoints();
 app.MapBotControlEndpoints();
+// Snapshot-Report-Fix Befund 1 / A0.4 — Admin-Operations (Trade-Backfill aus BingX-Income).
+app.MapAdminEndpoints();
 app.MapSettingsEndpoints();
 // Phase 18 / G4 — interner Metrics-Snapshot-Endpoint (JSON).
 app.MapMetricsEndpoints();

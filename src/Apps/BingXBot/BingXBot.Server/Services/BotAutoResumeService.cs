@@ -208,7 +208,9 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                         income.Count, sumPnl);
 
                     // Phase 18 / H3 — Auto-DB-Backfill der verpassten Trades.
-                    await BackfillIncomeRecordsAsync(income, lastHeartbeat.Value).ConfigureAwait(false);
+                    var summary = await BackfillIncomeRecordsAsync(income, lastHeartbeat.Value).ConfigureAwait(false);
+                    if (summary.ErrorMessage != null)
+                        _logger.LogWarning("Auto-Resume Backfill: {Error}", summary.ErrorMessage);
                 }
                 catch (Exception ex)
                 {
@@ -223,6 +225,44 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
     }
 
     /// <summary>
+    /// Snapshot-Report-Fix Befund 1 / A0.4 — Admin-Backfill der Trade-History aus BingX-Income-Records
+    /// fuer einen frei waehlbaren Zeitraum. Erstmals oeffentlich exponiert, damit der Admin-Endpoint
+    /// <c>/api/v1/admin/backfill-trades</c> nach Persistenz-Lecks die verlorenen Trades nachholen kann.
+    /// Liefert <see cref="BackfillSummary"/> mit Counts statt void zurueck, damit Caller HTTP-Response
+    /// bauen kann.
+    /// </summary>
+    public async Task<BackfillSummary> BackfillFromBingxAsync(DateTime fromUtc, DateTime? toUtc = null, CancellationToken ct = default)
+    {
+        if (_dbService == null)
+            return new BackfillSummary(0, 0, 0, "DB-Service nicht verfuegbar — Backfill nicht moeglich.");
+
+        if (_liveManager?.RestClient == null)
+            return new BackfillSummary(0, 0, 0, "Live-RestClient nicht verbunden — BingX-Income nicht erreichbar. /api/v1/bot/start vorher ausfuehren.");
+
+        var endUtc = toUtc ?? DateTime.UtcNow;
+        if (endUtc <= fromUtc)
+            return new BackfillSummary(0, 0, 0, "to muss spaeter sein als from.");
+
+        try
+        {
+            var income = await _liveManager.RestClient.GetIncomeHistoryAsync(
+                symbol: null, incomeType: "REALIZED_PNL",
+                startTime: fromUtc, endTime: endUtc, limit: 500)
+                .ConfigureAwait(false);
+
+            if (income.Count == 0)
+                return new BackfillSummary(0, 0, 0, $"Keine REALIZED_PNL-Records zwischen {fromUtc:O} und {endUtc:O} gefunden.");
+
+            return await BackfillIncomeRecordsAsync(income, fromUtc).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Admin-Backfill fehlgeschlagen (from={From:O}, to={To:O})", fromUtc, endUtc);
+            return new BackfillSummary(0, 0, 0, $"Fehler: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Phase 18 / H3 — Backfill verpasster Trades aus BingX-Income-Records in die lokale DB.
     /// Strategie:
     /// 1. Bestehende Backfilled-Trades (Reason="Backfilled (Pi offline)") aus DB laden zur Dedup-Erkennung.
@@ -232,9 +272,9 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
     /// 4. SaveTradeAsync + RiskManager.UpdateDailyStats nur fuer Trades vom heutigen UTC-Tag.
     /// Im Fehlerfall: Logging, kein Throw — Resume laeuft weiter.
     /// </summary>
-    private async Task BackfillIncomeRecordsAsync(List<IncomeRecord> income, DateTime lastHeartbeat)
+    private async Task<BackfillSummary> BackfillIncomeRecordsAsync(List<IncomeRecord> income, DateTime lastHeartbeat)
     {
-        if (_dbService == null) return;
+        if (_dbService == null) return new BackfillSummary(0, 0, 0, "DB-Service nicht verfuegbar.");
 
         try
         {
@@ -304,10 +344,12 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                 "Auto-Resume Backfill abgeschlossen: {Backfilled} Trades neu in DB, {Skipped} bereits bekannt, " +
                 "{TodayCount} davon in DailyPnl uebernommen.",
                 backfilled, skipped, todayCount);
+            return new BackfillSummary(backfilled, skipped, todayCount, null);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Auto-Resume Backfill fehlgeschlagen — DB-Stats bleiben unvollstaendig, manueller Eingriff noetig.");
+            return new BackfillSummary(0, 0, 0, $"Fehler: {ex.Message}");
         }
     }
 
@@ -317,3 +359,9 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         _lifetimeCts.Dispose();
     }
 }
+
+/// <summary>
+/// Snapshot-Report-Fix Befund 1 / A0.4 — Ergebnis eines Trade-Backfill-Laufs.
+/// <see cref="ErrorMessage"/> != null => Operation gescheitert; sonst alle Counts gefuellt.
+/// </summary>
+public sealed record BackfillSummary(int Backfilled, int Skipped, int TodayApplied, string? ErrorMessage);

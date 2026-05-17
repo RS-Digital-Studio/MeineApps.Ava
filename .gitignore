@@ -389,3 +389,8 @@ bot_settings.json
 bot_settings_pretty.json
 pending_orders.json
 exit_states.json
+
+# Ad-hoc settings-API-Patches (Robert + Claude debug-Sessions)
+risk_*.json
+full_patch.json
+server_current.json

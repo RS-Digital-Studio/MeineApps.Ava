@@ -26,14 +26,16 @@ class DateTimeChecker : IChecker
                 if (trimmed.StartsWith("//")) continue;
                 if (FileHelpers.IsSuppressed(file.Lines, i)) continue;
 
-                // DateTime.Now in Services/VMs (nicht Code-behind)
+                // DateTime.Now in Services/VMs (nicht Code-behind, nicht Stoppuhr/Wecker/Anzeige)
+                // INFO statt WARN: DateTime.Now ist legitim fuer UI-Anzeige, Stoppuhr,
+                // lokale Wecker-Zeiten, Export-Footer (menschenlesbare Lokal-Zeit).
+                // UtcNow ist Pflicht bei DB-Persistierung, JSON-Serialize, Audit-Logs.
                 if (!isCodeBehind && trimmed.Contains("DateTime.Now") && !trimmed.Contains("DateTime.Now.Date"))
                 {
-                    // DateTime.Today ist OK, nur DateTime.Now prüfen
                     if (!trimmed.Contains("DateTime.Now.") || Regex.IsMatch(trimmed, @"DateTime\.Now[^.]"))
                     {
                         dateTimeNowCount++;
-                        results.Add(new(Severity.Warn, Category, $"DateTime.Now statt UtcNow in {file.RelativePath}:{i + 1}"));
+                        results.Add(new(Severity.Info, Category, $"DateTime.Now in {file.RelativePath}:{i + 1} — Persistierung? Dann UtcNow nutzen"));
                     }
                 }
 
@@ -58,7 +60,9 @@ class DateTimeChecker : IChecker
         }
 
         if (dateTimeNowCount == 0)
-            results.Add(new(Severity.Pass, Category, "Kein DateTime.Now (UtcNow wird korrekt verwendet)"));
+            results.Add(new(Severity.Pass, Category, "Kein DateTime.Now (UtcNow wird konsequent verwendet)"));
+        else
+            results.Add(new(Severity.Info, Category, $"{dateTimeNowCount} DateTime.Now-Aufrufe (pro Aufruf: UI-Lokalzeit ok, Persistierung → UtcNow)"));
         if (parseNoRoundtripCount == 0)
             results.Add(new(Severity.Pass, Category, "Alle DateTime.Parse mit RoundtripKind"));
         if (parseNoInvariantCount == 0)

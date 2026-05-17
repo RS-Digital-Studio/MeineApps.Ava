@@ -88,12 +88,15 @@ class ViewBindingsChecker : IChecker
         else
             results.Add(new(Severity.Info, Category, $"{viewsWithoutVmNs}/{viewFiles.Count} Views ohne xmlns:vm (nicht alle brauchen es)"));
 
-        // View ↔ ViewModel Paar-Check
+        // View ↔ ViewModel Paar-Check (Resource-only Files ausnehmen)
         int viewsWithVm = 0;
         var viewsWithoutVmList = new List<string>();
         foreach (var view in viewFiles)
         {
             var viewName = Path.GetFileNameWithoutExtension(view.FullPath);
+            // Resource-Files (App.axaml, AppPalette.axaml, *Theme.axaml) brauchen kein VM
+            if (viewName is "App" or "AppPalette" || viewName.EndsWith("Theme") || viewName.EndsWith("Styles"))
+                continue;
             var expectedVm = viewName.Replace("View", "ViewModel");
             if (vmNames.Contains(expectedVm))
                 viewsWithVm++;

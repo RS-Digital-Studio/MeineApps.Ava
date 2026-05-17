@@ -19,8 +19,15 @@ class AvaloniaUiChecker : IChecker
         var appAxaml = ctx.AxamlFiles.FirstOrDefault(f => Path.GetFileName(f.FullPath) == "App.axaml");
         if (appAxaml != null)
         {
+            // Apps mit eigenem Icon-System (BomberBlast/HandwerkerImperium/RebornSaga)
+            // brauchen Material.Icons NICHT — sie nutzen ein selbst entwickeltes Bitmap/Vector-Icon-System
+            bool hasCustomIconSystem = ctx.SharedCsFiles.Any(f =>
+                Path.GetFileName(f.FullPath) is "GameIcon.cs" or "SagaIcon.cs" or "GameIconRenderer.cs");
+
             if (appAxaml.Content.Contains("MaterialIconStyles"))
                 results.Add(new(Severity.Pass, Category, "MaterialIconStyles registriert in App.axaml"));
+            else if (hasCustomIconSystem)
+                results.Add(new(Severity.Info, Category, "MaterialIconStyles nicht registriert (eigenes Icon-System aktiv: GameIcon/SagaIcon)"));
             else
                 results.Add(new(Severity.Fail, Category, "MaterialIconStyles NICHT registriert in App.axaml → Icons unsichtbar!"));
         }

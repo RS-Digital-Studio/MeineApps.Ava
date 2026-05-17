@@ -96,7 +96,9 @@ class HardcodedStringChecker : IChecker
                 foreach (Match m in matches)
                 {
                     var prop = m.Groups["prop"].Value;
-                    var value = m.Groups["value"].Value;
+                    var rawValue = m.Groups["value"].Value;
+                    // XAML-Entities dekodieren (&#241; → ñ, &amp; → & etc.)
+                    var value = System.Net.WebUtility.HtmlDecode(rawValue);
 
                     if (!userFacingSet.Contains(prop)) continue;
                     if (IsTechnicalValue(value)) continue;

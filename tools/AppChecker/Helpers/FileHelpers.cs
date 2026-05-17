@@ -35,7 +35,7 @@ static class FileHelpers
         return lines[lineIndex - 1].TrimStart().StartsWith("// AppChecker:ignore");
     }
 
-    /// <summary>Alle .cs Dateien in einem Verzeichnis laden (ohne obj/bin)</summary>
+    /// <summary>Alle .cs Dateien in einem Verzeichnis laden (ohne obj/bin) — explizit UTF-8</summary>
     public static List<CsFile> LoadCsFiles(string directory, string basePath)
     {
         if (!Directory.Exists(directory)) return [];
@@ -45,7 +45,7 @@ static class FileHelpers
             .Where(f => !f.Contains($"{sep}obj{sep}") && !f.Contains($"{sep}bin{sep}"))
             .Select(f =>
             {
-                var lines = File.ReadAllLines(f);
+                var lines = File.ReadAllLines(f, System.Text.Encoding.UTF8);
                 var content = string.Join('\n', lines);
                 var relPath = GetRelativePath(f, basePath);
                 return new CsFile(f, relPath, lines, content);
@@ -53,7 +53,7 @@ static class FileHelpers
             .ToList();
     }
 
-    /// <summary>Alle .axaml Dateien in einem Verzeichnis laden (ohne obj/bin)</summary>
+    /// <summary>Alle .axaml Dateien in einem Verzeichnis laden (ohne obj/bin) — explizit UTF-8</summary>
     public static List<AxamlFile> LoadAxamlFiles(string directory, string basePath)
     {
         if (!Directory.Exists(directory)) return [];
@@ -63,7 +63,7 @@ static class FileHelpers
             .Where(f => !f.Contains($"{sep}obj{sep}") && !f.Contains($"{sep}bin{sep}"))
             .Select(f =>
             {
-                var content = File.ReadAllText(f);
+                var content = File.ReadAllText(f, System.Text.Encoding.UTF8);
                 var relPath = GetRelativePath(f, basePath);
                 return new AxamlFile(f, relPath, content);
             })

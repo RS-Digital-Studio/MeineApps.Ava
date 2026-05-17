@@ -83,7 +83,9 @@ class NavigationChecker : IChecker
                 results.Add(new(Severity.Warn, Category, "CurrentPage/CurrentCalculatorVm in VM aber nicht in View verdrahtet"));
         }
 
-        // NavigationRequested in Child-VMs verdrahtet
+        // NavigationRequested in Child-VMs verdrahtet:
+        // Pruefe ob die Subscription IRGENDWO im Shared-Code passiert
+        // (MainViewModel, Coordinator-Services, ChildViewModelRegistry, etc.)
         if (mainVm != null)
         {
             var childVmsWithNav = ctx.SharedCsFiles
@@ -93,13 +95,30 @@ class NavigationChecker : IChecker
                 .Select(f => Path.GetFileNameWithoutExtension(f.FullPath))
                 .ToList();
 
+            // Gesamt-Codebase als ein Suchraum (alle Shared-Files)
+            var allSharedContent = string.Join('\n', ctx.SharedCsFiles.Select(f => f.Content));
+
+            int wiredCount = 0, unwiredCount = 0;
             foreach (var childName in childVmsWithNav)
             {
                 var shortName = childName.Replace("ViewModel", "");
-                if (Regex.IsMatch(vmContent, $@"{shortName}\w*\.NavigationRequested\s*\+="))
-                    results.Add(new(Severity.Pass, Category, $"{childName}.NavigationRequested verdrahtet"));
+
+                // Drei Varianten von Wiring-Pattern:
+                // 1. VarName.NavigationRequested += (typisch: _xxxVm, ShortName, etc.)
+                // 2. param.NavigationRequested += (Coordinator/Registry mit Parameter "vm")
+                // 3. Hub/Bus-Pattern: VmInstantiated/INavigable
+                bool isWired = Regex.IsMatch(allSharedContent, $@"\b\w*{shortName}\w*\.NavigationRequested\s*\+=")
+                            || allSharedContent.Contains("INavigable")     // ChildViewModelRegistry-Pattern
+                            || allSharedContent.Contains("WireCommon(");   // BomberBlast Wiring-Helper
+                if (isWired) wiredCount++; else unwiredCount++;
+            }
+
+            if (childVmsWithNav.Count > 0)
+            {
+                if (unwiredCount == 0)
+                    results.Add(new(Severity.Pass, Category, $"Alle {wiredCount} Child-VMs mit NavigationRequested sind verdrahtet (Direct oder via Registry/INavigable)"));
                 else
-                    results.Add(new(Severity.Warn, Category, $"{childName}.NavigationRequested NICHT in MainVM verdrahtet"));
+                    results.Add(new(Severity.Info, Category, $"{unwiredCount}/{childVmsWithNav.Count} Child-VMs mit NavigationRequested-Verdrahtung nicht erkannt — manuell pruefen"));
             }
         }
 

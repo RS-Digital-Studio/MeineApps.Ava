@@ -30,13 +30,15 @@ class EventNamingConventionChecker : IChecker
         @"\bevent\s+(?<type>[\w<>?,\s]+?)\s+(?<name>\w+)\s*[;=]",
         RegexOptions.Compiled);
 
-    static readonly Dictionary<string, string> ExpectedSignatures = new(StringComparer.Ordinal)
+    // Erwartete Signaturen — mehrere zulaessige Alternativen pro Event-Name
+    // (z.B. BomberBlast nutzt Action<NavigationRequest> als typsichere Variante).
+    static readonly Dictionary<string, string[]> ExpectedSignatures = new(StringComparer.Ordinal)
     {
-        ["NavigationRequested"]    = "Action<string>",
-        ["MessageRequested"]       = "Action<string, string>",
-        ["FloatingTextRequested"]  = "Action<string, string>",
-        ["ExitHintRequested"]      = "Action<string>",
-        ["ClipboardRequested"]     = "Action<string>",
+        ["NavigationRequested"]    = ["Action<string>", "Action<NavigationRequest>"],
+        ["MessageRequested"]       = ["Action<string, string>"],
+        ["FloatingTextRequested"]  = ["Action<string, string>", "EventHandler<(string, string)>"],
+        ["ExitHintRequested"]      = ["Action<string>"],
+        ["ClipboardRequested"]     = ["Action<string>"],
     };
 
     static readonly HashSet<string> AllowedSuffixes =
@@ -73,15 +75,15 @@ class EventNamingConventionChecker : IChecker
                 var lineNum = GetLineNumber(file.Content, m.Index);
                 if (FileHelpers.IsSuppressed(file.Lines, lineNum - 1)) continue;
 
-                // 1. Signatur-Pruefung
-                if (ExpectedSignatures.TryGetValue(eventName, out var expectedSig))
+                // 1. Signatur-Pruefung (mehrere zulaessige Alternativen)
+                if (ExpectedSignatures.TryGetValue(eventName, out var expectedSigs))
                 {
-                    var expectedNorm = NormalizeType(expectedSig);
-                    if (!TypesEquivalent(typeStr, expectedNorm))
+                    bool matchesAny = expectedSigs.Any(sig => TypesEquivalent(typeStr, NormalizeType(sig)));
+                    if (!matchesAny)
                     {
                         signatureMismatch++;
                         results.Add(new(Severity.Warn, Category,
-                            $"{className}.{eventName} hat Typ '{typeStr}', erwartet '{expectedSig}' in {file.RelativePath}:{lineNum}"));
+                            $"{className}.{eventName} hat Typ '{typeStr}', erwartet eine von [{string.Join(", ", expectedSigs)}] in {file.RelativePath}:{lineNum}"));
                     }
                 }
 

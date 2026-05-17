@@ -70,12 +70,15 @@ class AsyncPatternsChecker : IChecker
                         results.Add(new(Severity.Warn, Category, $"public async void '{methodName}' sollte Task zurueckgeben in {file.RelativePath}:{i + 1}"));
                 }
 
-                // Fire-and-forget im Constructor: _ = SomethingAsync()
-                if (Regex.IsMatch(trimmed, @"_\s*=\s*\w+Async\s*\("))
+                // Fire-and-forget: _ = SomethingAsync() — INFO statt WARN, weil oft legitim (Loading-Pipeline,
+                // Auto-Save, Ctor-Init). Sauberer Pattern: .SafeFireAndForget() Extension verwenden.
+                // Wird ignoriert wenn die Methode SafeFireAndForget oder FireAndForget heisst.
+                if (Regex.IsMatch(trimmed, @"_\s*=\s*\w+Async\s*\(")
+                    && !trimmed.Contains("SafeFireAndForget")
+                    && !trimmed.Contains(".FireAndForget("))
                 {
-                    // Prüfen ob wir in einem Constructor sind (vereinfacht: Klasse enthaelt diese Zeile + davor ist public ClassName()
                     fireAndForgetCount++;
-                    results.Add(new(Severity.Warn, Category, $"Fire-and-forget '_ = ...Async()' in {file.RelativePath}:{i + 1} → Race Condition moeglich"));
+                    results.Add(new(Severity.Info, Category, $"Fire-and-forget '_ = ...Async()' in {file.RelativePath}:{i + 1} → '.SafeFireAndForget()' Extension bevorzugen"));
                 }
 
                 // Leere catch-Bloecke (catch { } oder catch (Exception) { })
@@ -101,7 +104,9 @@ class AsyncPatternsChecker : IChecker
         if (asyncVoidCount == 0)
             results.Add(new(Severity.Pass, Category, "Keine unsicheren async void Methoden"));
         if (fireAndForgetCount == 0)
-            results.Add(new(Severity.Pass, Category, "Keine fire-and-forget Async-Aufrufe"));
+            results.Add(new(Severity.Pass, Category, "Keine fire-and-forget Async-Aufrufe (oder alle via SafeFireAndForget)"));
+        else
+            results.Add(new(Severity.Info, Category, $"{fireAndForgetCount} fire-and-forget Aufrufe — SafeFireAndForget-Extension einfuehren fuer zentrale Exception-Handling"));
         if (emptyCatchCount == 0)
             results.Add(new(Severity.Pass, Category, "Keine leeren catch-Bloecke"));
 

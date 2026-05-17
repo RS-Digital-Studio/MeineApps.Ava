@@ -269,48 +269,107 @@ public partial class LiveTradingService
     /// <see cref="RiskSettings.PendingLimitOrderMaxAgeHours"/> ist. Wenn der Wert ≤ 0 ist,
     /// macht die Methode nichts (Backwards-Compat / Opt-out).
     ///
+    /// Snapshot-Report-Fix Befund 3 / A0.7:
+    ///   1. Pending-Eintraege deren OrderId NICHT mehr in <paramref name="openOrders"/> erscheint,
+    ///      werden SOFORT entfernt — unabhaengig vom Alter. Schuetzt vor "23 Tage alter
+    ///      Recovery-Pending im Limbo" (NCSKMSFT/NCSKAMZN/NCSKCOIN im Snapshot vom 2026-05-17).
+    ///   2. Beim Entfernen wird zusaetzlich der zugehoerige <c>_exitStates</c>-Eintrag
+    ///      (IsRecovered=true, OriginalQuantity=0) abgeraeumt — A0.5 wuerde ihn sonst erst nach 1 h
+    ///      finden. Zusammen mit A0.5 vermeidet das das "Pending verschwunden, ExitState lebt weiter"-
+    ///      Szenario.
+    ///
     /// Hintergrund: Wenn ein Symbol aus der Top-100 herausfällt, wird kein neues Signal mehr
     /// generiert — <see cref="CancelStaleSequencePendingAsync"/> löst nur bei NEUEM Signal aus.
-    /// Ohne Time-Expiry läuft die Order tagelang gegen einen toten Markt; bei einer späten
-    /// Reversal-Bewegung kann sie zufällig auf BC-Niveau füllen, obwohl die Sequenz längst
-    /// verfallen ist.
     ///
     /// Wird vom Reconcile-Loop alle 60 s aufgerufen. Internal für Testbarkeit.
     /// </summary>
-    internal async Task CancelExpiredPendingLimitOrdersAsync()
+    internal async Task CancelExpiredPendingLimitOrdersAsync(IReadOnlyList<Order>? openOrders = null)
     {
-        var maxAgeHours = _riskSettings.PendingLimitOrderMaxAgeHours;
-        if (maxAgeHours <= 0m) return;
         if (_pendingLimitOrders.IsEmpty) return;
 
+        var maxAgeHours = _riskSettings.PendingLimitOrderMaxAgeHours;
+        var enforceMaxAge = maxAgeHours > 0m;
         var nowUtc = DateTime.UtcNow;
-        var maxAge = TimeSpan.FromHours((double)maxAgeHours);
-        var expired = _pendingLimitOrders
-            .Where(kvp => nowUtc - kvp.Value.PlacedAt > maxAge)
-            .Select(kvp => (kvp.Key, kvp.Value.OrderId, kvp.Value.Symbol, kvp.Value.SequenceId, kvp.Value.PlacedAt))
-            .ToList();
+        var maxAge = enforceMaxAge ? TimeSpan.FromHours((double)maxAgeHours) : TimeSpan.MaxValue;
 
-        if (expired.Count == 0) return;
+        // Open-Order-Set fuer den Existenz-Check. Wenn openOrders=null (Caller hat sie nicht),
+        // ueberspringen wir den BingX-Match-Check und verlassen uns nur auf das Alter.
+        HashSet<string>? openOrderIds = null;
+        if (openOrders != null)
+        {
+            openOrderIds = new HashSet<string>(
+                openOrders.Select(o => o.OrderId).Where(id => !string.IsNullOrEmpty(id)),
+                StringComparer.Ordinal);
+        }
 
-        foreach (var (key, orderId, symbol, sequenceId, placedAt) in expired)
+        var toRemove = new List<(string Key, string OrderId, string Symbol, string? SequenceId, DateTime PlacedAt, bool IsLong, bool VanishedFromBingx, bool AgeExpired)>();
+
+        foreach (var kvp in _pendingLimitOrders)
+        {
+            var age = nowUtc - kvp.Value.PlacedAt;
+            var ageExpired = enforceMaxAge && age > maxAge;
+            var vanished = openOrderIds != null && !openOrderIds.Contains(kvp.Value.OrderId);
+            if (!ageExpired && !vanished) continue;
+            toRemove.Add((kvp.Key, kvp.Value.OrderId, kvp.Value.Symbol, kvp.Value.SequenceId,
+                kvp.Value.PlacedAt, kvp.Value.IsLong, vanished, ageExpired));
+        }
+
+        if (toRemove.Count == 0) return;
+
+        foreach (var (key, orderId, symbol, sequenceId, placedAt, isLong, vanished, ageExpired) in toRemove)
         {
             var ageHours = (nowUtc - placedAt).TotalHours;
-            try
+            var reasonBits = new List<string>();
+            if (ageExpired) reasonBits.Add($"Alter={ageHours:F1}h > {maxAgeHours}h");
+            if (vanished) reasonBits.Add("BingX-OrderId verschwunden");
+            var reason = string.Join(", ", reasonBits);
+
+            // Cancel auf BingX nur wenn die Order dort noch existieren KOENNTE — bei "vanished"
+            // ist die Order eh schon weg und der Cancel-Call waere ein nutzloser API-Hit.
+            if (!vanished)
             {
-                await _restClient.CancelOrderAsync(orderId, symbol).ConfigureAwait(false);
+                try
+                {
+                    await _restClient.CancelOrderAsync(orderId, symbol).ConfigureAwait(false);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"{symbol}: Pending-Limit-Order abgelaufen ({reason}, SeqId={sequenceId}, OrderId={orderId}) — gecancelt",
+                        symbol));
+                }
+                catch (Exception ex)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
+                        $"{symbol}: Cancel der abgelaufenen Order schlug fehl (moeglicherweise bereits gefuellt/gecancelt): {ex.Message}",
+                        symbol));
+                }
+            }
+            else
+            {
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                    $"{symbol}: Pending-Limit-Order abgelaufen (Alter={ageHours:F1}h > {maxAgeHours}h, SeqId={sequenceId}, OrderId={orderId}) — gecancelt",
+                    $"{symbol}: Stale-Pending-Limit entfernt ({reason}, SeqId={sequenceId}, OrderId={orderId})",
                     symbol));
             }
-            catch (Exception ex)
-            {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
-                    $"{symbol}: Cancel der abgelaufenen Order schlug fehl (möglicherweise bereits gefüllt/gecancelt): {ex.Message}",
-                    symbol));
-            }
+
             _pendingLimitOrders.TryRemove(key, out _);
+
+            // Snapshot-Report-Fix A0.7 — Zugehoerige Recovery-ExitStates (OriginalQuantity=0,
+            // IsRecovered=true) sofort mit-entfernen. Ohne diesen Schritt blieb der ExitState
+            // bis A0.5-Stale-Cleanup nach 1h aktiv und wurde im Dashboard als "offene Position"
+            // gezaehlt.
+            var posKey = $"{symbol}_{(isLong ? Side.Buy : Side.Sell)}";
+            if (_exitStates.TryGetValue(posKey, out var exitState)
+                && exitState.IsRecovered && exitState.OriginalQuantity == 0m)
+            {
+                _exitStates.TryRemove(posKey, out _);
+                _positionSignals.TryRemove(posKey, out _);
+                OnSignalRemoved(posKey);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                    $"{symbol}: Recovery-ExitState (Qty=0, IsRecovered=true) gemeinsam mit Pending entfernt",
+                    symbol));
+            }
         }
 
         await PersistPendingLimitOrdersAsync().ConfigureAwait(false);
+        try { await PersistExitStatesAsync().ConfigureAwait(false); }
+        catch { /* best-effort — PersistPending hat schon gelaufen */ }
     }
 }

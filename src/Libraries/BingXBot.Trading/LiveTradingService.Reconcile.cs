@@ -35,7 +35,13 @@ public partial class LiveTradingService
                     // 04.05.2026 — Stale Pending-Limit-Orders mit Time-Expiry cancel (Default 6h).
                     // Schützt gegen "Symbol aus Top-100 gefallen, Pending hängt tagelang" — siehe
                     // RiskSettings.PendingLimitOrderMaxAgeHours.
-                    await CancelExpiredPendingLimitOrdersAsync().ConfigureAwait(false);
+                    // Snapshot-Report-Fix Befund 3 / A0.7 — zusaetzlich OpenOrders durchreichen,
+                    // damit der Cleanup Recovery-Pending-Orders die auf BingX nicht mehr existieren
+                    // sofort entfernt (statt 6h zu warten).
+                    IReadOnlyList<Order>? openOrdersForPending = null;
+                    try { openOrdersForPending = await _restClient.GetOpenOrdersAsync().ConfigureAwait(false); }
+                    catch { /* best-effort — fallback auf Time-Expiry-only */ }
+                    await CancelExpiredPendingLimitOrdersAsync(openOrdersForPending).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) { break; }
@@ -107,6 +113,17 @@ public partial class LiveTradingService
             missingStopGraceWindow: TimeSpan.FromSeconds(30),
             signalsExpectingTakeProfit: signalsExpectingTp);
 
+        // Snapshot-Report-Fix Befund 3 / A0.5: Stale-ExitStates aufraeumen — Eintraege die weder
+        // einer offenen BingX-Position noch einer Pending-Limit-Order noch einer Reduce-Only-Order
+        // zugeordnet sind. Tritt auf wenn:
+        //  - User manuell auf BingX schliesst → Position weg, ExitState bleibt im Bot.
+        //  - Liquidation/Funding-Strafe → Position weg, ExitState bleibt im Bot.
+        //  - Recovery-Pfad legt einen ExitState ohne echte Position an (Quantity=0).
+        // Im Snapshot vom 2026-05-17 lagen 11 ExitStates seit 22-30 Tagen im Bot, obwohl BingX
+        // sie laengst nicht mehr fuehrt — Folge: Positionen werden im Dashboard angezeigt, der
+        // Reconcile-Drift-Analyzer rauscht im Log, Stats sind falsch.
+        await CleanupStaleExitStatesAsync(positions, openOrders, ct).ConfigureAwait(false);
+
         if (actions.Count == 0) return;
 
         foreach (var action in actions)
@@ -176,6 +193,97 @@ public partial class LiveTradingService
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
                 $"{LogPrefix}{action.Symbol} {action.Side}: TP-Re-Place fehlgeschlagen ({ex.Message}) — Position ohne TP bis naechster Reconcile",
                 action.Symbol));
+        }
+    }
+
+    /// <summary>
+    /// Snapshot-Report-Fix Befund 3 / A0.5 — Stale-ExitStates aufraeumen.
+    ///
+    /// Definition "stale":
+    ///   1. Keine offene BingX-Position mit (Symbol, Side) und Quantity &gt; 0.
+    ///   2. Kein Pending-Limit-Entry fuer (Symbol, Side) in <see cref="_pendingLimitOrders"/>.
+    ///   3. Kein Reduce-Only-Limit (Tp1/Tp2OrderId) in den aktuellen <paramref name="openOrders"/>.
+    ///   4. Alter des Eintrags &gt;= Grace-Window (Recovery 1 h, normal 5 min).
+    ///
+    /// Wenn alle vier zutreffen, ist der ExitState verwaist und wird inkl. Signal entfernt.
+    /// Persistiert danach den neuen Snapshot, damit Pi-Restart die geleerten States nicht
+    /// wieder einliest.
+    /// </summary>
+    internal async Task CleanupStaleExitStatesAsync(
+        IReadOnlyList<Position> positions,
+        IReadOnlyList<Order>? openOrders,
+        CancellationToken ct)
+    {
+        if (_exitStates.IsEmpty) return;
+
+        var openOrderIds = openOrders == null
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : new HashSet<string>(openOrders.Select(o => o.OrderId).Where(id => !string.IsNullOrEmpty(id)), StringComparer.Ordinal);
+
+        var openPositionKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var p in positions)
+        {
+            if (p.Quantity > 0)
+                openPositionKeys.Add($"{p.Symbol}_{p.Side}");
+        }
+
+        var pendingKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var v in _pendingLimitOrders.Values)
+            pendingKeys.Add($"{v.Symbol}_{(v.IsLong ? Side.Buy : Side.Sell)}");
+
+        var now = DateTime.UtcNow;
+        var staleRecoveryAge = TimeSpan.FromHours(1);
+        var staleNormalAge = TimeSpan.FromMinutes(5);
+        var removed = 0;
+        var staleKeys = new List<(string Key, string Reason)>();
+
+        foreach (var kv in _exitStates)
+        {
+            ct.ThrowIfCancellationRequested();
+            var state = kv.Value;
+            var key = kv.Key;
+
+            if (openPositionKeys.Contains(key)) continue;
+            if (pendingKeys.Contains(key)) continue;
+            if (!string.IsNullOrEmpty(state.Tp1LimitOrderId) && openOrderIds.Contains(state.Tp1LimitOrderId!)) continue;
+            if (!string.IsNullOrEmpty(state.Tp2LimitOrderId) && openOrderIds.Contains(state.Tp2LimitOrderId!)) continue;
+
+            var age = now - state.EntryTime;
+            var threshold = state.IsRecovered ? staleRecoveryAge : staleNormalAge;
+            if (age < threshold) continue;
+
+            // OpenOrders konnten nicht abgerufen werden (Rate-Limit / Netzwerk) — wir koennten falsch-
+            // positiv loeschen. In dem Fall nur Eintraege >= 24 h droppen (sehr konservativ).
+            if (openOrders == null && age < TimeSpan.FromHours(24)) continue;
+
+            var reasonBits = new List<string>();
+            reasonBits.Add($"Age={age.TotalHours:F1}h");
+            if (state.IsRecovered) reasonBits.Add("IsRecovered");
+            if (state.OriginalQuantity == 0m) reasonBits.Add("Qty=0");
+            staleKeys.Add((key, string.Join(",", reasonBits)));
+        }
+
+        foreach (var (key, reason) in staleKeys)
+        {
+            if (_exitStates.TryRemove(key, out var removedState))
+            {
+                _positionSignals.TryRemove(key, out _);
+                OnSignalRemoved(key);
+                removed++;
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                    $"{LogPrefix}{removedState.Symbol} {removedState.Side}: Stale ExitState entfernt ({reason}, EntryTime={removedState.EntryTime:O}) — kein BingX-Match",
+                    removedState.Symbol));
+            }
+        }
+
+        if (removed > 0)
+        {
+            try { await PersistExitStatesAsync().ConfigureAwait(false); }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                    $"{LogPrefix}ExitStates-Persist nach Stale-Cleanup fehlgeschlagen: {ex.Message}"));
+            }
         }
     }
 

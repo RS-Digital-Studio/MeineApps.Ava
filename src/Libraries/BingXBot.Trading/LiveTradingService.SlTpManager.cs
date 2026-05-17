@@ -34,9 +34,12 @@ public partial class LiveTradingService
         if (_dbService == null) return;
         try
         {
+            // Snapshot-Report-Fix Befund 3 / A0.5: AUCH leeren Snapshot persistieren.
+            // Vorher gab es ein "if (snapshot.Count > 0)" — Folge: wenn der Stale-Cleanup alle
+            // ExitStates geleert hat, blieb der alte Snapshot in der DB stehen und nach dem naechsten
+            // Server-Restart waren die 18 verwaisten Eintraege wieder im Bot.
             var snapshot = new Dictionary<string, PositionExitState>(_exitStates);
-            if (snapshot.Count > 0)
-                await _dbService.SaveExitStatesAsync(snapshot).ConfigureAwait(false);
+            await _dbService.SaveExitStatesAsync(snapshot).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

@@ -380,3 +380,12 @@ website/
 
 # Firebase
 **/google-services.json
+
+# BingXBot Pi-Snapshots (regenerierbar via tools/SkAnalytics)
+bingxbot_snapshot.db
+bingxbot_snapshot.db-wal
+bingxbot_snapshot.db-shm
+bot_settings.json
+bot_settings_pretty.json
+pending_orders.json
+exit_states.json

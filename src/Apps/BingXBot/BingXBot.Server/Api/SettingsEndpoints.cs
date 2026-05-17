@@ -2,6 +2,7 @@ using BingXBot.Contracts.Api;
 using BingXBot.Contracts.Dto;
 using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace BingXBot.Server.Api;
@@ -22,7 +23,14 @@ public static class SettingsEndpoints
             return Results.NoContent();
         }).RequireRateLimiting("settings");
 
-        app.MapPut(ApiRoutes.SettingsRisk, async (HttpContext http, RiskSettings dto, ISettingsService settings, CancellationToken ct) =>
+        // KRITISCH: Die Sub-Settings-DTOs (RiskSettings/ScannerSettings/BotSettings/BacktestSettings)
+        // sind alle als DI-Singleton registriert. Ohne [FromBody] entscheidet ASP.NET Minimal-API
+        // die Parameter-Quelle ueber den Service-Container — der Endpoint bekam dann die DI-Singleton-
+        // Instance (= aktueller Server-State) statt das deserialisierte JSON-Body. Folge: HTTP 204,
+        // SettingsChange.Count=0, kein Diff. Mit [FromBody] wird der Request-Body deserialisiert.
+        // Bug entdeckt 2026-05-17 via [DBG SaveRiskAsync]-Logs auf dem Pi.
+
+        app.MapPut(ApiRoutes.SettingsRisk, async (HttpContext http, [FromBody] RiskSettings dto, ISettingsService settings, CancellationToken ct) =>
         {
             if (!TryValidateRisk(dto, out var reason)) return Results.BadRequest(new ErrorResponse("invalid_risk", reason));
             using var _ = BingXBot.Trading.Local.LocalSettingsService.WithSource(GetSource(http));
@@ -30,7 +38,7 @@ public static class SettingsEndpoints
             return Results.NoContent();
         }).RequireRateLimiting("settings");
 
-        app.MapPut(ApiRoutes.SettingsScanner, async (HttpContext http, ScannerSettings dto, ISettingsService settings, CancellationToken ct) =>
+        app.MapPut(ApiRoutes.SettingsScanner, async (HttpContext http, [FromBody] ScannerSettings dto, ISettingsService settings, CancellationToken ct) =>
         {
             if (!TryValidateScanner(dto, out var reason)) return Results.BadRequest(new ErrorResponse("invalid_scanner", reason));
             using var _ = BingXBot.Trading.Local.LocalSettingsService.WithSource(GetSource(http));
@@ -38,7 +46,7 @@ public static class SettingsEndpoints
             return Results.NoContent();
         }).RequireRateLimiting("settings");
 
-        app.MapPut(ApiRoutes.SettingsBot, async (HttpContext http, BotSettings dto, ISettingsService settings, CancellationToken ct) =>
+        app.MapPut(ApiRoutes.SettingsBot, async (HttpContext http, [FromBody] BotSettings dto, ISettingsService settings, CancellationToken ct) =>
         {
             if (!TryValidateBot(dto, out var reason)) return Results.BadRequest(new ErrorResponse("invalid_bot", reason));
             using var _ = BingXBot.Trading.Local.LocalSettingsService.WithSource(GetSource(http));
@@ -46,7 +54,7 @@ public static class SettingsEndpoints
             return Results.NoContent();
         }).RequireRateLimiting("settings");
 
-        app.MapPut(ApiRoutes.SettingsBacktest, async (HttpContext http, BacktestSettings dto, ISettingsService settings, CancellationToken ct) =>
+        app.MapPut(ApiRoutes.SettingsBacktest, async (HttpContext http, [FromBody] BacktestSettings dto, ISettingsService settings, CancellationToken ct) =>
         {
             if (!TryValidateBacktest(dto, out var reason)) return Results.BadRequest(new ErrorResponse("invalid_backtest", reason));
             using var _ = BingXBot.Trading.Local.LocalSettingsService.WithSource(GetSource(http));

@@ -16,6 +16,29 @@ Aktivitäts-Tracking, Rezept-Editor und Gamification.
 
 ---
 
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `FitnessRechner.Shared` | `net10.0` | `dotnet build src/Apps/FitnessRechner/FitnessRechner.Shared` |
+| `FitnessRechner.Desktop` | `net10.0` | `dotnet run --project src/Apps/FitnessRechner/FitnessRechner.Desktop` |
+| `FitnessRechner.Android` | `net10.0-android` | `dotnet build src/Apps/FitnessRechner/FitnessRechner.Android` |
+
+Release-AAB: `dotnet publish src/Apps/FitnessRechner/FitnessRechner.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `FitnessRechner.Shared/ViewModels/` | `FitnessRechner.ViewModels` |
+| `FitnessRechner.Shared/Views/` | `FitnessRechner.Views` |
+| `FitnessRechner.Shared/Services/` | `FitnessRechner.Services` |
+| `FitnessRechner.Shared/Models/` | `FitnessRechner.Models` |
+| `FitnessRechner.Shared/Graphics/` | `FitnessRechner.Graphics` |
+| `FitnessRechner.Shared/Loading/` | `FitnessRechner.Loading` |
+
+---
+
 ## Architektur
 
 ### Tab-Navigation (4 Tabs)

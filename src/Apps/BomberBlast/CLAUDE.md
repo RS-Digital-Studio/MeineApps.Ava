@@ -12,6 +12,35 @@ eigenes Icon-System, AI-Pathfinding, Roguelike-Dungeon-Modus und Liga-System.
 | Premium-Modell | 1,99 EUR `remove_ads` |
 | Mandat | Code-only / CC0 / prozedural — keine externen Audio-/Art-Pipelines, keine Voice-Talents |
 
+Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `BomberBlast.Shared` | `net10.0` | `dotnet build src/Apps/BomberBlast/BomberBlast.Shared` |
+| `BomberBlast.Desktop` | `net10.0` | `dotnet run --project src/Apps/BomberBlast/BomberBlast.Desktop` |
+| `BomberBlast.Android` | `net10.0-android` | `dotnet build src/Apps/BomberBlast/BomberBlast.Android` |
+
+Release-AAB: `dotnet publish src/Apps/BomberBlast/BomberBlast.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `BomberBlast.Shared/ViewModels/` | `BomberBlast.ViewModels` |
+| `BomberBlast.Shared/Views/` | `BomberBlast.Views` |
+| `BomberBlast.Shared/Core/` | `BomberBlast.Core` |
+| `BomberBlast.Shared/Core/Modes/` | `BomberBlast.Core.Modes` |
+| `BomberBlast.Shared/Core/Combat/` | `BomberBlast.Core.Combat` |
+| `BomberBlast.Shared/Services/` | `BomberBlast.Services` |
+| `BomberBlast.Shared/Models/` | `BomberBlast.Models` |
+| `BomberBlast.Shared/Graphics/` | `BomberBlast.Graphics` |
+| `BomberBlast.Shared/Icons/` | `BomberBlast.Icons` |
+| `BomberBlast.Shared/Loading/` | `BomberBlast.Loading` |
+
 ---
 
 ## Projektstruktur

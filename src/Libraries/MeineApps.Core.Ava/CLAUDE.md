@@ -3,9 +3,31 @@
 > Für app-spezifische Patterns siehe die jeweilige App-CLAUDE.md.
 > App-spezifische Farbpaletten sind in [Haupt-CLAUDE.md](../../../CLAUDE.md) dokumentiert.
 
-Shared Library für alle Avalonia-Apps. Enthält Preferences-Persistenz, Plattform-
+Shared Library für alle 12 Avalonia-Apps. Enthält Preferences-Persistenz, Plattform-
 Abstraktionen, Lokalisierung, Calculator-History, Converters, Design-Tokens und
 ViewLocator.
+
+## Zielframework
+
+- .NET 10.0
+- C# 14
+- Avalonia 12.0.2
+
+## Build
+
+```bash
+dotnet build src/Libraries/MeineApps.Core.Ava/MeineApps.Core.Ava.csproj
+```
+
+## Abhängigkeiten
+
+| Package | Zweck |
+|---------|-------|
+| `Avalonia` | UI-Framework (für ViewLocator, Converters, Themes) |
+| `CommunityToolkit.Mvvm` | `ObservableObject` für `ViewModelBase` |
+| `Microsoft.Extensions.DependencyInjection.Abstractions` | DI-Interfaces |
+
+Versionen zentral in `Directory.Packages.props`.
 
 ## Struktur
 

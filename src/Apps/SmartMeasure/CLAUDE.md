@@ -13,6 +13,28 @@ GeoJSON, DXF, KMZ, CSV, PDF. Nicht im Play Store.
 | ARCore-Paket | Vapolia.Google.ARCore 1.47.1 |
 | BLE-Paket | InTheHand.BluetoothLE |
 
+Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `SmartMeasure.Shared` | `net10.0` | `dotnet build src/Apps/SmartMeasure/SmartMeasure.Shared` |
+| `SmartMeasure.Desktop` | `net10.0` | `dotnet run --project src/Apps/SmartMeasure/SmartMeasure.Desktop` |
+| `SmartMeasure.Android` | `net10.0-android` | `dotnet build src/Apps/SmartMeasure/SmartMeasure.Android` |
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `SmartMeasure.Shared/ViewModels/` | `SmartMeasure.ViewModels` |
+| `SmartMeasure.Shared/Views/` | `SmartMeasure.Views` |
+| `SmartMeasure.Shared/Services/` | `SmartMeasure.Services` |
+| `SmartMeasure.Shared/Models/` | `SmartMeasure.Models` |
+| `SmartMeasure.Shared/Graphics/` | `SmartMeasure.Graphics` |
+
 ---
 
 ## Projekt-Struktur

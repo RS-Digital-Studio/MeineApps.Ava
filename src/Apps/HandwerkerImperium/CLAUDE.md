@@ -15,6 +15,34 @@ Für generische Build-Befehle, Conventions und Troubleshooting: [Haupt-CLAUDE.md
 
 ---
 
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `HandwerkerImperium.Shared` | `net10.0` | `dotnet build src/Apps/HandwerkerImperium/HandwerkerImperium.Shared` |
+| `HandwerkerImperium.Desktop` | `net10.0` | `dotnet run --project src/Apps/HandwerkerImperium/HandwerkerImperium.Desktop` |
+| `HandwerkerImperium.Android` | `net10.0-android` | `dotnet build src/Apps/HandwerkerImperium/HandwerkerImperium.Android` |
+
+Release-AAB: `dotnet publish src/Apps/HandwerkerImperium/HandwerkerImperium.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `HandwerkerImperium.Shared/ViewModels/` | `HandwerkerImperium.ViewModels` |
+| `HandwerkerImperium.Shared/Views/` | `HandwerkerImperium.Views` |
+| `HandwerkerImperium.Shared/Services/` | `HandwerkerImperium.Services` |
+| `HandwerkerImperium.Shared/Services/Interfaces/` | `HandwerkerImperium.Services.Interfaces` |
+| `HandwerkerImperium.Shared/Models/` | `HandwerkerImperium.Models` |
+| `HandwerkerImperium.Shared/Models/Enums/` | `HandwerkerImperium.Models.Enums` |
+| `HandwerkerImperium.Shared/Models/Firebase/` | `HandwerkerImperium.Models.Firebase` |
+| `HandwerkerImperium.Shared/Graphics/` | `HandwerkerImperium.Graphics` |
+| `HandwerkerImperium.Shared/Icons/` | `HandwerkerImperium.Icons` |
+| `HandwerkerImperium.Shared/Helpers/` | `HandwerkerImperium.Helpers` |
+| `HandwerkerImperium.Shared/Loading/` | `HandwerkerImperium.Loading` |
+
+---
+
 ## Architektur
 
 ### Projekt-Struktur

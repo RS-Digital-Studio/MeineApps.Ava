@@ -60,3 +60,11 @@ dotnet run --project tools/SocialPostGenerator all
 - Midnight Indigo Palette (konsistent mit RS-Digital Branding)
 - Akzentfarbe pro App aus AppRegistry
 - Code-Bracket-Ecken als Deko-Element
+
+---
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../CLAUDE.md) — Build, App-Status
+- Skill `/changelog` — Aktualisiert Changelog + Social-Posts
+- Ausgabe: Posts in Zwischenablage, Bilder in `Releases/SocialPosts/`

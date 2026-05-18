@@ -104,6 +104,223 @@ F:\Meine_Apps_Ava\
 
 ---
 
+## Projekt-CLAUDE.md-Index
+
+Pflichtlektüre vor Änderungen am jeweiligen Projekt. Jede Sub-CLAUDE.md beschreibt
+Zielframework, Build, Struktur, Conventions und ggf. Test-Projekte.
+
+**Libraries:**
+
+| Projekt | Beschreibung | Details |
+|---------|--------------|---------|
+| `MeineApps.Core.Ava` | Preferences, Lokalisierung, Themes, Converters, ViewLocator | [src/Libraries/MeineApps.Core.Ava/CLAUDE.md](src/Libraries/MeineApps.Core.Ava/CLAUDE.md) |
+| `MeineApps.Core.Premium.Ava` | AdMob, Google Play Billing, Trial, Android-Linked-Files | [src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md](src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) |
+| `MeineApps.CalcLib` | Calculator-Engine (Tokenizer + Parser + Evaluator) | [src/Libraries/MeineApps.CalcLib/CLAUDE.md](src/Libraries/MeineApps.CalcLib/CLAUDE.md) |
+| `MeineApps.UI` | Custom Controls, Behaviors, Skia-Helpers, AppIcons.axaml | [src/UI/MeineApps.UI/CLAUDE.md](src/UI/MeineApps.UI/CLAUDE.md) |
+
+**Apps:**
+
+| App | Details |
+|-----|---------|
+| RechnerPlus | [src/Apps/RechnerPlus/CLAUDE.md](src/Apps/RechnerPlus/CLAUDE.md) |
+| ZeitManager | [src/Apps/ZeitManager/CLAUDE.md](src/Apps/ZeitManager/CLAUDE.md) |
+| FinanzRechner | [src/Apps/FinanzRechner/CLAUDE.md](src/Apps/FinanzRechner/CLAUDE.md) |
+| FitnessRechner | [src/Apps/FitnessRechner/CLAUDE.md](src/Apps/FitnessRechner/CLAUDE.md) |
+| HandwerkerRechner | [src/Apps/HandwerkerRechner/CLAUDE.md](src/Apps/HandwerkerRechner/CLAUDE.md) |
+| WorkTimePro | [src/Apps/WorkTimePro/CLAUDE.md](src/Apps/WorkTimePro/CLAUDE.md) |
+| HandwerkerImperium | [src/Apps/HandwerkerImperium/CLAUDE.md](src/Apps/HandwerkerImperium/CLAUDE.md) |
+| BomberBlast | [src/Apps/BomberBlast/CLAUDE.md](src/Apps/BomberBlast/CLAUDE.md) |
+| RebornSaga | [src/Apps/RebornSaga/CLAUDE.md](src/Apps/RebornSaga/CLAUDE.md) |
+| BingXBot | [src/Apps/BingXBot/CLAUDE.md](src/Apps/BingXBot/CLAUDE.md) |
+| GardenControl | [src/Apps/GardenControl/CLAUDE.md](src/Apps/GardenControl/CLAUDE.md) |
+| SmartMeasure | [src/Apps/SmartMeasure/CLAUDE.md](src/Apps/SmartMeasure/CLAUDE.md) |
+
+**Tools:**
+
+| Tool | Details |
+|------|---------|
+| AppChecker | [tools/AppChecker/CLAUDE.md](tools/AppChecker/CLAUDE.md) |
+| StoreAssetGenerator | [tools/StoreAssetGenerator/CLAUDE.md](tools/StoreAssetGenerator/CLAUDE.md) |
+| SocialPostGenerator | [tools/SocialPostGenerator/CLAUDE.md](tools/SocialPostGenerator/CLAUDE.md) |
+
+---
+
+## Architektur (Pflicht)
+
+### Projekt-Referenzen
+
+```
+{App}.Android ──┬──> {App}.Shared
+                ├──> MeineApps.Core.Premium.Ava   (Android-Linked-Files)
+                └──> Android-Plattform-Bindings
+
+{App}.Desktop ──┬──> {App}.Shared
+                └──> Avalonia.Desktop
+
+{App}.Shared  ──┬──> MeineApps.Core.Ava           (Services, Themes, ViewLocator)
+                ├──> MeineApps.Core.Premium.Ava   (Ads, IAP, Trial — werbe-Apps)
+                ├──> MeineApps.UI                 (Controls, Behaviors, AppIcons)
+                └──> MeineApps.CalcLib            (Calculator-Apps)
+```
+
+**WICHTIG:**
+
+- App-Shared darf NICHT auf andere Apps referenzieren.
+- Libraries dürfen NICHT auf Apps referenzieren.
+- `MeineApps.UI` darf NICHT auf `MeineApps.Core.Premium.Ava` referenzieren (Premium hängt von UI ab, nicht umgekehrt).
+- Android-spezifische Klassen (`AndroidRewardedAdService`, `AndroidPurchaseService`) leben in `MeineApps.Core.Premium.Ava/Android/` und werden per `<Compile Include … Link="…" />` in jedes Android-Projekt eingebunden.
+
+### Domain vs UI Logic
+
+Views, Code-Behind und ViewModels enthalten **ausschließlich UI-Logik**. Domänenlogik (Berechnungen, Persistenz, Geschäftsregeln) gehört in Services unter `MeineApps.Core.Ava/Services/` oder app-spezifische Services im `{App}.Shared/Services/`-Ordner.
+
+| Kategorie | Beispiel | Gehört nach |
+|-----------|----------|-------------|
+| Berechnung | Tilgungsplan, BMI, Material-Bedarf | `MeineApps.CalcLib` oder `{App}.Shared/Calculators/` |
+| Persistenz | Save/Load JSON, SQLite | `{App}.Shared/Services/` (z.B. `SaveGameService`) |
+| Geschäftsregeln | "Letzter Marker löscht Gruppe", Game-Balancing | `{App}.Shared/Services/` (z.B. `OrderGeneratorService`) |
+| Plattform-API | AdMob, Billing, Haptics, FileShare | Interface in `MeineApps.Core.Ava`, Android-Impl in `MeineApps.Core.Premium.Ava/Android/` |
+
+**Faustregel:** Wenn eine Methode kein Avalonia-API braucht, gehört sie nicht in ein ViewModel.
+
+**UI darf:**
+- Service-Methoden aufrufen und Ergebnisse anzeigen
+- Confirmation-Dialoge vor destruktiven Service-Operationen zeigen
+- UI-Properties nach Service-Aufrufen aktualisieren
+
+### ViewModel-First
+
+Alle neuen Controls, Pages und Popups folgen ViewModel-First:
+
+1. **VM vor View:** ViewModel wird immer vor der View erzeugt (per DI im Composition Root).
+2. **Views erzeugen keine VMs:** Views nehmen das VM via `DataContext`-Binding oder Constructor entgegen.
+3. **DataContext VOR `InitializeComponent()`:** Pflicht für Compiled Bindings.
+4. **Navigation via VM-Property:** `MainViewModel.CurrentPage = "route"` triggert ContentControl-Binding mit ViewLocator.
+
+```csharp
+// RICHTIG: ViewLocator-Konvention (BomberBlast.ViewModels.DashboardViewModel → BomberBlast.Views.DashboardView)
+public DashboardView(DashboardViewModel vm)
+{
+    DataContext = vm;
+    InitializeComponent();
+}
+
+// FALSCH: Code-Behind erzeugt VM
+public DashboardView()
+{
+    DataContext = new DashboardViewModel(ServiceLocator.Get<IFoo>());  // Service-Locator → verboten
+    InitializeComponent();
+}
+```
+
+**Parameterloser Designer-Fallback** ist OK, darf aber kein VM erzeugen:
+```csharp
+public DashboardView() { InitializeComponent(); }
+```
+
+### Anti-Patterns (Verboten)
+
+Neuer Code mit folgenden Mustern wird abgelehnt:
+
+| Anti-Pattern | Warum verboten | Stattdessen |
+|--------------|----------------|-------------|
+| `ServiceLocator.Resolve<T>()` außerhalb Composition Root | Versteckte Abhängigkeiten, untestbar | Constructor Injection |
+| Statische Singletons (`Xxx.Instance`) | Keine Test-Isolation, Lifetime-Bugs | Interface via DI |
+| God Interfaces (>5 Methoden) | Verstößt gegen ISP | Pro Verantwortlichkeit ein Interface |
+| Parameterloser VM-Ctor mit `Resolve`-Delegation | Service-Locator-Anti-Pattern | Constructor Injection, parameterloser Ctor nur für Designer |
+| Hardcoded Werte in XAML (FontSize, Padding, Colors) | Verhindert Theming, Plattform-Skalierung | `{StaticResource …}` aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml` |
+| `Avalonia.Controls.Primitives.Popup` für Picker/Dropdowns | Auf Desktop = eigenes OS-Fenster, auf Android = In-App → inkonsistent | Inline `Border`/`Panel` mit `IsVisible`-Binding |
+| `DateTime.Now` für Persistenz | UTC-Konvertierungs-Bugs bei Timezone-Wechsel | `DateTime.UtcNow` + `"O"`-Format + `DateTimeStyles.RoundtripKind` |
+| Direkte AdMob-/Billing-Calls in ViewModels | Plattform-Lock-In, untestbar | `IRewardedAdService` / `IPurchaseService` via DI |
+
+### Testbarkeit
+
+`tests/`-Ordner ist vorgesehen für xUnit-v3-Test-Projekte (.NET 10).
+
+**Beim Hinzufügen oder Ändern von testbarer Logik** (Berechnungen, Konvertierungen, Zustandsverwaltung, Parser, Algorithmen) müssen passende Unit-Tests im zugehörigen Test-Projekt geschrieben werden. Tests sind nicht nötig für reine UI-Verdrahtung, triviale Property-Wrapper oder Code der ausschließlich Avalonia/Android-APIs aufruft.
+
+**Aktuell:** Nur `MeineApps.CalcLib` hat Tests. Domain-Code in Apps (z.B. `GameLoopService`, `OrderGeneratorService`, BingXBot SK-System) sollte sukzessive testbar gemacht werden — Services per Interface von Platform-APIs entkoppeln.
+
+### Feature-Ordner (Vertical Slice)
+
+Neue Features bekommen einen eigenen Ordner mit View + ViewModel + optional Service zusammen:
+
+```
+{App}.Shared/Views/MeinFeature/
+├── MeinFeatureView.axaml(.cs)
+└── (eventuell) MeinFeatureSubControl.axaml(.cs)
+
+{App}.Shared/ViewModels/
+├── MeinFeatureViewModel.cs
+
+{App}.Shared/Services/
+└── MeinFeatureService.cs   (wenn Service-Logik benötigt)
+```
+
+Namespace: `{App}.Views.MeinFeature`, `{App}.ViewModels.MeinFeatureViewModel`. Keine Dateien in Sammelordner wie `ViewModels/Misc/` ablegen.
+
+### Service-Extraktion + Event-Cleanup
+
+Wenn ein ViewModel ~300 Zeilen überschreitet oder eine zusammenhängende Teilverantwortung hat:
+
+1. **Partial-Split** wenn die Logik kohärent bleibt (siehe `MainViewModel.cs`-Partials in HandwerkerImperium, BomberBlast).
+2. **Service-Extraktion** wenn die Logik unabhängig ist — neuer Service in `{App}.Shared/Services/`, Interface in `{App}.Shared/Services/Interfaces/`.
+3. **Constructor Injection** statt Service-Locator.
+4. **`IDisposable` implementieren** wenn der Service Events abonniert.
+
+```csharp
+// Services die Events abonnieren MÜSSEN sich wieder abmelden:
+public class MyService(IEventBus eventBus) : IDisposable
+{
+    public void Dispose()
+    {
+        eventBus.SomeEvent -= OnSomeEvent;
+    }
+}
+
+// Controls: DetachedFromVisualTree-Cleanup
+protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+{
+    base.OnAttachedToVisualTree(e);
+    _service.Changed += OnChanged;
+}
+
+protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+{
+    _service.Changed -= OnChanged;
+    base.OnDetachedFromVisualTree(e);
+}
+```
+
+### C# 14 / .NET 10 Features (verbindlich nutzen)
+
+- **Primary Constructors** für Klassen und Structs: `public class MyService(IFoo foo) { ... }`
+- **Collection Expressions**: `string[] names = ["A", "B"];`
+- **Pattern Matching** mit `is`, `switch expressions`
+- **Records** für immutable Datenstrukturen (DTOs, Events)
+- **File-scoped namespaces**: `namespace BomberBlast.ViewModels;`
+- **Raw String Literals**: `"""..."""` für JSON/SQL
+- **Required Members**: `public required string Name { get; init; }`
+
+### Avalonia Popup-Primitive vermeiden
+
+`Avalonia.Controls.Primitives.Popup` erzeugt auf Desktop ein separates natives OS-Fenster (eigenes HWND), auf Android dagegen ein In-App-Overlay. Dieses inkonsistente Verhalten ist unerwünscht.
+
+**Regel:** Für Picker-Panels, Dropdown-Listen und expandierende Bereiche **inline Panels** verwenden (z.B. `Border`/`Panel` mit `IsVisible`-Binding), nicht `Popup`. Ausnahme: `ContextMenu` und `ToolTip`.
+
+### DebugHelper + AutomationIds
+
+Beide Pflicht-Helper liegen in `MeineApps.UI/DebugTools/`:
+
+- **`debug:DebugHelper.ShowName="True"`** auf jedem Control-Root (Debug-only, zeigt Control-Namen oben links).
+- **`AutomationProperties.AutomationId="…"`** auf allen interaktiven Elementen (Buttons, TextBoxes, ListBoxes, ComboBoxes, CheckBoxes) — Naming: `[Kontext][Aktion/Zweck][ControlTyp]` in PascalCase.
+
+Beispiele: `LoginButton`, `EmailTextBox`, `CalculatePaymentButton`, `SettingsListBox`.
+
+Details: [src/UI/MeineApps.UI/CLAUDE.md](src/UI/MeineApps.UI/CLAUDE.md).
+
+---
+
 ## App-spezifische Farbpaletten
 
 Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, statisch in App.axaml geladen. Kein dynamischer Theme-Wechsel, kein ThemeService.
@@ -485,28 +702,21 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Problem | Ursache | Lösung |
 |---------|---------|---------|
 | Material Icons unsichtbar | `MaterialIconStyles` nicht in App.axaml registriert | `<materialIcons:MaterialIconStyles />` in `<Application.Styles>` |
-| AdMob Crash auf Android | UMP Namespace hat Typo | `Xamarin.Google.UserMesssagingPlatform` (3x 's') |
 | DateTime Timer falsch (1h) | UTC→Lokal Konvertierung | `DateTimeStyles.RoundtripKind` bei Parse |
 | Release-Build crasht (Debug OK) | Meist stale Build-Artefakte oder falsche Flags | obj/bin löschen, clean rebuild |
 | Mono JIT Assertion `!ji->async` Crash | Profiled AOT (SDK-Default) kompiliert nur hot Methods, Rest fällt auf JIT zurück → JIT-Bug auf manchen Geräten (z.B. Huawei P30) | `AndroidEnableProfiledAot=false` in Directory.Build.targets → Full AOT (alle Methoden kompiliert, kein JIT). `UseInterpreter=true` geht NICHT zusammen mit AOT (XA0119) |
-| SKCanvasView updatet nicht | `InvalidateVisual()` verwendet | `InvalidateSurface()` verwenden |
-| SKCanvasView leer bei IsVisible-Toggle | `InvalidateSurface()` auf unsichtbare Canvas wird ignoriert | Nach Sichtbar-Werden erneut Daten setzen/Calculate() aufrufen, damit PropertyChanged → InvalidateSurface() feuert |
-| SKCanvasView Render-Loop tot nach StartRenderLoop() | `StartRenderLoop()` ruft `StopRenderLoop()` auf, das `_gameCanvas = null` setzt. Timer-Lambda captured `this._gameCanvas` → immer null | In `StartRenderLoop()` NUR `_renderTimer?.Stop()` aufrufen, NICHT `StopRenderLoop()` (das nullt die Canvas-Referenz) |
 | Render-Crash "calling thread cannot access this object" | VM-Graph auf Background-Thread instanziiert (z.B. `Task.Run(() => GetRequiredService<MainViewModel>())` in Lade-Pipeline). ViewModels erzeugen im Ctor UI-Objekte (`new SolidColorBrush`, `[ObservableProperty] IBrush`) → falsche Thread-Affinity → Crash beim 1. Render (`Brush.get_Transform` → `VerifyAccess`) | VM-Erzeugung IMMER auf dem UI-Thread: `Dispatcher.UIThread.InvokeAsync(() => GetRequiredService<MainViewModel>()).GetTask()`. Schwere Background-Arbeit (Shader/Asset-Preload) bleibt parallel auf `Task.Run` |
 | CSS translate() Exception | Fehlende px-Einheiten | `translate(0px, 400px)` statt `translate(0, 400)` |
 | AAPT2260 Fehler | grantUriPermissions ohne 's' | `android:grantUriPermissions="true"` (mit 's') |
 | ${applicationId} geht nicht | .NET Android kennt keine Gradle-Placeholder | Hardcodierte Package-Namen verwenden |
 | Icons in Tab-Leiste fehlen | Material.Icons xmlns fehlt | `xmlns:materialIcons="using:Material.Icons.Avalonia"` |
 | VersionCode Ablehnung | Code bereits im Play Store | VOR Release aktuelle Codes im Play Store prüfen |
-| Ads Error Code 0 + "Failed to instantiate ClientApi" | Ads vor SDK-Init geladen | `Initialize(activity, callback)` nutzen, Ads erst im Callback laden |
 | Release-App schließt sich beim 1. Start (VS) | VS kann in Release keinen Debugger anhängen | App manuell starten - funktioniert. Kein App-Bug, VS-Verhalten |
 | Process.Start PlatformNotSupportedException | Android unterstützt UseShellExecute nicht | `UriLauncher.OpenUri(uri)` verwenden (MeineApps.Core.Ava) |
 | `\u20ac` als Text in XAML | XAML interpretiert C#-Unicode-Escapes nicht | Direkt `€` schreiben oder `&#x20AC;` verwenden |
 | TransformOperations CS0103 | `Avalonia.Media` reicht nicht | `using Avalonia.Media.Transformation;` hinzufügen |
 | IsAnimating Property-Warnung | Kollidiert mit `AvaloniaObject.IsAnimating()` | Property umbenennen (z.B. `IsPulsing`) oder `new` Keyword |
 | KeyFrame-Animation Crash "No animator" | `Style.Animations` hat keinen Animator für `RenderTransform` | NUR `Opacity`/`Width`/`Height` (double) in KeyFrames verwenden. `TransformOperationsTransition` in `Transitions` funktioniert |
-| TapScaleBehavior Crash "InvalidCastException" | `animation.RunAsync(ScaleTransform)` crasht in `TransformAnimator.Apply` | DispatcherTimer-basierte Animation statt Animation API für ScaleTransform verwenden |
-| Content hinter Ad-Banner abgeschnitten | Ad-Spacer 50dp, aber adaptive Banner 50-60dp+ | Ad-Spacer auf 64dp erhöhen (alle 6 MainViews). Adaptive Banner variieren je nach Gerät |
 | Style Selector AVLN2200 "Can not find parent" | `#Name` ohne Typ-Prefix | IMMER `Typ#Name` schreiben: `Grid#ModeSelector`, `Border#DisplayBorder` |
 | Enum-Werte englisch in UI | Direktes Binding an Enum-Property | Display-Property mit lokalisiertem Text verwenden, im ViewModel per `GetString()` setzen |
 | Daten erscheinen kurz, verschwinden | `_ = InitializeAsync()` mit `_list.Clear()` raced mit User-Aktionen | Task speichern: `_initTask = InitializeAsync()`, in Methoden `await _initTask` |
@@ -514,22 +724,18 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | `IsAttachedToVisualTree` Kompilierfehler | Property in Avalonia 11.3 entfernt | `using Avalonia.VisualTree;` + `control.GetVisualRoot() != null` verwenden |
 | InsertAsync gibt falsche ID zurück | sqlite-net `InsertAsync()` gibt Zeilen-Count zurück (immer 1), NICHT Auto-Increment-ID. sqlite-net setzt ID direkt auf dem Objekt | Nach `await db.InsertAsync(entity)` NICHT `entity.Id = result` schreiben - `entity.Id` ist bereits korrekt gesetzt |
 | ScrollViewer scrollt nicht | `Padding` auf `ScrollViewer` verhindert Scrollen in Avalonia | `Padding` entfernen, stattdessen `Margin` auf das direkte Kind-Element setzen + `VerticalScrollBarVisibility="Auto"` |
-| DonutChart-Segment unsichtbar bei 100% | SkiaSharp `ArcTo` bei 360° erzeugt leeren Path (Start=Ende) | Bei `sweepAngle >= 359°` in zwei 180°-Hälften aufteilen |
 | ZIndex-Overlay Touch geht durch (Android) | Avalonia `ZIndex` auf Grid-Kindern funktioniert NICHT für Hit-Testing auf Android - Touch-Events gehen durch Overlay hindurch | Content-Swap statt Overlay: Normalen Content per `IsVisible=false` verstecken, Overlay-Content als Ersatz anzeigen. KEIN ZIndex verwenden für interaktive Overlays |
 | Assembly-Version 1.0.0 (Default) | Shared-Projekt hat keine `<Version>` Property → Assembly-Version ist 1.0.0.0 | `<Version>X.Y.Z</Version>` in Shared .csproj setzen wenn Assembly-Version zur Laufzeit ausgelesen wird |
-| Custom Control unsichtbar (PathIcon-Ableitung) | Abgeleitete Controls (z.B. `GameIcon : PathIcon`) haben kein ControlTheme → Avalonia 11 findet kein Template → Control rendert nichts | `protected override Type StyleKeyOverride => typeof(PathIcon);` in der Klasse überschreiben. Gilt für ALLE von TemplatedControl abgeleiteten Custom Controls |
-| Button.OnAttachedToLogicalTree Crash (Android) | `TransformOperationsTransition` für `RenderTransform` ohne initialen `RenderTransform`-Wert → Transition von null→scale() crasht auf manchen GPU-Treibern | IMMER `RenderTransform="scale(1)"` + `RenderTransformOrigin="50%,50%"` setzen wenn `TransformOperationsTransition Property="RenderTransform"` verwendet wird. Fix in ButtonStyles.axaml |
 | CommandParameter string→int Crash | XAML `CommandParameter="0"` ist IMMER `string`. `RelayCommand<int>` wirft `ArgumentException` in `CanExecute()` bei View-Attach | Methoden von `int` auf `string` ändern + `int.TryParse()` intern. Oder `<sys:Int32>0</sys:Int32>` im XAML. Betroffen: Alle hardcodierten CommandParameter-Werte |
-| Rewarded Ad Belohnung kommt nicht an | `LoadAndShowAsync()` Timeout (8s) deckt Laden UND Video-Anzeige ab → feuert während User Video schaut → `false` zurück | `CancellationTokenSource` im Callback: Timeout nur für Lade-Phase, wird gecancellt wenn Ad geladen+gezeigt wird |
-| Play Review Namespace falsch | `Com.Google.Android.Play.Core.Review` existiert nicht | `Xamarin.Google.Android.Play.Core.Review` verwenden. Task/IOnCompleteListener aus `Android.Gms.Tasks`. `ReviewInfo` (Klasse), NICHT `IReviewInfo` |
-| MediaPlayer.PrepareAsync() gibt void zurück | Android Java-Binding: PrepareAsync() ist void, nicht Task | `Prepare()` synchron verwenden oder TaskCompletionSource mit Prepared-Event |
-| SKMaskFilter Native Memory Leak (OOM auf Android) | `paint.MaskFilter = SKMaskFilter.CreateBlur(...)` ohne Dispose des vorherigen Filters | Gecachte statische SKMaskFilter verwenden oder `paint.MaskFilter?.Dispose()` vor jeder Neuzuweisung |
 | JsonSerializer.Serialize auf Background-Thread → Collection-Crash | `Task.Run(() => Serialize(state))` während GameLoop den State modifiziert | Serialisierung auf dem UI-Thread belassen (State ist klein, ~5-20ms). Alternative: DeepCopy vor Serialize |
-| Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
-| SKCanvasView Game-Loop startet nicht (Countdown stuck) | ContentControl+ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim `StartGameLoop()` keinen Subscriber → Render-Timer startet nie | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach. `TrySubscribeToViewModel()` als zentrale idempotente Methode |
 | Bildschirm flimmert bei Tab-/View-Wechsel | `FadeInContentPanel()` setzt `Opacity=0` NACH Binding-Update → neuer View kurz sichtbar bei voller Opacity → schwarzer Blitz | `PageTransitionStarting` Event via `OnActivePageChanging()` — feuert VOR dem Wert-Wechsel. View setzt `Opacity=0` bevor Bindings die neue View einblenden |
 | Startup langsam bei vielen Child-ViewModels | MainViewModel mit N Child-VMs als Singletons löst beim ersten `GetRequiredService<MainViewModel>()` alle Services+VMs transitiv auf — 200-500ms auf Mid-Tier-Android wenn N>15 | Spät-unlocked VMs als `Lazy<T>` injizieren, in `EnsureXxxVm()`-Methode beim ersten Navigations-Ziel instanziieren + verdrahten. Public Property `XxxViewModel?` ist nullable → `[ObservableProperty]` feuert OnPropertyChanged bei Ensure → XAML ContentControl bindet dann ein. `AddLazyResolution()` Extension registriert `Lazy<T>` im DI-Container. LanguageChanged-Handler nur `Xxx?.UpdateLocalizedTexts()` (null-safe). Pattern in BomberBlast v2.0.34 eingeführt |
 | Firebase ServerValue.TIMESTAMP für Anti-Spoofing | Client-gesetzte Zeitstempel (`DateTime.UtcNow.ToString("O")`) sind manipulierbar → Leaderboards können gefälschte "Letzte Aktivität"-Werte bekommen | Firebase-Sentinel `{".sv":"timestamp"}` als Payload-Wert verwenden: `private static readonly Dictionary<string,string> FirebaseServerTimestamp = new() { [".sv"] = "timestamp" };`. Firebase löst das serverseitig in ms-Timestamp auf. Security-Rules können darauf Rate-Limits setzen. Keine client-seitige Logik darauf verlassen — nur als Anzeige/Rate-Limit |
+
+**Themen-spezifische Gotchas (NICHT hier dokumentiert):**
+
+- **SkiaSharp / SKCanvasView / Custom Controls / Behaviors** → [src/UI/MeineApps.UI/CLAUDE.md](src/UI/MeineApps.UI/CLAUDE.md) (DonutChart-360°, SKMaskFilter-Leak, Render-Loop, IsVisible-Toggle, PathIcon-Ableitung, TapScaleBehavior-InvalidCastException, Game-Loop-Startup, Button-RenderTransform-Pflicht).
+- **AdMob / Billing / Rewarded / Ad-Banner-Layout / Play Review / MediaPlayer / Purchase-Restore** → [src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md](src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) (UMP-Namespace-Typo, Java Generics Erasure, Billing v8, Rewarded-Timeout, Ad-Spacer 64dp, Play-Review-Namespace, MediaPlayer-Binding).
 
 ---
 

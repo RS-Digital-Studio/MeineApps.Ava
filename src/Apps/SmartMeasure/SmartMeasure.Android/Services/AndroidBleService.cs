@@ -393,6 +393,13 @@ public sealed class AndroidBleService : IBleService, IDisposable
 
         // Ellipsoid → NN (MSL). Wenn Firmware bereits MSL sendet: _geoidService.IsClientCorrectionEnabled=false
         var altMsl = _geoidService.EllipsoidToGeoid(lat, lon, altEllipsoid);
+
+        // Position auch im CurrentState ablegen (Plan 3.1 RTK-AR-Fusion) — die AR-Activity
+        // konsumiert CurrentState ohne den Event abonnieren zu müssen.
+        CurrentState.Latitude = lat;
+        CurrentState.Longitude = lon;
+        CurrentState.Altitude = altMsl;
+
         PositionUpdated?.Invoke(lat, lon, altMsl);
     }
 

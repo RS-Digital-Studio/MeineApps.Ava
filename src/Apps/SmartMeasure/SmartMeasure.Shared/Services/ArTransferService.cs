@@ -20,6 +20,13 @@ public class ArTransferService : IArTransferService
     /// <summary>Faktor GPS-Accuracy (m) → AR-Genauigkeit (cm). AR addiert eigene Ungenauigkeit auf GPS-Basis</summary>
     private const float GpsToArAccuracyFactor = 100f;
 
+    /// <summary>
+    /// VerticalAccuracy-Faktor relativ zur horizontalen Genauigkeit.
+    /// GPS-Höhenmessungen sind klassisch ~1.5–2× ungenauer als Lagewerte (PDOP-/VDOP-Verhältnis).
+    /// AR-Höhe addiert eine eigene Komponente (Ground-Plane-Detection ±5cm, Multi-Frame-Y-Drift ±2cm).
+    /// </summary>
+    private const float VerticalToHorizontalAccFactor = 1.8f;
+
     /// <summary>Mapping: ArContourType → GardenElementType (vollstaendig fuer alle 9 Typen)</summary>
     private static readonly Dictionary<ArContourType, GardenElementType> ContourTypeMapping = new()
     {
@@ -108,14 +115,24 @@ public class ArTransferService : IArTransferService
         var headingDeg = result.MagneticHeading ?? 0f;
         var gpsAccuracy = result.GpsAccuracy ?? 5f;
 
+        // Plan 3.1: Bei RTK-Quelle ist die GPS-Accuracy bereits cm-genau — wir respektieren
+        // sie statt das 50cm-Minimum (MinArAccuracyCm) anzuwenden. Das ist der ganze Punkt
+        // der RTK-Fusion: nicht die AR-Schätzung als Fehler-Ceiling, sondern den echten
+        // RTK-Fehler durchreichen.
+        var isRtk = result.GpsSource == ArGpsSource.RtkRover;
+
         // ARCore-Session-Ursprung liegt typisch in Augen-/Brusthöhe (1.0-1.7m über Boden).
         // Wenn der ArCaptureService eine horizontale Ground-Plane gefunden hat, ist deren
         // Y-Wert die Boden-Höhe relativ zum Session-Ursprung — wir ziehen diesen Offset
         // ab, damit ArPoint.Y absolute Höhe über Boden wird.
         var groundOffset = result.GroundPlaneY ?? 0f;
 
-        // Fallback-Accuracy wenn Geospatial nicht aktiv (cm, aus GPS * Faktor)
-        var fallbackAccuracyCm = Math.Max(gpsAccuracy * GpsToArAccuracyFactor, MinArAccuracyCm);
+        // Fallback-Accuracy wenn Geospatial nicht aktiv (cm, aus GPS * Faktor).
+        // Bei RTK: kein 50cm-Minimum, kein 100x-Faktor — die RTK-Accuracy ist bereits cm-genau.
+        // Wir addieren nur einen kleinen ARCore-Drift-Term (5cm) auf den GPS-Wert.
+        var fallbackAccuracyCm = isRtk
+            ? Math.Max(gpsAccuracy * 100f + 5f, 2f) // RTK in m → cm + 5cm AR-Drift, min 2cm
+            : Math.Max(gpsAccuracy * GpsToArAccuracyFactor, MinArAccuracyCm);
 
         // Heading-Rotation nur als Fallback — Geospatial-Koords pro Punkt werden bevorzugt
         var headingRad = headingDeg * Math.PI / 180.0;
@@ -160,6 +177,14 @@ public class ArTransferService : IArTransferService
             // Korrektur nach NN analog BLE-Pfad (in DE ~48m Differenz).
             var finalAlt = _geoidService.EllipsoidToGeoid(finalLat, finalLon, finalAltEllipsoid);
 
+            // VerticalAccuracy ist nach Plan-Kap. 4.1 konservativ schlechter als die
+            // horizontale (GPS-Höhe hat höheres VDOP, AR-Höhe kommt zusätzlich aus
+            // Ground-Plane-Schätzung). 1.8× ist ein vorsichtiger Mittelwert.
+            var verticalAccCm = finalAccuracyCm * VerticalToHorizontalAccFactor;
+
+            // TiltAngle/MagAccuracy werden pro AR-Punkt aus der Camera-Pose und dem Magnetometer
+            // beim Capture-Zeitpunkt übernommen — gibt späterer Tilt-Korrektur / Quality-Berechnung
+            // belastbare Daten. TiltAzimuth bleibt 0, weil AR kein "Stab-Azimuth" hat.
             points.Add(new SurveyPoint
             {
                 ProjectId = projectId,
@@ -167,12 +192,12 @@ public class ArTransferService : IArTransferService
                 Longitude = finalLon,
                 Altitude = finalAlt,
                 HorizontalAccuracy = finalAccuracyCm,
-                VerticalAccuracy = finalAccuracyCm,
-                TiltAngle = 0f,
+                VerticalAccuracy = verticalAccCm,
+                TiltAngle = arPoint.CameraPitchDeg,
                 TiltAzimuth = 0f,
                 FixQuality = ArFixQuality,
                 SatelliteCount = 0,
-                MagAccuracy = 0,
+                MagAccuracy = arPoint.MagAccuracyAtCapture,
                 Timestamp = arPoint.Timestamp,
                 Label = arPoint.Label
             });

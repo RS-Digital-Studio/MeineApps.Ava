@@ -40,7 +40,14 @@ public sealed class AndroidArCaptureService : IArCaptureService
         {
             var availability = Google.AR.Core.ArCoreApk.Instance!
                 .CheckAvailability(_activity);
-            var isSupported = availability?.ToString()?.Contains("SUPPORTED") == true;
+            var availabilityName = availability?.ToString() ?? string.Empty;
+            // SUPPORTED_INSTALLED — alles ok, AR-Session kann sofort starten.
+            // SUPPORTED_NOT_INSTALLED / SUPPORTED_APK_TOO_OLD — Gerät ist kompatibel, ARCore
+            // muss aber aus dem Play Store installiert/aktualisiert werden. Plan Kap. 4.14:
+            // statt still false zu liefern, beim CaptureAsync den Install-Flow anstoßen.
+            // Hier melden wir trotzdem true zurück — UI bietet AR-Modus an, der Install-Flow
+            // läuft beim ersten StartCaptureActivity (siehe StartCaptureActivity).
+            var isSupported = availabilityName.Contains("SUPPORTED");
             return Task.FromResult(isSupported);
         }
         catch (Exception ex)
@@ -103,6 +110,34 @@ public sealed class AndroidArCaptureService : IArCaptureService
     {
         try
         {
+            // Plan 4.14: Prüfe ob ARCore-APK installiert ist, sonst Play-Store-Flow auslösen.
+            var apk = Google.AR.Core.ArCoreApk.Instance;
+            if (apk != null)
+            {
+                var availability = apk.CheckAvailability(_activity)?.ToString() ?? string.Empty;
+                if (availability.Contains("NOT_INSTALLED") || availability.Contains("TOO_OLD"))
+                {
+                    try
+                    {
+                        // RequestInstall(activity, userRequestedInstall=true) öffnet Play-Store.
+                        var status = apk.RequestInstall(_activity, true)?.ToString() ?? string.Empty;
+                        if (status == "InstallRequested")
+                        {
+                            // Activity wird re-launched nachdem Install fertig ist; CaptureAsync
+                            // muss vom User dann erneut getriggert werden.
+                            CompleteWithError("ARCore wird im Play Store installiert. Bitte AR-Modus danach neu starten.");
+                            return;
+                        }
+                        // Installed → weitermachen
+                    }
+                    catch (Exception installEx)
+                    {
+                        global::Android.Util.Log.Warn("ArCaptureService",
+                            $"ARCore Install-Request fehlgeschlagen: {installEx.Message}");
+                    }
+                }
+            }
+
             var intent = new Intent(_activity, typeof(ArCaptureActivity));
             _activity.StartActivityForResult(intent, ArCaptureActivity.REQUEST_CODE);
         }

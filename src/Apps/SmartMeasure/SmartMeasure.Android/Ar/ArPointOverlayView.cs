@@ -20,7 +20,7 @@ namespace SmartMeasure.Android.Ar;
 /// - Plane-Polygone halbtransparent
 /// - Transient-Hints (nach Undo/Redo etc.)
 /// </summary>
-public sealed class ArPointOverlayView : View
+public sealed partial class ArPointOverlayView : View
 {
     private readonly List<ArPoint> _points;
     private readonly List<ArContour> _contours;
@@ -36,6 +36,12 @@ public sealed class ArPointOverlayView : View
 
     // Transient-Hint Timer
     private long _transientHintUntilMs;
+
+    // Aktuelle Screen-Bounds des Readiness-Badges. Werden nach jedem Draw aktualisiert,
+    // die Activity nutzt sie für Tap-Detection (Tap → Detail-Panel).
+    // RectF.Empty wenn Badge nicht sichtbar (z.B. nicht trackend).
+    public global::Android.Graphics.RectF ReadinessBadgeBounds { get; private set; }
+        = new global::Android.Graphics.RectF();
 
     // Paints (alle gecacht)
     private readonly Paint _pointPaint;
@@ -69,6 +75,7 @@ public sealed class ArPointOverlayView : View
     // Nord-Pfeil
     private readonly Paint _northArrowPaint;
     private readonly Paint _northTextPaint;
+    private readonly Paint _compassAccRingPaint;
     private readonly global::Android.Graphics.Path _northArrowPath;
 
     // Auto-Close-Ring
@@ -77,6 +84,11 @@ public sealed class ArPointOverlayView : View
     // Maßstab
     private readonly Paint _scalePaint;
     private readonly Paint _scaleTextPaint;
+
+    // Live-Footer (Umfang / Fläche / Punkte) direkt über der Toolbar.
+    private readonly Paint _footerBgPaint;
+    private readonly Paint _footerLabelPaint;
+    private readonly Paint _footerValuePaint;
 
     // Transient-Hint
     private readonly Paint _transientHintBgPaint;
@@ -229,6 +241,13 @@ public sealed class ArPointOverlayView : View
         _northArrowPath = new global::Android.Graphics.Path();
         BuildNorthArrowPath(_northArrowPath, 14f * _density);
 
+        // Ring um die Kompass-Rosette wenn Mag-Accuracy schlecht ist (Color wird pro Draw gesetzt)
+        _compassAccRingPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            StrokeWidth = 2f * _density,
+        };
+        _compassAccRingPaint.SetStyle(Paint.Style.Stroke);
+
         _autoCloseRingPaint = new Paint(PaintFlags.AntiAlias)
         {
             Color = Color.Argb(220, 76, 175, 80),
@@ -250,6 +269,26 @@ public sealed class ArPointOverlayView : View
             TextAlign = Paint.Align.Center,
         };
         _scaleTextPaint.SetShadowLayer(3f, 0f, 0f, Color.Black);
+
+        // Live-Footer-Paints — größere Schrift als Stats-Panel weil das Footer-Info primär ist.
+        _footerBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(220, 18, 18, 28) };
+        _footerBgPaint.SetStyle(Paint.Style.Fill);
+
+        _footerLabelPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(200, 255, 255, 255),
+            TextSize = 10f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+
+        _footerValuePaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.White,
+            TextSize = 16f * _density,
+            TextAlign = Paint.Align.Center,
+            FakeBoldText = true,
+        };
+        _footerValuePaint.SetShadowLayer(2f, 0f, 0f, Color.Black);
 
         _transientHintBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(220, 76, 175, 80) };
         _transientHintBgPaint.SetStyle(Paint.Style.Fill);
@@ -340,10 +379,14 @@ public sealed class ArPointOverlayView : View
         _statsLabelPaint.Dispose();
         _northArrowPaint.Dispose();
         _northTextPaint.Dispose();
+        _compassAccRingPaint.Dispose();
         _northArrowPath.Dispose();
         _autoCloseRingPaint.Dispose();
         _scalePaint.Dispose();
         _scaleTextPaint.Dispose();
+        _footerBgPaint.Dispose();
+        _footerLabelPaint.Dispose();
+        _footerValuePaint.Dispose();
         _transientHintBgPaint.Dispose();
         _transientHintTextPaint.Dispose();
         base.OnDetachedFromWindow();
@@ -386,6 +429,12 @@ public sealed class ArPointOverlayView : View
         if (!_state.IsTracking)
             DrawTrackingBanner(canvas, width);
 
+        // 8b. Persistente System-Banner (Thermal + Battery) — stapeln sich unter dem
+        // Tracking-Banner. Anders als TransientHints bleiben sie sichtbar solange das
+        // System-Event aktiv ist, sodass der User nicht den Grund für reduzierte Präzision
+        // verpasst.
+        DrawSystemWarningBanners(canvas, width);
+
         // 9. Stats-Panel (oben rechts)
         if (_showStats)
             DrawStatsPanel(canvas, width);
@@ -395,6 +444,10 @@ public sealed class ArPointOverlayView : View
 
         // 11. Maßstab (unten links über Toolbar)
         DrawScaleBar(canvas, width, height);
+
+        // 11b. Live-Footer mit primären Mess-Werten (Umfang/Fläche/Punkte) direkt über
+        // der Toolbar — prominenter als das Stats-Panel oben rechts.
+        DrawLiveFooter(canvas, width, height);
 
         // 12. Ready-Badge + Quality-Score (oben links)
         DrawReadinessBadge(canvas);
@@ -519,8 +572,14 @@ public sealed class ArPointOverlayView : View
         }
     }
 
+    /// <summary>Dauer der Pop-In-Animation für neue Punkte in Millisekunden.</summary>
+    private const int PointBornAnimationMs = 250;
+
     private void DrawPoints(Canvas canvas, float pointRadius)
     {
+        var nowUtc = DateTime.UtcNow;
+        var anyAnimating = false;
+
         foreach (var (sx, sy, idx) in _projectedPoints)
         {
             if (idx == _selectedIndex)
@@ -530,19 +589,43 @@ public sealed class ArPointOverlayView : View
             var confidence = 1f;
             int hitQuality = 3;
             float stdDev = 0f;
+            DateTime timestamp = nowUtc;
             if (idx < _points.Count)
             {
                 confidence = _points[idx].Confidence;
                 hitQuality = _points[idx].HitQuality;
                 stdDev = _points[idx].PositionStdDev;
+                timestamp = _points[idx].Timestamp;
             }
 
-            var effectiveR = pointRadius * (0.6f + 0.4f * confidence);
+            // Plan Kap. 4.12: Punkt-Radius nicht mit Confidence schrumpfen lassen — bei
+            // niedriger Confidence sonst kaum sichtbar (4.8 dp). Stattdessen Mindest-Radius
+            // halten (6 dp via 0.75 * pointRadius bei pointRadius=8dp) und Confidence über
+            // Outline-Stärke signalisieren (dünn = unsicher, dick = sicher).
+            var effectiveR = MathF.Max(pointRadius * 0.75f, pointRadius * (0.85f + 0.15f * confidence));
             var alpha = (int)(255 * (0.5f + 0.5f * confidence));
+            // Outline-Stroke skaliert mit Confidence: 1.0 dp bei conf=0, 3.0 dp bei conf=1.
+            var outlineStroke = (1f + 2f * confidence) * _density;
+
+            // Pop-In-Animation: junge Punkte starten 2.2× groß und schrumpfen auf normalgröße.
+            // Ease-out-Quadratic. Dauer = PointBornAnimationMs.
+            var ageMs = (nowUtc - timestamp).TotalMilliseconds;
+            if (ageMs >= 0 && ageMs < PointBornAnimationMs)
+            {
+                var t = (float)(ageMs / PointBornAnimationMs);
+                var ease = 1f - (1f - t) * (1f - t); // Ease-out-Quadratic
+                var scale = 2.2f - 1.2f * ease;
+                effectiveR *= scale;
+                anyAnimating = true;
+            }
 
             _pointPaint.Alpha = alpha;
             canvas.DrawCircle(sx, sy, effectiveR, _pointPaint);
+            // Outline mit confidence-skaliertem Stroke — Plan Kap. 4.12.
+            var originalStroke = _pointOutlinePaint.StrokeWidth;
+            _pointOutlinePaint.StrokeWidth = outlineStroke;
             canvas.DrawCircle(sx, sy, effectiveR, _pointOutlinePaint);
+            _pointOutlinePaint.StrokeWidth = originalStroke;
             _pointPaint.Alpha = 255;
 
             // Hit-Quality-Indikator: kleines Symbol oberhalb des Punktes
@@ -581,6 +664,11 @@ public sealed class ArPointOverlayView : View
                 }
             }
         }
+
+        // Solange Pop-In-Animation läuft, alle 16ms neu zeichnen (60fps).
+        // Frame-Updates vom GL-Thread sind nicht garantiert wenn Tracking pausiert.
+        if (anyAnimating)
+            PostInvalidateDelayed(16);
     }
 
     /// <summary>Distanz-Labels zwischen ALLEN aufeinanderfolgenden Punkten — vorher nur zwischen letzten 2.</summary>
@@ -733,6 +821,49 @@ public sealed class ArPointOverlayView : View
         canvas.DrawText(text, width / 2f, textY, _bannerTextPaint);
     }
 
+    /// <summary>
+    /// Stapelt persistente System-Warnungen (Thermal-Throttling, niedriger Akku) unter dem
+    /// Tracking-Banner. Bleiben sichtbar solange das System-Event andauert — keine Auto-Fade
+    /// wie TransientHints. Orange für Thermal, Gelb für Battery (Severity-Hierarchie).
+    /// </summary>
+    private void DrawSystemWarningBanners(Canvas canvas, int width)
+    {
+        if (string.IsNullOrEmpty(_state.ThermalWarning) && string.IsNullOrEmpty(_state.BatteryWarning))
+            return;
+
+        // Vertikale Position: unter Tracking-Banner falls aktiv, sonst direkt unter Top-Inset.
+        var top = MathF.Max(_state.TopInsetPixels + 64 * _density, 80 * _density);
+        if (!_state.IsTracking)
+            top += 48 * _density; // Höhe Tracking-Banner (40dp + 8dp Abstand)
+
+        var bannerH = 36 * _density;
+        var gap = 6 * _density;
+
+        if (!string.IsNullOrEmpty(_state.ThermalWarning))
+        {
+            DrawWarningBanner(canvas, width, top, bannerH,
+                _state.ThermalWarning!, Color.Argb(230, 230, 81, 0)); // Orange
+            top += bannerH + gap;
+        }
+
+        if (!string.IsNullOrEmpty(_state.BatteryWarning))
+        {
+            DrawWarningBanner(canvas, width, top, bannerH,
+                _state.BatteryWarning!, Color.Argb(230, 245, 124, 0)); // Amber
+        }
+    }
+
+    private void DrawWarningBanner(Canvas canvas, int width, float top, float height,
+        string text, Color bgColor)
+    {
+        var rect = new RectF(20 * _density, top, width - 20 * _density, top + height);
+        using var bgPaint = new Paint(PaintFlags.AntiAlias) { Color = bgColor };
+        bgPaint.SetStyle(Paint.Style.Fill);
+        canvas.DrawRoundRect(rect, 6 * _density, 6 * _density, bgPaint);
+        var textY = top + height / 2f + _bannerTextPaint.TextSize / 3f;
+        canvas.DrawText(text, width / 2f, textY, _bannerTextPaint);
+    }
+
     private void DrawStatsPanel(Canvas canvas, int width)
     {
         // Panel unterhalb von Top-Inset + Nord-Pfeil starten
@@ -819,17 +950,45 @@ public sealed class ArPointOverlayView : View
         var cy = topOffset + 22f * _density;
         var radius = 18f * _density;
 
-        // Kreis-BG
+        // Kreis-BG. Bei niedriger Mag-Accuracy zusätzlich farbiger Ring um den Kreis —
+        // visueller Hinweis dass die Nord-Richtung unzuverlässig ist (typisch in
+        // Metallumgebung oder bei nicht-kalibriertem Kompass). Plan Kap. 4.10.
         canvas.DrawCircle(cx, cy, radius, _statsBgPaint);
+
+        var (ringColor, arrowColor) = GetCompassAccuracyColors(_state.MagneticAccuracy);
+        if (ringColor.HasValue)
+        {
+            // Gecachtes Ring-Paint, nur Farbe wechseln — keine Per-Frame-Allocation.
+            _compassAccRingPaint.Color = ringColor.Value;
+            canvas.DrawCircle(cx, cy, radius + 1f * _density, _compassAccRingPaint);
+        }
 
         canvas.Save();
         canvas.Translate(cx, cy);
         canvas.Rotate(-_state.CompassHeading);
+
+        var originalArrowColor = _northArrowPaint.Color;
+        if (arrowColor.HasValue)
+            _northArrowPaint.Color = arrowColor.Value;
         canvas.DrawPath(_northArrowPath, _northArrowPaint);
+        _northArrowPaint.Color = originalArrowColor;
         canvas.Restore();
 
         canvas.DrawText("N", cx, cy + radius + 14 * _density, _northTextPaint);
     }
+
+    /// <summary>
+    /// Liefert Ring- und Pfeil-Farbe für die Kompass-Genauigkeit.
+    /// Android-Magnetometer-Accuracy: 0=unreliable, 1=low, 2=medium, 3=high.
+    /// Bei "high" geben wir null zurück — die Default-Paint-Farben bleiben aktiv.
+    /// </summary>
+    private static (Color? ring, Color? arrow) GetCompassAccuracyColors(int magAccuracy) => magAccuracy switch
+    {
+        0 => (Color.Argb(255, 244, 67, 54), Color.Argb(255, 244, 67, 54)),    // Rot - unkalibriert
+        1 => (Color.Argb(255, 255, 152, 0), Color.Argb(255, 255, 152, 0)),    // Orange - niedrig
+        2 => (Color.Argb(255, 255, 235, 59), null),                            // Gelb-Ring, Pfeil bleibt
+        _ => (null, null),                                                      // High = normal
+    };
 
     private void DrawScaleBar(Canvas canvas, int width, int height)
     {
@@ -869,13 +1028,62 @@ public sealed class ArPointOverlayView : View
     }
 
     /// <summary>
+    /// Live-Footer-Bar direkt über der Toolbar — zeigt die primären Mess-Werte (Punkte,
+    /// Länge, Fläche) in großer Schrift. Stats-Panel bleibt zusätzlich für Detail-Infos.
+    /// Bottom-Position richtet sich nach Toolbar-Höhe (80dp) + BottomInset.
+    /// </summary>
+    private void DrawLiveFooter(Canvas canvas, int width, int height)
+    {
+        // Nur zeigen wenn überhaupt etwas zu zeigen ist
+        var pointCount = _points.Count + _contours.Sum(c => c.Points.Count);
+        if (_state.IsTracking && pointCount == 0) return;
+
+        var toolbarOffset = 80 * _density + _state.BottomInsetPixels;
+        var footerH = 56 * _density;
+        var footerMargin = 8 * _density;
+        var footerTop = height - toolbarOffset - footerH - footerMargin;
+        var sidePad = 16 * _density;
+        var rect = new RectF(sidePad, footerTop, width - sidePad, footerTop + footerH);
+
+        canvas.DrawRoundRect(rect, 10 * _density, 10 * _density, _footerBgPaint);
+
+        // 3 Spalten: Punkte / Länge / Fläche
+        var colW = (rect.Width()) / 3f;
+        var labelY = rect.Top + 16 * _density;
+        var valueY = rect.Top + 38 * _density;
+
+        // Punkte
+        var cx1 = rect.Left + colW / 2f;
+        canvas.DrawText("PUNKTE", cx1, labelY, _footerLabelPaint);
+        canvas.DrawText(pointCount.ToString(), cx1, valueY, _footerValuePaint);
+
+        // Länge
+        var cx2 = rect.Left + colW * 1.5f;
+        canvas.DrawText("LÄNGE", cx2, labelY, _footerLabelPaint);
+        canvas.DrawText($"{_state.LiveLengthMeters:F2} m", cx2, valueY, _footerValuePaint);
+
+        // Fläche
+        var cx3 = rect.Left + colW * 2.5f;
+        canvas.DrawText("FLÄCHE", cx3, labelY, _footerLabelPaint);
+        canvas.DrawText(
+            _state.LiveAreaSquareMeters >= 0.01f
+                ? $"{_state.LiveAreaSquareMeters:F1} m²"
+                : "—",
+            cx3, valueY, _footerValuePaint);
+    }
+
+    /// <summary>
     /// Zeichnet oben links ein Ready-Badge mit Quality-Score.
     /// Farbe: Grün (ready), Gelb (teilweise), Rot (nicht bereit).
     /// Zeigt zusätzlich den Tracking-Quality-Score in %.
     /// </summary>
     private void DrawReadinessBadge(Canvas canvas)
     {
-        if (!_state.IsTracking) return;
+        if (!_state.IsTracking)
+        {
+            ReadinessBadgeBounds.SetEmpty();
+            return;
+        }
 
         var padding = 8f * _density;
         var badgeX = 20 * _density;
@@ -906,6 +1114,13 @@ public sealed class ArPointOverlayView : View
         var rect = new RectF(badgeX, badgeY, badgeX + badgeW, badgeY + badgeH);
         canvas.DrawRoundRect(rect, 8f * _density, 8f * _density, bgPaint);
         canvas.DrawText(text, badgeX + badgeW / 2f, badgeY + badgeH / 2f + 5 * _density, _bannerTextPaint);
+
+        // Bounds publizieren für Tap-Detection in der Activity. Etwas vergrößert (8dp) damit
+        // dünne Finger leichter treffen.
+        var tapPad = 8 * _density;
+        ReadinessBadgeBounds.Set(
+            rect.Left - tapPad, rect.Top - tapPad,
+            rect.Right + tapPad, rect.Bottom + tapPad);
     }
 
     private void DrawTransientHint(Canvas canvas, int width, int height)

@@ -276,6 +276,11 @@ public sealed class MockBleService : IBleService, IDisposable
                 CurrentState.MagAccuracy = _magAccuracyOverride;
         }
 
+        // Position auch im CurrentState ablegen — siehe AndroidBleService-Kommentar
+        CurrentState.Latitude = lat;
+        CurrentState.Longitude = lon;
+        CurrentState.Altitude = alt;
+
         PositionUpdated?.Invoke(lat, lon, alt);
         AccuracyUpdated?.Invoke(hAcc, vAcc);
         StateChanged?.Invoke(CurrentState);

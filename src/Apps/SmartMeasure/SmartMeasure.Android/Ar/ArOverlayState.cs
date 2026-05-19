@@ -105,4 +105,15 @@ public sealed class ArOverlayState
 
     /// <summary>Bottom-Inset in Pixel (Navigation-Bar) — Overlay-Bottom-UI muss darüber enden.</summary>
     public float BottomInsetPixels { get; init; }
+
+    /// <summary>
+    /// Persistente Thermal-Warnung. null = ok, sonst Text wie "Gerät heiß — Präzision reduziert".
+    /// Wird als Top-Banner unter dem Tracking-Banner gerendert, bleibt sichtbar bis Throttling aufhört.
+    /// </summary>
+    public string? ThermalWarning { get; init; }
+
+    /// <summary>
+    /// Persistente Battery-Warnung bei niedrigem Akku. null = ok, sonst "Akku 12%".
+    /// </summary>
+    public string? BatteryWarning { get; init; }
 }

@@ -30,6 +30,21 @@ public class StickState
     /// <summary>BNO085 Magnetometer-Accuracy (0-3)</summary>
     public int MagAccuracy { get; set; }
 
+    /// <summary>
+    /// Letzte vom Rover gemeldete Latitude in Grad (WGS84). Null wenn noch keine
+    /// Position empfangen wurde. Wird via PositionUpdated-Event kontinuierlich aktualisiert.
+    /// </summary>
+    public double? Latitude { get; set; }
+
+    /// <summary>Letzte gemeldete Longitude in Grad (WGS84).</summary>
+    public double? Longitude { get; set; }
+
+    /// <summary>Letzte gemeldete Höhe in Meter über NN (geoid-korrigiert).</summary>
+    public double? Altitude { get; set; }
+
+    /// <summary>Komfort-Property — true wenn die letzte Position eine Höhe enthielt.</summary>
+    public bool HasAltitude => Altitude.HasValue;
+
     /// <summary>Fix-Status als lesbarer Text</summary>
     public string FixStatusText => GetFixStatusText(FixQuality);
 

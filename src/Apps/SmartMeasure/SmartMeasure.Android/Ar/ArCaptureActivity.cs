@@ -29,14 +29,25 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 {
     public const int REQUEST_CODE = 9011;
 
-    // Statisches Ergebnis-Feld (Intent-Extras haben Groessenlimit)
+    // Statisches Ergebnis-Feld (Intent-Extras haben Groessenlimit).
+    // Lock schützt gegen Race wenn der Konsument das Result liest waehrend die
+    // naechste Session bereits einen neuen Wert schreibt.
+    private static readonly object _lastResultLock = new();
     private static ArCaptureResult? _lastResult;
     public static ArCaptureResult? ConsumeLastResult()
     {
-        var result = _lastResult;
-        _lastResult = null;
-        return result;
+        lock (_lastResultLock)
+        {
+            var result = _lastResult;
+            _lastResult = null;
+            return result;
+        }
     }
+
+    /// <summary>Doppel-Submit-Guard: <see cref="FinishCapture"/> kann durch Back-Button und
+    /// Toolbar-Fertig gleichzeitig getriggert werden. Auch <see cref="OnPause"/>/<see cref="OnDestroy"/>
+    /// dürfen das Result nicht noch einmal anfassen.</summary>
+    private int _finished; // 0 = aktiv, 1 = abgeschlossen — via Interlocked.Exchange
 
     // ARCore
     private Session? _arSession;
@@ -61,18 +72,42 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     private DateTime _sessionStart;
     private CaptureMode _captureMode = CaptureMode.Point;
 
-    // Sensordaten zum Session-Start
+    // Sensordaten zum Session-Start. _magneticHeading wird Cross-Thread geschrieben
+    // (Sensor-Thread) und gelesen (GL-/UI-Thread) — Nullable<float> ist ein 8-Byte-Struct
+    // und damit NICHT atomic. Lösung: int-Bits eines float, NaN = "kein Wert", via
+    // Volatile.Read/Write.
     private double? _gpsLatitude;
     private double? _gpsLongitude;
     private double? _gpsAltitude;
     private float? _gpsAccuracy;
-    private float? _magneticHeading;
     private float? _barometricAltitude;
+
+    // Volatile-Bits eines float — sentinel NaN = "kein Wert".
+    private int _magneticHeadingBits = BitConverter.SingleToInt32Bits(float.NaN);
+    private float? _magneticHeading
+    {
+        get
+        {
+            var f = BitConverter.Int32BitsToSingle(System.Threading.Volatile.Read(ref _magneticHeadingBits));
+            return float.IsNaN(f) ? null : f;
+        }
+        set => System.Threading.Volatile.Write(ref _magneticHeadingBits,
+            BitConverter.SingleToInt32Bits(value ?? float.NaN));
+    }
 
     // Sensor-Manager fuer Heading/Barometer
     private global::Android.Hardware.SensorManager? _sensorManager;
     private readonly float[] _rotationMatrix = new float[9];
     private readonly float[] _orientationAngles = new float[3];
+
+    /// <summary>Aktive Sensor-Listener — werden in OnDestroy garantiert unregistered,
+    /// auch wenn die PostDelayed-Cleanups noch nicht abgelaufen sind. Sonst Sensor-Leak
+    /// + Battery-Drain wenn Activity vor 5s-Timeout beendet wird.</summary>
+    private readonly List<global::Android.Hardware.ISensorEventListener> _activeSensorListeners = [];
+
+    /// <summary>Aktive LocationManager-Listener für gleiches Cleanup wie Sensoren.</summary>
+    private readonly List<(global::Android.Locations.LocationManager mgr,
+        global::Android.Locations.ILocationListener listener)> _activeLocationListeners = [];
 
     // Drag-Startposition fuer Undo
     private (float x, float y, float z)? _dragStartPos;
@@ -101,10 +136,23 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     private TextView? _counterText;
     private TextView? _distanceText;
 
-    // Letzter Frame fuer Hit-Testing
+    // Letzter Frame fuer Hit-Testing.
+    //
+    // ARCore-Frames sind nicht offiziell cross-thread-safe — die JNI-Referenz bleibt
+    // zwar live, ARCore koennte aber waehrend Session.Update() interne Buffer recyceln.
+    // Pragmatische Loesung: HitTest-Requests vom UI-Thread werden via _pendingFrameOps
+    // an den GL-Thread weitergereicht und am Anfang von OnDrawFrame abgearbeitet, BEVOR
+    // ein neues Update() laeuft. Damit garantiert: Frame.HitTest laeuft nur auf dem
+    // GL-Thread und ist mit dem Frame-Lifecycle synchron.
+    //
+    // Drag-Operationen werden dadurch um 1 Frame (~16ms) verzoegert — kaum merklich.
     private Frame? _lastFrame;
     private readonly object _frameLock = new();
     private readonly object _dataLock = new(); // Schuetzt _points, _contours, _activeContour
+
+    /// <summary>Queue von Lambdas die am Anfang von OnDrawFrame im GL-Thread abgearbeitet
+    /// werden (typisch HitTest-Requests vom UI-Thread). Lock = die Liste selbst.</summary>
+    private readonly List<Action<Frame>> _pendingFrameOps = [];
 
     // Reticle/Live-HitTest (aktualisiert pro Frame vom GL-Thread)
     private float _reticleHitDistance;
@@ -174,16 +222,25 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     private volatile bool _geospatialEnabled; // Config war erfolgreich gesetzt
     private readonly List<float> _geospatialHorizontalAccSamples = [];
     private readonly List<float> _geospatialHeadingAccSamples = [];
-    private double? _lastGeoLatitude;
-    private double? _lastGeoLongitude;
-    private double? _lastGeoAltitude;
-    private float? _lastGeoHorizontalAcc;
-    private float? _lastGeoHeading;
-    private float? _lastGeoHeadingAcc;
+
+    /// <summary>Immutable Snapshot der Geospatial-Pose. Cross-Thread-sicher via
+    /// Volatile-Reference-Swap — ein Reader sieht entweder den alten oder den neuen
+    /// Snapshot, niemals einen halben Zustand. Null = noch nichts empfangen.</summary>
+    private sealed record GeospatialSnapshot(
+        double Latitude, double Longitude, double Altitude,
+        float HorizontalAccuracy, float Heading, float HeadingAccuracy);
+
+    private GeospatialSnapshot? _lastGeoSnapshot; // gelesen via Volatile.Read
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+
+        // Statisches _lastResult kann von einer vorherigen Session stammen
+        // (z.B. Process-Kill ohne ConsumeLastResult-Aufruf). Defensiv null-en.
+        lock (_lastResultLock) _lastResult = null;
+        _finished = 0;
+
         _sessionStart = DateTime.UtcNow;
 
         // Vibrator für Haptic-Feedback (Samsung-optimierte Predefined-Effects auf API 29+)
@@ -471,18 +528,19 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
     private void FinishCapture()
     {
-        // Aktive Kontur abschliessen
-        lock (_dataLock)
-        {
-            if (_activeContour != null && _activeContour.Points.Count > 0)
-                _contours.Add(_activeContour);
-        }
+        // Doppel-Submit-Guard: Back-Button + Toolbar-Fertig duerfen nicht doppelt feuern.
+        if (System.Threading.Interlocked.Exchange(ref _finished, 1) != 0) return;
 
-        // Ergebnis zusammenbauen (Snapshot unter Lock)
+        // Aktive Kontur abschliessen UND Snapshot — alles unter EINEM Lock,
+        // damit Render-Thread keinen halben Zustand sieht.
         List<ArPoint> pointsCopy;
         List<ArContour> contoursCopy;
         lock (_dataLock)
         {
+            if (_activeContour != null && _activeContour.Points.Count > 0)
+                _contours.Add(_activeContour);
+            _activeContour = null;
+
             pointsCopy = new List<ArPoint>(_points);
             contoursCopy = new List<ArContour>(_contours);
         }
@@ -500,18 +558,20 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
         var (geoHAcc, geoHeadingAcc) = GetGeospatialMedianAccuracy();
 
-        // Bevorzuge Geospatial-Werte (VPS) über rohe GPS/Magnetometer wenn verfügbar
-        var finalLat = _lastGeoLatitude ?? _gpsLatitude;
-        var finalLon = _lastGeoLongitude ?? _gpsLongitude;
-        var finalAlt = _lastGeoAltitude ?? _gpsAltitude;
+        // Bevorzuge Geospatial-Werte (VPS) über rohe GPS/Magnetometer wenn verfügbar.
+        // Snapshot atomar lesen — Cross-Thread-Sicherheit gegen GL-Thread-Update.
+        var geoSnap = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
+        var finalLat = geoSnap?.Latitude ?? _gpsLatitude;
+        var finalLon = geoSnap?.Longitude ?? _gpsLongitude;
+        var finalAlt = geoSnap?.Altitude ?? _gpsAltitude;
         var finalGpsAcc = _geospatialActive && geoHAcc.HasValue
             ? geoHAcc.Value
             : _gpsAccuracy;
-        var finalHeading = _geospatialActive && _lastGeoHeading.HasValue
-            ? _lastGeoHeading.Value
+        var finalHeading = _geospatialActive && geoSnap != null
+            ? geoSnap.Heading
             : _magneticHeading;
 
-        _lastResult = new ArCaptureResult
+        var captureResult = new ArCaptureResult
         {
             Points = pointsCopy,
             Contours = contoursCopy,
@@ -530,6 +590,7 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             GeospatialHorizontalAccuracy = geoHAcc,
             GeospatialHeadingAccuracy = geoHeadingAcc,
         };
+        lock (_lastResultLock) _lastResult = captureResult;
 
         // Session war erfolgreich abgeschlossen — Recovery-State aufräumen
         ClearRecoveryState();
@@ -538,10 +599,28 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         Finish();
     }
 
+    /// <summary>Back-Button → Cancel (kein Result). Konsument bekommt
+    /// <see cref="Result.Canceled"/> und kein altes <see cref="_lastResult"/>.</summary>
+    public override void OnBackPressed()
+    {
+        if (System.Threading.Interlocked.Exchange(ref _finished, 1) == 0)
+        {
+            lock (_lastResultLock) _lastResult = null;
+            SetResult(Result.Canceled);
+        }
+        base.OnBackPressed();
+    }
+
     private void UpdateCounter()
     {
-        var total = _points.Count + _contours.Sum(c => c.Points.Count)
-            + (_activeContour?.Points.Count ?? 0);
+        // _contours.Sum iteriert die Liste — ohne Lock kann ein parallel laufender
+        // Add InvalidOperationException werfen.
+        int total;
+        lock (_dataLock)
+        {
+            total = _points.Count + _contours.Sum(c => c.Points.Count)
+                + (_activeContour?.Points.Count ?? 0);
+        }
         if (_counterText != null)
             _counterText.Text = $"Punkte: {total}";
     }
@@ -755,7 +834,8 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         }
 
         // Quick-Test: Gibt es überhaupt einen Hit am Target-Pixel?
-        var probe = HitTestAt(screenX, screenY);
+        // UI-Thread → Frame-Op auf GL-Thread queuen.
+        var probe = HitTestAtFromUi(screenX, screenY);
         if (probe == null)
         {
             RunOnUiThread(() =>
@@ -902,6 +982,11 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         var stabilityComponent = stability * 0.2f;
         var confidence = (hitComponent + stdDevComponent) * depthMultiplier + stabilityComponent;
 
+        // Geospatial-Snapshot atomar lesen (Volatile-Reference) und einmal für ArPoint
+        // UND Anchor verwenden — sonst koennte der GL-Thread mitten in einer halben
+        // Pose-Aktualisierung den Snapshot wechseln.
+        var geoSnapshot = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
+
         var arPoint = new ArPoint
         {
             X = x,
@@ -914,23 +999,22 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             Confidence = Math.Clamp(confidence, 0f, 1f),
 
             // Geospatial-Snapshot (±1-3m Genauigkeit über VPS, wenn aktiv)
-            GeoLatitude = _lastGeoLatitude,
-            GeoLongitude = _lastGeoLongitude,
-            GeoAltitude = _lastGeoAltitude,
-            GeoHorizontalAccuracy = _lastGeoHorizontalAcc,
+            GeoLatitude = geoSnapshot?.Latitude,
+            GeoLongitude = geoSnapshot?.Longitude,
+            GeoAltitude = geoSnapshot?.Altitude,
+            GeoHorizontalAccuracy = geoSnapshot?.HorizontalAccuracy,
         };
 
         // Anchor erstellen — Earth-Anchor bevorzugen (drift-frei + persistent)
         // wenn Geospatial aktiv, sonst lokaler Session-Anchor.
         var hasAnchor = false;
-        if (_geospatialActive && _lastGeoLatitude.HasValue && _lastGeoLongitude.HasValue
-            && _lastGeoAltitude.HasValue && _arSession?.Earth != null)
+        if (_geospatialActive && geoSnapshot != null && _arSession?.Earth != null)
         {
             hasAnchor = _anchorManager.TryCreateEarthAnchor(
                 _arSession.Earth,
-                _lastGeoLatitude.Value,
-                _lastGeoLongitude.Value,
-                _lastGeoAltitude.Value,
+                geoSnapshot.Latitude,
+                geoSnapshot.Longitude,
+                geoSnapshot.Altitude,
                 arPoint);
         }
 
@@ -977,18 +1061,78 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         var point = GetSelectedArPoint();
         if (point == null) return;
 
-        var newPos = HitTestAt(screenX, screenY);
+        // UI-Thread → Frame-Op auf GL-Thread queuen (Drag-Hot-Path).
+        var newPos = HitTestAtFromUi(screenX, screenY);
         if (newPos == null) return;
 
         RunOnUiThread(() =>
         {
-            point.X = newPos.X;
-            point.Y = newPos.Y;
-            point.Z = newPos.Z;
-            point.AnchorId = newPos.AnchorId;
+            // Mutation unter _dataLock: GL-Thread iteriert in ProjectPointsToScreen
+            // parallel über die Listen — torn-reads (NaN, Visual-Flicker) sonst möglich.
+            lock (_dataLock)
+            {
+                point.X = newPos.X;
+                point.Y = newPos.Y;
+                point.Z = newPos.Z;
+                point.AnchorId = newPos.AnchorId;
+            }
             _overlayView?.Invalidate();
         });
     }
+
+    /// <summary>UI-Thread-sicherer HitTest: schedult eine Frame-Operation auf den GL-Thread
+    /// und wartet mit Timeout auf das Ergebnis. ARCore-Frame.HitTest laeuft so garantiert
+    /// auf dem korrekten Thread und kollidiert nicht mit Session.Update().</summary>
+    /// <param name="timeoutMs">Maximal warten — Default 60ms (~3 Frames @60fps).</param>
+    private ArPoint? HitTestAtFromUi(float screenX, float screenY, int timeoutMs = 60)
+    {
+        // Schon auf dem GL-Thread? Direkt aufrufen.
+        if (_glSurfaceView?.Holder?.Surface != null
+            && System.Threading.Thread.CurrentThread.ManagedThreadId == _glThreadId)
+        {
+            return HitTestAt(screenX, screenY);
+        }
+
+        ArPoint? result = null;
+        using var done = new System.Threading.ManualResetEventSlim(false);
+        lock (_pendingFrameOps)
+        {
+            _pendingFrameOps.Add(_ =>
+            {
+                try { result = HitTestAt(screenX, screenY); }
+                finally { done.Set(); }
+            });
+        }
+        // GL-Thread macht continuous rendering — Op wird im nächsten Frame ausgeführt.
+        done.Wait(timeoutMs);
+        return result;
+    }
+
+    /// <summary>Ruft alle queueten Frame-Operationen auf — wird vom GL-Thread am Anfang
+    /// von OnDrawFrame aufgerufen, BEVOR ein neuer Update() ein neues Frame holt.</summary>
+    private void DrainPendingFrameOps(Frame frame)
+    {
+        List<Action<Frame>>? ops = null;
+        lock (_pendingFrameOps)
+        {
+            if (_pendingFrameOps.Count == 0) return;
+            ops = new List<Action<Frame>>(_pendingFrameOps);
+            _pendingFrameOps.Clear();
+        }
+        foreach (var op in ops)
+        {
+            try { op(frame); }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Warn("ArCapture",
+                    $"PendingFrameOp fehlgeschlagen: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>Thread-ID des GL-Render-Threads (in OnSurfaceCreated gesetzt).
+    /// Erlaubt HitTestAtFromUi den Direkt-Aufruf wenn schon auf GL-Thread (Reentrancy-frei).</summary>
+    private int _glThreadId;
 
     private ArPoint? HitTestAt(float screenX, float screenY)
     {
@@ -1210,27 +1354,40 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     /// GPS-Erfassung mit Multi-Sample-Averaging über 5 Sekunden. Vorher: einmaliger
     /// LastKnownLocation-Snapshot (kann mehrere Minuten alt sein und ±10m abweichen).
     /// Jetzt: aktive Request + Samples-Accumulation, gewichtetes Mittel nach Accuracy.
+    ///
+    /// Permissions: Wir akzeptieren auch Coarse-Location (Android 12+: User kann Fine
+    /// verweigern aber Coarse erlauben). Bei reinem Coarse nutzen wir NetworkProvider
+    /// statt GpsProvider — RequestLocationUpdates(Gps...) wirft sonst SecurityException.
     /// </summary>
     private void CaptureGpsPosition()
     {
         try
         {
-            if (AndroidX.Core.Content.ContextCompat.CheckSelfPermission(this,
+            var hasFine = AndroidX.Core.Content.ContextCompat.CheckSelfPermission(this,
                     global::Android.Manifest.Permission.AccessFineLocation)
-                != global::Android.Content.PM.Permission.Granted)
+                == global::Android.Content.PM.Permission.Granted;
+            var hasCoarse = AndroidX.Core.Content.ContextCompat.CheckSelfPermission(this,
+                    global::Android.Manifest.Permission.AccessCoarseLocation)
+                == global::Android.Content.PM.Permission.Granted;
+            if (!hasFine && !hasCoarse)
             {
-                global::Android.Util.Log.Warn("ArCapture", "GPS-Permission fehlt");
+                global::Android.Util.Log.Warn("ArCapture", "GPS-Permission fehlt (weder Fine noch Coarse)");
                 return;
             }
 
             var locationManager = GetSystemService(LocationService) as global::Android.Locations.LocationManager;
             if (locationManager == null) return;
 
-            // Initialer Snapshot (Fallback falls aktive Samples nicht ankommen)
-            var location = locationManager.GetLastKnownLocation(
-                global::Android.Locations.LocationManager.GpsProvider)
-                ?? locationManager.GetLastKnownLocation(
-                    global::Android.Locations.LocationManager.NetworkProvider);
+            // Initialer Snapshot (Fallback falls aktive Samples nicht ankommen).
+            // Coarse-only → NetworkProvider; Fine → GPS bevorzugt, Network als Fallback.
+            global::Android.Locations.Location? location = null;
+            if (hasFine)
+            {
+                location = locationManager.GetLastKnownLocation(
+                    global::Android.Locations.LocationManager.GpsProvider);
+            }
+            location ??= locationManager.GetLastKnownLocation(
+                global::Android.Locations.LocationManager.NetworkProvider);
 
             if (location != null)
             {
@@ -1247,20 +1404,30 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
                 }
             }
 
-            // Aktive Updates über 5 Sekunden sammeln
+            // Aktive Updates über 5 Sekunden sammeln.
+            // Provider abhängig von Permission-Level.
+            var provider = hasFine
+                ? global::Android.Locations.LocationManager.GpsProvider
+                : global::Android.Locations.LocationManager.NetworkProvider;
+
             var listener = new GpsSampleListener(this);
             try
             {
-                locationManager.RequestLocationUpdates(
-                    global::Android.Locations.LocationManager.GpsProvider,
-                    500L, 0f, listener);
+                locationManager.RequestLocationUpdates(provider, 500L, 0f, listener);
+                _activeLocationListeners.Add((locationManager, listener));
             }
-            catch { /* GPS evtl. nicht aktiv */ }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Warn("ArCapture",
+                    $"RequestLocationUpdates({provider}) failed: {ex.Message}");
+            }
 
             // Nach 5s Listener abmelden und Median bilden
             Window?.DecorView?.PostDelayed(() =>
             {
+                if (IsFinishing || IsDestroyed) return;
                 try { locationManager.RemoveUpdates(listener); } catch { /* OK */ }
+                _activeLocationListeners.Remove((locationManager, listener));
                 FinalizeGpsAveraging();
             }, 5000);
         }
@@ -1288,10 +1455,13 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
                 var listener = new HeadingSensorListener(this);
                 _sensorManager.RegisterListener(listener, rotationSensor,
                     global::Android.Hardware.SensorDelay.Game);
+                _activeSensorListeners.Add(listener);
 
                 Window?.DecorView?.PostDelayed(() =>
                 {
-                    try { _sensorManager.UnregisterListener(listener); } catch { /* OK */ }
+                    if (IsFinishing || IsDestroyed) return;
+                    try { _sensorManager?.UnregisterListener(listener); } catch { /* OK */ }
+                    _activeSensorListeners.Remove(listener);
                 }, 5000);
             }
 
@@ -1302,10 +1472,13 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
                 var listener = new PressureSensorListener(this);
                 _sensorManager.RegisterListener(listener, pressureSensor,
                     global::Android.Hardware.SensorDelay.Normal);
+                _activeSensorListeners.Add(listener);
 
                 Window?.DecorView?.PostDelayed(() =>
                 {
-                    try { _sensorManager.UnregisterListener(listener); } catch { /* OK */ }
+                    if (IsFinishing || IsDestroyed) return;
+                    try { _sensorManager?.UnregisterListener(listener); } catch { /* OK */ }
+                    _activeSensorListeners.Remove(listener);
                 }, 1000);
             }
         }
@@ -1580,10 +1753,15 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     protected override void OnPause()
     {
         base.OnPause();
+        // Korrekte Reihenfolge (sonst CameraNotAvailableException im naechsten Update):
+        // 1) ARCore-Session pausieren — kein neuer Frame.Update() mehr
+        // 2) GL-Surface pausieren — blockiert bis Render-Thread idle ist
+        // 3) Frame-Cache invalidieren — ARCore wuerde alte Referenzen recyceln
+        // 4) Sensoren stoppen
+        _arSession?.Pause();
         _glSurfaceView?.OnPause();
         lock (_frameLock) { _lastFrame = null; }
         _stabilityMonitor?.Stop();
-        _arSession?.Pause();
     }
 
     #endregion
@@ -1592,6 +1770,9 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
     public void OnSurfaceCreated(IGL10? gl, EGLConfig? config)
     {
+        // Thread-ID merken: HitTestAtFromUi nutzt das zur Reentrancy-Erkennung
+        _glThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+
         GLES20.GlClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
         // Kamera-Textur erstellen
@@ -1633,9 +1814,14 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             lock (_frameLock)
             {
                 // KEIN Dispose: ARCore verwaltet Frame-Lifecycle intern.
-                // Dispose wuerde JNI-Referenz freigeben → HitTestAt auf UI-Thread crasht
+                // Dispose wuerde JNI-Referenz freigeben → HitTest crasht.
                 _lastFrame = frame;
             }
+
+            // Vom UI-Thread queuete Frame-Operationen (HitTest etc.) JETZT abarbeiten,
+            // bevor weitere GL-Aktionen den Frame-State veraendern. So laeuft Frame.HitTest
+            // garantiert auf dem GL-Thread mit aktuellem Frame.
+            DrainPendingFrameOps(frame);
 
             // Texturkoordinaten von ARCore holen (Display-Rotation beruecksichtigen)
             var texCoords = new float[8];
@@ -2194,47 +2380,121 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
     #region Screenshot
 
-    /// <summary>Screenshot des aktuellen AR-Frames + Overlay, speichert als PNG.</summary>
+    /// <summary>Screenshot des aktuellen AR-Frames + Overlay, speichert als PNG.
+    ///
+    /// Implementierung:
+    /// 1. PixelCopy.Request fuer die GL-Surface (Kamera-Feed) — View.Draw allein
+    ///    wuerde nur schwarz liefern, weil GL-Frames nicht in die View-Hierarchie
+    ///    gerendert werden.
+    /// 2. Anschließend zeichnen wir das Overlay (Punkte, Reticle, Stats) auf dasselbe Bitmap.
+    /// 3. Speichern als PNG.
+    /// </summary>
     private void TakeScreenshot()
     {
         VibrateLight();
+        var glView = _glSurfaceView;
+        var overlay = _overlayView;
+        if (glView == null || overlay == null || glView.Width <= 0 || glView.Height <= 0)
+        {
+            Toast.MakeText(this, "Screenshot nicht möglich", ToastLength.Short)?.Show();
+            return;
+        }
+
+        var width = glView.Width;
+        var height = glView.Height;
+        var bitmap = global::Android.Graphics.Bitmap.CreateBitmap(
+            width, height, global::Android.Graphics.Bitmap.Config.Argb8888!);
+        if (bitmap == null)
+        {
+            Toast.MakeText(this, "Screenshot fehlgeschlagen (Bitmap)", ToastLength.Short)?.Show();
+            return;
+        }
+
+        var handlerThread = new HandlerThread("PixelCopy-ArCapture");
+        handlerThread.Start();
+        var handler = new Handler(handlerThread.Looper!);
         try
         {
-            var root = _glSurfaceView?.Parent as global::Android.Views.View;
-            if (root == null)
+            PixelCopy.Request(glView, bitmap, new PixelCopyListener(result =>
             {
-                Toast.MakeText(this, "Screenshot nicht möglich", ToastLength.Short)?.Show();
-                return;
-            }
+                try
+                {
+                    if (result != (int)PixelCopyResult.Success)
+                    {
+                        bitmap.Recycle();
+                        bitmap.Dispose();
+                        RunOnUiThread(() =>
+                        {
+                            Toast.MakeText(this, $"Screenshot fehlgeschlagen (Code {result})",
+                                ToastLength.Short)?.Show();
+                        });
+                        return;
+                    }
 
-            // Nutze PixelCopy für GL-Surface (ab API 24)
-            var bitmap = global::Android.Graphics.Bitmap.CreateBitmap(
-                root.Width, root.Height, global::Android.Graphics.Bitmap.Config.Argb8888!)!;
-            var canvas = new Canvas(bitmap);
-            root.Draw(canvas);
-            canvas.Dispose();
+                    // Overlay drüber compositen — auf einem temporären Canvas
+                    using var canvas = new Canvas(bitmap);
+                    overlay.Draw(canvas);
 
+                    // Auf I/O-Thread speichern, damit UI nicht blockt
+                    var pngPath = SaveBitmapAsPng(bitmap);
+                    RunOnUiThread(() =>
+                    {
+                        if (pngPath != null)
+                        {
+                            Toast.MakeText(this,
+                                $"Screenshot: {System.IO.Path.GetFileName(pngPath)}",
+                                ToastLength.Short)?.Show();
+                            ShowTransientHint("📸 Screenshot gespeichert");
+                        }
+                        else
+                        {
+                            Toast.MakeText(this, "Screenshot konnte nicht gespeichert werden",
+                                ToastLength.Short)?.Show();
+                        }
+                    });
+                }
+                finally
+                {
+                    bitmap.Recycle();
+                    bitmap.Dispose();
+                    handlerThread.QuitSafely();
+                }
+            }), handler);
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"PixelCopy.Request failed: {ex.Message}");
+            bitmap.Recycle();
+            bitmap.Dispose();
+            handlerThread.QuitSafely();
+            Toast.MakeText(this, "Screenshot fehlgeschlagen", ToastLength.Short)?.Show();
+        }
+    }
+
+    private string? SaveBitmapAsPng(global::Android.Graphics.Bitmap bitmap)
+    {
+        try
+        {
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var dir = GetExternalFilesDir("Screenshots")?.AbsolutePath
                 ?? global::Android.OS.Environment.DirectoryPictures;
             Directory.CreateDirectory(dir);
-
             var path = System.IO.Path.Combine(dir, $"SmartMeasure_{timestamp}.png");
-            using (var stream = File.OpenWrite(path))
-            {
-                bitmap.Compress(global::Android.Graphics.Bitmap.CompressFormat.Png!, 100, stream);
-            }
-            bitmap.Recycle();
-            bitmap.Dispose();
-
-            Toast.MakeText(this, $"Screenshot: {System.IO.Path.GetFileName(path)}", ToastLength.Short)?.Show();
-            ShowTransientHint("📸 Screenshot gespeichert");
+            using var stream = File.OpenWrite(path);
+            bitmap.Compress(global::Android.Graphics.Bitmap.CompressFormat.Png!, 100, stream);
+            return path;
         }
         catch (Exception ex)
         {
-            global::Android.Util.Log.Warn("ArCapture", $"Screenshot failed: {ex.Message}");
-            Toast.MakeText(this, "Screenshot fehlgeschlagen", ToastLength.Short)?.Show();
+            global::Android.Util.Log.Warn("ArCapture", $"SaveBitmapAsPng failed: {ex.Message}");
+            return null;
         }
+    }
+
+    private sealed class PixelCopyListener(Action<int> onFinish)
+        : Java.Lang.Object, PixelCopy.IOnPixelCopyFinishedListener
+    {
+        public void OnPixelCopyFinished(int copyResult) => onFinish(copyResult);
     }
 
     #endregion
@@ -2347,7 +2607,8 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         _anchorManager.RefreshAnchors(allPoints);
     }
 
-    private bool _sensorAveragingFinalized;
+    // GL-Thread liest + setzt — volatile gegen JIT-Caching.
+    private volatile bool _sensorAveragingFinalized;
     private int _groundUpdateFrameCounter;
 
     /// <summary>Schließt GPS/Heading-Averaging nach 5s ab (einmal pro Session).</summary>
@@ -2579,23 +2840,25 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             var pose = earth.CameraGeospatialPose;
             if (pose == null) return;
 
-            _lastGeoLatitude = pose.Latitude;
-            _lastGeoLongitude = pose.Longitude;
-            _lastGeoAltitude = pose.Altitude;
-            _lastGeoHorizontalAcc = (float)pose.HorizontalAccuracy;
-            _lastGeoHeading = (float)pose.Heading;
-            _lastGeoHeadingAcc = (float)pose.HeadingAccuracy;
+            var snapshot = new GeospatialSnapshot(
+                Latitude: pose.Latitude,
+                Longitude: pose.Longitude,
+                Altitude: pose.Altitude,
+                HorizontalAccuracy: (float)pose.HorizontalAccuracy,
+                Heading: (float)pose.Heading,
+                HeadingAccuracy: (float)pose.HeadingAccuracy);
+            System.Threading.Volatile.Write(ref _lastGeoSnapshot, snapshot);
 
             // Samples für Final-Report (Median)
             lock (_geospatialHorizontalAccSamples)
             {
                 if (_geospatialHorizontalAccSamples.Count < 200)
-                    _geospatialHorizontalAccSamples.Add(_lastGeoHorizontalAcc.Value);
+                    _geospatialHorizontalAccSamples.Add(snapshot.HorizontalAccuracy);
             }
             lock (_geospatialHeadingAccSamples)
             {
                 if (_geospatialHeadingAccSamples.Count < 200)
-                    _geospatialHeadingAccSamples.Add(_lastGeoHeadingAcc.Value);
+                    _geospatialHeadingAccSamples.Add(snapshot.HeadingAccuracy);
             }
         }
         catch (Exception ex)
@@ -3147,11 +3410,30 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
     protected override void OnDestroy()
     {
+        // Aktive Sensor-Listener garantiert abmelden, auch wenn PostDelayed-Cleanups
+        // noch nicht abgelaufen sind (sonst Sensor-Leak + Battery-Drain).
+        if (_sensorManager != null)
+        {
+            foreach (var listener in _activeSensorListeners.ToArray())
+            {
+                try { _sensorManager.UnregisterListener(listener); } catch { /* OK */ }
+            }
+            _activeSensorListeners.Clear();
+        }
+        foreach (var (mgr, listener) in _activeLocationListeners.ToArray())
+        {
+            try { mgr.RemoveUpdates(listener); } catch { /* OK */ }
+        }
+        _activeLocationListeners.Clear();
+
         // Präzisions-Manager freigeben BEVOR Session geschlossen wird
         // (Anchors halten Session-Referenz)
         _stabilityMonitor?.Dispose();
         _stabilityMonitor = null;
         _anchorManager.Dispose();
+
+        // Pending Frame-Ops verwerfen — Caller-Threads warten mit Timeout, kein Hang.
+        lock (_pendingFrameOps) _pendingFrameOps.Clear();
 
         // OpenGL-Ressourcen aufraeumen (Textur + Renderer)
         if (_cameraTextureId != 0)

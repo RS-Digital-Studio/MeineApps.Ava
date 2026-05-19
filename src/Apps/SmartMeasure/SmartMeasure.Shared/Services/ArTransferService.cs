@@ -11,9 +11,6 @@ public class ArTransferService : IArTransferService
     private readonly IMeasurementService _measurementService;
     private readonly IGeoidService _geoidService;
 
-    /// <summary>Meter pro Breitengrad (WGS84 Naeherung)</summary>
-    private const double MetersPerDegreeLat = 111320.0;
-
     /// <summary>FixQuality-Wert fuer AR-erfasste Punkte</summary>
     private const int ArFixQuality = 10;
 
@@ -56,7 +53,9 @@ public class ArTransferService : IArTransferService
 
         var transferredCount = 0;
 
-        // 1. Einzelpunkte konvertieren und speichern (mit per-Punkt Fehlerbehandlung)
+        // 1. Einzelpunkte konvertieren und speichern. Pro-Punkt-Try-Catch: DB-Insert kann
+        //    failen, In-Memory-Add aber gelingen → erst DB, dann erst _measurementService,
+        //    damit beide Welten konsistent sind.
         var surveyPoints = ConvertToSurveyPoints(result, projectId);
         foreach (var point in surveyPoints)
         {
@@ -109,6 +108,12 @@ public class ArTransferService : IArTransferService
         var headingDeg = result.MagneticHeading ?? 0f;
         var gpsAccuracy = result.GpsAccuracy ?? 5f;
 
+        // ARCore-Session-Ursprung liegt typisch in Augen-/Brusthöhe (1.0-1.7m über Boden).
+        // Wenn der ArCaptureService eine horizontale Ground-Plane gefunden hat, ist deren
+        // Y-Wert die Boden-Höhe relativ zum Session-Ursprung — wir ziehen diesen Offset
+        // ab, damit ArPoint.Y absolute Höhe über Boden wird.
+        var groundOffset = result.GroundPlaneY ?? 0f;
+
         // Fallback-Accuracy wenn Geospatial nicht aktiv (cm, aus GPS * Faktor)
         var fallbackAccuracyCm = Math.Max(gpsAccuracy * GpsToArAccuracyFactor, MinArAccuracyCm);
 
@@ -116,7 +121,6 @@ public class ArTransferService : IArTransferService
         var headingRad = headingDeg * Math.PI / 180.0;
         var sinH = Math.Sin(headingRad);
         var cosH = Math.Cos(headingRad);
-        var metersPerDegreeLon = MetersPerDegreeLat * Math.Cos(gpsLat * Math.PI / 180.0);
 
         var points = new List<SurveyPoint>(result.Points.Count);
 
@@ -125,12 +129,15 @@ public class ArTransferService : IArTransferService
             double finalLat, finalLon, finalAltEllipsoid;
             float finalAccuracyCm;
 
+            // Y-Wert relativ zum Boden (falls Ground-Plane erkannt wurde)
+            var yRel = arPoint.Y - groundOffset;
+
             // Priorität 1: Geospatial-Koords pro Punkt (±1-3m via VPS, höchste Präzision)
             if (arPoint.GeoLatitude.HasValue && arPoint.GeoLongitude.HasValue)
             {
                 finalLat = arPoint.GeoLatitude.Value;
                 finalLon = arPoint.GeoLongitude.Value;
-                finalAltEllipsoid = arPoint.GeoAltitude ?? (gpsAlt + arPoint.Y);
+                finalAltEllipsoid = arPoint.GeoAltitude ?? (gpsAlt + yRel);
                 // Geo-Accuracy in Metern → cm umrechnen
                 finalAccuracyCm = arPoint.GeoHorizontalAccuracy.HasValue
                     ? arPoint.GeoHorizontalAccuracy.Value * 100f
@@ -138,12 +145,14 @@ public class ArTransferService : IArTransferService
             }
             else
             {
-                // Priorität 2: Rotation aus AR-Lokal-Koords + Heading (Fallback ~±50cm)
+                // Priorität 2: Rotation aus AR-Lokal-Koords + Heading (Fallback ~±50cm).
+                // UTM-basierte Umkehrung via CoordinateService — präziser als
+                // 111320-Approximation (~8cm/100m Fehler auf 50° Breite).
                 var (newLat, newLon) = RotateAndProject(
-                    arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, metersPerDegreeLon);
+                    arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, _coordinateService);
                 finalLat = newLat;
                 finalLon = newLon;
-                finalAltEllipsoid = gpsAlt + arPoint.Y;
+                finalAltEllipsoid = gpsAlt + yRel;
                 finalAccuracyCm = fallbackAccuracyCm;
             }
 
@@ -184,7 +193,6 @@ public class ArTransferService : IArTransferService
         var headingRad = headingDeg * Math.PI / 180.0;
         var sinH = Math.Sin(headingRad);
         var cosH = Math.Cos(headingRad);
-        var metersPerDegreeLon = MetersPerDegreeLat * Math.Cos(gpsLat * Math.PI / 180.0);
 
         var elements = new List<GardenElement>(result.Contours.Count);
 
@@ -204,9 +212,9 @@ public class ArTransferService : IArTransferService
                 }
                 else
                 {
-                    // Fallback auf Heading-basierte Rotation aus AR-Lokal-Koords
+                    // Fallback auf Heading-basierte Rotation aus AR-Lokal-Koords via UTM
                     var (lat, lon) = RotateAndProject(
-                        arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, metersPerDegreeLon);
+                        arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, _coordinateService);
                     wgsPoints.Add((lat, lon));
                 }
             }
@@ -243,7 +251,7 @@ public class ArTransferService : IArTransferService
 
             if (contour.IsClosed && contour.Points.Count >= 3)
                 element.AreaSquareMeters = CalculatePolygonArea(localPoints);
-            element.LengthMeters = CalculatePolylineLength(localPoints);
+            element.LengthMeters = CalculatePolylineLength(localPoints, contour.IsClosed);
 
             elements.Add(element);
         }
@@ -275,19 +283,21 @@ public class ArTransferService : IArTransferService
     /// - Heading 90 (Ost), arX=-1 (links): east=0, north=+1 ✓
     /// - Heading 180 (Süd), arZ=-1 (vorne): east=0, north=-1 ✓
     /// - Heading 270 (West), arZ=-1 (vorne): east=-1, north=0 ✓
+    ///
+    /// Meter→WGS84-Umkehrung läuft über <see cref="ICoordinateService.LocalToLatLon"/> (UTM-basiert) —
+    /// spart ~8 cm pro 100 m gegenüber der naiven 111320-m/Grad-Approximation.
     /// </remarks>
     private static (double latitude, double longitude) RotateAndProject(
         float arX, float arZ,
         double gpsLat, double gpsLon,
         double sinH, double cosH,
-        double metersPerDegreeLon)
+        ICoordinateService coordinateService)
     {
         var eastOffset = arX * cosH - arZ * sinH;
         var nordOffset = -arX * sinH - arZ * cosH;
 
-        // Meter → WGS84 Grad-Offset
-        var newLat = gpsLat + nordOffset / MetersPerDegreeLat;
-        var newLon = gpsLon + eastOffset / metersPerDegreeLon;
+        var (newLat, newLon, _) = coordinateService.LocalToLatLon(
+            eastOffset, nordOffset, 0, gpsLat, gpsLon, 0);
 
         return (newLat, newLon);
     }
@@ -307,14 +317,23 @@ public class ArTransferService : IArTransferService
         return Math.Abs(area) / 2.0;
     }
 
-    /// <summary>Laenge einer Polylinie in Metern (UTM-Meter-Koordinaten)</summary>
-    private static double CalculatePolylineLength(List<(double x, double y)> points)
+    /// <summary>Laenge einer Polylinie in Metern (UTM-Meter-Koordinaten).
+    /// Bei <paramref name="closed"/>=true wird die Schluss-Kante (letzter→erster Punkt) addiert.</summary>
+    private static double CalculatePolylineLength(List<(double x, double y)> points, bool closed)
     {
+        if (points.Count < 2) return 0;
+
         double length = 0;
         for (int i = 0; i < points.Count - 1; i++)
         {
             var dx = points[i + 1].x - points[i].x;
             var dy = points[i + 1].y - points[i].y;
+            length += Math.Sqrt(dx * dx + dy * dy);
+        }
+        if (closed && points.Count >= 3)
+        {
+            var dx = points[0].x - points[^1].x;
+            var dy = points[0].y - points[^1].y;
             length += Math.Sqrt(dx * dx + dy * dy);
         }
         return length;

@@ -146,6 +146,40 @@ public sealed class ArAnchorManager : IDisposable
         return count;
     }
 
+    /// <summary>Detacht alle Anchors deren TrackingState <see cref="TrackingState.Stopped"/> ist.
+    /// ARCore beendet ein Tracking dauerhaft (Stopped) wenn der zugehörige Trackable verloren ging.
+    /// Solche Anchors halten nur noch native Ressourcen und sollten freigegeben werden, sonst
+    /// wächst die Liste bei flackerndem Tracking unbegrenzt bis zum Hard-Limit.</summary>
+    /// <returns>Anzahl freigegebener Anchors.</returns>
+    public int PruneStopped()
+    {
+        if (_disposed) return 0;
+        var pruned = 0;
+        lock (_lock)
+        {
+            var toRemove = new List<string>();
+            foreach (var (id, anchor) in _anchors)
+            {
+                try
+                {
+                    if (anchor.TrackingState == TrackingState.Stopped)
+                        toRemove.Add(id);
+                }
+                catch { toRemove.Add(id); }
+            }
+            foreach (var id in toRemove)
+            {
+                if (_anchors.TryGetValue(id, out var anchor))
+                {
+                    try { anchor.Detach(); } catch { /* OK */ }
+                    _anchors.Remove(id);
+                    pruned++;
+                }
+            }
+        }
+        return pruned;
+    }
+
     /// <summary>Einzelnen Anchor freigeben (z.B. nach Undo).</summary>
     public void Detach(string? anchorId)
     {
@@ -200,8 +234,16 @@ public sealed class ArPoseSampler
     public void Clear() => _samples.Clear();
 
     /// <summary>
-    /// Berechnet robusten Median aller Samples. Outlier-Filter: Samples die >3×StdDev
-    /// vom ersten Median entfernt sind werden verworfen, dann erneut gemittelt.
+    /// Berechnet eine robuste Mittel-Position aller Samples in zwei Schritten:
+    /// 1. Komponentenweiser Median (X, Y, Z) — unempfindlich gegen Ausreißer
+    /// 2. Outlier-Filter: Samples die >3×StdDev vom Median entfernt sind werden verworfen
+    /// 3. Auf den gefilterten Samples wird das arithmetische Mittel berechnet
+    ///
+    /// Median im Schritt 1 + Mittel im Schritt 3 ist bewusst — der Median liefert
+    /// einen Ausreißer-resistenten Ankerpunkt, das anschließende Mittel auf bereinigten
+    /// Samples reduziert die Restvarianz (Median ist nicht der MLE für Gauß-Verteilungen,
+    /// das Mittel auf gefilterten Daten schon).
+    ///
     /// Liefert null wenn weniger als 3 Samples oder alle zu divergent.
     /// </summary>
     public (float x, float y, float z, float stdDev, int validCount, int maxHitQuality)? ComputeRobustMedian()
@@ -269,14 +311,26 @@ public sealed class ArStabilityMonitor : Java.Lang.Object,
     private readonly global::Android.Hardware.SensorManager? _sensorManager;
     private readonly global::Android.Hardware.Sensor? _gyroscope;
     private readonly global::Android.Hardware.Sensor? _accelerometer;
+    private readonly object _emaLock = new();
 
-    // Gleitender Durchschnitt der angular velocity (rad/s)
+    // Gleitender Durchschnitt der angular velocity (rad/s) / linear accel (m/s²).
+    // Sensor-Thread schreibt unter _emaLock; Reader lesen StabilityScore (volatile).
     private float _recentAngularSpeed;
     private float _recentLinearAccel;
-    private long _lastSensorTimeNs;
+    private volatile bool _disposed;
+
+    // Volatile-int-Bits eines float — sicherer Cross-Thread-Read ohne torn-read.
+    private int _stabilityScoreBits = ToBits(1.0f);
 
     /// <summary>0.0 (stark bewegt) bis 1.0 (vollkommen still).</summary>
-    public float StabilityScore { get; private set; } = 1.0f;
+    public float StabilityScore
+    {
+        get => FromBits(System.Threading.Volatile.Read(ref _stabilityScoreBits));
+        private set => System.Threading.Volatile.Write(ref _stabilityScoreBits, ToBits(value));
+    }
+
+    private static int ToBits(float f) => BitConverter.SingleToInt32Bits(f);
+    private static float FromBits(int b) => BitConverter.Int32BitsToSingle(b);
 
     /// <summary>Ist das Gerät "still genug" für präzise Messung? Threshold = 0.6.</summary>
     public bool IsStable => StabilityScore >= 0.6f;
@@ -308,40 +362,45 @@ public sealed class ArStabilityMonitor : Java.Lang.Object,
 
     public void OnSensorChanged(global::Android.Hardware.SensorEvent? e)
     {
-        if (e?.Values == null) return;
+        if (e?.Values == null || _disposed) return;
 
-        var values = e.Values;
-        if (e.Sensor?.Type == global::Android.Hardware.SensorType.Gyroscope && values.Count >= 3)
+        float angular, accel;
+        lock (_emaLock)
         {
-            // Magnitude der angular velocity (rad/s)
-            var gx = values[0];
-            var gy = values[1];
-            var gz = values[2];
-            var speed = MathF.Sqrt(gx * gx + gy * gy + gz * gz);
-
-            // Exponential Moving Average (schneller Response)
-            _recentAngularSpeed = _recentAngularSpeed * 0.7f + speed * 0.3f;
-        }
-        else if (e.Sensor?.Type == global::Android.Hardware.SensorType.LinearAcceleration && values.Count >= 3)
-        {
-            // Magnitude der linear acceleration (m/s²), bereits gravity-compensated
-            var ax = values[0];
-            var ay = values[1];
-            var az = values[2];
-            var accel = MathF.Sqrt(ax * ax + ay * ay + az * az);
-            _recentLinearAccel = _recentLinearAccel * 0.7f + accel * 0.3f;
+            var values = e.Values;
+            if (e.Sensor?.Type == global::Android.Hardware.SensorType.Gyroscope && values.Count >= 3)
+            {
+                // Magnitude der angular velocity (rad/s), EMA (schneller Response)
+                var gx = values[0];
+                var gy = values[1];
+                var gz = values[2];
+                var speed = MathF.Sqrt(gx * gx + gy * gy + gz * gz);
+                _recentAngularSpeed = _recentAngularSpeed * 0.7f + speed * 0.3f;
+            }
+            else if (e.Sensor?.Type == global::Android.Hardware.SensorType.LinearAcceleration && values.Count >= 3)
+            {
+                // Magnitude der linear acceleration (m/s²), bereits gravity-compensated
+                var ax = values[0];
+                var ay = values[1];
+                var az = values[2];
+                var a = MathF.Sqrt(ax * ax + ay * ay + az * az);
+                _recentLinearAccel = _recentLinearAccel * 0.7f + a * 0.3f;
+            }
+            angular = _recentAngularSpeed;
+            accel = _recentLinearAccel;
         }
 
         // Stability = 1.0 wenn beide Threshold-Werte unterschritten
-        // Gyro-Threshold: 0.15 rad/s (~8.6°/s = normale Handbewegung)
-        // Accel-Threshold: 0.8 m/s² (langsame Bewegungen)
-        var gyroScore = MathF.Max(0f, 1f - _recentAngularSpeed / 0.5f);
-        var accelScore = MathF.Max(0f, 1f - _recentLinearAccel / 2.0f);
+        // Gyro-Threshold: 0.5 rad/s (~28°/s), Accel-Threshold: 2.0 m/s²
+        var gyroScore = MathF.Max(0f, 1f - angular / 0.5f);
+        var accelScore = MathF.Max(0f, 1f - accel / 2.0f);
         StabilityScore = MathF.Min(gyroScore, accelScore);
     }
 
     public new void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         Stop();
         base.Dispose();
     }

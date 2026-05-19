@@ -202,4 +202,11 @@ Tieferanalyse / Auto-Fix: Agent `mvvm-auditor` (opus, max).
 ## Abhaengigkeiten
 
 - .NET 10.0
-- Keine externen NuGet-Packages (nur System.Text.RegularExpressions, System.Xml.Linq, System.Text.Json)
+- Keine externen NuGet-Packages (nur System.Text.RegularExpressions, System.Xml.Linq)
+
+---
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../CLAUDE.md) — Build, Conventions, Troubleshooting (die Checker prüfen genau diese)
+- Skill `/build-check` — Baut Solution + führt AppChecker aus

@@ -15,6 +15,30 @@ und Export (PDF/Excel/CSV/ICS).
 
 ---
 
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `WorkTimePro.Shared` | `net10.0` | `dotnet build src/Apps/WorkTimePro/WorkTimePro.Shared` |
+| `WorkTimePro.Desktop` | `net10.0` | `dotnet run --project src/Apps/WorkTimePro/WorkTimePro.Desktop` |
+| `WorkTimePro.Android` | `net10.0-android` | `dotnet build src/Apps/WorkTimePro/WorkTimePro.Android` |
+
+Release-AAB: `dotnet publish src/Apps/WorkTimePro/WorkTimePro.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `WorkTimePro.Shared/ViewModels/` | `WorkTimePro.ViewModels` |
+| `WorkTimePro.Shared/Views/` | `WorkTimePro.Views` |
+| `WorkTimePro.Shared/Services/` | `WorkTimePro.Services` |
+| `WorkTimePro.Shared/Models/` | `WorkTimePro.Models` |
+| `WorkTimePro.Shared/Graphics/` | `WorkTimePro.Graphics` |
+| `WorkTimePro.Shared/Helpers/` | `WorkTimePro.Helpers` |
+| `WorkTimePro.Shared/Loading/` | `WorkTimePro.Loading` |
+
+---
+
 ## Architektur
 
 ### Projekt-Struktur
@@ -403,3 +427,12 @@ dotnet run --project "F:\Meine_Apps_Ava\tools\AppChecker" WorkTimePro
 | `WorkTimePro.Shared/Loading/WorkTimeProLoadingPipeline.cs` | Startup-Sequenz |
 | `WorkTimePro.Android/Services/ReminderReceiver.cs` | Android BroadcastReceiver für Notifications |
 | `Releases/WorkTimePro/CHANGELOG_*.md` | Release-Notes |
+
+---
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, AdMob, Troubleshooting
+- [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
+- [MeineApps.Core.Premium.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) — AdMob + Google Play Billing
+- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, SkiaSharp-Helpers

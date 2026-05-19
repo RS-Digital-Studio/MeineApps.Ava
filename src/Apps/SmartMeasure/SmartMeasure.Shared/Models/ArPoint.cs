@@ -51,6 +51,27 @@ public class ArPoint
     /// <summary>Horizontale Genauigkeit der Geo-Position in Metern (beim Capture-Zeitpunkt).</summary>
     public float? GeoHorizontalAccuracy { get; set; }
 
+    /// <summary>
+    /// Kamera-Pitch in Grad zum Capture-Zeitpunkt (0 = horizontal, +90 = nach oben, -90 = nach unten).
+    /// Wird aus ARCore-Camera-Pose extrahiert und ist nicht der RTK-Stab-Tilt — hier zählt die
+    /// Phone-Orientierung, weil sie die Mess-Genauigkeit beeinflusst (steiler Pitch → größerer Depth-Fehler).
+    /// </summary>
+    public float CameraPitchDeg { get; set; }
+
+    /// <summary>
+    /// Android-Magnetometer-Accuracy beim Capture (0=unreliable, 1=low, 2=medium, 3=high).
+    /// Wandert nach SurveyPoint.MagAccuracy — relevant für Heading-Vertrauen bei späterer Tilt-Korrektur.
+    /// </summary>
+    public int MagAccuracyAtCapture { get; set; }
+
+    /// <summary>
+    /// Anteil der Sampling-Frames in denen ARCore Tracking hatte (0..1).
+    /// 1.0 = perfektes Tracking durchgängig, ~0.5 = die Hälfte verlor Tracking, &lt;0.5 = verworfen.
+    /// Wird in FinalizeSampling pro Punkt berechnet — separat vom Session-Median, damit
+    /// einzelne wackelige Messungen sichtbar werden.
+    /// </summary>
+    public float SampleTrackingContinuity { get; set; } = 1f;
+
     /// <summary>Zeitpunkt der Erfassung (UTC)</summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 

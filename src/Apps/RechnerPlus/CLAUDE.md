@@ -8,6 +8,27 @@ Scientific Calculator mit Unit Converter — werbefrei, kostenlos, kein IAP.
 
 ---
 
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `RechnerPlus.Shared` | `net10.0` | `dotnet build src/Apps/RechnerPlus/RechnerPlus.Shared` |
+| `RechnerPlus.Desktop` | `net10.0` | `dotnet run --project src/Apps/RechnerPlus/RechnerPlus.Desktop` |
+| `RechnerPlus.Android` | `net10.0-android` | `dotnet build src/Apps/RechnerPlus/RechnerPlus.Android` |
+
+Release-AAB: `dotnet publish src/Apps/RechnerPlus/RechnerPlus.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `RechnerPlus.Shared/ViewModels/` | `RechnerPlus.ViewModels` |
+| `RechnerPlus.Shared/Views/` | `RechnerPlus.Views` |
+| `RechnerPlus.Shared/Loading/` | `RechnerPlus.Loading` |
+| `RechnerPlus.Shared/Graphics/` | `RechnerPlus.Graphics` |
+
+---
+
 ## Architektur
 
 ### Datei-Struktur

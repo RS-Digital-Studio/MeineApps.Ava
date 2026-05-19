@@ -12,6 +12,33 @@ plus Android- und Desktop-App für mobile Steuerung. Solar-betrieben (kein Strom
 | Server-URL | `http://<pi-ip>:5000` |
 | Theme | Sattes Grün `#2E7D32` + Wasser-Blau `#1E88E5` + Erd-Braun `#8D6E63` |
 
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `GardenControl.Shared` | `net10.0` | `dotnet build src/Apps/GardenControl/GardenControl.Shared` |
+| `GardenControl.Server` | `net10.0` | `dotnet run --project src/Apps/GardenControl/GardenControl.Server` |
+| `GardenControl.Desktop` | `net10.0` | `dotnet run --project src/Apps/GardenControl/GardenControl.Desktop` |
+| `GardenControl.Android` | `net10.0-android` | `dotnet build src/Apps/GardenControl/GardenControl.Android` |
+
+Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)).
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `GardenControl.Shared/ViewModels/` | `GardenControl.ViewModels` |
+| `GardenControl.Shared/Views/` | `GardenControl.Views` |
+| `GardenControl.Shared/Services/` | `GardenControl.Services` |
+| `GardenControl.Shared/Models/` | `GardenControl.Models` |
+| `GardenControl.Server/Hubs/` | `GardenControl.Server.Hubs` |
+| `GardenControl.Server/Api/` | `GardenControl.Server.Api` |
+| `GardenControl.Server/Services/` | `GardenControl.Server.Services` |
+
+---
+
 ## Architektur
 
 ```
@@ -145,3 +172,12 @@ MainViewModel nutzt `BackPressHelper` aus MeineApps.Core.Ava.Services (Conventio
 - Akzent: `#8D6E63` (Erd-Braun)
 - Hintergrund: `#0F1923` (Premium Dark)
 - Gradient-Cards mit `#10-15FFFFFF` Border für Glas-Effekt
+
+---
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Troubleshooting
+- [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
+- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, Loading-Pipeline
+- `Releases/GardenControl/CHANGELOG_*.md` — Release-Notes

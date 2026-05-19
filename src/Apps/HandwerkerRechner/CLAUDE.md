@@ -15,6 +15,29 @@ Angebots-Generator, Vorlagen und Einheiten-Umrechnung. Premium-Modell = nur "rem
 
 ---
 
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `HandwerkerRechner.Shared` | `net10.0` | `dotnet build src/Apps/HandwerkerRechner/HandwerkerRechner.Shared` |
+| `HandwerkerRechner.Desktop` | `net10.0` | `dotnet run --project src/Apps/HandwerkerRechner/HandwerkerRechner.Desktop` |
+| `HandwerkerRechner.Android` | `net10.0-android` | `dotnet build src/Apps/HandwerkerRechner/HandwerkerRechner.Android` |
+
+Release-AAB: `dotnet publish src/Apps/HandwerkerRechner/HandwerkerRechner.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `HandwerkerRechner.Shared/ViewModels/` | `HandwerkerRechner.ViewModels` |
+| `HandwerkerRechner.Shared/Views/` | `HandwerkerRechner.Views` |
+| `HandwerkerRechner.Shared/Services/` | `HandwerkerRechner.Services` |
+| `HandwerkerRechner.Shared/Models/` | `HandwerkerRechner.Models` |
+| `HandwerkerRechner.Shared/Graphics/` | `HandwerkerRechner.Graphics` |
+| `HandwerkerRechner.Shared/Loading/` | `HandwerkerRechner.Loading` |
+
+---
+
 ## Architektur
 
 ### Calculator-Kategorien

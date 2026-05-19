@@ -13,6 +13,31 @@ Alle Charts vollständig in SkiaSharp (kein LiveCharts).
 | Ads | Banner + Rewarded |
 | Premium | 3,99 EUR `remove_ads` |
 
+Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `FinanzRechner.Shared` | `net10.0` | `dotnet build src/Apps/FinanzRechner/FinanzRechner.Shared` |
+| `FinanzRechner.Desktop` | `net10.0` | `dotnet run --project src/Apps/FinanzRechner/FinanzRechner.Desktop` |
+| `FinanzRechner.Android` | `net10.0-android` | `dotnet build src/Apps/FinanzRechner/FinanzRechner.Android` |
+
+Release-AAB: `dotnet publish src/Apps/FinanzRechner/FinanzRechner.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `FinanzRechner.Shared/ViewModels/` | `FinanzRechner.ViewModels` |
+| `FinanzRechner.Shared/Views/` | `FinanzRechner.Views` |
+| `FinanzRechner.Shared/Services/` | `FinanzRechner.Services` |
+| `FinanzRechner.Shared/Models/` | `FinanzRechner.Models` |
+| `FinanzRechner.Shared/Graphics/` | `FinanzRechner.Graphics` |
+| `FinanzRechner.Shared/Loading/` | `FinanzRechner.Loading` |
+
 ---
 
 ## Projekt-Struktur

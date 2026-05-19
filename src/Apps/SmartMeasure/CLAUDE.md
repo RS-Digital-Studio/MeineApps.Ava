@@ -7,11 +7,33 @@ GeoJSON, DXF, KMZ, CSV, PDF. Nicht im Play Store.
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v1.1.4 |
+| Aktuelle Version | v1.2.0 (UX-Refactoring AR-Modus) |
 | Modus | Desktop (Entwicklung/Mock) + Android (Samsung Galaxy S25 Ultra) |
 | Min SDK | 26 (Android 8.0) |
 | ARCore-Paket | Vapolia.Google.ARCore 1.47.1 |
 | BLE-Paket | InTheHand.BluetoothLE |
+
+Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `SmartMeasure.Shared` | `net10.0` | `dotnet build src/Apps/SmartMeasure/SmartMeasure.Shared` |
+| `SmartMeasure.Desktop` | `net10.0` | `dotnet run --project src/Apps/SmartMeasure/SmartMeasure.Desktop` |
+| `SmartMeasure.Android` | `net10.0-android` | `dotnet build src/Apps/SmartMeasure/SmartMeasure.Android` |
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `SmartMeasure.Shared/ViewModels/` | `SmartMeasure.ViewModels` |
+| `SmartMeasure.Shared/Views/` | `SmartMeasure.Views` |
+| `SmartMeasure.Shared/Services/` | `SmartMeasure.Services` |
+| `SmartMeasure.Shared/Models/` | `SmartMeasure.Models` |
+| `SmartMeasure.Shared/Graphics/` | `SmartMeasure.Graphics` |
 
 ---
 
@@ -264,6 +286,19 @@ FrameLayout
 └── Native Toolbar          Buttons (Punkt, Linie, Schließen, Undo, Redo, Löschen, Screenshot, ?, Fertig)
 ```
 
+### partial class Aufteilung
+
+`ArCaptureActivity` ist als `partial class` über drei Files verteilt, um die Datei
+unter 4000 Zeilen zu halten und Verantwortlichkeiten zu trennen:
+
+| Datei | Inhalt |
+|-------|--------|
+| `ArCaptureActivity.cs` | OnCreate/OnResume/OnPause/OnDestroy, CreateToolbar, OnDrawFrame, Touch-Handling, FinishCapture, GL-Rendering, Sensors, Geospatial, Thermal/Battery, Haptic, Sound, Screenshot, Snap-to-Edge |
+| `ArCaptureActivity.Dialogs.cs` | ConfirmDelete, ConfirmFinish, ShowContourTypeDialog + StartNewContour + UpdateModeButtonHighlight, ShowCompassCalibrationHint, ShowReadinessDetailDialog, ShowHelpDialog, ShowCoachMarksIfNeeded + PersistCoachMarksShown, `ContourTypeOptions`-Tabelle |
+| `ArCaptureActivity.Recovery.cs` | SaveRecoveryState, TryRestoreRecoveryState (mit Bestätigungs-Dialog), ClearRecoveryState, Earth-Anchor-Re-Attach-Queue |
+
+ArPointOverlayView ist ebenfalls `partial sealed` markiert (Drawing-Methoden-Split vorbereitet, noch nicht durchgeführt).
+
 ### S25-Ultra-Spezifika
 
 - `LightEstimationMode.EnvironmentalHdr` wenn RAM ≥ 8 GB (High-End-Check)
@@ -271,6 +306,26 @@ FrameLayout
 - `PowerManager.CurrentThermalStatus` alle 60 Frames prüfen
 - `OnApplyWindowInsets` liest Punch-Hole-Cutout → `ArOverlayState.TopInsetPixels`
 - BLE MTU 247 (BLE 5.3 DLE voll ausgenutzt)
+
+### UX-Features (AR-Modus)
+
+| Feature | Beschreibung |
+|---------|-------------|
+| Bestätigungs-Dialoge | Löschen + Fertig fragen vor destruktiver Aktion (`ConfirmDeleteSelectedPoint`, `ConfirmFinishCapture`) |
+| Sound beim Punkt-Setzen | `MediaActionSound.SHUTTER_CLICK` zusätzlich zur Vibration. SharedPreferences-Key `ar.sound.enabled` (Default an). Toggle im Help-Dialog. |
+| Pop-Animation neuer Punkte | 250ms Scale-Easing in `ArPointOverlayView.DrawPoints` — junge Punkte (Timestamp <250ms alt) starten 2.2× groß und schrumpfen mit Ease-Out-Quadratic |
+| Tooltips auf Toolbar-Buttons | Long-Press zeigt `Button.TooltipText` (API 26+) |
+| Coach-Marks beim 1. AR-Start | Show-once Dialog erklärt Crosshair/Workflow/Toolbar. SharedPreferences-Key `ar.coachmarks.shown`. "Später nochmal" lässt den Pref unverändert → nächster Start zeigt erneut |
+| Persistente System-Banner | `ArOverlayState.ThermalWarning` + `BatteryWarning` werden als persistente Top-Banner unter dem Tracking-Banner gezeichnet — bleiben sichtbar solange das System-Event andauert (vs. TransientHint-Fade) |
+| Live-Footer-Bar | Über der Toolbar mit Punkte/Länge/Fläche in großer Schrift (`ArPointOverlayView.DrawLiveFooter`) — primärer Mess-Wert-Anker neben dem kleineren Stats-Panel oben rechts |
+| Readiness-Badge Tap | Badge oben links ist klickbar (`ArPointOverlayView.ReadinessBadgeBounds` publiziert Tap-Target). Öffnet Detail-Dialog mit Checkliste je Condition (Stabilität / Kompass / Planes / GPS / Geospatial / Tracking-Continuity) |
+| Recovery-Bestätigungs-Dialog | Statt automatischem Restore + Toast: Dialog "X Punkte aus letzter Sitzung wiederherstellen?" mit Wiederherstellen/Verwerfen-Buttons. Earth-Anchors werden parallel re-attached. |
+| Verstärkter Toolbar-BG | Dichteres ARGB(235,18,18,28) statt halb-transparent (war bei sonnigem Garten kaum lesbar) + dünne weiße Trennlinie oben |
+
+**Geplante Erweiterung (postponed):** Einhand-Layout (Toolbar vertikal links/rechts statt unten).
+Würde Reorganisation aller Position-Logik in `DrawTrackingBanner`/`DrawSystemWarningBanners`/
+`DrawStatsPanel`/`DrawNorthArrow`/`DrawScaleBar`/`DrawLiveFooter`/`DrawReadinessBadge` benötigen.
+Pref-Key vorgesehen: `ar.toolbar.position` (Werte `bottom`/`left`/`right`).
 
 ### ARCore-Features aktiv
 

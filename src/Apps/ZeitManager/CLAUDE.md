@@ -11,7 +11,30 @@ Challenges und Schichtplan-Rechner. Komplett werbefrei, kein Premium, kein Meine
 | Preis | Kostenlos (werbefrei) |
 | Tabs | Timer, Stoppuhr, Pomodoro, Wecker/Schichtplan, Settings |
 
-> Für Build-Befehle, Conventions, Troubleshooting und Packages → [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für generische Build-Befehle, Conventions, Troubleshooting und Packages → [Haupt-CLAUDE.md](../../../CLAUDE.md)
+
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `ZeitManager.Shared` | `net10.0` | `dotnet build src/Apps/ZeitManager/ZeitManager.Shared` |
+| `ZeitManager.Desktop` | `net10.0` | `dotnet run --project src/Apps/ZeitManager/ZeitManager.Desktop` |
+| `ZeitManager.Android` | `net10.0-android` | `dotnet build src/Apps/ZeitManager/ZeitManager.Android` |
+
+Release-AAB: `dotnet publish src/Apps/ZeitManager/ZeitManager.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `ZeitManager.Shared/ViewModels/` | `ZeitManager.ViewModels` |
+| `ZeitManager.Shared/Views/` | `ZeitManager.Views` |
+| `ZeitManager.Shared/Services/` | `ZeitManager.Services` |
+| `ZeitManager.Shared/Audio/` | `ZeitManager.Audio` |
+| `ZeitManager.Shared/Graphics/` | `ZeitManager.Graphics` |
+| `ZeitManager.Shared/Loading/` | `ZeitManager.Loading` |
 
 ---
 
@@ -185,3 +208,12 @@ kein manuelles `PropertyChanged?.Invoke()`.
 - `sqlite-net-pcl` + `SQLitePCLRaw.bundle_green`
 - `SkiaSharp` + `Avalonia.Labs.Controls`
 - **Kein `MeineApps.Core.Premium` — komplett werbefrei**
+
+---
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Troubleshooting
+- [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
+- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, Behaviors, Loading-Pipeline
+- `Releases/ZeitManager/CHANGELOG_*.md` — Release-Notes

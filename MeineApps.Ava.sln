@@ -183,6 +183,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BingXBot.Android", "src\App
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BingXBot.Trading", "src\Libraries\BingXBot.Trading\BingXBot.Trading.csproj", "{17E24785-8E37-488F-84FE-0C0B2DE30AFF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartMeasure.Tests", "tests\SmartMeasure.Tests\SmartMeasure.Tests.csproj", "{0FD112CB-0294-46A4-9195-F1C715E84E11}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -953,6 +955,18 @@ Global
 		{17E24785-8E37-488F-84FE-0C0B2DE30AFF}.Release|x64.Build.0 = Release|Any CPU
 		{17E24785-8E37-488F-84FE-0C0B2DE30AFF}.Release|x86.ActiveCfg = Release|Any CPU
 		{17E24785-8E37-488F-84FE-0C0B2DE30AFF}.Release|x86.Build.0 = Release|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Debug|x64.Build.0 = Debug|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Debug|x86.Build.0 = Debug|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Release|x64.ActiveCfg = Release|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Release|x64.Build.0 = Release|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Release|x86.ActiveCfg = Release|Any CPU
+		{0FD112CB-0294-46A4-9195-F1C715E84E11}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1041,6 +1055,7 @@ Global
 		{B2437095-E1EF-4A6A-B246-03EB9F9C92A0} = {5E7EC0AF-E837-5B7A-FB41-A4DCCA877D1F}
 		{BEC1D354-5B48-4AE1-960D-FDD1061125A6} = {1CC63DDC-AAD8-D148-8EFF-80E717C99B36}
 		{17E24785-8E37-488F-84FE-0C0B2DE30AFF} = {5E7EC0AF-E837-5B7A-FB41-A4DCCA877D1F}
+		{0FD112CB-0294-46A4-9195-F1C715E84E11} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EAAEA93B-578B-49A5-AAF0-F6B6A6D6CD31}

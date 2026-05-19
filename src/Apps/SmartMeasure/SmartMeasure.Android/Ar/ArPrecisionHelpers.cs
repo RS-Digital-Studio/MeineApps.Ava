@@ -170,6 +170,119 @@ public static class ArPrecisionHelpers
     }
 
     /// <summary>
+    /// Plan Kap. 3.6: Liest die Depth-Map am Touch-Pixel und liefert die Tiefe in Metern.
+    /// Wird vom Instant-Placement-Fallback genutzt — statt hardcoded 1,5 m wird die echte
+    /// Distanz vom Stereo-Depth-Sensor verwendet. Bei Sky oder ungültigem Depth-Wert null.
+    /// </summary>
+    public static float? TryGetDepthMeters(Frame frame, float screenX, float screenY,
+        int viewportWidth, int viewportHeight)
+    {
+        // Raw Depth bevorzugt (höhere Präzision auf S25 Ultra mit Stereo-Depth-Sensor).
+        var raw = TryReadRawDepthMeters(frame, screenX, screenY, viewportWidth, viewportHeight);
+        if (raw.HasValue) return raw;
+
+        // Fallback: smoothed Depth
+        return TryReadSmoothedDepthMeters(frame, screenX, screenY, viewportWidth, viewportHeight);
+    }
+
+    private static float? TryReadRawDepthMeters(Frame frame, float screenX, float screenY,
+        int viewportWidth, int viewportHeight)
+    {
+        global::Android.Media.Image? depthImage = null;
+        global::Android.Media.Image? confImage = null;
+        try
+        {
+            depthImage = frame.AcquireRawDepthImage16Bits();
+            confImage = frame.AcquireRawDepthConfidenceImage();
+            if (depthImage == null || confImage == null) return null;
+
+            var dw = depthImage.Width;
+            var dh = depthImage.Height;
+            if (dw <= 0 || dh <= 0) return null;
+
+            var dx = (int)(screenX / viewportWidth * dw);
+            var dy = (int)(screenY / viewportHeight * dh);
+            dx = Math.Clamp(dx, 0, dw - 1);
+            dy = Math.Clamp(dy, 0, dh - 1);
+
+            var planes = depthImage.GetPlanes();
+            var cPlanes = confImage.GetPlanes();
+            if (planes == null || planes.Length == 0 || cPlanes == null || cPlanes.Length == 0) return null;
+
+            var plane = planes[0];
+            var cPlane = cPlanes[0];
+            if (plane?.Buffer == null || cPlane?.Buffer == null) return null;
+
+            var confOffset = dy * cPlane.RowStride + dx * cPlane.PixelStride;
+            if (confOffset >= cPlane.Buffer.Capacity()) return null;
+            cPlane.Buffer.Position(confOffset);
+            var conf = (cPlane.Buffer.Get() & 0xFF) / 255f;
+            if (conf < 0.3f) return null; // zu unsicher → Caller fällt auf 1.5m zurück
+
+            var depthOffset = dy * plane.RowStride + dx * plane.PixelStride;
+            if (depthOffset + 1 >= plane.Buffer.Capacity()) return null;
+            plane.Buffer.Position(depthOffset);
+            var low = plane.Buffer.Get() & 0xFF;
+            var high = plane.Buffer.Get() & 0xFF;
+            var depthMm = low | (high << 8);
+            if (depthMm == 0) return null; // 0 = invalid (z.B. Sky)
+
+            var depthMeters = depthMm / 1000f;
+            // Sanity-Range: 30 cm – 30 m. Außerhalb → Sensor unsicher.
+            if (depthMeters < 0.3f || depthMeters > 30f) return null;
+            return depthMeters;
+        }
+        catch (NotYetAvailableException) { return null; }
+        catch (Exception) { return null; }
+        finally
+        {
+            try { depthImage?.Close(); } catch { }
+            try { confImage?.Close(); } catch { }
+        }
+    }
+
+    private static float? TryReadSmoothedDepthMeters(Frame frame, float screenX, float screenY,
+        int viewportWidth, int viewportHeight)
+    {
+        global::Android.Media.Image? depthImage = null;
+        try
+        {
+            depthImage = frame.AcquireDepthImage16Bits();
+            if (depthImage == null) return null;
+
+            var dw = depthImage.Width;
+            var dh = depthImage.Height;
+            if (dw <= 0 || dh <= 0) return null;
+
+            var dx = Math.Clamp((int)(screenX / viewportWidth * dw), 0, dw - 1);
+            var dy = Math.Clamp((int)(screenY / viewportHeight * dh), 0, dh - 1);
+
+            var planes = depthImage.GetPlanes();
+            if (planes == null || planes.Length == 0 || planes[0]?.Buffer == null) return null;
+
+            var plane = planes[0];
+            var offset = dy * plane.RowStride + dx * plane.PixelStride;
+            if (offset + 1 >= plane.Buffer.Capacity()) return null;
+
+            plane.Buffer.Position(offset);
+            var low = plane.Buffer.Get() & 0xFF;
+            var high = plane.Buffer.Get() & 0xFF;
+            var depthMm = low | (high << 8);
+            if (depthMm == 0) return null;
+
+            var depthMeters = depthMm / 1000f;
+            if (depthMeters < 0.3f || depthMeters > 30f) return null;
+            return depthMeters;
+        }
+        catch (NotYetAvailableException) { return null; }
+        catch (Exception) { return null; }
+        finally
+        {
+            try { depthImage?.Close(); } catch { }
+        }
+    }
+
+    /// <summary>
     /// Findet die größte getrackte horizontale Plane in der Session und liefert ihren Y-Wert.
     /// Dient als Boden-Referenz: alle Punkt-Höhen werden relativ dazu gerechnet.
     /// "Horizontal" wird via Plane-Normalvektor identifiziert (Y-Komponente > 0.9 = nach oben).
@@ -271,6 +384,37 @@ public static class ArPrecisionHelpers
         catch
         {
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Extrahiert den Pitch der Kamera (Neigung gegen die horizontale Ebene) in Grad.
+    /// 0 = waagerecht, +90 = direkt nach oben, -90 = direkt nach unten.
+    /// Wird beim Punkt-Setzen mitgeschrieben, damit Vermessungs-PDF und Quality-Score
+    /// erkennen können wenn der User stark schräg gemessen hat (große Depth-Fehler).
+    /// </summary>
+    public static float ExtractPitchFromCameraPose(Pose cameraPose)
+    {
+        try
+        {
+            var q = cameraPose.GetRotationQuaternion();
+            if (q == null || q.Length < 4) return 0f;
+
+            float qx = q[0], qy = q[1], qz = q[2], qw = q[3];
+
+            // Forward = -Z im Welt-Frame, identische Formel wie in ExtractHeadingFromCameraPose
+            var fx = -2f * (qx * qz + qw * qy);
+            var fy = -2f * (qy * qz - qw * qx);
+            var fz = -(1f - 2f * (qx * qx + qy * qy));
+
+            var horizontalLen = MathF.Sqrt(fx * fx + fz * fz);
+            // atan2(fy, horizontal) gibt Pitch: fy > 0 ⇒ nach oben, fy < 0 ⇒ nach unten
+            var pitchRad = MathF.Atan2(fy, horizontalLen);
+            return pitchRad * 180f / MathF.PI;
+        }
+        catch
+        {
+            return 0f;
         }
     }
 

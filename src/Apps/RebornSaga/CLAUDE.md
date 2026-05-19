@@ -11,7 +11,33 @@ Spielbereich — alles Szenen, Overlays und UI werden direkt auf SKCanvasView ge
 | Farbpalette | "Isekai System Blue" — #4A90D9 Primary, #9B59B6 Lila, #F39C12 Gold |
 | Firebase | `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69,2 MB) |
 
-> Für Build-Befehle, Conventions, Troubleshooting und Packaging-Patterns: [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für generische Build-Befehle, Conventions, Troubleshooting und Packaging-Patterns: [Haupt-CLAUDE.md](../../../CLAUDE.md)
+
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `RebornSaga.Shared` | `net10.0` | `dotnet build src/Apps/RebornSaga/RebornSaga.Shared` |
+| `RebornSaga.Desktop` | `net10.0` | `dotnet run --project src/Apps/RebornSaga/RebornSaga.Desktop` |
+| `RebornSaga.Android` | `net10.0-android` | `dotnet build src/Apps/RebornSaga/RebornSaga.Android` |
+
+Release-AAB: `dotnet publish src/Apps/RebornSaga/RebornSaga.Android -c Release`
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `RebornSaga.Shared/ViewModels/` | `RebornSaga.ViewModels` |
+| `RebornSaga.Shared/Views/` | `RebornSaga.Views` |
+| `RebornSaga.Shared/Engine/` | `RebornSaga.Engine` |
+| `RebornSaga.Shared/Engine/Scenes/` | `RebornSaga.Engine.Scenes` |
+| `RebornSaga.Shared/Engine/Story/` | `RebornSaga.Engine.Story` |
+| `RebornSaga.Shared/Services/` | `RebornSaga.Services` |
+| `RebornSaga.Shared/Models/` | `RebornSaga.Models` |
+| `RebornSaga.Shared/Icons/` | `RebornSaga.Icons` |
+| `RebornSaga.Shared/Loading/` | `RebornSaga.Loading` |
 
 ---
 
@@ -444,3 +470,12 @@ dotnet run --project tools/AppChecker RebornSaga
 ```
 
 Nächste Schritte: Android-Test auf physischem Gerät. Release nur auf Anfrage.
+
+---
+
+## Verweise
+
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, AdMob, Troubleshooting
+- [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
+- [MeineApps.Core.Premium.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) — Rewarded Ads + IAP
+- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — SkiaSharp-Renderer, Shader, Loading-Pipeline

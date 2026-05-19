@@ -12,6 +12,43 @@ USDT-margined Perpetual Futures (Crypto + TradFi-Perps via NC-Prefix).
 | Exchange | BingX Perpetual Futures (USDT-M) |
 | Pi-Server | `steuerung@raspberrypi.local` (systemd-Service `bingxbot.service`) |
 
+Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+
+---
+
+## Build & Zielframework
+
+| Projekt | Framework | Befehl |
+|---------|-----------|--------|
+| `BingXBot.Core` | `net10.0` | `dotnet build src/Libraries/BingXBot.Core` |
+| `BingXBot.Contracts` | `net10.0` | `dotnet build src/Libraries/BingXBot.Contracts` |
+| `BingXBot.Exchange` | `net10.0` | `dotnet build src/Libraries/BingXBot.Exchange` |
+| `BingXBot.Engine` | `net10.0` | `dotnet build src/Libraries/BingXBot.Engine` |
+| `BingXBot.Backtest` | `net10.0` | `dotnet build src/Libraries/BingXBot.Backtest` |
+| `BingXBot.Trading` | `net10.0` | `dotnet build src/Libraries/BingXBot.Trading` |
+| `BingXBot.ClientApi` | `net10.0` | `dotnet build src/Libraries/BingXBot.ClientApi` |
+| `BingXBot.Server` | `net10.0` | `dotnet run --project src/Apps/BingXBot/BingXBot.Server` |
+| `BingXBot.Shared` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Shared` |
+| `BingXBot.Desktop` | `net10.0` | `dotnet run --project src/Apps/BingXBot/BingXBot.Desktop` |
+| `BingXBot.Android` | `net10.0-android` | `dotnet build src/Apps/BingXBot/BingXBot.Android` |
+
+Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)).
+
+## Namespace-Konvention
+
+| Ordner | Namespace |
+|--------|-----------|
+| `BingXBot.Core/Models/` | `BingXBot.Core.Models` |
+| `BingXBot.Core/Diagnostics/` | `BingXBot.Core.Diagnostics` |
+| `BingXBot.Contracts/Dtos/` | `BingXBot.Contracts.Dtos` |
+| `BingXBot.Engine/Indicators/` | `BingXBot.Engine.Indicators` |
+| `BingXBot.Trading/Services/` | `BingXBot.Trading.Services` |
+| `BingXBot.Server/Api/` | `BingXBot.Server.Api` |
+| `BingXBot.Server/Services/` | `BingXBot.Server.Services` |
+| `BingXBot.Shared/ViewModels/` | `BingXBot.ViewModels` |
+| `BingXBot.Shared/Views/` | `BingXBot.Views` |
+| `BingXBot.Shared/Services/` | `BingXBot.Services` |
+
 ---
 
 ## Projekt-Struktur

@@ -1,7 +1,31 @@
-# MeineApps.Core.Premium.Ava
+# MeineApps.Core.Premium.Ava — Monetization Library
 
 Monetarisierungs-Library für alle 6 werbe-unterstützten Apps: AdMob (Banner + Rewarded), Google Play Billing v8, 14-Tage-Trial und In-App Review.
-Abhängigkeit: `MeineApps.Core.Ava` (IPreferencesService).
+
+## Zielframework
+
+- .NET 10.0 (Library) — Android-Klassen sind Linked Files mit `<Compile Remove="Android\**" />` in der Library
+- C# 14
+- Android-Code wird per `<Compile Include="…" Link="…" />` in jedes `{App}.Android` eingebunden (siehe Linked-File-Pattern unten)
+
+## Build
+
+```bash
+dotnet build src/Libraries/MeineApps.Core.Premium.Ava/MeineApps.Core.Premium.Ava.csproj
+```
+
+## Abhängigkeiten
+
+| Package | Zweck |
+|---------|-------|
+| `MeineApps.Core.Ava` | `IPreferencesService` für Premium-State-Persistenz |
+| `Xamarin.Google.UserMessagingPlatform` | GDPR-Consent (UMP) — Namespace-Typo siehe Gotchas |
+| `Xamarin.GoogleAndroid.Ads.MobileAds.Lite` | AdMob Banner + Rewarded |
+| `Xamarin.Android.Google.BillingClient` | Google Play Billing Client v8 |
+| `Xamarin.Google.Android.Play.Core` | In-App Review |
+| `Xamarin.GooglePlayServices.Games.V2` | Google Play Games Services v2 |
+
+Versionen zentral in `Directory.Packages.props`.
 
 ---
 
@@ -211,6 +235,31 @@ ad.Show(_activity, this);
 <PackageReference Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm"
                   ExcludeAssets="all" PrivateAssets="all" />
 ```
+
+### Content hinter Ad-Banner abgeschnitten
+
+Adaptive Banner (`GetCurrentOrientationAnchoredAdaptiveBannerAdSize`) können je nach Gerät 50–60dp+ hoch sein. Der `Ad-Spacer` in `MainView` muss 64dp sein, nicht 50dp. Pflichtgrid: `RowDefinitions="*,Auto,Auto"` (Content / 64dp Ad-Spacer / Tab-Bar). Jede scrollbare Sub-View braucht mindestens 60dp `Margin` (NICHT `Padding`!) am Kind-Element.
+
+### Play Review — korrekter Namespace
+
+```csharp
+// FALSCH (existiert nicht)
+using Com.Google.Android.Play.Core.Review;
+
+// RICHTIG
+using Xamarin.Google.Android.Play.Core.Review;
+using Android.Gms.Tasks;   // für Task/IOnCompleteListener
+```
+
+`ReviewInfo` ist eine Klasse, NICHT `IReviewInfo`.
+
+### Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel
+
+`PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium`-Preference-Key fehlt. Fix: `IPurchaseService.InitializeAsync()` in der Loading-Pipeline parallel zum ersten Schritt aufrufen (siehe "Purchase-Restore beim App-Start" oben). Stellt Käufe + Abos via Google Play Billing wieder her.
+
+### `MediaPlayer.PrepareAsync()` gibt void zurück
+
+Android-Java-Binding-Eigenheit: `PrepareAsync()` ist void, kein `Task`. Stattdessen `Prepare()` synchron verwenden oder mit `TaskCompletionSource` + `Prepared`-Event arbeiten.
 
 ---
 

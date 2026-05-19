@@ -1,7 +1,32 @@
 # MeineApps.UI — Shared UI Component Library
 
-Wiederverwendbare UI-Bausteine für alle 11 Avalonia-Apps. Enthält Custom Controls, Behaviors,
+Wiederverwendbare UI-Bausteine für alle 12 Avalonia-Apps. Enthält Custom Controls, Behaviors,
 SkiaSharp-Visualisierungen, GPU-Shader und das Loading-Pipeline-Framework.
+
+## Zielframework
+
+- .NET 10.0
+- C# 14
+- Avalonia 12.0.2
+
+## Build
+
+```bash
+dotnet build src/UI/MeineApps.UI/MeineApps.UI.csproj
+```
+
+## Abhängigkeiten
+
+| Package | Zweck |
+|---------|-------|
+| `Avalonia` | UI-Framework |
+| `Avalonia.Xaml.Behaviors` | `TapScaleBehavior`, `FadeInBehavior`, etc. |
+| `Material.Icons.Avalonia` | 7000+ SVG-Icons |
+| `SkiaSharp` | 2D Graphics, GPU-Shader (SkSL) |
+| `Avalonia.Labs.Lottie` | `LottieAnimationView` |
+| `MeineApps.Core.Ava` | `ViewModelBase`, `ThemeColors.axaml`, Converters |
+
+Versionen zentral in `Directory.Packages.props`.
 
 ---
 
@@ -252,6 +277,30 @@ Wenn ein Segment 360° einnimmt, erzeugt SkiaSharp `ArcTo` einen leeren Path (St
 ### AnimatedNumberText vs. CountUpBehavior
 
 `AnimatedNumberText` ist ein eigenständiges Control (erbt von `TextBlock`) — gut für statische Views wo kein Behavior-XML-Overhead gewünscht ist. `CountUpBehavior` ist flexibler (Format, Suffix, Signed-Prefix, CultureName) und für bestehende `TextBlock`-Elemente gedacht. Nicht beide auf demselben Element verwenden.
+
+### SKCanvasView — `InvalidateSurface()` statt `InvalidateVisual()`
+
+`InvalidateVisual()` triggert die Avalonia-Layout-Pipeline, nicht den SkiaSharp-Repaint. SKCanvasView updatet erst nach `InvalidateSurface()`.
+
+### SKCanvasView — leer nach `IsVisible`-Toggle
+
+`InvalidateSurface()` auf einer unsichtbaren Canvas wird ignoriert. Nach Sichtbar-Werden erneut Daten setzen oder `Calculate()` aufrufen, damit der nächste `PropertyChanged` → `InvalidateSurface()`-Trigger feuert.
+
+### SKCanvasView — Render-Loop stirbt nach `StartRenderLoop()`
+
+`StartRenderLoop()` darf NICHT `StopRenderLoop()` aufrufen — `StopRenderLoop()` setzt `_gameCanvas = null` und die Timer-Lambda captured immer null. In `StartRenderLoop()` nur `_renderTimer?.Stop()` aufrufen, nicht die Canvas-Referenz nullen.
+
+### SKCanvasView — Game-Loop startet nicht (Countdown stuck)
+
+ContentControl + ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim ersten `StartGameLoop()` keinen Subscriber → Render-Timer startet nie. Fix: 3-stufige VM-Subscription via `TrySubscribeToViewModel()` — (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach.
+
+### Custom Control unsichtbar (`PathIcon`-Ableitung)
+
+Abgeleitete Controls (z.B. `GameIcon : PathIcon`) haben kein eigenes `ControlTheme` → Avalonia findet kein Template → Control rendert nichts. Fix: `protected override Type StyleKeyOverride => typeof(PathIcon);` in der Klasse überschreiben. Gilt für ALLE von `TemplatedControl` abgeleiteten Custom Controls.
+
+### TapScaleBehavior — `InvalidCastException` bei `RunAsync(ScaleTransform)`
+
+`animation.RunAsync(ScaleTransform)` crasht in `TransformAnimator.Apply`. Statt der Animation-API einen DispatcherTimer-basierten Tween verwenden — siehe `TapScaleBehavior.cs`.
 
 ---
 

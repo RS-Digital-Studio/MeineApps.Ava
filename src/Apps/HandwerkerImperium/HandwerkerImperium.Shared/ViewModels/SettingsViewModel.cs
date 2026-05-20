@@ -56,6 +56,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     [ObservableProperty]
     private bool _cloudSaveEnabled = true;
 
+    /// <summary>F-23: Accessibility — Animationen reduzieren (unabhaengig von GraphicsQuality).</summary>
+    [ObservableProperty]
+    private bool _reduceMotion;
+
+    /// <summary>F-20: Bildschirm waehrend Spiel aktiv halten (nur Premium).</summary>
+    [ObservableProperty]
+    private bool _keepScreenOn;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanUseCloudSave))]
     private bool _isPlayGamesSignedIn;
@@ -200,6 +208,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
             NotificationsEnabled = state.Settings.NotificationsEnabled;
             CloudSaveEnabled = state.Settings.CloudSaveEnabled;
             AnalyticsEnabled = state.Settings.AnalyticsEnabled;
+            ReduceMotion = state.Settings.ReduceMotion;
+            KeepScreenOn = state.Settings.KeepScreenOn;
             IsCloudSaveOnline = _cloudSaveService?.IsAvailable ?? false;
 
             // Grafik-Qualitaet laden
@@ -332,12 +342,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         // der WorkerAvatar-Shared-Timer reagiert sofort via CurrentChanged-Event.
         Graphics.FpsProfile.SetCurrent(value.Quality);
 
-        // ReduceMotion sofort an GameJuiceEngine durchreichen,
-        // damit Confetti/CoinFly/Sparkle/RadialBurst sofort respektiert werden —
-        // ohne App-Neustart.
+        // F-23: ReduceMotion sofort an GameJuiceEngine durchreichen — ist jetzt eigener
+        // Toggle PLUS GraphicsQuality=Low als Performance-Fallback. Beide gleichberechtigt.
         var juice = App.Services?.GetService(typeof(Graphics.GameJuiceEngine)) as Graphics.GameJuiceEngine;
         if (juice != null)
-            juice.ReduceMotion = value.Quality == GraphicsQuality.Low;
+            juice.ReduceMotion = _gameStateService.Settings.ReduceMotion
+                || value.Quality == GraphicsQuality.Low;
 
         _saveGameService.SaveAsync().FireAndForget();
     }
@@ -346,6 +356,29 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     {
         if (_isInitializing) return;
         _gameStateService.Automation.AutoCollectDelivery = value;
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
+    /// <summary>F-23: ReduceMotion-Toggle als eigenes Accessibility-Setting.</summary>
+    partial void OnReduceMotionChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _gameStateService.Settings.ReduceMotion = value;
+        var juice = App.Services?.GetService(typeof(Graphics.GameJuiceEngine)) as Graphics.GameJuiceEngine;
+        if (juice != null)
+            juice.ReduceMotion = value
+                || _gameStateService.Settings.GraphicsQuality == GraphicsQuality.Low;
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
+    /// <summary>F-20: KeepScreenOn-Toggle (Pass-Sweetener). Nicht-Premium: Toggle wird ignoriert.</summary>
+    partial void OnKeepScreenOnChanged(bool value)
+    {
+        if (_isInitializing) return;
+        // Pass-Sweetener — nur Premium-Spieler koennen die Funktion aktivieren.
+        bool effective = value && _purchaseService.IsPremium;
+        _gameStateService.Settings.KeepScreenOn = effective;
+        App.PlatformKeepScreenOn?.Invoke(effective);
         _saveGameService.SaveAsync().FireAndForget();
     }
 

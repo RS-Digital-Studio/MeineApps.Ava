@@ -207,6 +207,13 @@ public sealed class ProgressionFeedbackCoordinator : IProgressionFeedbackCoordin
             _contextualHintService.TryShowHint(ContextualHints.MasterToolsUnlock);
         else if (e.NewLevel == LevelThresholds.HintPrestige)
             _contextualHintService.TryShowHint(ContextualHints.PrestigeHint);
+        // F-10: Cross-Workshop-Lieferketten ab Lv 100 — Vorabhinweis bei Lv 99.
+        else if (e.NewLevel == GameBalanceConstants.MaterialOrderCrossWorkshopLevel - 1)
+            _contextualHintService.TryShowHint(ContextualHints.CrossWorkshopComing);
+        // F-15 (Backlog): BattlePass-Discovery bei Freischaltung — wiederverwendet
+        // den existierenden BattlePass-Hint statt einen neuen anzulegen.
+        else if (e.NewLevel == LevelThresholds.BattlePassSection)
+            _contextualHintService.TryShowHint(ContextualHints.BattlePass);
 
         // Story-Kapitel prüfen
         CheckForNewStoryChapter();
@@ -405,6 +412,11 @@ public sealed class ProgressionFeedbackCoordinator : IProgressionFeedbackCoordin
         // Rebirth-Hint: Erster Workshop erreicht Level 1000
         if (e.NewLevel >= Workshop.MaxLevel)
             _contextualHintService.TryShowHint(ContextualHints.RebirthReady);
+
+        // F-40: T4-Foreshadowing bei Workshop-Lv 450 (kurz vor der T4-Schwelle 500).
+        // Erklaert dem Spieler dass das Endgame naht — Logistik-Forschung wird wichtig.
+        if (e.NewLevel == 450)
+            _contextualHintService.TryShowHint(ContextualHints.Tier4Coming);
 
         // Multiplikator-Meilensteine (Bumpy Progression)
         if (!HostIsHoldingUpgrade && Workshop.IsMilestoneLevel(e.NewLevel))

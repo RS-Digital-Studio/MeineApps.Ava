@@ -3,8 +3,9 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// Statische Definition aller 60 Research-Nodes (3 Branches x 20 Level).
-/// Level 1-15: Basis-Forschungen. Level 16-20: Endgame-Forschungen (5B-100B Kosten, 96-168h).
+/// Statische Definition aller Research-Nodes über 4 Branches: Tools / Management /
+/// Marketing / Logistics (V7). Insgesamt ~57 Knoten, Kosten und Dauer steigen
+/// exponentiell. Endgame-Forschungen erreichen 5B-100B Kosten und 96-168h Dauer.
 /// </summary>
 public static class ResearchTree
 {

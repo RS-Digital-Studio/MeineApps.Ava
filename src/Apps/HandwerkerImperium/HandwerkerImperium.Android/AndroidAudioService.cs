@@ -92,6 +92,35 @@ public sealed class AndroidAudioService : IAudioService, IDisposable
         }
     }
 
+    /// <summary>F-19: SFX-Volume 0..1 — wird beim Play auf SoundPool angewandt.</summary>
+    public float SfxVolume
+    {
+        get => _gameStateService.State.Settings.SfxVolume;
+        set => _gameStateService.State.Settings.SfxVolume = System.Math.Clamp(value, 0f, 1f);
+    }
+
+    /// <summary>F-19: Music-Volume 0..1 — wird sofort an den MediaPlayer durchgereicht.</summary>
+    public float MusicVolume
+    {
+        get => _gameStateService.State.Settings.MusicVolume;
+        set
+        {
+            var clamped = System.Math.Clamp(value, 0f, 1f);
+            _gameStateService.State.Settings.MusicVolume = clamped;
+            // Sofort auf aktuell laufenden Track anwenden, damit der Slider Live-Feedback gibt.
+            try
+            {
+                lock (_musicLock)
+                {
+                    var effective = MusicMaxVolume * clamped;
+                    _musicPlayer?.SetVolume(effective, effective);
+                    _currentMusicVolume = effective;
+                }
+            }
+            catch { /* MediaPlayer-State-Change-Fehler still ignorieren */ }
+        }
+    }
+
     public AndroidAudioService(Activity activity, IGameStateService gameStateService)
     {
         _activity = activity;

@@ -3425,6 +3425,13 @@
   <data name="HintMaterialOfferText" xml:space="preserve">
     <value>Certaines commandes affichent maintenant un second bouton : « Démarrer avec matériaux ». Si tu livres les articles demandés depuis ton entrepôt, tu gagnes de l'argent et de l'XP en bonus.</value>
   </data>
+  <data name="HintMultiTaskOrderTitle" xml:space="preserve"><value>Plusieurs tâches</value></data>
+  <data name="HintMultiTaskOrderText" xml:space="preserve"><value>Pour les commandes avec plusieurs tâches, la MOYENNE de tes notes compte. Une note parfaite peut compenser une faible — mais pas l'inverse.</value></data>
+  <data name="HintCrossWorkshopComingTitle" xml:space="preserve"><value>Chaînes d'approvisionnement !</value></data>
+  <data name="HintCrossWorkshopComingText" xml:space="preserve"><value>À partir du niveau 100, les commandes exigeront aussi des matériaux d'AUTRES ateliers. Profites-en pour améliorer tes ateliers délaissés.</value></data>
+  <data name="HintTier4ComingTitle" xml:space="preserve"><value>Bientôt : Manufacture Impériale</value></data>
+  <data name="HintTier4ComingText" xml:space="preserve"><value>Au niveau d'atelier 500 plus la recherche logistique, tu débloques les produits Tier-4 (Villa, Gratte-ciel, QG Impérial) — le endgame.</value></data>
+  <data name="EternalMasteryShort" xml:space="preserve"><value>Maîtrise Éternelle</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Prêt pour la promotion</value>
   </data>
@@ -4330,6 +4337,7 @@
   <data name="Equipment" xml:space="preserve">
     <value>Équipement</value>
   </data>
+  <data name="GuildOfflineBonusReassure" xml:space="preserve"><value>Les bonus restent actifs</value></data>
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Pas de connexion internet. Les fonctions de guilde nécessitent une connexion active pour la synchronisation avec les autres joueurs.</value>
   </data>

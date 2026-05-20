@@ -30,6 +30,20 @@ public sealed class AudioService : IAudioService
         }
     }
 
+    /// <summary>F-19: Stub-Implementierung — Desktop hat kein Audio.</summary>
+    public float SfxVolume
+    {
+        get => _gameStateService.Settings.SfxVolume;
+        set => _gameStateService.Settings.SfxVolume = System.Math.Clamp(value, 0f, 1f);
+    }
+
+    /// <summary>F-19: Stub-Implementierung — Desktop hat kein Audio.</summary>
+    public float MusicVolume
+    {
+        get => _gameStateService.Settings.MusicVolume;
+        set => _gameStateService.Settings.MusicVolume = System.Math.Clamp(value, 0f, 1f);
+    }
+
     public AudioService(IGameStateService gameStateService)
     {
         _gameStateService = gameStateService;

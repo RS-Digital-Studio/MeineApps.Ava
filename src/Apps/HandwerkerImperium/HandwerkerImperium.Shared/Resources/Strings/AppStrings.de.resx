@@ -3568,6 +3568,13 @@
   <data name="HintMaterialOfferText" xml:space="preserve">
     <value>Einige Aufträge zeigen jetzt einen zweiten Button: „Mit Material starten". Wenn du die geforderten Items aus deinem Lager lieferst, gibt es extra Geld und XP obendrauf.</value>
   </data>
+  <data name="HintMultiTaskOrderTitle" xml:space="preserve"><value>Mehrere Aufgaben</value></data>
+  <data name="HintMultiTaskOrderText" xml:space="preserve"><value>Bei Aufträgen mit mehreren Aufgaben zählt der DURCHSCHNITT deiner Ratings. Ein perfektes Rating kann ein schwaches ausgleichen — aber nicht umgekehrt.</value></data>
+  <data name="HintCrossWorkshopComingTitle" xml:space="preserve"><value>Lieferketten kommen!</value></data>
+  <data name="HintCrossWorkshopComingText" xml:space="preserve"><value>Ab Level 100 verlangen Aufträge auch Material aus ANDEREN Werkstätten. Nutze die Zeit, deine vernachlässigten Werkstätten aufzuwerten.</value></data>
+  <data name="HintTier4ComingTitle" xml:space="preserve"><value>Bald: Imperium-Manufaktur</value></data>
+  <data name="HintTier4ComingText" xml:space="preserve"><value>Bei Workshop-Level 500 plus der Logistik-Forschung schaltest du Tier-4-Produkte frei (Villa, Wolkenkratzer, Imperium-HQ) — das End-Game.</value></data>
+  <data name="EternalMasteryShort" xml:space="preserve"><value>Ewige Meisterschaft</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Bereit zur Promotion</value>
   </data>
@@ -4575,6 +4582,7 @@
   <data name="Equipment" xml:space="preserve">
     <value>Ausrüstung</value>
   </data>
+  <data name="GuildOfflineBonusReassure" xml:space="preserve"><value>Boni bleiben aktiv</value></data>
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Keine Internetverbindung. Gilden-Funktionen benötigen eine aktive Internetverbindung für die Synchronisation mit anderen Spielern.</value>
   </data>

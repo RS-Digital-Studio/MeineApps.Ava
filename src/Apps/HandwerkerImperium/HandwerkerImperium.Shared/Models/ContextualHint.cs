@@ -253,4 +253,28 @@ public static class ContextualHints
         Id = "material_offer", TitleKey = "HintMaterialOfferTitle", TextKey = "HintMaterialOfferText",
         Position = HintPosition.Below, IsDialog = true
     };
+
+    // F-29: Beim ersten Multi-Task-Auftrag erklaeren, dass der Rating-DURCHSCHNITT zaehlt
+    // (nicht das beste oder schlechteste Rating). Sonst wundert sich der Spieler, warum sein
+    // 5-Stern + 3-Stern eine 4-Stern-Aggregation ergibt.
+    public static readonly ContextualHint MultiTaskOrder = new()
+    {
+        Id = "multi_task_order", TitleKey = "HintMultiTaskOrderTitle", TextKey = "HintMultiTaskOrderText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
+    // F-10: Bei Lv 99 erklaeren dass ab Lv 100 Cross-Workshop-Lieferketten kommen.
+    public static readonly ContextualHint CrossWorkshopComing = new()
+    {
+        Id = "cross_workshop_coming", TitleKey = "HintCrossWorkshopComingTitle", TextKey = "HintCrossWorkshopComingText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
+    // F-40: T4-Foreshadowing — bei WS-Lv 450 oder logi_08-Abschluss erklaeren dass T4 naht.
+    public static readonly ContextualHint Tier4Coming = new()
+    {
+        Id = "tier4_coming", TitleKey = "HintTier4ComingTitle", TextKey = "HintTier4ComingText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
 }

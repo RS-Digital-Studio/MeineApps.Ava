@@ -291,23 +291,25 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     /// </summary>
     protected readonly IGuildCoopOrderService? _coopOrderService;
 
+    /// <summary>F-29: Optional, fuer Multi-Task-Order-Hint beim ersten Auftrag mit mehreren Tasks.</summary>
+    protected readonly IContextualHintService? _contextualHintService;
+
     protected BaseMiniGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
         ILocalizationService localizationService,
         IGuildCoopOrderService? coopOrderService = null,
-        IAnalyticsService? analyticsService = null)
+        IAnalyticsService? analyticsService = null,
+        IContextualHintService? contextualHintService = null)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
         _rewardedAdService = rewardedAdService;
         _localizationService = localizationService;
         _coopOrderService = coopOrderService;
-        // Analytics per Constructor-Injection statt App.Services-Lookup.
-        // DI-Resolution beim VM-Build statt String-getypt zur Laufzeit — keine versteckte
-        // Abhaengigkeit zum statischen App.Services-Singleton mehr.
         _analyticsService = analyticsService;
+        _contextualHintService = contextualHintService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -344,6 +346,15 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
             ContinueButtonText = IsLastTask
                 ? _localizationService.GetString("Continue")
                 : _localizationService.GetString("NextTask");
+
+            // F-29: Beim allerersten Multi-Task-Auftrag erklaeren, dass das Rating
+            // der DURCHSCHNITT der einzelnen Task-Ratings ist (nicht max/min).
+            // Idempotent — wird nur einmal gezeigt.
+            if (totalTasks > 1 && currentTaskNum == 1 && _contextualHintService != null
+                && !_contextualHintService.HasSeenHint(Models.ContextualHints.MultiTaskOrder.Id))
+            {
+                _contextualHintService.TryShowHint(Models.ContextualHints.MultiTaskOrder);
+            }
         }
         else
         {

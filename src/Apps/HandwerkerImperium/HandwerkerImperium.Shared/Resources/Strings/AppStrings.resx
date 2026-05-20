@@ -3592,6 +3592,17 @@
   <data name="HintMaterialOfferText" xml:space="preserve">
     <value>Some orders now show a second button: "Start with materials". If you deliver the requested items from your warehouse, you earn bonus money and XP on top.</value>
   </data>
+  <!-- F-29: Multi-Task-Order Aggregation erklaeren -->
+  <data name="HintMultiTaskOrderTitle" xml:space="preserve"><value>Multiple tasks</value></data>
+  <data name="HintMultiTaskOrderText" xml:space="preserve"><value>For orders with multiple tasks the AVERAGE of your ratings counts. A perfect rating can balance out a weak one — but not the other way around.</value></data>
+  <!-- F-10: Cross-Workshop-Lieferketten Pre-Lv100-Hint -->
+  <data name="HintCrossWorkshopComingTitle" xml:space="preserve"><value>Supply chains incoming!</value></data>
+  <data name="HintCrossWorkshopComingText" xml:space="preserve"><value>From level 100 onwards, orders will require materials from OTHER workshops too. Use the time to upgrade your less-loved workshops.</value></data>
+  <!-- F-40: T4-Foreshadowing (Imperium-Manufaktur) -->
+  <data name="HintTier4ComingTitle" xml:space="preserve"><value>Soon: Imperial Manufactory</value></data>
+  <data name="HintTier4ComingText" xml:space="preserve"><value>At workshop level 500 plus the logistics research, you unlock Tier-4 products (Villa, Skyscraper, Imperium HQ) — the late-game endgame.</value></data>
+  <!-- F-18: Eternal-Mastery-Kurzbezeichnung fuer Prestige-Banner -->
+  <data name="EternalMasteryShort" xml:space="preserve"><value>Eternal Mastery</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Ready for promotion</value>
   </data>
@@ -4582,6 +4593,7 @@
   <data name="Equipment" xml:space="preserve">
     <value>Equipment</value>
   </data>
+  <data name="GuildOfflineBonusReassure" xml:space="preserve"><value>Bonuses still active</value></data>
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>No internet connection. Guild features require an active internet connection to sync with other players.</value>
   </data>

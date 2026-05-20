@@ -102,11 +102,13 @@ public sealed partial class MainViewModel
     public bool IsAutoClaimUnlocked => _purchaseService.IsPremium;
 
     /// <summary>
-    /// v2.0.36: Wenn die Grafik-Qualitaet auf Low steht, schalten wir die Loop-Animationen
-    /// (GoldenBadgeShimmer, TutorialHintPulse, BoostPulse) aus. Die wichtigen Event-getriebenen
-    /// One-Shot-Animationen (LevelUpFlash, IncomePulse) bleiben — die geben Spieler-Feedback.
+    /// Schaltet Loop-Animationen (GoldenBadgeShimmer, TutorialHintPulse, BoostPulse) aus,
+    /// One-Shot-Animationen (LevelUpFlash, IncomePulse) bleiben.
+    /// F-23: ReduceMotion ist ein eigenes Accessibility-Setting; zusaetzlich greift es
+    /// noch immer wenn GraphicsQuality=Low (Performance auf alten Geraeten).
     /// </summary>
-    public bool ReduceMotion => _gameStateService.Settings.GraphicsQuality == Models.Enums.GraphicsQuality.Low;
+    public bool ReduceMotion => _gameStateService.Settings.ReduceMotion
+        || _gameStateService.Settings.GraphicsQuality == Models.Enums.GraphicsQuality.Low;
 
     // ═══════════════════════════════════════════════════════════════════════
     // REPUTATION-TIER (v2.0.37 — Header-Badge + Spawn-Boni)

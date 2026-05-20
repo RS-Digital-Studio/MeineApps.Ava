@@ -3430,6 +3430,13 @@
   <data name="HintMaterialOfferText" xml:space="preserve">
     <value>Alcuni ordini ora mostrano un secondo pulsante: "Avvia con materiali". Se consegni gli articoli richiesti dal tuo magazzino, ottieni denaro ed XP extra.</value>
   </data>
+  <data name="HintMultiTaskOrderTitle" xml:space="preserve"><value>Più compiti</value></data>
+  <data name="HintMultiTaskOrderText" xml:space="preserve"><value>Per ordini con più compiti conta la MEDIA delle tue valutazioni. Una valutazione perfetta può compensare una debole — ma non viceversa.</value></data>
+  <data name="HintCrossWorkshopComingTitle" xml:space="preserve"><value>Catene di fornitura!</value></data>
+  <data name="HintCrossWorkshopComingText" xml:space="preserve"><value>Dal livello 100 in poi, gli ordini richiederanno materiali anche da ALTRE officine. Usa il tempo per potenziare le officine trascurate.</value></data>
+  <data name="HintTier4ComingTitle" xml:space="preserve"><value>Presto: Manifattura Imperiale</value></data>
+  <data name="HintTier4ComingText" xml:space="preserve"><value>Al livello 500 dell'officina più la ricerca logistica, sblocchi prodotti Tier-4 (Villa, Grattacielo, Sede Imperiale) — l'endgame.</value></data>
+  <data name="EternalMasteryShort" xml:space="preserve"><value>Maestria Eterna</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Pronto per la promozione</value>
   </data>
@@ -4331,6 +4338,7 @@
   <data name="Equipment" xml:space="preserve">
     <value>Equipaggiamento</value>
   </data>
+  <data name="GuildOfflineBonusReassure" xml:space="preserve"><value>I bonus restano attivi</value></data>
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Nessuna connessione internet. Le funzioni della gilda richiedono una connessione attiva per la sincronizzazione con gli altri giocatori.</value>
   </data>

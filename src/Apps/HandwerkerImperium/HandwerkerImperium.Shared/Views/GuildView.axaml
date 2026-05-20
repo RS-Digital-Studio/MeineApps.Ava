@@ -120,6 +120,17 @@
                      Foreground="{StaticResource CraftPrimaryLightBrush}"
                      IsVisible="{Binding CachedBonusInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                      AutomationProperties.AutomationId="Guild_Txt_CachedBonus" />
+          <!-- F-32: Beruhigender Hinweis dass die Gilden-Boni trotz Offline-State weiter wirken. -->
+          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"
+                      IsVisible="{Binding CachedBonusInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                      AutomationProperties.AutomationId="Guild_Panel_BonusReassure">
+            <icons:GameIcon Kind="CheckCircle" Width="16" Height="16"
+                             Foreground="{DynamicResource SuccessBrush}" />
+            <TextBlock Text="{loc:Translate GuildOfflineBonusReassure}"
+                       FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource SuccessBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
           <TextBlock Text="{loc:Translate GuildOfflineHint}"
                      TextWrapping="Wrap" TextAlignment="Center"
                      Opacity="0.7" FontSize="13"

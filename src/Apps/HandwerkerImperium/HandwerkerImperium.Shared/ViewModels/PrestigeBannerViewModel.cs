@@ -44,4 +44,14 @@ public sealed partial class PrestigeBannerViewModel : ViewModelBase
 
     /// <summary>Fortschritt zum naechsten Tier (0.0 - 1.0).</summary>
     [ObservableProperty] private double _nextPrestigeTierProgress;
+
+    /// <summary>
+    /// F-18: Kumulierter Eternal-Mastery-Bonus aller bisherigen Prestiges (z.B. "+12.5%").
+    /// Wird im Prestige-Banner neben dem Tier-Bonus angezeigt, damit Endgame-Spieler die
+    /// Late-Game-Skalierung sehen.
+    /// </summary>
+    [ObservableProperty] private string _eternalMasteryBonusDisplay = "";
+
+    /// <summary>Ob ueberhaupt ein Eternal-Mastery-Bonus existiert (Sichtbarkeit der Anzeige).</summary>
+    [ObservableProperty] private bool _hasEternalMasteryBonus;
 }

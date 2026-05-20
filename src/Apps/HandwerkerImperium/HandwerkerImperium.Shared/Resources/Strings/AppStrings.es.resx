@@ -3425,6 +3425,13 @@
   <data name="HintMaterialOfferText" xml:space="preserve">
     <value>Algunos pedidos muestran ahora un segundo botón: "Empezar con material". Si entregas los objetos solicitados desde tu almacén, ganas dinero y XP extra.</value>
   </data>
+  <data name="HintMultiTaskOrderTitle" xml:space="preserve"><value>Varias tareas</value></data>
+  <data name="HintMultiTaskOrderText" xml:space="preserve"><value>En pedidos con varias tareas cuenta el PROMEDIO de tus valoraciones. Una puntuación perfecta puede compensar una débil — pero no al revés.</value></data>
+  <data name="HintCrossWorkshopComingTitle" xml:space="preserve"><value>¡Cadenas de suministro!</value></data>
+  <data name="HintCrossWorkshopComingText" xml:space="preserve"><value>Desde el nivel 100, los pedidos requerirán material de OTROS talleres. Aprovecha para mejorar tus talleres menos usados.</value></data>
+  <data name="HintTier4ComingTitle" xml:space="preserve"><value>Pronto: Manufactura Imperial</value></data>
+  <data name="HintTier4ComingText" xml:space="preserve"><value>En el nivel 500 del taller más la investigación logística, desbloqueas productos Tier-4 (Villa, Rascacielos, Sede del Imperio) — el endgame.</value></data>
+  <data name="EternalMasteryShort" xml:space="preserve"><value>Maestría Eterna</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Listo para promoción</value>
   </data>
@@ -4330,6 +4337,7 @@
   <data name="Equipment" xml:space="preserve">
     <value>Equipamiento</value>
   </data>
+  <data name="GuildOfflineBonusReassure" xml:space="preserve"><value>Las bonificaciones siguen activas</value></data>
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Sin conexión a internet. Las funciones de gremio requieren una conexión activa para sincronizar con otros jugadores.</value>
   </data>

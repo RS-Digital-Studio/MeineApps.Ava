@@ -60,6 +60,13 @@ public partial class App : Application
     /// </summary>
     public static Action? ReviewPromptRequested;
 
+    /// <summary>
+    /// F-20: Plattform-Hook fuer FLAG_KEEP_SCREEN_ON (Android).
+    /// MainActivity setzt das Lambda; SettingsViewModel ruft es bei Toggle/Resume auf.
+    /// Pass-Spieler-Sweetener — Aufrufer prueft IsPremium.
+    /// </summary>
+    public static Action<bool>? PlatformKeepScreenOn { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

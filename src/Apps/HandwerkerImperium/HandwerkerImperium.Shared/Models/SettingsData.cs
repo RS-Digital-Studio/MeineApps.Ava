@@ -24,6 +24,29 @@ public sealed class SettingsData
     [JsonPropertyName("graphicsQuality")]
     public GraphicsQuality GraphicsQuality { get; set; } = GraphicsQuality.High;
 
+    /// <summary>
+    /// F-23: ReduceMotion als eigenes Setting (Accessibility), entkoppelt von GraphicsQuality.
+    /// Default false — User kann es im Settings-Bildschirm aktivieren ohne die GraphicsQuality
+    /// auf Low setzen zu muessen.
+    /// </summary>
+    [JsonPropertyName("reduceMotion")]
+    public bool ReduceMotion { get; set; }
+
+    /// <summary>F-19: SFX-Volume 0..1 (Default 1.0).</summary>
+    [JsonPropertyName("sfxVolume")]
+    public float SfxVolume { get; set; } = 1.0f;
+
+    /// <summary>F-19: Music-Volume 0..1 (Default 1.0).</summary>
+    [JsonPropertyName("musicVolume")]
+    public float MusicVolume { get; set; } = 1.0f;
+
+    /// <summary>
+    /// F-20: Bildschirm waehrend Spiel aktiv halten (FLAG_KEEP_SCREEN_ON, Android-only).
+    /// Imperium-Pass-Sweetener — nur fuer Pass-Spieler aktivierbar; Default false.
+    /// </summary>
+    [JsonPropertyName("keepScreenOn")]
+    public bool KeepScreenOn { get; set; }
+
     [JsonPropertyName("cloudSaveEnabled")]
     public bool CloudSaveEnabled { get; set; } = true;
 

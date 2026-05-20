@@ -15,6 +15,12 @@ public interface IAudioService
     /// </summary>
     bool MusicEnabled { get; set; }
 
+    /// <summary>F-19: SFX-Volume 0..1 (Default 1.0). Wird auf SoundPool angewandt (Android).</summary>
+    float SfxVolume { get; set; }
+
+    /// <summary>F-19: Music-Volume 0..1 (Default 1.0). Wird auf MediaPlayer angewandt (Android).</summary>
+    float MusicVolume { get; set; }
+
     /// <summary>
     /// Plays a sound effect.
     /// </summary>

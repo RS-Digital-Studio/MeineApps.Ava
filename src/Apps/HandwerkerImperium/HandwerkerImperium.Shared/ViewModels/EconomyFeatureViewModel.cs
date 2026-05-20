@@ -1072,6 +1072,15 @@ internal sealed class EconomyFeatureViewModel
         var highestTier = state.Prestige.GetHighestAvailableTier(currentLevel);
         _host.PrestigeBannerVM.IsPrestigeAvailable = highestTier != PrestigeTier.None;
 
+        // F-18: Kumulierten Eternal-Mastery-Bonus anzeigen (skaliert mit Prestige-Count).
+        decimal emBonus = GameBalanceConstants.EternalMasteryBonusPerPrestige * currentPrestigeCount
+                        + GameBalanceConstants.EternalMasteryBonusPer5Prestiges * (currentPrestigeCount / 5)
+                        + GameBalanceConstants.EternalMasteryBonusPer10Prestiges * (currentPrestigeCount / 10);
+        _host.PrestigeBannerVM.HasEternalMasteryBonus = emBonus > 0;
+        _host.PrestigeBannerVM.EternalMasteryBonusDisplay = emBonus > 0
+            ? $"+{(emBonus * 100):0.#}% {_localizationService.GetString("EternalMasteryShort") ?? "Eternal Mastery"}"
+            : "";
+
         if (_host.PrestigeBannerVM.IsPrestigeAvailable)
         {
             var potentialPoints = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);

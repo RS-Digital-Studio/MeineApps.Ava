@@ -178,10 +178,14 @@ public static class PowerUpExtensions
         PowerUpType.Fire => 1,
         PowerUpType.Speed => 1,
         PowerUpType.Kick => 10,
+        // v2.0.60 (B-A15): Wallpass von L20→L15. L20-24 sind Maze-dominiert —
+        // ohne Wallpass extrem frustrierend. Spieler bekommt 5 Level Vorlauf.
+        PowerUpType.Wallpass => 15,
         PowerUpType.Mystery => 15,
+        // v2.0.60 (B-A12): Cure von L20→L15. Spieler hat damit eine etablierte
+        // Cure-Strategie bevor der erste Skull (L20) trifft. Skull bleibt L20.
+        PowerUpType.Cure => 15,
         PowerUpType.Skull => 20,
-        PowerUpType.Cure => 20,  // v2.0.37: gleichzeitig mit Skull verfuegbar — sonst gibt es keine Heilung
-        PowerUpType.Wallpass => 20,
         PowerUpType.Detonator => 25,
         PowerUpType.Bombpass => 25,
         PowerUpType.LineBomb => 30,

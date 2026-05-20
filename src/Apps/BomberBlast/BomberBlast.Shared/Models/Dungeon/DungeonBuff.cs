@@ -136,30 +136,32 @@ public static class DungeonBuffCatalog
             Rarity = DungeonBuffRarity.Epic, Weight = 8
         },
 
-        // Legendary (Gewicht 3-4, extrem selten)
+        // Legendary
+        // v2.0.60 (B-A21): Weight von 3-4 auf 9-10 erhöht. Vorher: ~11% Legendary-Total — Casual
+        // sah in 10 Buffs realistisch keinen Legendary. Jetzt: ~25% — fühlt sich endlich "build-defining" an.
         new()
         {
             Type = DungeonBuffType.Berserker, NameKey = "DungeonBuffBerserker",
             DescKey = "DungeonBuffBerserkerDesc", IconName = "Sword",
-            Rarity = DungeonBuffRarity.Legendary, Weight = 4
+            Rarity = DungeonBuffRarity.Legendary, Weight = 10
         },
         new()
         {
             Type = DungeonBuffType.TimeFreeze, NameKey = "DungeonBuffTimeFreeze",
             DescKey = "DungeonBuffTimeFreezeDesc", IconName = "Snowflake",
-            Rarity = DungeonBuffRarity.Legendary, Weight = 3
+            Rarity = DungeonBuffRarity.Legendary, Weight = 9
         },
         new()
         {
             Type = DungeonBuffType.GoldRush, NameKey = "DungeonBuffGoldRush",
             DescKey = "DungeonBuffGoldRushDesc", IconName = "TreasureChest",
-            Rarity = DungeonBuffRarity.Legendary, Weight = 3
+            Rarity = DungeonBuffRarity.Legendary, Weight = 9
         },
         new()
         {
             Type = DungeonBuffType.Phantom, NameKey = "DungeonBuffPhantom",
             DescKey = "DungeonBuffPhantomDesc", IconName = "Ghost",
-            Rarity = DungeonBuffRarity.Legendary, Weight = 3
+            Rarity = DungeonBuffRarity.Legendary, Weight = 9
         }
     ];
 

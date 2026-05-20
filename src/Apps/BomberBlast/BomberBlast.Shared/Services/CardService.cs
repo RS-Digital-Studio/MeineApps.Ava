@@ -174,8 +174,10 @@ public sealed class CardService : ICardService
         }
         else
         {
-            // Normaler Drop: 60% Common, 25% Rare, 12% Epic, 3% Legendary
-            float legendaryChance = 0.03f + worldNumber * 0.005f;
+            // v2.0.60 (B-A23): Legendary 3%→6% Basis. Vorher: Whale-Bait-Rate (Standard-Gacha-rare 5-10%).
+            // 6% Basis + 0.5% pro Welt = bis 11% in Welt 10 — fühlt sich erreichbar an.
+            // Common reduziert auf 57%, Rare bleibt 25%, Epic bleibt 12%.
+            float legendaryChance = 0.06f + worldNumber * 0.005f;
             float epicChance = legendaryChance + 0.12f + worldNumber * 0.01f;
             float rareChance = epicChance + 0.25f;
 
@@ -291,11 +293,14 @@ public sealed class CardService : ICardService
 
     public int CraftCardCount => 5;
 
+    // v2.0.60 (B-B12): Crafting-Kosten halbiert. Vorher: ~41 Stunden Farm-Wall für 1 Legendary
+    // (125 Common-Drops à 3% + 65.000 Coins). Mit B-A23 Drop-Rate-Erhöhung (6%) + halbierten
+    // Crafting-Kosten ist Legendary in ~10-15 Stunden erreichbar — Casual-fair, Whale-Anreiz bleibt.
     public int GetCraftCoinCost(Rarity targetRarity) => targetRarity switch
     {
-        Rarity.Rare => 2_000,
-        Rarity.Epic => 8_000,
-        Rarity.Legendary => 25_000,
+        Rarity.Rare => 1_000,
+        Rarity.Epic => 4_000,
+        Rarity.Legendary => 12_500,
         _ => 0  // Common ist nicht craftbar (es gibt keine niedrigere Rarity)
     };
 
@@ -322,48 +327,81 @@ public sealed class CardService : ICardService
         return GetCraftableCount(sourceRarity) >= CraftCardCount;
     }
 
+    // v2.0.60 (B-E3): Lock-Object für atomare Karten-Mutation. Schützt vor Race
+    // zwischen CanCraft + TrySpendCoins + Karten-Verbrauch.
+    private readonly object _craftLock = new();
+
     public BombType? CraftCard(Rarity targetRarity, ICoinService coinService)
     {
-        if (!CanCraft(targetRarity, coinService)) return null;
-        var sourceRarity = (Rarity)((int)targetRarity - 1);
-
-        // Kosten zahlen — TrySpend gibt false bei Race; das wuerde nur bei paralleler Mutation passieren.
-        int cost = GetCraftCoinCost(targetRarity);
-        if (!coinService.TrySpendCoins(cost)) return null;
-
-        // 5 Quell-Karten verbrauchen — bevorzugt von Karten mit hoechstem Count
-        // (verhindert dass eine seltene Karte komplett aufgebraucht wird waehrend andere haengen).
-        int remaining = CraftCardCount;
-        var sortedSources = _data.Cards
-            .Where(c => CardCatalog.GetCard(c.BombType)?.Rarity == sourceRarity)
-            .OrderByDescending(c => c.Count)
-            .ToList();
-        foreach (var owned in sortedSources)
+        // v2.0.60 (B-E3): Komplette Crafting-Operation unter Lock. Snapshot der zu
+        // verbrauchenden Karten VOR Coin-Spend; try/catch um Mutation mit Coin-Rollback.
+        lock (_craftLock)
         {
-            if (remaining <= 0) break;
-            int take = Math.Min(remaining, owned.Count);
-            owned.Count -= take;
-            remaining -= take;
-        }
-        if (remaining > 0)
-        {
-            // Sollte durch CanCraft abgefangen sein — defensiv: Coins zurueckerstatten und abbrechen
-            coinService.AddCoins(cost);
-            return null;
-        }
+            if (!CanCraft(targetRarity, coinService)) return null;
+            var sourceRarity = (Rarity)((int)targetRarity - 1);
 
-        // Ziel-Karte zufaellig aus dem Pool waehlen (deterministisch durch Time-Seed)
-        var pool = CardCatalog.All.Where(c => c.Rarity == targetRarity).ToList();
-        if (pool.Count == 0)
-        {
-            coinService.AddCoins(cost);
-            return null;
-        }
-        var random = new Random();
-        var picked = pool[random.Next(pool.Count)];
-        AddCard(picked.BombType);  // erhoeht den Count und persistiert via Save()/CollectionChanged
+            // Snapshot vor Coin-Spend: Welche Karten werden verbraucht und wie viel von jeder?
+            // Wir berechnen die Verbrauchs-Liste ZUERST — wenn die Berechnung scheitert,
+            // wurde noch nichts ausgegeben.
+            int remaining = CraftCardCount;
+            var consumePlan = new List<(OwnedCard card, int amount)>();
+            var sortedSources = _data.Cards
+                .Where(c => CardCatalog.GetCard(c.BombType)?.Rarity == sourceRarity)
+                .OrderByDescending(c => c.Count)
+                .ToList();
+            foreach (var owned in sortedSources)
+            {
+                if (remaining <= 0) break;
+                int take = Math.Min(remaining, owned.Count);
+                if (take > 0)
+                {
+                    consumePlan.Add((owned, take));
+                    remaining -= take;
+                }
+            }
+            if (remaining > 0) return null;  // Nicht genug Karten — kein Coin-Spend.
 
-        return picked.BombType;
+            // Coins zahlen NACH erfolgreicher Snapshot-Berechnung.
+            int cost = GetCraftCoinCost(targetRarity);
+            if (!coinService.TrySpendCoins(cost)) return null;
+
+            // Verbrauch ausführen — mit Rollback-Sicherung bei Exception.
+            try
+            {
+                foreach (var (card, amount) in consumePlan)
+                {
+                    card.Count -= amount;
+                }
+            }
+            catch
+            {
+                // Rollback: Coins zurück, Karten-Counts wiederherstellen.
+                coinService.AddCoins(cost);
+                foreach (var (card, amount) in consumePlan)
+                {
+                    card.Count += amount;
+                }
+                return null;
+            }
+
+            // Ziel-Karte zufaellig aus dem Pool waehlen (deterministisch durch Time-Seed)
+            var pool = CardCatalog.All.Where(c => c.Rarity == targetRarity).ToList();
+            if (pool.Count == 0)
+            {
+                // Edge-Case: keine Karten der Zielrarität — Rollback komplett.
+                coinService.AddCoins(cost);
+                foreach (var (card, amount) in consumePlan)
+                {
+                    card.Count += amount;
+                }
+                return null;
+            }
+            var random = new Random();
+            var picked = pool[random.Next(pool.Count)];
+            AddCard(picked.BombType);  // erhoeht den Count und persistiert via Save()/CollectionChanged
+
+            return picked.BombType;
+        }
     }
 
     /// <summary>

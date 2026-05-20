@@ -39,16 +39,18 @@
     </Button>
 
     <!-- Pause-Button : Mobile-Pause-Trigger neben dem ?-Button.
-         Audit H03: 24dp Top-Margin + 80dp Right-Margin (Cutout-Safe).
+         Audit H03: 24dp Top-Margin + 76dp Right-Margin (Cutout-Safe).
+         v2.0.60 (B-C12): 44dp→52dp + Opacity 80→A0 + Margin/CornerRadius angepasst.
+         Vergrößert auf Mid-Tier-Android-Phones besser anklickbar (Material Design 48dp+).
          Sichtbar nur waehrend Gameplay (nicht im ContextHelp / nicht bereits pausiert). -->
     <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-            Margin="0,24,80,0"
-            Width="44" Height="44"
-            Background="#80000000"
+            Margin="0,24,76,0"
+            Width="52" Height="52"
+            Background="#A0000000"
             Foreground="White"
-            BorderBrush="#33FFFFFF"
+            BorderBrush="#55FFFFFF"
             BorderThickness="1"
-            CornerRadius="22"
+            CornerRadius="26"
             Padding="0"
             HorizontalContentAlignment="Center"
             VerticalContentAlignment="Center"

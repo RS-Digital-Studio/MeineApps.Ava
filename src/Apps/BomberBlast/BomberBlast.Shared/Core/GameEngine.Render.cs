@@ -118,6 +118,10 @@ public sealed partial class GameEngine
             return;
         }
 
+        // v2.0.60 (B-E1): Overlay-Glow-Filter re-init falls disposed (Android-Resume-Schutz).
+        // Idempotent — Allokation nur beim ersten Frame nach Dispose oder beim ersten Render.
+        EnsureOverlayFilters();
+
         // Audit C12: SaveCount-Backstop. Wirft eine Sub-Render-Methode eine Exception,
         // wuerden Colorblind/Zoom/Shake-Saves auf dem Canvas-Stack haengenbleiben →
         // naechster Frame mit doppeltem Zoom + Shake. Im finally klappen wir auf den

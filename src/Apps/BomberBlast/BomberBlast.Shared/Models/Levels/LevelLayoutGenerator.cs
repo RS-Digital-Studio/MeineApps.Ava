@@ -437,28 +437,51 @@ public static class LevelLayoutGenerator
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Weist Mutator-Regeln zu: Ab Welt 6, jedes 3. Level in der Welt (aber nicht Boss/Bonus).
+    /// Weist Mutator-Regeln zu.
+    /// v2.0.60 (B-A1): Welt 5 (world == 4, 0-basiert) ist Intro-Phase mit ~33% Frequenz
+    /// (1 Mutator-Level pro Welt statt 3) — sanfter Übergang zur vollen Mutator-Phase ab Welt 6.
+    /// Vorher: Welt 5 = 0 Mutator-Level, Welt 6 = 3/9 = 33% — harter Sprung.
+    /// v2.0.60 (B-A25): MirrorControls aus Pool entfernt (UX-Anti-Pattern — sabotiert
+    /// Muscle-Memory statt intellektuell zu fordern). Durch zusätzliche bestehende Mutatoren ersetzt.
     /// Deterministisch basierend auf Level-Nummer.
     /// </summary>
     private static void AssignMutator(Level level, int levelNumber, int world)
     {
-        if (world < 5) return; // Ab Welt 6 (world ist 0-basiert)
+        if (world < 4) return; // Ab Welt 5 (world ist 0-basiert)
 
         int levelInWorld = ((levelNumber - 1) % 10) + 1;
-        // Level 3, 6, 9 in der Welt (nicht 5/10 = Bonus/Boss)
-        if (levelInWorld != 3 && levelInWorld != 6 && levelInWorld != 9) return;
+
+        // v2.0.60 (B-A1): Welt 5 Intro — nur ein Mutator-Level (Level 6 in der Welt).
+        // Ab Welt 6 weiter normal mit drei Mutator-Levels (3, 6, 9).
+        bool isIntroWorld = world == 4;
+        if (isIntroWorld)
+        {
+            if (levelInWorld != 6) return;
+        }
+        else
+        {
+            if (levelInWorld != 3 && levelInWorld != 6 && levelInWorld != 9) return;
+        }
 
         // Deterministischer Mutator basierend auf Level-Nummer
+        // v2.0.60 (B-A25): MirrorControls aus Pool entfernt. Pool jetzt 4 Mutatoren statt 5.
         var mutators = new[]
         {
             LevelMutator.AllPowerBombs,
             LevelMutator.DoubleSpeed,
             LevelMutator.InvisibleBlocks,
-            LevelMutator.NoTimer,
-            LevelMutator.MirrorControls
+            LevelMutator.NoTimer
         };
 
         level.Mutator = mutators[levelNumber % mutators.Length];
+
+        // v2.0.60 (B-A26): Konflikt-Prävention — InvisibleBlocks + FoW = doppelt-blinde Navigation.
+        // FoW ist ab L50 + Welt 10 Fog-Mechanik aktiv. Wenn Konflikt → Mutator zu DoubleSpeed wechseln.
+        if (level.Mutator == LevelMutator.InvisibleBlocks
+            && (levelNumber >= 50 || level.Mechanic == WorldMechanic.Fog))
+        {
+            level.Mutator = LevelMutator.DoubleSpeed;
+        }
 
         // NoTimer: Zeitlimit auf max setzen (Pontan-System prüft Timer)
         if (level.Mutator == LevelMutator.NoTimer)

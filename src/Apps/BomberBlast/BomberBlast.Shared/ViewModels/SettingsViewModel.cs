@@ -31,6 +31,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private readonly IPreferencesService _preferences;
     private readonly IAccessibilityService _accessibilityService;
     private readonly IAccountDeletionService? _accountDeletionService;
+    // v2.0.60 (B-C16): Datenexport vor Konto-Löschung (DSGVO Art. 20).
+    private readonly IDataExportService? _dataExportService;
     // Phase 23b — Premium-Tier-Status für Settings-Anzeige
     private readonly IBattlePassPlusService? _battlePassPlus;
     private readonly IVipSubscriptionService? _vipSubscription;
@@ -329,7 +331,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         IAccountDeletionService? accountDeletionService = null,
         IBattlePassPlusService? battlePassPlus = null,
         IVipSubscriptionService? vipSubscription = null,
-        IAnalyticsService? analytics = null)
+        IAnalyticsService? analytics = null,
+        IDataExportService? dataExportService = null)
     {
         _progressService = progressService;
         _highScoreService = highScoreService;
@@ -346,6 +349,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _battlePassPlus = battlePassPlus;
         _vipSubscription = vipSubscription;
         _analytics = analytics;
+        _dataExportService = dataExportService;
 
         // Version info
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
@@ -538,22 +542,38 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
             return;
         }
 
-        bool confirmed = false;
-        if (ConfirmationRequested != null)
-        {
-            confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("DeleteAccount") ?? "Konto löschen",
-                _localizationService.GetString("DeleteAccountConfirm") ??
-                    "Alle deine Spieldaten werden unwiderruflich gelöscht. Bist du sicher?",
-                _localizationService.GetString("Delete") ?? "Löschen",
-                _localizationService.GetString("Cancel") ?? "Abbrechen");
-        }
+        if (ConfirmationRequested == null) return;
 
-        if (!confirmed) return;
+        // v2.0.60 (B-C16): 2-Step-Confirm mit Daten-Export-Hint (DSGVO Art. 17 + 20).
+        // Step 1: Hinweis auf Export-Möglichkeit + erste Confirm.
+        bool confirmed1 = await ConfirmationRequested.Invoke(
+            _localizationService.GetString("DeleteAccount") ?? "Konto löschen",
+            _localizationService.GetString("DeleteAccountExportHint") ??
+                "Tipp: Du kannst deine Daten vorher per \"Daten exportieren\" sichern.\n\n" +
+                "Wenn du fortfährst, werden alle deine Spieldaten unwiderruflich gelöscht. Möchtest du fortfahren?",
+            _localizationService.GetString("Continue") ?? "Weiter",
+            _localizationService.GetString("Cancel") ?? "Abbrechen");
+
+        if (!confirmed1) return;
+
+        // Step 2: Endgültige Bestätigung — keine versehentliche Löschung.
+        bool confirmed2 = await ConfirmationRequested.Invoke(
+            _localizationService.GetString("DeleteAccountFinalTitle") ?? "Letzte Bestätigung",
+            _localizationService.GetString("DeleteAccountFinalMessage") ??
+                "Alle deine Spieldaten werden JETZT permanent gelöscht. Dieser Schritt kann nicht rückgängig gemacht werden.\n\nWirklich fortfahren?",
+            _localizationService.GetString("DeletePermanently") ?? "Permanent löschen",
+            _localizationService.GetString("Cancel") ?? "Abbrechen");
+
+        if (!confirmed2) return;
 
         var result = await _accountDeletionService.DeleteAccountAsync();
         if (result.Success)
         {
+            // v2.0.60: Funnel-Event fuer DSGVO-Compliance-Tracking (DSGVO erlaubt anonyme Aggregat-Statistik).
+            _analytics?.LogEvent("account_deleted", new Dictionary<string, object>
+            {
+                ["success"] = 1,
+            });
             ShowAlert(
                 _localizationService.GetString("DeleteAccount") ?? "Konto gelöscht",
                 _localizationService.GetString("DeleteAccountDone") ??
@@ -565,6 +585,44 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
             ShowAlert(
                 _localizationService.GetString("DeleteAccount") ?? "Konto gelöscht",
                 $"{_localizationService.GetString("DeleteAccountPartial") ?? "Lokale Daten gelöscht. Cloud-Daten konnten nicht erreicht werden."} {result.ErrorMessage}",
+                _localizationService.GetString("OK") ?? "OK");
+        }
+    }
+
+    /// <summary>
+    /// v2.0.60 (B-C16): DSGVO Art. 20 — Datenexport. Lädt alle Spielerdaten als
+    /// human-readable Text in die Zwischenablage / nativen Share-Sheet.
+    /// </summary>
+    [RelayCommand]
+    private async Task ExportDataAsync()
+    {
+        if (_dataExportService == null)
+        {
+            ShowAlert(
+                _localizationService.GetString("Error") ?? "Error",
+                _localizationService.GetString("DataExportUnavailable") ?? "Datenexport nicht verfügbar.",
+                _localizationService.GetString("OK") ?? "OK");
+            return;
+        }
+
+        try
+        {
+            var text = await _dataExportService.ExportAsHumanReadableAsync();
+            // Plattformübergreifend: Android = Share-Sheet, Desktop = Clipboard-Copy.
+            MeineApps.Core.Ava.Services.UriLauncher.ShareText(
+                text,
+                _localizationService.GetString("DataExportTitle") ?? "Meine BomberBlast-Daten");
+            ShowAlert(
+                _localizationService.GetString("DataExportTitle") ?? "Datenexport",
+                _localizationService.GetString("DataExportSuccess") ??
+                    "Deine Daten wurden bereitgestellt. Auf Android kannst du sie per Share-Sheet weiterleiten, auf Desktop wurden sie in die Zwischenablage kopiert.",
+                _localizationService.GetString("OK") ?? "OK");
+        }
+        catch (Exception ex)
+        {
+            ShowAlert(
+                _localizationService.GetString("Error") ?? "Error",
+                $"{_localizationService.GetString("DataExportFailed") ?? "Export fehlgeschlagen"}: {ex.Message}",
                 _localizationService.GetString("OK") ?? "OK");
         }
     }

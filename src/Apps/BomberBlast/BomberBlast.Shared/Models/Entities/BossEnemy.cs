@@ -232,8 +232,16 @@ public class BossEnemy : Enemy
     // ═══════════════════════════════════════════════════════════════════════
 
     //.1 : Boss-Modifier-Effekte
+    // v2.0.60 (B-A16): HEALING_REGEN_PER_SECOND von 5f→2.5f. Bei 5f × 12-18s Cooldown
+    // regenerierte ein Boss mit MaxHP 3-8 effektiv 60-90 HP pro Cycle = unbesiegbar.
+    // Plus: float-Akkumulator-Fix (vorher: (int)Math.Round(5*0.016)=0 → de-facto kein Heal).
+    // Plus: HEAL_HP_CAP_FACTOR cappt Regen auf 50% MaxHP — Boss kann sich in Enrage nicht
+    // mehr selbst aus der Sterbephase retten.
     /// <summary>Healing-Modifier: HP/s Regeneration im Out-of-Combat-State.</summary>
-    private const float HEALING_REGEN_PER_SECOND = 5f;
+    private const float HEALING_REGEN_PER_SECOND = 2.5f;
+    /// <summary>Healing-Modifier: Regen-Cap als Bruchteil von MaxHitPoints (verhindert Enrage-Selbstrettung).</summary>
+    private const float HEAL_HP_CAP_FACTOR = 0.5f;
+    private float _healingAccumulator;
     /// <summary>Summoner-Modifier: Spawn-Cooldown fuer Mini-Enemies.</summary>
     private const float SUMMONER_SPAWN_COOLDOWN = 8f;
     private float _summonerSpawnTimer;
@@ -293,9 +301,12 @@ public class BossEnemy : Enemy
             SpecialAttackTimer -= deltaTime;
             if (SpecialAttackTimer <= 0)
             {
-                // Berserk-Modifier halbiert Telegraph-Dauer (weniger Reaktionszeit).
+                // v2.0.60 (B-A17): Berserk-Modifier verkürzt Telegraph, Mindestzeit 1.5s.
+                // Vorher: TELEGRAPH_DURATION * 0.5f = 1.0s — unter menschlicher Reaktionszeit
+                // für Bomb-Place + Move (~200-300ms Reaktion + ~700ms Bomb-Set + Move).
+                // 1.5s sichert Reaktionsfenster. In Enrage zusätzlich ×0.85 = 1.275s (vorher 0.6s).
                 TelegraphTimer = Modifier == BossModifier.Berserk
-                    ? TELEGRAPH_DURATION * 0.5f
+                    ? MathF.Max(1.5f, TELEGRAPH_DURATION * 0.75f)
                     : TELEGRAPH_DURATION;
             }
         }
@@ -340,11 +351,28 @@ public class BossEnemy : Enemy
         switch (Modifier)
         {
             case BossModifier.Healing:
-                // Heile HP/s waehrend des Cooldowns (Out-of-Combat). Cap bei MaxHitPoints.
-                if (!IsAttacking && !IsTelegraphing && HitPoints < MaxHitPoints)
+                // v2.0.60 (B-A16): Float-Akkumulator statt direkter int-Round-Addition.
+                // Vorher: (int)Math.Round(2.5f * 0.016f) = 0 → Heilung tat nichts.
+                // Jetzt: deltaTime-Anteile akkumulieren, ganzzahlige HP-Wende bei ≥1.
+                // Cap bei MaxHitPoints/2 verhindert Selbst-Rettung im Enrage.
+                if (!IsAttacking && !IsTelegraphing)
                 {
-                    HitPoints = Math.Min(MaxHitPoints,
-                        HitPoints + (int)Math.Round(HEALING_REGEN_PER_SECOND * deltaTime));
+                    int heal_cap = Math.Max(1, (int)MathF.Floor(MaxHitPoints * HEAL_HP_CAP_FACTOR));
+                    if (HitPoints < heal_cap)
+                    {
+                        _healingAccumulator += HEALING_REGEN_PER_SECOND * deltaTime;
+                        if (_healingAccumulator >= 1f)
+                        {
+                            int delta = (int)_healingAccumulator;
+                            _healingAccumulator -= delta;
+                            HitPoints = Math.Min(heal_cap, HitPoints + delta);
+                        }
+                    }
+                    else
+                    {
+                        // HP über Cap → Akkumulator-Reset, damit kein "Pop" nach Damage entsteht.
+                        _healingAccumulator = 0f;
+                    }
                 }
                 break;
 

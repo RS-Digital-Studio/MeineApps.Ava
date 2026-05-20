@@ -85,9 +85,17 @@ public sealed class FeatureUnlockChoreographer : IFeatureUnlockChoreographer
         lock (_lock)
         {
             _isShowing = false;
+            _showTimeoutTimer?.Dispose();
+            _showTimeoutTimer = null;
         }
         TryShowNext();
     }
+
+    // v2.0.60 (B-E10): Timer für Auto-Dismiss falls View DismissCurrent nicht aufruft
+    // (z.B. Crash/Navigation weg). Verhindert dass _isShowing für die ganze Session hängt
+    // und Queue-Items nie angezeigt werden.
+    private const int SHOW_TIMEOUT_MS = 10_000;
+    private System.Threading.Timer? _showTimeoutTimer;
 
     private void Enqueue(string featureId, string titleKey, string descKey,
         string? ctaNav = null, string? heroAsset = null)
@@ -130,6 +138,10 @@ public sealed class FeatureUnlockChoreographer : IFeatureUnlockChoreographer
             if (_queue.Count == 0) return;
             next = _queue.Dequeue();
             _isShowing = true;
+            // v2.0.60 (B-E10): Timeout-Fallback. Auto-Dismiss nach 10s falls View nicht reagiert.
+            _showTimeoutTimer?.Dispose();
+            _showTimeoutTimer = new System.Threading.Timer(_ => DismissCurrent(),
+                null, SHOW_TIMEOUT_MS, System.Threading.Timeout.Infinite);
         }
         if (next != null)
         {

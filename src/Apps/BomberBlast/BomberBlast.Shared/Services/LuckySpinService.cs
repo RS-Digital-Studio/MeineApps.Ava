@@ -54,7 +54,10 @@ public sealed class LuckySpinService : ILuckySpinService
 
     public int TotalSpins => _data.TotalSpins;
     public int SpinsSinceLastJackpot => _data.SpinsSinceLastJackpot;
-    public int JackpotPityThreshold => 50;
+    // v2.0.60 (B-B14): Pity 50→25, plus Soft-Pity ab Spin 15. 50 Tage bis Jackpot-Garantie
+    // war zu lang für Casual (1× free Spin/Tag = 7 Wochen). Soft-Pity-Curve macht Late-Game-Spins
+    // psychologisch fairer ohne Compliance-Verletzung (Drop-Rate steigt graduell, kommuniziert).
+    public int JackpotPityThreshold => 25;
 
     public IReadOnlyList<SpinReward> GetRewards() => _rewards;
 
@@ -69,6 +72,22 @@ public sealed class LuckySpinService : ILuckySpinService
         return list;
     }
 
+    /// <summary>
+    /// v2.0.60 (B-B14): Soft-Pity-Boost ab Spin 15 — Jackpot-Wahrscheinlichkeit
+    /// steigt schrittweise an. Spin 15-19: 8.5%, Spin 20-24: 25%, Spin 25+ Hard-Pity 100%.
+    /// </summary>
+    private int GetSoftPityBoostWeight()
+    {
+        int spinsSince = _data.SpinsSinceLastJackpot;
+        return spinsSince switch
+        {
+            >= 25 => 0,                       // Wird durch Hard-Pity behandelt
+            >= 20 => 25 * _totalWeight / 100, // 25% Jackpot-Chance
+            >= 15 => 9 * _totalWeight / 100,  // ~8.5% Jackpot-Chance
+            _ => 0
+        };
+    }
+
     public int Spin()
     {
         int jackpotIndex = -1;
@@ -76,8 +95,8 @@ public sealed class LuckySpinService : ILuckySpinService
             if (_rewards[i].IsJackpot) { jackpotIndex = i; break; }
 
         // Phase 23 — Pity-Counter (Lootbox-Compliance UK/China):
-        // Nach 50 Spins ohne Jackpot wird der naechste Spin garantiert ein Jackpot.
-        // Schuetzt vor langen Pech-Streaks und macht das System transparent.
+        // Nach JackpotPityThreshold Spins ohne Jackpot ist der naechste Spin garantiert Jackpot.
+        // v2.0.60 (B-B14): Threshold von 50 auf 25. Plus Soft-Pity-Boost ab Spin 15.
         if (jackpotIndex >= 0 && _data.SpinsSinceLastJackpot >= JackpotPityThreshold)
         {
             _data.TotalSpins++;
@@ -86,12 +105,17 @@ public sealed class LuckySpinService : ILuckySpinService
             return jackpotIndex;
         }
 
+        // v2.0.60 (B-B14): Soft-Pity erhöht effektives Gewicht des Jackpot-Segments.
+        int softPityBoost = jackpotIndex >= 0 ? GetSoftPityBoostWeight() : 0;
+        int effectiveTotalWeight = _totalWeight + softPityBoost;
+
         // Gewichtete Zufallsauswahl
-        int roll = Random.Shared.Next(_totalWeight);
+        int roll = Random.Shared.Next(effectiveTotalWeight);
         int cumulative = 0;
         for (int i = 0; i < _rewards.Length; i++)
         {
-            cumulative += _rewards[i].Weight;
+            int weight = _rewards[i].Weight + (i == jackpotIndex ? softPityBoost : 0);
+            cumulative += weight;
             if (roll < cumulative)
             {
                 _data.TotalSpins++;

@@ -530,8 +530,23 @@ public sealed partial class GameEngine : IDisposable
     private readonly SKFont _overlayFont = new() { Embolden = true };
     // SKBlurStyle.Solid: Text/Form bleibt scharf-opak, plus äußerer Glow.
     // (Normal blurrt INNEN UND AUSSEN → Text wirkt matschig/unscharf.)
-    private readonly SKMaskFilter _overlayGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 3);
-    private readonly SKMaskFilter _overlayGlowFilterLarge = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 4);
+    // v2.0.60 (B-E1): SKMaskFilter sind jetzt nullable + lazy. Verhindert
+    // Use-After-Free wenn GameEngine.Dispose() während eines Render-Frames läuft
+    // (Android-Resume-Race mit nicht-disposed GameRenderer). MaskFilter=null ist
+    // ein gültiger SKPaint-Wert (kein Glow), kein Crash bei Stale-Render.
+    // Re-Init via EnsureOverlayFilters() vor Verwendung im Render-Pfad.
+    private SKMaskFilter? _overlayGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 3);
+    private SKMaskFilter? _overlayGlowFilterLarge = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 4);
+
+    /// <summary>
+    /// v2.0.60 (B-E1): Lazy-Re-Init der Overlay-Glow-Filter falls disposed.
+    /// Wird vom Render-Pfad VOR Verwendung aufgerufen. Idempotent.
+    /// </summary>
+    private void EnsureOverlayFilters()
+    {
+        _overlayGlowFilter ??= SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 3);
+        _overlayGlowFilterLarge ??= SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 4);
+    }
 
     // Victory-Timer
     private float _victoryTimer;
@@ -711,8 +726,11 @@ public sealed partial class GameEngine : IDisposable
     private float _tutorialWarningTimer;
 
     // Pause-Button (Touch-Geräte, oben-links)
-    private const float PAUSE_BUTTON_SIZE = 40f;
+    // v2.0.60 (B-C12 + B-E16): PAUSE_BUTTON_SIZE 40→52 (konsistent mit GameView.axaml).
+    // Hit-Test-Toleranz +14dp (war +10) für Mid-Tier-Android mit großen Daumen.
+    private const float PAUSE_BUTTON_SIZE = 52f;
     private const float PAUSE_BUTTON_MARGIN = 10f;
+    private const float PAUSE_BUTTON_HIT_TOLERANCE = 14f;
     /// <summary>Callback für Pause-Anfrage vom Touch-Button</summary>
     public event Action? PauseRequested;
 
@@ -727,6 +745,12 @@ public sealed partial class GameEngine : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action? GameOver;
+    /// <summary>
+    /// v2.0.60 (B-C2): User hat Tutorial-Skip-Button gedrückt. View zeigt Confirm-Dialog
+    /// und ruft ConfirmTutorialSkip() bei OK. Verhindert versehentliches Skip → harte
+    /// Schwierigkeit für Genre-Neulinge.
+    /// </summary>
+    public event Action? TutorialSkipRequested;
     public event Action? LevelComplete;
     public event Action? Victory;
     public event Action<int>? ScoreChanged;
@@ -808,7 +832,9 @@ public sealed partial class GameEngine : IDisposable
             float pauseRight = PAUSE_BUTTON_MARGIN + PAUSE_BUTTON_SIZE;
             float pauseTop = PAUSE_BUTTON_MARGIN + BannerTopOffset;
             float pauseBottom = pauseTop + PAUSE_BUTTON_SIZE;
-            if (x <= pauseRight + 10 && y >= pauseTop - 10 && y <= pauseBottom + 10)
+            if (x <= pauseRight + PAUSE_BUTTON_HIT_TOLERANCE
+                && y >= pauseTop - PAUSE_BUTTON_HIT_TOLERANCE
+                && y <= pauseBottom + PAUSE_BUTTON_HIT_TOLERANCE)
             {
                 PauseRequested?.Invoke();
                 return;
@@ -827,7 +853,9 @@ public sealed partial class GameEngine : IDisposable
         {
             if (_tutorialOverlay.IsSkipButtonHit(x, y))
             {
-                _tutorialService.Skip();
+                // v2.0.60 (B-C2): Confirm-Dialog statt sofortigem Skip.
+                // GameViewModel abonniert das Event, zeigt Dialog, ruft ConfirmTutorialSkip() bei OK.
+                TutorialSkipRequested?.Invoke();
                 return;
             }
 
@@ -1116,6 +1144,15 @@ public sealed partial class GameEngine : IDisposable
         _soundManager.PlaySound(SoundManager.SFX_POWERUP);
     }
 
+    /// <summary>
+    /// v2.0.60 (B-C2): Tutorial-Skip nach User-Confirm. Wird vom GameViewModel aufgerufen
+    /// nachdem der Confirm-Dialog mit OK bestätigt wurde.
+    /// </summary>
+    public void ConfirmTutorialSkip()
+    {
+        _tutorialService.Skip();
+    }
+
     /// <summary>Spiel nach Game Over fortsetzen (per Rewarded Ad)</summary>
     public void ContinueAfterGameOver()
     {
@@ -1167,6 +1204,8 @@ public sealed partial class GameEngine : IDisposable
         _screenShake.Enabled = !reducedFx;
         _particleSystem.Enabled = !reducedFx;
         _renderer.ReducedEffects = reducedFx;
+        // v2.0.60 (B-C10): Photosensitivity-Schutz pro Frame aus IAccessibilityService durchreichen.
+        _renderer.ReducedFlashing = _accessibility?.ReducedFlashing == true;
 
         _screenShake.Update(deltaTime);
         _particleSystem.Update(deltaTime);
@@ -2627,8 +2666,12 @@ public sealed partial class GameEngine : IDisposable
         _overlayBgPaint.Dispose();
         _overlayTextPaint.Dispose();
         _overlayFont.Dispose();
-        _overlayGlowFilter.Dispose();
-        _overlayGlowFilterLarge.Dispose();
+        // v2.0.60 (B-E1): Null-sicheres Dispose + null setzen. Verhindert
+        // Use-After-Free wenn ein Render-Frame nach Dispose noch läuft (Android-Resume).
+        _overlayGlowFilter?.Dispose();
+        _overlayGlowFilter = null;
+        _overlayGlowFilterLarge?.Dispose();
+        _overlayGlowFilterLarge = null;
         _particleSystem.Dispose();
         _floatingText.Dispose();
         _subtitles.Dispose();

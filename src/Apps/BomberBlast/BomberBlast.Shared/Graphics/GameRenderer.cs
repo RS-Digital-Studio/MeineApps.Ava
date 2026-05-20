@@ -80,6 +80,13 @@ public sealed partial class GameRenderer : IDisposable
     // ReducedEffects: Atmosphärische Systeme manuell deaktivieren (Performance-Modus, User-Toggle)
     public bool ReducedEffects { get; set; }
 
+    /// <summary>
+    /// v2.0.60 (B-C10 / WCAG 2.1): Photosensitivity-Schutz. Wird vom GameEngine.Render
+    /// pro Frame aus IAccessibilityService.ReducedFlashing gesetzt. Drosselt hochfrequente
+    /// Pulse-/Blitz-Effekte (Combo-Pulse 12 Hz, UltraComboFlash, Damage-Flash).
+    /// </summary>
+    public bool ReducedFlashing { get; set; }
+
     // Adaptive Frame-Skipping: Ring-Buffer der letzten N Frame-Zeiten.
     // Wenn Durchschnitt > 40ms (< 25 FPS), werden atmosphärische Systeme für
     // SkipHoldMs ms ausgesetzt, damit Gameplay (Input, Collision, AI) vollen

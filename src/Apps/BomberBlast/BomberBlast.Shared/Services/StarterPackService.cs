@@ -12,7 +12,9 @@ namespace BomberBlast.Services;
 public sealed class StarterPackService : IStarterPackService
 {
     private const string DATA_KEY = "StarterPackData";
-    private const int REQUIRED_LEVEL = 5;
+    // v2.0.60 (B-B16): REQUIRED_LEVEL 5→20. Bei L5 (~15 min Spielzeit) kennt der Spieler
+    // den Shop noch nicht → kauft schlechte Upgrades. L20 gibt ihm Zeit, den Shop zu erkunden.
+    private const int REQUIRED_LEVEL = 20;
     private const int PACK_COINS = 5000;
     private const int PACK_GEMS = 20;
     private const int PACK_RARE_CARDS = 3;

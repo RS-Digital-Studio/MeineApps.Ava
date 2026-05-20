@@ -9,7 +9,10 @@ namespace BomberBlast.Models.Entities;
 public class Player : Entity
 {
     // Base stats
-    private const float BASE_SPEED = 80f; // Pixel pro Sekunde
+    // v2.0.60 (B-A14): BASE_SPEED von 80→100. Bei 80 war der Spieler ohne SpeedLevel
+    // langsamer als Elite-Pass-Gegner (84 px/s). Mit Slow-Curse (0.5×) wurde L50+ unspielbar.
+    // 100 liegt über Standard-Gegner-Speed und unter den schnellsten Bossen (35-55).
+    private const float BASE_SPEED = 100f; // Pixel pro Sekunde
     private const float SPEED_BOOST = 20f; // Pro Speed-Level
     private const int MAX_BOMB_COUNT = 10;
     private const int MAX_FIRE_RANGE = 10;
@@ -162,7 +165,7 @@ public class Player : Entity
     public const float BOMB_SQUASH_DURATION = 0.08f;
 
     /// <summary>
-    /// X-Skalierungsfaktor für Sprite-Render (Squash & Stretch).
+    /// X-Skalierungsfaktor für Sprite-Render (Squash &amp; Stretch).
     /// Beim Bewegen subtiles Wobble (±5%), im Ruhezustand 1.0. Beim Tod 0.6 (kollabiert).
     /// Renderer wendet das via canvas.Scale auf Player-Sprite an.
     /// </summary>

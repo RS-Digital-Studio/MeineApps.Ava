@@ -142,8 +142,16 @@ public sealed partial class GameRenderer
 
             // Combo-Text (pulsierend, farbig nach Stärke)
             // v2.0.37: Pulse staerker bei x10+ als visueller Belohnungs-Peak.
-            float pulseMultiplier = ComboCount >= 10 ? 0.30f : 0.15f;
-            float comboPulse = MathF.Sin(_globalTimer * 12f) * pulseMultiplier;
+            // v2.0.60 (B-C10): Bei ReducedFlashing || ReducedEffects wird die Pulse-Frequenz
+            // auf 3 Hz (statt 12 Hz, WCAG-2.1-konform) und Amplitude auf 5% gedrosselt.
+            // Schutz gegen Photosensitivity-Auslöser (WCAG 2.1 SC 2.3.1: Blitze > 3 Hz bei
+            // grossflaechigen Elementen vermeiden).
+            bool reduceFlash = ReducedFlashing || ReducedEffects;
+            float pulseMultiplier = reduceFlash
+                ? 0.05f
+                : ComboCount >= 10 ? 0.30f : 0.15f;
+            float pulseFrequency = reduceFlash ? 3f : 12f;
+            float comboPulse = MathF.Sin(_globalTimer * pulseFrequency) * pulseMultiplier;
             float comboScale = 1f + comboPulse;
             var comboColor = ComboCount >= 10
                 ? BomberBlastColors.Gold     // Gold fuer ULTRA (x10+)

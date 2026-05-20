@@ -22,6 +22,13 @@ public interface IAccessibilityService
     bool SubtitlesEnabled { get; set; }
 
     /// <summary>
+    /// v2.0.60 (B-C10 / WCAG 2.1): Photosensitivity-Schutz. Wenn true, werden
+    /// hochfrequente Pulse-/Blitz-Effekte (Combo-Pulse 12 Hz, Damage-Flash, UltraComboFlash)
+    /// gedrosselt oder deaktiviert. Empfohlen für Spieler mit Epilepsie-Risiko.
+    /// </summary>
+    bool ReducedFlashing { get; set; }
+
+    /// <summary>
     /// Liefert einen SkiaSharp-ColorMatrix passend zum Colorblind-Modus.
     /// Wird im GameRenderer als Post-Processing-Filter verwendet.
     /// Returnt null wenn ColorblindMode == "Off".
@@ -40,12 +47,14 @@ public sealed class AccessibilityService : IAccessibilityService
     private const string HighContrastKey = "Accessibility_HighContrast";
     private const string UiScaleKey = "Accessibility_UiScale";
     private const string SubtitlesKey = "Accessibility_Subtitles";
+    private const string ReducedFlashingKey = "Accessibility_ReducedFlashing";
 
     private readonly IPreferencesService _preferences;
     private string _colorblindMode;
     private bool _highContrast;
     private double _uiScale;
     private bool _subtitlesEnabled;
+    private bool _reducedFlashing;
 
     public event EventHandler? AccessibilityChanged;
 
@@ -56,6 +65,7 @@ public sealed class AccessibilityService : IAccessibilityService
         _highContrast = _preferences.Get(HighContrastKey, false);
         _uiScale = _preferences.Get(UiScaleKey, 1.0);
         _subtitlesEnabled = _preferences.Get(SubtitlesKey, false);
+        _reducedFlashing = _preferences.Get(ReducedFlashingKey, false);
     }
 
     public string ColorblindMode
@@ -102,6 +112,18 @@ public sealed class AccessibilityService : IAccessibilityService
             if (_subtitlesEnabled == value) return;
             _subtitlesEnabled = value;
             _preferences.Set(SubtitlesKey, value);
+            AccessibilityChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public bool ReducedFlashing
+    {
+        get => _reducedFlashing;
+        set
+        {
+            if (_reducedFlashing == value) return;
+            _reducedFlashing = value;
+            _preferences.Set(ReducedFlashingKey, value);
             AccessibilityChanged?.Invoke(this, EventArgs.Empty);
         }
     }

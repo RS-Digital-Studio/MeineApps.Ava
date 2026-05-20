@@ -67,4 +67,38 @@ public class CloudSaveData
         //    beim Erstlogin auf neuem Geraet, wenn Cloud-Inventar nicht in Vergleich einfliesst)
         return cloud;
     }
+
+    /// <summary>
+    /// v2.0.60 (B-D15): Per-Field-Merging statt all-or-nothing ChooseBest.
+    /// Verhindert Data-Loss bei minimal divergierten Stands. Beispiel:
+    /// - Local: 500 Stars + 50.000 Coins
+    /// - Cloud: 499 Stars + 5.000 Coins
+    /// → ChooseBest gibt Cloud (mehr Stars) = lokale 45.000 Coins gehen verloren.
+    /// → MergeBest macht max(500, 499) Stars + max(50.000, 5.000) Coins.
+    /// Für Keys (Dictionary) wird der jüngere Timestamp + Local-First-Strategie genutzt
+    /// (lokale Keys haben Vorrang weil sie typisch in-flight-mutiert sind).
+    /// </summary>
+    public static CloudSaveData MergeBest(CloudSaveData local, CloudSaveData cloud)
+    {
+        // Bestimme den authoritativen Datensatz für Keys (ChooseBest-Logik).
+        var authoritative = ChooseBest(local, cloud);
+
+        return new CloudSaveData
+        {
+            // Schema-Version: höchste behalten (Forward-Migration sicher).
+            Version = Math.Max(local.Version, cloud.Version),
+            // Timestamp: jüngerer (UTC-Ordinal-Vergleich).
+            TimestampUtc = string.CompareOrdinal(local.TimestampUtc, cloud.TimestampUtc) >= 0
+                ? local.TimestampUtc
+                : cloud.TimestampUtc,
+            // Maxima für Progress-Felder — kein Spieler verliert je Stars/Coins/Gems/Karten.
+            TotalStars = Math.Max(local.TotalStars, cloud.TotalStars),
+            CoinBalance = Math.Max(local.CoinBalance, cloud.CoinBalance),
+            GemBalance = Math.Max(local.GemBalance, cloud.GemBalance),
+            TotalCards = Math.Max(local.TotalCards, cloud.TotalCards),
+            // Keys aus dem authoritative Datensatz übernehmen (kann nicht sinnvoll feldweise
+            // gemerged werden — JSON-Blobs sind opaque). ChooseBest-Logik entscheidet.
+            Keys = new Dictionary<string, string>(authoritative.Keys),
+        };
+    }
 }

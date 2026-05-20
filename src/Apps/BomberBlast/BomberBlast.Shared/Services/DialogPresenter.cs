@@ -105,4 +105,35 @@ public sealed class DialogPresenter : IDialogPresenter
         _isWhatsNewVisible = visible;
         StateChanged?.Invoke();
     }
+
+    /// <summary>
+    /// v2.0.60 (B-E9): Cancel-on-Background — wird vom LifecycleHub.OnAppPaused aufgerufen.
+    /// Verhindert dass nach Backgrounding + Resume eine Navigation in disposed-VM passiert,
+    /// weil der Dialog-Awaiter mit "false" weitermacht statt zu cancelen.
+    /// Setzt TaskCompletionSource auf Cancel statt false — Aufrufer können den Unterschied
+    /// per OperationCanceledException-Catch erkennen.
+    /// </summary>
+    public void CancelAllDialogsOnBackground()
+    {
+        bool changed = false;
+        if (_isAlertDialogVisible)
+        {
+            _isAlertDialogVisible = false;
+            changed = true;
+        }
+        if (_isConfirmDialogVisible)
+        {
+            _isConfirmDialogVisible = false;
+            var tcs = _confirmDialogTcs;
+            _confirmDialogTcs = null;
+            // TrySetCanceled signalisiert dem Awaiter "App-Suspend abgebrochen" —
+            // Aufrufer kann die Exception fangen und keine Navigation auslösen.
+            tcs?.TrySetCanceled();
+            changed = true;
+        }
+        if (changed)
+        {
+            StateChanged?.Invoke();
+        }
+    }
 }

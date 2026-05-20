@@ -49,9 +49,9 @@ public class PlayerTests
         // Vorbereitung
         var spieler = ErstelleSpieler();
 
-        // Prüfung: BASE_SPEED = 80
-        spieler.Speed.Should().Be(80f,
-            "ohne Speed-PowerUp muss die Basis-Geschwindigkeit 80 betragen");
+        // v2.0.60 (B-A14): BASE_SPEED von 80→100 (Spieler muss über Elite-Pass-Gegner 84 liegen).
+        spieler.Speed.Should().Be(100f,
+            "ohne Speed-PowerUp muss die Basis-Geschwindigkeit 100 betragen (v2.0.60 B-A14)");
     }
 
     [Fact]
@@ -61,9 +61,9 @@ public class PlayerTests
         var spieler = ErstelleSpieler();
         spieler.SpeedLevel = 3; // Maximum
 
-        // Prüfung: 80 + 3 * 20 = 140
-        spieler.Speed.Should().Be(140f,
-            "mit MaxSpeedLevel (3) muss Geschwindigkeit 140 betragen");
+        // v2.0.60 (B-A14): 100 + 3 * 20 = 160
+        spieler.Speed.Should().Be(160f,
+            "mit MaxSpeedLevel (3) muss Geschwindigkeit 160 betragen (v2.0.60 B-A14)");
     }
 
     [Fact]
@@ -71,12 +71,12 @@ public class PlayerTests
     {
         // Vorbereitung
         var spieler = ErstelleSpieler();
-        spieler.SpeedLevel = 2; // 80 + 2*20 = 120 normal
+        spieler.SpeedLevel = 2; // 100 + 2*20 = 140 normal
         spieler.ActiveCurse = CurseType.Slow;
 
-        // Prüfung: 120 * 0.5 = 60
-        spieler.Speed.Should().Be(60f,
-            "Slow-Fluch halbiert die Geschwindigkeit");
+        // v2.0.60 (B-A14): 140 * 0.5 = 70
+        spieler.Speed.Should().Be(70f,
+            "Slow-Fluch halbiert die Geschwindigkeit (v2.0.60 B-A14: 140 × 0.5)");
     }
 
     // ─── PowerUp-Sammeln ─────────────────────────────────────────────────────

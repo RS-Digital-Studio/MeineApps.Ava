@@ -51,4 +51,12 @@ public interface IDialogPresenter
     /// das WhatsNew-Modal mitberuecksichtigt (HitTest-Schutz).
     /// </summary>
     void SetWhatsNewVisible(bool visible);
+
+    /// <summary>
+    /// v2.0.60 (B-E9): Cancel-on-Background. Wird vom <c>LifecycleHub.OnAppPaused</c>
+    /// aufgerufen — schließt alle offenen Dialoge und signalisiert dem Awaiter via
+    /// <c>TaskCompletionSource.TrySetCanceled()</c> dass die Operation abgebrochen wurde.
+    /// Verhindert Navigation-in-disposed-VM bei Backgrounding-Race.
+    /// </summary>
+    void CancelAllDialogsOnBackground();
 }

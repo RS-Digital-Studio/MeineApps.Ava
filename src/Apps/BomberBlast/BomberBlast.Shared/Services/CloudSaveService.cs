@@ -139,6 +139,11 @@ public sealed class CloudSaveService : ICloudSaveService
     private CancellationTokenSource? _debounceCts;
     private bool _isSyncing;
 
+    // v2.0.60 (B-E5): Sync-Semaphore — verhindert Push/Force-Race zwischen SchedulePushAsync,
+    // ForceUploadAsync und ForceDownloadAsync. Vorher konnten zwei parallele Sync-Operationen
+    // den Cloud-State in inkonsistenten Zustand bringen (z.B. Pull während Push).
+    private readonly SemaphoreSlim _syncSemaphore = new(1, 1);
+
     public bool IsEnabled => _preferences.Get(EnabledKey, false);
     public bool IsSyncing => _isSyncing;
     public string? LastSyncTimeUtc => _preferences.Get<string?>(LastSyncKey, null);
@@ -216,21 +221,18 @@ public sealed class CloudSaveService : ICloudSaveService
             // Lokalen Stand bauen
             var localData = BuildCloudSaveData();
 
-            // Besseren Stand wählen
-            var best = CloudSaveData.ChooseBest(localData, cloudData);
+            // v2.0.60 (B-D15): Per-Field-Merging — Maxima von Progress-Werten behalten.
+            // Verhindert Data-Loss-Szenarien wie "Local 500 Stars + 50.000 Coins, Cloud 499 Stars
+            // + 5.000 Coins" → ChooseBest wählte Cloud (1 Star mehr) und ließ 45.000 Coins verfallen.
+            // MergeBest behält max(Stars, Coins, Gems, Cards) aus beiden Snapshots.
+            var merged = CloudSaveData.MergeBest(localData, cloudData);
 
-            if (best == cloudData)
-            {
-                // Cloud-Stand auf lokale Preferences anwenden
-                ApplyCloudData(cloudData);
-                UpdateLastSyncTime();
-                return true;
-            }
-
-            // Lokaler Stand ist besser → nichts ändern, aber hochladen
-            await UploadDataAsync(localData);
+            // Apply merged data lokal (Maxima kommen entweder von local oder cloud — egal welcher).
+            ApplyCloudData(merged);
+            // Upload merged-Snapshot zurück damit Cloud-Side den merged Stand kennt.
+            await UploadDataAsync(merged);
             UpdateLastSyncTime();
-            return false;
+            return true;
         }
         catch (Exception ex)
         {
@@ -297,6 +299,8 @@ public sealed class CloudSaveService : ICloudSaveService
             return;
         }
 
+        // v2.0.60 (B-E5): Semaphore serialisiert Push/Pull/Force-Operationen — kein Race.
+        await _syncSemaphore.WaitAsync();
         try
         {
             SetSyncing(true);
@@ -311,6 +315,7 @@ public sealed class CloudSaveService : ICloudSaveService
         finally
         {
             SetSyncing(false);
+            _syncSemaphore.Release();
         }
     }
 

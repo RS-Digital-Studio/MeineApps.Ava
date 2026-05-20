@@ -155,7 +155,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IRetentionService retentionService,
         IAnalyticsService analytics,
         IWorldStoryService worldStoryService,
-        ITutorialService tutorialService)
+        ITutorialService tutorialService,
+        MeineApps.Core.Ava.Localization.ILocalizationService? localizationService = null)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
@@ -167,6 +168,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _assetService = assetService;
         _logger = logger;
         _tutorialService = tutorialService;
+        _localizationService = localizationService;
 
         // Phase 24b — RetentionService property-injecten damit GameEngine.PlayFirstWinCinematic
         // beim ECHTEN ersten Sieg getriggert werden kann.
@@ -178,6 +180,17 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     // Welle 3 v2.0.58 : Tutorial-Routing — Story-Mode startet automatisch
     // mit der naechsten offenen Tutorial-Phase wenn der Spieler noch nicht alle 3 abgeschlossen hat.
     private readonly ITutorialService _tutorialService;
+
+    // v2.0.60 (B-C2): Lokalisierung für Tutorial-Skip-Confirm und andere Dialog-Strings.
+    // Nullable für Backward-Compat (manche Test-Setups injizieren ohne).
+    private readonly MeineApps.Core.Ava.Localization.ILocalizationService? _localizationService;
+
+    /// <summary>
+    /// v2.0.60 (B-C2): Confirm-Request für Tutorial-Skip. MainView abonniert.
+    /// Params: title, message, acceptText (= behalten), cancelText (= überspringen).
+    /// Return true = Behalten (Default), false = Überspringen.
+    /// </summary>
+    public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // INITIALIZATION
@@ -244,10 +257,12 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _gameEngine.LevelComplete -= HandleLevelComplete;
         _gameEngine.CoinsEarned -= HandleCoinsEarned;
         _gameEngine.PauseRequested -= HandlePauseRequested;
+        _gameEngine.TutorialSkipRequested -= HandleTutorialSkipRequested;
         _gameEngine.GameOver += HandleGameOver;
         _gameEngine.LevelComplete += HandleLevelComplete;
         _gameEngine.CoinsEarned += HandleCoinsEarned;
         _gameEngine.PauseRequested += HandlePauseRequested;
+        _gameEngine.TutorialSkipRequested += HandleTutorialSkipRequested;
 
         if (!_isInitialized)
         {
@@ -788,6 +803,38 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     private void HandlePauseRequested()
     {
         Dispatcher.UIThread.Post(() => Pause());
+    }
+
+    /// <summary>
+    /// v2.0.60 (B-C2): Tutorial-Skip Confirm-Dialog. User-Klick auf Skip-Button löst
+    /// Confirm aus, der Default ist "Tutorial behalten" damit Ungeduld-Klick nicht direkt
+    /// in Normalschwierigkeit landet.
+    /// </summary>
+    private async void HandleTutorialSkipRequested()
+    {
+        if (ConfirmationRequested == null)
+        {
+            // Kein Dialog-Hook → direkt skippen (Backward-Compat falls VM noch nicht verdrahtet).
+            _gameEngine.ConfirmTutorialSkip();
+            return;
+        }
+
+        string title = _localizationService?.GetString("SkipTutorialTitle") ?? "Tutorial überspringen?";
+        string message = _localizationService?.GetString("SkipTutorialMessage")
+            ?? "Das Tutorial erklärt das Bomb-Timing und die Bewegung. Möchtest du es wirklich überspringen?";
+        string keepLabel = _localizationService?.GetString("SkipTutorialKeep") ?? "Tutorial behalten";
+        string confirmLabel = _localizationService?.GetString("SkipTutorialConfirm") ?? "Überspringen";
+
+        var task = Dispatcher.UIThread.InvokeAsync(
+            () => ConfirmationRequested.Invoke(title, message, keepLabel, confirmLabel));
+        bool keep = await task;
+
+        // Logik: Accept-Button = "Behalten" (Default-Schutz für Genre-Neulinge).
+        // !keep = "Überspringen" wurde gewählt.
+        if (!keep)
+        {
+            _gameEngine.ConfirmTutorialSkip();
+        }
     }
 
     private async void HandleGameOver()

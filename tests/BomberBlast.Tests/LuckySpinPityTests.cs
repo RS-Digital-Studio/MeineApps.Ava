@@ -5,9 +5,8 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für LuckySpin Pity-Counter (Phase 23 — , Lootbox-Compliance UK/China).
-/// Validiert dass nach 50 Spins ohne Jackpot der nächste Spin garantiert ein Jackpot wird,
-/// und dass die Drop-Rate-Tabelle für Compliance-Disclosure korrekt summiert.
+/// Tests für LuckySpin Pity-Counter (Phase 23 — Lootbox-Compliance UK/China).
+/// v2.0.60 (B-B14): Pity-Threshold von 50→25, plus Soft-Pity-Boost ab Spin 15.
 /// </summary>
 public class LuckySpinPityTests
 {
@@ -17,7 +16,8 @@ public class LuckySpinPityTests
         var prefs = new InMemoryPreferences();
         var svc = new LuckySpinService(prefs);
         svc.SpinsSinceLastJackpot.Should().Be(0);
-        svc.JackpotPityThreshold.Should().Be(50);
+        // v2.0.60 (B-B14): Pity 50→25.
+        svc.JackpotPityThreshold.Should().Be(25);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class LuckySpinPityTests
         var jackpotIdx = svc.GetRewards().Single(r => r.IsJackpot).Index;
 
         bool jackpotHit = false;
-        for (int i = 0; i < 200; i++)
+        for (int i = 0; i < 100; i++)
         {
             int idx = svc.Spin();
             if (idx == jackpotIdx)
@@ -38,8 +38,8 @@ public class LuckySpinPityTests
                 break;
             }
         }
-        // Garantie: Spätestens nach 50 Spins schlägt Pity-Counter zu
-        jackpotHit.Should().BeTrue("Pity-Counter muss spätestens bei Spin 51 garantiert Jackpot liefern");
+        // v2.0.60 (B-B14): Spätestens nach 25 Spins schlägt Pity-Counter zu.
+        jackpotHit.Should().BeTrue("Pity-Counter muss spätestens bei Spin 26 garantiert Jackpot liefern");
     }
 
     [Fact]
@@ -48,18 +48,18 @@ public class LuckySpinPityTests
         var prefs = new InMemoryPreferences();
         var svc = new LuckySpinService(prefs);
 
-        // Setze Counter direkt auf 50 via Reflection (faking 50 Pech-Spins)
+        // v2.0.60 (B-B14): Setze Counter direkt auf 25 via Reflection.
         var dataField = typeof(LuckySpinService).GetField("_data",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         var data = dataField!.GetValue(svc)!;
         var spinsField = data.GetType().GetProperty("SpinsSinceLastJackpot")!;
-        spinsField.SetValue(data, 50);
+        spinsField.SetValue(data, 25);
 
         // Nächster Spin MUSS Jackpot sein
         int idx = svc.Spin();
         var jackpotIdx = svc.GetRewards().Single(r => r.IsJackpot).Index;
 
-        idx.Should().Be(jackpotIdx, "Pity-Counter erzwingt Jackpot bei >= 50 Spins ohne");
+        idx.Should().Be(jackpotIdx, "Pity-Counter erzwingt Jackpot bei >= 25 Spins ohne");
         svc.SpinsSinceLastJackpot.Should().Be(0);
     }
 

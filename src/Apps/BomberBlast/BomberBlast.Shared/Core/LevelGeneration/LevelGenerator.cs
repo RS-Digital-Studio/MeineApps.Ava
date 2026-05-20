@@ -127,6 +127,24 @@ public sealed class LevelGenerator : ILevelGenerator
                 }
             }
         }
+
+        // v2.0.60 (B-A13): Mystery-PowerUp 5% Chance auf Extra-Slot ab Welt 3 (L21+).
+        // Vorher: Mystery hatte zwar Unlock-Level 15 + Sprite, wurde aber in PlacePowerUps
+        // nie eingesetzt → effektiv unspielbar. 35s Invincibility ist wertvoller Bonus —
+        // verdient gelegentlich überraschend zu droppen. Ab L61 (B-A3) +1 Slot mit 40% Chance.
+        if (level.Number >= 21 && blockIndex < blocks.Count)
+        {
+            bool extendedDrop = level.Number >= 61;
+            int chancePercent = extendedDrop ? 40 : 5;
+            if (random.Next(100) < chancePercent)
+            {
+                var cell = blocks[blockIndex++];
+                if (cell.Type == CellType.Block && cell.HiddenPowerUp == null)
+                {
+                    cell.HiddenPowerUp = PowerUpType.Mystery;
+                }
+            }
+        }
     }
 
     public void PlaceExit(LevelGenerationContext context)

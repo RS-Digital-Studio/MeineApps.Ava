@@ -26,7 +26,12 @@ public sealed class EnemyAI
     // Pathfinding-Budget pro Frame: Absicherung gegen gleichzeitig planende Gegner-Wellen
     // (z.B. Survival-Mass-Spawn, Explosion invalidiert 8 Pfade simultan).
     // Spawn-Jitter (Enemy-Ctor) glättet den Normalfall; dieses Budget glättet den Extremfall.
-    private const int AStarBudgetPerFrame = 5;
+    // v2.0.60 (B-A5): Dynamisches Budget statt fest 5. Bei Mass-Spawn (Survival/Splitter)
+    // braucht es ein höheres Cap, damit Gegner nicht auf Random-Movement zurückfallen.
+    // Min 5 (für sparse Levels), Max 12 (gegen Frame-Spike), skaliert mit Enemy-Count.
+    private const int AStarBudgetMin = 5;
+    private const int AStarBudgetMax = 12;
+    private int _aStarBudgetThisFrame = AStarBudgetMin;
     private int _aStarInvocationsThisFrame;
 
     public EnemyAI(GameGrid grid)
@@ -37,12 +42,25 @@ public sealed class EnemyAI
 
     /// <summary>
     /// Gefahrenzone einmal pro Frame vorberechnen (statt pro Gegner → Performance).
-    /// Setzt auch das Pathfinding-Budget zurück (5 A*-Calls pro Frame).
+    /// Setzt auch das Pathfinding-Budget zurück.
+    /// v2.0.60 (B-A5): Budget dynamisch berechnet als 5 + activeEnemyCount/4, clamped [5,12].
     /// </summary>
     public void PreCalculateDangerZone(IEnumerable<Bomb> bombs)
     {
         CalculateDangerZone(bombs);
         _aStarInvocationsThisFrame = 0;
+    }
+
+    /// <summary>
+    /// v2.0.60 (B-A5): Budget pro Frame setzen basierend auf aktiver Gegner-Anzahl.
+    /// Wird vom GameEngine.Update vor jedem AI-Tick aufgerufen.
+    /// </summary>
+    public void SetActiveEnemyCount(int activeEnemyCount)
+    {
+        _aStarBudgetThisFrame = Math.Clamp(
+            AStarBudgetMin + activeEnemyCount / 4,
+            AStarBudgetMin,
+            AStarBudgetMax);
     }
 
     /// <summary>
@@ -53,7 +71,7 @@ public sealed class EnemyAI
     /// </summary>
     private bool TryAcquireAStarSlot()
     {
-        if (_aStarInvocationsThisFrame >= AStarBudgetPerFrame)
+        if (_aStarInvocationsThisFrame >= _aStarBudgetThisFrame)
             return false;
         _aStarInvocationsThisFrame++;
         return true;

@@ -1345,18 +1345,27 @@ public sealed partial class GameEngine
                 if (boss.IsActive && !boss.IsDying)
                 {
                     // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
-                    // DoubleSpeed-Mutator + Master Mode: Gegner 50% schneller (nicht kombinierbar, max 1.5x)
-                    float bossDt = (_activeMutator == LevelMutator.DoubleSpeed || _isMasterMode) ? deltaTime * 1.5f : deltaTime;
+                    // DoubleSpeed-Mutator: Gegner 50% schneller.
+                    // v2.0.60 (B-A27): Master-Mode speed-Multiplier 1.5→1.2. Vorher: zu aggressiv
+                    // in Kombination mit Type-Upgrades (Pontan + 1.5x = Ueber-Boss). 1.2x belaesst
+                    // Master als "Reborn-Härter" ohne unfair zu sein.
+                    float bossDt = _activeMutator == LevelMutator.DoubleSpeed
+                        ? deltaTime * 1.5f
+                        : _isMasterMode ? deltaTime * 1.2f : deltaTime;
                     var bossCell = _grid.TryGetCell(boss.GridX, boss.GridY);
                     if (bossCell != null)
                     {
-                        if (bossCell.IsFrozen) bossDt *= 0.5f;
-                        if (bossCell.IsTimeWarped) bossDt *= 0.5f;
-                        if (bossCell.IsBlackHole) bossDt *= 0.3f;
-                        // Elementar-Synergy: Lava verlangsamt Gegner
-                        if (bossCell.IsLavaActive && _synergyElementalActive) bossDt *= 0.4f;
-                        // EnemySlow-Buff: Gegner 20% langsamer
-                        if (_dungeonEnemySlowActive) bossDt *= 0.8f;
+                        // v2.0.60 (B-A24): Multiplicative Slowdown-Cap auf 0.25× (war 0.075×
+                        // worst-case bei Frost+TimeWarp+BlackHole). Boss/Gegner praktisch
+                        // stillgelegt → unspielbar dröge. Cap macht Slowdown-Combos noch stark,
+                        // aber Gegner bewegt sich noch sichtbar.
+                        float slowFactor = 1f;
+                        if (bossCell.IsFrozen) slowFactor *= 0.5f;
+                        if (bossCell.IsTimeWarped) slowFactor *= 0.5f;
+                        if (bossCell.IsBlackHole) slowFactor *= 0.3f;
+                        if (bossCell.IsLavaActive && _synergyElementalActive) slowFactor *= 0.4f;
+                        if (_dungeonEnemySlowActive) slowFactor *= 0.8f;
+                        bossDt *= MathF.Max(0.25f, slowFactor);
                     }
 
                     // Boss-AI: Bewegt sich auf den Spieler zu (vereinfacht, kein A*)
@@ -1378,18 +1387,22 @@ public sealed partial class GameEngine
             if (enemy.IsActive && !enemy.IsDying)
             {
                 // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
-                // DoubleSpeed-Mutator + Master Mode: Gegner 50% schneller (nicht kombinierbar, max 1.5x)
-                float enemyDt = (_activeMutator == LevelMutator.DoubleSpeed || _isMasterMode) ? deltaTime * 1.5f : deltaTime;
+                // DoubleSpeed-Mutator: Gegner 50% schneller.
+                // v2.0.60 (B-A27): Master-Mode speed-Multiplier 1.5→1.2 (siehe Boss-Pfad oben).
+                float enemyDt = _activeMutator == LevelMutator.DoubleSpeed
+                    ? deltaTime * 1.5f
+                    : _isMasterMode ? deltaTime * 1.2f : deltaTime;
                 var enemyCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
                 if (enemyCell != null)
                 {
-                    if (enemyCell.IsFrozen) enemyDt *= 0.5f;
-                    if (enemyCell.IsTimeWarped) enemyDt *= 0.5f;
-                    if (enemyCell.IsBlackHole) enemyDt *= 0.3f;
-                    // Elementar-Synergy: Lava verlangsamt Gegner
-                    if (enemyCell.IsLavaActive && _synergyElementalActive) enemyDt *= 0.4f;
-                    // EnemySlow-Buff: Gegner 20% langsamer
-                    if (_dungeonEnemySlowActive) enemyDt *= 0.8f;
+                    // v2.0.60 (B-A24): Slowdown-Cap auf 0.25× (siehe Boss-Pfad).
+                    float slowFactor = 1f;
+                    if (enemyCell.IsFrozen) slowFactor *= 0.5f;
+                    if (enemyCell.IsTimeWarped) slowFactor *= 0.5f;
+                    if (enemyCell.IsBlackHole) slowFactor *= 0.3f;
+                    if (enemyCell.IsLavaActive && _synergyElementalActive) slowFactor *= 0.4f;
+                    if (_dungeonEnemySlowActive) slowFactor *= 0.8f;
+                    enemyDt *= MathF.Max(0.25f, slowFactor);
                 }
 
                 _enemyAI.Update(enemy, _player, enemyDt);
@@ -1621,6 +1634,10 @@ public sealed partial class GameEngine
 
         if (_purchaseService.IsPremium)
             coins *= 2;
+        // v2.0.60 (B-A28): Master-Mode-Coin-Reward ×1.5 — sonst lohnt sich die Härte nicht.
+        // Belohnt Spieler für die zusätzlichen ×1.2 Speed + Type-Upgrade-Encounters.
+        if (_isMasterMode)
+            coins = (int)(coins * 1.5f);
         //.1 : Hero-Coin-Pickup-Multiplier (z.B. SpeedySam: +5%).
         var heroForCoins = _heroService.ActiveHero;
         if (Math.Abs(heroForCoins.CoinPickupMultiplier - 1.0f) > 0.001f)

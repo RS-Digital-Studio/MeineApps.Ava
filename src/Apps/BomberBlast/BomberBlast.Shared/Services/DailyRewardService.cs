@@ -100,7 +100,10 @@ public sealed class DailyRewardService : IDailyRewardService
     }
 
     /// <summary>
-    /// Prüft ob die Streak abgebrochen ist (mehr als 1 Tag seit letztem Claim)
+    /// Prüft ob die Streak abgebrochen ist (mehr als 1 Tag seit letztem Claim).
+    /// v2.0.60 (B-C14): Tages-Grenze ist lokale Mitternacht des Geräts (statt UTC-Mitternacht).
+    /// Persistierter Timestamp bleibt UTC ("O"-Format), nur der Tagesvergleich wird lokalisiert —
+    /// damit Spieler in UTC+12 ihren Reset nicht zur Mittagszeit erleben.
     /// </summary>
     private void CheckStreakReset()
     {
@@ -110,7 +113,10 @@ public sealed class DailyRewardService : IDailyRewardService
         try
         {
             var lastClaim = DateTime.Parse(_data.LastClaimDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-            var daysSinceLastClaim = (DateTime.UtcNow.Date - lastClaim.Date).Days;
+            // v2.0.60: Beide Daten in lokale Zeitzone für Vergleich.
+            var lastClaimLocalDate = lastClaim.ToLocalTime().Date;
+            var todayLocal = DateTime.Now.Date;
+            var daysSinceLastClaim = (todayLocal - lastClaimLocalDate).Days;
 
             // Audit M13: 3-Tage-Gnade ist absichtlich (Streak-Bewahrung bei Wochenend-Pausen).
             // Streak ist daher faktisch "TotalClaims mit max 3 Tagen Pause" — nicht echte Konsekutiv-Streak.
@@ -131,6 +137,10 @@ public sealed class DailyRewardService : IDailyRewardService
         }
     }
 
+    /// <summary>
+    /// v2.0.60 (B-C14): Tagesvergleich in lokaler Zeitzone des Geräts statt UTC.
+    /// Spieler erleben Daily-Reset zur lokalen Mitternacht (statt UTC-Mitternacht).
+    /// </summary>
     private bool IsClaimedToday()
     {
         if (string.IsNullOrEmpty(_data.LastClaimDate))
@@ -139,7 +149,8 @@ public sealed class DailyRewardService : IDailyRewardService
         try
         {
             var lastClaim = DateTime.Parse(_data.LastClaimDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-            return lastClaim.Date == DateTime.UtcNow.Date;
+            // v2.0.60: ToLocalTime damit der Vergleich gegen lokale Tageswende läuft.
+            return lastClaim.ToLocalTime().Date == DateTime.Now.Date;
         }
         catch
         {
@@ -190,14 +201,22 @@ public sealed class DailyRewardService : IDailyRewardService
         try
         {
             var lastActivity = DateTime.Parse(_data.LastActivityDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-            var daysSinceActivity = (DateTime.UtcNow.Date - lastActivity.Date).Days;
+            // v2.0.60 (B-C14): Lokale Tagesgrenze für Tracking — konsistent mit IsClaimedToday.
+            var daysSinceActivity = (DateTime.Now.Date - lastActivity.ToLocalTime().Date).Days;
 
-            // >3 Tage inaktiv → Comeback-Bonus
+            // v2.0.60 (B-D10): Skalierter Comeback-Bonus (war: 2000/5 fest).
+            //  > 7 Tage: 10000 + 20G; > 3 Tage: 5000 + 10G. Belohnt Long-Tail-Returns stärker.
+            if (daysSinceActivity > 7)
+            {
+                _data.ComebackClaimed = true;
+                Save();
+                return (10000, 20);
+            }
             if (daysSinceActivity > 3)
             {
                 _data.ComebackClaimed = true;
                 Save();
-                return (2000, 5);
+                return (5000, 10);
             }
         }
         catch

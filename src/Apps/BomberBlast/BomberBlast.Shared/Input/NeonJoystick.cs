@@ -232,15 +232,21 @@ public class NeonJoystick : IInputHandler, IDisposable
         }
 
         // Bomb-Button prüfen (rechte Seite)
-        float dx = x - _bombButtonX;
-        float dy = y - _bombButtonY;
-        if (dx * dx + dy * dy <= _bombButtonRadius * _bombButtonRadius * 1.6f)
+        // v2.0.60 (B-E11): Pointer-ID-Guard. Wenn schon ein Pointer auf dem Bomb-Button ist,
+        // ignoriere zweite Finger-Hits — verhindert ID-Überschreibung bei eng nebeneinander
+        // liegenden gleichzeitigen Touches, die sonst Bomb-Hang verursachen können.
+        if (_bombButtonPointerId == -1)
         {
-            _bombButtonPressed = true;
-            _bombPressed = true;
-            _bombConsumed = false;
-            _bombButtonPointerId = pointerId;
-            return;
+            float dx = x - _bombButtonX;
+            float dy = y - _bombButtonY;
+            if (dx * dx + dy * dy <= _bombButtonRadius * _bombButtonRadius * 1.6f)
+            {
+                _bombButtonPressed = true;
+                _bombPressed = true;
+                _bombConsumed = false;
+                _bombButtonPointerId = pointerId;
+                return;
+            }
         }
 
         if (_isFixed)

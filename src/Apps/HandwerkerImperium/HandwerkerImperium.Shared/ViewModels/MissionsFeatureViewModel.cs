@@ -130,7 +130,11 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     /// Anzahl claimbarer Daily Challenges + Weekly Missions (fuer Tab-Bar Badge).
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasClaimableMissions))]
     private int _claimableMissionsCount;
+
+    /// <summary>F-21: Sichtbarkeits-Flag fuer Dashboard-Daily-Reward-Chip.</summary>
+    public bool HasClaimableMissions => ClaimableMissionsCount > 0;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES - WELCOME BACK OFFER

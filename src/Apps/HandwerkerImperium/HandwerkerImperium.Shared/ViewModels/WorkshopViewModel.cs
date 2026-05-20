@@ -494,9 +494,11 @@ public sealed partial class WorkshopViewModel : ViewModelBase, INavigable, IDisp
 
         // Re-Spec-Kosten (v2.0.35): Nur beim Wechsel einer existierenden Spezialisierung.
         // Gleiche Spezialisierung waehlen (No-Op) kostet nichts. Erste Wahl kostet nichts.
+        // F-08: Lernkurve-Rabatt — unter Workshop-Lv SpecializationFreeRespecBelowLevel
+        // ist auch der Re-Spec gratis. Erlaubt Experimentieren im Mid-Game.
         bool isRespec = workshop.WorkshopSpecialization != null
                         && workshop.WorkshopSpecialization.Type != specType;
-        if (isRespec)
+        if (isRespec && workshop.Level >= GameBalanceConstants.SpecializationFreeRespecBelowLevel)
         {
             int cost = GameBalanceConstants.SpecializationRespecCostGoldenScrews;
             if (_gameStateService.State.GoldenScrews < cost)

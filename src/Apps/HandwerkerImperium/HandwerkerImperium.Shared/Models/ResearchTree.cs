@@ -55,14 +55,17 @@ public static class ResearchTree
             // Zeile 8: T4-Rezepte ( trigger)
             Create("logi_09", ResearchBranch.Logistics, 9, "ResearchLogiTier4", 150_000_000m, TimeSpan.FromHours(24),
                 new ResearchEffect { UnlocksTier4 = true }, ["logi_11"]),
+            // F-36: Top-3-Nodes auf max 24h gekappt (vorher 32h / 48h / 72h).
+            // Begruendung: Kostenkurve liefert genug Pacing — 72h-Wartezeit verleitet zur
+            // Pflicht-Nutzung von Ads/Speedups statt Skalierung als natuerliches Gate.
             // Zeile 9: Bonus-Slots Premium
-            Create("logi_03", ResearchBranch.Logistics, 10, "ResearchLogiSlots3", 400_000_000m, TimeSpan.FromHours(32),
+            Create("logi_03", ResearchBranch.Logistics, 10, "ResearchLogiSlots3", 400_000_000m, TimeSpan.FromHours(24),
                 new ResearchEffect { BonusWarehouseSlots = 25 }, ["logi_09"]),
             // Zeile 10: Erbstueck-Survival ()
-            Create("logi_12", ResearchBranch.Logistics, 11, "ResearchLogiHeirloom", 1_000_000_000m, TimeSpan.FromHours(48),
+            Create("logi_12", ResearchBranch.Logistics, 11, "ResearchLogiHeirloom", 1_000_000_000m, TimeSpan.FromHours(24),
                 new ResearchEffect { UnlocksHeirloomSurvival = true }, ["logi_03"]),
             // Zeile 11: Master-Logistik-Speedup
-            Create("logi_06", ResearchBranch.Logistics, 12, "ResearchLogiMaster", 5_000_000_000m, TimeSpan.FromHours(72),
+            Create("logi_06", ResearchBranch.Logistics, 12, "ResearchLogiMaster", 5_000_000_000m, TimeSpan.FromHours(24),
                 new ResearchEffect { CraftingSpeedBonus = 0.30m, BonusWarehouseSlots = 25 }, ["logi_12"]),
         ];
     }

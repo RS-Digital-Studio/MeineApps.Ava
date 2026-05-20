@@ -186,6 +186,17 @@ public sealed class ProgressionFeedbackCoordinator : IProgressionFeedbackCoordin
             }
         }
 
+        // F-09: Mid-Game Vanity-Trigger bei Lv 110/120/130/140 — kein Geld-Bonus, nur
+        // FloatingText + sanfte Celebration als Anerkennung. Dichter packen den Lv-100-150
+        // Korridor mit dopaminergen Stops. Achievement-Belohnung waere optional.
+        if (e.NewLevel is 110 or 120 or 130 or 140)
+        {
+            _uiEffectBus.RaiseFloatingText(
+                _localizationService.GetString("ImperiumGrowsLevel") ?? "Dein Imperium waechst!",
+                "milestone");
+            _uiEffectBus.RaiseCelebration();
+        }
+
         // Tab-Freischaltung: Hinweis wenn ein neuer Tab verfügbar wird
         CheckTabUnlockNotification(e.NewLevel);
 

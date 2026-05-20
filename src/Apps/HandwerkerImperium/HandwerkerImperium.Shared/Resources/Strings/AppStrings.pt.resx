@@ -3437,6 +3437,8 @@
   <data name="HintTier4ComingTitle" xml:space="preserve"><value>Em breve: Manufatura Imperial</value></data>
   <data name="HintTier4ComingText" xml:space="preserve"><value>No nível 500 da oficina mais a pesquisa logística, desbloqueias produtos Tier-4 (Villa, Arranha-céu, Sede do Império) — o endgame.</value></data>
   <data name="EternalMasteryShort" xml:space="preserve"><value>Maestria Eterna</value></data>
+  <data name="DailyRewardsChipFormat" xml:space="preserve"><value>{0} recompensas prontas</value></data>
+  <data name="ImperiumGrowsLevel" xml:space="preserve"><value>Seu império cresce!</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Pronto para promoção</value>
   </data>

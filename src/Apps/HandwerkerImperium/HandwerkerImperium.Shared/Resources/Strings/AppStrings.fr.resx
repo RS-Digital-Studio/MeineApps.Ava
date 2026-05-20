@@ -3432,6 +3432,8 @@
   <data name="HintTier4ComingTitle" xml:space="preserve"><value>Bientôt : Manufacture Impériale</value></data>
   <data name="HintTier4ComingText" xml:space="preserve"><value>Au niveau d'atelier 500 plus la recherche logistique, tu débloques les produits Tier-4 (Villa, Gratte-ciel, QG Impérial) — le endgame.</value></data>
   <data name="EternalMasteryShort" xml:space="preserve"><value>Maîtrise Éternelle</value></data>
+  <data name="DailyRewardsChipFormat" xml:space="preserve"><value>{0} récompenses prêtes</value></data>
+  <data name="ImperiumGrowsLevel" xml:space="preserve"><value>Ton empire grandit !</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Prêt pour la promotion</value>
   </data>

@@ -3575,6 +3575,8 @@
   <data name="HintTier4ComingTitle" xml:space="preserve"><value>Bald: Imperium-Manufaktur</value></data>
   <data name="HintTier4ComingText" xml:space="preserve"><value>Bei Workshop-Level 500 plus der Logistik-Forschung schaltest du Tier-4-Produkte frei (Villa, Wolkenkratzer, Imperium-HQ) — das End-Game.</value></data>
   <data name="EternalMasteryShort" xml:space="preserve"><value>Ewige Meisterschaft</value></data>
+  <data name="DailyRewardsChipFormat" xml:space="preserve"><value>{0} Belohnungen wartend</value></data>
+  <data name="ImperiumGrowsLevel" xml:space="preserve"><value>Dein Imperium wächst!</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Bereit zur Promotion</value>
   </data>

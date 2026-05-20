@@ -163,6 +163,12 @@ public static class GameBalanceConstants
     public const int SpecializationRespecCostGoldenScrews = 20;
 
     /// <summary>
+    /// F-08: Lernkurve-Rabatt — bis zu diesem Workshop-Level ist Re-Spec gratis.
+    /// Erlaubt Spielern, die Spezialisierungen kennenzulernen, ohne die 20-GS-Huerde.
+    /// </summary>
+    public const int SpecializationFreeRespecBelowLevel = 75;
+
+    /// <summary>
     /// Maximale Anzahl parallel laufender Auftraege (v2.0.35 Feature A).
     /// Jeder Auftrag ist an genau eine Werkstatt gebunden — Spieler kann bis zu
     /// N Werkstaetten gleichzeitig beschaeftigen. Unter diesem Cap ist "Plate-Spinning"
@@ -353,11 +359,18 @@ public static class GameBalanceConstants
     /// <summary>Workshop-Level ab dem Auto-Produktion freigeschaltet wird.</summary>
     public const int AutoProductionUnlockLevel = 50;
 
-    /// <summary>Workshop-Level ab dem Auto-Craft Tier-2 freigeschaltet wird.</summary>
-    public const int AutoCraftTier2UnlockLevel = 200;
+    /// <summary>
+    /// Workshop-Level ab dem Auto-Craft Tier-2 freigeschaltet wird.
+    /// F-11: Von 200 auf 150 reduziert (Pacing-Studie zeigte den Sprung 50 -> 200
+    /// als zu hart fuer Casual-Spieler; logarithmische Slope statt linear).
+    /// </summary>
+    public const int AutoCraftTier2UnlockLevel = 150;
 
-    /// <summary>Workshop-Level ab dem Auto-Craft Tier-3 freigeschaltet wird.</summary>
-    public const int AutoCraftTier3UnlockLevel = 400;
+    /// <summary>
+    /// Workshop-Level ab dem Auto-Craft Tier-3 freigeschaltet wird.
+    /// F-11: Von 400 auf 320 reduziert (analog zu Tier-2-Anpassung).
+    /// </summary>
+    public const int AutoCraftTier3UnlockLevel = 320;
 
     /// <summary>Logarithmischer Skalierungsfaktor für Crafting-Verkaufspreise: log₂(1 + Level/Wert). Von 25 auf 15 gesenkt für stärkere Skalierung.</summary>
     public const double CraftingSellPriceLogDivisor = 15.0;

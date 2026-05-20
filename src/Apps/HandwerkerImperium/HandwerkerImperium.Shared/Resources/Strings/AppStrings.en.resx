@@ -4060,6 +4060,8 @@
   <data name="HintTier4ComingTitle" xml:space="preserve"><value>Soon: Imperial Manufactory</value></data>
   <data name="HintTier4ComingText" xml:space="preserve"><value>At workshop level 500 plus the logistics research, you unlock Tier-4 products (Villa, Skyscraper, Imperium HQ) — the late-game endgame.</value></data>
   <data name="EternalMasteryShort" xml:space="preserve"><value>Eternal Mastery</value></data>
+  <data name="DailyRewardsChipFormat" xml:space="preserve"><value>{0} rewards ready</value></data>
+  <data name="ImperiumGrowsLevel" xml:space="preserve"><value>Your empire grows!</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Ready for promotion</value>
   </data>

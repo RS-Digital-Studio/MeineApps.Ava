@@ -3603,6 +3603,10 @@
   <data name="HintTier4ComingText" xml:space="preserve"><value>At workshop level 500 plus the logistics research, you unlock Tier-4 products (Villa, Skyscraper, Imperium HQ) — the late-game endgame.</value></data>
   <!-- F-18: Eternal-Mastery-Kurzbezeichnung fuer Prestige-Banner -->
   <data name="EternalMasteryShort" xml:space="preserve"><value>Eternal Mastery</value></data>
+  <!-- F-21: Daily-Rewards-Chip im Dashboard-BannerStrip -->
+  <data name="DailyRewardsChipFormat" xml:space="preserve"><value>{0} rewards ready</value></data>
+  <!-- F-09: Mid-Game Vanity-Trigger Text -->
+  <data name="ImperiumGrowsLevel" xml:space="preserve"><value>Your empire grows!</value></data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Ready for promotion</value>
   </data>

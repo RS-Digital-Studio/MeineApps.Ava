@@ -425,6 +425,27 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         _timer.Start();
     }
 
+    /// <summary>
+    /// F-28: App-Pause-Hook — vom MainViewModel.PauseGameLoop aufgerufen, wenn die App
+    /// in den Hintergrund geht. Stoppt den Game-Timer, damit Risk-Strategy-MiniGames
+    /// nicht ohne Spieler-Beachtung "verlieren". Resume per <see cref="ResumeGame"/>.
+    /// </summary>
+    public virtual void PauseGame()
+    {
+        if (!IsPlaying) return;
+        _timer?.Stop();
+    }
+
+    /// <summary>
+    /// F-28: Resume nach App-Pause. Startet den Timer neu wenn das Spiel weiterhin
+    /// aktiv ist (kein Result-Screen, kein Cancel).
+    /// </summary>
+    public virtual void ResumeGame()
+    {
+        if (!IsPlaying || IsResultShown) return;
+        _timer?.Start();
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // SPIEL BEENDEN + ERGEBNIS
     // ═══════════════════════════════════════════════════════════════════════

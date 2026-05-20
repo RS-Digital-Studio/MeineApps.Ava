@@ -1198,12 +1198,15 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     }
 
     /// <summary>
-    /// Startet den 15-Sekunden Polling-Timer für den Chat.
+    /// Startet den Polling-Timer fuer den Chat.
+    /// F-30: Intervall von 15s auf 20s erhoeht (Battery-Saving — 25% weniger Reads/min).
+    /// Pause bei Tab-Wechsel weg vom GuildChat ist schon ueber MainViewModel.OnActivePageChanged
+    /// implementiert (StopChatPolling). FCM-Push als langfristige Loesung bleibt offen.
     /// </summary>
     public void StartChatPolling()
     {
         StopChatPolling();
-        _chatPollTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+        _chatPollTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
         _chatPollHandler = async (_, _) => await LoadChatMessagesAsync();
         _chatPollTimer.Tick += _chatPollHandler;
         _chatPollTimer.Start();

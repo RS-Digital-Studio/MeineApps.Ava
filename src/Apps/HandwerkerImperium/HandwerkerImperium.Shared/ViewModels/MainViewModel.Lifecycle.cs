@@ -27,6 +27,10 @@ public sealed partial class MainViewModel
         // v2.0.37: Live-Orders pausieren — Countdown laeuft im Background nicht weiter (Cap 5min).
         _gameStateService.PauseAllLiveOrders();
 
+        // F-28: Aktives MiniGame pausieren (Timer stoppen) damit Risk-Strategy-Spiele
+        // nicht unbemerkt verlieren wenn die App im Hintergrund landet.
+        ActiveMiniGameViewModel?.PauseGame();
+
         // Benachrichtigungen planen wenn aktiviert
         if (_gameStateService.Settings.NotificationsEnabled)
             _notificationService?.ScheduleGameNotifications(_gameStateService.State);
@@ -56,6 +60,9 @@ public sealed partial class MainViewModel
 
         // v2.0.37: Live-Orders fortsetzen — akkumulierte Pause wird auf 5min gecappt.
         _gameStateService.ResumeAllLiveOrders();
+
+        // F-28: Aktives MiniGame wieder starten falls nicht im Result-Screen.
+        ActiveMiniGameViewModel?.ResumeGame();
 
         // Render-Timer der MainView wieder starten
         PauseStateChanged?.Invoke(false);

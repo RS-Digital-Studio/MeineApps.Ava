@@ -202,6 +202,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         PrestigeBannerViewModel prestigeBannerViewModel,
         GoalBannerViewModel goalBannerViewModel,
         WelcomeFlowViewModel welcomeFlowViewModel,
+        LiveEventBannerViewModel liveEventBannerViewModel,
         NotificationCenterViewModel notificationCenterViewModel,
         INotificationCenterService notificationCenterService,
         Services.Interfaces.IUiEffectBus uiEffectBus,
@@ -316,6 +317,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         PrestigeBannerVM = prestigeBannerViewModel;
         GoalBannerVM = goalBannerViewModel;
         WelcomeFlowVM = welcomeFlowViewModel;
+        LiveEventBannerVM = liveEventBannerViewModel;
         // WelcomeFlowVM haelt die gesamte Welcome-Flow-Logik — MainViewModel ist nur noch
         // die schmale IWelcomeFlowHost-Bruecke (IsHoldingUpgrade + NavigateToShop).
         WelcomeFlowVM.AttachHost(this);

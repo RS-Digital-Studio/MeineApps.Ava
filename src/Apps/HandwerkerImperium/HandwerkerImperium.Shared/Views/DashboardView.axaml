@@ -135,11 +135,13 @@
                      Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
           <!-- v2.1.1 Bulk-Buy-Button prominenter mit Icon + Label.
                Frueher nur kleine Zahl ohne Hinweis auf die Bulk-Buy-Funktion. -->
+          <!-- F-22: ToolTip entfernt — auf Android nicht sichtbar. Stattdessen feuert
+               ProgressionFeedbackCoordinator nach dem 2. Workshop-Upgrade den
+               ContextualHints.LongPressBulk-Hint, der plattformuebergreifend funktioniert. -->
           <Button Grid.Column="1"
                   Classes="Primary"
                   Padding="14,8" MinHeight="44" CornerRadius="14"
                   Command="{Binding CycleBulkBuyCommand}"
-                  ToolTip.Tip="{loc:Translate HintLongPressBulkTitle}"
                   AutomationProperties.AutomationId="Dashboard_Btn_BulkBuy">
             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
               <icons:GameIcon Kind="CashMultiple" Width="18" Height="18"

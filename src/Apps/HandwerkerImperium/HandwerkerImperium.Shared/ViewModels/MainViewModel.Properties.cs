@@ -385,6 +385,48 @@ public sealed partial class MainViewModel
     /// <summary>Welcome-Flow: CombinedWelcome, StarterOffer, OfflineEarnings, DailyReward.</summary>
     public WelcomeFlowViewModel WelcomeFlowVM { get; }
 
+    /// <summary>F-16: Live-Event-Chip im Dashboard-BannerStrip (Score, Countdown, Tap-to-Claim).</summary>
+    public LiveEventBannerViewModel LiveEventBannerVM { get; }
+
+    /// <summary>
+    /// F-25: Tab-Badge fuer Gilde-Tab. Vereinfachte Heuristik:
+    /// Spieler ist in einer Gilde, Tab ist nicht aktiv, und der letzte Besuch ist
+    /// 24h+ her (oder noch nie). Boss-Active / MegaProject / Chat-Unread brauchen
+    /// async-State-Polling und sind in einem Folge-Sprint nachzuziehen.
+    /// </summary>
+    public int GuildBadgeCount
+    {
+        get
+        {
+            var membership = _gameStateService.State.GuildMembership;
+            if (membership == null || string.IsNullOrEmpty(membership.GuildId)) return 0;
+            if (IsGuildActive) return 0;
+
+            // Last-Visit-Timestamp pro Gilden-Tab. Wenn nicht gesetzt: zeigen,
+            // bis der Spieler einmal hingeschaut hat (One-Shot beim Erst-Beitritt).
+            var lastIso = membership.LastTabVisitIso;
+            if (string.IsNullOrEmpty(lastIso)) return 1;
+            if (DateTime.TryParse(lastIso, System.Globalization.CultureInfo.InvariantCulture,
+                                  System.Globalization.DateTimeStyles.RoundtripKind, out var last)
+                && (DateTime.UtcNow - last).TotalHours >= 24)
+                return 1;
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// F-25: Tab-Badge fuer Shop-Tab. Aktuell: StarterOffer-Countdown laeuft.
+    /// Daily-Deal + WhalesIAP-Promo benoetigen Server-Daten; in Folge-Sprint nachziehen.
+    /// </summary>
+    public int ShopBadgeCount
+    {
+        get
+        {
+            if (IsShopActive) return 0;
+            return WelcomeFlowVM.IsStarterOfferVisible ? 1 : 0;
+        }
+    }
+
     /// <summary>
     /// Notification-Center (Bell-UI im Header, v2.0.36). Sammelt nicht-kritische
     /// Benachrichtigungen statt Modal-Stacking beim Re-Open.

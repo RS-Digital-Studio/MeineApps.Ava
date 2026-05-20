@@ -68,6 +68,14 @@ public class GuildMembership
     [JsonPropertyName("researchFatigueReduction")]
     public decimal ResearchFatigueReduction { get; set; }
 
+    /// <summary>
+    /// F-25: Zeitstempel des letzten Gilden-Tab-Besuchs (ISO 8601 UTC). Wird beim
+    /// Wechsel zum Gilden-Tab gesetzt und vom <see cref="GuildBadgeCount"/> ausgewertet,
+    /// damit das Tab-Badge nicht dauerhaft brennt.
+    /// </summary>
+    [JsonPropertyName("lastTabVisitIso")]
+    public string LastTabVisitIso { get; set; } = "";
+
     [JsonPropertyName("researchSpeedBonus")]
     public decimal ResearchSpeedBonus { get; set; }
 

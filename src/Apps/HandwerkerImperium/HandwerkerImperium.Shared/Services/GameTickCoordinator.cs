@@ -23,6 +23,7 @@ public sealed class GameTickCoordinator : IGameTickCoordinator, IDisposable
     private readonly MissionsFeatureViewModel _missionsVm;
     private readonly ResearchViewModel _researchVm;
     private readonly GoalBannerViewModel _goalBannerVm;
+    private readonly LiveEventBannerViewModel _liveEventBannerVm;
     private readonly WorkerMarketViewModel _workerMarketVm;
     private readonly WorkerProfileViewModel _workerProfileVm;
     private readonly IUiEffectBus _uiEffectBus;
@@ -43,6 +44,7 @@ public sealed class GameTickCoordinator : IGameTickCoordinator, IDisposable
         MissionsFeatureViewModel missionsVm,
         ResearchViewModel researchVm,
         GoalBannerViewModel goalBannerVm,
+        LiveEventBannerViewModel liveEventBannerVm,
         WorkerMarketViewModel workerMarketVm,
         WorkerProfileViewModel workerProfileVm,
         IUiEffectBus uiEffectBus,
@@ -54,6 +56,7 @@ public sealed class GameTickCoordinator : IGameTickCoordinator, IDisposable
         _missionsVm = missionsVm;
         _researchVm = researchVm;
         _goalBannerVm = goalBannerVm;
+        _liveEventBannerVm = liveEventBannerVm;
         _workerMarketVm = workerMarketVm;
         _workerProfileVm = workerProfileVm;
         _uiEffectBus = uiEffectBus;
@@ -122,6 +125,9 @@ public sealed class GameTickCoordinator : IGameTickCoordinator, IDisposable
         if (_floatingTextCounter % 5 == 0)
         {
             _host.UpdateEventDisplay();
+
+            // F-16: Live-Event-Chip (Score, Countdown) alle 5 Ticks neu rendern.
+            _liveEventBannerVm.Refresh();
 
             // Dashboard/Missionen-spezifische Updates nur wenn sichtbar (spart ~20 PropertyChanged)
             if (IsDashboardActive || IsMissionenActive)

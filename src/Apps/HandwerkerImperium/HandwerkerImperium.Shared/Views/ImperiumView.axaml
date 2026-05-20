@@ -83,33 +83,8 @@
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
           </Button>
-          <!-- V7 (): Lager-Sub-Tab. Gesperrt bis Spielerlevel 50.
-               IsEnabled=True statt false — der Tap zeigt jetzt einen
-               Hint-Toast via SelectImperiumSubTabCommand statt stiller No-Op. -->
-          <Button Classes="Text"
-                  Classes.SubTabActive="{Binding IsImperiumWarehouseActive}"
-                  Classes.Locked="{Binding !IsImperiumWarehouseUnlocked}"
-                  Command="{Binding SelectImperiumSubTabCommand}"
-                  CommandParameter="Warehouse"
-                  MinHeight="44" Padding="6,8" CornerRadius="8"
-                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Warehouse">
-            <StackPanel Spacing="2" HorizontalAlignment="Center">
-              <Panel HorizontalAlignment="Center">
-                <icons:GameIcon Kind="Warehouse" Width="20" Height="20"
-                                HorizontalAlignment="Center"
-                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                <icons:GameIcon Kind="Lock" Width="12" Height="12"
-                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                Margin="0,0,-4,-4"
-                                IsVisible="{Binding !IsImperiumWarehouseUnlocked}"
-                                Foreground="{DynamicResource TextSecondaryBrush}" />
-              </Panel>
-              <TextBlock Text="{loc:Translate ImperiumSubTabWarehouse}"
-                         FontSize="10" FontWeight="SemiBold"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </StackPanel>
-          </Button>
+          <!-- F-34: Sub-Tab-Reihenfolge nach Spieler-Frequenz (Workshops/Workers/Research/Equipment/Warehouse/Ascension).
+               Warehouse + Ascension sind selten besucht und stehen ans Ende. -->
           <Button Classes="Text"
                   Classes.SubTabActive="{Binding IsImperiumWorkersActive}"
                   Command="{Binding SelectImperiumSubTabCommand}"
@@ -153,6 +128,31 @@
                               HorizontalAlignment="Center"
                               Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate ImperiumSubTabEquipment}"
+                         FontSize="10" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
+          <!-- F-34: Warehouse-Tab (frueher Pos 2) jetzt vor Ascension — selten besucht. -->
+          <Button Classes="Text"
+                  Classes.SubTabActive="{Binding IsImperiumWarehouseActive}"
+                  Classes.Locked="{Binding !IsImperiumWarehouseUnlocked}"
+                  Command="{Binding SelectImperiumSubTabCommand}"
+                  CommandParameter="Warehouse"
+                  MinHeight="44" Padding="6,8" CornerRadius="8"
+                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Warehouse">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <Panel HorizontalAlignment="Center">
+                <icons:GameIcon Kind="Warehouse" Width="20" Height="20"
+                                HorizontalAlignment="Center"
+                                Foreground="{DynamicResource TextPrimaryBrush}" />
+                <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Margin="0,0,-4,-4"
+                                IsVisible="{Binding !IsImperiumWarehouseUnlocked}"
+                                Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Panel>
+              <TextBlock Text="{loc:Translate ImperiumSubTabWarehouse}"
                          FontSize="10" FontWeight="SemiBold"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextPrimaryBrush}" />

@@ -55,6 +55,23 @@ public sealed partial class MainViewModel
         if (oldValue == ActivePage.GuildChat)
             GuildViewModel.StopChatPolling();
 
+        // F-25: Letzten Gilden-Tab-Besuch stempeln (fuer Tab-Badge-Logik).
+        // Auch Sub-Pages der Gilde zaehlen als Besuch.
+        if (newValue is ActivePage.Guild or ActivePage.GuildResearch or ActivePage.GuildMembers
+            or ActivePage.GuildInvite or ActivePage.GuildWarSeason or ActivePage.GuildBoss
+            or ActivePage.GuildHall or ActivePage.GuildAchievements or ActivePage.GuildChat
+            or ActivePage.GuildWar or ActivePage.GuildBuildSite)
+        {
+            var membership = _gameStateService.State.GuildMembership;
+            if (membership != null)
+                membership.LastTabVisitIso = DateTime.UtcNow.ToString("O");
+        }
+        // Tab-Badge nach Tab-Switch neu evaluieren (PropertyChanged feuert auch wenn
+        // der Wert sich nicht geaendert hat — Tab-Bar rendert ohnehin per Frame-Timer,
+        // aber das Notify hilft Bindings die direkt darauf hoeren).
+        OnPropertyChanged(nameof(GuildBadgeCount));
+        OnPropertyChanged(nameof(ShopBadgeCount));
+
         // PropertyChanged für die berechneten IsXxxActive-Properties (nur die 2 geänderten)
         var oldProp = Helpers.PageNavigationHelper.GetPropertyNameFor(oldValue);
         var newProp = Helpers.PageNavigationHelper.GetPropertyNameFor(newValue);

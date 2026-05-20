@@ -316,6 +316,25 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
         NavigateToMiniGame();
     }
 
+    /// <summary>
+    /// F-12 / F-26: Risk-Strategy-Sticky — pinnt die uebergebene Strategie als
+    /// <see cref="Workshop.DefaultRiskStrategy"/> dieses Workshops. Reduziert Choice-Fatigue
+    /// bei 30-60 Auftraegen/Session. Wird per Long-Press oder dediziertem Pin-Button getriggert.
+    /// </summary>
+    [RelayCommand]
+    private async Task PinDefaultStrategyAsync(string strategyName)
+    {
+        if (Order == null) return;
+        if (!Enum.TryParse<OrderStrategy>(strategyName, ignoreCase: true, out var strat)) return;
+
+        var workshop = _gameStateService.State.Workshops.FirstOrDefault(w => w.Type == Order.WorkshopType);
+        if (workshop == null) return;
+
+        workshop.DefaultRiskStrategy = strat;
+        Order.Strategy = strat; // Aktueller Auftrag sofort uebernehmen
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+    }
+
     [RelayCommand]
     private async Task CancelOrderAsync()
     {

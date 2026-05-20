@@ -33,6 +33,9 @@ public sealed partial class GameStateService
                 order.ExpiresAt = null;
             }
         }
+
+        // v2.1.2 (F-03): OrderStarted-Event fuer FTUE-Verdrahtung (AcceptFirstOrder-Trigger).
+        OrderStarted?.Invoke(this, new OrderStartedEventArgs(order));
     }
 
     /// <summary>

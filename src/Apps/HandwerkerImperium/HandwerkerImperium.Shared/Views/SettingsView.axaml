@@ -3,6 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:settings="using:HandwerkerImperium.Views.Settings"
              x:Class="HandwerkerImperium.Views.SettingsView"
              x:DataType="vm:SettingsViewModel"
              x:CompileBindings="True"
@@ -419,6 +420,12 @@
                     Command="{Binding RestorePurchasesCommand}"
                     HorizontalAlignment="Left" />
           </StackPanel>
+        </Border>
+
+        <!-- F-02: Friend-Invite Reward-Loop UI (eigener Code, Share, Code eingeben, Tier). -->
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_ReferralCard">
+          <settings:ReferralCard DataContext="{Binding ReferralVM}" />
         </Border>
 
         <!-- Cross-Promotion zwischen den 11 eigenen Apps. -->

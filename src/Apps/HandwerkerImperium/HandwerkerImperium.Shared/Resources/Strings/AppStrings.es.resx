@@ -3418,6 +3418,13 @@
   <data name="HintLongPressBulkText" xml:space="preserve">
     <value>Mantén pulsado el botón de mejora para comprar varios niveles a la vez — perfecto para los umbrales x10/x100/Max.</value>
   </data>
+  <!-- F-07: Material-Offer Discoverability beim ersten Spawn -->
+  <data name="HintMaterialOfferTitle" xml:space="preserve">
+    <value>¡Bonus con tu propio material!</value>
+  </data>
+  <data name="HintMaterialOfferText" xml:space="preserve">
+    <value>Algunos pedidos muestran ahora un segundo botón: "Empezar con material". Si entregas los objetos solicitados desde tu almacén, ganas dinero y XP extra.</value>
+  </data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Listo para promoción</value>
   </data>
@@ -5841,6 +5848,24 @@
   <data name="AchievementsEmptyText" xml:space="preserve">
     <value>Te esperan 110 logros. Completa pedidos, sube de nivel los talleres, contrata trabajadores - cada acci&#243;n te acerca m&#225;s. Tu primer trofeo est&#225; m&#225;s cerca de lo que crees.</value>
   </data>
+  <!-- F-02: Friend-Invite Reward-Loop UI -->
+  <data name="ReferralSectionTitle" xml:space="preserve"><value>Invita amigos</value></data>
+  <data name="ReferralSubtitle" xml:space="preserve"><value>Comparte tu c&#243;digo personal. Cada referido exitoso (24h activo) da Tornillos Dorados y un bono de ingresos permanente.</value></data>
+  <data name="ReferralOwnCodeLabel" xml:space="preserve"><value>Tu c&#243;digo</value></data>
+  <data name="ReferralShareButton" xml:space="preserve"><value>Compartir</value></data>
+  <data name="ReferralShareText" xml:space="preserve"><value>&#161;Juega HandwerkerImperium conmigo! Mi c&#243;digo: {0}</value></data>
+  <data name="ReferralShareTitle" xml:space="preserve"><value>Invitaci&#243;n HandwerkerImperium</value></data>
+  <data name="ReferralEnterCodePlaceholder" xml:space="preserve"><value>Introduce c&#243;digo (6 car.)</value></data>
+  <data name="ReferralSubmitButton" xml:space="preserve"><value>Enviar</value></data>
+  <data name="ReferralCodeAlreadyUsedFormat" xml:space="preserve"><value>C&#243;digo {0} ya usado — &#161;gracias!</value></data>
+  <data name="ReferralProgressFormat" xml:space="preserve"><value>{0} / {1} referidos exitosos</value></data>
+  <data name="ReferralClaimButton" xml:space="preserve"><value>Reclamar</value></data>
+  <data name="ReferralCodeAcceptedTitle" xml:space="preserve"><value>C&#243;digo aceptado</value></data>
+  <data name="ReferralCodeAcceptedBody" xml:space="preserve"><value>&#161;Gracias! Tu invitador recibir&#225; la recompensa una vez que est&#233;s 24h activo.</value></data>
+  <data name="ReferralCodeRejectedTitle" xml:space="preserve"><value>C&#243;digo rechazado</value></data>
+  <data name="ReferralCodeRejectedBody" xml:space="preserve"><value>C&#243;digo inv&#225;lido, ya usado o tuyo propio.</value></data>
+  <data name="ReferralRewardClaimedTitle" xml:space="preserve"><value>&#161;Recompensa obtenida!</value></data>
+  <data name="ReferralRewardClaimedBody" xml:space="preserve"><value>Nivel {0} desbloqueado — Tornillos Dorados acreditados.</value></data>
   <!-- Cross-Promotion (AAA audit P1) -->
   <data name="CrossPromoSectionTitle" xml:space="preserve"><value>&#191;Te gusta esta app? Prueba tambi&#233;n:</value></data>
   <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calculadora Plus</value></data>
@@ -6446,6 +6471,7 @@
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerra actual</value></data>
   <!-- Order Strategy (v2.0.35 Risk/Reward) -->
   <data name="OrderStrategyPrompt" xml:space="preserve"><value>Elige tu estrategia</value></data>
+  <data name="OrderStrategyHoldToPinHint" xml:space="preserve"><value>Consejo: Mant&#233;n pulsado un bot&#243;n para fijar esta estrategia para todos los pedidos futuros de este taller.</value></data>
   <data name="OrderStrategySafe" xml:space="preserve"><value>Seguro</value></data>
   <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Minijuego m&#225;s f&#225;cil, menor recompensa (0,75x)</value></data>
   <data name="OrderStrategyStandard" xml:space="preserve"><value>Est&#225;ndar</value></data>
@@ -6455,6 +6481,14 @@
   <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>&#191;Seguro que quieres arriesgar?</value></data>
   <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Un fallo significa cero recompensa y p&#233;rdida de reputaci&#243;n. &#191;Continuar?</value></data>
   <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>S&#237;, arriesgar</value></data>
+  <!-- F-16: Live-Event Titles + Dialog -->
+  <data name="LiveEvent_DoubleReward_Title" xml:space="preserve"><value>Doble Recompensa</value></data>
+  <data name="LiveEvent_BossRush_Title" xml:space="preserve"><value>Asalto al Jefe</value></data>
+  <data name="LiveEvent_CoopMarathon_Title" xml:space="preserve"><value>Marat&#243;n Cooperativo</value></data>
+  <data name="LiveEvent_MiniGameMastery_Title" xml:space="preserve"><value>Maestr&#237;a Mini-Juegos</value></data>
+  <data name="LiveEventDialogTitle" xml:space="preserve"><value>Evento en Vivo</value></data>
+  <data name="LiveEventRewardClaimedTitle" xml:space="preserve"><value>&#161;Recompensa obtenida!</value></data>
+  <data name="LiveEventRewardClaimedBody" xml:space="preserve"><value>Nivel {0} desbloqueado.</value></data>
   <!-- Live-Order-Stream (v2.0.35) -->
   <data name="OrderLiveBadge" xml:space="preserve"><value>EN VIVO</value></data>
   <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>

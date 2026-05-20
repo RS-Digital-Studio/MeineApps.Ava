@@ -63,6 +63,12 @@ public interface IGameStateService
     // EVENTS — ORDERS
     // ===================================================================
 
+    /// <summary>
+    /// Wird ausgeloest wenn ein Auftrag gestartet wird (v2.1.2, FTUE-Verdrahtung).
+    /// Konsument: FtueProgressTracker fuer Step "AcceptFirstOrder".
+    /// </summary>
+    event EventHandler<OrderStartedEventArgs>? OrderStarted;
+
     /// <summary>Wird ausgeloest wenn ein Auftrag abgeschlossen wird.</summary>
     event EventHandler<OrderCompletedEventArgs>? OrderCompleted;
 

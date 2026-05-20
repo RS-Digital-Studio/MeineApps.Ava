@@ -244,4 +244,13 @@ public static class ContextualHints
         Id = "long_press_bulk", TitleKey = "HintLongPressBulkTitle", TextKey = "HintLongPressBulkText",
         Position = HintPosition.Below
     };
+
+    // F-07: Material-Offer in Auftraegen freigeschaltet (ab Spielerlevel >= MaterialOfferUnlockLevel).
+    // Triggert beim ALLERERSTEN gerollten Material-Angebot — sonst uebersieht der Spieler den
+    // optionalen "Mit Material"-Button neben dem normalen Start-Button.
+    public static readonly ContextualHint MaterialOffer = new()
+    {
+        Id = "material_offer", TitleKey = "HintMaterialOfferTitle", TextKey = "HintMaterialOfferText",
+        Position = HintPosition.Below, IsDialog = true
+    };
 }

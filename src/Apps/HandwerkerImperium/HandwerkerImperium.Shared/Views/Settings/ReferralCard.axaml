@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Settings.ReferralCard"
+             x:DataType="vm:ReferralCardViewModel"
+             x:CompileBindings="True">
+
+  <!-- F-02: Friend-Invite Reward-Loop. Eigener 6-stelliger Code, Share-Sheet, Code-Eingabe,
+       Tier-Belohnung (50/200/500 GS bei 1/5/10 Empfehlungen). -->
+  <StackPanel Spacing="8" AutomationProperties.AutomationId="Referral_Panel_Root">
+    <TextBlock Text="{loc:Translate ReferralSectionTitle}"
+               FontSize="14" FontWeight="Bold"
+               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+    <Border Classes="Card" Padding="14" Background="{DynamicResource SurfaceBrush}">
+      <StackPanel Spacing="10">
+
+        <!-- Subtitle / Erklaerung -->
+        <TextBlock Text="{loc:Translate ReferralSubtitle}"
+                   FontSize="12" Opacity="0.85"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+        <!-- Eigener Code + Share-Button -->
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" RowDefinitions="Auto,Auto">
+          <TextBlock Grid.Row="0" Grid.Column="0"
+                     Text="{loc:Translate ReferralOwnCodeLabel}"
+                     FontSize="11" Opacity="0.75"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <Border Grid.Row="1" Grid.Column="0"
+                  Background="{DynamicResource BackgroundBrush}"
+                  CornerRadius="8" Padding="12,8" MinHeight="44">
+            <TextBlock Text="{Binding OwnCode}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Referral_Txt_OwnCode" />
+          </Border>
+          <Button Grid.Row="1" Grid.Column="1"
+                  Classes="Primary"
+                  Padding="14,8" MinHeight="44" CornerRadius="10"
+                  Command="{Binding ShareOwnCodeCommand}"
+                  AutomationProperties.AutomationId="Referral_Btn_Share">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <icons:GameIcon Kind="Share" Width="20" Height="20"
+                               Foreground="{DynamicResource PrimaryContrastBrush}" />
+              <TextBlock Text="{loc:Translate ReferralShareButton}"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="{DynamicResource PrimaryContrastBrush}" />
+            </StackPanel>
+          </Button>
+        </Grid>
+
+        <!-- Code-Eingabe (nur wenn noch nicht genutzt) -->
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10"
+              IsVisible="{Binding !HasUsedReferralCode}">
+          <TextBox Grid.Column="0"
+                   Text="{Binding EnteredCode, Mode=TwoWay}"
+                   Watermark="{loc:Translate ReferralEnterCodePlaceholder}"
+                   FontSize="14"
+                   MaxLength="6"
+                   AutomationProperties.AutomationId="Referral_Tb_EnterCode" />
+          <Button Grid.Column="1"
+                  Classes="Secondary"
+                  Padding="14,8" MinHeight="44" CornerRadius="10"
+                  Command="{Binding SubmitEnteredCodeCommand}"
+                  AutomationProperties.AutomationId="Referral_Btn_SubmitCode">
+            <TextBlock Text="{loc:Translate ReferralSubmitButton}"
+                       FontSize="13" FontWeight="SemiBold" />
+          </Button>
+        </Grid>
+        <!-- Bestaetigung wenn bereits genutzt -->
+        <TextBlock IsVisible="{Binding HasUsedReferralCode}"
+                   Text="{Binding UsedReferralCodeDisplay, StringFormat={loc:Translate ReferralCodeAlreadyUsedFormat}}"
+                   FontSize="12" Opacity="0.8"
+                   Foreground="{DynamicResource SuccessBrush}"
+                   AutomationProperties.AutomationId="Referral_Txt_UsedConfirm" />
+
+        <!-- Progress + Claim -->
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <TextBlock Grid.Column="0"
+                     Text="{Binding ProgressDisplay}"
+                     FontSize="13" FontWeight="SemiBold"
+                     VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     AutomationProperties.AutomationId="Referral_Txt_Progress" />
+          <Button Grid.Column="1"
+                  Classes="Primary"
+                  Padding="14,8" MinHeight="44" CornerRadius="10"
+                  Background="{StaticResource CraftGoldBrush}"
+                  Command="{Binding ClaimNextTierCommand}"
+                  IsVisible="{Binding HasClaimableTier}"
+                  AutomationProperties.AutomationId="Referral_Btn_ClaimTier">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18"
+                               Foreground="{StaticResource CraftDarkTextBrush}" />
+              <TextBlock Text="{loc:Translate ReferralClaimButton}"
+                         FontSize="13" FontWeight="Bold"
+                         Foreground="{StaticResource CraftDarkTextBrush}" />
+            </StackPanel>
+          </Button>
+        </Grid>
+
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

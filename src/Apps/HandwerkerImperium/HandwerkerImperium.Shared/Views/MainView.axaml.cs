@@ -315,8 +315,9 @@ public partial class MainView : UserControl
             _tabBadgeCounts[0] = (_vm.HasPendingDelivery ? 1 : 0) + (_vm.CanActivateRush ? 1 : 0);
             _tabBadgeCounts[1] = _vm.HeaderVM.HasWorkerWarning ? 1 : 0;
             _tabBadgeCounts[2] = _vm.MissionsVM.ClaimableMissionsCount + (_vm.MissionsVM.HasFreeSpin ? 1 : 0);
-            _tabBadgeCounts[3] = 0;
-            _tabBadgeCounts[4] = 0;
+            // F-25: Tab-3 (Gilde) + Tab-4 (Shop) — aggregierte Properties auf MainViewModel.
+            _tabBadgeCounts[3] = _vm.GuildBadgeCount;
+            _tabBadgeCounts[4] = _vm.ShopBadgeCount;
         }
 
         var state = new TabBarState

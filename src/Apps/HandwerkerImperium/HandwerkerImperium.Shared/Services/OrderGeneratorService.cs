@@ -12,6 +12,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     private readonly IGameStateService _gameStateService;
     private readonly IResearchService? _researchService;
     private readonly IAutoProductionService? _autoProductionService;
+    private readonly IContextualHintService? _contextualHintService;
 
     // Order templates per workshop type
     private static readonly Dictionary<WorkshopType, List<OrderTemplate>> _templates = new()
@@ -102,11 +103,13 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     public OrderGeneratorService(
         IGameStateService gameStateService,
         IResearchService? researchService = null,
-        IAutoProductionService? autoProductionService = null)
+        IAutoProductionService? autoProductionService = null,
+        IContextualHintService? contextualHintService = null)
     {
         _gameStateService = gameStateService;
         _researchService = researchService;
         _autoProductionService = autoProductionService;
+        _contextualHintService = contextualHintService;
     }
 
     /// <summary>
@@ -265,6 +268,13 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             Tasks = tasks
         };
 
+        // F-12/F-26: Risk-Strategy-Sticky — Default pro Workshop uebernehmen.
+        // Spieler kann pro Auftrag aendern (OrderViewModel.SetStrategy), Long-Press pinnt es
+        // dann fuer alle zukuenftigen Auftraege dieser Werkstatt.
+        var workshopForStrategy = state.Workshops.FirstOrDefault(w => w.Type == workshopType);
+        if (workshopForStrategy != null)
+            order.Strategy = workshopForStrategy.DefaultRiskStrategy;
+
         // Deadline für Weekly-Orders
         if (orderType.HasDeadline())
             order.Deadline = DateTime.UtcNow + orderType.GetDeadline();
@@ -279,6 +289,15 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         // Triggert nur bei Spieler-Level >= MaterialOfferUnlockLevel und nur fuer
         // bestimmte OrderTypes (Standard/Large/Cooperation/Weekly — nicht Quick/MaterialOrder).
         TryRollMaterialOffer(order, state);
+
+        // F-07: Discoverability-Hint beim ALLERERSTEN gerollten Material-Angebot.
+        // Spieler uebersieht den optionalen "Mit Material"-Button sonst — sichtbarer Hint
+        // statt stiller Spawn macht das Bonus-Feature greifbar.
+        if (order.HasMaterialOffer && _contextualHintService is { } hintSvc
+            && !hintSvc.HasSeenHint(ContextualHints.MaterialOffer.Id))
+        {
+            hintSvc.TryShowHint(ContextualHints.MaterialOffer);
+        }
 
         // Stammkunden-Zuordnung — Basis 20% + Reputation-Tier-Bonus (v2.0.37).
         // Tier-Boni: CityKnown +10%, RegionStar +20%, IndustryLegend +35% — additiv.

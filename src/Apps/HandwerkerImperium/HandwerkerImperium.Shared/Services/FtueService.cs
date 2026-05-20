@@ -18,19 +18,24 @@ public sealed class FtueService : IFtueService
     private readonly IGameStateService _gameStateService;
     private readonly IAnalyticsService? _analytics;
 
-    /// <summary>Default-FTUE-Sequenz (10 Steps). Reihenfolge stabil.</summary>
+    /// <summary>
+    /// Default-FTUE-Sequenz (10 Steps). Reihenfolge stabil.
+    /// SpotlightAutomationIds zeigen auf tatsaechlich in den Views vorhandene Elemente
+    /// (Audit F-03). Step 0 + 1 sind nicht skippbar (F-05) — erst nach Sichtbarwerden
+    /// des Core-Loops kann der Spieler eine informierte Skip-Entscheidung treffen.
+    /// </summary>
     private static readonly FtueStep[] s_defaultSteps =
     [
-        new() { Id = "ftue_welcome",          Order = 0, TitleKey = "FtueWelcomeTitle",          TextKey = "FtueWelcomeText",          ExpectedAction = FtueExpectedAction.TapContinue,           CanSkip = true }, // Skip ab Step 1 erlauben
-        new() { Id = "ftue_first_upgrade",    Order = 1, TitleKey = "FtueFirstUpgradeTitle",     TextKey = "FtueFirstUpgradeText",     ExpectedAction = FtueExpectedAction.BuyFirstUpgrade,        SpotlightAutomationId = "Dashboard_Btn_WorkshopUpgrade", CanSkip = true }, // Skip ab Step 1 erlauben
-        new() { Id = "ftue_first_order",      Order = 2, TitleKey = "FtueFirstOrderTitle",       TextKey = "FtueFirstOrderText",       ExpectedAction = FtueExpectedAction.AcceptFirstOrder,       SpotlightAutomationId = "Dashboard_Btn_AcceptOrder",     CanSkip = true }, // Skip ab Step 1 erlauben
-        new() { Id = "ftue_first_minigame",   Order = 3, TitleKey = "FtueFirstMiniGameTitle",    TextKey = "FtueFirstMiniGameText",    ExpectedAction = FtueExpectedAction.CompleteFirstMiniGame,                                                          CanSkip = true }, // Skip ab Step 1 erlauben
-        new() { Id = "ftue_money_explained",  Order = 4, TitleKey = "FtueMoneyExplainedTitle",   TextKey = "FtueMoneyExplainedText",   ExpectedAction = FtueExpectedAction.TapContinue,           SpotlightAutomationId = "Header_Txt_Money" },
-        new() { Id = "ftue_first_worker",     Order = 5, TitleKey = "FtueFirstWorkerTitle",      TextKey = "FtueFirstWorkerText",      ExpectedAction = FtueExpectedAction.HireFirstWorker,        SpotlightAutomationId = "Dashboard_Btn_HireWorker" },
-        new() { Id = "ftue_xp_explained",     Order = 6, TitleKey = "FtueXpExplainedTitle",      TextKey = "FtueXpExplainedText",      ExpectedAction = FtueExpectedAction.ReachLevel2,            SpotlightAutomationId = "Header_Txt_Level" },
-        new() { Id = "ftue_screws_explained", Order = 7, TitleKey = "FtueScrewsExplainedTitle",  TextKey = "FtueScrewsExplainedText",  ExpectedAction = FtueExpectedAction.TapContinue,           SpotlightAutomationId = "Header_Txt_GoldenScrews" },
-        new() { Id = "ftue_imperium_intro",   Order = 8, TitleKey = "FtueImperiumIntroTitle",    TextKey = "FtueImperiumIntroText",    ExpectedAction = FtueExpectedAction.TapContinue,           SpotlightAutomationId = "TabBar_Btn_Imperium" },
-        new() { Id = "ftue_complete",         Order = 9, TitleKey = "FtueCompleteTitle",         TextKey = "FtueCompleteText",         ExpectedAction = FtueExpectedAction.TapContinue },
+        new() { Id = "ftue_welcome",          Order = 0, TitleKey = "FtueWelcomeTitle",          TextKey = "FtueWelcomeText",          ExpectedAction = FtueExpectedAction.TapContinue,           CanSkip = false }, // F-05
+        new() { Id = "ftue_first_upgrade",    Order = 1, TitleKey = "FtueFirstUpgradeTitle",     TextKey = "FtueFirstUpgradeText",     ExpectedAction = FtueExpectedAction.BuyFirstUpgrade,        SpotlightAutomationId = "Workshop_Btn_Upgrade",       CanSkip = false }, // F-03 + F-05
+        new() { Id = "ftue_first_order",      Order = 2, TitleKey = "FtueFirstOrderTitle",       TextKey = "FtueFirstOrderText",       ExpectedAction = FtueExpectedAction.AcceptFirstOrder,       SpotlightAutomationId = "Dashboard_Items_Orders",     CanSkip = true }, // F-03
+        new() { Id = "ftue_first_minigame",   Order = 3, TitleKey = "FtueFirstMiniGameTitle",    TextKey = "FtueFirstMiniGameText",    ExpectedAction = FtueExpectedAction.CompleteFirstMiniGame,                                                        CanSkip = true },
+        new() { Id = "ftue_money_explained",  Order = 4, TitleKey = "FtueMoneyExplainedTitle",   TextKey = "FtueMoneyExplainedText",   ExpectedAction = FtueExpectedAction.TapContinue,           SpotlightAutomationId = "Dashboard_Txt_Money",        CanSkip = true }, // F-03
+        new() { Id = "ftue_first_worker",     Order = 5, TitleKey = "FtueFirstWorkerTitle",      TextKey = "FtueFirstWorkerText",      ExpectedAction = FtueExpectedAction.HireFirstWorker,        SpotlightAutomationId = "Workshop_Btn_HireWorker",    CanSkip = true }, // F-03
+        new() { Id = "ftue_xp_explained",     Order = 6, TitleKey = "FtueXpExplainedTitle",      TextKey = "FtueXpExplainedText",      ExpectedAction = FtueExpectedAction.ReachLevel2,            SpotlightAutomationId = "Dashboard_Txt_PlayerLevel",  CanSkip = true }, // F-03
+        new() { Id = "ftue_screws_explained", Order = 7, TitleKey = "FtueScrewsExplainedTitle",  TextKey = "FtueScrewsExplainedText",  ExpectedAction = FtueExpectedAction.TapContinue,           SpotlightAutomationId = "Dashboard_Btn_GoldenScrews", CanSkip = true }, // F-03
+        new() { Id = "ftue_imperium_intro",   Order = 8, TitleKey = "FtueImperiumIntroTitle",    TextKey = "FtueImperiumIntroText",    ExpectedAction = FtueExpectedAction.TapContinue,           SpotlightAutomationId = "Main_Canvas_TabBar",         CanSkip = true }, // F-03
+        new() { Id = "ftue_complete",         Order = 9, TitleKey = "FtueCompleteTitle",         TextKey = "FtueCompleteText",         ExpectedAction = FtueExpectedAction.TapContinue,                                                                  CanSkip = true },
     ];
 
     public IReadOnlyList<FtueStep> AllSteps => s_defaultSteps;
@@ -86,9 +91,50 @@ public sealed class FtueService : IFtueService
         var ftue = _gameStateService.State.Tutorial.Ftue;
         ftue.CompletedStepIds.Add(step.Id);
         TrackStepEvent("ftue_step_completed", step);
+        AdvanceToNextUncompletedStep();
+    }
 
-        var nextIdx = ftue.CurrentStepIndex + 1;
-        if (nextIdx >= s_defaultSteps.Length)
+    /// <summary>
+    /// F-06: Catch-Up-Pass. Markiert ALLE Steps mit dieser ExpectedAction als completed
+    /// (auch nachgelagerte, falls die Bedingung schon erfuellt ist — z.B. Spieler erreicht
+    /// Lv2 bevor Step 5 abgeschlossen ist). Wenn dadurch der aktuelle Step abgehakt wird,
+    /// schreitet die FTUE zum naechsten unabgehakten Step fort.
+    /// </summary>
+    public void OnPlayerAction(FtueExpectedAction action)
+    {
+        var ftue = _gameStateService.State.Tutorial.Ftue;
+        if (ftue.IsCompleted || ftue.WasSkipped) return;
+        if (ftue.CurrentStepIndex < 0) return;
+
+        bool currentStepCompleted = false;
+        foreach (var s in s_defaultSteps)
+        {
+            if (s.ExpectedAction != action) continue;
+            if (ftue.CompletedStepIds.Contains(s.Id)) continue;
+
+            ftue.CompletedStepIds.Add(s.Id);
+            TrackStepEvent("ftue_step_completed", s);
+
+            if (s.Order == ftue.CurrentStepIndex)
+                currentStepCompleted = true;
+        }
+
+        if (currentStepCompleted)
+            AdvanceToNextUncompletedStep();
+    }
+
+    /// <summary>
+    /// F-06: Schreitet zum naechsten Step, der NOCH NICHT in CompletedStepIds steht.
+    /// Ueberspringt nachgelagerte Steps, die per Catch-Up bereits abgehakt wurden.
+    /// </summary>
+    private void AdvanceToNextUncompletedStep()
+    {
+        var ftue = _gameStateService.State.Tutorial.Ftue;
+        int next = ftue.CurrentStepIndex + 1;
+        while (next < s_defaultSteps.Length && ftue.CompletedStepIds.Contains(s_defaultSteps[next].Id))
+            next++;
+
+        if (next >= s_defaultSteps.Length)
         {
             ftue.IsCompleted = true;
             ftue.CompletedAtIso = DateTime.UtcNow.ToString("O");
@@ -102,20 +148,8 @@ public sealed class FtueService : IFtueService
             return;
         }
 
-        ftue.CurrentStepIndex = nextIdx;
-        CurrentStepChanged?.Invoke(this, s_defaultSteps[nextIdx]);
-    }
-
-    public void OnPlayerAction(FtueExpectedAction action)
-    {
-        var step = CurrentStep;
-        if (step == null) return;
-        if (step.ExpectedAction != action) return;
-
-        // Idempotenz: Wenn bereits completed, ignorieren (z.B. doppeltes Event vom Service).
-        if (_gameStateService.State.Tutorial.Ftue.CompletedStepIds.Contains(step.Id)) return;
-
-        CompleteCurrentStep();
+        ftue.CurrentStepIndex = next;
+        CurrentStepChanged?.Invoke(this, s_defaultSteps[next]);
     }
 
     public void SkipAll()

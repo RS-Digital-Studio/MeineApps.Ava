@@ -142,6 +142,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     /// <summary>Cross-Promotion-Karte (House-Ad zwischen den 11 eigenen Apps).</summary>
     public CrossPromoViewModel CrossPromoVM { get; }
 
+    /// <summary>F-02: Friend-Invite Reward-Loop UI (Code anzeigen / teilen / eingeben).</summary>
+    public ReferralCardViewModel ReferralVM { get; }
+
     public SettingsViewModel(
         IAudioService audioService,
         ILocalizationService localizationService,
@@ -152,6 +155,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         IContextualHintService contextualHintService,
         IDialogService dialogService,
         CrossPromoViewModel crossPromoVm,
+        ReferralCardViewModel referralVm,
         IAnalyticsService? analyticsService = null,
         ICloudSaveService? cloudSaveService = null)
     {
@@ -166,6 +170,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _analyticsService = analyticsService;
         _cloudSaveService = cloudSaveService;
         CrossPromoVM = crossPromoVm;
+        ReferralVM = referralVm;
 
         // Grafik-Qualitäts-Optionen lokalisiert befüllen
         GraphicsQualities.Add(new(localizationService.GetString("GraphicsLow") ?? "Low", GraphicsQuality.Low));

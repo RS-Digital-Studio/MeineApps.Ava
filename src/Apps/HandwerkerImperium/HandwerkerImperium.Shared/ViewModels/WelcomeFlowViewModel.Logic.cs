@@ -91,13 +91,21 @@ public sealed partial class WelcomeFlowViewModel
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Dialog-Kaskaden-Begrenzung beim Spielstart: Max. 2 Dialoge.
-    /// Reihenfolge: Offline/Welcome → Daily Reward → (Rest verzögert).
-    /// Spieler sollen nicht von 5+ Dialogen erschlagen werden.
+    /// Dialog-Kaskaden-Begrenzung beim Spielstart, F-04: RunType-basierter Soft-Throttle.
+    /// - FirstEverStart: max 1 Dialog (Welcome) — Spieler wird sonst erschlagen.
+    /// - Day-2/Standard: max 2 Dialoge (OfflineEarnings + DailyReward).
+    /// - Veteran (Lv >= 30): max 1 Dialog — Spieler weiss was er tut, will weitermachen.
+    /// Story + Welcome-Hint sind nur fuer FirstEver/Standard verzoegert, fuer Veteran-Spieler
+    /// nicht (Story-Tab bleibt manuell zugaenglich).
     /// Wird vom GameStartupCoordinator nach dem State-Load aufgerufen.
     /// </summary>
     public void RunStartupDialogSequence()
     {
+        var state = _gameStateService.State;
+        bool isFirstEverStart = state.LastDailyRewardClaim == DateTime.MinValue
+                             && state.Statistics.TotalOrdersCompleted == 0;
+        bool isVeteran = state.PlayerLevel >= 30;
+        int maxStartupDialogs = isFirstEverStart ? 1 : (isVeteran ? 1 : 2);
         int dialogsShown = 0;
 
         // Offline-Earnings berechnen (noch nicht anzeigen)
@@ -113,24 +121,21 @@ public sealed partial class WelcomeFlowViewModel
 
         // Daily Reward: Bei brandneuem Spiel still einsammeln (kein Dialog am allerersten Start,
         // der Spieler kennt das Spiel noch nicht und wird sonst von Dialogen erschlagen)
-        var isFirstEverStart = _gameStateService.State.LastDailyRewardClaim == DateTime.MinValue
-                            && _gameStateService.Statistics.TotalOrdersCompleted == 0;
         if (isFirstEverStart && _dailyRewardService.IsRewardAvailable)
         {
             _dailyRewardService.ClaimReward();
             HasDailyReward = false;
         }
-        else if (dialogsShown < 1)
+        else if (dialogsShown < maxStartupDialogs)
         {
-            // v2.0.36: Daily Reward bekommt nur dann ein Modal, wenn noch KEIN anderer Dialog
-            // geschlagen wurde. Zweiter Modal in der Kaskade landet stattdessen in der Bell.
+            // F-04: Modal nur wenn Run-Type-Limit das erlaubt (Veteran-Start: 1, sonst 2).
             CheckDailyReward();
             if (IsDailyRewardDialogVisible)
                 dialogsShown++;
         }
         else if (_dailyRewardService.IsRewardAvailable)
         {
-            // v2.0.36: Statt verzoegertem Modal — direkt in Notification-Center pushen.
+            // Statt verzoegertem Modal — direkt in Notification-Center pushen.
             // HasDailyReward bleibt true, sodass das Header-Badge sichtbar wird.
             HasDailyReward = true;
             _notificationCenterService.Add(new NotificationItem
@@ -145,10 +150,13 @@ public sealed partial class WelcomeFlowViewModel
             _hasDeferredDailyReward = false;
         }
 
-        // Story + Welcome-Hint NUR verzögert (nie beim Start direkt)
-        // Werden nach Schließen des letzten Startup-Dialogs geprüft
-        _hasDeferredStory = true;
-        _hasDeferredWelcomeHint = !_contextualHintService.HasSeenHint(ContextualHints.Welcome.Id);
+        // F-04: Story + Welcome-Hint — Run-Type-gesteuert.
+        //   FirstEver: beide verzoegert (Story Kapitel 1 + Welcome-Hint nach Start-Dialog).
+        //   Standard:  Story verzoegert (neue Kapitel zeigen), Welcome-Hint entfaellt (schon gesehen).
+        //   Veteran:   beide unterdrueckt — Spieler hat Story-Tab manuell, Welcome-Hint laengst gesehen.
+        _hasDeferredStory = !isVeteran;
+        _hasDeferredWelcomeHint = isFirstEverStart
+                               && !_contextualHintService.HasSeenHint(ContextualHints.Welcome.Id);
 
         // Starter-Offer prüfen (ab Level 10, einmalig, Nicht-Premium)
         CheckStarterOffer();

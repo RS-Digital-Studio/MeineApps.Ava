@@ -40,6 +40,15 @@ public class Workshop
     public WorkshopSpecialization? WorkshopSpecialization { get; set; }
 
     /// <summary>
+    /// F-12 / F-26: Persistente Risk/Reward-Default-Strategie pro Workshop. Sticky-Pattern —
+    /// reduziert Choice-Fatigue bei 30-60 Auftraegen pro Session. Wird beim Auftrag-Spawn
+    /// in <see cref="Order.Strategy"/> kopiert. Der Spieler kann pro Auftrag aendern; das
+    /// Long-Press-Pinnen ueberschreibt das Default fuer alle zukuenftigen Auftraege dieser Werkstatt.
+    /// </summary>
+    [JsonPropertyName("defaultRiskStrategy")]
+    public OrderStrategy DefaultRiskStrategy { get; set; } = OrderStrategy.Standard;
+
+    /// <summary>
     /// Maximales Workshop-Level.
     /// </summary>
     public const int MaxLevel = GameBalanceConstants.WorkshopMaxLevel;

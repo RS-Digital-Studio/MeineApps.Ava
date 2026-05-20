@@ -71,6 +71,11 @@ public partial class FtueOverlay : UserControl
     /// <summary>
     /// Sucht im Visual-Tree nach dem Element mit AutomationId == VM.SpotlightAutomationId
     /// und gibt seine Center-Position + Radius an das VM weiter.
+    ///
+    /// F-03: Bei nicht gefundenem Target wird der Cache NICHT gesetzt — sonst gibt es
+    /// keinen Retry, wenn das Element verzoegert in den VisualTree kommt (z.B. wenn der
+    /// Step ein Element in einer noch nicht aktiven Sub-View referenziert). Plus
+    /// Debug-Warn-Log, damit fehlende AutomationIds beim Entwickeln auffallen.
     /// </summary>
     private void ResolveSpotlightBoundsAsync()
     {
@@ -78,13 +83,18 @@ public partial class FtueOverlay : UserControl
         if (string.IsNullOrEmpty(vm.SpotlightAutomationId)) return;
         if (_lastResolvedAutomationId == vm.SpotlightAutomationId) return; // Idempotent
 
+        var requestedId = vm.SpotlightAutomationId!;
         Dispatcher.UIThread.Post(() =>
         {
             try
             {
                 if (TopLevel.GetTopLevel(this) is not Control root) return;
-                var target = FindByAutomationId(root, vm.SpotlightAutomationId!);
-                if (target == null) return;
+                var target = FindByAutomationId(root, requestedId);
+                if (target == null)
+                {
+                    Debug.WriteLine($"[FtueOverlay] AutomationId '{requestedId}' nicht im VisualTree gefunden. Spotlight bleibt unsichtbar — retry bei naechstem LayoutUpdate.");
+                    return; // Cache NICHT setzen → naechster LayoutUpdated versucht es erneut.
+                }
 
                 var bounds = target.Bounds;
                 var topLeftInRoot = target.TranslatePoint(new Point(0, 0), this);
@@ -94,10 +104,11 @@ public partial class FtueOverlay : UserControl
                 var centerY = topLeftInRoot.Value.Y + bounds.Height / 2;
                 var radius = (float)Math.Max(bounds.Width, bounds.Height) / 2f + 16f;
                 vm.SetSpotlightBounds((float)centerX, (float)centerY, radius);
-                _lastResolvedAutomationId = vm.SpotlightAutomationId;
+                _lastResolvedAutomationId = requestedId;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[FtueOverlay] ResolveSpotlightBounds fehlgeschlagen ({requestedId}): {ex.Message}");
                 // Visual-Tree-Walk darf niemals crashen.
             }
         }, DispatcherPriority.Background);

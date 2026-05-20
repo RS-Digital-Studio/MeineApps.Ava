@@ -35,6 +35,7 @@ public sealed partial class GameStateService : IGameStateService
     public event EventHandler<XpGainedEventArgs>? XpGained;
     public event EventHandler<WorkshopUpgradedEventArgs>? WorkshopUpgraded;
     public event EventHandler<WorkerHiredEventArgs>? WorkerHired;
+    public event EventHandler<OrderStartedEventArgs>? OrderStarted;
     public event EventHandler<OrderCompletedEventArgs>? OrderCompleted;
     public event EventHandler? StateLoaded;
     public event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;

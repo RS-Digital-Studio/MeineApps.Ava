@@ -4046,6 +4046,13 @@
   <data name="HintLongPressBulkText" xml:space="preserve">
     <value>Hold the upgrade button to buy several levels at once — perfect for the x10/x100/Max thresholds.</value>
   </data>
+  <!-- F-07: Material-Offer Discoverability beim ersten Spawn -->
+  <data name="HintMaterialOfferTitle" xml:space="preserve">
+    <value>Bonus with your own materials!</value>
+  </data>
+  <data name="HintMaterialOfferText" xml:space="preserve">
+    <value>Some orders now show a second button: "Start with materials". If you deliver the requested items from your warehouse, you earn bonus money and XP on top.</value>
+  </data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Ready for promotion</value>
   </data>
@@ -6086,6 +6093,24 @@
   <data name="CraftingInventoryEmptyText" xml:space="preserve">
     <value>Start a recipe above &#8212; your finished items will land here and can be sold.</value>
   </data>
+  <!-- F-02: Friend-Invite Reward-Loop UI -->
+  <data name="ReferralSectionTitle" xml:space="preserve"><value>Invite friends</value></data>
+  <data name="ReferralSubtitle" xml:space="preserve"><value>Share your personal code. Each successful referral (24h active) gives Golden Screws and a permanent income bonus.</value></data>
+  <data name="ReferralOwnCodeLabel" xml:space="preserve"><value>Your invite code</value></data>
+  <data name="ReferralShareButton" xml:space="preserve"><value>Share</value></data>
+  <data name="ReferralShareText" xml:space="preserve"><value>Play HandwerkerImperium with me! My code: {0}</value></data>
+  <data name="ReferralShareTitle" xml:space="preserve"><value>HandwerkerImperium invite</value></data>
+  <data name="ReferralEnterCodePlaceholder" xml:space="preserve"><value>Enter code (6 chars)</value></data>
+  <data name="ReferralSubmitButton" xml:space="preserve"><value>Submit</value></data>
+  <data name="ReferralCodeAlreadyUsedFormat" xml:space="preserve"><value>Code {0} already used — thanks!</value></data>
+  <data name="ReferralProgressFormat" xml:space="preserve"><value>{0} / {1} successful referrals</value></data>
+  <data name="ReferralClaimButton" xml:space="preserve"><value>Claim reward</value></data>
+  <data name="ReferralCodeAcceptedTitle" xml:space="preserve"><value>Code accepted</value></data>
+  <data name="ReferralCodeAcceptedBody" xml:space="preserve"><value>Thanks! Your referrer gets the reward once you have been active for 24h.</value></data>
+  <data name="ReferralCodeRejectedTitle" xml:space="preserve"><value>Code rejected</value></data>
+  <data name="ReferralCodeRejectedBody" xml:space="preserve"><value>Code invalid, already used, or your own.</value></data>
+  <data name="ReferralRewardClaimedTitle" xml:space="preserve"><value>Reward claimed!</value></data>
+  <data name="ReferralRewardClaimedBody" xml:space="preserve"><value>Tier {0} unlocked — Golden Screws credited.</value></data>
   <!-- Cross-Promotion (AAA audit P1): Hooks for the 11 portfolio apps. -->
   <data name="CrossPromoSectionTitle" xml:space="preserve"><value>Liked this app? Try also:</value></data>
   <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calculator Plus</value></data>
@@ -6533,6 +6558,7 @@
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Current War</value></data>
   <!-- Order Strategy (v2.0.35 Risk/Reward) -->
   <data name="OrderStrategyPrompt" xml:space="preserve"><value>Choose your strategy</value></data>
+  <data name="OrderStrategyHoldToPinHint" xml:space="preserve"><value>Tip: Hold a button to pin this strategy for all future orders of this workshop.</value></data>
   <data name="OrderStrategySafe" xml:space="preserve"><value>Safe</value></data>
   <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Easier mini-game, less reward (0.75x)</value></data>
   <data name="OrderStrategyStandard" xml:space="preserve"><value>Standard</value></data>
@@ -6542,6 +6568,14 @@
   <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Really take the risk?</value></data>
   <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Miss means no reward and a reputation hit. Continue?</value></data>
   <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>Yes, risk it</value></data>
+  <!-- F-16: Live-Event Titles + Dialog -->
+  <data name="LiveEvent_DoubleReward_Title" xml:space="preserve"><value>Double Reward</value></data>
+  <data name="LiveEvent_BossRush_Title" xml:space="preserve"><value>Boss Rush</value></data>
+  <data name="LiveEvent_CoopMarathon_Title" xml:space="preserve"><value>Co-op Marathon</value></data>
+  <data name="LiveEvent_MiniGameMastery_Title" xml:space="preserve"><value>Mini-Game Mastery</value></data>
+  <data name="LiveEventDialogTitle" xml:space="preserve"><value>Live Event</value></data>
+  <data name="LiveEventRewardClaimedTitle" xml:space="preserve"><value>Reward claimed!</value></data>
+  <data name="LiveEventRewardClaimedBody" xml:space="preserve"><value>Tier {0} unlocked.</value></data>
   <!-- Live-Order-Stream (v2.0.35) -->
   <data name="OrderLiveBadge" xml:space="preserve"><value>LIVE</value></data>
   <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>

@@ -33,6 +33,8 @@ public sealed class GameStartupCoordinator : IGameStartupCoordinator
     private readonly IWhatsNewService? _whatsNewService;
     private readonly IAnalyticsService? _analyticsService;
     private readonly ICloudSaveService? _cloudSaveService;
+    private readonly FtueProgressTracker? _ftueProgressTracker;
+    private readonly LiveEventScoreTracker? _liveEventScoreTracker;
     private IStartupHost? _host;
 
     public GameStartupCoordinator(
@@ -51,7 +53,9 @@ public sealed class GameStartupCoordinator : IGameStartupCoordinator
         SettingsViewModel settingsVm,
         IWhatsNewService? whatsNewService = null,
         IAnalyticsService? analyticsService = null,
-        ICloudSaveService? cloudSaveService = null)
+        ICloudSaveService? cloudSaveService = null,
+        FtueProgressTracker? ftueProgressTracker = null,
+        LiveEventScoreTracker? liveEventScoreTracker = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
@@ -69,6 +73,10 @@ public sealed class GameStartupCoordinator : IGameStartupCoordinator
         _whatsNewService = whatsNewService;
         _analyticsService = analyticsService;
         _cloudSaveService = cloudSaveService;
+        _ftueProgressTracker = ftueProgressTracker;
+        _liveEventScoreTracker = liveEventScoreTracker;
+        // Tracker werden hier referenziert, damit DI sie eager instanziiert (Event-Abos im Ctor).
+        _ = _liveEventScoreTracker;
     }
 
     public void AttachHost(IStartupHost host) => _host = host;
@@ -151,6 +159,11 @@ public sealed class GameStartupCoordinator : IGameStartupCoordinator
             // Welcome-Flow: Offline-Earnings, Daily-Reward, Starter-Offer + verzoegerte
             // Dialog-Kaskade. Vollstaendig in WelcomeFlowViewModel gekapselt.
             _welcomeFlowVm.RunStartupDialogSequence();
+
+            // FTUE-Sequenz initialisieren (F-03): Tracker verdrahtet die Game-Events,
+            // StartIfNeeded() startet die 10-Step-Sequenz wenn der Spieler sie nie
+            // begonnen oder uebersprungen hat. Idempotent.
+            _ftueProgressTracker?.StartIfNeeded();
 
             // Start the game loop for idle earnings
             _gameLoopService.Start();

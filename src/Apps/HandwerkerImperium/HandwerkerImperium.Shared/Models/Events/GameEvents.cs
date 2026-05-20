@@ -93,6 +93,15 @@ public class WorkerHiredEventArgs : EventArgs
 }
 
 /// <summary>
+/// Event fired when an order is started (v2.1.2, FTUE-Verdrahtung F-03).
+/// Wird vom FtueProgressTracker abonniert, um den FTUE-Step "AcceptFirstOrder" zu triggern.
+/// </summary>
+public class OrderStartedEventArgs(Order order) : EventArgs
+{
+    public Order Order { get; } = order;
+}
+
+/// <summary>
 /// Event fired when an order is completed.
 /// </summary>
 public class OrderCompletedEventArgs : EventArgs

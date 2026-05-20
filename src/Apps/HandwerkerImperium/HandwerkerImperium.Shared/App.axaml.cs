@@ -362,14 +362,24 @@ public partial class App : Application
         // FTUE-Service + UI-Spotlight-Overlay (10-Step-Tutorial).
         services.AddSingleton<IFtueService, FtueService>();
         services.AddSingleton<FtueOverlayViewModel>();
+        // FTUE-Progress-Verdrahtung mit Game-Events (F-03): ohne diesen Tracker
+        // schreitet die FTUE nicht voran und Start() wird nie aufgerufen.
+        services.AddSingleton<FtueProgressTracker>();
 
         // Friend-Invite Reward-Loop (K-Factor-Driver, ~30% Free-Installs bei
         // Voodoo / Lion). Server-Endpoint fuer Anti-Cheat ist Folge-Sprint.
         services.AddSingleton<IReferralService, ReferralService>();
+        // F-02: Settings-Card UI fuer Referral (Code anzeigen / teilen / eingeben / Tier-Belohnung)
+        services.AddSingleton<ReferralCardViewModel>();
 
         // Limited-Time-Events (FOMO + Re-Engagement). 4 Templates:
         // DoubleReward, BossRush, CoopMarathon, MiniGameMastery.
         services.AddSingleton<ILiveEventService, LiveEventService>();
+        // F-01: Score-Tracker verdrahtet AddScore() mit OrderCompleted / PerfectRatingIncremented.
+        // Singleton, IDisposable — wird ueber Container-Dispose aufgeraeumt.
+        services.AddSingleton<LiveEventScoreTracker>();
+        // F-16: Dashboard-Banner-Chip fuer Live-Events (Titel, Score, Countdown, Tap-to-Claim).
+        services.AddSingleton<LiveEventBannerViewModel>();
 
         // Cinematic-Logik aus
         // MainViewModel extrahiert. Eigener Coordinator subscribed auf PrestigeService

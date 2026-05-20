@@ -59,6 +59,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     private readonly IGuildFacade _facade;
     private readonly ILocalizationService _localizationService;
     private readonly IDialogService _dialogService;
+    private readonly IContextualHintService? _contextualHintService;
     private bool _isBusy;
     private DateTime _lastChatSend = DateTime.MinValue;
     private Avalonia.Threading.DispatcherTimer? _chatPollTimer;
@@ -473,12 +474,14 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         GuildHallViewModel hallViewModel,
         GuildCoopOrderViewModel coopOrderViewModel,
         ViewModels.Auctions.WorkerAuctionViewModel auctionViewModel,
-        GuildMegaProjectViewModel megaProjectViewModel)
+        GuildMegaProjectViewModel megaProjectViewModel,
+        IContextualHintService? contextualHintService = null)
     {
         _gameStateService = gameStateService;
         _facade = facade;
         _localizationService = localizationService;
         _dialogService = dialogService;
+        _contextualHintService = contextualHintService;
 
         WarSeasonViewModel = warSeasonViewModel;
         BossViewModel = bossViewModel;
@@ -573,6 +576,9 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             // Spielername prüfen
             if (string.IsNullOrEmpty(_facade.Guild.PlayerName))
             {
+                // F-31: Welcome-Hint VOR dem NameDialog explizit pushen (idempotent — wird
+                // nur einmal angezeigt). Erklaert dem Spieler, warum ein Name gebraucht wird.
+                _contextualHintService?.TryShowHint(ContextualHints.GuildHint);
                 ViewState = GuildViewState.NameDialog;
                 return;
             }

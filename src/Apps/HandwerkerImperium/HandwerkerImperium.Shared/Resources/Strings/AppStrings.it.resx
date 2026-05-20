@@ -3423,6 +3423,13 @@
   <data name="HintLongPressBulkText" xml:space="preserve">
     <value>Tieni premuto il pulsante di potenziamento per comprare più livelli in una volta — perfetto per le soglie x10/x100/Max.</value>
   </data>
+  <!-- F-07: Material-Offer Discoverability beim ersten Spawn -->
+  <data name="HintMaterialOfferTitle" xml:space="preserve">
+    <value>Bonus con il tuo materiale!</value>
+  </data>
+  <data name="HintMaterialOfferText" xml:space="preserve">
+    <value>Alcuni ordini ora mostrano un secondo pulsante: "Avvia con materiali". Se consegni gli articoli richiesti dal tuo magazzino, ottieni denaro ed XP extra.</value>
+  </data>
   <data name="StatusInternReadyForPromotion" xml:space="preserve">
     <value>Pronto per la promozione</value>
   </data>
@@ -5849,6 +5856,24 @@
   <data name="AchievementsEmptyText" xml:space="preserve">
     <value>Ti aspettano 110 obiettivi. Completa ordini, potenzia officine, assumi lavoratori &#8212; ogni azione ti avvicina. Il primo trofeo &#232; pi&#249; vicino di quanto pensi.</value>
   </data>
+  <!-- F-02: Friend-Invite Reward-Loop UI -->
+  <data name="ReferralSectionTitle" xml:space="preserve"><value>Invita amici</value></data>
+  <data name="ReferralSubtitle" xml:space="preserve"><value>Condividi il tuo codice personale. Ogni referral riuscito (24h attivo) d&#224; Viti d'Oro e un bonus reddito permanente.</value></data>
+  <data name="ReferralOwnCodeLabel" xml:space="preserve"><value>Il tuo codice</value></data>
+  <data name="ReferralShareButton" xml:space="preserve"><value>Condividi</value></data>
+  <data name="ReferralShareText" xml:space="preserve"><value>Gioca a HandwerkerImperium con me! Il mio codice: {0}</value></data>
+  <data name="ReferralShareTitle" xml:space="preserve"><value>Invito HandwerkerImperium</value></data>
+  <data name="ReferralEnterCodePlaceholder" xml:space="preserve"><value>Inserisci codice (6 car.)</value></data>
+  <data name="ReferralSubmitButton" xml:space="preserve"><value>Invia</value></data>
+  <data name="ReferralCodeAlreadyUsedFormat" xml:space="preserve"><value>Codice {0} gi&#224; usato — grazie!</value></data>
+  <data name="ReferralProgressFormat" xml:space="preserve"><value>{0} / {1} referral riusciti</value></data>
+  <data name="ReferralClaimButton" xml:space="preserve"><value>Riscuoti</value></data>
+  <data name="ReferralCodeAcceptedTitle" xml:space="preserve"><value>Codice accettato</value></data>
+  <data name="ReferralCodeAcceptedBody" xml:space="preserve"><value>Grazie! Il tuo referente ricever&#224; la ricompensa una volta che sarai attivo per 24h.</value></data>
+  <data name="ReferralCodeRejectedTitle" xml:space="preserve"><value>Codice rifiutato</value></data>
+  <data name="ReferralCodeRejectedBody" xml:space="preserve"><value>Codice non valido, gi&#224; usato o il tuo.</value></data>
+  <data name="ReferralRewardClaimedTitle" xml:space="preserve"><value>Ricompensa ottenuta!</value></data>
+  <data name="ReferralRewardClaimedBody" xml:space="preserve"><value>Livello {0} sbloccato — Viti d'Oro accreditate.</value></data>
   <!-- Cross-Promotion (AAA audit P1) -->
   <data name="CrossPromoSectionTitle" xml:space="preserve"><value>Ti piace questa app? Prova anche:</value></data>
   <data name="CrossPromo_RechnerPlus_Name" xml:space="preserve"><value>Calcolatrice Plus</value></data>
@@ -6454,6 +6479,7 @@
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerra corrente</value></data>
   <!-- Order Strategy (v2.0.35 Risk/Reward) -->
   <data name="OrderStrategyPrompt" xml:space="preserve"><value>Scegli la tua strategia</value></data>
+  <data name="OrderStrategyHoldToPinHint" xml:space="preserve"><value>Consiglio: Tieni premuto un pulsante per fissare questa strategia per tutti gli ordini futuri di questa officina.</value></data>
   <data name="OrderStrategySafe" xml:space="preserve"><value>Sicuro</value></data>
   <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Minigioco pi&#249; facile, ricompensa minore (0,75x)</value></data>
   <data name="OrderStrategyStandard" xml:space="preserve"><value>Standard</value></data>
@@ -6463,6 +6489,14 @@
   <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Davvero rischiare?</value></data>
   <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Un fallimento significa zero ricompensa e perdita di reputazione. Continuare?</value></data>
   <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>S&#236;, rischiare</value></data>
+  <!-- F-16: Live-Event Titles + Dialog -->
+  <data name="LiveEvent_DoubleReward_Title" xml:space="preserve"><value>Doppia Ricompensa</value></data>
+  <data name="LiveEvent_BossRush_Title" xml:space="preserve"><value>Boss Rush</value></data>
+  <data name="LiveEvent_CoopMarathon_Title" xml:space="preserve"><value>Maratona Co-op</value></data>
+  <data name="LiveEvent_MiniGameMastery_Title" xml:space="preserve"><value>Maestria Mini-Giochi</value></data>
+  <data name="LiveEventDialogTitle" xml:space="preserve"><value>Evento Live</value></data>
+  <data name="LiveEventRewardClaimedTitle" xml:space="preserve"><value>Ricompensa ottenuta!</value></data>
+  <data name="LiveEventRewardClaimedBody" xml:space="preserve"><value>Livello {0} sbloccato.</value></data>
   <!-- Live-Order-Stream (v2.0.35) -->
   <data name="OrderLiveBadge" xml:space="preserve"><value>LIVE</value></data>
   <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>

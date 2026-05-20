@@ -678,6 +678,12 @@ public partial class DashboardView : UserControl
         if (!_renderActive) return;
         _frameClock?.Unsubscribe(OnCityRenderTick);
         _renderActive = false;
+
+        // Scroll-State zwangsweise zuruecksetzen: ohne laufenden Render-Tick wuerde
+        // _isScrolling = false nie wieder gesetzt (Reset passiert nur in OnCityRenderTick).
+        // Sonst pausiert MainView die TabBar dauerhaft → Tab-Indikator bleibt auf Dashboard
+        // haengen, wenn der User waehrend des Scrollens auf einen anderen Tab klickt.
+        _isScrolling = false;
     }
 
     /// <summary>

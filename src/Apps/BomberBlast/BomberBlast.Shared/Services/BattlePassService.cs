@@ -182,17 +182,64 @@ public sealed class BattlePassService : IBattlePassService
     {
         if (!_data.IsSeasonExpired) return false;
 
+        // v2.0.60 (B-D7): Legacy-Rewards-Fenster — Premium-Spieler mit unclaimed Rewards
+        // bekommen 7 Tage nach Season-Ende noch die Möglichkeit, ihre Tier-Rewards einzulösen.
+        // Bisheriges Whale-Verhalten: kompletter Reset → unclaimed Premium-Rewards weg →
+        // Whale-Retention-Killer. Jetzt: Snapshot der unclaimed Tiers + Premium-Status,
+        // wird im Legacy-Fenster (LegacyRewardsExpiresAt) abgerufen.
+        if (_data.IsPremium && _data.CurrentTier >= 1)
+        {
+            _data.LegacyRewardsExpiresAt = DateTime.UtcNow.AddDays(7).ToString("O");
+            _data.LegacyPremiumTier = _data.CurrentTier;
+            _data.LegacyPremiumSeasonNumber = _data.SeasonNumber;
+            // Persistenter Veteran-Bonus für Premium-Veteranen: +5% XP in der nächsten Saison.
+            _data.PremiumVeteranSeasonsCompleted = _data.PremiumVeteranSeasonsCompleted + 1;
+        }
+
         // Neue Saison starten
         _data = new BattlePassData
         {
             SeasonNumber = _data.SeasonNumber + 1,
-            SeasonStartDate = DateTime.UtcNow.ToString("O")
+            SeasonStartDate = DateTime.UtcNow.ToString("O"),
+            // v2.0.60 (B-D7): Legacy-Felder ueber den Reset hinaus erhalten.
+            LegacyRewardsExpiresAt = _data.LegacyRewardsExpiresAt,
+            LegacyPremiumTier = _data.LegacyPremiumTier,
+            LegacyPremiumSeasonNumber = _data.LegacyPremiumSeasonNumber,
+            PremiumVeteranSeasonsCompleted = _data.PremiumVeteranSeasonsCompleted,
         };
 
         SaveData();
         BattlePassChanged?.Invoke();
         return true;
     }
+
+    /// <summary>
+    /// v2.0.60 (B-D7): True wenn der Spieler unclaimed Premium-Rewards aus der vorherigen
+    /// Saison hat und das 7-Tage-Fenster noch aktiv ist. UI zeigt einen "Legacy"-Banner.
+    /// </summary>
+    public bool HasUnclaimedLegacyRewards
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_data.LegacyRewardsExpiresAt)) return false;
+            if (_data.LegacyPremiumTier < 1) return false;
+            try
+            {
+                var expires = DateTime.Parse(_data.LegacyRewardsExpiresAt,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind);
+                return DateTime.UtcNow < expires;
+            }
+            catch { return false; }
+        }
+    }
+
+    /// <summary>
+    /// v2.0.60 (B-D7): Veteran-XP-Boost +5% pro abgeschlossener Premium-Saison.
+    /// Wird vom XP-Anstieg-Pfad ausgewertet (jede Premium-Saison addiert kumulativen Boost).
+    /// </summary>
+    public float PremiumVeteranBoost
+        => 1.0f + (_data.PremiumVeteranSeasonsCompleted * 0.05f);
 
     public void ActivatePremium()
     {
@@ -249,8 +296,10 @@ public sealed class BattlePassService : IBattlePassService
         {
             return JsonSerializer.Deserialize<BattlePassData>(json, JsonOptions) ?? new BattlePassData();
         }
-        catch
+        catch (Exception ex)
         {
+            // v2.0.60 (B-E4): Corruption-Reporting für CloudSave-Cloud-Bevorzugung.
+            PersistenceHealth.ReportCorruption(nameof(BattlePassService), ex);
             return new BattlePassData();
         }
     }

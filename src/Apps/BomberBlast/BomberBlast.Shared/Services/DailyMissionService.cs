@@ -12,6 +12,8 @@ namespace BomberBlast.Services;
 public sealed class DailyMissionService : TimedMissionServiceBase, IDailyMissionService
 {
     private readonly Lazy<IAchievementService> _achievementService;
+    // v2.0.60 (B-D3): IProgressService für Player-Level-Gating der Missionen.
+    private readonly IProgressService _progressService;
 
     // Missions-Pool: Typ → (NameKey, DescKey, MinTarget, MaxTarget, CoinReward)
     private static readonly (WeeklyMissionType Type, string Name, string Desc, int Min, int Max, int Reward)[] DailyMissionPool =
@@ -43,11 +45,16 @@ public sealed class DailyMissionService : TimedMissionServiceBase, IDailyMission
         IPreferencesService preferences,
         IBattlePassService battlePassService,
         ILeagueService leagueService,
-        Lazy<IAchievementService> achievementService)
+        Lazy<IAchievementService> achievementService,
+        IProgressService progressService)
         : base(preferences, battlePassService, leagueService)
     {
         _achievementService = achievementService;
+        _progressService = progressService;
     }
+
+    // v2.0.60 (B-D3): Liefert das aktuelle Player-Level für Mission-Filtering.
+    protected override int CurrentPlayerLevel => _progressService.HighestCompletedLevel;
 
     // --- Interface-Properties (delegieren an Basisklasse) ---
 

@@ -38,6 +38,27 @@ public class BattlePassData
     /// </summary>
     public long XpBoostStartTicks { get; set; }
 
+    // === v2.0.60 (B-D7): Legacy-Rewards + Premium-Veteran-Bonus ===
+
+    /// <summary>
+    /// Ablaufzeitpunkt des 7-Tage-Legacy-Fensters nach einer Premium-Saison (UTC, ISO 8601).
+    /// Während dieser Zeit können Premium-Spieler ihre unclaimed Tier-Rewards der vorherigen
+    /// Saison noch einlösen — verhindert Whale-Frust bei kurz-vor-Season-Ende.
+    /// </summary>
+    public string? LegacyRewardsExpiresAt { get; set; }
+
+    /// <summary>v2.0.60 (B-D7): Höchstes Tier der vorherigen Premium-Saison.</summary>
+    public int LegacyPremiumTier { get; set; }
+
+    /// <summary>v2.0.60 (B-D7): Nummer der vorherigen Premium-Saison.</summary>
+    public int LegacyPremiumSeasonNumber { get; set; }
+
+    /// <summary>
+    /// v2.0.60 (B-D7): Anzahl abgeschlossener Premium-Saisons (für Veteran-XP-Boost).
+    /// Jede abgeschlossene Premium-Saison gibt +5% permanenten XP-Boost in folgenden Saisons.
+    /// </summary>
+    public int PremiumVeteranSeasonsCompleted { get; set; }
+
     // === Berechnete Properties (nicht serialisiert) ===
 
     /// <summary>

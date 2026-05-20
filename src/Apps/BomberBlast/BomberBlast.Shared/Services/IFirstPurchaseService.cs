@@ -4,8 +4,9 @@ namespace BomberBlast.Services;
 /// First-Time-Purchase-Bonus (Phase 23 — M5).
 ///
 /// <para>Industry-Standard: Beim ersten echten Kauf bekommt der Spieler +100% auf den Inhalt.
-/// Konkret: Wenn der Spieler ein Gem-Pack kauft (4,99 EUR / 600 Gems), bekommt er beim
-/// ersten Kauf 1200 Gems statt 600. Soft-Currency wird verdoppelt — IAP-Preis bleibt gleich.</para>
+/// v2.0.60 (B-B9): Bonus ist explizit auf das kleinste Gem-Paket (<c>gem_pack_small</c>, 100 Gems)
+/// fokussiert — als Conversion-Hook („Erste 100 Gems = 200 Gems!"). Größere Pakete bekommen den
+/// Bonus NICHT mehr (Whale-Anreiz war suboptimal — wer 14.99 € ausgibt, braucht keinen 100%-Bonus).</para>
 ///
 /// <para>Persistenz: <c>FirstPurchaseClaimed</c>-Flag in Preferences. Sobald gesetzt, gilt der
 /// Bonus nicht mehr. <c>HasClaimed</c> ist die Source-of-Truth — auch über App-Reinstall hinweg
@@ -20,10 +21,23 @@ public interface IFirstPurchaseService
     bool IsAvailable { get; }
 
     /// <summary>
-    /// Berechnet den Bonus-Multiplier für einen IAP. Vor dem ersten Kauf gibt das 2.0 zurück
-    /// (100% Bonus), danach 1.0. Sollte vom PurchaseService bei jeder Gem-Vergabe gelesen werden.
+    /// v2.0.60 (B-B9): Berechnet den Bonus-Multiplier für ein konkretes Produkt.
+    /// Nur <c>gem_pack_small</c> bekommt den Bonus — andere Produkte erhalten 1.0×.
     /// </summary>
+    float GetBonusMultiplier(string productId);
+
+    /// <summary>
+    /// Backward-Compat: liefert globalen Multiplier (2.0 wenn nicht claimed, sonst 1.0).
+    /// Neue Aufrufer sollen die productId-Variante verwenden.
+    /// </summary>
+    [System.Obsolete("Verwende GetBonusMultiplier(productId) für saubere Targeting.")]
     float GetBonusMultiplier();
+
+    /// <summary>
+    /// v2.0.60 (B-B9): True wenn dieses Produkt für den First-Purchase-Bonus qualifiziert ist
+    /// und noch nicht eingelöst wurde. Wird vom GemShopView genutzt um eine „First 100 = 200"-Badge zu zeigen.
+    /// </summary>
+    bool IsProductEligibleForBonus(string productId);
 
     /// <summary>Markiert den Bonus als eingelöst (nach erfolgreichem Kauf).</summary>
     void MarkAsClaimed();
@@ -36,6 +50,9 @@ public interface IFirstPurchaseService
 public sealed class FirstPurchaseService : IFirstPurchaseService
 {
     private const string Key = "FirstPurchaseClaimed";
+    // v2.0.60 (B-B9): Target-Produkt für First-Purchase-Bonus. Klein-genug für Casual-Conversion.
+    private const string TargetProductId = "gem_pack_small";
+
     private readonly MeineApps.Core.Ava.Services.IPreferencesService _prefs;
 
     public FirstPurchaseService(MeineApps.Core.Ava.Services.IPreferencesService prefs)
@@ -46,7 +63,19 @@ public sealed class FirstPurchaseService : IFirstPurchaseService
     public bool HasClaimed => _prefs.Get(Key, false);
     public bool IsAvailable => !HasClaimed;
 
+    public float GetBonusMultiplier(string productId)
+    {
+        if (HasClaimed) return 1.0f;
+        return productId == TargetProductId ? 2.0f : 1.0f;
+    }
+
+    [System.Obsolete("Verwende GetBonusMultiplier(productId) für saubere Targeting.")]
     public float GetBonusMultiplier() => HasClaimed ? 1.0f : 2.0f;
+
+    public bool IsProductEligibleForBonus(string productId)
+    {
+        return !HasClaimed && productId == TargetProductId;
+    }
 
     public void MarkAsClaimed() => _prefs.Set(Key, true);
 }

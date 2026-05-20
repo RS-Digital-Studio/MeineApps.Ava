@@ -46,6 +46,34 @@ public abstract class TimedMissionServiceBase
     /// <summary>Missions-Pool mit Typen, Lokalisierungs-Keys, Target-Bereichen und Belohnungen</summary>
     protected abstract (WeeklyMissionType Type, string Name, string Desc, int Min, int Max, int Reward)[] GetMissionPool();
 
+    /// <summary>
+    /// v2.0.60 (B-D3): Optionales Player-Level für Mission-Filtering. Wird vom Subtyp
+    /// gesetzt damit unerreichbare Missionen (z.B. "Complete 3-Star Levels" auf L10-Account)
+    /// nicht in den Pool aufgenommen werden. Default 1 = kein Gating.
+    /// </summary>
+    protected virtual int CurrentPlayerLevel => 1;
+
+    /// <summary>
+    /// v2.0.60 (B-D3): Returns minimum player level required for this mission type.
+    /// Wird im GenerateMissions-Filter angewendet.
+    /// </summary>
+    protected static int GetMinLevelForMissionType(WeeklyMissionType type) => type switch
+    {
+        // Skill-Missionen brauchen L30+ (3-Star auf Account ohne Sterne-Optimierung unmöglich).
+        WeeklyMissionType.CompleteThreeStar => 30,
+        WeeklyMissionType.NoDamageLevel => 30,
+        WeeklyMissionType.CompleteMutatorLevel => 60,  // Mutator ab Welt 5 (L41+), aber sinnvoll erst ab Welt 7
+        // Endgame-Features brauchen Unlock.
+        WeeklyMissionType.WinBossFights => 10,        // Erster Boss
+        WeeklyMissionType.CompleteDungeonFloors => 20,
+        WeeklyMissionType.UseSpecialBombs => 15,      // Special Bombs unlocked
+        WeeklyMissionType.UpgradeCards => 20,
+        WeeklyMissionType.PlayQuickPlay => 1,
+        WeeklyMissionType.SpinLuckyWheel => 1,
+        // Standard-Missionen ab L1 möglich.
+        _ => 1
+    };
+
     /// <summary>Perioden-ID berechnen (Tag-ID oder Wochen-ID aus dem aktuellen Datum)</summary>
     protected abstract int GetPeriodId(DateTime date);
 
@@ -161,9 +189,20 @@ public abstract class TimedMissionServiceBase
     /// </summary>
     private void GenerateMissions(int periodId)
     {
-        var pool = GetMissionPool();
+        var fullPool = GetMissionPool();
         var rng = new Random(periodId);
         _missions = [];
+
+        // v2.0.60 (B-D3): Pool filtern nach Player-Level. Unerreichbare Missionen
+        // (z.B. "3-Star Level" auf L10-Account) werden ausgeschlossen — sonst frustriert
+        // der Spieler, dass die Belohnung unerreichbar ist.
+        int playerLevel = CurrentPlayerLevel;
+        var pool = fullPool.Where(t => GetMinLevelForMissionType(t.Type) <= playerLevel).ToArray();
+
+        // Falls der Filter zu wenige Missionen übrig lässt, Fallback auf full pool —
+        // gilt vor allem für Neulings-Accounts auf L1-9, die fast nur Standard-Missionen sehen.
+        if (pool.Length < MissionsPerPeriod)
+            pool = fullPool;
 
         // Pool mischen und erste N nehmen
         var indices = Enumerable.Range(0, pool.Length).ToList();

@@ -140,6 +140,23 @@ public sealed class ShopService : IShopService
     }
 
     public float GetScoreMultiplier() => _upgrades.GetScoreMultiplier();
+
+    /// <summary>
+    /// v2.0.60 (B-B5): Liefert den realen CoinBonus-Multiplier basierend auf Upgrade-Level.
+    /// L0 = 1.0 (kein Bonus), L1 = 1.25 (+25%), L2+ = 1.60 (+60%).
+    /// Identisch zur Logik in GameEngine.Level.cs:1618-1627 — Single Source of Truth für UI.
+    /// </summary>
+    public float GetCoinBonusMultiplier()
+    {
+        int level = _upgrades.GetLevel(UpgradeType.CoinBonus);
+        return level switch
+        {
+            0 => 1.0f,
+            1 => 1.25f,
+            _ => 1.60f
+        };
+    }
+
     public int GetTimeBonusMultiplier() => _upgrades.GetTimeBonusMultiplier();
     public int GetStartBombs() => _upgrades.GetStartBombs();
     public int GetStartFire() => _upgrades.GetStartFire();

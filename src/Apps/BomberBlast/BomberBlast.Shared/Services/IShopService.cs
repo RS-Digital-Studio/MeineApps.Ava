@@ -22,6 +22,14 @@ public interface IShopService
     /// <summary>Score-Multiplikator (1.0 / 1.25 / 1.5 / 2.0)</summary>
     float GetScoreMultiplier();
 
+    /// <summary>
+    /// v2.0.60 (B-B5): CoinBonus-Multiplikator (1.0 / 1.25 / 1.60).
+    /// Wird vom Shop-UI als Tooltip auf dem CoinBonus-Upgrade angezeigt, damit Spieler
+    /// vor dem Kauf den realen Bonus-Wert kennen (vorher: nur generisches "+x%" undokumentiert).
+    /// L0 = 1.0, L1 = +25%, L2 = +60%. Wird in GameEngine.Level.cs:1618-1627 angewendet.
+    /// </summary>
+    float GetCoinBonusMultiplier();
+
     /// <summary>Zeitbonus-Multiplikator (10 oder 20)</summary>
     int GetTimeBonusMultiplier();
 

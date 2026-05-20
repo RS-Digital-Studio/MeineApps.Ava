@@ -23,6 +23,24 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
     /// <summary>D7-Reminder soll nur 1x pro 7 Tage gefeuert werden (kein Spam).</summary>
     private static readonly TimeSpan D7Cooldown = TimeSpan.FromDays(7);
 
+    /// <summary>
+    /// v2.0.60 (B-D11): Smart-Timing. Statt "+24h ab jetzt" wird der nächste lokale
+    /// Mittag (12:00 local) verwendet — höhere Engagement-Chance (Lunch-Break)
+    /// statt zufälliger Tageszeit basierend auf Login-Stunde.
+    /// </summary>
+    private static DateTime NextLocalNoon(int daysAhead)
+    {
+        var todayLocal = DateTime.Now.Date;
+        var noonLocal = todayLocal.AddDays(daysAhead).AddHours(12);
+        // Falls schon nach 12:00 → erst nächster Tag (für daysAhead=1).
+        if (daysAhead == 1 && DateTime.Now >= todayLocal.AddHours(12))
+        {
+            noonLocal = noonLocal.AddDays(0); // Bleibt bei +1 Tag
+        }
+        // Konvertiere zu UTC für PushService.
+        return noonLocal.ToUniversalTime();
+    }
+
     public ReEngagementScheduler(
         IPushNotificationService push,
         ILocalizationService localization,
@@ -85,7 +103,9 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
             return;
         }
 
-        var trigger = DateTime.UtcNow.AddHours(24);
+        // v2.0.60 (B-D11): Smart-Timing — Trigger auf lokalen Mittag des nächsten Tages
+        // (statt +24h ab Login). Verpasst nicht den Lunch-Break wenn User 23:59 logged.
+        var trigger = NextLocalNoon(daysAhead: 1);
         var title = _localization.GetString("ReEngagementD1Title")
             ?? "Your daily reward is waiting!";
         var body = _localization.GetString("ReEngagementD1Body")
@@ -110,7 +130,8 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
             return;
         }
 
-        var trigger = DateTime.UtcNow.AddHours(72);
+        // v2.0.60 (B-D11): D3 auf lokalen Mittag in 3 Tagen.
+        var trigger = NextLocalNoon(daysAhead: 3);
         var daysToBpEnd = Math.Max(1, _battlePass.DaysRemaining);
         var titleFormat = _localization.GetString("ReEngagementD3Title")
             ?? "Your Battle Pass ends in {0} days";
@@ -148,7 +169,8 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
             catch { /* Parse-Fehler → planen */ }
         }
 
-        var trigger = DateTime.UtcNow.AddHours(168);  // 7 Tage
+        // v2.0.60 (B-D11): D7 auf lokalen Mittag in 7 Tagen.
+        var trigger = NextLocalNoon(daysAhead: 7);  // 7 Tage
         var title = _localization.GetString("ReEngagementD7Title")
             ?? "We miss you!";
         var body = _localization.GetString("ReEngagementD7Body")

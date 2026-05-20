@@ -59,6 +59,26 @@ public sealed class FeatureUnlockChoreographer : IFeatureUnlockChoreographer
                 Enqueue("boss_rush", "FeatureUnlockBossRushTitle",
                     "FeatureUnlockBossRushDesc", ctaNav: "BossRush");
                 break;
+            // v2.0.60 (B-D12): Zwischenstationen L60-L90 schließen die Mid-Game-Wüste
+            // zwischen L50 (Boss-Rush) und L100 (Master-Mode). Vorher: 50 Level ohne neue
+            // Mechaniken. Jetzt: Trait-Slot-2 (L60), FoW-Marker (L70), Cosmetic-Tier (L80),
+            // Master-Preview (L90) — Spieler hat alle 10 Level eine neue Belohnung.
+            case 60:
+                Enqueue("hero_trait_slot2", "FeatureUnlockTraitSlot2Title",
+                    "FeatureUnlockTraitSlot2Desc");
+                break;
+            case 70:
+                Enqueue("boss_modifier_preview", "FeatureUnlockBossModPreviewTitle",
+                    "FeatureUnlockBossModPreviewDesc");
+                break;
+            case 80:
+                Enqueue("cosmetic_legendary_tier", "FeatureUnlockCosmeticLegendaryTitle",
+                    "FeatureUnlockCosmeticLegendaryDesc");
+                break;
+            case 90:
+                Enqueue("master_mode_preview", "FeatureUnlockMasterPreviewTitle",
+                    "FeatureUnlockMasterPreviewDesc");
+                break;
             case 100:
                 Enqueue("master_mode", "FeatureUnlockMasterModeTitle",
                     "FeatureUnlockMasterModeDesc");

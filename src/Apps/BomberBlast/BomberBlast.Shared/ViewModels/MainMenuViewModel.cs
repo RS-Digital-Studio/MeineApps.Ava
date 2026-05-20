@@ -80,6 +80,17 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [ObservableProperty]
     private int _coinBalance;
 
+    /// <summary>
+    /// v2.0.60 (B-C6): True wenn der Spieler noch im D0-Onboarding ist (HighestCompletedLevel = 0).
+    /// MainView bindet IsVisible der "Modi-Strip" (BossRush/Survival/Dungeon/QuickPlay/DailyChallenge)
+    /// dagegen, sodass Neulinge nur den Play-CTA + die HEUTE-Card sehen.
+    /// Ab L3 ist <see cref="ShouldHideModiStrip"/> false und alle Modi werden sichtbar.
+    /// </summary>
+    public bool ShouldHideModiStrip => _progressService.HighestCompletedLevel < 3;
+
+    /// <summary>v2.0.60 (B-C6): Inverse von ShouldHideModiStrip für XAML-Binding-Ergonomie.</summary>
+    public bool ShouldShowModiStrip => !ShouldHideModiStrip;
+
     [ObservableProperty]
     private string _totalEarnedText = "";
 

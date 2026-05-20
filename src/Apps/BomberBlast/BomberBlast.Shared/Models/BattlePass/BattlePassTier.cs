@@ -67,16 +67,18 @@ public static class BattlePassTierDefinitions
         // Gem-Tiers: 5,10,15,20,25,30
         if (tier % 5 == 0)
         {
-            // Erhöhte Free-Track Gems (gesamt 52 statt 28)
+            // v2.0.60 (B-B8): Free-Gems von gesamt 52→70. Vorher: Casual-Sinks (3× Dungeon
+            // 9G + Slot-5 20G + XP-Boost 20G ≈ 69G) überstiegen BP-Free-Track 52G → Free-User
+            // konnten nicht alle Gem-Optionen ausschöpfen. Jetzt: 5+8+10+12+15+20 = 70G.
             int gemAmount = tier switch
             {
-                5 => 3,
-                10 => 5,
-                15 => 7,
-                20 => 10,
-                25 => 12,
-                30 => 15,
-                _ => 3
+                5 => 5,
+                10 => 8,
+                15 => 10,
+                20 => 12,
+                25 => 15,
+                30 => 20,
+                _ => 5
             };
             return new BattlePassReward
             {

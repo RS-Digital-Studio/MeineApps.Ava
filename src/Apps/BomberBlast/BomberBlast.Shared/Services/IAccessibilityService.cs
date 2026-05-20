@@ -29,6 +29,24 @@ public interface IAccessibilityService
     bool ReducedFlashing { get; set; }
 
     /// <summary>
+    /// v2.0.60 (B-C9): Colorblind-Hint-Anbieten. Wird true wenn der Spieler in L1
+    /// innerhalb von &lt; 10s gestorben ist — heuristisch ein Indikator für sichtbare
+    /// Schwierigkeiten (z.B. unentdeckte Color-Vision-Deficiency). MainMenu zeigt
+    /// dann einen "Sicht-Schwierigkeiten? Try Colorblind-Mode"-Hint.
+    /// </summary>
+    bool ShouldOfferColorblindHint { get; }
+
+    /// <summary>
+    /// v2.0.60 (B-C9): Wird vom GameEngine.GameOver aufgerufen wenn der Spieler in L1
+    /// gestorben ist. Wenn die Spielzeit &lt; 10s war, wird <see cref="ShouldOfferColorblindHint"/>
+    /// auf true gesetzt (one-shot, bis User den Hint dismissed).
+    /// </summary>
+    void RegisterL1Fail(float playTimeSeconds);
+
+    /// <summary>v2.0.60 (B-C9): Dismiss-Hook nach User-Reaktion auf den Hint.</summary>
+    void DismissColorblindHint();
+
+    /// <summary>
     /// Liefert einen SkiaSharp-ColorMatrix passend zum Colorblind-Modus.
     /// Wird im GameRenderer als Post-Processing-Filter verwendet.
     /// Returnt null wenn ColorblindMode == "Off".
@@ -126,6 +144,32 @@ public sealed class AccessibilityService : IAccessibilityService
             _preferences.Set(ReducedFlashingKey, value);
             AccessibilityChanged?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    // v2.0.60 (B-C9): Colorblind-Hint-State.
+    private const string ColorblindHintKey = "Accessibility_ColorblindHintOffered";
+    private const float L1_FAIL_FAST_THRESHOLD_SECONDS = 10f;
+
+    public bool ShouldOfferColorblindHint => _preferences.Get(ColorblindHintKey, false);
+
+    public void RegisterL1Fail(float playTimeSeconds)
+    {
+        // Nur anbieten wenn Colorblind-Mode noch nicht aktiv ist + nicht schon vorher angeboten.
+        if (_colorblindMode != "Off") return;
+        if (ShouldOfferColorblindHint) return;
+        if (playTimeSeconds >= L1_FAIL_FAST_THRESHOLD_SECONDS) return;
+
+        _preferences.Set(ColorblindHintKey, true);
+        AccessibilityChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void DismissColorblindHint()
+    {
+        if (!ShouldOfferColorblindHint) return;
+        // Verbrauchen — kein Re-Trigger. Wenn User später Colorblind aktiviert oder ablehnt,
+        // bleibt das Flag konstant false.
+        _preferences.Set(ColorblindHintKey, false);
+        AccessibilityChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

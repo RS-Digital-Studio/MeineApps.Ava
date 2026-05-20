@@ -178,10 +178,15 @@ public static class DungeonBuffCatalog
     /// <summary>
     /// Buff-Floors: nach welchen Floors eine Buff-Auswahl stattfindet
     /// </summary>
-    public static readonly int[] BuffFloors = [2, 4, 5, 7, 9];
+    // v2.0.60 (B-A22): Buff-Floors für 1-10 + zusätzliche 12, 14 (Endless-Phase 11+).
+    // Vorher: Floor 11+ Skalierung +50% ohne neue Buff-Picks → harter Wall ohne Belohnung.
+    // Jetzt: Floor 12 + Floor 14 als Buff-Floors, damit Spieler im Endless-Modus weiter
+    // build-bauen können. Floor 10 + 15 + 20 sind Boss-Floors (mit Truhe-Reward).
+    public static readonly int[] BuffFloors = [2, 4, 5, 7, 9, 12, 14];
 
     /// <summary>
-    /// Prüft ob nach diesem Floor eine Buff-Auswahl stattfindet
+    /// Prüft ob nach diesem Floor eine Buff-Auswahl stattfindet.
+    /// v2.0.60 (B-A22): Auch in der Endless-Phase (ab Floor 11) gibt es zwei Buff-Floors.
     /// </summary>
     public static bool IsBuffFloor(int floor)
     {

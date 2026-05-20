@@ -178,6 +178,9 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
         }
         catch (Exception ex)
         {
+            // v2.0.60 (B-E4): Corruption-Reporting für CloudSave-Cloud-Bevorzugung.
+            // DeckTelemetry ist nicht kritisch für Coin/Stars-Sicherung, aber konsistent dokumentieren.
+            PersistenceHealth.ReportCorruption(nameof(DeckTelemetryService), ex);
             _logger.LogWarning(ex, "DeckTelemetry Load fehlgeschlagen");
         }
     }

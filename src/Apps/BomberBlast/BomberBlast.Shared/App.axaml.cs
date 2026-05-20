@@ -514,6 +514,11 @@ public partial class App : Application
         services.AddSingleton<IWhatsNewService, WhatsNewService>();
         //.4  — Feature-Unlock-Choreographer (Queue + Pref-Flag).
         services.AddSingleton<IFeatureUnlockChoreographer, FeatureUnlockChoreographer>();
+        // v2.0.60 (B-C1): D0-Modal-Gate — verhindert dass am ersten App-Start mehrere
+        // Modals (DailyReward + WhatsNew + FeatureUnlock) gleichzeitig den Neuling ueberfordern.
+        services.AddSingleton<ID0ModalGate, D0ModalGate>();
+        // v2.0.60 (B-D13): Daily-Achievements — neue Sub-Kategorie mit 3 taeglichen Items.
+        services.AddSingleton<IDailyAchievementsService, DailyAchievementsService>();
         //.2  — Mini-Story-Beats pro Welt (Intro + Outro).
         services.AddSingleton<IWorldStoryService, WorldStoryService>();
         //.1  — Hero/Character-System (5 spielbare Charaktere).

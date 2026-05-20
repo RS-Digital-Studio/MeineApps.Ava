@@ -3308,6 +3308,9 @@
   <data name="Subtitles" xml:space="preserve">
     <value>Sous-titres audio</value>
   </data>
+  <data name="ReducedFlashing" xml:space="preserve">
+    <value>Réduire les flashs (Photosensibilité)</value>
+  </data>
   <data name="DeleteAccount" xml:space="preserve">
     <value>Supprimer le compte</value>
   </data>

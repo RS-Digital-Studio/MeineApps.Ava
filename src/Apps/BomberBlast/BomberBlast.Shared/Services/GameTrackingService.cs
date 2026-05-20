@@ -22,6 +22,9 @@ public sealed class GameTrackingService : IGameTrackingService
     private readonly IPreferencesService _preferences;
     private readonly IMasterModeService _masterMode;
     private readonly ICustomizationService _customization;
+    // v2.0.60 (B-D13): Daily-Achievements werden zusätzlich zu Daily-Missions getrackt
+    // (eigene Sub-Kategorie mit Reset um lokale Mitternacht + 200C Reward pro Item).
+    private readonly IDailyAchievementsService? _dailyAchievements;
 
     // Survival-Meilensteine: Schwelle in Sekunden → (Coins, Gems)
     private static readonly (int Seconds, int Coins, int Gems)[] SurvivalMilestones =
@@ -52,7 +55,8 @@ public sealed class GameTrackingService : IGameTrackingService
         ICoinService coins,
         IPreferencesService preferences,
         IMasterModeService masterMode,
-        ICustomizationService customization)
+        ICustomizationService customization,
+        IDailyAchievementsService? dailyAchievements = null)
     {
         _achievements = achievements;
         _weekly = weekly;
@@ -66,6 +70,7 @@ public sealed class GameTrackingService : IGameTrackingService
         _customization = customization;
         _coins = coins;
         _preferences = preferences;
+        _dailyAchievements = dailyAchievements;
     }
 
     // --- Bomben ---
@@ -93,6 +98,8 @@ public sealed class GameTrackingService : IGameTrackingService
         // Vorher zaehlte jeder x2-Combo, was die Mission trivial machte.
         if (comboCount >= 6) _daily.TrackProgress(WeeklyMissionType.AchieveCombo);
         if (comboCount >= 8) _weekly.TrackProgress(WeeklyMissionType.AchieveCombo);
+        // v2.0.60 (B-D13): Daily-Achievement-Tracking (jeder Combo ab x2 zaehlt).
+        if (comboCount >= 2) _dailyAchievements?.TrackProgress(DailyAchievementType.AchieveCombo);
     }
 
     // --- Items ---
@@ -102,6 +109,8 @@ public sealed class GameTrackingService : IGameTrackingService
         _weekly.TrackProgress(WeeklyMissionType.CollectPowerUps);
         _daily.TrackProgress(WeeklyMissionType.CollectPowerUps);
         _collection.RecordPowerUpCollected(powerUpType);
+        // v2.0.60 (B-D13): Daily-Achievement-Tracking.
+        _dailyAchievements?.TrackProgress(DailyAchievementType.CollectOnePowerUp);
     }
 
     // --- Gegner ---
@@ -113,6 +122,8 @@ public sealed class GameTrackingService : IGameTrackingService
         _collection.RecordEnemyDefeat(type);
         _weekly.TrackProgress(WeeklyMissionType.DefeatEnemies);
         _daily.TrackProgress(WeeklyMissionType.DefeatEnemies);
+        // v2.0.60 (B-D13): Daily-Achievement-Tracking.
+        _dailyAchievements?.TrackProgress(DailyAchievementType.DefeatThreeEnemies);
         if (isSurvival)
         {
             _weekly.TrackProgress(WeeklyMissionType.SurvivalKills);

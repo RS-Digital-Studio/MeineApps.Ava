@@ -3734,6 +3734,9 @@
   <data name="Subtitles" xml:space="preserve">
     <value>Legendas de áudio</value>
   </data>
+  <data name="ReducedFlashing" xml:space="preserve">
+    <value>Reduzir piscadas (Fotossensibilidade)</value>
+  </data>
   <data name="DeleteAccount" xml:space="preserve">
     <value>Excluir conta</value>
   </data>

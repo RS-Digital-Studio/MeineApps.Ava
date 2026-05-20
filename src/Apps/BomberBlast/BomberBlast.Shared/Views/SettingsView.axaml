@@ -482,6 +482,21 @@
                               OnContent="" OffContent=""
                               IsChecked="{Binding SubtitlesEnabled}" />
               </Grid>
+
+              <!-- v2.0.60 (B-C10 / WCAG 2.1): Photosensitivity-Toggle -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock AutomationProperties.AutomationId="Settings_TxtReducedFlashing"
+                           AutomationProperties.Name="{loc:Translate ReducedFlashing}"
+                           Text="{loc:Translate ReducedFlashing}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleReducedFlashing"
+                              AutomationProperties.Name="{loc:Translate ReducedFlashing}"
+                              Grid.Column="1"
+                              OnContent="" OffContent=""
+                              IsChecked="{Binding ReducedFlashing}" />
+              </Grid>
             </StackPanel>
           </Border>
 

@@ -83,6 +83,13 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     [ObservableProperty]
     private bool _subtitlesEnabled;
 
+    /// <summary>
+    /// v2.0.60 (B-C10 / WCAG 2.1): Photosensitivity-Schutz. Drosselt hochfrequente
+    /// Pulse-/Blitz-Effekte (Combo-Pulse 12 Hz, UltraComboFlash, Damage-Flash).
+    /// </summary>
+    [ObservableProperty]
+    private bool _reducedFlashing;
+
     /// <summary>UI-Skalierung 0.75/1.0/1.25/1.5</summary>
     [ObservableProperty]
     private double _uiScale = 1.0;
@@ -399,6 +406,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         HighContrast = _accessibilityService.HighContrast;
         UiScale = _accessibilityService.UiScale;
         SubtitlesEnabled = _accessibilityService.SubtitlesEnabled;
+        // v2.0.60 (B-C10): Photosensitivity-Toggle laden.
+        ReducedFlashing = _accessibilityService.ReducedFlashing;
 
         // Performance (v2.0.44)
         UseHighFrameRate = GameLoopSettings.TargetFps == GameLoopSettings.FrameRate60;
@@ -468,6 +477,17 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
         {
             ["feature"] = "subtitles",
+            ["value"] = value ? 1 : 0,
+        });
+    }
+
+    partial void OnReducedFlashingChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _accessibilityService.ReducedFlashing = value;
+        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
+        {
+            ["feature"] = "reduced_flashing",
             ["value"] = value ? 1 : 0,
         });
     }

@@ -1664,6 +1664,17 @@ public sealed partial class GameEngine : IDisposable
                 try { _currentMode?.OnGameOver(BuildModeContext()); }
                 catch { /* Best-Effort, no-op-Default in GameModeBase */ }
 
+                // v2.0.60 (B-C9): L1-Fail < 10s triggert Colorblind-Hint. Heuristik für
+                // unentdeckte Color-Vision-Deficiency — MainMenu zeigt dann den Hint.
+                // Nur regulärer Story-Mode (kein Daily/Survival/QuickPlay/Dungeon/BossRush/Race).
+                bool isStoryFail = _currentLevelNumber == 1
+                    && !_isDailyChallenge && !_isSurvivalMode && !_isQuickPlayMode
+                    && !_isDungeonRun && !_isBossRushMode && !_isDailyRace;
+                if (isStoryFail)
+                {
+                    _accessibility?.RegisterL1Fail(_levelElapsedSeconds);
+                }
+
                 // Phase 21 (V4) — Defeat-Stinger
                 _soundManager.PlayStinger(SoundManager.STINGER_DEFEAT);
 

@@ -489,7 +489,7 @@ ab Floor 11 +50% Skalierung.
 V1 → V2: master_mode_status_v1, master_mode_active, deck_telemetry_v1, LoadoutData,
           BossRushData, DungeonStatsData als Defaults aufgefüllt
 V2 → V3: Accessibility_ColorblindMode, HighContrast, UiScale, Subtitles,
-          TargetFrameRate, AnalyticsConsent, CrashlyticsConsent als Defaults (Off/false/30fps)
+          TargetFrameRate, AnalyticsConsent als Defaults (Off/false/30fps)
 ```
 
 `CloudSaveSchemaMigrator.CurrentSchemaVersion = 3`.
@@ -693,8 +693,8 @@ Verhindert auf Android das ZIndex-Hit-Test-Problem (Taps gehen durch Overlay dur
 ### Firebase-REST-Sicherheit
 
 - **Bearer-Header statt URL-Query**: `FirebaseService.BuildAuthenticatedRequest()` setzt
-  `Authorization: Bearer <token>` als Header. Verhindert Token-Leak in Proxy-Logs, Crashlytics-
-  Stacktraces und Firebase-Audit-Logs.
+  `Authorization: Bearer <token>` als Header. Verhindert Token-Leak in Proxy-Logs und
+  Firebase-Audit-Logs.
 - **ServerValue.TIMESTAMP**: `LeagueService` + `FirebaseClanService.SendChatAsync` verwenden
   die Firebase-Sentinel-Konstante `Dictionary<string,string> { [".sv"] = "timestamp" }` statt
   Client-`DateTime.UtcNow` — verhindert Rate-Limit-/Reihenfolge-Spoofing.
@@ -823,7 +823,8 @@ Filter gecacht, nur bei Modus-Wechsel neu erzeugt (kein per-Frame-Allocation).
 
 **UiScale**: 17 `_overlayFont.Size = X`-Stellen mit `_overlayUiScale`-Multiplikator.
 **HighContrast für Floating-Text**: `_outlinePaint.StrokeWidth` 2× bei aktiv.
-**Privacy-Sektion in Settings**: 2 ToggleSwitches (CrashlyticsConsent + AnalyticsConsent).
+**Privacy-Sektion in Settings**: AnalyticsConsent-Toggle bleibt persistiert (kein aktives Backend,
+Toggle wird beim Andocken eines kuenftigen Providers ausgewertet).
 
 ### Fog of War (`FogOfWarSystem.cs`)
 
@@ -838,26 +839,22 @@ Update 1× pro Frame in `GameEngine.Update`. Render-RLE: Zusammenhängende gleic
 Zellen pro Zeile gemerged → ~150 DrawCalls → ~30 DrawCalls.
 Position-Cache: Update-Pass wird übersprungen wenn Grid-Position seit letztem Frame unverändert.
 
-### Telemetrie / DSGVO
+### Firebase-Integration
 
-**FPS-Bucket**: `GameEngine.Render` 5-Sekunden-Frame-Tick-Buffer, alle 5s FPS-Bucket
-(15/30/45/60+) via `ITelemetryService.SetFpsBucket`. Game-Mode + Level als Custom-Keys.
+Aktiver Stack: Cloud Messaging (FCM) + Remote Config + Realtime Database (Liga/Cloud-Save).
+Crashlytics + Analytics wurden ausgebaut — keine Crash-/Funnel-Telemetrie mehr (FirebaseInitProvider
+crasht ohne Crashlytics-Gradle-Plugin, und Single-App-Nutzung den Analytics-Aufwand nicht wert).
 
-**Memory-Telemetrie**: `GC.GetTotalMemory(false)` alle 60s auf Background-Thread via `Task.Run`.
-Setzt Crashlytics-Custom-Keys `memory_mb`, `gc_gen0/1/2` für Crash-Filterung nach Memory-Pressure.
-
-**Firebase-Integration aktiv ab v2.0.56**:
-
-- `AndroidTelemetryService` ruft `Firebase.Crashlytics.FirebaseCrashlytics.Instance` — `SetCrashlyticsCollectionEnabled` braucht `Java.Lang.Boolean.True` (Java-Binding-Quirk), .NET-Exception wird via `new Java.Lang.Throwable($"...")` in eine Java-Throwable gewrappt. User-ID = SHA256-Hash der `Android.Provider.Settings.Secure.ANDROID_ID` (DSGVO-konform, nicht reversibel auf User-Identitaet).
-- `AndroidAnalyticsService` ruft `Firebase.Analytics.FirebaseAnalytics.GetInstance(context)`. `LogEvent` konvertiert `IReadOnlyDictionary<string,object>` zu `Android.OS.Bundle` (PutString/PutInt/PutLong/PutDouble/PutFloat; bool → 1/0). Consent-Check via `IPreferencesService.Get("AnalyticsConsent", false)`.
 - `AndroidPushNotificationService` braucht `Activity`-Referenz (RequestPermissions auf Android 13+). FCM-Token via `FirebaseMessaging.Instance.GetToken()` + `Android.Gms.Tasks.IOnCompleteListener`. Permission-Resolution via `TaskCompletionSource`, das `MainActivity.OnRequestPermissionsResult` aufloest. AlarmManager mit `SetExactAndAllowWhileIdle` (Android 12+ Fallback: `SetAndAllowWhileIdle` wenn `CanScheduleExactAlarms() == false`).
 - `BomberBlastMessagingService` (FirebaseMessagingService-Subclass, im Manifest unter `org.rsdigital.bomberblast.BomberBlastMessagingService`): OnNewToken → `AndroidPushNotificationService.RaiseTokenRefresh()` (internal static, weil Events nur in der Definitions-Klasse gefeuert werden koennen). OnMessageReceived ignoriert Notification-Payload (System zeigt), behandelt nur Data-Payload (eigene Notification.Builder).
 - `NotificationReceiver` (BroadcastReceiver) postet Local-Notifications mit `Notification.BigTextStyle` aus AlarmManager-PendingIntent-Extras.
 - 3 Notification-Channels: `bomberblast_daily` (Low), `bomberblast_liveops` (Default, Manifest-Default), `bomberblast_important` (High mit Vibration).
+- `FirebaseRemoteConfigService` (Android-Override von `DefaultsRemoteConfigService`): Live-Tuning ohne App-Update.
+- `FirebaseService` + `LeagueService`: Anonymous-Auth + Realtime-Database-Zugriff fuer Liga / Daily-Race / Clans.
+- `CloudSaveService`: 35 Persistenz-Keys, Local-First + Push-Debounce 5s, Konflikt-Resolution per TotalStars/Wealth/Cards/Timestamp.
 
-NuGet-Versionen (BOM 33.5-konform): `Xamarin.Firebase.Crashlytics 119.4.4` + `Xamarin.Firebase.Analytics 123.2.0` (musste auf 123.x weil Measurement-Base 123.x transitiv aus Ads.Lite 124.x kommt — sonst R8-Dexer-Crash an `zzov`-Duplicate) + `Xamarin.Firebase.Messaging 124.1.2`. Tasks-Paket kommt transitiv.
-
-Setup-Anleitung: `src/Apps/BomberBlast/FIREBASE_SETUP.md`.
+NuGet (BOM 33.5-konform): `Xamarin.Firebase.Messaging 124.1.2` + `Xamarin.Firebase.Config 123.0.1.2`.
+Tasks kommt transitiv. Analytics-Familie bleibt aus dem Build raus (Measurement-Base 123.x kaeme transitiv via Ads.Lite 124.x, ist aber ohne `Xamarin.Firebase.Analytics` nicht im Dexer-Schritt).
 
 ---
 
@@ -1047,24 +1044,13 @@ Performance: ~2x DrawCalls pro Outline-Entity → empfohlen fuer 5-10 Entities p
 
 `RemoteConfigKeys` (statische Klasse): 23 vordefinierte Keys fuer
 Event-Toggles / Drop-Raten / Preise / Combat-Tuning / Live-Ops.
-Initialisierung im App.axaml.cs `InitializeServicesAndUi()` parallel zu Telemetry/Push.
+Initialisierung im App.axaml.cs `InitializeServicesAndUi()` parallel zu Push.
 
-### Funnel-Event-Telemetrie 
+### Funnel-Telemetrie
 
-Erweiterte `AnalyticsEvents`-Konstanten (40+ Funnel-Events) + `AnalyticsParams`-Konstanten
-(Tipp-sicheres Param-Handling fuer Firebase-Dashboards).
-
-Verkabelte Events:
-- `level_start` / `level_complete` / `level_failed` (mit time_ms, stars, deaths, cause)
-- `boss_encounter` / `boss_defeated` (boss_type, time_ms, damage_taken)
-- `combo_tier_reached` (tier=5/10) bei MEGA + ULTRA
-- `tutorial_step_complete` / `tutorial_complete` via TutorialService.StepCompleted-Event
-- `daily_login` (consecutive_days, day, multiplier) in MainMenuVM.ApplyDailyReward
-- `rewarded_ad_request` / `rewarded_ad_completed` via `ShowAdWithTelemetryAsync` Extension
-- `feature_unlocked` via FeatureUnlockChoreographer 
-
-GameEngine-Felder: `_levelElapsedSeconds` (tickt nur in Playing-State), `_deathsInLevel`
-(reset bei Level-Start, +1 bei jedem Player-Tod). Beide nullified in LoadLevelAsync().
+Aktuell keine — Firebase Crashlytics + Analytics wurden ausgebaut. GameEngine-Felder
+`_levelElapsedSeconds` (tickt nur in Playing-State) und `_deathsInLevel` bleiben erfasst
+(in LoadLevelAsync genullified), damit ein kuenftiger Analytics-Provider sie direkt nutzen kann.
 
 ### Re-Engagement Push 
 
@@ -1099,29 +1085,18 @@ Unlock-Schwellen: L10 → DailyChallenge, L20 → Dungeon, L30 → LineBomb,
 L40 → PowerBomb, L50 → BossRush, L100 → MasterMode. ach_master_100 → ChampionSkin.
 
 Pref-Flag pro `FeatureId`: jedes Feature wird nur einmal pro Lebenszeit gezeigt.
-Logged Funnel-Event `feature_unlocked` . UI-Thread-Event
-`FeatureUnlocked` mit `FeatureUnlockEvent` (TitleKey/DescKey/HeroAssetPath/CtaNavTarget).
+UI-Thread-Event `FeatureUnlocked` mit `FeatureUnlockEvent` (TitleKey/DescKey/HeroAssetPath/CtaNavTarget).
 
 ---
 
-## Logging-Pattern (Welle 6 — voll auf Microsoft.Extensions.Logging)
+## Logging-Pattern (Microsoft.Extensions.Logging)
 
-Alle Services, Engine-Klassen und ViewModels nutzen `ILogger<T>` per Constructor Injection
-(`IAppLogger`/`AppLogger`-Fassade ist entfernt). Die `LoggerFactory` haengt drei eigene
-Provider an (Code-only, keine NuGet-Sinks):
+Alle Services, Engine-Klassen und ViewModels nutzen `ILogger<T>` per Constructor Injection.
+Die `LoggerFactory` haengt zwei eigene Provider an (Code-only, keine NuGet-Sinks):
 
 - `Services.Logging.TraceLoggerProvider` — LogCat auf Android, Debug-Output auf Desktop
 - `Services.Logging.FileLoggerProvider` — rollende Log-Datei `{LocalAppData}/BomberBlast/logs/app.log`
   (512 KB Cap, 1 Backup). Ueberlebt App-Crashes.
-- `Services.Logging.CrashlyticsLoggerProvider` — Bridge zu `ITelemetryService`:
-  - `LogError(ex, msg)` → `telemetry.LogNonFatal(ex, ctx)` (non-fatal Crash-Report mit Stack-Trace)
-  - `LogWarning` / `LogError` ohne Exception → `telemetry.Log(...)` (Breadcrumb)
-  - `LogInformation` → Breadcrumb nur im DEBUG-Build (Quota fuer Warnings/Errors reservieren)
-  - `Trace`/`Debug`-Eintraege werden in Crashlytics nie weitergegeben (Noise-Schutz)
-
-`ITelemetryService` wird im `CrashlyticsLoggerProvider` lazy via `IServiceProvider` aufgeloest —
-verhindert Zirkularitaeten waehrend der DI-Aufbauphase. Bei fehlendem Telemetry-Service bleibt
-der Bridge inaktiv, Trace + File loggen unabhaengig weiter.
 
 Build-Filtering: `LogLevel.Trace` im DEBUG, `LogLevel.Information` im Release
 (`SetMinimumLevel` in `LoggerFactory.Create`).
@@ -1131,8 +1106,8 @@ Build-Filtering: `LogLevel.Trace` im DEBUG, `LogLevel.Information` im Release
 `GetRequiredService<ILogger<ShaderEffects>>()`, `PersistenceHealth` (static class)
 ueber `ILoggerFactory.CreateLogger(nameof(PersistenceHealth))`.
 
-**Strukturierte Logs**: Templates statt String-Interpolation verwenden, damit Crashlytics
-+ File-Logs aussagekraeftige Custom-Keys bekommen.
+**Strukturierte Logs**: Templates statt String-Interpolation verwenden, damit File-Logs
+und ein kuenftiger Telemetrie-Provider strukturierte Felder bekommen.
 - Falsch: `_logger.LogError($"Fehler bei Route '{route}'", ex)`
 - Richtig: `_logger.LogError(ex, "Fehler bei Route '{Route}'", route)`
 
@@ -1373,7 +1348,7 @@ gehalten werden (sonst zeigt Splash eine andere Version als die installierte App
 
 | Service | Zweck |
 |---------|-------|
-| `ILogger<T>` (M.E.L.) | Standard Logging — drei Provider (Trace/File/Crashlytics), siehe Logging-Pattern oben |
+| `ILogger<T>` (M.E.L.) | Standard Logging — zwei Provider (Trace/File), siehe Logging-Pattern oben |
 | `ISoundService` | Audio (Pitch/Pan-Variation, räumliches Audio) |
 | `IProgressService` | Level-Fortschritt, Sterne, Fail-Counter, World-Gating |
 | `IHighScoreService` | Top-10 Scores (sqlite-net-pcl) |
@@ -1412,8 +1387,6 @@ gehalten werden (sonst zeigt Splash eine andere Version als die installierte App
 | `IGameTrackingService` | Session-Tracking, Spielzeit, Game-Events für Analytics |
 | `IStarterPackService` | Starter-Pack-Angebot (Einmal-Kauf, erstes Start-Fenster) |
 | `IReviewService` | Google In-App Review API (Trigger nach Meilenstein) |
-| `ITelemetryService` | Crashlytics-Wrapper (NullTelemetryService auf Desktop) |
-| `IAnalyticsService` | Firebase Analytics (NullAnalyticsService auf Desktop) |
 | `IPushNotificationService` | FCM + AlarmManager (NullPushNotificationService auf Desktop) |
 | `IRemoteConfigService` | Remote Config (DefaultsRemoteConfigService laedt embedded JSON.1) |
 | `IReEngagementScheduler` | D1/D3/D7 lokale Push-Trigger (.3, MainActivity-OnPause/OnResume) |
@@ -1508,6 +1481,4 @@ Keine `SKPaint.TextSize/TextAlign/FakeBoldText` mehr (deprecated).
   Reports + Clans). Deployt via `firebase.bomberblast.json` (Repo-Root) auf Projekt `bomberblast-league`.
   Firebase-CLI verlangt dass `firebase.json` + Rules-Datei im selben Verzeichnis liegen — daher beide
   im Repo-Root, nicht im App-Ordner.
-- `src/Apps/BomberBlast/FIREBASE_SETUP.md`: Crashlytics/Analytics/FCM-Setup-Anleitung (~1.5h)
-- `src/Apps/BomberBlast/BOMBERBLAST_AAA_AUDIT.md`: Externer -Katalog (Roadmap-Referenz)
 - `tests/BomberBlast.Tests/`: 643 Tests (xUnit)

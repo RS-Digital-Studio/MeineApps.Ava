@@ -23,8 +23,6 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     private readonly ICoinService _coinService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
-    private readonly IAnalyticsService _analytics;
     private readonly IMasterModeService _masterModeService;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -115,15 +113,13 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         IRewardedAdService rewardedAdService,
         IMasterModeService masterModeService,
         ILoadoutService loadoutService,
-        IGemService gemService,
-        IAnalyticsService analytics)
+        IGemService gemService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
         _coinService = coinService;
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
-        _analytics = analytics;
         _masterModeService = masterModeService;
         _loadoutService = loadoutService;
         _gemService = gemService;
@@ -156,12 +152,6 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         // während des Toggle den Service abfragen.
         _masterModeService.IsActive = !_masterModeService.IsActive;
         IsMasterModeActive = _masterModeService.IsActive;
-
-        // Welle 2 v2.0.58 : Funnel-Tracking — Master-Mode-Aktivierung.
-        _analytics.LogEvent(AnalyticsEvents.MasterModeToggle, new Dictionary<string, object>
-        {
-            ["active"] = _masterModeService.IsActive ? 1 : 0,
-        });
 
         // Level-Liste neu laden damit Thumbnails Master-Sterne zeigen
         OnAppearing();
@@ -433,7 +423,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         }
 
         // Free: Rewarded Ad
-        var success = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "power_up");
+        var success = await _rewardedAdService.ShowAdAsync("power_up");
         if (success)
         {
             RewardedAdCooldownTracker.RecordAdShown();

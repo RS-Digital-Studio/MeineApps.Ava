@@ -91,7 +91,6 @@ public sealed class ChildViewModelRegistry : IChildViewModelRegistry
     // ─── Cross-cutting Services ──────────────────────────────────────────────
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
-    private readonly IAnalyticsService _analytics;
     private readonly ILocalizationService _localization;
     private readonly IGameEventBus _eventBus;
     private readonly IDialogPresenter _dialogPresenter;
@@ -138,7 +137,6 @@ public sealed class ChildViewModelRegistry : IChildViewModelRegistry
         // Services
         _rewardedAdService = deps.RewardedAdService;
         _purchaseService = deps.PurchaseService;
-        _analytics = deps.Analytics;
         _localization = deps.Localization;
         _eventBus = deps.EventBus;
         _dialogPresenter = dialogPresenter;
@@ -209,7 +207,7 @@ public sealed class ChildViewModelRegistry : IChildViewModelRegistry
         // Rewarded Ad fuer Dungeon-Run (Cooldown-Tracker recorded den letzten Ad-Anzeige-Zeitpunkt).
         vm.AdRunRequested += async () =>
         {
-            var result = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "dungeon_run");
+            var result = await _rewardedAdService.ShowAdAsync("dungeon_run");
             if (result)
             {
                 RewardedAdCooldownTracker.RecordAdShown();
@@ -233,29 +231,12 @@ public sealed class ChildViewModelRegistry : IChildViewModelRegistry
         if (_battlePassVm is { } existing) return existing;
         var vm = _battlePassVmLazy.Value;
         WireCommon(vm);
-        // Battle-Pass-Premium-Kauf inkl. Analytics-Funnel.
+        // Battle-Pass-Premium-Kauf (Analytics-Funnel ehemals via IAnalyticsService — deaktiviert).
         vm.PremiumPurchaseRequested += async () =>
         {
-            _analytics?.LogEvent(AnalyticsEvents.PurchaseFlowStart, new Dictionary<string, object>
-            {
-                [AnalyticsParams.Sku] = "battle_pass_premium",
-            });
             var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_premium");
             if (success)
-            {
-                _analytics?.LogEvent(AnalyticsEvents.PurchaseSuccess, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.Sku] = "battle_pass_premium",
-                });
                 vm.OnPremiumPurchaseConfirmed();
-            }
-            else
-            {
-                _analytics?.LogEvent(AnalyticsEvents.PurchaseFail, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.Sku] = "battle_pass_premium",
-                });
-            }
         };
         _battlePassVm = vm;
         VmInstantiated?.Invoke(nameof(BattlePassVm));

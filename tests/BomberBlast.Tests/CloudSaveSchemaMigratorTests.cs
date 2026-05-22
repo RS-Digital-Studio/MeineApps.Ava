@@ -177,7 +177,6 @@ public class CloudSaveSchemaMigratorTests
         data.Keys["master_mode_active"].Should().Be("true", "Bestand-Keys bleiben unverändert");
         data.Keys["Accessibility_ColorblindMode"].Should().Be("Off");
         data.Keys["AnalyticsConsent"].Should().Be("false", "DSGVO: Consent default false");
-        data.Keys["CrashlyticsConsent"].Should().Be("false");
         data.Keys["TargetFrameRate"].Should().Be("30", "Default 30 FPS Battery-Mode");
     }
 

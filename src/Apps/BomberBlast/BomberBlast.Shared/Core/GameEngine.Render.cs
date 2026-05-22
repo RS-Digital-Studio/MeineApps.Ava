@@ -388,8 +388,9 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
-    /// v2.0.45 — Frame-Time-Tracking: pro Render-Aufruf wird ein Tick-Sample gepusht,
-    /// alle ~5s wird der Avg-FPS auf einen Bucket gerundet und an Telemetry geschickt.
+    /// Frame-Time-Tracking-Hook: pro Render-Aufruf wird ein Tick-Sample fuer die Ring-Buffer
+    /// gepusht. FPS-Bucket + Memory-Sampling wurden zusammen mit dem Crashlytics-Backend
+    /// entfernt — die Sample-Erfassung bleibt als Hook fuer kuenftige Telemetrie-Provider.
     /// </summary>
     private void TrackFrameSample()
     {
@@ -399,54 +400,6 @@ public sealed partial class GameEngine
         // Älter als 5s entfernen
         while (_fpsFrameTicks.Count > 0 && now - _fpsFrameTicks.Peek() > FpsReportIntervalTicks)
             _fpsFrameTicks.Dequeue();
-
-        // Alle 5s reporten
-        if (now - _lastFpsReportTicks > FpsReportIntervalTicks && _fpsFrameTicks.Count > 10)
-        {
-            _lastFpsReportTicks = now;
-            float seconds = (now - _fpsFrameTicks.Peek()) / (float)TimeSpan.TicksPerSecond;
-            int fps = seconds > 0.1f ? (int)(_fpsFrameTicks.Count / seconds) : 0;
-
-            // Bucket: 15 / 30 / 45 / 60+
-            int bucket = fps switch
-            {
-                < 22 => 15,
-                < 37 => 30,
-                < 52 => 45,
-                _ => 60
-            };
-            _telemetry?.SetFpsBucket(bucket);
-            _telemetry?.SetCustomKey("game_mode", GetCurrentModeTag());
-            _telemetry?.SetCustomKey("level", _currentLevelNumber);
-        }
-
-        // v2.0.55 — Phase 15 P1-Fix: Memory-Sampling auf Background-Thread + 60s-Intervall.
-        // Vorher (UI-Thread, 30s): GC.GetTotalMemory(false) auf Mono-AOT-Android = 1-5ms Heap-Walk-Spike.
-        // Telemetry.SetCustomKey-Setter sind in Crashlytics thread-safe.
-        if (now - _lastMemoryReportTicks > MemoryReportIntervalTicks)
-        {
-            _lastMemoryReportTicks = now;
-            var localTelemetry = _telemetry;
-            if (localTelemetry != null)
-            {
-                _ = Task.Run(() =>
-                {
-                    try
-                    {
-                        long heapBytes = GC.GetTotalMemory(forceFullCollection: false);
-                        int memoryMb = (int)(heapBytes / (1024 * 1024));
-                        localTelemetry.SetCustomKey("memory_mb", memoryMb);
-                        localTelemetry.SetCustomKey("gc_gen0", GC.CollectionCount(0));
-                        localTelemetry.SetCustomKey("gc_gen1", GC.CollectionCount(1));
-                        localTelemetry.SetCustomKey("gc_gen2", GC.CollectionCount(2));
-                    }
-                    catch
-                    {
-                        // GC-API ist auf manchen AOT-Profilen restricted — silently fail
-                    }
-                });
-            }
-        }
     }
 
     private void RenderStateOverlay(SKCanvas canvas, float screenWidth, float screenHeight)

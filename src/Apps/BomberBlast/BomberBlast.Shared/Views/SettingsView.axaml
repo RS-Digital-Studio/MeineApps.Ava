@@ -834,20 +834,6 @@
               </StackPanel>
 
               <Grid ColumnDefinitions="*,Auto">
-                <TextBlock AutomationProperties.AutomationId="Settings_TxtCrashlyticsConsent"
-                           AutomationProperties.Name="{loc:Translate CrashlyticsConsent}"
-                           Text="{loc:Translate CrashlyticsConsent}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           VerticalAlignment="Center" />
-                <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleCrashlytics"
-                              AutomationProperties.Name="{loc:Translate CrashlyticsConsent}"
-                              Grid.Column="1"
-                              OnContent="" OffContent=""
-                              IsChecked="{Binding CrashlyticsConsent}" />
-              </Grid>
-
-              <Grid ColumnDefinitions="*,Auto">
                 <TextBlock AutomationProperties.AutomationId="Settings_TxtAnalyticsConsent"
                            AutomationProperties.Name="{loc:Translate AnalyticsConsent}"
                            Text="{loc:Translate AnalyticsConsent}"

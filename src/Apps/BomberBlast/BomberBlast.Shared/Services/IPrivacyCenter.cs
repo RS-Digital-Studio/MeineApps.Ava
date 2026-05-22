@@ -1,13 +1,10 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Privacy-Center (Phase 25b — Compliance).
+/// Privacy-Center (DSGVO/COPPA-Compliance).
 ///
-/// <para>Zentralisiert ALLE DSGVO-relevanten Toggles in einem Service. Vorher waren die
-/// Settings auf SettingsViewModel + IAccessibilityService verteilt (CrashlyticsConsent,
-/// AnalyticsConsent direkt via Preferences). Hier:</para>
-///
-/// <para>EU DSA Art. 15-22 + DSGVO Art. 6/7: Spieler hat Recht auf:</para>
+/// <para>Zentralisiert alle DSGVO-relevanten Toggles in einem Service. EU DSA Art. 15-22 +
+/// DSGVO Art. 6/7: Spieler hat Recht auf:</para>
 /// <list type="bullet">
 ///   <item>Information über Verarbeitung (Privacy-Center zeigt aktive Datenflüsse).</item>
 ///   <item>Widerruf der Einwilligung jederzeit (alle Toggles).</item>
@@ -22,10 +19,8 @@ public interface IPrivacyCenter
 {
     // === Consent-Toggles ===
 
-    /// <summary>Crashlytics-Berichte (Crash-Daten an Firebase senden).</summary>
-    bool CrashlyticsConsent { get; set; }
-
-    /// <summary>Analytics-Events (Funnel-Tracking an Firebase senden).</summary>
+    /// <summary>Analytics-Events (Funnel-Tracking). Aktuell ohne Backend — der Toggle bleibt
+    /// fuer kuenftige Provider als persistierter User-Wert erhalten.</summary>
     bool AnalyticsConsent { get; set; }
 
     /// <summary>Personalisierte Werbung (Behavioral-Targeting via AdMob).</summary>

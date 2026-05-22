@@ -93,7 +93,6 @@ public sealed class CloudSaveService : ICloudSaveService
         "Accessibility_Subtitles",
         "TargetFrameRate",
         "AnalyticsConsent",
-        "CrashlyticsConsent",
 
         // Phase 23 (M5) — First-Time-Purchase-Bonus muss über Geräte-Wechsel synchen,
         // sonst kann ein Spieler den Bonus durch App-Reinstall mehrfach einlösen (Exploit-Schutz).

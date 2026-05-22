@@ -7,8 +7,8 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für 8 konkrete IGameMode-Klassen (v2.0.49 — Phase 6, Mode-Plugin-Framework ).
-/// Validiert ModeTag-Konstanten (unique + AnalyticsEvents-konsistent), default-no-op-Verhalten der Hooks,
+/// Tests für 8 konkrete IGameMode-Klassen (Mode-Plugin-Framework).
+/// Validiert ModeTag-Konstanten (unique), default-no-op-Verhalten der Hooks,
 /// Mode-spezifische State-Properties.
 /// </summary>
 public class GameModesTests

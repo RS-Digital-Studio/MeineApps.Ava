@@ -60,5 +60,4 @@ public sealed record MainViewModelDependencies(
     IAchievementService AchievementService,
     IGameEventBus EventBus,
     IWhatsNewService WhatsNewService,
-    IAnalyticsService Analytics,
     IDialogPresenter DialogPresenter);

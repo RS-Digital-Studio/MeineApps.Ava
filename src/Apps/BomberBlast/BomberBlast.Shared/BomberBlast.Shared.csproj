@@ -5,7 +5,7 @@
     <RootNamespace>BomberBlast</RootNamespace>
     <!-- WICHTIG: Bei jedem Release synchron mit ApplicationDisplayVersion in BomberBlast.Android.csproj halten.
          Splash-Screen liest diese Version automatisch aus Assembly.GetName().Version (.4a ). -->
-    <Version>2.0.59</Version>
+    <Version>2.0.60</Version>
   </PropertyGroup>
 
   <ItemGroup>

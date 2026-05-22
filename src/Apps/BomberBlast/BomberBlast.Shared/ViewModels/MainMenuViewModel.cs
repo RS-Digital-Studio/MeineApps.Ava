@@ -43,8 +43,6 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     private readonly IAchievementService _achievementService;
     private readonly ICollectionService _collectionService;
     private readonly ICardService _cardService;
-    /// <summary>.2 : Funnel-Telemetrie fuer Daily-Login + Shop-Open Events.</summary>
-    private readonly IAnalyticsService _analytics;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -221,9 +219,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         ILuckySpinService luckySpinService, IRotatingDealsService rotatingDealsService,
         IBossRushService bossRushService, ICustomizationService customizationService,
         IMasterModeService masterModeService, IAchievementService achievementService,
-        ICollectionService collectionService, ICardService cardService,
-        //.2 : Funnel-Telemetrie
-        IAnalyticsService analytics)
+        ICollectionService collectionService, ICardService cardService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
@@ -249,7 +245,6 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         _achievementService = achievementService;
         _collectionService = collectionService;
         _cardService = cardService;
-        _analytics = analytics;
 
         // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
@@ -577,7 +572,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
             return;
         }
 
-        var adSuccess = await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "double_daily_reward");
+        var adSuccess = await _rewardedAdService.ShowAdAsync("double_daily_reward");
         if (adSuccess)
         {
             RewardedAdCooldownTracker.RecordAdShown();
@@ -610,13 +605,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         _battlePassService.AddXp(BattlePassXpSources.DailyLogin, "daily_login");
         _leagueService.AddPoints(5);
 
-        //.2 : Funnel-Event daily_login mit Streak-Counter.
-        _analytics?.LogEvent(AnalyticsEvents.DailyLogin, new Dictionary<string, object>
-        {
-            [AnalyticsParams.ConsecutiveDays] = _dailyRewardService.CurrentStreak,
-            ["day"] = reward.Day,
-            ["multiplier"] = multiplier,
-        });
+        // Daily-Login-Funnel ehemals via IAnalyticsService — Analytics ist deaktiviert.
 
         var dayText = string.Format(
             _localizationService.GetString("DailyRewardDay") ?? "Day {0}",
@@ -701,11 +690,6 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [RelayCommand]
     private void Settings()
     {
-        // Welle 2 v2.0.58 : Funnel-Tracking — Settings-Entry.
-        _analytics?.LogEvent(AnalyticsEvents.SettingsOpen, new Dictionary<string, object>
-        {
-            [AnalyticsParams.EntryPoint] = "main_menu",
-        });
         NavigationRequested?.Invoke(new GoSettings());
     }
 

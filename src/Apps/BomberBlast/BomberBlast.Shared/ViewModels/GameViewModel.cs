@@ -26,8 +26,6 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
 
     private readonly GameEngine _gameEngine;
     private readonly IRewardedAdService _rewardedAdService;
-    /// <summary>.2 : Funnel-Telemetrie fuer Rewarded-Ad-Placements.</summary>
-    private readonly IAnalyticsService _analytics;
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
     private readonly IProgressService _progressService;
@@ -153,14 +151,12 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IGameAssetService assetService,
         ILogger<GameViewModel> logger,
         IRetentionService retentionService,
-        IAnalyticsService analytics,
         IWorldStoryService worldStoryService,
         ITutorialService tutorialService,
         MeineApps.Core.Ava.Localization.ILocalizationService? localizationService = null)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
-        _analytics = analytics;
         _purchaseService = purchaseService;
         _adService = adService;
         _progressService = progressService;
@@ -703,7 +699,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         try
         {
             // Premium: Reward sofort gratis (kein Ad nötig)
-            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdWithTelemetryAsync(_analytics, "score_double");
+            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("score_double");
             if (rewarded)
             {
                 if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();

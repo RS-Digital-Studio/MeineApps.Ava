@@ -72,16 +72,15 @@
     <PackageVersion Include="Xamarin.GooglePlayServices.Games.V2" Version="121.0.0.3" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- FIREBASE (Crashlytics / Analytics / Cloud Messaging)              -->
-    <!-- Analytics 123.x passt zur Measurement-Base 123.x die ueber        -->
-    <!-- Xamarin.GooglePlayServices.Ads.Lite 124.x transitiv reinkommt —   -->
-    <!-- sonst zerbricht der R8-Dexer an duplicate measurement-classes.    -->
-    <!-- Tasks kommt transitiv ueber Crashlytics/Messaging.                -->
+    <!-- FIREBASE (Cloud Messaging / Remote Config)                        -->
+    <!-- Crashlytics + Analytics raus: Crashlytics braucht Gradle-Plugin   -->
+    <!-- fuer Build-ID, Analytics-Backend wurde abgewaehlt. Tasks-Paket    -->
+    <!-- kommt transitiv ueber Messaging.                                  -->
+    <!-- Config 123.x — Measurement-Base 123.x kommt transitiv ueber      -->
+    <!-- Xamarin.GooglePlayServices.Ads.Lite 124.x, daher 123er Familie    -->
+    <!-- bleibt um R8-Dexer-Duplicates (zzov) zu vermeiden.                -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.Firebase.Crashlytics" Version="119.4.4" />
-    <PackageVersion Include="Xamarin.Firebase.Analytics" Version="123.2.0" />
     <PackageVersion Include="Xamarin.Firebase.Messaging" Version="124.1.2" />
-    <!-- Remote Config 123.x passt zur Analytics-123.x-Familie (gleiche Measurement-Base). -->
     <PackageVersion Include="Xamarin.Firebase.Config" Version="123.0.1.2" />
 
     <!-- Transitive dependency von Ads.Lite: JVM-Variante muss excluded werden,

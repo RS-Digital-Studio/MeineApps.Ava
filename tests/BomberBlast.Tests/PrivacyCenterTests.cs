@@ -5,7 +5,7 @@ using Xunit;
 namespace BomberBlast.Tests;
 
 /// <summary>
-/// Tests für PrivacyCenter (Phase 25b — Compliance).
+/// Tests für PrivacyCenter.
 /// </summary>
 public class PrivacyCenterTests
 {
@@ -15,7 +15,6 @@ public class PrivacyCenterTests
         var prefs = new InMemoryPreferences();
         var pc = new PrivacyCenter(prefs);
 
-        pc.CrashlyticsConsent.Should().BeFalse();
         pc.AnalyticsConsent.Should().BeFalse();
         pc.PersonalizedAdsConsent.Should().BeFalse();
         pc.PushNotificationsConsent.Should().BeTrue("Push ist Default-True (UI-Hint, System-Permission ist die echte Hürde)");
@@ -27,12 +26,12 @@ public class PrivacyCenterTests
     {
         var prefs = new InMemoryPreferences();
         var pc = new PrivacyCenter(prefs);
-        pc.CrashlyticsConsent = true;
         pc.AnalyticsConsent = true;
+        pc.PersonalizedAdsConsent = true;
 
         var pc2 = new PrivacyCenter(prefs);
-        pc2.CrashlyticsConsent.Should().BeTrue();
         pc2.AnalyticsConsent.Should().BeTrue();
+        pc2.PersonalizedAdsConsent.Should().BeTrue();
     }
 
     [Fact]
@@ -43,9 +42,9 @@ public class PrivacyCenterTests
         var fireCount = 0;
         pc.ConsentChanged += () => fireCount++;
 
-        pc.CrashlyticsConsent = true;
         pc.AnalyticsConsent = true;
         pc.PersonalizedAdsConsent = true;
+        pc.PushNotificationsConsent = false;
 
         fireCount.Should().Be(3);
     }
@@ -55,11 +54,11 @@ public class PrivacyCenterTests
     {
         var prefs = new InMemoryPreferences();
         var pc = new PrivacyCenter(prefs);
-        pc.CrashlyticsConsent = true;
+        pc.AnalyticsConsent = true;
         var fireCount = 0;
         pc.ConsentChanged += () => fireCount++;
 
-        pc.CrashlyticsConsent = true; // gleicher Wert
+        pc.AnalyticsConsent = true; // gleicher Wert
         fireCount.Should().Be(0);
     }
 
@@ -71,7 +70,6 @@ public class PrivacyCenterTests
         pc.AcceptAll();
         pc.RejectAll();
 
-        pc.CrashlyticsConsent.Should().BeFalse();
         pc.AnalyticsConsent.Should().BeFalse();
         pc.PersonalizedAdsConsent.Should().BeFalse();
         pc.PushNotificationsConsent.Should().BeFalse();
@@ -84,7 +82,6 @@ public class PrivacyCenterTests
         var pc = new PrivacyCenter(prefs);
         pc.AcceptAll();
 
-        pc.CrashlyticsConsent.Should().BeTrue();
         pc.AnalyticsConsent.Should().BeTrue();
         pc.PersonalizedAdsConsent.Should().BeTrue();
         pc.PushNotificationsConsent.Should().BeTrue();
@@ -112,7 +109,7 @@ public class PrivacyCenterTests
         pc.AcceptAll();
 
         pc.PersonalizedAdsConsent.Should().BeFalse("AcceptAll respektiert ChildSafeMode");
-        pc.CrashlyticsConsent.Should().BeTrue("Andere Consents werden trotzdem aktiviert");
+        pc.AnalyticsConsent.Should().BeTrue("Andere Consents werden trotzdem aktiviert");
     }
 
     [Fact]
@@ -124,7 +121,7 @@ public class PrivacyCenterTests
 
         var flows = pc.GetActiveDataFlows();
         flows.Should().NotBeEmpty();
-        flows.Should().Contain(f => f.NameKey == "Privacy_DataFlow_Crashlytics" && f.Active);
+        flows.Should().Contain(f => f.NameKey == "Privacy_DataFlow_Analytics" && f.Active);
         flows.Should().Contain(f => f.NameKey == "Privacy_DataFlow_Leaderboard" && f.Active);
     }
 
@@ -136,7 +133,7 @@ public class PrivacyCenterTests
         pc.RejectAll();
 
         var flows = pc.GetActiveDataFlows();
-        flows.Should().Contain(f => f.NameKey == "Privacy_DataFlow_Crashlytics" && !f.Active);
+        flows.Should().Contain(f => f.NameKey == "Privacy_DataFlow_Analytics" && !f.Active);
         flows.Should().Contain(f => f.NameKey == "Privacy_DataFlow_Leaderboard" && f.Active,
             "Liga ist Kern-Funktion ohne Opt-out");
     }

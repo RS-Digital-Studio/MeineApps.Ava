@@ -61,11 +61,10 @@ public class MainActivity : AvaloniaMainActivity
             new MeineApps.Core.Premium.Ava.Droid.AndroidPlayGamesService(
                 this, sp.GetRequiredService<IPreferencesService>());
 
-        // Firebase Telemetrie/Analytics/Push (v2.0.56): Factories vor base.OnCreate setzen,
-        // damit DI sie statt der Null-Implementierungen einbindet. AndroidPushNotificationService
-        // braucht die Activity-Referenz fuer RequestPermissions auf Android 13+.
-        App.TelemetryServiceFactory = _ => new AndroidTelemetryService(this);
-        App.AnalyticsServiceFactory = _ => new AndroidAnalyticsService(this);
+        // Firebase Push: Factory vor base.OnCreate setzen, damit DI sie statt der
+        // Null-Implementierung einbindet. AndroidPushNotificationService braucht die
+        // Activity-Referenz fuer RequestPermissions auf Android 13+.
+        // Crashlytics + Analytics sind raus — entsprechende Factories ebenso.
         App.PushNotificationServiceFactory = _ => new AndroidPushNotificationService(this);
 
         // Firebase Remote Config (v2.0.57.1 : Live-Tuning ohne App-Update.

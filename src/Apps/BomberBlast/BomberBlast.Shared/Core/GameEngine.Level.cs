@@ -128,29 +128,8 @@ public sealed partial class GameEngine
             _worldAnnouncementTimer = 2.0f;
         }
 
-        //.2 : Funnel-Event level_start mit Welt + Lives + Master-Mode-Flag.
-        _analytics?.LogEvent(AnalyticsEvents.LevelStart, new Dictionary<string, object>
-        {
-            [AnalyticsParams.LevelId] = levelNumber,
-            [AnalyticsParams.WorldId] = world,
-            [AnalyticsParams.Lives] = _player.Lives,
-            ["master_mode"] = _isMasterMode ? 1 : 0,
-            ["mutator"] = _activeMutator.ToString(),
-        });
-
-        // boss_encounter wenn das Level einen Boss hat (vor dem Kampf, fuer Drop-Off-Funnel).
-        // Welle 1 v2.0.58: Mini-Boss-Levels feuern auch boss_encounter mit is_mini=1.
-        if ((_currentLevel.IsBossLevel || _currentLevel.IsMiniBossLevel) && _currentLevel.BossKind is { } bossKind)
-        {
-            _analytics?.LogEvent(AnalyticsEvents.BossEncounter, new Dictionary<string, object>
-            {
-                [AnalyticsParams.BossType] = bossKind.ToString(),
-                [AnalyticsParams.Phase] = 1,
-                [AnalyticsParams.LevelId] = levelNumber,
-                [AnalyticsParams.WorldId] = world,
-                ["is_mini"] = _currentLevel.IsMiniBossLevel ? 1 : 0,
-            });
-        }
+        // Level-Start- + Boss-Encounter-Funnel-Events ehemals via IAnalyticsService —
+        // Analytics ist deaktiviert.
     }
 
     /// <summary>
@@ -326,13 +305,6 @@ public sealed partial class GameEngine
 
         _worldAnnouncementText = "DAILY CHALLENGE";
         _worldAnnouncementTimer = 2.5f;
-
-        // Welle 2 v2.0.58 : Funnel-Tracking — Mode-Entry-Events.
-        _analytics?.LogEvent(AnalyticsEvents.DailyChallengeStart, new Dictionary<string, object>
-        {
-            ["seed"] = seed,
-            [AnalyticsParams.LevelId] = _currentLevelNumber,
-        });
     }
 
     /// <summary>
@@ -444,10 +416,6 @@ public sealed partial class GameEngine
         _worldAnnouncementTimer = 2.5f;
 
         // Welle 2 v2.0.58 : Funnel-Tracking — Mode-Entry-Events.
-        _analytics?.LogEvent(AnalyticsEvents.SurvivalStart, new Dictionary<string, object>
-        {
-            [AnalyticsParams.Lives] = _player.Lives,
-        });
     }
 
     /// <summary>
@@ -485,10 +453,6 @@ public sealed partial class GameEngine
         _worldAnnouncementTimer = 2.5f;
 
         // Welle 2 v2.0.58 : Funnel-Tracking — Mode-Entry-Events.
-        _analytics?.LogEvent(AnalyticsEvents.DailyRaceStart, new Dictionary<string, object>
-        {
-            ["seed"] = seed,
-        });
     }
 
     /// <summary>
@@ -558,15 +522,7 @@ public sealed partial class GameEngine
         _worldAnnouncementText = $"BOSS {bossIndex + 1} / 5";
         _worldAnnouncementTimer = 2.5f;
 
-        // Welle 2 v2.0.58 : Funnel-Tracking — nur fuer erste Boss-Encounter,
-        // sonst wuerde der Event 5x pro Run feuern.
-        if (bossIndex == 0)
-        {
-            _analytics?.LogEvent(AnalyticsEvents.BossRushStart, new Dictionary<string, object>
-            {
-                [AnalyticsParams.BossType] = bossType.ToString(),
-            });
-        }
+        // Boss-Rush-Start-Funnel-Event ehemals via IAnalyticsService — Analytics ist deaktiviert.
     }
 
     /// <summary>
@@ -589,13 +545,6 @@ public sealed partial class GameEngine
 
         // Welle 2 v2.0.58 : Funnel-Tracking — DungeonRunStart nur beim ersten Floor.
         if (isFirstFloor)
-        {
-            _analytics?.LogEvent(AnalyticsEvents.DungeonRunStart, new Dictionary<string, object>
-            {
-                ["floor"] = floor,
-                ["seed"] = seed,
-            });
-        }
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
 
@@ -1861,32 +1810,13 @@ public sealed partial class GameEngine
             // praezisere Level-Difficulty-Auswertung in Firebase-Dashboards.
             int worldForLevel = (_currentLevelNumber - 1) / 10 + 1;
             int starsEarned = _progressService.GetLevelStars(_currentLevelNumber);
-            _analytics?.LogEvent(AnalyticsEvents.LevelComplete, new Dictionary<string, object>
-            {
-                ["level"] = _currentLevelNumber,
-                [AnalyticsParams.LevelId] = _currentLevelNumber,
-                [AnalyticsParams.WorldId] = worldForLevel,
-                [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
-                [AnalyticsParams.Stars] = starsEarned,
-                [AnalyticsParams.Deaths] = _deathsInLevel,
-                [AnalyticsParams.TotalComboCount] = _comboTiersInLevel,
-                ["score"] = _player.Score,
-                [AnalyticsParams.Mode] = GetCurrentModeTag(),
-                ["master_mode"] = _isMasterMode
-            });
+            // LevelComplete-Funnel ehemals via IAnalyticsService — Analytics ist deaktiviert.
             // boss_defeated wenn das Level einen Boss hatte (paired mit boss_encounter beim Start)
             // Welle 1 v2.0.58: Mini-Boss-Levels feuern auch boss_defeated mit is_mini=1.
             if ((_currentLevel?.IsBossLevel == true || _currentLevel?.IsMiniBossLevel == true)
                 && _currentLevel.BossKind is { } defeatedBoss)
             {
-                _analytics?.LogEvent(AnalyticsEvents.BossDefeated, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.BossType] = defeatedBoss.ToString(),
-                    [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
-                    [AnalyticsParams.DamageTaken] = _deathsInLevel,
-                    [AnalyticsParams.LevelId] = _currentLevelNumber,
-                    ["is_mini"] = _currentLevel.IsMiniBossLevel ? 1 : 0,
-                });
+                // BossDefeated-Funnel ehemals via IAnalyticsService — Analytics ist deaktiviert.
 
                 //.2 : Welt-Outro-Cutscene beim Welt-Boss-Sieg
                 // (Level 10/20/.../90 — Endboss hat kein Outro, da kein "naechste Welt"-Cliffhanger).
@@ -1949,11 +1879,7 @@ public sealed partial class GameEngine
             }
 
             // v2.0.44 — Funnel-Tracking: Story-Mode-Sieg ist eine Mega-Konversion
-            _analytics?.LogEvent(_isBossRushMode ? AnalyticsEvents.BossRushStart : "victory_story", new Dictionary<string, object>
-            {
-                ["score"] = _player.Score,
-                ["mode"] = GetCurrentModeTag()
-            });
+            // Victory-Funnel ehemals via IAnalyticsService — Analytics ist deaktiviert.
 
             // v2.0.48 — Audio-Caption für Sieges-Fanfare
             if (_accessibility?.SubtitlesEnabled == true)

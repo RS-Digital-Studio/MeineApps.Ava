@@ -3679,9 +3679,6 @@
   <data name="PrivacySection" xml:space="preserve">
     <value>Datenschutz</value>
   </data>
-  <data name="CrashlyticsConsent" xml:space="preserve">
-    <value>Anonyme Absturzberichte senden</value>
-  </data>
   <data name="AnalyticsConsent" xml:space="preserve">
     <value>Anonyme Nutzungsstatistiken senden</value>
   </data>

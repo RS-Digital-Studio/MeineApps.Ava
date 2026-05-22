@@ -21,17 +21,15 @@ public sealed class FeatureUnlockChoreographer : IFeatureUnlockChoreographer
     private const string PrefKeyPrefix = "FeatureUnlock_";
 
     private readonly IPreferencesService _prefs;
-    private readonly IAnalyticsService _analytics;
     private readonly Queue<FeatureUnlockEvent> _queue = new();
     private bool _isShowing;
     private readonly object _lock = new();
 
     public event Action<FeatureUnlockEvent>? FeatureUnlocked;
 
-    public FeatureUnlockChoreographer(IPreferencesService prefs, IAnalyticsService analytics)
+    public FeatureUnlockChoreographer(IPreferencesService prefs)
     {
         _prefs = prefs;
-        _analytics = analytics;
     }
 
     public void OnLevelComplete(int completedLevel)
@@ -129,11 +127,7 @@ public sealed class FeatureUnlockChoreographer : IFeatureUnlockChoreographer
         // selbst wenn die Anzeige aus irgendeinem Grund versagt (App-Crash, View nicht montiert).
         _prefs.Set(prefKey, true);
 
-        //.2 : Funnel-Event feature_unlocked
-        _analytics?.LogEvent(AnalyticsEvents.FeatureUnlocked, new Dictionary<string, object>
-        {
-            [AnalyticsParams.FeatureId] = featureId,
-        });
+        // Feature-Unlock-Funnel-Event ehemals via IAnalyticsService — Analytics ist deaktiviert.
 
         lock (_lock)
         {

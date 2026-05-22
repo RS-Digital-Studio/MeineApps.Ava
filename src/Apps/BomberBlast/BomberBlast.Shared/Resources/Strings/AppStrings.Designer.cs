@@ -1454,7 +1454,6 @@ namespace BomberBlast.Resources.Strings {
         internal static string Delete => ResourceManager.GetString("Delete", resourceCulture)!;
         // v2.0.55 — Privacy/Consent (Phase 15 P0-Fix)
         internal static string PrivacySection => ResourceManager.GetString("PrivacySection", resourceCulture)!;
-        internal static string CrashlyticsConsent => ResourceManager.GetString("CrashlyticsConsent", resourceCulture)!;
         internal static string AnalyticsConsent => ResourceManager.GetString("AnalyticsConsent", resourceCulture)!;
         internal static string ConsentRequiresRestart => ResourceManager.GetString("ConsentRequiresRestart", resourceCulture)!;
 

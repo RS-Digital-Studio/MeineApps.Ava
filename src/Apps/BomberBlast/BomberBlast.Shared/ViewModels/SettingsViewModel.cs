@@ -36,8 +36,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     // Phase 23b — Premium-Tier-Status für Settings-Anzeige
     private readonly IBattlePassPlusService? _battlePassPlus;
     private readonly IVipSubscriptionService? _vipSubscription;
-    // Welle 2 v2.0.58 : Funnel-Tracking fuer Accessibility-Toggles.
-    private readonly IAnalyticsService? _analytics;
 
     private bool _isInitializing = true;
 
@@ -113,10 +111,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES - DSGVO PRIVACY (v2.0.55 — Phase 15 Security-Fix P0)
     // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>DSGVO-Consent für anonyme Crash-Reports an Firebase Crashlytics. Default false.</summary>
-    [ObservableProperty]
-    private bool _crashlyticsConsent;
 
     /// <summary>DSGVO-Consent für anonyme Nutzungs-Statistiken an Firebase Analytics. Default false.</summary>
     [ObservableProperty]
@@ -338,7 +332,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         IAccountDeletionService? accountDeletionService = null,
         IBattlePassPlusService? battlePassPlus = null,
         IVipSubscriptionService? vipSubscription = null,
-        IAnalyticsService? analytics = null,
         IDataExportService? dataExportService = null)
     {
         _progressService = progressService;
@@ -355,7 +348,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _accountDeletionService = accountDeletionService;
         _battlePassPlus = battlePassPlus;
         _vipSubscription = vipSubscription;
-        _analytics = analytics;
         _dataExportService = dataExportService;
 
         // Version info
@@ -412,8 +404,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         // Performance (v2.0.44)
         UseHighFrameRate = GameLoopSettings.TargetFps == GameLoopSettings.FrameRate60;
 
-        // Privacy (v2.0.55 — DSGVO Consent-Flow für Firebase)
-        CrashlyticsConsent = _preferences.Get("CrashlyticsConsent", false);
+        // Privacy (DSGVO Consent-Flow für Firebase Analytics)
         AnalyticsConsent = _preferences.Get("AnalyticsConsent", false);
         // Phase 25b — Privacy-Center-Toggles
         PersonalizedAdsConsent = _preferences.Get("Privacy_PersonalizedAds", false);
@@ -440,56 +431,30 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     {
         if (_isInitializing) return;
         _accessibilityService.ColorblindMode = value;
-        // Welle 2 v2.0.58 : Accessibility-Funnel-Event.
-        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
-        {
-            ["feature"] = "colorblind_mode",
-            ["value"] = value ?? "Off",
-        });
     }
 
     partial void OnHighContrastChanged(bool value)
     {
         if (_isInitializing) return;
         _accessibilityService.HighContrast = value;
-        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
-        {
-            ["feature"] = "high_contrast",
-            ["value"] = value ? 1 : 0,
-        });
     }
 
     partial void OnUiScaleChanged(double value)
     {
         if (_isInitializing) return;
         _accessibilityService.UiScale = value;
-        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
-        {
-            ["feature"] = "ui_scale",
-            ["value"] = value,
-        });
     }
 
     partial void OnSubtitlesEnabledChanged(bool value)
     {
         if (_isInitializing) return;
         _accessibilityService.SubtitlesEnabled = value;
-        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
-        {
-            ["feature"] = "subtitles",
-            ["value"] = value ? 1 : 0,
-        });
     }
 
     partial void OnReducedFlashingChanged(bool value)
     {
         if (_isInitializing) return;
         _accessibilityService.ReducedFlashing = value;
-        _analytics?.LogEvent(AnalyticsEvents.AccessibilityToggle, new Dictionary<string, object>
-        {
-            ["feature"] = "reduced_flashing",
-            ["value"] = value ? 1 : 0,
-        });
     }
 
     partial void OnUseHighFrameRateChanged(bool value)
@@ -500,15 +465,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
             _preferences);
     }
 
-    // v2.0.55 — Phase 15 P0-Fix: DSGVO Consent-Toggles. Werden beim nächsten App-Start
-    // von ITelemetryService/IAnalyticsService.Initialize() gelesen — keine sofortige
-    // Aktivierung/Deaktivierung weil die Firebase-SDKs nur einmal pro Process initialisiert werden.
-    partial void OnCrashlyticsConsentChanged(bool value)
-    {
-        if (_isInitializing) return;
-        _preferences.Set("CrashlyticsConsent", value);
-    }
-
+    // DSGVO Consent-Toggle bleibt als UI-Pref erhalten — Analytics-Backend ist aktuell nicht
+    // angebunden (Firebase-Analytics wurde entfernt). Wenn spaeter ein Provider andockt, wird
+    // dieser Wert in seinem Initialize() ausgewertet.
     partial void OnAnalyticsConsentChanged(bool value)
     {
         if (_isInitializing) return;
@@ -589,11 +548,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         var result = await _accountDeletionService.DeleteAccountAsync();
         if (result.Success)
         {
-            // v2.0.60: Funnel-Event fuer DSGVO-Compliance-Tracking (DSGVO erlaubt anonyme Aggregat-Statistik).
-            _analytics?.LogEvent("account_deleted", new Dictionary<string, object>
-            {
-                ["success"] = 1,
-            });
+            // Account-Deleted-Funnel ehemals via IAnalyticsService — Analytics ist deaktiviert.
             ShowAlert(
                 _localizationService.GetString("DeleteAccount") ?? "Konto gelöscht",
                 _localizationService.GetString("DeleteAccountDone") ??

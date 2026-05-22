@@ -79,7 +79,6 @@ public sealed class DataExportService : IDataExportService
         sb.AppendLine($"  Freigeschaltet: {snapshot.AchievementsUnlocked} / {snapshot.AchievementsTotal}");
         sb.AppendLine();
         sb.AppendLine("--- Datenschutz-Zustimmungen ---");
-        sb.AppendLine($"  Crashlytics: {(snapshot.CrashlyticsConsent ? "Aktiv" : "Deaktiviert")}");
         sb.AppendLine($"  Analytics: {(snapshot.AnalyticsConsent ? "Aktiv" : "Deaktiviert")}");
         return sb.ToString();
     }
@@ -105,7 +104,6 @@ public sealed class DataExportService : IDataExportService
             AchievementsUnlocked = _achievements.UnlockedCount,
             AchievementsTotal = _achievements.TotalCount,
 
-            CrashlyticsConsent = _prefs.Get("CrashlyticsConsent", false),
             AnalyticsConsent = _prefs.Get("AnalyticsConsent", false),
 
             ShopUpgradeLevels = BuildShopSummary(),
@@ -147,7 +145,6 @@ public sealed class DataExportService : IDataExportService
         public int LeaguePoints { get; set; }
         public int AchievementsUnlocked { get; set; }
         public int AchievementsTotal { get; set; }
-        public bool CrashlyticsConsent { get; set; }
         public bool AnalyticsConsent { get; set; }
         public Dictionary<string, int> ShopUpgradeLevels { get; set; } = new();
     }

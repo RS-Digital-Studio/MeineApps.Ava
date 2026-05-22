@@ -58,10 +58,6 @@ public sealed partial class GameEngine : IDisposable
     private readonly ILogger<GameEngine> _logger;
     // v2.0.44 — : Accessibility-ColorMatrix wird vor jedem Frame ausgewertet
     private readonly IAccessibilityService _accessibility;
-    // v2.0.44 — : Funnel-Tracking
-    private readonly IAnalyticsService _analytics;
-    // v2.0.45 — : Performance-Telemetry (FPS-Bucket für Crashlytics-Custom-Keys)
-    private readonly ITelemetryService _telemetry;
     /// <summary>.1 : Hero/Character-Service fuer Stat-Anwendung beim Spawn.</summary>
     private readonly IHeroService _heroService;
     /// <summary>.2 : Multiplayer-Session-Service fuer 2P-Co-Op-Toggle.</summary>
@@ -250,17 +246,12 @@ public sealed partial class GameEngine : IDisposable
     /// </summary>
     public int CombinedScore => _player.Score + (_player2?.Score ?? 0);
 
-    // FPS-Tracking: Wall-Clock Sample-Buffer (5s Window, ~150 Samples bei 30 FPS)
-    // Audit M12: Initial-Capacity 400 verhindert Queue-Internal-Resize bei 60 FPS x 5s = 300 Items.
-    // Queue<T> ist bereits ein Ringbuffer intern; Capacity-Pre-Sizing eliminiert die einzige Allokation.
+    // FPS-Sample-Buffer (5s Window, ~150 Samples bei 30 FPS). Initial-Capacity 400 verhindert
+    // Queue-Internal-Resize bei 60 FPS x 5s = 300 Items. Wird aktuell nur erfasst, nicht
+    // ausgewertet — der ehemals daran haengende FPS-Bucket-/Memory-Telemetrie-Pfad
+    // (Crashlytics-Custom-Keys) wurde mit dem Crashlytics-Removal entfernt.
     private readonly Queue<long> _fpsFrameTicks = new(400);
-    private long _lastFpsReportTicks;
     private const long FpsReportIntervalTicks = 5 * TimeSpan.TicksPerSecond;
-    // v2.0.47 — Memory-Pressure-Tracking: 60s-Intervall für Heap-Größe + GC-Counts.
-    // v2.0.55 — Phase 15 P1-Fix: 30s → 60s + Background-Thread weil GC.GetTotalMemory auf
-    // Mono-AOT-Android 1-5ms Heap-Walk kostet (1-Frame-Spike alle 30s war messbar).
-    private long _lastMemoryReportTicks;
-    private const long MemoryReportIntervalTicks = 60 * TimeSpan.TicksPerSecond;
     // Cached SKColorFilter wenn Colorblind-Modus aktiv (verhindert pro-Frame-Allokation).
     private SKColorFilter? _colorblindFilter;
     private string _lastColorblindMode = "Off";
@@ -933,8 +924,6 @@ public sealed partial class GameEngine : IDisposable
         IVibrationService vibrationService,
         ILogger<GameEngine> logger,
         IAccessibilityService accessibility,
-        IAnalyticsService analytics,
-        ITelemetryService telemetry,
         //.1 : Hero/Character-System Engine-Integration.
         IHeroService heroService,
         //.2 : 2P-Co-Op-Session-Service Engine-Integration.
@@ -965,8 +954,6 @@ public sealed partial class GameEngine : IDisposable
         _vibration = vibrationService;
         _logger = logger;
         _accessibility = accessibility;
-        _analytics = analytics;
-        _telemetry = telemetry;
         _heroService = heroService;
         _multiplayerSession = multiplayerSession;
         _tutorialOverlay = new TutorialOverlay(localizationService);
@@ -1005,18 +992,12 @@ public sealed partial class GameEngine : IDisposable
 
     private void OnTutorialStepCompleted(int stepIndex)
     {
-        _analytics?.LogEvent(AnalyticsEvents.TutorialStepComplete, new Dictionary<string, object>
-        {
-            [AnalyticsParams.StepId] = stepIndex,
-        });
+        // Funnel-Telemetrie ehemals via IAnalyticsService — Analytics ist deaktiviert.
     }
 
     private void OnTutorialCompleted()
     {
-        _analytics?.LogEvent(AnalyticsEvents.TutorialComplete, new Dictionary<string, object>
-        {
-            [AnalyticsParams.LevelId] = _currentLevelNumber,
-        });
+        // Funnel-Telemetrie ehemals via IAnalyticsService — Analytics ist deaktiviert.
     }
 
     /// <summary>
@@ -1644,21 +1625,6 @@ public sealed partial class GameEngine : IDisposable
                 }
 
                 _tracking.FlushIfDirty();
-
-                // v2.0.44 — : GameOver-Telemetrie für Funnel-Drop-off-Analyse.
-                //.2 : erweitert um cause + attempt_count fuer Drop-Off-Pattern.
-                _analytics?.LogEvent(AnalyticsEvents.LevelFailed, new Dictionary<string, object>
-                {
-                    ["level"] = _currentLevelNumber,
-                    [AnalyticsParams.LevelId] = _currentLevelNumber,
-                    [AnalyticsParams.WorldId] = (_currentLevelNumber - 1) / 10 + 1,
-                    [AnalyticsParams.Cause] = _timer.IsExpired ? "time" : "enemy_or_bomb",
-                    // Tode innerhalb dieser GameOver-Sequenz (jedes Sterben = ein Attempt).
-                    [AnalyticsParams.AttemptCount] = _deathsInLevel,
-                    [AnalyticsParams.TimeMs] = (long)Math.Max(0L, _levelElapsedSeconds * 1000f),
-                    ["score"] = _player.Score,
-                    ["mode"] = GetCurrentModeTag()
-                });
 
                 // Phase 18 — IGameMode.OnGameOver-Hook (ARCH-1 aus Phase-15-Audit)
                 try { _currentMode?.OnGameOver(BuildModeContext()); }

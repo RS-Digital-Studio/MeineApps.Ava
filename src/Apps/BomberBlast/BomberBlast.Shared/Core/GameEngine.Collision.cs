@@ -574,25 +574,15 @@ public sealed partial class GameEngine
                     _ultraFlash.Trigger(_renderer.GetWorldAccentColor());
                 //.3 : Music-Boost bei ULTRA — der epische Moment.
                 _soundManager.BusMixer.Boost(BomberBlast.Core.Audio.AudioBus.Music, 1.25f, 5.0f);
-                //.2 : Funnel-Event combo_tier_reached (ULTRA)
+                // Combo-Tier-Telemetrie (ULTRA) ehemals via IAnalyticsService — Analytics ist deaktiviert.
                 _comboTiersInLevel++;
-                _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.Tier] = 10,
-                    [AnalyticsParams.LevelId] = _currentLevelNumber,
-                });
             }
             else if (_comboCount == 5)
             {
                 _screenShake.TriggerPullBack(magnitude: 0.5f, durationSeconds: 0.35f);
                 _soundManager.PlayStinger(SoundManager.STINGER_COMBO_MEGA);
-                //.2 : Funnel-Event combo_tier_reached (MEGA)
+                // Combo-Tier-Telemetrie (MEGA) ehemals via IAnalyticsService — Analytics ist deaktiviert.
                 _comboTiersInLevel++;
-                _analytics?.LogEvent(AnalyticsEvents.ComboTierReached, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.Tier] = 5,
-                    [AnalyticsParams.LevelId] = _currentLevelNumber,
-                });
             }
 
             // Tracking: Combo erreicht (Achievement + Missionen)

@@ -18,8 +18,6 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     private readonly IGemService _gemService;
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
-    /// <summary>.2 : IAP-Funnel-Telemetrie (Start/Success/Cancel/Fail).</summary>
-    private readonly IAnalyticsService _analytics;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -56,12 +54,11 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     // ═══════════════════════════════════════════════════════════════════════
 
     public GemShopViewModel(IGemService gemService, IPurchaseService purchaseService,
-        ILocalizationService localizationService, IAnalyticsService analytics)
+        ILocalizationService localizationService)
     {
         _gemService = gemService;
         _purchaseService = purchaseService;
         _localizationService = localizationService;
-        _analytics = analytics;
 
         // Balance-Änderungen live verfolgen
         _gemService.BalanceChanged += OnGemBalanceChanged;
@@ -189,14 +186,6 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
     {
         if (item == null) return;
 
-        //.2 : Funnel-Start — der User hat Kauf-Intent gezeigt.
-        _analytics?.LogEvent(AnalyticsEvents.PurchaseFlowStart, new Dictionary<string, object>
-        {
-            [AnalyticsParams.Sku] = item.ProductId,
-            [AnalyticsParams.PriceCents] = item.PriceCents,
-            [AnalyticsParams.Currency] = "EUR",
-        });
-
         // Bestätigungsdialog vor Echtgeld-Kauf
         if (ConfirmationRequested != null)
         {
@@ -209,14 +198,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 _localizationService.GetString("Buy") ?? "Buy",
                 _localizationService.GetString("Cancel") ?? "Cancel");
             if (!confirmed)
-            {
-                // Funnel-Drop-off: User bricht im Bestätigungsdialog ab.
-                _analytics?.LogEvent(AnalyticsEvents.PurchaseCancel, new Dictionary<string, object>
-                {
-                    [AnalyticsParams.Sku] = item.ProductId,
-                });
                 return;
-            }
         }
 
         var success = await _purchaseService.PurchaseConsumableAsync(item.ProductId);
@@ -225,14 +207,6 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
             _gemService.AddGems(item.GemAmount);
             UpdateGemBalance();
 
-            // Funnel-Conversion: Echtgeld-Kauf abgeschlossen.
-            _analytics?.LogEvent(AnalyticsEvents.PurchaseSuccess, new Dictionary<string, object>
-            {
-                [AnalyticsParams.Sku] = item.ProductId,
-                [AnalyticsParams.PriceCents] = item.PriceCents,
-                [AnalyticsParams.Currency] = "EUR",
-            });
-
             // Erfolgs-Feedback
             var msg = string.Format(
                 _localizationService.GetString("GemPurchaseSuccess") ?? "+{0} Gems!",
@@ -240,15 +214,8 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
             FloatingTextRequested?.Invoke(msg, "gold");
             CelebrationRequested?.Invoke();
         }
-        else
-        {
-            // Funnel-Drop-off: Google-Play-Kauf fehlgeschlagen oder vom User im
-            // Play-Billing-Sheet abgebrochen (PurchaseConsumableAsync unterscheidet das nicht).
-            _analytics?.LogEvent(AnalyticsEvents.PurchaseFail, new Dictionary<string, object>
-            {
-                [AnalyticsParams.Sku] = item.ProductId,
-            });
-        }
+        // Purchase-Funnel-Telemetrie (Start/Success/Cancel/Fail) ehemals via IAnalyticsService —
+        // Analytics ist deaktiviert.
     }
 
     [RelayCommand]

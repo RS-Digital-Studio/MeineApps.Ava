@@ -104,11 +104,11 @@ public static class CloudSaveSchemaMigrator
         if (!data.Keys.ContainsKey("TargetFrameRate"))
             data.Keys["TargetFrameRate"] = "30";
 
-        // Analytics-Consent (DSGVO-Pflicht — default false bis User explizit zustimmt)
+        // Analytics-Consent (DSGVO-Pflicht — default false bis User explizit zustimmt).
+        // CrashlyticsConsent ist mit dem Crashlytics-Removal weggefallen — alte Saves duerfen
+        // den Key weiter mittragen (ignoriert), neue Saves fuellen ihn nicht mehr auf.
         if (!data.Keys.ContainsKey("AnalyticsConsent"))
             data.Keys["AnalyticsConsent"] = "false";
-        if (!data.Keys.ContainsKey("CrashlyticsConsent"))
-            data.Keys["CrashlyticsConsent"] = "false";
 
         data.Version = 3;
         return true;

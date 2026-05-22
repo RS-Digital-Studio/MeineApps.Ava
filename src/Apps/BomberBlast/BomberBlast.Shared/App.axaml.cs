@@ -69,17 +69,6 @@ public partial class App : Application
     public static Func<IServiceProvider, IVibrationService>? VibrationServiceFactory { get; set; }
 
     /// <summary>
-    /// Factory fuer plattformspezifischen ITelemetryService (Android setzt AndroidCrashlyticsService).
-    /// Wird im Console-Setup von Robert nachgereicht — bis dahin NullTelemetryService.
-    /// </summary>
-    public static Func<IServiceProvider, ITelemetryService>? TelemetryServiceFactory { get; set; }
-
-    /// <summary>
-    /// Factory fuer plattformspezifischen IAnalyticsService (Android setzt AndroidAnalyticsService).
-    /// </summary>
-    public static Func<IServiceProvider, IAnalyticsService>? AnalyticsServiceFactory { get; set; }
-
-    /// <summary>
     /// Factory fuer plattformspezifischen IPushNotificationService (Android setzt AndroidPushNotificationService).
     /// </summary>
     public static Func<IServiceProvider, IPushNotificationService>? PushNotificationServiceFactory { get; set; }
@@ -151,21 +140,12 @@ public partial class App : Application
         // GameLoopSettings: Persistierten TargetFps-Wert laden (30/60 FPS, default 30 Battery-Mode)
         GameLoopSettings.Initialize(Services.GetRequiredService<IPreferencesService>());
 
-        // v2.0.44 — : Telemetrie + Analytics + Push-Notifications initialisieren.
-        // Bei NullImpl auf Desktop ist das ein No-Op. Auf Android sucht ein konfigurierter
-        // Firebase-Setup nach google-services.json (Console-Setup vom User).
-        //.3 : Safe-Mode skippt optionale Services (Firebase + Push)
-        // damit die App garantiert startet wenn ein optionaler Service der Crash-Ursache war.
-        // Game-State + UI funktionieren weiterhin — User kommt ans Settings-Menue,
-        // kann Account-Delete oder Reset durchfuehren.
+        // Push-Notifications + RemoteConfig initialisieren. Crashlytics + Analytics raus.
+        // Safe-Mode skippt optionale Services damit die App garantiert startet wenn ein
+        // optionaler Service der Crash-Ursache war. Game-State + UI funktionieren weiterhin —
+        // User kommt ans Settings-Menue, kann Account-Delete oder Reset durchfuehren.
         if (!safeMode)
         {
-            try { Services.GetRequiredService<ITelemetryService>().Initialize(); }
-            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Telemetry-Init fehlgeschlagen"); }
-
-            try { Services.GetRequiredService<IAnalyticsService>().Initialize(); }
-            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Analytics-Init fehlgeschlagen"); }
-
             try { _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync(); }
             catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Push-Init fehlgeschlagen"); }
 
@@ -174,10 +154,8 @@ public partial class App : Application
         }
         else
         {
-            // Safe-Mode: Schreibe einen Diagnose-Eintrag damit Crashlytics weiss, warum dieser Start
-            // ohne optionale Services ist. Wird beim naechsten Online-Start gepushed.
             Services.GetService<ILogger<App>>()?.LogWarning(
-                "Safe-Mode aktiv — optionale Services (Telemetry/Analytics/Push/RemoteConfig) uebersprungen wegen wiederholter Crashes.");
+                "Safe-Mode aktiv — optionale Services (Push/RemoteConfig) uebersprungen wegen wiederholter Crashes.");
         }
 
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
@@ -302,7 +280,6 @@ public partial class App : Application
         catch (Exception ex)
         {
             // Logger statt Debug.WriteLine - wird auch im Release-Build sichtbar (LogCat auf Android).
-            // CrashlyticsLoggerProvider forwarded an ITelemetryService.LogNonFatal mit Stack-Trace.
             Services?.GetService<ILogger<App>>()?.LogError(ex, "Loading-Pipeline fehlgeschlagen");
             Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
         }
@@ -387,17 +364,14 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Logging —.1 (Welle 6: AppLogger-Fassade abgeloest).
-        // Microsoft.Extensions.Logging mit drei eigenen Providern (Code-only, keine NuGet-Sinks):
+        // Logging — Microsoft.Extensions.Logging mit zwei eigenen Providern (Code-only):
         //   - TraceLoggerProvider → LogCat auf Android / Debug-Output auf Desktop
         //   - FileLoggerProvider → rollende Log-Datei (App-intern, ueberlebt App-Crashes)
-        //   - CrashlyticsLoggerProvider → Bridge zu ITelemetryService.LogNonFatal/Log
         // Build-Filter: Trace im Debug, Info im Release.
         services.AddSingleton<ILoggerFactory>(sp => LoggerFactory.Create(builder =>
         {
             builder.AddProvider(new Services.Logging.TraceLoggerProvider());
             builder.AddProvider(new Services.Logging.FileLoggerProvider());
-            builder.AddProvider(new Services.Logging.CrashlyticsLoggerProvider(sp));
 #if DEBUG
             builder.SetMinimumLevel(LogLevel.Trace);
 #else
@@ -493,11 +467,9 @@ public partial class App : Application
         // Phase 23b — M1+M2: Premium-Pass-Plus + VIP-Subscription
         services.AddSingleton<IBattlePassPlusService, BattlePassPlusService>();
         services.AddSingleton<IVipSubscriptionService, VipSubscriptionService>();
-        // v2.0.44 — : Accessibility + DSGVO Account-Löschung + Telemetrie
+        // Accessibility + DSGVO Account-Löschung + Push
         services.AddSingleton<IAccessibilityService, AccessibilityService>();
         services.AddSingleton<IAccountDeletionService, AccountDeletionService>();
-        services.AddSingleton<ITelemetryService>(sp => TelemetryServiceFactory?.Invoke(sp) ?? new NullTelemetryService());
-        services.AddSingleton<IAnalyticsService>(sp => AnalyticsServiceFactory?.Invoke(sp) ?? new NullAnalyticsService());
         services.AddSingleton<IPushNotificationService>(sp => PushNotificationServiceFactory?.Invoke(sp) ?? new NullPushNotificationService());
         //.1  — RemoteConfig: Defaults aus eingebetteter JSON.
         // Android-Override (FirebaseRemoteConfigService) ueberschreibt einzelne Keys spaeter

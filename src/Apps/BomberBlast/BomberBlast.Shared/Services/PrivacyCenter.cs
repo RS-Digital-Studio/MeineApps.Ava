@@ -3,15 +3,15 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Default-Implementation von <see cref="IPrivacyCenter"/> (Phase 25b — Compliance).
+/// Default-Implementation von <see cref="IPrivacyCenter"/>.
 ///
-/// <para>Bestehende Consent-Keys (CrashlyticsConsent, AnalyticsConsent) bleiben kompatibel —
-/// PrivacyCenter ist eine Façade über IPreferencesService mit zusätzlichen DSGVO/COPPA-Toggles
-/// und einer Audit-Liste.</para>
+/// <para>Façade über <see cref="IPreferencesService"/> für alle DSGVO/COPPA-relevanten Toggles.
+/// Crashlytics + Analytics sind permanent deaktiviert (Firebase-SDKs raus aus dem Build).
+/// Der AnalyticsConsent-Toggle bleibt fuer kuenftige Provider als persistierter User-Wert
+/// erhalten.</para>
 /// </summary>
 public sealed class PrivacyCenter : IPrivacyCenter
 {
-    private const string KeyCrashlytics = "CrashlyticsConsent";   // Bestand
     private const string KeyAnalytics = "AnalyticsConsent";       // Bestand
     private const string KeyPersonalizedAds = "Privacy_PersonalizedAds";
     private const string KeyPushNotifications = "Privacy_PushNotifications";
@@ -24,12 +24,6 @@ public sealed class PrivacyCenter : IPrivacyCenter
     public PrivacyCenter(IPreferencesService prefs)
     {
         _prefs = prefs;
-    }
-
-    public bool CrashlyticsConsent
-    {
-        get => _prefs.Get(KeyCrashlytics, false);
-        set { if (CrashlyticsConsent == value) return; _prefs.Set(KeyCrashlytics, value); ConsentChanged?.Invoke(); }
     }
 
     public bool AnalyticsConsent
@@ -70,13 +64,10 @@ public sealed class PrivacyCenter : IPrivacyCenter
 
     public IReadOnlyList<DataFlowDescriptor> GetActiveDataFlows()
     {
-        var list = new List<DataFlowDescriptor>(8);
-        list.Add(new DataFlowDescriptor(
-            "Privacy_DataFlow_Crashlytics", "Privacy_DataFlow_Crashlytics_Purpose",
-            "Google Firebase", CrashlyticsConsent));
+        var list = new List<DataFlowDescriptor>(5);
         list.Add(new DataFlowDescriptor(
             "Privacy_DataFlow_Analytics", "Privacy_DataFlow_Analytics_Purpose",
-            "Google Firebase", AnalyticsConsent));
+            "Lokal (kein Backend aktiv)", AnalyticsConsent));
         list.Add(new DataFlowDescriptor(
             "Privacy_DataFlow_PersonalizedAds", "Privacy_DataFlow_PersonalizedAds_Purpose",
             "Google AdMob", PersonalizedAdsConsent && !ChildSafeMode));
@@ -94,7 +85,6 @@ public sealed class PrivacyCenter : IPrivacyCenter
 
     public void RejectAll()
     {
-        CrashlyticsConsent = false;
         AnalyticsConsent = false;
         PersonalizedAdsConsent = false;
         PushNotificationsConsent = false;
@@ -108,7 +98,6 @@ public sealed class PrivacyCenter : IPrivacyCenter
         {
             PersonalizedAdsConsent = true;
         }
-        CrashlyticsConsent = true;
         AnalyticsConsent = true;
         PushNotificationsConsent = true;
     }

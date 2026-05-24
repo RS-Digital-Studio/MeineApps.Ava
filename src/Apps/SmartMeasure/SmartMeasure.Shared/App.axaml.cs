@@ -103,6 +103,7 @@ public class App : Application
         services.AddSingleton<IArTransferService, ArTransferService>();
         services.AddSingleton<IDifferentialSnapshotService, DifferentialSnapshotService>();
         services.AddSingleton<IGnssConditionService, GnssConditionService>();
+        services.AddSingleton<IVolumeService, VolumeService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

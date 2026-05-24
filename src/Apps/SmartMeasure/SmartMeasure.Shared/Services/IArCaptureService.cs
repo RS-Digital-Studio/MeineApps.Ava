@@ -41,4 +41,11 @@ public interface IArCaptureService
     /// Muss vor <see cref="CaptureAsync"/> gesetzt werden. Wird beim Activity-Start
     /// uebernommen. Null = Stakeout-Mode in der Activity ist leer (Hint statt Pfeil).</summary>
     void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets);
+
+    /// <summary>Plan-Kap. 5.2: Persistente Sites — bestehende Projekt-Punkte werden in der
+    /// AR-Session als Earth-Anchors visualisiert (graue Marker), damit der User neue
+    /// Punkte im selben Koordinatensystem erfasst. Funktioniert ueber den Earth-Anchor-
+    /// Cache (Geospatial-API), kostenlos solange VPS-Coverage vorhanden ist. Site-Punkte
+    /// gehen NICHT ins ArCaptureResult zurueck.</summary>
+    void SetSitePoints(IReadOnlyList<SurveyPoint>? points);
 }

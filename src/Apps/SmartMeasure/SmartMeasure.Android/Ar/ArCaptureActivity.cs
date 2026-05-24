@@ -93,6 +93,26 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_stakeoutTargetsLock) _pendingStakeoutTargets = targets;
     }
 
+    /// <summary>Plan-Kap. 5.2: Statische Bruecke fuer Site-Points. Bestehende
+    /// Projekt-Punkte werden als Earth-Anchors visualisiert, damit der User neue Punkte
+    /// im selben Koordinatensystem erfasst.</summary>
+    private static readonly object _sitePointsLock = new();
+    private static IReadOnlyList<SurveyPoint>? _pendingSitePoints;
+    public static void SetSitePoints(IReadOnlyList<SurveyPoint>? points)
+    {
+        lock (_sitePointsLock) _pendingSitePoints = points;
+    }
+
+    /// <summary>Site-Points dieser Session (Snapshot zu OnCreate). Werden NICHT ins
+    /// ArCaptureResult zurueckgegeben — reine Visualisierungs-Layer.</summary>
+    private IReadOnlyList<SurveyPoint>? _sitePoints;
+
+    /// <summary>Bereits via Earth-Anchor instanzierte Site-Punkte als ArPoint-Marker.
+    /// Werden im OnDrawFrame iterativ angelegt (max 2 pro Frame) sobald
+    /// <see cref="_geospatialActive"/> ist.</summary>
+    private readonly List<ArPoint> _sitePointAnchors = [];
+    private int _siteAnchorsCreated;
+
     /// <summary>Stakeout-Ziele dieser Session (Snapshot zu OnCreate). Veraenderungen an
     /// <see cref="StakeoutTarget.IsReached"/> sind sichtbar fuer den UI-Layer weil
     /// StakeoutTarget ein <c>ObservableObject</c> ist.</summary>
@@ -360,6 +380,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         // Stakeout-Targets aus statischer Bruecke uebernehmen (Plan-Kap. 5.9).
         lock (_stakeoutTargetsLock) _stakeoutTargets = _pendingStakeoutTargets;
+        // Site-Points aus statischer Bruecke uebernehmen (Plan-Kap. 5.2).
+        lock (_sitePointsLock) _sitePoints = _pendingSitePoints;
 
         // Sample-Count an Gerät anpassen — auf leistungsstarken Chips mehr Samples
         // für höhere Präzision innerhalb der 800ms-Timeout
@@ -2328,7 +2350,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 // Geospatial aktiv ist. Limitiert auf 2 Re-Attaches pro Frame, damit auch
                 // ein 100-Punkt-Restore die Render-Loop nicht blockt.
                 if (_geospatialActive)
+                {
                     ReattachPendingEarthAnchors(maxPerFrame: 2);
+                    // Plan-Kap. 5.2: Bestehende Projekt-Punkte als Site-Marker verankern
+                    CreatePendingSiteAnchors(maxPerFrame: 2);
+                }
 
                 // Thermal + Battery + Anchor-Cleanup alle 60 Frames (~1x/s).
                 // PruneStopped() entfernt Anchors deren Trackable verloren ging — ohne diesen
@@ -2396,6 +2422,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// in Reihenfolge ihrer Tap-Erfassung.</summary>
     private readonly List<(float screenX, float screenY)> _projectedTapeMeasureBuilder = [];
 
+    /// <summary>Reusable Builder fuer Site-Marker (Plan-Kap. 5.2) — projizierte Earth-
+    /// Anchor-Positionen bestehender Projekt-Punkte mit Label.</summary>
+    private readonly List<(float screenX, float screenY, string label)> _projectedSiteMarkersBuilder = [];
+
     private void ProjectPointsToScreen()
     {
         global::Android.Opengl.Matrix.MultiplyMM(_mvpMatrixScratch, 0, _projectionMatrix, 0, _viewMatrix, 0);
@@ -2443,6 +2473,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 var screen = WorldToScreen(_tapeMeasurePoints[i], _mvpMatrixScratch);
                 if (screen.HasValue)
                     _projectedTapeMeasureBuilder.Add((screen.Value.x, screen.Value.y));
+            }
+
+            // Plan-Kap. 5.2: Site-Marker (Earth-Anchor-Cache, bestehende Projekt-Punkte)
+            _projectedSiteMarkersBuilder.Clear();
+            foreach (var sm in _sitePointAnchors)
+            {
+                var screen = WorldToScreen(sm, _mvpMatrixScratch);
+                if (screen.HasValue)
+                    _projectedSiteMarkersBuilder.Add((screen.Value.x, screen.Value.y, sm.Label ?? ""));
             }
         }
 
@@ -3115,6 +3154,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             allPoints = new List<ArPoint>(_points);
             foreach (var c in _contours) allPoints.AddRange(c.Points);
             if (_activeContour != null) allPoints.AddRange(_activeContour.Points);
+            // Plan-Kap. 5.2: Site-Marker auch refreshen, sonst driften die alten Punkte
+            allPoints.AddRange(_sitePointAnchors);
         }
         _anchorManager.RefreshAnchors(allPoints);
     }
@@ -3908,7 +3949,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             StakeoutTargetLabel = ReadStakeoutLabel(),
             StakeoutReachedCount = _stakeoutTargets?.Count(t => t.IsReached) ?? 0,
             StakeoutTotalCount = _stakeoutTargets?.Count ?? 0,
+            // Plan-Kap. 5.2: Site-Marker-Snapshot
+            SiteMarkerScreenPoints = BuildSiteMarkerSnapshot(),
         };
+    }
+
+    private IReadOnlyList<(float screenX, float screenY, string label)>? BuildSiteMarkerSnapshot()
+    {
+        if (_projectedSiteMarkersBuilder.Count == 0) return null;
+        return new List<(float, float, string)>(_projectedSiteMarkersBuilder);
     }
 
     private double? ReadStakeoutDistance()
@@ -4061,6 +4110,54 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _stakeoutCurrentDistance = distanceM;
             _stakeoutCurrentRelativeBearingDeg = relBearing;
             _stakeoutCurrentTargetLabel = target.Label;
+        }
+    }
+
+    /// <summary>Plan-Kap. 5.2: Erzeugt iterativ Earth-Anchors fuer alle bestehenden
+    /// SurveyPoints aus dem Site-Points-Snapshot. Wird im OnDrawFrame aufgerufen sobald
+    /// Geospatial-Tracking aktiv ist. Max <paramref name="maxPerFrame"/> Anchors pro
+    /// Frame, damit auch 100+ Punkte den Render-Loop nicht blocken. Die erzeugten
+    /// ArPoint-Marker landen in <see cref="_sitePointAnchors"/>, RefreshAllAnchors haelt
+    /// ihre Position drift-kompensiert.</summary>
+    private void CreatePendingSiteAnchors(int maxPerFrame)
+    {
+        var siteSnap = _sitePoints;
+        if (siteSnap == null || _siteAnchorsCreated >= siteSnap.Count) return;
+        if (_arSession == null) return;
+        var earth = _arSession.Earth;
+        if (earth == null || earth.TrackingState != TrackingState.Tracking) return;
+
+        var created = 0;
+        while (_siteAnchorsCreated < siteSnap.Count && created < maxPerFrame)
+        {
+            var sp = siteSnap[_siteAnchorsCreated];
+            // Site-Marker als reduzierter ArPoint — HitQuality=3 (Plane-aequivalent, weil
+            // RTK-Source), Confidence vom GPS abhaengig. Label "Site: <Original-Label>".
+            var marker = new ArPoint
+            {
+                Label = string.IsNullOrEmpty(sp.Label) ? $"Site #{sp.Id}" : $"Site: {sp.Label}",
+                Confidence = sp.HorizontalAccuracy < 5 ? 0.95f : 0.7f,
+                HitQuality = 3,
+                GeoLatitude = sp.Latitude,
+                GeoLongitude = sp.Longitude,
+                GeoAltitude = sp.Altitude,
+                GeoHorizontalAccuracy = sp.HorizontalAccuracy / 100f,
+                Timestamp = sp.Timestamp,
+            };
+
+            // Geoid-Korrektur: SurveyPoint.Altitude ist NN, Earth.CreateAnchor erwartet
+            // WGS84-Ellipsoid. Wir invertieren die ArTransferService-Korrektur grob —
+            // pragmatisch ohne IGeoidService-Lookup (Konstante 48m fuer DE als Naehrung,
+            // siehe IGeoidService Pauschal-Fallback).
+            var ellipsoidAlt = sp.Altitude + 48.0;
+
+            if (_anchorManager.TryCreateEarthAnchor(earth, sp.Latitude, sp.Longitude,
+                ellipsoidAlt, marker))
+            {
+                lock (_dataLock) _sitePointAnchors.Add(marker);
+                created++;
+            }
+            _siteAnchorsCreated++;
         }
     }
 

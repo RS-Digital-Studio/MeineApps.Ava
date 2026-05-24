@@ -200,4 +200,9 @@ public sealed class ArOverlayState
 
     /// <summary>Gesamt-Anzahl Targets.</summary>
     public int StakeoutTotalCount { get; init; }
+
+    /// <summary>Plan-Kap. 5.2: Site-Marker (Earth-Anchor-Cache). Screen-Position +
+    /// Label bestehender Projekt-Punkte. Wird als kleine graue Kreise mit Label
+    /// gerendert — visuell deutlich abgesetzt von aktiven (orange) Punkten.</summary>
+    public IReadOnlyList<(float screenX, float screenY, string label)>? SiteMarkerScreenPoints { get; init; }
 }

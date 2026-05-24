@@ -38,6 +38,9 @@ public class MockArCaptureService : IArCaptureService
     /// Plan Kap. 5.9.</summary>
     public void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets) { /* no-op */ }
 
+    /// <summary>Mock hat keine Earth-Anchors — Site-Points werden ignoriert. Plan Kap. 5.2.</summary>
+    public void SetSitePoints(IReadOnlyList<SurveyPoint>? points) { /* no-op */ }
+
     public Task<bool> IsAvailableAsync() => Task.FromResult(true);
 
     public async Task<ArCaptureResult?> CaptureAsync()

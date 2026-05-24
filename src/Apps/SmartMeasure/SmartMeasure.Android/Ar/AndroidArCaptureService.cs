@@ -41,6 +41,11 @@ public sealed class AndroidArCaptureService : IArCaptureService
     public void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets)
         => ArCaptureActivity.SetStakeoutTargets(targets);
 
+    /// <summary>Plan Kap. 5.2: Delegiert an die statische Bruecke in
+    /// <see cref="ArCaptureActivity.SetSitePoints"/>.</summary>
+    public void SetSitePoints(IReadOnlyList<SurveyPoint>? points)
+        => ArCaptureActivity.SetSitePoints(points);
+
     public AndroidArCaptureService(Activity activity)
     {
         _activity = activity;

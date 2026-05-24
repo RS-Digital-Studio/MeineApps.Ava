@@ -427,6 +427,11 @@ public sealed partial class ArPointOverlayView : View
         if (_state.IsTracking)
             DrawReticle(canvas, width, height);
 
+        // 6a. Plan-Kap. 5.2: Site-Marker (Earth-Anchor-Cache, bestehende Projekt-Punkte)
+        // VOR Tape-Measure und Reticle, damit aktive Punkte/Reticle ueber den Site-Markern liegen.
+        if (_state.SiteMarkerScreenPoints != null && _state.SiteMarkerScreenPoints.Count > 0)
+            DrawSiteMarkers(canvas);
+
         // 6b. Plan-Kap. 5.3: Tape-Measure-Polyline (Cyan, gestrichelt) + Segment-Distanzen
         if (_state.TapeMeasureScreenPoints != null && _state.TapeMeasureScreenPoints.Count > 0)
             DrawTapeMeasure(canvas);
@@ -793,6 +798,45 @@ public sealed partial class ArPointOverlayView : View
             ? $"  ({_state.StakeoutReachedCount}/{_state.StakeoutTotalCount})"
             : "";
         canvas.DrawText($"{label}{progress}", cx, cyArrow + 170f * _density, lblPaint);
+    }
+
+    /// <summary>Plan-Kap. 5.2: Site-Marker (bestehende Projekt-Punkte aus Earth-Anchor-Cache).
+    /// Visualisiert als kleine graue Kreise mit duenner Outline und Label — bewusst dezent,
+    /// damit aktive Punkte (orange) klar im Vordergrund bleiben.</summary>
+    private void DrawSiteMarkers(Canvas canvas)
+    {
+        var markers = _state.SiteMarkerScreenPoints;
+        if (markers == null || markers.Count == 0) return;
+
+        using var fillPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(180, 158, 158, 158), // Grau-transparent
+        };
+        fillPaint.SetStyle(Paint.Style.Fill);
+
+        using var outlinePaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(220, 33, 33, 33),
+            StrokeWidth = 1.5f * _density,
+        };
+        outlinePaint.SetStyle(Paint.Style.Stroke);
+
+        using var labelPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(220, 240, 240, 240),
+            TextSize = 11f * _density,
+            TextAlign = Paint.Align.Left,
+        };
+        labelPaint.SetShadowLayer(3f, 0f, 1f, Color.Black);
+
+        var r = 5f * _density;
+        foreach (var (sx, sy, label) in markers)
+        {
+            canvas.DrawCircle(sx, sy, r, fillPaint);
+            canvas.DrawCircle(sx, sy, r, outlinePaint);
+            if (!string.IsNullOrEmpty(label))
+                canvas.DrawText(label, sx + r + 4f * _density, sy + 4f * _density, labelPaint);
+        }
     }
 
     /// <summary>Plan-Kap. 5.3: Footer im Tape-Modus — Punkt-Anzahl + Strecken-Summe + Hint

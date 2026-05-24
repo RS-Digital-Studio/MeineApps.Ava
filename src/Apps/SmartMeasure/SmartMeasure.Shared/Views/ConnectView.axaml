@@ -10,6 +10,32 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12" Margin="16">
 
+            <!-- Plan-Kap. 5.16: GNSS-/Wetter-Bedingungen -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <TextBlock Grid.Column="0" Text="{Binding GnssConditionsQualityLabel}"
+                               FontSize="22" FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding GnssConditionsText}"
+                               FontSize="12" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Column="2" Command="{Binding RefreshGnssConditionsCommand}"
+                            Background="{DynamicResource BgElevatedBrush}"
+                            Foreground="{DynamicResource SecondaryBrush}"
+                            Padding="10,6" FontSize="11"
+                            ToolTip.Tip="NOAA-Daten neu laden (Cache 1h)">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Refresh" Width="14" Height="14" />
+                            <TextBlock Text="GNSS" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
             <!-- BLE-Verbindung -->
             <Border Background="{DynamicResource BgCardBrush}"
                     CornerRadius="{DynamicResource CardRadius}"

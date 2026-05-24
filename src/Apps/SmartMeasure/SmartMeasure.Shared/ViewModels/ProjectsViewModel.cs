@@ -37,10 +37,12 @@ public partial class ProjectsViewModel : ViewModelBase
     private bool _isInitialized;
     private readonly SemaphoreSlim _ensureLock = new(1, 1);
 
+    private readonly IDifferentialSnapshotService _differentialService;
+
     public ProjectsViewModel(IProjectService projectService, IExportService exportService,
         IBlenderExportService blenderExportService, ITerrainService terrainService,
         ICoordinateService coordinateService, IGardenPlanService gardenPlanService,
-        IAppPaths appPaths)
+        IAppPaths appPaths, IDifferentialSnapshotService differentialService)
     {
         _projectService = projectService;
         _exportService = exportService;
@@ -49,6 +51,46 @@ public partial class ProjectsViewModel : ViewModelBase
         _coordinateService = coordinateService;
         _gardenPlanService = gardenPlanService;
         _appPaths = appPaths;
+        _differentialService = differentialService;
+    }
+
+    // Plan-Kap. 5.13: Differential-Snapshot zwischen zwei Projekten
+    [ObservableProperty] private SurveyProject? _compareProjectA;
+    [ObservableProperty] private SurveyProject? _compareProjectB;
+    [ObservableProperty] private string _differentialResultText = string.Empty;
+
+    /// <summary>Plan-Kap. 5.13: Compare-Workflow im UI. User waehlt zwei Projekte, klickt
+    /// "Vergleichen" → DifferentialSnapshotService.Compare → Text-Zusammenfassung.</summary>
+    [RelayCommand]
+    private async Task CompareSelectedProjectsAsync()
+    {
+        if (CompareProjectA == null || CompareProjectB == null)
+        {
+            DifferentialResultText = "Bitte zwei Projekte zum Vergleich auswaehlen";
+            return;
+        }
+
+        try
+        {
+            var a = await _projectService.GetProjectAsync(CompareProjectA.Id);
+            var b = await _projectService.GetProjectAsync(CompareProjectB.Id);
+            if (a == null || b == null)
+            {
+                DifferentialResultText = "Projekt nicht ladbar";
+                return;
+            }
+            var result = _differentialService.Compare(a.Points, b.Points);
+            var moved = result.Matches.Count(m => m.Change == DifferentialChange.Moved);
+            var unchanged = result.Matches.Count - moved;
+            DifferentialResultText =
+                $"Vergleich: {a.Name} → {b.Name}\n" +
+                $"Unveraendert: {unchanged}  ·  Verschoben (>10cm): {moved}\n" +
+                $"Neu: {result.Added.Count}  ·  Verschwunden: {result.Removed.Count}";
+        }
+        catch (Exception ex)
+        {
+            DifferentialResultText = $"Vergleich fehlgeschlagen: {ex.Message}";
+        }
     }
 
     /// <summary>GardenElements mit LocalPoints befüllen, basierend auf Messpunkt-Schwerpunkt.

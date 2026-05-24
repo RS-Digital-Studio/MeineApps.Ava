@@ -153,6 +153,43 @@
                                Foreground="{DynamicResource TextMutedBrush}">
                         <Run Text="Werte inkl. 15% Sicherheitszuschlag" />
                     </TextBlock>
+
+                    <!-- Plan-Kap. 5.4: Volumen-Schaetzung pro Element -->
+                    <Border Background="{DynamicResource BgCardBrush}"
+                            CornerRadius="6" Padding="8" Margin="0,8,0,0">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Volumen-Schaetzung" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <ItemsControl ItemsSource="{Binding Elements}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:GardenElement">
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                            <TextBlock Text="{Binding Notes}" FontSize="11"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                                            <Button Grid.Column="1" FontSize="10" Padding="6,3"
+                                                    Command="{Binding $parent[ItemsControl].((vm:GardenPlanViewModel)DataContext).EstimateVolumeCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="{DynamicResource SecondaryBrush}"
+                                                    Foreground="White">V berechnen</Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Text="Tiefe (m):" FontSize="11" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <NumericUpDown Grid.Column="1" Margin="6,0,0,0"
+                                               Value="{Binding VolumeDepthMeters}"
+                                               Minimum="0.05" Maximum="10.0" Increment="0.05"
+                                               FormatString="F2" />
+                            </Grid>
+                            <TextBlock Text="{Binding VolumeResultText}" FontSize="11"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{Binding VolumeResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Foreground="{DynamicResource PrimaryBrush}" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Border>

@@ -74,10 +74,17 @@ public partial class ConnectViewModel : ViewModelBase
     [ObservableProperty] private int _fixQuality;
     [ObservableProperty] private string _fixStatusText = "KEIN FIX";
 
-    public ConnectViewModel(IBleService bleService, IPreferencesService preferences)
+    // Plan-Kap. 5.16: GNSS-/Wetter-Konditions-Anzeige
+    private readonly IGnssConditionService _gnssConditions;
+    [ObservableProperty] private string _gnssConditionsText = "GNSS-Bedingungen: noch nicht geprueft";
+    [ObservableProperty] private string _gnssConditionsQualityLabel = string.Empty;
+
+    public ConnectViewModel(IBleService bleService, IPreferencesService preferences,
+        IGnssConditionService gnssConditions)
     {
         _bleService = bleService;
         _preferences = preferences;
+        _gnssConditions = gnssConditions;
 
         LoadPreferences();
 
@@ -188,6 +195,35 @@ public partial class ConnectViewModel : ViewModelBase
         finally
         {
             IsScanning = false;
+        }
+    }
+
+    /// <summary>Plan-Kap. 5.16: Aktuelle NOAA-Konditionen abrufen + Anzeige aktualisieren.</summary>
+    [RelayCommand]
+    private async Task RefreshGnssConditionsAsync()
+    {
+        try
+        {
+            GnssConditionsText = "GNSS-Bedingungen werden geprueft...";
+            var conditions = await _gnssConditions.GetCurrentConditionsAsync();
+            var parts = new List<string>();
+            if (conditions.SatelliteCount.HasValue) parts.Add($"Sats: {conditions.SatelliteCount.Value}");
+            if (conditions.KpIndex.HasValue) parts.Add($"Kp: {conditions.KpIndex.Value:F1}");
+            if (conditions.SolarFluxF107.HasValue) parts.Add($"F10.7: {conditions.SolarFluxF107.Value:F0}");
+            parts.Add(conditions.Recommendation);
+            GnssConditionsText = string.Join("  ·  ", parts);
+            GnssConditionsQualityLabel = conditions.OverallLevel switch
+            {
+                GnssQuality.Good => "✓",
+                GnssQuality.Fair => "~",
+                GnssQuality.Poor => "✗",
+                _ => "?",
+            };
+        }
+        catch (Exception ex)
+        {
+            GnssConditionsText = $"GNSS-Bedingungen nicht abrufbar: {ex.Message}";
+            GnssConditionsQualityLabel = "?";
         }
     }
 

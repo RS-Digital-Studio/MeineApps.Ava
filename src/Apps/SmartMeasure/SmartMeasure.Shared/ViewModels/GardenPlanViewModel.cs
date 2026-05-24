@@ -73,20 +73,49 @@ public partial class GardenPlanViewModel : ViewModelBase
 
     private readonly IProjectService _projectService;
 
+    private readonly IVolumeService _volumeService;
+
     public GardenPlanViewModel(
         IMeasurementService measurementService,
         ICoordinateService coordinateService,
         IGardenPlanService gardenPlanService,
-        IProjectService projectService)
+        IProjectService projectService,
+        IVolumeService volumeService)
     {
         _measurementService = measurementService;
         _coordinateService = coordinateService;
         _gardenPlanService = gardenPlanService;
         _projectService = projectService;
+        _volumeService = volumeService;
         Renderer = new GardenPlanRenderer(gardenPlanService);
 
         _measurementService.PointAdded += _ => UpdateCoordinates();
         _measurementService.PointsReset += UpdateCoordinates;
+    }
+
+    // Plan-Kap. 5.4: Volumen-Schaetzung pro geschlossener Kontur
+    [ObservableProperty] private string _volumeResultText = string.Empty;
+    [ObservableProperty] private double _volumeDepthMeters = 0.30;
+
+    /// <summary>Plan-Kap. 5.4: Volumen fuer ein gewaehltes geschlossenes GardenElement
+    /// berechnen — Tiefe kommt aus <see cref="VolumeDepthMeters"/>. Liefert Text mit
+    /// Volumen + Top-3-Material-Tonnen (Mutterboden/Sand/Kies).</summary>
+    [RelayCommand]
+    private void EstimateVolume(GardenElement? element)
+    {
+        if (element == null) { VolumeResultText = string.Empty; return; }
+        try
+        {
+            var est = _volumeService.EstimatePrism(element, VolumeDepthMeters);
+            var top = string.Join(", ",
+                est.MaterialOptions.Take(3).Select(m => $"{m.Material}: {m.Tonnes:F1} t"));
+            VolumeResultText = $"V = {est.VolumeCubicMeters:F2} m³  ·  A = {est.BaseAreaSquareMeters:F2} m²" +
+                               (string.IsNullOrEmpty(top) ? string.Empty : $"\n{top}");
+        }
+        catch (Exception ex)
+        {
+            VolumeResultText = $"Volumen-Schaetzung fehlgeschlagen: {ex.Message}";
+        }
     }
 
     /// <summary>Gartenelemente aus der Datenbank laden (nach AR-Transfer oder Projekt-Wechsel)</summary>

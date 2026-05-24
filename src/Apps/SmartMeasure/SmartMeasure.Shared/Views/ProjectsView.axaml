@@ -7,7 +7,7 @@
              x:CompileBindings="True"
              x:DataType="vm:ProjectsViewModel">
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*">
         <!-- Neues Projekt erstellen -->
         <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" Padding="12,8">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -27,8 +27,47 @@
             </Grid>
         </Border>
 
+        <!-- Plan-Kap. 5.13: Differential-Snapshot zwischen zwei Projekten -->
+        <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" Padding="12,8" Margin="0,0,0,4">
+            <StackPanel Spacing="6">
+                <TextBlock Text="Sessions vergleichen (Differential)" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="6">
+                    <ComboBox Grid.Column="0" ItemsSource="{Binding Projects}"
+                              SelectedItem="{Binding CompareProjectA}"
+                              PlaceholderText="Projekt A" FontSize="12">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:SurveyProject">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Projects}"
+                              SelectedItem="{Binding CompareProjectB}"
+                              PlaceholderText="Projekt B" FontSize="12">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:SurveyProject">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Grid.Column="2" Command="{Binding CompareSelectedProjectsCommand}"
+                            Background="{DynamicResource SecondaryBrush}" Foreground="White"
+                            FontSize="11" Padding="8,4">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="CompareHorizontal" Width="14" Height="14" />
+                            <TextBlock Text="Vergleichen" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+                <TextBlock Text="{Binding DifferentialResultText}" FontSize="11" TextWrapping="Wrap"
+                           IsVisible="{Binding DifferentialResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Foreground="{DynamicResource PrimaryBrush}" />
+            </StackPanel>
+        </Border>
+
         <!-- Projektliste -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Projects}" Margin="12,8,12,60">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:SurveyProject">

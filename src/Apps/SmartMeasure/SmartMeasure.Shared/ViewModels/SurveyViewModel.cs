@@ -164,8 +164,23 @@ public partial class SurveyViewModel : ViewModelBase
             return;
         }
 
+        // Plan-Kap. 5.2: Bestehende Projekt-Punkte als Site-Marker in die AR-Session
+        // mitnehmen — neue Erfassungen landen dann im selben Koordinatensystem.
+        var sitePoints = _measurementService.CurrentPoints;
+        _arCaptureService.SetSitePoints(sitePoints.Count > 0 ? [.. sitePoints] : null);
+
         ArStatusText = "AR-Kamera aktiv...";
-        var result = await _arCaptureService.CaptureAsync();
+        ArCaptureResult? result;
+        try
+        {
+            result = await _arCaptureService.CaptureAsync();
+        }
+        finally
+        {
+            // Site-Points-Bruecke zuruecksetzen — naechster Aufruf soll keine veralteten
+            // Punkte erben.
+            _arCaptureService.SetSitePoints(null);
+        }
 
         if (result != null && result.TotalPointCount > 0)
         {

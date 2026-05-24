@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Helpers;
@@ -13,7 +14,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for year overview (Premium feature)
 /// </summary>
-public sealed partial class YearOverviewViewModel : ViewModelBase
+public sealed partial class YearOverviewViewModel : ViewModelBase, INavigationSource, IMessageSource
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
@@ -118,11 +119,8 @@ public sealed partial class YearOverviewViewModel : ViewModelBase
 
     partial void OnSelectedYearChanged(int value)
     {
-        _ = LoadDataAsync().ContinueWith(t =>
-        {
-            if (t.Exception != null)
-                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
-        }, TaskContinuationOptions.OnlyOnFaulted);
+        LoadDataAsync().Forget(ex =>
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     [RelayCommand]

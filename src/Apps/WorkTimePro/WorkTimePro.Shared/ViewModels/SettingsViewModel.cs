@@ -15,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for settings
 /// </summary>
-public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
+public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, IDisposable
 {
     public event Action<string, string>? MessageRequested;
     /// <summary>
@@ -203,21 +203,31 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     // === Automatische Wochenstunden-Berechnung ===
 
-    partial void OnUseIndividualHoursChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnMondayHoursChanged(double value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnTuesdayHoursChanged(double value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnWednesdayHoursChanged(double value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnThursdayHoursChanged(double value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnFridayHoursChanged(double value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnSaturdayHoursChanged(double value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnSundayHoursChanged(double value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnMondayEnabledChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnTuesdayEnabledChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnWednesdayEnabledChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnThursdayEnabledChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnFridayEnabledChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnSaturdayEnabledChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
-    partial void OnSundayEnabledChanged(bool value) { _workTimeSettingsChanged = true; RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    /// <summary>
+    /// Gemeinsamer Handler für alle Arbeitszeit-Settings (vorher: 15× identische Boilerplate-Zeile).
+    /// </summary>
+    private void NotifyWorkTimeChanged()
+    {
+        _workTimeSettingsChanged = true;
+        RecalculateWeeklyHours();
+        ScheduleAutoSave();
+    }
+
+    partial void OnUseIndividualHoursChanged(bool value) => NotifyWorkTimeChanged();
+    partial void OnMondayHoursChanged(double value) => NotifyWorkTimeChanged();
+    partial void OnTuesdayHoursChanged(double value) => NotifyWorkTimeChanged();
+    partial void OnWednesdayHoursChanged(double value) => NotifyWorkTimeChanged();
+    partial void OnThursdayHoursChanged(double value) => NotifyWorkTimeChanged();
+    partial void OnFridayHoursChanged(double value) => NotifyWorkTimeChanged();
+    partial void OnSaturdayHoursChanged(double value) => NotifyWorkTimeChanged();
+    partial void OnSundayHoursChanged(double value) => NotifyWorkTimeChanged();
+    partial void OnMondayEnabledChanged(bool value) => NotifyWorkTimeChanged();
+    partial void OnTuesdayEnabledChanged(bool value) => NotifyWorkTimeChanged();
+    partial void OnWednesdayEnabledChanged(bool value) => NotifyWorkTimeChanged();
+    partial void OnThursdayEnabledChanged(bool value) => NotifyWorkTimeChanged();
+    partial void OnFridayEnabledChanged(bool value) => NotifyWorkTimeChanged();
+    partial void OnSaturdayEnabledChanged(bool value) => NotifyWorkTimeChanged();
+    partial void OnSundayEnabledChanged(bool value) => NotifyWorkTimeChanged();
 
     /// <summary>
     /// Berechnet WeeklyHours automatisch aus den individuellen Tagesstunden

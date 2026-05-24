@@ -14,7 +14,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for week overview
 /// </summary>
-public sealed partial class WeekOverviewViewModel : ViewModelBase
+public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSource, IMessageSource
 {
     private readonly ICalculationService _calculation;
     private readonly IDatabaseService _database;

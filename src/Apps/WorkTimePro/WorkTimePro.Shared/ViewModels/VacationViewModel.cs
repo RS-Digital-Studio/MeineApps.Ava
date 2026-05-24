@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
@@ -23,7 +24,7 @@ public class VacationTypeItem
 /// <summary>
 /// ViewModel for vacation management (Premium feature)
 /// </summary>
-public sealed partial class VacationViewModel : ViewModelBase
+public sealed partial class VacationViewModel : ViewModelBase, INavigationSource, IMessageSource
 {
     private readonly IVacationService _vacationService;
     private readonly IHolidayService _holidayService;
@@ -131,33 +132,24 @@ public sealed partial class VacationViewModel : ViewModelBase
 
     partial void OnSelectedYearChanged(int value)
     {
-        _ = LoadDataAsync().ContinueWith(t =>
-        {
-            if (t.Exception != null)
-                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
-        }, TaskContinuationOptions.OnlyOnFaulted);
+        LoadDataAsync().Forget(ex =>
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     partial void OnNewStartDateChanged(DateTime value)
     {
         if (value > NewEndDate)
             NewEndDate = value;
-        _ = CalculateWorkDaysAsync().ContinueWith(t =>
-        {
-            if (t.Exception != null)
-                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
-        }, TaskContinuationOptions.OnlyOnFaulted);
+        CalculateWorkDaysAsync().Forget(ex =>
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     partial void OnNewEndDateChanged(DateTime value)
     {
         if (value < NewStartDate)
             NewStartDate = value;
-        _ = CalculateWorkDaysAsync().ContinueWith(t =>
-        {
-            if (t.Exception != null)
-                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
-        }, TaskContinuationOptions.OnlyOnFaulted);
+        CalculateWorkDaysAsync().Forget(ex =>
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     [RelayCommand]

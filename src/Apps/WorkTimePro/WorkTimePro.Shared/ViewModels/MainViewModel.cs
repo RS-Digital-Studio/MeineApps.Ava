@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
@@ -45,32 +46,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     // Undo-Mechanismus (5 Sekunden Fenster nach CheckIn/CheckOut)
     private CancellationTokenSource? _undoCts;
-    private CancellationTokenSource? _noteDebounce;
-    private bool _suppressNoteDebounce; // Verhindert Debounce-Speichern während LoadDataAsync
+    // AsyncDebouncer statt manuelles CancellationTokenSource — saubere Pause-Semantik
+    // (vorher: bool _suppressNoteDebounce konnte bei Exception in LoadDataAsync hängen bleiben).
+    private readonly AsyncDebouncer _noteDebouncer = new(TimeSpan.FromMilliseconds(1500));
     private TimeEntry? _lastUndoEntry;
     private TrackingStatus _statusBeforeUndo;
 
     // Event-Handler-Referenzen für sauberes Dispose
-    private readonly List<(ObservableObject Vm, string EventName, Delegate Handler)> _wiredEvents = [];
-
-    // === Sub-Page Navigation ===
-
-    [ObservableProperty]
-    private bool _isDayDetailActive;
-
-    [ObservableProperty]
-    private bool _isMonthActive;
-
-    [ObservableProperty]
-    private bool _isYearActive;
-
-    [ObservableProperty]
-    private bool _isVacationActive;
-
-    [ObservableProperty]
-    private bool _isShiftPlanActive;
-
-    public bool IsSubPageActive => IsDayDetailActive || IsMonthActive || IsYearActive || IsVacationActive || IsShiftPlanActive;
+    // Typed Wiring statt Reflection: jeder Subscriber-VM merkt sich seine eigenen Handler-Delegates,
+    // damit Dispose sie korrekt abmelden kann.
+    private readonly List<(INavigationSource Source, Action<string> Handler)> _navHandlers = [];
+    private readonly List<(IMessageSource Source, Action<string, string> Handler)> _msgHandlers = [];
 
     // === Child ViewModels (for tab pages and sub-pages) ===
     public WeekOverviewViewModel WeekVm { get; }
@@ -210,125 +196,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// Änderungen (Arbeitszeit-Settings, Backup-Restore). Bei kosmetischen Änderungen
     /// (Reminder-Zeit, Stundenlohn) reicht das Settings-Cache-Update.
     /// </summary>
-    private async void OnSettingsChanged(object? sender, bool requiresDataReload)
+    private void OnSettingsChanged(object? sender, bool requiresDataReload)
     {
-        try
+        // async void → Forget mit zentraler Fehlerbehandlung
+        ForgetExtensions.RunForget(async () =>
         {
-            // Settings-Cache sofort invalidieren
             _cachedSettings = await _database.GetSettingsAsync();
             if (requiresDataReload)
                 await LoadTabDataAsync(CurrentTab);
-        }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Settings-Reload Fehler: {ex.Message}"); }
-    }
-
-    private void WireSubPageNavigation(ObservableObject vm)
-    {
-        // Sub-page VMs navigieren per Route-Strings
-        var navEvent = vm.GetType().GetEvent("NavigationRequested");
-        if (navEvent != null)
-        {
-            var handler = new Action<string>(route => HandleNavigation(route));
-            navEvent.AddEventHandler(vm, handler);
-            _wiredEvents.Add((vm, "NavigationRequested", handler));
-        }
-
-        // MessageRequested weiterleiten (Fehlermeldungen der Sub-VMs dem User anzeigen)
-        var msgEvent = vm.GetType().GetEvent("MessageRequested");
-        if (msgEvent != null)
-        {
-            var handler = new Action<string, string>((title, msg) => MessageRequested?.Invoke(title, msg));
-            msgEvent.AddEventHandler(vm, handler);
-            _wiredEvents.Add((vm, "MessageRequested", handler));
-        }
-    }
-
-    /// <summary>
-    /// Zentrale Navigations-Behandlung für alle Sub-Page-Routes
-    /// </summary>
-    private async void HandleNavigation(string route)
-    {
-        try
-        {
-            // Zurück-Navigation
-            if (route == ".." || route.Contains("back", StringComparison.OrdinalIgnoreCase))
-            {
-                GoBack();
-                return;
-            }
-
-            // DayDetail-Navigation (z.B. "DayDetailPage?date=2026-02-13")
-            if (route.StartsWith("DayDetailPage", StringComparison.OrdinalIgnoreCase))
-            {
-                var dateParam = route.Split("date=", StringSplitOptions.RemoveEmptyEntries);
-                if (dateParam.Length > 1 && DateTime.TryParse(dateParam[1], out var date))
-                {
-                    DayDetailVm.SelectedDate = date;
-                }
-                CloseAllSubPages();
-                IsDayDetailActive = true;
-                OnPropertyChanged(nameof(IsSubPageActive));
-                await DayDetailVm.LoadDataAsync();
-                return;
-            }
-
-            // MonthOverview-Navigation (z.B. "month?date=2026-02-01" von YearOverview)
-            if (route.StartsWith("month", StringComparison.OrdinalIgnoreCase))
-            {
-                var dateParam = route.Split("date=", StringSplitOptions.RemoveEmptyEntries);
-                if (dateParam.Length > 1 && DateTime.TryParse(dateParam[1], out var monthDate))
-                {
-                    MonthVm.SelectedMonth = new DateTime(monthDate.Year, monthDate.Month, 1);
-                }
-                CloseAllSubPages();
-                IsMonthActive = true;
-                OnPropertyChanged(nameof(IsSubPageActive));
-                await MonthVm.LoadDataAsync();
-                return;
-            }
-
-            // WeekOverview-Navigation (von MonthOverview)
-            if (route.StartsWith("WeekOverviewPage", StringComparison.OrdinalIgnoreCase))
-            {
-                // Zur Wochen-Ansicht wechseln (Tab 1)
-                CloseAllSubPages();
-                CurrentTab = 1;
-                return;
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Fehler in HandleNavigation: {ex}");
-        }
-    }
-
-    // === Tab Navigation ===
-
-    [ObservableProperty]
-    private int _currentTab;
-
-    public bool IsTodayActive => CurrentTab == 0;
-    public bool IsWeekActive => CurrentTab == 1;
-    public bool IsCalendarActive => CurrentTab == 2;
-    public bool IsStatisticsActive => CurrentTab == 3;
-    public bool IsSettingsActive => CurrentTab == 4;
-
-    partial void OnCurrentTabChanged(int value)
-    {
-        OnPropertyChanged(nameof(IsTodayActive));
-        OnPropertyChanged(nameof(IsWeekActive));
-        OnPropertyChanged(nameof(IsCalendarActive));
-        OnPropertyChanged(nameof(IsStatisticsActive));
-        OnPropertyChanged(nameof(IsSettingsActive));
-
-        // Daten für den jeweiligen Tab neu laden
-        _ = LoadTabDataAsync(value).ContinueWith(t =>
-        {
-            if (t.IsFaulted)
-                MessageRequested?.Invoke(
-                    AppStrings.Error,
-                    t.Exception?.InnerException?.Message ?? AppStrings.ErrorLoading ?? "Tab load failed");
-        }, TaskContinuationOptions.OnlyOnFaulted);
+        }, ex => MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     private async Task LoadTabDataAsync(int tab)
@@ -342,21 +218,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             case 4: await SettingsVm.LoadDataAsync(); break;
         }
     }
-
-    [RelayCommand]
-    private void SelectTodayTab() => CurrentTab = 0;
-
-    [RelayCommand]
-    private void SelectWeekTab() => CurrentTab = 1;
-
-    [RelayCommand]
-    private void SelectCalendarTab() => CurrentTab = 2;
-
-    [RelayCommand]
-    private void SelectStatisticsTab() => CurrentTab = 3;
-
-    [RelayCommand]
-    private void SelectSettingsTab() => CurrentTab = 4;
 
     // === Observable Properties ===
 
@@ -494,25 +355,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     partial void OnTodayNoteChanged(string value)
     {
-        // Kein Debounce-Speichern während LoadDataAsync (vermeidet unnötigen DB-Write)
-        if (_suppressNoteDebounce) return;
-
-        // Debounce: Notiz nach 1.5s Inaktivität automatisch speichern
-        _noteDebounce?.Cancel();
-        _noteDebounce = new CancellationTokenSource();
-        var token = _noteDebounce.Token;
-
-        _ = Task.Run(async () =>
+        // Debounce: Notiz nach 1.5s Inaktivität automatisch speichern.
+        // Während LoadDataAsync wird der Debouncer per Pause()-Scope deaktiviert
+        // (siehe LoadDataAsync) → kein Race, kein hängendes Suppress-Flag.
+        _noteDebouncer.Trigger(async _ =>
         {
-            try
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
             {
-                await Task.Delay(1500, token);
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await SaveNoteAsync();
-                });
-            }
-            catch (TaskCanceledException) { }
+                await SaveNoteAsync();
+            });
         });
     }
 
@@ -652,10 +503,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             FirstCheckIn = today.FirstCheckIn?.ToString("HH:mm") ?? "--:--";
             LastCheckOut = today.LastCheckOut?.ToString("HH:mm") ?? "--:--";
 
-            // Tagesnotiz laden (Debounce unterdrücken, da gleicher Wert aus DB)
-            _suppressNoteDebounce = true;
-            TodayNote = today.Note ?? "";
-            _suppressNoteDebounce = false;
+            // Tagesnotiz laden (Debouncer pausieren statt Suppress-Flag → kein Leak bei Exception)
+            using (_noteDebouncer.Pause())
+            {
+                TodayNote = today.Note ?? "";
+            }
 
             // Auto-Pause Info
             HasAutoPause = today.HasAutoPause;
@@ -692,69 +544,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             IsLoading = false;
         }
-    }
-
-    [RelayCommand]
-    private async Task NavigateToDayDetailAsync()
-    {
-        // Immer den heutigen Tag anzeigen wenn von TodayView aus navigiert
-        DayDetailVm.SelectedDate = DateTime.Today;
-        CloseAllSubPages();
-        IsDayDetailActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
-        await DayDetailVm.LoadDataAsync();
-    }
-
-    [RelayCommand]
-    private async Task NavigateToMonthAsync()
-    {
-        CloseAllSubPages();
-        IsMonthActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
-        await MonthVm.LoadDataAsync();
-    }
-
-    [RelayCommand]
-    private async Task NavigateToYearAsync()
-    {
-        CloseAllSubPages();
-        IsYearActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
-        await YearVm.LoadDataAsync();
-    }
-
-    [RelayCommand]
-    private async Task NavigateToVacationAsync()
-    {
-        CloseAllSubPages();
-        IsVacationActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
-        await VacationVm.LoadDataAsync();
-    }
-
-    [RelayCommand]
-    private async Task NavigateToShiftPlanAsync()
-    {
-        CloseAllSubPages();
-        IsShiftPlanActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
-        await ShiftPlanVm.LoadDataAsync();
-    }
-
-    [RelayCommand]
-    public void GoBack()
-    {
-        CloseAllSubPages();
-    }
-
-    private void CloseAllSubPages()
-    {
-        IsDayDetailActive = false;
-        IsMonthActive = false;
-        IsYearActive = false;
-        IsVacationActive = false;
-        IsShiftPlanActive = false;
-        OnPropertyChanged(nameof(IsSubPageActive));
     }
 
     // === Zurück-Taste (Double-Back-to-Exit) ===
@@ -987,9 +776,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                         EstimatedEndTime = $"~{estimatedEnd:HH:mm}";
                         var remHours = (int)remainingMinutes / 60;
                         var remMins = (int)remainingMinutes % 60;
+                        // Fallback ist nur Defensive — RESX-Key existiert in allen 6 Sprachen.
+                        // Mit deutschem Default um nicht englisch durchzudringen wenn der Key mal verloren geht.
                         RemainingTodayText = string.Format(
-                            AppStrings.RemainingTodayFormat ?? "{0} {1}:{2:D2}",
-                            AppStrings.Remaining, remHours, remMins);
+                            AppStrings.RemainingTodayFormat ?? "{0} {1}:{2:D2} h",
+                            AppStrings.Remaining ?? "Noch", remHours, remMins);
                         HasInsight = true;
                     }
                     else
@@ -1024,16 +815,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async void OnUpdateTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private void OnUpdateTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        try
-        {
-            await UpdateLiveDataAsync();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnUpdateTimerElapsed: {ex}");
-        }
+        // Timer-Event sekündlich → zentraler Forget-Helper statt async void mit try/catch.
+        // Nach Dispose ist UpdateLiveDataAsync ein No-Op (_disposed-Guard); Forget meldet sonstige
+        // Fehler an die zentrale Stelle ohne sekündlich MessageRequested zu spammen.
+        ForgetExtensions.RunForget(UpdateLiveDataAsync);
     }
 
     public void Dispose()
@@ -1047,21 +834,26 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _updateTimer?.Dispose();
         _undoCts?.Cancel();
         _undoCts?.Dispose();
-        _noteDebounce?.Cancel();
-        _noteDebounce?.Dispose();
+        _noteDebouncer.Dispose();
         _timeTracking.StatusChanged -= OnStatusChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
         SettingsVm.SettingsChanged -= OnSettingsChanged;
 
-        // Sub-Page Navigation Events abmelden
-        foreach (var (vm, eventName, handler) in _wiredEvents)
-        {
-            var navEvent = vm.GetType().GetEvent(eventName);
-            navEvent?.RemoveEventHandler(vm, handler);
-        }
-        _wiredEvents.Clear();
+        // Sub-Page Navigation/Message Events abmelden (typed statt Reflection)
+        foreach (var (source, handler) in _navHandlers)
+            source.NavigationRequested -= handler;
+        _navHandlers.Clear();
+
+        foreach (var (source, handler) in _msgHandlers)
+            source.MessageRequested -= handler;
+        _msgHandlers.Clear();
+
+        // Sub-VMs die IDisposable implementieren disposen — Sub-VMs sind Singletons,
+        // ihr Cleanup-Pfad muss explizit aufgerufen werden (sonst leakt z.B. der
+        // AutoSave-CancellationTokenSource in SettingsVm bis zum Prozessende).
+        (SettingsVm as IDisposable)?.Dispose();
 
         GC.SuppressFinalize(this);
     }

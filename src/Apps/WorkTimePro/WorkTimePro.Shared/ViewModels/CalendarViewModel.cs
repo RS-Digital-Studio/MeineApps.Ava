@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -15,7 +16,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for calendar view with heatmap and status overlay
 /// </summary>
-public sealed partial class CalendarViewModel : ViewModelBase
+public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
@@ -112,14 +113,14 @@ public sealed partial class CalendarViewModel : ViewModelBase
     {
         if (value > OverlayEndDate)
             OverlayEndDate = value;
-        _ = RecalculateOverlayDaysAsync();
+        RecalculateOverlayDaysAsync().Forget();
     }
 
     partial void OnOverlayEndDateChanged(DateTime value)
     {
         if (value < OverlayStartDate)
             OverlayStartDate = value;
-        _ = RecalculateOverlayDaysAsync();
+        RecalculateOverlayDaysAsync().Forget();
     }
 
     private async Task RecalculateOverlayDaysAsync()

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Helpers;
@@ -14,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel für Tagesdetails mit Bearbeitung von Zeiteinträgen und Pausen
 /// </summary>
-public sealed partial class DayDetailViewModel : ViewModelBase
+public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSource, IMessageSource
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
@@ -194,7 +195,8 @@ public sealed partial class DayDetailViewModel : ViewModelBase
 
     partial void OnDateStringChanged(string value)
     {
-        if (DateTime.TryParse(value, out var date))
+        // InvariantCulture + RoundtripKind: ISO-Routen sind locale-unabhängig (Pflicht laut Haupt-CLAUDE.md)
+        if (DateTime.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var date))
         {
             SelectedDate = date;
         }
@@ -204,11 +206,8 @@ public sealed partial class DayDetailViewModel : ViewModelBase
         _loadCts?.Dispose();
         _loadCts = new CancellationTokenSource();
 
-        _ = LoadDataAsync().ContinueWith(t =>
-        {
-            if (t.Exception != null)
-                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
-        }, TaskContinuationOptions.OnlyOnFaulted);
+        LoadDataAsync().Forget(ex =>
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     // === Commands ===

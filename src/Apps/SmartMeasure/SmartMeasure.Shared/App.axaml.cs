@@ -23,6 +23,10 @@ public class App : Application
     /// <summary>Plattform-spezifischer IAppPaths (Android: Context.FilesDir, Desktop: ApplicationData)</summary>
     public static Func<IAppPaths>? AppPathsFactory { get; set; }
 
+    /// <summary>Plan-Kap. 5.12: Plattform-Voice-Service-Factory. Wenn nicht gesetzt
+    /// (Desktop/Mock), faellt DI auf <see cref="NullVoiceAnnotationService"/> zurueck.</summary>
+    public static Func<IServiceProvider, IVoiceAnnotationService>? VoiceAnnotationServiceFactory { get; set; }
+
     private MainViewModel? _mainVm;
 
     public override void Initialize()
@@ -108,7 +112,12 @@ public class App : Application
         services.AddSingleton<ILeastSquaresAdjustmentService, LeastSquaresAdjustmentService>();
         // Voice/Multi-User/Mesh: Interface-Stubs ohne Default-Impl — werden vom
         // jeweiligen Plattform-Modul oder einer Folge-Iteration verkabelt.
-        services.AddSingleton<IVoiceAnnotationService, NullVoiceAnnotationService>();
+        if (VoiceAnnotationServiceFactory != null)
+            services.AddSingleton(VoiceAnnotationServiceFactory);
+        else
+            services.AddSingleton<IVoiceAnnotationService, NullVoiceAnnotationService>();
+        services.AddSingleton<ISurveyReportService, SurveyReportService>();
+        services.AddSingleton<ISceneReconstructionService, SceneReconstructionService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

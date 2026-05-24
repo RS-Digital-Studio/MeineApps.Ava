@@ -56,6 +56,9 @@ public class MainActivity : AvaloniaMainActivity
         _arCaptureService = new AndroidArCaptureService(this);
         App.ArCaptureServiceFactory = _ => _arCaptureService;
 
+        // Plan-Kap. 5.12: Voice-Annotation via Android SpeechRecognizer
+        App.VoiceAnnotationServiceFactory = _ => new AndroidVoiceAnnotationService(this);
+
         base.OnCreate(savedInstanceState);
 
         _mainVm = App.Services?.GetService(typeof(MainViewModel)) as MainViewModel;

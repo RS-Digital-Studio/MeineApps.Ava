@@ -239,7 +239,10 @@ namespace ArcaneKingdom.EditorTools.Data
 
         private static T LoadOrCreateAsset<T>(string assetPath) where T : ScriptableObject
         {
-            EnsureFolder(Path.GetDirectoryName(assetPath)!);
+            // Auf Windows liefert Path.GetDirectoryName Backslashes, AssetDatabase
+            // erwartet aber Forward-Slashes — explizit normalisieren.
+            var dir = (Path.GetDirectoryName(assetPath) ?? string.Empty).Replace('\\', '/');
+            EnsureFolder(dir);
             var existing = AssetDatabase.LoadAssetAtPath<T>(assetPath);
             if (existing != null) return existing;
             var instance = ScriptableObject.CreateInstance<T>();
@@ -249,6 +252,8 @@ namespace ArcaneKingdom.EditorTools.Data
 
         private static void EnsureFolder(string relativePath)
         {
+            if (string.IsNullOrEmpty(relativePath)) return;
+            relativePath = relativePath.Replace('\\', '/');
             if (AssetDatabase.IsValidFolder(relativePath)) return;
             var parts = relativePath.Split('/');
             var current = parts[0];

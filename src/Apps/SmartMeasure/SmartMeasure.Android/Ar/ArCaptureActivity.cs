@@ -1019,6 +1019,21 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             return;
         }
 
+        // Plan-Kap. 3.5 / 5.10: Sky-Pixel-Filter. Wenn Scene-Semantics aktiv ist und
+        // der Hit auf einen Sky-Pixel faellt, lehnen wir die Messung ab — Instant-
+        // Placement liefert sonst eine 1.5m-Schaetzung obwohl der echte Hit Kilometer
+        // entfernt waere. Plane- und Point-Hits werden trotzdem akzeptiert (an reflektiven
+        // Glasfassaden klassifiziert ARCore manchmal das Spiegelbild als Sky).
+        if (probe.SemanticLabel == ArSemanticLabel.Sky && probe.HitQuality <= 1)
+        {
+            RunOnUiThread(() =>
+            {
+                ShowTransientHint("☁ Himmel-Bereich — bitte einen festen Punkt anvisieren");
+            });
+            VibrateWarning();
+            return;
+        }
+
         // Sample-Fenster starten — atomar unter Lock
         lock (_samplerLock)
         {
@@ -1447,6 +1462,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // hitQuality: 3=Plane (conf>=0.9), 2=FeaturePoint (>=0.7), 1=Instant-Placement (<0.7)
             var hitQuality = confidence >= 0.9f ? 3 : confidence >= 0.7f ? 2 : 1;
 
+            // Plan-Kap. 3.5 / 5.10: Semantic-Label am Hit-Pixel auslesen. Sky/Water-Hits
+            // werden nicht direkt verworfen (Plane-Detection war bereits erfolgreich, also
+            // ist es vermutlich eine reflektive Oberflaeche und kein echter Himmel), aber
+            // das Label wird mitgespeichert. PlaceNewPoint pruft den Label und kann
+            // ablehnen, wenn nur Instant-Placement + Sky zusammenkommen.
+            var semantic = ArSemanticLabel.None;
+            if (_viewportWidth > 0 && _viewportHeight > 0)
+            {
+                semantic = ArPrecisionHelpers.TryGetSemanticLabel(
+                    frame, screenX, screenY, _viewportWidth, _viewportHeight);
+            }
+
             var arPoint = new ArPoint
             {
                 X = pose.Tx(),
@@ -1454,6 +1481,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 Z = pose.Tz(),
                 Confidence = confidence,
                 HitQuality = hitQuality,
+                SemanticLabel = semantic,
                 Timestamp = DateTime.UtcNow,
             };
 

@@ -25,6 +25,7 @@ public partial class MainView : UserControl
     private readonly WorkspaceBackgroundRenderer _backgroundRenderer = new();
     private DispatcherTimer? _bgTimer;
     private float _bgTime;
+    private Window? _hostWindow; // Desktop: Activated/Deactivated für Hintergrund-Detektion
 
     public MainView()
     {
@@ -59,11 +60,30 @@ public partial class MainView : UserControl
         _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _bgTimer.Tick += OnBackgroundTimerTick;
         _bgTimer.Start();
+
+        // Desktop-Lifecycle: Timer pausieren wenn Fenster nicht aktiv (Fokus weg / minimiert).
+        // Spart Akku/CPU — Renderer läuft sonst weiter obwohl niemand das Pixel sieht.
+        // Auf Android existiert kein direktes "Window Deactivated"-Event auf TopLevel-Ebene;
+        // dort übernimmt die Activity-Lifecycle-Pause im Manifest die Drosselung.
+        _hostWindow = TopLevel.GetTopLevel(this) as Window;
+        if (_hostWindow != null)
+        {
+            _hostWindow.Activated += OnTopLevelActivated;
+            _hostWindow.Deactivated += OnTopLevelDeactivated;
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+
+        // Window-Lifecycle-Hooks abmelden
+        if (_hostWindow != null)
+        {
+            _hostWindow.Activated -= OnTopLevelActivated;
+            _hostWindow.Deactivated -= OnTopLevelDeactivated;
+            _hostWindow = null;
+        }
 
         // Hintergrund-Render-Loop stoppen und Renderer freigeben
         if (_bgTimer != null)
@@ -100,6 +120,18 @@ public partial class MainView : UserControl
         _bgTime += deltaTime;
         _backgroundRenderer.Update(deltaTime);
         BackgroundCanvas?.InvalidateSurface();
+    }
+
+    private void OnTopLevelActivated(object? sender, EventArgs e)
+    {
+        // App wieder im Vordergrund → Renderer reaktivieren
+        _bgTimer?.Start();
+    }
+
+    private void OnTopLevelDeactivated(object? sender, EventArgs e)
+    {
+        // App im Hintergrund → Render-Loop pausieren (Akku sparen)
+        _bgTimer?.Stop();
     }
 
     private void OnBackgroundPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

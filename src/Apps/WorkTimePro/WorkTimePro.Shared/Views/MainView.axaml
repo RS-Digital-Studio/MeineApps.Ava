@@ -127,8 +127,10 @@
 
     <!-- ============================================ -->
     <!-- Ad Banner Spacer (64dp fuer adaptive Banner) -->
+    <!-- Background gesetzt damit beim Banner-Laden / -Fehlen kein Loch durchscheint -->
     <Border Grid.Row="1" Height="64"
             AutomationProperties.AutomationId="Main_AdBannerSpacer"
+            Background="{DynamicResource SurfaceBrush}"
             IsVisible="{Binding IsAdBannerVisible}" />
 
     <!-- Ersatz-Spacer wenn Tab-Bar versteckt (SubPage offen) -->

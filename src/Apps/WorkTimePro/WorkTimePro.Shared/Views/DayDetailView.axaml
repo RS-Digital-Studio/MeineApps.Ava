@@ -446,7 +446,7 @@
           <!-- Notiz -->
           <TextBox AutomationProperties.AutomationId="DayDetail_TxtEditNote"
                    Text="{Binding EditNote, Mode=TwoWay}"
-                   Watermark="{loc:Translate NotePlaceholder}" />
+                   PlaceholderText="{loc:Translate NotePlaceholder}" />
 
           <!-- Buttons -->
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
@@ -525,7 +525,7 @@
           <!-- Notiz -->
           <TextBox AutomationProperties.AutomationId="DayDetail_TxtPauseNote"
                    Text="{Binding PauseNote, Mode=TwoWay}"
-                   Watermark="{loc:Translate NotePlaceholder}" />
+                   PlaceholderText="{loc:Translate NotePlaceholder}" />
 
           <!-- Buttons -->
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">

@@ -283,6 +283,61 @@ public static class ArPrecisionHelpers
     }
 
     /// <summary>
+    /// Plan-Kap. 3.5 / 5.10: Liest aus dem ARCore-SemanticImage die Pixel-Klasse am Touch-Punkt.
+    /// Liefert <see cref="ArSemanticLabel.None"/> wenn Scene-Semantics nicht verfuegbar ist
+    /// (RAM zu klein, Mode nicht supported) oder das Image gerade nicht ready. Der Caller
+    /// kann daraufhin Sky-Hits verwerfen (statt 1.5m-Instant-Placement) oder Punkte
+    /// automatisch labeln (Boden/Pflanze/Gebaeude).
+    /// </summary>
+    public static ArSemanticLabel TryGetSemanticLabel(Frame frame, float screenX, float screenY,
+        int viewportWidth, int viewportHeight)
+    {
+        global::Android.Media.Image? semImage = null;
+        try
+        {
+            semImage = frame.AcquireSemanticImage();
+            if (semImage == null) return ArSemanticLabel.None;
+
+            var sw = semImage.Width;
+            var sh = semImage.Height;
+            if (sw <= 0 || sh <= 0) return ArSemanticLabel.None;
+
+            var sx = Math.Clamp((int)(screenX / viewportWidth * sw), 0, sw - 1);
+            var sy = Math.Clamp((int)(screenY / viewportHeight * sh), 0, sh - 1);
+
+            var planes = semImage.GetPlanes();
+            if (planes == null || planes.Length == 0 || planes[0]?.Buffer == null)
+                return ArSemanticLabel.None;
+
+            var plane = planes[0];
+            var offset = sy * plane.RowStride + sx * plane.PixelStride;
+            if (offset >= plane.Buffer.Capacity()) return ArSemanticLabel.None;
+
+            plane.Buffer.Position(offset);
+            var raw = plane.Buffer.Get() & 0xFF;
+
+            // ARCore Semantic-Labels sind 0..11. Werte ausserhalb behandeln wir als Unlabeled.
+            return raw <= 11 ? (ArSemanticLabel)raw : ArSemanticLabel.Unlabeled;
+        }
+        catch (NotYetAvailableException) { return ArSemanticLabel.None; }
+        catch (Exception) { return ArSemanticLabel.None; }
+        finally
+        {
+            try { semImage?.Close(); } catch { }
+        }
+    }
+
+    /// <summary>Convenience-Check fuer den haeufigsten Verwendungsfall: ist der Hit ein
+    /// Sky-Pixel? Im Garten typische Fehlmess-Quelle (User peilt ueber den Horizont,
+    /// Instant-Placement liefert 1.5m → komplett falsche Position).</summary>
+    public static bool IsHitInSky(Frame frame, float screenX, float screenY,
+        int viewportWidth, int viewportHeight)
+    {
+        var label = TryGetSemanticLabel(frame, screenX, screenY, viewportWidth, viewportHeight);
+        return label == ArSemanticLabel.Sky;
+    }
+
+    /// <summary>
     /// Findet die größte getrackte horizontale Plane in der Session und liefert ihren Y-Wert.
     /// Dient als Boden-Referenz: alle Punkt-Höhen werden relativ dazu gerechnet.
     /// "Horizontal" wird via Plane-Normalvektor identifiziert (Y-Komponente > 0.9 = nach oben).

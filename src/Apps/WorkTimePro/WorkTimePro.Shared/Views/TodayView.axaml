@@ -11,9 +11,13 @@
 
   <!-- Styles fuer Animationen und Effekte -->
   <UserControl.Styles>
-    <!-- Big Action Button: Basis-Transition -->
+    <!-- Big Action Button: Basis-Transition.
+         RenderTransform="scale(1)" als initialer Wert ist Pflicht — sonst crasht der
+         null→scale()-Übergang auf manchen Android-GPU-Treibern (siehe Haupt-CLAUDE.md). -->
     <Style Selector="Button.BigAction">
       <Style.Setters>
+        <Setter Property="RenderTransform" Value="scale(1)" />
+        <Setter Property="RenderTransformOrigin" Value="50%,50%" />
         <Setter Property="Transitions">
           <Transitions>
             <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
@@ -32,7 +36,17 @@
       <Setter Property="Opacity" Value="0.85" />
     </Style>
 
-    <!-- Quick-Nav Cards: Hover-Effekt -->
+    <!-- Quick-Nav Cards: Basis-Setter + Hover-Effekt.
+         Auch hier Pflicht-initialer RenderTransform für sauberen Übergang. -->
+    <Style Selector="Button.QuickNav">
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
     <Style Selector="Button.QuickNav:pointerover">
       <Setter Property="RenderTransform" Value="scale(1.03)" />
     </Style>
@@ -339,7 +353,7 @@
           </StackPanel>
           <TextBox AutomationProperties.AutomationId="Today_TxtNote"
                    Text="{Binding TodayNote, Mode=TwoWay}"
-                   Watermark="{loc:Translate DayNotePlaceholder}"
+                   PlaceholderText="{loc:Translate DayNotePlaceholder}"
                    AcceptsReturn="True"
                    TextWrapping="Wrap"
                    MinHeight="40"

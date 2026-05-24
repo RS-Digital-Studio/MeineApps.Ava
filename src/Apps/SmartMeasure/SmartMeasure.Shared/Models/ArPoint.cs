@@ -1,5 +1,25 @@
 namespace SmartMeasure.Shared.Models;
 
+/// <summary>Semantische Pixel-Klassifikation aus ARCore Scene-Semantics (Plan-Kap. 3.5 / 5.10).
+/// Werte spiegeln das ARCore-Java-Enum 1:1 als uint8; <see cref="None"/> = noch nicht
+/// gesetzt oder API nicht verfuegbar.</summary>
+public enum ArSemanticLabel : byte
+{
+    None = 255,
+    Unlabeled = 0,
+    Sky = 1,
+    Building = 2,
+    Tree = 3,
+    Road = 4,
+    Sidewalk = 5,
+    Terrain = 6,
+    Structure = 7,
+    Object = 8,
+    Vehicle = 9,
+    Person = 10,
+    Water = 11,
+}
+
 /// <summary>Ein 3D-Punkt aus der AR-Kamera-Erfassung (lokale Meter-Koordinaten)</summary>
 public class ArPoint
 {
@@ -71,6 +91,12 @@ public class ArPoint
     /// einzelne wackelige Messungen sichtbar werden.
     /// </summary>
     public float SampleTrackingContinuity { get; set; } = 1f;
+
+    /// <summary>Optionales Semantik-Label aus ARCore Scene-Semantics (Plan-Kap. 3.5 / 5.10).
+    /// Werte aus <see cref="ArSemanticLabel"/>. None wenn Semantic-API nicht verfuegbar oder
+    /// die Pixel-Klassifikation am Hit-Pixel ungueltig war. Bewusst kein automatisches Setzen
+    /// von <see cref="Label"/> — der User soll seine eigene Beschriftung behalten koennen.</summary>
+    public ArSemanticLabel SemanticLabel { get; set; } = ArSemanticLabel.None;
 
     /// <summary>Zeitpunkt der Erfassung (UTC)</summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;

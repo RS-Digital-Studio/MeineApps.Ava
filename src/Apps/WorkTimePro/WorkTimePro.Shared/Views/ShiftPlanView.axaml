@@ -248,7 +248,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PatternName}"
                        AutomationProperties.AutomationId="ShiftPlan_TxtPatternName"
-                       Watermark="{loc:Translate EarlyShiftExample}" />
+                       PlaceholderText="{loc:Translate EarlyShiftExample}" />
             </StackPanel>
 
             <!-- Times -->
@@ -259,7 +259,7 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding PatternStartTimeDisplay}"
                          AutomationProperties.AutomationId="ShiftPlan_TxtStartTime"
-                         Watermark="HH:mm" />
+                         PlaceholderText="HH:mm" />
               </StackPanel>
 
               <StackPanel Grid.Column="1" Spacing="4">
@@ -268,7 +268,7 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding PatternEndTimeDisplay}"
                          AutomationProperties.AutomationId="ShiftPlan_TxtEndTime"
-                         Watermark="HH:mm" />
+                         PlaceholderText="HH:mm" />
               </StackPanel>
             </Grid>
 

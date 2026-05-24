@@ -148,7 +148,7 @@
             </ComboBox>
 
             <!-- Note -->
-            <TextBox Watermark="{loc:Translate NoteOptional}"
+            <TextBox PlaceholderText="{loc:Translate NoteOptional}"
                      AutomationProperties.AutomationId="Vacation_TxtNote"
                      Text="{Binding NewNote}" />
 

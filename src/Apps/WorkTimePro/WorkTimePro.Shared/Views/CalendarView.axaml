@@ -387,7 +387,7 @@
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Calendar_TxtOverlayNote"
                        Text="{Binding OverlayNote}"
-                       Watermark="{loc:Translate NotePlaceholder}"
+                       PlaceholderText="{loc:Translate NotePlaceholder}"
                        MinHeight="60"
                        AcceptsReturn="True"
                        TextWrapping="Wrap" />

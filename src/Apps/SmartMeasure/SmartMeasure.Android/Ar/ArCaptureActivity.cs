@@ -1161,7 +1161,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Snap nur anwenden wenn nicht durch Long-Press deaktiviert (Feature für später —
         // hier immer aktiv, mit Anzeige-Feedback im Toast).
         var (snappedX, snappedY, snappedZ, snapType) = ApplySnapToHit(x, y, z);
-        if (snapType != ArSnapEngine.SnapType.None)
+        if (snapType != SmartMeasure.Shared.Services.ArSnapEngine.SnapType.None)
         {
             x = snappedX;
             y = snappedY;
@@ -2905,13 +2905,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     /// <summary>
     /// Plan Kap. 3.7: Wendet die Snap-Engine auf einen Hit-Punkt an. Schickt alle aktuell
-    /// gesetzten Punkte (Einzel + alle Konturen) als Vertex-Snap-Kandidaten und die aktive
-    /// Kontur als Right-Angle-Referenz. Snap-Hint wird per Hint+Haptic gemeldet.
+    /// gesetzten Punkte (Einzel + alle Konturen) als Vertex-Snap-Kandidaten, die aktive
+    /// Kontur als Right-Angle-Referenz und die kompletten Konturkanten als Parallel- /
+    /// Extension-Quelle. Snap-Hint wird per Hint+Haptic gemeldet.
     /// </summary>
-    private (float x, float y, float z, ArSnapEngine.SnapType type) ApplySnapToHit(float x, float y, float z)
+    private (float x, float y, float z, SmartMeasure.Shared.Services.ArSnapEngine.SnapType type) ApplySnapToHit(float x, float y, float z)
     {
         List<ArPoint> existing;
         List<ArPoint>? activeContourPoints = null;
+        List<SmartMeasure.Shared.Services.ArSnapEngine.Edge>? edges = null;
         lock (_dataLock)
         {
             // Snapshots — Snap-Engine darf nicht auf Listen iterieren die parallel mutiert werden.
@@ -2922,15 +2924,36 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 existing.AddRange(_activeContour.Points);
                 activeContourPoints = new List<ArPoint>(_activeContour.Points);
             }
+
+            // Edge-Liste fuer Parallel- + Extension-Snap. Pro abgeschlossener Kontur alle
+            // Edges (inkl. Schluss-Edge wenn geschlossen). Aktive Kontur: Edges zwischen
+            // bisherigen Punkten — die nicht-fertige "letzter Punkt → Hit"-Strecke
+            // gehoert NICHT in die Edge-Liste (sonst snappt der Hit auf seine eigene
+            // Richtung).
+            edges = [];
+            foreach (var c in _contours)
+            {
+                for (var i = 0; i < c.Points.Count - 1; i++)
+                    edges.Add(new SmartMeasure.Shared.Services.ArSnapEngine.Edge(c.Points[i], c.Points[i + 1]));
+                if (c.IsClosed && c.Points.Count >= 3)
+                    edges.Add(new SmartMeasure.Shared.Services.ArSnapEngine.Edge(c.Points[^1], c.Points[0]));
+            }
+            if (_activeContour != null)
+            {
+                for (var i = 0; i < _activeContour.Points.Count - 1; i++)
+                    edges.Add(new SmartMeasure.Shared.Services.ArSnapEngine.Edge(_activeContour.Points[i], _activeContour.Points[i + 1]));
+            }
         }
 
-        var snapped = ArSnapEngine.Apply(x, y, z, existing, activeContourPoints);
-        if (snapped.type != ArSnapEngine.SnapType.None)
+        var snapped = SmartMeasure.Shared.Services.ArSnapEngine.Apply(x, y, z, existing, activeContourPoints, edges);
+        if (snapped.type != SmartMeasure.Shared.Services.ArSnapEngine.SnapType.None)
         {
             var hint = snapped.type switch
             {
-                ArSnapEngine.SnapType.Vertex => "◎ Vertex-Snap",
-                ArSnapEngine.SnapType.RightAngle => "⊥ 90°-Snap",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Vertex => "◎ Vertex-Snap",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.RightAngle => "⊥ 90°-Snap",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Parallel => "∥ Parallel-Snap",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Extension => "↗ Verlängerung",
                 _ => null,
             };
             if (hint != null)

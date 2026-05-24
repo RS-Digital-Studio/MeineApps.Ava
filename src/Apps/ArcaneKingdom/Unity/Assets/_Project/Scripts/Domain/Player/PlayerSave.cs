@@ -3,17 +3,19 @@ using System;
 using System.Collections.Generic;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Runes;
+using ArcaneKingdom.Domain.Save;
+using ArcaneKingdom.Domain.Tutorial;
 
 namespace ArcaneKingdom.Domain.Player
 {
     /// <summary>
     /// Zentrale Save-Datenstruktur (cloud-synced). Wird vom ISaveService geladen und gespeichert.
-    /// Aggregiert Profil, Waehrungen, Inventar, Decks, Welt-Fortschritt.
+    /// Aggregiert Profil, Waehrungen, Inventar, Decks, Welt-Fortschritt + Schema-v2-Slices.
     /// </summary>
     [Serializable]
     public sealed class PlayerSave
     {
-        public int SchemaVersion { get; set; } = 1;
+        public int SchemaVersion { get; set; } = SaveMigrator.CurrentSchemaVersion;
         public PlayerProfile Profile { get; set; }
         public PlayerCurrencies Currencies { get; set; }
         public Dictionary<string, CardInstance> CardInventory { get; set; }   // Key: InstanceId
@@ -21,7 +23,17 @@ namespace ArcaneKingdom.Domain.Player
         public List<Deck> Decks { get; set; }
         public int ActiveDeckSlot { get; set; }
         public Dictionary<string, WorldProgress> WorldProgress { get; set; }
-        public Dictionary<string, int> AchievementProgress { get; set; }      // Key: AchievementId, Value: Step
+
+        // v2: Schema-Erweiterungen
+        public TutorialProgress Tutorial { get; set; }
+        public AchievementSaveSlice Achievements { get; set; }
+        public FriendsSaveSlice FriendsSlice { get; set; }
+        public ChatSaveSlice ChatSlice { get; set; }
+        public List<PendingClaim> PendingClaims { get; set; }
+        public Dictionary<string, int> PackPityCounters { get; set; }          // Key: packId, Value: Packs ohne Legendary
+        public HashSet<string> UnlockedFeatureKeys { get; set; }
+        public Dictionary<string, int> SaisonPassXp { get; set; }              // Key: seasonId, Value: SaisonXp
+
         public DateTime LastEnergyRegenAtUtc { get; set; }
         public DateTime LastSavedAtUtc { get; set; }
 
@@ -34,7 +46,14 @@ namespace ArcaneKingdom.Domain.Player
             Decks = new List<Deck> { new Deck(0, "Deck 1") };
             ActiveDeckSlot = 0;
             WorldProgress = new Dictionary<string, WorldProgress>();
-            AchievementProgress = new Dictionary<string, int>();
+            Tutorial = new TutorialProgress();
+            Achievements = new AchievementSaveSlice();
+            FriendsSlice = new FriendsSaveSlice();
+            ChatSlice = new ChatSaveSlice();
+            PendingClaims = new List<PendingClaim>();
+            PackPityCounters = new Dictionary<string, int>();
+            UnlockedFeatureKeys = new HashSet<string>();
+            SaisonPassXp = new Dictionary<string, int>();
             LastEnergyRegenAtUtc = DateTime.UtcNow;
             LastSavedAtUtc = DateTime.UtcNow;
         }

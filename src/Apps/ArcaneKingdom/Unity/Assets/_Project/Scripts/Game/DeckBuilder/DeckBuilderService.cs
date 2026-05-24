@@ -23,7 +23,7 @@ namespace ArcaneKingdom.Game.DeckBuilder
             /// <summary>Optionales Element-Thema fuer Synergie-Praeferenz.</summary>
             public Element? PreferredElement { get; init; }
             /// <summary>Optionale Rassen-Praeferenz fuer Synergie-Boni.</summary>
-            public Cards.Race? PreferredRace { get; init; }
+            public ArcaneKingdom.Domain.Cards.Race? PreferredRace { get; init; }
         }
 
         public sealed class BuildResult
@@ -85,7 +85,7 @@ namespace ArcaneKingdom.Game.DeckBuilder
             return result;
         }
 
-        private static float ScoreCard(CardDefinition def, CardInstance inst, Element? prefElement, Cards.Race? prefRace)
+        private static float ScoreCard(CardDefinition def, CardInstance inst, Element? prefElement, ArcaneKingdom.Domain.Cards.Race? prefRace)
         {
             var statValue = (def.BaseAttack + def.BaseHealth) * inst.StatBonusMultiplier;
             var perCost = statValue / Math.Max(1, def.Cost);

@@ -21,7 +21,7 @@ namespace ArcaneKingdom.Game.World
         private readonly ISaveService<PlayerSave> _save;
         private readonly IAnalyticsService _analytics;
         private readonly Dictionary<string, NodeMaterialDropTable> _tables = new();
-        private readonly Random _random = new();
+        private readonly System.Random _random = new();
 
         public MaterialDropService(ISaveService<PlayerSave> save, IAnalyticsService analytics)
         {

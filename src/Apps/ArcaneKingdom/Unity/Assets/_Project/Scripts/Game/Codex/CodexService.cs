@@ -39,7 +39,7 @@ namespace ArcaneKingdom.Game.Codex
         public IReadOnlyList<CardDefinition> CardsByRarity(Rarity rarity) =>
             AllCards.Where(c => c.Rarity == rarity).ToList();
 
-        public IReadOnlyList<CardDefinition> CardsByRace(Cards.Race race) =>
+        public IReadOnlyList<CardDefinition> CardsByRace(ArcaneKingdom.Domain.Cards.Race race) =>
             AllCards.Where(c => c.Race == race).ToList();
 
         public IReadOnlyList<CardDefinition> SearchCards(string query)

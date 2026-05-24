@@ -383,6 +383,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var soundPrefs = GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private);
         _soundEnabled = soundPrefs?.GetBoolean("ar.sound.enabled", true) ?? true;
         _coachMarksShown = soundPrefs?.GetBoolean("ar.coachmarks.shown", false) ?? false;
+        // Plan-Kap. 5.15: Quality-Heatmap-Toggle (Default: aus, weil visuell aufdringlich)
+        _heatmapEnabled = soundPrefs?.GetBoolean("ar.heatmap.enabled", false) ?? false;
 
         // Stabilitäts-Monitor für präzise Punkt-Erfassung
         _stabilityMonitor = new ArStabilityMonitor(this);
@@ -2376,6 +2378,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     }
                 }
 
+                // Plan-Kap. 5.15: Quality-Heatmap einmal pro Sekunde berechnen (zu teuer
+                // pro Frame). Berechnung basiert auf Plane-Coverage + globalem Tracking-
+                // Quality-Score — eine echte Per-Patch-FeaturePoint-Analyse erfordert
+                // Iteration aller Trackables und ist fuer eine Folge-Iteration vorgesehen.
+                if (_heatmapEnabled)
+                {
+                    _heatmapFrameCounter++;
+                    if (_heatmapFrameCounter >= 30)
+                    {
+                        _heatmapFrameCounter = 0;
+                        UpdateQualityHeatmap();
+                    }
+                }
+
                 // Thermal + Battery + Anchor-Cleanup alle 60 Frames (~1x/s).
                 // PruneStopped() entfernt Anchors deren Trackable verloren ging — ohne diesen
                 // periodischen Cleanup wächst das Anchor-Dictionary bei langen Sessions oder
@@ -2450,6 +2466,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <see cref="ProjectPointsToScreen"/> aktualisiert, in <see cref="BuildOverlayState"/>
     /// in den Snapshot uebernommen. null = Anchor nicht sichtbar / kein RTK-Fix.</summary>
     private (float screenX, float screenY)? _projectedRtkStab;
+
+    // Plan-Kap. 5.15: Quality-Heatmap — 12x21-Grid (96 Patches), pro Patch 0..1.
+    // Berechnung alle 30 Frames (~1Hz), Snapshot wird in ArOverlayState durchgereicht.
+    private const int HeatmapCols = 12;
+    private const int HeatmapRows = 21;
+    private readonly float[,] _heatmapGrid = new float[HeatmapCols, HeatmapRows];
+    private int _heatmapFrameCounter;
+    private bool _heatmapEnabled;
 
     private void ProjectPointsToScreen()
     {
@@ -3990,7 +4014,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // Plan-Kap. 5.8: RTK-Stab-Live-Position
             RtkStabScreenPos = _projectedRtkStab,
             RtkStabFixQuality = _rtkStabLastFixQuality,
+            // Plan-Kap. 5.15: Quality-Heatmap (Snapshot der letzten Berechnung)
+            QualityHeatmapGrid = _heatmapEnabled ? CloneHeatmapGrid() : null,
+            QualityHeatmapCols = HeatmapCols,
+            QualityHeatmapRows = HeatmapRows,
         };
+    }
+
+    /// <summary>Plan-Kap. 5.15: Defensive Kopie damit Overlay-View nicht parallel mit
+    /// dem GL-Thread auf dem Live-Grid schreibt.</summary>
+    private float[,] CloneHeatmapGrid()
+    {
+        var copy = new float[HeatmapCols, HeatmapRows];
+        Array.Copy(_heatmapGrid, copy, _heatmapGrid.Length);
+        return copy;
     }
 
     private IReadOnlyList<(float screenX, float screenY, string label)>? BuildSiteMarkerSnapshot()
@@ -4150,6 +4187,52 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _stakeoutCurrentRelativeBearingDeg = relBearing;
             _stakeoutCurrentTargetLabel = target.Label;
         }
+    }
+
+    /// <summary>Plan-Kap. 5.15: MVP-Heatmap. Aktuell: Plane-Coverage pro Patch + globaler
+    /// Tracking-Quality-Score als Multiplikator. Die echte FeaturePoint-Density pro
+    /// Patch (Plan-Sollwert) ist als Folge-Iteration vorgesehen — das Grid-Layout +
+    /// Toggle + Render-Pipeline stehen damit schon.</summary>
+    private void UpdateQualityHeatmap()
+    {
+        if (_viewportWidth <= 0 || _viewportHeight <= 0) return;
+
+        // Patches initial mit 0 (= Rot/schlecht) belegen
+        for (var c = 0; c < HeatmapCols; c++)
+            for (var r = 0; r < HeatmapRows; r++)
+                _heatmapGrid[c, r] = 0f;
+
+        // Plane-Coverage: pro projiziertem Plane-Polygon-Punkt den passenden Patch erhoehen.
+        // _projectedPlanes wird in ProjectPlanesToScreen befuellt (eigener Render-Pfad).
+        var patchW = _viewportWidth / (float)HeatmapCols;
+        var patchH = _viewportHeight / (float)HeatmapRows;
+
+        var planes = _overlayView?.GetProjectedPlanesSnapshot();
+        if (planes != null)
+        {
+            foreach (var poly in planes)
+            {
+                foreach (var (px, py) in poly)
+                {
+                    var col = (int)(px / patchW);
+                    var row = (int)(py / patchH);
+                    if (col < 0 || col >= HeatmapCols || row < 0 || row >= HeatmapRows) continue;
+                    _heatmapGrid[col, row] = MathF.Min(1f, _heatmapGrid[col, row] + 0.25f);
+                }
+            }
+        }
+
+        // Globaler Tracking-Quality-Score als Daempfung (0..100 → 0..1)
+        var stability = _stabilityMonitor?.StabilityScore ?? 1f;
+        var anchorCount = _anchorManager.CountTracking();
+        var qualityScore = ArPrecisionHelpers.ComputeTrackingQualityScore(
+            isTracking: true, planeCount: 5, stabilityScore: stability,
+            magAccuracy: _magneticAccuracy, anchorCount: anchorCount,
+            avgPositionStdDev: GetAverageStdDev()) / 100f;
+
+        for (var c = 0; c < HeatmapCols; c++)
+            for (var r = 0; r < HeatmapRows; r++)
+                _heatmapGrid[c, r] *= qualityScore;
     }
 
     /// <summary>Plan-Kap. 5.8: Refresht den Earth-Anchor des RTK-Stabs an seiner aktuellen

@@ -333,6 +333,13 @@ public sealed partial class ArPointOverlayView : View
         Invalidate();
     }
 
+    /// <summary>Plan-Kap. 5.15: Heatmap-Berechnung im GL-Thread braucht den letzten
+    /// Plane-Snapshot. View liefert die Live-Liste zur Iteration — Caller darf nicht
+    /// mutieren. List&lt;List&lt;...&gt;&gt; kann nicht als IReadOnlyList&lt;IReadOnlyList&gt;
+    /// covariant zurueckgegeben werden, daher direkter Typ.</summary>
+    public IReadOnlyList<List<(float screenX, float screenY)>> GetProjectedPlanesSnapshot()
+        => _projectedPlanes;
+
     public void UpdateState(ArOverlayState state)
     {
         _state = state;
@@ -426,6 +433,11 @@ public sealed partial class ArPointOverlayView : View
         // 6. Reticle mit HitQuality-Färbung (nur bei Tracking)
         if (_state.IsTracking)
             DrawReticle(canvas, width, height);
+
+        // 5b. Plan-Kap. 5.15: Quality-Heatmap-Overlay (halb-transparent ueber Kamera-Frame).
+        // Liegt VOR Site-Markern und Punkten, damit Vermessungs-Daten lesbar bleiben.
+        if (_state.QualityHeatmapGrid != null)
+            DrawQualityHeatmap(canvas, width, height);
 
         // 6a. Plan-Kap. 5.2: Site-Marker (Earth-Anchor-Cache, bestehende Projekt-Punkte)
         // VOR Tape-Measure und Reticle, damit aktive Punkte/Reticle ueber den Site-Markern liegen.
@@ -802,6 +814,56 @@ public sealed partial class ArPointOverlayView : View
             ? $"  ({_state.StakeoutReachedCount}/{_state.StakeoutTotalCount})"
             : "";
         canvas.DrawText($"{label}{progress}", cx, cyArrow + 170f * _density, lblPaint);
+    }
+
+    /// <summary>Plan-Kap. 5.15: Quality-Heatmap als halb-transparenter Overlay.
+    /// Patch-Score 0..1 wird auf Rot→Gelb→Gruen interpoliert. Patches mit Score=0 werden
+    /// nicht gezeichnet (kein Sky-Rot ueber dem ganzen Bild).</summary>
+    private void DrawQualityHeatmap(Canvas canvas, int width, int height)
+    {
+        var grid = _state.QualityHeatmapGrid;
+        if (grid == null) return;
+        var cols = _state.QualityHeatmapCols;
+        var rows = _state.QualityHeatmapRows;
+        if (cols <= 0 || rows <= 0) return;
+
+        var patchW = width / (float)cols;
+        var patchH = height / (float)rows;
+
+        using var paint = new Paint(PaintFlags.AntiAlias);
+
+        for (var c = 0; c < cols; c++)
+        {
+            for (var r = 0; r < rows; r++)
+            {
+                var score = grid[c, r];
+                if (score < 0.05f) continue; // unbelegte Patches transparent lassen
+
+                paint.Color = HeatmapColor(score);
+                var x = c * patchW;
+                var y = r * patchH;
+                canvas.DrawRect(x, y, x + patchW, y + patchH, paint);
+            }
+        }
+    }
+
+    /// <summary>Rot (Score 0) → Gelb (0.5) → Gruen (1.0). Alpha 90 fuer dezente
+    /// Halb-Transparenz ueber dem Kamera-Frame.</summary>
+    private static Color HeatmapColor(float score)
+    {
+        score = Math.Clamp(score, 0f, 1f);
+        int r, g;
+        if (score < 0.5f)
+        {
+            r = 244;
+            g = (int)(score * 2f * 235);
+        }
+        else
+        {
+            r = (int)((1f - (score - 0.5f) * 2f) * 244);
+            g = 175;
+        }
+        return Color.Argb(90, r, g, 0);
     }
 
     /// <summary>Plan-Kap. 5.8: RTK-Stab-Live-Marker. Pulsierender Ring + Fix-Quality-Farbe

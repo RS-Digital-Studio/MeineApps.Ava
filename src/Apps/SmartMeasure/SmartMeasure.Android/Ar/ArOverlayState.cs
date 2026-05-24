@@ -214,4 +214,16 @@ public sealed class ArOverlayState
     /// 2=DGPS, 4=RTK-Fix, 5=Float). Bestimmt die Marker-Farbe in
     /// <c>DrawRtkStabMarker</c>.</summary>
     public int RtkStabFixQuality { get; init; }
+
+    /// <summary>Plan-Kap. 5.15: Quality-Heatmap-Patches in einem festen Grid (Spalten x
+    /// Zeilen). Jeder Wert ist 0..1 (0=schlecht=Rot, 1=optimal=Gruen). null wenn der
+    /// Heatmap-Toggle aus ist. Wird in <c>DrawQualityHeatmap</c> als farbiger
+    /// Halb-Transparent-Overlay auf das Kamera-Frame gerendert.</summary>
+    public float[,]? QualityHeatmapGrid { get; init; }
+
+    /// <summary>Anzahl Spalten im Heatmap-Grid (12 = ein 90x160 Pixel-Patch bei 1080x1920).</summary>
+    public int QualityHeatmapCols { get; init; }
+
+    /// <summary>Anzahl Zeilen im Heatmap-Grid.</summary>
+    public int QualityHeatmapRows { get; init; }
 }

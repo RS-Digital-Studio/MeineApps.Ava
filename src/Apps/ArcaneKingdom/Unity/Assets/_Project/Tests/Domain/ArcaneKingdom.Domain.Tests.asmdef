@@ -4,6 +4,7 @@
     "references": [
         "ArcaneKingdom.Core",
         "ArcaneKingdom.Domain",
+        "ArcaneKingdom.Game",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

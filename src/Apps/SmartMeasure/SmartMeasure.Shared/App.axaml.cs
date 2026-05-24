@@ -101,6 +101,7 @@ public class App : Application
         services.AddSingleton<IExportService, ExportService>();
         services.AddSingleton<IBlenderExportService, BlenderExportService>();
         services.AddSingleton<IArTransferService, ArTransferService>();
+        services.AddSingleton<IDifferentialSnapshotService, DifferentialSnapshotService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

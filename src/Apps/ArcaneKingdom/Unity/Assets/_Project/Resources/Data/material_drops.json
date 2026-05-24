@@ -1,0 +1,23 @@
+[
+  { "nodeId": "elderwald_n5",      "drops": [ { "materialId": "helle_sphaere",    "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "elderwald_n10",     "drops": [ { "materialId": "engelsfeder",      "chanceOneStar": 0.10, "chanceTwoStar": 0.20, "chanceThreeStar": 0.35, "chanceFourStar": 0.70 } ] },
+  { "nodeId": "sandreich_n5",      "drops": [ { "materialId": "sterne_splitter",  "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "sandreich_n10",     "drops": [ { "materialId": "heiliges_wasser",  "chanceOneStar": 0.10, "chanceTwoStar": 0.20, "chanceThreeStar": 0.35, "chanceFourStar": 0.70 } ] },
+  { "nodeId": "vulkanhort_n5",     "drops": [ { "materialId": "daemonenbrand",    "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "vulkanhort_n10",    "drops": [ { "materialId": "drachen_schuppe_rot", "chanceOneStar": 0.08, "chanceTwoStar": 0.15, "chanceThreeStar": 0.30, "chanceFourStar": 0.60 } ] },
+  { "nodeId": "frostgipfel_n5",    "drops": [ { "materialId": "schattenscherbe",  "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "frostgipfel_n10",   "drops": [ { "materialId": "drachen_schuppe_blau", "chanceOneStar": 0.08, "chanceTwoStar": 0.15, "chanceThreeStar": 0.30, "chanceFourStar": 0.60 } ] },
+  { "nodeId": "abysstiefe_n5",     "drops": [ { "materialId": "knochenstaub",     "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "abysstiefe_n10",    "drops": [ { "materialId": "plasma_zelle",     "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.55 } ] },
+  { "nodeId": "schattenlande_n5",  "drops": [ { "materialId": "pestodem",         "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "schattenlande_n10", "drops": [ { "materialId": "schwarzes_herz_material", "chanceOneStar": 0.10, "chanceTwoStar": 0.20, "chanceThreeStar": 0.40, "chanceFourStar": 0.80 } ] },
+  { "nodeId": "sturmzitadelle_n5", "drops": [ { "materialId": "zahnrad",          "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "sturmzitadelle_n10","drops": [ { "materialId": "eisenkern",        "chanceOneStar": 0.10, "chanceTwoStar": 0.20, "chanceThreeStar": 0.35, "chanceFourStar": 0.70 } ] },
+  { "nodeId": "galaxy_wald_n5",    "drops": [ { "materialId": "drachen_schuppe_gold", "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.55 },
+                                              { "materialId": "schreckensauge",   "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.20, "chanceFourStar": 0.50 } ] },
+  { "nodeId": "galaxy_wald_n10",   "drops": [ { "materialId": "steuermodul",      "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.25, "chanceFourStar": 0.60 },
+                                              { "materialId": "drachen_schuppe_gruen", "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.25, "chanceFourStar": 0.55 } ] },
+  { "nodeId": "drachenfeste_n5",   "drops": [ { "materialId": "drachen_schuppe_schwarz", "chanceOneStar": 0.05, "chanceTwoStar": 0.10, "chanceThreeStar": 0.25, "chanceFourStar": 0.55 } ] },
+  { "nodeId": "drachenfeste_n10",  "drops": [ { "materialId": "drachen_schuppe_rot", "chanceOneStar": 0.10, "chanceTwoStar": 0.20, "chanceThreeStar": 0.40, "chanceFourStar": 0.80 },
+                                              { "materialId": "drachen_schuppe_blau", "chanceOneStar": 0.10, "chanceTwoStar": 0.20, "chanceThreeStar": 0.40, "chanceFourStar": 0.80 } ] }
+]

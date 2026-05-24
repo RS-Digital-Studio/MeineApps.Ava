@@ -46,6 +46,11 @@ public sealed class AndroidArCaptureService : IArCaptureService
     public void SetSitePoints(IReadOnlyList<SurveyPoint>? points)
         => ArCaptureActivity.SetSitePoints(points);
 
+    /// <summary>Plan Kap. 5.7: Delegiert an die statische Bruecke in
+    /// <see cref="ArCaptureActivity.SetReferenceMarkers"/>.</summary>
+    public void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers)
+        => ArCaptureActivity.SetReferenceMarkers(markers);
+
     public AndroidArCaptureService(Activity activity)
     {
         _activity = activity;

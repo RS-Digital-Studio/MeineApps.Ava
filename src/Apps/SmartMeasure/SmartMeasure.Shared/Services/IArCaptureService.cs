@@ -48,4 +48,10 @@ public interface IArCaptureService
     /// Cache (Geospatial-API), kostenlos solange VPS-Coverage vorhanden ist. Site-Punkte
     /// gehen NICHT ins ArCaptureResult zurueck.</summary>
     void SetSitePoints(IReadOnlyList<SurveyPoint>? points);
+
+    /// <summary>Plan-Kap. 5.7: ArUco-/Augmented-Image-Marker fuer die naechste AR-Session
+    /// vorbereiten. Sobald die Activity einen davon im Sichtfeld erkennt, kann sie sich
+    /// instantan im Vermessungs-Koordinatensystem ausrichten — Vorteil: funktioniert auch
+    /// ohne Geospatial-API-Coverage und ohne aktiven RTK-Stab.</summary>
+    void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers);
 }

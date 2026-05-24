@@ -103,6 +103,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_sitePointsLock) _pendingSitePoints = points;
     }
 
+    /// <summary>Plan-Kap. 5.7: Statische Bruecke fuer Referenz-Marker. Augmented-Images-
+    /// Datenbank wird beim Activity-Start aus dieser Liste aufgebaut.</summary>
+    private static readonly object _markerLock = new();
+    private static IReadOnlyList<ArReferenceMarker>? _pendingMarkers;
+    public static void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers)
+    {
+        lock (_markerLock) _pendingMarkers = markers;
+    }
+
+    private IReadOnlyList<ArReferenceMarker>? _referenceMarkers;
+    private readonly Dictionary<string, ArReferenceMarker> _markersByImageName = [];
+
     /// <summary>Site-Points dieser Session (Snapshot zu OnCreate). Werden NICHT ins
     /// ArCaptureResult zurueckgegeben — reine Visualisierungs-Layer.</summary>
     private IReadOnlyList<SurveyPoint>? _sitePoints;
@@ -397,6 +409,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_stakeoutTargetsLock) _stakeoutTargets = _pendingStakeoutTargets;
         // Site-Points aus statischer Bruecke uebernehmen (Plan-Kap. 5.2).
         lock (_sitePointsLock) _sitePoints = _pendingSitePoints;
+        // Referenz-Marker aus statischer Bruecke uebernehmen (Plan-Kap. 5.7).
+        lock (_markerLock) _referenceMarkers = _pendingMarkers;
+        if (_referenceMarkers != null)
+        {
+            foreach (var m in _referenceMarkers)
+                _markersByImageName[m.ImageAssetName] = m;
+        }
 
         // Sample-Count an Gerät anpassen — auf leistungsstarken Chips mehr Samples
         // für höhere Präzision innerhalb der 800ms-Timeout
@@ -2097,6 +2116,45 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     }
                 }
                 catch { /* harmlos */ }
+
+                // Plan-Kap. 5.7: Augmented Images / ArUco-Marker als Referenz-Punkte.
+                // Wenn der Caller via SetReferenceMarkers Marker uebergeben hat, bauen
+                // wir eine AugmentedImageDatabase aus den ImageAssetName-Eintraegen und
+                // setzen sie auf die Config. ARCore versucht dann pro Frame die
+                // angegebenen Bilder zu erkennen — getrackte Marker liefern eine Pose,
+                // die wir mit der eingemessenen Geo-Position abgleichen koennen.
+                try
+                {
+                    if (_referenceMarkers != null && _referenceMarkers.Count > 0)
+                    {
+                        var db = new global::Google.AR.Core.AugmentedImageDatabase(_arSession);
+                        foreach (var m in _referenceMarkers)
+                        {
+                            try
+                            {
+                                using var stream = Assets?.Open(m.ImageAssetName);
+                                if (stream == null) continue;
+                                using var bmp = global::Android.Graphics.BitmapFactory.DecodeStream(stream);
+                                if (bmp == null) continue;
+                                // AddImage(name, bitmap, widthInMeters) registriert das Bild
+                                // mit bekannter physischer Groesse — verbessert die Pose-Genauigkeit
+                                // gegenueber dem groessenlosen Default.
+                                db.AddImage(m.ImageAssetName, bmp, m.WidthMeters);
+                            }
+                            catch (Exception ex)
+                            {
+                                global::Android.Util.Log.Warn("ArCapture",
+                                    $"Marker-Bild {m.ImageAssetName} nicht ladbar: {ex.Message}");
+                            }
+                        }
+                        config.SetAugmentedImageDatabase(db);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    global::Android.Util.Log.Warn("ArCapture",
+                        $"Augmented-Images-Setup fehlgeschlagen: {ex.Message}");
+                }
 
                 // Geospatial-API: VPS für globale Positionierung (±1-3m horizontal, ±5° Heading)
                 // statt Magnetometer (±15-30° in Metallumgebung). Benötigt Google Cloud API-Key

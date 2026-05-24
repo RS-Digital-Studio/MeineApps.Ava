@@ -9,7 +9,11 @@
         "Unity.InputSystem",
         "Unity.Localization",
         "Unity.UIElements",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "UniTask",
+        "UniTask.Linq",
+        "VContainer",
+        "VContainer.Unity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

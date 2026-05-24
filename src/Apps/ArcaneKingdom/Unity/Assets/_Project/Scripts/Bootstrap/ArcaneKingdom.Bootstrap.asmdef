@@ -5,7 +5,10 @@
         "ArcaneKingdom.Core",
         "ArcaneKingdom.Domain",
         "ArcaneKingdom.Game",
-        "ArcaneKingdom.UI"
+        "ArcaneKingdom.UI",
+        "UniTask",
+        "VContainer",
+        "VContainer.Unity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

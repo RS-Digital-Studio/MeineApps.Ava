@@ -3,7 +3,9 @@
     "rootNamespace": "ArcaneKingdom.Core",
     "references": [
         "Unity.Addressables",
-        "Unity.ResourceManager"
+        "Unity.ResourceManager",
+        "UniTask",
+        "UniTask.Linq"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

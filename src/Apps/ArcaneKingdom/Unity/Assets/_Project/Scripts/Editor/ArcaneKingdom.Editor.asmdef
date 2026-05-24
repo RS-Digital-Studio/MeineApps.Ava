@@ -7,7 +7,8 @@
         "ArcaneKingdom.Game",
         "ArcaneKingdom.UI",
         "Unity.Addressables.Editor",
-        "Unity.Localization.Editor"
+        "Unity.Localization.Editor",
+        "Unity.Nuget.Newtonsoft-Json"
     ],
     "includePlatforms": [
         "Editor"

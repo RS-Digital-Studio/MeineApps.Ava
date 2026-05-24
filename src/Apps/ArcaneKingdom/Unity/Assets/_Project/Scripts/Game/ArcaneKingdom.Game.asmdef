@@ -7,7 +7,12 @@
         "Unity.Addressables",
         "Unity.ResourceManager",
         "Unity.InputSystem",
-        "Unity.Localization"
+        "Unity.Localization",
+        "Unity.Nuget.Newtonsoft-Json",
+        "UniTask",
+        "UniTask.Linq",
+        "VContainer",
+        "VContainer.Unity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

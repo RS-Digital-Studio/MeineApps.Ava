@@ -2,7 +2,10 @@
     "name": "ArcaneKingdom.Domain",
     "rootNamespace": "ArcaneKingdom.Domain",
     "references": [
-        "ArcaneKingdom.Core"
+        "ArcaneKingdom.Core",
+        "UniTask",
+        "UniTask.Linq",
+        "Unity.Nuget.Newtonsoft-Json"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

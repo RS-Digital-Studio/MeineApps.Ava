@@ -6,6 +6,9 @@
         "ArcaneKingdom.Domain",
         "ArcaneKingdom.Game",
         "ArcaneKingdom.UI",
+        "UniTask",
+        "VContainer",
+        "VContainer.Unity",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

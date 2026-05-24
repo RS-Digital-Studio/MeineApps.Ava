@@ -43,11 +43,25 @@ namespace ArcaneKingdom.EditorTools.Setup
         [InitializeOnLoadMethod]
         private static void AutoOpenOnce()
         {
-            EditorApplication.delayCall += () =>
+            // Defensive: nichts machen waehrend Compile/Asset-Import oder im Batch-Mode.
+            // Verhindert seltene Crashes wenn Unity beim Open mitten in einer
+            // Reload-Domain-Phase ist.
+            if (Application.isBatchMode) return;
+            EditorApplication.delayCall += TryAutoOpen;
+        }
+
+        private static void TryAutoOpen()
+        {
+            try
             {
-                if (!EditorPrefs.GetBool(SetupCompletedPrefKey, false))
-                    Open();
-            };
+                if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+                if (EditorPrefs.GetBool(SetupCompletedPrefKey, false)) return;
+                Open();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[Setup] Auto-Open Wizard fehlgeschlagen ({ex.Message}). Bitte manuell oeffnen via Menue ArcaneKingdom -> Setup.");
+            }
         }
 
         // ------------------------------------------------------------ Check-Funktionen

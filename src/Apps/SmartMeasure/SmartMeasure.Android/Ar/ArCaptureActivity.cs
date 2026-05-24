@@ -473,6 +473,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private Button? _btnContour;
     private Button? _btnTape;
     private Button? _btnStakeout;
+    private Button? _btnTotalStation;
 
     // Toolbar-Referenz für Nav-Bar-Safe-Area-Update bei OnApplyWindowInsets
     private HorizontalScrollView? _toolbarScrollView;
@@ -552,6 +553,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _btnStakeout = AddToolbarButton(toolbar, "\uD83C\uDFAF Absteck", density,
             () => { VibrateLight(); SetMode(CaptureMode.Stakeout); },
             tooltip: "Stakeout: Pfeil zum naechsten Ziel");
+        // Plan-Kap. 5.17: Total-Station-Modus
+        _btnTotalStation = AddToolbarButton(toolbar, "\uD83D\uDCD0 Tachy", density,
+            () => { VibrateLight(); ToggleTotalStationMode(); },
+            tooltip: "Total-Station: Stativ-Modus mit Depth-Tachymeter");
         AddToolbarButton(toolbar, "\u25EF Schließen", density,
             () => { VibrateMedium(); CloseActiveContour(); },
             tooltip: "Aktive Kontur schließen (mind. 3 Punkte)");
@@ -703,6 +708,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 CaptureMode.Contour => "Modus: Linie",
                 CaptureMode.TapeMeasure => "Modus: Maßband",
                 CaptureMode.Stakeout => "Modus: Absteck",
+                CaptureMode.TotalStation => "Modus: Total-Station",
                 _ => "Modus: Punkt",
             };
 
@@ -723,6 +729,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
         _btnStakeout?.SetBackgroundColor(mode == CaptureMode.Stakeout
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
+        _btnTotalStation?.SetBackgroundColor(mode == CaptureMode.TotalStation
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
         _btnContour?.SetBackgroundColor(mode == CaptureMode.Contour
@@ -1118,6 +1127,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// </summary>
     private void PlaceNewPoint(float screenX, float screenY)
     {
+        // Plan-Kap. 5.17: Total-Station-Modus umgeht den Sampling-Pfad — Distanz
+        // kommt direkt aus der Depth-API + Stativ-Origin, kein Multi-Frame-Averaging.
+        if (_captureMode == CaptureMode.TotalStation)
+        {
+            var tsPoint = PlaceTotalStationPoint(screenX, screenY);
+            if (tsPoint == null) return;
+            RunOnUiThread(() =>
+            {
+                lock (_dataLock) _points.Add(tsPoint);
+                ShowTransientHint($"📐 Punkt {_points.Count} stationiert " +
+                    $"({tsPoint.GeoLatitude:F6}, {tsPoint.GeoLongitude:F6})");
+                VibrateLight();
+                _overlayView?.Invalidate();
+                SaveRecoveryState();
+            });
+            return;
+        }
+
         // Bereits ein Sample-Fenster aktiv? Ignorieren.
         lock (_samplerLock)
         {
@@ -2414,6 +2441,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 // (Lampe an/aus, Wolke vor Sonne) Sampling unterbrechen, weil ARCore-Feature-
                 // Detection in solchen Frames unzuverlaessig ist.
                 UpdateLightEstimate(frame);
+
+                // Plan-Kap. 5.7: ArUco-Marker erkennen + Re-Localisation
+                if (_referenceMarkers != null && _referenceMarkers.Count > 0)
+                    UpdateAugmentedImageRecognition();
 
                 // Plan-Kap. 5.9: Stakeout-Distanz + Pfeil-Richtung pro Frame neu berechnen.
                 if (_captureMode == CaptureMode.Stakeout)
@@ -4247,24 +4278,56 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
     }
 
-    /// <summary>Plan-Kap. 5.15: MVP-Heatmap. Aktuell: Plane-Coverage pro Patch + globaler
-    /// Tracking-Quality-Score als Multiplikator. Die echte FeaturePoint-Density pro
-    /// Patch (Plan-Sollwert) ist als Folge-Iteration vorgesehen — das Grid-Layout +
-    /// Toggle + Render-Pipeline stehen damit schon.</summary>
+    /// <summary>Plan-Kap. 5.15: Echte Per-Patch-FeaturePoint-Density. Iteriert getrackte
+    /// Point-Trackables, projiziert sie in Screen-Koordinaten und akkumuliert pro Patch.
+    /// Kombiniert mit Plane-Coverage (geringerer Gewicht — Planes sind sekundaer) und
+    /// globalem Quality-Score als Daempfung.</summary>
     private void UpdateQualityHeatmap()
     {
         if (_viewportWidth <= 0 || _viewportHeight <= 0) return;
+        if (_arSession == null) return;
 
         // Patches initial mit 0 (= Rot/schlecht) belegen
         for (var c = 0; c < HeatmapCols; c++)
             for (var r = 0; r < HeatmapRows; r++)
                 _heatmapGrid[c, r] = 0f;
 
-        // Plane-Coverage: pro projiziertem Plane-Polygon-Punkt den passenden Patch erhoehen.
-        // _projectedPlanes wird in ProjectPlanesToScreen befuellt (eigener Render-Pfad).
         var patchW = _viewportWidth / (float)HeatmapCols;
         var patchH = _viewportHeight / (float)HeatmapRows;
 
+        // Feature-Points iterieren — primaere Datenquelle laut Plan
+        try
+        {
+            var pointTrackables = _arSession.GetAllTrackables(
+                Java.Lang.Class.FromType(typeof(global::Google.AR.Core.Point)));
+            if (pointTrackables != null)
+            {
+                foreach (var t in pointTrackables)
+                {
+                    if (t is not global::Google.AR.Core.Point pt) continue;
+                    if (pt.TrackingState != TrackingState.Tracking) continue;
+                    var pose = pt.Pose;
+                    if (pose == null) continue;
+
+                    var arPoint = new ArPoint { X = pose.Tx(), Y = pose.Ty(), Z = pose.Tz() };
+                    var screen = WorldToScreen(arPoint, _mvpMatrixScratch);
+                    if (!screen.HasValue) continue;
+
+                    var col = (int)(screen.Value.x / patchW);
+                    var row = (int)(screen.Value.y / patchH);
+                    if (col < 0 || col >= HeatmapCols || row < 0 || row >= HeatmapRows) continue;
+                    // 0.1 pro Feature-Point — ein guter Patch mit ~10 Features kommt auf 1.0
+                    _heatmapGrid[col, row] = MathF.Min(1f, _heatmapGrid[col, row] + 0.10f);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"FeaturePoint-Heatmap failed: {ex.Message}");
+        }
+
+        // Plane-Coverage als zusaetzliches Boost (Planes deuten auf flaches, mess-freundliches
+        // Terrain hin — geringerer Gewicht weil Feature-Points die primaere Qualitaets-Quelle sind)
         var planes = _overlayView?.GetProjectedPlanesSnapshot();
         if (planes != null)
         {
@@ -4275,7 +4338,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     var col = (int)(px / patchW);
                     var row = (int)(py / patchH);
                     if (col < 0 || col >= HeatmapCols || row < 0 || row >= HeatmapRows) continue;
-                    _heatmapGrid[col, row] = MathF.Min(1f, _heatmapGrid[col, row] + 0.25f);
+                    _heatmapGrid[col, row] = MathF.Min(1f, _heatmapGrid[col, row] + 0.15f);
                 }
             }
         }
@@ -4361,6 +4424,70 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         1 => "GPS",
         _ => "?",
     };
+
+    /// <summary>Plan-Kap. 5.7: Per Frame die getrackten Augmented-Images abfragen. Wenn
+    /// ein bekannter Marker (Image-Name in <see cref="_markersByImageName"/>) im Status
+    /// Tracking gefunden wird, erzeugen wir EINMAL einen Earth-Anchor an der
+    /// vorab eingemessenen RTK-Position. Damit ist das Vermessungs-Koordinatensystem im
+    /// AR-Frame physisch verankert — der Marker dient als reale Referenz, das Anchor
+    /// haelt die Position drift-frei (via VPS).</summary>
+    private readonly HashSet<string> _markersAlreadyLocalized = [];
+    private void UpdateAugmentedImageRecognition()
+    {
+        if (_arSession == null) return;
+        var earth = _arSession.Earth;
+
+        try
+        {
+            var trackables = _arSession.GetAllTrackables(
+                Java.Lang.Class.FromType(typeof(global::Google.AR.Core.AugmentedImage)));
+            if (trackables == null) return;
+
+            foreach (var t in trackables)
+            {
+                if (t is not global::Google.AR.Core.AugmentedImage img) continue;
+                if (img.TrackingState != TrackingState.Tracking) continue;
+
+                var imageName = img.Name ?? string.Empty;
+                if (string.IsNullOrEmpty(imageName)) continue;
+                if (!_markersByImageName.TryGetValue(imageName, out var marker)) continue;
+                if (_markersAlreadyLocalized.Contains(imageName)) continue;
+
+                // Marker neu lokalisiert — Earth-Anchor an seiner vorab eingemessenen
+                // Position erzeugen. Visualisierung erfolgt via Site-Marker-Layer.
+                if (earth == null || earth.TrackingState != TrackingState.Tracking) continue;
+
+                var markerPoint = new ArPoint
+                {
+                    Label = $"Marker: {marker.Name}",
+                    Confidence = 0.98f,
+                    HitQuality = 3,
+                    GeoLatitude = marker.Latitude,
+                    GeoLongitude = marker.Longitude,
+                    GeoAltitude = marker.Altitude,
+                    GeoHorizontalAccuracy = marker.AccuracyCm / 100f,
+                    Timestamp = DateTime.UtcNow,
+                };
+                var ellipsoidAlt = marker.Altitude + 48.0;
+                if (_anchorManager.TryCreateEarthAnchor(earth, marker.Latitude, marker.Longitude,
+                    ellipsoidAlt, markerPoint))
+                {
+                    lock (_dataLock) _sitePointAnchors.Add(markerPoint);
+                    _markersAlreadyLocalized.Add(imageName);
+                    RunOnUiThread(() =>
+                    {
+                        ShowTransientHint($"🎯 Marker erkannt: {marker.Name}");
+                        VibrateMedium();
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture",
+                $"AugmentedImage-Recognition fehlgeschlagen: {ex.Message}");
+        }
+    }
 
     /// <summary>Plan-Kap. 5.2: Erzeugt iterativ Earth-Anchors fuer alle bestehenden
     /// SurveyPoints aus dem Site-Points-Snapshot. Wird im OnDrawFrame aufgerufen sobald
@@ -4487,6 +4614,92 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
     }
 
+    /// <summary>Plan-Kap. 5.17: Total-Station-Modus aktivieren. Stationiert das Phone an
+    /// der aktuellen RTK-Stab-Position (wenn vorhanden) oder zeigt einen Hint dass kein
+    /// Stab connected ist.</summary>
+    private void ToggleTotalStationMode()
+    {
+        var ts = App.Services?.GetService<ITotalStationService>();
+        if (ts == null)
+        {
+            ShowTransientHint("Total-Station-Service nicht verfuegbar");
+            return;
+        }
+
+        // Origin = aktuelle RTK-Stab-Position (gestaubt durch BLE)
+        if (_bleService is not { IsConnected: true })
+        {
+            ShowTransientHint("Stab nicht verbunden — Total-Station braucht RTK-Anker");
+            return;
+        }
+        var s = _bleService.CurrentState;
+        if (s.FixQuality < 4 || !s.Latitude.HasValue || !s.Longitude.HasValue)
+        {
+            ShowTransientHint("Kein RTK-Fix am Stab — bitte warten oder NTRIP pruefen");
+            return;
+        }
+
+        // Heading aus Geospatial-Pose oder Magnetometer
+        var geoSnap = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
+        var heading = geoSnap?.Heading ?? _magneticHeading ?? 0f;
+
+        ts.SetStationOrigin(s.Latitude.Value, s.Longitude.Value, s.Altitude ?? 0.0, heading);
+        SetMode(CaptureMode.TotalStation);
+        ShowTransientHint($"📐 Stationiert ({s.Latitude.Value:F6}, {s.Longitude.Value:F6})");
+        VibrateMedium();
+    }
+
+    /// <summary>Plan-Kap. 5.17: Im Total-Station-Modus berechnet PlaceNewPoint den
+    /// Ziel-Punkt nicht via ARCore-HitTest, sondern radial vom Stativ-Origin aus —
+    /// Distanz aus Depth-API, Bearing aus ARCore-Camera-Heading, Pitch aus ARCore-
+    /// Camera-Pitch. Liefert direkt einen ArPoint mit Geo-Position.</summary>
+    private ArPoint? PlaceTotalStationPoint(float screenX, float screenY)
+    {
+        var ts = App.Services?.GetService<ITotalStationService>();
+        if (ts?.Station == null)
+        {
+            ShowTransientHint("Bitte zuerst stationieren (📐 Tachy aktivieren)");
+            return null;
+        }
+
+        Frame? frame;
+        lock (_frameLock) frame = _lastFrame;
+        if (frame == null) return null;
+
+        var depth = ArPrecisionHelpers.TryGetDepthMeters(
+            frame, screenX, screenY, _viewportWidth, _viewportHeight);
+        if (!depth.HasValue)
+        {
+            ShowTransientHint("Keine Depth-Daten am Reticle — naeher heran/anders zielen");
+            return null;
+        }
+
+        var camPose = frame.Camera?.Pose;
+        if (camPose == null) return null;
+        var q = camPose.GetRotationQuaternion();
+        if (q == null || q.Length < 4) return null;
+
+        var relHeading = ArMathHelpers.ExtractHeadingFromQuaternion(q[0], q[1], q[2], q[3]) ?? 0f;
+        var pitch = ArMathHelpers.ExtractPitchFromQuaternion(q[0], q[1], q[2], q[3]);
+
+        // Bearing relativ zur Stativ-Heading: ARCore-Heading absolut → relative Differenz
+        var (lat, lon, alt) = ts.ProjectTarget(depth.Value, relHeading - (float)ts.Station.Value.headingDeg, pitch);
+
+        return new ArPoint
+        {
+            // X/Y/Z bleiben 0 — fuer Total-Station-Punkte nicht relevant (kein Anchor noetig)
+            GeoLatitude = lat,
+            GeoLongitude = lon,
+            GeoAltitude = alt,
+            GeoHorizontalAccuracy = (float)(depth.Value * 0.02), // ~2% von Distanz als Schaetzung
+            Confidence = 0.85f,
+            HitQuality = 2,
+            CameraPitchDeg = pitch,
+            MagAccuracyAtCapture = _magneticAccuracy,
+            Timestamp = DateTime.UtcNow,
+        };
+    }
+
     /// <summary>Plan-Kap. 5.3: Tape-Buffer leeren — Long-Click auf den Mass-Button.</summary>
     private void ResetTapeMeasure()
     {
@@ -4605,7 +4818,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         TapeMeasure,
         /// <summary>Plan-Kap. 5.9: Absteck-Modus. Zeigt Pfeil + Distanz zum naechsten
         /// unerreichten Stakeout-Target. Bei &lt;10cm wird das Target als erreicht markiert.</summary>
-        Stakeout
+        Stakeout,
+        /// <summary>Plan-Kap. 5.17: Total-Station-Modus. Phone auf Stativ ueber RTK-Stab.
+        /// Reticle-Hit liefert via Depth-API + ARCore-Heading die Ziel-Lat/Lon ueber
+        /// <see cref="ITotalStationService"/>.</summary>
+        TotalStation
     }
 
     #region Undo/Redo Actions

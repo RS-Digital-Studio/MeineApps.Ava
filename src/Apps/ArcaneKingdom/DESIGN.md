@@ -1,6 +1,6 @@
 # ArcaneKingdom — Game Design Document (GDD)
 
-> **Version 5.3** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 2022 LTS
+> **Version 5.4** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 2022 LTS
 > Quelle: `Kartenspiel Start.docx` v5.0 (Maerz 2026), Referenz: *Arcane Magic*
 
 Dieses Dokument ist die **autoritative Single-Source-of-Truth** fuer das Game Design.
@@ -1436,6 +1436,22 @@ Alle 15 in v5.1 markierten TBDs sind in v5.2 entschieden und im Haupttext eingea
 | TBD-13 | Avatar-Quellen | **50 Premade + Saison/Achievement-Avatare, keine Custom-Uploads** | Kap. 4.5 |
 | TBD-14 | Dieb-Aktivitaets-Multiplikator | **DAU-basierte Formel (0,4 - 1,5)** | Kap. 10.2 |
 | TBD-15 | iOS-Launch Zeitpunkt | **Phase 2, Monat 26+** | Kap. 1 + 18.4 |
+
+### 23.3.B Aenderungen v5.3 → v5.4
+
+| Aenderung | Quelle |
+|-----------|--------|
+| Material-Drop-Tabelle pro Welt-Boss-/Mini-Boss-Node | Neue `material_drops.json` + `MaterialDropResolver` |
+| Saison-Pass-Engine + Pilot-Saison "season_2_classic" | `saison_pass.json` + `SaisonPassService` |
+| Daily-Shop-Rotation (deterministisch per UTC-Tag) | `DailyShopRotation` |
+| Friends-System (Anfrage/Accept/Block) | `FriendsService` |
+| Chat-Moderation (Mute/Report/AutoMute-Aggregation) | `ChatModerationService` |
+| Achievement-Trigger-Hooks aktiv + PendingClaims | `AchievementService` |
+| Gilden-Treasury (Territory-Boni-Engine) | `TerritoryBonusEngine` + `GuildTreasuryService` |
+| PlayerSave-Schema v2 mit 8 neuen Slices | `SaveMigrator.CurrentSchemaVersion = 2` |
+| Server-Operations-Doku + 8 Cloud-Functions-Stubs | `Server/SERVEROPS.md` + `Server/CloudFunctions/` |
+| BattleEngine PlayCard/EndTurn voll implementiert + Boss-Phase-2 | `Domain/Battle/BattleEngine.cs` |
+| BattleStateSerializer (deterministische JSON-Roundtrip) | `Domain/Battle/BattleStateSerializer.cs` |
 
 ### 23.3.A Aenderungen v5.2 → v5.3
 

@@ -24,8 +24,10 @@ anderen Apps bewusst machen.
 | Datei | Zweck |
 |-------|-------|
 | [README.md](README.md) | Quickstart fuer Entwickler |
-| [DESIGN.md](DESIGN.md) | Konsolidiertes GDD v5.3 (19 Sektionen, TBDs geschlossen) |
+| [DESIGN.md](DESIGN.md) | Konsolidiertes GDD v5.4 (19 Sektionen, TBDs geschlossen, Save-Schema v2) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Folder-Layout, DI, Networking, Conventions |
+| [Server/SERVEROPS.md](Server/SERVEROPS.md) | Server-side Cloud-Functions (Anti-Cheat, Saison-Rewards) |
+| [Server/CloudFunctions/](Server/CloudFunctions/) | TypeScript-Cloud-Functions (8 Endpoints) |
 | [Unity/](Unity/) | Das eigentliche Unity-Projekt |
 
 ---
@@ -202,22 +204,26 @@ Domain-Tests sollen ohne Unity laufen — `BattleEngine` etc. sind reines C#.
 
 Vollstaendige Roadmap siehe [DESIGN.md Kapitel 19](DESIGN.md#19-entwicklungs-zeitplan-24-monate).
 
-**Aktuell (Stand 2026-05-24, Iteration 5):**
+**Aktuell (Stand 2026-05-24, Iteration 6 — Pre-MVP-Stand komplett):**
 
-- [x] App-Ordner angelegt
-- [x] GDD v5.3 (alle 15 v5.1-TBDs geschlossen)
-- [x] Architektur-Plan (ARCHITECTURE.md)
-- [x] Unity-Projekt-Skelett (6 asmdefs + Tests, Boot/Hub/Battle/Arena/Guild/GuildWorld Scenes)
-- [x] Domain (22 Module — Cards/Runes/Player/Battle/World/Economy/Config + Guild/Quest/Achievement/Thief/Chat/Shop + Progression/Hero/Replay/Collection/Tutorial/Notification/Season)
-- [x] Game (21 Services/Controller — Hub/Battle/Arena/Login + Guild/Thief/Chat/Shop/Quest/DailyReward + Progression/Hero/Replay/IAP/DeckBuilder/Collection/Tutorial/Notification/SeasonReset/Codex)
-- [x] 30 Karten + 32 Faehigkeiten + 18 Runen + 6 Helden + 9 Welten/90 Nodes + 4 Sammelsets + 8 Tutorial-Schritte + 5 Notifications als JSON
-- [x] 23 Domain-Test-Klassen (~120 Test-Cases, alle pure C#)
+- [x] App-Ordner angelegt + 6 Unity-Scenes (Boot/Hub/Battle/Arena/Guild/GuildWorld)
+- [x] GDD v5.4 (alle TBDs geschlossen, Save-Schema v2 dokumentiert)
+- [x] Architektur-Plan + komplette Service-Liste in ARCHITECTURE.md
+- [x] Unity-Projekt-Skelett (6 asmdefs + Tests-asmdefs)
+- [x] **Domain (29 Module)**: Cards/Runes/Player/Battle/World/Economy/Config + Guild/Quest/Achievement/Thief/Chat/Shop + Progression/Hero/Replay/Collection/Tutorial/Notification/Season + Save/Friends/SaisonPass/DailyShop
+- [x] **Game (28 Services/Controller)**: Hub/Battle/Arena/Login + Guild/Thief/Chat/Shop/Quest/DailyReward + Progression/Hero/Replay/IAP/DeckBuilder/Collection/Tutorial/Notification/SeasonReset/Codex + Achievement/ChatModeration/MaterialDrop/SaisonPass/DailyShop/Friends/Treasury/BattleEngine-voll
+- [x] **10 JSON-Daten-Dateien**: 30 Karten + 32 Faehigkeiten + 18 Runen + 6 Helden + 9 Welten/90 Nodes + 4 Sammelsets + 8 Tutorial-Schritte + 5 Notifications + 18 Material-Drop-Tabellen + Saison-Pass v2 + DailyShop-Pool
+- [x] **30 Domain-Test-Klassen** (~165 Test-Cases, alle pure C#)
 - [x] CI-Pipeline (GitHub Actions, EditMode-Tests + Android-AAB)
 - [x] Editor-Tools (DataImporter + CardPreview + LocalizationCheck + BalancingDashboard)
+- [x] **Cloud-Functions-Skelett** (8 TypeScript-Endpoints unter `Server/CloudFunctions/`)
+- [x] BattleEngine vollstaendig + BattleStateSerializer (deterministisch, replay-faehig)
 - [ ] MVP: Kampf-UI (Drag&Drop, Mana-Orbs, Damage-Numbers) — Monat 4-6
 - [ ] MVP: Hub-UI (Tabs, Energie-Bar, Navigation) — Monat 4-5
 - [ ] MVP: Welt-1-UI (Elderwald-Karte mit 10 Nodes) — Monat 6-8
 - [ ] Firebase Unity SDK installieren + Auth/RTDB/Analytics verdrahten — Monat 10-14
+- [ ] Cloud-Functions deployen (Staging) — Monat 11+
+- [ ] Karten-Artworks (Mid-Journey/Stable-Diffusion) + Sound-Assets — laufend
 
 ---
 

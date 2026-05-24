@@ -21,6 +21,12 @@ using ArcaneKingdom.Game.Season;
 using ArcaneKingdom.Game.Shop;
 using ArcaneKingdom.Game.Thief;
 using ArcaneKingdom.Game.Tutorial;
+using ArcaneKingdom.Game.Achievement;
+using ArcaneKingdom.Game.Friends;
+using ArcaneKingdom.Game.SaisonPass;
+using ArcaneKingdom.Game.DailyShop;
+using ArcaneKingdom.Game.Treasury;
+using ArcaneKingdom.Game.World;
 using VContainer;
 using VContainer.Unity;
 
@@ -60,6 +66,15 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<INotificationService, NotificationService>(Lifetime.Singleton);
             builder.Register<SeasonResetService>(Lifetime.Singleton);
             builder.Register<CodexService>(Lifetime.Singleton);
+
+            // Iter 6: Schema-v2 + Server-Anbindungs-Vorbereitung
+            builder.Register<AchievementService>(Lifetime.Singleton);
+            builder.Register<ChatModerationService>(Lifetime.Singleton);
+            builder.Register<MaterialDropService>(Lifetime.Singleton);
+            builder.Register<SaisonPassService>(Lifetime.Singleton);
+            builder.Register<DailyShopService>(Lifetime.Singleton);
+            builder.Register<FriendsService>(Lifetime.Singleton);
+            builder.Register<GuildTreasuryService>(Lifetime.Singleton);
 
             builder.RegisterEntryPoint<LoginController>();
         }

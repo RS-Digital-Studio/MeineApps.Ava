@@ -118,6 +118,7 @@ public class App : Application
             services.AddSingleton<IVoiceAnnotationService, NullVoiceAnnotationService>();
         services.AddSingleton<ISurveyReportService, SurveyReportService>();
         services.AddSingleton<ISceneReconstructionService, SceneReconstructionService>();
+        services.AddSingleton<IMultiUserSessionService, LocalTcpMultiUserService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

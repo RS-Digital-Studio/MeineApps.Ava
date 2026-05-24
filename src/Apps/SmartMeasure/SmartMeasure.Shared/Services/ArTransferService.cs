@@ -199,7 +199,9 @@ public class ArTransferService : IArTransferService
                 SatelliteCount = 0,
                 MagAccuracy = arPoint.MagAccuracyAtCapture,
                 Timestamp = arPoint.Timestamp,
-                Label = arPoint.Label
+                Label = arPoint.Label,
+                // Plan-Kap. 5.6: Foto-Annotation pro Punkt durchreichen
+                PhotoPath = arPoint.PhotoPath,
             });
         }
 

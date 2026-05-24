@@ -46,4 +46,10 @@ public class SurveyPoint
 
     /// <summary>Optionales Label ("Ecke Terrasse NW", "Grenzpunkt")</summary>
     public string? Label { get; set; }
+
+    /// <summary>Plan-Kap. 5.6: Relativer Pfad zum JPEG-Foto vom Capture-Zeitpunkt
+    /// (relativ zum <c>IAppPaths.PhotosFolder</c>). Wird beim AR-Capture mit dem
+    /// aktuellen Kamera-Frame befuellt, sonst null. PDF-Bericht laedt das Foto
+    /// neben dem Punkt-Eintrag.</summary>
+    public string? PhotoPath { get; set; }
 }

@@ -14,6 +14,7 @@ public sealed class AndroidAppPaths : IAppPaths
     public string AppDataFolder { get; }
     public string DatabasePath => Path.Combine(AppDataFolder, "smartmeasure.db");
     public string ExportFolder { get; }
+    public string PhotosFolder { get; }
 
     public AndroidAppPaths(Context context)
     {
@@ -27,10 +28,15 @@ public sealed class AndroidAppPaths : IAppPaths
             ?? Path.Combine(AppDataFolder, "Exports");
         ExportFolder = externalDir;
 
+        // Plan-Kap. 5.6: Photos im internen Sandbox-Ordner (nicht externer Speicher —
+        // 50MB pro Projekt sind klein genug, kein Storage-Permission noetig).
+        PhotosFolder = Path.Combine(AppDataFolder, "Photos");
+
         try
         {
             Directory.CreateDirectory(AppDataFolder);
             Directory.CreateDirectory(ExportFolder);
+            Directory.CreateDirectory(PhotosFolder);
         }
         catch (Exception ex)
         {

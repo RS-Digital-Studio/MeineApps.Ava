@@ -98,6 +98,11 @@ public class ArPoint
     /// von <see cref="Label"/> — der User soll seine eigene Beschriftung behalten koennen.</summary>
     public ArSemanticLabel SemanticLabel { get; set; } = ArSemanticLabel.None;
 
+    /// <summary>Plan-Kap. 5.6: Dateiname des JPEG-Fotos vom Capture-Zeitpunkt (im
+    /// <c>IAppPaths.PhotosFolder</c>). Wird in <see cref="SurveyPoint.PhotoPath"/>
+    /// uebernommen. null wenn kein Foto aufgenommen wurde (Mock-Pfad oder Capture-Fehler).</summary>
+    public string? PhotoPath { get; set; }
+
     /// <summary>Zeitpunkt der Erfassung (UTC)</summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 

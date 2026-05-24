@@ -1389,6 +1389,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _redoStack.Clear();
                     _points.Add(arPoint);
                     ShowTransientHint($"✓ Punkt {_points.Count}  σ={stdDev * 100:F1}cm  ({validCount} Samples)");
+                    // Plan-Kap. 5.6: Foto-Annotation pro Punkt (nicht im Tape-Modus —
+                    // Ad-hoc-Messung braucht kein Foto, das wuerde nur Storage fressen).
+                    CapturePhotoForPoint(arPoint);
                 }
                 else
                 {
@@ -1400,6 +1403,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _activeContour.ContourType).Label
                         ?? _activeContour.ContourType.ToString();
                     ShowTransientHint($"✓ {typeLabel}: {_activeContour.Points.Count} Punkte");
+                    // Foto auch fuer Kontur-Punkte (z.B. "Ecke Mauer Nord" mit Sichtbeleg).
+                    CapturePhotoForPoint(arPoint);
                 }
             }
             UpdateCounter();
@@ -4056,6 +4061,83 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _stakeoutCurrentDistance = distanceM;
             _stakeoutCurrentRelativeBearingDeg = relBearing;
             _stakeoutCurrentTargetLabel = target.Label;
+        }
+    }
+
+    /// <summary>Plan-Kap. 5.6: Foto vom aktuellen Kamera-Frame asynchron erstellen und
+    /// in <c>IAppPaths.PhotosFolder</c> als JPEG ablegen. Setzt sofort <see cref="ArPoint.PhotoPath"/>
+    /// auf den geplanten Dateinamen — auch wenn der eigentliche Disk-Write asynchron
+    /// laeuft. Der PDF-Bericht prueft beim Render File.Exists.</summary>
+    private void CapturePhotoForPoint(ArPoint point)
+    {
+        var glView = _glSurfaceView;
+        if (glView == null || glView.Width <= 0 || glView.Height <= 0) return;
+
+        IAppPaths? paths = null;
+        try { paths = App.AppPathsFactory?.Invoke(); }
+        catch { return; }
+        if (paths == null) return;
+
+        var fileName = $"pt_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.jpg";
+        var fullPath = System.IO.Path.Combine(paths.PhotosFolder, fileName);
+
+        // ArPoint sofort markieren — Async-Write soll Modell nicht blocken
+        point.PhotoPath = fileName;
+
+        global::Android.Graphics.Bitmap? bitmap;
+        try
+        {
+            bitmap = global::Android.Graphics.Bitmap.CreateBitmap(
+                glView.Width, glView.Height, global::Android.Graphics.Bitmap.Config.Argb8888!);
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"PhotoCapture: Bitmap-Alloc failed: {ex.Message}");
+            return;
+        }
+        if (bitmap == null) return;
+
+        var handlerThread = new HandlerThread("PhotoCapture-ArPoint");
+        handlerThread.Start();
+        var handler = new Handler(handlerThread.Looper!);
+
+        try
+        {
+            PixelCopy.Request(glView, bitmap, new PixelCopyListener(result =>
+            {
+                try
+                {
+                    if (result != (int)PixelCopyResult.Success)
+                    {
+                        global::Android.Util.Log.Warn("ArCapture",
+                            $"PhotoCapture: PixelCopy result {result}");
+                        return;
+                    }
+
+                    // JPEG-Quality 80 ist ein guter Kompromiss zwischen Groesse (~200 KB
+                    // bei 1080p) und Detail. Plan-Kap. 5.6 nennt 1MB pro Punkt als Budget.
+                    using var fs = System.IO.File.OpenWrite(fullPath);
+                    bitmap.Compress(global::Android.Graphics.Bitmap.CompressFormat.Jpeg!, 80, fs);
+                }
+                catch (Exception ex)
+                {
+                    global::Android.Util.Log.Warn("ArCapture",
+                        $"PhotoCapture: JPEG-Save failed: {ex.Message}");
+                }
+                finally
+                {
+                    try { bitmap.Recycle(); } catch { }
+                    try { bitmap.Dispose(); } catch { }
+                    handlerThread.QuitSafely();
+                }
+            }), handler);
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture",
+                $"PhotoCapture: PixelCopy-Request failed: {ex.Message}");
+            try { bitmap.Recycle(); bitmap.Dispose(); } catch { }
+            handlerThread.QuitSafely();
         }
     }
 

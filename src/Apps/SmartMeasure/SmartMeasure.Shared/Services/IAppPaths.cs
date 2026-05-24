@@ -15,4 +15,9 @@ public interface IAppPaths
 
     /// <summary>Ordner für Export-Dateien (CSV, GeoJSON, OBJ).</summary>
     string ExportFolder { get; }
+
+    /// <summary>Plan-Kap. 5.6: Ordner fuer AR-Capture-Fotos pro Punkt. JPEGs werden
+    /// hier abgelegt; <see cref="Models.SurveyPoint.PhotoPath"/> speichert nur den
+    /// Dateinamen relativ zu diesem Ordner.</summary>
+    string PhotosFolder { get; }
 }

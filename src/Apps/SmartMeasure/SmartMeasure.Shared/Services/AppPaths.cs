@@ -10,6 +10,7 @@ public sealed class AppPaths : IAppPaths
     public string AppDataFolder { get; }
     public string DatabasePath => Path.Combine(AppDataFolder, "smartmeasure.db");
     public string ExportFolder => Path.Combine(AppDataFolder, "Exports");
+    public string PhotosFolder => Path.Combine(AppDataFolder, "Photos");
 
     public AppPaths()
     {
@@ -28,6 +29,7 @@ public sealed class AppPaths : IAppPaths
         {
             Directory.CreateDirectory(AppDataFolder);
             Directory.CreateDirectory(ExportFolder);
+            Directory.CreateDirectory(PhotosFolder);
         }
         catch
         {

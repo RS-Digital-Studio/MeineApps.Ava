@@ -1,6 +1,6 @@
 # ArcaneKingdom — Software-Architektur
 
-> Engine: Unity 2022.3 LTS | Sprache: C# (.NET Standard 2.1) | Render-Pipeline: URP
+> Engine: Unity 6 (6000.4.x) | Sprache: C# (.NET Standard 2.1) | Render-Pipeline: URP 17.x
 > Geltungsbereich: alle Code-Entscheidungen, Folder-Layout, Konventionen.
 
 Diese Doku begleitet [DESIGN.md](DESIGN.md). DESIGN.md beschreibt **was**, ARCHITECTURE.md **wie**.
@@ -28,7 +28,7 @@ Diese Doku begleitet [DESIGN.md](DESIGN.md). DESIGN.md beschreibt **was**, ARCHI
 
 | Bereich | Entscheidung | Begruendung |
 |---------|--------------|-------------|
-| Engine | Unity 2022.3 LTS | LTS-Support bis 2025, breite Plugin-Kompatibilitaet, kostenlos < 100k EUR Umsatz/Jahr |
+| Engine | Unity 6 (6000.4.x) | Aktueller LTS-Stand, UI Toolkit built-in, URP 17 default, kostenlos < 200k USD Umsatz/Jahr |
 | Render-Pipeline | URP (Universal RP) | 2D/UI-fokussiert, Shader Graph, gute Performance auf mid-tier Android |
 | Input | New Input System | Action-basierte Architektur, Multi-Touch nativ, leichter testbar |
 | UI-Framework | UI Toolkit (UIElements) fuer statische UIs, UGUI fuer animations-heavy Kampf-UI | UI Toolkit ist deklarativ + USS-stylebar; UGUI bleibt fuer DOTween-haeufige UIs vorteilhaft |

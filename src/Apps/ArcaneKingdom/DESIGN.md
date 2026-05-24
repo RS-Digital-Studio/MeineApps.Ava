@@ -1,6 +1,6 @@
 # ArcaneKingdom — Game Design Document (GDD)
 
-> **Version 5.4** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 2022 LTS
+> **Version 5.4** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 6 (6000.4.x)
 > Quelle: `Kartenspiel Start.docx` v5.0 (Maerz 2026), Referenz: *Arcane Magic*
 
 Dieses Dokument ist die **autoritative Single-Source-of-Truth** fuer das Game Design.
@@ -1175,11 +1175,11 @@ im PlayerSave-Schema v2 persistiert.
 
 ## 18. Technologie & Entwicklung
 
-### 18.1 Engine: Unity 2022 LTS
+### 18.1 Engine: Unity 6
 
 | Aspekt | Wert |
 |--------|------|
-| Version | Unity 2022.3 LTS (LTS bis 2025) |
+| Version | Unity 6 (6000.4.8f1, kontinuierliche LTS-Linie) |
 | Sprache | C# (.NET Standard 2.1) |
 | Render-Pipeline | URP (Universal Render Pipeline) |
 | UI-Stack | UI Toolkit (UIElements, USS, UXML) + UGUI fuer Animations-haeufige UI |

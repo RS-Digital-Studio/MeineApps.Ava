@@ -12,6 +12,11 @@
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
 
+# Unity Package Manager — explizit whitelisten (Repo-Root-.gitignore hat **/Packages/* fuer NuGet)
+!Packages/
+!Packages/manifest.json
+!Packages/packages-lock.json
+
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
 

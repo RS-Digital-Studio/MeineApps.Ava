@@ -7,9 +7,9 @@ anderen Apps bewusst machen.
 | Aspekt | Wert |
 |--------|------|
 | Status | Konzept-Phase abgeschlossen — Pre-MVP (Stand 2026-05-24) |
-| Tech | Unity 2022.3 LTS + C# (.NET Standard 2.1) |
+| Tech | Unity 6 (6000.4.8f1) + C# (.NET Standard 2.1) |
 | Plattform | Android (Phase 1), iOS (Phase 2 ab Monat 26+) |
-| Render-Pipeline | URP |
+| Render-Pipeline | URP 17.x (optional aktivieren, siehe SETUP.md) |
 | Backend | Firebase + Photon |
 | Genre | TCG + RPG, Free-to-Play |
 | Farbpalette | Royal-Purple #6B46C1 + Gold #F59E0B (Brand-Referenz, finalisiert v5.2) |
@@ -24,6 +24,7 @@ anderen Apps bewusst machen.
 | Datei | Zweck |
 |-------|-------|
 | [README.md](README.md) | Quickstart fuer Entwickler |
+| [SETUP.md](SETUP.md) | Schritt-fuer-Schritt-Anleitung fuer Unity 6 (Pflichtlektuere beim ersten Open) |
 | [DESIGN.md](DESIGN.md) | Konsolidiertes GDD v5.4 (19 Sektionen, TBDs geschlossen, Save-Schema v2) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Folder-Layout, DI, Networking, Conventions |
 | [Server/SERVEROPS.md](Server/SERVEROPS.md) | Server-side Cloud-Functions (Anti-Cheat, Saison-Rewards) |
@@ -36,7 +37,7 @@ anderen Apps bewusst machen.
 
 | Bereich | Wahl | Anders als die anderen Apps |
 |---------|------|----------------------------|
-| Engine | Unity 2022.3 LTS | Andere: Avalonia 12 |
+| Engine | Unity 6 (6000.4.x) | Andere: Avalonia 12 |
 | Sprache | C# (.NET Standard 2.1) | Andere: .NET 10 |
 | UI | UI Toolkit + UGUI | Andere: AXAML |
 | DI | VContainer | Andere: Microsoft.Extensions.DI |
@@ -53,10 +54,11 @@ anderen Apps bewusst machen.
 
 ### Voraussetzungen
 
+> Vollstaendige Anleitung in [SETUP.md](SETUP.md).
+
 1. **Unity Hub** installieren ([unity.com/download](https://unity.com/download))
-2. **Unity 2022.3.50f1** via Unity Hub installieren
-3. **JDK 17** (mit Unity Android Build Support oft mitgeliefert)
-4. **Android SDK / NDK** (ueber Unity Hub installiert)
+2. **Unity 6000.4.8f1** via Unity Hub installieren (mit Android Build Support + JDK + Android SDK/NDK)
+3. Projekt oeffnen, Setup-Wizard erscheint automatisch ("ArcaneKingdom → Setup → First-Time Setup Wizard")
 
 ### Projekt oeffnen
 
@@ -82,7 +84,7 @@ Unity Editor:
 
 ```
 # Via Unity CLI (Beispiel, exakte Pfade anpassen):
-"C:\Program Files\Unity\Hub\Editor\2022.3.50f1\Editor\Unity.exe" `
+"C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Unity.exe" `
   -batchmode -quit -nographics `
   -projectPath "F:\Meine_Apps_Ava\src\Apps\ArcaneKingdom\Unity" `
   -executeMethod BuildScripts.BuildAndroidRelease `

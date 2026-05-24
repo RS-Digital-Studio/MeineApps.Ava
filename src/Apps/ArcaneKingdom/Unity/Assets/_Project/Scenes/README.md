@@ -28,9 +28,9 @@ Danach laeuft `Play`:
 | `Boot/Boot.unity` | Skelett vorhanden | siehe oben |
 | `Hub/Hub.unity` | Skelett vorhanden | HubScope + UIRoot beim ersten Open verdrahten |
 | `Battle/Battle.unity` | Skelett vorhanden | BattleScope + BattleField beim ersten Open verdrahten |
-| `Arena/Arena.unity` | nicht angelegt | wird in MVP-Phase erstellt |
-| `Guild/Guild.unity` | nicht angelegt | wird in MVP-Phase erstellt |
-| `GuildWorld/GuildWorld.unity` | nicht angelegt | wird in MVP-Phase erstellt |
+| `Arena/Arena.unity` | Skelett vorhanden | ArenaScope + Liste/Replay-UI in MVP-Phase |
+| `Guild/Guild.unity` | Skelett vorhanden | GuildScope + 5-Tabs-UI in MVP-Phase |
+| `GuildWorld/GuildWorld.unity` | Skelett vorhanden | GuildWorldScope + TerritoriesContainer in MVP-Phase |
 
 ## Hub.unity / Battle.unity — beim ersten Open
 

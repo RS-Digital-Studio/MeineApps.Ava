@@ -1,0 +1,42 @@
+[
+  {
+    "id": "energy_full",
+    "kind": "EnergyFull",
+    "titleKey": "notif.energy_full.title",
+    "bodyKey": "notif.energy_full.body",
+    "defaultDelaySeconds": 21600,
+    "requiresOptIn": true
+  },
+  {
+    "id": "thief_spawned",
+    "kind": "ThiefSpawned",
+    "titleKey": "notif.thief_spawned.title",
+    "bodyKey": "notif.thief_spawned.body",
+    "defaultDelaySeconds": 0,
+    "requiresOptIn": true
+  },
+  {
+    "id": "klan_match",
+    "kind": "KlanMatch",
+    "titleKey": "notif.klan_match.title",
+    "bodyKey": "notif.klan_match.body",
+    "defaultDelaySeconds": 1800,
+    "requiresOptIn": false
+  },
+  {
+    "id": "daily_reward",
+    "kind": "DailyReward",
+    "titleKey": "notif.daily_reward.title",
+    "bodyKey": "notif.daily_reward.body",
+    "defaultDelaySeconds": 86400,
+    "requiresOptIn": true
+  },
+  {
+    "id": "season_end",
+    "kind": "SeasonEnd",
+    "titleKey": "notif.season_end.title",
+    "bodyKey": "notif.season_end.body",
+    "defaultDelaySeconds": 0,
+    "requiresOptIn": true
+  }
+]

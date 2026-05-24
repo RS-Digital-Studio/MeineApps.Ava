@@ -1,0 +1,73 @@
+[
+  {
+    "id": "welcome",
+    "order": 1,
+    "titleKey": "tutorial.welcome.title",
+    "bodyKey": "tutorial.welcome.body",
+    "triggerEvent": "first_session_start",
+    "skippable": false
+  },
+  {
+    "id": "hub",
+    "order": 2,
+    "titleKey": "tutorial.hub.title",
+    "bodyKey": "tutorial.hub.body",
+    "triggerEvent": "hub_entered",
+    "highlightTargetId": "nav_world_map_button",
+    "skippable": true
+  },
+  {
+    "id": "first_battle",
+    "order": 3,
+    "titleKey": "tutorial.first_battle.title",
+    "bodyKey": "tutorial.first_battle.body",
+    "triggerEvent": "battle_started",
+    "highlightTargetId": "hand_first_card",
+    "skippable": true
+  },
+  {
+    "id": "deck_edit",
+    "order": 4,
+    "titleKey": "tutorial.deck_edit.title",
+    "bodyKey": "tutorial.deck_edit.body",
+    "triggerEvent": "first_battle_won",
+    "highlightTargetId": "deck_tab",
+    "skippable": true
+  },
+  {
+    "id": "first_pack",
+    "order": 5,
+    "titleKey": "tutorial.first_pack.title",
+    "bodyKey": "tutorial.first_pack.body",
+    "triggerEvent": "shop_entered",
+    "highlightTargetId": "shop_common_pack",
+    "skippable": true
+  },
+  {
+    "id": "collection",
+    "order": 6,
+    "titleKey": "tutorial.collection.title",
+    "bodyKey": "tutorial.collection.body",
+    "triggerEvent": "material_card_obtained",
+    "highlightTargetId": "deck_collection_tab",
+    "skippable": true
+  },
+  {
+    "id": "arena",
+    "order": 7,
+    "titleKey": "tutorial.arena.title",
+    "bodyKey": "tutorial.arena.body",
+    "triggerEvent": "level_15_reached",
+    "highlightTargetId": "nav_arena_button",
+    "skippable": true
+  },
+  {
+    "id": "guild",
+    "order": 8,
+    "titleKey": "tutorial.guild.title",
+    "bodyKey": "tutorial.guild.body",
+    "triggerEvent": "level_25_reached",
+    "highlightTargetId": "menu_guild_button",
+    "skippable": true
+  }
+]

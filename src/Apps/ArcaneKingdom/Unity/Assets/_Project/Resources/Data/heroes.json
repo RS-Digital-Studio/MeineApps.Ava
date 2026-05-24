@@ -1,0 +1,80 @@
+[
+  {
+    "id": "aurelia",
+    "displayNameKey": "hero.aurelia.name",
+    "flavorTextKey": "hero.aurelia.flavor",
+    "element": "Licht",
+    "faehigkeitNameKey": "hero.aurelia.skill_name",
+    "faehigkeitDescKey": "hero.aurelia.skill_desc",
+    "faehigkeitsTyp": "AllyHeal",
+    "cooldownRunden": 5,
+    "magnitude": 30,
+    "durationTurns": 0,
+    "portraitAddressableKey": "Heroes/portrait_aurelia"
+  },
+  {
+    "id": "velgar",
+    "displayNameKey": "hero.velgar.name",
+    "flavorTextKey": "hero.velgar.flavor",
+    "element": "Wasser",
+    "faehigkeitNameKey": "hero.velgar.skill_name",
+    "faehigkeitDescKey": "hero.velgar.skill_desc",
+    "faehigkeitsTyp": "EnemyManaBurn",
+    "cooldownRunden": 6,
+    "magnitude": 2,
+    "durationTurns": 0,
+    "portraitAddressableKey": "Heroes/portrait_velgar"
+  },
+  {
+    "id": "zarok",
+    "displayNameKey": "hero.zarok.name",
+    "flavorTextKey": "hero.zarok.flavor",
+    "element": "Feuer",
+    "faehigkeitNameKey": "hero.zarok.skill_name",
+    "faehigkeitDescKey": "hero.zarok.skill_desc",
+    "faehigkeitsTyp": "AoeDamage",
+    "cooldownRunden": 7,
+    "magnitude": 500,
+    "durationTurns": 0,
+    "portraitAddressableKey": "Heroes/portrait_zarok"
+  },
+  {
+    "id": "mortis",
+    "displayNameKey": "hero.mortis.name",
+    "flavorTextKey": "hero.mortis.flavor",
+    "element": "Dunkel",
+    "faehigkeitNameKey": "hero.mortis.skill_name",
+    "faehigkeitDescKey": "hero.mortis.skill_desc",
+    "faehigkeitsTyp": "FreeCardCast",
+    "cooldownRunden": 8,
+    "magnitude": 0,
+    "durationTurns": 0,
+    "portraitAddressableKey": "Heroes/portrait_mortis"
+  },
+  {
+    "id": "eolyn",
+    "displayNameKey": "hero.eolyn.name",
+    "flavorTextKey": "hero.eolyn.flavor",
+    "element": "Natur",
+    "faehigkeitNameKey": "hero.eolyn.skill_name",
+    "faehigkeitDescKey": "hero.eolyn.skill_desc",
+    "faehigkeitsTyp": "AllyManaBoost",
+    "cooldownRunden": 5,
+    "magnitude": 1,
+    "durationTurns": 0,
+    "portraitAddressableKey": "Heroes/portrait_eolyn"
+  },
+  {
+    "id": "cog",
+    "displayNameKey": "hero.cog.name",
+    "flavorTextKey": "hero.cog.flavor",
+    "element": "Licht",
+    "faehigkeitNameKey": "hero.cog.skill_name",
+    "faehigkeitDescKey": "hero.cog.skill_desc",
+    "faehigkeitsTyp": "DrawAndManaBoost",
+    "cooldownRunden": 6,
+    "magnitude": 1,
+    "durationTurns": 3,
+    "portraitAddressableKey": "Heroes/portrait_cog"
+  }
+]

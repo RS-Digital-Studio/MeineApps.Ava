@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using ArcaneKingdom.Domain.Cards;
+using ArcaneKingdom.Domain.Hero;
 using ArcaneKingdom.Domain.Runes;
 using ArcaneKingdom.Domain.World;
 using Newtonsoft.Json;
@@ -31,6 +32,7 @@ namespace ArcaneKingdom.EditorTools.Data
                 var cards = ImportCards(abilities);
                 ImportRunes();
                 ImportWorlds(cards);
+                ImportHeroes();
                 ImportBalancing();
             }
             finally
@@ -178,6 +180,47 @@ namespace ArcaneKingdom.EditorTools.Data
                 foreach (var cId in n.enemyDeckCardIds ?? Array.Empty<string>())
                     if (!cards.ContainsKey(cId))
                         throw new Exception($"World '{dto.id}', Node '{n.id}': Karte '{cId}' unbekannt.");
+        }
+
+        // ----------------------------------------------------------- Heroes
+
+        [MenuItem("ArcaneKingdom/Data/Import Heroes")]
+        public static void ImportHeroesMenu() { ImportHeroes(); AssetDatabase.SaveAssets(); }
+
+        private static void ImportHeroes()
+        {
+            var path = Path.Combine(DataFolderRel, "heroes.json");
+            if (!File.Exists(path)) { Debug.LogWarning("[DataImporter] heroes.json fehlt — Import uebersprungen."); return; }
+            var json = File.ReadAllText(path);
+            var dtos = JsonConvert.DeserializeObject<List<HeroDto>>(json) ?? new();
+            var ids = new HashSet<string>();
+
+            foreach (var dto in dtos)
+            {
+                if (!ids.Add(dto.id)) throw new Exception($"Heroes: Doppelte ID '{dto.id}'");
+                var so = LoadOrCreateAsset<HeroDefinition>($"{SoRootRel}/Heroes/Hero_{dto.id}.asset");
+                ApplyHero(so, dto);
+                EditorUtility.SetDirty(so);
+            }
+            Debug.Log($"[DataImporter] {dtos.Count} Helden importiert.");
+        }
+
+        private static void ApplyHero(HeroDefinition so, HeroDto dto)
+        {
+            var sObj = new SerializedObject(so);
+            sObj.FindProperty("id").stringValue = dto.id;
+            sObj.FindProperty("displayNameKey").stringValue = dto.displayNameKey;
+            sObj.FindProperty("flavorTextKey").stringValue = dto.flavorTextKey;
+            sObj.FindProperty("element").enumValueIndex = (int)dto.element;
+            sObj.FindProperty("faehigkeitNameKey").stringValue = dto.faehigkeitNameKey;
+            sObj.FindProperty("faehigkeitDescKey").stringValue = dto.faehigkeitDescKey;
+            sObj.FindProperty("faehigkeitsTyp").enumValueIndex = (int)dto.faehigkeitsTyp;
+            sObj.FindProperty("cooldownRunden").intValue = dto.cooldownRunden;
+            sObj.FindProperty("magnitude").intValue = dto.magnitude;
+            sObj.FindProperty("durationTurns").intValue = dto.durationTurns;
+            sObj.FindProperty("portraitAddressableKey").stringValue = dto.portraitAddressableKey ?? string.Empty;
+            sObj.FindProperty("voiceLineAddressableKey").stringValue = dto.voiceLineAddressableKey ?? string.Empty;
+            sObj.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // ----------------------------------------------------------- Balancing
@@ -357,6 +400,23 @@ namespace ArcaneKingdom.EditorTools.Data
             public float baseMagnitude = 5f;
             public float magnitudePerLevel = 1f;
             public Element elementTarget = Element.Natur;
+        }
+
+        [Serializable]
+        private sealed class HeroDto
+        {
+            public string id = string.Empty;
+            public string displayNameKey = string.Empty;
+            public string flavorTextKey = string.Empty;
+            public Element element = Element.Licht;
+            public string faehigkeitNameKey = string.Empty;
+            public string faehigkeitDescKey = string.Empty;
+            public HeroFaehigkeitsTyp faehigkeitsTyp = HeroFaehigkeitsTyp.AllyHeal;
+            public int cooldownRunden = 5;
+            public int magnitude;
+            public int durationTurns;
+            public string? portraitAddressableKey;
+            public string? voiceLineAddressableKey;
         }
 
         [Serializable]

@@ -7,8 +7,12 @@ using ArcaneKingdom.Game.Arena;
 using ArcaneKingdom.Game.Battle;
 using ArcaneKingdom.Game.Chat;
 using ArcaneKingdom.Game.Guild;
+using ArcaneKingdom.Game.Hero;
 using ArcaneKingdom.Game.Hub;
+using ArcaneKingdom.Game.Iap;
+using ArcaneKingdom.Game.Progression;
 using ArcaneKingdom.Game.Quest;
+using ArcaneKingdom.Game.Replay;
 using ArcaneKingdom.Game.Shop;
 using ArcaneKingdom.Game.Thief;
 using VContainer;
@@ -40,6 +44,10 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<ShopController>(Lifetime.Singleton);
             builder.Register<QuestService>(Lifetime.Singleton);
             builder.Register<DailyRewardService>(Lifetime.Singleton);
+            builder.Register<ProgressionService>(Lifetime.Singleton);
+            builder.Register<HeroService>(Lifetime.Singleton);
+            builder.Register<ReplayService>(Lifetime.Singleton);
+            builder.Register<IIapService, UnityIapService>(Lifetime.Singleton);
 
             builder.RegisterEntryPoint<LoginController>();
         }

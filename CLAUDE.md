@@ -3,6 +3,8 @@
 Multi-Plattform Apps (Android + Windows + Linux) mit Avalonia 12 + .NET 10.
 Migriert von MAUI mit verbesserter UX, modernem Design und behobenen MAUI-Bugs.
 
+> **Sonderfall ArcaneKingdom:** Einzige App, die **Unity 2022 LTS** statt Avalonia nutzt — TCG/RPG mit Echtzeit-PvP- und Live-Service-Anspruechen. Komplett eigene Tech-Stack-Doku unter [src/Apps/ArcaneKingdom/](src/Apps/ArcaneKingdom/CLAUDE.md). Wird **nicht** von `dotnet build` erfasst.
+
 ---
 
 ## Build-Befehle
@@ -62,7 +64,7 @@ F:\Meine_Apps_Ava\
 │   ├── UI/
 │   │   └── MeineApps.UI/           # Shared UI Components
 │   │
-│   └── Apps/                       # 12 Apps, jeweils Shared/Android/Desktop
+│   └── Apps/                       # 12 Avalonia-Apps + 1 Unity-App
 │       ├── RechnerPlus/            # Taschenrechner (werbefrei)
 │       ├── ZeitManager/            # Timer/Stoppuhr/Alarm (werbefrei)
 │       ├── FinanzRechner/          # 6 Finanzrechner + Budget-Tracker
@@ -74,7 +76,8 @@ F:\Meine_Apps_Ava\
 │       ├── RebornSaga/             # Anime Isekai-RPG (Volle SkiaSharp-Engine)
 │       ├── BingXBot/               # Trading Bot (Pi-Server 24/7 + Desktop + Android Remote)
 │       ├── GardenControl/          # Bewässerungssteuerung (Pi-Server + Desktop + Android)
-│       └── SmartMeasure/          # 3D-Grundstücksvermessung + Gartenplanung (RTK-GPS, privat)
+│       ├── SmartMeasure/           # 3D-Grundstücksvermessung + Gartenplanung (RTK-GPS, privat)
+│       └── ArcaneKingdom/          # TCG + RPG (NUR Unity 2022 LTS — kein Avalonia/.NET!)
 │
 ├── tools/
 │   ├── AppChecker/              # 10 Check-Kategorien, 100+ Prüfungen
@@ -88,7 +91,7 @@ F:\Meine_Apps_Ava\
 
 ## Status
 
-7 Apps im geschlossenen Test. HandwerkerImperium + BomberBlast in Produktion. RebornSaga + BingXBot in Entwicklung.
+7 Apps im geschlossenen Test. HandwerkerImperium + BomberBlast in Produktion. RebornSaga + BingXBot in Entwicklung. ArcaneKingdom in Konzept-Phase (Unity statt Avalonia).
 
 | App | Version | Ads | Premium | Status |
 |-----|---------|-----|---------|--------|
@@ -104,6 +107,7 @@ F:\Meine_Apps_Ava\
 | BingXBot | v1.8.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
 | SmartMeasure | v1.1.4 | Nein | Nein | Entwicklung (privat, RTK-GPS Vermessung) |
+| ArcaneKingdom | v0.0.1 | TBD | Diamanten-Packs (TCG-typisch) | Konzept-Phase (Unity 2022 LTS) |
 
 ---
 
@@ -137,6 +141,7 @@ Zielframework, Build, Struktur, Conventions und ggf. Test-Projekte.
 | BingXBot | [src/Apps/BingXBot/CLAUDE.md](src/Apps/BingXBot/CLAUDE.md) |
 | GardenControl | [src/Apps/GardenControl/CLAUDE.md](src/Apps/GardenControl/CLAUDE.md) |
 | SmartMeasure | [src/Apps/SmartMeasure/CLAUDE.md](src/Apps/SmartMeasure/CLAUDE.md) |
+| ArcaneKingdom (Unity) | [src/Apps/ArcaneKingdom/CLAUDE.md](src/Apps/ArcaneKingdom/CLAUDE.md) |
 
 **Tools:**
 
@@ -342,8 +347,9 @@ Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, statisch i
 | BingXBot | #3B82F6 Blau | Dark Trading Terminal |
 | GardenControl | #2E7D32 Grün | Natur/Garten Dashboard |
 | SmartMeasure | #FF6B00 Orange | Technisch-Professionell, Vermessung |
+| ArcaneKingdom (Unity) | #6B46C1 Royal-Purple + #F59E0B Gold | Magisches TCG, Fantasy-Premium (vorlaeufig) |
 
-Implementierung: Jede App lädt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`.
+Implementierung: Jede Avalonia-App lädt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`. ArcaneKingdom verwendet stattdessen ein eigenes Unity-USS-Theme — die hier dokumentierten Farben sind die Brand-Referenz.
 
 ---
 

@@ -25,11 +25,24 @@ Danach laeuft `Play`:
 
 | Szene | Status | Verantwortung |
 |-------|--------|--------------|
-| `Hub/Hub.unity` | nicht angelegt | wird in MVP-Phase erstellt |
-| `Battle/Battle.unity` | nicht angelegt | wird in MVP-Phase erstellt |
+| `Boot/Boot.unity` | Skelett vorhanden | siehe oben |
+| `Hub/Hub.unity` | Skelett vorhanden | HubScope + UIRoot beim ersten Open verdrahten |
+| `Battle/Battle.unity` | Skelett vorhanden | BattleScope + BattleField beim ersten Open verdrahten |
 | `Arena/Arena.unity` | nicht angelegt | wird in MVP-Phase erstellt |
 | `Guild/Guild.unity` | nicht angelegt | wird in MVP-Phase erstellt |
 | `GuildWorld/GuildWorld.unity` | nicht angelegt | wird in MVP-Phase erstellt |
+
+## Hub.unity / Battle.unity — beim ersten Open
+
+Beide Szenen enthalten:
+
+- `[HubCamera]` / `[BattleCamera]` (Orthographic, Theme-Hintergrundfarbe)
+- `[HubScope]` / `[BattleScope]` (leeres GameObject — bei Bedarf
+  `HubLifetimeScope` bzw. `BattleLifetimeScope` als Komponente anhaengen)
+- `[HubUIRoot]` / `[BattleField]` (leerer Container fuer UI Toolkit oder UGUI-Canvas)
+
+Sind primaer dazu da, dass `dotnet`-/Unity-CI nicht ueber fehlende Szenen-
+Referenzen stolpert. Die echten Hub/Battle-Layouts kommen in der MVP-Phase.
 
 Scene-Namen sind in `Assets/_Project/Scripts/Game/Bootstrap/SceneNames.cs`
 als Konstanten definiert — dort aktualisieren falls Namen geaendert werden.

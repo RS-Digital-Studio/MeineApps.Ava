@@ -8,7 +8,21 @@ namespace ArcaneKingdom.Domain.Battle
     /// </summary>
     public static class CardUpgradeCurve
     {
-        public readonly record struct LevelUpCost(int CopiesRequired, ScrapType ScrapKind, int ScrapAmount, long GoldCost);
+        public readonly struct LevelUpCost
+        {
+            public int CopiesRequired { get; }
+            public ScrapType ScrapKind { get; }
+            public int ScrapAmount { get; }
+            public long GoldCost { get; }
+
+            public LevelUpCost(int copiesRequired, ScrapType scrapKind, int scrapAmount, long goldCost)
+            {
+                CopiesRequired = copiesRequired;
+                ScrapKind = scrapKind;
+                ScrapAmount = scrapAmount;
+                GoldCost = goldCost;
+            }
+        }
 
         /// <summary>
         /// Liefert die Kosten fuer das Upgrade von <paramref name="fromLevel"/> auf <c>fromLevel+1</c>.

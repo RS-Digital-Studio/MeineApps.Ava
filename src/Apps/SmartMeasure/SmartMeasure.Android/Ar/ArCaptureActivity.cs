@@ -2193,6 +2193,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 // Geospatial Pose sampeln (VPS via Google Street View Matching)
                 UpdateGeospatialPose();
 
+                // Plan-Kap. 3.5: LightEstimate auswerten — bei abruptem Helligkeits-Sprung
+                // (Lampe an/aus, Wolke vor Sonne) Sampling unterbrechen, weil ARCore-Feature-
+                // Detection in solchen Frames unzuverlaessig ist.
+                UpdateLightEstimate(frame);
+
                 // Plan 3.3: Recovery-Punkte wieder mit Earth-Anchors verknüpfen, sobald
                 // Geospatial aktiv ist. Limitiert auf 2 Re-Attaches pro Frame, damit auch
                 // ein 100-Punkt-Restore die Render-Loop nicht blockt.
@@ -3253,6 +3258,83 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     }
 
     #endregion
+
+    /// <summary>Letzte gemessene Pixel-Intensitaet aus LightEstimate (0.0..1.0). NaN bis
+    /// der erste gueltige Wert anliegt. Volatile-Bits-Pattern wie bei _magneticHeading —
+    /// GL-Thread schreibt, Sampler-Pruefung kann von anderem Thread lesen.</summary>
+    private int _lastPixelIntensityBits = BitConverter.SingleToInt32Bits(float.NaN);
+
+    /// <summary>Anzahl Frames seit dem letzten Reset des Light-Jump-Triggers. Verhindert
+    /// dass eine einzige Helligkeits-Schwankung das Sampling 60x pro Sekunde aborted.</summary>
+    private int _lightJumpCooldownFrames;
+
+    /// <summary>Plan-Kap. 3.5: Light-Estimation auslesen und auf abrupte Helligkeits-
+    /// Sprunge reagieren. Wenn die PixelIntensity um &gt;40% sprint und gerade ein
+    /// Multi-Frame-Sampling laeuft, wird das Sampling abgebrochen — die Feature-Detection
+    /// liefert in solchen Frames keine stabilen Hits.</summary>
+    private void UpdateLightEstimate(Frame frame)
+    {
+        try
+        {
+            var le = frame.LightEstimate;
+            if (le == null) return;
+
+            // State auf "Valid" pruefen — ARCore meldet "NotValid" wenn Light-Estimation
+            // mid-frame disabled wurde (z.B. Thermal-Recovery).
+            if (le.GetState() != LightEstimate.State.Valid) return;
+
+            var intensity = le.PixelIntensity;
+            if (float.IsNaN(intensity) || intensity <= 0f) return;
+
+            var previousBits = System.Threading.Volatile.Read(ref _lastPixelIntensityBits);
+            var previous = BitConverter.Int32BitsToSingle(previousBits);
+            System.Threading.Volatile.Write(ref _lastPixelIntensityBits,
+                BitConverter.SingleToInt32Bits(intensity));
+
+            // Erstmessung oder noch im Cooldown → kein Jump-Trigger.
+            if (float.IsNaN(previous) || previous <= 0f) return;
+            if (_lightJumpCooldownFrames > 0)
+            {
+                _lightJumpCooldownFrames--;
+                return;
+            }
+
+            // Relative Aenderung. 0.4 = 40% Sprung in beide Richtungen.
+            var delta = MathF.Abs(intensity - previous) / previous;
+            if (delta < 0.4f) return;
+
+            // Cooldown so dass die naechsten ~2s keine weitere Detektion ausgeloest wird
+            // — Helligkeit pendelt sich oft erst nach mehreren Frames ein.
+            _lightJumpCooldownFrames = 60;
+
+            // Aktives Sampling abbrechen
+            bool wasSampling;
+            lock (_samplerLock)
+            {
+                wasSampling = _activeSampler != null;
+                if (wasSampling)
+                {
+                    _activeSampler = null;
+                    _samplesCollected = 0;
+                    _samplerActiveFrames = 0;
+                    _samplerPauseFrames = 0;
+                }
+            }
+
+            if (wasSampling)
+            {
+                RunOnUiThread(() =>
+                {
+                    ShowTransientHint("💡 Helligkeit gewechselt — bitte erneut anvisieren");
+                    VibrateWarning();
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"UpdateLightEstimate failed: {ex.Message}");
+        }
+    }
 
     /// <summary>
     /// Liest die Geospatial-Kamera-Pose (VPS) wenn Earth-Tracking aktiv ist.

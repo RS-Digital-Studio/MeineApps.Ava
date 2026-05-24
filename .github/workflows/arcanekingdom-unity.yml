@@ -24,7 +24,7 @@ on:
 
 env:
   UNITY_PROJECT_PATH: src/Apps/ArcaneKingdom/Unity
-  UNITY_VERSION: 2022.3.50f1
+  UNITY_VERSION: 6000.4.8f1
 
 jobs:
   test-domain:

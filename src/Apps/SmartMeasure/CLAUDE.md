@@ -79,15 +79,15 @@ src/Apps/SmartMeasure/
 | `ArPoseSampler` | Multi-Frame-HitTest-Averaging: Median + ±3σ-Outlier-Filter + Mittel auf bereinigten Samples. In Shared. |
 | `ArMathHelpers` | `ApplyBowditchCorrection` + `ExtractHeadingFromQuaternion` + `ExtractPitchFromQuaternion`. Pure Mathematik, in Shared. `ArPrecisionHelpers` delegiert dorthin. |
 | `IDifferentialSnapshotService` | Vergleicht zwei Vermessungs-Snapshots desselben Grundstuecks (Greedy-Nearest-Neighbor, 3D-Distanz inkl. Hoehe). Liefert Moved/Unchanged/Added/Removed. |
-| `IGnssConditionService` | NOAA Kp + F10.7-Solar-Flux via HTTP (Cache 1h). Klassifiziert Good/Fair/Poor + Empfehlung. |
-| `IVolumeService` | Prism/Layered/Frustum-Volumen aus geschlossenen Konturen + Material-Schaetzung (8 Standard-Materialien). |
-| `ITotalStationService` | Stationierung + Radial-Projektion (Distanz+Bearing+Pitch → Lat/Lon). |
+| `IGnssConditionService` | NOAA Kp + F10.7-Solar-Flux via HTTP (Cache 1h). Klassifiziert Good/Fair/Poor + Empfehlung. UI in `ConnectView`. |
+| `IVolumeService` | Prism/Layered/Frustum-Volumen aus geschlossenen Konturen + Material-Schaetzung (8 Standard-Materialien). UI in `GardenPlanView`. |
+| `ITotalStationService` | Stationierung + Radial-Projektion (Distanz+Bearing+Pitch → Lat/Lon). Aktiv via `CaptureMode.TotalStation`. |
 | `ILeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/sigma^2. Kein Math.NET noetig. |
-| `IVoiceAnnotationService` | Plan-Pattern fuer Audio-Aufnahme pro Punkt (Default `NullVoiceAnnotationService`). |
-| `ISurveyReportService` | Plan-Pattern fuer PDF-Bericht (PdfSharpCore). Datenquellen alle in Shared bereit. |
-| `IMultiUserSessionService` | Plan-Pattern fuer SignalR-Hub-basiertes Co-located Capture. |
-| `ISceneReconstructionService` | Plan-Pattern fuer Punktwolke→Mesh (PLY/OBJ). |
-| `IArSessionLike` | Wrapper-Pattern fuer ARCore-Session — ermoeglicht Activity-Tests ohne Google.AR.Core. |
+| `IVoiceAnnotationService` | Android: `AndroidVoiceAnnotationService` mit `SpeechRecognizer` (Transkript, kein Audio-File). Desktop: `NullVoiceAnnotationService`. |
+| `ISurveyReportService` | `SurveyReportService` mit PdfSharpCore — Cover, Punkt-Tabelle mit Foto-Thumbnails, Material-Estimate, optional Differential. |
+| `IMultiUserSessionService` | `LocalTcpMultiUserService` — TCP-NDJSON-Protokoll auf Port 5119, kein extra SignalR-Package. |
+| `ISceneReconstructionService` | `SceneReconstructionService` mit Voxel-Filter + PLY/OBJ-Punktwolke-Export. Meshing in Blender/MeshLab. |
+| `IArSessionLike` | `AndroidArSession` (Frame-Provider-Wrapper) + `MockArSession` (Tests). |
 
 ---
 
@@ -514,35 +514,38 @@ dotnet build src/Apps/SmartMeasure/SmartMeasure.Android
 
 ---
 
-## Roadmap (Plan-Status)
+## Roadmap (Plan-Status — komplett)
 
-Alle 30 Tasks aus dem Plan sind als Pattern oder Implementierung umgesetzt — manche
-mit MVP-Implementierung, andere nur als Service-Interface (Plattform-Verkettung
-folgt in eigenen Iterationen).
+Alle 30 Plan-Items + 12 Folge-UI/Logik-Aufgaben sind umgesetzt. Tests: **96 gruen**.
 
 | Kap. | Stand |
 |------|-------|
 | 3.1-3.7 | Alle umgesetzt (RTK-AR-Fusion, Tracking-Loss, Earth-Anchor-Re-Attach, PruneStopped, Light-Estimation, Scene-Semantics + Sky-Filter, Depth-Fallback, Snap-Engine V/R/P/E). |
 | 4.1-4.14 | Alle umgesetzt. |
-| 5.2 | Persistente Sites via Earth-Anchor-Cache — komplett. |
-| 5.3 | Tape-Measure-Modus — komplett. |
-| 5.4 | Volumen-Service (Prism/Layered/Frustum + Materialien) — komplett. Mesh-Variante in 5.5. |
-| 5.5 | `ISceneReconstructionService` Interface — Algorithmen-Impl in Folge-Iteration. |
-| 5.6 | Foto-Annotation pro Punkt — komplett. |
-| 5.7 | ArUco-Marker-Infrastruktur (AugmentedImageDatabase aktiv) — Erkennungs-/Re-Localisation-Loop in Folge-Iteration. |
-| 5.8 | RTK-Stab Live-Position in AR — komplett. |
-| 5.9 | Stakeout-AR (Pfeil + Distanz + Reached-Hysterese) — komplett. |
-| 5.11 | `IMultiUserSessionService` Interface — SignalR-Hub-Impl in Folge-Iteration. |
-| 5.12 | `IVoiceAnnotationService` + `NullVoiceAnnotationService` — Android-SpeechRecognizer-Impl in Folge-Iteration. |
-| 5.13 | Differential-Snapshot-Service — komplett mit Tests. |
-| 5.14 | `ISurveyReportService` Interface — PdfSharpCore-Impl in Folge-Iteration. |
-| 5.15 | Quality-Heatmap MVP (Plane-Coverage * Tracking-Quality) — echte Per-Patch-FeaturePoint-Density in Folge-Iteration. |
-| 5.16 | `IGnssConditionService` — NOAA-API-Calls aktiv. |
-| 5.17 | `ITotalStationService` — Stationierung + Radial-Projektion komplett. ARCore-Tachymeter-Verkettung in der Activity in Folge-Iteration. |
-| 5.18 | `ILeastSquaresAdjustmentService` (Position-based Dynamics) — komplett mit Tests. |
-| 7.3 | `IArSessionLike`-Wrapper-Interface — Activity-Refactor zur Verkabelung in Folge-Iteration. |
+| 5.2 | Persistente Sites via Earth-Anchor-Cache + UI-Verkettung in `SurveyViewModel.StartArCaptureAsync`. |
+| 5.3 | Tape-Measure-Modus + Toolbar. |
+| 5.4 | Volumen-Service (Prism/Layered/Frustum + Materialien) + UI-Panel in `GardenPlanView`. |
+| 5.5 | `SceneReconstructionService` mit Voxel-Filter + PLY/OBJ-Punktwolke-Export. Poisson-Mesh in Blender/MeshLab. |
+| 5.6 | Foto-Annotation pro Punkt + Foto-Thumbnails im PDF. |
+| 5.7 | ArUco-/Augmented-Image-Marker: AugmentedImageDatabase + Erkennungs-Loop + Auto-Anchor an eingemessener Position. |
+| 5.8 | RTK-Stab Live-Position in AR. |
+| 5.9 | Stakeout-AR mit Pfeil + Reached-Hysterese. |
+| 5.11 | `LocalTcpMultiUserService` — TCP-NDJSON-Broadcast statt SignalR (kein Extra-Package). |
+| 5.12 | `AndroidVoiceAnnotationService` mit `SpeechRecognizer`. |
+| 5.13 | Differential-Snapshot-Service + UI-Compare in `ProjectsView`. |
+| 5.14 | `SurveyReportService` mit PdfSharpCore (Cover, Punkte+Fotos, Materialien, optional Differential). |
+| 5.15 | Quality-Heatmap mit echter Per-Patch-FeaturePoint-Density (GetAllTrackables(Point)). |
+| 5.16 | `GnssConditionService` mit NOAA Kp + F10.7 + UI-Anzeige in `ConnectView`. |
+| 5.17 | Total-Station als `CaptureMode.TotalStation` + Toolbar + Stationieren-Flow + Depth-API-Tachymeter. |
+| 5.18 | `LeastSquaresAdjustmentService` mit Position-based Dynamics. |
+| 7.3 | `AndroidArSession`-Wrapper + `MockArSession` in Tests. AnchorManager-Refactor steht noch aus (Anchors sind tief in ARCore-API verzahnt). |
 
-Tests: 87 gruen.
+Verbleibende Bonus-/Nice-to-Have-Punkte aus dem Plan:
+- Sketch-Overlay auf Foto-Annotationen (5.6 Bonus)
+- Audio-File-Speicherung parallel zum Transkript (5.12 Bonus, blockiert durch Mic-Kanal-Konflikt)
+- WiFi-Direct-Setup (5.11 — TCP funktioniert auf existierendem WiFi/Hotspot)
+- AnchorManager-Refactor auf `IArSessionLike` (7.3 Vollendung)
+- NREL Solar-API zusaetzlich zu NOAA F10.7 (5.16 — braucht API-Key)
 
 ## Verweise
 

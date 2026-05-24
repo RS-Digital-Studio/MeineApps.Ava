@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace ArcaneKingdom.EditorTools
 {
     /// <summary>
     /// CI/CD Build-Skripte fuer Android (AAB) und Desktop-Test-Builds.
+    /// Unity 6 (6000.x) — nutzt NamedBuildTarget statt obsoleter BuildTargetGroup-APIs.
     /// Aufruf via Unity CLI:
     /// <code>
     /// Unity.exe -batchmode -quit -nographics `
@@ -27,10 +29,9 @@ namespace ArcaneKingdom.EditorTools
             EnsureOutputDirectory();
             EditorUserBuildSettings.buildAppBundle = true;
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
-            EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Android;
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
 
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.SetArchitecture(NamedBuildTarget.Android, 2 /* ARM64 */);
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;

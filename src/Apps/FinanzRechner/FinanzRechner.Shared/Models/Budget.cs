@@ -36,6 +36,9 @@ public record BudgetStatus(
     /// Lokalisierter Kategorie-Name. Faellt auf Enum-Name zurueck wenn nicht gesetzt.
     /// </summary>
     public string CategoryName => LocalizedCategoryName ?? Category.ToString();
+    // Kategorie-Icon kommt aus CategoryLocalizationHelper (zentral, sprachunabhaengig).
+    // Aktuell Emoji-basiert — eine Migration auf MaterialIcons betraefe auch User-Daten
+    // (Account.Icon / CustomCategory.Icon sind frei waehlbare Emoji-Strings).
     public string CategoryIcon => CategoryLocalizationHelper.GetCategoryIcon(Category);
     public string SpentDisplay => CurrencyHelper.Format(Spent);
     public string LimitDisplay => CurrencyHelper.Format(Limit);

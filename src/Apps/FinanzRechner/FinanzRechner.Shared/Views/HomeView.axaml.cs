@@ -39,6 +39,7 @@ public partial class HomeView : UserControl
         {
             _vm = vm;
             _vm.PropertyChanged += OnVmPropertyChanged;
+            UpdateTimerState();
         }
     }
 
@@ -58,13 +59,19 @@ public partial class HomeView : UserControl
             case nameof(_vm.HasBudgetRings):
                 BudgetMiniRingCanvas?.InvalidateSurface();
                 break;
+            case nameof(_vm.IsHomeActive):
+            case nameof(_vm.SelectedTab):
+                UpdateTimerState();
+                break;
         }
     }
 
     private async void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        // Dashboard-Hintergrund-Timer starten (~60fps)
-        StartDashboardTimer();
+        // Dashboard-Hintergrund-Timer nur starten wenn Home-Tab aktiv —
+        // sonst tickt der 60-fps-Timer auf inaktiven Tabs (Akku/CPU-Verschwendung,
+        // Avalonia 12 detacht IsVisible="False"-Controls NICHT aus dem Visual Tree).
+        UpdateTimerState();
 
         if (DataContext is MainViewModel vm)
             await vm.OnAppearingAsync();
@@ -74,6 +81,15 @@ public partial class HomeView : UserControl
     {
         // Timer stoppen wenn View nicht sichtbar
         StopDashboardTimer();
+    }
+
+    private void UpdateTimerState()
+    {
+        var shouldRun = _vm?.IsHomeActive == true;
+        if (shouldRun && _dashboardTimer == null)
+            StartDashboardTimer();
+        else if (!shouldRun && _dashboardTimer != null)
+            StopDashboardTimer();
     }
 
     /// <summary>

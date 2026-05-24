@@ -355,6 +355,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Daten laden beim Tab-Wechsel (nur wenn Cache veraltet).
         // Flag wird erst NACH Abschluss in LoadMonthlyDataAsync zurückgesetzt,
         // damit bei Fehler/Abbruch der Cache nicht fälschlich als aktuell gilt.
+        // Tab-Wechsel löst zusätzlich den HomeView-Timer aus (siehe HomeView.UpdateTimerState
+        // via OnSelectedTab-Property-Notify).
         if (value == 0 && _isHomeDataStale)
         {
             SafeFireAndForget(async () =>
@@ -619,6 +621,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
+
+        // CancellationTokenSources aus Home-Partial sauber freigeben
+        _budgetAnalysisCts?.Cancel();
+        _budgetAnalysisCts?.Dispose();
+        _budgetAnalysisCts = null;
+        _insightsCts?.Cancel();
+        _insightsCts?.Dispose();
+        _insightsCts = null;
 
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;

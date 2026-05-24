@@ -108,6 +108,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public string RestoreMergeDescText => _localizationService.GetString("RestoreMergeDesc") ?? "Combines existing data with backup";
     public string RestoreReplaceDescText => _localizationService.GetString("RestoreReplaceDesc") ?? "Replaces all data with backup";
     public string CancelText => _localizationService.GetString("Cancel") ?? "Cancel";
+    public string CurrencyLabelText => _localizationService.GetString("CurrencyLabel") ?? "Currency";
 
     #endregion
 

@@ -56,6 +56,14 @@
       <Color x:Key="InfoColor">#3B82F6</Color>
       <Color x:Key="InfoBackgroundColor">#1E3A8A</Color>
 
+      <!-- Finance-Semantic Colors (Income/Expense/Transfer Tokens statt Hex-Literale in Views) -->
+      <Color x:Key="IncomeColor">#22C55E</Color>
+      <Color x:Key="IncomeBackgroundColor">#3322C55E</Color>
+      <Color x:Key="ExpenseColor">#EF4444</Color>
+      <Color x:Key="ExpenseBackgroundColor">#33EF4444</Color>
+      <Color x:Key="TransferColor">#06B6D4</Color>
+      <Color x:Key="TransferBackgroundColor">#3306B6D4</Color>
+
       <!-- Shadow / Overlay -->
       <Color x:Key="ShadowColor">#000000</Color>
       <Color x:Key="OverlayColor">#80000000</Color>
@@ -105,6 +113,14 @@
       <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{DynamicResource ErrorBackgroundColor}" />
       <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource InfoColor}" />
       <SolidColorBrush x:Key="InfoBackgroundBrush" Color="{DynamicResource InfoBackgroundColor}" />
+
+      <!-- Finance-Semantic Brushes -->
+      <SolidColorBrush x:Key="IncomeBrush" Color="{DynamicResource IncomeColor}" />
+      <SolidColorBrush x:Key="IncomeBackgroundBrush" Color="{DynamicResource IncomeBackgroundColor}" />
+      <SolidColorBrush x:Key="ExpenseBrush" Color="{DynamicResource ExpenseColor}" />
+      <SolidColorBrush x:Key="ExpenseBackgroundBrush" Color="{DynamicResource ExpenseBackgroundColor}" />
+      <SolidColorBrush x:Key="TransferBrush" Color="{DynamicResource TransferColor}" />
+      <SolidColorBrush x:Key="TransferBackgroundBrush" Color="{DynamicResource TransferBackgroundColor}" />
 
       <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
       <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />

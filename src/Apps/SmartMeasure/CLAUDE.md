@@ -75,6 +75,9 @@ src/Apps/SmartMeasure/
 | `IProjectService` | SQLite-Persistenz (Projekte, Punkte, Elemente). `DeleteProject` atomar in Transaktion |
 | `IExportService` | CSV, GeoJSON, DXF, KMZ, PDF |
 | `IBlenderExportService` | OBJ + MTL (Y/Z kein Swap — UTM-Koords sind bereits Blender-Standard Z-up) |
+| `ArSnapEngine` | Geometrische Snap-Hilfen: Vertex (15cm), Right-Angle (5°), Parallel (3°), Extension (10cm zur Verlaengerung, min 5cm jenseits Edge-Ende). Stateless, in Shared damit testbar. |
+| `ArPoseSampler` | Multi-Frame-HitTest-Averaging: Median + ±3σ-Outlier-Filter + Mittel auf bereinigten Samples. In Shared. |
+| `ArMathHelpers` | `ApplyBowditchCorrection` + `ExtractHeadingFromQuaternion` + `ExtractPitchFromQuaternion`. Pure Mathematik, in Shared. `ArPrecisionHelpers` delegiert dorthin. |
 
 ---
 
@@ -107,8 +110,18 @@ Factory-Pattern analog zu BleService und AppPaths:
 public static Func<IServiceProvider, IArCaptureService>? ArCaptureServiceFactory { get; set; }
 ```
 
-TCS-Lock-Pattern: `LastError`-Property befüllen wenn `null`-Result — User bekommt Grund
-via `MessageRequested`.
+TCS-Lock-Pattern + Status-Enum: `IArCaptureService.LastCompletionStatus`
+(`Success | UserCancelled | Error`) + `LastError`-Klartext erlauben dem UI-Layer
+User-Abbruch von echten Fehlern zu trennen. Der `SurveyViewModel` zeigt
+unterschiedliche Meldungen je nach Status, statt pauschal "AR abgebrochen".
+
+### AR-Overlay-Lokalisierung (`ArOverlayLabels`)
+
+`ArCaptureActivity` ist eine native Activity ohne Avalonia-DI. Lokalisierte
+Strings werden einmalig in `OnCreate` via `LoadLocalizedLabels()` aus
+`AppStrings.*` gelesen und als `ArOverlayLabels`-Record in jedem `ArOverlayState`-
+Snapshot mitgegeben. Sprachwechsel mid-AR-Session passieren nicht (Modal-Fullscreen),
+daher reicht ein Snapshot pro Session.
 
 ### RTK-GPS Datenfluss
 
@@ -332,17 +345,20 @@ Pref-Key vorgesehen: `ar.toolbar.position` (Werte `bottom`/`left`/`right`).
 | Feature | Zweck |
 |---------|-------|
 | `ArAnchorManager` | Drift-Kompensation: Anchor pro gesetztem Punkt, RefreshAnchors pro Frame |
-| `ArPoseSampler` (in `ArAnchorManager.cs`) | Multi-Frame-Averaging (15 Samples / 800 ms), Median + ±3σ-Outlier-Filter |
+| `ArPoseSampler` (Shared.Services) | Multi-Frame-Averaging (15 Samples / 800 ms), Median + ±3σ-Outlier-Filter |
 | `ArStabilityMonitor` (in `ArAnchorManager.cs`) | EMA über Gyro + Accel, StabilityScore 0..1, Block bei <0,6 |
-| `ArPrecisionHelpers` | Depth-Sanity, Ground-Plane, ARCore-Heading-Extraktion, Bowditch-Correction |
+| `ArPrecisionHelpers` | Depth-Sanity, Depth-Fallback fuer Instant-Placement, Ground-Plane, ARCore-Heading-Extraktion, Semantic-Label-Read, Sky-Check. Delegiert Math-Helfer an `ArMathHelpers` (Shared) |
+| `ArMathHelpers` (Shared.Services) | Bowditch-Correction + Quaternion→Heading/Pitch — pure Mathematik, in Unit-Tests direkt fahrbar |
 | Geospatial API (VPS) | `earth.CameraGeospatialPose` → Heading ±5° statt ±15–30° (Metall-immun) |
-| Earth-Anchors | Persistent über Session-Ende via VPS re-lokalisierbar |
+| Earth-Anchors | Persistent über Session-Ende via VPS re-lokalisierbar — Recovery-Restore queued Punkte fuer Re-Attach sobald Earth-Tracking aktiv ist |
 | Raw Depth + Confidence | Pixel mit Confidence > 0,3 (Random-Noise-Filter) |
-| Scene Semantics | `SemanticMode.Enabled` (Infrastruktur für Sky-Filter bereit) |
+| Scene Semantics | `SemanticMode.Enabled` aktiv ausgelesen — Sky+Instant-Placement-Kombi wird abgelehnt, sonst Label in `ArPoint.SemanticLabel` |
+| Light-Estimation | `LightEstimate.PixelIntensity` ausgelesen — Helligkeits-Sprung >40% bricht laufendes Sampling ab (2s Cooldown) |
+| RTK-AR-Fusion | `IBleService`-Snapshot via `App.Services` — RTK-Position als GPS-Anker (±2cm) statt Android-LocationManager (±5m). `ArGpsSource`-Enum trackt die Quelle bis in `ArTransferService` (kein 50cm-Min, kein 100x-Faktor fuer RTK) |
 | Session Recovery | State in SharedPreferences nach jedem Punkt, max 30 Min. alt |
 | Recording API | MP4 in `ExternalFilesDir/Recordings/`, `SetAutoStopOnPause(true)` |
 
-**Bewusst NICHT aktiviert:** Augmented Images (Marker-Druck nötig), Cloud Anchors (kostenpflichtig), Shared Camera/Camera2 (Vapolia-Binding unvollständig).
+**Bewusst NICHT aktiviert:** Augmented Images (Marker-Druck nötig — vorgesehen fuer ArUco-Roadmap-Feature), Cloud Anchors (kostenpflichtig — Earth-Anchor-Cache ist die Default-Variante), Shared Camera/Camera2 (Vapolia-Binding unvollständig).
 
 ### Bowditch-Korrektur (klassische Vermessung)
 

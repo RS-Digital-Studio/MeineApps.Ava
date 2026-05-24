@@ -1,11 +1,11 @@
 # ArcaneKingdom — Game Design Document (GDD)
 
-> **Version 5.1 (konsolidiert)** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 2022 LTS
+> **Version 5.2** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 2022 LTS
 > Quelle: `Kartenspiel Start.docx` v5.0 (Maerz 2026), Referenz: *Arcane Magic*
 
 Dieses Dokument ist die **autoritative Single-Source-of-Truth** fuer das Game Design.
-Inkonsistenzen aus v5.0 wurden geschlossen, fehlende Werte ergaenzt, offene Punkte als **[TBD]** markiert.
-Alle Aenderungen gegenueber v5.0 sind im Abschnitt **23. Aenderungslog** dokumentiert.
+v5.2 schliesst die in v5.1 markierten TBDs (15 Entscheidungen, siehe Aenderungslog Kap. 23).
+Alle Aenderungen gegenueber v5.0 / v5.1 sind im Abschnitt **23. Aenderungslog** dokumentiert.
 
 ---
 
@@ -45,9 +45,9 @@ bauen Decks, ziehen durch 9 thematische Welten, treten in der Arena gegeneinande
 server-weite Diebe und kaempfen in Gilden um Gebiete einer gemeinsamen Weltkarte.
 
 **Genre:** TCG (Trading Card Game) + RPG-Progression + soziales Sandbox-Endgame
-**Plattform:** Android (Phase 1) — iOS optional ab Monat 24
+**Plattform:** Android (Phase 1, Monat 23 Launch) — iOS (Phase 2, Monat 26+)
 **Spielsitzung:** 3-5 Min (PvE-Kampf) bzw. 10-15 Min (Arena/Event-Burst)
-**F2P-Modell:** Optionale Diamant-Kaeufe (Karten-Packs, Energie, Premium-Saison-Pass [TBD])
+**F2P-Modell:** Optionale Diamant-Kaeufe (Karten-Packs, Energie, Premium-Saison-Pass ab Saison 2)
 
 **Drei Designsaeulen:**
 1. **Sammeln & Bauen** — jede der ca. 150 Karten kann auf LV 15 gebracht werden; max. 3 Kopien farmbar, Rest via Craft/Trade. Decks (max. 10 Karten) sind die kreative Spieleridentitaet.
@@ -74,7 +74,7 @@ server-weite Diebe und kaempfen in Gilden um Gebiete einer gemeinsamen Weltkarte
 | Genre | Sammelkartenspiel + RPG |
 | Plattform | Android (Phase 1), iOS (Phase 2) |
 | Spielmodi | PvE (Welten-Kampagnen, Boss-Raids), PvP (Arena), Coop (Dieb-Event), Guild-vs-Guild (Klan-Match) |
-| Monetarisierung | F2P + IAP (Diamanten, Packs, Energie, Premium-Pass [TBD]) |
+| Monetarisierung | F2P + IAP (Diamanten, Packs, Energie, Premium-Pass ab Saison 2) |
 | Zielgruppe | 16-35 Jahre, Kartenspiel- & RPG-Fans |
 | Inspiration | *Arcane Magic*, *Clash Royale* (Deck-Bau), *Marvel Snap* (kurze Kaempfe), *Lords Mobile* (Gilden-Karte) |
 
@@ -123,9 +123,9 @@ Login soll < 2 s zum interaktiven Zustand brauchen, < 8 s bis Hub-Welt geladen.
 
 ### 2.3 Server-Konzept
 
-- **Server-Kapazitaet:** ca. 50.000 aktive Spieler pro Server [TBD: Last-Test]
+- **Server-Kapazitaet:** ca. 50.000 aktive Spieler pro Server (kalibriert nach Last-Test in Closed-Beta)
 - **Server-Namen:** Mythische Wesen (z.B. *Poseidon*, *Athena*, *Phoenix*) — neue Server bei Bedarf
-- **Server-Wechsel:** Erst nach 30 Tagen ohne Login moeglich, gegen Diamanten [TBD: Preis 500?]
+- **Server-Wechsel:** 1.000 Diamanten, max. 1x / 90 Tage (Cooldown mit Server-seitigem Timestamp)
 - **Region:** EU/NA/SEA — Photon-Realtime-Regionen automatisch zugeordnet
 
 ---
@@ -180,7 +180,7 @@ Bonus-Energie wird zuerst verbraucht; danach faellt der Wert wieder auf max. 60.
 
 | Tab | Funktion |
 |-----|----------|
-| Menue | Settings, Hilfe, Support, Logout, Saison-Pass [TBD], Codex |
+| Menue | Settings, Hilfe, Support, Logout, Saison-Pass (ab Saison 2), Codex |
 | Laden | Shop: Karten-Pakete, Diamanten, Sonderangebote, Saison-Pass |
 | Deck | Deck-Verwaltung, Karten-Sammlung, Runen-Inventar |
 | Freunde | Freundesliste, Anfragen, Nachrichten (Inbox) |
@@ -245,6 +245,18 @@ Bonus-Energie wird zuerst verbraucht; danach faellt der Wert wieder auf max. 60.
 - **Deck-Wechsel:** Jederzeit ausserhalb des Kampfes, Wechsel-Cooldown 5 s in Arena
 - **Auto-Build:** "Suggest"-Button — System schlaegt optimales Deck aus Sammlung vor (KPI: max ATK+HP innerhalb COST-Budget)
 - **Deck-Sharing:** Decks koennen per Code (8 Zeichen) geteilt werden, Empfaenger braucht Karten selbst
+
+### 4.5 Avatare & Profil-Bilder
+
+| Quelle | Anzahl | Verfuegbarkeit |
+|--------|--------|----------------|
+| Premade-Avatare | 50 (5 pro Element/Rasse + Default) | Sofort ab LV 1 |
+| Saison-Avatare | 1-2 pro Saison | Saison-exklusiv, danach Sammler-Item |
+| Achievement-Avatare | ca. 10 | Permanent unlock (z.B. "Erster Welt-9-Sieg") |
+| Premium-Avatare | 6 | Nur via Diamant-Kauf (300 Diamanten pro Avatar) |
+| Custom-Avatare | nein (Phase 1) | Wegen Moderations-Aufwand gestrichen |
+
+**Avatar-Rahmen:** Separates Belohnungssystem (Saison-Endrang, Achievements), kombinierbar mit jedem Avatar.
 
 ---
 
@@ -359,7 +371,7 @@ Designziel: Decks bestehen aus ca. 8 verschiedenen Karten + 2 Duplikate, statt 5
 | Gilden-Shop | 1-3 Epic-Karten pro Saison |
 | Arena-Belohnungen | 1 Legendary garantiert in Top-100 |
 | Craft (Zauberschmiede) | Universal Scraps → spezifische Karten |
-| Karten-Tausch | Spieler-zu-Spieler (Gilde-intern, Restriktionen [TBD]) |
+| Karten-Tausch | Spieler-zu-Spieler (Gilde-intern Phase 1, Marktplatz ab Phase 2 — siehe 6.3) |
 | Materialien-Tausch | Spezialkarten via Sets |
 
 ---
@@ -431,6 +443,12 @@ Spieler-zu-Spieler-Tausch von Karten. Restriktionen verhindern Pay-to-Win-Bottin
 - Andere Gilden-Mitglieder sehen Anfragen, koennen annehmen
 - Anfrage gilt 24h, danach automatisch zurueckgezogen
 
+**Phase-2-Erweiterung (Marktplatz, Monat 18+):**
+- Server-weiter Karten-Marktplatz mit Gold-Auktionen (Bid + Buyout)
+- Listing-Gebuehr 5 % Gold, Verkaufs-Gebuehr 10 % Gold
+- Cooldown gleich (1 Tausch + 1 Listing pro 7 Tage)
+- Legendary nur via Direkt-Trade (nicht Auktion) zur Manipulation-Vermeidung
+
 ---
 
 ## 7. Das Runen-System
@@ -446,7 +464,7 @@ Deck-Karten. Slots schalten sich mit Spieler-Level frei.
 | 2 | Spieler-Level 20 |
 | 3 | Spieler-Level 30 |
 | 4 | Spieler-Level 40 |
-| 5 [TBD] | Spieler-Level 60, optional via Premium |
+| 5 | Spieler-Level 60 + aktiver Premium-Pass (Phase-2-Feature ab Saison 2) |
 
 ### 7.2 Runen-Typen
 
@@ -458,7 +476,7 @@ Deck-Karten. Slots schalten sich mit Spieler-Level frei.
 | Element-Rune (5 Varianten) | + X % Schaden bei passendem Element | Selten-Epic | 10-25 % |
 | Hero-Rune | + X Helden-HP | Epic-Legendaer | +500 / +1.500 |
 | Kombo-Rune | Kombinations-Effekte (z.B. "+10 % ATK wenn 3+ Daemonen im Deck") | Epic-Legendaer | Set-spezifisch |
-| Mana-Rune [TBD] | +1 Start-Mana | Legendaer | Saison-exklusiv |
+| Mana-Rune | +1 Start-Mana im Kampf | Legendaer | Saison-2-exklusiv |
 
 ### 7.3 Runen-Leveling
 
@@ -557,8 +575,8 @@ Spieler muss Stern-Stufe nacheinander freischalten — kein direkter Gott-Modus 
 
 ### 9.1 Kampf-Bildschirm Layout (Landscape oder Portrait?)
 
-> **Designentscheidung [TBD]:** Portrait fuer One-Handed Use, Landscape fuer Karten-Lesbarkeit.
-> Pilot-Vorschlag: **Portrait** (konsistent mit Hub).
+> **Designentscheidung:** Portrait — konsistent mit Hub, One-Handed-Use auf Mobile.
+> Lesbarkeit der Gegner-Karten wird durch Long-Press (Karte gross einblenden) sichergestellt.
 
 ```
 +-----------------------------------------------+
@@ -587,7 +605,7 @@ Spieler muss Stern-Stufe nacheinander freischalten — kein direkter Gott-Modus 
 | Gegner-Karten | Bis 5 Karten im Feld, ATK/HP sichtbar, Spezialattacken-Cooldown |
 | Kampf-Arena | Animierter Hintergrund, FX, Damage-Numbers fliegen |
 | Spieler-Karten | Eigene 5 Karten im Feld, ATK/HP, Spezialattacken-Cooldown |
-| Spieler-Avatar | Bild, Level, HP-Kreis, Helden-Faehigkeit (Tap-Button [TBD]) |
+| Spieler-Avatar | Bild, Level, HP-Kreis, Helden-Faehigkeit (Tap-Button, siehe 9.6) |
 | Mana-Orbs | Bis 10 Slots, gefuellte Orbs = verfuegbares Mana |
 | End-Turn-Button | Beendet eigenen Zug (oder Auto-End nach 60 s) |
 | Handkarten | Bis 5 Karten in der Hand, drag-and-drop aufs Feld |
@@ -641,14 +659,23 @@ Bosse haben **Phasen** — bei < 50 % HP aktiviert Phase 2 mit Spezialfaehigkeit
 - **Schnell-Kampf (Sweep):** Animation ueberspringen, sofort Ergebnis. Nur fuer wiederholte Levels mit 3+ Sternen verfuegbar.
 - **Auto-Kampf-Belohnung:** Identisch zum manuellen Kampf, kein Belohnungs-Penalty
 
-### 9.6 Spieler-Held (Hero) Faehigkeiten [TBD]
+### 9.6 Spieler-Held (Hero) Faehigkeiten
 
-Optionales Feature: Der Spieler-Held hat eine eigene Faehigkeit, die per Tap aktiviert wird.
-- Auswahl von 1 aus 6 Helden zu Spielbeginn
-- Faehigkeit hat Cooldown (5 Runden), kostet keine Mana
-- Beispiele: Vollheilung (+30 % HP), Mana-Schub (+2), Karte ziehen, AoE 500 Schaden
+Der Spieler-Held hat eine eigene Faehigkeit, die per Tap aktiviert wird.
 
-> Pilot-Vorschlag fuer Beta. Bei Bedarf streichen wenn Komplexitaet zu hoch.
+- **Held-Auswahl:** 1 aus 6 Helden bei Account-Erstellung (Wechsel via Diamanten nach 30 Tagen)
+- **Helden-Liste (Launch):**
+
+| Held | Element | Faehigkeit | Cooldown |
+|------|---------|------------|----------|
+| Lichtkoenigin Aurelia | Licht | Allies +30 % HP (Heilung) | 5 Runden |
+| Frostmagier Velgar | Wasser | -2 Mana fuer Gegner sofort | 6 Runden |
+| Flammenmeister Zarok | Feuer | AoE 500 Schaden auf Gegner-Reihe | 7 Runden |
+| Drachenfuerst Mortis | Dunkel | Spielt eine Random-Karte aus dem Deck kostenlos | 8 Runden |
+| Druiden-Schamane Eolyn | Natur | Allies +1 Mana sofort | 5 Runden |
+| Maschinenfuerst Cog | Licht | Karte ziehen + +1 max Mana fuer 3 Runden | 6 Runden |
+
+Faehigkeit kostet kein Mana, nur den Cooldown. Anzeige im Spieler-Avatar-Bereich. Pilot ueber Beta evaluiert — bei < 5 % Nutzung wird das Feature gestrichen.
 
 ---
 
@@ -675,7 +702,12 @@ gemeinsam angreifen, um Belohnungen zu erhalten.
 | Elitedieb | Lila | Schwer | 80.000 × Server-Aktivitaet | Rare Scraps, Selten-Karten, Runen-Fragmente |
 | Legendary Dieb | Gold | Extrem schwer | 500.000 × Server-Aktivitaet | Epic Scraps, Epic/Legendaer-Karten, exklusive Runen |
 
-> "Server-Aktivitaet" = Multiplikator basierend auf aktiven Spielern (z.B. 0,5 wenn 500 aktiv, 1,5 wenn 5000 aktiv)
+> **Server-Aktivitaets-Multiplikator** (DAU = Daily Active Users der letzten 24h):
+> - DAU < 1.000: Faktor 0,4
+> - DAU 1.000 - 5.000: Faktor 0,6 + (DAU - 1000) / 10.000
+> - DAU 5.000 - 20.000: Faktor 1,0 + (DAU - 5000) / 30.000
+> - DAU > 20.000: Faktor 1,5 (Cap)
+> Wird durch Cloud Function alle 4 Stunden aktualisiert. Kalibrierung nach Closed-Beta.
 
 ### 10.3 Dieb-Bildschirm
 
@@ -684,7 +716,7 @@ gemeinsam angreifen, um Belohnungen zu erhalten.
 | Dieb-Bild | Grosses Artwork mit Name (z.B. "Mysterioeser Dieb") |
 | Level | Schwierigkeitsstufe (z.B. Level 58) |
 | Daemon-Lebenspunkte | Gesamte HP (z.B. 16.724 HP) |
-| HP-Balken | Live-Update fuer alle (WebSocket via Photon Realtime [TBD]) |
+| HP-Balken | Live-Update fuer alle via Photon Realtime Room (1 Room pro Dieb, Master = Cloud Function) |
 | Timer | Verbleibende Aktive-Zeit (z.B. 1:59:34) |
 | Kampf-Button | Eigenen Angriff starten |
 | Entdeckt von | Spieler-Name + Avatar |
@@ -714,7 +746,7 @@ gemeinsam angreifen, um Belohnungen zu erhalten.
 Asynchrones PvP: Spieler kaempfen gegen das **Deck eines anderen Spielers**, der von der KI
 gesteuert wird (kein Live-PvP wegen Mobile-Connection-Stabilitaet).
 
-> **Designentscheidung:** Async-PvP (Marvel Snap-Style) statt Live (Hearthstone-Style). Phase 2 [TBD]: optionaler Live-Modus fuer Top-100.
+> **Designentscheidung:** Async-PvP (Marvel Snap-Style) statt Live (Hearthstone-Style). Phase 2 (Monat 18+): zusaetzlicher Live-Modus fuer Top-100-Spieler via Photon Fusion (deterministische Simulation).
 
 ### 11.1 Arena-Rangliste
 
@@ -735,7 +767,7 @@ gesteuert wird (kein Live-PvP wegen Mobile-Connection-Stabilitaet).
 | Match-Pool | ±150 Rangpunkte initial, erweitert sich nach 30 s Such-Zeit |
 | Cooldown | 30 s zwischen Kaempfen |
 | Eintritts-Energie | 5 Energie pro Arena-Kampf |
-| Eintritts-Tickets [TBD] | Optional: 1 Arena-Ticket statt Energie (taeglich 5 gratis) |
+| Eintritts-Tickets | Alternative zu Energie: 1 Arena-Ticket / Kampf, taeglich 5 gratis + Quest-Bonus + Pack-Bonus. Tickets verfallen nach 30 Tagen. |
 
 ### 11.3 Rang-Punkte-System
 
@@ -818,7 +850,7 @@ Karten-Tausch.
 
 | Feld | Beschreibung |
 |------|--------------|
-| Beitrag | Individuelle Gildenpunkte (z.B. 22.900) — taeglich resetbar oder kumuliert? [TBD] |
+| Beitrag | Individuelle Gildenpunkte (z.B. 22.900). **Saisonal-Score** (resetbar fuer Mitglieder-Ranking, alle 30 Tage) + **Total-Score** (kumuliert, nicht resetbar, fuer Gilden-Treasury und Tech-Tree). |
 | Stufe | Spieler-Level |
 | Eintrittsdatum | Wann beigetreten |
 | Letzte Anmeldung | Wichtig fuer Inaktivitaets-Pruefung |
@@ -873,7 +905,7 @@ taegliche Boni.
 | Spieler-Icons | Andere Gilden-Spieler sichtbar (online/offline-Indikator) |
 | Bevorstehende Matches | Liste oben links (z.B. *Abendtundra 19:50*, *Schwarzbinge 19:50*) |
 | Reinzoomen | Hineinzoomen in Gebiete fuer Details |
-| Aufnahme | Aufzeichnen/Ansehen von Kaempfen [TBD: Replay-Format] |
+| Aufnahme | Snapshot-Replays: BattleState wird pro Runde als JSON gespeichert (deterministische Engine erlaubt deterministisches Replay). Speicher pro Match ca. 50 KB, 30 Tage aufbewahrt. |
 
 ### 13.2 Klan-Match-Ablauf (Gebots-System)
 
@@ -949,8 +981,8 @@ taegliche Boni.
 | Emoji-Picker | Standard-Set (≈ 30 Emojis) |
 | Karten-Link | "[Karte: Drachenherrscher]" → tippen oeffnet Karte-Detail im Modal |
 | Spieler-Link | "@Name" → tippen oeffnet Profil im Modal |
-| Voice-Notes | NICHT in Phase 1 [TBD] |
-| Translation | Optional via Google Translate-API [TBD] |
+| Voice-Notes | NICHT geplant — wegen Moderations-Aufwand auch in Phase 2 gestrichen. Frueheste Evaluierung Monat 30+. |
+| Translation | Phase 2 (Monat 18+): Google Translate-API als Opt-in pro Welt/Privat-Chat. Gilden-Chat keine Translation (Gilden waehlen Sprache). |
 
 ### 14.3 Moderation
 
@@ -1037,17 +1069,26 @@ Gesamtleistung im Spiel (kumulierte Trophaeen aus Quests, Achievements):
 | Errungenschaft | Besiege 100 Bosse | Permanent | 1 Legendaere Karte + Titel |
 | Errungenschaft | Erreiche Spieler-Level 100 | Permanent | Avatar-Rahmen + 1 Legendary Scrap |
 
-### 16.3 Saison-Pass [TBD]
+### 16.3 Saison-Pass (ab Saison 2)
 
-**Designvorschlag:**
-- Saison-Pass laeuft 30 Tage parallel zur Arena-Saison
-- 50 Stufen mit Belohnungen, freischaltbar durch Saison-XP
-- Saison-XP aus allen Aktivitaeten (Quests, Kaempfe, Events)
-- **Free-Track:** Standard-Belohnungen
-- **Premium-Track:** + 1.500 Diamanten ueber 50 Stufen, exklusive Karten, doppelte Belohnungen, Saison-Avatar-Rahmen
+Implementierung in **Phase 2** (Monat 18+). Spezifikation final:
+
+- Saison-Pass laeuft **30 Tage** parallel zur Arena-Saison
+- **50 Stufen** mit Belohnungen, freischaltbar durch Saison-XP
+- Saison-XP aus allen Aktivitaeten (Quests, Kaempfe, Events). Cap: 100 Stufen, dann nur noch Diamanten als Stufen-Belohnung
+- **Free-Track:** Standard-Belohnungen (siehe Stufen-Tabelle unten)
+- **Premium-Track:** + 1.500 Diamanten ueber 50 Stufen, 1 exklusive Saison-Karte, 1 Saison-Rune, doppelte Belohnungen, Saison-Avatar-Rahmen
 - **Preis:** 9,99 EUR / Saison (oder 999 Diamanten)
+- **Premium-Pass-Stufen-Skip:** 100 Diamanten pro Stufe (Whale-Conversion)
 
-> Erst in Phase 2 nach Beta-Auswertung implementieren.
+**Stufen-Beispiele (Free / Premium):**
+
+| Stufe | Free-Belohnung | Premium-Belohnung (zusaetzlich) |
+|-------|----------------|--------------------------------|
+| 1 | 100 Gold | 50 Diamanten |
+| 10 | 1 Selten-Karte | 1 Epic-Rune |
+| 25 | 2 Epic Scraps | 1 Epic-Karte |
+| 50 | 1 Epic-Karte | 1 Legendaer-Karte (saison-exklusiv) + Saison-Avatar-Rahmen |
 
 ---
 
@@ -1062,7 +1103,7 @@ Gesamtleistung im Spiel (kumulierte Trophaeen aus Quests, Achievements):
 | Universal Scraps | Scrap-Symbol | Quests, Events, Arena, Tausch (Karten zerlegen) | Karten craften |
 | Common/Rare/Epic/Legendary Scrap | Stein-Symbole | Welt-Kaempfe, Boss-Drops, Events | Karten LV-Up (siehe 5.3) |
 | Merit-Punkte | Merit-Symbol | Alle Aktivitaeten | Merit-Rangliste & Belohnungen |
-| Arena-Tickets [TBD] | Ticket | Taeglich 5 gratis, Pack-Bonus, Quests | Arena-Eintritt (Alternative zu Energie) |
+| Arena-Tickets | Ticket | Taeglich 5 gratis, Pack-Bonus, Quests | Arena-Eintritt (Alternative zu Energie). Verfall nach 30 Tagen. |
 | Material-Karten | Karten | Boss-Drops, Saison-Events | Spezialkarten-Tausch (Sets) |
 
 ### 17.1 Diamanten-Preise (Shop)
@@ -1154,7 +1195,7 @@ Gesamtleistung im Spiel (kumulierte Trophaeen aus Quests, Achievements):
 ### 18.5 Tooling
 
 - **Versionierung:** Git (vorhandenes Repo)
-- **CI:** GitHub Actions oder Unity Cloud Build [TBD]
+- **CI:** GitHub Actions + game-ci/unity-builder Action (siehe `.github/workflows/unity-android.yml`). Unity-License via GitHub Secret. Builds bei Push auf `main` und Tags.
 - **Crash-Monitoring:** Crashlytics + Sentry (optional)
 - **Telemetrie:** Firebase Analytics + Custom-Events fuer Game-Economy
 
@@ -1255,7 +1296,7 @@ Guild
 - **Realtime Database** fuer Spieler-Daten (low-latency-Reads, write-light)
 - **Firestore** fuer Gilden, Klan-Matches, Marketplace (komplexe Queries)
 - **Cloud Functions** fuer Anti-Cheat (Karten-Drops validieren, Saison-Belohnungen verteilen, Klan-Match-Resultate)
-- **Storage** fuer User-Generated Content (Avatar-Upload) [TBD]
+- **Storage** wird **nicht** fuer User-Generated Avatare verwendet (Custom-Avatare gestrichen, siehe 4.5). Nur fuer Asset-Bundles (Phase 2 Remote-Catalog) und Saison-Replays (siehe 13.1)
 
 ### 20.3 Save-System
 
@@ -1320,9 +1361,9 @@ Guild
 
 ---
 
-## 23. Aenderungslog v5.0 → v5.1 und offene Punkte (TBD)
+## 23. Aenderungslog v5.0 → v5.1 → v5.2
 
-### 23.1 Geschlossene Inkonsistenzen
+### 23.1 Geschlossene Inkonsistenzen (v5.0 → v5.1)
 
 | v5.0 Problem | v5.1 Loesung |
 |--------------|--------------|
@@ -1342,28 +1383,48 @@ Guild
 | Server-Konzept fehlte | 2.3: Kapazitaet, Wechsel-Regeln, Regionen |
 | Arena-Cooldown nicht definiert | 11.2: 30 s zwischen Kaempfen, 5 Energie pro Kampf |
 
-### 23.2 Verbleibende TBDs (zu klaeren in Konzept-Phase Monat 1-2)
+### 23.2 Geschlossene TBDs (v5.1 → v5.2)
 
-| ID | Frage | Empfehlung |
-|----|-------|-----------|
-| TBD-01 | Server-Wechsel-Kosten | 1.000 Diamanten, nur 1x / 90 Tage |
-| TBD-02 | Voice-Notes in Chat | Streichen fuer Phase 1, evt. Phase 3 |
-| TBD-03 | Hero-Faehigkeiten (Spieler-Avatar mit aktiver Skill) | Pilot in Beta testen, Daten entscheiden |
-| TBD-04 | Live-PvP-Arena fuer Top-100 | Phase 2 mit Photon Fusion |
-| TBD-05 | Karten-Tausch ueber Gilde hinaus | Phase 2 mit Marktplatz |
-| TBD-06 | Rune-Slot 5 (Premium) | Erst nach Beta-Auswertung |
-| TBD-07 | Mana-Rune (Legendaer) | Beta-Test mit ausgewaehlten Spielern |
-| TBD-08 | Saison-Pass Implementierung | Phase 2 |
-| TBD-09 | Aufzeichnung/Replay-Format Klan-Matches | Snapshot-basiert (kein Live-Replay), evt. erst nach Launch |
-| TBD-10 | Beitragspunkte Reset (saisonal oder kumuliert?) | Saisonal fuer Mitglieder-Ranking, kumuliert fuer Gilden-Treasury |
-| TBD-11 | Translation in Chat | Optional, Google Translate-API, in Phase 2 testen |
-| TBD-12 | Arena-Tickets als Alt zu Energie | Pilot in Beta |
-| TBD-13 | Avatar-Quellen | Premade Set (50 Avatare) + Saison-exklusive |
-| TBD-14 | Server-Aktivitaets-Multiplikator Dieb (Last-Test noetig) | Mit Beta-Daten kalibrieren |
-| TBD-15 | iOS-Launch Zeitpunkt | Nach erfolgreichem Android-Launch (Monat 26+) |
+Alle 15 in v5.1 markierten TBDs sind in v5.2 entschieden und im Haupttext eingearbeitet.
+
+| ID | Frage | Entscheidung | Im Haupttext |
+|----|-------|--------------|--------------|
+| TBD-01 | Server-Wechsel-Kosten | **1.000 Diamanten, max. 1x / 90 Tage** | Kap. 2.3 |
+| TBD-02 | Voice-Notes in Chat | **Gestrichen** (Moderation zu aufwendig, auch nicht in Phase 2) | Kap. 14.2 |
+| TBD-03 | Hero-Faehigkeiten | **Implementiert mit 6 Helden, je 1 aktive Faehigkeit** | Kap. 9.6 |
+| TBD-04 | Live-PvP-Arena Top-100 | **Phase 2 (Monat 18+) via Photon Fusion** | Kap. 11 (Designnote) |
+| TBD-05 | Karten-Tausch ausserhalb Gilde | **Phase 2 Marktplatz (Gold-Auktionen)** | Kap. 6.3 |
+| TBD-06 | Rune-Slot 5 | **Phase 2, Spieler-Level 60 + Premium-Pass** | Kap. 7.1 |
+| TBD-07 | Mana-Rune (Legendaer) | **Saison-2-exklusiv** | Kap. 7.2 |
+| TBD-08 | Saison-Pass Implementierung | **Phase 2, vollstaendige Spec** | Kap. 16.3 |
+| TBD-09 | Klan-Match-Replays | **Snapshot-basiert (JSON pro Runde), 30 Tage Aufbewahrung** | Kap. 13.1 |
+| TBD-10 | Gilden-Beitragspunkte Reset | **Saisonal-Score + kumulativer Total-Score** | Kap. 12.3 |
+| TBD-11 | Chat-Translation | **Phase 2, Google Translate-API, opt-in Welt/Privat** | Kap. 14.2 |
+| TBD-12 | Arena-Tickets als Alt zu Energie | **JA, taeglich 5 gratis, 30 Tage Verfall** | Kap. 11.2 + 17 |
+| TBD-13 | Avatar-Quellen | **50 Premade + Saison/Achievement-Avatare, keine Custom-Uploads** | Kap. 4.5 |
+| TBD-14 | Dieb-Aktivitaets-Multiplikator | **DAU-basierte Formel (0,4 - 1,5)** | Kap. 10.2 |
+| TBD-15 | iOS-Launch Zeitpunkt | **Phase 2, Monat 26+** | Kap. 1 + 18.4 |
+
+### 23.3 Neue Inhalte in v5.2
+
+- **Kap. 4.5 (Avatare & Profil-Bilder)** — neue Sektion
+- **Kap. 9.6 (Hero-Faehigkeiten)** — komplett ausspezifiziert mit 6 Helden + Faehigkeiten + Cooldowns
+- **Kap. 16.3 (Saison-Pass)** — Stufen-Tabelle und Preise final
+- **Kap. 10.2 (Dieb-Multiplikator)** — DAU-Formel statt grober Schaetzung
+- **Kap. 6.3 (Tausch-Marktplatz Phase 2)** — Phase-2-Erweiterung dokumentiert
+
+### 23.4 Neue offene Punkte fuer v5.3 (Konzept-Phase Monat 2)
+
+| ID | Frage | Wo zu klaeren |
+|----|-------|---------------|
+| TBD-N01 | Genaue Verteil-Mechanik fuer Saison-Pass-XP (welche Aktivitaet wieviel?) | Beta-Test, mit Telemetrie |
+| TBD-N02 | Hero-Wechsel-Kosten und Cooldown nach 1. Wechsel | Nach Hero-Pick-Rate-Daten aus Beta |
+| TBD-N03 | Saison-2 startet wann nach Launch (28 / 30 / 42 Tage)? | Marketing-Abstimmung |
+| TBD-N04 | Marktplatz-Gold-Limits (Min/Max-Listings) | Anti-RMT-Analyse vor Phase-2-Start |
+| TBD-N05 | Dieb-Anti-Bot: Captcha bei 10/10 Angriffen oder Rate-Limit Server-seitig? | Sicherheits-Review |
 
 ---
 
 **Dokument-Ende.**
 
-> Naechste Aktualisierung: Nach Konzept-Phase (Monat 2) — dann GDD v6.0 mit allen TBDs geschlossen.
+> Naechste Aktualisierung: Nach Closed-Beta (Monat 23) — dann GDD v6.0 mit Beta-Erkenntnissen.

@@ -5,6 +5,7 @@
         "ArcaneKingdom.Core",
         "ArcaneKingdom.Domain",
         "ArcaneKingdom.Game",
+        "UniTask",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

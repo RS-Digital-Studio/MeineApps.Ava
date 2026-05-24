@@ -48,7 +48,7 @@ namespace ArcaneKingdom.Domain.Collection
     /// </summary>
     public static class CollectionEvaluator
     {
-        public static CollectionProgress Evaluate(CollectionSet set, IReadOnlySet<string> ownedMaterialIds)
+        public static CollectionProgress Evaluate(CollectionSet set, ISet<string> ownedMaterialIds)
         {
             var owned = new List<string>(set.RequiredMaterialIds.Count);
             var missing = new List<string>();

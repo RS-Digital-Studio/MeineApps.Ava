@@ -100,7 +100,7 @@ namespace ArcaneKingdom.Game.Collection
             return Result<string>.Success(newCardId!);
         }
 
-        private static IReadOnlySet<string> ExtractMaterialIds(PlayerSave save)
+        private static ISet<string> ExtractMaterialIds(PlayerSave save)
         {
             var set = new HashSet<string>();
             foreach (var kv in save.CardInventory)

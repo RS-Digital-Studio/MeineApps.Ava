@@ -9,6 +9,15 @@ using Cysharp.Threading.Tasks;
 
 namespace ArcaneKingdom.Game.Chat
 {
+    public enum ReportReason
+    {
+        Spam = 0,
+        Harassment = 1,
+        Cheating = 2,
+        InappropriateContent = 3,
+        Other = 4
+    }
+
     /// <summary>
     /// Chat-Steuerung mit Cooldowns + lokalem Wortfilter. Photon-Chat-Anbindung als STUB.
     /// </summary>

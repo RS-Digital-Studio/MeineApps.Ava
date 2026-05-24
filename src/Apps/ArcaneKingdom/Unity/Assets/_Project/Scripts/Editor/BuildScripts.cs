@@ -34,7 +34,7 @@ namespace ArcaneKingdom.EditorTools
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.SetArchitecture(NamedBuildTarget.Android, 2 /* ARM64 */);
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
 
             var outputPath = Path.Combine(OutputDirectory, $"arcanekingdom-{PlayerSettings.bundleVersion}.aab");
 

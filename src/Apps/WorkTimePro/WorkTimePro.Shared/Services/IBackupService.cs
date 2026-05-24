@@ -105,6 +105,24 @@ public interface IBackupService
     /// </summary>
     Task<List<BackupInfo>> GetLocalBackupsAsync();
 
+    // === Disk-Safety-Backup (Crash-Recovery) ===
+
+    /// <summary>
+    /// Liefert das jüngste Safety-Backup, falls beim letzten Restore/Import ein
+    /// Prozess-Kill stattfand. Wenn null, ist keine Recovery offen.
+    /// </summary>
+    Task<BackupInfo?> GetPendingSafetyBackupAsync();
+
+    /// <summary>
+    /// Stellt das jüngste Safety-Backup wieder her und löscht die Safety-Datei.
+    /// </summary>
+    Task<bool> RecoverPendingSafetyAsync();
+
+    /// <summary>
+    /// User lehnt Recovery ab → alle Safety-Dateien löschen, damit der Dialog nicht erneut erscheint.
+    /// </summary>
+    Task DismissPendingSafetyAsync();
+
     // === Auto-Sync ===
 
     /// <summary>

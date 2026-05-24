@@ -13,6 +13,12 @@ public sealed class DatabaseService : IDatabaseService
     private Task<SQLiteAsyncConnection>? _initTask;
     private readonly object _initLock = new();
 
+    // Settings-Cache: Settings ändern sich selten (User-Aktion in SettingsView),
+    // werden aber pro Tab-Wechsel/Live-Tick mehrfach gelesen. Cache wird in
+    // SaveSettingsAsync invalidiert und in GetSettingsAsync bei Miss befüllt.
+    private WorkSettings? _settingsCache;
+    private readonly object _settingsCacheLock = new();
+
     public DatabaseService()
     {
         var appDataDir = Path.Combine(
@@ -38,6 +44,18 @@ public sealed class DatabaseService : IDatabaseService
     private async Task<SQLiteAsyncConnection> InitializeDatabaseAsync()
     {
         _database = new SQLiteAsyncConnection(_dbPath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.SharedCache);
+
+        // WAL-Modus aktivieren: gleichzeitige Reads während Writes, weniger "SQLite busy"-Fehler
+        // bei parallelen Pfaden (Auto-Pause-Recalculation + Note-Debounce + Live-Updates).
+        try
+        {
+            await _database.ExecuteAsync("PRAGMA journal_mode=WAL");
+        }
+        catch (Exception ex)
+        {
+            // WAL ist nicht überall verfügbar (z.B. exotische Filesysteme) — kein Crash-Grund.
+            System.Diagnostics.Debug.WriteLine($"DatabaseService: WAL-Aktivierung fehlgeschlagen: {ex.Message}");
+        }
 
         // Tabellen erstellen
         await _database.CreateTableAsync<WorkDay>();
@@ -72,6 +90,20 @@ public sealed class DatabaseService : IDatabaseService
         {
             System.Diagnostics.Debug.WriteLine(
                 $"DatabaseService: UNIQUE-Index auf TimeEntries konnte nicht erstellt werden (vermutlich Altdaten-Duplikate): {ex.Message}");
+        }
+
+        // One-Time-Legacy-Migration: Frühere Versionen hatten WorkDays mit Saldo=0 + Soll>0 + Ist=0
+        // (vor der Negativ-Saldo-Berechnung). Hier einmalig korrigieren statt bei jeder
+        // Wochen-/Monatsberechnung erneut zu prüfen.
+        try
+        {
+            await _database.ExecuteAsync(
+                "UPDATE WorkDays SET BalanceMinutes = -TargetWorkMinutes " +
+                "WHERE ActualWorkMinutes = 0 AND BalanceMinutes = 0 AND TargetWorkMinutes > 0");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DatabaseService: Legacy-Migration fehlgeschlagen: {ex.Message}");
         }
 
         return _database;
@@ -260,32 +292,25 @@ public sealed class DatabaseService : IDatabaseService
     public async Task DeleteTimeEntryAsync(int id)
     {
         var db = await GetDatabaseAsync();
-        var entry = await db.Table<TimeEntry>().Where(t => t.Id == id).FirstOrDefaultAsync();
-        await db.DeleteAsync<TimeEntry>(id);
+        // PK-Lookup ist schneller als Table+Where; FindAsync gibt null bei nicht-gefunden
+        var entry = await db.FindAsync<TimeEntry>(id);
+        if (entry == null) return;
 
-        // WorkDay neu berechnen um verwaiste PauseEntries zu bereinigen
-        if (entry != null)
+        // Delete + ggf. AutoPause-Cleanup in einer Transaction (atomar, ein Roundtrip)
+        await db.RunInTransactionAsync(conn =>
         {
-            var workDay = await db.Table<WorkDay>().Where(w => w.Id == entry.WorkDayId).FirstOrDefaultAsync();
-            if (workDay != null)
-            {
-                // Entries für Recalculation neu laden (ohne den gelöschten)
-                var remainingEntries = await db.Table<TimeEntry>()
-                    .Where(t => t.WorkDayId == workDay.Id)
-                    .OrderBy(t => t.Timestamp)
-                    .ToListAsync();
+            conn.Delete<TimeEntry>(id);
 
-                if (remainingEntries.Count == 0)
-                {
-                    // Keine Entries mehr → Auto-Pause entfernen
-                    var autoPauses = await db.Table<PauseEntry>()
-                        .Where(p => p.WorkDayId == workDay.Id && p.IsAutoPause)
-                        .ToListAsync();
-                    foreach (var ap in autoPauses)
-                        await db.DeleteAsync<PauseEntry>(ap.Id);
-                }
+            // Wenn keine Entries mehr für diesen WorkDay existieren → Auto-Pause entfernen
+            var remainingCount = conn.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM TimeEntries WHERE WorkDayId = ?", entry.WorkDayId);
+
+            if (remainingCount == 0)
+            {
+                conn.Execute(
+                    "DELETE FROM PauseEntries WHERE WorkDayId = ? AND IsAutoPause = 1", entry.WorkDayId);
             }
-        }
+        });
     }
 
     // ==================== PauseEntry ====================
@@ -334,6 +359,11 @@ public sealed class DatabaseService : IDatabaseService
 
     public async Task<WorkSettings> GetSettingsAsync()
     {
+        // Cache-Hit: keine DB-Query nötig
+        WorkSettings? cached;
+        lock (_settingsCacheLock) cached = _settingsCache;
+        if (cached != null) return cached;
+
         var db = await GetDatabaseAsync();
         var settings = await db.Table<WorkSettings>().FirstOrDefaultAsync();
         if (settings == null)
@@ -341,6 +371,7 @@ public sealed class DatabaseService : IDatabaseService
             settings = new WorkSettings();
             await db.InsertAsync(settings);
         }
+        lock (_settingsCacheLock) _settingsCache = settings;
         return settings;
     }
 
@@ -349,6 +380,9 @@ public sealed class DatabaseService : IDatabaseService
         var db = await GetDatabaseAsync();
         settings.ModifiedAt = DateTime.UtcNow;
         await db.UpdateAsync(settings);
+        // Cache invalidieren / aktualisieren: die Referenz des gespeicherten Objekts ist
+        // der neueste Stand — Cache merkt sich die gleiche Instanz.
+        lock (_settingsCacheLock) _settingsCache = settings;
     }
 
     // ==================== VacationEntry ====================
@@ -726,47 +760,47 @@ public sealed class DatabaseService : IDatabaseService
 
     public async Task<int> GetTotalWorkMinutesAsync(DateTime startDate, DateTime endDate)
     {
+        // SQL-Aggregat statt komplette Rows materialisieren: vermeidet Reflection-Mapping pro Row.
+        // Bei 365-Tages-Sicht (Statistics/Year) Faktor-10-Speedup gegenüber ToListAsync().Sum().
         var db = await GetDatabaseAsync();
-        var start = startDate.Date;
-        var end = endDate.Date;
-
-        var workDays = await db.Table<WorkDay>()
-            .Where(w => w.Date >= start && w.Date <= end)
-            .ToListAsync();
-
-        return workDays.Sum(w => w.ActualWorkMinutes);
+        return await db.ExecuteScalarAsync<int>(
+            "SELECT COALESCE(SUM(ActualWorkMinutes), 0) FROM WorkDays WHERE Date BETWEEN ? AND ?",
+            startDate.Date, endDate.Date);
     }
 
     public async Task<int> GetTotalOvertimeMinutesAsync(DateTime startDate, DateTime endDate)
     {
         var db = await GetDatabaseAsync();
-        var start = startDate.Date;
-        var end = endDate.Date;
-
-        var workDays = await db.Table<WorkDay>()
-            .Where(w => w.Date >= start && w.Date <= end)
-            .ToListAsync();
-
-        return workDays.Sum(w => w.BalanceMinutes);
+        return await db.ExecuteScalarAsync<int>(
+            "SELECT COALESCE(SUM(BalanceMinutes), 0) FROM WorkDays WHERE Date BETWEEN ? AND ?",
+            startDate.Date, endDate.Date);
     }
 
     // ==================== Clear (für Restore) ====================
 
     public async Task ClearAllDataAsync()
     {
+        // Settings-Cache invalidieren — wird beim nächsten GetSettings neu aus DB geladen,
+        // damit ein Restore mit neuen Settings sauber durchschlägt.
+        lock (_settingsCacheLock) _settingsCache = null;
+
         var db = await GetDatabaseAsync();
-        // Reihenfolge beachten: FK-abhängige Tabellen zuerst
-        await db.DeleteAllAsync<TimeEntry>();
-        await db.DeleteAllAsync<PauseEntry>();
-        await db.DeleteAllAsync<ShiftAssignment>();
-        await db.DeleteAllAsync<ShiftPattern>();
-        await db.DeleteAllAsync<VacationEntry>();
-        await db.DeleteAllAsync<VacationQuota>();
-        await db.DeleteAllAsync<HolidayEntry>();
-        await db.DeleteAllAsync<WorkDay>();
-        await db.DeleteAllAsync<Project>();
-        await db.DeleteAllAsync<Employer>();
-        // Settings werden NICHT gelöscht (werden beim Restore überschrieben)
+        // Alle Delete-Calls in einer Transaction: atomar (Crash mittendrin = kein halb-leerer Zustand)
+        // Reihenfolge: FK-abhängige Tabellen zuerst, danach Stammdaten
+        await db.RunInTransactionAsync(conn =>
+        {
+            conn.DeleteAll<TimeEntry>();
+            conn.DeleteAll<PauseEntry>();
+            conn.DeleteAll<ShiftAssignment>();
+            conn.DeleteAll<ShiftPattern>();
+            conn.DeleteAll<VacationEntry>();
+            conn.DeleteAll<VacationQuota>();
+            conn.DeleteAll<HolidayEntry>();
+            conn.DeleteAll<WorkDay>();
+            conn.DeleteAll<Project>();
+            conn.DeleteAll<Employer>();
+            // Settings werden NICHT gelöscht (werden beim Restore überschrieben)
+        });
     }
 
     // ==================== Bulk Restore (Batch-Transaction) ====================

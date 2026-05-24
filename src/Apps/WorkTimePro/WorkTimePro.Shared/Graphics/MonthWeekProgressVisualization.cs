@@ -18,6 +18,9 @@ public static class MonthWeekProgressVisualization
     private static readonly SKFont _hoursFont = new() { Size = 11f };
     private static readonly SKFont _balanceFont = new() { Size = 11f };
 
+    // Gecachter Blur-Filter (statt CreateBlur pro Frame / pro Woche → native Allokationen gespart)
+    private static readonly SKMaskFilter _blur4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+
     /// <summary>
     /// Daten für eine einzelne Woche.
     /// </summary>
@@ -108,16 +111,13 @@ public static class MonthWeekProgressVisualization
                 _barPaint.Shader?.Dispose();
                 _barPaint.Shader = null;
 
-                // Glow am rechten Rand
+                // Glow am rechten Rand (gecachter Blur statt CreateBlur pro Woche)
                 if (fillW > 10f)
                 {
                     _glowPaint.Color = SkiaThemeHelper.Accent.WithAlpha(60);
-                    using (var blur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f))
-                    {
-                        _glowPaint.MaskFilter = blur;
-                        canvas.DrawCircle(barLeft + fillW, barY + barH / 2f, barH, _glowPaint);
-                        _glowPaint.MaskFilter = null;
-                    }
+                    _glowPaint.MaskFilter = _blur4;
+                    canvas.DrawCircle(barLeft + fillW, barY + barH / 2f, barH, _glowPaint);
+                    _glowPaint.MaskFilter = null;
                 }
 
                 // Überstunden-Markierung (>100%)

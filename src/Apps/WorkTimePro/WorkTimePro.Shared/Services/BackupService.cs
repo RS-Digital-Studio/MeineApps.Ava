@@ -53,6 +53,18 @@ public sealed class BackupService : IBackupService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "WorkTimePro");
 
+    private static string SafetyDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "WorkTimePro", "Safety");
+
+    /// <summary>
+    /// Dateiname-Muster für Disk-Safety-Backups (vor Restore/Import angelegt, nach Erfolg gelöscht).
+    /// Beim nächsten Start prüft <see cref="TryRecoverPendingSafetyAsync"/> auf zurückgelassene Dateien.
+    /// </summary>
+    private const string SAFETY_FILE_PREFIX = "safety_";
+    private const string SAFETY_FILE_EXT = ".json";
+    private const int SAFETY_RETENTION_COUNT = 3;
+
     public BackupService(IDatabaseService database, IPreferencesService preferences, IFileShareService fileShareService)
     {
         _database = database;
@@ -61,6 +73,7 @@ public sealed class BackupService : IBackupService
         _backupFolder = "WorkTimeProBackups";
         Directory.CreateDirectory(CacheDirectory);
         Directory.CreateDirectory(BackupDirectory);
+        Directory.CreateDirectory(SafetyDirectory);
         LoadSettings();
     }
 
@@ -176,7 +189,7 @@ public sealed class BackupService : IBackupService
             var json = JsonSerializer.Serialize(backupData, s_jsonWriteOptions);
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            var fileName = $"worktime_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var fileName = $"worktime_backup_{DateTime.UtcNow:yyyyMMddTHHmmssZ}.json";
 
             ProgressChanged?.Invoke(this, 60);
 
@@ -318,8 +331,10 @@ public sealed class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 40);
 
-            // Sicherheits-Backup der aktuellen Daten VOR dem Restore
+            // Sicherheits-Backup der aktuellen Daten VOR dem Restore — RAM + Disk
+            // (Disk übersteht App-Kill mitten im ClearAllDataAsync; Recovery beim Start)
             var safetyBackup = await CreateBackupDataAsync().ConfigureAwait(false);
+            var safetyPath = await WriteSafetyBackupAsync(safetyBackup).ConfigureAwait(false);
             ProgressChanged?.Invoke(this, 50);
 
             try
@@ -341,6 +356,10 @@ public sealed class BackupService : IBackupService
                 }
                 throw; // Ursprünglichen Fehler weitergeben
             }
+
+            // Restore erfolgreich → Safety-Datei aufräumen (alte Generationen behalten)
+            TryDeleteSafetyFile(safetyPath);
+            TrimOldSafetyFiles();
 
             ProgressChanged?.Invoke(this, 100);
 
@@ -416,7 +435,7 @@ public sealed class BackupService : IBackupService
             var json = JsonSerializer.Serialize(backupData, s_jsonWriteIndentedOptions);
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            var fileName = $"worktime_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var fileName = $"worktime_backup_{DateTime.UtcNow:yyyyMMddTHHmmssZ}.json";
             var localPath = Path.Combine(BackupDirectory, fileName);
 
             await File.WriteAllBytesAsync(localPath, bytes).ConfigureAwait(false);
@@ -506,8 +525,9 @@ public sealed class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 30);
 
-            // Sicherheits-Backup der aktuellen Daten VOR dem Import
+            // Sicherheits-Backup der aktuellen Daten VOR dem Import — RAM + Disk
             var safetyBackup = await CreateBackupDataAsync().ConfigureAwait(false);
+            var safetyPath = await WriteSafetyBackupAsync(safetyBackup).ConfigureAwait(false);
             ProgressChanged?.Invoke(this, 50);
 
             try
@@ -529,6 +549,10 @@ public sealed class BackupService : IBackupService
                 return false;
             }
 
+            // Import erfolgreich → Safety-Datei aufräumen
+            TryDeleteSafetyFile(safetyPath);
+            TrimOldSafetyFiles();
+
             ProgressChanged?.Invoke(this, 100);
             return true;
         }
@@ -541,35 +565,38 @@ public sealed class BackupService : IBackupService
 
     public Task<List<BackupInfo>> GetLocalBackupsAsync()
     {
-        var backups = new List<BackupInfo>();
-
-        try
+        // I/O auf Worker-Thread: Verhindert UI-Thread-Block wenn Aufrufer auf UI-Thread läuft
+        // (Directory.GetFiles + N×FileInfo sind synchroner Disk-Zugriff).
+        return Task.Run(() =>
         {
-            if (!Directory.Exists(BackupDirectory))
-                return Task.FromResult(backups);
-
-            var localFiles = Directory.GetFiles(BackupDirectory, "worktime_backup_*.json");
-
-            foreach (var file in localFiles.OrderByDescending(f => f))
+            var backups = new List<BackupInfo>();
+            try
             {
-                var fileInfo = new FileInfo(file);
-                backups.Add(new BackupInfo
-                {
-                    Id = Path.GetFileNameWithoutExtension(file),
-                    FileName = fileInfo.Name,
-                    CreatedAt = fileInfo.CreationTime,
-                    SizeBytes = fileInfo.Length,
-                    DeviceName = Environment.MachineName,
-                    AppVersion = GetAppVersion()
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"BackupService.GetLocalBackups Fehler: {ex.Message}");
-        }
+                if (!Directory.Exists(BackupDirectory))
+                    return backups;
 
-        return Task.FromResult(backups);
+                var localFiles = Directory.GetFiles(BackupDirectory, "worktime_backup_*.json");
+
+                foreach (var file in localFiles.OrderByDescending(f => f))
+                {
+                    var fileInfo = new FileInfo(file);
+                    backups.Add(new BackupInfo
+                    {
+                        Id = Path.GetFileNameWithoutExtension(file),
+                        FileName = fileInfo.Name,
+                        CreatedAt = fileInfo.CreationTime,
+                        SizeBytes = fileInfo.Length,
+                        DeviceName = Environment.MachineName,
+                        AppVersion = GetAppVersion()
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"BackupService.GetLocalBackups Fehler: {ex.Message}");
+            }
+            return backups;
+        });
     }
 
     // === Auto-Sync ===
@@ -629,6 +656,164 @@ public sealed class BackupService : IBackupService
     {
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "2.0.0";
+    }
+
+    // === Disk-Safety-Backup (überlebt Prozess-Kill mitten im Restore) ===
+
+    /// <summary>
+    /// Schreibt das übergebene Backup als zusätzliche Safety-Datei auf Disk.
+    /// Wird VOR dem Clear/Restore aufgerufen — bei Crash bleibt die Datei liegen
+    /// und kann beim nächsten Start via <see cref="TryRecoverPendingSafetyAsync"/>
+    /// wiederhergestellt werden.
+    /// </summary>
+    /// <returns>Vollständiger Dateipfad oder null bei I/O-Fehler.</returns>
+    private static async Task<string?> WriteSafetyBackupAsync(BackupData data)
+    {
+        try
+        {
+            Directory.CreateDirectory(SafetyDirectory);
+            var fileName = $"{SAFETY_FILE_PREFIX}{DateTime.UtcNow:yyyyMMddTHHmmssfffZ}{SAFETY_FILE_EXT}";
+            var path = Path.Combine(SafetyDirectory, fileName);
+            var json = JsonSerializer.Serialize(data, s_jsonWriteOptions);
+            await File.WriteAllTextAsync(path, json).ConfigureAwait(false);
+            return path;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.WriteSafetyBackup Fehler: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static void TryDeleteSafetyFile(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.TryDeleteSafetyFile Fehler: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Hält maximal <see cref="SAFETY_RETENTION_COUNT"/> der jüngsten Safety-Backups als
+    /// Vorhaltung (falls eine spätere Recovery doch noch gewünscht ist).
+    /// </summary>
+    private static void TrimOldSafetyFiles()
+    {
+        try
+        {
+            if (!Directory.Exists(SafetyDirectory)) return;
+            var files = Directory.GetFiles(SafetyDirectory, $"{SAFETY_FILE_PREFIX}*{SAFETY_FILE_EXT}")
+                .OrderByDescending(f => f, StringComparer.Ordinal)
+                .Skip(SAFETY_RETENTION_COUNT)
+                .ToList();
+            foreach (var f in files)
+            {
+                try { File.Delete(f); }
+                catch { /* nicht kritisch */ }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.TrimOldSafetyFiles Fehler: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Prüft beim App-Start auf zurückgelassene Safety-Backups. Wenn vorhanden, liefert
+    /// die Info zur jüngsten Datei zurück — Aufrufer (UI) kann dem User einen Recovery-
+    /// Dialog anbieten. Wenn der User ablehnt, kann <see cref="DismissPendingSafetyAsync"/>
+    /// die Datei löschen.
+    /// </summary>
+    public Task<BackupInfo?> GetPendingSafetyBackupAsync()
+    {
+        try
+        {
+            if (!Directory.Exists(SafetyDirectory))
+                return Task.FromResult<BackupInfo?>(null);
+
+            var newest = Directory.GetFiles(SafetyDirectory, $"{SAFETY_FILE_PREFIX}*{SAFETY_FILE_EXT}")
+                .OrderByDescending(f => f, StringComparer.Ordinal)
+                .FirstOrDefault();
+
+            if (newest == null)
+                return Task.FromResult<BackupInfo?>(null);
+
+            var fi = new FileInfo(newest);
+            return Task.FromResult<BackupInfo?>(new BackupInfo
+            {
+                Id = Path.GetFileNameWithoutExtension(newest),
+                FileName = fi.Name,
+                CreatedAt = fi.CreationTime,
+                SizeBytes = fi.Length,
+                DeviceName = Environment.MachineName,
+                AppVersion = GetAppVersion()
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.GetPendingSafetyBackup Fehler: {ex.Message}");
+            return Task.FromResult<BackupInfo?>(null);
+        }
+    }
+
+    /// <summary>
+    /// Stellt das zuletzt geschriebene Safety-Backup wieder her. Liefert true, wenn
+    /// die DB nach dem Aufruf wieder dem Stand vor dem letzten Restore entspricht.
+    /// </summary>
+    public async Task<bool> RecoverPendingSafetyAsync()
+    {
+        try
+        {
+            var pending = await GetPendingSafetyBackupAsync().ConfigureAwait(false);
+            if (pending == null)
+                return false;
+
+            var path = Path.Combine(SafetyDirectory, pending.FileName);
+            if (!File.Exists(path))
+                return false;
+
+            var json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
+            var data = JsonSerializer.Deserialize<BackupData>(json, s_jsonReadOptions);
+            if (data == null)
+                return false;
+
+            await RestoreDataAsync(data).ConfigureAwait(false);
+            TryDeleteSafetyFile(path);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.RecoverPendingSafety Fehler: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// User lehnt Recovery ab → Safety-Datei löschen, damit der Dialog beim nächsten Start nicht erneut erscheint.
+    /// </summary>
+    public Task DismissPendingSafetyAsync()
+    {
+        try
+        {
+            if (!Directory.Exists(SafetyDirectory))
+                return Task.CompletedTask;
+            foreach (var f in Directory.GetFiles(SafetyDirectory, $"{SAFETY_FILE_PREFIX}*{SAFETY_FILE_EXT}"))
+            {
+                try { File.Delete(f); }
+                catch { /* nicht kritisch */ }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.DismissPendingSafety Fehler: {ex.Message}");
+        }
+        return Task.CompletedTask;
     }
 }
 

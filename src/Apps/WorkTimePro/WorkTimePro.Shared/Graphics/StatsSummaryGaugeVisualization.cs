@@ -17,6 +17,9 @@ public static class StatsSummaryGaugeVisualization
     private static readonly SKFont _valueFont = new() { Size = 14f };
     private static readonly SKFont _labelFont = new() { Size = 9f };
 
+    // Gecachter Blur-Filter (statt CreateBlur pro Frame / pro Gauge)
+    private static readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+
     /// <summary>
     /// Daten für einen einzelnen Mini-Gauge.
     /// </summary>
@@ -106,16 +109,13 @@ public static class StatsSummaryGaugeVisualization
         {
             float sweepAngle = MathF.Min(fraction, 1f) * 180f;
 
-            // Glow
+            // Glow (gecachter Blur statt CreateBlur pro Gauge)
             _glowPaint.StrokeWidth = arcWidth + 4f;
             _glowPaint.StrokeCap = SKStrokeCap.Round;
             _glowPaint.Color = data.Color.WithAlpha(25);
-            using (var blur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f))
-            {
-                _glowPaint.MaskFilter = blur;
-                canvas.DrawArc(arcRect, 180f, sweepAngle, false, _glowPaint);
-                _glowPaint.MaskFilter = null;
-            }
+            _glowPaint.MaskFilter = _blur3;
+            canvas.DrawArc(arcRect, 180f, sweepAngle, false, _glowPaint);
+            _glowPaint.MaskFilter = null;
 
             // Arc
             _arcPaint.StrokeWidth = arcWidth;

@@ -19,6 +19,15 @@ public static class OvertimeSplineVisualization
     private static readonly SKFont _labelFont = new() { Size = 9f };
     private static readonly SKFont _axisFont = new() { Size = 10f };
 
+    // Gecachter Blur-Filter (statt CreateBlur pro Frame → native Allokation gespart)
+    private static readonly SKMaskFilter _blur4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+
+    // Gecachter Vertical-Gradient-Shader für die Spline-Flächenfüllung.
+    // Theme-abhängig (Success/Error), daher Cache invalidiert bei Höhen-/Farbwechsel.
+    private static SKShader? _cachedFillShader;
+    private static float _cachedShaderTop, _cachedShaderBottom;
+    private static SKColor _cachedShaderSuccess, _cachedShaderError;
+
     /// <summary>
     /// Rendert den Überstunden-Trend.
     /// </summary>
@@ -132,24 +141,36 @@ public static class OvertimeSplineVisualization
 
             // Fläche unter/über Baseline
             using var areaPath = CreateSmoothAreaPath(points, baselineY);
-            // Gradient: Grün oben, Rot unten
-            using (var shader = SKShader.CreateLinearGradient(
-                new SKPoint(0, chartTop),
-                new SKPoint(0, chartBottom),
-                new[]
-                {
-                    SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Success, 50),
-                    SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Success, 10),
-                    SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Error, 10),
-                    SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Error, 50)
-                },
-                new float[] { 0f, 0.45f, 0.55f, 1f },
-                SKShaderTileMode.Clamp))
+            // Gradient: Grün oben, Rot unten — gecacht, Re-Create nur bei Bounds-/Theme-Wechsel
+            var success = SkiaThemeHelper.Success;
+            var error = SkiaThemeHelper.Error;
+            if (_cachedFillShader == null
+                || MathF.Abs(_cachedShaderTop - chartTop) > 0.5f
+                || MathF.Abs(_cachedShaderBottom - chartBottom) > 0.5f
+                || _cachedShaderSuccess != success
+                || _cachedShaderError != error)
             {
-                _fillPaint.Shader = shader;
-                canvas.DrawPath(areaPath, _fillPaint);
-                _fillPaint.Shader = null;
+                _cachedFillShader?.Dispose();
+                _cachedFillShader = SKShader.CreateLinearGradient(
+                    new SKPoint(0, chartTop),
+                    new SKPoint(0, chartBottom),
+                    new[]
+                    {
+                        SkiaThemeHelper.WithAlpha(success, 50),
+                        SkiaThemeHelper.WithAlpha(success, 10),
+                        SkiaThemeHelper.WithAlpha(error, 10),
+                        SkiaThemeHelper.WithAlpha(error, 50)
+                    },
+                    new float[] { 0f, 0.45f, 0.55f, 1f },
+                    SKShaderTileMode.Clamp);
+                _cachedShaderTop = chartTop;
+                _cachedShaderBottom = chartBottom;
+                _cachedShaderSuccess = success;
+                _cachedShaderError = error;
             }
+            _fillPaint.Shader = _cachedFillShader;
+            canvas.DrawPath(areaPath, _fillPaint);
+            _fillPaint.Shader = null;
 
             // Spline-Linie
             using var linePath = CreateSmoothPath(points);
@@ -162,12 +183,9 @@ public static class OvertimeSplineVisualization
             _dotPaint.Color = SkiaThemeHelper.Warning;
             canvas.DrawCircle(lastPt, 4f, _dotPaint);
             _dotPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Warning, 60);
-            using (var blur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f))
-            {
-                _dotPaint.MaskFilter = blur;
-                canvas.DrawCircle(lastPt, 6f, _dotPaint);
-                _dotPaint.MaskFilter = null;
-            }
+            _dotPaint.MaskFilter = _blur4;
+            canvas.DrawCircle(lastPt, 6f, _dotPaint);
+            _dotPaint.MaskFilter = null;
         }
 
         // X-Achsen-Labels (jeden n-ten anzeigen)

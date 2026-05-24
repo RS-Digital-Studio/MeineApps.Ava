@@ -1,0 +1,57 @@
+[
+  {
+    "id": "white_heart",
+    "displayNameKey": "collection.white_heart.name",
+    "descriptionKey": "collection.white_heart.desc",
+    "requiredMaterialIds": [
+      "helle_sphaere",
+      "sterne_splitter",
+      "engelsfeder",
+      "heiliges_wasser"
+    ],
+    "rewardCardId": "engelsritter",
+    "rewardIconAddressableKey": "Cards.Epic/card_engelsritter"
+  },
+  {
+    "id": "dark_heart",
+    "displayNameKey": "collection.dark_heart.name",
+    "descriptionKey": "collection.dark_heart.desc",
+    "requiredMaterialIds": [
+      "schattenscherbe",
+      "knochenstaub",
+      "daemonenbrand",
+      "pestodem",
+      "schreckensauge",
+      "schwarzes_herz_material"
+    ],
+    "rewardCardId": "schattenfuerst",
+    "rewardIconAddressableKey": "Cards.Legendary/card_schattenfuerst"
+  },
+  {
+    "id": "dragon_set",
+    "displayNameKey": "collection.dragon_set.name",
+    "descriptionKey": "collection.dragon_set.desc",
+    "requiredMaterialIds": [
+      "drachen_schuppe_rot",
+      "drachen_schuppe_blau",
+      "drachen_schuppe_gruen",
+      "drachen_schuppe_gold",
+      "drachen_schuppe_schwarz"
+    ],
+    "rewardCardId": "elder_drache",
+    "rewardIconAddressableKey": "Cards.Legendary/card_elder_drache"
+  },
+  {
+    "id": "machine_core",
+    "displayNameKey": "collection.machine_core.name",
+    "descriptionKey": "collection.machine_core.desc",
+    "requiredMaterialIds": [
+      "zahnrad",
+      "eisenkern",
+      "plasma_zelle",
+      "steuermodul"
+    ],
+    "rewardCardId": "kriegsmaschine",
+    "rewardIconAddressableKey": "Cards.Epic/card_kriegsmaschine"
+  }
+]

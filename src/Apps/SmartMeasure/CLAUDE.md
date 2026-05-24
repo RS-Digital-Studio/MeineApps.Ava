@@ -78,6 +78,7 @@ src/Apps/SmartMeasure/
 | `ArSnapEngine` | Geometrische Snap-Hilfen: Vertex (15cm), Right-Angle (5°), Parallel (3°), Extension (10cm zur Verlaengerung, min 5cm jenseits Edge-Ende). Stateless, in Shared damit testbar. |
 | `ArPoseSampler` | Multi-Frame-HitTest-Averaging: Median + ±3σ-Outlier-Filter + Mittel auf bereinigten Samples. In Shared. |
 | `ArMathHelpers` | `ApplyBowditchCorrection` + `ExtractHeadingFromQuaternion` + `ExtractPitchFromQuaternion`. Pure Mathematik, in Shared. `ArPrecisionHelpers` delegiert dorthin. |
+| `IDifferentialSnapshotService` | Vergleicht zwei Vermessungs-Snapshots desselben Grundstuecks (Greedy-Nearest-Neighbor, 3D-Distanz inkl. Hoehe). Liefert Moved/Unchanged/Added/Removed. |
 
 ---
 
@@ -320,6 +321,30 @@ ArPointOverlayView ist ebenfalls `partial sealed` markiert (Drawing-Methoden-Spl
 - `OnApplyWindowInsets` liest Punch-Hole-Cutout → `ArOverlayState.TopInsetPixels`
 - BLE MTU 247 (BLE 5.3 DLE voll ausgenutzt)
 
+### Capture-Modi (`CaptureMode`)
+
+| Mode | Verhalten |
+|------|-----------|
+| `Point` | Einzelne Messpunkte ins Projekt + Undo-Stack + Foto-Annotation. |
+| `Contour` | Aktive Kontur (Weg/Beet/Mauer/...) — Mehrfach-Tap + `CloseActiveContour` mit Bowditch-Correction + Foto-Annotation pro Punkt. |
+| `TapeMeasure` | Ad-hoc-Distanz (Apple-Measure-Klon, Plan-Kap. 5.3). Eigener Buffer `_tapeMeasurePoints`, kein Projekt-Save, kein Undo, kein Foto. Long-Press auf Mass-Button = Reset. Footer zeigt Σ Strecken-Summe. |
+| `Stakeout` | Plan-Kap. 5.9: Pfeil + Distanz + Target-Label zum naechsten unerreichten Ziel. Targets via `IArCaptureService.SetStakeoutTargets` durchgereicht. Hysterese-Reached bei ≤10cm (von >30cm kommend). |
+
+### Site-Marker (`IArCaptureService.SetSitePoints`, Plan-Kap. 5.2)
+
+Bestehende Projekt-`SurveyPoints` werden vor Session-Start an die Activity uebergeben.
+Sobald Geospatial-Tracking aktiv ist, erzeugt `CreatePendingSiteAnchors` Earth-Anchors
+(max 2 pro Frame). Render als dezente graue Kreise — neue Punkte landen im selben
+Koordinatensystem. Geoid-Korrektur grob via 48m-Pauschal (DE-Naehrung).
+
+### RTK-Stab Live-Marker (Plan-Kap. 5.8)
+
+Bei verbundenem BLE-Stab + Geospatial-Tracking refresht `UpdateRtkStabAnchor` 1x/s
+den Earth-Anchor an der aktuellen Stab-Position. Alter Anchor wird detacht, neuer
+erzeugt. Render: pulsierender Marker (1Hz Sinus) + Fix-Quality-Farbe
+(Gruen=RTK-Fix, Gelb=Float, Orange=DGPS, Rot=GPS-only). PostInvalidateDelayed(33)
+haelt die Pulse-Animation.
+
 ### UX-Features (AR-Modus)
 
 | Feature | Beschreibung |
@@ -364,6 +389,15 @@ Pref-Key vorgesehen: `ar.toolbar.position` (Werte `bottom`/`left`/`right`).
 
 Bei Kontur-Close: Schlussfehler-Vektor proportional zur Distanz auf alle Zwischenpunkte verteilen.
 Nur aktiv bei 1 cm–2 m Schlussfehler (kleiner: unnötig, größer: Fehler-Detection).
+
+### Foto-Annotation pro Punkt (Plan-Kap. 5.6)
+
+Bei jedem AR-Punkt (Point + Contour, NICHT TapeMeasure) macht `CapturePhotoForPoint`
+via `PixelCopy.Request` einen JPEG-Snapshot des reinen Kamera-Frames (ohne Overlay)
+und legt ihn in `IAppPaths.PhotosFolder` ab. Dateiname `pt_<timestamp>_<guid>.jpg`,
+JPEG-Quality 80 (~200KB pro Foto). `ArPoint.PhotoPath` wird sofort gesetzt, der
+Disk-Write laeuft asynchron — PDF-Bericht muss `File.Exists` pruefen. Pfad wandert
+durch `ArTransferService` in `SurveyPoint.PhotoPath`.
 
 ### Confidence-Formel
 
@@ -470,6 +504,24 @@ dotnet build src/Apps/SmartMeasure/SmartMeasure.Android
 ```
 
 ---
+
+## Roadmap (offene Plan-Items)
+
+Sprint 3/4-Features die noch nicht implementiert sind — eigene Iterationen wert:
+
+| Kap. | Feature | Aufwand | Umsetzungs-Tipp |
+|------|---------|---------|-----------------|
+| 5.4 | Volumen-/Aushub-Messung | 5 PT | Truncated Prism aus geschl. Kontur + Hoehen-Anker; Mesh-Voxel-Variante optional |
+| 5.5 | Scene-Reconstruction (PLY/OBJ) | 7 PT | Raw-Depth akkumulieren + Voxel-Filter + Poisson; RAM-Risiko via Octree |
+| 5.7 | ArUco-/Augmented-Image-Marker | 4 PT | ARCore-AugmentedImages-API aktivieren, Marker als Image-Database, RTK-Stab als Einmess-Quelle |
+| 5.17 | Total-Station-Modus | 5 PT | Stativ-Kalibrierung + RTK als Origin + Depth-API als Tachymeter-Ersatz |
+| 5.14 | PDF-Bericht Vermessungs-Standard | 5 PT | PdfSharpCore + AndroidFontResolver; nutzt `SurveyPoint.PhotoPath` + Differential-Snapshot-Service |
+| 5.12 | Sprach-Annotation pro Punkt | 3 PT | Android `SpeechRecognizer` + Audio-Save im PhotosFolder |
+| 5.15 | Quality-Heatmap im Live-AR | 4 PT | 50x50px-Patches: FeaturePoint-Count + Depth-Confidence + Plane-Overlap → Gradient-Overlay |
+| 5.18 | Least-Squares-Netzausgleich | 6 PT | Eigene Impl in `MeineApps.CalcLib` (Math.NET zu gross), Kovarianzmatrix + Constraints |
+| 5.11 | Multi-User Co-located Capture | 6 PT | WiFi-Direct + lokaler SignalR-Hub, Earth-Anchor-Re-Localisation pro Geraet |
+| 5.16 | GNSS-/Wetter-Konditions-Indikator | 2 PT | NOAA-Ionosphaere + NREL-Solar via HTTP, lokaler Cache |
+| Test-Strat. | `IArSession`-Interface fuer Mocking | 3 PT | Wrappt `Google.AR.Core.Session` — erlaubt deterministische End-to-End-Tests |
 
 ## Verweise
 

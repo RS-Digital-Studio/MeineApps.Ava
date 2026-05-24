@@ -52,4 +52,12 @@ public class SurveyPoint
     /// aktuellen Kamera-Frame befuellt, sonst null. PDF-Bericht laedt das Foto
     /// neben dem Punkt-Eintrag.</summary>
     public string? PhotoPath { get; set; }
+
+    /// <summary>Plan-Kap. 5.12: Transkript einer Sprach-Annotation (gesprochen vom User
+    /// beim Punkt-Setzen). null wenn keine Audio-Erkennung lief.</summary>
+    public string? VoiceTranscript { get; set; }
+
+    /// <summary>Plan-Kap. 5.12: Dateiname der Audio-Aufnahme (WAV/MP3), relativ zum
+    /// <c>IAppPaths.PhotosFolder</c>. null wenn keine Aufnahme.</summary>
+    public string? VoiceAudioPath { get; set; }
 }

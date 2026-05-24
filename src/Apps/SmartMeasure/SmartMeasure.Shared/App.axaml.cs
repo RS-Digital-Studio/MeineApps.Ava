@@ -104,6 +104,11 @@ public class App : Application
         services.AddSingleton<IDifferentialSnapshotService, DifferentialSnapshotService>();
         services.AddSingleton<IGnssConditionService, GnssConditionService>();
         services.AddSingleton<IVolumeService, VolumeService>();
+        services.AddSingleton<ITotalStationService, TotalStationService>();
+        services.AddSingleton<ILeastSquaresAdjustmentService, LeastSquaresAdjustmentService>();
+        // Voice/Multi-User/Mesh: Interface-Stubs ohne Default-Impl — werden vom
+        // jeweiligen Plattform-Modul oder einer Folge-Iteration verkabelt.
+        services.AddSingleton<IVoiceAnnotationService, NullVoiceAnnotationService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

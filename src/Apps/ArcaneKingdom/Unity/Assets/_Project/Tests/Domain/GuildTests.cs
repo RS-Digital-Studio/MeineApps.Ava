@@ -1,7 +1,7 @@
 #nullable enable
 using System;
-using ArcaneKingdom.Domain.Guild;
 using NUnit.Framework;
+using Guild = ArcaneKingdom.Domain.Guild.Guild;
 
 namespace ArcaneKingdom.Domain.Tests
 {

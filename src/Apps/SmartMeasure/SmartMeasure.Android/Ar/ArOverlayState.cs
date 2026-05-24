@@ -205,4 +205,13 @@ public sealed class ArOverlayState
     /// Label bestehender Projekt-Punkte. Wird als kleine graue Kreise mit Label
     /// gerendert — visuell deutlich abgesetzt von aktiven (orange) Punkten.</summary>
     public IReadOnlyList<(float screenX, float screenY, string label)>? SiteMarkerScreenPoints { get; init; }
+
+    /// <summary>Plan-Kap. 5.8: Aktuelle RTK-Stab-Position im AR-Frame (Screen-Koordinaten).
+    /// null wenn kein Earth-Anchor verfuegbar bzw. kein RTK-Fix.</summary>
+    public (float screenX, float screenY)? RtkStabScreenPos { get; init; }
+
+    /// <summary>Plan-Kap. 5.8: Aktuelle Fix-Quality des RTK-Stabs (0=kein Fix, 1=GPS,
+    /// 2=DGPS, 4=RTK-Fix, 5=Float). Bestimmt die Marker-Farbe in
+    /// <c>DrawRtkStabMarker</c>.</summary>
+    public int RtkStabFixQuality { get; init; }
 }

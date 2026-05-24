@@ -113,6 +113,19 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly List<ArPoint> _sitePointAnchors = [];
     private int _siteAnchorsCreated;
 
+    /// <summary>Plan-Kap. 5.8: Aktueller RTK-Stab-Anchor (immer max einer). Wird einmal
+    /// pro Sekunde an die aktuelle BLE-Stab-Position aktualisiert — alte Anchors werden
+    /// detacht. null wenn kein RTK-Fix oder noch nicht erzeugt.</summary>
+    private ArPoint? _rtkStabAnchor;
+
+    /// <summary>Frame-Zaehler fuer das 1Hz-Refresh des Stab-Anchors (RTK-Stab bewegt sich
+    /// gelegentlich, aber 30fps-Refresh wuerde Anchor-Hard-Limit erschoepfen).</summary>
+    private int _rtkStabRefreshFrameCounter;
+
+    /// <summary>Letzte gemeldete Fix-Quality des Stabs — bestimmt die Marker-Farbe
+    /// (RTK-Fix=Gruen, Float=Gelb, sonst Rot/Aus).</summary>
+    private volatile int _rtkStabLastFixQuality;
+
     /// <summary>Stakeout-Ziele dieser Session (Snapshot zu OnCreate). Veraenderungen an
     /// <see cref="StakeoutTarget.IsReached"/> sind sichtbar fuer den UI-Layer weil
     /// StakeoutTarget ein <c>ObservableObject</c> ist.</summary>
@@ -2354,6 +2367,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     ReattachPendingEarthAnchors(maxPerFrame: 2);
                     // Plan-Kap. 5.2: Bestehende Projekt-Punkte als Site-Marker verankern
                     CreatePendingSiteAnchors(maxPerFrame: 2);
+                    // Plan-Kap. 5.8: RTK-Stab-Live-Position einmal pro Sekunde refreshen
+                    _rtkStabRefreshFrameCounter++;
+                    if (_rtkStabRefreshFrameCounter >= 30)
+                    {
+                        _rtkStabRefreshFrameCounter = 0;
+                        UpdateRtkStabAnchor();
+                    }
                 }
 
                 // Thermal + Battery + Anchor-Cleanup alle 60 Frames (~1x/s).
@@ -2426,6 +2446,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// Anchor-Positionen bestehender Projekt-Punkte mit Label.</summary>
     private readonly List<(float screenX, float screenY, string label)> _projectedSiteMarkersBuilder = [];
 
+    /// <summary>Aktuelle Projektion des RTK-Stab-Anchors (Plan-Kap. 5.8). Wird in
+    /// <see cref="ProjectPointsToScreen"/> aktualisiert, in <see cref="BuildOverlayState"/>
+    /// in den Snapshot uebernommen. null = Anchor nicht sichtbar / kein RTK-Fix.</summary>
+    private (float screenX, float screenY)? _projectedRtkStab;
+
     private void ProjectPointsToScreen()
     {
         global::Android.Opengl.Matrix.MultiplyMM(_mvpMatrixScratch, 0, _projectionMatrix, 0, _viewMatrix, 0);
@@ -2482,6 +2507,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 var screen = WorldToScreen(sm, _mvpMatrixScratch);
                 if (screen.HasValue)
                     _projectedSiteMarkersBuilder.Add((screen.Value.x, screen.Value.y, sm.Label ?? ""));
+            }
+
+            // Plan-Kap. 5.8: RTK-Stab-Marker (eigener Render-Pfad mit Fix-Farbe)
+            _projectedRtkStab = null;
+            if (_rtkStabAnchor != null)
+            {
+                var screen = WorldToScreen(_rtkStabAnchor, _mvpMatrixScratch);
+                if (screen.HasValue)
+                    _projectedRtkStab = (screen.Value.x, screen.Value.y);
             }
         }
 
@@ -3156,6 +3190,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (_activeContour != null) allPoints.AddRange(_activeContour.Points);
             // Plan-Kap. 5.2: Site-Marker auch refreshen, sonst driften die alten Punkte
             allPoints.AddRange(_sitePointAnchors);
+            // Plan-Kap. 5.8: RTK-Stab-Live-Anchor mit refreshen
+            if (_rtkStabAnchor != null) allPoints.Add(_rtkStabAnchor);
         }
         _anchorManager.RefreshAnchors(allPoints);
     }
@@ -3951,6 +3987,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             StakeoutTotalCount = _stakeoutTargets?.Count ?? 0,
             // Plan-Kap. 5.2: Site-Marker-Snapshot
             SiteMarkerScreenPoints = BuildSiteMarkerSnapshot(),
+            // Plan-Kap. 5.8: RTK-Stab-Live-Position
+            RtkStabScreenPos = _projectedRtkStab,
+            RtkStabFixQuality = _rtkStabLastFixQuality,
         };
     }
 
@@ -4112,6 +4151,75 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _stakeoutCurrentTargetLabel = target.Label;
         }
     }
+
+    /// <summary>Plan-Kap. 5.8: Refresht den Earth-Anchor des RTK-Stabs an seiner aktuellen
+    /// BLE-Position. Loescht den alten Anchor (Anchor-Hard-Limit) und erzeugt einen neuen.
+    /// Wird einmal pro Sekunde gerufen (30 Frames). _rtkStabAnchor.GeoLat/Lon/Alt bleiben
+    /// als Tooltip-Quelle erhalten. Wenn kein RTK-Fix → Anchor wird entfernt.</summary>
+    private void UpdateRtkStabAnchor()
+    {
+        if (_bleService is not { IsConnected: true })
+        {
+            ClearRtkStabAnchor();
+            return;
+        }
+        var state = _bleService.CurrentState;
+        if (state.FixQuality < 1 || !state.Latitude.HasValue || !state.Longitude.HasValue)
+        {
+            ClearRtkStabAnchor();
+            return;
+        }
+        var stabAltNn = state.Altitude ?? 0.0;
+
+        var earth = _arSession?.Earth;
+        if (earth == null || earth.TrackingState != TrackingState.Tracking) return;
+
+        // Alten Anchor freigeben (analog Anchor-Lifecycle in CloseActiveContour)
+        if (_rtkStabAnchor != null && !string.IsNullOrEmpty(_rtkStabAnchor.AnchorId))
+        {
+            _anchorManager.Detach(_rtkStabAnchor.AnchorId);
+            _rtkStabAnchor.AnchorId = null;
+        }
+
+        var newMarker = new ArPoint
+        {
+            Label = $"Stab ({FixQualityLabel(state.FixQuality)})",
+            Confidence = state.FixQuality >= 4 ? 0.95f : 0.6f,
+            HitQuality = 3,
+            GeoLatitude = state.Latitude,
+            GeoLongitude = state.Longitude,
+            GeoAltitude = state.Altitude,
+            Timestamp = DateTime.UtcNow,
+        };
+
+        // Stab-Altitude bereits NN-korrigiert von BleService.OnCharacteristicChanged.
+        // Earth.CreateAnchor erwartet Ellipsoid → grobe 48m-Naehrung (DE) wieder addieren.
+        var ellipsoidAlt = stabAltNn + 48.0;
+        if (_anchorManager.TryCreateEarthAnchor(earth, state.Latitude.Value, state.Longitude.Value,
+            ellipsoidAlt, newMarker))
+        {
+            lock (_dataLock) _rtkStabAnchor = newMarker;
+            _rtkStabLastFixQuality = state.FixQuality;
+        }
+    }
+
+    private void ClearRtkStabAnchor()
+    {
+        if (_rtkStabAnchor == null) return;
+        if (!string.IsNullOrEmpty(_rtkStabAnchor.AnchorId))
+            _anchorManager.Detach(_rtkStabAnchor.AnchorId);
+        lock (_dataLock) _rtkStabAnchor = null;
+        _rtkStabLastFixQuality = 0;
+    }
+
+    private static string FixQualityLabel(int fix) => fix switch
+    {
+        4 => "RTK-Fix",
+        5 => "RTK-Float",
+        2 => "DGPS",
+        1 => "GPS",
+        _ => "?",
+    };
 
     /// <summary>Plan-Kap. 5.2: Erzeugt iterativ Earth-Anchors fuer alle bestehenden
     /// SurveyPoints aus dem Site-Points-Snapshot. Wird im OnDrawFrame aufgerufen sobald

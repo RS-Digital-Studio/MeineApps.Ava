@@ -432,6 +432,10 @@ public sealed partial class ArPointOverlayView : View
         if (_state.SiteMarkerScreenPoints != null && _state.SiteMarkerScreenPoints.Count > 0)
             DrawSiteMarkers(canvas);
 
+        // 6a2. Plan-Kap. 5.8: RTK-Stab-Live-Marker (eigene Fix-Quality-Farbe)
+        if (_state.RtkStabScreenPos.HasValue)
+            DrawRtkStabMarker(canvas);
+
         // 6b. Plan-Kap. 5.3: Tape-Measure-Polyline (Cyan, gestrichelt) + Segment-Distanzen
         if (_state.TapeMeasureScreenPoints != null && _state.TapeMeasureScreenPoints.Count > 0)
             DrawTapeMeasure(canvas);
@@ -798,6 +802,56 @@ public sealed partial class ArPointOverlayView : View
             ? $"  ({_state.StakeoutReachedCount}/{_state.StakeoutTotalCount})"
             : "";
         canvas.DrawText($"{label}{progress}", cx, cyArrow + 170f * _density, lblPaint);
+    }
+
+    /// <summary>Plan-Kap. 5.8: RTK-Stab-Live-Marker. Pulsierender Ring + Fix-Quality-Farbe
+    /// (Gruen=RTK-Fix, Gelb=Float, Orange=DGPS, Rot=GPS-only). Visuell deutlich, weil der
+    /// User den Stab im Garten manchmal aus dem Sichtfeld verliert und froh ist wenn er
+    /// sieht "ah, da steht er".</summary>
+    private void DrawRtkStabMarker(Canvas canvas)
+    {
+        if (!_state.RtkStabScreenPos.HasValue) return;
+        var (sx, sy) = _state.RtkStabScreenPos.Value;
+
+        var color = _state.RtkStabFixQuality switch
+        {
+            4 => Color.Argb(240, 76, 175, 80),     // RTK-Fix: Gruen
+            5 => Color.Argb(240, 255, 235, 59),    // Float: Gelb
+            2 => Color.Argb(240, 255, 152, 0),     // DGPS: Orange
+            1 => Color.Argb(240, 244, 67, 54),     // GPS-only: Rot
+            _ => Color.Argb(180, 158, 158, 158),   // Aus: Grau
+        };
+
+        using var ringPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = color,
+            StrokeWidth = 3f * _density,
+        };
+        ringPaint.SetStyle(Paint.Style.Stroke);
+
+        using var dotPaint = new Paint(PaintFlags.AntiAlias) { Color = color };
+        dotPaint.SetStyle(Paint.Style.Fill);
+
+        // Pulsierender Outer-Ring (1Hz)
+        var pulse = (float)(Math.Sin(DateTime.UtcNow.Millisecond / 1000.0 * Math.PI * 2) * 0.5 + 0.5);
+        var outerR = 14f * _density + 4f * _density * pulse;
+        canvas.DrawCircle(sx, sy, outerR, ringPaint);
+
+        // Innerer Dot
+        canvas.DrawCircle(sx, sy, 5f * _density, dotPaint);
+
+        // Label "Stab"
+        using var lblPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.White,
+            TextSize = 12f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+        lblPaint.SetShadowLayer(3f, 0f, 1f, Color.Black);
+        canvas.DrawText("Stab", sx, sy + outerR + 12f * _density, lblPaint);
+
+        // Damit der Pulse animiert, eine kleine Invalidate-Schleife (~30fps)
+        PostInvalidateDelayed(33);
     }
 
     /// <summary>Plan-Kap. 5.2: Site-Marker (bestehende Projekt-Punkte aus Earth-Anchor-Cache).

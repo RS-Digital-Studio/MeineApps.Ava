@@ -1,0 +1,35 @@
+{
+  "id": "season_2_classic",
+  "number": 2,
+  "startedAtUtc": "2026-06-01T00:00:00Z",
+  "endsAtUtc": "2026-07-01T00:00:00Z",
+  "totalTiers": 50,
+  "xpPerTier": 1000,
+  "hardCapTier": 100,
+  "freeTrack": [
+    { "tier": 1,  "rewardKind": "Currency", "subType": "Gold",    "amount": 100 },
+    { "tier": 5,  "rewardKind": "Scrap",    "subType": "Common",  "amount": 5 },
+    { "tier": 10, "rewardKind": "Card",     "subType": "any_uncommon", "amount": 1 },
+    { "tier": 15, "rewardKind": "Currency", "subType": "Diamond", "amount": 25 },
+    { "tier": 20, "rewardKind": "Scrap",    "subType": "Rare",    "amount": 3 },
+    { "tier": 25, "rewardKind": "Scrap",    "subType": "Epic",    "amount": 2 },
+    { "tier": 30, "rewardKind": "Card",     "subType": "any_rare","amount": 1 },
+    { "tier": 35, "rewardKind": "Currency", "subType": "Diamond", "amount": 50 },
+    { "tier": 40, "rewardKind": "Scrap",    "subType": "Epic",    "amount": 5 },
+    { "tier": 45, "rewardKind": "Card",     "subType": "any_epic","amount": 1 },
+    { "tier": 50, "rewardKind": "Card",     "subType": "any_epic","amount": 1, "cosmeticKey": "avatar.frame.saison_2_free" }
+  ],
+  "premiumTrack": [
+    { "tier": 1,  "rewardKind": "Currency", "subType": "Diamond", "amount": 50 },
+    { "tier": 5,  "rewardKind": "Currency", "subType": "Diamond", "amount": 50 },
+    { "tier": 10, "rewardKind": "Scrap",    "subType": "Rare",    "amount": 5 },
+    { "tier": 15, "rewardKind": "Currency", "subType": "Diamond", "amount": 100 },
+    { "tier": 20, "rewardKind": "Scrap",    "subType": "Epic",    "amount": 3 },
+    { "tier": 25, "rewardKind": "Card",     "subType": "any_epic","amount": 1 },
+    { "tier": 30, "rewardKind": "Currency", "subType": "Diamond", "amount": 200 },
+    { "tier": 35, "rewardKind": "Scrap",    "subType": "Epic",    "amount": 5 },
+    { "tier": 40, "rewardKind": "Currency", "subType": "Diamond", "amount": 300 },
+    { "tier": 45, "rewardKind": "Scrap",    "subType": "Legendary","amount": 1 },
+    { "tier": 50, "rewardKind": "Card",     "subType": "saison_2_legendary", "amount": 1, "cosmeticKey": "avatar.frame.saison_2_premium" }
+  ]
+}

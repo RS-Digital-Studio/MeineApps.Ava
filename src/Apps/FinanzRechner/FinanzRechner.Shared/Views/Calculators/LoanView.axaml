@@ -6,7 +6,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.Calculators.LoanView"
-             x:DataType="vm:LoanViewModel">
+             x:DataType="vm:LoanViewModel"
+             x:CompileBindings="True">
 
     <UserControl.Styles>
       <Style Selector="Border.ResultFlash">

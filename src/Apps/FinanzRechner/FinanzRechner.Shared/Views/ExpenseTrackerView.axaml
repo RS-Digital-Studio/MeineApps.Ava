@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.ExpenseTrackerView"
-             x:DataType="vm:ExpenseTrackerViewModel">
+             x:DataType="vm:ExpenseTrackerViewModel"
+             x:CompileBindings="True">
 
   <!-- Äußerstes Grid: ScrollView + FAB + Dialog Overlay -->
   <Grid RowDefinitions="*,Auto"
@@ -258,16 +259,16 @@
               <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="3">
                   <mi:MaterialIcon Kind="ArrowUpBold" Width="12" Height="12"
-                                   Foreground="#22C55E" VerticalAlignment="Center" />
+                                   Foreground="{DynamicResource IncomeBrush}" VerticalAlignment="Center" />
                   <TextBlock Text="{Binding TotalIncomeDisplay}" FontSize="12" FontWeight="SemiBold"
-                             Foreground="#22C55E" VerticalAlignment="Center"
+                             Foreground="{DynamicResource IncomeBrush}" VerticalAlignment="Center"
                              AutomationProperties.AutomationId="Tracker_TxtIncome" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="3">
                   <mi:MaterialIcon Kind="ArrowDownBold" Width="12" Height="12"
-                                   Foreground="#EF4444" VerticalAlignment="Center" />
+                                   Foreground="{DynamicResource ExpenseBrush}" VerticalAlignment="Center" />
                   <TextBlock Text="{Binding TotalExpensesDisplay}" FontSize="12" FontWeight="SemiBold"
-                             Foreground="#EF4444" VerticalAlignment="Center"
+                             Foreground="{DynamicResource ExpenseBrush}" VerticalAlignment="Center"
                              AutomationProperties.AutomationId="Tracker_TxtExpenses" />
                 </StackPanel>
                 <Border Background="{DynamicResource AccentBrush}" CornerRadius="6" Padding="6,2"
@@ -352,7 +353,7 @@
                         </i:Interaction.Behaviors>
 
                         <!-- Delete-Layer (hinter Content) -->
-                        <Border Background="#EF4444" HorizontalAlignment="Right" Width="80"
+                        <Border Background="{DynamicResource ExpenseBrush}" HorizontalAlignment="Right" Width="80"
                                 CornerRadius="0,12,12,0" VerticalAlignment="Stretch">
                           <Button Command="{Binding $parent[UserControl].((vm:ExpenseTrackerViewModel)DataContext).DeleteExpenseCommand}"
                                   CommandParameter="{Binding}"
@@ -527,7 +528,9 @@
             Command="{Binding ShowAddExpenseFormCommand}"
             Padding="0"
             ZIndex="50"
-            AutomationProperties.AutomationId="Tracker_FabAdd">
+            AutomationProperties.AutomationId="Tracker_FabAdd"
+            AutomationProperties.Name="{Binding NewTransactionText}"
+            ToolTip.Tip="{Binding NewTransactionText}">
       <mi:MaterialIcon Kind="Plus" Width="24" Height="24"
                        AutomationProperties.AutomationId="ExpenseTracker_Icon_Add"
                        Foreground="White"
@@ -629,12 +632,12 @@
                   <Button Command="{Binding SetTransactionTypeExpenseCommand}"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                           Padding="12,18"
-                          Background="#33EF4444" BorderBrush="#EF4444" BorderThickness="2"
+                          Background="{DynamicResource ExpenseBackgroundBrush}" BorderBrush="{DynamicResource ExpenseBrush}" BorderThickness="2"
                           CornerRadius="12"
                           IsVisible="{Binding IsExpenseSelected}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="ArrowDownBold" Width="20" Height="20" Foreground="#EF4444" />
-                      <TextBlock Text="{Binding ExpenseText}" FontSize="15" FontWeight="Bold" Foreground="#EF4444" />
+                      <mi:MaterialIcon Kind="ArrowDownBold" Width="20" Height="20" Foreground="{DynamicResource ExpenseBrush}" />
+                      <TextBlock Text="{Binding ExpenseText}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource ExpenseBrush}" />
                     </StackPanel>
                   </Button>
                   <Button Command="{Binding SetTransactionTypeExpenseCommand}"
@@ -659,12 +662,12 @@
                   <Button Command="{Binding SetTransactionTypeIncomeCommand}"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                           Padding="12,18"
-                          Background="#3322C55E" BorderBrush="#22C55E" BorderThickness="2"
+                          Background="{DynamicResource IncomeBackgroundBrush}" BorderBrush="{DynamicResource IncomeBrush}" BorderThickness="2"
                           CornerRadius="12"
                           IsVisible="{Binding IsIncomeSelected}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="ArrowUpBold" Width="20" Height="20" Foreground="#22C55E" />
-                      <TextBlock Text="{Binding IncomeText}" FontSize="15" FontWeight="Bold" Foreground="#22C55E" />
+                      <mi:MaterialIcon Kind="ArrowUpBold" Width="20" Height="20" Foreground="{DynamicResource IncomeBrush}" />
+                      <TextBlock Text="{Binding IncomeText}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource IncomeBrush}" />
                     </StackPanel>
                   </Button>
                   <Button Command="{Binding SetTransactionTypeIncomeCommand}"

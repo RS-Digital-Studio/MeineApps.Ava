@@ -10,12 +10,13 @@
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.HomeView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Home_Root">
 
   <Panel AutomationProperties.AutomationId="Home_Panel_Root">
   <ScrollViewer VerticalScrollBarVisibility="Auto"
                 AutomationProperties.AutomationId="Home_ScrollViewer">
-    <StackPanel Spacing="0" Margin="0,0,0,120"
+    <StackPanel Spacing="0" Margin="0,0,0,60"
                 AutomationProperties.AutomationId="Home_Panel_MainContent">
 
       <!-- ========== A) Hero-Header (Gradient passend zum Bilanz-Status) ========== -->
@@ -89,9 +90,9 @@
               <Border Background="#4422C55E" CornerRadius="12" Padding="10,4"
                       AutomationProperties.AutomationId="Home_BadgeIncome">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" Foreground="#22C55E"
+                  <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" Foreground="{DynamicResource IncomeBrush}"
                                    AutomationProperties.AutomationId="Home_Icon_IncomeArrow" />
-                  <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#22C55E"
+                  <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource IncomeBrush}"
                              AutomationProperties.AutomationId="Home_TxtIncome">
                     <i:Interaction.Behaviors>
                       <uiBehaviors:CountUpBehavior TargetValue="{Binding MonthlyIncome}"
@@ -104,9 +105,9 @@
               <Border Background="#44EF4444" CornerRadius="12" Padding="10,4"
                       AutomationProperties.AutomationId="Home_BadgeExpenses">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="ArrowDownBold" Width="14" Height="14" Foreground="#EF4444"
+                  <mi:MaterialIcon Kind="ArrowDownBold" Width="14" Height="14" Foreground="{DynamicResource ExpenseBrush}"
                                    AutomationProperties.AutomationId="Home_Icon_ExpenseArrow" />
-                  <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#EF4444"
+                  <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource ExpenseBrush}"
                              AutomationProperties.AutomationId="Home_TxtExpenses">
                     <i:Interaction.Behaviors>
                       <uiBehaviors:CountUpBehavior TargetValue="{Binding MonthlyExpenses}"
@@ -424,7 +425,7 @@
               <Border Background="#20EF4444" Width="36" Height="36" CornerRadius="10"
                       HorizontalAlignment="Left">
                 <mi:MaterialIcon Kind="CreditCardOutline" Width="20" Height="20"
-                                 Foreground="#EF4444" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                 Foreground="{DynamicResource ExpenseBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <TextBlock Text="{Binding DebtsToolText}" FontSize="13" FontWeight="SemiBold" />
             </StackPanel>
@@ -495,7 +496,7 @@
             <Border Background="#2022C55E" Width="28" Height="28" CornerRadius="8"
                     AutomationProperties.AutomationId="Home_Border_CalculatorsIcon">
               <mi:MaterialIcon Kind="Calculator" Width="16" Height="16"
-                               Foreground="#22C55E"
+                               Foreground="{DynamicResource IncomeBrush}"
                                AutomationProperties.AutomationId="Home_Icon_Calculator" />
             </Border>
             <TextBlock Text="{Binding CalculatorsTitleText}"
@@ -513,7 +514,7 @@
               <i:Interaction.Behaviors>
                 <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="0" />
               </i:Interaction.Behaviors>
-              <Border Classes="FintechCardAccent" BorderBrush="#22C55E" Margin="0" Padding="0">
+              <Border Classes="FintechCardAccent" BorderBrush="{DynamicResource IncomeBrush}" Margin="0" Padding="0">
                 <Button CornerRadius="12" Height="120" Padding="8"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Background="Transparent"
@@ -621,7 +622,7 @@
               <i:Interaction.Behaviors>
                 <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="3" />
               </i:Interaction.Behaviors>
-              <Border Classes="FintechCardAccent" BorderBrush="#EF4444" Margin="0" Padding="0">
+              <Border Classes="FintechCardAccent" BorderBrush="{DynamicResource ExpenseBrush}" Margin="0" Padding="0">
                 <Button CornerRadius="12" Height="120" Padding="8"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Background="Transparent"

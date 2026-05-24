@@ -6,6 +6,7 @@
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.SettingsView"
              x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Settings_Root">
 
   <Grid RowDefinitions="Auto,*"
@@ -190,7 +191,7 @@
             <StackPanel Orientation="Horizontal" Spacing="12">
               <mi:MaterialIcon Kind="CurrencyUsd" Width="24" Height="24"
                                Foreground="{DynamicResource PrimaryBrush}" />
-              <TextBlock Text="Währung"
+              <TextBlock Text="{Binding CurrencyLabelText}"
                          FontSize="16" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />

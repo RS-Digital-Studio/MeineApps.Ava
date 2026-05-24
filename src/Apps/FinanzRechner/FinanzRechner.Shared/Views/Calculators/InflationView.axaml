@@ -7,6 +7,7 @@
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.Calculators.InflationView"
              x:DataType="vm:InflationViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Inflation_Root">
 
     <UserControl.Styles>

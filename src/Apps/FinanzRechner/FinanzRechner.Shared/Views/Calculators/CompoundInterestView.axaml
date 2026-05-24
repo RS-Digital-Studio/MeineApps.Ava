@@ -7,6 +7,7 @@
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.Calculators.CompoundInterestView"
              x:DataType="vm:CompoundInterestViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="CompoundInterest_Root">
 
     <UserControl.Styles>

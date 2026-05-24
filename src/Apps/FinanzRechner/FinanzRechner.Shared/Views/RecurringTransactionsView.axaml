@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.RecurringTransactionsView"
-             x:DataType="vm:RecurringTransactionsViewModel">
+             x:DataType="vm:RecurringTransactionsViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Recurring_Root">
 
@@ -78,7 +79,7 @@
                   </i:Interaction.Behaviors>
 
                   <!-- Delete-Layer (hinter Content) -->
-                  <Border Background="#EF4444" HorizontalAlignment="Right" Width="80"
+                  <Border Background="{DynamicResource ExpenseBrush}" HorizontalAlignment="Right" Width="80"
                           CornerRadius="0,12,12,0" VerticalAlignment="Stretch">
                     <Button Command="{Binding $parent[UserControl].((vm:RecurringTransactionsViewModel)DataContext).DeleteTransactionCommand}"
                             CommandParameter="{Binding Transaction}"
@@ -263,6 +264,8 @@
       <!-- FAB (Add Button) -->
       <Button Background="{DynamicResource PrimaryBrush}"
               AutomationProperties.AutomationId="Recurring_FabAdd"
+              AutomationProperties.Name="{Binding RecurringTransactionText}"
+              ToolTip.Tip="{Binding RecurringTransactionText}"
               CornerRadius="28"
               Width="56" Height="56"
               HorizontalAlignment="Right"
@@ -311,12 +314,12 @@
                           AutomationProperties.AutomationId="Recurring_BtnExpenseSelected"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                           Padding="12,14"
-                          Background="#33EF4444" BorderBrush="#EF4444" BorderThickness="2"
+                          Background="{DynamicResource ExpenseBackgroundBrush}" BorderBrush="{DynamicResource ExpenseBrush}" BorderThickness="2"
                           CornerRadius="12"
                           IsVisible="{Binding IsExpenseSelected}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="ArrowDownBold" Width="18" Height="18" Foreground="#EF4444" />
-                      <TextBlock Text="{Binding ExpenseText}" FontSize="14" FontWeight="Bold" Foreground="#EF4444" />
+                      <mi:MaterialIcon Kind="ArrowDownBold" Width="18" Height="18" Foreground="{DynamicResource ExpenseBrush}" />
+                      <TextBlock Text="{Binding ExpenseText}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource ExpenseBrush}" />
                     </StackPanel>
                   </Button>
                   <Button Command="{Binding SetTransactionTypeExpenseCommand}"
@@ -342,12 +345,12 @@
                           AutomationProperties.AutomationId="Recurring_BtnIncomeSelected"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                           Padding="12,14"
-                          Background="#3322C55E" BorderBrush="#22C55E" BorderThickness="2"
+                          Background="{DynamicResource IncomeBackgroundBrush}" BorderBrush="{DynamicResource IncomeBrush}" BorderThickness="2"
                           CornerRadius="12"
                           IsVisible="{Binding IsIncomeSelected}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="ArrowUpBold" Width="18" Height="18" Foreground="#22C55E" />
-                      <TextBlock Text="{Binding IncomeText}" FontSize="14" FontWeight="Bold" Foreground="#22C55E" />
+                      <mi:MaterialIcon Kind="ArrowUpBold" Width="18" Height="18" Foreground="{DynamicResource IncomeBrush}" />
+                      <TextBlock Text="{Binding IncomeText}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource IncomeBrush}" />
                     </StackPanel>
                   </Button>
                   <Button Command="{Binding SetTransactionTypeIncomeCommand}"

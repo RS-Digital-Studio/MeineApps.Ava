@@ -4,6 +4,7 @@
         xmlns:views="using:FinanzRechner.Views"
         x:Class="FinanzRechner.Views.MainWindow"
         x:DataType="vm:MainViewModel"
+        x:CompileBindings="True"
         Title="FinanzRechner"
         Icon="avares://FinanzRechner.Shared/Assets/icon.png"
         Width="400"

@@ -8,7 +8,8 @@
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              xmlns:converters="using:FinanzRechner.Converters"
              x:Class="FinanzRechner.Views.BudgetsView"
-             x:DataType="vm:BudgetsViewModel">
+             x:DataType="vm:BudgetsViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <converters:AlertLevelToBoxShadowConverter x:Key="AlertLevelToBoxShadowConverter" />
@@ -237,6 +238,8 @@
       <!-- FAB (Add Button) -->
       <Button Background="{DynamicResource AccentBrush}"
               AutomationProperties.AutomationId="Budgets_FabAdd"
+              AutomationProperties.Name="{Binding SetBudgetText}"
+              ToolTip.Tip="{Binding SetBudgetText}"
               CornerRadius="28"
               Width="56" Height="56"
               HorizontalAlignment="Right"

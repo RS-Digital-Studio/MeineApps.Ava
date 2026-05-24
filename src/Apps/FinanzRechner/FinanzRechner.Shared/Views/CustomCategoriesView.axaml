@@ -6,7 +6,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.CustomCategoriesView"
-             x:DataType="vm:CustomCategoriesViewModel">
+             x:DataType="vm:CustomCategoriesViewModel"
+             x:CompileBindings="True">
 
     <Grid RowDefinitions="Auto,*">
         <!-- Header -->

@@ -6,7 +6,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.AccountsView"
-             x:DataType="vm:AccountsViewModel">
+             x:DataType="vm:AccountsViewModel"
+             x:CompileBindings="True">
 
     <Grid RowDefinitions="Auto,*">
         <!-- Header -->
@@ -116,9 +117,9 @@
                                                        FontSize="16" FontWeight="SemiBold" />
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding MonthlyIncomeDisplay}"
-                                                           FontSize="12" Foreground="#22C55E" />
+                                                           FontSize="12" Foreground="{DynamicResource IncomeBrush}" />
                                                 <TextBlock Text="{Binding MonthlyExpensesDisplay}"
-                                                           FontSize="12" Foreground="#EF4444" />
+                                                           FontSize="12" Foreground="{DynamicResource ExpenseBrush}" />
                                             </StackPanel>
                                         </StackPanel>
                                         <TextBlock Grid.Column="2" Text="{Binding BalanceDisplay}"

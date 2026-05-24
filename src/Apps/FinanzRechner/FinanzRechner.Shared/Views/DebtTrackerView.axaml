@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.DebtTrackerView"
-             x:DataType="vm:DebtTrackerViewModel">
+             x:DataType="vm:DebtTrackerViewModel"
+             x:CompileBindings="True">
 
     <Grid RowDefinitions="Auto,*">
         <!-- Header -->
@@ -48,7 +49,7 @@
                         <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding TotalDebtDisplay}"
                                        FontSize="24" FontWeight="Bold"
-                                       Foreground="#EF4444"
+                                       Foreground="{DynamicResource ExpenseBrush}"
                                        HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding StillOpenText}"
                                        FontSize="12" Opacity="0.6"
@@ -57,7 +58,7 @@
                         <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding TotalPaidDisplay}"
                                        FontSize="24" FontWeight="Bold"
-                                       Foreground="#22C55E"
+                                       Foreground="{DynamicResource IncomeBrush}"
                                        HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding AlreadyPaidText}"
                                        FontSize="12" Opacity="0.6"
@@ -70,7 +71,7 @@
                 <ProgressBar Value="{Binding OverallProgress}"
                              Maximum="100" Height="10"
                              CornerRadius="5"
-                             Foreground="#22C55E"
+                             Foreground="{DynamicResource IncomeBrush}"
                              IsVisible="{Binding HasDebts}" />
 
                 <!-- Schulden-Liste -->
@@ -141,7 +142,7 @@
                                                         HorizontalAlignment="Right">
                                                 <TextBlock Text="{Binding RemainingDisplay}"
                                                            FontSize="16" FontWeight="Bold"
-                                                           Foreground="#EF4444"
+                                                           Foreground="{DynamicResource ExpenseBrush}"
                                                            HorizontalAlignment="Right" />
                                                 <TextBlock Text="{Binding PayoffPercentDisplay}"
                                                            FontSize="12" Opacity="0.6"
@@ -151,7 +152,7 @@
                                         <ProgressBar Value="{Binding PayoffPercent}"
                                                      Maximum="100" Height="6"
                                                      CornerRadius="3"
-                                                     Foreground="#22C55E" />
+                                                     Foreground="{DynamicResource IncomeBrush}" />
                                         <Grid ColumnDefinitions="*,Auto">
                                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
                                                 <TextBlock FontSize="11" Opacity="0.5">
@@ -175,7 +176,7 @@
                                                     <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
                                                 </i:Interaction.Behaviors>
                                                 <materialIcons:MaterialIcon Kind="CashMinus" Width="20" Height="20"
-                                                                             Foreground="#22C55E" />
+                                                                             Foreground="{DynamicResource IncomeBrush}" />
                                             </Button>
                                         </Grid>
                                     </StackPanel>

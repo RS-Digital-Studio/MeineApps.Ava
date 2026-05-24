@@ -7,6 +7,7 @@
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.Calculators.SavingsPlanView"
              x:DataType="vm:SavingsPlanViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="SavingsPlan_Root">
 
     <UserControl.Styles>

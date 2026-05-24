@@ -18,12 +18,14 @@ public sealed class WorkTimeProLoadingPipeline : LoadingPipelineBase
     {
         var loc = services.GetRequiredService<ILocalizationService>();
 
-        // Schritt 1: DB-Init + Shader-Kompilierung parallel (größter Zeitblock)
+        // Schritt 1: DB-Init + Shader-Kompilierung + Purchase parallel; danach Reminder
+        // (Reminder hängt von DB ab → muss sequenziell nach DB laufen, aber Pipeline-Stage
+        // entfällt — spart einen ProgressChanged-Event-Roundtrip).
         AddStep(new LoadingStep
         {
-            Name = "DB+Shader",
+            Name = "Init",
             DisplayName = loc.GetString("LoadingInit") ?? "Initialisierung...",
-            Weight = 40,
+            Weight = 45,
             ExecuteAsync = async () =>
             {
                 var dbTask = services.GetRequiredService<IDatabaseService>().InitializeAsync();
@@ -31,19 +33,13 @@ public sealed class WorkTimeProLoadingPipeline : LoadingPipelineBase
                 // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
                 await Task.WhenAll(dbTask, shaderTask, purchaseTask);
+
+                // Reminder hängt von DB ab — sequenziell, aber innerhalb derselben Stage
+                await services.GetRequiredService<IReminderService>().InitializeAsync();
             }
         });
 
-        // Schritt 2: Reminder-Service initialisieren
-        AddStep(new LoadingStep
-        {
-            Name = "Reminder",
-            DisplayName = loc.GetString("LoadingReminders") ?? "Erinnerungen werden geladen...",
-            Weight = 5,
-            ExecuteAsync = () => services.GetRequiredService<IReminderService>().InitializeAsync()
-        });
-
-        // Schritt 3: MainViewModel erstellen + initiale Daten laden
+        // Schritt 2: MainViewModel erstellen + initiale Daten laden
         AddStep(new LoadingStep
         {
             Name = "ViewModel",

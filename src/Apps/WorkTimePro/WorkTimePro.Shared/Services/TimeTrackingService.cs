@@ -234,6 +234,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
     /// <summary>
     /// Findet den WorkDay mit dem aktiven CheckIn.
     /// Berücksichtigt Mitternachts-Übergang bei Nachtarbeit (bis zu 3 Tage rückwärts).
+    /// Vorher: bis zu 8 separate DB-Queries (4 Tage × 2). Jetzt: 1 Range-Query + 1 Last-Entry-Query.
     /// </summary>
     private async Task<WorkDay> GetActiveWorkDayAsync()
     {
@@ -242,16 +243,14 @@ public sealed class TimeTrackingService : ITimeTrackingService
         if (lastEntry?.Type == EntryType.CheckIn)
             return today;
 
-        // Rückwärts prüfen (Mitternachts-Übergang, z.B. extrem lange Schichten)
-        for (int i = 1; i <= 3; i++)
+        // Mitternachts-Übergang: Alle Days der letzten 3 Tage in einem Roundtrip laden,
+        // dann von neueste→älteste prüfen ob CheckIn ohne CheckOut offen ist.
+        var pastDays = await _database.GetWorkDaysAsync(DateTime.Today.AddDays(-3), DateTime.Today.AddDays(-1));
+        foreach (var pastDay in pastDays.OrderByDescending(d => d.Date))
         {
-            var pastDay = await _database.GetWorkDayAsync(DateTime.Today.AddDays(-i));
-            if (pastDay != null)
-            {
-                var pastLast = await _database.GetLastTimeEntryAsync(pastDay.Id);
-                if (pastLast?.Type == EntryType.CheckIn)
-                    return pastDay;
-            }
+            var pastLast = await _database.GetLastTimeEntryAsync(pastDay.Id);
+            if (pastLast?.Type == EntryType.CheckIn)
+                return pastDay;
         }
 
         return today;

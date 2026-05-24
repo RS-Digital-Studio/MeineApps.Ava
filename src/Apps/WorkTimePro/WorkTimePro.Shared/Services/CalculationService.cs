@@ -63,9 +63,13 @@ public sealed class CalculationService : ICalculationService
 
     public async Task RecalculatePauseTimeAsync(WorkDay workDay)
     {
+        // Daten EINMAL laden und durchreichen — vermeidet Doppel-Load
+        // (vorher: pauses 2× geladen + entries/settings nochmal in ApplyAutoPauseAsync)
         var pauses = await _database.GetPauseEntriesAsync(workDay.Id);
+        var entries = await _database.GetTimeEntriesAsync(workDay.Id);
+        var settings = await _database.GetSettingsAsync();
         RecalculatePauseTime(workDay, pauses);
-        await ApplyAutoPauseAsync(workDay);
+        await ApplyAutoPauseAsync(workDay, entries, pauses, settings);
     }
 
     /// <summary>
@@ -185,10 +189,14 @@ public sealed class CalculationService : ICalculationService
             TargetWorkMinutes = weekTargetMinutes
         };
 
+        // Lookup-Dictionary statt O(n)-FirstOrDefault pro Tag: spart 30+ Compares pro Woche,
+        // wird relevant bei Statistics-Year-Range mit 365 Tagen.
+        var workDaysByDate = workDays.ToDictionary(d => d.Date.Date);
+
         // Process days
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
         {
-            var workDay = workDays.FirstOrDefault(d => d.Date.Date == date.Date);
+            workDaysByDate.TryGetValue(date.Date, out var workDay);
 
             if (workDay == null)
             {
@@ -202,13 +210,7 @@ public sealed class CalculationService : ICalculationService
                     BalanceMinutes = -targetMinutes
                 };
             }
-            else
-            {
-                if (workDay.ActualWorkMinutes == 0 && workDay.BalanceMinutes == 0 && workDay.TargetWorkMinutes > 0)
-                {
-                    workDay.BalanceMinutes = -workDay.TargetWorkMinutes;
-                }
-            }
+            // Legacy-Migration läuft einmalig beim DB-Init (siehe DatabaseService.InitializeDatabaseAsync)
 
             week.Days.Add(workDay);
 
@@ -265,10 +267,13 @@ public sealed class CalculationService : ICalculationService
 
         workMonth.TargetWorkMinutes = monthTargetMinutes;
 
+        // Lookup-Dictionary statt O(n)-FirstOrDefault pro Tag
+        var workDaysByDate = workDays.ToDictionary(d => d.Date.Date);
+
         // Process days
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
         {
-            var workDay = workDays.FirstOrDefault(d => d.Date.Date == date.Date);
+            workDaysByDate.TryGetValue(date.Date, out var workDay);
 
             if (workDay == null)
             {
@@ -282,13 +287,7 @@ public sealed class CalculationService : ICalculationService
                     BalanceMinutes = -targetMinutes
                 };
             }
-            else
-            {
-                if (workDay.ActualWorkMinutes == 0 && workDay.BalanceMinutes == 0 && workDay.TargetWorkMinutes > 0)
-                {
-                    workDay.BalanceMinutes = -workDay.TargetWorkMinutes;
-                }
-            }
+            // Legacy-Migration läuft einmalig beim DB-Init (siehe DatabaseService.InitializeDatabaseAsync)
 
             workMonth.Days.Add(workDay);
 

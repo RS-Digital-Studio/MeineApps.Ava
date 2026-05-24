@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.Localization;
 using WorkTimePro.Models;
 
@@ -96,42 +97,42 @@ public sealed class ReminderService : IReminderService, IDisposable
         }
     }
 
-    private async void OnStatusChanged(object? sender, TrackingStatus status)
+    private void OnStatusChanged(object? sender, TrackingStatus status)
     {
-        try
+        // EventHandler-Signatur ist void → Forget mit zentraler Fehlerbehandlung
+        // (vorher: async void mit try/catch → schluckte Exceptions ohne sichtbares Logging-Format)
+        ForgetExtensions.RunForget(() => HandleStatusChangedAsync(status));
+    }
+
+    private async Task HandleStatusChangedAsync(TrackingStatus status)
+    {
+        var settings = await _database.GetSettingsAsync();
+
+        switch (status)
         {
-            var settings = await _database.GetSettingsAsync();
+            case TrackingStatus.Working:
+                // Eingecheckt → Morgen-Reminder canceln, Timer starten
+                await _notification.CancelNotificationAsync(MorningReminderId);
+                StartPauseTimer(settings);
+                StartOvertimeTimer(settings);
+                break;
 
-            switch (status)
-            {
-                case TrackingStatus.Working:
-                    // Eingecheckt → Morgen-Reminder canceln, Timer starten
-                    await _notification.CancelNotificationAsync(MorningReminderId);
-                    StartPauseTimer(settings);
-                    StartOvertimeTimer(settings);
-                    break;
+            case TrackingStatus.OnBreak:
+                // In Pause → Pause-Timer stoppen (Overtime läuft weiter)
+                StopPauseTimer();
+                break;
 
-                case TrackingStatus.OnBreak:
-                    // In Pause → Pause-Timer stoppen (Overtime läuft weiter)
-                    StopPauseTimer();
-                    break;
-
-                case TrackingStatus.Idle:
-                    // Ausgecheckt → Abend-Reminder canceln, alle Timer stoppen
-                    await _notification.CancelNotificationAsync(EveningReminderId);
-                    StopPauseTimer();
-                    StopOvertimeTimer();
-                    // Morgen/Abend für nächsten Tag planen
-                    await ScheduleMorningReminderAsync(settings);
-                    await ScheduleEveningReminderAsync(settings);
-                    // Wochenzusammenfassung planen
-                    await ScheduleWeeklyReminderAsync(settings);
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"ReminderService.OnStatusChanged Fehler: {ex.Message}");
+            case TrackingStatus.Idle:
+                // Ausgecheckt → Abend-Reminder canceln, alle Timer stoppen
+                await _notification.CancelNotificationAsync(EveningReminderId);
+                StopPauseTimer();
+                StopOvertimeTimer();
+                // Morgen/Abend für nächsten Tag planen
+                await ScheduleMorningReminderAsync(settings);
+                await ScheduleEveningReminderAsync(settings);
+                // Wochenzusammenfassung planen
+                await ScheduleWeeklyReminderAsync(settings);
+                break;
         }
     }
 

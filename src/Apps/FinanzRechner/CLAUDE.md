@@ -184,6 +184,60 @@ CurrencyHelper.Configure(CurrencySettings.Presets.First(p => p.CurrencyCode == c
 16 Währungs-Presets. Symbol-Position und Dezimalformat automatisch korrekt.
 Konfiguration ist global — kein Service, kein DI nötig.
 
+**Overloads für decimal + double:** `Format`, `FormatSigned`, `FormatCompactSigned`,
+`FormatAxis`, `FormatInvariant` existieren beide Varianten. Datenebene (Models, Services,
+Datenebenen-VMs) nutzen `decimal`. Calculator-VMs (Math.Pow-basiert) nutzen `double` für
+Eingaben und konvertieren intern wenn nötig. Bei Aufrufen mit Literal `0` ist Disambiguierung
+nötig: `CurrencyHelper.Format(0m)` statt `Format(0)`.
+
+### Geldwerte-Typ-Konvention (decimal)
+
+Datenebene: **decimal** für alle Geldwerte. Models (`Expense.Amount`, `Account.InitialBalance`,
+`Budget.MonthlyLimit`, `DebtEntry.*`, `SavingsGoal.*`, `RecurringTransaction.Amount`),
+Services (`GetTotalExpensesAsync` → `Task<decimal>`, `AccountBalance.CurrentBalance` etc.),
+ViewModel-Felder mit Geld-Semantik (`MonthlyIncome/Expenses/Balance`, `TotalBudgetLimit`,
+`NetWorth`, `TotalDebt`, `TotalSaved`, `LastMonthExpenses`).
+
+**Calculator-Math bleibt double:** `FinanceEngine.CalculateXxx` nutzt `double` für `Math.Pow`
+(Zinseszins-Formel, Tilgungsplan, Inflation). Result-Records (`CompoundInterestResult`,
+`LoanResult`, etc.) bleiben `double`. Calculator-ViewModels (`CompoundInterestViewModel.Principal`,
+`LoanViewModel.LoanAmount`) bleiben `double` als User-Eingabe — NaN/Infinity-Guards via
+`double.IsFinite()` PFLICHT vor `_financeEngine.CalculateXxx`.
+
+**System.Text.Json:** deserialisiert alte JSON-Backups (mit `double`-Werten) automatisch in
+`decimal`-Properties — keine Migration nötig.
+
+**ProgressPercent / RemainingAmount:** Computed-Properties die mit `decimal` rechnen müssen
+`100m` / `0m` als Literal nutzen (sonst Compiler-Fehler "/ kann nicht auf decimal+double").
+
+### Theme-Tokens für Income/Expense/Transfer
+
+App-eigene Semantic-Brushes in `Themes/AppPalette.axaml`:
+
+```xml
+<SolidColorBrush x:Key="IncomeBrush" Color="#22C55E"/>
+<SolidColorBrush x:Key="ExpenseBrush" Color="#EF4444"/>
+<SolidColorBrush x:Key="TransferBrush" Color="#06B6D4"/>
+<SolidColorBrush x:Key="IncomeBackgroundBrush"  Color="#3322C55E"/>  <!-- 20% Alpha -->
+<SolidColorBrush x:Key="ExpenseBackgroundBrush" Color="#33EF4444"/>
+<SolidColorBrush x:Key="TransferBackgroundBrush" Color="#3306B6D4"/>
+```
+
+NIEMALS Hex-Literale für Income/Expense in Views — IMMER `{DynamicResource IncomeBrush}`
+etc. damit Marketing-Änderungen zentral greifen.
+
+### Atomic File-Persistenz
+
+Alle Service-Save-Methoden nutzen `MeineApps.Core.Ava.Services.AtomicFileWriter`:
+
+```csharp
+var json = JsonSerializer.Serialize(_data, _jsonOptions);
+await AtomicFileWriter.WriteAllTextAsync(_filePath, json);
+```
+
+Pattern: Schreibe in `{path}.tmp`, dann `File.Move(.tmp, target, overwrite)`. Atomar gegen
+Crash/Power-Loss. Vorher pro-Service dupliziert — jetzt zentraler Helper.
+
 ---
 
 ## Daten-Modell
@@ -333,6 +387,36 @@ Pfade wenn StorageProvider nicht verfügbar.
 Alle DynamicResource-Keys identisch zu anderen Apps. App-spezifisches Palette in
 `Themes/AppPalette.axaml` (per `<StyleInclude />` in App.axaml). Design-Tokens aus
 `MeineApps.Core.Ava/Themes/ThemeColors.axaml`. Kein dynamischer Theme-Wechsel.
+
+### HomeView 60-fps-Timer
+
+Der Dashboard-Hintergrund läuft auf einem 60-fps DispatcherTimer. Avalonia 12 detacht
+`IsVisible="False"`-Tabs NICHT aus dem Visual Tree → ohne Schutz würde der Timer beim
+Wechsel auf Tracker/Stats/Settings weitertick'ten. `HomeView.UpdateTimerState()`
+abonniert `MainViewModel.IsHomeActive`/`SelectedTab` und stoppt/startet den Timer
+synchron — Akku/CPU bleiben bei Tab-Wechsel auf 0.
+
+### DateTime — Idempotenz vs. User-Anzeige
+
+`ProcessDueRecurringTransactionsAsync` nutzt `DateTime.UtcNow.Date` als Idempotenz-Schlüssel
+(`last_processed.txt`). Reisen durch Zeitzonen erzeugen keine Doppel-Verarbeitung. Das
+Buchungs-Datum (`Expense.Date`) bleibt lokal — User-Erwartung "am 15. des Monats" bezieht
+sich auf die lokale Uhr.
+
+### CancellationToken-Race bei Insights
+
+`MainViewModel.LoadFinancialInsightsAsync` cancelt parallele Aufrufe via
+`_insightsCts.Token`. Der Token wird an `IFinancialAnalysisService.GetAllInsightsAsync(ct)`
+weitergereicht (intern via `Task.WhenAll().WaitAsync(ct)`) — schnelle Tab-Wechsel brechen
+laufende Berechnungen ab, statt nur die UI-Update-Phase zu überspringen.
+
+### Compiled Bindings + ItemsRepeater
+
+Alle 18 Views haben `x:CompileBindings="True"` — falsche Property-Bindings fliegen beim
+Build auf. ItemsControl wird NICHT auf ItemsRepeater migriert: F-09 (Clear+Add statt
+`new ObservableCollection(...)`) eliminiert das Re-Mount-Problem; bei realistischen
+User-Datenmengen (< 100 Tagesgruppen, < 30 Transaktionen pro Tag) ist Virtualisierung
+overkill und würde StaggerFadeIn/SwipeToReveal-Behaviors brechen.
 
 ---
 

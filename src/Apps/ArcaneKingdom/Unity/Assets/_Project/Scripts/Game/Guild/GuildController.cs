@@ -27,21 +27,21 @@ namespace ArcaneKingdom.Game.Guild
             _config = config;
         }
 
-        public async UniTask<Result<Domain.Guild.Guild>> CreateGuildAsync(string name, string tag, string slogan, CancellationToken ct = default)
+        public async UniTask<Result<GuildSnapshot>> CreateGuildAsync(string name, string tag, string slogan, CancellationToken ct = default)
         {
             var loadResult = await _save.LoadAsync(ct);
-            if (!loadResult.IsSuccess) return Result<Domain.Guild.Guild>.Failure(loadResult.ErrorMessage ?? "Save load failed");
+            if (!loadResult.IsSuccess) return Result<GuildSnapshot>.Failure(loadResult.ErrorMessage ?? "Save load failed");
 
             var save = loadResult.Value!;
             if (save.Profile.Level < _config.GuildMinPlayerLevel)
-                return Result<Domain.Guild.Guild>.Failure($"Mindestlevel {_config.GuildMinPlayerLevel} fuer Gilden-Gruendung.");
+                return Result<GuildSnapshot>.Failure($"Mindestlevel {_config.GuildMinPlayerLevel} fuer Gilden-Gruendung.");
             if (!save.Currencies.SpendGold(_config.GuildFoundationCost))
-                return Result<Domain.Guild.Guild>.Failure($"Nicht genug Gold ({_config.GuildFoundationCost:N0} benoetigt).");
+                return Result<GuildSnapshot>.Failure($"Nicht genug Gold ({_config.GuildFoundationCost:N0} benoetigt).");
 
             await _save.SaveAsync(save, ct);
 
             // TODO: Firestore Transaction — Tag-Eindeutigkeit pruefen, Gilde anlegen.
-            var guild = new Domain.Guild.Guild(
+            var guild = new GuildSnapshot(
                 id: Guid.NewGuid().ToString("N"),
                 name: name,
                 tag: tag,
@@ -53,7 +53,7 @@ namespace ArcaneKingdom.Game.Guild
             save.Profile.GuildId = guild.Id;
             await _save.SaveAsync(save, ct);
             _analytics.Track("guild_created", new Dictionary<string, object> { ["guild_id"] = guild.Id });
-            return Result<Domain.Guild.Guild>.Success(guild);
+            return Result<GuildSnapshot>.Success(guild);
         }
 
         public async UniTask<Result> RequestJoinAsync(string guildId, CancellationToken ct = default)

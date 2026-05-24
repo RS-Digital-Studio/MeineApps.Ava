@@ -5,11 +5,16 @@ using System.Collections.Generic;
 namespace ArcaneKingdom.Domain.Guild
 {
     /// <summary>
-    /// Gilden-Stammdaten (DESIGN.md Kap. 12). Live-State (Mitglieder, Beitraege) wird im
+    /// Gilden-Snapshot (DESIGN.md Kap. 12). Live-State (Mitglieder, Beitraege) wird im
     /// Backend (Firestore) verwaltet — der Client erhaelt Snapshots.
+    ///
+    /// <para>Hinweis: Klasse heisst absichtlich <c>GuildSnapshot</c> und NICHT
+    /// <c>Guild</c>, damit es keinen Namens-Konflikt mit dem
+    /// <c>ArcaneKingdom.Domain.Guild</c>-Namespace gibt (Compiler-CS0118 in
+    /// referenzierenden Assemblies sonst).</para>
     /// </summary>
     [Serializable]
-    public sealed class Guild
+    public sealed class GuildSnapshot
     {
         public string Id { get; }
         public string Name { get; set; }
@@ -24,7 +29,7 @@ namespace ArcaneKingdom.Domain.Guild
         public Dictionary<string, int> TechTreeLevels { get; }
         public DateTime CreatedAtUtc { get; }
 
-        public Guild(string id, string name, string tag, string leaderId, DateTime createdAtUtc)
+        public GuildSnapshot(string id, string name, string tag, string leaderId, DateTime createdAtUtc)
         {
             if (tag.Length != 5) throw new ArgumentException("Gilden-Tag muss exakt 5 Zeichen lang sein.", nameof(tag));
             if (name.Length is < 3 or > 20) throw new ArgumentException("Gilden-Name muss 3-20 Zeichen lang sein.", nameof(name));

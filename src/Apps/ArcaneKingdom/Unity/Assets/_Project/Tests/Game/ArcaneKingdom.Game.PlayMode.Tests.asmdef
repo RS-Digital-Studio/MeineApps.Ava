@@ -1,0 +1,25 @@
+{
+    "name": "ArcaneKingdom.Game.PlayMode.Tests",
+    "rootNamespace": "ArcaneKingdom.Game.PlayMode.Tests",
+    "references": [
+        "ArcaneKingdom.Core",
+        "ArcaneKingdom.Domain",
+        "ArcaneKingdom.Game",
+        "ArcaneKingdom.UI",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,21 @@
+{
+    "name": "ArcaneKingdom.Game",
+    "rootNamespace": "ArcaneKingdom.Game",
+    "references": [
+        "ArcaneKingdom.Core",
+        "ArcaneKingdom.Domain",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "Unity.InputSystem",
+        "Unity.Localization"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

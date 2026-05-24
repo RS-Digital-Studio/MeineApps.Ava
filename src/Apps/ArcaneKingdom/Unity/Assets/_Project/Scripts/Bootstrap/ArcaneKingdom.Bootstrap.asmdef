@@ -1,0 +1,19 @@
+{
+    "name": "ArcaneKingdom.Bootstrap",
+    "rootNamespace": "ArcaneKingdom.Bootstrap",
+    "references": [
+        "ArcaneKingdom.Core",
+        "ArcaneKingdom.Domain",
+        "ArcaneKingdom.Game",
+        "ArcaneKingdom.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

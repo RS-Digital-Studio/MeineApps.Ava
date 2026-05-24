@@ -1,0 +1,23 @@
+{
+    "name": "ArcaneKingdom.UI",
+    "rootNamespace": "ArcaneKingdom.UI",
+    "references": [
+        "ArcaneKingdom.Core",
+        "ArcaneKingdom.Domain",
+        "ArcaneKingdom.Game",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem",
+        "Unity.Localization",
+        "Unity.UIElements",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

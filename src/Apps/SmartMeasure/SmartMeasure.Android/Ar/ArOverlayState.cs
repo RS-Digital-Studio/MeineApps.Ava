@@ -177,4 +177,27 @@ public sealed class ArOverlayState
 
     /// <summary>True wenn <see cref="ArCaptureActivity"/> aktuell im Tape-Measure-Mode laeuft.</summary>
     public bool IsTapeMeasureMode { get; init; }
+
+    /// <summary>Plan-Kap. 5.9: True wenn der Stakeout-Modus aktiv ist.</summary>
+    public bool IsStakeoutMode { get; init; }
+
+    /// <summary>Distanz zum aktiven Stakeout-Target in Metern. null wenn keine Position
+    /// verfuegbar oder kein Target.</summary>
+    public double? StakeoutDistanceMeters { get; init; }
+
+    /// <summary>Relative Pfeil-Richtung in Grad (0=Vorderseite Kamera/Display, im
+    /// Uhrzeigersinn). Berechnet aus geografischem Bearing - aktuelles Heading. Null wenn
+    /// nicht berechenbar.</summary>
+    public double? StakeoutRelativeBearingDeg { get; init; }
+
+    /// <summary>Anzeige-Label des aktuellen Targets (z.B. "Grenzpunkt 1"). null wenn alle
+    /// Targets erreicht sind.</summary>
+    public string? StakeoutTargetLabel { get; init; }
+
+    /// <summary>Anzahl Targets, die in dieser Session bereits erreicht wurden — fuer
+    /// Fortschritts-Anzeige.</summary>
+    public int StakeoutReachedCount { get; init; }
+
+    /// <summary>Gesamt-Anzahl Targets.</summary>
+    public int StakeoutTotalCount { get; init; }
 }

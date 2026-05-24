@@ -20,15 +20,27 @@
                 <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="12"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <Button Grid.Column="2" Padding="10,6" MinHeight="36" FontSize="11"
-                        Command="{Binding LoadTargetsCommand}"
-                        Background="{DynamicResource BgElevatedBrush}"
-                        Foreground="{DynamicResource SecondaryBrush}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <mi:MaterialIcon Kind="Refresh" Width="14" Height="14" />
-                        <TextBlock Text="Ziele laden" />
-                    </StackPanel>
-                </Button>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                    <Button Padding="10,6" MinHeight="36" FontSize="11"
+                            Command="{Binding LoadTargetsCommand}"
+                            Background="{DynamicResource BgElevatedBrush}"
+                            Foreground="{DynamicResource SecondaryBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Refresh" Width="14" Height="14" />
+                            <TextBlock Text="Ziele laden" />
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="10,6" MinHeight="36" FontSize="11"
+                            Command="{Binding StartArStakeoutCommand}"
+                            Background="{DynamicResource BgElevatedBrush}"
+                            Foreground="{DynamicResource PrimaryBrush}"
+                            ToolTip.Tip="Absteckung in AR-Kamera anzeigen">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="AugmentedReality" Width="14" Height="14" />
+                            <TextBlock Text="AR" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
 

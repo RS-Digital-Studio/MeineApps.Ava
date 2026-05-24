@@ -431,6 +431,10 @@ public sealed partial class ArPointOverlayView : View
         if (_state.TapeMeasureScreenPoints != null && _state.TapeMeasureScreenPoints.Count > 0)
             DrawTapeMeasure(canvas);
 
+        // 6c. Plan-Kap. 5.9: Stakeout-Pfeil im Overlay-Zentrum + Distanz + Target-Label
+        if (_state.IsStakeoutMode)
+            DrawStakeoutOverlay(canvas, width, height);
+
         // 7. Auto-Close-Ring am ersten Kontur-Punkt
         if (_state.AutoCloseTarget.HasValue)
             DrawAutoCloseRing(canvas, _state.AutoCloseTarget.Value);
@@ -679,6 +683,116 @@ public sealed partial class ArPointOverlayView : View
         // Frame-Updates vom GL-Thread sind nicht garantiert wenn Tracking pausiert.
         if (anyAnimating)
             PostInvalidateDelayed(16);
+    }
+
+    /// <summary>Plan-Kap. 5.9: Stakeout-Overlay — grosser Richtungs-Pfeil (relativ zur
+    /// Kamera-Richtung), Distanz-Label, Target-Label und Fortschritts-Anzeige
+    /// (3/12 Targets). Pfeil-Farbe verschiebt sich von Rot (weit) ueber Gelb (nahe) bis
+    /// Gruen (im Toleranz-Bereich), analog zum 2D-StakeoutRenderer.</summary>
+    private void DrawStakeoutOverlay(Canvas canvas, int width, int height)
+    {
+        var label = _state.StakeoutTargetLabel;
+        var distance = _state.StakeoutDistanceMeters;
+        var relBearing = _state.StakeoutRelativeBearingDeg;
+
+        // Wenn kein Target oder kein Position-Fix: dezenter Hint statt Pfeil-Panik.
+        var cx = width / 2f;
+        var cyArrow = height * 0.42f;
+
+        if (label == null || !distance.HasValue)
+        {
+            // Hinweis-Box statt Pfeil
+            using var paint = new Paint(PaintFlags.AntiAlias)
+            {
+                Color = Color.Argb(220, 30, 30, 30),
+            };
+            var rect = new RectF(cx - 180f * _density, cyArrow - 28f * _density,
+                                 cx + 180f * _density, cyArrow + 28f * _density);
+            canvas.DrawRoundRect(rect, 10f * _density, 10f * _density, paint);
+
+            using var textPaint = new Paint(PaintFlags.AntiAlias)
+            {
+                Color = Color.White,
+                TextSize = 16f * _density,
+                TextAlign = Paint.Align.Center,
+            };
+            var text = label == null
+                ? "🎯 Keine Stakeout-Ziele"
+                : "🎯 Warte auf GPS / VPS …";
+            canvas.DrawText(text, cx, cyArrow + 5f * _density, textPaint);
+            return;
+        }
+
+        // Distanz-abhaengige Farbe (analog 2D-Stakeout: gruen <10cm, gelb <1m, orange <5m, rot >5m)
+        var color = distance.Value switch
+        {
+            < 0.10 => Color.Argb(255, 76, 175, 80),
+            < 1.0  => Color.Argb(255, 255, 235, 59),
+            < 5.0  => Color.Argb(255, 255, 152, 0),
+            _      => Color.Argb(255, 244, 67, 54),
+        };
+
+        // Pfeil-Rendering: relBearing in Grad relativ zur Kamera-Vorwaertsrichtung.
+        // 0 = nach vorne (Top des Displays), 90 = rechts, 180 = unten, -90 = links.
+        // Wenn null (kein Heading): Pfeil zeigt einfach nach oben.
+        using var arrowPaint = new Paint(PaintFlags.AntiAlias) { Color = color };
+        arrowPaint.SetStyle(Paint.Style.Fill);
+
+        canvas.Save();
+        canvas.Translate(cx, cyArrow);
+        if (relBearing.HasValue)
+            canvas.Rotate((float)relBearing.Value);
+
+        // Dreieck als Pfeil (Spitze oben, ca. 80dp lang)
+        var length = 80f * _density;
+        var width2 = 24f * _density;
+        var arrowPath = new global::Android.Graphics.Path();
+        arrowPath.MoveTo(0, -length);
+        arrowPath.LineTo(width2, length * 0.3f);
+        arrowPath.LineTo(width2 * 0.4f, length * 0.3f);
+        arrowPath.LineTo(width2 * 0.4f, length * 0.6f);
+        arrowPath.LineTo(-width2 * 0.4f, length * 0.6f);
+        arrowPath.LineTo(-width2 * 0.4f, length * 0.3f);
+        arrowPath.LineTo(-width2, length * 0.3f);
+        arrowPath.Close();
+        canvas.DrawPath(arrowPath, arrowPaint);
+
+        // Outline
+        using var arrowOutline = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(180, 0, 0, 0),
+            StrokeWidth = 2f * _density,
+        };
+        arrowOutline.SetStyle(Paint.Style.Stroke);
+        canvas.DrawPath(arrowPath, arrowOutline);
+
+        canvas.Restore();
+
+        // Distanz-Label unter dem Pfeil
+        using var distPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.White,
+            TextSize = 32f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+        distPaint.SetShadowLayer(6f, 0f, 2f, Color.Black);
+        var distText = distance.Value < 1.0
+            ? $"{distance.Value * 100:F1} cm"
+            : $"{distance.Value:F2} m";
+        canvas.DrawText(distText, cx, cyArrow + 130f * _density, distPaint);
+
+        // Target-Label + Fortschritt
+        using var lblPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(220, 255, 255, 255),
+            TextSize = 18f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+        lblPaint.SetShadowLayer(4f, 0f, 1f, Color.Black);
+        var progress = _state.StakeoutTotalCount > 0
+            ? $"  ({_state.StakeoutReachedCount}/{_state.StakeoutTotalCount})"
+            : "";
+        canvas.DrawText($"{label}{progress}", cx, cyArrow + 170f * _density, lblPaint);
     }
 
     /// <summary>Plan-Kap. 5.3: Footer im Tape-Modus — Punkt-Anzahl + Strecken-Summe + Hint

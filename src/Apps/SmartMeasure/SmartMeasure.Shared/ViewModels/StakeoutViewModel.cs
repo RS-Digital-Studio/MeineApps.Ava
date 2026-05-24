@@ -66,17 +66,55 @@ public partial class StakeoutViewModel : ViewModelBase
 
     private bool _targetNearTriggered;
 
+    private readonly IArCaptureService _arCaptureService;
+
     public StakeoutViewModel(
         IBleService bleService,
         IProjectService projectService,
-        IGardenPlanService gardenPlanService)
+        IGardenPlanService gardenPlanService,
+        IArCaptureService arCaptureService)
     {
         _bleService = bleService;
         _projectService = projectService;
         _gardenPlanService = gardenPlanService;
+        _arCaptureService = arCaptureService;
 
         _bleService.PositionUpdated += (lat, lon, alt) =>
             Dispatcher.UIThread.Post(() => OnPositionUpdate(lat, lon, alt));
+    }
+
+    /// <summary>Plan-Kap. 5.9: AR-Stakeout starten. Aktuelle Targets werden an die
+    /// ArCaptureActivity uebergeben, dort kann der User per Toolbar-Button auf den
+    /// "Absteck"-Modus umschalten und den Pfeil zum naechsten Ziel sehen. Erreichte
+    /// Targets werden direkt im StakeoutTarget-Objekt (ObservableObject) markiert —
+    /// die Liste im Stakeout-Tab updated sich live mit.</summary>
+    [RelayCommand]
+    public async Task StartArStakeoutAsync()
+    {
+        if (Targets.Count == 0)
+        {
+            StatusText = "Erst Ziele laden, dann AR starten";
+            return;
+        }
+        if (!await _arCaptureService.IsAvailableAsync())
+        {
+            StatusText = "ARCore nicht verfuegbar";
+            return;
+        }
+
+        // Snapshot reichen — die Activity-Logik mutiert Target.IsReached direkt auf den
+        // Listen-Eintraegen, sodass das UI im Stakeout-Tab gleich aktualisiert ist.
+        _arCaptureService.SetStakeoutTargets(Targets.ToList());
+        try
+        {
+            await _arCaptureService.CaptureAsync();
+        }
+        finally
+        {
+            // Targets-Bruecke zuruecksetzen — die naechste AR-Session soll nicht
+            // ueberraschend wieder Stakeout-Ziele zeigen.
+            _arCaptureService.SetStakeoutTargets(null);
+        }
     }
 
     /// <summary>Ziele aus aktuellem Projekt laden: Messpunkte + Garten-Kontur-Knoten.</summary>

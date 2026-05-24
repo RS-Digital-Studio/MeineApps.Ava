@@ -206,6 +206,21 @@ public class CoordinateService : ICoordinateService
         return 2 * EarthRadius * Math.Asin(Math.Sqrt(a));
     }
 
+    public double GetBearing(double lat1, double lon1, double lat2, double lon2)
+    {
+        var phi1 = lat1 * Math.PI / 180.0;
+        var phi2 = lat2 * Math.PI / 180.0;
+        var dLon = (lon2 - lon1) * Math.PI / 180.0;
+
+        var y = Math.Sin(dLon) * Math.Cos(phi2);
+        var x = Math.Cos(phi1) * Math.Sin(phi2)
+              - Math.Sin(phi1) * Math.Cos(phi2) * Math.Cos(dLon);
+
+        var bearing = Math.Atan2(y, x) * 180.0 / Math.PI;
+        if (bearing < 0) bearing += 360.0;
+        return bearing;
+    }
+
     private static char GetUtmBand(double latitude)
     {
         // UTM Band-Buchstaben (C-X, ohne I und O)

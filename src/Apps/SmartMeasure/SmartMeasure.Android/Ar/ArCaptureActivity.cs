@@ -80,6 +80,38 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// auf den Tape-Button geleert.</summary>
     private readonly List<ArPoint> _tapeMeasurePoints = [];
 
+    /// <summary>Plan-Kap. 5.9: Statische Bruecke fuer Stakeout-Targets. Der Caller
+    /// (MainViewModel, StakeoutViewModel) setzt die Liste vor dem Activity-Start;
+    /// ArCaptureActivity liest sie in OnCreate und reset im OnDestroy.</summary>
+    private static readonly object _stakeoutTargetsLock = new();
+    private static IReadOnlyList<StakeoutTarget>? _pendingStakeoutTargets;
+
+    /// <summary>Wird vom Caller vor <c>StartActivityForResult</c> aufgerufen, damit der
+    /// Stakeout-Modus echte Ziele bekommt.</summary>
+    public static void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets)
+    {
+        lock (_stakeoutTargetsLock) _pendingStakeoutTargets = targets;
+    }
+
+    /// <summary>Stakeout-Ziele dieser Session (Snapshot zu OnCreate). Veraenderungen an
+    /// <see cref="StakeoutTarget.IsReached"/> sind sichtbar fuer den UI-Layer weil
+    /// StakeoutTarget ein <c>ObservableObject</c> ist.</summary>
+    private IReadOnlyList<StakeoutTarget>? _stakeoutTargets;
+
+    /// <summary>Schwellwert fuer Target-erreicht in Metern (Plan-Kap. 5.9: 10 cm).</summary>
+    private const double StakeoutReachedThresholdMeters = 0.10;
+
+    /// <summary>Letzte Distanz zum aktiven Target — verhindert Spam-Haptic wenn der User
+    /// gerade ueber das Target hinausschwankt. Erst nach Verlassen erneut feuern.</summary>
+    private double _stakeoutLastDistance = double.PositiveInfinity;
+
+    /// <summary>Letzte berechnete Distanz/Bearing/Label des aktiven Targets. GL-Thread
+    /// schreibt unter _stakeoutSnapshotLock, BuildOverlayState liest.</summary>
+    private readonly object _stakeoutSnapshotLock = new();
+    private double? _stakeoutCurrentDistance;
+    private double? _stakeoutCurrentRelativeBearingDeg;
+    private string? _stakeoutCurrentTargetLabel;
+
     // Sensordaten zum Session-Start. _magneticHeading wird Cross-Thread geschrieben
     // (Sensor-Thread) und gelesen (GL-/UI-Thread) — Nullable<float> ist ein 8-Byte-Struct
     // und damit NICHT atomic. Lösung: int-Bits eines float, NaN = "kein Wert", via
@@ -326,6 +358,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // mid-session passieren nicht — die AR-Activity laeuft als Modal-Fullscreen.
         _overlayLabels = LoadLocalizedLabels();
 
+        // Stakeout-Targets aus statischer Bruecke uebernehmen (Plan-Kap. 5.9).
+        lock (_stakeoutTargetsLock) _stakeoutTargets = _pendingStakeoutTargets;
+
         // Sample-Count an Gerät anpassen — auf leistungsstarken Chips mehr Samples
         // für höhere Präzision innerhalb der 800ms-Timeout
         _effectiveMultiFrameSampleTargetCount = IsHighEndDevice() ? 15 : 10;
@@ -381,6 +416,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private Button? _btnPoint;
     private Button? _btnContour;
     private Button? _btnTape;
+    private Button? _btnStakeout;
 
     // Toolbar-Referenz für Nav-Bar-Safe-Area-Update bei OnApplyWindowInsets
     private HorizontalScrollView? _toolbarScrollView;
@@ -455,6 +491,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 ResetTapeMeasure();
             };
         }
+        // Plan-Kap. 5.9: Stakeout-Modus \u2014 nur sinnvoll wenn Targets vorhanden sind.
+        // Sonst zeigen wir trotzdem den Button, aber mit Hint beim Aktivieren.
+        _btnStakeout = AddToolbarButton(toolbar, "\uD83C\uDFAF Absteck", density,
+            () => { VibrateLight(); SetMode(CaptureMode.Stakeout); },
+            tooltip: "Stakeout: Pfeil zum naechsten Ziel");
         AddToolbarButton(toolbar, "\u25EF Schließen", density,
             () => { VibrateMedium(); CloseActiveContour(); },
             tooltip: "Aktive Kontur schließen (mind. 3 Punkte)");
@@ -605,13 +646,27 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 CaptureMode.Contour => "Modus: Linie",
                 CaptureMode.TapeMeasure => "Modus: Maßband",
+                CaptureMode.Stakeout => "Modus: Absteck",
                 _ => "Modus: Punkt",
             };
+
+        // Stakeout: Hint wenn keine Targets bereitstehen (Plan-Kap. 5.9)
+        if (mode == CaptureMode.Stakeout)
+        {
+            var hasTargets = _stakeoutTargets != null && _stakeoutTargets.Count > 0;
+            if (!hasTargets)
+                ShowTransientHint("🎯 Keine Stakeout-Ziele — aus Stakeout-Tab oeffnen");
+            // Reset Cooldown-Distanz bei Mode-Aktivierung
+            _stakeoutLastDistance = double.PositiveInfinity;
+        }
 
         _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point
             ? Color.Argb(220, 255, 107, 0)    // Aktiv: kräftiges Orange
             : Color.Argb(80, 255, 255, 255));  // Inaktiv: dezent
         _btnTape?.SetBackgroundColor(mode == CaptureMode.TapeMeasure
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
+        _btnStakeout?.SetBackgroundColor(mode == CaptureMode.Stakeout
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
         _btnContour?.SetBackgroundColor(mode == CaptureMode.Contour
@@ -2260,6 +2315,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 // Detection in solchen Frames unzuverlaessig ist.
                 UpdateLightEstimate(frame);
 
+                // Plan-Kap. 5.9: Stakeout-Distanz + Pfeil-Richtung pro Frame neu berechnen.
+                if (_captureMode == CaptureMode.Stakeout)
+                    UpdateStakeout();
+
                 // Plan 3.3: Recovery-Punkte wieder mit Earth-Anchors verknüpfen, sobald
                 // Geospatial aktiv ist. Limitiert auf 2 Re-Attaches pro Frame, damit auch
                 // ein 100-Punkt-Restore die Render-Loop nicht blockt.
@@ -3837,7 +3896,27 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             TapeMeasureSegmentMeters = BuildTapeMeasureSegmentMeters(),
             TapeMeasureTotalMeters = ComputeTapeMeasureTotalMetersLocked(),
             IsTapeMeasureMode = _captureMode == CaptureMode.TapeMeasure,
+            // Plan-Kap. 5.9: Stakeout-Daten fuer das Overlay
+            IsStakeoutMode = _captureMode == CaptureMode.Stakeout,
+            StakeoutDistanceMeters = ReadStakeoutDistance(),
+            StakeoutRelativeBearingDeg = ReadStakeoutBearing(),
+            StakeoutTargetLabel = ReadStakeoutLabel(),
+            StakeoutReachedCount = _stakeoutTargets?.Count(t => t.IsReached) ?? 0,
+            StakeoutTotalCount = _stakeoutTargets?.Count ?? 0,
         };
+    }
+
+    private double? ReadStakeoutDistance()
+    {
+        lock (_stakeoutSnapshotLock) return _stakeoutCurrentDistance;
+    }
+    private double? ReadStakeoutBearing()
+    {
+        lock (_stakeoutSnapshotLock) return _stakeoutCurrentRelativeBearingDeg;
+    }
+    private string? ReadStakeoutLabel()
+    {
+        lock (_stakeoutSnapshotLock) return _stakeoutCurrentTargetLabel;
     }
 
     /// <summary>Snapshot der projizierten Tape-Measure-Punkte (Plan-Kap. 5.3) — sicheres
@@ -3880,6 +3959,104 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         for (var i = 1; i < _tapeMeasurePoints.Count; i++)
             total += _tapeMeasurePoints[i].DistanceTo(_tapeMeasurePoints[i - 1]);
         return total;
+    }
+
+    /// <summary>Plan-Kap. 5.9: Pro Frame Distanz + Bearing zum naechsten Stakeout-Target
+    /// neu berechnen. Aktuelle Position aus Geospatial-Pose (bevorzugt) oder RTK-Snapshot;
+    /// bei &lt;10cm wird Target.IsReached gesetzt und das naechste angesteuert.</summary>
+    private void UpdateStakeout()
+    {
+        if (_stakeoutTargets == null || _stakeoutTargets.Count == 0) return;
+
+        // Aktuelle Position: Geospatial-Pose zuerst (VPS), sonst RTK-Snapshot, sonst
+        // die initialen GPS-Werte (Activity-Start) — die letzteren bringen aber wenig,
+        // weil sie sich nicht aendern. Realistisch braucht Stakeout entweder Geospatial-
+        // Tracking oder einen aktiven RTK-Rover.
+        double? curLat = null, curLon = null;
+        double? curHeadingDeg = null;
+
+        var geoSnap = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
+        if (geoSnap != null)
+        {
+            curLat = geoSnap.Latitude;
+            curLon = geoSnap.Longitude;
+            curHeadingDeg = geoSnap.Heading;
+        }
+        else if (_bleService is { IsConnected: true } && _bleService.CurrentState.FixQuality >= 4)
+        {
+            var s = _bleService.CurrentState;
+            curLat = s.Latitude;
+            curLon = s.Longitude;
+            curHeadingDeg = _magneticHeading;
+        }
+
+        if (!curLat.HasValue || !curLon.HasValue)
+        {
+            lock (_stakeoutSnapshotLock)
+            {
+                _stakeoutCurrentDistance = null;
+                _stakeoutCurrentRelativeBearingDeg = null;
+                _stakeoutCurrentTargetLabel = null;
+            }
+            return;
+        }
+
+        // Naechstes unerreichtes Target
+        StakeoutTarget? target = null;
+        foreach (var t in _stakeoutTargets)
+        {
+            if (!t.IsReached) { target = t; break; }
+        }
+
+        if (target == null)
+        {
+            lock (_stakeoutSnapshotLock)
+            {
+                _stakeoutCurrentDistance = null;
+                _stakeoutCurrentRelativeBearingDeg = null;
+                _stakeoutCurrentTargetLabel = null;
+            }
+            return;
+        }
+
+        var coords = App.Services?.GetService<ICoordinateService>();
+        if (coords == null) return;
+
+        var distanceM = coords.HaversineDistance(curLat.Value, curLon.Value, target.Latitude, target.Longitude);
+        var bearingTrue = coords.GetBearing(curLat.Value, curLon.Value, target.Latitude, target.Longitude);
+
+        // Relative Pfeil-Richtung = Bearing zum Target minus aktuelles Heading (Camera-Forward = "vorne")
+        double? relBearing = null;
+        if (curHeadingDeg.HasValue)
+        {
+            relBearing = bearingTrue - curHeadingDeg.Value;
+            // Normalisieren auf -180..180
+            while (relBearing > 180) relBearing -= 360;
+            while (relBearing < -180) relBearing += 360;
+        }
+
+        // Best-Distance fortschreiben
+        if (distanceM < target.BestDistance) target.BestDistance = distanceM;
+
+        // Reached-Detection mit Hysterese: erst feuern wenn der User von "weit weg"
+        // (>= 30cm) auf "<=10cm" geht — verhindert Wackler an der Schwelle.
+        if (_stakeoutLastDistance > 0.30 && distanceM <= StakeoutReachedThresholdMeters)
+        {
+            target.IsReached = true;
+            RunOnUiThread(() =>
+            {
+                VibrateMedium();
+                ShowTransientHint($"🎯 {target.Label} erreicht! (Distanz {distanceM * 100:F1} cm)");
+            });
+        }
+        _stakeoutLastDistance = distanceM;
+
+        lock (_stakeoutSnapshotLock)
+        {
+            _stakeoutCurrentDistance = distanceM;
+            _stakeoutCurrentRelativeBearingDeg = relBearing;
+            _stakeoutCurrentTargetLabel = target.Label;
+        }
     }
 
     /// <summary>Plan-Kap. 5.3: Tape-Buffer leeren — Long-Click auf den Mass-Button.</summary>
@@ -3997,7 +4174,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         /// <summary>Ad-hoc-Messmodus (Apple-Measure-Klon, Plan-Kap. 5.3): Punkte werden
         /// in einem separaten Buffer gehalten, NICHT ins Projekt uebertragen. Polylinie
         /// + Distanz-Labels zwischen Punkten + Gesamtsumme im Footer.</summary>
-        TapeMeasure
+        TapeMeasure,
+        /// <summary>Plan-Kap. 5.9: Absteck-Modus. Zeigt Pfeil + Distanz zum naechsten
+        /// unerreichten Stakeout-Target. Bei &lt;10cm wird das Target als erreicht markiert.</summary>
+        Stakeout
     }
 
     #region Undo/Redo Actions

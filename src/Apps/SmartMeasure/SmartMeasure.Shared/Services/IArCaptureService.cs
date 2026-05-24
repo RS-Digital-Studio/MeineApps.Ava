@@ -36,4 +36,9 @@ public interface IArCaptureService
     /// <see cref="LastCompletionStatus"/> = <see cref="ArCaptureCompletionStatus.Error"/>.
     /// Bei <see cref="ArCaptureCompletionStatus.UserCancelled"/> null.</summary>
     string? LastError { get; }
+
+    /// <summary>Plan-Kap. 5.9: Stakeout-Targets fuer die naechste AR-Session vorbereiten.
+    /// Muss vor <see cref="CaptureAsync"/> gesetzt werden. Wird beim Activity-Start
+    /// uebernommen. Null = Stakeout-Mode in der Activity ist leer (Hint statt Pfeil).</summary>
+    void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets);
 }

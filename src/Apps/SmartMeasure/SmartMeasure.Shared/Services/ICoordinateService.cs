@@ -39,4 +39,9 @@ public interface ICoordinateService
 
     /// <summary>Abstand zwischen zwei WGS84-Punkten in Metern (Haversine)</summary>
     double HaversineDistance(double lat1, double lon1, double lat2, double lon2);
+
+    /// <summary>Geografisches Bearing (initiale Peilung) vom ersten zum zweiten Punkt in Grad
+    /// (0..360, 0=Nord, 90=Ost). Forward-Azimuth via spheroidischer Trigonometrie —
+    /// ausreichend genau fuer Stakeout im Garten-Massstab. Plan-Kap. 5.9.</summary>
+    double GetBearing(double lat1, double lon1, double lat2, double lon2);
 }

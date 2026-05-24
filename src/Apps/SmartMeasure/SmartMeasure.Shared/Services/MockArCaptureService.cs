@@ -34,6 +34,10 @@ public class MockArCaptureService : IArCaptureService
     /// <summary>Mock liefert nie einen Fehler. Plan Kap. 4.3.</summary>
     public string? LastError => null;
 
+    /// <summary>Mock zeigt keinen AR-Pfeil — Stakeout-Targets werden ignoriert.
+    /// Plan Kap. 5.9.</summary>
+    public void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets) { /* no-op */ }
+
     public Task<bool> IsAvailableAsync() => Task.FromResult(true);
 
     public async Task<ArCaptureResult?> CaptureAsync()

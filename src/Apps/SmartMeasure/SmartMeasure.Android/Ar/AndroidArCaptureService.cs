@@ -35,6 +35,12 @@ public sealed class AndroidArCaptureService : IArCaptureService
     /// <summary>Plan Kap. 4.3: Status der letzten Capture-Operation.</summary>
     public ArCaptureCompletionStatus LastCompletionStatus { get; private set; }
 
+    /// <summary>Plan Kap. 5.9: Delegiert an die statische Bruecke in
+    /// <see cref="ArCaptureActivity.SetStakeoutTargets"/>, die die Targets in OnCreate
+    /// uebernimmt.</summary>
+    public void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets)
+        => ArCaptureActivity.SetStakeoutTargets(targets);
+
     public AndroidArCaptureService(Activity activity)
     {
         _activity = activity;

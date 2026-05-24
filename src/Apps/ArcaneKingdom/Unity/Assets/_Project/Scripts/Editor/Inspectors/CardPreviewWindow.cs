@@ -25,7 +25,19 @@ namespace ArcaneKingdom.EditorTools.Inspectors
             GetWindow<CardPreviewWindow>("Cards").Refresh();
         }
 
-        private void OnEnable() => Refresh();
+        private void OnEnable()
+        {
+            // Defensive: NICHT direkt im OnEnable refreshen — kann crashen wenn das
+            // Window beim Editor-Open noch im Layout liegt und Assets gerade
+            // importiert/reloaded werden. DelayCall wartet bis stabile Editor-Phase.
+            EditorApplication.delayCall += SafeRefresh;
+        }
+
+        private void SafeRefresh()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            try { Refresh(); } catch (System.Exception ex) { Debug.LogWarning($"[CardPreview] Refresh skipped: {ex.Message}"); }
+        }
 
         public void Refresh()
         {

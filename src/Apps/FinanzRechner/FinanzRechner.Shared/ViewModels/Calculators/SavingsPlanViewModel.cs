@@ -172,7 +172,11 @@ public sealed partial class SavingsPlanViewModel : ViewModelBase, IDisposable
     private void Calculate()
     {
         ErrorMessage = null;
-        if (MonthlyDeposit < 0 || Years <= 0)
+        // NaN/Infinity-Schutz fuer alle Math.Pow-Eingaben
+        if (!double.IsFinite(MonthlyDeposit) || MonthlyDeposit < 0
+            || !double.IsFinite(InitialDeposit) || InitialDeposit < 0
+            || !double.IsFinite(AnnualRate) || AnnualRate < 0
+            || Years <= 0 || Years > 100)
         {
             HasResult = false;
             return;

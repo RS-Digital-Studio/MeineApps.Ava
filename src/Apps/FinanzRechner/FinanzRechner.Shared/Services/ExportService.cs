@@ -26,12 +26,22 @@ public sealed class ExportService : IExportService
 
     public async Task<string> ExportToCsvAsync(int year, int month, string? targetPath = null)
     {
+        // Range-Check: schuetzt vor sinnlosen Aufrufen und liefert klare Fehlermeldung
+        if (year < 1900 || year > 2200)
+            throw new ArgumentOutOfRangeException(nameof(year), "Jahr muss zwischen 1900 und 2200 liegen.");
+        if (month < 1 || month > 12)
+            throw new ArgumentOutOfRangeException(nameof(month), "Monat muss zwischen 1 und 12 liegen.");
+
         var expenses = await _expenseService.GetExpensesByMonthAsync(year, month);
         return await GenerateCsvAsync(expenses, $"transactions_{year}_{month:D2}", targetPath);
     }
 
     public async Task<string> ExportToCsvAsync(DateTime startDate, DateTime endDate, string? targetPath = null)
     {
+        // Vertauschte Bereiche silently swappen statt leere Datei zu produzieren —
+        // der User hat trotzdem die Daten exportiert, die er sehen wollte.
+        if (endDate < startDate) (startDate, endDate) = (endDate, startDate);
+
         var filter = new ExpenseFilter { StartDate = startDate, EndDate = endDate };
         var expenses = await _expenseService.GetExpensesAsync(filter);
         var fileName = $"transactions_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
@@ -95,6 +105,8 @@ public sealed class ExportService : IExportService
 
     public Task<string> ExportStatisticsToPdfAsync(string period, DateTime startDate, DateTime endDate, string? targetPath = null)
     {
+        // Vertauschte Bereiche silently swappen — User-Friendly Fallback
+        if (endDate < startDate) (startDate, endDate) = (endDate, startDate);
         return ExportStatisticsToPdfInternal(period, startDate, endDate, targetPath);
     }
 

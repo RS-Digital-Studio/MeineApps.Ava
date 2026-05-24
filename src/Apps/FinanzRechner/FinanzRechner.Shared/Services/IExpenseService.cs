@@ -19,7 +19,7 @@ public interface IExpenseService
     Task<bool> UpdateExpenseAsync(Expense expense);
     Task<bool> DeleteExpenseAsync(string id);
     Task<MonthSummary> GetMonthSummaryAsync(int year, int month);
-    Task<double> GetTotalExpensesAsync(DateTime startDate, DateTime endDate);
+    Task<decimal> GetTotalExpensesAsync(DateTime startDate, DateTime endDate);
     Task ClearAllExpensesAsync();
 
     // Budget-Verwaltung

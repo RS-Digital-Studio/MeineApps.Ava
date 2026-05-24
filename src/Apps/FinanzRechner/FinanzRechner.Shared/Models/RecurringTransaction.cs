@@ -21,7 +21,7 @@ public class RecurringTransaction
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Description { get; set; } = string.Empty;
-    public double Amount { get; set; }
+    public decimal Amount { get; set; }
     public ExpenseCategory Category { get; set; }
     public TransactionType Type { get; set; }
     public string? Note { get; set; }
@@ -33,9 +33,18 @@ public class RecurringTransaction
     public bool IsActive { get; set; } = true;
 
     public string CategoryName => Category.ToString();
-    public string AmountDisplay => Type == TransactionType.Expense
-        ? $"-{CurrencyHelper.Format(Amount)}"
-        : $"+{CurrencyHelper.Format(Amount)}";
+
+    /// <summary>
+    /// Anzeige des Betrags mit Vorzeichen oder Transfer-Markierung.
+    /// Transfers (Umbuchungen) als neutrale Pfeil-Darstellung.
+    /// </summary>
+    public string AmountDisplay => Type switch
+    {
+        TransactionType.Expense => $"-{CurrencyHelper.Format(Amount)}",
+        TransactionType.Income => $"+{CurrencyHelper.Format(Amount)}",
+        TransactionType.Transfer => $"↔ {CurrencyHelper.Format(Amount)}",
+        _ => CurrencyHelper.Format(Amount)
+    };
 
     public DateTime GetNextDueDate()
     {

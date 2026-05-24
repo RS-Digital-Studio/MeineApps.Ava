@@ -143,7 +143,9 @@ public sealed partial class YieldViewModel : ViewModelBase, IDisposable
     private void Calculate()
     {
         ErrorMessage = null;
-        if (InitialInvestment <= 0 || FinalValue <= 0 || Years <= 0)
+        if (!double.IsFinite(InitialInvestment) || InitialInvestment <= 0
+            || !double.IsFinite(FinalValue) || FinalValue <= 0
+            || Years <= 0 || Years > 100)
         {
             HasResult = false;
             return;

@@ -24,8 +24,8 @@ public sealed partial class SavingsGoalsViewModel : ViewModelBase
 
     public ObservableCollection<SavingsGoal> Goals { get; } = [];
 
-    [ObservableProperty] private double _totalSaved;
-    [ObservableProperty] private string _totalSavedDisplay = CurrencyHelper.Format(0);
+    [ObservableProperty] private decimal _totalSaved;
+    [ObservableProperty] private string _totalSavedDisplay = CurrencyHelper.Format(0m);
     [ObservableProperty] private bool _hasGoals;
     [ObservableProperty] private bool _showAddDialog;
     [ObservableProperty] private bool _showAdjustDialog;
@@ -106,10 +106,12 @@ public sealed partial class SavingsGoalsViewModel : ViewModelBase
     private async Task SaveGoalAsync()
     {
         if (string.IsNullOrWhiteSpace(EditName)) return;
-        if (!double.TryParse(EditTargetAmount, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var target) || target <= 0)
+        // decimal-Parse: Cent-genaue Sparziele, MaxAmount-Clamp gegen ValidateGoal-Throw
+        if (!decimal.TryParse(EditTargetAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var target)
+            || target <= 0m || target > 999_999_999.99m)
             return;
-        double.TryParse(EditCurrentAmount, System.Globalization.NumberStyles.Any,
+        decimal.TryParse(EditCurrentAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var current);
 
         try
@@ -166,8 +168,9 @@ public sealed partial class SavingsGoalsViewModel : ViewModelBase
     private async Task ConfirmAdjustAsync()
     {
         if (_adjustingGoalId == null) return;
-        if (!double.TryParse(AdjustAmount, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var amount) || amount <= 0)
+        if (!decimal.TryParse(AdjustAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var amount)
+            || amount <= 0m || amount > 999_999_999.99m)
             return;
 
         var adjustedAmount = AdjustIsDeposit ? amount : -amount;

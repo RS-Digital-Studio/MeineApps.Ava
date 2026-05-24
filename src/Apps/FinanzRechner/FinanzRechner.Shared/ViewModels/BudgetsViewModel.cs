@@ -102,13 +102,13 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _showAddBudget;
     [ObservableProperty] private bool _isEditing;
     [ObservableProperty] private ExpenseCategory _selectedCategory;
-    [ObservableProperty] private double _monthlyLimit = 500;
-    [ObservableProperty] private double _warningThreshold = 80;
+    [ObservableProperty] private decimal _monthlyLimit = 500m;
+    [ObservableProperty] private decimal _warningThreshold = 80m;
 
     // Gesamt-Monatsbudget
-    [ObservableProperty] private double _totalBudgetLimit;
-    [ObservableProperty] private double _totalBudgetSpent;
-    [ObservableProperty] private double _totalBudgetPercentage;
+    [ObservableProperty] private decimal _totalBudgetLimit;
+    [ObservableProperty] private decimal _totalBudgetSpent;
+    [ObservableProperty] private decimal _totalBudgetPercentage;
     [ObservableProperty] private bool _hasTotalBudget;
 
     /// <summary>Budget-Verbrauch als 0.0-1.0 für SkiaGradientRing (geclampt auf 0-1).</summary>
@@ -118,15 +118,15 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isBudgetCritical;
 
     /// <summary>True wenn Gesamt-Budget überschritten (> 100%)</summary>
-    public bool IsTotalBudgetOverLimit => TotalBudgetPercentage > 100;
+    public bool IsTotalBudgetOverLimit => TotalBudgetPercentage > 100m;
 
-    partial void OnTotalBudgetPercentageChanged(double value)
+    partial void OnTotalBudgetPercentageChanged(decimal value)
         => OnPropertyChanged(nameof(IsTotalBudgetOverLimit));
 
-    partial void OnTotalBudgetSpentChanged(double value)
+    partial void OnTotalBudgetSpentChanged(decimal value)
         => OnPropertyChanged(nameof(TotalBudgetSpentDisplay));
 
-    partial void OnTotalBudgetLimitChanged(double value)
+    partial void OnTotalBudgetLimitChanged(decimal value)
         => OnPropertyChanged(nameof(TotalBudgetLimitDisplay));
 
     public List<ExpenseCategory> AvailableCategories { get; } = new()
@@ -164,20 +164,20 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
         {
             TotalBudgetLimit = statuses.Sum(s => s.Limit);
             TotalBudgetSpent = statuses.Sum(s => s.Spent);
-            TotalBudgetPercentage = TotalBudgetLimit > 0
-                ? TotalBudgetSpent / TotalBudgetLimit * 100
-                : 0;
+            TotalBudgetPercentage = TotalBudgetLimit > 0m
+                ? TotalBudgetSpent / TotalBudgetLimit * 100m
+                : 0m;
             HasTotalBudget = true;
 
             // SkiaGradientRing: 0.0-1.0 (geclampt), Puls ab 90%
-            BudgetUsagePercent = Math.Clamp(TotalBudgetPercentage / 100.0, 0.0, 1.0);
-            IsBudgetCritical = TotalBudgetPercentage > 90;
+            BudgetUsagePercent = Math.Clamp((double)TotalBudgetPercentage / 100.0, 0.0, 1.0);
+            IsBudgetCritical = TotalBudgetPercentage > 90m;
         }
         else
         {
-            TotalBudgetLimit = 0;
-            TotalBudgetSpent = 0;
-            TotalBudgetPercentage = 0;
+            TotalBudgetLimit = 0m;
+            TotalBudgetSpent = 0m;
+            TotalBudgetPercentage = 0m;
             HasTotalBudget = false;
             BudgetUsagePercent = 0;
             IsBudgetCritical = false;
@@ -207,10 +207,10 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
         foreach (var status in statuses)
         {
             var percentage = status.PercentageUsed;
-            if (percentage < 80) continue;
+            if (percentage < 80m) continue;
 
             // Eindeutiger Schlüssel für diesen Budget-Alert (Kategorie + Monat + Schwellwert)
-            var threshold = percentage >= 100 ? "100" : "80";
+            var threshold = percentage >= 100m ? "100" : "80";
             var alertKey = $"{status.Category}_{currentMonthKey}_{threshold}";
 
             // Überspringen wenn bereits in diesem Monat benachrichtigt (thread-safe)
@@ -253,8 +253,8 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
     {
         IsEditing = false;
         SelectedCategory = ExpenseCategory.Food;
-        MonthlyLimit = 500;
-        WarningThreshold = 80;
+        MonthlyLimit = 500m;
+        WarningThreshold = 80m;
         ShowAddBudget = true;
     }
 
@@ -267,7 +267,7 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task SaveBudgetAsync()
     {
-        if (MonthlyLimit <= 0)
+        if (MonthlyLimit <= 0m)
         {
             var title = _localizationService.GetString("Error") ?? "Error";
             var message = _localizationService.GetString("ErrorInvalidBudget") ?? "Please enter a valid budget amount.";

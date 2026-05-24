@@ -417,4 +417,50 @@
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Appuyez &#224; nouveau pour quitter</value>
   </data>
+
+  <!-- AR-Capture Stats-Panel + Footer -->
+  <data name="ArStatPoints" xml:space="preserve">
+    <value>POINTS</value>
+  </data>
+  <data name="ArStatArea" xml:space="preserve">
+    <value>SURFACE</value>
+  </data>
+  <data name="ArStatLength" xml:space="preserve">
+    <value>LONGUEUR</value>
+  </data>
+  <data name="ArStatHeightDelta" xml:space="preserve">
+    <value>&#916;H</value>
+  </data>
+  <data name="ArStatAnchors" xml:space="preserve">
+    <value>ANCRAGES</value>
+  </data>
+  <data name="ArStatTime" xml:space="preserve">
+    <value>TEMPS</value>
+  </data>
+  <data name="ArReticleHoldStill" xml:space="preserve">
+    <value>NE BOUGEZ PAS</value>
+  </data>
+  <data name="ArBadgeReady" xml:space="preserve">
+    <value>PR&#202;T</value>
+  </data>
+
+  <!-- AR-Tracking Failure Reasons -->
+  <data name="ArTrackingLost" xml:space="preserve">
+    <value>Suivi perdu</value>
+  </data>
+  <data name="ArTrackingInsufficientLight" xml:space="preserve">
+    <value>Lumi&#232;re insuffisante</value>
+  </data>
+  <data name="ArTrackingInsufficientFeatures" xml:space="preserve">
+    <value>Plus de textures/contours requis</value>
+  </data>
+  <data name="ArTrackingExcessiveMotion" xml:space="preserve">
+    <value>D&#233;placez-vous plus lentement</value>
+  </data>
+  <data name="ArTrackingCameraUnavailable" xml:space="preserve">
+    <value>Cam&#233;ra indisponible</value>
+  </data>
+  <data name="ArTrackingBadState" xml:space="preserve">
+    <value>Erreur de session</value>
+  </data>
 </root>

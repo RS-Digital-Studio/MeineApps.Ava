@@ -26,7 +26,7 @@ public class Account
     public AccountType Type { get; set; } = AccountType.Checking;
 
     /// <summary>Anfangssaldo beim Erstellen des Kontos.</summary>
-    public double InitialBalance { get; set; }
+    public decimal InitialBalance { get; set; }
 
     /// <summary>Emoji-Icon für die Darstellung.</summary>
     public string Icon { get; set; } = "\U0001F3E6"; // Bankgebäude
@@ -51,10 +51,10 @@ public class Account
 /// </summary>
 public record AccountBalance(
     Account Account,
-    double CurrentBalance,
-    double MonthlyIncome,
-    double MonthlyExpenses,
-    double MonthlyBalance)
+    decimal CurrentBalance,
+    decimal MonthlyIncome,
+    decimal MonthlyExpenses,
+    decimal MonthlyBalance)
 {
     public string BalanceDisplay => CurrencyHelper.Format(CurrentBalance);
     public string MonthlyIncomeDisplay => CurrencyHelper.FormatSigned(MonthlyIncome);

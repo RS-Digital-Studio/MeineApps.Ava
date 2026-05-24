@@ -24,11 +24,11 @@ public sealed partial class DebtTrackerViewModel : ViewModelBase
 
     public ObservableCollection<DebtEntry> Debts { get; } = [];
 
-    [ObservableProperty] private double _totalDebt;
-    [ObservableProperty] private string _totalDebtDisplay = CurrencyHelper.Format(0);
-    [ObservableProperty] private double _totalPaid;
-    [ObservableProperty] private string _totalPaidDisplay = CurrencyHelper.Format(0);
-    [ObservableProperty] private double _overallProgress;
+    [ObservableProperty] private decimal _totalDebt;
+    [ObservableProperty] private string _totalDebtDisplay = CurrencyHelper.Format(0m);
+    [ObservableProperty] private decimal _totalPaid;
+    [ObservableProperty] private string _totalPaidDisplay = CurrencyHelper.Format(0m);
+    [ObservableProperty] private decimal _overallProgress;
     [ObservableProperty] private bool _hasDebts;
     [ObservableProperty] private bool _showAddDialog;
     [ObservableProperty] private bool _showPaymentDialog;
@@ -77,7 +77,7 @@ public sealed partial class DebtTrackerViewModel : ViewModelBase
         TotalPaidDisplay = CurrencyHelper.Format(TotalPaid);
 
         var totalOriginal = debts.Sum(d => d.OriginalAmount);
-        OverallProgress = totalOriginal > 0 ? (TotalPaid / totalOriginal) * 100 : 0;
+        OverallProgress = totalOriginal > 0m ? (TotalPaid / totalOriginal) * 100m : 0m;
         HasDebts = Debts.Count > 0;
     }
 
@@ -117,18 +117,20 @@ public sealed partial class DebtTrackerViewModel : ViewModelBase
     private async Task SaveDebtAsync()
     {
         if (string.IsNullOrWhiteSpace(EditName)) return;
-        if (!double.TryParse(EditOriginalAmount, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var original) || original <= 0)
+        // decimal-Parse fuer Cent-genaue Schulden, MaxAmount-Clamp gegen ValidateDebt-Throw
+        if (!decimal.TryParse(EditOriginalAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var original)
+            || original <= 0m || original > 999_999_999.99m)
             return;
 
-        double.TryParse(EditRemainingAmount, System.Globalization.NumberStyles.Any,
+        decimal.TryParse(EditRemainingAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var remaining);
-        double.TryParse(EditInterestRate, System.Globalization.NumberStyles.Any,
+        decimal.TryParse(EditInterestRate.Replace(",", "."), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var rate);
-        double.TryParse(EditMonthlyPayment, System.Globalization.NumberStyles.Any,
+        decimal.TryParse(EditMonthlyPayment.Replace(",", "."), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var monthly);
 
-        if (remaining <= 0) remaining = original;
+        if (remaining <= 0m) remaining = original;
 
         try
         {
@@ -177,7 +179,7 @@ public sealed partial class DebtTrackerViewModel : ViewModelBase
     private void OpenPaymentDialog(DebtEntry debt)
     {
         _payingDebtId = debt.Id;
-        PaymentAmount = debt.MonthlyPayment > 0 ? debt.MonthlyPayment.ToString("F2") : string.Empty;
+        PaymentAmount = debt.MonthlyPayment > 0m ? debt.MonthlyPayment.ToString("F2") : string.Empty;
         ShowPaymentDialog = true;
     }
 
@@ -185,8 +187,9 @@ public sealed partial class DebtTrackerViewModel : ViewModelBase
     private async Task ConfirmPaymentAsync()
     {
         if (_payingDebtId == null) return;
-        if (!double.TryParse(PaymentAmount, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var amount) || amount <= 0)
+        if (!decimal.TryParse(PaymentAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var amount)
+            || amount <= 0m || amount > 999_999_999.99m)
             return;
 
         await _debtService.MakePaymentAsync(_payingDebtId, amount);

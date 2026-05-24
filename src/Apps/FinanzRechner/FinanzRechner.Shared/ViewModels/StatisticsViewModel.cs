@@ -196,13 +196,13 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
     #region Statistics Data
 
     [ObservableProperty]
-    private double _totalIncome;
+    private decimal _totalIncome;
 
     [ObservableProperty]
-    private double _totalExpenses;
+    private decimal _totalExpenses;
 
     [ObservableProperty]
-    private double _balance;
+    private decimal _balance;
 
     [ObservableProperty]
     private ObservableCollection<CategoryStatistic> _expensesByCategory = [];
@@ -241,10 +241,10 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
 
     // Month comparison
     [ObservableProperty]
-    private double _lastMonthExpenses;
+    private decimal _lastMonthExpenses;
 
     [ObservableProperty]
-    private double _lastMonthIncome;
+    private decimal _lastMonthIncome;
 
     [ObservableProperty]
     private string _expensesTrend = string.Empty;
@@ -261,10 +261,10 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
 
     // 6-Monats-Durchschnitte (berechnet in LoadTrendDataAsync)
     [ObservableProperty]
-    private double _avgMonthlyIncome;
+    private decimal _avgMonthlyIncome;
 
     [ObservableProperty]
-    private double _avgMonthlyExpense;
+    private decimal _avgMonthlyExpense;
 
     public string AvgMonthlyIncomeDisplay => $"Ø {CurrencyHelper.Format(AvgMonthlyIncome)}";
     public string AvgMonthlyExpenseDisplay => $"Ø {CurrencyHelper.Format(AvgMonthlyExpense)}";
@@ -340,10 +340,10 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
             var transactions = await _expenseService.GetExpensesAsync(filter);
 
             // Single-pass calculation: totals + categories grouped
-            var expenseGroups = new Dictionary<ExpenseCategory, double>();
-            var incomeGroups = new Dictionary<ExpenseCategory, double>();
-            double totalExpenses = 0;
-            double totalIncome = 0;
+            var expenseGroups = new Dictionary<ExpenseCategory, decimal>();
+            var incomeGroups = new Dictionary<ExpenseCategory, decimal>();
+            decimal totalExpenses = 0m;
+            decimal totalIncome = 0m;
 
             foreach (var t in transactions)
             {
@@ -351,14 +351,14 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
                 {
                     totalExpenses += t.Amount;
                     if (!expenseGroups.ContainsKey(t.Category))
-                        expenseGroups[t.Category] = 0;
+                        expenseGroups[t.Category] = 0m;
                     expenseGroups[t.Category] += t.Amount;
                 }
                 else if (t.Type == TransactionType.Income)
                 {
                     totalIncome += t.Amount;
                     if (!incomeGroups.ContainsKey(t.Category))
-                        incomeGroups[t.Category] = 0;
+                        incomeGroups[t.Category] = 0m;
                     incomeGroups[t.Category] += t.Amount;
                 }
                 // TransactionType.Transfer wird bewusst ignoriert (neutrale Umbuchung)
@@ -377,13 +377,14 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
                 .Select(kvp => new CategoryStatistic(
                     kvp.Key,
                     kvp.Value,
-                    totalExpenses > 0 ? kvp.Value / totalExpenses : 0,
+                    totalExpenses > 0m ? (double)(kvp.Value / totalExpenses) : 0,
                     GetCategoryName(kvp.Key)))
                 .OrderByDescending(c => c.Amount)
                 .ThenBy(c => c.CategoryName)
                 .ToList();
 
-            ExpensesByCategory = new ObservableCollection<CategoryStatistic>(expenseCategories);
+            ExpensesByCategory.Clear();
+            foreach (var c in expenseCategories) ExpensesByCategory.Add(c);
             OnPropertyChanged(nameof(HasExpenseData));
 
             // Check if there's any data
@@ -394,13 +395,14 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
                 .Select(kvp => new CategoryStatistic(
                     kvp.Key,
                     kvp.Value,
-                    totalIncome > 0 ? kvp.Value / totalIncome : 0,
+                    totalIncome > 0m ? (double)(kvp.Value / totalIncome) : 0,
                     GetCategoryName(kvp.Key)))
                 .OrderByDescending(c => c.Amount)
                 .ThenBy(c => c.CategoryName)
                 .ToList();
 
-            IncomeByCategory = new ObservableCollection<CategoryStatistic>(incomeCategories);
+            IncomeByCategory.Clear();
+            foreach (var c in incomeCategories) IncomeByCategory.Add(c);
             OnPropertyChanged(nameof(HasIncomeData));
 
             // Update charts
@@ -418,8 +420,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
     private async Task LoadTrendDataAsync()
     {
         var trendMonths = 6;
-        var monthlyExpenses = new double[trendMonths];
-        var monthlyIncomes = new double[trendMonths];
+        var monthlyExpenses = new decimal[trendMonths];
+        var monthlyIncomes = new decimal[trendMonths];
         var monthLabels = new string[trendMonths];
 
         var currentDate = DateTime.Today;
@@ -436,7 +438,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
         for (int i = 0; i < trendMonths; i++)
         {
             var monthDate = currentDate.AddMonths(-(trendMonths - 1 - i));
-            monthLabels[i] = monthDate.ToString("MMM");
+            monthLabels[i] = monthDate.ToString("MMM", _localizationService.CurrentCulture);
         }
 
         foreach (var t in allTransactions)
@@ -468,24 +470,24 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
         var currentMonthExpenses = monthlyExpenses[trendMonths - 1];
         var currentMonthIncome = monthlyIncomes[trendMonths - 1];
 
-        if (LastMonthExpenses > 0)
+        if (LastMonthExpenses > 0m)
         {
-            var expenseChange = ((currentMonthExpenses - LastMonthExpenses) / LastMonthExpenses) * 100;
-            ExpensesTrend = expenseChange >= 0 ? $"+{expenseChange:F0}%" : $"{expenseChange:F0}%";
+            var expenseChange = ((currentMonthExpenses - LastMonthExpenses) / LastMonthExpenses) * 100m;
+            ExpensesTrend = expenseChange >= 0m ? $"+{expenseChange:F0}%" : $"{expenseChange:F0}%";
         }
         else
         {
-            ExpensesTrend = currentMonthExpenses > 0 ? (_localizationService.GetString("New") ?? "Neu") : "—";
+            ExpensesTrend = currentMonthExpenses > 0m ? (_localizationService.GetString("New") ?? "Neu") : "—";
         }
 
-        if (LastMonthIncome > 0)
+        if (LastMonthIncome > 0m)
         {
-            var incomeChange = ((currentMonthIncome - LastMonthIncome) / LastMonthIncome) * 100;
-            IncomeTrend = incomeChange >= 0 ? $"+{incomeChange:F0}%" : $"{incomeChange:F0}%";
+            var incomeChange = ((currentMonthIncome - LastMonthIncome) / LastMonthIncome) * 100m;
+            IncomeTrend = incomeChange >= 0m ? $"+{incomeChange:F0}%" : $"{incomeChange:F0}%";
         }
         else
         {
-            IncomeTrend = currentMonthIncome > 0 ? (_localizationService.GetString("New") ?? "Neu") : "—";
+            IncomeTrend = currentMonthIncome > 0m ? (_localizationService.GetString("New") ?? "Neu") : "—";
         }
 
         // SkiaSharp Trend-Daten setzen (float[] statt LiveCharts ISeries)
@@ -581,7 +583,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
         return SelectedPeriod switch
         {
             TimePeriod.Week => $"{_localizationService.GetString("CalendarWeekAbbreviation") ?? "CW"} {GetWeekNumber(start)} - {start:dd.MM} - {end:dd.MM.yyyy}",
-            TimePeriod.Month => start.ToString("MMMM yyyy"),
+            TimePeriod.Month => start.ToString("MMMM yyyy", _localizationService.CurrentCulture),
             TimePeriod.Quarter => $"Q{((start.Month - 1) / 3) + 1} {start.Year}",
             TimePeriod.HalfYear => start.Month == 1 ? $"H1 {start.Year}" : $"H2 {start.Year}",
             TimePeriod.Year => start.Year.ToString(),
@@ -871,7 +873,7 @@ public enum TimePeriod
 /// </summary>
 public record CategoryStatistic(
     ExpenseCategory Category,
-    double Amount,
+    decimal Amount,
     double Percentage,
     string CategoryName)
 {

@@ -18,13 +18,14 @@ public interface IFinancialAnalysisService
     Task<FinancialForecast> GetForecastAsync();
 
     /// <summary>Berechnet das Nettovermögen (Assets - Schulden).</summary>
-    Task<double> CalculateNetWorthAsync();
+    Task<decimal> CalculateNetWorthAsync();
 
     /// <summary>
     /// Gebündeltes Laden aller Dashboard-Insights in einem Durchgang.
     /// Vermeidet redundante Service-Aufrufe (Score, Forecast, NetWorth).
+    /// CancellationToken wird an die parallelen Service-Aufrufe weitergereicht.
     /// </summary>
-    Task<FinancialInsightsBundle> GetAllInsightsAsync();
+    Task<FinancialInsightsBundle> GetAllInsightsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -34,4 +35,4 @@ public interface IFinancialAnalysisService
 public record FinancialInsightsBundle(
     FinancialScore Score,
     FinancialForecast Forecast,
-    double NetWorth);
+    decimal NetWorth);

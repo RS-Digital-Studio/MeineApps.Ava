@@ -180,6 +180,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         UpdateNavTexts();
         UpdateHomeTexts();
+        RefreshQuickCategoryLabels();
         ExpenseTrackerViewModel.UpdateLocalizedTexts();
         StatisticsViewModel.UpdateLocalizedTexts();
         BudgetsViewModel.UpdateLocalizedTexts();
@@ -188,6 +189,23 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SavingsGoalsViewModel.UpdateLocalizedTexts();
         DebtTrackerViewModel.UpdateLocalizedTexts();
         CustomCategoriesViewModel.UpdateLocalizedTexts();
+    }
+
+    /// <summary>
+    /// Strukturierter Fire-and-Forget-Helper: fängt OperationCanceled stillschweigend ab,
+    /// loggt alle anderen Exceptions per Debug.WriteLine statt sie zu verschlucken.
+    /// </summary>
+    private static void SafeFireAndForget(Func<Task> taskFactory, string context)
+    {
+        _ = Task.Run(async () =>
+        {
+            try { await taskFactory().ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[FAF:{context}] {ex}");
+            }
+        });
     }
 
     [ObservableProperty]
@@ -334,18 +352,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (ShowBudgetAnalysisOverlay)
             CloseBudgetAnalysis();
 
-        // Daten laden beim Tab-Wechsel (nur wenn Cache veraltet)
+        // Daten laden beim Tab-Wechsel (nur wenn Cache veraltet).
         // Flag wird erst NACH Abschluss in LoadMonthlyDataAsync zurückgesetzt,
-        // damit bei Fehler/Abbruch der Cache nicht fälschlich als aktuell gilt
+        // damit bei Fehler/Abbruch der Cache nicht fälschlich als aktuell gilt.
         if (value == 0 && _isHomeDataStale)
         {
-            _ = LoadMonthlyDataAsync().ContinueWith(_ => _isHomeDataStale = false,
-                TaskContinuationOptions.OnlyOnRanToCompletion);
+            SafeFireAndForget(async () =>
+            {
+                await LoadMonthlyDataAsync().ConfigureAwait(false);
+                _isHomeDataStale = false;
+            }, nameof(LoadMonthlyDataAsync));
         }
         else if (value == 1)
-            _ = ExpenseTrackerViewModel.OnAppearingAsync();
+            SafeFireAndForget(ExpenseTrackerViewModel.OnAppearingAsync, nameof(ExpenseTrackerViewModel.OnAppearingAsync));
         else if (value == 2)
-            _ = StatisticsViewModel.OnAppearingAsync();
+            SafeFireAndForget(StatisticsViewModel.OnAppearingAsync, nameof(StatisticsViewModel.OnAppearingAsync));
     }
 
     #endregion

@@ -161,14 +161,14 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _filteredCountDisplay = string.Empty;
 
-    public string MonthYearDisplay => new DateTime(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy");
+    public string MonthYearDisplay => new DateTime(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy", _localizationService.CurrentCulture);
 
-    public string TotalExpensesDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalExpenses) : CurrencyHelper.Format(0);
-    public string TotalIncomeDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalIncome) : CurrencyHelper.Format(0);
-    public string BalanceDisplay => Summary != null ? CurrencyHelper.Format(Summary.Balance) : CurrencyHelper.Format(0);
+    public string TotalExpensesDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalExpenses) : CurrencyHelper.Format(0m);
+    public string TotalIncomeDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalIncome) : CurrencyHelper.Format(0m);
+    public string BalanceDisplay => Summary != null ? CurrencyHelper.Format(Summary.Balance) : CurrencyHelper.Format(0m);
 
     // Legacy-Kompatibilität
-    public string TotalDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalAmount) : CurrencyHelper.Format(0);
+    public string TotalDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalAmount) : CurrencyHelper.Format(0m);
 
     partial void OnSelectedYearChanged(int value)
     {
@@ -211,7 +211,7 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     private string _newExpenseDescription = string.Empty;
 
     [ObservableProperty]
-    private double _newExpenseAmount;
+    private decimal _newExpenseAmount;
 
     [ObservableProperty]
     private ExpenseCategory _newExpenseCategory = ExpenseCategory.Other;
@@ -458,10 +458,10 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     private ExpenseCategory? _selectedCategoryFilter = null;
 
     [ObservableProperty]
-    private double _minAmountFilter = 0;
+    private decimal _minAmountFilter = 0m;
 
     [ObservableProperty]
-    private double _maxAmountFilter = 0;
+    private decimal _maxAmountFilter = 0m;
 
     [ObservableProperty]
     private bool _isFilterActive;
@@ -599,9 +599,9 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
                 continue;
 
             // Nach Betrag filtern
-            if (MinAmountFilter > 0 && expense.Amount < MinAmountFilter)
+            if (MinAmountFilter > 0m && expense.Amount < MinAmountFilter)
                 continue;
-            if (MaxAmountFilter > 0 && expense.Amount > MaxAmountFilter)
+            if (MaxAmountFilter > 0m && expense.Amount > MaxAmountFilter)
                 continue;
 
             // Alle Filter bestanden - hinzufügen
@@ -619,10 +619,11 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
             _ => (a, b) => b.Date.CompareTo(a.Date) // Default: DateDescending
         });
 
-        // Neue Collection statt Clear+AddRange: Bei Avalonia effizienter, da Clear+Add
-        // viele einzelne CollectionChanged-Events feuert (je eines pro Add), während
-        // eine neue Collection nur ein einziges PropertyChanged auslöst.
-        Expenses = new ObservableCollection<Expense>(filtered);
+        // Bestehende Container wiederverwenden: Clear+Add behält die Item-Container
+        // (inkl. SwipeToReveal/StaggerFadeIn-Behaviors). Neue Collection-Zuweisung würde
+        // alle Container disposen + neu erzeugen (sichtbares Flackern, hoher GC-Druck).
+        Expenses.Clear();
+        foreach (var e in filtered) Expenses.Add(e);
         HasExpenses = Expenses.Count > 0;
 
         // Nach Datum gruppieren
@@ -632,8 +633,8 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
         IsFilterActive = !string.IsNullOrWhiteSpace(SearchTerm) ||
                         SelectedFilter != FilterTypeOption.All ||
                         SelectedCategoryFilter.HasValue ||
-                        MinAmountFilter > 0 ||
-                        MaxAmountFilter > 0;
+                        MinAmountFilter > 0m ||
+                        MaxAmountFilter > 0m;
 
         // Anzeige aktualisieren
         FilteredCountDisplay = _allExpenses.Count > 0
@@ -657,13 +658,19 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
                 else if (g.Key == yesterday)
                     dateDisplay = _localizationService.GetString("Yesterday") ?? "Yesterday";
                 else
-                    dateDisplay = g.Key.ToString("dddd, dd. MMMM");
+                {
+                    // Sprachwechsel kann von System-Culture abweichen — explizit die
+                    // Service-Culture nutzen, sonst bleibt der Wochentag z.B. deutsch
+                    // obwohl der User in den Settings auf Spanisch gewechselt hat.
+                    dateDisplay = g.Key.ToString("dddd, dd. MMMM", _localizationService.CurrentCulture);
+                }
 
                 return new ExpenseGroup(g.Key, dateDisplay, g.OrderByDescending(e => e.Date));
             })
             .ToList();
 
-        GroupedExpenses = new ObservableCollection<ExpenseGroup>(groups);
+        GroupedExpenses.Clear();
+        foreach (var g in groups) GroupedExpenses.Add(g);
     }
 
     [RelayCommand]
@@ -672,8 +679,8 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
         SearchTerm = string.Empty;
         SelectedFilter = FilterTypeOption.All;
         SelectedCategoryFilter = null;
-        MinAmountFilter = 0;
-        MaxAmountFilter = 0;
+        MinAmountFilter = 0m;
+        MaxAmountFilter = 0m;
         ApplyFilterAndSort();
     }
 
@@ -703,7 +710,7 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task SaveExpenseAsync()
     {
-        if (string.IsNullOrWhiteSpace(NewExpenseDescription) || NewExpenseAmount <= 0)
+        if (string.IsNullOrWhiteSpace(NewExpenseDescription) || NewExpenseAmount <= 0m)
             return;
 
         // Enddatum muss nach Startdatum liegen (bei Daueraufträgen)
@@ -1155,7 +1162,7 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     {
         NewExpenseDate = DateTime.Today;
         NewExpenseDescription = string.Empty;
-        NewExpenseAmount = 0;
+        NewExpenseAmount = 0m;
         NewTransactionType = TransactionType.Expense;
         NewExpenseCategory = ExpenseCategory.Other;
         NewExpenseNote = string.Empty;

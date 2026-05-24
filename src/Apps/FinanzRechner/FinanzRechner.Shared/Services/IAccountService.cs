@@ -17,14 +17,14 @@ public interface IAccountService
     Task<IReadOnlyList<Account>> GetAllAccountsAsync();
 
     // Kontostand-Berechnungen
-    Task<double> GetAccountBalanceAsync(string accountId);
+    Task<decimal> GetAccountBalanceAsync(string accountId);
     Task<IReadOnlyList<AccountBalance>> GetAllAccountBalancesAsync();
-    Task<double> GetNetWorthAsync();
+    Task<decimal> GetNetWorthAsync();
 
     // Überweisungen
     Task<(Expense from, Expense to)> CreateTransferAsync(
         string fromAccountId, string toAccountId,
-        double amount, string description, DateTime date, string? note = null);
+        decimal amount, string description, DateTime date, string? note = null);
 
     // Daten-Export/Import
     Task<string> ExportToJsonAsync();

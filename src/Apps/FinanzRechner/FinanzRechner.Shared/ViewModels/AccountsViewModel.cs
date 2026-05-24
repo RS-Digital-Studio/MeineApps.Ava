@@ -23,8 +23,8 @@ public sealed partial class AccountsViewModel : ViewModelBase
 
     public ObservableCollection<AccountBalance> AccountBalances { get; } = [];
 
-    [ObservableProperty] private double _netWorth;
-    [ObservableProperty] private string _netWorthDisplay = CurrencyHelper.Format(0);
+    [ObservableProperty] private decimal _netWorth;
+    [ObservableProperty] private string _netWorthDisplay = CurrencyHelper.Format(0m);
     [ObservableProperty] private bool _hasAccounts;
     [ObservableProperty] private bool _showAddDialog;
     [ObservableProperty] private bool _showTransferDialog;
@@ -101,9 +101,10 @@ public sealed partial class AccountsViewModel : ViewModelBase
     private async Task SaveAccountAsync()
     {
         if (string.IsNullOrWhiteSpace(EditName)) return;
-        if (!double.TryParse(EditBalance, System.Globalization.NumberStyles.Any,
+        // decimal-Parse fuer Cent-genauen Anfangssaldo
+        if (!decimal.TryParse(EditBalance.Replace(",", "."), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var balance))
-            balance = 0;
+            balance = 0m;
 
         try
         {
@@ -163,8 +164,10 @@ public sealed partial class AccountsViewModel : ViewModelBase
     [RelayCommand]
     private async Task ExecuteTransferAsync()
     {
-        if (!double.TryParse(TransferAmount, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var amount) || amount <= 0)
+        // decimal-Parse: Cent-genau, akzeptiert "1,50" und "1.50"
+        if (!decimal.TryParse(TransferAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var amount)
+            || amount <= 0m || amount > 999_999_999.99m)
             return;
 
         if (TransferFromIndex == TransferToIndex || AccountBalances.Count < 2) return;

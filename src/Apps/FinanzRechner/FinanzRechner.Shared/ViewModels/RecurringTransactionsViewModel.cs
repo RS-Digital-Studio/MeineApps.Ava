@@ -131,7 +131,7 @@ public sealed partial class RecurringTransactionsViewModel : ViewModelBase, IDis
     private string _description = string.Empty;
 
     [ObservableProperty]
-    private double _amount;
+    private decimal _amount;
 
     [ObservableProperty]
     private ExpenseCategory _selectedCategory = ExpenseCategory.Other;
@@ -253,21 +253,21 @@ public sealed partial class RecurringTransactionsViewModel : ViewModelBase, IDis
             await _expenseService.InitializeAsync();
 
             var transactions = await _expenseService.GetAllRecurringTransactionsAsync();
-            RecurringTransactions = new ObservableCollection<RecurringTransaction>(transactions);
+            RecurringTransactions.Clear();
+            foreach (var t in transactions) RecurringTransactions.Add(t);
             HasTransactions = RecurringTransactions.Count > 0;
 
             // Display-Items mit berechneten Properties erstellen
-            var items = new ObservableCollection<RecurringDisplayItem>();
+            DisplayItems.Clear();
             foreach (var t in transactions)
             {
-                items.Add(new RecurringDisplayItem
+                DisplayItems.Add(new RecurringDisplayItem
                 {
                     Transaction = t,
                     DueDateDisplay = GetDueDateDisplay(t.GetNextDueDate()),
                     CategoryColor = CategoryLocalizationHelper.GetCategoryColor(t.Category)
                 });
             }
-            DisplayItems = items;
         }
         finally
         {
@@ -294,7 +294,7 @@ public sealed partial class RecurringTransactionsViewModel : ViewModelBase, IDis
     [RelayCommand]
     private async Task SaveTransactionAsync()
     {
-        if (string.IsNullOrWhiteSpace(Description) || Amount <= 0)
+        if (string.IsNullOrWhiteSpace(Description) || Amount <= 0m)
         {
             var title = _localizationService.GetString("Error") ?? "Error";
             var message = _localizationService.GetString("ErrorInvalidTransaction") ?? "Please enter description and amount.";
@@ -491,7 +491,7 @@ public sealed partial class RecurringTransactionsViewModel : ViewModelBase, IDis
     private void ResetForm()
     {
         Description = string.Empty;
-        Amount = 0;
+        Amount = 0m;
         SelectedCategory = ExpenseCategory.Other;
         TransactionType = TransactionType.Expense;
         Note = string.Empty;

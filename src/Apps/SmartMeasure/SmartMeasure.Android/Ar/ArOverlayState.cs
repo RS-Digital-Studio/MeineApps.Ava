@@ -1,6 +1,47 @@
 namespace SmartMeasure.Android.Ar;
 
 /// <summary>
+/// Lokalisierte AR-Overlay-Labels (Plan-Kap. 4.11). Wird einmal pro Session in
+/// <see cref="ArCaptureActivity"/> aus dem aktuellen <c>AppStrings</c>-Stand erzeugt
+/// und an alle <see cref="ArOverlayState"/>-Snapshots durchgereicht. Sprachwechsel
+/// passieren nie mid-session — ein Snapshot reicht.
+/// </summary>
+public sealed record ArOverlayLabels(
+    string Points,
+    string Area,
+    string Length,
+    string HeightDelta,
+    string Anchors,
+    string Time,
+    string HoldStill,
+    string Ready,
+    string TrackingLost,
+    string TrackingInsufficientLight,
+    string TrackingInsufficientFeatures,
+    string TrackingExcessiveMotion,
+    string TrackingCameraUnavailable,
+    string TrackingBadState)
+{
+    /// <summary>Hardcoded DE-Fallback fuer Activity-Konstruktion, bevor Localization-Service
+    /// verfuegbar ist (z.B. erster Frame vor BuildOverlayState).</summary>
+    public static ArOverlayLabels GermanDefaults { get; } = new(
+        Points: "PUNKTE",
+        Area: "FLÄCHE",
+        Length: "LÄNGE",
+        HeightDelta: "ΔH",
+        Anchors: "ANKER",
+        Time: "ZEIT",
+        HoldStill: "STILL HALTEN",
+        Ready: "BEREIT",
+        TrackingLost: "Tracking verloren",
+        TrackingInsufficientLight: "Nicht genug Licht",
+        TrackingInsufficientFeatures: "Mehr Texturen/Kanten nötig",
+        TrackingExcessiveMotion: "Langsamer bewegen",
+        TrackingCameraUnavailable: "Kamera nicht verfügbar",
+        TrackingBadState: "Session-Fehler");
+}
+
+/// <summary>
 /// Qualität eines AR-HitTest-Ergebnisses. Bestimmt Reticle-Farbe und Punkt-Confidence.
 /// </summary>
 public enum ArHitQuality
@@ -116,4 +157,8 @@ public sealed class ArOverlayState
     /// Persistente Battery-Warnung bei niedrigem Akku. null = ok, sonst "Akku 12%".
     /// </summary>
     public string? BatteryWarning { get; init; }
+
+    /// <summary>Lokalisierte Labels fuer Stats-Panel + Footer + Reticle (Plan-Kap. 4.11).
+    /// Default DE-Fallback, von <see cref="ArCaptureActivity"/> zu Session-Start ueberschrieben.</summary>
+    public ArOverlayLabels Labels { get; init; } = ArOverlayLabels.GermanDefaults;
 }

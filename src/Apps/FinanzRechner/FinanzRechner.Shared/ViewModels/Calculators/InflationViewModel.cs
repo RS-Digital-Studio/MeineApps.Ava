@@ -158,7 +158,9 @@ public sealed partial class InflationViewModel : ViewModelBase, IDisposable
     private void Calculate()
     {
         ErrorMessage = null;
-        if (CurrentAmount <= 0 || Years <= 0)
+        if (!double.IsFinite(CurrentAmount) || CurrentAmount <= 0
+            || !double.IsFinite(AnnualInflationRate) || AnnualInflationRate < 0
+            || Years <= 0 || Years > 200)
         {
             HasResult = false;
             return;

@@ -16,25 +16,25 @@ public sealed partial class MainViewModel
     #region Dashboard
 
     [ObservableProperty]
-    private double _monthlyIncome;
+    private decimal _monthlyIncome;
 
     [ObservableProperty]
-    private double _monthlyExpenses;
+    private decimal _monthlyExpenses;
 
     [ObservableProperty]
-    private double _monthlyBalance;
+    private decimal _monthlyBalance;
 
     [ObservableProperty]
     private bool _hasTransactions;
 
     public string MonthlyIncomeDisplay => CurrencyHelper.FormatSigned(MonthlyIncome);
     // Kein Minus-Prefix bei 0,00 (verhindert "-0,00 €")
-    public string MonthlyExpensesDisplay => MonthlyExpenses > 0
+    public string MonthlyExpensesDisplay => MonthlyExpenses > 0m
         ? $"-{CurrencyHelper.Format(MonthlyExpenses)}"
-        : CurrencyHelper.Format(0);
+        : CurrencyHelper.Format(0m);
     public string MonthlyBalanceDisplay => CurrencyHelper.FormatSigned(MonthlyBalance);
-    public string CurrentMonthDisplay => DateTime.Today.ToString("MMMM yyyy");
-    public bool IsBalancePositive => MonthlyBalance >= 0;
+    public string CurrentMonthDisplay => DateTime.Today.ToString("MMMM yyyy", _localizationService.CurrentCulture);
+    public bool IsBalancePositive => MonthlyBalance >= 0m;
 
     #endregion
 
@@ -44,7 +44,7 @@ public sealed partial class MainViewModel
     private bool _hasBudgets;
 
     [ObservableProperty]
-    private double _overallBudgetPercentage;
+    private decimal _overallBudgetPercentage;
 
     /// <summary>Budget-Verbrauch als 0.0-1.0 für SkiaGradientRing (geclampt auf 0-1).</summary>
     [ObservableProperty]
@@ -109,7 +109,7 @@ public sealed partial class MainViewModel
             Value = (float)c.Amount,
             Color = CategoryLocalizationHelper.GetCategoryColor(c.Category),
             Label = CategoryLocalizationHelper.GetLocalizedName(c.Category, _localizationService),
-            ValueText = $"{c.Amount:N0} €"
+            ValueText = CurrencyHelper.FormatAxis(c.Amount)
         }).ToArray();
     }
 
@@ -244,26 +244,56 @@ public sealed partial class MainViewModel
         ExpenseCategory.OtherIncome
     ];
 
+    // Vorberechnete Listen pro Type (Sprachwechsel triggert Refresh in UpdateLocalizedTexts).
+    // Vermeidet das ständige Neu-Erzeugen einer ObservableCollection bei jedem Type-Switch.
+    private readonly ObservableCollection<CategoryDisplayItem> _quickExpenseItems = [];
+    private readonly ObservableCollection<CategoryDisplayItem> _quickIncomeItems = [];
+
     [ObservableProperty]
     private ObservableCollection<CategoryDisplayItem> _quickCategoryItems = [];
 
-    private void UpdateQuickCategoryItems()
+    private void EnsureQuickCategoryCache()
     {
-        var categories = QuickAddType == TransactionType.Expense
-            ? QuickExpenseCategories
-            : QuickIncomeCategories;
+        if (_quickExpenseItems.Count == 0)
+            RebuildQuickCategoryCache();
+    }
 
-        var items = new ObservableCollection<CategoryDisplayItem>();
-        foreach (var cat in categories)
+    private void RebuildQuickCategoryCache()
+    {
+        _quickExpenseItems.Clear();
+        foreach (var cat in QuickExpenseCategories)
         {
-            items.Add(new CategoryDisplayItem
+            _quickExpenseItems.Add(new CategoryDisplayItem
             {
                 Category = cat,
                 CategoryName = CategoryLocalizationHelper.GetLocalizedName(cat, _localizationService),
                 IsSelected = cat == QuickAddCategory
             });
         }
-        QuickCategoryItems = items;
+        _quickIncomeItems.Clear();
+        foreach (var cat in QuickIncomeCategories)
+        {
+            _quickIncomeItems.Add(new CategoryDisplayItem
+            {
+                Category = cat,
+                CategoryName = CategoryLocalizationHelper.GetLocalizedName(cat, _localizationService),
+                IsSelected = cat == QuickAddCategory
+            });
+        }
+    }
+
+    private void UpdateQuickCategoryItems()
+    {
+        EnsureQuickCategoryCache();
+        var target = QuickAddType == TransactionType.Expense ? _quickExpenseItems : _quickIncomeItems;
+        SyncQuickSelection(target);
+        QuickCategoryItems = target;
+    }
+
+    private void SyncQuickSelection(ObservableCollection<CategoryDisplayItem> items)
+    {
+        foreach (var item in items)
+            item.IsSelected = item.Category == QuickAddCategory;
     }
 
     partial void OnQuickAddTypeChanged(TransactionType value)
@@ -297,6 +327,18 @@ public sealed partial class MainViewModel
         QuickAddCategory = item.Category;
     }
 
+    /// <summary>
+    /// Wird vom MainViewModel bei Sprachwechsel aufgerufen: aktualisiert die
+    /// gecachten Kategorie-Namen in beiden Quick-Listen.
+    /// </summary>
+    private void RefreshQuickCategoryLabels()
+    {
+        foreach (var item in _quickExpenseItems)
+            item.CategoryName = CategoryLocalizationHelper.GetLocalizedName(item.Category, _localizationService);
+        foreach (var item in _quickIncomeItems)
+            item.CategoryName = CategoryLocalizationHelper.GetLocalizedName(item.Category, _localizationService);
+    }
+
     #endregion
 
     #region Home Daten laden
@@ -324,13 +366,19 @@ public sealed partial class MainViewModel
     {
         try
         {
+            // Daueraufträge bei jedem Tab-Wechsel auf Home nachholen — idempotent durch
+            // WasProcessedTodayAsync-Check im Service. Wer die App über Mitternacht offen
+            // lässt, würde sonst seine Miete/Gehalt erst beim App-Neustart bekommen.
+            try { await _expenseService.ProcessDueRecurringTransactionsAsync(); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Home] Recurring failed: {ex}"); }
+
             var today = DateTime.Today;
             var summary = await _expenseService.GetMonthSummaryAsync(today.Year, today.Month);
 
             MonthlyIncome = summary.TotalIncome;
             MonthlyExpenses = summary.TotalExpenses;
             MonthlyBalance = summary.Balance;
-            HasTransactions = summary.TotalExpenses > 0 || summary.TotalIncome > 0;
+            HasTransactions = summary.TotalExpenses > 0m || summary.TotalIncome > 0m;
 
             OnPropertyChanged(nameof(MonthlyIncomeDisplay));
             OnPropertyChanged(nameof(MonthlyExpensesDisplay));
@@ -343,17 +391,19 @@ public sealed partial class MainViewModel
             // Letzte 3 Transaktionen laden
             await LoadRecentTransactionsAsync(today);
 
-            // Finanz-Score + Prognose laden (fire-and-forget, nicht-kritisch)
-            _ = LoadFinancialInsightsAsync();
+            // Finanz-Score + Prognose laden (fire-and-forget, nicht-kritisch).
+            // Exceptions werden geloggt damit Release-Builds nicht stillschweigend Fehler
+            // verschlucken.
+            SafeFireAndForget(LoadFinancialInsightsAsync, nameof(LoadFinancialInsightsAsync));
         }
         catch (Exception ex)
         {
             MessageRequested?.Invoke(
                 _localizationService.GetString("Error") ?? "Error",
                 ex.Message);
-            MonthlyIncome = 0;
-            MonthlyExpenses = 0;
-            MonthlyBalance = 0;
+            MonthlyIncome = 0m;
+            MonthlyExpenses = 0m;
+            MonthlyBalance = 0m;
             HasTransactions = false;
         }
     }
@@ -370,8 +420,8 @@ public sealed partial class MainViewModel
                 OverallBudgetPercentage = budgetStatuses.Average(b => b.PercentageUsed);
 
                 // SkiaGradientRing: 0.0-1.0 (geclampt), Puls ab 90%
-                BudgetUsagePercent = Math.Clamp(OverallBudgetPercentage / 100.0, 0.0, 1.0);
-                IsBudgetCritical = OverallBudgetPercentage > 90;
+                BudgetUsagePercent = Math.Clamp((double)OverallBudgetPercentage / 100.0, 0.0, 1.0);
+                IsBudgetCritical = OverallBudgetPercentage > 90m;
 
                 var top3 = budgetStatuses
                     .OrderByDescending(b => b.PercentageUsed)
@@ -384,7 +434,8 @@ public sealed partial class MainViewModel
                         AlertLevel = b.AlertLevel
                     });
 
-                TopBudgets = new ObservableCollection<BudgetDisplayItem>(top3);
+                TopBudgets.Clear();
+                foreach (var item in top3) TopBudgets.Add(item);
 
                 // Mini-Ringe für Budget-Übersicht aufbauen
                 BuildBudgetRings(budgetStatuses);
@@ -392,7 +443,7 @@ public sealed partial class MainViewModel
             else
             {
                 TopBudgets.Clear();
-                OverallBudgetPercentage = 0;
+                OverallBudgetPercentage = 0m;
                 BudgetUsagePercent = 0;
                 IsBudgetCritical = false;
                 HasBudgetRings = false;
@@ -419,7 +470,8 @@ public sealed partial class MainViewModel
                 .ToList();
 
             HasRecentTransactions = recent.Count > 0;
-            RecentTransactions = new ObservableCollection<Expense>(recent);
+            RecentTransactions.Clear();
+            foreach (var e in recent) RecentTransactions.Add(e);
 
             // Mini-Donut-Chart für HomeView aufbauen
             BuildHomeExpenseChart(expenseList);
@@ -534,8 +586,8 @@ public sealed partial class MainViewModel
             var transactions = await _expenseService.GetExpensesAsync(filter);
             ct.ThrowIfCancellationRequested();
 
-            double totalExpenses = 0, totalIncome = 0;
-            var categoryExpenses = new Dictionary<ExpenseCategory, double>();
+            decimal totalExpenses = 0m, totalIncome = 0m;
+            var categoryExpenses = new Dictionary<ExpenseCategory, decimal>();
 
             foreach (var t in transactions)
             {
@@ -543,7 +595,7 @@ public sealed partial class MainViewModel
                 {
                     totalExpenses += t.Amount;
                     if (!categoryExpenses.ContainsKey(t.Category))
-                        categoryExpenses[t.Category] = 0;
+                        categoryExpenses[t.Category] = 0m;
                     categoryExpenses[t.Category] += t.Amount;
                 }
                 else if (t.Type == TransactionType.Income)
@@ -560,7 +612,7 @@ public sealed partial class MainViewModel
             var prevTransactions = await _expenseService.GetExpensesAsync(prevFilter);
             ct.ThrowIfCancellationRequested();
 
-            double prevExpenses = 0;
+            decimal prevExpenses = 0m;
             foreach (var t in prevTransactions)
             {
                 if (t.Type == TransactionType.Expense)
@@ -574,7 +626,7 @@ public sealed partial class MainViewModel
                     Category = kvp.Key,
                     CategoryName = Helpers.CategoryLocalizationHelper.GetLocalizedName(kvp.Key, _localizationService),
                     Amount = kvp.Value,
-                    Percentage = totalExpenses > 0 ? kvp.Value / totalExpenses * 100 : 0
+                    Percentage = totalExpenses > 0m ? kvp.Value / totalExpenses * 100m : 0m
                 })
                 .OrderByDescending(c => c.Amount)
                 .ToList();
@@ -592,13 +644,13 @@ public sealed partial class MainViewModel
             }).ToList();
 
             // Monatsvergleich
-            double changePercent = 0;
-            if (prevExpenses > 0)
-                changePercent = ((totalExpenses - prevExpenses) / prevExpenses) * 100;
+            decimal changePercent = 0m;
+            if (prevExpenses > 0m)
+                changePercent = ((totalExpenses - prevExpenses) / prevExpenses) * 100m;
 
             var report = new BudgetAnalysisReport
             {
-                PeriodDisplay = today.ToString("MMMM yyyy"),
+                PeriodDisplay = today.ToString("MMMM yyyy", _localizationService.CurrentCulture),
                 TotalExpenses = totalExpenses,
                 TotalIncome = totalIncome,
                 CategoryBreakdown = breakdown,
@@ -659,8 +711,12 @@ public sealed partial class MainViewModel
         if (string.IsNullOrWhiteSpace(QuickAddAmount) || string.IsNullOrWhiteSpace(QuickAddDescription))
             return;
 
-        if (!double.TryParse(QuickAddAmount.Replace(",", "."), System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var amount) || amount <= 0)
+        // decimal-Parse: User-Eingabe akzeptiert "1,50" und "1.50" gleichwertig.
+        // decimal hat keine NaN/Infinity, aber wir clampen auf MaxAmount damit
+        // sehr große Zahlen nicht den 999_999_999.99-Validator im Service triggern.
+        if (!decimal.TryParse(QuickAddAmount.Replace(",", "."), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var amount)
+            || amount <= 0m || amount > 999_999_999.99m)
             return;
 
         var description = QuickAddDescription.Trim();
@@ -723,8 +779,11 @@ public sealed partial class MainViewModel
 
         try
         {
-            // Gebündelter Aufruf: Score + Forecast + NetWorth in einem Durchgang
-            var bundle = await _financialAnalysisService.GetAllInsightsAsync();
+            // Gebündelter Aufruf: Score + Forecast + NetWorth in einem Durchgang.
+            // Token wird an den Service weitergereicht, damit die Berechnung selbst
+            // bei schnellem Tab-Wechsel abbricht — sonst laufen N parallele Insights
+            // gegen dieselben Services.
+            var bundle = await _financialAnalysisService.GetAllInsightsAsync(cts.Token);
 
             // Prüfen ob dieser Ladevorgang noch aktuell ist
             if (cts.Token.IsCancellationRequested) return;

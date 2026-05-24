@@ -7,6 +7,7 @@ namespace FinanzRechner.Helpers;
 /// Zentraler Helper für Währungsformatierung.
 /// Konfigurierbar über CurrencySettings (Standard: EUR/de-DE).
 /// Thread-safe durch volatile Snapshot-Pattern (atomarer Config-Swap).
+/// Bietet Overloads für decimal (Datenebene) und double (Calculator-Math).
 /// </summary>
 public static class CurrencyHelper
 {
@@ -38,10 +39,52 @@ public static class CurrencyHelper
         _config = new CurrencyConfig(settings.CurrencySymbol, culture, settings.SymbolAfterAmount, settings.CurrencyCode);
     }
 
+    // -------- decimal Overloads (Datenebene) --------
+
+    /// <summary>Betrag formatieren: "1.234,56 €" oder "$1,234.56"</summary>
+    public static string Format(decimal amount)
+    {
+        var c = _config;
+        var number = amount.ToString("N2", c.Culture);
+        return c.SymbolAfter ? $"{number} {c.Symbol}" : $"{c.Symbol}{number}";
+    }
+
+    /// <summary>Betrag mit Vorzeichen: "+1.234,56 €" oder "-1.234,56 €"</summary>
+    public static string FormatSigned(decimal amount)
+    {
+        var c = _config;
+        var number = amount.ToString("N2", c.Culture);
+        var prefix = amount >= 0 ? "+" : "";
+        return c.SymbolAfter ? $"{prefix}{number} {c.Symbol}" : $"{prefix}{c.Symbol}{number}";
+    }
+
+    /// <summary>Kompakt mit Vorzeichen ohne Leerzeichen: "+1.234,56€" (für FloatingText)</summary>
+    public static string FormatCompactSigned(decimal amount)
+    {
+        var c = _config;
+        var number = amount.ToString("N2", c.Culture);
+        var prefix = amount >= 0 ? "+" : "";
+        return $"{prefix}{number}{c.Symbol}";
+    }
+
+    /// <summary>Gerundeter Betrag für Chart-Achsen: "1.235 €" (N0)</summary>
+    public static string FormatAxis(decimal amount)
+    {
+        var c = _config;
+        var number = amount.ToString("N0", c.Culture);
+        return c.SymbolAfter ? $"{number} {c.Symbol}" : $"{c.Symbol}{number}";
+    }
+
+    /// <summary>Betrag für CSV-Export (InvariantCulture, Punkt als Dezimaltrenner)</summary>
+    public static string FormatInvariant(decimal amount) =>
+        amount.ToString("F2", CultureInfo.InvariantCulture);
+
+    // -------- double Overloads (Calculator-Math) --------
+
     /// <summary>Betrag formatieren: "1.234,56 €" oder "$1,234.56"</summary>
     public static string Format(double amount)
     {
-        var c = _config; // Lokaler Snapshot für konsistente Formatierung
+        var c = _config;
         var number = amount.ToString("N2", c.Culture);
         return c.SymbolAfter ? $"{number} {c.Symbol}" : $"{c.Symbol}{number}";
     }

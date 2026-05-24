@@ -8,9 +8,9 @@ namespace FinanzRechner.Models;
 public record MonthComparison(
     MonthSummary CurrentMonth,
     MonthSummary PreviousMonth,
-    double ExpenseChangePercent,
-    double IncomeChangePercent,
-    double BalanceChange,
+    decimal ExpenseChangePercent,
+    decimal IncomeChangePercent,
+    decimal BalanceChange,
     IReadOnlyList<CategoryChange> CategoryChanges)
 {
     /// <summary>Ob die Ausgaben gestiegen sind (schlecht).</summary>
@@ -23,7 +23,7 @@ public record MonthComparison(
     public string IncomeChangeDisplay => FormatChangePercent(IncomeChangePercent);
     public string BalanceChangeDisplay => CurrencyHelper.FormatSigned(BalanceChange);
 
-    private static string FormatChangePercent(double percent)
+    private static string FormatChangePercent(decimal percent)
         => percent >= 0 ? $"+{percent:F1}%" : $"{percent:F1}%";
 }
 
@@ -34,11 +34,11 @@ public record CategoryChange(
     ExpenseCategory Category,
     string? CustomCategoryId,
     string CategoryName,
-    double CurrentAmount,
-    double PreviousAmount)
+    decimal CurrentAmount,
+    decimal PreviousAmount)
 {
-    public double ChangeAmount => CurrentAmount - PreviousAmount;
-    public double ChangePercent => PreviousAmount > 0
+    public decimal ChangeAmount => CurrentAmount - PreviousAmount;
+    public decimal ChangePercent => PreviousAmount > 0
         ? ((CurrentAmount - PreviousAmount) / PreviousAmount) * 100
         : CurrentAmount > 0 ? 100 : 0;
 

@@ -12,13 +12,13 @@ public class BudgetAnalysisReport
     public string PeriodDisplay { get; set; } = string.Empty;
 
     /// <summary>Gesamtausgaben im Zeitraum</summary>
-    public double TotalExpenses { get; set; }
+    public decimal TotalExpenses { get; set; }
 
     /// <summary>Gesamteinnahmen im Zeitraum</summary>
-    public double TotalIncome { get; set; }
+    public decimal TotalIncome { get; set; }
 
     /// <summary>Bilanz (Einnahmen - Ausgaben)</summary>
-    public double Balance => TotalIncome - TotalExpenses;
+    public decimal Balance => TotalIncome - TotalExpenses;
 
     /// <summary>Ausgaben nach Kategorie, sortiert absteigend</summary>
     public List<CategoryBreakdownItem> CategoryBreakdown { get; set; } = [];
@@ -27,10 +27,10 @@ public class BudgetAnalysisReport
     public List<SavingTipItem> SavingTips { get; set; } = [];
 
     /// <summary>Ausgaben des Vormonats (fuer Vergleich)</summary>
-    public double PreviousMonthExpenses { get; set; }
+    public decimal PreviousMonthExpenses { get; set; }
 
     /// <summary>Prozentuale Veraenderung zum Vormonat</summary>
-    public double MonthChangePercent { get; set; }
+    public decimal MonthChangePercent { get; set; }
 
     /// <summary>Ob Ausgaben gestiegen oder gesunken sind</summary>
     public bool IsExpenseIncreased => MonthChangePercent > 0;
@@ -51,8 +51,8 @@ public class CategoryBreakdownItem
 {
     public ExpenseCategory Category { get; set; }
     public string CategoryName { get; set; } = string.Empty;
-    public double Amount { get; set; }
-    public double Percentage { get; set; }
+    public decimal Amount { get; set; }
+    public decimal Percentage { get; set; }
 
     public string AmountDisplay => CurrencyHelper.Format(Amount);
     public string PercentageDisplay => $"{Percentage:F0}%";
@@ -65,6 +65,6 @@ public class SavingTipItem
 {
     public string CategoryName { get; set; } = string.Empty;
     public string Tip { get; set; } = string.Empty;
-    public double Amount { get; set; }
+    public decimal Amount { get; set; }
     public string AmountDisplay => CurrencyHelper.Format(Amount);
 }

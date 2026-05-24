@@ -10,7 +10,7 @@ public class Expense
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public DateTime Date { get; set; } = DateTime.Today;
     public string Description { get; set; } = string.Empty;
-    public double Amount { get; set; }
+    public decimal Amount { get; set; }
     public ExpenseCategory Category { get; set; } = ExpenseCategory.Other;
     public string? Note { get; set; }
     public TransactionType Type { get; set; } = TransactionType.Expense;
@@ -74,12 +74,12 @@ public enum ExpenseCategory
 public record MonthSummary(
     int Year,
     int Month,
-    double TotalExpenses,
-    double TotalIncome,
-    double Balance,
-    Dictionary<ExpenseCategory, double> ByCategory)
+    decimal TotalExpenses,
+    decimal TotalIncome,
+    decimal Balance,
+    Dictionary<ExpenseCategory, decimal> ByCategory)
 {
-    public double TotalAmount => TotalExpenses;
+    public decimal TotalAmount => TotalExpenses;
 }
 
 /// <summary>
@@ -90,8 +90,8 @@ public class ExpenseFilter
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public ExpenseCategory? Category { get; set; }
-    public double? MinAmount { get; set; }
-    public double? MaxAmount { get; set; }
+    public decimal? MinAmount { get; set; }
+    public decimal? MaxAmount { get; set; }
 }
 
 /// <summary>
@@ -101,9 +101,9 @@ public class ExpenseGroup : List<Expense>
 {
     public DateTime Date { get; }
     public string DateDisplay { get; }
-    public double DayTotal { get; }
-    public double DayIncome { get; }
-    public double DayExpenses { get; }
+    public decimal DayTotal { get; }
+    public decimal DayIncome { get; }
+    public decimal DayExpenses { get; }
 
     public ExpenseGroup(DateTime date, string dateDisplay, IEnumerable<Expense> expenses) : base(expenses)
     {

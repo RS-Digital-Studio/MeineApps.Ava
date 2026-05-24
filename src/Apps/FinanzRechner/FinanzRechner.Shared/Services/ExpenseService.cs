@@ -15,7 +15,7 @@ public sealed class ExpenseService : IExpenseService, IDisposable
     private const string RecurringFile = "recurring_transactions.json";
     private const string NotificationsFile = "notifications.json";
     private const string LastProcessedFile = "last_processed.txt";
-    private const double MaxAmount = 999_999_999.99;
+    private const decimal MaxAmount = 999_999_999.99m;
     private const int MaxDescriptionLength = 200;
     private const int MaxNoteLength = 500;
     private const int MaxBackupVersions = 5;
@@ -85,41 +85,63 @@ public sealed class ExpenseService : IExpenseService, IDisposable
     public async Task<IReadOnlyList<Expense>> GetAllExpensesAsync()
     {
         await InitializeAsync();
-        return _expenses.OrderByDescending(e => e.Date).ToList();
+        // Snapshot unter Semaphore: verhindert "Collection was modified"-Race wenn
+        // parallel ein Quick-Add laeuft (auch fire-and-forget CheckBudgetWarning).
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _expenses.OrderByDescending(e => e.Date).ToList();
+        }
+        finally { _semaphore.Release(); }
     }
 
     public async Task<IReadOnlyList<Expense>> GetExpensesByMonthAsync(int year, int month)
     {
         await InitializeAsync();
-        return _expenses
-            .Where(e => e.Date.Year == year && e.Date.Month == month)
-            .OrderByDescending(e => e.Date)
-            .ToList();
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _expenses
+                .Where(e => e.Date.Year == year && e.Date.Month == month)
+                .OrderByDescending(e => e.Date)
+                .ToList();
+        }
+        finally { _semaphore.Release(); }
     }
 
     public async Task<IReadOnlyList<Expense>> GetExpensesAsync(ExpenseFilter filter)
     {
         await InitializeAsync();
-        var query = _expenses.AsEnumerable();
+        await _semaphore.WaitAsync();
+        try
+        {
+            var query = _expenses.AsEnumerable();
 
-        if (filter.StartDate.HasValue)
-            query = query.Where(e => e.Date >= filter.StartDate.Value);
-        if (filter.EndDate.HasValue)
-            query = query.Where(e => e.Date <= filter.EndDate.Value);
-        if (filter.Category.HasValue)
-            query = query.Where(e => e.Category == filter.Category.Value);
-        if (filter.MinAmount.HasValue)
-            query = query.Where(e => e.Amount >= filter.MinAmount.Value);
-        if (filter.MaxAmount.HasValue)
-            query = query.Where(e => e.Amount <= filter.MaxAmount.Value);
+            if (filter.StartDate.HasValue)
+                query = query.Where(e => e.Date >= filter.StartDate.Value);
+            if (filter.EndDate.HasValue)
+                query = query.Where(e => e.Date <= filter.EndDate.Value);
+            if (filter.Category.HasValue)
+                query = query.Where(e => e.Category == filter.Category.Value);
+            if (filter.MinAmount.HasValue)
+                query = query.Where(e => e.Amount >= filter.MinAmount.Value);
+            if (filter.MaxAmount.HasValue)
+                query = query.Where(e => e.Amount <= filter.MaxAmount.Value);
 
-        return query.OrderByDescending(e => e.Date).ToList();
+            return query.OrderByDescending(e => e.Date).ToList();
+        }
+        finally { _semaphore.Release(); }
     }
 
     public async Task<Expense?> GetExpenseAsync(string id)
     {
         await InitializeAsync();
-        return _expenses.FirstOrDefault(e => e.Id == id);
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _expenses.FirstOrDefault(e => e.Id == id);
+        }
+        finally { _semaphore.Release(); }
     }
 
     public async Task<Expense> AddExpenseAsync(Expense expense)
@@ -217,7 +239,7 @@ public sealed class ExpenseService : IExpenseService, IDisposable
         return new MonthSummary(year, month, totalExpenses, totalIncome, balance, byCategory);
     }
 
-    public async Task<double> GetTotalExpensesAsync(DateTime startDate, DateTime endDate)
+    public async Task<decimal> GetTotalExpensesAsync(DateTime startDate, DateTime endDate)
     {
         var filter = new ExpenseFilter { StartDate = startDate, EndDate = endDate };
         var expenses = await GetExpensesAsync(filter);
@@ -314,8 +336,8 @@ public sealed class ExpenseService : IExpenseService, IDisposable
             .Sum(e => e.Amount);
 
         var remaining = budget.MonthlyLimit - spent;
-        var percentageUsed = budget.MonthlyLimit > 0 ? (spent / budget.MonthlyLimit) * 100 : 0;
-        var alertLevel = percentageUsed >= 100 ? BudgetAlertLevel.Exceeded :
+        var percentageUsed = budget.MonthlyLimit > 0m ? (spent / budget.MonthlyLimit) * 100m : 0m;
+        var alertLevel = percentageUsed >= 100m ? BudgetAlertLevel.Exceeded :
                         percentageUsed >= budget.WarningThreshold ? BudgetAlertLevel.Warning :
                         BudgetAlertLevel.Safe;
 
@@ -326,25 +348,30 @@ public sealed class ExpenseService : IExpenseService, IDisposable
     public async Task<IReadOnlyList<BudgetStatus>> GetAllBudgetStatusAsync()
     {
         await InitializeAsync();
-        var today = DateTime.Today;
-        // Alle Monatsausgaben einmal laden statt pro Budget (N+1 vermeiden)
-        var monthExpenses = _expenses
-            .Where(e => e.Date.Year == today.Year && e.Date.Month == today.Month && e.Type == TransactionType.Expense)
-            .ToList();
-
-        var statusList = new List<BudgetStatus>();
-        foreach (var budget in _budgets.Where(b => b.IsEnabled))
+        await _semaphore.WaitAsync();
+        try
         {
-            var spent = monthExpenses.Where(e => e.Category == budget.Category).Sum(e => e.Amount);
-            var remaining = budget.MonthlyLimit - spent;
-            var percentageUsed = budget.MonthlyLimit > 0 ? (spent / budget.MonthlyLimit) * 100 : 0;
-            var alertLevel = percentageUsed >= 100 ? BudgetAlertLevel.Exceeded :
-                            percentageUsed >= budget.WarningThreshold ? BudgetAlertLevel.Warning :
-                            BudgetAlertLevel.Safe;
-            var localizedName = CategoryLocalizationHelper.GetLocalizedName(budget.Category, _localizationService);
-            statusList.Add(new BudgetStatus(budget.Category, budget.MonthlyLimit, spent, remaining, percentageUsed, alertLevel, localizedName));
+            var today = DateTime.Today;
+            // Alle Monatsausgaben einmal laden statt pro Budget (N+1 vermeiden)
+            var monthExpenses = _expenses
+                .Where(e => e.Date.Year == today.Year && e.Date.Month == today.Month && e.Type == TransactionType.Expense)
+                .ToList();
+
+            var statusList = new List<BudgetStatus>();
+            foreach (var budget in _budgets.Where(b => b.IsEnabled))
+            {
+                var spent = monthExpenses.Where(e => e.Category == budget.Category).Sum(e => e.Amount);
+                var remaining = budget.MonthlyLimit - spent;
+                var percentageUsed = budget.MonthlyLimit > 0m ? (spent / budget.MonthlyLimit) * 100m : 0m;
+                var alertLevel = percentageUsed >= 100m ? BudgetAlertLevel.Exceeded :
+                                percentageUsed >= budget.WarningThreshold ? BudgetAlertLevel.Warning :
+                                BudgetAlertLevel.Safe;
+                var localizedName = CategoryLocalizationHelper.GetLocalizedName(budget.Category, _localizationService);
+                statusList.Add(new BudgetStatus(budget.Category, budget.MonthlyLimit, spent, remaining, percentageUsed, alertLevel, localizedName));
+            }
+            return statusList;
         }
-        return statusList;
+        finally { _semaphore.Release(); }
     }
 
     #endregion
@@ -730,7 +757,7 @@ public sealed class ExpenseService : IExpenseService, IDisposable
             throw new ArgumentException("Beschreibung darf nicht leer sein.");
         if (expense.Description.Length > MaxDescriptionLength)
             throw new ArgumentException($"Beschreibung darf maximal {MaxDescriptionLength} Zeichen lang sein.");
-        if (expense.Amount <= 0)
+        if (expense.Amount <= 0m)
             throw new ArgumentException("Betrag muss größer als Null sein.");
         if (expense.Amount > MaxAmount)
             throw new ArgumentException($"Betrag darf {MaxAmount:N2} nicht überschreiten.");
@@ -741,11 +768,11 @@ public sealed class ExpenseService : IExpenseService, IDisposable
     private static void ValidateBudget(Budget budget)
     {
         ArgumentNullException.ThrowIfNull(budget);
-        if (budget.MonthlyLimit <= 0)
+        if (budget.MonthlyLimit <= 0m)
             throw new ArgumentException("Monatliches Limit muss größer als Null sein.");
         if (budget.MonthlyLimit > MaxAmount)
             throw new ArgumentException($"Monatliches Limit darf {MaxAmount:N2} nicht überschreiten.");
-        if (budget.WarningThreshold is < 0 or > 100)
+        if (budget.WarningThreshold is < 0m or > 100m)
             throw new ArgumentException("Warnschwelle muss zwischen 0 und 100 liegen.");
     }
 
@@ -754,7 +781,7 @@ public sealed class ExpenseService : IExpenseService, IDisposable
         ArgumentNullException.ThrowIfNull(transaction);
         if (string.IsNullOrWhiteSpace(transaction.Description))
             throw new ArgumentException("Beschreibung darf nicht leer sein.");
-        if (transaction.Amount <= 0)
+        if (transaction.Amount <= 0m)
             throw new ArgumentException("Betrag muss größer als Null sein.");
         if (transaction.EndDate.HasValue && transaction.EndDate.Value <= transaction.StartDate)
             throw new ArgumentException("Enddatum muss nach dem Startdatum liegen.");
@@ -765,19 +792,27 @@ public sealed class ExpenseService : IExpenseService, IDisposable
         if (_notificationService == null) return;
         try
         {
-            var budget = _budgets.FirstOrDefault(b => b.Category == category && b.IsEnabled);
-            if (budget == null) return;
+            Budget? budget;
+            decimal spent;
+            await _semaphore.WaitAsync();
+            try
+            {
+                budget = _budgets.FirstOrDefault(b => b.Category == category && b.IsEnabled);
+                if (budget == null) return;
 
-            var startOfMonth = new DateTime(date.Year, date.Month, 1);
-            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
-            var spent = _expenses
-                .Where(e => e.Category == category && e.Type == TransactionType.Expense
-                    && e.Date >= startOfMonth && e.Date <= endOfMonth)
-                .Sum(e => e.Amount);
-            var percentageUsed = budget.MonthlyLimit > 0 ? (spent / budget.MonthlyLimit * 100) : 0;
+                var startOfMonth = new DateTime(date.Year, date.Month, 1);
+                var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+                spent = _expenses
+                    .Where(e => e.Category == category && e.Type == TransactionType.Expense
+                        && e.Date >= startOfMonth && e.Date <= endOfMonth)
+                    .Sum(e => e.Amount);
+            }
+            finally { _semaphore.Release(); }
+
+            var percentageUsed = budget.MonthlyLimit > 0m ? (spent / budget.MonthlyLimit * 100m) : 0m;
             var notificationKey = $"{category}_{date:yyyy-MM}";
 
-            if (percentageUsed >= 80 && !_sentNotifications.ContainsKey($"{notificationKey}_80"))
+            if (percentageUsed >= 80m && !_sentNotifications.ContainsKey($"{notificationKey}_80"))
             {
                 var categoryName = CategoryLocalizationHelper.GetLocalizedName(category, _localizationService);
                 await _notificationService.SendBudgetAlertAsync(categoryName, percentageUsed, spent, budget.MonthlyLimit);

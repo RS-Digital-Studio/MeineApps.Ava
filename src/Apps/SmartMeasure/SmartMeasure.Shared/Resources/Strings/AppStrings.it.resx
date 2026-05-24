@@ -417,4 +417,50 @@
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Premi di nuovo per uscire</value>
   </data>
+
+  <!-- AR-Capture Stats-Panel + Footer -->
+  <data name="ArStatPoints" xml:space="preserve">
+    <value>PUNTI</value>
+  </data>
+  <data name="ArStatArea" xml:space="preserve">
+    <value>AREA</value>
+  </data>
+  <data name="ArStatLength" xml:space="preserve">
+    <value>LUNGHEZZA</value>
+  </data>
+  <data name="ArStatHeightDelta" xml:space="preserve">
+    <value>&#916;H</value>
+  </data>
+  <data name="ArStatAnchors" xml:space="preserve">
+    <value>ANCORE</value>
+  </data>
+  <data name="ArStatTime" xml:space="preserve">
+    <value>TEMPO</value>
+  </data>
+  <data name="ArReticleHoldStill" xml:space="preserve">
+    <value>STAI FERMO</value>
+  </data>
+  <data name="ArBadgeReady" xml:space="preserve">
+    <value>PRONTO</value>
+  </data>
+
+  <!-- AR-Tracking Failure Reasons -->
+  <data name="ArTrackingLost" xml:space="preserve">
+    <value>Tracciamento perso</value>
+  </data>
+  <data name="ArTrackingInsufficientLight" xml:space="preserve">
+    <value>Luce insufficiente</value>
+  </data>
+  <data name="ArTrackingInsufficientFeatures" xml:space="preserve">
+    <value>Servono pi&#249; texture/bordi</value>
+  </data>
+  <data name="ArTrackingExcessiveMotion" xml:space="preserve">
+    <value>Muoviti pi&#249; lentamente</value>
+  </data>
+  <data name="ArTrackingCameraUnavailable" xml:space="preserve">
+    <value>Fotocamera non disponibile</value>
+  </data>
+  <data name="ArTrackingBadState" xml:space="preserve">
+    <value>Errore di sessione</value>
+  </data>
 </root>

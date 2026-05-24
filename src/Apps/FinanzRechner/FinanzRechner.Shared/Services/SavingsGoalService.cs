@@ -106,7 +106,7 @@ public sealed class SavingsGoalService : ISavingsGoalService, IDisposable
         return _goals.OrderBy(g => g.IsCompleted).ThenBy(g => g.Deadline ?? DateTime.MaxValue).ToList();
     }
 
-    public async Task<bool> AdjustAmountAsync(string goalId, double amount)
+    public async Task<bool> AdjustAmountAsync(string goalId, decimal amount)
     {
         await InitializeAsync();
         await _semaphore.WaitAsync();
@@ -115,7 +115,7 @@ public sealed class SavingsGoalService : ISavingsGoalService, IDisposable
             var goal = _goals.FirstOrDefault(g => g.Id == goalId);
             if (goal == null) return false;
 
-            goal.CurrentAmount = Math.Max(0, goal.CurrentAmount + amount);
+            goal.CurrentAmount = Math.Max(0m, goal.CurrentAmount + amount);
             if (goal.CurrentAmount >= goal.TargetAmount)
                 goal.IsCompleted = true;
 
@@ -194,7 +194,7 @@ public sealed class SavingsGoalService : ISavingsGoalService, IDisposable
         ArgumentNullException.ThrowIfNull(goal);
         if (string.IsNullOrWhiteSpace(goal.Name))
             throw new ArgumentException("Name darf nicht leer sein.");
-        if (goal.TargetAmount <= 0)
+        if (goal.TargetAmount <= 0m)
             throw new ArgumentException("Zielbetrag muss größer als Null sein.");
     }
 

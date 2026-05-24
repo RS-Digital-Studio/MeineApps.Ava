@@ -126,11 +126,11 @@ public sealed class AccountService : IAccountService, IDisposable
         return _accounts.Where(a => a.IsActive).OrderBy(a => a.SortOrder).ToList();
     }
 
-    public async Task<double> GetAccountBalanceAsync(string accountId)
+    public async Task<decimal> GetAccountBalanceAsync(string accountId)
     {
         // Nutzt GetAllAccountBalancesAsync um N+1 Queries zu vermeiden
         var balances = await GetAllAccountBalancesAsync();
-        return balances.FirstOrDefault(b => b.Account.Id == accountId)?.CurrentBalance ?? 0;
+        return balances.FirstOrDefault(b => b.Account.Id == accountId)?.CurrentBalance ?? 0m;
     }
 
     public async Task<IReadOnlyList<AccountBalance>> GetAllAccountBalancesAsync()
@@ -160,7 +160,7 @@ public sealed class AccountService : IAccountService, IDisposable
 
             var totalIncome = accountExpenses.Where(e => e.Type == TransactionType.Income).Sum(e => e.Amount);
             var totalExpenses = accountExpenses.Where(e => e.Type == TransactionType.Expense).Sum(e => e.Amount);
-            var transfersIn = transfersByTarget.GetValueOrDefault(account.Id, 0);
+            var transfersIn = transfersByTarget.GetValueOrDefault(account.Id, 0m);
             var transfersOut = accountExpenses.Where(e => e.Type == TransactionType.Transfer).Sum(e => e.Amount);
 
             var currentBalance = account.InitialBalance + totalIncome - totalExpenses + transfersIn - transfersOut;
@@ -176,7 +176,7 @@ public sealed class AccountService : IAccountService, IDisposable
         return balances;
     }
 
-    public async Task<double> GetNetWorthAsync()
+    public async Task<decimal> GetNetWorthAsync()
     {
         var balances = await GetAllAccountBalancesAsync();
         return balances.Where(b => b.Account.IncludeInNetWorth).Sum(b => b.CurrentBalance);
@@ -184,7 +184,7 @@ public sealed class AccountService : IAccountService, IDisposable
 
     public async Task<(Expense from, Expense to)> CreateTransferAsync(
         string fromAccountId, string toAccountId,
-        double amount, string description, DateTime date, string? note = null)
+        decimal amount, string description, DateTime date, string? note = null)
     {
         var transferId = Guid.NewGuid().ToString();
 

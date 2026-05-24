@@ -152,7 +152,12 @@ public sealed partial class CompoundInterestViewModel : ViewModelBase, IDisposab
     private void Calculate()
     {
         ErrorMessage = null;
-        if (Principal <= 0 || Years <= 0 || CompoundingsPerYear <= 0)
+        // NaN/Infinity-Schutz: User-Eingabe via NumericUpDown kann theoretisch
+        // out-of-range Werte liefern; Math.Pow erzeugt sonst Infinity → UI-Crash.
+        if (!double.IsFinite(Principal) || Principal <= 0
+            || !double.IsFinite(AnnualRate) || AnnualRate < 0
+            || Years <= 0 || Years > 100
+            || CompoundingsPerYear <= 0 || CompoundingsPerYear > 365)
         {
             HasResult = false;
             return;

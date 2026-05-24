@@ -11,10 +11,10 @@ public class SavingsGoal
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Zielbetrag.</summary>
-    public double TargetAmount { get; set; }
+    public decimal TargetAmount { get; set; }
 
     /// <summary>Aktuell angespartes Guthaben.</summary>
-    public double CurrentAmount { get; set; }
+    public decimal CurrentAmount { get; set; }
 
     /// <summary>Optionales Zieldatum.</summary>
     public DateTime? Deadline { get; set; }
@@ -39,10 +39,10 @@ public class SavingsGoal
     // Berechnete Eigenschaften
 
     /// <summary>Fortschritt in Prozent (0-100+).</summary>
-    public double ProgressPercent => TargetAmount > 0 ? Math.Min((CurrentAmount / TargetAmount) * 100, 100) : 0;
+    public decimal ProgressPercent => TargetAmount > 0 ? Math.Min((CurrentAmount / TargetAmount) * 100m, 100m) : 0m;
 
     /// <summary>Verbleibender Betrag bis zum Ziel.</summary>
-    public double RemainingAmount => Math.Max(TargetAmount - CurrentAmount, 0);
+    public decimal RemainingAmount => Math.Max(TargetAmount - CurrentAmount, 0m);
 
     /// <summary>Verbleibende Tage bis zum Deadline (null wenn kein Deadline).</summary>
     public int? DaysRemaining => Deadline.HasValue
@@ -50,11 +50,11 @@ public class SavingsGoal
         : null;
 
     /// <summary>Benötigter monatlicher Sparbetrag um das Ziel zu erreichen.</summary>
-    public double? RequiredMonthlySaving
+    public decimal? RequiredMonthlySaving
     {
         get
         {
-            if (!Deadline.HasValue || RemainingAmount <= 0) return null;
+            if (!Deadline.HasValue || RemainingAmount <= 0m) return null;
             var monthsLeft = Math.Max(((Deadline.Value.Year - DateTime.Today.Year) * 12)
                 + Deadline.Value.Month - DateTime.Today.Month, 1);
             return RemainingAmount / monthsLeft;

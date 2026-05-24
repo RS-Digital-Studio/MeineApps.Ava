@@ -202,5 +202,21 @@ namespace SmartMeasure.Shared.Resources.Strings {
 
         // Back Button
         public static string PressBackAgainToExit => ResourceManager.GetString("PressBackAgainToExit", resourceCulture) ?? "";
+
+        // AR-Capture Stats-Panel + Tracking-Reasons (Plan-Kap. 4.11)
+        public static string ArStatPoints => ResourceManager.GetString("ArStatPoints", resourceCulture) ?? "";
+        public static string ArStatArea => ResourceManager.GetString("ArStatArea", resourceCulture) ?? "";
+        public static string ArStatLength => ResourceManager.GetString("ArStatLength", resourceCulture) ?? "";
+        public static string ArStatHeightDelta => ResourceManager.GetString("ArStatHeightDelta", resourceCulture) ?? "";
+        public static string ArStatAnchors => ResourceManager.GetString("ArStatAnchors", resourceCulture) ?? "";
+        public static string ArStatTime => ResourceManager.GetString("ArStatTime", resourceCulture) ?? "";
+        public static string ArReticleHoldStill => ResourceManager.GetString("ArReticleHoldStill", resourceCulture) ?? "";
+        public static string ArBadgeReady => ResourceManager.GetString("ArBadgeReady", resourceCulture) ?? "";
+        public static string ArTrackingLost => ResourceManager.GetString("ArTrackingLost", resourceCulture) ?? "";
+        public static string ArTrackingInsufficientLight => ResourceManager.GetString("ArTrackingInsufficientLight", resourceCulture) ?? "";
+        public static string ArTrackingInsufficientFeatures => ResourceManager.GetString("ArTrackingInsufficientFeatures", resourceCulture) ?? "";
+        public static string ArTrackingExcessiveMotion => ResourceManager.GetString("ArTrackingExcessiveMotion", resourceCulture) ?? "";
+        public static string ArTrackingCameraUnavailable => ResourceManager.GetString("ArTrackingCameraUnavailable", resourceCulture) ?? "";
+        public static string ArTrackingBadState => ResourceManager.GetString("ArTrackingBadState", resourceCulture) ?? "";
     }
 }

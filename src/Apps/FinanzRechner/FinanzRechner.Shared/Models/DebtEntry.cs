@@ -12,16 +12,16 @@ public class DebtEntry
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Ursprünglicher Schuldenbetrag.</summary>
-    public double OriginalAmount { get; set; }
+    public decimal OriginalAmount { get; set; }
 
     /// <summary>Aktuell verbleibender Betrag.</summary>
-    public double RemainingAmount { get; set; }
+    public decimal RemainingAmount { get; set; }
 
     /// <summary>Jährlicher Zinssatz in Prozent.</summary>
-    public double InterestRate { get; set; }
+    public decimal InterestRate { get; set; }
 
     /// <summary>Monatliche Rate.</summary>
-    public double MonthlyPayment { get; set; }
+    public decimal MonthlyPayment { get; set; }
 
     /// <summary>Startdatum der Schuld.</summary>
     public DateTime StartDate { get; set; } = DateTime.Today;
@@ -46,33 +46,36 @@ public class DebtEntry
     // Berechnete Eigenschaften
 
     /// <summary>Bereits getilgter Betrag.</summary>
-    public double PaidAmount => OriginalAmount - RemainingAmount;
+    public decimal PaidAmount => OriginalAmount - RemainingAmount;
 
     /// <summary>Fortschritt der Tilgung in Prozent.</summary>
-    public double PayoffPercent => OriginalAmount > 0
-        ? Math.Min((PaidAmount / OriginalAmount) * 100, 100) : 0;
+    public decimal PayoffPercent => OriginalAmount > 0m
+        ? Math.Min((PaidAmount / OriginalAmount) * 100m, 100m) : 0m;
 
     /// <summary>
     /// Geschätzte Restlaufzeit in Monaten.
     /// Analytische Formel: n = -ln(1 - r*P/M) / ln(1+r)
     /// wobei r=Monatszins, P=Restbetrag, M=Rate.
+    /// Mathematische Berechnung erfolgt intern in double (Math.Log).
     /// </summary>
     public int? EstimatedMonthsRemaining
     {
         get
         {
-            if (MonthlyPayment <= 0 || RemainingAmount <= 0) return null;
-            if (InterestRate <= 0)
+            if (MonthlyPayment <= 0m || RemainingAmount <= 0m) return null;
+            if (InterestRate <= 0m)
                 return (int)Math.Ceiling(RemainingAmount / MonthlyPayment);
 
-            var monthlyRate = InterestRate / 100.0 / 12.0;
+            var monthlyRate = (double)InterestRate / 100.0 / 12.0;
+            var remaining = (double)RemainingAmount;
+            var payment = (double)MonthlyPayment;
 
             // Rate muss die monatlichen Zinsen übersteigen
-            if (MonthlyPayment <= RemainingAmount * monthlyRate)
+            if (payment <= remaining * monthlyRate)
                 return null;
 
             // Analytische Formel statt iterativer Schleife (O(1) statt O(n))
-            var months = -Math.Log(1 - monthlyRate * RemainingAmount / MonthlyPayment)
+            var months = -Math.Log(1 - monthlyRate * remaining / payment)
                          / Math.Log(1 + monthlyRate);
             return (int)Math.Ceiling(months);
         }
@@ -85,7 +88,7 @@ public class DebtEntry
             : null;
 
     /// <summary>Gesamte geschätzte Zinskosten über die Restlaufzeit.</summary>
-    public double? TotalInterestRemaining
+    public decimal? TotalInterestRemaining
     {
         get
         {

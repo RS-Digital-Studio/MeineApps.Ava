@@ -16,7 +16,7 @@ public interface ISavingsGoalService
     Task<IReadOnlyList<SavingsGoal>> GetAllGoalsAsync();
 
     /// <summary>Betrag zum Sparziel hinzufügen oder abziehen.</summary>
-    Task<bool> AdjustAmountAsync(string goalId, double amount);
+    Task<bool> AdjustAmountAsync(string goalId, decimal amount);
 
     /// <summary>Sparziel als abgeschlossen markieren.</summary>
     Task<bool> CompleteGoalAsync(string goalId);

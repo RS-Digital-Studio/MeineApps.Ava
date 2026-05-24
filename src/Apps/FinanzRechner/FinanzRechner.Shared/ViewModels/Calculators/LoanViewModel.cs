@@ -146,7 +146,10 @@ public sealed partial class LoanViewModel : ViewModelBase, IDisposable
     private void Calculate()
     {
         ErrorMessage = null;
-        if (LoanAmount <= 0 || AnnualRate < 0 || Years <= 0)
+        // NaN/Infinity-Schutz: Math.Pow auf Tilgungs-Formel erzeugt sonst Infinity
+        if (!double.IsFinite(LoanAmount) || LoanAmount <= 0
+            || !double.IsFinite(AnnualRate) || AnnualRate < 0
+            || Years <= 0 || Years > 100)
         {
             HasResult = false;
             return;

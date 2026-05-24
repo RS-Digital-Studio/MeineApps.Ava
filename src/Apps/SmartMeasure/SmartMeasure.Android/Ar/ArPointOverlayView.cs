@@ -773,7 +773,7 @@ public sealed partial class ArPointOverlayView : View
             var rect = new RectF(cx - progR, cy - progR, cx + progR, cy + progR);
             canvas.DrawArc(rect, -90f, sweepAngle, false, progressPaint);
 
-            canvas.DrawText("STILL HALTEN", cx, cy - progR - 14 * _density, _reticleTextPaint);
+            canvas.DrawText(_state.Labels.HoldStill, cx, cy - progR - 14 * _density, _reticleTextPaint);
         }
 
         // Stabilitäts-Balken links vom Reticle (nur wenn nicht perfekt stabil)
@@ -901,42 +901,46 @@ public sealed partial class ArPointOverlayView : View
         var x = rect.Left + padding;
         var y = rect.Top + padding + 12 * _density;
 
-        canvas.DrawText("ZEIT", x, y, _statsLabelPaint);
+        // Plan-Kap. 4.11: Labels aus dem lokalisierten Snapshot.
+        var labels = _state.Labels;
+
+        canvas.DrawText(labels.Time, x, y, _statsLabelPaint);
         canvas.DrawText(timeText, x + 50 * _density, y, _statsTextPaint);
         y += lineHeight;
 
-        canvas.DrawText("PUNKTE", x, y, _statsLabelPaint);
+        canvas.DrawText(labels.Points, x, y, _statsLabelPaint);
         canvas.DrawText(pointCount.ToString(), x + 50 * _density, y, _statsTextPaint);
         y += lineHeight;
 
         if (_state.LiveAreaSquareMeters > 0.01f)
         {
-            canvas.DrawText("FLÄCHE", x, y, _statsLabelPaint);
+            canvas.DrawText(labels.Area, x, y, _statsLabelPaint);
             canvas.DrawText($"{_state.LiveAreaSquareMeters:F1} m²",
                 x + 50 * _density, y, _statsTextPaint);
         }
         else
         {
+            // "PLANES" ist ein technischer Begriff (AR-Tracking), bleibt englisch — kein RESX-Key.
             canvas.DrawText("PLANES", x, y, _statsLabelPaint);
             canvas.DrawText(_state.DetectedPlaneCount.ToString(),
                 x + 50 * _density, y, _statsTextPaint);
         }
         y += lineHeight;
 
-        canvas.DrawText("LÄNGE", x, y, _statsLabelPaint);
+        canvas.DrawText(labels.Length, x, y, _statsLabelPaint);
         canvas.DrawText($"{_state.LiveLengthMeters:F2} m", x + 50 * _density, y, _statsTextPaint);
 
         if (_state.HeightRangeMeters > 0.05f)
         {
             y += lineHeight;
-            canvas.DrawText("ΔH", x, y, _statsLabelPaint);
+            canvas.DrawText(labels.HeightDelta, x, y, _statsLabelPaint);
             canvas.DrawText($"{_state.HeightRangeMeters:F2} m", x + 50 * _density, y, _statsTextPaint);
         }
 
         if (_state.AnchorCount > 0)
         {
             y += lineHeight;
-            canvas.DrawText("ANCHORS", x, y, _statsLabelPaint);
+            canvas.DrawText(labels.Anchors, x, y, _statsLabelPaint);
             // Farbe nach Qualität: Grün ok, Gelb nah Limit
             _statsTextPaint.Color = _state.AnchorCount >= 100
                 ? Color.Argb(255, 255, 193, 7)
@@ -1062,24 +1066,25 @@ public sealed partial class ArPointOverlayView : View
 
         canvas.DrawRoundRect(rect, 10 * _density, 10 * _density, _footerBgPaint);
 
-        // 3 Spalten: Punkte / Länge / Fläche
+        // 3 Spalten: Punkte / Länge / Fläche. Plan-Kap. 4.11: Lokalisierte Labels.
+        var fLabels = _state.Labels;
         var colW = (rect.Width()) / 3f;
         var labelY = rect.Top + 16 * _density;
         var valueY = rect.Top + 38 * _density;
 
         // Punkte
         var cx1 = rect.Left + colW / 2f;
-        canvas.DrawText("PUNKTE", cx1, labelY, _footerLabelPaint);
+        canvas.DrawText(fLabels.Points, cx1, labelY, _footerLabelPaint);
         canvas.DrawText(pointCount.ToString(), cx1, valueY, _footerValuePaint);
 
         // Länge
         var cx2 = rect.Left + colW * 1.5f;
-        canvas.DrawText("LÄNGE", cx2, labelY, _footerLabelPaint);
+        canvas.DrawText(fLabels.Length, cx2, labelY, _footerLabelPaint);
         canvas.DrawText($"{_state.LiveLengthMeters:F2} m", cx2, valueY, _footerValuePaint);
 
         // Fläche
         var cx3 = rect.Left + colW * 2.5f;
-        canvas.DrawText("FLÄCHE", cx3, labelY, _footerLabelPaint);
+        canvas.DrawText(fLabels.Area, cx3, labelY, _footerLabelPaint);
         canvas.DrawText(
             _state.LiveAreaSquareMeters >= 0.01f
                 ? $"{_state.LiveAreaSquareMeters:F1} m²"
@@ -1106,9 +1111,11 @@ public sealed partial class ArPointOverlayView : View
         var badgeY = MathF.Max(_state.TopInsetPixels + 110 * _density, 100 * _density);
         var badgeH = 32f * _density;
 
-        // Text: "BEREIT" oder Checkliste der fehlenden Bedingungen
+        // Text: "BEREIT" (lokalisiert) oder Checkliste der fehlenden Bedingungen.
+        // ReadinessIssues kommt aus ValidatePreMeasureConditions in ArCaptureActivity —
+        // dort wird die Liste bereits aus AppStrings zusammengebaut, also auch lokalisiert.
         var text = _state.IsReadyToMeasure
-            ? $"✓ BEREIT  {_state.TrackingQualityScore}%"
+            ? $"✓ {_state.Labels.Ready}  {_state.TrackingQualityScore}%"
             : $"⏳ {_state.ReadinessIssues}";
 
         var textWidth = _bannerTextPaint.MeasureText(text);

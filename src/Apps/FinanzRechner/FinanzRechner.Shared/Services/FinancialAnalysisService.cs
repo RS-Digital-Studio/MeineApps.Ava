@@ -33,8 +33,10 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
     /// <summary>
     /// Gebündeltes Laden: Alle Daten einmal abfragen, dann Score + Forecast + NetWorth berechnen.
     /// Spart ~4 redundante Service-Aufrufe gegenüber einzelnem Aufruf von Score + Forecast + NetWorth.
+    /// CancellationToken cancelt das await, sodass schnelle Tab-Wechsel keine veralteten Ergebnisse
+    /// in die UI schreiben.
     /// </summary>
-    public async Task<FinancialInsightsBundle> GetAllInsightsAsync()
+    public async Task<FinancialInsightsBundle> GetAllInsightsAsync(CancellationToken cancellationToken = default)
     {
         var today = DateTime.Today;
         var prevMonth = GetPreviousMonth(today);
@@ -53,7 +55,9 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
         await Task.WhenAll(
             currentMonthTask, previousMonthTask, budgetsTask,
             debtsTask, goalsTask, recurringTask,
-            monthExpensesTask, netWorthTask, totalDebtTask);
+            monthExpensesTask, netWorthTask, totalDebtTask)
+            .WaitAsync(cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var currentMonth = currentMonthTask.Result;
         var previousMonth = previousMonthTask.Result;
@@ -96,10 +100,10 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
         var prev = GetPreviousMonth(new DateTime(year, month, 1));
         var previous = await _expenseService.GetMonthSummaryAsync(prev.Year, prev.Month);
 
-        var expenseChange = previous.TotalExpenses > 0
-            ? ((current.TotalExpenses - previous.TotalExpenses) / previous.TotalExpenses) * 100 : 0;
-        var incomeChange = previous.TotalIncome > 0
-            ? ((current.TotalIncome - previous.TotalIncome) / previous.TotalIncome) * 100 : 0;
+        var expenseChange = previous.TotalExpenses > 0m
+            ? ((current.TotalExpenses - previous.TotalExpenses) / previous.TotalExpenses) * 100m : 0m;
+        var incomeChange = previous.TotalIncome > 0m
+            ? ((current.TotalIncome - previous.TotalIncome) / previous.TotalIncome) * 100m : 0m;
         var balanceChange = current.Balance - previous.Balance;
 
         var allCategories = current.ByCategory.Keys
@@ -108,12 +112,12 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
 
         var categoryChanges = allCategories.Select(cat =>
         {
-            var currentAmount = current.ByCategory.GetValueOrDefault(cat, 0);
-            var previousAmount = previous.ByCategory.GetValueOrDefault(cat, 0);
+            var currentAmount = current.ByCategory.GetValueOrDefault(cat, 0m);
+            var previousAmount = previous.ByCategory.GetValueOrDefault(cat, 0m);
             var name = CategoryLocalizationHelper.GetLocalizedName(cat, _localizationService);
             return new CategoryChange(cat, null, name, currentAmount, previousAmount);
         })
-        .Where(c => c.CurrentAmount > 0 || c.PreviousAmount > 0)
+        .Where(c => c.CurrentAmount > 0m || c.PreviousAmount > 0m)
         .OrderByDescending(c => Math.Abs(c.ChangeAmount))
         .ToList();
 
@@ -131,7 +135,7 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
         return CalculateForecast(today, monthExpenses, budgets);
     }
 
-    public async Task<double> CalculateNetWorthAsync()
+    public async Task<decimal> CalculateNetWorthAsync()
     {
         var accountNetWorth = await _accountService.GetNetWorthAsync();
         var totalDebt = await _debtService.GetTotalDebtAsync();
@@ -151,14 +155,14 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
         var tips = new List<string>();
 
         // Faktor 1: Sparquote (max 25 Punkte)
-        var savingsRate = currentMonth.TotalIncome > 0
-            ? (currentMonth.Balance / currentMonth.TotalIncome) * 100 : 0;
+        var savingsRate = currentMonth.TotalIncome > 0m
+            ? (currentMonth.Balance / currentMonth.TotalIncome) * 100m : 0m;
         var savingsPoints = savingsRate switch
         {
-            >= 30 => 25, >= 20 => 20, >= 10 => 15, >= 5 => 10, >= 0 => 5, _ => 0
+            >= 30m => 25, >= 20m => 20, >= 10m => 15, >= 5m => 10, >= 0m => 5, _ => 0
         };
         factors.Add(new ScoreFactor(T("ScoreSavingsRate") ?? "Sparquote", $"{savingsRate:F0}%", savingsPoints, 25));
-        if (savingsRate < 20)
+        if (savingsRate < 20m)
             tips.Add(T("TipIncreaseSavings") ?? "Versuche mindestens 20% deines Einkommens zu sparen.");
 
         // Faktor 2: Budget-Einhaltung (max 25 Punkte)
@@ -187,13 +191,13 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
         if (activeDebts.Count > 0)
         {
             var totalDebt = activeDebts.Sum(d => d.RemainingAmount);
-            var monthlyIncome = currentMonth.TotalIncome > 0 ? currentMonth.TotalIncome : 1;
+            var monthlyIncome = currentMonth.TotalIncome > 0m ? currentMonth.TotalIncome : 1m;
             var debtToIncomeRatio = totalDebt / monthlyIncome;
             debtPoints = debtToIncomeRatio switch
             {
-                <= 1 => 20, <= 3 => 15, <= 6 => 10, <= 12 => 5, _ => 0
+                <= 1m => 20, <= 3m => 15, <= 6m => 10, <= 12m => 5, _ => 0
             };
-            if (debtToIncomeRatio > 3)
+            if (debtToIncomeRatio > 3m)
                 tips.Add(T("TipReduceDebt") ?? "Dein Schulden-Einkommen-Verhältnis ist hoch. Priorisiere die Tilgung.");
         }
         factors.Add(new ScoreFactor(
@@ -203,12 +207,12 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
 
         // Faktor 4: Regelmäßigkeit & Ziele (max 25 Punkte)
         var regularityPoints = 0;
-        if (currentMonth.TotalIncome > 0) regularityPoints += 8;
+        if (currentMonth.TotalIncome > 0m) regularityPoints += 8;
         var activeGoals = goals.Where(g => !g.IsCompleted).ToList();
         if (activeGoals.Count > 0) regularityPoints += 7;
-        if (previousMonth.TotalExpenses > 0 && currentMonth.TotalExpenses <= previousMonth.TotalExpenses)
+        if (previousMonth.TotalExpenses > 0m && currentMonth.TotalExpenses <= previousMonth.TotalExpenses)
             regularityPoints += 5;
-        else if (previousMonth.TotalExpenses > 0)
+        else if (previousMonth.TotalExpenses > 0m)
             regularityPoints += 2;
         if (recurring.Count > 0) regularityPoints += 5;
 
@@ -224,9 +228,9 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
         var (grade, colorHex) = FinancialScore.GetGradeFromScore(totalScore);
 
         int? trend = null;
-        if (previousMonth.TotalIncome > 0)
+        if (previousMonth.TotalIncome > 0m)
         {
-            var prevSavingsRate = (previousMonth.Balance / previousMonth.TotalIncome) * 100;
+            var prevSavingsRate = (previousMonth.Balance / previousMonth.TotalIncome) * 100m;
             trend = (int)(savingsRate - prevSavingsRate);
         }
 
@@ -249,28 +253,34 @@ public sealed class FinancialAnalysisService : IFinancialAnalysisService
         var totalExpensesSoFar = monthExpenses.Where(e => e.Type == TransactionType.Expense).Sum(e => e.Amount);
         var totalIncomeSoFar = monthExpenses.Where(e => e.Type == TransactionType.Income).Sum(e => e.Amount);
 
-        var avgDailyExpense = daysPassed > 0 ? totalExpensesSoFar / daysPassed : 0;
+        var avgDailyExpense = daysPassed > 0 ? totalExpensesSoFar / daysPassed : 0m;
         var projectedExpenses = avgDailyExpense * daysInMonth;
 
-        double? dailyBudgetRemaining = null;
+        decimal? dailyBudgetRemaining = null;
         if (budgets.Count > 0 && daysRemaining > 0)
         {
-            var totalBudgetRemaining = budgets.Sum(b => Math.Max(0, b.Remaining));
+            var totalBudgetRemaining = budgets.Sum(b => Math.Max(0m, b.Remaining));
             dailyBudgetRemaining = totalBudgetRemaining / daysRemaining;
         }
 
-        // Trend-Daten
-        var trend = new List<(int Day, double CumulativeExpenses)>();
-        var cumulative = 0.0;
+        // Trend-Daten — Single-Pass über alle Monatsausgaben (vorher O(N×D), jetzt O(N+D)).
+        // Index 0 ungenutzt, 1..31 entsprechen Monatstagen.
+        var byDay = new decimal[32];
+        foreach (var e in monthExpenses)
+        {
+            if (e.Type == TransactionType.Expense && e.Date.Day is >= 1 and <= 31)
+                byDay[e.Date.Day] += e.Amount;
+        }
+
+        var trend = new List<(int Day, decimal CumulativeExpenses)>(daysPassed);
+        var cumulative = 0m;
         for (var day = 1; day <= daysPassed; day++)
         {
-            cumulative += monthExpenses
-                .Where(e => e.Type == TransactionType.Expense && e.Date.Day == day)
-                .Sum(e => e.Amount);
+            cumulative += byDay[day];
             trend.Add((day, cumulative));
         }
 
-        var forecastLine = new List<(int Day, double ProjectedCumulative)>();
+        var forecastLine = new List<(int Day, decimal ProjectedCumulative)>(Math.Max(0, daysInMonth - daysPassed));
         var projectedCumulative = cumulative;
         for (var day = daysPassed + 1; day <= daysInMonth; day++)
         {

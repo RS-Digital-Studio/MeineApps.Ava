@@ -13,7 +13,7 @@ public partial class BudgetDisplayItem : ObservableObject
     [ObservableProperty]
     private string _categoryName = string.Empty;
 
-    public double Percentage { get; set; }
+    public decimal Percentage { get; set; }
     public BudgetAlertLevel AlertLevel { get; set; }
 
     public string PercentageDisplay => $"{Percentage:F0}%";

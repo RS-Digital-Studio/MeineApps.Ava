@@ -13,7 +13,7 @@ public class SplitItem
     public string? CustomCategoryId { get; set; }
 
     /// <summary>Betrag dieses Teils.</summary>
-    public double Amount { get; set; }
+    public decimal Amount { get; set; }
 
     /// <summary>Optionale Notiz für diesen Teil.</summary>
     public string? Note { get; set; }

@@ -68,29 +68,29 @@ public record ScoreFactor(
 public class FinancialForecast
 {
     /// <summary>Prognostiziertes Monatsende-Saldo.</summary>
-    public double ProjectedEndOfMonthBalance { get; set; }
+    public decimal ProjectedEndOfMonthBalance { get; set; }
 
     /// <summary>Prognostizierte Monatsausgaben (basierend auf aktuellem Tempo).</summary>
-    public double ProjectedMonthlyExpenses { get; set; }
+    public decimal ProjectedMonthlyExpenses { get; set; }
 
     /// <summary>Prognostizierte Monatseinnahmen.</summary>
-    public double ProjectedMonthlyIncome { get; set; }
+    public decimal ProjectedMonthlyIncome { get; set; }
 
     /// <summary>Durchschnittliche tägliche Ausgaben.</summary>
-    public double AverageDailyExpense { get; set; }
+    public decimal AverageDailyExpense { get; set; }
 
     /// <summary>Verbleibende Tage im Monat.</summary>
     public int RemainingDaysInMonth { get; set; }
 
     /// <summary>Tägliches Budget um Ausgaben-Ziel einzuhalten.</summary>
-    public double? DailyBudgetRemaining { get; set; }
+    public decimal? DailyBudgetRemaining { get; set; }
 
     /// <summary>Ob die Prognose positiv ist (Einnahmen > Ausgaben).</summary>
     public bool IsPositive => ProjectedEndOfMonthBalance >= 0;
 
     /// <summary>Datenpunkte für Trend-Chart (Tag → kumulierte Ausgaben).</summary>
-    public List<(int Day, double CumulativeExpenses)> ExpenseTrend { get; set; } = [];
+    public List<(int Day, decimal CumulativeExpenses)> ExpenseTrend { get; set; } = [];
 
     /// <summary>Datenpunkte für Prognose-Linie (ab heute bis Monatsende).</summary>
-    public List<(int Day, double ProjectedCumulative)> ForecastLine { get; set; } = [];
+    public List<(int Day, decimal ProjectedCumulative)> ForecastLine { get; set; } = [];
 }

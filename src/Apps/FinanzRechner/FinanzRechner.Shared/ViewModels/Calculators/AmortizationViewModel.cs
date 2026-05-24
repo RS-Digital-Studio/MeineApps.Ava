@@ -165,7 +165,10 @@ public sealed partial class AmortizationViewModel : ViewModelBase, IDisposable
     private void Calculate()
     {
         ErrorMessage = null;
-        if (LoanAmount <= 0 || AnnualRate < 0 || Years <= 0)
+        // NaN/Infinity-Schutz: Tilgungsplan iteriert ueber Monate * Math.Pow
+        if (!double.IsFinite(LoanAmount) || LoanAmount <= 0
+            || !double.IsFinite(AnnualRate) || AnnualRate < 0
+            || Years <= 0 || Years > 100)
         {
             HasResult = false;
             return;

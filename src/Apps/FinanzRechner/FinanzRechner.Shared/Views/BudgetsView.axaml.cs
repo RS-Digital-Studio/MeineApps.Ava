@@ -43,7 +43,7 @@ public partial class BudgetsView : UserControl
         if (sender is not SKCanvasView canvasView) return;
         if (canvasView.DataContext is not BudgetStatus budget) return;
 
-        float progress = (float)(budget.PercentageUsed / 100.0);
+        float progress = (float)(budget.PercentageUsed / 100m);
 
         // Farbe je nach Warnstufe: Grün → Gelb → Rot
         SKColor startColor, endColor;

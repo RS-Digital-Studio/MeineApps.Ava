@@ -107,10 +107,10 @@ public sealed class DebtService : IDebtService, IDisposable
         return _debts.OrderByDescending(d => d.IsActive).ThenByDescending(d => d.RemainingAmount).ToList();
     }
 
-    public async Task<bool> MakePaymentAsync(string debtId, double amount)
+    public async Task<bool> MakePaymentAsync(string debtId, decimal amount)
     {
         await InitializeAsync();
-        if (amount <= 0)
+        if (amount <= 0m)
             throw new ArgumentException("Zahlungsbetrag muss größer als Null sein.");
 
         await _semaphore.WaitAsync();
@@ -119,10 +119,10 @@ public sealed class DebtService : IDebtService, IDisposable
             var debt = _debts.FirstOrDefault(d => d.Id == debtId);
             if (debt == null) return false;
 
-            debt.RemainingAmount = Math.Max(0, debt.RemainingAmount - amount);
-            if (debt.RemainingAmount <= 0)
+            debt.RemainingAmount = Math.Max(0m, debt.RemainingAmount - amount);
+            if (debt.RemainingAmount <= 0m)
             {
-                debt.RemainingAmount = 0;
+                debt.RemainingAmount = 0m;
                 debt.IsActive = false;
             }
 
@@ -132,7 +132,7 @@ public sealed class DebtService : IDebtService, IDisposable
         finally { _semaphore.Release(); }
     }
 
-    public async Task<double> GetTotalDebtAsync()
+    public async Task<decimal> GetTotalDebtAsync()
     {
         await InitializeAsync();
         return _debts.Where(d => d.IsActive).Sum(d => d.RemainingAmount);
@@ -146,7 +146,7 @@ public sealed class DebtService : IDebtService, IDisposable
         {
             var debt = _debts.FirstOrDefault(d => d.Id == debtId);
             if (debt == null) return false;
-            debt.RemainingAmount = 0;
+            debt.RemainingAmount = 0m;
             debt.IsActive = false;
             await SaveAsync();
             return true;
@@ -208,11 +208,11 @@ public sealed class DebtService : IDebtService, IDisposable
         ArgumentNullException.ThrowIfNull(debt);
         if (string.IsNullOrWhiteSpace(debt.Name))
             throw new ArgumentException("Name darf nicht leer sein.");
-        if (debt.OriginalAmount <= 0)
+        if (debt.OriginalAmount <= 0m)
             throw new ArgumentException("Ursprungsbetrag muss größer als Null sein.");
-        if (debt.MonthlyPayment < 0)
+        if (debt.MonthlyPayment < 0m)
             throw new ArgumentException("Monatliche Rate darf nicht negativ sein.");
-        if (debt.InterestRate < 0)
+        if (debt.InterestRate < 0m)
             throw new ArgumentException("Zinssatz darf nicht negativ sein.");
     }
 

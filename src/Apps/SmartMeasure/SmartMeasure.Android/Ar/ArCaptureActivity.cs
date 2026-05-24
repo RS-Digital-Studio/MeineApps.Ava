@@ -317,6 +317,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Stabilitäts-Monitor für präzise Punkt-Erfassung
         _stabilityMonitor = new ArStabilityMonitor(this);
 
+        // Lokalisierte Overlay-Labels einmalig laden (Plan-Kap. 4.11). Sprachwechsel
+        // mid-session passieren nicht — die AR-Activity laeuft als Modal-Fullscreen.
+        _overlayLabels = LoadLocalizedLabels();
+
         // Sample-Count an Gerät anpassen — auf leistungsstarken Chips mehr Samples
         // für höhere Präzision innerhalb der 800ms-Timeout
         _effectiveMultiFrameSampleTargetCount = IsHighEndDevice() ? 15 : 10;
@@ -3501,25 +3505,26 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             // TrackingFailureReason ist ein Java-Enum-Object, kein C#-Enum — deshalb
             // Equals() statt switch-Pattern. String-Vergleich ist zu fragil bei Proguard.
+            // Plan-Kap. 4.11: Lokalisierte Texte aus dem Session-Labels-Snapshot.
             var reason = camera.TrackingFailureReason;
             if (reason != null)
             {
                 if (reason.Equals(TrackingFailureReason.InsufficientLight))
-                    failReason = "Nicht genug Licht";
+                    failReason = _overlayLabels.TrackingInsufficientLight;
                 else if (reason.Equals(TrackingFailureReason.InsufficientFeatures))
-                    failReason = "Mehr Texturen/Kanten nötig";
+                    failReason = _overlayLabels.TrackingInsufficientFeatures;
                 else if (reason.Equals(TrackingFailureReason.ExcessiveMotion))
-                    failReason = "Langsamer bewegen";
+                    failReason = _overlayLabels.TrackingExcessiveMotion;
                 else if (reason.Equals(TrackingFailureReason.CameraUnavailable))
-                    failReason = "Kamera nicht verfügbar";
+                    failReason = _overlayLabels.TrackingCameraUnavailable;
                 else if (reason.Equals(TrackingFailureReason.BadState))
-                    failReason = "Session-Fehler";
+                    failReason = _overlayLabels.TrackingBadState;
                 else
-                    failReason = "Tracking verloren";
+                    failReason = _overlayLabels.TrackingLost;
             }
             else
             {
-                failReason = "Tracking verloren";
+                failReason = _overlayLabels.TrackingLost;
             }
         }
 
@@ -3646,7 +3651,40 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             BottomInsetPixels = _bottomInsetPx,
             ThermalWarning = _thermalWarningText,
             BatteryWarning = _batteryWarningText,
+            Labels = _overlayLabels,
         };
+    }
+
+    /// <summary>Aktuelle lokalisierte Overlay-Labels. Wird in OnCreate aus AppStrings
+    /// gefuellt und bleibt fuer die Session konstant (Sprachwechsel mid-session passieren
+    /// nicht — die Activity laeuft als Modal-Fullscreen). Plan-Kap. 4.11.</summary>
+    private ArOverlayLabels _overlayLabels = ArOverlayLabels.GermanDefaults;
+
+    /// <summary>Liest die AR-spezifischen Strings aus AppStrings und baut den
+    /// Snapshot fuer ArOverlayState.Labels.</summary>
+    private static ArOverlayLabels LoadLocalizedLabels()
+    {
+        // AppStrings ist statisch + bedient sich an Thread.CurrentUICulture, die zu Activity-
+        // Start bereits auf die User-Sprache gesetzt ist (MainActivity → LocalizationService).
+        // ResourceManager liefert deutsche Defaults wenn ein Key in einer Sprache fehlt.
+        var a = SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatPoints;
+        if (string.IsNullOrEmpty(a)) return ArOverlayLabels.GermanDefaults;
+
+        return new ArOverlayLabels(
+            Points: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatPoints,
+            Area: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatArea,
+            Length: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatLength,
+            HeightDelta: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatHeightDelta,
+            Anchors: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatAnchors,
+            Time: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatTime,
+            HoldStill: SmartMeasure.Shared.Resources.Strings.AppStrings.ArReticleHoldStill,
+            Ready: SmartMeasure.Shared.Resources.Strings.AppStrings.ArBadgeReady,
+            TrackingLost: SmartMeasure.Shared.Resources.Strings.AppStrings.ArTrackingLost,
+            TrackingInsufficientLight: SmartMeasure.Shared.Resources.Strings.AppStrings.ArTrackingInsufficientLight,
+            TrackingInsufficientFeatures: SmartMeasure.Shared.Resources.Strings.AppStrings.ArTrackingInsufficientFeatures,
+            TrackingExcessiveMotion: SmartMeasure.Shared.Resources.Strings.AppStrings.ArTrackingExcessiveMotion,
+            TrackingCameraUnavailable: SmartMeasure.Shared.Resources.Strings.AppStrings.ArTrackingCameraUnavailable,
+            TrackingBadState: SmartMeasure.Shared.Resources.Strings.AppStrings.ArTrackingBadState);
     }
 
     private bool _wasTrackingLastFrame = true;

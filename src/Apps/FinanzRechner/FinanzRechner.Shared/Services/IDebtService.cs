@@ -16,10 +16,10 @@ public interface IDebtService
     Task<IReadOnlyList<DebtEntry>> GetAllDebtsAsync();
 
     /// <summary>Zahlung auf eine Schuld buchen (reduziert RemainingAmount).</summary>
-    Task<bool> MakePaymentAsync(string debtId, double amount);
+    Task<bool> MakePaymentAsync(string debtId, decimal amount);
 
     /// <summary>Gesamte Schuldensumme berechnen.</summary>
-    Task<double> GetTotalDebtAsync();
+    Task<decimal> GetTotalDebtAsync();
 
     /// <summary>Schuld als abbezahlt markieren.</summary>
     Task<bool> PayOffDebtAsync(string debtId);

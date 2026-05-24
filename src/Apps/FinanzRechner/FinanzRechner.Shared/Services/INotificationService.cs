@@ -5,7 +5,7 @@ namespace FinanzRechner.Services;
 /// </summary>
 public interface INotificationService
 {
-    Task SendBudgetAlertAsync(string categoryName, double percentageUsed, double spent, double limit);
+    Task SendBudgetAlertAsync(string categoryName, decimal percentageUsed, decimal spent, decimal limit);
     Task<bool> AreNotificationsAllowedAsync();
     Task<bool> RequestNotificationPermissionAsync();
 }

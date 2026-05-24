@@ -43,6 +43,12 @@ public sealed partial class ArPointOverlayView : View
     public global::Android.Graphics.RectF ReadinessBadgeBounds { get; private set; }
         = new global::Android.Graphics.RectF();
 
+    /// <summary>Screen-Bounds des Nordpfeil-Buttons (oben mittig). Plan Kap. 4.13: Tap
+    /// öffnet einen Kompass-Kalibrierungs-Hint. Wird pro Frame in <see cref="DrawNorthArrow"/>
+    /// aktualisiert. RectF leer wenn Nordpfeil nicht sichtbar.</summary>
+    public global::Android.Graphics.RectF NorthArrowBounds { get; private set; }
+        = new global::Android.Graphics.RectF();
+
     // Paints (alle gecacht)
     private readonly Paint _pointPaint;
     private readonly Paint _pointOutlinePaint;
@@ -949,6 +955,15 @@ public sealed partial class ArPointOverlayView : View
         var topOffset = MathF.Max(_state.TopInsetPixels, 40f * _density);
         var cy = topOffset + 22f * _density;
         var radius = 18f * _density;
+
+        // Plan Kap. 4.13: Tap-Bounds vergroessern (Finger-Treffer-Flaeche). Reine
+        // Visualisierungs-Radius bleibt 18dp, Tap-Hitbox 32dp.
+        var tapPadding = 14f * _density;
+        NorthArrowBounds.Set(
+            cx - radius - tapPadding,
+            cy - radius - tapPadding,
+            cx + radius + tapPadding,
+            cy + radius + tapPadding);
 
         // Kreis-BG. Bei niedriger Mag-Accuracy zusätzlich farbiger Ring um den Kreis —
         // visueller Hinweis dass die Nord-Richtung unzuverlässig ist (typisch in

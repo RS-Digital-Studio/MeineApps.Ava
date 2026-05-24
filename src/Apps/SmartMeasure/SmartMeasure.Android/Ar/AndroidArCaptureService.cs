@@ -13,10 +13,11 @@ namespace SmartMeasure.Android.Ar;
 /// Android-Implementation des IArCaptureService.
 /// Startet ArCaptureActivity (ARCore) und gibt das Ergebnis zurück.
 ///
-/// Fehler-Behandlung: Abbrüche werden mit einem Error-String im TCS-Result
-/// getransport (<see cref="CaptureAsync"/> liefert null UND der Caller kann
-/// <see cref="LastError"/> abfragen für UX-Feedback). Die vorherige Variante
-/// gab still null zurück und User wusste nicht warum.
+/// Fehler-Behandlung: Plan Kap. 4.3 — User-Abbruch wird per
+/// <see cref="LastCompletionStatus"/> = <see cref="ArCaptureCompletionStatus.UserCancelled"/>
+/// signalisiert, echte Fehler per <see cref="ArCaptureCompletionStatus.Error"/> +
+/// Klartext in <see cref="LastError"/>. Vorher waren beide Fälle null und der
+/// UI-Layer konnte nicht differenzieren.
 /// </summary>
 public sealed class AndroidArCaptureService : IArCaptureService
 {
@@ -26,8 +27,13 @@ public sealed class AndroidArCaptureService : IArCaptureService
 
     private const int CAMERA_PERMISSION_CODE = 9010;
 
-    /// <summary>Letzter Fehler-Grund falls CaptureAsync null zurückgibt.</summary>
+    /// <summary>Letzter Fehler-Grund falls CaptureAsync null zurückgibt und
+    /// <see cref="LastCompletionStatus"/> = <see cref="ArCaptureCompletionStatus.Error"/>.
+    /// Bei User-Cancel null.</summary>
     public string? LastError { get; private set; }
+
+    /// <summary>Plan Kap. 4.3: Status der letzten Capture-Operation.</summary>
+    public ArCaptureCompletionStatus LastCompletionStatus { get; private set; }
 
     public AndroidArCaptureService(Activity activity)
     {
@@ -66,12 +72,14 @@ public sealed class AndroidArCaptureService : IArCaptureService
             if (_tcs != null && !_tcs.Task.IsCompleted)
             {
                 LastError = "Vorherige AR-Session wurde abgebrochen";
+                LastCompletionStatus = ArCaptureCompletionStatus.Error;
                 _tcs.TrySetResult(null);
             }
 
             newTcs = new TaskCompletionSource<ArCaptureResult?>();
             _tcs = newTcs;
             LastError = null;
+            LastCompletionStatus = ArCaptureCompletionStatus.None;
         }
 
         try
@@ -159,10 +167,14 @@ public sealed class AndroidArCaptureService : IArCaptureService
             var result = ArCaptureActivity.ConsumeLastResult();
             CompleteWithResult(result);
         }
+        else if (resultCode == Result.Canceled)
+        {
+            // Plan Kap. 4.3: User-Abbruch ist KEIN Fehler — eigener Status, kein LastError.
+            CompleteCancelled();
+        }
         else
         {
-            // Result.Canceled ist User-Abbruch (Back-Button), nicht Fehler
-            CompleteWithError(resultCode == Result.Canceled ? null : "AR-Capture wurde nicht erfolgreich beendet");
+            CompleteWithError("AR-Capture wurde nicht erfolgreich beendet");
         }
     }
 
@@ -203,6 +215,9 @@ public sealed class AndroidArCaptureService : IArCaptureService
     {
         lock (_tcsLock)
         {
+            LastCompletionStatus = result != null
+                ? ArCaptureCompletionStatus.Success
+                : ArCaptureCompletionStatus.UserCancelled;
             _tcs?.TrySetResult(result);
         }
     }
@@ -212,6 +227,17 @@ public sealed class AndroidArCaptureService : IArCaptureService
         lock (_tcsLock)
         {
             if (error != null) LastError = error;
+            LastCompletionStatus = ArCaptureCompletionStatus.Error;
+            _tcs?.TrySetResult(null);
+        }
+    }
+
+    private void CompleteCancelled()
+    {
+        lock (_tcsLock)
+        {
+            LastError = null;
+            LastCompletionStatus = ArCaptureCompletionStatus.UserCancelled;
             _tcs?.TrySetResult(null);
         }
     }

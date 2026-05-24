@@ -26,12 +26,21 @@ public class MockArCaptureService : IArCaptureService
     /// <summary>Anteil der Frames im Tracking-State (0..1). Default 0.97.</summary>
     public float TrackingContinuityRatio { get; set; } = 0.97f;
 
+    /// <summary>Status der letzten Mock-Capture-Operation. Mock simuliert weder Abbruch noch
+    /// Fehler — Wert ist <see cref="ArCaptureCompletionStatus.Success"/> nach jedem
+    /// <see cref="CaptureAsync"/>-Lauf.</summary>
+    public ArCaptureCompletionStatus LastCompletionStatus { get; private set; }
+
+    /// <summary>Mock liefert nie einen Fehler. Plan Kap. 4.3.</summary>
+    public string? LastError => null;
+
     public Task<bool> IsAvailableAsync() => Task.FromResult(true);
 
     public async Task<ArCaptureResult?> CaptureAsync()
     {
         // Simuliere kurze Verzoegerung wie eine echte AR-Session
         await Task.Delay(500);
+        LastCompletionStatus = ArCaptureCompletionStatus.Success;
 
         var random = new Random(42);
         const double gpsLat = 48.7758;

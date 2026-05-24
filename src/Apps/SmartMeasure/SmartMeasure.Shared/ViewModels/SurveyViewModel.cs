@@ -171,11 +171,18 @@ public partial class SurveyViewModel : ViewModelBase
         {
             ArStatusText = $"{result.TotalPointCount} Punkte erfasst";
             ArCaptureCompleted?.Invoke(result);
+            return;
         }
-        else
+
+        // Plan Kap. 4.3: Statt pauschal "abgebrochen" den Status differenzieren — User
+        // soll erkennen ob er selbst geschlossen hat oder ein Fehler vorlag.
+        ArStatusText = _arCaptureService.LastCompletionStatus switch
         {
-            ArStatusText = "AR-Capture abgebrochen";
-        }
+            ArCaptureCompletionStatus.UserCancelled => "AR-Capture abgebrochen",
+            ArCaptureCompletionStatus.Error         => _arCaptureService.LastError ?? "AR-Fehler",
+            ArCaptureCompletionStatus.Success       => "Keine Punkte erfasst",
+            _                                        => "AR-Capture abgebrochen",
+        };
     }
 
     /// <summary>Alle Punkte loeschen</summary>

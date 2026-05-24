@@ -821,6 +821,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             return true;
         }
 
+        // Plan Kap. 4.13: Nordpfeil-Tap → Kompass-Kalibrierungs-Hint. Gleiche
+        // Pre-Empt-Position wie Readiness-Badge — verhindert Punkt-Setzen oberhalb des
+        // Nordpfeils. ShowCompassCalibrationHint liegt in ArCaptureActivity.Dialogs.cs.
+        if (_overlayView != null
+            && _overlayView.NorthArrowBounds.Contains(_touchDownX, _touchDownY))
+        {
+            ShowCompassCalibrationHint();
+            return true;
+        }
+
         // Pruefen ob ein existierender Punkt (Einzel oder Kontur) getroffen wurde
         var selectRadius = SELECT_RADIUS_DP * density;
         FindNearestProjectedPoint(_touchDownX, _touchDownY, selectRadius);
@@ -2235,13 +2245,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// viewMatrix × projectionMatrix × worldPos → NDC → Screen-Pixel.
     /// Wird auf dem GL-Thread aufgerufen (pro Frame).
     /// </summary>
+    /// <summary>Reusable MVP-Matrix-Buffer (16 float) — vermeidet float[]-Allocation pro Frame.
+    /// GL-Thread-only, kein Lock.</summary>
+    private readonly float[] _mvpMatrixScratch = new float[16];
+
+    /// <summary>Reusable Builder fuer Einzelpunkt-Projektionen. Wird unter _dataLock befuellt,
+    /// dann atomar in _projectedPoints uebernommen — verhindert Per-Frame
+    /// <c>new List&lt;...&gt;()</c>-Allocations (Plan Kap. 4.8). GL-Thread-only.</summary>
+    private readonly List<(float screenX, float screenY, int pointIndex)> _projectedPointsBuilder = [];
+
+    /// <summary>Reusable Builder fuer Kontur-Punkt-Projektionen (analog Builder oben).</summary>
+    private readonly List<(float screenX, float screenY, int contourIdx, int pointIdx)> _projectedContourPointsBuilder = [];
+
     private void ProjectPointsToScreen()
     {
-        var mvpMatrix = new float[16];
-        global::Android.Opengl.Matrix.MultiplyMM(mvpMatrix, 0, _projectionMatrix, 0, _viewMatrix, 0);
+        global::Android.Opengl.Matrix.MultiplyMM(_mvpMatrixScratch, 0, _projectionMatrix, 0, _viewMatrix, 0);
 
-        var newProjected = new List<(float, float, int)>();
-        var newContourProjected = new List<(float, float, int, int)>();
+        _projectedPointsBuilder.Clear();
+        _projectedContourPointsBuilder.Clear();
 
         // Punkte-Snapshot unter Lock erstellen (GL-Thread liest, UI-Thread schreibt)
         lock (_dataLock)
@@ -2249,9 +2270,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // Einzelpunkte projizieren
             for (var i = 0; i < _points.Count; i++)
             {
-                var screen = WorldToScreen(_points[i], mvpMatrix);
+                var screen = WorldToScreen(_points[i], _mvpMatrixScratch);
                 if (screen.HasValue)
-                    newProjected.Add((screen.Value.x, screen.Value.y, i));
+                    _projectedPointsBuilder.Add((screen.Value.x, screen.Value.y, i));
             }
 
             // Kontur-Punkte projizieren
@@ -2259,9 +2280,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 for (var pi = 0; pi < _contours[ci].Points.Count; pi++)
                 {
-                    var screen = WorldToScreen(_contours[ci].Points[pi], mvpMatrix);
+                    var screen = WorldToScreen(_contours[ci].Points[pi], _mvpMatrixScratch);
                     if (screen.HasValue)
-                        newContourProjected.Add((screen.Value.x, screen.Value.y, ci, pi));
+                        _projectedContourPointsBuilder.Add((screen.Value.x, screen.Value.y, ci, pi));
                 }
             }
 
@@ -2270,9 +2291,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 for (var pi = 0; pi < _activeContour.Points.Count; pi++)
                 {
-                    var screen = WorldToScreen(_activeContour.Points[pi], mvpMatrix);
+                    var screen = WorldToScreen(_activeContour.Points[pi], _mvpMatrixScratch);
                     if (screen.HasValue)
-                        newContourProjected.Add((screen.Value.x, screen.Value.y, -1, pi));
+                        _projectedContourPointsBuilder.Add((screen.Value.x, screen.Value.y, -1, pi));
                 }
             }
         }
@@ -2280,28 +2301,27 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_projectedPoints)
         {
             _projectedPoints.Clear();
-            _projectedPoints.AddRange(newProjected);
+            _projectedPoints.AddRange(_projectedPointsBuilder);
         }
 
         lock (_projectedContourPoints)
         {
             _projectedContourPoints.Clear();
-            _projectedContourPoints.AddRange(newContourProjected);
+            _projectedContourPoints.AddRange(_projectedContourPointsBuilder);
         }
 
         // Erkannte Planes projizieren
-        var projectedPlanes = ProjectPlanesToScreen(mvpMatrix);
+        var projectedPlanes = ProjectPlanesToScreen(_mvpMatrixScratch);
 
-        // Overlay auf UI-Thread aktualisieren
+        // Overlay auf UI-Thread aktualisieren. Die Builder leben auf dem GL-Thread weiter —
+        // wir kopieren NUR einmal in eine Übergabe-Liste statt zweifach (vorher: erst Builder,
+        // dann eine zusaetzliche Snapshot-Copy unter dem _projectedPoints-Lock).
+        var ptsForUi = new List<(float, float, int)>(_projectedPointsBuilder);
+        var cPtsForUi = new List<(float, float, int, int)>(_projectedContourPointsBuilder);
+
         RunOnUiThread(() =>
         {
-            List<(float, float, int)> pts;
-            List<(float, float, int, int)> cPts;
-
-            lock (_projectedPoints) { pts = new List<(float, float, int)>(_projectedPoints); }
-            lock (_projectedContourPoints) { cPts = new List<(float, float, int, int)>(_projectedContourPoints); }
-
-            _overlayView?.UpdateProjectedPositions(pts, cPts);
+            _overlayView?.UpdateProjectedPositions(ptsForUi, cPtsForUi);
             _overlayView?.UpdateProjectedPlanes(projectedPlanes);
         });
     }
@@ -3119,7 +3139,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private volatile string? _thermalWarningText;
 
     /// <summary>Warnt User bei niedrigem Akku via persistentem Banner.
-    /// Niveau-Updates: kein Spam, der Banner aktualisiert sich nur stillschweigend.</summary>
+    /// Niveau-Updates: kein Spam, der Banner aktualisiert sich nur stillschweigend.
+    /// Bei kritisch niedrigem Akku (&lt;5%) wird die Session einmalig automatisch
+    /// abgeschlossen — alle bisher erfassten Punkte werden ins Result gepackt, bevor
+    /// das System die App eventuell kalt killt. Plan Kap. 4.7.</summary>
     private void CheckBatteryStatus()
     {
         try
@@ -3130,16 +3153,47 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var level = bm.GetIntProperty((int)global::Android.OS.BatteryProperty.Capacity);
             _batteryWarningText = level switch
             {
-                > 0 and < 5  => $"🔋 Akku {level}% — sofort beenden",
+                > 0 and < 5  => $"🔋 Akku {level}% — Session wird beendet",
                 > 0 and < 15 => $"🔋 Akku {level}% — Session bald beenden",
                 _            => null,
             };
+
+            // Auto-Finish: nur 1x feuern, nur wenn Session noch laeuft und tatsaechlich
+            // Daten erfasst wurden (leere Session zu speichern ist sinnlos).
+            if (level > 0 && level < 5
+                && System.Threading.Interlocked.CompareExchange(ref _batteryAutoFinishFired, 1, 0) == 0
+                && _finished == 0)
+            {
+                var hasData = false;
+                lock (_dataLock)
+                    hasData = _points.Count > 0
+                        || _contours.Count > 0
+                        || (_activeContour?.Points.Count ?? 0) > 0;
+
+                if (hasData)
+                {
+                    RunOnUiThread(() =>
+                    {
+                        ShowTransientHint($"🔋 Akku {level}% — Session wird beendet, alle Punkte werden gesichert");
+                        VibrateWarning();
+                        // 1.2s warten damit der User den Hint sieht, dann FinishCapture.
+                        _glSurfaceView?.PostDelayed(() =>
+                        {
+                            try { FinishCapture(); } catch { /* harmlos */ }
+                        }, 1200);
+                    });
+                }
+            }
         }
         catch { /* harmlos */ }
     }
 
     private volatile string? _batteryWarningText;
     private int _thermalCheckFrameCounter;
+
+    /// <summary>0=noch nicht ausgeloest, 1=Auto-Finish wurde getriggert. Verhindert
+    /// Spam-Trigger wenn CheckBatteryStatus weiter zyklisch laeuft (alle 60 Frames).</summary>
+    private int _batteryAutoFinishFired;
 
     #endregion
 

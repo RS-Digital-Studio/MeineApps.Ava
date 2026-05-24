@@ -1,0 +1,122 @@
+[
+  {
+    "id": "boss_slayer",
+    "displayNameKey": "achievement.boss_slayer.name",
+    "descriptionKey": "achievement.boss_slayer.desc",
+    "iconAddressableKey": "UI.Achievements/boss_slayer",
+    "tiers": [
+      { "tier": 1, "threshold": 10,  "trophyPoints": 50,  "titleKey": null },
+      { "tier": 2, "threshold": 50,  "trophyPoints": 200, "titleKey": null },
+      { "tier": 3, "threshold": 100, "trophyPoints": 500, "titleKey": "title.boss_slayer_gold" },
+      { "tier": 4, "threshold": 500, "trophyPoints": 2000, "titleKey": "title.dragon_slayer" }
+    ]
+  },
+  {
+    "id": "arena_champion",
+    "displayNameKey": "achievement.arena_champion.name",
+    "descriptionKey": "achievement.arena_champion.desc",
+    "iconAddressableKey": "UI.Achievements/arena_champion",
+    "tiers": [
+      { "tier": 1, "threshold": 50,   "trophyPoints": 100,  "titleKey": null },
+      { "tier": 2, "threshold": 250,  "trophyPoints": 400,  "titleKey": null },
+      { "tier": 3, "threshold": 1000, "trophyPoints": 1500, "titleKey": "title.arena_gladiator" },
+      { "tier": 4, "threshold": 5000, "trophyPoints": 5000, "titleKey": "title.arena_emperor" }
+    ]
+  },
+  {
+    "id": "card_collector",
+    "displayNameKey": "achievement.card_collector.name",
+    "descriptionKey": "achievement.card_collector.desc",
+    "iconAddressableKey": "UI.Achievements/card_collector",
+    "tiers": [
+      { "tier": 1, "threshold": 25,  "trophyPoints": 100,  "titleKey": null },
+      { "tier": 2, "threshold": 75,  "trophyPoints": 300,  "titleKey": null },
+      { "tier": 3, "threshold": 120, "trophyPoints": 800,  "titleKey": "title.collector" },
+      { "tier": 4, "threshold": 150, "trophyPoints": 2000, "titleKey": "title.master_collector" }
+    ]
+  },
+  {
+    "id": "legendary_owner",
+    "displayNameKey": "achievement.legendary_owner.name",
+    "descriptionKey": "achievement.legendary_owner.desc",
+    "iconAddressableKey": "UI.Achievements/legendary_owner",
+    "tiers": [
+      { "tier": 1, "threshold": 1,  "trophyPoints": 250,  "titleKey": null },
+      { "tier": 2, "threshold": 5,  "trophyPoints": 750,  "titleKey": null },
+      { "tier": 3, "threshold": 10, "trophyPoints": 1500, "titleKey": "title.legend_keeper" },
+      { "tier": 4, "threshold": 20, "trophyPoints": 4000, "titleKey": "title.legend_lord" }
+    ]
+  },
+  {
+    "id": "thief_hunter",
+    "displayNameKey": "achievement.thief_hunter.name",
+    "descriptionKey": "achievement.thief_hunter.desc",
+    "iconAddressableKey": "UI.Achievements/thief_hunter",
+    "tiers": [
+      { "tier": 1, "threshold": 10,  "trophyPoints": 100, "titleKey": null },
+      { "tier": 2, "threshold": 50,  "trophyPoints": 300, "titleKey": null },
+      { "tier": 3, "threshold": 200, "trophyPoints": 800, "titleKey": "title.thief_hunter" },
+      { "tier": 4, "threshold": 1000, "trophyPoints": 2500, "titleKey": "title.thief_legend" }
+    ]
+  },
+  {
+    "id": "guild_pillar",
+    "displayNameKey": "achievement.guild_pillar.name",
+    "descriptionKey": "achievement.guild_pillar.desc",
+    "iconAddressableKey": "UI.Achievements/guild_pillar",
+    "tiers": [
+      { "tier": 1, "threshold": 10000,    "trophyPoints": 100,  "titleKey": null },
+      { "tier": 2, "threshold": 100000,   "trophyPoints": 400,  "titleKey": null },
+      { "tier": 3, "threshold": 1000000,  "trophyPoints": 1200, "titleKey": "title.guild_pillar" },
+      { "tier": 4, "threshold": 10000000, "trophyPoints": 4000, "titleKey": "title.guild_legend" }
+    ]
+  },
+  {
+    "id": "world_conqueror",
+    "displayNameKey": "achievement.world_conqueror.name",
+    "descriptionKey": "achievement.world_conqueror.desc",
+    "iconAddressableKey": "UI.Achievements/world_conqueror",
+    "tiers": [
+      { "tier": 1, "threshold": 1, "trophyPoints": 150, "titleKey": null },
+      { "tier": 2, "threshold": 3, "trophyPoints": 500, "titleKey": null },
+      { "tier": 3, "threshold": 6, "trophyPoints": 1500, "titleKey": "title.world_conqueror" },
+      { "tier": 4, "threshold": 9, "trophyPoints": 5000, "titleKey": "title.dragon_emperor" }
+    ]
+  },
+  {
+    "id": "max_level_card",
+    "displayNameKey": "achievement.max_level_card.name",
+    "descriptionKey": "achievement.max_level_card.desc",
+    "iconAddressableKey": "UI.Achievements/max_level_card",
+    "tiers": [
+      { "tier": 1, "threshold": 1, "trophyPoints": 200, "titleKey": null },
+      { "tier": 2, "threshold": 5, "trophyPoints": 600, "titleKey": null },
+      { "tier": 3, "threshold": 10, "trophyPoints": 1500, "titleKey": "title.perfection" },
+      { "tier": 4, "threshold": 30, "trophyPoints": 5000, "titleKey": "title.god_collector" }
+    ]
+  },
+  {
+    "id": "spender",
+    "displayNameKey": "achievement.spender.name",
+    "descriptionKey": "achievement.spender.desc",
+    "iconAddressableKey": "UI.Achievements/spender",
+    "tiers": [
+      { "tier": 1, "threshold": 100,   "trophyPoints": 50,  "titleKey": null },
+      { "tier": 2, "threshold": 1000,  "trophyPoints": 200, "titleKey": null },
+      { "tier": 3, "threshold": 10000, "trophyPoints": 800, "titleKey": "title.supporter" },
+      { "tier": 4, "threshold": 50000, "trophyPoints": 3000, "titleKey": "title.patron" }
+    ]
+  },
+  {
+    "id": "veteran",
+    "displayNameKey": "achievement.veteran.name",
+    "descriptionKey": "achievement.veteran.desc",
+    "iconAddressableKey": "UI.Achievements/veteran",
+    "tiers": [
+      { "tier": 1, "threshold": 7,   "trophyPoints": 100, "titleKey": null },
+      { "tier": 2, "threshold": 30,  "trophyPoints": 300, "titleKey": null },
+      { "tier": 3, "threshold": 180, "trophyPoints": 1000, "titleKey": "title.veteran" },
+      { "tier": 4, "threshold": 365, "trophyPoints": 3000, "titleKey": "title.year_one" }
+    ]
+  }
+]

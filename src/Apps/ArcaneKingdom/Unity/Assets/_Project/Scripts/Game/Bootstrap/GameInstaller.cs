@@ -5,7 +5,12 @@ using ArcaneKingdom.Game.Login;
 using ArcaneKingdom.Game.Services;
 using ArcaneKingdom.Game.Arena;
 using ArcaneKingdom.Game.Battle;
+using ArcaneKingdom.Game.Chat;
+using ArcaneKingdom.Game.Guild;
 using ArcaneKingdom.Game.Hub;
+using ArcaneKingdom.Game.Quest;
+using ArcaneKingdom.Game.Shop;
+using ArcaneKingdom.Game.Thief;
 using VContainer;
 using VContainer.Unity;
 
@@ -29,6 +34,12 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<HubController>(Lifetime.Singleton);
             builder.Register<BattleController>(Lifetime.Singleton);
             builder.Register<ArenaController>(Lifetime.Singleton);
+            builder.Register<GuildController>(Lifetime.Singleton);
+            builder.Register<ThiefController>(Lifetime.Singleton);
+            builder.Register<ChatController>(Lifetime.Singleton);
+            builder.Register<ShopController>(Lifetime.Singleton);
+            builder.Register<QuestService>(Lifetime.Singleton);
+            builder.Register<DailyRewardService>(Lifetime.Singleton);
 
             builder.RegisterEntryPoint<LoginController>();
         }

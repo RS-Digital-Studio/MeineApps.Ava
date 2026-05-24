@@ -1,0 +1,235 @@
+[
+  {
+    "id": "daily_win_battles",
+    "displayNameKey": "quest.daily_win_battles.name",
+    "descriptionKey": "quest.daily_win_battles.desc",
+    "period": "Daily",
+    "objective": "WinBattles",
+    "targetCount": 3,
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 200 },
+      { "type": "Scrap", "subType": "Common", "amount": 2 }
+    ]
+  },
+  {
+    "id": "daily_play_feuer_cards",
+    "displayNameKey": "quest.daily_play_feuer_cards.name",
+    "descriptionKey": "quest.daily_play_feuer_cards.desc",
+    "period": "Daily",
+    "objective": "PlayCardsOfElement",
+    "targetCount": 5,
+    "filterElement": "Feuer",
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 100 },
+      { "type": "Currency", "subType": "Diamond", "amount": 5 }
+    ]
+  },
+  {
+    "id": "daily_login",
+    "displayNameKey": "quest.daily_login.name",
+    "descriptionKey": "quest.daily_login.desc",
+    "period": "Daily",
+    "objective": "LoginDays",
+    "targetCount": 1,
+    "rewards": [
+      { "type": "Currency", "subType": "Diamond", "amount": 10 }
+    ]
+  },
+  {
+    "id": "daily_deal_damage",
+    "displayNameKey": "quest.daily_deal_damage.name",
+    "descriptionKey": "quest.daily_deal_damage.desc",
+    "period": "Daily",
+    "objective": "DealDamage",
+    "targetCount": 10000,
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 300 }
+    ]
+  },
+  {
+    "id": "daily_arena_match",
+    "displayNameKey": "quest.daily_arena_match.name",
+    "descriptionKey": "quest.daily_arena_match.desc",
+    "period": "Daily",
+    "objective": "WinArenaMatches",
+    "targetCount": 1,
+    "rewards": [
+      { "type": "Scrap", "subType": "Rare", "amount": 1 }
+    ]
+  },
+  {
+    "id": "daily_attack_thief",
+    "displayNameKey": "quest.daily_attack_thief.name",
+    "descriptionKey": "quest.daily_attack_thief.desc",
+    "period": "Daily",
+    "objective": "AttackThieves",
+    "targetCount": 1,
+    "rewards": [
+      { "type": "Currency", "subType": "MeritPoints", "amount": 20 }
+    ]
+  },
+  {
+    "id": "daily_world_stars",
+    "displayNameKey": "quest.daily_world_stars.name",
+    "descriptionKey": "quest.daily_world_stars.desc",
+    "period": "Daily",
+    "objective": "ReachWorldStars",
+    "targetCount": 6,
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 150 },
+      { "type": "Scrap", "subType": "Common", "amount": 3 }
+    ]
+  },
+  {
+    "id": "daily_play_natur_cards",
+    "displayNameKey": "quest.daily_play_natur_cards.name",
+    "descriptionKey": "quest.daily_play_natur_cards.desc",
+    "period": "Daily",
+    "objective": "PlayCardsOfElement",
+    "targetCount": 5,
+    "filterElement": "Natur",
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 100 },
+      { "type": "Currency", "subType": "Diamond", "amount": 5 }
+    ]
+  },
+  {
+    "id": "daily_play_wasser_cards",
+    "displayNameKey": "quest.daily_play_wasser_cards.name",
+    "descriptionKey": "quest.daily_play_wasser_cards.desc",
+    "period": "Daily",
+    "objective": "PlayCardsOfElement",
+    "targetCount": 5,
+    "filterElement": "Wasser",
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 100 },
+      { "type": "Currency", "subType": "Diamond", "amount": 5 }
+    ]
+  },
+  {
+    "id": "daily_donate_guild",
+    "displayNameKey": "quest.daily_donate_guild.name",
+    "descriptionKey": "quest.daily_donate_guild.desc",
+    "period": "Daily",
+    "objective": "DonateGuildPoints",
+    "targetCount": 100,
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 200 }
+    ]
+  },
+  {
+    "id": "weekly_arena_wins",
+    "displayNameKey": "quest.weekly_arena_wins.name",
+    "descriptionKey": "quest.weekly_arena_wins.desc",
+    "period": "Weekly",
+    "objective": "WinArenaMatches",
+    "targetCount": 10,
+    "rewards": [
+      { "type": "Scrap", "subType": "Epic", "amount": 1 },
+      { "type": "Currency", "subType": "Diamond", "amount": 50 }
+    ]
+  },
+  {
+    "id": "weekly_world_stars",
+    "displayNameKey": "quest.weekly_world_stars.name",
+    "descriptionKey": "quest.weekly_world_stars.desc",
+    "period": "Weekly",
+    "objective": "ReachWorldStars",
+    "targetCount": 60,
+    "rewards": [
+      { "type": "Scrap", "subType": "Rare", "amount": 5 },
+      { "type": "Currency", "subType": "Gold", "amount": 5000 }
+    ]
+  },
+  {
+    "id": "weekly_beat_bosses",
+    "displayNameKey": "quest.weekly_beat_bosses.name",
+    "descriptionKey": "quest.weekly_beat_bosses.desc",
+    "period": "Weekly",
+    "objective": "BeatBosses",
+    "targetCount": 5,
+    "rewards": [
+      { "type": "Currency", "subType": "Diamond", "amount": 100 }
+    ]
+  },
+  {
+    "id": "weekly_play_50_cards",
+    "displayNameKey": "quest.weekly_play_50_cards.name",
+    "descriptionKey": "quest.weekly_play_50_cards.desc",
+    "period": "Weekly",
+    "objective": "PlayCardsOfElement",
+    "targetCount": 50,
+    "rewards": [
+      { "type": "Currency", "subType": "Diamond", "amount": 75 },
+      { "type": "Currency", "subType": "Gold", "amount": 2000 }
+    ]
+  },
+  {
+    "id": "weekly_attack_5_thieves",
+    "displayNameKey": "quest.weekly_attack_5_thieves.name",
+    "descriptionKey": "quest.weekly_attack_5_thieves.desc",
+    "period": "Weekly",
+    "objective": "AttackThieves",
+    "targetCount": 5,
+    "rewards": [
+      { "type": "Currency", "subType": "MeritPoints", "amount": 250 }
+    ]
+  },
+  {
+    "id": "weekly_login_7_days",
+    "displayNameKey": "quest.weekly_login_7_days.name",
+    "descriptionKey": "quest.weekly_login_7_days.desc",
+    "period": "Weekly",
+    "objective": "LoginDays",
+    "targetCount": 7,
+    "rewards": [
+      { "type": "Currency", "subType": "Diamond", "amount": 200 },
+      { "type": "Currency", "subType": "Gold", "amount": 10000 }
+    ]
+  },
+  {
+    "id": "weekly_donate_guild_1000",
+    "displayNameKey": "quest.weekly_donate_guild_1000.name",
+    "descriptionKey": "quest.weekly_donate_guild_1000.desc",
+    "period": "Weekly",
+    "objective": "DonateGuildPoints",
+    "targetCount": 1000,
+    "rewards": [
+      { "type": "Scrap", "subType": "Epic", "amount": 2 }
+    ]
+  },
+  {
+    "id": "weekly_deal_500k_damage",
+    "displayNameKey": "quest.weekly_deal_500k_damage.name",
+    "descriptionKey": "quest.weekly_deal_500k_damage.desc",
+    "period": "Weekly",
+    "objective": "DealDamage",
+    "targetCount": 500000,
+    "rewards": [
+      { "type": "Currency", "subType": "Gold", "amount": 5000 },
+      { "type": "Scrap", "subType": "Rare", "amount": 3 }
+    ]
+  },
+  {
+    "id": "weekly_spend_500_diamonds",
+    "displayNameKey": "quest.weekly_spend_500_diamonds.name",
+    "descriptionKey": "quest.weekly_spend_500_diamonds.desc",
+    "period": "Weekly",
+    "objective": "SpendDiamonds",
+    "targetCount": 500,
+    "rewards": [
+      { "type": "Scrap", "subType": "Legendary", "amount": 1 }
+    ]
+  },
+  {
+    "id": "weekly_win_25_battles",
+    "displayNameKey": "quest.weekly_win_25_battles.name",
+    "descriptionKey": "quest.weekly_win_25_battles.desc",
+    "period": "Weekly",
+    "objective": "WinBattles",
+    "targetCount": 25,
+    "rewards": [
+      { "type": "Currency", "subType": "Diamond", "amount": 50 }
+    ]
+  }
+]

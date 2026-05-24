@@ -1,0 +1,66 @@
+[
+  {
+    "id": "common_pack",
+    "displayNameKey": "pack.common_pack.name",
+    "cardCount": 10,
+    "diamondCost": 50,
+    "dropRates": {
+      "Gewoehnlich": 0.70,
+      "Ungewoehnlich": 0.22,
+      "Selten": 0.07,
+      "Epic": 0.01,
+      "Legendaer": 0.00
+    },
+    "guaranteedMinRarity": "Selten",
+    "legendaryPityThreshold": 200,
+    "maxLegendaryPerPack": 1
+  },
+  {
+    "id": "rare_pack",
+    "displayNameKey": "pack.rare_pack.name",
+    "cardCount": 10,
+    "diamondCost": 250,
+    "dropRates": {
+      "Gewoehnlich": 0.30,
+      "Ungewoehnlich": 0.40,
+      "Selten": 0.20,
+      "Epic": 0.09,
+      "Legendaer": 0.01
+    },
+    "guaranteedMinRarity": "Epic",
+    "legendaryPityThreshold": 60,
+    "maxLegendaryPerPack": 1
+  },
+  {
+    "id": "epic_pack",
+    "displayNameKey": "pack.epic_pack.name",
+    "cardCount": 10,
+    "diamondCost": 1000,
+    "dropRates": {
+      "Gewoehnlich": 0.10,
+      "Ungewoehnlich": 0.20,
+      "Selten": 0.30,
+      "Epic": 0.30,
+      "Legendaer": 0.10
+    },
+    "guaranteedMinRarity": "Legendaer",
+    "legendaryPityThreshold": 15,
+    "maxLegendaryPerPack": 1
+  },
+  {
+    "id": "mythic_summon",
+    "displayNameKey": "pack.mythic_summon.name",
+    "cardCount": 10,
+    "diamondCost": 2000,
+    "dropRates": {
+      "Gewoehnlich": 0.00,
+      "Ungewoehnlich": 0.00,
+      "Selten": 0.30,
+      "Epic": 0.60,
+      "Legendaer": 0.10
+    },
+    "guaranteedMinRarity": "Epic",
+    "legendaryPityThreshold": 10,
+    "maxLegendaryPerPack": 3
+  }
+]

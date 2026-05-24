@@ -1,0 +1,182 @@
+[
+  {
+    "id": "angriff_klein",
+    "displayNameKey": "rune.angriff_klein.name",
+    "descriptionKey": "rune.angriff_klein.desc",
+    "type": "Angriff",
+    "rarity": "Gewoehnlich",
+    "baseMagnitude": 5,
+    "magnitudePerLevel": 1,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "angriff_mittel",
+    "displayNameKey": "rune.angriff_mittel.name",
+    "descriptionKey": "rune.angriff_mittel.desc",
+    "type": "Angriff",
+    "rarity": "Ungewoehnlich",
+    "baseMagnitude": 8,
+    "magnitudePerLevel": 1.2,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "angriff_gross",
+    "displayNameKey": "rune.angriff_gross.name",
+    "descriptionKey": "rune.angriff_gross.desc",
+    "type": "Angriff",
+    "rarity": "Selten",
+    "baseMagnitude": 12,
+    "magnitudePerLevel": 1.5,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "verteidigung_klein",
+    "displayNameKey": "rune.verteidigung_klein.name",
+    "descriptionKey": "rune.verteidigung_klein.desc",
+    "type": "Verteidigung",
+    "rarity": "Gewoehnlich",
+    "baseMagnitude": 5,
+    "magnitudePerLevel": 1,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "verteidigung_mittel",
+    "displayNameKey": "rune.verteidigung_mittel.name",
+    "descriptionKey": "rune.verteidigung_mittel.desc",
+    "type": "Verteidigung",
+    "rarity": "Ungewoehnlich",
+    "baseMagnitude": 8,
+    "magnitudePerLevel": 1.2,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "verteidigung_gross",
+    "displayNameKey": "rune.verteidigung_gross.name",
+    "descriptionKey": "rune.verteidigung_gross.desc",
+    "type": "Verteidigung",
+    "rarity": "Selten",
+    "baseMagnitude": 12,
+    "magnitudePerLevel": 1.5,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "geschwindigkeit_einfach",
+    "displayNameKey": "rune.geschwindigkeit_einfach.name",
+    "descriptionKey": "rune.geschwindigkeit_einfach.desc",
+    "type": "Geschwindigkeit",
+    "rarity": "Selten",
+    "baseMagnitude": 1,
+    "magnitudePerLevel": 0,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "geschwindigkeit_episch",
+    "displayNameKey": "rune.geschwindigkeit_episch.name",
+    "descriptionKey": "rune.geschwindigkeit_episch.desc",
+    "type": "Geschwindigkeit",
+    "rarity": "Epic",
+    "baseMagnitude": 1,
+    "magnitudePerLevel": 0.5,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "element_natur",
+    "displayNameKey": "rune.element_natur.name",
+    "descriptionKey": "rune.element_natur.desc",
+    "type": "Element",
+    "rarity": "Selten",
+    "baseMagnitude": 15,
+    "magnitudePerLevel": 2,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "element_feuer",
+    "displayNameKey": "rune.element_feuer.name",
+    "descriptionKey": "rune.element_feuer.desc",
+    "type": "Element",
+    "rarity": "Selten",
+    "baseMagnitude": 15,
+    "magnitudePerLevel": 2,
+    "elementTarget": "Feuer"
+  },
+  {
+    "id": "element_wasser",
+    "displayNameKey": "rune.element_wasser.name",
+    "descriptionKey": "rune.element_wasser.desc",
+    "type": "Element",
+    "rarity": "Selten",
+    "baseMagnitude": 15,
+    "magnitudePerLevel": 2,
+    "elementTarget": "Wasser"
+  },
+  {
+    "id": "element_licht",
+    "displayNameKey": "rune.element_licht.name",
+    "descriptionKey": "rune.element_licht.desc",
+    "type": "Element",
+    "rarity": "Epic",
+    "baseMagnitude": 18,
+    "magnitudePerLevel": 2.5,
+    "elementTarget": "Licht"
+  },
+  {
+    "id": "element_dunkel",
+    "displayNameKey": "rune.element_dunkel.name",
+    "descriptionKey": "rune.element_dunkel.desc",
+    "type": "Element",
+    "rarity": "Epic",
+    "baseMagnitude": 18,
+    "magnitudePerLevel": 2.5,
+    "elementTarget": "Dunkel"
+  },
+  {
+    "id": "hero_klein",
+    "displayNameKey": "rune.hero_klein.name",
+    "descriptionKey": "rune.hero_klein.desc",
+    "type": "Hero",
+    "rarity": "Epic",
+    "baseMagnitude": 500,
+    "magnitudePerLevel": 50,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "hero_gross",
+    "displayNameKey": "rune.hero_gross.name",
+    "descriptionKey": "rune.hero_gross.desc",
+    "type": "Hero",
+    "rarity": "Legendaer",
+    "baseMagnitude": 1500,
+    "magnitudePerLevel": 100,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "kombo_daemon",
+    "displayNameKey": "rune.kombo_daemon.name",
+    "descriptionKey": "rune.kombo_daemon.desc",
+    "type": "Kombo",
+    "rarity": "Epic",
+    "baseMagnitude": 20,
+    "magnitudePerLevel": 1.5,
+    "elementTarget": "Natur"
+  },
+  {
+    "id": "kombo_drache",
+    "displayNameKey": "rune.kombo_drache.name",
+    "descriptionKey": "rune.kombo_drache.desc",
+    "type": "Kombo",
+    "rarity": "Legendaer",
+    "baseMagnitude": 50,
+    "magnitudePerLevel": 2,
+    "elementTarget": "Feuer"
+  },
+  {
+    "id": "mana_start",
+    "displayNameKey": "rune.mana_start.name",
+    "descriptionKey": "rune.mana_start.desc",
+    "type": "Mana",
+    "rarity": "Legendaer",
+    "baseMagnitude": 1,
+    "magnitudePerLevel": 0,
+    "elementTarget": "Natur"
+  }
+]

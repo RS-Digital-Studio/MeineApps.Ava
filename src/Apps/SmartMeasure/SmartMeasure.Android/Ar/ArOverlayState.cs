@@ -161,4 +161,20 @@ public sealed class ArOverlayState
     /// <summary>Lokalisierte Labels fuer Stats-Panel + Footer + Reticle (Plan-Kap. 4.11).
     /// Default DE-Fallback, von <see cref="ArCaptureActivity"/> zu Session-Start ueberschrieben.</summary>
     public ArOverlayLabels Labels { get; init; } = ArOverlayLabels.GermanDefaults;
+
+    /// <summary>Plan-Kap. 5.3: Tape-Measure-Punkte als Screen-Koordinaten (projiziert).
+    /// Liste ist die Reihenfolge der Tap-Punkte. Wenn null oder leer: Mode nicht aktiv
+    /// bzw. noch nichts gesetzt.</summary>
+    public IReadOnlyList<(float screenX, float screenY)>? TapeMeasureScreenPoints { get; init; }
+
+    /// <summary>Distanzen zwischen aufeinanderfolgenden Tape-Punkten in Metern (in
+    /// Reihenfolge). Eintrag i ist die Distanz zwischen Punkt i und Punkt i+1.</summary>
+    public IReadOnlyList<float>? TapeMeasureSegmentMeters { get; init; }
+
+    /// <summary>Summe aller <see cref="TapeMeasureSegmentMeters"/> in Metern — fuer den
+    /// Live-Footer im Tape-Mode statt der normalen Punkt/Flaeche/Laenge-Werte.</summary>
+    public float TapeMeasureTotalMeters { get; init; }
+
+    /// <summary>True wenn <see cref="ArCaptureActivity"/> aktuell im Tape-Measure-Mode laeuft.</summary>
+    public bool IsTapeMeasureMode { get; init; }
 }

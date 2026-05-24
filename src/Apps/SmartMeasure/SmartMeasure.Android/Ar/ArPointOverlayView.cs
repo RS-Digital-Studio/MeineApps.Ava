@@ -427,6 +427,10 @@ public sealed partial class ArPointOverlayView : View
         if (_state.IsTracking)
             DrawReticle(canvas, width, height);
 
+        // 6b. Plan-Kap. 5.3: Tape-Measure-Polyline (Cyan, gestrichelt) + Segment-Distanzen
+        if (_state.TapeMeasureScreenPoints != null && _state.TapeMeasureScreenPoints.Count > 0)
+            DrawTapeMeasure(canvas);
+
         // 7. Auto-Close-Ring am ersten Kontur-Punkt
         if (_state.AutoCloseTarget.HasValue)
             DrawAutoCloseRing(canvas, _state.AutoCloseTarget.Value);
@@ -675,6 +679,89 @@ public sealed partial class ArPointOverlayView : View
         // Frame-Updates vom GL-Thread sind nicht garantiert wenn Tracking pausiert.
         if (anyAnimating)
             PostInvalidateDelayed(16);
+    }
+
+    /// <summary>Plan-Kap. 5.3: Footer im Tape-Modus — Punkt-Anzahl + Strecken-Summe + Hint
+    /// "Long-Press auf Mass = Reset".</summary>
+    private void DrawTapeMeasureFooter(Canvas canvas, int width, int height)
+    {
+        var toolbarOffset = 80 * _density + _state.BottomInsetPixels;
+        var footerH = 56 * _density;
+        var footerMargin = 8 * _density;
+        var footerTop = height - toolbarOffset - footerH - footerMargin;
+        var sidePad = 16 * _density;
+        var rect = new RectF(sidePad, footerTop, width - sidePad, footerTop + footerH);
+
+        canvas.DrawRoundRect(rect, 10 * _density, 10 * _density, _footerBgPaint);
+
+        // 2 Spalten: Punkte / Summe
+        var colW = (rect.Width()) / 2f;
+        var labelY = rect.Top + 16 * _density;
+        var valueY = rect.Top + 38 * _density;
+
+        var count = _state.TapeMeasureScreenPoints?.Count ?? 0;
+        var cx1 = rect.Left + colW / 2f;
+        canvas.DrawText(_state.Labels.Points, cx1, labelY, _footerLabelPaint);
+        canvas.DrawText(count.ToString(), cx1, valueY, _footerValuePaint);
+
+        var cx2 = rect.Left + colW * 1.5f;
+        canvas.DrawText("Σ", cx2, labelY, _footerLabelPaint);
+        canvas.DrawText($"{_state.TapeMeasureTotalMeters:F2} m", cx2, valueY, _footerValuePaint);
+    }
+
+    /// <summary>Plan-Kap. 5.3: Tape-Measure-Polyline + Segment-Distanzen + Endpunkt-Reticles.
+    /// Ad-hoc-Messung, visuell deutlich abgesetzt von Konturen (Cyan, durchgehend statt
+    /// typ-farbig). Punkte sind kleine Kreise an jedem Tap-Punkt, Segmente sind solide
+    /// Linien mit Distanz-Labels in der Mitte. Gesamtsumme oben rechts neben dem Stats-Panel.</summary>
+    private void DrawTapeMeasure(Canvas canvas)
+    {
+        var points = _state.TapeMeasureScreenPoints;
+        if (points == null || points.Count == 0) return;
+
+        using var linePaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(240, 0, 188, 212),   // Cyan
+            StrokeWidth = 4f * _density,
+            StrokeCap = Paint.Cap.Round,
+        };
+        linePaint.SetStyle(Paint.Style.Stroke);
+
+        using var endPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(240, 255, 235, 59), // Gelb fuer Endpunkt-Reticle
+        };
+        endPaint.SetStyle(Paint.Style.Fill);
+
+        using var endOutline = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(255, 0, 0, 0),
+            StrokeWidth = 2f * _density,
+        };
+        endOutline.SetStyle(Paint.Style.Stroke);
+
+        // Segmente zeichnen + Distanz-Labels
+        var segments = _state.TapeMeasureSegmentMeters;
+        for (var i = 1; i < points.Count; i++)
+        {
+            var a = points[i - 1];
+            var b = points[i];
+            canvas.DrawLine(a.screenX, a.screenY, b.screenX, b.screenY, linePaint);
+
+            if (segments != null && i - 1 < segments.Count)
+            {
+                var mx = (a.screenX + b.screenX) * 0.5f;
+                var my = (a.screenY + b.screenY) * 0.5f;
+                canvas.DrawText($"{segments[i - 1]:F2} m", mx, my - 8f * _density, _distancePaint);
+            }
+        }
+
+        // Endpunkt-Reticles
+        var r = 6f * _density;
+        foreach (var (sx, sy) in points)
+        {
+            canvas.DrawCircle(sx, sy, r, endPaint);
+            canvas.DrawCircle(sx, sy, r, endOutline);
+        }
     }
 
     /// <summary>Distanz-Labels zwischen ALLEN aufeinanderfolgenden Punkten — vorher nur zwischen letzten 2.</summary>
@@ -1053,6 +1140,13 @@ public sealed partial class ArPointOverlayView : View
     /// </summary>
     private void DrawLiveFooter(Canvas canvas, int width, int height)
     {
+        // Plan-Kap. 5.3: Im Tape-Modus eigener Footer mit Punktanzahl + Strecken-Summe.
+        if (_state.IsTapeMeasureMode)
+        {
+            DrawTapeMeasureFooter(canvas, width, height);
+            return;
+        }
+
         // Nur zeigen wenn überhaupt etwas zu zeigen ist
         var pointCount = _points.Count + _contours.Sum(c => c.Points.Count);
         if (_state.IsTracking && pointCount == 0) return;

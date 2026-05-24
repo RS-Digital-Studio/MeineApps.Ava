@@ -75,6 +75,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private DateTime _sessionStart;
     private CaptureMode _captureMode = CaptureMode.Point;
 
+    /// <summary>Tape-Measure-Buffer (Plan-Kap. 5.3). Punkte hier landen NICHT im
+    /// ArCaptureResult — Ad-hoc-Messung, Buffer wird beim Mode-Wechsel oder Long-Click
+    /// auf den Tape-Button geleert.</summary>
+    private readonly List<ArPoint> _tapeMeasurePoints = [];
+
     // Sensordaten zum Session-Start. _magneticHeading wird Cross-Thread geschrieben
     // (Sensor-Thread) und gelesen (GL-/UI-Thread) — Nullable<float> ist ein 8-Byte-Struct
     // und damit NICHT atomic. Lösung: int-Bits eines float, NaN = "kein Wert", via
@@ -375,6 +380,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     // Toolbar-Buttons fuer aktiven Modus
     private Button? _btnPoint;
     private Button? _btnContour;
+    private Button? _btnTape;
 
     // Toolbar-Referenz für Nav-Bar-Safe-Area-Update bei OnApplyWindowInsets
     private HorizontalScrollView? _toolbarScrollView;
@@ -437,6 +443,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _btnContour = AddToolbarButton(toolbar, "\u2500 Linie +", density,
             () => { VibrateLight(); ShowContourTypeDialog(); },
             tooltip: "Neue Kontur (Weg/Beet/Mauer/...) beginnen");
+        // Plan-Kap. 5.3: Tape-Measure-Modus. Tap = Mode aktivieren, Long-Press = Reset.
+        _btnTape = AddToolbarButton(toolbar, "\uD83D\uDCCF Mass", density,
+            () => { VibrateLight(); SetMode(CaptureMode.TapeMeasure); },
+            tooltip: "Ad-hoc-Distanz messen (kein Projekt-Save). Long-Press: zuruecksetzen");
+        if (_btnTape != null)
+        {
+            _btnTape.LongClick += (_, _) =>
+            {
+                VibrateMedium();
+                ResetTapeMeasure();
+            };
+        }
         AddToolbarButton(toolbar, "\u25EF Schließen", density,
             () => { VibrateMedium(); CloseActiveContour(); },
             tooltip: "Aktive Kontur schließen (mind. 3 Punkte)");
@@ -583,11 +601,19 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         // Modus-Text + Button-Highlighting aktualisieren
         if (_modeText != null)
-            _modeText.Text = mode == CaptureMode.Point ? "Modus: Punkt" : "Modus: Linie";
+            _modeText.Text = mode switch
+            {
+                CaptureMode.Contour => "Modus: Linie",
+                CaptureMode.TapeMeasure => "Modus: Maßband",
+                _ => "Modus: Punkt",
+            };
 
         _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point
             ? Color.Argb(220, 255, 107, 0)    // Aktiv: kräftiges Orange
             : Color.Argb(80, 255, 255, 255));  // Inaktiv: dezent
+        _btnTape?.SetBackgroundColor(mode == CaptureMode.TapeMeasure
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
         _btnContour?.SetBackgroundColor(mode == CaptureMode.Contour
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
@@ -1294,7 +1320,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             lock (_dataLock)
             {
-                if (_captureMode == CaptureMode.Point)
+                if (_captureMode == CaptureMode.TapeMeasure)
+                {
+                    // Plan-Kap. 5.3: Tape-Punkte gehen in eigenen Buffer (kein Projekt-Save,
+                    // kein Undo-Stack — Reset per Long-Press auf den Mass-Button).
+                    _tapeMeasurePoints.Add(arPoint);
+                    var total = ComputeTapeMeasureTotalMeters();
+                    ShowTransientHint($"📏 Punkt {_tapeMeasurePoints.Count}  Σ {total:F2} m");
+                }
+                else if (_captureMode == CaptureMode.Point)
                 {
                     _undoStack.Push(new AddPointAction(_dataLock, _points, arPoint));
                     _redoStack.Clear();
@@ -2294,12 +2328,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Reusable Builder fuer Kontur-Punkt-Projektionen (analog Builder oben).</summary>
     private readonly List<(float screenX, float screenY, int contourIdx, int pointIdx)> _projectedContourPointsBuilder = [];
 
+    /// <summary>Reusable Builder fuer Tape-Measure-Punkte (Plan-Kap. 5.3) — Screen-Koordinaten
+    /// in Reihenfolge ihrer Tap-Erfassung.</summary>
+    private readonly List<(float screenX, float screenY)> _projectedTapeMeasureBuilder = [];
+
     private void ProjectPointsToScreen()
     {
         global::Android.Opengl.Matrix.MultiplyMM(_mvpMatrixScratch, 0, _projectionMatrix, 0, _viewMatrix, 0);
 
         _projectedPointsBuilder.Clear();
         _projectedContourPointsBuilder.Clear();
+        _projectedTapeMeasureBuilder.Clear();
 
         // Punkte-Snapshot unter Lock erstellen (GL-Thread liest, UI-Thread schreibt)
         lock (_dataLock)
@@ -2332,6 +2371,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     if (screen.HasValue)
                         _projectedContourPointsBuilder.Add((screen.Value.x, screen.Value.y, -1, pi));
                 }
+            }
+
+            // Plan-Kap. 5.3: Tape-Measure-Punkte
+            for (var i = 0; i < _tapeMeasurePoints.Count; i++)
+            {
+                var screen = WorldToScreen(_tapeMeasurePoints[i], _mvpMatrixScratch);
+                if (screen.HasValue)
+                    _projectedTapeMeasureBuilder.Add((screen.Value.x, screen.Value.y));
             }
         }
 
@@ -3785,13 +3832,63 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             ThermalWarning = _thermalWarningText,
             BatteryWarning = _batteryWarningText,
             Labels = _overlayLabels,
+            // Plan-Kap. 5.3: Tape-Measure-Daten fuer das Overlay
+            TapeMeasureScreenPoints = BuildTapeMeasureSnapshot(),
+            TapeMeasureSegmentMeters = BuildTapeMeasureSegmentMeters(),
+            TapeMeasureTotalMeters = ComputeTapeMeasureTotalMetersLocked(),
+            IsTapeMeasureMode = _captureMode == CaptureMode.TapeMeasure,
         };
+    }
+
+    /// <summary>Snapshot der projizierten Tape-Measure-Punkte (Plan-Kap. 5.3) — sicheres
+    /// Cross-Thread-Read: BuildOverlayState laeuft auf GL-Thread, Builder wird in
+    /// ProjectPointsToScreen direkt davor unter _dataLock befuellt.</summary>
+    private IReadOnlyList<(float screenX, float screenY)>? BuildTapeMeasureSnapshot()
+    {
+        if (_projectedTapeMeasureBuilder.Count == 0) return null;
+        return new List<(float, float)>(_projectedTapeMeasureBuilder);
+    }
+
+    private IReadOnlyList<float>? BuildTapeMeasureSegmentMeters()
+    {
+        lock (_dataLock)
+        {
+            if (_tapeMeasurePoints.Count < 2) return null;
+            var segments = new List<float>(_tapeMeasurePoints.Count - 1);
+            for (var i = 1; i < _tapeMeasurePoints.Count; i++)
+                segments.Add(_tapeMeasurePoints[i].DistanceTo(_tapeMeasurePoints[i - 1]));
+            return segments;
+        }
+    }
+
+    private float ComputeTapeMeasureTotalMetersLocked()
+    {
+        lock (_dataLock) return ComputeTapeMeasureTotalMeters();
     }
 
     /// <summary>Aktuelle lokalisierte Overlay-Labels. Wird in OnCreate aus AppStrings
     /// gefuellt und bleibt fuer die Session konstant (Sprachwechsel mid-session passieren
     /// nicht — die Activity laeuft als Modal-Fullscreen). Plan-Kap. 4.11.</summary>
     private ArOverlayLabels _overlayLabels = ArOverlayLabels.GermanDefaults;
+
+    /// <summary>Summe aller aufeinanderfolgenden Tape-Measure-Distanzen in Metern.
+    /// Caller muss bereits unter <see cref="_dataLock"/> stehen.</summary>
+    private float ComputeTapeMeasureTotalMeters()
+    {
+        if (_tapeMeasurePoints.Count < 2) return 0f;
+        var total = 0f;
+        for (var i = 1; i < _tapeMeasurePoints.Count; i++)
+            total += _tapeMeasurePoints[i].DistanceTo(_tapeMeasurePoints[i - 1]);
+        return total;
+    }
+
+    /// <summary>Plan-Kap. 5.3: Tape-Buffer leeren — Long-Click auf den Mass-Button.</summary>
+    private void ResetTapeMeasure()
+    {
+        lock (_dataLock) _tapeMeasurePoints.Clear();
+        ShowTransientHint("📏 Maßband zurückgesetzt");
+        _overlayView?.Invalidate();
+    }
 
     /// <summary>Liest die AR-spezifischen Strings aus AppStrings und baut den
     /// Snapshot fuer ArOverlayState.Labels.</summary>
@@ -3896,7 +3993,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private enum CaptureMode
     {
         Point,
-        Contour
+        Contour,
+        /// <summary>Ad-hoc-Messmodus (Apple-Measure-Klon, Plan-Kap. 5.3): Punkte werden
+        /// in einem separaten Buffer gehalten, NICHT ins Projekt uebertragen. Polylinie
+        /// + Distanz-Labels zwischen Punkten + Gesamtsumme im Footer.</summary>
+        TapeMeasure
     }
 
     #region Undo/Redo Actions

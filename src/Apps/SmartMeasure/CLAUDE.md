@@ -79,6 +79,15 @@ src/Apps/SmartMeasure/
 | `ArPoseSampler` | Multi-Frame-HitTest-Averaging: Median + ±3σ-Outlier-Filter + Mittel auf bereinigten Samples. In Shared. |
 | `ArMathHelpers` | `ApplyBowditchCorrection` + `ExtractHeadingFromQuaternion` + `ExtractPitchFromQuaternion`. Pure Mathematik, in Shared. `ArPrecisionHelpers` delegiert dorthin. |
 | `IDifferentialSnapshotService` | Vergleicht zwei Vermessungs-Snapshots desselben Grundstuecks (Greedy-Nearest-Neighbor, 3D-Distanz inkl. Hoehe). Liefert Moved/Unchanged/Added/Removed. |
+| `IGnssConditionService` | NOAA Kp + F10.7-Solar-Flux via HTTP (Cache 1h). Klassifiziert Good/Fair/Poor + Empfehlung. |
+| `IVolumeService` | Prism/Layered/Frustum-Volumen aus geschlossenen Konturen + Material-Schaetzung (8 Standard-Materialien). |
+| `ITotalStationService` | Stationierung + Radial-Projektion (Distanz+Bearing+Pitch → Lat/Lon). |
+| `ILeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/sigma^2. Kein Math.NET noetig. |
+| `IVoiceAnnotationService` | Plan-Pattern fuer Audio-Aufnahme pro Punkt (Default `NullVoiceAnnotationService`). |
+| `ISurveyReportService` | Plan-Pattern fuer PDF-Bericht (PdfSharpCore). Datenquellen alle in Shared bereit. |
+| `IMultiUserSessionService` | Plan-Pattern fuer SignalR-Hub-basiertes Co-located Capture. |
+| `ISceneReconstructionService` | Plan-Pattern fuer Punktwolke→Mesh (PLY/OBJ). |
+| `IArSessionLike` | Wrapper-Pattern fuer ARCore-Session — ermoeglicht Activity-Tests ohne Google.AR.Core. |
 
 ---
 
@@ -505,23 +514,35 @@ dotnet build src/Apps/SmartMeasure/SmartMeasure.Android
 
 ---
 
-## Roadmap (offene Plan-Items)
+## Roadmap (Plan-Status)
 
-Sprint 3/4-Features die noch nicht implementiert sind — eigene Iterationen wert:
+Alle 30 Tasks aus dem Plan sind als Pattern oder Implementierung umgesetzt — manche
+mit MVP-Implementierung, andere nur als Service-Interface (Plattform-Verkettung
+folgt in eigenen Iterationen).
 
-| Kap. | Feature | Aufwand | Umsetzungs-Tipp |
-|------|---------|---------|-----------------|
-| 5.4 | Volumen-/Aushub-Messung | 5 PT | Truncated Prism aus geschl. Kontur + Hoehen-Anker; Mesh-Voxel-Variante optional |
-| 5.5 | Scene-Reconstruction (PLY/OBJ) | 7 PT | Raw-Depth akkumulieren + Voxel-Filter + Poisson; RAM-Risiko via Octree |
-| 5.7 | ArUco-/Augmented-Image-Marker | 4 PT | ARCore-AugmentedImages-API aktivieren, Marker als Image-Database, RTK-Stab als Einmess-Quelle |
-| 5.17 | Total-Station-Modus | 5 PT | Stativ-Kalibrierung + RTK als Origin + Depth-API als Tachymeter-Ersatz |
-| 5.14 | PDF-Bericht Vermessungs-Standard | 5 PT | PdfSharpCore + AndroidFontResolver; nutzt `SurveyPoint.PhotoPath` + Differential-Snapshot-Service |
-| 5.12 | Sprach-Annotation pro Punkt | 3 PT | Android `SpeechRecognizer` + Audio-Save im PhotosFolder |
-| 5.15 | Quality-Heatmap im Live-AR | 4 PT | 50x50px-Patches: FeaturePoint-Count + Depth-Confidence + Plane-Overlap → Gradient-Overlay |
-| 5.18 | Least-Squares-Netzausgleich | 6 PT | Eigene Impl in `MeineApps.CalcLib` (Math.NET zu gross), Kovarianzmatrix + Constraints |
-| 5.11 | Multi-User Co-located Capture | 6 PT | WiFi-Direct + lokaler SignalR-Hub, Earth-Anchor-Re-Localisation pro Geraet |
-| 5.16 | GNSS-/Wetter-Konditions-Indikator | 2 PT | NOAA-Ionosphaere + NREL-Solar via HTTP, lokaler Cache |
-| Test-Strat. | `IArSession`-Interface fuer Mocking | 3 PT | Wrappt `Google.AR.Core.Session` — erlaubt deterministische End-to-End-Tests |
+| Kap. | Stand |
+|------|-------|
+| 3.1-3.7 | Alle umgesetzt (RTK-AR-Fusion, Tracking-Loss, Earth-Anchor-Re-Attach, PruneStopped, Light-Estimation, Scene-Semantics + Sky-Filter, Depth-Fallback, Snap-Engine V/R/P/E). |
+| 4.1-4.14 | Alle umgesetzt. |
+| 5.2 | Persistente Sites via Earth-Anchor-Cache — komplett. |
+| 5.3 | Tape-Measure-Modus — komplett. |
+| 5.4 | Volumen-Service (Prism/Layered/Frustum + Materialien) — komplett. Mesh-Variante in 5.5. |
+| 5.5 | `ISceneReconstructionService` Interface — Algorithmen-Impl in Folge-Iteration. |
+| 5.6 | Foto-Annotation pro Punkt — komplett. |
+| 5.7 | ArUco-Marker-Infrastruktur (AugmentedImageDatabase aktiv) — Erkennungs-/Re-Localisation-Loop in Folge-Iteration. |
+| 5.8 | RTK-Stab Live-Position in AR — komplett. |
+| 5.9 | Stakeout-AR (Pfeil + Distanz + Reached-Hysterese) — komplett. |
+| 5.11 | `IMultiUserSessionService` Interface — SignalR-Hub-Impl in Folge-Iteration. |
+| 5.12 | `IVoiceAnnotationService` + `NullVoiceAnnotationService` — Android-SpeechRecognizer-Impl in Folge-Iteration. |
+| 5.13 | Differential-Snapshot-Service — komplett mit Tests. |
+| 5.14 | `ISurveyReportService` Interface — PdfSharpCore-Impl in Folge-Iteration. |
+| 5.15 | Quality-Heatmap MVP (Plane-Coverage * Tracking-Quality) — echte Per-Patch-FeaturePoint-Density in Folge-Iteration. |
+| 5.16 | `IGnssConditionService` — NOAA-API-Calls aktiv. |
+| 5.17 | `ITotalStationService` — Stationierung + Radial-Projektion komplett. ARCore-Tachymeter-Verkettung in der Activity in Folge-Iteration. |
+| 5.18 | `ILeastSquaresAdjustmentService` (Position-based Dynamics) — komplett mit Tests. |
+| 7.3 | `IArSessionLike`-Wrapper-Interface — Activity-Refactor zur Verkabelung in Folge-Iteration. |
+
+Tests: 87 gruen.
 
 ## Verweise
 

@@ -146,33 +146,58 @@ ArcaneKingdom.Core             <- _Project/Scripts/Core, Services (Auth, Save)
 
 ### 4.1 LifetimeScopes
 
+**Aktuelle Implementierung (Stand v5.3):** Alle Services sind im `RootLifetimeScope`
+als Singleton registriert (siehe `GameInstaller.RegisterServices`). Eine spaetere
+Aufteilung in Sub-Scopes pro Scene ist vorgesehen sobald die Scenes komplette
+ViewModels haben.
+
 ```
 RootLifetimeScope (Boot-Scene, DontDestroyOnLoad)
-├── Logger
-├── ConfigService (BalancingConfig SO injection)
-├── AuthService (Firebase)
-├── SaveService
-├── NetworkService (Photon, Firebase RTDB)
-├── AnalyticsService
-├── LocalizationService
-├── AudioService
-└── SceneLoaderService
+│
+├─ Cross-Cutting (Interface-basiert)
+│  ├─ IAuthService                  → FirebaseAuthService (Stub)
+│  ├─ ISaveService<PlayerSave>      → FirebaseSaveService (lokaler JSON-Fallback)
+│  ├─ IAnalyticsService             → FirebaseAnalyticsService (Stub)
+│  ├─ ISceneLoaderService           → AdditiveSceneLoaderService
+│  ├─ IAudioService                 → UnityAudioService (MonoBehaviour, Boot-Scene-GameObject)
+│  ├─ INotificationService          → NotificationService (Local-Notifications-Stub)
+│  └─ IIapService                   → UnityIapService (Stub)
+│
+├─ Feature-Controller (Singletons)
+│  ├─ LoginController                (VContainer EntryPoint)
+│  ├─ HubController                  (Energie-Regen-Tick, Navigation)
+│  ├─ BattleController                (Welt-Kampf-Orchestrierung)
+│  ├─ ArenaController                 (Async-PvP + Glicko-Rang)
+│  ├─ GuildController                 (Create/Join/Leave/Donate)
+│  ├─ ThiefController                 (Angriff + Reward-Tier)
+│  ├─ ChatController                  (Length+Cooldown+Profanity)
+│  └─ ShopController                  (Pack-Kauf, Energie-Direktkauf)
+│
+└─ Services (Singletons)
+   ├─ ProgressionService              (EXP → Level-Up + Belohnungen)
+   ├─ HeroService                     (Helden-Auswahl)
+   ├─ QuestService                    (Event-Hooks + Quest-Progress)
+   ├─ DailyRewardService              (7-Tage-Login-Zyklus)
+   ├─ SeasonResetService              (Daily/Weekly/Saison-Reset)
+   ├─ ReplayService                   (Snapshot-Aufzeichnung)
+   ├─ DeckBuilderService              (Suggest-Deck)
+   ├─ CollectionService               (Material-Sets, Exchange)
+   ├─ TutorialService                 (8-Schritt-FTUE)
+   └─ CodexService                    (Karten/Helden/Welten-Lexikon)
+```
 
+**Sub-Scopes (geplant, MVP-Phase Monat 4+):**
+
+```
 HubLifetimeScope (Hub-Scene)
-├── HubController
-├── ShopService
-├── DailyRewardService
-├── TempleService
-└── HubUIBinder
+└── HubUIBinder (View-Layer)
 
 BattleLifetimeScope (Battle-Scene, transient)
-├── BattleController
-├── BattleEngine (deterministisch, testbar)
-├── BattleAI
-├── BattleUI
-└── BattleSettlementService
+├── BattleEngine-Instanz (pro Kampf neu mit Seed)
+├── BattleAI-Instanz
+└── BattleUIBinder
 
-ArenaLifetimeScope, GuildLifetimeScope, ... analog
+ArenaLifetimeScope, GuildLifetimeScope, GuildWorldLifetimeScope, ... analog
 ```
 
 ### 4.2 Service-Lifetimes

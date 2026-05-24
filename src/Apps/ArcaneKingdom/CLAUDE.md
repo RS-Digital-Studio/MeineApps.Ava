@@ -6,13 +6,13 @@ anderen Apps bewusst machen.
 
 | Aspekt | Wert |
 |--------|------|
-| Status | Konzept-Phase (Stand 2026-05-24) |
+| Status | Konzept-Phase abgeschlossen — Pre-MVP (Stand 2026-05-24) |
 | Tech | Unity 2022.3 LTS + C# (.NET Standard 2.1) |
-| Plattform | Android (Phase 1), iOS (Phase 2) |
+| Plattform | Android (Phase 1), iOS (Phase 2 ab Monat 26+) |
 | Render-Pipeline | URP |
 | Backend | Firebase + Photon |
 | Genre | TCG + RPG, Free-to-Play |
-| Farbpalette | Wird im Konzept-Phase festgelegt [TBD: Vermutlich Royal-Purple #6B46C1 + Gold #F59E0B] |
+| Farbpalette | Royal-Purple #6B46C1 + Gold #F59E0B (Brand-Referenz, finalisiert v5.2) |
 
 > Pflichtlektuere VOR Aenderungen: [DESIGN.md](DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 > Generische Repo-Konventionen siehe [Haupt-CLAUDE.md](../../../CLAUDE.md).
@@ -24,7 +24,7 @@ anderen Apps bewusst machen.
 | Datei | Zweck |
 |-------|-------|
 | [README.md](README.md) | Quickstart fuer Entwickler |
-| [DESIGN.md](DESIGN.md) | Konsolidiertes GDD v5.1 (19 Sektionen + TBDs) |
+| [DESIGN.md](DESIGN.md) | Konsolidiertes GDD v5.3 (19 Sektionen, TBDs geschlossen) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Folder-Layout, DI, Networking, Conventions |
 | [Unity/](Unity/) | Das eigentliche Unity-Projekt |
 
@@ -186,11 +186,15 @@ Domain-Tests sollen ohne Unity laufen — `BattleEngine` etc. sind reines C#.
 
 ---
 
-## Bekannte Stolperfallen (wird mit Implementierung ergaenzt)
+## Bekannte Stolperfallen
 
 | Problem | Loesung |
 |---------|---------|
-| (noch nichts implementiert) | — |
+| Scene-YAML-Skelette: Components zeigen "missing script" beim ersten Open | Erwartet. Per Hand `RootLifetimeScope` / `UnityAudioService` an die `[Bootstrapper]` / `[Audio]`-GameObjects ziehen. Anleitung in `Assets/_Project/Scenes/README.md`. |
+| `Resources.LoadAll<T>("")` liefert leere Liste im Editor vor Erstimport | Erst `ArcaneKingdom -> Data -> Import All` ausfuehren — danach existieren die SO-Assets unter `Assets/_Project/ScriptableObjects/`. |
+| Newtonsoft.Json fehlt im Build | Bereits via `com.unity.nuget.newtonsoft-json` 3.2.1 im `Packages/manifest.json`. Falls Package-Resolve fehlschlaegt: `Window -> Package Manager -> Refresh`. |
+| Domain-Tests laufen nicht im EditMode | Tests-asmdef hat `defineConstraints: ["UNITY_INCLUDE_TESTS"]` — in den Test Runner Settings das Define aktivieren. |
+| VContainer-Registrierungen werden nicht aufgeloest | Wurde Service im `GameInstaller.RegisterServices` vergessen? Datei pflegen, sobald ein neuer Service hinzukommt. |
 
 ---
 
@@ -198,17 +202,22 @@ Domain-Tests sollen ohne Unity laufen — `BattleEngine` etc. sind reines C#.
 
 Vollstaendige Roadmap siehe [DESIGN.md Kapitel 19](DESIGN.md#19-entwicklungs-zeitplan-24-monate).
 
-**Aktuell (Stand 2026-05-24):**
+**Aktuell (Stand 2026-05-24, Iteration 5):**
 
 - [x] App-Ordner angelegt
-- [x] GDD v5.1 konsolidiert (DESIGN.md)
+- [x] GDD v5.3 (alle 15 v5.1-TBDs geschlossen)
 - [x] Architektur-Plan (ARCHITECTURE.md)
-- [x] Unity-Projekt-Skelett
-- [x] Initiale C#-Scripts (Models, Enums, ScriptableObjects)
-- [ ] Konzept-Phase (TBDs schliessen, Karten-Set v1 entwerfen, BalancingConfig erstellen)
-- [ ] MVP: Kampfsystem (Monat 4-6)
-- [ ] MVP: Welt 1 (Elderwald, Monat 6-8)
-- [ ] Firebase-Integration (Monat 10-14)
+- [x] Unity-Projekt-Skelett (6 asmdefs + Tests, Boot/Hub/Battle/Arena/Guild/GuildWorld Scenes)
+- [x] Domain (22 Module — Cards/Runes/Player/Battle/World/Economy/Config + Guild/Quest/Achievement/Thief/Chat/Shop + Progression/Hero/Replay/Collection/Tutorial/Notification/Season)
+- [x] Game (21 Services/Controller — Hub/Battle/Arena/Login + Guild/Thief/Chat/Shop/Quest/DailyReward + Progression/Hero/Replay/IAP/DeckBuilder/Collection/Tutorial/Notification/SeasonReset/Codex)
+- [x] 30 Karten + 32 Faehigkeiten + 18 Runen + 6 Helden + 9 Welten/90 Nodes + 4 Sammelsets + 8 Tutorial-Schritte + 5 Notifications als JSON
+- [x] 23 Domain-Test-Klassen (~120 Test-Cases, alle pure C#)
+- [x] CI-Pipeline (GitHub Actions, EditMode-Tests + Android-AAB)
+- [x] Editor-Tools (DataImporter + CardPreview + LocalizationCheck + BalancingDashboard)
+- [ ] MVP: Kampf-UI (Drag&Drop, Mana-Orbs, Damage-Numbers) — Monat 4-6
+- [ ] MVP: Hub-UI (Tabs, Energie-Bar, Navigation) — Monat 4-5
+- [ ] MVP: Welt-1-UI (Elderwald-Karte mit 10 Nodes) — Monat 6-8
+- [ ] Firebase Unity SDK installieren + Auth/RTDB/Analytics verdrahten — Monat 10-14
 
 ---
 

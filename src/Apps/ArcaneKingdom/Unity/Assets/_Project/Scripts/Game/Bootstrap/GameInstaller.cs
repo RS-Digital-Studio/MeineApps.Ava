@@ -6,15 +6,21 @@ using ArcaneKingdom.Game.Services;
 using ArcaneKingdom.Game.Arena;
 using ArcaneKingdom.Game.Battle;
 using ArcaneKingdom.Game.Chat;
+using ArcaneKingdom.Game.Codex;
+using ArcaneKingdom.Game.Collection;
+using ArcaneKingdom.Game.DeckBuilder;
 using ArcaneKingdom.Game.Guild;
 using ArcaneKingdom.Game.Hero;
 using ArcaneKingdom.Game.Hub;
 using ArcaneKingdom.Game.Iap;
+using ArcaneKingdom.Game.Notification;
 using ArcaneKingdom.Game.Progression;
 using ArcaneKingdom.Game.Quest;
 using ArcaneKingdom.Game.Replay;
+using ArcaneKingdom.Game.Season;
 using ArcaneKingdom.Game.Shop;
 using ArcaneKingdom.Game.Thief;
+using ArcaneKingdom.Game.Tutorial;
 using VContainer;
 using VContainer.Unity;
 
@@ -48,6 +54,12 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<HeroService>(Lifetime.Singleton);
             builder.Register<ReplayService>(Lifetime.Singleton);
             builder.Register<IIapService, UnityIapService>(Lifetime.Singleton);
+            builder.Register<DeckBuilderService>(Lifetime.Singleton);
+            builder.Register<CollectionService>(Lifetime.Singleton);
+            builder.Register<TutorialService>(Lifetime.Singleton);
+            builder.Register<INotificationService, NotificationService>(Lifetime.Singleton);
+            builder.Register<SeasonResetService>(Lifetime.Singleton);
+            builder.Register<CodexService>(Lifetime.Singleton);
 
             builder.RegisterEntryPoint<LoginController>();
         }

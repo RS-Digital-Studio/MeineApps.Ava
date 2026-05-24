@@ -1,11 +1,12 @@
 # ArcaneKingdom — Game Design Document (GDD)
 
-> **Version 5.2** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 2022 LTS
+> **Version 5.3** | Stand: 2026-05-24 | Plattform: Android | Engine: Unity 2022 LTS
 > Quelle: `Kartenspiel Start.docx` v5.0 (Maerz 2026), Referenz: *Arcane Magic*
 
 Dieses Dokument ist die **autoritative Single-Source-of-Truth** fuer das Game Design.
-v5.2 schliesst die in v5.1 markierten TBDs (15 Entscheidungen, siehe Aenderungslog Kap. 23).
-Alle Aenderungen gegenueber v5.0 / v5.1 sind im Abschnitt **23. Aenderungslog** dokumentiert.
+v5.3 ergaenzt die Material-Karten-IDs der Sammelsets, dokumentiert die 8 Tutorial-Schritte
+und praezisiert die Reset-Zeiten (Daily 00:00 UTC, Weekly Montag 00:00 UTC).
+Alle Aenderungen gegenueber v5.0 / v5.1 / v5.2 sind im Abschnitt **23. Aenderungslog** dokumentiert.
 
 ---
 
@@ -347,13 +348,19 @@ Designziel: Decks bestehen aus ca. 8 verschiedenen Karten + 2 Duplikate, statt 5
 ### 5.6 Karten-Sammlung & Materialien-Karten
 
 **Spezielle Karten** koennen nur durch das Sammeln von **Materialien-Karten** freigeschaltet werden.
+Die Material-IDs sind autoritativ in `Unity/Assets/_Project/Resources/Data/collections.json` gepflegt
+und werden vom `CollectionService` (Game-Layer) gegen das Spieler-Inventar ausgewertet.
 
-| Sammlung | Materialien-Karten | Resultat |
-|----------|-------------------|----------|
-| White Heart | 4 (Helle Sphaere, Sterne-Splitter, Engelsfeder, Heiliges Wasser) | "Engelsritter" (Epic, Licht) |
-| Dark Heart | 6 (Schattenscherbe, Knochenstaub, Daemonenbrand, Pestodem, Schreckensauge, Schwarzes Herz) | "Schattenfuerst" (Legendaer, Dunkel) |
-| Drachen-Set | 5 (5 Drachen-Schuppen verschiedener Farben) | "Elder-Drache" (Legendaer, Alle Elemente) |
-| Maschinenkern | 4 (Zahnrad, Eisenkern, Plasma-Zelle, Steuermodul) | "Kriegsmaschine" (Epic, Licht) |
+| Sammlung | Set-ID | Material-IDs (4-6) | Resultat-Karte | Resultat-Rarity |
+|----------|--------|-------------------|----------------|-----------------|
+| Weisses Herz | `white_heart` | `helle_sphaere`, `sterne_splitter`, `engelsfeder`, `heiliges_wasser` | `engelsritter` | Epic, Licht |
+| Schwarzes Herz | `dark_heart` | `schattenscherbe`, `knochenstaub`, `daemonenbrand`, `pestodem`, `schreckensauge`, `schwarzes_herz_material` | `schattenfuerst` | Legendaer, Dunkel |
+| Drachen-Set | `dragon_set` | `drachen_schuppe_rot`, `_blau`, `_gruen`, `_gold`, `_schwarz` | `elder_drache` | Legendaer, Alle |
+| Maschinen-Kern | `machine_core` | `zahnrad`, `eisenkern`, `plasma_zelle`, `steuermodul` | `kriegsmaschine` | Epic, Licht |
+
+**Material-Karten im Inventar** werden mit Praefix `material.` gespeichert (z.B.
+`material.helle_sphaere`). ATK 1 / HP 1, nicht spielbar. Beim Exchange werden je eine Kopie
+pro Material verbraucht, die Resultat-Karte landet als neue `CardInstance` im Inventar.
 
 - **Materialien-Karten:** ATK 1 / HP 1, nicht spielbar, nur Tauschware
 - **Exchange-Button:** Erscheint sobald alle benoetigt vorhanden — Tap fuer Belohnung
@@ -1090,6 +1097,31 @@ Implementierung in **Phase 2** (Monat 18+). Spezifikation final:
 | 25 | 2 Epic Scraps | 1 Epic-Karte |
 | 50 | 1 Epic-Karte | 1 Legendaer-Karte (saison-exklusiv) + Saison-Avatar-Rahmen |
 
+### 16.4 Tutorial-Schritte (First-Time-User-Experience)
+
+8 Schritte, Event-getriggert, einzeln skippbar (ausser Schritt 1). Komplette
+Implementierung in `Unity/Assets/_Project/Resources/Data/tutorial.json`. Progress wird
+im PlayerSave-Schema v2 persistiert.
+
+| # | Step-ID | Trigger-Event | Highlight | Skippable | Inhalt (Kurz) |
+|---|---------|---------------|-----------|-----------|---------------|
+| 1 | `welcome` | `first_session_start` | — | nein | Splash + Tap-to-Begin |
+| 2 | `hub` | `hub_entered` | Welt-Map-Button | ja | Erklaerung Hub-Navigation |
+| 3 | `first_battle` | `battle_started` | Erste Karte | ja | Drag-and-Drop einer Karte |
+| 4 | `deck_edit` | `first_battle_won` | Deck-Tab | ja | Deck mit 10 Karten anpassen |
+| 5 | `first_pack` | `shop_entered` | Gratis Common Pack | ja | Pack-Oeffnen-Mechanik |
+| 6 | `collection` | `material_card_obtained` | Sammlungen-Tab | ja | Erstmaliges Material-Drop |
+| 7 | `arena` | `level_15_reached` | Arena-Button | ja | Arena ist verfuegbar |
+| 8 | `guild` | `level_25_reached` | Gilden-Menue | ja | Gilden-Beitritt erklaeren |
+
+**Reset-Zeiten (Quest-Reset, DESIGN-Praezisierung v5.3):**
+
+| Reset-Typ | Zeitpunkt | Trigger im Code |
+|-----------|-----------|------------------|
+| Daily | 00:00 UTC | `SeasonResetService.CheckResetsAsync` bei Hub-Tick, `ResetWindow.HasCrossedDailyReset` |
+| Weekly | Montag 00:00 UTC | analog mit `HasCrossedWeeklyReset` |
+| Saison | Account-Erstellung + 30 Tage (Server-getrieben in Production) | `ResetWindow.NextSeasonResetUtc` |
+
 ---
 
 ## 17. Waehrungs- & Wirtschaftssystem
@@ -1404,6 +1436,17 @@ Alle 15 in v5.1 markierten TBDs sind in v5.2 entschieden und im Haupttext eingea
 | TBD-13 | Avatar-Quellen | **50 Premade + Saison/Achievement-Avatare, keine Custom-Uploads** | Kap. 4.5 |
 | TBD-14 | Dieb-Aktivitaets-Multiplikator | **DAU-basierte Formel (0,4 - 1,5)** | Kap. 10.2 |
 | TBD-15 | iOS-Launch Zeitpunkt | **Phase 2, Monat 26+** | Kap. 1 + 18.4 |
+
+### 23.3.A Aenderungen v5.2 → v5.3
+
+| Aenderung | Quelle |
+|-----------|--------|
+| Material-IDs aller 4 Sammelsets autoritativ in DESIGN + `collections.json` | Kap. 5.6 |
+| Material-Karten-Naming-Konvention (`material.<id>`-Praefix) | Kap. 5.6 |
+| 8 Tutorial-Schritte konkret spezifiziert | Neuer Kap. 16.4 |
+| Daily/Weekly-Reset-Zeiten (00:00 UTC bzw. Montag 00:00 UTC) explizit | Kap. 11.4 (Quest-Reset) |
+| Notification-Templates final (Energie/Dieb/Klan-Match/Daily/Saison-Ende) | Kap. 14.x via `notifications.json` |
+| 6 Helden konkret spezifiziert (vorher TBD-03 noch im Pilot-Schwebezustand) | Kap. 9.6 |
 
 ### 23.3 Neue Inhalte in v5.2
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 
 namespace FinanzRechner.Services;
 
@@ -442,9 +443,13 @@ public sealed class ExpenseService : IExpenseService, IDisposable
     {
         await InitializeAsync();
         var today = DateTime.Today;
+        // Idempotenz-Schlüssel ist UTC: ein Zeitzonen-Wechsel (Reise) soll keine
+        // Doppel-Verarbeitung triggern. Buchungs-Datum bleibt Lokal (User-Erwartung
+        // "am 15. des Monats" bezieht sich auf die lokale Uhr).
+        var utcToday = DateTime.UtcNow.Date;
 
         // Nur 1x pro Tag verarbeiten (4.6)
-        if (await WasProcessedTodayAsync(today))
+        if (await WasProcessedTodayAsync(utcToday))
             return 0;
 
         await _semaphore.WaitAsync();
@@ -481,8 +486,8 @@ public sealed class ExpenseService : IExpenseService, IDisposable
                 await SaveRecurringTransactionsAsync();
             }
 
-            // Verarbeitungsdatum speichern
-            await MarkProcessedTodayAsync(today);
+            // Verarbeitungsdatum speichern — UTC-basiert (timezone-invariant)
+            await MarkProcessedTodayAsync(utcToday);
             return count;
         }
         finally
@@ -663,35 +668,27 @@ public sealed class ExpenseService : IExpenseService, IDisposable
         try
         {
             var json = JsonSerializer.Serialize(_sentNotifications, _jsonWriteOptions);
-            await WriteAtomicAsync(_notificationsFilePath, json);
+            await AtomicFileWriter.WriteAllTextAsync(_notificationsFilePath, json);
         }
         catch (Exception) { /* Nicht-kritisch */ }
-    }
-
-    /// <summary>Atomares Schreiben: temp-Datei + rename (4.1)</summary>
-    private static async Task WriteAtomicAsync(string targetPath, string content)
-    {
-        var tempPath = targetPath + ".tmp";
-        await File.WriteAllTextAsync(tempPath, content);
-        File.Move(tempPath, targetPath, overwrite: true);
     }
 
     private async Task SaveExpensesAsync()
     {
         var json = JsonSerializer.Serialize(_expenses, _jsonWriteOptions);
-        await WriteAtomicAsync(_expensesFilePath, json);
+        await AtomicFileWriter.WriteAllTextAsync(_expensesFilePath, json);
     }
 
     private async Task SaveBudgetsAsync()
     {
         var json = JsonSerializer.Serialize(_budgets, _jsonWriteOptions);
-        await WriteAtomicAsync(_budgetsFilePath, json);
+        await AtomicFileWriter.WriteAllTextAsync(_budgetsFilePath, json);
     }
 
     private async Task SaveRecurringTransactionsAsync()
     {
         var json = JsonSerializer.Serialize(_recurringTransactions, _jsonWriteOptions);
-        await WriteAtomicAsync(_recurringFilePath, json);
+        await AtomicFileWriter.WriteAllTextAsync(_recurringFilePath, json);
     }
 
     /// <summary>Auto-Backup erstellen, max. 5 Versionen rotieren (4.2)</summary>
@@ -728,24 +725,25 @@ public sealed class ExpenseService : IExpenseService, IDisposable
         }
     }
 
-    /// <summary>Prüft ob heute bereits verarbeitet wurde (4.6)</summary>
-    private async Task<bool> WasProcessedTodayAsync(DateTime today)
+    /// <summary>Prüft ob heute (UTC) bereits verarbeitet wurde — timezone-invariant (4.6).</summary>
+    private async Task<bool> WasProcessedTodayAsync(DateTime utcToday)
     {
         try
         {
             if (!File.Exists(_lastProcessedFilePath)) return false;
             var dateStr = await File.ReadAllTextAsync(_lastProcessedFilePath);
-            return dateStr.Trim() == today.ToString("yyyy-MM-dd");
+            return dateStr.Trim() == utcToday.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
         }
         catch { return false; }
     }
 
-    /// <summary>Heutiges Datum als verarbeitet markieren (4.6)</summary>
-    private async Task MarkProcessedTodayAsync(DateTime today)
+    /// <summary>Heutiges UTC-Datum als verarbeitet markieren — timezone-invariant (4.6).</summary>
+    private async Task MarkProcessedTodayAsync(DateTime utcToday)
     {
         try
         {
-            await File.WriteAllTextAsync(_lastProcessedFilePath, today.ToString("yyyy-MM-dd"));
+            await File.WriteAllTextAsync(_lastProcessedFilePath,
+                utcToday.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
         }
         catch { /* Nicht-kritisch */ }
     }

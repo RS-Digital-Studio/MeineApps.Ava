@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FinanzRechner.Models;
+using MeineApps.Core.Ava.Services;
 
 namespace FinanzRechner.Services;
 
@@ -184,9 +185,7 @@ public sealed class SavingsGoalService : ISavingsGoalService, IDisposable
     private async Task SaveAsync()
     {
         var json = JsonSerializer.Serialize(_goals, _jsonOptions);
-        var tempPath = _filePath + ".tmp";
-        await File.WriteAllTextAsync(tempPath, json);
-        File.Move(tempPath, _filePath, overwrite: true);
+        await AtomicFileWriter.WriteAllTextAsync(_filePath, json);
     }
 
     private static void ValidateGoal(SavingsGoal goal)

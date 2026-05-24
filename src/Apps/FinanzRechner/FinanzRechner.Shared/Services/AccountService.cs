@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FinanzRechner.Models;
+using MeineApps.Core.Ava.Services;
 
 namespace FinanzRechner.Services;
 
@@ -254,9 +255,7 @@ public sealed class AccountService : IAccountService, IDisposable
     private async Task SaveAsync()
     {
         var json = JsonSerializer.Serialize(_accounts, _jsonOptions);
-        var tempPath = _filePath + ".tmp";
-        await File.WriteAllTextAsync(tempPath, json);
-        File.Move(tempPath, _filePath, overwrite: true);
+        await AtomicFileWriter.WriteAllTextAsync(_filePath, json);
     }
 
     private static void ValidateAccount(Account account)

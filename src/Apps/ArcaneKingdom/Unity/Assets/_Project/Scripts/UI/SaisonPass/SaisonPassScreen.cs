@@ -35,12 +35,16 @@ namespace ArcaneKingdom.UI.SaisonPass
         public override string Id => ScreenId.SaisonPass;
         protected override string UxmlPath => "UI/SaisonPassScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public SaisonPassScreen(ScreenManager screenManager,
-                                ISaveService<PlayerSave> save, ToastService toast)
+                                ISaveService<PlayerSave> save, ToastService toast,
+                                UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -91,14 +95,14 @@ namespace ArcaneKingdom.UI.SaisonPass
             }
         }
 
-        private static VisualElement BuildTierColumn(int tier, int currentTier)
+        private VisualElement BuildTierColumn(int tier, int currentTier)
         {
             var col = new VisualElement();
             col.style.width = 100;
             col.style.marginRight = 6;
             col.style.alignItems = Align.Center;
 
-            // Free-Reward
+            // Free-Reward (mit Reward-Sprite saison_reward_{tier})
             var free = new VisualElement();
             free.AddToClassList("ak-surface");
             free.style.width = 96;
@@ -106,9 +110,17 @@ namespace ArcaneKingdom.UI.SaisonPass
             free.style.alignItems = Align.Center;
             free.style.justifyContent = Justify.Center;
             if (tier > currentTier) free.style.opacity = 0.4f;
+
+            // Reward-Sprite als Background (saison_reward_1.png ... saison_reward_30.png)
+            _uiAssets.ApplyBackground(free, $"SaisonPass/saison_reward_{tier}",
+                                      UnityEngine.ScaleMode.ScaleToFit);
+
             var freeLabel = new Label(FreeRewardFor(tier));
             freeLabel.AddToClassList("ak-caption");
             freeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            freeLabel.style.position = Position.Absolute;
+            freeLabel.style.bottom = 2;
+            freeLabel.style.color = new StyleColor(Color.white);
             free.Add(freeLabel);
             col.Add(free);
 
@@ -122,7 +134,7 @@ namespace ArcaneKingdom.UI.SaisonPass
             tierLabel.style.marginBottom = 4;
             col.Add(tierLabel);
 
-            // Premium-Reward
+            // Premium-Reward (anderer Tier-Asset-Index — wir nehmen die spaeteren Sprites)
             var premium = new VisualElement();
             premium.AddToClassList("ak-surface-elevated");
             premium.style.width = 96;
@@ -130,10 +142,18 @@ namespace ArcaneKingdom.UI.SaisonPass
             premium.style.alignItems = Align.Center;
             premium.style.justifyContent = Justify.Center;
             premium.style.opacity = 0.55f; // bis Premium gekauft
+
+            // Premium nutzt einen verschobenen Index (Tier+15 mod 30+1)
+            var premiumIdx = ((tier + 15 - 1) % 30) + 1;
+            _uiAssets.ApplyBackground(premium, $"SaisonPass/saison_reward_{premiumIdx}",
+                                      UnityEngine.ScaleMode.ScaleToFit);
+
             var pLabel = new Label(PremiumRewardFor(tier));
             pLabel.AddToClassList("ak-caption");
             pLabel.AddToClassList("ak-text--accent");
             pLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            pLabel.style.position = Position.Absolute;
+            pLabel.style.bottom = 2;
             premium.Add(pLabel);
             col.Add(premium);
 

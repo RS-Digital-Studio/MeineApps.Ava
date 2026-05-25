@@ -111,6 +111,21 @@ namespace ArcaneKingdom.Game.Artwork
         public void ApplyNodeMarker(VisualElement? element, string nodeType)
             => ApplyBackground(element, $"Icons/Nodes/node_{nodeType.ToLowerInvariant()}", ScaleMode.ScaleToFit);
 
+        /// <summary>
+        /// Achievement-Icon aus Resources/Achievements/. Sucht zuerst spezifisches Asset
+        /// (z.B. arena_top_10.png), fallt zurueck auf generisches Bronze-Icon wenn ID
+        /// nicht matched (z.B. wenn JSON-Definitions neue Achievements einfuegt).
+        /// </summary>
+        public void ApplyAchievement(VisualElement? element, string achievementId)
+        {
+            if (element == null) return;
+            var specific = LoadTexture($"Achievements/{achievementId}");
+            var tex = specific ?? LoadTexture("Quests/achievement_bronze");
+            if (tex == null) return;
+            element.style.backgroundImage = new StyleBackground(tex);
+            element.style.unityBackgroundScaleMode = new StyleEnum<ScaleMode>(ScaleMode.ScaleToFit);
+        }
+
         // === Interne Helfer (Texture-Loader fuer UI Toolkit) ===
 
         private Texture2D? LoadTexture(string resourcePath)

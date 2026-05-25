@@ -134,7 +134,7 @@ namespace ArcaneKingdom.UI.Battle
 
             // Spielplan v5 Kap. 8.3: Difficulty aus dem Context (gewaehlt im DifficultyPicker).
             // Fallback: Classic (1 Energie, 1 Stern bei Sieg).
-            _difficulty = _modalContext.Get<NodeDifficulty?>(WorldMapScreen.DifficultyContextKey)
+            _difficulty = _modalContext.GetStruct<NodeDifficulty>(WorldMapScreen.DifficultyContextKey)
                           ?? NodeDifficulty.Classic;
 
             // Battle-Background pro Welt (z.B. battle_bg_elderwald, battle_bg_vulkanhort)
@@ -427,12 +427,22 @@ namespace ArcaneKingdom.UI.Battle
             if (_busy || _engine == null) return;
             if (_engine.State.Phase != BattlePhase.PlayerTurn) return;
 
+            // Element der gespielten Karte fuer Burst-Effekt herausfinden
+            string? element = null;
+            if (_defs != null && _instances != null
+                && _instances.TryGetValue(cardInstanceId, out var inst)
+                && _defs.TryGetValue(inst.CardDefinitionId, out var def))
+            {
+                element = def.Element.ToString().ToLowerInvariant();
+            }
+
             if (!_engine.PlayCard(forPlayer: true, cardInstanceId))
             {
                 _toast.Show("Karte kann nicht gespielt werden.", ToastKind.Warning);
                 return;
             }
             SpawnFloatingText("Eingesetzt!", new Color(0.95f, 0.78f, 0.30f));
+            if (element != null) SpawnEffectBurst($"effect_{element}_burst");
             DrainPersonalityEvents().Forget();
             RefreshAll();
         }
@@ -683,6 +693,42 @@ namespace ArcaneKingdom.UI.Battle
             label.style.opacity = 0;
             await UniTask.Delay(950);
             label.RemoveFromHierarchy();
+        }
+
+        /// <summary>
+        /// Spawnt einen Effekt-Burst (z.B. effect_fire_burst, effect_heal, effect_critical)
+        /// als animierter Sprite-Burst auf dem Floating-Layer. Fade + Scale-Up + Auto-Cleanup.
+        /// </summary>
+        private void SpawnEffectBurst(string effectId, float xPercent = 50f, float yPercent = 40f)
+        {
+            var burst = new VisualElement { name = $"burst-{effectId}" };
+            burst.style.position = Position.Absolute;
+            burst.style.left = new Length(xPercent, LengthUnit.Percent);
+            burst.style.top = new Length(yPercent, LengthUnit.Percent);
+            burst.style.width = 256;
+            burst.style.height = 256;
+            burst.style.marginLeft = -128;
+            burst.style.marginTop = -128;
+            burst.pickingMode = PickingMode.Ignore;
+            _uiAssets.ApplyBackground(burst, $"Effects/{effectId}", ScaleMode.ScaleToFit);
+            burst.style.opacity = 0f;
+            burst.style.scale = new StyleScale(new Scale(new Vector3(0.4f, 0.4f, 1f)));
+            burst.style.transitionProperty = new List<StylePropertyName> { "opacity", "scale" };
+            burst.style.transitionDuration = new List<TimeValue> { new TimeValue(450, TimeUnit.Millisecond) };
+            _floatingLayer.Add(burst);
+            FadeBurstAsync(burst).Forget();
+        }
+
+        private static async UniTaskVoid FadeBurstAsync(VisualElement burst)
+        {
+            await UniTask.Yield();
+            burst.style.opacity = 1f;
+            burst.style.scale = new StyleScale(new Scale(new Vector3(1.2f, 1.2f, 1f)));
+            await UniTask.Delay(450);
+            burst.style.opacity = 0f;
+            burst.style.scale = new StyleScale(new Scale(new Vector3(1.6f, 1.6f, 1f)));
+            await UniTask.Delay(500);
+            burst.RemoveFromHierarchy();
         }
 
         // ============================================================

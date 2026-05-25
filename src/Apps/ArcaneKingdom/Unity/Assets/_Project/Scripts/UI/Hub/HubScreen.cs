@@ -152,6 +152,17 @@ namespace ArcaneKingdom.UI.Hub
             // Initials-Fallback ausblenden — Avatar-Sprite ist sichtbar
             _avatarInitials.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
 
+            // Avatar-Frame (Gold-Default) als ueberlagernder Ring um Avatar legen
+            var frameOverlay = new VisualElement { name = "header-avatar-frame" };
+            frameOverlay.style.position = Position.Absolute;
+            frameOverlay.style.left = -4;
+            frameOverlay.style.top = -4;
+            frameOverlay.style.right = -4;
+            frameOverlay.style.bottom = -4;
+            frameOverlay.pickingMode = PickingMode.Ignore;
+            _uiAssets.ApplyBackground(frameOverlay, "Icons/Frames/frame_gold", ScaleMode.ScaleToFit);
+            headerAvatar.Add(frameOverlay);
+
             // Currency-Pill-Icons (Energie/Gold/Diamant) durch generierte Sprites ersetzen
             ApplyCurrencyPillIcon("header-energy-pill", "currency_energie");
             ApplyCurrencyPillIcon("header-gold-pill",   "currency_gold");

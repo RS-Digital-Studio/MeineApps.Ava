@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Quest;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Quest;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
@@ -29,12 +30,16 @@ namespace ArcaneKingdom.UI.Quest
         public override string Id => ScreenId.QuestCenter;
         protected override string UxmlPath => "UI/QuestCenterScreen";
 
-        public QuestCenterScreen(ScreenManager screenManager, ILocalizationService loc, ToastService toast, QuestService questService)
+        private readonly UIAssetService _uiAssets;
+
+        public QuestCenterScreen(ScreenManager screenManager, ILocalizationService loc, ToastService toast,
+                                 QuestService questService, UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _loc = loc;
             _toast = toast;
             _questService = questService;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -103,13 +108,30 @@ namespace ArcaneKingdom.UI.Quest
         private VisualElement BuildQuestRow(QuestDefinition def, QuestProgress progress)
         {
             var row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Column;
+            row.style.flexDirection = FlexDirection.Row;
             row.style.paddingLeft = 12; row.style.paddingRight = 12;
             row.style.paddingTop = 8; row.style.paddingBottom = 8;
             row.style.marginBottom = 6;
             row.style.backgroundColor = new StyleColor(new UnityEngine.Color(0.10f, 0.10f, 0.18f));
             row.style.borderTopLeftRadius = 8; row.style.borderTopRightRadius = 8;
             row.style.borderBottomLeftRadius = 8; row.style.borderBottomRightRadius = 8;
+
+            // Quest-Icon links (52x52). Achievements nutzen das spezifische Achievement-Sprite,
+            // alle anderen Quests das passende Quest-Sprite.
+            var icon = new VisualElement();
+            icon.style.width = 52; icon.style.height = 52;
+            icon.style.marginRight = 10;
+            if (def.Period == QuestPeriod.Achievement)
+                _uiAssets.ApplyAchievement(icon, def.Id);
+            else
+                _uiAssets.ApplyBackground(icon, $"Quests/{PickQuestIcon(def.Id, def.Period)}",
+                                          UnityEngine.ScaleMode.ScaleToFit);
+            row.Add(icon);
+
+            // Content-Spalte
+            var content = new VisualElement();
+            content.style.flexDirection = FlexDirection.Column;
+            content.style.flexGrow = 1;
 
             // Header-Row: Titel + Belohnung
             var header = new VisualElement();
@@ -128,7 +150,7 @@ namespace ArcaneKingdom.UI.Quest
             rewardLbl.style.color = new StyleColor(new UnityEngine.Color(0.96f, 0.78f, 0.26f));
             rewardLbl.style.fontSize = 11;
             header.Add(rewardLbl);
-            row.Add(header);
+            content.Add(header);
 
             // Progress-Row: X/Y + Abholen-Button
             var bottom = new VisualElement();
@@ -162,9 +184,46 @@ namespace ArcaneKingdom.UI.Quest
                 noteLbl.style.fontSize = 11;
                 bottom.Add(noteLbl);
             }
-            row.Add(bottom);
+            content.Add(bottom);
+            row.Add(content);
 
             return row;
+        }
+
+        /// <summary>
+        /// Pickt ein passendes Quest-Sprite aus Resources/Quests/ basierend auf
+        /// Quest-ID (Keywords im Pfad) und Period-Fallback. 20 Sprites verfuegbar:
+        /// daily_battle/login/arena/card/world, weekly_arena/battle/collect/guild,
+        /// monthly_legendary/mythic, achievement_bronze/silver/gold/diamond/iron,
+        /// event_winter/spring/summer/autumn.
+        /// </summary>
+        private static string PickQuestIcon(string questId, QuestPeriod period)
+        {
+            var id = questId.ToLowerInvariant();
+            // Keyword-Match
+            if (id.Contains("login"))    return "daily_login";
+            if (id.Contains("arena"))    return period == QuestPeriod.Weekly ? "weekly_arena" : "daily_arena";
+            if (id.Contains("battle") || id.Contains("kampf"))
+                                          return period == QuestPeriod.Weekly ? "weekly_battle" : "daily_battle";
+            if (id.Contains("card") || id.Contains("karte"))
+                                          return "daily_card";
+            if (id.Contains("world") || id.Contains("welt"))
+                                          return "daily_world";
+            if (id.Contains("collect") || id.Contains("sammel"))
+                                          return "weekly_collect";
+            if (id.Contains("guild") || id.Contains("gilde"))
+                                          return "weekly_guild";
+            if (id.Contains("legend"))    return "monthly_legendary";
+            if (id.Contains("myth"))      return "monthly_mythic";
+            if (id.Contains("event"))     return "event_spring";
+            // Achievements: Fallback nach Rarity-Stufe
+            return period switch
+            {
+                QuestPeriod.Daily       => "daily_battle",
+                QuestPeriod.Weekly      => "weekly_battle",
+                QuestPeriod.Achievement => "achievement_bronze",
+                _                       => "daily_battle"
+            };
         }
 
         private async UniTask ClaimAsync(string questId)

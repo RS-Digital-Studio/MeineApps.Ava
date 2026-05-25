@@ -24,6 +24,14 @@ namespace ArcaneKingdom.UI.Foundation
         public T? Get<T>(string key) where T : class
             => _bag.TryGetValue(key, out var v) ? v as T : null;
 
+        /// <summary>
+        /// Overload fuer Value-Types (Enums, Structs). Gibt null zurueck wenn der Key
+        /// nicht existiert oder der gespeicherte Wert nicht zu T passt — der Caller
+        /// nutzt typischerweise <c>?? DefaultValue</c> als Fallback.
+        /// </summary>
+        public T? GetStruct<T>(string key) where T : struct
+            => _bag.TryGetValue(key, out var v) && v is T tv ? tv : (T?)null;
+
         public void Clear() => _bag.Clear();
 
         public void Remove(string key) => _bag.Remove(key);

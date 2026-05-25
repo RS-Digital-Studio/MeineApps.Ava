@@ -68,8 +68,8 @@ namespace ArcaneKingdom.Game.Crafting
                 return dtos.Select(d => new FusionRecipe(
                     id: d.id,
                     resultCardId: d.resultCardId,
-                    requiredCardIds: d.requiredCardIds ?? Array.Empty<string>(),
-                    requiredMaterialIds: d.requiredMaterialIds ?? Array.Empty<string>(),
+                    requiredCardIds: (IReadOnlyList<string>)(d.requiredCardIds ?? new List<string>()),
+                    requiredMaterialIds: (IReadOnlyList<string>)(d.requiredMaterialIds ?? new List<string>()),
                     goldCost: d.goldCost,
                     hintLocalizationKey: d.hintLocalizationKey ?? string.Empty,
                     isHidden: d.isHidden)).ToList();

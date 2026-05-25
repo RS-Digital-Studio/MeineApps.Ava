@@ -130,16 +130,16 @@ namespace ArcaneKingdom.Game.Login
                     state.Currencies.AddDiamond(item.magnitude);
                     break;
                 case "common_scrap":
-                    state.Currencies.AddScraps(Domain.Cards.ScrapType.Common, item.magnitude);
+                    state.Currencies.AddScraps(ScrapType.Common, item.magnitude);
                     break;
                 case "rare_scrap":
-                    state.Currencies.AddScraps(Domain.Cards.ScrapType.Rare, item.magnitude);
+                    state.Currencies.AddScraps(ScrapType.Rare, item.magnitude);
                     break;
                 case "epic_scrap":
-                    state.Currencies.AddScraps(Domain.Cards.ScrapType.Epic, item.magnitude);
+                    state.Currencies.AddScraps(ScrapType.Epic, item.magnitude);
                     break;
                 case "legendary_scrap":
-                    state.Currencies.AddScraps(Domain.Cards.ScrapType.Legendary, item.magnitude);
+                    state.Currencies.AddScraps(ScrapType.Legendary, item.magnitude);
                     break;
                 case "sternkarte":
                     if (Enum.TryParse<SternkartenStufe>(item.sternkartenStufe ?? "Bronze", out var stufe))

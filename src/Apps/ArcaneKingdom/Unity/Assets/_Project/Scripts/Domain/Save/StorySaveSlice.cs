@@ -1,7 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using ArcaneKingdom.Domain.Hero;
+using ArcaneKingdom.Domain.Cards;
 
 namespace ArcaneKingdom.Domain.Save
 {

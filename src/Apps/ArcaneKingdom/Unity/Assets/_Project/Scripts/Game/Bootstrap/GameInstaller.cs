@@ -105,6 +105,12 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<Crafting.FusionAppService>(Lifetime.Singleton);
             builder.Register<World.PrestigeAppService>(Lifetime.Singleton);
             builder.Register<LoginRewardController>(Lifetime.Singleton);
+
+            // Spielplan v5 — neue Domain-Services
+            builder.Register<ArcaneKingdom.Domain.Thief.ThiefService>(Lifetime.Singleton);
+            builder.Register<ArcaneKingdom.Domain.Merit.MeritService>(Lifetime.Singleton);
+            builder.Register<ArcaneKingdom.Domain.Arena.ArenaSeasonService>(Lifetime.Singleton);
+            builder.Register<ArcaneKingdom.Domain.Guild.TerritoryService>(Lifetime.Singleton);
         }
     }
 }

@@ -30,6 +30,7 @@ using ArcaneKingdom.Game.SaisonPass;
 using ArcaneKingdom.Game.DailyShop;
 using ArcaneKingdom.Game.Treasury;
 using ArcaneKingdom.Game.World;
+using ArcaneKingdom.Game.Crafting;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Economy;
 using ArcaneKingdom.Domain.World;
@@ -95,16 +96,14 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<LoginController>(Lifetime.Singleton);
 
             // v6 (Designplan v4) — Domain-Services
-            // FusionService benötigt Karten-Definitionen + Rezept-Liste — diese werden
-            // vom CardCatalogService bereitgestellt, daher wird FusionService via Factory
-            // erzeugt: builder.Register(c => new FusionService(catalogService.AllDefs, recipes), Lifetime.Singleton)
-            // Aktuell registrieren wir den Service ohne Factory — der Application-Layer
-            // muss die Argumente beim Aufruf bereitstellen. Alternative: einen Wrapper-Service
-            // FusionApplicationService in der Game-Assembly anlegen, der das Wiring uebernimmt.
             builder.Register<PrestigeService>(Lifetime.Singleton);
             builder.Register<SternkartenService>(Lifetime.Singleton);
-            // FusionService bleibt newable-by-app — die Game-Assembly hat eine FusionAppService-Faecade
-            // die CardCatalog + Recipes injiziert (geplant fuer Phase 2 zusammen mit der Schmiede-UI).
+            // FusionService bleibt newable-by-app (CardCatalog + Recipes werden vom Wrapper geladen)
+
+            // v6 (Designplan v4) — Application-Layer-Wrapper (Game-Assembly)
+            builder.Register<Crafting.FusionAppService>(Lifetime.Singleton);
+            builder.Register<World.PrestigeAppService>(Lifetime.Singleton);
+            builder.Register<LoginRewardController>(Lifetime.Singleton);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace ArcaneKingdom.Domain.Player
 {
     /// <summary>
     /// Zentrale Save-Datenstruktur (cloud-synced). Wird vom ISaveService geladen und gespeichert.
-    /// Aggregiert Profil, Währungen, Inventar, Decks, Welt-Fortschritt + Schema-v2-Slices.
+    /// Aggregiert Profil, Währungen, Inventar, Decks, Welt-Fortschritt + Schema-v2-Slices + v3-Slices.
     /// </summary>
     [Serializable]
     public sealed class PlayerSave
@@ -34,6 +34,18 @@ namespace ArcaneKingdom.Domain.Player
         public HashSet<string> UnlockedFeatureKeys { get; set; }
         public Dictionary<string, int> SaisonPassXp { get; set; }              // Key: seasonId, Value: SaisonXp
 
+        // v3: Designplan v4-Erweiterungen
+        /// <summary>Prestige-Stufen pro Welt (I/II/III/IV) + Prestige-IV-Karten-Unlocks.</summary>
+        public PrestigeSaveSlice Prestige { get; set; }
+        /// <summary>Sternkarten-Inventar + Login-Tracker + Mythische-Kern-Fragmente.</summary>
+        public SternkartenSaveSlice Sternkarten { get; set; }
+        /// <summary>Story-Status: Rasse, Erinnerungs-Fragmente, Karten-Persoenlichkeit-Tracking, Endkampf-Wahl.</summary>
+        public StorySaveSlice Story { get; set; }
+        /// <summary>Saison-Event-Status: Punkte + abgeholte Schwellen + Notfall-Kaeufe.</summary>
+        public EventSaveSlice Events { get; set; }
+        /// <summary>Favoriten-Karten (Schutz vor versehentlicher Fusion). Map InstanceId -> markiert.</summary>
+        public HashSet<string> FavoritedCardInstanceIds { get; set; }
+
         public DateTime LastEnergyRegenAtUtc { get; set; }
         public DateTime LastSavedAtUtc { get; set; }
 
@@ -54,6 +66,12 @@ namespace ArcaneKingdom.Domain.Player
             PackPityCounters = new Dictionary<string, int>();
             UnlockedFeatureKeys = new HashSet<string>();
             SaisonPassXp = new Dictionary<string, int>();
+            // v3
+            Prestige = new PrestigeSaveSlice();
+            Sternkarten = new SternkartenSaveSlice();
+            Story = new StorySaveSlice();
+            Events = new EventSaveSlice();
+            FavoritedCardInstanceIds = new HashSet<string>();
             LastEnergyRegenAtUtc = DateTime.UtcNow;
             LastSavedAtUtc = DateTime.UtcNow;
         }

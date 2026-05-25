@@ -45,6 +45,17 @@ namespace ArcaneKingdom.Domain.Battle
         public BattlePhase Phase { get; set; }
         public BattleResult Result { get; set; }
 
+        /// <summary>
+        /// Helden-Passiv-Kontext pro Seite (Designplan v4 Kap. 2.1). Wird beim Setup gefüllt.
+        /// </summary>
+        public HeroPassivContext? PlayerHeroPassiv { get; set; }
+        public HeroPassivContext? EnemyHeroPassiv { get; set; }
+
+        /// <summary>
+        /// Karten-Persönlichkeit-Events (Designplan v4 Kap. 8) für UI/Animation/Replay.
+        /// </summary>
+        public List<BattleEvent> Events { get; }
+
         public BattleState(int seed, int playerHeroHp, int enemyHeroHp)
         {
             Seed = seed;
@@ -63,6 +74,7 @@ namespace ArcaneKingdom.Domain.Battle
             Phase = BattlePhase.Setup;
             Result = BattleResult.Undecided;
             CurrentTurn = 1;
+            Events = new List<BattleEvent>(64);
         }
     }
 
@@ -75,6 +87,7 @@ namespace ArcaneKingdom.Domain.Battle
         public string CardInstanceId { get; }
         public int CurrentAttack { get; set; }
         public int CurrentHealth { get; set; }
+        public int MaxHealth { get; set; }              // fuer Vorgaben wie "+5% HP" beim KoeniglicheAura
         public int TurnsUntilSpecial { get; set; }
 
         public CardFieldSlot(string cardInstanceId, int currentAttack, int currentHealth, int turnsUntilSpecial)
@@ -82,6 +95,7 @@ namespace ArcaneKingdom.Domain.Battle
             CardInstanceId = cardInstanceId;
             CurrentAttack = currentAttack;
             CurrentHealth = currentHealth;
+            MaxHealth = currentHealth;
             TurnsUntilSpecial = turnsUntilSpecial;
         }
     }

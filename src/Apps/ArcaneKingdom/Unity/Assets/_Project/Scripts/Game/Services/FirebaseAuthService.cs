@@ -90,5 +90,52 @@ namespace ArcaneKingdom.Game.Services
             PlayerPrefs.SetString(DisplayNamePrefsKey, CurrentUserDisplayName);
             PlayerPrefs.Save();
         }
+
+        public async UniTask<Result<string>> RegisterAsync(string email, string password, string displayName, CancellationToken ct = default)
+        {
+            await UniTask.Yield(ct);
+
+            // TODO Firebase: ersetzen durch
+            //   var auth = Firebase.Auth.FirebaseAuth.DefaultInstance;
+            //   var result = await auth.CreateUserWithEmailAndPasswordAsync(email, password);
+            //   await result.User.UpdateUserProfileAsync(new UserProfile { DisplayName = displayName });
+            //   var token = await result.User.TokenAsync(false);
+
+            // Lokaler Fallback fuer Pre-MVP-Tests:
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                return Result<string>.Failure("E-Mail oder Passwort leer.");
+
+            CurrentUserId = $"local-{Guid.NewGuid():N}";
+            CurrentUserDisplayName = displayName.Trim();
+            IsAuthenticated = true;
+            PlayerPrefs.SetString(UserIdPrefsKey, CurrentUserId);
+            PlayerPrefs.SetString(DisplayNamePrefsKey, CurrentUserDisplayName);
+            PlayerPrefs.Save();
+            GameLogger.Info("Auth", $"Registration (local-only): {email} -> {CurrentUserId}");
+
+            var mockToken = $"local-token-{Guid.NewGuid():N}";
+            return Result<string>.Success(mockToken);
+        }
+
+        public async UniTask<Result<string>> SignInWithEmailAsync(string email, string password, CancellationToken ct = default)
+        {
+            await UniTask.Yield(ct);
+
+            // TODO Firebase: ersetzen durch
+            //   var result = await Firebase.Auth.FirebaseAuth.DefaultInstance.SignInWithEmailAndPasswordAsync(email, password);
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                return Result<string>.Failure("E-Mail oder Passwort leer.");
+
+            CurrentUserId = PlayerPrefs.GetString(UserIdPrefsKey, $"local-{Guid.NewGuid():N}");
+            CurrentUserDisplayName = PlayerPrefs.GetString(DisplayNamePrefsKey, "Gast");
+            IsAuthenticated = true;
+            PlayerPrefs.SetString(UserIdPrefsKey, CurrentUserId);
+            PlayerPrefs.Save();
+            GameLogger.Info("Auth", $"SignInWithEmail (local-only): {email}");
+
+            var mockToken = $"local-token-{Guid.NewGuid():N}";
+            return Result<string>.Success(mockToken);
+        }
     }
 }

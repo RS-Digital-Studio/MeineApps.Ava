@@ -19,6 +19,17 @@ namespace ArcaneKingdom.Core.Services
         UniTask<Result> LinkWithEmailAsync(string email, string password, CancellationToken ct = default);
         UniTask SignOutAsync();
 
+        /// <summary>
+        /// Registriert einen neuen Account mit E-Mail/Passwort (Spielplan v5 Kap. 2).
+        /// Bei Erfolg: Token im Result.Value zurueckgeben fuer lokale Speicherung.
+        /// </summary>
+        UniTask<Result<string>> RegisterAsync(string email, string password, string displayName, CancellationToken ct = default);
+
+        /// <summary>
+        /// Klassischer Login mit E-Mail/Passwort (im Gegensatz zum SignInAnonymously).
+        /// </summary>
+        UniTask<Result<string>> SignInWithEmailAsync(string email, string password, CancellationToken ct = default);
+
         /// <summary>Setzt den lokalen DisplayName (z.B. nach Namens-Setup im Onboarding).</summary>
         void UpdateDisplayName(string name);
     }

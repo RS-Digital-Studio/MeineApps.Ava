@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
+    <ui:VisualElement name="register-root" class="ak-screen ak-register" style="flex-grow: 1; background-color: rgb(13, 13, 26); padding-left: 24px; padding-right: 24px; padding-top: 48px; padding-bottom: 24px;">
+
+        <ui:Label text="ARCANE KINGDOM" style="font-size: 28px; -unity-font-style: bold; color: rgb(245, 200, 66); -unity-text-align: middle-center; margin-bottom: 24px;"/>
+        <ui:Label text="Konto erstellen" style="font-size: 18px; color: rgb(224, 224, 224); -unity-text-align: middle-center; margin-bottom: 32px;"/>
+
+        <ui:ScrollView name="register-form" style="flex-grow: 1;">
+            <ui:VisualElement style="max-width: 480px; align-self: center; width: 100%;">
+
+                <ui:TextField name="register-displayname" label="Spielername" style="margin-bottom: 12px;"/>
+                <ui:TextField name="register-email" label="E-Mail" style="margin-bottom: 12px;"/>
+                <ui:TextField name="register-email-confirm" label="E-Mail bestaetigen" style="margin-bottom: 12px;"/>
+                <ui:TextField name="register-password" label="Passwort" password="true" style="margin-bottom: 12px;"/>
+                <ui:TextField name="register-password-confirm" label="Passwort bestaetigen" password="true" style="margin-bottom: 16px;"/>
+
+                <ui:VisualElement name="register-password-hint" style="background-color: rgba(255, 255, 255, 0.05); padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; margin-bottom: 24px;">
+                    <ui:Label text="Passwort-Anforderungen:" style="font-size: 12px; color: rgb(200, 200, 220); -unity-font-style: bold;"/>
+                    <ui:Label text="• Mind. 8 Zeichen" style="font-size: 11px; color: rgb(170, 170, 190); margin-top: 2px;"/>
+                    <ui:Label text="• Mind. ein Grossbuchstabe + Kleinbuchstabe + Zahl" style="font-size: 11px; color: rgb(170, 170, 190);"/>
+                    <ui:Label text="• Darf nicht E-Mail oder Spielername enthalten" style="font-size: 11px; color: rgb(170, 170, 190);"/>
+                </ui:VisualElement>
+
+                <ui:Toggle name="register-agb-toggle" label="Ich akzeptiere die Nutzungsbedingungen" style="margin-bottom: 6px;"/>
+                <ui:Toggle name="register-privacy-toggle" label="Ich akzeptiere die Datenschutzrichtlinien" style="margin-bottom: 6px;"/>
+                <ui:Toggle name="register-verhalten-toggle" label="Ich akzeptiere die Verhaltensregeln" style="margin-bottom: 24px;"/>
+
+                <ui:Label name="register-error" style="color: rgb(198, 40, 40); font-size: 13px; margin-bottom: 16px; -unity-text-align: middle-center; display: none;"/>
+
+                <ui:Button name="register-submit" text="Konto erstellen" style="height: 56px; background-color: rgb(255, 122, 0); color: rgb(255, 255, 255); font-size: 18px; -unity-font-style: bold; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; margin-bottom: 12px;"/>
+
+                <ui:Button name="register-back-to-login" text="Bereits ein Konto? Anmelden" style="height: 44px; background-color: rgba(0, 0, 0, 0); color: rgb(245, 200, 66); font-size: 14px; border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 0;"/>
+
+            </ui:VisualElement>
+        </ui:ScrollView>
+
+    </ui:VisualElement>
+</ui:UXML>

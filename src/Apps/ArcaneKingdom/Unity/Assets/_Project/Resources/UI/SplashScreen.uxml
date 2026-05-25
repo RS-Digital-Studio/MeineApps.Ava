@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
+    <ui:VisualElement name="splash-root" class="ak-screen ak-splash" style="flex-grow: 1; align-items: center; justify-content: center; background-color: rgb(13, 13, 26);">
+
+        <ui:VisualElement name="splash-bg-tint" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(74, 27, 154, 0.15);"/>
+
+        <ui:VisualElement name="splash-center" style="align-items: center; justify-content: center;">
+            <ui:VisualElement name="splash-logo" class="ak-logo" style="width: 280px; height: 280px; background-color: rgba(245, 200, 66, 0.08); border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; align-items: center; justify-content: center;">
+                <ui:Label text="ARCANE&#10;KINGDOM" style="font-size: 42px; -unity-font-style: bold; color: rgb(245, 200, 66); -unity-text-align: middle-center; white-space: normal;"/>
+            </ui:VisualElement>
+
+            <ui:VisualElement style="height: 64px;"/>
+
+            <ui:VisualElement name="splash-progress-track" style="width: 320px; height: 6px; background-color: rgba(255, 255, 255, 0.08); border-top-left-radius: 3px; border-top-right-radius: 3px; border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; overflow: hidden;">
+                <ui:VisualElement name="splash-progress-fill" style="height: 100%; width: 0%; background-color: rgb(245, 200, 66); border-top-left-radius: 3px; border-top-right-radius: 3px; border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;"/>
+            </ui:VisualElement>
+
+            <ui:Label name="splash-status-text" text="Lade..." style="margin-top: 16px; font-size: 14px; color: rgb(224, 224, 224); -unity-text-align: middle-center;"/>
+        </ui:VisualElement>
+
+        <ui:Label name="splash-version" text="v0.0.0" style="position: absolute; left: 16px; bottom: 16px; font-size: 11px; color: rgba(224, 224, 224, 0.4);"/>
+
+    </ui:VisualElement>
+</ui:UXML>

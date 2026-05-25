@@ -6,16 +6,36 @@ anderen Apps bewusst machen.
 
 | Aspekt | Wert |
 |--------|------|
-| Status | Konzept-Phase abgeschlossen — Pre-MVP (Stand 2026-05-24) |
+| Status | Konzept-Phase abgeschlossen — Pre-MVP (Stand 2026-05-25, Designplan v4 eingearbeitet) |
 | Tech | Unity 6 (6000.4.8f1) + C# (.NET Standard 2.1) |
 | Plattform | Android (Phase 1), iOS (Phase 2 ab Monat 26+) |
 | Render-Pipeline | URP 17.x (optional aktivieren, siehe SETUP.md) |
 | Backend | Firebase + Photon |
 | Genre | TCG + RPG, Free-to-Play |
+| Karten-Pool (Launch) | 131 Standard + 27 Oekosystem (Event/Premium/Sternkarten/Prestige) = 158 Karten |
+| Welten | 10 Welten (Elderwald → Drachenfeste) mit Story-Mythologie |
 | Farbpalette | Royal-Purple #6B46C1 + Gold #F59E0B (Brand-Referenz, finalisiert v5.2) |
 
-> Pflichtlektuere VOR Aenderungen: [DESIGN.md](DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+> Pflichtlektuere VOR Aenderungen: [DESIGN.md](DESIGN.md) (v6, Quelle der Wahrheit) und [ARCHITECTURE.md](ARCHITECTURE.md).
 > Generische Repo-Konventionen siehe [Haupt-CLAUDE.md](../../../CLAUDE.md).
+
+---
+
+## Designplan-Quelle
+
+Die aktuelle Designspec basiert auf **Designplan v4** (Maerz 2026):
+
+| Quelldokument | Inhalt |
+|---------------|--------|
+| `Arcane_Legends_Designplan_v4.docx` | 5 Rassen, 6 Elemente Doppel-Dreieck, 131 Karten Pyramide, Fusions-Crafting, Auto-Battle |
+| `Arcane_Legends_Kartenliste_v4.docx` | Vollstaendige Liste aller 131 Karten + Stats |
+| `Arcane_Legends_Skills_v4.docx` | Skills 1 + 2 + 3 + Letzter Wille fuer alle 3*+ Karten |
+| `Arcane_Legends_Oekosystem_v4.docx` | Karten-Besitz, Event/Premium/Saison-Pass/Sternkarten/Prestige |
+| `Arcane_Legends_Story_v4_1.docx` | Welt-Mythologie, 10 Welten Story, Erinnerungs-Fragmente, Twist, NPCs |
+| `Arcane_Legends_Art_Style_Guide_v4.docx` | Visueller Leitfaden, AI-Prompts pro Rasse |
+| `Arcane_Legends_Implementierungsplan_v4.docx` | 7 Phasen Entwicklungs-Roadmap, MVP-Definition |
+
+Quelldokumente liegen unter `F:\AI\ComfyUI_windows_portable\ComfyUI\output\eva\Spiele Ideen Ordner\Ideen\`.
 
 ---
 
@@ -25,7 +45,7 @@ anderen Apps bewusst machen.
 |-------|-------|
 | [README.md](README.md) | Quickstart fuer Entwickler |
 | [SETUP.md](SETUP.md) | Schritt-fuer-Schritt-Anleitung fuer Unity 6 (Pflichtlektuere beim ersten Open) |
-| [DESIGN.md](DESIGN.md) | Konsolidiertes GDD v5.4 (19 Sektionen, TBDs geschlossen, Save-Schema v2) |
+| [DESIGN.md](DESIGN.md) | **GDD v6.0** (autoritativ, basiert auf Designplan v4) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Folder-Layout, DI, Networking, Conventions |
 | [Server/SERVEROPS.md](Server/SERVEROPS.md) | Server-side Cloud-Functions (Anti-Cheat, Saison-Rewards) |
 | [Server/CloudFunctions/](Server/CloudFunctions/) | TypeScript-Cloud-Functions (8 Endpoints) |
@@ -42,11 +62,81 @@ anderen Apps bewusst machen.
 | UI | UI Toolkit + UGUI | Andere: AXAML |
 | DI | VContainer | Andere: Microsoft.Extensions.DI |
 | Async | UniTask | Andere: Task<T> |
-| Localization | com.unity.localization | Andere: RESX + ILocalizationService |
+| Localization | com.unity.localization + strings.csv | Andere: RESX + ILocalizationService |
 | Persistenz | PlayerPrefs + JSON-File + Firebase Realtime DB | Andere: sqlite-net + PreferencesService |
 | Networking | Firebase + Photon | Andere: SignalR (BingXBot) oder keines |
 | IAP | Unity IAP + Google Play Billing v6 | Andere: Xamarin.Android.Google.BillingClient v8 |
 | Build | Unity Cloud Build / GitHub Actions | Andere: dotnet publish |
+
+---
+
+## Domain-Modelle (v4-Spec)
+
+### Rassen (5)
+
+```csharp
+public enum Race { Ritter, Goetter, Elfen, Tiergeister, Daemonen }
+```
+
+`Goetter` sind eine **Premium-Rasse** — nur als 4*+ und ausschliesslich ueber Fusion erhaeltlich.
+
+### Elemente (6, Doppel-Dreieck)
+
+```csharp
+public enum Element { Feuer, Wasser, Natur, Erde, Dunkel, Licht }
+```
+
+Physisches Dreieck (Feuer → Natur → Wasser → Feuer) + Magisches Dreieck (Licht → Dunkel → Erde → Licht).
+Matchup-Matrix: `Domain/Battle/ElementMatchup.cs` (Stark = 1.10x, Schwach = 0.90x, Cross-Dreieck = 1.00x).
+
+### Seltenheitsstufen (6)
+
+```csharp
+public enum Rarity { Gewoehnlich, Ungewoehnlich, Selten, Epic, Legendaer, Mythisch }
+```
+
+6* Mythisch sind die einzigartigen Endgame-Karten (5 Stueck im Spiel, eine pro Rasse).
+
+### Helden-Passivs (1 pro Rasse)
+
+```csharp
+public enum HeroFaehigkeitsTyp {
+    KoeniglicheAura,   // Ritter: +5% HP fuer eigene Karten
+    GoettlicherSegen,  // Goetter: 1x pro Kampf Tod verhindern
+    Waldlaeufer,       // Elfen: erste Karte jeder Runde kostet 0
+    Rudelbund,         // Tiergeister: +3% ATK pro Tiergeist im Deck
+    LebensraubAura     // Daemonen: 20% Schaden heilt Helden-HP
+}
+```
+
+Helden sind PASSIV in v4. Kein Cooldown, kein manuelles Auslösen.
+
+---
+
+## Daten-Files (Resources/Data)
+
+| Datei | Inhalt |
+|-------|--------|
+| `cards.json` | 158 Karten (131 Standard + 9 Event + 6 Premium + 2 Sternkarten + 10 Prestige) |
+| `worlds.json` | 10 Welten mit Saeulen, Bossen, Erinnerungs-Fragmenten, Mentoren |
+| `heroes.json` | 5 Rassen-Helden mit Passiv-Skills |
+| `abilities.json` | Skill-Definitionen (Awakening, Skill 2, Skill 3, Letzter Wille) |
+| `runes.json` | 18 Runen-Definitionen |
+| `fusion_recipes.json` | Feste Rezepte (inkl. Goetter-Crafting Rezepte) |
+| `login_rewards.json` | 30-Tage-Login-Zyklus mit Sternkarten |
+| `star_temple.json` | Sternkarten-Tempel-Eintausch (30/80/150/350/100/500 Sternpunkte) |
+| `premium_shop.json` | 6 Premium-Karten (3 permanent + 3 rotierend) |
+| `events.json` | 5 Saison-Events (Yule, Bluetenfest, Sonnenwende, Erntemond, Schattenerwachen) |
+| `prestige_balancing.json` | Prestige I-IV Balancing (Stats, Drops, Daily-Income, Boss-Phasen) |
+| `story_fragments.json` | Welt-Mythologie, 10 Erinnerungs-Fragmente, Schluessel-NPCs, sechs Saeulen |
+| `collections.json` | Material-Karten-Sets (Weisses Herz, Dunkles Herz, Drachen, Maschinen) |
+| `material_drops.json` | Material-Drops pro Welt-Boss / Mini-Boss |
+| `tutorial.json` | 8 Tutorial-Schritte |
+| `quests.json` | Daily/Weekly/Achievement-Quests |
+| `notifications.json` | Push-Notification-Templates |
+| `saison_pass.json` | Saison 1 (Aetherius), 30 Stufen, Free + Premium |
+| `packs.json` | Karten-Pack-Definitionen |
+| `achievements.json` | Erfolge mit Trigger-Hooks |
 
 ---
 
@@ -66,7 +156,13 @@ anderen Apps bewusst machen.
 Unity Hub → Add project → F:\Meine_Apps_Ava\src\Apps\ArcaneKingdom\Unity\
 ```
 
-Erstes Oeffnen dauert mehrere Minuten (Packages werden aufgeloest, Assets importiert).
+### Daten importieren (ScriptableObjects)
+
+```
+Unity-Menue → ArcaneKingdom → Data → Import All
+```
+
+Erzeugt alle ScriptableObject-Assets aus den JSON-Dateien unter `Resources/Data/`.
 
 ### Im Editor starten
 
@@ -75,7 +171,6 @@ Erstes Oeffnen dauert mehrere Minuten (Packages werden aufgeloest, Assets import
 
 ### Android Build (Debug)
 
-Unity Editor:
 1. File → Build Settings → Android → Switch Platform
 2. Player Settings → Other Settings → Scripting Backend = IL2CPP, Target Architecture = ARM64
 3. Build oder Build & Run
@@ -83,15 +178,12 @@ Unity Editor:
 ### Android Release (AAB fuer Play Store)
 
 ```
-# Via Unity CLI (Beispiel, exakte Pfade anpassen):
 "C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Unity.exe" `
   -batchmode -quit -nographics `
   -projectPath "F:\Meine_Apps_Ava\src\Apps\ArcaneKingdom\Unity" `
   -executeMethod BuildScripts.BuildAndroidRelease `
   -logFile build.log
 ```
-
-`BuildAndroidRelease`-Methode wird in `_Project/Scripts/Editor/BuildScripts.cs` definiert.
 
 ---
 
@@ -102,29 +194,27 @@ Unity Editor:
 ### Code
 
 - **Namespaces:** `ArcaneKingdom.{Module}` (z.B. `ArcaneKingdom.Battle`)
-- **Kommentare auf Deutsch** (siehe globale Conventions)
+- **Kommentare auf Deutsch** (siehe globale Conventions, Umlaute erlaubt im Code)
 - **UniTask statt Task<T>**, `_camelCase` fuer private Fields, `PascalCase` fuer Properties/Methoden
 - **Nullable Reference Types aktiv** (`#nullable enable`)
-- **Keine Unicode-Umlaute in v5.x Doku-Dateien** ist die globale Regel — Code-Kommentare in Deutsch koennen Umlaute nutzen (Visual-Studio-konform)
 
-### Assets
+### Lokalisierungs-Keys (Pattern)
 
-- ScriptableObjects in `Assets/_Project/ScriptableObjects/`
-- Karten-Assets als `Card_{Name}.asset`
-- Sprites in 4096x4096 Atlases gruppieren (Rarity-basiert)
-- Texturen: max. 2048 Karten, BC7-Compression auf Android
-
-### Scenes
-
-- Boot bleibt **immer geladen** (DontDestroyOnLoad), andere Scenes additive
-- Scene-Wechsel ueber `SceneLoaderService` (kein direktes `SceneManager.LoadScene`)
+| Pattern | Beispiel |
+|---------|----------|
+| `card.<id>.name` / `flavor` | `card.aetherius_allschoepfer.name` |
+| `card.<id>.play` / `victory` / `death` | `card.fenrir_urdrachenwolf.play` |
+| `world.<id>.name` / `story` / `memory` / `saeule` | `world.elderwald.memory` |
+| `fragment.<n>.title` / `content` / `reveal` | `fragment.8.content` (Der Twist) |
+| `hero.<rasse>.name` / `flavor` / `skill.name` / `skill.desc` | `hero.ritter.skill.desc` |
+| `npc.<id>.name` / `desc` | `npc.lumis.desc` |
+| `saeule.<name>` / `.state` | `saeule.lebensbaum.state` |
 
 ---
 
 ## DI-Pattern (VContainer)
 
 ```csharp
-// Boot-Scene RootLifetimeScope
 public class RootLifetimeScope : LifetimeScope
 {
     protected override void Configure(IContainerBuilder builder)
@@ -134,27 +224,9 @@ public class RootLifetimeScope : LifetimeScope
         builder.Register<ISaveService, FirebaseSaveService>(Lifetime.Singleton);
         builder.Register<INetworkService, PhotonNetworkService>(Lifetime.Singleton);
         builder.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);
-        builder.Register<IAudioService, UnityAudioService>(Lifetime.Singleton);
-        builder.Register<ISceneLoaderService, AdditiveSceneLoaderService>(Lifetime.Singleton);
 
-        // ScriptableObject-Configs
         builder.RegisterInstance(_balancingConfig);
         builder.RegisterInstance(_cardDatabase);
-    }
-}
-```
-
-```csharp
-// Service via Constructor Injection
-public class BattleController
-{
-    private readonly IBattleEngine _engine;
-    private readonly ISaveService _save;
-
-    public BattleController(IBattleEngine engine, ISaveService save)
-    {
-        _engine = engine;
-        _save = save;
     }
 }
 ```
@@ -163,30 +235,15 @@ public class BattleController
 
 ## Save-System (Firebase als Source-of-Truth)
 
-```csharp
-public interface ISaveService
-{
-    UniTask<PlayerSave> LoadAsync(CancellationToken ct = default);
-    UniTask SaveAsync(PlayerSave save, CancellationToken ct = default);
-    UniTask<Result> ApplyMutationAsync(Func<PlayerSave, PlayerSave> mutation, CancellationToken ct = default);
-}
-```
+Save-Schema **v3** (mit v4-Erweiterungen):
 
-- **Optimistic Update:** lokale Mutation sofort, dann Server-Sync
-- **Conflict-Resolution:** Server gewinnt, lokales Backup wird verworfen
-- **Trigger:** Nach Kampf-Ende, Karten-Drop, Deck-Aenderung, Stunden-Tick
+| Slice | Inhalt |
+|-------|--------|
+| Basis (v1) | Profile, Currencies, Cards, Decks, World-Progress |
+| v2-Erweiterungen | Achievements, Friends, Chat, Saison-Pass v2 |
+| **v3-Erweiterungen (Designplan v4)** | Prestige-Slice (Map<worldId, Stufe>), Sternkarten-Inventar, Memory-Fragmente, Hero-Passiv-Wahl, Karten-Persoenlichkeit-Gesehen-Tracking, Event-Punkte |
 
----
-
-## Testing
-
-```
-Unity Test Runner (Window → General → Test Runner)
-- EditMode-Tests: Domain (NUnit, ohne Unity-API)
-- PlayMode-Tests: Game-Logik (mit MonoBehaviours)
-```
-
-Domain-Tests sollen ohne Unity laufen — `BattleEngine` etc. sind reines C#.
+`SaveMigrator.CurrentSchemaVersion = 3` bei Implementierung.
 
 ---
 
@@ -199,27 +256,40 @@ Domain-Tests sollen ohne Unity laufen — `BattleEngine` etc. sind reines C#.
 | Newtonsoft.Json fehlt im Build | Bereits via `com.unity.nuget.newtonsoft-json` 3.2.1 im `Packages/manifest.json`. Falls Package-Resolve fehlschlaegt: `Window -> Package Manager -> Refresh`. |
 | Domain-Tests laufen nicht im EditMode | Tests-asmdef hat `defineConstraints: ["UNITY_INCLUDE_TESTS"]` — in den Test Runner Settings das Define aktivieren. |
 | VContainer-Registrierungen werden nicht aufgeloest | Wurde Service im `GameInstaller.RegisterServices` vergessen? Datei pflegen, sobald ein neuer Service hinzukommt. |
+| Karten-Skills-IDs in cards.json existieren nicht in abilities.json | Nach v4-Migration: viele Karten-Skills sind noch Platzhalter (`skill_<card_id>_1/2/3`). DataImporter loggt Warnung, setzt Ability auf null. abilities.json muss nachgepflegt werden. |
+| 6* Karten ohne `lastWillAbilityId` | Validierungs-Fehler im DataImporter. Jede Mythische Karte braucht einen Letzten Willen (LV 15 freigeschaltet). |
+| Goetter-Karten als Drop konfiguriert | Validierungs-Fehler. Goetter sind ausschliesslich ueber Fusion erhaeltlich (siehe `fusion_recipes.json`). |
+| Premium-Karte in Fusion verwendet | Crafting-Service muss `CardDefinition.CanBeUsedInFusion` (= `!IsPremiumCard`) pruefen, sonst Verlust einer gekauften Karte! |
 
 ---
 
-## Status & Roadmap
+## Roadmap-Status
 
-Vollstaendige Roadmap siehe [DESIGN.md Kapitel 19](DESIGN.md#19-entwicklungs-zeitplan-24-monate).
-
-**Aktuell (Stand 2026-05-24, Iteration 6 — Pre-MVP-Stand komplett):**
+**Aktuell (Stand 2026-05-25, Iteration 7 — v4-Designplan eingearbeitet):**
 
 - [x] App-Ordner angelegt + 6 Unity-Scenes (Boot/Hub/Battle/Arena/Guild/GuildWorld)
-- [x] GDD v5.4 (alle TBDs geschlossen, Save-Schema v2 dokumentiert)
+- [x] **GDD v6.0** (basiert auf Designplan v4, ersetzt v5.4)
 - [x] Architektur-Plan + komplette Service-Liste in ARCHITECTURE.md
 - [x] Unity-Projekt-Skelett (6 asmdefs + Tests-asmdefs)
-- [x] **Domain (29 Module)**: Cards/Runes/Player/Battle/World/Economy/Config + Guild/Quest/Achievement/Thief/Chat/Shop + Progression/Hero/Replay/Collection/Tutorial/Notification/Season + Save/Friends/SaisonPass/DailyShop
-- [x] **Game (28 Services/Controller)**: Hub/Battle/Arena/Login + Guild/Thief/Chat/Shop/Quest/DailyReward + Progression/Hero/Replay/IAP/DeckBuilder/Collection/Tutorial/Notification/SeasonReset/Codex + Achievement/ChatModeration/MaterialDrop/SaisonPass/DailyShop/Friends/Treasury/BattleEngine-voll
-- [x] **10 JSON-Daten-Dateien**: 30 Karten + 32 Faehigkeiten + 18 Runen + 6 Helden + 9 Welten/90 Nodes + 4 Sammelsets + 8 Tutorial-Schritte + 5 Notifications + 18 Material-Drop-Tabellen + Saison-Pass v2 + DailyShop-Pool
-- [x] **30 Domain-Test-Klassen** (~165 Test-Cases, alle pure C#)
+- [x] **Domain-Modelle v4-Spec**: Race (5), Element (6 Doppel-Dreieck), Rarity (6), HeroFaehigkeitsTyp (5 Passivs), CardDefinition mit Personality+Last-Will, WorldDefinition mit Story-Mythologie
+- [x] **158 Karten in cards.json**: 131 Standard (Ritter 31, Elfen 31, Tiergeister 31, Daemonen 31, Goetter 7) + 9 Event + 6 Premium + 2 Sternkarten + 10 Prestige
+- [x] **10 Welten in worlds.json**: Elderwald → Drachenfeste, alle mit Element/Boss/Saeule/Erinnerungs-Fragment/Mentor
+- [x] **Story-Daten in story_fragments.json**: Welt-Mythologie, 10 Erinnerungs-Fragmente, 8 Schluessel-NPCs, 6 Saeulen
+- [x] **Fusions-Crafting**: CategoryFusionRules (Typ A) + FusionRecipe (Typ B), 10 feste Rezepte (inkl. Goetter)
+- [x] **Auto-Battle-Progression**: LV 10/20/30/50 Speed-Stufen, Boss-Erster-Versuch-Manual-Rule
+- [x] **Prestige-System**: PrestigeStufe-Enum + Balancing-JSON (I-IV mit Stats/Drops/Income)
+- [x] **Sternkarten-System**: Sternkarte-Enum + Login-Belohnungen 30-Tage + Tempel-Eintausch
+- [x] **Premium-Shop-Daten**: 6 Karten mit Rotation
+- [x] **Event-Kalender**: 5 Saison-Events
+- [x] **Lokalisierung**: Hero-Passivs, 10 Welt-Stories, 10 Erinnerungs-Fragmente, 8 NPCs, 6 Saeulen, Mythologie (DE + EN)
+- [x] **DataImporter angepasst**: Neue Felder, neue Validierung, ResolveAbility statt Hard-Fail
+- [x] **30 Domain-Test-Klassen** (~165 Test-Cases — muessen bei Race/Element/Rarity-Aenderungen ggf. nachgezogen werden)
 - [x] CI-Pipeline (GitHub Actions, EditMode-Tests + Android-AAB)
 - [x] Editor-Tools (DataImporter + CardPreview + LocalizationCheck + BalancingDashboard)
 - [x] **Cloud-Functions-Skelett** (8 TypeScript-Endpoints unter `Server/CloudFunctions/`)
 - [x] BattleEngine vollstaendig + BattleStateSerializer (deterministisch, replay-faehig)
+- [ ] BattleEngine erweitern um Helden-Passivs (KoeniglicheAura/GoettlicherSegen/etc.) — Monat 4-6
+- [ ] BattleEngine erweitern um Karten-Persoenlichkeit (Dialog-Lines bei Play/Victory/Death) — Monat 4-6
 - [ ] MVP: Kampf-UI (Drag&Drop, Mana-Orbs, Damage-Numbers) — Monat 4-6
 - [ ] MVP: Hub-UI (Tabs, Energie-Bar, Navigation) — Monat 4-5
 - [ ] MVP: Welt-1-UI (Elderwald-Karte mit 10 Nodes) — Monat 6-8

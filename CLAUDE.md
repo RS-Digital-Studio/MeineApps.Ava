@@ -3,7 +3,7 @@
 Multi-Plattform Apps (Android + Windows + Linux) mit Avalonia 12 + .NET 10.
 Migriert von MAUI mit verbesserter UX, modernem Design und behobenen MAUI-Bugs.
 
-> **Sonderfall ArcaneKingdom:** Einzige App, die **Unity 2022 LTS** statt Avalonia nutzt — TCG/RPG mit Echtzeit-PvP- und Live-Service-Anspruechen. Komplett eigene Tech-Stack-Doku unter [src/Apps/ArcaneKingdom/](src/Apps/ArcaneKingdom/CLAUDE.md). Wird **nicht** von `dotnet build` erfasst.
+> **Sonderfall ArcaneKingdom:** Einzige App, die **Unity 6** statt Avalonia nutzt — TCG/RPG mit Echtzeit-PvP- und Live-Service-Anspruechen. Designplan v4 in [DESIGN.md](src/Apps/ArcaneKingdom/DESIGN.md) eingearbeitet: 5 Rassen (Ritter/Goetter/Elfen/Tiergeister/Daemonen), 6 Elemente Doppel-Dreieck, 131 Standard-Karten + 27 Oekosystem, 10 Welten mit Story-Mythologie, Prestige-System, Sternkarten-Login. Eigene Tech-Stack-Doku unter [src/Apps/ArcaneKingdom/](src/Apps/ArcaneKingdom/CLAUDE.md). Wird **nicht** von `dotnet build` erfasst.
 
 ---
 
@@ -107,7 +107,7 @@ F:\Meine_Apps_Ava\
 | BingXBot | v1.8.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
 | SmartMeasure | v1.1.4 | Nein | Nein | Entwicklung (privat, RTK-GPS Vermessung) |
-| ArcaneKingdom | v0.0.1 | TBD | Diamanten-Packs (TCG-typisch) | Konzept-Phase (Unity 2022 LTS) |
+| ArcaneKingdom | v0.0.2 | TBD | Diamanten-Packs (TCG-typisch) | Pre-MVP (Unity 6, Designplan v4 eingearbeitet: 5 Rassen, 6 Elemente, 131+27 Karten, 10 Welten, Story-Mythologie, Prestige, Sternkarten) |
 
 ---
 

@@ -18,5 +18,8 @@ namespace ArcaneKingdom.Core.Services
         UniTask<Result> SignInWithGooglePlayAsync(CancellationToken ct = default);
         UniTask<Result> LinkWithEmailAsync(string email, string password, CancellationToken ct = default);
         UniTask SignOutAsync();
+
+        /// <summary>Setzt den lokalen DisplayName (z.B. nach Namens-Setup im Onboarding).</summary>
+        void UpdateDisplayName(string name);
     }
 }

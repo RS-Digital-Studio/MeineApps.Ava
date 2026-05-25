@@ -131,12 +131,30 @@ namespace ArcaneKingdom.Domain.Battle
             var defenderField = attackerIsPlayer ? State.EnemyField : State.PlayerField;
             var attackerPassiv = attackerIsPlayer ? State.PlayerHeroPassiv : State.EnemyHeroPassiv;
 
+            // Status-Effekte: DoT-Tick + Action-Block-Check VOR der Attack-Phase
+            foreach (var slot in attackerField)
+            {
+                var dot = StatusEffectHelpers.TickDamageOverTime(slot.StatusEffects);
+                if (dot > 0) slot.CurrentHealth -= dot;
+            }
+            // Tote Karten entfernen (durch DoT)
+            for (var i = attackerField.Count - 1; i >= 0; i--)
+            {
+                if (attackerField[i].CurrentHealth > 0) continue;
+                var (deadDef, _) = ResolveDefinition(attackerField[i].CardInstanceId);
+                EmitOnDeathEvent(attackerField[i], deadDef, attackerIsPlayer);
+                attackerField.RemoveAt(i);
+            }
+
             for (var i = 0; i < attackerField.Count; i++)
             {
                 var attacker = attackerField[i];
                 if (attacker.CurrentHealth <= 0) continue;
                 var (def, _) = ResolveDefinition(attacker.CardInstanceId);
                 if (def == null) continue;
+
+                // Status-Effekt blockt Aktion? (Schlaf/Frozen/Stunned)
+                if (StatusEffectHelpers.IsBlocked(attacker.StatusEffects)) continue;
 
                 var damage = attacker.CurrentAttack;
                 if (defenderField.Count > 0)
@@ -179,6 +197,10 @@ namespace ArcaneKingdom.Domain.Battle
             }
 
             State.CurrentTurn++;
+
+            // Status-Effekt-Dauer reduzieren und abgelaufene entfernen
+            foreach (var slot in attackerField) StatusEffectHelpers.TickAndExpire(slot.StatusEffects);
+            foreach (var slot in defenderField) StatusEffectHelpers.TickAndExpire(slot.StatusEffects);
 
             // Waldlaeufer-Reset: jede Runde wieder neu
             if (State.PlayerHeroPassiv != null) State.PlayerHeroPassiv.FirstCardThisTurnPlayed = false;
@@ -404,9 +426,47 @@ namespace ArcaneKingdom.Domain.Battle
                         foreach (var e in enemies) e.CurrentAttack = Math.Max(1, e.CurrentAttack - e.CurrentAttack * ability.Magnitude / 100);
                     }
                     break;
-                // Control & Synergy: Status-Effekt-System wird in Phase 2 nachgereicht.
+                case AbilityCategory.Control:
+                    // Status-Effekt-Typ aus Element/Beschreibung ableiten
+                    var effectType = InferStatusEffectFromCardElement(def.Element);
+                    var duration = Math.Max(1, ability.DurationTurns > 0 ? ability.DurationTurns : 2);
+                    var dotMag = (effectType == StatusEffectType.Poisoned || effectType == StatusEffectType.Burning)
+                                ? Math.Max(50, ability.Magnitude)
+                                : 0;
+                    if (ability.TargetsAllEnemies)
+                    {
+                        foreach (var e in enemies)
+                            StatusEffectHelpers.ApplyOrRefresh(e.StatusEffects, new StatusEffect(effectType, duration, dotMag, def.Id));
+                    }
+                    else if (enemies.Count > 0)
+                    {
+                        StatusEffectHelpers.ApplyOrRefresh(enemies[0].StatusEffects, new StatusEffect(effectType, duration, dotMag, def.Id));
+                    }
+                    break;
+                case AbilityCategory.Synergy:
+                    // Synergy-Bonus auf Allies anwenden (z.B. +5% ATK)
+                    if (ability.TargetsAllAllies)
+                    {
+                        foreach (var a in allies) a.CurrentAttack += a.CurrentAttack * Math.Max(1, ability.Magnitude / 10) / 100;
+                    }
+                    break;
             }
         }
+
+        /// <summary>
+        /// Leitet aus dem Element der Karte den passenden Status-Effekt-Typ fuer Control-Skills ab.
+        /// Designplan v4 Kap. 3.4 Element-Spezialeffekte.
+        /// </summary>
+        private static StatusEffectType InferStatusEffectFromCardElement(Element element) => element switch
+        {
+            Element.Feuer  => StatusEffectType.Burning,     // Verbrennung (DoT)
+            Element.Wasser => StatusEffectType.Frozen,      // Einfrierung (blockt Aktion)
+            Element.Natur  => StatusEffectType.Poisoned,    // Vergiftung (DoT)
+            Element.Erde   => StatusEffectType.Stunned,     // Betaeubung (blockt Aktion)
+            Element.Dunkel => StatusEffectType.Silence,     // Stille (blockt Skills)
+            Element.Licht  => StatusEffectType.Slowed,      // Verlangsamung (selten — Licht hebt Effekte eher auf)
+            _              => StatusEffectType.Slowed
+        };
 
         private void ApplyBossPhase2()
         {

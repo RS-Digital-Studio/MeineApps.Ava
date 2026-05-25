@@ -90,6 +90,12 @@ namespace ArcaneKingdom.Domain.Battle
         public int MaxHealth { get; set; }              // fuer Vorgaben wie "+5% HP" beim KoeniglicheAura
         public int TurnsUntilSpecial { get; set; }
 
+        /// <summary>
+        /// Aktive Status-Effekte auf dieser Karte (Designplan v4 Kap. 3.4):
+        /// Schlaf, Stille, Einfrierung, Betaeubung, Vergiftung, Verbrennung, Verlangsamung, Verwurzelung.
+        /// </summary>
+        public List<StatusEffect> StatusEffects { get; } = new();
+
         public CardFieldSlot(string cardInstanceId, int currentAttack, int currentHealth, int turnsUntilSpecial)
         {
             CardInstanceId = cardInstanceId;

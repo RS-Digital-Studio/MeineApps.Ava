@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using ArcaneKingdom.UI.Battle;
 using ArcaneKingdom.UI.DeckBuilder;
 using ArcaneKingdom.UI.Foundation;
 using ArcaneKingdom.UI.Hub;
@@ -32,10 +33,11 @@ namespace ArcaneKingdom.UI.Bootstrap
                 [ScreenId.PackOpeningOverlay] = typeof(PackOpeningModal),
                 [ScreenId.DeckBuilder]        = typeof(DeckBuilderScreen),
                 [ScreenId.WorldMap]           = typeof(WorldMapScreen),
+                [ScreenId.Battle]             = typeof(BattleScreen),
 
-                // Stufen 8-10 werden hier nach und nach befuellt:
-                //   [ScreenId.Battle]      = typeof(BattleScreen),
+                // Stufen 9-10 werden hier nach und nach befuellt:
                 //   [ScreenId.Arena]       = typeof(ArenaScreen),
+                //   [ScreenId.Guild]       = typeof(GuildScreen),
                 //   ...
             };
 

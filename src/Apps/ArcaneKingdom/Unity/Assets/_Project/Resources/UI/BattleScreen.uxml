@@ -1,0 +1,106 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <!--
+        BattleScreen — vertikales Layout: Gegner oben, Feld in der Mitte, Spieler unten.
+    -->
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-deep);">
+
+        <!-- ================ TOP BAR ================ -->
+        <ui:VisualElement class="ak-row" style="height: 40; padding: 8;
+                                                  background-color: rgba(0,0,0,0.4);
+                                                  align-items: center;">
+            <ui:Button name="battle-flee-button" text="✕ Aufgeben"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" />
+            <ui:Label text="Runde" class="ak-caption" style="margin-left: 16; margin-right: 4;" />
+            <ui:Label name="battle-turn-number" text="1" class="ak-h4" />
+            <ui:VisualElement style="flex-grow: 1;" />
+            <ui:Label name="battle-phase-label" text="Dein Zug" class="ak-h4 ak-text--accent" />
+        </ui:VisualElement>
+
+        <!-- ================ ENEMY-BEREICH ================ -->
+        <ui:VisualElement class="ak-col" style="padding: 12;
+                                                  background-color: rgba(70,20,20,0.20);">
+
+            <!-- Enemy Hero (HP + Mana) -->
+            <ui:VisualElement class="ak-row" style="align-items: center; margin-bottom: 8;">
+                <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
+                                          background-color: var(--ak-danger);
+                                          border-width: 2; border-color: rgba(255,255,255,0.4);
+                                          margin-right: 8;" />
+                <ui:VisualElement class="ak-col" style="flex-grow: 1;">
+                    <ui:Label name="enemy-hero-name" text="Gegner" class="ak-h4" />
+                    <ui:VisualElement class="ak-progress ak-progress--danger" style="margin-top: 4;">
+                        <ui:VisualElement name="enemy-hp-fill" class="ak-progress__fill"
+                                          style="width: 100%;" />
+                    </ui:VisualElement>
+                    <ui:Label name="enemy-hp-text" text="100 / 100 HP" class="ak-caption"
+                              style="margin-top: 2;" />
+                </ui:VisualElement>
+                <ui:VisualElement class="ak-col ak-center" style="margin-left: 12;">
+                    <ui:Label name="enemy-mana-text" text="3/3" class="ak-h3 ak-text--primary" />
+                    <ui:Label text="Mana" class="ak-caption" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Enemy Field (5 Slots) -->
+            <ui:VisualElement name="enemy-field"
+                              style="flex-direction: row; justify-content: center;
+                                     min-height: 110;" />
+        </ui:VisualElement>
+
+        <!-- ================ BATTLEFIELD-DIVIDER ================ -->
+        <ui:VisualElement style="height: 8; background-color: var(--ak-accent);
+                                  opacity: 0.6;" />
+
+        <!-- ================ PLAYER-BEREICH ================ -->
+        <ui:VisualElement class="ak-col" style="flex-grow: 1; padding: 12;
+                                                  background-color: rgba(20,50,80,0.20);">
+
+            <!-- Player Field -->
+            <ui:VisualElement name="player-field"
+                              style="flex-direction: row; justify-content: center;
+                                     min-height: 110; margin-bottom: 8;" />
+
+            <!-- Player Hero (HP + Mana) -->
+            <ui:VisualElement class="ak-row" style="align-items: center; margin-top: 8;">
+                <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
+                                          background-color: var(--ak-primary);
+                                          border-width: 2; border-color: var(--ak-accent);
+                                          margin-right: 8;" />
+                <ui:VisualElement class="ak-col" style="flex-grow: 1;">
+                    <ui:Label name="player-hero-name" text="Du" class="ak-h4" />
+                    <ui:VisualElement class="ak-progress ak-progress--primary" style="margin-top: 4;">
+                        <ui:VisualElement name="player-hp-fill" class="ak-progress__fill"
+                                          style="width: 100%;" />
+                    </ui:VisualElement>
+                    <ui:Label name="player-hp-text" text="100 / 100 HP" class="ak-caption"
+                              style="margin-top: 2;" />
+                </ui:VisualElement>
+
+                <!-- Mana-Orbs -->
+                <ui:VisualElement name="player-mana-orbs" style="flex-direction: row;
+                                                                   margin-right: 12;" />
+
+                <ui:Button name="battle-end-turn-button" text="Zug beenden ▶"
+                           class="ak-btn ak-btn--accent" />
+            </ui:VisualElement>
+
+            <!-- Player Hand -->
+            <ui:Label text="Deine Hand" class="ak-overline" style="margin-top: 12; margin-bottom: 4;" />
+            <ui:ScrollView mode="Horizontal" vertical-scroller-visibility="Hidden"
+                           style="height: 200;">
+                <ui:VisualElement name="player-hand"
+                                  style="flex-direction: row; padding: 4;" />
+            </ui:ScrollView>
+
+        </ui:VisualElement>
+
+        <!-- ================ FLOATING-LAYER (Damage-Numbers) ================ -->
+        <ui:VisualElement name="battle-floating-layer"
+                          class="ak-fill" style="position: absolute;
+                                                  pointer-events: none;" />
+
+    </ui:VisualElement>
+</ui:UXML>

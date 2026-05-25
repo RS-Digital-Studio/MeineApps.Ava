@@ -9,6 +9,10 @@
 [Mm]emoryCaptures/
 [Rr]ecordings/
 
+# Unity-Editor Auto-Recovery (entsteht bei Editor-Crash, nicht im Repo benoetigt)
+/[Aa]ssets/_[Rr]ecovery/
+/[Aa]ssets/_[Rr]ecovery.meta
+
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
 

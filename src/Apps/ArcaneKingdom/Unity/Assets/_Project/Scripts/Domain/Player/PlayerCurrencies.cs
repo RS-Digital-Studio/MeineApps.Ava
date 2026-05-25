@@ -30,6 +30,23 @@ namespace ArcaneKingdom.Domain.Player
 
         public int TotalEnergy => Energy + EnergyBonus;
 
+        /// <summary>True wenn Bonus-Energie ueber dem Default-Cap liegt — fuer gruene UI-Anzeige (z.B. 80/60).</summary>
+        public bool HasEnergyOverflow => EnergyBonus > 0;
+
+        /// <summary>
+        /// Adaptive Energie-Vergabe: fuellt zuerst Normal-Energie bis zum Cap auf,
+        /// der Rest geht in EnergyBonus. Bequemer fuer Quest-/Event-Belohnungen.
+        /// </summary>
+        public void AddEnergyAdaptive(int amount)
+        {
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            var roomInNormal = Math.Max(0, EnergyDefaultCap - Energy);
+            var toNormal = Math.Min(roomInNormal, amount);
+            Energy += toNormal;
+            var rest = amount - toNormal;
+            if (rest > 0) EnergyBonus += rest;
+        }
+
         // --- Mutationen (intern, vom Service aufgerufen) ---
 
         public void AddGold(long amount) { if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount)); Gold += amount; }

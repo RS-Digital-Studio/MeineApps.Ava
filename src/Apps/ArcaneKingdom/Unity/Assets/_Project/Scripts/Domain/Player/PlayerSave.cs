@@ -74,6 +74,7 @@ namespace ArcaneKingdom.Domain.Player
             Story = new StorySaveSlice();
             Events = new EventSaveSlice();
             FavoritedCardInstanceIds = new HashSet<string>();
+            ClaimedCollectionSetIds = new HashSet<string>();
             LastEnergyRegenAtUtc = DateTime.UtcNow;
             LastSavedAtUtc = DateTime.UtcNow;
         }

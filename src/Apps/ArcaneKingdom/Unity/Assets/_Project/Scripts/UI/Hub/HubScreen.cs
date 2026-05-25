@@ -96,6 +96,8 @@ namespace ArcaneKingdom.UI.Hub
         private Button _moreSaisonPass = null!;
         private Button _moreCodex = null!;
         private Button _moreSettings = null!;
+        private Button? _moreSchmiede;        // v6 (optional — UXML kann ohne aktualisiert werden)
+        private Button? _moreTempel;          // v6
 
         private PlayerSave? _saveCached;
         private CancellationTokenSource? _refreshCts;
@@ -568,6 +570,15 @@ namespace ArcaneKingdom.UI.Hub
             _moreSaisonPass.clicked += () => GoToScreen(ScreenId.SaisonPass, "Saison-Pass kommt in Stufe 9.");
             _moreCodex.clicked      += () => GoToScreen(ScreenId.Codex, "Codex kommt in Stufe 10.");
             _moreSettings.clicked   += () => GoToScreen(ScreenId.Settings, "Einstellungen kommen in Stufe 10.");
+
+            // v6 (Designplan v4): Optional-Buttons fuer Schmiede + Tempel.
+            // QOptional weil das UXML alte Versionen ohne diese Buttons unterstuetzen muss.
+            _moreSchmiede = QOptional<Button>("more-schmiede");
+            _moreTempel = QOptional<Button>("more-tempel");
+            if (_moreSchmiede != null)
+                _moreSchmiede.clicked += () => GoToScreen(ScreenId.Schmiede, "Schmiede UXML fehlt.");
+            if (_moreTempel != null)
+                _moreTempel.clicked += () => GoToScreen(ScreenId.Tempel, "Tempel UXML fehlt.");
         }
 
         private void GoToScreen(string id, string fallbackMessage)

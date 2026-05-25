@@ -195,6 +195,18 @@
 
                         <ui:VisualElement class="ak-divider" />
 
+                        <!-- v6 (Designplan v4) — Schmiede + Tempel -->
+                        <ui:Label text="Zauberschmiede + Tempel" class="ak-overline"
+                                  style="margin-top: 8; margin-bottom: 8;" />
+                        <ui:Button name="more-schmiede" text="🔨 Zauberschmiede"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-tempel" text="⭐ Sternkarten-Tempel"
+                                   class="ak-btn ak-btn--lg ak-btn--accent"
+                                   style="margin-bottom: 16;" />
+
+                        <ui:VisualElement class="ak-divider" />
+
                         <ui:Button name="more-codex" text="Codex"
                                    class="ak-btn ak-btn--lg ak-btn--ghost"
                                    style="margin-bottom: 8;" />

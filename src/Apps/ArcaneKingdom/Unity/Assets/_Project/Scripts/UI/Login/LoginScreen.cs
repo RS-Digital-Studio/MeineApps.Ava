@@ -36,8 +36,11 @@ namespace ArcaneKingdom.UI.Login
             _toast = toast;
         }
 
+        private VisualElement _logo = null!;
+
         protected override void BindElements(VisualElement root)
         {
+            _logo         = Q<VisualElement>("login-logo");
             _progressFill = Q<VisualElement>("login-progress-fill");
             _statusText   = Q<Label>("login-status-text");
             _retryButton  = Q<Button>("login-retry-button");
@@ -54,7 +57,23 @@ namespace ArcaneKingdom.UI.Login
             // Transaktion zum busy-Deadlock fuehren wuerde. So kann OnEnterAsync sofort
             // returnen, ScreenManager.busy wird freigegeben, Hub-Replace klappt.
             RunLoginAsync(ct).Forget();
+            PulseLogoAsync(ct).Forget();
             return UniTask.CompletedTask;
+        }
+
+        /// <summary>Endlos-Pulse des Logos (2s Periode, DESIGN.md 2.1).</summary>
+        private async UniTask PulseLogoAsync(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested && _logo?.panel != null)
+            {
+                _logo.AddToClassList("ak-logo--pulse");
+                await UniTask.Delay(System.TimeSpan.FromMilliseconds(1000),
+                                    cancellationToken: ct).SuppressCancellationThrow();
+                if (ct.IsCancellationRequested || _logo?.panel == null) return;
+                _logo.RemoveFromClassList("ak-logo--pulse");
+                await UniTask.Delay(System.TimeSpan.FromMilliseconds(1000),
+                                    cancellationToken: ct).SuppressCancellationThrow();
+            }
         }
 
         private async UniTask RunLoginAsync(CancellationToken ct)

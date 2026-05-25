@@ -37,9 +37,11 @@
             <ui:Button name="guild-find" text="Gilde suchen"
                        class="ak-btn ak-btn--lg ak-btn--primary"
                        style="margin-bottom: 8; min-width: 220;" />
-            <ui:Button name="guild-create" text="Eigene Gilde gruenden (Lv 20+)"
+            <ui:Button name="guild-create" text="Gilde gruenden"
                        class="ak-btn ak-btn--lg ak-btn--accent"
-                       style="min-width: 220;" />
+                       style="min-width: 220px;" />
+            <ui:Label text="(ab Stufe 20)" class="ak-caption"
+                      style="-unity-text-align: middle-center; margin-top: 4px;" />
         </ui:VisualElement>
 
         <!-- Members-Tab -->

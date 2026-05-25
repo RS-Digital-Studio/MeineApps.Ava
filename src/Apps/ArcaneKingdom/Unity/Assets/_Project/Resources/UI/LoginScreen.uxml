@@ -3,51 +3,49 @@
 
     <!--
         LoginScreen.uxml — Splash + Login-Flow.
-        Verbunden mit ArcaneKingdom.UI.Login.LoginScreen (C#-Klasse).
-        Elemente per name="..." werden im Code per Q<T>(name) gefunden.
+        Logo nutzt .ak-logo + .ak-logo__text Klassen (USS), Pulse wird vom
+        LoginScreen.cs via Pulse-Klasse animiert.
     -->
 
     <ui:VisualElement class="ak-fill ak-col ak-center" style="background-color: rgb(13, 8, 28);">
 
-        <!-- Hintergrund-Gradient via mehrfache Layer wuerden hier liegen
-             (placeholder bis wir Sprite-Assets haben) -->
+        <!-- Dekoraltativer Hintergrund-Glow (subtil, Royal-Purple) -->
+        <ui:VisualElement style="position: absolute; left: 50%; top: 28%;
+                                  width: 420; height: 420; translate: -50% 0;
+                                  border-top-left-radius: 210; border-top-right-radius: 210;
+                                  border-bottom-left-radius: 210; border-bottom-right-radius: 210;
+                                  background-color: rgba(107, 70, 193, 0.18);" />
 
         <ui:VisualElement class="ak-col ak-center" style="flex-grow: 1; justify-content: center;">
 
-            <!-- Logo-Platzhalter (kreisrund, Royal-Purple) -->
-            <ui:VisualElement name="login-logo"
-                              style="width: 140; height: 140; border-radius: 70;
-                                     background-color: rgb(107, 70, 193);
-                                     border-width: 4; border-color: rgb(245, 158, 11);
-                                     margin-bottom: 32;
-                                     align-items: center; justify-content: center;">
-                <ui:Label text="AK" style="font-size: 64; -unity-font-style: bold;
-                                            color: rgb(245, 158, 11);" />
+            <!-- Logo (per Code mit Pulse animiert) -->
+            <ui:VisualElement name="login-logo" class="ak-logo" style="margin-bottom: 36;">
+                <ui:Label name="login-logo-text" text="AK" class="ak-logo__text" />
             </ui:VisualElement>
 
             <!-- Spieltitel -->
             <ui:Label text="ArcaneKingdom" class="ak-h1"
-                      style="margin-bottom: 8;" />
+                      style="margin-bottom: 8; -unity-text-align: middle-center;" />
 
             <!-- Subtitle -->
             <ui:Label text="Sammle Karten. Beherrsche Welten."
                       class="ak-body"
-                      style="margin-bottom: 64;" />
+                      style="margin-bottom: 56; -unity-text-align: middle-center;" />
 
             <!-- Status-Container (Progress + Text) -->
             <ui:VisualElement name="status-container"
                               class="ak-col ak-center"
-                              style="width: 320; max-width: 90%;">
+                              style="width: 340; max-width: 92%;">
 
                 <!-- Progress-Bar -->
                 <ui:VisualElement name="login-progress" class="ak-progress ak-progress--primary"
-                                  style="width: 100%; margin-bottom: 16;">
+                                  style="width: 100%; margin-bottom: 14;">
                     <ui:VisualElement name="login-progress-fill" class="ak-progress__fill"
                                       style="width: 0%;" />
                 </ui:VisualElement>
 
                 <!-- Status-Text -->
-                <ui:Label name="login-status-text" text="Verbinde mit Server..."
+                <ui:Label name="login-status-text" text="Verbinde mit Server…"
                           class="ak-body"
                           style="-unity-text-align: middle-center; min-height: 24;" />
 
@@ -63,7 +61,8 @@
         <!-- Footer (Version + Credits) -->
         <ui:VisualElement class="ak-row" style="height: 40; align-items: center;
                                                   padding-left: 16; padding-right: 16;
-                                                  justify-content: space-between;">
+                                                  justify-content: space-between;
+                                                  width: 100%;">
             <ui:Label name="login-version" text="v0.1.0" class="ak-caption" />
             <ui:Label text="© 2026 MeineApps" class="ak-caption" />
         </ui:VisualElement>

@@ -10,31 +10,37 @@
         <!-- ================== HEADER ================== -->
         <ui:VisualElement class="ak-app-header">
 
-            <!-- Avatar + Name + Level (links) -->
-            <ui:VisualElement name="header-profile-block" class="ak-row" style="align-items: center;">
-                <ui:VisualElement name="header-avatar" class="ak-app-header__avatar" />
-                <ui:VisualElement class="ak-col" style="margin-left: 8;">
-                    <ui:Label name="header-display-name" text="Spieler" class="ak-app-header__name" />
-                    <ui:Label name="header-level" text="Stufe 1" class="ak-app-header__level" />
-                </ui:VisualElement>
+            <!-- Avatar (rund) mit Level-Badge unten rechts (DESIGN.md 3.1) -->
+            <ui:VisualElement name="header-avatar" class="ak-app-header__avatar">
+                <ui:Label name="header-avatar-initials" text="?"
+                          style="font-size: 22; -unity-font-style: bold;
+                                  color: rgb(255, 255, 255); -unity-text-align: middle-center;
+                                  width: 100%;" />
+                <ui:Label name="header-level" text="1" class="ak-app-header__avatar-level" />
+            </ui:VisualElement>
+
+            <!-- Name (links neben Avatar) -->
+            <ui:VisualElement class="ak-col" style="margin-left: 8; align-self: center; flex-shrink: 1;">
+                <ui:Label name="header-display-name" text="Spieler" class="ak-app-header__name" />
+                <ui:Label name="header-guild-tag" text="" class="ak-app-header__guild-tag" />
             </ui:VisualElement>
 
             <!-- Spacer -->
             <ui:VisualElement style="flex-grow: 1;" />
 
-            <!-- Currency-Pills (rechts) -->
+            <!-- Currency-Pills (rechts) — Icons mit Buchstaben-Anker -->
             <ui:VisualElement name="header-energy-pill" class="ak-currency-pill ak-currency-pill--energy">
-                <ui:VisualElement class="ak-currency-pill__icon" />
+                <ui:Label text="⚡" class="ak-currency-pill__icon" />
                 <ui:Label name="header-energy-value" text="0/60" class="ak-currency-pill__value" />
             </ui:VisualElement>
 
             <ui:VisualElement name="header-gold-pill" class="ak-currency-pill ak-currency-pill--gold">
-                <ui:VisualElement class="ak-currency-pill__icon" />
+                <ui:Label text="G" class="ak-currency-pill__icon" />
                 <ui:Label name="header-gold-value" text="0" class="ak-currency-pill__value" />
             </ui:VisualElement>
 
             <ui:VisualElement name="header-diamond-pill" class="ak-currency-pill ak-currency-pill--diamond">
-                <ui:VisualElement class="ak-currency-pill__icon" />
+                <ui:Label text="◆" class="ak-currency-pill__icon" />
                 <ui:Label name="header-diamond-value" text="0" class="ak-currency-pill__value" />
             </ui:VisualElement>
 
@@ -204,27 +210,39 @@
         <ui:VisualElement class="ak-tab-bar">
 
             <ui:VisualElement name="tab-button-cards" class="ak-tab ak-tab--active">
-                <ui:VisualElement class="ak-tab__icon" style="background-color: rgb(179, 115, 242);" />
+                <ui:Label text="🃏" class="ak-tab__icon"
+                          style="background-color: rgba(179, 115, 242, 0.85);
+                                  -unity-text-align: middle-center; font-size: 16;" />
                 <ui:Label text="Karten" class="ak-tab__label" />
             </ui:VisualElement>
 
             <ui:VisualElement name="tab-button-quests" class="ak-tab">
-                <ui:VisualElement class="ak-tab__icon" style="background-color: rgb(245, 158, 11);" />
+                <ui:Label text="✦" class="ak-tab__icon"
+                          style="background-color: rgba(245, 158, 11, 0.85);
+                                  -unity-text-align: middle-center; font-size: 18;
+                                  color: rgb(38, 22, 0);" />
                 <ui:Label text="Quests" class="ak-tab__label" />
             </ui:VisualElement>
 
             <ui:VisualElement name="tab-button-shop" class="ak-tab">
-                <ui:VisualElement class="ak-tab__icon" style="background-color: rgb(56, 197, 137);" />
+                <ui:Label text="$" class="ak-tab__icon"
+                          style="background-color: rgba(56, 197, 137, 0.85);
+                                  -unity-text-align: middle-center; font-size: 16;
+                                  color: rgb(8, 32, 22);" />
                 <ui:Label text="Shop" class="ak-tab__label" />
             </ui:VisualElement>
 
             <ui:VisualElement name="tab-button-arena" class="ak-tab">
-                <ui:VisualElement class="ak-tab__icon" style="background-color: rgb(232, 64, 87);" />
+                <ui:Label text="⚔" class="ak-tab__icon"
+                          style="background-color: rgba(232, 64, 87, 0.85);
+                                  -unity-text-align: middle-center; font-size: 16;" />
                 <ui:Label text="Arena" class="ak-tab__label" />
             </ui:VisualElement>
 
             <ui:VisualElement name="tab-button-more" class="ak-tab">
-                <ui:VisualElement class="ak-tab__icon" style="background-color: rgb(140, 130, 168);" />
+                <ui:Label text="≡" class="ak-tab__icon"
+                          style="background-color: rgba(140, 130, 168, 0.85);
+                                  -unity-text-align: middle-center; font-size: 18;" />
                 <ui:Label text="Mehr" class="ak-tab__label" />
             </ui:VisualElement>
 

@@ -8,25 +8,55 @@
    ============================================================ */
 
 .ak-app-header {
-    height: 64;
+    min-height: 72px;
     flex-direction: row;
     align-items: center;
     padding-left: var(--ak-space-3);
     padding-right: var(--ak-space-3);
+    padding-top: var(--ak-space-2);
+    padding-bottom: var(--ak-space-2);
     background-color: var(--ak-bg-deep);
-    border-bottom-width: 1;
+    border-bottom-width: 1px;
     border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 
+/* Avatar 56x56 — kompromiss zwischen DESIGN.md (64dp) und kompakter Anzeige */
 .ak-app-header__avatar {
-    width: 44;
-    height: 44;
-    border-radius: 22;
+    width: 56px;
+    height: 56px;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
     background-color: var(--ak-primary);
-    border-width: 2;
+    border-width: 2px;
     border-color: var(--ak-accent);
     margin-right: var(--ak-space-3);
+    align-items: center;
+    justify-content: center;
     -unity-background-scale-mode: scale-and-crop;
+}
+
+/* Level-Badge in der unteren rechten Ecke des Avatars (DESIGN.md 3.1) */
+.ak-app-header__avatar-level {
+    position: absolute;
+    bottom: -2px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+    border-bottom-left-radius: 11px;
+    border-bottom-right-radius: 11px;
+    background-color: var(--ak-bg-deep);
+    border-width: 2px;
+    border-color: var(--ak-accent);
+    color: var(--ak-accent);
+    font-size: 11px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    padding-left: 4px;
+    padding-right: 4px;
 }
 
 .ak-app-header__name {
@@ -35,85 +65,125 @@
     color: var(--ak-text-primary);
 }
 
-.ak-app-header__level {
+.ak-app-header__guild-tag {
     font-size: var(--ak-font-xs);
-    color: var(--ak-accent);
+    color: var(--ak-text-muted);
     -unity-font-style: bold;
 }
 
 .ak-currency-pill {
     flex-direction: row;
     align-items: center;
-    height: 30;
+    height: 34px;
     padding-left: var(--ak-space-2);
     padding-right: var(--ak-space-3);
     margin-left: var(--ak-space-2);
-    background-color: rgba(0, 0, 0, 0.35);
-    border-radius: 15;
-    border-width: 1;
-    border-color: rgba(255, 255, 255, 0.06);
+    background-color: rgba(0, 0, 0, 0.45);
+    border-top-left-radius: 17px;
+    border-top-right-radius: 17px;
+    border-bottom-left-radius: 17px;
+    border-bottom-right-radius: 17px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ak-currency-pill__icon {
-    width: 18;
-    height: 18;
+    width: 22px;
+    height: 22px;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+    border-bottom-left-radius: 11px;
+    border-bottom-right-radius: 11px;
     margin-right: var(--ak-space-2);
+    align-items: center;
+    justify-content: center;
+    -unity-text-align: middle-center;
+    color: rgb(255, 255, 255);
+    font-size: 12px;
+    -unity-font-style: bold;
 }
 
 .ak-currency-pill__value {
     font-size: var(--ak-font-sm);
     -unity-font-style: bold;
     color: var(--ak-text-primary);
+    min-width: 36px;
 }
 
-.ak-currency-pill--gold .ak-currency-pill__icon { background-color: var(--ak-accent); }
-.ak-currency-pill--diamond .ak-currency-pill__icon { background-color: var(--ak-primary-light); }
-.ak-currency-pill--energy .ak-currency-pill__icon { background-color: var(--ak-success); }
+.ak-currency-pill--gold .ak-currency-pill__icon {
+    background-color: var(--ak-accent);
+    color: rgb(38, 22, 0);
+}
+.ak-currency-pill--diamond .ak-currency-pill__icon {
+    background-color: var(--ak-primary-light);
+}
+.ak-currency-pill--energy .ak-currency-pill__icon {
+    background-color: var(--ak-success);
+    color: rgb(8, 32, 22);
+}
 
 /* ============================================================
    TAB-BAR (Bottom-Navigation, 5 Tabs)
    ============================================================ */
 
 .ak-tab-bar {
-    height: 64;
+    min-height: 68px;
     flex-direction: row;
     background-color: var(--ak-bg-deep);
-    border-top-width: 1;
-    border-top-color: rgba(255, 255, 255, 0.08);
+    border-top-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.10);
+    padding-top: var(--ak-space-1);
 }
 
 .ak-tab {
     flex-grow: 1;
+    flex-basis: 0;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-top: var(--ak-space-1);
-    padding-bottom: var(--ak-space-1);
-    transition: background-color 120ms;
+    padding-top: var(--ak-space-2);
+    padding-bottom: var(--ak-space-2);
+    padding-left: 2px;
+    padding-right: 2px;
+    border-top-width: 2px;
+    border-top-color: rgba(0, 0, 0, 0);
+    transition: background-color 120ms, border-top-color 150ms;
 }
 
 .ak-tab:hover {
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .ak-tab__icon {
-    width: 24;
-    height: 24;
-    margin-bottom: 2;
-    -unity-background-image-tint-color: var(--ak-text-muted);
-    transition: -unity-background-image-tint-color 120ms, scale 120ms;
+    width: 28px;
+    height: 28px;
+    margin-bottom: 3px;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    opacity: 0.55;
+    transition: opacity 150ms, scale 150ms;
 }
 
 .ak-tab__label {
-    font-size: var(--ak-font-xs);
+    font-size: 11px;
     color: var(--ak-text-muted);
     -unity-font-style: bold;
-    transition: color 120ms;
+    -unity-text-align: middle-center;
+    transition: color 150ms;
+    white-space: nowrap;
+    -unity-text-overflow-position: end;
+}
+
+.ak-tab--active {
+    border-top-color: var(--ak-accent);
+    background-color: rgba(245, 158, 11, 0.06);
 }
 
 .ak-tab--active .ak-tab__icon {
-    -unity-background-image-tint-color: var(--ak-accent);
-    scale: 1.10 1.10;
+    opacity: 1.0;
+    scale: 1.12 1.12;
 }
 
 .ak-tab--active .ak-tab__label {
@@ -125,13 +195,13 @@
    ============================================================ */
 
 .ak-card {
-    width: 156;
-    height: 220;
+    width: 156px;
+    height: 220px;
     margin: var(--ak-space-2);
     padding: var(--ak-space-2);
     border-radius: var(--ak-radius-md);
     background-color: var(--ak-bg-surface);
-    border-width: 2;
+    border-width: 2px;
     border-color: rgba(255, 255, 255, 0.08);
     transition: scale 100ms, border-color 120ms;
 }
@@ -164,13 +234,13 @@
 
 .ak-card__cost-badge {
     position: absolute;
-    top: 4;
-    left: 4;
-    width: 28;
-    height: 28;
-    border-radius: 14;
+    top: 4px;
+    left: 4px;
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
     background-color: var(--ak-primary-dark);
-    border-width: 1;
+    border-width: 1px;
     border-color: var(--ak-accent);
     align-items: center;
     justify-content: center;
@@ -184,11 +254,11 @@
 
 .ak-card__element-badge {
     position: absolute;
-    top: 4;
-    right: 4;
-    width: 22;
-    height: 22;
-    border-radius: 11;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
 }
 
 .ak-card__element-badge--natur { background-color: var(--ak-element-natur); }
@@ -225,22 +295,22 @@
 
 .ak-modal-backdrop {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
     background-color: var(--ak-bg-overlay);
     align-items: center;
     justify-content: center;
 }
 
 .ak-modal {
-    min-width: 320;
-    max-width: 480;
+    min-width: 320px;
+    max-width: 480px;
     padding: var(--ak-space-5);
     background-color: var(--ak-bg-surface);
     border-radius: var(--ak-radius-lg);
-    border-width: 1;
+    border-width: 1px;
     border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -274,15 +344,15 @@
 
 .ak-toast {
     position: absolute;
-    top: 80;
+    top: 80px;
     left: 50%;
     translate: -50% 0;
-    min-width: 240;
-    max-width: 380;
+    min-width: 240px;
+    max-width: 380px;
     padding: var(--ak-space-3) var(--ak-space-4);
     background-color: var(--ak-bg-surface-2);
     border-radius: var(--ak-radius-md);
-    border-width: 1;
+    border-width: 1px;
     border-color: var(--ak-primary-light);
     flex-direction: row;
     align-items: center;
@@ -290,8 +360,8 @@
 }
 
 .ak-toast__icon {
-    width: 20;
-    height: 20;
+    width: 20px;
+    height: 20px;
     margin-right: var(--ak-space-2);
 }
 
@@ -311,8 +381,8 @@
    ============================================================ */
 
 .ak-progress {
-    height: 12;
-    border-radius: 6;
+    height: 12px;
+    border-radius: 6px;
     background-color: rgba(0, 0, 0, 0.4);
     overflow: hidden;
 }
@@ -328,11 +398,44 @@
 .ak-progress--danger .ak-progress__fill { background-color: var(--ak-danger); }
 
 /* ============================================================
+   LOGO (Login-Screen, mit Pulse-Animation via Code)
+   ============================================================ */
+
+.ak-logo {
+    width: 140px;
+    height: 140px;
+    border-top-left-radius: 70px;
+    border-top-right-radius: 70px;
+    border-bottom-left-radius: 70px;
+    border-bottom-right-radius: 70px;
+    background-color: var(--ak-primary);
+    border-width: 4px;
+    border-color: var(--ak-accent);
+    align-items: center;
+    justify-content: center;
+    transition: scale 600ms ease-in-out;
+}
+
+.ak-logo__text {
+    font-size: 54px;
+    -unity-font-style: bold;
+    color: var(--ak-accent);
+    -unity-text-align: middle-center;
+    width: 100%;
+    height: 100%;
+    letter-spacing: -3px;
+}
+
+.ak-logo--pulse {
+    scale: 1.05 1.05;
+}
+
+/* ============================================================
    DROP-ZONE (Highlight beim Drag&Drop)
    ============================================================ */
 
 .ak-drop-zone {
-    border-width: 2;
+    border-width: 2px;
     border-color: rgba(255, 255, 255, 0);
     border-radius: var(--ak-radius-md);
     transition: border-color 150ms, background-color 150ms;
@@ -349,10 +452,10 @@
 
 .ak-screen {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
     opacity: 1;
     transition: opacity 200ms ease-in-out;
 }

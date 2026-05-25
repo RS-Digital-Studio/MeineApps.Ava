@@ -14,10 +14,10 @@
 
 .ak-fill {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
 }
 
 /* === Surfaces (Panels, Cards, Sheets) === */
@@ -25,7 +25,7 @@
     background-color: var(--ak-bg-surface);
     border-radius: var(--ak-radius-lg);
     padding: var(--ak-space-4);
-    border-width: 1;
+    border-width: 1px;
     border-color: rgba(255, 255, 255, 0.04);
 }
 
@@ -33,12 +33,12 @@
     background-color: var(--ak-bg-surface-2);
     border-radius: var(--ak-radius-lg);
     padding: var(--ak-space-4);
-    border-width: 1;
+    border-width: 1px;
     border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ak-divider {
-    height: 1;
+    height: 1px;
     background-color: rgba(255, 255, 255, 0.06);
     margin-top: var(--ak-space-3);
     margin-bottom: var(--ak-space-3);
@@ -46,16 +46,19 @@
 
 /* === Buttons === */
 .ak-btn {
-    height: 44;
-    padding-left: var(--ak-space-5);
-    padding-right: var(--ak-space-5);
+    min-height: 44px;
+    padding-left: var(--ak-space-4);
+    padding-right: var(--ak-space-4);
+    padding-top: var(--ak-space-2);
+    padding-bottom: var(--ak-space-2);
     border-radius: var(--ak-radius-md);
-    border-width: 0;
+    border-width: 0px;
     background-color: var(--ak-bg-surface-2);
     color: var(--ak-text-primary);
     font-size: var(--ak-font-md);
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+    white-space: normal;
     transition: background-color 120ms ease-in-out, scale 80ms ease-out;
 }
 
@@ -93,7 +96,7 @@
 /* Ghost (transparent, für sekundäre Aktionen) */
 .ak-btn--ghost {
     background-color: rgba(255, 255, 255, 0.04);
-    border-width: 1;
+    border-width: 1px;
     border-color: rgba(255, 255, 255, 0.16);
 }
 .ak-btn--ghost:hover {
@@ -106,20 +109,20 @@
     color: var(--ak-text-on-primary);
 }
 
-/* Größenvarianten */
-.ak-btn--sm { height: 32; font-size: var(--ak-font-sm); padding-left: var(--ak-space-3); padding-right: var(--ak-space-3); }
-.ak-btn--lg { height: 56; font-size: var(--ak-font-lg); padding-left: var(--ak-space-6); padding-right: var(--ak-space-6); }
-.ak-btn--icon { width: 44; padding-left: 0; padding-right: 0; }
+/* Größenvarianten — min-height statt height, damit white-space:normal auto-wrap funktioniert */
+.ak-btn--sm { min-height: 32px; font-size: var(--ak-font-sm); padding-left: var(--ak-space-3); padding-right: var(--ak-space-3); }
+.ak-btn--lg { min-height: 56px; font-size: var(--ak-font-lg); padding-left: var(--ak-space-6); padding-right: var(--ak-space-6); }
+.ak-btn--icon { width: 44px; height: 44px; min-height: 44px; padding-left: 0px; padding-right: 0px; }
 
 /* === Inputs === */
 .ak-input {
-    height: 44;
+    height: 44px;
     padding-left: var(--ak-space-3);
     padding-right: var(--ak-space-3);
     border-radius: var(--ak-radius-md);
     background-color: rgba(0, 0, 0, 0.32);
     color: var(--ak-text-primary);
-    border-width: 1;
+    border-width: 1px;
     border-color: rgba(255, 255, 255, 0.12);
     font-size: var(--ak-font-md);
 }
@@ -136,6 +139,13 @@
 .ak-caption { font-size: var(--ak-font-sm); color: var(--ak-text-muted); }
 .ak-overline { font-size: var(--ak-font-xs); color: var(--ak-text-muted); letter-spacing: 1px; -unity-font-style: bold; }
 
+/* Zentrierter Text in runden Containern (Logo, Avatar-Level-Overlay etc.) */
+.ak-centered-text {
+    -unity-text-align: middle-center;
+    width: 100%;
+    flex-grow: 1;
+}
+
 .ak-text--accent { color: var(--ak-accent); }
 .ak-text--primary { color: var(--ak-primary-light); }
 .ak-text--success { color: var(--ak-success); }
@@ -150,9 +160,9 @@
 .ak-center-h { justify-content: center; }
 .ak-space-between { justify-content: space-between; }
 
-.ak-gap-1 { margin: 2; }
-.ak-gap-2 { margin: 4; }
-.ak-gap-3 { margin: 6; }
-.ak-gap-4 { margin: 8; }
+.ak-gap-1 { margin: 2px; }
+.ak-gap-2 { margin: 4px; }
+.ak-gap-3 { margin: 6px; }
+.ak-gap-4 { margin: 8px; }
 
 .ak-hidden { display: none; }

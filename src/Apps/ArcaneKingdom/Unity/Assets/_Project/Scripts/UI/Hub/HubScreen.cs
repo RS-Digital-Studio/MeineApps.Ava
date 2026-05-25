@@ -38,7 +38,9 @@ namespace ArcaneKingdom.UI.Hub
         private readonly ModalContext _modalContext;
 
         // Header
+        private Label _avatarInitials = null!;
         private Label _displayName = null!;
+        private Label _guildTag = null!;
         private Label _levelLabel = null!;
         private Label _energyValue = null!;
         private Label _goldValue = null!;
@@ -121,11 +123,13 @@ namespace ArcaneKingdom.UI.Hub
         protected override void BindElements(VisualElement root)
         {
             // Header
-            _displayName  = Q<Label>("header-display-name");
-            _levelLabel   = Q<Label>("header-level");
-            _energyValue  = Q<Label>("header-energy-value");
-            _goldValue    = Q<Label>("header-gold-value");
-            _diamondValue = Q<Label>("header-diamond-value");
+            _avatarInitials = Q<Label>("header-avatar-initials");
+            _displayName    = Q<Label>("header-display-name");
+            _guildTag       = Q<Label>("header-guild-tag");
+            _levelLabel     = Q<Label>("header-level");
+            _energyValue    = Q<Label>("header-energy-value");
+            _goldValue      = Q<Label>("header-gold-value");
+            _diamondValue   = Q<Label>("header-diamond-value");
 
             // Tab-Panels
             _tabCards  = Q<VisualElement>("tab-cards");
@@ -355,11 +359,11 @@ namespace ArcaneKingdom.UI.Hub
                 _shopPacksGrid.Add(BuildPackTile(pack));
 
             // Direkt-Angebote (Energie-Nachkauf, Scrap-Pakete, etc.)
-            _shopDirectList.Add(BuildDirectOffer("60 Energie sofort",
-                "100 Diamanten",
+            _shopDirectList.Add(BuildDirectOffer("Voll-Energie", "+60 sofort",
+                "100 ◆",
                 () => BuyEnergyAsync(60, 100).Forget()));
-            _shopDirectList.Add(BuildDirectOffer("Bonus-Energie +30 (8h)",
-                "50 Diamanten",
+            _shopDirectList.Add(BuildDirectOffer("Bonus-Energie", "+30 fuer 8h",
+                "50 ◆",
                 () => BuyEnergyAsync(30, 50).Forget()));
         }
 
@@ -396,7 +400,7 @@ namespace ArcaneKingdom.UI.Hub
             return tile;
         }
 
-        private VisualElement BuildDirectOffer(string title, string price, System.Action onBuy)
+        private VisualElement BuildDirectOffer(string title, string subtitle, string price, System.Action onBuy)
         {
             var row = new VisualElement();
             row.AddToClassList("ak-surface");
@@ -404,15 +408,27 @@ namespace ArcaneKingdom.UI.Hub
             row.style.alignItems = Align.Center;
             row.style.marginBottom = 6;
 
-            var name = new Label(title);
-            name.AddToClassList("ak-body");
-            name.style.flexGrow = 1;
-            row.Add(name);
+            // Titel + Subtitle in einer Col (2 Zeilen)
+            var textCol = new VisualElement();
+            textCol.style.flexGrow = 1;
+            textCol.style.flexShrink = 1;
+            var titleLabel = new Label(title);
+            titleLabel.AddToClassList("ak-body");
+            textCol.Add(titleLabel);
+            if (!string.IsNullOrEmpty(subtitle))
+            {
+                var subLabel = new Label(subtitle);
+                subLabel.AddToClassList("ak-caption");
+                textCol.Add(subLabel);
+            }
+            row.Add(textCol);
 
             var priceLabel = new Label(price);
-            priceLabel.AddToClassList("ak-caption");
+            priceLabel.AddToClassList("ak-h4");
             priceLabel.AddToClassList("ak-text--accent");
             priceLabel.style.marginRight = 12;
+            priceLabel.style.minWidth = 70;
+            priceLabel.style.unityTextAlign = TextAnchor.MiddleRight;
             row.Add(priceLabel);
 
             var btn = new Button(onBuy) { text = "Kaufen" };
@@ -604,13 +620,31 @@ namespace ArcaneKingdom.UI.Hub
             var p = _saveCached.Profile;
             var c = _saveCached.Currencies;
 
-            _displayName.text  = string.IsNullOrEmpty(p.DisplayName) ? "Spieler" : p.DisplayName;
-            _levelLabel.text   = $"Stufe {p.Level}";
-            _energyValue.text  = c.EnergyBonus > 0
-                ? $"{c.TotalEnergy}/{PlayerCurrencies.EnergyDefaultCap} (+{c.EnergyBonus})"
+            var name = string.IsNullOrEmpty(p.DisplayName) ? "Spieler" : p.DisplayName;
+            _displayName.text    = name;
+            _avatarInitials.text = ComputeInitials(name);
+            _guildTag.text       = string.IsNullOrEmpty(p.GuildId)
+                ? string.Empty
+                : $"[{p.GuildId.Substring(0, System.Math.Min(5, p.GuildId.Length)).ToUpperInvariant()}]";
+
+            _levelLabel.text     = p.Level.ToString();
+
+            _energyValue.text    = c.EnergyBonus > 0
+                ? $"{c.TotalEnergy}/{PlayerCurrencies.EnergyDefaultCap}"
                 : $"{c.Energy}/{PlayerCurrencies.EnergyDefaultCap}";
-            _goldValue.text    = FormatNumber(c.Gold);
-            _diamondValue.text = FormatNumber(c.Diamond);
+            _goldValue.text      = FormatNumber(c.Gold);
+            _diamondValue.text   = FormatNumber(c.Diamond);
+        }
+
+        /// <summary>1-2 Initialen aus dem DisplayName (z.B. "Robert Schneider" -> "RS").</summary>
+        private static string ComputeInitials(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "?";
+            var parts = name.Trim().Split(new[] { ' ', '_', '-' },
+                System.StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0) return "?";
+            if (parts.Length == 1) return char.ToUpper(parts[0][0]).ToString();
+            return $"{char.ToUpper(parts[0][0])}{char.ToUpper(parts[1][0])}";
         }
 
         // ============================================================
@@ -731,11 +765,17 @@ namespace ArcaneKingdom.UI.Hub
             _        => null
         };
 
+        /// <summary>
+        /// Currency-Format nach DESIGN.md 3.2: Tausender-Trennung mit "."
+        /// (z.B. "18.487.900" statt "18M"). Bei sehr grossen Zahlen (&gt;1 Mrd)
+        /// schalten wir auf Mrd/Mio um, sonst wird die Pill zu breit.
+        /// </summary>
         private static string FormatNumber(long n)
         {
-            if (n >= 1_000_000) return $"{n / 1_000_000.0:0.#}M";
-            if (n >= 10_000)    return $"{n / 1_000.0:0.#}K";
-            return n.ToString("N0");
+            var culture = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
+            if (n >= 1_000_000_000) return string.Format(culture, "{0:0.##} Mrd", n / 1_000_000_000.0);
+            if (n >= 100_000_000)   return string.Format(culture, "{0:0.#} Mio", n / 1_000_000.0);
+            return n.ToString("N0", culture);
         }
     }
 }

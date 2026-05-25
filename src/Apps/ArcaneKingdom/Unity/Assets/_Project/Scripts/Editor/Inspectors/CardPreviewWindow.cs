@@ -138,21 +138,23 @@ namespace ArcaneKingdom.EditorTools.Inspectors
 
         private static Color ElementColor(Element e) => e switch
         {
-            Element.Natur => new Color(0.30f, 0.78f, 0.30f),
-            Element.Feuer => new Color(0.90f, 0.35f, 0.20f),
+            Element.Natur  => new Color(0.30f, 0.78f, 0.30f),
+            Element.Feuer  => new Color(0.90f, 0.35f, 0.20f),
             Element.Wasser => new Color(0.30f, 0.55f, 0.95f),
-            Element.Licht => new Color(0.95f, 0.85f, 0.40f),
+            Element.Licht  => new Color(0.95f, 0.85f, 0.40f),
             Element.Dunkel => new Color(0.55f, 0.30f, 0.65f),
+            Element.Erde   => new Color(0.80f, 0.55f, 0.30f),
             _ => Color.white
         };
 
         private static Color RarityColor(Rarity r) => r switch
         {
-            Rarity.Gewoehnlich => Color.gray,
+            Rarity.Gewoehnlich   => Color.gray,
             Rarity.Ungewoehnlich => new Color(0.40f, 0.78f, 0.40f),
-            Rarity.Selten => new Color(0.40f, 0.65f, 0.95f),
-            Rarity.Epic => new Color(0.70f, 0.45f, 0.95f),
-            Rarity.Legendaer => new Color(0.95f, 0.78f, 0.30f),
+            Rarity.Selten        => new Color(0.40f, 0.65f, 0.95f),
+            Rarity.Epic          => new Color(0.70f, 0.45f, 0.95f),
+            Rarity.Legendaer     => new Color(0.95f, 0.78f, 0.30f),
+            Rarity.Mythisch      => new Color(0.95f, 0.85f, 0.95f),
             _ => Color.white
         };
     }

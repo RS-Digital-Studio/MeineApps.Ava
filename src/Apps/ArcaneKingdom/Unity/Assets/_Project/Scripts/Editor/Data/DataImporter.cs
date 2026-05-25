@@ -16,6 +16,7 @@ namespace ArcaneKingdom.EditorTools.Data
     /// Konvertiert JSON-Definitionen aus <c>Assets/_Project/Resources/Data/</c> in
     /// ScriptableObject-Assets unter <c>Assets/_Project/ScriptableObjects/</c>.
     /// Validierung erfolgt vor dem Schreiben — bei Fehler wird abgebrochen.
+    /// Angepasst auf Designplan v4 (5 Rassen, 6 Elemente Doppel-Dreieck, 6 Seltenheitsstufen).
     /// </summary>
     public static class DataImporter
     {
@@ -113,14 +114,28 @@ namespace ArcaneKingdom.EditorTools.Data
 
         private static void ValidateCard(CardDto dto, IReadOnlyDictionary<string, AbilityDefinition> abilities)
         {
-            if (dto.cost < 1 || dto.cost > 10) throw new Exception($"Card '{dto.id}': Cost {dto.cost} ausserhalb 1-10.");
+            if (dto.cost < 1 || dto.cost > 60) throw new Exception($"Card '{dto.id}': Cost {dto.cost} ausserhalb 1-60 (Designplan v4: 1*~5 bis 6*~50).");
             if (dto.baseAttack < 0) throw new Exception($"Card '{dto.id}': BaseAttack negativ.");
             if (dto.baseHealth < 1) throw new Exception($"Card '{dto.id}': BaseHealth < 1.");
             if (dto.turnsToSpecial < 1 || dto.turnsToSpecial > 10)
                 throw new Exception($"Card '{dto.id}': TurnsToSpecial {dto.turnsToSpecial} ausserhalb 1-10.");
+
+            // Goetter sind nur 4*+ und nicht als Drop erhaeltlich (Designplan v4 Kap. 2).
+            if (dto.race == Race.Goetter && dto.rarity < Rarity.Epic)
+                throw new Exception($"Card '{dto.id}': Goetter-Karten muessen mindestens 4* (Epic) sein.");
+
+            // Mythische Karten brauchen einen Letzten Willen (Designplan v4 Kap. 4.2).
+            if (dto.rarity == Rarity.Mythisch && string.IsNullOrEmpty(dto.lastWillAbilityId))
+                throw new Exception($"Card '{dto.id}': 6* Mythische Karten muessen einen lastWillAbilityId haben.");
+
+            // Premium-Karten duerfen nicht in Fusion verwendet werden (Designplan v4 Kap. 3 Oeko).
+            // Hier nur Konsistenz-Check — Logik liegt im Crafting-Service.
+
+            // baseAbility nur Pflicht falls keine reine Oekosystem-Karte (Event/Premium koennen einfacher sein).
             CheckAbility(dto.id, dto.baseAbilityId, abilities, required: true);
             CheckAbility(dto.id, dto.secondAbilityId, abilities, required: false);
             CheckAbility(dto.id, dto.thirdAbilityId, abilities, required: false);
+            CheckAbility(dto.id, dto.lastWillAbilityId, abilities, required: false);
         }
 
         private static void CheckAbility(string cardId, string? abilityId, IReadOnlyDictionary<string, AbilityDefinition> abilities, bool required)
@@ -130,8 +145,9 @@ namespace ArcaneKingdom.EditorTools.Data
                 if (required) throw new Exception($"Card '{cardId}': Basis-Faehigkeit ist Pflicht.");
                 return;
             }
+            // In v4 sind viele Skill-IDs noch Platzhalter — wir warnen nur, brechen aber nicht ab.
             if (!abilities.ContainsKey(abilityId!))
-                throw new Exception($"Card '{cardId}': Faehigkeit '{abilityId}' nicht in abilities.json.");
+                Debug.LogWarning($"Card '{cardId}': Faehigkeit '{abilityId}' nicht in abilities.json (wird beim Import zu null).");
         }
 
         // ----------------------------------------------------------- Runes
@@ -180,6 +196,10 @@ namespace ArcaneKingdom.EditorTools.Data
                 foreach (var cId in n.enemyDeckCardIds ?? Array.Empty<string>())
                     if (!cards.ContainsKey(cId))
                         throw new Exception($"World '{dto.id}', Node '{n.id}': Karte '{cId}' unbekannt.");
+            if (!string.IsNullOrEmpty(dto.bossCardId) && !cards.ContainsKey(dto.bossCardId!))
+                Debug.LogWarning($"World '{dto.id}': bossCardId '{dto.bossCardId}' nicht in cards.json.");
+            if (!string.IsNullOrEmpty(dto.prestige4CardId) && !cards.ContainsKey(dto.prestige4CardId!))
+                Debug.LogWarning($"World '{dto.id}': prestige4CardId '{dto.prestige4CardId}' nicht in cards.json.");
         }
 
         // ----------------------------------------------------------- Heroes
@@ -211,13 +231,11 @@ namespace ArcaneKingdom.EditorTools.Data
             sObj.FindProperty("id").stringValue = dto.id;
             sObj.FindProperty("displayNameKey").stringValue = dto.displayNameKey;
             sObj.FindProperty("flavorTextKey").stringValue = dto.flavorTextKey;
-            sObj.FindProperty("element").enumValueIndex = (int)dto.element;
+            sObj.FindProperty("race").enumValueIndex = (int)dto.race;
             sObj.FindProperty("faehigkeitNameKey").stringValue = dto.faehigkeitNameKey;
             sObj.FindProperty("faehigkeitDescKey").stringValue = dto.faehigkeitDescKey;
             sObj.FindProperty("faehigkeitsTyp").enumValueIndex = (int)dto.faehigkeitsTyp;
-            sObj.FindProperty("cooldownRunden").intValue = dto.cooldownRunden;
             sObj.FindProperty("magnitude").intValue = dto.magnitude;
-            sObj.FindProperty("durationTurns").intValue = dto.durationTurns;
             sObj.FindProperty("portraitAddressableKey").stringValue = dto.portraitAddressableKey ?? string.Empty;
             sObj.FindProperty("voiceLineAddressableKey").stringValue = dto.voiceLineAddressableKey ?? string.Empty;
             sObj.ApplyModifiedPropertiesWithoutUndo();
@@ -227,9 +245,6 @@ namespace ArcaneKingdom.EditorTools.Data
 
         private static void ImportBalancing()
         {
-            // BalancingConfig hat zur Zeit nur primitive Werte — wir lesen die JSON
-            // und schreiben über Reflection / SerializedObject. Im Erst-Wurf
-            // platzieren wir das Asset und lassen Werte aus dem Inspector setzen.
             var path = $"{SoRootRel}/Config/BalancingConfig.asset";
             LoadOrCreateAsset<Domain.Config.BalancingConfig>(path);
             Debug.Log("[DataImporter] BalancingConfig-Asset vorhanden (Werte via Inspector pflegen).");
@@ -239,8 +254,6 @@ namespace ArcaneKingdom.EditorTools.Data
 
         private static T LoadOrCreateAsset<T>(string assetPath) where T : ScriptableObject
         {
-            // Auf Windows liefert Path.GetDirectoryName Backslashes, AssetDatabase
-            // erwartet aber Forward-Slashes — explizit normalisieren.
             var dir = (Path.GetDirectoryName(assetPath) ?? string.Empty).Replace('\\', '/');
             EnsureFolder(dir);
             var existing = AssetDatabase.LoadAssetAtPath<T>(assetPath);
@@ -298,10 +311,41 @@ namespace ArcaneKingdom.EditorTools.Data
             sObj.FindProperty("globalCraftLimit").intValue = dto.globalCraftLimit;
             sObj.FindProperty("artworkAddressableKey").stringValue = dto.artworkAddressableKey ?? string.Empty;
             sObj.FindProperty("voiceLineAddressableKey").stringValue = dto.voiceLineAddressableKey ?? string.Empty;
-            sObj.FindProperty("baseAbility").objectReferenceValue = dto.baseAbilityId != null && abilities.TryGetValue(dto.baseAbilityId, out var a1) ? a1 : null;
-            sObj.FindProperty("secondAbility").objectReferenceValue = dto.secondAbilityId != null && abilities.TryGetValue(dto.secondAbilityId, out var a2) ? a2 : null;
-            sObj.FindProperty("thirdAbility").objectReferenceValue = dto.thirdAbilityId != null && abilities.TryGetValue(dto.thirdAbilityId, out var a3) ? a3 : null;
+
+            sObj.FindProperty("baseAbility").objectReferenceValue   = ResolveAbility(dto.baseAbilityId, abilities);
+            sObj.FindProperty("secondAbility").objectReferenceValue = ResolveAbility(dto.secondAbilityId, abilities);
+            sObj.FindProperty("thirdAbility").objectReferenceValue  = ResolveAbility(dto.thirdAbilityId, abilities);
+            sObj.FindProperty("lastWillAbility").objectReferenceValue = ResolveAbility(dto.lastWillAbilityId, abilities);
+
+            // Personality-Lines
+            sObj.FindProperty("onPlayLineKey").stringValue    = dto.onPlayLineKey ?? string.Empty;
+            sObj.FindProperty("onVictoryLineKey").stringValue = dto.onVictoryLineKey ?? string.Empty;
+            sObj.FindProperty("onDeathLineKey").stringValue   = dto.onDeathLineKey ?? string.Empty;
+
+            // Rivalen / Synergien
+            SetStringList(sObj, "rivalCardIds", dto.rivalCardIds);
+            SetStringList(sObj, "synergyCardIds", dto.synergyCardIds);
+
+            // Ökosystem-Marker
+            sObj.FindProperty("isEventCard").boolValue       = dto.isEventCard;
+            sObj.FindProperty("isPremiumCard").boolValue     = dto.isPremiumCard;
+            sObj.FindProperty("isPrestigeCard").boolValue    = dto.isPrestigeCard;
+            sObj.FindProperty("isStarTempleCard").boolValue  = dto.isStarTempleCard;
+            sObj.FindProperty("isSaisonPassCard").boolValue  = dto.isSaisonPassCard;
+
             sObj.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static AbilityDefinition? ResolveAbility(string? id, IReadOnlyDictionary<string, AbilityDefinition> abilities)
+            => string.IsNullOrEmpty(id) || !abilities.TryGetValue(id!, out var a) ? null : a;
+
+        private static void SetStringList(SerializedObject sObj, string propName, List<string>? values)
+        {
+            var prop = sObj.FindProperty(propName);
+            var list = values ?? new List<string>();
+            prop.arraySize = list.Count;
+            for (var i = 0; i < list.Count; i++)
+                prop.GetArrayElementAtIndex(i).stringValue = list[i];
         }
 
         private static void ApplyRune(RuneDefinition so, RuneDto dto)
@@ -325,9 +369,17 @@ namespace ArcaneKingdom.EditorTools.Data
             sObj.FindProperty("displayNameKey").stringValue = dto.displayNameKey;
             sObj.FindProperty("index").intValue = dto.index;
             sObj.FindProperty("themeElement").enumValueIndex = (int)dto.themeElement;
+            sObj.FindProperty("recommendedCounterElement").enumValueIndex = (int)dto.recommendedCounterElement;
             sObj.FindProperty("recommendedPlayerLevel").intValue = dto.recommendedPlayerLevel;
             sObj.FindProperty("backgroundAddressableKey").stringValue = dto.backgroundAddressableKey ?? string.Empty;
             sObj.FindProperty("musicAddressableKey").stringValue = dto.musicAddressableKey ?? string.Empty;
+            sObj.FindProperty("saeuleNameKey").stringValue = dto.saeuleNameKey ?? string.Empty;
+            sObj.FindProperty("bossCardId").stringValue = dto.bossCardId ?? string.Empty;
+            sObj.FindProperty("storySummaryKey").stringValue = dto.storySummaryKey ?? string.Empty;
+            sObj.FindProperty("memoryFragmentKey").stringValue = dto.memoryFragmentKey ?? string.Empty;
+            sObj.FindProperty("mentorNpcKey").stringValue = dto.mentorNpcKey ?? string.Empty;
+            sObj.FindProperty("baseGoldPerDay").intValue = dto.baseGoldPerDay;
+            sObj.FindProperty("prestige4CardId").stringValue = dto.prestige4CardId ?? string.Empty;
 
             var nodesProp = sObj.FindProperty("nodes");
             nodesProp.arraySize = dto.nodes!.Count;
@@ -380,16 +432,27 @@ namespace ArcaneKingdom.EditorTools.Data
             public string flavorTextKey = string.Empty;
             public Element element = Element.Natur;
             public Rarity rarity = Rarity.Gewoehnlich;
-            public Race race = Race.Koenigreich;
-            public int cost = 1;
+            public Race race = Race.Ritter;
+            public int cost = 5;
             public int baseAttack = 100;
             public int baseHealth = 200;
-            public int turnsToSpecial = 4;
+            public int turnsToSpecial = 3;
             public string? baseAbilityId;
             public string? secondAbilityId;
             public string? thirdAbilityId;
+            public string? lastWillAbilityId;
             public DeckLimit deckLimit = DeckLimit.Unlimited;
             public int globalCraftLimit = 90;
+            public string? onPlayLineKey;
+            public string? onVictoryLineKey;
+            public string? onDeathLineKey;
+            public List<string>? rivalCardIds;
+            public List<string>? synergyCardIds;
+            public bool isEventCard;
+            public bool isPremiumCard;
+            public bool isPrestigeCard;
+            public bool isStarTempleCard;
+            public bool isSaisonPassCard;
             public string? artworkAddressableKey;
             public string? voiceLineAddressableKey;
         }
@@ -413,13 +476,11 @@ namespace ArcaneKingdom.EditorTools.Data
             public string id = string.Empty;
             public string displayNameKey = string.Empty;
             public string flavorTextKey = string.Empty;
-            public Element element = Element.Licht;
+            public Race race = Race.Ritter;
             public string faehigkeitNameKey = string.Empty;
             public string faehigkeitDescKey = string.Empty;
-            public HeroFaehigkeitsTyp faehigkeitsTyp = HeroFaehigkeitsTyp.AllyHeal;
-            public int cooldownRunden = 5;
+            public HeroFaehigkeitsTyp faehigkeitsTyp = HeroFaehigkeitsTyp.KoeniglicheAura;
             public int magnitude;
-            public int durationTurns;
             public string? portraitAddressableKey;
             public string? voiceLineAddressableKey;
         }
@@ -431,9 +492,17 @@ namespace ArcaneKingdom.EditorTools.Data
             public string displayNameKey = string.Empty;
             public int index = 1;
             public Element themeElement = Element.Natur;
+            public Element recommendedCounterElement = Element.Feuer;
             public int recommendedPlayerLevel = 1;
             public string? backgroundAddressableKey;
             public string? musicAddressableKey;
+            public string? saeuleNameKey;
+            public string? bossCardId;
+            public string? storySummaryKey;
+            public string? memoryFragmentKey;
+            public string? mentorNpcKey;
+            public int baseGoldPerDay = 100;
+            public string? prestige4CardId;
             public List<NodeDto>? nodes;
         }
 

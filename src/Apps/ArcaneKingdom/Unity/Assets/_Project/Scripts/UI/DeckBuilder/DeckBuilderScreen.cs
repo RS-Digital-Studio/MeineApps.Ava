@@ -399,6 +399,7 @@ namespace ArcaneKingdom.UI.DeckBuilder
             "Selten"        => Rarity.Selten,
             "Epic"          => Rarity.Epic,
             "Legendaer"     => Rarity.Legendaer,
+            "Mythisch"      => Rarity.Mythisch,
             _               => null
         };
     }

@@ -184,6 +184,7 @@ namespace ArcaneKingdom.UI.Modals
             Rarity.Selten        => "ak-card--rarity-rare",
             Rarity.Epic          => "ak-card--rarity-epic",
             Rarity.Legendaer     => "ak-card--rarity-legendary",
+            Rarity.Mythisch      => "ak-card--rarity-mythic",
             _                    => "ak-card--rarity-common"
         };
 

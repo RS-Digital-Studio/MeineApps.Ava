@@ -168,6 +168,7 @@ namespace ArcaneKingdom.Game.Artwork
             Element.Wasser => new Color(0.30f, 0.55f, 0.95f),
             Element.Licht  => new Color(1.00f, 0.92f, 0.55f),
             Element.Dunkel => new Color(0.55f, 0.30f, 0.65f),
+            Element.Erde   => new Color(0.80f, 0.55f, 0.30f),
             _              => new Color(0.45f, 0.85f, 0.45f)  // Natur
         };
 
@@ -177,6 +178,7 @@ namespace ArcaneKingdom.Game.Artwork
             Element.Wasser => new Color(0.05f, 0.15f, 0.32f),
             Element.Licht  => new Color(0.35f, 0.28f, 0.10f),
             Element.Dunkel => new Color(0.18f, 0.08f, 0.22f),
+            Element.Erde   => new Color(0.28f, 0.18f, 0.08f),
             _              => new Color(0.10f, 0.30f, 0.10f)
         };
 
@@ -186,7 +188,8 @@ namespace ArcaneKingdom.Game.Artwork
             Rarity.Selten        => new Color(0.40f, 0.65f, 0.95f),
             Rarity.Epic          => new Color(0.70f, 0.45f, 0.95f),
             Rarity.Legendaer     => new Color(0.95f, 0.78f, 0.30f),
-            _                    => Color.gray
+            Rarity.Mythisch      => new Color(0.95f, 0.85f, 0.95f),  // Celestial/animiert
+            _                    => Color.gray                         // Gewoehnlich
         };
     }
 }

@@ -65,8 +65,13 @@ namespace ArcaneKingdom.UI.Battle
         private int _enemyStartHp;
         private NodeDefinition? _node;
 
+        // v6: Anzahl bereits angezeigter Events (damit jeder Event nur 1x als Toast erscheint)
+        private int _eventsShownCount;
+
         public override string Id => ScreenId.Battle;
         protected override string UxmlPath => "UI/BattleScreen";
+
+        private readonly ILocalizationService _loc;
 
         public BattleScreen(ScreenManager screenManager,
                             ISaveService<PlayerSave> save,
@@ -74,7 +79,8 @@ namespace ArcaneKingdom.UI.Battle
                             BattleBootstrap battleBootstrap,
                             ModalContext modalContext,
                             ToastService toast,
-                            CardArtworkService artworkService)
+                            CardArtworkService artworkService,
+                            ILocalizationService loc)
         {
             _screenManager = screenManager;
             _save = save;
@@ -83,6 +89,7 @@ namespace ArcaneKingdom.UI.Battle
             _modalContext = modalContext;
             _toast = toast;
             _artworkService = artworkService;
+            _loc = loc;
         }
 
         protected override void BindElements(VisualElement root)
@@ -366,7 +373,55 @@ namespace ArcaneKingdom.UI.Battle
                 return;
             }
             SpawnFloatingText("Eingesetzt!", new Color(0.95f, 0.78f, 0.30f));
+            DrainPersonalityEvents().Forget();
             RefreshAll();
+        }
+
+        /// <summary>
+        /// Zeigt alle noch nicht angezeigten Personality-Events als Toast.
+        /// Designplan v4 Kap. 8 (Karten-Persoenlichkeit).
+        /// </summary>
+        private async UniTask DrainPersonalityEvents()
+        {
+            if (_engine == null) return;
+            var events = _engine.State.Events;
+            while (_eventsShownCount < events.Count)
+            {
+                var evt = events[_eventsShownCount];
+                _eventsShownCount++;
+                await ShowEventToast(evt);
+            }
+        }
+
+        private async UniTask ShowEventToast(BattleEvent evt)
+        {
+            string message;
+            var kind = ToastKind.Info;
+            switch (evt.EventType)
+            {
+                case BattleEventType.CardPlayed:
+                case BattleEventType.CardVictory:
+                case BattleEventType.CardDied:
+                    if (string.IsNullOrEmpty(evt.LocalizationKey)) return;
+                    message = _loc.Get(evt.LocalizationKey!, evt.LocalizationKey);
+                    kind = evt.EventType == BattleEventType.CardDied ? ToastKind.Warning : ToastKind.Info;
+                    break;
+                case BattleEventType.SynergyActivated:
+                    message = $"✨ Synergie: +{evt.Magnitude}% Bonus";
+                    kind = ToastKind.Success;
+                    break;
+                case BattleEventType.RivalryClashed:
+                    message = "⚡ Rivalen-Konflikt!";
+                    kind = ToastKind.Warning;
+                    break;
+                case BattleEventType.HeroPassivTriggered:
+                    message = $"⭐ {_loc.Get(evt.LocalizationKey ?? "", "Helden-Passiv")}";
+                    kind = ToastKind.Success;
+                    break;
+                default: return;
+            }
+            _toast.Show(message, kind, 2.5f);
+            await UniTask.Delay(180);   // kleine Verzoegerung zwischen Toasts
         }
 
         private async UniTask OnEndTurnAsync()
@@ -377,6 +432,7 @@ namespace ArcaneKingdom.UI.Battle
 
             // 1. Player-EndTurn (Engine wickelt Combat ab, Phase wechselt zu Enemy)
             _engine.EndTurn();
+            await DrainPersonalityEvents();
             RefreshAll();
             if (_engine.State.Result != BattleResult.Undecided)
             {
@@ -403,6 +459,7 @@ namespace ArcaneKingdom.UI.Battle
 
             // 4. Enemy-EndTurn (Engine fuehrt Enemy-Combat, wechselt zu Player)
             _engine.EndTurn();
+            await DrainPersonalityEvents();
             RefreshAll();
             if (_engine.State.Result != BattleResult.Undecided)
                 await HandleGameOverAsync();

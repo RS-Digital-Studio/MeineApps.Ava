@@ -103,13 +103,17 @@ namespace ArcaneKingdom.UI.Hub
         public override string Id => ScreenId.Hub;
         protected override string UxmlPath => "UI/HubScreen";
 
+        // v6: Daily-Income via PrestigeAppService beim Hub-Open
+        private readonly ArcaneKingdom.Game.World.PrestigeAppService _prestige;
+
         public HubScreen(ScreenManager screenManager,
                          ISaveService<PlayerSave> save,
                          CardCatalogService cardCatalog,
                          QuestService questService,
                          ShopController shopController,
                          ToastService toast,
-                         ModalContext modalContext)
+                         ModalContext modalContext,
+                         ArcaneKingdom.Game.World.PrestigeAppService prestige)
         {
             _screenManager = screenManager;
             _save = save;
@@ -118,6 +122,7 @@ namespace ArcaneKingdom.UI.Hub
             _shopController = shopController;
             _toast = toast;
             _modalContext = modalContext;
+            _prestige = prestige;
         }
 
         protected override void BindElements(VisualElement root)
@@ -591,6 +596,15 @@ namespace ArcaneKingdom.UI.Hub
         {
             _refreshCts?.Cancel();
             _refreshCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+            // v6: Daily-Income Tick (Designplan v4 Oeko Kap. 6.3) — passive Gold-Belohnung
+            // pro Welt nach Prestige-Stufe. Wird bei jedem Hub-Open ausgefuehrt; ignoriert
+            // wenn weniger als 24h seit letztem Tick vergangen.
+            var incomeTick = await _prestige.TickDailyIncomeAsync(System.DateTime.UtcNow, _refreshCts.Token);
+            if (incomeTick.IsSuccess && incomeTick.Value > 0)
+            {
+                _toast.Show($"💰 Passives Income: +{incomeTick.Value:N0} Gold", ToastKind.Success);
+            }
 
             var result = await _save.LoadAsync(_refreshCts.Token);
             if (!result.IsSuccess)

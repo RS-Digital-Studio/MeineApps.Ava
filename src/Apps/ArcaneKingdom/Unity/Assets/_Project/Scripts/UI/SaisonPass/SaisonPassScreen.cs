@@ -2,6 +2,7 @@
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine;

@@ -2,6 +2,7 @@
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -31,16 +32,21 @@ namespace ArcaneKingdom.UI.Arena
         public override string Id => ScreenId.Arena;
         protected override string UxmlPath => "UI/ArenaScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public ArenaScreen(ScreenManager screenManager,
-                           ISaveService<PlayerSave> save, ToastService toast)
+                           ISaveService<PlayerSave> save, ToastService toast,
+                           UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
         {
+            _uiAssets.ApplyUIBackground(root, "arena");
             _backBtn        = Q<Button>("arena-back-button");
             _ticketsLabel   = Q<Label>("arena-tickets-label");
             _rankName       = Q<Label>("arena-rank-name");

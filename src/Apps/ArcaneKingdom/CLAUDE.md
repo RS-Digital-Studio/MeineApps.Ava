@@ -21,19 +21,22 @@ anderen Apps bewusst machen.
 
 ---
 
-## Designplan-Quelle
+## Designplan-Quellen (Stand 2026-05-25)
 
-Die aktuelle Designspec basiert auf **Designplan v4** (Maerz 2026):
+Die aktuelle Spec ist die Kombination aus **Spielplan v5 FINAL** (Master, Maerz 2026)
+und **Arcane Legends Designplan v1** (Karten-Details). Der Code geht **ueber** die
+Spec hinaus (5 Rassen statt 4, 6 Elemente statt 5, 6 Seltenheiten statt 5, 10 Welten
+statt 9, plus Helden-Passivs/Sternkarten/Prestige-pro-Welt/Memory-Fragments) — diese
+Erweiterungen sind bewusst, der Plan ist ein **Subset** des Codes.
 
 | Quelldokument | Inhalt |
 |---------------|--------|
-| `Arcane_Legends_Designplan_v4.docx` | 5 Rassen, 6 Elemente Doppel-Dreieck, 131 Karten Pyramide, Fusions-Crafting, Auto-Battle |
-| `Arcane_Legends_Kartenliste_v4.docx` | Vollstaendige Liste aller 131 Karten + Stats |
-| `Arcane_Legends_Skills_v4.docx` | Skills 1 + 2 + 3 + Letzter Wille fuer alle 3*+ Karten |
-| `Arcane_Legends_Oekosystem_v4.docx` | Karten-Besitz, Event/Premium/Saison-Pass/Sternkarten/Prestige |
-| `Arcane_Legends_Story_v4_1.docx` | Welt-Mythologie, 10 Welten Story, Erinnerungs-Fragmente, Twist, NPCs |
-| `Arcane_Legends_Art_Style_Guide_v4.docx` | Visueller Leitfaden, AI-Prompts pro Rasse |
-| `Arcane_Legends_Implementierungsplan_v4.docx` | 7 Phasen Entwicklungs-Roadmap, MVP-Definition |
+| `Spielplan_v5_FINAL.docx` | Master-Spielplan (Login/Hub/Karten/Crafting/Welten/Kampf/Dieb/Arena/Gilde/Chat/Merit/Events) |
+| `Arcane_Legends_Designplan.docx` | Karten-Spec V1 (4 Rassen × 25 Karten, Skills, Crafting, Saison) |
+| `Implementierungsplan_Login_HubWelt_1.docx` | Splash/Login/Registration/Auto-Login + Hub-Stadt-UX |
+| `files.zip → Implementierungsplan_KOMPLETT.docx` | 19 Sub-Screens vollstaendig spezifiziert |
+| `Design_Entwurf_Login_HubWelt.html` | UI-Design-Referenz |
+| `karten_vorlage.html` | Karten-Vorlage |
 
 Quelldokumente liegen unter `F:\AI\ComfyUI_windows_portable\ComfyUI\output\eva\Spiele Ideen Ordner\Ideen\`.
 
@@ -265,7 +268,22 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 
 ## Roadmap-Status
 
-**Aktuell (Stand 2026-05-25, Iteration 7 — v4-Designplan eingearbeitet):**
+**Aktuell (Stand 2026-05-25, Iteration 8 — Spielplan v5 FINAL eingearbeitet):**
+
+- [x] **Domain v5**: NodeDifficulty (Classic/Amateur/Profi/Gott), AccountUnlocks (LV1-150),
+      RuneSlotUnlock/DeckSlotUnlock, DeckValidator (Cost-Cap 200 + Legendary/Epic-Limits),
+      CardUpgradeService, CollectionExchangeService, Energie-Ueberlauf >60,
+      Boss-Phasen-Mechanik (50% HP-Trigger + Reinforcements), Thief/Merit/Arena/Territory-Services
+- [x] **UI v5**: SplashScreen, RegistrationScreen, DifficultyPickerModal, RuneScreen,
+      PlayerProfileScreen, ShopScreen, QuestCenterScreen, MeritRankingScreen,
+      BattleReportScreen + Context, ThiefScreen, GuildWorldMapScreen, ChatOverlay,
+      PvpMatchmakingScreen, CollectionTradeScreen, HubCityRenderer
+- [x] **User-Flow verkabelt**: BootEntryPoint → Splash → Login/Registration → Hub
+      mit 10 neuen Mehr-Tab-Buttons. WorldMap → DifficultyPicker → Battle → BattleReport.
+- [x] **LoginController.RunLoginAsync(email, password)** fuer echten E-Mail-Login.
+- [x] **Hub-Cards-Filter** vollstaendig (6 Elemente inkl. Erde, 6 Seltenheiten inkl. Mythisch)
+
+**Aus Iteration 7 (Designplan v4) erhalten:**
 
 - [x] App-Ordner angelegt + 6 Unity-Scenes (Boot/Hub/Battle/Arena/Guild/GuildWorld)
 - [x] **GDD v6.0** (basiert auf Designplan v4, ersetzt v5.4)

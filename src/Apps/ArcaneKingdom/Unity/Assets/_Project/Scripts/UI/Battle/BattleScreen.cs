@@ -64,6 +64,7 @@ namespace ArcaneKingdom.UI.Battle
         private int _playerStartHp;
         private int _enemyStartHp;
         private NodeDefinition? _node;
+        private NodeDifficulty _difficulty = NodeDifficulty.Classic;
 
         // v6: Anzahl bereits angezeigter Events (damit jeder Event nur 1x als Toast erscheint)
         private int _eventsShownCount;
@@ -74,6 +75,7 @@ namespace ArcaneKingdom.UI.Battle
         private readonly ILocalizationService _loc;
         private readonly WorldCatalogService _worldCatalog;
         private readonly ArcaneKingdom.UI.Modals.MemoryFragmentContext _memoryCtx;
+        private readonly ArcaneKingdom.UI.BattleReport.BattleReportContext _reportCtx;
 
         private readonly UIAssetService _uiAssets;
 
@@ -87,6 +89,7 @@ namespace ArcaneKingdom.UI.Battle
                             ILocalizationService loc,
                             WorldCatalogService worldCatalog,
                             ArcaneKingdom.UI.Modals.MemoryFragmentContext memoryCtx,
+                            ArcaneKingdom.UI.BattleReport.BattleReportContext reportCtx,
                             UIAssetService uiAssets)
         {
             _screenManager = screenManager;
@@ -99,6 +102,7 @@ namespace ArcaneKingdom.UI.Battle
             _loc = loc;
             _worldCatalog = worldCatalog;
             _memoryCtx = memoryCtx;
+            _reportCtx = reportCtx;
             _uiAssets = uiAssets;
         }
 
@@ -128,6 +132,11 @@ namespace ArcaneKingdom.UI.Battle
         {
             _node = _modalContext.Get<NodeDefinition>(WorldMapScreen.NodeContextKey);
 
+            // Spielplan v5 Kap. 8.3: Difficulty aus dem Context (gewaehlt im DifficultyPicker).
+            // Fallback: Classic (1 Energie, 1 Stern bei Sieg).
+            _difficulty = _modalContext.Get<NodeDifficulty?>(WorldMapScreen.DifficultyContextKey)
+                          ?? NodeDifficulty.Classic;
+
             // Battle-Background pro Welt (z.B. battle_bg_elderwald, battle_bg_vulkanhort)
             if (_node != null)
             {
@@ -146,17 +155,18 @@ namespace ArcaneKingdom.UI.Battle
 
             var save = saveResult.Value;
 
-            // Energie abziehen (falls Node-Battle und genug Energie da)
-            if (_node != null && !save.Currencies.SpendEnergy(_node.EnergyCost))
+            // Energie abziehen — skaliert mit Difficulty (Classic/Amateur=1, Profi=2, Gott=3)
+            var energyCost = _node != null ? _node.EnergyCostFor(_difficulty) : 0;
+            if (_node != null && !save.Currencies.SpendEnergy(energyCost))
             {
-                _toast.Show($"Nicht genug Energie ({_node.EnergyCost} benoetigt).", ToastKind.Warning);
+                _toast.Show($"Nicht genug Energie ({energyCost} benoetigt).", ToastKind.Warning);
                 _screenManager.PopAsync().Forget();
                 return;
             }
             if (_node != null) await _save.SaveAsync(save, ct);
 
-            // Engine + AI bauen
-            var setup = _battleBootstrap.Build(save, _node, seed: System.Environment.TickCount);
+            // Engine + AI bauen — Difficulty wird an BattleBootstrap weitergegeben
+            var setup = _battleBootstrap.Build(save, _node, seed: System.Environment.TickCount, difficulty: _difficulty);
             if (setup == null)
             {
                 _toast.Show("Kein Deck fuer Battle — bitte zuerst im DeckBuilder befuellen.", ToastKind.Danger);
@@ -524,27 +534,57 @@ namespace ArcaneKingdom.UI.Battle
 
         private async UniTask HandleGameOverAsync()
         {
+            var stars = _difficulty.StarsOnVictory();
             switch (_engine!.State.Result)
             {
                 case BattleResult.PlayerWins:
-                    var reward = _node?.GoldReward(3) ?? 50;
-                    var exp = _node?.ExpReward(3) ?? 25;
-                    await ApplyRewardsAsync(reward, exp);
-                    _toast.Show($"Sieg! +{reward} Gold, +{exp} EXP", ToastKind.Success, 6f);
+                    var reward = _node?.GoldReward(_difficulty) ?? 50;
+                    var exp = _node?.ExpReward(_difficulty) ?? 25;
+                    await ApplyRewardsAsync(reward, exp, stars);
+                    _toast.Show($"Sieg! ★ {stars}/4 — +{reward} Gold, +{exp} EXP", ToastKind.Success, 5f);
 
                     // v6 (Designplan v4 Story Kap. 9): Welt-Boss-Sieg -> Erinnerungs-Fragment
                     if (_node != null && _node.Type == NodeType.WorldBoss)
                         await ShowMemoryFragmentIfNewAsync();
                     break;
                 case BattleResult.EnemyWins:
-                    _toast.Show("Niederlage — versuch's nochmal.", ToastKind.Danger, 6f);
+                    _toast.Show("Niederlage — versuch's nochmal.", ToastKind.Danger, 4f);
                     break;
                 case BattleResult.Draw:
-                    _toast.Show("Unentschieden.", ToastKind.Warning, 6f);
+                    _toast.Show("Unentschieden.", ToastKind.Warning, 4f);
                     break;
             }
-            await UniTask.Delay(2200);
+            await UniTask.Delay(1500);
+
+            // Spielplan v5 Kap. 11.2: Schlachtbericht-Screen statt einfach Pop.
+            // Battle-Report-Context fuellen + replacen (Pop + Push wuerde Stack-Order zerstoeren).
+            await ShowBattleReportAsync();
+        }
+
+        /// <summary>
+        /// Bereitet den BattleReportScreen vor und ersetzt den BattleScreen damit.
+        /// </summary>
+        private async UniTask ShowBattleReportAsync()
+        {
+            // Report-Context mit echten Battle-Daten befuellen
+            _reportCtx.IsVictory = _engine!.State.Result == BattleResult.PlayerWins;
+            _reportCtx.IsDraw    = _engine.State.Result == BattleResult.Draw;
+            _reportCtx.Stars     = _reportCtx.IsVictory ? _difficulty.StarsOnVictory() : 0;
+            _reportCtx.GoldReward = _reportCtx.IsVictory && _node != null ? _node.GoldReward(_difficulty) : 0;
+            _reportCtx.ExpReward  = _reportCtx.IsVictory && _node != null ? _node.ExpReward(_difficulty) : 0;
+            _reportCtx.NodeId     = _node?.Id;
+
+            // Fallback: wenn der Report-Screen nicht registriert ist, einfach poppen.
+            if (!_screenManager.IsRegistered(ScreenId.BattleReport))
+            {
+                await _screenManager.PopAsync();
+                return;
+            }
+
+            // BattleScreen poppen und Report pushen — Report kann beim Schliessen
+            // wieder zum WorldMap zurueckkehren.
             await _screenManager.PopAsync();
+            _screenManager.PushAsync(ScreenId.BattleReport).Forget();
         }
 
         /// <summary>
@@ -577,13 +617,14 @@ namespace ArcaneKingdom.UI.Battle
             await _screenManager.PushAsync(ScreenId.MemoryFragmentOverlay);
         }
 
-        private async UniTask ApplyRewardsAsync(int gold, int exp)
+        private async UniTask ApplyRewardsAsync(int gold, int exp, int stars)
         {
             await _save.MutateAsync(save =>
             {
                 save.Currencies.AddGold(gold);
                 save.Profile.ExpTotal += exp;
-                // Welt-Progress (3 Sterne als Standardrewards)
+                // Welt-Progress: Sterne entsprechen der gewaehlten Schwierigkeit
+                // (Classic=1, Amateur=2, Profi=3, Gott=4). Nur ueberschreiben wenn besser.
                 if (_node != null)
                 {
                     var worldId = WorldIdForNode(_node);
@@ -595,7 +636,7 @@ namespace ArcaneKingdom.UI.Battle
                             save.WorldProgress[worldId] = wp;
                         }
                         var prevStars = wp.StarsByNodeId.TryGetValue(_node.Id, out var s) ? s : 0;
-                        if (prevStars < 3) wp.StarsByNodeId[_node.Id] = 3;
+                        if (prevStars < stars) wp.StarsByNodeId[_node.Id] = stars;
                     }
                 }
                 return save;

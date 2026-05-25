@@ -6,6 +6,7 @@ using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.Game.Crafting;
 using ArcaneKingdom.UI.Common;
@@ -13,7 +14,6 @@ using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
-using ArcaneKingdom.UI.Foundation;
 
 namespace ArcaneKingdom.UI.Schmiede
 {
@@ -57,13 +57,16 @@ namespace ArcaneKingdom.UI.Schmiede
         public override string Id => ScreenId.Schmiede;
         protected override string UxmlPath => "UI/SchmiedeScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public SchmiedeScreen(
             ScreenManager screenManager,
             ISaveService<PlayerSave> save,
             CardCatalogService catalog,
             FusionAppService fusion,
             ILocalizationService loc,
-            ToastService toast)
+            ToastService toast,
+            UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
@@ -71,10 +74,12 @@ namespace ArcaneKingdom.UI.Schmiede
             _fusion = fusion;
             _loc = loc;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
         {
+            _uiAssets.ApplyUIBackground(root, "zauberschmiede");
             _inputSlots = Q<VisualElement>("input-slots");
             _inventoryList = Q<VisualElement>("inventory-list");
             _previewPanel = Q<VisualElement>("preview-panel");

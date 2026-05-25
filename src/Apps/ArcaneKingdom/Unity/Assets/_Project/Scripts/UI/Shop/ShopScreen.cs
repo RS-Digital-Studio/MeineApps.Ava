@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine.UIElements;
@@ -29,15 +30,19 @@ namespace ArcaneKingdom.UI.Shop
         public override string Id => ScreenId.Shop;
         protected override string UxmlPath => "UI/ShopScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public ShopScreen(ScreenManager screenManager,
                           ISaveService<PlayerSave> save,
                           ILocalizationService loc,
-                          ToastService toast)
+                          ToastService toast,
+                          UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _loc = loc;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -88,43 +93,56 @@ namespace ArcaneKingdom.UI.Shop
 
         private void RenderPacks()
         {
-            // 6 Pack-Typen aus Impl_KOMPLETT Kap. 8.2
+            // 6 Pack-Typen aus Impl_KOMPLETT Kap. 8.2 — Pack-IDs matchen generierte Sprites in Resources/Packs/
             var packs = new[]
             {
-                ("Basis-Pack", "3 Karten — mind. 1 Ungewoehnlich", "500 Gold", false),
-                ("Standard-Pack", "5 Karten — mind. 1 Selten", "1.500 Gold / 50 Diamanten", false),
-                ("Premium-Pack", "10 Karten — mind. 1 Epic", "100 Diamanten", true),
-                ("Legendaer-Pack", "5 Karten — mind. 1 Legendaer", "300 Diamanten", true),
-                ("10er Pack", "10 Karten — garantiert 1 Epic + 1 Legendaer", "900 Diamanten", true),
-                ("Element-Pack", "8 Karten — 1 Element, 3 Selten garantiert", "150 Diamanten", true)
+                ("Basis-Pack", "3 Karten — mind. 1 Ungewoehnlich", "500 Gold", false, "pack_common"),
+                ("Standard-Pack", "5 Karten — mind. 1 Selten", "1.500 Gold / 50 Diamanten", false, "pack_uncommon"),
+                ("Premium-Pack", "10 Karten — mind. 1 Epic", "100 Diamanten", true, "pack_rare"),
+                ("Legendaer-Pack", "5 Karten — mind. 1 Legendaer", "300 Diamanten", true, "pack_legendary"),
+                ("10er Pack", "10 Karten — garantiert 1 Epic + 1 Legendaer", "900 Diamanten", true, "pack_epic"),
+                ("Element-Pack", "8 Karten — 1 Element, 3 Selten garantiert", "150 Diamanten", true, "pack_rare")
             };
-            foreach (var (name, desc, price, premium) in packs)
-                _content.Add(BuildPackCard(name, desc, price, premium));
+            foreach (var (name, desc, price, premium, packId) in packs)
+                _content.Add(BuildPackCard(name, desc, price, premium, packId));
         }
 
-        private VisualElement BuildPackCard(string name, string desc, string price, bool premium)
+        private VisualElement BuildPackCard(string name, string desc, string price, bool premium, string packId)
         {
             var card = new VisualElement();
+            card.style.flexDirection = FlexDirection.Row;
             card.style.backgroundColor = premium
                 ? new StyleColor(new UnityEngine.Color(0.29f, 0.11f, 0.60f))
                 : new StyleColor(new UnityEngine.Color(0.10f, 0.10f, 0.18f));
-            card.style.paddingLeft = 16; card.style.paddingRight = 16;
+            card.style.paddingLeft = 12; card.style.paddingRight = 12;
             card.style.paddingTop = 12; card.style.paddingBottom = 12;
             card.style.marginBottom = 8;
             card.style.borderTopLeftRadius = 12; card.style.borderTopRightRadius = 12;
             card.style.borderBottomLeftRadius = 12; card.style.borderBottomRightRadius = 12;
+
+            // Pack-Sprite links (84x84, scale-to-fit)
+            var packIcon = new VisualElement();
+            packIcon.style.width = 84; packIcon.style.height = 84;
+            packIcon.style.marginRight = 12;
+            _uiAssets.ApplyBackground(packIcon, $"Packs/{packId}", UnityEngine.ScaleMode.ScaleToFit);
+            card.Add(packIcon);
+
+            // Text-Spalte
+            var textCol = new VisualElement();
+            textCol.style.flexGrow = 1;
+            textCol.style.flexDirection = FlexDirection.Column;
 
             var nameLbl = new Label(name);
             nameLbl.style.fontSize = 16; nameLbl.style.unityFontStyleAndWeight = UnityEngine.FontStyle.Bold;
             nameLbl.style.color = premium
                 ? new StyleColor(new UnityEngine.Color(0.96f, 0.78f, 0.26f))
                 : new StyleColor(UnityEngine.Color.white);
-            card.Add(nameLbl);
+            textCol.Add(nameLbl);
 
             var descLbl = new Label(desc);
             descLbl.style.fontSize = 12; descLbl.style.color = new StyleColor(new UnityEngine.Color(0.67f, 0.67f, 0.75f));
             descLbl.style.marginTop = 4; descLbl.style.whiteSpace = WhiteSpace.Normal;
-            card.Add(descLbl);
+            textCol.Add(descLbl);
 
             var row = new VisualElement(); row.style.flexDirection = FlexDirection.Row; row.style.marginTop = 8;
             var priceLbl = new Label(price);
@@ -138,7 +156,9 @@ namespace ArcaneKingdom.UI.Shop
             buyBtn.style.backgroundColor = new StyleColor(new UnityEngine.Color(1.0f, 0.48f, 0.0f));
             buyBtn.style.color = new StyleColor(UnityEngine.Color.white);
             row.Add(buyBtn);
-            card.Add(row);
+            textCol.Add(row);
+
+            card.Add(textCol);
             return card;
         }
 

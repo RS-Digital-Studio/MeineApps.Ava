@@ -23,6 +23,7 @@ namespace ArcaneKingdom.UI.WorldMap
     public sealed class WorldMapScreen : ScreenBase
     {
         public const string NodeContextKey = "battle_node";
+        public const string DifficultyContextKey = "battle_difficulty";
 
         private readonly ScreenManager _screenManager;
         private readonly ISaveService<PlayerSave> _save;
@@ -62,6 +63,7 @@ namespace ArcaneKingdom.UI.WorldMap
         // v6 (Designplan v4): Prestige-Upgrade-Button pro Welt
         private readonly ArcaneKingdom.Domain.World.PrestigeService _prestige;
         private readonly ArcaneKingdom.UI.Modals.PrestigeUpgradeContext _prestigeCtx;
+        private readonly ArcaneKingdom.UI.Modals.DifficultyPickerContext _difficultyCtx;
 
         private readonly UIAssetService _uiAssets;
 
@@ -72,6 +74,7 @@ namespace ArcaneKingdom.UI.WorldMap
                               ModalContext modalContext,
                               ArcaneKingdom.Domain.World.PrestigeService prestige,
                               ArcaneKingdom.UI.Modals.PrestigeUpgradeContext prestigeCtx,
+                              ArcaneKingdom.UI.Modals.DifficultyPickerContext difficultyCtx,
                               UIAssetService uiAssets)
         {
             _screenManager = screenManager;
@@ -81,6 +84,7 @@ namespace ArcaneKingdom.UI.WorldMap
             _modalContext = modalContext;
             _prestige = prestige;
             _prestigeCtx = prestigeCtx;
+            _difficultyCtx = difficultyCtx;
             _uiAssets = uiAssets;
         }
 
@@ -294,17 +298,25 @@ namespace ArcaneKingdom.UI.WorldMap
             tile.style.backgroundColor = NodeBg(node.Type);
             if (!unlocked) tile.style.opacity = 0.35f;
 
+            // Node-Marker-Sprite oben drueber (normal/miniboss/worldboss)
+            var marker = new VisualElement();
+            marker.style.width = 56;
+            marker.style.height = 56;
+            marker.style.marginBottom = 4;
+            var nodeTypeStr = node.Type switch
+            {
+                NodeType.MiniBoss => "miniboss",
+                NodeType.WorldBoss => "worldboss",
+                _ => "normal"
+            };
+            _uiAssets.ApplyNodeMarker(marker, nodeTypeStr);
+            tile.Add(marker);
+
             var indexLbl = new Label(node.NodeIndex.ToString());
-            indexLbl.style.fontSize = 32;
+            indexLbl.style.fontSize = 22;
             indexLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
             indexLbl.style.color = new StyleColor(Color.white);
             tile.Add(indexLbl);
-
-            var typeLbl = new Label(node.Type == NodeType.Normal ? "Node"
-                : node.Type == NodeType.MiniBoss ? "Mini-Boss" : "Welt-Boss");
-            typeLbl.style.fontSize = 11;
-            typeLbl.style.color = new StyleColor(new Color(1f, 1f, 1f, 0.8f));
-            tile.Add(typeLbl);
 
             var starsRow = new Label(BuildStarsString(stars));
             starsRow.style.fontSize = 14;
@@ -398,8 +410,33 @@ namespace ArcaneKingdom.UI.WorldMap
                 _toast.Show("Battle-Screen nicht verfuegbar.", ToastKind.Warning);
                 return;
             }
-            // Node im ModalContext für den BattleScreen ablegen
-            _modalContext.Set(NodeContextKey, _selectedNode);
+
+            // Spielplan v5 Kap. 8.3: Vor dem Kampf Difficulty-Auswahl (Classic/Amateur/Profi/Gott).
+            // Wenn das Difficulty-Picker-Overlay registriert ist, gehen wir den vollen Flow,
+            // sonst direkt mit Classic-Difficulty starten (Fallback fuer alte Builds).
+            if (_screenManager.IsRegistered(ScreenId.DifficultyPickerOverlay))
+            {
+                var progress = GetOrCreateProgress(_activeWorld!.Id);
+                var bestStars = progress.StarsByNodeId.TryGetValue(_selectedNode.Id, out var s) ? s : 0;
+
+                _difficultyCtx.Node = _selectedNode;
+                _difficultyCtx.WorldId = _activeWorld!.Id;
+                _difficultyCtx.AvailableEnergy = _saveCached?.Currencies.TotalEnergy ?? 0;
+                _difficultyCtx.BestStarsSoFar = bestStars;
+                _difficultyCtx.OnDifficultySelected = difficulty => StartBattleWithDifficulty(_selectedNode, difficulty);
+
+                _screenManager.PushAsync(ScreenId.DifficultyPickerOverlay).Forget();
+            }
+            else
+            {
+                StartBattleWithDifficulty(_selectedNode, ArcaneKingdom.Domain.World.NodeDifficulty.Classic);
+            }
+        }
+
+        private void StartBattleWithDifficulty(NodeDefinition node, ArcaneKingdom.Domain.World.NodeDifficulty difficulty)
+        {
+            _modalContext.Set(NodeContextKey, node);
+            _modalContext.Set(DifficultyContextKey, difficulty);
             _screenManager.PushAsync(ScreenId.Battle).Forget();
         }
 

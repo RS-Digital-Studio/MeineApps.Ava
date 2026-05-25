@@ -11,6 +11,18 @@
         <ui:VisualElement class="ak-app-header">
             <ui:Button name="deck-back-button" text="‹ Zurueck"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
+            <!-- Hero-Portrait (rund, gefuellt durch UIAssetService.ApplyHeroPortrait pro Rasse) -->
+            <ui:VisualElement name="deck-hero-portrait"
+                              style="width: 44;
+                                     height: 44;
+                                     border-radius: 22;
+                                     margin-right: 10;
+                                     border-width: 2;
+                                     border-top-color: rgb(245, 158, 11);
+                                     border-bottom-color: rgb(245, 158, 11);
+                                     border-left-color: rgb(245, 158, 11);
+                                     border-right-color: rgb(245, 158, 11);
+                                     -unity-background-scale-mode: scale-and-crop;" />
             <ui:DropdownField name="deck-slot-selector" label=""
                               style="min-width: 110; margin-right: 8;" />
             <ui:TextField name="deck-name-input" class="ak-input"

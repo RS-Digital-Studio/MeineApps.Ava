@@ -35,27 +35,56 @@ namespace ArcaneKingdom.Game.Login
 
         /// <summary>
         /// Fuehrt den kompletten Login-Flow aus und meldet Stufen über <paramref name="progress"/>.
+        /// Optionale email/password werden fuer SignInWithEmail verwendet (Spielplan v5 Kap. 2.3),
+        /// sonst Auto-SignIn (anonym) als Fallback fuer Pre-MVP-Tests.
         /// </summary>
         /// <returns>Success bei abgeschlossenem Login, Failure mit Fehlermeldung bei Abbruch.</returns>
         public async UniTask<Result> RunLoginAsync(IProgress<LoginStage>? progress,
-                                                   CancellationToken ct = default)
+                                                   CancellationToken ct = default,
+                                                   string? email = null,
+                                                   string? password = null)
         {
             _analytics.Track("login_started");
-            GameLogger.Info("Login", "Auto-SignIn (anonym)...");
+            var useEmail = !string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(password);
+            GameLogger.Info("Login", useEmail ? $"SignIn via E-Mail ({email})..." : "Auto-SignIn (anonym)...");
 
             try
             {
                 progress?.Report(LoginStage.Authenticating);
-                var auth = await _auth.SignInAnonymouslyAsync(ct);
-                if (!auth.IsSuccess)
+
+                bool authOk;
+                string? authError = null;
+                if (useEmail)
                 {
-                    GameLogger.Error("Login", $"Auth fehlgeschlagen: {auth.ErrorMessage}");
+                    var emailAuth = await _auth.SignInWithEmailAsync(email!, password!, ct);
+                    authOk = emailAuth.IsSuccess;
+                    authError = emailAuth.ErrorMessage;
+                    if (authOk)
+                    {
+                        // Token persistieren fuer Auto-Login beim naechsten Start
+                        UnityEngine.PlayerPrefs.SetString("last_user_email", email!);
+                        if (!string.IsNullOrEmpty(emailAuth.Value))
+                            UnityEngine.PlayerPrefs.SetString("auth_token", emailAuth.Value);
+                        UnityEngine.PlayerPrefs.Save();
+                    }
+                }
+                else
+                {
+                    var anonAuth = await _auth.SignInAnonymouslyAsync(ct);
+                    authOk = anonAuth.IsSuccess;
+                    authError = anonAuth.ErrorMessage;
+                }
+
+                if (!authOk)
+                {
+                    GameLogger.Error("Login", $"Auth fehlgeschlagen: {authError}");
                     _analytics.Track("login_failed", new Dictionary<string, object>
                     {
-                        ["reason"] = auth.ErrorMessage ?? "unknown"
+                        ["reason"] = authError ?? "unknown",
+                        ["mode"]   = useEmail ? "email" : "anonymous"
                     });
                     progress?.Report(LoginStage.Failed);
-                    return Result.Failure(auth.ErrorMessage ?? "Auth failed");
+                    return Result.Failure(authError ?? "Auth failed");
                 }
                 _analytics.SetUserId(_auth.CurrentUserId ?? "anonymous");
 

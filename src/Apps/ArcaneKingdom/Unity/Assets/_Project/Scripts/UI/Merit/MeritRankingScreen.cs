@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Merit;
+using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine.UIElements;
@@ -11,11 +12,16 @@ namespace ArcaneKingdom.UI.Merit
     /// <summary>
     /// Merit-Rangliste (Spielplan v5 Kap. 15.1 + Impl_KOMPLETT Kap. 14.1).
     /// Top-3 mit Gold/Silber/Bronze-Medaillon, Rest als Liste, eigener Rang sticky.
+    ///
+    /// Solange Firebase nicht angeschlossen ist, kombinieren wir Bot-Eintraege mit
+    /// dem realen Spieler aus dem Save, damit der Spieler sich selbst in der
+    /// Rangliste findet.
     /// </summary>
     public sealed class MeritRankingScreen : ScreenBase
     {
         private readonly ScreenManager _screenManager;
         private readonly MeritService _meritService;
+        private readonly ISaveService<PlayerSave> _save;
 
         private VisualElement _topPodium = null!;
         private VisualElement _rankingList = null!;
@@ -24,10 +30,11 @@ namespace ArcaneKingdom.UI.Merit
         public override string Id => ScreenId.MeritRanking;
         protected override string UxmlPath => "UI/MeritRankingScreen";
 
-        public MeritRankingScreen(ScreenManager screenManager, MeritService meritService)
+        public MeritRankingScreen(ScreenManager screenManager, MeritService meritService, ISaveService<PlayerSave> save)
         {
             _screenManager = screenManager;
             _meritService = meritService;
+            _save = save;
         }
 
         protected override void BindElements(VisualElement root)
@@ -38,22 +45,39 @@ namespace ArcaneKingdom.UI.Merit
             _closeBtn.clicked += () => _screenManager.PopAsync().Forget();
         }
 
-        public override UniTask OnEnterAsync(System.Threading.CancellationToken ct)
+        public override async UniTask OnEnterAsync(System.Threading.CancellationToken ct)
         {
-            // Mock-Daten bis Firebase integriert ist
-            var mockEntries = new List<MeritRankEntry>
+            // Bot-Eintraege als Fuell-Material (bis Firebase liefert)
+            var entries = new List<MeritRankEntry>
             {
-                new() { PlayerName = "Drachenfaust", GuildTag = "KINGZ", Level = 142, MeritPoints = 199_999 },
-                new() { PlayerName = "Sturmreiterin", GuildTag = "ELITE", Level = 138, MeritPoints = 187_452 },
-                new() { PlayerName = "Schattenklinge", GuildTag = "KINGZ", Level = 135, MeritPoints = 172_900 },
-                new() { PlayerName = "Mondbote", GuildTag = "NEXUS", Level = 130, MeritPoints = 156_320 },
-                new() { PlayerName = "Eisendrache", GuildTag = "VOID", Level = 128, MeritPoints = 144_810 },
-                new() { PlayerName = "Sperber", GuildTag = "KINGZ", Level = 88, MeritPoints = 89_500 }   // eigener Spieler
+                new() { PlayerId = "bot_1", PlayerName = "Drachenfaust",   GuildTag = "KINGZ", Level = 142, MeritPoints = 199_999 },
+                new() { PlayerId = "bot_2", PlayerName = "Sturmreiterin",  GuildTag = "ELITE", Level = 138, MeritPoints = 187_452 },
+                new() { PlayerId = "bot_3", PlayerName = "Schattenklinge", GuildTag = "KINGZ", Level = 135, MeritPoints = 172_900 },
+                new() { PlayerId = "bot_4", PlayerName = "Mondbote",       GuildTag = "NEXUS", Level = 130, MeritPoints = 156_320 },
+                new() { PlayerId = "bot_5", PlayerName = "Eisendrache",    GuildTag = "VOID",  Level = 128, MeritPoints = 144_810 },
+                new() { PlayerId = "bot_6", PlayerName = "Aria",           GuildTag = "NEXUS", Level = 120, MeritPoints = 121_400 },
+                new() { PlayerId = "bot_7", PlayerName = "Tarrok",         GuildTag = "VOID",  Level = 115, MeritPoints = 102_100 },
+                new() { PlayerId = "bot_8", PlayerName = "Selene",         GuildTag = "AURA",  Level = 108, MeritPoints =  88_750 },
             };
-            var ranked = _meritService.RankByMerit(mockEntries);
+
+            // Echten Spieler aus Save laden + einfuegen
+            var saveResult = await _save.LoadAsync(ct);
+            if (saveResult.IsSuccess && saveResult.Value != null)
+            {
+                var p = saveResult.Value.Profile;
+                entries.Add(new MeritRankEntry
+                {
+                    PlayerId    = p.UserId,
+                    PlayerName  = string.IsNullOrEmpty(p.DisplayName) ? "Spieler" : p.DisplayName,
+                    GuildTag    = string.IsNullOrEmpty(p.GuildId) ? null : p.GuildId.Substring(0, System.Math.Min(5, p.GuildId.Length)).ToUpperInvariant(),
+                    Level       = p.Level,
+                    MeritPoints = saveResult.Value.Currencies.MeritPoints,
+                });
+            }
+
+            var ranked = _meritService.RankByMerit(entries);
             BuildPodium(ranked);
             BuildList(ranked);
-            return UniTask.CompletedTask;
         }
 
         private void BuildPodium(IReadOnlyList<MeritRankEntry> entries)

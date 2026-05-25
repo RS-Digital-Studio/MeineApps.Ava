@@ -31,6 +31,7 @@ namespace ArcaneKingdom.UI.Foundation
             builder.Register<ArcaneKingdom.UI.Modals.MemoryFragmentContext>(Lifetime.Singleton);
             builder.Register<ArcaneKingdom.UI.Modals.PrestigeUpgradeContext>(Lifetime.Singleton);
             builder.Register<ArcaneKingdom.UI.Modals.DifficultyPickerContext>(Lifetime.Singleton);
+            builder.Register<ArcaneKingdom.UI.BattleReport.BattleReportContext>(Lifetime.Singleton);
 
             // Screens als Transient registrieren — pro Push neue Instanz wäre theoretisch
             // möglich, aber ScreenManager cached gebaute Screens (built-cache). Singleton

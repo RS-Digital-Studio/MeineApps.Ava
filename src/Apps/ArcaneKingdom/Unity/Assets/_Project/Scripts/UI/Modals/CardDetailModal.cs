@@ -30,6 +30,7 @@ namespace ArcaneKingdom.UI.Modals
         private readonly ToastService _toast;
         private readonly ISaveService<PlayerSave> _save;
         private readonly CardArtworkService _artworkService;
+        private readonly UIAssetService _uiAssets;
         private readonly CardUpgradeService _upgradeService = new();
 
         // Bindings
@@ -55,13 +56,15 @@ namespace ArcaneKingdom.UI.Modals
                                ModalContext context,
                                ToastService toast,
                                ISaveService<PlayerSave> save,
-                               CardArtworkService artworkService)
+                               CardArtworkService artworkService,
+                               UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _context = context;
             _toast = toast;
             _save = save;
             _artworkService = artworkService;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -178,6 +181,10 @@ namespace ArcaneKingdom.UI.Modals
             _rarity.text  = $"Raritaet: {card.Rarity}";
             _race.text    = $"Rasse: {card.Race}";
             _cost.text    = $"Kosten: {card.Cost}";
+
+            // Element-Wappen + Rassen-Emblem als Background-Image auf die Label-Pills
+            _uiAssets.ApplyElementIcon(_element, card.Element);
+            _uiAssets.ApplyRaceEmblem(_race, card.Race);
 
             _atk.text   = card.BaseAttack.ToString("N0");
             _hp.text    = card.BaseHealth.ToString("N0");

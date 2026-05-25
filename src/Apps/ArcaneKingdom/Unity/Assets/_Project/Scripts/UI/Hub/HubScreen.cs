@@ -186,11 +186,11 @@ namespace ArcaneKingdom.UI.Hub
 
             // Filter-Dropdowns befuellen
             _cardsRarityFilter.choices = new List<string> { "Alle Raritaeten",
-                "Gewoehnlich", "Ungewoehnlich", "Selten", "Epic", "Legendaer" };
+                "Gewoehnlich", "Ungewoehnlich", "Selten", "Epic", "Legendaer", "Mythisch" };
             _cardsRarityFilter.index = 0;
 
             _cardsElementFilter.choices = new List<string> { "Alle Elemente",
-                "Natur", "Feuer", "Wasser", "Licht", "Dunkel" };
+                "Natur", "Feuer", "Wasser", "Erde", "Licht", "Dunkel" };
             _cardsElementFilter.index = 0;
 
             _cardsSearch.RegisterValueChangedCallback(_ => RefreshCardsGrid());
@@ -828,6 +828,7 @@ namespace ArcaneKingdom.UI.Hub
             "Natur"  => Element.Natur,
             "Feuer"  => Element.Feuer,
             "Wasser" => Element.Wasser,
+            "Erde"   => Element.Erde,
             "Licht"  => Element.Licht,
             "Dunkel" => Element.Dunkel,
             _        => null

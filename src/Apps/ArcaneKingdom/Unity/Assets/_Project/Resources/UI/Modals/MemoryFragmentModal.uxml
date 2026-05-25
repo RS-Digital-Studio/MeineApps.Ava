@@ -23,6 +23,16 @@
                           style="text-align: center; color: rgb(255, 220, 220);" />
             </ui:VisualElement>
 
+            <!-- NPC-Portrait (nur sichtbar wenn NpcId gesetzt) -->
+            <ui:VisualElement name="fragment-portrait"
+                              style="display: None;
+                                     width: 120;
+                                     height: 120;
+                                     align-self: center;
+                                     border-radius: 60;
+                                     margin-bottom: 12;
+                                     -unity-background-scale-mode: scale-and-crop;" />
+
             <ui:Label name="fragment-title" text="Erinnerung 1: Ein Name"
                       class="ak-h2"
                       style="text-align: center; color: rgb(220, 200, 230);

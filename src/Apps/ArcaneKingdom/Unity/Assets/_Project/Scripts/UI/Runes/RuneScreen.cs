@@ -4,6 +4,7 @@ using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.Runes;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine.UIElements;
@@ -33,15 +34,19 @@ namespace ArcaneKingdom.UI.Runes
         public override string Id => ScreenId.Runes;
         protected override string UxmlPath => "UI/RuneScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public RuneScreen(ScreenManager screenManager,
                            ISaveService<PlayerSave> save,
                            ILocalizationService loc,
-                           ToastService toast)
+                           ToastService toast,
+                           UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _loc = loc;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -136,7 +141,7 @@ namespace ArcaneKingdom.UI.Runes
                 return;
             }
 
-            // Hier muessten Rune-Definitions aufgeloest werden — in dieser Stufe Mock-Display
+            // Pro Rune-Instance: Sprite-Icon + Definition-ID anzeigen
             foreach (var (instId, runeInst) in save.RuneInventory)
             {
                 var tile = new VisualElement();
@@ -151,10 +156,22 @@ namespace ArcaneKingdom.UI.Runes
                 tile.style.borderBottomRightRadius = 10;
                 tile.style.alignItems = Align.Center;
                 tile.style.justifyContent = Justify.Center;
+                tile.style.paddingTop = 6;
+                tile.style.paddingBottom = 6;
+
+                // Rune-Sprite (64x64)
+                var icon = new VisualElement();
+                icon.style.width = 64; icon.style.height = 64;
+                icon.style.marginBottom = 4;
+                _uiAssets.ApplyBackground(icon, $"Runes/{runeInst.RuneDefinitionId}",
+                                          UnityEngine.ScaleMode.ScaleToFit);
+                tile.Add(icon);
 
                 var name = new Label(runeInst.RuneDefinitionId);
                 name.style.fontSize = 11;
                 name.style.color = new StyleColor(UnityEngine.Color.white);
+                name.style.unityTextAlign = UnityEngine.TextAnchor.MiddleCenter;
+                name.style.whiteSpace = WhiteSpace.Normal;
                 tile.Add(name);
 
                 _runeGrid.Add(tile);

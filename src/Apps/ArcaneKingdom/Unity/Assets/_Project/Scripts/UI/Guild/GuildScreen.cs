@@ -2,6 +2,7 @@
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine.UIElements;
@@ -42,16 +43,20 @@ namespace ArcaneKingdom.UI.Guild
         public override string Id => ScreenId.Guild;
         protected override string UxmlPath => "UI/GuildScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public GuildScreen(ScreenManager screenManager, ISaveService<PlayerSave> save,
-                           ToastService toast)
+                           ToastService toast, UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
         {
+            _uiAssets.ApplyUIBackground(root, "gilde");
             _backBtn      = Q<Button>("guild-back-button");
             _name         = Q<Label>("guild-name");
             _pointsLabel  = Q<Label>("guild-points-label");

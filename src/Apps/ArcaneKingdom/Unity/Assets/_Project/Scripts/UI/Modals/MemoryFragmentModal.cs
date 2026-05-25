@@ -2,6 +2,7 @@
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -32,7 +33,9 @@ namespace ArcaneKingdom.UI.Modals
         private Label _fragmentContent = null!;
         private Label _twistReveal = null!;
         private VisualElement _twistBanner = null!;
+        private VisualElement _portrait = null!;
         private Button _continueButton = null!;
+        private readonly UIAssetService _uiAssets;
 
         public override string Id => ScreenId.MemoryFragmentOverlay;
         public override bool IsOverlay => true;
@@ -42,12 +45,14 @@ namespace ArcaneKingdom.UI.Modals
             ScreenManager screenManager,
             ISaveService<PlayerSave> save,
             ILocalizationService loc,
-            MemoryFragmentContext ctx)
+            MemoryFragmentContext ctx,
+            UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _loc = loc;
             _ctx = ctx;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -56,6 +61,7 @@ namespace ArcaneKingdom.UI.Modals
             _fragmentContent = Q<Label>("fragment-content");
             _twistReveal = Q<Label>("twist-reveal");
             _twistBanner = Q<VisualElement>("twist-banner");
+            _portrait = Q<VisualElement>("fragment-portrait");
             _continueButton = Q<Button>("continue-button");
 
             _continueButton.clicked += OnContinueClicked;
@@ -75,6 +81,17 @@ namespace ArcaneKingdom.UI.Modals
             else
             {
                 _twistBanner.style.display = DisplayStyle.None;
+            }
+
+            // NPC-Portrait nur anzeigen wenn gesetzt
+            if (!string.IsNullOrEmpty(_ctx.NpcId))
+            {
+                _uiAssets.ApplyNpc(_portrait, _ctx.NpcId!);
+                _portrait.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                _portrait.style.display = DisplayStyle.None;
             }
 
             if (!string.IsNullOrEmpty(_ctx.FragmentId))

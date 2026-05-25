@@ -6,6 +6,7 @@ using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Economy;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Login;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
@@ -47,13 +48,16 @@ namespace ArcaneKingdom.UI.Tempel
         public override string Id => ScreenId.Tempel;
         protected override string UxmlPath => "UI/TempelScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public TempelScreen(
             ScreenManager screenManager,
             ISaveService<PlayerSave> save,
             LoginRewardController loginRewards,
             SternkartenService sternService,
             ILocalizationService loc,
-            ToastService toast)
+            ToastService toast,
+            UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
@@ -61,10 +65,12 @@ namespace ArcaneKingdom.UI.Tempel
             _sternService = sternService;
             _loc = loc;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
         {
+            _uiAssets.ApplyUIBackground(root, "tempel");
             _bronzeCount = Q<Label>("count-bronze");
             _silberCount = Q<Label>("count-silber");
             _goldCount = Q<Label>("count-gold");

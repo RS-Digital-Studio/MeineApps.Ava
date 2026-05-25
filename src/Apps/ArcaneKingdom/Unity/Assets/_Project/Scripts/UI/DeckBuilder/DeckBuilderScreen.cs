@@ -6,6 +6,7 @@ using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
@@ -53,20 +54,26 @@ namespace ArcaneKingdom.UI.DeckBuilder
         public override string Id => ScreenId.DeckBuilder;
         protected override string UxmlPath => "UI/DeckBuilderScreen";
 
+        private readonly UIAssetService _uiAssets;
+        private VisualElement _heroPortrait = null!;
+
         public DeckBuilderScreen(ScreenManager screenManager,
                                  ISaveService<PlayerSave> save,
                                  CardCatalogService cardCatalog,
-                                 ToastService toast)
+                                 ToastService toast,
+                                 UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _cardCatalog = cardCatalog;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
         {
             _backBtn         = Q<Button>("deck-back-button");
+            _heroPortrait    = Q<VisualElement>("deck-hero-portrait");
             _slotSelector    = Q<DropdownField>("deck-slot-selector");
             _nameInput       = Q<TextField>("deck-name-input");
             _suggestBtn      = Q<Button>("deck-suggest-button");
@@ -113,6 +120,9 @@ namespace ArcaneKingdom.UI.DeckBuilder
                 return;
             }
             _saveCached = saveResult.Value;
+            // Hero-Portrait pro gewaehlter Rasse aus Save
+            var race = _saveCached?.Story?.ChosenRace ?? ArcaneKingdom.Domain.Cards.Race.Ritter;
+            _uiAssets.ApplyHeroPortrait(_heroPortrait, race);
             InitializeSlotSelector();
             LoadActiveDeck();
         }

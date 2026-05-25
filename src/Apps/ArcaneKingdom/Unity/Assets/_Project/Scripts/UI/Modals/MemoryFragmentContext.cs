@@ -15,6 +15,9 @@ namespace ArcaneKingdom.UI.Modals
         public string? TwistRevealKey { get; set; }
         public bool IsMajorTwist { get; set; }
 
+        /// <summary>Optional: NPC-ID fuer das Portrait (z.B. "lumis", "lilith"). Wird vom Modal als Sprite geladen.</summary>
+        public string? NpcId { get; set; }
+
         public void Reset()
         {
             FragmentId = null;
@@ -22,6 +25,7 @@ namespace ArcaneKingdom.UI.Modals
             ContentKey = null;
             TwistRevealKey = null;
             IsMajorTwist = false;
+            NpcId = null;
         }
     }
 

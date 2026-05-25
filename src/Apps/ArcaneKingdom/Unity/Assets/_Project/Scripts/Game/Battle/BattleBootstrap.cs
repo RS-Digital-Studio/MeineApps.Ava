@@ -36,7 +36,13 @@ namespace ArcaneKingdom.Game.Battle
         /// PlayerSave-Slot gezogen, Enemy-Deck aus der Node (oder zufällig wenn
         /// <paramref name="node"/> null ist — Test-Pfad).
         /// </summary>
-        public Setup? Build(PlayerSave save, NodeDefinition? node, int seed = 0)
+        /// <param name="difficulty">
+        /// Sterne-Schwierigkeit (Spielplan v5 Kap. 8.3). Beeinflusst Gegner-Stats-Multiplier
+        /// (Classic 1.0x, Amateur 1.25x, Profi 1.6x, Gott 2.2x) und aktiviert bei Gott-Stufe
+        /// die Phasen-Boss-Mechanik. Default = Classic.
+        /// </param>
+        public Setup? Build(PlayerSave save, NodeDefinition? node, int seed = 0,
+                             NodeDifficulty difficulty = NodeDifficulty.Classic)
         {
             // 1. Spieler-Deck aus aktivem Slot
             if (save.Decks.Count == 0)
@@ -98,10 +104,40 @@ namespace ArcaneKingdom.Game.Battle
             }
 
             // 4. State + Engine + AI
+            // Enemy-HP skaliert mit Difficulty (Spielplan v5 Kap. 8.3)
+            var enemyMultiplier = difficulty.EnemyStatMultiplier();
+            var scaledEnemyHp = (int)(1000 * enemyMultiplier);
             var state = new BattleState(seed != 0 ? seed : System.Environment.TickCount,
-                                        playerHeroHp: 1000, enemyHeroHp: 1000);
+                                        playerHeroHp: 1000, enemyHeroHp: scaledEnemyHp);
+
+            // Boss-Encounter aktivieren wenn Mini-/World-Boss-Node + Gott-Stufe
+            if (node != null && difficulty.ActivatesBossPhases(node.Type))
+            {
+                state.IsBossEncounter = true;
+                state.BossPhase2PassiveKey = "boss.phase2.allcards_atk_buff";
+                // 2-3 Verstaerkungs-Karten aus Enemy-Deck-Pool (Plan-Vorgabe)
+                foreach (var cardId in node.EnemyDeckCardIds.Take(3))
+                    state.BossPhase2ReinforcementCardIds.Add(cardId);
+            }
+
             var engine = new BattleEngine(state, definitions, instances);
             engine.Setup(playerDeck.CardInstanceIds, enemyDeckInstanceIds);
+
+            // Karten-Stats der Gegner skalieren — pro Field-Slot wird dies aber erst
+            // beim Einsetzen aktiv. Wir mutieren die synthetischen Enemy-Instances
+            // indirekt via Definitions-Multiplier (Stat-Multiplier kommt aus CardInstance.Level).
+            // Difficulty-Buff wird stattdessen auf die State-Cards im Field gleich nach Setup
+            // angewendet, wenn enemyMultiplier > 1.
+            if (enemyMultiplier > 1.0f)
+            {
+                foreach (var slot in state.EnemyField)
+                {
+                    slot.CurrentAttack = (int)(slot.CurrentAttack * enemyMultiplier);
+                    slot.CurrentHealth = (int)(slot.CurrentHealth * enemyMultiplier);
+                    slot.MaxHealth = (int)(slot.MaxHealth * enemyMultiplier);
+                }
+            }
+
             var ai = new BattleAI(definitions, instances);
 
             return new Setup

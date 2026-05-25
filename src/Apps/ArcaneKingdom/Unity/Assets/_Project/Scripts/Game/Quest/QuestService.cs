@@ -9,6 +9,8 @@ using ArcaneKingdom.Domain.Economy;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.Quest;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
+using UnityEngine;
 
 namespace ArcaneKingdom.Game.Quest
 {
@@ -18,20 +20,62 @@ namespace ArcaneKingdom.Game.Quest
     /// </summary>
     public sealed class QuestService
     {
+        private const string QuestsResourcePath = "Data/quests";
+
         private readonly ISaveService<PlayerSave> _save;
         private readonly IAnalyticsService _analytics;
-        private readonly IReadOnlyList<QuestDefinition> _allDefinitions;
+        private readonly List<QuestDefinition> _allDefinitions = new();
         private readonly Dictionary<string, QuestProgress> _progress = new();
 
+        public QuestService(ISaveService<PlayerSave> save, IAnalyticsService analytics)
+        {
+            _save = save;
+            _analytics = analytics;
+            LoadDefinitionsFromResources();
+        }
+
+        /// <summary>Test-Konstruktor mit explizit uebergebenen Definitions (umgeht Resource-Load).</summary>
         public QuestService(ISaveService<PlayerSave> save, IAnalyticsService analytics,
                             IReadOnlyList<QuestDefinition> allDefinitions)
         {
             _save = save;
             _analytics = analytics;
-            _allDefinitions = allDefinitions;
+            _allDefinitions.AddRange(allDefinitions);
         }
 
         public IReadOnlyDictionary<string, QuestProgress> Progress => _progress;
+
+        /// <summary>Alle bekannten Quest-Definitionen (fuer UI-Listing).</summary>
+        public IReadOnlyList<QuestDefinition> AllDefinitions => _allDefinitions;
+
+        /// <summary>
+        /// Liefert den aktuellen Progress fuer eine Quest. Wenn noch nie advanced wurde,
+        /// gibt es einen leeren QuestProgress zurueck (count = 0).
+        /// </summary>
+        public QuestProgress GetProgress(string questId)
+        {
+            return _progress.TryGetValue(questId, out var p) ? p : new QuestProgress(questId);
+        }
+
+        private void LoadDefinitionsFromResources()
+        {
+            var asset = Resources.Load<TextAsset>(QuestsResourcePath);
+            if (asset == null)
+            {
+                GameLogger.Warning("Quest", $"Resources/{QuestsResourcePath}.json nicht gefunden.");
+                return;
+            }
+            try
+            {
+                var loaded = JsonConvert.DeserializeObject<List<QuestDefinition>>(asset.text);
+                if (loaded != null) _allDefinitions.AddRange(loaded);
+                GameLogger.Info("Quest", $"{_allDefinitions.Count} Quest-Definitionen geladen.");
+            }
+            catch (Exception ex)
+            {
+                GameLogger.Error("Quest", "Quest-Deserialisierung fehlgeschlagen", ex);
+            }
+        }
 
         public void OnBattleWon() => Advance(QuestObjectiveType.WinBattles, 1);
         public void OnArenaMatchWon() => Advance(QuestObjectiveType.WinArenaMatches, 1);

@@ -8,6 +8,8 @@ using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.Shop;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
+using UnityEngine;
 
 namespace ArcaneKingdom.Game.Shop
 {
@@ -18,6 +20,8 @@ namespace ArcaneKingdom.Game.Shop
     /// </summary>
     public sealed class ShopController
     {
+        private const string PacksResourcePath = "Data/packs";
+
         public sealed class PackPurchaseResult
         {
             public bool Success { get; init; }
@@ -30,12 +34,37 @@ namespace ArcaneKingdom.Game.Shop
         private readonly IAnalyticsService _analytics;
         private readonly Random _rng;
         private readonly Dictionary<string, int> _pityCounters = new();   // wird im Save-Schema v2 persistiert
+        private readonly List<CardPackDefinition> _availablePacks = new();
 
         public ShopController(ISaveService<PlayerSave> save, IAnalyticsService analytics)
         {
             _save = save;
             _analytics = analytics;
             _rng = new Random();
+            LoadPacksFromResources();
+        }
+
+        /// <summary>Alle bekannten Card-Packs (fuer UI-Listing).</summary>
+        public IReadOnlyList<CardPackDefinition> AvailablePacks => _availablePacks;
+
+        private void LoadPacksFromResources()
+        {
+            var asset = Resources.Load<TextAsset>(PacksResourcePath);
+            if (asset == null)
+            {
+                GameLogger.Warning("Shop", $"Resources/{PacksResourcePath}.json nicht gefunden.");
+                return;
+            }
+            try
+            {
+                var loaded = JsonConvert.DeserializeObject<List<CardPackDefinition>>(asset.text);
+                if (loaded != null) _availablePacks.AddRange(loaded);
+                GameLogger.Info("Shop", $"{_availablePacks.Count} Card-Packs geladen.");
+            }
+            catch (Exception ex)
+            {
+                GameLogger.Error("Shop", "Pack-Deserialisierung fehlgeschlagen", ex);
+            }
         }
 
         public async UniTask<PackPurchaseResult> BuyPackAsync(CardPackDefinition pack, CancellationToken ct = default)

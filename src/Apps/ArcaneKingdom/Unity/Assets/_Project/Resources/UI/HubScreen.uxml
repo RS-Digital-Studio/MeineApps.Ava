@@ -78,28 +78,124 @@
 
             </ui:VisualElement>
 
-            <!-- Quests-Tab (Stub fuer Stufe 4) -->
-            <ui:VisualElement name="tab-quests" class="ak-fill ak-col ak-center ak-hidden">
-                <ui:Label text="Quests" class="ak-h2" />
-                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            <!-- =============== QUESTS-TAB =============== -->
+            <ui:VisualElement name="tab-quests" class="ak-fill ak-col ak-hidden">
+                <ui:VisualElement class="ak-row" style="padding: 12; align-items: center;">
+                    <ui:Label text="Quests" class="ak-h3" style="flex-grow: 1;" />
+                    <ui:Button name="quests-filter-daily" text="Daily"
+                               class="ak-btn ak-btn--sm ak-btn--primary"
+                               style="margin-right: 4;" />
+                    <ui:Button name="quests-filter-weekly" text="Weekly"
+                               class="ak-btn ak-btn--sm ak-btn--ghost"
+                               style="margin-right: 4;" />
+                    <ui:Button name="quests-filter-achievements" text="Erfolge"
+                               class="ak-btn ak-btn--sm ak-btn--ghost" />
+                </ui:VisualElement>
+                <ui:ScrollView name="quests-scroll" style="flex-grow: 1;">
+                    <ui:VisualElement name="quests-list" style="padding: 8;" />
+                </ui:ScrollView>
+                <ui:VisualElement name="quests-empty" class="ak-col ak-center ak-hidden"
+                                  style="padding: 32;">
+                    <ui:Label text="Keine Quests verfuegbar." class="ak-h4" />
+                </ui:VisualElement>
             </ui:VisualElement>
 
-            <!-- Shop-Tab (Stub fuer Stufe 4) -->
-            <ui:VisualElement name="tab-shop" class="ak-fill ak-col ak-center ak-hidden">
-                <ui:Label text="Shop" class="ak-h2" />
-                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            <!-- =============== SHOP-TAB =============== -->
+            <ui:VisualElement name="tab-shop" class="ak-fill ak-col ak-hidden">
+                <ui:VisualElement class="ak-row" style="padding: 12; align-items: center;">
+                    <ui:Label text="Shop" class="ak-h3" style="flex-grow: 1;" />
+                    <ui:Button name="shop-buy-diamonds" text="Diamanten kaufen"
+                               class="ak-btn ak-btn--sm ak-btn--accent" />
+                </ui:VisualElement>
+                <ui:ScrollView name="shop-scroll" style="flex-grow: 1;">
+                    <ui:VisualElement style="padding: 8;">
+                        <ui:Label text="Karten-Packs" class="ak-overline"
+                                 style="margin-bottom: 8; margin-left: 8;" />
+                        <ui:VisualElement name="shop-packs-grid"
+                                          style="flex-direction: row; flex-wrap: wrap;" />
+                        <ui:VisualElement class="ak-divider" />
+                        <ui:Label text="Direkt-Angebote" class="ak-overline"
+                                 style="margin-bottom: 8; margin-left: 8;" />
+                        <ui:VisualElement name="shop-direct-list" style="padding: 4;" />
+                    </ui:VisualElement>
+                </ui:ScrollView>
             </ui:VisualElement>
 
-            <!-- Arena-Tab (Stub fuer Stufe 4) -->
-            <ui:VisualElement name="tab-arena" class="ak-fill ak-col ak-center ak-hidden">
-                <ui:Label text="Arena" class="ak-h2" />
-                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            <!-- =============== ARENA-TAB =============== -->
+            <ui:VisualElement name="tab-arena" class="ak-fill ak-col ak-hidden">
+                <ui:ScrollView style="flex-grow: 1;">
+                    <ui:VisualElement style="padding: 16;">
+                        <ui:Label text="Arena" class="ak-h2" style="margin-bottom: 16;" />
+
+                        <!-- Rank-Block -->
+                        <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
+                            <ui:VisualElement class="ak-row" style="align-items: center;">
+                                <ui:VisualElement class="ak-col" style="flex-grow: 1;">
+                                    <ui:Label name="arena-rank-name" text="Bronze III"
+                                              class="ak-h3" />
+                                    <ui:Label name="arena-rank-points"
+                                              text="0 / 100 Rang-Punkte" class="ak-caption" />
+                                </ui:VisualElement>
+                                <ui:Label name="arena-tickets-value" text="0"
+                                          class="ak-h2 ak-text--accent" />
+                                <ui:Label text="Tickets" class="ak-caption"
+                                          style="margin-left: 8;" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="ak-progress" style="margin-top: 12;">
+                                <ui:VisualElement name="arena-rank-fill"
+                                                  class="ak-progress__fill"
+                                                  style="width: 0%;" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <!-- Action-Buttons -->
+                        <ui:VisualElement class="ak-row">
+                            <ui:Button name="arena-search-match" text="Gegner suchen"
+                                       class="ak-btn ak-btn--lg ak-btn--primary"
+                                       style="flex-grow: 1; margin-right: 8;" />
+                            <ui:Button name="arena-view-leaderboard" text="Bestenliste"
+                                       class="ak-btn ak-btn--lg ak-btn--ghost"
+                                       style="flex-grow: 1;" />
+                        </ui:VisualElement>
+
+                        <ui:Label text="Saison endet in 14 Tagen — sichere dir deine Belohnungen!"
+                                  class="ak-caption"
+                                  style="margin-top: 16; -unity-text-align: middle-center;" />
+                    </ui:VisualElement>
+                </ui:ScrollView>
             </ui:VisualElement>
 
-            <!-- Mehr-Tab (Stub fuer Stufe 4) -->
-            <ui:VisualElement name="tab-more" class="ak-fill ak-col ak-center ak-hidden">
-                <ui:Label text="Mehr" class="ak-h2" />
-                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            <!-- =============== MEHR-TAB =============== -->
+            <ui:VisualElement name="tab-more" class="ak-fill ak-col ak-hidden">
+                <ui:ScrollView style="flex-grow: 1;">
+                    <ui:VisualElement style="padding: 16;">
+                        <ui:Label text="Mehr" class="ak-h2" style="margin-bottom: 16;" />
+
+                        <ui:Button name="more-deck-builder" text="Deck-Builder"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-world-map" text="Welt-Karte"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-guild" text="Gilde"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-friends" text="Freunde"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-saison-pass" text="Saison-Pass"
+                                   class="ak-btn ak-btn--lg ak-btn--accent"
+                                   style="margin-bottom: 16;" />
+
+                        <ui:VisualElement class="ak-divider" />
+
+                        <ui:Button name="more-codex" text="Codex"
+                                   class="ak-btn ak-btn--lg ak-btn--ghost"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-settings" text="Einstellungen"
+                                   class="ak-btn ak-btn--lg ak-btn--ghost" />
+                    </ui:VisualElement>
+                </ui:ScrollView>
             </ui:VisualElement>
 
         </ui:VisualElement>

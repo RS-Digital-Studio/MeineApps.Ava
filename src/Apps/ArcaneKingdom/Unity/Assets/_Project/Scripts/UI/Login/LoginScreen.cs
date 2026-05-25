@@ -89,13 +89,25 @@ namespace ArcaneKingdom.UI.Login
                 // Kleine Pause damit der User "Bereit"-Status sieht
                 await UniTask.Delay(System.TimeSpan.FromMilliseconds(400), cancellationToken: ct);
 
-                if (_screenManager.IsRegistered(ScreenId.Hub))
+                // v6 (Designplan v4): First-Time-User-Detection.
+                // Wenn keine Rasse gewaehlt (= LoadedSave existiert NICHT oder ChosenRace ist Ritter-Default
+                // UND noch keine Memory-Fragments freigeschaltet sind), Rassen-Wahl zeigen.
+                var save = _login.LoadedSave;
+                var needsRaceSelection = save != null
+                    && save.Story != null
+                    && save.Story.UnlockedMemoryFragments.Count == 0
+                    && save.CardInventory.Count == 0;   // brandneuer Spieler
+
+                if (needsRaceSelection && _screenManager.IsRegistered(ScreenId.RaceSelection))
+                {
+                    await _screenManager.ReplaceAsync(ScreenId.RaceSelection, ct);
+                }
+                else if (_screenManager.IsRegistered(ScreenId.Hub))
                 {
                     await _screenManager.ReplaceAsync(ScreenId.Hub, ct);
                 }
                 else
                 {
-                    // Stufe 3 noch nicht implementiert — Login zeigt nur Erfolgs-Toast.
                     _statusText.text = "Login erfolgreich (Hub-Screen folgt in Stufe 3)";
                     _toast.Show("Login erfolgreich!", ToastKind.Success, 4f);
                 }

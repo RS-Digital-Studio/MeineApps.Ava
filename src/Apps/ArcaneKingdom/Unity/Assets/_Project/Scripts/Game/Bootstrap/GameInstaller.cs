@@ -4,6 +4,7 @@ using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Game.Login;
 using ArcaneKingdom.Game.Services;
 using ArcaneKingdom.Game.Arena;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Battle;
 using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.Game.Chat;
@@ -74,6 +75,7 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<CardCatalogService>(Lifetime.Singleton);
             builder.Register<WorldCatalogService>(Lifetime.Singleton);
             builder.Register<BattleBootstrap>(Lifetime.Singleton);
+            builder.Register<CardArtworkService>(Lifetime.Singleton);
 
             // Iter 6: Schema-v2 + Server-Anbindungs-Vorbereitung
             builder.Register<AchievementService>(Lifetime.Singleton);

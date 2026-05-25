@@ -1,5 +1,7 @@
 #nullable enable
 using ArcaneKingdom.Domain.Cards;
+using ArcaneKingdom.Game.Artwork;
+using Cysharp.Threading.Tasks;
 using UnityEngine.UIElements;
 
 namespace ArcaneKingdom.UI.Common
@@ -12,6 +14,11 @@ namespace ArcaneKingdom.UI.Common
     /// </summary>
     public static class CardTileFactory
     {
+        /// <summary>
+        /// Globaler Artwork-Service der von der UI-Foundation gesetzt wird (im UIInstaller).
+        /// Wenn null: Karten zeigen nur den leeren Artwork-Platzhalter.
+        /// </summary>
+        public static CardArtworkService? ArtworkService { get; set; }
         /// <summary>
         /// Erstellt ein neues Karten-Tile. <paramref name="onClick"/> wird bei Klick aufgerufen.
         /// <paramref name="locked"/> grayed-out die Karte (z.B. nicht-besessene Codex-Eintraege).
@@ -39,10 +46,13 @@ namespace ArcaneKingdom.UI.Common
             elementBadge.AddToClassList(ElementClass(card.Element));
             root.Add(elementBadge);
 
-            // Artwork (Platzhalter — spaeter Sprite-Load via Addressables)
+            // Artwork — Sprite-Load via ArtworkService (async, mit Procedural-Fallback)
             var art = new VisualElement { name = "art" };
             art.AddToClassList("ak-card__art");
             root.Add(art);
+
+            if (ArtworkService != null)
+                LoadArtworkAsync(art, card).Forget();
 
             // Name
             var nameLabel = new Label(DisplayNameOf(card));
@@ -90,6 +100,16 @@ namespace ArcaneKingdom.UI.Common
             Element.Dunkel => "ak-card__element-badge--dunkel",
             _              => "ak-card__element-badge--natur"
         };
+
+        private static async UniTaskVoid LoadArtworkAsync(VisualElement art, CardDefinition card)
+        {
+            if (ArtworkService == null) return;
+            var sprite = await ArtworkService.GetSpriteAsync(card);
+            if (sprite == null) return;
+            // VisualElement existiert vielleicht nicht mehr (Tile wurde recyclet)
+            if (art.panel == null) return;
+            art.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(sprite);
+        }
 
         /// <summary>Fallback: wenn Localization noch nicht da ist, nutzen wir ID-Suffix als Name.</summary>
         private static string DisplayNameOf(CardDefinition card)

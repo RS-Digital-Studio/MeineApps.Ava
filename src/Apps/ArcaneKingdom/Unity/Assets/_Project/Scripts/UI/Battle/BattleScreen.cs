@@ -8,6 +8,7 @@ using ArcaneKingdom.Domain.Battle;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.World;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Battle;
 using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.UI.Common;
@@ -31,6 +32,7 @@ namespace ArcaneKingdom.UI.Battle
         private readonly BattleBootstrap _battleBootstrap;
         private readonly ModalContext _modalContext;
         private readonly ToastService _toast;
+        private readonly CardArtworkService _artworkService;
 
         // Top
         private Button _fleeBtn = null!;
@@ -71,7 +73,8 @@ namespace ArcaneKingdom.UI.Battle
                             CardCatalogService cardCatalog,
                             BattleBootstrap battleBootstrap,
                             ModalContext modalContext,
-                            ToastService toast)
+                            ToastService toast,
+                            CardArtworkService artworkService)
         {
             _screenManager = screenManager;
             _save = save;
@@ -79,6 +82,7 @@ namespace ArcaneKingdom.UI.Battle
             _battleBootstrap = battleBootstrap;
             _modalContext = modalContext;
             _toast = toast;
+            _artworkService = artworkService;
         }
 
         protected override void BindElements(VisualElement root)
@@ -281,6 +285,7 @@ namespace ArcaneKingdom.UI.Battle
             var art = new VisualElement();
             art.AddToClassList("ak-card__art");
             tile.Add(art);
+            LoadArtAsync(art, def).Forget();
 
             var name = new Label(def.Id);
             name.AddToClassList("ak-card__name");
@@ -496,6 +501,13 @@ namespace ArcaneKingdom.UI.Battle
         // ============================================================
         // Helpers
         // ============================================================
+
+        private async UniTaskVoid LoadArtAsync(VisualElement art, CardDefinition def)
+        {
+            var sprite = await _artworkService.GetSpriteAsync(def);
+            if (sprite == null || art.panel == null) return;
+            art.style.backgroundImage = new StyleBackground(sprite);
+        }
 
         private CardDefinition? ResolveDefinition(string cardInstanceId)
         {

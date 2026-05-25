@@ -4,6 +4,7 @@ using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine.UIElements;
@@ -28,6 +29,7 @@ namespace ArcaneKingdom.UI.Modals
         private readonly ModalContext _context;
         private readonly ToastService _toast;
         private readonly ISaveService<PlayerSave> _save;
+        private readonly CardArtworkService _artworkService;
 
         // Bindings
         private Label _name = null!;
@@ -51,12 +53,14 @@ namespace ArcaneKingdom.UI.Modals
         public CardDetailModal(ScreenManager screenManager,
                                ModalContext context,
                                ToastService toast,
-                               ISaveService<PlayerSave> save)
+                               ISaveService<PlayerSave> save,
+                               CardArtworkService artworkService)
         {
             _screenManager = screenManager;
             _context = context;
             _toast = toast;
             _save = save;
+            _artworkService = artworkService;
         }
 
         protected override void BindElements(VisualElement root)
@@ -138,6 +142,17 @@ namespace ArcaneKingdom.UI.Modals
             AddAbility("LV 0",  card.BaseAbility?.Id);
             AddAbility("LV 5",  card.SecondAbility?.Id);
             AddAbility("LV 10", card.ThirdAbility?.Id);
+
+            // Artwork in den Platzhalter laden (Procedural-Fallback wenn kein Sprite)
+            var art = Root.Q<VisualElement>("card-detail-art");
+            if (art != null) LoadArtAsync(art, card).Forget();
+        }
+
+        private async UniTaskVoid LoadArtAsync(VisualElement art, CardDefinition card)
+        {
+            var sprite = await _artworkService.GetSpriteAsync(card);
+            if (sprite == null || art.panel == null) return;
+            art.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(sprite);
         }
 
         private void AddAbility(string levelLabel, string? abilityId)

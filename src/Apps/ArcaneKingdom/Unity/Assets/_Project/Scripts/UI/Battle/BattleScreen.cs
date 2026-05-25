@@ -456,6 +456,11 @@ namespace ArcaneKingdom.UI.Battle
                     message = $"⭐ {_loc.Get(evt.LocalizationKey ?? "", "Helden-Passiv")}";
                     kind = ToastKind.Success;
                     break;
+                case BattleEventType.BossPhaseChange:
+                    // Spielplan v5 Kap. 9.4: Boss-Phase 2 — dramatischer Toast + UI-Flash
+                    message = $"⚠️ BOSS-PHASE 2 — {_loc.Get(evt.LocalizationKey ?? "", "Boss erwacht!")} (+{evt.Magnitude} Karten)";
+                    kind = ToastKind.Danger;
+                    break;
                 default: return;
             }
             _toast.Show(message, kind, 2.5f);

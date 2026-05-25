@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
+    <ui:VisualElement name="shop-root" class="ak-screen" style="flex-grow: 1; background-color: rgb(13, 13, 26); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
+
+        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 16px;">
+            <ui:Label text="SHOP" style="font-size: 22px; -unity-font-style: bold; color: rgb(245, 200, 66); flex-grow: 1;"/>
+            <ui:Button name="shop-close" text="✕" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="shop-tabs" style="flex-direction: row; margin-bottom: 16px;"/>
+
+        <ui:ScrollView style="flex-grow: 1;">
+            <ui:VisualElement name="shop-content"/>
+        </ui:ScrollView>
+
+    </ui:VisualElement>
+</ui:UXML>

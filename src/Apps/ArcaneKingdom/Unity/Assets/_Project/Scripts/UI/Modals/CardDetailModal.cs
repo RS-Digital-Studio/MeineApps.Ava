@@ -30,6 +30,7 @@ namespace ArcaneKingdom.UI.Modals
         private readonly ToastService _toast;
         private readonly ISaveService<PlayerSave> _save;
         private readonly CardArtworkService _artworkService;
+        private readonly CardUpgradeService _upgradeService = new();
 
         // Bindings
         private Label _name = null!;
@@ -88,10 +89,54 @@ namespace ArcaneKingdom.UI.Modals
             });
 
             _closeBtn.clicked += Close;
-            _upgradeBtn.clicked += () =>
-                _toast.Show("Upgrade-Logik kommt mit DeckBuilder (Stufe 6).", ToastKind.Info);
+            _upgradeBtn.clicked += () => OnUpgradeClickedAsync(default).Forget();
             _deckBtn.clicked += () =>
                 _toast.Show("Karte zum Deck — DeckBuilder folgt in Stufe 6.", ToastKind.Info);
+        }
+
+        private async UniTask OnUpgradeClickedAsync(CancellationToken ct)
+        {
+            var card = _context.Get<CardDefinition>(ContextKey);
+            if (card == null)
+            {
+                _toast.Show("Keine Karte uebergeben.", ToastKind.Danger);
+                return;
+            }
+
+            var saveResult = await _save.LoadAsync(ct);
+            if (!saveResult.IsSuccess || saveResult.Value == null)
+            {
+                _toast.Show("Save nicht ladbar.", ToastKind.Danger);
+                return;
+            }
+
+            var save = saveResult.Value;
+            // Erste Instanz dieser Definition aus dem Inventar finden
+            var instance = save.CardInventory.Values
+                .FirstOrDefault(i => i.CardDefinitionId == card.Id);
+            if (instance == null)
+            {
+                _toast.Show("Karte ist nicht im Besitz.", ToastKind.Warning);
+                return;
+            }
+            if (instance.Level >= CardLevelTable.MaxLevel)
+            {
+                _toast.Show("Karte ist bereits Max-Level (LV 15).", ToastKind.Info);
+                return;
+            }
+
+            var result = _upgradeService.ApplyUpgrade(instance, save);
+            if (!result.IsSuccess)
+            {
+                _toast.Show(result.ErrorMessage ?? "Upgrade fehlgeschlagen.", ToastKind.Danger);
+                return;
+            }
+
+            await _save.SaveAsync(save, ct);
+            _toast.Show($"Aufgewertet auf LV {result.Value}!", ToastKind.Success);
+
+            // UI aktualisieren
+            PopulateCard(card);
         }
 
         public override async UniTask OnEnterAsync(CancellationToken ct)

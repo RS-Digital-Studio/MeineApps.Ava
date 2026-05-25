@@ -328,6 +328,22 @@
 .ak-progress--danger .ak-progress__fill { background-color: var(--ak-danger); }
 
 /* ============================================================
+   DROP-ZONE (Highlight beim Drag&Drop)
+   ============================================================ */
+
+.ak-drop-zone {
+    border-width: 2;
+    border-color: rgba(255, 255, 255, 0);
+    border-radius: var(--ak-radius-md);
+    transition: border-color 150ms, background-color 150ms;
+}
+
+.ak-drop-zone--active {
+    border-color: var(--ak-accent);
+    background-color: rgba(245, 158, 11, 0.10);
+}
+
+/* ============================================================
    SCREEN-TRANSITIONS (Fade-In/Out beim Screen-Wechsel)
    ============================================================ */
 

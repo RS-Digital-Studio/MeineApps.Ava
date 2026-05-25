@@ -8,6 +8,7 @@ using ArcaneKingdom.Domain.Battle;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Game.Catalog;
+using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -286,6 +287,16 @@ namespace ArcaneKingdom.UI.Battle
             }
             else
             {
+                // Drag&Drop: Karte aus Hand auf Player-Field ziehen.
+                // Click-Fallback bleibt fuer Touch-Geraete erhalten (Tap auf Karte = Spielen).
+                var drag = new CardDragManipulator(
+                    dropZone: _playerField,
+                    onDrop: () => OnPlayCard(def),
+                    floatingLayer: _floatingLayer,
+                    canDrag: () => _state.Phase == BattlePhase.PlayerTurn
+                                    && _state.PlayerMana >= def.Cost
+                                    && _state.PlayerField.Count < MaxFieldSlots);
+                tile.AddManipulator(drag);
                 tile.AddManipulator(new Clickable(() => OnPlayCard(def)));
             }
             return tile;

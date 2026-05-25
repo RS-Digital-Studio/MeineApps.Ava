@@ -34,5 +34,7 @@ namespace ArcaneKingdom.UI.Foundation
 
             return screen;
         }
+
+        public bool IsRegistered(string screenId) => _idToType.ContainsKey(screenId);
     }
 }

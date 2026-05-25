@@ -12,5 +12,8 @@ namespace ArcaneKingdom.UI.Foundation
         /// <summary>Erzeugt einen Screen anhand seiner ID (siehe <see cref="ScreenId"/>).</summary>
         /// <exception cref="System.InvalidOperationException">Wenn kein Screen fuer die ID registriert ist.</exception>
         IScreen Create(string screenId);
+
+        /// <summary>True wenn ein Screen mit dieser ID registriert ist.</summary>
+        bool IsRegistered(string screenId);
     }
 }

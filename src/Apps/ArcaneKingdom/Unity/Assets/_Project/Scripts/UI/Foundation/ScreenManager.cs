@@ -44,6 +44,9 @@ namespace ArcaneKingdom.UI.Foundation
         public IReadOnlyCollection<IScreen> Stack => _stack;
         public IScreen? Current => _stack.Count > 0 ? _stack.Peek() : null;
 
+        /// <summary>Pruefen ob eine Screen-ID registriert ist (vor Push, um Exceptions zu vermeiden).</summary>
+        public bool IsRegistered(string screenId) => _factory.IsRegistered(screenId);
+
         // ============================================================
         // Public Navigation API
         // ============================================================

@@ -76,7 +76,10 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<FriendsService>(Lifetime.Singleton);
             builder.Register<GuildTreasuryService>(Lifetime.Singleton);
 
-            builder.RegisterEntryPoint<LoginController>();
+            // LoginController NICHT mehr als EntryPoint — wird vom LoginScreen
+            // (UI-Layer) aufgerufen sobald der Screen sichtbar ist. So sieht der
+            // User Status-Updates statt eines schwarzen Bildschirms.
+            builder.Register<LoginController>(Lifetime.Singleton);
         }
     }
 }

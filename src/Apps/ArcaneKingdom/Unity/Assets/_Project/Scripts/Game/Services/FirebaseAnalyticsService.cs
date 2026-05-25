@@ -7,7 +7,7 @@ namespace ArcaneKingdom.Game.Services
 {
     /// <summary>
     /// Firebase-Analytics-Stub. Loggt aktuell nur in die Konsole. Wird in der MVP-Phase
-    /// durch <c>Firebase.Analytics.FirebaseAnalytics</c> ergaenzt.
+    /// durch <c>Firebase.Analytics.FirebaseAnalytics</c> ergänzt.
     /// </summary>
     public sealed class FirebaseAnalyticsService : IAnalyticsService
     {

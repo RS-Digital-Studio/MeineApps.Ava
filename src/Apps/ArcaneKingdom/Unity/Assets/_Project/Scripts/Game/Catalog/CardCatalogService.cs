@@ -7,7 +7,7 @@ using UnityEngine;
 namespace ArcaneKingdom.Game.Catalog
 {
     /// <summary>
-    /// Runtime-Lookup fuer Karten-Definitionen. Laedt <see cref="CardCatalogAsset"/>
+    /// Runtime-Lookup für Karten-Definitionen. Laedt <see cref="CardCatalogAsset"/>
     /// aus Resources beim ersten Zugriff (Lazy) und cached die ID-&gt;Definition-Map.
     /// </summary>
     public sealed class CardCatalogService

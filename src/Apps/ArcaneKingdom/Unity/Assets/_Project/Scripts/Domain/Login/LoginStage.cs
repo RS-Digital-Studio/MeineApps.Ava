@@ -3,8 +3,8 @@
 namespace ArcaneKingdom.Domain.Login
 {
     /// <summary>
-    /// Stufen die der Login-Flow durchlaeuft. Wird ueber <see cref="System.IProgress{T}"/>
-    /// an die UI gemeldet, damit der LoginScreen einen aussagekraeftigen Status zeigen kann.
+    /// Stufen die der Login-Flow durchläuft. Wird über <see cref="System.IProgress{T}"/>
+    /// an die UI gemeldet, damit der LoginScreen einen aussagekräftigen Status zeigen kann.
     /// </summary>
     public enum LoginStage
     {
@@ -17,7 +17,7 @@ namespace ArcaneKingdom.Domain.Login
         /// <summary>Spielerdaten vom Server holen.</summary>
         LoadingSave = 2,
 
-        /// <summary>Daten validieren, optional Migration ausfuehren.</summary>
+        /// <summary>Daten validieren, optional Migration ausführen.</summary>
         Validating = 3,
 
         /// <summary>Login abgeschlossen, UI kann zum Hub wechseln.</summary>

@@ -53,7 +53,7 @@ namespace ArcaneKingdom.Game.Season
                 WeeklyReset?.Invoke();
             }
 
-            // Saison: pragmatisch ueber Account-Erstellung als Anker — Production wird Server-getrieben sein
+            // Saison: pragmatisch über Account-Erstellung als Anker — Production wird Server-getrieben sein
             var seasonStart = save.Profile.CreatedAtUtc;
             var seasonEnd = ResetWindow.NextSeasonResetUtc(seasonStart);
             if (nowUtc >= seasonEnd)

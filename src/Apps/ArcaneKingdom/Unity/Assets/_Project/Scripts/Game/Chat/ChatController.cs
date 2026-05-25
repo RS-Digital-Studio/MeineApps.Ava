@@ -32,7 +32,7 @@ namespace ArcaneKingdom.Game.Chat
         public ChatController(IAnalyticsService analytics)
         {
             _analytics = analytics;
-            // Pilot-Wortfilter — wird in Production durch Server-Filter ergaenzt.
+            // Pilot-Wortfilter — wird in Production durch Server-Filter ergänzt.
             _localProfanityList.UnionWith(new[] { "n_word_placeholder", "slur_placeholder" });
         }
 

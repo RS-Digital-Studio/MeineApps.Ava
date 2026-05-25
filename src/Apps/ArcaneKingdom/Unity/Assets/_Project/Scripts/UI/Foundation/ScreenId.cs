@@ -4,7 +4,7 @@ namespace ArcaneKingdom.UI.Foundation
 {
     /// <summary>
     /// Zentrale Liste aller Screen-IDs. Wird vom <see cref="ScreenManager"/> als Key
-    /// fuer Push/Pop/Replace-Operationen verwendet.
+    /// für Push/Pop/Replace-Operationen verwendet.
     ///
     /// Jeder Screen registriert sich in <see cref="UIInstaller"/> unter einer dieser IDs.
     /// </summary>
@@ -35,7 +35,7 @@ namespace ArcaneKingdom.UI.Foundation
         // --- Battle ---
         public const string Battle = "battle";
 
-        // --- Overlays (immer ueber dem aktuellen Screen) ---
+        // --- Overlays (immer über dem aktuellen Screen) ---
         public const string CardDetailOverlay = "overlay-card-detail";
         public const string PackOpeningOverlay = "overlay-pack-opening";
         public const string TutorialOverlay = "overlay-tutorial";

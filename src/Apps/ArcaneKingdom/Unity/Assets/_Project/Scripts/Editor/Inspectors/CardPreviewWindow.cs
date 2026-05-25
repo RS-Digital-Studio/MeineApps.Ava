@@ -9,7 +9,7 @@ namespace ArcaneKingdom.EditorTools.Inspectors
 {
     /// <summary>
     /// Editor-Fenster zur Inspektion aller Karten — sortierbar nach Element/Rarity,
-    /// mit Stat-Vorschau, Faehigkeits-Slots und Deck-Limit-Anzeige.
+    /// mit Stat-Vorschau, Fähigkeits-Slots und Deck-Limit-Anzeige.
     /// </summary>
     public sealed class CardPreviewWindow : EditorWindow
     {

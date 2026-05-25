@@ -1,8 +1,8 @@
 namespace ArcaneKingdom.Domain.Economy
 {
     /// <summary>
-    /// Upgrade-Stein-Typen fuer Karten-Leveling (DESIGN.md Kapitel 6.2).
-    /// NICHT zu verwechseln mit Universal Scraps (Craft-Waehrung).
+    /// Upgrade-Stein-Typen für Karten-Leveling (DESIGN.md Kapitel 6.2).
+    /// NICHT zu verwechseln mit Universal Scraps (Craft-Währung).
     /// </summary>
     public enum ScrapType
     {

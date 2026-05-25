@@ -56,7 +56,7 @@ namespace ArcaneKingdom.Domain.Thief
         }
 
         /// <summary>
-        /// Berechnet den Schadensanteil eines Spielers — Basis fuer Belohnungs-Verteilung
+        /// Berechnet den Schadensanteil eines Spielers — Basis für Belohnungs-Verteilung
         /// (DESIGN.md Kap. 10.4).
         /// </summary>
         public float ContributionShare(string playerId)

@@ -228,7 +228,7 @@ namespace ArcaneKingdom.EditorTools.Data
         private static void ImportBalancing()
         {
             // BalancingConfig hat zur Zeit nur primitive Werte — wir lesen die JSON
-            // und schreiben ueber Reflection / SerializedObject. Im Erst-Wurf
+            // und schreiben über Reflection / SerializedObject. Im Erst-Wurf
             // platzieren wir das Asset und lassen Werte aus dem Inspector setzen.
             var path = $"{SoRootRel}/Config/BalancingConfig.asset";
             LoadOrCreateAsset<Domain.Config.BalancingConfig>(path);

@@ -19,11 +19,11 @@ namespace ArcaneKingdom.UI.Common
     /// </code>
     ///
     /// Verhalten:
-    ///   - PointerDown: prueft <see cref="_canDrag"/>; wenn ok wird ein Ghost-Clone
+    ///   - PointerDown: prüft <see cref="_canDrag"/>; wenn ok wird ein Ghost-Clone
     ///     im Floating-Layer angelegt
     ///   - PointerMove: Ghost folgt dem Pointer
-    ///   - PointerUp: wenn Pointer ueber DropZone -&gt; <see cref="_onDrop"/>
-    ///                sonst Ghost faded weg, Original bleibt unveraendert
+    ///   - PointerUp: wenn Pointer über DropZone -&gt; <see cref="_onDrop"/>
+    ///                sonst Ghost faded weg, Original bleibt unverändert
     /// </summary>
     public sealed class CardDragManipulator : IManipulator
     {
@@ -142,7 +142,7 @@ namespace ArcaneKingdom.UI.Common
         {
             var ghost = new VisualElement();
             ghost.AddToClassList("ak-card");
-            // Style auf Source-Groesse spiegeln
+            // Style auf Source-Größe spiegeln
             ghost.style.width = source.resolvedStyle.width;
             ghost.style.height = source.resolvedStyle.height;
             ghost.style.position = Position.Absolute;
@@ -150,7 +150,7 @@ namespace ArcaneKingdom.UI.Common
             ghost.style.scale = new StyleScale(new Scale(new Vector2(1.05f, 1.05f)));
             ghost.pickingMode = PickingMode.Ignore;
 
-            // Optional: Source-Klassen kopieren fuer Rarity-Border
+            // Optional: Source-Klassen kopieren für Rarity-Border
             foreach (var cls in source.GetClasses())
                 if (cls.StartsWith("ak-card--rarity-"))
                     ghost.AddToClassList(cls);

@@ -290,7 +290,7 @@ namespace ArcaneKingdom.UI.WorldMap
 
             BuildRewardsPanel(_selectedNode);
 
-            // Energie-Check fuer Start-Button
+            // Energie-Check für Start-Button
             var enoughEnergy = _saveCached.Currencies.TotalEnergy >= _selectedNode.EnergyCost;
             _detailStartBtn.SetEnabled(enoughEnergy);
             _detailStartBtn.text = enoughEnergy ? "Kampf starten" : "Nicht genug Energie";
@@ -332,7 +332,7 @@ namespace ArcaneKingdom.UI.WorldMap
                 _toast.Show("Battle-Screen nicht verfuegbar.", ToastKind.Warning);
                 return;
             }
-            // Node im ModalContext fuer den BattleScreen ablegen
+            // Node im ModalContext für den BattleScreen ablegen
             _modalContext.Set(NodeContextKey, _selectedNode);
             _screenManager.PushAsync(ScreenId.Battle).Forget();
         }

@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 namespace ArcaneKingdom.UI.Modals
 {
     /// <summary>
-    /// Card-Detail-Overlay. Wird ueber dem aktuellen Screen (Hub/DeckBuilder/Codex) gezeigt
+    /// Card-Detail-Overlay. Wird über dem aktuellen Screen (Hub/DeckBuilder/Codex) gezeigt
     /// und zeigt Stats, Abilities, Rune-Slots, Owned-Info und Aktions-Buttons.
     ///
     /// Aufruf:
@@ -79,11 +79,11 @@ namespace ArcaneKingdom.UI.Modals
             _deckBtn    = Q<Button>("card-detail-deck");
             _closeBtn   = Q<Button>("card-detail-close");
 
-            // Backdrop-Klick schliesst
+            // Backdrop-Klick schließt
             var backdrop = Q<VisualElement>("card-detail-backdrop");
             backdrop.RegisterCallback<ClickEvent>(evt =>
             {
-                // Nur schliessen wenn Klick AUF dem Backdrop (nicht innerhalb des Modals)
+                // Nur schließen wenn Klick AUF dem Backdrop (nicht innerhalb des Modals)
                 if (evt.target == backdrop) Close();
             });
 

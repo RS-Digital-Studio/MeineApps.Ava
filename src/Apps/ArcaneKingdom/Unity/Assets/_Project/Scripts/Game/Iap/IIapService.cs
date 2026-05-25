@@ -7,8 +7,8 @@ using Cysharp.Threading.Tasks;
 namespace ArcaneKingdom.Game.Iap
 {
     /// <summary>
-    /// Abstraktion ueber Unity IAP. Frontend ruft <see cref="BuyAsync"/> auf, die Implementierung
-    /// loest Google Play Billing aus und liefert nach Validation (Server-seitig Cloud Function)
+    /// Abstraktion über Unity IAP. Frontend ruft <see cref="BuyAsync"/> auf, die Implementierung
+    /// löst Google Play Billing aus und liefert nach Validation (Server-seitig Cloud Function)
     /// die Diamanten-/Pack-Belohnung als Result.
     /// </summary>
     public interface IIapService

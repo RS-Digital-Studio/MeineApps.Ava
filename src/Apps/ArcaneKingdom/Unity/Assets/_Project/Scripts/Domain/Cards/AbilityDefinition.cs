@@ -20,7 +20,7 @@ namespace ArcaneKingdom.Domain.Cards
     }
 
     /// <summary>
-    /// Faehigkeit einer Karte als ScriptableObject. Jede Karte hat bis zu 3 Faehigkeiten,
+    /// Fähigkeit einer Karte als ScriptableObject. Jede Karte hat bis zu 3 Fähigkeiten,
     /// die ab Level 0, 5 bzw. 10 freigeschaltet werden (DESIGN.md Kapitel 5.4).
     /// </summary>
     [CreateAssetMenu(menuName = "ArcaneKingdom/Cards/Ability", fileName = "Ability_")]

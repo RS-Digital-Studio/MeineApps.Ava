@@ -4,7 +4,7 @@ using System;
 namespace ArcaneKingdom.Domain.Player
 {
     /// <summary>
-    /// Spieler-Stammdaten, die selten geaendert werden (Name, Server, Level).
+    /// Spieler-Stammdaten, die selten geändert werden (Name, Server, Level).
     /// </summary>
     [Serializable]
     public sealed class PlayerProfile

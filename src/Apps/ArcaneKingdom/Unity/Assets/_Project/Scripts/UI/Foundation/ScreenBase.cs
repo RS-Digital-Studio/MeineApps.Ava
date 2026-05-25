@@ -8,10 +8,10 @@ using UnityEngine.UIElements;
 namespace ArcaneKingdom.UI.Foundation
 {
     /// <summary>
-    /// Basis fuer Screens — laedt das UXML-Asset aus Resources und biettet Helper
-    /// fuer Element-Lookup mit klaren Fehlermeldungen.
+    /// Basis für Screens — laedt das UXML-Asset aus Resources und biettet Helper
+    /// für Element-Lookup mit klaren Fehlermeldungen.
     ///
-    /// Konkrete Screens (z.B. <c>HubScreen</c>) erben hiervon, ueberschreiben
+    /// Konkrete Screens (z.B. <c>HubScreen</c>) erben hiervon, überschreiben
     /// <see cref="UxmlPath"/>, <see cref="BindElements"/>, optional
     /// <see cref="OnEnterAsync"/> und <see cref="OnLeaveAsync"/>.
     /// </summary>
@@ -75,7 +75,7 @@ namespace ArcaneKingdom.UI.Foundation
             return el;
         }
 
-        /// <summary>Optional-Variante von <see cref="Q{T}"/>: gibt null zurueck statt zu werfen.</summary>
+        /// <summary>Optional-Variante von <see cref="Q{T}"/>: gibt null zurück statt zu werfen.</summary>
         protected T? QOptional<T>(string name) where T : VisualElement
             => Root.Q<T>(name);
     }

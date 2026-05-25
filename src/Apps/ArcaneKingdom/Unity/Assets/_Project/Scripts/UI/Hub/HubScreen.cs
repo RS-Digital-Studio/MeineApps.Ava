@@ -488,7 +488,7 @@ namespace ArcaneKingdom.UI.Hub
 
             _arenaSearchMatch.clicked += () =>
             {
-                // Mock-Match starten — Battle ist seit Stufe 8 verfuegbar
+                // Mock-Match starten — Battle ist seit Stufe 8 verfügbar
                 if (_screenManager.IsRegistered(ScreenId.Battle))
                     _screenManager.PushAsync(ScreenId.Battle).Forget();
                 else
@@ -700,7 +700,7 @@ namespace ArcaneKingdom.UI.Hub
             if (_saveCached == null) return;
 
             // Welche Karten besitzt der Spieler? (Card-Inventory enthaelt CardInstance,
-            // wir zaehlen pro CardDefinitionId)
+            // wir zählen pro CardDefinitionId)
             var ownedCounts = new Dictionary<string, int>();
             foreach (var instance in _saveCached.CardInventory.Values)
             {
@@ -713,7 +713,7 @@ namespace ArcaneKingdom.UI.Hub
             var search = (_cardsSearch.value ?? string.Empty).Trim().ToLowerInvariant();
 
             // Wir zeigen ALLE Cards aus dem Catalog. Nicht besessene werden "locked" dargestellt.
-            // So sieht der Spieler die Vollstaendigkeit der Collection.
+            // So sieht der Spieler die Vollständigkeit der Collection.
             var cards = _cardCatalog.AllCards
                 .Where(c => rarityFilter == null || c.Rarity == rarityFilter)
                 .Where(c => elementFilter == null || c.Element == elementFilter)
@@ -767,7 +767,7 @@ namespace ArcaneKingdom.UI.Hub
 
         /// <summary>
         /// Currency-Format nach DESIGN.md 3.2: Tausender-Trennung mit "."
-        /// (z.B. "18.487.900" statt "18M"). Bei sehr grossen Zahlen (&gt;1 Mrd)
+        /// (z.B. "18.487.900" statt "18M"). Bei sehr großen Zahlen (&gt;1 Mrd)
         /// schalten wir auf Mrd/Mio um, sonst wird die Pill zu breit.
         /// </summary>
         private static string FormatNumber(long n)

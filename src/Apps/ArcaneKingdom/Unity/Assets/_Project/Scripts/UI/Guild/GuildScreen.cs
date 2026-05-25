@@ -10,7 +10,7 @@ namespace ArcaneKingdom.UI.Guild
 {
     /// <summary>
     /// Guild-Screen mit drei Tabs (Mitglieder, Tech-Tree, Chat). Wenn der Spieler in
-    /// keiner Gilde ist, wird ein Empty-State mit "Gilde suchen" / "Gilde gruenden"
+    /// keiner Gilde ist, wird ein Empty-State mit "Gilde suchen" / "Gilde gründen"
     /// gezeigt.
     /// </summary>
     public sealed class GuildScreen : ScreenBase
@@ -142,7 +142,7 @@ namespace ArcaneKingdom.UI.Guild
                        ?? _membersTab.Q<VisualElement>();
             list?.Clear();
 
-            // Wir haben keinen echten Members-Service — Mock 3 Eintraege
+            // Wir haben keinen echten Members-Service — Mock 3 Einträge
             for (var i = 0; i < 3; i++)
             {
                 var row = new VisualElement();

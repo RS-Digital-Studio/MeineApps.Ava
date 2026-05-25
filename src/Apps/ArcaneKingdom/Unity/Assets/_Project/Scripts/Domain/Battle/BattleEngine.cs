@@ -200,7 +200,7 @@ namespace ArcaneKingdom.Domain.Battle
 
         private void ApplyBossPhase2()
         {
-            // Welt-Boss aktiviert Spezialfaehigkeit + ATK-Buff fuer alle Field-Karten (DESIGN 9.4).
+            // Welt-Boss aktiviert Spezialfähigkeit + ATK-Buff für alle Field-Karten (DESIGN 9.4).
             foreach (var slot in State.EnemyField) slot.CurrentAttack += slot.CurrentAttack / 2;
         }
 

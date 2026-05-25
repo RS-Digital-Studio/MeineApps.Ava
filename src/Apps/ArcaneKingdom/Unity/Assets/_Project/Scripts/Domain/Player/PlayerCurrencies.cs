@@ -5,8 +5,8 @@ using ArcaneKingdom.Domain.Economy;
 namespace ArcaneKingdom.Domain.Player
 {
     /// <summary>
-    /// Alle Spieler-Waehrungs-Saldi. Energie hat besondere Logik:
-    /// Cap = 60, aber Bonus-Energie kann darueber gehen (z.B. 80/60 in gruen).
+    /// Alle Spieler-Währungs-Saldi. Energie hat besondere Logik:
+    /// Cap = 60, aber Bonus-Energie kann darüber gehen (z.B. 80/60 in grün).
     /// </summary>
     [Serializable]
     public sealed class PlayerCurrencies
@@ -16,7 +16,7 @@ namespace ArcaneKingdom.Domain.Player
         public long Gold { get; private set; }
         public long Diamond { get; private set; }
         public int Energy { get; private set; }              // Normal-Energie (max EnergyDefaultCap)
-        public int EnergyBonus { get; private set; }         // Bonus-Energie (kann ueber Cap)
+        public int EnergyBonus { get; private set; }         // Bonus-Energie (kann über Cap)
         public long GuildPoints { get; private set; }
         public long UniversalScraps { get; private set; }
         public long MeritPoints { get; private set; }
@@ -38,14 +38,14 @@ namespace ArcaneKingdom.Domain.Player
         public void AddDiamond(long amount) { if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount)); Diamond += amount; }
         public bool SpendDiamond(long amount) { if (amount < 0 || Diamond < amount) return false; Diamond -= amount; return true; }
 
-        /// <summary>Fuegt Normal-Energie hinzu, capped bei EnergyDefaultCap.</summary>
+        /// <summary>Fügt Normal-Energie hinzu, capped bei EnergyDefaultCap.</summary>
         public void AddEnergy(int amount)
         {
             if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
             Energy = Math.Min(Energy + amount, EnergyDefaultCap);
         }
 
-        /// <summary>Fuegt Bonus-Energie hinzu (kein Cap).</summary>
+        /// <summary>Fügt Bonus-Energie hinzu (kein Cap).</summary>
         public void AddEnergyBonus(int amount)
         {
             if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
@@ -54,7 +54,7 @@ namespace ArcaneKingdom.Domain.Player
 
         /// <summary>
         /// Verbraucht Energie. Zuerst Bonus, dann Normal (DESIGN.md 3.2).
-        /// Gibt false zurueck wenn nicht genug Energie vorhanden.
+        /// Gibt false zurück wenn nicht genug Energie vorhanden.
         /// </summary>
         public bool SpendEnergy(int amount)
         {

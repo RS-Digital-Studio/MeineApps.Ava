@@ -4,7 +4,7 @@ using System;
 namespace ArcaneKingdom.Domain.Season
 {
     /// <summary>
-    /// Pure-C#-Logik fuer Reset-Zeitpunkte (Daily/Weekly/Saison).
+    /// Pure-C#-Logik für Reset-Zeitpunkte (Daily/Weekly/Saison).
     /// Reset-Grenzen sind UTC, damit alle Server-Regionen synchron resetten.
     /// </summary>
     public static class ResetWindow
@@ -28,7 +28,7 @@ namespace ArcaneKingdom.Domain.Season
                 if (nextDaily.DayOfWeek == WeeklyResetDay) return nextDaily;
                 nextDaily = nextDaily.AddDays(1);
             }
-            // Defensive: sollte nie ausgeloest werden
+            // Defensive: sollte nie ausgelöst werden
             return nextDaily;
         }
 

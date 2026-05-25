@@ -6,7 +6,7 @@ namespace ArcaneKingdom.Domain.Guild
 {
     /// <summary>
     /// Gilden-Kasse: aggregierte Boni aus kontrollierten Gebieten (DESIGN 13.3).
-    /// Wird taeglich um 00:00 UTC durch Cloud Function gefuellt.
+    /// Wird täglich um 00:00 UTC durch Cloud Function gefüllt.
     /// </summary>
     [Serializable]
     public sealed class GuildTreasury

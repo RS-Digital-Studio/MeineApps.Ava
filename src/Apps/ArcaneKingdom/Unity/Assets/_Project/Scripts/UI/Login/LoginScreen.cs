@@ -53,8 +53,8 @@ namespace ArcaneKingdom.UI.Login
         public override UniTask OnEnterAsync(CancellationToken ct)
         {
             // WICHTIG: detached starten (.Forget) statt awaiten — RunLoginAsync ruft am
-            // Ende ScreenManager.ReplaceAsync(Hub) auf, was waehrend laufender Push-
-            // Transaktion zum busy-Deadlock fuehren wuerde. So kann OnEnterAsync sofort
+            // Ende ScreenManager.ReplaceAsync(Hub) auf, was während laufender Push-
+            // Transaktion zum busy-Deadlock fuehren würde. So kann OnEnterAsync sofort
             // returnen, ScreenManager.busy wird freigegeben, Hub-Replace klappt.
             RunLoginAsync(ct).Forget();
             PulseLogoAsync(ct).Forget();
@@ -141,7 +141,7 @@ namespace ArcaneKingdom.UI.Login
 
         /// <summary>
         /// Hilfsklasse — IProgress&lt;T&gt;-Wrapper der Reports synchron auf dem
-        /// aufrufenden Thread durchreicht (LoginController laeuft via UniTask
+        /// aufrufenden Thread durchreicht (LoginController läuft via UniTask
         /// im PlayerLoopUpdate, das ist der UI-Thread).
         /// </summary>
         private sealed class SyncProgress<T> : IProgress<T>

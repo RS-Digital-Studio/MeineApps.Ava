@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 namespace ArcaneKingdom.Domain.Battle
 {
     /// <summary>
-    /// Kompakte JSON-Serialisierung des BattleStates fuer ReplayService.
+    /// Kompakte JSON-Serialisierung des BattleStates für ReplayService.
     /// Deterministisch: Roundtrip ergibt strukturgleichen State.
     /// </summary>
     public static class BattleStateSerializer

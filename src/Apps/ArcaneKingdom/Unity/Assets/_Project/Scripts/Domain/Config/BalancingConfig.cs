@@ -4,8 +4,8 @@ using UnityEngine;
 namespace ArcaneKingdom.Domain.Config
 {
     /// <summary>
-    /// Globale Balancing-Konstanten als ScriptableObject. Wird ueber Firebase Remote Config
-    /// fuer Live-Anpassung gespiegelt — Werte hier sind die Pilot-Defaults aus DESIGN.md.
+    /// Globale Balancing-Konstanten als ScriptableObject. Wird über Firebase Remote Config
+    /// für Live-Anpassung gespiegelt — Werte hier sind die Pilot-Defaults aus DESIGN.md.
     /// </summary>
     [CreateAssetMenu(menuName = "ArcaneKingdom/Config/Balancing", fileName = "BalancingConfig")]
     public sealed class BalancingConfig : ScriptableObject

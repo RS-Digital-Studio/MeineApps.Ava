@@ -32,8 +32,8 @@ namespace ArcaneKingdom.Game.Battle
         }
 
         /// <summary>
-        /// Erzeugt Engine + AI fuer einen Battle. Spieler-Deck wird aus dem aktiven
-        /// PlayerSave-Slot gezogen, Enemy-Deck aus der Node (oder zufaellig wenn
+        /// Erzeugt Engine + AI für einen Battle. Spieler-Deck wird aus dem aktiven
+        /// PlayerSave-Slot gezogen, Enemy-Deck aus der Node (oder zufällig wenn
         /// <paramref name="node"/> null ist — Test-Pfad).
         /// </summary>
         public Setup? Build(PlayerSave save, NodeDefinition? node, int seed = 0)
@@ -80,7 +80,7 @@ namespace ArcaneKingdom.Game.Battle
             }
             else
             {
-                // Test-Pfad: zufaellige 10 Karten aus dem Catalog
+                // Test-Pfad: zufällige 10 Karten aus dem Catalog
                 var rng = new System.Random(seed);
                 var pool = _cardCatalog.AllCards.OrderBy(_ => rng.Next()).Take(10).ToList();
                 enemyDeckInstanceIds = new List<string>();

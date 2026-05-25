@@ -4,7 +4,7 @@ using System;
 namespace ArcaneKingdom.Domain.Hero
 {
     /// <summary>
-    /// Verwaltet den Cooldown der Helden-Faehigkeit waehrend eines Kampfes.
+    /// Verwaltet den Cooldown der Helden-Fähigkeit während eines Kampfes.
     /// </summary>
     public sealed class HeroCooldown
     {

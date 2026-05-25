@@ -10,7 +10,7 @@ using Cysharp.Threading.Tasks;
 namespace ArcaneKingdom.Game.Quest
 {
     /// <summary>
-    /// Taeglicher Login-Bonus (DESIGN.md Kap. 16.1, Sieben-Tage-Zyklus aus Tempel).
+    /// Täglicher Login-Bonus (DESIGN.md Kap. 16.1, Sieben-Tage-Zyklus aus Tempel).
     /// </summary>
     public sealed class DailyRewardService
     {
@@ -22,7 +22,7 @@ namespace ArcaneKingdom.Game.Quest
             public int CommonScraps { get; init; }
         }
 
-        /// <summary>Pilot-Werte fuer den 7-Tage-Zyklus.</summary>
+        /// <summary>Pilot-Werte für den 7-Tage-Zyklus.</summary>
         public static readonly IReadOnlyList<DailyRewardDay> Cycle = new[]
         {
             new DailyRewardDay { Day = 1, Gold = 500,  Diamonds = 10, CommonScraps = 1 },

@@ -6,7 +6,7 @@ namespace ArcaneKingdom.Domain.Hero
 {
     /// <summary>
     /// Statische Helden-Daten als ScriptableObject (DESIGN.md Kap. 9.6).
-    /// Eine Faehigkeit pro Held, mit Cooldown in Runden. Faehigkeit ist mana-frei.
+    /// Eine Fähigkeit pro Held, mit Cooldown in Runden. Fähigkeit ist mana-frei.
     /// </summary>
     [CreateAssetMenu(menuName = "ArcaneKingdom/Hero/Hero", fileName = "Hero_")]
     public sealed class HeroDefinition : ScriptableObject

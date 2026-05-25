@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 namespace ArcaneKingdom.UI.Foundation
 {
     /// <summary>
-    /// Vertrag fuer alle Screens (Login, Hub, Battle, Modals, ...).
+    /// Vertrag für alle Screens (Login, Hub, Battle, Modals, ...).
     /// Ein Screen liefert ein <see cref="VisualElement"/>-Root, das vom
     /// <see cref="ScreenManager"/> in den UIDocument-Tree gehangen wird.
     ///
@@ -29,7 +29,7 @@ namespace ArcaneKingdom.UI.Foundation
         VisualElement Root { get; }
 
         /// <summary>
-        /// Wenn true, bleibt der Screen DARUNTER stehen (z.B. Overlays ueber dem Hub).
+        /// Wenn true, bleibt der Screen DARUNTER stehen (z.B. Overlays über dem Hub).
         /// Wenn false, wird der vorherige Screen versteckt (z.B. Hub -> Battle).
         /// </summary>
         bool IsOverlay { get; }

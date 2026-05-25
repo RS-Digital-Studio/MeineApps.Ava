@@ -4,7 +4,7 @@ using System;
 namespace ArcaneKingdom.Domain.Runes
 {
     /// <summary>
-    /// Runtime-Instanz einer Rune. Veraenderlicher State: Level (1-10).
+    /// Runtime-Instanz einer Rune. Veränderlicher State: Level (1-10).
     /// </summary>
     [Serializable]
     public sealed class RuneInstance

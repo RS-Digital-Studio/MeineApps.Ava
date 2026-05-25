@@ -10,7 +10,7 @@ using UnityEngine;
 namespace ArcaneKingdom.EditorTools.Setup
 {
     /// <summary>
-    /// Setup-Wizard fuer den ersten Project-Open in Unity 6.
+    /// Setup-Wizard für den ersten Project-Open in Unity 6.
     /// Macht alles in einem Klick: BalancingConfig anlegen, JSON-Daten importieren,
     /// Build-Scenes registrieren, Setup-Status anzeigen.
     /// </summary>
@@ -43,7 +43,7 @@ namespace ArcaneKingdom.EditorTools.Setup
         [InitializeOnLoadMethod]
         private static void AutoOpenOnce()
         {
-            // Defensive: nichts machen waehrend Compile/Asset-Import oder im Batch-Mode.
+            // Defensive: nichts machen während Compile/Asset-Import oder im Batch-Mode.
             // Verhindert seltene Crashes wenn Unity beim Open mitten in einer
             // Reload-Domain-Phase ist.
             if (Application.isBatchMode) return;

@@ -1,8 +1,8 @@
 namespace ArcaneKingdom.Domain.Economy
 {
     /// <summary>
-    /// Spielwaehrungen (DESIGN.md Kapitel 17).
-    /// Energie ist eine Spezialwaehrung mit Cap + Bonus-Ueberlauf — siehe PlayerCurrencies.
+    /// Spielwährungen (DESIGN.md Kapitel 17).
+    /// Energie ist eine Spezialwaehrung mit Cap + Bonus-Überlauf — siehe PlayerCurrencies.
     /// </summary>
     public enum Currency
     {

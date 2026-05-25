@@ -11,7 +11,7 @@ namespace ArcaneKingdom.Game.Treasury
 {
     /// <summary>
     /// Client-Sicht auf die Gilden-Kasse. Real wird die Treasury durch
-    /// <c>dailyTerritoryTick</c> Cloud Function gefuellt; dieser Service stellt
+    /// <c>dailyTerritoryTick</c> Cloud Function gefüllt; dieser Service stellt
     /// nur die Read-API + Auto-Split-Berechnung bereit.
     /// </summary>
     public sealed class GuildTreasuryService

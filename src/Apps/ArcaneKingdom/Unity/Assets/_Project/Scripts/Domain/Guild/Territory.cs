@@ -37,7 +37,7 @@ namespace ArcaneKingdom.Domain.Guild
         }
 
         /// <summary>
-        /// Taeglicher Gold-Bonus pro Mitglied (DESIGN.md Kap. 13.3).
+        /// Täglicher Gold-Bonus pro Mitglied (DESIGN.md Kap. 13.3).
         /// </summary>
         public int DailyGoldPerMember => Rarity switch
         {

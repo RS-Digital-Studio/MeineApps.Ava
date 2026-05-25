@@ -41,7 +41,7 @@ namespace ArcaneKingdom.Game.SaisonPass
             _activeSaison == null ? 0 : SaisonPassEngine.XpRemainingToNextTier(GetXp(save), _activeSaison);
 
         /// <summary>
-        /// Vergibt XP fuer beliebige Trigger-Events (Quest abgeschlossen, Arena-Sieg, ...).
+        /// Vergibt XP für beliebige Trigger-Events (Quest abgeschlossen, Arena-Sieg, ...).
         /// </summary>
         public async UniTask AwardXpAsync(int xp, string sourceKey, bool premiumActive, CancellationToken ct = default)
         {

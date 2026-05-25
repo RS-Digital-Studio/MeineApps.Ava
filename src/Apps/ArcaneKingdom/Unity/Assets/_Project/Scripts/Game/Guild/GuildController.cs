@@ -40,7 +40,7 @@ namespace ArcaneKingdom.Game.Guild
 
             await _save.SaveAsync(save, ct);
 
-            // TODO: Firestore Transaction — Tag-Eindeutigkeit pruefen, Gilde anlegen.
+            // TODO: Firestore Transaction — Tag-Eindeutigkeit prüfen, Gilde anlegen.
             var guild = new GuildSnapshot(
                 id: Guid.NewGuid().ToString("N"),
                 name: name,
@@ -73,7 +73,7 @@ namespace ArcaneKingdom.Game.Guild
             var save = saveResult.Value!;
             if (string.IsNullOrEmpty(save.Profile.GuildId)) return Result.Failure("Keine Gilde.");
 
-            // TODO: Firestore — Mitglied entfernen, ggf. Gilde aufloesen wenn letzter Leader.
+            // TODO: Firestore — Mitglied entfernen, ggf. Gilde auflösen wenn letzter Leader.
             save.Profile.GuildId = null;
             await _save.SaveAsync(save, ct);
             _analytics.Track("guild_left");

@@ -17,7 +17,7 @@ namespace ArcaneKingdom.UI.DeckBuilder
 {
     /// <summary>
     /// Deck-Builder mit Sammlung (links) + aktuellem Deck (rechts). Klick auf Sammlungs-Karte
-    /// fuegt sie hinzu, Klick auf Deck-Eintrag entfernt sie. Live-Validierung zeigt Status.
+    /// fügt sie hinzu, Klick auf Deck-Eintrag entfernt sie. Live-Validierung zeigt Status.
     /// </summary>
     public sealed class DeckBuilderScreen : ScreenBase
     {

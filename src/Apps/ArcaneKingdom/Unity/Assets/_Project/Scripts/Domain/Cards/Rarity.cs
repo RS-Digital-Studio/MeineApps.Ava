@@ -6,7 +6,7 @@ namespace ArcaneKingdom.Domain.Cards
     public enum Rarity
     {
         Gewoehnlich = 0,   // 1 Stern, grauer Rahmen
-        Ungewoehnlich = 1, // 2 Sterne, gruener Rahmen
+        Ungewoehnlich = 1, // 2 Sterne, grüner Rahmen
         Selten = 2,        // 3 Sterne, blauer Rahmen
         Epic = 3,          // 4 Sterne, lila Rahmen
         Legendaer = 4      // 5 Sterne, goldener Rahmen

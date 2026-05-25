@@ -17,7 +17,7 @@ namespace ArcaneKingdom.Game.Collection
     /// Verwaltet Material-Karten-Sammelsets (DESIGN.md Kap. 5.6).
     /// Sets werden aus <c>Resources/Data/collections.json</c> geladen, der Spieler-
     /// Materialien-Pool wird aus dem PlayerSave abgeleitet (Karten-Inventar mit
-    /// "material.*" Praefix-Konvention).
+    /// "material.*" Präfix-Konvention).
     /// </summary>
     public sealed class CollectionService
     {
@@ -36,7 +36,7 @@ namespace ArcaneKingdom.Game.Collection
 
         public IReadOnlyList<CollectionSet> AllSets => _sets;
 
-        /// <summary>Status aller Sets fuer die aktuelle Spieler-Sammlung.</summary>
+        /// <summary>Status aller Sets für die aktuelle Spieler-Sammlung.</summary>
         public async UniTask<List<CollectionProgress>> EvaluateAllAsync(CancellationToken ct = default)
         {
             var loadResult = await _save.LoadAsync(ct);
@@ -46,7 +46,7 @@ namespace ArcaneKingdom.Game.Collection
         }
 
         /// <summary>
-        /// Tauscht ein vollstaendiges Set gegen die Belohnungs-Karte. Verbraucht die
+        /// Tauscht ein vollständiges Set gegen die Belohnungs-Karte. Verbraucht die
         /// Material-Karten aus dem Inventar.
         /// </summary>
         public async UniTask<Result<string>> ExchangeAsync(string setId, CancellationToken ct = default)

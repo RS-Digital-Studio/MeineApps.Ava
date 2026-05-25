@@ -26,7 +26,7 @@ namespace ArcaneKingdom.Domain.Runes
         /// <summary>Magnitude-Zuwachs pro Level (linear).</summary>
         [SerializeField, Min(0)] private float magnitudePerLevel = 1f;
 
-        /// <summary>Nur fuer Element-Runen: das Ziel-Element.</summary>
+        /// <summary>Nur für Element-Runen: das Ziel-Element.</summary>
         [SerializeField] private Element elementTarget = Element.Natur;
 
         public string Id => id;

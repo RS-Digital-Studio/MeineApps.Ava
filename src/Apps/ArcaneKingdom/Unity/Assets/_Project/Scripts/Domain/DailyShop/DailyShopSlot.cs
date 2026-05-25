@@ -21,13 +21,13 @@ namespace ArcaneKingdom.Domain.DailyShop
         public long Quantity { get; init; } = 1;
         public string PriceCurrency { get; init; } = "Diamond";    // "Diamond" oder "Gold"
         public long PriceAmount { get; init; }
-        public bool DiscountedFromDaily { get; init; }              // wahr fuer 1 Slot pro Tag
+        public bool DiscountedFromDaily { get; init; }              // wahr für 1 Slot pro Tag
         public string? DisplayNameKey { get; init; }
     }
 
     /// <summary>
     /// Deterministische Tages-Rotation. Seed = Server-UTC-Tag — alle Spieler weltweit
-    /// sehen dasselbe Sortiment fuer 24h.
+    /// sehen dasselbe Sortiment für 24h.
     /// </summary>
     public static class DailyShopRotation
     {

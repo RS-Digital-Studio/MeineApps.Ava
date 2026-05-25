@@ -138,7 +138,7 @@ namespace ArcaneKingdom.UI.Settings
         private void OnLogout()
         {
             _toast.Show("Logout-Flow folgt mit Auth-Backend.", ToastKind.Info);
-            // TODO: _auth.SignOutAsync + zurueck zum Login-Screen
+            // TODO: _auth.SignOutAsync + zurück zum Login-Screen
             // _screenManager.ReplaceAsync(ScreenId.Login).Forget();
         }
 

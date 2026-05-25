@@ -3,7 +3,7 @@
 namespace ArcaneKingdom.UI.Foundation
 {
     /// <summary>
-    /// Container fuer Daten die einem Modal/Overlay-Screen uebergeben werden.
+    /// Container für Daten die einem Modal/Overlay-Screen übergeben werden.
     /// Wird im DI als Singleton registriert — Caller setzt vor Push, Screen liest in OnEnter.
     ///
     /// Pattern:

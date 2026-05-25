@@ -67,7 +67,7 @@ namespace ArcaneKingdom.Domain.Battle
     }
 
     /// <summary>
-    /// Karten-Feld-Slot mit aktuellen Werten (ATK/HP koennen Buffs/Debuffs erlitten haben).
+    /// Karten-Feld-Slot mit aktuellen Werten (ATK/HP können Buffs/Debuffs erlitten haben).
     /// </summary>
     [Serializable]
     public sealed class CardFieldSlot

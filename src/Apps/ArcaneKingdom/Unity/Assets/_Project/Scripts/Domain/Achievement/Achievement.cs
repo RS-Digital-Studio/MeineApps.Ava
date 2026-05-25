@@ -6,7 +6,7 @@ namespace ArcaneKingdom.Domain.Achievement
 {
     /// <summary>
     /// Achievement-Definition mit Stufen (Bronze/Silber/Gold/Platin).
-    /// Bekommt Trophaeen-Punkte fuer Leistungs-Rangliste (DESIGN.md Kap. 15.4).
+    /// Bekommt Trophäen-Punkte für Leistungs-Rangliste (DESIGN.md Kap. 15.4).
     /// </summary>
     [Serializable]
     public sealed class AchievementDefinition
@@ -42,7 +42,7 @@ namespace ArcaneKingdom.Domain.Achievement
         }
 
         /// <summary>
-        /// Erhoeht den Wert und gibt die neu freigeschalteten Tiers zurueck.
+        /// Erhöht den Wert und gibt die neu freigeschalteten Tiers zurück.
         /// </summary>
         public IReadOnlyList<AchievementTier> Advance(int delta, IReadOnlyList<AchievementTier> tiers)
         {

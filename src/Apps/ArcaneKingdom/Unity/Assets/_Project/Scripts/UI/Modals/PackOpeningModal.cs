@@ -13,7 +13,7 @@ namespace ArcaneKingdom.UI.Modals
 {
     /// <summary>
     /// Pack-Opening-Overlay. Zeigt die geoeffneten Karten als Flip-Animation
-    /// (eine nach der anderen) und schliesst sich beim "Weiter"-Klick.
+    /// (eine nach der anderen) und schließt sich beim "Weiter"-Klick.
     ///
     /// Aufruf:
     /// <code>

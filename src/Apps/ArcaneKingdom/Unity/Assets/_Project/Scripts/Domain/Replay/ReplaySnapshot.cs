@@ -6,8 +6,8 @@ using ArcaneKingdom.Domain.Battle;
 namespace ArcaneKingdom.Domain.Replay
 {
     /// <summary>
-    /// Snapshot eines BattleStates pro Runde — Basis fuer deterministische Replays
-    /// (DESIGN.md Kap. 13.1). Pro Snapshot wird der minimal noetige State persistiert,
+    /// Snapshot eines BattleStates pro Runde — Basis für deterministische Replays
+    /// (DESIGN.md Kap. 13.1). Pro Snapshot wird der minimal nötige State persistiert,
     /// damit der BattleEngine ihn aus dem Seed reproduzieren kann.
     /// </summary>
     [Serializable]

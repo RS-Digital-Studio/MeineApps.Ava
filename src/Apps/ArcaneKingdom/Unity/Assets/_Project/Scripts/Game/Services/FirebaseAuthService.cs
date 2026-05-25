@@ -15,9 +15,9 @@ namespace ArcaneKingdom.Game.Services
     /// Was funktioniert:
     ///   - Anonymous-Login mit STABILER User-ID (PlayerPrefs-persistiert)
     ///   - DisplayName aus PlayerPrefs (default "Gast")
-    ///   - SignOut loescht die Prefs nicht (User-Identity bleibt fuer Re-Login)
+    ///   - SignOut löscht die Prefs nicht (User-Identity bleibt für Re-Login)
     ///
-    /// Was als Firebase-Switch zu ergaenzen ist:
+    /// Was als Firebase-Switch zu ergänzen ist:
     ///   - SignInAnonymouslyAsync: ersetzen durch
     ///       Firebase.Auth.FirebaseAuth.DefaultInstance.SignInAnonymouslyAsync()
     ///   - SignInWithGooglePlayAsync: ersetzen durch

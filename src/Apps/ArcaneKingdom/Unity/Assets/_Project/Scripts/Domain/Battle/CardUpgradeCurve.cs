@@ -4,7 +4,7 @@ using ArcaneKingdom.Domain.Economy;
 namespace ArcaneKingdom.Domain.Battle
 {
     /// <summary>
-    /// Upgrade-Kosten-Tabelle fuer Karten-Leveling (DESIGN.md Kapitel 5.3).
+    /// Upgrade-Kosten-Tabelle für Karten-Leveling (DESIGN.md Kapitel 5.3).
     /// </summary>
     public static class CardUpgradeCurve
     {
@@ -25,7 +25,7 @@ namespace ArcaneKingdom.Domain.Battle
         }
 
         /// <summary>
-        /// Liefert die Kosten fuer das Upgrade von <paramref name="fromLevel"/> auf <c>fromLevel+1</c>.
+        /// Liefert die Kosten für das Upgrade von <paramref name="fromLevel"/> auf <c>fromLevel+1</c>.
         /// </summary>
         public static LevelUpCost? GetCostForUpgrade(int fromLevel) => fromLevel switch
         {

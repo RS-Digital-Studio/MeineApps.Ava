@@ -12,7 +12,7 @@ namespace ArcaneKingdom.Game.Localization
     /// Localization-Service der eine einzelne CSV-Datei aus Resources laedt.
     /// Format:  Key,DE,EN,ES,FR,IT,PT
     ///
-    /// Die aktive Sprache wird in PlayerPrefs gespeichert ("ak.lang"). Beim Aendern
+    /// Die aktive Sprache wird in PlayerPrefs gespeichert ("ak.lang"). Beim Ändern
     /// feuert <see cref="LanguageChanged"/>.
     /// </summary>
     public sealed class CsvLocalizationService : ILocalizationService
@@ -132,7 +132,7 @@ namespace ArcaneKingdom.Game.Localization
         }
 
         /// <summary>
-        /// Sehr simple CSV-Aufteilung — splittet bei Kommas. Kommas IN Zellen muessen
+        /// Sehr simple CSV-Aufteilung — splittet bei Kommas. Kommas IN Zellen müssen
         /// mit doppelten Anfuehrungszeichen escape'd werden.
         /// </summary>
         private static List<string> SplitCsvLine(string line)

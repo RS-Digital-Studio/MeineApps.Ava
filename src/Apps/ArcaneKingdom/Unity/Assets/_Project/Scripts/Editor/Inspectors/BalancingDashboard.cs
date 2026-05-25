@@ -9,7 +9,7 @@ namespace ArcaneKingdom.EditorTools.Inspectors
 {
     /// <summary>
     /// Balancing-Dashboard: Stat-Verteilung aller Karten visualisiert.
-    /// Histogramme fuer ATK/HP/Cost/Turns + Verteilung pro Element/Rasse/Rarity.
+    /// Histogramme für ATK/HP/Cost/Turns + Verteilung pro Element/Rasse/Rarity.
     /// </summary>
     public sealed class BalancingDashboard : EditorWindow
     {

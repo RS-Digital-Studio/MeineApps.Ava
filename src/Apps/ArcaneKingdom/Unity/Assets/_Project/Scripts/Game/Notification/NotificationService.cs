@@ -11,7 +11,7 @@ namespace ArcaneKingdom.Game.Notification
 {
     /// <summary>
     /// Lokale Notification-Implementierung (STUB). Wird in der MVP-Phase mit
-    /// com.unity.mobile.notifications fuer Android verdrahtet.
+    /// com.unity.mobile.notifications für Android verdrahtet.
     /// </summary>
     public sealed class NotificationService : INotificationService
     {

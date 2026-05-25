@@ -20,7 +20,7 @@ namespace ArcaneKingdom.Domain.World
     public sealed class NodeDefinition
     {
         [SerializeField] private string id = string.Empty;       // z.B. "world_1_node_3"
-        [SerializeField] private string displayNameKey = string.Empty; // z.B. "Dimension Tuer 1-3"
+        [SerializeField] private string displayNameKey = string.Empty; // z.B. "Dimension Tür 1-3"
         [SerializeField] private int nodeIndex = 1;                // 1-10
         [SerializeField] private NodeType type = NodeType.Normal;
 

@@ -58,7 +58,7 @@ namespace ArcaneKingdom.Game.DailyShop
                         success = true;
                         break;
                     case DailyShopItemKind.Pack:
-                        // TODO MVP: Pack als ungeoeffnetes Inventar-Item — fuers Erste sofort rollen
+                        // TODO MVP: Pack als ungeoeffnetes Inventar-Item — fürs Erste sofort rollen
                         save.PendingClaims.Add(new Domain.Save.PendingClaim
                         {
                             Id = Guid.NewGuid().ToString("N"),

@@ -40,7 +40,7 @@ namespace ArcaneKingdom.Domain.Shop
     }
 
     /// <summary>
-    /// Reine Rolling-Logik fuer Card-Packs. Deterministisch via Random-Seed → testbar.
+    /// Reine Rolling-Logik für Card-Packs. Deterministisch via Random-Seed → testbar.
     /// </summary>
     public static class CardPackRoller
     {

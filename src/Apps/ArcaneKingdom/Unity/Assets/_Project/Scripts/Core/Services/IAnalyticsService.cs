@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ArcaneKingdom.Core.Services
 {
     /// <summary>
-    /// Telemetrie-Abstraktion. Sammelt Events lokal bei Offline und sendet beim naechsten Connect.
+    /// Telemetrie-Abstraktion. Sammelt Events lokal bei Offline und sendet beim nächsten Connect.
     /// </summary>
     public interface IAnalyticsService
     {

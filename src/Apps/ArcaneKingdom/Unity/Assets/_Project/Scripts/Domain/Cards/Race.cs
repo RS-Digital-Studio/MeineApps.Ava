@@ -1,7 +1,7 @@
 namespace ArcaneKingdom.Domain.Cards
 {
     /// <summary>
-    /// Karten-Rassen fuer Synergien (z.B. "+20 % ATK fuer alle Daemonen im Deck").
+    /// Karten-Rassen für Synergien (z.B. "+20 % ATK für alle Daemonen im Deck").
     /// </summary>
     public enum Race
     {

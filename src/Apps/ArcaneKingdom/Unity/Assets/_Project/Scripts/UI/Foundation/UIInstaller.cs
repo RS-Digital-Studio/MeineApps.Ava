@@ -27,14 +27,14 @@ namespace ArcaneKingdom.UI.Foundation
             builder.Register<ToastService>(Lifetime.Singleton);
             builder.Register<ModalContext>(Lifetime.Singleton);
 
-            // Screens als Transient registrieren — pro Push neue Instanz waere theoretisch
-            // moeglich, aber ScreenManager cached gebaute Screens (built-cache). Singleton
-            // wuerde Lifetime-Ueberlapp ergeben, deswegen Transient.
+            // Screens als Transient registrieren — pro Push neue Instanz wäre theoretisch
+            // möglich, aber ScreenManager cached gebaute Screens (built-cache). Singleton
+            // würde Lifetime-Überlapp ergeben, deswegen Transient.
             foreach (var (_, type) in screenRegistrations)
                 builder.Register(type, Lifetime.Transient).AsSelf();
 
             // ScreenFactory + ScreenManager kommen als Singletons. Beide brauchen
-            // Argumente, die zur Build-Zeit aufgeloest werden.
+            // Argumente, die zur Build-Zeit aufgelöst werden.
             builder.Register<IScreenFactory>(resolver =>
                 new VContainerScreenFactory(resolver, screenRegistrations), Lifetime.Singleton);
 

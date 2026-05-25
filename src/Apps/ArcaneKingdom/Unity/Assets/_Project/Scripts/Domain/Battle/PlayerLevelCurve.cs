@@ -5,14 +5,14 @@ namespace ArcaneKingdom.Domain.Battle
 {
     /// <summary>
     /// Spieler-EXP-Kurve (DESIGN.md Kapitel 4.2).
-    /// Vorlaeufige Formel: <c>EXP(n) = round(1000 * 1.08^n + 50 * n^2)</c>.
+    /// Vorläufige Formel: <c>EXP(n) = round(1000 * 1.08^n + 50 * n^2)</c>.
     /// </summary>
     public static class PlayerLevelCurve
     {
         public const int SoftCap = 150;
 
         /// <summary>
-        /// EXP, die zum Wechsel von Level n auf n+1 benoetigt werden.
+        /// EXP, die zum Wechsel von Level n auf n+1 benötigt werden.
         /// </summary>
         public static long ExpRequiredFromLevel(int level)
         {
@@ -23,8 +23,8 @@ namespace ArcaneKingdom.Domain.Battle
         }
 
         /// <summary>
-        /// Kumulierte EXP, die noetig sind um Level <paramref name="targetLevel"/> zu erreichen
-        /// (ausgehend von Level 1, 0 EXP). Wird fuer Profil-Anzeige verwendet.
+        /// Kumulierte EXP, die nötig sind um Level <paramref name="targetLevel"/> zu erreichen
+        /// (ausgehend von Level 1, 0 EXP). Wird für Profil-Anzeige verwendet.
         /// </summary>
         public static long ExpCumulativeForLevel(int targetLevel)
         {

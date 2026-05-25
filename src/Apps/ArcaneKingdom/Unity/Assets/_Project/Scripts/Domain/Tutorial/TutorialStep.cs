@@ -14,12 +14,12 @@ namespace ArcaneKingdom.Domain.Tutorial
         public string TitleKey { get; init; } = string.Empty;
         public string BodyKey { get; init; } = string.Empty;
         public string TriggerEvent { get; init; } = string.Empty;   // z.B. "hub_entered", "first_battle_won"
-        public string? HighlightTargetId { get; init; }              // optional fuer UI-Pulse-Highlight
+        public string? HighlightTargetId { get; init; }              // optional für UI-Pulse-Highlight
         public bool Skippable { get; init; } = true;
     }
 
     /// <summary>
-    /// Persistierte Spieler-Tutorial-Progress (gehoert in PlayerSave-Schema v2).
+    /// Persistierte Spieler-Tutorial-Progress (gehört in PlayerSave-Schema v2).
     /// </summary>
     [Serializable]
     public sealed class TutorialProgress

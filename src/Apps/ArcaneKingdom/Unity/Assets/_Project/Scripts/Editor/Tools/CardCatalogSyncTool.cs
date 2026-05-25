@@ -17,7 +17,7 @@ namespace ArcaneKingdom.EditorTools
     /// Muss aufgerufen werden:
     ///   - Nach jedem Import neuer Cards (DataImporter)
     ///   - Wenn man neue Karten haendisch erstellt hat
-    ///   - Vor jedem Build (sonst sind Karten im Build nicht verfuegbar)
+    ///   - Vor jedem Build (sonst sind Karten im Build nicht verfügbar)
     /// </summary>
     public static class CardCatalogSyncTool
     {

@@ -100,7 +100,7 @@ namespace ArcaneKingdom.Game.Replay
                     var replay = JsonConvert.DeserializeObject<ReplayFile>(File.ReadAllText(file), _jsonSettings);
                     if (replay != null && replay.IsExpired) { File.Delete(file); purged++; }
                 }
-                catch { /* defekte Datei loeschen */ File.Delete(file); purged++; }
+                catch { /* defekte Datei löschen */ File.Delete(file); purged++; }
             }
             if (purged > 0) GameLogger.Info("Replay", $"{purged} abgelaufene Replays geloescht.");
             return purged;

@@ -14,10 +14,10 @@ namespace ArcaneKingdom.EditorTools.Inspectors
     /// <summary>
     /// Findet fehlende und unbenutzte Localization-Keys.
     ///
-    /// Quellen fuer benutzte Keys:
-    /// - Karten-, Faehigkeits-, Runen-, Welt-Definitions-SOs (displayNameKey, descriptionKey, etc.)
+    /// Quellen für benutzte Keys:
+    /// - Karten-, Fähigkeits-, Runen-, Welt-Definitions-SOs (displayNameKey, descriptionKey, etc.)
     ///
-    /// Quelle fuer vorhandene Keys: Resources/Localization/strings.csv (1. Spalte).
+    /// Quelle für vorhandene Keys: Resources/Localization/strings.csv (1. Spalte).
     /// </summary>
     public sealed class LocalizationCheckTool : EditorWindow
     {
@@ -99,7 +99,7 @@ namespace ArcaneKingdom.EditorTools.Inspectors
         }
 
         /// <summary>
-        /// Filter: zeigt nur "Content"-Keys an (Karten, Faehigkeiten, etc.) statt UI/Element-Keys.
+        /// Filter: zeigt nur "Content"-Keys an (Karten, Fähigkeiten, etc.) statt UI/Element-Keys.
         /// </summary>
         private static bool IsContentKey(string key) =>
             key.StartsWith("card.") || key.StartsWith("ability.") || key.StartsWith("rune.") || key.StartsWith("world.");

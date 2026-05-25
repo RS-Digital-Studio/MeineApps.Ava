@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 namespace ArcaneKingdom.Core.Services
 {
     /// <summary>
-    /// Lade-/Entlade-Service fuer Unity-Scenes. Bevorzugt additive Loads
+    /// Lade-/Entlade-Service für Unity-Scenes. Bevorzugt additive Loads
     /// (Boot bleibt immer geladen, andere Scenes kommen daruef).
     /// </summary>
     public interface ISceneLoaderService

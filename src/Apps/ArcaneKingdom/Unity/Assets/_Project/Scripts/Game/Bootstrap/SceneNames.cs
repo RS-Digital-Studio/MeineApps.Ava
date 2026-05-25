@@ -1,7 +1,7 @@
 namespace ArcaneKingdom.Game
 {
     /// <summary>
-    /// Konstanten fuer Scene-Namen (Single Source of Truth, statt verstreute String-Literals).
+    /// Konstanten für Scene-Namen (Single Source of Truth, statt verstreute String-Literals).
     /// </summary>
     public static class SceneNames
     {

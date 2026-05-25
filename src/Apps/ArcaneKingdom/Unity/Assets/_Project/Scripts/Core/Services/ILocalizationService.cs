@@ -16,7 +16,7 @@ namespace ArcaneKingdom.Core.Services
         IReadOnlyList<string> SupportedLanguages { get; }
 
         /// <summary>
-        /// Liefert den uebersetzten String fuer den Key in der aktuellen Sprache.
+        /// Liefert den übersetzten String für den Key in der aktuellen Sprache.
         /// Wenn Key fehlt: fallback auf <paramref name="fallback"/> oder Key selbst.
         /// </summary>
         string Get(string key, string? fallback = null);
@@ -27,10 +27,10 @@ namespace ArcaneKingdom.Core.Services
         /// </summary>
         string GetFormatted(string key, params object[] args);
 
-        /// <summary>Aendert die aktive Sprache und feuert <see cref="LanguageChanged"/>.</summary>
+        /// <summary>Ändert die aktive Sprache und feuert <see cref="LanguageChanged"/>.</summary>
         void SetLanguage(string languageCode);
 
-        /// <summary>Wird gefeuert sobald sich die Sprache geaendert hat.</summary>
+        /// <summary>Wird gefeuert sobald sich die Sprache geändert hat.</summary>
         event Action? LanguageChanged;
     }
 }

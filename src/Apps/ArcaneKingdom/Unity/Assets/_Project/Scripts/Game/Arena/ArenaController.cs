@@ -49,12 +49,12 @@ namespace ArcaneKingdom.Game.Arena
         }
 
         /// <summary>
-        /// Berechnet Rangpunkte-Aenderung nach Glicko-2-aehnlicher Heuristik
-        /// (DESIGN.md Kap. 11.3). Pure-C# fuer Testbarkeit.
+        /// Berechnet Rangpunkte-Änderung nach Glicko-2-aehnlicher Heuristik
+        /// (DESIGN.md Kap. 11.3). Pure-C# für Testbarkeit.
         /// </summary>
         public static int CalculateRankChange(int ownRank, int opponentRank, MatchOutcome outcome)
         {
-            var diff = ownRank - opponentRank;        // positiv = Gegner schwaecher
+            var diff = ownRank - opponentRank;        // positiv = Gegner schwächer
             return outcome switch
             {
                 MatchOutcome.Win when diff >= 50 => 25,

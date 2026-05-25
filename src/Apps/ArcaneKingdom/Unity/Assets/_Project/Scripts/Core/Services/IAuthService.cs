@@ -6,7 +6,7 @@ using Cysharp.Threading.Tasks;
 namespace ArcaneKingdom.Core.Services
 {
     /// <summary>
-    /// Abstraktion ueber den Auth-Provider (Firebase, Google Play Games).
+    /// Abstraktion über den Auth-Provider (Firebase, Google Play Games).
     /// </summary>
     public interface IAuthService
     {

@@ -10,7 +10,7 @@ namespace ArcaneKingdom.Domain.Player
 {
     /// <summary>
     /// Zentrale Save-Datenstruktur (cloud-synced). Wird vom ISaveService geladen und gespeichert.
-    /// Aggregiert Profil, Waehrungen, Inventar, Decks, Welt-Fortschritt + Schema-v2-Slices.
+    /// Aggregiert Profil, Währungen, Inventar, Decks, Welt-Fortschritt + Schema-v2-Slices.
     /// </summary>
     [Serializable]
     public sealed class PlayerSave

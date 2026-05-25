@@ -8,7 +8,7 @@ using UnityEngine;
 namespace ArcaneKingdom.Game.Catalog
 {
     /// <summary>
-    /// Runtime-Lookup fuer Welt-Definitionen. Lazy-Load aus Resources/WorldCatalog.asset.
+    /// Runtime-Lookup für Welt-Definitionen. Lazy-Load aus Resources/WorldCatalog.asset.
     /// </summary>
     public sealed class WorldCatalogService
     {

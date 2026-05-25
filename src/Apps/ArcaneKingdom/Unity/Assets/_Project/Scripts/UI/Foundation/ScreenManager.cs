@@ -12,19 +12,19 @@ namespace ArcaneKingdom.UI.Foundation
     /// <summary>
     /// Zentraler UI-Router. Verwaltet einen Stack von Screens innerhalb eines
     /// UIDocument-Roots. Ein Screen ist entweder ein VOLL-Screen (Push verdrängt
-    /// vorigen visuell) oder ein OVERLAY (legt sich darueber, voriger bleibt sichtbar).
+    /// vorigen visuell) oder ein OVERLAY (legt sich darüber, voriger bleibt sichtbar).
     ///
     /// Verwendung:
     /// <code>
     ///   await _screenManager.PushAsync(ScreenId.Hub);
     ///   await _screenManager.PushAsync(ScreenId.DeckBuilder);
-    ///   await _screenManager.PopAsync();          // Zurueck zum Hub
+    ///   await _screenManager.PopAsync();          // Zurück zum Hub
     ///   await _screenManager.ReplaceAsync(ScreenId.Battle); // Stack leeren -> Battle
     /// </code>
     ///
     /// Screens werden NICHT direkt instanziiert. Sie kommen aus dem DI-Container
     /// (VContainer) per <see cref="IScreenFactory"/>. So ist Constructor-Injection
-    /// fuer Domain-Services moeglich.
+    /// für Domain-Services möglich.
     /// </summary>
     public sealed class ScreenManager : IDisposable
     {
@@ -33,7 +33,7 @@ namespace ArcaneKingdom.UI.Foundation
         private readonly Stack<IScreen> _stack = new();
         private readonly Dictionary<string, IScreen> _builtCache = new();
         private CancellationTokenSource _ctsActive = new();
-        private bool _busy; // schuetzt vor Re-Entrance waehrend Transition
+        private bool _busy; // schützt vor Re-Entrance während Transition
 
         public ScreenManager(VisualElement root, IScreenFactory factory)
         {
@@ -44,7 +44,7 @@ namespace ArcaneKingdom.UI.Foundation
         public IReadOnlyCollection<IScreen> Stack => _stack;
         public IScreen? Current => _stack.Count > 0 ? _stack.Peek() : null;
 
-        /// <summary>Pruefen ob eine Screen-ID registriert ist (vor Push, um Exceptions zu vermeiden).</summary>
+        /// <summary>Prüfen ob eine Screen-ID registriert ist (vor Push, um Exceptions zu vermeiden).</summary>
         public bool IsRegistered(string screenId) => _factory.IsRegistered(screenId);
 
         // ============================================================
@@ -103,7 +103,7 @@ namespace ArcaneKingdom.UI.Foundation
         }
 
         /// <summary>Leert den Stack komplett und zeigt nur <paramref name="screenId"/>.
-        /// Verwendet z.B. fuer Login -&gt; Hub oder Hub -&gt; Battle.</summary>
+        /// Verwendet z.B. für Login -&gt; Hub oder Hub -&gt; Battle.</summary>
         public async UniTask ReplaceAsync(string screenId, CancellationToken ct = default)
         {
             if (!await TryAcquireBusyAsync(ct)) return;
@@ -131,7 +131,7 @@ namespace ArcaneKingdom.UI.Foundation
             finally { _busy = false; }
         }
 
-        /// <summary>Pop bis ein bestimmter Screen oben liegt (z.B. zurueck zum Hub).</summary>
+        /// <summary>Pop bis ein bestimmter Screen oben liegt (z.B. zurück zum Hub).</summary>
         public async UniTask PopToAsync(string screenId, CancellationToken ct = default)
         {
             while (_stack.Count > 1 && Current?.Id != screenId)
@@ -177,7 +177,7 @@ namespace ArcaneKingdom.UI.Foundation
         private async UniTask<bool> TryAcquireBusyAsync(CancellationToken ct)
         {
             // Sehr einfache Re-Entrance-Bremse: laufende Navigation darf nicht
-            // unterbrochen werden. Wer waehrend Transition pusht/popt, wartet ab.
+            // unterbrochen werden. Wer während Transition pusht/popt, wartet ab.
             var waited = 0;
             while (_busy)
             {

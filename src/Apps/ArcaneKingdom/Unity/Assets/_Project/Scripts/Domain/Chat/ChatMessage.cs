@@ -22,7 +22,7 @@ namespace ArcaneKingdom.Domain.Chat
         public string SenderId { get; }
         public string SenderDisplayName { get; }
         public string? SenderGuildTag { get; }
-        public string? RecipientId { get; }                // Nur fuer Private
+        public string? RecipientId { get; }                // Nur für Private
         public string Body { get; }
         public DateTime SentAtUtc { get; }
 

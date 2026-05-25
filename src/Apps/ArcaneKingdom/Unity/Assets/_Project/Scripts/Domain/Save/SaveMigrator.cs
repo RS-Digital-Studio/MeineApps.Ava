@@ -24,7 +24,7 @@ namespace ArcaneKingdom.Domain.Save
 
         private static void MigrateToV2(PlayerSave save)
         {
-            // v2 ergaenzt die nullable Schema-Felder (TutorialProgress / PendingClaims /
+            // v2 ergänzt die nullable Schema-Felder (TutorialProgress / PendingClaims /
             // PityCounters / TitlesUnlocked / Friends). Da PlayerSave die Felder mit
             // Default-Werten initialisiert, ist die Migration hier nur ein
             // No-Op-Schritt — die Felder existieren auf neu erstellten Saves bereits.

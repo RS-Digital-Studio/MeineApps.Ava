@@ -16,14 +16,14 @@ namespace ArcaneKingdom.Game.Services
     /// Realtime-Database-Anbindung vor.
     ///
     /// Verbesserungen vs Stufe-1-Stub:
-    ///   - Atomic-Write ueber Temp-Datei (kein halbgeschriebenes Save bei App-Crash)
+    ///   - Atomic-Write über Temp-Datei (kein halbgeschriebenes Save bei App-Crash)
     ///   - .bak-Datei mit dem letzten erfolgreichen Save (Restore bei Korruption)
     ///   - SchemaVersion-Check nach Load + Migration-Versuch via SaveMigrator
     ///
     /// Firebase-Erweiterung (siehe SETUP.md "Firebase-Integration"):
     ///   - Im LoadAsync nach erfolgreichem Local-Read mit Server-Snapshot vergleichen
-    ///     (LastSavedAtUtc > Local -> Server-Version uebernehmen)
-    ///   - Im SaveAsync zusaetzlich an Firebase-Realtime-DB pushen
+    ///     (LastSavedAtUtc > Local -> Server-Version übernehmen)
+    ///   - Im SaveAsync zusätzlich an Firebase-Realtime-DB pushen
     ///   - Conflict-Resolution: Server-Wins bei Differenz &gt; 60s
     /// </summary>
     public sealed class FirebaseSaveService : ISaveService<PlayerSave>
@@ -52,7 +52,7 @@ namespace ArcaneKingdom.Game.Services
             if (_cache != null) return Result<PlayerSave>.Success(_cache);
 
             // TODO Firebase: Realtime-DB Pull. Wenn Server-Daten vorhanden und neuer
-            //                als Local -> Local ueberschreiben, sonst Server-Push.
+            //                als Local -> Local überschreiben, sonst Server-Push.
 
             var save = await TryLoadFromAsync(LocalPath(), ct)
                        ?? await TryLoadFromAsync(BackupPath(), ct);

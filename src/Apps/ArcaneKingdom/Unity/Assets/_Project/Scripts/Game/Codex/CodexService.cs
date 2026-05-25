@@ -12,7 +12,7 @@ using UnityEngine;
 namespace ArcaneKingdom.Game.Codex
 {
     /// <summary>
-    /// Lese-Service fuer das in-game-Lexikon (Karten/Helden/Welten/Faehigkeiten/Runen).
+    /// Lese-Service für das in-game-Lexikon (Karten/Helden/Welten/Fähigkeiten/Runen).
     /// Daten kommen aus Resources (per DataImporter generierte ScriptableObjects).
     /// </summary>
     public sealed class CodexService

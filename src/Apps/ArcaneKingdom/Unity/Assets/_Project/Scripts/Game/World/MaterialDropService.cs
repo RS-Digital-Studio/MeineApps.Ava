@@ -13,7 +13,7 @@ namespace ArcaneKingdom.Game.World
 {
     /// <summary>
     /// Vergibt Material-Karten nach Welt-Node-Sieg. Drop-Tabelle aus
-    /// <c>Resources/Data/material_drops.json</c>. Auf Servern wuerde diese Logik
+    /// <c>Resources/Data/material_drops.json</c>. Auf Servern würde diese Logik
     /// in einer Cloud Function laufen — der Client-Trigger ist optimistisch.
     /// </summary>
     public sealed class MaterialDropService

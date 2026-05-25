@@ -15,7 +15,7 @@ namespace ArcaneKingdom.Game.Shop
 {
     /// <summary>
     /// Shop-Logik: Pack-Kauf, Diamant-Direkt-Items, Energie-Nachkauf.
-    /// IAP (Diamanten kaufen) wird per Unity-IAP ergaenzt — diese Klasse arbeitet
+    /// IAP (Diamanten kaufen) wird per Unity-IAP ergänzt — diese Klasse arbeitet
     /// nach erfolgtem IAP nur mit dem Inventar.
     /// </summary>
     public sealed class ShopController
@@ -44,7 +44,7 @@ namespace ArcaneKingdom.Game.Shop
             LoadPacksFromResources();
         }
 
-        /// <summary>Alle bekannten Card-Packs (fuer UI-Listing).</summary>
+        /// <summary>Alle bekannten Card-Packs (für UI-Listing).</summary>
         public IReadOnlyList<CardPackDefinition> AvailablePacks => _availablePacks;
 
         private void LoadPacksFromResources()
@@ -80,7 +80,7 @@ namespace ArcaneKingdom.Game.Shop
             var roll = CardPackRoller.Roll(new CardPackRoller.RollContext { Pack = pack, PityCounter = pity, Random = _rng });
             _pityCounters[pack.Id] = roll.NewPityCounter;
 
-            // TODO MVP: Aus Rarities konkrete Karten auswaehlen (Random aus Element/Race-Verteilung)
+            // TODO MVP: Aus Rarities konkrete Karten auswählen (Random aus Element/Race-Verteilung)
             //          und CardInstances im Save anlegen.
             await _save.SaveAsync(save, ct);
 

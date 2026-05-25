@@ -7,14 +7,14 @@ using ArcaneKingdom.Domain.Cards;
 namespace ArcaneKingdom.Game.Battle
 {
     /// <summary>
-    /// Greedy-AI fuer Welt-Kaempfe (PvE) und Auto-Kampf. Reine C#-Logik, deterministisch
-    /// fuer Replay-Faehigkeit.
+    /// Greedy-AI für Welt-Kaempfe (PvE) und Auto-Kampf. Reine C#-Logik, deterministisch
+    /// für Replay-Fähigkeit.
     ///
     /// Strategie (Pilot):
     /// 1. Spiele alle Karten, die ins Mana passen
     /// 2. Wahl-Reihenfolge: hoechster (ATK + HP) / Cost — best value first
     /// 3. Bevorzuge Element-Vorteil gegen aktiven Gegner-Feld
-    /// 4. Reserviere Mana fuer Karten mit aktiver Spezial in <=2 Runden
+    /// 4. Reserviere Mana für Karten mit aktiver Spezial in <=2 Runden
     /// </summary>
     public sealed class BattleAI
     {
@@ -66,10 +66,10 @@ namespace ArcaneKingdom.Game.Battle
                 statValue *= multiplier;
             }
 
-            // Spezial-Cooldown-Bonus: Karten mit kurzer Wartezeit sind im Schnitt staerker
+            // Spezial-Cooldown-Bonus: Karten mit kurzer Wartezeit sind im Schnitt stärker
             statValue *= 1f + (1f / Math.Max(1, def.TurnsToSpecial)) * 0.2f;
 
-            // Rarity-Praeferenz (Tie-Break)
+            // Rarity-Präferenz (Tie-Break)
             statValue += (int)def.Rarity * 0.5f;
 
             return statValue;

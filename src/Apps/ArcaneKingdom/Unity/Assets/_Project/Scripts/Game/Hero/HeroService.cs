@@ -12,7 +12,7 @@ using UnityEngine;
 namespace ArcaneKingdom.Game.Hero
 {
     /// <summary>
-    /// Verwaltet die Helden-Auswahl des Spielers und stellt die HeroDefinition fuer den
+    /// Verwaltet die Helden-Auswahl des Spielers und stellt die HeroDefinition für den
     /// aktiven Held bereit. Wechsel-Cooldown 30 Tage (DESIGN.md Kap. 9.6).
     /// </summary>
     public sealed class HeroService

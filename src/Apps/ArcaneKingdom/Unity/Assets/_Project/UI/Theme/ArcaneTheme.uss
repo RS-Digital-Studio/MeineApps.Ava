@@ -1,5 +1,5 @@
 /*
-    ArcaneKingdom Master-Theme — laedt Tokens + Common + Components in einem Schritt.
+    ArcaneKingdom Master-Theme — lädt Tokens + Common + Components in einem Schritt.
     Wird einer UIDocument zugewiesen (panelSettings.themeStyleSheet ODER direkt
     UIDocument.rootVisualElement.styleSheets.Add(...) im Code).
 */

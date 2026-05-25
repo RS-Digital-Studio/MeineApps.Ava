@@ -12,7 +12,7 @@ namespace ArcaneKingdom.Game.Friends
 {
     /// <summary>
     /// Friends-Verwaltung: Anfrage/Accept/Reject/Remove/Block.
-    /// Lokal optimistisch, Server (Cloud Function) bestaetigt + propagiert beim Empfaenger.
+    /// Lokal optimistisch, Server (Cloud Function) bestätigt + propagiert beim Empfänger.
     /// </summary>
     public sealed class FriendsService
     {

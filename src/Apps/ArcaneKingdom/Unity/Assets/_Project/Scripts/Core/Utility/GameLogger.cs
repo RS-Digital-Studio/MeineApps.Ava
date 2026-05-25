@@ -7,7 +7,7 @@ using Debug = UnityEngine.Debug;
 namespace ArcaneKingdom.Core.Utility
 {
     /// <summary>
-    /// Zentrales Logging mit Tag-Praefix. Production-Builds koennen ueber Verbosity-Filter ans
+    /// Zentrales Logging mit Tag-Präfix. Production-Builds können über Verbosity-Filter ans
     /// Backend (Firebase, Sentry) angebunden werden.
     /// </summary>
     public static class GameLogger

@@ -9,7 +9,7 @@ using UnityEngine;
 namespace ArcaneKingdom.EditorTools
 {
     /// <summary>
-    /// CI/CD Build-Skripte fuer Android (AAB) und Desktop-Test-Builds.
+    /// CI/CD Build-Skripte für Android (AAB) und Desktop-Test-Builds.
     /// Unity 6 (6000.x) — nutzt NamedBuildTarget statt obsoleter BuildTargetGroup-APIs.
     /// Aufruf via Unity CLI:
     /// <code>

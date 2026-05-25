@@ -12,13 +12,13 @@ namespace ArcaneKingdom.UI.Foundation
     /// <para><b>Lifecycle:</b></para>
     /// <para>
     /// In Awake werden ScreenContainer + OverlayContainer angelegt — bewusst NICHT an
-    /// UIDocument.rootVisualElement gehaengt, weil das in Awake noch null ist. Stattdessen
+    /// UIDocument.rootVisualElement gehängt, weil das in Awake noch null ist. Stattdessen
     /// bekommt der ScreenManager bereits eine stabile VisualElement-Referenz.
     /// </para>
     /// <para>
     /// In OnEnable (wenn UIDocument bereit ist) werden die Container an
-    /// rootVisualElement gehaengt + das Theme verlinkt. Das ist idempotent — bei
-    /// Domain-Reload / Scene-Switch wird nichts doppelt eingehaengt.
+    /// rootVisualElement gehängt + das Theme verlinkt. Das ist idempotent — bei
+    /// Domain-Reload / Scene-Switch wird nichts doppelt eingehängt.
     /// </para>
     /// </summary>
     [DefaultExecutionOrder(-10000)]
@@ -32,14 +32,14 @@ namespace ArcaneKingdom.UI.Foundation
         private VisualElement _overlayContainer = null!;
         private bool _attachedToRoot;
 
-        /// <summary>Root-Container fuer Screens.</summary>
+        /// <summary>Root-Container für Screens.</summary>
         public VisualElement ScreenContainer => _screenContainer;
 
         /// <summary>Overlay-Container — liegt UEBER ScreenContainer (Toasts, Loading-Spinner).</summary>
         public VisualElement OverlayContainer => _overlayContainer;
 
         /// <summary>True wenn Container an UIDocument-Root angehangen sind UND Theme-StyleSheet
-        /// in der Parent-Chain ist. Erst dann sind UXML-var()-Variablen aufloesbar.</summary>
+        /// in der Parent-Chain ist. Erst dann sind UXML-var()-Variablen auflösbar.</summary>
         public bool IsReady => _attachedToRoot;
 
         private void Awake()
@@ -58,7 +58,7 @@ namespace ArcaneKingdom.UI.Foundation
 
         private void OnEnable()
         {
-            // UIDocument.rootVisualElement ist ab OnEnable verfuegbar.
+            // UIDocument.rootVisualElement ist ab OnEnable verfügbar.
             // Container an root haengen wenn noch nicht passiert.
             AttachToRoot();
         }

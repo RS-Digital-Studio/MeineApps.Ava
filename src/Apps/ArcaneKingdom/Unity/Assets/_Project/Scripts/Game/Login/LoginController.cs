@@ -34,7 +34,7 @@ namespace ArcaneKingdom.Game.Login
         public PlayerSave? LoadedSave { get; private set; }
 
         /// <summary>
-        /// Fuehrt den kompletten Login-Flow aus und meldet Stufen ueber <paramref name="progress"/>.
+        /// Fuehrt den kompletten Login-Flow aus und meldet Stufen über <paramref name="progress"/>.
         /// </summary>
         /// <returns>Success bei abgeschlossenem Login, Failure mit Fehlermeldung bei Abbruch.</returns>
         public async UniTask<Result> RunLoginAsync(IProgress<LoginStage>? progress,

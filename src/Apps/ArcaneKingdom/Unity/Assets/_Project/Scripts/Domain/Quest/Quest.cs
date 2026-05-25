@@ -28,8 +28,8 @@ namespace ArcaneKingdom.Domain.Quest
     }
 
     /// <summary>
-    /// Quest-Definition (Datenstruktur fuer JSON-Pflege). Vergleich mit Spieler-Fortschritt
-    /// ueber den QuestService.
+    /// Quest-Definition (Datenstruktur für JSON-Pflege). Vergleich mit Spieler-Fortschritt
+    /// über den QuestService.
     /// </summary>
     [Serializable]
     public sealed class QuestDefinition
@@ -40,7 +40,7 @@ namespace ArcaneKingdom.Domain.Quest
         public QuestPeriod Period { get; init; }
         public QuestObjectiveType Objective { get; init; }
         public int TargetCount { get; init; }
-        public string? FilterElement { get; init; }        // z.B. "Feuer" fuer "Spiele 5 Feuerkarten"
+        public string? FilterElement { get; init; }        // z.B. "Feuer" für "Spiele 5 Feuerkarten"
         public List<QuestReward> Rewards { get; init; } = new();
     }
 

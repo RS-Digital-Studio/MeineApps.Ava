@@ -64,7 +64,7 @@ namespace ArcaneKingdom.Game.Progression
                 if (r.Gold > 0) save.Currencies.AddGold(r.Gold);
                 if (r.Diamonds > 0) save.Currencies.AddDiamond(r.Diamonds);
                 // Packs/AvatarFrames/UnlockedFeatures werden im PlayerSave-Schema v2 als
-                // Inventory-Eintraege bzw. PendingClaims persistiert — fuer den ersten Wurf
+                // Inventory-Einträge bzw. PendingClaims persistiert — für den ersten Wurf
                 // werden sie nur geloggt.
                 if (r.CommonPacks > 0 || r.RarePacks > 0 || r.EpicPacks > 0)
                     GameLogger.Info("Progression", $"  +{r.CommonPacks} Common / +{r.RarePacks} Rare / +{r.EpicPacks} Epic Packs (PendingClaim — Schema v2)");

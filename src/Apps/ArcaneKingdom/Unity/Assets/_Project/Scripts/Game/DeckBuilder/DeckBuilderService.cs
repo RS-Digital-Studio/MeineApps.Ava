@@ -7,11 +7,11 @@ using ArcaneKingdom.Domain.Cards;
 namespace ArcaneKingdom.Game.DeckBuilder
 {
     /// <summary>
-    /// Schlaegt ein optimales Deck aus der Spieler-Sammlung vor (DESIGN.md Kap. 4.4
+    /// Schlägt ein optimales Deck aus der Spieler-Sammlung vor (DESIGN.md Kap. 4.4
     /// "Suggest-Button"). Greedy-Heuristik: maximiert ATK + HP innerhalb des COST-Budgets,
     /// respektiert Deck-Limits (1/deck, MaxTwo, Unlimited).
     ///
-    /// Pure C# — deterministisch fuer gleiche Eingabe (Ordnung der Sammlung egal).
+    /// Pure C# — deterministisch für gleiche Eingabe (Ordnung der Sammlung egal).
     /// </summary>
     public sealed class DeckBuilderService
     {
@@ -20,9 +20,9 @@ namespace ArcaneKingdom.Game.DeckBuilder
             public IReadOnlyDictionary<string, CardInstance> Sammlung { get; init; } = default!;
             public IReadOnlyDictionary<string, CardDefinition> Definitions { get; init; } = default!;
             public int CostBudget { get; init; } = int.MaxValue;
-            /// <summary>Optionales Element-Thema fuer Synergie-Praeferenz.</summary>
+            /// <summary>Optionales Element-Thema für Synergie-Präferenz.</summary>
             public Element? PreferredElement { get; init; }
-            /// <summary>Optionale Rassen-Praeferenz fuer Synergie-Boni.</summary>
+            /// <summary>Optionale Rassen-Präferenz für Synergie-Boni.</summary>
             public ArcaneKingdom.Domain.Cards.Race? PreferredRace { get; init; }
         }
 
@@ -91,7 +91,7 @@ namespace ArcaneKingdom.Game.DeckBuilder
             var perCost = statValue / Math.Max(1, def.Cost);
             if (prefElement.HasValue && def.Element == prefElement.Value) perCost *= 1.15f;
             if (prefRace.HasValue && def.Race == prefRace.Value) perCost *= 1.10f;
-            perCost += (int)def.Rarity * 0.5f;                  // sanfte Rarity-Praeferenz
+            perCost += (int)def.Rarity * 0.5f;                  // sanfte Rarity-Präferenz
             perCost += (1f / Math.Max(1, def.TurnsToSpecial));  // Speed-Bonus
             return perCost;
         }

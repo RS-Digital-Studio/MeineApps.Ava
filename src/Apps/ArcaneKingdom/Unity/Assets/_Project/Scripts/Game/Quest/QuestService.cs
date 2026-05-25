@@ -34,7 +34,7 @@ namespace ArcaneKingdom.Game.Quest
             LoadDefinitionsFromResources();
         }
 
-        /// <summary>Test-Konstruktor mit explizit uebergebenen Definitions (umgeht Resource-Load).</summary>
+        /// <summary>Test-Konstruktor mit explizit übergebenen Definitions (umgeht Resource-Load).</summary>
         public QuestService(ISaveService<PlayerSave> save, IAnalyticsService analytics,
                             IReadOnlyList<QuestDefinition> allDefinitions)
         {
@@ -45,12 +45,12 @@ namespace ArcaneKingdom.Game.Quest
 
         public IReadOnlyDictionary<string, QuestProgress> Progress => _progress;
 
-        /// <summary>Alle bekannten Quest-Definitionen (fuer UI-Listing).</summary>
+        /// <summary>Alle bekannten Quest-Definitionen (für UI-Listing).</summary>
         public IReadOnlyList<QuestDefinition> AllDefinitions => _allDefinitions;
 
         /// <summary>
-        /// Liefert den aktuellen Progress fuer eine Quest. Wenn noch nie advanced wurde,
-        /// gibt es einen leeren QuestProgress zurueck (count = 0).
+        /// Liefert den aktuellen Progress für eine Quest. Wenn noch nie advanced wurde,
+        /// gibt es einen leeren QuestProgress zurück (count = 0).
         /// </summary>
         public QuestProgress GetProgress(string questId)
         {

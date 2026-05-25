@@ -4,7 +4,7 @@ using System;
 namespace ArcaneKingdom.Domain.Cards
 {
     /// <summary>
-    /// Runtime-Instanz einer Karte im Spieler-Besitz. Haelt veraenderlichen State
+    /// Runtime-Instanz einer Karte im Spieler-Besitz. Haelt veränderlichen State
     /// (Level, EXP, Erwerbsdatum). Statische Daten kommen aus <see cref="CardDefinition"/>.
     /// </summary>
     [Serializable]
@@ -54,7 +54,7 @@ namespace ArcaneKingdom.Domain.Cards
         };
 
         /// <summary>
-        /// Wendet einen Level-Up an. Voraussetzungen (Kopien, Steine, Gold) werden hier NICHT geprueft —
+        /// Wendet einen Level-Up an. Voraussetzungen (Kopien, Steine, Gold) werden hier NICHT geprüft —
         /// das ist Aufgabe des Upgrade-Services in der Game-Assembly.
         /// </summary>
         internal void ApplyLevelUp(int newLevel)

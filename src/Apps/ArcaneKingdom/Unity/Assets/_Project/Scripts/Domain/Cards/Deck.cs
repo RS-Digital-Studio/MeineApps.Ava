@@ -18,7 +18,7 @@ namespace ArcaneKingdom.Domain.Cards
         public int SlotIndex { get; }
         public string Name { get; set; }
         public List<string> CardInstanceIds { get; }      // bis zu MaxCards
-        public List<string?> RuneInstanceIds { get; }      // genau MaxRuneSlots Eintraege (null wenn leer)
+        public List<string?> RuneInstanceIds { get; }      // genau MaxRuneSlots Einträge (null wenn leer)
         public DateTime LastModifiedUtc { get; set; }
 
         public Deck(int slotIndex, string name)

@@ -5,7 +5,7 @@ namespace ArcaneKingdom.Core.Utility
 {
     /// <summary>
     /// Generischer Result-Type zur expliziten Fehlerbehandlung ohne Exceptions.
-    /// Wird fuer alle fehlbaren Operationen (Save, Auth, Network) verwendet.
+    /// Wird für alle fehlbaren Operationen (Save, Auth, Network) verwendet.
     /// </summary>
     public readonly struct Result
     {

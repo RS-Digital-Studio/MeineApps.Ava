@@ -6,9 +6,9 @@ using System.Linq;
 namespace ArcaneKingdom.Domain.Collection
 {
     /// <summary>
-    /// Sammelset (DESIGN.md Kap. 5.6) — eine Liste benoetigter Material-Karten-IDs
+    /// Sammelset (DESIGN.md Kap. 5.6) — eine Liste benötigter Material-Karten-IDs
     /// und die Karten-ID die nach erfolgreichem Exchange vergeben wird.
-    /// Materialien werden NICHT verbraucht im Sinne von "weniger als 1 → loeschen",
+    /// Materialien werden NICHT verbraucht im Sinne von "weniger als 1 → löschen",
     /// sondern als Pool-Eintrag im Inventar markiert.
     /// </summary>
     [Serializable]
@@ -44,7 +44,7 @@ namespace ArcaneKingdom.Domain.Collection
     }
 
     /// <summary>
-    /// Pure Logik fuer Set-Status. Kein Side-Effect — die Anwendung erfolgt im CollectionService.
+    /// Pure Logik für Set-Status. Kein Side-Effect — die Anwendung erfolgt im CollectionService.
     /// </summary>
     public static class CollectionEvaluator
     {

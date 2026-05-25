@@ -1,8 +1,8 @@
 namespace ArcaneKingdom.Domain.Hero
 {
     /// <summary>
-    /// Typen der Helden-Faehigkeit (DESIGN.md Kap. 9.6). Magnitude/Dauer kommen
-    /// aus der HeroDefinition, die Wirkung wird vom BattleEngine ausgeloest.
+    /// Typen der Helden-Fähigkeit (DESIGN.md Kap. 9.6). Magnitude/Dauer kommen
+    /// aus der HeroDefinition, die Wirkung wird vom BattleEngine ausgelöst.
     /// </summary>
     public enum HeroFaehigkeitsTyp
     {
@@ -12,11 +12,11 @@ namespace ArcaneKingdom.Domain.Hero
         EnemyManaBurn = 1,
         /// <summary>AoE-Schaden auf alle Gegner-Karten.</summary>
         AoeDamage = 2,
-        /// <summary>Spielt eine zufaellige Karte aus dem Deck kostenlos.</summary>
+        /// <summary>Spielt eine zufällige Karte aus dem Deck kostenlos.</summary>
         FreeCardCast = 3,
         /// <summary>Allies bekommen +X Mana sofort.</summary>
         AllyManaBoost = 4,
-        /// <summary>Eigener Held zieht Karte + max Mana erhoeht sich temporaer.</summary>
+        /// <summary>Eigener Held zieht Karte + max Mana erhöht sich temporaer.</summary>
         DrawAndManaBoost = 5
     }
 }

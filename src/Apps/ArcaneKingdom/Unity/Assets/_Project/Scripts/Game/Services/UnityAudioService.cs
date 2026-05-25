@@ -6,7 +6,7 @@ using UnityEngine;
 namespace ArcaneKingdom.Game.Services
 {
     /// <summary>
-    /// Basis-Audio mit zwei AudioSources (BGM + SFX-Pool). Sound-Assets ueber Addressables.
+    /// Basis-Audio mit zwei AudioSources (BGM + SFX-Pool). Sound-Assets über Addressables.
     ///
     /// SKELETT: Implementierung von Crossfade / SFX-Pooling / Addressables-Loading folgt
     /// in der MVP-Phase. Aktuell nur Volume-Kontrolle und Logging.
@@ -27,7 +27,7 @@ namespace ArcaneKingdom.Game.Services
         public void PlayMusic(string addressableKey, float fadeInSeconds = 1.0f)
         {
             GameLogger.Info("Audio", $"PlayMusic({addressableKey}) (TODO: Addressables-Load + Crossfade)");
-            // TODO MVP: Addressables.LoadAssetAsync<AudioClip>(addressableKey), Crossfade ueber 2 AudioSources.
+            // TODO MVP: Addressables.LoadAssetAsync<AudioClip>(addressableKey), Crossfade über 2 AudioSources.
         }
 
         public void StopMusic(float fadeOutSeconds = 1.0f)
@@ -39,7 +39,7 @@ namespace ArcaneKingdom.Game.Services
         public void PlaySfx(string addressableKey, float volume = 1.0f)
         {
             GameLogger.Verbose("Audio", $"PlaySfx({addressableKey}, vol {volume:F2})");
-            // TODO MVP: SFX-Pool aus 8 AudioSources, LRU-Cache fuer geladene Clips.
+            // TODO MVP: SFX-Pool aus 8 AudioSources, LRU-Cache für geladene Clips.
         }
 
         public void StopAllSfx()

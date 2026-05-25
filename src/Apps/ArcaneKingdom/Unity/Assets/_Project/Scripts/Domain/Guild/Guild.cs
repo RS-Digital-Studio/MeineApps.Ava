@@ -5,10 +5,10 @@ using System.Collections.Generic;
 namespace ArcaneKingdom.Domain.Guild
 {
     /// <summary>
-    /// Gilden-Snapshot (DESIGN.md Kap. 12). Live-State (Mitglieder, Beitraege) wird im
+    /// Gilden-Snapshot (DESIGN.md Kap. 12). Live-State (Mitglieder, Beiträge) wird im
     /// Backend (Firestore) verwaltet — der Client erhaelt Snapshots.
     ///
-    /// <para>Hinweis: Klasse heisst absichtlich <c>GuildSnapshot</c> und NICHT
+    /// <para>Hinweis: Klasse heißt absichtlich <c>GuildSnapshot</c> und NICHT
     /// <c>Guild</c>, damit es keinen Namens-Konflikt mit dem
     /// <c>ArcaneKingdom.Domain.Guild</c>-Namespace gibt (Compiler-CS0118 in
     /// referenzierenden Assemblies sonst).</para>
@@ -18,7 +18,7 @@ namespace ArcaneKingdom.Domain.Guild
     {
         public string Id { get; }
         public string Name { get; set; }
-        public string Tag { get; }               // 5 Zeichen, unveraenderlich
+        public string Tag { get; }               // 5 Zeichen, unveränderlich
         public string Slogan { get; set; }
         public int Level { get; set; }
         public long TotalContributionPoints { get; set; }
@@ -60,7 +60,7 @@ namespace ArcaneKingdom.Domain.Guild
         };
 
         /// <summary>
-        /// Naechste Level-Up-Schwelle (kumulierte Punkte).
+        /// Nächste Level-Up-Schwelle (kumulierte Punkte).
         /// </summary>
         public static long ContributionRequiredForLevel(int targetLevel) => targetLevel switch
         {

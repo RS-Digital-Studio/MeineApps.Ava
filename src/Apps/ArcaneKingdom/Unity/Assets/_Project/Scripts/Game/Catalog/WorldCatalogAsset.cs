@@ -6,8 +6,8 @@ namespace ArcaneKingdom.Game.Catalog
 {
     /// <summary>
     /// ScriptableObject-Container der alle <see cref="WorldDefinition"/>-Assets
-    /// fuer Runtime-Lookup buendelt. Liegt unter Assets/_Project/Resources/WorldCatalog.asset
-    /// und wird vom WorldCatalogSyncTool gefuellt.
+    /// für Runtime-Lookup buendelt. Liegt unter Assets/_Project/Resources/WorldCatalog.asset
+    /// und wird vom WorldCatalogSyncTool gefüllt.
     /// </summary>
     [CreateAssetMenu(menuName = "ArcaneKingdom/Catalog/World Catalog",
                      fileName = "WorldCatalog")]

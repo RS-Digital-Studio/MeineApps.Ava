@@ -29,7 +29,7 @@ namespace ArcaneKingdom.Bootstrap
                 builder.RegisterComponent(audioService).AsImplementedInterfaces();
 
             // UIRoot-MonoBehaviour als Singleton-Component registrieren (haelt
-            // das UIDocument + Screen/Overlay-Container). Pflicht fuer ScreenManager.
+            // das UIDocument + Screen/Overlay-Container). Pflicht für ScreenManager.
             if (uiRoot != null)
                 builder.RegisterComponent(uiRoot);
 

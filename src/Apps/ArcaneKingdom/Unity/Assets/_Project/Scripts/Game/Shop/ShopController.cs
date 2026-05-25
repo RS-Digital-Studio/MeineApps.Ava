@@ -32,7 +32,7 @@ namespace ArcaneKingdom.Game.Shop
 
         private readonly ISaveService<PlayerSave> _save;
         private readonly IAnalyticsService _analytics;
-        private readonly Random _rng;
+        private readonly System.Random _rng;
         private readonly Dictionary<string, int> _pityCounters = new();   // wird im Save-Schema v2 persistiert
         private readonly List<CardPackDefinition> _availablePacks = new();
 
@@ -40,7 +40,7 @@ namespace ArcaneKingdom.Game.Shop
         {
             _save = save;
             _analytics = analytics;
-            _rng = new Random();
+            _rng = new System.Random();
             LoadPacksFromResources();
         }
 

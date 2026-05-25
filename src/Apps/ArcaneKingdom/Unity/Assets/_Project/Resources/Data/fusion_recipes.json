@@ -20,11 +20,11 @@
   {
     "id": "recipe_gott_des_schildes",
     "resultCardId": "solaris_gott_feuer",
-    "requiredCardIds": ["paladin_morgenroete", "felsenbrecher_gorm", "tempelwaechterin"],
-    "requiredMaterialIds": ["heiliger_stein"],
-    "goldCost": 50000,
+    "requiredCardIds": ["libra_waage", "scharlachrose", "sternenwanderer_caelum"],
+    "requiredMaterialIds": ["heiliger_stein", "epic_scrap"],
+    "goldCost": 500000,
     "hintLocalizationKey": "recipe.gott_des_schildes.hint",
-    "isHidden": false
+    "isHidden": true
   },
 
   {
@@ -67,7 +67,7 @@
   {
     "id": "recipe_selene_5star",
     "resultCardId": "selene_mondschleier",
-    "requiredCardIds": ["solaris_gott_feuer", "mondkoenigin_naeris", "marschall_eisen"],
+    "requiredCardIds": ["solaris_gott_feuer", "mondkoenigin_naeris", "weissesherz"],
     "requiredMaterialIds": ["mondstein", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap"],
     "goldCost": 2000000,
     "hintLocalizationKey": "recipe.selene_5star.hint",
@@ -76,7 +76,7 @@
   {
     "id": "recipe_chronos_5star",
     "resultCardId": "chronos_zeit",
-    "requiredCardIds": ["thalassa_gezeiten", "hoellenfuerst_malphas", "grimmfang_alpha"],
+    "requiredCardIds": ["thalassa_gezeiten", "hoellenhund_gruum", "grimmfang_alpha"],
     "requiredMaterialIds": ["zeitsplitter", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap"],
     "goldCost": 2000000,
     "hintLocalizationKey": "recipe.chronos_5star.hint",

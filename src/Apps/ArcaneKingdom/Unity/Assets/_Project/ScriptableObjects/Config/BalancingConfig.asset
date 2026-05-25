@@ -20,10 +20,15 @@ MonoBehaviour:
   energyCostArena: 5
   energyCostThiefAttack: 5
   playerLevelSoftCap: 150
-  maxCopiesFarmable: 3
   maxCardsPerDeck: 10
   defaultDeckSlots: 3
   maxDeckSlots: 6
+  maxCopies1Star: 0
+  maxCopies2Star: 0
+  maxCopies3Star: 5
+  maxCopies4Star: 3
+  maxCopies5Star: 2
+  maxCopies6Star: 1
   maxBattleTurns: 50
   startManaPerSide: 3
   maxMana: 10

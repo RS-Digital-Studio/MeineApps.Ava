@@ -5,7 +5,7 @@
         BattleScreen — vertikales Layout: Gegner oben, Feld in der Mitte, Spieler unten.
     -->
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-deep);">
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(13, 8, 28);">
 
         <!-- ================ TOP BAR ================ -->
         <ui:VisualElement class="ak-row" style="height: 40; padding: 8;
@@ -26,7 +26,7 @@
             <!-- Enemy Hero (HP + Mana) -->
             <ui:VisualElement class="ak-row" style="align-items: center; margin-bottom: 8;">
                 <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
-                                          background-color: var(--ak-danger);
+                                          background-color: rgb(232, 64, 87);
                                           border-width: 2; border-color: rgba(255,255,255,0.4);
                                           margin-right: 8;" />
                 <ui:VisualElement class="ak-col" style="flex-grow: 1;">
@@ -51,7 +51,7 @@
         </ui:VisualElement>
 
         <!-- ================ BATTLEFIELD-DIVIDER ================ -->
-        <ui:VisualElement style="height: 8; background-color: var(--ak-accent);
+        <ui:VisualElement style="height: 8; background-color: rgb(245, 158, 11);
                                   opacity: 0.6;" />
 
         <!-- ================ PLAYER-BEREICH ================ -->
@@ -66,8 +66,8 @@
             <!-- Player Hero (HP + Mana) -->
             <ui:VisualElement class="ak-row" style="align-items: center; margin-top: 8;">
                 <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
-                                          background-color: var(--ak-primary);
-                                          border-width: 2; border-color: var(--ak-accent);
+                                          background-color: rgb(107, 70, 193);
+                                          border-width: 2; border-color: rgb(245, 158, 11);
                                           margin-right: 8;" />
                 <ui:VisualElement class="ak-col" style="flex-grow: 1;">
                     <ui:Label name="player-hero-name" text="Du" class="ak-h4" />

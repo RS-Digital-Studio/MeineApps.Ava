@@ -7,7 +7,7 @@
         Elemente per name="..." werden im Code per Q<T>(name) gefunden.
     -->
 
-    <ui:VisualElement class="ak-fill ak-col ak-center" style="background-color: var(--ak-bg-deep);">
+    <ui:VisualElement class="ak-fill ak-col ak-center" style="background-color: rgb(13, 8, 28);">
 
         <!-- Hintergrund-Gradient via mehrfache Layer wuerden hier liegen
              (placeholder bis wir Sprite-Assets haben) -->
@@ -17,12 +17,12 @@
             <!-- Logo-Platzhalter (kreisrund, Royal-Purple) -->
             <ui:VisualElement name="login-logo"
                               style="width: 140; height: 140; border-radius: 70;
-                                     background-color: var(--ak-primary);
-                                     border-width: 4; border-color: var(--ak-accent);
+                                     background-color: rgb(107, 70, 193);
+                                     border-width: 4; border-color: rgb(245, 158, 11);
                                      margin-bottom: 32;
                                      align-items: center; justify-content: center;">
                 <ui:Label text="AK" style="font-size: 64; -unity-font-style: bold;
-                                            color: var(--ak-accent);" />
+                                            color: rgb(245, 158, 11);" />
             </ui:VisualElement>
 
             <!-- Spieltitel -->

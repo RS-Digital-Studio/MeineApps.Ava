@@ -5,7 +5,7 @@
         WorldMapScreen — Welt-Auswahl (Tabs) + Node-Grid + Detail-Panel.
     -->
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(22, 16, 41);">
 
         <!-- ================ HEADER ================ -->
         <ui:VisualElement class="ak-app-header">
@@ -20,7 +20,7 @@
         <!-- ================ WELT-TABS (horizontal scroll) ================ -->
         <ui:ScrollView name="world-tabs-scroll" mode="Horizontal"
                        vertical-scroller-visibility="Hidden"
-                       style="height: 80; background-color: var(--ak-bg-deep);
+                       style="height: 80; background-color: rgb(13, 8, 28);
                               border-bottom-width: 1;
                               border-bottom-color: rgba(255,255,255,0.06);">
             <ui:VisualElement name="world-tabs-container"

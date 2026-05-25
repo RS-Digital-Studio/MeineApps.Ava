@@ -47,9 +47,14 @@ namespace ArcaneKingdom.UI.Login
             _versionLabel.text = $"v{UnityEngine.Application.version}";
         }
 
-        public override async UniTask OnEnterAsync(CancellationToken ct)
+        public override UniTask OnEnterAsync(CancellationToken ct)
         {
-            await RunLoginAsync(ct);
+            // WICHTIG: detached starten (.Forget) statt awaiten — RunLoginAsync ruft am
+            // Ende ScreenManager.ReplaceAsync(Hub) auf, was waehrend laufender Push-
+            // Transaktion zum busy-Deadlock fuehren wuerde. So kann OnEnterAsync sofort
+            // returnen, ScreenManager.busy wird freigegeben, Hub-Replace klappt.
+            RunLoginAsync(ct).Forget();
+            return UniTask.CompletedTask;
         }
 
         private async UniTask RunLoginAsync(CancellationToken ct)

@@ -616,7 +616,9 @@ Die Datenmodelle und ScriptableObjects wurden gemaess Designplan v4 umstrukturie
 | CardDefinition + 12 Felder | Personality (3 Lines + Rival/Synergy-Listen) + LastWill + 5 Oeko-Marker |
 | WorldDefinition + 8 Felder | Saeule/Boss/Story/Memory/Mentor/BaseGold/Prestige4-Karte/CounterElement |
 | Neue Domain-Klassen | FusionRecipe, CategoryFusionRules, PrestigeStufe, Sternkarte, AutoBattleProgression |
-| Save-Schema v2 → v3 | + PrestigeSlice + SternkartenSlice + MemoryFragmentSlice + HeroPassivSlice + KartenPersoenlichkeitSlice + EventSlice |
+| Save-Schema v2 → v3 | + PrestigeSaveSlice + SternkartenSaveSlice + StorySaveSlice (Race+Memory+Twist+EndingChoice) + EventSaveSlice + FavoritedCardInstanceIds (SaveMigrator.MigrateToV3 implementiert) |
+| BattleEngine erweitert | Helden-Passivs (5 Rassen) + Personality-Events (OnPlay/OnVictory/OnDeath/Synergy/Rivalry/HeroPassivTriggered) — BattleState.Events fuer UI/Animation/Replay |
+| Neue Tests | FusionServiceTests, PrestigeServiceTests, SternkartenServiceTests, HeroPassivBattleTests, BattlePersonalityTests — Domain-Layer komplett abgedeckt |
 | ElementMatchup-Matrix neu | Stark = 1.10x, Schwach = 0.90x, Cross-Dreieck = 1.00x (statt v5: 1.5x/0.75x/1.0x) |
 
 ---

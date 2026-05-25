@@ -288,11 +288,23 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 - [x] Editor-Tools (DataImporter + CardPreview + LocalizationCheck + BalancingDashboard)
 - [x] **Cloud-Functions-Skelett** (8 TypeScript-Endpoints unter `Server/CloudFunctions/`)
 - [x] BattleEngine vollstaendig + BattleStateSerializer (deterministisch, replay-faehig)
-- [ ] BattleEngine erweitern um Helden-Passivs (KoeniglicheAura/GoettlicherSegen/etc.) — Monat 4-6
-- [ ] BattleEngine erweitern um Karten-Persoenlichkeit (Dialog-Lines bei Play/Victory/Death) — Monat 4-6
-- [ ] MVP: Kampf-UI (Drag&Drop, Mana-Orbs, Damage-Numbers) — Monat 4-6
+- [x] BattleEngine erweitert um Helden-Passivs (KoeniglicheAura/GoettlicherSegen/Waldlaeufer/Rudelbund/LebensraubAura)
+- [x] BattleEngine erweitert um Karten-Persoenlichkeit-Events (OnPlay/OnVictory/OnDeath/Synergy/Rivalry/HeroPassivTriggered)
+- [x] FusionService implementiert (Kategorie-Fusion + feste Rezepte + Premium-Sperre + Favoriten-Schutz + Letzte-Kopie-Warnung)
+- [x] PrestigeService implementiert (I-IV, Sterne-Reset, Stat-Multiplier, Daily-Income, Boss-Phasen-Skalierung)
+- [x] SternkartenService implementiert (Inventar, Sternpunkte, Tempel-Eintausch, Mythic-Fragment-Sammlung)
+- [x] LoginTracker implementiert (30-Tage-Zyklus, CanClaimToday-Logik)
+- [x] 1*/2* Skill-Mechaniken nach Rasse getunt (Ritter=Defense, Elfen=Control, Tiergeister=Synergy/Buff, Daemonen=Damage/Debuff, Goetter=Buff)
+- [x] PlayerSave Schema v3: PrestigeSaveSlice + SternkartenSaveSlice + StorySaveSlice + EventSaveSlice + FavoritedCardInstanceIds
+- [x] SaveMigrator.MigrateToV3 implementiert
+- [x] Domain-Tests: FusionServiceTests + PrestigeServiceTests + SternkartenServiceTests + HeroPassivBattleTests + BattlePersonalityTests
+- [x] DI-Wiring: PrestigeService + SternkartenService in GameInstaller (FusionService bleibt Application-Wrapper-Job)
+- [ ] MVP: Kampf-UI (Drag&Drop, Mana-Orbs, Damage-Numbers, Personality-Line-Anzeige) — Monat 4-6
 - [ ] MVP: Hub-UI (Tabs, Energie-Bar, Navigation) — Monat 4-5
 - [ ] MVP: Welt-1-UI (Elderwald-Karte mit 10 Nodes) — Monat 6-8
+- [ ] FusionAppService in Game-Assembly (Wrapper der CardCatalog + Rezepte injiziert)
+- [ ] PrestigeAppService in Game-Assembly (Wrapper der PlayerSave-Mutation + Karten-Drop orchestriert)
+- [ ] LoginRewardController in Game-Assembly (claimt taeglich, ruft SternkartenService.AddSternkarte)
 - [ ] Firebase Unity SDK installieren + Auth/RTDB/Analytics verdrahten — Monat 10-14
 - [ ] Cloud-Functions deployen (Staging) — Monat 11+
 - [ ] Karten-Artworks (Mid-Journey/Stable-Diffusion) + Sound-Assets — laufend

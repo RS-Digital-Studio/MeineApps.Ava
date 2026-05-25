@@ -356,10 +356,10 @@
     "displayNameKey": "ability.skill_rekrut_aldor_1.name",
     "descriptionKey": "ability.skill_rekrut_aldor_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -367,10 +367,10 @@
     "displayNameKey": "ability.skill_wachsoldat_1.name",
     "descriptionKey": "ability.skill_wachsoldat_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -378,10 +378,10 @@
     "displayNameKey": "ability.skill_schildknappe_1.name",
     "descriptionKey": "ability.skill_schildknappe_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -389,10 +389,10 @@
     "displayNameKey": "ability.skill_novizen_bogenschuetzin_1.name",
     "descriptionKey": "ability.skill_novizen_bogenschuetzin_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -400,10 +400,10 @@
     "displayNameKey": "ability.skill_lehrling_magier_1.name",
     "descriptionKey": "ability.skill_lehrling_magier_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -411,10 +411,10 @@
     "displayNameKey": "ability.skill_fackeltraeger_1.name",
     "descriptionKey": "ability.skill_fackeltraeger_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -422,10 +422,10 @@
     "displayNameKey": "ability.skill_wachtposten_1.name",
     "descriptionKey": "ability.skill_wachtposten_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -433,10 +433,10 @@
     "displayNameKey": "ability.skill_heilerlehrling_1.name",
     "descriptionKey": "ability.skill_heilerlehrling_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -444,10 +444,10 @@
     "displayNameKey": "ability.skill_lanzentraeger_1.name",
     "descriptionKey": "ability.skill_lanzentraeger_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -455,10 +455,10 @@
     "displayNameKey": "ability.skill_grenzlaeufer_1.name",
     "descriptionKey": "ability.skill_grenzlaeufer_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -466,10 +466,10 @@
     "displayNameKey": "ability.skill_speertraegerin_mira_1.name",
     "descriptionKey": "ability.skill_speertraegerin_mira_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -477,10 +477,10 @@
     "displayNameKey": "ability.skill_schildmaid_bryta_1.name",
     "descriptionKey": "ability.skill_schildmaid_bryta_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -488,10 +488,10 @@
     "displayNameKey": "ability.skill_kavallerist_brandt_1.name",
     "descriptionKey": "ability.skill_kavallerist_brandt_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -499,10 +499,10 @@
     "displayNameKey": "ability.skill_tempelwaechterin_1.name",
     "descriptionKey": "ability.skill_tempelwaechterin_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -510,10 +510,10 @@
     "displayNameKey": "ability.skill_erdwall_ritter_1.name",
     "descriptionKey": "ability.skill_erdwall_ritter_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -521,10 +521,10 @@
     "displayNameKey": "ability.skill_rankenkriegerin_1.name",
     "descriptionKey": "ability.skill_rankenkriegerin_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -532,10 +532,10 @@
     "displayNameKey": "ability.skill_wasserklinge_cael_1.name",
     "descriptionKey": "ability.skill_wasserklinge_cael_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -543,10 +543,10 @@
     "displayNameKey": "ability.skill_feuerschmied_1.name",
     "descriptionKey": "ability.skill_feuerschmied_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Defense",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -983,10 +983,10 @@
     "displayNameKey": "ability.skill_erzkoenig_aldric_lw.name",
     "descriptionKey": "ability.skill_erzkoenig_aldric_lw.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Buff",
     "magnitude": 400,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -994,7 +994,7 @@
     "displayNameKey": "ability.skill_elfenpfeil_novize_1.name",
     "descriptionKey": "ability.skill_elfenpfeil_novize_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1005,7 +1005,7 @@
     "displayNameKey": "ability.skill_blumenfee_1.name",
     "descriptionKey": "ability.skill_blumenfee_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1016,7 +1016,7 @@
     "displayNameKey": "ability.skill_waldlaeufer_novize_1.name",
     "descriptionKey": "ability.skill_waldlaeufer_novize_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1027,7 +1027,7 @@
     "displayNameKey": "ability.skill_elfenheiler_1.name",
     "descriptionKey": "ability.skill_elfenheiler_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1038,7 +1038,7 @@
     "displayNameKey": "ability.skill_elfenschuetze_1.name",
     "descriptionKey": "ability.skill_elfenschuetze_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1049,7 +1049,7 @@
     "displayNameKey": "ability.skill_sternenfunke_1.name",
     "descriptionKey": "ability.skill_sternenfunke_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1060,7 +1060,7 @@
     "displayNameKey": "ability.skill_waldspinne_1.name",
     "descriptionKey": "ability.skill_waldspinne_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1071,7 +1071,7 @@
     "displayNameKey": "ability.skill_mondfee_1.name",
     "descriptionKey": "ability.skill_mondfee_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1082,7 +1082,7 @@
     "displayNameKey": "ability.skill_blaettertaenzer_1.name",
     "descriptionKey": "ability.skill_blaettertaenzer_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1093,7 +1093,7 @@
     "displayNameKey": "ability.skill_wasserspeier_1.name",
     "descriptionKey": "ability.skill_wasserspeier_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 100,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1104,7 +1104,7 @@
     "displayNameKey": "ability.skill_rankenkriegerin_ivy_1.name",
     "descriptionKey": "ability.skill_rankenkriegerin_ivy_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1115,7 +1115,7 @@
     "displayNameKey": "ability.skill_elfenspaeher_1.name",
     "descriptionKey": "ability.skill_elfenspaeher_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1126,7 +1126,7 @@
     "displayNameKey": "ability.skill_mondlicht_heilerin_1.name",
     "descriptionKey": "ability.skill_mondlicht_heilerin_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1137,7 +1137,7 @@
     "displayNameKey": "ability.skill_faunen_priesterin_1.name",
     "descriptionKey": "ability.skill_faunen_priesterin_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1148,7 +1148,7 @@
     "displayNameKey": "ability.skill_sternenlaeufer_1.name",
     "descriptionKey": "ability.skill_sternenlaeufer_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1159,7 +1159,7 @@
     "displayNameKey": "ability.skill_eiskristall_magierin_1.name",
     "descriptionKey": "ability.skill_eiskristall_magierin_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1170,7 +1170,7 @@
     "displayNameKey": "ability.skill_erdwurzler_1.name",
     "descriptionKey": "ability.skill_erdwurzler_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1181,7 +1181,7 @@
     "displayNameKey": "ability.skill_windlaeuferin_ayla_1.name",
     "descriptionKey": "ability.skill_windlaeuferin_ayla_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Control",
     "magnitude": 150,
     "durationTurns": 0,
     "targetsAllAllies": false,
@@ -1621,10 +1621,10 @@
     "displayNameKey": "ability.skill_sternbaum_elarion_lw.name",
     "descriptionKey": "ability.skill_sternbaum_elarion_lw.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Buff",
     "magnitude": 400,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1632,10 +1632,10 @@
     "displayNameKey": "ability.skill_jungwolf_1.name",
     "descriptionKey": "ability.skill_jungwolf_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1643,10 +1643,10 @@
     "displayNameKey": "ability.skill_waldfuchs_1.name",
     "descriptionKey": "ability.skill_waldfuchs_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1654,10 +1654,10 @@
     "displayNameKey": "ability.skill_steinechse_1.name",
     "descriptionKey": "ability.skill_steinechse_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1665,10 +1665,10 @@
     "displayNameKey": "ability.skill_gluehwuermchen_schwarm_1.name",
     "descriptionKey": "ability.skill_gluehwuermchen_schwarm_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1676,10 +1676,10 @@
     "displayNameKey": "ability.skill_baumspross_1.name",
     "descriptionKey": "ability.skill_baumspross_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1687,10 +1687,10 @@
     "displayNameKey": "ability.skill_wasserschlange_1.name",
     "descriptionKey": "ability.skill_wasserschlange_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1698,10 +1698,10 @@
     "displayNameKey": "ability.skill_feuersalamander_1.name",
     "descriptionKey": "ability.skill_feuersalamander_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1709,10 +1709,10 @@
     "displayNameKey": "ability.skill_moorgeist_1.name",
     "descriptionKey": "ability.skill_moorgeist_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1720,10 +1720,10 @@
     "displayNameKey": "ability.skill_erdferkel_1.name",
     "descriptionKey": "ability.skill_erdferkel_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1731,10 +1731,10 @@
     "displayNameKey": "ability.skill_windfalke_1.name",
     "descriptionKey": "ability.skill_windfalke_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 100,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1742,10 +1742,10 @@
     "displayNameKey": "ability.skill_schattenwoelfin_nyx_1.name",
     "descriptionKey": "ability.skill_schattenwoelfin_nyx_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1753,10 +1753,10 @@
     "displayNameKey": "ability.skill_steinbaer_1.name",
     "descriptionKey": "ability.skill_steinbaer_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1764,10 +1764,10 @@
     "displayNameKey": "ability.skill_frostfuchs_1.name",
     "descriptionKey": "ability.skill_frostfuchs_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1775,10 +1775,10 @@
     "displayNameKey": "ability.skill_flammengreif_1.name",
     "descriptionKey": "ability.skill_flammengreif_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1786,10 +1786,10 @@
     "displayNameKey": "ability.skill_baumgeist_elder_1.name",
     "descriptionKey": "ability.skill_baumgeist_elder_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1797,10 +1797,10 @@
     "displayNameKey": "ability.skill_mondwolf_1.name",
     "descriptionKey": "ability.skill_mondwolf_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1808,10 +1808,10 @@
     "displayNameKey": "ability.skill_erdwuermer_kolonie_1.name",
     "descriptionKey": "ability.skill_erdwuermer_kolonie_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -1819,10 +1819,10 @@
     "displayNameKey": "ability.skill_dornenigel_1.name",
     "descriptionKey": "ability.skill_dornenigel_1.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Synergy",
     "magnitude": 150,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {
@@ -2263,7 +2263,7 @@
     "magnitude": 400,
     "durationTurns": 0,
     "targetsAllAllies": false,
-    "targetsAllEnemies": false
+    "targetsAllEnemies": true
   },
   {
     "id": "skill_schattenklaue_1",
@@ -2901,7 +2901,7 @@
     "magnitude": 400,
     "durationTurns": 0,
     "targetsAllAllies": false,
-    "targetsAllEnemies": false
+    "targetsAllEnemies": true
   },
   {
     "id": "skill_solaris_gott_feuer_1",
@@ -3139,10 +3139,10 @@
     "displayNameKey": "ability.skill_aetherius_allschoepfer_lw.name",
     "descriptionKey": "ability.skill_aetherius_allschoepfer_lw.desc",
     "type": "Passive",
-    "category": "Damage",
+    "category": "Buff",
     "magnitude": 400,
     "durationTurns": 0,
-    "targetsAllAllies": false,
+    "targetsAllAllies": true,
     "targetsAllEnemies": false
   },
   {

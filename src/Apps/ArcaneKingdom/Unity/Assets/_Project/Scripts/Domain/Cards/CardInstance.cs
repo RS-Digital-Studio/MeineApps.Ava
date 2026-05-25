@@ -65,6 +65,16 @@ namespace ArcaneKingdom.Domain.Cards
             ExpWithinLevel = 0;
         }
 
+        /// <summary>Setzt das Level neu (vom CardUpgradeService aufgerufen, mit Pruefung).</summary>
+        public void SetLevel(int newLevel) => ApplyLevelUp(newLevel);
+
+        /// <summary>Setzt EXP-within-Level neu (vom CardUpgradeService oder beim Kampf-EXP-Reward).</summary>
+        public void SetExpWithinLevel(int newExp)
+        {
+            if (newExp < 0) throw new ArgumentOutOfRangeException(nameof(newExp));
+            ExpWithinLevel = newExp;
+        }
+
         internal void AddExp(int delta)
         {
             if (delta < 0) throw new ArgumentOutOfRangeException(nameof(delta));

@@ -28,15 +28,23 @@ namespace ArcaneKingdom.Game.Artwork
         /// Liefert das Sprite (oder ein procedural-generiertes Fallback) fuer eine Karte.
         /// Asynchron weil Addressables-Load IO ist.
         /// </summary>
-        public async UniTask<Sprite> GetSpriteAsync(CardDefinition card)
+        public UniTask<Sprite> GetSpriteAsync(CardDefinition card)
         {
-            // 1. Addressable-Lookup (wenn Key + Package vorhanden)
+#if ARCANE_ADDRESSABLES_INSTALLED
+            return GetSpriteAddressableAsync(card);
+#else
+            return UniTask.FromResult(GetProcedural(card));
+#endif
+        }
+
+#if ARCANE_ADDRESSABLES_INSTALLED
+        private async UniTask<Sprite> GetSpriteAddressableAsync(CardDefinition card)
+        {
             if (!string.IsNullOrEmpty(card.ArtworkAddressableKey))
             {
                 if (_addressableCache.TryGetValue(card.ArtworkAddressableKey, out var cached))
                     return cached;
 
-#if ARCANE_ADDRESSABLES_INSTALLED
                 try
                 {
                     var handle = Addressables.LoadAssetAsync<Sprite>(card.ArtworkAddressableKey);
@@ -52,10 +60,13 @@ namespace ArcaneKingdom.Game.Artwork
                     GameLogger.Warning("Artwork",
                         $"Addressable '{card.ArtworkAddressableKey}' nicht geladen: {ex.Message}");
                 }
-#endif
             }
+            return GetProcedural(card);
+        }
+#endif
 
-            // 2. Procedural-Fallback (immer gecached pro Element/Rarity)
+        private Sprite GetProcedural(CardDefinition card)
+        {
             var key = (card.Element, card.Rarity);
             if (!_proceduralCache.TryGetValue(key, out var procedural))
             {

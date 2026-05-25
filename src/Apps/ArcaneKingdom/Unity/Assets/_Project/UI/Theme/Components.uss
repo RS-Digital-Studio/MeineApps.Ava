@@ -191,103 +191,151 @@
 }
 
 /* ============================================================
-   CARD-ITEM (Karten-Vorschau im Browser / Collection)
+   CARD-ITEM (Karten-Vorschau im Browser / Collection / Deck)
+   ------------------------------------------------------------
+   Das PNG-Artwork enthält bereits den Rahmen + Rarity-Border +
+   Element-Wappen + Banner mit Name + Sterne (1-6).
+   Unity-UI rendert hier nur die DYNAMISCHEN Werte als Overlay:
+     - LV-Box (oben links)
+     - Cost-Bubble (oben rechts)
+     - Sanduhr + Rundenwarten (Mitte links)
+     - ATK / HP (unten)
    ============================================================ */
 
 .ak-card {
-    width: 156px;
-    height: 220px;
+    width: 200px;
+    height: 290px;
     margin: var(--ak-space-2);
-    padding: var(--ak-space-2);
     border-radius: var(--ak-radius-md);
-    background-color: var(--ak-bg-surface);
-    border-width: 2px;
-    border-color: rgba(255, 255, 255, 0.08);
-    transition: scale 100ms, border-color 120ms;
+    background-color: transparent;
+    -unity-background-scale-mode: scale-to-fit;
+    transition: scale 100ms;
 }
 
 .ak-card:hover { scale: 1.03 1.03; }
 .ak-card:active { scale: 0.97 0.97; }
 
-.ak-card--rarity-common { border-color: var(--ak-rarity-common); }
-.ak-card--rarity-uncommon { border-color: var(--ak-rarity-uncommon); }
-.ak-card--rarity-rare { border-color: var(--ak-rarity-rare); }
-.ak-card--rarity-epic { border-color: var(--ak-rarity-epic); }
-.ak-card--rarity-legendary { border-color: var(--ak-rarity-legendary); }
-
-.ak-card__art {
-    flex-grow: 1;
-    border-radius: var(--ak-radius-sm);
-    background-color: rgba(0, 0, 0, 0.4);
-    margin-bottom: var(--ak-space-1);
-    -unity-background-scale-mode: scale-and-crop;
+/* Locked-State: alles ausgegraut */
+.ak-card--locked {
+    opacity: 0.4;
 }
 
-.ak-card__name {
-    font-size: var(--ak-font-sm);
-    -unity-font-style: bold;
-    color: var(--ak-text-primary);
-    -unity-text-align: middle-center;
-    white-space: normal;
-    -unity-text-overflow-position: end;
-}
+/* Tile-Größen-Modifier */
+.ak-card--size-small  { width: 156px; height: 226px; }
+.ak-card--size-medium { width: 200px; height: 290px; }
+.ak-card--size-large  { width: 280px; height: 408px; }
 
-.ak-card__cost-badge {
+/* LV-Box (oben links) */
+.ak-card__lv-badge {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 28px;
-    height: 28px;
-    border-radius: 14px;
-    background-color: var(--ak-primary-dark);
+    top: 6%;
+    left: 6%;
+    min-width: 44px;
+    height: 22px;
+    padding-left: 6px;
+    padding-right: 6px;
+    border-radius: 6px;
+    background-color: rgba(14, 10, 28, 0.85);
     border-width: 1px;
     border-color: var(--ak-accent);
     align-items: center;
     justify-content: center;
 }
+.ak-card__lv-value {
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: var(--ak-text-primary);
+}
+.ak-card__lv-badge--max {
+    background-color: var(--ak-accent);
+    border-color: rgba(140, 95, 20, 1);
+}
+.ak-card__lv-badge--max .ak-card__lv-value {
+    color: rgba(40, 20, 0, 1);
+}
 
+/* Cost-Bubble (oben rechts) */
+.ak-card__cost-badge {
+    position: absolute;
+    top: 4%;
+    right: 6%;
+    width: 38px;
+    height: 38px;
+    border-radius: 19px;
+    background-color: rgba(60, 130, 220, 1);
+    border-width: 2px;
+    border-color: var(--ak-accent);
+    align-items: center;
+    justify-content: center;
+}
 .ak-card__cost-value {
-    font-size: var(--ak-font-md);
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgba(255, 255, 255, 1);
+}
+
+/* Sanduhr (Mitte links am Artwork) — nur in größeren Tiles + Detail-View */
+.ak-card__hourglass {
+    position: absolute;
+    top: 45%;
+    left: 5%;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    background-color: rgba(14, 10, 28, 0.85);
+    border-width: 1px;
+    border-color: var(--ak-accent);
+    align-items: center;
+    justify-content: center;
+    display: none;  /* default: hidden, wird via .ak-card--with-hourglass aktiviert */
+}
+.ak-card--with-hourglass .ak-card__hourglass {
+    display: flex;
+}
+.ak-card__hourglass-value {
+    font-size: 14px;
     -unity-font-style: bold;
     color: var(--ak-accent);
 }
 
-.ak-card__element-badge {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 22px;
-    height: 22px;
-    border-radius: 11px;
-}
-
-.ak-card__element-badge--natur { background-color: var(--ak-element-natur); }
-.ak-card__element-badge--feuer { background-color: var(--ak-element-feuer); }
-.ak-card__element-badge--wasser { background-color: var(--ak-element-wasser); }
-.ak-card__element-badge--licht { background-color: var(--ak-element-licht); }
-.ak-card__element-badge--dunkel { background-color: var(--ak-element-dunkel); }
-
+/* ATK / HP (unten) */
 .ak-card__stats {
+    position: absolute;
+    bottom: 4%;
+    left: 6%;
+    right: 6%;
     flex-direction: row;
     justify-content: space-between;
-    padding-top: var(--ak-space-1);
+    align-items: center;
 }
 
 .ak-card__stat {
-    font-size: var(--ak-font-sm);
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(8, 6, 18, 0.85);
+    border-width: 1px;
+    border-color: var(--ak-accent);
+    border-radius: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    min-width: 50px;
+}
+
+.ak-card__stat-label {
+    font-size: 9px;
+    -unity-font-style: bold;
+    color: var(--ak-text-muted);
+}
+
+.ak-card__stat-value {
+    font-size: 14px;
     -unity-font-style: bold;
 }
 
-.ak-card__stat--atk { color: var(--ak-danger); }
-.ak-card__stat--hp { color: var(--ak-success); }
-
-/* Locked / Not-Owned-State: Karten-Art ausgegraut */
-.ak-card--locked .ak-card__art {
-    opacity: 0.25;
-}
-.ak-card--locked .ak-card__name {
-    color: var(--ak-text-muted);
-}
+.ak-card__stat--atk .ak-card__stat-value { color: var(--ak-danger); }
+.ak-card__stat--hp  .ak-card__stat-value { color: var(--ak-success); }
 
 /* ============================================================
    MODAL / OVERLAY (Center-Dialog mit Backdrop)

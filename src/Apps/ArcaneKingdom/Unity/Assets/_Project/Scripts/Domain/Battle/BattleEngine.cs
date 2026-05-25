@@ -189,10 +189,17 @@ namespace ArcaneKingdom.Domain.Battle
                 }
             }
 
-            // Boss-Phase 2 ab 50 % Helden-HP der Gegnerseite (nur einmal pro Kampf).
-            if (attackerIsPlayer && State.EnemyHeroHp > 0 && State.EnemyHeroHp < 500 && !_bossPhase2Triggered)
+            // Boss-Phase 2 ab 50 % Helden-HP der Gegnerseite (Spielplan v5 Kap. 9.4):
+            // Nur in Boss-Encountern (Mini-Boss/World-Boss) und nur einmal pro Kampf.
+            if (State.IsBossEncounter
+                && attackerIsPlayer
+                && State.EnemyHeroHp > 0
+                && State.EnemyHeroMaxHp > 0
+                && State.EnemyHeroHp * 2 < State.EnemyHeroMaxHp   // < 50%
+                && !_bossPhase2Triggered)
             {
                 _bossPhase2Triggered = true;
+                State.BossPhase2Active = true;
                 ApplyBossPhase2();
             }
 
@@ -470,8 +477,44 @@ namespace ArcaneKingdom.Domain.Battle
 
         private void ApplyBossPhase2()
         {
-            // Welt-Boss aktiviert Spezialfähigkeit + ATK-Buff für alle Field-Karten (DESIGN 9.4).
-            foreach (var slot in State.EnemyField) slot.CurrentAttack += slot.CurrentAttack / 2;
+            // Spielplan v5 Kap. 9.4: Boss-Phase 2 — 3 Effekte:
+            // 1) Boss-Karten erhalten passive Faehigkeit (+200 ATK fuer alle Karten im Feld)
+            // 2) 2-3 starke Verstaerkungs-Karten kommen ins Feld
+            // 3) Visuelles Signal via BattleEvent
+
+            // 1) Passive Faehigkeit — Plan-Wert ist +200 absolute ATK; wir nehmen +50% als Skalen-sicheren Fallback
+            //    UND zusaetzlich +200 absolute ATK wo verfuegbar.
+            foreach (var slot in State.EnemyField)
+            {
+                slot.CurrentAttack += Math.Max(200, slot.CurrentAttack / 2);
+            }
+
+            // 2) Verstaerkungs-Karten ins Feld stellen (max. so viele wie freier Platz, bis zu Plan-Vorgabe von 3)
+            const int maxReinforcements = 3;
+            var addedCount = 0;
+            foreach (var reinforcementDefId in State.BossPhase2ReinforcementCardIds)
+            {
+                if (addedCount >= maxReinforcements) break;
+                if (State.EnemyField.Count >= 5) break;
+                if (!_cardDefinitions.TryGetValue(reinforcementDefId, out var def)) continue;
+
+                var instId = $"boss_reinforcement_{State.CurrentTurn}_{addedCount}";
+                var slot = new CardFieldSlot(
+                    cardInstanceId: instId,
+                    currentAttack: def.BaseAttack,
+                    currentHealth: def.BaseHealth,
+                    turnsUntilSpecial: def.TurnsToSpecial);
+                State.EnemyField.Add(slot);
+                addedCount++;
+            }
+
+            // 3) Battle-Event so die UI eine Phasen-Animation triggern kann
+            State.Events.Add(new BattleEvent(
+                eventType: BattleEventType.BossPhaseChange,
+                turn: State.CurrentTurn,
+                forPlayer: false,
+                localizationKey: State.BossPhase2PassiveKey ?? "boss_phase_2_passive",
+                magnitude: addedCount));
         }
 
         private (CardDefinition? def, float statMultiplier) ResolveDefinition(string cardInstanceId)

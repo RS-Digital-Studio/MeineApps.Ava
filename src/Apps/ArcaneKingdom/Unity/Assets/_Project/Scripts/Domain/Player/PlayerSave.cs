@@ -45,6 +45,8 @@ namespace ArcaneKingdom.Domain.Player
         public EventSaveSlice Events { get; set; }
         /// <summary>Favoriten-Karten (Schutz vor versehentlicher Fusion). Map InstanceId -> markiert.</summary>
         public HashSet<string> FavoritedCardInstanceIds { get; set; }
+        /// <summary>Bereits eingeloeste Sammlungs-Sets (Spielplan v5 Kap. 5.6) — verhindert Doppel-Eintausch.</summary>
+        public HashSet<string> ClaimedCollectionSetIds { get; set; }
 
         public DateTime LastEnergyRegenAtUtc { get; set; }
         public DateTime LastSavedAtUtc { get; set; }

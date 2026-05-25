@@ -32,10 +32,35 @@ namespace ArcaneKingdom.Domain.Battle
         public int CurrentTurn { get; set; }
         public int PlayerHeroHp { get; set; }
         public int EnemyHeroHp { get; set; }
+        /// <summary>Maximales HP des Spieler-Helden (fuer 50%-Schwellen-Berechnung).</summary>
+        public int PlayerHeroMaxHp { get; set; }
+        /// <summary>Maximales HP des Gegner-Helden (fuer Boss-Phasen-Trigger).</summary>
+        public int EnemyHeroMaxHp { get; set; }
         public int PlayerMana { get; set; }
         public int EnemyMana { get; set; }
         public int PlayerMaxMana { get; set; }
         public int EnemyMaxMana { get; set; }
+
+        /// <summary>
+        /// Markiert den Kampf als Boss-Encounter (Mini-Boss = Node-Index 5, World-Boss = Node-Index 10).
+        /// Aktiviert die Boss-Phase-2-Mechanik (Spielplan v5 Kap. 9.4).
+        /// </summary>
+        public bool IsBossEncounter { get; set; }
+
+        /// <summary>
+        /// Karten-Definitionen die als Verstaerkung in Boss-Phase-2 ins Feld kommen
+        /// (2-3 starke Karten laut Plan). Wird beim Setup gefuellt.
+        /// </summary>
+        public List<string> BossPhase2ReinforcementCardIds { get; } = new();
+
+        /// <summary>
+        /// Passive Faehigkeit, die in Boss-Phase-2 aktiviert wird
+        /// (z.B. "Alle Karten +200 ATK"). Lokalisierungs-Key oder Beschreibung.
+        /// </summary>
+        public string? BossPhase2PassiveKey { get; set; }
+
+        /// <summary>True wenn Boss-Phase-2 bereits ausgeloest wurde (verhindert doppelten Trigger).</summary>
+        public bool BossPhase2Active { get; set; }
         public List<CardFieldSlot> PlayerField { get; }      // max. 5
         public List<CardFieldSlot> EnemyField { get; }       // max. 5
         public List<string> PlayerHand { get; }              // InstanceIds
@@ -61,6 +86,8 @@ namespace ArcaneKingdom.Domain.Battle
             Seed = seed;
             PlayerHeroHp = playerHeroHp;
             EnemyHeroHp = enemyHeroHp;
+            PlayerHeroMaxHp = playerHeroHp;
+            EnemyHeroMaxHp = enemyHeroHp;
             PlayerMana = 3;
             EnemyMana = 3;
             PlayerMaxMana = 3;

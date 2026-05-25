@@ -46,6 +46,24 @@ namespace ArcaneKingdom.Domain.World
         public int GoldReward(int stars) => stars switch { 1 => goldOneStar, 2 => goldTwoStar, 3 => goldThreeStar, 4 => goldFourStar, _ => 0 };
         public int ExpReward(int stars) => stars switch { 1 => expOneStar, 2 => expTwoStar, 3 => expThreeStar, 4 => expFourStar, _ => 0 };
 
+        /// <summary>
+        /// Gold-Belohnung fuer eine konkrete Schwierigkeitsstufe (Spielplan v5 Kap. 8.3).
+        /// </summary>
+        public int GoldReward(NodeDifficulty difficulty) => GoldReward((int)difficulty);
+
+        /// <summary>
+        /// EXP-Belohnung fuer eine konkrete Schwierigkeitsstufe.
+        /// </summary>
+        public int ExpReward(NodeDifficulty difficulty) => ExpReward((int)difficulty);
+
+        /// <summary>
+        /// Energie-Kosten fuer eine konkrete Schwierigkeitsstufe (Classic/Amateur=1, Profi=2, Gott=3).
+        /// </summary>
+        public int EnergyCostFor(NodeDifficulty difficulty) => difficulty.EnergyCost();
+
+        /// <summary>
+        /// Legacy: Energie-Kosten basierend auf NodeType (fuer Schnell-Start ohne Difficulty-Wahl).
+        /// </summary>
         public int EnergyCost => type switch
         {
             NodeType.Normal => 1,

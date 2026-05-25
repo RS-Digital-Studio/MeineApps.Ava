@@ -24,7 +24,10 @@ namespace ArcaneKingdom.Domain.Battle
         RivalryClashed = 4,
 
         /// <summary>Helden-Passiv hat Effekt ausgeloest (z.B. GoettlicherSegen rettet Karte).</summary>
-        HeroPassivTriggered = 5
+        HeroPassivTriggered = 5,
+
+        /// <summary>Boss-Phasen-Wechsel (Phase 2 ab 50% Helden-HP). Triggert UI-Animation + neue Karten.</summary>
+        BossPhaseChange = 6
     }
 
     /// <summary>

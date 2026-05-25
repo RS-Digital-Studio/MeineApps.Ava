@@ -207,6 +207,42 @@
 
                         <ui:VisualElement class="ak-divider" />
 
+                        <!-- Spielplan v5 — Mehr-Tab erweitert um alle neuen Screens -->
+                        <ui:Label text="Mehr Inhalte" class="ak-overline"
+                                  style="margin-top: 8; margin-bottom: 8;" />
+                        <ui:Button name="more-shop" text="🛒 Shop (Karten-Pakete)"
+                                   class="ak-btn ak-btn--lg ak-btn--accent"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-quest-center" text="📜 Quest-Center"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-merit-ranking" text="🏆 Merit-Rangliste"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-thief" text="🦹 Dieb-Event"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-guild-world" text="🌍 Gilden-Weltkarte"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-pvp-matchmaking" text="⚔️ PvP-Matchmaking"
+                                   class="ak-btn ak-btn--lg ak-btn--accent"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-runes" text="✨ Runen-Verwaltung"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-collection-trade" text="🔄 Sammlung tauschen"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-player-profile" text="👤 Spieler-Profil"
+                                   class="ak-btn ak-btn--lg ak-btn--primary"
+                                   style="margin-bottom: 8;" />
+                        <ui:Button name="more-chat" text="💬 Chat"
+                                   class="ak-btn ak-btn--lg ak-btn--ghost"
+                                   style="margin-bottom: 16;" />
+
+                        <ui:VisualElement class="ak-divider" />
+
                         <ui:Button name="more-codex" text="Codex"
                                    class="ak-btn ak-btn--lg ak-btn--ghost"
                                    style="margin-bottom: 8;" />

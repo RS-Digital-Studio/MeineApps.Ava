@@ -579,6 +579,29 @@ namespace ArcaneKingdom.UI.Hub
                 _moreSchmiede.clicked += () => GoToScreen(ScreenId.Schmiede, "Schmiede UXML fehlt.");
             if (_moreTempel != null)
                 _moreTempel.clicked += () => GoToScreen(ScreenId.Tempel, "Tempel UXML fehlt.");
+
+            // Spielplan v5 — alle neuen Mehr-Tab-Buttons verkabeln (QOptional fuer Vorwaerts-Kompat.)
+            var btnShop          = QOptional<Button>("more-shop");
+            var btnQuestCenter   = QOptional<Button>("more-quest-center");
+            var btnMeritRanking  = QOptional<Button>("more-merit-ranking");
+            var btnThief         = QOptional<Button>("more-thief");
+            var btnGuildWorld    = QOptional<Button>("more-guild-world");
+            var btnPvp           = QOptional<Button>("more-pvp-matchmaking");
+            var btnRunes         = QOptional<Button>("more-runes");
+            var btnCollection    = QOptional<Button>("more-collection-trade");
+            var btnPlayerProfile = QOptional<Button>("more-player-profile");
+            var btnChat          = QOptional<Button>("more-chat");
+
+            if (btnShop          != null) btnShop.clicked          += () => GoToScreen(ScreenId.Shop, "Shop nicht verfuegbar.");
+            if (btnQuestCenter   != null) btnQuestCenter.clicked   += () => GoToScreen(ScreenId.QuestCenter, "Quest-Center nicht verfuegbar.");
+            if (btnMeritRanking  != null) btnMeritRanking.clicked  += () => GoToScreen(ScreenId.MeritRanking, "Merit-Rangliste nicht verfuegbar.");
+            if (btnThief         != null) btnThief.clicked         += () => GoToScreen(ScreenId.ThiefScreen, "Dieb-Event nicht verfuegbar.");
+            if (btnGuildWorld    != null) btnGuildWorld.clicked    += () => GoToScreen(ScreenId.GuildWorldMap, "Gilden-Weltkarte nicht verfuegbar.");
+            if (btnPvp           != null) btnPvp.clicked           += () => GoToScreen(ScreenId.PvpMatchmaking, "PvP-Matchmaking nicht verfuegbar.");
+            if (btnRunes         != null) btnRunes.clicked         += () => GoToScreen(ScreenId.Runes, "Runen-Verwaltung nicht verfuegbar.");
+            if (btnCollection    != null) btnCollection.clicked    += () => GoToScreen("collection-trade", "Sammlung-Tausch nicht verfuegbar.");
+            if (btnPlayerProfile != null) btnPlayerProfile.clicked += () => GoToScreen(ScreenId.PlayerProfile, "Spieler-Profil nicht verfuegbar.");
+            if (btnChat          != null) btnChat.clicked          += () => GoToScreen(ScreenId.ChatOverlay, "Chat nicht verfuegbar.");
         }
 
         private void GoToScreen(string id, string fallbackMessage)

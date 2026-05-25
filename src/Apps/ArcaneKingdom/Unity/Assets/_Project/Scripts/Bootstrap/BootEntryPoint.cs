@@ -57,8 +57,14 @@ namespace ArcaneKingdom.Bootstrap
                     "UIRoot nach 200 Frames nicht ready — starte Login trotzdem, " +
                     "Theme-Variablen werden vermutlich nicht aufgeloest.");
 
-            GameLogger.Info("Boot", "ArcaneKingdom gestartet — Initial-Screen: Login.");
-            await _screenManager.ReplaceAsync(ScreenId.Login, ct);
+            // Spielplan v5 Kap. 2: Splash-Screen ist der erste sichtbare Screen.
+            // Der Splash erledigt Asset-Preload + Auto-Login-Check und entscheidet
+            // dann zwischen Login/Registration/Hub.
+            var initialScreen = _screenManager.IsRegistered(ScreenId.Splash)
+                ? ScreenId.Splash
+                : ScreenId.Login;
+            GameLogger.Info("Boot", $"ArcaneKingdom gestartet — Initial-Screen: {initialScreen}.");
+            await _screenManager.ReplaceAsync(initialScreen, ct);
         }
     }
 }

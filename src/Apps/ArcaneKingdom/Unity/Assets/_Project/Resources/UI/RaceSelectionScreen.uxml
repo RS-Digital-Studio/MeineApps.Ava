@@ -1,0 +1,81 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(15, 8, 30);">
+
+        <ui:VisualElement style="padding: 24;">
+            <ui:Label text="Waehle deine Rasse" class="ak-h1"
+                      style="text-align: center;" />
+            <ui:Label text="Diese Wahl bestimmt deinen Helden-Passiv-Skill und Mentor."
+                      class="ak-caption"
+                      style="text-align: center; margin-top: 4;" />
+        </ui:VisualElement>
+
+        <!-- 4 Rassen-Karten -->
+        <ui:VisualElement class="ak-row"
+                          style="justify-content: center;
+                                 flex-wrap: wrap;
+                                 padding: 16;">
+
+            <ui:VisualElement name="race-card-ritter"
+                              class="ak-race-card"
+                              style="background-color: rgb(80, 60, 30); padding: 12; margin: 8;
+                                     min-width: 160; min-height: 200;">
+                <ui:Label text="⚔ Ritter" class="ak-h3" />
+                <ui:Label text="Tank/Support — Schilde, Heilung, Team-Buffs."
+                          class="ak-caption" />
+                <ui:Label text="Passiv: Koenigliche Aura (+5% HP)"
+                          class="ak-text--accent" style="margin-top: 8;" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="race-card-elfen"
+                              class="ak-race-card"
+                              style="background-color: rgb(30, 60, 70); padding: 12; margin: 8;
+                                     min-width: 160; min-height: 200;">
+                <ui:Label text="🏹 Elfen" class="ak-h3" />
+                <ui:Label text="Speed/Kontrolle — schnell, Schlaf/Slow."
+                          class="ak-caption" />
+                <ui:Label text="Passiv: Waldlaeufer (erste Karte gratis)"
+                          class="ak-text--accent" style="margin-top: 8;" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="race-card-tiergeister"
+                              class="ak-race-card"
+                              style="background-color: rgb(40, 70, 30); padding: 12; margin: 8;
+                                     min-width: 160; min-height: 200;">
+                <ui:Label text="🐺 Tiergeister" class="ak-h3" />
+                <ui:Label text="Rudel-Synergien — viele Tiergeister = mehr Power."
+                          class="ak-caption" />
+                <ui:Label text="Passiv: Rudelbund (+3% ATK pro Tiergeist)"
+                          class="ak-text--accent" style="margin-top: 8;" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="race-card-daemonen"
+                              class="ak-race-card"
+                              style="background-color: rgb(70, 25, 50); padding: 12; margin: 8;
+                                     min-width: 160; min-height: 200;">
+                <ui:Label text="😈 Daemonen" class="ak-h3" />
+                <ui:Label text="Hohe ATK — Lebensraub, Gift, risikoreich."
+                          class="ak-caption" />
+                <ui:Label text="Passiv: Lebensraub-Aura (20% Heal)"
+                          class="ak-text--accent" style="margin-top: 8;" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- Auswahl-Detail -->
+        <ui:VisualElement class="ak-surface"
+                          style="margin: 16; padding: 16;">
+            <ui:Label name="selected-race-name" text="Ritter" class="ak-h2" />
+            <ui:Label name="selected-passiv" text=""
+                      class="ak-text" style="margin-top: 8;" />
+            <ui:Label name="selected-mentor" text="Mentor: Marschall Aldor"
+                      class="ak-caption ak-text--accent" style="margin-top: 4;" />
+        </ui:VisualElement>
+
+        <!-- Bestätigen -->
+        <ui:Button name="confirm-button" text="Diese Rasse waehlen"
+                   class="ak-btn ak-btn--accent ak-btn--lg"
+                   style="margin: 16;" />
+
+    </ui:VisualElement>
+</ui:UXML>

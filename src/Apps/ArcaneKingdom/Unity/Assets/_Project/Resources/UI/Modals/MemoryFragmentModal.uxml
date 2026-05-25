@@ -1,0 +1,56 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-modal-backdrop ak-memory__backdrop"
+                      style="background-color: rgb(0,0,0);
+                             flex-grow: 1;
+                             justify-content: center;
+                             align-items: center;">
+
+        <ui:VisualElement class="ak-modal ak-memory__panel"
+                          style="background-color: rgba(20, 14, 35, 0.95);
+                                 padding: 32;
+                                 max-width: 600;
+                                 min-width: 360;">
+
+            <!-- Twist-Banner (nur bei Welt 8 sichtbar) -->
+            <ui:VisualElement name="twist-banner" class="ak-memory__twist-banner"
+                              style="display: None;
+                                     background-color: rgb(110, 30, 50);
+                                     padding: 8;
+                                     margin-bottom: 12;
+                                     border-radius: 4;">
+                <ui:Label text="⚠ DER TWIST ⚠" class="ak-h3"
+                          style="text-align: center; color: rgb(255, 220, 220);" />
+            </ui:VisualElement>
+
+            <ui:Label name="fragment-title" text="Erinnerung 1: Ein Name"
+                      class="ak-h2"
+                      style="text-align: center; color: rgb(220, 200, 230);
+                             margin-bottom: 24;" />
+
+            <ui:Label name="fragment-content"
+                      text="Ein Name. Nythragor. Angst und Schuld."
+                      class="ak-text"
+                      style="text-align: center;
+                             color: rgb(200, 200, 200);
+                             font-size: 16;
+                             white-space: normal;
+                             margin-bottom: 16;" />
+
+            <ui:Label name="twist-reveal" text=""
+                      class="ak-caption"
+                      style="text-align: center;
+                             color: rgb(150, 150, 180);
+                             font-size: 12;
+                             font-style: italic;
+                             white-space: normal;
+                             margin-bottom: 24;" />
+
+            <ui:Button name="continue-button" text="Weiter"
+                       class="ak-btn ak-btn--accent"
+                       style="align-self: center;
+                              min-width: 200;" />
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

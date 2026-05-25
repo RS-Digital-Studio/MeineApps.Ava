@@ -1,0 +1,73 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-modal-backdrop"
+                      style="background-color: rgba(0,0,0,0.7);
+                             flex-grow: 1;
+                             justify-content: center;
+                             align-items: center;">
+
+        <ui:VisualElement class="ak-modal ak-surface"
+                          style="background-color: rgb(34, 25, 55);
+                                 padding: 24;
+                                 max-width: 480;
+                                 min-width: 320;">
+
+            <ui:Label text="🌟 Prestige-Upgrade" class="ak-h2"
+                      style="text-align: center; margin-bottom: 16;" />
+
+            <ui:Label name="world-name" text="Welt-Name"
+                      class="ak-h3 ak-text--accent"
+                      style="text-align: center; margin-bottom: 16;" />
+
+            <ui:VisualElement class="ak-row" style="justify-content: center; margin-bottom: 16;">
+                <ui:Label name="current-stufe" text="Normal"
+                          class="ak-h4" style="margin-right: 8;" />
+                <ui:Label text="→" class="ak-h4" style="margin-right: 8;" />
+                <ui:Label name="next-stufe" text="I"
+                          class="ak-h4 ak-text--accent" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="ak-surface" style="padding: 12; margin-bottom: 12;">
+                <ui:VisualElement class="ak-row" style="justify-content: space-between;">
+                    <ui:Label text="Kosten:" class="ak-text" />
+                    <ui:Label name="gold-cost" text="100.000 Gold"
+                              class="ak-text--accent" />
+                </ui:VisualElement>
+                <ui:VisualElement class="ak-row" style="justify-content: space-between; margin-top: 4;">
+                    <ui:Label text="Gegner-Stats:" class="ak-text" />
+                    <ui:Label name="enemy-multiplier" text="x1.30" class="ak-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="ak-row" style="justify-content: space-between; margin-top: 4;">
+                    <ui:Label text="Gold-Drops:" class="ak-text" />
+                    <ui:Label name="drop-multiplier" text="x1.50" class="ak-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="ak-row" style="justify-content: space-between; margin-top: 4;">
+                    <ui:Label text="Daily-Income:" class="ak-text" />
+                    <ui:Label name="daily-income-multiplier" text="x2.00" class="ak-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="ak-row" style="justify-content: space-between; margin-top: 4;">
+                    <ui:Label text="Boss-Phasen:" class="ak-text" />
+                    <ui:Label name="boss-phases" text="2 Phasen" class="ak-text" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:Label name="exclusive-card" text=""
+                      class="ak-text--accent"
+                      style="text-align: center; margin-bottom: 12;" />
+
+            <ui:Label name="warning" text=""
+                      class="ak-caption ak-text--warning"
+                      style="text-align: center; margin-bottom: 12;" />
+
+            <ui:VisualElement class="ak-row">
+                <ui:Button name="cancel-button" text="Abbrechen"
+                           class="ak-btn ak-btn--ghost"
+                           style="flex-grow: 1; margin-right: 8;" />
+                <ui:Button name="confirm-button" text="Aufwerten"
+                           class="ak-btn ak-btn--accent"
+                           style="flex-grow: 1;" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

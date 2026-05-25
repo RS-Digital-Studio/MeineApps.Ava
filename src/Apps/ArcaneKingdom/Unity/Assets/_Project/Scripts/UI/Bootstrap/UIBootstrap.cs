@@ -11,8 +11,11 @@ using ArcaneKingdom.UI.Guild;
 using ArcaneKingdom.UI.Hub;
 using ArcaneKingdom.UI.Login;
 using ArcaneKingdom.UI.Modals;
+using ArcaneKingdom.UI.RaceSelection;
 using ArcaneKingdom.UI.SaisonPass;
+using ArcaneKingdom.UI.Schmiede;
 using ArcaneKingdom.UI.Settings;
+using ArcaneKingdom.UI.Tempel;
 using ArcaneKingdom.UI.Tutorial;
 using ArcaneKingdom.UI.WorldMap;
 using VContainer;
@@ -48,6 +51,13 @@ namespace ArcaneKingdom.UI.Bootstrap
                 [ScreenId.Settings]           = typeof(SettingsScreen),
                 [ScreenId.Codex]              = typeof(CodexScreen),
                 [ScreenId.TutorialOverlay]    = typeof(TutorialOverlay),
+
+                // v6 (Designplan v4) — neue Screens
+                [ScreenId.Schmiede]                 = typeof(SchmiedeScreen),
+                [ScreenId.Tempel]                   = typeof(TempelScreen),
+                [ScreenId.RaceSelection]            = typeof(RaceSelectionScreen),
+                [ScreenId.PrestigeUpgradeOverlay]   = typeof(PrestigeUpgradeModal),
+                [ScreenId.MemoryFragmentOverlay]    = typeof(MemoryFragmentModal),
             };
 
             UIInstaller.RegisterUI(builder, screens);

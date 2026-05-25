@@ -1,0 +1,60 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(22, 16, 41);">
+
+        <ui:VisualElement class="ak-app-header">
+            <ui:Button name="back-button" text="‹ Zurueck"
+                       class="ak-btn ak-btn--sm ak-btn--ghost"
+                       style="margin-right: 12;" />
+            <ui:Label text="Zauberschmiede" class="ak-h3"
+                      style="flex-grow: 1;" />
+        </ui:VisualElement>
+
+        <ui:VisualElement class="ak-col" style="flex-grow: 1; padding: 16;">
+
+            <!-- Input-Slots (max 4) -->
+            <ui:VisualElement name="input-slots"
+                              class="ak-row ak-schmiede__input-slots"
+                              style="justify-content: center;
+                                     margin-bottom: 16;
+                                     min-height: 140;" />
+
+            <!-- Vorschau-Panel -->
+            <ui:VisualElement name="preview-panel" class="ak-surface"
+                              style="padding: 12;
+                                     margin-bottom: 16;
+                                     min-height: 80;">
+                <ui:Label name="preview-title"
+                          text="Karten auswaehlen"
+                          class="ak-h4" />
+                <ui:Label name="preview-gold-cost" text=""
+                          class="ak-text--accent"
+                          style="margin-top: 4;" />
+                <ui:Label name="preview-warning" text=""
+                          class="ak-caption ak-text--warning"
+                          style="margin-top: 4;" />
+            </ui:VisualElement>
+
+            <!-- Action-Buttons -->
+            <ui:VisualElement class="ak-row" style="margin-bottom: 16;">
+                <ui:Button name="clear-button" text="Auswahl zuruecksetzen"
+                           class="ak-btn ak-btn--ghost"
+                           style="flex-grow: 1; margin-right: 8;" />
+                <ui:Button name="fuse-button" text="Schmieden"
+                           class="ak-btn ak-btn--accent ak-btn--lg"
+                           style="flex-grow: 2;" />
+            </ui:VisualElement>
+
+            <!-- Inventar -->
+            <ui:Label text="Inventar (Premium-Karten verborgen)"
+                      class="ak-overline" />
+            <ui:ScrollView style="flex-grow: 1; margin-top: 8;">
+                <ui:VisualElement name="inventory-list"
+                                  class="ak-row"
+                                  style="flex-wrap: wrap;
+                                         justify-content: flex-start;" />
+            </ui:ScrollView>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

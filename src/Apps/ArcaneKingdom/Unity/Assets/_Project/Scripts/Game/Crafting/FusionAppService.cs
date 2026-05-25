@@ -105,6 +105,13 @@ namespace ArcaneKingdom.Game.Crafting
         }
 
         /// <summary>
+        /// Liefert true, wenn die Karte nur noch in 1 Kopie im Inventar vorhanden ist.
+        /// Wird vom UI fuer die "Letzte-Kopie-Warnung" verwendet (Designplan v4 Kap. 5.2).
+        /// </summary>
+        public bool IsLastCopy(string cardDefinitionId, PlayerSave save)
+            => GetFusionService().IsLastCopy(cardDefinitionId, save.CardInventory.Values);
+
+        /// <summary>
         /// Fuehrt eine Kategorie-Fusion durch: validiert, prueft Gold/Scrap-Konto, mutiert PlayerSave.
         /// </summary>
         public async UniTask<Result<string>> ApplyCategoryFusionAsync(

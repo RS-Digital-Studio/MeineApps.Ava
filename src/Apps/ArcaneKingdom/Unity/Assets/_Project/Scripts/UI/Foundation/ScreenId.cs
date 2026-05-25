@@ -39,5 +39,12 @@ namespace ArcaneKingdom.UI.Foundation
         public const string CardDetailOverlay = "overlay-card-detail";
         public const string PackOpeningOverlay = "overlay-pack-opening";
         public const string TutorialOverlay = "overlay-tutorial";
+
+        // --- v6 (Designplan v4) — Schmiede / Tempel / Prestige / Story / Onboarding ---
+        public const string Schmiede = "schmiede";
+        public const string Tempel = "tempel";
+        public const string RaceSelection = "race-selection";
+        public const string PrestigeUpgradeOverlay = "overlay-prestige-upgrade";
+        public const string MemoryFragmentOverlay = "overlay-memory-fragment";
     }
 }

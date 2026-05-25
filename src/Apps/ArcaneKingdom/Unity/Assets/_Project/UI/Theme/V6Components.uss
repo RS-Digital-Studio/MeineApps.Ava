@@ -1,0 +1,207 @@
+/* ============================================================
+   v6 Components (Designplan v4)
+   ============================================================
+
+   USS-Klassen fuer:
+   - Schmiede (.ak-schmiede__*)
+   - Tempel (.ak-tempel__*)
+   - Race-Card (.ak-race-card__*)
+   - Memory-Fragment-Banner (.ak-memory__*)
+
+   Token-Quelle: Tokens.uss (--ak-accent, --ak-radius-md, ...)
+   ============================================================ */
+
+
+/* ============================================================
+   SCHMIEDE
+   ============================================================ */
+
+.ak-schmiede__input-slots {
+    background-color: rgba(245, 158, 11, 0.06);
+    border-radius: var(--ak-radius-md);
+    padding: 8px;
+}
+
+.ak-schmiede__input-slot {
+    width: 96px;
+    height: 128px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-width: 2px;
+    border-color: rgba(245, 158, 11, 0.3);
+    border-radius: var(--ak-radius-sm);
+    margin: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.ak-schmiede__input-slot--empty {
+    border-color: rgba(255, 255, 255, 0.15);
+    background-image: url("project://database/Assets/_Project/Art/UI/empty-slot.png");
+}
+
+.ak-schmiede__stack-count {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    -unity-font-style: bold;
+}
+
+
+/* ============================================================
+   TEMPEL
+   ============================================================ */
+
+.ak-tempel__day-cell {
+    width: 28px;
+    height: 28px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    margin: 2px;
+    justify-content: center;
+    align-items: center;
+}
+
+.ak-tempel__day-cell--claimed {
+    background-color: rgba(34, 197, 94, 0.3);
+    opacity: 0.6;
+}
+
+.ak-tempel__day-cell--today {
+    background-color: var(--ak-accent);
+    -unity-font-style: bold;
+}
+
+.ak-tempel__day-cell--milestone {
+    border-width: 2px;
+    border-color: var(--ak-accent);
+}
+
+.ak-tempel__exchange-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: var(--ak-radius-sm);
+    margin-bottom: 6px;
+}
+
+.ak-tempel__exchange-label {
+    flex-grow: 1;
+}
+
+.ak-tempel__exchange-cost {
+    color: var(--ak-accent);
+    -unity-font-style: bold;
+    margin-right: 12px;
+}
+
+.ak-tempel__exchange-button {
+    min-width: 100px;
+}
+
+
+/* ============================================================
+   RACE-SELECTION (Onboarding)
+   ============================================================ */
+
+.ak-race-card {
+    border-width: 3px;
+    border-color: rgba(255, 255, 255, 0);
+    border-radius: var(--ak-radius-md);
+    transition: border-color 150ms, transform 100ms;
+    cursor: link;
+}
+
+.ak-race-card:hover {
+    transform: translate(0, -4px);
+}
+
+.ak-race-card--selected {
+    border-color: var(--ak-accent);
+}
+
+
+/* ============================================================
+   MEMORY-FRAGMENT (Story-Cutscene)
+   ============================================================ */
+
+.ak-memory__backdrop {
+    background-color: rgb(0, 0, 0);
+}
+
+.ak-memory__panel {
+    border-width: 1px;
+    border-color: rgba(220, 200, 230, 0.3);
+    border-radius: var(--ak-radius-lg);
+}
+
+.ak-memory__twist-banner {
+    animation-duration: 1s;
+    animation-name: pulseAccent;
+    animation-iteration-count: infinite;
+}
+
+.ak-memory__twist-banner--major {
+    background-color: rgb(180, 30, 60);
+}
+
+@keyframes pulseAccent {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+
+/* ============================================================
+   STATUS-EFFECT-ICONS (auf Karten im Kampf)
+   ============================================================ */
+
+.ak-status-effect-row {
+    flex-direction: row;
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+}
+
+.ak-status-effect-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+    border-radius: 8px;
+    justify-content: center;
+    align-items: center;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+    font-size: 10px;
+}
+
+.ak-status-effect-icon--sleep    { background-color: rgb(108, 92, 231); }
+.ak-status-effect-icon--silence  { background-color: rgb(70, 50, 90); }
+.ak-status-effect-icon--frozen   { background-color: rgb(50, 130, 200); }
+.ak-status-effect-icon--stunned  { background-color: rgb(180, 130, 60); }
+.ak-status-effect-icon--poisoned { background-color: rgb(80, 160, 60); }
+.ak-status-effect-icon--burning  { background-color: rgb(200, 80, 40); }
+.ak-status-effect-icon--slowed   { background-color: rgb(150, 150, 150); }
+.ak-status-effect-icon--rooted   { background-color: rgb(110, 80, 40); }
+
+
+/* ============================================================
+   PERSONALITY-LINE-TOAST (Dialog-Lines im Kampf)
+   ============================================================ */
+
+.ak-personality-toast {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.85);
+    border-width: 1px;
+    border-color: var(--ak-accent);
+    border-radius: var(--ak-radius-md);
+    padding: 8px 12px;
+    max-width: 280px;
+    -unity-font-style: italic;
+    color: rgb(240, 220, 200);
+}

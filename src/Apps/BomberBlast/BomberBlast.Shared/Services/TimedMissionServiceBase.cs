@@ -21,6 +21,11 @@ public abstract class TimedMissionServiceBase
 
     private MissionPersistenceData _data;
     private List<WeeklyMission> _missions;
+    // Lazy-Init-Flag: CheckPeriodReset() darf NICHT im Base-Ctor laufen, weil es virtuelle
+    // Properties (z.B. CurrentPlayerLevel) aufruft, die im Subtyp auf injizierte Services
+    // zugreifen — diese sind beim Base-Ctor-Aufruf noch null (Subtyp-Felder werden erst
+    // NACH base() zugewiesen). Initialisierung erfolgt deshalb beim ersten Zugriff.
+    private bool _initialized;
 
     protected TimedMissionServiceBase(IPreferencesService preferences, IBattlePassService battlePassService, ILeagueService leagueService)
     {
@@ -29,6 +34,17 @@ public abstract class TimedMissionServiceBase
         LeagueService = leagueService;
         _data = Load();
         _missions = [];
+    }
+
+    /// <summary>
+    /// Stellt sicher dass Missionen für die aktuelle Periode geladen/generiert sind.
+    /// Muss VOR jedem Zugriff auf _missions/_data laufen — wird von allen public APIs aufgerufen.
+    /// Idempotent: subsequent Calls sind No-Ops.
+    /// </summary>
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+        _initialized = true;
         CheckPeriodReset();
     }
 
@@ -89,22 +105,22 @@ public abstract class TimedMissionServiceBase
     // --- Gemeinsame Properties ---
 
     /// <summary>Aktuelle Missionen dieser Periode</summary>
-    public List<WeeklyMission> MissionsList => _missions;
+    public List<WeeklyMission> MissionsList { get { EnsureInitialized(); return _missions; } }
 
     /// <summary>Ob alle Missionen der aktuellen Periode abgeschlossen sind</summary>
-    public bool IsAllComplete => _missions.Count > 0 && _missions.All(m => m.IsCompleted);
+    public bool IsAllComplete { get { EnsureInitialized(); return _missions.Count > 0 && _missions.All(m => m.IsCompleted); } }
 
     /// <summary>Anzahl abgeschlossener Missionen</summary>
-    public int CompletedCount => _missions.Count(m => m.IsCompleted);
+    public int CompletedCount { get { EnsureInitialized(); return _missions.Count(m => m.IsCompleted); } }
 
     /// <summary>Bonus-Coins für alle-abgeschlossen</summary>
     public int AllCompleteBonusCoins => AllCompleteBonusCoinAmount;
 
     /// <summary>Ob der All-Complete-Bonus bereits eingesammelt wurde</summary>
-    public bool IsBonusClaimed => _data.BonusClaimed;
+    public bool IsBonusClaimed { get { EnsureInitialized(); return _data.BonusClaimed; } }
 
     /// <summary>Gesamtanzahl abgeschlossener Perioden</summary>
-    public int TotalPeriodsCompleted => _data.TotalPeriodsCompleted;
+    public int TotalPeriodsCompleted { get { EnsureInitialized(); return _data.TotalPeriodsCompleted; } }
 
     // --- Gemeinsame Methoden ---
 
@@ -115,6 +131,7 @@ public abstract class TimedMissionServiceBase
     public bool TrackProgressInternal(WeeklyMissionType type, int amount = 1)
     {
         if (amount <= 0) return false;
+        EnsureInitialized();
 
         bool anyCompleted = false;
         foreach (var mission in _missions)
@@ -147,6 +164,7 @@ public abstract class TimedMissionServiceBase
     /// </summary>
     public int ClaimAllCompleteBonus()
     {
+        EnsureInitialized();
         if (!IsAllComplete || _data.BonusClaimed) return 0;
 
         _data.BonusClaimed = true;

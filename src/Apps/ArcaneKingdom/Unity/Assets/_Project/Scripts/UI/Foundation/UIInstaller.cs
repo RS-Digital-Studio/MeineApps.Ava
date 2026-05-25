@@ -27,6 +27,10 @@ namespace ArcaneKingdom.UI.Foundation
             builder.Register<ToastService>(Lifetime.Singleton);
             builder.Register<ModalContext>(Lifetime.Singleton);
 
+            // v6 (Designplan v4): Modal-Contexts fuer Daten-Uebergabe an Transient-Modals
+            builder.Register<ArcaneKingdom.UI.Modals.MemoryFragmentContext>(Lifetime.Singleton);
+            builder.Register<ArcaneKingdom.UI.Modals.PrestigeUpgradeContext>(Lifetime.Singleton);
+
             // Screens als Transient registrieren — pro Push neue Instanz wäre theoretisch
             // möglich, aber ScreenManager cached gebaute Screens (built-cache). Singleton
             // würde Lifetime-Überlapp ergeben, deswegen Transient.

@@ -45,8 +45,7 @@ namespace ArcaneKingdom.UI.Modals
         private Button _confirmButton = null!;
         private Button _cancelButton = null!;
 
-        // Eingangs-Parameter
-        public string? TargetWorldId { get; set; }
+        private readonly PrestigeUpgradeContext _ctx;
 
         public override string Id => ScreenId.PrestigeUpgradeOverlay;
         public override bool IsOverlay => true;
@@ -60,7 +59,8 @@ namespace ArcaneKingdom.UI.Modals
             WorldCatalogService worldCatalog,
             CardCatalogService cardCatalog,
             ILocalizationService loc,
-            ToastService toast)
+            ToastService toast,
+            PrestigeUpgradeContext ctx)
         {
             _screenManager = screenManager;
             _save = save;
@@ -70,6 +70,7 @@ namespace ArcaneKingdom.UI.Modals
             _cardCatalog = cardCatalog;
             _loc = loc;
             _toast = toast;
+            _ctx = ctx;
         }
 
         protected override void BindElements(VisualElement root)
@@ -93,7 +94,7 @@ namespace ArcaneKingdom.UI.Modals
 
         public override async UniTask OnEnterAsync(CancellationToken ct)
         {
-            if (string.IsNullOrEmpty(TargetWorldId))
+            if (string.IsNullOrEmpty(_ctx.TargetWorldId))
             {
                 _toast.Show("Keine Welt gewaehlt", ToastKind.Danger);
                 _screenManager.PopAsync().Forget();
@@ -107,14 +108,14 @@ namespace ArcaneKingdom.UI.Modals
                 return;
             }
             var save = saveR.Value;
-            var world = _worldCatalog.Find(TargetWorldId!);
+            var world = _worldCatalog.Find(_ctx.TargetWorldId!);
             if (world == null)
             {
-                _toast.Show($"Welt '{TargetWorldId}' unbekannt", ToastKind.Danger);
+                _toast.Show($"Welt '{_ctx.TargetWorldId}' unbekannt", ToastKind.Danger);
                 return;
             }
 
-            var currentStufe = save.Prestige.Get(TargetWorldId!);
+            var currentStufe = save.Prestige.Get(_ctx.TargetWorldId!);
             var nextStufe = _domain.NextStufe(currentStufe);
             var cost = PrestigeStufeBalancing.GetUpgradeGoldCost(currentStufe);
 
@@ -136,7 +137,7 @@ namespace ArcaneKingdom.UI.Modals
             }
 
             // Voraussetzungs-Check
-            var canUpgrade = _app.CanUpgrade(TargetWorldId!, save);
+            var canUpgrade = _app.CanUpgrade(_ctx.TargetWorldId!, save);
             if (!canUpgrade.IsSuccess)
             {
                 _warning.text = $"⚠ {canUpgrade.ErrorMessage}";
@@ -154,10 +155,10 @@ namespace ArcaneKingdom.UI.Modals
 
         private async UniTaskVoid RunUpgradeAsync()
         {
-            if (string.IsNullOrEmpty(TargetWorldId)) return;
+            if (string.IsNullOrEmpty(_ctx.TargetWorldId)) return;
             _confirmButton.SetEnabled(false);
 
-            var result = await _app.ApplyUpgradeAsync(TargetWorldId!);
+            var result = await _app.ApplyUpgradeAsync(_ctx.TargetWorldId!);
             if (!result.IsSuccess)
             {
                 _toast.Show(result.ErrorMessage ?? "Upgrade fehlgeschlagen", ToastKind.Danger);

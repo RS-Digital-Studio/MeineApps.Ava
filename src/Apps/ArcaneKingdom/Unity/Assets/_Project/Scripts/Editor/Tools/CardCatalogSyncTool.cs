@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using ArcaneKingdom.Domain.Cards;
+using ArcaneKingdom.Domain.World;
 using ArcaneKingdom.Game.Catalog;
 using UnityEditor;
 using UnityEngine;
@@ -64,6 +65,60 @@ namespace ArcaneKingdom.EditorTools
             AssetDatabase.Refresh();
 
             Debug.Log($"[CardCatalog] Sync abgeschlossen — {cards.Length} Karten registriert.");
+        }
+
+        // ============================================================
+        // World-Catalog-Sync (analoges Pattern)
+        // ============================================================
+
+        private const string WorldCatalogPath = "Assets/_Project/Resources/WorldCatalog.asset";
+
+        [MenuItem("ArcaneKingdom/Tools/Sync WorldCatalog")]
+        public static void SyncWorlds()
+        {
+            EnsureResourcesFolder();
+
+            var worlds = AssetDatabase.FindAssets("t:WorldDefinition")
+                .Select(g => AssetDatabase.LoadAssetAtPath<WorldDefinition>(AssetDatabase.GUIDToAssetPath(g)))
+                .Where(w => w != null)
+                .OrderBy(w => w!.Index)
+                .ToArray();
+
+            var catalog = AssetDatabase.LoadAssetAtPath<WorldCatalogAsset>(WorldCatalogPath);
+            if (catalog == null)
+            {
+                catalog = ScriptableObject.CreateInstance<WorldCatalogAsset>();
+                AssetDatabase.CreateAsset(catalog, WorldCatalogPath);
+                Debug.Log($"[WorldCatalog] Neues Catalog angelegt unter {WorldCatalogPath}");
+            }
+
+            catalog.SetWorlds(worlds!);
+            EditorUtility.SetDirty(catalog);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log($"[WorldCatalog] Sync abgeschlossen — {worlds.Length} Welten registriert.");
+        }
+
+        [MenuItem("ArcaneKingdom/Tools/Sync All Catalogs")]
+        public static void SyncAll()
+        {
+            Sync();
+            SyncWorlds();
+        }
+
+        private static void EnsureResourcesFolder()
+        {
+            const string dir = "Assets/_Project/Resources";
+            if (AssetDatabase.IsValidFolder(dir)) return;
+            var parts = dir.Split('/');
+            var current = parts[0];
+            for (var i = 1; i < parts.Length; i++)
+            {
+                var next = $"{current}/{parts[i]}";
+                if (!AssetDatabase.IsValidFolder(next))
+                    AssetDatabase.CreateFolder(current, parts[i]);
+                current = next;
+            }
         }
     }
 }

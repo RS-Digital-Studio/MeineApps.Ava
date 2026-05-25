@@ -6,6 +6,7 @@ using ArcaneKingdom.UI.Foundation;
 using ArcaneKingdom.UI.Hub;
 using ArcaneKingdom.UI.Login;
 using ArcaneKingdom.UI.Modals;
+using ArcaneKingdom.UI.WorldMap;
 using VContainer;
 
 namespace ArcaneKingdom.UI.Bootstrap
@@ -30,10 +31,11 @@ namespace ArcaneKingdom.UI.Bootstrap
                 [ScreenId.CardDetailOverlay]  = typeof(CardDetailModal),
                 [ScreenId.PackOpeningOverlay] = typeof(PackOpeningModal),
                 [ScreenId.DeckBuilder]        = typeof(DeckBuilderScreen),
+                [ScreenId.WorldMap]           = typeof(WorldMapScreen),
 
-                // Stufen 7-10 werden hier nach und nach befuellt:
-                //   [ScreenId.WorldMap]    = typeof(WorldMapScreen),
+                // Stufen 8-10 werden hier nach und nach befuellt:
                 //   [ScreenId.Battle]      = typeof(BattleScreen),
+                //   [ScreenId.Arena]       = typeof(ArenaScreen),
                 //   ...
             };
 

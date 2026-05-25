@@ -1,0 +1,95 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <!--
+        WorldMapScreen — Welt-Auswahl (Tabs) + Node-Grid + Detail-Panel.
+    -->
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <!-- ================ HEADER ================ -->
+        <ui:VisualElement class="ak-app-header">
+            <ui:Button name="world-back-button" text="‹ Zurueck"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
+            <ui:Label name="world-title" text="Welt-Karte" class="ak-h3"
+                      style="flex-grow: 1;" />
+            <ui:Label name="world-total-stars" text="0 / 360 ★"
+                      class="ak-body ak-text--accent" />
+        </ui:VisualElement>
+
+        <!-- ================ WELT-TABS (horizontal scroll) ================ -->
+        <ui:ScrollView name="world-tabs-scroll" mode="Horizontal"
+                       vertical-scroller-visibility="Hidden"
+                       style="height: 80; background-color: var(--ak-bg-deep);
+                              border-bottom-width: 1;
+                              border-bottom-color: rgba(255,255,255,0.06);">
+            <ui:VisualElement name="world-tabs-container"
+                              style="flex-direction: row; padding: 8;" />
+        </ui:ScrollView>
+
+        <!-- ================ BODY (Nodes-Grid + Detail) ================ -->
+        <ui:VisualElement class="ak-row" style="flex-grow: 1;">
+
+            <!-- Nodes-Grid (links) -->
+            <ui:VisualElement class="ak-col" style="flex-grow: 2; padding: 16;">
+                <ui:Label name="current-world-name" text="" class="ak-h2"
+                          style="margin-bottom: 4;" />
+                <ui:Label name="current-world-meta" text="" class="ak-caption"
+                          style="margin-bottom: 16;" />
+
+                <ui:ScrollView style="flex-grow: 1;">
+                    <ui:VisualElement name="world-nodes-grid"
+                                      style="flex-direction: row; flex-wrap: wrap;
+                                             justify-content: center;" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+
+            <!-- Detail-Panel (rechts) -->
+            <ui:VisualElement name="node-detail-panel"
+                              class="ak-col" style="width: 280; padding: 16;
+                                                     border-left-width: 1;
+                                                     border-left-color: rgba(255,255,255,0.06);">
+
+                <ui:Label name="node-detail-empty" text="Waehle einen Node"
+                          class="ak-body" style="-unity-text-align: middle-center;
+                                                  margin-top: 32;" />
+
+                <ui:VisualElement name="node-detail-content" class="ak-hidden">
+                    <ui:Label name="node-detail-name" text="Node" class="ak-h2"
+                              style="margin-bottom: 4;" />
+                    <ui:Label name="node-detail-type" text="Normal" class="ak-caption"
+                              style="margin-bottom: 12;" />
+
+                    <!-- Energie-Kosten -->
+                    <ui:VisualElement class="ak-surface" style="margin-bottom: 12;">
+                        <ui:VisualElement class="ak-row" style="justify-content: space-between;">
+                            <ui:Label text="Energie-Kosten" class="ak-caption" />
+                            <ui:Label name="node-detail-energy"
+                                      text="1" class="ak-h3 ak-text--success" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <!-- Sterne (aktueller Fortschritt) -->
+                    <ui:Label text="Beste Bewertung" class="ak-overline"
+                              style="margin-bottom: 4;" />
+                    <ui:Label name="node-detail-stars" text="☆ ☆ ☆ ☆"
+                              class="ak-h3"
+                              style="-unity-text-align: middle-center; margin-bottom: 12;" />
+
+                    <!-- Belohnungen -->
+                    <ui:Label text="Belohnungen" class="ak-overline"
+                              style="margin-bottom: 4;" />
+                    <ui:VisualElement name="node-detail-rewards"
+                                      class="ak-surface" style="margin-bottom: 16;" />
+
+                    <!-- Start-Button -->
+                    <ui:Button name="node-detail-start" text="Kampf starten"
+                               class="ak-btn ak-btn--lg ak-btn--accent" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

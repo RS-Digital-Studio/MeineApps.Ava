@@ -13,7 +13,9 @@ using ArcaneKingdom.Game.Quest;
 using ArcaneKingdom.Game.Shop;
 using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
+using ArcaneKingdom.UI.Modals;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ArcaneKingdom.UI.Hub

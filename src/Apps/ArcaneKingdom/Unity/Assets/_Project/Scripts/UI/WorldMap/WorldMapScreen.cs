@@ -215,7 +215,10 @@ namespace ArcaneKingdom.UI.WorldMap
             var tile = new VisualElement { name = $"node-{node.Id}" };
             tile.style.width = 96;
             tile.style.height = 110;
-            tile.style.margin = 8;
+            tile.style.marginTop = 8;
+            tile.style.marginBottom = 8;
+            tile.style.marginLeft = 8;
+            tile.style.marginRight = 8;
             tile.style.borderTopLeftRadius = 12;
             tile.style.borderTopRightRadius = 12;
             tile.style.borderBottomLeftRadius = 12;

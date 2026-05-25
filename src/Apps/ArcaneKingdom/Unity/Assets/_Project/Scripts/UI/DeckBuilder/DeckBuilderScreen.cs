@@ -10,6 +10,7 @@ using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ArcaneKingdom.UI.DeckBuilder

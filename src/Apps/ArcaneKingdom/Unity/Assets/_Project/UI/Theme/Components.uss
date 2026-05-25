@@ -1,0 +1,355 @@
+/*
+    Komplexe Komponenten — Header, TabBar, Karten-Item, Modal, Toast.
+    Setzt auf Tokens.uss + Common.uss auf.
+*/
+
+/* ============================================================
+   APP-HEADER (Top-Bar mit Avatar, Level, Currencies)
+   ============================================================ */
+
+.ak-app-header {
+    height: 64;
+    flex-direction: row;
+    align-items: center;
+    padding-left: var(--ak-space-3);
+    padding-right: var(--ak-space-3);
+    background-color: var(--ak-bg-deep);
+    border-bottom-width: 1;
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.ak-app-header__avatar {
+    width: 44;
+    height: 44;
+    border-radius: 22;
+    background-color: var(--ak-primary);
+    border-width: 2;
+    border-color: var(--ak-accent);
+    margin-right: var(--ak-space-3);
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.ak-app-header__name {
+    font-size: var(--ak-font-md);
+    -unity-font-style: bold;
+    color: var(--ak-text-primary);
+}
+
+.ak-app-header__level {
+    font-size: var(--ak-font-xs);
+    color: var(--ak-accent);
+    -unity-font-style: bold;
+}
+
+.ak-currency-pill {
+    flex-direction: row;
+    align-items: center;
+    height: 30;
+    padding-left: var(--ak-space-2);
+    padding-right: var(--ak-space-3);
+    margin-left: var(--ak-space-2);
+    background-color: rgba(0, 0, 0, 0.35);
+    border-radius: 15;
+    border-width: 1;
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.ak-currency-pill__icon {
+    width: 18;
+    height: 18;
+    margin-right: var(--ak-space-2);
+}
+
+.ak-currency-pill__value {
+    font-size: var(--ak-font-sm);
+    -unity-font-style: bold;
+    color: var(--ak-text-primary);
+}
+
+.ak-currency-pill--gold .ak-currency-pill__icon { background-color: var(--ak-accent); }
+.ak-currency-pill--diamond .ak-currency-pill__icon { background-color: var(--ak-primary-light); }
+.ak-currency-pill--energy .ak-currency-pill__icon { background-color: var(--ak-success); }
+
+/* ============================================================
+   TAB-BAR (Bottom-Navigation, 5 Tabs)
+   ============================================================ */
+
+.ak-tab-bar {
+    height: 64;
+    flex-direction: row;
+    background-color: var(--ak-bg-deep);
+    border-top-width: 1;
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.ak-tab {
+    flex-grow: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: var(--ak-space-1);
+    padding-bottom: var(--ak-space-1);
+    transition: background-color 120ms;
+}
+
+.ak-tab:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.ak-tab__icon {
+    width: 24;
+    height: 24;
+    margin-bottom: 2;
+    -unity-background-image-tint-color: var(--ak-text-muted);
+    transition: -unity-background-image-tint-color 120ms, scale 120ms;
+}
+
+.ak-tab__label {
+    font-size: var(--ak-font-xs);
+    color: var(--ak-text-muted);
+    -unity-font-style: bold;
+    transition: color 120ms;
+}
+
+.ak-tab--active .ak-tab__icon {
+    -unity-background-image-tint-color: var(--ak-accent);
+    scale: 1.10 1.10;
+}
+
+.ak-tab--active .ak-tab__label {
+    color: var(--ak-accent);
+}
+
+/* ============================================================
+   CARD-ITEM (Karten-Vorschau im Browser / Collection)
+   ============================================================ */
+
+.ak-card {
+    width: 156;
+    height: 220;
+    margin: var(--ak-space-2);
+    padding: var(--ak-space-2);
+    border-radius: var(--ak-radius-md);
+    background-color: var(--ak-bg-surface);
+    border-width: 2;
+    border-color: rgba(255, 255, 255, 0.08);
+    transition: scale 100ms, border-color 120ms;
+}
+
+.ak-card:hover { scale: 1.03 1.03; }
+.ak-card:active { scale: 0.97 0.97; }
+
+.ak-card--rarity-common { border-color: var(--ak-rarity-common); }
+.ak-card--rarity-uncommon { border-color: var(--ak-rarity-uncommon); }
+.ak-card--rarity-rare { border-color: var(--ak-rarity-rare); }
+.ak-card--rarity-epic { border-color: var(--ak-rarity-epic); }
+.ak-card--rarity-legendary { border-color: var(--ak-rarity-legendary); }
+
+.ak-card__art {
+    flex-grow: 1;
+    border-radius: var(--ak-radius-sm);
+    background-color: rgba(0, 0, 0, 0.4);
+    margin-bottom: var(--ak-space-1);
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.ak-card__name {
+    font-size: var(--ak-font-sm);
+    -unity-font-style: bold;
+    color: var(--ak-text-primary);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-text-overflow-position: end;
+}
+
+.ak-card__cost-badge {
+    position: absolute;
+    top: 4;
+    left: 4;
+    width: 28;
+    height: 28;
+    border-radius: 14;
+    background-color: var(--ak-primary-dark);
+    border-width: 1;
+    border-color: var(--ak-accent);
+    align-items: center;
+    justify-content: center;
+}
+
+.ak-card__cost-value {
+    font-size: var(--ak-font-md);
+    -unity-font-style: bold;
+    color: var(--ak-accent);
+}
+
+.ak-card__element-badge {
+    position: absolute;
+    top: 4;
+    right: 4;
+    width: 22;
+    height: 22;
+    border-radius: 11;
+}
+
+.ak-card__element-badge--natur { background-color: var(--ak-element-natur); }
+.ak-card__element-badge--feuer { background-color: var(--ak-element-feuer); }
+.ak-card__element-badge--wasser { background-color: var(--ak-element-wasser); }
+.ak-card__element-badge--licht { background-color: var(--ak-element-licht); }
+.ak-card__element-badge--dunkel { background-color: var(--ak-element-dunkel); }
+
+.ak-card__stats {
+    flex-direction: row;
+    justify-content: space-between;
+    padding-top: var(--ak-space-1);
+}
+
+.ak-card__stat {
+    font-size: var(--ak-font-sm);
+    -unity-font-style: bold;
+}
+
+.ak-card__stat--atk { color: var(--ak-danger); }
+.ak-card__stat--hp { color: var(--ak-success); }
+
+/* Locked / Not-Owned-State: Karten-Art ausgegraut */
+.ak-card--locked .ak-card__art {
+    opacity: 0.25;
+}
+.ak-card--locked .ak-card__name {
+    color: var(--ak-text-muted);
+}
+
+/* ============================================================
+   MODAL / OVERLAY (Center-Dialog mit Backdrop)
+   ============================================================ */
+
+.ak-modal-backdrop {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: var(--ak-bg-overlay);
+    align-items: center;
+    justify-content: center;
+}
+
+.ak-modal {
+    min-width: 320;
+    max-width: 480;
+    padding: var(--ak-space-5);
+    background-color: var(--ak-bg-surface);
+    border-radius: var(--ak-radius-lg);
+    border-width: 1;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.ak-modal__title {
+    font-size: var(--ak-font-xl);
+    -unity-font-style: bold;
+    color: var(--ak-text-primary);
+    margin-bottom: var(--ak-space-3);
+    -unity-text-align: middle-center;
+}
+
+.ak-modal__body {
+    font-size: var(--ak-font-md);
+    color: var(--ak-text-secondary);
+    margin-bottom: var(--ak-space-4);
+    white-space: normal;
+}
+
+.ak-modal__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.ak-modal__actions > .ak-btn {
+    margin-left: var(--ak-space-2);
+}
+
+/* ============================================================
+   TOAST / SNACKBAR (kurze Nachricht oben)
+   ============================================================ */
+
+.ak-toast {
+    position: absolute;
+    top: 80;
+    left: 50%;
+    translate: -50% 0;
+    min-width: 240;
+    max-width: 380;
+    padding: var(--ak-space-3) var(--ak-space-4);
+    background-color: var(--ak-bg-surface-2);
+    border-radius: var(--ak-radius-md);
+    border-width: 1;
+    border-color: var(--ak-primary-light);
+    flex-direction: row;
+    align-items: center;
+    transition: opacity 200ms, translate 200ms;
+}
+
+.ak-toast__icon {
+    width: 20;
+    height: 20;
+    margin-right: var(--ak-space-2);
+}
+
+.ak-toast__text {
+    flex-grow: 1;
+    font-size: var(--ak-font-md);
+    color: var(--ak-text-primary);
+    white-space: normal;
+}
+
+.ak-toast--success { border-color: var(--ak-success); }
+.ak-toast--warning { border-color: var(--ak-warning); }
+.ak-toast--danger { border-color: var(--ak-danger); }
+
+/* ============================================================
+   PROGRESS-BAR (z.B. Energie-Bar, EXP-Bar, Quest-Progress)
+   ============================================================ */
+
+.ak-progress {
+    height: 12;
+    border-radius: 6;
+    background-color: rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.ak-progress__fill {
+    height: 100%;
+    background-color: var(--ak-accent);
+    transition: width 300ms ease-out;
+}
+
+.ak-progress--primary .ak-progress__fill { background-color: var(--ak-primary-light); }
+.ak-progress--success .ak-progress__fill { background-color: var(--ak-success); }
+.ak-progress--danger .ak-progress__fill { background-color: var(--ak-danger); }
+
+/* ============================================================
+   SCREEN-TRANSITIONS (Fade-In/Out beim Screen-Wechsel)
+   ============================================================ */
+
+.ak-screen {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    opacity: 1;
+    transition: opacity 200ms ease-in-out;
+}
+
+.ak-screen--hidden {
+    opacity: 0;
+    display: none;
+}
+
+.ak-screen--entering {
+    opacity: 0;
+}
+
+.ak-screen--leaving {
+    opacity: 0;
+}

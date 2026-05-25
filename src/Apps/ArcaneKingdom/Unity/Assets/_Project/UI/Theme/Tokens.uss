@@ -1,0 +1,81 @@
+/*
+    ArcaneKingdom Design Tokens
+    Royal-Purple + Gold (Brand-Referenz aus DESIGN.md v5.4)
+
+    Verwendung in anderen USS:  var(--ak-primary)
+    Verwendung in UXML inline:  style="background-color: var(--ak-primary);"
+*/
+
+:root {
+    /* === Brand Farben === */
+    --ak-primary: rgb(107, 70, 193);          /* #6B46C1 Royal-Purple */
+    --ak-primary-light: rgb(139, 92, 246);    /* #8B5CF6 Light-Purple */
+    --ak-primary-dark: rgb(76, 47, 153);      /* #4C2F99 Dark-Purple */
+    --ak-accent: rgb(245, 158, 11);           /* #F59E0B Gold */
+    --ak-accent-light: rgb(252, 211, 77);     /* #FCD34D Gold-Light */
+    --ak-accent-dark: rgb(180, 110, 0);       /* #B46E00 Gold-Dark */
+
+    /* === Hintergrund / Surface === */
+    --ak-bg-deep: rgb(13, 8, 28);             /* #0D081C Deepest BG */
+    --ak-bg-base: rgb(22, 16, 41);            /* #161029 Main BG */
+    --ak-bg-surface: rgb(38, 28, 64);         /* #261C40 Card/Panel */
+    --ak-bg-surface-2: rgb(52, 40, 84);       /* #342854 Elevated */
+    --ak-bg-overlay: rgba(0, 0, 0, 0.72);     /* Modal Backdrop */
+
+    /* === Text === */
+    --ak-text-primary: rgb(248, 245, 255);    /* #F8F5FF Main Text */
+    --ak-text-secondary: rgb(196, 188, 220);  /* #C4BCDC Subtitle */
+    --ak-text-muted: rgb(140, 130, 168);      /* #8C82A8 Disabled */
+    --ak-text-on-accent: rgb(38, 22, 0);      /* #261600 Text on Gold */
+    --ak-text-on-primary: rgb(255, 255, 255); /* Text on Purple */
+
+    /* === Rarities (Karten / Items) === */
+    --ak-rarity-common: rgb(160, 160, 160);
+    --ak-rarity-uncommon: rgb(102, 199, 102);
+    --ak-rarity-rare: rgb(102, 166, 242);
+    --ak-rarity-epic: rgb(179, 115, 242);
+    --ak-rarity-legendary: rgb(242, 199, 77);
+
+    /* === Elemente === */
+    --ak-element-natur: rgb(77, 199, 77);
+    --ak-element-feuer: rgb(230, 89, 51);
+    --ak-element-wasser: rgb(77, 140, 242);
+    --ak-element-licht: rgb(242, 217, 102);
+    --ak-element-dunkel: rgb(140, 77, 166);
+
+    /* === Status === */
+    --ak-success: rgb(56, 197, 137);          /* #38C589 */
+    --ak-warning: rgb(245, 158, 11);          /* Wie Accent */
+    --ak-danger: rgb(232, 64, 87);            /* #E84057 */
+    --ak-info: rgb(77, 166, 242);             /* #4DA6F2 */
+
+    /* === Spacing (in px) === */
+    --ak-space-1: 4;
+    --ak-space-2: 8;
+    --ak-space-3: 12;
+    --ak-space-4: 16;
+    --ak-space-5: 24;
+    --ak-space-6: 32;
+    --ak-space-7: 48;
+    --ak-space-8: 64;
+
+    /* === Radius === */
+    --ak-radius-sm: 4;
+    --ak-radius-md: 8;
+    --ak-radius-lg: 16;
+    --ak-radius-xl: 24;
+    --ak-radius-pill: 9999;
+
+    /* === Font-Size === */
+    --ak-font-xs: 11;
+    --ak-font-sm: 13;
+    --ak-font-md: 15;
+    --ak-font-lg: 18;
+    --ak-font-xl: 24;
+    --ak-font-xxl: 34;
+    --ak-font-display: 48;
+
+    /* === Effekt-Glow === */
+    --ak-glow-primary: rgba(139, 92, 246, 0.55);
+    --ak-glow-accent: rgba(252, 211, 77, 0.65);
+}

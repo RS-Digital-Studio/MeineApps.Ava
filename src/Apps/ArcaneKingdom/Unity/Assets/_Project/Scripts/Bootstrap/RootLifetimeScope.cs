@@ -2,6 +2,8 @@
 using ArcaneKingdom.Domain.Config;
 using ArcaneKingdom.Game.Bootstrap;
 using ArcaneKingdom.Game.Services;
+using ArcaneKingdom.UI.Bootstrap;
+using ArcaneKingdom.UI.Foundation;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -16,6 +18,7 @@ namespace ArcaneKingdom.Bootstrap
     {
         [SerializeField] private BalancingConfig? balancingConfig;
         [SerializeField] private UnityAudioService? audioService;
+        [SerializeField] private UIRoot? uiRoot;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -25,8 +28,16 @@ namespace ArcaneKingdom.Bootstrap
             if (audioService != null)
                 builder.RegisterComponent(audioService).AsImplementedInterfaces();
 
+            // UIRoot-MonoBehaviour als Singleton-Component registrieren (haelt
+            // das UIDocument + Screen/Overlay-Container). Pflicht fuer ScreenManager.
+            if (uiRoot != null)
+                builder.RegisterComponent(uiRoot);
+
             // Game-Assembly-Registrierungen (Services, Controller, EntryPoints)
             GameInstaller.RegisterServices(builder);
+
+            // UI-Foundation (ScreenManager, Factory, Toasts) + alle konkreten Screens
+            UIBootstrap.RegisterAllScreens(builder);
 
             builder.RegisterEntryPoint<BootEntryPoint>();
         }

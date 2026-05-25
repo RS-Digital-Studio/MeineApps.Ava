@@ -1,0 +1,158 @@
+/*
+    Common Controls — Buttons, Inputs, Labels, Surfaces.
+    Setzt auf Tokens.uss auf.
+*/
+
+/* === Root / globale Defaults === */
+.ak-root {
+    flex-grow: 1;
+    background-color: var(--ak-bg-base);
+    color: var(--ak-text-primary);
+    font-size: var(--ak-font-md);
+    -unity-font-style: normal;
+}
+
+.ak-fill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+/* === Surfaces (Panels, Cards, Sheets) === */
+.ak-surface {
+    background-color: var(--ak-bg-surface);
+    border-radius: var(--ak-radius-lg);
+    padding: var(--ak-space-4);
+    border-width: 1;
+    border-color: rgba(255, 255, 255, 0.04);
+}
+
+.ak-surface-elevated {
+    background-color: var(--ak-bg-surface-2);
+    border-radius: var(--ak-radius-lg);
+    padding: var(--ak-space-4);
+    border-width: 1;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ak-divider {
+    height: 1;
+    background-color: rgba(255, 255, 255, 0.06);
+    margin-top: var(--ak-space-3);
+    margin-bottom: var(--ak-space-3);
+}
+
+/* === Buttons === */
+.ak-btn {
+    height: 44;
+    padding-left: var(--ak-space-5);
+    padding-right: var(--ak-space-5);
+    border-radius: var(--ak-radius-md);
+    border-width: 0;
+    background-color: var(--ak-bg-surface-2);
+    color: var(--ak-text-primary);
+    font-size: var(--ak-font-md);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    transition: background-color 120ms ease-in-out, scale 80ms ease-out;
+}
+
+.ak-btn:hover {
+    background-color: rgb(64, 50, 102);
+}
+
+.ak-btn:active {
+    scale: 0.97 0.97;
+}
+
+.ak-btn:disabled {
+    background-color: rgba(82, 70, 112, 0.4);
+    color: var(--ak-text-muted);
+}
+
+/* Primary (Royal-Purple) */
+.ak-btn--primary {
+    background-color: var(--ak-primary);
+    color: var(--ak-text-on-primary);
+}
+.ak-btn--primary:hover {
+    background-color: var(--ak-primary-light);
+}
+
+/* Accent (Gold — Energie, Premium, Confirm-Käufe) */
+.ak-btn--accent {
+    background-color: var(--ak-accent);
+    color: var(--ak-text-on-accent);
+}
+.ak-btn--accent:hover {
+    background-color: var(--ak-accent-light);
+}
+
+/* Ghost (transparent, für sekundäre Aktionen) */
+.ak-btn--ghost {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-width: 1;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+.ak-btn--ghost:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+/* Danger */
+.ak-btn--danger {
+    background-color: var(--ak-danger);
+    color: var(--ak-text-on-primary);
+}
+
+/* Größenvarianten */
+.ak-btn--sm { height: 32; font-size: var(--ak-font-sm); padding-left: var(--ak-space-3); padding-right: var(--ak-space-3); }
+.ak-btn--lg { height: 56; font-size: var(--ak-font-lg); padding-left: var(--ak-space-6); padding-right: var(--ak-space-6); }
+.ak-btn--icon { width: 44; padding-left: 0; padding-right: 0; }
+
+/* === Inputs === */
+.ak-input {
+    height: 44;
+    padding-left: var(--ak-space-3);
+    padding-right: var(--ak-space-3);
+    border-radius: var(--ak-radius-md);
+    background-color: rgba(0, 0, 0, 0.32);
+    color: var(--ak-text-primary);
+    border-width: 1;
+    border-color: rgba(255, 255, 255, 0.12);
+    font-size: var(--ak-font-md);
+}
+.ak-input:focus {
+    border-color: var(--ak-primary-light);
+}
+
+/* === Labels / Typography === */
+.ak-h1 { font-size: var(--ak-font-display); -unity-font-style: bold; color: var(--ak-text-primary); letter-spacing: -2px; }
+.ak-h2 { font-size: var(--ak-font-xxl); -unity-font-style: bold; color: var(--ak-text-primary); letter-spacing: -1px; }
+.ak-h3 { font-size: var(--ak-font-xl); -unity-font-style: bold; color: var(--ak-text-primary); }
+.ak-h4 { font-size: var(--ak-font-lg); -unity-font-style: bold; color: var(--ak-text-primary); }
+.ak-body { font-size: var(--ak-font-md); color: var(--ak-text-secondary); }
+.ak-caption { font-size: var(--ak-font-sm); color: var(--ak-text-muted); }
+.ak-overline { font-size: var(--ak-font-xs); color: var(--ak-text-muted); letter-spacing: 1px; -unity-font-style: bold; }
+
+.ak-text--accent { color: var(--ak-accent); }
+.ak-text--primary { color: var(--ak-primary-light); }
+.ak-text--success { color: var(--ak-success); }
+.ak-text--danger { color: var(--ak-danger); }
+
+/* === Layout-Helpers === */
+.ak-row { flex-direction: row; }
+.ak-col { flex-direction: column; }
+.ak-grow { flex-grow: 1; }
+.ak-center { align-items: center; justify-content: center; }
+.ak-center-v { align-items: center; }
+.ak-center-h { justify-content: center; }
+.ak-space-between { justify-content: space-between; }
+
+.ak-gap-1 { margin: 2; }
+.ak-gap-2 { margin: 4; }
+.ak-gap-3 { margin: 6; }
+.ak-gap-4 { margin: 8; }
+
+.ak-hidden { display: none; }

@@ -21,10 +21,13 @@ namespace ArcaneKingdom.UI.WorldMap
     /// </summary>
     public sealed class WorldMapScreen : ScreenBase
     {
+        public const string NodeContextKey = "battle_node";
+
         private readonly ScreenManager _screenManager;
         private readonly ISaveService<PlayerSave> _save;
         private readonly WorldCatalogService _worldCatalog;
         private readonly ToastService _toast;
+        private readonly ModalContext _modalContext;
 
         // Header
         private Button _backBtn = null!;
@@ -58,12 +61,14 @@ namespace ArcaneKingdom.UI.WorldMap
         public WorldMapScreen(ScreenManager screenManager,
                               ISaveService<PlayerSave> save,
                               WorldCatalogService worldCatalog,
-                              ToastService toast)
+                              ToastService toast,
+                              ModalContext modalContext)
         {
             _screenManager = screenManager;
             _save = save;
             _worldCatalog = worldCatalog;
             _toast = toast;
+            _modalContext = modalContext;
         }
 
         protected override void BindElements(VisualElement root)
@@ -319,16 +324,14 @@ namespace ArcaneKingdom.UI.WorldMap
         private void OnStartBattle()
         {
             if (_selectedNode == null) return;
-            // Stufe 8 bringt den Battle-Screen
-            if (_screenManager.IsRegistered(ScreenId.Battle))
+            if (!_screenManager.IsRegistered(ScreenId.Battle))
             {
-                _screenManager.PushAsync(ScreenId.Battle).Forget();
+                _toast.Show("Battle-Screen nicht verfuegbar.", ToastKind.Warning);
+                return;
             }
-            else
-            {
-                _toast.Show($"Kampf gegen {_selectedNode.Id} — Battle-Screen folgt in Stufe 8.",
-                    ToastKind.Info);
-            }
+            // Node im ModalContext fuer den BattleScreen ablegen
+            _modalContext.Set(NodeContextKey, _selectedNode);
+            _screenManager.PushAsync(ScreenId.Battle).Forget();
         }
 
         // ============================================================

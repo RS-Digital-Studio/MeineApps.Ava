@@ -7,9 +7,12 @@ using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Battle;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Domain.World;
+using ArcaneKingdom.Game.Battle;
 using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
+using ArcaneKingdom.UI.WorldMap;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -17,21 +20,16 @@ using UnityEngine.UIElements;
 namespace ArcaneKingdom.UI.Battle
 {
     /// <summary>
-    /// Battle-Screen mit Mock-Battle (kein echtes BattleEngine-Setup — das kommt in
-    /// einer Folge-Stufe). Zeigt: Spieler-/Gegner-Hero (HP/Mana), Felder (5 Slots je),
-    /// Spieler-Hand (Klick zum Spielen wenn genug Mana), Zug-Beenden-Button, Floating
-    /// Damage-Numbers.
+    /// Battle-Screen mit echter <see cref="BattleEngine"/>-Integration. Setup kommt
+    /// aus PlayerSave (aktives Deck) + Node (Enemy-Deck).
     /// </summary>
     public sealed class BattleScreen : ScreenBase
     {
-        private const int HeroStartHp = 100;
-        private const int MaxFieldSlots = 5;
-        private const int StartingHandSize = 4;
-        private const int StartingMana = 3;
-
         private readonly ScreenManager _screenManager;
         private readonly ISaveService<PlayerSave> _save;
         private readonly CardCatalogService _cardCatalog;
+        private readonly BattleBootstrap _battleBootstrap;
+        private readonly ModalContext _modalContext;
         private readonly ToastService _toast;
 
         // Top
@@ -55,11 +53,15 @@ namespace ArcaneKingdom.UI.Battle
 
         private VisualElement _floatingLayer = null!;
 
-        // State (Mock)
-        private BattleState _state = null!;
-        private List<CardDefinition> _playerDeckPool = new();
-        private List<CardDefinition> _enemyDeckPool = new();
+        // State (echt)
+        private BattleEngine? _engine;
+        private BattleAI? _ai;
+        private Dictionary<string, CardDefinition>? _defs;
+        private Dictionary<string, CardInstance>? _instances;
         private bool _busy;
+        private int _playerStartHp;
+        private int _enemyStartHp;
+        private NodeDefinition? _node;
 
         public override string Id => ScreenId.Battle;
         protected override string UxmlPath => "UI/BattleScreen";
@@ -67,11 +69,15 @@ namespace ArcaneKingdom.UI.Battle
         public BattleScreen(ScreenManager screenManager,
                             ISaveService<PlayerSave> save,
                             CardCatalogService cardCatalog,
+                            BattleBootstrap battleBootstrap,
+                            ModalContext modalContext,
                             ToastService toast)
         {
             _screenManager = screenManager;
             _save = save;
             _cardCatalog = cardCatalog;
+            _battleBootstrap = battleBootstrap;
+            _modalContext = modalContext;
             _toast = toast;
         }
 
@@ -80,7 +86,6 @@ namespace ArcaneKingdom.UI.Battle
             _fleeBtn       = Q<Button>("battle-flee-button");
             _turnNumber    = Q<Label>("battle-turn-number");
             _phaseLabel    = Q<Label>("battle-phase-label");
-
             _enemyHpFill   = Q<VisualElement>("enemy-hp-fill");
             _playerHpFill  = Q<VisualElement>("player-hp-fill");
             _enemyHpText   = Q<Label>("enemy-hp-text");
@@ -94,46 +99,55 @@ namespace ArcaneKingdom.UI.Battle
             _endTurnBtn    = Q<Button>("battle-end-turn-button");
             _floatingLayer = Q<VisualElement>("battle-floating-layer");
 
-            _fleeBtn.clicked += () =>
-            {
-                _toast.Show("Aufgegeben.", ToastKind.Warning);
-                _screenManager.PopAsync().Forget();
-            };
+            _fleeBtn.clicked += OnFlee;
             _endTurnBtn.clicked += () => OnEndTurnAsync().Forget();
         }
 
-        public override UniTask OnEnterAsync(CancellationToken ct)
+        public override async UniTask OnEnterAsync(CancellationToken ct)
         {
-            SetupMockBattle();
-            RefreshAll();
-            return UniTask.CompletedTask;
-        }
+            _node = _modalContext.Get<NodeDefinition>(WorldMapScreen.NodeContextKey);
 
-        // ============================================================
-        // Mock-Battle-Setup
-        // ============================================================
-
-        private void SetupMockBattle()
-        {
-            // Mock-Decks aus dem Katalog: jeweils 10 zufaellige Karten
-            var allCards = _cardCatalog.AllCards.ToList();
-            if (allCards.Count == 0)
+            var saveResult = await _save.LoadAsync(ct);
+            if (!saveResult.IsSuccess || saveResult.Value == null)
             {
-                _toast.Show("Keine Karten im Catalog — Sync ausfuehren.", ToastKind.Danger);
+                _toast.Show("Save-Load fehlgeschlagen.", ToastKind.Danger);
+                _screenManager.PopAsync().Forget();
                 return;
             }
-            var rng = new System.Random();
-            _playerDeckPool = allCards.OrderBy(_ => rng.Next()).Take(10).ToList();
-            _enemyDeckPool  = allCards.OrderBy(_ => rng.Next()).Take(10).ToList();
 
-            _state = new BattleState(rng.Next(), HeroStartHp, HeroStartHp);
-            // Hand initialisieren (4 Karten)
-            for (var i = 0; i < StartingHandSize && i < _playerDeckPool.Count; i++)
-                _state.PlayerHand.Add(_playerDeckPool[i].Id);
-            for (var i = 0; i < StartingHandSize && i < _enemyDeckPool.Count; i++)
-                _state.EnemyHand.Add(_enemyDeckPool[i].Id);
+            var save = saveResult.Value;
 
-            _state.Phase = BattlePhase.PlayerTurn;
+            // Energie abziehen (falls Node-Battle und genug Energie da)
+            if (_node != null && !save.Currencies.SpendEnergy(_node.EnergyCost))
+            {
+                _toast.Show($"Nicht genug Energie ({_node.EnergyCost} benoetigt).", ToastKind.Warning);
+                _screenManager.PopAsync().Forget();
+                return;
+            }
+            if (_node != null) await _save.SaveAsync(save, ct);
+
+            // Engine + AI bauen
+            var setup = _battleBootstrap.Build(save, _node, seed: System.Environment.TickCount);
+            if (setup == null)
+            {
+                _toast.Show("Kein Deck fuer Battle — bitte zuerst im DeckBuilder befuellen.", ToastKind.Danger);
+                _screenManager.PopAsync().Forget();
+                return;
+            }
+            _engine = setup.Engine;
+            _ai = setup.Ai;
+            _defs = setup.Definitions;
+            _instances = setup.Instances;
+            _playerStartHp = _engine.State.PlayerHeroHp;
+            _enemyStartHp = _engine.State.EnemyHeroHp;
+
+            RefreshAll();
+        }
+
+        public override UniTask OnLeaveAsync(CancellationToken ct)
+        {
+            _modalContext.Remove(WorldMapScreen.NodeContextKey);
+            return UniTask.CompletedTask;
         }
 
         // ============================================================
@@ -142,6 +156,7 @@ namespace ArcaneKingdom.UI.Battle
 
         private void RefreshAll()
         {
+            if (_engine == null) return;
             RenderHud();
             RenderEnemyField();
             RenderPlayerField();
@@ -151,18 +166,19 @@ namespace ArcaneKingdom.UI.Battle
 
         private void RenderHud()
         {
-            _turnNumber.text = _state.CurrentTurn.ToString();
-            _phaseLabel.text = _state.Phase switch
+            var s = _engine!.State;
+            _turnNumber.text = s.CurrentTurn.ToString();
+            _phaseLabel.text = s.Phase switch
             {
                 BattlePhase.PlayerTurn => "Dein Zug",
                 BattlePhase.EnemyTurn  => "Gegner-Zug",
                 BattlePhase.Settlement => "Ende",
-                _                      => _state.Phase.ToString()
+                _                      => s.Phase.ToString()
             };
 
-            UpdateHpBar(_playerHpFill, _playerHpText, _state.PlayerHeroHp, HeroStartHp);
-            UpdateHpBar(_enemyHpFill, _enemyHpText, _state.EnemyHeroHp, HeroStartHp);
-            _enemyManaText.text = $"{_state.EnemyMana}/{_state.EnemyMaxMana}";
+            UpdateHpBar(_playerHpFill, _playerHpText, s.PlayerHeroHp, _playerStartHp);
+            UpdateHpBar(_enemyHpFill,  _enemyHpText,  s.EnemyHeroHp,  _enemyStartHp);
+            _enemyManaText.text = $"{s.EnemyMana}/{s.EnemyMaxMana}";
         }
 
         private static void UpdateHpBar(VisualElement fill, Label text, int hp, int maxHp)
@@ -175,20 +191,20 @@ namespace ArcaneKingdom.UI.Battle
         private void RenderEnemyField()
         {
             _enemyField.Clear();
-            foreach (var slot in _state.EnemyField)
+            foreach (var slot in _engine!.State.EnemyField)
                 _enemyField.Add(BuildFieldSlotTile(slot, isEnemy: true));
         }
 
         private void RenderPlayerField()
         {
             _playerField.Clear();
-            foreach (var slot in _state.PlayerField)
+            foreach (var slot in _engine!.State.PlayerField)
                 _playerField.Add(BuildFieldSlotTile(slot, isEnemy: false));
         }
 
         private VisualElement BuildFieldSlotTile(CardFieldSlot slot, bool isEnemy)
         {
-            var def = _cardCatalog.Find(slot.CardInstanceId);
+            var def = ResolveDefinition(slot.CardInstanceId);
             var tile = new VisualElement();
             tile.style.width = 80;
             tile.style.height = 96;
@@ -224,9 +240,13 @@ namespace ArcaneKingdom.UI.Battle
             stats.style.color = new StyleColor(new Color(0.95f, 0.78f, 0.30f));
             tile.Add(stats);
 
-            if (!isEnemy && _state.Phase == BattlePhase.PlayerTurn)
+            // Cooldown-Anzeige (Spezial-Timer)
+            if (slot.TurnsUntilSpecial > 0)
             {
-                tile.AddManipulator(new Clickable(() => OnPlayerAttack(slot)));
+                var cd = new Label($"⚡{slot.TurnsUntilSpecial}");
+                cd.style.fontSize = 10;
+                cd.style.color = new StyleColor(new Color(0.55f, 0.80f, 0.95f));
+                tile.Add(cd);
             }
             return tile;
         }
@@ -234,16 +254,16 @@ namespace ArcaneKingdom.UI.Battle
         private void RenderPlayerHand()
         {
             _playerHand.Clear();
-            foreach (var cardId in _state.PlayerHand)
+            foreach (var cardInstId in _engine!.State.PlayerHand)
             {
-                var def = _cardCatalog.Find(cardId);
+                var def = ResolveDefinition(cardInstId);
                 if (def == null) continue;
-                var tile = BuildHandCardTile(def);
+                var tile = BuildHandCardTile(cardInstId, def);
                 _playerHand.Add(tile);
             }
         }
 
-        private VisualElement BuildHandCardTile(CardDefinition def)
+        private VisualElement BuildHandCardTile(string cardInstId, CardDefinition def)
         {
             var tile = new VisualElement();
             tile.AddToClassList("ak-card");
@@ -278,26 +298,29 @@ namespace ArcaneKingdom.UI.Battle
             stats.Add(hp);
             tile.Add(stats);
 
-            var canPlay = _state.Phase == BattlePhase.PlayerTurn
-                          && _state.PlayerMana >= def.Cost
-                          && _state.PlayerField.Count < MaxFieldSlots;
+            var s = _engine!.State;
+            var canPlay = s.Phase == BattlePhase.PlayerTurn
+                          && s.PlayerMana >= def.Cost
+                          && s.PlayerField.Count < BattleEngine.MaxFieldSlots;
             if (!canPlay)
             {
                 tile.style.opacity = 0.5f;
             }
             else
             {
-                // Drag&Drop: Karte aus Hand auf Player-Field ziehen.
-                // Click-Fallback bleibt fuer Touch-Geraete erhalten (Tap auf Karte = Spielen).
                 var drag = new CardDragManipulator(
                     dropZone: _playerField,
-                    onDrop: () => OnPlayCard(def),
+                    onDrop: () => OnPlayCard(cardInstId),
                     floatingLayer: _floatingLayer,
-                    canDrag: () => _state.Phase == BattlePhase.PlayerTurn
-                                    && _state.PlayerMana >= def.Cost
-                                    && _state.PlayerField.Count < MaxFieldSlots);
+                    canDrag: () =>
+                    {
+                        var st = _engine!.State;
+                        return st.Phase == BattlePhase.PlayerTurn
+                               && st.PlayerMana >= def.Cost
+                               && st.PlayerField.Count < BattleEngine.MaxFieldSlots;
+                    });
                 tile.AddManipulator(drag);
-                tile.AddManipulator(new Clickable(() => OnPlayCard(def)));
+                tile.AddManipulator(new Clickable(() => OnPlayCard(cardInstId)));
             }
             return tile;
         }
@@ -305,7 +328,8 @@ namespace ArcaneKingdom.UI.Battle
         private void RenderManaOrbs()
         {
             _playerManaOrbs.Clear();
-            for (var i = 0; i < _state.PlayerMaxMana; i++)
+            var s = _engine!.State;
+            for (var i = 0; i < s.PlayerMaxMana; i++)
             {
                 var orb = new VisualElement();
                 orb.style.width = 14;
@@ -315,7 +339,7 @@ namespace ArcaneKingdom.UI.Battle
                 orb.style.borderBottomLeftRadius = 7;
                 orb.style.borderBottomRightRadius = 7;
                 orb.style.marginRight = 4;
-                orb.style.backgroundColor = i < _state.PlayerMana
+                orb.style.backgroundColor = i < s.PlayerMana
                     ? new StyleColor(new Color(0.30f, 0.65f, 0.95f))
                     : new StyleColor(new Color(0.30f, 0.30f, 0.40f));
                 _playerManaOrbs.Add(orb);
@@ -326,131 +350,122 @@ namespace ArcaneKingdom.UI.Battle
         // Player-Actions
         // ============================================================
 
-        private void OnPlayCard(CardDefinition def)
+        private void OnPlayCard(string cardInstanceId)
         {
-            if (_busy) return;
-            if (_state.Phase != BattlePhase.PlayerTurn) return;
-            if (_state.PlayerMana < def.Cost) { _toast.Show("Nicht genug Mana.", ToastKind.Warning); return; }
-            if (_state.PlayerField.Count >= MaxFieldSlots) { _toast.Show("Feld voll.", ToastKind.Warning); return; }
+            if (_busy || _engine == null) return;
+            if (_engine.State.Phase != BattlePhase.PlayerTurn) return;
 
-            _state.PlayerMana -= def.Cost;
-            _state.PlayerHand.Remove(def.Id);
-            _state.PlayerField.Add(new CardFieldSlot(def.Id, def.BaseAttack, def.BaseHealth, def.TurnsToSpecial));
+            if (!_engine.PlayCard(forPlayer: true, cardInstanceId))
+            {
+                _toast.Show("Karte kann nicht gespielt werden.", ToastKind.Warning);
+                return;
+            }
             SpawnFloatingText("Eingesetzt!", new Color(0.95f, 0.78f, 0.30f));
-            RefreshAll();
-        }
-
-        private void OnPlayerAttack(CardFieldSlot attacker)
-        {
-            if (_busy) return;
-            if (_state.Phase != BattlePhase.PlayerTurn) return;
-
-            // Vereinfacht: greift Enemy-Hero an wenn Feld leer, sonst erstes Feld
-            if (_state.EnemyField.Count == 0)
-            {
-                _state.EnemyHeroHp = System.Math.Max(0, _state.EnemyHeroHp - attacker.CurrentAttack);
-                SpawnFloatingText($"-{attacker.CurrentAttack}", Color.red);
-            }
-            else
-            {
-                var target = _state.EnemyField[0];
-                target.CurrentHealth -= attacker.CurrentAttack;
-                attacker.CurrentHealth -= target.CurrentAttack;
-                SpawnFloatingText($"-{attacker.CurrentAttack}", new Color(0.95f, 0.50f, 0.50f));
-                if (target.CurrentHealth <= 0) _state.EnemyField.RemoveAt(0);
-                if (attacker.CurrentHealth <= 0) _state.PlayerField.Remove(attacker);
-            }
-
-            CheckGameOver();
             RefreshAll();
         }
 
         private async UniTask OnEndTurnAsync()
         {
-            if (_busy || _state.Phase != BattlePhase.PlayerTurn) return;
+            if (_busy || _engine == null) return;
+            if (_engine.State.Phase != BattlePhase.PlayerTurn) return;
             _busy = true;
-            _state.Phase = BattlePhase.EnemyTurn;
-            RenderHud();
 
-            await UniTask.Delay(600);
-            await RunEnemyTurnAsync();
-
-            _state.CurrentTurn++;
-            _state.PlayerMaxMana = System.Math.Min(_state.PlayerMaxMana + 1, 10);
-            _state.PlayerMana = _state.PlayerMaxMana;
-            _state.EnemyMaxMana = System.Math.Min(_state.EnemyMaxMana + 1, 10);
-            _state.EnemyMana = _state.EnemyMaxMana;
-
-            // Karte ziehen
-            if (_state.PlayerHand.Count < 8 && _playerDeckPool.Count > _state.CurrentTurn + StartingHandSize)
-                _state.PlayerHand.Add(_playerDeckPool[_state.CurrentTurn + StartingHandSize - 1].Id);
-
-            _state.Phase = BattlePhase.PlayerTurn;
-            _busy = false;
+            // 1. Player-EndTurn (Engine wickelt Combat ab, Phase wechselt zu Enemy)
+            _engine.EndTurn();
             RefreshAll();
-        }
-
-        private async UniTask RunEnemyTurnAsync()
-        {
-            // Mock-AI: spielt eine Karte wenn genug Mana, attackiert Spieler-Hero
-            foreach (var enemyCardId in _state.EnemyHand.ToList())
+            if (_engine.State.Result != BattleResult.Undecided)
             {
-                if (_state.EnemyField.Count >= MaxFieldSlots) break;
-                var def = _cardCatalog.Find(enemyCardId);
-                if (def == null || _state.EnemyMana < def.Cost) continue;
-                _state.EnemyMana -= def.Cost;
-                _state.EnemyHand.Remove(enemyCardId);
-                _state.EnemyField.Add(new CardFieldSlot(def.Id, def.BaseAttack, def.BaseHealth, def.TurnsToSpecial));
+                await HandleGameOverAsync();
+                _busy = false;
+                return;
             }
 
-            await UniTask.Delay(400);
+            // 2. Kurze Pause damit Spieler die Phase wahrnimmt
+            await UniTask.Delay(500);
 
-            // Attacke: jede Enemy-Karte attackiert
-            foreach (var enemyCard in _state.EnemyField.ToList())
+            // 3. Enemy spielt Karten (AI)
+            if (_ai != null)
             {
-                if (_state.PlayerField.Count == 0)
+                var enemyHand = _engine.State.EnemyHand.ToList();
+                var picks = _ai.ChooseCardsToPlay(enemyHand, _engine.State.EnemyMana);
+                foreach (var instId in picks)
                 {
-                    _state.PlayerHeroHp = System.Math.Max(0, _state.PlayerHeroHp - enemyCard.CurrentAttack);
-                    SpawnFloatingText($"-{enemyCard.CurrentAttack}", Color.red);
+                    _engine.PlayCard(forPlayer: false, instId);
+                    RefreshAll();
+                    await UniTask.Delay(280);
                 }
-                else
-                {
-                    var target = _state.PlayerField[0];
-                    target.CurrentHealth -= enemyCard.CurrentAttack;
-                    enemyCard.CurrentHealth -= target.CurrentAttack;
-                    if (target.CurrentHealth <= 0) _state.PlayerField.RemoveAt(0);
-                    if (enemyCard.CurrentHealth <= 0) _state.EnemyField.Remove(enemyCard);
-                }
-                await UniTask.Delay(200);
             }
 
-            CheckGameOver();
+            // 4. Enemy-EndTurn (Engine fuehrt Enemy-Combat, wechselt zu Player)
+            _engine.EndTurn();
+            RefreshAll();
+            if (_engine.State.Result != BattleResult.Undecided)
+                await HandleGameOverAsync();
+
+            _busy = false;
         }
 
-        private void CheckGameOver()
+        private async UniTask HandleGameOverAsync()
         {
-            if (_state.PlayerHeroHp <= 0)
+            switch (_engine!.State.Result)
             {
-                _state.Result = BattleResult.EnemyWins;
-                _toast.Show("Niederlage. Versuch's nochmal!", ToastKind.Danger, 6f);
-                CloseAfterDelay().Forget();
+                case BattleResult.PlayerWins:
+                    var reward = _node?.GoldReward(3) ?? 50;
+                    var exp = _node?.ExpReward(3) ?? 25;
+                    await ApplyRewardsAsync(reward, exp);
+                    _toast.Show($"Sieg! +{reward} Gold, +{exp} EXP", ToastKind.Success, 6f);
+                    break;
+                case BattleResult.EnemyWins:
+                    _toast.Show("Niederlage — versuch's nochmal.", ToastKind.Danger, 6f);
+                    break;
+                case BattleResult.Draw:
+                    _toast.Show("Unentschieden.", ToastKind.Warning, 6f);
+                    break;
             }
-            else if (_state.EnemyHeroHp <= 0)
-            {
-                _state.Result = BattleResult.PlayerWins;
-                _toast.Show("Sieg! +50 Gold +25 EXP", ToastKind.Success, 6f);
-                CloseAfterDelay().Forget();
-            }
-        }
-
-        private async UniTask CloseAfterDelay()
-        {
             await UniTask.Delay(2200);
             await _screenManager.PopAsync();
         }
 
+        private async UniTask ApplyRewardsAsync(int gold, int exp)
+        {
+            await _save.MutateAsync(save =>
+            {
+                save.Currencies.AddGold(gold);
+                save.Profile.ExpTotal += exp;
+                // Welt-Progress (3 Sterne als Standardrewards)
+                if (_node != null)
+                {
+                    var worldId = WorldIdForNode(_node);
+                    if (!string.IsNullOrEmpty(worldId))
+                    {
+                        if (!save.WorldProgress.TryGetValue(worldId, out var wp))
+                        {
+                            wp = new WorldProgress(worldId);
+                            save.WorldProgress[worldId] = wp;
+                        }
+                        var prevStars = wp.StarsByNodeId.TryGetValue(_node.Id, out var s) ? s : 0;
+                        if (prevStars < 3) wp.StarsByNodeId[_node.Id] = 3;
+                    }
+                }
+                return save;
+            });
+        }
+
+        private static string WorldIdForNode(NodeDefinition node)
+        {
+            // Konvention: "world_1_node_3" -> "world_1"
+            var idx = node.Id.IndexOf("_node_", System.StringComparison.Ordinal);
+            return idx > 0 ? node.Id.Substring(0, idx) : string.Empty;
+        }
+
+        private void OnFlee()
+        {
+            _toast.Show("Aufgegeben.", ToastKind.Warning);
+            _screenManager.PopAsync().Forget();
+        }
+
         // ============================================================
-        // Floating Damage-Numbers
+        // Floating Damage-Numbers (UI-Effekt)
         // ============================================================
 
         private void SpawnFloatingText(string text, Color color)
@@ -481,6 +496,19 @@ namespace ArcaneKingdom.UI.Battle
         // ============================================================
         // Helpers
         // ============================================================
+
+        private CardDefinition? ResolveDefinition(string cardInstanceId)
+        {
+            // 1. Direkt aus Catalog (Catalog-ID = CardDefinition.Id)
+            var direct = _cardCatalog.Find(cardInstanceId);
+            if (direct != null) return direct;
+            // 2. Via Engine-Defs (catalog-IDs sind dort schon drin, aber theoretisch sicher)
+            if (_defs != null && _defs.TryGetValue(cardInstanceId, out var d)) return d;
+            // 3. PlayerInstance (GUID) -> CardInstance -> CardDefinitionId -> Catalog
+            if (_instances != null && _instances.TryGetValue(cardInstanceId, out var inst))
+                return _cardCatalog.Find(inst.CardDefinitionId);
+            return null;
+        }
 
         private static string RarityClass(Rarity r) => r switch
         {

@@ -71,6 +71,7 @@ namespace ArcaneKingdom.Game.Bootstrap
             // Card-Catalog: Runtime-Lookup von CardDefinitions per ID
             builder.Register<CardCatalogService>(Lifetime.Singleton);
             builder.Register<WorldCatalogService>(Lifetime.Singleton);
+            builder.Register<BattleBootstrap>(Lifetime.Singleton);
 
             // Iter 6: Schema-v2 + Server-Anbindungs-Vorbereitung
             builder.Register<AchievementService>(Lifetime.Singleton);

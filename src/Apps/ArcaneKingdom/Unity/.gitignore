@@ -9,12 +9,12 @@
 [Mm]emoryCaptures/
 [Rr]ecordings/
 
-# Unity-Editor Auto-Recovery (entsteht bei Editor-Crash, nicht im Repo benoetigt)
-/[Aa]ssets/_[Rr]ecovery/
-/[Aa]ssets/_[Rr]ecovery.meta
-
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
+
+# Unity-Editor Auto-Recovery (entsteht bei Editor-Crash, nicht im Repo benoetigt) — nach Meta-Whitelist, damit beide Regeln greifen
+/[Aa]ssets/_[Rr]ecovery/
+/[Aa]ssets/_[Rr]ecovery.meta
 
 # Unity Package Manager — explizit whitelisten (Repo-Root-.gitignore hat **/Packages/* fuer NuGet)
 !Packages/

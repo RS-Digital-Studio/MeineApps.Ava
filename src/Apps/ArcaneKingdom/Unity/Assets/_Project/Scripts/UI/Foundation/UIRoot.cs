@@ -38,6 +38,10 @@ namespace ArcaneKingdom.UI.Foundation
         /// <summary>Overlay-Container — liegt UEBER ScreenContainer (Toasts, Loading-Spinner).</summary>
         public VisualElement OverlayContainer => _overlayContainer;
 
+        /// <summary>True wenn Container an UIDocument-Root angehangen sind UND Theme-StyleSheet
+        /// in der Parent-Chain ist. Erst dann sind UXML-var()-Variablen aufloesbar.</summary>
+        public bool IsReady => _attachedToRoot;
+
         private void Awake()
         {
             // Container in Awake bauen — gibt dem ScreenManager im DI-Build eine

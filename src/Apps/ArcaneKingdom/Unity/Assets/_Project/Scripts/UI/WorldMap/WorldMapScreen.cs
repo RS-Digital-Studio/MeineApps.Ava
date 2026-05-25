@@ -58,17 +58,25 @@ namespace ArcaneKingdom.UI.WorldMap
         public override string Id => ScreenId.WorldMap;
         protected override string UxmlPath => "UI/WorldMapScreen";
 
+        // v6 (Designplan v4): Prestige-Upgrade-Button pro Welt
+        private readonly ArcaneKingdom.Domain.World.PrestigeService _prestige;
+        private readonly ArcaneKingdom.UI.Modals.PrestigeUpgradeContext _prestigeCtx;
+
         public WorldMapScreen(ScreenManager screenManager,
                               ISaveService<PlayerSave> save,
                               WorldCatalogService worldCatalog,
                               ToastService toast,
-                              ModalContext modalContext)
+                              ModalContext modalContext,
+                              ArcaneKingdom.Domain.World.PrestigeService prestige,
+                              ArcaneKingdom.UI.Modals.PrestigeUpgradeContext prestigeCtx)
         {
             _screenManager = screenManager;
             _save = save;
             _worldCatalog = worldCatalog;
             _toast = toast;
             _modalContext = modalContext;
+            _prestige = prestige;
+            _prestigeCtx = prestigeCtx;
         }
 
         protected override void BindElements(VisualElement root)
@@ -156,12 +164,62 @@ namespace ArcaneKingdom.UI.WorldMap
             _activeWorld = world;
             _selectedNode = null;
             _currentWorldName.text = NicifyId(world.Id);
+
+            // Aktuelle Prestige-Stufe der Welt
+            var stufe = _saveCached?.Prestige?.Get(world.Id) ?? PrestigeStufe.Normal;
+            var stufeText = stufe == PrestigeStufe.Normal ? string.Empty : $"  ★ Prestige {stufe}";
             _currentWorldMeta.text =
-                $"Element: {world.ThemeElement}  •  Empfohlene Stufe: {world.RecommendedPlayerLevel}";
+                $"Element: {world.ThemeElement}  •  Empfohlene Stufe: {world.RecommendedPlayerLevel}{stufeText}";
 
             BuildNodesGrid();
             HideDetail();
             UpdateActiveTabHighlight();
+            UpdatePrestigeUpgradeButton(world, stufe);
+        }
+
+        /// <summary>
+        /// v6 (Designplan v4 Oeko Kap. 6): Zeigt einen "Prestige aufwerten"-Button wenn alle Nodes 3 Sterne haben.
+        /// Button wird dynamisch unter dem Welt-Meta-Label angefuegt.
+        /// </summary>
+        private void UpdatePrestigeUpgradeButton(WorldDefinition world, PrestigeStufe currentStufe)
+        {
+            // Vorhandenen Button entfernen wenn vorher aktiviert
+            var existing = _currentWorldMeta.parent?.Q<Button>("prestige-upgrade-button");
+            existing?.RemoveFromHierarchy();
+
+            if (_saveCached == null || currentStufe == PrestigeStufe.IV) return;
+            if (!_saveCached.WorldProgress.TryGetValue(world.Id, out var progress)) return;
+            if (progress.StarsByNodeId.Count == 0) return;
+
+            // Alle Nodes 3 Sterne?
+            var allThreeStars = progress.StarsByNodeId.Count >= world.Nodes.Count
+                                && progress.StarsByNodeId.Values.All(s => s >= 3);
+            if (!allThreeStars) return;
+
+            var cost = PrestigeStufeBalancing.GetUpgradeGoldCost(currentStufe);
+            var nextStufe = currentStufe switch
+            {
+                PrestigeStufe.Normal => PrestigeStufe.I,
+                PrestigeStufe.I      => PrestigeStufe.II,
+                PrestigeStufe.II     => PrestigeStufe.III,
+                _                    => PrestigeStufe.IV
+            };
+
+            var btn = new Button(() => OpenPrestigeUpgrade(world.Id))
+            {
+                name = "prestige-upgrade-button",
+                text = $"🌟 Aufwerten zu Prestige {nextStufe} ({cost:N0} Gold)"
+            };
+            btn.AddToClassList("ak-btn");
+            btn.AddToClassList("ak-btn--accent");
+            btn.style.marginTop = 8;
+            _currentWorldMeta.parent?.Add(btn);
+        }
+
+        private void OpenPrestigeUpgrade(string worldId)
+        {
+            _prestigeCtx.TargetWorldId = worldId;
+            _screenManager.PushAsync(ScreenId.PrestigeUpgradeOverlay).Forget();
         }
 
         private void UpdateActiveTabHighlight()

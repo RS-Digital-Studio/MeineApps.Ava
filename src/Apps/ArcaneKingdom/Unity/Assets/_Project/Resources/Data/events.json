@@ -1,0 +1,95 @@
+[
+  {
+    "id": "event_yule_fest",
+    "displayNameKey": "event.yule_fest.name",
+    "descriptionKey": "event.yule_fest.desc",
+    "monthStart": 12,
+    "dayStart": 15,
+    "monthEnd": 1,
+    "dayEnd": 10,
+    "eventCards": [
+      { "cardId": "yule_baumgeist_veradis",    "starsRequired": 10000, "emergencyDiamondCost": 1000 },
+      { "cardId": "frostwolf_fenris_event",    "starsRequired": 5000,  "emergencyDiamondCost": 500 }
+    ],
+    "pointThresholds": [
+      { "points": 2000,  "rewardType": "event_frame",            "rewardMagnitude": 1 },
+      { "points": 5000,  "rewardType": "card_event_secondary",   "rewardMagnitude": 1 },
+      { "points": 10000, "rewardType": "card_event_primary",     "rewardMagnitude": 1 },
+      { "points": 15000, "rewardType": "diamonds",               "rewardMagnitude": 500 }
+    ]
+  },
+  {
+    "id": "event_bluetenfest",
+    "displayNameKey": "event.bluetenfest.name",
+    "descriptionKey": "event.bluetenfest.desc",
+    "monthStart": 3,
+    "dayStart": 15,
+    "monthEnd": 4,
+    "dayEnd": 10,
+    "eventCards": [
+      { "cardId": "bluetenfee_hanami",         "starsRequired": 10000, "emergencyDiamondCost": 1000 },
+      { "cardId": "fruehlingsdrache_verdant",  "starsRequired": 5000,  "emergencyDiamondCost": 500 }
+    ],
+    "pointThresholds": [
+      { "points": 2000,  "rewardType": "event_frame",          "rewardMagnitude": 1 },
+      { "points": 5000,  "rewardType": "card_event_secondary", "rewardMagnitude": 1 },
+      { "points": 10000, "rewardType": "card_event_primary",   "rewardMagnitude": 1 },
+      { "points": 15000, "rewardType": "diamonds",             "rewardMagnitude": 500 }
+    ]
+  },
+  {
+    "id": "event_sonnenwende",
+    "displayNameKey": "event.sonnenwende.name",
+    "descriptionKey": "event.sonnenwende.desc",
+    "monthStart": 6,
+    "dayStart": 15,
+    "monthEnd": 7,
+    "dayEnd": 10,
+    "eventCards": [
+      { "cardId": "sonnendaemon_solaris_event", "starsRequired": 10000, "emergencyDiamondCost": 1500 },
+      { "cardId": "flammenvogel_helios",        "starsRequired": 5000,  "emergencyDiamondCost": 1000 }
+    ],
+    "pointThresholds": [
+      { "points": 2000,  "rewardType": "event_frame",          "rewardMagnitude": 1 },
+      { "points": 5000,  "rewardType": "card_event_secondary", "rewardMagnitude": 1 },
+      { "points": 10000, "rewardType": "card_event_primary",   "rewardMagnitude": 1 },
+      { "points": 15000, "rewardType": "diamonds",             "rewardMagnitude": 500 }
+    ]
+  },
+  {
+    "id": "event_erntemondfest",
+    "displayNameKey": "event.erntemondfest.name",
+    "descriptionKey": "event.erntemondfest.desc",
+    "monthStart": 9,
+    "dayStart": 15,
+    "monthEnd": 10,
+    "dayEnd": 10,
+    "eventCards": [
+      { "cardId": "erntegott_miraveth",  "starsRequired": 10000, "emergencyDiamondCost": 1000 },
+      { "cardId": "mondkaninchen_luna",  "starsRequired": 5000,  "emergencyDiamondCost": 500 }
+    ],
+    "pointThresholds": [
+      { "points": 2000,  "rewardType": "event_frame",          "rewardMagnitude": 1 },
+      { "points": 5000,  "rewardType": "card_event_secondary", "rewardMagnitude": 1 },
+      { "points": 10000, "rewardType": "card_event_primary",   "rewardMagnitude": 1 },
+      { "points": 15000, "rewardType": "diamonds",             "rewardMagnitude": 500 }
+    ]
+  },
+  {
+    "id": "event_schattenerwachen",
+    "displayNameKey": "event.schattenerwachen.name",
+    "descriptionKey": "event.schattenerwachen.desc",
+    "monthStart": 11,
+    "dayStart": 1,
+    "monthEnd": 11,
+    "dayEnd": 25,
+    "eventCards": [
+      { "cardId": "geisterkoenig_samhain", "starsRequired": 10000, "emergencyDiamondCost": 1500 }
+    ],
+    "pointThresholds": [
+      { "points": 2000,  "rewardType": "event_frame",        "rewardMagnitude": 1 },
+      { "points": 10000, "rewardType": "card_event_primary", "rewardMagnitude": 1 },
+      { "points": 15000, "rewardType": "diamonds",           "rewardMagnitude": 500 }
+    ]
+  }
+]

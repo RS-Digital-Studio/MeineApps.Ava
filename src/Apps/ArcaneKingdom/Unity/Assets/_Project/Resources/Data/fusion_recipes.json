@@ -1,0 +1,95 @@
+[
+  {
+    "id": "recipe_mondbogen_jaegerin",
+    "resultCardId": "waldlaeuferin_fenris",
+    "requiredCardIds": ["elfenschuetze", "blumenfee"],
+    "requiredMaterialIds": [],
+    "goldCost": 2000,
+    "hintLocalizationKey": "recipe.mondbogen_jaegerin.hint",
+    "isHidden": false
+  },
+  {
+    "id": "recipe_schattenfuerst_kael",
+    "resultCardId": "schattenlaeuferin_nyx",
+    "requiredCardIds": ["schattenklaue", "nachtkreatur"],
+    "requiredMaterialIds": ["dunkel_rune"],
+    "goldCost": 3000,
+    "hintLocalizationKey": "recipe.schattenfuerst_kael.hint",
+    "isHidden": true
+  },
+  {
+    "id": "recipe_gott_des_schildes",
+    "resultCardId": "solaris_gott_feuer",
+    "requiredCardIds": ["paladin_morgenroete", "felsenbrecher_gorm", "tempelwaechterin"],
+    "requiredMaterialIds": ["heiliger_stein"],
+    "goldCost": 50000,
+    "hintLocalizationKey": "recipe.gott_des_schildes.hint",
+    "isHidden": false
+  },
+
+  {
+    "id": "recipe_solaris_4star",
+    "resultCardId": "solaris_gott_feuer",
+    "requiredCardIds": ["kriegsmagier_voss", "daemonenrufer_kelzar", "feuervogel_pyra"],
+    "requiredMaterialIds": ["sonnenstein", "epic_scrap", "epic_scrap", "epic_scrap"],
+    "goldCost": 500000,
+    "hintLocalizationKey": "recipe.solaris_4star.hint",
+    "isHidden": false
+  },
+  {
+    "id": "recipe_thalassa_4star",
+    "resultCardId": "thalassa_gezeiten",
+    "requiredCardIds": ["elfenmagierin_lira", "wasserdrache_tidal", "sturmreiterin_kira"],
+    "requiredMaterialIds": ["gezeitenkristall", "epic_scrap", "epic_scrap", "epic_scrap"],
+    "goldCost": 500000,
+    "hintLocalizationKey": "recipe.thalassa_4star.hint",
+    "isHidden": false
+  },
+  {
+    "id": "recipe_gaia_4star",
+    "resultCardId": "gaia_erdmutter",
+    "requiredCardIds": ["donnerhirsch_kaelen", "felsenbrecher_gorm", "steinhueterin_gaia"],
+    "requiredMaterialIds": ["urkern_erde", "epic_scrap", "epic_scrap", "epic_scrap"],
+    "goldCost": 500000,
+    "hintLocalizationKey": "recipe.gaia_4star.hint",
+    "isHidden": false
+  },
+  {
+    "id": "recipe_noctis_4star",
+    "resultCardId": "noctis_schatten",
+    "requiredCardIds": ["dunkelmagierin_seela", "traumweberin_aria", "nebelkraehe_moira"],
+    "requiredMaterialIds": ["schattenkern", "epic_scrap", "epic_scrap", "epic_scrap"],
+    "goldCost": 500000,
+    "hintLocalizationKey": "recipe.noctis_4star.hint",
+    "isHidden": false
+  },
+
+  {
+    "id": "recipe_selene_5star",
+    "resultCardId": "selene_mondschleier",
+    "requiredCardIds": ["solaris_gott_feuer", "mondkoenigin_naeris", "marschall_eisen"],
+    "requiredMaterialIds": ["mondstein", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap"],
+    "goldCost": 2000000,
+    "hintLocalizationKey": "recipe.selene_5star.hint",
+    "isHidden": false
+  },
+  {
+    "id": "recipe_chronos_5star",
+    "resultCardId": "chronos_zeit",
+    "requiredCardIds": ["thalassa_gezeiten", "hoellenfuerst_malphas", "grimmfang_alpha"],
+    "requiredMaterialIds": ["zeitsplitter", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap"],
+    "goldCost": 2000000,
+    "hintLocalizationKey": "recipe.chronos_5star.hint",
+    "isHidden": false
+  },
+
+  {
+    "id": "recipe_aetherius_6star",
+    "resultCardId": "aetherius_allschoepfer",
+    "requiredCardIds": ["selene_mondschleier", "artemis_jaegerin", "hoellenfuerst_malphas"],
+    "requiredMaterialIds": ["mythischer_kern", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap", "legendary_scrap"],
+    "goldCost": 5000000,
+    "hintLocalizationKey": "recipe.aetherius_6star.hint",
+    "isHidden": true
+  }
+]

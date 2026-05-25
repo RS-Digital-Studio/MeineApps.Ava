@@ -1,0 +1,13 @@
+{
+  "rotationDays": 30,
+  "permanentSlots": [
+    { "cardId": "goldwolf_aurelius",       "diamondPrice": 300 },
+    { "cardId": "kristallhirsch_cervus",   "diamondPrice": 300 },
+    { "cardId": "infernalwolf_pyrrhus",    "diamondPrice": 300 }
+  ],
+  "rotatingSlots": [
+    { "cardId": "himmelsritter_orion",     "diamondPrice": 800, "rotationMonths": 3 },
+    { "cardId": "schattenprinzessin_nyx",  "diamondPrice": 800, "rotationMonths": 3 },
+    { "cardId": "elfenprinz_luminaris",    "diamondPrice": 800, "rotationMonths": 4 }
+  ]
+}

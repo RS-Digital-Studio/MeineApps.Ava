@@ -1,0 +1,38 @@
+{
+  "mythology": {
+    "creator": "npc.aetherius_geist",
+    "creatorTextKey": "story.creation.aetherius",
+    "antagonist": "npc.nythragor",
+    "antagonistTextKey": "story.antagonist.nythragor",
+    "saeulen": [
+      { "id": "flammenherz",   "element": "Feuer",  "worldId": "vulkanhort",     "nameKey": "saeule.flammenherz",   "stateKey": "saeule.flammenherz.state" },
+      { "id": "gezeitenkern",  "element": "Wasser", "worldId": "abysstiefe",     "nameKey": "saeule.gezeitenkern",  "stateKey": "saeule.gezeitenkern.state" },
+      { "id": "lebensbaum",    "element": "Natur",  "worldId": "elderwald",      "nameKey": "saeule.lebensbaum",    "stateKey": "saeule.lebensbaum.state" },
+      { "id": "urkern",        "element": "Erde",   "worldId": "titanengrat",    "nameKey": "saeule.urkern",        "stateKey": "saeule.urkern.state" },
+      { "id": "schattenriss",  "element": "Dunkel", "worldId": "schattenlande",  "nameKey": "saeule.schattenriss",  "stateKey": "saeule.schattenriss.state" },
+      { "id": "sternenfeuer",  "element": "Licht",  "worldId": "sturmzitadelle", "nameKey": "saeule.sternenfeuer",  "stateKey": "saeule.sternenfeuer.state" }
+    ]
+  },
+  "memoryFragments": [
+    { "id": "fragment_1",  "worldId": "elderwald",       "orderIndex": 1,  "titleKey": "fragment.1.title",  "contentKey": "fragment.1.content",  "twistRevealKey": "fragment.1.reveal" },
+    { "id": "fragment_2",  "worldId": "sandreich",       "orderIndex": 2,  "titleKey": "fragment.2.title",  "contentKey": "fragment.2.content",  "twistRevealKey": "fragment.2.reveal" },
+    { "id": "fragment_3",  "worldId": "vulkanhort",      "orderIndex": 3,  "titleKey": "fragment.3.title",  "contentKey": "fragment.3.content",  "twistRevealKey": "fragment.3.reveal" },
+    { "id": "fragment_4",  "worldId": "frostgipfel",     "orderIndex": 4,  "titleKey": "fragment.4.title",  "contentKey": "fragment.4.content",  "twistRevealKey": "fragment.4.reveal" },
+    { "id": "fragment_5",  "worldId": "schattenlande",   "orderIndex": 5,  "titleKey": "fragment.5.title",  "contentKey": "fragment.5.content",  "twistRevealKey": "fragment.5.reveal" },
+    { "id": "fragment_6",  "worldId": "sturmzitadelle",  "orderIndex": 6,  "titleKey": "fragment.6.title",  "contentKey": "fragment.6.content",  "twistRevealKey": "fragment.6.reveal" },
+    { "id": "fragment_7",  "worldId": "titanengrat",     "orderIndex": 7,  "titleKey": "fragment.7.title",  "contentKey": "fragment.7.content",  "twistRevealKey": "fragment.7.reveal" },
+    { "id": "fragment_8",  "worldId": "abysstiefe",      "orderIndex": 8,  "titleKey": "fragment.8.title",  "contentKey": "fragment.8.content",  "twistRevealKey": "fragment.8.reveal", "isMajorTwist": true },
+    { "id": "fragment_9",  "worldId": "galaxy_wald",     "orderIndex": 9,  "titleKey": "fragment.9.title",  "contentKey": "fragment.9.content",  "twistRevealKey": "fragment.9.reveal" },
+    { "id": "fragment_10", "worldId": "drachenfeste",    "orderIndex": 10, "titleKey": "fragment.10.title", "contentKey": "fragment.10.content", "twistRevealKey": "fragment.10.reveal", "isFinale": true }
+  ],
+  "keyNpcs": [
+    { "id": "npc.lumis",             "displayNameKey": "npc.lumis.name",             "race": "Goetter",     "worldIds": ["elderwald", "sandreich", "vulkanhort", "frostgipfel", "schattenlande", "sturmzitadelle", "titanengrat", "abysstiefe", "galaxy_wald", "drachenfeste"], "portraitAddressableKey": "Npcs/portrait_lumis",            "descKey": "npc.lumis.desc" },
+    { "id": "npc.marschall_aldor",   "displayNameKey": "npc.marschall_aldor.name",   "race": "Ritter",      "worldIds": ["elderwald", "sandreich", "galaxy_wald", "drachenfeste"],   "portraitAddressableKey": "Npcs/portrait_aldor",            "descKey": "npc.marschall_aldor.desc" },
+    { "id": "npc.mondpriesterin_lira","displayNameKey": "npc.mondpriesterin_lira.name","race": "Elfen",     "worldIds": ["elderwald", "frostgipfel", "galaxy_wald", "drachenfeste"], "portraitAddressableKey": "Npcs/portrait_lira",             "descKey": "npc.mondpriesterin_lira.desc" },
+    { "id": "npc.grimmfang",         "displayNameKey": "npc.grimmfang.name",         "race": "Tiergeister", "worldIds": ["elderwald", "vulkanhort", "titanengrat", "drachenfeste"],  "portraitAddressableKey": "Npcs/portrait_grimmfang",        "descKey": "npc.grimmfang.desc" },
+    { "id": "npc.lilith",            "displayNameKey": "npc.lilith.name",            "race": "Daemonen",    "worldIds": ["vulkanhort", "schattenlande", "galaxy_wald", "drachenfeste"], "portraitAddressableKey": "Npcs/portrait_lilith",        "descKey": "npc.lilith.desc" },
+    { "id": "npc.koenigin_sera",     "displayNameKey": "npc.koenigin_sera.name",     "race": "Ritter",      "worldIds": ["sandreich", "sturmzitadelle", "drachenfeste"],             "portraitAddressableKey": "Npcs/portrait_sera",             "descKey": "npc.koenigin_sera.desc" },
+    { "id": "npc.general_dorn",      "displayNameKey": "npc.general_dorn.name",      "race": "Ritter",      "worldIds": ["sandreich", "sturmzitadelle"],                             "portraitAddressableKey": "Npcs/portrait_dorn",             "descKey": "npc.general_dorn.desc" },
+    { "id": "npc.nythragor",         "displayNameKey": "npc.nythragor.name",         "race": "Goetter",     "worldIds": ["abysstiefe", "galaxy_wald", "drachenfeste"],               "portraitAddressableKey": "Npcs/portrait_nythragor",        "descKey": "npc.nythragor.desc" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "sternkartenValues": {
+    "Bronze": 1,
+    "Silber": 5,
+    "Gold": 15,
+    "Platin": 50
+  },
+  "exchanges": [
+    { "id": "exchange_random_2star",     "costSternpunkte": 30,  "rewardType": "card_random_2star",     "rewardMagnitude": 1, "labelKey": "star_temple.random_2star" },
+    { "id": "exchange_chosen_3star",     "costSternpunkte": 80,  "rewardType": "card_chosen_3star",     "rewardMagnitude": 1, "labelKey": "star_temple.chosen_3star" },
+    { "id": "exchange_exclusive_3star",  "costSternpunkte": 150, "rewardType": "card_specific",         "rewardCardId": "sternenweber_astria", "rewardMagnitude": 1, "labelKey": "star_temple.exclusive_3star" },
+    { "id": "exchange_exclusive_4star",  "costSternpunkte": 350, "rewardType": "card_specific",         "rewardCardId": "sternentiger_raj",    "rewardMagnitude": 1, "labelKey": "star_temple.exclusive_4star" },
+    { "id": "exchange_legendary_scrap",  "costSternpunkte": 100, "rewardType": "legendary_scrap",       "rewardMagnitude": 1, "labelKey": "star_temple.legendary_scrap" },
+    { "id": "exchange_mythic_fragment",  "costSternpunkte": 500, "rewardType": "mythic_fragment",       "rewardMagnitude": 1, "labelKey": "star_temple.mythic_fragment" }
+  ]
+}

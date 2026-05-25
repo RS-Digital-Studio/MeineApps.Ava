@@ -1,0 +1,59 @@
+{
+  "stufen": [
+    {
+      "stufe": "Normal",
+      "upgradeGoldCost": 100000,
+      "enemyStatMultiplier": 1.0,
+      "goldDropMultiplier": 1.0,
+      "dailyRevenueMultiplier": 1.0,
+      "enemiesUseSkill2": false,
+      "enemiesUseSkill3": false,
+      "bossPhases": 2,
+      "exclusiveCardReward": false
+    },
+    {
+      "stufe": "I",
+      "upgradeGoldCost": 500000,
+      "enemyStatMultiplier": 1.3,
+      "goldDropMultiplier": 1.5,
+      "dailyRevenueMultiplier": 2.0,
+      "enemiesUseSkill2": true,
+      "enemiesUseSkill3": false,
+      "bossPhases": 2,
+      "exclusiveCardReward": false
+    },
+    {
+      "stufe": "II",
+      "upgradeGoldCost": 2000000,
+      "enemyStatMultiplier": 1.6,
+      "goldDropMultiplier": 2.0,
+      "dailyRevenueMultiplier": 4.0,
+      "enemiesUseSkill2": true,
+      "enemiesUseSkill3": true,
+      "bossPhases": 2,
+      "exclusiveCardReward": false
+    },
+    {
+      "stufe": "III",
+      "upgradeGoldCost": 5000000,
+      "enemyStatMultiplier": 2.0,
+      "goldDropMultiplier": 3.0,
+      "dailyRevenueMultiplier": 8.0,
+      "enemiesUseSkill2": true,
+      "enemiesUseSkill3": true,
+      "bossPhases": 3,
+      "exclusiveCardReward": false
+    },
+    {
+      "stufe": "IV",
+      "upgradeGoldCost": -1,
+      "enemyStatMultiplier": 2.5,
+      "goldDropMultiplier": 4.0,
+      "dailyRevenueMultiplier": 16.0,
+      "enemiesUseSkill2": true,
+      "enemiesUseSkill3": true,
+      "bossPhases": 4,
+      "exclusiveCardReward": true
+    }
+  ]
+}

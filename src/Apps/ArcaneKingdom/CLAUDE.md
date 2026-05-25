@@ -299,12 +299,17 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 - [x] SaveMigrator.MigrateToV3 implementiert
 - [x] Domain-Tests: FusionServiceTests + PrestigeServiceTests + SternkartenServiceTests + HeroPassivBattleTests + BattlePersonalityTests
 - [x] DI-Wiring: PrestigeService + SternkartenService in GameInstaller (FusionService bleibt Application-Wrapper-Job)
+- [x] FusionAppService in Game-Assembly (Wrapper der CardCatalog + Rezepte lazy-laedt + Save-Mutation orchestriert)
+- [x] PrestigeAppService in Game-Assembly (Welt-Upgrade + Daily-Income-Tick + Prestige-IV-Karten-Drop)
+- [x] LoginRewardController in Game-Assembly (30-Tage-Zyklus aus login_rewards.json + Sternkarten-Drop)
+- [x] Status-Effekt-System (Sleep/Silence/Frozen/Stunned/Poisoned/Burning/Slowed/Rooted)
+- [x] BattleEngine.Control-Case + Synergy-Case implementiert (Element-zu-Effekt-Inference)
+- [x] BattleEngine DoT-Tick + Action-Block-Check + StatusEffect-Dauer-Tick
+- [x] DI-Wiring fuer Application-Layer-Services
 - [ ] MVP: Kampf-UI (Drag&Drop, Mana-Orbs, Damage-Numbers, Personality-Line-Anzeige) — Monat 4-6
 - [ ] MVP: Hub-UI (Tabs, Energie-Bar, Navigation) — Monat 4-5
 - [ ] MVP: Welt-1-UI (Elderwald-Karte mit 10 Nodes) — Monat 6-8
-- [ ] FusionAppService in Game-Assembly (Wrapper der CardCatalog + Rezepte injiziert)
-- [ ] PrestigeAppService in Game-Assembly (Wrapper der PlayerSave-Mutation + Karten-Drop orchestriert)
-- [ ] LoginRewardController in Game-Assembly (claimt taeglich, ruft SternkartenService.AddSternkarte)
+- [ ] Rune-Fragment + EXP-Potion Inventar-Sub-Systeme — Monat 4-6
 - [ ] Firebase Unity SDK installieren + Auth/RTDB/Analytics verdrahten — Monat 10-14
 - [ ] Cloud-Functions deployen (Staging) — Monat 11+
 - [ ] Karten-Artworks (Mid-Journey/Stable-Diffusion) + Sound-Assets — laufend

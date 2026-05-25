@@ -1,0 +1,184 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 604d2cde71f2fe843ac64bfdcfec2a0d, type: 3}
+  m_Name: World_schattenlande
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
+  id: schattenlande
+  displayNameKey: world.schattenlande.name
+  index: 6
+  themeElement: 4
+  recommendedPlayerLevel: 65
+  backgroundAddressableKey: Worlds.6/bg_schattenlande
+  musicAddressableKey: Audio.BGM/music_schattenlande
+  nodes:
+  - id: schattenlande_n1
+    displayNameKey: world.schattenlande.node1
+    nodeIndex: 1
+    type: 0
+    enemyDeckCardIds:
+    - schattenscherge
+    - knochen_ritter
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n2
+    displayNameKey: world.schattenlande.node2
+    nodeIndex: 2
+    type: 0
+    enemyDeckCardIds:
+    - knochen_ritter
+    - schattenscherge
+    - funkenmeister
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n3
+    displayNameKey: world.schattenlande.node3
+    nodeIndex: 3
+    type: 0
+    enemyDeckCardIds:
+    - knochen_ritter
+    - knochen_ritter
+    - schattenscherge
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n4
+    displayNameKey: world.schattenlande.node4
+    nodeIndex: 4
+    type: 0
+    enemyDeckCardIds:
+    - nachtschatten_wolf
+    - knochen_ritter
+    - schattenscherge
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n5
+    displayNameKey: world.schattenlande.node5
+    nodeIndex: 5
+    type: 1
+    enemyDeckCardIds:
+    - schreckens_ritter
+    - nachtschatten_wolf
+    - knochen_ritter
+    - schattenscherge
+    goldOneStar: 800
+    goldTwoStar: 1600
+    goldThreeStar: 3200
+    goldFourStar: 8000
+    expOneStar: 160
+    expTwoStar: 400
+    expThreeStar: 800
+    expFourStar: 1600
+  - id: schattenlande_n6
+    displayNameKey: world.schattenlande.node6
+    nodeIndex: 6
+    type: 0
+    enemyDeckCardIds:
+    - schreckens_ritter
+    - knochen_ritter
+    - schattenscherge
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n7
+    displayNameKey: world.schattenlande.node7
+    nodeIndex: 7
+    type: 0
+    enemyDeckCardIds:
+    - schreckens_ritter
+    - nachtschatten_wolf
+    - knochen_ritter
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n8
+    displayNameKey: world.schattenlande.node8
+    nodeIndex: 8
+    type: 0
+    enemyDeckCardIds:
+    - schreckens_ritter
+    - schreckens_ritter
+    - nachtschatten_wolf
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n9
+    displayNameKey: world.schattenlande.node9
+    nodeIndex: 9
+    type: 0
+    enemyDeckCardIds:
+    - schwarzes_herz_lich
+    - schreckens_ritter
+    - knochen_ritter
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: schattenlande_n10
+    displayNameKey: world.schattenlande.node10
+    nodeIndex: 10
+    type: 2
+    enemyDeckCardIds:
+    - schwarzes_herz_lich
+    - schreckens_ritter
+    - nachtschatten_wolf
+    - knochen_ritter
+    - schattenscherge
+    goldOneStar: 1600
+    goldTwoStar: 3200
+    goldThreeStar: 6400
+    goldFourStar: 16000
+    expOneStar: 400
+    expTwoStar: 1000
+    expThreeStar: 2000
+    expFourStar: 4000

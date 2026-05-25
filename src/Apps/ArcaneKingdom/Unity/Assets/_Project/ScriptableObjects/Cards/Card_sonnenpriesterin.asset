@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_sonnenpriesterin
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: sonnenpriesterin
+  displayNameKey: card.sonnenpriesterin.name
+  flavorTextKey: card.sonnenpriesterin.flavor
+  element: 3
+  rarity: 0
+  race: 0
+  cost: 3
+  baseAttack: 250
+  baseHealth: 480
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 7f8af4af91dedcf448fd822cf010bbf1, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 200
+  artworkAddressableKey: Cards.Common/card_sonnenpriesterin
+  voiceLineAddressableKey: 

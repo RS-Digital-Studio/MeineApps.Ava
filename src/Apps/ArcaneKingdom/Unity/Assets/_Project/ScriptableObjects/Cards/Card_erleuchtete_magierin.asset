@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_erleuchtete_magierin
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: erleuchtete_magierin
+  displayNameKey: card.erleuchtete_magierin.name
+  flavorTextKey: card.erleuchtete_magierin.flavor
+  element: 3
+  rarity: 1
+  race: 0
+  cost: 5
+  baseAttack: 660
+  baseHealth: 1020
+  turnsToSpecial: 5
+  baseAbility: {fileID: 11400000, guid: 7f8af4af91dedcf448fd822cf010bbf1, type: 2}
+  secondAbility: {fileID: 11400000, guid: 05465b945a31dc14fba94172c757dae2, type: 2}
+  thirdAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 150
+  artworkAddressableKey: Cards.Uncommon/card_erleuchtete_magierin
+  voiceLineAddressableKey: 

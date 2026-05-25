@@ -1,0 +1,185 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 604d2cde71f2fe843ac64bfdcfec2a0d, type: 3}
+  m_Name: World_vulkanhort
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
+  id: vulkanhort
+  displayNameKey: world.vulkanhort.name
+  index: 3
+  themeElement: 1
+  recommendedPlayerLevel: 18
+  backgroundAddressableKey: Worlds.3/bg_vulkanhort
+  musicAddressableKey: Audio.BGM/music_vulkanhort
+  nodes:
+  - id: vulkanhort_n1
+    displayNameKey: world.vulkanhort.node1
+    nodeIndex: 1
+    type: 0
+    enemyDeckCardIds:
+    - vulkan_krieger
+    - funkenmeister
+    - schmieden_golem
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n2
+    displayNameKey: world.vulkanhort.node2
+    nodeIndex: 2
+    type: 0
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - vulkan_krieger
+    - glutwolf
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n3
+    displayNameKey: world.vulkanhort.node3
+    nodeIndex: 3
+    type: 0
+    enemyDeckCardIds:
+    - vulkan_krieger
+    - vulkan_krieger
+    - schmieden_golem
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n4
+    displayNameKey: world.vulkanhort.node4
+    nodeIndex: 4
+    type: 0
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - funkenmeister
+    - schmieden_golem
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n5
+    displayNameKey: world.vulkanhort.node5
+    nodeIndex: 5
+    type: 1
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - vulkan_krieger
+    - schmieden_golem
+    - funkenmeister
+    goldOneStar: 240
+    goldTwoStar: 480
+    goldThreeStar: 960
+    goldFourStar: 2400
+    expOneStar: 48
+    expTwoStar: 120
+    expThreeStar: 240
+    expFourStar: 480
+  - id: vulkanhort_n6
+    displayNameKey: world.vulkanhort.node6
+    nodeIndex: 6
+    type: 0
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - drachenlord_adept
+    - vulkan_krieger
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n7
+    displayNameKey: world.vulkanhort.node7
+    nodeIndex: 7
+    type: 0
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - schmieden_golem
+    - funkenmeister
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n8
+    displayNameKey: world.vulkanhort.node8
+    nodeIndex: 8
+    type: 0
+    enemyDeckCardIds:
+    - phoenix_ewigkeit
+    - vulkan_krieger
+    - drachenlord_adept
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n9
+    displayNameKey: world.vulkanhort.node9
+    nodeIndex: 9
+    type: 0
+    enemyDeckCardIds:
+    - phoenix_ewigkeit
+    - drachenlord_adept
+    - schmieden_golem
+    goldOneStar: 120
+    goldTwoStar: 240
+    goldThreeStar: 480
+    goldFourStar: 1200
+    expOneStar: 24
+    expTwoStar: 60
+    expThreeStar: 120
+    expFourStar: 240
+  - id: vulkanhort_n10
+    displayNameKey: world.vulkanhort.node10
+    nodeIndex: 10
+    type: 2
+    enemyDeckCardIds:
+    - hoellenfuerst_inferno
+    - phoenix_ewigkeit
+    - drachenlord_adept
+    - vulkan_krieger
+    - funkenmeister
+    goldOneStar: 480
+    goldTwoStar: 960
+    goldThreeStar: 1920
+    goldFourStar: 4800
+    expOneStar: 120
+    expTwoStar: 300
+    expThreeStar: 600
+    expFourStar: 1200

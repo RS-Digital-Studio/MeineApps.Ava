@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_frostklingen_adept
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: frostklingen_adept
+  displayNameKey: card.frostklingen_adept.name
+  flavorTextKey: card.frostklingen_adept.flavor
+  element: 2
+  rarity: 1
+  race: 0
+  cost: 4
+  baseAttack: 480
+  baseHealth: 740
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: ff01809bc5bebb244b42243a0eea5383, type: 2}
+  secondAbility: {fileID: 11400000, guid: 79025dbc6dc19cc488b6a0666605aaba, type: 2}
+  thirdAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 150
+  artworkAddressableKey: Cards.Uncommon/card_frostklingen_adept
+  voiceLineAddressableKey: 

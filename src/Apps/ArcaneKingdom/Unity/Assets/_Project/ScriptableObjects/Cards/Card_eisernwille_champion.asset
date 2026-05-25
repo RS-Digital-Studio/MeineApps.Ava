@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_eisernwille_champion
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: eisernwille_champion
+  displayNameKey: card.eisernwille_champion.name
+  flavorTextKey: card.eisernwille_champion.flavor
+  element: 3
+  rarity: 3
+  race: 0
+  cost: 7
+  baseAttack: 1320
+  baseHealth: 2200
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: b12ee1f5741eb2c49bb01be21c34f262, type: 2}
+  secondAbility: {fileID: 11400000, guid: cf376c2a44d93df4c897c2687c0f3491, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 8cfe143a6907d034fbc6f845b36a8e78, type: 2}
+  deckLimit: 1
+  globalCraftLimit: 60
+  artworkAddressableKey: Cards.Epic/card_eisernwille_champion
+  voiceLineAddressableKey: 

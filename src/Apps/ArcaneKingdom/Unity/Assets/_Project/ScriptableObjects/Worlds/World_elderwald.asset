@@ -1,0 +1,187 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 604d2cde71f2fe843ac64bfdcfec2a0d, type: 3}
+  m_Name: World_elderwald
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
+  id: elderwald
+  displayNameKey: world.elderwald.name
+  index: 1
+  themeElement: 0
+  recommendedPlayerLevel: 1
+  backgroundAddressableKey: Worlds.1/bg_elderwald
+  musicAddressableKey: Audio.BGM/music_elderwald
+  nodes:
+  - id: elderwald_n1
+    displayNameKey: world.elderwald.node1
+    nodeIndex: 1
+    type: 0
+    enemyDeckCardIds:
+    - waldlaeufer
+    - bornenkrabbe
+    - lehrlingsschmied
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n2
+    displayNameKey: world.elderwald.node2
+    nodeIndex: 2
+    type: 0
+    enemyDeckCardIds:
+    - waldlaeufer
+    - waldlaeufer
+    - bornenkrabbe
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n3
+    displayNameKey: world.elderwald.node3
+    nodeIndex: 3
+    type: 0
+    enemyDeckCardIds:
+    - bornenkrabbe
+    - bornenkrabbe
+    - lehrlingsschmied
+    - waldlaeufer
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n4
+    displayNameKey: world.elderwald.node4
+    nodeIndex: 4
+    type: 0
+    enemyDeckCardIds:
+    - waldlaeufer
+    - bornenkrabbe
+    - sonnenpriesterin
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n5
+    displayNameKey: world.elderwald.node5
+    nodeIndex: 5
+    type: 1
+    enemyDeckCardIds:
+    - mondlicht_druidin
+    - waldlaeufer
+    - waldlaeufer
+    - bornenkrabbe
+    goldOneStar: 100
+    goldTwoStar: 200
+    goldThreeStar: 400
+    goldFourStar: 1000
+    expOneStar: 20
+    expTwoStar: 50
+    expThreeStar: 100
+    expFourStar: 200
+  - id: elderwald_n6
+    displayNameKey: world.elderwald.node6
+    nodeIndex: 6
+    type: 0
+    enemyDeckCardIds:
+    - dornenbestie
+    - waldlaeufer
+    - bornenkrabbe
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n7
+    displayNameKey: world.elderwald.node7
+    nodeIndex: 7
+    type: 0
+    enemyDeckCardIds:
+    - mondlicht_druidin
+    - waldlaeufer
+    - sonnenpriesterin
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n8
+    displayNameKey: world.elderwald.node8
+    nodeIndex: 8
+    type: 0
+    enemyDeckCardIds:
+    - dornenbestie
+    - mondlicht_druidin
+    - waldlaeufer
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n9
+    displayNameKey: world.elderwald.node9
+    nodeIndex: 9
+    type: 0
+    enemyDeckCardIds:
+    - dornenbestie
+    - mondlicht_druidin
+    - sonnenpriesterin
+    - bornenkrabbe
+    goldOneStar: 50
+    goldTwoStar: 100
+    goldThreeStar: 200
+    goldFourStar: 500
+    expOneStar: 10
+    expTwoStar: 25
+    expThreeStar: 50
+    expFourStar: 100
+  - id: elderwald_n10
+    displayNameKey: world.elderwald.node10
+    nodeIndex: 10
+    type: 2
+    enemyDeckCardIds:
+    - aelteren_druide
+    - dornenbestie
+    - mondlicht_druidin
+    - waldlaeufer
+    - bornenkrabbe
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 50
+    expTwoStar: 125
+    expThreeStar: 250
+    expFourStar: 500

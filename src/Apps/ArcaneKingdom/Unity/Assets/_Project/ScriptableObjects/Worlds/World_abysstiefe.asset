@@ -1,0 +1,181 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 604d2cde71f2fe843ac64bfdcfec2a0d, type: 3}
+  m_Name: World_abysstiefe
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
+  id: abysstiefe
+  displayNameKey: world.abysstiefe.name
+  index: 5
+  themeElement: 2
+  recommendedPlayerLevel: 50
+  backgroundAddressableKey: Worlds.5/bg_abysstiefe
+  musicAddressableKey: Audio.BGM/music_abysstiefe
+  nodes:
+  - id: abysstiefe_n1
+    displayNameKey: world.abysstiefe.node1
+    nodeIndex: 1
+    type: 0
+    enemyDeckCardIds:
+    - tiefenfuerst_kraken
+    - frostklingen_adept
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n2
+    displayNameKey: world.abysstiefe.node2
+    nodeIndex: 2
+    type: 0
+    enemyDeckCardIds:
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n3
+    displayNameKey: world.abysstiefe.node3
+    nodeIndex: 3
+    type: 0
+    enemyDeckCardIds:
+    - tiefenfuerst_kraken
+    - tiefenfuerst_kraken
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n4
+    displayNameKey: world.abysstiefe.node4
+    nodeIndex: 4
+    type: 0
+    enemyDeckCardIds:
+    - abgrund_tyrann
+    - tiefenfuerst_kraken
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n5
+    displayNameKey: world.abysstiefe.node5
+    nodeIndex: 5
+    type: 1
+    enemyDeckCardIds:
+    - abgrund_tyrann
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    - frostklingen_adept
+    goldOneStar: 600
+    goldTwoStar: 1200
+    goldThreeStar: 2400
+    goldFourStar: 6000
+    expOneStar: 120
+    expTwoStar: 300
+    expThreeStar: 600
+    expFourStar: 1200
+  - id: abysstiefe_n6
+    displayNameKey: world.abysstiefe.node6
+    nodeIndex: 6
+    type: 0
+    enemyDeckCardIds:
+    - abgrund_tyrann
+    - tiefenfuerst_kraken
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n7
+    displayNameKey: world.abysstiefe.node7
+    nodeIndex: 7
+    type: 0
+    enemyDeckCardIds:
+    - abgrund_tyrann
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n8
+    displayNameKey: world.abysstiefe.node8
+    nodeIndex: 8
+    type: 0
+    enemyDeckCardIds:
+    - abgrund_tyrann
+    - abgrund_tyrann
+    - tiefenfuerst_kraken
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n9
+    displayNameKey: world.abysstiefe.node9
+    nodeIndex: 9
+    type: 0
+    enemyDeckCardIds:
+    - abgrund_tyrann
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    - frostklingen_adept
+    goldOneStar: 300
+    goldTwoStar: 600
+    goldThreeStar: 1200
+    goldFourStar: 3000
+    expOneStar: 60
+    expTwoStar: 150
+    expThreeStar: 300
+    expFourStar: 600
+  - id: abysstiefe_n10
+    displayNameKey: world.abysstiefe.node10
+    nodeIndex: 10
+    type: 2
+    enemyDeckCardIds:
+    - abgrund_tyrann
+    - abgrund_tyrann
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    - frostklingen_adept
+    goldOneStar: 1200
+    goldTwoStar: 2400
+    goldThreeStar: 4800
+    goldFourStar: 12000
+    expOneStar: 300
+    expTwoStar: 750
+    expThreeStar: 1500
+    expFourStar: 3000

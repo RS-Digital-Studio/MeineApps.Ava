@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aff64acf2176bf24bac5ea26ff419e51, type: 3}
+  m_Name: BalancingConfig
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Config.BalancingConfig
+  energyCapDefault: 60
+  energyRegenSeconds: 360
+  energyCostNormalNode: 1
+  energyCostMiniBoss: 2
+  energyCostWorldBoss: 3
+  energyCostArena: 5
+  energyCostThiefAttack: 5
+  playerLevelSoftCap: 150
+  maxCopiesFarmable: 3
+  maxCardsPerDeck: 10
+  defaultDeckSlots: 3
+  maxDeckSlots: 6
+  maxBattleTurns: 50
+  startManaPerSide: 3
+  maxMana: 10
+  maxFieldSlots: 5
+  maxHandSize: 5
+  startHandSize: 4
+  matchmakingRatingWindow: 150
+  arenaMatchCooldownSeconds: 30
+  arenaSeasonDays: 30
+  guildMinPlayerLevel: 25
+  guildFoundationCost: 50000
+  guildInactivityKickDays: 7
+  thiefSpawnIntervalHoursMin: 4
+  thiefSpawnIntervalHoursMax: 6
+  thiefActiveHours: 2
+  thiefMaxAttacksPerPlayer: 10

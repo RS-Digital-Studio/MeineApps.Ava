@@ -1,0 +1,185 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 604d2cde71f2fe843ac64bfdcfec2a0d, type: 3}
+  m_Name: World_sandreich
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
+  id: sandreich
+  displayNameKey: world.sandreich.name
+  index: 2
+  themeElement: 1
+  recommendedPlayerLevel: 8
+  backgroundAddressableKey: Worlds.2/bg_sandreich
+  musicAddressableKey: Audio.BGM/music_sandreich
+  nodes:
+  - id: sandreich_n1
+    displayNameKey: world.sandreich.node1
+    nodeIndex: 1
+    type: 0
+    enemyDeckCardIds:
+    - glutwolf
+    - funkenmeister
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n2
+    displayNameKey: world.sandreich.node2
+    nodeIndex: 2
+    type: 0
+    enemyDeckCardIds:
+    - glutwolf
+    - glutwolf
+    - funkenmeister
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n3
+    displayNameKey: world.sandreich.node3
+    nodeIndex: 3
+    type: 0
+    enemyDeckCardIds:
+    - vulkan_krieger
+    - glutwolf
+    - lehrlingsschmied
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n4
+    displayNameKey: world.sandreich.node4
+    nodeIndex: 4
+    type: 0
+    enemyDeckCardIds:
+    - vulkan_krieger
+    - funkenmeister
+    - glutwolf
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n5
+    displayNameKey: world.sandreich.node5
+    nodeIndex: 5
+    type: 1
+    enemyDeckCardIds:
+    - schmieden_golem
+    - vulkan_krieger
+    - funkenmeister
+    - glutwolf
+    goldOneStar: 160
+    goldTwoStar: 320
+    goldThreeStar: 640
+    goldFourStar: 1600
+    expOneStar: 32
+    expTwoStar: 80
+    expThreeStar: 160
+    expFourStar: 320
+  - id: sandreich_n6
+    displayNameKey: world.sandreich.node6
+    nodeIndex: 6
+    type: 0
+    enemyDeckCardIds:
+    - schmieden_golem
+    - vulkan_krieger
+    - glutwolf
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n7
+    displayNameKey: world.sandreich.node7
+    nodeIndex: 7
+    type: 0
+    enemyDeckCardIds:
+    - vulkan_krieger
+    - vulkan_krieger
+    - funkenmeister
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n8
+    displayNameKey: world.sandreich.node8
+    nodeIndex: 8
+    type: 0
+    enemyDeckCardIds:
+    - schmieden_golem
+    - schmieden_golem
+    - vulkan_krieger
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n9
+    displayNameKey: world.sandreich.node9
+    nodeIndex: 9
+    type: 0
+    enemyDeckCardIds:
+    - schmieden_golem
+    - vulkan_krieger
+    - funkenmeister
+    - glutwolf
+    goldOneStar: 80
+    goldTwoStar: 160
+    goldThreeStar: 320
+    goldFourStar: 800
+    expOneStar: 16
+    expTwoStar: 40
+    expThreeStar: 80
+    expFourStar: 160
+  - id: sandreich_n10
+    displayNameKey: world.sandreich.node10
+    nodeIndex: 10
+    type: 2
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - schmieden_golem
+    - vulkan_krieger
+    - funkenmeister
+    - glutwolf
+    goldOneStar: 320
+    goldTwoStar: 640
+    goldThreeStar: 1280
+    goldFourStar: 3200
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800

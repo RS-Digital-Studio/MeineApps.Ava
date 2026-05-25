@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_schreckens_ritter
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: schreckens_ritter
+  displayNameKey: card.schreckens_ritter.name
+  flavorTextKey: card.schreckens_ritter.flavor
+  element: 4
+  rarity: 2
+  race: 4
+  cost: 6
+  baseAttack: 950
+  baseHealth: 1450
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 4ada37b5992af1a46b7a8ddec6c6f396, type: 2}
+  secondAbility: {fileID: 11400000, guid: a67f7d05c4bb98048881bf6e3f87c5a3, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 77074c3e26425dd41a7d607cd55d9c89, type: 2}
+  deckLimit: 1
+  globalCraftLimit: 90
+  artworkAddressableKey: Cards.Rare/card_schreckens_ritter
+  voiceLineAddressableKey: 

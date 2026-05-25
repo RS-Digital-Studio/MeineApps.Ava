@@ -1,0 +1,184 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 604d2cde71f2fe843ac64bfdcfec2a0d, type: 3}
+  m_Name: World_frostgipfel
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
+  id: frostgipfel
+  displayNameKey: world.frostgipfel.name
+  index: 4
+  themeElement: 2
+  recommendedPlayerLevel: 30
+  backgroundAddressableKey: Worlds.4/bg_frostgipfel
+  musicAddressableKey: Audio.BGM/music_frostgipfel
+  nodes:
+  - id: frostgipfel_n1
+    displayNameKey: world.frostgipfel.node1
+    nodeIndex: 1
+    type: 0
+    enemyDeckCardIds:
+    - wasserspirit
+    - frostklingen_adept
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n2
+    displayNameKey: world.frostgipfel.node2
+    nodeIndex: 2
+    type: 0
+    enemyDeckCardIds:
+    - frostklingen_adept
+    - wasserspirit
+    - wasserspirit
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n3
+    displayNameKey: world.frostgipfel.node3
+    nodeIndex: 3
+    type: 0
+    enemyDeckCardIds:
+    - frostklingen_adept
+    - frostklingen_adept
+    - wasserspirit
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n4
+    displayNameKey: world.frostgipfel.node4
+    nodeIndex: 4
+    type: 0
+    enemyDeckCardIds:
+    - frostklingen_adept
+    - wasserspirit
+    - stahlfaust_berserker
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n5
+    displayNameKey: world.frostgipfel.node5
+    nodeIndex: 5
+    type: 1
+    enemyDeckCardIds:
+    - stahlfaust_berserker
+    - frostklingen_adept
+    - frostklingen_adept
+    - wasserspirit
+    goldOneStar: 400
+    goldTwoStar: 800
+    goldThreeStar: 1600
+    goldFourStar: 4000
+    expOneStar: 80
+    expTwoStar: 200
+    expThreeStar: 400
+    expFourStar: 800
+  - id: frostgipfel_n6
+    displayNameKey: world.frostgipfel.node6
+    nodeIndex: 6
+    type: 0
+    enemyDeckCardIds:
+    - stahlfaust_berserker
+    - frostklingen_adept
+    - wasserspirit
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n7
+    displayNameKey: world.frostgipfel.node7
+    nodeIndex: 7
+    type: 0
+    enemyDeckCardIds:
+    - tiefenfuerst_kraken
+    - frostklingen_adept
+    - wasserspirit
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n8
+    displayNameKey: world.frostgipfel.node8
+    nodeIndex: 8
+    type: 0
+    enemyDeckCardIds:
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    - frostklingen_adept
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n9
+    displayNameKey: world.frostgipfel.node9
+    nodeIndex: 9
+    type: 0
+    enemyDeckCardIds:
+    - tiefenfuerst_kraken
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    goldOneStar: 200
+    goldTwoStar: 400
+    goldThreeStar: 800
+    goldFourStar: 2000
+    expOneStar: 40
+    expTwoStar: 100
+    expThreeStar: 200
+    expFourStar: 400
+  - id: frostgipfel_n10
+    displayNameKey: world.frostgipfel.node10
+    nodeIndex: 10
+    type: 2
+    enemyDeckCardIds:
+    - tiefenfuerst_kraken
+    - tiefenfuerst_kraken
+    - stahlfaust_berserker
+    - frostklingen_adept
+    - wasserspirit
+    goldOneStar: 800
+    goldTwoStar: 1600
+    goldThreeStar: 3200
+    goldFourStar: 8000
+    expOneStar: 200
+    expTwoStar: 500
+    expThreeStar: 1000
+    expFourStar: 2000

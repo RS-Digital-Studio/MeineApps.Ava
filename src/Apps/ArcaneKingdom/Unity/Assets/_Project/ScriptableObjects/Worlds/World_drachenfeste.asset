@@ -1,0 +1,184 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 604d2cde71f2fe843ac64bfdcfec2a0d, type: 3}
+  m_Name: World_drachenfeste
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
+  id: drachenfeste
+  displayNameKey: world.drachenfeste.name
+  index: 9
+  themeElement: 1
+  recommendedPlayerLevel: 110
+  backgroundAddressableKey: Worlds.9/bg_drachenfeste
+  musicAddressableKey: Audio.BGM/music_drachenfeste
+  nodes:
+  - id: drachenfeste_n1
+    displayNameKey: world.drachenfeste.node1
+    nodeIndex: 1
+    type: 0
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - drachenlord_adept
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n2
+    displayNameKey: world.drachenfeste.node2
+    nodeIndex: 2
+    type: 0
+    enemyDeckCardIds:
+    - drachenlord_adept
+    - phoenix_ewigkeit
+    - vulkan_krieger
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n3
+    displayNameKey: world.drachenfeste.node3
+    nodeIndex: 3
+    type: 0
+    enemyDeckCardIds:
+    - phoenix_ewigkeit
+    - drachenlord_adept
+    - schmieden_golem
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n4
+    displayNameKey: world.drachenfeste.node4
+    nodeIndex: 4
+    type: 0
+    enemyDeckCardIds:
+    - hoellenfuerst_inferno
+    - drachenlord_adept
+    - phoenix_ewigkeit
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n5
+    displayNameKey: world.drachenfeste.node5
+    nodeIndex: 5
+    type: 1
+    enemyDeckCardIds:
+    - drachenherrscher_goldzahn
+    - drachenlord_adept
+    - hoellenfuerst_inferno
+    - phoenix_ewigkeit
+    goldOneStar: 1800
+    goldTwoStar: 3600
+    goldThreeStar: 7200
+    goldFourStar: 18000
+    expOneStar: 360
+    expTwoStar: 900
+    expThreeStar: 1800
+    expFourStar: 3600
+  - id: drachenfeste_n6
+    displayNameKey: world.drachenfeste.node6
+    nodeIndex: 6
+    type: 0
+    enemyDeckCardIds:
+    - hoellenfuerst_inferno
+    - drachenlord_adept
+    - drachenlord_adept
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n7
+    displayNameKey: world.drachenfeste.node7
+    nodeIndex: 7
+    type: 0
+    enemyDeckCardIds:
+    - drachenherrscher_goldzahn
+    - phoenix_ewigkeit
+    - hoellenfuerst_inferno
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n8
+    displayNameKey: world.drachenfeste.node8
+    nodeIndex: 8
+    type: 0
+    enemyDeckCardIds:
+    - drachenherrscher_goldzahn
+    - hoellenfuerst_inferno
+    - drachenlord_adept
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n9
+    displayNameKey: world.drachenfeste.node9
+    nodeIndex: 9
+    type: 0
+    enemyDeckCardIds:
+    - drachenherrscher_goldzahn
+    - drachenherrscher_goldzahn
+    - hoellenfuerst_inferno
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
+  - id: drachenfeste_n10
+    displayNameKey: world.drachenfeste.node10
+    nodeIndex: 10
+    type: 2
+    enemyDeckCardIds:
+    - drachenherrscher_goldzahn
+    - drachenherrscher_goldzahn
+    - hoellenfuerst_inferno
+    - phoenix_ewigkeit
+    - drachenlord_adept
+    goldOneStar: 3600
+    goldTwoStar: 7200
+    goldThreeStar: 14400
+    goldFourStar: 36000
+    expOneStar: 900
+    expTwoStar: 2250
+    expThreeStar: 4500
+    expFourStar: 9000

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e177bc8bb3b7819408238fcecd0ceb86, type: 3}
+  m_Name: Ability_burning_aura
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.AbilityDefinition
+  id: burning_aura
+  displayNameKey: ability.burning_aura.name
+  descriptionKey: ability.burning_aura.desc
+  type: 0
+  category: 5
+  magnitude: 20
+  durationTurns: 0
+  targetsAllAllies: 1
+  targetsAllEnemies: 0

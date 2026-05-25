@@ -1,4 +1,5 @@
 #nullable enable
+using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Game.Artwork;
 using Cysharp.Threading.Tasks;
@@ -19,9 +20,15 @@ namespace ArcaneKingdom.UI.Common
         /// Wenn null: Karten zeigen nur den leeren Artwork-Platzhalter.
         /// </summary>
         public static CardArtworkService? ArtworkService { get; set; }
+
+        /// <summary>
+        /// Globaler Localization-Service. Wenn gesetzt: lokalisierte Display-Namen
+        /// (z.B. "Waldläufer" mit Umlaut aus strings.csv). Wenn null: Key-Suffix-Fallback.
+        /// </summary>
+        public static ILocalizationService? LocalizationService { get; set; }
         /// <summary>
         /// Erstellt ein neues Karten-Tile. <paramref name="onClick"/> wird bei Klick aufgerufen.
-        /// <paramref name="locked"/> grayed-out die Karte (z.B. nicht-besessene Codex-Eintraege).
+        /// <paramref name="locked"/> grayed-out die Karte (z.B. nicht-besessene Codex-Einträge).
         /// </summary>
         public static VisualElement Build(CardDefinition card,
                                           System.Action<CardDefinition>? onClick = null,
@@ -111,23 +118,25 @@ namespace ArcaneKingdom.UI.Common
             art.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(sprite);
         }
 
-        /// <summary>Fallback: wenn Localization noch nicht da ist, nutzen wir ID-Suffix als Name.</summary>
+        /// <summary>
+        /// Liefert den lokalisierten Display-Namen einer Karte. Bevorzugt
+        /// LocalizationService (volle deutsche Namen mit Umlauten), fällt auf
+        /// "card.Id" capitalized zurück wenn Localization noch nicht geladen ist.
+        /// </summary>
         private static string DisplayNameOf(CardDefinition card)
         {
-            if (!string.IsNullOrEmpty(card.DisplayNameKey))
+            // 1. Localization-Service nutzen wenn verfügbar
+            if (!string.IsNullOrEmpty(card.DisplayNameKey) && LocalizationService != null)
             {
-                // Spaeter: ILocalizationService.Get(card.DisplayNameKey)
-                // Vorerst: Key-basiertes Fallback ("card.drachenherrscher" -> "Drachenherrscher")
-                var key = card.DisplayNameKey;
-                var dot = key.LastIndexOf('.');
-                if (dot >= 0 && dot < key.Length - 1)
-                {
-                    var name = key.Substring(dot + 1).Replace('_', ' ');
-                    if (name.Length > 0)
-                        return char.ToUpper(name[0]) + name.Substring(1);
-                }
+                var translated = LocalizationService.Get(card.DisplayNameKey, fallback: null);
+                if (!string.IsNullOrEmpty(translated) && translated != card.DisplayNameKey)
+                    return translated;
             }
-            return card.Id;
+
+            // 2. Fallback: card.Id capitalized (z.B. "waldlaeufer" -> "Waldlaeufer")
+            if (string.IsNullOrEmpty(card.Id)) return string.Empty;
+            var name = card.Id.Replace('_', ' ');
+            return char.ToUpper(name[0]) + name.Substring(1);
         }
     }
 }

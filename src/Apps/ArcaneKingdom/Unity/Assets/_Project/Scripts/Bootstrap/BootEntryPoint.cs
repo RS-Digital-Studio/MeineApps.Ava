@@ -1,4 +1,5 @@
 #nullable enable
+using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Common;
@@ -15,21 +16,24 @@ namespace ArcaneKingdom.Bootstrap
     ///
     /// Wartet auf <see cref="UIRoot.IsReady"/> bevor der erste Screen gepusht wird —
     /// sonst werden UXML-var()-Variablen (z.B. background-color: var(--ak-bg-deep))
-    /// gegen einen leeren StyleSheet-Tree aufgeloest -&gt; NullReferenceException
+    /// gegen einen leeren StyleSheet-Tree aufgelöst -&gt; NullReferenceException
     /// im StyleVariableResolver.
     /// </summary>
     public sealed class BootEntryPoint : IAsyncStartable
     {
         private readonly ScreenManager _screenManager;
         private readonly CardArtworkService _artworkService;
+        private readonly ILocalizationService _localization;
         private readonly UIRoot _uiRoot;
 
         public BootEntryPoint(ScreenManager screenManager,
                               CardArtworkService artworkService,
+                              ILocalizationService localization,
                               UIRoot uiRoot)
         {
             _screenManager = screenManager;
             _artworkService = artworkService;
+            _localization = localization;
             _uiRoot = uiRoot;
         }
 
@@ -37,6 +41,7 @@ namespace ArcaneKingdom.Bootstrap
         {
             // UI-Globals binden bevor erste View entsteht
             CardTileFactory.ArtworkService = _artworkService;
+            CardTileFactory.LocalizationService = _localization;
 
             // Warten bis UIRoot fertig ist (UIDocument.rootVisualElement vorhanden +
             // ScreenContainer + Theme-StyleSheet in Parent-Chain).

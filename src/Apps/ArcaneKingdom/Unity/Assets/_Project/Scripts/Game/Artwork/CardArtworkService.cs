@@ -11,30 +11,65 @@ using UnityEngine.AddressableAssets;
 namespace ArcaneKingdom.Game.Artwork
 {
     /// <summary>
-    /// Liefert Sprites fuer Karten. Ladestrategie:
-    ///   1. Wenn <see cref="CardDefinition.ArtworkAddressableKey"/> gesetzt: per
-    ///      Addressables laden (sofern Addressables-Symbol gesetzt ist)
-    ///   2. Sonst (oder bei Fehler): procedural generierter Element-Gradient
+    /// Liefert Sprites für Karten. Ladestrategie (in dieser Reihenfolge):
+    ///   1. Resources/Cards/{cardId}.png aus dem Build (DreamShaper-XL-Artworks)
+    ///   2. Wenn <see cref="CardDefinition.ArtworkAddressableKey"/> gesetzt und
+    ///      Addressables-Symbol aktiv: per Addressables laden (z.B. spätere Live-Updates)
+    ///   3. Sonst (oder bei Fehler): procedural generierter Element-Gradient
     ///
-    /// Cache-Strategie: Procedural-Sprites werden EINMALIG pro (Element, Rarity)
-    /// generiert und wiederverwendet — minimaler Speicher-Footprint.
+    /// Cache-Strategie: Resources- und Addressable-Sprites werden pro CardId gecacht,
+    /// procedural-Sprites EINMALIG pro (Element, Rarity) — minimaler Speicher-Footprint.
     /// </summary>
     public sealed class CardArtworkService
     {
+        private const string ResourcesFolder = "Cards";
+
+        private readonly Dictionary<string, Sprite> _resourceCache = new();
         private readonly Dictionary<string, Sprite> _addressableCache = new();
         private readonly Dictionary<(Element, Rarity), Sprite> _proceduralCache = new();
 
         /// <summary>
-        /// Liefert das Sprite (oder ein procedural-generiertes Fallback) fuer eine Karte.
-        /// Asynchron weil Addressables-Load IO ist.
+        /// Liefert das Sprite (oder ein procedural-generiertes Fallback) für eine Karte.
+        /// Asynchron weil Addressables-Load IO ist; Resources-Load ist synchron, läuft aber
+        /// im selben UniTask-Pfad damit Callsites einheitlich bleiben.
         /// </summary>
         public UniTask<Sprite> GetSpriteAsync(CardDefinition card)
         {
+            // 1. Resources-Versuch (lokales Artwork im Build)
+            var resourceSprite = TryLoadFromResources(card);
+            if (resourceSprite != null)
+                return UniTask.FromResult(resourceSprite);
+
+            // 2. Addressables-Versuch (nur wenn Package installiert)
 #if ARCANE_ADDRESSABLES_INSTALLED
             return GetSpriteAddressableAsync(card);
 #else
+            // 3. Procedural-Fallback
             return UniTask.FromResult(GetProcedural(card));
 #endif
+        }
+
+        private Sprite? TryLoadFromResources(CardDefinition card)
+        {
+            if (_resourceCache.TryGetValue(card.Id, out var cached))
+                return cached;
+
+            // Resources.Load liefert Texture2D — Sprite wird zur Laufzeit erzeugt.
+            // Vorteil: keine speziellen .meta-Settings notwendig (Default-Import reicht).
+            var tex = Resources.Load<Texture2D>($"{ResourcesFolder}/{card.Id}");
+            if (tex == null)
+                return null;
+
+            var sprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, tex.width, tex.height),
+                new Vector2(0.5f, 0.5f),
+                pixelsPerUnit: 100f,
+                extrude: 0,
+                meshType: SpriteMeshType.FullRect);
+            sprite.name = card.Id;
+            _resourceCache[card.Id] = sprite;
+            return sprite;
         }
 
 #if ARCANE_ADDRESSABLES_INSTALLED
@@ -102,7 +137,7 @@ namespace ArcaneKingdom.Game.Artwork
 
                 for (var x = 0; x < size; x++)
                 {
-                    // Sanftes Vignette (dunkler an den Raendern)
+                    // Sanftes Vignette (dunkler an den Rändern)
                     var dx = (x - size * 0.5f) / (size * 0.5f);
                     var dy = (y - size * 0.5f) / (size * 0.5f);
                     var dist = Mathf.Sqrt(dx * dx + dy * dy);

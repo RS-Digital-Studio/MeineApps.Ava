@@ -7,16 +7,18 @@ namespace ArcaneKingdom.UI.Foundation
 {
     /// <summary>
     /// MonoBehaviour das in der Boot-Scene auf einem GameObject (z.B. [UI]) liegt
-    /// und das UIDocument haelt. Bietet Zugriff auf den ScreenRoot-Container an den
-    /// der ScreenManager seine Screens haengt.
+    /// und das UIDocument haelt.
     ///
-    /// Wird vom <see cref="UIInstaller"/> ueber RegisterComponent in den DI-Container
-    /// gehangen, damit der ScreenManager den Root bekommt.
-    ///
+    /// <para><b>Lifecycle:</b></para>
     /// <para>
-    /// <b>DefaultExecutionOrder(-10000):</b> UIRoot.Awake muss VOR LifetimeScope.Awake
-    /// laufen, sonst ist ScreenContainer noch null wenn der ScreenManager im DI gebaut
-    /// wird. -10000 ist niedriger als VContainer's LifetimeScope default (-50).
+    /// In Awake werden ScreenContainer + OverlayContainer angelegt — bewusst NICHT an
+    /// UIDocument.rootVisualElement gehaengt, weil das in Awake noch null ist. Stattdessen
+    /// bekommt der ScreenManager bereits eine stabile VisualElement-Referenz.
+    /// </para>
+    /// <para>
+    /// In OnEnable (wenn UIDocument bereit ist) werden die Container an
+    /// rootVisualElement gehaengt + das Theme verlinkt. Das ist idempotent — bei
+    /// Domain-Reload / Scene-Switch wird nichts doppelt eingehaengt.
     /// </para>
     /// </summary>
     [DefaultExecutionOrder(-10000)]
@@ -26,35 +28,22 @@ namespace ArcaneKingdom.UI.Foundation
         [SerializeField] private StyleSheet? themeStyleSheet;
 
         private UIDocument? _document;
-        private VisualElement? _screenContainer;
-        private VisualElement? _overlayContainer;
+        private VisualElement _screenContainer = null!;
+        private VisualElement _overlayContainer = null!;
+        private bool _attachedToRoot;
 
-        /// <summary>Root-Container fuer Screens. Lazy-initialisiert.</summary>
-        public VisualElement ScreenContainer
-        {
-            get
-            {
-                EnsureInitialized();
-                return _screenContainer!;
-            }
-        }
+        /// <summary>Root-Container fuer Screens.</summary>
+        public VisualElement ScreenContainer => _screenContainer;
 
         /// <summary>Overlay-Container — liegt UEBER ScreenContainer (Toasts, Loading-Spinner).</summary>
-        public VisualElement OverlayContainer
-        {
-            get
-            {
-                EnsureInitialized();
-                return _overlayContainer!;
-            }
-        }
+        public VisualElement OverlayContainer => _overlayContainer;
 
         private void Awake()
         {
-            EnsureInitialized();
+            // Container in Awake bauen — gibt dem ScreenManager im DI-Build eine
+            // stabile Referenz, auch wenn UIDocument.rootVisualElement noch null ist.
+            BuildContainers();
 
-            // DontDestroyOnLoad funktioniert nur an Root-GameObjects.
-            // Wenn [UI] Child von [Bootstrapper] ist, erst zum Root machen.
             if (transform.parent != null)
             {
                 GameLogger.Verbose("UI", "UIRoot war Child — fuer DontDestroyOnLoad zum Root gemacht.");
@@ -63,44 +52,21 @@ namespace ArcaneKingdom.UI.Foundation
             DontDestroyOnLoad(gameObject);
         }
 
-        private void EnsureInitialized()
+        private void OnEnable()
+        {
+            // UIDocument.rootVisualElement ist ab OnEnable verfuegbar.
+            // Container an root haengen wenn noch nicht passiert.
+            AttachToRoot();
+        }
+
+        private void BuildContainers()
         {
             if (_screenContainer != null) return;
 
-            _document ??= GetComponent<UIDocument>();
-            if (_document == null)
-            {
-                GameLogger.Error("UI", "UIRoot ohne UIDocument-Component — kann ScreenContainer nicht bauen.");
-                _screenContainer = new VisualElement { name = "screen-container-fallback" };
-                _overlayContainer = new VisualElement { name = "overlay-container-fallback" };
-                return;
-            }
-
-            var root = _document.rootVisualElement;
-            if (root == null)
-            {
-                GameLogger.Warning("UI",
-                    "UIDocument.rootVisualElement noch null — Container werden detached angelegt " +
-                    "und beim naechsten EnsureInitialized angehaengt.");
-                _screenContainer = new VisualElement { name = "screen-container" };
-                _overlayContainer = new VisualElement { name = "overlay-container" };
-                return;
-            }
-
-            // Theme zuweisen wenn im Inspector verlinkt
-            if (themeStyleSheet != null && !root.styleSheets.Contains(themeStyleSheet))
-                root.styleSheets.Add(themeStyleSheet);
-
-            root.AddToClassList("ak-root");
-            root.style.flexGrow = 1;
-
-            // Container fuer Screens
             _screenContainer = new VisualElement { name = "screen-container" };
             _screenContainer.style.flexGrow = 1;
             _screenContainer.style.position = Position.Relative;
-            root.Add(_screenContainer);
 
-            // Container fuer Overlays (Toasts, Loading, immer obendrueber)
             _overlayContainer = new VisualElement { name = "overlay-container" };
             _overlayContainer.style.position = Position.Absolute;
             _overlayContainer.style.left = 0;
@@ -108,9 +74,54 @@ namespace ArcaneKingdom.UI.Foundation
             _overlayContainer.style.top = 0;
             _overlayContainer.style.bottom = 0;
             _overlayContainer.pickingMode = PickingMode.Ignore;
-            root.Add(_overlayContainer);
+        }
 
-            GameLogger.Info("UI", "UIRoot bereit (ScreenContainer + OverlayContainer).");
+        private void AttachToRoot()
+        {
+            if (_attachedToRoot) return;
+
+            _document ??= GetComponent<UIDocument>();
+            if (_document == null)
+            {
+                GameLogger.Error("UI", "UIRoot ohne UIDocument-Component — Container bleiben detached.");
+                return;
+            }
+
+            var root = _document.rootVisualElement;
+            if (root == null)
+            {
+                GameLogger.Warning("UI",
+                    "UIDocument.rootVisualElement in OnEnable noch null — versuche es im naechsten Frame.");
+                StartCoroutine(WaitForRootAndAttach());
+                return;
+            }
+
+            DoAttach(root);
+        }
+
+        private System.Collections.IEnumerator WaitForRootAndAttach()
+        {
+            while (_document != null && _document.rootVisualElement == null)
+                yield return null;
+            if (_document?.rootVisualElement is { } root)
+                DoAttach(root);
+        }
+
+        private void DoAttach(VisualElement root)
+        {
+            if (themeStyleSheet != null && !root.styleSheets.Contains(themeStyleSheet))
+                root.styleSheets.Add(themeStyleSheet);
+
+            root.AddToClassList("ak-root");
+            root.style.flexGrow = 1;
+
+            if (_screenContainer.parent != root) root.Add(_screenContainer);
+            if (_overlayContainer.parent != root) root.Add(_overlayContainer);
+
+            _attachedToRoot = true;
+            GameLogger.Info("UI",
+                $"UIRoot bereit — Containers an UIDocument-Root angehangen " +
+                $"(root.childCount={root.childCount}, theme={(themeStyleSheet != null ? "ja" : "nein")}).");
         }
     }
 }

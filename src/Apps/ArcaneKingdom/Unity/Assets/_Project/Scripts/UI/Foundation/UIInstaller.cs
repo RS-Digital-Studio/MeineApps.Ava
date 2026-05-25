@@ -25,6 +25,7 @@ namespace ArcaneKingdom.UI.Foundation
         {
             // Foundation
             builder.Register<ToastService>(Lifetime.Singleton);
+            builder.Register<ModalContext>(Lifetime.Singleton);
 
             // Screens als Transient registrieren — pro Push neue Instanz waere theoretisch
             // moeglich, aber ScreenManager cached gebaute Screens (built-cache). Singleton

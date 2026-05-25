@@ -1,0 +1,74 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <!--
+        CardDetailModal — Overlay ueber dem Hub. Zeigt Card-Stats, Abilities, Rune-Slots,
+        Upgrade-Button. Tap auf Backdrop oder Close-Button schliesst.
+    -->
+
+    <ui:VisualElement class="ak-modal-backdrop" name="card-detail-backdrop">
+        <ui:VisualElement class="ak-modal" name="card-detail-modal" style="min-width: 360; max-width: 560;">
+
+            <!-- Header (Karten-Name + Close) -->
+            <ui:VisualElement class="ak-row" style="align-items: center; margin-bottom: 8;">
+                <ui:Label name="card-detail-name" text="Karte" class="ak-h2"
+                          style="flex-grow: 1;" />
+                <ui:Button name="card-detail-close" text="✕"
+                           class="ak-btn ak-btn--ghost ak-btn--sm ak-btn--icon" />
+            </ui:VisualElement>
+
+            <!-- Element + Rarity + Race + Cost -->
+            <ui:VisualElement class="ak-row" style="margin-bottom: 12;">
+                <ui:Label name="card-detail-element" text="Element"
+                          class="ak-caption" style="margin-right: 12;" />
+                <ui:Label name="card-detail-rarity" text="Rarity"
+                          class="ak-caption" style="margin-right: 12;" />
+                <ui:Label name="card-detail-race" text="Race"
+                          class="ak-caption" style="margin-right: 12;" />
+                <ui:Label name="card-detail-cost" text="Cost: 1"
+                          class="ak-caption ak-text--accent" />
+            </ui:VisualElement>
+
+            <!-- Artwork-Platzhalter -->
+            <ui:VisualElement name="card-detail-art"
+                              style="height: 200; border-radius: 8;
+                                     background-color: rgba(0, 0, 0, 0.4);
+                                     margin-bottom: 12;" />
+
+            <!-- Stats (ATK / HP / Turns) -->
+            <ui:VisualElement class="ak-row" style="margin-bottom: 12; justify-content: space-around;">
+                <ui:VisualElement class="ak-col ak-center">
+                    <ui:Label text="ATK" class="ak-caption" />
+                    <ui:Label name="card-detail-atk" text="0" class="ak-h3 ak-text--danger" />
+                </ui:VisualElement>
+                <ui:VisualElement class="ak-col ak-center">
+                    <ui:Label text="HP" class="ak-caption" />
+                    <ui:Label name="card-detail-hp" text="0" class="ak-h3 ak-text--success" />
+                </ui:VisualElement>
+                <ui:VisualElement class="ak-col ak-center">
+                    <ui:Label text="Spezial in" class="ak-caption" />
+                    <ui:Label name="card-detail-turns" text="0" class="ak-h3 ak-text--primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Abilities -->
+            <ui:Label text="Faehigkeiten" class="ak-overline"
+                      style="margin-bottom: 6; margin-top: 4;" />
+            <ui:VisualElement name="card-detail-abilities" />
+
+            <!-- Owned / Instances-Info -->
+            <ui:VisualElement class="ak-divider" />
+            <ui:Label name="card-detail-owned-info" text="" class="ak-caption"
+                      style="margin-bottom: 8;" />
+
+            <!-- Action-Buttons -->
+            <ui:VisualElement class="ak-row ak-modal__actions">
+                <ui:Button name="card-detail-upgrade" text="Aufwerten"
+                           class="ak-btn ak-btn--accent" />
+                <ui:Button name="card-detail-deck" text="Zum Deck"
+                           class="ak-btn ak-btn--primary" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

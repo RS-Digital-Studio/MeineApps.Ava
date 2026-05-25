@@ -33,6 +33,7 @@ namespace ArcaneKingdom.UI.Hub
         private readonly QuestService _questService;
         private readonly ShopController _shopController;
         private readonly ToastService _toast;
+        private readonly ModalContext _modalContext;
 
         // Header
         private Label _displayName = null!;
@@ -103,7 +104,8 @@ namespace ArcaneKingdom.UI.Hub
                          CardCatalogService cardCatalog,
                          QuestService questService,
                          ShopController shopController,
-                         ToastService toast)
+                         ToastService toast,
+                         ModalContext modalContext)
         {
             _screenManager = screenManager;
             _save = save;
@@ -111,6 +113,7 @@ namespace ArcaneKingdom.UI.Hub
             _questService = questService;
             _shopController = shopController;
             _toast = toast;
+            _modalContext = modalContext;
         }
 
         protected override void BindElements(VisualElement root)
@@ -422,18 +425,20 @@ namespace ArcaneKingdom.UI.Hub
         private async UniTask BuyPackAsync(CardPackDefinition pack)
         {
             var result = await _shopController.BuyPackAsync(pack);
-            if (result.Success)
-            {
-                var rarities = string.Join(", ", result.AwardedRarities);
-                _toast.Show($"Pack geoeffnet: {rarities}" +
-                            (result.PityTriggered ? " (Pity!)" : ""),
-                    ToastKind.Success, 6f);
-                await OnEnterAsync(CancellationToken.None);
-            }
-            else
+            if (!result.Success)
             {
                 _toast.Show(result.Error ?? "Pack-Kauf fehlgeschlagen", ToastKind.Danger);
+                return;
             }
+
+            // Pack-Opening-Modal mit den Rarities oeffnen
+            _modalContext.Set(PackOpeningModal.ContextKey, result.AwardedRarities);
+            await _screenManager.PushAsync(ScreenId.PackOpeningOverlay);
+            if (result.PityTriggered)
+                _toast.Show("Legendary-Pity ausgeloest!", ToastKind.Success, 4f);
+
+            // Header nach dem Modal refreshen (Diamanten wurden abgezogen)
+            await OnEnterAsync(CancellationToken.None);
         }
 
         private async UniTask BuyEnergyAsync(int amount, long diamondCost)
@@ -684,8 +689,8 @@ namespace ArcaneKingdom.UI.Hub
 
         private void OnCardClicked(CardDefinition card)
         {
-            // Stufe 5 bringt das Card-Detail-Modal. Bis dahin nur Toast.
-            _toast.Show($"{card.Id} ({card.Rarity}, {card.Element})", ToastKind.Info);
+            _modalContext.Set(CardDetailModal.ContextKey, card);
+            _screenManager.PushAsync(ScreenId.CardDetailOverlay).Forget();
         }
 
         // ============================================================

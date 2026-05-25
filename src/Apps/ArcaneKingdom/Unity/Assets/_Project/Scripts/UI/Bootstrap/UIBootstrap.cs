@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using ArcaneKingdom.UI.Foundation;
+using ArcaneKingdom.UI.Hub;
 using ArcaneKingdom.UI.Login;
 using VContainer;
 
@@ -23,9 +24,9 @@ namespace ArcaneKingdom.UI.Bootstrap
             var screens = new Dictionary<string, Type>
             {
                 [ScreenId.Login] = typeof(LoginScreen),
+                [ScreenId.Hub]   = typeof(HubScreen),
 
-                // Stufen 3-10 werden hier nach und nach befuellt:
-                //   [ScreenId.Hub]         = typeof(HubScreen),
+                // Stufen 4-10 werden hier nach und nach befuellt:
                 //   [ScreenId.DeckBuilder] = typeof(DeckBuilderScreen),
                 //   [ScreenId.WorldMap]    = typeof(WorldMapScreen),
                 //   [ScreenId.Battle]      = typeof(BattleScreen),

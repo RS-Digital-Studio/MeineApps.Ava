@@ -5,6 +5,7 @@ using ArcaneKingdom.Game.Login;
 using ArcaneKingdom.Game.Services;
 using ArcaneKingdom.Game.Arena;
 using ArcaneKingdom.Game.Battle;
+using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.Game.Chat;
 using ArcaneKingdom.Game.Codex;
 using ArcaneKingdom.Game.Collection;
@@ -66,6 +67,9 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<INotificationService, NotificationService>(Lifetime.Singleton);
             builder.Register<SeasonResetService>(Lifetime.Singleton);
             builder.Register<CodexService>(Lifetime.Singleton);
+
+            // Card-Catalog: Runtime-Lookup von CardDefinitions per ID
+            builder.Register<CardCatalogService>(Lifetime.Singleton);
 
             // Iter 6: Schema-v2 + Server-Anbindungs-Vorbereitung
             builder.Register<AchievementService>(Lifetime.Singleton);

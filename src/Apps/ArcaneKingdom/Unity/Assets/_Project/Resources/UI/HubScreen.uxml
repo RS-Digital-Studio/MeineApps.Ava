@@ -1,0 +1,138 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <!--
+        HubScreen.uxml — Zentrale Hub-Ansicht (3-Spalten: Header / Content / TabBar).
+    -->
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <!-- ================== HEADER ================== -->
+        <ui:VisualElement class="ak-app-header">
+
+            <!-- Avatar + Name + Level (links) -->
+            <ui:VisualElement name="header-profile-block" class="ak-row" style="align-items: center;">
+                <ui:VisualElement name="header-avatar" class="ak-app-header__avatar" />
+                <ui:VisualElement class="ak-col" style="margin-left: 8;">
+                    <ui:Label name="header-display-name" text="Spieler" class="ak-app-header__name" />
+                    <ui:Label name="header-level" text="Stufe 1" class="ak-app-header__level" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Spacer -->
+            <ui:VisualElement style="flex-grow: 1;" />
+
+            <!-- Currency-Pills (rechts) -->
+            <ui:VisualElement name="header-energy-pill" class="ak-currency-pill ak-currency-pill--energy">
+                <ui:VisualElement class="ak-currency-pill__icon" />
+                <ui:Label name="header-energy-value" text="0/60" class="ak-currency-pill__value" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="header-gold-pill" class="ak-currency-pill ak-currency-pill--gold">
+                <ui:VisualElement class="ak-currency-pill__icon" />
+                <ui:Label name="header-gold-value" text="0" class="ak-currency-pill__value" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="header-diamond-pill" class="ak-currency-pill ak-currency-pill--diamond">
+                <ui:VisualElement class="ak-currency-pill__icon" />
+                <ui:Label name="header-diamond-value" text="0" class="ak-currency-pill__value" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- ================== CONTENT ================== -->
+        <ui:VisualElement name="hub-content" style="flex-grow: 1; position: relative;">
+
+            <!-- Tab-Panels (jeder Tab ein VisualElement, durch JS-Code (de)aktiviert) -->
+
+            <!-- Cards-Tab (default sichtbar) -->
+            <ui:VisualElement name="tab-cards" class="ak-fill ak-col">
+
+                <!-- Filter-Leiste -->
+                <ui:VisualElement class="ak-row" style="padding: 12; align-items: center;">
+                    <ui:TextField name="cards-search" picking-mode="Position"
+                                  class="ak-input" style="flex-grow: 1; margin-right: 8;" />
+                    <ui:DropdownField name="cards-rarity-filter" label=""
+                                      style="min-width: 130; margin-right: 8;" />
+                    <ui:DropdownField name="cards-element-filter" label=""
+                                      style="min-width: 130;" />
+                </ui:VisualElement>
+
+                <!-- Karten-Grid (ScrollView mit dynamisch erzeugten Cards) -->
+                <ui:ScrollView name="cards-scroll" style="flex-grow: 1;"
+                               horizontal-scroller-visibility="Hidden">
+                    <ui:VisualElement name="cards-grid"
+                                      style="flex-direction: row; flex-wrap: wrap;
+                                             justify-content: center; padding: 8;" />
+                </ui:ScrollView>
+
+                <!-- Empty-State (wenn keine Karten gefunden) -->
+                <ui:VisualElement name="cards-empty"
+                                  class="ak-fill ak-col ak-center ak-hidden">
+                    <ui:Label text="Keine Karten gefunden." class="ak-h4"
+                              style="margin-bottom: 8;" />
+                    <ui:Label name="cards-empty-hint"
+                              text="Oeffne ein Karten-Pack im Shop, um neue Karten zu erhalten."
+                              class="ak-body" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+
+            <!-- Quests-Tab (Stub fuer Stufe 4) -->
+            <ui:VisualElement name="tab-quests" class="ak-fill ak-col ak-center ak-hidden">
+                <ui:Label text="Quests" class="ak-h2" />
+                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            </ui:VisualElement>
+
+            <!-- Shop-Tab (Stub fuer Stufe 4) -->
+            <ui:VisualElement name="tab-shop" class="ak-fill ak-col ak-center ak-hidden">
+                <ui:Label text="Shop" class="ak-h2" />
+                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            </ui:VisualElement>
+
+            <!-- Arena-Tab (Stub fuer Stufe 4) -->
+            <ui:VisualElement name="tab-arena" class="ak-fill ak-col ak-center ak-hidden">
+                <ui:Label text="Arena" class="ak-h2" />
+                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            </ui:VisualElement>
+
+            <!-- Mehr-Tab (Stub fuer Stufe 4) -->
+            <ui:VisualElement name="tab-more" class="ak-fill ak-col ak-center ak-hidden">
+                <ui:Label text="Mehr" class="ak-h2" />
+                <ui:Label text="Folgt in Stufe 4" class="ak-body" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- ================== TAB-BAR ================== -->
+        <ui:VisualElement class="ak-tab-bar">
+
+            <ui:VisualElement name="tab-button-cards" class="ak-tab ak-tab--active">
+                <ui:VisualElement class="ak-tab__icon" style="background-color: var(--ak-rarity-epic);" />
+                <ui:Label text="Karten" class="ak-tab__label" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="tab-button-quests" class="ak-tab">
+                <ui:VisualElement class="ak-tab__icon" style="background-color: var(--ak-accent);" />
+                <ui:Label text="Quests" class="ak-tab__label" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="tab-button-shop" class="ak-tab">
+                <ui:VisualElement class="ak-tab__icon" style="background-color: var(--ak-success);" />
+                <ui:Label text="Shop" class="ak-tab__label" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="tab-button-arena" class="ak-tab">
+                <ui:VisualElement class="ak-tab__icon" style="background-color: var(--ak-danger);" />
+                <ui:Label text="Arena" class="ak-tab__label" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="tab-button-more" class="ak-tab">
+                <ui:VisualElement class="ak-tab__icon" style="background-color: var(--ak-text-muted);" />
+                <ui:Label text="Mehr" class="ak-tab__label" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

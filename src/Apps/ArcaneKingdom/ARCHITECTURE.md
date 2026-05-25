@@ -72,9 +72,11 @@ Unity/
 │   │   │   ├── Economy/                 <- Waehrungen, Quests, Merit
 │   │   │   └── UI/                      <- UI-Bindings, View-Models, Custom Controls
 │   │   ├── ScriptableObjects/           <- Konfigurations-Daten
-│   │   │   ├── Cards/                   <- 150x CardDefinition.asset
-│   │   │   ├── Runes/                   <- ca. 20x RuneDefinition.asset
-│   │   │   ├── Worlds/                  <- 9x WorldDefinition.asset
+│   │   │   ├── Cards/                   <- 158x CardDefinition.asset (131 Standard + 27 Oeko)
+│   │   │   ├── Abilities/               <- 313x AbilityDefinition.asset (Skill 1+2+3 + LastWill)
+│   │   │   ├── Runes/                   <- 18x RuneDefinition.asset
+│   │   │   ├── Heroes/                  <- 5x HeroDefinition.asset (eine pro Rasse)
+│   │   │   ├── Worlds/                  <- 10x WorldDefinition.asset (mit 100 Nodes)
 │   │   │   └── Config/                  <- Game-Constants, BalancingConfig
 │   │   ├── Scenes/                      <- Unity-Scenes
 │   │   │   ├── Boot/Boot.unity          <- Bootstrap-Scene (DI, Splash)
@@ -221,18 +223,29 @@ ArenaLifetimeScope, GuildLifetimeScope, GuildWorldLifetimeScope, ... analog
 
 ### 5.1 ScriptableObjects (statische Spielkonfiguration)
 
-Inhalt:
-- `CardDefinition` (150x) — alle Karten-Stammdaten
-- `RuneDefinition` (20x) — Runen-Stammdaten
-- `WorldDefinition` (9x) — Welten-Daten (Name, Element, Hintergrund, Nodes)
-- `NodeDefinition` (90x) — Welt-Nodes (Gegner-Deck, Belohnungen)
-- `BalancingConfig` (1x) — globale Konstanten (Energie-Cap, EXP-Formel, Drop-Rates)
-- `LevelCurve` (1x) — Spieler-Level-EXP-Tabelle
-- `CardUpgradeCurve` (1x) — Karten-Level-Upgrade-Kosten
+Inhalt (Designplan v4, Stand v6):
+- `CardDefinition` (158x) — 131 Standard + 9 Event + 6 Premium + 2 Sternkarten-Tempel + 10 Prestige-IV
+- `AbilityDefinition` (313x) — Skill 1+2+3 fuer alle Karten + LastWill fuer 6* Mythische
+- `RuneDefinition` (18x) — Runen-Stammdaten
+- `HeroDefinition` (5x) — Helden-Passivs (eine pro Rasse — Ritter/Goetter/Elfen/Tiergeister/Daemonen)
+- `WorldDefinition` (10x) — Welten-Daten mit Saeule, Boss, Story-Summary, Erinnerungs-Fragment, Mentor-NPC, Prestige-IV-Karte
+- `NodeDefinition` (100x) — 10 Welten × 10 Nodes (Gegner-Deck, Belohnungen)
+- `BalancingConfig` (1x) — globale Konstanten (Energie-Cap, EXP-Formel, Drop-Rates, Per-Rarity-Inventar-Limits)
+
+**Daten-Quelle:** JSON-Dateien in `Resources/Data/` (20 Files), importiert per `ArcaneKingdom → Data → Import All`:
+- `cards.json` (158 Karten) + `abilities.json` (313 Skills) + `worlds.json` (10 Welten)
+- `heroes.json` (5 Passivs) + `runes.json` + `packs.json`
+- `fusion_recipes.json` (10 Rezepte inkl. Goetter-Crafting + verstecktes "Gott des Schildes")
+- `story_fragments.json` (Mythologie, 10 Erinnerungs-Fragmente, 8 NPCs, 6 Saeulen)
+- `events.json` (5 Saison-Events) + `premium_shop.json` (6 Premium-Karten) + `prestige_balancing.json` (I–IV)
+- `login_rewards.json` (30 Tage) + `star_temple.json` (Sternkarten-Tausch)
+- `saison_pass.json` + `tutorial.json` + `quests.json` + `achievements.json` + `notifications.json`
+- `collections.json` (Sammel-Sets) + `material_drops.json`
 
 **Pattern:**
 - ScriptableObjects sind **read-only zur Laufzeit** — Mutationen IMMER auf Runtime-Instanzen
-- Editor-Tools: Card-Editor Custom Window fuer Massen-Editing
+- DataImporter validiert vor dem Schreiben (Goetter nur 4*+, 6* braucht LastWill, Cost-Range 1–60)
+- Skills mit nicht existierenden IDs erzeugen Warning (nicht Throw) — Soft-Fallback fuer iterative Entwicklung
 
 ### 5.2 Save-Daten (Cloud Source of Truth)
 
@@ -575,13 +588,36 @@ GitHub Actions Workflow (.github/workflows/unity-android.yml):
 
 ---
 
-## Naechste Schritte (Konzept-Phase Monat 1-2)
+## Naechste Schritte (Phase 2 — Core Gameplay Loop, Monat 4-6)
 
-1. **DESIGN.md TBDs schliessen** (15 offene Punkte)
-2. **Karten-Set v1 designen:** 30 Start-Karten (8 Common, 8 Uncommon, 6 Rare, 5 Epic, 3 Legendaer)
-3. **BalancingConfig Pilot-Werte erstellen** (EXP-Kurve, Drop-Rates, Diamant-Preise)
-4. **Unity-Projekt initialisieren** (Boot-Scene, RootLifetimeScope, erste Stub-Services)
-5. **Card-View-Prefab + CardDefinition-Editor-Tool** als erstes konkretes Werkzeug
+Designplan v4 ist vollstaendig in den Daten eingearbeitet (v6.0). Naechste Bauschritte:
+
+1. **BattleEngine erweitern um Helden-Passivs** — KoeniglicheAura/GoettlicherSegen/Waldlaeufer/Rudelbund/LebensraubAura
+2. **BattleEngine erweitern um Karten-Persoenlichkeit** — Dialog-Lines bei Play/Victory/Death-Triggern, Synergy-Bonus-Berechnung, Rivalen-Dialoge
+3. **FusionService implementieren** — kategorie-basiertes Crafting (CategoryFusionRules) + feste Rezepte (FusionRecipe) + Letzte-Kopie-Warnung + Favoriten-Schutz + Premium-Karten-Lock
+4. **PrestigeService implementieren** — Welt-Aufwertung I-IV, Sterne-Reset, Daily-Income-Multiplier
+5. **SternkartenService implementieren** — Login-Belohnung-Tracker, Tempel-Eintausch-Logik
+6. **Kampf-UI bauen** — Drag&Drop, Mana-Orbs, Damage-Numbers, Personality-Line-Anzeige
+7. **Hub-UI bauen** — Tabs, Energie-Bar, Navigation zu Schmiede/Tempel/Arena
+8. **Welt-1-UI bauen** — Elderwald-Karte mit 10 Nodes, Boss-Marker, Sterne-Anzeige
+
+---
+
+## v6.0 Aenderungslog (ARCHITECTURE-relevant)
+
+Die Datenmodelle und ScriptableObjects wurden gemaess Designplan v4 umstrukturiert:
+
+| Aenderung | Effekt |
+|-----------|--------|
+| Race-Enum 8 → 5 Werte | Ritter/Goetter/Elfen/Tiergeister/Daemonen |
+| Element-Enum 5 → 6 Werte | + Erde (Doppel-Dreieck-System) |
+| Rarity-Enum 5 → 6 Werte | + Mythisch (6*) |
+| HeroFaehigkeitsTyp 6 Aktiv → 5 Passiv | An Race gekoppelt, kein Cooldown |
+| CardDefinition + 12 Felder | Personality (3 Lines + Rival/Synergy-Listen) + LastWill + 5 Oeko-Marker |
+| WorldDefinition + 8 Felder | Saeule/Boss/Story/Memory/Mentor/BaseGold/Prestige4-Karte/CounterElement |
+| Neue Domain-Klassen | FusionRecipe, CategoryFusionRules, PrestigeStufe, Sternkarte, AutoBattleProgression |
+| Save-Schema v2 → v3 | + PrestigeSlice + SternkartenSlice + MemoryFragmentSlice + HeroPassivSlice + KartenPersoenlichkeitSlice + EventSlice |
+| ElementMatchup-Matrix neu | Stark = 1.10x, Schwach = 0.90x, Cross-Dreieck = 1.00x (statt v5: 1.5x/0.75x/1.0x) |
 
 ---
 

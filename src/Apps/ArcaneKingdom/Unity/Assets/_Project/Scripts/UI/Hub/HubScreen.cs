@@ -8,6 +8,7 @@ using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.Quest;
 using ArcaneKingdom.Domain.Shop;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.Game.Quest;
 using ArcaneKingdom.Game.Shop;
@@ -108,6 +109,8 @@ namespace ArcaneKingdom.UI.Hub
         // v6: Daily-Income via PrestigeAppService beim Hub-Open
         private readonly ArcaneKingdom.Game.World.PrestigeAppService _prestige;
 
+        private readonly UIAssetService _uiAssets;
+
         public HubScreen(ScreenManager screenManager,
                          ISaveService<PlayerSave> save,
                          CardCatalogService cardCatalog,
@@ -115,7 +118,8 @@ namespace ArcaneKingdom.UI.Hub
                          ShopController shopController,
                          ToastService toast,
                          ModalContext modalContext,
-                         ArcaneKingdom.Game.World.PrestigeAppService prestige)
+                         ArcaneKingdom.Game.World.PrestigeAppService prestige,
+                         UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
@@ -125,10 +129,14 @@ namespace ArcaneKingdom.UI.Hub
             _toast = toast;
             _modalContext = modalContext;
             _prestige = prestige;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
         {
+            // Hub-Background aus generierten Assets (City-Hub-Sceneary)
+            _uiAssets.ApplyUIBackground(root, "hub_main");
+
             // Header
             _avatarInitials = Q<Label>("header-avatar-initials");
             _displayName    = Q<Label>("header-display-name");
@@ -137,6 +145,17 @@ namespace ArcaneKingdom.UI.Hub
             _energyValue    = Q<Label>("header-energy-value");
             _goldValue      = Q<Label>("header-gold-value");
             _diamondValue   = Q<Label>("header-diamond-value");
+
+            // Avatar als Background des Header-Avatars (Default avatar01, spaeter aus Save laden)
+            var headerAvatar = Q<VisualElement>("header-avatar");
+            _uiAssets.ApplyAvatar(headerAvatar, "avatar01");
+            // Initials-Fallback ausblenden — Avatar-Sprite ist sichtbar
+            _avatarInitials.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+
+            // Currency-Pill-Icons (Energie/Gold/Diamant) durch generierte Sprites ersetzen
+            ApplyCurrencyPillIcon("header-energy-pill", "currency_energie");
+            ApplyCurrencyPillIcon("header-gold-pill",   "currency_gold");
+            ApplyCurrencyPillIcon("header-diamond-pill","currency_diamant");
 
             // Tab-Panels
             _tabCards  = Q<VisualElement>("tab-cards");
@@ -825,6 +844,26 @@ namespace ArcaneKingdom.UI.Hub
             if (n >= 1_000_000_000) return string.Format(culture, "{0:0.##} Mrd", n / 1_000_000_000.0);
             if (n >= 100_000_000)   return string.Format(culture, "{0:0.#} Mio", n / 1_000_000.0);
             return n.ToString("N0", culture);
+        }
+
+        /// <summary>
+        /// Ersetzt das textbasierte Icon-Label (⚡/G/◆) einer Currency-Pill durch ein
+        /// echtes Sprite aus dem UIAssetService. Das erste Kind der Pill MUSS das
+        /// Icon-Label sein — wir setzen es als Background-Image und blenden den Text aus.
+        /// </summary>
+        private void ApplyCurrencyPillIcon(string pillName, string currencyId)
+        {
+            var pill = QOptional<VisualElement>(pillName);
+            if (pill == null || pill.childCount == 0) return;
+            if (pill[0] is Label iconLabel)
+            {
+                _uiAssets.ApplyCurrencyIcon(iconLabel, currencyId);
+                iconLabel.text = string.Empty;
+                iconLabel.style.minWidth = 18;
+                iconLabel.style.minHeight = 18;
+                iconLabel.style.width = 18;
+                iconLabel.style.height = 18;
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using ArcaneKingdom.Domain.Cards;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ArcaneKingdom.Game.Artwork
 {
@@ -17,6 +18,7 @@ namespace ArcaneKingdom.Game.Artwork
     public sealed class UIAssetService
     {
         private readonly Dictionary<string, Sprite?> _cache = new();
+        private readonly Dictionary<string, Texture2D?> _texCache = new();
 
         public Sprite? GetAvatar(string avatarId)            => Load($"Avatars/{avatarId}");
         public Sprite? GetHeroPortrait(Race race)            => Load($"Heroes/portrait_{RaceFolder(race)}");
@@ -44,7 +46,81 @@ namespace ArcaneKingdom.Game.Artwork
         /// Cache leeren — z.B. bei Scene-Wechseln, wenn nicht-genutzte Sprites
         /// freigegeben werden sollen.
         /// </summary>
-        public void ClearCache() => _cache.Clear();
+        public void ClearCache()
+        {
+            _cache.Clear();
+            _texCache.Clear();
+        }
+
+        // === UI Toolkit Convenience: Background-Image direkt auf VisualElements setzen ===
+
+        /// <summary>
+        /// Setzt das Background-Image eines VisualElements basierend auf einem Resource-Pfad.
+        /// Fallback (Asset fehlt) belaesst das Element unveraendert.
+        /// </summary>
+        public void ApplyBackground(VisualElement? element, string resourcePath, ScaleMode scaleMode = ScaleMode.ScaleAndCrop)
+        {
+            if (element == null) return;
+            var tex = LoadTexture(resourcePath);
+            if (tex == null) return;
+            element.style.backgroundImage = new StyleBackground(tex);
+            element.style.unityBackgroundScaleMode = new StyleEnum<ScaleMode>(scaleMode);
+        }
+
+        /// <summary>Welt-Background direkt aufs VisualElement.</summary>
+        public void ApplyWorldBackground(VisualElement? element, string worldId)
+            => ApplyBackground(element, $"Worlds/{worldId}");
+
+        /// <summary>Battle-Background direkt aufs VisualElement (16:9 pro Welt).</summary>
+        public void ApplyBattleBackground(VisualElement? element, string worldId)
+            => ApplyBackground(element, $"Battle/Backgrounds/battle_bg_{worldId}");
+
+        /// <summary>UI-Background direkt aufs VisualElement (z.B. hub_main, login, splash, arena, gilde, tempel, zauberschmiede).</summary>
+        public void ApplyUIBackground(VisualElement? element, string uiId)
+            => ApplyBackground(element, $"UI/{uiId}");
+
+        /// <summary>Brand-Logo direkt aufs VisualElement (ScaleMode.ScaleToFit, behaelt Aspect-Ratio).</summary>
+        public void ApplyBrandLogo(VisualElement? element)
+            => ApplyBackground(element, "Brand/logo_arcanekingdom", ScaleMode.ScaleToFit);
+
+        /// <summary>Avatar-Sprite direkt aufs VisualElement (rund, ScaleMode.ScaleAndCrop).</summary>
+        public void ApplyAvatar(VisualElement? element, string avatarId)
+            => ApplyBackground(element, $"Avatars/{avatarId}", ScaleMode.ScaleAndCrop);
+
+        /// <summary>Helden-Portrait pro Rasse aufs VisualElement.</summary>
+        public void ApplyHeroPortrait(VisualElement? element, Race race)
+            => ApplyBackground(element, $"Heroes/portrait_{RaceFolder(race)}", ScaleMode.ScaleAndCrop);
+
+        /// <summary>Currency-Icon (gold/diamant/energie/scrap_*) aufs VisualElement.</summary>
+        public void ApplyCurrencyIcon(VisualElement? element, string id)
+            => ApplyBackground(element, $"Icons/Currency/{id}", ScaleMode.ScaleToFit);
+
+        /// <summary>Element-Wappen aufs VisualElement.</summary>
+        public void ApplyElementIcon(VisualElement? element, Element element_)
+            => ApplyBackground(element, $"Icons/Elements/{ElementFolder(element_)}", ScaleMode.ScaleToFit);
+
+        /// <summary>Rassen-Emblem aufs VisualElement.</summary>
+        public void ApplyRaceEmblem(VisualElement? element, Race race)
+            => ApplyBackground(element, $"Icons/Races/{RaceFolder(race)}", ScaleMode.ScaleToFit);
+
+        /// <summary>NPC-Portrait aufs VisualElement.</summary>
+        public void ApplyNpc(VisualElement? element, string npcId)
+            => ApplyBackground(element, $"NPCs/{npcId}", ScaleMode.ScaleAndCrop);
+
+        /// <summary>Node-Marker auf WorldMap.</summary>
+        public void ApplyNodeMarker(VisualElement? element, string nodeType)
+            => ApplyBackground(element, $"Icons/Nodes/node_{nodeType.ToLowerInvariant()}", ScaleMode.ScaleToFit);
+
+        // === Interne Helfer (Texture-Loader fuer UI Toolkit) ===
+
+        private Texture2D? LoadTexture(string resourcePath)
+        {
+            if (_texCache.TryGetValue(resourcePath, out var cached))
+                return cached;
+            var tex = Resources.Load<Texture2D>(resourcePath);
+            _texCache[resourcePath] = tex;
+            return tex;
+        }
 
         // === Interne Helfer ===
 

@@ -4,6 +4,7 @@ using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Login;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Login;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
@@ -20,6 +21,7 @@ namespace ArcaneKingdom.UI.Login
         private readonly LoginController _login;
         private readonly ScreenManager _screenManager;
         private readonly ToastService _toast;
+        private readonly UIAssetService _uiAssets;
 
         private VisualElement _progressFill = null!;
         private Label _statusText = null!;
@@ -29,18 +31,24 @@ namespace ArcaneKingdom.UI.Login
         public override string Id => ScreenId.Login;
         protected override string UxmlPath => "UI/LoginScreen";
 
-        public LoginScreen(LoginController login, ScreenManager screenManager, ToastService toast)
+        public LoginScreen(LoginController login,
+                           ScreenManager screenManager,
+                           ToastService toast,
+                           UIAssetService uiAssets)
         {
             _login = login;
             _screenManager = screenManager;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         private VisualElement _logo = null!;
+        private Label _logoText = null!;
 
         protected override void BindElements(VisualElement root)
         {
             _logo         = Q<VisualElement>("login-logo");
+            _logoText     = Q<Label>("login-logo-text");
             _progressFill = Q<VisualElement>("login-progress-fill");
             _statusText   = Q<Label>("login-status-text");
             _retryButton  = Q<Button>("login-retry-button");
@@ -48,6 +56,12 @@ namespace ArcaneKingdom.UI.Login
 
             _retryButton.clicked += OnRetryClicked;
             _versionLabel.text = $"v{UnityEngine.Application.version}";
+
+            // Brand-Logo + Splash-Background aus generierten Assets
+            _uiAssets.ApplyUIBackground(root, "splash");
+            _uiAssets.ApplyBrandLogo(_logo);
+            // Wenn Logo-Background gesetzt, "AK"-Text-Fallback ausblenden
+            _logoText.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
         }
 
         public override UniTask OnEnterAsync(CancellationToken ct)

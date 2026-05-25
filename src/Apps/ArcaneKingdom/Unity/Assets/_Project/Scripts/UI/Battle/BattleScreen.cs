@@ -75,6 +75,8 @@ namespace ArcaneKingdom.UI.Battle
         private readonly WorldCatalogService _worldCatalog;
         private readonly ArcaneKingdom.UI.Modals.MemoryFragmentContext _memoryCtx;
 
+        private readonly UIAssetService _uiAssets;
+
         public BattleScreen(ScreenManager screenManager,
                             ISaveService<PlayerSave> save,
                             CardCatalogService cardCatalog,
@@ -84,7 +86,8 @@ namespace ArcaneKingdom.UI.Battle
                             CardArtworkService artworkService,
                             ILocalizationService loc,
                             WorldCatalogService worldCatalog,
-                            ArcaneKingdom.UI.Modals.MemoryFragmentContext memoryCtx)
+                            ArcaneKingdom.UI.Modals.MemoryFragmentContext memoryCtx,
+                            UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
@@ -96,6 +99,7 @@ namespace ArcaneKingdom.UI.Battle
             _loc = loc;
             _worldCatalog = worldCatalog;
             _memoryCtx = memoryCtx;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -123,6 +127,14 @@ namespace ArcaneKingdom.UI.Battle
         public override async UniTask OnEnterAsync(CancellationToken ct)
         {
             _node = _modalContext.Get<NodeDefinition>(WorldMapScreen.NodeContextKey);
+
+            // Battle-Background pro Welt (z.B. battle_bg_elderwald, battle_bg_vulkanhort)
+            if (_node != null)
+            {
+                var world = _worldCatalog.AllWorlds.FirstOrDefault(w => w.Nodes.Any(n => n.Id == _node.Id));
+                if (world != null)
+                    _uiAssets.ApplyBattleBackground(Root, world.Id);
+            }
 
             var saveResult = await _save.LoadAsync(ct);
             if (!saveResult.IsSuccess || saveResult.Value == null)

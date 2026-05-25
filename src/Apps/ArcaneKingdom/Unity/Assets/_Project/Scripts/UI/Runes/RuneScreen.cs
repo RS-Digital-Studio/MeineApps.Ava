@@ -119,7 +119,7 @@ namespace ArcaneKingdom.UI.Runes
                     ? new StyleColor(new UnityEngine.Color(0.96f, 0.78f, 0.26f))
                     : new StyleColor(new UnityEngine.Color(0.55f, 0.55f, 0.65f));
                 icon.style.fontSize = 12;
-                icon.style.unityTextAlign = TextAnchor.MiddleCenter;
+                icon.style.unityTextAlign = UnityEngine.TextAnchor.MiddleCenter;
                 icon.style.whiteSpace = WhiteSpace.Normal;
                 slot.Add(icon);
 

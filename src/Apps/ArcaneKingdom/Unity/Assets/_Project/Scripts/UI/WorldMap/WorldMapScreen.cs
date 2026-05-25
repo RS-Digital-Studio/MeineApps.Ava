@@ -6,6 +6,7 @@ using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.World;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
@@ -62,13 +63,16 @@ namespace ArcaneKingdom.UI.WorldMap
         private readonly ArcaneKingdom.Domain.World.PrestigeService _prestige;
         private readonly ArcaneKingdom.UI.Modals.PrestigeUpgradeContext _prestigeCtx;
 
+        private readonly UIAssetService _uiAssets;
+
         public WorldMapScreen(ScreenManager screenManager,
                               ISaveService<PlayerSave> save,
                               WorldCatalogService worldCatalog,
                               ToastService toast,
                               ModalContext modalContext,
                               ArcaneKingdom.Domain.World.PrestigeService prestige,
-                              ArcaneKingdom.UI.Modals.PrestigeUpgradeContext prestigeCtx)
+                              ArcaneKingdom.UI.Modals.PrestigeUpgradeContext prestigeCtx,
+                              UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
@@ -77,6 +81,7 @@ namespace ArcaneKingdom.UI.WorldMap
             _modalContext = modalContext;
             _prestige = prestige;
             _prestigeCtx = prestigeCtx;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -164,6 +169,9 @@ namespace ArcaneKingdom.UI.WorldMap
             _activeWorld = world;
             _selectedNode = null;
             _currentWorldName.text = NicifyId(world.Id);
+
+            // Welt-Background pro aktiver Welt (z.B. Worlds/elderwald.png, Worlds/vulkanhort.png)
+            _uiAssets.ApplyWorldBackground(Root, world.Id);
 
             // Aktuelle Prestige-Stufe der Welt
             var stufe = _saveCached?.Prestige?.Get(world.Id) ?? PrestigeStufe.Normal;

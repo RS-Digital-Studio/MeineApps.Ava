@@ -5,6 +5,7 @@ using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Hero;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -40,16 +41,20 @@ namespace ArcaneKingdom.UI.RaceSelection
         public override string Id => ScreenId.RaceSelection;
         protected override string UxmlPath => "UI/RaceSelectionScreen";
 
+        private readonly UIAssetService _uiAssets;
+
         public RaceSelectionScreen(
             ScreenManager screenManager,
             ISaveService<PlayerSave> save,
             ILocalizationService loc,
-            ToastService toast)
+            ToastService toast,
+            UIAssetService uiAssets)
         {
             _screenManager = screenManager;
             _save = save;
             _loc = loc;
             _toast = toast;
+            _uiAssets = uiAssets;
         }
 
         protected override void BindElements(VisualElement root)
@@ -75,6 +80,12 @@ namespace ArcaneKingdom.UI.RaceSelection
             elfenCard.AddManipulator(new Clickable(() => OnRaceClicked(Race.Elfen)));
             tierCard.AddManipulator(new Clickable(() => OnRaceClicked(Race.Tiergeister)));
             daemonCard.AddManipulator(new Clickable(() => OnRaceClicked(Race.Daemonen)));
+
+            // Helden-Portraits als Background auf jede Rassen-Karte
+            _uiAssets.ApplyHeroPortrait(ritterCard, Race.Ritter);
+            _uiAssets.ApplyHeroPortrait(elfenCard, Race.Elfen);
+            _uiAssets.ApplyHeroPortrait(tierCard, Race.Tiergeister);
+            _uiAssets.ApplyHeroPortrait(daemonCard, Race.Daemonen);
 
             RefreshSelection();
         }

@@ -46,5 +46,24 @@ namespace ArcaneKingdom.UI.Foundation
         public const string RaceSelection = "race-selection";
         public const string PrestigeUpgradeOverlay = "overlay-prestige-upgrade";
         public const string MemoryFragmentOverlay = "overlay-memory-fragment";
+
+        // --- Spielplan v5 — Auth / Boot ---
+        public const string Registration = "registration";
+
+        // --- Spielplan v5 — Sub-Screens ---
+        public const string Runes = "runes";
+        public const string PlayerProfile = "player-profile";
+        public const string QuestCenter = "quest-center";
+        public const string MeritRanking = "merit-ranking";
+        public const string LeistungsRanking = "leistungs-ranking";
+        public const string BattleReport = "battle-report";
+        public const string ThiefScreen = "thief";
+        public const string GuildWorldMap = "guild-world-map";
+        public const string ClanMatch = "clan-match";
+        public const string PvpMatchmaking = "pvp-matchmaking";
+
+        // --- Spielplan v5 — Overlays ---
+        public const string ChatOverlay = "overlay-chat";
+        public const string DifficultyPickerOverlay = "overlay-difficulty-picker";
     }
 }

@@ -30,6 +30,7 @@ namespace ArcaneKingdom.UI.Foundation
             // v6 (Designplan v4): Modal-Contexts fuer Daten-Uebergabe an Transient-Modals
             builder.Register<ArcaneKingdom.UI.Modals.MemoryFragmentContext>(Lifetime.Singleton);
             builder.Register<ArcaneKingdom.UI.Modals.PrestigeUpgradeContext>(Lifetime.Singleton);
+            builder.Register<ArcaneKingdom.UI.Modals.DifficultyPickerContext>(Lifetime.Singleton);
 
             // Screens als Transient registrieren — pro Push neue Instanz wäre theoretisch
             // möglich, aber ScreenManager cached gebaute Screens (built-cache). Singleton

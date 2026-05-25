@@ -3,19 +3,32 @@ using System;
 using System.Collections.Generic;
 using ArcaneKingdom.UI.Arena;
 using ArcaneKingdom.UI.Battle;
+using ArcaneKingdom.UI.BattleReport;
+using ArcaneKingdom.UI.Chat;
 using ArcaneKingdom.UI.Codex;
+using ArcaneKingdom.UI.CollectionTrade;
 using ArcaneKingdom.UI.DeckBuilder;
 using ArcaneKingdom.UI.Foundation;
 using ArcaneKingdom.UI.Friends;
 using ArcaneKingdom.UI.Guild;
+using ArcaneKingdom.UI.GuildWorld;
 using ArcaneKingdom.UI.Hub;
 using ArcaneKingdom.UI.Login;
+using ArcaneKingdom.UI.Merit;
 using ArcaneKingdom.UI.Modals;
+using ArcaneKingdom.UI.PlayerProfile;
+using ArcaneKingdom.UI.Pvp;
+using ArcaneKingdom.UI.Quest;
 using ArcaneKingdom.UI.RaceSelection;
+using ArcaneKingdom.UI.Registration;
+using ArcaneKingdom.UI.Runes;
 using ArcaneKingdom.UI.SaisonPass;
 using ArcaneKingdom.UI.Schmiede;
 using ArcaneKingdom.UI.Settings;
+using ArcaneKingdom.UI.Shop;
+using ArcaneKingdom.UI.Splash;
 using ArcaneKingdom.UI.Tempel;
+using ArcaneKingdom.UI.Thief;
 using ArcaneKingdom.UI.Tutorial;
 using ArcaneKingdom.UI.WorldMap;
 using VContainer;
@@ -37,6 +50,8 @@ namespace ArcaneKingdom.UI.Bootstrap
         {
             var screens = new Dictionary<string, Type>
             {
+                [ScreenId.Splash]             = typeof(SplashScreen),
+                [ScreenId.Registration]       = typeof(RegistrationScreen),
                 [ScreenId.Login]              = typeof(LoginScreen),
                 [ScreenId.Hub]                = typeof(HubScreen),
                 [ScreenId.CardDetailOverlay]  = typeof(CardDetailModal),
@@ -58,6 +73,20 @@ namespace ArcaneKingdom.UI.Bootstrap
                 [ScreenId.RaceSelection]            = typeof(RaceSelectionScreen),
                 [ScreenId.PrestigeUpgradeOverlay]   = typeof(PrestigeUpgradeModal),
                 [ScreenId.MemoryFragmentOverlay]    = typeof(MemoryFragmentModal),
+                [ScreenId.DifficultyPickerOverlay]  = typeof(DifficultyPickerModal),
+
+                // Spielplan v5 — neue Screens
+                [ScreenId.Runes]                    = typeof(RuneScreen),
+                [ScreenId.PlayerProfile]            = typeof(PlayerProfileScreen),
+                [ScreenId.Shop]                     = typeof(ShopScreen),
+                [ScreenId.QuestCenter]              = typeof(QuestCenterScreen),
+                [ScreenId.MeritRanking]             = typeof(MeritRankingScreen),
+                [ScreenId.BattleReport]             = typeof(BattleReportScreen),
+                [ScreenId.ThiefScreen]              = typeof(ThiefScreen),
+                [ScreenId.GuildWorldMap]            = typeof(GuildWorldMapScreen),
+                [ScreenId.PvpMatchmaking]           = typeof(PvpMatchmakingScreen),
+                [ScreenId.ChatOverlay]              = typeof(ChatOverlay),
+                ["collection-trade"]                = typeof(CollectionTradeScreen),
             };
 
             UIInstaller.RegisterUI(builder, screens);

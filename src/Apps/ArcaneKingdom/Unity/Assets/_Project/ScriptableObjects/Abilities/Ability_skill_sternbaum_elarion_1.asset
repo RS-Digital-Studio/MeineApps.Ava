@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e177bc8bb3b7819408238fcecd0ceb86, type: 3}
+  m_Name: Ability_skill_sternbaum_elarion_1
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.AbilityDefinition
+  id: skill_sternbaum_elarion_1
+  displayNameKey: ability.skill_sternbaum_elarion_1.name
+  descriptionKey: ability.skill_sternbaum_elarion_1.desc
+  type: 0
+  category: 1
+  magnitude: 300
+  durationTurns: 0
+  targetsAllAllies: 1
+  targetsAllEnemies: 0

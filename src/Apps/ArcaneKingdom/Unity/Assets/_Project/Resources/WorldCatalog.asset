@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75a856a4d17804e45b046dfe1e7100b4, type: 3}
+  m_Name: WorldCatalog
+  m_EditorClassIdentifier: ArcaneKingdom.Game::ArcaneKingdom.Game.Catalog.WorldCatalogAsset
+  worlds:
+  - {fileID: 11400000, guid: d35a527536c233040ae0f6b990e3f57e, type: 2}
+  - {fileID: 11400000, guid: b23d0b876cf4d9146a1a0856858ac4e1, type: 2}
+  - {fileID: 11400000, guid: 6599175b01a208f4cbd490c5473a2617, type: 2}
+  - {fileID: 11400000, guid: a9e86c05cde5c8d47a1699f9d9c9c4b6, type: 2}
+  - {fileID: 11400000, guid: 821e55058598b59409583e8ceda8c270, type: 2}
+  - {fileID: 11400000, guid: b5f96388a72a76748b87716752136ec9, type: 2}
+  - {fileID: 11400000, guid: faf7418961294e04195daaaf78df596b, type: 2}
+  - {fileID: 11400000, guid: f70bbbda1db93814f889a4b9b1b27b7f, type: 2}
+  - {fileID: 11400000, guid: f39ce9bca3d6ab641b5dffcb1a3a1874, type: 2}

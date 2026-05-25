@@ -72,6 +72,8 @@ namespace ArcaneKingdom.UI.Battle
         protected override string UxmlPath => "UI/BattleScreen";
 
         private readonly ILocalizationService _loc;
+        private readonly WorldCatalogService _worldCatalog;
+        private readonly ArcaneKingdom.UI.Modals.MemoryFragmentContext _memoryCtx;
 
         public BattleScreen(ScreenManager screenManager,
                             ISaveService<PlayerSave> save,
@@ -80,7 +82,9 @@ namespace ArcaneKingdom.UI.Battle
                             ModalContext modalContext,
                             ToastService toast,
                             CardArtworkService artworkService,
-                            ILocalizationService loc)
+                            ILocalizationService loc,
+                            WorldCatalogService worldCatalog,
+                            ArcaneKingdom.UI.Modals.MemoryFragmentContext memoryCtx)
         {
             _screenManager = screenManager;
             _save = save;
@@ -90,6 +94,8 @@ namespace ArcaneKingdom.UI.Battle
             _toast = toast;
             _artworkService = artworkService;
             _loc = loc;
+            _worldCatalog = worldCatalog;
+            _memoryCtx = memoryCtx;
         }
 
         protected override void BindElements(VisualElement root)
@@ -259,8 +265,40 @@ namespace ArcaneKingdom.UI.Battle
                 cd.style.color = new StyleColor(new Color(0.55f, 0.80f, 0.95f));
                 tile.Add(cd);
             }
+
+            // v6 (Designplan v4 Kap. 3.4): Status-Effekt-Icons unten links
+            if (slot.StatusEffects.Count > 0)
+            {
+                var effectsRow = new VisualElement();
+                effectsRow.AddToClassList("ak-status-effect-row");
+                foreach (var fx in slot.StatusEffects)
+                {
+                    var icon = new Label(GetStatusEffectGlyph(fx.Type));
+                    icon.AddToClassList("ak-status-effect-icon");
+                    icon.AddToClassList($"ak-status-effect-icon--{fx.Type.ToString().ToLower()}");
+                    icon.tooltip = $"{fx.Type} ({fx.RemainingTurns} Runden)";
+                    effectsRow.Add(icon);
+                }
+                tile.Add(effectsRow);
+            }
             return tile;
         }
+
+        /// <summary>
+        /// Liefert einen kurzen Glyph fuer den Status-Effekt (Emoji/Unicode-Symbol).
+        /// </summary>
+        private static string GetStatusEffectGlyph(StatusEffectType type) => type switch
+        {
+            StatusEffectType.Sleep    => "💤",
+            StatusEffectType.Silence  => "🤐",
+            StatusEffectType.Frozen   => "❄",
+            StatusEffectType.Stunned  => "💫",
+            StatusEffectType.Poisoned => "☠",
+            StatusEffectType.Burning  => "🔥",
+            StatusEffectType.Slowed   => "⏳",
+            StatusEffectType.Rooted   => "🌿",
+            _                          => "•"
+        };
 
         private void RenderPlayerHand()
         {
@@ -476,6 +514,10 @@ namespace ArcaneKingdom.UI.Battle
                     var exp = _node?.ExpReward(3) ?? 25;
                     await ApplyRewardsAsync(reward, exp);
                     _toast.Show($"Sieg! +{reward} Gold, +{exp} EXP", ToastKind.Success, 6f);
+
+                    // v6 (Designplan v4 Story Kap. 9): Welt-Boss-Sieg -> Erinnerungs-Fragment
+                    if (_node != null && _node.Type == NodeType.WorldBoss)
+                        await ShowMemoryFragmentIfNewAsync();
                     break;
                 case BattleResult.EnemyWins:
                     _toast.Show("Niederlage — versuch's nochmal.", ToastKind.Danger, 6f);
@@ -486,6 +528,36 @@ namespace ArcaneKingdom.UI.Battle
             }
             await UniTask.Delay(2200);
             await _screenManager.PopAsync();
+        }
+
+        /// <summary>
+        /// Zeigt das Erinnerungs-Fragment der Welt wenn der Spieler diesen Welt-Boss
+        /// zum ersten Mal besiegt hat (Designplan v4 Story Kap. 9).
+        /// </summary>
+        private async UniTask ShowMemoryFragmentIfNewAsync()
+        {
+            if (_node == null) return;
+            var worldId = WorldIdForNode(_node);
+            if (string.IsNullOrEmpty(worldId)) return;
+
+            var world = _worldCatalog.Find(worldId);
+            if (world == null || string.IsNullOrEmpty(world.MemoryFragmentKey)) return;
+
+            // Pruefen ob das Fragment bereits angesehen wurde — sonst zeigen
+            var saveR = await _save.LoadAsync();
+            if (!saveR.IsSuccess || saveR.Value == null) return;
+            var fragmentId = world.Id;   // z.B. "elderwald" -> fragment-id = welt-id
+            if (saveR.Value.Story.ViewedMemoryFragments.Contains(fragmentId)) return;
+
+            // Fragment-Index aus Welt-Index ableiten (welt 1 -> fragment 1, ...)
+            var isMajorTwist = world.Index == 8;   // Abysstiefe = DER TWIST
+            _memoryCtx.FragmentId = fragmentId;
+            _memoryCtx.TitleKey   = $"fragment.{world.Index}.title";
+            _memoryCtx.ContentKey = world.MemoryFragmentKey;
+            _memoryCtx.TwistRevealKey = $"fragment.{world.Index}.reveal";
+            _memoryCtx.IsMajorTwist = isMajorTwist;
+
+            await _screenManager.PushAsync(ScreenId.MemoryFragmentOverlay);
         }
 
         private async UniTask ApplyRewardsAsync(int gold, int exp)

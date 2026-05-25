@@ -1,0 +1,55 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <ui:VisualElement class="ak-app-header">
+            <ui:Button name="saison-back-button" text="‹ Zurueck"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
+            <ui:Label text="Saison-Pass" class="ak-h3" style="flex-grow: 1;" />
+            <ui:Label name="saison-days-left" text="14 Tage" class="ak-h4 ak-text--accent" />
+        </ui:VisualElement>
+
+        <ui:VisualElement class="ak-col" style="padding: 16;">
+
+            <!-- Saison-Stufe -->
+            <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
+                <ui:VisualElement class="ak-row" style="align-items: center;">
+                    <ui:VisualElement class="ak-col" style="flex-grow: 1;">
+                        <ui:Label text="Saison-Stufe" class="ak-caption" />
+                        <ui:Label name="saison-tier" text="0" class="ak-h1" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="ak-col" style="flex-grow: 2;">
+                        <ui:Label name="saison-xp-text" text="0 / 1000 XP"
+                                  class="ak-body" style="margin-bottom: 4;" />
+                        <ui:VisualElement class="ak-progress ak-progress--primary">
+                            <ui:VisualElement name="saison-xp-fill"
+                                              class="ak-progress__fill" style="width: 0%;" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Premium-Upsell -->
+            <ui:VisualElement name="saison-premium-banner" class="ak-surface-elevated"
+                              style="margin-bottom: 12;">
+                <ui:Label text="Premium-Pass freischalten" class="ak-h4 ak-text--accent" />
+                <ui:Label text="Schalte alle Premium-Belohnungen frei (rueckwirkend!)."
+                          class="ak-caption" style="margin-bottom: 8;" />
+                <ui:Button name="saison-buy-premium" text="Fuer 500 Diamanten kaufen"
+                           class="ak-btn ak-btn--accent" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- Reward-Track -->
+        <ui:Label text="Belohnungen" class="ak-overline"
+                  style="margin-left: 16; margin-bottom: 6;" />
+        <ui:ScrollView mode="Horizontal" vertical-scroller-visibility="Hidden"
+                       style="height: 220;">
+            <ui:VisualElement name="saison-reward-track"
+                              style="flex-direction: row; padding: 8;" />
+        </ui:ScrollView>
+
+    </ui:VisualElement>
+</ui:UXML>

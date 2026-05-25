@@ -1,0 +1,78 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <ui:VisualElement class="ak-app-header">
+            <ui:Button name="guild-back-button" text="‹ Zurueck"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
+            <ui:Label name="guild-name" text="Gilde" class="ak-h3" style="flex-grow: 1;" />
+            <ui:Label name="guild-points-label" text="0 GP"
+                      class="ak-h4 ak-text--accent" />
+        </ui:VisualElement>
+
+        <!-- Tabs -->
+        <ui:VisualElement class="ak-row" style="padding: 8;
+                                                  background-color: var(--ak-bg-deep);">
+            <ui:Button name="guild-tab-members" text="Mitglieder"
+                       class="ak-btn ak-btn--sm ak-btn--primary"
+                       style="flex-grow: 1; margin-right: 4;" />
+            <ui:Button name="guild-tab-tech" text="Tech-Tree"
+                       class="ak-btn ak-btn--sm ak-btn--ghost"
+                       style="flex-grow: 1; margin-right: 4;" />
+            <ui:Button name="guild-tab-chat" text="Chat"
+                       class="ak-btn ak-btn--sm ak-btn--ghost"
+                       style="flex-grow: 1;" />
+        </ui:VisualElement>
+
+        <!-- Empty-State (kein Guild-Beitritt aktuell) -->
+        <ui:VisualElement name="guild-empty" class="ak-col ak-center"
+                          style="flex-grow: 1; padding: 32;">
+            <ui:Label text="Du bist in keiner Gilde." class="ak-h3"
+                      style="margin-bottom: 12;" />
+            <ui:Label text="Tritt einer Gilde bei oder gruende eine eigene fuer Gilden-Bonus und Tech-Tree."
+                      class="ak-body" style="whitespace: normal;
+                                              -unity-text-align: middle-center;
+                                              margin-bottom: 24; max-width: 360;" />
+            <ui:Button name="guild-find" text="Gilde suchen"
+                       class="ak-btn ak-btn--lg ak-btn--primary"
+                       style="margin-bottom: 8; min-width: 220;" />
+            <ui:Button name="guild-create" text="Eigene Gilde gruenden (Lv 20+)"
+                       class="ak-btn ak-btn--lg ak-btn--accent"
+                       style="min-width: 220;" />
+        </ui:VisualElement>
+
+        <!-- Members-Tab -->
+        <ui:VisualElement name="guild-members-tab" class="ak-fill ak-col ak-hidden">
+            <ui:ScrollView style="flex-grow: 1;">
+                <ui:VisualElement name="guild-members-list" style="padding: 8;" />
+            </ui:ScrollView>
+            <ui:Button name="guild-donate" text="GP spenden (10)"
+                       class="ak-btn ak-btn--accent" style="margin: 8;" />
+        </ui:VisualElement>
+
+        <!-- Tech-Tree-Tab -->
+        <ui:VisualElement name="guild-tech-tab" class="ak-fill ak-col ak-center ak-hidden"
+                          style="padding: 32;">
+            <ui:Label text="Tech-Tree" class="ak-h3" />
+            <ui:Label text="Forschungs-Bonuse fuer alle Mitglieder."
+                      class="ak-body" />
+            <ui:Label text="(Implementierung folgt mit Backend-Integration)"
+                      class="ak-caption" style="margin-top: 16;" />
+        </ui:VisualElement>
+
+        <!-- Chat-Tab -->
+        <ui:VisualElement name="guild-chat-tab" class="ak-fill ak-col ak-hidden">
+            <ui:ScrollView style="flex-grow: 1;">
+                <ui:VisualElement name="guild-chat-messages" style="padding: 8;" />
+            </ui:ScrollView>
+            <ui:VisualElement class="ak-row" style="padding: 8;">
+                <ui:TextField name="guild-chat-input" class="ak-input"
+                              style="flex-grow: 1; margin-right: 6; height: 36;" />
+                <ui:Button name="guild-chat-send" text="Senden"
+                           class="ak-btn ak-btn--sm ak-btn--primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

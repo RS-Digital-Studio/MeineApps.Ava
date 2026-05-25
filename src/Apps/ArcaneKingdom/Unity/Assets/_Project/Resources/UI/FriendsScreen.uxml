@@ -1,0 +1,46 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <ui:VisualElement class="ak-app-header">
+            <ui:Button name="friends-back-button" text="‹ Zurueck"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
+            <ui:Label text="Freunde" class="ak-h3" style="flex-grow: 1;" />
+            <ui:Button name="friends-add-button" text="+ Freund hinzufuegen"
+                       class="ak-btn ak-btn--sm ak-btn--primary" />
+        </ui:VisualElement>
+
+        <!-- Tabs -->
+        <ui:VisualElement class="ak-row" style="padding: 8;
+                                                  background-color: var(--ak-bg-deep);">
+            <ui:Button name="friends-tab-list" text="Liste"
+                       class="ak-btn ak-btn--sm ak-btn--primary"
+                       style="flex-grow: 1; margin-right: 4;" />
+            <ui:Button name="friends-tab-requests" text="Anfragen"
+                       class="ak-btn ak-btn--sm ak-btn--ghost"
+                       style="flex-grow: 1;" />
+        </ui:VisualElement>
+
+        <!-- Liste -->
+        <ui:VisualElement name="friends-list-tab" class="ak-fill ak-col">
+            <ui:ScrollView style="flex-grow: 1;">
+                <ui:VisualElement name="friends-list" style="padding: 8;" />
+            </ui:ScrollView>
+            <ui:Label name="friends-list-empty" text="Du hast noch keine Freunde."
+                      class="ak-body ak-hidden"
+                      style="-unity-text-align: middle-center; padding: 32;" />
+        </ui:VisualElement>
+
+        <!-- Anfragen -->
+        <ui:VisualElement name="friends-requests-tab" class="ak-fill ak-col ak-hidden">
+            <ui:ScrollView style="flex-grow: 1;">
+                <ui:VisualElement name="friends-requests-list" style="padding: 8;" />
+            </ui:ScrollView>
+            <ui:Label name="friends-requests-empty" text="Keine offenen Anfragen."
+                      class="ak-body ak-hidden"
+                      style="-unity-text-align: middle-center; padding: 32;" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

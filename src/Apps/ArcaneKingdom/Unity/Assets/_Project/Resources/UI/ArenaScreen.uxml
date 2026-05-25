@@ -1,0 +1,55 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <ui:VisualElement class="ak-app-header">
+            <ui:Button name="arena-back-button" text="‹ Zurueck"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
+            <ui:Label text="Arena" class="ak-h3" style="flex-grow: 1;" />
+            <ui:Label name="arena-tickets-label" text="0 Tickets"
+                      class="ak-h4 ak-text--accent" />
+        </ui:VisualElement>
+
+        <ui:ScrollView style="flex-grow: 1;">
+            <ui:VisualElement style="padding: 16;">
+
+                <!-- Rank-Block -->
+                <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
+                    <ui:VisualElement class="ak-row" style="align-items: center;">
+                        <ui:VisualElement class="ak-col" style="flex-grow: 1;">
+                            <ui:Label name="arena-rank-name" text="Bronze III"
+                                      class="ak-h2" />
+                            <ui:Label name="arena-rank-points"
+                                      text="0 / 100 Rang-Punkte" class="ak-caption" />
+                        </ui:VisualElement>
+                        <ui:Label name="arena-record" text="0 W / 0 N"
+                                  class="ak-h4" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="ak-progress" style="margin-top: 12;">
+                        <ui:VisualElement name="arena-rank-fill"
+                                          class="ak-progress__fill" style="width: 0%;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- Reward-Track (5 Tiers) -->
+                <ui:Label text="Saison-Belohnungen" class="ak-overline"
+                          style="margin-bottom: 8;" />
+                <ui:VisualElement name="arena-reward-track"
+                                  style="flex-direction: row; flex-wrap: wrap;
+                                         margin-bottom: 16;" />
+
+                <!-- Action -->
+                <ui:VisualElement class="ak-row">
+                    <ui:Button name="arena-quick-match" text="Schnelles Match"
+                               class="ak-btn ak-btn--lg ak-btn--accent"
+                               style="flex-grow: 1; margin-right: 8;" />
+                    <ui:Button name="arena-leaderboard" text="Rangliste"
+                               class="ak-btn ak-btn--lg ak-btn--ghost"
+                               style="flex-grow: 1;" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

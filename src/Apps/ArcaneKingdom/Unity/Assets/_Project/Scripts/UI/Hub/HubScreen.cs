@@ -469,9 +469,21 @@ namespace ArcaneKingdom.UI.Hub
             _arenaViewLeaderboard = Q<Button>("arena-view-leaderboard");
 
             _arenaSearchMatch.clicked += () =>
-                _toast.Show("Matchmaking folgt in Stufe 9.", ToastKind.Info);
+            {
+                // Mock-Match starten — Battle ist seit Stufe 8 verfuegbar
+                if (_screenManager.IsRegistered(ScreenId.Battle))
+                    _screenManager.PushAsync(ScreenId.Battle).Forget();
+                else
+                    _toast.Show("Battle nicht verfuegbar.", ToastKind.Warning);
+            };
             _arenaViewLeaderboard.clicked += () =>
-                _toast.Show("Leaderboard folgt in Stufe 9.", ToastKind.Info);
+            {
+                // Vollansicht-Arena-Screen (Stufe 9)
+                if (_screenManager.IsRegistered(ScreenId.Arena))
+                    _screenManager.PushAsync(ScreenId.Arena).Forget();
+                else
+                    _toast.Show("Arena-Vollansicht nicht verfuegbar.", ToastKind.Warning);
+            };
         }
 
         private void RefreshArenaTab()

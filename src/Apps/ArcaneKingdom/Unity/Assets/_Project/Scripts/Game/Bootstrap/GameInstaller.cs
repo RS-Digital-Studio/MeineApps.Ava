@@ -14,6 +14,7 @@ using ArcaneKingdom.Game.Guild;
 using ArcaneKingdom.Game.Hero;
 using ArcaneKingdom.Game.Hub;
 using ArcaneKingdom.Game.Iap;
+using ArcaneKingdom.Game.Localization;
 using ArcaneKingdom.Game.Notification;
 using ArcaneKingdom.Game.Progression;
 using ArcaneKingdom.Game.Quest;
@@ -42,6 +43,7 @@ namespace ArcaneKingdom.Game.Bootstrap
         public static void RegisterServices(IContainerBuilder builder)
         {
             builder.Register<ISceneLoaderService, AdditiveSceneLoaderService>(Lifetime.Singleton);
+            builder.Register<ILocalizationService, CsvLocalizationService>(Lifetime.Singleton);
             builder.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
             builder.Register<ISaveService<PlayerSave>, FirebaseSaveService>(Lifetime.Singleton);
             builder.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);

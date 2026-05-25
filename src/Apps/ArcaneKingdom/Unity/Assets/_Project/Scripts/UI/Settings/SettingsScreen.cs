@@ -23,6 +23,7 @@ namespace ArcaneKingdom.UI.Settings
         private readonly IAuthService _auth;
         private readonly ISaveService<PlayerSave> _save;
         private readonly IAudioService _audio;
+        private readonly ILocalizationService _localization;
 
         private Button _backBtn = null!;
         private Slider _musicSlider = null!;
@@ -48,13 +49,15 @@ namespace ArcaneKingdom.UI.Settings
                               ToastService toast,
                               IAuthService auth,
                               ISaveService<PlayerSave> save,
-                              IAudioService audio)
+                              IAudioService audio,
+                              ILocalizationService localization)
         {
             _screenManager = screenManager;
             _toast = toast;
             _auth = auth;
             _save = save;
             _audio = audio;
+            _localization = localization;
         }
 
         protected override void BindElements(VisualElement root)
@@ -77,7 +80,8 @@ namespace ArcaneKingdom.UI.Settings
             _privacyBtn          = Q<Button>("settings-open-privacy");
 
             _languageDropdown.choices = new List<string> { "Deutsch", "English", "Espanol", "Francais", "Italiano", "Portugues" };
-            _languageDropdown.index = 0;
+            var idx = System.Array.IndexOf(new[] { "DE", "EN", "ES", "FR", "IT", "PT" }, _localization.CurrentLanguage);
+            _languageDropdown.index = idx >= 0 ? idx : 0;
 
             _backBtn.clicked += () => _screenManager.PopAsync().Forget();
 
@@ -97,7 +101,13 @@ namespace ArcaneKingdom.UI.Settings
             });
 
             _languageDropdown.RegisterValueChangedCallback(evt =>
-                _toast.Show($"Sprache: {evt.newValue} (Localization-Switch folgt).", ToastKind.Info));
+            {
+                var codes = new[] { "DE", "EN", "ES", "FR", "IT", "PT" };
+                var newIdx = _languageDropdown.index;
+                if (newIdx < 0 || newIdx >= codes.Length) return;
+                _localization.SetLanguage(codes[newIdx]);
+                _toast.Show($"Sprache: {evt.newValue}", ToastKind.Success);
+            });
 
             _cloudLinkBtn.clicked += () =>
                 _toast.Show("Cloud-Sign-In folgt mit Firebase Auth.", ToastKind.Info);

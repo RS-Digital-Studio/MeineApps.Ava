@@ -1,0 +1,80 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <ui:VisualElement class="ak-app-header">
+            <ui:Button name="settings-back-button" text="‹ Zurueck"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
+            <ui:Label text="Einstellungen" class="ak-h3" style="flex-grow: 1;" />
+        </ui:VisualElement>
+
+        <ui:ScrollView style="flex-grow: 1;">
+            <ui:VisualElement style="padding: 16;">
+
+                <!-- AUDIO -->
+                <ui:Label text="Audio" class="ak-overline" style="margin-bottom: 6;" />
+                <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
+                    <ui:VisualElement class="ak-row" style="align-items: center; margin-bottom: 8;">
+                        <ui:Label text="Musik" class="ak-body" style="flex-grow: 1;" />
+                        <ui:Label name="settings-music-value" text="80 %"
+                                  class="ak-caption" />
+                    </ui:VisualElement>
+                    <ui:Slider name="settings-music-slider" low-value="0" high-value="100" value="80" />
+
+                    <ui:VisualElement class="ak-row"
+                                      style="align-items: center; margin-top: 8; margin-bottom: 8;">
+                        <ui:Label text="Effekte" class="ak-body" style="flex-grow: 1;" />
+                        <ui:Label name="settings-sfx-value" text="80 %"
+                                  class="ak-caption" />
+                    </ui:VisualElement>
+                    <ui:Slider name="settings-sfx-slider" low-value="0" high-value="100" value="80" />
+
+                    <ui:Toggle name="settings-mute-toggle" label="Stumm" style="margin-top: 8;" />
+                </ui:VisualElement>
+
+                <!-- SPRACHE -->
+                <ui:Label text="Sprache" class="ak-overline" style="margin-bottom: 6;" />
+                <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
+                    <ui:DropdownField name="settings-language-dropdown" label="" />
+                </ui:VisualElement>
+
+                <!-- ACCOUNT -->
+                <ui:Label text="Account" class="ak-overline" style="margin-bottom: 6;" />
+                <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
+                    <ui:Label name="settings-account-id" text="User: anonymous"
+                              class="ak-body" style="margin-bottom: 4;" />
+                    <ui:Label name="settings-account-server" text="Server: EU-WEST-1"
+                              class="ak-caption" style="margin-bottom: 12;" />
+                    <ui:Button name="settings-cloud-link" text="Mit Account verbinden"
+                               class="ak-btn ak-btn--accent" style="margin-bottom: 6;" />
+                    <ui:Button name="settings-logout" text="Abmelden"
+                               class="ak-btn ak-btn--ghost" />
+                </ui:VisualElement>
+
+                <!-- GAMEPLAY -->
+                <ui:Label text="Gameplay" class="ak-overline" style="margin-bottom: 6;" />
+                <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
+                    <ui:Toggle name="settings-haptics-toggle" label="Vibration"
+                               style="margin-bottom: 6;" />
+                    <ui:Toggle name="settings-notifications-toggle"
+                               label="Push-Benachrichtigungen" style="margin-bottom: 6;" />
+                    <ui:Button name="settings-reset-tutorial" text="Tutorial zuruecksetzen"
+                               class="ak-btn ak-btn--sm ak-btn--ghost"
+                               style="margin-top: 8; max-width: 240;" />
+                </ui:VisualElement>
+
+                <!-- ABOUT -->
+                <ui:Label text="Ueber" class="ak-overline" style="margin-bottom: 6;" />
+                <ui:VisualElement class="ak-surface">
+                    <ui:Label name="settings-version" text="ArcaneKingdom v0.1.0"
+                              class="ak-body" style="margin-bottom: 4;" />
+                    <ui:Label text="© 2026 MeineApps" class="ak-caption" />
+                    <ui:Button name="settings-open-privacy" text="Datenschutz"
+                               class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-top: 12;" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

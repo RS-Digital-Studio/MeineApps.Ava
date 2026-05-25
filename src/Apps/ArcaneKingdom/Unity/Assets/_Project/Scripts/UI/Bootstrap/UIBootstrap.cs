@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using ArcaneKingdom.UI.Arena;
 using ArcaneKingdom.UI.Battle;
+using ArcaneKingdom.UI.Codex;
 using ArcaneKingdom.UI.DeckBuilder;
 using ArcaneKingdom.UI.Foundation;
 using ArcaneKingdom.UI.Friends;
@@ -11,6 +12,8 @@ using ArcaneKingdom.UI.Hub;
 using ArcaneKingdom.UI.Login;
 using ArcaneKingdom.UI.Modals;
 using ArcaneKingdom.UI.SaisonPass;
+using ArcaneKingdom.UI.Settings;
+using ArcaneKingdom.UI.Tutorial;
 using ArcaneKingdom.UI.WorldMap;
 using VContainer;
 
@@ -42,11 +45,9 @@ namespace ArcaneKingdom.UI.Bootstrap
                 [ScreenId.Guild]              = typeof(GuildScreen),
                 [ScreenId.SaisonPass]         = typeof(SaisonPassScreen),
                 [ScreenId.Friends]            = typeof(FriendsScreen),
-
-                // Stufe 10 wird hier befuellt:
-                //   [ScreenId.Settings]    = typeof(SettingsScreen),
-                //   [ScreenId.Codex]       = typeof(CodexScreen),
-                //   [ScreenId.TutorialOverlay] = typeof(TutorialOverlay),
+                [ScreenId.Settings]           = typeof(SettingsScreen),
+                [ScreenId.Codex]              = typeof(CodexScreen),
+                [ScreenId.TutorialOverlay]    = typeof(TutorialOverlay),
             };
 
             UIInstaller.RegisterUI(builder, screens);

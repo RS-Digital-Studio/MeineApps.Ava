@@ -1,0 +1,38 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="False">
+
+    <!--
+        Tutorial-Overlay — Dimming-Backdrop + Speech-Bubble unten mit "Weiter"-Button.
+        Highlight des aktuellen Schritts erfolgt durch ein Loch im Backdrop
+        (hier als Sichtbarkeits-Vereinfachung: kein echtes Loch, nur Text-Indikator).
+    -->
+
+    <ui:VisualElement name="tutorial-root" class="ak-fill">
+
+        <!-- Backdrop (halbtransparent, blockt Clicks ausserhalb der Bubble) -->
+        <ui:VisualElement name="tutorial-backdrop" class="ak-fill"
+                          style="background-color: rgba(0, 0, 0, 0.55);
+                                 pointer-events: auto;" />
+
+        <!-- Speech-Bubble (Bottom-Center) -->
+        <ui:VisualElement name="tutorial-bubble" class="ak-modal"
+                          style="position: absolute; bottom: 100; left: 50%;
+                                 translate: -50% 0; min-width: 320; max-width: 480;">
+            <ui:Label name="tutorial-step-counter" text="Schritt 1 / 8"
+                      class="ak-overline" style="margin-bottom: 4;" />
+            <ui:Label name="tutorial-title" text="Willkommen!"
+                      class="ak-h3" style="margin-bottom: 8;" />
+            <ui:Label name="tutorial-text" text="Hier lernst du das Spiel kennen."
+                      class="ak-body"
+                      style="white-space: normal; margin-bottom: 16;" />
+            <ui:VisualElement class="ak-row" style="justify-content: space-between;">
+                <ui:Button name="tutorial-skip" text="Ueberspringen"
+                           class="ak-btn ak-btn--sm ak-btn--ghost" />
+                <ui:Button name="tutorial-next" text="Weiter ▶"
+                           class="ak-btn ak-btn--primary"
+                           style="min-width: 120;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

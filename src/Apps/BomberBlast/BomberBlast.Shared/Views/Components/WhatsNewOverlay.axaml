@@ -14,7 +14,8 @@
     wichtigsten Aenderungen — DataContext erbt vom MainViewModel, das WhatsNewVm haelt.
     -->
   <Border Background="#DD000000"
-          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+          DataContext="{Binding WhatsNewVm}">
     <Border Background="{DynamicResource SurfaceBrush}"
             CornerRadius="16" Padding="24"
             MaxWidth="540" MaxHeight="420"
@@ -22,7 +23,6 @@
             BoxShadow="0 8 24 0 #60000000"
             BorderThickness="2"
             BorderBrush="{DynamicResource AccentBrush}"
-            DataContext="{Binding WhatsNewVm}"
             x:DataType="vm:WhatsNewViewModel">
       <Grid RowDefinitions="Auto,*,Auto">
         <!-- Titel-Header -->

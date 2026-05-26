@@ -973,6 +973,35 @@ Server-seitiges Anti-Cheat (Geraete-Fingerprint gegen Self-Referral) als separat
 Saison-Dauer 42 → 30 Tage (12 Saisons/Jahr statt 8.7). Premium-Spread auf ~3x Free
 (baseMoney *120→*180, Capstone-GS 100→150, Milestone-40 30→50, Tier-0-29 GS 10/2→12/3).
 
+### What's-New-Modal (Release-Workflow Pflicht)
+
+`IWhatsNewService` + `WhatsNewService` mit statischem `s_releases`-Array
+`(Version, FeatureKeys[])` — pro Versions-Eintrag eine Liste von RESX-Keys
+(`WhatsNewBell`, `WhatsNewStrategyEV`, ...), die bei `ShowWhatsNewIfNeededAsync`
+kumulativ in einen Bullet-Dialog gerendert werden. `lastSeen` wird vor Render gesetzt
+(Crash-Sicherheit).
+
+**Release-Workflow fuer Neuigkeiten-Eintraege (Pflicht):**
+
+`s_releases` enthaelt EINEN offenen Eintrag fuer die aktuell in Entwicklung
+befindliche naechste Version. Diesen bei JEDER funktionalen Aenderung zwischen
+zwei Releases erweitern — kumulativ, nicht selektiv.
+
+Workflow:
+1. Zwischen Releases: Pro Feature/Fix/Polish-Schritt einen neuen RESX-Key + Default-Text
+   in 6 Sprachen (`AppStrings*.resx`) anlegen und in das `FeatureKeys`-Array des
+   aktuellen offenen `s_releases`-Eintrags einfuegen.
+2. Beim Release-Trigger ("erstelle mir die neue Releaseversion" o.ae.):
+   Der aktuelle Eintrag wird als finalisiert behandelt (bleibt in `s_releases` damit
+   Spieler ihn beim Update sehen). Danach **neuen leeren Eintrag** fuer die naechste
+   Version hinten anhaengen — Version aus `HandwerkerImperium.Shared.csproj`
+   (Folge-Versionsnummer), `FeatureKeys` zunaechst leer.
+3. Nach dem Release: Der neue leere Eintrag wird sukzessive bei jeder Aenderung wieder
+   gefuellt — bis zum naechsten Release-Trigger.
+
+So sehen Spieler beim Update IMMER eine vollstaendige Liste seit ihrer zuletzt installierten
+Version, und der Develop-Stand ist jederzeit als "kumulativer Eintrag" sichtbar.
+
 ### Telemetrie-Events (V7 — Material-Loop, Plan Section 8.1)
 
 `IAnalyticsService.TrackEvent(name, props)` ist die einzige Schnittstelle — Services injizieren

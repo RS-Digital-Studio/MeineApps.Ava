@@ -1075,7 +1075,25 @@ Texte lokalisiert in 6 Sprachen via RESX.
 `MarkSeen()` setzt `LastSeenVersion` Pref.
 
 `WhatsNewViewModel` mit `Closed`-Event + Spaeter/Verstanden-Commands.
-UI-Modal-View ist deferred — Service+VM-API stehen bereit.
+
+**Release-Workflow fuer Neuigkeiten-Eintraege (Pflicht):**
+
+`WhatsNewService.BuildReleases()` enthaelt EINEN offenen Eintrag fuer die aktuell in
+Entwicklung befindliche naechste Version. Diesen Eintrag bei JEDER funktionalen Aenderung
+zwischen zwei Releases mit einem weiteren Bullet ergaenzen — kumulativ, nicht selektiv.
+
+Workflow:
+1. Zwischen Releases: Pro Feature/Fix/Polish-Schritt einen Bullet zum aktuellen offenen
+   Eintrag in `BuildReleases()` hinzufuegen (Lokalisierungs-Key + Default-Text).
+2. Beim Release-Trigger ("erstelle mir die neue Releaseversion" o.ae.):
+   Der aktuelle Eintrag wird als finalisiert behandelt (bleibt in `BuildReleases()` damit
+   Spieler ihn beim Update sehen). Danach **neuen leeren Eintrag** fuer die naechste
+   Version anhaengen (mit der Folge-Versionsnummer und einem Platzhalter-Titel).
+3. Nach dem Release: Der neue leere Eintrag wird sukzessive bei jeder Aenderung wieder
+   gefuellt — bis zum naechsten Release-Trigger.
+
+So sehen Spieler beim Update IMMER eine vollstaendige Liste seit ihrer zuletzt installierten
+Version, und der Develop-Stand ist jederzeit als "kumulativer Eintrag" sichtbar.
 
 ### Feature-Unlock-Choreographie 
 

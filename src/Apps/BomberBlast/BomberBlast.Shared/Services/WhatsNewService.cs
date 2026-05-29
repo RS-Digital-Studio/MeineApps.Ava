@@ -91,6 +91,27 @@ public sealed class WhatsNewService : IWhatsNewService
                 _localization.GetString("WhatsNew_2_0_58_BulletStory") ?? "World-Story-Beats jetzt cinematischer — 6-7s Lesezeit + dezenter Pull-Back-Effekt",
             }
         }),
+        ("2.0.62", () => new WhatsNewEntry
+        {
+            Title = _localization.GetString("WhatsNew_2_0_62_Title")
+                ?? "Stabilität, Privacy & UI-Politur",
+            Bullets = new[]
+            {
+                _localization.GetString("WhatsNew_2_0_62_BulletRenderCrash") ?? "Render-Crash beim ersten Frame behoben — ViewModel-Graph wird jetzt zuverlässig auf dem UI-Thread aufgebaut",
+                _localization.GetString("WhatsNew_2_0_62_BulletDailyMission") ?? "Tägliche Missionen crashen nicht mehr beim Tageswechsel (NullReference im DailyMissionService gefixt)",
+                _localization.GetString("WhatsNew_2_0_62_BulletPrivacy") ?? "Privacy-Update: Firebase Crashlytics + Analytics komplett ausgebaut — keine Telemetrie mehr, nur noch Liga + Cloud-Save",
+                _localization.GetString("WhatsNew_2_0_62_BulletOverlay") ?? "Modal-Overlays (What's-New, Bestätigungs-Dialoge) zeigen wieder den korrekten Inhalt — DataContext-Bug bereinigt",
+                _localization.GetString("WhatsNew_2_0_62_BulletPolish") ?? "Viele kleine Politur-Schritte aus dem internen Spieletester-Audit — saubereres Routing, weniger Sub-Tab-Hänger",
+            }
+        }),
+        // OFFENER ENTWICKLUNGSEINTRAG fuer naechste Version — Bullets pro Aenderung anhaengen,
+        // beim naechsten Release-Trigger wird dieser Eintrag finalisiert + ein neuer leerer angehaengt.
+        ("2.0.63", () => new WhatsNewEntry
+        {
+            Title = _localization.GetString("WhatsNew_2_0_63_Title")
+                ?? "In Entwicklung",
+            Bullets = Array.Empty<string>()
+        }),
     ];
 
     public IReadOnlyList<WhatsNewEntry> GetEntries()

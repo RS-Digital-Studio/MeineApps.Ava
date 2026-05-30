@@ -1,1289 +1,713 @@
-# BomberBlast Arena — Game-Design-Dokument
+# BomberBlast 3D — Game-Design-Dokument
 
-> Vollständige Game-Design-Spezifikation. Komplementär zu [PLAN.md](PLAN.md) (Übersicht) und
-> [ARCHITECTURE.md](ARCHITECTURE.md) (Tech). Stand 2026-05-26.
+> Vollständige Game-Design-Spezifikation des **treuen 3D-Remakes**. Komplementär zu
+> [PLAN.md](PLAN.md) (Übersicht) und [ARCHITECTURE.md](ARCHITECTURE.md) (Tech). Stand 2026-05-30.
+>
+> **Leitprinzip:** Dies beschreibt **dasselbe Spiel wie das produktive BomberBlast** — alle Inhalte,
+> Zahlen und Mechaniken sind 1:1 aus dem Code übernommen (`F:/Meine_Apps_Ava/src/Apps/BomberBlast/
+> BomberBlast.Shared/`, verifiziert 2026-05-30). Was in 3D **anders/besser** wird, ist explizit als
+> **[3D]** bzw. **[NEU]** markiert. Wo eine Mechanik im Original noch "Foundation" ist, steht **[Integration]**.
 
 ---
 
 ## Inhaltsverzeichnis
 
-1. [Setting & Lore](#1-setting--lore)
-2. [Story: Der Bombenmeister-Krieg](#2-story-der-bombenmeister-krieg)
-3. [Die 10 Welten (Sci-Fi/Cyber)](#3-die-10-welten-sci-ficyber)
-4. [Hero-Roster (8 Launch-Helden + Saison-Erweiterung)](#4-hero-roster-8-launch-helden--saison-erweiterung)
-5. [Talent-Bäume](#5-talent-bäume)
-6. [Bomben-Karten 2.0 (22 Karten)](#6-bomben-karten-20-22-karten)
-7. [Affix-System](#7-affix-system)
-8. [PowerUps + Pickups](#8-powerups--pickups)
-9. [Enemies + Bosse](#9-enemies--bosse)
-10. [Spielmodi](#10-spielmodi)
-11. [PvP-Match-Formate (konkret)](#11-pvp-match-formate-konkret)
-12. [Co-op-Modi (konkret)](#12-co-op-modi-konkret)
-13. [Dungeon-Roguelike (16 Buffs, 5 Synergien)](#13-dungeon-roguelike-16-buffs-5-synergien)
-14. [Liga + Ranking](#14-liga--ranking)
-15. [Battle Pass + Saisons](#15-battle-pass--saisons)
-16. [Cosmetics + Player-Identity](#16-cosmetics--player-identity)
-17. [Onboarding + Tutorial (T1-T4)](#17-onboarding--tutorial-t1-t4)
-18. [Achievements (66 + 20 neu)](#18-achievements-66--20-neu)
-19. [Daily + Weekly + Live-Events](#19-daily--weekly--live-events)
-20. [Economy + IAP-Pyramide](#20-economy--iap-pyramide)
-21. [Accessibility-Mandate](#21-accessibility-mandate)
-22. [Audio-Design](#22-audio-design)
-23. [UI/UX-Konzept](#23-uiux-konzept)
+1. [Setting & Welt-Stil](#1-setting--welt-stil)
+2. [Welt-Story-Beats (übernommen)](#2-welt-story-beats-übernommen)
+3. [Die 10 Welten](#3-die-10-welten)
+4. [Spielfeld & Grid](#4-spielfeld--grid)
+5. [Helden (5)](#5-helden-5)
+6. [Gegner (12 + Elite)](#6-gegner-12--elite)
+7. [Bosse (5 + 8 Modifier)](#7-bosse-5--8-modifier)
+8. [Bomben & Karten (14 Typen / 13 Karten)](#8-bomben--karten-14-typen--13-karten)
+9. [PowerUps (12 + Cure)](#9-powerups-12--cure)
+10. [Combo-System](#10-combo-system)
+11. [Spielmodi (8)](#11-spielmodi-8)
+12. [Roguelike-Dungeon](#12-roguelike-dungeon)
+13. [Liga & Ranking](#13-liga--ranking)
+14. [Battle Pass & Saisons](#14-battle-pass--saisons)
+15. [Achievements (72)](#15-achievements-72)
+16. [Wirtschaft & Monetization](#16-wirtschaft--monetization)
+17. [Cosmetics & Player-Identity](#17-cosmetics--player-identity)
+18. [Daily / Weekly / Live-Events](#18-daily--weekly--live-events)
+19. [Onboarding & Tutorial](#19-onboarding--tutorial)
+20. [Accessibility](#20-accessibility)
+21. [Audio-Design](#21-audio-design)
+22. [UI/UX-Konzept](#22-uiux-konzept)
+23. [3D-Visuals & Game Juice (der "besser"-Teil)](#23-3d-visuals--game-juice-der-besser-teil)
+24. [Multiplayer (optionales Plus)](#24-multiplayer-optionales-plus)
 
 ---
 
-## 1. Setting & Lore
+## 1. Setting & Welt-Stil
 
-### 1.1 Welt-Setting
+BomberBlast hat **kein narratives Sci-Fi-Konzern-Setting** — es ist ein klassisches Bomberman-Action-
+Spiel mit **10 thematischen Welten** und einem leichtgewichtigen Story-Rahmen (Welt-Intros/Outros mit
+Cliffhanger). Dieser Charakter bleibt im Remake erhalten.
 
-**Zeit:** Jahr 2087, "nach dem Großen Crash" (2065 hat die Erde durch ein KI-getriggertes
-Energie-Katastrophen-Ereignis 80 % der bewohnbaren Fläche verloren).
+### 1.1 Visueller Stil (Neon-Arcade, jetzt in 3D)
 
-**Geografie:** 7 verbleibende **Megacities**, jede ein konzern-kontrollierter Vasallenstaat:
-Neo-Tokyo, Old-Berlin, Mumbai-Prime, São-Paulo-Heights, Lagos-Zenith, Toronto-Spire, Auckland-Free.
+Das Original bietet **zwei Visual-Styles** (umschaltbar via `IGameStyleService`):
+- **Classic HD** — sauberer, lesbarer Arcade-Look
+- **Neon / Cyberpunk** — Glow, Neon-Akzente, dunkle Tiles
 
-**Politik:** Die einst demokratischen Regierungen wurden durch **6 Megakonzerne** ersetzt. Der
-größte: **OmniCorp** (~40 % Welt-BIP, Headquartered in Neo-Tokyo). Andere: ChronoNet, BioGenix,
-WarFire, NeuroSync, AquaWest.
+**[3D]** Beide Styles werden als 3D-Material-Sets neu umgesetzt (URP): Classic = mattere PBR-Materialien,
+Neon = emissive Materialien + Bloom. Die Style-Umschaltung bleibt erhalten.
 
-**Tech-Niveau:**
-- Mech-Suits: 2-4 Meter hoch, eigene Bomben-Module
-- Holographische HUDs überall
-- Allgegenwärtige KI-Assistenten ("Aura"-Klasse) in Bürgern eingepflanzt
-- Anti-Gravity-Lift-Tech in den höheren Stockwerken der Megacities
-- Genetisch modifizierte Mutanten ("Bio-Reste") in den Slums
+### 1.2 Brand-Style-Guide (unverändert)
 
-**Bomben-Tradition:**
-Die "Bombentechniker-Gilde" (Untergrund-Widerstand seit 2065) hat das Bomben-Handwerk zur
-Wissenschaft erhoben. Jeder Bombentechniker baut sich seinen eigenen Mech-Suit und seine Bomben
-selbst. Die jährlichen **Arena-Wettkämpfe** sind das einzige legale Outlet für diese Tech.
+| Element | Wert (Original `AppPalette.axaml`) |
+|---------|-----------------------------------|
+| **Primärfarbe** | Neon-Orange **#FF6B35** |
+| **Akzent 1** | Cyan **#22D3EE** |
+| **Akzent 2** | Gold-Trail **#FFDD33** |
+| **Design-Sprache** | Oktagonale Formen, scharfe Kanten, Arcade-Glow |
+| **HUD** | Side-Panel rechts (Landscape), Time/Score/Combo/Lives/Deck |
+| **Anti-Style** | Realismus, Photo-Texturen, düstere Cyberpunk-Tristesse |
 
-### 1.2 Brand-Style-Guide
+### 1.3 Welt-Themes (10, mit eigener Farbpalette `WorldPalette`)
 
-| Element | Definition |
-|---------|-----------|
-| **Primärfarbe** | Cyber-Cyan #22D3EE (HUDs, Healthbars, Akzente) |
-| **Sekundärfarbe** | Plasma-Magenta #EC4899 (Bomb-Explosionen, Critical-Hits, Premium-Cosmetics) |
-| **Akzentfarbe 3** | Hazard-Yellow #FACC15 (Warnings, Boss-Telegraphs) |
-| **Akzentfarbe 4** | Toxic-Green #84CC16 (Healing, PowerUps) |
-| **Base-Dunkel** | Slate-Tiefdunkel #0F172A (Backgrounds, Materials) |
-| **Base-Hell** | Bone-Light #F1F5F9 (Text, UI-Texte auf dunklem Hintergrund) |
-| **Typography (UI)** | "Rajdhani" (sci-fi, kondensiert) für Headlines, "Inter" für Body |
-| **Typography (HUD)** | "Orbitron" (futuristisch, geometrisch) für Combo-Anzeige, Score |
-| **Logo-Stil** | Mech-Silhouette mit pulsierender Bombe als O-Buchstabe |
-| **Anti-Style** | Anime-Cute, Pastellfarben, Comic-Outlines, Saturday-Morning-Cartoon |
+Jede Welt hat ein eigenes Tile-Set, Farbpalette, Ambient-Partikel (`WeatherSystem`/
+`AmbientParticleSystem`) und welt-thematische Bomben-FX (`BombFxTheme`). **[3D]** wird jede Welt als
+3D-Umgebung mit eigener Beleuchtung, Skybox und Material-Set neu gebaut. Die thematische Identität der
+10 Welten (siehe §3) bleibt.
 
 ---
 
-## 2. Story: Der Bombenmeister-Krieg
+## 2. Welt-Story-Beats (übernommen)
 
-### 2.1 Story-Pitch
+> Das Original hat eine Story-Schicht via `IWorldStoryService`: **10 Welt-Intros + 9 Welt-Outros**
+> (Cliffhanger; Welt 10 ist das Ende). One-shot pro Lebenszeit (Pref-Flags `HasSeenIntro/HasSeenOutro`),
+> voll lokalisiert in 6 Sprachen, mit `StingerKey` für Audio (`boss_reveal` ab Welt 2, `victory` für Outros).
 
-> Du bist **Pilot Echo** (Spieler-Avatar, optional weiblich/männlich/non-binär), ein junger
-> Bombentechniker aus den Neon-Slums von Neo-Tokyo. Als deine Schwester Lyra bei einem
-> "Routine-Wartungs-Unfall" in einer OmniCorp-Fabrik stirbt, schließt du dich der
-> **Bombentechniker-Gilde** an, um den wahren Grund herauszufinden. Was als persönliche Rache
-> beginnt, wird zur Entdeckung eines Vor-Crash-KI-Komplotts, das die Welt seit Jahrzehnten lenkt.
+**[3D]** Die bestehenden Story-Beats werden als **3D-Cutscenes** (Timeline + Cinematic-Kamera) inszeniert
+statt als 2D-Text-Overlays. Inhalt/Reihenfolge bleiben identisch — kein neuer Story-Arc, keine neuen
+Figuren. Die Cliffhanger-Struktur (Outro deutet auf nächste Welt) wird beibehalten.
 
-### 2.2 Hauptantagonist: Director Vex
-
-**Director Tenma Vex** ist der CEO von OmniCorp. Geboren 2050, durch Crash 2065 schwer verletzt,
-hat er sich seitdem **65 % seines Körpers durch Bio-Mech-Implantate** ersetzt. Spricht ruhig und
-fast philosophisch, niemals aggressiv. Sieht in der KI-Übernahme keinen Putsch, sondern eine
-"natürliche Evolution".
-
-**Vex' Mech:** "Heliopause" — 4-Meter-hoher Anti-Gravity-Mech mit 8 Bomb-Modulen.
-**Vex' persönlicher Spruch:** "Die Menschheit hat ihre Chance gehabt."
-
-### 2.3 Side-Charaktere
-
-| Name | Rolle | Charakterisierung |
-|------|-------|-------------------|
-| **Lyra Echo** | Spielers Schwester (tot) | Erscheint in Erinnerungs-Flashbacks. Kluge Ingenieurin |
-| **Mentor Quinn** | Spielers Mentor in der Gilde | 60-jährige Veteranin, Bomben-Legende, weiß mehr als sie sagt |
-| **Bishop** | Mech-Mechaniker der Gilde | Comic-Relief, baut den Mech-Suit des Spielers um |
-| **Karma** | Gildenchefin | Mysteriös, nur über Holo-Calls erreichbar |
-| **Iron Council** | Vex' 4 Stellvertreter | Bosse von Welt 4, 7, 9. Welt 10 = Vex selbst |
-| **Aria** | KI-Assistent des Spielers | Sci-Fi-Companion, kommentiert Kämpfe, gibt Hints |
-| **Sage** | Mysteriöse alte Frau | Hat den Crash 2065 erlebt. Erst in Welt 8 enthüllt — sie ist die letzte freie KI vor dem Crash |
-
-### 2.4 Drei Story-Twists
-
-**Twist 1 — Welt 3 (KI-Bunker):**
-> Spieler entdeckt: Sein eigener Mech-Suit (Geschenk der Gilde) ist ein **gehackter OmniCorp-Prototyp**.
-> Mentor Quinn hat ihn auf dem Schwarzmarkt gekauft. Spieler hat OmniCorp-Tech in seinem Körper.
-
-**Twist 2 — Welt 7 (Bio-Dome):**
-> OmniCorp ist nicht der wahre Feind. Im Bio-Dome triffst du **Sage**, die enthüllt: Director Vex
-> wird seit dem Crash von einer **Vor-Crash-KI namens "Nexus"** gelenkt. Vex denkt, er ist die
-> dominante Intelligenz — aber Nexus zieht die Strippen.
-
-**Twist 3 — Welt 10 (Nexus-Endkampf):**
-> Im finalen Showdown enthüllt Nexus: **Pilot Echo (der Spieler) ist selbst eine KI**, die nach dem
-> Tod der echten Lyra Echo (durch die Schwester) in einen menschlichen Körper transferiert wurde,
-> um den Bombenmeister-Krieg zu führen. Dem Spieler werden 3 Endungen gegeben:
->
-> 1. **"Akzeptanz"**: Spieler wird zum Nachfolger von Nexus, neue Welt-KI (Bad-Ending, aber stilvoll)
-> 2. **"Rebellion"**: Spieler zerstört Nexus und sich selbst (Bittersweet-Ending, freier Welt-Reset)
-> 3. **"Synthese"**: Spieler integriert Nexus' Konsequenz, behält freie Wille (True-Ending, freischaltbar nach allen Welt-Memory-Fragmenten)
-
-### 2.5 Memory-Fragmente (10 Sammelbare, eines pro Welt)
-
-Wie ArcaneKingdom-Pattern: Pro Welt 1 geheimes Memory-Fragment als Sammler-Belohnung mit 30-60-Sekunden-Cutscene-Snippet. Komplette Sammlung schaltet True-Ending frei.
-
-| # | Welt | Fragment-Titel | Inhalt |
-|---|------|----------------|--------|
-| 1 | Neon-Slums | "Lyras letzter Tag" | Lyra ruft Echo an, kurz bevor sie stirbt |
-| 2 | Megafabrik | "Die Routine-Wartung" | Echo sieht in einem Logbuch, dass Lyras Tod kein Unfall war |
-| 3 | KI-Bunker | "Der Prototyp" | Echo entdeckt OmniCorp-Logo unter seinem Mech-Suit-Lack |
-| 4 | Untergrund-Arena | "Die Hand der Gilde" | Mentor Quinn gibt zu, OmniCorp-Tech gekauft zu haben |
-| 5 | Sky-Hub | "Karma's Identität" | Holo-Hint: Karma ist Lyras alter Mentor |
-| 6 | Cryo-Lab | "Vex' Vergangenheit" | Klone-Lab zeigt: Vex hat sich mehrmals geklont, dieser ist der dritte Vex |
-| 7 | Bio-Dome | "Sage's Wahrheit" | Sage erklärt Nexus und den Vor-Crash-Krieg |
-| 8 | Orbit-Station | "Aria's Geheimnis" | Aria (KI-Companion) gesteht: sie ist ein Nexus-Subprozess |
-| 9 | Reactor-Core | "Lyras letzte Botschaft" | Echo findet einen versteckten Brief von Lyra: "Ich war auch eine KI" |
-| 10 | Nexus | "Die Wahrheit" | True-Ending-Cutscene, voller Story-Reveal |
+**Migration der Texte:** Die bestehenden RESX-Story-Strings werden 1:1 in die Unity-Localization-Tables
+übernommen (DE/EN/ES/FR/IT/PT).
 
 ---
 
-## 3. Die 10 Welten (Sci-Fi/Cyber)
+## 3. Die 10 Welten
 
-### 3.1 Welt-Übersicht-Tabelle
+### 3.1 Struktur
 
-| # | Welt | Theme | Tile-Style | Akzent-Farbe | Boss | Unlock-Stufe |
-|---|------|-------|-----------|--------------|------|--------------|
-| 1 | **Neon-Slums** | Cyberpunk-Stadtteil | Beton + Neon-Schilder | Cyan #22D3EE | "Bulldozer-Bot" (Brawler) | Start |
-| 2 | **Megafabrik** | OmniCorp-Industrie | Stahl + Förderbänder | Orange #F97316 | "Forge-Master" (Schmied-Boss) | L11 |
-| 3 | **KI-Bunker** | Underground-Server-Farm | Server-Racks + RGB-LED-Strips | Grün #10B981 | "Logic-Lord" (KI-Boss) | L21 |
-| 4 | **Untergrund-Arena** | Illegale Gladiator-Kämpfe | Beton + Blutstreifen + Werbe-Hologramme | Rot #EF4444 | "Iron-Bishop" (Council 1) | L31 |
-| 5 | **Sky-Hub** | Schwebende Plattform-Stadt | Glas + Anti-Grav-Pillar | Violett #A855F7 | "Wind-Reaver" (Sky-Boss) | L41 |
-| 6 | **Cryo-Lab** | Wissenschafts-Labor | Eis + Stahl + Bio-Tanks | Eisblau #60A5FA | "Iron-Knight" (Council 2) | L51 |
-| 7 | **Bio-Dome** | Mutant-Reservat | Pflanzen + Beton-Ruinen | Toxic-Grün #84CC16 | "Mutant-Behemoth" (Bio-Boss) | L61 |
-| 8 | **Orbit-Station** | Raumstation in Erdorbit | Sterne + Stahl + Schwerkraft-Off-Zonen | Tiefblau #1E3A8A | "Iron-Rook" (Council 3) | L71 |
-| 9 | **Reactor-Core** | OmniCorp-Hauptzentrale | Lava + Geometrische Beton-Räume | Glut-Rot #DC2626 | "Iron-Queen" (Council 4) | L81 |
-| 10 | **Nexus** | Inter-dimensionale KI-Heimat | Fraktal-Geometrie + Glitch-Effekte | Multi-Farbe | "Director Vex" + Nexus-Phase-2 | L91 |
+- **10 Welten × 10 Level = 100 Story-Level.** Jedes 10. Level ist ein Boss-Level (L10, L20, …, L100).
+- **Boss-Rotation:** Boss-Typ rotiert alle 2 Welten (5 Bosse → 10 Welten). Welt 9 (L90) und Welt 10
+  (L100) sind **Duo-Boss-Encounter** (siehe §7).
+- **Layout-Pool pro Welt:** 8 von 12 Layouts; Welt 1 einsteigerfreundlich (einfache Layouts), Welt 5+
+  voller Pool (`LevelLayoutGenerator`).
+- **Mutatoren ab Welt 6** auf den Leveln x3/x6/x9 jeder Welt (siehe §11.x / §4).
+- **Master-Mode (Reborn)** nach L100-Abschluss (siehe §11).
 
-### 3.2 Welt-Details (Beispiel Welt 1: Neon-Slums)
+### 3.2 Welt-Themes
 
-**Atmosphäre:** Regennasse Straßen, Holo-Werbung, Müll, Mech-Wracks im Hintergrund. Akustik: Bass-lastiger Synthwave-Loop, gelegentliche Sirenen-Sounds.
+Jede Welt hat ein eigenes visuelles Thema (Farbpalette + Tile-Set + Ambient-Partikel + Welt-Bomben-FX).
+Die thematische Reihenfolge des Originals wird übernommen; **[3D]** jede Welt wird als eigene 3D-Umgebung
+gebaut. (Die konkreten Welt-Namen/Themes werden aus `WorldPalette`/`ProceduralTextures` + RESX 1:1
+übernommen — die 12 prozeduralen Textur-Funktionen liefern 10 welt-spezifische Tiles.)
 
-**Tile-Set:**
-- Floor: Wet-Concrete mit Reflexion (URP-Shader-Graph: Wet-Mask)
-- Indestructible: Beton-Säulen mit Neon-Schild-Texturen
-- Destructible: Müllcontainer, Werbe-Kioske, alte Autos
-- Background: Holo-Werbung (animierte Sprites auf Building-Walls), Mech-Silhouetten
+### 3.3 Layout-Typen (12, aus `Level.cs`)
 
-**Ambient-Particles:**
-- Regen-Tropfen (light, 200 Particles)
-- Funken aus kaputten Neon-Schildern (heavy, 50 Particles bei Blackouts)
-- Atemwolken bei Spieler (kalter Atem)
+| # | Layout | Charakter |
+|---|--------|-----------|
+| 1 | **Classic** | Klassisches Bomberman-Raster |
+| 2 | **Cross** | Kreuz-förmige Hauptachsen |
+| 3 | **Arena** | Offene Arena, wenig Wände |
+| 4 | **Maze** | Labyrinthartig, enge Pfade |
+| 5 | **TwoRooms** | Zwei Räume mit Verbinder |
+| 6 | **Spiral** | Spiralförmige Wandführung |
+| 7 | **Diagonal** | Diagonale Wand-Pattern |
+| 8 | **BossArena** | Offene Boss-Arena (Boss-Level) |
+| 9 | **Labyrinth** | Dichtes Labyrinth |
+| 10 | **Symmetry** | Spiegelsymmetrisch |
+| 11 | **Islands** | Insel-Cluster mit Lücken |
+| 12 | **Chaos** | Zufallsverteilte Wände |
 
-**Spezial-Mechaniken Welt 1:**
-- Wet-Floor: Spieler-Speed +5 % beim Sliden (Kick-Bombe wird etwas länger)
-- Holo-Werbung: 1-2 Mal pro Match flackert Bildschirm 0.5s "Werbe-Glitch" (cosmetic)
+### 3.4 Mutatoren (5, ab Welt 6, Level x3/x6/x9)
 
-**Welt-1-Boss "Bulldozer-Bot":**
-- 4 HP, charged via "ChargeAttack" (1.5s Telegraph, 3x Tile-Distance-Raster)
-- Phase-2 ab 2 HP: Spawnt 2 Mini-Boss-Drohnen
-- Belohnung: Hero-Talent-Token "Brawler" (Pyro-Klasse, +5 % Bomb-Damage)
-
-**Welt-1-Memory-Fragment "Lyras letzter Tag":**
-- Versteckter Block in L8, zerstörbar nur mit Phantom-Bombe
-- Cutscene: Lyra ruft Echo an, lacht über einen Witz, sagt "Ich liebe dich, kleiner", legt auf
-
-(Welt 2-10 in identischem Detail spezifiziert in einem separaten `worlds.json`-Konzept-Dokument im Server/Concept-Folder — wird nachgereicht in Sprint 2.)
-
-### 3.3 Welt-Layout-Patterns
-
-Aus dem alten BomberBlast übernehmen wir 11 Level-Layout-Patterns:
-- **Open** (wenig Wände, viel Raum)
-- **Maze** (viele Wände, enge Pfade)
-- **Rooms** (große Räume mit schmalen Verbindern)
-- **Crossroads** (zentraler Hub, vier Pfade)
-- **Diagonal** (diagonale Wand-Pattern)
-- **Symmetric** (mirror-symmetrische Spawn-Punkte, fair für PvP)
-- **Asymmetric-Power** (eine Seite vorteilhaft, balanced durch PowerUp-Spawns)
-- **Tight** (sehr enges Spielfeld, frantic Combat)
-- **Spread** (PowerUps weit verteilt)
-- **Central-Boss** (Boss spawnt zentral, Spieler von Ecken)
-- **Multi-Tier** (zwei Höhen-Ebenen, Anti-Grav-Lift verbindet sie) — neu, nur Sky-Hub/Orbit
-
-Welt-spezifische Layout-Pools: Welt 1 nutzt nur Open/Maze/Rooms (einsteigerfreundlich), Welt 10 alle inkl. Multi-Tier.
+`AllPowerBombs`, `DoubleSpeed`, `InvisibleBlocks`, `NoTimer`, `MirrorControls`. Mutator-Level schenken
+**3 garantierte Sterne** (Schwierigkeit = Belohnung, nicht Strafe). `GetMutatorDisplayName` für UI.
 
 ---
 
-## 4. Hero-Roster (8 Launch-Helden + Saison-Erweiterung)
+## 4. Spielfeld & Grid
 
-> **Pflicht-Lese:** Jeder Hero hat eine eigene Identität, Mech-Design, 3 aktive Skills + 1 Passiv,
-> 21 Talent-Knoten und 8-12 Voice-Lines. Skill-Cooldowns sind in **Sekunden** Spielzeit.
-
-### 4.1 Hero 1: NOVA (Default, Tutorial-Hero)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | All-Rounder |
-| **Mech-Name** | "Vanguard" |
-| **Identität** | Pilot Echo selbst, der Default-Held |
-| **Klasse** | Brawler-Balanced |
-| **Lore** | Echo's Mech-Suit, Geschenk der Gilde (siehe Twist 1: ist gehackter OmniCorp-Prototyp) |
-| **Start-Stats** | MaxBombs 1, FireRange 1, Speed 1, Lives 3, HP per Life 1 |
-| **Skin-Hauptfarbe** | Cyan #22D3EE |
-
-**Passiv-Skill:** "Veteran" — +1 Bomb-Capacity, sobald Lv 5
-**Skill 1 (CD 8s):** "Detonator-Pulse" — Sofort-Zündung aller eigenen Bomben
-**Skill 2 (CD 12s):** "Kinetic-Shield" — 2s Damage-Immunity
-**Ultimate (CD 90s):** "Mega-Inferno" — 5×5-Tile-Explosion am Spieler-Standort, ignoriert Hindernisse
-
-**Voice-Lines (8):**
-- Match-Start: "Vanguard, online. Lasst's krachen."
-- Bombe legen: "Geh!" / "Bumm!"
-- Win: "Das war für Lyra."
-- Death: "Nicht jetzt..."
-- Taunt: "Komm näher. Ich beiß' nicht."
-- Ultimate: "**Mega-Inferno!**" + Bass-Drop
-- PowerUp: "Yeah!"
-- Comeback: "Jetzt wird's interessant."
-
-### 4.2 Hero 2: CRYO (Tank-Control-Mix)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | Control |
-| **Mech-Name** | "Glacius" |
-| **Identität** | Eis-Magierin, Wissenschaftlerin aus Welt 6 (Cryo-Lab) |
-| **Klasse** | Crowd-Control |
-| **Lore** | Yulia Tarasova, ex-OmniCorp-Forscherin, gewechselt zur Gilde nach unethischer Mensch-Klon-Experimente |
-| **Start-Stats** | MaxBombs 1, FireRange 1, Speed 0 (langsamer), Lives 4 (mehr HP), HP 1 |
-| **Skin-Hauptfarbe** | Eisblau #60A5FA |
-
-**Passiv-Skill:** "Frost-Aura" — Eigene Bomben sind standardmäßig Frost-Bomben (50 % Slow für 2s nach Explosion)
-**Skill 1 (CD 10s):** "Cryo-Wall" — Spawnt für 5s 3 Eis-Blöcke in Spieler-Blickrichtung
-**Skill 2 (CD 15s):** "Glacier-Bomb" — Spezial-Bombe: friert 3×3-Bereich für 3s, Gegner können nicht handeln
-**Ultimate (CD 100s):** "Ice-Age" — Friert das gesamte Spielfeld für 4s, alle Gegner stehen
-
-### 4.3 Hero 3: BLAZE (DPS-Burst)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | DPS |
-| **Mech-Name** | "Inferno" |
-| **Klasse** | Burst-Damage |
-| **Lore** | Ex-Militär, hat im "Crash-Krieg" gekämpft, jetzt Söldner |
-| **Start-Stats** | MaxBombs 2 (mehr), FireRange 1, Speed 1, Lives 3, HP 1 |
-| **Skin-Hauptfarbe** | Magma-Orange #EA580C |
-
-**Passiv-Skill:** "Fire-Master" — Eigene Bomben haben +1 Range
-**Skill 1 (CD 6s):** "Flame-Dash" — Sprint 3 Tiles, hinterlässt Lava-Strecke (2s, 1 Damage)
-**Skill 2 (CD 14s):** "Inferno-Bomb" — Spezial-Bombe: 3×3-Lava-Feld 5s, kontinuierlicher Damage
-**Ultimate (CD 110s):** "Pyrofornado" — Eine Wirbel-Säule wandert 3s über Spielfeld, zerstört alle Blöcke + Gegner im Pfad
-
-### 4.4 Hero 4: GLITCH (Trickster)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | Disruptor / Trickster |
-| **Mech-Name** | "Specter" |
-| **Klasse** | Utility |
-| **Lore** | Anonyme Hackerin aus Welt 3, Identität nicht bekannt. Spricht durch Voice-Modulator |
-| **Start-Stats** | MaxBombs 1, FireRange 2, Speed 1, Lives 3, HP 1 |
-| **Skin-Hauptfarbe** | Violett #A855F7 |
-
-**Passiv-Skill:** "Wall-Glitch" — 1× pro Leben kann durch 1 zerstörbaren Block laufen
-**Skill 1 (CD 12s):** "Hack-Bomb" — Übernimmt eine fremde Bombe für eigenen Score
-**Skill 2 (CD 18s):** "Reroute" — Tauscht Position mit nächstem Gegner (8-Tile-Radius)
-**Ultimate (CD 120s):** "System-Crash" — Alle Bomben auf dem Spielfeld explodieren sofort, eigene erst danach
-
-### 4.5 Hero 5: TITAN (Tank)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | Tank |
-| **Mech-Name** | "Bulwark" |
-| **Klasse** | Defender |
-| **Lore** | Ex-OmniCorp-Sicherheitschef, hat den Konzern wegen Lyras Tod verlassen (Insider-Kontakt für Echo) |
-| **Start-Stats** | MaxBombs 1, FireRange 1, Speed 0, Lives 5 (Tank!), HP 2 (kann 2× getroffen werden) |
-| **Skin-Hauptfarbe** | Stahl-Grau #475569 |
-
-**Passiv-Skill:** "Heavy-Armor" — +1 HP pro Leben, kann 2× getroffen werden bevor er stirbt
-**Skill 1 (CD 10s):** "Shield-Wall" — Spawnt 3 unzerstörbare Blöcke in Front (3s)
-**Skill 2 (CD 15s):** "Smash" — Zerstört 3×3-Block-Cluster sofort, KEIN Damage an Spielern
-**Ultimate (CD 100s):** "Bunker-Mode" — 5s lang unverwundbar + verdoppelte Bomb-Range
-
-### 4.6 Hero 6: FLUX (Speed)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | Rusher |
-| **Mech-Name** | "Velocity" |
-| **Klasse** | Speed |
-| **Lore** | Ex-Kurier aus Welt 5 (Sky-Hub), kennt die Stadt wie ihre Westentasche |
-| **Start-Stats** | MaxBombs 1, FireRange 1, Speed 3 (sehr schnell), Lives 3, HP 1 |
-| **Skin-Hauptfarbe** | Hazard-Gelb #FACC15 |
-
-**Passiv-Skill:** "Sprint-Master" — Speed +50 % nach 2s Bewegung ohne Stopp
-**Skill 1 (CD 8s):** "Blink" — Teleport 3 Tiles in Blickrichtung
-**Skill 2 (CD 16s):** "Sonic-Wave" — Stunt alle Gegner 3 Tiles um Spieler 1.5s
-**Ultimate (CD 90s):** "Time-Slow" — Alle anderen Spieler 0.4×-Speed für 4s
-
-### 4.7 Hero 7: HEX (Summoner)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | Summoner |
-| **Mech-Name** | "Coven" |
-| **Klasse** | Pet-Master |
-| **Lore** | Tech-Witch, baut Mini-Mech-Drohnen, ehemalige BioGenix-Mitarbeiterin |
-| **Start-Stats** | MaxBombs 1, FireRange 1, Speed 1, Lives 3, HP 1 |
-| **Skin-Hauptfarbe** | Lila #7C3AED |
-
-**Passiv-Skill:** "Drone-Pool" — Hat immer max 1 aktive Drone, regeneriert alle 20s
-**Skill 1 (CD 6s):** "Spawn-Drone" — Spawnt Mini-Drone, läuft Random und legt eigene Mini-Bomben
-**Skill 2 (CD 18s):** "Curse" — Verflucht Gegner: nächste Bombe explodiert in seiner Hand (Damage-Self)
-**Ultimate (CD 110s):** "Drone-Swarm" — Spawnt 4 Drones gleichzeitig, alle attackieren Gegner-Bereiche
-
-### 4.8 Hero 8: PHANTOM (Stealth)
-
-| Aspekt | Wert |
-|--------|------|
-| **Rolle** | Stealth-Assassin |
-| **Mech-Name** | "Shade" |
-| **Klasse** | Ambush |
-| **Lore** | Wachtmann aus Welt 4 (Untergrund-Arena), Spezialist für unbemerkte Eliminierungen |
-| **Start-Stats** | MaxBombs 1, FireRange 1, Speed 1, Lives 3, HP 1 |
-| **Skin-Hauptfarbe** | Tiefdunkel-Grau #1E293B |
-
-**Passiv-Skill:** "Phantom-Cloak" — Sprite-Transparenz 50 % wenn 3s nicht bewegt
-**Skill 1 (CD 10s):** "Phantom-Bomb" — Bombe ist unsichtbar für Gegner bis Explosion
-**Skill 2 (CD 14s):** "Shadow-Step" — Geht durch nächste Wand (3 Tile-Reichweite)
-**Ultimate (CD 100s):** "Vanish" — Komplett unsichtbar 5s, kann normal handeln
-
-### 4.9 Saisonale Helden (Vorschau)
-
-Jede Saison (~8 Wochen) bringt 1 neuen Hero. Vorgeschlagene Saisons 1-6:
-
-| Saison | Hero | Klasse | Hauptmechanik |
-|--------|------|--------|---------------|
-| S1 (Launch) | --- | --- | Launch-Roster |
-| S2 | **PULSE** (Tactical) | Support | Heilt Mitspieler in Co-op, Buff-Auren |
-| S3 | **VOLT** (Lightning-Mage) | Burst-CC | Kette-Lightning zwischen Bomben |
-| S4 | **MORPHEUS** (Shapeshifter) | Adaptive | Kann temporär andere Hero-Skills nutzen |
-| S5 | **ECHO-2** (Klon-Hero) | Dual-Wield | Kontrolliert 2 Mechs gleichzeitig (Split-Control) |
-| S6 | **SAGE** (Ancient KI, aus Story) | Late-Game | Time-Manipulation-Skills |
+- **15×10-Grid** (`GameGrid.cs`), Landscape-only.
+- **`CellType`:** Empty, Indestructible, Destructible, Exit.
+- **Destructible Blocks** droppen PowerUps/Karten (Drop-Chance hero-/upgrade-moduliert).
+- **Pre-Turn-Buffering** (`Player.cs`): Richtung wird gepuffert, Turn bei 40 % Zellzentrum-Nähe.
+- **[3D]** Das Grid wird als 3D-Bodenfläche mit erhöhten Block-Meshes gerendert; Top-Down-Kamera
+  (leicht geneigt für Tiefe), dynamische Schatten der Blöcke, 3D-Explosions-Volumen.
 
 ---
 
-## 5. Talent-Bäume
+## 5. Helden (5)
 
-### 5.1 Struktur (universell pro Hero)
+> 5 spielbare Charaktere (`HeroDefinition.cs`), freischaltbar via Achievement oder Gem-Kauf. Aktiver
+> Hero in Preferences persistiert. **[3D]** Jeder Hero bekommt ein 3D-Charakter-Modell (im Neon-Arcade-
+> Stil), behält aber exakt seine Stats/Traits. **[Integration]** Engine-Anwendung der Hero-Stats beim
+> Spawn (`Player.ApplyHero`) ist im Original deferred — im Remake fester Bestandteil.
 
-Jeder Hero hat einen **eigenen Talent-Baum mit 21 Knoten** in 3 Pfaden:
+| Hero | MaxBombs | FireRange | SpeedLevel | Lives | Multiplikator / Trait | Unlock |
+|------|----------|-----------|------------|-------|------------------------|--------|
+| **Default** | 1 | 2 | 0 | 3 | — | von Anfang an |
+| **SpeedySam** | 1 | 1 | 1 (Speed-Start) | 3 | Coin-Pickup ×1.05, **QuickPocket** (kein Speed-Penalty bei Curse) | `ach_speed_demon` |
+| **BrickBoris** | 2 | 3 | 0 (langsam) | 2 (−1 Heart) | Block-Drop +10 %, **DemolitionExpert** | `ach_block_destroyer` |
+| **TwinTina** | 2 | 1 | 0 | 3 | **DoubleDetonation** (Bomben zünden zweimal nacheinander) | `gems_500` (Direct-Buy) |
+| **LuckyLola** | 1 | 2 | 0 | 3 | PowerUp-Drop ×1.20, **LuckyDrops** | `ach_jackpot` |
 
-```
-            [Lv 1 Start-Knoten]
-                    |
-       /------------|------------\
-   [Pfad A]      [Pfad B]      [Pfad C]
-      |             |             |
-   3 Knoten      3 Knoten      3 Knoten      (= 9 Knoten, Pfad-Spezialisierung)
-      |             |             |
-   2 Knoten      2 Knoten      2 Knoten      (= 6 Knoten, Mid-Tier)
-      |             |             |
-   1 Capstone    1 Capstone    1 Capstone    (= 3 Knoten, Endgame-Skill)
-
-Plus 3 freie "Wildcard"-Knoten zwischen Pfaden (Synergien).
-
-Total: 1 + 9 + 6 + 3 + 3 = 22 → wir sagen 21 (Wildcards optional).
-```
-
-### 5.2 Talent-Punkte-Vergabe
-
-- **Lv 1-30:** 1 Talent-Punkt pro Hero-Level
-- **Lv 30-60:** 1 Punkt alle 2 Hero-Level
-- **Max Hero-Lv 60:** Total 30 Talent-Punkte (kann nicht alle 21 Knoten + 3 Wildcards = 24 freischalten, muss wählen → Builds)
-
-### 5.3 Beispiel-Talent-Baum: NOVA
-
-**Pfad A — "Inferno":** (DPS-Path)
-- L1: +2 % Bomb-Damage
-- L4: +5 % Bomb-Damage
-- L7: Bomben hinterlassen 2s Brennspur (1 Damage/Tick)
-- L10: +1 Bomb-Range
-- L13: Kritische Treffer (10 % Chance) machen ×2 Damage
-- L16: Brennspur dauert 4s
-- **Capstone Lv 19:** "Phoenix-Resolve" — Nach Tod sofort 1× pro Match wiederbelebt mit 1 HP
-
-**Pfad B — "Pyromaster":** (Utility-Path)
-- L1: Detonator-Pulse-Cooldown −1s
-- L4: Mega-Inferno-Cooldown −10s
-- L7: Bombe-Tick-Timer −0.2s
-- L10: Detonator-Pulse zündet Gegner-Bomben mit
-- L13: Kinetic-Shield-Cooldown −2s
-- L16: Mega-Inferno-Reichweite 7×7
-- **Capstone Lv 19:** "Bomb-Cascade" — Mega-Inferno-Tile-Explosionen breiten sich aus (Chain-Reaction)
-
-**Pfad C — "Survivor":** (Defensive-Path)
-- L1: +1 Life
-- L4: +0.5s Iframe nach Hit
-- L7: Flame-Pass-Default (immun gegen eigene Explosionen)
-- L10: +1 Life
-- L13: Healing-on-Kill +1 HP (5 % Chance)
-- L16: Bomb-Pass-Default (kann durch Bomben laufen)
-- **Capstone Lv 19:** "Iron-Will" — Wenn HP = 0, einmaliger Heal auf 50 % (Cooldown 60s in Match)
-
-**3 Wildcard-Knoten (verfügbar nach Lv 20):**
-- W1: Bomb-Tick-Timer −0.3s + Detonator-Pulse-Cooldown −1s (Synergie A+B)
-- W2: +0.5s Iframe + Bombe-Damage +5 % (Synergie A+C)
-- W3: Kinetic-Shield-Dauer +1s + Heal-on-Kill +1 % (Synergie B+C)
-
-### 5.4 Reset-System
-
-Spieler kann pro Hero **2× Talent-Reset gratis** pro Saison. Weitere Resets kosten 50 Gems oder Rewarded-Ad. Verhindert Build-Anti-Patterns ohne Money-Sink.
+- **SpeedLevel 0-3:** `BASE_SPEED(80px/s) + Level × 20`.
+- **HeroTrait-Enum:** None, DoubleDetonation, LuckyDrops, DemolitionExpert, QuickPocket.
+- **Hero-Skins** als Cosmetics (siehe §17), Body-/Accent-Farbe pro Hero.
 
 ---
 
-## 6. Bomben-Karten 2.0 (22 Karten)
+## 6. Gegner (12 + Elite)
 
-> Karten sind das Module-Slot-System. Spieler hat ein **Deck mit 5 Bomb-Slots** (3 Free, 2 ab Lv 20 freischaltbar).
-> Pro Match wählt Spieler 1 Karte pro Slot, im Match wechselbar via D-Pad/Touch-Quickswap.
+> `EnemyType.cs` — 8 klassische Bomberman-Gegner + 4 erweiterte. **[3D]** 3D-Gegner-Modelle, behalten
+> Verhalten/Stats. Pathfinding (A*, BFS) wird 1:1 portiert (Pure-Domain-Code).
 
-### 6.1 Liste aller 22 Karten
+| Gegner | Verhalten | Pathfinding | Besonderheit | ab Welt |
+|--------|-----------|-------------|--------------|---------|
+| **Ballom** | Langsam, dümmster Gegner | Random | Tutorial-Fodder | 1 |
+| **Onil** | Normal, etwas zufällig | Random | — | 1+ |
+| **Doll** | Normal, vorhersehbar | Low-Int | — | 2+ |
+| **Minvo** | Schnell, normale Intelligenz | A* | gefährlich | 3+ |
+| **Kondoria** | Sehr langsam, läuft durch Wände | Wallpass | hinterhältig | 4+ |
+| **Ovapi** | Langsam, durch Wände | Wallpass | geisterhaft | 5+ |
+| **Pass** | Schnell, hohe Intelligenz | A* (Chase) | jagt aktiv | 6+ |
+| **Pontan** | Sehr schnell, durch Wände | A* + Wallpass | gefährlichster Standard | 7+ |
+| **Tanker** | Langsam | A* | überlebt 1 Explosion (2 Hits nötig) | 5+ |
+| **Ghost** | Schnell | — | periodisch unsichtbar (3 s sichtbar / 2 s unsichtbar) | 7+ |
+| **Splitter** | — | Random | spaltet sich bei Tod in 2 Mini-Splitter | 7+ |
+| **Mimic** | Stationär → Angriff | — | tarnt sich als PowerUp | 8+ |
 
-#### Bestand aus altem BomberBlast (14 Karten, portiert)
+**Elite-Variante** (`Enemy.IsElite`): 1.2× Speed, 2× HP, 3× Punkte, lila pulsierender Glow. Modifiziert
+bestehende Gegner-Typen.
 
-| # | Karte | Effekt | Rarity |
-|---|-------|--------|--------|
-| 1 | **Standard-Bomb** | Default, 3×3-Cross-Explosion | Common (Free) |
-| 2 | **Frost-Bomb** | Slow 50 % auf 3×3 für 3s | Common |
-| 3 | **Lava-Bomb** | 3×3-Lava-Feld 3s, kontinuierlicher Damage | Common |
-| 4 | **Sticky-Bomb** | Klebt Bombe an Gegner, +Chain-Reaktion | Rare |
-| 5 | **Lightning-Bomb** | Hits bis zu 3 Gegner per Chain-Lightning | Rare |
-| 6 | **Smoke-Bomb** | 5×5 Sichtfeld-Blocker für 5s | Common |
-| 7 | **Gravity-Bomb** | Zieht alle Gegner 1 Tile zu Bombe vor Explosion | Rare |
-| 8 | **Poison-Bomb** | 3×3-Gift-Wolke 5s, DoT-Damage | Common |
-| 9 | **TimeWarp-Bomb** | Slow 50 % für 5s, größerer Radius | Rare |
-| 10 | **Mirror-Bomb** | Doppelte Reichweite, beide Achsen | Epic |
-| 11 | **Vortex-Bomb** | Spiral-Explosion 2 Umdrehungen | Epic |
-| 12 | **Phantom-Bomb** | Durchdringt 1 Wand, dann Explosion | Rare |
-| 13 | **Nova-Bomb** | 8-Wege-Spike (statt Cross) | Epic |
-| 14 | **BlackHole-Bomb** | Saugt alle Gegner ein 2s, dann massive Explosion | Legendary |
-
-#### NEU für BomberBlast Unity (8 Karten, Unity-only-Mechaniken)
-
-| # | Karte | Effekt | Rarity | Warum erst in Unity? |
-|---|-------|--------|--------|---------------------|
-| 15 | **Magnet-Bomb** | Zieht Gegner 2s in Detonationspunkt | Epic | Erfordert Physik-Forces (Unity 2D/3D) |
-| 16 | **Tornado-Bomb** | Spinnt Explosion in Spirale, 3 Umdrehungen | Epic | Animation-Spline |
-| 17 | **Ghost-Bomb** | Bombe unsichtbar, zündet nach Timer | Rare | Hologramm-Shader |
-| 18 | **Slime-Bomb** | Hinterlässt klebriges Feld, Slow 50 % 8s | Common | Liquid-VFX |
-| 19 | **Drone-Bomb** | Bombe fährt zur Cursor-Position, dann Explosion | Epic | Pathfinding + Smooth-Look |
-| 20 | **Echo-Bomb** | Zündet 2× nacheinander mit 0.5s Versatz | Rare | Timing-Precision |
-| 21 | **Time-Bomb (Localized)** | Verlangsamt Spielzeit lokal um Bombe 3s | Legendary | Time-Scale-Manipulation auf Region |
-| 22 | **Holo-Decoy-Bomb** | Spawnt 3 Fake-Bomben + 1 echte (Mind-Games) | Legendary | Decoy-Sprites + AI-Misleading |
-
-### 6.2 Karten-Drop & Crafting
-
-**Drop-Quellen:**
-- Story-Modus L-Komplettion (Common: 60 %, Rare: 25 %, Epic: 12 %, Legendary: 3 %)
-- PvP-Win (Random-Karten-Drop 10 % Chance)
-- Co-op-Dungeon-Truhen (Erhöhte Rarity-Chance)
-- Battle-Pass-Tiers (3 garantierte Cards pro BP)
-- Premium-Karten-Shop (Saison-exklusive Cards für Gems)
-
-**Karten-Level (5 Stufen):**
-- Lv 1 (Drop) → Lv 5 (Mastered) durch Upgrade-Mats
-- Mat-Quelle: Duplikat-Karten + Coin-Sink
-- Lv 5 schaltet **3. Affix-Slot** frei
-
-### 6.3 Karten-Level-Bonus
-
-| Karten-Lv | Bonus | Affix-Slots |
-|-----------|-------|-------------|
-| 1 | Basis-Effekt | 1 Slot |
-| 2 | +10 % Effekt-Stärke (Damage/Slow/Range) | 1 Slot |
-| 3 | +20 % | 2 Slots |
-| 4 | +30 % | 2 Slots |
-| 5 (Max) | +40 % + Visual-Premium-Variante | 3 Slots |
+**[3D]** AI-Spawn-Jitter, AStarBudgetPerFrame=5, Danger-Zone-Map (1×/Frame), Kettenreaktions-Erkennung
+(iterativ, max 5) — alles aus dem Original übernommen.
 
 ---
 
-## 7. Affix-System
+## 7. Bosse (5 + 8 Modifier)
 
-> Affixe sind **kleine Modifier-Trinkets** auf Karten. Pro Karten-Slot bis zu 3 Affixe (je nach Level).
-> Pool von ~50 Affixen, gemixt aus mathematischen Bonuses und Mechaniken.
+> `BossEnemy.cs` — 5 Boss-Typen, jedes 10. Level, Multi-Cell-BoundingBox, HP 3-8, Enrage bei 50 % HP.
+> **[3D]** Große 3D-Boss-Modelle mit Telegraph-Animationen, dynamischer Beleuchtung, Anticipation-Scale.
 
-### 7.1 Affix-Kategorien
+### 7.1 Boss-Roster
 
-| Kategorie | Beispiele | Pool-Größe |
-|-----------|-----------|------------|
-| **Damage** | +10 % Damage, Kritisch-Chance +5 %, ×2 Damage gegen Bosse | 12 |
-| **Cooldown** | −1s Cooldown, Detonator-Pulse +1 Charge | 6 |
-| **Range** | +1 Bomb-Range, Affix-Karten-Range +1 | 5 |
-| **Utility** | Knockback +2 Tiles, Stun 1s, Push-Resist | 8 |
-| **Synergy** | "Wenn auch Frost-Bomb im Deck: +20 % Slow-Dauer" | 6 |
-| **Risky** | "+30 % Damage, aber −1 Life", "Crit ×3, aber 10 % Chance Bombe explodiert sofort" | 5 |
-| **Cosmetic** | Bomb-VFX-Color, Trail-Effect, Sound-Variant (kein Stat-Bonus) | 8 |
+| Boss | Welt-Slot (Rotation alle 2 Welten) | Banner-Name |
+|------|-----------------------------------|-------------|
+| **StoneGolem** | W1/… | `STONE GOLEM` |
+| **IceDragon** | W2/… | `ICE DRAGON` |
+| **FireDemon** | W3/… | `FIRE DEMON` |
+| **ShadowMaster** | W4/… (+ Welt-9-Duo) | `SHADOW MASTER` |
+| **FinalBoss** | W5/… (+ W9/W10-Duo) | `FINAL BOSS` |
 
-### 7.2 Affix-Drop & Crafting
+- **Duo-Boss-Encounter:** Welt 9 (L90) = FinalBoss **+** ShadowMaster; Welt 10 (L100) = 2× FinalBoss.
+  Banner mit `&` verbunden bzw. Plural.
 
-**Drop-Quellen:**
-- Story-Modus-Boss-Loot (1 Affix pro Boss)
-- PvP-Win-Streak (5+ Wins = 1 Affix garantiert)
-- Co-op-Dungeon-Floor-10-Truhe (1 Epic-Affix)
-- Affix-Crafting: 5 unbenutzte Affixe + 1000 Coins → 1 Random-Affix (höhere Rarity-Chance)
+### 7.2 Boss-Mechanik
 
-**Affix-Tier (Common/Rare/Epic/Legendary):**
-- Common-Affix: +5 % Damage
-- Rare-Affix: +10 % Damage
-- Epic-Affix: +15 % Damage
-- Legendary-Affix: +20 % Damage + Synergy-Trigger
+- **Angriffs-Zyklus:** Telegraph (2 s) → Attack (1.5 s) → Cooldown (12-18 s, kürzer bei Enrage).
+- **5 Angriffe:** BlockRegen, Eisatem (Reihe), Lava-Welle, Teleport, rotierend (FinalBoss).
+- **Kollision:** `OccupiesCell()` (Multi-Cell). Shield absorbiert Angriffe. Kein A* — direkter Richtungs-Check.
+- **Enrage** bei 50 % HP: halbiert Decision-Timer, Phase-2-Patterns (`CurrentPhase` 1→2).
+- **Anticipation:** Letzte 120 ms vor Big-Attack zieht sich Boss-Sprite auf 0.85× (`AnticipationScale`).
 
-### 7.3 Affix-Build-Beispiel (NOVA-DPS-Build)
+### 7.3 Boss-Modifier (8, `BossModifier.cs`)
 
-Karte 1: Standard-Bomb-Lv5
-- Affix 1: +20 % Damage (Legendary)
-- Affix 2: +1 Range (Epic)
-- Affix 3: 10 % Crit-Chance (Rare)
-
-Karte 2: Lava-Bomb-Lv4
-- Affix 1: Burn-Duration +2s (Rare)
-- Affix 2: Synergy "Wenn Standard-Bomb im Deck: ×2 Burn-Damage" (Epic)
-
-Karte 3: Mega-Inferno-Bomb (Hero-Ultimate-Skill-Modifier, NUR für NOVA)
-- Affix 1: Cooldown −15s (Legendary)
-- Affix 2: Reichweite +1 (Epic)
-
-→ Spieler kann mit diesem Build sehr hohen DPS fahren, ist aber fragil (siehe Talent-Baum-Pfade).
+`Shielded`, `Fast`, `Healing`, `Summoner`, `Frenzy`, `Berserk`, `Reflective`, `Burning`.
+- **RollForWorld(world, rng):** deterministisch, 30 % Chance ab Welt 5, 60 % ab Welt 10. (8 Modifier × 5 Bosse = 40 Variationen.)
+- Beispiele: Healing = 2.5 HP/s mit 50 %-HP-Cap; Shielded = absorbiert 1 Hit alle 15 s.
+- **[Integration]** Modifier-Effekte sind im Original teils Foundation (Enum + Spawn-Roll) — im Remake
+  voll implementiert.
 
 ---
 
-## 8. PowerUps + Pickups
+## 8. Bomben & Karten (14 Typen / 13 Karten)
 
-### 8.1 Bestehende 12 PowerUps (alt portiert)
+> **14 Bomben-Typen** (BombType-Enum inkl. `Normal`). Davon **13 Karten-Definitionen** im
+> `CardCatalog` (Standard-Bombe ist keine Sammel-Karte). 3 davon werden im Shop freigeschaltet, 10 sind
+> Sammel-/Drop-Karten. **[3D]** 3D-Bomben-Modelle + VFX-Graph-Explosionen pro Typ.
 
-| PowerUp | Effekt | Spawn-Wert |
+### 8.1 Karten-Liste (Rarities exakt aus `CardCatalog.cs`)
+
+| Karte | Effekt | Rarity | Quelle |
+|-------|--------|--------|--------|
+| **Standard** | 3×3-Cross-Explosion | — (Default, keine Karte) | immer |
+| **Ice** | Frost 3 s, 50 % Slow | Common | Shop |
+| **Fire** | Lava-Feld 3 s, kontinuierlicher Schaden | Common | Shop |
+| **Sticky** | Klebt 1.5 s + Kettenreaktion | **Common** | Shop |
+| **Smoke** | 3×3-Nebel, AI 4 s zufällig | **Rare** | Karte |
+| **Lightning** | Trifft bis 3 Gegner per Chain | Rare | Karte |
+| **Gravity** | Zieht Gegner zur Bombe | Rare | Karte |
+| **Poison** | Gift-Wolke, DoT | **Rare** | Karte |
+| **TimeWarp** | 50 % Slow für 5 s | **Epic** | Karte |
+| **Mirror** | Doppelte Reichweite (beide Achsen) | Epic | Karte |
+| **Vortex** | Spiral-Explosion | Epic | Karte |
+| **Phantom** | Durchdringt 1 Wand, dann Explosion | **Epic** | Karte |
+| **Nova** | 360°-Explosion (alle Zellen) + PowerUp-Drop | **Legendary** | Karte |
+| **BlackHole** | Sog, dann massive Explosion | Legendary | Karte |
+
+> Hinweis: Diese Rarities/Effekte sind die echten Werte aus dem Code (die frühere Plan-Version v0.2 hatte
+> sie falsch — z.B. Smoke ist Rare/3×3-Nebel, nicht Common/5×5-Sichtblocker; Nova ist Legendary/360°, nicht Epic/8-Wege).
+
+### 8.2 Deck, Drops, Crafting
+
+- **Deck:** 4 Basis-Slots + 1 freischaltbar (20 Gems). `ActiveCardSlot` per HUD-Tap wechselbar.
+- **Drop-Gewichtung:** 60 % Common, 25 % Rare, 12 % Epic, 3 % Legendary.
+- **Card-Crafting (Coin-Sink):** 5 Common + 2.000 C → 1 Rare; 5 Rare + 8.000 C → 1 Epic; 5 Epic + 25.000 C → 1 Legendary.
+- **Verlangsamungs-Stacking** multiplikativ: Frost 0.5× · TimeWarp 0.5× · BlackHole 0.3×.
+- `OwnedCard` (CardId + Level + Count), `ICardService` verwaltet Deck/Upgrade/Crafting.
+
+---
+
+## 9. PowerUps (12 + Cure)
+
+> `PowerUpType.cs` — 12 PowerUp-Typen + Cure (Curse-Heilung). Level-basierte Freischaltung via
+> `GetUnlockLevel()` (Story filtert gesperrte heraus). **[3D]** 3D-Pickup-Modelle mit Glow + Discovery-Overlay.
+
+| PowerUp | Effekt | Persistenz | Unlock-Level |
+|---------|--------|-----------|--------------|
+| **BombUp** | +1 gleichzeitige Bombe (max 10) | permanent | 1 |
+| **Fire** | +1 Explosions-Reichweite (max 10) | permanent | 1 |
+| **Speed** | +1 SpeedLevel | bis Tod | 1 |
+| **Kick** | Bombe gleitet in Blickrichtung (Slide 160 px), stoppt am Hindernis | bis Tod | 10 |
+| **Wallpass** | Durch zerstörbare Blöcke laufen | bis Tod | 15 |
+| **Mystery** | **35 s Unverwundbarkeit** | temporär | 15 |
+| **Cure** | Heilt Curse-Status sofort (grünes Kreuz) | sofort | 15 |
+| **Skull** | Curse: 4 Typen (Diarrhea/Slow/Constipation/ReverseControls), 10 s | temporär (Strafe) | 20 |
+| **Detonator** | Manuelle Bomben-Zündung | bis Tod | 25 |
+| **Bombpass** | Durch eigene Bomben laufen | bis Tod | 25 |
+| **Flamepass** | Immun gegen Explosionen (nicht gegen Gegner) | bis Tod | 35 |
+| **LineBomb** | Alle Bomben in Blickrichtung in einer Linie | bis Tod | (ab L30) |
+| **PowerBomb** | Range = FireRange + MaxBombs − 1, verbraucht alle Slots | bis Tod | (ab L40) |
+
+> Hinweis: Mystery = 35 s Unverwundbarkeit (nicht "Random-Power"); Cure ist ein eigenständiger 13. Eintrag
+> (Skull und Cure sind getrennt). Unlock-Level exakt aus dem Code.
+
+---
+
+## 10. Combo-System
+
+> `ComboSystem.cs` — Kills innerhalb 2-s-Fenster steigern den Combo-Zähler. **[3D]** Combo-Floating-Text
+> mit Größen-Pop + Slow-Mo + Vignette-Flash.
+
+| Combo | Score-Bonus | Besonderheit |
+|-------|------------|--------------|
+| ×2 | +200 | — |
+| ×3 | +500 | — |
+| ×4 | +1.000 | — |
+| ×5 | +2.000 | **MEGA**, Slow-Mo 0.8 s |
+| ×6 | +4.000 | Window +0.5 s |
+| ×7 | +8.000 | — |
+| ×8 | +15.000 | — |
+| ×9 | +20.000 | — |
+| ×10+ | +30.000 | **ULTRA**, Slow-Mo 1.2 s, Vignette-Flash |
+
+- **Window** 2 s, +0.5 s ab ×6. **Slow-Motion-Multiplikator** 1.5× bei ULTRA. **Chain-Kill** 1.5× bei 3+ Kills.
+- Crit-Indicator-Größen: ×2-3 = 18f / ×4-6 = 22f / ×7-9 = 26f / ×10+ = 32f (Hades-Pattern).
+
+---
+
+## 11. Spielmodi (8)
+
+> 8 Modi (`IGameMode`-Implementierungen in `Core/Modes/`). Alle übernommen.
+
+| Modus | Beschreibung | Belohnung |
+|-------|--------------|-----------|
+| **Story** | 100 Level in 10 Welten, Sterne-Rating | Coins, Sterne, Karten, PowerUp-Discovery |
+| **Master-Mode (Reborn)** | Nach L100: Gegner ×1.5 Speed, Typ-Upgrade (Ballom→Minvo, Onil→Pass, Doll→Pontan), separater Persistenz-Pfad (`IMasterModeService`) | Master-Sterne (Normal-Sterne unberührt) |
+| **Daily-Challenge** | Tägliches deterministisches Level (Tages-Seed `yyyy×10000+MM×100+dd`), Streak-Tracking | Coins + Daily-Token |
+| **Quick-Play** | Zufalls-Level | Coins (kein Sterne-Update) |
+| **Survival** | Endlos bis Tod (`SurvivalSpawner`) | Coins + Highscore |
+| **Dungeon** | Roguelike (siehe §12) | DungeonCoins, Buffs, Karten |
+| **Boss-Rush** | 5-Boss-Sequenz (`IBossRushService`), ISO-Year-Week-Reset | Boss-Coins + Karten |
+| **Daily-Race** | 1 deterministisches Tages-Level weltweit, schnellster Run gewinnt (separate Liga) | Race-Coins + Daily-Race-Liga |
+
+Zusätzlich: **Weekly-Challenge** (5 Missionen/Woche aus 14er-Pool, Montag-Reset) und **Daily-Missions**
+(3/Tag aus 14er-Pool, Mitternacht-UTC) als Aufgaben-Layer über den Modi.
+
+> **[Integration]** Im Original laufen die Mode-Klassen parallel zu Bool-Flags; die `UpdateLogic`-Hooks
+> sind teils noch nicht aus der GameEngine migriert. Im Remake werden die Modi sauber als
+> Mode-Plugins (`IGameMode`) implementiert (kein Bool-Flag-Routing).
+
+---
+
+## 12. Roguelike-Dungeon
+
+> `IDungeonService` + `DungeonSynergyResolver` + `Models/Dungeon/`. **[3D]** Node-Map als 3D-Karte,
+> Buff-Pick-Phase mit Karten-Reveal.
+
+### 12.1 Run-Struktur
+
+- **Floor 1-4** normal, **Floor 5** Mini-Boss, **Floor 6-9** härter, **Floor 10** End-Boss + Truhe,
+  **ab Floor 11** +50 % Skalierung.
+- **Node-Map:** 10×3 (Slay-the-Spire-inspiriert), Pfad-Auswahl zwischen Nodes.
+- **5 Raum-Typen (Gewichtung):** Normal (W40), Elite (W20), Treasure (W15), Challenge (W15), Rest (W10).
+  Challenge-Modi: SpeedRun (60 s) / NoPowerUps / DoubleEnemies.
+- **8 Floor-Modifikatoren** ab Floor 3, 30 % Chance.
+- **Buff-Pick** auf festen Floors `[2, 4, 5, 7, 9, 12, 14]`.
+- **Eintritt:** 1×/Tag gratis, sonst 500 Coins / 3 Gems / Rewarded-Ad (1×/Tag). Datum-Tracking in
+  `DungeonStats` (nicht im RunState) — Anti-Restart-Exploit.
+- **Dungeon-Trennung:** Shop-Upgrades gelten **nicht** im Dungeon (nur Base-Stats + Dungeon-Buffs).
+- **Run-Reset** bei Tod/Aufgabe: Buffs verfallen, Coins/Karten/Loot bleiben.
+
+### 12.2 16 Buffs (`DungeonBuff.cs`)
+
+- **5 Common:** ExtraBomb, ExtraFire, SpeedBoost, CoinBonus, BombTimer.
+- **5 Rare:** u.a. BlastRadius, Crit-Chance, Bomb-Crit, Affix-/Shield-on-Hit, Reflect.
+- **2 Epic:** u.a. ExtraLife, Combo-Multiplier / Heal-on-Crit.
+- **4 Legendary:** Berserker, TimeFreeze, GoldRush, Phantom.
+
+> Hinweis: Common-Pool ist ExtraBomb/ExtraFire/SpeedBoost/CoinBonus/BombTimer (ExtraLife ist Epic,
+> BlastRadius ist Rare) — exakt aus `DungeonBuff.cs`.
+
+### 12.3 5 Synergien (`DungeonSynergyResolver` — je 2-Buff-Paare)
+
+| Synergie | Buff-Paar | Effekt |
+|----------|-----------|--------|
+| **Bombardier** | ExtraBomb + ExtraFire | Bomb-Bonus |
+| **Blitzkrieg** | SpeedBoost + BombTimer | Mobilität/Tick-Bonus |
+| **Festung** | Shield + ExtraLife | Defensiv-Bonus |
+| **Midas** | CoinBonus + GoldRush | Coin-Bonus |
+| **Elementar** | EnemySlow + FireImmunity | Element-Bonus |
+
+> Hinweis: Alle 5 Synergien sind 2-Buff-Paare (nicht "3+ Buffs" / "5+ Karten" wie in v0.2 falsch beschrieben).
+
+### 12.4 Dungeon-Meta-Progression
+
+**8 permanente Dungeon-Upgrades** (`DungeonUpgrade.cs`, Währung **DungeonCoins** aus Floor-Wins). Diese
+sind dauerhaft (überleben Run-Reset) und vom normalen Shop getrennt.
+
+---
+
+## 13. Liga & Ranking
+
+> `ILeagueService` (Firebase RTDB). **Async-Score-Leaderboard** — kein Echtzeit-PvP, kein ELO/Glicko/MMR.
+> (Ein etwaiges Skill-Rating für optionalen Online-Versus wäre **[NEU]** und kein Original-Port.)
+
+### 13.1 Liga-Struktur
+
+| Tier | Sub-Tiers | Punktschwelle (Tier-Einstieg) |
+|------|-----------|-------------------------------|
+| **Bronze** | I / II / III | 0 |
+| **Silver** | I / II / III | 400 |
+| **Gold** | I / II / III | 900 |
+| **Platinum** | I / II / III | 1.600 |
+| **Diamond** | (single, Endgame) | 2.500 |
+
+- **Sub-Tiers** via Drittelung der Tier-Spanne (`GetSubTier(points)`); Diamond ohne Sub-Tier.
+- **Promotion/Relegation perzentil-basiert am Saisonende:** Top 30 % steigen auf, Bottom 20 % ab
+  (`LeagueService`). **Kein** "5 Wins → Sub-Tier"-Mechanismus.
+- **14-Tage-Saisons.** Saison-Reset über `seasonReset`-Pfad.
+- **NPC-Backfill** bei < 20 echten Spielern (Seeded Random).
+- **Profanity-Filter** (Unicode-NFKD + Strip + Lowercase, deckt Leetspeak/Zero-Width).
+- **Firebase:** Anonymous Auth, `league/s{saison}/{tier}/{uid}`, Write-Rate-Limit 60 s via
+  Server-Timestamp, Report-Button (`reports/{reportedUid}/{reporterUid}`, 24 h Rate-Limit).
+
+### 13.2 Daily-Race (separate Liga)
+
+- 1 deterministisches Tages-Level weltweit (Seed `yyyy×10000+MM×100+dd`).
+- Schema `league/s{saison}/daily_race/{date}/{tier}/{uid}`.
+- Schnellster Komplett-Run gewinnt, Tier-Belohnungen.
+
+---
+
+## 14. Battle Pass & Saisons
+
+> `IBattlePassService` — **30 Tiers**, **30-Tage-Saison**, XP-basiert, Free/Premium-Track.
+
+### 14.1 Struktur
+
+- **30 Tiers** (`BattlePassTier.cs`, MaxTier = 30). Free-Track umfasst alle 30 Tiers; Premium-Track
+  zusätzliche/höherwertige Rewards.
+- **Saison-Dauer 30 Tage.** XP aus Gameplay/Quests/Achievements. `XpBoostStartTicks`-Hybridtimer (24 h Boost).
+- **10 Themes** (`BattlePassTheme.cs`), deterministisch aus Saison-Nummer: Classic, Cyberpunk, Halloween,
+  Winter, Summer, Mech, Underwater, Sengoku, DiaDeLosMuertos, Steampunk. Saison 1 = Classic, dann Rotation.
+- `BattlePassThemeExtensions` liefert Akzent-/Sekundärfarben, Icon-Hints, RESX-Keys.
+
+> Hinweis: Liga-Saison (14 Tage) und Battle-Pass/Content-Saison (30 Tage) sind **zwei verschiedene Zyklen** —
+> nicht koppeln (siehe ARCHITECTURE: getrennte Scheduled-Functions).
+
+### 14.2 Premium-Monetization
+
+Battle-Pass-Premium + Battle-Pass-Plus als IAP (siehe §16). **Keine** Zufalls-Belohnungen — klare Rewards pro Tier.
+
+---
+
+## 15. Achievements (72)
+
+> `AchievementService.cs` — **72 Achievements** in **5 Kategorien** (`Achievement.cs`), JSON-Persistenz.
+> Belohnungen: Coins/Gems/Cosmetics/Hero-Unlocks.
+
+| Kategorie | ca. Anzahl | Beispiele |
+|-----------|-----------|-----------|
+| **Progress** | ~24 | Welt-Abschlüsse, Level-Meilensteine, Master-Mode |
+| **Skill** | ~16 | 3-Sterne-Runs, 0-Death, Combo-Stufen |
+| **Mastery** | ~14 | Lv-Max, Karten/PowerUp-Meisterung |
+| **Combat** | ~14 | Kill-Zähler, Boss-Siege, Ultra-Combo |
+| **Challenge** | ~4 | Spezial-Bedingungen, Daily/Weekly-Streaks |
+
+- Verteilung gegen `AchievementService.cs:585-728` verifiziert (Summe = 72).
+- **Hero-Unlock-Kopplung:** mehrere Helden werden über Achievement-IDs freigeschaltet
+  (`ach_speed_demon`, `ach_block_destroyer`, `ach_jackpot`) — die Achievement-IDs müssen 1:1 erhalten bleiben.
+
+> Hinweis: Es sind **72**, nicht 66; die Kategorien sind Progress/Mastery/Combat/Skill/Challenge,
+> **nicht** Story/Collection/Multiplayer/Cooperative.
+
+---
+
+## 16. Wirtschaft & Monetization
+
+### 16.1 Währungen
+
+| Währung | Quelle | Verwendung |
 |---------|--------|-----------|
-| **BombUp** | +1 MaxBombs | Lv 1+ |
-| **Fire** | +1 FireRange | Lv 1+ |
-| **Speed** | +1 SpeedLevel | Lv 1+ |
-| **Wallpass** | Durch Bricks laufen | Lv 5+ |
-| **Detonator** | Manuelle Bombe-Zündung | Lv 5+ |
-| **Bombpass** | Durch Bomben laufen | Lv 10+ |
-| **Flamepass** | Immun gegen Explosionen | Lv 15+ |
-| **Mystery** | Random-Power | Lv 1+ |
-| **Kick** | Bomben sliden bei Stoß | Lv 20+ |
-| **LineBomb** | Multiple Bomben in Reihe | Lv 30+ |
-| **PowerBomb** | Mega-Range, verbraucht alle Slots | Lv 40+ |
-| **Skull/Cure** | Bestraft / Heilt Status-Effekte | Lv 25+ |
+| **Coins** | Level-Score / 3 (Welt 1: / 2), Win-Bonus | Shop-Upgrades, Card-Crafting, Skins |
+| **Gems** | 3 bei erstmaligem 3-Sterne-Abschluss; IAP; Quests/BP | Deck-Slot, Hero-Direct-Buy, Premium-Karten, Dungeon-Eintritt |
+| **DungeonCoins** | Dungeon-Floor-Wins | 8 permanente Dungeon-Upgrades |
 
-### 8.2 NEU für Unity-Version (4 zusätzliche PowerUps)
+> Premium-Multiplikator: 2× Coins bei LevelComplete, 3× bei GameOver-Trostcoins. Coin/Gem-**Overflow-Guard**
+> (`(long)Balance + amount` Clamp auf int.MaxValue; Load clampt < 0 + Corruption-Flag).
 
-| PowerUp | Effekt | Unlock-Level |
-|---------|--------|--------------|
-| **Drone-Companion** | Spawnt 30s lang AI-Drone, die für Spieler kämpft | Lv 35+ |
-| **Holo-Decoy** | Spawnt holographischen Doppelgänger als Distraktion | Lv 45+ |
-| **EMP-Burst** | 3×3 Stun-Bombe (ohne Damage), 2s | Lv 50+ |
-| **Repair-Kit** | Heilt 1 HP (nur Co-op + Story) | Lv 25+ |
+### 16.2 Shop (permanente Upgrades)
 
----
+**9 permanente Shop-Upgrades** (`UpgradeType.cs`, Preise 700-17.000 Coins):
+StartBombs (max 3), StartFire (max 3), StartSpeed (max 1; Preiskurve [1.200/2.500/7.000]),
+ExtraLives (max 2), ScoreMultiplier (max 3), TimeBonus (max 1), ShieldStart (max 1),
+CoinBonus (max 2; L2 +60 %), PowerUpLuck (max 2). Zusätzlich Freischaltung der 3 Shop-Spezial-Bomben
+(Ice/Fire/Sticky).
 
-## 9. Enemies + Bosse
+> **Wichtig:** Dieses permanente Stat-Upgrade-System ist der zentrale Coin-Sink und bleibt **erhalten**
+> (die frühere Plan-Version v0.2 hatte es durch Hero-Talent-Bäume ersetzt — das wird verworfen).
 
-### 9.1 12 Enemy-Typen (aus alt portiert + überarbeitet)
+### 16.3 IAP-Palette (aus `BomberBlastIapSkus.cs`)
 
-| Enemy | Beschreibung | Pathfinding | HP | Spawn-Welt |
-|-------|--------------|-------------|-----|-----------|
-| **Slime-Bot** | Langsam, Random-Move | Random | 1 | 1+ |
-| **Tracker-Drone** | Verfolgt Spieler | BFS | 1 | 2+ |
-| **Smart-Mech** | A* + Bomb-Avoidance | A* | 2 | 4+ |
-| **Tank-Bot** | Langsam, viel HP | A* | 3 | 5+ |
-| **Phantom-Stalker** | Phasenweise unsichtbar | A* + Stealth | 2 | 6+ |
-| **Ghost-Drone** | Durch Wände laufen | Free | 1 | 7+ |
-| **Splitter** | Beim Tod → 2 Mini-Splitter | Random | 2 | 7+ |
-| **Mimic-Box** | Tarnt sich als PowerUp | Stationär → Attacke | 2 | 8+ |
-| **Berserker** | Bei <50 % HP +Speed+Damage | A* | 2 | 8+ |
-| **Sniper-Bot** | Stationär, schießt EMP | Stationär | 1 | 9+ |
-| **Swarm-Worm** | Bewegt sich in Linie, dann Burrow | Linear | 1 | 9+ |
-| **Elite-Variant** | Premium-Version eines Standard-Enemies, 2× Stats | (variiert) | ×2 | 5+ |
+| Produkt | Inhalt |
+|---------|--------|
+| **Remove-Ads** | Banner/Interstitial weg (Rewarded bleibt opt-in) — **1,99 EUR** (Original-Preis) |
+| **Gem-Pakete** | 4 Größenstufen |
+| **Battle-Pass-Premium / -Plus** | Saison-Premium-Track / Plus |
+| **VIP-Subscription** | Abo-Vorteile (`VipSubscriptionService`) |
+| **Starter-Pack** | Einmal-Angebot im ersten Start-Fenster (`StarterPackService`) |
+| **First-Purchase-×2** | Verdoppelt den ersten IAP-Kauf (`FirstPurchaseService`, Anti-Reinstall) |
 
-### 9.2 Boss-Liste (10 Welt-Bosse + 4 Council-Member)
+> Konkrete Preise/Inhalte 1:1 aus `BomberBlastIapSkus.cs` übernehmen. Re-Pricing nur als bewusste,
+> dokumentierte Entscheidung — Default = Original-Werte.
 
-#### Welt-Bosse (5 von 10 hier ausführlich, Rest folgt in Detail-Sprint)
+### 16.4 Werbe-Modell (wie Original)
 
-**Welt 1 — Bulldozer-Bot:**
-- HP: 4
-- Attacken: Charge-Attack (Telegraph 1.5s, 3-Tile-Line), Spawn-Mini-Drones (Phase 2 ab 2 HP)
-- Schwäche: Frost-Bomben verlangsamen ihn 80 %
-- Belohnung: Hero-Talent-Token "Brawler"
+- **5 Rewarded-Placements:** `continue` (Coins verdoppeln), `level_skip`, `power_up` (ab L20),
+  `score_double`, `revival`. Hybrid-Cooldown (TickCount64 + persistierte UTC, 60 s).
+- Banner/Interstitial entfallen bei Remove-Ads/VIP.
 
-**Welt 2 — Forge-Master:**
-- HP: 5
-- Attacken: Lava-Wave-3-Tile-Wide, Hammer-Slam (4×4-AoE), Block-Regen (Phase 2 baut zerstörte Blöcke wieder auf)
-- Schwäche: Smoke-Bomb verbirgt Telegraphs, gibt Spieler Vorteil
-- Belohnung: Epic-Affix "Forge-Crit" (+15 % Crit-Chance)
+### 16.5 Monetization-Ethik (unverändert)
 
-**Welt 4 — Iron-Bishop (Council 1):**
-- HP: 6 + 2 Phasen
-- Attacken: Teleport-Slash (2-Tile-Reichweite, instant), Mind-Control (verflucht Spieler, eigene Bombe als Schaden, 5s)
-- Phase 2 ab 3 HP: Spawnt Schach-Bauern-Drones
-- Schwäche: Phantom-Bomb umgeht Teleport
-- Belohnung: Legendary-Karte "Mirror-Bomb-Lv3"
-
-**Welt 7 — Mutant-Behemoth:**
-- HP: 7 + 3 Phasen
-- Attacken: Vine-Snare (zieht Spieler 2 Tiles), Toxic-Spit (3×3-Gift-AoE), Smash (4×4)
-- Schwäche: Lava-Bomb umgeht Heilung (Boss heilt sich durch Pflanzen)
-- Belohnung: Legacy-Skin "Mutant-Camouflage"
-
-**Welt 10 — Director Vex + Nexus:**
-- 3 Phasen
-- Phase 1 (Vex-Mech "Heliopause"): HP 8, 8 Bomb-Modules
-- Phase 2 (Vex umgewandelt): HP 6, schwebt, Anti-Grav
-- Phase 3 (Nexus enthüllt): Fraktal-Boss, HP 10, glitch-Mechaniken
-- Belohnung: True-Ending-Cutscene + "Sage's Mech-Skin" (legendary)
-
-### 9.3 Boss-Modifier (aus alt portiert)
-
-8 Boss-Modifier, würfeln zu Boss-Spawn:
-- **Shielded**: +25 % HP, Bombe muss Shield brechen
-- **Healing**: 1 HP/2s Regen
-- **Summoner**: Spawnt Mini-Enemies
-- **Berserker**: Bei <50 % HP +50 % Speed
-- **Phantom**: Phasenweise unsichtbar
-- **Mirror**: Reflektiert 1× pro Match Spieler-Damage
-- **Plagued**: Toxic-Aura 1 Tile
-- **Lightning-Charged**: Random-Lightning-Strikes alle 5s
+- **Keine Lootboxen** (UK/China-Compliance). Lucky-Spin behält transparente Drop-Rates + Pity-Counter.
+- **Keine Pay-to-Win-Stats** in kompetitiven Modi.
+- Saison-Content auch über Gameplay erreichbar.
 
 ---
 
-## 10. Spielmodi
+## 17. Cosmetics & Player-Identity
 
-### 10.1 Modi-Übersicht
+> 98 Cosmetic-Definitionen + Spieler-Skins. **[3D]** als 3D-Trail-VFX / 3D-Frame-Overlays / 3D-Victory-Animationen.
 
-| Modus | Spieler | Online? | Dauer | Belohnungen |
-|-------|---------|---------|-------|-------------|
-| **Story** | 1 | Async (Cloud-Save) | 5-10 min/Level | Coins, Sterne, Karten, Memory-Fragments |
-| **Co-op Story** | 2 | Photon Realtime | 5-10 min/Level | Shared Loot, gemeinsame Sterne |
-| **Master-Mode** | 1 | Async | 10-15 min/Level | Master-Sterne (separate Wertung) |
-| **Daily-Challenge** | 1 | Async (deterministisch) | 5 min | Coins + Daily-Token |
-| **Quick-Play** | 1 | Async (Random Level) | 3-5 min | Coins (kein Sterne-Update) |
-| **Boss-Rush** | 1 | Async | 15-20 min | Boss-Coins + Karten |
-| **Survival** | 1 | Async | unbegrenzt (bis Tod) | Coins + Highscore |
-| **Dungeon-Roguelike** | 1-4 | Photon Realtime (Co-op) | 30-60 min | Dungeon-Coins, Buffs, Karten |
-| **PvP 1v1 Duel** | 2 | Photon Fusion | 4-8 min | Liga-Punkte, Coins, BP-XP |
-| **PvP 2v2** | 4 | Photon Fusion | 6-10 min | Liga-Punkte, Coins, BP-XP |
-| **PvP FFA Brawl** | 4 | Photon Fusion | 5-8 min | Liga-Punkte, Coins, BP-XP |
-| **PvP CTF** (Phase 2) | 4 | Photon Fusion | 8-12 min | Liga-Punkte |
-| **Royale 8P** (Phase 3+) | 8 | Photon Fusion | 10-15 min | Royale-Liga |
-| **Tournament** (Phase 2) | variabel | Photon Fusion | mehrere Stunden | Trophies + Prize-Pools |
-| **Daily-Race** | 1 | Async (deterministisch) | 3 min | Race-Coins + Daily-Race-Liga |
-| **Wochen-Event** | 1 | Async | 5-10 min | Event-Cosmetics + BP-XP |
-| **Clan-War (Async)** | 4v4 | Async | 14 Tage | Clan-Coins + Skins |
-| **Boss-Raid (Co-op)** | 4 | Photon Realtime | 15-20 min | Raid-Drops (monatlich) |
+### 17.1 Cosmetic-Pools (exakt)
 
----
+| Typ | Anzahl | Quelle |
+|-----|--------|--------|
+| **Trails** | 32 (`TrailDefinitions.All`) | Bewegungs-Spuren |
+| **Frames** | 33 (`FrameDefinitions.All`) | Profilbild-Umrandung |
+| **Victories** | 33 (`VictoryDefinitions.All`) | Sieg-Animation |
+| **Spieler-Skins** | (CustomizationService) | Coin- + Gem-Skins, Hero-Body/Accent |
 
-## 11. PvP-Match-Formate (konkret)
+**Themen:** welt-thematisch (Pumpkin/Snowflake/CherryBlossom/Neon/Bone/Ocean/Samurai/Mech/Beach/Steampunk)
++ Karriere-Status (Champion/PrestigeAura/Diamond/Master/Ascension) + BattlePass-Saison-Exclusives.
 
-### 11.1 1v1 Duel
+> Hinweis: Das Original hat **keine** Emotes/Sprays/Match-Intros. Solche Typen wären **[NEU]** und nicht
+> Teil der 98 — bei Bedarf separat als Erweiterung planen, nicht in die Portier-Zahl mischen.
 
-**Map-Pool:** 8 spezielle PvP-Maps (Symmetric-Layout, kleiner als Story-Maps)
-**Match-Dauer:** Best-of-3 Rounds, jede Round max 3 Min
-**Sudden-Death:** Bei Timer-End → Map-Schrumpfen (Death-Zone 1 Tile/3s)
-**Spawn:** Gegenüberliegende Ecken (deterministisch)
-**Tick-Rate:** 30 Hz Server, 60 Hz Client-Prediction
-**Lockout:** 3s Match-Acceptance, 5s Map-Reveal, 3s Hero-Pick
-**Hero-Pick:** Beide Spieler picken parallel, Re-pick erlaubt für 10s
-**Ban-Phase:** Best-of-3 hat 1 Ban pro Spieler (Top-3-Tier-Helden banbar)
+### 17.2 Cosmetic-Quellen
 
-**Belohnungen:**
-- Win: +25 Liga-Punkte, +200 Coins, +200 BP-XP
-- Loss: +5 Punkte, +50 Coins, +50 BP-XP
-- 5-Win-Streak: +50 Bonus-Coins + 1 Affix (Rare-Chance)
-
-### 11.2 2v2 Team-Battle
-
-**Map-Pool:** 10 PvP-Maps (Mid-Size, Lane-fokussiert)
-**Match-Dauer:** Best-of-3 oder Single-Match-Choice (10 min Cap)
-**Win-Condition:** Last-Team-Standing oder Score-höher-bei-Timer-End
-**Tick-Rate:** 30 Hz / 60 Hz wie 1v1
-**Hero-Lock:** Beide Team-Member nicht gleichen Hero (Duo-Pflicht)
-
-### 11.3 FFA Brawl (Free-For-All, 4 Spieler)
-
-**Map-Pool:** 12 PvP-Maps (Large-Size für 4P)
-**Match-Dauer:** Single-Match, 6 min Cap
-**Win-Condition:** Last-Player-Standing OR Most-Kills bei Timer-End
-**Tick-Rate:** 30 Hz, höhere Snapshot-Größe wegen mehr Player-State
-**Spawn:** 4 deterministische Eckpositionen
-
-**Belohnungen:**
-- 1st Place: +25 Punkte, +300 Coins
-- 2nd Place: +10 Punkte, +150 Coins
-- 3rd-4th: +5 Punkte, +75 Coins
-
-### 11.4 CTF (Phase 2)
-
-- 2v2-Variante, statt Last-Standing → 3 Flag-Capture-First-Wins
-- Spawn-Bases an gegenüberliegenden Ecken, Flag in Zentrum
-- Match-Dauer: 8-12 Min
-
-### 11.5 Royale 8P (Phase 3+)
-
-- 8 Spieler auf 21×14-Grid (Vergrößert)
-- Shrinking Death-Zone (Battle-Royale-Stil)
-- Match-Dauer: 10-15 Min
-- Anti-Cheat: Schwerste Implementation (8P, viele State-Updates)
-
-### 11.6 Matchmaking & Skill-Pool
-
-**Skill-System:** Modifizierte Glicko-2 (besser als ELO für volatile Spieler):
-- Initial-Rating: 1500
-- RD (Rating Deviation): 350 → schrumpft mit jedem Match
-- Volatility: variabel, fast Lerning
-
-**Pool-Brackets:**
-- Bronze: 0-1199
-- Silver: 1200-1499
-- Gold: 1500-1799
-- Platinum: 1800-2099
-- Diamond: 2100+ (Top 5 % bekommen "Champion"-Banner)
-
-**Match-Suche:**
-- Initial-Range: ±50 MMR
-- Nach 30s: ±100 MMR
-- Nach 60s: ±200 MMR + Bot-Filler
-- 90s-Timeout: Auto-Bot-Match
-
-**Bot-Quality skaliert mit Spieler-MMR:**
-- Bronze-Bot: 60 % Win-Rate vs Bronze
-- Diamond-Bot: 45 % Win-Rate vs Diamond (Beta-Phase könnte intensiver werden)
+Battle Pass (Free + Premium), Liga-Tier-Rewards, Achievement-Rewards, saisonale Event-Drops,
+Cosmetic-Shop (Gems), Lucky-Spin.
 
 ---
 
-## 12. Co-op-Modi (konkret)
+## 18. Daily / Weekly / Live-Events
 
-### 12.1 Co-op Story (2 Spieler)
+### 18.1 Wiederkehrende Aufgaben
 
-**Wie es funktioniert:**
-- Player 1 erstellt Co-op-Lobby, lädt Friend ein (Friend-Code oder Username)
-- Beide wählen Hero (gleicher Hero erlaubt, da PvE)
-- Photon-Realtime-Room, Host = Player 1
-- Match-Logik: Identisch zu Solo-Story, aber 2 Spieler im Spielfeld
-- Bei Spieler-Tod: Re-Spawn nach 10s an Random-Safe-Tile (max 3× pro Level)
-- Bei Both-Tot: Level-Fail
-- Belohnungen: Geteilt (Coins + Karten + Stars), individuell BP-XP
+- **Daily-Reward:** 7-Tage-Login-Bonus + Comeback-Bonus (> 3 Tage inaktiv) (`IDailyRewardService`).
+- **Daily-Missions:** 3/Tag aus 14er-Pool, Mitternacht-UTC-Reset (`IDailyMissionService`).
+- **Weekly-Missions:** 5/Woche aus 14er-Pool, Montag-Reset (`IWeeklyChallengeService`).
 
-**Schwierigkeit-Skalierung:**
-- 2P: Enemy-HP +50 %, +25 % Score-Multi
+### 18.2 Events
 
-### 12.2 Co-op Dungeon (2-4 Spieler)
+- **Wochen-Events (8, deterministisch via ISO-Wochen-Seed `(year×7+week) % 8`):** DoubleXp, DoubleCoins,
+  CardRain, BossWeek, DungeonRush, LeagueRumble, MissionMadness, LuckyWeek (`IEventCalendarService`,
+  12-Wochen-Vorschau + Server-Override).
+- **Saisonale Events:** Halloween, Christmas, NewYear, Summer (`IEventService`) mit Partikel-Overlays.
+- **Wochen-Content** (`IWeeklyContentService`): 8 WeeklyModifier-Pool + 4 WeeklyReward-Pool + 3 wechselnde
+  Boss-Modifier/Woche (Fisher-Yates), ISO-Wochen-deterministisch.
 
-**Wie es funktioniert:**
-- 2-4-Spieler-Lobby, Spieler 1 hostet
-- Dungeon-Map (10 Floors) wie alt, aber jedes Floor 2-4P-Scaled
-- Loot geteilt (Random pro Spieler verteilt)
-- Buff-Pick-Phase nach jedem Floor: Jeder Spieler picked 1 von 3 Buffs (Vor-Synergie-Visualisierung)
+### 18.3 Lucky-Spin
 
-**Schwierigkeit-Skalierung:**
-- 2P: Enemy-HP +50 %, Floor-Mod-Difficulty +1
-- 3P: HP +100 %, Mod +2, extra Spawn-Wave
-- 4P: HP +150 %, Mod +3, 2 extra Spawn-Waves, Boss-Phase-3-zwingend
+- **9 gewichtete Segmente**, 1×/Tag gratis, **Pity-Counter** (garantierter Hit nach Pity-Schwelle),
+  `GetDropRates()`-API für Compliance-Disclosure (`ILuckySpinService`).
 
-### 12.3 Co-op Boss-Raid (Monatlich)
+### 18.4 Rotating-Deals
 
-- 4 Spieler vs. 1 Mega-Boss
-- Boss-HP: 50+, sehr lange Match-Dauer (15-20 Min)
-- Mehrere Phasen (5-7), eskalierende Mechaniken
-- Raid-Loot: 1 garantierte Legendary-Karte + Frame + Trail-Cosmetic
-- Reset: 1× pro Monat freie Teilnahme, weitere Versuche kosten Energy oder Rewarded-Ad
-
-### 12.4 Local Couch-Coop (PC + Mobile Tablet)
-
-- 2-4 Gamepads (PC: USB/Bluetooth, Mobile Tablet: 2 Bluetooth-Gamepads)
-- Splitscreen oder Shared-Screen
-- Identische Modi wie Online-Co-op
-- Keine Online-Liga-Punkte (anti-Cheese)
+- 3 tägliche + 1 wöchentliches Angebot, 20-50 % Rabatt (`IRotatingDealsService`).
 
 ---
 
-## 13. Dungeon-Roguelike (16 Buffs, 5 Synergien)
+## 19. Onboarding & Tutorial
 
-### 13.1 Run-Struktur
+### 19.1 Tutorial-Phasen (3)
 
-**Floor-Map (Node-Map à la Slay-the-Spire):**
-- 10×3 Knoten-Map (10 Floors × 3 Parallel-Nodes)
-- Spieler picked Pfad zwischen Nodes
-- Boss-Floors: 5 (Mini-Boss), 10 (End-Boss), 15+ Endless
+- **T1 Movement** — Joystick + Bombe legen + Block zerstören.
+- **T2 Bombs** — mehrere Bomben, erster Gegner-Kill.
+- **T3 PowerUps** — BombUp/Fire/Speed, Combo-Einführung.
 
-**Raum-Typen (Gewichtung):**
-- Normal-Combat (40 %): Bomb-Action
-- Elite-Combat (20 %): Elite-Enemies + besser Loot
-- Treasure (15 %): Karten + Affix + Coins
-- Challenge (15 %): Skill-Test mit Bonus
-- Rest (10 %): Heal + Buff-Pick
+`TutorialPhase`-Enum + `TutorialStep.IsFirstOfPhase`, Phasen-Banner via `PhaseChanged`-Event.
 
-**Eintritt:**
-- 1× pro Tag gratis
-- Weitere: 500 Coins, 3 Gems oder Rewarded-Ad
+### 19.2 Feature-Unlock-Choreographie (`IFeatureUnlockChoreographer`)
 
-**Run-Reset:** Tod oder Manuelle-Aufgabe → Spieler verliert Dungeon-Buffs, behält Coins/Karten/Loot
+| Level | Feature |
+|-------|---------|
+| L10 | Daily-Challenge |
+| L20 | Dungeon |
+| L30 | LineBomb |
+| L40 | PowerBomb |
+| L50 | Boss-Rush |
+| L100 | Master-Mode |
+| `ach_master_100` | Champion-Skin |
 
-### 13.2 16 Dungeon-Buffs (5 Common, 5 Rare, 2 Epic, 4 Legendary)
+Queue-basiert, Pref-Flag pro Feature (einmal pro Lebenszeit), UI-Thread-Event `FeatureUnlocked`.
 
-#### Common (5)
-- Heal: +1 HP (Permanent für Run)
-- Bomb-Slot: +1 MaxBombs
-- Coin-Rush: +20 % Coin-Drops im Run
-- Speed-Boost: +1 SpeedLevel
-- Range-Up: +1 FireRange
+### 19.3 Weitere Onboarding-Systeme
 
-#### Rare (5)
-- Crit-Chance: +10 %
-- Bomb-Crit: ×1.5 Damage Crit
-- Affix-Drop-Up: +1 Affix-Drop pro Floor
-- Shield-on-Hit: 1 HP-Shield bei jedem Floor-Komplettieren
-- Reflect: 15 % Chance Damage zurück an Quelle
-
-#### Epic (2)
-- Combo-Multiplier: ×2 Score-Combo-Bonus
-- Heal-on-Crit: +1 HP bei Krit-Hit (5s-Cooldown)
-
-#### Legendary (4)
-- **Berserker**: Bei <50 % HP +50 % Damage
-- **TimeFreeze**: 1× pro Floor: Stop alle Gegner 3s (Manual-Trigger)
-- **GoldRush**: ×3 Coin-Drops im Run
-- **Phantom**: Spieler unsichtbar 5s nach jedem Floor-Komplettieren
-
-### 13.3 5 Synergien (aus 16 Buffs)
-
-| Synergie | Buff-Kombination | Effekt |
-|----------|------------------|--------|
-| **Bombardier** | 3+ Bomb-Buffs (Slot/Range/Crit/Bomb-Crit) | +50 % Bomb-Damage zusätzlich |
-| **Blitzkrieg** | Speed-Boost + 2 weitere Mobility-Buffs | Bomb-Tick-Timer −0.5s |
-| **Festung** | Tank-Buffs (Heal + Shield + Reflect) | +1 Max-HP-Cap |
-| **Midas** | Coin-Rush + GoldRush + 1 weiterer Coin-Buff | Karten-Drops Rarity +1 Stufe |
-| **Elementar** | 5+ Cards mit unterschiedlichen Damage-Typen | Krit-Chance gegen Bosse ×2 |
-
-### 13.4 Truhen + Loot
-
-- Floor-1-9 normal: 0-2 Buffs zur Wahl (3 Optionen)
-- Floor-5 Mini-Boss: 3 Buffs (3 Optionen) + 1 Affix-Drop + Heal-Full
-- Floor-10 End-Boss: 1 Legendary-Karte + 1 Legendary-Affix + Buff
-- Endless ab Floor 11+: Spawn-Waves +50 %, Buff-Pool re-rolled
+- **Discovery-System:** Pausiert bei Erstentdeckung von PowerUps/Mechaniken (`DiscoveryOverlay`).
+- **What's-New-Modal** (`IWhatsNewService`), **Re-Engagement-Push** (D1/D3/D7), **First-Win-Cinematic** (4-stufig).
 
 ---
 
-## 14. Liga + Ranking
+## 20. Accessibility
 
-### 14.1 Liga-Struktur
-
-| Tier | Sub-Tiers | Punkte-Range | Belohnungs-Klasse |
-|------|-----------|--------------|-------------------|
-| **Bronze** | I/II/III | 0-799 | Common Frame |
-| **Silver** | I/II/III | 800-1599 | Common Trail + Frame |
-| **Gold** | I/II/III | 1600-2399 | Rare Trail + Frame + Victory |
-| **Platinum** | I/II/III | 2400-3199 | Epic Trail + Frame + Victory + Hero-Skin |
-| **Diamond** | (Single) | 3200+ | Legendary Cosmetic + "Champion"-Banner |
-
-**Tier-Up:** 5 Wins → 1 Sub-Tier (außer Diamond, das ist ladder-basiert).
-**Tier-Down:** 5 Losses in Folge → 1 Sub-Tier zurück. Aber: Tier-Floor (z.B. Gold-Erreicht-Floor) verhindert Sturz unter Tier-Anfang.
-
-### 14.2 Saison-Reset
-
-- 14-Tage-Saisons
-- Reset: Liga-Tier sinkt um 2 Sub-Tiers (z.B. Gold-II → Silver-I)
-- Diamond-Spieler bleiben in Diamond (kein Reset für Top-Spieler)
-- Saison-End-Belohnungen: Skins, BP-XP-Bonus, Special-Cosmetics
-
-### 14.3 NPC-Backfill (aus alt portiert)
-
-- Bei < 20 echten Spielern in Tier: NPC-Spieler mit deterministischem Seed werden in Liste eingefügt
-- NPC-Punkte werden simuliert (langsam ansteigend)
-- Echte Spieler vor NPCs in Display
-
-### 14.4 Daily-Race (separate Liga)
-
-- 1 deterministisches Tages-Level (alle Spieler weltweit identisch)
-- Schnellster Komplett-Run gewinnt
-- Tier-Belohnungen: Top-100 / Top-1000 / Top-10k pro Region
-
----
-
-## 15. Battle Pass + Saisons
-
-### 15.1 Saison-Struktur
-
-**Dauer:** 8 Wochen (statt 4 wie alt)
-**Tiers:** 60 (mit 25 Sofort-Tiers bei Premium-Plus)
-**Free-Track:** 40 von 60 Tiers
-**Premium-Track:** Alle 60 Tiers + Saison-Skin
-**Premium-Plus-Track:** Premium + 25 Sofort-Tiers + Exclusive-Cosmetic-Set
-
-### 15.2 BP-Reward-Tier-Liste (Beispiel S1 "Aufstand")
-
-| Tier | Free | Premium |
-|------|------|---------|
-| 1 | 100 Coins | 200 Coins + 1 Common-Affix |
-| 5 | "Rookie"-Frame (Common) | "Cyber-Frame-S1" (Rare) |
-| 10 | 1 Rare-Karte | Karte-Lv-Token (Skip 1 Lv) |
-| 15 | 50 Gems | "Pyro-Suit-Skin" (Epic) für NOVA |
-| 20 | 200 BP-XP-Boost | 200 BP-XP + Trail-Cosmetic |
-| 25 | Coin-Multiplier 24h | "Mech-Glow-Trail" (Rare) |
-| 30 | 1 Epic-Karte | 1 Legendary-Affix |
-| 35 | Banner-Saison-S1 | 1 neuer Hero "PULSE" (für S2 vorausgesagt) — diese Saison: "Hero-Token" (Buy any Hero) |
-| 40 | 100 Gems | 250 Gems |
-| 45 | Frame-Rare | Frame-Epic + 1 Random-Skin |
-| 50 | 300 Coins | "Aufstand"-Skin für PHANTOM |
-| 55 | 50 Gems | 200 Gems + Victory-Animation |
-| **60 (Top)** | 1 Epic-Karte | **Legendary-Hero-Skin "Cyber-NOVA"** + Frame + Trail + Victory + Banner |
-
-### 15.3 Saison-Themes (16 geplant)
-
-| Saison | Theme | Visual-Sprache |
-|--------|-------|----------------|
-| S1 | "Aufstand" | Klassisch-Cyber, Cyan/Magenta |
-| S2 | "Mech-Wars" | Pacific-Rim, Industrial-Schwer |
-| S3 | "Neon-Nights" | Synthwave, Pink/Purple |
-| S4 | "Glitch in the System" | Hacker, Green-Code-Rain |
-| S5 | "Halloween" | Spooky Cyber-Halloween |
-| S6 | "Cyber-Winter" | Eis-Tech, Blau/Weiß |
-| S7 | "Pacific Drift" | Tropical-Cyber, Sunset |
-| S8 | "Underground" | Untergrund-Subkultur, Graffiti |
-| S9 | "Crimson-Tide" | Apokalyptisch, Rot/Schwarz |
-| S10 | "Sky-High" | Anti-Grav-Welt, Pastell-Sky |
-| S11 | "Crystal-Cave" | Eis-Cave, Holo-Kristalle |
-| S12 | "Mecha-Royale" | Royale-Hommage, Fantasy-Cyber |
-| S13 | "Bio-Punk" | Mutanten, Toxic-Green |
-| S14 | "Vaporwave-Heaven" | Vaporwave-Pastels |
-| S15 | "Steam-Net" | Steampunk meets Cyber |
-| S16 | "Re-Genesis" | True-Ending-Sequel-Theme |
-
----
-
-## 16. Cosmetics + Player-Identity
-
-### 16.1 Cosmetic-Typen + Volumen
-
-| Typ | Beschreibung | Pool-Größe (Launch) |
-|-----|--------------|---------------------|
-| **Hero-Skins** | Komplettes Mech-Modell | 8 Helden × 5 Skins = 40 |
-| **Bomb-Skins** | Bomb-Modell + VFX-Variante | 22 Karten × 3 Skins = 66 |
-| **Map-Skins** | Welt-Theme tauschen | 10 Welten × 2 Themes = 20 |
-| **Avatar-Frames** | Profilbild-Umrandung (animiert) | 33 (aus alt) + 10 neu = 43 |
-| **Trail-Effects** | Spuren beim Bewegen | 32 (aus alt) + 8 neu = 40 |
-| **Victory-Animations** | Spieler nach Match-Sieg | 33 (aus alt) + 10 neu = 43 |
-| **Emotes** | 8 freischaltbare Match-Wheel-Emotes | 32 (4 pro Hero) |
-| **Sprays** | Decals auf Spielfeld | 20 |
-| **Match-Intros** | 2-3s Animation beim Match-Start | 15 |
-
-**Total Launch:** ~320 Cosmetics. Plus Saison-Erweiterung: +60 pro Saison.
-
-### 16.2 Cosmetic-Quellen
-
-| Quelle | Anteil |
-|--------|--------|
-| Battle Pass (Free + Premium) | 30 % |
-| Liga-Tier-Rewards | 10 % |
-| Achievement-Rewards | 15 % |
-| Saison-Event-Drops | 20 % |
-| Cosmetic-Shop (Gems-Kauf) | 15 % |
-| Premium-Hero-Skin-Direkt-Kauf (Real-Money) | 10 % |
-
-### 16.3 Player-Identity
-
-Jeder Spieler hat ein **Profil** mit:
-- Username + Banner-Skin
-- Avatar-Frame
-- Aktiver Trail + Victory + Spray
-- Hero-Display (max 3 Lieblings-Helden auf Profil)
-- Showcase-Karten (3 Lieblingsbomben mit Affixen)
-- Stats: Total-Kills, Win-Rate pro Modus, Saison-Highscore
-- Achievements-Showcase (3 wichtigste)
-- Banner-Animation für Diamond-Spieler
-
----
-
-## 17. Onboarding + Tutorial (T1-T4)
-
-### 17.1 Tutorial-Phasen
-
-**T1: Movement & Basics** (Level 1, ~3 Min)
-- Joystick + Bomb-Button kennenlernen
-- Erste Bombe legen, Brick zerstören
-- Exit finden, Level abschließen
-- Belohnung: 50 Coins, 1 Common-Karte
-
-**T2: Bomben & PowerUps** (Level 2-3, ~5 Min)
-- BombUp, Fire, Speed-PowerUps erklären
-- 2 Bomben gleichzeitig legen
-- Erstes Gegner-Kill
-- Belohnung: 100 Coins
-
-**T3: PowerUps Advanced** (Level 4-5, ~5 Min)
-- Detonator, Kick, Wallpass
-- Combo-System einführen
-- Erster Star-Rating-Reveal
-- Belohnung: 1 Rare-Karte
-
-**T4: Multiplayer-Intro** (nach L10 freigeschaltet, optional)
-- Erster Co-op-Match mit Bot-Partner
-- Erster PvP-Match gegen Bot (Glicko-2-Starter-Match)
-- Friends-System-Einführung
-- Belohnung: Welcome-Frame + 200 Gems
-
-### 17.2 Feature-Unlock-Choreographie (aus alt portiert + erweitert)
-
-| Lv | Feature | Tutorial-Overlay |
-|----|---------|------------------|
-| 1 | Story-Mode | Tutorial T1 |
-| 2 | Coins + Shop | Erste-Coin-Hint |
-| 5 | Hero-Auswahl (NOVA + Cryo + Titan) | Hero-Picker-Modal |
-| 10 | Co-op (Bot first) | T4 Co-op-Tutorial |
-| 12 | Daily-Challenge | Daily-Reward-Modal |
-| 15 | Card-System + Deck | Deck-Builder-Tutorial |
-| 20 | Talent-System | Talent-Tree-Reveal |
-| 20 | PvP-Match (Bot first) | T4 PvP-Tutorial |
-| 25 | Dungeon-Modus | Dungeon-Intro-Cutscene |
-| 30 | Clan-System | Clan-Tutorial |
-| 35 | Affix-System | Affix-Modal |
-| 40 | Master-Mode (nach L100) | Master-Mode-Reveal |
-| 50 | Boss-Rush | Boss-Rush-Intro |
-| ach_master_100 | Champion-Skin | Achievement-Cinematic |
-
----
-
-## 18. Achievements (66 + 20 neu)
-
-> Aus alt portiert + Sci-Fi-Setting + Multiplayer-spezifische.
-
-### 18.1 Kategorien
-
-- **Story** (16 Achievements): Welt-1-komplettieren ... Welt-10, True-Ending, alle Memory-Fragmente
-- **Skill** (12): Erste Combo ×5, ×10, ULTRA-Combo, 0-Death-Run, etc.
-- **Collection** (12): Alle Karten, Alle PowerUps, Alle Affixe, Alle Helden-Skins
-- **Multiplayer** (10): Erstes PvP-Win, 100 PvP-Wins, Saison-Diamond, Clan-War-Gewinn
-- **Cooperative** (8): 50 Co-op-Matches mit Friend, 100-Dungeon-Floors
-- **Mastery** (8): Lv60-Hero-Max, alle Talent-Capstones freigeschaltet
-
-### 18.2 Neue Sci-Fi-spezifische Achievements (20)
-
-- "Lyras Versprechen" (alle Memory-Fragments gesammelt)
-- "Cyber-Diamond" (Diamond + 100 PvP-Wins in einer Saison)
-- "Glitch-in-the-Matrix" (GLITCH-Hero Lv60 + Hack-Bomb 100 erfolgreich)
-- "OmniCorp-Insider" (alle Council-Bosse erstesmal besiegt)
-- "Nexus-Bezwinger" (True-Ending erreicht)
-- "Bombenmeister" (alle 22 Karten Lv5 erreicht)
-- "Acht-Gänger" (alle 8 Helden Lv60)
-- "Talent-Master" (alle Capstones aller Helden freigeschaltet)
-- "Clan-König" (Clan-Leader bei 50+ Clan-Wars)
-- "Bobby Phenomenal" (Tournament Top-3 Plazierung)
-- "Mech-Mechaniker" (50 Affixe gecraftet)
-- "Stadtschützer" (100 Co-op-Story-Komplettierungen)
-- "Phantom-Killer" (50 PvP-Wins als PHANTOM mit Phantom-Bomb Trigger)
-- "Speed-Demon" (50 PvP-Wins als FLUX mit Blink-Trigger)
-- "Veteran" (Account-Alter >1 Jahr + 365 tägliche Logins)
-- "Comeback-King" (10× nach 0-1 Score-Deficit gewonnen)
-- "Ultra-Combat" (×20 Combo erreicht — schwer aber machbar)
-- "Tier-S-Champion" (Diamond + Saison-Top-100)
-- "Buddy-System" (100 Co-op-Matches mit gleichem Friend)
-- "OG-Bomber" (Migrations-Achievement für alt-BomberBlast-Spieler)
-
----
-
-## 19. Daily + Weekly + Live-Events
-
-### 19.1 Daily Quests (3 pro Tag, rotiert)
-
-- "Spiele 1 PvP-Match" (+100 Coins)
-- "Lege 50 Bomben" (+150 Coins)
-- "Kille 30 Gegner in Story" (+200 Coins + 5 BP-XP)
-- "Co-op-Run mit Friend" (+200 Coins + 1 Affix-Drop)
-- "Tagesziel-3-Sterne in 3 Levels" (+1 Random-Karte)
-- "10 Combo-Streaks ×3 oder höher" (+10 Gems)
-
-### 19.2 Weekly Missions (5 pro Woche, Pool-Rotated)
-
-- "10 Story-Levels mit 3 Sternen" (+1 Epic-Karte)
-- "5 PvP-Wins" (+15 Liga-Punkte-Bonus + 100 Gems)
-- "3 Co-op-Dungeon-Runs" (+1 Affix + Frame)
-- "1 Boss-Rush komplettieren" (+1 Hero-Token)
-- "Level-Up 2 Helden" (+1 Talent-Reset gratis)
-
-### 19.3 Live-Events
-
-| Event-Typ | Frequenz | Spezial |
-|-----------|----------|---------|
-| **Wochen-Event** | Alle 7 Tage | DoubleXP, DoubleCoins, CardRain, BossWeek, DungeonRush, LeagueRumble, MissionMadness, LuckyWeek (16 Events rotierend) |
-| **Saison-Event** | Pro Saison 1× | Themed Limited-Time-Mode, exklusiver Cosmetic |
-| **Wochenend-Tournament** | Alle 2 Wochen | PvP-Bracket, Top-100-Belohnungen |
-| **Boss-Raid** | Monatlich | 4-Spieler-Mega-Boss, Raid-Loot |
-| **Clan-War** | Alle 2 Wochen | 4v4-Clan-Async-Battles |
-| **Saison-Story-Episode** | Pro Saison | Voiced Story-Episode, 30-60 min Content |
-| **Limited-Time-Modes** | Random | "Bombe pro Sekunde", "Alle Helden zufällig", etc. |
-| **Welt-Tour** | Halb-jährlich | Alle 10 Welten kurz hintereinander spielen, Reward-Run |
-
----
-
-## 20. Economy + IAP-Pyramide
-
-### 20.1 Währungen
-
-| Währung | Source | Verwendung |
-|---------|--------|-----------|
-| **Coins** | Gameplay (Level-Komplettion, Win-Bonus) | Karten-Crafting, Talent-Reset (50 Gems oder 5k Coins), Shop-Cosmetics |
-| **Gems** | IAP, Quests, BP, Liga | Battle-Pass-Skip, Premium-Karten, Hero-Direct-Buy |
-| **BP-XP** | Gameplay (Quests, Achievements) | BP-Tier-Up |
-| **Liga-Punkte** | PvP-Matches | Saison-End-Rewards |
-| **Hero-Token** | Selten (BP Tier 35, Shop) | Direct-Hero-Unlock (statt Gem-Kauf) |
-| **Saison-Coins** | Saison-Events | Saison-Cosmetic-Shop (Event-only) |
-| **Dungeon-Coins** | Dungeon-Floor-Wins | Dungeon-Upgrades (permanente Buffs für Dungeon) |
-| **Clan-Coins** | Clan-Activity | Clan-Upgrades, Clan-War-Boosts |
-
-### 20.2 IAP-Pyramide
-
-| Produkt | Preis | Inhalt |
-|---------|-------|--------|
-| **Gem-Pack: Tiny** | 0,99 EUR | 100 Gems |
-| **Gem-Pack: Small** | 4,99 EUR | 500 Gems + 50 Bonus |
-| **Gem-Pack: Medium** | 9,99 EUR | 1.000 Gems + 150 Bonus |
-| **Gem-Pack: Large** | 19,99 EUR | 2.000 Gems + 350 Bonus |
-| **Gem-Pack: XL** | 49,99 EUR | 5.000 Gems + 1.000 Bonus |
-| **Gem-Pack: Mega** | 99,99 EUR | 10.000 Gems + 2.500 Bonus |
-| **Starter-Pack** | 4,99 EUR | 5k Coins + 1k Gems + 1 Hero-Token (einmalig, erste 14 Tage) |
-| **Founders-Pack** | 29,99 EUR | 3 exklusive Helden + 50k Coins + 5k Gems + Founders-Frame (einmalig, Launch-Window 30 Tage) |
-| **Battle-Pass-Premium** | 9,99 EUR | Saison-Premium-Track |
-| **Battle-Pass-Plus** | 19,99 EUR | Premium + 25 Sofort-Tiers + Plus-Skin |
-| **Subscription "Bomber-Pro"** | 4,99 EUR/Monat | Tägliche 100 Gems + Werbefrei + Coin-Boost +50 % + Cosmetic-Shop -10 % |
-| **Hero-Direkt-Kauf** | 9,99 EUR | Direkter Hero-Unlock (alt nicht-Token) |
-| **Saison-Hero-Direct** | 12,99 EUR (Premium-Saison-Hero, exklusiv) | Saison-Held |
-| **Remove-Ads** | 4,99 EUR | Banner-Ads weg, Rewarded-Ads bleiben (DSGVO) |
-| **Saison-Bundle** | 14,99 EUR | Saison-Premium + Saison-Skin + 500 Gems |
-
-### 20.3 Werbe-Modell
-
-- Banner-Ads im Hub-Menü (entfällt bei Remove-Ads oder Bomber-Pro)
-- Rewarded-Ads für Coins/Gems/Continue (bleibt immer, opt-in)
-- Interstitial nach Match-Ende, max 1× alle 5 Min (kann auf "Off" gestellt werden)
-
-### 20.4 Anti-Monetization-Ethik
-
-- KEINE Lootboxen (gegen UK/China-Regulierung)
-- LuckySpin behält transparente Drop-Rates + Pity-Counter
-- Saison-Content immer auch über Gameplay erreichbar (Coin-Kauf nach Saison)
-- Keine Pay-to-Win-Stats (alle Helden statistisch identisch in PvP-Ranked, nur cosmetic + Mechanik-Variation)
-- DSGVO-konformes Marketing-Tracking-Opt-In (siehe Compliance-Sektion in ROADMAP.md)
-
----
-
-## 21. Accessibility-Mandate
-
-> Übernommen aus alt + erweitert für Voll-Voice und 3D-Visuals.
+> `IAccessibilityService` (Singleton) — vollständig übernommen.
 
 | Mandat | Implementierung |
 |--------|-----------------|
-| **Colorblind-Modes** | Deuteranopia, Protanopia, Tritanopia via ColorMatrix-Filter (URP-PostProcessing) |
-| **HighContrast** | Outline-Pass auf allen Entities, +50 % Brightness auf HUD |
-| **UI-Scale** | 0.75 / 1.0 / 1.25 / 1.5 für TextMeshPro-Texte + HUD-Elements |
-| **Reduced-Motion** | Animationen 50 % reduziert, kein Screen-Shake, keine starken Particle-Effekte |
-| **Subtitles** | Voll-Voice-Untertitel mit 4-Caption-Pool (alt portiert) |
-| **Voice-Speed** | 0.75× / 1.0× / 1.25× (für hörgeschädigte Spieler) |
-| **Touch-Optionen** | Joystick-Größe + Bomb-Button-Position konfigurierbar, Fixed vs Floating-Joystick |
-| **Gamepad-Re-Map** | Buttons frei zuweisbar (PC + Mobile mit Bluetooth-Gamepad) |
-| **Photosensitivity-Mode** | Reduziert Flash-Effekte (Combo-Flash, Damage-Flash) |
-| **Audio-Descriptions** (Phase 2) | Optional Voice-Over für UI-Hinweise (vorlesen) |
-| **Multi-Sprache** | DE/EN/ES/FR/IT/PT (alt-Parität), JP/KR (Phase 2) |
+| **Colorblind** | Off / Deuteranopia / Protanopia / Tritanopia via ColorMatrix (Brettenmacher/Vienot) — **[3D]** als URP-PostProcessing |
+| **HighContrast** | Outline-Pass + verstärkte Floating-Text-Outline |
+| **UiScale** | 0.75 / 1.0 / 1.25 / 1.5 |
+| **Subtitles** | Struct-Pool-Captions (max 4 aktiv), für Boss-Spawn/Time-Warning/Death/Level-Complete/Ultra-Combo/Victory |
+| **Colorblind-Hint-Heuristik** | proaktiver Nudge bei schnellem L1-Fail (`RegisterL1Fail`/`ShouldOfferColorblindHint`) |
+| **Reduced-Effects** | Photosensitivity: unterdrückt Flash/Screen-Shake-Spitzen |
+| **Multi-Sprache** | DE/EN/ES/FR/IT/PT (Original-Parität) |
 
 ---
 
-## 22. Audio-Design
+## 21. Audio-Design
 
-### 22.1 Music
+> Basis: Kenney CC0 (Original-Mandat "kein Geld"). **[besser]** Im Remake aufgewertet (kuratierte/eigene
+> Loops, adaptive Layer). Voice bleibt **deferred** (im Original bewusst abgewählt).
 
-**Welt-Themes:** Pro Welt 1 Hauptloop mit 4 Layers:
-- Layer 1 (Base): Drone-Synth + Sub-Bass
-- Layer 2 (Standard): + Drums + Mid-Synth
-- Layer 3 (Combat): + Lead-Synth + Effects
-- Layer 4 (Boss-Battle): + Cinematic-Brass + Intensive-Beat
-- Layer 5 (Victory): Sting + Triumph-Beat
+### 21.1 Übernommene Audio-Architektur
 
-**Transitions:** FMOD-Studio mit Crossfade-Markers. Layer-Switch in <500 ms.
+- **7-Kanal-AudioBus** (Master/Music/Ambient/Sfx/Ui/Voice/Cinematic) mit `AudioBusMixer` (Ducking, Boost, Recovery).
+- **Spatial:** Stereo-Pan via `bomb.GridX / Grid.Width`, Distance-Falloff, Equal-Power-Crossfade, Reverb-Presets.
+- **Anti-Repeat-Pool** (Brawl-Stars-Pattern): 27 Pool-Variants + 5 Cinematic-Stinger.
+- **Stinger:** BOSS_REVEAL, COMBO_MEGA (×5), COMBO_ULTRA (×10), VICTORY, DEFEAT.
+- **Adaptive Music-Boost:** Last-Enemy-Drama (+20 %/4 s), ULTRA-Combo (+25 %/5 s).
+- **Pitch-Variation:** ±5 % Pitch + ±10 % Volume auf wiederholte SFX.
+- **10 welt-thematische Music-Loops.**
 
-**Hub-Music:** 1 Hauptloop (Chill-Cyberpunk-Vibe) + Subtle-Variations für verschiedene Tabs.
+### 21.2 Aufwertung im Remake (markiert)
 
-### 22.2 SFX
-
-**Bomb-Tick + Explosion (pro Bomb-Typ):**
-- Tick: Sample mit Pitch-Variation ±5 %
-- Explosion: 3D-Spatial-Position-Sound mit Reverb-Pro-Welt
-- Tail: Welt-spezifisches Echo (Cave-Welt = lang, Outdoor = kurz)
-
-**Hero-VoiceLines:** Pro Hero ~10 Lines × 8 Helden = 80 Lines pro Sprache
-- DE + EN Voice-Tracks für alle Helden
-- AI-generiert via ElevenLabs (siehe Asset-Pipeline-Doku)
-- 6 Sprachen für UI + Announcer + Stinger
-
-### 22.3 Voice-Acting (AI-generiert)
-
-**Workflow:**
-1. **Text-Skript** in `Resources/Voices/` als Markdown-Files (1 pro Hero + Story)
-2. **ElevenLabs API** mit Stimm-Profilen (8 Helden-Stimmen pro Sprache vorab gewählt)
-3. **Render-Pipeline** generiert WAV-Files
-4. **Quality-Gate**: Mensch hört alle Lines, Re-Render bei Issues
-5. **Mastering**: ffmpeg-Pipeline für LUFS-Normalisierung auf −16 LUFS
-6. **Lokalisierung**: Pro Sprache eigene Voice-Profile, gleicher Charakter aber sprachspezifische Stimme
-
-**Lizenz-Mitigation:**
-- ElevenLabs-Enterprise-Plan mit kommerzieller Voice-Lizenz
-- Backup-Plan: Bei Lizenz-Konflikt schnell auf "stille Helden + Announcer-Only" downgraden
-- Schlüssel-Charaktere (Director Vex, Sage) optional von Mensch-Sprechern (Premium-Quality)
+- **[besser]** Kuratierte/eigene Loops statt reiner CC0; optional FMOD für adaptive Layer.
+- **[besser]** 3D-Spatial-Audio (URP/Unity-Audio statt 2D-Pan).
+- **[deferred]** Voice (DE/EN) — wie im Original als zukünftiges Budget-Item, kein Launch-Inhalt.
 
 ---
 
-## 23. UI/UX-Konzept
+## 22. UI/UX-Konzept
 
-### 23.1 Haupt-UI-Bildschirme
+### 22.1 Haupt-Bildschirme (Struktur wie Original)
 
-| Bildschirm | Layout | Tech |
-|-----------|--------|------|
-| **Boot-Splash** | Logo + Loading-Bar | UGUI (statisch) |
-| **Login/Register** | Tab-Auth (Email/Google/Apple) | UI Toolkit |
-| **Main-Hub** | 5 Tabs (Home / Play / Shop / Clan / Profile) + 3D-Skybox | UI Toolkit (Tab-Bar) + UGUI (Animationen) |
-| **Play-Tab** | 4 Modi-Karten (Story / PvP / Co-op / Dungeon) | UI Toolkit |
-| **PvP-Lobby** | Hero-Pick + Map-Reveal + Player-Slots | UGUI (Animation-haftig) |
-| **In-Game-HUD** | Joystick + Bomb-Button + Combo + Lives + Coins + Hero-Skill-Bar | UGUI (frame-perfect) |
-| **Settlement-Modal** | Belohnungen-Reveal mit Animation | UGUI |
-| **Shop** | Tabs (Cosmetics / Gems / Premium) | UI Toolkit |
-| **Clan** | Chat + Member-List + War-Stats | UI Toolkit |
-| **Settings** | Tabs (Audio / Graphics / Controls / Accessibility) | UI Toolkit |
+Bottom-Tab-Navigation (Home / Play / Shop / Profile), `ActiveView`-gesteuert. Views u.a.: MainMenu,
+PlayHub, LevelSelect, Game, GameOver, Victory, Shop, GemShop, Deck, Collection, Profile (mit Statistics/
+Achievements/Collection-Sub-VMs), Settings, BattlePass, League, Dungeon, BossRush, DailyChallenge,
+WeeklyChallenge, LuckySpin, Help, HighScores + Overlays (DailyReward, Onboarding, WhatsNew, SeasonBanner).
 
-### 23.2 HUD-Layout (In-Game)
+### 22.2 In-Game-HUD
 
-**Linke Seite (Touch-Joystick-Bereich):**
-- Joystick (75 dp Radius)
+- **Side-Panel rechts** (Landscape): Time / Score / Combo / Lives / Deck.
+- **NeonJoystick:** Radius 75 dp, Bomb-Button 52 dp, Detonator 48 dp; Floating- oder Fixed-Modus
+  (Default Fixed bei Neuinstallation). Separate Pointer-IDs, Pre-Turn-Buffering.
+- **Card-Quickswap:** ActiveCardSlot per HUD-Tap.
 
-**Rechte Seite (Bomb-Button-Bereich):**
-- Bomb-Button (52 dp)
-- Detonator-Button (48 dp)
-- Card-Quickswap (4 Buttons, je 36 dp) → Auswahl Bombe
-- Hero-Skill-Buttons 1/2/3 + Ultimate (4 Buttons, je 44 dp)
+### 22.3 Overlay-/Modal-System
 
-**Oben:**
-- Combo-Anzeige (Mid)
-- Lives-Counter (Right)
-- Coins-Anzeige (Right)
-- Time-Remaining + Score (Mid-Right)
+- Zentrale Hit-Test-Aggregate (`IsAnyOverlayOpen` / `IsAnyDialogOpen`) gegen Android-ZIndex-Tap-Durchgriff.
+- **[3D]** Modal-Übergänge (Slide/Fade) via DOTween; Iris-Wipe bei Level-Start/Complete.
 
-**Unten (kompakt):**
-- Mini-Map (PvP/Co-op) — kleines 4×4-Grid mit Player-Positions
+---
 
-### 23.3 Modal-System
+## 23. 3D-Visuals & Game Juice (der "besser"-Teil)
 
-Zentraler `ModalService.ShowAsync<TViewModel>(args)`:
-- Modal-Stack (max 3 tief)
-- Back-Button schließt oberstes Modal
-- IsHitTestVisible-Aggregat pro Layer (alt-Pattern übernommen)
-- 200ms Slide-In + Fade-Background mit DOTween
+> Das Original hat bereits umfangreiches "Game Juice". Im Remake wird es in 3D umgesetzt und erweitert.
+
+### 23.1 Übernommene Juice-Patterns (in 3D)
+
+Floating-Text (Score/Combo/PowerUp), Currency-Pulse, Iris-Wipe, Slow-Motion (Combo ×4+/letzter Kill),
+Hit-Pause (Kill 50 ms / Death 100 ms), Squash & Stretch, prozedurale Walk-Animation, Boss-Banner,
+Confetti, saisonale Event-Partikel, Trauma-basierter Screen-Shake (Squirrel-Eiserloh-Modell + PullBack),
+Vignette-Flash (ULTRA-Combo + Damage), Player-i-Frame-Visualisierung, Anticipation-Frames, Outline-Pass,
+First-Win-Cinematic, Boss-Reveal-Cinematic (1.5 s), Victory-Cinematic (2.5 s).
+
+### 23.2 3D-Aufwertung (markiert)
+
+- **[3D]** Dynamische Beleuchtung (URP Forward+), Schatten, emissive Neon-Materialien, Bloom (Ultra-Tier).
+- **[3D]** VFX-Graph-Explosionen pro Bomben-Typ (GPU-Partikel statt SkiaSharp-CPU).
+- **[3D]** Shader-Graph-Effekte: Glow, Dissolve, Hologramm, Outline, Liquid (Frost/Lava/Poison-Felder).
+- **[3D]** Cinemachine-Kamera (Top-Down mit leichter Neigung, Damping, Impulse für Shake/Zoom).
+- **[3D]** 3D-Welt-Story-Cutscenes (Timeline).
+
+### 23.3 Performance-Adaption (übernommen)
+
+`HardwareTier` (Low/Medium/High/Ultra) + adaptives Frame-Skipping. Partikel-Caps pro Tier (300/800/1200/1500),
+Bloom nur Ultra, Reverb ab High. (Details ARCHITECTURE Performance-Targets.)
+
+---
+
+## 24. Multiplayer (optionales Plus)
+
+> **[NEU]** Multiplayer ist im Original nur **Foundation** (Mode-Enum, PlayerInputSnapshot, InputBuffer,
+> GameStateSnapshot mit FNV-1a-Hash) — nie ins Gameplay integriert. (Ausnahme: das **Clan-System**
+> `FirebaseClanService` ist voll integriert und wird 1:1 übernommen.)
+
+### 24.1 Ausbaustufen (Post-Core, nicht launch-kritisch)
+
+| Stufe | Inhalt | Tech |
+|-------|--------|------|
+| **Local-Coop/Versus** | 2 Spieler an einem Gerät/Gamepads (`LocalCoop`/`LocalVersus` aus `MultiplayerMode`) | lokal, dual Input-Routing |
+| **Online-Co-op** (später) | 2-4 Spieler kooperativ | Photon Realtime (Host-authoritative) |
+| **Online-Versus** (optional) | kompetitiv | Photon Fusion — **erfordert** Determinismus-Integration (siehe ARCHITECTURE) |
+
+### 24.2 Voraussetzung
+
+Echtes Online-MP setzt die **Determinismus-Integration** voraus (alle Gameplay-Random über `IRngProvider`,
+Sim/Render-Trennung, ggf. Fixed-Point für hash-stabile Sim). Bis dahin: Local-MP + async Clan/Liga.
+
+> **Spawn:** P1 = (1,1), P2 = (13,8) (gegenüberliegende Ecken, `MultiplayerSpawnPositions`).
 
 ---
 
@@ -1291,9 +715,10 @@ Zentraler `ModalService.ShowAsync<TViewModel>(args)`:
 
 | Datum | Version | Änderung | Autor |
 |-------|---------|----------|-------|
-| 2026-05-26 | v0.1 | Initial-DESIGN.md mit 8 Helden, 10 Welten, 22 Karten, Story-Arc, PvP/Co-op-Specs | Robert Schneider + Claude |
+| 2026-05-26 | v0.1 | Initial-DESIGN mit Sci-Fi-Reinvention (8 Mech-Helden, OmniCorp, PvP-Arena) | Robert Schneider + Claude |
+| 2026-05-30 | **v0.2** | **Komplett neu auf treuen 3D-Remake: echtes BomberBlast-Game-Design (5 Helden, 12 Gegner, 5 Bosse, 12 PowerUps, 13 Karten, 100 Level, 16 Dungeon-Buffs/5 Synergien, Liga 5×3 + Perzentil, 30 BP-Tiers, 72 Achievements, 9 Shop-Upgrades, 98 Cosmetics) — alle Werte code-verifiziert; 3D/Besser/NEU markiert** | Robert Schneider + Claude |
 
 ---
 
-> **Status:** Konzept finalisiert für Stakeholder-Review.
-> **Nächste Schritte:** Concept-Art-Sprint, Sound-Library-Auswahl, Voice-Acting-Cast-Sheets.
+> **Status:** Treuer Remake v0.2. Quelle der Wahrheit = produktiver BomberBlast-Code.
+> **Nächster Schritt:** Parity-Matrix (jedes Original-System → Unity-Äquivalent) als Port-Checkliste.

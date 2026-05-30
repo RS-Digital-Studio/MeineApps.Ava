@@ -227,6 +227,13 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
         TabCustomizeText = _localization.GetString("ProfileTabCustomize") ?? "Customize";
 
         UpdateCustomizationLabels();
+
+        // #30: Eingebettete Sub-VMs bei Sprachwechsel mit-aktualisieren. ProfileViewModel selbst wird
+        // über RefreshAllLocalizedTexts erfasst, die eingebetteten VMs aber nicht.
+        StatisticsVm.UpdateLocalizedTexts();
+        CollectionVm.UpdateLocalizedTexts();
+        // AchievementsViewModel ist nicht ILocalizable → über OnAppearing neu laden (nur wenn aktiv).
+        if (IsAchievementsTab) AchievementsVm.OnAppearing();
     }
 
     private void UpdateStats()

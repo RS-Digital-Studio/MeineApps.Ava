@@ -10,10 +10,11 @@ namespace BomberBlast.Navigation;
 /// Haelt:
 /// </para>
 /// <list type="bullet">
-/// <item>5 Sub-Tab-Bools fuer kombinierte Views (Shop/Spin, Profile/Achievements,
-///       Settings/Help, Cards/Collection, Challenges/Missions).</item>
+/// <item>4 Sub-Tab-Bools fuer kombinierte Views (Shop/Spin, Settings/Help,
+///       Cards/Collection, Challenges/Missions). Profile/Achievements/Collection laufen
+///       embedded ueber ProfileView (eigene Sub-Tabs), nicht als Bottom-Tabs.</item>
 /// <item>IsBottomTabBarVisible — true nur fuer die 4 Haupt-Tabs (Home/Play/Shop/Profile).</item>
-/// <item>10 SwitchToXxxTab-Methoden — setzen den jeweiligen Sub-Tab-Bool und rufen
+/// <item>SwitchToXxxTab-Methoden — setzen den jeweiligen Sub-Tab-Bool und rufen
 ///       die OnAppearing-Methode des zugehoerigen VMs ueber die Registry.</item>
 /// <item>OnBottomTabChanged-Handler — uebersetzt einen <see cref="BottomTab"/>-Wechsel in eine
 ///       NavigationRequest (idempotent: kein Re-Navigate wenn die View schon zum Tab gehoert).</item>
@@ -32,7 +33,6 @@ public sealed class BottomTabController : IBottomTabController
     private readonly Action<NavigationRequest> _navigate;
 
     private bool _isShopSpinTab;
-    private bool _isProfileAchievementsTab;
     private bool _isSettingsHelpTab;
     private bool _isCardsCollectionTab;
     private bool _isChallengesMissionsTab;
@@ -55,12 +55,6 @@ public sealed class BottomTabController : IBottomTabController
     {
         get => _isShopSpinTab;
         set { if (_isShopSpinTab == value) return; _isShopSpinTab = value; StateChanged?.Invoke(); }
-    }
-
-    public bool IsProfileAchievementsTab
-    {
-        get => _isProfileAchievementsTab;
-        set { if (_isProfileAchievementsTab == value) return; _isProfileAchievementsTab = value; StateChanged?.Invoke(); }
     }
 
     public bool IsSettingsHelpTab
@@ -119,18 +113,6 @@ public sealed class BottomTabController : IBottomTabController
         _registry.EnsureLuckySpin().OnAppearing();
     }
 
-    public void SwitchToProfileTab()
-    {
-        IsProfileAchievementsTab = false;
-        _registry.EnsureProfile().OnAppearing();
-    }
-
-    public void SwitchToAchievementsTab()
-    {
-        IsProfileAchievementsTab = true;
-        _registry.EnsureAchievements().OnAppearing();
-    }
-
     public void SwitchToSettingsTab()
     {
         IsSettingsHelpTab = false;
@@ -149,12 +131,6 @@ public sealed class BottomTabController : IBottomTabController
         _registry.EnsureDeck().OnAppearing();
     }
 
-    public void SwitchToCollectionTab()
-    {
-        IsCardsCollectionTab = true;
-        _registry.EnsureCollection().OnAppearing();
-    }
-
     public void SwitchToDailyChallengeTab()
     {
         IsChallengesMissionsTab = false;
@@ -170,10 +146,9 @@ public sealed class BottomTabController : IBottomTabController
     public void ResetTabStates()
     {
         var changed =
-            _isShopSpinTab || _isProfileAchievementsTab || _isSettingsHelpTab
+            _isShopSpinTab || _isSettingsHelpTab
             || _isCardsCollectionTab || _isChallengesMissionsTab;
         _isShopSpinTab = false;
-        _isProfileAchievementsTab = false;
         _isSettingsHelpTab = false;
         _isCardsCollectionTab = false;
         _isChallengesMissionsTab = false;

@@ -2,8 +2,9 @@ namespace BomberBlast.Navigation;
 
 /// <summary>
 /// Verwaltet den State der Bottom-Tab-Bar: Home / Play / Shop / Profile,
-/// plus die 5 horizontalen Sub-Tabs (Shop/Spin, Profile/Achievements, Settings/Help,
-/// Cards/Collection, Challenges/Missions).
+/// plus die 4 horizontalen Sub-Tabs (Shop/Spin, Settings/Help, Cards/Collection,
+/// Challenges/Missions). Profile/Achievements/Collection laufen embedded ueber ProfileView
+/// (eigene Sub-Tabs), nicht als Bottom-Tabs.
 ///
 /// <para>
 /// Bindet bidirektional an <see cref="BomberBlast.Services.IBottomTabHub"/> und an die
@@ -15,7 +16,6 @@ namespace BomberBlast.Navigation;
 public interface IBottomTabController
 {
     bool IsShopSpinTab { get; set; }
-    bool IsProfileAchievementsTab { get; set; }
     bool IsSettingsHelpTab { get; set; }
     bool IsCardsCollectionTab { get; set; }
     bool IsChallengesMissionsTab { get; set; }
@@ -26,12 +26,9 @@ public interface IBottomTabController
 
     void SwitchToShopTab();
     void SwitchToSpinTab();
-    void SwitchToProfileTab();
-    void SwitchToAchievementsTab();
     void SwitchToSettingsTab();
     void SwitchToHelpTab();
     void SwitchToDeckTab();
-    void SwitchToCollectionTab();
     void SwitchToDailyChallengeTab();
     void SwitchToMissionsTab();
 

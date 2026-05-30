@@ -166,9 +166,6 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <summary>Shop: false=Shop-Tab, true=Glücksrad-Tab</summary>
     public bool IsShopSpinTab { get => _tabController.IsShopSpinTab; set => _tabController.IsShopSpinTab = value; }
 
-    /// <summary>Profil: false=Profil-Tab, true=Erfolge-Tab</summary>
-    public bool IsProfileAchievementsTab { get => _tabController.IsProfileAchievementsTab; set => _tabController.IsProfileAchievementsTab = value; }
-
     /// <summary>Einstellungen: false=Settings-Tab, true=Hilfe-Tab</summary>
     public bool IsSettingsHelpTab { get => _tabController.IsSettingsHelpTab; set => _tabController.IsSettingsHelpTab = value; }
 
@@ -383,14 +380,15 @@ public sealed partial class MainViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     // Tab-Switch-RelayCommands delegieren an den IBottomTabController.
+    // HINWEIS: SwitchToProfileTab/AchievementsTab/CollectionTab wurden entfernt — Profile,
+    // Achievements und Collection sind als Sub-Tabs in ProfileView eingebettet (nicht als
+    // eigene Bottom-Tabs). Die Commands waren in keinem XAML gebunden (toter Pfad, der bei
+    // Wiederverdrahtung Doppel-Navigation ausgelöst hätte).
     [RelayCommand] private void SwitchToShopTab() => _tabController.SwitchToShopTab();
     [RelayCommand] private void SwitchToSpinTab() => _tabController.SwitchToSpinTab();
-    [RelayCommand] private void SwitchToProfileTab() => _tabController.SwitchToProfileTab();
-    [RelayCommand] private void SwitchToAchievementsTab() => _tabController.SwitchToAchievementsTab();
     [RelayCommand] private void SwitchToSettingsTab() => _tabController.SwitchToSettingsTab();
     [RelayCommand] private void SwitchToHelpTab() => _tabController.SwitchToHelpTab();
     [RelayCommand] private void SwitchToDeckTab() => _tabController.SwitchToDeckTab();
-    [RelayCommand] private void SwitchToCollectionTab() => _tabController.SwitchToCollectionTab();
     [RelayCommand] private void SwitchToDailyChallengeTab() => _tabController.SwitchToDailyChallengeTab();
     [RelayCommand] private void SwitchToMissionsTab() => _tabController.SwitchToMissionsTab();
 
@@ -452,7 +450,6 @@ public sealed partial class MainViewModel : ViewModelBase
     private void OnTabControllerStateChanged()
     {
         OnPropertyChanged(nameof(IsShopSpinTab));
-        OnPropertyChanged(nameof(IsProfileAchievementsTab));
         OnPropertyChanged(nameof(IsSettingsHelpTab));
         OnPropertyChanged(nameof(IsCardsCollectionTab));
         OnPropertyChanged(nameof(IsChallengesMissionsTab));

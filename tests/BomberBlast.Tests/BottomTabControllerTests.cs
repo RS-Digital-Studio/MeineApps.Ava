@@ -30,7 +30,6 @@ public class BottomTabControllerTests
         var (sut, _, _, _) = CreateSut();
 
         sut.IsShopSpinTab.Should().BeFalse();
-        sut.IsProfileAchievementsTab.Should().BeFalse();
         sut.IsSettingsHelpTab.Should().BeFalse();
         sut.IsCardsCollectionTab.Should().BeFalse();
         sut.IsChallengesMissionsTab.Should().BeFalse();
@@ -170,25 +169,23 @@ public class BottomTabControllerTests
         registry.DidNotReceive().EnsureShop();
     }
 
-    // Anmerkung: SwitchToShopTab/SwitchToSpinTab/SwitchToAchievementsTab und Co. rufen
-    // EnsureXxx().OnAppearing() — NSubstitute kann concrete VM-Typen (ShopViewModel etc.)
-    // ohne parameterlosen Ctor nicht substituieren, daher gibt es keinen sauberen Mock
-    // fuer OnAppearing(). Diese Pfade sind besser ueber Integration-Tests abgedeckt;
-    // hier wird das Tab-Bool-Setting via OnActiveViewChanged + StateChanged-Event
-    // indirekt verifiziert.
+    // Anmerkung: SwitchToShopTab/SwitchToSpinTab und Co. rufen EnsureXxx().OnAppearing() —
+    // NSubstitute kann concrete VM-Typen (ShopViewModel etc.) ohne parameterlosen Ctor nicht
+    // substituieren, daher gibt es keinen sauberen Mock fuer OnAppearing(). Diese Pfade sind
+    // besser ueber Integration-Tests abgedeckt; hier wird das Tab-Bool-Setting via
+    // OnActiveViewChanged + StateChanged-Event indirekt verifiziert.
 
     [Fact]
     public void ResetTabStates_SetztAlleBoolsAufFalse()
     {
         var (sut, _, _, _) = CreateSut();
         sut.IsShopSpinTab = true;
-        sut.IsProfileAchievementsTab = true;
+        sut.IsSettingsHelpTab = true;
         sut.IsCardsCollectionTab = true;
 
         sut.ResetTabStates();
 
         sut.IsShopSpinTab.Should().BeFalse();
-        sut.IsProfileAchievementsTab.Should().BeFalse();
         sut.IsSettingsHelpTab.Should().BeFalse();
         sut.IsCardsCollectionTab.Should().BeFalse();
         sut.IsChallengesMissionsTab.Should().BeFalse();

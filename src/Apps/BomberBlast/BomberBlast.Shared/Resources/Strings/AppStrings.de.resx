@@ -4595,6 +4595,7 @@
   <data name="WhatsNew_2_0_62_BulletOverlay" xml:space="preserve"><value>Modal-Overlays (Neuigkeiten, Bestätigungs-Dialoge) zeigen wieder korrekten Inhalt — DataContext-Bug bereinigt</value></data>
   <data name="WhatsNew_2_0_62_BulletPolish" xml:space="preserve"><value>Viele kleine Politur-Schritte aus dem internen Spieletester-Audit — saubereres Routing, weniger Sub-Tab-Hänger</value></data>
   <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>Faires Spiel &amp; runde Bedienung</value></data>
+  <data name="WhatsNew_2_0_64_Title" xml:space="preserve"><value>In Entwicklung</value></data>
   <data name="WhatsNew_2_0_63_BulletBoss" xml:space="preserve"><value>Bosse nehmen pro Explosion nur noch einmal Schaden — Boss-Kämpfe sind wieder fair berechnet</value></data>
   <data name="WhatsNew_2_0_63_BulletLeague" xml:space="preserve"><value>Liga &amp; Saison: Saison-Ende, Aufstiegs-Berechnung und das Löschen des eigenen Eintrags arbeiten jetzt zuverlässig</value></data>
   <data name="WhatsNew_2_0_63_BulletCards" xml:space="preserve"><value>Karten-Upgrade erstattet deine Ressourcen zurück, falls es fehlschlägt — kein verlorener Einsatz mehr</value></data>

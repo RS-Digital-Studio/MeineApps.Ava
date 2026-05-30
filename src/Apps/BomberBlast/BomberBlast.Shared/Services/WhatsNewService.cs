@@ -132,6 +132,14 @@ public sealed class WhatsNewService : IWhatsNewService
                 L("WhatsNew_2_0_63_BulletStability", "Zahlreiche Absturz-, Speicher- und Render-Fixes aus dem internen Spieletester-Durchlauf"),
             }
         }),
+        // OFFENER ENTWICKLUNGSEINTRAG fuer naechste Version — Bullets pro Aenderung anhaengen,
+        // beim naechsten Release-Trigger wird dieser Eintrag finalisiert + ein neuer leerer angehaengt.
+        // Solange Bullets leer sind, filtert GetEntries() den Eintrag heraus (kein leerer Dialog).
+        ("2.0.64", () => new WhatsNewEntry
+        {
+            Title = L("WhatsNew_2_0_64_Title", "In Entwicklung"),
+            Bullets = Array.Empty<string>()
+        }),
     ];
 
     public IReadOnlyList<WhatsNewEntry> GetEntries()

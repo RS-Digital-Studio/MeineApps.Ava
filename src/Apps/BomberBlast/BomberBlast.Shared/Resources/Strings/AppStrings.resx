@@ -4614,6 +4614,7 @@
   <data name="WhatsNew_2_0_62_BulletOverlay" xml:space="preserve"><value>Modal overlays (What's New, confirmation dialogs) show correct content again — DataContext bug resolved</value></data>
   <data name="WhatsNew_2_0_62_BulletPolish" xml:space="preserve"><value>Many small polish steps from internal playtester audit — cleaner routing, fewer sub-tab hangs</value></data>
   <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>Fair Play &amp; Smooth Controls</value></data>
+  <data name="WhatsNew_2_0_64_Title" xml:space="preserve"><value>In Development</value></data>
   <data name="WhatsNew_2_0_63_BulletBoss" xml:space="preserve"><value>Bosses now take damage only once per explosion — boss fights are calculated fairly again</value></data>
   <data name="WhatsNew_2_0_63_BulletLeague" xml:space="preserve"><value>League &amp; Season: end-of-season processing, promotion calculation and deleting your own entry now work reliably</value></data>
   <data name="WhatsNew_2_0_63_BulletCards" xml:space="preserve"><value>Card upgrades refund your resources if they fail — no more lost investment</value></data>

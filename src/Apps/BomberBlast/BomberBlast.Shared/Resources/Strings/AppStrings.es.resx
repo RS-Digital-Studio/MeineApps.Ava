@@ -4241,6 +4241,7 @@
   <data name="WhatsNew_2_0_62_BulletOverlay" xml:space="preserve"><value>Los overlays modales (Novedades, diálogos de confirmación) vuelven a mostrar el contenido correcto — error de DataContext resuelto</value></data>
   <data name="WhatsNew_2_0_62_BulletPolish" xml:space="preserve"><value>Muchos pequeños detalles de pulido del audit interno — enrutamiento más limpio, menos bloqueos en sub-pestañas</value></data>
   <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>Juego justo &amp; controles más fluidos</value></data>
+  <data name="WhatsNew_2_0_64_Title" xml:space="preserve"><value>En Desarrollo</value></data>
   <data name="WhatsNew_2_0_63_BulletBoss" xml:space="preserve"><value>Los jefes solo reciben daño una vez por explosión — los combates contra jefes vuelven a ser justos</value></data>
   <data name="WhatsNew_2_0_63_BulletLeague" xml:space="preserve"><value>Liga &amp; Temporada: el cierre de temporada, el cálculo de ascensos y la eliminación de tu entrada funcionan de forma fiable</value></data>
   <data name="WhatsNew_2_0_63_BulletCards" xml:space="preserve"><value>Al fallar una mejora de carta, tus recursos se devuelven automáticamente — sin pérdidas</value></data>

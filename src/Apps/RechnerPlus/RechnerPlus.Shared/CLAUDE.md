@@ -44,9 +44,9 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 | `Graphics/` | SkiaSharp-Renderer (VFD-Display, Result-Burst, Function-Graph, Splash) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
 | `Controls/` | App-eigene Custom Controls | [Controls/CLAUDE.md](Controls/CLAUDE.md) |
 | `Loading/` | Startup-Pipeline | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
-| `Themes/` | `AppPalette.axaml` | [Themes/CLAUDE.md](Themes/CLAUDE.md) |
-| `Resources/` | `AppStrings.resx` (6 Sprachen) | [Resources/CLAUDE.md](Resources/CLAUDE.md) |
-| `Assets/` | App-Bild-/Icon-Assets | [Assets/CLAUDE.md](Assets/CLAUDE.md) |
+
+Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (`AppPalette.axaml`, Indigo #7C7FF7),
+`Resources/Strings/` (`AppStrings.resx`, 6 Sprachen), `Assets/` (Bild-Assets).
 
 ## Build
 

@@ -35,8 +35,9 @@ Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `RechnerPlus.Shared/App
 | SkiaSharp-Renderer (VFD, Burst, Graph) | `Graphics/` | [Shared/Graphics](RechnerPlus.Shared/Graphics/CLAUDE.md) |
 | Custom Controls | `ExpressionHighlightControl` | [Shared/Controls](RechnerPlus.Shared/Controls/CLAUDE.md) |
 | Startup-Pipeline | `RechnerPlusLoadingPipeline` | [Shared/Loading](RechnerPlus.Shared/Loading/CLAUDE.md) |
-| Farbpalette | `AppPalette.axaml` (Indigo #7C7FF7) | [Shared/Themes](RechnerPlus.Shared/Themes/CLAUDE.md) |
-| Lokalisierung (6 Sprachen) | `AppStrings.resx` | [Shared/Resources](RechnerPlus.Shared/Resources/CLAUDE.md) |
+
+Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (AppPalette, Indigo #7C7FF7),
+`Shared/Resources/Strings/` (AppStrings.resx, 6 Sprachen), `Shared/Assets/`.
 
 ## Verweise
 

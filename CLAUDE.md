@@ -7,7 +7,7 @@ Domänen-Details, Gotchas und Troubleshooting → jeweilige Library-/App-CLAUDE.
 
 > **Unity-Projekte** (eigener Stack, **nicht** von `dotnet build` erfasst, eigene CLAUDE.md):
 > - **ArcaneKingdom** — TCG + RPG, native Unity-Neuentwicklung (Designplan v4).
-> - **BomberBlast.Unity** — Arena-Neuauflage von BomberBlast (Unity 6 + URP + Photon Fusion).
+> - **BomberBlast.Unity** — treuer 3D-Remake des produktiven BomberBlast (Unity 6 + URP; gleiches Spiel, nur 3D + besser; Online-Multiplayer optional).
 > - **HandwerkerImperium.Unity** — Neuentwicklung parallel zur produktiven Avalonia-Version.
 >
 > Die Avalonia-Versionen von BomberBlast und HandwerkerImperium bleiben produktiv und werden
@@ -189,7 +189,7 @@ F:\Meine_Apps_Ava\
 │       ├── GardenControl/               # Bewässerungssteuerung (Pi-Server + Desktop + Android)
 │       ├── SmartMeasure/                # 3D-Grundstücksvermessung (RTK-GPS, privat)
 │       ├── ArcaneKingdom/               # TCG + RPG  (Unity 6)
-│       ├── BomberBlast.Unity/           # Arena-Neuauflage (Unity 6 + URP + Photon Fusion)
+│       ├── BomberBlast.Unity/           # Treuer 3D-Remake des Originals (Unity 6 + URP)
 │       └── HandwerkerImperium.Unity/    # Neuentwicklung parallel zur Avalonia-Version (Unity 6)
 │
 ├── tools/

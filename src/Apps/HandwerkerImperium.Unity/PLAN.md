@@ -3,7 +3,7 @@
 > **Status:** Konzept (Pre-MVP) — Mai 2026
 > **Ziel:** Komplette Neuentwicklung von HandwerkerImperium in **Unity 6 (LTS)** parallel zur bestehenden Avalonia-Version. Tech-Foundation analog ArcaneKingdom. Avalonia-Version bleibt produktiv und wird weiter gepflegt, bis die Unity-Version Feature-Parität erreicht hat.
 > **Codename:** *HWI-Unity* (intern), Play-Store-Titel bleibt **HandwerkerImperium**
-> **Avalonia-Referenz:** v2.1.1 (~27.000 Zeilen C#, 177 Services, 80 ViewModels, 74 Views, 59 SkiaSharp-Renderer)
+> **Avalonia-Referenz:** v2.1.1 (~28.000 Zeilen C#, 91 Services, 77 Models, 80 ViewModels, 74 Views). Verbindliche Werte/Mechaniken: [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) + [DESIGN.md](DESIGN.md).
 > **Unity-Referenz:** ArcaneKingdom v0.0.2 (Unity 6000.4.8f1, VContainer, UniTask, Firebase, Addressables, URP)
 
 ---
@@ -58,7 +58,7 @@ Die Avalonia-Version hat 10 fertige Werkstätten, 10 Mini-Games, vollständige G
 | Audio: 3 Platform-Implementationen (Android/NAudio/ffplay) | Plattform-spezifische Bugs | Unity AudioMixer (1 API für alle Plattformen) |
 | TextMeshPro fehlt, Custom-Font-Resolver für CJK | Begrenzte Typografie | TextMesh Pro + Font-Assets |
 | WorkshopCardHitTester manuell | Komplexe Hit-Test-Logik | InputSystem + EventSystem (Raycaster) |
-| 27k LoC, 70+ DI-Service-Wirings manuell | Boilerplate-heavy | VContainer mit Auto-Wiring (Pattern aus ArcaneKingdom) |
+| ~28k LoC, ~91 DI-Service-Wirings manuell | Boilerplate-heavy | VContainer mit Auto-Wiring (Pattern aus ArcaneKingdom) |
 | Build: 3 Projekte (Shared/Android/Desktop) + Linked-Files | Verteilte Plattform-Logik | 1 Unity-Projekt, Build-Targets pro Plattform |
 | Konstanten-Compile-Time (GameBalanceConstants 491 Z.) | Live-Balancing nur via RemoteConfig | ScriptableObjects + Remote-Catalog → Hot-Reload |
 
@@ -83,11 +83,11 @@ Die Avalonia-Version hat 10 fertige Werkstätten, 10 Mini-Games, vollständige G
 
 ### 1.4 Was NICHT Ziel ist
 
-- ❌ **Kein Reboot der Spielmechanik** — Es ist eine **Re-Implementation**, kein neues Spiel
-- ❌ **Kein MMO** — Bleibt Idle/Async, kein Live-PvP (außer optional Phase 2)
-- ❌ **Kein Cross-Save** zwischen Avalonia & Unity — beide Versionen werden parallel betrieben, getrennte Save-Slots
-- ❌ **Kein Re-Launch im Play Store** — Update der bestehenden App im Hauptpaket (`com.meineapps.handwerkerimperium`), Migration in der App via Save-Konverter
-- ❌ **iOS nicht in Phase 1** — Vorbereitet im Code (Unity ist Cross-Platform), aber Build/Submission später
+- **Kein Reboot der Spielmechanik** — Es ist eine **Re-Implementation**, kein neues Spiel. Alle Mechaniken, Formeln und Balancing-Werte bleiben **1:1 identisch** zum Avalonia-Original (verbindlich: [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) + [DESIGN.md](DESIGN.md)). "Besser/3D" betrifft ausschließlich die Präsentation (Grafik, 3D, Hub, Cinematics, Audio, Input, UI-Tech) — niemals Mechanik oder Balance.
+- **Kein MMO** — Bleibt Idle/Async, kein Live-PvP (außer optional Phase 2)
+- **Kein Cross-Save** zwischen Avalonia & Unity — beide Versionen werden parallel betrieben, getrennte Save-Slots
+- **Kein Re-Launch im Play Store** — Update der bestehenden App im Hauptpaket (`com.meineapps.handwerkerimperium`), Migration in der App via Save-Konverter
+- **iOS nicht in Phase 1** — Vorbereitet im Code (Unity ist Cross-Platform), aber Build/Submission später
 
 ---
 
@@ -185,13 +185,13 @@ src/Apps/HandwerkerImperium.Unity/
 │       │   ├── ScriptableObjects/  # Configs als Assets
 │       │   │   ├── Workshops/      # 10 WorkshopDefinitions
 │       │   │   ├── Workers/        # WorkerTier-Definitions (10 Tiers)
-│       │   │   ├── Recipes/        # 30 CraftingRecipes
-│       │   │   ├── Research/       # 45 ResearchNodes
-│       │   │   ├── Achievements/   # 60+ AchievementDefinitions
-│       │   │   ├── Quests/         # Daily/Weekly/Story
-│       │   │   ├── Equipment/      # 5 Rarity-Tiers × 3 Slots
+│       │   │   ├── Recipes/        # 33 CraftingRecipes (T1 10 + T2 10 + T3 10 + T4 3)
+│       │   │   ├── Research/       # 72 ResearchNodes (Tools 20 + Mgmt 20 + Marketing 20 + Logistics 12)
+│       │   │   ├── Achievements/   # 79 AchievementDefinitions (Spieler) + 33 Gilden
+│       │   │   ├── Quests/         # Daily/Weekly/Story (60 Story-Kapitel)
+│       │   │   ├── Equipment/      # 4 Rarity-Tiers (KEIN Legendary) × 3 Slots
 │       │   │   ├── GuildBuildings/ # 10 HallBuildings
-│       │   │   ├── Events/         # 8 Event-Templates
+│       │   │   ├── Events/         # 4 Live-Event-Templates + 8 Random-Events
 │       │   │   ├── BattlePass/     # Season-Definitionen
 │       │   │   ├── Localization/   # String Tables
 │       │   │   └── Config/         # BalancingConfig, GameSettings
@@ -475,9 +475,11 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 
 ---
 
-## 5. Was wird 1:1 portiert, was umgebaut, was neu
+## 5. Was wird 1:1 portiert, was neu präsentiert, was ergänzt
 
-### 5.1 1:1 portierbar (90% Copy-Paste mit kleinen Anpassungen)
+> **Grundsatz:** Die **gesamte Spiel-Logik** (Mechaniken, Formeln, Balancing, Save-Schema, Firebase-Schema, Anti-Cheat) wird **1:1** portiert — sie ist verbindlich in [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md)/[DESIGN.md](DESIGN.md) dokumentiert. **Nichts Mechanisches wird "umgebaut".** Geändert wird ausschließlich die **Präsentation** (2D→3D, Audio, Input, UI-Tech) — das ist die legitime Verbesserung, niemals ein Eingriff in Mechanik oder Balance.
+
+### 5.1 1:1 portierte Logik (Domain-Layer, keine mechanischen Anpassungen)
 
 | Komponente | Avalonia-Quelle | Unity-Ziel |
 |------------|-----------------|------------|
@@ -501,9 +503,11 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 | **Lokalisierungs-Strings** | `Resources/*.resx` (6 Sprachen) | Unity Localization String-Tables (Import-Skript) |
 | **Story-Chapters** | `Models/StoryChapter.cs` | `ScriptableObjects/Story/Chapter_*.asset` |
 
-**Geschätzte Ersparnis:** ~3-4 Wochen Implementierungs-Zeit durch Reuse der Domain-Logik.
+**Geschätzte Ersparnis:** ~3-4 Wochen Implementierungs-Zeit durch Reuse der Domain-Logik. Die gelisteten Avalonia-Quellgrößen (Zeilenzahlen) sind grobe Orientierungswerte — maßgeblich für jede Formel/Wert bleibt [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md).
 
-### 5.2 Umzubauen (UI + Rendering komplett neu)
+### 5.2 Neu präsentiert (UI + Rendering — reine Präsentationsschicht, KEINE Mechanik-Änderung)
+
+> Hier wird ausschließlich die **Darstellungs-Technik** ausgetauscht (2D→3D, neuer UI-Stack, Audio/Input/Animation). Die dahinterliegende Logik bleibt die 1:1 portierte Domain aus § 5.1.
 
 | Avalonia-Komponente | Unity-Equivalent | Aufwand |
 |---------------------|-------------------|---------|
@@ -513,7 +517,7 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 | 59 SkiaSharp-Renderer | Mix aus: UI Toolkit (Codex), Shader Graph (FX), 3D-Prefabs (Werkstätten), uGUI+Animator (Mini-Games) | 8-10 Wochen |
 | WorkerAvatarControl | Spine 2D-Animationen oder Unity-Mecanim | 2 Wochen |
 | GameIcon (PathIcon-Subklasse, 224 Icons) | TextMeshPro-SpriteAsset oder ScriptableObject-IconAtlas | 1 Woche |
-| `App.axaml.cs` ServiceCollection (70+ Services) | VContainer-Installer (siehe 4.2) | 1 Woche |
+| `App.axaml.cs` ServiceCollection (~91 Services) | VContainer-Installer (siehe 4.2) | 1 Woche |
 | Android-LinkedFiles (`AdMobHelper`, `RewardedAdHelper`, etc.) | Google Mobile Ads Unity SDK + Plugin | 1 Woche |
 | Platform-Audio (3 Implementierungen) | Unity AudioMixer + Addressables | 0.5 Wochen |
 
@@ -542,31 +546,23 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 
 ## 6. Spielmechaniken im Detail
 
-> Alle Mechaniken werden aus der Avalonia-Version übernommen (sie funktionieren, Balancing ist getestet). Hier nur die Highlights — vollständige Spezifikation kommt in `DESIGN.md`.
+> Alle Mechaniken, Formeln und Balancing-Werte werden **1:1** aus der Avalonia-Version übernommen.
+> **Verbindliche Werte stehen in [DESIGN.md](DESIGN.md) (vollständiges GDD) und [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) (Single Source of Truth).**
+> Dieser Abschnitt beschreibt **nur** die Unity-spezifische **Präsentation** (3D, FX, Audio) — er dupliziert
+> bewusst **keine** Werte mehr, um Abweichungen zu vermeiden.
 
 ### 6.1 Werkstätten (10 Typen)
 
-| Werkstatt | Unlock-Level | Basis-Income | Spezialisierung |
-|-----------|--------------|--------------|-----------------|
-| 1. Holzwerkstatt | 1 | 1 € | Sawing |
-| 2. Maurerei | 5 | 10 € | RoofTiling |
-| 3. Maler | 12 | 50 € | Painting |
-| 4. Elektrik | 25 | 250 € | Wiring |
-| 5. Sanitär | 50 | 1.000 € | Pipe Puzzle |
-| 6. Architekt | 100 | 5.000 € | Blueprint |
-| 7. Designer | 200 | 25.000 € | DesignPuzzle |
-| 8. Bauinspektion | 350 | 125.000 € | Inspection |
-| 9. Schmiede | 550 | 625.000 € | Forge |
-| 10. Tüftler | 800 | 3.125.000 € | InventGame |
+**Werte/Mechanik:** siehe [DESIGN.md § 4](DESIGN.md#4-werkstätten-10-typen) (Tabelle der 10 Typen, Unlock-Level/-Kosten, Income-Multiplikatoren, Income-Formel § 4.3, Milestones § 4.4, Upgrade-Kosten § 4.5, Slots § 4.6, Spezialisierung § 4.7, Rebirth § 4.8, Manager § 4.9). Stammwerte: [ORIGINAL_WERTE.md § 01/02](ORIGINAL_WERTE.md).
 
-**Pro Werkstatt:**
-- Level 1-1500+
-- Income-Formel: `BaseValue × 1.02^Level` (siehe 11.1)
-- Rebirth-System: 5 Sterne, nach 100 Levels jeweils
-- Spezialisierung: Eines von 3 Profiles (Speed/Quality/Income)
-- Manager: 1 Slot, hire-/upgrade-bar
+Kurz-Eckdaten (keine abweichende Zweitquelle — bei Konflikt gilt DESIGN/ORIGINAL_WERTE):
+- **Max-Level 1000** pro Werkstatt (`WorkshopMaxLevel = 1000`) — KEIN "1-1500+".
+- **Income** = Summe über alle eingesetzten Worker (`1.02^(Level-1) × TypeMultiplier × MilestoneMultiplier × …`); **ohne Worker kein Einkommen** — KEIN globaler `BaseValue × Multiplier`-Term (siehe DESIGN § 4.3).
+- **Rebirth (0–5 Sterne):** Trigger ist **Level 1000** (nicht "alle 100 Level"); gestaffelte Boni je Stern (+15/35/60/100/150 % Einkommen, −5..−25 % Upgrade-Kosten, +0/1/1/2/2/3 Worker-Slots) — DESIGN § 4.8.
+- **Spezialisierung:** Efficiency / Quality / Economy ab Level 50 (nicht "Speed/Quality/Income") — DESIGN § 4.7.
+- **Manager:** 14 fest definierte Manager (kein freier Slot pro Werkstatt) — DESIGN § 4.9.
 
-**Unity-Visualisierung:**
+**Unity-Visualisierung (Präsentation):**
 - Jede Werkstatt als 3D-Szene (Workshop.unity, additive)
 - Camera schwenkt von Hub zu Detail-Ansicht
 - Worker laufen sichtbar zwischen Arbeitsstationen
@@ -574,39 +570,22 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 
 ### 6.2 Arbeiter (10 Tiers)
 
-| Tier | Rarity | Name | Effizienz |
-|------|--------|------|-----------|
-| F | Common | Auszubildender | 1.0x |
-| E | Common | Geselle | 1.5x |
-| D | Uncommon | Facharbeiter | 2.5x |
-| C | Uncommon | Vorarbeiter | 4.0x |
-| B | Rare | Meister | 6.5x |
-| A | Rare | Großmeister | 10.0x |
-| S | Epic | Star-Handwerker | 16.0x |
-| SS | Epic | Industrie-Veteran | 25.0x |
-| SSS | Legendary | Halbgott der Werkbank | 40.0x |
-| Legendary | Mythic | Hephaestus | 65.0x |
+**Werte/Mechanik:** siehe [DESIGN.md § 5](DESIGN.md#5-arbeiter-10-tiers) (Tier-Tabelle mit Effizienz-Spannen, Löhnen, Hire-Kosten, Unlock-Level, Aura-Bonus, Level-Resistance; Stats/EffectiveEfficiency § 5.2; Mood § 5.3; Fatigue § 5.4; Training § 5.6; Personalities § 5.5b; Affinity § 5.7; Markt § 5.8; Auktionen § 5.9). Stammwerte: [ORIGINAL_WERTE.md § 01](ORIGINAL_WERTE.md).
 
-**Stats pro Worker:**
-- Level (1-1000), XP, Mood (0-100), Fatigue (0-100)
-- Training-Tiers (3 Types: Stärke, Geschick, Geschwindigkeit)
-- Affinity (Material-Matching für +20%)
-- Personality (Random, beeinflusst Mood-Sensitivity)
-- Equipment-Slot (Helm, Werkzeug, Stiefel)
+Kurz-Eckdaten (keine abweichende Zweitquelle):
+- 10 Tiers F → Legendary; **Effizienz ist eine Min/Max-Spanne pro Tier** (z.B. F 0.30–0.50x, Legendary 13.0–22.0x) — die früheren festen Faktoren (1.0x … 65x) waren falsch.
+- Worker-Stats: Level (1–1000), XP, Mood (0–100), Fatigue (0–100), Talent, Personality, Equipment-Slot.
+- Auktionen sind ein **Gilden-Feature** (Worker-Markt vs. Gilden-Auktion) — exakte Cycle-/Bid-/Bot-Werte siehe DESIGN § 5.8/§ 5.9.
 
-**Auktionen:**
-- Worker-Markt (15min Cycle)
-- Bid-Logik (10% min)
-- NPC-Bots (35% Chance pro Tick)
-- Cross-Guild-Auktionen
-
-**Unity-Visualisierung:**
+**Unity-Visualisierung (Präsentation):**
 - Worker als **Spine 2D-Animationen** oder **animierte 3D-Charaktere**
 - Mood-Anzeige als Schwebe-Icon (Glücklich/Genervt/Erschöpft)
 - Idle-Bobbing + Blinzeln + Trink-Animation
 - Bei Promotion: Konfetti-Burst, neuer Avatar-Rahmen
 
 ### 6.3 Aufträge (6 Types)
+
+**Werte/Mechanik (verbindlich):** [DESIGN.md § 6](DESIGN.md#6-aufträge-6-types--3-strategien) — Order-Types § 6.1, Reward-/XP-Formel § 6.1a, Strategien § 6.2, Live-Orders § 6.3, Material-Orders § 6.4. Die folgende Übersicht ist nur eine Kurz-Orientierung.
 
 | Type | Reward-Multiplier | Special |
 |------|--------------------|---------|
@@ -632,9 +611,11 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 - Strategie-Wahl via animiertes Risiko-Meter
 - Mini-Game-Erfolg sichtbar in Werkstatt-Szene (Worker animiert es)
 
-### 6.4 Mini-Games (10 — als 3D-Erlebnis neu gedacht)
+### 6.4 Mini-Games (13 Enum-Typen, 10 Renderer — als 3D-Erlebnis neu gedacht)
 
-| Mini-Game | Avalonia (2D-SkiaSharp) | Unity (3D + Physik) |
+**Werte/Mechanik (verbindlich):** [DESIGN.md § 7](DESIGN.md#7-mini-games-13-typen-10-renderer). **13 MiniGame-Enum-Typen, aber nur 10 distinkte Routen/Renderer** (Planing, TileLaying, Measuring teilen die Sawing-Route); 8 davon sind "perfekt-zählbar" (Achievement `all_minigames_perfect`). Die untenstehende Tabelle zeigt die **10 Renderer** als 3D-Konzept.
+
+| Mini-Game (Renderer) | Avalonia (2D-SkiaSharp) | Unity (3D + Physik) |
 |-----------|--------------------------|---------------------|
 | **Sawing** | Bezier-Maserung-Pfad, 2D-Säge | 3D-Holzbrett mit Maserung, Säge folgt Maus/Finger, Holz-Splitter-Partikel, Klang reagiert auf Druck |
 | **Pipe Puzzle** | 2D-BFS Wasser-Durchfluss | 3D-Rohrleitungs-Anlage, drehen mit Touch, Wasser fließt sichtbar mit Particles |
@@ -651,33 +632,43 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 
 **Auto-Complete-Tickets bleiben:** 30 Perfects → Auto-Complete (Premium: 15)
 
-### 6.5 Forschung (45 Nodes, 4 Branches)
+### 6.5 Forschung (72 Nodes, 4 Branches)
 
-| Branch | Nodes | Effekt |
-|--------|-------|--------|
-| Infrastruktur | ~12 | Werkstatt-Speed, Bau-Kosten, Tabletten |
-| Wirtschaft | ~12 | Einkommen, Rep-Bonus, Crafting-Preis |
-| Wissen | ~10 | XP-Gain, Worker-Lern-Speed, Mini-Game-Score |
-| Logistik | ~11 | Auto-Collect, Order-Slots, Live-Order-Quality |
+**Werte/Mechanik (verbindlich):** [DESIGN.md § 8](DESIGN.md#8-forschung-72-nodes-4-branches) — alle 72 Nodes, Effekt-Felder § 8.2, Effekt-Aggregation § 8.7, Mechaniken § 8.8.
+
+| Branch | Enum | Nodes | Fokus |
+|--------|------|-------|-------|
+| Tools | 0 | 20 | Effizienz, MiniGame-Zone, Bau-Kosten, Auto-Material, Ascension |
+| Management | 1 | 20 | Lohn-Reduktion, Worker-Slots, Worker-Tiers-Unlock, Training, Auto-Assign |
+| Marketing | 2 | 20 | Reward-Multiplikator, Order-Slots, Reputation, Premium-Order-Chance |
+| Logistics | 3 | 12 | Lager-Slots, Stack-Limit, Markt, Auto-Sell, Crafting-Speed, Tier-4, Erbstücke |
+
+(Summe: 20 + 20 + 20 + 12 = **72**.)
 
 **Unity-Visualisierung:**
 - Forschungsbaum als **3D-Skill-Tree** mit Cinemachine-Kamera
 - Aktive Forschung: Particle-Strom zwischen Nodes
 - Abgeschlossen: Goldene Aura
 
-### 6.6 Prestige (7 Tiers)
+### 6.6 Prestige (7 Tiers + Ascension)
 
-| Tier | Bonus | Preservation |
-|------|-------|--------------|
-| Bronze | +20% | Achievements |
+**Werte/Mechanik (verbindlich):** [DESIGN.md § 9](DESIGN.md#9-prestige-7-tiers--ascension) — Tier-Tabelle § 9.1, PP-Berechnung § 9.2, permanenter Multiplikator + Diminishing Returns + **Hard-Cap 20×** § 9.3, Prestige-Shop (**25 Items**) § 9.7, Ascension § 9.8.
+
+Kurz-Orientierung (permanenter Einkommens-Bonus pro Tier, `GetPermanentMultiplierBonus`):
+
+| Tier | Permanent-Mult-Bonus | Preservation (kumulativ) |
+|------|----------------------|--------------------------|
+| Bronze | +20% | Prestige-Daten, Achievements, Premium, Settings, Tutorial |
 | Silver | +35% | + dito |
 | Gold | +50% | + Research |
-| Platin | +100% | + Prestige-Shop |
-| Diamant | +200% | + MasterTools |
-| Meister | +400% | + Gebäude (Lv→1) |
-| Legende | +800% | + Manager (Lv→1) |
+| Platin | +100% | + Prestige-Shop-Items |
+| Diamant | +200% | + Master-Tools |
+| Meister | +400% | + Gebäude (Lv→1), Equipment |
+| Legende | +800% | + Manager (Lv→1), Top-3 Worker/WS |
 
-**Nach 3× Legende: Ascension freigeschaltet**
+> **Wichtig (siehe DESIGN § 9.1/§ 9.3):** Die PP-Multiplikator-Spalte (1×…64×) skaliert nur die Prestige-**Punkte**. Der **permanente Einkommens-Multiplikator** (akkumuliert aus obigen Bonus-Werten) ist davon getrennt und **hart bei 20× gedeckelt** (`MaxPermanentMultiplier = 20.0`).
+
+**Nach 3× Legende: Ascension freigeschaltet** (DESIGN § 9.8).
 
 **Unity-Cinematic (statt SkiaSharp):**
 - Timeline-Sequenz (10-15s)
@@ -689,7 +680,7 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 
 ### 6.7 Gilden (V7-Features 1:1)
 
-Alle Gilden-Features bleiben strukturell identisch zur Avalonia-Version — Firebase-Pfade kompatibel.
+**Werte/Mechanik (verbindlich):** [DESIGN.md § 17](DESIGN.md#17-gilden--multiplayer) — Struktur § 17.1 (max **20** Basis-Mitglieder, 3 Rollen), Guild-Research **18 Nodes** § 17.2, **6 Bosse** § 17.4, **10 Hall-Gebäude** § 17.5, Mega-Projekte (2 Templates) § 17.6, Achievements (33) § 17.10, Firebase-Schema § 17.12. Alle Gilden-Features bleiben strukturell identisch zur Avalonia-Version — Firebase-Pfade kompatibel.
 
 | Feature | Status |
 |---------|--------|
@@ -711,10 +702,12 @@ Alle Gilden-Features bleiben strukturell identisch zur Avalonia-Version — Fire
 
 ### 6.8 Lager & Crafting (V7)
 
-- 20-200 Slots, Stack-Limit
-- 30 Rezepte (T1-T4)
-- Auto-Verkaufs-Regeln
-- Material-Affinität (+20% bei Match)
+**Werte/Mechanik (verbindlich):** Crafting [DESIGN.md § 10](DESIGN.md#10-crafting-33-rezepte-4-tiers), Lager [DESIGN.md § 11](DESIGN.md#11-lager-warehouse-v7).
+
+- 20-200 Slots, Stack-Limit (siehe DESIGN § 11.1)
+- **33 Rezepte** (T1 10 + T2 10 + T3 10 + T4 3) — DESIGN § 10
+- Auto-Verkaufs-Regeln (Unlock via logi_07) — DESIGN § 11.5
+- Material-Affinität (+20% Crafting-Speed bei Match) — DESIGN § 12.5
 
 **Unity-Visualisierung:**
 - Lager als **3D-Regalsystem** (animiert sich auffüllend)
@@ -730,11 +723,12 @@ Alle Gilden-Features bleiben strukturell identisch zur Avalonia-Version — Fire
 
 ### 6.10 Achievements/Quests/BattlePass
 
-- 60+ Achievements (3 Tiers Bronze/Silver/Gold)
-- 5 Daily-Challenge-Types
-- 4 Weekly-Missions
-- 30-Tage BattlePass (Free + Premium)
-- 4 saisonale Live-Events
+**Werte/Mechanik (verbindlich):** Achievements [DESIGN.md § 18](DESIGN.md#18-achievements-79-spieler-achievements-17-kategorien), Daily-Reward § 19, Lucky-Spin § 20, BattlePass § 21, Live-/Random-Events § 22, Saisonale Events § 23.
+
+- **79 Spieler-Achievements** (17 Kategorien) — DESIGN § 18
+- Daily-Reward (30-Tage-Zyklus) + Lucky-Spin (8 Slots) — DESIGN § 19/§ 20
+- BattlePass: **50 Tiers**, 30-Tage-Saison (Free + Premium) — DESIGN § 21
+- 4 Live-Event-Templates + 8 Random-Events + 4 saisonale Events/Jahr — DESIGN § 22/§ 23
 
 **Unity-Verbesserung:**
 - Achievement-Unlock mit **3D-Trophäen-Cinematic** (statt 2D-Dialog)
@@ -835,12 +829,12 @@ Unity Localization Package mit String-Tables:
   ├── research/ (18 Nodes)
   ├── boss/ (6 Boss-Types)
   ├── hall/ (10 Gebäude)
-  ├── achievements/ (30: 10 Typen × 3 Tiers)
+  ├── achievements/ (33: 11 Typen × 3 Tiers, siehe DESIGN § 17.10)
   ├── warSeason/
   └── chat/
 ```
 
-**Vorteil:** Bestehende Avalonia-Spieler könnten theoretisch ihre Gilde behalten — aber wir trennen mit eigenem Player-Profil-Pfad-Prefix (`/players_unity/`) um Schema-Konflikte zu vermeiden, **bis** der Avalonia-Save-Konverter (Phase 7) zuverlässig läuft.
+**Pfad-Schema:** identisch zur Avalonia-Version und zu [ARCHITECTURE.md § 10.1](ARCHITECTURE.md) — Wurzel `/players/{playerId}/` (kein abweichender `players_unity/`-Prefix). Die parallele Beta läuft über eine **eigene Firebase-Datenbank-Instanz / ein eigenes Projekt** (siehe Migrations-Strategie § 17.2), nicht über einen abweichenden Pfad-Prefix im selben Schema. So bleibt das Schema 1:1 kompatibel, **bis** der Avalonia-Save-Konverter (Phase 7) zuverlässig läuft.
 
 ### 8.2 Authentifizierung
 
@@ -1216,33 +1210,41 @@ Optional, wenn Spieler von Avalonia migrieren wollen:
 
 ### 11.1 Balancing-Werte (aus Avalonia, in ScriptableObject)
 
+> **Verbindliche Werte:** [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) (`GameBalanceConstants`) + [DESIGN.md § 30](DESIGN.md#30-ökonomie-formel-zusammenfassung). Der ScriptableObject spiegelt **exakt** diese Konstanten — bei Abweichung gilt ORIGINAL_WERTE.
+
 ```csharp
 [CreateAssetMenu(menuName = "HWI/BalancingConfig")]
 public class BalancingConfig : ScriptableObject
 {
     [Header("Workshop")]
-    public float WorkshopIncomeBase = 1.02f;
-    public float WorkshopUpgradeCostLow = 1.07f;
-    public float WorkshopUpgradeCostHigh = 1.06f;
+    public float IncomeBaseMultiplier = 1.02f;        // 1.02^(Level-1)
+    public float UpgradeCostExponent = 1.07f;         // Lv 2-500
+    public float UpgradeCostReducedExponent = 1.06f;  // ab Lv 501
+    public int   WorkshopMaxLevel = 1000;             // Rebirth-Trigger (NICHT 1500)
 
-    [Header("Income Soft-Cap")]
-    public decimal SoftCapThreshold = 8_000_000m;
-    public float SoftCapLog = 2.0f;
+    [Header("Income Soft-Cap (MULTIPLIKATOR-Cap, KEIN €/s-Cap)")]
+    // Schwelle ist eine Multiplikator-Einheit (Default 8.0), tier-/ascension-skaliert.
+    // Dämpfung: softened = threshold + log2(1 + (mult - threshold)). Details: DESIGN § 30.2.
+    public float SoftCapThresholdDefault = 8.0f;      // KEIN 8_000_000 — das war ein €-Wert-Fehler
 
-    [Header("Prestige")]
+    [Header("Prestige (Permanent-Mult-Bonus pro Tier, Hard-Cap 20x)")]
     public float PrestigeBronzeBonus = 0.20f;
     public float PrestigeSilverBonus = 0.35f;
-    // ... etc.
+    // ... bis Legende +8.00; MaxPermanentMultiplier = 20.0 (DESIGN § 9.3)
 
     [Header("Premium-Multipliers")]
     public float PremiumIncomeMultiplier = 1.5f;
     public float PremiumGoldenScrewMultiplier = 2.0f;
 
     [Header("Crafting")]
-    public float CraftingSellMultiplier = 1.0f;
-    public float MaterialAffinityBonus = 0.2f;
+    public float CraftingSellMultiplier = 1.0f;       // Soft-Cap 8.0, Hard-Cap 12.0 (DESIGN § 30)
+    public float MaterialAffinityBonus = 0.2f;        // +20% Crafting-Speed bei Match
 }
 ```
+
+**Income-Soft-Cap (verbindlich, DESIGN § 30.2):** Der Soft-Cap dämpft den **effektiven Multiplikator** (`grossIncome / TotalIncomePerSecond`), **nicht** einen absoluten €/s-Betrag. Schwelle ist tier-abhängig (None 4.0 … Legende 20.0, Ascension-Floor bis 30.0); `softened = threshold + log₂(1 + (mult − threshold))`.
+
+**Offline-Income (verbindlich, 4-stufige Staffelung, DESIGN § 30.3):** `netPerSecond × (80% in 0–2h, 35% in 2–4h, 15% in 4–8h, 5% ab 8h)`. MaxOfflineHours: 4h Basis / 8h Video-erweitert / 16h Premium (+4h aus Prestige-Shop). Zeitmanipulations-Schutz: `lastPlayed > now → 0`, `offlineDuration < 60s → 0`.
 
 **Editor-Tool:** "Balancing Dashboard" zum Live-Editieren (Hot-Reload).
 
@@ -1264,29 +1266,26 @@ public class BalancingConfig : ScriptableObject
 
 ### 11.4 IAPs (1:1 aus Avalonia)
 
-| Bundle | Preis | Inhalt |
-|--------|-------|--------|
-| Premium | 4,99 € | +50% Income, +100% GS (Gameplay), keine Ads, etc. |
-| Mid Bundle | 9,99 € | 1500 GS + 8h Speed-Boost |
-| Big Bundle | 19,99 € | 4000 GS + 48h Boost + 25 Mio. € |
-| Mega Bundle | 49,99 € | 12.000 GS + 7 Tage Boost + 200 Mio. € + Premium |
+Premium (`+50% Income`, `+100% GS` auf Gameplay-Quellen, keine Ads) entspricht dem Premium-Flag aus
+ORIGINAL_WERTE. Goldschrauben-/Geld-Bundles und ihre konkreten Inhalte/Preise stammen aus dem
+**Store-IAP-Katalog** (im Code nicht hartkodiert — vgl. [ORIGINAL_WERTE.md § 06](ORIGINAL_WERTE.md),
+`battle_pass_season`, `DailyBundleSkus`). Die finale Bundle-Tabelle ist 1:1 aus dem produktiven
+Play-Store-Katalog zu übernehmen, **nicht** zu erfinden.
 
-### 11.5 Ads (1:1 aus Avalonia, 13 Placements)
+| Bundle | Inhalt (Beispiel — gegen Live-Katalog verifizieren) |
+|--------|-----------------------------------------------------|
+| Premium | +50% Income, +100% GS (Gameplay), keine Ads (Premium-Flag, ORIGINAL_WERTE) |
+| GS-Bundles | Goldschrauben-Pakete + Speed-Boost — Preise/Mengen aus Store-Katalog |
+| Daily Bundle | 7-Slot-Rotation, RemoteConfig-getrieben (`DailyBundleSkus`), Default deaktiviert |
+| Prestige-Pass / Battle-Pass | `battle_pass_season` (Consumable) — Preis aus Store |
 
-Über Google Mobile Ads Unity SDK:
-- golden_screws (4h Cooldown)
-- shop_reward (3h Cooldown)
-- score_double
-- market_refresh
-- workshop_speedup
-- workshop_unlock
-- worker_hire_bonus
-- research_speedup
-- daily_challenge_retry
-- achievement_boost
-- offline_double
-- rush_boost
-- lucky_spin
+### 11.5 Ads (1:1 aus Avalonia)
+
+Über Google Mobile Ads Unity SDK. **Verbindliche Cooldowns/Reward-Werte (RemoteConfig, ORIGINAL_WERTE § 06):**
+`golden_screws` 4h-Cooldown (`GoldenScrewAdReward = 8`), `shop_reward` 3h-Cooldown, max **3** Premium-Ad-Rewards/Tag.
+Weitere Rewarded-Placements (1:1 aus Avalonia, exakte Liste gegen den AdReward-Enum verifizieren):
+score_double, market_refresh, workshop_speedup, workshop_unlock, worker_hire_bonus, research_speedup,
+daily_challenge_retry, achievement_boost, offline_double, rush_boost, lucky_spin.
 
 ### 11.6 Saison-System
 
@@ -1545,15 +1544,15 @@ unity-builder \
 ### Phase 4: Forschung + Prestige + Crafting (Monat 5-7)
 
 **Ziele:**
-- 45 Research-Nodes
+- 72 Research-Nodes (4 Branches)
 - 7 Prestige-Tiers
 - Ascension-System
-- 30 Crafting-Recipes
+- 33 Crafting-Recipes (T1-T4)
 - Warehouse mit 20-200 Slots
 - Markt mit Tagespreis-Sinus
-- Achievements (60+)
+- 79 Achievements (17 Kategorien)
 - Daily-Challenges, Weekly-Missions
-- BattlePass (30 Tage)
+- BattlePass (50 Tiers, 30-Tage-Saison)
 
 **Output:**
 - Single-Player-Komplett
@@ -1611,68 +1610,71 @@ unity-builder \
 
 ## 16. MVP-Definition
 
+> Mechanik/Werte aller MVP-Inhalte sind verbindlich in [DESIGN.md](DESIGN.md)/[ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) festgelegt; "im MVP" = im Production-Launch enthalten.
+
 ### IM MVP (zum Production-Launch):
 
 **Single-Player:**
-- ✅ Alle 10 Werkstätten (Level 1-1500+)
-- ✅ Alle 10 Worker-Tiers
-- ✅ Alle 6 Order-Types (Quick, Standard, Large, Coop, Weekly, Material)
-- ✅ Live-Orders mit VIP-Multiplikator
-- ✅ 3 Strategien (Safe/Standard/Risk)
-- ✅ **Alle 10 Mini-Games als 3D-Version** (Sawing, Forge, Pipe, Wiring, Painting, Blueprint, RoofTiling, Design, Inspection, Invent) — kompromisslose 3D-Vision
-- ✅ 45 Research-Nodes (4 Branches)
-- ✅ Prestige bis Tier 5 (Diamant) — Meister + Legende kommen post-Launch
-- ✅ Ascension nicht im MVP (kommt 1 Monat nach Launch)
-- ✅ 30 Crafting-Recipes (T1-T4)
-- ✅ Warehouse mit V7-Features
-- ✅ Markt
-- ✅ 60 Achievements
-- ✅ 5 Daily-Challenge-Types
-- ✅ 4 Weekly-Missions
-- ✅ 30-Tage BattlePass (Free + Premium)
-- ✅ Tutorial / FTUE
+- Alle 10 Werkstätten (Max-Level **1000**, Rebirth-Trigger; DESIGN § 4)
+- Alle 10 Worker-Tiers
+- Alle 6 Order-Types (Quick, Standard, Large, Coop, Weekly, Material)
+- Live-Orders mit VIP-Multiplikator
+- 3 Strategien (Safe/Standard/Risk)
+- **Alle 10 Mini-Game-Renderer als 3D-Version** (Sawing, Pipes, Wiring, Painting, RoofTiling, Blueprint, DesignPuzzle, Inspection, Forge, Invent — 13 Enum-Typen, 10 Renderer) — kompromisslose 3D-Vision
+- **72 Research-Nodes** (4 Branches)
+- Prestige bis Tier 5 (Diamant) — Meister + Legende kommen post-Launch
+- Ascension nicht im MVP (kommt 1 Monat nach Launch)
+- **33 Crafting-Recipes** (T1-T4)
+- Warehouse mit V7-Features
+- Markt
+- **79 Achievements** (17 Kategorien)
+- Daily-Reward (30-Tage) + Lucky-Spin (8 Slots)
+- 5 Daily-Challenge-Types
+- 4 Weekly-Missions
+- BattlePass: **50 Tiers**, 30-Tage-Saison (Free + Premium)
+- Tutorial / FTUE (**10 Schritte**)
 
 **Multiplayer:**
-- ✅ Gilden (Create, Join, Manage)
-- ✅ Co-op-Orders
-- ✅ Worker-Auktionen
-- ✅ Boss-Kämpfe (2 von 6 Bossen — Rest kommt nach)
-- ✅ Hall-Gebäude (5 von 10)
-- ✅ Chat
-- ❌ Kriegssaison (kommt 1 Monat nach Launch)
-- ❌ Mega-Projekte (kommt 2 Monate nach Launch)
+- Gilden (Create, Join, Manage; max **20** Mitglieder Basis)
+- Co-op-Orders
+- Worker-Auktionen (Gilden-Feature)
+- Boss-Kämpfe (2 von 6 Bossen — Rest kommt nach)
+- Hall-Gebäude (5 von 10)
+- Chat
+- Kriegssaison: **NICHT im MVP** (kommt 1 Monat nach Launch)
+- Mega-Projekte: **NICHT im MVP** (kommt 2 Monate nach Launch)
 
 **Online:**
-- ✅ Firebase Auth (Anonymous + Google)
-- ✅ Cloud-Save mit Sync
-- ✅ Push-Notifications (8 Trigger)
-- ✅ Anti-Cheat (HMAC + Cloud Functions)
-- ✅ Live-Events (1 zum Launch)
+- Firebase Auth (Anonymous + Google)
+- Cloud-Save mit Sync
+- Push-Notifications (8 Trigger)
+- Anti-Cheat (HMAC + Cloud Functions)
+- Live-Events (1 zum Launch)
 
 **Visuell:**
-- ✅ 3D-Hub-Szene mit allen Werkstätten
-- ✅ Cinemachine-Camera
-- ✅ Particle-System (Coin-Fly, Confetti, Sparkle)
-- ✅ Post-Processing (Bloom, Vignette, Color Grading)
-- ✅ Shader-Effekte (Workshop-Glow, Holographic-Worker, Money-Shimmer)
-- ✅ DOTween-Animationen
-- ✅ AudioMixer mit Ducking
-- ✅ Haptic Feedback
-- ✅ Prestige-Cinematic via Timeline
-- ❌ Day/Night-Cycle (Phase 2)
-- ❌ Live-Wetter (Phase 2)
-- ✅ **Meister-Hans-Voice in allen 6 Sprachen** (1500 Voice-Lines, ElevenLabs voice-cloned, ASSETS_AI.md § 11.3)
-- ❌ Worker-Tier-Voice-Lines (separate Stimmen pro Worker — Phase 2)
+- 3D-Hub-Szene mit allen Werkstätten
+- Cinemachine-Camera
+- Particle-System (Coin-Fly, Confetti, Sparkle)
+- Post-Processing (Bloom, Vignette, Color Grading)
+- Shader-Effekte (Workshop-Glow, Holographic-Worker, Money-Shimmer)
+- DOTween-Animationen
+- AudioMixer mit Ducking
+- Haptic Feedback
+- Prestige-Cinematic via Timeline
+- Day/Night-Cycle: **NICHT im MVP** (Phase 2)
+- Live-Wetter: **NICHT im MVP** (Phase 2)
+- **Meister-Hans-Voice in allen 6 Sprachen** (ElevenLabs Standard-Voice, multilingual v2 — **kein** Voice-Cloning; siehe § 9.16)
+- Worker-Tier-Voice-Lines: **NICHT im MVP** (separate Stimmen pro Worker — Phase 2)
 
 **Lokalisierung:**
-- ✅ Deutsch (primär, vollständig — inkl. Meister-Hans-Voice)
-- ✅ Englisch (vollständig — inkl. Meister-Hans-Voice)
-- ✅ ES, FR, IT, PT (Auto-Übersetzung + 1-2 Pässe Review — inkl. Meister-Hans-Voice via ElevenLabs Multi-Lingual-Cloning)
+- Deutsch (primär, vollständig — inkl. Meister-Hans-Voice)
+- Englisch (vollständig — inkl. Meister-Hans-Voice)
+- ES, FR, IT, PT (Auto-Übersetzung + 1-2 Pässe Review — inkl. Meister-Hans-Voice via ElevenLabs Multilingual-Standard-Voice)
 
 **Plattform:**
-- ✅ Android API 24+ (ARM64)
-- ❌ iOS (Phase 2)
-- ❌ Desktop (Phase 3, falls Nachfrage)
+- Android API 24+ (ARM64)
+- iOS: **NICHT im MVP** (Phase 2)
+- Desktop: **NICHT im MVP** (Phase 3, falls Nachfrage)
 
 ### NACH MVP (Post-Launch in den ersten 3-6 Monaten):
 
@@ -1722,10 +1724,10 @@ unity-builder \
 - **Vorteile:** Keine Migrations-Bugs blocken Avalonia-User, Unity-Entwicklung ohne Zeitdruck, A/B-Vergleich beider Versionen möglich
 
 **Konsequenzen für die Roadmap:**
-- ✅ Avalonia-Codebase muss in Phase 1-6 NICHT eingefroren werden
-- ✅ Beta-Tester können auch Avalonia weiter spielen ohne Konflikt
-- ❌ Save-Konverter wird nicht zum MVP gebaut (spart 2-3 Wochen)
-- ❌ Erste Unity-Build hat noch kein Multi-Device-Cloud-Save zu Avalonia (nicht nötig in Beta)
+- Avalonia-Codebase muss in Phase 1-6 NICHT eingefroren werden
+- Beta-Tester können auch Avalonia weiter spielen ohne Konflikt
+- Save-Konverter wird nicht zum MVP gebaut (spart 2-3 Wochen)
+- Erste Unity-Build hat noch kein Multi-Device-Cloud-Save zu Avalonia (nicht nötig in Beta)
 
 **Spätere Optionen (post-Beta):**
 
@@ -1759,11 +1761,10 @@ Falls Unity-Version kritische Bugs hat:
 | **Animation** | CSS-Hacks + DoubleTransition | Animator + DOTween + Timeline |
 | **Camera** | N/A (2D) | Cinemachine |
 | **Post-Processing** | N/A | URP Post-FX |
-| **DI** | Manual ServiceCollection (70+ Services) | VContainer Auto-Wiring |
+| **DI** | Manual ServiceCollection (~91 Services) | VContainer Auto-Wiring |
 | **Build** | 3 Projekte | 1 Projekt + Build-Targets |
 | **Test** | xUnit (CalcLib only) | NUnit + Unity Test Framework |
-| **Code-Size (Domain)** | ~27.000 Zeilen | ~30.000 Zeilen (geschätzt) |
-| **Code-Size (UI)** | ~18.000 Zeilen | ~12.000 Zeilen (Unity-Optimierung) |
+| **Code-Size (gesamt)** | ~28.000 Zeilen C# (91 Services, 77 Models, 80 ViewModels, 74 Views) | ~30.000 Zeilen (geschätzt, inkl. Unity-UI) |
 | **Firebase** | Custom REST-Client | Firebase Unity SDK |
 | **Mobile-Performance** | Mittel (SkiaSharp-Stutter auf Low-End) | Hoch (Mobile-optimiert) |
 | **Iteration-Speed** | Mittel (Recompile + XAML-Hotreload) | Hoch (ScriptableObject-Hotreload + Shader Graph) |
@@ -1821,8 +1822,6 @@ Falls Unity-Version kritische Bugs hat:
 
 ## Anhang C: Asset-Liste (Schätzung)
 
-| Kategorie | Anzahl | Quelle | Aufwand (€) |
-|-----------|--------|--------|-------------|
 ### Asset-Strategie: KI-Pipeline statt Outsourcing
 
 **Strategischer Wechsel:** Statt klassisches 3D-Outsourcing nutzen wir eine **lokal-laufende KI-Pipeline** (siehe [ASSETS_AI.md](ASSETS_AI.md) für volle Spezifikation). Das spart **~3-4 Monate Asset-Lieferzeit** und reduziert das Budget drastisch.
@@ -1832,7 +1831,7 @@ Falls Unity-Version kritische Bugs hat:
 - **Cloud-Polish:** Rodin Gen-2.5 für 5 Hero-Assets (Prestige-Cinematic, Mega-Projekte)
 - **Texturing:** Adobe Substance 3D Sampler + Material-Decals für 5 Upgrade-Stufen pro Werkstatt
 - **Audio:** Stable Audio 3 (Musik + SFX, lizenzierte Trainingsdaten)
-- **Voice:** ElevenLabs Pro (Meister-Hans-Voice-Cloned in 6 Sprachen)
+- **Voice:** ElevenLabs Pro (Meister-Hans-Standard-Voice, multilingual v2 — **kein** Voice-Cloning; siehe § 9.16)
 - **Animation:** Mixamo (Standard) + Cascadeur (Custom Mood-States)
 
 **Asset-Übersicht (~330 unique + ~130 Re-Texture-Varianten):**
@@ -1855,7 +1854,7 @@ Falls Unity-Version kritische Bugs hat:
 | **3D-Summe** | **~380 Slots** | — | **~12 Wochen** |
 | 10 BGM-Tracks | 10 | Stable Audio 3 | 0.5 Wochen |
 | 150 SFX | 150 | Stable Audio Open Small | 1 Woche |
-| 1500 Meister-Hans-Voice-Lines (6 Sprachen) | 1500 | ElevenLabs Voice-Cloned | 2 Wochen |
+| 1500 Meister-Hans-Voice-Lines (6 Sprachen) | 1500 | ElevenLabs Standard-Voice (multilingual v2) | 2 Wochen |
 | **Audio-Summe** | **~1660 Files** | — | **~3.5 Wochen** |
 
 **Geschätzter monetärer Aufwand (Stand Mai 2026):**

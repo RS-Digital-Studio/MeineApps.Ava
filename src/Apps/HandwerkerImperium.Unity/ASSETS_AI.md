@@ -2,10 +2,13 @@
 
 > **Status:** Produktions-Plan (Stand 2026-05-26, recherchiert)
 > **Ziel:** Skalierbarer, EU-konformer und kommerziell sauberer Workflow für 3D-Assets, Animationen, Texturen und Audio mit KI-Tools — primär lokal (ComfyUI + EU-konforme OSS-Modelle), Cloud-Services als Production-Standard wo Qualität es rechtfertigt.
-> **Geltungsbereich:** Werkstätten, Arbeiter, Werkzeuge, Master-Tools, Möbel/Crafting-Items, City-Tiles, Prestige-Cinematic-Assets, Animationen, Texturen, Game-Audio.
-> **Nicht im Scope:** UI-Icons (bleiben 2D, Übernahme aus Avalonia-Bestand mit 224 Bitmap-Icons), redaktionelle Texte, Story-Schreiben.
+> **Geltungsbereich:** Werkstätten, Arbeiter (inkl. sichtbares Equipment + Mood-States), Werkzeuge, Master-Tools, Crafting-Produkte, Buildings, Mini-Game-Props, Gilden-Hall-Gebäude, Mega-Projekte, Gilden-Bosse, City-Tiles, Cosmetics/Event-Visuals, Prestige-Cinematic-Assets, Animationen, Texturen, Game-Audio.
+> **Grundsatz (unverhandelbar):** Die Unity-Version ist **dasselbe Spiel** wie das produktive Avalonia-Original (gleiche Mechaniken, Formeln, Balancing-Werte — Quelle: [DESIGN.md](DESIGN.md) + [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md)), nur in **3D statt 2D-SkiaSharp**. Asset-mengen sind daher **vom realen Spielinhalt abgeleitet, nicht frei geschätzt**. Jedes sichtbare 2D-Element des Originals braucht ein 3D-Pendant.
+> **Nicht im Scope:** redaktionelle Texte, Story-Schreiben.
 
-> ⚠️ **EU-Compliance-Warnung:** Hunyuan3D (Tencent) ist in der EU/UK/Südkorea per Lizenz **explizit ausgeschlossen** und erfordert schriftliche Tencent-Sonderfreigabe. Wir bauen bewusst eine **EU-konforme Pipeline** ohne Hunyuan als Default. Details: [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05).
+> **EU-Compliance-Warnung:** Hunyuan3D (Tencent) ist in der EU/UK/Südkorea per Lizenz **explizit ausgeschlossen** und erfordert schriftliche Tencent-Sonderfreigabe. Wir bauen bewusst eine **EU-konforme Pipeline** ohne Hunyuan als Default. Details: [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05).
+
+> **2D-zu-3D-Migration:** Das Original rendert alles in 2D (SkiaSharp + 224 Bitmap-/Vektor-Icons aus `Assets/visuals/`). Für die Unity-Version wird **jedes sichtbare 2D-Element zu einem 3D-Pendant** überführt: Werkstätten und Buildings werden begehbare 3D-Strukturen, Worker-Sprites werden riggbare 3D-Charaktere, Crafting-Produkt-Icons werden 3D-Props (im Lager/Showroom sichtbar), Master-Tool-Icons werden Glow-Artefakte, Gilden-Hall und Bosse werden 3D-Szenen. UI-Icons (Buttons, Tab-Symbole, Währungs-Glyphen) bleiben **2D** und werden als TextMeshPro-SpriteAsset aus dem Avalonia-Icon-Bestand (224 Glyphen) übernommen (siehe [§12.3](#123-ui-icons-2d-bleiben-2d)).
 
 ---
 
@@ -25,7 +28,7 @@
 12. [Asset-Kategorien & Budgets (Toon-Werkstatt)](#12-asset-kategorien--budgets-toon-werkstatt)
 13. [Stil-Konsistenz (Stylized Toon-Werkstatt)](#13-stil-konsistenz-stylized-toon-werkstatt)
 14. [EU-Compliance & Lizenz-Recherche (Stand 2026-05)](#14-eu-compliance--lizenz-recherche-stand-2026-05)
-15. [Pilot-Plan (5 Assets vor Skalierung)](#15-pilot-plan-5-assets-vor-skalierung)
+15. [Pilot-Plan (6 Assets vor Skalierung)](#15-pilot-plan-6-assets-vor-skalierung)
 16. [Output-Ablage + Versionierung](#16-output-ablage--versionierung)
 17. [Risiken & Mitigation](#17-risiken--mitigation)
 18. [Verweise](#18-verweise)
@@ -34,15 +37,15 @@
 
 ## 1. Strategische Entscheidung
 
-Für ein **stylisiertes Idle-Builder-Game mit Cartoon-Werkstatt-Ästhetik** ist KI-3D-Generierung 2026 nicht nur reif, sondern **wirtschaftlich notwendig**. Die schiere Menge an Modellen (10 Werkstätten × 5 Upgrade-Stufen + 30 Crafting-Rezepte über 4 Tiers + ~120 Arbeiter-Skin-Varianten + 80 City-Tiles + 12 Master-Tools = ~330 Asset-Slots) ist mit klassischem Artist-Workflow nicht zu bewältigen.
+Für ein **stylisiertes Idle-Builder-Game mit Cartoon-Werkstatt-Ästhetik** ist KI-3D-Generierung 2026 nicht nur reif, sondern **wirtschaftlich notwendig**. Die schiere Menge an Modellen, die der reale Spielinhalt erfordert (10 Werkstätten × 5 Upgrade-Stufen + 33 Crafting-Produkte über 4 Tiers + 20 Arbeiter-Basis-Modelle mit ~120 Skin-Varianten + 7 Buildings + 12 Master-Tools + 13 Mini-Game-Prop-Sets + 10 Gilden-Hall-Gebäude + 6 Gilden-Bosse + 2 Mega-Projekte + 80 City-Tiles = mehrere hundert Asset-Slots, siehe [§12](#12-asset-kategorien--budgets-toon-werkstatt)) ist mit klassischem Artist-Workflow nicht zu bewältigen. **Alle Stückzahlen sind aus dem produktiven Avalonia-Original abgeleitet** (Quelle: [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) / [DESIGN.md](DESIGN.md)), nicht frei geschätzt.
 
 **Kern-Entscheidungen (verbindlich):**
 
 - **EU-konformer OSS-Stack** als Default — kein Hunyuan3D ohne Tencent-Sonderfreigabe.
 - **Lokale Pipeline primär**: ComfyUI 0.3.x + ComfyUI-3D-Pack mit **TRELLIS 2** (Microsoft, MIT) als Geometrie-Hauptmodell, **SPAR3D** (Stability) für schnelle Props.
 - **Cloud-Services für Production**: Meshy 6 oder Rodin Gen-2.5 für Prestige-Cinematic-Hero-Modelle, Tripo 3.0 für komplexe Werkstatt-Architektur mit Auto-Rigging.
-- **Modulare Werkstätten:** Basis-Modell + austauschbare Material-Decals/Anbauten für Upgrade-Stufen Lv1-5 — spart ~80% Generations-Zeit gegenüber 5× separat generierten Modellen.
-- **Re-Texturing-Workflow:** 30 Workshop-Specialization-Skins über Decal-Material-Layer, nicht über neue Modelle.
+- **Modulare Werkstätten:** Basis-Modell + austauschbare Material-Decals/Anbauten für Upgrade-Stufen Lv1-5 — spart ~80% Generations-Zeit gegenüber 5× separat generierten Modellen. (WorkshopMaxLevel = 1000 im Code; die 5 sichtbaren Decal-Stufen sind eine visuelle Gruppierung, keine mechanische Abweichung.)
+- **Re-Texturing-Workflow:** 30 Workshop-Specialization-Skins (3 Spezialisierungen × 10 Werkstätten, siehe DESIGN.md) über Decal-Material-Layer, nicht über neue Modelle.
 - **Audio**: Stable Audio 3 (Open-Weight, lizenzierte Trainingsdaten). Suno wegen ungeklärter Trainingsdaten-Lawsuits **gemieden**.
 - **Animation**: Cascadeur (AI-AutoPosing) + Mixamo (Standard-Worker-Loops) + DeepMotion (für individuelle Mood-Animation aus eigenem Video).
 - **Bestehende 2D-ComfyUI-Pipeline** für Avalonia-Icons (`F:\AI\ComfyUI_workflows\handwerkerimperium\`) wird um 3D-Schritte erweitert — gemeinsamer Style-LoRA-Pool für 2D-UI und 3D-Welt.
@@ -131,7 +134,7 @@ Für ein **stylisiertes Idle-Builder-Game mit Cartoon-Werkstatt-Ästhetik** ist 
 | **Stable Audio 3** | 3.0 (Mai 2026) | Stability Community ≤ $1M; Open-Weight Small/Medium | Musik + SFX (lizenzierte Trainingsdaten!) | stableaudio.com |
 | **Blender** | 4.3+ | GPL | Cleanup, Decimation, Modul-Setup, Export | blender.org |
 
-> ⚠️ **NICHT genutzt (EU-Lizenz-Ausschluss):**
+> **NICHT genutzt (EU-Lizenz-Ausschluss):**
 > - **Hunyuan3D-2 / 2.5** (Tencent) — Lizenz schließt EU/UK/Korea per Definition `Territory` aus. Nur mit schriftlicher Sonderfreigabe. Source: [Hunyuan3D-2 LICENSE](https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/LICENSE).
 > - **HunyuanWorld-1.0** (Tencent) — gleiche Lizenz-Restriktion.
 
@@ -157,7 +160,7 @@ Für ein **stylisiertes Idle-Builder-Game mit Cartoon-Werkstatt-Ästhetik** ist 
 
 | Tool | Lizenz | Stärke | Hinweis |
 |------|--------|--------|---------|
-| **Mixamo** (Adobe) | Kostenlos, kommerziell OK | Standard-Humanoid-Rigging + Animations-Bibliothek | **Hauptlösung für 20+ Worker-Basis-Modelle** |
+| **Mixamo** (Adobe) | Kostenlos, kommerziell OK | Standard-Humanoid-Rigging + Animations-Bibliothek | **Hauptlösung für die 20 Worker-Basis-Modelle** (10 Tiers × m/w, siehe DESIGN.md § 5) |
 | **Tripo Auto-Rigging** | Tripo-Sub | Universal-Rig (humanoid + non-humanoid) | Backup falls Mixamo bei stylisierten Worker-Proportionen versagt |
 | **Reallusion AccuRIG 2** | Free (mit RL-Acc) | Auto-Rig humanoid + non-humanoid, AI Body-Detection | Solider Mixamo-Konkurrent, gute Toon-Proportions-Unterstützung |
 | **Cascadeur** (Nekki) | Free für Indie < $100k Rev | AI-AutoPosing, Mood-States-Animation, Mixamo-Skelett-Kompatibel | Best-in-Class für individuelle Mood/Working-Animations |
@@ -214,13 +217,13 @@ Alternative: **ComfyUI-Manager** (One-Click).
 
 | Modell | Größe | Ablage | EU-Lizenz OK |
 |--------|-------|--------|---------------|
-| TRELLIS 2 (image-large) | ~5 GB | `ComfyUI/models/TRELLIS/` | ✅ MIT |
-| SPAR3D | ~2 GB | `ComfyUI/models/SPAR3D/` | ✅ Stability Community |
-| Stable Fast 3D | ~1.5 GB | `ComfyUI/models/SF3D/` | ✅ Stability Community |
-| TripoSG (1.5B) | ~3 GB | `ComfyUI/models/TripoSG/` | ✅ OSS (VAST) |
-| InstantMesh | ~1 GB | `ComfyUI/models/InstantMesh/` | ✅ Apache-2.0 |
-| Flux.1-dev (für interne 2D-Iteration) | ~24 GB | `ComfyUI/models/checkpoints/` | ⚠️ Non-commercial Default |
-| SDXL 1.0 base + refiner | ~13 GB | `ComfyUI/models/checkpoints/` | ✅ Stability Community |
+| TRELLIS 2 (image-large) | ~5 GB | `ComfyUI/models/TRELLIS/` | Ja — MIT |
+| SPAR3D | ~2 GB | `ComfyUI/models/SPAR3D/` | Ja — Stability Community |
+| Stable Fast 3D | ~1.5 GB | `ComfyUI/models/SF3D/` | Ja — Stability Community |
+| TripoSG (1.5B) | ~3 GB | `ComfyUI/models/TripoSG/` | Ja — OSS (VAST) |
+| InstantMesh | ~1 GB | `ComfyUI/models/InstantMesh/` | Ja — Apache-2.0 |
+| Flux.1-dev (für interne 2D-Iteration) | ~24 GB | `ComfyUI/models/checkpoints/` | Nur intern — Non-commercial Default |
+| SDXL 1.0 base + refiner | ~13 GB | `ComfyUI/models/checkpoints/` | Ja — Stability Community |
 
 > **Wichtig:** Final-Konzepte via **SDXL+LoRA** produzieren (kommerziell sauber). Flux.1-dev nur für interne Iteration.
 
@@ -229,19 +232,28 @@ Alternative: **ComfyUI-Manager** (One-Click).
 ```
 F:\AI\ComfyUI_workflows\handwerkerimperium_unity\
 ├── 00_style_reference\
-│   ├── workshop_carpenter\           (5 Style-Refs)
+│   ├── workshop_carpenter\           (5 Style-Refs; je Werkstatt-Typ analog)
 │   ├── workshop_innovation_lab\
-│   ├── worker_tier_F_to_S\
+│   ├── building_office\              (7 Buildings analog)
+│   ├── worker_tier_F_to_legendary\   (10 Tiers × m/w)
 │   ├── tool_master_smith\
+│   ├── guild_hall_assembly\          (10 Hall-Gebäude)
+│   ├── guild_boss_stone_golem\       (6 Bosse)
 │   └── city_tile_dawn\
 ├── 01_concept_2d\                    (Stage 1)
 │   ├── sdxl_workshop_lora.json
+│   ├── sdxl_building_lora.json
 │   ├── sdxl_worker_lora.json
+│   ├── sdxl_guild_lora.json          (Hall-Gebäude + Bosse)
 │   └── flux_props_iter.json          (intern)
 ├── 02_image_to_3d\                   (Stage 2)
 │   ├── trellis2_workshop_modular.json
+│   ├── trellis2_building_modular.json
 │   ├── trellis2_worker_tpose.json
+│   ├── trellis2_guild_hall.json
+│   ├── rodin_guild_boss.json         (Cloud-Polish, animierbar)
 │   ├── spar3d_tools_batch.json
+│   ├── spar3d_equipment_batch.json   (4 Typen × 4 Rarities)
 │   ├── triposg_crafting_items.json
 │   └── batch_city_tiles.json
 ├── 03_texture_decals\                (Stage 4, HWI-spezifisch!)
@@ -269,7 +281,7 @@ Die existierende **2D-Avalonia-Icon-Pipeline** (`F:\AI\ComfyUI_workflows\handwer
 
 **Trainings-Setup:**
 - Tool: **Kohya_ss** (Standard für SDXL/Flux-LoRA-Training)
-- Trainings-Set: 20-30 hochwertige eigene Konzept-Bilder (5 pro Kategorie: Workshops, Workers, Tools, Crafting-Items, City-Tiles)
+- Trainings-Set: 30-50 hochwertige eigene Konzept-Bilder, breit über alle sichtbaren Kategorien gestreut (Workshops, Buildings, Workers + Equipment, Tools, Crafting-Produkte, Gilden-Hall-Gebäude, Gilden-Bosse, City-Tiles) — so bleibt der Style-LoRA über das gesamte Asset-Spektrum konsistent
 - Re-Use existierender 2D-Style-Bilder aus der Avalonia-Pipeline als Basis
 - Trainings-Zeit: 4-8h auf RTX 4080 (LoRA Rank 64)
 - Output: `handwerkerimperium_toon_v2.safetensors` (~150-300 MB)
@@ -310,14 +322,19 @@ ControlNet `Canny` aus einem groben Block-Sketch erzwingt die Layout-Konstanz.
 
 | Asset-Typ | Primär-Algorithmus | Backup | Grund |
 |-----------|---------------------|--------|-------|
-| Werkstatt (komplex, modular zerlegbar) | **TRELLIS 2** | Rodin Gen-2.5 | Beste Topologie für Multi-Mesh-Komposition |
-| Worker (humanoid, T-Pose) | **TRELLIS 2** | TripoSG | TRELLIS-2 hält humanoide Topologie für Mixamo-Rigging |
-| Crafting-Item T1/T2 (Möbel, Kisten) | **SPAR3D** | TRELLIS 2 | <1s pro Asset, gute Prop-Qualität |
-| Crafting-Item T3/T4 (Villa, Skyscraper) | **TRELLIS 2** | Rodin Gen-2.5 | Hero-Quality, Cloud-Polish optional |
+| Werkstatt (10 Typen, komplex, modular zerlegbar) | **TRELLIS 2** | Rodin Gen-2.5 | Beste Topologie für Multi-Mesh-Komposition |
+| Building (7 Typen, modular) | **TRELLIS 2** | Rodin Gen-2.5 | Wie Werkstätten, Modul-Split für 5 Level-Stufen |
+| Worker (10 Tiers × m/w, humanoid, T-Pose) | **TRELLIS 2** | TripoSG | TRELLIS-2 hält humanoide Topologie für Mixamo-Rigging |
+| Worker-Equipment (4 Typen × 4 Rarities) | **SPAR3D** | InstantMesh | Kleine getragene Props (Helm/Handschuhe/Stiefel/Gürtel) |
+| Crafting-Produkt T1/T2 (33 gesamt) | **SPAR3D** | TRELLIS 2 | <1s pro Asset, gute Prop-Qualität |
+| Crafting-Produkt T3/T4 (Villa, Skyscraper, HQ) | **TRELLIS 2** | Rodin Gen-2.5 | Hero-Quality, Cloud-Polish optional |
 | Master-Tools (12 Artefakte) | **SPAR3D** | TRELLIS 2 | Kleine Props mit Glow → Emissive im PBR |
 | City-Tiles (80) | **TripoSG** | TRELLIS 2 | Batch-fähig, gleichförmige Geometrie |
-| Mega-Projekt (Cathedral, Headquarters) | **Rodin Gen-2.5** | TRELLIS 2 + Cloud-Polish | Hero-Hero, Architektur-Qualität |
-| MiniGame-Props (Werkbank-Items) | **SPAR3D** | InstantMesh | Schnell, klein |
+| Gilden-Hall-Gebäude (10) | **TRELLIS 2** | Rodin Gen-2.5 | Modular, Level = Größe/Glow |
+| Gilden-Bosse (6, animiert) | **Rodin Gen-2.5** | TRELLIS 2 + Cloud-Polish | Hero-Charaktere, eigene Boss-Arena, müssen riggbar sein |
+| Mega-Projekt (2 Templates: Cathedral, HQ) | **Rodin Gen-2.5** | TRELLIS 2 + Cloud-Polish | Hero-Hero, Architektur-Qualität, 5 Bauphasen je Template |
+| MiniGame-Props (13 Typen / 10 Renderer) | **SPAR3D** | InstantMesh | Schnell, klein |
+| Cosmetics / Event-Visuals (saisonal) | **SPAR3D** / **TRELLIS 2** | — | Je nach Komplexität (Deko-Props vs. Themen-Strukturen) |
 
 ### 6.2 TRELLIS 2 — Workshop-Workflow
 
@@ -381,12 +398,13 @@ Mesh-Zerlegung in Blender (manuell beim Pilot, später Script-basiert):
 
 ### 7.3 Worker-Cleanup
 
-Pro Worker-Basis-Modell (20 Stück, ~F-Legendary × m/w):
+Pro Worker-Basis-Modell (20 Stück = 10 Tiers F/E/D/C/B/A/S/SS/SSS/Legendary × m/w, siehe DESIGN.md § 5):
 
 1. **Decimate AUF Polygon-Budget VOR Mixamo-Rig** (Mixamo limitiert auf 75k Tris).
 2. **T-Pose-Check:** GLB in T-Pose? Falls nicht → Blender-Auto-Pose via Rigify-Stub setzen.
-3. **Face-UV-Map separieren** in eigenes UV-Set (für Mood-State-Texture-Swap).
-4. **Affinity-Prop-Slot** als leerer Empty an der Hand-Bone-Position.
+3. **Face-UV-Map separieren** in eigenes UV-Set (für Mood-State-Texture-Swap, 4 States).
+4. **Affinity-Prop-Slot** als leerer Empty an der Hand-Bone-Position (5 Material-Affinitäten).
+5. **Equipment-Attach-Slots** als leere Empties (Helm-/Hand-/Fuß-/Gürtel-Bone) für sichtbar getragenes Equipment (4 Typen × 4 Rarities).
 
 ---
 
@@ -446,12 +464,20 @@ Pro Worker: **4 Gesichtstexturen** (Happy / Neutral / Sad / Frustrated) auf sepa
 
 **Generation:** 5 Prop-Modelle insgesamt (kein Re-Generation pro Worker). Unity-Animation-Layer hängt das Prop dynamisch an Hand-Bone.
 
-### 8.5 Master-Tool Glow + Emissive
+### 8.5 Worker-Equipment (sichtbar getragen)
 
-12 Master-Tools brauchen Glow-FX (Gold-Hammer, Crystal-Chisel, etc.):
+Das Original kennt **4 Equipment-Typen** (Helm, Handschuhe, Stiefel, Gürtel) in **4 Rarities** (Common/Uncommon/Rare/Epic) — Quelle: [ORIGINAL_WERTE.md § 6](ORIGINAL_WERTE.md). Jeder Worker hat **genau 1 Equipment-Slot** (`EquippedItem`), kein Multi-Slot. In 3D wird das getragene Stück sichtbar an den passenden Bone-Slot des Workers gehängt (Helm → Kopf, Handschuhe → Hände, Stiefel → Füße, Gürtel → Hüfte).
+
+- **16 Modelle** (4 Typen × 4 Rarities), klein (LOD0 ~300 Tris). Kein Re-Modeling pro Worker.
+- **Rarity-Visualisierung** über Material + Farbe (Rarity-Color aus ORIGINAL_WERTE.md § 6.4: Common #9E9E9E, Uncommon #4CAF50, Rare #2196F3, Epic #9C27B0) + Emissive-Akzent bei Epic.
+- **Generation:** SPAR3D (kleine Props) + Material-Recolor pro Rarity. Workflow: `03_texture_decals/equipment_rarity_recolor.json`.
+
+### 8.6 Master-Tool Glow + Emissive
+
+12 Master-Tools brauchen Glow-FX (Gold-Hammer, Crystal-Chisel, etc.) — Quelle: [ORIGINAL_WERTE.md § 5](ORIGINAL_WERTE.md), Rarity Common→Legendary:
 
 - Albedo + Normal Standard.
-- **Emissive-Map** für Glow-Bereiche, in Unity via `URP/Lit Emission`.
+- **Emissive-Map** für Glow-Bereiche, in Unity via `URP/Lit Emission`. Glow-Intensität skaliert mit MasterToolRarity.
 - Workflow: `03_texture_decals/master_tool_glow_emissive.json` (SDXL + ControlNet-Mask für Glow-Bereich-Definition).
 
 ---
@@ -485,16 +511,15 @@ Insgesamt: ~8 Anim-Clips × 20 Workers = 160 Animation-Slots. Mixamo deckt 6 dav
 
 ### 9.3 Mood-State-Sync
 
-Animator-State-Machine pro Worker:
+Animator-State-Machine pro Worker. **Mood-Schwellen 1:1 aus dem Original** ([DESIGN.md § 5.3](DESIGN.md) / [ORIGINAL_WERTE.md § 3.4](ORIGINAL_WERTE.md)): Happy ab 80, Neutral ab 50, kritisch unter 20, `WillQuit` bei Mood < 20):
 
 ```
-Idle_Happy ─── (Mood<70) ──> Idle_Neutral
-Idle_Neutral ─── (Mood<40) ──> Idle_Sad
-Idle_Sad ─── (Mood<20) ──> Idle_Frustrated
-                       └── (Mood<10) ──> Frustrated-Outburst (One-Shot) → quit
+Idle_Happy   ─── (Mood < 80) ──> Idle_Neutral
+Idle_Neutral ─── (Mood < 50) ──> Idle_Sad
+Idle_Sad     ─── (Mood < 20) ──> Idle_Frustrated (WillQuit-Zone, QuitDeadline läuft)
 ```
 
-Material-Slot-Override (Face-Texture-Swap) synchronisiert mit Animator-State.
+Frustrated-Outburst ist ein One-Shot, der bei tatsächlichem Verlassen (`QuitDeadline` abgelaufen) abgespielt wird. Die 4 Face-Texturen mappen auf diese 4 visuellen Zustände (Happy/Neutral/Sad/Frustrated). Material-Slot-Override (Face-Texture-Swap) synchronisiert mit Animator-State. Die Schwellen sind reine Präsentations-Trigger und ändern **keine** Spielmechanik.
 
 ### 9.4 Workshop-Idle-Particle-FX
 
@@ -525,7 +550,7 @@ Alle Particle-FX in Unity, kein KI-Asset nötig.
 - [ ] **Materials Tab:** Extract → `Art/Materials/`. Shader `URP/Lit` oder `URP/Toon`.
 - [ ] **LOD-Group** (3 LODs aus Budget [§12](#12-asset-kategorien--budgets-toon-werkstatt)).
 - [ ] **Collider:** Box/Capsule manuell. Werkstätten: Box-Collider Gesamt + Trigger-Collider Eingang.
-- [ ] **Layer:** Worker / Workshop / Item / CityTile.
+- [ ] **Layer:** Worker / Workshop / Building / Item / CityTile / GuildBuilding / GuildBoss.
 - [ ] **Prefab** in `Assets/_Project/Prefabs/{Kategorie}/`.
 - [ ] **Addressables-Group** zuweisen.
 
@@ -549,21 +574,26 @@ Upgrade-Logic (Lv1→Lv2):
 
 ```
 HandwerkerImperium.Unity Addressables:
-├── BootstrapAssets          # Logo, Splash, Default-Material
+├── BootstrapAssets          # Logo, Splash, Default-Material, UI-SpriteAtlas (224 Icons)
 ├── Workshops_Basic          # 10 Basis-Werkstätten + Sub-Module (immer)
 ├── Workshops_Decals_Lv{1..5} # Decal-Material-Sets (lazy bei Upgrade)
-├── Workshops_Specialization # Efficiency/Quality/Economy-Skins (lazy)
-├── Workers_TierF_to_C       # Basis-Tiers (immer)
-├── Workers_TierB_to_S       # Höhere Tiers (lazy bei Erst-Hire)
-├── Workers_Legendary        # Legendary (lazy)
+├── Workshops_Specialization # 3 Spez. (Efficiency/Quality/Economy) × 10 (lazy)
+├── Buildings                # 7 Buildings (Office/Storage/TrainingCenter/Canteen/Showroom/… — DESIGN.md § 7), je 5 Level-Stufen via Decal
+├── Workers_TierF_to_C       # Basis-Tiers (immer) — Tiers F/E/D/C × m/w
+├── Workers_TierB_to_S       # Höhere Tiers (lazy bei Erst-Hire) — B/A/S × m/w
+├── Workers_TierSS_to_Legendary # SS/SSS/Legendary × m/w (lazy)
 ├── Workers_Affinity_Props   # 5 Prop-Modelle (Wood/Metal/Stone/Art/Tech), klein
-├── CraftingItems_T{1..4}    # Pro Tier (lazy bei Crafting-Unlock)
+├── Worker_Equipment         # 4 Typen (Helm/Handschuhe/Stiefel/Gürtel) × 4 Rarities, sichtbar am Worker (lazy bei Equip)
+├── CraftingItems_T{1..4}    # 33 Produkte pro Tier (10/10/10/3, lazy bei Crafting-Unlock)
 ├── MasterTools              # 12 Artefakte (lazy bei Unlock)
 ├── CityTiles_World{1..10}   # Pro Welt-Theme (lazy bei Theme-Wechsel)
-├── MegaProjects             # Cathedral + Headquarters (lazy)
-├── MiniGames_{1..10}        # Pro MiniGame eigene Props (lazy)
+├── MegaProjects             # 2 Templates (Cathedral + HQ) + Bauphasen (lazy)
+├── Guild_Hall_Buildings     # 10 Hall-Gebäude (DESIGN.md § 33) (lazy bei Gilden-Beitritt)
+├── Guild_Bosses             # 6 Boss-Modelle (StoneGolem/IronTitan/… — DESIGN.md § 33) (lazy)
+├── MiniGames_{1..13}        # 13 MiniGame-Typen, 10 distinkte Renderer/Prop-Sets (lazy)
+├── Cosmetics_Event          # Skins, saisonale Event-Visuals (Spring/Summer/Fall/Winter) (lazy)
 ├── Prestige_Cinematic       # Hero-Assets (lazy bei Prestige)
-└── Audio_Music + Audio_SFX  # Stage 7 Output
+└── Audio_Music + Audio_SFX + Audio_Voice  # Stage 7 Output
 ```
 
 ### 10.4 Texture-Compression
@@ -579,10 +609,10 @@ HandwerkerImperium.Unity Addressables:
 ### 11.1 Musik — Stable Audio 3
 
 **Asset-Plan (Musik):**
-- 4 Loop-Tracks: IdleWorkshop, BossOrTournament, Celebration (entspricht Avalonia-Bestand, in 3D-Stil neu erzeugt)
+- 4 Loop-Tracks: IdleWorkshop, GuildBoss, Tournament, Celebration (entspricht Avalonia-Bestand, in 3D-Stil neu erzeugt)
 - 1 Menu-Track
 - 1 Prestige-Cinematic-Track (orchestral, 30s)
-- 4 Saisonal-Themes (Spring/Summer/Fall/Winter Kurz-Loops)
+- 4 Saisonal-Themes (Spring/Summer/Fall/Winter Kurz-Loops, entspricht den 4 saisonalen Live-Events — DESIGN.md)
 
 **Gesamt:** ~10 Tracks.
 
@@ -590,26 +620,31 @@ HandwerkerImperium.Unity Addressables:
 
 ### 11.2 SFX — Stable Audio Open Small
 
-Werkstatt-spezifische SFX-Klassen:
-- 10 Workshop-Idle-Loops (Sägen, Hämmern, Schweißen, etc.)
-- 12 Master-Tool-Unlock-Stinger
-- 6 Order-Complete-Stinger (Bronze/Silver/Gold)
-- 10 MiniGame-spezifische SFX-Sets (Sawing-Cut, Pipe-Click, Wire-Spark, Paint-Splash, Roof-Tile-Place, Blueprint-Reveal, Inspection-Beep, Forge-Strike, Invention-Spark, etc.)
-- UI-Sounds (Tab-Switch, Achievement-Unlock, Currency-Earn, Premium-Tier-Up)
-- Worker-Reactions (Happy-Laugh, Frustrated-Sigh, Tired-Grunt) × 4 Stimmungen × m/w = 24 SFX
+Werkstatt-spezifische SFX-Klassen (Stückzahlen aus realem Spielinhalt — DESIGN.md / ORIGINAL_WERTE.md):
+- 10 Workshop-Idle-Loops (Sägen, Hämmern, Schweißen, etc. — pro WorkshopType)
+- 7 Building-Idle-/Interaktions-Loops (Office, Storage, TrainingCenter, Canteen, Showroom, …)
+- 12 Master-Tool-Unlock-Stinger (1 pro Artefakt)
+- 6 Order-Complete-Stinger (Quality-Stufen: Perfect/Good/… + Order-Type-Akzente)
+- 10 MiniGame-SFX-Sets (für die 10 distinkten Renderer — Sawing-Cut, Pipe-Click, Wire-Spark, Paint-Splash, Roof-Tile-Place, Blueprint-Reveal, DesignPuzzle-Snap, Inspection-Beep, Forge-Strike, Invention-Spark). Die 13 MiniGame-Enum-Typen teilen sich diese 10 Renderer (Planing/TileLaying/Measuring nutzen Sawing-Route).
+- 6 Gilden-Boss-Sounds (Hit/Defeat/Spawn pro Boss-Archetyp — StoneGolem/IronTitan/MasterArchitect/RustDragon/ShadowTrader/ClockworkColossus)
+- Gilden-Hall-Build-/Upgrade-Stinger + Mega-Projekt-Bauphasen-Sounds
+- UI-Sounds (Tab-Switch, Achievement-Unlock, Currency-Earn, Premium-Tier-Up, Equip-Click, Prestige-Whoosh)
+- Worker-Reactions (Happy-Laugh, Neutral-Hum, Sad-Sigh, Frustrated-Grunt) — 4 Mood-States × m/w = 8 Stimm-Sets, mehrere Varianten
 
-**Gesamt:** ~150 SFX.
+**Gesamt:** ~150 SFX (aus den realen Systemen abgeleitet, nicht frei geschätzt).
 
 ### 11.3 Voice — Meister Hans (ElevenLabs Standard-Voice)
 
 Meister-Hans-Persona ist zentral für HWI. **Wir nutzen eine vorgefertigte ElevenLabs-Standard-Voice** (kein Voice-Cloning, kein eigener Sprecher).
 
+Diese Entscheidung ist verbindlich und deckungsgleich mit [DESIGN.md § 36.1](DESIGN.md) (Voice-Strategie geändert Mai 2026 — Standard-Voice statt Cloning).
+
 **Begründung der Entscheidung (Mai 2026):**
-- ✅ Schneller Setup (kein Aufnahme-Equipment, keine Sprecher-Freigabe-PDF)
-- ✅ Konsistente Qualität in allen 6 Sprachen via Multilingual v2-Modell
-- ✅ Keine rechtlichen Risiken (Voice ist von ElevenLabs lizenziert, kommerziell freigegeben mit Pro-Sub)
-- ✅ Re-Generation jederzeit möglich (z.B. neue Story-Chapters, Live-Event-Texte)
-- ✅ Geringeres Budget-Risiko (kein Voice-Actor-Honorar)
+- Schneller Setup (kein Aufnahme-Equipment, keine Sprecher-Freigabe-PDF)
+- Konsistente Qualität in allen 6 Sprachen via Multilingual v2-Modell
+- Keine rechtlichen Risiken (Voice ist von ElevenLabs lizenziert, kommerziell freigegeben mit Pro-Sub)
+- Re-Generation jederzeit möglich (z.B. neue Story-Chapters, Live-Event-Texte)
+- Geringeres Budget-Risiko (kein Voice-Actor-Honorar)
 
 **Voice-Konfiguration:**
 - **6 Sprachen** (DE/EN/ES/FR/IT/PT)
@@ -617,14 +652,16 @@ Meister-Hans-Persona ist zentral für HWI. **Wir nutzen eine vorgefertigte Eleve
 - **Modell:** `eleven_multilingual_v2` (ein Voice-ID funktioniert für alle 6 Sprachen)
 - **Voice-Settings:** `stability = 0.5`, `similarity_boost = 0.75`, `style = 0.3` (leicht karikiert)
 
-**Voice-Lines:**
-- Tutorial-Hints (10 Lines pro Sprache = 60 Lines)
-- Story-Chapters (5 Lines pro Chapter × ~20 Chapter = 100 Lines pro Sprache = 600 Lines)
-- Random-Idle-Tipps (20 Lines pro Sprache = 120 Lines)
-- Achievement-Unlock-Voicelines (30+ Achievements × short voice × 6 Sprachen = 180 Lines)
-- Live-Events + Notifications + Premium-Promotion (30 Lines × 6 = 180 Lines)
+**Voice-Lines (Aufteilung am realen Content-Umfang orientiert — DESIGN.md):**
+- FTUE-/Tutorial-Hints: 10 FTUE-Schritte + kontextuelle Hints → ~25 Lines/Sprache (DESIGN.md FTUE = 10 Schritte)
+- Story-Chapters: 60 Kapitel (40 Haupt + 20 Saison, DESIGN.md § 26) — eine markante Hans-Voice-Line je Kapitel → ~60 Lines/Sprache (Volltext-Vertonung aller Kapitel ist Phase 2)
+- Random-Idle-Tipps: ~30 Lines/Sprache
+- Achievement-Unlock-Voicelines: eine Auswahl der 79 Spieler-Achievements (Meilensteine, DESIGN.md § 24) → ~40 Lines/Sprache
+- Live-Events + Notifications + Premium-Promotion: ~40 Lines/Sprache
 
-**Insgesamt:** ~250 Voice-Lines × 6 Sprachen = **~1500 Voice-Files**.
+Summe ~205 Kern-Lines + Reserve für Live-Event-Nachschub → **~250 Voice-Lines pro Sprache**.
+
+**Insgesamt:** ~250 Voice-Lines × 6 Sprachen = **~1500 Voice-Files** (deckungsgleich mit DESIGN.md § 2 / § 36.1).
 
 **Workflow:** `04_audio/elevenlabs_meister_hans.json` (ElevenLabs-API-Integration, batchable via Python-Skript). Beispiel:
 
@@ -683,40 +720,54 @@ F:\AI\audio_output\handwerkerimperium_unity\voice_meister_hans\
 
 ### 12.1 Polygon-Budgets (Mid-Tier-Android Ziel)
 
+Stückzahlen sind 1:1 aus dem realen Spielinhalt abgeleitet (Quelle: [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) / [DESIGN.md](DESIGN.md)). "KI direkt?": Ja = vollständig per lokaler KI-Pipeline; Cloud = Cloud-Polish (Rodin Gen-2.5) empfohlen.
+
 | Asset-Klasse | Anzahl | LOD0 | LOD1 | LOD2 | KI direkt? |
 |--------------|-------:|-----:|-----:|-----:|------------|
-| **Werkstätten Basis (10 Typen)** | 10 | 6 000 | 3 000 | 1 500 | ✅ Direkt + Modular |
-| **Workshop-Sub-Module** (Schild/Werkbank/Lager × 10) | 30 | 800 | 400 | 200 | ✅ Aus Modul-Split |
-| **Workshop-Upgrade-Decals (Lv1-5)** | 50 (Material-Sets) | (Re-Tex) | — | — | ✅ Stage 4 |
-| **Workshop-Specialization** (Eff/Qual/Eco × 10) | 30 (Re-Tex) | (Re-Tex) | — | — | ✅ Stage 4 |
-| **Arbeiter-Basis (m/w × 10 Tiers)** | 20 | 5 000 | 2 500 | 1 200 | ✅ + Mixamo |
-| **Arbeiter-Affinity-Props** (5 unique Props) | 5 | 400 | 200 | 100 | ✅ Direkt |
-| **Worker-Mood-Face-Textures** (4 × 20 Worker) | 80 (Tex) | (Tex) | — | — | ✅ Stage 4 |
-| **Tier-1-Crafting-Items (10 Workshops)** | 10 | 800 | 400 | 200 | ✅ Direkt |
-| **Tier-2-Crafting-Items** | 10 | 1 200 | 600 | 300 | ✅ Direkt |
-| **Tier-3-Crafting-Items** | 10 | 1 800 | 900 | 450 | ✅ Direkt |
-| **Tier-4-Crafting-Items** (Villa, Skyscraper, Imperium-HQ) | 3 | 5 000 | 2 500 | 1 200 | ✅ Direkt, Hero |
-| **Master-Tools (12 Artefakte)** | 12 | 600 | 300 | 150 | ✅ Direkt + Glow |
-| **Erbstücke (Top-Items aus T4)** | 3 (Re-Use) | (Re-Use T4) | — | — | (Material-Aura-Overlay) |
-| **City-Tiles (10 Welt-Themes × 8 Tiles)** | 80 | 1 200 | 600 | 300 | ✅ Batch, Tiling-Check |
-| **Mega-Projekte (Cathedral, Headquarters)** | 2 + 5 Bauphasen | 12 000 | 6 000 | 3 000 | ⚠️ Cloud-Polish |
-| **MiniGame-Props (Sawing-Wood, Pipes, Wires, ...)** | ~30 | 400 | 200 | 100 | ✅ Direkt |
-| **Prestige-Cinematic-Hero** | 5 | 20 000 | — | — | ⚠️ Cloud + Polish |
+| **Werkstätten Basis (10 Typen)** — DESIGN.md § 4 | 10 | 6 000 | 3 000 | 1 500 | Ja + Modular |
+| **Workshop-Sub-Module** (Schild/Werkbank/Lager × 10) | 30 | 800 | 400 | 200 | Ja (Modul-Split) |
+| **Workshop-Upgrade-Decals (Lv1-5 × 10)** | 50 (Material-Sets) | (Re-Tex) | — | — | Ja (Stage 4) |
+| **Workshop-Specialization** (Eff/Qual/Eco × 10) | 30 (Re-Tex) | (Re-Tex) | — | — | Ja (Stage 4) |
+| **Buildings (7 Typen)** — DESIGN.md § 7 | 7 | 3 000 | 1 500 | 750 | Ja + Modular |
+| **Building-Upgrade-Decals (Lv1-5 × 7)** | 35 (Material-Sets) | (Re-Tex) | — | — | Ja (Stage 4) |
+| **Arbeiter-Basis (10 Tiers × m/w)** — DESIGN.md § 5 | 20 | 5 000 | 2 500 | 1 200 | Ja + Mixamo |
+| **Arbeiter-Affinity-Props** (5 Material-Affinitäten) | 5 | 400 | 200 | 100 | Ja |
+| **Worker-Mood-Face-Textures** (4 States × 20 Worker) | 80 (Tex) | (Tex) | — | — | Ja (Stage 4) |
+| **Worker-Equipment** (4 Typen × 4 Rarities, sichtbar getragen) — ORIGINAL_WERTE.md § 6 | 16 | 300 | 150 | 80 | Ja |
+| **Tier-1-Crafting-Produkte** (10) | 10 | 800 | 400 | 200 | Ja |
+| **Tier-2-Crafting-Produkte** (10) | 10 | 1 200 | 600 | 300 | Ja |
+| **Tier-3-Crafting-Produkte** (10) | 10 | 1 800 | 900 | 450 | Ja |
+| **Tier-4-Crafting-Produkte** (Villa, Skyscraper, Imperium-HQ; IsHeirloomEligible) | 3 | 5 000 | 2 500 | 1 200 | Ja, Hero |
+| **Master-Tools (12 Artefakte)** — ORIGINAL_WERTE.md § 5 | 12 | 600 | 300 | 150 | Ja + Glow |
+| **City-Tiles (10 Welt-Themes × 8 Tiles)** | 80 | 1 200 | 600 | 300 | Ja (Batch, Tiling-Check) |
+| **Gilden-Hall-Gebäude (10)** — DESIGN.md § 33 | 10 | 3 000 | 1 500 | 750 | Ja + Modular (Level = Größe/Glow) |
+| **Gilden-Bosse (6 Typen)** — DESIGN.md § 33 / ORIGINAL_WERTE.md § 4 | 6 | 8 000 | 4 000 | 2 000 | Cloud-Polish (animierte 3D-Modelle, eigene Arena) |
+| **Mega-Projekte (2 Templates: Cathedral, HQ)** je 5 Bauphasen | 2 (+10 Phasen-Stufen) | 12 000 | 6 000 | 3 000 | Cloud-Polish |
+| **MiniGame-Props** (13 MiniGame-Typen, 10 distinkte Renderer — DESIGN.md § 7) | ~40 | 400 | 200 | 100 | Ja |
+| **Cosmetics / Event-Visuals** (Skins + 4 saisonale Themes Spring/Summer/Fall/Winter) | ~20 | 1 000 | 500 | 250 | Ja |
+| **Prestige-Cinematic-Hero** | 5 | 20 000 | — | — | Cloud + Polish |
 
-**Total unique Models:** ~250 + ~80 Re-Texture-Varianten + ~50 Decal-Sets = **~380 Asset-Slots**.
+**Total geometrische unique Models:** ~250 + ~111 Re-Texture/Decal-Sets (50 Workshop-Decals + 35 Building-Decals + 80 Mood-Faces + 30 Specialization) = **mehrere hundert Asset-Slots**. Aktuelle Aufschlüsselung in PLAN.md Anhang C. Erbstücke sind kein eigenes Modell — die 3 IsHeirloomEligible-T4-Produkte werden mit Material-Aura-Overlay wiederverwendet.
 
 ### 12.2 Texture-Auflösungen
 
 | Klasse | Albedo | Normal | MRA | Notes |
 |--------|-------:|-------:|----:|-------|
-| Werkstätten + Tier-4-Items | 2048² | 2048² | 2048² | Hero |
+| Werkstätten + Buildings + Tier-4-Items | 2048² | 2048² | 2048² | Hero |
+| Gilden-Hall-Gebäude + Mega-Projekte | 2048² | 2048² | 2048² | Hero |
+| Gilden-Bosse | 2048² | 2048² | 2048² | Hero, animiert |
 | Arbeiter + Tier-2/3-Items | 1024² | 1024² | 1024² | Mid |
-| Master-Tools + Tier-1-Items | 512² | 512² | 512² | Klein |
+| Master-Tools + Tier-1-Items + Worker-Equipment | 512² | 512² | 512² | Klein |
 | City-Tiles | 1024² (atlassed) | 1024² | 1024² | Atlas pro Welt-Theme |
 | MiniGame-Props | 512² | 512² | 512² | Mip-Bias +1 |
 | Worker-Mood-Faces | 256² × 4 | — | — | Pro Worker, kompakt |
+| Cosmetics / Event-Visuals | 1024² | 1024² | 1024² | Mid |
 
-### 12.3 Audio-Budgets
+### 12.3 UI-Icons (2D bleiben 2D)
+
+Das Avalonia-Original nutzt **224 Bitmap-/Vektor-Icons** (`GameIcon`-PathIcon-Subklasse, `Assets/visuals/`). Diese UI-Glyphen (Tab-Symbole, Button-Icons, Währungs-Glyphen wie Goldschraube/Geld, Rarity-Marker, Achievement-Badges) bleiben **2D** und werden 1:1 als **TextMeshPro-SpriteAsset** bzw. Sprite-Atlas in die Unity-UI übernommen (siehe PLAN.md § Migrations-Mapping). Sie sind **kein** 3D-Generierungs-Scope. In-Welt-Objekte (Werkstätten, Worker, Crafting-Produkte, Master-Tools, Buildings, Gilden-Gebäude, Bosse) sind dagegen vollwertige 3D-Assets (Stage 1-6). Material-Icons-Glyphen aus dem Original (z.B. Boss-/Hall-Icon-Keys in ORIGINAL_WERTE.md) werden ebenfalls als 2D-UI-Sprite gespiegelt — das 3D-Modell ist die spielweltliche Repräsentation, das 2D-Icon der UI-Repräsentant.
+
+### 12.4 Audio-Budgets
 
 | Klasse | Sample-Rate | Bit | Komprimierung | Größe-Ziel |
 |--------|-------------|-----|----------------|-------------|
@@ -749,10 +800,11 @@ Konsistenz-Check pro 5-Asset-Batch in Blender-AssetReview-Szene mit Cartoon-Ligh
 ### 13.3 Toon-Shading-Entscheidung
 
 URP unterstützt eigenen Toon-Shader. Entscheidung pro Asset-Klasse:
-- **Workshops + City-Tiles:** `URP/Lit` mit warmem Lighting (Standard-PBR)
-- **Workers + Master-Tools + Tier-4-Items:** `URP/Toon` mit Outline-Pass (Cell-Shading-Look)
+- **Workshops + Buildings + Gilden-Hall-Gebäude + City-Tiles:** `URP/Lit` mit warmem Lighting (Standard-PBR)
+- **Workers + Worker-Equipment + Master-Tools + Tier-4-Items:** `URP/Toon` mit Outline-Pass (Cell-Shading-Look)
+- **Gilden-Bosse:** `URP/Toon` mit Outline + Emissive-Akzenten (Hero-Charaktere in der Boss-Arena)
 - **MiniGame-Props:** `URP/Lit` mit AO-Boost
-- **Mega-Projekte:** `URP/Lit` mit Post-Processing-Bloom
+- **Mega-Projekte + Prestige-Cinematic:** `URP/Lit` mit Post-Processing-Bloom
 
 Toon-Shader-Asset wird im Pilot evaluiert.
 
@@ -768,13 +820,13 @@ Tencents Hunyuan3D-2 / 2.1 / 2.5 ist technisch gut, aber die Lizenz definiert ei
 
 | Modell | Lizenz | EU OK |
 |--------|--------|-------|
-| TRELLIS 2 | MIT | ✅ |
-| SPAR3D, SF3D, Stable Audio 3 | Stability Community ≤ $1M | ✅ |
-| TripoSG, TripoSF | OSS (VAST) | ✅ |
-| InstantMesh | Apache-2.0 | ✅ |
-| Mixamo | Adobe-Standard | ✅ |
-| Cascadeur | Free Indie < $100k Rev | ✅ |
-| Meshy Pro+ / Rodin Pro / Tripo Pro | Pro-Tier Commercial | ✅ |
+| TRELLIS 2 | MIT | Ja |
+| SPAR3D, SF3D, Stable Audio 3 | Stability Community ≤ $1M | Ja |
+| TripoSG, TripoSF | OSS (VAST) | Ja |
+| InstantMesh | Apache-2.0 | Ja |
+| Mixamo | Adobe-Standard | Ja |
+| Cascadeur | Free Indie < $100k Rev | Ja |
+| Meshy Pro+ / Rodin Pro / Tripo Pro | Pro-Tier Commercial | Ja |
 
 ### 14.3 EU AI Act — Compliance-Status
 
@@ -811,24 +863,25 @@ Pro Asset-Metadata-JSON: `"license_source"` + `"license_archive"`.
 
 ---
 
-## 15. Pilot-Plan (5 Assets vor Skalierung)
+## 15. Pilot-Plan (6 Assets vor Skalierung)
 
 | # | Pilot-Asset | Kategorie | Pipeline-Test | Erfolgs-Kriterium |
 |---|-------------|-----------|---------------|-------------------|
 | 1 | Werkstatt "Carpenter" Basis + Lv1-5 Decals | Workshop | TRELLIS 2 + Modul-Zerlegung + 5 Decal-Sets | Modular Lv1→Lv5 visuell unterscheidbar in Unity, Decal-Material funktioniert |
-| 2 | Arbeiter "C-Tier männlich" + 4 Mood-States | Worker | TRELLIS 2 → Mixamo → 4 Face-Texture-Swaps | Animiert, alle 4 Stimmungen via Material-Slot synchronisiert |
+| 2 | Arbeiter "C-Tier männlich" + 4 Mood-States + 1 sichtbares Equipment | Worker | TRELLIS 2 → Mixamo → 4 Face-Texture-Swaps + Helm-Attach an Bone | Animiert, alle 4 Stimmungen via Material-Slot synchronisiert, Equipment sichtbar getragen |
 | 3 | Tier-2-Crafting "Wooden Furniture" | Crafting | SPAR3D → Cleanup → Unity | < 1200 Tris, ASTC-Test bestanden |
 | 4 | Master-Tool "Golden Hammer" | Tool | SDXL → SPAR3D → Emissive-Map → URP/Lit Emission | Glow funktioniert in URP, < 600 Tris |
 | 5 | City-Tile "Sunny Day Plaza" | City | TripoSG Batch → Tiling-Test 4× nebeneinander | Naht-frei, < 1200 Tris |
+| 6 | Gilden-Boss "Stone Golem" | Guild-Boss | Rodin Gen-2.5 → Rig → Hit/Defeat-Anim | Animierter Hero-Charakter in Boss-Arena, Cloud-Pipeline validiert |
 | **Audio-Pilot** | Workshop-Idle-Loop "Carpenter" (10s) | Audio | Stable Audio 3 + Mastering | Seamless Loop, LUFS −16 |
 | **Voice-Pilot** | Meister-Hans-Line "Bauauftrag bereit!" (DE) | Voice | ElevenLabs Standard-Voice (multilingual v2) | Verständlich, konsistent mit Persona |
 | **Workshop-Specialization-Test** | Carpenter Efficiency-Skin | Re-Texturing | Material-Property-Override in Unity | Distinct vom Basis-Carpenter, gleiches Modell-Footprint |
 
-**Zeitplan:** 6 Arbeitstage (Workshop 2 Tage, Worker 1.5 Tage, Items 1 Tag, City+Audio 1 Tag, Specialization 0.5 Tage).
+**Zeitplan:** ~7 Arbeitstage (Workshop 2 Tage, Worker+Equipment 1.5 Tage, Items 1 Tag, City+Audio 1 Tag, Guild-Boss 1 Tag, Specialization 0.5 Tage).
 
 **Output:** Lessons-Learned in `F:\AI\ComfyUI_workflows\handwerkerimperium_unity\pilot_log.md`.
 
-**Skalierungs-Freigabe:** 5/5 Pilots OK → Phase 2 Skalierung. Bei 4/5 → Pipeline iterieren. Bei < 4/5 → Cloud-Anteil erhöhen oder Stack neu bewerten.
+**Skalierungs-Freigabe:** Alle 6 Geometrie-Pilots + Audio/Voice/Specialization OK → Phase 2 Skalierung. Bei einem Fehlschlag → betroffene Pipeline-Stufe iterieren. Bei mehreren → Cloud-Anteil erhöhen oder Stack neu bewerten.
 
 ---
 
@@ -849,7 +902,10 @@ F:\AI\
 │   └── handwerkerimperium_unity\
 │       ├── music\
 │       ├── sfx_workshops\
+│       ├── sfx_buildings\
 │       ├── sfx_minigames\
+│       ├── sfx_guild\               (Boss-Hits/Defeat, Hall-Build, Mega-Projekt)
+│       ├── sfx_ui\
 │       └── voice_meister_hans\
 │           ├── de\
 │           ├── en\

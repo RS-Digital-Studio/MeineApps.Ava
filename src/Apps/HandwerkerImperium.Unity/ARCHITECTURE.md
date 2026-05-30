@@ -197,8 +197,11 @@ public sealed class RootLifetimeScope : LifetimeScope
         b.Register<WorkshopService>(Lifetime.Singleton);
         b.Register<WorkerService>(Lifetime.Singleton);
         b.Register<OrderService>(Lifetime.Singleton);
+        b.Register<OrderGeneratorService>(Lifetime.Singleton);
+        b.Register<AutomationService>(Lifetime.Singleton);   // Auto-Collect/Accept/Craft (GameLoop-Tick)
+        b.Register<OfflineProgressService>(Lifetime.Singleton);
+        b.Register<IncomeCalculatorService>(Lifetime.Singleton);
         b.Register<ResearchService>(Lifetime.Singleton);
-        b.Register<PrestigeService>(Lifetime.Singleton);
         b.Register<CraftingService>(Lifetime.Singleton);
         b.Register<WarehouseService>(Lifetime.Singleton);
         b.Register<MarketService>(Lifetime.Singleton);
@@ -209,11 +212,29 @@ public sealed class RootLifetimeScope : LifetimeScope
         b.Register<BattlePassService>(Lifetime.Singleton);
         b.Register<LiveEventService>(Lifetime.Singleton);
         b.Register<TutorialService>(Lifetime.Singleton);
-        b.Register<NotificationService>(Lifetime.Singleton);
         b.Register<ReferralService>(Lifetime.Singleton);
         b.Register<DailyRewardService>(Lifetime.Singleton);
         b.Register<EquipmentService>(Lifetime.Singleton);
+        b.Register<ManagerService>(Lifetime.Singleton);
+        b.Register<ReputationShopService>(Lifetime.Singleton);
+        b.Register<WhatsNewService>(Lifetime.Singleton);
+        b.Register<ChallengeConstraintService>(Lifetime.Singleton);
+
+        // Progression-Stack (Prestige → Rebirth → Ascension → EternalMastery) — Findings: vollständig!
+        b.Register<PrestigeService>(Lifetime.Singleton);
+        b.Register<RebirthService>(Lifetime.Singleton);          // Workshop-Rebirth (Sterne), war im Plan vergessen
         b.Register<AscensionService>(Lifetime.Singleton);
+        b.Register<EternalMasteryService>(Lifetime.Singleton);   // Findings: fehlte
+        b.Register<MiniGameMasteryService>(Lifetime.Singleton);  // Findings: fehlte — eager (subscribt PerfectRatingIncremented)
+        b.Register<IProgressionFacade, ProgressionFacade>(Lifetime.Singleton);
+
+        // Story / Goals / Hints — Findings: alle drei fehlten
+        b.Register<StoryService>(Lifetime.Singleton);            // 60 Kapitel (40+20), DESIGN.md
+        b.Register<GoalService>(Lifetime.Singleton);             // Goal-Banner-Ziele
+        b.Register<ContextualHintService>(Lifetime.Singleton);   // kontextuelle Tipps (getrennt von FTUE)
+
+        // In-App-NotificationCenter (Bell/Inbox) — getrennt von Push (s. RegisterPlatform)!
+        b.Register<INotificationCenterService, NotificationCenterService>(Lifetime.Singleton);
 
         // Guild-Facade (Pattern aus Avalonia)
         b.Register<GuildService>(Lifetime.Singleton);
@@ -225,9 +246,12 @@ public sealed class RootLifetimeScope : LifetimeScope
         b.Register<GuildMegaProjectService>(Lifetime.Singleton);
         b.Register<GuildChatService>(Lifetime.Singleton);
         b.Register<GuildAchievementService>(Lifetime.Singleton);
+        b.Register<GuildTickService>(Lifetime.Singleton);   // periodische Guild-Checks (Offsets, ORIGINAL_WERTE Bereich 05 §16)
+        // GuildFacade bündelt 9 Subsysteme; Co-op + Mega-Projects sind NICHT im Facade
+        // (separat injiziert, ORIGINAL_WERTE Bereich 05 §17) — GuildCoopOrderService/GuildMegaProjectService oben.
         b.Register<IGuildFacade, GuildFacade>(Lifetime.Singleton);
 
-        // Mini-Game-Registry
+        // Mini-Game-Registry (13 Mini-Games, DESIGN.md)
         b.Register<IMiniGameRegistry, MiniGameRegistry>(Lifetime.Singleton);
 
         // Scene-Loader
@@ -238,11 +262,15 @@ public sealed class RootLifetimeScope : LifetimeScope
     {
         // Firebase
         b.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
-        b.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);
+        b.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);   // Batching/Queue-Cap/Consent (§ 10.7)
         b.Register<ICrashlyticsService, FirebaseCrashlyticsService>(Lifetime.Singleton);
-        b.Register<IRemoteConfigService, FirebaseRemoteConfigService>(Lifetime.Singleton);
-        b.Register<IPushNotificationService, FcmPushNotificationService>(Lifetime.Singleton);
+        b.Register<IRemoteConfigService, FirebaseRemoteConfigService>(Lifetime.Singleton); // Offline-Cache/Kill-Switches (§ 10.6)
         b.Register<ICloudFunctionsService, FirebaseCloudFunctionsService>(Lifetime.Singleton);
+        b.Register<ICloudSaveService, FirebaseCloudSaveService>(Lifetime.Singleton);   // ist im RegisterGame schon gesetzt — hier Platform-Sicht
+
+        // BETRIEBSSYSTEM-PUSH (Android lokale Notifications via AlarmManager, 8 Trigger):
+        // STRIKT GETRENNT vom In-App-NotificationCenter (Bell/Inbox, s. RegisterGame → INotificationCenterService).
+        b.Register<IPushNotificationService, AndroidLocalNotificationService>(Lifetime.Singleton);
 
         // AdMob + Billing
         b.Register<IRewardedAdService, AdMobRewardedAdService>(Lifetime.Singleton);
@@ -254,12 +282,13 @@ public sealed class RootLifetimeScope : LifetimeScope
         b.Register<IHapticFeedbackService, UnityHapticFeedbackService>(Lifetime.Singleton);
         b.Register<IShareService, NativeShareService>(Lifetime.Singleton);
         b.Register<IPlayReviewService, GooglePlayReviewService>(Lifetime.Singleton);
+        b.Register<IReviewService, ReviewService>(Lifetime.Singleton);   // Milestone-Timing + 14d-Cooldown (§ 16.4)
 
         // Audio (MonoBehaviour-Service)
         b.RegisterComponent(_audioService).AsImplementedInterfaces();
 
         // Security
-        b.Register<IHmacSigner, HmacSha256Signer>(Lifetime.Singleton);
+        b.Register<IHmacSigner, HmacSha256Signer>(Lifetime.Singleton);   // = GameIntegrityService (§ 16.1)
         b.Register<IDeviceIdentifierService, AndroidDeviceIdService>(Lifetime.Singleton);
     }
 
@@ -349,13 +378,14 @@ public sealed class BootEntryPoint(
     {
         logger.Log("Boot: Start");
 
-        // 1. Auth
+        // 1. Auth (Anonymous + PlayerId-Mapping)
         await authService.SignInAnonymouslyAsync(cancellation);
 
-        // 2. Save laden
+        // 2. Save LOKAL laden (Local-First; null = Neu-Spieler, LastLoadFailedCorrupt = Cloud-Recovery-Signal)
         var save = await saveService.LoadAsync(cancellation);
 
-        // 3. Startup-Sequenz (FTUE-Check, Dialoge, Daily-Reward, Welcome-Back)
+        // 3. Startup-Sequenz: CheckCloudSaveAsync (Konflikt-Logik § 8.4), Stuck-Order-Recovery (aktiver
+        //    Auftrag → CancelActiveOrder), FTUE-Check, Dialoge, Daily-Reward, Welcome-Back, Offline-Progress.
         await startupCoordinator.RunAsync(save, cancellation);
 
         // 4. Hub-Scene additive laden
@@ -608,12 +638,15 @@ public record NotificationTappedEvent(string NotificationId) : IGameEvent;
 
 ### 6.1 Übersicht
 
+> Das Avalonia-Original hat **91 Services / 77 Models / 80 ViewModels / 74 Views (~28k LOC C#)**. Die hier
+> gelisteten Anzahlen sind Richtwerte je Kategorie; die DI-Registrierung in § 3 ist die Single-Source-of-Truth.
+
 | Service-Kategorie | Lifetime | Anzahl |
 |-------------------|----------|--------|
-| Core (Logger, Clock, EventBus) | Singleton (Root) | 4 |
+| Core (Logger, Clock, EventBus, Random) | Singleton (Root) | 4 |
 | Domain-Calculators (pure C#) | Singleton (Root) | ~12 |
-| Game-Services (mit State) | Singleton (Root) | ~25 |
-| Platform-Services | Singleton (Root) | ~15 |
+| Game-Services (mit State) | Singleton (Root) | ~45 |
+| Platform-Services | Singleton (Root) | ~16 |
 | Coordinators | Singleton (Root) | ~7 |
 | ViewModels (langlebig) | Singleton (Hub/Workshop-Scope) | ~10 |
 | ViewModels (Modal/Dialog) | Transient | je nach Bedarf |
@@ -753,15 +786,19 @@ public sealed class GameLoopService(
 
 ## 8. Persistence-Layer
 
-### 8.1 Save-Service (Local-First)
+> **Local-First, NICHT Server-wins.** Der lokale atomare Save ist die Wahrheitsquelle. Cloud ist
+> Geräteverlust-Backup, kein Konfliktgewinner. Verbindliche Werte → ORIGINAL_WERTE Bereich 08 §1+§2.
+
+### 8.1 Save-Service (Local-First, atomare Writes)
 
 ```csharp
 public interface ISaveService<T>
 {
-    UniTask<T> LoadAsync(CancellationToken ct);
+    UniTask<T?> LoadAsync(CancellationToken ct);   // null = legitimer Neu-Spieler
     UniTask SaveAsync(T data, CancellationToken ct);
     UniTask DeleteAsync(CancellationToken ct);
-    string Path { get; }
+    bool LastLoadFailedCorrupt { get; }            // Signal für Cloud-Recovery (s. 8.4)
+    string SavePath { get; }
 }
 
 public sealed class LocalFirstSaveService<T>(
@@ -769,34 +806,38 @@ public sealed class LocalFirstSaveService<T>(
     ISaveMigrator<T> migrator,
     ISaveSanitizer sanitizer,
     ICloudSaveService cloudSaveService,
+    IHmacSigner integrity,
     ILogger logger) : ISaveService<T>
 {
-    public string Path => System.IO.Path.Combine(Application.persistentDataPath, "save.json");
+    // Drei Dateien (analog Avalonia): Save / Backup / Temp
+    public string SavePath   => System.IO.Path.Combine(Application.persistentDataPath, "save.json");
+    private string BackupPath => SavePath + ".bak";
+    private string TempPath   => SavePath + ".tmp";
 
-    private readonly SemaphoreSlim _ioLock = new(1, 1);
+    private readonly SemaphoreSlim _ioLock = new(1, 1);   // Timeout 30s
+    private long _lastCloudUploadTicks;                    // Rate-Limit (s. 8.5)
 
-    public async UniTask<T> LoadAsync(CancellationToken ct)
+    public bool LastLoadFailedCorrupt { get; private set; }
+
+    public async UniTask<T?> LoadAsync(CancellationToken ct)
     {
         await _ioLock.WaitAsync(ct);
         try
         {
-            // 1. Cloud zuerst versuchen (mit Timeout)
-            var cloudSave = await TryLoadCloudAsync(ct);
-            if (cloudSave is not null) return cloudSave;
+            // 1. LOKAL zuerst (Haupt-Datei, sonst Backup) — KEIN Cloud-Vorrang beim Laden
+            var json = await TryReadLocalAsync(ct);   // probiert Save, dann Backup
+            if (json is null) { LastLoadFailedCorrupt = false; return default; } // Neu-Spieler
 
-            // 2. Local fallback
-            if (!File.Exists(Path)) return default!;
+            T? save;
+            try { save = serializer.Deserialize(json); }
+            catch { LastLoadFailedCorrupt = true; return default; } // beide korrupt → Cloud-Recovery (8.4)
 
-            var json = await File.ReadAllTextAsync(Path, ct);
-            var save = serializer.Deserialize(json);
-
-            // 3. Migrate
+            // 2. Migrate (V1→aktuell) + 3. Sanitize (Reparatur statt Ablehnung)
             var schemaVersion = serializer.ReadSchemaVersion(json);
             save = migrator.Migrate(save, schemaVersion);
-
-            // 4. Sanitize
             save = sanitizer.Sanitize(save);
 
+            LastLoadFailedCorrupt = false;
             return save;
         }
         finally { _ioLock.Release(); }
@@ -807,12 +848,20 @@ public sealed class LocalFirstSaveService<T>(
         await _ioLock.WaitAsync(ct);
         try
         {
-            // Serialize off-thread (UniTask.RunOnThreadPool)
-            var json = await UniTask.RunOnThreadPool(() => serializer.Serialize(data), cancellationToken: ct);
-            await File.WriteAllTextAsync(Path, json, ct);
+            // Unter Lock nur: LastSavedAt=UtcNow + HMAC-Signatur + Serialize-Snapshot.
+            var json = await UniTask.RunOnThreadPool(() =>
+            {
+                StampAndSign(data);                 // LastSavedAt = UtcNow; ComputeSignature(data)
+                return serializer.Serialize(data);
+            }, cancellationToken: ct);
 
-            // Cloud-Save Fire-and-Forget
-            cloudSaveService.UploadAsync(json, CancellationToken.None).Forget();
+            // Atomarer Write: temp schreiben → save→backup verschieben → temp→save (atomares Rename)
+            await File.WriteAllTextAsync(TempPath, json, ct);
+            if (File.Exists(SavePath)) File.Move(SavePath, BackupPath, overwrite: true);
+            File.Move(TempPath, SavePath, overwrite: true);
+
+            // Cloud-Upload Fire-and-Forget — mit 2-Minuten-Rate-Limit (s. 8.5)
+            TryCloudUpload(json);
         }
         finally { _ioLock.Release(); }
     }
@@ -821,16 +870,88 @@ public sealed class LocalFirstSaveService<T>(
 
 ### 8.2 Save-Trigger
 
-| Trigger | Mechanismus |
-|---------|-------------|
-| Sofort | Service ruft direkt `_saveService.SaveAsync()` |
-| AutoSave 30s | `GameLoopService` tickt einen Counter, ruft Save |
-| App-Pause | `OnApplicationPause(true)` in MonoBehaviour-Bridge |
-| Cloud-Sync | Nach jeder Sofort-Save |
+| Trigger | Mechanismus | Entspricht Original |
+|---------|-------------|---------------------|
+| Sofort | Service ruft `_saveService.SaveAsync()` | Order-Complete, Prestige, Workshop-Kauf, Worker-Hire, IAP-Erfolg |
+| AutoSave 30s | `GameLoopService` tickt einen Counter, ruft Save | Hintergrund, kein UI-Block |
+| App-Pause | `OnApplicationPause(true)` (MonoBehaviour-Bridge) | `OnDestroy` nicht garantiert → Save in Pause |
+| Cloud-Upload | Innerhalb Save, rate-limitiert (2 min) | NICHT bei jeder Sofort-Save (s. 8.5) |
 
 ### 8.3 Save-Layout (HwiSave)
 
-Siehe [CLAUDE.md § 10 Save-Schema](CLAUDE.md). Slices: 22 Stück.
+Siehe [CLAUDE.md § 10 Save-Schema](CLAUDE.md). Slices entsprechen den realen `GameState`-Feldern
+(ORIGINAL_WERTE Bereich 08 §1.1). Persistenz-Felder immer `DateTime.UtcNow` / `"O"`-Format.
+
+### 8.4 Cloud-Save-Konfliktauflösung (Local-First mit SavedAt-Vergleich + User-Confirmation)
+
+> **Quelle: ORIGINAL_WERTE Bereich 08 §2.3 — `GameStartupCoordinator.CheckCloudSaveAsync()`.**
+> Verbindlich: NICHT "Server wins". Der Ablauf ist exakt zu übernehmen.
+
+Pfade: `cloud_saves/{playerId}/metadata` (kleine Preview) + `cloud_saves/{playerId}/data` (State-JSON
+als String-Wert). `IsAvailable => Firebase.IsOnline && PlayerId != ""`.
+
+`CloudSaveMetadata`-Felder: `level`, `money`, `goldenScrews`, `prestigePoints`, `ascensionLevel`,
+`savedAt` (ISO `"O"`), `version` (StateVersion), `appVersion`. `SavedAtUtc` wird mit
+`CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind` geparst (Fallback `DateTime.MinValue`).
+
+```csharp
+public async UniTask CheckCloudSaveAsync(GameState state, CancellationToken ct)
+{
+    // 1. Vorbedingung
+    if (!_cloudSave.IsAvailable || !state.Settings.CloudSaveEnabled) return;
+
+    // 2. Metadata laden
+    var metadata = await _cloudSave.LoadMetadataAsync(ct);
+    if (metadata is null) return;
+
+    // 3. Version-Outdated-Schutz: Cloud-Save ist NEUER als diese App-Version → Alert, KEIN Download
+    //    (Migration auf bereits-aktuelle Daten würde den State korrumpieren).
+    //    Verglichen wird gegen die HIER laufende Schema-Version (Unity: HwiSaveMigrator.CurrentSchemaVersion = 8;
+    //    im Avalonia-Original war das GameState.CurrentStateVersion = 7). Logik identisch.
+    if (metadata.StateVersion > HwiSaveMigrator.CurrentSchemaVersion)
+    {
+        ShowAlert("CloudSaveTooNewTitle", "CloudSaveTooNewBody"); // "App update required"
+        return;
+    }
+
+    // 4. SavedAt-Vergleich mit 5s-Toleranz (gegen Clock-Skew)
+    var localSavedAt = state.LastSavedAt;
+    var cloudSavedAt = metadata.SavedAtUtc;
+    var localWasCorrupt = _saveService.LastLoadFailedCorrupt;
+    // Bei korruptem Local IMMER Cloud bevorzugen (Cloud > frischer Leer-State); sonst Heuristik:
+    if (!localWasCorrupt && cloudSavedAt <= localSavedAt.AddSeconds(5))
+        return;   // lokal aktuell genug
+
+    // 5. User-Confirmation-Dialog ("CloudSaveNewer"): zeigt lokal Level/Money vs. Cloud Level/Money
+    //    (MoneyFormatter.FormatCompact); Buttons "Use Cloud" / "Keep Local".
+    if (!await ConfirmUseCloudAsync(state, metadata, ct))
+        return;   // Ablehnung → Local behalten
+
+    // 6. Download → Import (läuft Sanitize + Save) → RefreshFromState; Analytics cloud_save_downloaded
+    var cloudState = await _cloudSave.DownloadAsync(ct);
+    await _saveService.ImportAsync(serializer.Serialize(cloudState), ct);
+    _analytics.Track("cloud_save_downloaded", new { level = cloudState.PlayerLevel, money = cloudState.Money });
+    // 7. Fehler still ignorieren — lokaler Save funktioniert weiter.
+}
+```
+
+**Wichtige Details (verbindlich):**
+- Beim **Download** wird der Cloud-State für das lokale Gerät **neu HMAC-signiert**
+  (`integrity.ComputeSignature(state)`), weil der Integrity-Key gerätegebunden ist (s. 16.1).
+  Cloud schützt gegen Geräteverlust, nicht gegen Save-Editing.
+- **Upload** signiert vor dem Schreiben: `state.LastSavedAt = UtcNow; ComputeSignature(state)`; Metadata +
+  Data via `SetAsync` (PUT), Upload nur wenn beide ok (`metaOk && dataOk`).
+- Bei korruptem lokalem Save (`LastLoadFailedCorrupt`) wird die 5s-Heuristik übersprungen.
+
+### 8.5 Cloud-Upload-Rate-Limit (aus dem Save-Loop)
+
+> **Quelle: ORIGINAL_WERTE Bereich 08 §2.4 — `SaveGameService.SaveInternalAsync()`.**
+
+- Upload nur wenn `cloudSave.IsAvailable && Settings.CloudSaveEnabled`.
+- Rate-Limit `CloudUploadMinIntervalTicks = TimeSpan.FromMinutes(2)` — **2 Minuten**, NICHT pro Save.
+  Lock-frei via `Interlocked.Read` + `CompareExchange` auf `_lastCloudUploadTicks` (nur ein Thread gewinnt
+  den Upload-Slot pro Fenster). Bei Erfolg `Settings.LastCloudSaveTime = UtcNow`.
+- Es gibt **kein** separates 5s-Push-Debounce; die 5s sind ausschließlich die Toleranz im Konflikt-Vergleich (8.4).
 
 ---
 
@@ -847,6 +968,10 @@ public interface ISaveMigrator<T>
 
 public sealed class HwiSaveMigrator(ILogger logger) : ISaveMigrator<HwiSave>
 {
+    // V1..V7 = Avalonia-Schema (GameState.CurrentStateVersion = 7), V8 = Unity-Erweiterung.
+    // Realistischer Pfad analog ORIGINAL_WERTE Bereich 08 §1.2 (SaveGameService.MigrateState):
+    //   V3→V4 und V4→V5 sind im Original zusammengefasst (Legacy-Forward-Properties deserialisieren
+    //   flache V4-Felder direkt in die Sub-Objekte) — KEIN eigener MigrateV3ToV4.
     public int CurrentSchemaVersion => 8;
 
     public HwiSave Migrate(HwiSave save, int fromVersion)
@@ -855,13 +980,12 @@ public sealed class HwiSaveMigrator(ILogger logger) : ISaveMigrator<HwiSave>
 
         logger.Log($"Migrating save from v{fromVersion} to v{CurrentSchemaVersion}");
 
-        if (fromVersion < 2) save = MigrateV1ToV2(save);
-        if (fromVersion < 3) save = MigrateV2ToV3(save);
-        if (fromVersion < 4) save = MigrateV3ToV4(save);
-        if (fromVersion < 5) save = MigrateV4ToV5(save);
-        if (fromVersion < 6) save = MigrateV5ToV6(save);
-        if (fromVersion < 7) save = MigrateV6ToV7(save);  // V7 = Warehouse + Mega-Projects
-        if (fromVersion < 8) save = MigrateV7ToV8(save);  // V8 = Unity-Specific
+        if (fromVersion < 2) save = MigrateV1ToV2(save);  // Worker→Tier.E/.., Prestige aus Legacy, ResearchTree.CreateAll
+        if (fromVersion < 3) save = MigrateV2ToV3(save);  // WorkshopStars ??= new()
+        if (fromVersion < 5) save = MigrateV4ToV5(save);  // Boosts/DailyProgress/Cosmetics ??= new() (V3→V4 implizit)
+        if (fromVersion < 6) save = MigrateV5ToV6(save);  // ParallelOrdersByWorkshop; ActiveOrder ins Dictionary migrieren
+        if (fromVersion < 7) save = MigrateV6ToV7(save);  // V7 = Warehouse (Slots/StackLimit/Reserved/AutoSell/Heirlooms) + Stack-Truncation
+        if (fromVersion < 8) save = MigrateV7ToV8(save);  // V8 = Unity-Specific (reine Präsentations-/Tech-Felder)
 
         save.SchemaVersion = CurrentSchemaVersion;
         return save;
@@ -869,7 +993,8 @@ public sealed class HwiSaveMigrator(ILogger logger) : ISaveMigrator<HwiSave>
 
     private HwiSave MigrateV7ToV8(HwiSave save)
     {
-        // Unity-Specific Slice initialisieren
+        // V7→V8 fügt AUSSCHLIESSLICH reine Präsentations-/Tech-Felder hinzu (Unity-spezifisch).
+        // KEINE mechanischen/Balancing-Felder — sonst würde die Unity-Version vom Original abweichen.
         save.UnitySpecific ??= new UnitySpecificSlice
         {
             PostFxQuality = PostFxQuality.High,
@@ -877,14 +1002,16 @@ public sealed class HwiSaveMigrator(ILogger logger) : ISaveMigrator<HwiSave>
             AssetCatalogVersion = 1,
             AudioMixerLevels = new AudioMixerLevelsData(),
         };
-
-        // Cosmetic-Slice initialisieren (war optional in V7)
+        // Cosmetics existiert bereits ab V5 (Avalonia) — hier nur Null-Safety, kein neues Feld.
         save.Cosmetics ??= new CosmeticSlice();
-
         return save;
     }
 }
 ```
+
+**V7→V8 ist rein additiv (Präsentation/Tech).** Mechanik, Formeln und Balancing bleiben identisch zum
+Avalonia-V7-Schema (im Original `GameState.CurrentStateVersion = 7`). Das Cloud-Save-Version-Gate (§ 8.4)
+vergleicht gegen die hier laufende `HwiSaveMigrator.CurrentSchemaVersion` (8).
 
 ### 9.2 Migrations-Tests
 
@@ -912,30 +1039,48 @@ public class HwiSaveMigratorTests
 
 ### 10.1 Firebase-Pfade (1:1 wie Avalonia)
 
-**Schema-Datei:** `Server/DatabaseRules/database.rules.json`
+> **Schema exakt aus dem produktiven Code — ORIGINAL_WERTE Bereich 05 §14 + Bereich 08 §2/§3.**
+> Identität ist **PlayerId** (stabile GUID, überlebt Account-/Gerätewechsel), NICHT die Firebase-`Uid`.
+> Migration alt→neu via `MigrateFromUidToPlayerIdAsync`. Cloud-Save liegt unter eigenem Top-Level-Pfad,
+> NICHT unter `players/`. Erfundene Sammel-Knoten wie `players/{playerId}/profile|progress` gibt es nicht.
+
+**Projekt:** `handwerkerimperium-487917` · RTDB `europe-west1` (`...-default-rtdb.europe-west1...`).
+**Schema-Datei:** `Server/DatabaseRules/database.rules.json`.
 
 ```
-/auth_to_player/{uid} → PlayerId (.write nur auth.uid == uid)
-/players/{playerId}/
-  ├── profile { name, level, lastSeen }
-  ├── progress { ... }
-  ├── achievements { ... }
-  ├── battlePass { ... }
-  ├── guilds (membership-refs)
-  └── invites { ... }
-/available_players/{playerId} { name, level, lastSeen }   (Suchindex, .indexOn: ["lastSeen"])
-/guild_invite_codes/{code} { guildId, expiresAt }
-/guilds/{guildId}/
-  ├── meta { name, tag, ownerId, createdAt }
-  ├── memberList/{playerId}/{ joinedAt, role, contribution }
-  ├── coopOrders/{orderId}/{ ... }
-  ├── megaProjects/active/{ ... }
-  ├── research/{ ... }
-  ├── boss/{bossType}/{ hp, attackers, ... }
-  ├── hall/{buildingId}/{ level, timer }
-  ├── achievements/{ ... }
-  ├── warSeason/{ ... }
-  └── chat/{messageId}/{ ... }
+# Identität / Auth
+auth_to_player/{uid}                  → PlayerId-Mapping (.write nur auth.uid == uid; Security-Rules nutzen es)
+
+# Cloud-Save (Top-Level, nicht unter players/)
+cloud_saves/{playerId}/metadata       → CloudSaveMetadata (kleine Preview: level, money, savedAt, version, …)
+cloud_saves/{playerId}/data           → State-JSON (kompakt, als String-Wert)
+
+# Telemetrie
+analytics_events/{YYYY-MM-DD}/{pushId} → Event-Batch (PATCH, ein Push pro Event)
+remote_config                          → flacher Dot-Key-Katalog (s. 10.6)
+
+# Gilden — Top-Level-Knoten (KEIN verschachteltes guilds/{guildId}/everything)
+player_guilds/{playerId}              → GuildId-Schnell-Lookup (string)
+guilds/{guildId}                      → FirebaseGuildData (inkl. hallLevel, leagueId, weeklyProgress, …)
+guilds/{guildId}/coopOrders/{orderId} → CoopOrderState
+guilds/{guildId}/coopOrders/{orderId}/claimedBy/{playerId} → bool (Write-once-Claim, Idempotenz)
+guilds/{guildId}/megaProjects/active  → GuildMegaProject
+guild_members/{guildId}/{uid}         → FirebaseGuildMember (…/role separat)
+available_players/{uid}               → AvailablePlayerInfo (Suchindex)
+player_invites/{uid}/{guildId}        → GuildInvitation
+guild_invite_codes/{guildId}          → string (Code)
+invite_code_to_guild/{code}           → string (GuildId)
+guild_research/{guildId}/{researchId} → GuildResearchState
+guild_hall/{guildId}/buildings/{buildingId} → GuildBuildingState
+guild_bosses/{guildId}                → FirebaseGuildBoss
+guild_boss_damage/{guildId}/{uid}     → GuildBossDamage
+guild_achievements/{guildId}/{achievementId} → GuildAchievementState
+guild_chat/{guildId}/messages/{messageId}    → ChatMessage (Push)
+guild_war_seasons/{seasonId}          → GuildWarSeasonData
+guild_war_seasons/{seasonId}/leagues/{leagueId}/{guildId} → GuildLeagueEntry
+guild_wars/{warId}                    → GuildWar
+guild_war_scores/{warId}/{guildId}/{uid} → GuildWarPlayerScore
+guild_war_log/{warId}/{entryId}       → GuildWarLogEntry (Push)
 ```
 
 ### 10.2 Firebase-Service-Interface
@@ -985,6 +1130,67 @@ var result = await _cloudFunctions.CallAsync<ValidateBattleResultResponse>(
 - Jeder neue Pfad MUSS in `database.rules.json` eingetragen sein
 - Bei `orderBy` MUSS `.indexOn` gesetzt sein
 - Schreibrechte streng: `auth.uid == playerId` oder via Cloud-Function
+- Server-Timestamp via `{".sv":"timestamp"}` für Anti-Spoofing; Score-Wertebereiche zusätzlich per
+  Rule-`validate` begrenzen (ORIGINAL_WERTE Bereich 05 §15).
+
+### 10.6 RemoteConfig (typisierter Key-Katalog + Offline-Cache + Kill-Switches)
+
+> **Quelle: ORIGINAL_WERTE Bereich 08 §7 — `RemoteConfigService.cs`, `Models/RemoteConfigKeys.cs`.**
+
+```csharp
+public interface IRemoteConfigService
+{
+    UniTask InitializeAsync(CancellationToken ct);    // Startup, 5s-Timeout
+    int     GetInt(string key, int fallback);
+    decimal GetDecimal(string key, decimal fallback);
+    bool    GetBool(string key, bool fallback);
+    string  GetString(string key, string fallback);
+}
+```
+
+- **Firebase-Pfad** `remote_config`. **Offline-Cache** in Preferences: `remote_config_cache_json` +
+  `remote_config_last_fetched`. Offline-Start → letzte bekannte Werte; kalter Erststart → Defaults.
+- Verschachteltes JSON wird auf **flache Dot-Keys** gewalkt (`{"balancing":{"foo":1}}` → `balancing.foo`);
+  Arrays als JSON-String abgelegt (nicht weiter geparst). Typisierte Getter mit InvariantCulture-Fallback.
+- Startup: `InitializeAsync()` mit **5s-Timeout** (gegen `Task.Delay(5s)`); bei Timeout läuft Fetch im
+  Hintergrund weiter, DailyBundle deferred per `ContinueWith` (s. Loading-Pipeline § 11.3 Schritt 3).
+- **Typisierter Key-Katalog** (Konstanten in `RemoteConfigKeys`, vollständige Defaults → ORIGINAL_WERTE
+  Bereich 08 §7): u.a. `balancing.starter_offer_min_level` (10), `balancing.offline_earnings_max_hours` (8),
+  `balancing.order_difficulty_multiplier` (1.0), `balancing.live_order_spawn_chance` (0.5),
+  `balancing.worker_market_weights` (CSV), `monetization.golden_screw_ad_reward` (8),
+  `monetization.shop_reward_cooldown_hours` (3), `ux.onboarding_dialog_count` (1).
+- **Kill-Switches** (Bug-Notabschaltung der Big-Bet-Features, je default `true`):
+  `features.coop_orders_enabled`, `features.auctions_enabled`. Zusätzliche Bug-Out-Switches:
+  `events.seasonal_theme_override`, `promo.banner_active`.
+- **RemoteConfig ändert keine mechanischen Formeln** — es überschreibt nur Werte, die das Original
+  ohnehin remote-konfigurierbar macht. Keine neuen Unity-Keys, die das Balancing verschieben.
+
+### 10.7 Analytics (Batching / Queue-Cap / Consent)
+
+> **Quelle: ORIGINAL_WERTE Bereich 08 §8 — `AnalyticsService.cs`, `Models/AnalyticsEvents.cs`.**
+
+- REST via Firebase nach `analytics_events/{YYYY-MM-DD}` (ein PATCH, `pushId` pro Event).
+- Konstanten: `QueueCap = 500` (FIFO-Drop bei Überlauf), `FlushIntervalSeconds = 30`, `MaxBatchSize = 50`.
+  `ConcurrentQueue` + `_flushLock = SemaphoreSlim(1,1)`.
+- **Consent (DSGVO):** `IsEnabled` ⇄ `Settings.AnalyticsEnabled`. Bei `false` → Timer stoppen + Queue
+  **verwerfen** (keine Daten nach Opt-Out). `Track` ist No-Op wenn `!IsEnabled || disposed`.
+- Flush nur wenn `IsEnabled && !disposed && !queue.IsEmpty && Firebase.IsOnline && PlayerId != ""`; bei
+  Fehler Events zurück in die Queue (Cap-Recheck). Dispose: best-effort Flush mit `Wait(2s)`.
+- Event-Payload: `{ eventName, timestamp (UtcNow "O"), sessionId, playerId, params, user (User-Props-Snapshot) }`.
+  `SessionId = Guid.NewGuid().ToString("N")[..12]`. Event-Katalog (snake_case) → ORIGINAL_WERTE Bereich 08 §8.3.
+
+### 10.8 Cloud-Functions (REINE Server-Validierung — kein Verhalten ändern)
+
+> **Verbindlich:** Cloud-Functions validieren/persistieren server-seitig, sie ersetzen oder verändern
+> **keine** Client-Spiellogik. Ergebnis, Formeln und Balancing entstehen weiterhin client-seitig wie im
+> Avalonia-Original; der Server prüft nur Integrität (HMAC, Wertebereiche, Idempotenz) und schreibt.
+
+```csharp
+public interface ICloudFunctionsService
+{
+    UniTask<T> CallAsync<T>(string functionName, object payload, CancellationToken ct);
+}
+```
 
 ---
 
@@ -1207,32 +1413,69 @@ public static void ImportFromRESX()
 
 ## 16. Anti-Cheat & Security
 
-### 16.1 HMAC-Signierung
+### 16.1 HMAC-Signierung (GameIntegrityService — exakt wie Avalonia)
+
+> **Quelle: ORIGINAL_WERTE Bereich 08 §4 + Bereich 05 §15. Werte verbindlich, nichts ändern.**
+
+**Schlüssel-Ableitung (gerätegebunden, kein hardcodierter Key):**
+- Preference-Key `game_integrity_install_id`. PackageSalt = `com.meineapps.handwerkerimperium`.
+- Installations-GUID (`Guid.NewGuid().ToString("N")`, persistiert) →
+  `_hmacKey = SHA256.HashData(UTF8(PackageSalt + installId))` → 32 Byte (256 Bit).
+- Weil der Key gerätegebunden ist, wird ein Cloud-Save beim Download **neu signiert** (s. 8.4).
+
+**GameState-Signatur (Hauptintegrität):**
+- Signierte Felder (Payload, kulturunabhängig):
+  `"{PlayerLevel}|{Prestige.TotalPrestigeCount}|{Money:F2}|{GoldenScrews}|{Statistics.TotalOrdersCompleted}"`.
+- HMAC-SHA256 über UTF8(payload), als **Hex-String (lower)** in `GameState.IntegritySignature`.
+- `VerifySignature`: `Convert.FromHexString` der gespeicherten Signatur, timing-sicherer
+  `CryptographicOperations.FixedTimeEquals`. Ungültiges Hex → `false`.
 
 ```csharp
 public interface IHmacSigner
 {
-    string Sign(string payload, string key);
-    bool Verify(string payload, string signature, string key);
+    /// <summary>HMAC-SHA256(payload, gerätegebundener Key) als lower-Hex.</summary>
+    string ComputeStringHmac(string payload);
+
+    /// <summary>Signiert GameState (Payload aus PlayerLevel|PrestigeCount|Money:F2|GoldenScrews|TotalOrders).</summary>
+    void ComputeSignature(GameState state);
+
+    bool VerifySignature(GameState state);
 }
 
-public sealed class HmacSha256Signer : IHmacSigner
+public sealed class HmacSha256Signer(IPreferencesService prefs) : IHmacSigner
 {
-    public string Sign(string payload, string key)
-    {
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
-        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
-        return Convert.ToBase64String(hash);
-    }
+    private const string PackageSalt = "com.meineapps.handwerkerimperium";
+    private readonly byte[] _hmacKey = DeriveKey(prefs);   // SHA256(PackageSalt + installId)
 
-    public bool Verify(string payload, string signature, string key) =>
-        CryptographicOperations.FixedTimeEquals(
-            Encoding.UTF8.GetBytes(Sign(payload, key)),
-            Encoding.UTF8.GetBytes(signature));
+    public string ComputeStringHmac(string payload)
+    {
+        using var hmac = new HMACSHA256(_hmacKey);
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash).ToLowerInvariant();   // lower-Hex, NICHT Base64
+    }
+    // ComputeSignature / VerifySignature → Payload-Format + FixedTimeEquals s.o.
 }
 ```
 
-### 16.2 Save-Sanitizer
+**Server-validierte Felder + Guild-HMAC-Kontexte (ORIGINAL_WERTE Bereich 05 §15):**
+`ComputeStringHmac` signiert pro Kontext nur **stabile Identitätsfelder**; veränderliche Werte (Scores)
+werden per atomarem PATCH aktualisiert und über Firebase-Rules `validate` begrenzt.
+
+| Kontext | Salt | Signierte (stabile) Felder | NICHT signiert (PATCH) |
+|---------|------|----------------------------|------------------------|
+| GameState | (gerätegebundener Key) | PlayerLevel, PrestigeCount, Money, GoldenScrews, TotalOrders | — |
+| Co-op-Auftrag | `coop-order-v1` | OrderId, CreatedBy, InvitedPlayer, BaseReward, MiniGameType | Score, Status, ExpiresAt |
+| Mega-Projekt | `guild-mega-project-v1` | ProjectId, (int)Type, CreatedAt (`:O`) | Contributions, Donations, CompletedAt |
+| Auktion | (ComputeStringHmac) | AuctionId, WorkerTier, WorkerName, Status, HighestBidderId, HighestBid, sortierte AllBids | — |
+
+Die in CLAUDE.md § 13.2 gelisteten kritischen Werte (Money, GoldenScrews, BossDamage, AuctionBid,
+CoopOrderScore, MegaProjectContribution) werden über diese Signaturen bzw. Rule-`validate` abgesichert.
+
+### 16.2 Save-Sanitizer (Reparatur statt Ablehnung)
+
+> **Läuft nach Migration bei jedem Load/Import.** Die vollständige, verbindliche Regelliste (Clamps, Caps,
+> Orphan-Bereinigung, ResearchTree-Sync) steht in **ORIGINAL_WERTE Bereich 08 §1.3** — exakt übernehmen,
+> nicht abweichen. Auszug der Eckwerte (keine erfundenen Caps):
 
 ```csharp
 public interface ISaveSanitizer
@@ -1246,32 +1489,73 @@ public sealed class SaveSanitizer(
 {
     public HwiSave Sanitize(HwiSave save)
     {
-        // Heirloom-Items gegen Catalog validieren
-        save.Prestige.Heirlooms.RemoveAll(h => !catalog.Has(h.ItemId));
+        var s = save.GameState;
 
-        // Money-Cap
-        if (save.GameState.Money > config.MaxMoney)
-            save.GameState.Money = config.MaxMoney;
+        // IsPremium aus kaufgesichertem Preference-Cache (VOR Heirloom-Cap)
+        s.IsPremium = _purchaseService?.IsPremium ?? false;
 
-        // Worker-Level-Cap
-        foreach (var w in save.Workers)
-            if (w.Level > config.MaxWorkerLevel)
-                w.Level = config.MaxWorkerLevel;
+        // PlayerLevel clamp [1, 1500]; negative Währungen → 0
+        s.PlayerLevel = Math.Clamp(s.PlayerLevel, 1, 1500);
 
-        // Orphan-Reservierungen entfernen
-        var activeOrderIds = save.Orders.Active.Select(o => o.Id).ToHashSet();
-        save.Crafting.Reservations.RemoveAll(r => !activeOrderIds.Contains(r.OrderId));
+        // Money-Cap = max(1e15-Floor, TotalMoneyEarned) — NICHT config.MaxMoney
+        var moneyCap = Math.Max(1_000_000_000_000_000m, s.TotalMoneyEarned);
+        if (s.Money < 0) s.Money = 0;
+        if (s.Money > moneyCap) s.Money = moneyCap;
 
+        // GoldenScrews Cap = 100_000; Prestige.PermanentMultiplier clamp [1.0, 20.0]
+        s.GoldenScrews = Math.Clamp(s.GoldenScrews, 0, 100_000);
+
+        // Heirlooms gegen Catalog; Cap = GetEffectiveHeirloomSlots(IsPremium) (3, Premium 4)
+        save.HeirloomItems.RemoveAll(id => !catalog.IsHeirloomEligible(id));
+
+        // ParallelOrdersByWorkshop: Orphans entfernen, hartes Cap MaxParallelOrders = 3
+        // ReservedInventory nie > CraftingInventory; Orphan-Reservierungen freigeben
+        // ResearchTree aus Template (CreateAll, 72 Nodes) syncen; fehlende Nodes ergänzen
+        // BattlePass.IsPremium = false; IsPrestigePassActive = false (Exploit-Schutz)
         return save;
     }
 }
 ```
 
-### 16.3 Cloud-Functions (Server-Side)
+### 16.3 Cloud-Functions (reine Server-Validierung)
 
-Spec-Datei: `Server/SERVEROPS.md`
+Spec-Datei: `Server/SERVEROPS.md`. 8 Functions analog Avalonia + ArcaneKingdom (siehe [PLAN.md § 8.4](PLAN.md)).
 
-8 Functions analog Avalonia + ArcaneKingdom (siehe [PLAN.md § 8.4](PLAN.md)).
+> **Verbindlich (Grundsatz "gleiches Spiel"):** Cloud-Functions ändern **kein** Spielverhalten. Sie sind
+> reine **Server-Validierung + Persistenz** (HMAC-/Wertebereich-/Idempotenz-Prüfung, atomare Writes,
+> Receipt-Checks). Formeln, Belohnungshöhen und Balancing entstehen client-seitig exakt wie im Avalonia-
+> Original; der Server bestätigt oder lehnt ab, er rechnet nicht neu. Eine Function, die einen anderen
+> Wert berechnet als der Client, wäre eine mechanische Abweichung und ist verboten.
+
+### 16.4 NotificationCenter (In-App-Bell/Inbox) — getrennt von Push
+
+> **Quelle: ORIGINAL_WERTE Bereich 08 §6 — `NotificationCenterService.cs`, `Models/NotificationItem.cs`.**
+> **Strikte Abgrenzung:** Die Bell-Inbox ist **in-App** (persistiert in `GameState.NotificationInbox`) und
+> hat nichts mit den 8 Android-OS-Push-Triggern (`IPushNotificationService`, Bereich 08 §5) zu tun.
+
+- `MaxInboxSize = 100` (FIFO-Eviction der ältesten über `CreatedAt` bei Überlauf).
+- Alle Mutationen (Add/Dismiss/Clear/MarkAllSeen) laufen unter `IGameStateService.ExecuteWithLock(...)`
+  (derselbe Lock wie SaveGame → kein "Collection was modified").
+- `Items` (IReadOnlyList): Snapshot, neueste zuerst (`OrderByDescending(CreatedAt)`), gecacht
+  (`_isCacheDirty`). `UnseenCount = Count(i => !i.Seen)`. `Add` dedupliziert über `Id` (Seen bleibt erhalten).
+  `Changed`-Event (`Action`) bei jeder Mutation.
+- **NotificationKind:** `OfflineEarnings` (IMMER Modal, NICHT in Bell), `DailyReward`, `WelcomeBackOffer`,
+  `AchievementUnlocked`, `StreakSaved`, `NewStoryChapter` (Pulse-Akzent), `LiveOrderAvailable`.
+- `NotificationItem`: `id`, `kind`, `titleKey`, `titleArg?`, `bodyKey`, `bodyArg?`, `createdAt` (UtcNow),
+  `seen`, `iconKind?`.
+
+### 16.5 ReviewService (Milestone-Timing + 14-Tage-Cooldown)
+
+> **Quelle: ORIGINAL_WERTE Bereich 08 §9 — `ReviewService.cs`.**
+
+- Preference-Key `ReviewPromptedDate` (UtcNow `"O"`). `CooldownDays = 14`.
+- Trigger-Meilensteine `OnMilestone(type, value)`:
+  - `"level"` → value ∈ **{20, 50, 100}**
+  - `"prestige"` → value ≥ 1
+  - `"orders"` → value ≥ 50
+- Bei Trigger: wenn letzter Prompt < 14 Tage her → `return` (Cooldown), sonst `_shouldPrompt = true`.
+- Auslösung: `ProgressionFeedbackCoordinator` ruft `OnMilestone(...)` + `CheckReviewPrompt()`; bei
+  `ShouldPromptReview()==true` → `MarkReviewPrompted()` + In-App-Review über `IPlayReviewService`.
 
 ---
 
@@ -1279,15 +1563,18 @@ Spec-Datei: `Server/SERVEROPS.md`
 
 ### 17.1 Platform-Interfaces
 
-| Interface | Android-Impl | iOS-Impl (Phase 2) |
-|-----------|-------------|---------------------|
-| `IAuthService` | FirebaseAuthAndroid | FirebaseAuthIos |
-| `IPurchaseService` | GooglePlayBilling | StoreKit |
-| `IRewardedAdService` | AdMobAndroid | AdMobIos |
-| `IPushNotificationService` | FcmAndroid | FcmIos |
-| `INotificationService` | AndroidLocalNotifications | iOSLocalNotifications |
-| `IHapticFeedbackService` | AndroidVibrator | iOSHaptic |
-| `IShareService` | AndroidShare | iOSShare |
+| Interface | Android-Impl | iOS-Impl (Phase 2) | Hinweis |
+|-----------|-------------|---------------------|---------|
+| `IAuthService` | FirebaseAuthAndroid | FirebaseAuthIos | Anonymous Auth + PlayerId-Mapping |
+| `IPurchaseService` | GooglePlayBilling | StoreKit | |
+| `IRewardedAdService` | AdMobAndroid | AdMobIos | |
+| `IPushNotificationService` | AndroidLocalNotificationService | iOSLocalNotifications | **OS-Push** (8 Trigger, AlarmManager) — NICHT die In-App-Bell (§ 16.4) |
+| `IHapticFeedbackService` | AndroidVibrator | iOSHaptic | |
+| `IShareService` | AndroidShare | iOSShare | |
+| `IPlayReviewService` | GooglePlayReview | StoreKitReview | Auslösung via ReviewService-Timing (§ 16.5) |
+
+`INotificationCenterService` (In-App-Bell/Inbox, § 16.4) ist **plattformneutral** (POCO im Game-Layer) und
+hat hier keine Android-/iOS-Implementierung.
 
 Unity macht Plattform-Auswahl via `#if UNITY_ANDROID` / `#if UNITY_IOS`. DI-Registrierung erfolgt im Bootstrap mit Platform-Check:
 
@@ -1539,15 +1826,19 @@ Datei: `Server/SERVEROPS.md` (folgt separat)
 
 **Stack:** Node.js 20 + TypeScript + Firebase Functions v2
 
+> **Reine Server-Validierung — kein Verhalten ändern (s. § 16.3).** Jede Function prüft/persistiert nur
+> (Receipt-/HMAC-/Wertebereich-/Idempotenz-Check). Die Spielmechanik bleibt client-seitig identisch zum
+> Avalonia-Original; der Server berechnet keine Belohnungen neu.
+
 **8 Functions:**
-1. `validateIapReceipt`
-2. `validateMiniGameScore`
-3. `settleBattlePassRewards`
-4. `createGuild`
-5. `onPlayerWriteValidate`
-6. `onReportReceived`
-7. `onWarSeasonCompleted`
-8. `liveEventRefresh`
+1. `validateIapReceipt` — Google-Play-Receipt prüfen, Premium/SKU bestätigen
+2. `validateMiniGameScore` — Score-Plausibilität (Wertebereich), kein Re-Scoring
+3. `settleBattlePassRewards` — Claim-Idempotenz + Persistenz der client-berechneten Tier-Rewards
+4. `createGuild` — Gilden-Anlage, Eindeutigkeit (Tag/Code)
+5. `onPlayerWriteValidate` — HMAC-/Wertebereich-Trigger auf Spieler-Writes
+6. `onReportReceived` — Spieler-Reports verarbeiten
+7. `onWarSeasonCompleted` — Saison-Abschluss, League-Verteilung
+8. `liveEventRefresh` — Live-Event-Rotation (server-getaktet)
 
 ---
 

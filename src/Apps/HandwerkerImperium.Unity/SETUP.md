@@ -16,7 +16,7 @@
 6. [Firebase einrichten](#6-firebase-einrichten)
 7. [Play Store + AdMob Konten](#7-play-store--admob-konten)
 8. [KI-Asset-Pipeline einrichten](#8-ki-asset-pipeline-einrichten)
-9. [ElevenLabs Voice-Cloning Setup](#9-elevenlabs-voice-cloning-setup)
+9. [ElevenLabs Standard-Voice Setup](#9-elevenlabs-standard-voice-setup)
 10. [First-Boot-Test](#10-first-boot-test)
 11. [Build Android Dev](#11-build-android-dev)
 12. [Troubleshooting](#12-troubleshooting)
@@ -38,18 +38,18 @@
 
 ### 1.2 Bestehende Accounts (vorausgesetzt)
 
-- ✅ Google-Konto (für Play Store + Firebase + AdMob)
-- ✅ Apple-Konto (Phase 2, optional)
-- ✅ GitHub-Konto (für CI/CD später)
-- ⚠️ **Adobe Creative Cloud** (Substance 3D Sampler + Painter) — Subscription kaufen falls nicht vorhanden
-- ⚠️ **ElevenLabs Pro** — Subscription kaufen
-- ⚠️ **Rodin Gen-2.5** (Hyper3D, optional für Hero-Assets) — Free-Tier reicht erstmal
+- Google-Konto (für Play Store + Firebase + AdMob) — gleicher Account wie die Avalonia-Apps
+- Apple-Konto (Phase 2, optional)
+- GitHub-Konto (für CI/CD später)
+- **Adobe Creative Cloud** (Substance 3D Sampler + Painter) — Subscription kaufen falls nicht vorhanden
+- **ElevenLabs Pro** — Subscription kaufen
+- **Rodin Gen-2.5** (Hyper3D, optional für Hero-Assets) — Free-Tier reicht erstmal
 
 ### 1.3 Vorbereitete Dateien
 
-- ✅ Keystore: `F:\Meine_Apps_Ava\Releases\meineapps.keystore` (gleicher wie Avalonia)
-- ✅ Style-Reference-Bilder (15-20 Stück für LoRA-Training) — werden in Phase 1 Woche 8 generiert
-- ⚠️ **Eigene Voice-Aufnahme** (3-5min pro Sprache) — wird in Phase 1 Woche 6 aufgenommen
+- Keystore: `F:\Meine_Apps_Ava\Releases\meineapps.keystore` (gleicher wie alle Avalonia-Apps, Alias `meineapps`)
+- Style-Reference-Bilder (15-20 Stück für LoRA-Training) — werden in Phase 1 Woche 8 generiert
+- **Standard-Voice statt eigener Aufnahme** — vorgefertigte ElevenLabs-Library-Voice (siehe § 9)
 
 ### 1.4 Empfohlene zusätzliche Software
 
@@ -57,7 +57,7 @@
 - **GitHub Desktop** oder **GitKraken** (visual Git)
 - **VS Code** (für Cloud-Functions in TypeScript)
 - **Notepad++** oder **Sublime Text** (für JSON/USS/UXML)
-- **Audacity** (Voice-Aufnahme)
+- **Audacity** (Audio-Schnitt/-Normalisierung der generierten Voice-Lines)
 - **Discord** (für Beta-Tester-Community später)
 
 ---
@@ -106,8 +106,8 @@ Falls Rider bevorzugt:
 # Git LFS installieren
 git lfs install
 
-# Im Repo-Root (nach Klonen)
-cd C:\Users\roschneider\MeineApps.Ava
+# Im Repo-Root (Workspace bereits vorhanden)
+cd F:\Meine_Apps_Ava
 # .gitattributes konfigurieren falls nötig
 ```
 
@@ -150,20 +150,25 @@ python --version
 
 ## 3. Repository klonen & vorbereiten
 
-### 3.1 Falls noch nicht da
+### 3.1 Repository verifizieren
+
+Der Workspace liegt bereits unter `F:\Meine_Apps_Ava\`, das Unity-Projekt unter
+`src/Apps/HandwerkerImperium.Unity/`.
 
 ```powershell
-# Repository ist bereits unter C:\Users\roschneider\MeineApps.Ava\
-
 # Verifizieren:
-ls C:\Users\roschneider\MeineApps.Ava\src\Apps\HandwerkerImperium.Unity\
+ls F:\Meine_Apps_Ava\src\Apps\HandwerkerImperium.Unity\
 
 # Sollte zeigen:
 # - README.md, PLAN.md, DESIGN.md, CLAUDE.md, ARCHITECTURE.md
 # - ROADMAP.md, ASSETS_AI.md, SETUP.md (diese Datei)
+# - PLAN_ABGLEICH_ORIGINAL.md, ORIGINAL_WERTE.md
 ```
 
 ### 3.2 Branch wechseln
+
+Unity-Arbeit läuft auf einem eigenen Branch parallel zur produktiven Avalonia-Version (siehe
+CLAUDE.md § 18.1):
 
 ```powershell
 git checkout -b unity-main
@@ -205,7 +210,7 @@ Git LFS für große Asset-Dateien:
 2. **New Project**
 3. **Template:** Universal 3D (URP) — wichtig für 2D + 3D
 4. **Project Name:** `HandwerkerImperium`
-5. **Location:** `C:\Users\roschneider\MeineApps.Ava\src\Apps\HandwerkerImperium.Unity\Unity\`
+5. **Location:** `F:\Meine_Apps_Ava\src\Apps\HandwerkerImperium.Unity\Unity\`
 6. **Create**
 
 Unity öffnet → erste Initialisierung dauert ~5-10 min.
@@ -274,6 +279,9 @@ Assets/
 ---
 
 ## 5. Packages installieren
+
+> **Single-Source-of-Truth für Versionen:** [CLAUDE.md § 2 (Tech-Stack)](CLAUDE.md). Die hier
+> genannten Versionen müssen mit CLAUDE.md § 2 übereinstimmen — bei Abweichung gilt CLAUDE.md.
 
 ### 5.1 Über Package Manager UI
 
@@ -408,7 +416,9 @@ In Firebase Console:
 }
 ```
 
-Vollständige Rules: aus Avalonia portieren (`src/Apps/HandwerkerImperium/database.rules.json`).
+Vollständige Rules: aus der produktiven Avalonia-Version portieren — Quelle ist die Workspace-Root-Datei
+`F:\Meine_Apps_Ava\database.rules.json` (gilt aktuell nur für HandwerkerImperium). Ziel im Unity-Projekt:
+`Server/DatabaseRules/database.rules.json` (siehe CLAUDE.md § 13.3).
 
 ### 6.5 Cloud Functions Setup
 
@@ -475,14 +485,24 @@ firebase init functions
 
 ### 7.3 Google Play Billing Setup
 
+> **Inhalte/Preise nicht hier pflegen** — maßgeblich ist [DESIGN.md § 29 (Monetarisierung)](DESIGN.md):
+> § 29.1 Imperium-Pass (Premium), § 29.2 IAP-Bundles, § 29.5 Daily-Bundle. Hier nur die Play-Console-Anlage.
+
 1. Play Console → App → Monetization → Products
-2. **In-App Products:**
-   - `imperium_pass` (4,99 €, Non-Consumable) — Premium Lifetime
-3. **Subscriptions:** (keine im MVP)
-4. **In-App Products → Mehr:**
-   - `bundle_mid` (9,99 €, Consumable)
-   - `bundle_big` (19,99 €, Consumable)
-   - `bundle_mega` (49,99 €, Consumable)
+2. **Premium (Non-Consumable):**
+   - Imperium-Pass, 4,99 € Lifetime (Effekte → DESIGN.md § 29.1)
+3. **Whale-Bundles (Consumable, 3 Stück — Inhalte → DESIGN.md § 29.2):**
+   - Mid (9,99 €), Big (19,99 €), Mega (49,99 €)
+4. **Battle-Pass-Saison (Consumable):**
+   - `battle_pass_season` — eigener SKU pro Saison (einziger im Original-Code fest belegter SKU,
+     `BattlePassService.UpgradeToPremiumAsync`; DESIGN.md § 21.8)
+5. **Daily-Bundle (Consumable, RemoteConfig-getrieben):**
+   - 7 Slot-SKUs, befüllt über `monetization.daily_bundle_skus` (DESIGN.md § 29.5) — KEIN Hardcoded-Default
+6. **Subscriptions:** keine
+
+**Hinweis zu SKU-IDs:** Außer `battle_pass_season` sind die konkreten Produkt-IDs für Imperium-Pass und
+Bundles im Original-Avalonia-Code nicht fest verdrahtet — finale IDs beim Anlegen in der Play Console
+festlegen und mit der Avalonia-Version abgleichen, nicht erfinden.
 
 ---
 
@@ -764,7 +784,7 @@ Oder direkt über Unity → Build And Run.
 | **Addressables-Fehler** | Build Catalog explizit (`Addressables → Build → New Build`) |
 | **ComfyUI Modell lädt nicht** | Verify CUDA 12.4 + PyTorch 2.5.1 + RAM-Check (16+ GB VRAM für TRELLIS 2) |
 | **TRELLIS 2 OOM** | Kleinere Bilder (1024² statt 2048²), Memory-Fragmentierung-Cleanup |
-| **ElevenLabs Voice klingt schlecht** | Quellaufnahme verbessern (Mikro-Quality, Hintergrundrauschen, klare Aussprache) |
+| **ElevenLabs Voice klingt schlecht** | Voice-Settings anpassen (stability/style/similarity_boost) oder andere Library-Voice wählen (§ 9.4) |
 | **Firebase RTDB schreibt nicht** | Rules + indexOn korrekt setzen, im Console-Logs prüfen |
 | **Mixamo Auto-Rig fail bei stylized Worker** | Proportionen näher am Standard halten, AccuRIG 2 als Fallback |
 
@@ -800,7 +820,7 @@ Oder direkt über Unity → Build And Run.
 
 ### 13.2 Repository (Tag 1)
 
-- [ ] Repository unter `C:\Users\roschneider\MeineApps.Ava\` verfügbar
+- [ ] Repository unter `F:\Meine_Apps_Ava\` verfügbar
 - [ ] Branch `unity-main` erstellt
 - [ ] .gitignore + .gitattributes für Unity konfiguriert
 
@@ -826,8 +846,8 @@ Oder direkt über Unity → Build And Run.
 ### 13.5 Play Store + AdMob (Tag 2)
 
 - [ ] Play Console App erstellt (Beta)
-- [ ] AdMob App + 13 Ad-Units angelegt
-- [ ] In-App Products (4 Stück) angelegt
+- [ ] AdMob App + 13 Rewarded-Ad-Units angelegt (DESIGN.md § 29.3)
+- [ ] In-App Products angelegt: Imperium-Pass + 3 Bundles + `battle_pass_season` + Daily-Bundle-Slots (DESIGN.md § 29)
 
 ### 13.6 KI-Pipeline (Tag 3-4)
 
@@ -860,12 +880,17 @@ Oder direkt über Unity → Build And Run.
 - [ ] Alle Doku-Dateien gelesen:
   - [ ] README.md
   - [ ] PLAN.md
-  - [ ] DESIGN.md
+  - [ ] DESIGN.md (korrigiertes GDD — verbindliche Werte)
   - [ ] CLAUDE.md
   - [ ] ARCHITECTURE.md
   - [ ] ROADMAP.md
   - [ ] ASSETS_AI.md
+  - [ ] ORIGINAL_WERTE.md (echte Werte aus dem Avalonia-Code)
+  - [ ] PLAN_ABGLEICH_ORIGINAL.md (Abgleich Plan ↔ Original)
 - [ ] Designentscheidungen verstanden
+- [ ] **Grundsatz verinnerlicht:** Die Unity-Version ist GENAU DASSELBE SPIEL wie das produktive
+      Avalonia-Original (gleiche Mechaniken, Formeln, Balancing) — nur in 3D besser präsentiert.
+      Jede mechanische/Balancing-Abweichung ist ein Fehler.
 
 ### 13.10 Bereitstellung für Phase 1 (Woche 1 starten)
 
@@ -917,9 +942,9 @@ Oder direkt über Unity → Build And Run.
 
 ## 15. Nächste Schritte nach Setup
 
-1. ✅ Setup abgeschlossen
-2. ⏭️ [ROADMAP.md](ROADMAP.md) → Phase 1, Woche 1 starten
-3. ⏭️ Parallel: KI-Pilot-Assets gemäß [ASSETS_AI.md § 15](ASSETS_AI.md) starten
-4. ⏭️ Erste Style-Reference-Bilder generieren (Woche 7-8)
+1. Setup abgeschlossen
+2. [ROADMAP.md](ROADMAP.md) → Phase 1, Woche 1 starten
+3. Parallel: KI-Pilot-Assets gemäß [ASSETS_AI.md § 15 (Pilot-Plan)](ASSETS_AI.md) starten
+4. Erste Style-Reference-Bilder generieren (Woche 7-8)
 
-**Setup abgeschlossen — bereit zur Implementation!** 🎮
+**Setup abgeschlossen — bereit zur Implementation.**

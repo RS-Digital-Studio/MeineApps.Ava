@@ -5348,12 +5348,14 @@ Quelle: `Models/ResearchTree.cs`, `Models/Research.cs`, `Models/ResearchEffect.c
 
 Quelle: `Models/Enums/ResearchBranch.cs`
 
-| Branch | Enum-Wert | Icon (Emoji-Unicode im Code) | Farbe | Nodes |
-|--------|-----------|------------------------------|-------|-------|
-| Tools | 0 | Wrench `🔧` | #FF9800 (Orange) | 20 |
-| Management | 1 | Briefcase `💼` | #2196F3 (Blau) | 20 |
-| Marketing | 2 | Megaphone `📣` | #4CAF50 (Grün) | 20 |
-| Logistics | 3 | Package `📦` | #D97706 (Amber) | 12 |
+| Branch | Enum-Wert | Icon (Original-Glyph als Unicode-Codepoint) | Farbe | Nodes |
+|--------|-----------|---------------------------------------------|-------|-------|
+| Tools | 0 | Wrench (U+1F527) | #FF9800 (Orange) | 20 |
+| Management | 1 | Briefcase (U+1F4BC) | #2196F3 (Blau) | 20 |
+| Marketing | 2 | Megaphone (U+1F4E3) | #4CAF50 (Grün) | 20 |
+| Logistics | 3 | Package (U+1F4E6) | #D97706 (Amber) | 12 |
+
+> Hinweis: Das Avalonia-Original verwendet diese Emoji-Glyphen direkt als Branch-Icons. Fuer die Unity-Version werden sie gemaess Projekt-Regel (keine Emojis als UI-Text) durch Material-Icons/3D-Icons ersetzt — das ist eine reine Praesentations-Verbesserung ("besser/3D"), keine Mechanik-Aenderung.
 
 **Node-Anzahl gesamt: 72** (Tools 20 + Management 20 + Marketing 20 + Logistics 12).
 

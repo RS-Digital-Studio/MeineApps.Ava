@@ -1,9 +1,34 @@
-# ROADMAP.md — HandwerkerImperium-Unity (12-Monate Wochenplan)
+# ROADMAP.md — HandwerkerImperium-Unity (Wochenplan)
 
-> **Vollständige Wochenweise-Aufschlüsselung der 7 Phasen.**
-> Annahme: 1 Entwickler (Vollzeit) + Asset-Outsourcing (3D-Modelle, Animationen, Audio).
-> **Visualisierungs-Ansatz:** Kompromissloses 3D von Anfang an → Asset-Pipeline parallel zur Code-Entwicklung.
+> **Vollständige Wochenweise-Aufschlüsselung der Entwicklungs-Phasen.**
+> Annahme: 1 Entwickler (Vollzeit) + KI-Asset-Pipeline (3D-Modelle, Animationen, Audio inhouse via ComfyUI/Cloud, KEIN Outsourcing — siehe [ASSETS_AI.md](ASSETS_AI.md)).
+> **Visualisierungs-Ansatz:** Kompromissloses 3D von Anfang an → KI-Asset-Pipeline parallel zur Code-Entwicklung.
 > **Migrations-Ansatz:** Closed Beta parallel zur Avalonia-Production → Avalonia bleibt aktiv.
+
+---
+
+## Grundsatz & Vollständigkeits-Anspruch
+
+**Das Endprodukt ist 1:1 vollständig** — GENAU DASSELBE SPIEL wie die produktive Avalonia-Version
+(gleiche Mechaniken, Formeln, Balancing-Werte), NUR in 3D und mit besserer Präsentation. JEDES in
+[DESIGN.md](DESIGN.md) dokumentierte System muss in dieser Roadmap eingeplant sein und im finalen
+Release enthalten sein. "Besser/3D" betrifft ausschließlich Präsentation (Grafik, Hub, Cinematics,
+Audio, Input, UI-Tech) — niemals Mechanik oder Balancing.
+
+**Realismus-Hinweis (verbindlich):** Eine vollständige 1:1-Reimplementierung des Original-Umfangs
+(91 Services, 77 Models, 80 ViewModels, 74 Views, ~28k LOC C# — siehe [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md))
+PLUS komplette KI-3D-Asset-Produktion durch **1 Entwickler** ist in 52 Wochen **nicht** in voller Tiefe
+erreichbar. Diese Roadmap ist daher **Beta-gestuft**: Sie liefert nach 52 Wochen eine **funktional
+vollständige Closed Beta** (alle Systeme spielbar, ggf. mit 2D-Asset-Platzhaltern und reduziertem
+Inhalts-Polish), und führt die **Vollständigkeit auf 1:1-Niveau** in der Stabilisierungs-Phase
+(Beta → 1.0, Wochen 53-72) sowie der Post-1.0-Roadmap fort. **Kein System wird weggelassen** — die
+Stufung betrifft Reihenfolge und Polish-Tiefe, nicht den Funktionsumfang.
+
+| Beta-Stufe | Bedeutung |
+|------------|-----------|
+| **Closed Beta (Ende W52)** | Alle Kern- und Meta-Systeme spielbar (Single-Player + Multiplayer + Live-Ops), Inhalt teils reduziert (z.B. Story-Kapitel 1-20 statt 60, Asset-Platzhalter wo KI-Pipeline noch nachzieht) |
+| **Content-Complete (W53-66)** | Voller Inhalt: alle 60 Story-Kapitel, alle 79+33 Achievements, alle 33 Rezepte, alle 72 Forschungs-Nodes verifiziert, finale 3D-Assets statt Platzhalter |
+| **1.0 Vollständig (W67-72)** | 1:1-Parität zur Avalonia-Version verifiziert (Checkliste § Vollständigkeits-Matrix), Production-Launch |
 
 ---
 
@@ -15,11 +40,13 @@
 | **2: Core-Loop-Prototyp** | 9-12 | M 2-3 | 1 Werkstatt + 1 Mini-Game spielbar |
 | **3: Werkstätten + Worker + Orders** | 13-20 | M 3-5 | Alle 10 Werkstätten, 6 Order-Types |
 | **4: Forschung + Prestige + Crafting** | 21-28 | M 5-7 | Single-Player komplett |
-| **5: Gilden + Multiplayer** | 29-36 | M 7-9 | Online-Features (Gilde, Co-op, Auktionen) |
-| **6: Polish (3D, Shader, Audio)** | 37-44 | M 9-11 | Beta-Ready, alle 3D-Effekte |
-| **7: Beta + Launch** | 45-52 | M 11-12 | Closed Beta → Production-Launch |
+| **5: Gilden + Multiplayer + Live-Ops** | 29-38 | M 7-9 | Online-Features + Daily/Weekly/BattlePass/Live-Events |
+| **6: Polish (3D, Shader, Audio)** | 39-46 | M 9-11 | Beta-Ready, alle 3D-Effekte |
+| **7: Closed Beta** | 47-52 | M 11-12 | Funktional vollständige Closed Beta (alle Systeme spielbar) |
+| **8: Content-Complete + 1.0** | 53-72 | M 13-18 | Voller Inhalt + verifizierte 1:1-Parität → Production-Launch |
 
-**Asset-Pipeline (parallel):** Woche 4 → Woche 40 (3D-Modelle, Audio, Animationen werden outgesourced).
+**KI-Asset-Pipeline (parallel):** Woche 4 → Woche 44 (3D-Modelle, Audio, Animationen inhouse via
+ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outsourcing).
 
 ---
 
@@ -319,14 +346,20 @@
 **Output:**
 - Reputation-Loop geschlossen
 
-### Woche 20: Mini-Games (2D-Prototypen für die anderen 9)
+### Woche 20: Mini-Games (2D-Prototypen für alle Renderer)
+
+> **13 MiniGame-Enum-Typen, 10 distinkte Routen/Renderer** (Planing/TileLaying/Measuring teilen sich
+> die Sawing-Route). Maßgeblich: 13 Enum-Typen, 10 Renderer, 8 perfekt-zählbar (DESIGN.md § 7).
 
 **Tasks:**
-- [ ] Alle 10 Mini-Games als 2D-Prototyp (für Game-Logic-Test)
-- [ ] Mini-Game-Registry mit allen 10 Types
-- [ ] Score-Rating-System (Perfect/Good/Ok/Miss)
-- [ ] Auto-Complete-Ticket-Logik
-- [ ] **Tests:** Mini-Game-Score-Caps (10+ Tests)
+- [ ] Alle 13 MiniGame-Enum-Typen in der Registry (10 Renderer-Routen + 3 geteilte Sawing-Familie)
+- [ ] Mini-Game-Registry mit allen 13 Types (`IMiniGameRegistry`)
+- [ ] Alle 10 distinkten Renderer als 2D-Prototyp (für Game-Logic-Test)
+- [ ] Score-Rating-System (Perfect 100% / Good 75% / Ok 50% / Miss 0% — DESIGN.md § 7.2)
+- [ ] Mini-Game-Mastery (Bronze/Silver/Gold — DESIGN.md § 7.4) + Master-Tool-Kopplung (§ 7.6)
+- [ ] Auto-Complete-Ticket-Logik (DESIGN.md § 7.3, Schwellen § 30.11)
+- [ ] MiniGameNavigator (Route-Map + Abbruch, DESIGN.md § 7.5)
+- [ ] **Tests:** Mini-Game-Score-Caps, Auto-Complete-Schwellen (10+ Tests)
 
 **Output:**
 - Phase 3 abgeschlossen → 10 Werkstätten + Worker + 6 Order-Types spielbar
@@ -335,13 +368,14 @@
 
 ## Phase 4: Forschung + Prestige + Crafting (Woche 21-28)
 
-### Woche 21: Forschungs-System (45 Nodes)
+### Woche 21: Forschungs-System (72 Nodes, 4 Branches)
 
 **Tasks:**
-- [ ] `ResearchService` mit Timer + Effekt-Cache
-- [ ] 45 `ResearchNodeDefinition` ScriptableObjects
+- [ ] `ResearchService` mit Timer + Effekt-Cache + Effekt-Aggregation (DESIGN.md § 8.7/8.8)
+- [ ] 72 `ResearchNodeDefinition` ScriptableObjects (Tools 20, Management 20, Marketing 20, Logistics 12 — DESIGN.md § 8.3-8.6)
 - [ ] Branch-Logik (4 Branches mit Prerequisites)
-- [ ] **Tests:** Research-Effects, Cache-Invalidation (15+ Tests)
+- [ ] InstantFinish-GS-Kosten pro Level ab Level 8 (DESIGN.md § 8.9)
+- [ ] **Tests:** Research-Effects, Effekt-Aggregation, Cache-Invalidation (15+ Tests)
 
 **Output:**
 - Forschung funktional (UI noch simpel)
@@ -356,22 +390,25 @@
 - [ ] Camera-Zoom zu Branch
 
 **Asset-Pipeline:**
-- [ ] Research-Icons (45 Stück)
+- [ ] Research-Icons (72 Stück, 4 Branches)
 
 **Output:**
 - Beeindruckender 3D-Forschungsbaum
 
-### Woche 23: Prestige-System
+### Woche 23: Prestige-System + Prestige-Shop
 
 **Tasks:**
-- [ ] `PrestigeService` (PP-Formel, Tier-Transitions)
-- [ ] 7 Tiers (Bronze → Legende)
-- [ ] Diminishing Returns
-- [ ] Preservation-Regeln pro Tier
-- [ ] **Tests:** Prestige-Berechnung (20+ Tests)
+- [ ] `PrestigeService` (PP-Formel `CalculateTotalPrestigePoints`, Tier-Transitions — DESIGN.md § 9.2)
+- [ ] 7 Tiers (Bronze → Legende — DESIGN.md § 9.1)
+- [ ] Permanenter Multiplikator + Diminishing Returns + Cap 20× (DESIGN.md § 9.3)
+- [ ] Prestige-Bonus-PP (flat, nach Tier-Multiplikator — § 9.5) + Meilensteine (GS, § 9.4)
+- [ ] Reset-Preservierung pro Tier (`ResetProgress` — DESIGN.md § 9.9)
+- [ ] **Prestige-Shop (25 Items)** mit PP-Währung (DESIGN.md § 9.7)
+- [ ] Prestige-Pass (IAP, permanent — § 9.3a) + Speedrun-Belohnungen (§ 9.10)
+- [ ] **Tests:** Prestige-Berechnung, Prestige-Shop-Käufe, Speedrun-Brackets (25+ Tests)
 
 **Output:**
-- Prestige-Reset funktioniert
+- Prestige-Reset + Prestige-Shop funktionieren
 
 ### Woche 24: Prestige-Cinematic (Timeline)
 
@@ -386,14 +423,15 @@
 **Output:**
 - Beeindruckende Prestige-Cinematic
 
-### Woche 25: Challenges + Heirloom
+### Woche 25: Challenges + Heirloom + Ascension + Eternal-Mastery
 
 **Tasks:**
-- [ ] Challenge-System (3 Slots pro Prestige)
-- [ ] Heirloom-System (3 Slots, Premium 4)
-- [ ] Ascension-Vorbereitung (nach 3× Legende, im MVP nicht aktiv)
-- [ ] Eternal-Mastery (linear +0.5% pro Prestige)
-- [ ] **Tests:** Challenge-Multiplier, Heirloom-Selection (15+ Tests)
+- [ ] Prestige-Challenge-System (max 3 parallel, additiv — DESIGN.md § 9.6)
+- [ ] Heirloom-System (Run-Heirlooms beim Prestige, Pool = nur Tier-4-Crafting-Items — DESIGN.md § 24)
+- [ ] Ascension-System (Meta-Prestige nach 3× Legende, Perks + Permanent-Heirlooms — DESIGN.md § 9.8 / § 24.3). Vollständig implementieren; Live-Schaltung gemäß Beta-Stufung (Content-Complete)
+- [ ] Eternal-Mastery (permanenter Einkommens-Bonus mit Soft-Cap-Dämpfung — DESIGN.md § 25, NICHT linear)
+- [ ] `IProgressionFacade` (Prestige + Rebirth + Ascension + EternalMastery)
+- [ ] **Tests:** Challenge-Multiplier, Heirloom-Selection, Eternal-Mastery-Soft-Cap (15+ Tests)
 
 **Output:**
 - Meta-Progression komplett
@@ -401,14 +439,15 @@
 ### Woche 26: Crafting-System
 
 **Tasks:**
-- [ ] `CraftingService` mit 30 Recipes
-- [ ] T1-T4 Material-Tiers
-- [ ] Auto-Produktion (180s/360s)
-- [ ] Cross-Workshop-Inputs (V7)
-- [ ] **Tests:** Recipe-Berechnung, Material-Affinity (15+ Tests)
+- [ ] `CraftingService` mit **33 Rezepten** (T1: 10, T2: 10, T3: 10, T4: 3 — DESIGN.md § 10.1-10.4)
+- [ ] T1-T4 Material-Tiers + StartCrafting-Ablauf inkl. Tier-1-Goldkosten + Stack-Schutz (§ 10.4a)
+- [ ] Auto-Produktion (180s/360s — § 10.6) + Crafting-Speed-Bonus (§ 10.5)
+- [ ] Cross-Workshop-Inputs (V7 — § 10.7)
+- [ ] **Tools:** 8 aufrüstbare Werkzeuge (Goldschrauben — DESIGN.md § 10.8)
+- [ ] **Tests:** Recipe-Berechnung, Material-Affinity, Tool-Upgrades (15+ Tests)
 
 **Output:**
-- Crafting läuft
+- Crafting (33 Rezepte) + Tools laufen
 
 ### Woche 27: Lager (Warehouse V7)
 
@@ -422,22 +461,30 @@
 **Output:**
 - Vollständiges V7-System
 
-### Woche 28: Markt + Achievements
+### Woche 28: Markt + Reputation + Equipment + Master-Tools + Gebäude + Achievements
+
+> Sammelwoche für die verbleibenden Single-Player-Systeme. Funktional vollständig; Inhalts-Polish
+> (alle 79 Achievement-Texte, finale 3D-Trophäen) wird in der Content-Complete-Phase verifiziert.
 
 **Tasks:**
-- [ ] `MarketService` mit Sinus-Welle
-- [ ] Buy/Sell mit Strafzoll
-- [ ] Event-Modulation
-- [ ] **AchievementService** mit 60+ Achievements
-- [ ] 3D-Trophäen-Cinematic
-- [ ] **Tests:** Market-Pricing, Achievement-Trigger (20+ Tests)
+- [ ] `MarketService` mit Sinus-Welle, Buy/Sell mit Strafzoll, Event-Modulation (DESIGN.md § 12, Unlock via logi_05)
+- [ ] **Reputation-System** (Score 0-100, Tiers, Reward-Multiplikator, Decay, Tier-Up-Effekte — DESIGN.md § 13) inkl. **Reputation-Shop (5 Items, Unlock ab Score 60 — § 13.8)**
+- [ ] **Equipment-System** (4 Rarity, Typen/Slots, 3 Stats, Erwerb, Prestige-Preservation — DESIGN.md § 16)
+- [ ] **Master-Tools (12 Artefakte)** inkl. Mini-Game-Kopplung (DESIGN.md § 14)
+- [ ] **Gebäude (7 Stück)** mit Effekten (DESIGN.md § 15)
+- [ ] **AchievementService** mit **79 Spieler-Achievements (17 Kategorien — DESIGN.md § 18)** + 3D-Trophäen-Cinematic
+- [ ] **Tests:** Market-Pricing, Reputation-Tiers, Equipment-Rolls, Master-Tool-Boni, Achievement-Trigger (30+ Tests)
 
 **Output:**
-- Phase 4 abgeschlossen → Single-Player komplett
+- Phase 4 abgeschlossen → Single-Player funktional vollständig (Inhalts-Verifikation in Content-Complete-Phase)
 
 ---
 
-## Phase 5: Gilden + Multiplayer (Woche 29-36)
+## Phase 5: Gilden + Multiplayer + Live-Ops (Woche 29-38)
+
+> Deckt **alle** Online- und Live-Ops-Systeme aus DESIGN.md ab: komplettes Gilden-System (§ 17),
+> Daily-Reward (§ 19), Lucky-Spin (§ 20), BattlePass (§ 21), Live-/Random-Events (§ 22), Saisonale
+> Events + Event-Shop (§ 23), Story-Chapters (§ 26), Notifications (§ 28) und Monetarisierung (§ 29).
 
 ### Woche 29: Firebase-Realtime-DB-Integration
 
@@ -451,18 +498,19 @@
 **Output:**
 - Firebase-Layer komplett
 
-### Woche 30: Gilden-CRUD
+### Woche 30: Gilden-CRUD + Guild-Research
 
 **Tasks:**
-- [ ] `GuildService` (Create, Join, Leave)
+- [ ] `GuildService` (Create, Join, Leave — **max 20 Mitglieder**, DESIGN.md § 17.1)
 - [ ] 6-stellige Invite-Codes
 - [ ] Cloud-Function: `createGuild` (TypeScript)
 - [ ] Member-Liste mit Rollen
-- [ ] Wochenziele
-- [ ] **Tests:** Guild-Lifecycle (15+ Tests)
+- [ ] **Guild-Research (18 Nodes, 6 Kategorien — DESIGN.md § 17.2)** mit Research-Cache
+- [ ] Gilden-Tipps (`GuildTips` — § 17.11)
+- [ ] **Tests:** Guild-Lifecycle, Guild-Research-Effekte (15+ Tests)
 
 **Output:**
-- Spieler kann Gilden erstellen + beitreten
+- Spieler kann Gilden erstellen + beitreten, Guild-Research aktiv
 
 ### Woche 31: Co-op-Orders + Auktionen
 
@@ -504,29 +552,31 @@
 **Output:**
 - Bosse spielbar
 
-### Woche 34: Hall-Gebäude + Wochenziele
+### Woche 34: Hall-Gebäude + Mega-Projekte + War-Season + Guild-Achievements
 
 **Tasks:**
-- [ ] `GuildHallService` (10 Gebäude, Level-Upgrades)
-- [ ] Hall-Effekte (Income/Speed/Slots/etc.)
-- [ ] Wochenziele-Tracking
-- [ ] Belohnungs-Verteilung
-- [ ] **Tests:** Hall-Effects, Wochenziele (15+ Tests)
+- [ ] `GuildHallService` (**10 Gebäude**, Level-Upgrades, Hall-Effekte — DESIGN.md § 17.5)
+- [ ] **Mega-Projekte (2 Templates: Cathedral, HQ — DESIGN.md § 17.6 / § 34)** mit Bauphasen + Donations
+- [ ] **Kriegssaison (`GuildWarSeasonService` — DESIGN.md § 17.7)**
+- [ ] Wochenziele-Tracking + Belohnungs-Verteilung
+- [ ] **Guild-Achievement-System (33 Einträge — DESIGN.md § 17.10)**
+- [ ] `IGuildFacade` komplett (9 Gilden-Services) + Tick-Offsets + HMAC (§ 17.13)
+- [ ] **Tests:** Hall-Effects, Mega-Projekt-Donations, War-Season-Scoring, Guild-Achievements (25+ Tests)
 
 **Output:**
-- Gilden-Upgrade-System komplett
+- Gilden-System vollständig (alle 9 Services aus § 17)
 
-### Woche 35: Chat + Push-Notifications
+### Woche 35: Chat + Push-Notifications + In-App-Bell
 
 **Tasks:**
 - [ ] `GuildChatService` mit Firebase
 - [ ] Profanity-Filter (DE/EN/ES/FR/IT/PT)
-- [ ] `PushNotificationService` (8 Trigger)
-- [ ] Notification-Scheduler
-- [ ] **Tests:** Profanity-Filter (10+ Tests)
+- [ ] `PushNotificationService` (**8 Trigger — DESIGN.md § 28.1**) + Notification-Scheduler
+- [ ] **In-App-Bell / NotificationCenter (DESIGN.md § 28.2)** + Lokalisierung (§ 28.3)
+- [ ] **Tests:** Profanity-Filter, Notification-Trigger (10+ Tests)
 
 **Output:**
-- Chat + Notifications live
+- Chat + Notifications (Push + In-App-Bell) live
 
 ### Woche 36: Anti-Cheat + Cloud-Functions
 
@@ -540,18 +590,43 @@
   - onReportReceived
   - onWarSeasonCompleted
   - liveEventRefresh
-- [ ] `SaveSanitizer`-Edge-Cases
-- [ ] Rate-Limits in Firebase Security Rules
+- [ ] HMAC-Signierung kritischer Werte (DESIGN.md § 31.1) + Server-Side-Validation (§ 31.2)
+- [ ] `SaveSanitizer`-Edge-Cases (Reparatur statt Ablehnung — § 31.3) + Offline-Zeit-Schutz (§ 31.4)
+- [ ] Rate-Limits in Firebase Security Rules (§ 31.5)
 - [ ] **Manual-Test:** Cheat-Versuche detektiert
 
 **Output:**
-- Phase 5 abgeschlossen → Multiplayer + Anti-Cheat funktional
+- Multiplayer + Anti-Cheat funktional
+
+### Woche 37: Daily-Reward + Lucky-Spin + BattlePass
+
+**Tasks:**
+- [ ] **Daily-Reward** (30-Tage-Zyklus, Streak + Skalierung, VIP Auto-Claim — DESIGN.md § 19)
+- [ ] **Lucky-Spin** (8 Slots, Gewichte/Belohnungen, Verfügbarkeits-Priorität — DESIGN.md § 20)
+- [ ] **BattlePass** (`BattlePassService`, 50 Tier, 30-Tage-Saison, Free + Premium-Track, XP-Schwellen, Saison-Theme-Rotation, Premium-Lock-in — DESIGN.md § 21)
+- [ ] **Daily/Weekly:** `DailyChallengeService` (5 Types, Rotation) + `WeeklyMissionService` (4 Missions) + `IMissionsFacade`
+- [ ] **Tests:** Daily-Streak, Spin-Gewichte, BattlePass-Tier/XP, Challenge-Rotation (25+ Tests)
+
+**Output:**
+- Tägliche/wöchentliche Live-Ops-Schleifen komplett
+
+### Woche 38: Live-Events + Saisonale Events + Monetarisierung
+
+**Tasks:**
+- [ ] **Live Events** (4 Templates, Limited-Time — DESIGN.md § 22.A) + **Random Events** (8 Typen + saisonal — § 22.B)
+- [ ] **Saisonale Events (4/Jahr)** + Event-Shop (Basis + Saison-einzigartige Items — DESIGN.md § 23)
+- [ ] **Monetarisierung:** Imperium-Pass (4,99 €), IAP-Bundles, **13 Ad-Placements (§ 29.3)**, GS-Quellen (§ 29.4), Daily-Bundle (§ 29.5), Shop Daily Offer (§ 29.6), Cross-Promotion (§ 29.7), VIP (§ 29.8), Referral (§ 29.9)
+- [ ] `IPurchaseService` / `IRewardedAdService` via DI (Platform-Services)
+- [ ] **Tests:** Live-Event-Lifecycle, Seasonal-Item-Effekte, IAP-Grant-Logik (25+ Tests)
+
+**Output:**
+- Phase 5 abgeschlossen → Multiplayer + komplette Live-Ops + Monetarisierung funktional
 
 ---
 
-## Phase 6: Polish (Woche 37-44)
+## Phase 6: Polish (Woche 39-46)
 
-### Woche 37: 3D-Mini-Games (Sawing, Forge)
+### Woche 39: 3D-Mini-Games (Sawing, Forge)
 
 **Tasks:**
 - [ ] Sawing-Mini-Game als finales 3D (mit Procedural-Holzmaserung, Splitter-Particles, Sound)
@@ -560,7 +635,7 @@
 **Asset-Pipeline:**
 - [ ] Sawing + Forge 3D-Assets final
 
-### Woche 38: 3D-Mini-Games (Pipe, Wiring, Painting)
+### Woche 40: 3D-Mini-Games (Pipe, Wiring, Painting)
 
 **Tasks:**
 - [ ] Pipe-Puzzle (3D-Rohrleitungs-Anlage, Wasser-Particles)
@@ -570,7 +645,7 @@
 **Asset-Pipeline:**
 - [ ] 3D-Assets dieser 3 Mini-Games
 
-### Woche 39: 3D-Mini-Games (Blueprint, RoofTiling, Design)
+### Woche 41: 3D-Mini-Games (Blueprint, RoofTiling, Design)
 
 **Tasks:**
 - [ ] Blueprint (3D-Bauplan-Tisch)
@@ -580,7 +655,7 @@
 **Asset-Pipeline:**
 - [ ] 3D-Assets dieser 3 Mini-Games
 
-### Woche 40: 3D-Mini-Games (Inspection, InventGame)
+### Woche 42: 3D-Mini-Games (Inspection, InventGame)
 
 **Tasks:**
 - [ ] Inspection (3D-Gebäude, Lupe scannt Wände)
@@ -590,9 +665,9 @@
 - [ ] 3D-Assets der letzten 2 Mini-Games
 
 **Output:**
-- Alle 10 Mini-Games als 3D-Erlebnis
+- Alle 10 distinkten Mini-Game-Renderer als 3D-Erlebnis (deckt alle 13 Enum-Typen ab — Sawing-Familie geteilt)
 
-### Woche 41: Particle-System + Shader-Graphs
+### Woche 43: Particle-System + Shader-Graphs
 
 **Tasks:**
 - [ ] GPU-Particle-System (Coin-Fly, Confetti, Sparkle, Money-Burst)
@@ -600,7 +675,7 @@
 - [ ] Object-Pooling für Particles
 - [ ] Mobile-Quality-Settings
 
-### Woche 42: Post-Processing + Audio
+### Woche 44: Post-Processing + Audio
 
 **Tasks:**
 - [ ] URP Post-Processing-Profile (Low/Med/High/Cinematic)
@@ -613,33 +688,38 @@
 - [ ] Audio-Mastering
 - [ ] Neue SFX für 3D-Mini-Games
 
-### Woche 43: Daily/Weekly/BattlePass
+### Woche 45: Tutorial / FTUE + Story-Anbindung
 
 **Tasks:**
-- [ ] `DailyChallengeService` (5 Types, Rotation)
-- [ ] `WeeklyMissionService` (4 Missions)
-- [ ] `BattlePassService` (30 Tage, Free + Premium)
-- [ ] BattlePass-UI mit Animationen
-- [ ] **Tests:** Challenge-Rotation, BattlePass-Tier (20+ Tests)
-
-### Woche 44: Tutorial + FTUE-Polish
-
-**Tasks:**
-- [ ] `TutorialService` mit 8 Schritten
-- [ ] 3D-Tutorial-Highlight-Overlays
-- [ ] Animierter Finger-Indikator
-- [ ] Stage-Lighting für Tutorial-Fokus
-- [ ] Story-Chapter 1-5 implementiert
+- [ ] `FtueService` mit **10 Schritten** (`s_defaultSteps`, Order 0-9 — DESIGN.md § 27.1, NICHT 8) + `FtueProgressTracker`-Verdrahtung (§ 27.3)
+- [ ] **ContextualHints (32 — DESIGN.md § 27.4)**
+- [ ] 3D-Tutorial-Highlight-Overlays + animierter Finger-Indikator + Stage-Lighting für Tutorial-Fokus
+- [ ] **Story-Chapters (60 = 40 Haupt + 20 Saison — DESIGN.md § 26)**: Modell, Freischalt-Logik, Belohnungs-Auszahlung; Kapitel-Inhalte werden in der Content-Complete-Phase vervollständigt (Beta: 1-20)
 - [ ] **QA:** Vollständiger Tutorial-Durchlauf
+
+**Output:**
+- FTUE (10 Schritte) + Story-Gerüst stehen
+
+### Woche 46: Visual-Polish + Game-Juice
+
+**Tasks:**
+- [ ] City-Hub-Design final (DESIGN.md § 33): Stadt-Wachstum, City-Tiles, Camera-System, Worker-Bewegung
+- [ ] Celebration-/Floating-Text-Effekte über alle Systeme (Order-Complete, Level-Up, Achievement)
+- [ ] Final-Pass Game-Juice (Gold-Shimmer, Micro-Animations)
+- [ ] Telemetrie-Events verdrahtet (DESIGN.md § 32)
+- [ ] **QA:** Visueller Konsistenz-Check über alle Screens
 
 **Output:**
 - Phase 6 abgeschlossen → Beta-Ready
 
 ---
 
-## Phase 7: Beta + Launch (Woche 45-52)
+## Phase 7: Closed Beta (Woche 47-52)
 
-### Woche 45: Closed Internal-Test
+> Ziel: **funktional vollständige Closed Beta** — alle Systeme aus DESIGN.md spielbar (ggf. mit
+> 2D-Asset-Platzhaltern und reduziertem Inhalt, z.B. Story 1-20). Voll-Inhalt + 1:1-Parität folgt in Phase 8.
+
+### Woche 47: Closed Internal-Test
 
 **Tasks:**
 - [ ] Build → Internal Track (Dev-Team, 5 Tester)
@@ -648,73 +728,125 @@
 - [ ] Memory-Leaks fixen
 - [ ] Crashes analysieren (Crashlytics)
 
-### Woche 46: Bug-Fixing
+### Woche 48: Bug-Fixing + Closed Alpha (20 Tester)
 
 **Tasks:**
 - [ ] Top-20 Bug-Tickets abarbeiten
-- [ ] Performance-Optimierungen (Texture-Compression, LOD)
-- [ ] Stutter-Fixes
+- [ ] Performance-Optimierungen (Texture-Compression, LOD), Stutter-Fixes
+- [ ] Erweiterte Tester-Gruppe (20)
+- [ ] Telemetrie-Analyse (Funnel-Drops) + Balancing-Feedback einarbeiten
 
-### Woche 47: Closed Alpha (20 Tester)
-
-**Tasks:**
-- [ ] Erweiterte Tester-Gruppe
-- [ ] Telemetrie-Analyse (Funnel-Drops)
-- [ ] Balancing-Feedback einarbeiten
-- [ ] Bug-Fixes
-
-### Woche 48: Lokalisierung-Review
+### Woche 49: Lokalisierung-Review
 
 **Tasks:**
 - [ ] DE + EN: vollständige Review
 - [ ] ES, FR, IT, PT: Auto-Translation-Review (durch Native-Speaker)
 - [ ] Layout-Tests (lange Strings)
-- [ ] Missing-Keys-Check
+- [ ] Missing-Keys-Check (`LocalizationCheckTool`, 6 Sprachen)
 
-### Woche 49: Closed Beta (100 Tester)
+### Woche 50: Closed Beta (100 Tester)
 
 **Tasks:**
-- [ ] Closed Beta-Track im Play Store
+- [ ] Closed Beta-Track im Play Store (App-ID `com.meineapps.handwerkerimperium2.beta`)
 - [ ] Vorbereitung: Beta-Anmeldungs-Link
 - [ ] Marketing: Discord-Announce, Social-Media
 - [ ] Tracking: Active-User-Metrics, Retention
 
-### Woche 50: Performance-Pass
+### Woche 51: Performance-Pass + Pre-Launch-QA
 
 **Tasks:**
-- [ ] FPS-Profile auf Low-/Mid-/High-End-Geräten
-- [ ] APK-Size-Optimierung (<120 MB)
-- [ ] Texture-Atlas-Audit
-- [ ] Audio-Compression-Audit
-- [ ] Memory-Watcher final
+- [ ] FPS-Profile auf Low-/Mid-/High-End-Geräten, APK-Size-Optimierung (<120 MB)
+- [ ] Texture-Atlas-Audit, Audio-Compression-Audit, Memory-Watcher final
+- [ ] Vollständiger Pre-Release-Checker (analog Avalonia) + Save-Migration-Test (V1→V8)
+- [ ] Network-Failure-Test (Offline-Modus), App-Pause/Resume-Test, Final-Bug-Fixes
 
-### Woche 51: Pre-Launch-QA
-
-**Tasks:**
-- [ ] Vollständiger Pre-Release-Checker (analog Avalonia)
-- [ ] Save-Migration-Test (V1→V8)
-- [ ] Network-Failure-Test (Offline-Modus)
-- [ ] App-Pause/Resume-Test
-- [ ] Final-Bug-Fixes
-
-### Woche 52: Production-Launch
+### Woche 52: Closed-Beta-Release
 
 **Tasks:**
 - [ ] Build → Closed Beta Track (final)
-- [ ] Soft-Launch in DACH-Region (DE/AT/CH)
+- [ ] Soft-Launch der Beta in DACH-Region (DE/AT/CH)
 - [ ] Monitoring: Crashlytics, Analytics
 - [ ] Live-Operations-Setup
 - [ ] Marketing-Push
-- [ ] **🎉 v1.0.0 Beta Released!**
 
 **Output:**
-- Phase 7 abgeschlossen → Beta-Launch live
+- Phase 7 abgeschlossen → funktional vollständige Closed Beta live (Inhalt/Polish-Vervollständigung in Phase 8)
+
+---
+
+## Phase 8: Content-Complete + 1.0 (Woche 53-72)
+
+> Ziel: **vollständige 1:1-Parität** zur produktiven Avalonia-Version verifizieren — voller Inhalt,
+> finale 3D-Assets statt Platzhalter, alle Systeme über die Vollständigkeits-Matrix abgehakt.
+
+### Woche 53-58: Content-Vervollständigung
+
+**Tasks:**
+- [ ] **Story:** alle 60 Kapitel (40 Haupt + 20 Saison) inhaltlich fertig + Meister-Hans-Voice (DESIGN.md § 26)
+- [ ] **Achievements:** alle 79 Spieler-Achievements + 33 Gilden-Achievements mit finalen Texten/Triggern verifiziert
+- [ ] **Forschung:** alle 72 Nodes (4 Branches) mit korrekten Effekten gegen Original verifiziert
+- [ ] **Crafting:** alle 33 Rezepte (T1-T4) gegen Original-Werte verifiziert
+- [ ] **Prestige-Shop (25)** + **Reputation-Shop (5)** + **Event-Shop** Items vollständig + balanciert
+- [ ] Saison-Kapitel, Saison-Themes, Saisonale Events über vollen Jahres-Zyklus geprüft
+- [ ] Finale KI-3D-Assets ersetzen alle 2D-Platzhalter (siehe KI-Asset-Pipeline Phase E)
+
+### Woche 59-64: Balancing-Parität
+
+**Tasks:**
+- [ ] Sämtliche Formeln (Income, Offline-Income, Upgrade-Kosten, Order-Reward, XP-Kurve, Soft-Caps) numerisch gegen Original-Code (ORIGINAL_WERTE.md) gegengerechnet
+- [ ] Balancing-Werte (Workshop-BaseValues, Worker-Tiers, Manager 14, Master-Tools 12, Gebäude 7) 1:1 abgeglichen
+- [ ] Ascension live geschaltet + verifiziert (3× Legende → Permanent-Heirlooms)
+- [ ] Speedrun-Belohnungen, Eternal-Mastery-Soft-Cap, Heirloom-Boni gegengeprüft
+- [ ] End-to-End-Telemetrie-Funnel über vollständigen Spielverlauf
+
+### Woche 65-72: 1.0-Launch
+
+**Tasks:**
+- [ ] Vollständigkeits-Matrix (siehe unten) zu 100% abgehakt
+- [ ] Open-Beta → Production-Track (Cutover-Entscheidung ggü. Avalonia erst nach erfolgreicher Beta)
+- [ ] Final-Performance-Pass auf voller Asset-Last
+- [ ] Production-Launch v1.0.0, Live-Ops-Betrieb, Marketing-Push
+
+**Output:**
+- Phase 8 abgeschlossen → 1:1-vollständige 3D-Version, Production-Launch
+
+---
+
+## Vollständigkeits-Matrix (1:1-Parität — Pflicht vor 1.0)
+
+> Jedes System aus [DESIGN.md](DESIGN.md) muss vor dem 1.0-Launch implementiert UND gegen das
+> Original verifiziert sein. Referenzzahlen aus [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) / DESIGN.md.
+
+| System | Referenz-Umfang | Eingeplant (Phase/Woche) |
+|--------|-----------------|--------------------------|
+| Werkstätten | 10 Typen + Rebirth (0-5★) + Spezialisierung + Manager (14) | Phase 3 (W13-14) |
+| Arbeiter | 10 Tiers, Mood/Fatigue, Training, Praktikanten, Personalities (6) | Phase 3 (W15-16) |
+| Aufträge | 6 Types + 3 Strategien + Live-Orders/VIP + Material-Orders | Phase 3 (W17-18) |
+| Reputation + Reputation-Shop | Score 0-100, Tiers, Shop (5 Items) | Phase 4 (W28) |
+| Mini-Games | 13 Enum-Typen / 10 Renderer / 8 perfekt-zählbar + Mastery | Phase 3 (W20) + Phase 6 (W39-42) |
+| Forschung | 72 Nodes, 4 Branches | Phase 4 (W21-22) |
+| Prestige + Prestige-Shop | 7 Tiers, Shop (25 Items), Challenges, Speedrun | Phase 4 (W23-25) |
+| Ascension + Heirloom + Eternal-Mastery | Meta-Prestige, Permanent-Heirlooms, Soft-Cap-Bonus | Phase 4 (W25) + live ab Phase 8 |
+| Crafting | 33 Rezepte (T1-T4) + 8 Tools + Lager (V7) + Markt | Phase 4 (W26-28) |
+| Equipment | 4 Rarity, Slots, Stats | Phase 4 (W28) |
+| Master-Tools | 12 Artefakte | Phase 4 (W28) |
+| Gebäude | 7 Stück | Phase 4 (W28) |
+| Gilden | max 20 Mitglieder, Guild-Research (18), Hall (10), Bosse (6), Mega-Projekte (2), War-Season, Chat, Guild-Achievements (33) | Phase 5 (W30-36) |
+| Daily-Reward / Lucky-Spin / BattlePass | 30-Tage / 8 Slots / 50 Tier | Phase 5 (W37) |
+| Live-/Random-/Saisonale Events + Event-Shop | 4 Live + 8 Random + 4 Saisons | Phase 5 (W38) |
+| Monetarisierung | Imperium-Pass, IAP-Bundles, 13 Ad-Placements, VIP, Referral | Phase 5 (W38) |
+| Story | 60 Kapitel (40 + 20) + Meister-Hans-Voice | Phase 6 (W45) + Inhalt Phase 8 |
+| FTUE + ContextualHints | 10 Schritte + 32 Hints | Phase 6 (W45) |
+| Notifications | 8 Push-Trigger + In-App-Bell | Phase 5 (W35) |
+| Anti-Cheat | HMAC, Server-Validation, Sanitizer, Rate-Limits | Phase 5 (W36) |
+| Telemetrie | Event-Katalog (snake_case), 11 User-Properties | Phase 6 (W46) |
+| City-Hub | 80 City-Tiles, Camera, Worker-Bewegung | Phase 3/6 + Assets |
 
 ---
 
 ## KI-Asset-Pipeline (parallel zur Code-Entwicklung)
 
-> **Vollständige Pipeline-Spec:** [ASSETS_AI.md](ASSETS_AI.md) (924 Zeilen, EU-konform, kein Hunyuan)
+> **Vollständige Pipeline-Spec:** [ASSETS_AI.md](ASSETS_AI.md) (EU-konform, kein Hunyuan, KI-Pipeline statt Outsourcing)
 
 ### Asset-Pipeline-Phasen
 
@@ -740,7 +872,7 @@
 | 11-12 | 50 Workshop-Upgrade-Decals (Substance Sampler + ComfyUI Glow-Maps) |
 | 13-14 | 20 Worker-Basis (m/w × 10 Tiers, TRELLIS 2 → Mixamo Auto-Rig) |
 | 15-16 | 80 Worker-Mood-Face-Textures (SDXL + ControlNet Inpainting) |
-| 17-18 | 30 Crafting-Items T1-T3 (SPAR3D + TripoSG Batch) |
+| 17-18 | 30 Crafting-Items T1-T3 (SPAR3D + TripoSG Batch) — T4 folgt in Woche 27-28 (insgesamt 33 Rezepte) |
 | 19-20 | 12 Master-Tools mit Emissive (SPAR3D) |
 | 21-22 | 80 City-Tiles (TripoSG Batch, über Nacht ~12h) |
 | 23-24 | 5 Affinity-Props + 30 Specialization-Skins |
@@ -757,13 +889,22 @@
 | 34 | 150 SFX (Stable Audio Open Small) |
 | 35-36 | 1500 Meister-Hans-Voice-Lines (ElevenLabs Standard-Voice + Multilingual v2, 6 Sprachen × 250 Lines, batchable via Python-Skript) |
 
-**Phase D: Integration & Polish (Woche 37-44)**
+**Phase D: Integration & Polish (Woche 39-46)**
 
 Während Code-Phase 6 (Polish):
 - Unity-Import aller Assets (Addressables-Groups)
 - Mastering Audio (−16 LUFS)
 - Lizenz-Archiv (`F:\AI\Licenses\handwerkerimperium_unity\`)
 - Asset-Metadata-JSON pro Asset
+
+**Phase E: Content-Complete-Assets (Woche 53-66, parallel zu Code-Phase 8)**
+
+Finalisierung für 1:1-Vollständigkeit — ersetzt alle 2D-Beta-Platzhalter durch finale 3D-Assets:
+- Restliche City-Tiles bis 80, Specialization-Skins, Affinity-Props vollständig
+- Story-Kapitel-Hintergründe + Saison-Visuals (4 Saisons)
+- Worker-Mood-Texturen über alle 10 Tiers + 6 Hauttöne vollständig
+- Audio: vollständige Meister-Hans-Voice-Bank (alle 60 Story-Kapitel, 6 Sprachen)
+- Final-QA gegen Vollständigkeits-Matrix
 
 ### Asset-Tool-Budget
 
@@ -795,9 +936,11 @@ Während Code-Phase 6 (Polish):
 | 4-8 | Firebase-Setup-Probleme | Frühe Validation, Stubs vorbereiten |
 | 13-17 | 3D-Asset-Delays | Fallback: 2D-Stubs, später ersetzen |
 | 20-25 | Komplexität Prestige | Pure-Tests früh, Mock-Daten |
-| 29-36 | Cloud-Functions-Deployment | Lokaler Emulator, dann Deploy |
-| 37-44 | Performance auf Low-End | Quality-Settings-Tiers, Mobile-Profil |
-| 45-52 | Bug-Berg in Beta | Buffer von 2 Wochen, früher Beta-Start |
+| 29-38 | Cloud-Functions-Deployment + Live-Ops-Breite | Lokaler Emulator, dann Deploy; Live-Ops modular pro Woche |
+| 39-46 | Performance auf Low-End | Quality-Settings-Tiers, Mobile-Profil |
+| 47-52 | Bug-Berg in Beta | Buffer einplanen, früher Beta-Start |
+| 53-72 | 1:1-Parität unvollständig | Vollständigkeits-Matrix als harte Gate vor 1.0; Inhalts-Backlog priorisiert |
+| Gesamt | Scope vs. 1-Entwickler-Kapazität | Beta-Stufung (W52 funktional, W72 inhaltlich vollständig); kein System gestrichen, nur Reihenfolge/Polish gestuft |
 
 ---
 
@@ -820,49 +963,72 @@ Während Code-Phase 6 (Polish):
 - [ ] 100+ Tests grün
 - [ ] **Go/No-Go-Decision:** Single-Player-Vision erreicht?
 
-### Meilenstein 4: Single-Player komplett (Ende Woche 28)
-- [ ] Prestige + Crafting + Achievements läuft
+### Meilenstein 4: Single-Player funktional vollständig (Ende Woche 28)
+- [ ] Forschung (72 Nodes), Prestige + Prestige-Shop (25), Crafting (33 Rezepte), Reputation + Reputation-Shop (5), Equipment, Master-Tools (12), Gebäude (7), Achievements (79) laufen
 - [ ] 200+ Tests grün
-- [ ] **Go/No-Go-Decision:** Multiplayer starten?
+- [ ] **Go/No-Go-Decision:** Multiplayer + Live-Ops starten?
 
-### Meilenstein 5: Multiplayer (Ende Woche 36)
-- [ ] Gilden + Co-op + Auktionen + Bosse
+### Meilenstein 5: Multiplayer + Live-Ops (Ende Woche 38)
+- [ ] Gilden komplett (max 20 Mitglieder, Guild-Research 18, Hall 10, Bosse 6, Mega-Projekte 2, War-Season, Chat, Guild-Achievements 33)
+- [ ] Daily-Reward + Lucky-Spin + BattlePass + Live-/Saison-Events + Monetarisierung
 - [ ] Anti-Cheat aktiv
 - [ ] **Go/No-Go-Decision:** Polish-Phase starten?
 
-### Meilenstein 6: Beta-Ready (Ende Woche 44)
-- [ ] Alle 3D-Mini-Games fertig
-- [ ] Audio + Shader + Post-FX
-- [ ] Lokalisierung komplett
-- [ ] **Go/No-Go-Decision:** Beta-Launch?
+### Meilenstein 6: Beta-Ready (Ende Woche 46)
+- [ ] Alle 10 Mini-Game-Renderer als 3D fertig (deckt 13 Enum-Typen ab)
+- [ ] Audio + Shader + Post-FX + FTUE (10 Schritte) + Story-Gerüst (60 Kapitel)
+- [ ] Lokalisierung 6 Sprachen
+- [ ] **Go/No-Go-Decision:** Closed Beta starten?
 
-### Meilenstein 7: Production (Ende Woche 52)
-- [ ] Beta-Launch DACH
+### Meilenstein 7: Funktional vollständige Closed Beta (Ende Woche 52)
+- [ ] Alle Systeme aus DESIGN.md spielbar (ggf. mit 2D-Platzhaltern + reduziertem Inhalt)
 - [ ] Crashlytics-Rate <0.5%
 - [ ] FPS-Median 60 auf Mid-Tier
-- [ ] **🎉 Released!**
+- [ ] **Go/No-Go-Decision:** Content-Complete-Phase starten?
+
+### Meilenstein 8: 1.0 Vollständig (Ende Woche 72)
+- [ ] Vollständigkeits-Matrix zu 100% abgehakt (1:1-Parität zur Avalonia-Version)
+- [ ] Voller Inhalt: 60 Story-Kapitel, 79+33 Achievements, finale 3D-Assets statt Platzhalter
+- [ ] Balancing-Werte + Formeln numerisch gegen Original (ORIGINAL_WERTE.md) verifiziert
+- [ ] Production-Launch v1.0.0
 
 ---
 
-## Post-Launch-Roadmap (Monate 13-24)
+## Post-Launch-Roadmap (Phase 2 — über das Original hinaus)
 
-| Monat | Features |
-|-------|----------|
-| 13 | Ascension freischalten, Mega-Projekte (V2) |
-| 14 | War-Season, Boss 3-6 |
-| 15 | Hall-Gebäude 6-10, Day/Night-Cycle |
-| 16 | Saisonale Live-Events (mehr), Live-Wetter |
-| 17 | Worker-Tier-Voice-Lines (separate ElevenLabs-Voices pro Worker-Tier), Replay-Highlights |
-| 18 | Cosmetic-DLC (Workshop-Skins, Worker-Outfits) |
-| 19-21 | **Photon Fusion Live-PvP** (Echtzeit-Klan-Matches 5v5, neue Architektur-Schicht) — Tech-Investment + Closed-Beta-Phase |
-| 22-23 | iOS-Launch Entscheidung + ggf. Apple Developer Account + Closed Beta auf iOS |
-| 24 | iOS Production-Launch (falls Entscheidung positiv) |
+> **Abgrenzung (DESIGN.md § 35):** ALLE Original-Systeme — inkl. Ascension, Mega-Projekte, War-Season,
+> alle 6 Bosse, alle 10 Hall-Gebäude, 4 Saison-Events + 8 Live-Event-Templates, 12 Master-Tools — sind
+> Teil des **1:1-Ports** und in den Phasen 1-8 (bis Woche 72) eingeplant, NICHT hier. Post-Launch enthält
+> ausschließlich Erweiterungen, die das Original NICHT kennt (neue Mechanik/Balancing) oder reine
+> Plattform-/Präsentations-Aufsätze. Diese werden erst nach der Cutover-Entscheidung erwogen.
+
+**(A) Präsentation & Plattform (kein Mechanik-Eingriff):**
+
+| Thema | Inhalt |
+|-------|--------|
+| iOS-Launch | Entscheidung nach Beta-Erfolg (DAU > 5000), Apple Developer Account, Cross-Platform via Unity |
+| Day/Night-Cycle | Rein visuell (DESIGN.md § 33.2) |
+| Live-Wetter | API-gestützte Wetter-Visuals; saisonale Income-Multiplikatoren bleiben unverändert |
+| Worker-Tier-Voice-Lines | Separate ElevenLabs-Voices pro Worker-Tier (kann ins MVP, wenn Audio-Budget reicht) |
+| Replay-Highlights | Prestige-Cinematic-Clips zum Teilen |
+| Cosmetic-DLC | Workshop-Skins, Worker-Outfits — rein kosmetisch, keine Gameplay-Boni |
+| Cross-Save Avalonia ↔ Unity | Nur falls Hard-Cutover entschieden wird (Save-Schema-Brücke) |
+
+**(B) Inhaltliche Erweiterungen (ändern Mechanik/Balancing — strikt Phase 2):**
+
+| Thema | Inhalt |
+|-------|--------|
+| Live-PvP via Photon Fusion | Echtzeit-Klan-Matches 5v5 — neue Mechanik (Original kennt nur async Gilden-Inhalte) |
+| Kriegssaison-Ligen erweitern | Über die Original-Kriegssaison hinaus |
+| Mehr Saisonale/Live-Events | Über die 4 Saison-Events + 8 Live-Templates des Originals hinaus |
+| Ascension-Perks erweitern | Original hat 6 Perks × 3 Level (54 AP); Erweiterung = neues Balancing |
+| Master-Tools erweitern | Original hat 12 Artefakte; Erweiterung auf 18+ = neuer Content |
 
 ### Phase 2 Major-Features
 
-**Photon Fusion Live-PvP (Monat 19-21):**
+**Photon Fusion Live-PvP (nach 1.0):**
 - Stack: Photon Fusion 2.x für Netcode + Photon Cloud
-- Use-Case: Echtzeit-Klan-Match 5v5 (statt async Boss-Schaden)
+- Use-Case: Echtzeit-Klan-Match 5v5 (zusätzlich zu den async Gilden-Inhalten des Originals)
 - Match-Format: Beide Klans bauen gegeneinander, höchster Output gewinnt
 - Tech-Architektur: Neue Scene `LivePvP.unity` + dedicated PhotonLifetimeScope
 - Server-Region: europe-west1 (Photon Cloud)
@@ -870,12 +1036,12 @@ Während Code-Phase 6 (Polish):
 - Geschätzter Aufwand: 8-10 Wochen (1 Entwickler)
 - **Voraussetzung:** Beta-Spielerbasis > 1000 MAU, sonst nicht wirtschaftlich
 
-**Worker-Tier-Voice-Lines (Monat 17):**
-- Separate ElevenLabs-Voice pro Worker-Tier (10 Tiers × 6 Lines × 6 Sprachen = 360 Lines)
+**Worker-Tier-Voice-Lines (nach 1.0):**
+- Separate ElevenLabs-Standard-Voice pro Worker-Tier (10 Tiers × 6 Lines × 6 Sprachen = 360 Lines, KEIN Voice-Cloning)
 - Voices aus Library wählen (z.B. "junge Stimme" für F-Tier, "veteran" für SSS)
 - Re-Generation jederzeit möglich
 
-**iOS-Launch (Monat 22-24):**
+**iOS-Launch (nach 1.0):**
 - Voraussetzung: Beta-Erfolg + DAU > 5000
 - Apple Developer Account 99$/Jahr
 - Tech-Migration: Unity Cross-Platform = minimaler Aufwand
@@ -895,7 +1061,8 @@ Während Code-Phase 6 (Polish):
 | 22 | CheatsWindow (Dev-Build) |
 | 28 | PerformanceProfiler-Integration |
 | 36 | Cloud-Function-Deploy-Skripte |
-| 44 | Build-Pipeline-Hardening |
+| 46 | Build-Pipeline-Hardening |
+| 51 | Pre-Release-Checker (analog Avalonia AppChecker) |
 
 ---
 
@@ -904,10 +1071,10 @@ Während Code-Phase 6 (Polish):
 | Rolle | Auslastung |
 |-------|-----------|
 | **Entwickler (Robert)** | Vollzeit, alle Code-Bereiche |
-| **KI-Pipeline-Operator (Robert)** | Wochen 4-36, je 5-10h/Woche (parallel zur Code-Arbeit). ComfyUI-Workflows + Blender-Cleanup + Mixamo + ElevenLabs-Voice-Cloning |
+| **KI-Pipeline-Operator (Robert)** | Wochen 4-44 (+ Content-Complete 53-66), je 5-10h/Woche (parallel zur Code-Arbeit). ComfyUI-Workflows + Blender-Cleanup + Mixamo + ElevenLabs-Standard-Voice (KEIN Cloning) |
 | **Hand-Polish (optional, Robert)** | Wochen 28-32, für Hero-Assets in Substance Painter |
-| **Translator-Review (Native-Speaker)** | Wochen 7 + 48, einmalige Lieferung (4-8h/Sprache à 50 €) |
-| **Beta-Tester (Community)** | Wochen 45-52, 5-100 Personen |
+| **Translator-Review (Native-Speaker)** | Wochen 7 + 49, einmalige Lieferung (4-8h/Sprache à 50 €) |
+| **Beta-Tester (Community)** | Wochen 47-72, 5-100+ Personen |
 
 **Wichtig:** Die KI-Pipeline ist parallel-fähig — während Code kompiliert oder Tests laufen, kann ComfyUI im Hintergrund Batches generieren (City-Tiles über Nacht, Worker-Mood-Textures während Refactoring).
 
@@ -925,10 +1092,10 @@ Während Code-Phase 6 (Polish):
 ## Verzögerungs-Strategie
 
 Falls ein Sprint überzieht:
-1. **Liegen-gelassene Tasks dokumentieren** (z.B. Asset-Polish, Optionales)
-2. **Phase-Kritische Tasks** priorisieren (Single-Player-Loop > Visualisierung)
-3. **Buffer einplanen** — Phase 7 hat 8 Wochen für Beta, kann auf 6 Wochen verkürzt werden
-4. **Scope-Cut:** 2D-Fallback für 3D-Mini-Games als Backup
+1. **Liegen-gelassene Tasks dokumentieren** (z.B. Asset-Polish, Inhalts-Vervollständigung)
+2. **Phase-Kritische Tasks** priorisieren (funktionale Vollständigkeit > Visualisierung > Inhalts-Polish)
+3. **Beta-Stufung nutzen** — Inhalt/Polish darf in Phase 8 (Content-Complete, W53-72) rutschen, aber **kein System wird gestrichen**; die 1:1-Vollständigkeit bleibt verbindliches 1.0-Gate (Vollständigkeits-Matrix)
+4. **Scope-Verschiebung statt Scope-Cut:** 2D-Platzhalter für 3D-Assets als Brücke bis zur finalen KI-Asset-Lieferung — Mechanik bleibt vollständig
 5. **KI-Pipeline-Backup:** Falls TRELLIS 2 für komplexe Werkstatt-Architektur versagt → Cloud-Fallback Rodin Gen-2.5 (50 € Sub-Top-Up reicht für ~50-100 Hero-Assets)
 
 ---

@@ -1,7 +1,10 @@
 # HandwerkerImperium-Unity
 
 > **Neuentwicklung von HandwerkerImperium in Unity 6 (LTS), parallel zur Avalonia-Version.**
-> Idle-Incremental-Builder mit Mini-Games, 7-Tier-Prestige, 10 Werkstätten in einer Handwerker-Stadt, Gilden, Co-op-Orders, Boss-Kämpfe, Master-Tools, Mega-Projekte.
+> GENAU DASSELBE SPIEL wie das produktive Avalonia-Original — gleiche Mechaniken, Formeln und
+> Balancing-Werte — nur in 3D und mit besserer Präsentation. Idle-Incremental-Builder mit
+> Mini-Games, 7-Tier-Prestige, 10 Werkstätten in einer Handwerker-Stadt, Gilden, Co-op-Orders,
+> Boss-Kämpfen, Master-Tools und Mega-Projekten.
 
 | | |
 |---|---|
@@ -9,8 +12,8 @@
 | **Engine** | Unity 6000.4.8f1 (LTS) + URP 17.0.4 + IL2CPP |
 | **Plattform** | Android (Phase 1), iOS (Phase 2) |
 | **Stack** | VContainer + UniTask + Addressables + Firebase + TextMesh Pro + Cinemachine + DOTween |
-| **Avalonia-Vergleich** | Production-Version unter [`../HandwerkerImperium/`](../HandwerkerImperium/) |
-| **Persona-Anker** | "Meister Hans" (1500 Voice-Lines via ElevenLabs Standard-Voice in 6 Sprachen) |
+| **Avalonia-Original** | Produktiv unter [`../HandwerkerImperium/`](../HandwerkerImperium/) — ~28k LOC C#, 91 Services, 77 Models, 80 ViewModels, 74 Views |
+| **Persona-Anker** | "Meister Hans" (~1500 Voice-Files via ElevenLabs-Standard-Voice in 6 Sprachen, kein Cloning) |
 | **Asset-Pipeline** | KI-basiert, EU-konform (TRELLIS 2 + ComfyUI + Stable Audio + ElevenLabs) |
 
 ---
@@ -54,12 +57,18 @@ ls src/Apps/HandwerkerImperium.Unity/
 
 ## Dokumentations-Index
 
+### Verbindliche Werte-Referenz
+
+| Datei | Beschreibung |
+|-------|--------------|
+| [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) | **Single Source of Truth** — alle echten Mechaniken, Formeln und Balancing-Werte, direkt aus dem Avalonia-Code extrahiert. Jede Abweichung eines anderen Dokuments ist ein Fehler und auf diese Werte zu korrigieren. |
+
 ### Strategie & Planung
 
 | Datei | Beschreibung | Größe |
 |-------|--------------|-------|
 | [PLAN.md](PLAN.md) | Strategischer Plan: Vision, Tech-Stack, Architektur, was 1:1/umgebaut/neu, Roadmap-Übersicht, MVP, Risiken | ~1200 Zeilen |
-| [DESIGN.md](DESIGN.md) | Game Design Document: 35 Sektionen, alle Werte aus Avalonia, Meister-Hans-Persona, Handwerker-Stadt | ~1400 Zeilen |
+| [DESIGN.md](DESIGN.md) | Game Design Document: 35 Sektionen, alle Werte 1:1 aus ORIGINAL_WERTE.md, Meister-Hans-Persona, Handwerker-Stadt | ~1400 Zeilen |
 | [ROADMAP.md](ROADMAP.md) | 52-Wochen-Sprint-Plan: 7 Phasen, KI-Pipeline parallel, Milestones | ~700 Zeilen |
 
 ### Code & Conventions
@@ -85,14 +94,18 @@ Ein **3D-stylized Idle-Incremental-Game** mit aktiven Mini-Games. Der Spieler er
 
 **Was es besser macht als Avalonia:**
 
-| Avalonia | Unity |
+> **Wichtig:** "Besser" heißt ausschließlich **Präsentation** (Grafik, 3D, Hub, Cinematics,
+> Audio, Input, UI-Tech). Mechaniken, Formeln und Balancing-Werte sind **identisch** zum
+> Avalonia-Original (siehe [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md)).
+
+| Avalonia (Präsentation) | Unity (Präsentation) |
 |----------|-------|
-| 2D SkiaSharp-Renderer (59 Stück) | **3D-Werkstatt-Welt** (10 Gebäude in lebender Stadt) |
-| CPU-Partikel (max 200) | **GPU-Particles** (10.000+) |
+| 2D SkiaSharp-Renderer | **3D-Werkstatt-Welt** (10 Gebäude in lebender Stadt) |
+| CPU-Partikel | **GPU-Particles** |
 | C#-hardcoded Shader | **Shader Graph** (visuell editierbar) |
-| 3 Plattform-Audio-Impls | **Unity AudioMixer** (1 API, Ducking) |
-| Statische Worker-Pixel-Art | **Animierte 3D-Worker** (Mecanim, NavMesh) |
-| Stille Spielfigur | **Meister-Hans-Voice** (1500 Voice-Files in 6 Sprachen) |
+| Plattform-spezifische Audio-Impls | **Unity AudioMixer** (1 API, Ducking) |
+| Statische Worker-Grafik | **Animierte 3D-Worker** (Mecanim, NavMesh) |
+| Stille Spielfigur | **Meister-Hans-Voice** (~1500 Voice-Files in 6 Sprachen, ElevenLabs-Standard-Voice) |
 
 **Migrations-Strategie:**
 - Avalonia-Version bleibt im Play Store **aktiv und in Entwicklung**
@@ -128,10 +141,10 @@ Ein **3D-stylized Idle-Incremental-Game** mit aktiven Mini-Games. Der Spieler er
 5. Investieren (Upgrade, Worker, Forschung)
 
 **Stunden-Loop:**
-- 10 Werkstätten leveln (Lv 1 → 1500+)
+- 10 Werkstätten leveln (Lv 1 → 1000, WorkshopMaxLevel = 1000)
 - 10 Worker-Tiers (F → Legendary)
-- 57 Research-Nodes (4 Branches)
-- Reputation-Tier-Aufstieg (4 Tiers)
+- 72 Research-Nodes (4 Branches)
+- Reputation-Tier-Aufstieg (4 Tiers: Beginner → Industry Legend)
 
 **Wochen/Monate-Loop:**
 - 7 Prestige-Tiers (Bronze → Legende)
@@ -164,12 +177,12 @@ Vollständige Spec: [DESIGN.md](DESIGN.md).
 | **Audio** | Unity AudioMixer | 1 API für alle Plattformen |
 | **Animation** | Animator + DOTween + Timeline | UI + Mood-States + Cinematics |
 | **Camera** | Cinemachine 2.10+ | Orbit + Pan + Shake |
-| **Text** | TextMesh Pro | Emoji + Rich Text + CJK-ready |
+| **Text** | TextMesh Pro | Inline-Sprites + Rich Text + CJK-ready |
 | **Input** | New Input System | Multi-Touch + Gesten |
 | **Tests** | Unity Test Framework + NUnit | EditMode + PlayMode |
 | **Backend** | Firebase Suite | Auth + RTDB + Functions + Analytics + Crashlytics + RC + FCM |
 | **IAP** | Google Play Billing 6.x | Premium + Bundles |
-| **Ads** | Google Mobile Ads | 13 Rewarded-Placements |
+| **Ads** | Google Mobile Ads | 13 Ad-Placements (1:1 Original, siehe DESIGN.md § 29.3) |
 
 Vollständige Asmdef-Hierarchie, DI-Setup, Service-Lifetimes: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -308,16 +321,16 @@ Vollständige Pipeline-Spec: [ASSETS_AI.md](ASSETS_AI.md).
 
 ## EU AI Act Compliance
 
-Diese App nutzt KI-generierte Assets (3D-Modelle, Texturen, Audio, Voice-Cloning).
+Diese App nutzt KI-generierte Assets (3D-Modelle, Texturen, Audio, Voice).
 
 **Pflicht-Maßnahmen (EU AI Act, ab August 2026):**
-- ✅ Play-Store-Description enthält KI-Hinweis
-- ✅ In-App-Credits dokumentieren Tools
-- ✅ Pro-Asset-Metadata mit `license_source`
-- ✅ Lizenz-Archiv unter `F:\AI\Licenses\handwerkerimperium_unity\`
-- ✅ Voice-Cloning nur mit eigener Voice + Sprecher-Freigabe
-- ✅ Bewusst Hunyuan-frei (EU-Lizenz-Ausschluss)
-- ✅ Suno/Udio gemieden (Trainingsdaten-Lawsuits)
+- Play-Store-Description enthält KI-Hinweis
+- In-App-Credits dokumentieren Tools
+- Pro-Asset-Metadata mit `license_source`
+- Lizenz-Archiv unter `F:\AI\Licenses\handwerkerimperium_unity\`
+- Voice ausschließlich über ElevenLabs-Standard-Voice (von ElevenLabs lizenziert, kein Cloning, keine Sprecher-Freigabe nötig)
+- Bewusst Hunyuan-frei (EU-Lizenz-Ausschluss)
+- Suno/Udio gemieden (Trainingsdaten-Lawsuits)
 
 Details: [ASSETS_AI.md § 14](ASSETS_AI.md).
 
@@ -333,18 +346,16 @@ Assets (KI-generiert): vollständige kommerzielle Rechte, dokumentiert pro Asset
 
 ## Kontakt & Support
 
-- **Maintainer:** Robert Schneider (`robert.schneider@kummert.de`)
-- **Repository:** Lokal unter `C:\Users\roschneider\MeineApps.Ava\`
+- **Maintainer:** Robert Schneider (`robert.schneider97@gmail.com`)
+- **Repository:** Lokal unter `F:\Meine_Apps_Ava\` (App-Pfad: `src\Apps\HandwerkerImperium.Unity\`)
 - **Documentation-Updates:** Alle Markdown-Dateien in diesem Ordner
 
 ---
 
 ## Nächste Schritte
 
-1. ✅ Alle Doku-Dateien existieren und sind konsistent
-2. ⏭️ **Setup durchführen:** Folge [SETUP.md](SETUP.md)
-3. ⏭️ **Pilot-Assets starten** (parallel zu Foundation): 5 Pilots gemäß ASSETS_AI.md § 15
-4. ⏭️ **Code-Foundation:** Woche 1-8 gemäß ROADMAP.md
-5. ⏭️ **Pilot-Review nach Woche 6:** Go/No-Go für Skalierung
-
-**Viel Erfolg!** 🎮 🔨 ✨
+1. Alle Doku-Dateien existieren und sind konsistent (verbindliche Werte in [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md))
+2. **Setup durchführen:** Folge [SETUP.md](SETUP.md)
+3. **Pilot-Assets starten** (parallel zu Foundation): 5 Pilots gemäß ASSETS_AI.md § 15
+4. **Code-Foundation:** Woche 1-8 gemäß ROADMAP.md
+5. **Pilot-Review nach Woche 6:** Go/No-Go für Skalierung

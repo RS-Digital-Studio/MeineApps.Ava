@@ -16,8 +16,15 @@
 **Migrations-Strategie:** Closed Beta parallel zur Avalonia-Production. Unity-Version wird unter eigener App-ID (`com.meineapps.handwerkerimperium2.beta`) released. Avalonia bleibt aktiv in Entwicklung. Cutover-Entscheidung erst nach erfolgreicher Beta.
 
 **Codebase-Lage:**
-- Avalonia (alt): `src/Apps/HandwerkerImperium/` — 27k LoC, 177 Services, 80 ViewModels, 74 Views, 59 SkiaSharp-Renderer
+- Avalonia (alt): `src/Apps/HandwerkerImperium/` — ~28k LoC C#, 91 Services, 77 Models, 80 ViewModels, 74 Views, ~55 SkiaSharp-Renderer
 - Unity (neu): `src/Apps/HandwerkerImperium.Unity/` — dieses Projekt
+
+> **Grundsatz (unverhandelbar):** Die Unity-Version ist **dasselbe Spiel** wie das produktive
+> Avalonia-Original — gleiche Mechaniken, Formeln, Balancing-Werte. "Besser/3D" betrifft
+> ausschliesslich die Praesentation (Grafik, 3D, Hub, Cinematics, Audio, Input, UI-Tech).
+> JEDE mechanische oder Balancing-Abweichung ist ein Fehler. Verbindliche Werte-Referenzen:
+> [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) (echte Werte aus dem Avalonia-Code) und
+> [DESIGN.md](DESIGN.md) (abgeglichenes GDD). Im Zweifel gelten diese — niemals Werte erfinden.
 
 ---
 
@@ -265,10 +272,10 @@ public class OrderService
 ```
 
 **Verbieten:**
-- ❌ `ServiceLocator.Resolve<T>()` (außerhalb Bootstrap)
-- ❌ `Container.Resolve<T>()` aus VContainer (außer in Bootstrap)
-- ❌ Statische `Instance`-Properties (`MyService.Instance`)
-- ❌ Property Injection (außer für optionale Dependencies)
+- `ServiceLocator.Resolve<T>()` (außerhalb Bootstrap)
+- `Container.Resolve<T>()` aus VContainer (außer in Bootstrap)
+- Statische `Instance`-Properties (`MyService.Instance`)
+- Property Injection (außer für optionale Dependencies)
 
 ### 6.3 Container-Facades (gegen Service-Sprawl)
 
@@ -302,7 +309,7 @@ public sealed class GuildFacade(
 - `IGuildFacade` — 9 Gilden-Services
 - `IWorkerFacade` — Worker + Auction
 - `IProgressionFacade` — Prestige + Rebirth + Ascension + EternalMastery
-- `IMissionsFacade` — Daily + Weekly + LuckySpin + QuickJob
+- `IMissionsFacade` — DailyChallenge + WeeklyMission + LuckySpin + QuickJob + Goal (5 Services, wie Avalonia-Original)
 
 ---
 
@@ -469,13 +476,13 @@ HwiSave
 ├── WorkshopsSlice         (10 Werkstätten + Levels)
 ├── WorkersSlice           (Worker-Liste + Stats)
 ├── OrdersSlice            (Active + Queue + Live-Orders)
-├── ResearchSlice          (45 Nodes)
+├── ResearchSlice          (72 Nodes, 4 Branches — s. DESIGN.md § 8)
 ├── PrestigeSlice          (Tier, Count, Boni, Heirloom)
 ├── AscensionSlice         (Perks, Permanent-Heirlooms)
 ├── CraftingSlice          (Inventar + Reservierungen)
 ├── WarehouseSlice         (Slots + Stack-Limit + Auto-Sell)
 ├── GuildSlice             (Membership + Research-Cache)
-├── EquipmentSlice         (5 Rarity × 3 Slots)
+├── EquipmentSlice         (EquipmentInventory: List<Equipment>; 4 Rarity, 1 Slot/Worker — s. DESIGN.md § 16)
 ├── AchievementSlice       (Unlocked + Progress)
 ├── DailyChallengeSlice    (Aktuelle Challenges)
 ├── WeeklyMissionSlice     (Aktuelle Missions)
@@ -715,9 +722,9 @@ await _firebase.SetAsync($"players/{playerId}/money", new SignedValue(money, sig
 - **Cinemachine** für Camera-Bewegungen
 
 **Verbieten:**
-- ❌ `Coroutine` für UI-Animationen → DOTween
-- ❌ `Time.deltaTime` für UI-Animationen → DOTween-eigenes Time-Scaling
-- ❌ Hardcoded `Animator.Play("StateName")` → typsicheres Wrapper
+- `Coroutine` für UI-Animationen → DOTween
+- `Time.deltaTime` für UI-Animationen → DOTween-eigenes Time-Scaling
+- Hardcoded `Animator.Play("StateName")` → typsicheres Wrapper
 
 ---
 

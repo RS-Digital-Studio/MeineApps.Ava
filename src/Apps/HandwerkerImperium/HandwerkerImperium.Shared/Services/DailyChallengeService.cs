@@ -24,6 +24,12 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
 
     public event EventHandler? ChallengeProgressChanged;
 
+    /// <summary>
+    /// Feuert pro Daily-Challenge, die in diesem Schritt auf abgeschlossen wechselt (false→true).
+    /// Speist die Weekly-Mission "Schliesse Daily-Challenges ab" (sonst toter Content).
+    /// </summary>
+    public event EventHandler? ChallengeCompleted;
+
     public decimal AllCompletedBonusAmount => 500m;
 
     /// <summary>
@@ -481,6 +487,7 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
     private void IncrementChallenge(DailyChallengeType type, long amount = 1)
     {
         var challenges = _gameStateService.State.DailyChallengeState.Challenges;
+        int newlyCompleted = 0;
         // For-Schleife statt LINQ .Where() (wird bei Events haeufig aufgerufen)
         for (int i = 0; i < challenges.Count; i++)
         {
@@ -490,10 +497,13 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             if (challenge.CurrentValue >= challenge.TargetValue)
             {
                 challenge.IsCompleted = true;
+                newlyCompleted++;
             }
         }
         // UI sofort ueber Fortschrittsaenderung benachrichtigen
         ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
+        for (int c = 0; c < newlyCompleted; c++)
+            ChallengeCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -502,6 +512,7 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
     private void SetChallengeMax(DailyChallengeType type, long value)
     {
         var challenges = _gameStateService.State.DailyChallengeState.Challenges;
+        int newlyCompleted = 0;
         // For-Schleife statt LINQ .Where()
         for (int i = 0; i < challenges.Count; i++)
         {
@@ -510,10 +521,15 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             if (value > challenge.CurrentValue)
                 challenge.CurrentValue = value;
             if (challenge.CurrentValue >= challenge.TargetValue)
+            {
                 challenge.IsCompleted = true;
+                newlyCompleted++;
+            }
         }
         // UI sofort ueber Fortschrittsaenderung benachrichtigen
         ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
+        for (int c = 0; c < newlyCompleted; c++)
+            ChallengeCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

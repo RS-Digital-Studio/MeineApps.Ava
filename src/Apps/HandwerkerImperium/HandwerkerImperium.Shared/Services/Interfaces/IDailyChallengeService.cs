@@ -59,4 +59,7 @@ public interface IDailyChallengeService
     /// Wird ausgeloest wenn sich der Fortschritt einer Challenge aendert.
     /// </summary>
     event EventHandler? ChallengeProgressChanged;
+
+    /// <summary>Feuert pro Daily-Challenge, die auf abgeschlossen wechselt (false→true).</summary>
+    event EventHandler? ChallengeCompleted;
 }

@@ -17,6 +17,7 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     private readonly IVipService _vipService;
     private readonly IWorkerService _workerService;
     private readonly IEquipmentService? _equipmentService;
+    private readonly IDailyChallengeService? _dailyChallengeService;
     private bool _disposed;
 
     private static readonly WeeklyMissionType[] AllMissionTypes = Enum.GetValues<WeeklyMissionType>();
@@ -42,13 +43,14 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         }
     }
 
-    public WeeklyMissionService(IGameStateService gameStateService, ILocalizationService localizationService, IVipService vipService, IWorkerService workerService, IEquipmentService? equipmentService = null)
+    public WeeklyMissionService(IGameStateService gameStateService, ILocalizationService localizationService, IVipService vipService, IWorkerService workerService, IEquipmentService? equipmentService = null, IDailyChallengeService? dailyChallengeService = null)
     {
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _vipService = vipService;
         _workerService = workerService;
         _equipmentService = equipmentService;
+        _dailyChallengeService = dailyChallengeService;
 
         // Event-Subscriptions fuer automatisches Tracking
         _gameStateService.OrderCompleted += OnOrderCompleted;
@@ -59,7 +61,12 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         _workerService.WorkerLevelUp += OnWorkerLevelUp;
         if (_equipmentService != null)
             _equipmentService.EquipmentDropped += OnEquipmentDropped;
+        // Speist die "CompleteDailyChallenges"-Weekly-Mission (sonst nie steigender Fortschritt).
+        if (_dailyChallengeService != null)
+            _dailyChallengeService.ChallengeCompleted += OnDailyChallengeCompletedEvent;
     }
+
+    private void OnDailyChallengeCompletedEvent(object? sender, EventArgs e) => OnDailyChallengeCompleted();
 
     public void Initialize()
     {
@@ -581,6 +588,8 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         _workerService.WorkerLevelUp -= OnWorkerLevelUp;
         if (_equipmentService != null)
             _equipmentService.EquipmentDropped -= OnEquipmentDropped;
+        if (_dailyChallengeService != null)
+            _dailyChallengeService.ChallengeCompleted -= OnDailyChallengeCompletedEvent;
 
         _disposed = true;
         GC.SuppressFinalize(this);

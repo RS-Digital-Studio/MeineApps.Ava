@@ -302,7 +302,7 @@
                             CommandParameter="{Binding}"
                             IsVisible="{Binding CanReport}"
                             Background="Transparent" Padding="6,2"
-                            Margin="6,0,0,0"
+                            Margin="6,0,0,0" MinHeight="44" MinWidth="44"
                             ToolTip.Tip="{loc:Translate ReportPlayer}"
                             AutomationProperties.AutomationId="League_BtnReport">
                       <icons:GameIcon Kind="AlertCircle" Width="14" Height="14"

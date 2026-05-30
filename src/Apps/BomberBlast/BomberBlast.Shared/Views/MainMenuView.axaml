@@ -75,7 +75,7 @@
 
         <!-- Coin-Badge (tappbar → Shop) -->
         <Button Grid.Column="1" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="12" Padding="10,3"
+                CornerRadius="12" Padding="10,3" MinHeight="44"
                 Margin="8,0,0,0" VerticalAlignment="Center"
                 BorderThickness="1" BorderBrush="#40FFD700"
                 Command="{Binding OpenCoinShopCommand}"
@@ -107,7 +107,7 @@
 
         <!-- Gem-Badge (tappbar → GemShop) -->
         <Button Grid.Column="2" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="12" Padding="10,3"
+                CornerRadius="12" Padding="10,3" MinHeight="44"
                 Margin="6,0,0,0" VerticalAlignment="Center"
                 BorderThickness="1" BorderBrush="#4000BCD4"
                 Command="{Binding GoToGemShopCommand}"

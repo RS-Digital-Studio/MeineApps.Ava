@@ -21,7 +21,16 @@ public sealed partial class MainMenuViewModel
 {
     private const string OnboardingSeenPrefKey = "dashboard_intro_seen_v3";
 
-    [ObservableProperty] private bool _isOnboardingVisible;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyModalOpen))]
+    private bool _isOnboardingVisible;
+
+    /// <summary>
+    /// True solange ein MainMenu-Modal (Onboarding ODER Daily-Reward) offen ist. MainView koppelt
+    /// daran das Hit-Testing der BottomTabBar — sonst sind die Tabs durch das Overlay tappbar
+    /// (das Overlay liegt im Pages-Panel UNTER der MainView-Ebenen-Tab-Bar).
+    /// </summary>
+    public bool IsAnyModalOpen => IsOnboardingVisible || IsRewardPopupVisible;
     [ObservableProperty] private string _onboardingTitle = "";
     [ObservableProperty] private string _onboardingHint1 = "";
     [ObservableProperty] private string _onboardingHint2 = "";

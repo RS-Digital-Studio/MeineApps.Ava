@@ -350,6 +350,7 @@
          BottomTabBar darin bekommt BottomTabVm als eigenen DataContext.
          Tab-Wechsel laeuft ueber IBottomTabHub, MainViewModel navigiert + synct das Highlight. -->
     <Panel IsVisible="{Binding IsBottomTabBarVisible}"
+           IsHitTestVisible="{Binding !MenuVm.IsAnyModalOpen}"
            VerticalAlignment="Bottom"
            ZIndex="14">
       <components:BottomTabBar DataContext="{Binding BottomTabVm}"

@@ -189,6 +189,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
 
     // Daily Reward Popup
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnyModalOpen))]
     private bool _isRewardPopupVisible;
 
     [ObservableProperty]

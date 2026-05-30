@@ -215,7 +215,7 @@
                                   Classes="Text"
                                   IsEnabled="{Binding CanBuy}"
                                   IsVisible="{Binding !IsMaxed}"
-                                  Padding="8,4"
+                                  Padding="8,4" MinHeight="44" MinWidth="44"
                                   VerticalAlignment="Center">
                             <icons:GameIcon Kind="CartPlus" Width="18" Height="18"
                                              Foreground="#E040FB" />

@@ -282,9 +282,12 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         int tier = GetTier(level);
 
         // Basis-Multiplikator: Belohnung skaliert mit Level
-        // ~10 Minuten Netto-Einkommen als Basis, mindestens Level * 30
+        // ~10 Minuten Netto-Einkommen als Basis. Der Level-Floor waechst progressiv (level^2/2),
+        // damit Dailies direkt nach einem Prestige (NetIncomePerSecond ~0) nicht auf den frueher
+        // viel zu niedrigen level*30-Wert kollabieren. Early-Game (Lv<60) bleibt bei level*30.
         var netPerSecond = Math.Max(0m, _gameStateService.State.NetIncomePerSecond);
-        var incomeBase = Math.Max(level * 30m, netPerSecond * 600m);
+        var levelFloor = Math.Max(level * 30m, (decimal)level * level / 2m);
+        var incomeBase = Math.Max(levelFloor, netPerSecond * 600m);
 
         var challenge = new DailyChallenge { Type = type };
 

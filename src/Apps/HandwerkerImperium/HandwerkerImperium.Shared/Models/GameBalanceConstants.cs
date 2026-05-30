@@ -73,12 +73,12 @@ public static class GameBalanceConstants
         (225, 1.30m),
         (250, 1.60m),
         (350, 1.60m),
-        (400, 1.40m),   // NEU: Bricht die 150-Level-Lücke Lv350→Lv500
+        (400, 1.60m),   // Bricht die 150-Level-Lücke Lv350→Lv500 (angehoben gegen tote Grind-Zone)
         (500, 2.00m),
-        (600, 1.50m),   // NEU: Bricht die 500-Level-Lücke Lv500→Lv1000
-        (650, 1.50m),   // NEU: Entschärft tote Zone Lv600-750
-        (750, 1.60m),   // NEU: Mid-Late-Game Kick
-        (900, 1.40m),   // NEU: Letzter Boost vor Lv1000
+        (600, 1.70m),   // Bricht die 500-Level-Lücke Lv500→Lv1000 (angehoben)
+        (650, 1.65m),   // Entschärft tote Zone Lv600-750 (angehoben)
+        (750, 1.60m),   // Mid-Late-Game Kick
+        (900, 1.60m),   // Letzter Boost vor Lv1000 (angehoben)
         (1000, 3.00m)
     ];
 

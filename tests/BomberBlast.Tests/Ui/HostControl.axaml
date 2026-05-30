@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.Tests.Ui"
+             xmlns:local="using:BomberBlast.Tests.Ui"
+             x:Class="BomberBlast.Tests.Ui.HostControl"
+             x:DataType="vm:OuterTestViewModel"
+             x:CompileBindings="True">
+  <!-- Repliziert den ECHTEN Einbettungsfall: Eine UserControl (BrokenContextControl) wird in
+       eine andere View eingebettet und ERBT deren DataContext (analog WhatsNewOverlay in MainView,
+       das MainViewModel erbt). Der innere Sub-VM-Wechsel ({Binding Inner}) muss auch hier greifen. -->
+  <local:BrokenContextControl x:Name="EmbeddedBroken" />
+</UserControl>

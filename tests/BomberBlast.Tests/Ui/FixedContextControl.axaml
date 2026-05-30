@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.Tests.Ui"
+             x:Class="BomberBlast.Tests.Ui.FixedContextControl"
+             x:DataType="vm:InnerTestViewModel"
+             x:CompileBindings="True">
+  <!-- Reproduziert das korrekte BottomTabBar-Muster: Ein einziger x:DataType am Control-Root,
+       der DataContext (auf das Sub-VM) wird EXTERN beim Einbinden gesetzt. Keine getrennten Ebenen. -->
+  <Border>
+    <Button x:Name="InnerButton"
+            Command="{Binding PressCommand}"
+            Content="{Binding ButtonText}" />
+  </Border>
+</UserControl>

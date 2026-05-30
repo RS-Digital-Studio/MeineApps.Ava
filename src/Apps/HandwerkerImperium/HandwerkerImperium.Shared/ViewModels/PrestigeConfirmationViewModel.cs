@@ -411,21 +411,10 @@ public sealed partial class PrestigeConfirmationViewModel : ViewModelBase
     /// Bronze-Minimum, Prestige-Pass (+50%), Gilden-Forschung (+10%) werden berücksichtigt.
     /// </summary>
     public int CalculateEffectivePoints(GameState state, PrestigeTier tier)
-    {
-        int basePoints = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
-        int tierPoints = (int)(basePoints * tier.GetPointMultiplier());
-
-        if (tier == PrestigeTier.Bronze && tierPoints < 10)
-            tierPoints = 10;
-
-        if (state.IsPrestigePassActive)
-            tierPoints = (int)(tierPoints * 1.5m);
-
-        if (state.GuildMembership?.ResearchPrestigePointBonus > 0)
-            tierPoints = (int)(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
-
-        return tierPoints;
-    }
+        // Delegiert an die Single Source of Truth im PrestigeService — sonst weicht die
+        // angezeigte Vorschau von der tatsaechlichen Auszahlung ab (fehlten zuvor:
+        // Bronze-15-Minimum, Challenge-Multiplikator, Bonus-PP, Math.Round).
+        => _prestigeService.CalculateTotalPrestigePoints(state, tier);
 
     // ═══════════════════════════════════════════════════════════════════
     // V7 (, Section 3.8): Heirloom-Selection

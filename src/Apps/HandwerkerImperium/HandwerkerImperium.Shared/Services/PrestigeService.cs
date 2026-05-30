@@ -132,21 +132,23 @@ public sealed partial class PrestigeService : IPrestigeService
     /// mutiert ausschliesslich State und sammelt alle fuer Events/Save/Telemetrie
     /// benoetigten Werte in einem <see cref="PrestigeMutationResult"/>.
     /// </summary>
-    private PrestigeMutationResult ApplyPrestige(PrestigeTier tier)
+    /// <summary>
+    /// Berechnet die gesamten Prestige-Punkte fuer einen Tier — inkl. Bronze-Minimum,
+    /// Challenge-Multiplikator, Prestige-Pass, Gilden-Forschung und flacher Bonus-PP.
+    /// Single Source of Truth fuer ApplyPrestige (Auszahlung) UND die Dialog-Vorschau
+    /// (PrestigeConfirmationViewModel) — beide muessen exakt dieselbe Zahl liefern.
+    /// </summary>
+    public int CalculateTotalPrestigePoints(GameState state, PrestigeTier tier)
     {
-        var state = _gameStateService.State;
         var prestige = state.Prestige;
-
-        // Prestige-Punkte berechnen (nur aktueller Durchlauf, nicht kumulativ)
         int basePoints = GetPrestigePoints(state.CurrentRunMoney);
         int tierPoints = (int)Math.Round(basePoints * tier.GetPointMultiplier());
 
-        // Bronze: Mindestens 15 PP (BAL-12: von 10 erhöht, damit beim ersten Prestige 3-4 Shop-Items kaufbar sind)
+        // Bronze: Mindestens 15 PP (damit beim ersten Prestige 3-4 Shop-Items kaufbar sind)
         if (tier == PrestigeTier.Bronze && tierPoints < 15)
             tierPoints = 15;
 
-        // Challenge-PP: Additiver Bonus für aktive Run-Modifikatoren
-        // z.B. Spartaner (+40%) + Sprint (+35%) = ×1.75
+        // Challenge-PP: Multiplikativer Bonus fuer aktive Run-Modifikatoren
         if (prestige.ActiveChallenges.Count > 0)
         {
             decimal challengeMultiplier = ((IReadOnlyList<PrestigeChallengeType>)prestige.ActiveChallenges)
@@ -158,13 +160,28 @@ public sealed partial class PrestigeService : IPrestigeService
         if (state.IsPrestigePassActive)
             tierPoints = (int)Math.Round(tierPoints * 1.5m);
 
-        // Gilden-Forschung: Prestige-Punkte-Bonus (+10%)
+        // Gilden-Forschung: Prestige-Punkte-Bonus
         if (state.GuildMembership?.ResearchPrestigePointBonus > 0)
             tierPoints = (int)Math.Round(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
 
         // Bonus-PP aus Spielleistung (flat, NACH Tier-Multiplikator addiert)
+        tierPoints += CalculateBonusPrestigePoints(tier);
+
+        return tierPoints;
+    }
+
+    private PrestigeMutationResult ApplyPrestige(PrestigeTier tier)
+    {
+        var state = _gameStateService.State;
+        var prestige = state.Prestige;
+
+        // Prestige-Punkte berechnen (nur aktueller Durchlauf, nicht kumulativ).
+        // WICHTIG: Dieselbe Methode speist die Dialog-Vorschau (PrestigeConfirmationViewModel) —
+        // Vorschau und tatsaechliche Auszahlung duerfen niemals divergieren.
+        int tierPoints = CalculateTotalPrestigePoints(state, tier);
+        // Bonus-PP separat fuer die Cinematic-Aufschluesselung (BasePrestigePoints = tierPoints - bonusPp).
+        // Reiner Lese-Aufruf, kein Seiteneffekt — bereits in CalculateTotalPrestigePoints enthalten.
         int bonusPp = CalculateBonusPrestigePoints(tier);
-        tierPoints += bonusPp;
 
         prestige.PrestigePoints += tierPoints;
         prestige.TotalPrestigePoints += tierPoints;
@@ -285,7 +302,9 @@ public sealed partial class PrestigeService : IPrestigeService
             // Tier-Name als RESX-Key — MainViewModel kann ihn vor View-Forward auflösen.
             TierDisplayName = tier.ToString(),
         };
-        CinematicReady?.Invoke(this, cinematicData);
+        // CinematicReady wird NICHT hier gefeuert — das Event laeuft sonst unter dem State-Lock
+        // (ApplyPrestige steht in ExecuteWithLock) und wuerde doppelt feuern. DoPrestige feuert es
+        // mit demselben cinematicData (via result.CinematicData) sauber AUSSERHALB des Locks.
 
         // Reset durchfuehren
         ResetProgress(state, tier);

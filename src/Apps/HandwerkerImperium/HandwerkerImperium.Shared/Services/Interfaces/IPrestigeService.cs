@@ -87,6 +87,13 @@ public interface IPrestigeService
     int CalculateBonusPrestigePoints(PrestigeTier tier);
 
     /// <summary>
+    /// Berechnet die gesamten Prestige-Punkte fuer einen Tier (Bronze-Minimum, Challenge-
+    /// Multiplikator, Prestige-Pass, Gilden-Forschung, flacher Bonus-PP). Single Source of
+    /// Truth fuer Auszahlung UND Dialog-Vorschau — beide muessen identisch sein.
+    /// </summary>
+    int CalculateTotalPrestigePoints(GameState state, PrestigeTier tier);
+
+    /// <summary>
     /// Prüft und vergibt Prestige-Meilensteine nach einem Prestige.
     /// Gibt die verdienten GS zurück (0 = kein neuer Meilenstein).
     /// </summary>

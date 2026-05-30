@@ -1,4 +1,4 @@
-# BomberBlast Arena — Tech-Architektur
+# BomberBlast 3D — Tech-Architektur
 
 > Vollständige technische Spezifikation. Komplementär zu [PLAN.md](PLAN.md) (Übersicht),
 > [DESIGN.md](DESIGN.md) (Game-Design) und [ROADMAP.md](ROADMAP.md) (Produktion).
@@ -261,29 +261,17 @@ Assets/_Project/Scripts/
 │   ├── Bombs/
 │   │   ├── BombDefinition.cs (ScriptableObject)
 │   │   ├── BombInstance.cs (runtime)
-│   │   ├── BombEffects/   (22 Effect-Klassen)
-│   │   │   ├── StandardEffect.cs
-│   │   │   ├── FrostEffect.cs
-│   │   │   ├── LavaEffect.cs
-│   │   │   ├── ... (22 total)
-│   │   ├── BombFactory.cs
-│   │   └── Affixes/
-│   │       ├── Affix.cs
-│   │       ├── AffixCategory.cs
-│   │       └── AffixApplier.cs
+│   │   ├── CardCatalog.cs   (13 Karten + Standard = 14 BombTypes)
+│   │   ├── BombEffects/   (pro BombType: Frost/Lava/Sticky/Smoke/Lightning/Gravity/Poison/TimeWarp/Mirror/Vortex/Phantom/Nova/BlackHole)
+│   │   └── BombFactory.cs
 │   ├── PowerUps/
 │   │   ├── PowerUpDefinition.cs (ScriptableObject)
-│   │   ├── PowerUpEffects/  (12 Effects)
+│   │   ├── PowerUpEffects/  (12 PowerUps + Cure)
 │   │   └── PowerUpFactory.cs
 │   ├── Heroes/
-│   │   ├── HeroDefinition.cs (ScriptableObject)
-│   │   ├── HeroStats.cs
-│   │   ├── HeroSkills.cs
+│   │   ├── HeroDefinition.cs (ScriptableObject — 5 Helden)
+│   │   ├── HeroTrait.cs      (None/DoubleDetonation/LuckyDrops/DemolitionExpert/QuickPocket)
 │   │   └── HeroState.cs
-│   ├── Talents/
-│   │   ├── TalentDefinition.cs (ScriptableObject)
-│   │   ├── TalentTree.cs
-│   │   └── TalentNode.cs
 │   ├── Enemies/
 │   │   ├── EnemyDefinition.cs (ScriptableObject)
 │   │   ├── EnemyType.cs
@@ -329,13 +317,17 @@ Assets/_Project/Scripts/
 │   ├── Economy/
 │   │   ├── Coin.cs
 │   │   ├── Gem.cs
-│   │   ├── Currency.cs
-│   │   └── OverflowGuard.cs
+│   │   ├── DungeonCoin.cs
+│   │   ├── OverflowGuard.cs
+│   │   └── Shop/
+│   │       ├── UpgradeType.cs        (9 permanente Upgrades — Haupt-Coin-Sink)
+│   │       ├── PlayerUpgrades.cs
+│   │       └── ShopUpgrade.cs
 │   ├── League/
 │   │   ├── LeagueTier.cs
 │   │   ├── SubTier.cs
-│   │   ├── LeaguePoints.cs
-│   │   └── Glicko2Calculator.cs
+│   │   ├── LeaguePoints.cs           // Async-Score (kein MMR)
+│   │   └── PercentilePromotion.cs    // Top 30% auf / Bottom 20% ab (Saisonende)
 │   ├── BattlePass/
 │   │   ├── BattlePassData.cs
 │   │   ├── BattlePassRewardDefinition.cs
@@ -345,11 +337,9 @@ Assets/_Project/Scripts/
 │   │   ├── Achievement.cs
 │   │   └── AchievementTrigger.cs
 │   ├── Cards/
-│   │   ├── OwnedCard.cs
-│   │   ├── Deck.cs
-│   │   └── Crafting/
-│   │       ├── CardCrafter.cs
-│   │       └── AffixCrafter.cs
+│   │   ├── OwnedCard.cs              (CardId + Level + Count)
+│   │   ├── Deck.cs                   (4 Basis-Slots + 1 freischaltbar)
+│   │   └── CardCrafter.cs            (Coin-Sink: 5+2000C->Rare, 5+8000C->Epic, 5+25000C->Legendary)
 │   └── Chat/
 │       ├── ProfanityFilter.cs (port aus alt)
 │       └── ChatMessage.cs
@@ -622,12 +612,13 @@ RootLifetimeScope (Boot-Scene, DontDestroyOnLoad)
    ├─ EnemyDatabase
    ├─ BossDatabase
    ├─ WorldDatabase
-   ├─ TalentDatabase
-   ├─ AffixDatabase
-   ├─ AchievementDatabase
+   ├─ CardCatalog            (13 Karten)
+   ├─ DungeonBuffDatabase    (16 Buffs)
+   ├─ AchievementDatabase    (72 Achievements)
+   ├─ ShopUpgradeConfig      (9 Upgrades)
    ├─ BalancingConfig
    ├─ EconomyConfig
-   └─ NetworkConfig
+   └─ NetworkConfig          (nur für optionalen Multiplayer)
 ```
 
 ### 4.2 Sub-Scopes pro Scene
@@ -800,50 +791,58 @@ public class HeroDatabase : ScriptableObject
     public HeroDefinition GetById(string id) => Heroes.Find(h => h.Id == id);
 }
 
-[CreateAssetMenu(fileName = "Hero_NOVA", menuName = "BomberBlast/Hero")]
+// 1:1 aus dem Original (HeroDefinition.cs) — 5 Helden, NUR Stat-Variation + Trait + Skin-Farben.
+// KEINE Skills/Ultimates/Talent-Baeume (das war die verworfene Sci-Fi-Reinvention).
+[CreateAssetMenu(fileName = "Hero_Default", menuName = "BomberBlast/Hero")]
 public class HeroDefinition : ScriptableObject
 {
-    public string Id;                       // "nova"
-    public string DisplayNameKey;           // Localization-Key "hero.nova.name"
-    public string MechName;                 // "Vanguard"
-    public HeroRole Role;                   // AllRounder / Tank / DPS / Control / ...
-    public HeroStats StartStats;
-    public AbilityDefinition PassiveSkill;
-    public AbilityDefinition Skill1;
-    public AbilityDefinition Skill2;
-    public AbilityDefinition Ultimate;
-    public TalentTreeDefinition TalentTree;
-    public List<HeroSkinDefinition> Skins;
-    public List<VoiceLineDefinition> VoiceLines;
-    public string UnlockCondition;          // "default" / "achievement_..." / "gem_buy_2500"
-    public string Lore;                     // Localization-Key
-    public Sprite Portrait;
-    public GameObject MechPrefab;
+    public string Id;                       // "hero_default", "hero_speedy_sam", ...
+    public string NameKey;                  // Localization-Key (z.B. "HeroSpeedySamName")
+    public string DescriptionKey;
+    public int StartMaxBombs = 1;
+    public int StartFireRange = 2;
+    public int StartSpeedLevel = 0;         // 0-3, BASE_SPEED 80 + Level*20
+    public int StartLives = 3;
+    public float CoinPickupMultiplier = 1f;
+    public float PowerUpDropMultiplier = 1f;
+    public float BlockDropChanceBonus = 0f;
+    public HeroTrait Trait;                 // None / DoubleDetonation / LuckyDrops / DemolitionExpert / QuickPocket
+    public string UnlockCondition;          // "default" / "ach_speed_demon" / "gems_500" ...
+    public Color BodyColor;                 // Skin-Hauptfarbe
+    public Color AccentColor;
+    public GameObject HeroModelPrefab;      // 3D-Modell (im Neon-Arcade-Stil)
 }
 ```
+
+> **5 Helden** (siehe DESIGN §5): Default, SpeedySam (QuickPocket), BrickBoris (DemolitionExpert),
+> TwinTina (DoubleDetonation), LuckyLola (LuckyDrops). Stats/Trait/Unlock 1:1 aus `HeroDefinition.cs`.
 
 ### 6.2 Daten-Importer (Editor-Tool)
 
 Analog ArcaneKingdom: JSON-Sources in `Resources/Data/` → ScriptableObject-Assets via Menü `BomberBlast → Data → Import All`.
 
-JSON-Files in `Resources/Data/`:
-- `heroes.json` (8 Helden)
-- `bombs.json` (22 Karten)
-- `power_ups.json` (16 PowerUps)
-- `enemies.json` (12 Enemies)
-- `bosses.json` (10 Welt-Bosse + 4 Council)
-- `worlds.json` (10 Welten + 100 Level)
-- `talents.json` (~200 Talent-Knoten)
-- `affixes.json` (50 Affixe)
-- `achievements.json` (86 Achievements)
-- `quests.json` (30 Quest-Templates)
-- `events.json` (16 Live-Events)
-- `battle_pass_s1.json` (Saison-1 BP-Rewards)
-- `cosmetics.json` (320+ Items)
-- `balancing.json` (Damage-Multiplier, HP-Curves, etc.)
+JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 2026-05-30):
+- `heroes.json` (**5 Helden**)
+- `bombs.json` (**14 Bomben-Typen / 13 Karten** im CardCatalog)
+- `power_ups.json` (**12 PowerUps + Cure**)
+- `enemies.json` (**12 Enemies** + Elite-Flag)
+- `bosses.json` (**5 Bosse** + 8 Modifier)
+- `worlds.json` (10 Welten + 100 Level, 12 Layouts, 5 Mutatoren) — *(folgt im Content-Sprint)*
+- `achievements.json` (**72 Achievements** in 5 Kategorien)
+- `dungeon.json` (16 Buffs, 5 Synergien, 5 Raum-Typen, 8 Floor-Modifier, 8 Dungeon-Upgrades)
+- `daily_missions.json` (14er-Pool), `weekly_missions.json` (14er-Pool)
+- `events.json` (**8 Wochen-Events** + 4 saisonale)
+- `battle_pass_s1.json` (30 Tiers, Saison-1-Rewards)
+- `cosmetics.json` (**98 Items**: 32 Trails / 33 Frames / 33 Victories + Skins)
+- `shop_upgrades.json` (9 permanente Upgrades + 3 Shop-Spezial-Bomben)
+- `balancing.json` (Stat-Curves, Drop-Gewichte, Combo-Boni)
 - `localization_de.json`, `localization_en.json`, ... (6 Sprachen initial)
-- `tutorial.json` (4 Tutorial-Phasen)
-- `loading_tips.json` (33 globale + 100 welt-spezifische)
+- `tutorial.json` (3 Tutorial-Phasen: Movement/Bombs/PowerUps)
+- `loading_tips.json` (33 globale + 10 welt-spezifische)
+- `world_story.json` (10 Welt-Intros + 9 Welt-Outros)
+
+> Keine `talents.json` / `affixes.json` — Talent-Baeume und Affix-System gehoeren zur verworfenen
+> Sci-Fi-Reinvention. Progression laeuft ueber die 9 permanenten Shop-Upgrades (siehe DESIGN §16.2).
 
 ### 6.3 Save-Schema (Firebase RTDB)
 
@@ -867,32 +866,27 @@ JSON-Files in `Resources/Data/`:
    ├── currencies {
    │     coins: number,
    │     gems: number,
-   │     energy: number,
-   │     dungeon_coins: number,
-   │     clan_coins: number,
-   │     saison_coins: number,
-   │     hero_tokens: number
+   │     dungeon_coins: number      // nur 3 Waehrungen (wie Original)
+   │   }
+   ├── shop_upgrades {              // 9 permanente Upgrades (PlayerUpgrades / UpgradeType)
+   │     startBombs, startFire, startSpeed, extraLives, scoreMultiplier,
+   │     timeBonus, shieldStart, coinBonus, powerUpLuck   // jeweils Level-Wert
    │   }
    ├── inventory
    │   ├── heroes {
-   │   │     [heroId]: { unlocked: bool, level: number, exp: number,
-   │   │                 talents: {nodeId: lv}, skins: [skinId], selectedSkin: skinId }
+   │   │     [heroId]: { unlocked: bool, selectedSkin: skinId }   // KEINE Talente/Level (nur Unlock + Skin)
    │   │   }
+   │   ├── active_hero: string,
    │   ├── cards {
-   │   │     [instanceId]: { cardId, level, affixes: [{slot, affixId}] }
+   │   │     [cardId]: { level, count }       // OwnedCard: CardId + Level + Count (keine Affixe)
    │   │   }
+   │   ├── deck { active_slot, slots: [cardId], extra_slot_unlocked: bool }
    │   └── cosmetics {
-   │         trails: [id],
-   │         frames: [id],
-   │         victories: [id],
-   │         sprays: [id],
-   │         emotes: [id],
-   │         match_intros: [id]
+   │         trails: [id],        // 32
+   │         frames: [id],        // 33
+   │         victories: [id],     // 33
+   │         skins: [id]          // CustomizationService
    │       }
-   ├── decks {
-   │     active: { slots: [cardInstanceId] },
-   │     saved: { 0: {...}, 1: {...} }
-   │   }
    ├── progress {
    │     story: { [worldId]: { [levelId]: stars } },
    │     master: { [worldId]: { [levelId]: stars } },
@@ -901,18 +895,17 @@ JSON-Files in `Resources/Data/`:
    │     discoveries: { [powerUpId]: bool, [bombId]: bool }
    │   }
    ├── league {
-   │     rank: number,            // Liga-Punkte
-   │     tier: string,            // "Bronze.I" / "Silver.II" / ...
-   │     season: number,
-   │     last5Matches: [{ result, opponent, mmrChange, time }]
+   │     points: number,          // Liga-Punkte (Async-Score, KEIN MMR/Glicko)
+   │     tier: string,            // "Bronze.I" / "Silver.II" / ... / "Diamond"
+   │     season: number           // 14-Tage-Liga-Saison
    │   }
    ├── battle_pass {
-   │     season: number,
-   │     level: number,
+   │     season: number,          // 30-Tage-BP-Saison (von Liga-Saison getrennt!)
+   │     tier: number,            // 1..30
    │     xp: number,
-   │     premium: bool,
-   │     premiumPlus: bool,
-   │     claimedTiers: [number]
+   │     premium: bool,           // BattlePass-Plus = separates IAP-Flag (vip/plus)
+   │     claimedTiers: [number],
+   │     xpBoostStartTicks: number  // Hybridtimer-Anti-Cheat
    │   }
    ├── quests {
    │     daily: [{ id, progress, completed, rerollUsed }],
@@ -965,21 +958,43 @@ JSON-Files in `Resources/Data/`:
    ├── reason, comment, time: ServerValue.TIMESTAMP
 ```
 
-### 6.4 Save-Schema-Migration
+### 6.4 Save-Schema-Migration (Intra-Schema)
 
-Wie alt: Schema-Version-Feld auf `players/{uid}/schemaVersion`. Cloud-Function `migrateSchema(uid, fromVersion, toVersion)` läuft beim ersten Login einer neuen App-Version.
+Schema-Version-Feld auf `players/{uid}/schemaVersion` (neues Projekt startet bei **1**). Cloud-Function
+`migrateSchema(uid, fromVersion, toVersion)` läuft beim ersten Login einer neuen App-Version (Forward-Migration-Pflicht).
 
 ```typescript
-// CloudFunctions/src/migrateSchema.ts
+// CloudFunctions/src/migrateSchema.ts — betrifft NUR das neue arena-Schema (intra)
 export async function migrateSchema(uid: string, fromV: number, toV: number) {
-  if (fromV === 1 && toV === 2) {
-    // Beispiel: V1 hatte keine "energy"-Currency, V2 hat sie
-    await db.ref(`/players/${uid}/currencies/energy`).set(60);
-    await db.ref(`/players/${uid}/schemaVersion`).set(2);
-  }
-  // ... weitere Migrations
+  if (fromV === 1 && toV === 2) { /* neue Felder mit Defaults auffuellen */ }
+  // ... weitere Forward-Migrations, danach schemaVersion setzen
 }
 ```
+
+### 6.5 Legacy-Save-Import (KRITISCH — alt → neu, Cross-Projekt)
+
+> Das produktive BomberBlast speichert in einem **anderen Firebase-Projekt** und einem **anderen Format**
+> als das Unity-Remake. Bestands-Spieler dürfen ihren Fortschritt **nicht** verlieren.
+
+| Aspekt | Original (alt) | Unity-Remake (neu) |
+|--------|----------------|---------------------|
+| Firebase-Projekt | **`bomberblast-league`** | **`bomberblast-arena`** |
+| Save-Format | 35-Key-Preferences-Blob (`CloudSaveData`, `CloudSaveSchemaMigrator` V1→V3) | strukturiertes `/players/{uid}/` (oben) |
+| Identität | Anonymous-UID (im league-Projekt) | Anonymous-UID (im arena-Projekt) |
+
+**Cloud-Function `importLegacySave` (HTTP-Callable, Auth):**
+1. **UID-Bridging:** Alt-UID (league-Projekt) ↔ Neu-UID (arena-Projekt) verknüpfen (Mapping-Tabelle
+   `/legacy_links/{newUid} = oldUid`; idempotent, einmalig pro Account).
+2. **Lesen:** 35-Key-Blob aus `bomberblast-league` über Admin-SDK (Cross-Projekt-Service-Account).
+3. **Mapping (Feld-für-Feld):** TotalStars/Story-Sterne → `progress.story`; Coins/Gems → `currencies`;
+   Shop-Upgrade-Level → `shop_upgrades`; OwnedCards (CSV) → `inventory.cards`; Cosmetics/Skins; Achievements;
+   Liga-Punkte/Tier/Saison; BattlePass-Tier/XP; DungeonStats/DungeonCoins; Hero-Unlocks + aktiver Hero;
+   Accessibility/Consent-Flags; DailyReward/Streak. (Quelle: `CloudSaveData.cs`-SyncKeys.)
+4. **Konflikt-Resolution** wie Original `ChooseBest`: TotalStars → Wealth → Cards → Keys.Count → Timestamp.
+5. **Validierung + Logging**, kein Datenverlust bei Teilfehler (Best-Effort, Corruption-Flag wie `PersistenceHealth`).
+
+**Pflicht-Test vor Launch:** Import mit echten Alt-Accounts (alle 35 Keys, CSV-Karten, leere/teilweise Saves).
+Erfolgsrate-Ziel ≥ 99 % (PLAN §4.4).
 
 ---
 
@@ -1050,7 +1065,7 @@ public class PvpNetworkPlayer : NetworkBehaviour
     {
         // Initialize visual representation
         var hero = HeroDatabase.Instance.GetById(HeroId);
-        InstantiateMech(hero.MechPrefab);
+        InstantiateHeroModel(hero.HeroModelPrefab);
     }
     
     public override void FixedUpdateNetwork()
@@ -1182,7 +1197,13 @@ Client → Cloud Function `submitMatchResult(matchId, result, replay)`
 
 ### 10.2 Replay-Re-Simulation auf Server-Worker
 
-**Tech**: Eigener C#-Worker (.NET 10) der den **identischen Domain-Code** wie der Client ausführt.
+> **Voraussetzung (siehe §13.0):** Die Re-Simulation setzt eine **bit-stabile** Sim zwischen IL2CPP-Client
+> und .NET-10-Worker voraus. Mit float-basierter Physik ist das **nicht** garantiert. Daher ist dieser
+> Anti-Cheat-Pfad an das Float-Determinismus-Mandat (Fixed-Point/Quantisierung) gebunden **und** nur für
+> den optionalen **Online-Versus** relevant — kein Launch-Blocker. Solange dieser nicht aktiv ist, greifen
+> die übrigen Stufen (Format/Hash/Rate-Limit/Heuristiken) plus die bestehenden Firebase-Server-Rules.
+
+**Tech**: Eigener C#-Worker (.NET 10) der **denselben (quantisierten) Domain-Code** wie der Client ausführt.
 
 ```
 Server/DomainReplay/Program.cs
@@ -1232,7 +1253,8 @@ Heuristiken:
 | `submitMatchResult` | HTTP-Callable (Auth-pflichtig) | Empfängt Match-Ergebnis, triggert Validation |
 | `validateMatch` | Pub/Sub | Spawn Server-Worker für Replay-Re-Sim |
 | `validateDailyRace` | HTTP-Callable | Daily-Race-Replay-Validation |
-| `seasonReset` | Scheduled (alle 14 Tage) | Liga-Reset, BP-Reset, Saison-Belohnungen verteilen |
+| `leagueReset` | Scheduled (alle **14 Tage**) | Liga-Saison-Reset (Perzentil-Promotion Top 30 % / Bottom 20 %), Liga-Belohnungen |
+| `battlePassReset` | Scheduled (alle **30 Tage**) | Battle-Pass-Saison-Reset + Theme-Rotation (getrennt von der Liga-Saison!) |
 | `dailyMissionReset` | Scheduled (00:00 UTC) | Daily-Quests neu würfeln |
 | `weeklyMissionReset` | Scheduled (Mo 00:00 UTC) | Weekly-Missions neu würfeln |
 | `clanWarResult` | Scheduled (Sa 20:00 UTC) | Clan-War-Auswertung |
@@ -1243,8 +1265,8 @@ Heuristiken:
 | `friendRequest` | HTTP-Callable (Auth) | Friend-Code-Lookup, Anti-Spam |
 | `reportPlayer` | HTTP-Callable (Auth) | Report-Queue, Auto-Action bei 5+ Reports/24h |
 | `notificationSend` | Pub/Sub | Server-getriggerte Pushes |
-| `migrateOldBomberBlast` | HTTP-Callable (Auth) | Account-Migration alt → neu |
-| `migrateSchema` | HTTP-Callable (Auth) | Save-Schema-Version-Upgrade |
+| `importLegacySave` | HTTP-Callable (Auth) | **Legacy-Save-Import alt → neu** (Cross-Projekt `bomberblast-league` → `bomberblast-arena`, 35-Key-Mapping, UID-Bridging — siehe §6.5) |
+| `migrateSchema` | HTTP-Callable (Auth) | Intra-Schema-Version-Upgrade (nur arena, siehe §6.4) |
 | `clanInvite` | HTTP-Callable (Auth) | Clan-Invite-Code generieren + Annahme |
 | `leaderboardSnapshot` | Scheduled (stündlich) | Liga-Tabellen-Snapshot für Display |
 
@@ -1401,7 +1423,7 @@ export const accountDelete = functions.https.onCall(async (data, context) => {
         ".write": "auth != null && auth.uid === $uid",
         
         "currencies": {
-          ".validate": "newData.hasChildren(['coins', 'gems', 'energy'])",
+          ".validate": "newData.hasChildren(['coins', 'gems'])",
           "coins": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99999999" },
           "gems": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999" }
         },
@@ -1526,9 +1548,29 @@ export const photonWebhook = functions.https.onRequest(async (req, res) => {
 
 ## 13. Determinismus-First-Design
 
+### 13.0 Status & Mandat (WICHTIG)
+
+> **Im Original ist Determinismus nur Foundation, NICHT integriert.** Der Live-Game-Loop nutzt
+> `System.Random` (`GameEngine.cs`); `DeterministicRandom`/`ReplayCapture`/`FixedTimestepRunner`/
+> `IRngProvider` existieren als isolierte Bausteine, sind aber **nicht** in `GameEngine.Update`
+> verdrahtet (EnemyAI ~16 + LevelGenerator ~13 Random-Stellen laufen noch über `System.Random`).
+> **Die Determinismus-Integration ist daher Neu-Arbeit (mehrwöchiger Sprint), kein reiner Port.**
+
+> **Float-Determinismus-Mandat:** `DeterministicRandom` (xoshiro256+) ist nur **integer**-bit-stabil.
+> Die gesamte Gameplay-Physik nutzt `float` (Positionen, Timer, `1/60f`). IEEE-754-Operationen
+> (FMA/SIMD/transzendente Funktionen) divergieren zwischen **IL2CPP/ARM64-Client** und **x64-.NET-10-
+> Server-Worker** — eine "isomorphe" bit-identische Re-Simulation ist damit **nicht garantiert**.
+> Konsequenz für hash-relevante Zustände (State-Hash / Anti-Cheat / Online-Versus):
+> - **Entweder** Fixed-Point/Integer-Sim für alle hash-relevanten Felder (Grid, HP, quantisierte Positionen),
+> - **oder** dokumentierte Quantisierung der Felder **vor** dem FNV-1a-State-Hash.
+>
+> Online-Versus (das diese bit-stabile Sim braucht) ist ein **optionales Post-Launch-Feature** (siehe
+> DESIGN §24) — daher **kein Launch-Blocker**. Für Single-Player/Replay genügt Client-seitiger
+> Determinismus; Lockstep statt Rollback ist der wahrscheinliche Online-Default.
+
 ### 13.1 Pflicht-Konstanten
 
-> **Wichtigste Regel der Codebase:** Alle gameplay-relevanten Random-Calls gehen über `IRngProvider`.
+> Nach der Integration gilt: Alle gameplay-relevanten Random-Calls gehen über `IRngProvider`.
 > Alle Tick-Updates laufen über `FixedTimestepRunner` bei 60 Hz. Alle Inputs werden in `ReplayCapture` aufgezeichnet.
 
 ### 13.2 IRngProvider-Implementation
@@ -1609,7 +1651,12 @@ public class FixedTimestepRunner
 
 ### 13.5 ReplayCapture
 
-Input pro Tick: 1 Byte (Direction 3 Bits + Bomb 1 Bit + Detonate 1 Bit + ToggleSpecial 1 Bit + Reserved 2 Bits).
+> Original-Layout (`ReplayCapture.cs`, Schema-V1): 1 Byte/Tick = **Direction (Bits 0-2) + Bomb (Bit 3) +
+> Detonate (Bit 4)**, Bits 5-7 reserviert. **`ToggleSpecial` ist NICHT im ReplayCapture-Byte** — es lebt im
+> separaten `PlayerInputSnapshot` (Multiplayer-Wire-Format). Das `0x20`-Bit unten ist eine **Erweiterung**
+> für das Remake und erfordert einen Schema-Versions-Bump (V1 → V2), wenn Alt-Replays gelesen werden sollen.
+
+Input pro Tick (Remake-Erweiterung V2): 1 Byte (Direction 3 Bits + Bomb 1 Bit + Detonate 1 Bit + ToggleSpecial 1 Bit + Reserved 2 Bits).
 
 ```csharp
 public class ReplayCapture
@@ -1743,7 +1790,7 @@ Auto-Aktivierung bei <20 % Akku:
 
 ### 15.2 Renderer-Features
 
-- **Outline-Renderer-Feature** (Custom, für stilisierte Mech-Outlines)
+- **Outline-Renderer-Feature** (Custom, für stilisierte Charakter-/Entity-Outlines — wie Original `OutlineRenderHelper`)
 - **Decal-Renderer-Feature** (für Bomb-Brandflecken)
 - **PostProcessing** (Bloom, Vignette, ChromaticAberration, FilmGrain)
 
@@ -1754,7 +1801,7 @@ Auto-Aktivierung bei <20 % Akku:
 | **Glow.shadergraph** | Bomben-Pulsing, Hero-Aura |
 | **Dissolve.shadergraph** | Block-Zerstörung |
 | **Hologramm.shadergraph** | Phantom/Ghost-Bombs, Decoy |
-| **Outline.shadergraph** | Mech-Outline (Stylized-Toon) |
+| **Outline.shadergraph** | Charakter-/Entity-Outline (Stylized-Toon) |
 | **Liquid.shadergraph** | Slime-/Poison-Felder |
 | **ForceField.shadergraph** | Shields, Invuln-Indication |
 | **Cyber-Floor.shadergraph** | Welt-1-Boden (Wet + Holo) |
@@ -1776,8 +1823,8 @@ Auto-Aktivierung bei <20 % Akku:
 | Group | Inhalt | Loading-Strategy | Size-Target |
 |-------|--------|------------------|-------------|
 | `Bootstrap` | Splash, Default-Font, Loading-Tipps | Sync, im AAB | 5 MB |
-| `Heroes.Launch` | 3 MVP-Helden (NOVA/Cryo/Titan) | Sync, im AAB | 30 MB |
-| `Heroes.Remaining` | Restliche 5 Launch-Helden | Lazy, nach Unlock | 50 MB |
+| `Heroes.Launch` | 3 MVP-Helden (Default/SpeedySam/BrickBoris) | Sync, im AAB | 30 MB |
+| `Heroes.Remaining` | Restliche 2 Helden (TwinTina/LuckyLola) | Lazy, nach Unlock | 20 MB |
 | `Heroes.Seasonal` | Saisonale Helden | Remote CDN, post-Saison-Start | 10 MB pro Saison |
 | `Worlds.1-3` | Welt 1-3 Assets | Sync, im AAB | 80 MB |
 | `Worlds.4-10` | Welt 4-10 Assets | Lazy, nach World-Unlock | 200 MB |
@@ -1827,7 +1874,7 @@ CI: Build Addressables → Upload zu Firebase Storage
 | Steam (Linux/macOS) | BC7 / ETC2 | High |
 
 Texture-Max-Size:
-- Mech-Modelle: 1024×1024 (Mid/High), 512×512 (Low)
+- Hero-/Charakter-Modelle: 1024×1024 (Mid/High), 512×512 (Low)
 - UI: 2048×2048 Atlas, 512×512 individual
 - Welt-Hintergründe: 2048×1024 (High), 1024×512 (Low)
 
@@ -1929,7 +1976,7 @@ Mastering-Step (Build-Pipeline):
 **Pflicht für:**
 - Alle Domain-Klassen (BomberBlast.Domain.Tests)
 - Pure-Funktionen, Algorithmen (Combo-System, DungeonSynergyResolver, LevelLayoutGenerator)
-- Math-Funktionen (Glicko-2-Calculator, OverflowGuard)
+- Math-Funktionen (Overflow-Guard, Liga-Punkt-/Sub-Tier-Berechnung, Combo-Score)
 
 **Coverage-Ziel:** 90 % für BomberBlast.Domain, 75 % für BomberBlast.Core
 
@@ -2205,7 +2252,7 @@ Funnel-Events:
 | Event-Name | Properties | Trigger |
 |-----------|------------|---------|
 | `app_open` | version, deviceTier | App-Start |
-| `tutorial_complete` | phase (T1/T2/T3/T4) | Tutorial-Phasen-End |
+| `tutorial_complete` | phase (T1/T2/T3) | Tutorial-Phasen-End |
 | `level_start` | worldId, levelId, heroId | Story-Match-Start |
 | `level_complete` | worldId, levelId, stars, durationSec | Story-Match-End |
 | `pvp_match_start` | mode, region | PvP-Match-Start |
@@ -2244,30 +2291,44 @@ Funnel-Events:
 ### 22.2 Port-Checkliste (Priority-2, Sprint 3-4)
 
 - [ ] `Core/LevelGeneration/LevelGenerator.cs` + `MutatorEffects.cs` → `BomberBlast.Domain/Worlds/`
-- [ ] `Models/Levels/LevelLayoutGenerator.cs` (11 Layouts) → `BomberBlast.Domain/Worlds/Layouts/`
-- [ ] `Models/Cards/CardCatalog.cs` (14 Karten) → `BomberBlast.Domain/Bombs/`
+- [ ] `Models/Levels/LevelLayoutGenerator.cs` (**12 Layouts** + 5 Mutatoren) → `BomberBlast.Domain/Worlds/Layouts/`
+- [ ] `Models/Cards/CardCatalog.cs` (**13 Karten** + Standard-Bombe = 14 BombTypes) → `BomberBlast.Domain/Bombs/`
 - [ ] `AI/PathFinding/AStar.cs` → `BomberBlast.Domain/Enemies/AI/`
 - [ ] BFS + DangerZone-Code → `BomberBlast.Domain/Enemies/AI/`
 
 ### 22.3 Port-Checkliste (Priority-3, Sprint 5-6)
 
-- [ ] `Services/LeagueService.cs` Logik (5-Tier × 3-Sub, NPC-Backfill) → `BomberBlast.Domain/League/`
-- [ ] `Services/BattlePassService.cs` (XP-Tier) → `BomberBlast.Domain/BattlePass/`
-- [ ] `Services/AchievementService.cs` (66 Definitionen) → `BomberBlast.Domain/Achievements/`
-- [ ] `Services/CoinService.cs` + `GemService.cs` (Overflow-Guard) → `BomberBlast.Domain/Economy/`
-- [ ] `Services/DailyChallengeService.cs` (deterministischer Tages-Seed) → `BomberBlast.Domain/Modes/`
-- [ ] `Services/EventCalendarService.cs` (ISO-Wochen-Seed) → `BomberBlast.LiveOps/Events/`
-- [ ] `Services/LuckySpinService.cs` (Pity-Counter) → `BomberBlast.LiveOps/`
-- [ ] `Services/FirstPurchaseService.cs` (×2 Multiplier) → `BomberBlast.LiveOps/`
-- [ ] `Services/RetentionService.cs` (D1/D3/D7) → `BomberBlast.LiveOps/Retention/`
-- [ ] Hybridtimer-Pattern (TickCount64 + UTC) → `BomberBlast.Core/HybridTimer.cs`
-- [ ] Profanity-Filter → `BomberBlast.Domain/Chat/ProfanityFilter.cs`
+- [ ] `Services/LeagueService.cs` Logik (5-Tier × 3-Sub, **Perzentil-Promotion Top30/Bottom20**, NPC-Backfill, Daily-Race) → `BomberBlast.Domain/League/`
+- [ ] `Services/BattlePassService.cs` (**30 Tiers**, XP-Tier, 10 Themes) → `BomberBlast.Domain/BattlePass/`
+- [ ] `Services/AchievementService.cs` (**72 Definitionen**, 5 Kategorien) → `BomberBlast.Domain/Achievements/`
+- [ ] `Services/CoinService.cs` + `GemService.cs` + DungeonCoins (Overflow-Guard) → `BomberBlast.Domain/Economy/`
+- [ ] `Services/ShopService.cs` + `Models/UpgradeType.cs` + `PlayerUpgrades.cs` (**9 permanente Upgrades** — Haupt-Coin-Sink!) → `BomberBlast.Domain/Economy/Shop/`
+- [ ] `Services/CardService.cs` (Deck, Crafting) + `DungeonService.cs` + `DungeonUpgradeService.cs` (16 Buffs, 5 Synergien, 8 Upgrades) → `BomberBlast.Domain/`
+- [ ] `Services/DailyChallengeService.cs` (Tages-Seed), `DailyMissionService.cs`, `WeeklyChallengeService.cs`, `WeeklyContentService.cs` → `BomberBlast.Domain/Modes/` bzw. `LiveOps/`
+- [ ] `Services/EventCalendarService.cs` (**8 Wochen-Events**, ISO-Wochen-Seed) + `EventService.cs` (saisonal) → `BomberBlast.LiveOps/Events/`
+- [ ] `Services/LuckySpinService.cs` (**9 Segmente**, Pity-Counter, Drop-Rate-Disclosure) → `BomberBlast.LiveOps/`
+- [ ] `Services/DailyRewardService.cs` (7-Tage + Comeback) → `BomberBlast.LiveOps/`
+- [ ] `Services/FirstPurchaseService.cs` (×2) + `StarterPackService.cs` + `VipSubscriptionService.cs` + `RotatingDealsService.cs` (Monetarisierungs-Glue) → `BomberBlast.LiveOps/`
+- [ ] `Services/RetentionService.cs` (D1/D3/D7) + `ReEngagementScheduler.cs` + `ReviewService.cs` + `DiscoveryService.cs` → `BomberBlast.LiveOps/Retention/`
+- [ ] **`Services/GameTrackingService.cs`** (zentraler Engine↔Meta-Event-Dispatcher, 30+ Hooks — kritisch für die Verkabelung aller Meta-Systeme) → `BomberBlast.LiveOps/`
+- [ ] `Services/HighScoreService.cs` (Top-10) + `SurvivalSpawner` (Survival-Modus) + `QuickPlay`-Logik → `BomberBlast.Domain/Modes/`
+- [ ] `Services/MasterModeService.cs`, `BossRushService.cs`, `WorldStoryService.cs`, `WhatsNewService.cs`, `FeatureUnlockChoreographer.cs`, `TutorialService.cs`, `HeroService.cs`, `CustomizationService.cs`, `CollectionService.cs`, `AccessibilityService.cs` → jeweiliges Modul
+- [ ] `Services/FirebaseClanService.cs` (Clan voll integriert: Create/Join/Chat/Leaderboard) → `BomberBlast.LiveOps/Clan/`
+- [ ] `Services/RemoteConfigService` (+ `RemoteConfigKeys`) + `PushNotificationService` (FCM + Local) → Plattform-Layer
+- [ ] Hybridtimer-Pattern (TickCount64 + persistierte UTC) → `BomberBlast.Core/HybridTimer.cs`
+- [ ] Profanity-Filter (NFKD, im Original **inline** in `LeagueService.cs`) → als `BomberBlast.Domain/Chat/ProfanityFilter.cs` **extrahieren**
 
 ### 22.4 Geschätzte Port-Zeit
 
-- 1 Senior-Entwickler: **4-6 Wochen** Vollzeit
-- 2 Devs parallel: **2-3 Wochen**
-- Mit Tests + Coverage: zusätzlich +50 %
+> Das Original umfasst ~117 Services / ~86k LOC. Der Pure-Domain-Anteil (keine Avalonia/Android-API)
+> ist 1:1 portierbar; die Engine-/UI-Verkabelung ist Neu-Arbeit in Unity.
+
+- Pure-Domain-Port (Combo/Dungeon/Liga/Cards/Economy/Determinismus-Bausteine): **3-4 Wochen** (1 Senior).
+- Vollständige Feature-Parität inkl. Live-Service-Glue + UI: **mehrere Monate** (siehe ROADMAP-Phasen).
+- Mit Tests + Coverage: zusätzlich +50 %.
+
+> **Pflicht:** Eine vollständige **Parity-Matrix** (jedes Original-System → Unity-Äquivalent + Status)
+> als lebende Checkliste führen — das Original ist umfangreich; ohne Matrix gehen Systeme verloren.
 
 ---
 
@@ -2285,9 +2346,9 @@ Funnel-Events:
 | Property | PascalCase | `public int CurrentMana { get; }` |
 | Constant | `UPPER_SNAKE` | `private const int MAX_BOMBS = 8` |
 | Event | `On{Verb}{Past}` (Unity-Standard) | `OnBombPlaced`, `OnPlayerDied` |
-| ScriptableObject Asset | PascalCase + `_` für ID | `Hero_NOVA.asset`, `Bomb_Frost.asset` |
+| ScriptableObject Asset | PascalCase + `_` für ID | `Hero_Default.asset`, `Bomb_Frost.asset` |
 | Scene | PascalCase | `Boot.unity`, `MainMenu.unity` |
-| Prefab | PascalCase + `_Prefab` Suffix | `BombPrefab`, `MechViewPrefab` |
+| Prefab | PascalCase + `_Prefab` Suffix | `BombPrefab`, `HeroViewPrefab` |
 | asmdef | `BomberBlast.{Module}` | `BomberBlast.Game.asmdef` |
 | Test-Class | `{Subject}Tests` | `ComboSystemTests`, `LeagueServiceTests` |
 | Test-Method | `{Method}_{Scenario}_{Expected}` | `ProcessInput_ValidMove_UpdatesPosition` |

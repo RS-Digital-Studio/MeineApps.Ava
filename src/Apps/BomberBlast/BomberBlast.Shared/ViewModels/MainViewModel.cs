@@ -6,6 +6,7 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BomberBlast.ViewModels;
 
@@ -225,6 +226,8 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <summary>Haelt BackPress, CloudSave-Init und Rewarded-Ad-Unavailable-Handling.</summary>
     private readonly ILifecycleHub _lifecycleHub;
 
+    private readonly ILogger<MainViewModel> _logger;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -240,8 +243,10 @@ public sealed partial class MainViewModel : ViewModelBase
         IChildViewModelRegistry registry,
         IBottomTabController tabController,
         INavigationCoordinator navigationCoordinator,
-        ILifecycleHub lifecycleHub)
+        ILifecycleHub lifecycleHub,
+        ILogger<MainViewModel> logger)
     {
+        _logger = logger;
         // Registry haelt alle Child-VMs + Sub-Wirings. Events routen Navigation + VM-Lazy-Instantiation
         // an MainViewModel zurueck, damit AXAML-Bindings (ContentControl auf MenuVm/GameVm/ShopVm etc.)
         // beim ersten Resolve eine PropertyChanged-Notification bekommen.
@@ -335,8 +340,31 @@ public sealed partial class MainViewModel : ViewModelBase
         if (deps.WhatsNewService.ShouldShow)
             _dialogPresenter.SetWhatsNewVisible(true);
 
-        // Menü initialisieren
-        menuVm.OnAppearing();
+        // HINWEIS: menuVm.OnAppearing() wird NICHT mehr hier aufgerufen, sondern in OnAppeared()
+        // nach dem Setzen des DataContext (siehe Methode unten).
+    }
+
+    /// <summary>
+    /// Wird aus <c>App.RunLoadingAsync</c> NACH dem Setzen des DataContext auf dem UI-Thread
+    /// aufgerufen — initialisiert das Menue (Daily-Reward-Popup, Comeback-Bonus, Feature-Unlocks).
+    ///
+    /// <para>Bewusst NICHT im Konstruktor:
+    /// (1) <c>MenuVm.OnAppearing()</c> macht umfangreiche, fehleranfaellige Arbeit (Preferences/JSON,
+    /// Tageswechsel-Logik) — eine Exception im Ctor wuerde die gesamte VM-Konstruktion und damit
+    /// den App-Start abbrechen (permanenter Leerbildschirm, da der DataContext nie gesetzt wird).
+    /// (2) Game-Juice-Events (FloatingText/Celebration) brauchen einen View-Subscriber, der erst
+    /// nach der DataContext-Zuweisung existiert — im Ctor gefeuerte Events liefen ins Leere.</para>
+    /// </summary>
+    public void OnAppeared()
+    {
+        try
+        {
+            _registry.MenuVm.OnAppearing();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "MenuVm.OnAppearing fehlgeschlagen — App startet trotzdem");
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

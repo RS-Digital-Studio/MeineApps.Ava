@@ -261,11 +261,23 @@ public partial class App : Application
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
                     && desktop.MainWindow != null)
                     desktop.MainWindow.DataContext = mainVm;
+                // Android (IActivityApplicationLifetime): DataContext explizit auf den Panel-Root
+                // (_activityRoot) setzen. Avalonia spiegelt MainViewFactory NICHT in
+                // ISingleViewApplicationLifetime.MainView — der SingleView-Zweig unten griff auf
+                // Android daher nicht (MainView == null). MainView (Kind des Panels) erbt den Context.
+                else if (_activityRoot != null)
+                    _activityRoot.DataContext = mainVm;
                 else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform
                          && singleViewPlatform.MainView != null)
                     singleViewPlatform.MainView.DataContext = mainVm;
 
                 splash.FadeOut();
+
+                // Menue-Initialisierung NACH dem Setzen des DataContext: Game-Juice-Events
+                // (Comeback-Bonus etc.) haben jetzt einen View-Subscriber, und eine Exception in
+                // OnAppearing bricht nicht mehr die VM-Konstruktion / den App-Start ab
+                // (OnAppeared ist intern try/catch-geschuetzt).
+                mainVm.OnAppeared();
             });
 
             //.3 : Pipeline-Erfolg → Crash-Counter zuruecksetzen.

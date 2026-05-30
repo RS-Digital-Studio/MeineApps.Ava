@@ -315,16 +315,30 @@ public sealed partial class GameLoopService
         {
             state.CraftingInventory ??= new Dictionary<string, int>();
 
+            // Slot-/Stack-Limit respektieren statt blind ins Dictionary zu schreiben — sonst umgeht
+            // die MasterSmith-Passiv-Produktion das Lager-Limit (Material-Burn beim naechsten
+            // Save-Load, der ueberlaufende Stacks ohne Wertausgleich kuerzt).
+            int stackLimit = _warehouseService?.CurrentStackLimit ?? int.MaxValue;
+            int freeSlots = _warehouseService?.FreeSlotCount ?? int.MaxValue;
+            int produced = 0;
+
             for (int i = 0; i < workingWorkers; i++)
             {
                 var product = Tier1CraftingProducts[Random.Shared.Next(Tier1CraftingProducts.Length)];
-                if (state.CraftingInventory.ContainsKey(product))
-                    state.CraftingInventory[product]++;
-                else
-                    state.CraftingInventory[product] = 1;
+                int current = state.CraftingInventory.GetValueOrDefault(product, 0);
+
+                if (current == 0)
+                {
+                    if (freeSlots <= 0) continue; // kein freier Slot → kein neuer Material-Typ
+                    freeSlots--;
+                }
+                if (current >= stackLimit) continue; // Stack voll → kein Ueberlauf
+
+                state.CraftingInventory[product] = current + 1;
+                produced++;
             }
 
-            state.Statistics.TotalItemsCrafted += workingWorkers;
+            state.Statistics.TotalItemsCrafted += produced;
         });
     }
 

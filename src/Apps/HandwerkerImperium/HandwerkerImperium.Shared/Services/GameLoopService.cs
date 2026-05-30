@@ -45,6 +45,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
     private readonly IAutoProductionService? _autoProductionService;
     private readonly IOrderGeneratorService? _orderGeneratorService;
     private readonly IChallengeConstraintService? _challengeConstraints;
+    private readonly IWarehouseService? _warehouseService;
     private DispatcherTimer? _timer;
     private DateTime _sessionStart;
     private bool _isPaused;
@@ -138,7 +139,8 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         IAscensionService? ascensionService = null,
         IAutoProductionService? autoProductionService = null,
         IChallengeConstraintService? challengeConstraints = null,
-        IOrderGeneratorService? orderGeneratorService = null)
+        IOrderGeneratorService? orderGeneratorService = null,
+        IWarehouseService? warehouseService = null)
     {
         ArgumentNullException.ThrowIfNull(gameStateService);
         ArgumentNullException.ThrowIfNull(saveGameService);
@@ -169,6 +171,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         _autoProductionService = autoProductionService;
         _challengeConstraints = challengeConstraints;
         _orderGeneratorService = orderGeneratorService;
+        _warehouseService = warehouseService;
 
         // Bei State-Wechsel (Load/Import/Reset/Prestige) alle Caches invalidieren
         _stateLoadedHandler = (_, _) => ResetAllCaches();

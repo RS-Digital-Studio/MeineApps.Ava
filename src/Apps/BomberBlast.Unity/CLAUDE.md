@@ -951,6 +951,7 @@ Bei Verstoß: **Sofort korrigieren oder User informieren**. Nicht stillschweigen
 
 - **[PLAN.md](PLAN.md)** — Master-Übersicht, Vision, KPIs, Roadmap-Summary
 - **[DESIGN.md](DESIGN.md)** — Game-Design (Helden, Welten, Story, Karten, Modi, Live-Service)
+- **[PARITY.md](PARITY.md)** — Parity-Matrix: jedes Original-System → Unity-Äquivalent + Port-Status (lebende Port-Checkliste)
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — Tech-Stack, Asmdefs, Netcode, Anti-Cheat, Performance
 - **[ROADMAP.md](ROADMAP.md)** — Team, Marketing, Compliance, Risiken, Sprint-Struktur
 - **[ASSETS_AI.md](ASSETS_AI.md)** — KI-Asset-Pipeline (TRELLIS 2, SPAR3D, Stable Audio 3)

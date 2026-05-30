@@ -2327,8 +2327,9 @@ Funnel-Events:
 - Vollständige Feature-Parität inkl. Live-Service-Glue + UI: **mehrere Monate** (siehe ROADMAP-Phasen).
 - Mit Tests + Coverage: zusätzlich +50 %.
 
-> **Pflicht:** Eine vollständige **Parity-Matrix** (jedes Original-System → Unity-Äquivalent + Status)
-> als lebende Checkliste führen — das Original ist umfangreich; ohne Matrix gehen Systeme verloren.
+> **Pflicht:** Die vollständige **Parity-Matrix** → [PARITY.md](PARITY.md) (jedes Original-System →
+> Unity-Äquivalent + Status) als lebende Checkliste führen — das Original ist umfangreich; ohne Matrix
+> gehen Systeme verloren. Beim Port jeden Eintrag-Status dort aktualisieren.
 
 ---
 

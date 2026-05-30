@@ -14,6 +14,7 @@ Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 | Bereich | Datei |
 |---------|-------|
 | Game-Design (Helden, Welten, Karten, Modi, Liga, Dungeon, Live-Service — 1:1 zum Original) | [DESIGN.md](DESIGN.md) |
+| **Parity-Matrix** (jedes Original-System → Unity-Äquivalent + Port-Status) | [PARITY.md](PARITY.md) |
 | Tech-Architektur (Stack, Asmdefs, Determinismus, Save-Migration, Performance, optionaler Netcode) | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Produktion (Roadmap, Team, Marketing, Compliance, Risiken) | [ROADMAP.md](ROADMAP.md) |
 | Code-Conventions, bekannte Stolperfallen | [CLAUDE.md](CLAUDE.md) |
@@ -337,7 +338,7 @@ nicht launch-kritisch.)
 
 ### Sofort (Woche 1-2)
 1. **Stakeholder-Review** dieses Plans → Feedback einarbeiten.
-2. **Parity-Matrix** erstellen: jedes Original-System (Services/Models/Core) → Unity-Äquivalent + Port-Status.
+2. **Parity-Matrix** ✓ erstellt → [PARITY.md](PARITY.md) (jedes Original-System → Unity-Äquivalent + Port-Status). Beim Port laufend pflegen.
 3. **Firebase-Projekt** `bomberblast-arena` anlegen (Auth + RTDB + Functions + Storage + Crashlytics) und **Legacy-Save-Import-Pfad** aus `bomberblast-league` spezifizieren.
 4. **Unity-Projekt** `src/Apps/BomberBlast.Unity/Unity/` (Unity 6 + URP) anlegen + `.gitignore` + Git-LFS.
 5. **Pure-Domain-Code-Port-Sprint** planen: `DeterministicRandom`, `ComboSystem`, `ReplayCapture`, `DungeonSynergyResolver`, `LevelLayoutGenerator`, Liga-Logik zuerst (keine Unity-API → 1:1 portierbar).

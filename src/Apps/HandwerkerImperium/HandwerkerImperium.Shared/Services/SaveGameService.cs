@@ -367,6 +367,19 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         state.Boosts ??= new BoostData();
         state.DailyProgress ??= new DailyProgressData();
         state.Cosmetics ??= new CosmeticData();
+        // Weitere Sub-Objekte gegen explizites JSON-"null" absichern: Der Default-Initializer im
+        // GameState greift nur bei FEHLENDEM Feld, nicht bei serialisiertem null. Sonst NRE beim
+        // ersten Zugriff (z.B. state.Tutorial/Statistics unten) → Load scheitert → Save gilt
+        // faelschlich als beschaedigt (Daten-Verlust-Pfad statt Reparatur).
+        state.Tutorial ??= new TutorialState();
+        state.Statistics ??= new StatisticsData();
+        state.Settings ??= new SettingsData();
+        state.BattlePass ??= new BattlePass();
+
+        // Premium-Status aus dem kaufgesicherten Preference-Cache (is_premium/has_subscription/
+        // has_lifetime), getrennt vom Save-File — Save-Editing kann ihn nicht manipulieren. Muss
+        // VOR der Heirloom-Cap-Berechnung weiter unten stehen (die darauf basiert).
+        state.IsPremium = _purchaseService?.IsPremium ?? false;
 
         // Basis-Werte mit Ober-Caps (Exploit-Schutz gegen Save-Editing)
         if (state.PlayerLevel < LevelThresholds.MinPlayerLevel) state.PlayerLevel = LevelThresholds.MinPlayerLevel;
@@ -619,10 +632,10 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         var allProductsForHeirlooms = CraftingProduct.GetAllProducts();
         state.HeirloomItems.RemoveAll(id =>
             !allProductsForHeirlooms.TryGetValue(id, out var p) || !p.IsHeirloomEligible);
-        // Imperium-Pass-Spieler bekommen +1 Slot (Plan Section 10.2). Sanitize wendet den
-        // SaveGame-State an, aber Premium kann sich aendern → wir clampen auf den Pass-Cap,
-        // das ist der hoechste; bei Prestige clamped der PrestigeService dann strenger.
-        int heirloomCap = GameBalanceConstants.MaxHeirloomsPerRunPremium;
+        // Heirloom-Cap basiert auf dem echten (kaufgesicherten) Premium-Status, der oben am Anfang
+        // gesetzt wurde — ein Free-Spieler kann so nicht via Save-Edit dauerhaft +1 Erbstueck samt
+        // Income-Bonus halten (GetTotalHeirloomBonus liest HeirloomItems, nicht erst beim Prestige).
+        int heirloomCap = GameBalanceConstants.GetEffectiveHeirloomSlots(state.IsPremium);
         if (state.HeirloomItems.Count > heirloomCap)
             state.HeirloomItems.RemoveRange(heirloomCap, state.HeirloomItems.Count - heirloomCap);
         state.Ascension.PermanentHeirlooms.RemoveAll(id =>
@@ -632,14 +645,8 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (state.Statistics.TotalItemsCrafted < 0) state.Statistics.TotalItemsCrafted = 0;
         if (state.Statistics.TotalTournamentsWon < 0) state.Statistics.TotalTournamentsWon = 0;
 
-        // Premium-Status aus IPurchaseService statt blind auf false. Der Wert kommt
-        // aus dem kaufgesicherten Preference-Cache (is_premium/has_subscription/has_lifetime),
-        // der getrennt vom Save-File liegt — Save-Editing kann ihn nicht manipulieren. So sieht
-        // ein Premium-Spieler auch bei kaputtem Netz keine Werbung; RestorePurchasesAsync beim
-        // App-Start ist dann nur noch eine Auffrischung.
-        state.IsPremium = _purchaseService?.IsPremium ?? false;
         // BattlePass-Saison-Premium + Prestige-Pass haben eigene Restore-Pfade — bleiben false
-        // (Exploit-Schutz gegen Save-Editing).
+        // (Exploit-Schutz gegen Save-Editing). state.IsPremium wird oben am Anfang gesetzt.
         if (state.BattlePass != null)
             state.BattlePass.IsPremium = false;
         state.IsPrestigePassActive = false;

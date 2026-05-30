@@ -26,12 +26,14 @@ public class AccountDeletionServiceTests
         prefs = new InMemoryPreferences();
         progress = Substitute.For<IProgressService>();
         scores = Substitute.For<IHighScoreService>();
+        var clanService = Substitute.For<IClanService>();
         var logger = Substitute.For<ILogger<AccountDeletionService>>();
 
         league.DeleteOwnEntryAsync().Returns(Task.CompletedTask);
         cloud.DeleteCloudSaveAsync().Returns(Task.CompletedTask);
+        // clanService.LeaveClanAsync() gibt Task zurück — NSubstitute liefert default Task.CompletedTask.
 
-        return new AccountDeletionService(league, cloud, playGames, prefs, progress, scores, logger);
+        return new AccountDeletionService(league, cloud, playGames, prefs, progress, scores, clanService, logger);
     }
 
     [Fact]

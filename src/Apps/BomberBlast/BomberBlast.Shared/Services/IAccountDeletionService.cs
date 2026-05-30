@@ -39,6 +39,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
     private readonly IPreferencesService _preferences;
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;
+    private readonly IClanService _clanService;
     private readonly ILogger<AccountDeletionService> _logger;
 
     public AccountDeletionService(
@@ -48,6 +49,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
         IPreferencesService preferences,
         IProgressService progressService,
         IHighScoreService highScoreService,
+        IClanService clanService,
         ILogger<AccountDeletionService> logger)
     {
         _leagueService = leagueService;
@@ -56,6 +58,7 @@ public sealed class AccountDeletionService : IAccountDeletionService
         _preferences = preferences;
         _progressService = progressService;
         _highScoreService = highScoreService;
+        _clanService = clanService;
         _logger = logger;
     }
 
@@ -110,6 +113,19 @@ public sealed class AccountDeletionService : IAccountDeletionService
         {
             _logger.LogError(ex, "AccountDeletion: Firebase delete failed");
             error ??= $"Firebase: {ex.Message}";
+        }
+
+        // 4. Clan verlassen — entfernt den eigenen Member-Eintrag (inkl. DisplayName-PII) bzw. löscht
+        //    den Clan beim letzten Mitglied. _currentClan wird in-memory gehalten, daher unabhängig
+        //    vom bereits erfolgten lokalen Prefs-Clear. Best-Effort (DSGVO Art. 17, Clan-PII).
+        try
+        {
+            await _clanService.LeaveClanAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AccountDeletion: Clan leave failed");
+            error ??= $"Clan: {ex.Message}";
         }
 
         return new AccountDeletionResult(

@@ -20,6 +20,7 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
     private readonly IFirebaseService _firebase;
     private readonly ILogger<DeckTelemetryService> _logger;
     private readonly ICloudSaveService _cloudSave;
+    private readonly IPrivacyCenter _privacyCenter;
     private readonly Dictionary<BombType, DeckTelemetryEntry> _entries = new();
     private readonly object _sync = new();
     private CancellationTokenSource? _saveDebounce;
@@ -29,12 +30,14 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
         IPreferencesService preferences,
         IFirebaseService firebase,
         ILogger<DeckTelemetryService> logger,
-        ICloudSaveService cloudSave)
+        ICloudSaveService cloudSave,
+        IPrivacyCenter privacyCenter)
     {
         _preferences = preferences;
         _firebase = firebase;
         _logger = logger;
         _cloudSave = cloudSave;
+        _privacyCenter = privacyCenter;
         Load();
 
         // Cache invalidieren wenn Cloud-Pull neue Preferences setzt
@@ -130,6 +133,8 @@ public sealed class DeckTelemetryService : IDeckTelemetryService, IDisposable
 
     public async Task FlushToRemoteAsync()
     {
+        // DSGVO: kein Telemetrie-Upload ohne ausdrückliche Analytics-Einwilligung.
+        if (!_privacyCenter.AnalyticsConsent) return;
         if (!_firebase.IsOnline || _firebase.Uid == null) return;
 
         Dictionary<string, object> payload;

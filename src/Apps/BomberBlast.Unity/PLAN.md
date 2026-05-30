@@ -1,10 +1,11 @@
-# BomberBlast Unity — Master-Plan
+# BomberBlast 3D — Master-Plan
 
-> **Status:** Konzept-Phase (Stand 2026-05-26)
-> **Arbeitstitel:** BomberBlast / **Marken-Vorschlag:** "BomberBlast Arena"
-> **Genre:** 3D-Top-Down Bomberman-Action mit Meta-Progression, Real-time-PvP und Co-op
-> **Setting:** Sci-Fi/Cyberpunk mit Mech-Bombern (eigene Welt, nicht mit ArcaneKingdom verbunden)
-> **Plattformen:** Android + iOS + Steam (Windows/macOS/Linux), Cross-Save aber separate PvP-Pools
+> **Status:** Konzept-Phase (Stand 2026-05-30)
+> **Arbeitstitel:** BomberBlast (3D-Neuauflage des produktiven BomberBlast)
+> **Genre:** 3D-Top-Down Bomberman-Action mit Meta-Progression (Helden, Karten, Liga, Roguelike-Dungeon)
+> **Leitprinzip:** **Genau dasselbe Spiel wie das produktive BomberBlast — nur in 3D und in jeder Hinsicht besser.**
+> **Setting:** Identisch zum Original (10 thematische Welten + bestehende Welt-Story-Beats, Neon-Arcade-Stil)
+> **Plattformen:** Android (primär, wie Original) + iOS + Steam (Windows/macOS/Linux) — NEU ggü. Original
 > **Team:** Full Studio (5+ Personen) — siehe [ROADMAP.md](ROADMAP.md#team)
 > **Launch-Strategie:** Soft-Launch DACH → EU → Global
 
@@ -12,13 +13,17 @@ Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 
 | Bereich | Datei |
 |---------|-------|
-| Game-Design (Helden, Welten, Story, Karten, Modi, Live-Service) | [DESIGN.md](DESIGN.md) |
-| Tech-Architektur (Stack, Asmdefs, Netcode, Anti-Cheat, Performance) | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Game-Design (Helden, Welten, Karten, Modi, Liga, Dungeon, Live-Service — 1:1 zum Original) | [DESIGN.md](DESIGN.md) |
+| Tech-Architektur (Stack, Asmdefs, Determinismus, Save-Migration, Performance, optionaler Netcode) | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Produktion (Roadmap, Team, Marketing, Compliance, Risiken) | [ROADMAP.md](ROADMAP.md) |
 | Code-Conventions, bekannte Stolperfallen | [CLAUDE.md](CLAUDE.md) |
-| KI-Asset-Pipeline (3D-Meshes + PBR-Texturen via ComfyUI/Hunyuan3D) | [ASSETS_AI.md](ASSETS_AI.md) |
+| KI-Asset-Pipeline (3D-Meshes + PBR-Texturen) | [ASSETS_AI.md](ASSETS_AI.md) |
 | First-Time-Setup für Entwickler (folgt nach Projekt-Anlage) | SETUP.md |
 | Cloud-Functions-Server-Doku (folgt) | Server/SERVEROPS.md |
+
+> **Quelle der Wahrheit für alles "vom Original":** der produktive Code unter
+> `F:/Meine_Apps_Ava/src/Apps/BomberBlast/BomberBlast.Shared/` und dessen granulare CLAUDE.md-Dateien.
+> Jede Zahl/Mechanik in diesem Plan ist gegen den Code verifiziert (Stand 2026-05-30).
 
 ---
 
@@ -26,10 +31,10 @@ Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 
 1. [Vision & Pitch](#1-vision--pitch)
 2. [Zielgruppe & Personas](#2-zielgruppe--personas)
-3. [Strategische Entscheidungen (Stand 2026-05-26)](#3-strategische-entscheidungen-stand-2026-05-26)
+3. [Strategische Entscheidungen](#3-strategische-entscheidungen)
 4. [Erfolgs-KPIs](#4-erfolgs-kpis)
-5. [Was bleibt vom alten BomberBlast?](#5-was-bleibt-vom-alten-bomberblast)
-6. [Was ändert sich fundamental?](#6-was-ändert-sich-fundamental)
+5. [Was bleibt vom Original? (Nahezu alles — 1:1)](#5-was-bleibt-vom-original-nahezu-alles-11)
+6. [Was ändert sich? (Nur Engine, Darstellung, Plattform, Plus-Features)](#6-was-ändert-sich-nur-engine-darstellung-plattform-plus-features)
 7. [USPs (Unique Selling Points)](#7-usps-unique-selling-points)
 8. [High-Level-Roadmap](#8-high-level-roadmap)
 9. [Risiko-Summary](#9-risiko-summary)
@@ -41,94 +46,90 @@ Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 
 ### 1.1 Elevator-Pitch
 
-> **BomberBlast Arena** ist ein **3D-Top-Down Bomberman-Action-Spiel** in einer dystopischen
-> Sci-Fi-Welt, in der **Mech-Bomber-Piloten** in 4-Spieler-Real-time-Arena-Battles um die
-> Vorherrschaft kämpfen. Spieler sammeln 8+ Helden mit eigenen Mech-Designs, Talent-Bäumen und
-> 14+ Bomben-Karten. Das Spiel kombiniert Action-PvP, kooperative Roguelike-Dungeons und einen
-> tiefen Story-Modus (100 Level in 10 Welten) mit Welt-Mythologie und dem zentralen
-> "Bombenmeister-Krieg" gegen den Megakonzern OmniCorp.
+> **BomberBlast** wird in Unity 6 als **vollwertiger 3D-Top-Down-Remake des bestehenden,
+> produktiven BomberBlast** neu aufgelegt. Es ist **dasselbe Spiel** — dieselben 5 Helden,
+> dieselben 12 Gegner-Typen, dieselben 5 Bosse, dasselbe 15×10-Grid, dieselben 100 Story-Level
+> in 10 Welten, derselbe Roguelike-Dungeon, dieselbe Liga, derselbe Battle Pass, dieselbe Karten-
+> und Wirtschafts-Logik — aber gerendert in echtem 3D mit URP, dynamischer Beleuchtung, VFX Graph
+> und kuratiertem Audio. Das bewährte Game-Design (Combo-System, Skull-Curses, Master-Mode,
+> Welt-Story-Beats) bleibt **unangetastet**; verbessert werden Engine, Optik, Audio, Plattform-
+> Reichweite und — als echtes Plus — optionaler Multiplayer.
 
-### 1.2 Brand-Identität
+**In einem Satz:** *Das BomberBlast, das Spieler heute lieben — in 3D, schöner, auf mehr Plattformen,
+mit optionalem Mehrspieler-Modus.*
 
-| Aspekt | Wert |
-|--------|------|
-| **Markenfarben** | Cyan #22D3EE (Akzent 1) + Magenta #EC4899 (Akzent 2) + Tiefdunkel #0F172A (Base) |
-| **Tonalität** | Edgy-Cyber, aber nicht zu düster. Slay-the-Spire-Selbstironie statt Cyberpunk-2077-Düsternis |
-| **Audio-Sprache** | Synthwave + Drum-and-Bass + leichte 80er-Anleihen |
-| **Visual-Sprache** | Mech-Sprites, Neon-Akzente, holografische HUDs, glitch-Effekte als Stil-Element |
-| **Story-Setting** | Nahe Zukunft, ~2087, nach dem "Großen Crash". Megakonzern OmniCorp kontrolliert die letzten lebbaren Megacities |
+### 1.2 Brand-Identität (unverändert zum Original)
+
+Das Original hat eine etablierte **Neon-Arcade-Identität**. Diese bleibt erhalten — sie ist Teil
+des Markenkerns, nicht verhandelbar.
+
+| Aspekt | Wert (wie Original) |
+|--------|---------------------|
+| **Primärfarbe** | Neon-Orange **#FF6B35** (Markenfarbe, `AppPalette.axaml`) |
+| **Akzentfarbe** | Cyan **#22D3EE** + Gold-Trail **#FFDD33** |
+| **Tonalität** | Energetisch, Arcade, "Game Juice" — Nostalgie an SNES-Bomberman |
+| **Visual-Sprache** | Neon-Arcade: oktagonale Formen, Glow, scharfe Kanten, zwei Visual-Styles (Classic HD + Neon/Cyberpunk) — **jetzt in 3D umgesetzt** |
+| **Audio-Sprache** | Arcade-SFX (Kenney-CC0-Basis), 10 welt-thematische Loops, adaptive Layer — **jetzt kuratiert/aufgewertet** |
+| **Setting** | Die 10 bestehenden Welt-Themes + die bestehenden Welt-Story-Beats (`IWorldStoryService`: 10 Intros, 9 Outros, Cliffhanger). Keine neue Mythologie. |
+
+> **Bewusste Abkehr von der früheren Plan-Version (v0.2):** Die dort entworfene Sci-Fi-Neuerfindung
+> (OmniCorp/Director Vex/Mech-Bomber/8 neue Helden/PvP-Arena-Fokus) wird **verworfen**. Sie war ein
+> anderes Spiel. Diese Version ist ein treuer Remake des existierenden BomberBlast.
 
 ---
 
 ## 2. Zielgruppe & Personas
 
-### 2.1 Kern-Zielgruppe
+Die Kern-Zielgruppe bleibt die des bestehenden BomberBlast, erweitert um die neuen Plattformen.
 
-**Persona A: "Der nostalgische Wettkämpfer" (40 % der Zielgruppe)**
-- Alter: 28-42, primär männlich
-- Spielte Bomberman in Kindheit (SNES, NES, PS1)
-- Will modernes Multiplayer-Bomberman auf Mobile/PC
-- Bereit für Battle Pass + Cosmetics, ablehnend gegenüber Lootboxen
-- Spielt 30-60 Min pro Session, 4-5× Woche
-- ARPPU-Ziel: 25-40 EUR/Saison
+**Persona A: "Der nostalgische Single-Player-Fan" (Kern, ~50 %)**
+- Alter: 28-45. Spielte Bomberman in der Kindheit (SNES/NES/PS1).
+- Will das BomberBlast-Erlebnis (Story-Level, Sterne sammeln, Dungeon-Runs, Liga) — jetzt schöner.
+- Akzeptiert das bestehende Modell: kostenlos mit Rewarded-Ads, 1,99 EUR Remove-Ads, optionale Cosmetics.
+- Spielt 10-30 Min pro Session, mehrmals pro Woche.
 
-**Persona B: "Der Casual-Mobile-Action-Gamer" (35 %)**
-- Alter: 18-35, gemischt
-- Spielt Brawl Stars, Clash Royale, Among Us
-- Kommt für 10-15-Min-Sessions, mehrmals täglich
-- Free-to-Play akzeptiert, kauft selten (2-3× Jahr)
-- ARPPU-Ziel: 10-20 EUR/Jahr
+**Persona B: "Der Casual-Mobile-Gamer" (~30 %)**
+- Alter: 18-40. Kurze Sessions (Daily-Challenge, Daily-Race, Quick-Play, Lucky-Spin).
+- Free-to-Play, kauft selten. Liga + Battle Pass als Bindung.
 
-**Persona C: "Der Streamer/Content-Creator" (15 %)**
-- Alter: 20-30
-- Twitch/YouTube/TikTok-Inhalte produziert
-- Sucht eintaktbare PvP-Action für Stream
-- Will Replay-Sharing, Spectator-Mode, Highlights-Tool
-- Indirekter Wert: Marketing-Multiplikator, kein direkter ARPPU
+**Persona C: "Der Completionist/Sammler" (~15 %)**
+- Will alle 72 Achievements, alle Karten Lv-Max, alle Cosmetics, Master-Mode-Sterne, Collection-Album.
 
-**Persona D: "Der Hardcore-Esports-Aspirant" (10 %)**
-- Alter: 16-25
-- Spielt Rocket League, Apex, Valorant kompetitiv
-- Will Ranking-Liga, Tournament-Modus, Skill-Ceiling
-- ARPPU-Ziel: 50-100 EUR/Saison (Founders-Pack, Saison-Skins)
-
-### 2.2 Sekundär-Märkte
-
-- **Family-Co-op**: Eltern spielen mit Kindern Co-op-Story (USK 12, PEGI 7)
-- **Lokale LAN-Parties** (PC-Couch-Coop): 2-4 Spieler an einem Gerät via Gamepads
-- **Mobile-Bus/Bahn-Spieler**: Async-Modi (Daily-Race, Liga) ohne Online-Verbindung
+**Persona D (NEU durch Plattform-Erweiterung): "Der PC/Cross-Save-Spieler" (~5 %)**
+- Spielt mobil unterwegs, am PC (Steam) zu Hause — ein Account, Cross-Save.
+- Interessiert am optionalen Co-op/Versus-Multiplayer.
 
 ---
 
-## 3. Strategische Entscheidungen (Stand 2026-05-26)
+## 3. Strategische Entscheidungen
 
-Diese 8 Weichen wurden bewusst gestellt und bilden das Fundament des Plans:
+Diese Weichen bilden das Fundament des Remakes:
 
 | # | Frage | Entscheidung |
 |---|-------|--------------|
-| 1 | Genre-Vision | **Hybrid:** Action-Core + Meta-Progression (Helden, Talente, Karten 2.0, Welt-Mythologie) |
-| 2 | Multiplayer-Schwerpunkt | **Voll-Stack:** Real-time PvP (Photon Fusion) + Co-op (Photon Realtime) + Async-Liga (Firebase) |
-| 3 | Visueller Stil | **Voll-3D Top-Down** mit URP, VFX Graph, Cinemachine — Mobile + PC |
-| 4 | Hero-Pool zum Launch | **8 Helden** + 1 neuer Hero pro Saison |
-| 5 | Welt-Story-Setting | **Eigene Welt: Sci-Fi/Cyber mit Mech-Bombern** (keine ArcaneKingdom-Verbindung) |
-| 6 | Monetization | **Hybrid F2P:** Battle Pass + Cosmetic-Shop + saisonale Helden via Direct-Kauf (keine Lootboxen) |
-| 7 | Launch-Region | **Soft-Launch DACH → EU → Global** |
-| 8 | Team-Setup | **Full Studio (5+ Personen)** — Budget 500k+, 10-12 Monate bis Launch |
-| 9 | Performance-Target | **60 FPS High-End, 30 FPS Low-End** mit dynamischer Tier-Skalierung |
-| 10 | Cross-Play | **Separate Pools Mobile/PC**, gemeinsamer Account + Cross-Save |
-| 11 | Voice-Acting | **AI-generiert (ElevenLabs)** mit Lizenz-Mitigation und menschlichem QA-Editing |
+| 1 | Grundprinzip | **Treuer Remake:** dasselbe Spiel wie das produktive BomberBlast, nur 3D + besser. Keine Inhalts-Neuerfindung. |
+| 2 | Engine | **Unity 6 + URP** (statt Avalonia 12 + SkiaSharp). 3D-Top-Down statt 2D-prozedural. |
+| 3 | Content-Umfang zum Launch | **100 % Feature-Parität** mit dem Original (Helden, Gegner, Bosse, Karten, Modi, Liga, Dungeon, BattlePass, Achievements, Wirtschaft, Cosmetics). |
+| 4 | Setting/Helden | **Identisch:** 10 bestehende Welt-Themes + Welt-Story-Beats; 5 bestehende Helden. |
+| 5 | Plattformen | **Erweitert:** Android (wie heute) **+ iOS + Steam** mit Cross-Save. |
+| 6 | Monetization | **Wie Original:** kostenlos + Rewarded-Ads, 1,99 EUR Remove-Ads, Gems, Battle Pass, Cosmetics, bestehende IAP-Palette. **Keine** Pay-to-Win-Stats, **keine** Lootboxen. |
+| 7 | Multiplayer | **Optionales Plus:** echte Integration der vorhandenen MP-Foundation (Local-Coop/Versus, später Online via Photon). Single-Player bleibt das Herzstück. |
+| 8 | Visueller Anspruch | **AAA-Mobile-Optik:** 3D-Modelle, dynamische Beleuchtung, VFX Graph, Shader — der "besser"-Teil. |
+| 9 | Performance-Target | **60 FPS High-End, 30 FPS Low-End** mit Hardware-Tier-Skalierung (übernimmt das `HardwareTier`-Konzept des Originals). |
+| 10 | Audio | **Aufgewertet:** kuratierte/eigene Loops + adaptive Layer; optional Voice (deferred, wie im Original abgewählt). |
+| 11 | Launch-Region | **Soft-Launch DACH → EU → Global.** |
 
 ---
 
 ## 4. Erfolgs-KPIs
 
-> **Wichtig:** Wir messen über drei Saisons (~6 Monate post-Launch). Erfolg wird **nicht** am Tag-1-DAU
-> sondern an Retention + Monetization-Konsistenz definiert.
+> Gemessen über drei Saisons (~6 Monate post-Launch). Erfolg = Retention + Monetization-Konsistenz,
+> nicht Tag-1-DAU. Da es ein Remake einer bestehenden Live-App ist, dient deren Telemetrie als Baseline.
 
 ### 4.1 Akquisitions-KPIs (Launch-Window, erste 90 Tage)
 
-| KPI | Soft-Launch DACH (Wochen 1-8) | EU-Launch (Wochen 9-16) | Global (Wochen 17-26) |
-|-----|-------------------------------|--------------------------|------------------------|
+| KPI | Soft-Launch DACH (W 1-8) | EU-Launch (W 9-16) | Global (W 17-26) |
+|-----|--------------------------|---------------------|-------------------|
 | Downloads | 50k | 500k | 3-5M |
 | D1-Retention | ≥ 35 % | ≥ 30 % | ≥ 25 % |
 | D7-Retention | ≥ 15 % | ≥ 12 % | ≥ 10 % |
@@ -142,201 +143,212 @@ Diese 8 Weichen wurden bewusst gestellt und bilden das Fundament des Plans:
 |-----|------|
 | Sessions pro DAU | ≥ 3.5 |
 | Session-Länge median | 8-12 Min |
-| Daily PvP-Matches pro Aktiv-Spieler | ≥ 4 |
-| Daily Co-op-Matches pro Aktiv-Spieler | ≥ 1.5 |
 | Tutorial-Completion (T1-T3) | ≥ 85 % |
-| Erste-Saison-BP-Tier-50-Reach | ≥ 30 % der Premium-Käufer |
-| Clan-Membership-Rate | ≥ 25 % der MAU |
+| Story-Welt-2-Erreichung (D7) | ≥ 60 % |
+| Dungeon-Run-Teilnahme (Spieler ≥ L20) | ≥ 40 % |
+| Liga-Teilnahme (MAU) | ≥ 30 % |
+| Erste-Saison-BP-Tier-30-Reach | ≥ 30 % der Premium-Käufer |
 
 ### 4.3 Monetarisierungs-KPIs
 
 | KPI | Ziel |
 |-----|------|
-| ARPDAU (Average Revenue per Daily Active User) | 0.30-0.50 EUR |
-| Conversion (Free→Pay) | ≥ 4 % |
-| Battle-Pass-Premium-Conversion (pro Saison) | ≥ 12 % der MAU |
-| Subscription "Bomber-Pro" Conversion | ≥ 2 % der MAU (Stretch-Goal) |
-| ARPPU (Average Revenue per Paying User pro Saison) | 25-40 EUR |
-| Saisonaler Founders-Pack-Sell-Through | ≥ 3 % der Launch-Cohort |
+| ARPDAU | 0.10-0.20 EUR (Casual-F2P, werbegestützt — wie Original-Modell) |
+| Remove-Ads-Conversion (1,99 EUR) | ≥ 3 % |
+| Battle-Pass-Premium-Conversion (pro Saison) | ≥ 8 % der MAU |
+| Rewarded-Ad-Opt-In-Rate | ≥ 40 % der Sessions |
+| ARPPU (pro Saison) | 8-15 EUR |
 
 ### 4.4 Technische KPIs
 
 | KPI | Ziel |
 |-----|------|
 | Average Frame-Rate (High-End) | 60 FPS (± 2) |
-| Average Frame-Rate (Low-End) | 30 FPS (± 3) |
-| Match-Latency (P95) | < 80 ms in EU-Region |
-| Anti-Cheat False-Positives | < 0.05 % |
-| Cloud-Save-Sync-Success | ≥ 99.5 % |
-| Server-Downtime (über 90 Tage) | < 0.5 % (~3.5 h) |
+| Average Frame-Rate (Low-End, z.B. Galaxy A50) | 30 FPS (± 3) |
 | App-Größe (Android-AAB) | < 250 MB |
 | App-Größe nach Install (mit Addressables) | < 800 MB |
+| Cloud-Save-Sync-Success | ≥ 99.5 % |
+| Save-Migration alt→neu Erfolgsrate | ≥ 99 % (siehe ARCHITECTURE: Legacy-Save-Import) |
 
 ---
 
-## 5. Was bleibt vom alten BomberBlast?
+## 5. Was bleibt vom Original? (Nahezu alles — 1:1)
 
-> Dem alten BomberBlast danken wir das stabile **Fundament an Domain-Code und Game-Design-Lehrgeld**.
-> Folgendes wird **portiert oder konzeptionell übernommen**.
+> **Grundsatz:** Game-Design, Content und Balancing des produktiven BomberBlast werden **vollständig
+> übernommen**. Die folgenden Inhalte/Systeme sind 1:1 nachzubauen — Details + exakte Werte in
+> [DESIGN.md](DESIGN.md). Alle Zahlen hier sind gegen den Code verifiziert (Stand 2026-05-30).
 
-### 5.1 Direkt portierbare Domain-Logik
+### 5.1 Content (identisch)
 
-- **Determinismus-Foundation**: `DeterministicRandom` (xoshiro256+) + `ReplayCapture` (1 Byte/Tick)
-- **A\*-Pathfinding**: Object-Pooled PriorityQueue + BFS-Safe-Cell-Finder
-- **Combo-System**: Kills innerhalb 2s-Fenster mit Multiplier-Logik
-- **Dungeon-Synergie-Resolver**: 5 Synergien aus 16 Buffs
-- **Level-Layout-Generator**: 11 Layouts + Welt-Pool + Daily-Race-Seed
-- **Liga-Logik**: 5 Tiers × 3 Sub-Tiers + Diamant + NPC-Backfill + Profanity-Filter
-- **Battle-Pass-Logik**: XP-Tier-Berechnung + Free/Premium-Track
-- **Achievement-Definitionen**: 66 Achievements als Templates
-- **Coin/Gem-Overflow-Guard**: Anti-Hack-Pattern
-- **Daily-Challenge-Determinismus**: ISO-Wochen-Seed-Pattern
-- **Lucky-Spin Pity-Counter**: Lootbox-Compliance-konform
-- **Anti-Cheat-Hybridtimer**: TickCount64 + UTC-Datetime gegen Datum-Manipulation
-- **Profanity-Filter**: Unicode-NFKD-Normalisierung + Leetspeak-Wörterbuch
+- **Spielfeld:** 15×10-Grid (`GameGrid.cs`), `CellType` Empty/Indestructible/Destructible/Exit.
+- **5 Helden:** Default, SpeedySam, BrickBoris, TwinTina, LuckyLola — mit ihren exakten Start-Stats,
+  Multiplikatoren und `HeroTrait` (QuickPocket/DemolitionExpert/DoubleDetonation/LuckyDrops) und
+  Unlock-Bedingungen (`HeroDefinition.cs`).
+- **12 Gegner-Typen:** 8 klassische (Ballom, Onil, Doll, Minvo, Kondoria, Ovapi, Pass, Pontan) +
+  Tanker, Ghost, Splitter, Mimic — plus Elite-Flag (1.2× Speed, 2× HP, 3× Punkte) (`EnemyType.cs`).
+- **5 Bosse:** StoneGolem, IceDragon, FireDemon, ShadowMaster, FinalBoss — jedes 10. Level, Boss-Typ
+  rotiert alle 2 Welten, Duo-Encounter Welt 9 (FinalBoss + ShadowMaster) und Welt 10 (2× FinalBoss).
+  8 Boss-Modifier (`BossModifier.cs`).
+- **12 PowerUps:** BombUp, Fire, Speed, Wallpass, Detonator, Bombpass, Flamepass, Mystery (35 s
+  Unverwundbarkeit), Kick, LineBomb, PowerBomb, Skull — plus Cure (Curse-Heilung). Level-basierte
+  Freischaltung via `GetUnlockLevel()` (`PowerUpType.cs`).
+- **14 Bomben-Typen / 13 Karten:** 3 Shop-Bomben (Ice/Fire/Sticky) + 10 Karten (Smoke, Lightning,
+  Gravity, Poison, TimeWarp, Mirror, Vortex, Phantom, Nova, BlackHole) + Standard-Bombe. Rarities
+  exakt aus `CardCatalog.cs`. Verlangsamungs-Stacking multiplikativ.
+- **10 Welten × 10 Level = 100 Story-Level** + **Master-Mode (Reborn)** nach L100. 12 Layout-Typen
+  (`Level.cs`), 8-Layout-Pool pro Welt, 5 Mutatoren ab Welt 6 (`LevelLayoutGenerator.cs`).
+- **Welt-Story-Beats:** 10 Welt-Intros + 9 Welt-Outros (Cliffhanger), one-shot, 6 Sprachen
+  (`IWorldStoryService`). **Das Original hat bereits eine Story — sie wird übernommen und in 3D inszeniert.**
+- **Roguelike-Dungeon:** 16 Buffs (5 Common/5 Rare/2 Epic/4 Legendary), 5 Synergien (Bombardier,
+  Blitzkrieg, Festung, Midas, Elementar — je 2-Buff-Paare), 8 Floor-Modifier (ab Floor 3, 30 %),
+  5 Raum-Typen (Normal/Elite/Treasure/Challenge/Rest), 10×3-Node-Map, 8 permanente Dungeon-Upgrades
+  (DungeonCoins).
+- **Cosmetics:** 32 Trails + 33 Frames + 33 Victories (= 98) + Spieler-Skins (`CustomizationService`).
 
-### 5.2 Strukturell übernommene Mechaniken
+### 5.2 Systeme & Logik (direkt portierbar — Pure-Domain-Code)
 
-- **15×10 Grid** als kanonisches Spielfeld
-- **14 Bomben-Karten** als Module-Slot-System (erweitert auf 22 mit 8 neuen Sci-Fi-Karten)
-- **12 PowerUp-Typen** im Spielfeld
-- **12 Enemy-Typen** + 5 Bosse + Boss-Modifier
-- **10 Welten × 10 Level + Master-Mode** als Story-Spine
-- **Roguelike-Dungeon** (16 Buffs, 5 Synergien, Node-Map à la Slay-the-Spire)
-- **Cosmetic-Pipeline**: 98+ Items (Trails, Frames, Victories, Avatare, Emotes, Sprays)
-- **Accessibility**: Colorblind, HighContrast, UiScale, Subtitles, Reduced-Motion
-- **DSGVO**: Account-Delete + Data-Export
+- **Combo-System:** Kills im 2-s-Fenster, ×2…×10+, Score-Boni, MEGA/ULTRA, Slow-Mo, Window-Extend (`ComboSystem.cs`).
+- **Liga:** 5 Tiers (Bronze→Diamond) × 3 Sub-Tiers (I/II/III; Diamond single), Punktschwellen
+  0/400/900/1600/2500, **perzentil-basierte** Promotion/Relegation (Top 30 % / Bottom 20 %) am
+  Saisonende, 14-Tage-Saisons, NPC-Backfill bei < 20 Spielern, Daily-Race-Leaderboard (Tages-Seed),
+  Profanity-Filter (Unicode-NFKD) (`LeagueService.cs`).
+- **Battle Pass:** 30 Tiers, 30-Tage-Saison, XP-basiert, Free/Premium-Track, 10 Themes
+  (deterministisch aus Saison-Nummer) (`BattlePassService.cs`).
+- **Achievements:** **72 Achievements** in 5 Kategorien (Progress/Mastery/Combat/Skill/Challenge),
+  JSON-Persistenz (`AchievementService.cs`).
+- **Wirtschaft:** Coins + Gems + DungeonCoins. **9 permanente Shop-Upgrades** (`UpgradeType.cs`,
+  Preise 700-17.000 Coins), Card-Crafting (Coin-Sink), Coin/Gem-**Overflow-Guard**
+  (`(long)Balance + amount` Clamp). Dungeon-Trennung (Shop-Upgrades gelten nicht im Dungeon).
+- **Live-Service:** Daily-Reward (7-Tage + Comeback), 3 Daily-Missions (14er-Pool), 5 Weekly-Missions
+  (14er-Pool), 8 Wochen-Events (deterministisch via ISO-Wochen-Seed), saisonale Events
+  (Halloween/Christmas/NewYear/Summer), Lucky-Spin (9 Segmente, Pity-Counter, Drop-Rate-Disclosure),
+  Rotating-Deals, Starter-Pack, First-Purchase-×2.
+- **Determinismus-Bausteine:** `DeterministicRandom` (xoshiro256+, integer-bit-stabil), `ReplayCapture`
+  (1 Byte/Tick), `FixedTimestepRunner` (60 Hz), `IRngProvider` (DI). **Wichtig:** Im Original sind das
+  **isolierte Bausteine, NICHT in den Game-Loop integriert** (Live-Pfad nutzt `System.Random`). Die
+  Integration ist Neu-Arbeit, kein reiner Port (siehe §6 + ARCHITECTURE Determinismus).
+- **Pathfinding:** A*-Pathfinding (Object-Pooled PriorityQueue), BFS-Safe-Cell-Finder, Danger-Zone-Map,
+  Kettenreaktions-Erkennung, AStarBudgetPerFrame.
+- **Anti-Cheat-Patterns:** Hybridtimer (TickCount64 + persistierte UTC) in CoinService/RetentionService/
+  BattlePassService/RewardedAdCooldownTracker; Overflow-Guards; Firebase-Server-Rules mit ServerValue-Timestamp.
+- **Persistenz/DSGVO:** Cloud-Save (Local-First, 35 Keys, `CloudSaveSchemaMigrator` V1→V3), Account-Delete
+  (Art. 17), Data-Export (Art. 20), `PersistenceHealth`-Corruption-Schutz.
+- **Clan-System:** `FirebaseClanService` ist im Original **voll integriert** (Create/Join/Chat mit
+  Rate-Limit, ISO-Leaderboard, deployte RTDB-Rules) — wird übernommen.
 
-### 5.3 Conceptional Lessons-Learned (Was wir vermeiden)
+### 5.3 Accessibility, Audio, Onboarding (übernommen)
 
-Aus dem alten BomberBlast haben wir Patterns gelernt, die wir **bewusst anders machen**:
-
-| Lesson Learned | Konsequenz im neuen Spiel |
-|----------------|---------------------------|
-| GameEngine-God-Class (~5.100 LOC) wurde mühsam in Partials gesplittet | Von Anfang an MonoBehaviour-Components statt einer Mega-Engine |
-| `On`-Prefix-Verzicht bei Events war Avalonia-spezifisch | Unity-Standard: `OnXxxHappened` mit Past-Tense |
-| Custom Icon-System (152 Icons) erforderte AppChecker-Ausnahme | Sprite-Atlases + Asset-Store-Icons (Standard-Workflow) |
-| AdMob-Crashlytics-Konflikt war Wartungs-Hölle | Unity SDKs gehen sauberer mit AdMob+Crashlytics um |
-| Cloud-Save-Schema-Migration v1→v2→v3 war reaktiv | Schema-Versionierung mit Forward-Migration-Pflicht von Tag 1 |
-| Multiplayer war Foundation-only (nie integriert) | Multiplayer als First-Class-Citizen ab MVP |
-| 643 Tests im xUnit-Stil, aber kein Determinismus-Sweep | Determinismus-Replay-Suite als Pflicht-CI-Check |
-| Music + Voice-Mandat "kein Geld" lieferte Kenney-CC0-Schicht | AI-Voice (ElevenLabs) + kuratierte Premium-Libraries (Splice/Soundsnap) |
+- **Accessibility:** Colorblind (Off/Deuteranopia/Protanopia/Tritanopia via ColorMatrix), HighContrast,
+  UiScale (0.75/1.0/1.25/1.5), Subtitles, Colorblind-Hint-Heuristik, Reduced-Effects (`IAccessibilityService`).
+- **Audio:** 7-Kanal-AudioBus, Spatial-Pan, Anti-Repeat-Pool, Cinematic-Stinger, adaptive Music-Boost.
+  Basis Kenney CC0 — in der Neuauflage **aufgewertet** (siehe §6).
+- **Tutorial + Onboarding:** T1 Movement / T2 Bombs / T3 PowerUps (3 Phasen), Feature-Unlock-Choreographie
+  (L10 DailyChallenge, L20 Dungeon, L30 LineBomb, L40 PowerBomb, L50 BossRush, L100 MasterMode),
+  Discovery-System, What's-New, Re-Engagement-Push.
 
 ---
 
-## 6. Was ändert sich fundamental?
+## 6. Was ändert sich? (Nur Engine, Darstellung, Plattform, Plus-Features)
 
-| Achse | Alt (Avalonia/SkiaSharp) | Neu (Unity 6) |
-|-------|--------------------------|---------------|
-| **Engine** | Avalonia 12 + SkiaSharp CPU | Unity 6 + URP 17 + GPU |
-| **Renderer** | 2D-Top-Down prozedural, Code-only-Mandat | 3D-Top-Down mit URP, Lighting, Shadows, VFX Graph |
-| **Spieler-Fokus** | Solo + Async-Liga | Solo + Async + **Real-time PvP 2-4** + **Co-op 2-4** |
-| **Visuals** | Eigene Neon-Icon-Engine (152 Icons) | 3D-Modelle (Blender), VFX Graph, Shader Graph |
-| **Audio** | Kenney CC0 + Android SoundPool | Kuratierte Library + AI-Voice (ElevenLabs) + FMOD/Wwise |
-| **Plattform** | Android only | Android + iOS + Steam (Win/macOS/Linux) |
-| **Netcode** | Firebase REST (async-only) | Photon Fusion (Real-time PvP) + Photon Realtime (Co-op) + Firebase (Meta) |
-| **Persistenz** | sqlite-net-pcl + Cloud-Save v3 | Firebase RTDB als Source-of-Truth + JSON-Fallback |
-| **Tooling** | dotnet build + AppChecker | Unity Cloud Build / GitHub Actions + Addressables |
-| **Tests** | xUnit (643 Tests) | Unity Test Framework EditMode+PlayMode + Determinismus-Replay-Suite |
-| **CI/CD** | GitHub Actions Android-AAB | GitHub Actions Android+iOS+Steam + Cloud Functions Deploy |
-| **Team** | 1 Solo-Entwickler | 5+ Personen Full Studio (siehe ROADMAP) |
-| **Setting** | Generisch (10 Welt-Themes ohne übergeordnete Story) | Cohärente Sci-Fi-Welt mit Bombenmeister-Krieg-Story-Arc |
-| **Monetization** | 1,99 EUR Remove-Ads + Battle Pass 9,99 + Cosmetics | Hybrid-F2P: BP + Cosmetic-Shop + saisonale Hero-Direct-Kauf (keine Lootboxen) |
-| **Voice** | Komplett stumm | Voll-Voice (AI-generiert) DE+EN |
-| **Liga** | NPC-Backfill bei < 20 echten Spielern | Echte Real-time-PvP-Liga + Co-op-Liga + Daily-Race |
-| **Anti-Cheat** | Firebase-Server-Rules + Hybridtimer | Server-Replay-Re-Sim via Cloud Functions + Photon Webhooks + ML-Pattern-Detection (Phase 3+) |
+> Alles unter §5 bleibt inhaltlich gleich. Was sich ändert, ist **wie** es läuft und aussieht — plus
+> echte Erweiterungen, die klar als **NEU/besser** markiert sind.
+
+| Achse | Alt (Avalonia/SkiaSharp) | Neu (Unity 6) | Art der Änderung |
+|-------|--------------------------|---------------|------------------|
+| **Engine** | Avalonia 12 + SkiaSharp CPU | Unity 6 + URP 17 + GPU | Technik |
+| **Renderer** | 2D-Top-Down prozedural (Code-only) | **3D-Top-Down** mit URP, Lighting, Shadows, VFX Graph, Shader Graph | besser (Optik) |
+| **Visual-Styles** | Classic HD + Neon (2D-SkiaSharp) | Dieselben zwei Style-Welten, jetzt als 3D-Material-Sets | besser (Optik) |
+| **Audio** | Kenney CC0 + Android SoundPool | Kuratierte/aufgewertete Loops + adaptive Layer (FMOD optional); Voice weiterhin deferred | besser |
+| **Plattform** | Android only | Android **+ iOS + Steam (Win/macOS/Linux)** | NEU (Reichweite) |
+| **Persistenz** | sqlite-net-pcl (Highscores) + Firebase-RTDB Cloud-Save (`bomberblast-league`) | Firebase RTDB (`bomberblast-arena`) als Source-of-Truth + JSON-Fallback; **Legacy-Save-Import** alt→neu | Technik + Migration |
+| **Determinismus** | Bausteine vorhanden, NICHT integriert; Live-Pfad nutzt `System.Random` | **Integriert:** alle Gameplay-Random über `IRngProvider`, Sim/Render-Trennung, 60-Hz-Fixed-Step | NEU (Voraussetzung für Replay/MP) |
+| **Multiplayer** | Foundation-only (Enums/Snapshots), nie integriert; Clan async integriert | **Optionales Plus:** Local-Coop/Versus integriert; später Online (Photon Realtime Co-op, optional Fusion Versus) | NEU (Plus) |
+| **Tooling** | dotnet build + AppChecker | Unity Cloud Build / GitHub Actions + Addressables | Technik |
+| **Tests** | xUnit (~663 Tests) | Unity Test Framework EditMode + PlayMode + Determinismus-Replay-Suite | Technik |
+| **Icon-System** | Eigenes Neon-Arcade-System (159 Icons) | Sprite-Atlas/3D-UI-Icons (Standard-Unity-Workflow) | Technik |
+
+**Nicht geändert:** Setting, Welten, Story-Beats, Helden, Gegner, Bosse, Karten, PowerUps, Liga-Formel,
+Dungeon-Inhalte, Battle-Pass-Struktur, Achievements, Wirtschaft, Monetization-Modell, Balancing.
 
 ---
 
 ## 7. USPs (Unique Selling Points)
 
-Diese 5 USPs sind unsere Marketing-Anker und Differenzierung gegenüber der Konkurrenz:
+### 7.1 USP 1: "Dein BomberBlast — jetzt in 3D"
+Das vertraute Spiel, komplett in 3D neu gerendert: dynamische Beleuchtung, Schatten, Partikel,
+3D-Bomben-Explosionen. Gleiche Mechanik, massiv aufgewertete Optik. Marketing-Hook: Before/After-Vergleich.
 
-### 7.1 USP 1: "Echtes 4-Spieler-Bomberman in Real-time auf Mobile"
+### 7.2 USP 2: "100 Level Story + Roguelike-Dungeon + Liga"
+Tiefer Solo-Content (10 Welten, Master-Mode, Dungeon-Runs mit 16 Buffs/5 Synergien, 14-Tage-Liga) —
+deutlich mehr als generische Bomberman-Klone. Vom Original bewährt, jetzt schöner präsentiert.
 
-- **Konkurrenz:** Bomb Squad (PC/Mobile) und Super Bomberman R (Konsole). Niemand bietet *kompetitives* Real-time-PvP auf Mobile mit Rollback-Netcode.
-- **Marketing-Hook:** Gameplay-Footage von 4-Spieler-FFA mit < 80 ms Latenz.
+### 7.3 USP 3: "Cross-Save Mobile ↔ PC"
+Erstmals auf iOS und Steam mit gemeinsamem Account + Cross-Save. Im Bus mobil, abends am PC weiter.
+(NEU ggü. dem Android-only-Original.)
 
-### 7.2 USP 2: "Mech-Bomber statt Mensch-Charaktere"
+### 7.4 USP 4: "Werbe-fair & Pay-to-Win-frei"
+Kostenlos spielbar, Rewarded-Ads opt-in, 1,99 EUR Remove-Ads, keine Lootboxen, keine Stat-Käufe —
+das faire Modell des Originals bleibt.
 
-- **Konkurrenz:** Sieht alle aus wie Anime-Kinder-Charaktere (Brawl Stars, Bombsquad). Wir gehen ernster: Mech-Designs mit eigener Personality.
-- **Marketing-Hook:** Concept-Art-Drops auf Twitter/Instagram, jeder Hero kriegt ein Reveal-Video.
-
-### 7.3 USP 3: "Story-Modus mit Welt-Mythologie"
-
-- **Konkurrenz:** Brawl Stars + Bombsquad haben *keinen* echten Story-Modus. Wir bauen 100 Level mit dem Bombenmeister-Krieg-Arc.
-- **Marketing-Hook:** Cinematic-Trailer mit Direktor-Vex-Antagonist-Reveal.
-
-### 7.4 USP 4: "Cross-Save Mobile↔PC mit einem Account"
-
-- **Konkurrenz:** Praktisch keine Mobile-PvP-Spiele mit echtem Cross-Save. Brawl Stars hat nichts auf PC.
-- **Marketing-Hook:** "Pendel-Spiel": Im Bus auf Mobile, abends am PC weiterspielen.
-
-### 7.5 USP 5: "Co-op-Roguelike-Dungeon mit 4 Spielern"
-
-- **Konkurrenz:** Vampire Survivors hat den Single-Player. Niemand hat einen 4-Spieler-Co-op-Bomberman-Roguelike.
-- **Marketing-Hook:** "Bomberman trifft Slay-the-Spire trifft Vampire-Survivors."
+### 7.5 USP 5 (NEU, optional): "Spiel mit Freunden"
+Local-Coop/Versus zum Launch, Online-Co-op später — als Erweiterung des bewährten Solo-Kerns.
 
 ---
 
 ## 8. High-Level-Roadmap
 
-> Detaillierte Sprint-Planung in [ROADMAP.md](ROADMAP.md). Hier nur die Phasen-Übersicht.
+> Detail-Sprints in [ROADMAP.md](ROADMAP.md). Hier nur die Phasen-Übersicht. Da das Game-Design
+> bereits feststeht (= das Original), liegt der Fokus auf Engine-Aufbau, 3D-Art und faktentreuer Portierung.
 
 | Phase | Zeitrahmen | Hauptziel |
 |-------|-----------|-----------|
-| **Phase 0** | Monat 1 | Setup: Unity-Skelett, CI, Firebase, Photon. Domain-Code-Port starten. |
-| **Phase 1** | Monat 2-4 | Single-Player-Core: Grid, 3 Helden, 5 Bomben, 10 Welten, 100 Levels, HUD. |
-| **Phase 2** | Monat 4-6 | Meta-Layer: Economy, Shop, Talent-Bäume, Card-System, BP, Cloud-Save. |
-| **Phase 3** | Monat 6-8 | Async + Co-op-Multiplayer: Liga, Friends, Photon Realtime, Co-op-Dungeon. |
-| **Phase 4** | Monat 8-10 | Real-time PvP: Photon Fusion, Matchmaking, Anti-Cheat, PvP-Liga. |
-| **Phase 5** | Monat 9-11 | Polish: 3D-Art, VFX, AI-Voice DE/EN, Welt-Cutscenes, Cosmetics 40+. |
-| **Phase 6** | Monat 10-12 | Closed Beta DACH (500 Tester), Stress-Test, LiveOps-Tooling. |
-| **Phase 7** | Monat 12 | **Soft-Launch DACH** + Saison 1 ("Aufstand"). |
-| **Phase 8** | Monat 13-14 | **EU-Launch** + Saison 2. iOS-Release. |
-| **Phase 9** | Monat 15-16 | **Global-Launch** + Saison 3. Steam-Demo. |
-| **Phase 10** | Monat 17-18+ | Steam-Full-Launch, Tournament-Modus, Voice-Chat-Rollout |
+| **Phase 0** | Monat 1 | Setup: Unity-Skelett, CI, Firebase, Asmdefs. Pure-Domain-Code-Port (Combo/Dungeon/Liga/Determinismus-Bausteine). |
+| **Phase 1** | Monat 2-4 | Single-Player-Core: 15×10-Grid, 5 Helden, 14 Bomben-Typen, 12 PowerUps, 12 Gegner, 5 Bosse, 100 Level in 10 Welten, Layouts/Mutatoren, HUD. |
+| **Phase 2** | Monat 4-6 | Meta-Layer: Wirtschaft (Coins/Gems/DungeonCoins), 9 Shop-Upgrades, Karten/Deck/Crafting, Battle Pass (30 Tiers), Cloud-Save + Legacy-Import, 72 Achievements, Tutorial. |
+| **Phase 3** | Monat 6-8 | Live-Service + Dungeon: Roguelike-Dungeon (16 Buffs/5 Synergien), Liga (5×3 + Daily-Race), Daily/Weekly/Events, Lucky-Spin, Clan, Master-Mode. |
+| **Phase 4** | Monat 8-9 | Determinismus-Integration + Multiplayer-Foundation: Sim/Render-Trennung, `IRngProvider` überall, Local-Coop/Versus. |
+| **Phase 5** | Monat 8-10 | Polish: 3D-Art aller Welten/Helden/Gegner/Bosse, VFX Graph, adaptive Music, Welt-Story-Cutscenes in 3D, Cosmetics. |
+| **Phase 6** | Monat 10-11 | Closed Beta DACH, Save-Migration-Test mit Alt-Spielern, Performance-Pass (Low-End), LiveOps-Tooling. |
+| **Phase 7** | Monat 12 | **Soft-Launch DACH** + Saison 1. |
+| **Phase 8** | Monat 13-14 | **EU-Launch** + iOS-Release. |
+| **Phase 9** | Monat 15-16 | **Global-Launch** + Steam-Demo. |
+| **Phase 10** | Monat 17-18+ | Steam-Full-Launch; optional: Online-Co-op-Rollout, Versus-PvP-Erweiterung. |
 
-**Realistischer Launch im 12. Monat (Q1 2027), Global Q3 2027.**
+**Realistischer Launch im 12. Monat, Global Q3 2027.** (Online-PvP ist ein optionales Post-Launch-Plus,
+nicht launch-kritisch.)
 
 ---
 
 ## 9. Risiko-Summary
 
-> Vollständiges Risiko-Register in [ROADMAP.md](ROADMAP.md#risiken). Top-5 hier:
+> Vollständiges Register in [ROADMAP.md](ROADMAP.md#risiken). Top-5:
 
 | # | Risiko | Wahrscheinlichkeit | Impact | Mitigation |
 |---|--------|--------------------|--------|------------|
-| 1 | Photon Fusion Determinismus auf Mobile schwierig | Mittel | Hoch | Frühe Prototypen, evtl. Lockstep statt Rollback als Fallback |
-| 2 | 4-Spieler-Mobile-Performance (60 FPS High / 30 FPS Low) | Mittel | Hoch | LOD-System, VFX-Skalierung, dedizierte Performance-Tests pro Sprint |
-| 3 | AI-Voice (ElevenLabs) Lizenz-Risiko + Sterilität | Mittel | Mittel | Backup-Plan: Mensch-Sprecher für Schlüssel-Lines (Heroes, Antagonist) |
-| 4 | Photon-Kosten bei 50k+ MAU explodieren | Niedrig (anfangs) | Hoch (bei Erfolg) | Bei Skala evaluieren: Custom Nakama, Self-hosted-Server, Mirror |
-| 5 | Anti-Cheat-Replay-Re-Sim auf Server-Worker zu langsam | Mittel | Hoch | Domain-Code muss isomorph (gleiche Logik Client+Server). C#-Worker mit .NET 10 |
+| 1 | **Save-Migration alt→neu** verliert Spielstände echter Spieler | Mittel | Hoch | Feld-für-Feld-Mapping der 35 Keys, UID-Bridging `bomberblast-league`→`bomberblast-arena`, ausgiebiger Test mit Alt-Accounts vor Launch (siehe ARCHITECTURE: Legacy-Save-Import) |
+| 2 | **Float-Determinismus** für Replay/Online-MP nicht bit-stabil (IL2CPP/ARM64 ↔ Server) | Hoch | Mittel | Determinismus-Mandat: Fixed-Point/Quantisierung für hash-relevante Zustände; Online-MP ist optional/Post-Launch, daher kein Launch-Blocker; Lockstep statt Rollback als Fallback |
+| 3 | **3D-Performance** auf Low-End (30 FPS, 4-Spieler) | Mittel | Hoch | Hardware-Tier-System (aus Original), LOD, VFX-Skalierung, dedizierte Low-End-Tests pro Sprint |
+| 4 | **Feature-Parität** unvollständig (Original ist sehr umfangreich: ~117 Services) | Mittel | Hoch | Vollständige Parity-Matrix Original-System → Unity-Äquivalent als Pflicht-Checkliste (inkl. Live-Service-Glue: GameTracking/RotatingDeals/VIP/Push) |
+| 5 | **Scope** durch optionalen Multiplayer aufgebläht | Mittel | Mittel | Single-Player + Feature-Parität zuerst; MP strikt als Post-Core-Plus, kein Launch-Gate |
 
 ---
 
 ## 10. Nächste konkrete Schritte
 
 ### Sofort (Woche 1-2)
-
-1. **Stakeholder-Review** dieses Plans (heute) → Feedback einarbeiten
-2. **Firebase-Projekt anlegen** `bomberblast-arena` (Auth + RTDB + Functions + Storage + Crashlytics)
-3. **Photon-Account einrichten** + 3 AppIds: Dev/Stage/Prod für Fusion, Realtime, Chat
-4. **Unity-Projekt anlegen** `src/Apps/BomberBlast.Unity/Unity/` (Unity 6 mit URP)
-5. **GitHub Repo** (oder Monorepo-Branch) anlegen mit `.gitignore` für Unity
-6. **Domain-Code-Port-Sprint planen**: DeterministicRandom + ComboSystem + ReplayCapture als erstes
-7. **Team-Recruiting starten** (siehe [ROADMAP.md](ROADMAP.md#team) für Rollen-Specs)
+1. **Stakeholder-Review** dieses Plans → Feedback einarbeiten.
+2. **Parity-Matrix** erstellen: jedes Original-System (Services/Models/Core) → Unity-Äquivalent + Port-Status.
+3. **Firebase-Projekt** `bomberblast-arena` anlegen (Auth + RTDB + Functions + Storage + Crashlytics) und **Legacy-Save-Import-Pfad** aus `bomberblast-league` spezifizieren.
+4. **Unity-Projekt** `src/Apps/BomberBlast.Unity/Unity/` (Unity 6 + URP) anlegen + `.gitignore` + Git-LFS.
+5. **Pure-Domain-Code-Port-Sprint** planen: `DeterministicRandom`, `ComboSystem`, `ReplayCapture`, `DungeonSynergyResolver`, `LevelLayoutGenerator`, Liga-Logik zuerst (keine Unity-API → 1:1 portierbar).
 
 ### Mittelfrist (Monat 1)
-
-8. **CI/CD-Pipeline** mit game-ci/unity-builder (Android-Build, EditMode-Tests pro PR)
-9. **Concept-Art-Sprint** für 3 MVP-Helden (Nova, Cryo, Titan) + Cyber-Slum-Welt 1
-10. **Erste Boot.unity-Scene** mit VContainer + Splash + Anonymous Auth
-11. **Game-Design-Doc** finalisieren ([DESIGN.md](DESIGN.md) verfeinern mit Feedback)
-12. **Tech-Architektur-Doc** finalisieren ([ARCHITECTURE.md](ARCHITECTURE.md) verfeinern)
+6. **CI/CD** (game-ci/unity-builder, EditMode-Tests + Determinismus-Suite pro PR).
+7. **Concept-Art/3D-Sprint** für die 5 bestehenden Helden + Welt-1-Theme (im bestehenden Neon-Arcade-Stil, jetzt 3D).
+8. **Boot-Scene** mit VContainer + Splash + Anonymous Auth.
+9. **DESIGN.md / ARCHITECTURE.md** mit Feedback finalisieren.
 
 ### Langfrist (Monat 2-12)
-
 Folge [ROADMAP.md](ROADMAP.md).
 
 ---
@@ -345,7 +357,8 @@ Folge [ROADMAP.md](ROADMAP.md).
 
 | Datum | Version | Änderung | Autor |
 |-------|---------|----------|-------|
-| 2026-05-26 | v0.1 | Initial-Version aus 3 Weichen-Antworten | Robert Schneider + Claude |
-| 2026-05-26 | v0.2 | Komplettes Restruktur: PLAN als Master + DESIGN/ARCHITECTURE/ROADMAP/CLAUDE Sub-Files. 8 Weichen-Antworten vertieft (Helden, Welten, Setting, Team, Performance, Cross-Play, Voice, Launch-Region) | Robert Schneider + Claude |
+| 2026-05-26 | v0.1 | Initial-Version | Robert Schneider + Claude |
+| 2026-05-26 | v0.2 | Restruktur in Sub-Files; Sci-Fi-Reinvention (OmniCorp/Mech/PvP-Arena) | Robert Schneider + Claude |
+| 2026-05-30 | **v0.3** | **Grundsatz-Wechsel: treuer 3D-Remake des produktiven BomberBlast (genau dasselbe Spiel, nur 3D + besser). Sci-Fi-Reinvention verworfen. Alle Inhalte/Zahlen gegen den Code verifiziert.** | Robert Schneider + Claude |
 
-> **Status:** Konzept-Phase. Bereit für Team-Recruiting + Setup-Sprint.
+> **Status:** Konzept-Phase v0.3 — treuer Remake. Bereit für Parity-Matrix + Setup-Sprint.

@@ -84,7 +84,10 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         _jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = false,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            // Erzwingt UTC fuer alle DateTime-Felder — sonst deserialisiert STJ "Z"-Strings als
+            // Local und verschiebt .Date-basierte Tages-/Wochen-Resets um den Geraete-UTC-Offset.
+            Converters = { new Helpers.UtcDateTimeJsonConverter() }
         };
     }
 

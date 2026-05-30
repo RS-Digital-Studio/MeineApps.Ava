@@ -8,7 +8,6 @@ Aktivitäts-Tracking, Rezept-Editor und Gamification.
 
 | Aspekt | Wert |
 |--------|------|
-| Version | v2.0.7 (VersionCode 15) |
 | Package-ID | `com.meineapps.fitnessrechner` |
 | Premium | 3,99 EUR `remove_ads` (keine Ads, unbegrenzte Barcode-Scans, permanente Extended Food-DB) |
 | Ad-Placements | `barcode_scan` (+5 Bonus-Scans), `detail_analysis` (7-Tage-Analyse), `tracking_export` (CSV), `extended_food_db` (24h-Zugang) |

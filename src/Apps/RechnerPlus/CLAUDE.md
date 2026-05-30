@@ -4,7 +4,7 @@
 
 Scientific Calculator mit Unit Converter — werbefrei, kostenlos, kein IAP.
 
-**Version:** 2.0.7 (VersionCode 31) | **Package:** com.meineapps.rechnerplus | **Status:** Geschlossener Test
+**Package:** `com.meineapps.rechnerplus`
 
 ---
 
@@ -83,7 +83,7 @@ CalculatorViewModel, ConverterViewModel, SettingsViewModel, MainViewModel → al
 ### Loading-Pipeline
 
 ```
-1. CalcLib-Warm-Up (ExpressionParser.Evaluate("1+1") im MainViewModel-Ctor)
+1. CalcLib-Warm-Up (im MainViewModel-Ctor)
 2. History-Persistenz laden (IHistoryService aus IPreferencesService JSON)
 3. Memory-Persistenz laden (M-Register aus Preferences)
 4. Mindestens 800ms Splash-Anzeige (damit Sweep-Wellen-Animation abläuft)

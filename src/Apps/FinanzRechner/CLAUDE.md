@@ -6,9 +6,7 @@ Alle Charts vollständig in SkiaSharp (kein LiveCharts).
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v2.0.7 |
 | Package-ID | com.meineapps.finanzrechner |
-| Modus | Geschlossener Test |
 | Theme | Smaragd `#10B981` — Living Finance |
 | Ads | Banner + Rewarded |
 | Premium | 3,99 EUR `remove_ads` |
@@ -282,7 +280,7 @@ IFinancialAnalysisService hat keine eigene Persistenz — berechnet aus den ande
 | `TrendLineVisualization.cs` | 2 Spline-Kurven (Einnahmen/Ausgaben) mit Gradient-Füllung |
 | `StackedAreaVisualization.cs` | 2 gestapelte Flächen (CompoundInterest, SavingsPlan, Inflation) |
 | `AmortizationBarVisualization.cs` | Gestapelte Balken (Tilgung+Zinsen pro Jahr) |
-| `BudgetGaugeVisualization.cs` | Halbkreis-Tachometer (Legacy, ersetzt durch SkiaGradientRing) |
+| `BudgetGaugeVisualization.cs` | Halbkreis-Tachometer — nicht mehr verwendet, durch `SkiaGradientRing` ersetzt |
 | `ChartHelper.cs` | Gemeinsame Y-Achsen-Skalierung und Label-Formatierung |
 
 ### Shared-Renderer aus `MeineApps.UI.SkiaSharp`
@@ -413,7 +411,7 @@ laufende Berechnungen ab, statt nur die UI-Update-Phase zu überspringen.
 ### Compiled Bindings + ItemsRepeater
 
 Alle 18 Views haben `x:CompileBindings="True"` — falsche Property-Bindings fliegen beim
-Build auf. ItemsControl wird NICHT auf ItemsRepeater migriert: F-09 (Clear+Add statt
+Build auf. ItemsControl wird NICHT auf ItemsRepeater migriert: Clear+Add (statt
 `new ObservableCollection(...)`) eliminiert das Re-Mount-Problem; bei realistischen
 User-Datenmengen (< 100 Tagesgruppen, < 30 Transaktionen pro Tag) ist Virtualisierung
 overkill und würde StaggerFadeIn/SwipeToReveal-Behaviors brechen.

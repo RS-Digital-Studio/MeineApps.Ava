@@ -1,8 +1,9 @@
-# AppChecker v2.1
+# AppChecker
 
-Automatisches Pruef-Tool fuer alle 9 Avalonia-Apps. **33 Checker-Klassen, 200+ Pruefungen pro App.**
-Modulare Architektur mit `IChecker`-Interface und Datei-Caching via `CheckContext`.
-Vollstaendige MVVM-Pattern-Abdeckung gemaess Architektur in der Haupt-CLAUDE.md.
+Automatisches Pruef-Tool fuer die Avalonia-Apps (aktuell 9, siehe Tabelle "Bekannte Apps").
+**33 Checker-Klassen, 200+ Pruefungen pro App.** Modulare Architektur mit `IChecker`-Interface
+und Datei-Caching via `CheckContext`. Vollstaendige MVVM-Pattern-Abdeckung gemaess Architektur
+in der Haupt-CLAUDE.md.
 
 ## Verwendung
 

@@ -8,7 +8,6 @@ Angebots-Generator, Vorlagen und Einheiten-Umrechnung. Premium-Modell = nur "rem
 | Aspekt | Wert |
 |--------|------|
 | Package-ID | `com.meineapps.handwerkerrechner` |
-| Version | v2.0.7 (VersionCode 22) |
 | Theme | Blueprint Professional (`#3B82F6` Blau) |
 | Premium | 3,99 EUR `remove_ads` (alle 19 Rechner sind frei zugänglich) |
 | Ad-Placements | `material_pdf`, `project_export` (Rewarded) |

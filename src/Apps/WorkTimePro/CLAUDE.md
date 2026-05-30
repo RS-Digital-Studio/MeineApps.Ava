@@ -8,10 +8,8 @@ und Export (PDF/Excel/CSV/ICS).
 
 | Aspekt | Wert |
 |--------|------|
-| Version | 2.0.7 (VersionCode 16) |
 | Package-ID | `com.meineapps.worktimepro` |
-| Status | Geschlossener Test |
-| Modus | Android + Desktop |
+| Plattformen | Android + Desktop |
 
 ---
 
@@ -412,11 +410,11 @@ dotnet run --project "F:\Meine_Apps_Ava\tools\AppChecker" WorkTimePro
 ```
 
 **Vor Android-Release**: `ApplicationVersion` + `ApplicationDisplayVersion` in
-`WorkTimePro.Android.csproj` hochsetzen. Aktuell: VersionCode `16`, DisplayVersion `2.0.7`.
+`WorkTimePro.Android.csproj` hochsetzen.
 
 ---
 
-## Verweise
+## Wichtige Dateien
 
 | Datei | Zweck |
 |-------|-------|

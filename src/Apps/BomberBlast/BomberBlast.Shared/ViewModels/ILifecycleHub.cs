@@ -30,4 +30,16 @@ public interface ILifecycleHub
     /// (App soll NICHT beendet werden).
     /// </summary>
     bool HandleBackPressed();
+
+    /// <summary>
+    /// App geht in den Hintergrund (Android OnPause). Bricht offene modale Dialoge ab, pausiert ein
+    /// laufendes Spiel und stoppt die Musik — sonst liefe Engine/Musik im Hintergrund weiter.
+    /// </summary>
+    void OnAppPaused();
+
+    /// <summary>
+    /// App kommt zurueck in den Vordergrund (Android OnResume). Nimmt die Musik wieder auf, sofern
+    /// der Spieler nicht im Pause-Overlay steht (dort startet erst der Resume-Button die Musik).
+    /// </summary>
+    void OnAppResumed();
 }

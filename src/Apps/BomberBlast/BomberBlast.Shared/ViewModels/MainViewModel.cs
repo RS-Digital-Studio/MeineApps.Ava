@@ -404,6 +404,12 @@ public sealed partial class MainViewModel : ViewModelBase
     /// </summary>
     public bool HandleBackPressed() => _lifecycleHub.HandleBackPressed();
 
+    /// <summary>Android OnPause: Dialoge abbrechen, Spiel pausieren, Musik stoppen.</summary>
+    public void OnAppPaused() => _lifecycleHub.OnAppPaused();
+
+    /// <summary>Android OnResume: Musik wieder aufnehmen (sofern nicht im Game-Pause-Overlay).</summary>
+    public void OnAppResumed() => _lifecycleHub.OnAppResumed();
+
     // ═══════════════════════════════════════════════════════════════════════
     // DIALOGS
     // ═══════════════════════════════════════════════════════════════════════

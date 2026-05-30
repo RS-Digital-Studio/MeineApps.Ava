@@ -7,6 +7,8 @@ namespace BomberBlast.Views;
 
 public partial class HelpView : UserControl
 {
+    private bool _canvasesBound;
+
     public HelpView()
     {
         InitializeComponent();
@@ -15,6 +17,11 @@ public partial class HelpView : UserControl
     protected override void OnLoaded(global::Avalonia.Interactivity.RoutedEventArgs e)
     {
         base.OnLoaded(e);
+
+        // OnLoaded kann bei Re-Attach erneut feuern — PaintSurface nur einmal binden,
+        // sonst stapeln sich die Handler (mehrfaches Rendern + Leak).
+        if (_canvasesBound) return;
+        _canvasesBound = true;
 
         // PowerUp-Icons registrieren
         BindPowerUpCanvas(PuBombUp, PowerUpType.BombUp);

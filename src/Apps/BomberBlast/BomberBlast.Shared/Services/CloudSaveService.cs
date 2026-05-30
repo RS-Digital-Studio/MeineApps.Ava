@@ -186,6 +186,11 @@ public sealed class CloudSaveService : ICloudSaveService
         if (!IsEnabled || !_playGames.IsSignedIn)
             return false;
 
+        // #34: Pull über dasselbe Semaphore serialisieren wie ForceUpload — verhindert Push/Pull-Race
+        // (Pull baut intern via MergeBest + UploadDataAsync auch hoch). Die internen Aufrufer
+        // (SchedulePushAsync/ForceUploadAsync bei Corruption) rufen diese Methode VOR ihrem eigenen
+        // WaitAsync auf, und UploadDataAsync nimmt das Semaphore nicht → keine Re-Entrancy/kein Deadlock.
+        await _syncSemaphore.WaitAsync();
         try
         {
             SetSyncing(true);
@@ -241,6 +246,7 @@ public sealed class CloudSaveService : ICloudSaveService
         finally
         {
             SetSyncing(false);
+            _syncSemaphore.Release();
         }
     }
 
@@ -358,6 +364,8 @@ public sealed class CloudSaveService : ICloudSaveService
         if (!IsEnabled || !_playGames.IsSignedIn)
             return false;
 
+        // #34: Über dasselbe Semaphore serialisieren wie Push/Pull (kein paralleler Cloud-Zugriff).
+        await _syncSemaphore.WaitAsync();
         try
         {
             SetSyncing(true);
@@ -390,6 +398,7 @@ public sealed class CloudSaveService : ICloudSaveService
         finally
         {
             SetSyncing(false);
+            _syncSemaphore.Release();
         }
     }
 

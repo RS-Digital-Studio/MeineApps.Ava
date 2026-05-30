@@ -10,16 +10,22 @@ namespace BomberBlast.ViewModels;
 /// Subscribt auf IBottomTabHub, propagiert Tab-Wechsel-Commands an den Hub
 /// und liefert pro-Tab Brushes (Active = AccentBrush, Inactive = TextMutedBrush).
 /// </summary>
-public sealed partial class BottomTabBarViewModel : ObservableObject
+public sealed partial class BottomTabBarViewModel : ObservableObject, IDisposable
 {
     private readonly IBottomTabHub _hub;
 
     public BottomTabBarViewModel(IBottomTabHub hub)
     {
         _hub = hub;
-        _hub.ActiveTabChanged += _ => RefreshBrushes();
+        // Benannter Handler (statt Lambda) → abmeldbar in Dispose, kein dauerhaftes Anhaengen am
+        // Singleton-Hub. Registrierung ist Singleton (eine BottomTabBar in MainView).
+        _hub.ActiveTabChanged += OnActiveTabChanged;
         RefreshBrushes();
     }
+
+    private void OnActiveTabChanged(BottomTab _) => RefreshBrushes();
+
+    public void Dispose() => _hub.ActiveTabChanged -= OnActiveTabChanged;
 
     // 8 Brushes (4 Icons + 4 Texte) — bei Tab-Wechsel via OnPropertyChanged() aktualisiert.
     [ObservableProperty] private IBrush _homeIconBrush = Brushes.Gray;

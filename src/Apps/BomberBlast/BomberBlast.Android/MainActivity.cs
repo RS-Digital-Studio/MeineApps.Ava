@@ -136,6 +136,9 @@ public class MainActivity : AvaloniaMainActivity
         // Fullscreen/Immersive Mode erneut setzen (kann bei Alt-Tab etc. verloren gehen)
         EnableImmersiveMode();
 
+        // Musik wieder aufnehmen (ausser im Game-Pause-Overlay) — Gegenstueck zu OnPause.
+        _mainVm?.OnAppResumed();
+
         _adMobHelper?.Resume();
 
         //.3 : Re-Engagement-Notifications stornieren — User ist aktiv,
@@ -157,6 +160,10 @@ public class MainActivity : AvaloniaMainActivity
 
     protected override void OnPause()
     {
+        // App geht in den Hintergrund: offene Dialoge abbrechen, laufendes Spiel pausieren,
+        // Musik stoppen (sonst liefe die Engine/Musik im Hintergrund weiter).
+        _mainVm?.OnAppPaused();
+
         _adMobHelper?.Pause();
 
         //.3 : Re-Engagement-Notifications planen.

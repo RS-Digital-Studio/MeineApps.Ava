@@ -33,9 +33,10 @@ public class LifecycleHubTests
         var nav = Substitute.For<INavigationCoordinator>();
         var localization = Substitute.For<ILocalizationService>();
         var ads = Substitute.For<IRewardedAdService>();
+        var sound = Substitute.For<BomberBlast.Services.ISoundService>();
         var logger = Substitute.For<ILogger<LifecycleHub>>();
 
-        var sut = new LifecycleHub(cloudSave, dialog, registry, nav, localization, ads, logger);
+        var sut = new LifecycleHub(cloudSave, dialog, registry, nav, localization, ads, sound, logger);
         return (sut, dialog, registry, nav, ads);
     }
 

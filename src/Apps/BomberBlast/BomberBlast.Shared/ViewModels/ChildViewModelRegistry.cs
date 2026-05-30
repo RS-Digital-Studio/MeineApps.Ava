@@ -154,7 +154,17 @@ public sealed class ChildViewModelRegistry : IChildViewModelRegistry
         => ChildViewModelWiring.Wire(vm, request => NavigationRequested?.Invoke(request), _eventBus);
 
     public GameViewModel EnsureGame()
-        => EnsureLazy(ref _gameVm, _gameVmLazy, nameof(GameVm));
+    {
+        if (_gameVm is { } existing) return existing;
+        var vm = _gameVmLazy.Value;
+        WireCommon(vm);
+        // Tutorial-Skip-Confirm: ohne dieses Wiring blieb GameViewModel.ConfirmationRequested null →
+        // der Skip-Dialog wurde nie gezeigt, das Tutorial wurde stillschweigend übersprungen.
+        vm.ConfirmationRequested += (t, m, a, c) => _dialogPresenter.ShowConfirmAsync(t, m, a, c);
+        _gameVm = vm;
+        VmInstantiated?.Invoke(nameof(GameVm));
+        return vm;
+    }
 
     public ShopViewModel EnsureShop()
     {

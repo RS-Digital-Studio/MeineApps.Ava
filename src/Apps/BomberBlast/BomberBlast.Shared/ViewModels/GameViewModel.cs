@@ -219,6 +219,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
             {
                 _lastPreloadedWorldIndex = worldIndex;
                 _preloadCts?.Cancel();
+                _preloadCts?.Dispose();  // altes CTS freigeben vor Neuzuweisung
                 _preloadCts = new CancellationTokenSource();
                 var token = _preloadCts.Token;
                 _ = Task.Run(async () =>
@@ -302,6 +303,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _gameEngine.LevelComplete -= HandleLevelComplete;
         _gameEngine.CoinsEarned -= HandleCoinsEarned;
         _gameEngine.PauseRequested -= HandlePauseRequested;
+        _gameEngine.TutorialSkipRequested -= HandleTutorialSkipRequested;
     }
 
     private async Task InitializeGameAsync()
@@ -815,21 +817,35 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
             return;
         }
 
-        string title = _localizationService?.GetString("SkipTutorialTitle") ?? "Tutorial überspringen?";
-        string message = _localizationService?.GetString("SkipTutorialMessage")
-            ?? "Das Tutorial erklärt das Bomb-Timing und die Bewegung. Möchtest du es wirklich überspringen?";
-        string keepLabel = _localizationService?.GetString("SkipTutorialKeep") ?? "Tutorial behalten";
-        string confirmLabel = _localizationService?.GetString("SkipTutorialConfirm") ?? "Überspringen";
-
-        var task = Dispatcher.UIThread.InvokeAsync(
-            () => ConfirmationRequested.Invoke(title, message, keepLabel, confirmLabel));
-        bool keep = await task;
-
-        // Logik: Accept-Button = "Behalten" (Default-Schutz für Genre-Neulinge).
-        // !keep = "Überspringen" wurde gewählt.
-        if (!keep)
+        // try/catch ist Pflicht: async void + ein await, der bei App-Backgrounding (DialogPresenter
+        // bricht offene Confirms via TrySetCanceled ab) eine OperationCanceledException wirft —
+        // ungefangen waere das ein unhandled Exception/Crash.
+        try
         {
-            _gameEngine.ConfirmTutorialSkip();
+            string title = _localizationService?.GetString("SkipTutorialTitle") ?? "Tutorial überspringen?";
+            string message = _localizationService?.GetString("SkipTutorialMessage")
+                ?? "Das Tutorial erklärt das Bomb-Timing und die Bewegung. Möchtest du es wirklich überspringen?";
+            string keepLabel = _localizationService?.GetString("SkipTutorialKeep") ?? "Tutorial behalten";
+            string confirmLabel = _localizationService?.GetString("SkipTutorialConfirm") ?? "Überspringen";
+
+            var task = Dispatcher.UIThread.InvokeAsync(
+                () => ConfirmationRequested.Invoke(title, message, keepLabel, confirmLabel));
+            bool keep = await task;
+
+            // Logik: Accept-Button = "Behalten" (Default-Schutz für Genre-Neulinge).
+            // !keep = "Überspringen" wurde gewählt.
+            if (!keep)
+            {
+                _gameEngine.ConfirmTutorialSkip();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Dialog bei App-Backgrounding abgebrochen → Tutorial bleibt aktiv.
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "HandleTutorialSkipRequested fehlgeschlagen");
         }
     }
 
@@ -941,6 +957,11 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _gameEngine.LevelComplete -= HandleLevelComplete;
         _gameEngine.CoinsEarned -= HandleCoinsEarned;
         _gameEngine.PauseRequested -= HandlePauseRequested;
+        _gameEngine.TutorialSkipRequested -= HandleTutorialSkipRequested;
+
+        _preloadCts?.Cancel();
+        _preloadCts?.Dispose();
+        _preloadCts = null;
 
         _disposed = true;
         GC.SuppressFinalize(this);

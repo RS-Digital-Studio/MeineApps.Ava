@@ -571,6 +571,7 @@ public partial class App : Application
             sp.GetRequiredService<BomberBlast.Navigation.INavigationCoordinator>(),
             sp.GetRequiredService<MeineApps.Core.Ava.Localization.ILocalizationService>(),
             sp.GetRequiredService<MeineApps.Core.Premium.Ava.Services.IRewardedAdService>(),
+            sp.GetRequiredService<BomberBlast.Services.ISoundService>(),
             sp.GetRequiredService<ILogger<BomberBlast.ViewModels.LifecycleHub>>()));
 
         services.AddSingleton<MainViewModel>();
@@ -604,6 +605,8 @@ public partial class App : Application
         //.3 : What's-New-Modal — Transient (wird bei Bedarf neu erstellt).
         services.AddTransient<WhatsNewViewModel>();
         //.1 : BottomTabBar-VM — Transient (View hat eigene Instanz).
-        services.AddTransient<BottomTabBarViewModel>();
+        // Singleton: es gibt genau eine BottomTabBar (MainView), die VM abonniert den Singleton-Hub.
+        // Transient hätte bei mehrfacher Auflösung leakende Hub-Subscriptions erzeugt.
+        services.AddSingleton<BottomTabBarViewModel>();
     }
 }

@@ -881,5 +881,11 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     {
         _coinService.BalanceChanged -= OnBalanceChanged;
         _gemService.BalanceChanged -= OnBalanceChanged;
+
+        // Pulse-DispatcherTimer stoppen + Tick abmelden (sonst halten die Timer das VM am Leben).
+        _coinsPulseTimer?.Stop();
+        if (_coinsPulseTimer != null) _coinsPulseTimer.Tick -= OnCoinsPulseTick;
+        _gemsPulseTimer?.Stop();
+        if (_gemsPulseTimer != null) _gemsPulseTimer.Tick -= OnGemsPulseTick;
     }
 }

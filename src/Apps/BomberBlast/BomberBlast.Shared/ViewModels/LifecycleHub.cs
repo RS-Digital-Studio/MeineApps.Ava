@@ -24,13 +24,14 @@ namespace BomberBlast.ViewModels;
 ///       zeigt einen erklaerenden Alert.</item>
 /// </list>
 /// </summary>
-public sealed class LifecycleHub : ILifecycleHub
+public sealed class LifecycleHub : ILifecycleHub, IDisposable
 {
     private readonly IDialogPresenter _dialogPresenter;
     private readonly IChildViewModelRegistry _registry;
     private readonly INavigationCoordinator _navigationCoordinator;
     private readonly ILocalizationService _localization;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly ISoundService _soundService;
     private readonly ILogger<LifecycleHub> _logger;
     private readonly BackPressHelper _backPressHelper = new();
 
@@ -45,6 +46,7 @@ public sealed class LifecycleHub : ILifecycleHub
         INavigationCoordinator navigationCoordinator,
         ILocalizationService localization,
         IRewardedAdService rewardedAdService,
+        ISoundService soundService,
         ILogger<LifecycleHub> logger)
     {
         _dialogPresenter = dialogPresenter;
@@ -52,6 +54,7 @@ public sealed class LifecycleHub : ILifecycleHub
         _navigationCoordinator = navigationCoordinator;
         _localization = localization;
         _rewardedAdService = rewardedAdService;
+        _soundService = soundService;
         _logger = logger;
 
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
@@ -142,4 +145,37 @@ public sealed class LifecycleHub : ILifecycleHub
             AppStrings.AdVideoNotAvailableTitle,
             AppStrings.AdVideoNotAvailableMessage,
             AppStrings.OK);
+
+    /// <inheritdoc />
+    public void OnAppPaused()
+    {
+        // Offene modale Dialoge abbrechen (sonst macht ein Awaiter nach Resume mit "false" weiter).
+        _dialogPresenter.CancelAllDialogsOnBackground();
+
+        // Laufendes Spiel pausieren (GameEngine.Pause stoppt Game-Loop + Spiel-Musik).
+        var gameVm = _registry.GameVm;
+        if (gameVm is { State: GameState.Playing, IsPaused: false })
+            gameVm.PauseCommand.Execute(null);
+
+        // Restliche Musik (z.B. Menue) explizit stoppen — sonst liefe sie im Hintergrund weiter.
+        _soundService.PauseMusic();
+    }
+
+    /// <inheritdoc />
+    public void OnAppResumed()
+    {
+        // Musik NICHT wieder aufnehmen, wenn der Spieler im Game-Pause-Overlay steht — dort startet
+        // erst der Resume-Button (GameEngine.Resume) die Musik. Sonst (Menue etc.) wieder aufnehmen.
+        var gameVm = _registry.GameVm;
+        if (gameVm is { IsPaused: true })
+            return;
+
+        _soundService.ResumeMusic();
+    }
+
+    public void Dispose()
+    {
+        // Service-Event abmelden (Singleton-Lifetime, aber sauberes Unsubscribe).
+        _rewardedAdService.AdUnavailable -= OnAdUnavailable;
+    }
 }

@@ -21,6 +21,10 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
     private readonly IWarehouseService _warehouse;
     private readonly ICraftingService _crafting;
     private readonly IAnalyticsService? _analytics;
+    // Serialisiert Spende + Reward-Claim gegen parallele Aufrufe (Material-Doppelverbrauch /
+    // Doppel-Bonus). HashSet (ClaimedGuildProjectIds) ist nicht thread-safe, ConfigureAwait(false)
+    // legt Continuations auf den ThreadPool.
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     private const string MegaHmacSalt = "guild-mega-project-v1";
 
@@ -98,6 +102,19 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
         if (string.IsNullOrEmpty(CurrentGuildId)) return false;
         if (string.IsNullOrEmpty(_firebase.PlayerId)) return false;
 
+        // Serialisiert Spende + Auto-Claim gegen parallele Aufrufe (Doppel-Tap aus mehreren
+        // UI-Stellen / Polling): sonst lesen zwei Spenden denselben alreadyDonated-Stand und
+        // reduzieren beide das lokale Inventar, waehrend die Contribution nur einmal zaehlt.
+        if (!await _semaphore.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false)) return false;
+        try
+        {
+            return await DonateCoreAsync(productId, count).ConfigureAwait(false);
+        }
+        finally { _semaphore.Release(); }
+    }
+
+    private async Task<bool> DonateCoreAsync(string productId, int count)
+    {
         var project = await GetActiveProjectAsync().ConfigureAwait(false);
         if (project == null || project.IsCompleted) return false;
 
@@ -186,8 +203,9 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
         if (isNowComplete)
         {
             ProjectCompleted?.Invoke(project);
-            // Auto-Claim fuer den Spender der das Projekt abschliesst
-            await TryClaimRewardAsync().ConfigureAwait(false);
+            // Auto-Claim fuer den Spender der das Projekt abschliesst — ungelockte interne Variante,
+            // da DonateCoreAsync den Semaphore bereits haelt (TryClaimRewardAsync wuerde deadlocken).
+            ClaimRewardInternal(project);
         }
 
         return true;
@@ -196,9 +214,22 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
     public async Task<bool> TryClaimRewardAsync()
     {
         if (string.IsNullOrEmpty(CurrentGuildId)) return false;
-        var project = await GetActiveProjectAsync().ConfigureAwait(false);
-        if (project == null || !project.IsCompleted) return false;
+        if (!await _semaphore.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false)) return false;
+        try
+        {
+            var project = await GetActiveProjectAsync().ConfigureAwait(false);
+            if (project == null || !project.IsCompleted) return false;
+            return ClaimRewardInternal(project);
+        }
+        finally { _semaphore.Release(); }
+    }
 
+    /// <summary>
+    /// Vergibt den permanenten Mega-Projekt-Bonus genau einmal pro Spieler+Projekt. MUSS unter dem
+    /// _semaphore aufgerufen werden (Contains+Add auf dem nicht-thread-safen HashSet ist sonst racy).
+    /// </summary>
+    private bool ClaimRewardInternal(GuildMegaProject project)
+    {
         var state = _gameStateService.State;
         // Idempotenz: pro Spieler und Projekt nur einmal claimen.
         if (state.ClaimedGuildProjectIds.Contains(project.ProjectId)) return false;

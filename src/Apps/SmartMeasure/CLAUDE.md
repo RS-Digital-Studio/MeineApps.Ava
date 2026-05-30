@@ -7,8 +7,7 @@ GeoJSON, DXF, KMZ, CSV, PDF. Nicht im Play Store.
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v1.2.0 (UX-Refactoring AR-Modus) |
-| Modus | Desktop (Entwicklung/Mock) + Android (Samsung Galaxy S25 Ultra) |
+| Plattformen | Desktop (Entwicklung/Mock) + Android (Samsung Galaxy S25 Ultra) |
 | Min SDK | 26 (Android 8.0) |
 | ARCore-Paket | Vapolia.Google.ARCore 1.47.1 |
 | BLE-Paket | InTheHand.BluetoothLE |

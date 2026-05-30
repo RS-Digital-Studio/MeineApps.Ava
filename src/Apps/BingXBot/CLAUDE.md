@@ -6,8 +6,7 @@ USDT-margined Perpetual Futures (Crypto + TradFi-Perps via NC-Prefix).
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v1.8.0 |
-| Modus | Pi-Server Production + Desktop/Android Remote-Clients |
+| Topologie | Pi-Server (Engine, 24/7) + Desktop/Android Remote-Clients |
 | Strategie | SK-System (Sequenz-Konzept nach Stefan Kassing, Multi-TF Standalone) |
 | Exchange | BingX Perpetual Futures (USDT-M) |
 | Pi-Server | `steuerung@raspberrypi.local` (systemd-Service `bingxbot.service`) |

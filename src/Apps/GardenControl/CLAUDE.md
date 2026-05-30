@@ -7,7 +7,6 @@ plus Android- und Desktop-App für mobile Steuerung. Solar-betrieben (kein Strom
 
 | Aspekt | Wert |
 |--------|------|
-| Version | v1.0.0 (VersionCode 1) |
 | Pi-Hostname | `gardencontrol.local` |
 | Server-URL | `http://<pi-ip>:5000` |
 | Theme | Sattes Grün `#2E7D32` + Wasser-Blau `#1E88E5` + Erd-Braun `#8D6E63` |

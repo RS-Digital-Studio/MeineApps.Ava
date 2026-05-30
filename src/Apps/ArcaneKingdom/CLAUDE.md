@@ -6,7 +6,7 @@ anderen Apps bewusst machen.
 
 | Aspekt | Wert |
 |--------|------|
-| Status | Konzept-Phase abgeschlossen — Pre-MVP (Stand 2026-05-25, Designplan v4 eingearbeitet) |
+| Status | Pre-MVP (Konzept-Phase abgeschlossen) |
 | Tech | Unity 6 (6000.4.8f1) + C# (.NET Standard 2.1) |
 | Plattform | Android (Phase 1), iOS (Phase 2 ab Monat 26+) |
 | Render-Pipeline | URP 17.x (optional aktivieren, siehe SETUP.md) |
@@ -14,14 +14,14 @@ anderen Apps bewusst machen.
 | Genre | TCG + RPG, Free-to-Play |
 | Karten-Pool (Launch) | 131 Standard + 27 Oekosystem (Event/Premium/Sternkarten/Prestige) = 158 Karten |
 | Welten | 10 Welten (Elderwald → Drachenfeste) mit Story-Mythologie |
-| Farbpalette | Royal-Purple #6B46C1 + Gold #F59E0B (Brand-Referenz, finalisiert v5.2) |
+| Farbpalette | Royal-Purple #6B46C1 + Gold #F59E0B (Brand-Referenz) |
 
 > Pflichtlektuere VOR Aenderungen: [DESIGN.md](DESIGN.md) (v6, Quelle der Wahrheit) und [ARCHITECTURE.md](ARCHITECTURE.md).
 > Generische Repo-Konventionen siehe [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
 ---
 
-## Designplan-Quellen (Stand 2026-05-25)
+## Designplan-Quellen
 
 Die aktuelle Spec ist die Kombination aus **Spielplan v5 FINAL** (Master, Maerz 2026)
 und **Arcane Legends Designplan v1** (Karten-Details). Der Code geht **ueber** die
@@ -268,7 +268,7 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 
 ## Roadmap-Status
 
-**Aktuell (Stand 2026-05-25, Iteration 8 — Spielplan v5 FINAL eingearbeitet):**
+**Bereits implementiert (Domain + UI):**
 
 - [x] **Domain v5**: NodeDifficulty (Classic/Amateur/Profi/Gott), AccountUnlocks (LV1-150),
       RuneSlotUnlock/DeckSlotUnlock, DeckValidator (Cost-Cap 200 + Legendary/Epic-Limits),
@@ -283,7 +283,7 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 - [x] **LoginController.RunLoginAsync(email, password)** fuer echten E-Mail-Login.
 - [x] **Hub-Cards-Filter** vollstaendig (6 Elemente inkl. Erde, 6 Seltenheiten inkl. Mythisch)
 
-**Aus Iteration 7 (Designplan v4) erhalten:**
+**Grundgerüst (etabliert):**
 
 - [x] App-Ordner angelegt + 6 Unity-Scenes (Boot/Hub/Battle/Arena/Guild/GuildWorld)
 - [x] **GDD v6.0** (basiert auf Designplan v4, ersetzt v5.4)

@@ -5,9 +5,7 @@ Challenges und Schichtplan-Rechner. Komplett werbefrei, kein Premium, kein Meine
 
 | Aspekt | Wert |
 |--------|------|
-| Version | v2.0.7 |
 | Package-ID | com.meineapps.zeitmanager |
-| Modus | Geschlossener Test |
 | Preis | Kostenlos (werbefrei) |
 | Tabs | Timer, Stoppuhr, Pomodoro, Wecker/Schichtplan, Settings |
 

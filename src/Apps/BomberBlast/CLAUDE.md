@@ -6,9 +6,7 @@ eigenes Icon-System, AI-Pathfinding, Roguelike-Dungeon-Modus und Liga-System.
 
 | Aspekt | Wert |
 |--------|------|
-| Version | v2.0.62 (VersionCode 72) |
 | Package-ID | org.rsdigital.bomberblast |
-| Status | Produktion |
 | Premium-Modell | 1,99 EUR `remove_ads` |
 | Mandat | Code-only / CC0 / prozedural — keine externen Audio-/Art-Pipelines, keine Voice-Talents |
 
@@ -980,7 +978,7 @@ CTA=0.5, Success=0.3, Danger=0.7, Gold=0.6, Secondary=0.2-0.3
 
 ---
 
-## Game-Juice-Patterns (-3 )
+## Game-Juice-Patterns
 
 ### Welt-Themed Bomb-FX 
 

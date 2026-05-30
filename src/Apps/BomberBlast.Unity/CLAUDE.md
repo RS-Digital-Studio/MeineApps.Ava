@@ -2,7 +2,6 @@
 
 > Pflichtlektüre vor jeder Code-Änderung am Unity-Projekt. Komplementär zu
 > [PLAN.md](PLAN.md), [DESIGN.md](DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md), [ROADMAP.md](ROADMAP.md), [ASSETS_AI.md](ASSETS_AI.md).
-> Stand 2026-05-26.
 >
 > Diese Datei wächst mit dem Projekt — jede Erkenntnis ("Gotcha"), die mehr als einmal aufgetreten ist, gehört hier dokumentiert.
 
@@ -961,11 +960,3 @@ Bei Verstoß: **Sofort korrigieren oder User informieren**. Nicht stillschweigen
 - Firebase Unity SDK — `https://firebase.google.com/docs/unity/setup`
 - DOTween — `http://dotween.demigiant.com/documentation.php`
 - Cinemachine 3 — `https://docs.unity3d.com/Packages/com.unity.cinemachine@3.0/`
-
----
-
-## Änderungslog (CLAUDE.md)
-
-| Datum | Version | Änderung | Autor |
-|-------|---------|----------|-------|
-| 2026-05-26 | v0.1 | Initial-CLAUDE.md mit Conventions, Stolperfallen, Agent-Triggers | Robert Schneider + Claude |

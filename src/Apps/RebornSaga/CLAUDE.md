@@ -5,9 +5,7 @@ Spielbereich — alles Szenen, Overlays und UI werden direkt auf SKCanvasView ge
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v1.0.0 |
 | Package-ID | org.rsdigital.rebornsaga |
-| Modus | In Entwicklung (Android-Test ausstehend) |
 | Farbpalette | "Isekai System Blue" — #4A90D9 Primary, #9B59B6 Lila, #F39C12 Gold |
 | Firebase | `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69,2 MB) |
 

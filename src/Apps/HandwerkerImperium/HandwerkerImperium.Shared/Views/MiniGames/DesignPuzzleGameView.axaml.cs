@@ -29,6 +29,9 @@ public partial class DesignPuzzleGameView : UserControl
     public DesignPuzzleGameView()
     {
         InitializeComponent();
+        // _renderLoop muss vor den Event-Handlern initialisiert sein
+        // (sealed class — uninitialisiert wuerde StartRenderLoop()/_renderLoop.IsActive eine NRE werfen)
+        _renderLoop = new Helpers.FrameClockRenderLoop(() => _gameCanvas?.InvalidateSurface(), Graphics.FpsProfile.MiniGame());
         DataContextChanged += OnDataContextChanged;
 
         // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)

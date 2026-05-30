@@ -107,6 +107,7 @@ public sealed class ProgressionFeedbackCoordinator : IProgressionFeedbackCoordin
         _prestigeService.MilestoneReached += OnPrestigeMilestoneReached;
         _workerService.WorkerLevelUp += OnWorkerLevelUp;
         _workerService.InternReadyForPromotion += OnInternReadyForPromotion;
+        _gameStateService.StateLoaded += OnStateLoadedRetriggerInterns;
         if (_rebirthService != null)
             _rebirthService.RebirthCompleted += OnRebirthCompleted;
     }
@@ -397,6 +398,28 @@ public sealed class ProgressionFeedbackCoordinator : IProgressionFeedbackCoordin
         });
     }
 
+    /// <summary>
+    /// Bietet beim Laden eines Spielstands alle Praktikanten erneut zur Promotion an, die schon
+    /// auf die Schwelle gelaufen sind (<see cref="Worker.InternAwaitingPromotion"/>). Das
+    /// InternReadyForPromotion-Event feuert nur einmal beim Erreichen — wird der Dialog verpasst
+    /// (App-Kill/Crash/Navigation), bliebe der Praktikant sonst dauerhaft als F-Tier haengen.
+    /// Selbstbegrenzend: Nach Promote/Decline ist das Flag false, der Re-Trigger feuert nicht erneut.
+    /// </summary>
+    private void OnStateLoadedRetriggerInterns(object? sender, EventArgs e)
+    {
+        var workshops = _gameStateService.State.Workshops;
+        for (int w = 0; w < workshops.Count; w++)
+        {
+            var workers = workshops[w].Workers;
+            for (int i = 0; i < workers.Count; i++)
+            {
+                var worker = workers[i];
+                if (worker.IsIntern && worker.InternAwaitingPromotion)
+                    OnInternReadyForPromotion(this, worker);
+            }
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOP
     // ═══════════════════════════════════════════════════════════════════════
@@ -540,6 +563,7 @@ public sealed class ProgressionFeedbackCoordinator : IProgressionFeedbackCoordin
             _prestigeService.MilestoneReached -= OnPrestigeMilestoneReached;
             _workerService.WorkerLevelUp -= OnWorkerLevelUp;
             _workerService.InternReadyForPromotion -= OnInternReadyForPromotion;
+            _gameStateService.StateLoaded -= OnStateLoadedRetriggerInterns;
             if (_rebirthService != null)
                 _rebirthService.RebirthCompleted -= OnRebirthCompleted;
         }

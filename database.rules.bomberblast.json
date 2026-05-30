@@ -117,7 +117,6 @@
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 32"
         },
         "weeklyGoalProgress": {
-          "//": "Cap deutlich unter dem alten 1e9 (verhindert absurde Werte). Wöchentlicher Reset auf 0 bleibt erlaubt, daher keine strikte Monotonie.",
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
         },
         "weeklyGoalTarget": {
@@ -181,7 +180,6 @@
     "clan_codes": {
       ".read": "auth != null",
       "$code": {
-        "//": "Create-only: ein einmal gesetzter Code darf nicht auf eine andere clan_id umgebogen werden (Join-Hijack-Schutz).",
         ".write": "auth != null && (!data.exists() || data.child('clan_id').val() == newData.child('clan_id').val())",
         ".validate": "newData.hasChild('clan_id')",
         "clan_id": {
@@ -202,7 +200,6 @@
           ".write": "auth != null",
           ".validate": "newData.hasChildren(['clanId', 'name', 'weeklyGoalProgress'])",
           "weeklyGoalProgress": {
-            "//": "Pro $weekId eigener Pfad (kein Reset) → monoton steigend + Cap deutlich unter 1e9.",
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && (!data.exists() || newData.val() >= data.val())"
           },
           "name": {

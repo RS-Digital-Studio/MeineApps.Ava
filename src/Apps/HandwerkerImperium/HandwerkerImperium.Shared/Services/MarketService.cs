@@ -208,7 +208,10 @@ public sealed class MarketService : IMarketService
         var state = _gameState.State;
         string playerKey = state.PlayerGuid ?? "anonymous";
         int dayIndex = (int)(utc - new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalDays;
-        int seed = playerKey.GetHashCode() ^ dayIndex.GetHashCode() ^ productId.GetHashCode();
+        // StableHash statt string.GetHashCode() — Letzteres ist pro Prozess randomisiert und
+        // wuerde den Preis bei JEDEM App-Neustart auf eine andere Sinus-Phase springen lassen
+        // (verletzt die zugesicherte Tages-Determinismus-Eigenschaft des Marktes).
+        int seed = Helpers.StableHash.Compute(playerKey) ^ dayIndex ^ Helpers.StableHash.Compute(productId);
 
         // Phase-Offset aus dem Seed (deterministisch pro Tag/Material/Spieler)
         var rng = new Random(seed);

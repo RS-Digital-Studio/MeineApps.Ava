@@ -134,6 +134,8 @@ Der native Android-Banner sitzt als `FrameLayout`-Overlay über Avalonia, **nich
 - Standard: `GravityFlags.Bottom | GravityFlags.CenterHorizontal` mit `BottomMargin = tabBarHeightDp * density`
 - Top-Position: `IAdService.SetBannerPosition(true)` → `GravityFlags.Top` (z.B. BomberBlast GameView)
 - `AdInsetListener` passt Margin für Edge-to-Edge Navigation-Bar-Insets an
+- **Jeder `MainViewModel` muss `_adService.ShowBanner()` explizit aufrufen** — der `AdMobHelper`
+  verschluckt Fehler still, ohne den Aufruf erscheint kein Banner.
 
 Tab-Bar-Höhen für `tabBarHeightDp`-Parameter:
 
@@ -265,7 +267,7 @@ Android-Java-Binding-Eigenheit: `PrepareAsync()` ist void, kein `Task`. Stattdes
 
 ## Verweise
 
-- AdMob-Gotchas (generisch) → `F:\Meine_Apps_Ava\CLAUDE.md` Abschnitt "AdMob"
-- Billing-Gotchas (generisch) → `F:\Meine_Apps_Ava\CLAUDE.md` Abschnitt "Google Play Billing"
+- AdMob-, Billing- und Ad-Banner-Layout-Gotchas: Abschnitt "Kritische Gotchas" oben in dieser Datei (kanonische Heimat)
 - App-spezifische Premium-Konfiguration → jeweilige `src/Apps/{App}/CLAUDE.md`
+- Architektur, DI-/Factory-Pattern, Build-Konfiguration → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 - NuGet-Versionen → `Directory.Packages.props`

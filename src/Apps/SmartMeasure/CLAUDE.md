@@ -13,7 +13,7 @@ GeoJSON, DXF, KMZ, CSV, PDF. Nicht im Play Store.
 | ARCore-Paket | Vapolia.Google.ARCore 1.47.1 |
 | BLE-Paket | InTheHand.BluetoothLE |
 
-Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
 ---
 
@@ -551,4 +551,4 @@ Verbleibende Bonus-/Nice-to-Have-Punkte aus dem Plan:
 
 - Hardware-Detail: `~/.claude/projects/F--Meine-Apps-Ava/memory/smartmeasure.md`
 - Globale Conventions (DI, MVVM, DateTime, Thread-Safety): `F:\Meine_Apps_Ava\CLAUDE.md`
-- Globale Gotchas (SkiaSharp, Avalonia, Android): `F:\Meine_Apps_Ava\CLAUDE.md` Troubleshooting
+- Globale Gotchas SkiaSharp/Rendering: `src/UI/MeineApps.UI/CLAUDE.md`; Avalonia/MVVM/Android-Framework-Fallstricke: `src/Libraries/MeineApps.Core.Ava/CLAUDE.md` (Abschnitt "Framework-Fallstricke")

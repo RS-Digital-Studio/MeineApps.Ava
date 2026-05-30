@@ -1,6 +1,6 @@
 # GardenControl — Bewässerungssteuerung
 
-> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Architektur siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 Automatische Gartenbewässerung mit Raspberry Pi 5 + 7"-Touchscreen als Kiosk-Station,
 plus Android- und Desktop-App für mobile Steuerung. Solar-betrieben (kein Strom im Garten).
@@ -177,7 +177,7 @@ MainViewModel nutzt `BackPressHelper` aus MeineApps.Core.Ava.Services (Conventio
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Troubleshooting
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Architektur
 - [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
 - [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, Loading-Pipeline
 - `Releases/GardenControl/CHANGELOG_*.md` — Release-Notes

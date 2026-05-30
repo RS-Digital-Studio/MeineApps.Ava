@@ -12,7 +12,7 @@ eigenes Icon-System, AI-Pathfinding, Roguelike-Dungeon-Modus und Liga-System.
 | Premium-Modell | 1,99 EUR `remove_ads` |
 | Mandat | Code-only / CC0 / prozedural — keine externen Audio-/Art-Pipelines, keine Voice-Talents |
 
-Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
 ---
 
@@ -1083,7 +1083,8 @@ Miss den Key-NAMEN zurück (nie null), sodass `?? default` toter Code wäre und 
 `WhatsNew_2_0_62_Title` als Text erschiene. `L` erkennt den Miss und fällt auf den Default.
 `GetEntries()` filtert Eintraege mit leeren Bullets heraus — der offene Develop-Eintrag erscheint
 nie als leerer Titel-only-Dialog (auch nicht direkt nach einem Versions-Bump). Das XAML-Overlay-
-Binding (getrennte DataContext-/x:DataType-Ebenen) ist korrekt — siehe Haupt-CLAUDE.md-Gotcha.
+Binding (getrennte DataContext-/x:DataType-Ebenen) ist korrekt — siehe Core.Ava-CLAUDE.md
+(Framework-Fallstricke: verschachtelte `x:DataType`-Ebenen).
 
 **Release-Workflow fuer Neuigkeiten-Eintraege (Pflicht):**
 
@@ -1389,7 +1390,7 @@ View-Subscriber, der erst nach DataContext-Zuweisung existiert.
 gesteuert (`IsAnyOverlayOpen` = Pause + ScoreDouble + ContextHelp + Loading). KEIN Code-Behind-
 Setter daneben — ein CLR-Setter verdrängt das Binding dauerhaft (LocalValue-Precedence) und eine
 unvollständige Bedingung lässt Taps unter ContextHelp/Loading-Overlays durch. Generelles Pattern
-in Haupt-CLAUDE.md.
+(Value-Precedence) in Core.Ava-CLAUDE.md (Framework-Fallstricke).
 
 ---
 
@@ -1525,7 +1526,7 @@ Keine `SKPaint.TextSize/TextAlign/FakeBoldText` mehr (deprecated).
 ## Verweise
 
 - Haupt-CLAUDE.md (`F:\Meine_Apps_Ava\CLAUDE.md`): Build-System, allgemeine Conventions,
-  Troubleshooting, Keystore, Ad-Pattern, DI-Pattern
+  Architektur, Keystore, DI-Pattern (Ad-Pattern/Banner → MeineApps.Core.Premium.Ava/CLAUDE.md)
 - `database.rules.bomberblast.json` (Repo-Root): Firebase-RTDB-Security-Rules (Liga + Daily-Race +
   Reports + Clans). Deployt via `firebase.bomberblast.json` (Repo-Root) auf Projekt `bomberblast-league`.
   Firebase-CLI verlangt dass `firebase.json` + Rules-Datei im selben Verzeichnis liegen — daher beide

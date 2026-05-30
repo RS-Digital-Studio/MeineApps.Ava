@@ -11,7 +11,7 @@ Challenges und Schichtplan-Rechner. Komplett werbefrei, kein Premium, kein Meine
 | Preis | Kostenlos (werbefrei) |
 | Tabs | Timer, Stoppuhr, Pomodoro, Wecker/Schichtplan, Settings |
 
-> Für generische Build-Befehle, Conventions, Troubleshooting und Packages → [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für generische Build-Befehle, Conventions, Architektur und Packages → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ---
 
@@ -213,7 +213,7 @@ kein manuelles `PropertyChanged?.Invoke()`.
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Troubleshooting
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Architektur
 - [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
 - [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, Behaviors, Loading-Pipeline
 - `Releases/ZeitManager/CHANGELOG_*.md` — Release-Notes

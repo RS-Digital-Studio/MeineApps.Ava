@@ -11,7 +11,7 @@ forschen, Gilden beitreten. Idle-Einkommen läuft passiv weiter, Mini-Games brin
 | Ads | Banner + Rewarded (13 Placements) |
 | Premium | 4,99 EUR Lifetime |
 
-Für generische Build-Befehle, Conventions und Troubleshooting: [Haupt-CLAUDE.md](../../../CLAUDE.md)
+Für generische Build-Befehle, Conventions und Architektur: [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ---
 

@@ -208,5 +208,5 @@ Tieferanalyse / Auto-Fix: Agent `mvvm-auditor` (opus, max).
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../CLAUDE.md) — Build, Conventions, Troubleshooting (die Checker prüfen genau diese)
+- [Haupt-CLAUDE.md](../../CLAUDE.md) — Build, Conventions, Architektur (die Checker prüfen genau diese)
 - Skill `/build-check` — Baut Solution + führt AppChecker aus

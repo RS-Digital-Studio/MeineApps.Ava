@@ -4,7 +4,7 @@ Vollständige Arbeitszeiterfassung mit Check-in/out, Pausen, Urlaub, Schichtplan
 Feiertagen (DE/AT/CH), Statistiken (11 eigene + 3 geteilte SkiaSharp-Visualisierungen)
 und Export (PDF/Excel/CSV/ICS).
 
-> Für Build-Befehle, Conventions, Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions, Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 | Aspekt | Wert |
 |--------|------|
@@ -363,7 +363,7 @@ je nach Gerät unterschiedlich).
 
 CommandParameter ist Sprachcode (String: "de"/"en"/...), KEIN Integer-Index.
 `RelayCommand<string>`, NICHT `RelayCommand<int>` — XAML `CommandParameter="de"` ist
-immer String (globales Gotcha aus Haupt-CLAUDE.md).
+immer String (siehe Core.Ava-CLAUDE.md, Framework-Fallstricke).
 
 ### Tab-Reload vs. Tab-Lazy-Load
 
@@ -432,7 +432,7 @@ dotnet run --project "F:\Meine_Apps_Ava\tools\AppChecker" WorkTimePro
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, AdMob, Troubleshooting
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Architektur
 - [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
 - [MeineApps.Core.Premium.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) — AdMob + Google Play Billing
 - [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, SkiaSharp-Helpers

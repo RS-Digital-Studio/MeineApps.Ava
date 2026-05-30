@@ -1,6 +1,6 @@
 # HandwerkerRechner (Avalonia)
 
-> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Architektur siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium-Tools), Projektverwaltung,
 Angebots-Generator, Vorlagen und Einheiten-Umrechnung. Premium-Modell = nur "remove_ads".
@@ -275,7 +275,7 @@ Code-Behind ruft direkt `InvalidateSurface()` bei PropertyChanged.
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build-Befehle, Conventions, Troubleshooting
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build-Befehle, Conventions, Architektur
 - [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — `SkiaBlueprintCanvas`, `SkiaThemeHelper`
 - [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — `CalculationHistoryService`
 - [MeineApps.CalcLib/CLAUDE.md](../../Libraries/MeineApps.CalcLib/CLAUDE.md) — `CraftEngine`

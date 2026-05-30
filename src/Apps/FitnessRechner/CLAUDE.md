@@ -1,6 +1,6 @@
 # FitnessRechner (Avalonia)
 
-> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Architektur siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Körperfett),
 Tracking-Charts, Nahrungsmittel-Suche (114 lokal + Open Food Facts API), Intervallfasten,
@@ -273,7 +273,7 @@ CardColor-Gradient, Feature-Farben auf Icon-Container beibehalten.
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build-Befehle, Conventions, Troubleshooting
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build-Befehle, Conventions, Architektur
 - [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Shared UI Components
 - [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — `IHapticService`, `BackPressHelper`, Converters
 - `Releases/FitnessRechner/CHANGELOG_*.md` — Release-Notes

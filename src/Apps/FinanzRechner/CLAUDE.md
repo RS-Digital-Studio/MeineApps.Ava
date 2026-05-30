@@ -13,7 +13,7 @@ Alle Charts vollständig in SkiaSharp (kein LiveCharts).
 | Ads | Banner + Rewarded |
 | Premium | 3,99 EUR `remove_ads` |
 
-Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
 ---
 
@@ -440,7 +440,7 @@ dotnet run --project tools/AppChecker FinanzRechner
 
 | Datei | Zweck |
 |-------|-------|
-| `F:\Meine_Apps_Ava\CLAUDE.md` | Build, Conventions, DI-Patterns, Ad-Banner-Layout, Troubleshooting |
+| `F:\Meine_Apps_Ava\CLAUDE.md` | Build, Conventions, DI-Patterns, Architektur |
 | `src/Libraries/MeineApps.Core.Ava/CLAUDE.md` | Themes, Services (BackPressHelper, UriLauncher, CurrencyHelper) |
 | `src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md` | AdMob, IAP, RewardedAdHelper |
 | `src/UI/MeineApps.UI/CLAUDE.md` | Shared Behaviors, DonutChart, SkiaGradientRing, LinearProgress |

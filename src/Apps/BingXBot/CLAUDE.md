@@ -12,7 +12,7 @@ USDT-margined Perpetual Futures (Crypto + TradFi-Perps via NC-Prefix).
 | Exchange | BingX Perpetual Futures (USDT-M) |
 | Pi-Server | `steuerung@raspberrypi.local` (systemd-Service `bingxbot.service`) |
 
-Für generische Build-Befehle, Conventions und Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
 ---
 

@@ -1,6 +1,6 @@
 # RechnerPlus
 
-> Build-Befehle, Conventions, Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Build-Befehle, Conventions, Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 Scientific Calculator mit Unit Converter — werbefrei, kostenlos, kein IAP.
 
@@ -337,7 +337,7 @@ dotnet publish "F:\Meine_Apps_Ava\src\Apps\RechnerPlus\RechnerPlus.Android" -c R
 
 | Was | Wo |
 |-----|----|
-| Build, Conventions, Troubleshooting | [Haupt-CLAUDE.md](../../../CLAUDE.md) |
+| Build, Conventions, Architektur | [Haupt-CLAUDE.md](../../../CLAUDE.md) |
 | Calculator Engine, ExpressionParser, IHistoryService | `src/Libraries/MeineApps.CalcLib/` |
 | Theme-Tokens, IPreferencesService, BackPressHelper | `src/Libraries/MeineApps.Core.Ava/` |
 | IHapticService, FloatingTextOverlay, SkiaLoadingSplash | `src/UI/MeineApps.UI/` |

@@ -11,7 +11,7 @@ Spielbereich — alles Szenen, Overlays und UI werden direkt auf SKCanvasView ge
 | Farbpalette | "Isekai System Blue" — #4A90D9 Primary, #9B59B6 Lila, #F39C12 Gold |
 | Firebase | `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69,2 MB) |
 
-> Für generische Build-Befehle, Conventions, Troubleshooting und Packaging-Patterns: [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für generische Build-Befehle, Conventions, Architektur und Packaging-Patterns: [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ---
 
@@ -475,7 +475,7 @@ Nächste Schritte: Android-Test auf physischem Gerät. Release nur auf Anfrage.
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, AdMob, Troubleshooting
+- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Architektur
 - [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
 - [MeineApps.Core.Premium.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) — Rewarded Ads + IAP
 - [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — SkiaSharp-Renderer, Shader, Loading-Pipeline

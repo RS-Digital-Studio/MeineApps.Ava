@@ -372,6 +372,7 @@ SkiaHeatShimmerEffect.DrawForgeHeat(canvas, bounds, time);
 ## Verweise
 
 - Design-Tokens (Spacing, Radius, Farben): `src/Libraries/MeineApps.Core.Ava/Themes/ThemeColors.axaml`
-- App-Farbpaletten (Primary-Farbe pro App): Haupt-CLAUDE.md → "App-spezifische Farbpaletten"
-- Troubleshooting (DonutChart, SKMaskFilter, RenderTransform): Haupt-CLAUDE.md → "Troubleshooting"
+- App-Farbpaletten (Primary-Farbe pro App): Haupt-CLAUDE.md → "App-Portfolio → App-Farbpaletten"
+- Rendering-Gotchas (DonutChart, SKMaskFilter, RenderTransform, SKCanvasView): Abschnitt "Gotchas" oben in dieser Datei
+- Avalonia-/MVVM-Framework-Fallstricke: `src/Libraries/MeineApps.Core.Ava/CLAUDE.md`
 - App-spezifische Splash-Renderer: jeweils `src/Apps/{App}/{App}.Shared/Graphics/{App}SplashRenderer.cs`

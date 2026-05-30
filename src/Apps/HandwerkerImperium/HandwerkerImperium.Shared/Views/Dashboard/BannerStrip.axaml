@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dashboard.BannerStrip"
              x:DataType="vm:MainViewModel"
              x:CompileBindings="True">
@@ -69,7 +70,7 @@
 
       <!-- F-21: Daily-Reward-Chip im Dashboard — sichtbar wenn Missionen Belohnungen warten. -->
       <Button IsVisible="{Binding MissionsVM.HasClaimableMissions}"
-              Command="{Binding SelectMissionsTabCommand}"
+              Command="{Binding SelectMissionenTabCommand}"
               Classes="Text" Padding="0" CornerRadius="22"
               AutomationProperties.AutomationId="Dashboard_Btn_DailyRewardsChip">
         <Border CornerRadius="22" Padding="12,6" Height="44">

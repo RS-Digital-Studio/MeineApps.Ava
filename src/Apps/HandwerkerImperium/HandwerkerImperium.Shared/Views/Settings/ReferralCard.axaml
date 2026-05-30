@@ -45,7 +45,7 @@
                   Command="{Binding ShareOwnCodeCommand}"
                   AutomationProperties.AutomationId="Referral_Btn_Share">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <icons:GameIcon Kind="Share" Width="20" Height="20"
+              <icons:GameIcon Kind="ShareVariant" Width="20" Height="20"
                                Foreground="{DynamicResource PrimaryContrastBrush}" />
               <TextBlock Text="{loc:Translate ReferralShareButton}"
                          FontSize="13" FontWeight="SemiBold"

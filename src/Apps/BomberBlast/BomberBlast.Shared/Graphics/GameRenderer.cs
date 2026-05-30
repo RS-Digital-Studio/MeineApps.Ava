@@ -1182,16 +1182,17 @@ public sealed partial class GameRenderer : IDisposable
                 // Lava-Glow: orange-rot mit warmer Mitte.
                 float px = tx * cs;
                 float py = ty * cs;
-                using (var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill })
-                {
-                    // Aussere Halo
-                    paint.Color = new SKColor(255, 80, 30, (byte)(a * 0.55f));
-                    canvas.DrawRect(px, py, cs, cs, paint);
-                    // Innere heisse Mitte (kleineres Rect, gelblicher)
-                    paint.Color = new SKColor(255, 180, 60, a);
-                    float inset = cs * 0.25f;
-                    canvas.DrawRect(px + inset, py + inset, cs - 2 * inset, cs - 2 * inset, paint);
-                }
+                // Gepooltes _fillPaint statt new SKPaint pro Trail-Eintrag/Frame (Allokation+Dispose gespart).
+                _fillPaint.IsAntialias = true;
+                _fillPaint.Style = SKPaintStyle.Fill;
+                _fillPaint.MaskFilter = null;
+                // Aussere Halo
+                _fillPaint.Color = new SKColor(255, 80, 30, (byte)(a * 0.55f));
+                canvas.DrawRect(px, py, cs, cs, _fillPaint);
+                // Innere heisse Mitte (kleineres Rect, gelblicher)
+                _fillPaint.Color = new SKColor(255, 180, 60, a);
+                float inset = cs * 0.25f;
+                canvas.DrawRect(px + inset, py + inset, cs - 2 * inset, cs - 2 * inset, _fillPaint);
             }
         }
     }

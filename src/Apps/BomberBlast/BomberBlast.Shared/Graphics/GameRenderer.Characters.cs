@@ -23,6 +23,15 @@ public sealed partial class GameRenderer
         float cs = GameGrid.CELL_SIZE;
         bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
 
+        // IsDying VOR jeglichem Blink-SaveLayer / Squash-Save: RenderPlayerDeath rendert seinen
+        // eigenen Effekt (inkl. Squash). Ein canvas.Save()/SaveLayer() davor bliebe bei diesem
+        // early-return offen → Save-Frame-Leak auf dem Canvas-Stack pro Sterbe-Frame.
+        if (player.IsDying)
+        {
+            RenderPlayerDeath(canvas, player, cs);
+            return;
+        }
+
         // Blink-Effekt bei Unverwundbarkeit / Spawn-Schutz.
         //.3 : Statt komplettem Verstecken (return) auf 30% Alpha
         // — Spieler bleibt sichtbar, fuehlt sich respektiert. Schnelleres Blinken in
@@ -55,12 +64,6 @@ public sealed partial class GameRenderer
         {
             canvas.Save();
             canvas.Scale(sx, sy, player.X, player.Y);
-        }
-
-        if (player.IsDying)
-        {
-            RenderPlayerDeath(canvas, player, cs);
-            return;
         }
 
         float bodyW = cs * 0.5f;

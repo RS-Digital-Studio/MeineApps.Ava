@@ -190,7 +190,7 @@ public sealed class TutorialOverlay : IDisposable
         float arrowSize = 10;
         float arrowAngle = MathF.PI / 6;
 
-        _arrowPath.Reset();
+        _arrowPath.Rewind();  // Rewind statt Reset: behält den nativen Buffer (keine Re-Allokation pro Frame)
         _arrowPath.MoveTo(toX, toY);
         _arrowPath.LineTo(
             toX - arrowSize * MathF.Cos(angle - arrowAngle),

@@ -122,7 +122,7 @@ Besonderheiten:
 | `Core/` | GameEngine (Partial), GameState, Modes, Combat, Audio, Multiplayer, Replay | [Core/CLAUDE.md](Core/CLAUDE.md) |
 | `Extensions/` | `LazyServiceExtensions` für DI-Zirkel | [Extensions/CLAUDE.md](Extensions/CLAUDE.md) |
 | `Graphics/` | GameRenderer (10 Partials), Atmosphärische Subsysteme, Splash, Shader | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
-| `Icons/` | Eigenes Neon-Arcade Icon-System (152 Icons, PathIcon-Ableitung) | [Icons/CLAUDE.md](Icons/CLAUDE.md) |
+| `Icons/` | Eigenes Neon-Arcade Icon-System (159 Icons, PathIcon-Ableitung) | [Icons/CLAUDE.md](Icons/CLAUDE.md) |
 | `Input/` | InputManager, NeonJoystick, Keyboard, Gamepad, KonamiCode | [Input/CLAUDE.md](Input/CLAUDE.md) |
 | `Loading/` | `BomberBlastLoadingPipeline`, `LoadingTips` | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
 | `Models/` | Entities, Grid, Levels, Dungeon, Cards, BattlePass, Cosmetics, CloudSave | [Models/CLAUDE.md](Models/CLAUDE.md) |

@@ -39,7 +39,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | Datei | Zweck |
 |-------|-------|
 | `Level.cs` | LevelNumber, WorldIndex, Layout-Typ, aktive Mutator |
-| `LevelLayoutGenerator.cs` | **Static**. 11 Layout-Typen, Pool 8 Layouts pro Welt, `GenerateDailyChallengeLevel(seed)`, `GetMutatorDisplayName`. KEINE DI. |
+| `LevelLayoutGenerator.cs` | **Static**. 12 Layout-Typen (`LevelLayout`-Enum in Level.cs), Pool 8 Layouts pro Welt, `GenerateDailyChallengeLevel(seed)`, `GetMutatorDisplayName`. KEINE DI. |
 
 ### `Dungeon/`
 

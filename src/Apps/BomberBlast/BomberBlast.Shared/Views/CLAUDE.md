@@ -23,7 +23,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `PlayHubView.axaml(.cs)` | `PlayHubViewModel` | Bottom-Tab "Spielen" (Modi-Auswahl) |
 | `GemShopView.axaml(.cs)` | `GemShopViewModel` | IAP-Gem-Pakete |
 | `SettingsView.axaml(.cs)` | `SettingsViewModel` | Audio/Visual/Accessibility/Privacy |
-| `AchievementsView.axaml(.cs)` | `AchievementsViewModel` | 66 Achievements in 5 Kategorien |
+| `AchievementsView.axaml(.cs)` | `AchievementsViewModel` | 72 Achievements in 5 Kategorien |
 | `CollectionView.axaml(.cs)` | `CollectionViewModel` | Gegner/Bosse/PowerUps-Album |
 | `StatisticsView.axaml(.cs)` | `StatisticsViewModel` | Session-Statistiken |
 | `HighScoresView.axaml(.cs)` | `HighScoresViewModel` | Top-10 local + Liga-Link |

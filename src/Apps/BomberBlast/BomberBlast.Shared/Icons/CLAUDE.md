@@ -1,6 +1,6 @@
 # Icons — Neon-Arcade Icon-System
 
-Eigenes Icon-System mit 152 Icons im Neon-Arcade-Stil. Ersetzt `Material.Icons` vollständig —
+Eigenes Icon-System mit 159 Icons (160 Enum-Member inkl. None) im Neon-Arcade-Stil. Ersetzt `Material.Icons` vollständig —
 kein Material-Icons-Namespace in BomberBlast. Generische Conventions →
 [Haupt-CLAUDE.md](../../../../../CLAUDE.md). App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
@@ -9,7 +9,7 @@ kein Material-Icons-Namespace in BomberBlast. Generische Conventions →
 | Datei | Zweck |
 |-------|-------|
 | `GameIcon.cs` | `PathIcon`-Ableitung. **`StyleKeyOverride => typeof(PathIcon)` ist Pflicht** — sonst findet Avalonia kein Template und das Control ist leer. |
-| `GameIconKind.cs` | Enum aller 152 Icons |
+| `GameIconKind.cs` | Enum aller Icons (160 Member inkl. None = 159 Icons) |
 | `GameIconPaths.cs` | SVG-Pfade im Neon-Arcade-Stil (nur M/L/H/V/Z — keine Kurven) |
 | `GameIconRenderer.cs` | SkiaSharp-Renderer für Icons auf `SKCanvas`. Gecachte `SKPath` pro Kind. |
 

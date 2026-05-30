@@ -1,6 +1,6 @@
 # Core — GameEngine & Simulation
 
-Herz der Spiellogik. `GameEngine` (5.100 LOC, 5 Partials), Modes, Combat, Audio, Multiplayer-
+Herz der Spiellogik. `GameEngine` (~7.450 LOC, 5 Partials), Modes, Combat, Audio, Multiplayer-
 und Replay-Foundation. Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 

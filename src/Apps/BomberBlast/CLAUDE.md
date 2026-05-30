@@ -25,7 +25,7 @@ Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md]
 | Render-Pipeline + Atmosphärische Systeme | GameRenderer (10 Partials), Bloom, FoW, ScreenShake, Cinematic | [Shared/Graphics](BomberBlast.Shared/Graphics/CLAUDE.md) |
 | AI & Pathfinding | A\*-Pathfinding, BFS Safe-Cell, Danger-Zone, Boss-AI | [Shared/AI](BomberBlast.Shared/AI/CLAUDE.md) |
 | Input-System | InputManager, NeonJoystick, Keyboard, Gamepad, KonamiCode | [Shared/Input](BomberBlast.Shared/Input/CLAUDE.md) |
-| Icon-System | 152 Neon-Arcade-Icons, PathIcon-Ableitung, Skia-Renderer | [Shared/Icons](BomberBlast.Shared/Icons/CLAUDE.md) |
+| Icon-System | 159 Neon-Arcade-Icons (160 Enum-Member inkl. None), PathIcon-Ableitung, Skia-Renderer | [Shared/Icons](BomberBlast.Shared/Icons/CLAUDE.md) |
 | Services (37) | Economy, Firebase, Live-Ops, Logging, DialogPresenter | [Shared/Services](BomberBlast.Shared/Services/CLAUDE.md) |
 | ViewModels (25) | Compositor, Feature-Module, ChildViewModelRegistry, LifecycleHub | [Shared/ViewModels](BomberBlast.Shared/ViewModels/CLAUDE.md) |
 | Views (30 + Components) | AXAML-Views, Compiled Bindings, GameView-Subscription, Overlays | [Shared/Views](BomberBlast.Shared/Views/CLAUDE.md) |
@@ -101,7 +101,7 @@ src/Apps/BomberBlast/
 │   │   ├── UltraComboFlash.cs           # Vignette-Flash (ULTRA-Combo + Damage-Flash, /#18)
 │   │   ├── OutlineRenderHelper.cs       # Outline-Pass via Dilate-ImageFilter (
 │   │   └── ...weitere Renderer
-│   ├── Icons/                   # Eigenes Neon-Arcade Icon-System (152 Icons)
+│   ├── Icons/                   # Eigenes Neon-Arcade Icon-System (159 Icons)
 │   ├── Input/                   # NeonJoystick, InputManager
 │   ├── Models/                  # Entities, Level, Dungeon, PowerUp, Bomb-Typen
 │   │   └── Levels/LevelLayoutGenerator.cs  # Static: Welt-Layout-Rotation, Boss/Bonus-Level-Config
@@ -118,7 +118,7 @@ src/Apps/BomberBlast/
 
 ### Partial-Class-Struktur
 
-Die `GameEngine` ist eine God-Class (~5.100 LOC), aufgeteilt in 5 Partial-Files:
+Die `GameEngine` ist eine God-Class (~7.450 LOC), aufgeteilt in 5 Partial-Files:
 
 | Partial | Verantwortung |
 |---------|--------------|
@@ -487,7 +487,7 @@ Duo-Encounter mit `&` verbunden oder Plural-Form.
 
 `LevelLayoutGenerator` (umbenannt von `LevelGenerator` — eliminiert Namespace-Konflikt
 mit `Core.LevelGeneration.LevelGenerator`):
-- 11 Layout-Typen, Pool pro Welt 8 Layouts (Welt 1 einsteiger-freundlich, Welt 5+ alle)
+- 12 Layout-Typen (Classic/Cross/Arena/Maze/TwoRooms/Spiral/Diagonal/BossArena/Labyrinth/Symmetry/Islands/Chaos), Pool pro Welt 8 Layouts (Welt 1 einsteiger-freundlich, Welt 5+ alle)
 - Tägliches deterministisches Level via `GenerateDailyChallengeLevel(seed)`
 - `GetMutatorDisplayName`, `PlacePowerUps`, `PlaceExit`, `SpawnEnemies`, `SpawnBossAtPosition`
 - Gepoolte interne Listen (`_blockCells`, `_farBlocks`, `_validPositions`) — keine Heap-Allokation pro Level-Start
@@ -626,7 +626,7 @@ Summer/Mech/Underwater/Sengoku/DiaDeLosMuertos/Steampunk). `BattlePassData.Theme
 deterministisch aus `SeasonNumber` abgeleitet (Saison 1 = Classic, dann rotiert).
 `BattlePassThemeExtensions` mit Akzent-/Sekundär-Farben, Icon-Hints, RESX-Keys.
 
-**LuckySpin Pity-Counter** (Lootbox-Compliance UK/China): Nach 50 Spins ohne Jackpot
+**LuckySpin Pity-Counter** (Lootbox-Compliance UK/China): 9 gewichtete Segmente; nach 25 Spins ohne Jackpot (Hard-Pity, + Soft-Pity ab 15/20)
 garantierter Hit. `SpinsSinceLastJackpot` persistiert. `GetDropRates()`-API für
 Compliance-Disclosure.
 
@@ -962,7 +962,7 @@ Tolerance-Strategie: 5 RGB-Units Default (Anti-Aliasing-typisch). 1% Pixel-Diff 
 
 ## Icon-System (Eigene Neon-Arcade Icons)
 
-- **Kein Material.Icons** — eigenes GameIcon-System mit 152 Icons
+- **Kein Material.Icons** — eigenes GameIcon-System mit 159 Icons (160 Enum-Member inkl. None)
 - `Icons/GameIcon.cs`: `PathIcon`-Ableitung mit `StyleKeyOverride => typeof(PathIcon)`
   (PFLICHT — sonst rendert das Control nicht, Avalonia 11 findet kein Template)
 - `Icons/GameIconKind.cs`: Enum aller Icons
@@ -1238,14 +1238,13 @@ Co-Op-Camera, GameOver-bei-beide-tot, Splitscreen) ist eigener Multi-Wochen-Spri
 
 ---
 
-## Clan-System Foundation 
+## Clan-System (integriert) 
 
-`IClanService` mit `NullClanService` (Default). Domain-Models: ClanData, ClanMember,
-ClanChatMessage, ClanRole. API: Create/Join/Leave/Pull-Chat/Send/Leaderboard.
-Asynchron-Pattern (kein Live-Sync, alle 30s Pull).
-
-HINWEIS: Echte Firebase-Realtime-DB-Integration mit Security-Rules + Profanity-Filter
-+ Rate-Limits ist eigener 4-6-Wochen-Sprint.
+`IClanService` → **`FirebaseClanService`** (registriert in `App.axaml.cs:515`). Domain-Models: ClanData,
+ClanMember, ClanChatMessage, ClanRole. API: Create/Join/Leave/Pull-Chat/Send/Leaderboard.
+Asynchron-Pattern (kein Live-Sync, alle 30s Pull). Chat mit 5-Msg/Min-Rate-Limit, ISO-Leaderboard,
+ServerValue.TIMESTAMP. Firebase-RTDB-Rules deployt (`database.rules.bomberblast.json`).
+(`NullClanService` existiert nur als Desktop-/Test-Fallback.)
 
 ---
 
@@ -1454,11 +1453,11 @@ in der alten Sprache stehen.
 | `ITutorialService` | 6-Schritte Tutorial für Level 1 |
 | `IDailyRewardService` | 7-Tage Login-Bonus + Comeback-Bonus (> 3 Tage inaktiv) |
 | `ICustomizationService` | Spieler-Skins (Coin + Gem-Skins) |
-| `IAchievementService` | 66 Achievements in 5 Kategorien, JSON-Persistenz |
+| `IAchievementService` | 72 Achievements in 5 Kategorien (Progress/Mastery/Combat/Skill/Challenge), JSON-Persistenz |
 | `IDiscoveryService` | Erstentdeckungs-Tracking (PowerUps/Mechaniken) |
 | `IDailyChallengeService` | Tägliche Herausforderung, Streak-Tracking |
 | `IPlayGamesService` | Google Play Games Services v2 (Leaderboards, Online-Achievements) |
-| `ILuckySpinService` | Glücksrad: 8 gewichtete Segmente, 1× gratis/Tag |
+| `ILuckySpinService` | Glücksrad: 9 gewichtete Segmente, 1× gratis/Tag, Pity-Counter (Hard-Pity 25) |
 | `IWeeklyChallengeService` | 5 wöchentliche Missionen aus 14er-Pool, Montag-Reset |
 | `IDailyMissionService` | 3 tägliche Missionen aus 14er-Pool, Mitternacht-UTC-Reset |
 | `ICardService` | 14 Bomben-Karten, Deck, Upgrade, Crafting |
@@ -1490,7 +1489,7 @@ in der alten Sprache stehen.
 | `IWorldStoryService` | Welt-Intro/Outro-Cutscenes  |
 | `IHeroService` | 5 spielbare Heroes mit Stats + Unlock  |
 | `IMultiplayerSessionService` | Multiplayer-Mode-Verwaltung (.2 Foundation) |
-| `IClanService` | Clan-System (.3 Foundation, NullImpl bis Firebase live) |
+| `IClanService` | Clan-System (FirebaseClanService integriert: Create/Join/Chat/Leaderboard) |
 | `IWeeklyContentService` | Wochen-Content-Pipeline (.4, ISO-Week-deterministisch) |
 | `IRngProvider` | Deterministischer RNG (.2, Core-Namespace, Replay-Foundation) |
 | `IGameEventBus` | Pub/Sub-Hub fuer UI-Events (.2, FloatingText/Celebration/ExitHint/Message) |
@@ -1576,4 +1575,4 @@ Keine `SKPaint.TextSize/TextAlign/FakeBoldText` mehr (deprecated).
   Reports + Clans). Deployt via `firebase.bomberblast.json` (Repo-Root) auf Projekt `bomberblast-league`.
   Firebase-CLI verlangt dass `firebase.json` + Rules-Datei im selben Verzeichnis liegen — daher beide
   im Repo-Root, nicht im App-Ordner.
-- `tests/BomberBlast.Tests/`: 643 Tests (xUnit)
+- `tests/BomberBlast.Tests/`: 663 Tests (xUnit; 542 Fact + 20 Theory mit 121 InlineData)

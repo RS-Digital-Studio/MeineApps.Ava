@@ -69,7 +69,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
 | Service | Beschreibung |
 |---------|-------------|
-| `IAchievementService` / `AchievementService` | 66 Achievements in 5 Kategorien, JSON-Persistenz, Dirty-Flag, `FlushIfDirty()` |
+| `IAchievementService` / `AchievementService` | 72 Achievements in 5 Kategorien, JSON-Persistenz, Dirty-Flag, `FlushIfDirty()` |
 | `ICardService` / `CardService` | 14 Bomben-Karten, Deck (4+1 Slots), Upgrade, Crafting (5 Common→1 Rare, 5 Rare→1 Epic, 5 Epic→1 Legendary) |
 | `IDungeonService` / `DungeonService` | Roguelike-Run-State, 16 Buffs, Eintritt-Logic (1×/Tag gratis, 500 Coins, 3 Gems, Rewarded) |
 | `IDungeonUpgradeService` / `DungeonUpgradeService` | 8 permanente Dungeon-Upgrades (DungeonCoins) |

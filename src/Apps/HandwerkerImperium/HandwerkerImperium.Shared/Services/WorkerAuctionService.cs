@@ -394,6 +394,15 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         // Nur Master simuliert die Bots — andere Clients lesen das Resultat ueber Polling.
         if (!await IsMasterClientAsync().ConfigureAwait(false)) return;
 
+        // Abgelaufene Auktion zeitnah settlen (dieser Tick laeuft alle 5s) — sonst wuerde der
+        // Settle erst beim 300s-RefreshAuctionAsync passieren, und Gewinner/Verlierer warteten
+        // bis zu ~4,5 Minuten auf Worker bzw. die Freigabe ihres gelockten Geldes.
+        if (DateTime.UtcNow > auction.EndsAt)
+        {
+            await SettleAsync(auction).ConfigureAwait(false);
+            return;
+        }
+
         var rng = Random.Shared; // Random.Shared statt new Random() — kein RNG-Bias
         // 35% Chance pro Tick — fuehrt zu mehreren Bot-Bids in einer 30s-Auktion.
         if (rng.Next(0, 100) >= 35) return;

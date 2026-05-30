@@ -11,6 +11,14 @@ public class LeagueData
     public string SeasonStartUtc { get; set; } = "";
     public bool SeasonRewardClaimed { get; set; }
 
+    /// <summary>
+    /// Zuletzt online ermitteltes Perzentil des Spielers (0 = Top, 1 = Schlusslicht) der LAUFENDEN
+    /// Saison. Wird bei jedem echten Online-Leaderboard-Refresh aktualisiert und beim Saisonende für
+    /// Auf-/Abstieg genutzt — statt einer Offline-Schätzung gegen den NPC-Backfill der NEUEN Saison.
+    /// -1 = noch nie online ermittelt → kein Auf-/Abstieg (kein unverdienter Abstieg).
+    /// </summary>
+    public float LastOnlinePercentile { get; set; } = -1f;
+
     /// <summary>NPC-Einträge der aktuellen Saison (20 Stück)</summary>
     public List<LeagueNpcEntry> Npcs { get; set; } = [];
 }

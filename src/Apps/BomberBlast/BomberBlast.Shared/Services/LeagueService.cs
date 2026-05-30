@@ -126,16 +126,30 @@ public sealed class LeagueService : ILeagueService
         return SeasonEpoch.AddDays((seasonNumber - 1) * SeasonDurationDays);
     }
 
+    /// <summary>
+    /// Im Ctor (SyncSeasonNumber) verarbeitetes Saisonende — das <see cref="SeasonEnded"/>-Event
+    /// wird erst beim ersten <see cref="CheckAndProcessSeasonEnd"/> (View-Open) nachgeholt, da im
+    /// Ctor noch kein Subscriber verdrahtet ist.
+    /// </summary>
+    private bool _pendingSeasonEnd;
+
     /// <summary>Synct lokale Saison-Nummer mit deterministischer Berechnung.</summary>
     private void SyncSeasonNumber()
     {
         var currentSeason = GetDeterministicSeasonNumber();
         if (_data.SeasonNumber != currentSeason)
         {
-            // Saison hat sich geändert → Saisonende verarbeiten
+            // Saison hat sich geändert → vollständiges Saisonende verarbeiten. WICHTIG: auch Points
+            // + SeasonRewardClaimed zuruecksetzen. Frueher tat das NUR CheckAndProcessSeasonEnd —
+            // das aber sofort returnte, weil SyncSeasonNumber SeasonNumber bereits hochzog. Folge:
+            // alte Saisonpunkte wanderten in die neue Saison und der Reward-Button blieb dauerhaft aus.
             if (_data.SeasonNumber > 0 && _data.SeasonNumber < currentSeason)
             {
                 ProcessSeasonEnd();
+                _data.Points = 0;
+                _data.SeasonRewardClaimed = false;
+                _data.LastOnlinePercentile = -1f;  // neue Saison: Rang erst wieder online ermitteln
+                _pendingSeasonEnd = true;
             }
             _data.SeasonNumber = currentSeason;
             SaveData();
@@ -397,6 +411,19 @@ public sealed class LeagueService : ILeagueService
                         IsRealPlayer = true
                     });
                 }
+
+                // #11: Letztes echtes Online-Perzentil der laufenden Saison festhalten — wird beim
+                // Saisonende (ProcessSeasonEnd) fuer Auf-/Abstieg genutzt, statt einer Offline-
+                // Schaetzung gegen den NPC-Backfill der neuen Saison.
+                if (_cachedOnlineEntries.Count > 0)
+                {
+                    int playerPoints = _data.Points;
+                    int better = 0;
+                    foreach (var e in _cachedOnlineEntries)
+                        if (e.Points > playerPoints) better++;
+                    _data.LastOnlinePercentile = (float)better / _cachedOnlineEntries.Count;
+                    SaveData();
+                }
             }
 
             LeaderboardUpdated?.Invoke(this, EventArgs.Empty);
@@ -466,6 +493,20 @@ public sealed class LeagueService : ILeagueService
             {
                 var path = $"league/s{SeasonNumber}/{tier.ToString().ToLowerInvariant()}/{uid}";
                 deleteTasks.Add(SafeDeleteAsync(path));
+            }
+
+            // Daily-Race-Eintraege der laufenden Saison löschen (pro Tag + Tier uid-indiziert) —
+            // der Methoden-Kontrakt (DSGVO Art. 17) verspricht den Daily-Race-Subtree. Über alle
+            // Saison-Tage × alle Tiers, da der Spieler tageweise in verschiedenen Tiers gespielt haben kann.
+            var todayUtc = DateTime.UtcNow.Date;
+            for (int dayOffset = 0; dayOffset < SeasonDurationDays; dayOffset++)
+            {
+                var dateKey = GetDailyRaceDateKey(todayUtc.AddDays(-dayOffset));
+                foreach (var tier in Enum.GetValues<LeagueTier>())
+                {
+                    var drPath = $"league/s{SeasonNumber}/daily_race/{dateKey}/{(int)tier}/{uid}";
+                    deleteTasks.Add(SafeDeleteAsync(drPath));
+                }
             }
 
             // Reports zu diesem Spieler bleiben (Moderations-Audit-Trail), aber eigene Submissions als
@@ -574,15 +615,26 @@ public sealed class LeagueService : ILeagueService
 
     public bool CheckAndProcessSeasonEnd()
     {
+        // Im Ctor (SyncSeasonNumber) bereits verarbeitetes Saisonende → Event jetzt nachholen
+        // (im Ctor war noch kein Subscriber verdrahtet).
+        if (_pendingSeasonEnd)
+        {
+            _pendingSeasonEnd = false;
+            SeasonEnded?.Invoke(this, EventArgs.Empty);
+            ScheduleFirebasePush();
+            return true;
+        }
+
         var currentSeason = GetDeterministicSeasonNumber();
         if (_data.SeasonNumber == currentSeason)
             return false;
 
-        // Saison ist abgelaufen → verarbeiten
+        // Saison ist während der Laufzeit abgelaufen → vollständig verarbeiten
         ProcessSeasonEnd();
         _data.SeasonNumber = currentSeason;
         _data.Points = 0;
         _data.SeasonRewardClaimed = false;
+        _data.LastOnlinePercentile = -1f;
         SaveData();
 
         SeasonEnded?.Invoke(this, EventArgs.Empty);
@@ -616,42 +668,40 @@ public sealed class LeagueService : ILeagueService
 
     private void ProcessSeasonEnd()
     {
-        // Rang bestimmen (aus gecachtem Leaderboard)
-        int rank = GetPlayerRank();
-        var leaderboard = GetLeaderboard();
-        int totalPlayers = leaderboard.Count;
-
-        float percentile = totalPlayers > 0 ? (float)rank / totalPlayers : 1f;
-
-        // Auf-/Abstieg bestimmen
-        var promotionPercent = _data.CurrentTier.GetPromotionPercent();
-        var relegationPercent = _data.CurrentTier.GetRelegationPercent();
-
-        LeagueTier newTier = _data.CurrentTier;
-
-        // Top 30% → Aufstieg
-        if (promotionPercent > 0 && percentile <= promotionPercent && _data.CurrentTier < LeagueTier.Diamond)
+        // Auf-/Abstieg auf Basis des ZULETZT ONLINE ermittelten Perzentils der ENDENDEN Saison.
+        // Eine Offline-Schaetzung (Spieler-Rang gegen den frisch erzeugten NPC-Backfill der NEUEN
+        // Saison) wuerde fast immer promovieren/relegieren — daher nur entscheiden, wenn ein echter
+        // Online-Rang vorliegt (LastOnlinePercentile >= 0). Sonst bleibt der Tier unveraendert
+        // (kein unverdienter Auf-/Abstieg).
+        float percentile = _data.LastOnlinePercentile;
+        if (percentile >= 0f)
         {
-            newTier = _data.CurrentTier + 1;
-            _stats.TotalPromotions++;
-        }
-        // Bottom 20% → Abstieg
-        else if (relegationPercent > 0 && percentile > (1f - relegationPercent))
-        {
-            newTier = _data.CurrentTier - 1;
-        }
+            var promotionPercent = _data.CurrentTier.GetPromotionPercent();
+            var relegationPercent = _data.CurrentTier.GetRelegationPercent();
 
-        // Höchster Rang tracken
-        if ((int)newTier > _stats.HighestTier)
-            _stats.HighestTier = (int)newTier;
+            LeagueTier newTier = _data.CurrentTier;
 
-        // Achievement: Liga-Tier prüfen
-        _achievementService.Value.OnLeagueTierReached((int)newTier);
+            // Top X% → Aufstieg
+            if (promotionPercent > 0 && percentile <= promotionPercent && _data.CurrentTier < LeagueTier.Diamond)
+            {
+                newTier = _data.CurrentTier + 1;
+                _stats.TotalPromotions++;
+            }
+            // Bottom Y% → Abstieg
+            else if (relegationPercent > 0 && percentile > (1f - relegationPercent))
+            {
+                newTier = _data.CurrentTier - 1;
+            }
+
+            if ((int)newTier > _stats.HighestTier)
+                _stats.HighestTier = (int)newTier;
+
+            _achievementService.Value.OnLeagueTierReached((int)newTier);
+            _data.CurrentTier = newTier;
+        }
 
         _stats.TotalSeasons++;
         SaveStats();
-
-        _data.CurrentTier = newTier;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

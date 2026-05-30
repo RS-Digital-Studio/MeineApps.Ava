@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_flammenvogel_helios
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: flammenvogel_helios
+  displayNameKey: card.flammenvogel_helios.name
+  flavorTextKey: card.flammenvogel_helios.flavor
+  element: 0
+  rarity: 3
+  race: 3
+  cost: 25
+  baseAttack: 580
+  baseHealth: 1650
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: 951c655697584b441b878820ca2a01ad, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 100
+  onPlayLineKey: 
+  onVictoryLineKey: 
+  onDeathLineKey: 
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 1
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Event/card_flammenvogel_helios
+  voiceLineAddressableKey: 

@@ -14,19 +14,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
   id: sturmzitadelle
   displayNameKey: world.sturmzitadelle.name
-  index: 7
-  themeElement: 3
-  recommendedPlayerLevel: 80
-  backgroundAddressableKey: Worlds.7/bg_sturmzitadelle
+  index: 6
+  themeElement: 5
+  recommendedCounterElement: 3
+  recommendedPlayerLevel: 65
+  backgroundAddressableKey: Worlds.6/bg_sturmzitadelle
   musicAddressableKey: Audio.BGM/music_sturmzitadelle
+  saeuleNameKey: world.sturmzitadelle.saeule
+  bossCardId: sturmadler_aethon
+  storySummaryKey: world.sturmzitadelle.story
+  memoryFragmentKey: world.sturmzitadelle.memory
+  mentorNpcKey: npc.koenigin_sera
+  baseGoldPerDay: 1600
+  prestige4CardId: blitzgeneral_thorak
   nodes:
   - id: sturmzitadelle_n1
     displayNameKey: world.sturmzitadelle.node1
     nodeIndex: 1
     type: 0
     enemyDeckCardIds:
-    - sonnenpriesterin
-    - erleuchtete_magierin
+    - wachtposten
+    - sternenfunke
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -40,9 +48,9 @@ MonoBehaviour:
     nodeIndex: 2
     type: 0
     enemyDeckCardIds:
-    - erleuchtete_magierin
-    - sturmvogel
-    - sonnenpriesterin
+    - mondfee
+    - elfenheiler
+    - rekrut_aldor
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -56,9 +64,9 @@ MonoBehaviour:
     nodeIndex: 3
     type: 0
     enemyDeckCardIds:
-    - sphaerenwaechter
-    - erleuchtete_magierin
-    - sonnenpriesterin
+    - sternenlaeufer
+    - gluehwuermchen_schwarm
+    - mondwolf
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -72,9 +80,9 @@ MonoBehaviour:
     nodeIndex: 4
     type: 0
     enemyDeckCardIds:
-    - sphaerenwaechter
-    - sphaerenwaechter
-    - erleuchtete_magierin
+    - paladin_morgenroete
+    - heilige_wachtmeisterin
+    - tempelwaechterin
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -88,10 +96,10 @@ MonoBehaviour:
     nodeIndex: 5
     type: 1
     enemyDeckCardIds:
-    - eisernwille_champion
-    - sphaerenwaechter
-    - erleuchtete_magierin
-    - sonnenpriesterin
+    - traumweberin_aria
+    - mondschleier_selene_3star
+    - paladin_morgenroete
+    - mondwolf
     goldOneStar: 1000
     goldTwoStar: 2000
     goldThreeStar: 4000
@@ -105,9 +113,9 @@ MonoBehaviour:
     nodeIndex: 6
     type: 0
     enemyDeckCardIds:
-    - eisernwille_champion
-    - sphaerenwaechter
-    - erleuchtete_magierin
+    - sturmadler_aethon
+    - traumweberin_aria
+    - heilige_wachtmeisterin
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -121,9 +129,9 @@ MonoBehaviour:
     nodeIndex: 7
     type: 0
     enemyDeckCardIds:
-    - eisernwille_champion
-    - eisernwille_champion
-    - sphaerenwaechter
+    - sternenwanderer_caelum
+    - mondkoenigin_naeris
+    - paladin_morgenroete
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -137,10 +145,9 @@ MonoBehaviour:
     nodeIndex: 8
     type: 0
     enemyDeckCardIds:
-    - eisernwille_champion
-    - sphaerenwaechter
-    - erleuchtete_magierin
-    - sturmvogel
+    - selene_mondschleier
+    - chronos_zeit
+    - sturmadler_aethon
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -154,9 +161,9 @@ MonoBehaviour:
     nodeIndex: 9
     type: 0
     enemyDeckCardIds:
-    - mondkoenigin_selene
-    - eisernwille_champion
-    - sphaerenwaechter
+    - eos_morgenroete
+    - marschall_eisen
+    - selene_mondschleier
     goldOneStar: 500
     goldTwoStar: 1000
     goldThreeStar: 2000
@@ -170,11 +177,11 @@ MonoBehaviour:
     nodeIndex: 10
     type: 2
     enemyDeckCardIds:
-    - mondkoenigin_selene
-    - eisernwille_champion
-    - sphaerenwaechter
-    - erleuchtete_magierin
-    - sonnenpriesterin
+    - eos_morgenroete
+    - selene_mondschleier
+    - chronos_zeit
+    - marschall_eisen
+    - sturmadler_aethon
     goldOneStar: 2000
     goldTwoStar: 4000
     goldThreeStar: 8000

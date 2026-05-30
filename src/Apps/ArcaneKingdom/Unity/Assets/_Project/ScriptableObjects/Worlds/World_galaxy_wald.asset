@@ -14,172 +14,179 @@ MonoBehaviour:
   m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
   id: galaxy_wald
   displayNameKey: world.galaxy_wald.name
-  index: 8
-  themeElement: 3
-  recommendedPlayerLevel: 95
-  backgroundAddressableKey: Worlds.8/bg_galaxy_wald
+  index: 9
+  themeElement: 5
+  recommendedCounterElement: 4
+  recommendedPlayerLevel: 110
+  backgroundAddressableKey: Worlds.9/bg_galaxy_wald
   musicAddressableKey: Audio.BGM/music_galaxy_wald
+  saeuleNameKey: world.galaxy_wald.saeule
+  bossCardId: selene_mondschleier
+  storySummaryKey: world.galaxy_wald.story
+  memoryFragmentKey: world.galaxy_wald.memory
+  mentorNpcKey: npc.aetherius_geist
+  baseGoldPerDay: 2800
+  prestige4CardId: kosmischer_druide
   nodes:
   - id: galaxy_wald_n1
     displayNameKey: world.galaxy_wald.node1
     nodeIndex: 1
     type: 0
     enemyDeckCardIds:
-    - aelteren_druide
-    - phoenix_ewigkeit
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - sternenfunke
+    - mondfee
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n2
     displayNameKey: world.galaxy_wald.node2
     nodeIndex: 2
     type: 0
     enemyDeckCardIds:
-    - nachtschatten_wolf
-    - sphaerenwaechter
-    - schreckens_ritter
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - gluehwuermchen_schwarm
+    - sternenlaeufer
+    - mondwolf
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n3
     displayNameKey: world.galaxy_wald.node3
     nodeIndex: 3
     type: 0
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - phoenix_ewigkeit
-    - aelteren_druide
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - traumweberin_aria
+    - mondschleier_selene_3star
+    - paladin_morgenroete
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n4
     displayNameKey: world.galaxy_wald.node4
     nodeIndex: 4
     type: 0
     enemyDeckCardIds:
-    - hoellenfuerst_inferno
-    - abgrund_tyrann
-    - phoenix_ewigkeit
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - sternenwanderer_caelum
+    - sturmadler_aethon
+    - mondkoenigin_naeris
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n5
     displayNameKey: world.galaxy_wald.node5
     nodeIndex: 5
     type: 1
     enemyDeckCardIds:
-    - mondkoenigin_selene
-    - schwarzes_herz_lich
-    - eisernwille_champion
-    - schreckens_ritter
-    goldOneStar: 1400
-    goldTwoStar: 2800
-    goldThreeStar: 5600
-    goldFourStar: 14000
-    expOneStar: 280
-    expTwoStar: 700
-    expThreeStar: 1400
-    expFourStar: 2800
+    - selene_mondschleier
+    - chronos_zeit
+    - eos_morgenroete
+    - marschall_eisen
+    goldOneStar: 2200
+    goldTwoStar: 4400
+    goldThreeStar: 8800
+    goldFourStar: 22000
+    expOneStar: 440
+    expTwoStar: 1100
+    expThreeStar: 2200
+    expFourStar: 4400
   - id: galaxy_wald_n6
     displayNameKey: world.galaxy_wald.node6
     nodeIndex: 6
     type: 0
     enemyDeckCardIds:
-    - hoellenfuerst_inferno
-    - schwarzes_herz_lich
-    - aelteren_druide
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - eos_morgenroete
+    - selene_mondschleier
+    - marschall_eisen
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n7
     displayNameKey: world.galaxy_wald.node7
     nodeIndex: 7
     type: 0
     enemyDeckCardIds:
-    - mondkoenigin_selene
-    - hoellenfuerst_inferno
-    - nachtschatten_wolf
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - prinzessin_seraphine
+    - selene_mondschleier
+    - chronos_zeit
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n8
     displayNameKey: world.galaxy_wald.node8
     nodeIndex: 8
     type: 0
     enemyDeckCardIds:
-    - mondkoenigin_selene
-    - schwarzes_herz_lich
-    - hoellenfuerst_inferno
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - erzkoenig_aldric
+    - sternbaum_elarion
+    - selene_mondschleier
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n9
     displayNameKey: world.galaxy_wald.node9
     nodeIndex: 9
     type: 0
     enemyDeckCardIds:
-    - mondkoenigin_selene
-    - schwarzes_herz_lich
-    - abgrund_tyrann
-    - aelteren_druide
-    goldOneStar: 700
-    goldTwoStar: 1400
-    goldThreeStar: 2800
-    goldFourStar: 7000
-    expOneStar: 140
-    expTwoStar: 350
-    expThreeStar: 700
-    expFourStar: 1400
+    - erzkoenig_aldric
+    - sternbaum_elarion
+    - fenrir_urdrachenwolf
+    goldOneStar: 1100
+    goldTwoStar: 2200
+    goldThreeStar: 4400
+    goldFourStar: 11000
+    expOneStar: 220
+    expTwoStar: 550
+    expThreeStar: 1100
+    expFourStar: 2200
   - id: galaxy_wald_n10
     displayNameKey: world.galaxy_wald.node10
     nodeIndex: 10
     type: 2
     enemyDeckCardIds:
-    - drachenherrscher_goldzahn
-    - mondkoenigin_selene
-    - schwarzes_herz_lich
-    - hoellenfuerst_inferno
-    - abgrund_tyrann
-    goldOneStar: 2800
-    goldTwoStar: 5600
-    goldThreeStar: 11200
-    goldFourStar: 28000
-    expOneStar: 700
-    expTwoStar: 1750
-    expThreeStar: 3500
-    expFourStar: 7000
+    - aetherius_allschoepfer
+    - sternbaum_elarion
+    - selene_mondschleier
+    - chronos_zeit
+    - marschall_eisen
+    goldOneStar: 4400
+    goldTwoStar: 8800
+    goldThreeStar: 17600
+    goldFourStar: 44000
+    expOneStar: 1100
+    expTwoStar: 2750
+    expThreeStar: 5500
+    expFourStar: 11000

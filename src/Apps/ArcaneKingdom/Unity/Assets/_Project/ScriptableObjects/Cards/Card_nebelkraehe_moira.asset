@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_nebelkraehe_moira
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: nebelkraehe_moira
+  displayNameKey: card.nebelkraehe_moira.name
+  flavorTextKey: card.nebelkraehe_moira.flavor
+  element: 4
+  rarity: 2
+  race: 3
+  cost: 15
+  baseAttack: 480
+  baseHealth: 950
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: c7a1b6b4d3221f449a87830c5a29591d, type: 2}
+  secondAbility: {fileID: 11400000, guid: aff42056dd3cfc54c9a621a70f50814a, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 61f9872696819b8439b8553eac228336, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.nebelkraehe_moira.play
+  onVictoryLineKey: card.nebelkraehe_moira.victory
+  onDeathLineKey: card.nebelkraehe_moira.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_nebelkraehe_moira
+  voiceLineAddressableKey: 

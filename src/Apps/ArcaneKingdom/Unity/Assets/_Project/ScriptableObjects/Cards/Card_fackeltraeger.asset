@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_fackeltraeger
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: fackeltraeger
+  displayNameKey: card.fackeltraeger.name
+  flavorTextKey: card.fackeltraeger.flavor
+  element: 0
+  rarity: 0
+  race: 0
+  cost: 4
+  baseAttack: 170
+  baseHealth: 550
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: 1b2ee2221dba6d34ba5a7eae7bfb202d, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 200
+  onPlayLineKey: 
+  onVictoryLineKey: 
+  onDeathLineKey: 
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Common/card_fackeltraeger
+  voiceLineAddressableKey: 

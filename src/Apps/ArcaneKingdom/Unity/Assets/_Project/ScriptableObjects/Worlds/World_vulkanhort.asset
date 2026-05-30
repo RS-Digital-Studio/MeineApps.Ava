@@ -15,19 +15,26 @@ MonoBehaviour:
   id: vulkanhort
   displayNameKey: world.vulkanhort.name
   index: 3
-  themeElement: 1
+  themeElement: 0
+  recommendedCounterElement: 1
   recommendedPlayerLevel: 18
   backgroundAddressableKey: Worlds.3/bg_vulkanhort
   musicAddressableKey: Audio.BGM/music_vulkanhort
+  saeuleNameKey: world.vulkanhort.saeule
+  bossCardId: hoellenfuerst_malphas
+  storySummaryKey: world.vulkanhort.story
+  memoryFragmentKey: world.vulkanhort.memory
+  mentorNpcKey: npc.lilith
+  baseGoldPerDay: 500
+  prestige4CardId: lavaschmied_pyrros
   nodes:
   - id: vulkanhort_n1
     displayNameKey: world.vulkanhort.node1
     nodeIndex: 1
     type: 0
     enemyDeckCardIds:
-    - vulkan_krieger
-    - funkenmeister
-    - schmieden_golem
+    - feuerteufel_lehrling
+    - besessener_krieger
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -41,9 +48,9 @@ MonoBehaviour:
     nodeIndex: 2
     type: 0
     enemyDeckCardIds:
-    - drachenlord_adept
-    - vulkan_krieger
-    - glutwolf
+    - flammengeist
+    - feuersalamander
+    - feuerteufel_lehrling
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -57,9 +64,9 @@ MonoBehaviour:
     nodeIndex: 3
     type: 0
     enemyDeckCardIds:
-    - vulkan_krieger
-    - vulkan_krieger
-    - schmieden_golem
+    - feuerteufel_veteran
+    - flammengreif
+    - fackeltraeger
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -73,9 +80,9 @@ MonoBehaviour:
     nodeIndex: 4
     type: 0
     enemyDeckCardIds:
-    - drachenlord_adept
-    - funkenmeister
-    - schmieden_golem
+    - kriegsmagier_voss
+    - feuerschmied
+    - speertraegerin_mira
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -89,10 +96,10 @@ MonoBehaviour:
     nodeIndex: 5
     type: 1
     enemyDeckCardIds:
-    - drachenlord_adept
-    - vulkan_krieger
-    - schmieden_golem
-    - funkenmeister
+    - scharlachrose
+    - feuervogel_pyra
+    - daemonenrufer_kelzar
+    - feuerteufel_veteran
     goldOneStar: 240
     goldTwoStar: 480
     goldThreeStar: 960
@@ -106,9 +113,9 @@ MonoBehaviour:
     nodeIndex: 6
     type: 0
     enemyDeckCardIds:
-    - drachenlord_adept
-    - drachenlord_adept
-    - vulkan_krieger
+    - hoellenhund_gruum
+    - flammengreif
+    - feuervogel_pyra
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -122,9 +129,9 @@ MonoBehaviour:
     nodeIndex: 7
     type: 0
     enemyDeckCardIds:
-    - drachenlord_adept
-    - schmieden_golem
-    - funkenmeister
+    - hoellenhund_gruum
+    - daemonenrufer_kelzar
+    - feuerteufel_veteran
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -138,9 +145,9 @@ MonoBehaviour:
     nodeIndex: 8
     type: 0
     enemyDeckCardIds:
-    - phoenix_ewigkeit
-    - vulkan_krieger
-    - drachenlord_adept
+    - scharlachrose
+    - hoellenhund_gruum
+    - solaris_gott_feuer
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -154,9 +161,9 @@ MonoBehaviour:
     nodeIndex: 9
     type: 0
     enemyDeckCardIds:
-    - phoenix_ewigkeit
-    - drachenlord_adept
-    - schmieden_golem
+    - hoellenfuerst_malphas
+    - scharlachrose
+    - feuervogel_pyra
     goldOneStar: 120
     goldTwoStar: 240
     goldThreeStar: 480
@@ -170,11 +177,11 @@ MonoBehaviour:
     nodeIndex: 10
     type: 2
     enemyDeckCardIds:
-    - hoellenfuerst_inferno
-    - phoenix_ewigkeit
-    - drachenlord_adept
-    - vulkan_krieger
-    - funkenmeister
+    - hoellenfuerst_malphas
+    - solaris_gott_feuer
+    - hoellenhund_gruum
+    - scharlachrose
+    - feuervogel_pyra
     goldOneStar: 480
     goldTwoStar: 960
     goldThreeStar: 1920

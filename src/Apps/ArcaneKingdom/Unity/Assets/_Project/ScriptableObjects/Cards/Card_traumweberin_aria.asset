@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_traumweberin_aria
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: traumweberin_aria
+  displayNameKey: card.traumweberin_aria.name
+  flavorTextKey: card.traumweberin_aria.flavor
+  element: 5
+  rarity: 2
+  race: 2
+  cost: 17
+  baseAttack: 350
+  baseHealth: 1500
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 393ef496f08a93d49b817924a52ca0c7, type: 2}
+  secondAbility: {fileID: 11400000, guid: 5f2cbb8e5d421c646938fb33db072633, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 218428fb371f65940add33a01ed1d86f, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.traumweberin_aria.play
+  onVictoryLineKey: card.traumweberin_aria.victory
+  onDeathLineKey: card.traumweberin_aria.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_traumweberin_aria
+  voiceLineAddressableKey: 

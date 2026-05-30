@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_bogenschuetzin_lyra
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: bogenschuetzin_lyra
+  displayNameKey: card.bogenschuetzin_lyra.name
+  flavorTextKey: card.bogenschuetzin_lyra.flavor
+  element: 2
+  rarity: 2
+  race: 0
+  cost: 16
+  baseAttack: 420
+  baseHealth: 920
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: b72997547ae97b94ebdf833c9632b915, type: 2}
+  secondAbility: {fileID: 11400000, guid: 3579dc2f17e8757498b31e3fea52c501, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 632bd717340858348ba014ac7db5633f, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.bogenschuetzin_lyra.play
+  onVictoryLineKey: card.bogenschuetzin_lyra.victory
+  onDeathLineKey: card.bogenschuetzin_lyra.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_bogenschuetzin_lyra
+  voiceLineAddressableKey: 

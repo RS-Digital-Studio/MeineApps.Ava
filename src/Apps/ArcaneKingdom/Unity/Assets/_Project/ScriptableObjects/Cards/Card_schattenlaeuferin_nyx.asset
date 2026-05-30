@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_schattenlaeuferin_nyx
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: schattenlaeuferin_nyx
+  displayNameKey: card.schattenlaeuferin_nyx.name
+  flavorTextKey: card.schattenlaeuferin_nyx.flavor
+  element: 4
+  rarity: 2
+  race: 4
+  cost: 16
+  baseAttack: 510
+  baseHealth: 1050
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: 7fa1d50039660dd49b5f9211ef83d0b3, type: 2}
+  secondAbility: {fileID: 11400000, guid: e4209981499485e4a92911c008119af5, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 7cb8c9cd587f9904b9d337374b7c8621, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.schattenlaeuferin_nyx.play
+  onVictoryLineKey: card.schattenlaeuferin_nyx.victory
+  onDeathLineKey: card.schattenlaeuferin_nyx.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_schattenlaeuferin_nyx
+  voiceLineAddressableKey: 

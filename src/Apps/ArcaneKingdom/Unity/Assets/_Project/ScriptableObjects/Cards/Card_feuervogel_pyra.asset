@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_feuervogel_pyra
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: feuervogel_pyra
+  displayNameKey: card.feuervogel_pyra.name
+  flavorTextKey: card.feuervogel_pyra.flavor
+  element: 0
+  rarity: 2
+  race: 3
+  cost: 16
+  baseAttack: 510
+  baseHealth: 1000
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: ee4557970ab3d5e4381eb68b59a61705, type: 2}
+  secondAbility: {fileID: 11400000, guid: a32318c87c25c3a4ea67510666ea4990, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 6b9ac612fe24fb3438e52f9b4b980011, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.feuervogel_pyra.play
+  onVictoryLineKey: card.feuervogel_pyra.victory
+  onDeathLineKey: card.feuervogel_pyra.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_feuervogel_pyra
+  voiceLineAddressableKey: 

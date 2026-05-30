@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_prinzessin_seraphine
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: prinzessin_seraphine
+  displayNameKey: card.prinzessin_seraphine.name
+  flavorTextKey: card.prinzessin_seraphine.flavor
+  element: 5
+  rarity: 4
+  race: 0
+  cost: 30
+  baseAttack: 720
+  baseHealth: 2300
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 4ad0d07f86dbe6b429aac0e239637aaa, type: 2}
+  secondAbility: {fileID: 11400000, guid: 1c6088c827cf3df468aab964b6ff1e9f, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 882a3552d9afa6a4bb8da8824537b372, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 2
+  globalCraftLimit: 30
+  onPlayLineKey: card.prinzessin_seraphine.play
+  onVictoryLineKey: card.prinzessin_seraphine.victory
+  onDeathLineKey: card.prinzessin_seraphine.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Legendary/card_prinzessin_seraphine
+  voiceLineAddressableKey: 

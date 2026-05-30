@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Hero;
 using ArcaneKingdom.Domain.Runes;
@@ -32,9 +33,13 @@ namespace ArcaneKingdom.EditorTools.Data
                 var abilities = ImportAbilities();
                 var cards = ImportCards(abilities);
                 ImportRunes();
-                ImportWorlds(cards);
+                var nodeIds = ImportWorlds(cards);
                 ImportHeroes();
                 ImportBalancing();
+
+                // Querverweis-Validierung der bislang reinen Daten-Dateien (kein SO-Import noetig).
+                // Verstoesse werden geloggt, damit fehlende/falsche Referenzen frueh auffallen.
+                ValidateCrossReferences(cards, nodeIds);
             }
             finally
             {
@@ -170,22 +175,27 @@ namespace ArcaneKingdom.EditorTools.Data
 
         // ----------------------------------------------------------- Worlds
 
-        private static void ImportWorlds(IReadOnlyDictionary<string, CardDefinition> cards)
+        private static HashSet<string> ImportWorlds(IReadOnlyDictionary<string, CardDefinition> cards)
         {
             var json = File.ReadAllText(Path.Combine(DataFolderRel, "worlds.json"));
             var dtos = JsonConvert.DeserializeObject<List<WorldDto>>(json) ?? new();
             var ids = new HashSet<string>();
+            var nodeIds = new HashSet<string>();
 
             foreach (var dto in dtos)
             {
                 if (!ids.Add(dto.id)) throw new Exception($"Worlds: Doppelte ID '{dto.id}'");
                 ValidateWorld(dto, cards);
 
+                foreach (var n in dto.nodes ?? new List<NodeDto>())
+                    if (!string.IsNullOrEmpty(n.id)) nodeIds.Add(n.id);
+
                 var so = LoadOrCreateAsset<WorldDefinition>($"{SoRootRel}/Worlds/World_{dto.id}.asset");
                 ApplyWorld(so, dto);
                 EditorUtility.SetDirty(so);
             }
             Debug.Log($"[DataImporter] {dtos.Count} Welten importiert.");
+            return nodeIds;
         }
 
         private static void ValidateWorld(WorldDto dto, IReadOnlyDictionary<string, CardDefinition> cards)
@@ -200,6 +210,141 @@ namespace ArcaneKingdom.EditorTools.Data
                 Debug.LogWarning($"World '{dto.id}': bossCardId '{dto.bossCardId}' nicht in cards.json.");
             if (!string.IsNullOrEmpty(dto.prestige4CardId) && !cards.ContainsKey(dto.prestige4CardId!))
                 Debug.LogWarning($"World '{dto.id}': prestige4CardId '{dto.prestige4CardId}' nicht in cards.json.");
+        }
+
+        // ----------------------------------------------------------- Querverweis-Validierung (reine Daten-Dateien)
+
+        /// <summary>
+        /// Prueft die Daten-Dateien, die keinen eigenen ScriptableObject-Import haben, auf
+        /// konsistente Karten- und Node-Referenzen. Harte Verstoesse (Datenverlust, falsche
+        /// Spielregeln) werfen; weichere Inkonsistenzen werden nur als Warnung geloggt.
+        /// </summary>
+        private static void ValidateCrossReferences(IReadOnlyDictionary<string, CardDefinition> cards, IReadOnlyCollection<string> nodeIds)
+        {
+            ValidateCollections(cards);
+            ValidateFusionRecipes(cards);
+            ValidateMaterialDrops(nodeIds);
+            ValidatePremiumShop(cards);
+            ValidateStarTemple(cards);
+            ValidateEvents(cards);
+        }
+
+        private static List<T> LoadJsonArray<T>(string fileName)
+        {
+            var path = Path.Combine(DataFolderRel, fileName);
+            if (!File.Exists(path)) { Debug.LogWarning($"[DataImporter] {fileName} fehlt — Validierung uebersprungen."); return new List<T>(); }
+            return JsonConvert.DeserializeObject<List<T>>(File.ReadAllText(path)) ?? new List<T>();
+        }
+
+        private static T? LoadJsonObject<T>(string fileName) where T : class
+        {
+            var path = Path.Combine(DataFolderRel, fileName);
+            if (!File.Exists(path)) { Debug.LogWarning($"[DataImporter] {fileName} fehlt — Validierung uebersprungen."); return null; }
+            return JsonConvert.DeserializeObject<T>(File.ReadAllText(path));
+        }
+
+        private static void ValidateCollections(IReadOnlyDictionary<string, CardDefinition> cards)
+        {
+            var dtos = LoadJsonArray<CollectionDto>("collections.json");
+            foreach (var dto in dtos)
+            {
+                // rewardCardId ist Pflicht und MUSS in cards.json existieren (sonst Datenverlust beim Einloesen des Sets).
+                if (string.IsNullOrEmpty(dto.rewardCardId))
+                    throw new Exception($"Collection '{dto.id}': rewardCardId fehlt.");
+                if (!cards.ContainsKey(dto.rewardCardId!))
+                    throw new Exception($"Collection '{dto.id}': rewardCardId '{dto.rewardCardId}' existiert nicht in cards.json.");
+                if (dto.requiredMaterialIds == null || dto.requiredMaterialIds.Count == 0)
+                    Debug.LogWarning($"Collection '{dto.id}': Keine requiredMaterialIds definiert.");
+            }
+            Debug.Log($"[DataImporter] {dtos.Count} Sammel-Sets validiert.");
+        }
+
+        private static void ValidateFusionRecipes(IReadOnlyDictionary<string, CardDefinition> cards)
+        {
+            var dtos = LoadJsonArray<FusionRecipeDto>("fusion_recipes.json");
+            var recipeIds = new HashSet<string>();
+            foreach (var dto in dtos)
+            {
+                if (!string.IsNullOrEmpty(dto.id) && !recipeIds.Add(dto.id!))
+                    throw new Exception($"FusionRecipes: Doppelte ID '{dto.id}'.");
+
+                // Ergebnis-Karte muss existieren.
+                if (string.IsNullOrEmpty(dto.resultCardId) || !cards.ContainsKey(dto.resultCardId!))
+                    throw new Exception($"FusionRecipe '{dto.id}': resultCardId '{dto.resultCardId}' existiert nicht in cards.json.");
+
+                // Input-Karten muessen existieren UND duerfen keine Premium-Karten sein
+                // (Premium-Karten koennen nicht in Fusion verwendet werden — sonst Verlust einer gekauften Karte).
+                foreach (var inId in dto.requiredCardIds ?? new List<string>())
+                {
+                    if (!cards.TryGetValue(inId, out var inCard))
+                        throw new Exception($"FusionRecipe '{dto.id}': Input-Karte '{inId}' existiert nicht in cards.json.");
+                    if (inCard.IsPremiumCard)
+                        throw new Exception($"FusionRecipe '{dto.id}': Premium-Karte '{inId}' darf NICHT als Fusion-Input verwendet werden.");
+                }
+            }
+            Debug.Log($"[DataImporter] {dtos.Count} Fusions-Rezepte validiert.");
+        }
+
+        private static void ValidateMaterialDrops(IReadOnlyCollection<string> nodeIds)
+        {
+            var dtos = LoadJsonArray<MaterialDropDto>("material_drops.json");
+            foreach (var dto in dtos)
+            {
+                if (string.IsNullOrEmpty(dto.nodeId))
+                    throw new Exception("MaterialDrops: Eintrag ohne nodeId.");
+                if (!nodeIds.Contains(dto.nodeId!))
+                    Debug.LogWarning($"MaterialDrops: nodeId '{dto.nodeId}' kommt in keiner Welt aus worlds.json vor.");
+                foreach (var d in dto.drops ?? new List<MaterialDropEntryDto>())
+                    if (string.IsNullOrEmpty(d.materialId))
+                        Debug.LogWarning($"MaterialDrops '{dto.nodeId}': Drop ohne materialId.");
+            }
+            Debug.Log($"[DataImporter] {dtos.Count} Material-Drop-Eintraege validiert.");
+        }
+
+        private static void ValidatePremiumShop(IReadOnlyDictionary<string, CardDefinition> cards)
+        {
+            var dto = LoadJsonObject<PremiumShopDto>("premium_shop.json");
+            if (dto == null) return;
+            void Check(PremiumShopSlotDto? slot, string section)
+            {
+                if (slot == null) return;
+                if (string.IsNullOrEmpty(slot.cardId) || !cards.TryGetValue(slot.cardId!, out var card))
+                    throw new Exception($"PremiumShop ({section}): cardId '{slot.cardId}' existiert nicht in cards.json.");
+                if (!card.IsPremiumCard)
+                    Debug.LogWarning($"PremiumShop ({section}): Karte '{slot.cardId}' ist nicht als isPremiumCard markiert.");
+            }
+            foreach (var s in dto.permanentSlots ?? new List<PremiumShopSlotDto>()) Check(s, "permanent");
+            foreach (var s in dto.rotatingSlots ?? new List<PremiumShopSlotDto>()) Check(s, "rotating");
+            Debug.Log("[DataImporter] Premium-Shop validiert.");
+        }
+
+        private static void ValidateStarTemple(IReadOnlyDictionary<string, CardDefinition> cards)
+        {
+            var dto = LoadJsonObject<StarTempleDto>("star_temple.json");
+            if (dto == null) return;
+            foreach (var ex in dto.exchanges ?? new List<StarTempleExchangeDto>())
+            {
+                // rewardCardId ist nur bei konkreten Karten-Belohnungen gesetzt.
+                if (!string.IsNullOrEmpty(ex.rewardCardId) && !cards.ContainsKey(ex.rewardCardId!))
+                    throw new Exception($"StarTemple '{ex.id}': rewardCardId '{ex.rewardCardId}' existiert nicht in cards.json.");
+            }
+            Debug.Log("[DataImporter] Sternkarten-Tempel validiert.");
+        }
+
+        private static void ValidateEvents(IReadOnlyDictionary<string, CardDefinition> cards)
+        {
+            var dtos = LoadJsonArray<EventDto>("events.json");
+            foreach (var dto in dtos)
+            {
+                foreach (var ec in dto.eventCards ?? new List<EventCardDto>())
+                {
+                    if (string.IsNullOrEmpty(ec.cardId) || !cards.TryGetValue(ec.cardId!, out var card))
+                        throw new Exception($"Event '{dto.id}': eventCard '{ec.cardId}' existiert nicht in cards.json.");
+                    if (!card.IsEventCard)
+                        Debug.LogWarning($"Event '{dto.id}': Karte '{ec.cardId}' ist nicht als isEventCard markiert.");
+                }
+            }
+            Debug.Log($"[DataImporter] {dtos.Count} Events validiert.");
         }
 
         // ----------------------------------------------------------- Heroes
@@ -522,6 +667,76 @@ namespace ArcaneKingdom.EditorTools.Data
             public int expTwoStar = 25;
             public int expThreeStar = 50;
             public int expFourStar = 100;
+        }
+
+        // --- DTOs fuer die Querverweis-Validierung (nur die fuer die Pruefung relevanten Felder) ---
+
+        [Serializable]
+        private sealed class CollectionDto
+        {
+            public string id = string.Empty;
+            public List<string>? requiredMaterialIds;
+            public string? rewardCardId;
+        }
+
+        [Serializable]
+        private sealed class FusionRecipeDto
+        {
+            public string? id;
+            public string? resultCardId;
+            public List<string>? requiredCardIds;
+        }
+
+        [Serializable]
+        private sealed class MaterialDropDto
+        {
+            public string? nodeId;
+            public List<MaterialDropEntryDto>? drops;
+        }
+
+        [Serializable]
+        private sealed class MaterialDropEntryDto
+        {
+            public string? materialId;
+        }
+
+        [Serializable]
+        private sealed class PremiumShopDto
+        {
+            public List<PremiumShopSlotDto>? permanentSlots;
+            public List<PremiumShopSlotDto>? rotatingSlots;
+        }
+
+        [Serializable]
+        private sealed class PremiumShopSlotDto
+        {
+            public string? cardId;
+        }
+
+        [Serializable]
+        private sealed class StarTempleDto
+        {
+            public List<StarTempleExchangeDto>? exchanges;
+        }
+
+        [Serializable]
+        private sealed class StarTempleExchangeDto
+        {
+            public string? id;
+            public string? rewardCardId;
+        }
+
+        [Serializable]
+        private sealed class EventDto
+        {
+            public string? id;
+            public List<EventCardDto>? eventCards;
+        }
+
+        [Serializable]
+        private sealed class EventCardDto
+        {
+            public string? cardId;
         }
     }
 }

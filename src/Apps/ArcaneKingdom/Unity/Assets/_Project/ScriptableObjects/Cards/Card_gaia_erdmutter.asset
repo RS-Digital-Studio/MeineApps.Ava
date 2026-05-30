@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_gaia_erdmutter
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: gaia_erdmutter
+  displayNameKey: card.gaia_erdmutter.name
+  flavorTextKey: card.gaia_erdmutter.flavor
+  element: 3
+  rarity: 3
+  race: 1
+  cost: 30
+  baseAttack: 520
+  baseHealth: 2200
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 7f1ce4610161521459c9e69a05dea1c1, type: 2}
+  secondAbility: {fileID: 11400000, guid: 475fb9b68794e864686d8f0de60070b6, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 0bb28a203de73a843a6de42452d1fb7d, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 2
+  globalCraftLimit: 25
+  onPlayLineKey: card.gaia_erdmutter.play
+  onVictoryLineKey: card.gaia_erdmutter.victory
+  onDeathLineKey: card.gaia_erdmutter.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_gaia_erdmutter
+  voiceLineAddressableKey: 

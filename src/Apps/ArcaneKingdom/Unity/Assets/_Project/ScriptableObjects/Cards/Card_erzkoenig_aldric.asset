@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_erzkoenig_aldric
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: erzkoenig_aldric
+  displayNameKey: card.erzkoenig_aldric.name
+  flavorTextKey: card.erzkoenig_aldric.flavor
+  element: 5
+  rarity: 5
+  race: 0
+  cost: 42
+  baseAttack: 950
+  baseHealth: 2800
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 1a5ce2c8f9acef949a715f0345072eea, type: 2}
+  secondAbility: {fileID: 11400000, guid: 10a9ceda36fd9924dac93f4bc53876c9, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 63f083ffa3f893e4d9ac9b28fcf7e32b, type: 2}
+  lastWillAbility: {fileID: 11400000, guid: 21bd80cef46a1b7449c15293e954ce7e, type: 2}
+  deckLimit: 2
+  globalCraftLimit: 5
+  onPlayLineKey: card.erzkoenig_aldric.play
+  onVictoryLineKey: card.erzkoenig_aldric.victory
+  onDeathLineKey: card.erzkoenig_aldric.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Mythic/card_erzkoenig_aldric
+  voiceLineAddressableKey: 

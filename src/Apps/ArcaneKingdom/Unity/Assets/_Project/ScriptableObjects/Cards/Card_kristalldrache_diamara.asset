@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_kristalldrache_diamara
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: kristalldrache_diamara
+  displayNameKey: card.kristalldrache_diamara.name
+  flavorTextKey: card.kristalldrache_diamara.flavor
+  element: 3
+  rarity: 3
+  race: 3
+  cost: 26
+  baseAttack: 550
+  baseHealth: 2000
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 7ef9f467b288ec14e9b3e0555c975b66, type: 2}
+  secondAbility: {fileID: 11400000, guid: 35d453853dcadee43bdf0d068fb43c48, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 71b724ff8c089484c9fe36527a8b808c, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 60
+  onPlayLineKey: card.kristalldrache_diamara.play
+  onVictoryLineKey: card.kristalldrache_diamara.victory
+  onDeathLineKey: card.kristalldrache_diamara.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_kristalldrache_diamara
+  voiceLineAddressableKey: 

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_eos_morgenroete
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: eos_morgenroete
+  displayNameKey: card.eos_morgenroete.name
+  flavorTextKey: card.eos_morgenroete.flavor
+  element: 5
+  rarity: 4
+  race: 2
+  cost: 32
+  baseAttack: 680
+  baseHealth: 2350
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 48067d2a01dae634ab95ab2794a8a979, type: 2}
+  secondAbility: {fileID: 11400000, guid: 79ef5238e2c3fbe41afeece1bdf84ab9, type: 2}
+  thirdAbility: {fileID: 11400000, guid: dfc60bd236fd83f4aa5ce4afee86ed48, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 2
+  globalCraftLimit: 30
+  onPlayLineKey: card.eos_morgenroete.play
+  onVictoryLineKey: card.eos_morgenroete.victory
+  onDeathLineKey: card.eos_morgenroete.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Legendary/card_eos_morgenroete
+  voiceLineAddressableKey: 

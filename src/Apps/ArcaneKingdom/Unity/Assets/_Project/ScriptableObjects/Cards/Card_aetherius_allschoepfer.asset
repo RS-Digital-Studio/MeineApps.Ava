@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_aetherius_allschoepfer
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: aetherius_allschoepfer
+  displayNameKey: card.aetherius_allschoepfer.name
+  flavorTextKey: card.aetherius_allschoepfer.flavor
+  element: 5
+  rarity: 5
+  race: 1
+  cost: 50
+  baseAttack: 1050
+  baseHealth: 3200
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 36a5593f5ee96ba4fa23ab964e7c0451, type: 2}
+  secondAbility: {fileID: 11400000, guid: ddef2731e508aa448963756a2830bad8, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 819403149cbd99d49be2dfb92e4822ad, type: 2}
+  lastWillAbility: {fileID: 11400000, guid: 52e52edf8c0c5b841813347cdfd49f88, type: 2}
+  deckLimit: 2
+  globalCraftLimit: 3
+  onPlayLineKey: card.aetherius_allschoepfer.play
+  onVictoryLineKey: card.aetherius_allschoepfer.victory
+  onDeathLineKey: card.aetherius_allschoepfer.death
+  rivalCardIds:
+  - fenrir_urdrachenwolf
+  - urdaemon_malphas_rex
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Mythic/card_aetherius_allschoepfer
+  voiceLineAddressableKey: 

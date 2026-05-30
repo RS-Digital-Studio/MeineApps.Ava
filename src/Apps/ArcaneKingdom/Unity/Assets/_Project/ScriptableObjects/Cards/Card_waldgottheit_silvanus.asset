@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_waldgottheit_silvanus
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: waldgottheit_silvanus
+  displayNameKey: card.waldgottheit_silvanus.name
+  flavorTextKey: card.waldgottheit_silvanus.flavor
+  element: 2
+  rarity: 3
+  race: 3
+  cost: 27
+  baseAttack: 480
+  baseHealth: 2050
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 840ee764af9db144d95d8f353a0f48d0, type: 2}
+  secondAbility: {fileID: 11400000, guid: cf85afd900867a64ca16a08c2e50afdb, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 2c8bf485069fb1e4e95d32dbbe26909b, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 60
+  onPlayLineKey: card.waldgottheit_silvanus.play
+  onVictoryLineKey: card.waldgottheit_silvanus.victory
+  onDeathLineKey: card.waldgottheit_silvanus.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_waldgottheit_silvanus
+  voiceLineAddressableKey: 

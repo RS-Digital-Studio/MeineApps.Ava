@@ -14,168 +14,179 @@ MonoBehaviour:
   m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
   id: abysstiefe
   displayNameKey: world.abysstiefe.name
-  index: 5
-  themeElement: 2
-  recommendedPlayerLevel: 50
-  backgroundAddressableKey: Worlds.5/bg_abysstiefe
+  index: 8
+  themeElement: 1
+  recommendedCounterElement: 2
+  recommendedPlayerLevel: 95
+  backgroundAddressableKey: Worlds.8/bg_abysstiefe
   musicAddressableKey: Audio.BGM/music_abysstiefe
+  saeuleNameKey: world.abysstiefe.saeule
+  bossCardId: jormungand_weltenschlange
+  storySummaryKey: world.abysstiefe.story
+  memoryFragmentKey: world.abysstiefe.memory
+  mentorNpcKey: npc.lumis
+  baseGoldPerDay: 2400
+  prestige4CardId: tiefseekaiser_leviath
   nodes:
   - id: abysstiefe_n1
     displayNameKey: world.abysstiefe.node1
     nodeIndex: 1
     type: 0
     enemyDeckCardIds:
-    - tiefenfuerst_kraken
-    - frostklingen_adept
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - frostdemon
+    - wasserspeier
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n2
     displayNameKey: world.abysstiefe.node2
     nodeIndex: 2
     type: 0
     enemyDeckCardIds:
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - frostfuchs
+    - wasserschlange
+    - wasserspeier
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n3
     displayNameKey: world.abysstiefe.node3
     nodeIndex: 3
     type: 0
     enemyDeckCardIds:
-    - tiefenfuerst_kraken
-    - tiefenfuerst_kraken
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - wasserdrache_tidal
+    - eiskristall_magierin
+    - sturmreiterin_kira
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n4
     displayNameKey: world.abysstiefe.node4
     nodeIndex: 4
     type: 0
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - tiefenfuerst_kraken
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - wasserdrache_tidal
+    - libra_waage
+    - thalassa_gezeiten
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n5
     displayNameKey: world.abysstiefe.node5
     nodeIndex: 5
     type: 1
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
-    - frostklingen_adept
-    goldOneStar: 600
-    goldTwoStar: 1200
-    goldThreeStar: 2400
-    goldFourStar: 6000
-    expOneStar: 120
-    expTwoStar: 300
-    expThreeStar: 600
-    expFourStar: 1200
+    - thalassa_gezeiten
+    - wasserdrache_tidal
+    - jormungand_weltenschlange
+    - libra_waage
+    goldOneStar: 1800
+    goldTwoStar: 3600
+    goldThreeStar: 7200
+    goldFourStar: 18000
+    expOneStar: 360
+    expTwoStar: 900
+    expThreeStar: 1800
+    expFourStar: 3600
   - id: abysstiefe_n6
     displayNameKey: world.abysstiefe.node6
     nodeIndex: 6
     type: 0
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - tiefenfuerst_kraken
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - jormungand_weltenschlange
+    - thalassa_gezeiten
+    - abgrundwaechter_gor
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n7
     displayNameKey: world.abysstiefe.node7
     nodeIndex: 7
     type: 0
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - jormungand_weltenschlange
+    - noctis_schatten
+    - thalassa_gezeiten
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n8
     displayNameKey: world.abysstiefe.node8
     nodeIndex: 8
     type: 0
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - abgrund_tyrann
-    - tiefenfuerst_kraken
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - jormungand_weltenschlange
+    - chronos_zeit
+    - thalassa_gezeiten
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n9
     displayNameKey: world.abysstiefe.node9
     nodeIndex: 9
     type: 0
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
-    - frostklingen_adept
-    goldOneStar: 300
-    goldTwoStar: 600
-    goldThreeStar: 1200
-    goldFourStar: 3000
-    expOneStar: 60
-    expTwoStar: 150
-    expThreeStar: 300
-    expFourStar: 600
+    - jormungand_weltenschlange
+    - thalassa_gezeiten
+    - urdaemon_malphas_rex
+    goldOneStar: 900
+    goldTwoStar: 1800
+    goldThreeStar: 3600
+    goldFourStar: 9000
+    expOneStar: 180
+    expTwoStar: 450
+    expThreeStar: 900
+    expFourStar: 1800
   - id: abysstiefe_n10
     displayNameKey: world.abysstiefe.node10
     nodeIndex: 10
     type: 2
     enemyDeckCardIds:
-    - abgrund_tyrann
-    - abgrund_tyrann
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
-    - frostklingen_adept
-    goldOneStar: 1200
-    goldTwoStar: 2400
-    goldThreeStar: 4800
-    goldFourStar: 12000
-    expOneStar: 300
-    expTwoStar: 750
-    expThreeStar: 1500
-    expFourStar: 3000
+    - jormungand_weltenschlange
+    - thalassa_gezeiten
+    - urdaemon_malphas_rex
+    - chronos_zeit
+    - abgrundwaechter_gor
+    goldOneStar: 3600
+    goldTwoStar: 7200
+    goldThreeStar: 14400
+    goldFourStar: 36000
+    expOneStar: 900
+    expTwoStar: 2250
+    expThreeStar: 4500
+    expFourStar: 9000

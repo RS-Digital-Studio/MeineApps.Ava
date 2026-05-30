@@ -12,7 +12,7 @@
       "Legendaer": 0.00
     },
     "guaranteedMinRarity": "Selten",
-    "legendaryPityThreshold": 200,
+    "legendaryPityThreshold": 2147483647,
     "maxLegendaryPerPack": 1
   },
   {

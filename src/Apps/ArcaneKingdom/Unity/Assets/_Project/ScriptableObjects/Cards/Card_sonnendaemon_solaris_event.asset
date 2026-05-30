@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_sonnendaemon_solaris_event
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: sonnendaemon_solaris_event
+  displayNameKey: card.sonnendaemon_solaris_event.name
+  flavorTextKey: card.sonnendaemon_solaris_event.flavor
+  element: 0
+  rarity: 4
+  race: 4
+  cost: 34
+  baseAttack: 780
+  baseHealth: 2200
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 4367b41deaab2dd41a01022f276b4e4e, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 2
+  globalCraftLimit: 50
+  onPlayLineKey: 
+  onVictoryLineKey: 
+  onDeathLineKey: 
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 1
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Event/card_sonnendaemon_solaris_event
+  voiceLineAddressableKey: 

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_solaris_gott_feuer
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: solaris_gott_feuer
+  displayNameKey: card.solaris_gott_feuer.name
+  flavorTextKey: card.solaris_gott_feuer.flavor
+  element: 0
+  rarity: 3
+  race: 1
+  cost: 28
+  baseAttack: 680
+  baseHealth: 1950
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: df9f2060a133ed14eb806d171b65992a, type: 2}
+  secondAbility: {fileID: 11400000, guid: 324b1f0a349b6b44a9e0e48b09b7b193, type: 2}
+  thirdAbility: {fileID: 11400000, guid: eb664b0284448ee429730deae0f6e7d6, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 2
+  globalCraftLimit: 25
+  onPlayLineKey: card.solaris_gott_feuer.play
+  onVictoryLineKey: card.solaris_gott_feuer.victory
+  onDeathLineKey: card.solaris_gott_feuer.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_solaris_gott_feuer
+  voiceLineAddressableKey: 

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_pestdoktor_morbius
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: pestdoktor_morbius
+  displayNameKey: card.pestdoktor_morbius.name
+  flavorTextKey: card.pestdoktor_morbius.flavor
+  element: 4
+  rarity: 2
+  race: 4
+  cost: 18
+  baseAttack: 480
+  baseHealth: 1400
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 1c8bc264f83ec3041bf7d0b01f251470, type: 2}
+  secondAbility: {fileID: 11400000, guid: 919bd97f278f3264ab8694717e58f3c8, type: 2}
+  thirdAbility: {fileID: 11400000, guid: c5ad925e3abc87a4a81fe971a4106743, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.pestdoktor_morbius.play
+  onVictoryLineKey: card.pestdoktor_morbius.victory
+  onDeathLineKey: card.pestdoktor_morbius.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_pestdoktor_morbius
+  voiceLineAddressableKey: 

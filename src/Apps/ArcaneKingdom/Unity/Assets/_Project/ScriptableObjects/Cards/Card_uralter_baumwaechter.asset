@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_uralter_baumwaechter
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: uralter_baumwaechter
+  displayNameKey: card.uralter_baumwaechter.name
+  flavorTextKey: card.uralter_baumwaechter.flavor
+  element: 2
+  rarity: 2
+  race: 3
+  cost: 19
+  baseAttack: 320
+  baseHealth: 1600
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: ba3a2ca3f3d39754bb1cb15e2350f967, type: 2}
+  secondAbility: {fileID: 11400000, guid: 3fc811fe65f0dc945925f916de8c5393, type: 2}
+  thirdAbility: {fileID: 11400000, guid: cb841068ff96af34dabfa3db08d1d02f, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.uralter_baumwaechter.play
+  onVictoryLineKey: card.uralter_baumwaechter.victory
+  onDeathLineKey: card.uralter_baumwaechter.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_uralter_baumwaechter
+  voiceLineAddressableKey: 

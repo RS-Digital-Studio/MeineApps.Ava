@@ -15,19 +15,26 @@ MonoBehaviour:
   id: elderwald
   displayNameKey: world.elderwald.name
   index: 1
-  themeElement: 0
+  themeElement: 2
+  recommendedCounterElement: 0
   recommendedPlayerLevel: 1
   backgroundAddressableKey: Worlds.1/bg_elderwald
   musicAddressableKey: Audio.BGM/music_elderwald
+  saeuleNameKey: world.elderwald.saeule
+  bossCardId: uralter_baumwaechter
+  storySummaryKey: world.elderwald.story
+  memoryFragmentKey: world.elderwald.memory
+  mentorNpcKey: npc.lumis
+  baseGoldPerDay: 100
+  prestige4CardId: urwaldgeist_ygg
   nodes:
   - id: elderwald_n1
     displayNameKey: world.elderwald.node1
     nodeIndex: 1
     type: 0
     enemyDeckCardIds:
-    - waldlaeufer
-    - bornenkrabbe
-    - lehrlingsschmied
+    - jungwolf
+    - elfenpfeil_novize
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -41,9 +48,9 @@ MonoBehaviour:
     nodeIndex: 2
     type: 0
     enemyDeckCardIds:
-    - waldlaeufer
-    - waldlaeufer
-    - bornenkrabbe
+    - waldfuchs
+    - blumenfee
+    - baumspross
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -57,10 +64,9 @@ MonoBehaviour:
     nodeIndex: 3
     type: 0
     enemyDeckCardIds:
-    - bornenkrabbe
-    - bornenkrabbe
-    - lehrlingsschmied
-    - waldlaeufer
+    - windfalke
+    - waldspinne
+    - elfenpfeil_novize
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -74,9 +80,10 @@ MonoBehaviour:
     nodeIndex: 4
     type: 0
     enemyDeckCardIds:
-    - waldlaeufer
-    - bornenkrabbe
-    - sonnenpriesterin
+    - baumspross
+    - waldfuchs
+    - blumenfee
+    - moorgeist
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -90,10 +97,10 @@ MonoBehaviour:
     nodeIndex: 5
     type: 1
     enemyDeckCardIds:
-    - mondlicht_druidin
-    - waldlaeufer
-    - waldlaeufer
-    - bornenkrabbe
+    - baumgeist_elder
+    - blumenfee
+    - windfalke
+    - waldspinne
     goldOneStar: 100
     goldTwoStar: 200
     goldThreeStar: 400
@@ -107,9 +114,9 @@ MonoBehaviour:
     nodeIndex: 6
     type: 0
     enemyDeckCardIds:
-    - dornenbestie
-    - waldlaeufer
-    - bornenkrabbe
+    - dornenigel
+    - waldspinne
+    - baumgeist_elder
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -123,9 +130,9 @@ MonoBehaviour:
     nodeIndex: 7
     type: 0
     enemyDeckCardIds:
-    - mondlicht_druidin
-    - waldlaeufer
-    - sonnenpriesterin
+    - rankenkriegerin_ivy
+    - blumenfee
+    - waldlaeufer_novize
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -139,9 +146,9 @@ MonoBehaviour:
     nodeIndex: 8
     type: 0
     enemyDeckCardIds:
-    - dornenbestie
-    - mondlicht_druidin
-    - waldlaeufer
+    - uralter_baumwaechter
+    - dornenigel
+    - waldspinne
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -155,10 +162,10 @@ MonoBehaviour:
     nodeIndex: 9
     type: 0
     enemyDeckCardIds:
-    - dornenbestie
-    - mondlicht_druidin
-    - sonnenpriesterin
-    - bornenkrabbe
+    - faunen_priesterin
+    - rankenkriegerin_ivy
+    - baumgeist_elder
+    - windfalke
     goldOneStar: 50
     goldTwoStar: 100
     goldThreeStar: 200
@@ -172,11 +179,11 @@ MonoBehaviour:
     nodeIndex: 10
     type: 2
     enemyDeckCardIds:
-    - aelteren_druide
-    - dornenbestie
-    - mondlicht_druidin
-    - waldlaeufer
-    - bornenkrabbe
+    - uralter_baumwaechter
+    - ladon_drachenhueter
+    - rankenkriegerin_ivy
+    - baumgeist_elder
+    - windfalke
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_schattenfuerst_mordred
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: schattenfuerst_mordred
+  displayNameKey: card.schattenfuerst_mordred.name
+  flavorTextKey: card.schattenfuerst_mordred.flavor
+  element: 4
+  rarity: 3
+  race: 4
+  cost: 25
+  baseAttack: 600
+  baseHealth: 1650
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: b97a8d5f1e81cb141bd15f7392dca252, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 30
+  onPlayLineKey: 
+  onVictoryLineKey: 
+  onDeathLineKey: 
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 1
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Prestige/card_schattenfuerst_mordred
+  voiceLineAddressableKey: 

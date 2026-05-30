@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_sturmreiterin_kira
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: sturmreiterin_kira
+  displayNameKey: card.sturmreiterin_kira.name
+  flavorTextKey: card.sturmreiterin_kira.flavor
+  element: 1
+  rarity: 2
+  race: 0
+  cost: 16
+  baseAttack: 460
+  baseHealth: 960
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: 00e03c7b496efbd4aa7e3575aad8cffd, type: 2}
+  secondAbility: {fileID: 11400000, guid: d78f044ba21b1b247ad50ebe84b4dac3, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 9e94dd2f7f3ac454aafcc46270bcc960, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.sturmreiterin_kira.play
+  onVictoryLineKey: card.sturmreiterin_kira.victory
+  onDeathLineKey: card.sturmreiterin_kira.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_sturmreiterin_kira
+  voiceLineAddressableKey: 

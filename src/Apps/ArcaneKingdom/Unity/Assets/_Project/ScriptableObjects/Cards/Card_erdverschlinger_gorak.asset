@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_erdverschlinger_gorak
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: erdverschlinger_gorak
+  displayNameKey: card.erdverschlinger_gorak.name
+  flavorTextKey: card.erdverschlinger_gorak.flavor
+  element: 3
+  rarity: 2
+  race: 4
+  cost: 18
+  baseAttack: 460
+  baseHealth: 1350
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: d627f614488e3ee47a4b7e24eee2ab71, type: 2}
+  secondAbility: {fileID: 11400000, guid: 3cff72ff02f518d44989fce57e2f3ad5, type: 2}
+  thirdAbility: {fileID: 11400000, guid: bc62cd3ba232c754284c744020687ed2, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.erdverschlinger_gorak.play
+  onVictoryLineKey: card.erdverschlinger_gorak.victory
+  onDeathLineKey: card.erdverschlinger_gorak.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_erdverschlinger_gorak
+  voiceLineAddressableKey: 

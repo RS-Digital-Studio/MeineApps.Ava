@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_scharlachrose
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: scharlachrose
+  displayNameKey: card.scharlachrose.name
+  flavorTextKey: card.scharlachrose.flavor
+  element: 0
+  rarity: 3
+  race: 0
+  cost: 23
+  baseAttack: 620
+  baseHealth: 1650
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: a6c3da41cd9308147b7d8836fcdf1ec3, type: 2}
+  secondAbility: {fileID: 11400000, guid: 08bf9ce432c4d0143878d57453f4e6ee, type: 2}
+  thirdAbility: {fileID: 11400000, guid: f1036ad24b96ac04eaf85e379a55adbf, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 60
+  onPlayLineKey: card.scharlachrose.play
+  onVictoryLineKey: card.scharlachrose.victory
+  onDeathLineKey: card.scharlachrose.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_scharlachrose
+  voiceLineAddressableKey: 

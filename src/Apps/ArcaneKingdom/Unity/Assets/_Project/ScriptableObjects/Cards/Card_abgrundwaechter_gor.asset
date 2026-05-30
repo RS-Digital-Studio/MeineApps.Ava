@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_abgrundwaechter_gor
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: abgrundwaechter_gor
+  displayNameKey: card.abgrundwaechter_gor.name
+  flavorTextKey: card.abgrundwaechter_gor.flavor
+  element: 4
+  rarity: 3
+  race: 4
+  cost: 27
+  baseAttack: 580
+  baseHealth: 2100
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: 43ece89e3fff66d4f8ae6c724b3a28af, type: 2}
+  secondAbility: {fileID: 11400000, guid: bc4bc9df3d5f1074e974190ab22e8c84, type: 2}
+  thirdAbility: {fileID: 11400000, guid: ffe3ca36f8aa24241953e351964db520, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 60
+  onPlayLineKey: card.abgrundwaechter_gor.play
+  onVictoryLineKey: card.abgrundwaechter_gor.victory
+  onDeathLineKey: card.abgrundwaechter_gor.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_abgrundwaechter_gor
+  voiceLineAddressableKey: 

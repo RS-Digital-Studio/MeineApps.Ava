@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_mondschleier_selene_3star
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: mondschleier_selene_3star
+  displayNameKey: card.mondschleier_selene_3star.name
+  flavorTextKey: card.mondschleier_selene_3star.flavor
+  element: 5
+  rarity: 2
+  race: 2
+  cost: 17
+  baseAttack: 430
+  baseHealth: 1100
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: 207aea6fa80b9dc45bbd3ba552d0d7e6, type: 2}
+  secondAbility: {fileID: 11400000, guid: 4721c790316704c4f8141865d03be3c6, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 0e04109b42195ae4e80f3b0f6ea7835b, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 100
+  onPlayLineKey: card.mondschleier_selene_3star.play
+  onVictoryLineKey: card.mondschleier_selene_3star.victory
+  onDeathLineKey: card.mondschleier_selene_3star.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Rare/card_mondschleier_selene_3star
+  voiceLineAddressableKey: 

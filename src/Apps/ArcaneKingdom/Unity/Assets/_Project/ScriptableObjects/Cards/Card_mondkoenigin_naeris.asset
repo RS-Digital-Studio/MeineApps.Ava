@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_mondkoenigin_naeris
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: mondkoenigin_naeris
+  displayNameKey: card.mondkoenigin_naeris.name
+  flavorTextKey: card.mondkoenigin_naeris.flavor
+  element: 5
+  rarity: 3
+  race: 2
+  cost: 26
+  baseAttack: 480
+  baseHealth: 1950
+  turnsToSpecial: 4
+  baseAbility: {fileID: 11400000, guid: bd19f8a68c876cc438580fe54738b37b, type: 2}
+  secondAbility: {fileID: 11400000, guid: f568d04d53135494d9ce13cc0a49d09e, type: 2}
+  thirdAbility: {fileID: 11400000, guid: bfece6e9519847c46a1e92b8901686b0, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 60
+  onPlayLineKey: card.mondkoenigin_naeris.play
+  onVictoryLineKey: card.mondkoenigin_naeris.victory
+  onDeathLineKey: card.mondkoenigin_naeris.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_mondkoenigin_naeris
+  voiceLineAddressableKey: 

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_libra_waage
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: libra_waage
+  displayNameKey: card.libra_waage.name
+  flavorTextKey: card.libra_waage.flavor
+  element: 1
+  rarity: 3
+  race: 0
+  cost: 24
+  baseAttack: 580
+  baseHealth: 1800
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 5dd125af050b29949a21b6a04a0aa56c, type: 2}
+  secondAbility: {fileID: 11400000, guid: 1bc7ad8f5af02ee44a64e3942f9d688e, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 0be103d48f68b47468f0b2a708993355, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 60
+  onPlayLineKey: card.libra_waage.play
+  onVictoryLineKey: card.libra_waage.victory
+  onDeathLineKey: card.libra_waage.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_libra_waage
+  voiceLineAddressableKey: 

@@ -15,18 +15,26 @@ MonoBehaviour:
   id: frostgipfel
   displayNameKey: world.frostgipfel.name
   index: 4
-  themeElement: 2
+  themeElement: 1
+  recommendedCounterElement: 2
   recommendedPlayerLevel: 30
   backgroundAddressableKey: Worlds.4/bg_frostgipfel
   musicAddressableKey: Audio.BGM/music_frostgipfel
+  saeuleNameKey: world.frostgipfel.saeule
+  bossCardId: wasserdrache_tidal
+  storySummaryKey: world.frostgipfel.story
+  memoryFragmentKey: world.frostgipfel.memory
+  mentorNpcKey: npc.mondpriesterin_lira
+  baseGoldPerDay: 750
+  prestige4CardId: eiskoenigin_freja
   nodes:
   - id: frostgipfel_n1
     displayNameKey: world.frostgipfel.node1
     nodeIndex: 1
     type: 0
     enemyDeckCardIds:
-    - wasserspirit
-    - frostklingen_adept
+    - wasserspeier
+    - wasserschlange
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -40,9 +48,9 @@ MonoBehaviour:
     nodeIndex: 2
     type: 0
     enemyDeckCardIds:
-    - frostklingen_adept
-    - wasserspirit
-    - wasserspirit
+    - frostfuchs
+    - frostdemon
+    - wasserspeier
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -56,9 +64,9 @@ MonoBehaviour:
     nodeIndex: 3
     type: 0
     enemyDeckCardIds:
-    - frostklingen_adept
-    - frostklingen_adept
-    - wasserspirit
+    - eiskristall_magierin
+    - schildmaid_bryta
+    - wasserklinge_cael
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -72,9 +80,9 @@ MonoBehaviour:
     nodeIndex: 4
     type: 0
     enemyDeckCardIds:
-    - frostklingen_adept
-    - wasserspirit
-    - stahlfaust_berserker
+    - sturmreiterin_kira
+    - wasserklinge_cael
+    - frostfuchs
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -88,10 +96,10 @@ MonoBehaviour:
     nodeIndex: 5
     type: 1
     enemyDeckCardIds:
-    - stahlfaust_berserker
-    - frostklingen_adept
-    - frostklingen_adept
-    - wasserspirit
+    - elfenmagierin_lira
+    - eiskristall_magierin
+    - frostfuchs
+    - wasserspeier
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -105,9 +113,9 @@ MonoBehaviour:
     nodeIndex: 6
     type: 0
     enemyDeckCardIds:
-    - stahlfaust_berserker
-    - frostklingen_adept
-    - wasserspirit
+    - sturmreiterin_kira
+    - schildmaid_bryta
+    - elfenmagierin_lira
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -121,9 +129,9 @@ MonoBehaviour:
     nodeIndex: 7
     type: 0
     enemyDeckCardIds:
-    - tiefenfuerst_kraken
-    - frostklingen_adept
-    - wasserspirit
+    - wasserdrache_tidal
+    - elfenmagierin_lira
+    - sturmreiterin_kira
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -137,9 +145,9 @@ MonoBehaviour:
     nodeIndex: 8
     type: 0
     enemyDeckCardIds:
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
-    - frostklingen_adept
+    - wasserdrache_tidal
+    - thalassa_gezeiten
+    - eiskristall_magierin
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -153,9 +161,9 @@ MonoBehaviour:
     nodeIndex: 9
     type: 0
     enemyDeckCardIds:
-    - tiefenfuerst_kraken
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
+    - thalassa_gezeiten
+    - libra_waage
+    - wasserdrache_tidal
     goldOneStar: 200
     goldTwoStar: 400
     goldThreeStar: 800
@@ -169,11 +177,11 @@ MonoBehaviour:
     nodeIndex: 10
     type: 2
     enemyDeckCardIds:
-    - tiefenfuerst_kraken
-    - tiefenfuerst_kraken
-    - stahlfaust_berserker
-    - frostklingen_adept
-    - wasserspirit
+    - thalassa_gezeiten
+    - wasserdrache_tidal
+    - libra_waage
+    - elfenmagierin_lira
+    - schildmaid_bryta
     goldOneStar: 800
     goldTwoStar: 1600
     goldThreeStar: 3200

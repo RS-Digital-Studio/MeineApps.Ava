@@ -3441,5 +3441,49 @@
     "durationTurns": 0,
     "targetsAllAllies": false,
     "targetsAllEnemies": false
+  },
+  {
+    "id": "skill_engelsritter_1",
+    "displayNameKey": "ability.skill_engelsritter_1.name",
+    "descriptionKey": "ability.skill_engelsritter_1.desc",
+    "type": "ActiveOnSpecial",
+    "category": "Defense",
+    "magnitude": 300,
+    "durationTurns": 0,
+    "targetsAllAllies": true,
+    "targetsAllEnemies": false
+  },
+  {
+    "id": "skill_schattenfuerst_1",
+    "displayNameKey": "ability.skill_schattenfuerst_1.name",
+    "descriptionKey": "ability.skill_schattenfuerst_1.desc",
+    "type": "ActiveOnSpecial",
+    "category": "Debuff",
+    "magnitude": 200,
+    "durationTurns": 2,
+    "targetsAllAllies": false,
+    "targetsAllEnemies": true
+  },
+  {
+    "id": "skill_elder_drache_1",
+    "displayNameKey": "ability.skill_elder_drache_1.name",
+    "descriptionKey": "ability.skill_elder_drache_1.desc",
+    "type": "ActiveOnSpecial",
+    "category": "Damage",
+    "magnitude": 350,
+    "durationTurns": 0,
+    "targetsAllAllies": false,
+    "targetsAllEnemies": true
+  },
+  {
+    "id": "skill_kriegsmaschine_1",
+    "displayNameKey": "ability.skill_kriegsmaschine_1.name",
+    "descriptionKey": "ability.skill_kriegsmaschine_1.desc",
+    "type": "Passive",
+    "category": "Defense",
+    "magnitude": 350,
+    "durationTurns": 0,
+    "targetsAllAllies": false,
+    "targetsAllEnemies": false
   }
 ]

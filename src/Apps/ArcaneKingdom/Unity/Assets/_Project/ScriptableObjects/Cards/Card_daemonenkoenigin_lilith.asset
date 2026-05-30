@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_daemonenkoenigin_lilith
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: daemonenkoenigin_lilith
+  displayNameKey: card.daemonenkoenigin_lilith.name
+  flavorTextKey: card.daemonenkoenigin_lilith.flavor
+  element: 4
+  rarity: 3
+  race: 4
+  cost: 26
+  baseAttack: 660
+  baseHealth: 1900
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: d53af1b1092eb74499d8d5bcd365a970, type: 2}
+  secondAbility: {fileID: 11400000, guid: dc3dfbe02143d0f449d9d8f04cbb70e1, type: 2}
+  thirdAbility: {fileID: 11400000, guid: ee54de439efb2134eb947491fd8b381a, type: 2}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 1
+  globalCraftLimit: 60
+  onPlayLineKey: card.daemonenkoenigin_lilith.play
+  onVictoryLineKey: card.daemonenkoenigin_lilith.victory
+  onDeathLineKey: card.daemonenkoenigin_lilith.death
+  rivalCardIds:
+  - selene_mondschleier
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Epic/card_daemonenkoenigin_lilith
+  voiceLineAddressableKey: 

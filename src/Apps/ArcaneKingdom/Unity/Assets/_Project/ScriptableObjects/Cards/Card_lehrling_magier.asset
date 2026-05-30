@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_lehrling_magier
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: lehrling_magier
+  displayNameKey: card.lehrling_magier.name
+  flavorTextKey: card.lehrling_magier.flavor
+  element: 0
+  rarity: 0
+  race: 0
+  cost: 5
+  baseAttack: 180
+  baseHealth: 490
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: b4a9439af1ea1794d914a72aef71b23a, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 200
+  onPlayLineKey: 
+  onVictoryLineKey: 
+  onDeathLineKey: 
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Common/card_lehrling_magier
+  voiceLineAddressableKey: 

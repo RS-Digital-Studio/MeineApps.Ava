@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80062313aad99654a974b41300b11bee, type: 3}
+  m_Name: Hero_held_daemonen
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Hero.HeroDefinition
+  id: held_daemonen
+  displayNameKey: hero.daemonen.name
+  flavorTextKey: hero.daemonen.flavor
+  race: 4
+  faehigkeitNameKey: hero.daemonen.skill.name
+  faehigkeitDescKey: hero.daemonen.skill.desc
+  faehigkeitsTyp: 4
+  magnitude: 20
+  portraitAddressableKey: Heroes/portrait_daemonen
+  voiceLineAddressableKey: 

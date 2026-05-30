@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_schattenfuerst
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: schattenfuerst
+  displayNameKey: card.schattenfuerst.name
+  flavorTextKey: card.schattenfuerst.flavor
+  element: 4
+  rarity: 4
+  race: 4
+  cost: 33
+  baseAttack: 800
+  baseHealth: 2350
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 7e7cb34e9b8dc024daf78ce1971f157d, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 2
+  globalCraftLimit: 30
+  onPlayLineKey: card.schattenfuerst.play
+  onVictoryLineKey: card.schattenfuerst.victory
+  onDeathLineKey: card.schattenfuerst.death
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Legendary/card_schattenfuerst
+  voiceLineAddressableKey: 

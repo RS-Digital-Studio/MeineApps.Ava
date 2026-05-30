@@ -14,19 +14,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.World.WorldDefinition
   id: schattenlande
   displayNameKey: world.schattenlande.name
-  index: 6
+  index: 5
   themeElement: 4
-  recommendedPlayerLevel: 65
-  backgroundAddressableKey: Worlds.6/bg_schattenlande
+  recommendedCounterElement: 5
+  recommendedPlayerLevel: 50
+  backgroundAddressableKey: Worlds.5/bg_schattenlande
   musicAddressableKey: Audio.BGM/music_schattenlande
+  saeuleNameKey: world.schattenlande.saeule
+  bossCardId: daemonenkoenigin_lilith
+  storySummaryKey: world.schattenlande.story
+  memoryFragmentKey: world.schattenlande.memory
+  mentorNpcKey: npc.grimmfang
+  baseGoldPerDay: 1200
+  prestige4CardId: schattenfuerst_mordred
   nodes:
   - id: schattenlande_n1
     displayNameKey: world.schattenlande.node1
     nodeIndex: 1
     type: 0
     enemyDeckCardIds:
-    - schattenscherge
-    - knochen_ritter
+    - schattenklaue
+    - nachtkreatur
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -40,9 +48,9 @@ MonoBehaviour:
     nodeIndex: 2
     type: 0
     enemyDeckCardIds:
-    - knochen_ritter
-    - schattenscherge
-    - funkenmeister
+    - seelenhunger
+    - knochendiener
+    - moorgeist
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -56,9 +64,9 @@ MonoBehaviour:
     nodeIndex: 3
     type: 0
     enemyDeckCardIds:
-    - knochen_ritter
-    - knochen_ritter
-    - schattenscherge
+    - pestbote
+    - knochensplitter
+    - blutfledermaus
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -72,9 +80,9 @@ MonoBehaviour:
     nodeIndex: 4
     type: 0
     enemyDeckCardIds:
-    - nachtschatten_wolf
-    - knochen_ritter
-    - schattenscherge
+    - schattenscherge_2star
+    - schattenwoelfin_nyx
+    - nebelkraehe_moira
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -88,10 +96,10 @@ MonoBehaviour:
     nodeIndex: 5
     type: 1
     enemyDeckCardIds:
-    - schreckens_ritter
-    - nachtschatten_wolf
-    - knochen_ritter
-    - schattenscherge
+    - dunkelmagierin_seela
+    - scharlach_morrigan
+    - schattenlaeuferin_nyx
+    - pestdoktor_morbius
     goldOneStar: 800
     goldTwoStar: 1600
     goldThreeStar: 3200
@@ -105,9 +113,9 @@ MonoBehaviour:
     nodeIndex: 6
     type: 0
     enemyDeckCardIds:
-    - schreckens_ritter
-    - knochen_ritter
-    - schattenscherge
+    - dunkelmagierin_seela
+    - schattenlaeuferin_nyx
+    - nebelkraehe_moira
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -121,9 +129,9 @@ MonoBehaviour:
     nodeIndex: 7
     type: 0
     enemyDeckCardIds:
-    - schreckens_ritter
-    - nachtschatten_wolf
-    - knochen_ritter
+    - abgrundwaechter_gor
+    - chaosherold_azrael
+    - pestdoktor_morbius
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -137,9 +145,9 @@ MonoBehaviour:
     nodeIndex: 8
     type: 0
     enemyDeckCardIds:
-    - schreckens_ritter
-    - schreckens_ritter
-    - nachtschatten_wolf
+    - daemonenkoenigin_lilith
+    - noctis_schatten
+    - scharlach_morrigan
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -153,9 +161,9 @@ MonoBehaviour:
     nodeIndex: 9
     type: 0
     enemyDeckCardIds:
-    - schwarzes_herz_lich
-    - schreckens_ritter
-    - knochen_ritter
+    - pestdoktor_meister
+    - abgrundwaechter_gor
+    - daemonenkoenigin_lilith
     goldOneStar: 400
     goldTwoStar: 800
     goldThreeStar: 1600
@@ -169,11 +177,11 @@ MonoBehaviour:
     nodeIndex: 10
     type: 2
     enemyDeckCardIds:
-    - schwarzes_herz_lich
-    - schreckens_ritter
-    - nachtschatten_wolf
-    - knochen_ritter
-    - schattenscherge
+    - daemonenkoenigin_lilith
+    - noctis_schatten
+    - pestdoktor_meister
+    - abgrundwaechter_gor
+    - chaosherold_azrael
     goldOneStar: 1600
     goldTwoStar: 3200
     goldThreeStar: 6400

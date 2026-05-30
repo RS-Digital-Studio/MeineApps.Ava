@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_kristallhirsch_cervus
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: kristallhirsch_cervus
+  displayNameKey: card.kristallhirsch_cervus.name
+  flavorTextKey: card.kristallhirsch_cervus.flavor
+  element: 3
+  rarity: 2
+  race: 3
+  cost: 17
+  baseAttack: 440
+  baseHealth: 1200
+  turnsToSpecial: 2
+  baseAbility: {fileID: 11400000, guid: 2ca9342ad836f694f9c783f2ab7fd967, type: 2}
+  secondAbility: {fileID: 0}
+  thirdAbility: {fileID: 0}
+  lastWillAbility: {fileID: 0}
+  deckLimit: 0
+  globalCraftLimit: 999
+  onPlayLineKey: 
+  onVictoryLineKey: 
+  onDeathLineKey: 
+  rivalCardIds: []
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 1
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Premium/card_kristallhirsch_cervus
+  voiceLineAddressableKey: 

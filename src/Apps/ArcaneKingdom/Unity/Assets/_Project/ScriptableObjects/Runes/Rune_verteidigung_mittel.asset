@@ -19,4 +19,4 @@ MonoBehaviour:
   rarity: 1
   baseMagnitude: 8
   magnitudePerLevel: 1.2
-  elementTarget: 0
+  elementTarget: 2

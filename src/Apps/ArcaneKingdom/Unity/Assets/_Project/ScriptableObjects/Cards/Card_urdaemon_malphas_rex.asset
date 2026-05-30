@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e5c026b40a02d459df089330e5c749, type: 3}
+  m_Name: Card_urdaemon_malphas_rex
+  m_EditorClassIdentifier: ArcaneKingdom.Domain::ArcaneKingdom.Domain.Cards.CardDefinition
+  id: urdaemon_malphas_rex
+  displayNameKey: card.urdaemon_malphas_rex.name
+  flavorTextKey: card.urdaemon_malphas_rex.flavor
+  element: 4
+  rarity: 5
+  race: 4
+  cost: 48
+  baseAttack: 1200
+  baseHealth: 3100
+  turnsToSpecial: 3
+  baseAbility: {fileID: 11400000, guid: 591228bec050ef04d9c14c488239f7de, type: 2}
+  secondAbility: {fileID: 11400000, guid: 6f2120a0aba19c94cb627c9735904119, type: 2}
+  thirdAbility: {fileID: 11400000, guid: 80b1c591567a11b49b3587fa50272eaa, type: 2}
+  lastWillAbility: {fileID: 11400000, guid: 979453a25576aec49954fce5c51b18b6, type: 2}
+  deckLimit: 2
+  globalCraftLimit: 5
+  onPlayLineKey: card.urdaemon_malphas_rex.play
+  onVictoryLineKey: card.urdaemon_malphas_rex.victory
+  onDeathLineKey: card.urdaemon_malphas_rex.death
+  rivalCardIds:
+  - aetherius_allschoepfer
+  synergyCardIds: []
+  isEventCard: 0
+  isPremiumCard: 0
+  isPrestigeCard: 0
+  isStarTempleCard: 0
+  isSaisonPassCard: 0
+  artworkAddressableKey: Cards.Mythic/card_urdaemon_malphas_rex
+  voiceLineAddressableKey: 

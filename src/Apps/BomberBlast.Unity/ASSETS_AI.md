@@ -1,9 +1,14 @@
-# BomberBlast Unity — KI-Asset-Pipeline (3D + Audio + Animation)
+# BomberBlast 3D — KI-Asset-Pipeline (3D + Audio + Animation)
 
-> **Status:** Produktions-Plan (Stand 2026-05-26, recherchiert)
+> **Status:** Produktions-Plan (Stand 2026-05-30, recherchiert)
 > **Ziel:** Skalierbarer, EU-konformer und kommerziell sauberer Workflow für 3D-Assets, Animationen, Texturen und Audio mit KI-Tools — primär lokal (ComfyUI + EU-konforme OSS-Modelle), Cloud-Services als Production-Standard wo Qualität es rechtfertigt.
-> **Geltungsbereich:** Mechs, Bomben, Power-Ups, Tiles, Bosse, Environment, Props, Animationen, Texturen, Game-Audio.
-> **Nicht im Scope:** UI-Icons (bleiben 2D), redaktionelle Texte, Story-Schreiben.
+> **Geltungsbereich:** die **5 Helden-Charaktere**, 12 Gegner, 5 Bosse, 14 Bomben-Typen, 12 PowerUps, 10 Welt-Tile-Sets, Environment, Props, Animationen, Texturen, Game-Audio — alles im **Neon-Arcade-Stil des Originals**, jetzt in 3D.
+> **Nicht im Scope:** UI-Icons (bleiben 2D), redaktionelle Texte, Story-Schreiben, Voice (deferred — Original ist voice-los).
+
+> **WICHTIG — Subjekte sind KEINE Mechs:** Dies ist ein treuer 3D-Remake des produktiven BomberBlast.
+> Die Charaktere sind die 5 bestehenden Helden (Default/SpeedySam/BrickBoris/TwinTina/LuckyLola),
+> die Gegner sind die klassischen Bomberman-Typen, die Bosse StoneGolem/IceDragon/FireDemon/ShadowMaster/
+> FinalBoss. Wo unten "Mech" steht, ist der **Helden-/Charakter-Workflow** gemeint (humanoid, Neon-Arcade).
 
 > ⚠️ **EU-Compliance-Warnung:** Hunyuan3D (Tencent) ist in der EU/UK/Südkorea per Lizenz **explizit ausgeschlossen** und erfordert schriftliche Tencent-Sonderfreigabe. Wir bauen bewusst eine **EU-konforme Pipeline** ohne Hunyuan als Default. Details: [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05).
 
@@ -22,8 +27,8 @@
 9. [Stage 5 — Rigging + Animation](#9-stage-5--rigging--animation)
 10. [Stage 6 — Unity-Import](#10-stage-6--unity-import)
 11. [Stage 7 — Audio (Musik + SFX + Voice)](#11-stage-7--audio-musik--sfx--voice)
-12. [Asset-Kategorien & Budgets (Mech-Setting)](#12-asset-kategorien--budgets-mech-setting)
-13. [Stil-Konsistenz (Cyberpunk-Mech)](#13-stil-konsistenz-cyberpunk-mech)
+12. [Asset-Kategorien & Budgets (Neon-Arcade)](#12-asset-kategorien--budgets-neon-arcade)
+13. [Stil-Konsistenz (Neon-Arcade)](#13-stil-konsistenz-neon-arcade)
 14. [EU-Compliance & Lizenz-Recherche (Stand 2026-05)](#14-eu-compliance--lizenz-recherche-stand-2026-05)
 15. [Pilot-Plan (5 Assets vor Skalierung)](#15-pilot-plan-5-assets-vor-skalierung)
 16. [Output-Ablage + Versionierung](#16-output-ablage--versionierung)
@@ -34,7 +39,7 @@
 
 ## 1. Strategische Entscheidung
 
-3D-Asset-Generierung mit KI ist 2026 für **stylisierte Mech/Cyberpunk-Assets** Production-reif. Wir setzen es als Standard-Pipeline, nicht als Notlösung. Realistische Hero-Bosse für Cinematics gehen optional über Cloud-Services mit Artist-Polish.
+3D-Asset-Generierung mit KI ist 2026 für **stylisierte Neon-Arcade-Charaktere/Props** Production-reif. Wir setzen es als Standard-Pipeline, nicht als Notlösung. Aufwändigere Boss-Modelle für Cinematics gehen optional über Cloud-Services mit Artist-Polish.
 
 **Kern-Entscheidungen (verbindlich):**
 
@@ -257,23 +262,23 @@ Versionierung via Git-LFS für die JSONs und Style-References.
 
 ### 5.1 Style-LoRA-Training (einmalig, ~1 Tag)
 
-Wir trainieren eine eigene **Style-LoRA** für das BomberBlast-Cyberpunk-Mech-Setting. Damit ist Stil-Konsistenz über 200+ Assets garantiert.
+Wir trainieren eine eigene **Style-LoRA** für den BomberBlast-Neon-Arcade-Stil (Orange/Cyan, Glow, oktagonale Formen). Damit ist Stil-Konsistenz über 200+ Assets garantiert.
 
 **Trainings-Setup:**
 - Tool: **Kohya_ss** (Standard für SDXL/Flux-LoRA-Training)
 - Trainings-Set: 15-20 hochwertige eigene Konzept-Bilder (SDXL ohne LoRA + Inpainting + Photo-Touchups in Krita/Photoshop)
 - Trainings-Zeit: 4-8h auf RTX 4080 (LoRA Rank 64)
-- Output: `bomberblast_cyber_v1.safetensors` (~150-300 MB)
+- Output: `bomberblast_neon_v1.safetensors` (~150-300 MB)
 
 **Style-Lock-Prompt (Template):**
 
 ```
 Style-Block (Pflicht in jedem Asset-Konzept-Prompt):
-<lora:bomberblast_cyber_v1:0.85>,
-cyberpunk mech, neon accents cyan #22D3EE and magenta #EC4899,
-holographic decals, matte dark metal base color #0F172A,
-glowing edges, industrial sci-fi, stylized PBR,
-T-pose if humanoid, single object centered,
+<lora:bomberblast_neon_v1:0.85>,
+neon arcade style, primary orange #FF6B35 and cyan #22D3EE accents,
+octagonal shapes, sharp edges, glowing neon edges, stylized PBR,
+two style variants (clean HD / neon), single object centered,
+T-pose if humanoid character, 
 plain white or transparent background,
 3D render quality, octane-style lighting
 
@@ -390,9 +395,9 @@ Für ein App-spezifisches Material-Set (z.B. "Cyber-Stahl mit Neon-Ätzung") eig
 | **DeepMotion Animate 3D** | Eigenes Video → 3D-Animation (kein Mocap-Suit nötig) | FBX, retargetable auf jedes Rig |
 | **RADiCAL** (Autodesk-acquired 04/2026) | Video → Motion, Cloud-Stream zu Unity möglich | FBX oder Live-Stream |
 
-### 9.3 Mech-spezifische Animation-Set
+### 9.3 Helden-Animation-Set
 
-Pro Player-Mech (8 Mechs):
+Pro Held (5 Helden):
 - Idle (Loop)
 - Walk + Run (Loop)
 - Bomb-Place (One-Shot, ~0.5s)
@@ -400,9 +405,11 @@ Pro Player-Mech (8 Mechs):
 - Hit (One-Shot)
 - Death (One-Shot)
 - Victory-Pose (One-Shot)
-- **Mech-Spezial** (Hero-Skill, eine pro Mech)
 
-Insgesamt: 8 Animations × 8 Mechs = 64 Clips. Mixamo deckt 6 davon ab, Mech-Spezial via Cascadeur per Hand-Setup.
+> Die 5 Helden unterscheiden sich nur durch Stats/Trait + Skin-Farben (keine eigenen Skills/Ultimates) —
+> sie teilen sich dasselbe Animation-Set (Material-/Farb-Variation pro Held).
+
+Insgesamt: ~7 Animations, geteilt über 5 Helden = ~7 Basis-Clips + Skin-Varianten. Mixamo deckt alle ab.
 
 ### 9.4 Boss-Animations
 
@@ -432,7 +439,7 @@ Bosse brauchen größere Animation-Sets (Mehrkomponenten-Hitboxes, Phase-Wechsel
 ```
 BomberBlast.Unity Addressables:
 ├── BootstrapAssets         # Sofort (Logo, Splash, Default-Material)
-├── PlayerMechs             # 8 Mechs + Skins, lazy bei MechSelection
+├── Heroes                  # 5 Helden + Skins, lazy bei HeroSelection
 ├── Bombs_Common            # Standard-Bomben (immer geladen)
 ├── Bombs_Special           # Karten-Spezialbomben (lazy bei Deck-Equip)
 ├── PowerUps                # 12 PowerUp-Typen (immer geladen)
@@ -485,14 +492,14 @@ Stability AI hat Stable Audio 3 am 20. Mai 2026 veröffentlicht:
 
 **Insgesamt:** ~150 SFX. Generation in Batches á 20 SFX über Nacht.
 
-### 11.3 Voice — ElevenLabs (saubere Lizenz)
+### 11.3 Voice — DEFERRED (Original ist voice-los)
 
-- Announcer-Lines (6 Sprachen)
-- Boss-Reveal-Voicelines
-- Achievement-Unlock-Voicelines
-- Tutorial-Hints
+> Das produktive BomberBlast hat **keine** Voice (bewusstes "kein Geld"-Mandat). Im Remake bleibt Voice
+> **deferred/optional**. Falls später eingeführt (bewusste Erweiterung), kämen in Frage:
+- Announcer-Lines (6 Sprachen), Stinger-Vocals, optionale Boss-Roar-Samples
+- Saubere Lizenzkette (Standard-Voices/Consent), Disclosure in Credits, Manual-QA-Pflicht
 
-Pro Sprache ein Voice-Profil clonen (ElevenLabs unterstützt eigene Sample-Aufnahmen für Voice-Cloning — saubere Lizenzkette).
+Bis dahin: Announcer/Feedback rein über SFX-Stinger (Cinematic-Bus), keine gesprochenen Lines.
 
 ### 11.4 Mastering
 
@@ -502,14 +509,14 @@ Pro Sprache ein Voice-Profil clonen (ElevenLabs unterstützt eigene Sample-Aufna
 
 ---
 
-## 12. Asset-Kategorien & Budgets (Mech-Setting)
+## 12. Asset-Kategorien & Budgets (Neon-Arcade)
 
 ### 12.1 Polygon-Budgets (Mid-Tier-Android Ziel)
 
 | Asset-Klasse | Anzahl | LOD0 | LOD1 | LOD2 | KI direkt? |
 |--------------|-------:|-----:|-----:|-----:|------------|
-| **Player-Mechs** (8 Helden) | 8 | 12 000 | 6 000 | 3 000 | ✅ + Mixamo |
-| **Mech-Skins** (3-5 pro Held) | ~30 | (Re-Tex) | — | — | ✅ Re-Texturing |
+| **Helden** (5 Charaktere) | 5 | 12 000 | 6 000 | 3 000 | ✅ + Mixamo |
+| **Hero-Skins** (Coin-/Gem-Skins, Material-Variation) | ~20 | (Re-Tex) | — | — | ✅ Re-Texturing |
 | **Bomben** (14 Typen) | 14 | 1 500 | 800 | 400 | ✅ Direkt |
 | **Power-Ups** (12 Typen) | 12 | 1 000 | 500 | 250 | ✅ Direkt |
 | **Tiles/Blocks** (10 Welten × 4 Typen) | 40 | 800 | 400 | 200 | ✅ Direkt, Tiling-Check |
@@ -527,7 +534,7 @@ Pro Sprache ein Voice-Profil clonen (ElevenLabs unterstützt eigene Sample-Aufna
 
 | Klasse | Albedo | Normal | MRA | Notes |
 |--------|-------:|-------:|----:|-------|
-| Player-Mechs / Hero-Bosse | 2048² | 2048² | 2048² | Mip-Bias 0 |
+| Helden / Bosse | 2048² | 2048² | 2048² | Mip-Bias 0 |
 | Standard-Gegner / Mini-Bosse | 1024² | 1024² | 1024² | Mip-Bias +1 |
 | Bomben / Power-Ups | 512² | 512² | 512² | Mip-Bias +1 |
 | Blocks / Tiles | 1024² (atlassed pro Welt) | 1024² | 1024² | Texture-Atlas |
@@ -546,20 +553,20 @@ Pro Sprache ein Voice-Profil clonen (ElevenLabs unterstützt eigene Sample-Aufna
 
 ---
 
-## 13. Stil-Konsistenz (Cyberpunk-Mech)
+## 13. Stil-Konsistenz (Neon-Arcade)
 
-### 13.1 Brand-Identität (aus PLAN.md)
+### 13.1 Brand-Identität (aus PLAN.md / Original-`AppPalette.axaml`)
 
 | Aspekt | Wert |
 |--------|------|
-| Markenfarben | Cyan `#22D3EE` + Magenta `#EC4899` + Tiefdunkel `#0F172A` |
-| Tonalität | Edgy-Cyber, Slay-the-Spire-Selbstironie |
-| Visual-Sprache | Mech-Sprites, Neon-Akzente, holografische HUDs, glitch-Effekte |
-| Setting | ~2087, nach dem "Großen Crash" |
+| Markenfarben | Neon-Orange `#FF6B35` (Primär) + Cyan `#22D3EE` + Gold-Trail `#FFDD33` |
+| Tonalität | Energetisch, Arcade, "Game Juice" — Nostalgie an SNES-Bomberman |
+| Visual-Sprache | Oktagonale Formen, scharfe Kanten, Neon-Glow; zwei Styles (Classic HD + Neon) in 3D |
+| Setting | 10 thematische Welten (kein Sci-Fi-Konzern-Setting) + bestehende Welt-Story-Beats |
 
 ### 13.2 Style-Lock (zentrales Prompt-Template)
 
-Der `bomberblast_cyber_v1.safetensors`-LoRA hält den Stil. Zusätzlich Pflicht-Style-Block (siehe §5.1).
+Der `bomberblast_neon_v1.safetensors`-LoRA hält den Stil. Zusätzlich Pflicht-Style-Block (siehe §5.1).
 
 ### 13.3 Konsistenz-Check pro Batch
 
@@ -619,15 +626,17 @@ Pro Asset-Metadata-JSON ein Eintrag `"license_source": "Rodin Gen-2.5 Free Tier"
 
 | # | Pilot-Asset | Kategorie | Pipeline-Test | Erfolgs-Kriterium |
 |---|-------------|-----------|---------------|-------------------|
-| 1 | Mech "Striker" | Player-Mech | SDXL+LoRA → TRELLIS 2 → Mixamo-Rig | Animiert in Unity, < 12k Tris LOD0, Style-LoRA hält |
-| 2 | Bombe "Cyber-Standard" | Bomb | SPAR3D → Blender-Cleanup → Unity | < 1.5k Tris, Emissive-Glow funktioniert |
-| 3 | Block "Industrial Crate" | Tile | TripoSG → Tile-Check 4× nebeneinander | Naht-frei, < 800 Tris |
-| 4 | Mini-Boss "OmniCorp Sentry" | Mini-Boss | TRELLIS 2 → AccuRIG 2 → Cascadeur-Polish | Phase-1 + Phase-2 (Material-Swap), 2-Capsule-Hitbox |
-| 5 | Holo-Display "Score-HUD" | UI-3D | SDXL → SPAR3D → URP/Unlit + Glow | URP-Glow funktioniert, < 500 Tris |
+| 1 | Held "Default" (Pilot Echo) | Held | SDXL+LoRA → TRELLIS 2 → Mixamo-Rig | Animiert in Unity, < 12k Tris LOD0, Neon-Style-LoRA hält |
+| 2 | Bombe "Standard" | Bomb | SPAR3D → Blender-Cleanup → Unity | < 1.5k Tris, Emissive-Glow funktioniert |
+| 3 | Block "Destructible (Welt 1)" | Tile | TripoSG → Tile-Check 4× nebeneinander | Naht-frei, < 800 Tris |
+| 4 | Boss "StoneGolem" | Boss | TRELLIS 2 → AccuRIG 2 → Cascadeur-Polish | Phase-1 + Enrage (Material-Swap), Multi-Cell-Hitbox |
+| 5 | PowerUp "BombUp" + "Fire" | PowerUp | SDXL → SPAR3D → URP + Glow | URP-Glow funktioniert, < 1k Tris |
 | **Audio-Pilot** | Welt-1-Theme (2min) | Music | Stable Audio 3 + Mastering | LUFS −16 ±1, Loop sauber |
-| **Voice-Pilot** | Boss-Reveal-Line | Voice | ElevenLabs Cloned-Voice (DE+EN) | Verständlich, Lippenbewegung-untauglich (gewollt für Mech-Bosse) |
 
-**Zeitplan:** 5 Arbeitstage (Mech 1 Tag, Bomb+Block 1 Tag, Boss 2 Tage, HUD 0.5 Tage, Audio 0.5 Tage).
+> Kein Voice-Pilot — Voice ist deferred (Original ist voice-los). Stattdessen ein SFX-Pilot (Bomben-Explosion
+> + Combo-Stinger) zur Validierung der Audio-Bus-/Spatial-Pipeline.
+
+**Zeitplan:** 5 Arbeitstage (Held 1 Tag, Bomb+Block 1 Tag, Boss 2 Tage, PowerUps 0.5 Tage, Audio 0.5 Tage).
 
 **Output:** Lessons-Learned in `F:\AI\ComfyUI_workflows\bomberblast_unity\pilot_log.md` mit:
 - Tatsächliche Generations-Zeit pro Asset
@@ -678,7 +687,7 @@ F:\AI\
   "category": "player_mech",
   "stage_1_concept": {
     "model": "sdxl_1.0",
-    "lora": "bomberblast_cyber_v1@0.85",
+    "lora": "bomberblast_neon_v1@0.85",
     "prompt": "...",
     "seed": 123456,
     "output_png": "concept_2d/mech_striker_v1.png"

@@ -1,5 +1,9 @@
-# BomberBlast Arena — Projekt-Conventions & Stolperfallen
+# BomberBlast 3D — Projekt-Conventions & Stolperfallen
 
+> **Leitprinzip:** Treuer 3D-Remake des produktiven BomberBlast (`../BomberBlast/`) — **dasselbe Spiel,
+> nur in 3D und besser**. Game-Design/Inhalte/Balancing 1:1 aus dem Original-Code (Quelle der Wahrheit).
+> Siehe [PLAN.md](PLAN.md) §5/§6.
+>
 > Pflichtlektüre vor jeder Code-Änderung am Unity-Projekt. Komplementär zu
 > [PLAN.md](PLAN.md), [DESIGN.md](DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md), [ROADMAP.md](ROADMAP.md), [ASSETS_AI.md](ASSETS_AI.md).
 >
@@ -35,25 +39,27 @@
 
 ## 1. Projektübersicht (Schnell-Referenz)
 
+> **Versions-Pinning (Pflicht):** Alle Versionen unten beim Setup auf eine **konkrete, existierende
+> Patch-Version** festnageln (manifest.json — keine `x`-Platzhalter, keine Pre-Release ungewollt).
+> Die exakte Unity-6-LTS-Patch-Version beim Projekt-Anlegen aus dem Unity Hub übernehmen.
+
 | Aspekt | Wert |
 |--------|------|
-| Engine | Unity 6 (6000.4.8f1) |
-| Render-Pipeline | URP 17.0.4 |
+| Engine | Unity 6 (6000.x LTS — exakte Patch-Version beim Setup pinnen) |
+| Render-Pipeline | URP 17.x |
 | Sprache | C# (.NET Standard 2.1) |
 | DI | VContainer 1.16+ |
 | Async | UniTask 2.5+ |
 | Reactive | R3 (Nachfolger UniRx) |
-| Netcode (PvP) | Photon Fusion 2 |
-| Netcode (Co-op) | Photon Realtime 5 |
-| Chat | Photon Chat 4 |
+| Netcode (optional, nur für Online-MP) | Photon Fusion 2 (Versus) / Photon Realtime 5 (Co-op) / Photon Chat 4 |
 | Backend | Firebase (Auth/RTDB/Functions/Storage/Crashlytics/Analytics/Remote Config) |
-| Voice (AI) | ElevenLabs Enterprise |
-| 3D-Asset-Pipeline | ComfyUI + TRELLIS 2 + SPAR3D + Cloud-Fallback (siehe [ASSETS_AI.md](ASSETS_AI.md)) |
-| Audio | Stable Audio 3 + ElevenLabs |
+| Voice | **deferred/optional** (Original ist voice-los; nur falls bewusst eingeführt) |
+| 3D-Asset-Pipeline | ComfyUI + TRELLIS/SPAR3D + Cloud-Fallback (siehe [ASSETS_AI.md](ASSETS_AI.md)) |
+| Audio | Aufgewertete Bestands-Loops (Kenney-CC0-Basis) + optional FMOD |
 | Min-Android | API 24 (Android 7) |
 | Min-iOS | 13 |
-| Plattformen | Android + iOS + Steam (Windows/macOS/Linux) |
-| Performance | 60 FPS High-End, 30 FPS Low-End |
+| Plattformen | Android (primär) + iOS + Steam (Windows/macOS/Linux) |
+| Performance | 60 FPS High-End, 30 FPS Low-End (Hardware-Tier-System aus Original) |
 
 ---
 
@@ -151,12 +157,12 @@ npx firebase deploy --only storage --project bomberblast-arena
 | Field (private) | `_camelCase` | `private int _currentMana;` |
 | Property | PascalCase | `public int CurrentMana { get; }` |
 | Constant | `UPPER_SNAKE` | `private const int MAX_BOMBS = 8;` |
-| Static-readonly | PascalCase | `private static readonly SKPath BombPath = ...;` |
+| Static-readonly | PascalCase | `private static readonly int[] ComboScores = ...;` |
 | Event | `On{Verb}{Past}` (Unity-Standard) | `OnBombPlaced`, `OnPlayerDied` |
 | Async-Method | `Async`-Suffix | `LoadProfileAsync()` |
-| ScriptableObject Asset | PascalCase + Underscore-ID | `Hero_NOVA.asset`, `Bomb_Frost.asset` |
+| ScriptableObject Asset | PascalCase + Underscore-ID | `Hero_Default.asset`, `Bomb_Frost.asset` |
 | Scene | PascalCase | `Boot.unity`, `MainMenu.unity` |
-| Prefab | PascalCase + `Prefab`-Suffix | `BombPrefab`, `MechViewPrefab` |
+| Prefab | PascalCase + `Prefab`-Suffix | `BombPrefab`, `HeroViewPrefab` |
 | asmdef | `BomberBlast.{Module}` | `BomberBlast.Game.asmdef` |
 | Test-Class | `{Subject}Tests` | `ComboSystemTests`, `LeagueServiceTests` |
 | Test-Method | `{Method}_{Scenario}_{Expected}` | `ProcessInput_ValidMove_UpdatesPosition` |
@@ -366,6 +372,15 @@ public class Foo
 
 > **Wichtigste Regel der Codebase:** Alle gameplay-relevanten Random-Calls gehen über `IRngProvider`.
 > Alle Tick-Updates laufen über `FixedTimestepRunner` bei 60 Hz. Alle Inputs werden in `ReplayCapture` aufgezeichnet.
+>
+> **Status (aus dem Original):** Im produktiven BomberBlast ist Determinismus nur **Foundation, NICHT
+> integriert** — der Live-Loop nutzt `System.Random`. Die Integration (alle ~50 Random-Calls auf
+> `IRngProvider`, Sim/Render-Trennung) ist **Neu-Arbeit** dieses Projekts, kein reiner Port.
+>
+> **Float-Mandat:** `DeterministicRandom` (xoshiro256+) ist nur **integer**-bit-stabil. Für hash-stabile
+> Sim (Replay-Re-Sim / Online-Versus) gilt: **Fixed-Point/Integer** für hash-relevante Zustände ODER
+> dokumentierte Quantisierung **vor** dem State-Hash — float-Physik divergiert IL2CPP/ARM64 ↔ Server
+> (siehe [ARCHITECTURE.md](ARCHITECTURE.md) §13.0). Online-Versus ist optional/Post-Launch, daher kein Launch-Blocker.
 
 ### 6.1 RNG-Verwendung
 
@@ -657,7 +672,7 @@ Pflicht für:
 - Domain-Logik (Card-Resolution, AI-Pathfinding, Combat-Berechnungen)
 - Service-Logik (Liga-Berechnung, BP-XP, Achievement-Trigger)
 - Algorithmen (LevelLayoutGenerator, DungeonSynergyResolver)
-- Math-Funktionen (Glicko-2-Calculator, Overflow-Guard)
+- Math-Funktionen (Overflow-Guard, Liga-Punkt-/Sub-Tier-Berechnung, Combo-Score, ISO-Wochen-Seed)
 
 Optional für:
 - Reine UI-Verdrahtung
@@ -766,11 +781,11 @@ UserSettings/
 
 ## 12. Commit-Verhalten
 
-### 12.1 Kein automatisches Commiten
+### 12.1 Auto-Commit (wie globale Regel)
 
-- **Nur auf explizite User-Anfrage** ("commit", "committe das", etc.)
-- Niemals eigenständig committen ohne Aufforderung
-- Vor dem Commit: Alle Änderungen kurz zusammenfassen
+- **Nach abgeschlossenen Änderungen selbstständig sinnvoll/logisch committen** (globale Arbeitsweise).
+- Mehrere thematisch unabhängige Änderungen = mehrere Commits. Keine Mega-Commits, keine Mini-Commits pro Datei.
+- Nur bei Massen-Reverts/Force-Push/History-Rewrite vorher fragen.
 
 ### 12.2 Commit-Message-Format
 
@@ -778,14 +793,14 @@ UserSettings/
 **Format:** `BomberBlast.Unity: Kurze Beschreibung`
 
 ```
-BomberBlast.Unity: Hero-Service implementiert
+BomberBlast.Unity: Hero-Service portiert
 
-- HeroDefinition als ScriptableObject
-- HeroDatabase mit 3 MVP-Helden (NOVA, CRYO, TITAN)
+- HeroDefinition als ScriptableObject (5 echte Helden: Default/SpeedySam/BrickBoris/TwinTina/LuckyLola)
+- HeroDatabase mit Stats + HeroTrait + Unlock-Bedingungen (1:1 aus dem Original)
 - Unit-Tests für HeroService.UnlockHero()
 - DI-Registrierung in RootLifetimeScope
 
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 ```
 
 ---

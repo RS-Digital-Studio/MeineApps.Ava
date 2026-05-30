@@ -1,4 +1,4 @@
-# BomberBlast Arena — Roadmap, Team & Produktion
+# BomberBlast 3D — Roadmap, Team & Produktion
 
 > Production-Plan, Team-Struktur, Marketing/Launch, Compliance und Risiko-Register.
 > Komplementär zu [PLAN.md](PLAN.md), [DESIGN.md](DESIGN.md) und [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -59,7 +59,7 @@
 - 3D-Modellierungs-Pipeline (Blender → Unity)
 - Animation-Lead (Helden-Animator, Mech-Movements)
 - VFX Graph + Shader Graph-Visuals
-- Skills: Mobile-Game-Erfahrung, Sci-Fi-Setting, Blender + Substance Painter
+- Skills: Mobile-Game-Erfahrung, stilisierter Arcade-/Neon-Look (3D), Blender + Substance Painter
 
 #### 1.1.4 UI/UX Designer (0.5-1 FTE, Teil-Zeit ok)
 
@@ -89,7 +89,7 @@
 
 ### 1.2 Optional / Freelance
 
-- **Voice-Director** (für Schlüssel-Charaktere wie Director Vex, Sage): 1-2 Wochen, ~5-10k
+- *(optional, nur falls Voice eingeführt wird — im Original deferred)* **Voice-Director**: 1-2 Wochen, ~5-10k
 - **Story-Writer** (für Welt-Mythologie, Memory-Fragmente, Dialoge): 2-4 Wochen, ~10-15k
 - **Localization-Service**: pro Sprache ~2-3k (DE/EN nativ, ES/FR/IT/PT freelance)
 - **QA-Tester** (für Closed Beta): 2-3 Wochen, ~5-8k oder via Discord-Community
@@ -185,7 +185,7 @@
 
 | Bereich | Kosten |
 |---------|--------|
-| Voice-Acting (AI-Voice, ElevenLabs siehe oben + Premium-Backup Mensch-Sprecher für Vex/Sage) | 15.000 |
+| *(optional/deferred)* Voice-Acting (nur falls eingeführt — Original ist voice-los) | 0 (deferred) / ~15.000 falls dazu |
 | Music-Komposition (Optional Custom-Composer für Hauptthemes) | 20.000 |
 | 3D-Asset-Store-Kostümierung (z.B. Background-Props) | 5.000 |
 | Localization-Service (6 Sprachen Initial) | 18.000 |
@@ -248,13 +248,14 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 - [ ] Firebase-Projekt `bomberblast-arena` (Auth + RTDB + Functions + Storage + Crashlytics)
 - [ ] Photon-AppIds: Dev / Stage / Prod für Fusion + Realtime + Chat
 - [ ] Domain-Code-Port: `DeterministicRandom`, `ComboSystem`, `ReplayCapture`, `FixedTimestepRunner`
-- [ ] **Concept-Art-Sprint**: 3 MVP-Helden (NOVA, CRYO, TITAN) + Welt-1 Concept-Art (Neon-Slums)
+- [ ] **Concept-Art-Sprint**: 3 MVP-Helden (Default, SpeedySam, BrickBoris) + Welt-1-Theme (im bestehenden Neon-Arcade-Stil, jetzt 3D)
+- [ ] **Parity-Matrix** anlegen (jedes Original-System → Unity-Äquivalent + Port-Status)
 
 **Team-Fokus:**
-- Lead Dev + Junior Dev: Unity-Setup, Asmdefs, DI, Domain-Code-Port
+- Lead Dev + Junior Dev: Unity-Setup, Asmdefs, DI, Pure-Domain-Code-Port
 - Lead Artist: Concept-Art-Sprint
-- Game Director: Story-Outline finalisieren, Sprint-Planning für Phase 1
-- Sound: Reference-Library zusammenstellen (Synthwave-Tracks für Welt-1 Reference)
+- Game Director: Parity-Matrix + Sprint-Planning für Phase 1 (Game-Design steht = Original)
+- Sound: Reference-Library aus dem bestehenden Audio-Set zusammenstellen
 
 ### Phase 1 — Single-Player-Core (Monat 2-4)
 
@@ -262,25 +263,25 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 
 **Deliverables:**
 - [ ] Grid-System (15×10) mit GameGrid, CellType, GridUtils
-- [ ] 3 MVP-Helden (NOVA, CRYO, TITAN) mit Stats + Skills + Talent-Bäume
+- [ ] 3 MVP-Helden (Default, SpeedySam, BrickBoris) mit echten Start-Stats + HeroTrait (keine Skills/Talente)
 - [ ] Hero-Switching im Hub
-- [ ] 5 MVP-Bomben (Standard, Frost, Lava, Sticky, Phantom)
-- [ ] 12 PowerUp-Typen mit Effekten
-- [ ] 12 Enemy-Typen + A*-Pathfinding (portiert)
-- [ ] 10 Welt-Bosse + 5 Council-Bosse (5 davon polished)
+- [ ] MVP-Bomben (Standard + Shop-Bomben Ice/Fire/Sticky)
+- [ ] 12 PowerUps + Cure mit echten Effekten + Unlock-Levels
+- [ ] 12 Enemy-Typen (8 klassisch + Tanker/Ghost/Splitter/Mimic) + Elite-Flag + A*-Pathfinding (portiert)
+- [ ] 5 Bosse (StoneGolem/IceDragon/FireDemon/ShadowMaster/FinalBoss) + Phase/Enrage (1-2 davon polished)
 - [ ] 10 Welten × 10 Level = 100 Levels (mit Placeholder-Visuals)
-- [ ] LevelLayoutGenerator (portiert) mit 11 Layouts
+- [ ] LevelLayoutGenerator (portiert) mit 12 Layouts + 5 Mutatoren
 - [ ] Combo-System (portiert)
-- [ ] HUD (Joystick, Bomb-Button, Hero-Skill-Bar, Combo-Anzeige, Lives, Coins)
+- [ ] HUD (Joystick, Bomb-Button, Detonator, Card-Quickswap, Combo-Anzeige, Lives, Coins)
 - [ ] Vibration + Audio-Hooks
 - [ ] Pause-Menü + Settings-Stub
 
 **Team-Fokus:**
-- Lead Dev: Battle-Controller, Multi-Mode-Foundation
+- Lead Dev: Battle-Controller, Mode-Plugin-Foundation
 - Junior Dev: Enemy-AI, Boss-Phase-Logic, HUD-Verkabelung
-- Lead Artist: 3 Helden-3D-Modelle + Welt-1-Art-Assets
+- Lead Artist: 3 Helden-3D-Modelle + Welt-1-Art-Assets (Neon-Arcade in 3D)
 - UI/UX: HUD-Mockup + Hub-Mockup
-- Sound: Welt-1 + 2 Music-Loops + 22 SFX (Placeholder OK)
+- Sound: Welt-1 + 2 Music-Loops + SFX (aus bestehendem Set, Placeholder OK)
 
 **Milestone-Gate:**
 - 1-Stunden-Playtest mit Story-Mode L1-L20 durchspielbar
@@ -291,29 +292,27 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 **Hauptziel:** Vollständige Meta-Loop. Spieler kann grinden, leveln, BP claimen.
 
 **Deliverables:**
-- [ ] Coin/Gem/Energy-Economy
-- [ ] Shop mit permanenten Upgrades
-- [ ] Hero-Talent-Bäume (3 MVP-Helden × 21 Knoten = 63 Knoten)
-- [ ] Card-System mit 5 Slots + Quickswap
-- [ ] Affix-System (~20 Affixe für MVP)
+- [ ] Coin/Gem/DungeonCoin-Economy (Overflow-Guard, portiert)
+- [ ] Shop mit 9 permanenten Upgrades (UpgradeType — Haupt-Coin-Sink) + 3 Shop-Bomben
+- [ ] Card-System: Deck (4 Basis + 1 freischaltbar), Quickswap, Crafting (Coin-Sink)
 - [ ] Deck-Builder UI
-- [ ] Battle Pass v1 (60 Tiers, Free/Premium)
-- [ ] Daily Reward (7-Tage-Zyklus, portiert)
-- [ ] Daily Quests + Weekly Missions
-- [ ] 50 Achievements (portiert + Sci-Fi-spezifisch)
-- [ ] Cloud-Save via Firebase RTDB
+- [ ] Battle Pass v1 (30 Tiers, Free/Premium, 10 Themes)
+- [ ] Daily Reward (7-Tage-Zyklus + Comeback, portiert)
+- [ ] Daily Missions (3/Tag) + Weekly Missions (5/Woche)
+- [ ] 72 Achievements (5 Kategorien, portiert) — Achievement-IDs für Hero-Unlocks erhalten
+- [ ] Cloud-Save via Firebase RTDB (`bomberblast-arena`) + **Legacy-Save-Import** aus `bomberblast-league`
 - [ ] Account-Login: Anonymous + Email + Google SignIn
-- [ ] Settings-Screen + Accessibility-Optionen
-- [ ] Localization-Foundation (DE + EN voll, ES/FR/IT/PT Stub)
-- [ ] Tutorial T1-T3 voll spielbar
-- [ ] Cloud Functions: `accountDelete`, `dataExport`, `migrateSchema`
+- [ ] Settings-Screen + Accessibility-Optionen (Colorblind/HighContrast/UiScale/Subtitles)
+- [ ] Localization-Foundation (DE + EN voll, ES/FR/IT/PT Stub) — RESX-Migration aus Original
+- [ ] Tutorial T1-T3 voll spielbar + Feature-Unlock-Choreographie
+- [ ] Cloud Functions: `accountDelete`, `dataExport`, `migrateSchema`, `importLegacySave`
 
 **Team-Fokus:**
-- Lead Dev: BP-Logik, Cloud-Save, IAP-Verkabelung
-- Junior Dev: Achievement-System, Quest-System, Talent-Tree-UI
-- Lead Artist: Restliche 5 Helden-Modelle (BLAZE, GLITCH, FLUX, HEX, PHANTOM)
+- Lead Dev: BP-Logik, Cloud-Save + Legacy-Import, IAP-Verkabelung
+- Junior Dev: Achievement-System, Missions, Shop/Deck-UI
+- Lead Artist: Restliche 2 Helden-Modelle (TwinTina, LuckyLola) + Welt 2-3
 - UI/UX: Vollständige Hub-UI + Shop + Deck-Builder Mockups
-- Sound: Welt 3-5 Music + Hero-VoiceLines DE+EN (AI-Voice via ElevenLabs)
+- Sound: Welt 3-5 Music (aus bestehendem Set, aufgewertet)
 
 **Milestone-Gate:**
 - 5-Stunden-Playthrough von Tutorial bis Welt-5
@@ -322,80 +321,75 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 
 ### Phase 3 — Async + Co-op-Multiplayer (Monat 6-8)
 
-**Hauptziel:** Liga-System läuft, Co-op-Modi verkabelt.
+**Hauptziel:** Live-Service + Roguelike-Dungeon (Solo-Kern) komplett; Clan + optionaler Co-op verkabelt.
 
-**Deliverables:**
-- [ ] Liga-System (5 Tiers × 3 Subs, 14-Tage-Saison) — Domain-Port
-- [ ] Liga-NPC-Backfill
-- [ ] Daily-Race-Modus (deterministisches Tageslevel)
+**Deliverables (Solo-Kern):**
+- [ ] Roguelike-Dungeon (16 Buffs, 5 Synergien, 5 Raum-Typen, 8 Floor-Modifier, Node-Map 10×3, 8 Dungeon-Upgrades)
+- [ ] Master-Mode (Reborn nach L100) + Boss-Rush + Survival + Quick-Play
+- [ ] Liga-System (5 Tiers × 3 Subs, 14-Tage-Saison, **Perzentil-Promotion**) — Domain-Port
+- [ ] Liga-NPC-Backfill + Daily-Race-Modus (deterministisches Tageslevel)
+- [ ] Live-Events: 8 Wochen-Events (ISO-Seed), saisonale Events, Lucky-Spin (9 Segmente, Pity), Rotating-Deals
+- [ ] Profanity-Filter (portiert/extrahiert), Report-Funktion
+- [ ] Clan-System (`FirebaseClanService` voll integriert: Create/Join/Chat/Leaderboard — portiert)
+- [ ] Cloud Functions: `leagueReset` (14T), `battlePassReset` (30T), `validateDailyRace`, `reportPlayer`
+
+**Deliverables (optionaler Multiplayer — Plus):**
 - [ ] Friend-System (Friend-Codes + Search)
-- [ ] Photon Realtime Co-op-Lobby
-- [ ] Co-op Story (2 Spieler durchlaufen Welt)
-- [ ] Co-op Dungeon (2-4 Spieler, 10 Floors)
-- [ ] Chat-System: Globaler + Privater Chat (Photon Chat)
-- [ ] Profanity-Filter (portiert)
-- [ ] Block/Report-Funktion
-- [ ] Cloud Functions: `seasonReset`, `submitMatchResult`, `validateDailyRace`, `friendRequest`, `reportPlayer`
-- [ ] Domain-Replay-Worker (C# .NET 10 Cloud Run Container)
+- [ ] Photon Realtime Co-op-Lobby + Co-op Story/Dungeon (2-4 Spieler)
+- [ ] Chat-System (Photon Chat) + Block/Report
 
 **Team-Fokus:**
-- Lead Dev: Photon Realtime, Cloud Functions, Domain-Replay-Worker
-- Junior Dev: Liga-UI, Friend-System-UI, Chat-UI
-- Lead Artist: Welt 5-7 + Co-op-Lobby-Visuals
-- UI/UX: Liga-Bildschirm, Friend-List, Chat-UI
+- Lead Dev: Dungeon/Liga/Events-Port, Cloud Functions, Clan-Integration
+- Junior Dev: Liga-UI, Dungeon-UI, Events-UI
+- Lead Artist: Welt 5-7 + Dungeon-Visuals
+- UI/UX: Liga-Bildschirm, Dungeon-Node-Map, Event-Banner
 - Sound: Welt 6-8 Music + Stinger-Library
 
 **Milestone-Gate:**
-- Internal-2-Spieler-Co-op-Match (Editor + Build)
-- Liga-Saison-Reset via Cloud Function getestet
-- Erste Daily-Race-Submissions funktionieren
+- Dungeon-Run komplett spielbar (Floor 1-10 + Buffs/Synergien)
+- Liga-Saison-Reset via Cloud Function getestet, erste Daily-Race-Submissions
+- Live-Event-Rotation deterministisch korrekt
 
-### Phase 4 — Real-time PvP (Monat 8-10)
+### Phase 4 — Determinismus-Integration + Multiplayer-Foundation (Monat 8-9, optional/Plus)
 
-**Hauptziel:** Photon Fusion PvP läuft, Anti-Cheat-Pipeline aktiv.
+**Hauptziel:** Determinismus integriert (Voraussetzung für Replay/Online-MP); Local-Coop/Versus spielbar.
+**Online-Versus ist optionales Post-Launch-Feature — kein Launch-Blocker (siehe PLAN §9 Risiko #2/#5).**
 
 **Deliverables:**
-- [ ] Photon Fusion Setup + NetworkRunner
-- [ ] PvP-Lobby-System mit Hero-Pick + Ready-Check
-- [ ] 1v1 Duel-Modus + ELO/Glicko-2-Matchmaking
-- [ ] FFA Brawl (4 Spieler)
-- [ ] 2v2 Team-Battle
-- [ ] PvP-Liga (separate Ranking-Tabelle Mobile/PC)
-- [ ] Server-Side-Match-Validation via Replay-Re-Sim
-- [ ] Anti-Cheat: Replay-Hash-Validation + Suspicious-Pattern-Detection
-- [ ] Spectator-Mode (Cinemachine)
-- [ ] Match-Replay-Speicher + Replay-Viewer
-- [ ] Cloud Functions: `validateMatch` (Pub/Sub), `photonWebhook`
-- [ ] **Anti-Cheat-Security-Consultant-Review**
+- [ ] **Determinismus-Integration:** alle Gameplay-Random über `IRngProvider`, Sim/Render-Trennung, 60-Hz-Fixed-Step
+- [ ] Float-Determinismus-Strategie (Fixed-Point/Quantisierung vor State-Hash) — siehe ARCHITECTURE §13.0
+- [ ] Determinismus-Replay-Suite (CI-Gate)
+- [ ] Local-Coop/Versus (2 Spieler an einem Gerät/Gamepads, dual Input-Routing)
+- [ ] *(später/optional)* Online-Co-op (Photon Realtime), Online-Versus (Photon Fusion) + Server-Re-Sim-Anti-Cheat
 
 **Team-Fokus:**
-- Lead Dev: Photon Fusion, Server-Worker, Anti-Cheat
-- Junior Dev: PvP-Lobby, Spectator-Mode, Replay-Viewer
-- Lead Artist: Welt 8-10 + Final-Boss-Vex
-- UI/UX: PvP-Lobby + Hero-Pick + Settlement-Modal
+- Lead Dev: Determinismus-Integration, Local-MP, (optional) Photon
+- Junior Dev: Replay-Suite, Local-Coop-Camera/Input
+- Lead Artist: Welt 8-10 + FinalBoss
+- UI/UX: Local-MP-Setup + Settlement-Modal
 - Sound: Welt 9-10 Music + Boss-Reveal-Cinematic-Audio
 
 **Milestone-Gate:**
-- 8-Spieler-Studio-Internal-Tournament läuft mit < 100ms Latency
-- 100 Replays in Determinismus-Suite passen
-- Anti-Cheat erkennt Manual-Cheat-Attempts
+- Determinismus-Replay-Suite grün (Single-Player)
+- Local-2-Spieler-Match spielbar
+- (optional) Online-Co-op-Match Editor + Build
 
 ### Phase 5 — Polish + Visuals + Audio (Monat 9-11)
 
 **Hauptziel:** Production-Quality-Look + Audio.
 
 **Deliverables:**
-- [ ] Alle 8 Helden 3D-Modelle finalisiert + Animationen
-- [ ] Alle 10 Welten Art-Assets finalisiert
-- [ ] VFX Graph für 22 Bomb-Typen
-- [ ] VFX Graph für 8 Hero-Ultimates
-- [ ] Adaptive Music (FMOD-Integration optional)
-- [ ] Voice-Recording finalisiert (DE+EN voll via ElevenLabs + Mensch-Sprecher für Schlüssel-Chars)
-- [ ] Welt-Cutscenes (Timeline + Cinemachine) für alle 10 Welten + Endings
-- [ ] Cosmetics-Pipeline aktiviert: 60+ Items für Launch
-- [ ] UI-Polish: Glassmorphism, Animationen, Modal-Transitions
-- [ ] Localization-Vervollständigung (alle 6 Sprachen voll)
-- [ ] Performance-Optimization auf Min-Spec-Device (Galaxy A50 etc.)
+- [ ] Alle 5 Helden 3D-Modelle finalisiert + Animationen (Neon-Arcade in 3D)
+- [ ] Alle 10 Welten Art-Assets finalisiert (beide Visual-Styles: Classic HD + Neon)
+- [ ] VFX Graph für 14 Bomben-Typen
+- [ ] VFX Graph für Boss-Angriffe + Combo/ULTRA-Effekte
+- [ ] Adaptive Music (FMOD-Integration optional), aufgewertete Loops aus bestehendem Set
+- [ ] *(deferred/optional)* Voice — im Original bewusst abgewählt; nur falls Budget-Entscheidung dafür
+- [ ] Welt-Story-Cutscenes in 3D (Timeline + Cinemachine) — die bestehenden 10 Intros + 9 Outros
+- [ ] Cosmetics-Pipeline aktiviert: 98 Items (32 Trails / 33 Frames / 33 Victories) + Skins
+- [ ] UI-Polish: Animationen, Modal-Transitions, Iris-Wipe
+- [ ] Localization-Vervollständigung (alle 6 Sprachen voll, RESX-Migration aus Original)
+- [ ] Performance-Optimization auf Min-Spec-Device (Galaxy A50 etc.) + Hardware-Tier-System
 - [ ] Memory-Profiling + Crash-Reduction
 
 **Team-Fokus:**
@@ -467,12 +461,10 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 **Deliverables:**
 - [ ] EU-Release (alle EU-Länder)
 - [ ] iOS-Submission + Approval
-- [ ] Saison 2 "Mech-Wars" live
-- [ ] 1 neuer Hero (PULSE, Support-Klasse)
-- [ ] Cosmetics-Schub +60 Items für S2
+- [ ] Saison 2 live (neues BP-Theme aus Rotation, neue Cosmetics + Event)
+- [ ] Cosmetics-Schub für S2 (neue Trails/Frames/Victories)
 - [ ] Cross-Save voll funktional Mobile↔PC (für Steam-Vorbereitung)
-- [ ] Friend-System voll, Cross-Play-Restrictions-Konfiguration
-- [ ] Voice-Chat-Soft-Launch (Phase 1: Premium-only, opt-in)
+- [ ] *(optional)* Friend-System voll, Cross-Play-Restrictions-Konfiguration
 
 **KPIs (Wochen 9-16):**
 - Downloads: 500k
@@ -485,10 +477,8 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 
 **Deliverables:**
 - [ ] Global-Release (alle Märkte außer geo-restricted)
-- [ ] Steam-Demo (Free-Demo mit 3 Welten + PvP-Bot-Match)
-- [ ] Saison 3 "Neon-Nights" live
-- [ ] 1 neuer Hero (VOLT, Lightning-Mage)
-- [ ] Tournament-Modus (Phase 1: weekend-only Open-Brackets)
+- [ ] Steam-Demo (Free-Demo mit 3 Welten + Dungeon-Probe)
+- [ ] Saison 3 live (neues BP-Theme, neue Cosmetics + Event)
 - [ ] Influencer-Push global
 
 **KPIs (Wochen 17-26):**
@@ -503,11 +493,10 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 
 **Deliverables:**
 - [ ] Steam-Vollrelease (Windows + Linux + macOS)
-- [ ] Saison 4 "Glitch in the System"
-- [ ] Voice-Chat global verfügbar
-- [ ] Tournament-Modus voll: monthly Brackets mit Cash-Prize
-- [ ] Bomberman-Royale (8 Spieler) BETA in der Saison 4 (sehr ambitioniert!)
-- [ ] LiveOps autonom mit 8-Wochen-Saison-Schedule
+- [ ] Saison 4 live (neues BP-Theme, neue Cosmetics + Event)
+- [ ] *(optional)* Online-Co-op global verfügbar
+- [ ] *(optional, sehr ambitioniert)* Online-Versus-Erweiterung (setzt Float-Determinismus-Lösung voraus)
+- [ ] LiveOps autonom mit Saison-Schedule (Liga 14T / BP 30T)
 
 ---
 
@@ -618,7 +607,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 
 ### 5.6 Trailer-Strategie
 
-- **Cinematic-Trailer** (1:30 min) für Launch-Window — Director Vex Reveal, gameplay-light
+- **Cinematic-Trailer** (1:30 min) für Launch-Window — 3D-Before/After + FinalBoss-Reveal, gameplay-light
 - **Gameplay-Trailer** (30 sec) für TikTok/Reels — schnelle Kills, Combo-Highlights
 - **Hero-Reveal-Trailer** pro Saison (45 sec) — Lore + Gameplay
 - **PvP-Highlight-Trailer** (2 min) für YouTube — best moments aus Closed Beta
@@ -631,7 +620,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 ### 6.1 Discord-Server-Struktur
 
 ```
-BomberBlast Arena (Server)
+BomberBlast (Discord-Server)
 ├── 📢 ANNOUNCEMENTS
 ├── 📜 RULES & FAQ
 ├── 💬 GENERAL
@@ -727,7 +716,7 @@ BomberBlast Arena (Server)
 **Kritische Inhalte:**
 - Bombenexplosionen (kein Blut, stylisiert) → PEGI 7-OK
 - Mech-Combat (Gewalt gegen Roboter, nicht Menschen) → PEGI 7-OK
-- Sci-Fi-Horror (Mutant-Bossees, Dark-Themes) → PEGI 12
+- Stilisierte Boss-Kämpfe (Fantasy-Bosse wie IceDragon/FireDemon, kein Blut) → PEGI 7-12
 - Story-Twist 3 (KI-Identitäts-Krise) → mild storytelling, PEGI 12
 
 **Audit:** PEGI-Antrag (~600 EUR), USK-Beratung (Berlin-Office, ~1.000 EUR), ESRB-Self-Cert (kostenlos).
@@ -747,18 +736,14 @@ BomberBlast Arena (Server)
 - Karten-Drops aus Gameplay-Quellen (kein Pay-to-Roll)
 - Cosmetic-Shop verkauft konkrete Items (keine Mystery-Boxes)
 
-### 7.5 AI-Voice-Compliance (ElevenLabs)
+### 7.5 AI-Voice-Compliance (nur falls Voice eingeführt wird — DEFERRED)
 
-**Lizenz-Anforderungen:**
-- Enterprise-Plan für kommerzielle Nutzung (~6k/Jahr)
-- Voice-Cloning nur mit explizitem Consent der Stimm-Inhaber (wir nutzen Standard-Voices)
-- Disclosure in Credits: "Voice-Acting powered by ElevenLabs AI"
-- Backup-Plan: Bei Lizenz-Issues → schnelle Migration zu Mensch-Sprechern (Schlüssel-Chars zuerst)
-
-**Mitigation:**
-- 2-3 Mensch-Sprecher für Hauptchars (Director Vex, Sage, Echo) — Premium-Authentizität
-- ElevenLabs für Rest (NPCs, kleinere Helden, Side-Characters)
+> Das Original ist **bewusst voice-los** (Mandat "kein Geld"). Voice ist im Remake **deferred/optional**.
+> Dieser Abschnitt gilt nur, falls Voice nachträglich als bewusste Erweiterung dazukommt — dann:
+- Enterprise-Plan für kommerzielle Nutzung; Standard-Voices (kein Voice-Cloning ohne Consent)
+- Disclosure in Credits: "Voice-Acting powered by <Anbieter> AI"
 - Manual-QA-Pflicht: Mensch hört alle AI-Lines, Re-Render bei Issues
+- Optional Mensch-Sprecher für Schlüssel-Lines (Announcer/Boss-Roar)
 
 ### 7.6 Datenschutz-Tracking-Strategie
 
@@ -937,7 +922,11 @@ Bei P0/P1-Issues:
 
 ---
 
-## 11. Esports-Foundation (Phase 2+)
+## 11. Esports-Foundation (optional, setzt Online-Versus voraus)
+
+> **Hinweis:** Esports/Tournament setzt den optionalen **Online-Versus** voraus (der wiederum die
+> Float-Determinismus-Lösung braucht, siehe ARCHITECTURE §13.0). Daher ein optionales Post-Launch-Thema,
+> kein Teil des treuen Remake-Kerns.
 
 ### 11.1 Tournament-Mode
 
@@ -993,25 +982,25 @@ Bei Tournament-Mode:
 | T7 | Steam-Build-Macken (macOS+Linux) | Mittel | Niedrig | Steam-Deck als Test-Device, Continuous-Steam-Builds |
 | T8 | Unity-Version-Update-Breaking-Changes | Niedrig | Mittel | Version pinnen, Update-Sprints planmäßig |
 | T9 | Firebase-Quota-Limits (RTDB-Schreibrate) | Mittel | Hoch | Frühzeitig auf Firestore-Sharding evaluieren, Cache-Layer |
-| T10 | AI-Voice (ElevenLabs) Qualität sinkt nach Update | Mittel | Mittel | Backup: Mensch-Sprecher für Schlüssel-Chars, Re-Render-Pipeline |
+| T10 | *(nur falls Voice eingeführt)* AI-Voice-Qualität schwankt | Niedrig | Niedrig | Voice ist deferred/optional; Original ist voice-los — kein Launch-Risiko |
 
 ### 12.2 Game-Design-Risiken
 
 | # | Risiko | Wahrscheinlichkeit | Impact | Mitigation |
 |---|--------|--------------------|--------|------------|
-| D1 | Hero-Balancing-Anti-Pattern (1-2 Helden zu stark) | Hoch | Hoch | Frühe Telemetry-Auswertung, A/B-Balance-Tests, Saisonale Patches |
-| D2 | PvP-Meta wird stagnierend ("Same Build wins") | Mittel | Hoch | Variety durch Affixes, Saisonale Counter-Karten, Tier-S-Restrictions in Tournament |
-| D3 | Talent-Bäume zu komplex für Casual-Spieler | Mittel | Mittel | Auto-Skill-Vorschläge, Build-Templates (Quick-Pick), Pre-Made-Builds |
-| D4 | Co-op-Schwierigkeit zu hart oder zu leicht | Mittel | Mittel | Beta-Test-Data, dynamische Schwierigkeit |
-| D5 | Story-Twists werden geleakt vor Saison-End | Hoch | Niedrig | Saisonale Story-Beats nicht spoilern, Datamine-Schutz |
+| D1 | Hero-Balancing (1-2 der 5 Helden zu stark) | Mittel | Mittel | Original-Balancing übernehmen, Telemetrie, Saisonale Patches |
+| D2 | Karten-/Deck-Meta stagniert | Mittel | Mittel | Drop-/Crafting-Tuning, saisonale Cosmetic-Anreize (kein Pay-to-Win) |
+| D3 | 3D-Lesbarkeit schlechter als 2D-Original (Top-Down-Klarheit) | Mittel | Hoch | Kamera-Tuning, HighContrast/Outline-Modi, Playtests gegen das 2D-Original |
+| D4 | *(optional)* Co-op-Schwierigkeit zu hart/leicht | Mittel | Mittel | Beta-Test-Data, dynamische Skalierung (wie Original-Dungeon) |
+| D5 | 3D-Remake verliert den Arcade-„Game-Juice" des Originals | Mittel | Hoch | Bestehende Juice-Patterns (Slow-Mo/Shake/Combo-Flash) 1:1 in 3D übernehmen |
 
 ### 12.3 Markt-Risiken
 
 | # | Risiko | Wahrscheinlichkeit | Impact | Mitigation |
 |---|--------|--------------------|--------|------------|
-| M1 | Bomberman-Genre Nische auf Mobile (kein Markt) | Niedrig | Hoch | USPs (Real-time PvP, Mech) als Differenzierung, Marketing-Hook |
-| M2 | Konkurrenz von Bomb Squad/Bombsquad reagiert | Mittel | Mittel | Vorsprung durch Sci-Fi-Setting + tiefe Meta, schnelle Iteration |
-| M3 | Mobile-PvP-Latency-Skepsis | Hoch | Hoch | Beta-Test-Latency-Transparency, Region-Server, Adaptive-Settings |
+| M1 | Bomberman-Genre Nische auf Mobile | Niedrig | Hoch | USPs (3D-Remake, tiefer Solo-Content, Cross-Save) + bestehende Spielerbasis als Anker |
+| M2 | Konkurrenz von Bomb Squad/Bombsquad | Mittel | Mittel | Vorsprung durch 3D-Optik + tiefe Meta (Liga/Dungeon/100 Level), schnelle Iteration |
+| M3 | *(nur falls Online-MP)* Mobile-PvP-Latency-Skepsis | Mittel | Mittel | Region-Server, Adaptive-Settings; MP ist optional, Solo-Kern unabhängig |
 | M4 | Konkurrenz von ArcaneKingdom (eigene App-Family) | Mittel | Mittel | Unterschiedliche Genres, Cross-Promo möglich |
 | M5 | Apple-Cross-Promo-Policy für iOS verhindert Mobile↔PC-Promotion | Hoch | Niedrig | Saubere Trennung, kein Cross-Save-Hint auf Apple-Build |
 | M6 | DSGVO-Verschärfung wirft Datensammeln um | Mittel | Hoch | Datenminimierung von Tag 1, Server-EU |
@@ -1043,20 +1032,17 @@ Diese Entscheidungen müssen vor oder während Phase 0-1 geklärt werden:
 
 | # | Entscheidung | Frist | Status |
 |---|--------------|-------|--------|
-| 1 | Final Brand-Name: "BomberBlast Arena" oder Alternative | Vor Marketing-Start (Monat 4) | Open |
+| 1 | Markenname: "BomberBlast" beibehalten (Default) oder Zusatz "3D"? | Vor Marketing-Start | Default: BomberBlast (Bestandsmarke) |
 | 2 | FMOD vs. Unity Audio-only (Lizenz-Decision) | Phase 2 | Open |
-| 3 | Mensch-Sprecher für Vex/Sage/Echo wählen | Phase 5 | Open |
-| 4 | Subscription "Bomber-Pro" Launch oder Saison-2-Launch | Phase 7 | Open (vorsichtig: Sub-Refund-Risiko) |
-| 5 | Voice-Chat Public-Launch (Phase 8 oder später) | Phase 8 | Open |
-| 6 | Bomberman-Royale (8 Spieler) — bauen oder canceln | Phase 9 | Open |
-| 7 | AR-Modus überhaupt entwickeln | Phase 10+ | Open (vermutlich Cancel) |
-| 8 | Steam-Build mit Cross-Match Mobile-PC erlauben | Phase 8 | Open (vermutlich Nein) |
-| 9 | Hero-Anzahl Launch: 8 (Plan) oder 6 (kürzere Pipeline) | Phase 2 | Default: 8 |
-| 10 | Esport-Schiene: Investment-Decision | Post-Launch | Open |
-| 11 | Migrations-Bonus alt → neu (1.5× Coins reicht?) | Phase 8 | Open |
-| 12 | Affiliate-Programm für Influencer | Phase 6+ | Open |
-| 13 | Custom-Music-Composer vs. Stock-Music-Library | Phase 5 | Open |
-| 14 | Photon Voice 2 Integration Phase 2 oder spätestens | Phase 8 | Open |
+| 3 | Voice überhaupt einführen? (Original ist bewusst voice-los) | Phase 5 | Default: Nein (deferred) |
+| 4 | VIP-Subscription-Pricing/-Inhalt beibehalten oder anpassen | Phase 7 | Default: Original-Werte |
+| 5 | **Online-Multiplayer** überhaupt bauen (Co-op/Versus) — und wenn ja, wann? | Post-Launch | Default: Local-MP ja, Online optional |
+| 6 | **Legacy-Save-Import**: Migrations-Bonus für Alt-Spieler? | Phase 6 | Open (Mapping ist Pflicht, Bonus optional) |
+| 7 | Steam-Build mit Cross-Match Mobile-PC erlauben | Phase 8 | Open (vermutlich Nein) |
+| 8 | Hero-Anzahl Launch | Phase 1 | **Fix: 5 (= Original)**; 6. Held nur als bewusste [NEU]-Erweiterung |
+| 9 | IAP-Preise: Original-Werte beibehalten oder re-pricen? | Phase 2 | Default: Original-Werte |
+| 10 | Custom-Music-Composer vs. aufgewertete Bestands-Loops | Phase 5 | Open |
+| 11 | Affiliate-Programm für Influencer | Phase 6+ | Open |
 
 ---
 
@@ -1071,33 +1057,34 @@ Diese Entscheidungen müssen vor oder während Phase 0-1 geklärt werden:
 - [ ] Determinismus-Suite: 1.000+ Replays pass-Rate 100 %
 - [ ] Crashlytics: Crash-Free-Rate ≥ 99 % in Closed-Beta
 - [ ] Build-Pipeline: AAB + Xcode-Project + Steam-Build via CI funktionieren
-- [ ] Photon Fusion: 100 simultane PvP-Matches in EU-Region getestet
-- [ ] Anti-Cheat: 5+ manual Cheat-Attempts korrekt erkannt
 - [ ] Cloud-Save: Cross-Platform-Test Mobile↔PC ≥ 99 % Success
+- [ ] **Legacy-Save-Import: Test mit echten Alt-Accounts ≥ 99 % Success** (35-Key-Mapping)
+- [ ] *(optional, falls Online-MP)* Photon: simultane Matches getestet, Anti-Cheat erkennt Cheat-Attempts
 - [ ] Performance: 60 FPS High-Tier, 30 FPS Low-Tier ≥ 95 % stabil
 - [ ] Localization: alle 6 Sprachen voll, kein "_KeyMissing_"
 
-### 14.2 Content
+### 14.2 Content (= Feature-Parität mit dem Original)
 
-- [ ] 8 Helden mit allen Skills + Talent-Bäumen + Voice-Lines
-- [ ] 22 Bomben-Karten mit Affix-System
-- [ ] 10 Welten × 10 Levels = 100 Story-Levels
-- [ ] 10 Welt-Bosse + 4 Council-Bosse polished
-- [ ] Co-op Story + Dungeon + Boss-Raid spielbar
-- [ ] PvP: 1v1 + 2v2 + FFA-Brawl
-- [ ] Battle Pass S1 mit 60 Tiers vollständig
-- [ ] 60+ Cosmetics zum Launch
-- [ ] 86 Achievements (66 alt + 20 neu)
-- [ ] 30+ Daily/Weekly-Quest-Templates
-- [ ] 10 Welt-Cutscenes + 3 Ending-Cutscenes
+- [ ] 5 Helden mit echten Stats + HeroTrait + Unlock-Bedingungen
+- [ ] 14 Bomben-Typen / 13 Karten (echte Rarities) + Deck/Crafting
+- [ ] 12 PowerUps + Cure (echte Effekte + Unlock-Levels)
+- [ ] 12 Gegner (+ Elite) + 5 Bosse (+ 8 Modifier, Duo-Encounter W9/W10) polished
+- [ ] 10 Welten × 10 Levels = 100 Story-Levels (12 Layouts, 5 Mutatoren) + Master-Mode
+- [ ] Roguelike-Dungeon (16 Buffs, 5 Synergien, 8 Upgrades) + Boss-Rush + Survival + Quick-Play
+- [ ] Liga (5×3 + Perzentil) + Daily-Race + Daily/Weekly-Missions + 8 Wochen-Events + Lucky-Spin
+- [ ] Battle Pass S1 mit 30 Tiers vollständig (10 Themes)
+- [ ] 98 Cosmetics (32 Trails / 33 Frames / 33 Victories) + Skins
+- [ ] 72 Achievements (5 Kategorien) — Hero-Unlock-IDs erhalten
+- [ ] 10 Welt-Intro-Cutscenes + 9 Welt-Outro-Cutscenes (in 3D)
+- [ ] *(optional)* Co-op Story/Dungeon + Local-Coop/Versus
 
 ### 14.3 Compliance
 
 - [ ] PEGI-12 / USK-12 / ESRB-Teen-Rating bestätigt
 - [ ] DSGVO: Privacy-Policy + Cookie-Consent + Right-to-Access + Right-to-Deletion
 - [ ] COPPA: Age-Gate + Eltern-Zustimmung-Flow
-- [ ] AI-Voice-Disclosure in Credits
-- [ ] DPA-Verträge mit Firebase, Photon, ElevenLabs signiert
+- [ ] DPA-Verträge mit Firebase (+ Photon, falls Online-MP) signiert
+- [ ] *(nur falls Voice nachträglich dazukommt)* AI-Voice-Disclosure in Credits
 
 ### 14.4 Marketing
 
@@ -1122,50 +1109,33 @@ Diese Entscheidungen müssen vor oder während Phase 0-1 geklärt werden:
 
 ## 15. Post-Launch-Roadmap (Saison 1-6)
 
-### Saison 1 — "Aufstand" (Monat 12-14, 8 Wochen)
+> Saisons = **30-Tage-Battle-Pass-Zyklen** mit rotierendem Theme (aus den 10 bestehenden BP-Themes) +
+> neuen Cosmetics + Live-Event. **Keine neuen Helden** (Original hat 5 feste Helden); neue Inhalte sind
+> Cosmetics, Events, Balancing-Tuning und Plattform-Meilensteine. Echte neue Helden wären eine bewusste
+> **[NEU]**-Erweiterung über den treuen Remake hinaus — separat zu entscheiden.
 
-- Launch-Saison, alle 8 Helden, alle 10 Welten verfügbar
-- BP-Theme: Cyber-Klassisch
-- LiveOps: Stabilität-Fokus, Tutorial-Funnel-Optimierung
-- Event: "Aufstand-Wochenend" (DoubleXP)
+### Saison 1 (Monat 12-14)
+- Launch-Saison, alle 5 Helden + alle 10 Welten verfügbar; BP-Theme: Classic
+- LiveOps: Stabilität-Fokus, Tutorial-Funnel-Optimierung; Event: DoubleXP-Wochenende
 
-### Saison 2 — "Mech-Wars" (Monat 14-16)
+### Saison 2 (Monat 14-16)
+- BP-Theme aus Rotation (z.B. Cyberpunk); neue Cosmetics-Welle (Trails/Frames/Victories)
+- iOS-Launch + EU-Launch (parallel); Event aus dem 8er-Wochen-Pool
 
-- Neuer Hero: PULSE (Support-Klasse, Heilt Mitspieler)
-- BP-Theme: Pacific-Rim
-- 3 neue Karten + 20 neue Cosmetics
-- Event: Mech-Customization-Wochenend
-- iOS-Launch + EU-Launch (parallel)
+### Saison 3 (Monat 16-18)
+- BP-Theme aus Rotation; neue Cosmetics; Global-Launch
+- Balancing-Pass (Karten/Liga) auf Basis der Telemetrie
 
-### Saison 3 — "Neon-Nights" (Monat 16-18)
+### Saison 4 (Monat 18-20)
+- BP-Theme aus Rotation (z.B. Halloween, saisonal); Steam-Demo-Phase
+- *(optional)* Online-Co-op-Beta
 
-- Neuer Hero: VOLT (Lightning-Mage)
-- BP-Theme: Synthwave
-- 3 neue Karten
-- Event: Synthwave-Concert-In-Game (kein Story-Bezug)
-- Global-Launch + Tournament-Mode-Phase-1
+### Saison 5 — Winter-Saison (Monat 20-22)
+- BP-Theme: Winter; Christmas/NewYear-Special-Event; Steam-Full-Launch
 
-### Saison 4 — "Glitch in the System" (Monat 18-20)
-
-- Neuer Hero: MORPHEUS (Shapeshifter)
-- BP-Theme: Hacker-Green-Code
-- Steam-Demo-Phase startet
-- Bomberman-Royale-Beta-Test (8-Spieler-Modus)
-
-### Saison 5 — "Cyber-Winter" (Monat 20-22, Winter-Saison)
-
-- Neuer Hero: ECHO-2 (Klon-Hero, Saison-Story-Cliffhanger)
-- BP-Theme: Eis-Tech
-- Event: Christmas/NewYear-Special
-- Steam-Full-Launch
-
-### Saison 6 — "Re-Genesis" (Monat 22-24)
-
-- Neuer Hero: SAGE (Late-Game-Reveal, aus Story)
-- BP-Theme: True-Ending-Setup
-- Story-Episode: True-Ending-Beats
-- Voice-Chat global verfügbar
-- Bomberman-Royale-Full-Release
+### Saison 6 (Monat 22-24)
+- BP-Theme aus Rotation; *(optional)* Online-Versus-Erweiterung (setzt Float-Determinismus-Lösung voraus)
+- *(optional, bewusste [NEU]-Entscheidung)* Evaluierung eines 6. Helden als echte Content-Erweiterung
 
 ---
 
@@ -1174,8 +1144,9 @@ Diese Entscheidungen müssen vor oder während Phase 0-1 geklärt werden:
 | Datum | Version | Änderung | Autor |
 |-------|---------|----------|-------|
 | 2026-05-26 | v0.1 | Initial-ROADMAP mit 18-Mo-Plan, Team, Marketing, Compliance, Risiken | Robert Schneider + Claude |
+| 2026-05-30 | **v0.2** | **Auf treuen 3D-Remake ausgerichtet: Deliverables = Feature-Parität mit dem Original (5 Helden, 12 Gegner, 5 Bosse, 13 Karten, 30 BP-Tiers, 72 Achievements, 9 Shop-Upgrades, Dungeon, Liga 5×3+Perzentil). Phase 4 = Determinismus-Integration + Local-MP; Online-MP/Esports/Voice als optionale Post-Launch-Plus markiert. Sci-Fi-Reste (Vex/Mech-Wars/PULSE-VOLT/Royale/Affixe/Talente) entfernt; Legacy-Save-Import als Pflicht-Checklistenpunkt** | Robert Schneider + Claude |
 
 ---
 
-> **Status:** Production-Plan finalisiert für Sprint 0 Kickoff.
-> **Nächste Schritte:** Team-Recruiting, Firebase-Setup, Unity-Projekt-Skelett.
+> **Status:** Production-Plan v0.2 — treuer 3D-Remake. Bereit für Parity-Matrix + Sprint 0 Kickoff.
+> **Nächste Schritte:** Parity-Matrix, Firebase-Setup (`bomberblast-arena` + Legacy-Import-Pfad), Unity-Projekt-Skelett.

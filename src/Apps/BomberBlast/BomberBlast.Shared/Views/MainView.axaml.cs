@@ -70,22 +70,20 @@ public partial class MainView : UserControl
         // Audit L12: Granularere Progress-Reports verhindern "Freeze"-Eindruck zwischen Steps.
         Splash.PreloadAction = async (reportProgress) =>
         {
-            // Schritt 1: SkSL-GPU-Shader kompilieren (12 Shader, 600-2400ms auf Android)
-            reportProgress(0.05f, "Grafik-Engine wird vorbereitet...");
-            await Task.Run(() => ShaderPreloader.PreloadAll());
-            reportProgress(0.55f, "Shader bereit");
-
-            // Schritt 2: Statische Renderer-Klassen initialisieren
-            // (SKPaint/SKFont/SKMaskFilter/SKPath + Noise-LUT vorallokieren,
-            //  verhindert Jank beim ersten Frame/View-Öffnen)
-            await Task.Run(() => { ExplosionShaders.Preload(); });
-            reportProgress(0.65f, "Effekte werden geladen...");
+            // HINWEIS: Die SkSL-GPU-Shader (ShaderPreloader.PreloadAll) UND ExplosionShaders werden
+            // bereits von der BomberBlastLoadingPipeline (App.RunLoadingAsync) kompiliert. Hier NICHT
+            // erneut aufrufen — sonst doppelte GPU-Shader-Kompilierung auf konkurrierenden Threads
+            // (600-2400ms verschenkt) plus Race auf die nicht-atomaren ??=-Effekt-Caches
+            // (verwaiste SKRuntimeEffect-Allokation = nativer Leak). Hier nur die statischen
+            // Renderer-Klassen, die die Pipeline NICHT abdeckt — SKPaint/SKFont/SKMaskFilter/SKPath
+            // vorallokieren, verhindert Jank beim ersten Frame/View-Öffnen.
+            reportProgress(0.1f, "Effekte werden geladen...");
             await Task.Run(() => { HelpIconRenderer.Preload(); });
-            reportProgress(0.75f, "Icons werden geladen...");
+            reportProgress(0.4f, "Icons werden geladen...");
             await Task.Run(() => { TornMetalRenderer.Preload(); });
-            reportProgress(0.85f, "Buttons werden geladen...");
+            reportProgress(0.6f, "Buttons werden geladen...");
             await Task.Run(() => { RarityRenderer.Preload(); });
-            reportProgress(0.92f, "Kartensystem wird geladen...");
+            reportProgress(0.85f, "Kartensystem wird geladen...");
             await Task.Run(() => { MenuBackgroundRenderer.Preload(); });
 
             reportProgress(1.0f, "Fertig");

@@ -61,6 +61,7 @@ namespace ArcaneKingdom.UI.Battle
         private Dictionary<string, CardDefinition>? _defs;
         private Dictionary<string, CardInstance>? _instances;
         private bool _busy;
+        private bool _energySpent;   // H11: True sobald Energie fuer diesen Kampf verbraucht wurde
         private int _playerStartHp;
         private int _enemyStartHp;
         private NodeDefinition? _node;
@@ -130,6 +131,18 @@ namespace ArcaneKingdom.UI.Battle
 
         public override async UniTask OnEnterAsync(CancellationToken ct)
         {
+            // H13: ScreenManager cached Screen-Instanzen — pro-Kampf-Felder zwingend
+            // zuruecksetzen, sonst bleiben _busy/_eventsShownCount/Engine vom letzten Kampf.
+            _busy = false;
+            _eventsShownCount = 0;
+            _engine = null;
+            _ai = null;
+            _defs = null;
+            _instances = null;
+            _energySpent = false;
+            _playerStartHp = 0;
+            _enemyStartHp = 0;
+
             _node = _modalContext.Get<NodeDefinition>(WorldMapScreen.NodeContextKey);
 
             // Spielplan v5 Kap. 8.3: Difficulty aus dem Context (gewaehlt im DifficultyPicker).
@@ -148,31 +161,43 @@ namespace ArcaneKingdom.UI.Battle
             var saveResult = await _save.LoadAsync(ct);
             if (!saveResult.IsSuccess || saveResult.Value == null)
             {
-                _toast.Show("Save-Load fehlgeschlagen.", ToastKind.Danger);
+                _toast.Show(_loc.Get("battle.save_load_failed", "Save-Load fehlgeschlagen."), ToastKind.Danger);
                 _screenManager.PopAsync().Forget();
                 return;
             }
 
             var save = saveResult.Value;
 
-            // Energie abziehen — skaliert mit Difficulty (Classic/Amateur=1, Profi=2, Gott=3)
-            var energyCost = _node != null ? _node.EnergyCostFor(_difficulty) : 0;
-            if (_node != null && !save.Currencies.SpendEnergy(energyCost))
-            {
-                _toast.Show($"Nicht genug Energie ({energyCost} benoetigt).", ToastKind.Warning);
-                _screenManager.PopAsync().Forget();
-                return;
-            }
-            if (_node != null) await _save.SaveAsync(save, ct);
-
-            // Engine + AI bauen — Difficulty wird an BattleBootstrap weitergegeben
-            var setup = _battleBootstrap.Build(save, _node, seed: System.Environment.TickCount, difficulty: _difficulty);
+            // C5/H11: ERST Engine bauen + auf null pruefen, DANN Energie abziehen.
+            // Bei deck-losen Spielern (setup == null) darf KEINE Energie verloren gehen.
+            // seed:0 -> BattleBootstrap leitet einen DETERMINISTISCHEN Seed (FNV-1a) aus
+            // Deck+Node ab (Replay/Anti-Cheat, siehe CLAUDE.md — NICHT Environment.TickCount).
+            var setup = _battleBootstrap.Build(save, _node, seed: 0, difficulty: _difficulty);
             if (setup == null)
             {
-                _toast.Show("Kein Deck fuer Battle — bitte zuerst im DeckBuilder befuellen.", ToastKind.Danger);
+                _toast.Show(_loc.Get("battle.no_deck",
+                    "Kein Deck fuer Battle — bitte zuerst im DeckBuilder befuellen."), ToastKind.Danger);
                 _screenManager.PopAsync().Forget();
                 return;
             }
+
+            // Energie abziehen — skaliert mit Difficulty (Classic/Amateur=1, Profi=2, Gott=3).
+            // Erst jetzt (Kampf startet wirklich) wird Energie verbraucht + persistiert.
+            var energyCost = _node != null ? _node.EnergyCostFor(_difficulty) : 0;
+            if (_node != null && energyCost > 0)
+            {
+                if (!save.Currencies.SpendEnergy(energyCost))
+                {
+                    _toast.Show(string.Format(
+                        _loc.Get("battle.not_enough_energy", "Nicht genug Energie ({0} benoetigt)."),
+                        energyCost), ToastKind.Warning);
+                    _screenManager.PopAsync().Forget();
+                    return;
+                }
+                await _save.SaveAsync(save, ct);
+                _energySpent = true;   // H11: Kampf wurde tatsaechlich angetreten
+            }
+
             _engine = setup.Engine;
             _ai = setup.Ai;
             _defs = setup.Definitions;
@@ -209,9 +234,9 @@ namespace ArcaneKingdom.UI.Battle
             _turnNumber.text = s.CurrentTurn.ToString();
             _phaseLabel.text = s.Phase switch
             {
-                BattlePhase.PlayerTurn => "Dein Zug",
-                BattlePhase.EnemyTurn  => "Gegner-Zug",
-                BattlePhase.Settlement => "Ende",
+                BattlePhase.PlayerTurn => _loc.Get("battle.phase.player", "Dein Zug"),
+                BattlePhase.EnemyTurn  => _loc.Get("battle.phase.enemy", "Gegner-Zug"),
+                BattlePhase.Settlement => _loc.Get("battle.phase.settlement", "Ende"),
                 _                      => s.Phase.ToString()
             };
 
@@ -279,16 +304,19 @@ namespace ArcaneKingdom.UI.Battle
             stats.style.color = new StyleColor(new Color(0.95f, 0.78f, 0.30f));
             tile.Add(stats);
 
-            // Cooldown-Anzeige (Spezial-Timer)
+            // Cooldown-Anzeige (Spezial-Timer). H14: kein Emoji — "CD" + Rundenzahl als ASCII.
             if (slot.TurnsUntilSpecial > 0)
             {
-                var cd = new Label($"⚡{slot.TurnsUntilSpecial}");
+                var cd = new Label($"CD {slot.TurnsUntilSpecial}");
                 cd.style.fontSize = 10;
                 cd.style.color = new StyleColor(new Color(0.55f, 0.80f, 0.95f));
                 tile.Add(cd);
             }
 
-            // v6 (Designplan v4 Kap. 3.4): Status-Effekt-Icons unten links
+            // v6 (Designplan v4 Kap. 3.4): Status-Effekt-Icons unten links.
+            // H14: Es existieren (noch) keine Status-Effekt-Sprites unter Resources/Effects/,
+            // daher BMP-sichere Kurzcodes statt Emojis (auf Android sonst Tofu-Boxen). Die
+            // CSS-Klasse pro Typ erlaubt spaeter ein Sprite-Hintergrundbild ohne Code-Aenderung.
             if (slot.StatusEffects.Count > 0)
             {
                 var effectsRow = new VisualElement();
@@ -297,8 +325,8 @@ namespace ArcaneKingdom.UI.Battle
                 {
                     var icon = new Label(GetStatusEffectGlyph(fx.Type));
                     icon.AddToClassList("ak-status-effect-icon");
-                    icon.AddToClassList($"ak-status-effect-icon--{fx.Type.ToString().ToLower()}");
-                    icon.tooltip = $"{fx.Type} ({fx.RemainingTurns} Runden)";
+                    icon.AddToClassList($"ak-status-effect-icon--{fx.Type.ToString().ToLowerInvariant()}");
+                    icon.tooltip = $"{GetStatusEffectName(fx.Type)} ({fx.RemainingTurns})";
                     effectsRow.Add(icon);
                 }
                 tile.Add(effectsRow);
@@ -307,20 +335,40 @@ namespace ArcaneKingdom.UI.Battle
         }
 
         /// <summary>
-        /// Liefert einen kurzen Glyph fuer den Status-Effekt (Emoji/Unicode-Symbol).
+        /// Liefert einen kurzen BMP-sicheren Glyph fuer den Status-Effekt.
+        /// Bewusst KEINE Emojis/Symbol-Glyphen (Android-Tofu, Projekt-Doktrin) — reine
+        /// ASCII/Latin-Kuerzel die jede Schrift rendert.
         /// </summary>
         private static string GetStatusEffectGlyph(StatusEffectType type) => type switch
         {
-            StatusEffectType.Sleep    => "💤",
-            StatusEffectType.Silence  => "🤐",
-            StatusEffectType.Frozen   => "❄",
-            StatusEffectType.Stunned  => "💫",
-            StatusEffectType.Poisoned => "☠",
-            StatusEffectType.Burning  => "🔥",
-            StatusEffectType.Slowed   => "⏳",
-            StatusEffectType.Rooted   => "🌿",
-            _                          => "•"
+            StatusEffectType.Sleep    => "Zz",
+            StatusEffectType.Silence  => "Si",
+            StatusEffectType.Frozen   => "Fr",
+            StatusEffectType.Stunned  => "St",
+            StatusEffectType.Poisoned => "Px",
+            StatusEffectType.Burning  => "Br",
+            StatusEffectType.Slowed   => "Sl",
+            StatusEffectType.Rooted   => "Rt",
+            _                          => "*"
         };
+
+        /// <summary>Lesbarer Name fuer den Tooltip (lokalisiert mit deutschem Fallback).</summary>
+        private string GetStatusEffectName(StatusEffectType type)
+        {
+            var fallback = type switch
+            {
+                StatusEffectType.Sleep    => "Schlaf",
+                StatusEffectType.Silence  => "Stille",
+                StatusEffectType.Frozen   => "Einfrierung",
+                StatusEffectType.Stunned  => "Betaeubung",
+                StatusEffectType.Poisoned => "Vergiftung",
+                StatusEffectType.Burning  => "Verbrennung",
+                StatusEffectType.Slowed   => "Verlangsamung",
+                StatusEffectType.Rooted   => "Verwurzelung",
+                _                          => type.ToString()
+            };
+            return _loc.Get($"battle.status.{type.ToString().ToLowerInvariant()}", fallback);
+        }
 
         private void RenderPlayerHand()
         {
@@ -438,10 +486,10 @@ namespace ArcaneKingdom.UI.Battle
 
             if (!_engine.PlayCard(forPlayer: true, cardInstanceId))
             {
-                _toast.Show("Karte kann nicht gespielt werden.", ToastKind.Warning);
+                _toast.Show(_loc.Get("battle.card_unplayable", "Karte kann nicht gespielt werden."), ToastKind.Warning);
                 return;
             }
-            SpawnFloatingText("Eingesetzt!", new Color(0.95f, 0.78f, 0.30f));
+            SpawnFloatingText(_loc.Get("battle.card_played", "Eingesetzt!"), new Color(0.95f, 0.78f, 0.30f));
             if (element != null) SpawnEffectBurst($"effect_{element}_burst");
             DrainPersonalityEvents().Forget();
             RefreshAll();
@@ -477,20 +525,24 @@ namespace ArcaneKingdom.UI.Battle
                     kind = evt.EventType == BattleEventType.CardDied ? ToastKind.Warning : ToastKind.Info;
                     break;
                 case BattleEventType.SynergyActivated:
-                    message = $"✨ Synergie: +{evt.Magnitude}% Bonus";
+                    message = string.Format(
+                        _loc.Get("battle.synergy", "Synergie: +{0}% Bonus"), evt.Magnitude);
                     kind = ToastKind.Success;
                     break;
                 case BattleEventType.RivalryClashed:
-                    message = "⚡ Rivalen-Konflikt!";
+                    message = _loc.Get("battle.rivalry", "Rivalen-Konflikt!");
                     kind = ToastKind.Warning;
                     break;
                 case BattleEventType.HeroPassivTriggered:
-                    message = $"⭐ {_loc.Get(evt.LocalizationKey ?? "", "Helden-Passiv")}";
+                    message = _loc.Get(evt.LocalizationKey ?? "battle.hero_passiv", "Helden-Passiv");
                     kind = ToastKind.Success;
                     break;
                 case BattleEventType.BossPhaseChange:
                     // Spielplan v5 Kap. 9.4: Boss-Phase 2 — dramatischer Toast + UI-Flash
-                    message = $"⚠️ BOSS-PHASE 2 — {_loc.Get(evt.LocalizationKey ?? "", "Boss erwacht!")} (+{evt.Magnitude} Karten)";
+                    message = string.Format(
+                        _loc.Get("battle.boss_phase2", "BOSS-PHASE 2 — {0} (+{1} Karten)"),
+                        _loc.Get(evt.LocalizationKey ?? "battle.boss_awakens", "Boss erwacht!"),
+                        evt.Magnitude);
                     kind = ToastKind.Danger;
                     break;
                 default: return;
@@ -505,41 +557,47 @@ namespace ArcaneKingdom.UI.Battle
             if (_engine.State.Phase != BattlePhase.PlayerTurn) return;
             _busy = true;
 
-            // 1. Player-EndTurn (Engine wickelt Combat ab, Phase wechselt zu Enemy)
-            _engine.EndTurn();
-            await DrainPersonalityEvents();
-            RefreshAll();
-            if (_engine.State.Result != BattleResult.Undecided)
+            // H13: try/finally garantiert dass _busy auch bei einer Exception wieder
+            // freigegeben wird — sonst bleibt der gecachte Screen dauerhaft blockiert.
+            try
             {
-                await HandleGameOverAsync();
-                _busy = false;
-                return;
-            }
-
-            // 2. Kurze Pause damit Spieler die Phase wahrnimmt
-            await UniTask.Delay(500);
-
-            // 3. Enemy spielt Karten (AI)
-            if (_ai != null)
-            {
-                var enemyHand = _engine.State.EnemyHand.ToList();
-                var picks = _ai.ChooseCardsToPlay(enemyHand, _engine.State.EnemyMana);
-                foreach (var instId in picks)
+                // 1. Player-EndTurn (Engine wickelt Combat ab, Phase wechselt zu Enemy)
+                _engine.EndTurn();
+                await DrainPersonalityEvents();
+                RefreshAll();
+                if (_engine.State.Result != BattleResult.Undecided)
                 {
-                    _engine.PlayCard(forPlayer: false, instId);
-                    RefreshAll();
-                    await UniTask.Delay(280);
+                    await HandleGameOverAsync();
+                    return;
                 }
+
+                // 2. Kurze Pause damit Spieler die Phase wahrnimmt
+                await UniTask.Delay(500);
+
+                // 3. Enemy spielt Karten (AI)
+                if (_ai != null)
+                {
+                    var enemyHand = _engine.State.EnemyHand.ToList();
+                    var picks = _ai.ChooseCardsToPlay(enemyHand, _engine.State.EnemyMana);
+                    foreach (var instId in picks)
+                    {
+                        _engine.PlayCard(forPlayer: false, instId);
+                        RefreshAll();
+                        await UniTask.Delay(280);
+                    }
+                }
+
+                // 4. Enemy-EndTurn (Engine fuehrt Enemy-Combat, wechselt zu Player)
+                _engine.EndTurn();
+                await DrainPersonalityEvents();
+                RefreshAll();
+                if (_engine.State.Result != BattleResult.Undecided)
+                    await HandleGameOverAsync();
             }
-
-            // 4. Enemy-EndTurn (Engine fuehrt Enemy-Combat, wechselt zu Player)
-            _engine.EndTurn();
-            await DrainPersonalityEvents();
-            RefreshAll();
-            if (_engine.State.Result != BattleResult.Undecided)
-                await HandleGameOverAsync();
-
-            _busy = false;
+            finally
+            {
+                _busy = false;
+            }
         }
 
         private async UniTask HandleGameOverAsync()
@@ -551,17 +609,19 @@ namespace ArcaneKingdom.UI.Battle
                     var reward = _node?.GoldReward(_difficulty) ?? 50;
                     var exp = _node?.ExpReward(_difficulty) ?? 25;
                     await ApplyRewardsAsync(reward, exp, stars);
-                    _toast.Show($"Sieg! ★ {stars}/4 — +{reward} Gold, +{exp} EXP", ToastKind.Success, 5f);
+                    _toast.Show(string.Format(
+                        _loc.Get("battle.victory", "Sieg! {0}/4 Sterne — +{1} Gold, +{2} EXP"),
+                        stars, reward, exp), ToastKind.Success, 5f);
 
                     // v6 (Designplan v4 Story Kap. 9): Welt-Boss-Sieg -> Erinnerungs-Fragment
                     if (_node != null && _node.Type == NodeType.WorldBoss)
                         await ShowMemoryFragmentIfNewAsync();
                     break;
                 case BattleResult.EnemyWins:
-                    _toast.Show("Niederlage — versuch's nochmal.", ToastKind.Danger, 4f);
+                    _toast.Show(_loc.Get("battle.defeat", "Niederlage — versuch's nochmal."), ToastKind.Danger, 4f);
                     break;
                 case BattleResult.Draw:
-                    _toast.Show("Unentschieden.", ToastKind.Warning, 4f);
+                    _toast.Show(_loc.Get("battle.draw", "Unentschieden."), ToastKind.Warning, 4f);
                     break;
             }
             await UniTask.Delay(1500);
@@ -662,7 +722,12 @@ namespace ArcaneKingdom.UI.Battle
 
         private void OnFlee()
         {
-            _toast.Show("Aufgegeben.", ToastKind.Warning);
+            // H11: Energie wurde nur dann verbraucht, wenn der Kampf tatsaechlich
+            // angetreten wurde (siehe OnEnterAsync). Flucht aus einem GESTARTETEN Kampf
+            // ist bewusster Verlust (Spielplan v5). Wurde keine Energie verbraucht
+            // (z.B. kein Node / 0-Energie-Kampf), geht auch nichts verloren.
+            GameLogger.Info("Battle", _energySpent ? "Flucht aus gestartetem Kampf (Energie verbraucht)." : "Flucht ohne Energie-Verbrauch.");
+            _toast.Show(_loc.Get("battle.fled", "Aufgegeben."), ToastKind.Warning);
             _screenManager.PopAsync().Forget();
         }
 

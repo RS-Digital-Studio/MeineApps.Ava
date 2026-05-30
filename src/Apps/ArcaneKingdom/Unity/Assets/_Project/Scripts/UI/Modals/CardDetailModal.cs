@@ -203,8 +203,17 @@ namespace ArcaneKingdom.UI.Modals
         private async UniTaskVoid LoadArtAsync(VisualElement art, CardDefinition card)
         {
             var sprite = await _artworkService.GetSpriteAsync(card);
-            if (sprite == null || art.panel == null) return;
+            if (sprite == null) return;
             art.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(sprite);
+            art.style.unityBackgroundScaleMode = UnityEngine.ScaleMode.ScaleToFit;
+            // Element-Hoehe exakt ans Sprite-Seitenverhaeltnis koppeln -> kein leerer Rand oben/unten,
+            // unabhaengig vom konkreten PNG-Format (820x1200, 768x1120, ...). Breite bleibt aus dem UXML.
+            var h = sprite.rect.height;
+            if (h > 0.5f)
+            {
+                var aspect = sprite.rect.width / h;          // Karten-PNGs ~0.68 (Portrait)
+                if (aspect > 0.01f) art.style.height = 260f / aspect;   // Breite = 260 (aus UXML)
+            }
         }
 
         private void AddAbility(string levelLabel, string? abilityId)

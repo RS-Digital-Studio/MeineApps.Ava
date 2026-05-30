@@ -37,6 +37,7 @@ namespace ArcaneKingdom.UI.Hub
         private readonly ShopController _shopController;
         private readonly ToastService _toast;
         private readonly ModalContext _modalContext;
+        private readonly ILocalizationService _loc;
 
         // Header
         private Label _avatarInitials = null!;
@@ -119,7 +120,8 @@ namespace ArcaneKingdom.UI.Hub
                          ToastService toast,
                          ModalContext modalContext,
                          ArcaneKingdom.Game.World.PrestigeAppService prestige,
-                         UIAssetService uiAssets)
+                         UIAssetService uiAssets,
+                         ILocalizationService loc)
         {
             _screenManager = screenManager;
             _save = save;
@@ -130,6 +132,7 @@ namespace ArcaneKingdom.UI.Hub
             _modalContext = modalContext;
             _prestige = prestige;
             _uiAssets = uiAssets;
+            _loc = loc;
         }
 
         protected override void BindElements(VisualElement root)
@@ -287,7 +290,7 @@ namespace ArcaneKingdom.UI.Hub
             header.style.flexDirection = FlexDirection.Row;
             header.style.alignItems = Align.Center;
 
-            var nameLabel = new Label(LocalizeFallback(def.DisplayNameKey, def.Id));
+            var nameLabel = new Label(_loc.Get(def.DisplayNameKey, def.Id));
             nameLabel.AddToClassList("ak-h4");
             nameLabel.style.flexGrow = 1;
             header.Add(nameLabel);
@@ -301,7 +304,7 @@ namespace ArcaneKingdom.UI.Hub
             row.Add(header);
 
             // Beschreibung
-            var desc = new Label(LocalizeFallback(def.DescriptionKey, $"{def.Objective} x {def.TargetCount}"));
+            var desc = new Label(_loc.Get(def.DescriptionKey, $"{def.Objective} x {def.TargetCount}"));
             desc.AddToClassList("ak-body");
             desc.style.whiteSpace = WhiteSpace.Normal;
             desc.style.marginTop = 4;
@@ -334,7 +337,7 @@ namespace ArcaneKingdom.UI.Hub
             // Claim-Button (nur wenn completed und nicht claimed)
             if (progress.Completed && !progress.RewardClaimed)
             {
-                var claimBtn = new Button(() => OnClaimQuest(def.Id)) { text = "Einloesen" };
+                var claimBtn = new Button(() => OnClaimQuest(def.Id)) { text = _loc.Get("quest.claim", "Einloesen") };
                 claimBtn.AddToClassList("ak-btn");
                 claimBtn.AddToClassList("ak-btn--sm");
                 claimBtn.AddToClassList("ak-btn--accent");
@@ -343,7 +346,7 @@ namespace ArcaneKingdom.UI.Hub
             }
             else if (progress.RewardClaimed)
             {
-                var done = new Label("✓ Eingeloest");
+                var done = new Label(_loc.Get("quest.claimed", "Eingeloest"));
                 done.AddToClassList("ak-caption");
                 done.AddToClassList("ak-text--success");
                 done.style.marginTop = 8;
@@ -364,12 +367,12 @@ namespace ArcaneKingdom.UI.Hub
             var result = await _questService.ClaimAsync(questId);
             if (result.IsSuccess)
             {
-                _toast.Show("Quest eingeloest!", ToastKind.Success);
+                _toast.Show(_loc.Get("quest.claim_success", "Quest eingeloest!"), ToastKind.Success);
                 await OnEnterAsync(CancellationToken.None); // Re-Load Save + Header refresh
             }
             else
             {
-                _toast.Show(result.ErrorMessage ?? "Fehler beim Einloesen", ToastKind.Danger);
+                _toast.Show(result.ErrorMessage ?? _loc.Get("quest.claim_failed", "Fehler beim Einloesen"), ToastKind.Danger);
             }
         }
 
@@ -384,7 +387,7 @@ namespace ArcaneKingdom.UI.Hub
             _shopBuyDiamondsButton = Q<Button>("shop-buy-diamonds");
 
             _shopBuyDiamondsButton.clicked += () =>
-                _toast.Show("IAP-Integration kommt in einer spaeteren Stufe.", ToastKind.Info);
+                _toast.Show(_loc.Get("hub.shop.iap_soon", "IAP-Integration kommt in einer spaeteren Stufe."), ToastKind.Info);
         }
 
         private void RefreshShopTab()
@@ -396,12 +399,16 @@ namespace ArcaneKingdom.UI.Hub
                 _shopPacksGrid.Add(BuildPackTile(pack));
 
             // Direkt-Angebote (Energie-Nachkauf, Scrap-Pakete, etc.)
-            _shopDirectList.Add(BuildDirectOffer("Voll-Energie", "+60 sofort",
+            _shopDirectList.Add(BuildDirectOffer(
+                _loc.Get("hub.shop.full_energy", "Voll-Energie"),
+                _loc.Get("hub.shop.full_energy_sub", "+60 sofort"),
                 "100 ◆",
-                () => BuyEnergyAsync(60, 100).Forget()));
-            _shopDirectList.Add(BuildDirectOffer("Bonus-Energie", "+30 fuer 8h",
+                btn => BuyEnergyAsync(60, 100, btn).Forget()));
+            _shopDirectList.Add(BuildDirectOffer(
+                _loc.Get("hub.shop.bonus_energy", "Bonus-Energie"),
+                _loc.Get("hub.shop.bonus_energy_sub", "+30 fuer 8h"),
                 "50 ◆",
-                () => BuyEnergyAsync(30, 50).Forget()));
+                btn => BuyEnergyAsync(30, 50, btn).Forget()));
         }
 
         private VisualElement BuildPackTile(CardPackDefinition pack)
@@ -413,21 +420,24 @@ namespace ArcaneKingdom.UI.Hub
             tile.style.marginBottom = 12;
             tile.style.alignItems = Align.Center;
 
-            var name = new Label(LocalizeFallback(pack.DisplayNameKey, pack.Id));
+            var name = new Label(_loc.Get(pack.DisplayNameKey, pack.Id));
             name.AddToClassList("ak-h4");
             tile.Add(name);
 
-            var meta = new Label($"{pack.CardCount} Karten • Min: {pack.GuaranteedMinRarity}");
+            var meta = new Label(string.Format(
+                _loc.Get("hub.shop.pack_meta", "{0} Karten - Min: {1}"),
+                pack.CardCount, pack.GuaranteedMinRarity));
             meta.AddToClassList("ak-caption");
             meta.style.marginBottom = 8;
             tile.Add(meta);
 
-            var price = new Label($"{pack.DiamondCost} Diamanten");
+            var price = new Label(string.Format(_loc.Get("hub.shop.pack_price", "{0} Diamanten"), pack.DiamondCost));
             price.AddToClassList("ak-h4");
             price.AddToClassList("ak-text--accent");
             tile.Add(price);
 
-            var buyBtn = new Button(() => BuyPackAsync(pack).Forget()) { text = "Kaufen" };
+            Button buyBtn = null!;
+            buyBtn = new Button(() => BuyPackAsync(pack, buyBtn).Forget()) { text = _loc.Get("hub.shop.buy", "Kaufen") };
             buyBtn.AddToClassList("ak-btn");
             buyBtn.AddToClassList("ak-btn--primary");
             buyBtn.style.marginTop = 8;
@@ -437,7 +447,7 @@ namespace ArcaneKingdom.UI.Hub
             return tile;
         }
 
-        private VisualElement BuildDirectOffer(string title, string subtitle, string price, System.Action onBuy)
+        private VisualElement BuildDirectOffer(string title, string subtitle, string price, System.Action<Button> onBuy)
         {
             var row = new VisualElement();
             row.AddToClassList("ak-surface");
@@ -468,7 +478,8 @@ namespace ArcaneKingdom.UI.Hub
             priceLabel.style.unityTextAlign = TextAnchor.MiddleRight;
             row.Add(priceLabel);
 
-            var btn = new Button(onBuy) { text = "Kaufen" };
+            Button btn = null!;
+            btn = new Button(() => onBuy(btn)) { text = _loc.Get("hub.shop.buy", "Kaufen") };
             btn.AddToClassList("ak-btn");
             btn.AddToClassList("ak-btn--sm");
             btn.AddToClassList("ak-btn--accent");
@@ -477,36 +488,54 @@ namespace ArcaneKingdom.UI.Hub
             return row;
         }
 
-        private async UniTask BuyPackAsync(CardPackDefinition pack)
+        private async UniTask BuyPackAsync(CardPackDefinition pack, Button buyBtn)
         {
-            var result = await _shopController.BuyPackAsync(pack);
-            if (!result.Success)
+            // H10: Button vor dem ersten await sperren (Doppel-Kauf bei schnellem Doppel-Tap).
+            buyBtn.SetEnabled(false);
+            try
             {
-                _toast.Show(result.Error ?? "Pack-Kauf fehlgeschlagen", ToastKind.Danger);
-                return;
-            }
+                var result = await _shopController.BuyPackAsync(pack);
+                if (!result.Success)
+                {
+                    _toast.Show(result.Error ?? _loc.Get("hub.shop.pack_failed", "Pack-Kauf fehlgeschlagen"), ToastKind.Danger);
+                    return;
+                }
 
-            // Pack-Opening-Modal mit den Rarities oeffnen
-            _modalContext.Set(PackOpeningModal.ContextKey, result.AwardedRarities);
-            await _screenManager.PushAsync(ScreenId.PackOpeningOverlay);
-            if (result.PityTriggered)
-                _toast.Show("Legendary-Pity ausgeloest!", ToastKind.Success, 4f);
+                // Pack-Opening-Modal mit den Rarities oeffnen
+                _modalContext.Set(PackOpeningModal.ContextKey, result.AwardedRarities);
+                await _screenManager.PushAsync(ScreenId.PackOpeningOverlay);
+                if (result.PityTriggered)
+                    _toast.Show(_loc.Get("hub.shop.pity_triggered", "Legendary-Pity ausgeloest!"), ToastKind.Success, 4f);
 
-            // Header nach dem Modal refreshen (Diamanten wurden abgezogen)
-            await OnEnterAsync(CancellationToken.None);
-        }
-
-        private async UniTask BuyEnergyAsync(int amount, long diamondCost)
-        {
-            var result = await _shopController.BuyEnergyAsync(amount, diamondCost);
-            if (result.IsSuccess)
-            {
-                _toast.Show($"+{amount} Energie", ToastKind.Success);
+                // Header nach dem Modal refreshen (Diamanten wurden abgezogen)
                 await OnEnterAsync(CancellationToken.None);
             }
-            else
+            finally
             {
-                _toast.Show(result.ErrorMessage ?? "Energie-Kauf fehlgeschlagen", ToastKind.Danger);
+                buyBtn.SetEnabled(true);
+            }
+        }
+
+        private async UniTask BuyEnergyAsync(int amount, long diamondCost, Button buyBtn)
+        {
+            // H10: Button vor dem ersten await sperren (Doppel-Kauf bei schnellem Doppel-Tap).
+            buyBtn.SetEnabled(false);
+            try
+            {
+                var result = await _shopController.BuyEnergyAsync(amount, diamondCost);
+                if (result.IsSuccess)
+                {
+                    _toast.Show(string.Format(_loc.Get("hub.shop.energy_added", "+{0} Energie"), amount), ToastKind.Success);
+                    await OnEnterAsync(CancellationToken.None);
+                }
+                else
+                {
+                    _toast.Show(result.ErrorMessage ?? _loc.Get("hub.shop.energy_failed", "Energie-Kauf fehlgeschlagen"), ToastKind.Danger);
+                }
+            }
+            finally
+            {
+                buyBtn.SetEnabled(true);
             }
         }
 
@@ -642,50 +671,149 @@ namespace ArcaneKingdom.UI.Hub
                 _toast.Show(fallbackMessage, ToastKind.Info);
         }
 
-        // ============================================================
-        // Lokalisierungs-Fallback
-        // ============================================================
-
-        /// <summary>Bis Localization verdrahtet ist: Key-Suffix als lesbarer Text.</summary>
-        private static string LocalizeFallback(string key, string fallback)
-        {
-            if (string.IsNullOrEmpty(key)) return fallback;
-            var dot = key.LastIndexOf('.');
-            if (dot < 0 || dot >= key.Length - 1) return fallback;
-            var raw = key.Substring(dot + 1).Replace('_', ' ');
-            return raw.Length == 0 ? fallback : char.ToUpper(raw[0]) + raw.Substring(1);
-        }
-
         public override async UniTask OnEnterAsync(CancellationToken ct)
         {
             _refreshCts?.Cancel();
             _refreshCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var token = _refreshCts.Token;
+
+            // H12: Quest-Fortschritt aus dem Save wiederherstellen (idempotent, laeuft nur
+            // beim ersten Aufruf) — sonst startet jeder App-Lauf bei 0.
+            var restoreR = await _save.LoadAsync(token);
+            if (restoreR.IsSuccess && restoreR.Value != null)
+                _questService.RestoreFromSave(restoreR.Value);
+
+            // M13: Offene PendingClaims (Season-Rewards etc.) beim Hub-Eintritt einloesen.
+            // Atomar + idempotent im MutateAsync-Lambda.
+            await RedeemPendingClaimsAsync(token);
 
             // v6: Daily-Income Tick (Designplan v4 Oeko Kap. 6.3) — passive Gold-Belohnung
             // pro Welt nach Prestige-Stufe. Wird bei jedem Hub-Open ausgefuehrt; ignoriert
             // wenn weniger als 24h seit letztem Tick vergangen.
-            var incomeTick = await _prestige.TickDailyIncomeAsync(System.DateTime.UtcNow, _refreshCts.Token);
+            var incomeTick = await _prestige.TickDailyIncomeAsync(System.DateTime.UtcNow, token);
             if (incomeTick.IsSuccess && incomeTick.Value > 0)
             {
-                _toast.Show($"💰 Passives Income: +{incomeTick.Value:N0} Gold", ToastKind.Success);
+                _toast.Show(string.Format(
+                    _loc.Get("hub.passive_income", "Passives Einkommen: +{0} Gold"),
+                    incomeTick.Value.ToString("N0")), ToastKind.Success);
             }
 
-            var result = await _save.LoadAsync(_refreshCts.Token);
+            var result = await _save.LoadAsync(token);
             if (!result.IsSuccess)
             {
-                _toast.Show($"Save laden fehlgeschlagen: {result.ErrorMessage}", ToastKind.Danger);
+                _toast.Show(string.Format(
+                    _loc.Get("hub.save_load_failed", "Save laden fehlgeschlagen: {0}"),
+                    result.ErrorMessage), ToastKind.Danger);
                 return;
             }
             _saveCached = result.Value;
             RefreshHeader();
             RefreshCardsGrid();
+
+            // H12: Quest-Progress sichern (z.B. Advance-Fortschritt aus vorigem Battle).
+            await _questService.FlushAsync(token);
         }
 
-        public override UniTask OnLeaveAsync(CancellationToken ct)
+        public override async UniTask OnLeaveAsync(CancellationToken ct)
         {
+            // H12: beim Verlassen Quest-Progress sichern, bevor andere Screens mutieren.
+            await _questService.FlushAsync(ct);
             _refreshCts?.Cancel();
             _refreshCts = null;
-            return UniTask.CompletedTask;
+        }
+
+        /// <summary>
+        /// M13: Loest alle offenen PendingClaims des Spielers ein (Currency/Scrap/Pack/
+        /// Card/FeatureUnlock/RuneSlotUnlock/Title/AvatarFrame). Atomar im MutateAsync-Lambda,
+        /// jeder eingeloeste Eintrag wird aus PendingClaims entfernt -> idempotent.
+        /// </summary>
+        private async UniTask RedeemPendingClaimsAsync(CancellationToken ct)
+        {
+            var redeemed = 0;
+            await _save.MutateAsync(save =>
+            {
+                if (save.PendingClaims == null || save.PendingClaims.Count == 0) return save;
+
+                // Kopie iterieren, Original waehrend des Einloesens leeren.
+                var pending = new List<ArcaneKingdom.Domain.Save.PendingClaim>(save.PendingClaims);
+                save.PendingClaims.Clear();
+
+                foreach (var claim in pending)
+                {
+                    switch (claim.Kind)
+                    {
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.Currency:
+                            ApplyCurrencyClaim(save, claim.SubType, claim.Amount);
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.Scrap:
+                            if (System.Enum.TryParse<ArcaneKingdom.Domain.Economy.ScrapType>(claim.SubType, out var scrap))
+                                save.Currencies.AddScraps(scrap, claim.Amount);
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.Card:
+                            // SubType = CardDefinitionId; Amount = Stueckzahl
+                            for (var i = 0; i < claim.Amount; i++)
+                            {
+                                var instId = System.Guid.NewGuid().ToString("N");
+                                save.CardInventory[instId] = new CardInstance(
+                                    instId, claim.SubType, 0, 0, System.DateTime.UtcNow);
+                            }
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.Rune:
+                            // SubType = RuneDefinitionId; Amount = Stueckzahl
+                            for (var i = 0; i < claim.Amount; i++)
+                            {
+                                var runeId = System.Guid.NewGuid().ToString("N");
+                                save.RuneInventory[runeId] = new ArcaneKingdom.Domain.Runes.RuneInstance(
+                                    runeId, claim.SubType, 1, System.DateTime.UtcNow);
+                            }
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.FeatureUnlock:
+                            save.UnlockedFeatureKeys ??= new HashSet<string>();
+                            if (!string.IsNullOrEmpty(claim.SubType))
+                                save.UnlockedFeatureKeys.Add(claim.SubType);
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.RuneSlotUnlock:
+                            save.UnlockedFeatureKeys ??= new HashSet<string>();
+                            save.UnlockedFeatureKeys.Add($"rune_slot_{claim.SubType}");
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.Title:
+                            save.UnlockedFeatureKeys ??= new HashSet<string>();
+                            save.UnlockedFeatureKeys.Add($"title_{claim.SubType}");
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.AvatarFrame:
+                            save.UnlockedFeatureKeys ??= new HashSet<string>();
+                            save.UnlockedFeatureKeys.Add($"frame_{claim.SubType}");
+                            break;
+                        case ArcaneKingdom.Domain.Save.PendingClaimKind.Pack:
+                            // Pack als Feature-Flag vormerken (Pack-Opening passiert separat im Shop).
+                            // Damit das Pack nicht verloren geht, behalten wir es als ungeoeffnetes Item
+                            // im Pending-Bestand: noch kein Inventar-Slot fuer Packs -> Eintrag wieder anfuegen.
+                            save.PendingClaims.Add(claim);
+                            continue;   // nicht als "redeemed" zaehlen, nicht entfernen
+                    }
+                    redeemed++;
+                }
+                return save;
+            }, ct);
+
+            if (redeemed > 0)
+                _toast.Show(string.Format(
+                    _loc.Get("hub.claims_redeemed", "{0} Belohnung(en) eingeloest"), redeemed),
+                    ToastKind.Success, 4f);
+        }
+
+        /// <summary>Schreibt eine Currency-PendingClaim auf den passenden Saldo.</summary>
+        private static void ApplyCurrencyClaim(PlayerSave save, string subType, long amount)
+        {
+            switch (subType)
+            {
+                case nameof(ArcaneKingdom.Domain.Economy.Currency.Gold):            save.Currencies.AddGold(amount); break;
+                case nameof(ArcaneKingdom.Domain.Economy.Currency.Diamond):         save.Currencies.AddDiamond(amount); break;
+                case nameof(ArcaneKingdom.Domain.Economy.Currency.UniversalScraps): save.Currencies.AddUniversalScraps(amount); break;
+                case nameof(ArcaneKingdom.Domain.Economy.Currency.MeritPoints):     save.Currencies.AddMeritPoints(amount); break;
+                case nameof(ArcaneKingdom.Domain.Economy.Currency.GuildPoints):     save.Currencies.AddGuildPoints(amount); break;
+                case nameof(ArcaneKingdom.Domain.Economy.Currency.Energy):          save.Currencies.AddEnergyAdaptive((int)amount); break;
+            }
         }
 
         // ============================================================

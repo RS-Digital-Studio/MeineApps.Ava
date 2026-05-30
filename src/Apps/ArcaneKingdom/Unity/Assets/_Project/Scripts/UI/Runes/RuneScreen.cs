@@ -119,7 +119,9 @@ namespace ArcaneKingdom.UI.Runes
                     ? new StyleColor(new UnityEngine.Color(0.20f, 0.20f, 0.30f))
                     : new StyleColor(new UnityEngine.Color(0.10f, 0.10f, 0.15f));
 
-                var icon = new Label(unlocked ? $"Slot {s}" : $"🔒\nLV {RuneSlotUnlock.MinLevelForSlot(s)}");
+                var icon = new Label(unlocked
+                    ? $"Slot {s}"
+                    : $"{_loc.Get("rune.slot_locked", "Gesperrt")}\nLV {RuneSlotUnlock.MinLevelForSlot(s)}");
                 icon.style.color = unlocked
                     ? new StyleColor(new UnityEngine.Color(0.96f, 0.78f, 0.26f))
                     : new StyleColor(new UnityEngine.Color(0.55f, 0.55f, 0.65f));

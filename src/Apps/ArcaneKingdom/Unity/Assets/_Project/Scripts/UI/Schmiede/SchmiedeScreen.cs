@@ -299,9 +299,9 @@ namespace ArcaneKingdom.UI.Schmiede
 
             var resultCardId = result.Value!;
             if (_catalog.TryFind(resultCardId, out var resultDef))
-                _toast.Show($"✨ {_loc.Get("schmiede.fuse_success") ?? "Geschmiedet"}: {_loc.Get(resultDef.DisplayNameKey)}", ToastKind.Success);
+                _toast.Show($"{_loc.Get("schmiede.fuse_success") ?? "Geschmiedet"}: {_loc.Get(resultDef.DisplayNameKey)}", ToastKind.Success);
             else
-                _toast.Show($"✨ Geschmiedet: {resultCardId}", ToastKind.Success);
+                _toast.Show($"{_loc.Get("schmiede.fuse_success") ?? "Geschmiedet"}: {resultCardId}", ToastKind.Success);
 
             // Selection leeren + Save neu laden
             _selectedInstanceIds.Clear();

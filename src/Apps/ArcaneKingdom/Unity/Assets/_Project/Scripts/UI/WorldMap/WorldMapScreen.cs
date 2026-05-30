@@ -220,7 +220,7 @@ namespace ArcaneKingdom.UI.WorldMap
             var btn = new Button(() => OpenPrestigeUpgrade(world.Id))
             {
                 name = "prestige-upgrade-button",
-                text = $"🌟 Aufwerten zu Prestige {nextStufe} ({cost:N0} Gold)"
+                text = $"Aufwerten zu Prestige {nextStufe} ({cost:N0} Gold)"
             };
             btn.AddToClassList("ak-btn");
             btn.AddToClassList("ak-btn--accent");

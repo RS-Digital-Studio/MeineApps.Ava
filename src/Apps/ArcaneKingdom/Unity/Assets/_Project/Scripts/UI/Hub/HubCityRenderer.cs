@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.UI.Foundation;
 using UnityEngine.UIElements;
 
@@ -13,8 +14,12 @@ namespace ArcaneKingdom.UI.Hub
     /// </summary>
     public static class HubCityRenderer
     {
-        /// <summary>Baut die Hub-Stadt-Gebaeude in den uebergebenen Container.</summary>
-        public static void Render(VisualElement container, Action<string> onBuildingTapped)
+        /// <summary>
+        /// Baut die Hub-Stadt-Gebaeude in den uebergebenen Container.
+        /// <paramref name="uiAssets"/> (optional) setzt — wo ein UI-Background existiert — ein
+        /// echtes Gebaeude-Bild als Tile-Hintergrund (H14: keine Emojis in Titeln mehr).
+        /// </summary>
+        public static void Render(VisualElement container, Action<string> onBuildingTapped, UIAssetService? uiAssets = null)
         {
             container.Clear();
             container.style.flexGrow = 1;
@@ -29,18 +34,21 @@ namespace ArcaneKingdom.UI.Hub
             grid.style.paddingTop = 16; grid.style.paddingBottom = 16;
             container.Add(grid);
 
-            AddBuilding(grid, "🏰 Karten-Turm",       "Deck-Verwaltung",     "rgb(74, 27, 154)",  ScreenId.DeckBuilder, onBuildingTapped);
-            AddBuilding(grid, "⚒️ Zauberschmiede",   "Karten craften",       "rgb(180, 80, 20)",  ScreenId.Schmiede, onBuildingTapped);
-            AddBuilding(grid, "⚔️ Arena-Tempel",     "PvP-Kaempfe",          "rgb(180, 30, 30)",  ScreenId.Arena, onBuildingTapped);
-            AddBuilding(grid, "🛕 Tempel",            "Quests + Login-Bonus", "rgb(120, 70, 20)",  ScreenId.QuestCenter, onBuildingTapped);
-            AddBuilding(grid, "⚓ Hafen",             "Gilden-Weltkarte",     "rgb(20, 60, 120)",  ScreenId.GuildWorldMap, onBuildingTapped);
-            AddBuilding(grid, "🛒 Marktplatz",        "Shop + Pakete",        "rgb(40, 120, 60)",  ScreenId.Shop, onBuildingTapped);
-            AddBuilding(grid, "📚 Bibliothek",        "Codex + Story",        "rgb(80, 40, 100)",  ScreenId.Codex, onBuildingTapped);
-            AddBuilding(grid, "🏆 Wand der Ehre",     "Rangliste",            "rgb(245, 200, 66)", ScreenId.MeritRanking, onBuildingTapped);
-            AddBuilding(grid, "🔮 Schmiede (Sammlung)","Material-Tausch",     "rgb(140, 30, 100)", "collection-trade", onBuildingTapped);
+            // H14: Emoji-Praefixe aus den Titeln entfernt (Android-Tofu, Projekt-Doktrin).
+            // Wo ein generiertes UI-Background-Asset existiert, wird es als Tile-Bild gesetzt.
+            AddBuilding(grid, "Karten-Turm",        "Deck-Verwaltung",     "rgb(74, 27, 154)",  ScreenId.DeckBuilder,   null,             onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Zauberschmiede",     "Karten craften",      "rgb(180, 80, 20)",  ScreenId.Schmiede,      "zauberschmiede", onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Arena-Tempel",       "PvP-Kaempfe",         "rgb(180, 30, 30)",  ScreenId.Arena,         "arena",          onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Tempel",             "Quests + Login-Bonus","rgb(120, 70, 20)",  ScreenId.QuestCenter,   "tempel",         onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Hafen",              "Gilden-Weltkarte",    "rgb(20, 60, 120)",  ScreenId.GuildWorldMap, null,             onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Marktplatz",         "Shop + Pakete",       "rgb(40, 120, 60)",  ScreenId.Shop,          null,             onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Bibliothek",         "Codex + Story",       "rgb(80, 40, 100)",  ScreenId.Codex,         null,             onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Wand der Ehre",      "Rangliste",           "rgb(245, 200, 66)", ScreenId.MeritRanking,  null,             onBuildingTapped, uiAssets);
+            AddBuilding(grid, "Schmiede (Sammlung)","Material-Tausch",     "rgb(140, 30, 100)", "collection-trade",     "gilde",          onBuildingTapped, uiAssets);
         }
 
-        private static void AddBuilding(VisualElement parent, string title, string subtitle, string colorRgb, string screenId, Action<string> onTap)
+        private static void AddBuilding(VisualElement parent, string title, string subtitle, string colorRgb, string screenId,
+                                        string? uiBackgroundId, Action<string> onTap, UIAssetService? uiAssets)
         {
             var bg = StringRgbToColor(colorRgb);
             var tile = new VisualElement();
@@ -48,6 +56,10 @@ namespace ArcaneKingdom.UI.Hub
             tile.style.height = 110;
             tile.style.marginBottom = 12;
             tile.style.backgroundColor = new StyleColor(bg);
+
+            // Wo ein passendes UI-Background-Asset vorhanden ist, als echtes Gebaeude-Bild setzen.
+            if (uiAssets != null && !string.IsNullOrEmpty(uiBackgroundId))
+                uiAssets.ApplyUIBackground(tile, uiBackgroundId);
             tile.style.borderTopLeftRadius = 12; tile.style.borderTopRightRadius = 12;
             tile.style.borderBottomLeftRadius = 12; tile.style.borderBottomRightRadius = 12;
             tile.style.alignItems = Align.Center;

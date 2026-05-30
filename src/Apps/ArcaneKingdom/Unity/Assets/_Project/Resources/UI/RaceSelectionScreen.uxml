@@ -10,54 +10,42 @@
                       style="text-align: center; margin-top: 4;" />
         </ui:VisualElement>
 
-        <!-- 4 Rassen-Karten -->
+        <!-- 4 Rassen-Karten (Portrait-Bild oben, lesbares Info-Panel unten) -->
         <ui:VisualElement class="ak-row"
                           style="justify-content: center;
                                  flex-wrap: wrap;
                                  padding: 16;">
 
-            <ui:VisualElement name="race-card-ritter"
-                              class="ak-race-card"
-                              style="background-color: rgb(80, 60, 30); padding: 12; margin: 8;
-                                     min-width: 160; min-height: 200;">
-                <ui:Label text="⚔ Ritter" class="ak-h3" />
-                <ui:Label text="Tank/Support — Schilde, Heilung, Team-Buffs."
-                          class="ak-caption" />
-                <ui:Label text="Passiv: Koenigliche Aura (+5% HP)"
-                          class="ak-text--accent" style="margin-top: 8;" />
+            <ui:VisualElement name="race-card-ritter" class="ak-race-card">
+                <ui:VisualElement class="ak-race-card__scrim" />
+                <ui:VisualElement class="ak-race-card__info">
+                    <ui:Label text="Ritter" class="ak-race-card__title" />
+                    <ui:Label text="Tank / Support" class="ak-race-card__role" />
+                </ui:VisualElement>
             </ui:VisualElement>
 
-            <ui:VisualElement name="race-card-elfen"
-                              class="ak-race-card"
-                              style="background-color: rgb(30, 60, 70); padding: 12; margin: 8;
-                                     min-width: 160; min-height: 200;">
-                <ui:Label text="🏹 Elfen" class="ak-h3" />
-                <ui:Label text="Speed/Kontrolle — schnell, Schlaf/Slow."
-                          class="ak-caption" />
-                <ui:Label text="Passiv: Waldlaeufer (erste Karte gratis)"
-                          class="ak-text--accent" style="margin-top: 8;" />
+            <ui:VisualElement name="race-card-elfen" class="ak-race-card">
+                <ui:VisualElement class="ak-race-card__scrim" />
+                <ui:VisualElement class="ak-race-card__info">
+                    <ui:Label text="Elfen" class="ak-race-card__title" />
+                    <ui:Label text="Speed / Kontrolle" class="ak-race-card__role" />
+                </ui:VisualElement>
             </ui:VisualElement>
 
-            <ui:VisualElement name="race-card-tiergeister"
-                              class="ak-race-card"
-                              style="background-color: rgb(40, 70, 30); padding: 12; margin: 8;
-                                     min-width: 160; min-height: 200;">
-                <ui:Label text="🐺 Tiergeister" class="ak-h3" />
-                <ui:Label text="Rudel-Synergien — viele Tiergeister = mehr Power."
-                          class="ak-caption" />
-                <ui:Label text="Passiv: Rudelbund (+3% ATK pro Tiergeist)"
-                          class="ak-text--accent" style="margin-top: 8;" />
+            <ui:VisualElement name="race-card-tiergeister" class="ak-race-card">
+                <ui:VisualElement class="ak-race-card__scrim" />
+                <ui:VisualElement class="ak-race-card__info">
+                    <ui:Label text="Tiergeister" class="ak-race-card__title" />
+                    <ui:Label text="Rudel-Synergien" class="ak-race-card__role" />
+                </ui:VisualElement>
             </ui:VisualElement>
 
-            <ui:VisualElement name="race-card-daemonen"
-                              class="ak-race-card"
-                              style="background-color: rgb(70, 25, 50); padding: 12; margin: 8;
-                                     min-width: 160; min-height: 200;">
-                <ui:Label text="😈 Daemonen" class="ak-h3" />
-                <ui:Label text="Hohe ATK — Lebensraub, Gift, risikoreich."
-                          class="ak-caption" />
-                <ui:Label text="Passiv: Lebensraub-Aura (20% Heal)"
-                          class="ak-text--accent" style="margin-top: 8;" />
+            <ui:VisualElement name="race-card-daemonen" class="ak-race-card">
+                <ui:VisualElement class="ak-race-card__scrim" />
+                <ui:VisualElement class="ak-race-card__info">
+                    <ui:Label text="Daemonen" class="ak-race-card__title" />
+                    <ui:Label text="Hohe ATK / Lebensraub" class="ak-race-card__role" />
+                </ui:VisualElement>
             </ui:VisualElement>
 
         </ui:VisualElement>

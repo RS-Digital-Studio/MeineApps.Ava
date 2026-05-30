@@ -133,20 +133,20 @@ namespace ArcaneKingdom.UI.Modals
             if (_domain.UnlocksExclusiveCard(nextStufe) && !string.IsNullOrEmpty(world.Prestige4CardId))
             {
                 if (_cardCatalog.TryFind(world.Prestige4CardId, out var def))
-                    _exclusiveCard.text = $"🏆 {_loc.Get("prestige.unlocks_card") ?? "Schaltet frei"}: {_loc.Get(def.DisplayNameKey)}";
+                    _exclusiveCard.text = $"{_loc.Get("prestige.unlocks_card") ?? "Schaltet frei"}: {_loc.Get(def.DisplayNameKey)}";
             }
 
             // Voraussetzungs-Check
             var canUpgrade = _app.CanUpgrade(_ctx.TargetWorldId!, save);
             if (!canUpgrade.IsSuccess)
             {
-                _warning.text = $"⚠ {canUpgrade.ErrorMessage}";
+                _warning.text = canUpgrade.ErrorMessage ?? string.Empty;
                 _confirmButton.SetEnabled(false);
             }
             else
             {
                 _warning.text = _loc.Get("prestige.stars_reset_warning")
-                    ?? "⚠ Alle Sterne dieser Welt werden zurueckgesetzt — Belohnungen koennen erneut gefarmt werden.";
+                    ?? "Alle Sterne dieser Welt werden zurueckgesetzt — Belohnungen koennen erneut gefarmt werden.";
                 _confirmButton.SetEnabled(true);
             }
         }
@@ -167,11 +167,11 @@ namespace ArcaneKingdom.UI.Modals
             }
 
             var outcome = result.Value!;
-            var msg = $"🌟 {_loc.Get("prestige.upgrade_success") ?? "Aufgewertet"}: {outcome.OldStufe} → {outcome.NewStufe}";
+            var msg = $"{_loc.Get("prestige.upgrade_success") ?? "Aufgewertet"}: {outcome.OldStufe} -> {outcome.NewStufe}";
             if (!string.IsNullOrEmpty(outcome.UnlockedCardId))
             {
                 if (_cardCatalog.TryFind(outcome.UnlockedCardId, out var def))
-                    msg += $" — 🏆 {_loc.Get(def.DisplayNameKey)}!";
+                    msg += $" — {_loc.Get(def.DisplayNameKey)}!";
             }
             _toast.Show(msg, ToastKind.Success);
             await _screenManager.PopAsync();

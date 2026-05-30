@@ -110,9 +110,18 @@
    ============================================================ */
 
 .ak-race-card {
+    width: 190px;
+    height: 290px;
+    margin: 8px;
     border-width: 3px;
     border-color: rgba(255, 255, 255, 0);
     border-radius: var(--ak-radius-md);
+    overflow: hidden;
+    /* Portrait-Hintergrund (1024x1536) formatfuellend, Gesicht oben sichtbar lassen */
+    background-color: rgb(20, 14, 34);
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-position-y: top;
+    justify-content: flex-end;   /* Info-Panel an den unteren Rand */
     transition: border-color 150ms, transform 100ms;
     cursor: link;
 }
@@ -123,6 +132,32 @@
 
 .ak-race-card--selected {
     border-color: var(--ak-accent);
+}
+
+/* Transparenter Spacer oben — laesst das Portrait durchscheinen */
+.ak-race-card__scrim {
+    flex-grow: 1;
+}
+
+/* Lesbares, abgedunkeltes Info-Panel am unteren Rand */
+.ak-race-card__info {
+    background-color: rgba(8, 5, 16, 0.82);
+    padding-top: 8px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.ak-race-card__title {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: rgb(245, 240, 255);
+}
+
+.ak-race-card__role {
+    font-size: 12px;
+    color: var(--ak-accent);
+    margin-top: 2px;
 }
 
 

@@ -56,7 +56,14 @@ namespace ArcaneKingdom.UI.Quest
         {
             _tabBar.Clear();
             string[] tabs = { "daily", "weekly", "achievements", "events", "login" };
-            string[] labels = { "Taeglich", "Woechentlich", "Erfolge", "Events", "Login-Bonus" };
+            string[] labels =
+            {
+                _loc.Get("quest.tab.daily", "Taeglich"),
+                _loc.Get("quest.tab.weekly", "Woechentlich"),
+                _loc.Get("quest.tab.achievements", "Erfolge"),
+                _loc.Get("quest.tab.events", "Events"),
+                _loc.Get("quest.tab.login", "Login-Bonus")
+            };
             for (var i = 0; i < tabs.Length; i++)
             {
                 var id = tabs[i];
@@ -79,7 +86,7 @@ namespace ArcaneKingdom.UI.Quest
                 case "daily":        RenderQuestsForPeriod(QuestPeriod.Daily); break;
                 case "weekly":       RenderQuestsForPeriod(QuestPeriod.Weekly); break;
                 case "achievements": RenderQuestsForPeriod(QuestPeriod.Achievement); break;
-                case "events":       _content.Add(new Label("Keine aktiven Events — schau spaeter wieder rein!")); break;
+                case "events":       _content.Add(new Label(_loc.Get("quest.no_events", "Keine aktiven Events — schau spaeter wieder rein!"))); break;
                 case "login":        RenderLoginCalendar(); break;
             }
         }
@@ -92,7 +99,7 @@ namespace ArcaneKingdom.UI.Quest
 
             if (defs.Count == 0)
             {
-                _content.Add(new Label("Keine Quests fuer diesen Zeitraum.") {
+                _content.Add(new Label(_loc.Get("quest.none_period", "Keine Quests fuer diesen Zeitraum.")) {
                     style = { color = new StyleColor(new UnityEngine.Color(0.67f, 0.67f, 0.75f)) }
                 });
                 return;
@@ -138,7 +145,7 @@ namespace ArcaneKingdom.UI.Quest
             header.style.flexDirection = FlexDirection.Row;
             header.style.alignItems = Align.Center;
 
-            var titleLbl = new Label(NicifyKey(def.DisplayNameKey, def.Id));
+            var titleLbl = new Label(_loc.Get(def.DisplayNameKey, def.Id));
             titleLbl.style.flexGrow = 1; titleLbl.style.color = new StyleColor(UnityEngine.Color.white);
             titleLbl.style.unityFontStyleAndWeight = UnityEngine.FontStyle.Bold;
             header.Add(titleLbl);
@@ -165,13 +172,13 @@ namespace ArcaneKingdom.UI.Quest
 
             if (progress.RewardClaimed)
             {
-                var doneLbl = new Label("✓ Eingeloest");
+                var doneLbl = new Label(_loc.Get("quest.claimed", "Eingeloest"));
                 doneLbl.style.color = new StyleColor(new UnityEngine.Color(0.41f, 0.94f, 0.68f));
                 bottom.Add(doneLbl);
             }
             else if (progress.Completed)
             {
-                var claimBtn = new Button(() => ClaimAsync(def.Id).Forget()) { text = "Abholen" };
+                var claimBtn = new Button(() => ClaimAsync(def.Id).Forget()) { text = _loc.Get("quest.collect", "Abholen") };
                 claimBtn.style.width = 100; claimBtn.style.height = 32;
                 claimBtn.style.backgroundColor = new StyleColor(new UnityEngine.Color(1.0f, 0.48f, 0.0f));
                 claimBtn.style.color = new StyleColor(UnityEngine.Color.white);
@@ -179,7 +186,7 @@ namespace ArcaneKingdom.UI.Quest
             }
             else
             {
-                var noteLbl = new Label("In Fortschritt");
+                var noteLbl = new Label(_loc.Get("quest.in_progress", "In Fortschritt"));
                 noteLbl.style.color = new StyleColor(new UnityEngine.Color(0.55f, 0.55f, 0.65f));
                 noteLbl.style.fontSize = 11;
                 bottom.Add(noteLbl);
@@ -231,22 +238,13 @@ namespace ArcaneKingdom.UI.Quest
             var result = await _questService.ClaimAsync(questId);
             if (result.IsSuccess)
             {
-                _toast.Show("Quest eingeloest!", ToastKind.Success);
+                _toast.Show(_loc.Get("quest.claim_success", "Quest eingeloest!"), ToastKind.Success);
                 RenderContent();
             }
             else
             {
-                _toast.Show(result.ErrorMessage ?? "Fehler beim Einloesen", ToastKind.Danger);
+                _toast.Show(result.ErrorMessage ?? _loc.Get("quest.claim_failed", "Fehler beim Einloesen"), ToastKind.Danger);
             }
-        }
-
-        private static string NicifyKey(string? key, string fallback)
-        {
-            if (string.IsNullOrEmpty(key)) return fallback;
-            var dot = key.LastIndexOf('.');
-            if (dot < 0 || dot >= key.Length - 1) return fallback;
-            var raw = key.Substring(dot + 1).Replace('_', ' ');
-            return raw.Length == 0 ? fallback : char.ToUpper(raw[0]) + raw.Substring(1);
         }
 
         private void RenderLoginCalendar()
@@ -265,14 +263,16 @@ namespace ArcaneKingdom.UI.Quest
                 cell.style.borderTopLeftRadius = 8; cell.style.borderTopRightRadius = 8;
                 cell.style.borderBottomLeftRadius = 8; cell.style.borderBottomRightRadius = 8;
 
-                var dayLbl = new Label($"Tag {day}");
+                var dayLbl = new Label(string.Format(_loc.Get("quest.login.day", "Tag {0}"), day));
                 dayLbl.style.fontSize = 11;
                 dayLbl.style.color = day == 1
                     ? new StyleColor(new UnityEngine.Color(0.07f, 0.07f, 0.13f))
                     : new StyleColor(new UnityEngine.Color(0.67f, 0.67f, 0.75f));
                 cell.Add(dayLbl);
 
-                var reward = new Label(day == 7 ? "Epic\nKarte" : $"{day * 1000}\nGold");
+                var reward = new Label(day == 7
+                    ? _loc.Get("quest.login.day7_reward", "Epic\nKarte")
+                    : string.Format(_loc.Get("quest.login.gold_reward", "{0}\nGold"), day * 1000));
                 reward.style.fontSize = 10;
                 reward.style.unityTextAlign = UnityEngine.TextAnchor.MiddleCenter;
                 reward.style.whiteSpace = WhiteSpace.Normal;
@@ -284,7 +284,8 @@ namespace ArcaneKingdom.UI.Quest
             }
             _content.Add(grid);
 
-            var claim = new Button(() => _toast.Show("Tages-Login abgeholt!", ToastKind.Success)) { text = "Jetzt abholen" };
+            var claim = new Button(() => _toast.Show(_loc.Get("quest.login.claimed", "Tages-Login abgeholt!"), ToastKind.Success))
+                { text = _loc.Get("quest.login.claim", "Jetzt abholen") };
             claim.style.height = 44; claim.style.marginTop = 12;
             _content.Add(claim);
         }

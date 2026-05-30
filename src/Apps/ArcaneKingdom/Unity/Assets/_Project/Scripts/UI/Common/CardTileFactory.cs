@@ -133,9 +133,13 @@ namespace ArcaneKingdom.UI.Common
             if (ArtworkService == null) return;
             var sprite = await ArtworkService.GetSpriteAsync(card);
             if (sprite == null) return;
-            // VisualElement existiert vielleicht nicht mehr (Tile wurde recyclet)
-            if (root.panel == null) return;
+            // backgroundImage AUCH setzen, wenn das Tile noch nicht im Panel haengt — Build() ruft
+            // diese Methode auf, BEVOR der Aufrufer das Tile ins Grid einfuegt. Der fruehere
+            // panel==null-Check verwarf dadurch das Artwork beim Erst-Laden (Tiles blieben leer).
             root.style.backgroundImage = new StyleBackground(sprite);
+            // Karten-Artwork formatfuellend skalieren (nicht stauchen): wird vom .ak-card-USS bestimmt,
+            // hier als Sicherheitsnetz der Scale-Mode.
+            root.style.unityBackgroundScaleMode = UnityEngine.ScaleMode.ScaleAndCrop;
         }
     }
 }

@@ -29,11 +29,14 @@
                           class="ak-caption ak-text--accent" />
             </ui:VisualElement>
 
-            <!-- Artwork-Platzhalter -->
+            <!-- Artwork (Karten-PNG ist Portrait ~2:3 / 768x1120) — Element im selben Verhaeltnis,
+                 zentriert, scale-to-fit zeigt das ganze Bild ohne Stauchung. -->
             <ui:VisualElement name="card-detail-art"
-                              style="height: 200; border-radius: 8;
+                              style="width: 260px; height: 380px; align-self: center;
+                                     border-radius: 8px;
                                      background-color: rgba(0, 0, 0, 0.4);
-                                     margin-bottom: 12;" />
+                                     -unity-background-scale-mode: scale-to-fit;
+                                     margin-bottom: 12px;" />
 
             <!-- Stats (ATK / HP / Turns) -->
             <ui:VisualElement class="ak-row" style="margin-bottom: 12; justify-content: space-around;">

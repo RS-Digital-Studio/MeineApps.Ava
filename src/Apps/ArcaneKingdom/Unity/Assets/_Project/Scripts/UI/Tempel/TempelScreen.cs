@@ -165,7 +165,7 @@ namespace ArcaneKingdom.UI.Tempel
                 parts.Add(item.type switch
                 {
                     "gold" => $"{item.magnitude:N0} Gold",
-                    "diamonds" => $"{item.magnitude} 💎",
+                    "diamonds" => $"{item.magnitude} Diamanten",
                     "common_scrap" => $"{item.magnitude}x Common Scrap",
                     "rare_scrap" => $"{item.magnitude}x Rare Scrap",
                     "epic_scrap" => $"{item.magnitude}x Epic Scrap",
@@ -233,7 +233,7 @@ namespace ArcaneKingdom.UI.Tempel
             }
 
             var outcome = result.Value!;
-            _toast.Show($"✨ Tag {outcome.Day}: {FormatRewardItems(outcome.GrantedItems)}", ToastKind.Success);
+            _toast.Show($"{_loc.Get("tempel.day") ?? "Tag"} {outcome.Day}: {FormatRewardItems(outcome.GrantedItems)}", ToastKind.Success);
 
             var saveR = await _save.LoadAsync();
             if (saveR.IsSuccess && saveR.Value != null) _cachedSave = saveR.Value;
@@ -253,7 +253,7 @@ namespace ArcaneKingdom.UI.Tempel
                 if (r.IsSuccess)
                 {
                     await _save.MutateAsync(s => s, default);   // Trigger persistierung
-                    _toast.Show($"✨ {_loc.Get("tempel.fragment_gained") ?? "Mythic-Fragment erhalten"} ({_cachedSave.Sternkarten.Inventory.MythicCoreFragments}/3)", ToastKind.Success);
+                    _toast.Show($"{_loc.Get("tempel.fragment_gained") ?? "Mythic-Fragment erhalten"} ({_cachedSave.Sternkarten.Inventory.MythicCoreFragments}/3)", ToastKind.Success);
                 }
                 else
                 {

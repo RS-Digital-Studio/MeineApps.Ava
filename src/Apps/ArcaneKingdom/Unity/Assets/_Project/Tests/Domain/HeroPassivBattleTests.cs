@@ -72,10 +72,10 @@ namespace ArcaneKingdom.Domain.Tests
             Assert.AreEqual(3, state.PlayerMana);   // unveraendert!
             Assert.IsTrue(state.PlayerHeroPassiv.FirstCardThisTurnPlayed);
 
-            // Zweite Karte: voller Preis
+            // Zweite Karte: kostet 1 Mana (Designplan v3 Kap. 7.3 — jede Karte 1 Mana, NICHT die COST).
             var played2 = engine.PlayCard(forPlayer: true, "i2");
             Assert.IsTrue(played2);
-            Assert.AreEqual(3 - 5, state.PlayerMana);    // = -2, wir lassen es passieren (Mana-Underflow in Tests)
+            Assert.AreEqual(2, state.PlayerMana);   // 3 - 0 (erste, Waldlaeufer) - 1 (zweite) = 2
         }
 
         // --------------------------------------------------------------------

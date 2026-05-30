@@ -39,7 +39,8 @@ namespace ArcaneKingdom.Domain.Tests
             Assert.IsTrue(engine.PlayCard(forPlayer: true, "a"));
             Assert.AreEqual(1, state.PlayerField.Count);
             Assert.AreEqual(0, state.PlayerHand.Count);
-            Assert.AreEqual(1, state.PlayerMana, "Start-Mana 3 - Cost 2 = 1.");
+            // Designplan v3 Kap. 7.3: jede Karte kostet 1 Mana (NICHT die COST). 3 - 1 = 2.
+            Assert.AreEqual(2, state.PlayerMana, "Start-Mana 3 - 1 Mana pro Karte = 2.");
         }
 
         [Test]
@@ -47,9 +48,33 @@ namespace ArcaneKingdom.Domain.Tests
         {
             var defs = new Dictionary<string, CardDefinition> { ["a"] = MakeDef("a", cost: 5, atk: 100, hp: 200) };
             var state = new BattleState(seed: 1, playerHeroHp: 1000, enemyHeroHp: 1000);
+            state.PlayerMana = 0;   // Mana in dieser Runde erschoepft
             state.PlayerHand.Add("a");
             var engine = new BattleEngine(state, defs);
-            Assert.IsFalse(engine.PlayCard(forPlayer: true, "a"), "Cost 5 > Mana 3 → ablehnen.");
+            Assert.IsFalse(engine.PlayCard(forPlayer: true, "a"), "Kein Mana (0) -> ablehnen (1 Mana/Karte).");
+        }
+
+        [Test]
+        public void SchwereKarteNurAlsErsteAktion()
+        {
+            // Designplan v3 Kap. 7.3: COST > 30 nur spielbar, wenn diese Runde noch nichts gespielt wurde.
+            var defs = new Dictionary<string, CardDefinition>
+            {
+                ["light"] = MakeDef("light", cost: 5,  atk: 100, hp: 200),
+                ["heavy"] = MakeDef("heavy", cost: 42, atk: 800, hp: 900),
+            };
+            var state = new BattleState(seed: 1, playerHeroHp: 1000, enemyHeroHp: 1000);
+            state.PlayerHand.Add("light");
+            state.PlayerHand.Add("heavy");
+            var engine = new BattleEngine(state, defs);
+            Assert.IsTrue(engine.PlayCard(forPlayer: true, "light"), "Leichte Karte als erste Aktion ok.");
+            Assert.IsFalse(engine.PlayCard(forPlayer: true, "heavy"), "Schwere Karte (COST>30) nach erster Aktion -> abgelehnt.");
+
+            // Frische Runde: schwere Karte als erste Aktion ist erlaubt.
+            var state2 = new BattleState(seed: 1, playerHeroHp: 1000, enemyHeroHp: 1000);
+            state2.PlayerHand.Add("heavy");
+            var engine2 = new BattleEngine(state2, defs);
+            Assert.IsTrue(engine2.PlayCard(forPlayer: true, "heavy"), "Schwere Karte als erste Aktion -> ok.");
         }
 
         [Test]
@@ -109,8 +134,8 @@ namespace ArcaneKingdom.Domain.Tests
             state.EnemyField.Add(new CardFieldSlot("wasser", 50, 200, 99));
             var engine = new BattleEngine(state, defs);
             engine.EndTurn();
-            // Natur stark gegen Wasser: 100 * 1.5 = 150 → 200 - 150 = 50
-            Assert.AreEqual(50, state.EnemyField[0].CurrentHealth);
+            // Natur stark gegen Wasser: StrongMultiplier 1.10x -> 100 * 1.10 = 110 -> 200 - 110 = 90
+            Assert.AreEqual(90, state.EnemyField[0].CurrentHealth);
         }
 
         [Test]
@@ -129,8 +154,9 @@ namespace ArcaneKingdom.Domain.Tests
         }
 
         [Test]
-        public void ManaSteigtProRundeBisMax()
+        public void ManaBleibtKonstantProRunde()
         {
+            // Designplan v3 Kap. 7.3: zu Rundenstart 3 Mana-Orbs, KEIN Anstieg ueber Runden.
             var defs = new Dictionary<string, CardDefinition>();
             var state = new BattleState(seed: 1, playerHeroHp: 1000, enemyHeroHp: 1000);
             var engine = new BattleEngine(state, defs);
@@ -138,7 +164,8 @@ namespace ArcaneKingdom.Domain.Tests
             Assert.AreEqual(3, state.PlayerMana);
             engine.EndTurn();  // enemy turn
             engine.EndTurn();  // back to player
-            Assert.AreEqual(4, state.PlayerMaxMana);
+            Assert.AreEqual(3, state.PlayerMaxMana, "Kein Mana-Anstieg ueber Runden.");
+            Assert.AreEqual(3, state.PlayerMana, "Mana wird zu Rundenstart wieder auf 3 gesetzt.");
         }
     }
 }

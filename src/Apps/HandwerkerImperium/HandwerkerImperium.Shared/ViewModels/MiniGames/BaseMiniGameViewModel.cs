@@ -495,7 +495,12 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
                         state.Reputation.ReputationScore = Math.Max(0, state.Reputation.ReputationScore + penalty);
                     }
                 }
-                // Restliche Tasks ueberspringen — Continue geht direkt zum Ende.
+                // Restliche Tasks ueberspringen — Continue() prueft order.IsCompleted
+                // (CurrentTaskIndex >= Tasks.Count), nicht IsLastTask. Ohne dieses Setzen
+                // wuerde der Spieler nach einem 0-Reward-Risk-Miss bei Multi-Task-Auftraegen
+                // zum naechsten Task navigieren statt den Auftrag abzuschliessen — und die
+                // Material-Reservierung bliebe haengen (CompleteActiveOrder liefe nie).
+                failedOrder.CurrentTaskIndex = failedOrder.Tasks.Count;
                 IsLastTask = true;
             }
         }

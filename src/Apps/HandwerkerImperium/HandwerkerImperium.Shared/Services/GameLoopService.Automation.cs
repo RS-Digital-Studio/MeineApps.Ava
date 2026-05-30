@@ -88,6 +88,10 @@ public sealed partial class GameLoopService
                 if (bestOrder != null)
                 {
                     state.ActiveOrder = bestOrder;
+                    // Slot in ParallelOrdersByWorkshop spiegeln — analog zum manuellen StartOrder-Pfad.
+                    // Ohne diese Zeile sieht CanStartParallelOrder den belegten Slot nicht → der
+                    // Workshop koennte einen zweiten Auftrag parallel bekommen (Max-3-Cap unterlaufen).
+                    state.ParallelOrdersByWorkshop[bestOrder.WorkshopType] = bestOrder;
                     state.AvailableOrders.Remove(bestOrder);
                     acceptedOrder = bestOrder;
                 }

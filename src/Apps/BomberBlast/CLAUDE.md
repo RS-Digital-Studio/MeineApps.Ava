@@ -243,7 +243,7 @@ bestehenden Bindings (`{Binding MenuVm}`, `{Binding ActiveView}`, `{Binding IsAn
 | Modul | Pfad | Verantwortung |
 |-------|------|---------------|
 | `INavigationCoordinator` | `Navigation/NavigationCoordinator.cs` | `ActiveView` (Source-of-Truth) + komplettes Routing (`NavigateToRouteAsync` mit 26 Routen-Cases, `NavigateTo(NavigationRequest)`, `HideAll`). CloudSave-Init-Race-Guard mit 3s-Cap. |
-| `IBottomTabController` | `Navigation/BottomTabController.cs` | 5 Sub-Tab-Bools, `IsBottomTabBarVisible`, 10 `SwitchToXxxTab`-Methoden, bidirektionale `ActiveView ↔ BottomTab`-Sync mit `IBottomTabHub`. |
+| `IBottomTabController` | `Navigation/BottomTabController.cs` | 4 Sub-Tab-Bools, `IsBottomTabBarVisible`, 7 `SwitchToXxxTab`-Methoden, bidirektionale `ActiveView ↔ BottomTab`-Sync mit `IBottomTabHub`. |
 | `IDialogPresenter` | `Services/DialogPresenter.cs` | Alert + Confirm (`ShowConfirmAsync` mit `TaskCompletionSource`-Roundtrip) + `IsAnyDialogOpen`-Aggregat (inkl. WhatsNew-Flag). |
 | `IChildViewModelRegistry` | `ViewModels/ChildViewModelRegistry.cs` | 11 Eager + 15 Lazy VMs, idempotente `EnsureXxx()`-Methoden, VM-spezifische Sub-Wirings (Shop/Dungeon/BattlePass/GemShop), `RefreshAllLocalizedTexts`, `WireCommon`. |
 | `ILifecycleHub` | `ViewModels/LifecycleHub.cs` | `HandleBackPressed` (hierarchische Android-Back-Navigation), `CloudSaveInitTask` (Ctor-gestarteter Cloud-Pull), `OnAdUnavailable`. |
@@ -1413,6 +1413,18 @@ gesteuert (`IsAnyOverlayOpen` = Pause + ScoreDouble + ContextHelp + Loading). KE
 Setter daneben — ein CLR-Setter verdrängt das Binding dauerhaft (LocalValue-Precedence) und eine
 unvollständige Bedingung lässt Taps unter ContextHelp/Loading-Overlays durch. Generelles Pattern
 (Value-Precedence) in Core.Ava-CLAUDE.md (Framework-Fallstricke).
+
+### Embedded Sub-VM-Lokalisierung (Sprachwechsel)
+
+Container-VMs, die andere VMs **eingebettet** halten (Ctor-Injection + `{Binding SubVm}` im
+eigenen DataContext — z.B. `ProfileViewModel.StatisticsVm/AchievementsVm/CollectionVm`,
+gebunden in `ProfileView.axaml`), werden von `ChildViewModelRegistry.RefreshAllLocalizedTexts`
+**nicht** erfasst: Die Registry aktualisiert nur ihre eigenen `_xxxVm`-Felder, die bei embedded
+VMs `null` bleiben (kein `EnsureXxx()`-Pfad). Der Container-VM MUSS daher in seiner eigenen
+`UpdateLocalizedTexts()` die eingebetteten Sub-VMs explizit mit-aktualisieren — `ILocalizable`
+→ `subVm.UpdateLocalizedTexts()`, sonst `subVm.OnAppearing()` (nur wenn der Sub-Tab aktiv ist,
+um unnötiges Neuladen zu vermeiden). Sonst bleiben die Texte der Sub-Bereiche beim Sprachwechsel
+in der alten Sprache stehen.
 
 ---
 

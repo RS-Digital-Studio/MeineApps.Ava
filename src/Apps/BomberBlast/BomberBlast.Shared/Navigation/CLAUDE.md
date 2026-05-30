@@ -13,7 +13,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 |-------|-------|
 | `INavigationCoordinator.cs` | Interface: `NavigateToRouteAsync(string)`, `NavigateTo(NavigationRequest)`, `HideAll()`, `ActiveView`-Property, `ActiveViewChanged`-Event |
 | `NavigationCoordinator.cs` | Implementierung: 26 Routen-Cases, CloudSave-Init-Race-Guard (3s-Cap), `StateChanged`-Event |
-| `IBottomTabController.cs` | Interface: 5 Sub-Tab-Bools, `IsBottomTabBarVisible`, 10 `SwitchToXxxTab()`-Methoden |
+| `IBottomTabController.cs` | Interface: 4 Sub-Tab-Bools, `IsBottomTabBarVisible`, 7 `SwitchToXxxTab()`-Methoden |
 | `BottomTabController.cs` | Implementierung: bidirektionale `ActiveView ↔ BottomTab`-Sync via `IBottomTabHub` |
 | `NavigationRouteParser.cs` | `Parse(route)` → `NavigationRequest`, `RequiresCloudSaveInit(baseRoute)` |
 

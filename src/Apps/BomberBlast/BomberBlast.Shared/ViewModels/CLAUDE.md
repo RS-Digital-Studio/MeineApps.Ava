@@ -19,7 +19,7 @@ Alle bestehenden AXAML-Bindings (`{Binding MenuVm}`, `{Binding ActiveView}`,
 | Modul | Datei | Verantwortung |
 |-------|-------|--------------|
 | `INavigationCoordinator` | `Navigation/NavigationCoordinator.cs` | ActiveView + 26 Routen, CloudSave-Race-Guard |
-| `IBottomTabController` | `Navigation/BottomTabController.cs` | 5 Sub-Tabs, bidirektionale View↔Tab-Sync |
+| `IBottomTabController` | `Navigation/BottomTabController.cs` | 4 Sub-Tabs, bidirektionale View↔Tab-Sync |
 | `IDialogPresenter` | `Services/DialogPresenter.cs` | Alert/Confirm/IsAnyDialogOpen-Aggregat |
 | `IChildViewModelRegistry` | `ChildViewModelRegistry.cs` | 11 Eager + 15 Lazy VMs, EnsureXxx()-Methoden |
 | `ILifecycleHub` | `LifecycleHub.cs` | HandleBackPressed, CloudSaveInitTask, OnAdUnavailable |

@@ -736,6 +736,10 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                             _gameStateService.AddMoney(cash);
                         if (grantsPremium && !_gameStateService.State.IsPremium)
                         {
+                            // SetPremiumStatus setzt den is_premium-Preference-Key — sonst waere das
+                            // aus bundle_mega (49,99 EUR Consumable) erworbene Premium nach
+                            // Reinstall/Geraetewechsel unwiederbringlich weg (Restore findet Consumables nicht).
+                            _purchaseService.SetPremiumStatus(true);
                             _gameStateService.State.IsPremium = true;
                             _gameStateService.State.InvalidateMaxOfflineHoursCache();
                             _rewardedAdService.Disable();
@@ -760,6 +764,10 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                 // VIP-System: Echtgeld-Kauf registrieren
                 if (success)
                 {
+                    // Sofort persistieren: Consumables sind bei Google bereits verbraucht, die
+                    // Gutschrift haengt sonst bis zum naechsten AutoSave (<=30s) ungesichert im RAM
+                    // — bei App-Kill/Crash in diesem Fenster ist der bezahlte Kauf verloren.
+                    await _saveGameService.SaveAsync();
                     RecordVipPurchase(item.Id);
                     _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapPurchaseSuccess, new Dictionary<string, object?>
                     {

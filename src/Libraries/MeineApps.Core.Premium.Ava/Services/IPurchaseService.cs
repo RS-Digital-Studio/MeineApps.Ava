@@ -52,6 +52,13 @@ public interface IPurchaseService
     Task<bool> PurchaseConsumableAsync(string productId);
 
     /// <summary>
+    /// Persists premium status in the preference store (survives reinstall/device change).
+    /// Needed when premium is granted via a consumable bundle that Google Play Restore
+    /// cannot recover on its own.
+    /// </summary>
+    void SetPremiumStatus(bool isPremium);
+
+    /// <summary>
     /// Event fired when premium status changes
     /// </summary>
     event EventHandler? PremiumStatusChanged;

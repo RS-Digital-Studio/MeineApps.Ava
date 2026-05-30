@@ -1,0 +1,86 @@
+rules_version = '2';
+
+// ArcaneKingdom Firestore-Security-Rules.
+// Grundprinzip: Default Deny-All. Schreibrechte auf spielrelevante, betrugsanfaellige
+// Collections liegen AUSSCHLIESSLICH beim Admin-SDK (Cloud Functions). Das Admin-SDK
+// umgeht diese Rules vollstaendig — die Regeln gelten nur fuer Client-Zugriffe.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Gilden: fuer eingeloggte Clients lesbar (Gilden-Browser/Profil),
+    // aber NICHT vom Client schreibbar (Anlage/Aenderung nur ueber createGuild & Co.).
+    match /guilds/{guildId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      // Mitglieder-Subdokumente: lesbar fuer eingeloggte Clients, server-only schreibbar.
+      match /members/{memberUid} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+    }
+
+    // Tag-Eindeutigkeit: nur Cloud Functions duerfen Tags reservieren.
+    match /guildTags/{tag} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Territorien: lesbar (Welt-/Gebietskarte), server-only schreibbar.
+    match /territories/{territoryId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Klan-Matches: lesbar fuer eingeloggte Clients, Abschluss/Reward server-only.
+    match /klanMatches/{matchId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Saisons + Rankings: lesbar (Leaderboard), Settlement server-only.
+    match /seasons/{seasonId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      match /rankings/{rankingId} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+    }
+
+    // Remote-Config (z.B. Dieb-Multiplikator): lesbar, nur server-seitig schreibbar.
+    match /remoteConfig/{configId=**} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Chat-Reports: Clients duerfen Reports anlegen (loest onReportReceived aus),
+    // aber nicht lesen/aendern. reporterUid muss der eigene Account sein.
+    match /chats/reports/{reportId} {
+      allow create: if isSignedIn()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.reportedPlayerId is string
+        && request.resource.data.reportedAtMs is int;
+      allow read, update, delete: if false;
+    }
+
+    // Session-Logs (DAU-Berechnung): Clients duerfen den eigenen Log-Eintrag anlegen,
+    // nicht lesen. Aggregation laeuft server-seitig.
+    match /sessionLogs/{logId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.startedAtMs is int;
+      allow read, update, delete: if false;
+    }
+
+    // Alles andere: explizit verboten (Default Deny-All).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

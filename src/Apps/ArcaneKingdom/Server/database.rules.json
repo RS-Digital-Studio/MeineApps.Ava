@@ -1,0 +1,57 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "players": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": false,
+
+        "profile": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        },
+        "currencies": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        },
+        "cardInventory": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        },
+        "pendingClaims": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        },
+        "prestige": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        },
+        "settledSeasons": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        },
+        "chatSlice": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        }
+      }
+    },
+
+    "battleNonces": {
+      ".read": false,
+      ".write": false
+    },
+
+    "ledger": {
+      ".read": false,
+      ".write": false
+    },
+
+    "remoteConfig": {
+      ".read": "auth != null",
+      ".write": false
+    }
+  }
+}

@@ -156,6 +156,10 @@ var text = _localization.GetString("Key");
 _localization.SetLanguage("en");  // Triggert LanguageChanged → alle VMs aktualisieren ihre Strings
 ```
 
+**Gotcha:** `GetString(key)` liefert bei FEHLENDEM Key den Key-NAMEN zurück (nie null) — `?? "fallback"`
+ist daher toter Code und die rohe Key-ID erscheint im UI. Bei optionalen/dynamischen Keys den Miss
+explizit behandeln (`var v = GetString(key); return v == key ? fallback : v;`). Details: Haupt-CLAUDE.md Troubleshooting.
+
 ### `TranslateExtension`
 
 XAML-Markup-Extension für inline-Lokalisierung in AXAML. Selten verwendet (die meisten

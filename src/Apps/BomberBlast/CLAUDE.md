@@ -1076,6 +1076,15 @@ Texte lokalisiert in 6 Sprachen via RESX.
 
 `WhatsNewViewModel` mit `Closed`-Event + Spaeter/Verstanden-Commands.
 
+**RESX-Keys sind Pflicht (sonst rohe Key-IDs im Dialog):** Jeder in `BuildReleases()` referenzierte
+Key (Titel + Bullets) MUSS in allen 6 RESX-Dateien existieren. `BuildReleases()` nutzt den
+`L(key, default)`-Helper statt `GetString(key) ?? default` — denn `GetString` liefert bei einem
+Miss den Key-NAMEN zurück (nie null), sodass `?? default` toter Code wäre und z.B.
+`WhatsNew_2_0_62_Title` als Text erschiene. `L` erkennt den Miss und fällt auf den Default.
+`GetEntries()` filtert Eintraege mit leeren Bullets heraus — der offene Develop-Eintrag erscheint
+nie als leerer Titel-only-Dialog (auch nicht direkt nach einem Versions-Bump). Das XAML-Overlay-
+Binding (getrennte DataContext-/x:DataType-Ebenen) ist korrekt — siehe Haupt-CLAUDE.md-Gotcha.
+
 **Release-Workflow fuer Neuigkeiten-Eintraege (Pflicht):**
 
 `WhatsNewService.BuildReleases()` enthaelt EINEN offenen Eintrag fuer die aktuell in
@@ -1359,6 +1368,28 @@ Rule-Änderungen müssen in Firebase Console deployed werden — Datei lokal ist
 `<Version>X.Y.Z</Version>` in `BomberBlast.Shared.csproj` — diese muss bei jedem
 Release synchron mit `ApplicationDisplayVersion` in `BomberBlast.Android.csproj`
 gehalten werden (sonst zeigt Splash eine andere Version als die installierte App).
+
+### Startup: Keine schwere Arbeit im MainViewModel-Ctor + Android-DataContext
+
+`MenuVm.OnAppearing()` (Daily-Reward, Comeback-Bonus, Feature-Unlocks — fehleranfaellige
+Preferences/JSON-/Tageswechsel-Logik) läuft NICHT im Ctor, sondern in `MainViewModel.OnAppeared()`,
+das `App.RunLoadingAsync` NACH dem DataContext-Set aufruft (try/catch-geschützt). Grund: Die
+Loading-Pipeline schluckt Step-Exceptions; eine Ctor-Exception würde den DataContext nie setzen
+lassen → permanenter Leerbildschirm beim Erststart (kein Crash-Counter-Schutz, da der Pfad
+ausserhalb von `OnFrameworkInitializationCompleted` liegt). Game-Juice-Events brauchen zudem den
+View-Subscriber, der erst nach DataContext-Zuweisung existiert.
+
+**Android-DataContext:** `RunLoadingAsync` setzt den DataContext explizit auf `_activityRoot`
+(Panel-Root) im `IActivityApplicationLifetime`-Fall. Avalonia spiegelt `MainViewFactory` NICHT in
+`ISingleViewApplicationLifetime.MainView` — der SingleView-Zweig greift auf Android nicht.
+
+### Overlay-Hit-Test nur via XAML-Binding (nicht Code-Behind)
+
+`GameCanvas.IsHitTestVisible` wird ausschliesslich per `{Binding !IsAnyOverlayOpen}` im XAML
+gesteuert (`IsAnyOverlayOpen` = Pause + ScoreDouble + ContextHelp + Loading). KEIN Code-Behind-
+Setter daneben — ein CLR-Setter verdrängt das Binding dauerhaft (LocalValue-Precedence) und eine
+unvollständige Bedingung lässt Taps unter ContextHelp/Loading-Overlays durch. Generelles Pattern
+in Haupt-CLAUDE.md.
 
 ---
 

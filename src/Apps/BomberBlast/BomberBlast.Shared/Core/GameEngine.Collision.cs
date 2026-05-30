@@ -16,6 +16,12 @@ public sealed partial class GameEngine
     // Vermeidet O(n) Iteration pro Explosionszelle → O(1) Lookup, Bosse multi-cell registriert.
     private readonly BomberBlast.Core.Combat.EnemyPositionIndex _enemyPositionIndex = new();
 
+    // Dedup-Set pro Explosion: Multi-Cell-Bosse stehen in mehreren Zellen-Buckets des
+    // EnemyPositionIndex. Deckt eine Explosion mehrere Boss-Zellen ab, wuerde derselbe Boss
+    // sonst pro Explosion mehrfach TakeDamage() bekommen (Boss-HP-Mehrfachabzug → Balancing kaputt).
+    // Wiederverwendetes Feld (Clear pro Explosion) statt Allokation pro Frame.
+    private readonly HashSet<Enemy> _explosionHitEnemies = new();
+
     // Poison-Schaden-Cooldown (periodisch statt sofort-Kill)
     private float _poisonDamageTimer;
     private const float POISON_DAMAGE_COOLDOWN = 2.0f;
@@ -276,6 +282,10 @@ public sealed partial class GameEngine
                 indexBuilt = true;
             }
 
+            // Pro Explosion zuruecksetzen — jeder Gegner darf von DIESER Explosion nur einmal
+            // Schaden nehmen (Multi-Cell-Boss steht in mehreren AffectedCells-Buckets).
+            _explosionHitEnemies.Clear();
+
             foreach (var cell in explosion.AffectedCells)
             {
                 // Block-Hit-Zellen fügen keinen Schaden zu — der Block absorbiert die Explosion
@@ -296,6 +306,11 @@ public sealed partial class GameEngine
 
                     // Ghost: Unsichtbare Ghosts sind immun gegen Explosionen
                     if (enemy.IsInvisible)
+                        continue;
+
+                    // Multi-Cell-Boss-Dedup: bereits von DIESER Explosion getroffen → kein
+                    // zweiter Schaden / kein zweites Shield-Consume (Boss steht in mehreren Buckets).
+                    if (!_explosionHitEnemies.Add(enemy))
                         continue;
 
                     //.1 : Shielded-Modifier — Schild absorbiert 1 Hit pro

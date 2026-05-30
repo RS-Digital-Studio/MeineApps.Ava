@@ -134,13 +134,27 @@ public class BossEnemy : Enemy
     protected override float HitboxScale => 1.0f;
 
     /// <summary>
+    /// Linke obere Grid-Zelle des belegten BossSize×BossSize-Bereichs.
+    /// <para>
+    /// WICHTIG: X/Y sind die MITTE des Boss (Render-Konvention, siehe <see cref="CreateAtGrid"/>:
+    /// <c>x = gridX*CELL + CELL*size/2</c>). Die belegten Zellen werden daher aus der LINKEN KANTE
+    /// (<c>X - BossSize*CELL/2</c>) abgeleitet, NICHT aus <c>GridX = floor(X/CELL)</c> (= Zelle der
+    /// Mitte). Sonst lägen Kollisions-/Explosions-Treffer-/Movement-Zellen gegenüber dem gezeichneten
+    /// Sprite um ~1 Zelle verschoben. Eine einzige Quelle für alle Occupancy-Konsumenten.
+    /// </para>
+    /// </summary>
+    public int OccupancyBaseX => (int)MathF.Floor((X - BossSize * GameGrid.CELL_SIZE / 2f) / GameGrid.CELL_SIZE);
+
+    /// <summary>Obere Grid-Zeile des belegten Bereichs — siehe <see cref="OccupancyBaseX"/>.</summary>
+    public int OccupancyBaseY => (int)MathF.Floor((Y - BossSize * GameGrid.CELL_SIZE / 2f) / GameGrid.CELL_SIZE);
+
+    /// <summary>
     /// Prüft ob eine Grid-Zelle vom Boss belegt wird (für Multi-Cell Kollision)
     /// </summary>
     public bool OccupiesCell(int cellX, int cellY)
     {
-        // Boss-Position ist die obere linke Ecke des Bereichs
-        int baseX = GridX;
-        int baseY = GridY;
+        int baseX = OccupancyBaseX;
+        int baseY = OccupancyBaseY;
         return cellX >= baseX && cellX < baseX + BossSize &&
                cellY >= baseY && cellY < baseY + BossSize;
     }
@@ -150,8 +164,8 @@ public class BossEnemy : Enemy
     /// </summary>
     public IEnumerable<(int x, int y)> GetOccupiedCells()
     {
-        int baseX = GridX;
-        int baseY = GridY;
+        int baseX = OccupancyBaseX;
+        int baseY = OccupancyBaseY;
         for (int dy = 0; dy < BossSize; dy++)
             for (int dx = 0; dx < BossSize; dx++)
                 yield return (baseX + dx, baseY + dy);
@@ -448,12 +462,14 @@ public class BossEnemy : Enemy
             MovementDirection = Direction.None;
         }
 
-        // Grid-Bounds (Boss braucht mehr Platz)
-        float margin = GameGrid.CELL_SIZE * 0.5f;
-        float maxX = (grid.Width - BossSize) * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE * 0.5f;
-        float maxY = (grid.Height - BossSize) * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE * 0.5f;
-        X = Math.Clamp(X, margin, maxX);
-        Y = Math.Clamp(Y, margin, maxY);
+        // Grid-Bounds (Boss braucht mehr Platz). X/Y = Mitte → min = Mitte bei top-left 0,
+        // max = Mitte bei top-left (Dim - BossSize). Konsistent mit der Occupancy-Konvention;
+        // CanBossMoveTo verhindert den Wand-Eintritt ohnehin früher (dies ist nur ein Backstop).
+        float marginX = BossSize * GameGrid.CELL_SIZE / 2f;
+        float maxX = (grid.Width - BossSize) * GameGrid.CELL_SIZE + BossSize * GameGrid.CELL_SIZE / 2f;
+        float maxY = (grid.Height - BossSize) * GameGrid.CELL_SIZE + BossSize * GameGrid.CELL_SIZE / 2f;
+        X = Math.Clamp(X, marginX, maxX);
+        Y = Math.Clamp(Y, marginX, maxY);
     }
 
     /// <summary>
@@ -461,9 +477,10 @@ public class BossEnemy : Enemy
     /// </summary>
     private bool CanBossMoveTo(float newX, float newY, GameGrid grid)
     {
-        // Zellen die der Boss an der neuen Position belegen würde
-        int baseGridX = (int)MathF.Floor(newX / GameGrid.CELL_SIZE);
-        int baseGridY = (int)MathF.Floor(newY / GameGrid.CELL_SIZE);
+        // Zellen die der Boss an der neuen Position belegen würde. newX/newY ist die MITTE —
+        // top-left aus der linken Kante ableiten (konsistent mit OccupancyBaseX/Y).
+        int baseGridX = (int)MathF.Floor((newX - BossSize * GameGrid.CELL_SIZE / 2f) / GameGrid.CELL_SIZE);
+        int baseGridY = (int)MathF.Floor((newY - BossSize * GameGrid.CELL_SIZE / 2f) / GameGrid.CELL_SIZE);
 
         for (int dy = 0; dy < BossSize; dy++)
         {

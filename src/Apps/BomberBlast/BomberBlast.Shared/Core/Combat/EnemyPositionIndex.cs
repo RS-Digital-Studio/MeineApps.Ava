@@ -34,9 +34,13 @@ public sealed class EnemyPositionIndex
 
             if (enemy is BossEnemy boss)
             {
+                // OccupancyBaseX/Y (linke obere Belegungs-Zelle) statt GridX/GridY (Zelle der Mitte) —
+                // sonst lägen die Explosions-Treffer-Zellen gegenüber dem Sprite um ~1 Zelle verschoben.
+                int baseX = boss.OccupancyBaseX;
+                int baseY = boss.OccupancyBaseY;
                 for (int bx = 0; bx < boss.BossSize; bx++)
                     for (int by = 0; by < boss.BossSize; by++)
-                        Add((boss.GridX + bx, boss.GridY + by), boss);
+                        Add((baseX + bx, baseY + by), boss);
             }
             else
             {

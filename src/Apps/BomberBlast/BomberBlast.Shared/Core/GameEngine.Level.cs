@@ -543,8 +543,9 @@ public sealed partial class GameEngine
         if (isFirstFloor)
             _currentMode = new BomberBlast.Core.Modes.DungeonMode();
 
-        // Welle 2 v2.0.58 : Funnel-Tracking — DungeonRunStart nur beim ersten Floor.
-        if (isFirstFloor)
+        // Dungeon-Floors tragen nie einen Mutator aus einem anderen Modus — bedingungslos zuruecksetzen.
+        // (Frueher haftete dieser Reset an einem entfernten Funnel-Tracking-if(isFirstFloor) — bei
+        //  Folge-Floors blieb dadurch ein Stale-Mutator aktiv.)
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
 
@@ -1132,7 +1133,9 @@ public sealed partial class GameEngine
         // Manuelle Schleife statt LINQ (wird pro Enemy-Kill aufgerufen)
         foreach (var enemy in _enemies)
         {
-            if (enemy.IsActive && !enemy.IsDying)
+            // Getarnte Mimics sind !IsActive bis sie aktiviert werden — zaehlen aber als
+            // "noch lebend", sonst wird der Exit aufgedeckt obwohl noch ein Mimic im Level steht.
+            if ((enemy.IsActive || enemy.IsDisguised) && !enemy.IsDying)
                 return;
         }
 
@@ -1267,6 +1270,9 @@ public sealed partial class GameEngine
     {
         // Gefahrenzone EINMAL pro Frame vorberechnen (nicht pro Gegner → P-R6-1)
         _enemyAI.PreCalculateDangerZone(_bombs);
+        // Dynamisches A*-Budget pro Frame (5 + aktive Gegner/4, clamped [5,12]) — ohne diesen
+        // Aufruf blieb das Budget permanent beim Minimum (toter dynamischer Pfad).
+        _enemyAI.SetActiveEnemyCount(EnemiesRemaining);
 
         foreach (var enemy in _enemies)
         {
@@ -1378,8 +1384,10 @@ public sealed partial class GameEngine
             return;
         }
 
-        // AI-Entscheidung alle 0.8s (Enraged: 0.5s)
-        boss.AIDecisionTimer -= deltaTime;
+        // AI-Entscheidung alle 0.8s (Enraged: 0.5s). Der Timer wird NICHT hier dekrementiert,
+        // sondern zentral in boss.Update() → Enemy.Update (raw deltaTime), genau wie bei normalen
+        // Gegnern. Frueher wurde er hier ZUSAETZLICH dekrementiert → doppelter Abzug pro Frame →
+        // Boss wechselte ~doppelt so oft die Richtung.
         if (boss.AIDecisionTimer > 0 && boss.MovementDirection != Direction.None)
             return;
 
@@ -1765,6 +1773,9 @@ public sealed partial class GameEngine
             // (Pure-Logic, isoliert testbar). Engine triggert nur den Async-Switch + Victory-Event.
             if (_isBossRushMode && BossRushModeState is { } brm)
             {
+                // Wall-Clock-Zeit des gerade gecleartem Boss-Levels akkumulieren (sonst bliebe die
+                // Leaderboard-Zeit immer 0).
+                brm.TotalTimeSeconds += _levelElapsedSeconds;
                 int levelScore = _player.Score - _scoreAtLevelStart;
                 int nextIndex = brm.AccumulateScoreAndGetNextBossIndex(levelScore, _bossRushService.BossSequence.Count);
 

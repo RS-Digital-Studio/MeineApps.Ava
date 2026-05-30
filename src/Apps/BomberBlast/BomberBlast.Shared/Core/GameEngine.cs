@@ -792,7 +792,9 @@ public sealed partial class GameEngine : IDisposable
             {
                 int count = 0;
                 foreach (var e in _enemies)
-                    if (e.IsActive && !e.IsDying) count++;
+                    // Getarnte Mimics (IsActive=false bis aktiviert) als lebend zaehlen — sonst
+                    // zeigt das HUD eine zu niedrige Restzahl und der Exit erscheint vorzeitig.
+                    if ((e.IsActive || e.IsDisguised) && !e.IsDying) count++;
                 _enemiesRemainingCache = count;
                 _enemiesRemainingDirty = false;
             }
@@ -1575,6 +1577,8 @@ public sealed partial class GameEngine : IDisposable
                 // v2.0.54 — Phase 11: TryGetSubmitArgs setzt Submitted=true atomar (Pure-Logic-Hook)
                 if (_isBossRushMode && BossRushModeState is { } brm)
                 {
+                    // Zeit des laufenden Boss-Levels noch akkumulieren bevor submitted wird (Tod-Pfad).
+                    brm.TotalTimeSeconds += _levelElapsedSeconds;
                     int finalScore = brm.AccumulatedScore + (_player.Score - _scoreAtLevelStart);
                     if (brm.TryGetSubmitArgs(completedAllBosses: false) is { } sa)
                     {
@@ -2607,7 +2611,12 @@ public sealed partial class GameEngine : IDisposable
         float px = gridX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
         float py = gridY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
         var pseudoBomb = new Bomb(px, py, _player, range);
+        // Pseudo-Bombe wurde NIE zum ActiveBombs-Slot-Count addiert. Bomb.Explode() dekrementiert
+        // aber Owner.ActiveBombs — das wuerde dem Spieler faelschlich einen freien Slot schenken.
+        // Daher den Slot-Count um die Pseudo-Explosion herum erhalten.
+        int activeBombsBefore = _player.ActiveBombs;
         pseudoBomb.Explode();  // setzt IsExploded → Explosion-Spread funktioniert
+        _player.ActiveBombs = activeBombsBefore;
 
         var explosion = new Explosion(pseudoBomb);
         explosion.CalculateSpread(_grid, range);

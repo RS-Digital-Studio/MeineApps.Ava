@@ -122,8 +122,15 @@ public sealed class WhatsNewService : IWhatsNewService
         // Solange Bullets leer sind, filtert GetEntries() den Eintrag heraus (kein leerer Dialog).
         ("2.0.63", () => new WhatsNewEntry
         {
-            Title = L("WhatsNew_2_0_63_Title", "In Entwicklung"),
-            Bullets = Array.Empty<string>()
+            Title = L("WhatsNew_2_0_63_Title", "Faires Spiel & runde Bedienung"),
+            Bullets = new[]
+            {
+                L("WhatsNew_2_0_63_BulletBoss", "Bosse nehmen pro Explosion nur noch einmal Schaden — Boss-Kämpfe sind wieder fair berechnet"),
+                L("WhatsNew_2_0_63_BulletLeague", "Liga & Saison: Saison-Ende, Aufstiegs-Berechnung und das Löschen des eigenen Eintrags arbeiten jetzt zuverlässig"),
+                L("WhatsNew_2_0_63_BulletCards", "Karten-Upgrade erstattet deine Ressourcen zurück, falls es fehlschlägt — kein verlorener Einsatz mehr"),
+                L("WhatsNew_2_0_63_BulletUi", "Größere Touch-Flächen und ein Sprachwechsel, der jetzt alle Profil-Bereiche sofort aktualisiert"),
+                L("WhatsNew_2_0_63_BulletStability", "Zahlreiche Absturz-, Speicher- und Render-Fixes aus dem internen Spieletester-Durchlauf"),
+            }
         }),
     ];
 

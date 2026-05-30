@@ -4239,5 +4239,10 @@
   <data name="WhatsNew_2_0_62_BulletPrivacy" xml:space="preserve"><value>Aggiornamento privacy: Firebase Crashlytics e Analytics rimossi — nessuna telemetria, restano solo Lega e Cloud Save</value></data>
   <data name="WhatsNew_2_0_62_BulletOverlay" xml:space="preserve"><value>Gli overlay modali (Novità, finestre di conferma) mostrano di nuovo il contenuto corretto — bug DataContext risolto</value></data>
   <data name="WhatsNew_2_0_62_BulletPolish" xml:space="preserve"><value>Tante piccole rifiniture dall'audit interno dei tester — routing più pulito, meno blocchi nelle sotto-schede</value></data>
-  <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>In sviluppo</value></data>
+  <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>Gioco equo &amp; controlli migliorati</value></data>
+  <data name="WhatsNew_2_0_63_BulletBoss" xml:space="preserve"><value>I boss subiscono danno una sola volta per esplosione — i combattimenti contro i boss sono di nuovo calcolati in modo equo</value></data>
+  <data name="WhatsNew_2_0_63_BulletLeague" xml:space="preserve"><value>Lega &amp; Stagione: la fine stagione, il calcolo delle promozioni e l'eliminazione della propria voce ora funzionano in modo affidabile</value></data>
+  <data name="WhatsNew_2_0_63_BulletCards" xml:space="preserve"><value>Se il potenziamento di una carta fallisce, le risorse vengono rimborsate — nessuna perdita ingiustificata</value></data>
+  <data name="WhatsNew_2_0_63_BulletUi" xml:space="preserve"><value>Aree touch più grandi e un cambio lingua che ora aggiorna immediatamente tutte le sezioni del profilo</value></data>
+  <data name="WhatsNew_2_0_63_BulletStability" xml:space="preserve"><value>Numerosi fix a crash, memoria e rendering emersi dal ciclo interno di test</value></data>
 </root>

@@ -9,6 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Test-Projekt darf internal-Member testen (z.B. WhatsNewService.CompareVersions). -->
+    <InternalsVisibleTo Include="BomberBlast.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" />
 
     <PackageReference Include="Xaml.Behaviors.Avalonia" />

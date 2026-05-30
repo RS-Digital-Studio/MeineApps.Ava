@@ -4593,4 +4593,25 @@
   <data name="PlayHubBossRushDesc" xml:space="preserve"><value>Fight all 5 bosses back to back</value></data>
   <data name="PlayHubMasterDesc" xml:space="preserve"><value>The 100-level campaign - harder, faster enemies</value></data>
   <data name="PlayHubMasterLockHint" xml:space="preserve"><value>Complete level 100 to unlock</value></data>
+  <!-- What's-New versioned entries -->
+  <data name="WhatsNew_2_0_57_Title" xml:space="preserve"><value>Live-Ops, Polish &amp; Pacing</value></data>
+  <data name="WhatsNew_2_0_57_BulletStory" xml:space="preserve"><value>Mini story beats — every world opens with a 2-line intro, every boss-clear ends with a cliffhanger</value></data>
+  <data name="WhatsNew_2_0_57_BulletBoss" xml:space="preserve"><value>Boss modifiers complete — Reflective deflects 30% damage, Shielded blocks hits, Burning leaves lava trails</value></data>
+  <data name="WhatsNew_2_0_57_BulletElite" xml:space="preserve"><value>Elite enemies from World 3 — purple pulsing glow, more HP, more points</value></data>
+  <data name="WhatsNew_2_0_57_BulletTutorial" xml:space="preserve"><value>Tutorial split into 3 protected phases — Movement, Bombs, Power-Ups each with a resume checkpoint</value></data>
+  <data name="WhatsNew_2_0_57_BulletAudio" xml:space="preserve"><value>Music consistently mastered at -16 LUFS (EBU R128) — no more volume jumps between worlds</value></data>
+  <data name="WhatsNew_2_0_57_BulletOutline" xml:space="preserve"><value>Outline pass on all entities — sprites and AI assets now look like they belong together</value></data>
+  <data name="WhatsNew_2_0_57_BulletHero" xml:space="preserve"><value>Hero system active — coin and power-up multipliers now take effect in-game</value></data>
+  <data name="WhatsNew_2_0_58_Title" xml:space="preserve"><value>Mini-Bosses, Phase-2 Attacks &amp; Hero Powers</value></data>
+  <data name="WhatsNew_2_0_58_BulletMiniBoss" xml:space="preserve"><value>Mini-bosses between worlds — every 10 levels a training boss with half HP appears</value></data>
+  <data name="WhatsNew_2_0_58_BulletPhase2" xml:space="preserve"><value>Boss Phase 2 — enraged bosses switch to stronger attack patterns (more blocks, double rows, shadow clones)</value></data>
+  <data name="WhatsNew_2_0_58_BulletHero" xml:space="preserve"><value>Hero traits now active — TwinTina's bombs detonate twice, SpeedySam is immune to Slow-Curse, BrickBoris finds more power-ups</value></data>
+  <data name="WhatsNew_2_0_58_BulletStory" xml:space="preserve"><value>World story beats more cinematic — 6–7 s reading time with a subtle pull-back effect</value></data>
+  <data name="WhatsNew_2_0_62_Title" xml:space="preserve"><value>Stability, Privacy &amp; UI Polish</value></data>
+  <data name="WhatsNew_2_0_62_BulletRenderCrash" xml:space="preserve"><value>Render crash on first frame fixed — view-model graph now reliably built on the UI thread</value></data>
+  <data name="WhatsNew_2_0_62_BulletDailyMission" xml:space="preserve"><value>Daily missions no longer crash on day rollover (null-reference in DailyMissionService fixed)</value></data>
+  <data name="WhatsNew_2_0_62_BulletPrivacy" xml:space="preserve"><value>Privacy update: Firebase Crashlytics &amp; Analytics removed — no telemetry, only League &amp; Cloud Save remain</value></data>
+  <data name="WhatsNew_2_0_62_BulletOverlay" xml:space="preserve"><value>Modal overlays (What's New, confirmation dialogs) show correct content again — DataContext bug resolved</value></data>
+  <data name="WhatsNew_2_0_62_BulletPolish" xml:space="preserve"><value>Many small polish steps from internal playtester audit — cleaner routing, fewer sub-tab hangs</value></data>
+  <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>In Development</value></data>
 </root>

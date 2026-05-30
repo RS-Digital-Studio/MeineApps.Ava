@@ -57,6 +57,22 @@ public sealed class WhatsNewService : IWhatsNewService
     }
 
     /// <summary>
+    /// Lokalisierten Text holen, bei fehlendem Key auf den eingebauten Default zurueckfallen.
+    /// <para>
+    /// WICHTIG: <see cref="ILocalizationService.GetString"/> liefert bei einem RESX-Miss den
+    /// Key-NAMEN zurueck (nie null) — das verbreitete <c>GetString(key) ?? "default"</c>-Muster
+    /// ist daher toter Code und wuerde rohe Key-IDs (z.B. "WhatsNew_2_0_62_Title") in der UI
+    /// anzeigen. Dieser Helper erkennt den Miss (Rueckgabe == Key) und nutzt stattdessen den
+    /// Default-Text. So bleibt der Dialog auch bei (noch) fehlenden RESX-Keys lesbar.
+    /// </para>
+    /// </summary>
+    private string L(string key, string fallback)
+    {
+        var value = _localization.GetString(key);
+        return string.IsNullOrEmpty(value) || value == key ? fallback : value;
+    }
+
+    /// <summary>
     /// Releases sortiert aufsteigend nach Version. Pro Versions-Bump in
     /// <c>BomberBlast.Android.csproj</c> einfach einen Eintrag hinten anhaengen —
     /// auch fuer noch nicht released Zwischenversionen. Eintraege bleiben kumulativ
@@ -66,50 +82,47 @@ public sealed class WhatsNewService : IWhatsNewService
     [
         ("2.0.57", () => new WhatsNewEntry
         {
-            Title = _localization.GetString("WhatsNew_2_0_57_Title")
-                ?? "Live-Ops, Polish & Pacing",
+            Title = L("WhatsNew_2_0_57_Title", "Live-Ops, Polish & Pacing"),
             Bullets = new[]
             {
-                _localization.GetString("WhatsNew_2_0_57_BulletStory") ?? "Mini-Story-Beats — every world starts with a 2-line intro, every boss-clear has a cliffhanger outro",
-                _localization.GetString("WhatsNew_2_0_57_BulletBoss") ?? "Boss-Modifier complete — Reflective spiegelt 30% Schaden zurueck, Shielded blockt Hits, Burning hinterlaesst Lava-Spuren",
-                _localization.GetString("WhatsNew_2_0_57_BulletElite") ?? "Elite-Gegner ab Welt 3 — lila pulsierender Glow, mehr HP, mehr Punkte",
-                _localization.GetString("WhatsNew_2_0_57_BulletTutorial") ?? "Tutorial in 3 geschuetzte Phasen aufgeteilt — Movement, Bomben, Power-Ups jetzt mit Resume-Punkt",
-                _localization.GetString("WhatsNew_2_0_57_BulletAudio") ?? "Musik konsistent gemastered (-16 LUFS, EBU R128) — keine Lautstaerke-Spruenge zwischen Welten",
-                _localization.GetString("WhatsNew_2_0_57_BulletOutline") ?? "Outline-Pass auf allen Entities — Sprites + AI-Assets sehen jetzt aus einem Guss aus",
-                _localization.GetString("WhatsNew_2_0_57_BulletHero") ?? "Hero-System aktiv — Coin- und PowerUp-Multiplier wirken im Spiel",
+                L("WhatsNew_2_0_57_BulletStory", "Mini-Story-Beats — every world starts with a 2-line intro, every boss-clear has a cliffhanger outro"),
+                L("WhatsNew_2_0_57_BulletBoss", "Boss-Modifier complete — Reflective spiegelt 30% Schaden zurueck, Shielded blockt Hits, Burning hinterlaesst Lava-Spuren"),
+                L("WhatsNew_2_0_57_BulletElite", "Elite-Gegner ab Welt 3 — lila pulsierender Glow, mehr HP, mehr Punkte"),
+                L("WhatsNew_2_0_57_BulletTutorial", "Tutorial in 3 geschuetzte Phasen aufgeteilt — Movement, Bomben, Power-Ups jetzt mit Resume-Punkt"),
+                L("WhatsNew_2_0_57_BulletAudio", "Musik konsistent gemastered (-16 LUFS, EBU R128) — keine Lautstaerke-Spruenge zwischen Welten"),
+                L("WhatsNew_2_0_57_BulletOutline", "Outline-Pass auf allen Entities — Sprites + AI-Assets sehen jetzt aus einem Guss aus"),
+                L("WhatsNew_2_0_57_BulletHero", "Hero-System aktiv — Coin- und PowerUp-Multiplier wirken im Spiel"),
             }
         }),
         ("2.0.58", () => new WhatsNewEntry
         {
-            Title = _localization.GetString("WhatsNew_2_0_58_Title")
-                ?? "Mini-Bosses, Phase-2 Attacks & Hero Powers",
+            Title = L("WhatsNew_2_0_58_Title", "Mini-Bosses, Phase-2 Attacks & Hero Powers"),
             Bullets = new[]
             {
-                _localization.GetString("WhatsNew_2_0_58_BulletMiniBoss") ?? "Mini-Bosses zwischen den Welten — alle 10 Level taucht ein Trainings-Boss mit halber HP auf",
-                _localization.GetString("WhatsNew_2_0_58_BulletPhase2") ?? "Boss-Phase-2 — wenn Bosse enraged sind, schalten sie auf staerkere Attack-Patterns um (mehr Bloecke, doppelte Reihen, Schatten-Klone)",
-                _localization.GetString("WhatsNew_2_0_58_BulletHero") ?? "Hero-Traits wirken jetzt — TwinTina's Bomben explodieren doppelt, SpeedySam ist immun gegen Slow-Curse, BrickBoris findet mehr PowerUps",
-                _localization.GetString("WhatsNew_2_0_58_BulletStory") ?? "World-Story-Beats jetzt cinematischer — 6-7s Lesezeit + dezenter Pull-Back-Effekt",
+                L("WhatsNew_2_0_58_BulletMiniBoss", "Mini-Bosses zwischen den Welten — alle 10 Level taucht ein Trainings-Boss mit halber HP auf"),
+                L("WhatsNew_2_0_58_BulletPhase2", "Boss-Phase-2 — wenn Bosse enraged sind, schalten sie auf staerkere Attack-Patterns um (mehr Bloecke, doppelte Reihen, Schatten-Klone)"),
+                L("WhatsNew_2_0_58_BulletHero", "Hero-Traits wirken jetzt — TwinTina's Bomben explodieren doppelt, SpeedySam ist immun gegen Slow-Curse, BrickBoris findet mehr PowerUps"),
+                L("WhatsNew_2_0_58_BulletStory", "World-Story-Beats jetzt cinematischer — 6-7s Lesezeit + dezenter Pull-Back-Effekt"),
             }
         }),
         ("2.0.62", () => new WhatsNewEntry
         {
-            Title = _localization.GetString("WhatsNew_2_0_62_Title")
-                ?? "Stabilität, Privacy & UI-Politur",
+            Title = L("WhatsNew_2_0_62_Title", "Stabilität, Privacy & UI-Politur"),
             Bullets = new[]
             {
-                _localization.GetString("WhatsNew_2_0_62_BulletRenderCrash") ?? "Render-Crash beim ersten Frame behoben — ViewModel-Graph wird jetzt zuverlässig auf dem UI-Thread aufgebaut",
-                _localization.GetString("WhatsNew_2_0_62_BulletDailyMission") ?? "Tägliche Missionen crashen nicht mehr beim Tageswechsel (NullReference im DailyMissionService gefixt)",
-                _localization.GetString("WhatsNew_2_0_62_BulletPrivacy") ?? "Privacy-Update: Firebase Crashlytics + Analytics komplett ausgebaut — keine Telemetrie mehr, nur noch Liga + Cloud-Save",
-                _localization.GetString("WhatsNew_2_0_62_BulletOverlay") ?? "Modal-Overlays (What's-New, Bestätigungs-Dialoge) zeigen wieder den korrekten Inhalt — DataContext-Bug bereinigt",
-                _localization.GetString("WhatsNew_2_0_62_BulletPolish") ?? "Viele kleine Politur-Schritte aus dem internen Spieletester-Audit — saubereres Routing, weniger Sub-Tab-Hänger",
+                L("WhatsNew_2_0_62_BulletRenderCrash", "Render-Crash beim ersten Frame behoben — ViewModel-Graph wird jetzt zuverlässig auf dem UI-Thread aufgebaut"),
+                L("WhatsNew_2_0_62_BulletDailyMission", "Tägliche Missionen crashen nicht mehr beim Tageswechsel (NullReference im DailyMissionService gefixt)"),
+                L("WhatsNew_2_0_62_BulletPrivacy", "Privacy-Update: Firebase Crashlytics + Analytics komplett ausgebaut — keine Telemetrie mehr, nur noch Liga + Cloud-Save"),
+                L("WhatsNew_2_0_62_BulletOverlay", "Modal-Overlays (What's-New, Bestätigungs-Dialoge) zeigen wieder den korrekten Inhalt — DataContext-Bug bereinigt"),
+                L("WhatsNew_2_0_62_BulletPolish", "Viele kleine Politur-Schritte aus dem internen Spieletester-Audit — saubereres Routing, weniger Sub-Tab-Hänger"),
             }
         }),
         // OFFENER ENTWICKLUNGSEINTRAG fuer naechste Version — Bullets pro Aenderung anhaengen,
         // beim naechsten Release-Trigger wird dieser Eintrag finalisiert + ein neuer leerer angehaengt.
+        // Solange Bullets leer sind, filtert GetEntries() den Eintrag heraus (kein leerer Dialog).
         ("2.0.63", () => new WhatsNewEntry
         {
-            Title = _localization.GetString("WhatsNew_2_0_63_Title")
-                ?? "In Entwicklung",
+            Title = L("WhatsNew_2_0_63_Title", "In Entwicklung"),
             Bullets = Array.Empty<string>()
         }),
     ];
@@ -131,7 +144,13 @@ public sealed class WhatsNewService : IWhatsNewService
                 continue;
             if (CompareVersions(version, current) > 0)
                 continue;
-            result.Add(factory());
+            var entry = factory();
+            // Offener Entwicklungs-Eintrag (Bullets noch leer) NICHT ausspielen — sonst zeigt das
+            // Modal eine Titel-Karte ohne Inhalt (leerer Dialog). Greift z.B. wenn die App-Version
+            // gebumpt wird, bevor der neue Eintrag mit Bullets gefuellt ist.
+            if (entry.Bullets.Count == 0)
+                continue;
+            result.Add(entry);
         }
         return result;
     }
@@ -151,6 +170,10 @@ public sealed class WhatsNewService : IWhatsNewService
         {
             return va.CompareTo(vb);
         }
+        // Nicht-parsebarer Versionsstring (z.B. Tippfehler in BuildReleases) — defensiv "gleich"
+        // zurueckgeben (kein Crash), aber im Debug-Build sichtbar machen statt still zu verschlucken.
+        System.Diagnostics.Debug.WriteLine(
+            $"WhatsNewService.CompareVersions: nicht-parsebarer Versionsstring ('{a}' vs '{b}') — Eintrag in BuildReleases() pruefen.");
         return 0;
     }
 }

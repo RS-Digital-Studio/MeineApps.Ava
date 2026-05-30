@@ -4220,4 +4220,25 @@
   <data name="AnnounceMiniBoss" xml:space="preserve"><value>MINI-JEFE</value></data>
   <data name="SubtitleMiniBossRoar" xml:space="preserve"><value>[MINI-JEFE SE ACERCA]</value></data>
   <data name="FloatShadowClone" xml:space="preserve"><value>¡CLON SOMBRA!</value></data>
+  <!-- Entradas de novedades por versión -->
+  <data name="WhatsNew_2_0_57_Title" xml:space="preserve"><value>Live-Ops, Pulido &amp; Ritmo</value></data>
+  <data name="WhatsNew_2_0_57_BulletStory" xml:space="preserve"><value>Mini secuencias de historia — cada mundo abre con una intro de 2 líneas y cada victoria sobre el jefe termina con un cliffhanger</value></data>
+  <data name="WhatsNew_2_0_57_BulletBoss" xml:space="preserve"><value>Modificadores de jefe completos — Reflectivo deflecta el 30 % del daño, Escudado bloquea golpes, Ardiente deja rastros de lava</value></data>
+  <data name="WhatsNew_2_0_57_BulletElite" xml:space="preserve"><value>Enemigos élite desde el Mundo 3 — brillo púrpura pulsante, más HP, más puntos</value></data>
+  <data name="WhatsNew_2_0_57_BulletTutorial" xml:space="preserve"><value>Tutorial dividido en 3 fases protegidas — Movimiento, Bombas y Power-Ups, cada una con punto de reanudación</value></data>
+  <data name="WhatsNew_2_0_57_BulletAudio" xml:space="preserve"><value>Música masterizada de forma consistente a -16 LUFS (EBU R128) — sin saltos de volumen entre mundos</value></data>
+  <data name="WhatsNew_2_0_57_BulletOutline" xml:space="preserve"><value>Contorno aplicado a todas las entidades — sprites y assets de IA ahora tienen un aspecto uniforme</value></data>
+  <data name="WhatsNew_2_0_57_BulletHero" xml:space="preserve"><value>Sistema de héroes activo — los multiplicadores de monedas y power-ups ya surten efecto en el juego</value></data>
+  <data name="WhatsNew_2_0_58_Title" xml:space="preserve"><value>Mini-jefes, Ataques de Fase 2 &amp; Poderes de Héroe</value></data>
+  <data name="WhatsNew_2_0_58_BulletMiniBoss" xml:space="preserve"><value>Mini-jefes entre mundos — cada 10 niveles aparece un jefe de entrenamiento con la mitad de HP</value></data>
+  <data name="WhatsNew_2_0_58_BulletPhase2" xml:space="preserve"><value>Fase 2 del jefe — los jefes enfurecidos cambian a patrones de ataque más fuertes (más bloques, filas dobles, clones sombra)</value></data>
+  <data name="WhatsNew_2_0_58_BulletHero" xml:space="preserve"><value>Rasgos de héroe activos — las bombas de TwinTina explotan dos veces, SpeedySam es inmune al Slow-Curse, BrickBoris encuentra más power-ups</value></data>
+  <data name="WhatsNew_2_0_58_BulletStory" xml:space="preserve"><value>Secuencias de historia más cinematográficas — 6–7 s de lectura con un sutil efecto de alejamiento</value></data>
+  <data name="WhatsNew_2_0_62_Title" xml:space="preserve"><value>Estabilidad, Privacidad &amp; Pulido de UI</value></data>
+  <data name="WhatsNew_2_0_62_BulletRenderCrash" xml:space="preserve"><value>Crash de renderizado en el primer fotograma corregido — el grafo de ViewModel se construye ahora de forma fiable en el hilo de UI</value></data>
+  <data name="WhatsNew_2_0_62_BulletDailyMission" xml:space="preserve"><value>Las misiones diarias ya no se cuelgan al cambiar de día (referencia nula en DailyMissionService corregida)</value></data>
+  <data name="WhatsNew_2_0_62_BulletPrivacy" xml:space="preserve"><value>Actualización de privacidad: Firebase Crashlytics &amp; Analytics eliminados — sin telemetría, solo quedan Liga &amp; Cloud Save</value></data>
+  <data name="WhatsNew_2_0_62_BulletOverlay" xml:space="preserve"><value>Los overlays modales (Novedades, diálogos de confirmación) vuelven a mostrar el contenido correcto — error de DataContext resuelto</value></data>
+  <data name="WhatsNew_2_0_62_BulletPolish" xml:space="preserve"><value>Muchos pequeños detalles de pulido del audit interno — enrutamiento más limpio, menos bloqueos en sub-pestañas</value></data>
+  <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>En Desarrollo</value></data>
 </root>

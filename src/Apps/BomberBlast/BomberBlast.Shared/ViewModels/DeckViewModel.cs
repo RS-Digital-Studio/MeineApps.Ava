@@ -333,6 +333,12 @@ public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuic
             RefreshAll();
             UpdateSelectedCardDetails();
         }
+        else
+        {
+            // Upgrade fehlgeschlagen (z.B. Vorbedingung nicht erfuellt) NACH dem Coin-Abzug →
+            // abgezogene Coins zurueckerstatten, sonst verliert der Spieler sie ohne Gegenwert.
+            _coinService.AddCoins(coinCost);
+        }
     }
 
     /// <summary>Karte für Gems kaufen (Rare 15, Epic 30, Legendary 75)</summary>
@@ -668,12 +674,14 @@ public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuic
         string bossDrop = _localization.GetString("DropSourceBoss") ?? "Boss Fight";
         string dungeonDrop = _localization.GetString("DropSourceDungeon") ?? "Dungeon";
 
+        // Raten konsistent mit CardService.GenerateDrop (Basis-Werte B-A23): Common 57 / Rare 25 /
+        // Epic 12 / Legendary 6 % (Legendary steigt zusaetzlich +0,5 %-Punkte pro Welt).
         return rarity switch
         {
-            Rarity.Common => $"{levelDrop} (60%)",
+            Rarity.Common => $"{levelDrop} (57%)",
             Rarity.Rare => $"{levelDrop} (25%)\n{bossDrop}",
             Rarity.Epic => $"{levelDrop} (12%)\n{bossDrop}\n{dungeonDrop}",
-            Rarity.Legendary => $"{bossDrop} (3%)\n{dungeonDrop}",
+            Rarity.Legendary => $"{bossDrop} (6%)\n{dungeonDrop}",
             _ => levelDrop
         };
     }

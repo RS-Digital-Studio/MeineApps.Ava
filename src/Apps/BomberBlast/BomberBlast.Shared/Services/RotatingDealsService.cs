@@ -319,7 +319,8 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 DiscountPercent = 40,
                 Currency = "Gems",
                 RewardType = "Coins",
-                RewardAmount = 3000
+                // ~120 Coins/Gem (15 Gems) — unter dem günstigsten Coins→Gems-Kauf (125 C/G), kein Arbitrage.
+                RewardAmount = 1800
             },
             1 => new RotatingDeal
             {
@@ -352,7 +353,8 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 DiscountPercent = 40,
                 Currency = "Gems",
                 RewardType = "Coins",
-                RewardAmount = 5000
+                // ~117 Coins/Gem (18 Gems) — unter dem günstigsten Coins→Gems-Kauf (125 C/G), kein Arbitrage.
+                RewardAmount = 2100
             },
 
             // v2.0.34: Zwei neue Weekly-Deal-Typen
@@ -376,7 +378,8 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 DiscountPercent = 42,
                 Currency = "Gems",
                 RewardType = "Coins",
-                RewardAmount = 10000
+                // ~120 Coins/Gem (35 Gems) — unter dem günstigsten Coins→Gems-Kauf (125 C/G), kein Arbitrage.
+                RewardAmount = 4200
             }
         };
     }

@@ -1,9 +1,11 @@
 # GardenControl — Bewässerungssteuerung
 
-> Für Build-Befehle, Conventions und Architektur siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 Automatische Gartenbewässerung mit Raspberry Pi 5 + 7"-Touchscreen als Kiosk-Station,
 plus Android- und Desktop-App für mobile Steuerung. Solar-betrieben (kein Strom im Garten).
+
+**Package:** `com.meineapps.gardencontrol`
 
 | Aspekt | Wert |
 |--------|------|
@@ -13,48 +15,56 @@ plus Android- und Desktop-App für mobile Steuerung. Solar-betrieben (kein Strom
 
 ---
 
-## Build & Zielframework
+## Architektur-Überblick
 
-| Projekt | Framework | Befehl |
-|---------|-----------|--------|
-| `GardenControl.Shared` | `net10.0` | `dotnet build src/Apps/GardenControl/GardenControl.Shared` |
-| `GardenControl.Server` | `net10.0` | `dotnet run --project src/Apps/GardenControl/GardenControl.Server` |
-| `GardenControl.Desktop` | `net10.0` | `dotnet run --project src/Apps/GardenControl/GardenControl.Desktop` |
-| `GardenControl.Android` | `net10.0-android` | `dotnet build src/Apps/GardenControl/GardenControl.Android` |
-
-Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)).
-
-## Namespace-Konvention
-
-| Ordner | Namespace |
-|--------|-----------|
-| `GardenControl.Shared/ViewModels/` | `GardenControl.ViewModels` |
-| `GardenControl.Shared/Views/` | `GardenControl.Views` |
-| `GardenControl.Shared/Services/` | `GardenControl.Services` |
-| `GardenControl.Shared/Models/` | `GardenControl.Models` |
-| `GardenControl.Server/Hubs/` | `GardenControl.Server.Hubs` |
-| `GardenControl.Server/Api/` | `GardenControl.Server.Api` |
-| `GardenControl.Server/Services/` | `GardenControl.Server.Services` |
-
----
-
-## Architektur
+Fünf Projekte — Server auf dem Pi, Avalonia-Client auf Desktop + Android:
 
 ```
 [Raspberry Pi 5 + 7" Display]          [Android / Desktop App]
 ├── ASP.NET Core Server                  ├── Avalonia UI
-│   ├── SignalR Hub (Echtzeit)  ←WiFi→  ├── SignalR Client
-│   ├── REST API                         ├── REST API Client
+│   ├── SignalR Hub (Echtzeit)  ←WiFi→  ├── SignalR Client (ConnectionService)
+│   ├── REST API                         ├── REST API Client (ApiService)
 │   └── SQLite (Verlauf)                 └── ViewModels (MVVM)
 ├── Avalonia Desktop-App (Fullscreen)
 │   └── Verbindet zu localhost:5000
-├── GPIO → 4-Kanal Relais (ALAMSCN Kit)
+├── GPIO → 4-Kanal Relais
 │   ├── 3x 12V Magnetventile (Beete)
 │   └── 1x 12V Tauchpumpe
 ├── I2C → ADS1115 ADC
 │   └── 3x Bodenfeuchtesensoren (10m Kabel)
 └── Solar: 50W Panel + 12V Akku + Laderegler
 ```
+
+Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `GardenControl.Shared/App.axaml.cs`
+(DI + Pi-Erkennung + Lifecycle-Zweig) → `MainViewModel` (6 Tabs) → `ViewLocator` löst Views.
+**Werbefrei** → keine `MeineApps.Core.Premium.Ava`-Referenz.
+
+## Projekte
+
+| Projekt | Framework | Zweck |
+|---------|-----------|-------|
+| `GardenControl.Core` | `net10.0` | Models, DTOs, Enums (geteilt zwischen Client + Server) |
+| `GardenControl.Server` | `net10.0` | ASP.NET Core Server für den Pi (linux-arm64) |
+| `GardenControl.Shared` | `net10.0` | Avalonia-Client (ViewModels, Views, Services, Controls) |
+| `GardenControl.Desktop` | `net10.0` | Desktop Entry Point (auch Kiosk auf Pi) |
+| `GardenControl.Android` | `net10.0-android` | Android Entry Point |
+
+## Doku-Karte — Detail liegt beim jeweiligen Bereich
+
+| Bereich | Inhalt | Doku |
+|---------|--------|------|
+| Composition Root, DI, Pi-Erkennung, Lifecycle | `App.axaml.cs`, Service-/VM-Registrierung, Kiosk-/Dev-Zweig | [GardenControl.Shared](GardenControl.Shared/CLAUDE.md) |
+| Android-Host | `AndroidApp`, `MainActivity`, Back-Button, Manifest/Permissions | [GardenControl.Android](GardenControl.Android/CLAUDE.md) |
+| Desktop-Host / Pi-Kiosk | `Program.cs`, Deployment auf Pi | [GardenControl.Desktop](GardenControl.Desktop/CLAUDE.md) |
+| Tab-ViewModels, Verbindungsmanagement | MainVM, DashboardVM, ZoneControlVM, ScheduleVM, CalibrationVM, HistoryVM, SettingsVM | [Shared/ViewModels](GardenControl.Shared/ViewModels/CLAUDE.md) |
+| Views + View-Converter | MainView, DashboardView, ZoneControlView, … | [Shared/Views](GardenControl.Shared/Views/CLAUDE.md) |
+| SignalR-Client, REST-API-Client | ConnectionService, ApiService | [Shared/Services](GardenControl.Shared/Services/CLAUDE.md) |
+| SkiaSharp Custom Controls | MoistureGaugeControl, MoistureChartControl | [Shared/Controls](GardenControl.Shared/Controls/CLAUDE.md) |
+
+Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (`AppPalette.axaml`, Grün #2E7D32),
+`Shared/Assets/`.
+
+---
 
 ## Hardware
 
@@ -66,42 +76,6 @@ Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CL
 - **Solar**: 50W Panel + 12V AGM 12Ah + PWM-Laderegler + Buck-Converter 5V
 - Details + Einkaufsliste: `docs/HARDWARE.md`
 
-## Projekte
-
-| Projekt | Zweck | Target |
-|---------|-------|--------|
-| GardenControl.Core | Models, DTOs, Enums (shared) | net10.0 |
-| GardenControl.Server | ASP.NET Core Server für den Pi | net10.0 (linux-arm64) |
-| GardenControl.Shared | ViewModels, Views, Client-Services, App | net10.0 |
-| GardenControl.Desktop | Desktop Entry Point (auch auf Pi) | net10.0 |
-| GardenControl.Android | Android Entry Point | net10.0-android |
-
-## Build-Befehle
-
-```bash
-# Desktop starten (Mock-Hardware, kein Pi nötig)
-dotnet run --project src/Apps/GardenControl/GardenControl.Desktop
-
-# Alles bauen
-dotnet build src/Apps/GardenControl/GardenControl.Desktop
-dotnet build src/Apps/GardenControl/GardenControl.Server
-
-# Für Pi cross-compilieren
-dotnet publish src/Apps/GardenControl/GardenControl.Server -c Release -r linux-arm64 --self-contained
-dotnet publish src/Apps/GardenControl/GardenControl.Desktop -c Release -r linux-arm64 --self-contained
-
-# Komplett-Deploy auf den Pi
-bash src/Apps/GardenControl/GardenControl.Server/Install/deploy.sh gardencontrol.local
-```
-
-## Pi-Kiosk-Modus
-
-- Server als systemd-Service (immer an, auch ohne Display)
-- Desktop-App startet automatisch in Fullscreen (Auto-Login + Autostart)
-- Pi-Erkennung in `App.axaml.cs`: Prüft `/proc/device-tree/model` → auto-connect localhost
-- Touch-optimierte Styles (`TouchStyles.axaml`): Min. 44dp Touch-Targets
-- Install-Skript: `install-pi5.sh` (I2C, .NET, Auto-Login, Kiosk)
-
 ## GPIO-Belegung (BCM)
 
 | Pin | Funktion |
@@ -112,13 +86,15 @@ bash src/Apps/GardenControl/GardenControl.Server/Install/deploy.sh gardencontrol
 | GPIO 22 | Relais Kanal 3 → Ventil Beet 3 |
 | GPIO 23 | Relais Kanal 4 → Pumpe |
 
-## API
+## Pi-Kiosk-Modus
 
-- REST: `http://<pi-ip>:5000/api/...` (status, zones, history, config, calibrate)
-- SignalR: `http://<pi-ip>:5000/hub/garden` (Echtzeit-Push)
-- Mock-Hardware: Automatisch wenn kein `/sys/class/gpio` erkannt (Desktop-Entwicklung)
+- Server als systemd-Service (immer an, auch ohne Display)
+- Desktop-App startet automatisch in Fullscreen (Auto-Login + Autostart)
+- Pi-Erkennung in `App.axaml.cs`: Prüft `/proc/device-tree/model` → auto-connect localhost
+- Touch-optimierte Styles (`TouchStyles.axaml`): Min. 44dp Touch-Targets
+- Install-Skript: `install-pi5.sh` (I2C, .NET, Auto-Login, Kiosk)
 
-## Server-Komponenten
+## Server-Komponenten (GardenControl.Server)
 
 ### `Hardware/` (Plattform-Abstraktion)
 
@@ -141,42 +117,37 @@ Mock-Erkennung: automatisch wenn `/sys/class/gpio` nicht vorhanden ist.
 
 ### `Hubs/`
 
-| Hub | Aufgabe |
-|-----|---------|
-| `GardenHub` | SignalR-Hub für Echtzeit-Kommunikation (`/hub/garden`) |
+| Hub | Pfad |
+|-----|------|
+| `GardenHub` | `/hub/garden` — SignalR-Hub, empfängt Befehle und sendet Status-Push |
 
-## Client-ViewModels
+## Build-Befehle
 
-| ViewModel | Tab | Features |
-|-----------|-----|----------|
-| DashboardViewModel | Dashboard | Live-Werte, Pumpen-Status, Schnell-Bewässerung, Modus-Wechsel, Notstopp |
-| ZoneControlViewModel | Steuerung | Manuelle Ventil-/Pumpen-Steuerung, Dauer wählbar |
-| ScheduleViewModel | Automatik | Schwellenwerte, Dauer, Cooldown, Pollintervall pro Zone |
-| CalibrationViewModel | Kalibrierung | Live-ADC-Werte, Trocken/Nass-Kalibrierung pro Zone |
-| HistoryViewModel | Verlauf | Bewässerungsereignisse, Zeitfilter (1h-30d), Zone-Filter |
-| SettingsViewModel | Einstellungen | Server-URL, Verbindungstest, Server-Info |
+```bash
+# Entwicklung (Mock-Hardware, kein Pi nötig)
+dotnet run --project src/Apps/GardenControl/GardenControl.Desktop
 
-## Android Back-Button
+# Alles bauen
+dotnet build src/Apps/GardenControl/GardenControl.Desktop
+dotnet build src/Apps/GardenControl/GardenControl.Server
 
-MainViewModel nutzt `BackPressHelper` aus MeineApps.Core.Ava.Services (Convention aller Apps):
+# Pi cross-compile
+dotnet publish src/Apps/GardenControl/GardenControl.Server  -c Release -r linux-arm64 --self-contained
+dotnet publish src/Apps/GardenControl/GardenControl.Desktop -c Release -r linux-arm64 --self-contained
 
-- `ExitHintRequested` Event für Toast-Anzeige
-- `HandleBackPressed()` Reihenfolge: Error-Banner schließen → Tab zurück zu Dashboard → Double-Back-to-Exit
-- MainActivity verdrahtet Event per `OnCreate`, delegiert `OnBackPressed` an VM
+# Komplett-Deploy auf den Pi
+bash src/Apps/GardenControl/GardenControl.Server/Install/deploy.sh gardencontrol.local
+```
 
-## Farbpalette
-
-- Primary: `#2E7D32` (Sattes Grün)
-- Wasser: `#1E88E5` (Blau für aktive Bewässerung)
-- Akzent: `#8D6E63` (Erd-Braun)
-- Hintergrund: `#0F1923` (Premium Dark)
-- Gradient-Cards mit `#10-15FFFFFF` Border für Glas-Effekt
+Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)).
 
 ---
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Architektur
-- [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
-- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, Loading-Pipeline
-- `Releases/GardenControl/CHANGELOG_*.md` — Release-Notes
+| Was | Wo |
+|-----|----|
+| Build, Conventions, Architektur | [Haupt-CLAUDE.md](../../../CLAUDE.md) |
+| Preferences, BackPressHelper, ViewLocator | [MeineApps.Core.Ava](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) |
+| SkiaSharp Custom Controls Grundlagen | [MeineApps.UI](../../UI/MeineApps.UI/CLAUDE.md) |
+| `Releases/GardenControl/CHANGELOG_*.md` | Release-Notes |

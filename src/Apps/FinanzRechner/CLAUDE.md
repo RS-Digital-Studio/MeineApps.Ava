@@ -15,6 +15,27 @@ Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md]
 
 ---
 
+## Doku-Karte — Detail liegt beim jeweiligen Bereich
+
+| Bereich | Inhalt | Doku |
+|---------|--------|------|
+| Composition Root, DI, Namespaces | `App.axaml.cs`, Service-/VM-Registrierung, Loading-Start | [FinanzRechner.Shared](FinanzRechner.Shared/CLAUDE.md) |
+| Android-Host | `AndroidApp`, `MainActivity`, AdMob, Factories, Immersive | [FinanzRechner.Android](FinanzRechner.Android/CLAUDE.md) |
+| Desktop-Host | `Program.cs` | [FinanzRechner.Desktop](FinanzRechner.Desktop/CLAUDE.md) |
+| ViewModels (Navigation, Cache, Calculator-Pattern, Back-Press) | MainViewModel, Sub-VMs, Calculator-VMs | [Shared/ViewModels](FinanzRechner.Shared/ViewModels/CLAUDE.md) |
+| Views (Ad-Banner-Layout, Overlays, Behaviors, Timer-Pattern) | 18 AXAML-Views + Code-Behind | [Shared/Views](FinanzRechner.Shared/Views/CLAUDE.md) |
+| Services (Persistenz, Export, Analyse, Transfer-Buchung) | 8 Interface/Impl-Paare | [Shared/Services](FinanzRechner.Shared/Services/CLAUDE.md) |
+| Models (Datenmodelle, FinanceEngine, Geldwerte-Konvention) | Expense, Account, Budget, FinanceEngine … | [Shared/Models](FinanzRechner.Shared/Models/CLAUDE.md) |
+| SkiaSharp-Renderer (12 Visualisierungen + ChartHelper) | `Graphics/` | [Shared/Graphics](FinanzRechner.Shared/Graphics/CLAUDE.md) |
+| Converter (18 IValueConverter) | Kategorie, TransactionType, Alert, Balance | [Shared/Converters](FinanzRechner.Shared/Converters/CLAUDE.md) |
+| Helpers (CurrencyHelper, CategoryLocalizationHelper) | Globale Formatierung + Kategorie-Icons/Farben | [Shared/Helpers](FinanzRechner.Shared/Helpers/CLAUDE.md) |
+| Startup-Pipeline | `FinanzRechnerLoadingPipeline` | [Shared/Loading](FinanzRechner.Shared/Loading/CLAUDE.md) |
+
+Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (AppPalette, Smaragd `#10B981`),
+`Shared/Resources/Strings/` (`AppStrings.resx`, 6 Sprachen), `Shared/Assets/`.
+
+---
+
 ## Build & Zielframework
 
 | Projekt | Framework | Befehl |

@@ -16,6 +16,38 @@ Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md]
 
 ---
 
+## Architektur-Überblick
+
+Drei Projekte, ViewModel-First, kein Service-Locator. Kein AdMob/IAP (privates Projekt).
+
+```
+SmartMeasure.Android ┐
+                     ├─> SmartMeasure.Shared ──> MeineApps.Core.Ava  (Preferences, Localization, ViewLocator)
+SmartMeasure.Desktop ┘                       └─> MeineApps.UI        (SkiaSharp-Helpers, Behaviors)
+```
+
+Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `SmartMeasure.Shared/App.axaml.cs`
+(Factory-Properties → DI-Build → `MainViewModel`) → ViewLocator löst die 9 Views.
+Desktop nutzt `MockBleService` + `MockArCaptureService` statt echter Hardware.
+
+## Doku-Karte — Detail liegt beim jeweiligen Bereich
+
+| Bereich | Inhalt | Doku |
+|---------|--------|------|
+| Composition Root, DI, Factories | `App.axaml.cs`, Service-/VM-Registrierung, Lifecycle | [SmartMeasure.Shared](SmartMeasure.Shared/CLAUDE.md) |
+| Android-Host | `AndroidApp`, `MainActivity`, AR-Brücke, BLE, Permissions, FileProvider | [SmartMeasure.Android](SmartMeasure.Android/CLAUDE.md) |
+| Desktop-Host | `Program.cs`, Mock-Modus | [SmartMeasure.Desktop](SmartMeasure.Desktop/CLAUDE.md) |
+| ViewModels (Navigation, Messung, Terrain, Gartenplan, Projekte, ...) | MainVM, SurveyVM, TerrainVM, ... | [Shared/ViewModels](SmartMeasure.Shared/ViewModels/CLAUDE.md) |
+| Views (AXAML, Touch, Lazy-Map, SKCanvasView-Pattern) | 9 Views | [Shared/Views](SmartMeasure.Shared/Views/CLAUDE.md) |
+| Services (Geo-Algorithmen, BLE-Mock, Export, AR-Math, ...) | 20+ Interfaces + Impls | [Shared/Services](SmartMeasure.Shared/Services/CLAUDE.md) |
+| Models (SQLite-Entities, TerrainMesh, AR-Typen) | SurveyPoint, GardenElement, TerrainMesh, ... | [Shared/Models](SmartMeasure.Shared/Models/CLAUDE.md) |
+| SkiaSharp-Renderer (Terrain, GardenPlan, Kompass, Stakeout) | 5 Renderer | [Shared/Graphics](SmartMeasure.Shared/Graphics/CLAUDE.md) |
+
+Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (AppPalette, Orange #FF6B00),
+`Shared/Resources/Strings/` (AppStrings.resx, 6 Sprachen), `Shared/Assets/`.
+
+---
+
 ## Build & Zielframework
 
 | Projekt | Framework | Befehl |

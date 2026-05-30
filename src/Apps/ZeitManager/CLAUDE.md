@@ -5,7 +5,7 @@ Challenges und Schichtplan-Rechner. Komplett werbefrei, kein Premium, kein Meine
 
 | Aspekt | Wert |
 |--------|------|
-| Package-ID | com.meineapps.zeitmanager |
+| Package-ID | `com.meineapps.zeitmanager` |
 | Preis | Kostenlos (werbefrei) |
 | Tabs | Timer, Stoppuhr, Pomodoro, Wecker/Schichtplan, Settings |
 
@@ -13,190 +13,62 @@ Challenges und Schichtplan-Rechner. Komplett werbefrei, kein Premium, kein Meine
 
 ---
 
-## Build & Zielframework
+## Architektur-Überblick
 
-| Projekt | Framework | Befehl |
-|---------|-----------|--------|
-| `ZeitManager.Shared` | `net10.0` | `dotnet build src/Apps/ZeitManager/ZeitManager.Shared` |
-| `ZeitManager.Desktop` | `net10.0` | `dotnet run --project src/Apps/ZeitManager/ZeitManager.Desktop` |
-| `ZeitManager.Android` | `net10.0-android` | `dotnet build src/Apps/ZeitManager/ZeitManager.Android` |
-
-Release-AAB: `dotnet publish src/Apps/ZeitManager/ZeitManager.Android -c Release`
-
-## Namespace-Konvention
-
-| Ordner | Namespace |
-|--------|-----------|
-| `ZeitManager.Shared/ViewModels/` | `ZeitManager.ViewModels` |
-| `ZeitManager.Shared/Views/` | `ZeitManager.Views` |
-| `ZeitManager.Shared/Services/` | `ZeitManager.Services` |
-| `ZeitManager.Shared/Audio/` | `ZeitManager.Audio` |
-| `ZeitManager.Shared/Graphics/` | `ZeitManager.Graphics` |
-| `ZeitManager.Shared/Loading/` | `ZeitManager.Loading` |
-
----
-
-## Architektur
-
-### Projekt-Struktur
+Drei Projekte, ViewModel-First, kein Service-Locator:
 
 ```
-src/Apps/ZeitManager/
-├── ZeitManager.Shared/
-│   ├── Audio/
-│   │   ├── WavGenerator.cs          # WAV-Daten generieren (Frequenz + Dauer)
-│   │   ├── SoundDefinitions.cs      # 6 eingebaute Töne mit Frequenz/Dauer
-│   │   └── TimeFormatHelper.cs      # HH:MM:SS.cs Formatierung
-│   ├── Graphics/                    # 6 SkiaSharp-Visualisierungen (siehe unten)
-│   ├── Loading/
-│   │   └── ZeitManagerLoadingPipeline.cs  # DB-Init + Shader-Kompilierung parallel
-│   ├── Models/                      # AlarmItem, TimerItem, FocusSession, ShiftException
-│   └── ViewModels/                  # TimerVM, StopwatchVM, AlarmVM, PomodoroVM, ShiftVM
-├── ZeitManager.Android/
-│   └── Services/                    # 7 Android-Services (siehe unten)
-└── ZeitManager.Desktop/
+ZeitManager.Android ┐
+                    ├─> ZeitManager.Shared ──> MeineApps.Core.Ava  (Preferences, Localization, BackPressHelper, ViewLocator)
+ZeitManager.Desktop ┘                       └─> MeineApps.UI       (SkiaLoadingSplash, FloatingText, Behaviors, Controls)
 ```
 
-### Loading-Pipeline
-
-`ZeitManagerLoadingPipeline` führt echtes Preloading aus: DB-Init + Shader-Kompilierung parallel,
-dann AlarmScheduler, dann ViewModel-Erstellung. `SkiaLoadingSplash` zeigt Fortschrittsring +
-Statustext. `App.axaml.cs` setzt DataContext erst nach Pipeline-Abschluss — kein fire-and-forget
-`_ = InitializeServicesAsync()`.
-
-### Android-Services
-
-```
-ZeitManager.Android/Services/
-├── TimerForegroundService.cs       # Foreground Service mit Notification (Timer-Countdown)
-├── AlarmReceiver.cs                # BroadcastReceiver für Wecker-Auslösung
-├── BootReceiver.cs                 # BOOT_COMPLETED → Wecker neu planen
-├── AlarmActivity.cs                # Fullscreen Lockscreen-Alarm (Dismiss/Snooze, Gradual Volume)
-├── AndroidAudioService.cs          # System-Ringtones via RingtoneManager + PlayUri + PickSound
-├── AndroidNotificationService.cs   # NotificationChannels + AlarmManager + StableHash
-└── AndroidShakeDetectionService.cs # Accelerometer-basierte Shake-Erkennung
-```
-
-**AndroidManifest Permissions:** FOREGROUND_SERVICE, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED,
-POST_NOTIFICATIONS, VIBRATE, USE_FULL_SCREEN_INTENT, WAKE_LOCK
+Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `ZeitManager.Shared/App.axaml.cs`
+(DI + `ConfigurePlatformServices`-Hook + Loading-Pipeline + Splash) → `MainViewModel`
+(5 Tabs, Overlay, Event-Relay) → `ViewLocator` löst die Views auf.
+**Werbefrei** → keine `MeineApps.Core.Premium.Ava`-Referenz.
 
 ---
 
-## Services
+## Doku-Karte — Detail liegt beim jeweiligen Bereich
 
-| Interface | Implementierung | Zweck |
-|-----------|----------------|-------|
-| `ITimerService` | `TimerService` | In-Memory Timer-Management + Snooze + AutoRepeat + Notifications + ExtendTimer + DeleteAll |
-| `IAudioService` | `AudioService` / `AndroidAudioService` | Eingebaute Töne + System-Ringtones + PlayUriAsync + PickSoundAsync |
-| `IAlarmSchedulerService` | `AlarmSchedulerService` | 60s Check-Timer, Weekday-Matching, Double-Trigger-Schutz + Notifications + Urlaubsmodus/PauseAll |
-| `IShiftScheduleService` | `ShiftScheduleService` | 15/21-Schicht-Berechnung + Ausnahmen |
-| `IShakeDetectionService` | `Desktop-` / `AndroidShakeDetectionService` | Shake-Challenge: Desktop = Button-Simulation, Android = Accelerometer |
-| `INotificationService` | Plattform-spezifisch via `ConfigurePlatformServices` | Android: `AndroidNotificationService`, Desktop: `DesktopNotificationService` |
-| `IHapticService` | `NoOpHapticService` / `AndroidHapticService` | HeavyClick bei Alarm-Dismiss + Timer-Ende, Click bei Snooze |
+| Bereich | Inhalt | Doku |
+|---------|--------|------|
+| Composition Root, DI, Platform-Hook | `App.axaml.cs`, Service-/VM-Registrierung, Loading-Start | [ZeitManager.Shared](ZeitManager.Shared/CLAUDE.md) |
+| Android-Host | `AndroidApp`, `MainActivity`, Platform-Services, Ringtone-Picker, Manifest | [ZeitManager.Android](ZeitManager.Android/CLAUDE.md) |
+| Desktop-Host | `Program.cs`, Desktop-Fallbacks | [ZeitManager.Desktop](ZeitManager.Desktop/CLAUDE.md) |
+| ViewModels | MainVM (Back-Nav, Event-Relay, Onboarding), Tab-VMs, Overlay | [Shared/ViewModels](ZeitManager.Shared/ViewModels/CLAUDE.md) |
+| Views | AXAML, Code-Behind, SkiaSharp-Handler, Content-Swap, Bottom-Sheet-Swipe | [Shared/Views](ZeitManager.Shared/Views/CLAUDE.md) |
+| Services | Timer, Alarm, Audio, DB, Shift, Shake, Notification (Interfaces + Impls) | [Shared/Services](ZeitManager.Shared/Services/CLAUDE.md) |
+| Audio | WAV-Generator, Sound-Definitionen, StableHash | [Shared/Audio](ZeitManager.Shared/Audio/CLAUDE.md) |
+| SkiaSharp-Renderer | 6 Visualisierungen + Splash, Render-Loop-Pattern | [Shared/Graphics](ZeitManager.Shared/Graphics/CLAUDE.md) |
+| Startup-Pipeline | DB+Shader parallel, AlarmScheduler, ViewModel-Wait | [Shared/Loading](ZeitManager.Shared/Loading/CLAUDE.md) |
+| DB-Entitäten & Enums | TimerItem, AlarmItem, FocusSession, ShiftSchedule u.a. | [Shared/Models](ZeitManager.Shared/Models/CLAUDE.md) |
 
----
-
-## Feature-Patterns
-
-### Timer
-
-- Mehrere Timer gleichzeitig, Quick-Timer (1/5/10/15/30 min), +1/+5 Min Extend, Alle löschen
-- Snooze, AutoRepeat, Presets (DB-gespeichert), eingebaute + System-/benutzerdefinierte Töne
-- `TimerView` nutzt `SkiaGradientRing` aus `MeineApps.UI` (Shared Control) mit `GlowEnabled` /
-  `IsPulsing` bei laufendem Timer — kein `CircularProgress` pro Timer-Item
-
-### Stoppuhr
-
-- Rundenzeiten mit Best/Worst-Markierung + Delta, Undo-Funktion, Centisecond-Precision
-- **Undo-Pattern:** `TimeSpan _offset` — `Stopwatch` unterstützt keine direkte Elapsed-Zuweisung,
-  deshalb Offset-Akkumulation beim Undo statt direkter Zuweisung
-
-### Wecker + Alarm-Overlay
-
-- CRUD, Weekday-Toggles, Challenge-Support (Math + Shake mit UI), Tonauswahl
-- Snooze mit konfigurierbarer Dauer, ansteigende Lautstärke, Urlaubsmodus (WheelPicker 1-30 Tage)
-- **Fullscreen Alarm-Overlay:** Content-Swap statt ZIndex-Overlay. Normaler Content + Tab-Bar
-  werden per `IsVisible="{Binding !IsAlarmOverlayVisible}"` versteckt, Alarm-Content als Ersatz
-  angezeigt. Grund: Avalonia ZIndex Hit-Testing funktioniert nicht auf Android
-- Pulsier-Animation: nur Opacity in KeyFrames — kein ScaleTransform (crasht auf Android-GPU)
-- `AlarmActivity`: Dedizierte Android Activity (`ShowWhenLocked`, `TurnScreenOn`) für
-  Fullscreen-Alarm über Lockscreen. Buttons (Dismiss/Snooze) lokalisiert via
-  `App.Services.GetService<ILocalizationService>()`. Unterstützt `alarm_tone` + `snooze_duration`
-  als Intent-Extras
-- **StableHash:** Deterministische Hash-Funktion für Alarm-IDs statt `GetHashCode()` (nicht
-  deterministisch). Verwendet in `AndroidNotificationService`, `AlarmActivity`
-- **Foreground-Check:** `MainActivity.IsAppInForeground` statisches Flag. `AlarmReceiver` prüft
-  dies um Doppel-Auslösung (AlarmActivity + In-App Overlay) zu vermeiden
-
-### Pomodoro
-
-- Konfigurierbare Zeiten (Work/ShortBreak/LongBreak), Zyklus-Tracking (CycleDots), Auto-Start
-- Phasen-Ringfarbe (PhaseBrush), Streak-Anzeige (Tage in Folge mit Gold-Shimmer bei Streak > 3)
-- Focus-Statistiken: Heute + Woche als Balkendiagramm (`DayStatistic`), Monats-Heatmap
-- `FocusSession` DB-Persistierung, Celebration + FloatingText bei Session-Abschluss
-- Config-Dialog (Bottom-Sheet, Preferences-gespeichert): Aufgabenname pro Session,
-  konfigurierbares Tagesziel (1-20 Sessions)
-
-### Schichtplan
-
-- 15-Schicht (3 Gruppen Mo-Fr) + 21-Schicht (5 Gruppen 24/7)
-- Kalender-Ansicht, Ausnahmen (Urlaub/Krank/Schichttausch)
-- `CustomShiftPattern.ShortName()` nutzt `LocalizationManager.GetString()` für lokalisierte Kürzel
-
-### Sound-System
-
-- `IAudioService` mit `SystemSounds`, `PlayUriAsync`, `PickSoundAsync`
-- Android: RingtoneManager für System-Sounds + `RingtoneManager.ActionRingtonePicker` für Auswahl
-  (ActivityResult via MainActivity)
-- Desktop: Avalonia `StorageProvider.OpenFilePickerAsync` + Kopie in AppData
-- `SoundItem.Uri` ist nullable — null = eingebauter Ton
-
----
-
-## SkiaSharp-Visualisierungen
-
-6 Visualisierungen in `ZeitManager.Shared/Graphics/`:
-
-| Datei | Beschreibung | Genutzt in |
-|-------|-------------|------------|
-| `ClockworkBackgroundRenderer.cs` | Animierter "Warm Clockwork"-Hintergrund (5 Layer): 3-Farben-Gradient, konzentrische Uhrenringe, Glühwürmchen-Partikel (Amber, Glow via MaskFilter), 60 Tick-Markierungen, radiale Vignette. Struct-Pool (max 12), gecachte Paints/Shader, ~5 fps | MainView |
-| `StopwatchVisualization.cs` | Stoppuhr-Ring mit Sekundenzeiger + Nachleucht-Trail (6 Ghost-Positionen), Runden-Sektoren (farbige Bögen, 8 Farben), Sub-Dial (Minuten-Ring oben rechts), 60 Sekunden-Ticks, Rundenpunkte | StopwatchView |
-| `PomodoroVisualization.cs` | Fortschrittsring mit Pulsier-Effekt (2 Hz) auf aktivem Zyklus-Segment + Glow, innerer Session-Ring (Tages-Fortschritt als Segment-Bögen); Wochen-Balkendiagramm | PomodoroView |
-| `TimerVisualization.cs` | Flüssigkeits-Füllung + Welleneffekt, Tropfen-Partikel (8 Stück), Countdown-Ziffern (letzte 5 s, Scale-Bounce 1,5→1,0), Ablauf-Burst (20 Confetti-Partikel bei Timer=0) | TimerView (Reserve) |
-| `PomodoroStatisticsVisualization.cs` | Monats-Heatmap (GitHub-Contributions-Stil): 7×5 Grid, 5 Intensitätsstufen, Wochentag-Labels, Heute-Highlight, HitTest für Tap-Interaktion | PomodoroView (Statistik) |
-| `ZeitManagerSplashRenderer.cs` | Analoge Uhr mit Snap-Tick Sekundenzeiger, kreisförmiger Progress-Ring, 12 rotierende Zahnrad-Partikel, konzentrische Deko-Ringe | Splash-Screen |
-
----
-
-## Game Juice
-
-- `FloatingTextOverlay`: Stoppuhr-Runden, Timer fertig
-- `CelebrationOverlay`: Confetti bei Timer-Ende + Pomodoro-Session-Abschluss
-- `TapScaleBehavior`: Quick-Timer-Buttons
-- `FadeInBehavior`: Stoppuhr-Runden
-- `StaggerFadeInBehavior`: Timer-/Alarm-Listen
-- `CountUpBehavior`: Pomodoro-Statistiken
-- `SwipeToRevealBehavior`: Alarm Swipe-to-Delete
-- `BounceEaseOut`: Dialog-Spring-Animations (Timer/Alarm/Pomodoro Bottom-Sheets)
-- `EmptyPulse`: Empty-State-Icons
-- Onboarding: `TooltipBubble`, 2 Schritte
-- Streak Gold-Shimmer: `#FFD700` + `StreakGoldPulse` bei Streak > 3
-- Wochen-Balken-Einfahranimation: CubicEaseOut, ~500 ms
+Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (AppPalette, Amber #F7A833),
+`Shared/Resources/Strings/` (AppStrings.resx, 6 Sprachen), `Shared/Assets/`.
 
 ---
 
 ## Kritische Architektur-Entscheidungen
 
+### Alarm-Overlay — Content-Swap statt ZIndex
+
+Avalonia ZIndex für Hit-Testing auf Android unzuverlässig. `IsAlarmOverlayVisible` steuert
+`IsVisible` auf dem Overlay-Panel sowie `IsVisible="{Binding !IsAlarmOverlayVisible}"` auf
+normalem Content + Tab-Bar. Kein ZIndex-Overlay.
+
 ### Thread-Safety
 
-`System.Timers.Timer` feuert auf ThreadPool → `Dispatcher.UIThread.Post()` für Property-Updates.
-`TimerService` und `AlarmSchedulerService` nutzen `lock(_lock)` für List-Zugriffe. `AudioService`
-lock-swap für CTS. `DesktopNotificationService` nutzt `ConcurrentDictionary`.
+`System.Timers.Timer` feuert auf ThreadPool → `Dispatcher.UIThread.Post()` für alle UI-Property-
+Updates. `TimerService` und `AlarmSchedulerService` nutzen `lock(_lock)` für Listen-Zugriffe.
+Detail: [Shared/Services](ZeitManager.Shared/Services/CLAUDE.md).
 
-### AlarmItem-Reaktivität
+### Foreground-Callbacks (Android-only)
 
-`AlarmItem` erbt `ObservableObject`. `IsEnabled` nutzt `SetProperty()` für UI-Notification —
-kein manuelles `PropertyChanged?.Invoke()`.
+`TimerService.ForegroundNotificationCallback` + `StopForegroundCallback` werden von
+`MainActivity.OnCreate` (nach `base.OnCreate`) direkt auf dem Service-Objekt gesetzt.
+Desktop: Callbacks bleiben null, kein Foreground-Service-Aufruf.
 
 ---
 
@@ -211,7 +83,9 @@ kein manuelles `PropertyChanged?.Invoke()`.
 
 ## Verweise
 
-- [Haupt-CLAUDE.md](../../../CLAUDE.md) — Build, Conventions, Architektur
-- [MeineApps.Core.Ava/CLAUDE.md](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) — Preferences, BackPressHelper, ViewLocator
-- [MeineApps.UI/CLAUDE.md](../../UI/MeineApps.UI/CLAUDE.md) — Custom Controls, Behaviors, Loading-Pipeline
-- `Releases/ZeitManager/CHANGELOG_*.md` — Release-Notes
+| Was | Wo |
+|-----|----|
+| Build, Conventions, Architektur | [Haupt-CLAUDE.md](../../../CLAUDE.md) |
+| Preferences, BackPressHelper, ViewLocator, Localization | [MeineApps.Core.Ava](../../Libraries/MeineApps.Core.Ava/CLAUDE.md) |
+| Custom Controls, Behaviors, Loading-Pipeline, SkiaThemeHelper | [MeineApps.UI](../../UI/MeineApps.UI/CLAUDE.md) |
+| Release-Notes | `Releases/ZeitManager/CHANGELOG_*.md` |

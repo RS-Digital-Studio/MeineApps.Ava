@@ -14,6 +14,30 @@ Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md]
 
 ---
 
+## Doku-Karte — Detail liegt beim jeweiligen Bereich
+
+| Bereich | Inhalt | Doku |
+|---------|--------|------|
+| Composition Root, DI, Factories, Namespaces | `App.axaml.cs`, 37 Services, 25 VMs, Crash-Recovery, Loading-Pipeline | [BomberBlast.Shared](BomberBlast.Shared/CLAUDE.md) |
+| Android-Host | `AndroidApp`, `MainActivity`, Factories, Gamepad, Immersive, FCM, Firebase | [BomberBlast.Android](BomberBlast.Android/CLAUDE.md) |
+| Desktop-Host | `Program.cs` | [BomberBlast.Desktop](BomberBlast.Desktop/CLAUDE.md) |
+| GameEngine + Modes + Combat + Audio | Partials, IGameMode-Plugin, ComboSystem, Determinismus, Audio-Bus | [Shared/Core](BomberBlast.Shared/Core/CLAUDE.md) |
+| Render-Pipeline + Atmosphärische Systeme | GameRenderer (10 Partials), Bloom, FoW, ScreenShake, Cinematic | [Shared/Graphics](BomberBlast.Shared/Graphics/CLAUDE.md) |
+| AI & Pathfinding | A\*-Pathfinding, BFS Safe-Cell, Danger-Zone, Boss-AI | [Shared/AI](BomberBlast.Shared/AI/CLAUDE.md) |
+| Input-System | InputManager, NeonJoystick, Keyboard, Gamepad, KonamiCode | [Shared/Input](BomberBlast.Shared/Input/CLAUDE.md) |
+| Icon-System | 152 Neon-Arcade-Icons, PathIcon-Ableitung, Skia-Renderer | [Shared/Icons](BomberBlast.Shared/Icons/CLAUDE.md) |
+| Services (37) | Economy, Firebase, Live-Ops, Logging, DialogPresenter | [Shared/Services](BomberBlast.Shared/Services/CLAUDE.md) |
+| ViewModels (25) | Compositor, Feature-Module, ChildViewModelRegistry, LifecycleHub | [Shared/ViewModels](BomberBlast.Shared/ViewModels/CLAUDE.md) |
+| Views (30 + Components) | AXAML-Views, Compiled Bindings, GameView-Subscription, Overlays | [Shared/Views](BomberBlast.Shared/Views/CLAUDE.md) |
+| Navigation-Module | NavigationCoordinator, BottomTabController, RouteParser | [Shared/Navigation](BomberBlast.Shared/Navigation/CLAUDE.md) |
+| Domain-Modelle | Entities, Grid, Dungeon, Cards, BattlePass, CloudSave, SchemaMigrator | [Shared/Models](BomberBlast.Shared/Models/CLAUDE.md) |
+| Startup-Pipeline | BomberBlastLoadingPipeline, LoadingTips | [Shared/Loading](BomberBlast.Shared/Loading/CLAUDE.md) |
+| Controls | GameButtonCanvas, AchievementIcon, MenuBackground | [Shared/Controls](BomberBlast.Shared/Controls/CLAUDE.md) |
+| Converter | ActiveViewEquals, BoolToOpacity, StringToGameIconKind | [Shared/Converters](BomberBlast.Shared/Converters/CLAUDE.md) |
+| DI-Extensions | `LazyServiceExtensions` (Zirkel-Auflösung) | [Shared/Extensions](BomberBlast.Shared/Extensions/CLAUDE.md) |
+
+---
+
 ## Build & Zielframework
 
 | Projekt | Framework | Befehl |

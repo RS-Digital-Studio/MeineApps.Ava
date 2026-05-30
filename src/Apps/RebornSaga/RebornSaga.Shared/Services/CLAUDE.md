@@ -1,0 +1,61 @@
+# Services — RPG-Logik & Infrastruktur
+
+18 Services, alle als **Singleton** in `App.axaml.cs` registriert.
+Domänenlogik (Berechnungen, Persistenz, Geschäftsregeln) lebt hier — nicht in ViewModels oder Szenen.
+Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
+
+## Dateien
+
+| Datei | Service | Zweck |
+|-------|---------|-------|
+| `StoryEngine.cs` | `StoryEngine` | Kapitel-Navigation, Condition-Parser, StoryEffects (EXP/Gold/Karma/Flags). **`SetPlayer()` nach jedem Load/Neues-Spiel pflicht!** |
+| `BattleEngine.cs` | `BattleEngine` | Schadensberechnung, Element-System (6 Elemente, 1,5×/0,5× Modifikatoren), Crits. |
+| `SkillService.cs` | `SkillService` | 15 Skills/Klasse, 5 Stufen, Freischaltung per Level. `LoadSkills()` muss in `InitializeServicesAsync` aufgerufen werden. |
+| `InventoryService.cs` | `InventoryService` | Items verwalten, Ausrüsten, Stack-Verwaltung. `LoadItems()` muss in `InitializeServicesAsync` aufgerufen werden. |
+| `AffinityService.cs` | `AffinityService` | Bond-Stufen (0–100) für 5 NPCs (Aria, Luna, Kael, Aldric, Vex). |
+| `FateTrackingService.cs` | `FateTrackingService` | Karma (−100 bis +100), Entscheidungs-Log, FateFlags. Karma-Änderungen via `ModifyKarma()` + Player.Karma sync. |
+| `CodexService.cs` | `CodexService` | Enzyklopädie (Charaktere, Orte, Lore), nach Kategorien sortiert. |
+| `ProgressionService.cs` | `ProgressionService` | EXP via `AwardExp()`, Level-Up-Events, `LevelUpOccurred` Event. |
+| `SaveGameService.cs` | `SaveGameService` | SQLite, 3 Slots, Auto-Save bei Knoten-Wechsel, `SemaphoreSlim(1,1)` gegen parallele Saves, `IDisposable` (SQLite `CloseAsync`). |
+| `GoldService.cs` | `GoldService` | Gold addieren/abziehen (`Math.Clamp(0, int.MaxValue)`), Rewarded-Video-Cooldown (3×/Tag). |
+| `ChapterUnlockService.cs` | `ChapterUnlockService` | K6–K10 per Gold freischalten, `SemaphoreSlim(1,1)` gegen Doppel-Unlock. |
+| `TutorialService.cs` | `TutorialService` | Erstbesucher-Hints per `IPreferencesService`. `ShouldShow(key)` + `MarkSeen(key)`. |
+| `DailyService.cs` | `DailyService` | Login-Bonus (Gold), Prophezeiung (RESX-Keys Prophecy_0–13), Login-Streak. |
+| `EnemyLoader.cs` | `EnemyLoader` | Lazy-Load aus `enemies.json`, `GetById()` gibt geklonten Enemy zurück (defensive copy). |
+| `SpriteCache.cs` | `SpriteCache` | LRU-Cache (max 30 Bilder), thread-safe, `IDisposable`. `PeekPixels()` für `ComputeContentBounds`. Wird von `CharacterRenderer` + `BackgroundCompositor` genutzt. |
+| `AssetDeliveryService.cs` | `AssetDeliveryService` | Firebase Storage REST API, SHA256-Hash-Verifikation, Delta-Updates. Stream-basierter Download, Retry (3× exponentieller Backoff), temporäre Dateien. |
+| `IAssetDeliveryService.cs` | Interface | Trennt `AssetDownloadScene` von der konkreten Implementierung. |
+| `AudioService.cs` | `AudioService` | Desktop-Stub (kein Sound). Android-Override via `App.AudioServiceFactory` → `AndroidAudioService`. |
+
+## Kritische Patterns
+
+### StoryEngine — Condition-Parser
+
+```
+karma > 50          affinity:aria >= 10      class == 1
+has_item:M001        !has_item:M001
+has_flag:betrayed    !has_flag:betrayed
+alliance_aria        (Fallback: Flags.Contains)
+```
+
+`AdvanceToNode()` überspringt Knoten iterativ (Limit 100) wenn Condition nicht erfüllt.
+
+### StoryEngine — `SetPlayer()` Pflicht
+
+`StoryEngine.SetPlayer(player)` MUSS nach `SaveGameService.LoadGameAsync()` und nach
+"Neues Spiel" aufgerufen werden. Ohne diesen Aufruf liefert die Engine falschen State.
+
+### Thread-Safety
+
+| Service | Mechanismus |
+|---------|-------------|
+| `SaveGameService` | `SemaphoreSlim(1,1)` + `IDisposable` (SQLite CloseAsync) |
+| `ChapterUnlockService` | `SemaphoreSlim(1,1)` gegen Doppel-Unlock |
+| `SpriteCache` | `lock` auf internem Dictionary |
+| `GoldService` | `Math.Clamp(0, int.MaxValue)` in Add/Remove |
+
+### Asset-Delivery
+
+`AssetManifest` beschreibt alle Packs (characters, backgrounds, enemies, items, scenes).
+Firebase-Bucket: `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69,2 MB).
+Upload via `F:\AI\ComfyUI_workflows\upload_assets.py` (Uniform Bucket Access, kein `make_public()`).

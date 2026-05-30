@@ -15,6 +15,21 @@ Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md]
 
 ---
 
+## Doku-Karte — Detail liegt beim jeweiligen Bereich
+
+| Bereich | Inhalt | Doku |
+|---------|--------|------|
+| Composition Root, DI, Modus-Conditional, Settings-Restore | `App.axaml.cs`, Service-Registrierungen, Local/Remote-Branch | [BingXBot.Shared](BingXBot.Shared/CLAUDE.md) |
+| Android-Host | `AndroidApp`, `MainActivity`, AppPaths-Factory, Manifest, Back-Button | [BingXBot.Android](BingXBot.Android/CLAUDE.md) |
+| Desktop-Host | `Program.cs`, Standalone vs. Remote-Client-Modus | [BingXBot.Desktop](BingXBot.Desktop/CLAUDE.md) |
+| ViewModels (alle Sub-VMs, Lazy-Pattern, BotEventBus-Abo) | MainVM, DashboardVM, ScannerVM, BacktestVM, … | [Shared/ViewModels](BingXBot.Shared/ViewModels/CLAUDE.md) |
+| Views (Desktop + Mobile-Varianten, MVVM-Strict, More-Sheet) | Alle AXAML-Views, ViewLocator-Konvention | [Shared/Views](BingXBot.Shared/Views/CLAUDE.md) |
+| SkiaSharp-Renderer (Equity, Drawdown, Candlestick, Gauge) | Alle 6 Renderer, Paint-Cache-Strategie | [Shared/Graphics](BingXBot.Shared/Graphics/CLAUDE.md) |
+| Converters (NullableDecimal, StaleOpacity) | XAML-Wert-Konverter | [Shared/Converters](BingXBot.Shared/Converters/CLAUDE.md) |
+| Services (RemoteSettingsAutoSync) | Client-seitige Service-Impls | [Shared/Services](BingXBot.Shared/Services/CLAUDE.md) |
+
+---
+
 ## Build & Zielframework
 
 | Projekt | Framework | Befehl |
@@ -911,6 +926,14 @@ dotnet publish src/Apps/BingXBot/BingXBot.Android -c Release   # AAB für Play C
 
 | Datei | Zweck |
 |-------|-------|
+| `BingXBot.Shared/CLAUDE.md` | Composition Root, DI-Registrierungen, Namespace-Konvention |
+| `BingXBot.Android/CLAUDE.md` | Android-Host, AndroidApp, MainActivity, Manifest |
+| `BingXBot.Desktop/CLAUDE.md` | Desktop-Host, Standalone vs. Remote-Client |
+| `BingXBot.Shared/ViewModels/CLAUDE.md` | Alle Sub-ViewModels, Lazy-Pattern, BotEventBus |
+| `BingXBot.Shared/Views/CLAUDE.md` | AXAML-Views (Desktop + Mobile), MVVM-Strict |
+| `BingXBot.Shared/Graphics/CLAUDE.md` | SkiaSharp-Renderer, Paint-Cache |
+| `BingXBot.Shared/Converters/CLAUDE.md` | NullableDecimalConverter, StaleOpacityConverter |
+| `BingXBot.Shared/Services/CLAUDE.md` | RemoteSettingsAutoSync |
 | `src/Apps/BingXBot/SK_BUCH_COMPLIANCE_PLAN.md` | SK-System Master-Plan (25 Punkte, 5 Phasen) |
 | `src/Apps/BingXBot/MULTI_TF_STANDALONE_PLAN.md` | Multi-TF-Architektur-Plan |
 | `src/Apps/BingXBot/PLAN_SERVER_MODE.md` | Client/Server-Architektur-Plan |

@@ -240,18 +240,28 @@ public sealed partial class GameLoopService
         // Early-Exit: Alle Meisterwerkzeuge bereits gesammelt → nichts zu pruefen
         if (state.CollectedMasterTools.Count >= MasterToolDefinitionCount) return;
 
-        foreach (var def in MasterTool.GetAllDefinitions())
+        // Mutation von CollectedMasterTools (List) unter dem State-Lock — racet sonst mit
+        // dem AutoSave-Serializer. Events erst NACH dem Lock feuern (Subscriber machen UI-Arbeit).
+        List<MasterToolDefinition>? unlocked = null;
+        _gameStateService.ExecuteWithLock(() =>
         {
-            if (state.CollectedMasterTools.Contains(def.Id))
-                continue;
-
-            if (MasterTool.CheckEligibility(def.Id, state))
+            foreach (var def in MasterTool.GetAllDefinitions())
             {
-                state.CollectedMasterTools.Add(def.Id);
-                _cachedMasterToolBonus = -1m; // Cache invalidieren nach Freischaltung
-                MasterToolUnlocked?.Invoke(this, def);
+                if (state.CollectedMasterTools.Contains(def.Id))
+                    continue;
+
+                if (MasterTool.CheckEligibility(def.Id, state))
+                {
+                    state.CollectedMasterTools.Add(def.Id);
+                    _cachedMasterToolBonus = -1m; // Cache invalidieren nach Freischaltung
+                    (unlocked ??= new List<MasterToolDefinition>()).Add(def);
+                }
             }
-        }
+        });
+
+        if (unlocked != null)
+            foreach (var def in unlocked)
+                MasterToolUnlocked?.Invoke(this, def);
     }
 
     /// <summary>
@@ -298,18 +308,24 @@ public sealed partial class GameLoopService
             if (masterSmith.Workers[w].IsWorking) workingWorkers++;
         if (workingWorkers <= 0) return;
 
-        state.CraftingInventory ??= new Dictionary<string, int>();
-
-        for (int i = 0; i < workingWorkers; i++)
+        // Mutation unter dem State-Lock — sonst racet die Dictionary-Mutation mit dem
+        // AutoSave-Serializer (laeuft auf dem Background-Thread unter demselben Lock und
+        // enumeriert CraftingInventory) → "Collection was modified" → verschluckter Save.
+        _gameStateService.ExecuteWithLock(() =>
         {
-            var product = Tier1CraftingProducts[Random.Shared.Next(Tier1CraftingProducts.Length)];
-            if (state.CraftingInventory.ContainsKey(product))
-                state.CraftingInventory[product]++;
-            else
-                state.CraftingInventory[product] = 1;
-        }
+            state.CraftingInventory ??= new Dictionary<string, int>();
 
-        state.Statistics.TotalItemsCrafted += workingWorkers;
+            for (int i = 0; i < workingWorkers; i++)
+            {
+                var product = Tier1CraftingProducts[Random.Shared.Next(Tier1CraftingProducts.Length)];
+                if (state.CraftingInventory.ContainsKey(product))
+                    state.CraftingInventory[product]++;
+                else
+                    state.CraftingInventory[product] = 1;
+            }
+
+            state.Statistics.TotalItemsCrafted += workingWorkers;
+        });
     }
 
     /// <summary>

@@ -13,6 +13,27 @@ Für generische Build-Befehle, Conventions und Architektur: [Haupt-CLAUDE.md](..
 
 ---
 
+## Doku-Karte — Detail liegt beim jeweiligen Bereich
+
+| Bereich | Inhalt | Doku |
+|---------|--------|------|
+| Composition Root, DI, Factories, Namespaces | `App.axaml.cs`, 70+ Services, 50+ VMs, DisposeServices, Loading-Pipeline | [HandwerkerImperium.Shared](HandwerkerImperium.Shared/CLAUDE.md) |
+| Android-Host | `AndroidApp`, `MainActivity`, Factory-Wiring, AdMob, Lifecycle, In-App Review | [HandwerkerImperium.Android](HandwerkerImperium.Android/CLAUDE.md) |
+| Desktop-Host | `Program.cs`, DesktopAudioService | [HandwerkerImperium.Desktop](HandwerkerImperium.Desktop/CLAUDE.md) |
+| ViewModels (MainVM 13 Partials, DialogVM, Feature-VMs, MiniGames, Gilde) | MVVM-Composition, Coordinator-Pattern, IsBusy, INavigable | [Shared/ViewModels](HandwerkerImperium.Shared/ViewModels/CLAUDE.md) |
+| Views (5 Tabs, Sub-Tabs, Dialoge, MiniGames, Gilden) | MainView-Layout, LazyLoading, Code-Behind-Regeln | [Shared/Views](HandwerkerImperium.Shared/Views/CLAUDE.md) |
+| Services (70+: GameLoop, Gilde, Live-Ops, Firebase, Coordinator) | Service-Hierarchie, Facaden, IUiEffectBus, IFrameClock | [Shared/Services](HandwerkerImperium.Shared/Services/CLAUDE.md) |
+| Models (GameState V7, Balancing-Konstanten, Domain-Entities) | SaveGame-Versionen, Worker/Order/Workshop-Details | [Shared/Models](HandwerkerImperium.Shared/Models/CLAUDE.md) |
+| Graphics (~55 SkiaSharp-Renderer, GameJuiceEngine, FpsProfile) | IDisposable-Klassifizierung, Caching-Patterns, FPS-Profile | [Shared/Graphics](HandwerkerImperium.Shared/Graphics/CLAUDE.md) |
+| Icons (224 Bitmap-Icons, GameIcon-Control) | PathIcon-Ableitung, StyleKeyOverride, GameAssetService-Init | [Shared/Icons](HandwerkerImperium.Shared/Icons/CLAUDE.md) |
+| Helpers (AsyncExtensions, ProfanityFilter, HitTester) | RunHandlerSafely, UtcDateTimeJsonConverter | [Shared/Helpers](HandwerkerImperium.Shared/Helpers/CLAUDE.md) |
+| Loading (HandwerkerImperiumLoadingPipeline) | Startup-Schritte, Splash-Mindestanzeige | [Shared/Loading](HandwerkerImperium.Shared/Loading/CLAUDE.md) |
+| Controls (EmptyStateCard, WorkerAvatarControl) | Shared-Timer-Pattern, WeakReference-Cleanup | [Shared/Controls](HandwerkerImperium.Shared/Controls/CLAUDE.md) |
+| Behaviors (BottomSheetBehavior) | translate()-Einheiten, TransformOperationsTransition | [Shared/Behaviors](HandwerkerImperium.Shared/Behaviors/CLAUDE.md) |
+| Converters (WorkshopColor, MoneyDisplay, ...) | WorkshopColorConverter Quelle-der-Wahrheit | [Shared/Converters](HandwerkerImperium.Shared/Converters/CLAUDE.md) |
+
+---
+
 ## Build & Zielframework
 
 | Projekt | Framework | Befehl |

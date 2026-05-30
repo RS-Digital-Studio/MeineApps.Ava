@@ -9,12 +9,13 @@ namespace ArcaneKingdom.Domain.Save
     /// </summary>
     public static class SaveMigrator
     {
-        public const int CurrentSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 4;
 
         public static PlayerSave MigrateToCurrent(PlayerSave save)
         {
             if (save.SchemaVersion < 2) MigrateToV2(save);
             if (save.SchemaVersion < 3) MigrateToV3(save);
+            if (save.SchemaVersion < 4) MigrateToV4(save);
             save.SchemaVersion = CurrentSchemaVersion;
             return save;
         }
@@ -48,6 +49,14 @@ namespace ArcaneKingdom.Domain.Save
             if (save.FavoritedCardInstanceIds == null) save.FavoritedCardInstanceIds = new System.Collections.Generic.HashSet<string>();
 
             save.SchemaVersion = 3;
+        }
+
+        private static void MigrateToV4(PlayerSave save)
+        {
+            // v4 ergaenzt die persistierte Quest-Slice. Aeltere Saves hatten keinen Quest-Zustand;
+            // null-safe initialisieren, damit Fortschritt ab jetzt erhalten bleibt.
+            if (save.Quests == null) save.Quests = new QuestSaveSlice();
+            save.SchemaVersion = 4;
         }
     }
 }

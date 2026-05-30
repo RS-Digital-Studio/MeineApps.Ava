@@ -75,7 +75,8 @@ namespace ArcaneKingdom.Game.DailyShop
                         save.PendingClaims.Add(new Domain.Save.PendingClaim
                         {
                             Id = Guid.NewGuid().ToString("N"),
-                            Kind = slot.Kind == DailyShopItemKind.Rune ? Domain.Save.PendingClaimKind.Card : Domain.Save.PendingClaimKind.Card,
+                            // M17: Rune-Kauf MUSS als Rune gebucht werden (vorher faelschlich Card -> Rune ging als Karte ins Inventar).
+                            Kind = slot.Kind == DailyShopItemKind.Rune ? Domain.Save.PendingClaimKind.Rune : Domain.Save.PendingClaimKind.Card,
                             SubType = slot.SubType,
                             Amount = slot.Quantity,
                             SourceKey = "daily_shop",

@@ -84,9 +84,13 @@ namespace ArcaneKingdom.Game.World
                 unlockedCardId = world.Prestige4CardId;
             }
 
+            string? failure = null;
             var mutation = await _save.MutateAsync(state =>
             {
-                state.Currencies.SpendGold(cost);
+                // H7: Vorbedingungen INNERHALB der atomaren Mutation re-validieren (Gold-Deckung +
+                // Stufe noch aktuell), SpendGold-Rueckgabe auswerten — sonst Upgrade trotz Unterdeckung.
+                if (state.Prestige.Get(worldId) != oldStufe) { failure = "Prestige-Stufe hat sich geaendert."; return state; }
+                if (!state.Currencies.SpendGold(cost)) { failure = $"Nicht genug Gold (benoetigt: {cost:N0})."; return state; }
                 state.Prestige.Set(worldId, newStufe);
                 // Sterne-Reset nach Designplan v4 Oeko Kap. 6.2
                 if (state.WorldProgress.TryGetValue(worldId, out var p))
@@ -108,6 +112,8 @@ namespace ArcaneKingdom.Game.World
                 return state;
             }, ct);
 
+            if (failure != null)
+                return Result<PrestigeUpgradeOutcome>.Failure(failure);
             if (!mutation.IsSuccess)
                 return Result<PrestigeUpgradeOutcome>.Failure(mutation.ErrorMessage ?? "Save-Mutation fehlgeschlagen");
 
@@ -132,6 +138,9 @@ namespace ArcaneKingdom.Game.World
         /// Berechnet das passive Gold-Income aller Welten seit dem letzten Tick (UTC, mind. 24h).
         /// Bucht das Gold in die Spieler-Currencies ein und persistiert den Save.
         /// </summary>
+        /// <summary>Maximal anrechenbare Offline-Tage pro Tick — deckelt den Windfall (Uhr-Manipulation / langer Idle).</summary>
+        public const int MaxOfflineIncomeDays = 7;
+
         public async UniTask<Result<int>> TickDailyIncomeAsync(DateTime nowUtc, CancellationToken ct = default)
         {
             var saveR = await _save.LoadAsync(ct);
@@ -139,9 +148,19 @@ namespace ArcaneKingdom.Game.World
                 return Result<int>.Failure(saveR.ErrorMessage ?? "Save nicht geladen");
             var save = saveR.Value;
 
+            // C3-Schutz: Ein nie initialisiertes LastDailyIncomeAtUtc steht auf DateTime.MinValue (Jahr 0001)
+            // und wuerde ~739.000 Tage Income buchen. Beim Initial-Tick nur das Datum setzen, kein Income.
+            if (save.Prestige.LastDailyIncomeAtUtc == default)
+            {
+                await _save.MutateAsync(state => { state.Prestige.LastDailyIncomeAtUtc = nowUtc; return state; }, ct);
+                return Result<int>.Success(0);
+            }
+
             var elapsed = nowUtc - save.Prestige.LastDailyIncomeAtUtc;
             var days = (int)Math.Floor(elapsed.TotalDays);
             if (days <= 0) return Result<int>.Success(0);
+            // Offline-Tage deckeln (Schutz gegen Uhr-Manipulation und extrem lange Pausen).
+            days = Math.Min(days, MaxOfflineIncomeDays);
 
             // Pro Welt: BaseGoldPerDay * Multiplier * days
             long totalGold = 0;
@@ -152,7 +171,12 @@ namespace ArcaneKingdom.Game.World
                 var daily = _domain.CalculateDailyRevenue(world.BaseGoldPerDay, kv.Value);
                 totalGold += (long)daily * days;
             }
-            if (totalGold <= 0) return Result<int>.Success(0);
+            if (totalGold <= 0)
+            {
+                // Auch ohne Income den Tick-Zeitpunkt fortschreiben, damit Tage nicht akkumulieren.
+                await _save.MutateAsync(state => { state.Prestige.LastDailyIncomeAtUtc = nowUtc; return state; }, ct);
+                return Result<int>.Success(0);
+            }
 
             await _save.MutateAsync(state =>
             {

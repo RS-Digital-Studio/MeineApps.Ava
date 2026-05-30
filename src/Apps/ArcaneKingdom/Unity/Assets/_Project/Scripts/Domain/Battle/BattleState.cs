@@ -36,10 +36,27 @@ namespace ArcaneKingdom.Domain.Battle
         public int PlayerHeroMaxHp { get; set; }
         /// <summary>Maximales HP des Gegner-Helden (fuer Boss-Phasen-Trigger).</summary>
         public int EnemyHeroMaxHp { get; set; }
+        /// <summary>Verfuegbare Mana-Orbs des Spielers in der laufenden Runde (Designplan v3 Kap. 7.3: 3/Runde, 1 pro Karte).</summary>
         public int PlayerMana { get; set; }
         public int EnemyMana { get; set; }
+        /// <summary>Mana-Orbs pro Runde (Reset-Wert). Spec: konstant 3, kein Anstieg ueber Runden.</summary>
         public int PlayerMaxMana { get; set; }
         public int EnemyMaxMana { get; set; }
+
+        /// <summary>
+        /// Anzahl in der laufenden Runde bereits eingesetzter Karten je Seite.
+        /// Designplan v3 Kap. 7.3: Karten mit COST &gt; 30 koennen nur eingesetzt werden,
+        /// wenn in diesem Zug noch nichts anderes gespielt wurde.
+        /// </summary>
+        public int PlayerCardsPlayedThisTurn { get; set; }
+        public int EnemyCardsPlayedThisTurn { get; set; }
+
+        /// <summary>
+        /// Stat-Multiplier fuer Gegner-Karten nach Schwierigkeit (Spielplan v5 Kap. 8.3:
+        /// Classic 1.0 / Amateur 1.25 / Profi 1.6 / Gott 2.2). Wird beim Einsetzen jeder
+        /// Gegner-Karte auf ATK/HP angewandt (nicht auf das Spieler-Feld).
+        /// </summary>
+        public float EnemyStatMultiplier { get; set; } = 1.0f;
 
         /// <summary>
         /// Markiert den Kampf als Boss-Encounter (Mini-Boss = Node-Index 5, World-Boss = Node-Index 10).

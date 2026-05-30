@@ -124,16 +124,17 @@ namespace ArcaneKingdom.Domain.Cards
             _ => 0
         };
 
+        // Gold-Kosten exakt nach DESIGN.md Kap. 8 (autoritative Quelle).
         public static long GoldForLevel(int level) => level switch
         {
-            1 => 500, 2 => 1_000, 3 => 2_000, 4 => 4_000,
-            5 => 8_000, 6 => 15_000, 7 => 25_000, 8 => 40_000, 9 => 60_000,
-            10 => 100_000, 11 => 150_000, 12 => 220_000, 13 => 320_000, 14 => 470_000,
-            15 => 700_000,
+            1 => 500, 2 => 1_500, 3 => 4_000, 4 => 10_000,
+            5 => 25_000, 6 => 50_000, 7 => 90_000, 8 => 150_000, 9 => 250_000,
+            10 => 500_000, 11 => 800_000, 12 => 1_200_000, 13 => 2_000_000, 14 => 3_500_000,
+            15 => 8_000_000,
             _ => 0
         };
 
-        /// <summary>LV 1-4 = Common, LV 5-9 = Rare, LV 10-14 = Epic, LV 15 = Legendary.</summary>
+        /// <summary>LV 1-4 = Common, LV 5-9 = Rare, LV 10-14 = Epic, LV 15 = Legendary (DESIGN.md Kap. 8).</summary>
         public static ScrapType ScrapTypeForLevel(int level)
         {
             if (level <= 4) return ScrapType.Common;
@@ -142,12 +143,13 @@ namespace ArcaneKingdom.Domain.Cards
             return ScrapType.Legendary;
         }
 
+        // Stein-Anzahl exakt nach DESIGN.md Kap. 8 (vorher pauschal 1/2/3/1 — Sink war ~50-67x zu billig).
         public static int ScrapCountForLevel(int level) => level switch
         {
-            <= 4 => 1,
-            <= 9 => 2,
-            <= 14 => 3,
-            15 => 1,  // Legendary-Scrap (selten, 1 reicht fuer LV15)
+            1 => 2, 2 => 4, 3 => 8, 4 => 16,
+            5 => 4, 6 => 8, 7 => 16, 8 => 32, 9 => 60,
+            10 => 10, 11 => 25, 12 => 50, 13 => 100, 14 => 200,
+            15 => 50,
             _ => 0
         };
 

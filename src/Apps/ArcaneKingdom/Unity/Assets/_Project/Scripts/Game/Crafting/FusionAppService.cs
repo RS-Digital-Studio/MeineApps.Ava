@@ -118,6 +118,10 @@ namespace ArcaneKingdom.Game.Crafting
             IReadOnlyList<string> inputInstanceIds,
             CancellationToken ct = default)
         {
+            // H6: Duplikat-Input abwehren.
+            if (inputInstanceIds.Distinct().Count() != inputInstanceIds.Count)
+                return Result<string>.Failure("Doppelte Input-Karte angegeben.");
+
             var currentSave = await _save.LoadAsync(ct);
             if (!currentSave.IsSuccess || currentSave.Value == null)
                 return Result<string>.Failure(currentSave.ErrorMessage ?? "Save nicht geladen");
@@ -127,21 +131,14 @@ namespace ArcaneKingdom.Game.Crafting
             if (!preview.IsSuccess)
                 return Result<string>.Failure(preview.ErrorMessage ?? "Preview fehlgeschlagen");
 
-            // Gold-Konto pruefen
+            var materialId = preview.RequiredMaterialId;
+            var needsMaterial = !string.IsNullOrEmpty(materialId);
+
+            // Vorab-Pruefung (UX): Gold + Material (verbindliche Pruefung erfolgt im Mutate).
             if (save.Currencies.Gold < preview.GoldCost)
                 return Result<string>.Failure($"Nicht genug Gold (benoetigt: {preview.GoldCost:N0}).");
-
-            // Optional: Scrap-Konto pruefen
-            if (!string.IsNullOrEmpty(preview.RequiredMaterialId))
-            {
-                var scrapType = ParseScrapType(preview.RequiredMaterialId);
-                if (scrapType.HasValue)
-                {
-                    var scrapBalance = ReadScrapBalance(save.Currencies, scrapType.Value);
-                    if (scrapBalance <= 0)
-                        return Result<string>.Failure($"Benoetigt {preview.RequiredMaterialId} — Konto leer.");
-                }
-            }
+            if (needsMaterial && CountMaterial(save, materialId!) < 1)
+                return Result<string>.Failure($"Benoetigt {materialId} — nicht vorhanden.");
 
             var inputs = ResolveInstances(inputInstanceIds, save);
             var rolled = GetFusionService().ApplyCategoryFusion(inputs, BuildGuard(save));
@@ -149,16 +146,19 @@ namespace ArcaneKingdom.Game.Crafting
 
             var resultCardId = rolled.Value!;
 
-            // Mutiere PlayerSave: Inputs entfernen, Gold/Scrap abziehen, neue Karte hinzufuegen
+            // Mutiere PlayerSave atomar: erst re-validieren, dann konsumieren.
+            string? failure = null;
             var mutationResult = await _save.MutateAsync(state =>
             {
+                foreach (var instId in inputInstanceIds)
+                    if (!state.CardInventory.ContainsKey(instId)) { failure = "Input-Karte nicht mehr vorhanden."; return state; }
+                if (state.Currencies.Gold < preview.GoldCost) { failure = "Nicht genug Gold."; return state; }
+                if (needsMaterial && CountMaterial(state, materialId!) < 1) { failure = $"Material '{materialId}' fehlt."; return state; }
+
                 foreach (var instId in inputInstanceIds) state.CardInventory.Remove(instId);
                 state.Currencies.SpendGold(preview.GoldCost);
-                if (!string.IsNullOrEmpty(preview.RequiredMaterialId))
-                {
-                    var st = ParseScrapType(preview.RequiredMaterialId);
-                    if (st.HasValue) state.Currencies.SpendScraps(st.Value, 1);
-                }
+                if (needsMaterial) ConsumeMaterial(state, materialId!, 1);
+
                 var newInstId = Guid.NewGuid().ToString("N");
                 state.CardInventory[newInstId] = new CardInstance(
                     instanceId: newInstId,
@@ -168,6 +168,7 @@ namespace ArcaneKingdom.Game.Crafting
                 return state;
             }, ct);
 
+            if (failure != null) return Result<string>.Failure(failure);
             if (!mutationResult.IsSuccess)
                 return Result<string>.Failure(mutationResult.ErrorMessage ?? "Save-Mutation fehlgeschlagen");
 
@@ -189,29 +190,44 @@ namespace ArcaneKingdom.Game.Crafting
             IReadOnlyList<string> inputInstanceIds,
             CancellationToken ct = default)
         {
+            // H6: Duplikat-Input abwehren (sonst wird dieselbe Karte mehrfach gezaehlt, aber nur einmal entfernt).
+            if (inputInstanceIds.Distinct().Count() != inputInstanceIds.Count)
+                return Result<string>.Failure("Doppelte Input-Karte angegeben.");
+
             var currentSave = await _save.LoadAsync(ct);
             if (!currentSave.IsSuccess || currentSave.Value == null)
                 return Result<string>.Failure(currentSave.ErrorMessage ?? "Save nicht geladen");
             var save = currentSave.Value;
 
-            if (save.Currencies.Gold < recipe.GoldCost)
-                return Result<string>.Failure($"Nicht genug Gold (benoetigt: {recipe.GoldCost:N0}).");
-
             var inputs = ResolveInstances(inputInstanceIds, save);
             var applyResult = GetFusionService().ApplyFixedRecipe(recipe, inputs, BuildGuard(save));
             if (!applyResult.IsSuccess) return applyResult;
 
-            // Mutiere PlayerSave: Inputs entfernen, Gold abziehen, neue Karte hinzufuegen
+            // C2: ALLE benoetigten Materialien (Gate-Materialien + Scraps) pruefen — nicht nur Gold.
+            var requiredMaterials = GroupMaterials(recipe.RequiredMaterialIds);
+
+            // Vorab-Pruefung fuer schnelles UX-Feedback (die verbindliche Pruefung erfolgt im Mutate).
+            if (save.Currencies.Gold < recipe.GoldCost)
+                return Result<string>.Failure($"Nicht genug Gold (benoetigt: {recipe.GoldCost:N0}).");
+            foreach (var kv in requiredMaterials)
+                if (CountMaterial(save, kv.Key) < kv.Value)
+                    return Result<string>.Failure($"Material '{kv.Key}' fehlt (benoetigt: {kv.Value}).");
+
+            // Mutiere PlayerSave atomar: erst ALLE Vorbedingungen re-validieren, dann konsumieren.
+            string? failure = null;
             var mutationResult = await _save.MutateAsync(state =>
             {
+                foreach (var instId in inputInstanceIds)
+                    if (!state.CardInventory.ContainsKey(instId)) { failure = "Input-Karte nicht mehr vorhanden."; return state; }
+                if (state.Currencies.Gold < recipe.GoldCost) { failure = "Nicht genug Gold."; return state; }
+                foreach (var kv in requiredMaterials)
+                    if (CountMaterial(state, kv.Key) < kv.Value) { failure = $"Material '{kv.Key}' fehlt."; return state; }
+
+                // Alle Checks bestanden -> konsumieren (kann jetzt nicht mehr fehlschlagen).
                 foreach (var instId in inputInstanceIds) state.CardInventory.Remove(instId);
                 state.Currencies.SpendGold(recipe.GoldCost);
-                // Materialien-Verbrauch (Scraps): pro Material-ID 1 Scrap-Typ wenn passt
-                foreach (var matId in recipe.RequiredMaterialIds)
-                {
-                    var st = ParseScrapType(matId);
-                    if (st.HasValue) state.Currencies.SpendScraps(st.Value, 1);
-                }
+                foreach (var kv in requiredMaterials) ConsumeMaterial(state, kv.Key, kv.Value);
+
                 var newInstId = Guid.NewGuid().ToString("N");
                 state.CardInventory[newInstId] = new CardInstance(
                     instanceId: newInstId,
@@ -221,6 +237,7 @@ namespace ArcaneKingdom.Game.Crafting
                 return state;
             }, ct);
 
+            if (failure != null) return Result<string>.Failure(failure);
             if (!mutationResult.IsSuccess)
                 return Result<string>.Failure(mutationResult.ErrorMessage ?? "Save-Mutation fehlgeschlagen");
 
@@ -274,6 +291,62 @@ namespace ArcaneKingdom.Game.Crafting
             ScrapType.Legendary => currencies.LegendaryScraps,
             _                   => 0
         };
+
+        /// <summary>Gruppiert eine Material-ID-Liste zu {Material-Id : benoetigte Anzahl}.</summary>
+        private static Dictionary<string, int> GroupMaterials(IReadOnlyList<string> matIds)
+        {
+            var dict = new Dictionary<string, int>();
+            foreach (var m in matIds)
+            {
+                if (string.IsNullOrEmpty(m)) continue;
+                dict[m] = dict.TryGetValue(m, out var c) ? c + 1 : 1;
+            }
+            return dict;
+        }
+
+        /// <summary>
+        /// Verfuegbare Menge eines Materials. Scrap-Typen kommen aus PlayerCurrencies, alle echten
+        /// Gate-Materialien (sonnenstein, mythischer_kern, ...) liegen als material.{id}-CardInstances
+        /// im CardInventory (siehe MaterialDropService).
+        /// </summary>
+        /// <summary>Material-Id des Mythischen Kerns — wird ueber das Sternkarten-Inventar getrackt, nicht als material.*-Karte.</summary>
+        private const string MythicCoreMaterialId = "mythischer_kern";
+
+        private static int CountMaterial(PlayerSave save, string matId)
+        {
+            if (matId == MythicCoreMaterialId) return save.Sternkarten?.MythicCoresAvailable ?? 0;
+            var scrap = ParseScrapType(matId);
+            if (scrap.HasValue) return (int)Math.Min(int.MaxValue, ReadScrapBalance(save.Currencies, scrap.Value));
+            var defId = "material." + matId;
+            var count = 0;
+            foreach (var inst in save.CardInventory.Values)
+                if (inst.CardDefinitionId == defId) count++;
+            return count;
+        }
+
+        /// <summary>Verbraucht <paramref name="amount"/> eines Materials (Scrap ODER material.{id}-Karten). True bei Erfolg.</summary>
+        private static bool ConsumeMaterial(PlayerSave state, string matId, int amount)
+        {
+            if (matId == MythicCoreMaterialId)
+            {
+                if (state.Sternkarten == null || state.Sternkarten.MythicCoresAvailable < amount) return false;
+                state.Sternkarten.MythicCoresAvailable -= amount;
+                return true;
+            }
+            var scrap = ParseScrapType(matId);
+            if (scrap.HasValue) return state.Currencies.SpendScraps(scrap.Value, amount);
+            var defId = "material." + matId;
+            var toRemove = new List<string>();
+            foreach (var kv in state.CardInventory)
+            {
+                if (kv.Value.CardDefinitionId != defId) continue;
+                toRemove.Add(kv.Key);
+                if (toRemove.Count >= amount) break;
+            }
+            if (toRemove.Count < amount) return false;
+            foreach (var key in toRemove) state.CardInventory.Remove(key);
+            return true;
+        }
 
         // ============================================================================
         // DTO fuer JSON-Parsing

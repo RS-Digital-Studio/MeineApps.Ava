@@ -6,6 +6,7 @@ using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Login;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Quest;
 using Cysharp.Threading.Tasks;
 
 namespace ArcaneKingdom.Game.Login
@@ -20,14 +21,17 @@ namespace ArcaneKingdom.Game.Login
         private readonly IAuthService _auth;
         private readonly ISaveService<PlayerSave> _save;
         private readonly IAnalyticsService _analytics;
+        private readonly QuestService _questService;
 
         public LoginController(IAuthService auth,
                                ISaveService<PlayerSave> save,
-                               IAnalyticsService analytics)
+                               IAnalyticsService analytics,
+                               QuestService questService)
         {
             _auth = auth;
             _save = save;
             _analytics = analytics;
+            _questService = questService;
         }
 
         /// <summary>Letzter Save-Stand nach erfolgreichem Login (null wenn noch kein Erfolg).</summary>
@@ -99,6 +103,10 @@ namespace ArcaneKingdom.Game.Login
 
                 progress?.Report(LoginStage.Validating);
                 LoadedSave = saveResult.Value!;
+
+                // H12: Quest-Fortschritt direkt nach Save-Load wiederherstellen (idempotent).
+                // Frueheste Stelle vor dem ersten Quest-Advance (Battle etc.).
+                _questService.RestoreFromSave(LoadedSave);
 
                 _analytics.Track("login_success", new Dictionary<string, object>
                 {

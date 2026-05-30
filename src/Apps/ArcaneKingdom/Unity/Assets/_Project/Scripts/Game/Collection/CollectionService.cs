@@ -7,6 +7,7 @@ using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Collection;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Game.Catalog;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -25,12 +26,14 @@ namespace ArcaneKingdom.Game.Collection
 
         private readonly ISaveService<PlayerSave> _save;
         private readonly IAnalyticsService _analytics;
+        private readonly CardCatalogService _catalog;
         private readonly List<CollectionSet> _sets = new();
 
-        public CollectionService(ISaveService<PlayerSave> save, IAnalyticsService analytics)
+        public CollectionService(ISaveService<PlayerSave> save, IAnalyticsService analytics, CardCatalogService catalog)
         {
             _save = save;
             _analytics = analytics;
+            _catalog = catalog;
             LoadSetsFromResources();
         }
 
@@ -54,6 +57,11 @@ namespace ArcaneKingdom.Game.Collection
             var set = _sets.FirstOrDefault(s => s.Id == setId);
             if (set == null) return Result<string>.Failure($"Set '{setId}' unbekannt.");
 
+            // H15: Belohnungs-Karte MUSS im Katalog existieren — sonst wuerden die Materialien
+            // vernichtet und der Spieler bekaeme eine Null-Karte. Lieber hart abbrechen.
+            if (!_catalog.TryFind(set.RewardCardId, out _))
+                return Result<string>.Failure($"Belohnungs-Karte '{set.RewardCardId}' existiert nicht im Katalog — Eintausch abgebrochen.");
+
             string? newCardId = null;
             string? error = null;
 
@@ -64,6 +72,12 @@ namespace ArcaneKingdom.Game.Collection
                 if (!progress.IsComplete)
                 {
                     error = $"Set unvollstaendig: {progress.OwnedCount}/{progress.TotalCount}.";
+                    return save;
+                }
+                // Doppelte Absicherung innerhalb der atomaren Mutation.
+                if (!_catalog.TryFind(set.RewardCardId, out _))
+                {
+                    error = $"Belohnungs-Karte '{set.RewardCardId}' existiert nicht.";
                     return save;
                 }
 

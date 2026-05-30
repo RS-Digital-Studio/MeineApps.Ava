@@ -10,11 +10,10 @@ namespace ArcaneKingdom.Game.Battle
     /// Greedy-AI für Welt-Kaempfe (PvE) und Auto-Kampf. Reine C#-Logik, deterministisch
     /// für Replay-Fähigkeit.
     ///
-    /// Strategie (Pilot):
-    /// 1. Spiele alle Karten, die ins Mana passen
-    /// 2. Wahl-Reihenfolge: hoechster (ATK + HP) / Cost — best value first
-    /// 3. Bevorzuge Element-Vorteil gegen aktiven Gegner-Feld
-    /// 4. Reserviere Mana für Karten mit aktiver Spezial in <=2 Runden
+    /// Strategie (Pilot, Designplan v3 Kap. 7.3 Mana-Modell):
+    /// 1. Jede Karte kostet 1 Mana-Orb (3/Runde) — COST ist KEIN Mana-Preis
+    /// 2. Wahl-Reihenfolge: hoechste absolute Staerke (ATK + HP), Element-Vorteil bevorzugt
+    /// 3. Schwere Karten (COST > 30) nur als erste Aktion der Runde einsetzen
     /// </summary>
     public sealed class BattleAI
     {
@@ -38,26 +37,31 @@ namespace ArcaneKingdom.Game.Battle
             {
                 if (!_cardInstances.TryGetValue(instId, out var inst)) continue;
                 if (!_cardDefinitions.TryGetValue(inst.CardDefinitionId, out var def)) continue;
-                if (def.Cost > availableMana) continue;
+                // Jede Karte ist grundsaetzlich spielbar — COST ist kein Mana-Preis (Designplan v3 Kap. 7.3).
                 playable.Add((instId, def, ScoreCard(def, dominantEnemyElement)));
             }
 
             playable.Sort((a, b) => b.score.CompareTo(a.score));
 
+            // 1 Mana pro Karte; schwere Karten (COST>30) nur, wenn diese Runde noch nichts gespielt wurde.
             var result = new List<string>();
             var remainingMana = availableMana;
+            var cardsPlayed = 0;
             foreach (var p in playable)
             {
-                if (p.def.Cost > remainingMana) continue;
+                if (remainingMana < BattleEngine.ManaPerCard) break;
+                if (p.def.Cost > BattleEngine.HeavyCardCostThreshold && cardsPlayed > 0) continue;
                 result.Add(p.id);
-                remainingMana -= p.def.Cost;
+                remainingMana -= BattleEngine.ManaPerCard;
+                cardsPlayed++;
             }
             return result;
         }
 
         private static float ScoreCard(CardDefinition def, Element? dominantEnemyElement)
         {
-            var statValue = (def.BaseAttack + def.BaseHealth) / (float)Math.Max(1, def.Cost);
+            // Mana ist nicht cost-abhaengig -> absolute Karten-Staerke bewerten, nicht Wert/Cost.
+            var statValue = (float)(def.BaseAttack + def.BaseHealth);
 
             // Element-Bonus
             if (dominantEnemyElement.HasValue)
@@ -69,8 +73,8 @@ namespace ArcaneKingdom.Game.Battle
             // Spezial-Cooldown-Bonus: Karten mit kurzer Wartezeit sind im Schnitt stärker
             statValue *= 1f + (1f / Math.Max(1, def.TurnsToSpecial)) * 0.2f;
 
-            // Rarity-Präferenz (Tie-Break)
-            statValue += (int)def.Rarity * 0.5f;
+            // Rarity-Präferenz (leichter Tie-Break-Multiplier)
+            statValue *= 1f + (int)def.Rarity * 0.02f;
 
             return statValue;
         }

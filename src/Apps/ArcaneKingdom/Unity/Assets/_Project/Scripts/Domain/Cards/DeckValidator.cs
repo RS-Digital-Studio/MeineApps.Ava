@@ -30,7 +30,9 @@ namespace ArcaneKingdom.Domain.Cards
             /// <summary>Zu viele Legendaere Karten im Deck (max 2 laut V1-Plan).</summary>
             TooManyLegendaries = 9,
             /// <summary>Zu viele Epic-Karten im Deck (max 3).</summary>
-            TooManyEpics = 10
+            TooManyEpics = 10,
+            /// <summary>Zu viele Mythische Karten im Deck (max 1 — einzigartige Endgame-Karten).</summary>
+            TooManyMythics = 11
         }
 
         public sealed class ValidationResult
@@ -58,6 +60,7 @@ namespace ArcaneKingdom.Domain.Cards
             var perDefinitionCount = new Dictionary<string, int>();
             var totalCost = 0;
             var legendaryCount = 0;
+            var mythicCount = 0;
             var epicCount = 0;
 
             foreach (var instanceId in deck.CardInstanceIds)
@@ -73,8 +76,10 @@ namespace ArcaneKingdom.Domain.Cards
 
                 totalCost += def.Cost;
 
-                // Seltenheits-Limits laut V1-Plan Kap. 9
-                if (def.Rarity == Rarity.Legendaer || def.Rarity == Rarity.Mythisch) legendaryCount++;
+                // Seltenheits-Limits laut V1-Plan Kap. 9: Legendaer und Mythisch getrennt zaehlen,
+                // damit ein Deck mit 1 Mythisch + 2 Legendaer (jeweils im Besitz-Limit) erlaubt bleibt.
+                if (def.Rarity == Rarity.Mythisch) mythicCount++;
+                else if (def.Rarity == Rarity.Legendaer) legendaryCount++;
                 else if (def.Rarity == Rarity.Epic) epicCount++;
 
                 var limit = def.DeckLimit switch
@@ -111,6 +116,15 @@ namespace ArcaneKingdom.Domain.Cards
                 return new ValidationResult
                 {
                     Code = ValidationCode.TooManyLegendaries,
+                    CardCount = deck.CardInstanceIds.Count,
+                    TotalCost = totalCost
+                };
+
+            // Mythisch-Limit pruefen (max 1 — einzigartige Endgame-Karten)
+            if (mythicCount > 1)
+                return new ValidationResult
+                {
+                    Code = ValidationCode.TooManyMythics,
                     CardCount = deck.CardInstanceIds.Count,
                     TotalCost = totalCost
                 };

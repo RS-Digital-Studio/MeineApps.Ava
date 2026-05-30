@@ -107,8 +107,12 @@ namespace ArcaneKingdom.Game.Battle
             // Enemy-HP skaliert mit Difficulty (Spielplan v5 Kap. 8.3)
             var enemyMultiplier = difficulty.EnemyStatMultiplier();
             var scaledEnemyHp = (int)(1000 * enemyMultiplier);
-            var state = new BattleState(seed != 0 ? seed : System.Environment.TickCount,
-                                        playerHeroHp: 1000, enemyHeroHp: scaledEnemyHp);
+            // Seed MUSS deterministisch sein (Replay/Anti-Cheat). Kein Environment.TickCount:
+            // wenn der Aufrufer keinen Seed liefert (seed==0), aus Deck+Node stabil ableiten.
+            var effectiveSeed = seed != 0 ? seed : ComputeDeterministicSeed(playerDeck.CardInstanceIds, node);
+            var state = new BattleState(effectiveSeed, playerHeroHp: 1000, enemyHeroHp: scaledEnemyHp);
+            // Schwierigkeits-Multiplier wird beim Einsetzen jeder Gegner-Karte angewandt (BattleEngine.PlayCard).
+            state.EnemyStatMultiplier = enemyMultiplier;
 
             // Boss-Encounter aktivieren wenn Mini-/World-Boss-Node + Gott-Stufe
             if (node != null && difficulty.ActivatesBossPhases(node.Type))
@@ -123,21 +127,6 @@ namespace ArcaneKingdom.Game.Battle
             var engine = new BattleEngine(state, definitions, instances);
             engine.Setup(playerDeck.CardInstanceIds, enemyDeckInstanceIds);
 
-            // Karten-Stats der Gegner skalieren — pro Field-Slot wird dies aber erst
-            // beim Einsetzen aktiv. Wir mutieren die synthetischen Enemy-Instances
-            // indirekt via Definitions-Multiplier (Stat-Multiplier kommt aus CardInstance.Level).
-            // Difficulty-Buff wird stattdessen auf die State-Cards im Field gleich nach Setup
-            // angewendet, wenn enemyMultiplier > 1.
-            if (enemyMultiplier > 1.0f)
-            {
-                foreach (var slot in state.EnemyField)
-                {
-                    slot.CurrentAttack = (int)(slot.CurrentAttack * enemyMultiplier);
-                    slot.CurrentHealth = (int)(slot.CurrentHealth * enemyMultiplier);
-                    slot.MaxHealth = (int)(slot.MaxHealth * enemyMultiplier);
-                }
-            }
-
             var ai = new BattleAI(definitions, instances);
 
             return new Setup
@@ -147,6 +136,32 @@ namespace ArcaneKingdom.Game.Battle
                 Definitions = definitions,
                 Instances = instances
             };
+        }
+
+        /// <summary>
+        /// Erzeugt einen stabilen, reproduzierbaren Seed aus den Deck-Instanz-IDs und der Node.
+        /// Nutzt FNV-1a (NICHT string.GetHashCode, das pro Prozess randomisiert ist), damit
+        /// derselbe Kampf bei Replay/Server-Nachrechnung denselben Seed ergibt.
+        /// </summary>
+        private static int ComputeDeterministicSeed(IReadOnlyList<string> playerDeckInstanceIds, NodeDefinition? node)
+        {
+            unchecked
+            {
+                const uint fnvOffset = 2166136261;
+                const uint fnvPrime = 16777619;
+                var hash = fnvOffset;
+                void Mix(string? s)
+                {
+                    if (string.IsNullOrEmpty(s)) return;
+                    foreach (var c in s!) { hash ^= c; hash *= fnvPrime; }
+                    hash ^= (uint)'|'; hash *= fnvPrime;
+                }
+                if (node != null) Mix(node.Id);
+                for (var i = 0; i < playerDeckInstanceIds.Count; i++) Mix(playerDeckInstanceIds[i]);
+                // 0 ist ein gueltiger Seed, aber wir vermeiden ihn, da Aufrufer 0 als "nicht gesetzt" deuten.
+                var seed = (int)hash;
+                return seed != 0 ? seed : 1;
+            }
         }
     }
 }

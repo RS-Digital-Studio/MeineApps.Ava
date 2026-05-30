@@ -33,8 +33,10 @@ namespace ArcaneKingdom.Game.Shop
         private readonly ISaveService<PlayerSave> _save;
         private readonly IAnalyticsService _analytics;
         private readonly System.Random _rng;
-        private readonly Dictionary<string, int> _pityCounters = new();   // wird im Save-Schema v2 persistiert
+        // M16: Pity-Counter werden in save.PackPityCounters persistiert (kein In-Memory-State,
+        // sonst Reset-Exploit nach Neustart). Re-Entrancy-Flag schuetzt vor Doppel-Kauf.
         private readonly List<CardPackDefinition> _availablePacks = new();
+        private bool _buyInProgress;
 
         public ShopController(ISaveService<PlayerSave> save, IAnalyticsService analytics)
         {
@@ -69,28 +71,52 @@ namespace ArcaneKingdom.Game.Shop
 
         public async UniTask<PackPurchaseResult> BuyPackAsync(CardPackDefinition pack, CancellationToken ct = default)
         {
-            var saveResult = await _save.LoadAsync(ct);
-            if (!saveResult.IsSuccess) return new PackPurchaseResult { Success = false, Error = saveResult.ErrorMessage };
-
-            var save = saveResult.Value!;
-            if (!save.Currencies.SpendDiamond(pack.DiamondCost))
-                return new PackPurchaseResult { Success = false, Error = $"Nicht genug Diamanten ({pack.DiamondCost} benoetigt)." };
-
-            var pity = _pityCounters.TryGetValue(pack.Id, out var p) ? p : 0;
-            var roll = CardPackRoller.Roll(new CardPackRoller.RollContext { Pack = pack, PityCounter = pity, Random = _rng });
-            _pityCounters[pack.Id] = roll.NewPityCounter;
-
-            // TODO MVP: Aus Rarities konkrete Karten auswählen (Random aus Element/Race-Verteilung)
-            //          und CardInstances im Save anlegen.
-            await _save.SaveAsync(save, ct);
-
-            _analytics.Track("pack_bought", new Dictionary<string, object>
+            // M18: Re-Entrancy-Schutz gegen Doppel-Kauf bei parallelen Aufrufen.
+            if (_buyInProgress)
+                return new PackPurchaseResult { Success = false, Error = "Kauf laeuft bereits." };
+            _buyInProgress = true;
+            try
             {
-                ["pack_id"] = pack.Id,
-                ["pity"] = pity,
-                ["pity_triggered"] = roll.PityTriggered
-            });
-            return new PackPurchaseResult { Success = true, AwardedRarities = roll.Rarities, PityTriggered = roll.PityTriggered };
+                string? error = null;
+                CardPackRoller.RollResult? roll = null;
+                var pity = 0;
+
+                // M16: Pity-Counter aus dem Save lesen + neuen Stand atomar zurueckschreiben.
+                // Diamant-Abzug + Pity-Update laufen serialisiert im MutateAsync-Lock.
+                await _save.MutateAsync(save =>
+                {
+                    if (!save.Currencies.SpendDiamond(pack.DiamondCost))
+                    {
+                        error = $"Nicht genug Diamanten ({pack.DiamondCost} benoetigt).";
+                        return save;
+                    }
+
+                    save.PackPityCounters ??= new Dictionary<string, int>();
+                    pity = save.PackPityCounters.TryGetValue(pack.Id, out var p) ? p : 0;
+                    var r = CardPackRoller.Roll(new CardPackRoller.RollContext { Pack = pack, PityCounter = pity, Random = _rng });
+                    save.PackPityCounters[pack.Id] = r.NewPityCounter;
+                    roll = r;
+
+                    // TODO MVP: Aus Rarities konkrete Karten auswählen (Random aus Element/Race-Verteilung)
+                    //          und CardInstances im Save anlegen.
+                    return save;
+                }, ct);
+
+                if (error != null || roll == null)
+                    return new PackPurchaseResult { Success = false, Error = error ?? "Pack-Kauf fehlgeschlagen." };
+
+                _analytics.Track("pack_bought", new Dictionary<string, object>
+                {
+                    ["pack_id"] = pack.Id,
+                    ["pity"] = pity,
+                    ["pity_triggered"] = roll.PityTriggered
+                });
+                return new PackPurchaseResult { Success = true, AwardedRarities = roll.Rarities, PityTriggered = roll.PityTriggered };
+            }
+            finally
+            {
+                _buyInProgress = false;
+            }
         }
 
         public async UniTask<Result> BuyEnergyAsync(int energyAmount, long diamondCost, CancellationToken ct = default)

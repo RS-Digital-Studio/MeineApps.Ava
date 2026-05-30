@@ -48,6 +48,10 @@ namespace ArcaneKingdom.Domain.Player
         /// <summary>Bereits eingeloeste Sammlungs-Sets (Spielplan v5 Kap. 5.6) — verhindert Doppel-Eintausch.</summary>
         public HashSet<string> ClaimedCollectionSetIds { get; set; }
 
+        // v4: Quest-Fortschritt persistiert (verhindert Verlust nach Neustart + Re-Claim-Exploit).
+        /// <summary>Quest-Zaehler + bereits abgeholte Quests + Reset-Zeitpunkte.</summary>
+        public QuestSaveSlice Quests { get; set; }
+
         public DateTime LastEnergyRegenAtUtc { get; set; }
         public DateTime LastSavedAtUtc { get; set; }
 
@@ -70,11 +74,13 @@ namespace ArcaneKingdom.Domain.Player
             SaisonPassXp = new Dictionary<string, int>();
             // v3
             Prestige = new PrestigeSaveSlice();
+            Prestige.LastDailyIncomeAtUtc = DateTime.UtcNow;   // C3: sonst MinValue -> Riesen-Income beim 1. Tick
             Sternkarten = new SternkartenSaveSlice();
             Story = new StorySaveSlice();
             Events = new EventSaveSlice();
             FavoritedCardInstanceIds = new HashSet<string>();
             ClaimedCollectionSetIds = new HashSet<string>();
+            Quests = new QuestSaveSlice();
             LastEnergyRegenAtUtc = DateTime.UtcNow;
             LastSavedAtUtc = DateTime.UtcNow;
         }

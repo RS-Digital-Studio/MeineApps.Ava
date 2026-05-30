@@ -40,7 +40,9 @@ namespace ArcaneKingdom.Game.Notification
                 _optedIn = value;
                 PlayerPrefs.SetInt(OptInPrefsKey, value ? 1 : 0);
                 _analytics.Track("notifications_opt_changed", new Dictionary<string, object> { ["opted_in"] = value });
-                if (!value) _scheduled.Clear();
+                // M19: Opt-Out muss auch die bereits am OS geplanten Notifications abbestellen —
+                // sonst feuern sie weiter, obwohl der User abgelehnt hat. Nicht nur die In-Memory-Liste leeren.
+                if (!value) CancelAllScheduled();
             }
         }
 
@@ -61,12 +63,43 @@ namespace ArcaneKingdom.Game.Notification
         public void CancelById(string scheduledId)
         {
             var idx = _scheduled.FindIndex(n => n.Id == scheduledId);
-            if (idx >= 0) _scheduled.RemoveAt(idx);
+            if (idx >= 0)
+            {
+                CancelAtOs(_scheduled[idx]);
+                _scheduled.RemoveAt(idx);
+            }
         }
 
         public void CancelByKind(NotificationKind kind)
         {
-            _scheduled.RemoveAll(n => n.Kind == kind);
+            for (var i = _scheduled.Count - 1; i >= 0; i--)
+            {
+                if (_scheduled[i].Kind != kind) continue;
+                CancelAtOs(_scheduled[i]);
+                _scheduled.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// M19: Bestellt ALLE geplanten Notifications ab (OS + In-Memory). Wird beim Opt-Out
+        /// aufgerufen, damit keine bereits geplante OS-Notification mehr feuert.
+        /// </summary>
+        private void CancelAllScheduled()
+        {
+            for (var i = _scheduled.Count - 1; i >= 0; i--)
+                CancelAtOs(_scheduled[i]);
+            _scheduled.Clear();
+        }
+
+        /// <summary>
+        /// Bestellt eine einzelne geplante Notification am Betriebssystem ab. Zentraler Hook
+        /// fuer die OS-Integration (Gegenstueck zum Schedule-OS-Hook).
+        /// </summary>
+        private void CancelAtOs(ScheduledNotification notification)
+        {
+            GameLogger.Verbose("Notification", $"Cancel {notification.Kind} ({notification.Id}) am OS.");
+            // TODO MVP: AndroidNotificationCenter.CancelScheduledNotification(int) anhand der
+            // OS-Notification-ID (gemappt aus notification.Id). Symmetrisch zum Schedule-Hook.
         }
 
         private void LoadTemplates()

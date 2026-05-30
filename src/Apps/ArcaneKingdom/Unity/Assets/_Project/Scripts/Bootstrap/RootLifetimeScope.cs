@@ -22,16 +22,23 @@ namespace ArcaneKingdom.Bootstrap
 
         protected override void Configure(IContainerBuilder builder)
         {
-            if (balancingConfig != null)
-                builder.RegisterInstance(balancingConfig);
+            // Pflicht-Abhaengigkeiten NICHT bedingt registrieren: ein nicht verdrahteter Scene-Slot
+            // soll hier laut und lokalisierbar fehlschlagen, statt spaeter als diffuser Resolve-/NullRef-
+            // Crash an entfernter Stelle (ScreenManager, HubController, SettingsScreen).
+            if (balancingConfig == null)
+                throw new System.InvalidOperationException(
+                    "RootLifetimeScope: BalancingConfig-Slot nicht verdrahtet — Asset auf das [Bootstrapper]-GameObject ziehen (siehe Scenes/README.md).");
+            if (audioService == null)
+                throw new System.InvalidOperationException(
+                    "RootLifetimeScope: AudioService-Slot nicht verdrahtet — UnityAudioService auf das [Audio]-GameObject ziehen (siehe Scenes/README.md).");
+            if (uiRoot == null)
+                throw new System.InvalidOperationException(
+                    "RootLifetimeScope: UIRoot-Slot nicht verdrahtet — UIRoot-Component referenzieren (Pflicht fuer ScreenManager, siehe Scenes/README.md).");
 
-            if (audioService != null)
-                builder.RegisterComponent(audioService).AsImplementedInterfaces();
-
-            // UIRoot-MonoBehaviour als Singleton-Component registrieren (haelt
-            // das UIDocument + Screen/Overlay-Container). Pflicht für ScreenManager.
-            if (uiRoot != null)
-                builder.RegisterComponent(uiRoot);
+            builder.RegisterInstance(balancingConfig);
+            builder.RegisterComponent(audioService).AsImplementedInterfaces();
+            // UIRoot-MonoBehaviour als Singleton-Component (haelt UIDocument + Screen/Overlay-Container).
+            builder.RegisterComponent(uiRoot);
 
             // Game-Assembly-Registrierungen (Services, Controller, EntryPoints)
             GameInstaller.RegisterServices(builder);

@@ -16,10 +16,24 @@ namespace ArcaneKingdom.Domain.Battle
     {
         public const int MaxFieldSlots = 5;
         public const int MaxHandSize = 5;
-        public const int MaxMana = 10;
         public const int MaxTurns = 50;
 
-        private readonly Random _random;
+        /// <summary>
+        /// Mana-Kosten pro eingesetzter Karte. Designplan v3 Kap. 7.3: jede Karte kostet 1 Mana-Orb,
+        /// UNABHAENGIG von ihrem COST-Wert. COST ist das Deck-Bau-Budget (DeckValidator, Cap 200) und
+        /// das Schwere-Karten-Gate, NICHT der pro-Karte-Mana-Preis.
+        /// </summary>
+        public const int ManaPerCard = 1;
+
+        /// <summary>
+        /// COST-Schwelle fuer "schwere" Karten (Designplan v3 Kap. 7.3): Karten mit COST &gt; 30
+        /// koennen nur eingesetzt werden, wenn in diesem Zug noch nichts anderes gespielt wurde.
+        /// </summary>
+        public const int HeavyCardCostThreshold = 30;
+
+        // Plattformneutraler PRNG (Mulberry32) — identisch in der TS-Portierung des Servers,
+        // damit der Anti-Cheat-Replay denselben Kampfverlauf erzeugt (kein System.Random!).
+        private readonly DeterministicRng _random;
         private readonly IReadOnlyDictionary<string, CardDefinition> _cardDefinitions;
         private readonly IReadOnlyDictionary<string, CardInstance> _cardInstances;
 
@@ -32,7 +46,7 @@ namespace ArcaneKingdom.Domain.Battle
             State = state;
             _cardDefinitions = cardDefinitions;
             _cardInstances = cardInstances ?? new Dictionary<string, CardInstance>();
-            _random = new Random(state.Seed);
+            _random = new DeterministicRng(state.Seed);
         }
 
         public void Setup(IEnumerable<string> playerDeckInstanceIds, IEnumerable<string> enemyDeckInstanceIds)
@@ -67,16 +81,18 @@ namespace ArcaneKingdom.Domain.Battle
 
             // Helden-Passivs anwenden (Designplan v4 Kap. 2.1)
             var heroPassiv = forPlayer ? State.PlayerHeroPassiv : State.EnemyHeroPassiv;
-            var manaCost = def.Cost;
             float hpMultiplier = 1.0f;
             float atkMultiplier = 1.0f;
 
+            // Mana-Kosten = 1 pro Karte (Designplan v3 Kap. 7.3), NICHT die COST.
+            var manaCost = ManaPerCard;
+
             if (heroPassiv != null)
             {
-                // Waldlaeufer: erste Karte jeder Runde kostet 0 COST
+                // Waldlaeufer: erste Karte jeder Runde kostet 0 Mana
                 if (heroPassiv.PassivType == HeroFaehigkeitsTyp.Waldlaeufer && !heroPassiv.FirstCardThisTurnPlayed)
                 {
-                    manaCost = heroPassiv.Magnitude;  // i.d.R. 0
+                    manaCost = 0;
                 }
                 // Koenigliche Aura: +X% HP auf eigene Karten
                 if (heroPassiv.PassivType == HeroFaehigkeitsTyp.KoeniglicheAura)
@@ -93,13 +109,21 @@ namespace ArcaneKingdom.Domain.Battle
             var availableMana = forPlayer ? State.PlayerMana : State.EnemyMana;
             if (manaCost > availableMana) return false;
 
+            // Schwere Karte (COST > 30, i.d.R. Epic/Legendaer/Mythisch): nur einsetzbar, wenn in
+            // diesem Zug noch nichts anderes gespielt wurde (Designplan v3 Kap. 7.3).
+            var cardsPlayedThisTurn = forPlayer ? State.PlayerCardsPlayedThisTurn : State.EnemyCardsPlayedThisTurn;
+            if (def.Cost > HeavyCardCostThreshold && cardsPlayedThisTurn > 0) return false;
+
             if (forPlayer) State.PlayerMana -= manaCost; else State.EnemyMana -= manaCost;
+            if (forPlayer) State.PlayerCardsPlayedThisTurn++; else State.EnemyCardsPlayedThisTurn++;
             if (heroPassiv != null && heroPassiv.PassivType == HeroFaehigkeitsTyp.Waldlaeufer)
                 heroPassiv.FirstCardThisTurnPlayed = true;
 
             hand.Remove(cardInstanceId);
-            var finalHp = (int)(def.BaseHealth * statMultiplier * hpMultiplier);
-            var finalAtk = (int)(def.BaseAttack * statMultiplier * atkMultiplier);
+            // Gegner-Karten zusaetzlich mit Schwierigkeits-Multiplier skalieren (Spielplan v5 Kap. 8.3).
+            var difficultyMul = forPlayer ? 1.0f : State.EnemyStatMultiplier;
+            var finalHp = (int)(def.BaseHealth * statMultiplier * hpMultiplier * difficultyMul);
+            var finalAtk = (int)(def.BaseAttack * statMultiplier * atkMultiplier * difficultyMul);
             field.Add(new CardFieldSlot(cardInstanceId,
                 currentAttack: finalAtk,
                 currentHealth: finalHp,
@@ -137,14 +161,9 @@ namespace ArcaneKingdom.Domain.Battle
                 var dot = StatusEffectHelpers.TickDamageOverTime(slot.StatusEffects);
                 if (dot > 0) slot.CurrentHealth -= dot;
             }
-            // Tote Karten entfernen (durch DoT)
+            // Tote Karten entfernen (durch DoT) — mit GoettlicherSegen-Rettung + OnDeath-Event
             for (var i = attackerField.Count - 1; i >= 0; i--)
-            {
-                if (attackerField[i].CurrentHealth > 0) continue;
-                var (deadDef, _) = ResolveDefinition(attackerField[i].CardInstanceId);
-                EmitOnDeathEvent(attackerField[i], deadDef, attackerIsPlayer);
-                attackerField.RemoveAt(i);
-            }
+                ResolveDeathAt(attackerField, i, attackerIsPlayer);
 
             for (var i = 0; i < attackerField.Count; i++)
             {
@@ -165,15 +184,7 @@ namespace ArcaneKingdom.Domain.Battle
                     var dealt = (int)(damage * multiplier);
                     target.CurrentHealth -= dealt;
                     ApplyLifesteal(attackerPassiv, attackerIsPlayer, dealt);
-
-                    if (target.CurrentHealth <= 0)
-                    {
-                        if (!TryGoettlicherSegenRescue(target, defenderField, !attackerIsPlayer))
-                        {
-                            EmitOnDeathEvent(target, targetDef, !attackerIsPlayer);
-                            defenderField.RemoveAt(0);
-                        }
-                    }
+                    ResolveDeathAt(defenderField, 0, !attackerIsPlayer);
                 }
                 else
                 {
@@ -216,15 +227,15 @@ namespace ArcaneKingdom.Domain.Battle
             if (State.Phase == BattlePhase.PlayerTurn)
             {
                 State.Phase = BattlePhase.EnemyTurn;
-                State.EnemyMaxMana = Math.Min(State.EnemyMaxMana + 1, MaxMana);
-                State.EnemyMana = State.EnemyMaxMana;
+                State.EnemyMana = State.EnemyMaxMana;            // Designplan v3 Kap. 7.3: 3 Orbs/Runde, kein Anstieg
+                State.EnemyCardsPlayedThisTurn = 0;
                 DrawCard(forPlayer: false);
             }
             else
             {
                 State.Phase = BattlePhase.PlayerTurn;
-                State.PlayerMaxMana = Math.Min(State.PlayerMaxMana + 1, MaxMana);
                 State.PlayerMana = State.PlayerMaxMana;
+                State.PlayerCardsPlayedThisTurn = 0;
                 DrawCard(forPlayer: true);
             }
 
@@ -290,6 +301,24 @@ namespace ArcaneKingdom.Domain.Battle
         }
 
         /// <summary>
+        /// Verarbeitet den moeglichen Tod der Karte an Position <paramref name="index"/>:
+        /// prueft zuerst die GoettlicherSegen-Rettung der besitzenden Seite, emittiert sonst das
+        /// OnDeath-Persoenlichkeits-Event und entfernt die Karte. Liefert true, wenn entfernt wurde.
+        /// Zentralisiert die Tod-Behandlung fuer normale Angriffe, AoE-/Single-Skills und DoT-Ticks.
+        /// </summary>
+        private bool ResolveDeathAt(List<CardFieldSlot> field, int index, bool fieldOwnerIsPlayer)
+        {
+            if (index < 0 || index >= field.Count) return false;
+            var slot = field[index];
+            if (slot.CurrentHealth > 0) return false;
+            if (TryGoettlicherSegenRescue(slot, field, fieldOwnerIsPlayer)) return false;
+            var (def, _) = ResolveDefinition(slot.CardInstanceId);
+            EmitOnDeathEvent(slot, def, fieldOwnerIsPlayer);
+            field.RemoveAt(index);
+            return true;
+        }
+
+        /// <summary>
         /// Pre-compute Tiergeist-Anzahl im Deck fuer Rudelbund-Stack-Bonus.
         /// </summary>
         private void UpdateBeastSpiritCount(HeroPassivContext? passiv, IEnumerable<string> deck)
@@ -312,6 +341,9 @@ namespace ArcaneKingdom.Domain.Battle
         private void TriggerSynergyIfMatches(CardDefinition def, List<CardFieldSlot> field, bool forPlayer)
         {
             if (def.SynergyCardIds == null || def.SynergyCardIds.Count == 0) return;
+            // Die gerade eingesetzte Karte ist der zuletzt hinzugefuegte Slot.
+            var playedSlot = field.Count > 0 ? field[field.Count - 1] : null;
+            const int synergyHpBonusPct = 5;   // Designplan v4 Kap. 8.2: +5% HP-Bonus
             foreach (var slot in field)
             {
                 if (slot.CardInstanceId == "") continue;
@@ -320,14 +352,25 @@ namespace ArcaneKingdom.Domain.Battle
                 if (otherDef.Id == def.Id) continue;
                 if (def.SynergyCardIds.Contains(otherDef.Id))
                 {
+                    // Bonus auf beide Synergie-Partner anwenden (nicht nur als Event melden).
+                    if (playedSlot != null) ApplySynergyHpBonus(playedSlot, synergyHpBonusPct);
+                    ApplySynergyHpBonus(slot, synergyHpBonusPct);
                     State.Events.Add(new BattleEvent(
                         BattleEventType.SynergyActivated, State.CurrentTurn, forPlayer,
                         cardInstanceId: slot.CardInstanceId,
                         cardDefinitionId: def.Id,
                         partnerCardId: otherDef.Id,
-                        magnitude: 5));   // Designplan v4 Kap. 8.2: +5% HP-Bonus
+                        magnitude: synergyHpBonusPct));
                 }
             }
+        }
+
+        /// <summary>Erhoeht Max- und Current-HP eines Slots um den prozentualen Synergie-Bonus.</summary>
+        private static void ApplySynergyHpBonus(CardFieldSlot slot, int pct)
+        {
+            var bonus = Math.Max(1, slot.MaxHealth * pct / 100);
+            slot.MaxHealth += bonus;
+            slot.CurrentHealth += bonus;
         }
 
         private void CheckRivalryWithOpposingField(CardDefinition def, bool forPlayer)
@@ -391,10 +434,12 @@ namespace ArcaneKingdom.Domain.Battle
             if (deck.Count > 0) hand.Add(deck.Dequeue());
         }
 
-        private static void TriggerSpecial(CardFieldSlot caster, CardDefinition def, List<CardFieldSlot> allies, List<CardFieldSlot> enemies, bool forPlayer)
+        private void TriggerSpecial(CardFieldSlot caster, CardDefinition def, List<CardFieldSlot> allies, List<CardFieldSlot> enemies, bool forPlayer)
         {
             var ability = def.BaseAbility;
             if (ability == null) return;
+            // enemies ist das gegnerische Feld des Casters -> dessen Owner ist die Gegenseite.
+            var enemyFieldOwnerIsPlayer = !forPlayer;
             switch (ability.Category)
             {
                 case AbilityCategory.Damage:
@@ -404,33 +449,37 @@ namespace ArcaneKingdom.Domain.Battle
                         for (var i = enemies.Count - 1; i >= 0; i--)
                         {
                             enemies[i].CurrentHealth -= aoeDmg;
-                            if (enemies[i].CurrentHealth <= 0) enemies.RemoveAt(i);
+                            ResolveDeathAt(enemies, i, enemyFieldOwnerIsPlayer);
                         }
                     }
                     else if (enemies.Count > 0)
                     {
                         var dmg = Math.Max(1, caster.CurrentAttack * ability.Magnitude / 100);
                         enemies[0].CurrentHealth -= dmg;
-                        if (enemies[0].CurrentHealth <= 0) enemies.RemoveAt(0);
+                        ResolveDeathAt(enemies, 0, enemyFieldOwnerIsPlayer);
                     }
                     break;
                 case AbilityCategory.Defense:
                     if (ability.Magnitude > 0)
                     {
-                        var heal = caster.MaxHealth * ability.Magnitude / 100;
+                        var heal = Math.Max(1, caster.MaxHealth * ability.Magnitude / 100);
                         caster.CurrentHealth = Math.Min(caster.CurrentHealth + heal, caster.MaxHealth);
                     }
                     break;
                 case AbilityCategory.Buff:
                     if (ability.TargetsAllAllies)
                     {
-                        foreach (var a in allies) a.CurrentAttack += a.CurrentAttack * ability.Magnitude / 100;
+                        foreach (var a in allies) a.CurrentAttack += Math.Max(1, a.CurrentAttack * ability.Magnitude / 100);
                     }
                     break;
                 case AbilityCategory.Debuff:
                     if (ability.TargetsAllEnemies)
                     {
-                        foreach (var e in enemies) e.CurrentAttack = Math.Max(1, e.CurrentAttack - e.CurrentAttack * ability.Magnitude / 100);
+                        foreach (var e in enemies)
+                        {
+                            var reduce = Math.Max(1, e.CurrentAttack * ability.Magnitude / 100);
+                            e.CurrentAttack = Math.Max(1, e.CurrentAttack - reduce);
+                        }
                     }
                     break;
                 case AbilityCategory.Control:
@@ -451,10 +500,10 @@ namespace ArcaneKingdom.Domain.Battle
                     }
                     break;
                 case AbilityCategory.Synergy:
-                    // Synergy-Bonus auf Allies anwenden (z.B. +5% ATK)
+                    // Synergy-Bonus auf Allies anwenden (z.B. +X% ATK), mind. +1 gegen Integer-Truncation.
                     if (ability.TargetsAllAllies)
                     {
-                        foreach (var a in allies) a.CurrentAttack += a.CurrentAttack * Math.Max(1, ability.Magnitude / 10) / 100;
+                        foreach (var a in allies) a.CurrentAttack += Math.Max(1, a.CurrentAttack * ability.Magnitude / 100);
                     }
                     break;
             }
@@ -499,10 +548,11 @@ namespace ArcaneKingdom.Domain.Battle
                 if (!_cardDefinitions.TryGetValue(reinforcementDefId, out var def)) continue;
 
                 var instId = $"boss_reinforcement_{State.CurrentTurn}_{addedCount}";
+                var mul = State.EnemyStatMultiplier;
                 var slot = new CardFieldSlot(
                     cardInstanceId: instId,
-                    currentAttack: def.BaseAttack,
-                    currentHealth: def.BaseHealth,
+                    currentAttack: (int)(def.BaseAttack * mul),
+                    currentHealth: (int)(def.BaseHealth * mul),
                     turnsUntilSpecial: def.TurnsToSpecial);
                 State.EnemyField.Add(slot);
                 addedCount++;

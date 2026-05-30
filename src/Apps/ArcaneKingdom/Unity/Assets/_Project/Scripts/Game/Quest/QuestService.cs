@@ -26,6 +26,8 @@ namespace ArcaneKingdom.Game.Quest
         private readonly IAnalyticsService _analytics;
         private readonly List<QuestDefinition> _allDefinitions = new();
         private readonly Dictionary<string, QuestProgress> _progress = new();
+        private bool _restored;
+        private bool _dirty;
 
         public QuestService(ISaveService<PlayerSave> save, IAnalyticsService analytics)
         {
@@ -47,6 +49,52 @@ namespace ArcaneKingdom.Game.Quest
 
         /// <summary>Alle bekannten Quest-Definitionen (für UI-Listing).</summary>
         public IReadOnlyList<QuestDefinition> AllDefinitions => _allDefinitions;
+
+        /// <summary>
+        /// Stellt den Quest-Fortschritt aus dem geladenen Save wieder her. MUSS beim App-Start
+        /// (nach Save-Load, vor erstem Quest-UI) genau einmal aufgerufen werden, sonst startet jeder
+        /// Lauf bei 0. Idempotent (laeuft nur beim ersten Aufruf).
+        /// </summary>
+        public void RestoreFromSave(PlayerSave save)
+        {
+            if (_restored) return;
+            _restored = true;
+            var slice = save.Quests;
+            if (slice == null) return;
+            foreach (var def in _allDefinitions)
+            {
+                var count = slice.CountByQuestId.TryGetValue(def.Id, out var c) ? c : 0;
+                var claimed = slice.ClaimedQuestIds.Contains(def.Id);
+                if (count == 0 && !claimed) continue;
+                _progress[def.Id] = new QuestProgress(def.Id, count, claimed, def.TargetCount);
+            }
+        }
+
+        /// <summary>Schreibt den aktuellen In-Memory-Quest-Zustand in die Save-Slice (ohne zu persistieren).</summary>
+        public void PersistTo(PlayerSave save)
+        {
+            save.Quests ??= new ArcaneKingdom.Domain.Save.QuestSaveSlice();
+            var slice = save.Quests;
+            foreach (var kv in _progress)
+            {
+                slice.CountByQuestId[kv.Key] = kv.Value.CurrentCount;
+                // Claimed-Status synchronisieren: ein Reset (neuer QuestProgress) hebt ihn wieder auf,
+                // damit Daily/Weekly-Quests nach dem Reset erneut eingeloest werden koennen.
+                if (kv.Value.RewardClaimed) slice.ClaimedQuestIds.Add(kv.Key);
+                else slice.ClaimedQuestIds.Remove(kv.Key);
+            }
+        }
+
+        /// <summary>
+        /// Persistiert den Quest-Zustand, wenn seit dem letzten Flush etwas geaendert wurde.
+        /// Beim Hub-Eintritt / Battle-Ende / App-Pause aufrufen, um Advance-Fortschritt zu sichern.
+        /// </summary>
+        public async UniTask FlushAsync(CancellationToken ct = default)
+        {
+            if (!_dirty) return;
+            _dirty = false;
+            await _save.MutateAsync(save => { PersistTo(save); return save; }, ct);
+        }
 
         /// <summary>
         /// Liefert den aktuellen Progress für eine Quest. Wenn noch nie advanced wurde,
@@ -107,11 +155,20 @@ namespace ArcaneKingdom.Game.Quest
             if (def == null) return Result.Failure("Quest unbekannt.");
 
             if (!progress.TryClaim()) return Result.Failure("Bereits eingeloest.");
+            var claimed = false;
             await _save.MutateAsync(save =>
             {
+                // Re-Claim-Schutz ueber Neustart/Reset hinweg: persistierten Claimed-Status pruefen.
+                save.Quests ??= new ArcaneKingdom.Domain.Save.QuestSaveSlice();
+                if (save.Quests.ClaimedQuestIds.Contains(questId)) return save;   // schon ausgezahlt
                 foreach (var r in def.Rewards) ApplyReward(save, r);
+                PersistTo(save);                                  // Counts + Claimed-Flag mitschreiben
+                save.Quests.ClaimedQuestIds.Add(questId);
+                claimed = true;
                 return save;
             }, ct);
+            if (!claimed) return Result.Failure("Bereits eingeloest.");
+            _dirty = false;
             _analytics.Track("quest_claimed", new Dictionary<string, object> { ["quest_id"] = questId });
             return Result.Success();
         }
@@ -121,6 +178,7 @@ namespace ArcaneKingdom.Game.Quest
             foreach (var def in _allDefinitions)
                 if (def.Period == QuestPeriod.Daily)
                     _progress[def.Id] = new QuestProgress(def.Id);
+            _dirty = true;
             GameLogger.Info("Quest", "Daily-Quests zurueckgesetzt.");
         }
 
@@ -129,6 +187,7 @@ namespace ArcaneKingdom.Game.Quest
             foreach (var def in _allDefinitions)
                 if (def.Period == QuestPeriod.Weekly)
                     _progress[def.Id] = new QuestProgress(def.Id);
+            _dirty = true;
             GameLogger.Info("Quest", "Weekly-Quests zurueckgesetzt.");
         }
 
@@ -146,7 +205,9 @@ namespace ArcaneKingdom.Game.Quest
                 p = new QuestProgress(def.Id);
                 _progress[def.Id] = p;
             }
+            var before = p.CurrentCount;
             p.Advance(delta, def.TargetCount);
+            if (p.CurrentCount != before) _dirty = true;   // beim naechsten FlushAsync sichern
         }
 
         private static void ApplyReward(PlayerSave save, QuestReward reward)

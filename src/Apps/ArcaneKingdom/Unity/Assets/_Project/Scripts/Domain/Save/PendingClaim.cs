@@ -17,7 +17,9 @@ namespace ArcaneKingdom.Domain.Save
         RuneSlotUnlock = 4,
         Card = 5,
         Currency = 6,
-        Scrap = 7
+        Scrap = 7,
+        /// <summary>Eine konkrete Rune (SubType = RuneDefinitionId) fuers RuneInventory.</summary>
+        Rune = 8
     }
 
     [Serializable]

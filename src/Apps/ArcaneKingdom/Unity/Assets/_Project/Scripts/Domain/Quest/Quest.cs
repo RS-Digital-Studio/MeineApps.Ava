@@ -71,6 +71,16 @@ namespace ArcaneKingdom.Domain.Quest
             LastUpdateUtc = DateTime.UtcNow;
         }
 
+        /// <summary>Rekonstruiert den vollen Fortschritt aus einem persistierten Save (Count + Claimed + Ziel).</summary>
+        public QuestProgress(string questId, int currentCount, bool rewardClaimed, int target)
+        {
+            QuestId = questId;
+            CurrentCount = currentCount;
+            Completed = currentCount >= target;
+            RewardClaimed = rewardClaimed;
+            LastUpdateUtc = DateTime.UtcNow;
+        }
+
         public void Advance(int delta, int target)
         {
             if (delta < 0) throw new ArgumentOutOfRangeException(nameof(delta));

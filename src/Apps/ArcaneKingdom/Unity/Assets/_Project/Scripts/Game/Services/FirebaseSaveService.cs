@@ -36,6 +36,10 @@ namespace ArcaneKingdom.Game.Services
         private readonly JsonSerializerSettings _jsonSettings;
         private PlayerSave? _cache;
         private readonly object _ioLock = new();
+        // Serialisiert den kompletten Read-Modify-Write von MutateAsync (sowie Load/Save) gegen
+        // Nebenlaeufigkeit — sonst koennen ueberlappende Mutationen (Hub-Tick + Settlement, Doppel-Kauf)
+        // Buchungen verlieren/duplizieren (Last-Write-Wins auf dem geteilten _cache).
+        private readonly SemaphoreSlim _gate = new(1, 1);
 
         public FirebaseSaveService(IAuthService auth)
         {
@@ -43,16 +47,60 @@ namespace ArcaneKingdom.Game.Services
             _jsonSettings = new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                NullValueHandling = NullValueHandling.Ignore
+                NullValueHandling = NullValueHandling.Ignore,
+                // Verhindert, dass Newtonsoft beim Deserialisieren Elemente an bereits vorbefuellte
+                // read-only-Collections ANHAENGT (z.B. Deck.RuneInstanceIds) — sonst wachsen solche
+                // Listen bei jedem Laden. Replace = Inhalt komplett ersetzen.
+                ObjectCreationHandling = ObjectCreationHandling.Replace
             };
         }
 
         public async UniTask<Result<PlayerSave>> LoadAsync(CancellationToken ct = default)
         {
+            await _gate.WaitAsync(ct);
+            try { return await LoadInternalAsync(ct); }
+            finally { _gate.Release(); }
+        }
+
+        public async UniTask<Result> SaveAsync(PlayerSave save, CancellationToken ct = default)
+        {
+            await _gate.WaitAsync(ct);
+            try { return await SaveInternalAsync(save, ct); }
+            finally { _gate.Release(); }
+        }
+
+        /// <summary>
+        /// Atomare Read-Modify-Write-Operation: Load + mutation + Save laufen unter EINEM Lock,
+        /// sodass nebenlaeufige Mutationen sich nicht verschachteln und keine Buchung verloren geht.
+        /// Die mutation-Lambda sollte ihre Vorbedingungen selbst pruefen (z.B. Gold-Deckung) und bei
+        /// Fehlschlag den State unveraendert zurueckgeben.
+        /// </summary>
+        public async UniTask<Result<PlayerSave>> MutateAsync(Func<PlayerSave, PlayerSave> mutation,
+                                                             CancellationToken ct = default)
+        {
+            await _gate.WaitAsync(ct);
+            try
+            {
+                var loadResult = await LoadInternalAsync(ct);
+                if (!loadResult.IsSuccess) return loadResult;
+                var mutated = mutation(loadResult.Value!);
+                var saveResult = await SaveInternalAsync(mutated, ct);
+                return saveResult.IsSuccess
+                    ? Result<PlayerSave>.Success(mutated)
+                    : Result<PlayerSave>.Failure(saveResult.ErrorMessage ?? "Save failed");
+            }
+            finally { _gate.Release(); }
+        }
+
+        // -------------------------------------------------------------------- Interne (ohne Lock)
+
+        private async UniTask<Result<PlayerSave>> LoadInternalAsync(CancellationToken ct)
+        {
             if (_cache != null) return Result<PlayerSave>.Success(_cache);
 
-            // TODO Firebase: Realtime-DB Pull. Wenn Server-Daten vorhanden und neuer
-            //                als Local -> Local überschreiben, sonst Server-Push.
+            // TODO Firebase: Realtime-DB Pull (benoetigt das Firebase Unity SDK, noch nicht installiert —
+            //                siehe FIREBASE_SETUP.md). Konflikt-Aufloesung dann ueber LastSavedAtUtc
+            //                (Server-Wins bei neuerer Server-Version). Bis dahin: rein lokaler Save.
 
             var save = await TryLoadFromAsync(LocalPath(), ct)
                        ?? await TryLoadFromAsync(BackupPath(), ct);
@@ -72,11 +120,10 @@ namespace ArcaneKingdom.Game.Services
             return Result<PlayerSave>.Success(fresh);
         }
 
-        public async UniTask<Result> SaveAsync(PlayerSave save, CancellationToken ct = default)
+        private async UniTask<Result> SaveInternalAsync(PlayerSave save, CancellationToken ct)
         {
             try
             {
-                _cache = save;
                 save.LastSavedAtUtc = DateTime.UtcNow;
                 var json = JsonConvert.SerializeObject(save, Formatting.Indented, _jsonSettings);
 
@@ -100,29 +147,22 @@ namespace ArcaneKingdom.Game.Services
                     File.Move(tempPath, livePath);
                 }
 
+                // _cache erst NACH erfolgreichem Write aktualisieren (Konsistenz mit Persistenz).
+                _cache = save;
                 GameLogger.Verbose("Save", $"Lokal gesichert ({json.Length} bytes).");
 
-                // TODO Firebase: parallel an Realtime-DB pushen
+                // TODO Firebase: parallel an Realtime-DB pushen (benoetigt Firebase Unity SDK).
                 // (await FirebaseDatabase.DefaultInstance.GetReference($"users/{userId}/save").SetRawJsonValueAsync(json);)
                 return Result.Success();
             }
             catch (Exception ex)
             {
-                GameLogger.Error("Save", "SaveAsync fehlgeschlagen", ex);
+                // Cache invalidieren: der mutierte In-Memory-Stand ist NICHT persistiert. Naechster
+                // LoadAsync liest den letzten konsistenten Stand von Platte statt einen Phantom-Cache.
+                _cache = null;
+                GameLogger.Error("Save", "SaveAsync fehlgeschlagen — Cache invalidiert", ex);
                 return Result.Failure(ex);
             }
-        }
-
-        public async UniTask<Result<PlayerSave>> MutateAsync(Func<PlayerSave, PlayerSave> mutation,
-                                                             CancellationToken ct = default)
-        {
-            var loadResult = await LoadAsync(ct);
-            if (!loadResult.IsSuccess) return loadResult;
-            var mutated = mutation(loadResult.Value!);
-            var saveResult = await SaveAsync(mutated, ct);
-            return saveResult.IsSuccess
-                ? Result<PlayerSave>.Success(mutated)
-                : Result<PlayerSave>.Failure(saveResult.ErrorMessage ?? "Save failed");
         }
 
         // -------------------------------------------------------------------- Intern
@@ -141,10 +181,20 @@ namespace ArcaneKingdom.Game.Services
                 }
 
                 // SchemaVersion-Check & Migration
-                if (save.SchemaVersion < ArcaneKingdom.Domain.Save.SaveMigrator.CurrentSchemaVersion)
+                var current = ArcaneKingdom.Domain.Save.SaveMigrator.CurrentSchemaVersion;
+                if (save.SchemaVersion < current)
                 {
                     save = ArcaneKingdom.Domain.Save.SaveMigrator.MigrateToCurrent(save);
                     GameLogger.Info("Save", $"Migriert {Path.GetFileName(path)} auf Schema v{save.SchemaVersion}.");
+                }
+                else if (save.SchemaVersion > current)
+                {
+                    // Save stammt aus einer neueren App-Version (Downgrade-Szenario). Felder, die diese
+                    // Version nicht kennt, gingen beim naechsten Speichern verloren. Laut warnen statt
+                    // still zu degradieren — der Aufrufer/QA sieht das im Log.
+                    GameLogger.Error("Save",
+                        $"{Path.GetFileName(path)} hat Schema v{save.SchemaVersion} > Client v{current} " +
+                        "(Save aus neuerer App-Version). Moeglicher Daten-Downgrade beim naechsten Speichern.");
                 }
 
                 GameLogger.Info("Save", $"Geladen aus {Path.GetFileName(path)} ({json.Length} bytes).");

@@ -33,17 +33,20 @@ namespace ArcaneKingdom.Domain.Merit
         /// </summary>
         public long ComputeReward(MeritSource source, long magnitude, bool isWin = false)
         {
+            // M11: Magnitude defensiv begrenzen — kein Negativwert (sonst negative Merit-Vergabe) und
+            // die quell-spezifischen Maxima cappen (sonst beliebig hohe Punkte aus manipuliertem Input).
+            if (magnitude < 0) magnitude = 0;
             return source switch
             {
                 MeritSource.DailyQuest        => MeritRewardTable.DailyQuestMin
-                                                  + (magnitude * (MeritRewardTable.DailyQuestMax - MeritRewardTable.DailyQuestMin) / 100),
+                                                  + (Math.Min(magnitude, 100) * (MeritRewardTable.DailyQuestMax - MeritRewardTable.DailyQuestMin) / 100),
                 MeritSource.ArenaBattle       => isWin ? MeritRewardTable.ArenaWin : MeritRewardTable.ArenaLoss,
                 MeritSource.ThiefAttack       => Math.Min(magnitude / 1000, MeritRewardTable.ThiefPerEncounterCap),
                 MeritSource.GuildContribution => isWin ? MeritRewardTable.GuildClanMatchWin : MeritRewardTable.GuildTechDonation,
                 MeritSource.EventCompleted    => Math.Max(50, Math.Min(500, magnitude)),
                 MeritSource.WorldBossDefeated => magnitude == 10 ? MeritRewardTable.WorldBoss10 : MeritRewardTable.WorldBoss5,
-                MeritSource.SaisonPassTier    => magnitude * MeritRewardTable.SaisonPassTierStep,
-                MeritSource.Achievement       => magnitude,
+                MeritSource.SaisonPassTier    => Math.Min(magnitude, 30) * MeritRewardTable.SaisonPassTierStep,
+                MeritSource.Achievement       => Math.Min(magnitude, 5_000),
                 _ => 0
             };
         }

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -51,7 +50,6 @@ public partial class GameView : UserControl
         if (_subscribedVm != null)
         {
             _subscribedVm.InvalidateCanvasRequested -= OnInvalidateRequested;
-            _subscribedVm.PropertyChanged -= OnViewModelPropertyChanged;
             _subscribedVm = null;
         }
     }
@@ -81,7 +79,6 @@ public partial class GameView : UserControl
 
         _subscribedVm = vm;
         vm.InvalidateCanvasRequested += OnInvalidateRequested;
-        vm.PropertyChanged += OnViewModelPropertyChanged;
 
         // Falls Game-Loop bereits laeuft, sofort rendern + Timer starten
         if (vm.IsGameLoopRunning)
@@ -99,7 +96,6 @@ public partial class GameView : UserControl
         if (_subscribedVm != null)
         {
             _subscribedVm.InvalidateCanvasRequested -= OnInvalidateRequested;
-            _subscribedVm.PropertyChanged -= OnViewModelPropertyChanged;
             _subscribedVm = null;
         }
 
@@ -114,26 +110,12 @@ public partial class GameView : UserControl
         StartRenderTimer();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // OVERLAY HIT-TEST STEUERUNG
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Deaktiviert Hit-Testing auf dem GameCanvas wenn Pause- oder Score-Double-Overlay sichtbar ist,
-    /// damit Overlay-Buttons auf Android Touch-Events empfangen können.
-    /// </summary>
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName is nameof(GameViewModel.IsPaused) or nameof(GameViewModel.ShowScoreDoubleOverlay))
-        {
-            UpdateCanvasHitTest();
-        }
-    }
-
-    private void UpdateCanvasHitTest()
-    {
-        GameCanvas.IsHitTestVisible = ViewModel is { IsPaused: false, ShowScoreDoubleOverlay: false };
-    }
+    // HINWEIS: Die Hit-Test-Steuerung des GameCanvas liegt ausschliesslich im XAML-Binding
+    // IsHitTestVisible="{Binding !IsAnyOverlayOpen}" (GameView.axaml). IsAnyOverlayOpen deckt
+    // Pause + ScoreDouble + ContextHelp + Loading vollstaendig ab. Eine fruehere Code-Behind-
+    // Variante setzte die Property zusaetzlich per LocalValue-Setter — das verdraengt das Binding
+    // dauerhaft (Avalonia-Value-Precedence) und liess ContextHelp/Loading aussen vor (Taps gingen
+    // unter dem Overlay durch). Daher bewusst KEIN Code-Behind-Hit-Test mehr.
 
     // ═══════════════════════════════════════════════════════════════════════
     // RENDER-TIMER (~60fps, selbes Pattern wie CelebrationOverlay)

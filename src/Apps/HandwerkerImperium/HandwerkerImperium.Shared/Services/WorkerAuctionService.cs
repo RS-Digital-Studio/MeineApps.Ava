@@ -240,16 +240,31 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
 
         if (auction.HighestBidderId == _firebase.PlayerId)
         {
-            // v2.1.0: Gewinner — Worker generieren und in einen Workshop einstellen.
-            // Strategie: ersten freigeschalteten Workshop ohne volle Slot-Belegung waehlen.
-            // Wenn keiner frei ist, kommt der Worker in den Carpenter (Default-Start-Workshop).
+            // Gewinner — Worker generieren und in einen Workshop mit freiem Slot einstellen.
+            // Wenn KEIN Workshop einen freien Slot hat, wuerde HireWorker fehlschlagen und der
+            // Spieler verloere sein (oft sechsstelliges) Gebot ersatzlos. Daher: nur claimen
+            // wenn das Einstellen tatsaechlich gelingt, sonst das Gebot erstatten.
             try
             {
-                var newWorker = Worker.CreateForTier(auction.WorkerTier);
-                newWorker.Name = string.IsNullOrEmpty(auction.WorkerName) ? newWorker.Name : auction.WorkerName;
                 var targetWorkshop = PickWorkshopForAuctionWinner();
-                _workerService.HireWorker(newWorker, targetWorkshop);
-                claimed.Add(auction.AuctionId);
+                bool hired = false;
+                if (targetWorkshop != null)
+                {
+                    var newWorker = Worker.CreateForTier(auction.WorkerTier);
+                    newWorker.Name = string.IsNullOrEmpty(auction.WorkerName) ? newWorker.Name : auction.WorkerName;
+                    hired = _workerService.HireWorker(newWorker, targetWorkshop.Value);
+                }
+
+                if (hired)
+                {
+                    claimed.Add(auction.AuctionId);
+                }
+                else if (myBid > 0)
+                {
+                    // Keine freie Werkstatt → Gebot zurueckerstatten statt zu verschlucken.
+                    _gameStateService.AddMoney(myBid);
+                    claimed.Add(auction.AuctionId);
+                }
             }
             catch (Exception ex)
             {
@@ -267,18 +282,18 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
     }
 
     /// <summary>
-    /// Auktions-Sieger-Workshop-Auswahl: ersten freigeschalteten Workshop nehmen.
-    /// Bewusst simpel — der Spieler kann den Worker im Worker-Profil per TransferWorker
-    /// zu einem anderen Workshop verschieben.
+    /// Auktions-Sieger-Workshop-Auswahl: ersten freigeschalteten Workshop MIT freiem Slot nehmen.
+    /// Gibt null zurueck, wenn alle freigeschalteten Werkstaetten voll sind — der Aufrufer
+    /// erstattet dann das Gebot (sonst ginge der Worker samt Geld verloren).
     /// </summary>
-    private WorkshopType PickWorkshopForAuctionWinner()
+    private WorkshopType? PickWorkshopForAuctionWinner()
     {
         var state = _gameStateService.State;
         foreach (var ws in state.Workshops)
         {
-            if (ws.IsUnlocked) return ws.Type;
+            if (ws.IsUnlocked && ws.Workers.Count < ws.MaxWorkers) return ws.Type;
         }
-        return WorkshopType.Carpenter;
+        return null;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

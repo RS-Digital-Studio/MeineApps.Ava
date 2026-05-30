@@ -1369,6 +1369,17 @@ Version = CloudSaveSchemaMigrator.CurrentSchemaVersion
 `daily_race`-Rule MUSS vor `$tier`-Wildcard in `database.rules.bomberblast.json` stehen.
 Ohne das wird `daily_race` als Tier-Name interpretiert → Permission-Denied.
 
+### Firebase-Rules — keine `"//"`-Pseudo-Kommentare
+
+`database.rules.bomberblast.json` ist striktes JSON, aber RTDB-Rules haben eine eigene Semantik:
+Ein `"//": "text"`-Eintrag ist **kein** Kommentar, sondern wird als Pfad-Name `//` interpretiert,
+dessen Wert ein Objekt sein müsste → der Deploy bricht mit `Syntax error … Expected '{'` ab
+(obwohl `JSON.parse` lokal durchläuft). Rules kommentarfrei halten; Erklärungen gehören in die
+CLAUDE.md/Commit, nicht in die Rules-Datei. Deploy:
+`npx firebase deploy --only database --project bomberblast-league --config firebase.bomberblast.json`
+(braucht gültigen `firebase login`; der Firebase-MCP teilt sich denselben Token + ist an die
+default `firebase.json` = HandwerkerImperium gebunden, taugt also nicht für den BomberBlast-Deploy).
+
 ### GC.GetTotalMemory auf Background-Thread
 
 `GC.GetTotalMemory(false)` auf UI-Thread verursacht 1-5ms Frame-Spike auf Mono-AOT-Android

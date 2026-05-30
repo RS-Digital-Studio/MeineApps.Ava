@@ -15,7 +15,7 @@ Mobile Sammelkartenspiel + RPG fuer Android. Einzige App in dieser Codebase, die
 |-------|--------|
 | [SETUP.md](SETUP.md) | **Erste Schritte fuer Unity 6** — Pflichtlektuere beim ersten Open |
 | [CLAUDE.md](CLAUDE.md) | App-Conventions, Tech-Stack, Build, Verweise |
-| [DESIGN.md](DESIGN.md) | Konsolidiertes Game Design Document (GDD v5.4) |
+| [DESIGN.md](DESIGN.md) | Konsolidiertes Game Design Document (GDD v6.0) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Unity-Projektstruktur, DI, Save-System, Networking |
 | [Server/SERVEROPS.md](Server/SERVEROPS.md) | Cloud-Functions (Anti-Cheat, Saison-Rewards) |
 | [Unity/](Unity/) | Das eigentliche Unity-Projekt (in Unity Hub oeffnen) |

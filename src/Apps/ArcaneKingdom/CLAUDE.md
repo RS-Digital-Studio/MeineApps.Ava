@@ -12,7 +12,7 @@ anderen Apps bewusst machen.
 | Render-Pipeline | URP 17.x (optional aktivieren, siehe SETUP.md) |
 | Backend | Firebase + Photon |
 | Genre | TCG + RPG, Free-to-Play |
-| Karten-Pool (Launch) | 131 Standard + 27 Oekosystem (Event/Premium/Sternkarten/Prestige) = 158 Karten |
+| Karten-Pool (Launch) | 131 Standard + 27 Oekosystem (Event/Premium/Sternkarten/Prestige) + 4 Sammelset-Belohnungen = 162 Karten |
 | Welten | 10 Welten (Elderwald → Drachenfeste) mit Story-Mythologie |
 | Farbpalette | Royal-Purple #6B46C1 + Gold #F59E0B (Brand-Referenz) |
 
@@ -114,13 +114,31 @@ public enum HeroFaehigkeitsTyp {
 
 Helden sind PASSIV in v4. Kein Cooldown, kein manuelles Auslösen.
 
+### Kampf-Mechanik: Mana vs. COST (Designplan v3 Kap. 7.3 — kritisch)
+
+**COST ist NICHT der Mana-Preis einer Karte.** Diese Verwechslung war ein kampfbrechender Bug
+(Epic/Legendaer/Mythisch unspielbar). Korrekte Mechanik:
+
+- **Mana:** Zu Rundenstart **3 Mana-Orbs** (konstant, KEIN Anstieg ueber Runden). **Jede Karte kostet
+  genau 1 Mana** (`BattleEngine.ManaPerCard`) — unabhaengig von ihrem COST. Man spielt also ~3 Karten/Runde.
+- **COST hat zwei andere Rollen:** (1) **Deck-Bau-Budget** — Summe aller Karten ≤ 200 (`DeckValidator.MaxDeckCost`);
+  (2) **Schwere-Karten-Gate** — Karten mit **COST > 30** (`BattleEngine.HeavyCardCostThreshold`) duerfen nur
+  eingesetzt werden, wenn in dieser Runde noch nichts anderes gespielt wurde.
+- **Waldlaeufer** (Elfen-Passiv): erste Karte jeder Runde kostet 0 Mana.
+
+**Determinismus/Anti-Cheat:** Die `BattleEngine` nutzt `DeterministicRng` (Mulberry32), NICHT `System.Random` —
+bit-identisch zur TS-Portierung des Servers (`Server/CloudFunctions/src/battle/engine/`). Seeds muessen
+reproduzierbar sein (kein `Environment.TickCount`); `BattleBootstrap.ComputeDeterministicSeed` (FNV-1a) liefert
+einen stabilen Fallback. Der serverseitige Replay laeuft im Schatten-Modus, bis er gegen die C#-Engine
+cross-getestet ist (`REPLAY_VALIDATION_ENABLED`).
+
 ---
 
 ## Daten-Files (Resources/Data)
 
 | Datei | Inhalt |
 |-------|--------|
-| `cards.json` | 158 Karten (131 Standard + 9 Event + 6 Premium + 2 Sternkarten + 10 Prestige) |
+| `cards.json` | 162 Karten (131 Standard + 9 Event + 6 Premium + 2 Sternkarten + 10 Prestige + 4 Sammelset-Belohnungen) |
 | `worlds.json` | 10 Welten mit Saeulen, Bossen, Erinnerungs-Fragmenten, Mentoren |
 | `heroes.json` | 5 Rassen-Helden mit Passiv-Skills |
 | `abilities.json` | Skill-Definitionen (Awakening, Skill 2, Skill 3, Letzter Wille) |
@@ -290,7 +308,7 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 - [x] Architektur-Plan + komplette Service-Liste in ARCHITECTURE.md
 - [x] Unity-Projekt-Skelett (6 asmdefs + Tests-asmdefs)
 - [x] **Domain-Modelle v4-Spec**: Race (5), Element (6 Doppel-Dreieck), Rarity (6), HeroFaehigkeitsTyp (5 Passivs), CardDefinition mit Personality+Last-Will, WorldDefinition mit Story-Mythologie
-- [x] **158 Karten in cards.json**: 131 Standard (Ritter 31, Elfen 31, Tiergeister 31, Daemonen 31, Goetter 7) + 9 Event + 6 Premium + 2 Sternkarten + 10 Prestige
+- [x] **162 Karten in cards.json**: 131 Standard (Ritter 31, Elfen 31, Tiergeister 31, Daemonen 31, Goetter 7) + 9 Event + 6 Premium + 2 Sternkarten + 10 Prestige + 4 Sammelset-Belohnungen (engelsritter/schattenfuerst/elder_drache/kriegsmaschine)
 - [x] **10 Welten in worlds.json**: Elderwald → Drachenfeste, alle mit Element/Boss/Saeule/Erinnerungs-Fragment/Mentor
 - [x] **Story-Daten in story_fragments.json**: Welt-Mythologie, 10 Erinnerungs-Fragmente, 8 Schluessel-NPCs, 6 Saeulen
 - [x] **Fusions-Crafting**: CategoryFusionRules (Typ A) + FusionRecipe (Typ B), 10 feste Rezepte (inkl. Goetter)

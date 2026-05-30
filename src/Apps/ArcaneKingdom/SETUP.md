@@ -57,7 +57,7 @@ Drei automatische Schritte mit ✓/○-Status:
 | Schritt | Aktion |
 |---------|--------|
 | 1. BalancingConfig.asset | "Anlegen"-Button → erzeugt `Assets/_Project/ScriptableObjects/Config/BalancingConfig.asset` |
-| 2. JSON-Daten importieren | "Import All"-Button → liest alle Resources/Data/*.json und erzeugt ScriptableObject-Assets unter `Assets/_Project/ScriptableObjects/` (30 Karten, 32 Faehigkeiten, 18 Runen, 6 Helden, 9 Welten, 4 Sets) |
+| 2. JSON-Daten importieren | "Import All"-Button → liest alle Resources/Data/*.json und erzeugt ScriptableObject-Assets unter `Assets/_Project/ScriptableObjects/` (162 Karten, 317 Faehigkeiten, 18 Runen, 5 Helden, 10 Welten, 4 Sets) |
 | 3. Build-Scenes registrieren | "Registrieren"-Button → traegt alle 6 Scenes in den Build-Settings ein, Boot.unity als Index 0 |
 
 **Schneller Weg:** Button **"Alle automatischen Schritte ausfuehren (1-3)"** macht alle drei in einem Klick.
@@ -65,11 +65,11 @@ Drei automatische Schritte mit ✓/○-Status:
 **Console** sollte zeigen:
 ```
 [Setup] BalancingConfig.asset angelegt unter Assets/_Project/ScriptableObjects/Config/BalancingConfig.asset
-[DataImporter] 32 Faehigkeiten importiert.
-[DataImporter] 30 Karten importiert.
+[DataImporter] 317 Faehigkeiten importiert.
+[DataImporter] 162 Karten importiert.
 [DataImporter] 18 Runen importiert.
-[DataImporter] 9 Welten importiert.
-[DataImporter] 6 Helden importiert.
+[DataImporter] 10 Welten importiert.
+[DataImporter] 5 Helden importiert.
 [DataImporter] BalancingConfig-Asset vorhanden (Werte via Inspector pflegen).
 [DataImporter] Alle Daten importiert.
 [Setup] Build-Scenes registriert (6 Scenes, Boot.unity als Index 0).

@@ -133,13 +133,17 @@ ArcaneKingdom.Core             <- _Project/Scripts/Core, Services (Auth, Save)
 ```
 
 - **Core:** Logger, Extension-Methods, Result-Type, GameClock
-- **Domain:** Datentypen, ScriptableObject-Definitionen, reine Logik (testbar ohne Unity-API)
+- **Domain:** Datentypen, ScriptableObject-Definitionen, reine Logik. Die reine Logik (BattleEngine,
+  FusionService, DeckValidator, …) ist von Unity entkoppelt, aber die Schicht ist NICHT komplett
+  Unity-frei: die Daten-Definitionen erben von `UnityEngine.ScriptableObject` und `Core.GameLogger`
+  nutzt `UnityEngine.Debug`. Die Domain-Tests laufen daher im Unity-EditMode-Test-Runner, nicht
+  als standalone-.NET-Suite.
 - **Game:** Feature-Code mit Unity-Abhaengigkeit (MonoBehaviours, Coroutines)
 - **UI:** Views, Controller, Bindings — abhaengig von Game und Domain
 - **Bootstrap:** App-Einstieg, LifetimeScope-Setup
 
 **Test-Assemblies (separat):**
-- `ArcaneKingdom.Domain.Tests` (NUnit, ohne Unity-API)
+- `ArcaneKingdom.Domain.Tests` (NUnit, EditMode — laeuft im Unity-Test-Runner)
 - `ArcaneKingdom.Game.PlayMode.Tests` (Unity Test Framework, PlayMode)
 
 ---

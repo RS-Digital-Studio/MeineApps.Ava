@@ -162,8 +162,50 @@
 
 .ak-text--accent { color: var(--ak-accent); }
 .ak-text--primary { color: var(--ak-primary-light); }
+.ak-text--primary-light { color: var(--ak-primary-light); }
+.ak-text--accent-light { color: var(--ak-accent-light); }
 .ak-text--success { color: var(--ak-success); }
 .ak-text--danger { color: var(--ak-danger); }
+.ak-text--muted { color: var(--ak-text-muted); }
+.ak-text--secondary { color: var(--ak-text-secondary); }
+
+/* === Theme-Token-Utility-Klassen ===
+   WICHTIG: Unity loest var(--token) NUR in USS-Regeln auf, NICHT in Inline-Styles
+   (style="..." im UXML). Inline var() crasht beim VisualTreeAsset.Instantiate()
+   (StyleVariableResolver -> NullReferenceException, da der Tree detached ist).
+   Theme-Werte daher IMMER ueber diese Klassen setzen, NIE inline var() und NIE
+   hardcodierte Inline-Farben (nicht wartbar). Siehe MeineApps.UI-Doktrin. */
+
+/* Hintergrund */
+.ak-bg-deep      { background-color: var(--ak-bg-deep); }
+.ak-bg-base      { background-color: var(--ak-bg-base); }
+.ak-bg-surface   { background-color: var(--ak-bg-surface); }
+.ak-bg-surface-2 { background-color: var(--ak-bg-surface-2); }
+.ak-bg-overlay   { background-color: var(--ak-bg-overlay); }
+.ak-bg-accent    { background-color: var(--ak-accent); }
+.ak-bg-primary   { background-color: var(--ak-primary); }
+.ak-bg-danger    { background-color: var(--ak-danger); }
+
+/* Rahmen — alle Seiten */
+.ak-bd-gold-soft   { border-color: var(--ak-border-gold-soft); }
+.ak-bd-gold        { border-color: var(--ak-border-gold); }
+.ak-bd-gold-strong { border-color: var(--ak-border-gold-strong); }
+.ak-bd-danger      { border-color: var(--ak-danger); }
+.ak-bd-accent      { border-color: var(--ak-accent); }
+.ak-bd-success     { border-color: var(--ak-success); }
+
+/* Rahmen — nur unten (Header/Leisten/Trennlinien) */
+.ak-bd-b-gold-soft { border-bottom-color: var(--ak-border-gold-soft); }
+.ak-bd-b-gold      { border-bottom-color: var(--ak-border-gold); }
+.ak-bd-b-accent    { border-bottom-color: var(--ak-accent); }
+.ak-bd-b-danger    { border-bottom-color: var(--ak-danger); }
+.ak-bd-b-success   { border-bottom-color: var(--ak-success); }
+
+/* Eck-Radius (alle vier Ecken) */
+.ak-rad-sm { border-top-left-radius: var(--ak-radius-sm); border-top-right-radius: var(--ak-radius-sm); border-bottom-left-radius: var(--ak-radius-sm); border-bottom-right-radius: var(--ak-radius-sm); }
+.ak-rad-md { border-top-left-radius: var(--ak-radius-md); border-top-right-radius: var(--ak-radius-md); border-bottom-left-radius: var(--ak-radius-md); border-bottom-right-radius: var(--ak-radius-md); }
+.ak-rad-lg { border-top-left-radius: var(--ak-radius-lg); border-top-right-radius: var(--ak-radius-lg); border-bottom-left-radius: var(--ak-radius-lg); border-bottom-right-radius: var(--ak-radius-lg); }
+.ak-rad-xl { border-top-left-radius: var(--ak-radius-xl); border-top-right-radius: var(--ak-radius-xl); border-bottom-left-radius: var(--ak-radius-xl); border-bottom-right-radius: var(--ak-radius-xl); }
 
 /* === Layout-Helpers === */
 .ak-row { flex-direction: row; }

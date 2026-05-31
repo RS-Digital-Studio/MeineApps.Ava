@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement class="ak-screen ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+    <ui:VisualElement class="ak-screen ak-fill ak-col ak-bg-base">
 
         <!-- Header -->
         <ui:VisualElement class="ak-app-header">
@@ -17,13 +17,13 @@
 
                 <!-- Dieb-Portrait -->
                 <ui:VisualElement class="ak-center" style="margin-bottom: 24px;">
-                    <ui:VisualElement style="width: 200px; height: 200px; background-color: var(--ak-bg-surface-2); border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-left-radius: 100px; border-bottom-right-radius: 100px; border-left-width: 4px; border-right-width: 4px; border-top-width: 4px; border-bottom-width: 4px; border-left-color: var(--ak-danger); border-right-color: var(--ak-danger); border-top-color: var(--ak-danger); border-bottom-color: var(--ak-danger); margin-bottom: 16px;"/>
+                    <ui:VisualElement class="ak-bg-surface-2 ak-bd-danger" style="width: 200px; height: 200px; border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-left-radius: 100px; border-bottom-right-radius: 100px; border-left-width: 4px; border-right-width: 4px; border-top-width: 4px; border-bottom-width: 4px; margin-bottom: 16px;"/>
                     <ui:Label name="thief-name" text="Mysterioeser Dieb" class="ak-h3"/>
                 </ui:VisualElement>
 
                 <!-- HP-Balken -->
                 <ui:VisualElement style="margin-bottom: 16px;">
-                    <ui:VisualElement class="ak-progress ak-progress--danger" style="height: 24px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-width: 1px; border-color: var(--ak-border-gold-soft);">
+                    <ui:VisualElement class="ak-progress ak-progress--danger ak-bd-gold-soft" style="height: 24px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-width: 1px;">
                         <ui:VisualElement name="thief-hp-fill" class="ak-progress__fill" style="width: 100%;"/>
                     </ui:VisualElement>
                     <ui:Label name="thief-hp-text" text="16.724 / 16.724 HP" class="ak-body"

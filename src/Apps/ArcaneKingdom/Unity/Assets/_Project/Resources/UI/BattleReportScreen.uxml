@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement class="ak-screen" style="flex-grow: 1; background-color: var(--ak-bg-base); padding-left: 24px; padding-right: 24px; padding-top: 32px; padding-bottom: 24px; align-items: center; justify-content: center;">
-        <ui:Label name="battle-report-banner" text="WIN" style="font-size: 64px; -unity-font-style: bold; color: var(--ak-accent); margin-bottom: 24px;"/>
+    <ui:VisualElement class="ak-screen ak-bg-base" style="flex-grow: 1; padding-left: 24px; padding-right: 24px; padding-top: 32px; padding-bottom: 24px; align-items: center; justify-content: center;">
+        <ui:Label name="battle-report-banner" text="WIN" class="ak-text--accent" style="font-size: 64px; -unity-font-style: bold; margin-bottom: 24px;"/>
         <ui:Label name="battle-report-rank-change" text="+0 Rangpunkte" class="ak-text--accent" style="font-size: 18px; -unity-font-style: bold; margin-bottom: 48px;"/>
 
-        <ui:VisualElement class="ak-surface" style="width: 100%; max-width: 480px; padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-left-color: var(--ak-border-gold-soft); border-right-color: var(--ak-border-gold-soft); border-top-color: var(--ak-border-gold-soft); border-bottom-color: var(--ak-border-gold-soft);">
+        <ui:VisualElement class="ak-surface ak-bd-gold-soft" style="width: 100%; max-width: 480px; padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px;">
             <ui:Label text="Gegner" class="ak-overline" style="margin-bottom: 2px;"/>
             <ui:Label name="battle-report-opponent" text="-" class="ak-h4" style="margin-bottom: 12px;"/>
             <ui:Label text="Schlachtzeit" class="ak-overline" style="margin-bottom: 2px;"/>
-            <ui:Label name="battle-report-time" text="-" class="ak-body" style="color: var(--ak-text-secondary);"/>
+            <ui:Label name="battle-report-time" text="-" class="ak-body ak-text--secondary"/>
         </ui:VisualElement>
 
         <ui:VisualElement style="flex-direction: row; margin-top: 24px; width: 100%; max-width: 480px;">

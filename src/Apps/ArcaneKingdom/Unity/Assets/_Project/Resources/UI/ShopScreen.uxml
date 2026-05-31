@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement name="shop-root" class="ak-screen" style="flex-grow: 1; background-color: var(--ak-bg-base); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
+    <ui:VisualElement name="shop-root" class="ak-screen ak-bg-base" style="flex-grow: 1; padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
 
-        <ui:VisualElement class="ak-row ak-center-v" style="background-color: rgb(6, 6, 16); border-bottom-width: 1px; border-bottom-color: var(--ak-border-gold-soft); padding-left: 12px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; margin-bottom: 16px;">
+        <ui:VisualElement class="ak-row ak-center-v ak-bd-b-gold-soft" style="background-color: rgb(6, 6, 16); border-bottom-width: 1px; padding-left: 12px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; margin-bottom: 16px;">
             <ui:Label text="SHOP" class="ak-h2" style="flex-grow: 1;"/>
             <ui:Button name="shop-close" text="X" class="ak-btn ak-btn--ghost ak-btn--icon" style="width: 44px; height: 44px;"/>
         </ui:VisualElement>

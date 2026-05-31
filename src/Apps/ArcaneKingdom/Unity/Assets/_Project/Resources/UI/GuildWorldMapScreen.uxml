@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement class="ak-screen ak-col" style="flex-grow: 1; background-color: var(--ak-bg-base);">
+    <ui:VisualElement class="ak-screen ak-col ak-bg-base" style="flex-grow: 1;">
 
         <ui:VisualElement class="ak-app-header">
             <ui:Label text="GILDEN-WELTKARTE" class="ak-h2" style="flex-grow: 1;"/>

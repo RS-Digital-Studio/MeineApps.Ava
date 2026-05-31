@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
     <ui:VisualElement name="chat-backdrop" class="ak-modal-backdrop" style="justify-content: flex-end; align-items: stretch;">
-        <ui:VisualElement style="background-color: var(--ak-bg-base); border-top-left-radius: 16px; border-top-right-radius: 16px; border-top-width: 1px; border-left-width: 1px; border-right-width: 1px; border-color: var(--ak-border-gold); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 12px; height: 65%;">
+        <ui:VisualElement class="ak-bg-base ak-bd-gold" style="border-top-left-radius: 16px; border-top-right-radius: 16px; border-top-width: 1px; border-left-width: 1px; border-right-width: 1px; padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 12px; height: 65%;">
 
-            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 12px; background-color: rgb(6, 6, 16); border-bottom-width: 1px; border-color: var(--ak-border-gold-soft); padding-left: 8px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+            <ui:VisualElement class="ak-bd-gold-soft" style="flex-direction: row; align-items: center; margin-bottom: 12px; background-color: rgb(6, 6, 16); border-bottom-width: 1px; padding-left: 8px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-top-left-radius: 12px; border-top-right-radius: 12px;">
                 <ui:Label text="CHAT" class="ak-h2" style="flex-grow: 1;"/>
                 <ui:Button name="chat-close" text="X" class="ak-btn ak-btn--ghost ak-btn--icon"/>
             </ui:VisualElement>
@@ -14,7 +14,7 @@
                 <ui:VisualElement name="chat-messages"/>
             </ui:ScrollView>
 
-            <ui:VisualElement style="flex-direction: row; align-items: center; background-color: rgb(6, 6, 16); border-top-width: 1px; border-color: var(--ak-border-gold-soft); padding-left: 8px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+            <ui:VisualElement class="ak-bd-gold-soft" style="flex-direction: row; align-items: center; background-color: rgb(6, 6, 16); border-top-width: 1px; padding-left: 8px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
                 <ui:TextField name="chat-input" placeholder-text="Nachricht eingeben..." class="ak-input" style="flex-grow: 1; margin-right: 8px;"/>
                 <ui:Button name="chat-send" text="Senden" class="ak-btn ak-btn--accent" style="width: 100px;"/>
             </ui:VisualElement>

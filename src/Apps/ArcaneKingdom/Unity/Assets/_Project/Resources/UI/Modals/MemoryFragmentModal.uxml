@@ -1,41 +1,33 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
 
-    <ui:VisualElement class="ak-modal-backdrop ak-memory__backdrop"
-                      style="background-color: var(--ak-bg-overlay);
-                             flex-grow: 1;
+    <ui:VisualElement class="ak-modal-backdrop ak-memory__backdrop ak-bg-overlay"
+                      style="flex-grow: 1;
                              justify-content: center;
                              align-items: center;">
 
-        <ui:VisualElement class="ak-modal ak-memory__panel"
-                          style="background-color: var(--ak-bg-surface);
-                                 border-width: 1px;
-                                 border-color: var(--ak-border-gold);
-                                 border-radius: var(--ak-radius-lg);
+        <ui:VisualElement class="ak-modal ak-memory__panel ak-bg-surface ak-bd-gold ak-rad-lg"
+                          style="border-width: 1px;
                                  padding: 32;
                                  max-width: 600;
                                  min-width: 360;">
 
             <!-- Twist-Banner (nur bei Welt 8 sichtbar) -->
-            <ui:VisualElement name="twist-banner" class="ak-memory__twist-banner"
+            <ui:VisualElement name="twist-banner" class="ak-memory__twist-banner ak-bg-deep ak-bd-danger ak-rad-sm"
                               style="display: None;
-                                     background-color: var(--ak-bg-deep);
                                      border-width: 1px;
-                                     border-color: var(--ak-danger);
                                      padding: 8;
-                                     margin-bottom: 12;
-                                     border-radius: var(--ak-radius-sm);">
-                <ui:Label text="DER TWIST" class="ak-h3"
-                          style="text-align: center; color: var(--ak-accent-light); letter-spacing: 2px;" />
+                                     margin-bottom: 12;">
+                <ui:Label text="DER TWIST" class="ak-h3 ak-text--accent-light"
+                          style="text-align: center; letter-spacing: 2px;" />
             </ui:VisualElement>
 
             <!-- NPC-Portrait (nur sichtbar wenn NpcId gesetzt) -->
-            <ui:VisualElement name="fragment-portrait"
+            <ui:VisualElement name="fragment-portrait" class="ak-bd-gold-strong"
                               style="display: None;
                                      width: 120;
                                      height: 120;
                                      align-self: center;
                                      border-width: 2px;
-                                     border-color: var(--ak-border-gold-strong);
                                      border-radius: 60;
                                      margin-bottom: 12;
                                      -unity-background-scale-mode: scale-and-crop;" />
@@ -47,17 +39,15 @@
 
             <ui:Label name="fragment-content"
                       text="Ein Name. Nythragor. Angst und Schuld."
-                      class="ak-body"
+                      class="ak-body ak-text--secondary"
                       style="text-align: center;
-                             color: var(--ak-text-secondary);
                              font-size: 16;
                              white-space: normal;
                              margin-bottom: 16;" />
 
             <ui:Label name="twist-reveal" text=""
-                      class="ak-caption"
+                      class="ak-caption ak-text--muted"
                       style="text-align: center;
-                             color: var(--ak-text-muted);
                              font-size: 12;
                              font-style: italic;
                              white-space: normal;

@@ -6,11 +6,9 @@
         Jedes Card-Slot wird per Code animiert eingeblendet (Flip+Glow nach Rarity).
     -->
 
-    <ui:VisualElement class="ak-modal-backdrop" name="pack-opening-backdrop"
-                      style="background-color: var(--ak-bg-overlay);">
-        <ui:VisualElement class="ak-modal ak-col ak-center"
-                          style="background-color: var(--ak-bg-base);
-                                 width: 92%; max-width: 720; padding: 28;">
+    <ui:VisualElement class="ak-modal-backdrop ak-bg-overlay" name="pack-opening-backdrop">
+        <ui:VisualElement class="ak-modal ak-col ak-center ak-bg-base"
+                          style="width: 92%; max-width: 720; padding: 28;">
 
             <!-- Header -->
             <ui:Label name="pack-opening-title" text="Pack geoeffnet!" class="ak-h2"

@@ -10,9 +10,8 @@
     <ui:VisualElement name="tutorial-root" class="ak-fill">
 
         <!-- Backdrop (halbtransparent, blockt Clicks ausserhalb der Bubble) -->
-        <ui:VisualElement name="tutorial-backdrop" class="ak-fill"
-                          style="background-color: var(--ak-bg-overlay);
-                                 pointer-events: auto;" />
+        <ui:VisualElement name="tutorial-backdrop" class="ak-fill ak-bg-overlay"
+                          style="pointer-events: auto;" />
 
         <!-- Speech-Bubble (Bottom-Center) -->
         <ui:VisualElement name="tutorial-bubble" class="ak-modal"

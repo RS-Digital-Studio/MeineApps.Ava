@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+    <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
         <ui:VisualElement class="ak-app-header">
             <ui:Button name="back-button" text="Zurueck"
@@ -20,12 +20,11 @@
                                      min-height: 140;" />
 
             <!-- Vorschau-Panel -->
-            <ui:VisualElement name="preview-panel" class="ak-surface"
+            <ui:VisualElement name="preview-panel" class="ak-surface ak-bd-gold-soft"
                               style="padding: 12;
                                      margin-bottom: 16;
                                      min-height: 80;
-                                     border-width: 1px;
-                                     border-color: var(--ak-border-gold-soft);">
+                                     border-width: 1px;">
                 <ui:Label name="preview-title"
                           text="Karten auswaehlen"
                           class="ak-h4" />

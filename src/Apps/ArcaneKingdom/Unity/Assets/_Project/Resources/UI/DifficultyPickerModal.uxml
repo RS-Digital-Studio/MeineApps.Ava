@@ -12,7 +12,7 @@
 
             <ui:VisualElement style="flex-direction: row; flex-wrap: wrap; justify-content: space-between;">
                 <ui:Button name="difficulty-classic" text="Classic" class="ak-btn ak-btn--ghost" style="width: 48%; min-height: 96px; margin-bottom: 12px;"/>
-                <ui:Button name="difficulty-amateur" text="Amateur" class="ak-btn" style="width: 48%; min-height: 96px; margin-bottom: 12px; border-left-color: var(--ak-success); border-right-color: var(--ak-success); border-top-color: var(--ak-success); border-bottom-color: var(--ak-success); color: var(--ak-success);"/>
+                <ui:Button name="difficulty-amateur" text="Amateur" class="ak-btn ak-bd-success ak-text--success" style="width: 48%; min-height: 96px; margin-bottom: 12px;"/>
                 <ui:Button name="difficulty-profi" text="Profi" class="ak-btn ak-btn--primary" style="width: 48%; min-height: 96px;"/>
                 <ui:Button name="difficulty-gott" text="Gott" class="ak-btn ak-btn--accent" style="width: 48%; min-height: 96px;"/>
             </ui:VisualElement>

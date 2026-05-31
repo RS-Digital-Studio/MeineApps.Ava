@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
          editor-extension-mode="False">
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+    <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
         <ui:VisualElement class="ak-app-header">
             <ui:Button name="settings-back-button" text="Zurueck"

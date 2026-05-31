@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement name="profile-root" class="ak-screen" style="flex-grow: 1; background-color: var(--ak-bg-base); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
+    <ui:VisualElement name="profile-root" class="ak-screen ak-bg-base" style="flex-grow: 1; padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
 
-        <ui:VisualElement class="ak-row ak-center-v" style="background-color: var(--ak-bg-deep); border-bottom-width: 1px; border-bottom-color: var(--ak-border-gold-soft); padding-left: 12px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; margin-bottom: 24px;">
+        <ui:VisualElement class="ak-row ak-center-v ak-bg-deep ak-bd-b-gold-soft" style="border-bottom-width: 1px; padding-left: 12px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; margin-bottom: 24px;">
             <ui:Label text="PROFIL" class="ak-h2 ak-grow"/>
             <ui:Button name="profile-close" text="X" class="ak-btn ak-btn--ghost ak-btn--icon"/>
         </ui:VisualElement>
 
         <ui:VisualElement class="ak-center" style="margin-bottom: 24px;">
-            <ui:VisualElement style="width: 120px; height: 120px; border-top-left-radius: 60px; border-top-right-radius: 60px; border-bottom-left-radius: 60px; border-bottom-right-radius: 60px; background-color: var(--ak-primary); border-left-width: 3px; border-right-width: 3px; border-top-width: 3px; border-bottom-width: 3px; border-left-color: var(--ak-accent); border-right-color: var(--ak-accent); border-top-color: var(--ak-accent); border-bottom-color: var(--ak-accent); margin-bottom: 12px;"/>
+            <ui:VisualElement class="ak-bg-primary ak-bd-accent" style="width: 120px; height: 120px; border-top-left-radius: 60px; border-top-right-radius: 60px; border-bottom-left-radius: 60px; border-bottom-right-radius: 60px; border-left-width: 3px; border-right-width: 3px; border-top-width: 3px; border-bottom-width: 3px; margin-bottom: 12px;"/>
             <ui:Label name="profile-name" text="Spielername" class="ak-h3"/>
             <ui:Label name="profile-level-exp" text="LV 1 - 0 EXP" class="ak-body ak-text--accent" style="margin-top: 4px;"/>
             <ui:Label name="profile-server" text="Server: Poseidon" class="ak-caption" style="margin-top: 4px;"/>
@@ -21,7 +21,7 @@
             </ui:VisualElement>
             <ui:VisualElement class="ak-surface" style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px;">
                 <ui:Label text="Kosten" class="ak-caption"/>
-                <ui:Label name="profile-total-cost" text="-" class="ak-h4" style="color: var(--ak-primary-light);"/>
+                <ui:Label name="profile-total-cost" text="-" class="ak-h4 ak-text--primary-light"/>
             </ui:VisualElement>
             <ui:VisualElement class="ak-surface" style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px;">
                 <ui:Label text="Karten gesamt" class="ak-caption"/>
@@ -33,7 +33,7 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <ui:Label name="profile-stats" text="" class="ak-body" style="color: var(--ak-text-secondary); margin-bottom: 16px; -unity-text-align: middle-center;"/>
+        <ui:Label name="profile-stats" text="" class="ak-body ak-text--secondary" style="margin-bottom: 16px; -unity-text-align: middle-center;"/>
 
         <ui:Label text="Freigeschaltete Inhalte" class="ak-h4 ak-text--accent" style="margin-bottom: 8px;"/>
         <ui:ScrollView class="ak-surface" style="flex-grow: 1; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px;">

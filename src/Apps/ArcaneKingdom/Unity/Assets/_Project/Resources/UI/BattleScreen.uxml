@@ -9,14 +9,13 @@
         Fallback (deck-lose / node-lose Kaempfe ohne Welt-Sprite).
     -->
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+    <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
         <!-- ================ TOP BAR ================ -->
-        <ui:VisualElement class="ak-row" style="height: 48; padding-left: 12; padding-right: 12;
+        <ui:VisualElement class="ak-row ak-bd-b-gold-soft" style="height: 48; padding-left: 12; padding-right: 12;
                                                   padding-top: 8; padding-bottom: 8;
                                                   background-color: rgb(6, 6, 16);
                                                   border-bottom-width: 1;
-                                                  border-bottom-color: var(--ak-border-gold-soft);
                                                   align-items: center;">
             <ui:Button name="battle-flee-button" text="Aufgeben"
                        class="ak-btn ak-btn--sm ak-btn--ghost" />
@@ -33,9 +32,8 @@
 
             <!-- Enemy Hero (HP + Mana) -->
             <ui:VisualElement class="ak-row" style="align-items: center; margin-bottom: 8;">
-                <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
-                                          background-color: var(--ak-danger);
-                                          border-width: 2; border-color: var(--ak-border-gold);
+                <ui:VisualElement class="ak-bg-danger ak-bd-gold" style="width: 48; height: 48; border-radius: 24;
+                                          border-width: 2;
                                           margin-right: 8;" />
                 <ui:VisualElement class="ak-col" style="flex-grow: 1;">
                     <ui:Label name="enemy-hero-name" text="Gegner" class="ak-h4" />
@@ -59,7 +57,7 @@
         </ui:VisualElement>
 
         <!-- ================ BATTLEFIELD-DIVIDER (Gold-Linie) ================ -->
-        <ui:VisualElement style="height: 4; background-color: var(--ak-accent);
+        <ui:VisualElement class="ak-bg-accent" style="height: 4;
                                   opacity: 0.55;" />
 
         <!-- ================ PLAYER-BEREICH ================ -->
@@ -74,9 +72,8 @@
 
             <!-- Player Hero (HP + Mana) -->
             <ui:VisualElement class="ak-row" style="align-items: center; margin-top: 8;">
-                <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
-                                          background-color: var(--ak-primary);
-                                          border-width: 2; border-color: var(--ak-border-gold-strong);
+                <ui:VisualElement class="ak-bg-primary ak-bd-gold-strong" style="width: 48; height: 48; border-radius: 24;
+                                          border-width: 2;
                                           margin-right: 8;" />
                 <ui:VisualElement class="ak-col" style="flex-grow: 1;">
                     <ui:Label name="player-hero-name" text="Du" class="ak-h4" />

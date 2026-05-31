@@ -521,3 +521,243 @@
 .ak-screen--leaving {
     opacity: 0;
 }
+
+/* ============================================================
+   HUB-WELT (Referenz: Design_Entwurf_Login_HubWelt.html, Screen 3)
+   Stadt-Szene (hub_main.png) als Hintergrund, gold-umrandete
+   Gebaeude-Buttons + Right-Nav als Overlay, Bottom-Navigation.
+   ============================================================ */
+
+/* Spieler-Status-Badges (LV / Arena-Rang) unter dem Namen */
+.ak-hub-badge {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    margin-right: 4px;
+    font-size: 9px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+.ak-hub-badge--gold {
+    background-color: rgba(245, 200, 66, 0.13);
+    border-width: 1px;
+    border-color: var(--ak-border-gold);
+    color: var(--ak-accent);
+}
+.ak-hub-badge--danger {
+    background-color: rgba(232, 64, 87, 0.13);
+    border-width: 1px;
+    border-color: rgba(232, 64, 87, 0.4);
+    color: var(--ak-danger);
+}
+
+/* Energie-Leiste (unter der Top-Bar) */
+.ak-hub-energy {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-width: 1px;
+    border-color: var(--ak-border-gold-soft);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    padding-left: 10px;
+    padding-right: 12px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin-left: 16px;
+    margin-right: 16px;
+    margin-top: 8px;
+}
+.ak-hub-energy__icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    color: var(--ak-accent);
+    font-size: 12px;
+}
+.ak-hub-energy__track {
+    flex-grow: 1;
+    height: 6px;
+    background-color: rgba(255, 255, 255, 0.10);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    overflow: hidden;
+}
+.ak-hub-energy__fill {
+    height: 100%;
+    width: 50%;
+    background-color: var(--ak-accent);
+}
+.ak-hub-energy__text {
+    margin-left: 8px;
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: var(--ak-accent);
+    white-space: nowrap;
+}
+
+/* Event-Banner (pulsierender Punkt + Lauftext) */
+.ak-hub-event {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(74, 27, 154, 0.35);
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-color: var(--ak-border-gold-soft);
+    border-bottom-color: var(--ak-border-gold-soft);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-top: 8px;
+}
+.ak-hub-event__dot {
+    width: 6px;
+    height: 6px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    background-color: var(--ak-accent);
+    margin-right: 8px;
+    animation-name: pulseAccent;
+    animation-duration: 1.5s;
+    animation-iteration-count: infinite;
+}
+.ak-hub-event__text {
+    font-size: 11px;
+    color: var(--ak-accent);
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+}
+
+/* Right-Nav (vertikale Spalte runder Buttons) */
+.ak-hub-rightnav {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    translate: 0 -50%;
+    flex-direction: column;
+}
+.ak-hub-navbtn {
+    width: 56px;
+    height: 56px;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    border-width: 2px;
+    border-color: var(--ak-border-gold);
+    background-color: rgba(6, 6, 16, 0.82);
+    color: var(--ak-accent);
+    font-size: 10px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 8px;
+    padding-left: 2px;
+    padding-right: 2px;
+    transition: background-color 120ms, border-color 120ms, scale 80ms;
+}
+.ak-hub-navbtn:hover {
+    background-color: rgba(245, 200, 66, 0.18);
+    border-color: var(--ak-border-gold-strong);
+}
+.ak-hub-navbtn:active { scale: 0.94 0.94; }
+.ak-hub-navbtn--arena {
+    border-color: rgba(232, 64, 87, 0.6);
+    background-color: rgba(120, 20, 30, 0.6);
+    color: rgb(255, 180, 180);
+}
+
+/* Gebaeude-Grid (schwebt ueber der unteren Stadt-Haelfte) */
+.ak-hub-buildings {
+    position: absolute;
+    left: 12px;
+    right: 80px;
+    bottom: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.ak-hub-building {
+    width: 23%;
+    min-width: 96px;
+    height: 56px;
+    margin: 4px;
+    border-width: 1px;
+    border-color: var(--ak-border-gold);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    background-color: rgba(6, 6, 16, 0.72);
+    color: var(--ak-accent);
+    font-size: 11px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    transition: background-color 120ms, border-color 120ms, scale 100ms;
+}
+.ak-hub-building:hover {
+    background-color: rgba(245, 200, 66, 0.16);
+    border-color: var(--ak-border-gold-strong);
+    scale: 1.03 1.03;
+}
+.ak-hub-building:active { scale: 0.97 0.97; }
+.ak-hub-building--highlight {
+    border-color: var(--ak-accent);
+    background-color: rgba(245, 200, 66, 0.12);
+}
+
+/* Bottom-Navigation (5 Tabs) */
+.ak-hub-bottomnav {
+    flex-direction: row;
+    min-height: 60px;
+    background-color: var(--ak-bg-deep);
+    border-top-width: 1px;
+    border-top-color: var(--ak-border-gold);
+}
+.ak-hub-bottombtn {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-top-width: 2px;
+    border-top-color: rgba(0, 0, 0, 0);
+    color: var(--ak-text-muted);
+    font-size: 11px;
+    -unity-font-style: bold;
+    white-space: nowrap;
+    transition: color 120ms, background-color 120ms, border-top-color 150ms;
+}
+.ak-hub-bottombtn:hover {
+    background-color: rgba(245, 200, 66, 0.08);
+    color: var(--ak-accent);
+}
+.ak-hub-bottombtn--active {
+    color: var(--ak-accent);
+    border-top-color: var(--ak-accent);
+    background-color: rgba(245, 200, 66, 0.08);
+}
+
+/* Gold-Puls (Event-Banner-Dot) — eigenstaendig in Components.uss definiert. */
+@keyframes pulseAccent {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.3; }
+    100% { opacity: 1; }
+}

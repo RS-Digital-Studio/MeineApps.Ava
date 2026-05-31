@@ -1,20 +1,13 @@
 #nullable enable
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
-using ArcaneKingdom.Domain.Quest;
-using ArcaneKingdom.Domain.Shop;
 using ArcaneKingdom.Game.Artwork;
-using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.Game.Quest;
-using ArcaneKingdom.Game.Shop;
-using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
-using ArcaneKingdom.UI.Modals;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,84 +15,35 @@ using UnityEngine.UIElements;
 namespace ArcaneKingdom.UI.Hub
 {
     /// <summary>
-    /// Zentrale Hub-Ansicht — Header (Profil + Currencies), TabBar (Cards/Quests/Shop/Arena/Mehr),
-    /// Content-Container der das aktive Tab-Panel zeigt.
+    /// Hub-Welt (Spielplan v5 Kap. 3, Referenz: Design_Entwurf_Login_HubWelt.html, Screen 3).
+    /// Stadt-Szene (hub_main) als Hintergrund mit Top-Bar (Profil + Ressourcen), Energie-Leiste,
+    /// Event-Banner, klickbarem Gebaeude-Grid + Right-Nav und Bottom-Navigation.
     ///
-    /// In Stufe 3 ist nur der Cards-Tab voll implementiert. Quests/Shop/Arena/Mehr
-    /// kommen in Stufe 4.
+    /// Der Hub ist ein reiner Navigations-Knoten: jedes Gebaeude / jeder Nav-Button fuehrt
+    /// per ScreenManager zu einem eigenstaendigen Screen. Daily-Income, PendingClaims und
+    /// Quest-Restore laufen beim Hub-Eintritt.
     /// </summary>
     public sealed class HubScreen : ScreenBase
     {
         private readonly ScreenManager _screenManager;
         private readonly ISaveService<PlayerSave> _save;
-        private readonly CardCatalogService _cardCatalog;
         private readonly QuestService _questService;
-        private readonly ShopController _shopController;
         private readonly ToastService _toast;
-        private readonly ModalContext _modalContext;
+        private readonly ArcaneKingdom.Game.World.PrestigeAppService _prestige;
+        private readonly UIAssetService _uiAssets;
         private readonly ILocalizationService _loc;
 
-        // Header
+        // Top-Bar
         private Label _avatarInitials = null!;
         private Label _displayName = null!;
         private Label _guildTag = null!;
         private Label _levelLabel = null!;
+        private Label _levelBadge = null!;
+        private Label _arenaBadge = null!;
         private Label _energyValue = null!;
         private Label _goldValue = null!;
         private Label _diamondValue = null!;
-
-        // Tab-Panels
-        private VisualElement _tabCards = null!;
-        private VisualElement _tabQuests = null!;
-        private VisualElement _tabShop = null!;
-        private VisualElement _tabArena = null!;
-        private VisualElement _tabMore = null!;
-
-        // Tab-Buttons
-        private VisualElement _btnCards = null!;
-        private VisualElement _btnQuests = null!;
-        private VisualElement _btnShop = null!;
-        private VisualElement _btnArena = null!;
-        private VisualElement _btnMore = null!;
-
-        // Cards-Tab
-        private TextField _cardsSearch = null!;
-        private DropdownField _cardsRarityFilter = null!;
-        private DropdownField _cardsElementFilter = null!;
-        private VisualElement _cardsGrid = null!;
-        private VisualElement _cardsEmpty = null!;
-
-        // Quests-Tab
-        private Button _questsFilterDaily = null!;
-        private Button _questsFilterWeekly = null!;
-        private Button _questsFilterAchievements = null!;
-        private VisualElement _questsList = null!;
-        private VisualElement _questsEmpty = null!;
-        private QuestPeriod _questsPeriodFilter = QuestPeriod.Daily;
-
-        // Shop-Tab
-        private VisualElement _shopPacksGrid = null!;
-        private VisualElement _shopDirectList = null!;
-        private Button _shopBuyDiamondsButton = null!;
-
-        // Arena-Tab
-        private Label _arenaRankName = null!;
-        private Label _arenaRankPoints = null!;
-        private VisualElement _arenaRankFill = null!;
-        private Label _arenaTicketsValue = null!;
-        private Button _arenaSearchMatch = null!;
-        private Button _arenaViewLeaderboard = null!;
-
-        // More-Tab
-        private Button _moreDeckBuilder = null!;
-        private Button _moreWorldMap = null!;
-        private Button _moreGuild = null!;
-        private Button _moreFriends = null!;
-        private Button _moreSaisonPass = null!;
-        private Button _moreCodex = null!;
-        private Button _moreSettings = null!;
-        private Button? _moreSchmiede;        // v6 (optional — UXML kann ohne aktualisiert werden)
-        private Button? _moreTempel;          // v6
+        private VisualElement _energyFill = null!;
 
         private PlayerSave? _saveCached;
         private CancellationTokenSource? _refreshCts;
@@ -107,29 +51,18 @@ namespace ArcaneKingdom.UI.Hub
         public override string Id => ScreenId.Hub;
         protected override string UxmlPath => "UI/HubScreen";
 
-        // v6: Daily-Income via PrestigeAppService beim Hub-Open
-        private readonly ArcaneKingdom.Game.World.PrestigeAppService _prestige;
-
-        private readonly UIAssetService _uiAssets;
-
         public HubScreen(ScreenManager screenManager,
                          ISaveService<PlayerSave> save,
-                         CardCatalogService cardCatalog,
                          QuestService questService,
-                         ShopController shopController,
                          ToastService toast,
-                         ModalContext modalContext,
                          ArcaneKingdom.Game.World.PrestigeAppService prestige,
                          UIAssetService uiAssets,
                          ILocalizationService loc)
         {
             _screenManager = screenManager;
             _save = save;
-            _cardCatalog = cardCatalog;
             _questService = questService;
-            _shopController = shopController;
             _toast = toast;
-            _modalContext = modalContext;
             _prestige = prestige;
             _uiAssets = uiAssets;
             _loc = loc;
@@ -137,25 +70,26 @@ namespace ArcaneKingdom.UI.Hub
 
         protected override void BindElements(VisualElement root)
         {
-            // Hub-Background aus generierten Assets (City-Hub-Sceneary)
+            // Stadt-Szene als formatfuellender Hintergrund (16:9, scale-and-crop).
             _uiAssets.ApplyUIBackground(root, "hub_main");
 
-            // Header
+            // === Top-Bar ===
             _avatarInitials = Q<Label>("header-avatar-initials");
             _displayName    = Q<Label>("header-display-name");
             _guildTag       = Q<Label>("header-guild-tag");
             _levelLabel     = Q<Label>("header-level");
+            _levelBadge     = Q<Label>("header-level-badge");
+            _arenaBadge     = Q<Label>("header-arena-badge");
             _energyValue    = Q<Label>("header-energy-value");
             _goldValue      = Q<Label>("header-gold-value");
             _diamondValue   = Q<Label>("header-diamond-value");
+            _energyFill     = Q<VisualElement>("hub-energy-fill");
 
-            // Avatar als Background des Header-Avatars (Default avatar01, spaeter aus Save laden)
+            // Avatar-Sprite + Gold-Frame-Ring + ausgeblendete Initialen (Sprite ist sichtbar).
             var headerAvatar = Q<VisualElement>("header-avatar");
             _uiAssets.ApplyAvatar(headerAvatar, "avatar01");
-            // Initials-Fallback ausblenden — Avatar-Sprite ist sichtbar
             _avatarInitials.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
 
-            // Avatar-Frame (Gold-Default) als ueberlagernder Ring um Avatar legen
             var frameOverlay = new VisualElement { name = "header-avatar-frame" };
             frameOverlay.style.position = Position.Absolute;
             frameOverlay.style.left = -4;
@@ -166,501 +100,41 @@ namespace ArcaneKingdom.UI.Hub
             _uiAssets.ApplyBackground(frameOverlay, "Icons/Frames/frame_gold", ScaleMode.ScaleToFit);
             headerAvatar.Add(frameOverlay);
 
-            // Currency-Pill-Icons (Energie/Gold/Diamant) durch generierte Sprites ersetzen
-            ApplyCurrencyPillIcon("header-energy-pill", "currency_energie");
+            // Ressourcen-Pill-Icons + Energie-Icon durch generierte Sprites ersetzen.
             ApplyCurrencyPillIcon("header-gold-pill",   "currency_gold");
             ApplyCurrencyPillIcon("header-diamond-pill","currency_diamant");
+            _uiAssets.ApplyCurrencyIcon(Q<VisualElement>("hub-energy-icon"), "currency_energie");
 
-            // Tab-Panels
-            _tabCards  = Q<VisualElement>("tab-cards");
-            _tabQuests = Q<VisualElement>("tab-quests");
-            _tabShop   = Q<VisualElement>("tab-shop");
-            _tabArena  = Q<VisualElement>("tab-arena");
-            _tabMore   = Q<VisualElement>("tab-more");
+            // === Gebaeude-Grid (Navigation zu eigenstaendigen Screens) ===
+            BindNav("building-cards",      ScreenId.Codex,          "Karten-Sammlung nicht verfuegbar.");
+            BindNav("building-schmiede",   ScreenId.Schmiede,       "Zauberschmiede nicht verfuegbar.");
+            BindNav("building-bibliothek", ScreenId.QuestCenter,    "Bibliothek nicht verfuegbar.");
+            BindNav("building-tempel",     ScreenId.Tempel,         "Tempel nicht verfuegbar.");
+            BindNav("building-gilde",      ScreenId.Guild,          "Gilde nicht verfuegbar.");
+            BindNav("building-markt",      ScreenId.Shop,           "Marktplatz nicht verfuegbar.");
+            BindNav("building-ehre",       ScreenId.MeritRanking,   "Wand der Ehre nicht verfuegbar.");
+            BindNav("building-post",       ScreenId.ChatOverlay,    "Postamt nicht verfuegbar.");
 
-            // Tab-Buttons
-            _btnCards  = Q<VisualElement>("tab-button-cards");
-            _btnQuests = Q<VisualElement>("tab-button-quests");
-            _btnShop   = Q<VisualElement>("tab-button-shop");
-            _btnArena  = Q<VisualElement>("tab-button-arena");
-            _btnMore   = Q<VisualElement>("tab-button-more");
+            // === Right-Nav ===
+            BindNav("nav-worldmap", ScreenId.WorldMap,      "Welt-Karte nicht verfuegbar.");
+            BindNav("nav-arena",    ScreenId.Arena,         "Arena nicht verfuegbar.");
+            BindNav("nav-runes",    ScreenId.Runes,         "Runen-Verwaltung nicht verfuegbar.");
+            BindNav("nav-profile",  ScreenId.PlayerProfile, "Spieler-Profil nicht verfuegbar.");
 
-            _btnCards.AddManipulator(new Clickable(() => SwitchTab("cards")));
-            _btnQuests.AddManipulator(new Clickable(() => SwitchTab("quests")));
-            _btnShop.AddManipulator(new Clickable(() => SwitchTab("shop")));
-            _btnArena.AddManipulator(new Clickable(() => SwitchTab("arena")));
-            _btnMore.AddManipulator(new Clickable(() => SwitchTab("more")));
-
-            // Cards-Tab
-            _cardsSearch        = Q<TextField>("cards-search");
-            _cardsRarityFilter  = Q<DropdownField>("cards-rarity-filter");
-            _cardsElementFilter = Q<DropdownField>("cards-element-filter");
-            _cardsGrid          = Q<VisualElement>("cards-grid");
-            _cardsEmpty         = Q<VisualElement>("cards-empty");
-
-            // Filter-Dropdowns befuellen
-            _cardsRarityFilter.choices = new List<string> { "Alle Raritaeten",
-                "Gewoehnlich", "Ungewoehnlich", "Selten", "Epic", "Legendaer", "Mythisch" };
-            _cardsRarityFilter.index = 0;
-
-            _cardsElementFilter.choices = new List<string> { "Alle Elemente",
-                "Natur", "Feuer", "Wasser", "Erde", "Licht", "Dunkel" };
-            _cardsElementFilter.index = 0;
-
-            _cardsSearch.RegisterValueChangedCallback(_ => RefreshCardsGrid());
-            _cardsRarityFilter.RegisterValueChangedCallback(_ => RefreshCardsGrid());
-            _cardsElementFilter.RegisterValueChangedCallback(_ => RefreshCardsGrid());
-
-            BindQuestsTab();
-            BindShopTab();
-            BindArenaTab();
-            BindMoreTab();
-
-            SwitchTab("cards");
+            // === Bottom-Navigation ===
+            BindNav("bottom-menu",    ScreenId.Settings,    "Einstellungen nicht verfuegbar.");
+            BindNav("bottom-shop",    ScreenId.Shop,        "Laden nicht verfuegbar.");
+            BindNav("bottom-deck",    ScreenId.DeckBuilder, "Deck-Builder nicht verfuegbar.");
+            BindNav("bottom-friends", ScreenId.Friends,     "Freunde nicht verfuegbar.");
+            // "bottom-hub" ist der aktive Screen — kein Handler noetig.
         }
 
-        // ============================================================
-        // Quests-Tab Bindings
-        // ============================================================
-
-        private void BindQuestsTab()
+        /// <summary>Verkabelt einen Button mit der Navigation zu einem Screen (Fallback-Toast wenn nicht registriert).</summary>
+        private void BindNav(string buttonName, string screenId, string fallbackMessage)
         {
-            _questsFilterDaily = Q<Button>("quests-filter-daily");
-            _questsFilterWeekly = Q<Button>("quests-filter-weekly");
-            _questsFilterAchievements = Q<Button>("quests-filter-achievements");
-            _questsList = Q<VisualElement>("quests-list");
-            _questsEmpty = Q<VisualElement>("quests-empty");
-
-            _questsFilterDaily.clicked += () => SetQuestsFilter(QuestPeriod.Daily);
-            _questsFilterWeekly.clicked += () => SetQuestsFilter(QuestPeriod.Weekly);
-            _questsFilterAchievements.clicked += () => SetQuestsFilter(QuestPeriod.Achievement);
-        }
-
-        private void SetQuestsFilter(QuestPeriod period)
-        {
-            _questsPeriodFilter = period;
-            UpdateQuestsFilterButtonStyles();
-            RefreshQuestsTab();
-        }
-
-        private void UpdateQuestsFilterButtonStyles()
-        {
-            UpdateButtonStyle(_questsFilterDaily, _questsPeriodFilter == QuestPeriod.Daily);
-            UpdateButtonStyle(_questsFilterWeekly, _questsPeriodFilter == QuestPeriod.Weekly);
-            UpdateButtonStyle(_questsFilterAchievements, _questsPeriodFilter == QuestPeriod.Achievement);
-        }
-
-        private static void UpdateButtonStyle(Button btn, bool active)
-        {
-            btn.RemoveFromClassList("ak-btn--primary");
-            btn.RemoveFromClassList("ak-btn--ghost");
-            btn.AddToClassList(active ? "ak-btn--primary" : "ak-btn--ghost");
-        }
-
-        private void RefreshQuestsTab()
-        {
-            _questsList.Clear();
-            var defs = _questService.AllDefinitions
-                .Where(q => q.Period == _questsPeriodFilter)
-                .ToList();
-
-            if (defs.Count == 0)
-            {
-                SetActive(_questsList, false);
-                SetActive(_questsEmpty, true);
-                return;
-            }
-            SetActive(_questsEmpty, false);
-            SetActive(_questsList, true);
-
-            foreach (var def in defs)
-                _questsList.Add(BuildQuestRow(def));
-        }
-
-        private VisualElement BuildQuestRow(QuestDefinition def)
-        {
-            var progress = _questService.GetProgress(def.Id);
-
-            var row = new VisualElement { name = $"quest-{def.Id}" };
-            row.AddToClassList("ak-surface");
-            row.style.marginBottom = 8;
-
-            // Titel + Belohnungen
-            var header = new VisualElement();
-            header.style.flexDirection = FlexDirection.Row;
-            header.style.alignItems = Align.Center;
-
-            var nameLabel = new Label(_loc.Get(def.DisplayNameKey, def.Id));
-            nameLabel.AddToClassList("ak-h4");
-            nameLabel.style.flexGrow = 1;
-            header.Add(nameLabel);
-
-            // Rewards-Summary (z.B. "200 Gold + 2 Common-Scraps")
-            var rewardSummary = string.Join(" • ", def.Rewards.Select(r => $"{r.Amount} {r.SubType}"));
-            var rewardLabel = new Label(rewardSummary);
-            rewardLabel.AddToClassList("ak-caption");
-            rewardLabel.AddToClassList("ak-text--accent");
-            header.Add(rewardLabel);
-            row.Add(header);
-
-            // Beschreibung
-            var desc = new Label(_loc.Get(def.DescriptionKey, $"{def.Objective} x {def.TargetCount}"));
-            desc.AddToClassList("ak-body");
-            desc.style.whiteSpace = WhiteSpace.Normal;
-            desc.style.marginTop = 4;
-            row.Add(desc);
-
-            // Progress-Bar + Anzeige
-            var progressContainer = new VisualElement();
-            progressContainer.style.flexDirection = FlexDirection.Row;
-            progressContainer.style.alignItems = Align.Center;
-            progressContainer.style.marginTop = 8;
-
-            var progressBar = new VisualElement();
-            progressBar.AddToClassList("ak-progress");
-            progressBar.style.flexGrow = 1;
-            var fill = new VisualElement();
-            fill.AddToClassList("ak-progress__fill");
-            var pct = def.TargetCount > 0 ? (float)progress.CurrentCount * 100f / def.TargetCount : 0f;
-            fill.style.width = new Length(System.Math.Min(pct, 100f), LengthUnit.Percent);
-            progressBar.Add(fill);
-            progressContainer.Add(progressBar);
-
-            var counter = new Label($"{progress.CurrentCount}/{def.TargetCount}");
-            counter.AddToClassList("ak-caption");
-            counter.style.marginLeft = 8;
-            counter.style.minWidth = 48;
-            progressContainer.Add(counter);
-
-            row.Add(progressContainer);
-
-            // Claim-Button (nur wenn completed und nicht claimed)
-            if (progress.Completed && !progress.RewardClaimed)
-            {
-                var claimBtn = new Button(() => OnClaimQuest(def.Id)) { text = _loc.Get("quest.claim", "Einloesen") };
-                claimBtn.AddToClassList("ak-btn");
-                claimBtn.AddToClassList("ak-btn--sm");
-                claimBtn.AddToClassList("ak-btn--accent");
-                claimBtn.style.marginTop = 8;
-                row.Add(claimBtn);
-            }
-            else if (progress.RewardClaimed)
-            {
-                var done = new Label(_loc.Get("quest.claimed", "Eingeloest"));
-                done.AddToClassList("ak-caption");
-                done.AddToClassList("ak-text--success");
-                done.style.marginTop = 8;
-                done.style.unityTextAlign = TextAnchor.MiddleRight;
-                row.Add(done);
-            }
-
-            return row;
-        }
-
-        private void OnClaimQuest(string questId)
-        {
-            ClaimQuestAsync(questId).Forget();
-        }
-
-        private async UniTask ClaimQuestAsync(string questId)
-        {
-            var result = await _questService.ClaimAsync(questId);
-            if (result.IsSuccess)
-            {
-                _toast.Show(_loc.Get("quest.claim_success", "Quest eingeloest!"), ToastKind.Success);
-                await OnEnterAsync(CancellationToken.None); // Re-Load Save + Header refresh
-            }
-            else
-            {
-                _toast.Show(result.ErrorMessage ?? _loc.Get("quest.claim_failed", "Fehler beim Einloesen"), ToastKind.Danger);
-            }
-        }
-
-        // ============================================================
-        // Shop-Tab Bindings
-        // ============================================================
-
-        private void BindShopTab()
-        {
-            _shopPacksGrid = Q<VisualElement>("shop-packs-grid");
-            _shopDirectList = Q<VisualElement>("shop-direct-list");
-            _shopBuyDiamondsButton = Q<Button>("shop-buy-diamonds");
-
-            _shopBuyDiamondsButton.clicked += () =>
-                _toast.Show(_loc.Get("hub.shop.iap_soon", "IAP-Integration kommt in einer spaeteren Stufe."), ToastKind.Info);
-        }
-
-        private void RefreshShopTab()
-        {
-            _shopPacksGrid.Clear();
-            _shopDirectList.Clear();
-
-            foreach (var pack in _shopController.AvailablePacks)
-                _shopPacksGrid.Add(BuildPackTile(pack));
-
-            // Direkt-Angebote (Energie-Nachkauf, Scrap-Pakete, etc.)
-            _shopDirectList.Add(BuildDirectOffer(
-                _loc.Get("hub.shop.full_energy", "Voll-Energie"),
-                _loc.Get("hub.shop.full_energy_sub", "+60 sofort"),
-                "100 ◆",
-                btn => BuyEnergyAsync(60, 100, btn).Forget()));
-            _shopDirectList.Add(BuildDirectOffer(
-                _loc.Get("hub.shop.bonus_energy", "Bonus-Energie"),
-                _loc.Get("hub.shop.bonus_energy_sub", "+30 fuer 8h"),
-                "50 ◆",
-                btn => BuyEnergyAsync(30, 50, btn).Forget()));
-        }
-
-        private VisualElement BuildPackTile(CardPackDefinition pack)
-        {
-            var tile = new VisualElement { name = $"pack-{pack.Id}" };
-            tile.AddToClassList("ak-surface-elevated");
-            tile.style.width = 220;
-            tile.style.marginRight = 12;
-            tile.style.marginBottom = 12;
-            tile.style.alignItems = Align.Center;
-
-            var name = new Label(_loc.Get(pack.DisplayNameKey, pack.Id));
-            name.AddToClassList("ak-h4");
-            tile.Add(name);
-
-            var meta = new Label(string.Format(
-                _loc.Get("hub.shop.pack_meta", "{0} Karten - Min: {1}"),
-                pack.CardCount, pack.GuaranteedMinRarity));
-            meta.AddToClassList("ak-caption");
-            meta.style.marginBottom = 8;
-            tile.Add(meta);
-
-            var price = new Label(string.Format(_loc.Get("hub.shop.pack_price", "{0} Diamanten"), pack.DiamondCost));
-            price.AddToClassList("ak-h4");
-            price.AddToClassList("ak-text--accent");
-            tile.Add(price);
-
-            Button buyBtn = null!;
-            buyBtn = new Button(() => BuyPackAsync(pack, buyBtn).Forget()) { text = _loc.Get("hub.shop.buy", "Kaufen") };
-            buyBtn.AddToClassList("ak-btn");
-            buyBtn.AddToClassList("ak-btn--primary");
-            buyBtn.style.marginTop = 8;
-            buyBtn.style.minWidth = 140;
-            tile.Add(buyBtn);
-
-            return tile;
-        }
-
-        private VisualElement BuildDirectOffer(string title, string subtitle, string price, System.Action<Button> onBuy)
-        {
-            var row = new VisualElement();
-            row.AddToClassList("ak-surface");
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.alignItems = Align.Center;
-            row.style.marginBottom = 6;
-
-            // Titel + Subtitle in einer Col (2 Zeilen)
-            var textCol = new VisualElement();
-            textCol.style.flexGrow = 1;
-            textCol.style.flexShrink = 1;
-            var titleLabel = new Label(title);
-            titleLabel.AddToClassList("ak-body");
-            textCol.Add(titleLabel);
-            if (!string.IsNullOrEmpty(subtitle))
-            {
-                var subLabel = new Label(subtitle);
-                subLabel.AddToClassList("ak-caption");
-                textCol.Add(subLabel);
-            }
-            row.Add(textCol);
-
-            var priceLabel = new Label(price);
-            priceLabel.AddToClassList("ak-h4");
-            priceLabel.AddToClassList("ak-text--accent");
-            priceLabel.style.marginRight = 12;
-            priceLabel.style.minWidth = 70;
-            priceLabel.style.unityTextAlign = TextAnchor.MiddleRight;
-            row.Add(priceLabel);
-
-            Button btn = null!;
-            btn = new Button(() => onBuy(btn)) { text = _loc.Get("hub.shop.buy", "Kaufen") };
-            btn.AddToClassList("ak-btn");
-            btn.AddToClassList("ak-btn--sm");
-            btn.AddToClassList("ak-btn--accent");
-            row.Add(btn);
-
-            return row;
-        }
-
-        private async UniTask BuyPackAsync(CardPackDefinition pack, Button buyBtn)
-        {
-            // H10: Button vor dem ersten await sperren (Doppel-Kauf bei schnellem Doppel-Tap).
-            buyBtn.SetEnabled(false);
-            try
-            {
-                var result = await _shopController.BuyPackAsync(pack);
-                if (!result.Success)
-                {
-                    _toast.Show(result.Error ?? _loc.Get("hub.shop.pack_failed", "Pack-Kauf fehlgeschlagen"), ToastKind.Danger);
-                    return;
-                }
-
-                // Pack-Opening-Modal mit den Rarities oeffnen
-                _modalContext.Set(PackOpeningModal.ContextKey, result.AwardedRarities);
-                await _screenManager.PushAsync(ScreenId.PackOpeningOverlay);
-                if (result.PityTriggered)
-                    _toast.Show(_loc.Get("hub.shop.pity_triggered", "Legendary-Pity ausgeloest!"), ToastKind.Success, 4f);
-
-                // Header nach dem Modal refreshen (Diamanten wurden abgezogen)
-                await OnEnterAsync(CancellationToken.None);
-            }
-            finally
-            {
-                buyBtn.SetEnabled(true);
-            }
-        }
-
-        private async UniTask BuyEnergyAsync(int amount, long diamondCost, Button buyBtn)
-        {
-            // H10: Button vor dem ersten await sperren (Doppel-Kauf bei schnellem Doppel-Tap).
-            buyBtn.SetEnabled(false);
-            try
-            {
-                var result = await _shopController.BuyEnergyAsync(amount, diamondCost);
-                if (result.IsSuccess)
-                {
-                    _toast.Show(string.Format(_loc.Get("hub.shop.energy_added", "+{0} Energie"), amount), ToastKind.Success);
-                    await OnEnterAsync(CancellationToken.None);
-                }
-                else
-                {
-                    _toast.Show(result.ErrorMessage ?? _loc.Get("hub.shop.energy_failed", "Energie-Kauf fehlgeschlagen"), ToastKind.Danger);
-                }
-            }
-            finally
-            {
-                buyBtn.SetEnabled(true);
-            }
-        }
-
-        // ============================================================
-        // Arena-Tab Bindings
-        // ============================================================
-
-        private void BindArenaTab()
-        {
-            _arenaRankName = Q<Label>("arena-rank-name");
-            _arenaRankPoints = Q<Label>("arena-rank-points");
-            _arenaRankFill = Q<VisualElement>("arena-rank-fill");
-            _arenaTicketsValue = Q<Label>("arena-tickets-value");
-            _arenaSearchMatch = Q<Button>("arena-search-match");
-            _arenaViewLeaderboard = Q<Button>("arena-view-leaderboard");
-
-            _arenaSearchMatch.clicked += () =>
-            {
-                // Mock-Match starten — Battle ist seit Stufe 8 verfügbar
-                if (_screenManager.IsRegistered(ScreenId.Battle))
-                    _screenManager.PushAsync(ScreenId.Battle).Forget();
-                else
-                    _toast.Show("Battle nicht verfuegbar.", ToastKind.Warning);
-            };
-            _arenaViewLeaderboard.clicked += () =>
-            {
-                // Vollansicht-Arena-Screen (Stufe 9)
-                if (_screenManager.IsRegistered(ScreenId.Arena))
-                    _screenManager.PushAsync(ScreenId.Arena).Forget();
-                else
-                    _toast.Show("Arena-Vollansicht nicht verfuegbar.", ToastKind.Warning);
-            };
-        }
-
-        private void RefreshArenaTab()
-        {
-            if (_saveCached == null) return;
-            var tickets = _saveCached.Currencies.ArenaTickets;
-            var meritPoints = _saveCached.Currencies.MeritPoints;
-
-            _arenaTicketsValue.text = tickets.ToString();
-            // Bronze III/II/I, Silber III/II/I, Gold III/II/I, Platin III/II/I, Diamant III/II/I, Meister
-            var (rankName, pointsInTier, tierMax) = ComputeRank(meritPoints);
-            _arenaRankName.text = rankName;
-            _arenaRankPoints.text = $"{pointsInTier} / {tierMax} Rang-Punkte";
-
-            var pct = tierMax > 0 ? (float)pointsInTier * 100f / tierMax : 0f;
-            _arenaRankFill.style.width = new Length(System.Math.Min(pct, 100f), LengthUnit.Percent);
-        }
-
-        /// <summary>
-        /// Vereinfachte Rang-Berechnung — 100 Punkte pro Tier, 3 Tiers pro Liga,
-        /// 5 Ligen + Meister (insgesamt 16 Stufen, max 1.500 Pkt).
-        /// </summary>
-        private static (string rank, int pointsInTier, int tierMax) ComputeRank(long merit)
-        {
-            string[] leagues = { "Bronze", "Silber", "Gold", "Platin", "Diamant", "Meister" };
-            string[] tiers = { "III", "II", "I" };
-            const int pointsPerTier = 100;
-
-            var capped = System.Math.Min(merit, 5 * 3 * pointsPerTier); // 5 Ligen × 3 Tiers × 100
-            var totalTiers = (int)(capped / pointsPerTier);
-            if (totalTiers >= 15)
-                return ("Meister", (int)(merit - 1500), 1000);
-
-            var league = totalTiers / 3;
-            var tier = totalTiers % 3;
-            return ($"{leagues[league]} {tiers[tier]}",
-                    (int)(capped % pointsPerTier),
-                    pointsPerTier);
-        }
-
-        // ============================================================
-        // More-Tab Bindings + Sub-Navigation
-        // ============================================================
-
-        private void BindMoreTab()
-        {
-            _moreDeckBuilder = Q<Button>("more-deck-builder");
-            _moreWorldMap = Q<Button>("more-world-map");
-            _moreGuild = Q<Button>("more-guild");
-            _moreFriends = Q<Button>("more-friends");
-            _moreSaisonPass = Q<Button>("more-saison-pass");
-            _moreCodex = Q<Button>("more-codex");
-            _moreSettings = Q<Button>("more-settings");
-
-            _moreDeckBuilder.clicked += () => GoToScreen(ScreenId.DeckBuilder, "Deck-Builder kommt in Stufe 6.");
-            _moreWorldMap.clicked   += () => GoToScreen(ScreenId.WorldMap, "Welt-Karte kommt in Stufe 7.");
-            _moreGuild.clicked      += () => GoToScreen(ScreenId.Guild, "Gilde kommt in Stufe 9.");
-            _moreFriends.clicked    += () => GoToScreen(ScreenId.Friends, "Freunde kommen in Stufe 9.");
-            _moreSaisonPass.clicked += () => GoToScreen(ScreenId.SaisonPass, "Saison-Pass kommt in Stufe 9.");
-            _moreCodex.clicked      += () => GoToScreen(ScreenId.Codex, "Codex kommt in Stufe 10.");
-            _moreSettings.clicked   += () => GoToScreen(ScreenId.Settings, "Einstellungen kommen in Stufe 10.");
-
-            // v6 (Designplan v4): Optional-Buttons fuer Schmiede + Tempel.
-            // QOptional weil das UXML alte Versionen ohne diese Buttons unterstuetzen muss.
-            _moreSchmiede = QOptional<Button>("more-schmiede");
-            _moreTempel = QOptional<Button>("more-tempel");
-            if (_moreSchmiede != null)
-                _moreSchmiede.clicked += () => GoToScreen(ScreenId.Schmiede, "Schmiede UXML fehlt.");
-            if (_moreTempel != null)
-                _moreTempel.clicked += () => GoToScreen(ScreenId.Tempel, "Tempel UXML fehlt.");
-
-            // Spielplan v5 — alle neuen Mehr-Tab-Buttons verkabeln (QOptional fuer Vorwaerts-Kompat.)
-            var btnShop          = QOptional<Button>("more-shop");
-            var btnQuestCenter   = QOptional<Button>("more-quest-center");
-            var btnMeritRanking  = QOptional<Button>("more-merit-ranking");
-            var btnThief         = QOptional<Button>("more-thief");
-            var btnGuildWorld    = QOptional<Button>("more-guild-world");
-            var btnPvp           = QOptional<Button>("more-pvp-matchmaking");
-            var btnRunes         = QOptional<Button>("more-runes");
-            var btnCollection    = QOptional<Button>("more-collection-trade");
-            var btnPlayerProfile = QOptional<Button>("more-player-profile");
-            var btnChat          = QOptional<Button>("more-chat");
-
-            if (btnShop          != null) btnShop.clicked          += () => GoToScreen(ScreenId.Shop, "Shop nicht verfuegbar.");
-            if (btnQuestCenter   != null) btnQuestCenter.clicked   += () => GoToScreen(ScreenId.QuestCenter, "Quest-Center nicht verfuegbar.");
-            if (btnMeritRanking  != null) btnMeritRanking.clicked  += () => GoToScreen(ScreenId.MeritRanking, "Merit-Rangliste nicht verfuegbar.");
-            if (btnThief         != null) btnThief.clicked         += () => GoToScreen(ScreenId.ThiefScreen, "Dieb-Event nicht verfuegbar.");
-            if (btnGuildWorld    != null) btnGuildWorld.clicked    += () => GoToScreen(ScreenId.GuildWorldMap, "Gilden-Weltkarte nicht verfuegbar.");
-            if (btnPvp           != null) btnPvp.clicked           += () => GoToScreen(ScreenId.PvpMatchmaking, "PvP-Matchmaking nicht verfuegbar.");
-            if (btnRunes         != null) btnRunes.clicked         += () => GoToScreen(ScreenId.Runes, "Runen-Verwaltung nicht verfuegbar.");
-            if (btnCollection    != null) btnCollection.clicked    += () => GoToScreen("collection-trade", "Sammlung-Tausch nicht verfuegbar.");
-            if (btnPlayerProfile != null) btnPlayerProfile.clicked += () => GoToScreen(ScreenId.PlayerProfile, "Spieler-Profil nicht verfuegbar.");
-            if (btnChat          != null) btnChat.clicked          += () => GoToScreen(ScreenId.ChatOverlay, "Chat nicht verfuegbar.");
+            var btn = QOptional<Button>(buttonName);
+            if (btn != null)
+                btn.clicked += () => GoToScreen(screenId, fallbackMessage);
         }
 
         private void GoToScreen(string id, string fallbackMessage)
@@ -677,19 +151,15 @@ namespace ArcaneKingdom.UI.Hub
             _refreshCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             var token = _refreshCts.Token;
 
-            // H12: Quest-Fortschritt aus dem Save wiederherstellen (idempotent, laeuft nur
-            // beim ersten Aufruf) — sonst startet jeder App-Lauf bei 0.
+            // Quest-Fortschritt aus dem Save wiederherstellen (idempotent).
             var restoreR = await _save.LoadAsync(token);
             if (restoreR.IsSuccess && restoreR.Value != null)
                 _questService.RestoreFromSave(restoreR.Value);
 
-            // M13: Offene PendingClaims (Season-Rewards etc.) beim Hub-Eintritt einloesen.
-            // Atomar + idempotent im MutateAsync-Lambda.
+            // Offene PendingClaims (Season-Rewards etc.) atomar + idempotent einloesen.
             await RedeemPendingClaimsAsync(token);
 
-            // v6: Daily-Income Tick (Designplan v4 Oeko Kap. 6.3) — passive Gold-Belohnung
-            // pro Welt nach Prestige-Stufe. Wird bei jedem Hub-Open ausgefuehrt; ignoriert
-            // wenn weniger als 24h seit letztem Tick vergangen.
+            // Daily-Income Tick (Designplan v4 Oeko Kap. 6.3) — passives Gold pro Welt.
             var incomeTick = await _prestige.TickDailyIncomeAsync(System.DateTime.UtcNow, token);
             if (incomeTick.IsSuccess && incomeTick.Value > 0)
             {
@@ -708,23 +178,20 @@ namespace ArcaneKingdom.UI.Hub
             }
             _saveCached = result.Value;
             RefreshHeader();
-            RefreshCardsGrid();
 
-            // H12: Quest-Progress sichern (z.B. Advance-Fortschritt aus vorigem Battle).
             await _questService.FlushAsync(token);
         }
 
         public override async UniTask OnLeaveAsync(CancellationToken ct)
         {
-            // H12: beim Verlassen Quest-Progress sichern, bevor andere Screens mutieren.
             await _questService.FlushAsync(ct);
             _refreshCts?.Cancel();
             _refreshCts = null;
         }
 
         /// <summary>
-        /// M13: Loest alle offenen PendingClaims des Spielers ein (Currency/Scrap/Pack/
-        /// Card/FeatureUnlock/RuneSlotUnlock/Title/AvatarFrame). Atomar im MutateAsync-Lambda,
+        /// Loest alle offenen PendingClaims des Spielers ein (Currency/Scrap/Pack/Card/
+        /// FeatureUnlock/RuneSlotUnlock/Title/AvatarFrame). Atomar im MutateAsync-Lambda,
         /// jeder eingeloeste Eintrag wird aus PendingClaims entfernt -> idempotent.
         /// </summary>
         private async UniTask RedeemPendingClaimsAsync(CancellationToken ct)
@@ -734,7 +201,6 @@ namespace ArcaneKingdom.UI.Hub
             {
                 if (save.PendingClaims == null || save.PendingClaims.Count == 0) return save;
 
-                // Kopie iterieren, Original waehrend des Einloesens leeren.
                 var pending = new List<ArcaneKingdom.Domain.Save.PendingClaim>(save.PendingClaims);
                 save.PendingClaims.Clear();
 
@@ -750,7 +216,6 @@ namespace ArcaneKingdom.UI.Hub
                                 save.Currencies.AddScraps(scrap, claim.Amount);
                             break;
                         case ArcaneKingdom.Domain.Save.PendingClaimKind.Card:
-                            // SubType = CardDefinitionId; Amount = Stueckzahl
                             for (var i = 0; i < claim.Amount; i++)
                             {
                                 var instId = System.Guid.NewGuid().ToString("N");
@@ -759,7 +224,6 @@ namespace ArcaneKingdom.UI.Hub
                             }
                             break;
                         case ArcaneKingdom.Domain.Save.PendingClaimKind.Rune:
-                            // SubType = RuneDefinitionId; Amount = Stueckzahl
                             for (var i = 0; i < claim.Amount; i++)
                             {
                                 var runeId = System.Guid.NewGuid().ToString("N");
@@ -785,11 +249,9 @@ namespace ArcaneKingdom.UI.Hub
                             save.UnlockedFeatureKeys.Add($"frame_{claim.SubType}");
                             break;
                         case ArcaneKingdom.Domain.Save.PendingClaimKind.Pack:
-                            // Pack als Feature-Flag vormerken (Pack-Opening passiert separat im Shop).
-                            // Damit das Pack nicht verloren geht, behalten wir es als ungeoeffnetes Item
-                            // im Pending-Bestand: noch kein Inventar-Slot fuer Packs -> Eintrag wieder anfuegen.
+                            // Pack behaelt seinen Pending-Eintrag (Oeffnen passiert separat im Shop).
                             save.PendingClaims.Add(claim);
-                            continue;   // nicht als "redeemed" zaehlen, nicht entfernen
+                            continue;
                     }
                     redeemed++;
                 }
@@ -817,7 +279,7 @@ namespace ArcaneKingdom.UI.Hub
         }
 
         // ============================================================
-        // Header
+        // Top-Bar
         // ============================================================
 
         private void RefreshHeader()
@@ -833,13 +295,20 @@ namespace ArcaneKingdom.UI.Hub
                 ? string.Empty
                 : $"[{p.GuildId.Substring(0, System.Math.Min(5, p.GuildId.Length)).ToUpperInvariant()}]";
 
-            _levelLabel.text     = p.Level.ToString();
+            _levelLabel.text = p.Level.ToString();
+            _levelBadge.text = $"LV {p.Level}";
 
-            _energyValue.text    = c.EnergyBonus > 0
-                ? $"{c.TotalEnergy}/{PlayerCurrencies.EnergyDefaultCap}"
-                : $"{c.Energy}/{PlayerCurrencies.EnergyDefaultCap}";
-            _goldValue.text      = FormatNumber(c.Gold);
-            _diamondValue.text   = FormatNumber(c.Diamond);
+            // Arena-Rang nur zeigen, wenn der Spieler bereits gewertet ist (sonst ausblenden).
+            _arenaBadge.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+
+            var energy = c.EnergyBonus > 0 ? c.TotalEnergy : c.Energy;
+            var energyCap = PlayerCurrencies.EnergyDefaultCap;
+            _energyValue.text = $"{energy}/{energyCap}";
+            var ratio = energyCap > 0 ? Mathf.Clamp01((float)energy / energyCap) : 0f;
+            _energyFill.style.width = new Length(ratio * 100f, LengthUnit.Percent);
+
+            _goldValue.text    = FormatNumber(c.Gold);
+            _diamondValue.text = FormatNumber(c.Diamond);
         }
 
         /// <summary>1-2 Initialen aus dem DisplayName (z.B. "Robert Schneider" -> "RS").</summary>
@@ -853,130 +322,9 @@ namespace ArcaneKingdom.UI.Hub
             return $"{char.ToUpper(parts[0][0])}{char.ToUpper(parts[1][0])}";
         }
 
-        // ============================================================
-        // Tabs
-        // ============================================================
-
-        private void SwitchTab(string id)
-        {
-            SetActive(_tabCards,  id == "cards");
-            SetActive(_tabQuests, id == "quests");
-            SetActive(_tabShop,   id == "shop");
-            SetActive(_tabArena,  id == "arena");
-            SetActive(_tabMore,   id == "more");
-
-            SetTabButtonActive(_btnCards,  id == "cards");
-            SetTabButtonActive(_btnQuests, id == "quests");
-            SetTabButtonActive(_btnShop,   id == "shop");
-            SetTabButtonActive(_btnArena,  id == "arena");
-            SetTabButtonActive(_btnMore,   id == "more");
-
-            // Lazy-Refresh: nur den gerade aktivierten Tab neu zeichnen.
-            switch (id)
-            {
-                case "cards":  RefreshCardsGrid(); break;
-                case "quests": UpdateQuestsFilterButtonStyles(); RefreshQuestsTab(); break;
-                case "shop":   RefreshShopTab(); break;
-                case "arena":  RefreshArenaTab(); break;
-                // "more" hat keine dynamischen Daten — Buttons sind statisch verdrahtet
-            }
-
-            GameLogger.Verbose("Hub", $"Tab -> {id}");
-        }
-
-        private static void SetActive(VisualElement panel, bool active)
-        {
-            if (active) panel.RemoveFromClassList("ak-hidden");
-            else panel.AddToClassList("ak-hidden");
-        }
-
-        private static void SetTabButtonActive(VisualElement button, bool active)
-        {
-            if (active) button.AddToClassList("ak-tab--active");
-            else button.RemoveFromClassList("ak-tab--active");
-        }
-
-        // ============================================================
-        // Cards-Tab
-        // ============================================================
-
-        private void RefreshCardsGrid()
-        {
-            _cardsGrid.Clear();
-            if (_saveCached == null) return;
-
-            // Welche Karten besitzt der Spieler? (Card-Inventory enthaelt CardInstance,
-            // wir zählen pro CardDefinitionId)
-            var ownedCounts = new Dictionary<string, int>();
-            foreach (var instance in _saveCached.CardInventory.Values)
-            {
-                var defId = instance.CardDefinitionId;
-                ownedCounts[defId] = ownedCounts.TryGetValue(defId, out var c) ? c + 1 : 1;
-            }
-
-            var rarityFilter = ParseRarityFilter(_cardsRarityFilter.value);
-            var elementFilter = ParseElementFilter(_cardsElementFilter.value);
-            var search = (_cardsSearch.value ?? string.Empty).Trim().ToLowerInvariant();
-
-            // Wir zeigen ALLE Cards aus dem Catalog. Nicht besessene werden "locked" dargestellt.
-            // So sieht der Spieler die Vollständigkeit der Collection.
-            var cards = _cardCatalog.AllCards
-                .Where(c => rarityFilter == null || c.Rarity == rarityFilter)
-                .Where(c => elementFilter == null || c.Element == elementFilter)
-                .Where(c => string.IsNullOrEmpty(search)
-                            || c.Id.ToLowerInvariant().Contains(search))
-                .ToList();
-
-            foreach (var card in cards)
-            {
-                var owned = ownedCounts.ContainsKey(card.Id);
-                var tile = CardTileFactory.Build(card,
-                    onClick: OnCardClicked,
-                    locked: !owned);
-                _cardsGrid.Add(tile);
-            }
-
-            var empty = cards.Count == 0;
-            SetActive(_cardsEmpty, empty);
-            SetActive(_cardsGrid, !empty);
-        }
-
-        private void OnCardClicked(CardDefinition card)
-        {
-            _modalContext.Set(CardDetailModal.ContextKey, card);
-            _screenManager.PushAsync(ScreenId.CardDetailOverlay).Forget();
-        }
-
-        // ============================================================
-        // Helpers
-        // ============================================================
-
-        private static Rarity? ParseRarityFilter(string value) => value switch
-        {
-            "Gewoehnlich"   => Rarity.Gewoehnlich,
-            "Ungewoehnlich" => Rarity.Ungewoehnlich,
-            "Selten"        => Rarity.Selten,
-            "Epic"          => Rarity.Epic,
-            "Legendaer"     => Rarity.Legendaer,
-            "Mythisch"      => Rarity.Mythisch,
-            _               => null
-        };
-
-        private static Element? ParseElementFilter(string value) => value switch
-        {
-            "Natur"  => Element.Natur,
-            "Feuer"  => Element.Feuer,
-            "Wasser" => Element.Wasser,
-            "Erde"   => Element.Erde,
-            "Licht"  => Element.Licht,
-            "Dunkel" => Element.Dunkel,
-            _        => null
-        };
-
         /// <summary>
-        /// Currency-Format nach DESIGN.md 3.2: Tausender-Trennung mit "."
-        /// (z.B. "18.487.900" statt "18M"). Bei sehr großen Zahlen (&gt;1 Mrd)
-        /// schalten wir auf Mrd/Mio um, sonst wird die Pill zu breit.
+        /// Currency-Format nach DESIGN.md 3.2: Tausender-Trennung mit "." bis 100 Mio,
+        /// danach Mio/Mrd-Kurzform (sonst wird die Pill zu breit).
         /// </summary>
         private static string FormatNumber(long n)
         {
@@ -987,9 +335,8 @@ namespace ArcaneKingdom.UI.Hub
         }
 
         /// <summary>
-        /// Ersetzt das textbasierte Icon-Label (⚡/G/◆) einer Currency-Pill durch ein
-        /// echtes Sprite aus dem UIAssetService. Das erste Kind der Pill MUSS das
-        /// Icon-Label sein — wir setzen es als Background-Image und blenden den Text aus.
+        /// Ersetzt das textbasierte Icon-Label einer Currency-Pill durch ein echtes Sprite.
+        /// Das erste Kind der Pill MUSS das Icon-Label sein.
         /// </summary>
         private void ApplyCurrencyPillIcon(string pillName, string currencyId)
         {

@@ -2,37 +2,39 @@
          editor-extension-mode="False">
 
     <!--
-        HubScreen.uxml — Zentrale Hub-Ansicht (3-Spalten: Header / Content / TabBar).
+        HubScreen.uxml — Gebaeude-Welt (Referenz: Design_Entwurf_Login_HubWelt.html, Screen 3).
+        Stadt-Szene (hub_main.png, via Controller) als Hintergrund; Top-Bar mit Profil +
+        Ressourcen, Energie-Leiste, Event-Banner, Gebaeude-Grid + Right-Nav als Overlay,
+        Bottom-Navigation (Menue/Laden/Hub/Deck/Freunde).
+
+        Gebundene Namen (HubScreen.cs): header-avatar(+initials/level), header-display-name,
+        header-guild-tag, header-level-badge, header-arena-badge, header-gold-pill/value,
+        header-diamond-pill/value, hub-energy-icon, hub-energy-fill, header-energy-value,
+        hub-event-text, nav-*, building-*, bottom-*.
     -->
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(22, 16, 41);">
+    <ui:VisualElement name="hub-root" class="ak-fill ak-col" style="background-color: rgb(10, 10, 24);">
 
-        <!-- ================== HEADER ================== -->
-        <ui:VisualElement class="ak-app-header">
+        <!-- ================== TOP-BAR ================== -->
+        <ui:VisualElement class="ak-app-header" style="background-color: rgba(6, 6, 16, 0.55);">
 
-            <!-- Avatar (rund) mit Level-Badge unten rechts (DESIGN.md 3.1) -->
             <ui:VisualElement name="header-avatar" class="ak-app-header__avatar">
                 <ui:Label name="header-avatar-initials" text="?"
-                          style="font-size: 22; -unity-font-style: bold;
-                                  color: rgb(255, 255, 255); -unity-text-align: middle-center;
-                                  width: 100%;" />
+                          style="font-size: 22; -unity-font-style: bold; color: rgb(255, 255, 255);
+                                  -unity-text-align: middle-center; width: 100%;" />
                 <ui:Label name="header-level" text="1" class="ak-app-header__avatar-level" />
             </ui:VisualElement>
 
-            <!-- Name (links neben Avatar) -->
             <ui:VisualElement class="ak-col" style="margin-left: 8; align-self: center; flex-shrink: 1;">
                 <ui:Label name="header-display-name" text="Spieler" class="ak-app-header__name" />
                 <ui:Label name="header-guild-tag" text="" class="ak-app-header__guild-tag" />
+                <ui:VisualElement class="ak-row" style="margin-top: 3;">
+                    <ui:Label name="header-level-badge" text="LV 1" class="ak-hub-badge ak-hub-badge--gold" />
+                    <ui:Label name="header-arena-badge" text="Arena -" class="ak-hub-badge ak-hub-badge--danger" />
+                </ui:VisualElement>
             </ui:VisualElement>
 
-            <!-- Spacer -->
             <ui:VisualElement style="flex-grow: 1;" />
-
-            <!-- Currency-Pills (rechts) — Icons mit Buchstaben-Anker -->
-            <ui:VisualElement name="header-energy-pill" class="ak-currency-pill ak-currency-pill--energy">
-                <ui:Label text="⚡" class="ak-currency-pill__icon" />
-                <ui:Label name="header-energy-value" text="0/60" class="ak-currency-pill__value" />
-            </ui:VisualElement>
 
             <ui:VisualElement name="header-gold-pill" class="ak-currency-pill ak-currency-pill--gold">
                 <ui:Label text="G" class="ak-currency-pill__icon" />
@@ -40,260 +42,59 @@
             </ui:VisualElement>
 
             <ui:VisualElement name="header-diamond-pill" class="ak-currency-pill ak-currency-pill--diamond">
-                <ui:Label text="◆" class="ak-currency-pill__icon" />
+                <ui:Label text="D" class="ak-currency-pill__icon" />
                 <ui:Label name="header-diamond-value" text="0" class="ak-currency-pill__value" />
             </ui:VisualElement>
 
         </ui:VisualElement>
 
-        <!-- ================== CONTENT ================== -->
+        <!-- ================== ENERGIE-LEISTE ================== -->
+        <ui:VisualElement class="ak-hub-energy">
+            <ui:VisualElement name="hub-energy-icon" class="ak-hub-energy__icon" />
+            <ui:VisualElement class="ak-hub-energy__track">
+                <ui:VisualElement name="hub-energy-fill" class="ak-hub-energy__fill" />
+            </ui:VisualElement>
+            <ui:Label name="header-energy-value" text="0/60" class="ak-hub-energy__text" />
+        </ui:VisualElement>
+
+        <!-- ================== EVENT-BANNER ================== -->
+        <ui:VisualElement class="ak-hub-event">
+            <ui:VisualElement class="ak-hub-event__dot" />
+            <ui:Label name="hub-event-text" text="Willkommen zurueck, Held!" class="ak-hub-event__text" />
+        </ui:VisualElement>
+
+        <!-- ================== CONTENT (Stadt-Szene + Overlays) ================== -->
         <ui:VisualElement name="hub-content" style="flex-grow: 1; position: relative;">
 
-            <!-- Tab-Panels (jeder Tab ein VisualElement, durch JS-Code (de)aktiviert) -->
-
-            <!-- Cards-Tab (default sichtbar) -->
-            <ui:VisualElement name="tab-cards" class="ak-fill ak-col">
-
-                <!-- Filter-Leiste -->
-                <ui:VisualElement class="ak-row" style="padding: 12; align-items: center;">
-                    <ui:TextField name="cards-search" picking-mode="Position"
-                                  class="ak-input" style="flex-grow: 1; margin-right: 8;" />
-                    <ui:DropdownField name="cards-rarity-filter" label=""
-                                      style="min-width: 130; margin-right: 8;" />
-                    <ui:DropdownField name="cards-element-filter" label=""
-                                      style="min-width: 130;" />
-                </ui:VisualElement>
-
-                <!-- Karten-Grid (ScrollView mit dynamisch erzeugten Cards) -->
-                <ui:ScrollView name="cards-scroll" style="flex-grow: 1;"
-                               horizontal-scroller-visibility="Hidden">
-                    <ui:VisualElement name="cards-grid"
-                                      style="flex-direction: row; flex-wrap: wrap;
-                                             justify-content: center; padding: 8;" />
-                </ui:ScrollView>
-
-                <!-- Empty-State (wenn keine Karten gefunden) -->
-                <ui:VisualElement name="cards-empty"
-                                  class="ak-fill ak-col ak-center ak-hidden">
-                    <ui:Label text="Keine Karten gefunden." class="ak-h4"
-                              style="margin-bottom: 8;" />
-                    <ui:Label name="cards-empty-hint"
-                              text="Oeffne ein Karten-Pack im Shop, um neue Karten zu erhalten."
-                              class="ak-body" />
-                </ui:VisualElement>
-
+            <!-- Right-Nav (vertikale runde Buttons) -->
+            <ui:VisualElement class="ak-hub-rightnav">
+                <ui:Button name="nav-worldmap" text="Land-karte" class="ak-hub-navbtn" />
+                <ui:Button name="nav-arena" text="Arena" class="ak-hub-navbtn ak-hub-navbtn--arena" />
+                <ui:Button name="nav-runes" text="Zauber" class="ak-hub-navbtn" />
+                <ui:Button name="nav-profile" text="Profil" class="ak-hub-navbtn" />
             </ui:VisualElement>
 
-            <!-- =============== QUESTS-TAB =============== -->
-            <ui:VisualElement name="tab-quests" class="ak-fill ak-col ak-hidden">
-                <ui:VisualElement class="ak-row" style="padding: 12; align-items: center;">
-                    <ui:Label text="Quests" class="ak-h3" style="flex-grow: 1;" />
-                    <ui:Button name="quests-filter-daily" text="Daily"
-                               class="ak-btn ak-btn--sm ak-btn--primary"
-                               style="margin-right: 4;" />
-                    <ui:Button name="quests-filter-weekly" text="Weekly"
-                               class="ak-btn ak-btn--sm ak-btn--ghost"
-                               style="margin-right: 4;" />
-                    <ui:Button name="quests-filter-achievements" text="Erfolge"
-                               class="ak-btn ak-btn--sm ak-btn--ghost" />
-                </ui:VisualElement>
-                <ui:ScrollView name="quests-scroll" style="flex-grow: 1;">
-                    <ui:VisualElement name="quests-list" style="padding: 8;" />
-                </ui:ScrollView>
-                <ui:VisualElement name="quests-empty" class="ak-col ak-center ak-hidden"
-                                  style="padding: 32;">
-                    <ui:Label text="Keine Quests verfuegbar." class="ak-h4" />
-                </ui:VisualElement>
-            </ui:VisualElement>
-
-            <!-- =============== SHOP-TAB =============== -->
-            <ui:VisualElement name="tab-shop" class="ak-fill ak-col ak-hidden">
-                <ui:VisualElement class="ak-row" style="padding: 12; align-items: center;">
-                    <ui:Label text="Shop" class="ak-h3" style="flex-grow: 1;" />
-                    <ui:Button name="shop-buy-diamonds" text="Diamanten kaufen"
-                               class="ak-btn ak-btn--sm ak-btn--accent" />
-                </ui:VisualElement>
-                <ui:ScrollView name="shop-scroll" style="flex-grow: 1;">
-                    <ui:VisualElement style="padding: 8;">
-                        <ui:Label text="Karten-Packs" class="ak-overline"
-                                 style="margin-bottom: 8; margin-left: 8;" />
-                        <ui:VisualElement name="shop-packs-grid"
-                                          style="flex-direction: row; flex-wrap: wrap;" />
-                        <ui:VisualElement class="ak-divider" />
-                        <ui:Label text="Direkt-Angebote" class="ak-overline"
-                                 style="margin-bottom: 8; margin-left: 8;" />
-                        <ui:VisualElement name="shop-direct-list" style="padding: 4;" />
-                    </ui:VisualElement>
-                </ui:ScrollView>
-            </ui:VisualElement>
-
-            <!-- =============== ARENA-TAB =============== -->
-            <ui:VisualElement name="tab-arena" class="ak-fill ak-col ak-hidden">
-                <ui:ScrollView style="flex-grow: 1;">
-                    <ui:VisualElement style="padding: 16;">
-                        <ui:Label text="Arena" class="ak-h2" style="margin-bottom: 16;" />
-
-                        <!-- Rank-Block -->
-                        <ui:VisualElement class="ak-surface" style="margin-bottom: 16;">
-                            <ui:VisualElement class="ak-row" style="align-items: center;">
-                                <ui:VisualElement class="ak-col" style="flex-grow: 1;">
-                                    <ui:Label name="arena-rank-name" text="Bronze III"
-                                              class="ak-h3" />
-                                    <ui:Label name="arena-rank-points"
-                                              text="0 / 100 Rang-Punkte" class="ak-caption" />
-                                </ui:VisualElement>
-                                <ui:Label name="arena-tickets-value" text="0"
-                                          class="ak-h2 ak-text--accent" />
-                                <ui:Label text="Tickets" class="ak-caption"
-                                          style="margin-left: 8;" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="ak-progress" style="margin-top: 12;">
-                                <ui:VisualElement name="arena-rank-fill"
-                                                  class="ak-progress__fill"
-                                                  style="width: 0%;" />
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-
-                        <!-- Action-Buttons -->
-                        <ui:VisualElement class="ak-row">
-                            <ui:Button name="arena-search-match" text="Gegner suchen"
-                                       class="ak-btn ak-btn--lg ak-btn--primary"
-                                       style="flex-grow: 1; margin-right: 8;" />
-                            <ui:Button name="arena-view-leaderboard" text="Bestenliste"
-                                       class="ak-btn ak-btn--lg ak-btn--ghost"
-                                       style="flex-grow: 1;" />
-                        </ui:VisualElement>
-
-                        <ui:Label text="Saison endet in 14 Tagen — sichere dir deine Belohnungen!"
-                                  class="ak-caption"
-                                  style="margin-top: 16; -unity-text-align: middle-center;" />
-                    </ui:VisualElement>
-                </ui:ScrollView>
-            </ui:VisualElement>
-
-            <!-- =============== MEHR-TAB =============== -->
-            <ui:VisualElement name="tab-more" class="ak-fill ak-col ak-hidden">
-                <ui:ScrollView style="flex-grow: 1;">
-                    <ui:VisualElement style="padding: 16;">
-                        <ui:Label text="Mehr" class="ak-h2" style="margin-bottom: 16;" />
-
-                        <ui:Button name="more-deck-builder" text="Deck-Builder"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-world-map" text="Welt-Karte"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-guild" text="Gilde"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-friends" text="Freunde"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-saison-pass" text="Saison-Pass"
-                                   class="ak-btn ak-btn--lg ak-btn--accent"
-                                   style="margin-bottom: 16;" />
-
-                        <ui:VisualElement class="ak-divider" />
-
-                        <!-- v6 (Designplan v4) — Schmiede + Tempel -->
-                        <ui:Label text="Zauberschmiede + Tempel" class="ak-overline"
-                                  style="margin-top: 8; margin-bottom: 8;" />
-                        <ui:Button name="more-schmiede" text="🔨 Zauberschmiede"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-tempel" text="⭐ Sternkarten-Tempel"
-                                   class="ak-btn ak-btn--lg ak-btn--accent"
-                                   style="margin-bottom: 16;" />
-
-                        <ui:VisualElement class="ak-divider" />
-
-                        <!-- Spielplan v5 — Mehr-Tab erweitert um alle neuen Screens -->
-                        <ui:Label text="Mehr Inhalte" class="ak-overline"
-                                  style="margin-top: 8; margin-bottom: 8;" />
-                        <ui:Button name="more-shop" text="🛒 Shop (Karten-Pakete)"
-                                   class="ak-btn ak-btn--lg ak-btn--accent"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-quest-center" text="📜 Quest-Center"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-merit-ranking" text="🏆 Merit-Rangliste"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-thief" text="🦹 Dieb-Event"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-guild-world" text="🌍 Gilden-Weltkarte"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-pvp-matchmaking" text="⚔️ PvP-Matchmaking"
-                                   class="ak-btn ak-btn--lg ak-btn--accent"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-runes" text="✨ Runen-Verwaltung"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-collection-trade" text="🔄 Sammlung tauschen"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-player-profile" text="👤 Spieler-Profil"
-                                   class="ak-btn ak-btn--lg ak-btn--primary"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-chat" text="💬 Chat"
-                                   class="ak-btn ak-btn--lg ak-btn--ghost"
-                                   style="margin-bottom: 16;" />
-
-                        <ui:VisualElement class="ak-divider" />
-
-                        <ui:Button name="more-codex" text="Codex"
-                                   class="ak-btn ak-btn--lg ak-btn--ghost"
-                                   style="margin-bottom: 8;" />
-                        <ui:Button name="more-settings" text="Einstellungen"
-                                   class="ak-btn ak-btn--lg ak-btn--ghost" />
-                    </ui:VisualElement>
-                </ui:ScrollView>
+            <!-- Gebaeude-Grid (schwebt ueber der unteren Stadt-Haelfte) -->
+            <ui:VisualElement class="ak-hub-buildings">
+                <ui:Button name="building-cards" text="Karten-Turm" class="ak-hub-building ak-hub-building--highlight" />
+                <ui:Button name="building-schmiede" text="Zauber-schmiede" class="ak-hub-building" />
+                <ui:Button name="building-bibliothek" text="Bibliothek" class="ak-hub-building" />
+                <ui:Button name="building-tempel" text="Tempel" class="ak-hub-building" />
+                <ui:Button name="building-gilde" text="Gilden-Hafen" class="ak-hub-building" />
+                <ui:Button name="building-markt" text="Marktplatz" class="ak-hub-building" />
+                <ui:Button name="building-ehre" text="Wand der Ehre" class="ak-hub-building" />
+                <ui:Button name="building-post" text="Postamt" class="ak-hub-building" />
             </ui:VisualElement>
 
         </ui:VisualElement>
 
-        <!-- ================== TAB-BAR ================== -->
-        <ui:VisualElement class="ak-tab-bar">
-
-            <ui:VisualElement name="tab-button-cards" class="ak-tab ak-tab--active">
-                <ui:Label text="🃏" class="ak-tab__icon"
-                          style="background-color: rgba(179, 115, 242, 0.85);
-                                  -unity-text-align: middle-center; font-size: 16;" />
-                <ui:Label text="Karten" class="ak-tab__label" />
-            </ui:VisualElement>
-
-            <ui:VisualElement name="tab-button-quests" class="ak-tab">
-                <ui:Label text="✦" class="ak-tab__icon"
-                          style="background-color: rgba(245, 158, 11, 0.85);
-                                  -unity-text-align: middle-center; font-size: 18;
-                                  color: rgb(38, 22, 0);" />
-                <ui:Label text="Quests" class="ak-tab__label" />
-            </ui:VisualElement>
-
-            <ui:VisualElement name="tab-button-shop" class="ak-tab">
-                <ui:Label text="$" class="ak-tab__icon"
-                          style="background-color: rgba(56, 197, 137, 0.85);
-                                  -unity-text-align: middle-center; font-size: 16;
-                                  color: rgb(8, 32, 22);" />
-                <ui:Label text="Shop" class="ak-tab__label" />
-            </ui:VisualElement>
-
-            <ui:VisualElement name="tab-button-arena" class="ak-tab">
-                <ui:Label text="⚔" class="ak-tab__icon"
-                          style="background-color: rgba(232, 64, 87, 0.85);
-                                  -unity-text-align: middle-center; font-size: 16;" />
-                <ui:Label text="Arena" class="ak-tab__label" />
-            </ui:VisualElement>
-
-            <ui:VisualElement name="tab-button-more" class="ak-tab">
-                <ui:Label text="≡" class="ak-tab__icon"
-                          style="background-color: rgba(140, 130, 168, 0.85);
-                                  -unity-text-align: middle-center; font-size: 18;" />
-                <ui:Label text="Mehr" class="ak-tab__label" />
-            </ui:VisualElement>
-
+        <!-- ================== BOTTOM-NAVIGATION ================== -->
+        <ui:VisualElement class="ak-hub-bottomnav">
+            <ui:Button name="bottom-menu" text="Menue" class="ak-hub-bottombtn" />
+            <ui:Button name="bottom-shop" text="Laden" class="ak-hub-bottombtn" />
+            <ui:Button name="bottom-hub" text="Hub" class="ak-hub-bottombtn ak-hub-bottombtn--active" />
+            <ui:Button name="bottom-deck" text="Deck" class="ak-hub-bottombtn" />
+            <ui:Button name="bottom-friends" text="Freunde" class="ak-hub-bottombtn" />
         </ui:VisualElement>
 
     </ui:VisualElement>

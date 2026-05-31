@@ -33,6 +33,13 @@ namespace ArcaneKingdom.UI.RaceSelection
         private readonly Dictionary<Race, VisualElement> _raceCards = new();
         private Race _selectedRace = Race.Ritter;
 
+        /// <summary>
+        /// Festes Starter-Deck (Robert-Vorgabe): 3 Basis-Karten beim ersten Spielstart, immer gleich.
+        /// Ausgewogenes Rekruten-Trio — Tank (Erde) / Zauber (Feuer) / Distanz (Natur), alle Gewoehnlich
+        /// + Unlimited. Weitere Karten werden durch das Erreichen spezieller Welt-Level freigeschaltet.
+        /// </summary>
+        private static readonly string[] StarterCardIds = { "wachsoldat", "lehrling_magier", "novizen_bogenschuetzin" };
+
         private Label _selectedNameLabel = null!;
         private Label _selectedPassivLabel = null!;
         private Label _selectedMentorLabel = null!;
@@ -140,6 +147,16 @@ namespace ArcaneKingdom.UI.RaceSelection
             var result = await _save.MutateAsync(s =>
             {
                 s.Story.ChosenRace = _selectedRace;
+                // Starter-Deck einmalig gewaehren — sonst hat der neue Spieler kein Deck und kann
+                // nicht kaempfen. Nur wenn das Inventar leer ist (idempotent bei erneutem Confirm).
+                if (s.CardInventory.Count == 0)
+                {
+                    foreach (var defId in StarterCardIds)
+                    {
+                        var instId = System.Guid.NewGuid().ToString("N");
+                        s.CardInventory[instId] = new CardInstance(instId, defId, 0, 0, System.DateTime.UtcNow);
+                    }
+                }
                 return s;
             }, CancellationToken.None);
 

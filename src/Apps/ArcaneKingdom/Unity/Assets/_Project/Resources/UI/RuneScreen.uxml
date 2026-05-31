@@ -3,25 +3,40 @@
     <ui:VisualElement name="rune-root" class="ak-screen ak-bg-base" style="flex-grow: 1;">
 
         <ui:VisualElement class="ak-row ak-center-v ak-bd-b-gold-soft ak-bg-deep" style="border-bottom-width: 1px; padding-left: 16px; padding-right: 16px; padding-top: 14px; padding-bottom: 14px; margin-bottom: 16px;">
-            <ui:Label text="RUNEN" class="ak-h2 ak-grow"/>
+            <ui:Label name="rune-title" text="RUNEN" class="ak-h2 ak-grow"/>
             <ui:Button name="rune-close" text="X" class="ak-btn ak-btn--icon"/>
         </ui:VisualElement>
 
         <ui:VisualElement style="padding-left: 16px; padding-right: 16px; flex-grow: 1;">
 
-            <ui:Label text="Runen-Slots" class="ak-overline" style="margin-bottom: 8px;"/>
-            <ui:VisualElement name="rune-slots-row" class="ak-row" style="margin-bottom: 16px;"/>
+            <ui:Label name="rune-slots-header" text="Runen-Slots" class="ak-overline" style="margin-bottom: 8px;"/>
+            <ui:VisualElement name="rune-slots-row" class="ak-row" style="margin-bottom: 8px;"/>
 
+            <ui:Label name="rune-selection-hint" text="" class="ak-caption ak-text--accent" style="margin-bottom: 8px; display: none;"/>
             <ui:Label name="rune-active-stats" text="" class="ak-caption" style="margin-bottom: 16px;"/>
 
-            <ui:Label text="Filter" class="ak-overline" style="margin-bottom: 8px;"/>
+            <ui:Label name="rune-filter-header" text="Filter" class="ak-overline" style="margin-bottom: 8px;"/>
             <ui:VisualElement name="rune-filter-row" class="ak-row" style="flex-wrap: wrap; margin-bottom: 16px;"/>
 
-            <ui:Label text="Verfügbare Runen" class="ak-overline" style="margin-bottom: 8px;"/>
+            <ui:Label name="rune-grid-header" text="Verfügbare Runen" class="ak-overline" style="margin-bottom: 8px;"/>
             <ui:ScrollView style="flex-grow: 1;">
                 <ui:VisualElement name="rune-grid" class="ak-row" style="flex-wrap: wrap;"/>
             </ui:ScrollView>
 
+        </ui:VisualElement>
+
+        <!-- Runen-Detail-Overlay (default versteckt) -->
+        <ui:VisualElement name="rune-detail-overlay" class="ak-modal-backdrop ak-bg-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; justify-content: center; align-items: center; display: none;">
+            <ui:VisualElement class="ak-modal ak-bg-surface ak-bd-gold ak-rad-lg" style="border-width: 1px; padding: 28; max-width: 460; min-width: 320;">
+                <ui:Label name="rune-detail-name" text="" class="ak-h3 ak-text--accent" style="text-align: center; margin-bottom: 8;"/>
+                <ui:Label name="rune-detail-type" text="" class="ak-caption ak-text--secondary" style="text-align: center; margin-bottom: 4;"/>
+                <ui:Label name="rune-detail-rarity" text="" class="ak-caption ak-text--muted" style="text-align: center; margin-bottom: 12;"/>
+                <ui:Label name="rune-detail-bonus" text="" class="ak-body ak-text--secondary" style="text-align: center; white-space: normal; font-size: 14; margin-bottom: 20;"/>
+                <ui:VisualElement class="ak-row" style="justify-content: center;">
+                    <ui:Button name="rune-detail-remove" text="Slot leeren" class="ak-btn ak-btn--ghost ak-text--danger" style="min-width: 130; margin-right: 12; display: none;"/>
+                    <ui:Button name="rune-detail-close" text="Schließen" class="ak-btn ak-btn--accent" style="min-width: 130;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:VisualElement>
 
     </ui:VisualElement>

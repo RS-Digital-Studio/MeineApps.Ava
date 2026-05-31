@@ -7,7 +7,7 @@ USDT-margined Perpetual Futures (Crypto + TradFi-Perps via NC-Prefix).
 | Aspekt | Wert |
 |--------|------|
 | Topologie | Pi-Server (Engine, 24/7) + Desktop/Android Remote-Clients |
-| Strategie | **TrendFollow** (Donchian-Breakout, Live-Default seit 31.05.2026) + SK-System (Reversal, optional) — Multi-TF Standalone |
+| Strategie | **TrendFollow-Fast** (Donchian-Breakout, Live-Default seit 31.05.2026, H4-only) + SK-System (Reversal, optional) — Multi-TF Standalone |
 | Exchange | BingX Perpetual Futures (USDT-M) |
 | Pi-Server | `steuerung@raspberrypi.local` (systemd-Service `bingxbot.service`) |
 
@@ -311,23 +311,27 @@ Order-Pipeline (Scanner → Evaluate → RiskManager → Order) ist strategie-ag
 Strategie wählt `BotSettings.LastStrategyName`. Empirisch verglichen über das Backtest-Lab
 (`tools/BingXBacktestLab`) auf echten BingX-Klines.
 
-| Strategie | Typ | Backtest-PF (Crypto) | Status |
-|-----------|-----|----------------------|--------|
-| **TrendFollow** | Donchian-Breakout in Trend-Richtung (EMA + ADX/DMI), Market-Entry, ATR-SL, RRR 1.5/3.0 | **2.2–2.5** | **Live-Default** |
-| TrendFollow-Fast / -Wide / -Strong | TrendFollow-Varianten (Parameter) | 1.8–3.7 | optional |
-| SkTrend | SK-Sequenz-Trigger + Trend-Filter + Market-Entry + ATR-SL ("reparierte SK") | ~1.0–1.35 (OOS verlierend) | nicht empfohlen |
-| SK-System | Reversal nach Stefan Kassing (Limit-Entry in Korrektur-Zone) | 1.2–1.4 | optional, **live unrentabel** |
+| Strategie | Typ | H4-PF (3 Marktphasen, gefixt) | Status |
+|-----------|-----|-------------------------------|--------|
+| **TrendFollow-Fast** | Donchian(10)-Breakout in Trend-Richtung, EMA(34)+ADX/DMI, Market-Entry, ATR-SL, RRR 1.5/3.0 | **5.4 / 2.0 / 2.8** (alle 3 profitabel) | **Live-Default, H4-only** |
+| TrendFollow (Standard, Don 20/EMA 50) | wie Fast, traegere Parameter | 5.3 / **0.95** / 1.7 (Mittelphase verlierend) | optional |
+| TrendFollow-Wide / -Strong | TrendFollow-Varianten | gemischt (Strong Mittelphase 0.78) | optional |
+| SkTrend | SK-Sequenz-Trigger + Trend-Filter + Market-Entry + ATR-SL ("reparierte SK") | OOS verlierend (PF 0.78) | nicht empfohlen |
+| SK-System | Reversal nach Stefan Kassing (Limit-Entry in Korrektur-Zone) | H4 backtest-ok, aber Limit-Entry → **live unrentabel** (12 % WR live) | optional |
 
-**Warum TrendFollow Live-Default ist:** Das SK-Reversal-System lieferte live nur ~12 % WinRate /
-PF 0.11 (enge SL ~0.3 %, RRR 1.2, kaputter Short-Pfad, Loss-Streak-Pause → Dauerstillstand).
-TrendFollow handelt **mit** dem Markt, weite ATR-SL, hohes RRR, **Market-Entry** (deshalb
-backtest-treu — minimaler Backtest-Live-Gap, im Gegensatz zu SKs Limit-Entries). Profitabel auf
-Long UND Short, robust über zwei Marktzyklen, und **umgeht den TradFi-Pip-Bug** (ATR statt fixe Pips).
-H4 hat durchweg den besten PF, H1 mehr Trades. Details + Lab → `tools/BingXBacktestLab/CLAUDE.md`.
+**Warum TrendFollow-Fast (H4-only) Live-Default ist:** Das SK-Reversal-System lieferte live nur ~12 % WinRate /
+PF 0.11 (enge SL ~0.3 %, RRR 1.2, kaputter Short-Pfad, Loss-Streak-Pause → Dauerstillstand). TrendFollow handelt
+**mit** dem Markt, weite ATR-SL, hohes RRR, **Market-Entry** (backtest-treu — minimaler Backtest-Live-Gap, anders
+als SKs Limit-Entry mit 48 %-Backtest-vs-12 %-Live-Gap). Empirisch (gefixtes Lab, echte Klines, 3 disjunkte
+Marktphasen): **H1 ist konsistent unprofitabel** (PF 0.4–0.99 ueber alle Strategien) → nur H4. **TrendFollow-Fast**
+ist die einzige Variante, die auf H4 in allen 3 Phasen profitabel ist. Realistischer Live-PF ~2 (NICHT die
+ungefixten 2.5+). Longs liefen 2023–2026 schwaecher (28–45 % WR) als Shorts — markphasen-abhaengig, offener
+Verbesserungs-Hebel. Umgeht den TradFi-Pip-Bug (ATR statt fixe Pips). Details + Lab → `tools/BingXBacktestLab/CLAUDE.md`.
 
 `RuntimeState` (TradesToday, ConsecutiveLosses) wird mit dem Strategie-Namen getaggt:
-`LiveTradingManager` setzt die Loss-Streak bei Strategiewechsel zurück (eine frische Strategie
-erbt nicht die Loss-Pause der alten).
+`LiveTradingManager` setzt die Loss-Streak bei Strategiewechsel zurueck. **Zusaetzlich** (Audit-Fix 31.05.):
+der UTC-Tageswechsel ruft `RiskManager.SetConsecutiveLosses(0)` — ohne das blieb der RiskManager-Counter
+bei ≥ PauseAtCount stehen → Scaling 0 → kein Trade → selbsterhaltende Dauerpause (die SK-Falle).
 
 ## SK-System (Sequenz-Konzept Strategie)
 

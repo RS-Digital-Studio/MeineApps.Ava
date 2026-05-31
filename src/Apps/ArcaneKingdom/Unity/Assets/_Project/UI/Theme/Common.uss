@@ -164,6 +164,7 @@
 .ak-text--primary { color: var(--ak-primary-light); }
 .ak-text--primary-light { color: var(--ak-primary-light); }
 .ak-text--accent-light { color: var(--ak-accent-light); }
+.ak-text--accent-dark { color: var(--ak-accent-dark); }
 .ak-text--success { color: var(--ak-success); }
 .ak-text--danger { color: var(--ak-danger); }
 .ak-text--muted { color: var(--ak-text-muted); }

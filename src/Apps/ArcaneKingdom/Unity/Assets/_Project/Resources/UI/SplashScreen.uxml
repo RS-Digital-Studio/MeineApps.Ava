@@ -5,7 +5,7 @@
         Freistehender Gold-Schriftzug mit Glow + Untertitel, Loader-Bar, Version unten links.
         Gebundene Namen (Controller): splash-logo, splash-progress-fill, splash-status-text, splash-version.
     -->
-    <ui:VisualElement name="splash-root" class="ak-screen ak-splash" style="flex-grow: 1; align-items: center; justify-content: center; background-color: rgb(6, 6, 16);">
+    <ui:VisualElement name="splash-root" class="ak-screen ak-splash ak-bg-deep" style="flex-grow: 1; align-items: center; justify-content: center;">
 
         <!-- Dezenter, tiefvioletter Schimmer von oben (radial-Ersatz) -->
         <ui:VisualElement name="splash-bg-tint" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(45, 10, 78, 0.20);"/>
@@ -14,19 +14,16 @@
 
             <!-- Logo: freistehender Schriftzug (pulsiert via Controller-Klasse) -->
             <ui:VisualElement name="splash-logo" style="align-items: center; justify-content: center;">
-                <ui:Label text="ARCANE KINGDOM"
-                          style="font-size: 52px; -unity-font-style: bold; color: rgb(245, 200, 66);
-                                 -unity-text-align: middle-center; letter-spacing: 4px; white-space: nowrap;
-                                 text-shadow: 0 0 32px rgba(245, 200, 66, 0.55);"/>
-                <ui:Label text="SAMMELKARTENSPIEL"
-                          style="margin-top: 8px; font-size: 15px; -unity-font-style: bold;
-                                 color: rgb(184, 134, 11); -unity-text-align: middle-center; letter-spacing: 8px;"/>
+                <ui:Label class="ak-text--accent" text="ARCANE KINGDOM"
+                          style="font-size: 52px; -unity-font-style: bold; -unity-text-align: middle-center; letter-spacing: 4px; white-space: nowrap; text-shadow: 0 0 32px rgba(245, 200, 66, 0.55);"/>
+                <ui:Label class="ak-text--accent-dark" text="SAMMELKARTENSPIEL"
+                          style="margin-top: 8px; font-size: 15px; -unity-font-style: bold; -unity-text-align: middle-center; letter-spacing: 8px;"/>
             </ui:VisualElement>
 
             <ui:VisualElement style="height: 72px;"/>
 
             <ui:VisualElement name="splash-progress-track" style="width: 320px; height: 4px; background-color: rgba(255, 255, 255, 0.08); border-top-left-radius: 2px; border-top-right-radius: 2px; border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; overflow: hidden;">
-                <ui:VisualElement name="splash-progress-fill" style="height: 100%; width: 0%; background-color: rgb(245, 200, 66); border-top-left-radius: 2px; border-top-right-radius: 2px; border-bottom-left-radius: 2px; border-bottom-right-radius: 2px;"/>
+                <ui:VisualElement class="ak-bg-accent" name="splash-progress-fill" style="height: 100%; width: 0%; border-top-left-radius: 2px; border-top-right-radius: 2px; border-bottom-left-radius: 2px; border-bottom-right-radius: 2px;"/>
             </ui:VisualElement>
 
             <ui:Label name="splash-status-text" text="Lade..." style="margin-top: 16px; font-size: 13px; color: rgba(224, 224, 224, 0.75); -unity-text-align: middle-center; letter-spacing: 2px;"/>

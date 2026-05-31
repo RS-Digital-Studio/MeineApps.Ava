@@ -3,9 +3,8 @@
 
     <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
-        <ui:VisualElement class="ak-app-header ak-bd-b-gold-soft"
-                          style="background-color: rgb(6, 6, 16);
-                                 border-bottom-width: 1px;">
+        <ui:VisualElement class="ak-app-header ak-bd-b-gold-soft ak-bg-deep"
+                          style="border-bottom-width: 1px;">
             <ui:Button name="friends-back-button" text="Zurueck"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
             <ui:Label text="Freunde" class="ak-h2" style="flex-grow: 1;" />
@@ -14,10 +13,8 @@
         </ui:VisualElement>
 
         <!-- Tabs -->
-        <ui:VisualElement class="ak-row ak-bd-b-gold-soft"
-                          style="padding: 8;
-                                 background-color: rgb(6, 6, 16);
-                                 border-bottom-width: 1px;">
+        <ui:VisualElement class="ak-row ak-bd-b-gold-soft ak-bg-deep"
+                          style="padding: 8; border-bottom-width: 1px;">
             <ui:Button name="friends-tab-list" text="Liste"
                        class="ak-btn ak-btn--sm ak-btn--primary"
                        style="flex-grow: 1; margin-right: 4;" />

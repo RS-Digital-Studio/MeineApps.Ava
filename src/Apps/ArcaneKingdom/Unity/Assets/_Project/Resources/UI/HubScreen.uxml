@@ -13,7 +13,7 @@
         hub-event-text, nav-*, building-*, bottom-*.
     -->
 
-    <ui:VisualElement name="hub-root" class="ak-fill ak-col" style="background-color: rgb(10, 10, 24);">
+    <ui:VisualElement name="hub-root" class="ak-fill ak-col ak-bg-base">
 
         <!-- ================== TOP-BAR ================== -->
         <ui:VisualElement class="ak-app-header" style="background-color: rgba(6, 6, 16, 0.55);">

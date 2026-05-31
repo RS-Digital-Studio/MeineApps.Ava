@@ -7,7 +7,7 @@
         LoginScreen.cs via Pulse-Klasse animiert.
     -->
 
-    <ui:VisualElement class="ak-fill ak-col ak-center" style="background-color: rgb(6, 6, 16);">
+    <ui:VisualElement class="ak-fill ak-col ak-center ak-bg-deep">
 
         <!-- Dekoraltativer Hintergrund-Glow (subtil, Royal-Purple) -->
         <ui:VisualElement style="position: absolute; left: 50%; top: 28%;

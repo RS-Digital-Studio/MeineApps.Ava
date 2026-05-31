@@ -3,8 +3,8 @@
 
     <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
-        <ui:VisualElement class="ak-app-header ak-bd-b-gold-soft"
-                          style="background-color: rgb(6, 6, 16); border-bottom-width: 1px;">
+        <ui:VisualElement class="ak-app-header ak-bd-b-gold-soft ak-bg-deep"
+                          style="border-bottom-width: 1px;">
             <ui:Button name="saison-back-button" text="Zurück"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12px;" />
             <ui:Label text="Saison-Pass" class="ak-h2" style="flex-grow: 1;" />
@@ -44,8 +44,8 @@
         </ui:VisualElement>
 
         <!-- Reward-Track -->
-        <ui:VisualElement class="ak-col ak-grow ak-bd-gold-soft"
-                          style="background-color: rgb(6, 6, 16); border-top-width: 1px; padding-top: 12;">
+        <ui:VisualElement class="ak-col ak-grow ak-bd-gold-soft ak-bg-deep"
+                          style="border-top-width: 1px; padding-top: 12;">
             <ui:Label text="Belohnungen" class="ak-overline"
                       style="margin-left: 16; margin-bottom: 6;" />
             <ui:ScrollView mode="Horizontal" vertical-scroller-visibility="Hidden"

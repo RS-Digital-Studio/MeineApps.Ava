@@ -2,7 +2,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
     <ui:VisualElement name="rune-root" class="ak-screen ak-bg-base" style="flex-grow: 1;">
 
-        <ui:VisualElement class="ak-row ak-center-v ak-bd-b-gold-soft" style="background-color: rgb(6, 6, 16); border-bottom-width: 1px; padding-left: 16px; padding-right: 16px; padding-top: 14px; padding-bottom: 14px; margin-bottom: 16px;">
+        <ui:VisualElement class="ak-row ak-center-v ak-bd-b-gold-soft ak-bg-deep" style="border-bottom-width: 1px; padding-left: 16px; padding-right: 16px; padding-top: 14px; padding-bottom: 14px; margin-bottom: 16px;">
             <ui:Label text="RUNEN" class="ak-h2 ak-grow"/>
             <ui:Button name="rune-close" text="X" class="ak-btn ak-btn--icon"/>
         </ui:VisualElement>

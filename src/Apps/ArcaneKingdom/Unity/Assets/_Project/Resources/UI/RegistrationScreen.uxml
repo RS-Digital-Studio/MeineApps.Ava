@@ -5,15 +5,12 @@
         Gold-Logo mit Untertitel, gold-umrandete Hint-Box, Gold-CTA.
         Gebundene Namen bleiben unveraendert (Controller: RegistrationScreen.cs).
     -->
-    <ui:VisualElement name="register-root" class="ak-screen ak-register" style="flex-grow: 1; background-color: rgb(6, 6, 16); padding-left: 24px; padding-right: 24px; padding-top: 40px; padding-bottom: 24px;">
+    <ui:VisualElement name="register-root" class="ak-screen ak-register ak-bg-deep" style="flex-grow: 1; padding-left: 24px; padding-right: 24px; padding-top: 40px; padding-bottom: 24px;">
 
-        <ui:Label text="ARCANE KINGDOM"
-                  style="font-size: 30px; -unity-font-style: bold; color: rgb(245, 200, 66);
-                         -unity-text-align: middle-center; letter-spacing: 3px; margin-bottom: 4px;
-                         text-shadow: 0 0 26px rgba(245, 200, 66, 0.5);"/>
-        <ui:Label text="DEIN ABENTEUER BEGINNT"
-                  style="font-size: 11px; color: rgb(184, 134, 11); -unity-text-align: middle-center;
-                         letter-spacing: 4px; margin-bottom: 28px;"/>
+        <ui:Label class="ak-text--accent" text="ARCANE KINGDOM"
+                  style="font-size: 30px; -unity-font-style: bold; -unity-text-align: middle-center; letter-spacing: 3px; margin-bottom: 4px; text-shadow: 0 0 26px rgba(245, 200, 66, 0.5);"/>
+        <ui:Label class="ak-text--accent-dark" text="DEIN ABENTEUER BEGINNT"
+                  style="font-size: 11px; -unity-text-align: middle-center; letter-spacing: 4px; margin-bottom: 28px;"/>
 
         <ui:ScrollView name="register-form" style="flex-grow: 1;">
             <ui:VisualElement style="max-width: 480px; align-self: center; width: 100%;">
@@ -25,7 +22,7 @@
                 <ui:TextField name="register-password-confirm" label="Passwort bestaetigen" password="true" class="ak-input" style="margin-bottom: 16px;"/>
 
                 <ui:VisualElement name="register-password-hint" style="background-color: rgba(245, 200, 66, 0.05); border-width: 1px; border-color: rgba(245, 200, 66, 0.38); padding-left: 12px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; margin-bottom: 24px;">
-                    <ui:Label text="Passwort-Anforderungen" style="font-size: 11px; color: rgb(245, 200, 66); -unity-font-style: bold; letter-spacing: 1px; margin-bottom: 4px;"/>
+                    <ui:Label class="ak-text--accent" text="Passwort-Anforderungen" style="font-size: 11px; -unity-font-style: bold; letter-spacing: 1px; margin-bottom: 4px;"/>
                     <ui:Label text="Mind. 8 Zeichen" style="font-size: 11px; color: rgb(170, 170, 190); margin-top: 2px;"/>
                     <ui:Label text="Mind. ein Grossbuchstabe + Kleinbuchstabe + Zahl" style="font-size: 11px; color: rgb(170, 170, 190);"/>
                     <ui:Label text="Darf nicht E-Mail oder Spielername enthalten" style="font-size: 11px; color: rgb(170, 170, 190);"/>
@@ -35,11 +32,11 @@
                 <ui:Toggle name="register-privacy-toggle" label="Ich akzeptiere die Datenschutzrichtlinien" style="margin-bottom: 6px;"/>
                 <ui:Toggle name="register-verhalten-toggle" label="Ich akzeptiere die Verhaltensregeln" style="margin-bottom: 24px;"/>
 
-                <ui:Label name="register-error" style="color: rgb(232, 64, 87); font-size: 13px; margin-bottom: 16px; -unity-text-align: middle-center; display: none;"/>
+                <ui:Label class="ak-text--danger" name="register-error" style="font-size: 13px; margin-bottom: 16px; -unity-text-align: middle-center; display: none;"/>
 
                 <ui:Button name="register-submit" text="Konto erstellen" class="ak-btn ak-btn--accent" style="height: 56px; font-size: 18px; -unity-font-style: bold; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; margin-bottom: 12px;"/>
 
-                <ui:Button name="register-back-to-login" text="Bereits ein Konto? Anmelden" style="height: 44px; background-color: rgba(0, 0, 0, 0); color: rgb(245, 200, 66); font-size: 14px; border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 0;"/>
+                <ui:Button class="ak-text--accent" name="register-back-to-login" text="Bereits ein Konto? Anmelden" style="height: 44px; background-color: rgba(0, 0, 0, 0); font-size: 14px; border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 0;"/>
 
             </ui:VisualElement>
         </ui:ScrollView>

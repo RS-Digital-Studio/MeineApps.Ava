@@ -8,9 +8,8 @@
     <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
         <!-- ================ HEADER ================ -->
-        <ui:VisualElement class="ak-app-header ak-bd-b-gold-soft"
-                          style="background-color: rgb(6, 6, 16);
-                                 border-bottom-width: 1;">
+        <ui:VisualElement class="ak-app-header ak-bd-b-gold-soft ak-bg-deep"
+                          style="border-bottom-width: 1;">
             <ui:Button name="world-back-button" text="Zurueck"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
             <ui:Label name="world-title" text="Welt-Karte" class="ak-h3 ak-text--accent"
@@ -22,9 +21,8 @@
         <!-- ================ WELT-TABS (horizontal scroll) ================ -->
         <ui:ScrollView name="world-tabs-scroll" mode="Horizontal"
                        vertical-scroller-visibility="Hidden"
-                       class="ak-bd-b-gold-soft"
-                       style="height: 80; background-color: rgb(6, 6, 16);
-                              border-bottom-width: 1;">
+                       class="ak-bd-b-gold-soft ak-bg-deep"
+                       style="height: 80; border-bottom-width: 1;">
             <ui:VisualElement name="world-tabs-container"
                               style="flex-direction: row; padding: 8;" />
         </ui:ScrollView>
@@ -48,9 +46,7 @@
 
             <!-- Detail-Panel (rechts) -->
             <ui:VisualElement name="node-detail-panel"
-                              class="ak-col ak-bd-gold-soft" style="width: 280; padding: 16;
-                                                     background-color: rgb(6, 6, 16);
-                                                     border-left-width: 1;">
+                              class="ak-col ak-bd-gold-soft ak-bg-deep" style="width: 280; padding: 16; border-left-width: 1;">
 
                 <ui:Label name="node-detail-empty" text="Waehle einen Node"
                           class="ak-body ak-text--muted" style="-unity-text-align: middle-center;

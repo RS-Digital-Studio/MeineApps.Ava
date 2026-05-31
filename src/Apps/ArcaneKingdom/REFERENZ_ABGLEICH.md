@@ -22,6 +22,14 @@
 
 ## 1. KRITISCH — große fehlende/falsche Systeme (Feature-Arbeit)
 
+> **Bereits abgearbeitet (Unity-verifiziert, committed):** K5 (Auto-Kampf verdrahtet),
+> K8 (Karten-Belohnung pro Sieg, gestuft nach Node×Sterne), K9 (Story-Enden W10).
+> Aus Abschnitt 2: M1 (rassenspezifische Starter-Decks), M6 (Boss-Phase 2 bei jedem Boss),
+> M7 (Element→Status-Mapping), M8 (MaxRuneSlots 4). **M16 bewusst NICHT gefixt** —
+> Kartenliste_v4 ist für konkrete Karten-Werte autoritativ, die Spannen sind nachrangig.
+> **Offen, große Brocken:** K1/K2 (Skill-System, größter), K3/K4 (Schild/Element-Passiv),
+> K6/K7/K10–K13, K11 (Premium-Shop/Tempel-Rest). Voller Stand: Memory `arcanekingdom-referenz-angleich`.
+
 | # | Befund | Quelle | Aufwand |
 |---|--------|--------|---------|
 | K1 | **Nur Skill 1 wirkt im Kampf.** Skill 2 (LV5), Skill 3 (LV10), Letzter Wille (LV15) werden in `BattleEngine.TriggerSpecial` nie ausgewertet (nur `def.BaseAbility`). Daten (abilities.json `_2/_3/_lw`, cards.json) sind vorhanden, die Level-Gates `HasSecond/ThirdAbilityUnlocked` sind tote Flags. | Skills_v4; BattleEngine.cs:196-199,439 | Groß |

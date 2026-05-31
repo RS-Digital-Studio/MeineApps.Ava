@@ -37,6 +37,7 @@ namespace ArcaneKingdom.UI.Battle
         private readonly ToastService _toast;
         private readonly CardArtworkService _artworkService;
         private readonly MaterialDropService _materialDrops;
+        private readonly CardDropService _cardDrops;
         private readonly QuestService _questService;
         private readonly AchievementService _achievements;
 
@@ -99,6 +100,7 @@ namespace ArcaneKingdom.UI.Battle
                             ArcaneKingdom.UI.BattleReport.BattleReportContext reportCtx,
                             UIAssetService uiAssets,
                             MaterialDropService materialDrops,
+                            CardDropService cardDrops,
                             QuestService questService,
                             AchievementService achievements)
         {
@@ -115,6 +117,7 @@ namespace ArcaneKingdom.UI.Battle
             _reportCtx = reportCtx;
             _uiAssets = uiAssets;
             _materialDrops = materialDrops;
+            _cardDrops = cardDrops;
             _questService = questService;
             _achievements = achievements;
         }
@@ -657,6 +660,22 @@ namespace ArcaneKingdom.UI.Battle
                             _toast.Show(string.Format(
                                 _loc.Get("battle.material_drop", "{0} Material(ien) erbeutet!"), drops.Count),
                                 ToastKind.Success, 3f);
+                    }
+
+                    // Karten-Belohnung (Spielplan v5 Kap. 8.2): jeder Sieg droppt eine Karte, deren
+                    // Seltenheit nach Node-Typ x Sternzahl gestuft ist (Normal/MiniBoss/WorldBoss,
+                    // 1-3★ vs. 4★ Gott — Boss bei 4★ = Epic bzw. Legendär).
+                    if (_node != null)
+                    {
+                        var cardId = await _cardDrops.RollAndAwardAsync(_node, stars);
+                        if (!string.IsNullOrEmpty(cardId))
+                        {
+                            var def = _cardCatalog.Find(cardId);
+                            var cardName = def != null ? _loc.Get(def.DisplayNameKey, cardId!) : cardId!;
+                            _toast.Show(string.Format(
+                                _loc.Get("battle.card_drop", "Neue Karte erbeutet: {0}"), cardName),
+                                ToastKind.Success, 4f);
+                        }
                     }
 
                     // v6 (Designplan v4 Story Kap. 9): Welt-Boss-Sieg -> Erinnerungs-Fragment

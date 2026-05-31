@@ -86,6 +86,7 @@ namespace ArcaneKingdom.Game.Bootstrap
             builder.Register<AchievementService>(Lifetime.Singleton);
             builder.Register<ChatModerationService>(Lifetime.Singleton);
             builder.Register<MaterialDropService>(Lifetime.Singleton);
+            builder.Register<CardDropService>(Lifetime.Singleton);
             builder.Register<SaisonPassService>(Lifetime.Singleton);
             builder.Register<DailyShopService>(Lifetime.Singleton);
             builder.Register<FriendsService>(Lifetime.Singleton);

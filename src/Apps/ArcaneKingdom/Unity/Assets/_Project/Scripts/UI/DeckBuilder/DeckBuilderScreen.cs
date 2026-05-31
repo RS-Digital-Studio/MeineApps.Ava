@@ -286,7 +286,7 @@ namespace ArcaneKingdom.UI.DeckBuilder
                 name.style.marginLeft = 8;
                 row.Add(name);
 
-                var remove = new Button(() => RemoveFromDeck(instanceId)) { text = "✕" };
+                var remove = new Button(() => RemoveFromDeck(instanceId)) { text = "X" };
                 remove.AddToClassList("ak-btn");
                 remove.AddToClassList("ak-btn--sm");
                 remove.AddToClassList("ak-btn--ghost");

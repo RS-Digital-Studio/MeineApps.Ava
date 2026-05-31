@@ -150,7 +150,7 @@ namespace ArcaneKingdom.UI.RaceSelection
                 return;
             }
 
-            _toast.Show($"✓ {_loc.Get("race_selection.confirmed") ?? "Rasse gewaehlt"}: {_selectedRace}", ToastKind.Success);
+            _toast.Show($"{_loc.Get("race_selection.confirmed") ?? "Rasse gewaehlt"}: {_selectedRace}", ToastKind.Success);
             await _screenManager.ReplaceAsync(ScreenId.Hub);
         }
     }

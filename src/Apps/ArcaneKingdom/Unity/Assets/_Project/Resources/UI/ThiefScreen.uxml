@@ -18,7 +18,7 @@
                 <!-- Dieb-Portrait -->
                 <ui:VisualElement class="ak-center" style="margin-bottom: 24px;">
                     <ui:VisualElement class="ak-bg-surface-2 ak-bd-danger" style="width: 200px; height: 200px; border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-left-radius: 100px; border-bottom-right-radius: 100px; border-left-width: 4px; border-right-width: 4px; border-top-width: 4px; border-bottom-width: 4px; margin-bottom: 16px;"/>
-                    <ui:Label name="thief-name" text="Mysterioeser Dieb" class="ak-h3"/>
+                    <ui:Label name="thief-name" text="Mysteriöser Dieb" class="ak-h3"/>
                 </ui:VisualElement>
 
                 <!-- HP-Balken -->
@@ -34,7 +34,7 @@
                 <ui:VisualElement class="ak-surface" style="margin-bottom: 16px;">
                     <ui:Label name="thief-discovered-by" text="Entdeckt von: ServerEvent" class="ak-caption"/>
                     <ui:Label name="thief-last-attacker" text="Letzte Attacke: -" class="ak-caption" style="margin-top: 4px;"/>
-                    <ui:Label name="thief-attack-count" text="0 Kaempfe wurden gefuehrt" class="ak-caption" style="margin-top: 4px;"/>
+                    <ui:Label name="thief-attack-count" text="0 Kämpfe wurden geführt" class="ak-caption" style="margin-top: 4px;"/>
                 </ui:VisualElement>
 
                 <!-- Aktionen -->

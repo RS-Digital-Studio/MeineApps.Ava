@@ -17,9 +17,9 @@
 
                 <ui:TextField name="register-displayname" label="Spielername" class="ak-input" style="margin-bottom: 12px;"/>
                 <ui:TextField name="register-email" label="E-Mail" class="ak-input" style="margin-bottom: 12px;"/>
-                <ui:TextField name="register-email-confirm" label="E-Mail bestaetigen" class="ak-input" style="margin-bottom: 12px;"/>
+                <ui:TextField name="register-email-confirm" label="E-Mail bestätigen" class="ak-input" style="margin-bottom: 12px;"/>
                 <ui:TextField name="register-password" label="Passwort" password="true" class="ak-input" style="margin-bottom: 12px;"/>
-                <ui:TextField name="register-password-confirm" label="Passwort bestaetigen" password="true" class="ak-input" style="margin-bottom: 16px;"/>
+                <ui:TextField name="register-password-confirm" label="Passwort bestätigen" password="true" class="ak-input" style="margin-bottom: 16px;"/>
 
                 <ui:VisualElement name="register-password-hint" style="background-color: rgba(245, 200, 66, 0.05); border-width: 1px; border-color: rgba(245, 200, 66, 0.38); padding-left: 12px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; margin-bottom: 24px;">
                     <ui:Label class="ak-text--accent" text="Passwort-Anforderungen" style="font-size: 11px; -unity-font-style: bold; letter-spacing: 1px; margin-bottom: 4px;"/>

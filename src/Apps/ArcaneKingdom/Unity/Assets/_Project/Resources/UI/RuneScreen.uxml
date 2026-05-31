@@ -17,7 +17,7 @@
             <ui:Label text="Filter" class="ak-overline" style="margin-bottom: 8px;"/>
             <ui:VisualElement name="rune-filter-row" class="ak-row" style="flex-wrap: wrap; margin-bottom: 16px;"/>
 
-            <ui:Label text="Verfuegbare Runen" class="ak-overline" style="margin-bottom: 8px;"/>
+            <ui:Label text="Verfügbare Runen" class="ak-overline" style="margin-bottom: 8px;"/>
             <ui:ScrollView style="flex-grow: 1;">
                 <ui:VisualElement name="rune-grid" class="ak-row" style="flex-wrap: wrap;"/>
             </ui:ScrollView>

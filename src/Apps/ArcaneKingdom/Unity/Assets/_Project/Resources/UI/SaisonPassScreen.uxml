@@ -35,7 +35,7 @@
             <ui:VisualElement name="saison-premium-banner" class="ak-surface-elevated"
                               style="margin-bottom: 12;">
                 <ui:Label text="Premium-Pass freischalten" class="ak-h4 ak-text--accent" />
-                <ui:Label text="Schalte alle Premium-Belohnungen frei (rueckwirkend!)."
+                <ui:Label text="Schalte alle Premium-Belohnungen frei (rückwirkend!)."
                           class="ak-caption" style="margin-bottom: 8;" />
                 <ui:Button name="saison-buy-premium" text="Fuer 500 Diamanten kaufen"
                            class="ak-btn ak-btn--accent" />

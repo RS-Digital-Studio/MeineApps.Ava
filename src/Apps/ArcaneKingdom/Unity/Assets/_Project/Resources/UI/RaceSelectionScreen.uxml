@@ -3,7 +3,7 @@
     <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(15, 8, 30);">
 
         <ui:VisualElement style="padding: 24;">
-            <ui:Label text="Waehle deine Rasse" class="ak-h1"
+            <ui:Label text="Wähle deine Rasse" class="ak-h1"
                       style="text-align: center;" />
             <ui:Label text="Diese Wahl bestimmt deinen Helden-Passiv-Skill und Mentor."
                       class="ak-caption"
@@ -43,7 +43,7 @@
             <ui:VisualElement name="race-card-daemonen" class="ak-race-card">
                 <ui:VisualElement class="ak-race-card__scrim" />
                 <ui:VisualElement class="ak-race-card__info">
-                    <ui:Label text="Daemonen" class="ak-race-card__title" />
+                    <ui:Label text="Dämonen" class="ak-race-card__title" />
                     <ui:Label text="Hohe ATK / Lebensraub" class="ak-race-card__role" />
                 </ui:VisualElement>
             </ui:VisualElement>
@@ -61,7 +61,7 @@
         </ui:VisualElement>
 
         <!-- Bestätigen -->
-        <ui:Button name="confirm-button" text="Diese Rasse waehlen"
+        <ui:Button name="confirm-button" text="Diese Rasse wählen"
                    class="ak-btn ak-btn--accent ak-btn--lg"
                    style="margin: 16;" />
 

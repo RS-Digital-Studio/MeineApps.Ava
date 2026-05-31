@@ -4,7 +4,7 @@
     <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
         <ui:VisualElement class="ak-app-header">
-            <ui:Button name="settings-back-button" text="Zurueck"
+            <ui:Button name="settings-back-button" text="Zurück"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
             <ui:Label text="Einstellungen" class="ak-h3" style="flex-grow: 1;" />
         </ui:VisualElement>
@@ -59,7 +59,7 @@
                                style="margin-bottom: 6;" />
                     <ui:Toggle name="settings-notifications-toggle"
                                label="Push-Benachrichtigungen" style="margin-bottom: 6;" />
-                    <ui:Button name="settings-reset-tutorial" text="Tutorial zuruecksetzen"
+                    <ui:Button name="settings-reset-tutorial" text="Tutorial zurücksetzen"
                                class="ak-btn ak-btn--sm ak-btn--ghost"
                                style="margin-top: 8; max-width: 240;" />
                 </ui:VisualElement>

@@ -8,7 +8,7 @@
 
             <ui:VisualElement class="ak-divider" style="margin-bottom: 16px;"/>
 
-            <ui:Label text="Schwierigkeit waehlen:" class="ak-overline" style="margin-bottom: 12px;"/>
+            <ui:Label text="Schwierigkeit wählen:" class="ak-overline" style="margin-bottom: 12px;"/>
 
             <ui:VisualElement style="flex-direction: row; flex-wrap: wrap; justify-content: space-between;">
                 <ui:Button name="difficulty-classic" text="Classic" class="ak-btn ak-btn--ghost" style="width: 48%; min-height: 96px; margin-bottom: 12px;"/>

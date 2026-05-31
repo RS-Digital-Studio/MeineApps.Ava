@@ -3,7 +3,7 @@
     <ui:VisualElement class="ak-fill ak-col ak-bg-base">
 
         <ui:VisualElement class="ak-app-header">
-            <ui:Button name="back-button" text="Zurueck"
+            <ui:Button name="back-button" text="Zurück"
                        class="ak-btn ak-btn--sm ak-btn--ghost"
                        style="margin-right: 12;" />
             <ui:Label text="Zauberschmiede" class="ak-h2"
@@ -26,7 +26,7 @@
                                      min-height: 80;
                                      border-width: 1px;">
                 <ui:Label name="preview-title"
-                          text="Karten auswaehlen"
+                          text="Karten auswählen"
                           class="ak-h4" />
                 <ui:Label name="preview-gold-cost" text=""
                           class="ak-text--accent"
@@ -38,7 +38,7 @@
 
             <!-- Action-Buttons -->
             <ui:VisualElement class="ak-row" style="margin-bottom: 16;">
-                <ui:Button name="clear-button" text="Auswahl zuruecksetzen"
+                <ui:Button name="clear-button" text="Auswahl zurücksetzen"
                            class="ak-btn ak-btn--ghost"
                            style="flex-grow: 1; margin-right: 8;" />
                 <ui:Button name="fuse-button" text="Schmieden"

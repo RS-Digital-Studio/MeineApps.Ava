@@ -55,7 +55,7 @@
             </ui:VisualElement>
 
             <!-- Abilities -->
-            <ui:Label text="Faehigkeiten" class="ak-overline"
+            <ui:Label text="Fähigkeiten" class="ak-overline"
                       style="margin-bottom: 6; margin-top: 4;" />
             <ui:VisualElement name="card-detail-abilities" />
 

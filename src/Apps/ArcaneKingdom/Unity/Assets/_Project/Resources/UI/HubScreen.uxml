@@ -60,7 +60,7 @@
         <!-- ================== EVENT-BANNER ================== -->
         <ui:VisualElement class="ak-hub-event">
             <ui:VisualElement class="ak-hub-event__dot" />
-            <ui:Label name="hub-event-text" text="Willkommen zurueck, Held!" class="ak-hub-event__text" />
+            <ui:Label name="hub-event-text" text="Willkommen zurück, Held!" class="ak-hub-event__text" />
         </ui:VisualElement>
 
         <!-- ================== CONTENT (Stadt-Szene + Overlays) ================== -->
@@ -90,7 +90,7 @@
 
         <!-- ================== BOTTOM-NAVIGATION ================== -->
         <ui:VisualElement class="ak-hub-bottomnav">
-            <ui:Button name="bottom-menu" text="Menue" class="ak-hub-bottombtn" />
+            <ui:Button name="bottom-menu" text="Menü" class="ak-hub-bottombtn" />
             <ui:Button name="bottom-shop" text="Laden" class="ak-hub-bottombtn" />
             <ui:Button name="bottom-hub" text="Hub" class="ak-hub-bottombtn ak-hub-bottombtn--active" />
             <ui:Button name="bottom-deck" text="Deck" class="ak-hub-bottombtn" />

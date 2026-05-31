@@ -20,13 +20,14 @@
     bottom: 0px;
 }
 
-/* === Surfaces (Panels, Cards, Sheets) === */
+/* === Surfaces (Panels, Cards, Sheets) ===
+   Dunkles Panel mit dezentem Gold-Rahmen — der "ornamentierte" Look der Referenz. */
 .ak-surface {
     background-color: var(--ak-bg-surface);
     border-radius: var(--ak-radius-lg);
     padding: var(--ak-space-4);
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.04);
+    border-color: var(--ak-border-gold-soft);
 }
 
 .ak-surface-elevated {
@@ -34,17 +35,19 @@
     border-radius: var(--ak-radius-lg);
     padding: var(--ak-space-4);
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--ak-border-gold);
 }
 
 .ak-divider {
     height: 1px;
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: var(--ak-border-gold-soft);
     margin-top: var(--ak-space-3);
     margin-bottom: var(--ak-space-3);
 }
 
-/* === Buttons === */
+/* === Buttons ===
+   Default: dunkles Panel mit dezentem Gold-Rahmen (Referenz: building/nav-btn).
+   Gold-Hover laesst die Border aufleuchten. */
 .ak-btn {
     min-height: 44px;
     padding-left: var(--ak-space-4);
@@ -52,18 +55,20 @@
     padding-top: var(--ak-space-2);
     padding-bottom: var(--ak-space-2);
     border-radius: var(--ak-radius-md);
-    border-width: 0px;
-    background-color: var(--ak-bg-surface-2);
+    border-width: 1px;
+    border-color: var(--ak-border-gold-soft);
+    background-color: rgba(22, 18, 40, 0.85);
     color: var(--ak-text-primary);
     font-size: var(--ak-font-md);
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     white-space: normal;
-    transition: background-color 120ms ease-in-out, scale 80ms ease-out;
+    transition: background-color 120ms ease-in-out, border-color 120ms ease-in-out, scale 80ms ease-out;
 }
 
 .ak-btn:hover {
-    background-color: rgb(64, 50, 102);
+    background-color: rgba(245, 200, 66, 0.10);
+    border-color: var(--ak-border-gold);
 }
 
 .ak-btn:active {
@@ -71,36 +76,42 @@
 }
 
 .ak-btn:disabled {
-    background-color: rgba(82, 70, 112, 0.4);
+    background-color: rgba(40, 34, 60, 0.4);
+    border-color: rgba(255, 255, 255, 0.04);
     color: var(--ak-text-muted);
 }
 
-/* Primary (Royal-Purple) */
+/* Primary (Royal-Purple, Brand-Hauptaktion) — mit Gold-Rahmen */
 .ak-btn--primary {
     background-color: var(--ak-primary);
+    border-color: var(--ak-border-gold);
     color: var(--ak-text-on-primary);
 }
 .ak-btn--primary:hover {
     background-color: var(--ak-primary-light);
+    border-color: var(--ak-border-gold-strong);
 }
 
-/* Accent (Gold — Energie, Premium, Confirm-Käufe) */
+/* Accent (Gold — Energie, Premium, Confirm-Käufe, Haupt-CTA) */
 .ak-btn--accent {
     background-color: var(--ak-accent);
+    border-color: var(--ak-accent-light);
     color: var(--ak-text-on-accent);
 }
 .ak-btn--accent:hover {
     background-color: var(--ak-accent-light);
 }
 
-/* Ghost (transparent, für sekundäre Aktionen) */
+/* Ghost (transparent mit Gold-Rahmen + Gold-Text — sekundaere Aktionen) */
 .ak-btn--ghost {
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: rgba(0, 0, 0, 0.25);
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: var(--ak-border-gold);
+    color: var(--ak-accent);
 }
 .ak-btn--ghost:hover {
-    background-color: rgba(255, 255, 255, 0.10);
+    background-color: rgba(245, 200, 66, 0.12);
+    border-color: var(--ak-border-gold-strong);
 }
 
 /* Danger */
@@ -120,24 +131,27 @@
     padding-left: var(--ak-space-3);
     padding-right: var(--ak-space-3);
     border-radius: var(--ak-radius-md);
-    background-color: rgba(0, 0, 0, 0.32);
+    background-color: rgba(0, 0, 0, 0.42);
     color: var(--ak-text-primary);
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.12);
     font-size: var(--ak-font-md);
+    transition: border-color 120ms ease-in-out;
 }
 .ak-input:focus {
-    border-color: var(--ak-primary-light);
+    border-color: var(--ak-accent);
 }
 
-/* === Labels / Typography === */
-.ak-h1 { font-size: var(--ak-font-display); -unity-font-style: bold; color: var(--ak-text-primary); letter-spacing: -2px; }
-.ak-h2 { font-size: var(--ak-font-xxl); -unity-font-style: bold; color: var(--ak-text-primary); letter-spacing: -1px; }
-.ak-h3 { font-size: var(--ak-font-xl); -unity-font-style: bold; color: var(--ak-text-primary); }
-.ak-h4 { font-size: var(--ak-font-lg); -unity-font-style: bold; color: var(--ak-text-primary); }
+/* === Labels / Typography ===
+   Fantasy-Anmutung: grosse Titel in Gold mit GESPREIZTEM Letter-Spacing
+   (Cinzel-Charakter), statt des modernen, negativen Trackings. */
+.ak-h1 { font-size: var(--ak-font-display); -unity-font-style: bold; color: var(--ak-accent); letter-spacing: 3px; }
+.ak-h2 { font-size: var(--ak-font-xxl); -unity-font-style: bold; color: var(--ak-accent); letter-spacing: 2px; }
+.ak-h3 { font-size: var(--ak-font-xl); -unity-font-style: bold; color: var(--ak-text-primary); letter-spacing: 1px; }
+.ak-h4 { font-size: var(--ak-font-lg); -unity-font-style: bold; color: var(--ak-text-primary); letter-spacing: 1px; }
 .ak-body { font-size: var(--ak-font-md); color: var(--ak-text-secondary); }
 .ak-caption { font-size: var(--ak-font-sm); color: var(--ak-text-muted); }
-.ak-overline { font-size: var(--ak-font-xs); color: var(--ak-text-muted); letter-spacing: 1px; -unity-font-style: bold; }
+.ak-overline { font-size: var(--ak-font-xs); color: var(--ak-accent-dark); letter-spacing: 2px; -unity-font-style: bold; }
 
 /* Zentrierter Text in runden Containern (Logo, Avatar-Level-Overlay etc.) */
 .ak-centered-text {

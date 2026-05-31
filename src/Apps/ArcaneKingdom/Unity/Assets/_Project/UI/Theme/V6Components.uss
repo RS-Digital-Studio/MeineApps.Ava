@@ -17,7 +17,7 @@
    ============================================================ */
 
 .ak-schmiede__input-slots {
-    background-color: rgba(245, 158, 11, 0.06);
+    background-color: rgba(245, 200, 66, 0.06);
     border-radius: var(--ak-radius-md);
     padding: 8px;
 }
@@ -27,7 +27,7 @@
     height: 128px;
     background-color: rgba(255, 255, 255, 0.04);
     border-width: 2px;
-    border-color: rgba(245, 158, 11, 0.3);
+    border-color: var(--ak-border-gold);
     border-radius: var(--ak-radius-sm);
     margin: 4px;
     justify-content: center;

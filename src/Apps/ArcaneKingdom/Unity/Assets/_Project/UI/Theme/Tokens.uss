@@ -7,20 +7,31 @@
 */
 
 :root {
-    /* === Brand Farben === */
+    /* === Brand Farben ===
+       Arcane-Realm-Design (Referenz Design_Entwurf_Login_HubWelt.html):
+       helles, gelbliches Gold #f5c842 als Leitfarbe auf sehr dunklem,
+       leicht blau-violettem Grund. Royal-Purple bleibt als Sekundaer-Akzent. */
     --ak-primary: rgb(107, 70, 193);          /* #6B46C1 Royal-Purple */
     --ak-primary-light: rgb(139, 92, 246);    /* #8B5CF6 Light-Purple */
     --ak-primary-dark: rgb(76, 47, 153);      /* #4C2F99 Dark-Purple */
-    --ak-accent: rgb(245, 158, 11);           /* #F59E0B Gold */
-    --ak-accent-light: rgb(252, 211, 77);     /* #FCD34D Gold-Light */
-    --ak-accent-dark: rgb(180, 110, 0);       /* #B46E00 Gold-Dark */
+    --ak-accent: rgb(245, 200, 66);           /* #F5C842 Arcane-Gold */
+    --ak-accent-light: rgb(255, 217, 102);    /* #FFD966 Gold-Light */
+    --ak-accent-dark: rgb(184, 134, 11);      /* #B8860B Gold-Dark (Cinzel-Untertitel) */
 
-    /* === Hintergrund / Surface === */
-    --ak-bg-deep: rgb(13, 8, 28);             /* #0D081C Deepest BG */
-    --ak-bg-base: rgb(22, 16, 41);            /* #161029 Main BG */
-    --ak-bg-surface: rgb(38, 28, 64);         /* #261C40 Card/Panel */
-    --ak-bg-surface-2: rgb(52, 40, 84);       /* #342854 Elevated */
-    --ak-bg-overlay: rgba(0, 0, 0, 0.72);     /* Modal Backdrop */
+    /* === Hintergrund / Surface ===
+       Tiefer, neutral-dunkler Grund (#0a0a18) mit dezent violett gehobenen
+       Surfaces — damit die Gold-Akzente "leuchten" wie in der Referenz. */
+    --ak-bg-deep: rgb(6, 6, 16);              /* #060610 Deepest BG / Header / TabBar */
+    --ak-bg-base: rgb(10, 10, 24);            /* #0A0A18 Main BG */
+    --ak-bg-surface: rgb(22, 18, 40);         /* #161228 Card/Panel */
+    --ak-bg-surface-2: rgb(34, 28, 58);       /* #221C3A Elevated */
+    --ak-bg-overlay: rgba(0, 0, 0, 0.78);     /* Modal Backdrop */
+
+    /* === Gold-Border-Akzente (ornamentierter Rahmen-Look der Referenz) ===
+       Drei Stufen analog zu #f5c84230 / 40 / 60 im Design-HTML. */
+    --ak-border-gold-soft: rgba(245, 200, 66, 0.18);
+    --ak-border-gold: rgba(245, 200, 66, 0.38);
+    --ak-border-gold-strong: rgba(245, 200, 66, 0.65);
 
     /* === Text === */
     --ak-text-primary: rgb(248, 245, 255);    /* #F8F5FF Main Text */
@@ -77,5 +88,5 @@
 
     /* === Effekt-Glow === */
     --ak-glow-primary: rgba(139, 92, 246, 0.55);
-    --ak-glow-accent: rgba(252, 211, 77, 0.65);
+    --ak-glow-accent: rgba(245, 200, 66, 0.65);
 }

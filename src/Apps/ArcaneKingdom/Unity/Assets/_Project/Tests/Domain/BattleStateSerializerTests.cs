@@ -1,5 +1,6 @@
 #nullable enable
 using ArcaneKingdom.Domain.Battle;
+using ArcaneKingdom.Domain.Hero;
 using NUnit.Framework;
 
 namespace ArcaneKingdom.Domain.Tests
@@ -68,6 +69,65 @@ namespace ArcaneKingdom.Domain.Tests
             var state = new BattleState(1, 100, 100);
             var json = BattleStateSerializer.Serialize(state);
             Assert.IsFalse(json.Contains("\n"));
+        }
+
+        [Test]
+        public void RoundtripPreservesStatusEffectsHeroPassivBossAndEvents()
+        {
+            // Verifiziert den erweiterten, verlustfreien Serializer (vorher gingen StatusEffects,
+            // MaxHealth, Hero-Passivs, Boss-State und Events beim Round-Trip verloren).
+            var original = new BattleState(7, 1000, 800)
+            {
+                PlayerHeroMaxHp = 1000,
+                EnemyHeroMaxHp = 800,
+                EnemyStatMultiplier = 1.6f,
+                PlayerCardsPlayedThisTurn = 2,
+                EnemyCardsPlayedThisTurn = 1,
+                IsBossEncounter = true,
+                BossPhase2Active = true,
+                BossPhase2PassiveKey = "boss.test.key",
+                PlayerHeroPassiv = new HeroPassivContext(HeroFaehigkeitsTyp.GoettlicherSegen, 1)
+                    { DivineBlessingsRemaining = 1, FirstCardThisTurnPlayed = true },
+                EnemyHeroPassiv = new HeroPassivContext(HeroFaehigkeitsTyp.Rudelbund, 3, beastSpiritCountInDeck: 4),
+            };
+            original.BossPhase2ReinforcementCardIds.Add("reinf_a");
+            original.BossPhase2ReinforcementCardIds.Add("reinf_b");
+
+            var slot = new CardFieldSlot("ci1", 100, 150, 3) { MaxHealth = 300 };
+            slot.StatusEffects.Add(new StatusEffect(StatusEffectType.Poisoned, 2, magnitude: 50, sourceCardId: "src1"));
+            slot.StatusEffects.Add(new StatusEffect(StatusEffectType.Frozen, 1));
+            original.PlayerField.Add(slot);
+
+            original.Events.Add(new BattleEvent(BattleEventType.SynergyActivated, 3, forPlayer: true,
+                cardInstanceId: "ci1", cardDefinitionId: "def1", partnerCardId: "def2", magnitude: 5));
+
+            var restored = BattleStateSerializer.Deserialize(BattleStateSerializer.Serialize(original));
+
+            Assert.AreEqual(1000, restored.PlayerHeroMaxHp);
+            Assert.AreEqual(800, restored.EnemyHeroMaxHp);
+            Assert.AreEqual(1.6f, restored.EnemyStatMultiplier, 0.001f);
+            Assert.AreEqual(2, restored.PlayerCardsPlayedThisTurn);
+            Assert.IsTrue(restored.IsBossEncounter);
+            Assert.IsTrue(restored.BossPhase2Active);
+            Assert.AreEqual("boss.test.key", restored.BossPhase2PassiveKey);
+            CollectionAssert.AreEqual(new[] { "reinf_a", "reinf_b" }, restored.BossPhase2ReinforcementCardIds);
+
+            Assert.IsNotNull(restored.PlayerHeroPassiv);
+            Assert.AreEqual(HeroFaehigkeitsTyp.GoettlicherSegen, restored.PlayerHeroPassiv!.PassivType);
+            Assert.AreEqual(1, restored.PlayerHeroPassiv.DivineBlessingsRemaining);
+            Assert.IsTrue(restored.PlayerHeroPassiv.FirstCardThisTurnPlayed);
+            Assert.AreEqual(4, restored.EnemyHeroPassiv!.BeastSpiritCountInDeck);
+
+            var rs = restored.PlayerField[0];
+            Assert.AreEqual(300, rs.MaxHealth, "MaxHealth muss erhalten bleiben (nicht auf CurrentHealth zurueckgesetzt).");
+            Assert.AreEqual(2, rs.StatusEffects.Count);
+            Assert.AreEqual(StatusEffectType.Poisoned, rs.StatusEffects[0].Type);
+            Assert.AreEqual(50, rs.StatusEffects[0].Magnitude);
+            Assert.AreEqual("src1", rs.StatusEffects[0].SourceCardId);
+
+            Assert.AreEqual(1, restored.Events.Count);
+            Assert.AreEqual(BattleEventType.SynergyActivated, restored.Events[0].EventType);
+            Assert.AreEqual("def2", restored.Events[0].PartnerCardId);
         }
     }
 }

@@ -4,6 +4,8 @@
 > **Quelle:** vollständige Lektüre des echten C#-Codes unter `Unity/Assets/_Project/Scripts/{Bootstrap,Core,Domain,Game,UI}`, der JSON-Daten unter `Resources/Data/`, `Resources/Localization/strings.csv` und der `Packages/manifest.json`.
 >
 > **Was dieses Dokument ist:** Es beschreibt, wie ArcaneKingdom **tatsächlich abläuft** — vom App-Start bis ins Endgame — und verknüpft die **Spielerperspektive** (was der Spieler erlebt) mit der **technischen Umsetzung** (welche Klasse/Methode/Datei, welche Werte). Es ist die **faktische Ergänzung** zum [DESIGN.md](DESIGN.md) (GDD v6.0). Wo das GDD den *Soll*-Zustand beschreibt, hält dieses Dokument den *Ist*-Zustand fest. Jede Zahl stammt aus dem Code/JSON, nicht aus dem GDD.
+>
+> **Hinweis:** Mehrere der ursprünglich dokumentierten Bugs/Verdrahtungs-Lücken wurden inzwischen behoben (Unity-Recompile-verifiziert) — siehe [Teil XII](#teil-xii--behobene-befunde). Die folgenden Statusangaben sind bereits aktualisiert.
 
 ---
 
@@ -59,18 +61,19 @@ App-Start (Boot.unity)
 | Tutorial | **[DOMAIN-ONLY]** | 8 Schritte definiert, aber **nie getriggert** |
 | Hub-Navigation | **[LIVE]** | Eintritts-Pipeline (Claims/Income/Energie), 17 Nav-Ziele |
 | Kampf-Engine | **[LIVE]** | Vollständig, deterministisch, manuell gespielt |
-| Helden-Passivs (im Kampf) | **[DOMAIN-ONLY]** | Logik da, aber im Kampf **nicht verdrahtet** → wirkungslos |
+| Helden-Passivs (im Kampf) | **[LIVE]** | BattleBootstrap setzt PlayerHeroPassiv aus der gewählten Rasse (behoben) |
 | Auto-Battle | **[DOMAIN-ONLY]** | Freischalt-Kurve da, kein Auto-Modus im Battle-Screen |
-| Karten-Level / Deckbau / Codex / Fusion | **[LIVE]** | Funktional (mit kleinen UI-Lücken, s.u.) |
-| Welt-Karte / Schwierigkeit / Settlement | **[LIVE]** | Gold/EXP/Sterne real vergeben |
+| Karten-Level / Deckbau / Codex / Fusion | **[LIVE]** | Funktional; Codex-Erde-Filter + DeckBuilder-Mythisch-Filter + lokalisierte Namen behoben |
+| Welt-Karte / Schwierigkeit / Settlement | **[LIVE]** | Gold/EXP/Sterne real; **WorldIdForNode-Bug behoben** (Sterne wurden vorher nie gespeichert) |
 | Prestige-Aufwertung + Idle-Income | **[LIVE]** | Vollständig, gehärtet |
-| Prestige-Kampfwirkung / Material-Drops | **[DOMAIN-ONLY]** | Logik da, im Kampf **nie aufgerufen** |
-| Login-Belohnung (Tempel, 30 Tage) | **[LIVE]** | (Karten-Items aber noch Pending/Müll, s.u.) |
-| Sternkarten-Tempel | **[LIVE/Teil]** | Abbuchung real, Belohnungsausgabe (außer Mythic-Fragment) **TODO** |
-| Quests / Achievements | **[DOMAIN-ONLY]** | Trigger-Hooks **nirgends aufgerufen** → kein Fortschritt |
+| Material-Drops | **[LIVE]** | Bei Sieg über `RollAndAwardAsync` ausgelöst (behoben) |
+| Prestige-Kampfwirkung | **[DOMAIN-ONLY]** | `ScaleEnemyStats`/`ScaleGoldDrop` im Kampf weiterhin nicht angewandt |
+| Login-Belohnung (Tempel, 30 Tage) | **[LIVE]** | Karten-Belohnungen werden jetzt zu echten Karten aufgelöst (behoben) |
+| Sternkarten-Tempel | **[LIVE]** | Eintausch reiht Belohnung als PendingClaim ein (behoben) |
+| Quests / Achievements | **[LIVE]** | Kampf-Hooks + Daily/Weekly-Reset verdrahtet (behoben); Arena/Thief/Guild-Hooks noch offen |
 | Shop / IAP / DailyShop / Saison-Pass / Events | **[SKELETT]** | UI zeigt Mock, Services ohne Aufrufer |
 | Arena / Gilden / Klan-Welt / Chat / Dieb / Merit | **[SKELETT]** | Domain-Logik real, UI = Mock, kein Netzwerk |
-| Story / Memory-Fragmente | **[LIVE]** | Fragment-Cutscene bei Welt-Boss-Sieg; Enden (W10) **[FEHLT]** |
+| Story / Memory-Fragmente | **[LIVE]** | Fragment-Cutscene bei Welt-Boss-Sieg (durch WorldIdForNode-Fix jetzt wirksam); Enden (W10) **[FEHLT]** |
 | Save-System (lokales JSON v4) | **[LIVE]** | Atomic-Write, Backup, Migrator, hochwertig |
 | Firebase / Photon / Cloud | **[FEHLT]** | Kein SDK installiert, nur Namens-Präfix + TODOs |
 
@@ -913,33 +916,61 @@ Zahlreiche `<summary>`-Kommentare verweisen auf falsche GDD-Kapitel (z.B. „DES
 Die teuerste Arbeit ist bereits getan (die Domain-Logik existiert). Was fehlt, ist überwiegend **Anbindung**. Priorisierte Liste:
 
 ### A. Kampf-kritisch (blockiert Kern-Loop)
-1. **UI-Mana-Gating-Bug fixen** — `BattleScreen` muss gegen `ManaPerCard` (1) statt `def.Cost` prüfen, sonst sind teure Karten unspielbar.
-2. **Helden-Passivs verdrahten** — `BattleBootstrap.Build` muss `PlayerHeroPassiv`/`EnemyHeroPassiv` aus `heroes.json` + gewählter Rasse setzen.
-3. **Starter-Karten ins Deck legen** — der neue Spieler hat sonst ein leeres Deck und kann nicht kämpfen.
-4. **Karten-EXP-Quelle** — ohne EXP-Vergabe scheitern alle Karten-Upgrades.
+1. **[BEHOBEN]** UI-Mana-Gating-Bug — `BattleScreen.CanPlayHandCard` prüft jetzt gegen `ManaPerCard`.
+2. **[BEHOBEN]** Helden-Passivs — `BattleBootstrap` setzt `PlayerHeroPassiv` aus der gewählten Rasse.
+3. **[BEHOBEN]** Starter-Karten ins Deck — `RaceSelectionScreen` weist sie „Deck 1" zu.
+4. **[OFFEN]** Karten-EXP-Quelle — ohne EXP-Vergabe scheitern Karten-Upgrades an der EXP-Bedingung.
 
 ### B. Progression & Belohnung
-5. **Quest-/Achievement-Hooks aufrufen** (`OnBattleWon`, `OnBossDefeated`, `OnCardPlayed` … aus `BattleScreen`/Settlement) — sonst kein Quest-/Erfolgs-Fortschritt.
-6. **SeasonResetService im Hub ticken** + korrekte Reset-Anker nutzen.
-7. **Login-Karten-Belohnung reparieren** — derzeit Müll-`CardInstance` mit `card_random_Nstar`-ID statt echter Karten-Auswahl.
-8. **Sternkarten-Tempel-Belohnung ausgeben** (außer Mythic-Fragment derzeit TODO).
-9. **Material-Drops im Settlement auslösen** (`MaterialDropService.RollAndAwardAsync` bei Boss-Sieg).
-10. **Prestige-Kampfwirkung** — `ScaleEnemyStats`/`ScaleGoldDrop` im Kampf anwenden.
+5. **[BEHOBEN]** Quest-/Achievement-Hooks im Kampf (`OnBattleWon`/`OnBossDefeated`/`OnCardPlayed`/`OnWorldStarsEarned` + `OnBossDefeatedAsync`). Offen: Arena-/Thief-/Guild-/Diamonds-/Login-Hooks (gehören in ihre Screens).
+6. **[BEHOBEN]** SeasonResetService im Hub getickt + korrekter Anker (`QuestSaveSlice`-Felder).
+7. **[BEHOBEN]** Login-/Belohnungs-Karten — Token-Resolver im `HubScreen` löst zu echten Karten auf.
+8. **[BEHOBEN]** Sternkarten-Tempel-Belohnung — Eintausch reiht PendingClaim ein.
+9. **[BEHOBEN]** Material-Drops im Settlement (`RollAndAwardAsync` bei Sieg).
+10. **[OFFEN]** Prestige-Kampfwirkung — `ScaleEnemyStats`/`ScaleGoldDrop` im Kampf weiterhin nicht angewandt (Endgame-Politur).
+- **[BEHOBEN, nicht ursprünglich gelistet]** `WorldIdForNode`-Bug — Sterne/Node-Freischaltung/Prestige-Gate/Memory-Fragmente waren alle tot, jetzt über WorldCatalog korrekt.
 
 ### C. Engagement & Monetarisierung
-11. **Shop-Screens an Services anbinden** (`ShopController`, `DailyShopService`, `SaisonPassService`, `IIapService`) + Karten-Materialisierung aus Rarities.
-12. **Saison-Pass-XP-Trigger** (`AwardXpAsync` aus Quests/Arena/Battle).
-13. **Tutorial verdrahten** (Trigger-Events feuern, Overlay pushen).
-14. **Auto-Battle-Modus** im Battle-Screen.
+11. **[OFFEN]** Shop-Screens an Services anbinden (`ShopController`/`DailyShopService`/`SaisonPassService`/`IIapService`) + Karten-Materialisierung. Braucht u.a. IAP-Package.
+12. **[OFFEN]** Saison-Pass-XP-Trigger (`AwardXpAsync` aus Quests/Arena/Battle).
+13. **[OFFEN]** Tutorial verdrahten (Trigger-Events feuern, Overlay pushen).
+14. **[OFFEN]** Auto-Battle-Modus im Battle-Screen.
 
-### D. Online (GDD-Phase 5, größter Block)
-15. **Netzwerk-Backend** (Firebase-SDK + Photon) — Voraussetzung für echtes PvP, Gilden-Sync, Realtime-Chat, server-weiten Dieb, Leaderboards, Cloud-Save, IAP-Validierung, Replay-Cross-Check.
-16. **Social-UI an Domain-Services anbinden** (Arena/Guild/Chat/Friends/Thief — die Logik ist da, die Screens nutzen sie nicht).
+### D. Online (GDD-Phase 5, größter Block — bewusst nicht angefasst)
+15. **[OFFEN]** Netzwerk-Backend (Firebase-SDK + Photon) — Voraussetzung für PvP, Gilden-Sync, Realtime-Chat, server-weiten Dieb, Leaderboards, Cloud-Save, IAP-Validierung, Replay-Cross-Check.
+16. **[OFFEN]** Social-UI an Domain-Services anbinden (Arena/Guild/Chat/Friends/Thief).
 
 ### E. Story & Politur
-17. **Die zwei Enden (Welt 10)** — Auswahl-UI + Branching + `EndingChoice` schreiben.
-18. **Lokalisierte Karten-Namen** in DeckBuilder/Codex/Battle (statt Roh-IDs); Codex-Element-Filter „Erde" ergänzen.
-19. **Collection-Trade Hub-Zugang** + „1× pro Save"-Sperre.
+17. **[OFFEN]** Die zwei Enden (Welt 10) — Auswahl-UI + Branching + `EndingChoice` schreiben.
+18. **[BEHOBEN]** Lokalisierte Karten-Namen (Battle + DeckBuilder) + Codex-Element-Filter „Erde" + DeckBuilder-Mythisch-Filter.
+19. **[OFFEN]** Collection-Trade Hub-Zugang + „1× pro Save"-Sperre.
+- **[OFFEN]** Silence/Slowed/Rooted-Status-Effekte (definiert, aber von der Engine nicht ausgewertet) · DeckBuilder-Suggest-Button (`DeckBuilderService` nicht angebunden) · `rune_fragment`/`exp_potion`-Login-Items (übersprungen).
+
+---
+
+<a id="teil-xii--behobene-befunde"></a>
+# TEIL XII — Behobene Befunde (Code-Fix-Runde, Unity-verifiziert)
+
+Die folgenden Punkte wurden nach der ersten Bestandsaufnahme direkt im Code behoben. Jede Änderung
+wurde per Unity-Recompile (`Editor.log`, fehlerfrei) verifiziert.
+
+| # | Behoben | Datei(en) |
+|---|---------|-----------|
+| 1 | Helden-Passivs verdrahtet (aus gewählter Rasse, vor `engine.Setup`) | `Game/Battle/BattleBootstrap.cs` |
+| 2 | UI-Mana-Gating-Bug (`CanPlayHandCard` statt `def.Cost`) | `UI/Battle/BattleScreen.cs` |
+| 3 | Starter-Karten landen im Deck (nicht nur Inventar) | `UI/RaceSelection/RaceSelectionScreen.cs` |
+| 4 | Material-Drops bei Sieg ausgelöst | `UI/Battle/BattleScreen.cs` |
+| 5 | Lokalisierte Karten-Namen (Kampf-HUD + Hand) | `UI/Battle/BattleScreen.cs` |
+| 6 | **WorldIdForNode-Bug** (Sterne/Freischaltung/Prestige-Gate/Fragmente waren tot) | `UI/Battle/BattleScreen.cs` |
+| 7 | Quest- + Achievement-Fortschritt im Kampf verdrahtet + `FlushAsync` | `UI/Battle/BattleScreen.cs` |
+| 8 | Login-/Belohnungs-Karten-Token-Resolver (kein Müll mehr) | `UI/Hub/HubScreen.cs` |
+| 9 | Sternkarten-Tempel-Eintausch gibt Belohnung (PendingClaim) | `UI/Tempel/TempelScreen.cs` |
+| 10 | Daily-/Weekly-Quest-Reset verdrahtet + korrekter Anker | `Game/Season/SeasonResetService.cs`, `UI/Hub/HubScreen.cs` |
+| 11 | Codex-Element-Filter „Erde" | `UI/Codex/CodexScreen.cs` |
+| 12 | DeckBuilder-Mythisch-Filter + lokalisierte Namen/Suche | `UI/DeckBuilder/DeckBuilderScreen.cs` |
+| 13 | GuildScreen „Stufe 25" (Text-Bug); CardUpgradeService `+80%`; Waldläufer-Doc | `UI/Guild/`, `Domain/Cards/`, `Domain/Hero/` |
+
+**Bewusst nicht angefasst** (Feature-Arbeit, nicht „Ausbesserung", bzw. ohne Build/Backend nicht verantwortbar verifizierbar): Firebase-/Photon-/Unity-IAP-SDK, der gesamte Online-/Social-Layer, die zwei Story-Enden, Auto-Battle-Modus, Tutorial-Verdrahtung, Prestige-Kampfwirkung, Shop-Kauf-Pipeline. Diese bleiben in Teil XI als offene Roadmap.
 
 ---
 

@@ -61,10 +61,15 @@ namespace ArcaneKingdom.Game.Artwork
         public void ApplyBackground(VisualElement? element, string resourcePath, ScaleMode scaleMode = ScaleMode.ScaleAndCrop)
         {
             if (element == null) return;
+            // WICHTIG: VisualTreeAsset.Instantiate() liefert einen TemplateContainer, dessen einziges
+            // Kind das eigentliche UXML-Root ist. Dieses Root fuellt den Container (ak-fill) und ist
+            // i.d.R. opak (ak-bg-*) -> ein Hintergrund am Container waere komplett verdeckt und nie
+            // sichtbar. Daher das Bild auf das UXML-Root-Kind setzen.
+            var target = (element is TemplateContainer && element.childCount == 1) ? element[0] : element;
             var tex = LoadTexture(resourcePath);
             if (tex == null) return;
-            element.style.backgroundImage = new StyleBackground(tex);
-            element.style.unityBackgroundScaleMode = new StyleEnum<ScaleMode>(scaleMode);
+            target.style.backgroundImage = new StyleBackground(tex);
+            target.style.unityBackgroundScaleMode = new StyleEnum<ScaleMode>(scaleMode);
         }
 
         /// <summary>Welt-Background direkt aufs VisualElement.</summary>

@@ -8,9 +8,11 @@ using ArcaneKingdom.Domain.Battle;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.World;
+using ArcaneKingdom.Game.Achievement;
 using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Battle;
 using ArcaneKingdom.Game.Catalog;
+using ArcaneKingdom.Game.Quest;
 using ArcaneKingdom.Game.World;
 using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
@@ -35,6 +37,8 @@ namespace ArcaneKingdom.UI.Battle
         private readonly ToastService _toast;
         private readonly CardArtworkService _artworkService;
         private readonly MaterialDropService _materialDrops;
+        private readonly QuestService _questService;
+        private readonly AchievementService _achievements;
 
         // Top
         private Button _fleeBtn = null!;
@@ -94,7 +98,9 @@ namespace ArcaneKingdom.UI.Battle
                             ArcaneKingdom.UI.Modals.MemoryFragmentContext memoryCtx,
                             ArcaneKingdom.UI.BattleReport.BattleReportContext reportCtx,
                             UIAssetService uiAssets,
-                            MaterialDropService materialDrops)
+                            MaterialDropService materialDrops,
+                            QuestService questService,
+                            AchievementService achievements)
         {
             _screenManager = screenManager;
             _save = save;
@@ -109,6 +115,8 @@ namespace ArcaneKingdom.UI.Battle
             _reportCtx = reportCtx;
             _uiAssets = uiAssets;
             _materialDrops = materialDrops;
+            _questService = questService;
+            _achievements = achievements;
         }
 
         protected override void BindElements(VisualElement root)
@@ -488,13 +496,15 @@ namespace ArcaneKingdom.UI.Battle
             if (_busy || _engine == null) return;
             if (_engine.State.Phase != BattlePhase.PlayerTurn) return;
 
-            // Element der gespielten Karte fuer Burst-Effekt herausfinden
+            // Element der gespielten Karte fuer Burst-Effekt + Quest-Tracking herausfinden
             string? element = null;
+            Element? cardElement = null;
             if (_defs != null && _instances != null
                 && _instances.TryGetValue(cardInstanceId, out var inst)
                 && _defs.TryGetValue(inst.CardDefinitionId, out var def))
             {
                 element = def.Element.ToString().ToLowerInvariant();
+                cardElement = def.Element;
             }
 
             if (!_engine.PlayCard(forPlayer: true, cardInstanceId))
@@ -504,6 +514,8 @@ namespace ArcaneKingdom.UI.Battle
             }
             SpawnFloatingText(_loc.Get("battle.card_played", "Eingesetzt!"), new Color(0.95f, 0.78f, 0.30f));
             if (element != null) SpawnEffectBurst($"effect_{element}_burst");
+            // Quest-Fortschritt "Spiele N Karten (Element)" — wird im Settlement-Flush persistiert.
+            if (cardElement != null) _questService.OnCardPlayed(cardElement.Value);
             DrainPersonalityEvents().Forget();
             RefreshAll();
         }
@@ -621,10 +633,19 @@ namespace ArcaneKingdom.UI.Battle
                 case BattleResult.PlayerWins:
                     var reward = _node?.GoldReward(_difficulty) ?? 50;
                     var exp = _node?.ExpReward(_difficulty) ?? 25;
-                    await ApplyRewardsAsync(reward, exp, stars);
+                    var starDelta = await ApplyRewardsAsync(reward, exp, stars);
                     _toast.Show(string.Format(
                         _loc.Get("battle.victory", "Sieg! {0}/4 Sterne — +{1} Gold, +{2} EXP"),
                         stars, reward, exp), ToastKind.Success, 5f);
+
+                    // Quest- + Achievement-Fortschritt (vorher nicht verdrahtet -> Systeme waren wirkungslos).
+                    _questService.OnBattleWon();
+                    if (starDelta > 0) _questService.OnWorldStarsEarned(starDelta);
+                    if (_node != null && (_node.Type == NodeType.MiniBoss || _node.Type == NodeType.WorldBoss))
+                    {
+                        _questService.OnBossDefeated();
+                        await _achievements.OnBossDefeatedAsync();
+                    }
 
                     // Material-Drops (Designplan v4 Kap. 4.3): Mini-/Welt-Boss-Nodes droppen
                     // Sammel-Materialien, Chance steigt mit der Sternzahl. RollAndAwardAsync prueft
@@ -649,6 +670,10 @@ namespace ArcaneKingdom.UI.Battle
                     _toast.Show(_loc.Get("battle.draw", "Unentschieden."), ToastKind.Warning, 4f);
                     break;
             }
+            // Quest-Fortschritt (OnBattleWon/OnBossDefeated/OnCardPlayed/OnWorldStarsEarned) sichern —
+            // gilt auch bei Niederlage/Unentschieden, damit gespielte-Karten-Quests nicht verloren gehen.
+            await _questService.FlushAsync();
+
             await UniTask.Delay(1500);
 
             // Spielplan v5 Kap. 11.2: Schlachtbericht-Screen statt einfach Pop.
@@ -712,8 +737,10 @@ namespace ArcaneKingdom.UI.Battle
             await _screenManager.PushAsync(ScreenId.MemoryFragmentOverlay);
         }
 
-        private async UniTask ApplyRewardsAsync(int gold, int exp, int stars)
+        /// <summary>Wendet Belohnungen an und liefert den Zuwachs an neuen Sternen (0 wenn kein neuer Bestwert).</summary>
+        private async UniTask<int> ApplyRewardsAsync(int gold, int exp, int stars)
         {
+            var starDelta = 0;
             await _save.MutateAsync(save =>
             {
                 save.Currencies.AddGold(gold);
@@ -731,11 +758,16 @@ namespace ArcaneKingdom.UI.Battle
                             save.WorldProgress[worldId] = wp;
                         }
                         var prevStars = wp.StarsByNodeId.TryGetValue(_node.Id, out var s) ? s : 0;
-                        if (prevStars < stars) wp.StarsByNodeId[_node.Id] = stars;
+                        if (prevStars < stars)
+                        {
+                            wp.StarsByNodeId[_node.Id] = stars;
+                            starDelta = stars - prevStars;
+                        }
                     }
                 }
                 return save;
             });
+            return starDelta;
         }
 
         private static string WorldIdForNode(NodeDefinition node)

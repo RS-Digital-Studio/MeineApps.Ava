@@ -399,10 +399,10 @@ In Firebase Console:
         ".write": "auth.uid === $uid"
       }
     },
-    "players": {
+    "cloud_saves": {
       "$playerId": {
-        ".read": "auth != null && data.parent().parent().child('auth_to_player').child(auth.uid).val() === $playerId",
-        ".write": "auth != null && data.parent().parent().child('auth_to_player').child(auth.uid).val() === $playerId"
+        ".read": "auth != null && root.child('auth_to_player').child(auth.uid).val() === $playerId",
+        ".write": "auth != null && root.child('auth_to_player').child(auth.uid).val() === $playerId"
       }
     },
     "guilds": {

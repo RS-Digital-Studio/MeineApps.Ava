@@ -27,7 +27,7 @@ Stufung betrifft Reihenfolge und Polish-Tiefe, nicht den Funktionsumfang.
 | Beta-Stufe | Bedeutung |
 |------------|-----------|
 | **Closed Beta (Ende W52)** | Alle Kern- und Meta-Systeme spielbar (Single-Player + Multiplayer + Live-Ops), Inhalt teils reduziert (z.B. Story-Kapitel 1-20 statt 60, Asset-Platzhalter wo KI-Pipeline noch nachzieht) |
-| **Content-Complete (W53-66)** | Voller Inhalt: alle 60 Story-Kapitel, alle 79+33 Achievements, alle 33 Rezepte, alle 72 Forschungs-Nodes verifiziert, finale 3D-Assets statt Platzhalter |
+| **Content-Complete (W53-66)** | Voller Inhalt: alle 60 Story-Kapitel, alle 109+33 Achievements, alle 33 Rezepte, alle 72 Forschungs-Nodes verifiziert, finale 3D-Assets statt Platzhalter |
 | **1.0 Vollständig (W67-72)** | 1:1-Parität zur Avalonia-Version verifiziert (Checkliste § Vollständigkeits-Matrix), Production-Launch |
 
 ---
@@ -464,7 +464,7 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 ### Woche 28: Markt + Reputation + Equipment + Master-Tools + Gebäude + Achievements
 
 > Sammelwoche für die verbleibenden Single-Player-Systeme. Funktional vollständig; Inhalts-Polish
-> (alle 79 Achievement-Texte, finale 3D-Trophäen) wird in der Content-Complete-Phase verifiziert.
+> (alle 109 Achievement-Texte, finale 3D-Trophäen) wird in der Content-Complete-Phase verifiziert.
 
 **Tasks:**
 - [ ] `MarketService` mit Sinus-Welle, Buy/Sell mit Strafzoll, Event-Modulation (DESIGN.md § 12, Unlock via logi_05)
@@ -472,7 +472,7 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 - [ ] **Equipment-System** (4 Rarity, Typen/Slots, 3 Stats, Erwerb, Prestige-Preservation — DESIGN.md § 16)
 - [ ] **Master-Tools (12 Artefakte)** inkl. Mini-Game-Kopplung (DESIGN.md § 14)
 - [ ] **Gebäude (7 Stück)** mit Effekten (DESIGN.md § 15)
-- [ ] **AchievementService** mit **79 Spieler-Achievements (17 Kategorien — DESIGN.md § 18)** + 3D-Trophäen-Cinematic
+- [ ] **AchievementService** mit **109 Spieler-Achievements (17 Kategorien — DESIGN.md § 18)** + 3D-Trophäen-Cinematic
 - [ ] **Tests:** Market-Pricing, Reputation-Tiers, Equipment-Rolls, Master-Tool-Boni, Achievement-Trigger (30+ Tests)
 
 **Output:**
@@ -783,7 +783,7 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 
 **Tasks:**
 - [ ] **Story:** alle 60 Kapitel (40 Haupt + 20 Saison) inhaltlich fertig + Meister-Hans-Voice (DESIGN.md § 26)
-- [ ] **Achievements:** alle 79 Spieler-Achievements + 33 Gilden-Achievements mit finalen Texten/Triggern verifiziert
+- [ ] **Achievements:** alle 109 Spieler-Achievements + 33 Gilden-Achievements mit finalen Texten/Triggern verifiziert
 - [ ] **Forschung:** alle 72 Nodes (4 Branches) mit korrekten Effekten gegen Original verifiziert
 - [ ] **Crafting:** alle 33 Rezepte (T1-T4) gegen Original-Werte verifiziert
 - [ ] **Prestige-Shop (25)** + **Reputation-Shop (5)** + **Event-Shop** Items vollständig + balanciert
@@ -964,7 +964,7 @@ Finalisierung für 1:1-Vollständigkeit — ersetzt alle 2D-Beta-Platzhalter dur
 - [ ] **Go/No-Go-Decision:** Single-Player-Vision erreicht?
 
 ### Meilenstein 4: Single-Player funktional vollständig (Ende Woche 28)
-- [ ] Forschung (72 Nodes), Prestige + Prestige-Shop (25), Crafting (33 Rezepte), Reputation + Reputation-Shop (5), Equipment, Master-Tools (12), Gebäude (7), Achievements (79) laufen
+- [ ] Forschung (72 Nodes), Prestige + Prestige-Shop (25), Crafting (33 Rezepte), Reputation + Reputation-Shop (5), Equipment, Master-Tools (12), Gebäude (7), Achievements (109) laufen
 - [ ] 200+ Tests grün
 - [ ] **Go/No-Go-Decision:** Multiplayer + Live-Ops starten?
 
@@ -988,7 +988,7 @@ Finalisierung für 1:1-Vollständigkeit — ersetzt alle 2D-Beta-Platzhalter dur
 
 ### Meilenstein 8: 1.0 Vollständig (Ende Woche 72)
 - [ ] Vollständigkeits-Matrix zu 100% abgehakt (1:1-Parität zur Avalonia-Version)
-- [ ] Voller Inhalt: 60 Story-Kapitel, 79+33 Achievements, finale 3D-Assets statt Platzhalter
+- [ ] Voller Inhalt: 60 Story-Kapitel, 109+33 Achievements, finale 3D-Assets statt Platzhalter
 - [ ] Balancing-Werte + Formeln numerisch gegen Original (ORIGINAL_WERTE.md) verifiziert
 - [ ] Production-Launch v1.0.0
 

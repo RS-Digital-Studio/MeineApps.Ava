@@ -1101,11 +1101,16 @@ public interface IFirebaseDatabase
 ### 10.3 Atomar updaten (PATCH)
 
 ```csharp
-// Co-op-Order Score
+// Co-op-Order Score — PATCH direkt auf das eigene Score-Feld der CoopOrderState
+// (player1Score ODER player2Score, je nachdem ob man createdBy oder invitedPlayer ist).
+// KEIN scores/{playerId}-Subknoten und KEIN lastUpdate-Feld (existieren im Original nicht).
+// CoopOrderState-Felder: orderId, createdBy, invitedPlayer, status, expiresAt, miniGameType,
+//                        player1Score, player2Score, rewardSplit, baseReward, hmac.
+var scoreField = isCreator ? "player1Score" : "player2Score";
 var updates = new Dictionary<string, object>
 {
-    [$"guilds/{guildId}/coopOrders/{orderId}/scores/{playerId}"] = newScore,
-    [$"guilds/{guildId}/coopOrders/{orderId}/lastUpdate"] = ServerValue.Timestamp,
+    [$"guilds/{guildId}/coopOrders/{orderId}/{scoreField}"] = newScore,
+    [$"guilds/{guildId}/coopOrders/{orderId}/hmac"] = signature,
 };
 await _firebase.UpdateAsync("", updates, ct);  // Root-PATCH
 ```

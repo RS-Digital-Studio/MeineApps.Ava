@@ -26,7 +26,7 @@
 15. [Gebäude (7 Stück)](#15-gebäude-7-stück)
 16. [Equipment-System](#16-equipment-system)
 17. [Gilden & Multiplayer](#17-gilden--multiplayer)
-18. [Achievements (79 Spieler-Achievements, 17 Kategorien)](#18-achievements-79-spieler-achievements-17-kategorien)
+18. [Achievements (109 Spieler-Achievements, 17 Kategorien)](#18-achievements-109-spieler-achievements-17-kategorien)
 19. [Daily-Reward (30-Tage-Zyklus)](#19-daily-reward-30-tage-zyklus)
 20. [Lucky-Spin (8 Slots)](#20-lucky-spin-8-slots)
 21. [BattlePass (50 Tier, 30-Tage-Saison)](#21-battlepass-50-tier-30-tage-saison)
@@ -1730,7 +1730,7 @@ Alle drei sind heirloom-fähig (`IsHeirloomEligible = true`).
 Reihenfolge unter `_craftingLock` (`CraftingService.StartCrafting`):
 1. Rezept laden; `effectiveInputs = GetEffectiveInputs(recipe, playerLevel)` (§10.7).
 2. **Tier-1-Goldkosten:** wenn `recipe.Tier == 1 && effectiveInputs.Count == 0`: `materialCost = product.BaseValue × 0.20` (= 20% des BaseValue; z.B. planks 500 → 100 Gold). `CanAfford` + `TrySpendMoney`. → Geld-Senke.
-3. **Output-Stack-Limit-Check:** bei Bestand 0 → freier Slot nötig (`usedSlots < EffectiveSlotCount`, sonst Abbruch); sonst `currentOutput + OutputCount > CurrentStackLimit` → Abbruch.
+3. **Output-Stack-Limit-Check:** bei Bestand 0 → freier Slot nötig (`usedSlots >= WarehouseSlotCount` → Abbruch; Code prueft gegen die **Basis**-Slots `WarehouseSlotCount`, NICHT `EffectiveSlotCount` mit Research-/Gilden-Bonus); sonst `currentOutput + OutputCount > CurrentStackLimit` → Abbruch.
 4. **Input-Verfügbarkeit:** für jeden Input `available = CraftingInventory[id] − ReservedInventory[id]`; bei `< required` → Abbruch. Sonst Inputs abziehen.
 5. Crafting-Speed-Bonus berechnen (§10.5), Job mit `StartedAt=UtcNow`, `DurationSeconds=effectiveDuration` in `ActiveCraftingJobs`.
 
@@ -1750,12 +1750,21 @@ if craftingSpeedBonus > 0:
 
 ### 10.6 Auto-Produktion
 
-| Tier | Interval (Default) | MasterSmith | InnovationLab |
-|------|---------------------|-------------|---------------|
-| T1 | 180s (Offset 90s) | 60s | 60s |
-| T2-T4 | 360s (Offset 270s) | — | 120s |
+Zwei getrennte Mechanismen (1:1 Original, `AutoProductionService`):
 
-**Premium:** -50% Intervalle für T1. (Auto-Produktion ab Spielerlevel 50.)
+**Tier-1-Auto-Produktion** (`ProduceForAllWorkshops`, ab Spielerlevel 50 / `AutoProductionUnlockLevel`) — erzeugt das Tier-1-Produkt des Workshops. Intervall pro Workshop-Typ:
+
+| Workshop-Typ | Intervall |
+|--------------|-----------|
+| Standard (alle ausser MasterSmith/InnovationLab) | 180s (`AutoProductionIntervalSeconds`) |
+| MasterSmith | 60s (`AutoProductionMasterSmithInterval`) |
+| InnovationLab | 120s (`AutoProductionInnovationLabInterval`) |
+
+Menge je Zyklus: `mainCount = 5 + Min(playerLevel / 50, 10)` (5..15).
+
+**Higher-Tier-Auto-Craft** (`AutoCraftHigherTiers`) — wird pauschal alle 360 GameLoop-Ticks (~6 min) aufgerufen, KEINE workshop-/tier-spezifischen Intervalle. Pro Aufruf max. 1 Rezept je Workshop. T3 ab `AutoCraftTier3UnlockLevel`, sonst T2 ab `AutoCraftTier2UnlockLevel` (Workshop-Level-Gates).
+
+> Hinweis: Die fruehere Tabelle ("T1 vs. T2-T4"-Intervalle, InnovationLab 60s, "Premium -50%") war falsch. Die "Offset"-Werte (90/270) sind reine GameLoop-Tick-Scheduling-Offsets zur Lastverteilung (180-/360-Tick-Slot), KEINE Produktions-Intervalle. Eine Premium-Halbierung der Auto-Produktions-Intervalle existiert im Original NICHT.
 
 ### 10.6a Verkauf aus dem Lager (Crafting-Sell-Preis)
 
@@ -2581,12 +2590,12 @@ Nur stabile Identitäts-Felder im HMAC; veränderliche Felder per atomarem PATCH
 
 ---
 
-## 18. Achievements (79 Spieler-Achievements, 17 Kategorien)
+## 18. Achievements (109 Spieler-Achievements, 17 Kategorien)
 
 Quelle: `Models/Achievement.cs` (`Achievements.GetAll()`), `Services/AchievementService.cs`,
 `Models/Enums/AchievementCategory.cs`. (Die 33 Gilden-Achievements sind ein separates System — siehe §17.10.)
 
-> **Echte Anzahl: 79 Spieler-Achievements** (`AchievementService.TotalCount = _achievements.Count = 79`).
+> **Echte Anzahl: 109 Spieler-Achievements** (`AchievementService.TotalCount = _achievements.Count = 109`, gezaehlt aus `Achievements.GetAll()`).
 > Es gibt **kein** eigenes Bronze/Silver/Gold-Tier-System bei den Spieler-Achievements — Belohnungen sind
 > pro Achievement individuell (Money + XP + GS, jeweils ≥ 0).
 
@@ -2603,7 +2612,7 @@ IsUnlocked, UnlockedAt, HasUsedAdBoost.
 Orders, Workshops, MiniGames, Money, Time, Special, Workers, Buildings, Research, Reputation, Prestige,
 Guilds, Crafting, Tournaments, Collection, Ascension, Rebirth.
 
-### 18.3 Vollständige Liste (alle 79)
+### 18.3 Vollständige Liste (alle 109)
 
 Spalten: Id | Kategorie | Titel (Fallback) | Target | Money | XP | GS | Tracking-Quelle (State).
 "(kein Tracking)" = im Original-`UpdateProgress`-Switch nicht behandelt → **muss in der Neuentwicklung mit
@@ -2722,7 +2731,7 @@ Ad-Boost erreichbar).
 | material_order_10 | Orders | Material Master | 10 | 50.000 | 5.000 | 50 | TotalMaterialOrdersCompleted |
 | craft_tier3_first | Crafting | Masterpiece | 1 | 100.000 | 5.000 | 50 | CountTier3Items (Inventar/abgeschl. T3-Rezept) |
 
-(Summe = 79 Achievements, lückenlos.)
+(Summe = 109 Achievements, lückenlos.)
 
 ### 18.4 Achievement-Mechaniken (Service)
 
@@ -3704,8 +3713,6 @@ Alle Texte in 6 Sprachen (DE/EN/ES/FR/IT/PT). Englisch ist Basis-Sprache für Fa
 | Auto-Complete-Tickets | 15 Perfects statt 30 |
 | Mini-Game-Score | +10% |
 | Markt-Verkaufs-Spread | **5% konstant** (KEIN Premium-Rabatt — Spread ist Anti-Arbitrage, unabhängig vom Premium-Status) |
-| T1-Auto-Produktion | −50% Intervall |
-| T2-T4-Auto-Produktion | −50% Intervall |
 | Markt-Insider-Heatmap | aktiv (Markt-Sichtbarkeit) |
 | Auto-Verkaufs-Regeln | aktiv (vor Research-Unlock) |
 | Max-Offline-Stunden | 16h (statt Basis 4h; Rewarded-Video temporär 8h; Prestige-Shop +4h additiv) |
@@ -4029,7 +4036,7 @@ xpReward    = order.FinalXp
 // Rewarded-Ad-Verdopplung:  × (IsPremium ? 3 : 2)                  (IsScoreDoubled)
 ```
 
-`order.FinalReward` = `BaseReward × TypeMultiplier × StrategyMultiplier × MiniGameRatingMultiplier × Difficulty` (Detail in §6: Type 0.6/1.0/1.8/2.5/3.0/1.8 · Strategy 0.75/1.0/2.0 · Rating 0.5/0.75/1.0/1.5). Material-Order: `EstimatedReward × OrderRewardMultiplier`, XP über `MaterialOrderXpMultiplier = 1.5`.
+`order.FinalReward` = `BaseReward × TypeMultiplier × StrategyMultiplier × MiniGameRatingMultiplier × Difficulty` (Detail in §6: Type 0.6/1.0/1.8/2.5/3.0/1.8 · Strategy 0.75/1.0/2.0 · Rating 0.20/0.50/1.00/1.50 (Miss/Ok/Good/Perfect)). Material-Order: `EstimatedReward × OrderRewardMultiplier`, XP über `MaterialOrderXpMultiplier = 1.5`.
 
 ### 30.7 Kosten-Berechnung (Netto = Brutto − Kosten)
 

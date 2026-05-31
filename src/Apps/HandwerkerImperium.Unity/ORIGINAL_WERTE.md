@@ -5551,13 +5551,13 @@ Quelle: `Models/Achievement.cs` (`Achievements.GetAll()`), `Services/Achievement
 
 ### 2.1 Übersicht
 
-**Echte Anzahl: 79 Achievements** (gezählt aus `Achievements.GetAll()`).
+**Echte Anzahl: 109 Achievements** (gezählt aus `Achievements.GetAll()` — `new Achievement(` × 109).
 
-`AchievementService.TotalCount` = `_achievements.Count` = 79. `UnlockedCount` zählt freigeschaltete.
+`AchievementService.TotalCount` = `_achievements.Count` = 109. `UnlockedCount` zählt freigeschaltete.
 
 **17 Kategorien** (Enum `AchievementCategory`): Orders, Workshops, MiniGames, Money, Time, Special, Workers, Buildings, Research, Reputation, Prestige, Guilds, Crafting, Tournaments, Collection, Ascension, Rebirth.
 
-ACHTUNG: Der Service-`UpdateProgress()`-Switch deckt NICHT alle 79 Ids ab. Mehrere Achievements werden im Switch nie aktualisiert (kein `case`), d.h. ihr CurrentValue bleibt 0 → sie können über den automatischen Pfad nie freigeschaltet werden (nur theoretisch über `BoostAchievement`-Ad oder manuelles Setzen). Nicht im Switch behandelt (CurrentValue bleibt default): `all_workshops_8`, `events_survived_10`, `worker_a_tier`, `workers_max_level`, `worker_loyal`, `worker_specialist`, `workers_total_50`, `worker_s_tier`, `research_first`, `research_branch`, `research_all`, `research_tools5`, `research_mgmt5`, `reputation_70`, `reputation_90`, `reputation_100`, `regular_10`. Für die Neuentwicklung: diese müssen mit echtem Tracking verdrahtet werden (siehe RESX-Fallbacks unten als Intention).
+ACHTUNG: Der Service-`UpdateProgress()`-Switch deckt NICHT alle 109 Ids ab. Mehrere Achievements werden im Switch nie aktualisiert (kein `case`), d.h. ihr CurrentValue bleibt 0 → sie können über den automatischen Pfad nie freigeschaltet werden (nur theoretisch über `BoostAchievement`-Ad oder manuelles Setzen). Nicht im Switch behandelt (CurrentValue bleibt default): `all_workshops_8`, `events_survived_10`, `worker_a_tier`, `workers_max_level`, `worker_loyal`, `worker_specialist`, `workers_total_50`, `worker_s_tier`, `research_first`, `research_branch`, `research_all`, `research_tools5`, `research_mgmt5`, `reputation_70`, `reputation_90`, `reputation_100`, `regular_10`. Für die Neuentwicklung: diese müssen mit echtem Tracking verdrahtet werden (siehe RESX-Fallbacks unten als Intention).
 
 ### 2.2 Achievement-Datenmodell
 
@@ -5565,7 +5565,7 @@ Quelle: `Models/Achievement.cs`. Felder: Id, TitleKey, TitleFallback, Descriptio
 - `Progress` = `Min(100, CurrentValue/TargetValue*100)`.
 - `IsCloseToUnlock` = nicht unlocked && Progress ≥ 75.
 
-### 2.3 Vollständige Achievement-Liste (alle 79)
+### 2.3 Vollständige Achievement-Liste (alle 109)
 
 Spalten: Id | Category | TitleFallback | TargetValue | Money | XP | GS | Bedingung (Switch-Mapping in AchievementService.UpdateProgress)
 
@@ -5681,7 +5681,7 @@ Spalten: Id | Category | TitleFallback | TargetValue | Money | XP | GS | Bedingu
 | material_order_10 | Orders | Material Master | 10 | 50.000 | 5.000 | 50 | Statistics.TotalMaterialOrdersCompleted |
 | craft_tier3_first | Crafting | Masterpiece | 1 | 100.000 | 5.000 | 50 | CountTier3Items (Inventar/abgeschl. T3-Rezept) |
 
-(Hinweis: Zeilenanzahl = 79 Achievements, lückenlos.)
+(Hinweis: Zeilenanzahl = 109 Achievements, lückenlos.)
 
 ### 2.4 Achievement-Mechaniken (Service)
 
@@ -6157,7 +6157,7 @@ Quelle: `Services/WhatsNewService.cs`
 |---------|---------------------|-------------------------------------|
 | Research-Nodes gesamt | **72** (20+20+20+12) | "45" (ResearchService-Cache + research_all-Achievement) / "~57" (ResearchTree-Kommentar) |
 | Research-Branches | **4** (Tools/Management/Marketing/Logistics) | "3" (BranchCount-Konstante) |
-| Achievements | **79** | — |
+| Achievements | **109** | — |
 | Achievement-Kategorien | **17** | — |
 | Story-Kapitel (Haupt) | **40** (Nr 1–40) | "37"/"38" (StoryService-Kommentar) |
 | Story-Kapitel (Saison) | **20** (Nr 100–119) | — |

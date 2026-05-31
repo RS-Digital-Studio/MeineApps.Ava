@@ -187,7 +187,7 @@ src/Apps/HandwerkerImperium.Unity/
 │       │   │   ├── Workers/        # WorkerTier-Definitions (10 Tiers)
 │       │   │   ├── Recipes/        # 33 CraftingRecipes (T1 10 + T2 10 + T3 10 + T4 3)
 │       │   │   ├── Research/       # 72 ResearchNodes (Tools 20 + Mgmt 20 + Marketing 20 + Logistics 12)
-│       │   │   ├── Achievements/   # 79 AchievementDefinitions (Spieler) + 33 Gilden
+│       │   │   ├── Achievements/   # 109 AchievementDefinitions (Spieler) + 33 Gilden
 │       │   │   ├── Quests/         # Daily/Weekly/Story (60 Story-Kapitel)
 │       │   │   ├── Equipment/      # 4 Rarity-Tiers (KEIN Legendary) × 3 Slots
 │       │   │   ├── GuildBuildings/ # 10 HallBuildings
@@ -574,7 +574,7 @@ Kurz-Eckdaten (keine abweichende Zweitquelle — bei Konflikt gilt DESIGN/ORIGIN
 
 Kurz-Eckdaten (keine abweichende Zweitquelle):
 - 10 Tiers F → Legendary; **Effizienz ist eine Min/Max-Spanne pro Tier** (z.B. F 0.30–0.50x, Legendary 13.0–22.0x) — die früheren festen Faktoren (1.0x … 65x) waren falsch.
-- Worker-Stats: Level (1–1000), XP, Mood (0–100), Fatigue (0–100), Talent, Personality, Equipment-Slot.
+- Worker-Stats: **Erfahrungslevel (`ExperienceLevel` 1–10)**, XP, Mood (0–100), Fatigue (0–100), Talent (1–5 Sterne), Personality (6 Typen), MaterialAffinity, 1 Equipment-Slot. (1–1000 ist der **Workshop**-Level, NICHT der Worker — siehe DESIGN § 5.2.)
 - Auktionen sind ein **Gilden-Feature** (Worker-Markt vs. Gilden-Auktion) — exakte Cycle-/Bid-/Bot-Werte siehe DESIGN § 5.8/§ 5.9.
 
 **Unity-Visualisierung (Präsentation):**
@@ -723,9 +723,9 @@ Kurz-Orientierung (permanenter Einkommens-Bonus pro Tier, `GetPermanentMultiplie
 
 ### 6.10 Achievements/Quests/BattlePass
 
-**Werte/Mechanik (verbindlich):** Achievements [DESIGN.md § 18](DESIGN.md#18-achievements-79-spieler-achievements-17-kategorien), Daily-Reward § 19, Lucky-Spin § 20, BattlePass § 21, Live-/Random-Events § 22, Saisonale Events § 23.
+**Werte/Mechanik (verbindlich):** Achievements [DESIGN.md § 18](DESIGN.md#18-achievements-109-spieler-achievements-17-kategorien), Daily-Reward § 19, Lucky-Spin § 20, BattlePass § 21, Live-/Random-Events § 22, Saisonale Events § 23.
 
-- **79 Spieler-Achievements** (17 Kategorien) — DESIGN § 18
+- **109 Spieler-Achievements** (17 Kategorien) — DESIGN § 18
 - Daily-Reward (30-Tage-Zyklus) + Lucky-Spin (8 Slots) — DESIGN § 19/§ 20
 - BattlePass: **50 Tiers**, 30-Tage-Saison (Free + Premium) — DESIGN § 21
 - 4 Live-Event-Templates + 8 Random-Events + 4 saisonale Events/Jahr — DESIGN § 22/§ 23
@@ -811,30 +811,24 @@ Unity Localization Package mit String-Tables:
 
 ### 8.1 Firebase Realtime DB (Schema 1:1 wie Avalonia)
 
+Alle Knoten sind **Top-Level** — KEIN verschachteltes `guilds/{guildId}/everything` und KEIN erfundener `players/{playerId}/`-Sammelknoten (den gibt es im Original nicht). Vollstaendige Pfad-Liste: [ARCHITECTURE.md § 10.1](ARCHITECTURE.md). Kurzueberblick:
+
 ```
-/auth_to_player/{uid} → PlayerId
-/players/{playerId}/
-  ├── profile { name, level, lastSeen (ServerValue.TIMESTAMP) }
-  ├── progress { workshops, workers, money, ... }
-  ├── achievements
-  ├── battlePass
-  ├── guilds (membership-references)
-  └── invites
-/available_players/{playerId} (Suchindex)
-/guild_invite_codes/{code} → guildId
-/guilds/{guildId}/
-  ├── memberList
-  ├── coopOrders/
-  ├── megaProjects/active (V7)
-  ├── research/ (18 Nodes)
-  ├── boss/ (6 Boss-Types)
-  ├── hall/ (10 Gebäude)
-  ├── achievements/ (33: 11 Typen × 3 Tiers, siehe DESIGN § 17.10)
-  ├── warSeason/
-  └── chat/
+auth_to_player/{uid}                         → PlayerId-Mapping
+cloud_saves/{playerId}/{metadata,data}       → Cloud-Save (Metadata-Preview + State-JSON-String)
+available_players/{uid}                      → Suchindex
+player_guilds/{playerId}                     → GuildId-Lookup
+guilds/{guildId}                             → FirebaseGuildData (+ coopOrders/, megaProjects/active darunter)
+guild_members/{guildId}/{uid}                → Mitglieder
+guild_research/{guildId}/{researchId}        → 18 Research-Nodes
+guild_hall/{guildId}/buildings/{buildingId}  → 10 Gebäude
+guild_bosses/{guildId}                       → 6 Boss-Types (+ guild_boss_damage/{guildId}/{uid})
+guild_achievements/{guildId}/{achievementId} → 33 Achievements
+guild_chat/{guildId}/messages/{messageId}    → Chat
+guild_war_seasons/{seasonId}                 → Kriegssaison (+ leagues/, guild_wars/, guild_war_scores/)
 ```
 
-**Pfad-Schema:** identisch zur Avalonia-Version und zu [ARCHITECTURE.md § 10.1](ARCHITECTURE.md) — Wurzel `/players/{playerId}/` (kein abweichender `players_unity/`-Prefix). Die parallele Beta läuft über eine **eigene Firebase-Datenbank-Instanz / ein eigenes Projekt** (siehe Migrations-Strategie § 17.2), nicht über einen abweichenden Pfad-Prefix im selben Schema. So bleibt das Schema 1:1 kompatibel, **bis** der Avalonia-Save-Konverter (Phase 7) zuverlässig läuft.
+**Pfad-Schema:** identisch zur Avalonia-Version (vollstaendig in [ARCHITECTURE.md § 10.1](ARCHITECTURE.md)). Cloud-Save liegt unter `cloud_saves/{playerId}/`, der GameState ist ein **flaches JSON** (kein `players/{playerId}/progress`-Baum). Die parallele Beta läuft über eine **eigene Firebase-Datenbank-Instanz / ein eigenes Projekt** (Migrations-Strategie § 17.2), nicht über einen abweichenden Pfad-Prefix.
 
 ### 8.2 Authentifizierung
 
@@ -844,8 +838,8 @@ Unity Localization Package mit String-Tables:
 
 ### 8.3 Cloud-Save
 
-- Save bei jedem Tick → kein Verlust
-- Conflict-Resolution: **Server wins** (Firebase ist Source-of-Truth)
+- **Lokaler Save ist primär** (atomar: Save/Backup/Temp); AutoSave alle 30s + bei wichtigen Events; Cloud-Upload rate-limitiert (alle 2 min, NICHT jeder Tick).
+- Conflict-Resolution: **Local-First** — beim Laden SavedAt-Vergleich (+5s-Toleranz), bei Konflikt **User-Confirmation**, Version-Outdated-Schutz, Neu-Signierung beim Download (Details [ARCHITECTURE.md § 8.4](ARCHITECTURE.md)). NICHT "Server wins".
 - Lokaler JSON-Fallback (persistentDataPath)
 - Cross-Device-Sync per Google Account
 
@@ -1192,10 +1186,10 @@ Optional, wenn Spieler von Avalonia migrieren wollen:
 
 ### 10.5 Cloud-Save mit Conflict-Resolution
 
-- Lokaler Save (Background-Thread, Lock-frei via UniTask)
-- Cloud-Save zu Firebase (Server-Timestamp)
-- Konflikt: Server wins, lokaler Save wird überschrieben
-- User-Confirmation bei merklichem Datenverlust (z.B. lokaler Save deutlich neuer)
+- Lokaler Save ist primär (Background-Thread, Lock-frei via UniTask; atomar Save/Backup/Temp)
+- Cloud-Upload rate-limitiert (alle 2 min), Metadata-Preview + State-JSON unter `cloud_saves/{playerId}/`
+- Konflikt: **Local-First** — SavedAt-Vergleich (+5s-Toleranz), Version-Outdated-Schutz; NICHT "Server wins"
+- **User-Confirmation** bei Konflikt (Spieler entscheidet, welcher Stand gilt); Details [ARCHITECTURE.md § 8.4](ARCHITECTURE.md)
 
 ### 10.6 Sanitize / Anti-Cheat
 
@@ -1550,7 +1544,7 @@ unity-builder \
 - 33 Crafting-Recipes (T1-T4)
 - Warehouse mit 20-200 Slots
 - Markt mit Tagespreis-Sinus
-- 79 Achievements (17 Kategorien)
+- 109 Achievements (17 Kategorien)
 - Daily-Challenges, Weekly-Missions
 - BattlePass (50 Tiers, 30-Tage-Saison)
 
@@ -1627,7 +1621,7 @@ unity-builder \
 - **33 Crafting-Recipes** (T1-T4)
 - Warehouse mit V7-Features
 - Markt
-- **79 Achievements** (17 Kategorien)
+- **109 Achievements** (17 Kategorien)
 - Daily-Reward (30-Tage) + Lucky-Spin (8 Slots)
 - 5 Daily-Challenge-Types
 - 4 Weekly-Missions

@@ -656,7 +656,7 @@ Diese Entscheidung ist verbindlich und deckungsgleich mit [DESIGN.md § 36.1](DE
 - FTUE-/Tutorial-Hints: 10 FTUE-Schritte + kontextuelle Hints → ~25 Lines/Sprache (DESIGN.md FTUE = 10 Schritte)
 - Story-Chapters: 60 Kapitel (40 Haupt + 20 Saison, DESIGN.md § 26) — eine markante Hans-Voice-Line je Kapitel → ~60 Lines/Sprache (Volltext-Vertonung aller Kapitel ist Phase 2)
 - Random-Idle-Tipps: ~30 Lines/Sprache
-- Achievement-Unlock-Voicelines: eine Auswahl der 79 Spieler-Achievements (Meilensteine, DESIGN.md § 24) → ~40 Lines/Sprache
+- Achievement-Unlock-Voicelines: eine Auswahl der 109 Spieler-Achievements (Meilensteine, DESIGN.md § 18) → ~40 Lines/Sprache
 - Live-Events + Notifications + Premium-Promotion: ~40 Lines/Sprache
 
 Summe ~205 Kern-Lines + Reserve für Live-Event-Nachschub → **~250 Voice-Lines pro Sprache**.

@@ -507,9 +507,9 @@ HwiSave
 
 ### 10.4 HMAC-Signierung (Anti-Cheat)
 
-- **`HmacSigner.Sign(data, key)`** für kritische Werte (Money, Goldscrews, BossDamage, AuctionBid)
-- Server validiert vor Persist
-- Bei Mismatch: Save-Reset, Log-Eintrag, ggf. Account-Flag
+- **Lokaler Haupt-Save:** `HmacSigner.Sign(...)` erzeugt eine **gerätegebundene** Signatur über die GameState-Kernwerte (`PlayerLevel|PrestigeCount|Money:F2|GoldenScrews|TotalOrders`). Verifikation lokal via `FixedTimeEquals`.
+- **Bei ungültiger/fehlender Signatur:** **Reparatur statt Ablehnung** — `SanitizeState` klemmt Werte auf gültige Caps (kein Save-Reset, kein Wipe). Details ARCHITECTURE § 16.1/§ 16.2.
+- **Server-Validierung (mit Ablehnung)** gilt nur für die Online-/Gilden-Kontexte (Co-op-Score, Auktions-Gebot, Boss-Damage, Mega-Projekt-Beitrag) — atomarer PATCH + Firebase-`validate`-Rules. NICHT für den lokalen Haupt-Save.
 
 ---
 
@@ -663,8 +663,19 @@ Werte, die manipuliert werden könnten, MÜSSEN HMAC-signiert sein:
 - MegaProjectContribution (long)
 
 ```csharp
-var signature = HmacSigner.Sign($"{playerId}|{money}|{timestamp}", _secretKey);
-await _firebase.SetAsync($"players/{playerId}/money", new SignedValue(money, signature));
+// Lokaler Haupt-Save: gerätegebundene Integritäts-Signatur über die GameState-Kernwerte
+// (kein Firebase-Write pro Wert — es gibt keinen players/{playerId}/money-Knoten).
+state.IntegritySignature = HmacSigner.Sign(
+    $"{state.PlayerLevel}|{state.PrestigeCount}|{state.Money:F2}|{state.GoldenScrews}|{state.TotalOrders}",
+    _deviceKey);
+
+// Online-Wert (z.B. Co-op-Score): im Firebase-PATCH signiert, server-validiert
+var sig = HmacSigner.Sign($"{guildId}|{orderId}|{playerId}|{score}", _coopSalt);
+await _firebase.UpdateAsync("", new Dictionary<string, object>
+{
+    [$"guilds/{guildId}/coopOrders/{orderId}/player1Score"] = score,
+    [$"guilds/{guildId}/coopOrders/{orderId}/hmac"] = sig,
+}, ct);
 ```
 
 ### 13.3 Firebase-Pfade

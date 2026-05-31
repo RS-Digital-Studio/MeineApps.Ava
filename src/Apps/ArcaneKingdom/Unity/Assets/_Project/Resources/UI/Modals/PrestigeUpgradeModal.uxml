@@ -12,7 +12,7 @@
                                  max-width: 480;
                                  min-width: 320;">
 
-            <ui:Label text="🌟 Prestige-Upgrade" class="ak-h2"
+            <ui:Label text="Prestige-Upgrade" class="ak-h2"
                       style="text-align: center; margin-bottom: 16;" />
 
             <ui:Label name="world-name" text="Welt-Name"
@@ -22,7 +22,7 @@
             <ui:VisualElement class="ak-row" style="justify-content: center; margin-bottom: 16;">
                 <ui:Label name="current-stufe" text="Normal"
                           class="ak-h4" style="margin-right: 8;" />
-                <ui:Label text="→" class="ak-h4" style="margin-right: 8;" />
+                <ui:Label text="zu" class="ak-caption" style="margin-right: 8; align-self: center;" />
                 <ui:Label name="next-stufe" text="I"
                           class="ak-h4 ak-text--accent" />
             </ui:VisualElement>

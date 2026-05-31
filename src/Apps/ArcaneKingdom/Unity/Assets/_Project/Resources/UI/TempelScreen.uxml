@@ -22,19 +22,19 @@
                                       style="justify-content: space-around;
                                              margin-top: 8;">
                         <ui:VisualElement class="ak-col" style="align-items: center;">
-                            <ui:Label text="🥉 Bronze" class="ak-caption" />
+                            <ui:Label text="Bronze" class="ak-caption" />
                             <ui:Label name="count-bronze" text="0" class="ak-h4" />
                         </ui:VisualElement>
                         <ui:VisualElement class="ak-col" style="align-items: center;">
-                            <ui:Label text="🥈 Silber" class="ak-caption" />
+                            <ui:Label text="Silber" class="ak-caption" />
                             <ui:Label name="count-silber" text="0" class="ak-h4" />
                         </ui:VisualElement>
                         <ui:VisualElement class="ak-col" style="align-items: center;">
-                            <ui:Label text="🥇 Gold" class="ak-caption" />
+                            <ui:Label text="Gold" class="ak-caption" />
                             <ui:Label name="count-gold" text="0" class="ak-h4" />
                         </ui:VisualElement>
                         <ui:VisualElement class="ak-col" style="align-items: center;">
-                            <ui:Label text="💎 Platin" class="ak-caption" />
+                            <ui:Label text="Platin" class="ak-caption" />
                             <ui:Label name="count-platin" text="0" class="ak-h4" />
                         </ui:VisualElement>
                     </ui:VisualElement>

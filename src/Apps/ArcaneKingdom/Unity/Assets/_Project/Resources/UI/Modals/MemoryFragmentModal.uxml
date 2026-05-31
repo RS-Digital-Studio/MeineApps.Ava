@@ -19,8 +19,8 @@
                                      padding: 8;
                                      margin-bottom: 12;
                                      border-radius: 4;">
-                <ui:Label text="⚠ DER TWIST ⚠" class="ak-h3"
-                          style="text-align: center; color: rgb(255, 220, 220);" />
+                <ui:Label text="DER TWIST" class="ak-h3"
+                          style="text-align: center; color: rgb(255, 220, 220); letter-spacing: 2px;" />
             </ui:VisualElement>
 
             <!-- NPC-Portrait (nur sichtbar wenn NpcId gesetzt) -->

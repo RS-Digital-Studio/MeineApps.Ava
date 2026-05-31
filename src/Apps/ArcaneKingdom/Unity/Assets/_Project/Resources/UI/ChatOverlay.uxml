@@ -5,7 +5,7 @@
 
             <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 12px;">
                 <ui:Label text="CHAT" style="font-size: 18px; -unity-font-style: bold; color: rgb(245, 200, 66); flex-grow: 1;"/>
-                <ui:Button name="chat-close" text="✕" style="width: 32px; height: 32px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+                <ui:Button name="chat-close" text="X" style="width: 32px; height: 32px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
             </ui:VisualElement>
 
             <ui:VisualElement name="chat-tabs" style="flex-direction: row; margin-bottom: 12px;"/>

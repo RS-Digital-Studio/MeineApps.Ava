@@ -6,7 +6,7 @@
             <ui:Label name="thief-level" text="LV 58" style="font-size: 12px; color: rgb(0, 0, 0); background-color: rgb(245, 200, 66); padding-left: 8px; padding-right: 8px; padding-top: 4px; padding-bottom: 4px; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;"/>
             <ui:Label text="DIEB GESICHTET" style="font-size: 22px; -unity-font-style: bold; color: rgb(198, 40, 40); flex-grow: 1; margin-left: 12px;"/>
             <ui:Label name="thief-timer" text="Flueсhtet in 01:59:34" style="font-size: 13px; color: rgb(245, 200, 66);"/>
-            <ui:Button name="thief-close" text="✕" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66); margin-left: 12px;"/>
+            <ui:Button name="thief-close" text="X" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66); margin-left: 12px;"/>
         </ui:VisualElement>
 
         <ui:VisualElement style="align-items: center; margin-bottom: 24px;">

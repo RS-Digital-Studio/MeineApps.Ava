@@ -13,7 +13,7 @@
             <ui:VisualElement class="ak-row" style="align-items: center; margin-bottom: 8;">
                 <ui:Label name="card-detail-name" text="Karte" class="ak-h2"
                           style="flex-grow: 1;" />
-                <ui:Button name="card-detail-close" text="✕"
+                <ui:Button name="card-detail-close" text="X"
                            class="ak-btn ak-btn--ghost ak-btn--sm ak-btn--icon" />
             </ui:VisualElement>
 

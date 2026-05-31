@@ -4,7 +4,7 @@
 
         <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 24px;">
             <ui:Label text="PROFIL" style="font-size: 22px; -unity-font-style: bold; color: rgb(245, 200, 66); flex-grow: 1;"/>
-            <ui:Button name="profile-close" text="✕" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+            <ui:Button name="profile-close" text="X" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
         </ui:VisualElement>
 
         <ui:VisualElement style="align-items: center; margin-bottom: 24px;">

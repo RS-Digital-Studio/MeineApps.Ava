@@ -137,8 +137,10 @@ namespace ArcaneKingdom.UI.Friends
 
             var statusLabel = new Label(status);
             statusLabel.AddToClassList("ak-caption");
-            statusLabel.AddToClassList(status is "Online" or "InBattle" or "InArena"
-                ? "ak-text--success" : "ak-text--muted");
+            // ak-caption liefert bereits den gedaempften Offline-Ton (var(--ak-text-muted)).
+            // Nur der Online-Status bekommt zusaetzlich die semantische Gruen-Klasse.
+            if (status is "Online" or "InBattle" or "InArena")
+                statusLabel.AddToClassList("ak-text--success");
             row.Add(statusLabel);
 
             return row;
@@ -158,15 +160,17 @@ namespace ArcaneKingdom.UI.Friends
             row.Add(nameLabel);
 
             var accept = new Button(() => _toast.Show("Annehmen — Backend folgt.", ToastKind.Info))
-                { text = "✓" };
+                { text = "Annehmen" };
             accept.AddToClassList("ak-btn"); accept.AddToClassList("ak-btn--sm");
-            accept.AddToClassList("ak-btn--primary"); accept.AddToClassList("ak-btn--icon");
+            accept.AddToClassList("ak-btn--primary");
+            accept.style.marginLeft = 4;
             row.Add(accept);
 
             var reject = new Button(() => _toast.Show("Ablehnen — Backend folgt.", ToastKind.Info))
-                { text = "✕" };
+                { text = "Ablehnen" };
             reject.AddToClassList("ak-btn"); reject.AddToClassList("ak-btn--sm");
-            reject.AddToClassList("ak-btn--ghost"); reject.AddToClassList("ak-btn--icon");
+            reject.AddToClassList("ak-btn--ghost");
+            reject.style.marginLeft = 4;
             row.Add(reject);
 
             return row;

@@ -1,42 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement name="profile-root" class="ak-screen" style="flex-grow: 1; background-color: rgb(13, 13, 26); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
+    <ui:VisualElement name="profile-root" class="ak-screen" style="flex-grow: 1; background-color: var(--ak-bg-base); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
 
-        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 24px;">
-            <ui:Label text="PROFIL" style="font-size: 22px; -unity-font-style: bold; color: rgb(245, 200, 66); flex-grow: 1;"/>
-            <ui:Button name="profile-close" text="X" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+        <ui:VisualElement class="ak-row ak-center-v" style="background-color: var(--ak-bg-deep); border-bottom-width: 1px; border-bottom-color: var(--ak-border-gold-soft); padding-left: 12px; padding-right: 12px; padding-top: 10px; padding-bottom: 10px; margin-bottom: 24px;">
+            <ui:Label text="PROFIL" class="ak-h2 ak-grow"/>
+            <ui:Button name="profile-close" text="X" class="ak-btn ak-btn--ghost ak-btn--icon"/>
         </ui:VisualElement>
 
-        <ui:VisualElement style="align-items: center; margin-bottom: 24px;">
-            <ui:VisualElement style="width: 120px; height: 120px; border-top-left-radius: 60px; border-top-right-radius: 60px; border-bottom-left-radius: 60px; border-bottom-right-radius: 60px; background-color: rgb(74, 27, 154); border-left-width: 3px; border-right-width: 3px; border-top-width: 3px; border-bottom-width: 3px; border-left-color: rgb(245, 200, 66); border-right-color: rgb(245, 200, 66); border-top-color: rgb(245, 200, 66); border-bottom-color: rgb(245, 200, 66); margin-bottom: 12px;"/>
-            <ui:Label name="profile-name" text="Spielername" style="font-size: 22px; -unity-font-style: bold; color: rgb(255, 255, 255);"/>
-            <ui:Label name="profile-level-exp" text="LV 1 — 0 EXP" style="font-size: 14px; color: rgb(245, 200, 66); margin-top: 4px;"/>
-            <ui:Label name="profile-server" text="Server: Poseidon" style="font-size: 11px; color: rgb(170, 170, 190); margin-top: 4px;"/>
+        <ui:VisualElement class="ak-center" style="margin-bottom: 24px;">
+            <ui:VisualElement style="width: 120px; height: 120px; border-top-left-radius: 60px; border-top-right-radius: 60px; border-bottom-left-radius: 60px; border-bottom-right-radius: 60px; background-color: var(--ak-primary); border-left-width: 3px; border-right-width: 3px; border-top-width: 3px; border-bottom-width: 3px; border-left-color: var(--ak-accent); border-right-color: var(--ak-accent); border-top-color: var(--ak-accent); border-bottom-color: var(--ak-accent); margin-bottom: 12px;"/>
+            <ui:Label name="profile-name" text="Spielername" class="ak-h3"/>
+            <ui:Label name="profile-level-exp" text="LV 1 - 0 EXP" class="ak-body ak-text--accent" style="margin-top: 4px;"/>
+            <ui:Label name="profile-server" text="Server: Poseidon" class="ak-caption" style="margin-top: 4px;"/>
         </ui:VisualElement>
 
         <ui:VisualElement style="flex-direction: row; flex-wrap: wrap; justify-content: space-between; margin-bottom: 24px;">
-            <ui:VisualElement style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; background-color: rgb(26, 26, 46); border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; margin-bottom: 8px;">
-                <ui:Label text="Helden-HP" style="font-size: 11px; color: rgb(170, 170, 190);"/>
-                <ui:Label name="profile-hero-hp" text="—" style="font-size: 18px; color: rgb(105, 240, 174); -unity-font-style: bold;"/>
+            <ui:VisualElement class="ak-surface" style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px;">
+                <ui:Label text="Helden-HP" class="ak-caption"/>
+                <ui:Label name="profile-hero-hp" text="-" class="ak-h4 ak-text--success"/>
             </ui:VisualElement>
-            <ui:VisualElement style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; background-color: rgb(26, 26, 46); border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; margin-bottom: 8px;">
-                <ui:Label text="Kosten" style="font-size: 11px; color: rgb(170, 170, 190);"/>
-                <ui:Label name="profile-total-cost" text="—" style="font-size: 18px; color: rgb(199, 138, 255); -unity-font-style: bold;"/>
+            <ui:VisualElement class="ak-surface" style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px;">
+                <ui:Label text="Kosten" class="ak-caption"/>
+                <ui:Label name="profile-total-cost" text="-" class="ak-h4" style="color: var(--ak-primary-light);"/>
             </ui:VisualElement>
-            <ui:VisualElement style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; background-color: rgb(26, 26, 46); border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
-                <ui:Label text="Karten gesamt" style="font-size: 11px; color: rgb(170, 170, 190);"/>
-                <ui:Label name="profile-total-atk" text="0" style="font-size: 18px; color: rgb(255, 122, 0); -unity-font-style: bold;"/>
+            <ui:VisualElement class="ak-surface" style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px;">
+                <ui:Label text="Karten gesamt" class="ak-caption"/>
+                <ui:Label name="profile-total-atk" text="0" class="ak-h4 ak-text--accent"/>
             </ui:VisualElement>
-            <ui:VisualElement style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; background-color: rgb(26, 26, 46); border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
-                <ui:Label text="Runen gesamt" style="font-size: 11px; color: rgb(170, 170, 190);"/>
-                <ui:Label name="profile-total-hp" text="0" style="font-size: 18px; color: rgb(245, 200, 66); -unity-font-style: bold;"/>
+            <ui:VisualElement class="ak-surface" style="width: 48%; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px;">
+                <ui:Label text="Runen gesamt" class="ak-caption"/>
+                <ui:Label name="profile-total-hp" text="0" class="ak-h4 ak-text--accent"/>
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <ui:Label name="profile-stats" text="" style="font-size: 13px; color: rgb(200, 200, 220); margin-bottom: 16px; -unity-text-align: middle-center;"/>
+        <ui:Label name="profile-stats" text="" class="ak-body" style="color: var(--ak-text-secondary); margin-bottom: 16px; -unity-text-align: middle-center;"/>
 
-        <ui:Label text="Freigeschaltete Inhalte" style="font-size: 14px; color: rgb(245, 200, 66); -unity-font-style: bold; margin-bottom: 8px;"/>
-        <ui:ScrollView style="flex-grow: 1; background-color: rgba(26, 26, 46, 0.5); padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px; border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+        <ui:Label text="Freigeschaltete Inhalte" class="ak-h4 ak-text--accent" style="margin-bottom: 8px;"/>
+        <ui:ScrollView class="ak-surface" style="flex-grow: 1; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 8px;">
             <ui:VisualElement name="profile-unlocks"/>
         </ui:ScrollView>
 

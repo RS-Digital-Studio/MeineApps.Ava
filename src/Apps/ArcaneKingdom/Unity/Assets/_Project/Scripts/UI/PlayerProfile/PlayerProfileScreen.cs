@@ -71,27 +71,27 @@ namespace ArcaneKingdom.UI.PlayerProfile
         {
             var p = save.Profile;
             _name.text = string.IsNullOrEmpty(p.DisplayName) ? "Spieler" : p.DisplayName;
-            _levelExp.text = $"LV {p.Level} — {p.ExpTotal:N0} EXP";
+            _levelExp.text = $"LV {p.Level} - {p.ExpTotal:N0} EXP";
             _server.text = string.IsNullOrEmpty(p.Server) ? "Server: Poseidon" : $"Server: {p.Server}";
 
             // Helden-HP: berechnet aus aktivem Deck (Summe Base-HP)
-            _heroHp.text = "—";   // wird vom Battle-Setup berechnet, hier nur Anzeige-Platzhalter
-            _totalCost.text = "—";  // Berechnung erfordert CardDefinition-Lookup
+            _heroHp.text = "-";   // wird vom Battle-Setup berechnet, hier nur Anzeige-Platzhalter
+            _totalCost.text = "-";  // Berechnung erfordert CardDefinition-Lookup
             _totalAtk.text = $"{save.CardInventory.Count:N0} Karten";
             _totalHp.text = $"{save.RuneInventory.Count:N0} Runen";
 
             // Stats-Zusammenfassung (Achievements als Proxy bis dedizierte Stats-Klasse existiert)
             var titleCount = save.Achievements?.UnlockedTitleKeys?.Count ?? 0;
             var trophyPoints = save.Achievements?.TotalTrophyPoints ?? 0;
-            _statsLine.text = $"Titel: {titleCount} • Trophaeen: {trophyPoints:N0} • Karten: {save.CardInventory.Count:N0}";
+            _statsLine.text = $"Titel: {titleCount}   Trophaeen: {trophyPoints:N0}   Karten: {save.CardInventory.Count:N0}";
 
             // Account-Unlocks (Plan-Inhalts-Liste)
             _unlocksList.Clear();
             foreach (var unlock in AccountUnlocks.ActiveUnlocks(p.Level))
             {
-                var row = new Label($"✓ {unlock} (LV {AccountUnlocks.LevelFor(unlock)})");
-                row.style.fontSize = 11;
-                row.style.color = new StyleColor(new UnityEngine.Color(0.42f, 0.94f, 0.68f));
+                var row = new Label($"+ {unlock} (LV {AccountUnlocks.LevelFor(unlock)})");
+                row.style.fontSize = 13;
+                row.style.color = new StyleColor(new UnityEngine.Color(0.22f, 0.773f, 0.537f));
                 row.style.marginBottom = 2;
                 _unlocksList.Add(row);
             }

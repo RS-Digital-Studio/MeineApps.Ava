@@ -1,24 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement name="rune-root" class="ak-screen" style="flex-grow: 1; background-color: rgb(13, 13, 26); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
+    <ui:VisualElement name="rune-root" class="ak-screen" style="flex-grow: 1; background-color: var(--ak-bg-base);">
 
-        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 16px;">
-            <ui:Label text="RUNEN" style="font-size: 22px; -unity-font-style: bold; color: rgb(245, 200, 66); flex-grow: 1;"/>
-            <ui:Button name="rune-close" text="X" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+        <ui:VisualElement class="ak-row ak-center-v" style="background-color: rgb(6, 6, 16); border-bottom-width: 1px; border-bottom-color: var(--ak-border-gold-soft); padding-left: 16px; padding-right: 16px; padding-top: 14px; padding-bottom: 14px; margin-bottom: 16px;">
+            <ui:Label text="RUNEN" class="ak-h2 ak-grow"/>
+            <ui:Button name="rune-close" text="X" class="ak-btn ak-btn--icon"/>
         </ui:VisualElement>
 
-        <ui:Label text="Runen-Slots" style="font-size: 14px; color: rgb(200, 200, 220); margin-bottom: 8px;"/>
-        <ui:VisualElement name="rune-slots-row" style="flex-direction: row; margin-bottom: 16px;"/>
+        <ui:VisualElement style="padding-left: 16px; padding-right: 16px; flex-grow: 1;">
 
-        <ui:Label name="rune-active-stats" text="" style="font-size: 12px; color: rgb(170, 170, 190); margin-bottom: 16px;"/>
+            <ui:Label text="Runen-Slots" class="ak-overline" style="margin-bottom: 8px;"/>
+            <ui:VisualElement name="rune-slots-row" class="ak-row" style="margin-bottom: 16px;"/>
 
-        <ui:Label text="Filter" style="font-size: 14px; color: rgb(200, 200, 220); margin-bottom: 8px;"/>
-        <ui:VisualElement name="rune-filter-row" style="flex-direction: row; flex-wrap: wrap; margin-bottom: 16px;"/>
+            <ui:Label name="rune-active-stats" text="" class="ak-caption" style="margin-bottom: 16px;"/>
 
-        <ui:Label text="Verfuegbare Runen" style="font-size: 14px; color: rgb(200, 200, 220); margin-bottom: 8px;"/>
-        <ui:ScrollView style="flex-grow: 1;">
-            <ui:VisualElement name="rune-grid" style="flex-direction: row; flex-wrap: wrap;"/>
-        </ui:ScrollView>
+            <ui:Label text="Filter" class="ak-overline" style="margin-bottom: 8px;"/>
+            <ui:VisualElement name="rune-filter-row" class="ak-row" style="flex-wrap: wrap; margin-bottom: 16px;"/>
+
+            <ui:Label text="Verfuegbare Runen" class="ak-overline" style="margin-bottom: 8px;"/>
+            <ui:ScrollView style="flex-grow: 1;">
+                <ui:VisualElement name="rune-grid" class="ak-row" style="flex-wrap: wrap;"/>
+            </ui:ScrollView>
+
+        </ui:VisualElement>
 
     </ui:VisualElement>
 </ui:UXML>

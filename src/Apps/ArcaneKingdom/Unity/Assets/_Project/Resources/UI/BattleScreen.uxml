@@ -3,31 +3,39 @@
 
     <!--
         BattleScreen — vertikales Layout: Gegner oben, Feld in der Mitte, Spieler unten.
+        Arcane-Realm-Design: dunkler Token-BG, Gold-Akzente, ornamentierte Gold-Raender.
+        Hinweis: Der Controller (BattleScreen.cs) setzt per ApplyBattleBackground einen
+        Welt-spezifischen Battle-Hintergrund. Der hier gesetzte dunkle Token-BG ist der
+        Fallback (deck-lose / node-lose Kaempfe ohne Welt-Sprite).
     -->
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(13, 8, 28);">
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
 
         <!-- ================ TOP BAR ================ -->
-        <ui:VisualElement class="ak-row" style="height: 40; padding: 8;
-                                                  background-color: rgba(0,0,0,0.4);
+        <ui:VisualElement class="ak-row" style="height: 48; padding-left: 12; padding-right: 12;
+                                                  padding-top: 8; padding-bottom: 8;
+                                                  background-color: rgb(6, 6, 16);
+                                                  border-bottom-width: 1;
+                                                  border-bottom-color: var(--ak-border-gold-soft);
                                                   align-items: center;">
             <ui:Button name="battle-flee-button" text="Aufgeben"
                        class="ak-btn ak-btn--sm ak-btn--ghost" />
-            <ui:Label text="Runde" class="ak-caption" style="margin-left: 16; margin-right: 4;" />
-            <ui:Label name="battle-turn-number" text="1" class="ak-h4" />
+            <ui:Label text="Runde" class="ak-overline" style="margin-left: 16; margin-right: 6;" />
+            <ui:Label name="battle-turn-number" text="1" class="ak-h4 ak-text--accent" />
             <ui:VisualElement style="flex-grow: 1;" />
             <ui:Label name="battle-phase-label" text="Dein Zug" class="ak-h4 ak-text--accent" />
         </ui:VisualElement>
 
         <!-- ================ ENEMY-BEREICH ================ -->
+        <!-- Subtiler roter Tint signalisiert die Gegner-Zone (semantisch, bleibt). -->
         <ui:VisualElement class="ak-col" style="padding: 12;
-                                                  background-color: rgba(70,20,20,0.20);">
+                                                  background-color: rgba(70, 20, 20, 0.20);">
 
             <!-- Enemy Hero (HP + Mana) -->
             <ui:VisualElement class="ak-row" style="align-items: center; margin-bottom: 8;">
                 <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
-                                          background-color: rgb(232, 64, 87);
-                                          border-width: 2; border-color: rgba(255,255,255,0.4);
+                                          background-color: var(--ak-danger);
+                                          border-width: 2; border-color: var(--ak-border-gold);
                                           margin-right: 8;" />
                 <ui:VisualElement class="ak-col" style="flex-grow: 1;">
                     <ui:Label name="enemy-hero-name" text="Gegner" class="ak-h4" />
@@ -50,13 +58,14 @@
                                      min-height: 110;" />
         </ui:VisualElement>
 
-        <!-- ================ BATTLEFIELD-DIVIDER ================ -->
-        <ui:VisualElement style="height: 8; background-color: rgb(245, 158, 11);
-                                  opacity: 0.6;" />
+        <!-- ================ BATTLEFIELD-DIVIDER (Gold-Linie) ================ -->
+        <ui:VisualElement style="height: 4; background-color: var(--ak-accent);
+                                  opacity: 0.55;" />
 
         <!-- ================ PLAYER-BEREICH ================ -->
+        <!-- Subtiler blauer Tint signalisiert die Spieler-Zone (semantisch, bleibt). -->
         <ui:VisualElement class="ak-col" style="flex-grow: 1; padding: 12;
-                                                  background-color: rgba(20,50,80,0.20);">
+                                                  background-color: rgba(20, 50, 80, 0.20);">
 
             <!-- Player Field -->
             <ui:VisualElement name="player-field"
@@ -66,8 +75,8 @@
             <!-- Player Hero (HP + Mana) -->
             <ui:VisualElement class="ak-row" style="align-items: center; margin-top: 8;">
                 <ui:VisualElement style="width: 48; height: 48; border-radius: 24;
-                                          background-color: rgb(107, 70, 193);
-                                          border-width: 2; border-color: rgb(245, 158, 11);
+                                          background-color: var(--ak-primary);
+                                          border-width: 2; border-color: var(--ak-border-gold-strong);
                                           margin-right: 8;" />
                 <ui:VisualElement class="ak-col" style="flex-grow: 1;">
                     <ui:Label name="player-hero-name" text="Du" class="ak-h4" />
@@ -83,7 +92,7 @@
                 <ui:VisualElement name="player-mana-orbs" style="flex-direction: row;
                                                                    margin-right: 12;" />
 
-                <ui:Button name="battle-end-turn-button" text="Zug beenden ▶"
+                <ui:Button name="battle-end-turn-button" text="Zug beenden"
                            class="ak-btn ak-btn--accent" />
             </ui:VisualElement>
 

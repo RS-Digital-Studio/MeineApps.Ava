@@ -1,19 +1,25 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
          editor-extension-mode="False">
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(22, 16, 41);">
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
 
-        <ui:VisualElement class="ak-app-header">
-            <ui:Button name="friends-back-button" text="‹ Zurueck"
+        <ui:VisualElement class="ak-app-header"
+                          style="background-color: rgb(6, 6, 16);
+                                 border-bottom-width: 1px;
+                                 border-bottom-color: var(--ak-border-gold-soft);">
+            <ui:Button name="friends-back-button" text="Zurueck"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
-            <ui:Label text="Freunde" class="ak-h3" style="flex-grow: 1;" />
-            <ui:Button name="friends-add-button" text="+ Freund hinzufuegen"
-                       class="ak-btn ak-btn--sm ak-btn--primary" />
+            <ui:Label text="Freunde" class="ak-h2" style="flex-grow: 1;" />
+            <ui:Button name="friends-add-button" text="Freund hinzufuegen"
+                       class="ak-btn ak-btn--sm ak-btn--accent" />
         </ui:VisualElement>
 
         <!-- Tabs -->
-        <ui:VisualElement class="ak-row" style="padding: 8;
-                                                  background-color: rgb(13, 8, 28);">
+        <ui:VisualElement class="ak-row"
+                          style="padding: 8;
+                                 background-color: rgb(6, 6, 16);
+                                 border-bottom-width: 1px;
+                                 border-bottom-color: var(--ak-border-gold-soft);">
             <ui:Button name="friends-tab-list" text="Liste"
                        class="ak-btn ak-btn--sm ak-btn--primary"
                        style="flex-grow: 1; margin-right: 4;" />

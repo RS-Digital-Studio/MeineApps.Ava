@@ -37,20 +37,40 @@ namespace ArcaneKingdom.Game.Season
             var save = loadResult.Value!;
             var nowUtc = DateTime.UtcNow;
 
-            // Daily
-            if (ResetWindow.HasCrossedDailyReset(save.LastEnergyRegenAtUtc, nowUtc))
+            // Anker sind die DAFUER vorgesehenen Quest-Slice-Felder — NICHT LastEnergyRegenAtUtc
+            // (das wird bei jeder Energie-Regen aktualisiert, wodurch der Reset praktisch nie feuerte).
+            save.Quests ??= new ArcaneKingdom.Domain.Save.QuestSaveSlice();
+            var lastDaily = save.Quests.LastDailyResetUtc;
+            var lastWeekly = save.Quests.LastWeeklyResetUtc;
+
+            // Beim Erststart (Anker == default) nur den Anker setzen, keinen Reset ausloesen.
+            var daily  = lastDaily  != default && ResetWindow.HasCrossedDailyReset(lastDaily, nowUtc);
+            var weekly = lastWeekly != default && ResetWindow.HasCrossedWeeklyReset(lastWeekly, nowUtc);
+
+            if (daily)
             {
                 _questService.ResetDaily();
                 _analytics.Track("daily_reset_applied");
                 DailyReset?.Invoke();
             }
-
-            // Weekly
-            if (ResetWindow.HasCrossedWeeklyReset(save.LastEnergyRegenAtUtc, nowUtc))
+            if (weekly)
             {
                 _questService.ResetWeekly();
                 _analytics.Track("weekly_reset_applied");
                 WeeklyReset?.Invoke();
+            }
+
+            // Reset-Anker fortschreiben (und beim Erststart initialisieren). Quest-Counts sichern.
+            if (daily || weekly || lastDaily == default || lastWeekly == default)
+            {
+                if (daily || weekly) await _questService.FlushAsync(ct);
+                await _save.MutateAsync(s =>
+                {
+                    s.Quests ??= new ArcaneKingdom.Domain.Save.QuestSaveSlice();
+                    if (daily || lastDaily == default)  s.Quests.LastDailyResetUtc = nowUtc;
+                    if (weekly || lastWeekly == default) s.Quests.LastWeeklyResetUtc = nowUtc;
+                    return s;
+                }, ct);
             }
 
             // Saison: pragmatisch über Account-Erstellung als Anker — Production wird Server-getrieben sein

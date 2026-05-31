@@ -36,6 +36,7 @@ namespace ArcaneKingdom.UI.Hub
         private readonly UIAssetService _uiAssets;
         private readonly ILocalizationService _loc;
         private readonly CardCatalogService _cardCatalog;
+        private readonly ArcaneKingdom.Game.Season.SeasonResetService _seasonReset;
         private readonly System.Random _rewardRng = new();
 
         // Top-Bar
@@ -64,7 +65,8 @@ namespace ArcaneKingdom.UI.Hub
                          ArcaneKingdom.Game.Hub.HubController hubController,
                          UIAssetService uiAssets,
                          ILocalizationService loc,
-                         CardCatalogService cardCatalog)
+                         CardCatalogService cardCatalog,
+                         ArcaneKingdom.Game.Season.SeasonResetService seasonReset)
         {
             _screenManager = screenManager;
             _save = save;
@@ -75,6 +77,7 @@ namespace ArcaneKingdom.UI.Hub
             _uiAssets = uiAssets;
             _loc = loc;
             _cardCatalog = cardCatalog;
+            _seasonReset = seasonReset;
         }
 
         protected override void BindElements(VisualElement root)
@@ -164,6 +167,9 @@ namespace ArcaneKingdom.UI.Hub
             var restoreR = await _save.LoadAsync(token);
             if (restoreR.IsSuccess && restoreR.Value != null)
                 _questService.RestoreFromSave(restoreR.Value);
+
+            // Daily-/Weekly-Quest-Reset pruefen (00:00 UTC / Montag). Muss nach dem Restore laufen.
+            await _seasonReset.CheckResetsAsync(token);
 
             // Offene PendingClaims (Season-Rewards etc.) atomar + idempotent einloesen.
             await RedeemPendingClaimsAsync(token);

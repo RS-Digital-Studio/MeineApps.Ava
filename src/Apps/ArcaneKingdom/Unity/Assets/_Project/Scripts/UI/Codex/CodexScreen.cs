@@ -57,7 +57,7 @@ namespace ArcaneKingdom.UI.Codex
             _ownedOnly     = Q<Toggle>("codex-owned-only");
             _grid          = Q<VisualElement>("codex-grid");
 
-            _elementFilter.choices = new List<string> { "Alle", "Natur", "Feuer", "Wasser", "Licht", "Dunkel" };
+            _elementFilter.choices = new List<string> { "Alle", "Natur", "Feuer", "Wasser", "Erde", "Licht", "Dunkel" };
             _elementFilter.index = 0;
 
             _backBtn.clicked += () => _screenManager.PopAsync().Forget();
@@ -115,6 +115,7 @@ namespace ArcaneKingdom.UI.Codex
             "Natur"  => Element.Natur,
             "Feuer"  => Element.Feuer,
             "Wasser" => Element.Wasser,
+            "Erde"   => Element.Erde,
             "Licht"  => Element.Licht,
             "Dunkel" => Element.Dunkel,
             _        => null

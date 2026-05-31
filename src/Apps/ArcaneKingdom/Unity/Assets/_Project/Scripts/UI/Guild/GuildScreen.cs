@@ -83,7 +83,7 @@ namespace ArcaneKingdom.UI.Guild
             _tabChat.clicked    += () => SwitchTab("chat");
 
             _findBtn.clicked   += () => _toast.Show("Gilden-Suche kommt mit Backend.", ToastKind.Info);
-            _createBtn.clicked += () => _toast.Show("Gilden-Gruendung erfordert Stufe 20.", ToastKind.Warning);
+            _createBtn.clicked += () => _toast.Show("Gilden-Gruendung erfordert Stufe 25.", ToastKind.Warning);
             _donateBtn.clicked += () => _toast.Show("+10 GP gespendet (Mock).", ToastKind.Success);
             _chatSend.clicked  += OnSendChat;
         }

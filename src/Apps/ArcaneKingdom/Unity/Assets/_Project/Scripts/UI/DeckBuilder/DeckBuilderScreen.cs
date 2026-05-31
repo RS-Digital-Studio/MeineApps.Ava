@@ -26,6 +26,7 @@ namespace ArcaneKingdom.UI.DeckBuilder
         private readonly ISaveService<PlayerSave> _save;
         private readonly CardCatalogService _cardCatalog;
         private readonly ToastService _toast;
+        private readonly ILocalizationService _loc;
 
         // Header
         private Button _backBtn = null!;
@@ -61,13 +62,15 @@ namespace ArcaneKingdom.UI.DeckBuilder
                                  ISaveService<PlayerSave> save,
                                  CardCatalogService cardCatalog,
                                  ToastService toast,
-                                 UIAssetService uiAssets)
+                                 UIAssetService uiAssets,
+                                 ILocalizationService loc)
         {
             _screenManager = screenManager;
             _save = save;
             _cardCatalog = cardCatalog;
             _toast = toast;
             _uiAssets = uiAssets;
+            _loc = loc;
         }
 
         protected override void BindElements(VisualElement root)
@@ -91,7 +94,7 @@ namespace ArcaneKingdom.UI.DeckBuilder
             _clearBtn         = Q<Button>("deck-clear-button");
 
             _cardsRarity.choices = new List<string> { "Alle Raritaeten",
-                "Gewoehnlich", "Ungewoehnlich", "Selten", "Epic", "Legendaer" };
+                "Gewoehnlich", "Ungewoehnlich", "Selten", "Epic", "Legendaer", "Mythisch" };
             _cardsRarity.index = 0;
 
             _backBtn.clicked += OnBack;
@@ -204,7 +207,9 @@ namespace ArcaneKingdom.UI.DeckBuilder
                 var def = _cardCatalog.Find(grp.Key);
                 if (def == null) continue;
                 if (rarity != null && def.Rarity != rarity) continue;
-                if (!string.IsNullOrEmpty(search) && !def.Id.ToLowerInvariant().Contains(search)) continue;
+                if (!string.IsNullOrEmpty(search)
+                    && !def.Id.ToLowerInvariant().Contains(search)
+                    && !_loc.Get(def.DisplayNameKey, def.Id).ToLowerInvariant().Contains(search)) continue;
 
                 var owned = grp.Value.Count;
                 var inDeck = inDeckPerDef.TryGetValue(def.Id, out var c) ? c : 0;
@@ -280,7 +285,7 @@ namespace ArcaneKingdom.UI.DeckBuilder
                 cost.style.unityTextAlign = TextAnchor.MiddleCenter;
                 row.Add(cost);
 
-                var name = new Label(def.Id);
+                var name = new Label(_loc.Get(def.DisplayNameKey, def.Id));
                 name.AddToClassList("ak-body");
                 name.style.flexGrow = 1;
                 name.style.marginLeft = 8;

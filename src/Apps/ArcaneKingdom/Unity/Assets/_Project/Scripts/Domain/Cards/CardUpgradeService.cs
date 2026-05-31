@@ -44,7 +44,7 @@ namespace ArcaneKingdom.Domain.Cards
     /// <summary>
     /// Pure Logik fuer das Karten-Leveln (Arcane_Legends_Designplan Kap. 3).
     /// LV 0->1: 100 EXP, 500 Gold. LV 5: SKILL 2 freischalten. LV 10: SKILL 3.
-    /// LV 15 MAX: +88% ATK/HP + Goldener Rahmen.
+    /// LV 15 MAX: +80% ATK/HP + Goldener Rahmen (siehe CardInstance.StatBonusMultiplier).
     /// </summary>
     public sealed class CardUpgradeService
     {

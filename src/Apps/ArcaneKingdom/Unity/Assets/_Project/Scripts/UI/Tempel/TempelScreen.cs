@@ -269,15 +269,59 @@ namespace ArcaneKingdom.UI.Tempel
                     return;
                 }
                 _sternService.Exchange(_cachedSave.Sternkarten.Inventory, cost);
-                await _save.MutateAsync(s => s, default);
+                // Belohnung als PendingClaim einreihen — wird beim naechsten Hub-Eintritt eingeloest
+                // (Karten-Token loest der HubScreen-Resolver zu einer echten Karte auf). Vorher wurden
+                // nur Sternpunkte abgebucht, ohne dass der Spieler etwas erhielt.
+                var rewardClaim = BuildExchangeClaim(optionKey);
+                await _save.MutateAsync(s =>
+                {
+                    if (rewardClaim != null) s.PendingClaims.Add(rewardClaim);
+                    return s;
+                }, default);
                 _toast.Show($"{_loc.Get("tempel.exchange.success") ?? "Eingetauscht"}: {optionKey} (-{cost} SP)", ToastKind.Success);
-
-                // TODO Phase 2: tatsaechliche Belohnung (Karte/Scrap) ins Inventar legen
             }
 
             var saveR = await _save.LoadAsync();
             if (saveR.IsSuccess && saveR.Value != null) _cachedSave = saveR.Value;
             RefreshAll();
+        }
+
+        /// <summary>
+        /// Baut den PendingClaim fuer eine Tempel-Eintausch-Option. Karten-Optionen liefern einen
+        /// Karten-Token (der HubScreen-Resolver waehlt daraus eine echte Karte); die exklusiven
+        /// Optionen liefern die konkreten Sternkarten-Tempel-Karten (star_temple.json).
+        /// </summary>
+        private static ArcaneKingdom.Domain.Save.PendingClaim? BuildExchangeClaim(string optionKey)
+        {
+            string? cardToken = optionKey switch
+            {
+                "random_2star"    => "card_random_2star",
+                "chosen_3star"    => "card_chosen_3star",
+                "exclusive_3star" => "sternenweber_astria",
+                "exclusive_4star" => "sternentiger_raj",
+                _                 => null
+            };
+            if (cardToken != null)
+                return new ArcaneKingdom.Domain.Save.PendingClaim
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Kind = ArcaneKingdom.Domain.Save.PendingClaimKind.Card,
+                    SubType = cardToken,
+                    Amount = 1,
+                    SourceKey = "star_temple",
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+            if (optionKey == "legendary_scrap")
+                return new ArcaneKingdom.Domain.Save.PendingClaim
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Kind = ArcaneKingdom.Domain.Save.PendingClaimKind.Scrap,
+                    SubType = nameof(ScrapType.Legendary),
+                    Amount = 1,
+                    SourceKey = "star_temple",
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+            return null;
         }
     }
 }

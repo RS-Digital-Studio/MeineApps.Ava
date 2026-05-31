@@ -590,7 +590,10 @@ public partial class LiveTradingService
             var fillPrice = es.Signal.TakeProfit ?? 0m;
             // Maker-Fee — Bot-platzierte Reduce-Only-LIMIT ist Maker. Anteilige Entry-Fee
             // (proportional zur geschlossenen Menge) gegen Doppel-Buchung beim TP2-Fill.
-            var entryFee = closedQty * es.EntryPrice * _makerFeeRate;
+            // Fix K: Entry-Fee haengt vom Entry-Typ ab — Market-Entry (PreferLimitOrder=false, z.B.
+            // TrendFollow) ist TAKER, nur Limit-Pullback-Entry (SK) ist Maker. Die Exit-Fee bleibt
+            // Maker (Bot-Reduce-Only-Limit). Falsche Maker-Buchung unterschaetzte sonst die Kosten.
+            var entryFee = closedQty * es.EntryPrice * (es.Signal.PreferLimitOrder ? _makerFeeRate : _takerFeeRate);
             var exitFee = closedQty * fillPrice * _makerFeeRate;
             var totalFee = entryFee + exitFee;
             var rawPnl = es.Side == Side.Buy
@@ -648,7 +651,10 @@ public partial class LiveTradingService
             if (closedQty <= 0m) closedQty = Math.Max(0m, totalEntryQty - alreadyClosedTp1);
 
             var fillPrice = es.Signal.TakeProfit ?? 0m;
-            var entryFee = closedQty * es.EntryPrice * _makerFeeRate;
+            // Fix K: Entry-Fee haengt vom Entry-Typ ab — Market-Entry (PreferLimitOrder=false, z.B.
+            // TrendFollow) ist TAKER, nur Limit-Pullback-Entry (SK) ist Maker. Die Exit-Fee bleibt
+            // Maker (Bot-Reduce-Only-Limit). Falsche Maker-Buchung unterschaetzte sonst die Kosten.
+            var entryFee = closedQty * es.EntryPrice * (es.Signal.PreferLimitOrder ? _makerFeeRate : _takerFeeRate);
             var exitFee = closedQty * fillPrice * _makerFeeRate;
             var totalFee = entryFee + exitFee;
             var rawPnl = es.Side == Side.Buy

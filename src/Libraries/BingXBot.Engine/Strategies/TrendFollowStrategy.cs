@@ -75,7 +75,8 @@ public sealed class TrendFollowStrategy : IStrategy
 
         if (!ema[i].HasValue || !atr[i].HasValue || atr[i]!.Value <= 0m
             || !adx[i].HasValue || !pdi[i].HasValue || !mdi[i].HasValue
-            || !donUp[i - 1].HasValue || !donLo[i - 1].HasValue)
+            || !donUp[i - 1].HasValue || !donLo[i - 1].HasValue
+            || !donUp[i - 2].HasValue || !donLo[i - 2].HasValue)
             return None("insufficient_data");
 
         var close = c[i].Close;
@@ -85,14 +86,21 @@ public sealed class TrendFollowStrategy : IStrategy
         var adxV = adx[i]!.Value;
         var pdiV = pdi[i]!.Value;
         var mdiV = mdi[i]!.Value;
-        var upPrev = donUp[i - 1]!.Value; // hoechstes Hoch der N Kerzen VOR der aktuellen
-        var loPrev = donLo[i - 1]!.Value;
+        // Ausbruch-Schwelle fuer die AKTUELLE Kerze: N-Hoch/Tief der Kerzen davor (bis i-1).
+        var upBreakout = donUp[i - 1]!.Value;
+        var loBreakout = donLo[i - 1]!.Value;
+        // Zustands-Schwelle fuer die VORHERIGE Kerze: N-Hoch/Tief bis i-2.
+        var upPrevState = donUp[i - 2]!.Value;
+        var loPrevState = donLo[i - 2]!.Value;
 
         bool strongTrend = adxV >= _adxMin;
 
-        // Echter Breakout-Crossover: vorherige Kerze noch im Kanal, aktuelle schliesst darueber/darunter.
-        bool breakoutUp = prevClose <= upPrev && close > upPrev;
-        bool breakoutDown = prevClose >= loPrev && close < loPrev;
+        // ECHTER Breakout-Crossover (Fix G): Vorkerze noch im Kanal (Close <= ihr N-Hoch),
+        // aktuelle Kerze schliesst ueber dem N-Hoch. Der fruehere Guard (prevClose <= donUp[i-1])
+        // war mathematisch immer wahr (donUp[i-1] >= High[i-1] >= Close[i-1]) → kein echter Crossover,
+        // sondern "Close ueber N-Hoch" bei JEDER Kerze (Re-Entry-Spam nach Exit).
+        bool breakoutUp = prevClose <= upPrevState && close > upBreakout;
+        bool breakoutDown = prevClose >= loPrevState && close < loBreakout;
 
         bool trendUp = close > emaV && pdiV > mdiV;
         bool trendDown = close < emaV && mdiV > pdiV;
@@ -105,7 +113,7 @@ public sealed class TrendFollowStrategy : IStrategy
             var tp1 = close + _tp1Rrr * risk;
             var tp2 = close + _tp2Rrr * risk;
             return new SignalResult(Signal.Long, Confidence(adxV), close, sl, tp1,
-                $"TrendFollow Long (ADX {adxV:F0}, Donchian-Breakout > {upPrev:F4})",
+                $"TrendFollow Long (ADX {adxV:F0}, Donchian-Breakout > {upBreakout:F4})",
                 TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV);
         }
 
@@ -117,7 +125,7 @@ public sealed class TrendFollowStrategy : IStrategy
             var tp1 = close - _tp1Rrr * risk;
             var tp2 = close - _tp2Rrr * risk;
             return new SignalResult(Signal.Short, Confidence(adxV), close, sl, tp1,
-                $"TrendFollow Short (ADX {adxV:F0}, Donchian-Breakout < {loPrev:F4})",
+                $"TrendFollow Short (ADX {adxV:F0}, Donchian-Breakout < {loBreakout:F4})",
                 TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV);
         }
 

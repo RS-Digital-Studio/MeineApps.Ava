@@ -472,6 +472,12 @@ public abstract class TradingServiceBase : IDisposable
                     _lastDailyResetDate = today;
                     Interlocked.Exchange(ref _tradesToday, 0);
                     Interlocked.Exchange(ref _consecutiveLosses, 0);
+                    // KRITISCH: Den RiskManager-eigenen Loss-Counter MIT-zuruecksetzen. Ohne das bleibt
+                    // RiskManager.CurrentConsecutiveLosses bei >= LossStreakPauseAtCount stehen →
+                    // GetPositionScalingFactor liefert 0 → kein Trade → der Counter wird nie ueber einen
+                    // Win zurueckgesetzt → selbsterhaltende Dauerpause (genau die SK-Falle vom 17.05.).
+                    // ResetDailyStats() selbst fasst den Counter nicht an (nur _dailyPnl).
+                    _riskManager?.SetConsecutiveLosses(0);
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
                         $"{LogPrefix}Tages-Drawdown + Trade-Counter + Verlustserie zurückgesetzt (neuer Tag)"));
                 }

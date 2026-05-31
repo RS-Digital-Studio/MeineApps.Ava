@@ -61,9 +61,12 @@ public class BacktestEngineTests
     }
 
     [Fact]
-    public async Task Run_EmptyData_ShouldGenerateDemoAndReturnReport()
+    public async Task Run_EmptyData_WithRealDataSource_ShouldReturnEmptyReportNotDemo()
     {
-        // Wenn keine Daten vom Exchange kommen, generiert die Engine Demo-Candles
+        // Fix C: Bei einer echten Datenquelle (hier IExchangeClient-Mock) und leeren Klines
+        // wird der Run als "keine Daten" uebersprungen — KEINE synthetischen Demo-Candles.
+        // (Demo-Candles wuerden einen Sinus-Random-Walk erzeugen, den ein Trendfolger trivial
+        // gewinnt → genau das machte den OOS-2024-Lauf mit ZEC-Phantom-Trades wertlos.)
         var exchangeClient = Substitute.For<IExchangeClient>();
         exchangeClient.GetKlinesAsync(Arg.Any<string>(), Arg.Any<TimeFrame>(), Arg.Any<int>())
             .Returns(new List<Candle>());
@@ -79,9 +82,10 @@ public class BacktestEngineTests
             "BTC-USDT", TimeFrame.H1,
             DateTime.UtcNow.AddDays(-7), DateTime.UtcNow, new BacktestSettings());
 
-        // Report sollte existieren (Demo-Candles wurden generiert)
+        // Leerer Report (keine Trades, keine Equity-Kurve) statt Demo-Candle-Phantom-Statistik.
         report.Should().NotBeNull();
-        report.EquityCurve.Should().NotBeEmpty();
+        report.TotalTrades.Should().Be(0);
+        report.EquityCurve.Should().BeEmpty();
     }
 
     [Fact]

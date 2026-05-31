@@ -72,9 +72,21 @@ public class BacktestEngine
         // 1. Historische Daten laden
         var allCandles = await LoadHistoricalDataAsync(symbol, timeFrame, from, to).ConfigureAwait(false);
 
-        // Wenn keine Daten: Demo-Candles generieren
+        // Wenn keine Daten: Demo-Candles NUR generieren wenn es keine echte Datenquelle gibt
+        // (reiner Test-Kontext ohne PublicClient/ExchangeClient). Sobald eine echte Datenquelle
+        // konfiguriert ist (Lab/Live-Backtest mit _publicClient), sind leere Klines ein echtes
+        // "Symbol nicht/noch nicht gelistet"-Signal — KEINE synthetischen Demo-Candles, sonst flutet
+        // ein deterministischer Sinus-Random-Walk (den ein Trendfolger trivial gewinnt) die Statistik.
+        // Genau das machte den OOS-2024-Lauf wertlos (ZEC ohne 2024-Daten → 311 Phantom-Trades).
+        var hasRealDataSource = _publicClient != null || _dataSource != null;
         if (allCandles.Count == 0)
         {
+            if (hasRealDataSource)
+            {
+                _logger.LogWarning("Keine echten Klines fuer {Symbol} {TF} im Zeitraum {From}..{To} — Run uebersprungen (kein Demo-Fallback bei echter Datenquelle).",
+                    symbol, timeFrame, from.ToString("yyyy-MM-dd"), to.ToString("yyyy-MM-dd"));
+                return new PerformanceReport();
+            }
             _logger.LogWarning("Keine historischen Daten verfügbar, generiere Demo-Daten");
             var candleDuration = TimeFrameHelper.ToDuration(timeFrame);
             var duration = to - from;

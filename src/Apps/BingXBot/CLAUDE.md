@@ -7,7 +7,7 @@ USDT-margined Perpetual Futures (Crypto + TradFi-Perps via NC-Prefix).
 | Aspekt | Wert |
 |--------|------|
 | Topologie | Pi-Server (Engine, 24/7) + Desktop/Android Remote-Clients |
-| Strategie | SK-System (Sequenz-Konzept nach Stefan Kassing, Multi-TF Standalone) |
+| Strategie | **TrendFollow** (Donchian-Breakout, Live-Default seit 31.05.2026) + SK-System (Reversal, optional) — Multi-TF Standalone |
 | Exchange | BingX Perpetual Futures (USDT-M) |
 | Pi-Server | `steuerung@raspberrypi.local` (systemd-Service `bingxbot.service`) |
 
@@ -304,11 +304,37 @@ Aus `LiveTradingService` extrahierte pure-function- und Manager-Klassen:
 
 ---
 
+## Strategien (`StrategyFactory`)
+
+Alle Strategien implementieren `IStrategy` (`Evaluate(MarketContext) → SignalResult`). Die
+Order-Pipeline (Scanner → Evaluate → RiskManager → Order) ist strategie-agnostisch; die aktive
+Strategie wählt `BotSettings.LastStrategyName`. Empirisch verglichen über das Backtest-Lab
+(`tools/BingXBacktestLab`) auf echten BingX-Klines.
+
+| Strategie | Typ | Backtest-PF (Crypto) | Status |
+|-----------|-----|----------------------|--------|
+| **TrendFollow** | Donchian-Breakout in Trend-Richtung (EMA + ADX/DMI), Market-Entry, ATR-SL, RRR 1.5/3.0 | **2.2–2.5** | **Live-Default** |
+| TrendFollow-Fast / -Wide / -Strong | TrendFollow-Varianten (Parameter) | 1.8–3.7 | optional |
+| SkTrend | SK-Sequenz-Trigger + Trend-Filter + Market-Entry + ATR-SL ("reparierte SK") | ~1.0–1.35 (OOS verlierend) | nicht empfohlen |
+| SK-System | Reversal nach Stefan Kassing (Limit-Entry in Korrektur-Zone) | 1.2–1.4 | optional, **live unrentabel** |
+
+**Warum TrendFollow Live-Default ist:** Das SK-Reversal-System lieferte live nur ~12 % WinRate /
+PF 0.11 (enge SL ~0.3 %, RRR 1.2, kaputter Short-Pfad, Loss-Streak-Pause → Dauerstillstand).
+TrendFollow handelt **mit** dem Markt, weite ATR-SL, hohes RRR, **Market-Entry** (deshalb
+backtest-treu — minimaler Backtest-Live-Gap, im Gegensatz zu SKs Limit-Entries). Profitabel auf
+Long UND Short, robust über zwei Marktzyklen, und **umgeht den TradFi-Pip-Bug** (ATR statt fixe Pips).
+H4 hat durchweg den besten PF, H1 mehr Trades. Details + Lab → `tools/BingXBacktestLab/CLAUDE.md`.
+
+`RuntimeState` (TradesToday, ConsecutiveLosses) wird mit dem Strategie-Namen getaggt:
+`LiveTradingManager` setzt die Loss-Streak bei Strategiewechsel zurück (eine frische Strategie
+erbt nicht die Loss-Pause der alten).
+
 ## SK-System (Sequenz-Konzept Strategie)
 
 Implementierung von Stefan Kassings Sequenz-Konzept (SK-Buch + Algorithmische Strukturpunkte
 + Technische Spezifikation, alle drei DOCX in `src/Apps/BingXBot/`). Multi-TF Standalone
-seit Frühjahr 2026.
+seit Frühjahr 2026. **Hinweis:** Seit 31.05.2026 nicht mehr Live-Default (siehe Strategien-Tabelle oben) —
+bleibt als optionale, vollständig implementierte Strategie erhalten.
 
 ### Sequenz-Phasen (`SmState`)
 

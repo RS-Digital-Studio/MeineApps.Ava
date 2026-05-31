@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.sturmzitadelle.name
   index: 6
   themeElement: 5
+  themeElements: 
   recommendedCounterElement: 3
+  recommendedCounterElements: 
   recommendedPlayerLevel: 65
   backgroundAddressableKey: Worlds.6/bg_sturmzitadelle
   musicAddressableKey: Audio.BGM/music_sturmzitadelle

@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.drachenfeste.name
   index: 10
   themeElement: 0
+  themeElements: 000000000100000002000000030000000400000005000000
   recommendedCounterElement: 1
+  recommendedCounterElements: 
   recommendedPlayerLevel: 130
   backgroundAddressableKey: Worlds.10/bg_drachenfeste
   musicAddressableKey: Audio.BGM/music_drachenfeste

@@ -30,6 +30,7 @@ namespace ArcaneKingdom.UI.WorldMap
         private readonly WorldCatalogService _worldCatalog;
         private readonly ToastService _toast;
         private readonly ModalContext _modalContext;
+        private readonly ILocalizationService _loc;
 
         // Header
         private Button _backBtn = null!;
@@ -75,7 +76,8 @@ namespace ArcaneKingdom.UI.WorldMap
                               ArcaneKingdom.Domain.World.PrestigeService prestige,
                               ArcaneKingdom.UI.Modals.PrestigeUpgradeContext prestigeCtx,
                               ArcaneKingdom.UI.Modals.DifficultyPickerContext difficultyCtx,
-                              UIAssetService uiAssets)
+                              UIAssetService uiAssets,
+                              ILocalizationService loc)
         {
             _screenManager = screenManager;
             _save = save;
@@ -86,6 +88,7 @@ namespace ArcaneKingdom.UI.WorldMap
             _prestigeCtx = prestigeCtx;
             _difficultyCtx = difficultyCtx;
             _uiAssets = uiAssets;
+            _loc = loc;
         }
 
         protected override void BindElements(VisualElement root)
@@ -151,7 +154,11 @@ namespace ArcaneKingdom.UI.WorldMap
             tab.style.borderTopRightRadius = 8;
             tab.style.borderBottomLeftRadius = 8;
             tab.style.borderBottomRightRadius = 8;
-            tab.style.backgroundColor = ElementBg(world.ThemeElement);
+            // Mixed-Welten mit allen Elementen (W9/W10) erhalten einen kosmisch-violetten Ton;
+            // sonst der Primaer-Element-Ton (W8 bleibt Wasser-getoent).
+            tab.style.backgroundColor = world.IsAllElements
+                ? new StyleColor(new Color(0.28f, 0.20f, 0.42f))
+                : ElementBg(world.ThemeElement);
 
             var idx = new Label($"W{world.Index}");
             idx.style.fontSize = 22;
@@ -172,7 +179,7 @@ namespace ArcaneKingdom.UI.WorldMap
         {
             _activeWorld = world;
             _selectedNode = null;
-            _currentWorldName.text = NicifyId(world.Id);
+            _currentWorldName.text = _loc.Get(world.DisplayNameKey, world.Id);
 
             // Welt-Background pro aktiver Welt (z.B. Worlds/elderwald.png, Worlds/vulkanhort.png)
             _uiAssets.ApplyWorldBackground(Root, world.Id);
@@ -180,8 +187,19 @@ namespace ArcaneKingdom.UI.WorldMap
             // Aktuelle Prestige-Stufe der Welt
             var stufe = _saveCached?.Prestige?.Get(world.Id) ?? PrestigeStufe.Normal;
             var stufeText = stufe == PrestigeStufe.Normal ? string.Empty : $"  -  Prestige {stufe}";
+
+            // Element-Anzeige Mixed-faehig (Designplan v4 Kap. 3.5): W8 "Wasser / Dunkel",
+            // W9/W10 "Alle Elemente"; Counter "Vielseitig" bei leerer Counter-Liste.
+            var elementText = world.IsAllElements
+                ? _loc.Get("world.element.all", "Alle Elemente")
+                : string.Join(" / ", world.ThemeElements.Select(LocElement));
+            var counterText = world.RecommendedCounterElements.Count == 0
+                ? _loc.Get("world.counter.versatile", "Vielseitig")
+                : string.Join(" / ", world.RecommendedCounterElements.Select(LocElement));
             _currentWorldMeta.text =
-                $"Element: {world.ThemeElement}  -  Empfohlene Stufe: {world.RecommendedPlayerLevel}{stufeText}";
+                $"{_loc.Get("world.element.label", "Element")}: {elementText}  -  " +
+                $"{_loc.Get("world.counter.label", "Empf. Counter")}: {counterText}  -  " +
+                $"{_loc.Get("world.recommendedlevel.label", "Empf. Stufe")}: {world.RecommendedPlayerLevel}{stufeText}";
 
             BuildNodesGrid();
             HideDetail();
@@ -488,6 +506,17 @@ namespace ArcaneKingdom.UI.WorldMap
             var maxStars = _worldCatalog.AllWorlds.Sum(w => w.Nodes.Count * 4);
             _totalStarsLabel.text = $"{totalStars} / {maxStars}";
         }
+
+        /// <summary>Lokalisierter Element-Name (fuer die Mixed-Element-Welt-Anzeige, Designplan v4 Kap. 3.5).</summary>
+        private string LocElement(ArcaneKingdom.Domain.Cards.Element e) => e switch
+        {
+            ArcaneKingdom.Domain.Cards.Element.Feuer  => _loc.Get("element.feuer",  "Feuer"),
+            ArcaneKingdom.Domain.Cards.Element.Wasser => _loc.Get("element.wasser", "Wasser"),
+            ArcaneKingdom.Domain.Cards.Element.Natur  => _loc.Get("element.natur",  "Natur"),
+            ArcaneKingdom.Domain.Cards.Element.Erde   => _loc.Get("element.erde",   "Erde"),
+            ArcaneKingdom.Domain.Cards.Element.Dunkel => _loc.Get("element.dunkel", "Dunkel"),
+            _                                          => _loc.Get("element.licht",  "Licht")
+        };
 
         private static StyleColor ElementBg(ArcaneKingdom.Domain.Cards.Element e) => e switch
         {

@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.schattenlande.name
   index: 5
   themeElement: 4
+  themeElements: 
   recommendedCounterElement: 5
+  recommendedCounterElements: 
   recommendedPlayerLevel: 50
   backgroundAddressableKey: Worlds.5/bg_schattenlande
   musicAddressableKey: Audio.BGM/music_schattenlande

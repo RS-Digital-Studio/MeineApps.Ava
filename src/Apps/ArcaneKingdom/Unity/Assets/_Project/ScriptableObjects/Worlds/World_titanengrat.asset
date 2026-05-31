@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.titanengrat.name
   index: 7
   themeElement: 3
+  themeElements: 
   recommendedCounterElement: 4
+  recommendedCounterElements: 
   recommendedPlayerLevel: 80
   backgroundAddressableKey: Worlds.7/bg_titanengrat
   musicAddressableKey: Audio.BGM/music_titanengrat

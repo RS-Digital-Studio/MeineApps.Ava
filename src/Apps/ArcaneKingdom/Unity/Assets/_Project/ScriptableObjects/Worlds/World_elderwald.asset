@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.elderwald.name
   index: 1
   themeElement: 2
+  themeElements: 
   recommendedCounterElement: 0
+  recommendedCounterElements: 
   recommendedPlayerLevel: 1
   backgroundAddressableKey: Worlds.1/bg_elderwald
   musicAddressableKey: Audio.BGM/music_elderwald

@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.galaxy_wald.name
   index: 9
   themeElement: 5
+  themeElements: 050000000000000001000000020000000300000004000000
   recommendedCounterElement: 4
+  recommendedCounterElements: 
   recommendedPlayerLevel: 110
   backgroundAddressableKey: Worlds.9/bg_galaxy_wald
   musicAddressableKey: Audio.BGM/music_galaxy_wald

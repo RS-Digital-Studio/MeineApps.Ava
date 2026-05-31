@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.vulkanhort.name
   index: 3
   themeElement: 0
+  themeElements: 
   recommendedCounterElement: 1
+  recommendedCounterElements: 
   recommendedPlayerLevel: 18
   backgroundAddressableKey: Worlds.3/bg_vulkanhort
   musicAddressableKey: Audio.BGM/music_vulkanhort

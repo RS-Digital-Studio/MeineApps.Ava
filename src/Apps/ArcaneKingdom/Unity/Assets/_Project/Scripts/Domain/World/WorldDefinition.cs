@@ -19,8 +19,13 @@ namespace ArcaneKingdom.Domain.World
         [SerializeField] private int index = 1;                 // 1–10
 
         [Header("Thema (Designplan v4 Kap. 3.5)")]
-        [SerializeField] private Element themeElement = Element.Natur;
-        [SerializeField] private Element recommendedCounterElement = Element.Feuer;
+        [SerializeField] private Element themeElement = Element.Natur;                 // Primaer-/Dominant-Element (UI-Akzent)
+        [Tooltip("Alle Elemente dieser Welt (Designplan v4 Kap. 3.5). Mixed: W8 Wasser+Dunkel, W9/W10 alle 6. " +
+                 "Single-Element-Welten: leer lassen — dann zaehlt nur themeElement.")]
+        [SerializeField] private List<Element> themeElements = new();
+        [SerializeField] private Element recommendedCounterElement = Element.Feuer;    // Primaer-Counter
+        [Tooltip("Alle empfohlenen Counter-Elemente. Mixed: W8 Natur+Licht. Single/Vielseitig: leer lassen.")]
+        [SerializeField] private List<Element> recommendedCounterElements = new();
         [SerializeField, Min(1)] private int recommendedPlayerLevel = 1;
         [SerializeField] private string backgroundAddressableKey = string.Empty;
         [SerializeField] private string musicAddressableKey = string.Empty;
@@ -51,6 +56,24 @@ namespace ArcaneKingdom.Domain.World
         public int Index => index;
         public Element ThemeElement => themeElement;
         public Element RecommendedCounterElement => recommendedCounterElement;
+
+        /// <summary>Alle Elemente der Welt (Designplan v4 Kap. 3.5). Liefert IMMER mind. das
+        /// Primaer-Element (Single-Welten). Reihenfolge: Primaer zuerst.</summary>
+        public IReadOnlyList<Element> ThemeElements =>
+            themeElements is { Count: > 0 } ? themeElements : new[] { themeElement };
+
+        /// <summary>Alle empfohlenen Counter-Elemente. Leer + Mixed-Welt ("Vielseitig") -> leere Liste,
+        /// sonst Fallback auf Primaer-Counter.</summary>
+        public IReadOnlyList<Element> RecommendedCounterElements =>
+            recommendedCounterElements is { Count: > 0 }
+                ? recommendedCounterElements
+                : (themeElements is { Count: > 0 } ? System.Array.Empty<Element>() : new[] { recommendedCounterElement });
+
+        /// <summary>True, wenn die Welt mehrere Elemente fuehrt (W8, W9, W10).</summary>
+        public bool IsMixedElement => ThemeElements.Count > 1;
+
+        /// <summary>True, wenn die Welt alle 6 Elemente fuehrt (W9 Galaxy Wald, W10 Drachenfeste).</summary>
+        public bool IsAllElements => ThemeElements.Count >= System.Enum.GetValues(typeof(Element)).Length;
         public int RecommendedPlayerLevel => recommendedPlayerLevel;
         public string BackgroundAddressableKey => backgroundAddressableKey;
         public string MusicAddressableKey => musicAddressableKey;

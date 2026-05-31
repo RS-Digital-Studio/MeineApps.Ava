@@ -493,6 +493,15 @@ namespace ArcaneKingdom.EditorTools.Data
                 prop.GetArrayElementAtIndex(i).stringValue = list[i];
         }
 
+        private static void SetEnumList(SerializedObject sObj, string propName, List<Element>? values)
+        {
+            var prop = sObj.FindProperty(propName);
+            var list = values ?? new List<Element>();
+            prop.arraySize = list.Count;
+            for (var i = 0; i < list.Count; i++)
+                prop.GetArrayElementAtIndex(i).enumValueIndex = (int)list[i];
+        }
+
         private static void ApplyRune(RuneDefinition so, RuneDto dto)
         {
             var sObj = new SerializedObject(so);
@@ -514,7 +523,9 @@ namespace ArcaneKingdom.EditorTools.Data
             sObj.FindProperty("displayNameKey").stringValue = dto.displayNameKey;
             sObj.FindProperty("index").intValue = dto.index;
             sObj.FindProperty("themeElement").enumValueIndex = (int)dto.themeElement;
+            SetEnumList(sObj, "themeElements", dto.themeElements);
             sObj.FindProperty("recommendedCounterElement").enumValueIndex = (int)dto.recommendedCounterElement;
+            SetEnumList(sObj, "recommendedCounterElements", dto.recommendedCounterElements);
             sObj.FindProperty("recommendedPlayerLevel").intValue = dto.recommendedPlayerLevel;
             sObj.FindProperty("backgroundAddressableKey").stringValue = dto.backgroundAddressableKey ?? string.Empty;
             sObj.FindProperty("musicAddressableKey").stringValue = dto.musicAddressableKey ?? string.Empty;
@@ -637,7 +648,9 @@ namespace ArcaneKingdom.EditorTools.Data
             public string displayNameKey = string.Empty;
             public int index = 1;
             public Element themeElement = Element.Natur;
+            public List<Element>? themeElements;                 // Designplan v4 Kap. 3.5 (Mixed-Welten, optional)
             public Element recommendedCounterElement = Element.Feuer;
+            public List<Element>? recommendedCounterElements;    // optional
             public int recommendedPlayerLevel = 1;
             public string? backgroundAddressableKey;
             public string? musicAddressableKey;

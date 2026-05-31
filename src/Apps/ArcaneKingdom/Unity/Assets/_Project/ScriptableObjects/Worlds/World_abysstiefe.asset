@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.abysstiefe.name
   index: 8
   themeElement: 1
+  themeElements: 0100000004000000
   recommendedCounterElement: 2
+  recommendedCounterElements: 0200000005000000
   recommendedPlayerLevel: 95
   backgroundAddressableKey: Worlds.8/bg_abysstiefe
   musicAddressableKey: Audio.BGM/music_abysstiefe

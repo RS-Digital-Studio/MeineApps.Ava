@@ -163,6 +163,8 @@ Implementierung: `Domain/Battle/ElementMatchup.cs::GetMultiplier(Element attacke
 
 Jede Welt hat ein dominantes Element (siehe Kap. 4). Gegner nutzen vorwiegend dieses Element. Der Spieler muss sein Deck anpassen.
 
+W1–W7 führen genau ein dominantes Element. **W8 (Abysstiefe)** führt **Wasser + Dunkel**, **W9/W10 (Galaxy Wald, Drachenfeste)** führen **alle sechs Elemente** (das Primär-Element dient nur dem UI-Akzent). Datenmodell: `WorldDefinition.ThemeElements` (Liste, Primär zuerst) + `ThemeElement` (Primär-Fallback für Single-Welten) + `RecommendedCounterElements` (leer bei „Vielseitig"-Welten W9/W10).
+
 ---
 
 ## 4. Welten von Aethera
@@ -199,9 +201,9 @@ Daten: `Unity/Assets/_Project/Resources/Data/story_fragments.json`.
 | 5 | Schattenlande | Dunkel | Dämonenkönigin Lilith | 50 | Schattenriss | Grimmfang (Tiergeist) |
 | 6 | Sturmzitadelle | Licht | Sturmadler Aethon | 65 | Sternenfeuer | Königin Sera |
 | 7 | Titanengrat | Erde | Kristalldrache Diamara | 80 | Urkern | General Dorn |
-| 8 | Abysstiefe | Wasser | Jormungand (Weltenschlange) | 95 | Gezeitenkern | Lumis (Twist-Revelation!) |
-| 9 | Galaxy Wald | Licht (alle) | Selene (oder Schatten-Doppelgänger) | 110 | (Dimensionaler Raum) | Aetherius-Geist |
-| 10 | Drachenfeste | Feuer (alle) | **Aetherius** (oder Nythragor-Erlöst-Ende) | 130 | Finale | Nythragor selbst |
+| 8 | Abysstiefe | **Wasser/Dunkel** | Jormungand (Weltenschlange) | 95 | Gezeitenkern | Lumis (Twist-Revelation!) |
+| 9 | Galaxy Wald | **Alle** (Primär Licht) | Selene (oder Schatten-Doppelgänger) | 110 | (Dimensionaler Raum) | Aetherius-Geist |
+| 10 | Drachenfeste | **Alle** (Primär Feuer) | **Aetherius** (oder Nythragor-Erlöst-Ende) | 130 | Finale | Nythragor selbst |
 
 Welt-Daten: `Unity/Assets/_Project/Resources/Data/worlds.json`.
 

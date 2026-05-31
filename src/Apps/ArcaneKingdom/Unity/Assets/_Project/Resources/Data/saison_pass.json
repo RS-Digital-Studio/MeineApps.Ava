@@ -4,10 +4,14 @@
   "startedAtUtc": "2026-06-01T00:00:00Z",
   "endsAtUtc": "2026-07-01T00:00:00Z",
   "totalTiers": 30,
-  "xpPerTier": 1167,
+  "xpThresholds": [
+    0, 500, 1000, 1500, 2000, 2500, 3400, 4300, 5200, 6100, 7000,
+    8000, 9000, 10000, 11000, 12000, 13200, 14400, 15600, 16800, 18000,
+    19400, 20800, 22200, 23600, 25000, 27000, 29000, 31000, 33000, 35000
+  ],
   "hardCapTier": 30,
   "premiumPriceDiamonds": 500,
-  "_comment": "Designplan v4 Oekosystem Kap. 4: 30 Stufen ueber 30 Tage, 35.000 EXP gesamt, 500 Diamanten Premium-Track. Stufe 15 = 3* Saison-Karte (Free), Stufe 30 = 4* Premium-Saison-Karte.",
+  "_comment": "Oekosystem v4 Kap. 4.1: 30 Stufen / 30 Tage. Non-lineare EXP-Kurve, kumulative Schwellen je Stufe. 6 Meilensteine 5/10/15/20/25/30 = 2500/7000/12000/18000/25000/35000 EXP; Stufen dazwischen stueckweise-linear interpoliert. Track-unabhaengig — Premium schaltet nur Zusatz-Belohnungen frei.",
   "freeTrack": [
     { "tier": 5,  "rewardKind": "Currency", "subType": "Gold",          "amount": 5000 },
     { "tier": 5,  "rewardKind": "Scrap",    "subType": "Common",        "amount": 2 },

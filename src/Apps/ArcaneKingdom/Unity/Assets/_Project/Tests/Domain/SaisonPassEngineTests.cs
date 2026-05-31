@@ -78,5 +78,102 @@ namespace ArcaneKingdom.Domain.Tests
             var def = NewDef();
             Assert.AreEqual(0, SaisonPassEngine.TierForXp(-100, def));
         }
+
+        // ============================================================
+        // Non-lineare Kurve (Oekosystem v4 Kap. 4.1) — K7
+        // ============================================================
+
+        /// <summary>Definition mit der echten non-linearen Saison-1-Kurve (31 kumulative Schwellen).</summary>
+        private static SaisonPassDefinition NewCurveDef() => new()
+        {
+            Id = "curve",
+            Number = 1,
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.AddDays(30),
+            TotalTiers = 30,
+            XpPerTier = 1167,
+            HardCapTier = 30,
+            XpThresholds =
+            {
+                0, 500, 1000, 1500, 2000, 2500, 3400, 4300, 5200, 6100, 7000,
+                8000, 9000, 10000, 11000, 12000, 13200, 14400, 15600, 16800, 18000,
+                19400, 20800, 22200, 23600, 25000, 27000, 29000, 31000, 33000, 35000
+            }
+        };
+
+        [Test]
+        public void KurveMeilensteineExakt()
+        {
+            var def = NewCurveDef();
+            Assert.AreEqual(4, SaisonPassEngine.TierForXp(2499, def));
+            Assert.AreEqual(5, SaisonPassEngine.TierForXp(2500, def));
+            Assert.AreEqual(10, SaisonPassEngine.TierForXp(7000, def));
+            Assert.AreEqual(15, SaisonPassEngine.TierForXp(12000, def));
+            Assert.AreEqual(20, SaisonPassEngine.TierForXp(18000, def));
+            Assert.AreEqual(25, SaisonPassEngine.TierForXp(25000, def));
+            Assert.AreEqual(30, SaisonPassEngine.TierForXp(35000, def));
+        }
+
+        [Test]
+        public void KurveZwischenstufenUndCap()
+        {
+            var def = NewCurveDef();
+            Assert.AreEqual(0, SaisonPassEngine.TierForXp(499, def));
+            Assert.AreEqual(1, SaisonPassEngine.TierForXp(500, def));
+            Assert.AreEqual(6, SaisonPassEngine.TierForXp(3400, def));
+            Assert.AreEqual(29, SaisonPassEngine.TierForXp(34999, def));
+            Assert.AreEqual(30, SaisonPassEngine.TierForXp(999999, def));
+        }
+
+        [Test]
+        public void KurveXpRemaining()
+        {
+            var def = NewCurveDef();
+            Assert.AreEqual(500, SaisonPassEngine.XpRemainingToNextTier(0, def));
+            Assert.AreEqual(900, SaisonPassEngine.XpRemainingToNextTier(2500, def));
+            Assert.AreEqual(0, SaisonPassEngine.XpRemainingToNextTier(35000, def));
+        }
+
+        [Test]
+        public void KurveXpForTierUndMaxXp()
+        {
+            var def = NewCurveDef();
+            Assert.AreEqual(0, SaisonPassEngine.XpForTier(0, def));
+            Assert.AreEqual(2500, SaisonPassEngine.XpForTier(5, def));
+            Assert.AreEqual(35000, SaisonPassEngine.XpForTier(30, def));
+            Assert.AreEqual(35000, SaisonPassEngine.MaxXp(def));
+        }
+
+        [Test]
+        public void KurveProgressInTier()
+        {
+            var def = NewCurveDef();
+            Assert.AreEqual((0, 900), SaisonPassEngine.ProgressInTier(2500, def));
+            Assert.AreEqual((500, 900), SaisonPassEngine.ProgressInTier(3000, def));
+            Assert.AreEqual((0, 500), SaisonPassEngine.ProgressInTier(0, def));
+            Assert.AreEqual((0, 0), SaisonPassEngine.ProgressInTier(35000, def));
+        }
+
+        [Test]
+        public void KurveIstMonoton()
+        {
+            var def = NewCurveDef();
+            var prev = 0;
+            for (var xp = 0; xp <= 35000; xp += 100)
+            {
+                var tier = SaisonPassEngine.TierForXp(xp, def);
+                Assert.GreaterOrEqual(tier, prev, $"Tier darf bei xp={xp} nicht sinken.");
+                prev = tier;
+            }
+        }
+
+        [Test]
+        public void LegacyFallbackOhneSchwellen()
+        {
+            // Def ohne XpThresholds -> lineare Berechnung (Abwaerts-Kompatibilitaet).
+            var def = NewDef();
+            Assert.AreEqual(2, SaisonPassEngine.TierForXp(2000, def));
+            Assert.AreEqual(1000, SaisonPassEngine.XpRemainingToNextTier(1000, def));
+        }
     }
 }

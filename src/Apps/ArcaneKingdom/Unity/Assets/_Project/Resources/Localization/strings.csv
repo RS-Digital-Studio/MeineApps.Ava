@@ -36,12 +36,20 @@ ui.battle_won,Sieg!,Victory!,¡Victoria!,Victoire !,Vittoria!,Vitória!
 ui.battle_lost,Niederlage!,Defeat!,¡Derrota!,Défaite !,Sconfitta!,Derrota!
 ui.battle_draw,Unentschieden!,Draw!,¡Empate!,Égalité !,Pareggio!,Empate!
 ui.season_ends_in,Saison endet in {0},Season ends in {0},La temporada termina en {0},La saison se termine dans {0},La stagione finisce tra {0},A temporada termina em {0}
+ui.season_days_left,{0} Tage,{0} days,{0} días,{0} jours,{0} giorni,{0} dias
+ui.season_pass_max,MAX,MAX,MAX,MAX,MAX,MAX
 ui.guild_create_cost,Gründung: {0} Gold,Foundation: {0} Gold,Fundación: {0} de oro,Fondation : {0} or,Fondazione: {0} oro,Fundação: {0} de ouro
 element.natur,Natur,Nature,Naturaleza,Nature,Natura,Natureza
 element.feuer,Feuer,Fire,Fuego,Feu,Fuoco,Fogo
 element.wasser,Wasser,Water,Agua,Eau,Acqua,Água
 element.licht,Licht,Light,Luz,Lumière,Luce,Luz
 element.dunkel,Dunkel,Dark,Oscuridad,Ténèbres,Oscurità,Trevas
+element.erde,Erde,Earth,Tierra,Terre,Terra,Terra
+world.element.label,Element,Element,Elemento,Élément,Elemento,Elemento
+world.element.all,Alle Elemente,All Elements,Todos los elementos,Tous les éléments,Tutti gli elementi,Todos os elementos
+world.counter.label,Empf. Counter,Rec. Counter,Counter rec.,Contre rec.,Contro consigliato,Contador rec.
+world.counter.versatile,Vielseitig,Versatile,Versátil,Polyvalent,Versatile,Versátil
+world.recommendedlevel.label,Empf. Stufe,Rec. Level,Nivel rec.,Niveau rec.,Livello cons.,Nível rec.
 race.koenigreich,Königreich,Kingdom,Reino,Royaume,Regno,Reino
 race.demonist,Demonist,Demonist,Demonista,Démoniste,Demonista,Demonista
 race.elfe,Elfe,Elf,Elfo,Elfe,Elfo,Elfo

@@ -54,7 +54,7 @@ namespace ArcaneKingdom.Game.SaisonPass
             {
                 var current = GetXp(save);
                 beforeTier = SaisonPassEngine.TierForXp(current, _activeSaison);
-                var newXp = Math.Min(current + xp, _activeSaison.HardCapTier * _activeSaison.XpPerTier);
+                var newXp = Math.Min(current + xp, SaisonPassEngine.MaxXp(_activeSaison));
                 save.SaisonPassXp[_activeSaison.Id] = newXp;
                 afterTier = SaisonPassEngine.TierForXp(newXp, _activeSaison);
                 earned = SaisonPassEngine.RewardsForTierRange(_activeSaison, beforeTier, afterTier, premiumActive);

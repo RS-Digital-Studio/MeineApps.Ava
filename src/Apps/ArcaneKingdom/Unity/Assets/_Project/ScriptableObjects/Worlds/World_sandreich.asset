@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.sandreich.name
   index: 2
   themeElement: 3
+  themeElements: 
   recommendedCounterElement: 4
+  recommendedCounterElements: 
   recommendedPlayerLevel: 8
   backgroundAddressableKey: Worlds.2/bg_sandreich
   musicAddressableKey: Audio.BGM/music_sandreich

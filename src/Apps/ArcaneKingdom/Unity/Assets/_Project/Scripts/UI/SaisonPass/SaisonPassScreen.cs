@@ -1,8 +1,11 @@
 #nullable enable
+using System;
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Domain.Player;
+using ArcaneKingdom.Domain.SaisonPass;
 using ArcaneKingdom.Game.Artwork;
+using ArcaneKingdom.Game.SaisonPass;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -11,17 +14,17 @@ using UnityEngine.UIElements;
 namespace ArcaneKingdom.UI.SaisonPass
 {
     /// <summary>
-    /// Saison-Pass mit Free + Premium Track. 30 Tiers, je 1000 XP. Premium-Upsell-Banner
-    /// wenn noch nicht gekauft.
+    /// Saison-Pass mit Free + Premium Track. 30 Stufen, non-lineare EXP-Kurve
+    /// (Oekosystem v4 Kap. 4.1, Schwellen aus <see cref="SaisonPassDefinition.XpThresholds"/>).
+    /// Premium-Upsell-Banner wenn noch nicht gekauft.
     /// </summary>
     public sealed class SaisonPassScreen : ScreenBase
     {
-        private const int MaxTier = 30;
-        private const int XpPerTier = 1000;
-
         private readonly ScreenManager _screenManager;
         private readonly ISaveService<PlayerSave> _save;
         private readonly ToastService _toast;
+        private readonly SaisonPassService _saisonPass;
+        private readonly ILocalizationService _loc;
 
         private Button _backBtn = null!;
         private Label _daysLeft = null!;
@@ -39,12 +42,16 @@ namespace ArcaneKingdom.UI.SaisonPass
 
         public SaisonPassScreen(ScreenManager screenManager,
                                 ISaveService<PlayerSave> save, ToastService toast,
-                                UIAssetService uiAssets)
+                                UIAssetService uiAssets,
+                                SaisonPassService saisonPass,
+                                ILocalizationService loc)
         {
             _screenManager = screenManager;
             _save = save;
             _toast = toast;
             _uiAssets = uiAssets;
+            _saisonPass = saisonPass;
+            _loc = loc;
         }
 
         protected override void BindElements(VisualElement root)
@@ -69,27 +76,38 @@ namespace ArcaneKingdom.UI.SaisonPass
             if (!result.IsSuccess || result.Value == null) return;
             var save = result.Value;
 
-            // Vereinfachung: 1. Saison aus dict ziehen oder 0
-            var seasonXp = save.SaisonPassXp.Values.Count > 0
-                ? System.Linq.Enumerable.Sum(save.SaisonPassXp.Values) : 0;
-            var tier = System.Math.Min(seasonXp / XpPerTier, MaxTier);
-            var xpInTier = seasonXp % XpPerTier;
+            var def = _saisonPass.ActiveSaison;
+            if (def == null) return;
 
+            // Saison-EXP der AKTIVEN Saison (absolute Gesamt-EXP), Stufe via non-linearer Kurve.
+            var seasonXp = save.SaisonPassXp.TryGetValue(def.Id, out var v) ? v : 0;
+            var tier = SaisonPassEngine.TierForXp(seasonXp, def);
+            var (inTier, span) = SaisonPassEngine.ProgressInTier(seasonXp, def);
+
+            // Statisches "Saison-Stufe"-Label steht im UXML daneben -> hier nur die Zahl.
             _tier.text = tier.ToString();
-            _xpText.text = $"{xpInTier} / {XpPerTier} XP";
-            var pct = (float)xpInTier * 100f / XpPerTier;
-            _xpFill.style.width = new Length(pct, LengthUnit.Percent);
+            if (tier >= def.HardCapTier)
+            {
+                _xpText.text = _loc.Get("ui.season_pass_max", "MAX");
+                _xpFill.style.width = new Length(100, LengthUnit.Percent);
+            }
+            else
+            {
+                _xpText.text = $"{inTier} / {span} XP";   // numerisch, sprachneutral
+                var pct = (float)inTier * 100f / span;
+                _xpFill.style.width = new Length(pct, LengthUnit.Percent);
+            }
 
-            // Saison-Ende — Mock: 14 Tage
-            _daysLeft.text = "14 Tage";
+            var daysLeft = Math.Max(0, (int)Math.Ceiling((def.EndsAtUtc - DateTime.UtcNow).TotalDays));
+            _daysLeft.text = _loc.GetFormatted("ui.season_days_left", daysLeft);
 
-            BuildRewardTrack(tier);
+            BuildRewardTrack(tier, def.TotalTiers);
         }
 
-        private void BuildRewardTrack(int currentTier)
+        private void BuildRewardTrack(int currentTier, int totalTiers)
         {
             _rewardTrack.Clear();
-            for (var t = 1; t <= MaxTier; t++)
+            for (var t = 1; t <= totalTiers; t++)
             {
                 _rewardTrack.Add(BuildTierColumn(t, currentTier));
             }

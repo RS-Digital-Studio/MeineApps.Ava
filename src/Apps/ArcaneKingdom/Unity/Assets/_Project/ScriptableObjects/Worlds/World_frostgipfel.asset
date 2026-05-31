@@ -16,7 +16,9 @@ MonoBehaviour:
   displayNameKey: world.frostgipfel.name
   index: 4
   themeElement: 1
+  themeElements: 
   recommendedCounterElement: 2
+  recommendedCounterElements: 
   recommendedPlayerLevel: 30
   backgroundAddressableKey: Worlds.4/bg_frostgipfel
   musicAddressableKey: Audio.BGM/music_frostgipfel

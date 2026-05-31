@@ -94,6 +94,15 @@ namespace ArcaneKingdom.Domain.Battle
         public HeroPassivContext? EnemyHeroPassiv { get; set; }
 
         /// <summary>
+        /// Aggregierte Deck-Runen-Boni (Spielplan v5 Kap. 7.2). Vom BattleBootstrap vorberechnet,
+        /// in Setup/PlayCard/EndTurn angewandt. Null = keine Runen. NICHT im Replay-Snapshot
+        /// (Serializer ist DTO-basiert) — Boni werden in HeroHp/Field-Werte eingebrannt.
+        /// EnemyRuneLoadout ist Phase 1 immer null (symmetrisch fuer spaeteren PvP).
+        /// </summary>
+        public ArcaneKingdom.Domain.Runes.RuneLoadout? PlayerRuneLoadout { get; set; }
+        public ArcaneKingdom.Domain.Runes.RuneLoadout? EnemyRuneLoadout { get; set; }
+
+        /// <summary>
         /// Karten-Persönlichkeit-Events (Designplan v4 Kap. 8) für UI/Animation/Replay.
         /// </summary>
         public List<BattleEvent> Events { get; }

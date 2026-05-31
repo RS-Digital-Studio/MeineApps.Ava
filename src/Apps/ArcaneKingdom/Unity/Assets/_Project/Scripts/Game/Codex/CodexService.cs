@@ -63,5 +63,8 @@ namespace ArcaneKingdom.Game.Codex
 
         public HeroDefinition? FindHero(string id) =>
             AllHeroes.FirstOrDefault(h => h.Id == id);
+
+        public ArcaneKingdom.Domain.Runes.RuneDefinition? FindRune(string id) =>
+            AllRunes.FirstOrDefault(r => r.Id == id);
     }
 }

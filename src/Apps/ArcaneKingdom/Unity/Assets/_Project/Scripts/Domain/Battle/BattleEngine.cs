@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Hero;
+using ArcaneKingdom.Domain.Runes;
 
 namespace ArcaneKingdom.Domain.Battle
 {
@@ -66,7 +67,41 @@ namespace ArcaneKingdom.Domain.Battle
                 if (State.PlayerDeckQueue.Count > 0) State.PlayerHand.Add(State.PlayerDeckQueue.Dequeue());
                 if (State.EnemyDeckQueue.Count > 0) State.EnemyHand.Add(State.EnemyDeckQueue.Dequeue());
             }
+
+            // K12: Runen-Start-Effekte (Hero-HP + Start-Mana). Kein RNG -> RNG-Verlauf unveraendert.
+            ApplyRuneStartEffects(forPlayer: true, State.PlayerRuneLoadout);
+            ApplyRuneStartEffects(forPlayer: false, State.EnemyRuneLoadout);
+
             State.Phase = BattlePhase.PlayerTurn;
+        }
+
+        /// <summary>
+        /// Wendet die einmaligen Start-Boni einer Deck-Rune an (Spielplan v5 Kap. 7.2):
+        /// Hero-Runen erhoehen Helden-HP (+Max), Mana-Runen geben einmalig Start-Mana fuer Runde 1
+        /// (NICHT MaxMana -> ab Runde 2 wieder 3 Orbs, Invariante gewahrt).
+        /// </summary>
+        private void ApplyRuneStartEffects(bool forPlayer, RuneLoadout? loadout)
+        {
+            if (loadout == null) return;
+            if (loadout.HeroHpFlat > 0)
+            {
+                if (forPlayer) { State.PlayerHeroHp += loadout.HeroHpFlat; State.PlayerHeroMaxHp += loadout.HeroHpFlat; }
+                else           { State.EnemyHeroHp += loadout.HeroHpFlat;  State.EnemyHeroMaxHp += loadout.HeroHpFlat; }
+            }
+            if (loadout.BonusStartMana > 0)
+            {
+                if (forPlayer) State.PlayerMana += loadout.BonusStartMana;
+                else           State.EnemyMana += loadout.BonusStartMana;
+            }
+        }
+
+        /// <summary>Spezial-Cooldown nach Geschwindigkeits-Runen (Spielplan v5 Kap. 7.2), min. 1 Runde.</summary>
+        private static int EffectiveTurnsToSpecial(CardDefinition def, RuneLoadout? loadout)
+        {
+            var t = def.TurnsToSpecial;
+            if (loadout != null && loadout.SpecialTurnReduction > 0)
+                t = Math.Max(1, t - loadout.SpecialTurnReduction);
+            return t;
         }
 
         public bool PlayCard(bool forPlayer, string cardInstanceId)
@@ -122,12 +157,23 @@ namespace ArcaneKingdom.Domain.Battle
             hand.Remove(cardInstanceId);
             // Gegner-Karten zusaetzlich mit Schwierigkeits-Multiplier skalieren (Spielplan v5 Kap. 8.3).
             var difficultyMul = forPlayer ? 1.0f : State.EnemyStatMultiplier;
-            var finalHp = (int)(def.BaseHealth * statMultiplier * hpMultiplier * difficultyMul);
-            var finalAtk = (int)(def.BaseAttack * statMultiplier * atkMultiplier * difficultyMul);
+            // Deck-Runen-Boni (K12, Spielplan v5 Kap. 7.2): +X% ATK/HP aller Deck-Karten, plus
+            // Kombo-Boni (Daemonen -> alle Allies, Drachen -> nur Drachen). Additiv, kein RNG.
+            var loadout = forPlayer ? State.PlayerRuneLoadout : State.EnemyRuneLoadout;
+            var runeHpMul = 1f + (loadout?.HealthPercent ?? 0f) / 100f;
+            var runeAtkMul = 1f + (loadout?.AttackPercent ?? 0f) / 100f;
+            if (loadout != null)
+            {
+                if (loadout.ComboDaemonActive) runeAtkMul += loadout.ComboDaemonAtkPercent / 100f;
+                if (loadout.ComboDracheActive && RuneLoadoutBuilder.IsDrache(def))
+                    runeAtkMul += loadout.ComboDracheAtkPercent / 100f;
+            }
+            var finalHp = (int)(def.BaseHealth * statMultiplier * hpMultiplier * difficultyMul * runeHpMul);
+            var finalAtk = (int)(def.BaseAttack * statMultiplier * atkMultiplier * difficultyMul * runeAtkMul);
             field.Add(new CardFieldSlot(cardInstanceId,
                 currentAttack: finalAtk,
                 currentHealth: finalHp,
-                turnsUntilSpecial: def.TurnsToSpecial));
+                turnsUntilSpecial: EffectiveTurnsToSpecial(def, loadout)));
 
             // Karten-Persoenlichkeit OnPlay (ab 3 Sternen mit Dialog-Lines)
             if (!string.IsNullOrEmpty(def.OnPlayLineKey))
@@ -154,6 +200,7 @@ namespace ArcaneKingdom.Domain.Battle
             var attackerField = attackerIsPlayer ? State.PlayerField : State.EnemyField;
             var defenderField = attackerIsPlayer ? State.EnemyField : State.PlayerField;
             var attackerPassiv = attackerIsPlayer ? State.PlayerHeroPassiv : State.EnemyHeroPassiv;
+            var attackerLoadout = attackerIsPlayer ? State.PlayerRuneLoadout : State.EnemyRuneLoadout;   // K12
 
             // Status-Effekte: DoT-Tick + Action-Block-Check VOR der Attack-Phase
             foreach (var slot in attackerField)
@@ -181,22 +228,25 @@ namespace ArcaneKingdom.Domain.Battle
                     var target = defenderField[0];
                     var (targetDef, _) = ResolveDefinition(target.CardInstanceId);
                     var multiplier = targetDef != null ? ElementMatchup.GetMultiplier(def.Element, targetDef.Element) : 1f;
-                    var dealt = (int)(damage * multiplier);
+                    // K12: Element-Rune verstaerkt den Schaden des passenden Elements (+X%).
+                    var elemRune = 1f + (attackerLoadout?.ElementBonusFor(def.Element) ?? 0f) / 100f;
+                    var dealt = (int)(damage * multiplier * elemRune);
                     target.CurrentHealth -= dealt;
                     ApplyLifesteal(attackerPassiv, attackerIsPlayer, dealt);
                     ResolveDeathAt(defenderField, 0, !attackerIsPlayer);
                 }
                 else
                 {
-                    if (attackerIsPlayer) State.EnemyHeroHp -= damage; else State.PlayerHeroHp -= damage;
-                    ApplyLifesteal(attackerPassiv, attackerIsPlayer, damage);
+                    var heroDmg = (int)(damage * (1f + (attackerLoadout?.ElementBonusFor(def.Element) ?? 0f) / 100f));
+                    if (attackerIsPlayer) State.EnemyHeroHp -= heroDmg; else State.PlayerHeroHp -= heroDmg;
+                    ApplyLifesteal(attackerPassiv, attackerIsPlayer, heroDmg);
                 }
 
                 attacker.TurnsUntilSpecial = Math.Max(0, attacker.TurnsUntilSpecial - 1);
                 if (attacker.TurnsUntilSpecial == 0 && def.BaseAbility != null)
                 {
                     TriggerSpecial(attacker, def, attackerField, defenderField, attackerIsPlayer);
-                    attacker.TurnsUntilSpecial = def.TurnsToSpecial;
+                    attacker.TurnsUntilSpecial = EffectiveTurnsToSpecial(def, attackerLoadout);   // K12: Geschwindigkeits-Rune
                 }
             }
 

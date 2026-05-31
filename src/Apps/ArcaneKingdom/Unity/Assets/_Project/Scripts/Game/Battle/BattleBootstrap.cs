@@ -6,7 +6,9 @@ using ArcaneKingdom.Domain.Battle;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.World;
+using ArcaneKingdom.Domain.Runes;
 using ArcaneKingdom.Game.Catalog;
+using ArcaneKingdom.Game.Codex;
 using ArcaneKingdom.Game.Hero;
 
 namespace ArcaneKingdom.Game.Battle
@@ -19,13 +21,16 @@ namespace ArcaneKingdom.Game.Battle
     {
         private readonly CardCatalogService _cardCatalog;
         private readonly HeroService? _heroService;
+        private readonly CodexService? _codex;
 
-        // HeroService ist optional, damit Test-Code BattleBootstrap weiterhin ohne ihn bauen
-        // kann; im DI-Build (VContainer) wird der registrierte HeroService injiziert.
-        public BattleBootstrap(CardCatalogService cardCatalog, HeroService? heroService = null)
+        // HeroService + CodexService sind optional, damit Test-Code BattleBootstrap weiterhin ohne
+        // sie bauen kann; im DI-Build (VContainer) werden die registrierten Singletons injiziert.
+        // CodexService liefert die RuneDefinitions fuer die Deck-Runen-Aggregation (K12).
+        public BattleBootstrap(CardCatalogService cardCatalog, HeroService? heroService = null, CodexService? codex = null)
         {
             _cardCatalog = cardCatalog;
             _heroService = heroService;
+            _codex = codex;
         }
 
         public sealed class Setup
@@ -130,6 +135,15 @@ namespace ArcaneKingdom.Game.Battle
                 if (hero != null)
                     state.PlayerHeroPassiv = new HeroPassivContext(hero.FaehigkeitsTyp, hero.Magnitude);
             }
+
+            // Deck-Runen aggregieren (Spielplan v5 Kap. 7.2, K12). MUSS vor engine.Setup gesetzt
+            // werden, damit Setup die Hero-HP-/Start-Mana-Runen anwenden kann. Geteilte Logik mit
+            // dem RuneScreen. Nur freigeschaltete Slots zaehlen (RuneLoadoutBuilder prueft das).
+            if (_codex != null)
+                state.PlayerRuneLoadout = RuneLoadoutBuilder.Build(
+                    playerDeck, save,
+                    runeId => _codex.FindRune(runeId),
+                    cardId => _cardCatalog.Find(cardId));
 
             // Boss-Encounter aktivieren wenn Mini-/World-Boss-Node + Gott-Stufe
             if (node != null && difficulty.ActivatesBossPhases(node.Type))

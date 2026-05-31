@@ -490,6 +490,40 @@ public class BacktestEngine
                 // so feuert der Trigger beim ersten Wick-Touch, konsistent zum Live-Tick-Verhalten.
                 if (exitTracking.TryGetValue(key, out var exitState))
                 {
+                    // Runner-Trailing (EnableRunner): Nach TP1 laeuft der Rest mit ATR-Chandelier-Trailing-Stop
+                    // statt festem TP2. Spiegelt die Live-Runner-Mechanik (TradingServiceBase) im Backtest,
+                    // damit "fester TP2 vs Trailing" empirisch A/B-getestet werden kann.
+                    if (exitState.RunnerActive)
+                    {
+                        var trailMul = riskSettings?.RunnerTrailingAtrMultiplier ?? 2.0m;
+                        var trailDist = exitState.RunnerAtrBase > 0m
+                            ? exitState.RunnerAtrBase * trailMul
+                            : exitState.EntryPrice * 0.01m;
+                        decimal trailSl;
+                        bool trailHit;
+                        if (pos.Side == Side.Buy)
+                        {
+                            if (currentCandle.High > exitState.RunnerTrailAnchor) exitState.RunnerTrailAnchor = currentCandle.High;
+                            trailSl = exitState.RunnerTrailAnchor - trailDist;
+                            trailHit = currentCandle.Low <= trailSl;
+                        }
+                        else
+                        {
+                            if (exitState.RunnerTrailAnchor <= 0m || currentCandle.Low < exitState.RunnerTrailAnchor) exitState.RunnerTrailAnchor = currentCandle.Low;
+                            trailSl = exitState.RunnerTrailAnchor + trailDist;
+                            trailHit = currentCandle.High >= trailSl;
+                        }
+                        if (trailHit)
+                        {
+                            simExchange.SetCurrentPrice(symbol, trailSl);
+                            await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
+                            positionSignals.Remove(key);
+                            exitTracking.Remove(key);
+                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+                        }
+                        continue; // Runner-Position hat eigene Exit-Logik — kein BE/TP1/Standard-Check.
+                    }
+
                     if (!exitState.BreakevenSet && origSignal.StopLoss.HasValue)
                     {
                         var currentPrice = pos.Side == Side.Buy ? currentCandle.High : currentCandle.Low;
@@ -524,9 +558,20 @@ public class BacktestEngine
                             await simExchange.ReducePositionAsync(symbol, pos.Side, closeQty, isMakerClose: true).ConfigureAwait(false);
                             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                         }
-                        // TP2 (200%+Buffer) als neues Ziel, SL bleibt (Buch 4.3)
-                        positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
                         exitState.PartialClosed = true;
+                        if (riskSettings?.EnableRunner == true && exitState.RunnerAtrBase > 0m)
+                        {
+                            // Trailing-Variante: Rest laeuft mit ATR-Trailing-Stop statt festem TP2.
+                            // Start-Anker = TP1-Preis; kein festes TP-Ziel mehr (TakeProfit=null), SL bleibt.
+                            exitState.RunnerActive = true;
+                            exitState.RunnerTrailAnchor = origSignal.TakeProfit!.Value;
+                            positionSignals[key] = origSignal with { TakeProfit = null };
+                        }
+                        else
+                        {
+                            // Baseline: TP2 (200%+Buffer) als neues Ziel, SL bleibt (Buch 4.3).
+                            positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
+                        }
                         continue;
                     }
 
@@ -629,6 +674,7 @@ public class BacktestEngine
                                 EntryTime = currentCandle.CloseTime,
                                 Tp2 = signal.TakeProfit2,
                                 NavPointA = signal.NavPointA ?? 0m,
+                                RunnerAtrBase = signal.EntryAtr ?? 0m,
                             };
                         }
                     }
@@ -920,5 +966,13 @@ public class BacktestEngine
         public bool BreakevenSet { get; set; }
         /// <summary>Navigator-PointA für den A-Bruch-BE-Trigger. 0 = unbekannt (kein BE möglich).</summary>
         public decimal NavPointA { get; init; }
+
+        // === Runner-Trailing (Task 4.7 / EnableRunner) ===
+        /// <summary>Runner aktiv: Rest-Position laeuft nach TP2 mit ATR-Trailing-Stop weiter.</summary>
+        public bool RunnerActive { get; set; }
+        /// <summary>Bestpreis seit Runner-Aktivierung (Trailing-Anker).</summary>
+        public decimal RunnerTrailAnchor { get; set; }
+        /// <summary>ATR-Basis fuer die Trailing-Distanz (aus SignalResult.EntryAtr).</summary>
+        public decimal RunnerAtrBase { get; init; }
     }
 }

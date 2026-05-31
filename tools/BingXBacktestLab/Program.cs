@@ -59,6 +59,13 @@ else
     botSettings = new BotSettings();
     Console.WriteLine("WARNUNG: keine settings.json gefunden — nutze Defaults.");
 }
+
+// Runner-Trailing per Flag aktivieren (A/B-Test: fester TP2 vs ATR-Trailing nach TP1).
+if (GetArg(argMap, "enable-runner", null) == "true")
+{
+    botSettings.Risk.EnableRunner = true;
+    Console.WriteLine($"RUNNER-TRAILING aktiv (Rest nach TP1 mit ATR×{botSettings.Risk.RunnerTrailingAtrMultiplier}-Trailing statt festem TP2)");
+}
 Console.WriteLine();
 
 // --- Clients aufbauen ---

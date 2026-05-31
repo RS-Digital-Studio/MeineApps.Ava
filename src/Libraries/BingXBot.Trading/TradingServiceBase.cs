@@ -1576,8 +1576,22 @@ public abstract class TradingServiceBase : IDisposable
         try
         {
             var now = DateTime.UtcNow;
-            return await _publicClient.GetKlinesAsync(
+            var candles = await _publicClient.GetKlinesAsync(
                 symbol, tf, now.AddDays(-daysBack), now, ct).ConfigureAwait(false);
+
+            // Repaint-Schutz (Fix F): Die laufende, noch nicht geschlossene Kerze verwerfen.
+            // BingX liefert sie als letztes Element. Wuerde die Strategie darauf entscheiden, sieht
+            // sie einen intra-bar-Breakout, der bis Kerzenschluss zuruecklaufen kann → Live weicht vom
+            // Backtest ab (der nur abgeschlossene Kerzen kennt). Gilt fuer ALLE TFs + Strategien:
+            // Entscheidung nur auf abgeschlossenen Kerzen, Entry zum Close = backtest-treu.
+            if (candles.Count > 0)
+            {
+                var duration = BingXBot.Core.Helpers.TimeFrameHelper.ToDuration(tf);
+                var last = candles[^1];
+                if (last.OpenTime + duration > now)
+                    candles.RemoveAt(candles.Count - 1);
+            }
+            return candles;
         }
         catch (OperationCanceledException) { throw; }
         catch

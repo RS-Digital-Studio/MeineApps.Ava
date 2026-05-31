@@ -21,6 +21,12 @@ public static class StrategyFactory
         "TrendFollow" => new TrendFollowStrategy(),
         // Schneller: kuerzere Donchian/EMA, mehr Signale auf niedrigeren TFs.
         "TrendFollow-Fast" => new TrendFollowStrategy(donchianPeriod: 10, emaPeriod: 34, adxMin: 18m),
+        // Fast + Chop-Filter (ADX steigend) — gegen Seitwaerts-Whipsaw.
+        "TrendFollow-Fast-Chop" => new TrendFollowStrategy(donchianPeriod: 10, emaPeriod: 34, adxMin: 18m, requireRisingAdx: true),
+        // Fast + Mindest-Ausbruchsdistanz 0.5xATR — gegen Knapp-Fakeouts.
+        "TrendFollow-Fast-BO" => new TrendFollowStrategy(donchianPeriod: 10, emaPeriod: 34, adxMin: 18m, minBreakoutAtr: 0.5m),
+        // Fast + beide Filter.
+        "TrendFollow-Fast-ChopBO" => new TrendFollowStrategy(donchianPeriod: 10, emaPeriod: 34, adxMin: 18m, requireRisingAdx: true, minBreakoutAtr: 0.5m),
         // Defensiver: weiterer SL, hoeheres RRR — weniger SL-Hits durch Rauschen, groessere Gewinner.
         "TrendFollow-Wide" => new TrendFollowStrategy(donchianPeriod: 20, atrSlMultiplier: 3.5m, tp1Rrr: 2.0m, tp2Rrr: 4.0m),
         // Strenger Trendfilter: nur sehr starke Trends (ADX >= 25), langsame EMA.

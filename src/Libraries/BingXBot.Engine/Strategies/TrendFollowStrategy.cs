@@ -31,6 +31,8 @@ public sealed class TrendFollowStrategy : IStrategy
     private readonly decimal _atrSlMultiplier;
     private readonly decimal _tp1Rrr;
     private readonly decimal _tp2Rrr;
+    private readonly bool _requireRisingAdx;
+    private readonly decimal _minBreakoutAtr;
 
     public TrendFollowStrategy(
         int donchianPeriod = 20,
@@ -40,7 +42,11 @@ public sealed class TrendFollowStrategy : IStrategy
         decimal adxMin = 20m,
         decimal atrSlMultiplier = 2.5m,
         decimal tp1Rrr = 1.5m,
-        decimal tp2Rrr = 3.0m)
+        decimal tp2Rrr = 3.0m,
+        // Chop-Filter: ADX muss steigen (Trend verstaerkt sich) — filtert Seitwaerts-Fehlausbrueche.
+        bool requireRisingAdx = false,
+        // Mindest-Ausbruchsdistanz: Close muss min. N×ATR ueber/unter dem Kanal schliessen (kein Knapp-Fakeout).
+        decimal minBreakoutAtr = 0m)
     {
         _donchianPeriod = donchianPeriod;
         _emaPeriod = emaPeriod;
@@ -50,6 +56,8 @@ public sealed class TrendFollowStrategy : IStrategy
         _atrSlMultiplier = atrSlMultiplier;
         _tp1Rrr = tp1Rrr;
         _tp2Rrr = tp2Rrr;
+        _requireRisingAdx = requireRisingAdx;
+        _minBreakoutAtr = minBreakoutAtr;
     }
 
     public string Name => "TrendFollow";
@@ -93,14 +101,24 @@ public sealed class TrendFollowStrategy : IStrategy
         var upPrevState = donUp[i - 2]!.Value;
         var loPrevState = donLo[i - 2]!.Value;
 
-        bool strongTrend = adxV >= _adxMin;
+        // Chop-Filter (optional): ADX muss steigen — der Trend verstaerkt sich gerade, statt in einer
+        // Seitwaerts-Range zu maeandern (Hauptquelle der Long-Whipsaws). Vergleich gegen ADX vor 3 Kerzen.
+        bool risingAdx = true;
+        if (_requireRisingAdx)
+        {
+            var adxPrev = adx[i - 3];
+            risingAdx = adxPrev.HasValue && adxV > adxPrev.Value;
+        }
+        bool strongTrend = adxV >= _adxMin && risingAdx;
 
         // ECHTER Breakout-Crossover (Fix G): Vorkerze noch im Kanal (Close <= ihr N-Hoch),
         // aktuelle Kerze schliesst ueber dem N-Hoch. Der fruehere Guard (prevClose <= donUp[i-1])
         // war mathematisch immer wahr (donUp[i-1] >= High[i-1] >= Close[i-1]) → kein echter Crossover,
         // sondern "Close ueber N-Hoch" bei JEDER Kerze (Re-Entry-Spam nach Exit).
-        bool breakoutUp = prevClose <= upPrevState && close > upBreakout;
-        bool breakoutDown = prevClose >= loPrevState && close < loBreakout;
+        // Mindest-Ausbruchsdistanz (optional): Close muss deutlich (N×ATR) ueber/unter den Kanal — kein Knapp-Fakeout.
+        var breakoutBuffer = _minBreakoutAtr * atrV;
+        bool breakoutUp = prevClose <= upPrevState && close > upBreakout + breakoutBuffer;
+        bool breakoutDown = prevClose >= loPrevState && close < loBreakout - breakoutBuffer;
 
         bool trendUp = close > emaV && pdiV > mdiV;
         bool trendDown = close < emaV && mdiV > pdiV;

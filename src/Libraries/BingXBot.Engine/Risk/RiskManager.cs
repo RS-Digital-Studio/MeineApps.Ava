@@ -92,6 +92,28 @@ public class RiskManager : IRiskManager
                     return new RiskCheckResult(false,
                         $"Cluster-Limit {newCluster}: {clusterPct:F1}% > {_settings.MaxCorrelatedExposurePercent}% (offene {clusterMargins:F2}$ + geplant {plannedMargin:F2}$)", 0m);
             }
+
+            // Aggregiertes gleichgerichtetes Crypto-Exposure (Audit-Fix D): Die feinen Cluster
+            // (BTC/ETH/AltL1/AltDefi/Meme) umgehen das Cluster-Limit, sind bei einem BTC-Flash-Crash
+            // aber ALLE korreliert (geballtes BTC-Beta). Daher zusaetzlich die Summe aller
+            // gleichgerichteten (Long bzw. Short) Crypto-Margins gegen ein groesszuegigeres
+            // Aggregat-Limit (1.5× Cluster-Schwelle) pruefen.
+            if (BingXBot.Core.Helpers.SymbolClassifier.Classify(context.Symbol) == BingXBot.Core.Enums.MarketCategory.Crypto)
+            {
+                var newSide = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+                var sameSideCryptoMargin = context.OpenPositions
+                    .Where(p => p.Side == newSide
+                        && BingXBot.Core.Helpers.SymbolClassifier.Classify(p.Symbol) == BingXBot.Core.Enums.MarketCategory.Crypto)
+                    .Sum(p => p.Leverage > 0 ? p.EntryPrice * p.Quantity / p.Leverage : p.EntryPrice * p.Quantity);
+                var plannedMargin = context.Account.Balance * _settings.MaxPositionSizePercent / 100m;
+                // Feste Untergrenze 40 %: greift nur bei echtem gleichgerichtetem Klumpen, nicht bei
+                // scharfen Cluster-Schwellen (sonst wuerde ein knappes Cluster-Limit hier alles blocken).
+                var aggregateLimit = Math.Max(_settings.MaxCorrelatedExposurePercent * 1.5m, 40m);
+                var aggPct = (sameSideCryptoMargin + plannedMargin) / context.Account.Balance * 100m;
+                if (aggPct > aggregateLimit)
+                    return new RiskCheckResult(false,
+                        $"Crypto-Netto-{newSide}-Limit: {aggPct:F1}% > {aggregateLimit:F1}% (gleichgerichtetes Crypto-Klumpenrisiko)", 0m);
+            }
         }
 
         // 4. Position-Größe berechnen mit tatsächlichem Leverage (nicht MaxLeverage)

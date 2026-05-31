@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using ArcaneKingdom.Core.Services;
 using ArcaneKingdom.Core.Utility;
+using System.Linq;
 using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Game.Artwork;
+using ArcaneKingdom.Game.Catalog;
 using ArcaneKingdom.Game.Quest;
 using ArcaneKingdom.UI.Foundation;
 using Cysharp.Threading.Tasks;
@@ -33,6 +35,8 @@ namespace ArcaneKingdom.UI.Hub
         private readonly ArcaneKingdom.Game.Hub.HubController _hubController;
         private readonly UIAssetService _uiAssets;
         private readonly ILocalizationService _loc;
+        private readonly CardCatalogService _cardCatalog;
+        private readonly System.Random _rewardRng = new();
 
         // Top-Bar
         private Label _avatarInitials = null!;
@@ -59,7 +63,8 @@ namespace ArcaneKingdom.UI.Hub
                          ArcaneKingdom.Game.World.PrestigeAppService prestige,
                          ArcaneKingdom.Game.Hub.HubController hubController,
                          UIAssetService uiAssets,
-                         ILocalizationService loc)
+                         ILocalizationService loc,
+                         CardCatalogService cardCatalog)
         {
             _screenManager = screenManager;
             _save = save;
@@ -69,6 +74,7 @@ namespace ArcaneKingdom.UI.Hub
             _hubController = hubController;
             _uiAssets = uiAssets;
             _loc = loc;
+            _cardCatalog = cardCatalog;
         }
 
         protected override void BindElements(VisualElement root)
@@ -225,9 +231,14 @@ namespace ArcaneKingdom.UI.Hub
                         case ArcaneKingdom.Domain.Save.PendingClaimKind.Card:
                             for (var i = 0; i < claim.Amount; i++)
                             {
+                                // Platzhalter-Token (z.B. "card_random_4star") zu einer echten Karte
+                                // aufloesen — vorher wurde der rohe Token als CardDefinitionId angelegt,
+                                // was eine unbenutzbare "Geister-Karte" im Inventar erzeugte.
+                                var cardId = ResolveRewardCardId(claim.SubType);
+                                if (cardId == null) continue;   // nicht aufloesbar -> keinen Muell anlegen
                                 var instId = System.Guid.NewGuid().ToString("N");
                                 save.CardInventory[instId] = new CardInstance(
-                                    instId, claim.SubType, 0, 0, System.DateTime.UtcNow);
+                                    instId, cardId, 0, 0, System.DateTime.UtcNow);
                             }
                             break;
                         case ArcaneKingdom.Domain.Save.PendingClaimKind.Rune:
@@ -269,6 +280,42 @@ namespace ArcaneKingdom.UI.Hub
                 _toast.Show(string.Format(
                     _loc.Get("hub.claims_redeemed", "{0} Belohnung(en) eingeloest"), redeemed),
                     ToastKind.Success, 4f);
+        }
+
+        /// <summary>
+        /// Loest eine Belohnungs-Karten-Referenz zu einer echten Karten-ID auf. Konkrete IDs
+        /// (existieren im Catalog) werden direkt zurueckgegeben; Platzhalter-Token aus den
+        /// Belohnungs-JSONs ("card_random_4star", "card_chosen_3star", "any_rare", ...) zu einer
+        /// zufaelligen, NICHT-exklusiven Karte der jeweiligen Seltenheit. Nicht aufloesbare Token
+        /// (z.B. "card_specific" ohne erkennbare Seltenheit) liefern null.
+        /// </summary>
+        private string? ResolveRewardCardId(string token)
+        {
+            if (string.IsNullOrEmpty(token)) return null;
+            if (_cardCatalog.Find(token) != null) return token;   // schon eine echte Karte
+
+            var rarity = RarityFromToken(token);
+            if (rarity == null) return null;
+
+            var pool = _cardCatalog.AllCards
+                .Where(c => c.Rarity == rarity.Value && !c.IsExclusive)
+                .ToList();
+            if (pool.Count == 0) return null;
+            return pool[_rewardRng.Next(pool.Count)].Id;
+        }
+
+        /// <summary>Leitet die Seltenheit aus einem Belohnungs-Token ab. "uncommon" wird vor "common"
+        /// geprueft (Substring-Falle).</summary>
+        private static Rarity? RarityFromToken(string token)
+        {
+            var t = token.ToLowerInvariant();
+            if (t.Contains("2star") || t.Contains("uncommon") || t.Contains("ungewoehnlich")) return Rarity.Ungewoehnlich;
+            if (t.Contains("1star") || t.Contains("common") || t.Contains("gewoehnlich")) return Rarity.Gewoehnlich;
+            if (t.Contains("3star") || t.Contains("rare") || t.Contains("selten")) return Rarity.Selten;
+            if (t.Contains("4star") || t.Contains("epic")) return Rarity.Epic;
+            if (t.Contains("5star") || t.Contains("legend")) return Rarity.Legendaer;
+            if (t.Contains("6star") || t.Contains("myth")) return Rarity.Mythisch;
+            return null;
         }
 
         /// <summary>Schreibt eine Currency-PendingClaim auf den passenden Saldo.</summary>

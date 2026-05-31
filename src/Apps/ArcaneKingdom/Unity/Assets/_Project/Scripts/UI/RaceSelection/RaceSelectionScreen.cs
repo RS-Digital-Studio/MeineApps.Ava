@@ -151,11 +151,22 @@ namespace ArcaneKingdom.UI.RaceSelection
                 // nicht kaempfen. Nur wenn das Inventar leer ist (idempotent bei erneutem Confirm).
                 if (s.CardInventory.Count == 0)
                 {
+                    // Die Starter-Karten muessen nicht nur ins Inventar, sondern auch in ein Deck —
+                    // sonst startet der Spieler mit leerem Deck und BattleBootstrap lehnt jeden Kampf ab.
+                    if (s.Decks.Count == 0)
+                    {
+                        s.Decks.Add(new Deck(0, "Deck 1"));
+                        s.ActiveDeckSlot = 0;
+                    }
+                    var deck = s.Decks[0];
                     foreach (var defId in StarterCardIds)
                     {
                         var instId = System.Guid.NewGuid().ToString("N");
                         s.CardInventory[instId] = new CardInstance(instId, defId, 0, 0, System.DateTime.UtcNow);
+                        if (deck.CardInstanceIds.Count < Deck.MaxCards)
+                            deck.CardInstanceIds.Add(instId);
                     }
+                    deck.LastModifiedUtc = System.DateTime.UtcNow;
                 }
                 return s;
             }, CancellationToken.None);

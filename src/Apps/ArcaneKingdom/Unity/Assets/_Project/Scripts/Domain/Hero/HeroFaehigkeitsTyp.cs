@@ -20,8 +20,9 @@ namespace ArcaneKingdom.Domain.Hero
         GoettlicherSegen = 1,
 
         /// <summary>
-        /// Elfen — Waldläufer: Erste eigene Karte jeder Runde kostet 0 COST.
-        /// Magnitude = COST-Reduktion (Default 0 = komplett kostenlos).
+        /// Elfen — Waldläufer: Erste eigene Karte jeder Runde kostet 0 Mana.
+        /// (COST ist kein Mana-Preis — jede Karte kostet sonst 1 Mana-Orb, siehe BattleEngine.ManaPerCard.)
+        /// Magnitude wird nicht verwendet (Effekt ist binär: erste Karte gratis).
         /// </summary>
         Waldlaeufer = 2,
 

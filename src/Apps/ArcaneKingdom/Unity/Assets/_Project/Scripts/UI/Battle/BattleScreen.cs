@@ -11,6 +11,7 @@ using ArcaneKingdom.Domain.World;
 using ArcaneKingdom.Game.Artwork;
 using ArcaneKingdom.Game.Battle;
 using ArcaneKingdom.Game.Catalog;
+using ArcaneKingdom.Game.World;
 using ArcaneKingdom.UI.Common;
 using ArcaneKingdom.UI.Foundation;
 using ArcaneKingdom.UI.WorldMap;
@@ -33,6 +34,7 @@ namespace ArcaneKingdom.UI.Battle
         private readonly ModalContext _modalContext;
         private readonly ToastService _toast;
         private readonly CardArtworkService _artworkService;
+        private readonly MaterialDropService _materialDrops;
 
         // Top
         private Button _fleeBtn = null!;
@@ -91,7 +93,8 @@ namespace ArcaneKingdom.UI.Battle
                             WorldCatalogService worldCatalog,
                             ArcaneKingdom.UI.Modals.MemoryFragmentContext memoryCtx,
                             ArcaneKingdom.UI.BattleReport.BattleReportContext reportCtx,
-                            UIAssetService uiAssets)
+                            UIAssetService uiAssets,
+                            MaterialDropService materialDrops)
         {
             _screenManager = screenManager;
             _save = save;
@@ -105,6 +108,7 @@ namespace ArcaneKingdom.UI.Battle
             _memoryCtx = memoryCtx;
             _reportCtx = reportCtx;
             _uiAssets = uiAssets;
+            _materialDrops = materialDrops;
         }
 
         protected override void BindElements(VisualElement root)
@@ -292,7 +296,7 @@ namespace ArcaneKingdom.UI.Battle
             tile.style.borderLeftColor = tile.style.borderTopColor;
             tile.style.borderRightColor = tile.style.borderTopColor;
 
-            var nameLbl = new Label(def?.Id ?? slot.CardInstanceId);
+            var nameLbl = new Label(def != null ? _loc.Get(def.DisplayNameKey, def.Id) : slot.CardInstanceId);
             nameLbl.style.fontSize = 11;
             nameLbl.style.color = new StyleColor(Color.white);
             nameLbl.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -402,7 +406,7 @@ namespace ArcaneKingdom.UI.Battle
             tile.Add(art);
             LoadArtAsync(art, def).Forget();
 
-            var name = new Label(def.Id);
+            var name = new Label(_loc.Get(def.DisplayNameKey, def.Id));
             name.AddToClassList("ak-card__name");
             tile.Add(name);
 
@@ -418,10 +422,7 @@ namespace ArcaneKingdom.UI.Battle
             stats.Add(hp);
             tile.Add(stats);
 
-            var s = _engine!.State;
-            var canPlay = s.Phase == BattlePhase.PlayerTurn
-                          && s.PlayerMana >= def.Cost
-                          && s.PlayerField.Count < BattleEngine.MaxFieldSlots;
+            var canPlay = CanPlayHandCard(def);
             if (!canPlay)
             {
                 tile.style.opacity = 0.5f;
@@ -432,17 +433,29 @@ namespace ArcaneKingdom.UI.Battle
                     dropZone: _playerField,
                     onDrop: () => OnPlayCard(cardInstId),
                     floatingLayer: _floatingLayer,
-                    canDrag: () =>
-                    {
-                        var st = _engine!.State;
-                        return st.Phase == BattlePhase.PlayerTurn
-                               && st.PlayerMana >= def.Cost
-                               && st.PlayerField.Count < BattleEngine.MaxFieldSlots;
-                    });
+                    canDrag: () => CanPlayHandCard(def));
                 tile.AddManipulator(drag);
                 tile.AddManipulator(new Clickable(() => OnPlayCard(cardInstId)));
             }
             return tile;
+        }
+
+        /// <summary>
+        /// Spiegelt die Spielbarkeits-Regeln der <see cref="BattleEngine"/>: Eine Karte kostet
+        /// <see cref="BattleEngine.ManaPerCard"/> (= 1 Mana), NICHT ihren COST. COST ist nur das
+        /// Deck-Budget und das Schwere-Karten-Gate. Frueher pruefte die UI faelschlich gegen
+        /// def.Cost — dadurch waren Epic/Legendaer/Mythisch-Karten (COST &gt; 3) dauerhaft als
+        /// unspielbar gedimmt, obwohl die Engine sie fuer 1 Mana akzeptiert haette.
+        /// </summary>
+        private bool CanPlayHandCard(CardDefinition def)
+        {
+            var s = _engine!.State;
+            if (s.Phase != BattlePhase.PlayerTurn) return false;
+            if (s.PlayerField.Count >= BattleEngine.MaxFieldSlots) return false;
+            if (s.PlayerMana < BattleEngine.ManaPerCard) return false;
+            // Schwere Karte (COST > 30): nur einsetzbar, wenn diese Runde noch nichts gespielt wurde.
+            if (def.Cost > BattleEngine.HeavyCardCostThreshold && s.PlayerCardsPlayedThisTurn > 0) return false;
+            return true;
         }
 
         private void RenderManaOrbs()
@@ -612,6 +625,18 @@ namespace ArcaneKingdom.UI.Battle
                     _toast.Show(string.Format(
                         _loc.Get("battle.victory", "Sieg! {0}/4 Sterne — +{1} Gold, +{2} EXP"),
                         stars, reward, exp), ToastKind.Success, 5f);
+
+                    // Material-Drops (Designplan v4 Kap. 4.3): Mini-/Welt-Boss-Nodes droppen
+                    // Sammel-Materialien, Chance steigt mit der Sternzahl. RollAndAwardAsync prueft
+                    // selbst, ob der Node eine Drop-Tabelle hat (sonst leeres Ergebnis).
+                    if (_node != null)
+                    {
+                        var drops = await _materialDrops.RollAndAwardAsync(_node.Id, stars);
+                        if (drops.Count > 0)
+                            _toast.Show(string.Format(
+                                _loc.Get("battle.material_drop", "{0} Material(ien) erbeutet!"), drops.Count),
+                                ToastKind.Success, 3f);
+                    }
 
                     // v6 (Designplan v4 Story Kap. 9): Welt-Boss-Sieg -> Erinnerungs-Fragment
                     if (_node != null && _node.Type == NodeType.WorldBoss)

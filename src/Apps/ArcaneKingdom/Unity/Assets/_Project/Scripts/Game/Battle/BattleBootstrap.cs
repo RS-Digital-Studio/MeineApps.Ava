@@ -7,6 +7,7 @@ using ArcaneKingdom.Domain.Cards;
 using ArcaneKingdom.Domain.Player;
 using ArcaneKingdom.Domain.World;
 using ArcaneKingdom.Game.Catalog;
+using ArcaneKingdom.Game.Hero;
 
 namespace ArcaneKingdom.Game.Battle
 {
@@ -17,10 +18,14 @@ namespace ArcaneKingdom.Game.Battle
     public sealed class BattleBootstrap
     {
         private readonly CardCatalogService _cardCatalog;
+        private readonly HeroService? _heroService;
 
-        public BattleBootstrap(CardCatalogService cardCatalog)
+        // HeroService ist optional, damit Test-Code BattleBootstrap weiterhin ohne ihn bauen
+        // kann; im DI-Build (VContainer) wird der registrierte HeroService injiziert.
+        public BattleBootstrap(CardCatalogService cardCatalog, HeroService? heroService = null)
         {
             _cardCatalog = cardCatalog;
+            _heroService = heroService;
         }
 
         public sealed class Setup
@@ -113,6 +118,18 @@ namespace ArcaneKingdom.Game.Battle
             var state = new BattleState(effectiveSeed, playerHeroHp: 1000, enemyHeroHp: scaledEnemyHp);
             // Schwierigkeits-Multiplier wird beim Einsetzen jeder Gegner-Karte angewandt (BattleEngine.PlayCard).
             state.EnemyStatMultiplier = enemyMultiplier;
+
+            // Helden-Passiv des Spielers verdrahten (Designplan v4 Kap. 2.1): an die gewaehlte Rasse
+            // gekoppelt. MUSS vor engine.Setup gesetzt werden, damit Setup den Rudelbund-Tiergeist-
+            // Zaehler (BeastSpiritCountInDeck) vorberechnet. Ohne diesen Schritt blieben alle Passivs
+            // (Koenigliche Aura, Goettlicher Segen, Waldlaeufer, Rudelbund, Lebensraub) im Kampf wirkungslos.
+            if (_heroService != null)
+            {
+                var chosenRace = save.Story.ChosenRace;
+                var hero = _heroService.AvailableHeroes.FirstOrDefault(h => h.Race == chosenRace);
+                if (hero != null)
+                    state.PlayerHeroPassiv = new HeroPassivContext(hero.FaehigkeitsTyp, hero.Magnitude);
+            }
 
             // Boss-Encounter aktivieren wenn Mini-/World-Boss-Node + Gott-Stufe
             if (node != null && difficulty.ActivatesBossPhases(node.Type))

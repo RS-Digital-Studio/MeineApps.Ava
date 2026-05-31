@@ -13,7 +13,8 @@ namespace ArcaneKingdom.Domain.Cards
     public sealed class Deck
     {
         public const int MaxCards = 10;
-        public const int MaxRuneSlots = 5;
+        // Spielplan v5 Kap. 7.1: genau 4 Runen-Slots (Lvl 1/20/30/40), konsistent mit RuneSlotUnlock.MaxSlots.
+        public const int MaxRuneSlots = 4;
 
         public int SlotIndex { get; }
         public string Name { get; set; }

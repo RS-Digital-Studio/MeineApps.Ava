@@ -34,11 +34,16 @@ namespace ArcaneKingdom.UI.RaceSelection
         private Race _selectedRace = Race.Ritter;
 
         /// <summary>
-        /// Festes Starter-Deck (Robert-Vorgabe): 3 Basis-Karten beim ersten Spielstart, immer gleich.
-        /// Ausgewogenes Rekruten-Trio — Tank (Erde) / Zauber (Feuer) / Distanz (Natur), alle Gewoehnlich
-        /// + Unlimited. Weitere Karten werden durch das Erreichen spezieller Welt-Level freigeschaltet.
+        /// Rassenspezifisches Starter-Deck (Designplan v4 Kap. 7): 5 Gewöhnliche Karten je gewählter
+        /// Rasse — 3× die eigene Rasse + je 1 Karte aus zwei anderen Rassen, passend zum Spielstil.
         /// </summary>
-        private static readonly string[] StarterCardIds = { "wachsoldat", "lehrling_magier", "novizen_bogenschuetzin" };
+        private static readonly Dictionary<Race, string[]> StarterDecksByRace = new()
+        {
+            [Race.Ritter]      = new[] { "wachsoldat", "schildknappe", "fackeltraeger", "elfenpfeil_novize", "jungwolf" },
+            [Race.Elfen]       = new[] { "elfenpfeil_novize", "blumenfee", "waldlaeufer_novize", "wachsoldat", "jungwolf" },
+            [Race.Tiergeister] = new[] { "jungwolf", "waldfuchs", "baumspross", "elfenpfeil_novize", "wachsoldat" },
+            [Race.Daemonen]    = new[] { "schattenklaue", "besessener_krieger", "feuerteufel_lehrling", "wachsoldat", "elfenpfeil_novize" },
+        };
 
         private Label _selectedNameLabel = null!;
         private Label _selectedPassivLabel = null!;
@@ -159,7 +164,9 @@ namespace ArcaneKingdom.UI.RaceSelection
                         s.ActiveDeckSlot = 0;
                     }
                     var deck = s.Decks[0];
-                    foreach (var defId in StarterCardIds)
+                    var starter = StarterDecksByRace.TryGetValue(_selectedRace, out var set)
+                        ? set : StarterDecksByRace[Race.Ritter];
+                    foreach (var defId in starter)
                     {
                         var instId = System.Guid.NewGuid().ToString("N");
                         s.CardInventory[instId] = new CardInstance(instId, defId, 0, 0, System.DateTime.UtcNow);

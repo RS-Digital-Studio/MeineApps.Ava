@@ -64,10 +64,12 @@ namespace ArcaneKingdom.Domain.World
             difficulty >= NodeDifficulty.Profi;
 
         /// <summary>
-        /// Liefert true, wenn die Stufe Phasen-Boss-Mechanik aktiviert (Boss-LV5/LV10 + Gott-Stufe).
+        /// Liefert true, wenn der Node Phasen-Boss-Mechanik aktiviert. Spielplan v5 Kap. 9.4:
+        /// Phase 2 (ab 50% HP) gilt fuer JEDEN Boss-Kampf (Node 5 = MiniBoss, Node 10 = WorldBoss),
+        /// unabhaengig von der Schwierigkeitsstufe (frueher faelschlich nur auf Gott-Stufe).
+        /// Die zusaetzlichen Prestige-Phasen (3/4 ab Prestige III/IV) sind eine separate Eskalation.
         /// </summary>
         public static bool ActivatesBossPhases(this NodeDifficulty difficulty, NodeType nodeType) =>
-            difficulty == NodeDifficulty.Gott
-            && (nodeType == NodeType.MiniBoss || nodeType == NodeType.WorldBoss);
+            nodeType == NodeType.MiniBoss || nodeType == NodeType.WorldBoss;
     }
 }

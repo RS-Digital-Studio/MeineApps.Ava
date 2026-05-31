@@ -71,7 +71,24 @@ namespace ArcaneKingdom.UI.Modals
         {
             _fragmentTitle.text = _ctx.TitleKey != null ? _loc.Get(_ctx.TitleKey, _ctx.TitleKey) : "Erinnerung";
             _fragmentContent.text = _ctx.ContentKey != null ? _loc.Get(_ctx.ContentKey, _ctx.ContentKey) : string.Empty;
-            _twistReveal.text = _ctx.TwistRevealKey != null ? _loc.Get(_ctx.TwistRevealKey, string.Empty) : string.Empty;
+
+            // Twist-Reveal (Story_v4 Kap. 9): Die "spaetere Wahrheit" darf erst NACH dem grossen Twist
+            // (Welt 8 Abysstiefe) sichtbar werden — vorher bleiben die Fragmente bewusst mehrdeutig,
+            // damit der Spieler sie zuerst falsch interpretiert. Beim Twist-Fragment selbst (IsMajorTwist)
+            // wird der Reveal gezeigt; danach dauerhaft (TwistRevealed im Save).
+            var preSave = await _save.LoadAsync(ct);
+            var twistKnown = _ctx.IsMajorTwist
+                || (preSave.IsSuccess && preSave.Value != null && preSave.Value.Story.TwistRevealed);
+            if (twistKnown && _ctx.TwistRevealKey != null)
+            {
+                _twistReveal.text = _loc.Get(_ctx.TwistRevealKey, string.Empty);
+                _twistReveal.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                _twistReveal.text = string.Empty;
+                _twistReveal.style.display = DisplayStyle.None;
+            }
 
             if (_ctx.IsMajorTwist)
             {

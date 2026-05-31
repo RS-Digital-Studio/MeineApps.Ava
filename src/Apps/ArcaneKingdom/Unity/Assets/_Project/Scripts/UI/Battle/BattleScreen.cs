@@ -718,13 +718,24 @@ namespace ArcaneKingdom.UI.Battle
             if (string.IsNullOrEmpty(worldId)) return;
 
             var world = _worldCatalog.Find(worldId);
-            if (world == null || string.IsNullOrEmpty(world.MemoryFragmentKey)) return;
+            if (world == null) return;
 
             // Pruefen ob das Fragment bereits angesehen wurde — sonst zeigen
             var saveR = await _save.LoadAsync();
             if (!saveR.IsSuccess || saveR.Value == null) return;
             var fragmentId = world.Id;   // z.B. "elderwald" -> fragment-id = welt-id
             if (saveR.Value.Story.ViewedMemoryFragments.Contains(fragmentId)) return;
+
+            // Welt 10 (Drachenfeste) = Finale (Story v4 Kap. 10): statt des normalen
+            // Erinnerungs-Fragments die finale Endkampf-Entscheidung (Nythragor zerstoeren
+            // oder erloesen). Das EndingChoiceModal markiert "drachenfeste" selbst als gesehen.
+            if (world.Index == 10)
+            {
+                await _screenManager.PushAsync(ScreenId.EndingChoiceOverlay);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(world.MemoryFragmentKey)) return;
 
             // Fragment-Index aus Welt-Index ableiten (welt 1 -> fragment 1, ...)
             var isMajorTwist = world.Index == 8;   // Abysstiefe = DER TWIST

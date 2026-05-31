@@ -73,6 +73,7 @@ namespace ArcaneKingdom.UI.Bootstrap
                 [ScreenId.RaceSelection]            = typeof(RaceSelectionScreen),
                 [ScreenId.PrestigeUpgradeOverlay]   = typeof(PrestigeUpgradeModal),
                 [ScreenId.MemoryFragmentOverlay]    = typeof(MemoryFragmentModal),
+                [ScreenId.EndingChoiceOverlay]      = typeof(EndingChoiceModal),
                 [ScreenId.DifficultyPickerOverlay]  = typeof(DifficultyPickerModal),
 
                 // Spielplan v5 — neue Screens

@@ -1,0 +1,76 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-modal-backdrop ak-bg-overlay"
+                      style="flex-grow: 1;
+                             justify-content: center;
+                             align-items: center;">
+
+        <ui:VisualElement class="ak-modal ak-bg-surface ak-bd-gold ak-rad-lg"
+                          style="border-width: 1px;
+                                 padding: 36;
+                                 max-width: 660;
+                                 min-width: 400;">
+
+            <ui:Label text="Das Ende" class="ak-h2"
+                      style="text-align: center;
+                             margin-bottom: 16;" />
+
+            <!-- Finale-Reminiszenz (Fragment 10) als Intro -->
+            <ui:Label name="ending-intro" text=""
+                      class="ak-body ak-text--muted"
+                      style="text-align: center;
+                             font-size: 14;
+                             font-style: italic;
+                             white-space: normal;
+                             margin-bottom: 20;" />
+
+            <ui:Label name="ending-prompt" text=""
+                      class="ak-body ak-text--secondary"
+                      style="text-align: center;
+                             font-size: 16;
+                             white-space: normal;
+                             margin-bottom: 24;" />
+
+            <!-- Choice-Phase: zwei sich ausschliessende Wege -->
+            <ui:VisualElement name="ending-choice-row"
+                              style="flex-direction: row;
+                                     justify-content: center;
+                                     align-items: stretch;">
+                <ui:Button name="ending-destroy-button" text="Nythragor zerstoeren"
+                           class="ak-btn ak-btn--ghost ak-btn--lg ak-text--danger"
+                           style="min-width: 220;
+                                  min-height: 52;
+                                  margin-right: 16;
+                                  white-space: normal;" />
+                <ui:Button name="ending-redeem-button" text="Nythragor erloesen"
+                           class="ak-btn ak-btn--accent ak-btn--lg"
+                           style="min-width: 220;
+                                  min-height: 52;
+                                  white-space: normal;" />
+            </ui:VisualElement>
+
+            <!-- Ending-Cutscene: nach der Wahl -->
+            <ui:Label name="ending-result-title" text=""
+                      class="ak-h2 ak-text--accent"
+                      style="display: None;
+                             text-align: center;
+                             margin-bottom: 12;" />
+
+            <ui:Label name="ending-result-text" text=""
+                      class="ak-body ak-text--secondary"
+                      style="display: None;
+                             text-align: center;
+                             font-size: 16;
+                             white-space: normal;
+                             margin-bottom: 28;" />
+
+            <ui:Button name="ending-close-button" text="Vollenden"
+                       class="ak-btn ak-btn--accent ak-btn--lg"
+                       style="display: None;
+                              align-self: center;
+                              min-width: 220;
+                              min-height: 44;" />
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

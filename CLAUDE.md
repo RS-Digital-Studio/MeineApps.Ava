@@ -414,7 +414,7 @@ Design-Tokens (Spacing, Radius, Fonts) kommen aus `MeineApps.Core.Ava/Themes/The
 | BingXBot | #3B82F6 Blau | Dark Trading Terminal |
 | GardenControl | #2E7D32 Grün | Natur/Garten Dashboard |
 | SmartMeasure | #FF6B00 Orange | Technisch-Professionell |
-| ArcaneKingdom (Unity) | #6B46C1 Royal-Purple + #F59E0B Gold | Magisches TCG (eigenes USS-Theme) |
+| ArcaneKingdom (Unity) | #f5c842 Gold (UI-Leitfarbe) · #6B46C1 Royal-Purple (Sekundär-Akzent) | Dark-Fantasy TCG, "Arcane Realm"-Design (eigenes USS-Theme) |
 
 ---
 

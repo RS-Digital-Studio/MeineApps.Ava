@@ -14,7 +14,7 @@ anderen Apps bewusst machen.
 | Genre | TCG + RPG, Free-to-Play |
 | Karten-Pool (Launch) | 131 Standard + 27 Oekosystem (Event/Premium/Sternkarten/Prestige) + 4 Sammelset-Belohnungen = 162 Karten |
 | Welten | 10 Welten (Elderwald → Drachenfeste) mit Story-Mythologie |
-| Farbpalette | Royal-Purple #6B46C1 + Gold #F59E0B (Brand-Referenz) |
+| Farbpalette | Gold #f5c842 auf #0a0a18 (UI-Leitfarbe) · Royal-Purple #6B46C1 (Sekundär-Akzent/Brand) |
 
 > Pflichtlektuere VOR Aenderungen: [DESIGN.md](DESIGN.md) (v6, Quelle der Wahrheit) und [ARCHITECTURE.md](ARCHITECTURE.md).
 > Generische Repo-Konventionen siehe [Haupt-CLAUDE.md](../../../CLAUDE.md).
@@ -208,6 +208,91 @@ Erzeugt alle ScriptableObject-Assets aus den JSON-Dateien unter `Resources/Data/
 
 ---
 
+## UI/Theme-Konventionen (Arcane Realm)
+
+Design-Sprache: **Dark Fantasy / "Arcane Realm"** — helles Gold auf sehr dunklem, leicht
+blau-violettem Grund. Referenz-Designs: `Design_Entwurf_Login_HubWelt.html` und
+`karten_vorlage.html` (unter `F:\AI\ComfyUI_windows_portable\…\Spiele Ideen Ordner\Ideen\`).
+
+### Farbpalette
+
+| Token | Wert | Verwendung |
+|-------|------|-----------|
+| `--ak-gold` | #f5c842 | Leitfarbe: Titel, aktive Borders, CTA-Flächen |
+| `--ak-bg-deep` | #0a0a18 | Haupt-Hintergrund |
+| `--ak-bg-header` | #060610 | Header, Navigationsleisten |
+| `--ak-purple` | #6B46C1 | Sekundär-Akzent (Brand, Primary-Buttons) |
+
+Royal-Purple ist **nie** Hintergrundfarbe für Flächen — nur Akzent und Brand-Signal.
+
+### Theme-Dateien (Ladereihenfolge)
+
+```
+Unity/Assets/_Project/UI/Theme/
+├── ArcaneTheme.uss          # Root — importiert alle anderen via @import
+├── Tokens.uss               # CSS-Custom-Properties (--ak-*)
+├── Common.uss               # Reset, Basis-Typografie, Utilities
+├── Components.uss           # Alle ak-* Komponenten-Klassen + ak-hub-*
+└── V6Components.uss         # Unity-6-spezifische UI-Toolkit-Overrides (separat, kein @import)
+```
+
+UXML soll ausschließlich Theme-Klassen und `var(--ak-*)`-Tokens nutzen, **keine hardcodierten
+Farben, Schriftgrößen oder Abstände**. Detail-Tokens → `Tokens.uss`.
+
+### Gold-Border-Tokens
+
+| Token | Stärke | Einsatz |
+|-------|--------|---------|
+| `--ak-border-gold-soft` | schwacher Gold-Rand | Standard-Surfaces, inaktive Elemente |
+| `--ak-border-gold` | normaler Gold-Rand | Aktive Panels, Cards |
+| `--ak-border-gold-strong` | starker Gold-Rand | CTAs, hervorgehobene Surfaces |
+
+### Klassen-Katalog
+
+| Klasse | Beschreibung |
+|--------|-------------|
+| `ak-surface` | Dunkle Fläche mit Gold-Rand (soft) |
+| `ak-surface-elevated` | Wie `ak-surface`, aber mit stärkerem Rand + leicht erhöhtem Hintergrund |
+| `ak-btn` | Basis-Button: transparente Fläche, gold-soft-Rand |
+| `ak-btn--primary` | Button: Purple-Fläche + Gold-Rand (Haupt-Aktionen) |
+| `ak-btn--accent` | Button: Gold-Fläche + dunkler Text (CTAs, Kauf-Buttons) |
+| `ak-btn--ghost` | Button: transparente Fläche + Gold-Rand + Gold-Text |
+| `ak-h1`, `ak-h2` | Großer Titel: Gold, gespreiztes Letter-Spacing |
+| `ak-h3`, `ak-h4` | Unter-Titel: hell (nicht Gold) |
+| `ak-hub-*` | Hub-Welt-spezifische Klassen (Gebäude-Overlays, Energie-Leiste, Top-Bar) |
+
+### No-Emoji / No-Unicode-Symbol-Doktrin
+
+**Keine Unicode-Symbole als UI-Text** (★ ☆ ← → ✓ ✗ und ähnliche) — Android rendert
+viele davon als Tofu-Quadrate. Erlaubte Alternativen:
+
+- **Close-Buttons:** ASCII "X" (kein ✕/×)
+- **Stern-Bewertungen** (WorldMap, DifficultyPicker, BattleReport): `star_sprite`-Sprites als
+  `VisualElement`, gefüllt = Gold-Tint, leer = reduzierte Opacity — **nie** ★/☆-Glyphen
+- **Icons:** Material Icons / eigene SVG-Sprites via UI Toolkit `background-image`
+
+### Hub-Welt-Pattern
+
+Der Hub ist eine **Gebäude-Welt** (Lies-of-Astaroth-Stil), kein Tab-Layout:
+
+- **Hintergrund:** `hub_main.png` als Vollbild-Sprite
+- **Top-Bar:** Avatar/Gold-Ring + Level-Badge, Name, Gilden-Tag, LV-/Arena-Badge, Gold-/Diamant-Währungs-Pills
+- **Energie-Leiste:** gold-umrandet, unterhalb der Top-Bar
+- **Event-Banner:** optional, über dem Gebäude-Grid
+- **Gebäude-Grid:** 8 Overlays (Karten-Turm→Codex, Zauberschmiede→Schmiede, Bibliothek→QuestCenter,
+  Tempel, Gilden-Hafen→Guild, Marktplatz→Shop, Wand der Ehre→Merit, Postamt→Chat)
+- **Right-Nav:** Landkarte / Arena / Runen / Profil
+- **Bottom-Nav:** Settings / Shop / Hub (aktiv) / DeckBuilder / Freunde
+
+`HubScreen` ist ein **reiner Navigations-Knoten**: Jedes Gebäude und jeder Nav-Button navigiert
+per `ScreenManager` zu einem eigenständigen Screen. Beim Hub-Eintritt laufen Daily-Income-Tick,
+PendingClaims-Check und Quest-Restore — die Hub-View selbst enthält keine Spiellogik.
+
+`HubCityRenderer` (programmatischer Gebäude-Renderer) ist durch diesen UXML-basierten Hub
+**ungenutzt/Legacy** und wird nicht mehr gepflegt.
+
+---
+
 ## Wichtige Konventionen (Auszug)
 
 > Vollstaendig in [ARCHITECTURE.md Kapitel 11](ARCHITECTURE.md#11-conventions).
@@ -284,71 +369,37 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 
 ---
 
-## Roadmap-Status
+## Implementierungsstand
 
-**Bereits implementiert (Domain + UI):**
+### Implementiert
 
-- [x] **Domain v5**: NodeDifficulty (Classic/Amateur/Profi/Gott), AccountUnlocks (LV1-150),
-      RuneSlotUnlock/DeckSlotUnlock, DeckValidator (Cost-Cap 200 + Legendary/Epic-Limits),
-      CardUpgradeService, CollectionExchangeService, Energie-Ueberlauf >60,
-      Boss-Phasen-Mechanik (50% HP-Trigger + Reinforcements), Thief/Merit/Arena/Territory-Services
-- [x] **UI v5**: SplashScreen, RegistrationScreen, DifficultyPickerModal, RuneScreen,
-      PlayerProfileScreen, ShopScreen, QuestCenterScreen, MeritRankingScreen,
-      BattleReportScreen + Context, ThiefScreen, GuildWorldMapScreen, ChatOverlay,
-      PvpMatchmakingScreen, CollectionTradeScreen, HubCityRenderer
-- [x] **User-Flow verkabelt**: BootEntryPoint → Splash → Login/Registration → Hub
-      mit 10 neuen Mehr-Tab-Buttons. WorldMap → DifficultyPicker → Battle → BattleReport.
-- [x] **LoginController.RunLoginAsync(email, password)** fuer echten E-Mail-Login.
-- [x] **Hub-Cards-Filter** vollstaendig (6 Elemente inkl. Erde, 6 Seltenheiten inkl. Mythisch)
+| Bereich | Details |
+|---------|---------|
+| **Projekt-Skelett** | 6 Unity-Scenes (Boot/Hub/Battle/Arena/Guild/GuildWorld), 6 asmdefs + Tests-asmdefs, GDD v6.0, CI-Pipeline (GitHub Actions, EditMode-Tests + Android-AAB) |
+| **Domain-Modelle** | Race (5), Element (6, Doppel-Dreieck), Rarity (6), HeroFaehigkeitsTyp (5 Passivs), CardDefinition mit Personality + Last-Will, WorldDefinition mit Story-Mythologie |
+| **Daten** | 162 Karten (cards.json), 10 Welten (worlds.json), Story-Fragmente, Fusions-Rezepte, Prestige-Balancing, Sternkarten-Tempel, Premium-Shop, Event-Kalender, alle weiteren JSON-Dateien (vollstaendige Liste → Abschnitt "Daten-Files") |
+| **BattleEngine** | Deterministisch (DeterministicRng/Mulberry32), replay-faehig (BattleStateSerializer), Helden-Passivs, Karten-Persoenlichkeit-Events, Status-Effekte (8 Typen), DoT-Tick, Control/Synergy-Cases |
+| **Services (Domain)** | FusionService, PrestigeService, SternkartenService, LoginTracker, DeckValidator, CardUpgradeService, CollectionExchangeService, Thief/Merit/Arena/Territory-Services |
+| **Application-Layer** | FusionAppService, PrestigeAppService, LoginRewardController — DI-Wiring in GameInstaller |
+| **Save-System** | Schema v3 (PrestigeSaveSlice, SternkartenSaveSlice, StorySaveSlice, EventSaveSlice, FavoritedCardInstanceIds), SaveMigrator.MigrateToV3 |
+| **Lokalisierung** | DE + EN fuer Hero-Passivs, 10 Welt-Stories, 10 Erinnerungs-Fragmente, 8 NPCs, 6 Saeulen, Mythologie |
+| **Tests** | 30 Domain-Test-Klassen, ~165 Test-Cases (FusionService, PrestigeService, SternkartenService, HeroPassiv-Battle, Karten-Persoenlichkeit) |
+| **Editor-Tools** | DataImporter, CardPreview, LocalizationCheck, BalancingDashboard |
+| **Cloud-Functions** | Skelett (8 TypeScript-Endpoints unter `Server/CloudFunctions/`) |
+| **User-Flow** | BootEntryPoint → Splash → Login/Registration → Hub-Welt. WorldMap → DifficultyPicker → Battle → BattleReport. LoginController.RunLoginAsync (E-Mail-Login) |
+| **UI (implementiert)** | SplashScreen, RegistrationScreen, DifficultyPickerModal, RuneScreen, PlayerProfileScreen, ShopScreen, QuestCenterScreen, MeritRankingScreen, BattleReportScreen, ThiefScreen, GuildWorldMapScreen, ChatOverlay, PvpMatchmakingScreen, CollectionTradeScreen, **HubScreen (Gebäude-Welt, Arcane-Realm-Design)** |
+| **Theme** | ArcaneTheme.uss (Tokens → Common → Components via @import), V6Components.uss, Gold-Border-Tokens, alle ak-* und ak-hub-* Klassen |
 
-**Grundgerüst (etabliert):**
+### Noch ausstehend
 
-- [x] App-Ordner angelegt + 6 Unity-Scenes (Boot/Hub/Battle/Arena/Guild/GuildWorld)
-- [x] **GDD v6.0** (basiert auf Designplan v4, ersetzt v5.4)
-- [x] Architektur-Plan + komplette Service-Liste in ARCHITECTURE.md
-- [x] Unity-Projekt-Skelett (6 asmdefs + Tests-asmdefs)
-- [x] **Domain-Modelle v4-Spec**: Race (5), Element (6 Doppel-Dreieck), Rarity (6), HeroFaehigkeitsTyp (5 Passivs), CardDefinition mit Personality+Last-Will, WorldDefinition mit Story-Mythologie
-- [x] **162 Karten in cards.json**: 131 Standard (Ritter 31, Elfen 31, Tiergeister 31, Daemonen 31, Goetter 7) + 9 Event + 6 Premium + 2 Sternkarten + 10 Prestige + 4 Sammelset-Belohnungen (engelsritter/schattenfuerst/elder_drache/kriegsmaschine)
-- [x] **10 Welten in worlds.json**: Elderwald → Drachenfeste, alle mit Element/Boss/Saeule/Erinnerungs-Fragment/Mentor
-- [x] **Story-Daten in story_fragments.json**: Welt-Mythologie, 10 Erinnerungs-Fragmente, 8 Schluessel-NPCs, 6 Saeulen
-- [x] **Fusions-Crafting**: CategoryFusionRules (Typ A) + FusionRecipe (Typ B), 10 feste Rezepte (inkl. Goetter)
-- [x] **Auto-Battle-Progression**: LV 10/20/30/50 Speed-Stufen, Boss-Erster-Versuch-Manual-Rule
-- [x] **Prestige-System**: PrestigeStufe-Enum + Balancing-JSON (I-IV mit Stats/Drops/Income)
-- [x] **Sternkarten-System**: Sternkarte-Enum + Login-Belohnungen 30-Tage + Tempel-Eintausch
-- [x] **Premium-Shop-Daten**: 6 Karten mit Rotation
-- [x] **Event-Kalender**: 5 Saison-Events
-- [x] **Lokalisierung**: Hero-Passivs, 10 Welt-Stories, 10 Erinnerungs-Fragmente, 8 NPCs, 6 Saeulen, Mythologie (DE + EN)
-- [x] **DataImporter angepasst**: Neue Felder, neue Validierung, ResolveAbility statt Hard-Fail
-- [x] **30 Domain-Test-Klassen** (~165 Test-Cases — muessen bei Race/Element/Rarity-Aenderungen ggf. nachgezogen werden)
-- [x] CI-Pipeline (GitHub Actions, EditMode-Tests + Android-AAB)
-- [x] Editor-Tools (DataImporter + CardPreview + LocalizationCheck + BalancingDashboard)
-- [x] **Cloud-Functions-Skelett** (8 TypeScript-Endpoints unter `Server/CloudFunctions/`)
-- [x] BattleEngine vollstaendig + BattleStateSerializer (deterministisch, replay-faehig)
-- [x] BattleEngine erweitert um Helden-Passivs (KoeniglicheAura/GoettlicherSegen/Waldlaeufer/Rudelbund/LebensraubAura)
-- [x] BattleEngine erweitert um Karten-Persoenlichkeit-Events (OnPlay/OnVictory/OnDeath/Synergy/Rivalry/HeroPassivTriggered)
-- [x] FusionService implementiert (Kategorie-Fusion + feste Rezepte + Premium-Sperre + Favoriten-Schutz + Letzte-Kopie-Warnung)
-- [x] PrestigeService implementiert (I-IV, Sterne-Reset, Stat-Multiplier, Daily-Income, Boss-Phasen-Skalierung)
-- [x] SternkartenService implementiert (Inventar, Sternpunkte, Tempel-Eintausch, Mythic-Fragment-Sammlung)
-- [x] LoginTracker implementiert (30-Tage-Zyklus, CanClaimToday-Logik)
-- [x] 1*/2* Skill-Mechaniken nach Rasse getunt (Ritter=Defense, Elfen=Control, Tiergeister=Synergy/Buff, Daemonen=Damage/Debuff, Goetter=Buff)
-- [x] PlayerSave Schema v3: PrestigeSaveSlice + SternkartenSaveSlice + StorySaveSlice + EventSaveSlice + FavoritedCardInstanceIds
-- [x] SaveMigrator.MigrateToV3 implementiert
-- [x] Domain-Tests: FusionServiceTests + PrestigeServiceTests + SternkartenServiceTests + HeroPassivBattleTests + BattlePersonalityTests
-- [x] DI-Wiring: PrestigeService + SternkartenService in GameInstaller (FusionService bleibt Application-Wrapper-Job)
-- [x] FusionAppService in Game-Assembly (Wrapper der CardCatalog + Rezepte lazy-laedt + Save-Mutation orchestriert)
-- [x] PrestigeAppService in Game-Assembly (Welt-Upgrade + Daily-Income-Tick + Prestige-IV-Karten-Drop)
-- [x] LoginRewardController in Game-Assembly (30-Tage-Zyklus aus login_rewards.json + Sternkarten-Drop)
-- [x] Status-Effekt-System (Sleep/Silence/Frozen/Stunned/Poisoned/Burning/Slowed/Rooted)
-- [x] BattleEngine.Control-Case + Synergy-Case implementiert (Element-zu-Effekt-Inference)
-- [x] BattleEngine DoT-Tick + Action-Block-Check + StatusEffect-Dauer-Tick
-- [x] DI-Wiring fuer Application-Layer-Services
-- [ ] MVP: Kampf-UI (Drag&Drop, Mana-Orbs, Damage-Numbers, Personality-Line-Anzeige) — Monat 4-6
-- [ ] MVP: Hub-UI (Tabs, Energie-Bar, Navigation) — Monat 4-5
-- [ ] MVP: Welt-1-UI (Elderwald-Karte mit 10 Nodes) — Monat 6-8
-- [ ] Rune-Fragment + EXP-Potion Inventar-Sub-Systeme — Monat 4-6
-- [ ] Firebase Unity SDK installieren + Auth/RTDB/Analytics verdrahten — Monat 10-14
-- [ ] Cloud-Functions deployen (Staging) — Monat 11+
-- [ ] Karten-Artworks (Mid-Journey/Stable-Diffusion) + Sound-Assets — laufend
+| Bereich | Details |
+|---------|---------|
+| Kampf-UI | Drag&Drop, Mana-Orbs, Damage-Numbers, Personality-Line-Anzeige |
+| Welt-1-UI | Elderwald-Karte mit 10 Nodes |
+| Inventar-Sub-Systeme | Rune-Fragment + EXP-Potion |
+| Firebase-Integration | Unity SDK, Auth/RTDB/Analytics verdrahten |
+| Cloud-Functions | Staging-Deploy |
+| Assets | Karten-Artworks, Sound-Assets |
 
 ---
 

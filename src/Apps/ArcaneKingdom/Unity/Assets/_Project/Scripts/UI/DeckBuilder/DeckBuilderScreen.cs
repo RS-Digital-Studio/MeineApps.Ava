@@ -319,7 +319,7 @@ namespace ArcaneKingdom.UI.DeckBuilder
 
             var defs = _cardCatalog.AllCards.ToDictionary(c => c.Id, c => c);
             _statsCount.text = $"{_editingDeck.CardInstanceIds.Count}/{Deck.MaxCards}";
-            _statsCost.text = _editingDeck.TotalCost(defs, _saveCached.CardInventory).ToString();
+            _statsCost.text = $"{_editingDeck.TotalCost(defs, _saveCached.CardInventory)}/{DeckValidator.MaxDeckCost}";
 
             var validation = DeckValidator.Validate(_editingDeck, _saveCached.CardInventory, defs);
             if (validation.IsValid)
@@ -334,10 +334,14 @@ namespace ArcaneKingdom.UI.DeckBuilder
                 _validationStatus.text = validation.Code switch
                 {
                     DeckValidator.ValidationCode.EmptyDeck => "Deck ist leer",
-                    DeckValidator.ValidationCode.TooManyCards => "Zu viele Karten",
+                    DeckValidator.ValidationCode.TooManyCards => "Zu viele Karten (max. 10)",
                     DeckValidator.ValidationCode.CardLimitExceeded => $"Limit ueberschritten: {validation.OffendingCardId}",
                     DeckValidator.ValidationCode.UniqueCardDuplicated => $"Unique-Karte doppelt: {validation.OffendingCardId}",
                     DeckValidator.ValidationCode.CopyLimitExceeded => $"Mehr als 3 Kopien: {validation.OffendingCardId}",
+                    DeckValidator.ValidationCode.CostBudgetExceeded => $"COST-Budget ueberschritten: {validation.TotalCost}/{DeckValidator.MaxDeckCost}",
+                    DeckValidator.ValidationCode.TooManyLegendaries => "Max. 2 Legendaere pro Deck",
+                    DeckValidator.ValidationCode.TooManyEpics => "Max. 3 Epics pro Deck",
+                    DeckValidator.ValidationCode.TooManyMythics => "Max. 1 Mythische pro Deck",
                     _ => $"Fehler: {validation.Code}"
                 };
                 _validationStatus.RemoveFromClassList("ak-text--success");

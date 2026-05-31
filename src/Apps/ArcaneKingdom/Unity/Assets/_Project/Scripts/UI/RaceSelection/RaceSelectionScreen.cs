@@ -140,7 +140,8 @@ namespace ArcaneKingdom.UI.RaceSelection
             Race.Ritter      => _loc.Get("npc.marschall_aldor.name") ?? "Marschall Aldor",
             Race.Elfen       => _loc.Get("npc.mondpriesterin_lira.name") ?? "Mondpriesterin Lira",
             Race.Tiergeister => _loc.Get("npc.grimmfang.name") ?? "Grimmfang",
-            Race.Daemonen    => _loc.Get("npc.lilith.name") ?? "Lilith",
+            // Designplan v4 Kap. 7: Dämonen-Starter-Mentor ist Schattenflüsterer Morah (nicht Lilith).
+            Race.Daemonen    => _loc.Get("npc.morah.name") ?? "Schattenflüsterer Morah",
             _                => "?"
         };
 

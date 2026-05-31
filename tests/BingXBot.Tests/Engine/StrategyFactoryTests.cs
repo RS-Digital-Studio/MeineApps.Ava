@@ -27,10 +27,27 @@ public class StrategyFactoryTests
     }
 
     [Fact]
-    public void AvailableStrategies_ShouldContainOnlySkSystem()
+    public void AvailableStrategies_ShouldContainSkAndTrendFollow()
     {
-        StrategyFactory.AvailableStrategies.Should().ContainSingle();
-        StrategyFactory.AvailableStrategies[0].Should().Be("SK-System");
+        StrategyFactory.AvailableStrategies.Should().Contain("SK-System");
+        StrategyFactory.AvailableStrategies.Should().Contain("TrendFollow");
+    }
+
+    [Theory]
+    [InlineData("TrendFollow")]
+    [InlineData("TrendFollow-Fast")]
+    [InlineData("TrendFollow-Wide")]
+    [InlineData("TrendFollow-Strong")]
+    [InlineData("SkTrend")]
+    [InlineData("SkTrend-Wide")]
+    public void Create_TrendFamily_ShouldReturnCloneableStrategy(string name)
+    {
+        var strategy = StrategyFactory.Create(name);
+        strategy.Should().NotBeNull();
+        strategy.Should().BeAssignableTo<IStrategy>();
+        var clone = strategy.Clone();
+        clone.Should().NotBeSameAs(strategy);
+        clone.Name.Should().Be(strategy.Name);
     }
 
     [Fact]

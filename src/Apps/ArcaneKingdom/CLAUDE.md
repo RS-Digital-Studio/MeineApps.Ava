@@ -259,7 +259,27 @@ Farben, Schriftgrößen oder Abstände**. Detail-Tokens → `Tokens.uss`.
 | `ak-btn--ghost` | Button: transparente Fläche + Gold-Rand + Gold-Text |
 | `ak-h1`, `ak-h2` | Großer Titel: Gold, gespreiztes Letter-Spacing |
 | `ak-h3`, `ak-h4` | Unter-Titel: hell (nicht Gold) |
+| `ak-bg-*` | Hintergrund-Token (`ak-bg-deep/base/surface/surface-2/overlay/accent/primary/danger`) |
+| `ak-bd-*` / `ak-bd-b-*` | Rahmen-Token, alle Seiten bzw. nur unten (`gold-soft/gold/gold-strong/accent/danger/success`) |
+| `ak-text--*` | Text-Farbe (`accent/accent-light/accent-dark/secondary/muted/danger/success/primary-light`) |
+| `ak-rad-*` | Eck-Radius (`sm/md/lg/xl`) |
 | `ak-hub-*` | Hub-Welt-spezifische Klassen (Gebäude-Overlays, Energie-Leiste, Top-Bar) |
+
+### Theme-Werte NUR über Klassen — niemals inline (Pflicht)
+
+**Unity UI Toolkit löst `var(--token)` ausschließlich in USS-Regeln auf, NICHT in Inline-Styles**
+(`style="..."` im UXML). Inline `var()` crasht beim `VisualTreeAsset.Instantiate()`
+(`StyleVariableResolver` → `NullReferenceException`), da der Tree zu dem Zeitpunkt detached ist —
+ein `PanelSettings.themeStyleSheet`-Import behebt das **nicht** (per MCP verifiziert). Daher:
+
+- **Theme-Farben/-Radien immer über die Utility-/Komponenten-Klassen** (`ak-bg-*`, `ak-bd-*`,
+  `ak-text--*`, `ak-rad-*`, `ak-surface`, `ak-btn` …) am `class`-Attribut setzen.
+- **Niemals** `style="… : var(--ak-…)"` inline (crasht) und **niemals** den Token-Wert hardcoden
+  (`rgb(6,6,16)` etc. — Verschleierung, nicht zentral steuerbar).
+- Inline-`style` nur für Layout/Einzelwerte (Größen, Abstände, `border-width`, `flex-*`,
+  `-unity-*`) und für bewusste Alpha-Effekte (`rgba(...)`-Tints, `text-shadow`), die keine Tokens sind.
+- Verifikation (MCP, panel-unabhängig): alle UXML per `Resources.LoadAll<VisualTreeAsset>("UI")` +
+  `vta.Instantiate()` in try/catch instanziieren — crashende Screens haben noch inline `var()`.
 
 ### No-Emoji / No-Unicode-Symbol-Doktrin
 

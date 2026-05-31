@@ -415,17 +415,18 @@ public class BotDatabaseService
         catch { return null; }
     }
 
-    /// <summary>Speichert Runtime-State (TradesToday, ConsecutiveLosses) für Crash-Recovery.</summary>
-    public async Task SaveRuntimeStateAsync(int tradesToday, int consecutiveLosses)
+    /// <summary>Speichert Runtime-State (TradesToday, ConsecutiveLosses, aktive Strategie) für Crash-Recovery.
+    /// Der Strategie-Name erlaubt beim Start einen Reset der Loss-Historie bei Strategiewechsel.</summary>
+    public async Task SaveRuntimeStateAsync(int tradesToday, int consecutiveLosses, string? strategyName = null)
     {
         EnsureInitialized();
-        var state = new { TradesToday = tradesToday, ConsecutiveLosses = consecutiveLosses };
+        var state = new { TradesToday = tradesToday, ConsecutiveLosses = consecutiveLosses, StrategyName = strategyName };
         var json = JsonSerializer.Serialize(state);
         await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "RuntimeState", Value = json });
     }
 
-    /// <summary>Lädt Runtime-State für Crash-Recovery.</summary>
-    public async Task<(int TradesToday, int ConsecutiveLosses)?> LoadRuntimeStateAsync()
+    /// <summary>Lädt Runtime-State für Crash-Recovery. StrategyName ist null bei altem Format (vor Strategie-Tagging).</summary>
+    public async Task<(int TradesToday, int ConsecutiveLosses, string? StrategyName)?> LoadRuntimeStateAsync()
     {
         EnsureInitialized();
         var entity = await _db!.FindAsync<SettingEntity>("RuntimeState");
@@ -436,7 +437,9 @@ public class BotDatabaseService
             var root = doc.RootElement;
             var tradesToday = root.GetProperty("TradesToday").GetInt32();
             var consecutiveLosses = root.GetProperty("ConsecutiveLosses").GetInt32();
-            return (tradesToday, consecutiveLosses);
+            var strategyName = root.TryGetProperty("StrategyName", out var sn) && sn.ValueKind == JsonValueKind.String
+                ? sn.GetString() : null;
+            return (tradesToday, consecutiveLosses, strategyName);
         }
         catch { return null; }
     }

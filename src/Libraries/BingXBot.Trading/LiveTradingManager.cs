@@ -33,6 +33,9 @@ public class LiveTradingManager : IDisposable
     private LiveTradingService? _service;
     private bool _disposed;
 
+    /// <summary>Name der aktuell laufenden Strategie — fuer RuntimeState-Tagging (Loss-Streak-Reset bei Wechsel).</summary>
+    private string? _activeStrategyName;
+
     /// <summary>Aktueller REST-Client (null wenn nicht verbunden).</summary>
     public BingXRestClient? RestClient => _restClient;
 
@@ -204,6 +207,7 @@ public class LiveTradingManager : IDisposable
         // Strategie aktivieren (Multi-TF Standalone: kein Preset mehr)
         var strategy = StrategyFactory.Create(strategyName);
         _strategyManager.SetStrategy(strategy);
+        _activeStrategyName = strategyName;
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
             $"LIVE-TRADING AKTIV mit Strategie '{strategyName}'. Echtes Geld!"));
@@ -222,9 +226,22 @@ public class LiveTradingManager : IDisposable
             var runtimeState = await _dbService.LoadRuntimeStateAsync();
             if (runtimeState.HasValue)
             {
-                _service.RestoreRuntimeState(runtimeState.Value.TradesToday, runtimeState.Value.ConsecutiveLosses);
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                    $"Runtime-State wiederhergestellt: {runtimeState.Value.TradesToday} Trades heute, {runtimeState.Value.ConsecutiveLosses} Verluste in Folge"));
+                if (runtimeState.Value.StrategyName != strategyName)
+                {
+                    // Strategiewechsel (oder erstmaliger Start mit Strategie-Tagging): Die Loss-Streak +
+                    // Tages-Trades der vorherigen Strategie sind fuer die aktuelle irrelevant → zuruecksetzen.
+                    // Sonst startet eine frische Strategie mit der geerbten Loss-Streak-Pause der alten.
+                    _service.RestoreRuntimeState(0, 0);
+                    await _dbService.SaveRuntimeStateAsync(0, 0, strategyName);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                        $"Strategie '{strategyName}' (vorher '{runtimeState.Value.StrategyName ?? "unbekannt"}'): Loss-Streak + Tages-Trades zurueckgesetzt"));
+                }
+                else
+                {
+                    _service.RestoreRuntimeState(runtimeState.Value.TradesToday, runtimeState.Value.ConsecutiveLosses);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                        $"Runtime-State wiederhergestellt: {runtimeState.Value.TradesToday} Trades heute, {runtimeState.Value.ConsecutiveLosses} Verluste in Folge"));
+                }
             }
             var savedExitStates = await _dbService.LoadExitStatesAsync();
             if (savedExitStates is { Count: > 0 })
@@ -571,7 +588,7 @@ public class LiveTradingManager : IDisposable
                 if (exitStates.Count > 0)
                     await _dbService.SaveExitStatesAsync(exitStates);
                 var (tradesToday, losses) = _service.GetRuntimeStateSnapshot();
-                await _dbService.SaveRuntimeStateAsync(tradesToday, losses);
+                await _dbService.SaveRuntimeStateAsync(tradesToday, losses, _activeStrategyName);
 
                 // Pending Limit-Orders persistieren (TP-Recovery nach Neustart)
                 var pendingOrders = _service.GetPendingLimitOrdersSnapshot();
@@ -613,7 +630,7 @@ public class LiveTradingManager : IDisposable
                     if (exitStates.Count > 0)
                         await _dbService.SaveExitStatesAsync(exitStates);
                     var (tradesToday, losses) = _service.GetRuntimeStateSnapshot();
-                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses);
+                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses, _activeStrategyName);
                     // EmergencyStop schließt alle Positionen → pending orders nicht mehr relevant
                     await _dbService.ClearPendingLimitOrdersAsync();
                 }

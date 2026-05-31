@@ -770,10 +770,16 @@ namespace ArcaneKingdom.UI.Battle
             return starDelta;
         }
 
-        private static string WorldIdForNode(NodeDefinition node)
+        private string WorldIdForNode(NodeDefinition node)
         {
-            // Konvention: "world_1_node_3" -> "world_1"
-            var idx = node.Id.IndexOf("_node_", System.StringComparison.Ordinal);
+            // Zuverlaessig ueber den Catalog: die echten Node-IDs sind "{welt}_n{index}"
+            // (z.B. "elderwald_n5") — NICHT "world_X_node_Y". Die alte "_node_"-Konvention
+            // lieferte immer "" -> Sterne wurden nie gespeichert, Node-Freischaltung/Prestige/
+            // Memory-Fragmente blieben tot.
+            var world = _worldCatalog.AllWorlds.FirstOrDefault(w => w.Nodes.Any(n => n.Id == node.Id));
+            if (world != null) return world.Id;
+            // Fallback: Praefix vor dem letzten "_n{index}"-Suffix.
+            var idx = node.Id.LastIndexOf("_n", System.StringComparison.Ordinal);
             return idx > 0 ? node.Id.Substring(0, idx) : string.Empty;
         }
 

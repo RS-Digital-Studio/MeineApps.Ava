@@ -19,6 +19,10 @@
             <ui:Label name="battle-turn-number" text="1" class="ak-h4 ak-text--accent" />
             <ui:VisualElement style="flex-grow: 1;" />
             <ui:Label name="battle-phase-label" text="Dein Zug" class="ak-h4 ak-text--accent" />
+            <!-- Auto-Kampf (Spielplan v5 Kap. 9.1: Auto-Kampf-Button rechts oben).
+                 Text zeigt den Zustand: AUTO (aus) / 1x..4x (aktiver Speed). -->
+            <ui:Button name="battle-auto-button" text="AUTO"
+                       class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-left: 12; min-width: 56;" />
         </ui:VisualElement>
 
         <!-- ================ ENEMY-BEREICH ================ -->

@@ -59,6 +59,7 @@ namespace ArcaneKingdom.UI.Battle
         private VisualElement _playerField = null!;
         private VisualElement _playerHand = null!;
         private Button _endTurnBtn = null!;
+        private Button _autoBtn = null!;
 
         private VisualElement _floatingLayer = null!;
 
@@ -76,6 +77,14 @@ namespace ArcaneKingdom.UI.Battle
 
         // v6: Anzahl bereits angezeigter Events (damit jeder Event nur 1x als Toast erscheint)
         private int _eventsShownCount;
+
+        // K5: Auto-Battle (Designplan v4 Kap. 6 / Spielplan v5 Kap. 9.1).
+        // _autoBattleSpeed: 0 = aus, 1..4 = aktive Geschwindigkeit. _autoRunning verhindert
+        // doppelte Loops. _playerLevel + _hasBeatenNodeBefore steuern Freischaltung/Boss-Lock.
+        private int _autoBattleSpeed;
+        private bool _autoRunning;
+        private int _playerLevel = 1;
+        private bool _hasBeatenNodeBefore;
 
         public override string Id => ScreenId.Battle;
         protected override string UxmlPath => "UI/BattleScreen";
@@ -138,10 +147,12 @@ namespace ArcaneKingdom.UI.Battle
             _playerField   = Q<VisualElement>("player-field");
             _playerHand    = Q<VisualElement>("player-hand");
             _endTurnBtn    = Q<Button>("battle-end-turn-button");
+            _autoBtn       = Q<Button>("battle-auto-button");
             _floatingLayer = Q<VisualElement>("battle-floating-layer");
 
             _fleeBtn.clicked += OnFlee;
             _endTurnBtn.clicked += () => OnEndTurnAsync().Forget();
+            _autoBtn.clicked += OnAutoButtonClicked;
         }
 
         public override async UniTask OnEnterAsync(CancellationToken ct)
@@ -157,6 +168,9 @@ namespace ArcaneKingdom.UI.Battle
             _energySpent = false;
             _playerStartHp = 0;
             _enemyStartHp = 0;
+            _autoBattleSpeed = 0;
+            _autoRunning = false;
+            _hasBeatenNodeBefore = false;
 
             _node = _modalContext.Get<NodeDefinition>(WorldMapScreen.NodeContextKey);
 
@@ -219,6 +233,20 @@ namespace ArcaneKingdom.UI.Battle
             _instances = setup.Instances;
             _playerStartHp = _engine.State.PlayerHeroHp;
             _enemyStartHp = _engine.State.EnemyHeroHp;
+
+            // K5: Auto-Battle-Voraussetzungen aus dem Save ableiten. Spieler-Level steuert die
+            // maximale Geschwindigkeit; der Boss-Lock greift, solange dieser Boss-Node noch nie
+            // bezwungen wurde (= keine Sterne im WorldProgress).
+            _playerLevel = save.Profile.Level;
+            if (_node != null)
+            {
+                var worldId = WorldIdForNode(_node);
+                if (!string.IsNullOrEmpty(worldId)
+                    && save.WorldProgress.TryGetValue(worldId, out var wp)
+                    && wp.StarsByNodeId.ContainsKey(_node.Id))
+                    _hasBeatenNodeBefore = true;
+            }
+            UpdateAutoButton();
 
             RefreshAll();
         }
@@ -579,11 +607,16 @@ namespace ArcaneKingdom.UI.Battle
             await UniTask.Delay(180);   // kleine Verzoegerung zwischen Toasts
         }
 
-        private async UniTask OnEndTurnAsync()
+        private async UniTask OnEndTurnAsync(int speed = 1)
         {
             if (_busy || _engine == null) return;
             if (_engine.State.Phase != BattlePhase.PlayerTurn) return;
             _busy = true;
+
+            // K5: Im Auto-Modus werden die Schau-Pausen mit der Geschwindigkeit verkuerzt.
+            var spd = speed < 1 ? 1 : speed;
+            var phasePause = 500 / spd;
+            var cardPause = 280 / spd;
 
             // H13: try/finally garantiert dass _busy auch bei einer Exception wieder
             // freigegeben wird — sonst bleibt der gecachte Screen dauerhaft blockiert.
@@ -600,7 +633,7 @@ namespace ArcaneKingdom.UI.Battle
                 }
 
                 // 2. Kurze Pause damit Spieler die Phase wahrnimmt
-                await UniTask.Delay(500);
+                await UniTask.Delay(phasePause);
 
                 // 3. Enemy spielt Karten (AI)
                 if (_ai != null)
@@ -611,7 +644,7 @@ namespace ArcaneKingdom.UI.Battle
                     {
                         _engine.PlayCard(forPlayer: false, instId);
                         RefreshAll();
-                        await UniTask.Delay(280);
+                        await UniTask.Delay(cardPause);
                     }
                 }
 
@@ -626,6 +659,113 @@ namespace ArcaneKingdom.UI.Battle
             {
                 _busy = false;
             }
+        }
+
+        // ============================================================
+        // K5: Auto-Battle (Designplan v4 Kap. 6 / Spielplan v5 Kap. 9.1)
+        // ============================================================
+
+        /// <summary>
+        /// Auto-Kampf-Button: zyklt durch Aus -> 1x -> 2x -> ... -> max -> Aus. Die maximale
+        /// Geschwindigkeit haengt vom Spieler-Level ab (LV10=1x, 20=2x, 30=3x, 50=4x). Vor LV 10
+        /// ist Auto-Kampf gesperrt; ein Boss-Node muss zudem einmal manuell bezwungen sein.
+        /// </summary>
+        private void OnAutoButtonClicked()
+        {
+            if (_engine == null) return;
+
+            var maxSpeed = AutoBattleProgression.GetMaxAutoBattleSpeed(_playerLevel);
+            if (maxSpeed == 0)
+            {
+                _toast.Show(string.Format(
+                    _loc.Get("battle.auto_locked_level", "Auto-Kampf ab Level {0}."),
+                    AutoBattleProgression.AutoBattleUnlockLevel), ToastKind.Warning);
+                return;
+            }
+
+            var isBossNode = _node != null && (_node.Type == NodeType.MiniBoss || _node.Type == NodeType.WorldBoss);
+            if (!AutoBattleProgression.IsAutoBattleAllowedForBoss(_playerLevel, isBossNode, _hasBeatenNodeBefore))
+            {
+                _toast.Show(_loc.Get("battle.auto_boss_first_manual",
+                    "Diesen Boss zuerst einmal selbst bezwingen."), ToastKind.Warning);
+                return;
+            }
+
+            // Zyklus: aus -> 1 -> 2 -> ... -> max -> aus
+            if (_autoBattleSpeed >= maxSpeed) _autoBattleSpeed = 0;
+            else                              _autoBattleSpeed++;
+
+            UpdateAutoButton();
+
+            if (_autoBattleSpeed > 0 && !_autoRunning)
+                RunAutoBattleAsync().Forget();
+        }
+
+        /// <summary>
+        /// Treibt den Spieler-Zug automatisch: waehlt Karten per <see cref="BattleAI"/> (gleiche
+        /// Greedy-Logik wie der Gegner), spielt sie und beendet den Zug — bis der Kampf entschieden
+        /// ist oder der Spieler Auto-Kampf wieder ausschaltet (_autoBattleSpeed == 0).
+        /// </summary>
+        private async UniTaskVoid RunAutoBattleAsync()
+        {
+            if (_autoRunning) return;
+            _autoRunning = true;
+            try
+            {
+                while (_autoBattleSpeed > 0 && _engine != null
+                       && _engine.State.Result == BattleResult.Undecided)
+                {
+                    var speed = _autoBattleSpeed;
+                    var stepPause = 260 / (speed < 1 ? 1 : speed);
+
+                    // Nur im Spieler-Zug agieren; sonst kurz abwarten (z.B. waehrend _busy/Gegner-Zug).
+                    if (_busy || _engine.State.Phase != BattlePhase.PlayerTurn)
+                    {
+                        await UniTask.Delay(60);
+                        continue;
+                    }
+
+                    // Spieler-Karten per AI auswaehlen + spielen (Mana/Heavy-Gate prueft die Engine).
+                    if (_ai != null)
+                    {
+                        var hand = _engine.State.PlayerHand.ToList();
+                        var picks = _ai.ChooseCardsToPlay(hand, _engine.State.PlayerMana);
+                        foreach (var instId in picks)
+                        {
+                            if (_autoBattleSpeed == 0 || _engine.State.Result != BattleResult.Undecided) break;
+                            OnPlayCard(instId);
+                            await UniTask.Delay(stepPause);
+                        }
+                    }
+
+                    if (_autoBattleSpeed == 0) break;
+
+                    await OnEndTurnAsync(speed);
+
+                    if (_engine != null && _engine.State.Result != BattleResult.Undecided) break;
+                    await UniTask.Delay(stepPause);
+                }
+            }
+            finally
+            {
+                _autoRunning = false;
+                // Kampf vorbei -> Auto-Zustand zuruecksetzen, falls der Screen wiederverwendet wird.
+                if (_engine == null || _engine.State.Result != BattleResult.Undecided)
+                    _autoBattleSpeed = 0;
+                UpdateAutoButton();
+            }
+        }
+
+        /// <summary>Aktualisiert Beschriftung + Hervorhebung des Auto-Kampf-Buttons.</summary>
+        private void UpdateAutoButton()
+        {
+            if (_autoBtn == null) return;
+            _autoBtn.text = _autoBattleSpeed > 0
+                ? $"{_autoBattleSpeed}x"
+                : _loc.Get("battle.auto", "AUTO");
+            // Aktiver Zustand visuell hervorheben (Gold-Akzent statt Ghost).
+            _autoBtn.EnableInClassList("ak-btn--accent", _autoBattleSpeed > 0);
+            _autoBtn.EnableInClassList("ak-btn--ghost", _autoBattleSpeed == 0);
         }
 
         private async UniTask HandleGameOverAsync()
@@ -820,6 +960,7 @@ namespace ArcaneKingdom.UI.Battle
             // ist bewusster Verlust (Spielplan v5). Wurde keine Energie verbraucht
             // (z.B. kein Node / 0-Energie-Kampf), geht auch nichts verloren.
             GameLogger.Info("Battle", _energySpent ? "Flucht aus gestartetem Kampf (Energie verbraucht)." : "Flucht ohne Energie-Verbrauch.");
+            _autoBattleSpeed = 0;   // K5: laufenden Auto-Kampf-Loop stoppen, bevor der Screen verlassen wird
             _toast.Show(_loc.Get("battle.fled", "Aufgegeben."), ToastKind.Warning);
             _screenManager.PopAsync().Forget();
         }

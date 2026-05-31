@@ -19,26 +19,19 @@ namespace ArcaneKingdom.Domain.Cards
         public int ToLevel { get; init; }
         public int ExpRequired { get; init; }
         public long GoldCost { get; init; }
-        public ScrapType ScrapType { get; init; }
-        public int ScrapCount { get; init; }
         /// <summary>Bei LV 5/10/15 — Kopien-Anforderung (1x bei LV5, 2x bei LV10, 3x bei LV15).</summary>
         public int CopiesRequired { get; init; }
 
-        /// <summary>True wenn der Spieler genug Material hat um zu leveln.</summary>
+        /// <summary>
+        /// True wenn der Spieler genug für das Level-Up hat. v4-Resolution
+        /// (Arcane_legends_implementierungsplan_phaser_v4_infos_danach): Karten leveln NUR mit
+        /// EXP + Gold (+ Kopien an 5/10/15). Upgrade-Steine/Scraps wurden gestrichen — Scraps
+        /// dienen ausschließlich dem Crafting/Fusion ("level ODER crafte"-Konflikt aufgelöst).
+        /// </summary>
         public bool CanAfford(PlayerCurrencies currencies, int availableCopies, int currentExp) =>
             currentExp >= ExpRequired
             && currencies.Gold >= GoldCost
-            && GetScrapBalance(currencies, ScrapType) >= ScrapCount
             && availableCopies >= CopiesRequired;
-
-        private static long GetScrapBalance(PlayerCurrencies c, ScrapType t) => t switch
-        {
-            ScrapType.Common    => c.CommonScraps,
-            ScrapType.Rare      => c.RareScraps,
-            ScrapType.Epic      => c.EpicScraps,
-            ScrapType.Legendary => c.LegendaryScraps,
-            _ => 0
-        };
     }
 
     /// <summary>
@@ -60,8 +53,6 @@ namespace ArcaneKingdom.Domain.Cards
                 ToLevel = nextLevel,
                 ExpRequired = CardLevelTable.ExpForLevel(nextLevel),
                 GoldCost = CardLevelTable.GoldForLevel(nextLevel),
-                ScrapType = CardLevelTable.ScrapTypeForLevel(nextLevel),
-                ScrapCount = CardLevelTable.ScrapCountForLevel(nextLevel),
                 CopiesRequired = CardLevelTable.CopiesRequiredForLevel(nextLevel)
             };
         }
@@ -85,9 +76,8 @@ namespace ArcaneKingdom.Domain.Cards
             if (!req.CanAfford(save.Currencies, copies, instance.ExpWithinLevel))
                 return Result<int>.Failure("Nicht genug Material/EXP/Gold/Kopien.");
 
-            // Materialien verbrauchen
+            // Material verbrauchen — nur Gold (v4-Resolution: keine Upgrade-Steine fürs Leveln).
             save.Currencies.SpendGold(req.GoldCost);
-            save.Currencies.SpendScraps(req.ScrapType, req.ScrapCount);
 
             // Kopien-Karten konsumieren (entfernen aus Inventar)
             if (req.CopiesRequired > 0)

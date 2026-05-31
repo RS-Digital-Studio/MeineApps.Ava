@@ -515,13 +515,14 @@ namespace ArcaneKingdom.Domain.Battle
         /// </summary>
         private static StatusEffectType InferStatusEffectFromCardElement(Element element) => element switch
         {
+            // Designplan v4 Kap. 3.3 Element-Spezialeffekte (thematisch korrigiert):
             Element.Feuer  => StatusEffectType.Burning,     // Verbrennung (DoT)
             Element.Wasser => StatusEffectType.Frozen,      // Einfrierung (blockt Aktion)
-            Element.Natur  => StatusEffectType.Poisoned,    // Vergiftung (DoT)
             Element.Erde   => StatusEffectType.Stunned,     // Betaeubung (blockt Aktion)
-            Element.Dunkel => StatusEffectType.Silence,     // Stille (blockt Skills)
-            Element.Licht  => StatusEffectType.Slowed,      // Verlangsamung (selten — Licht hebt Effekte eher auf)
-            _              => StatusEffectType.Slowed
+            Element.Dunkel => StatusEffectType.Poisoned,    // Gift/Fluch — v4: Dunkel staerkt/verursacht Gift (DoT)
+            Element.Natur  => StatusEffectType.Sleep,       // Wald-Ruhe: einschlaefern (Gift gehoert zu Dunkel)
+            Element.Licht  => StatusEffectType.Silence,     // Blendung/Stille (Licht ist kein Gift-/Verlangsamungs-Element)
+            _              => StatusEffectType.Stunned
         };
 
         private void ApplyBossPhase2()

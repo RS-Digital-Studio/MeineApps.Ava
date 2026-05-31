@@ -30,17 +30,18 @@ namespace ArcaneKingdom.Domain.Tests
         public void WasserStarkGegenFeuer()
             => Assert.AreEqual(ElementMatchup.StrongMultiplier, ElementMatchup.GetMultiplier(Element.Wasser, Element.Feuer));
 
+        // v4 Kap. 3.3 kennt KEINEN Schwäche-Malus — die Rückrichtung ist neutral (1.0x).
         [Test]
-        public void NaturSchwachGegenFeuer()
-            => Assert.AreEqual(ElementMatchup.WeakMultiplier, ElementMatchup.GetMultiplier(Element.Natur, Element.Feuer));
+        public void NaturGegenFeuerNeutral()
+            => Assert.AreEqual(ElementMatchup.NeutralMultiplier, ElementMatchup.GetMultiplier(Element.Natur, Element.Feuer));
 
         [Test]
-        public void WasserSchwachGegenNatur()
-            => Assert.AreEqual(ElementMatchup.WeakMultiplier, ElementMatchup.GetMultiplier(Element.Wasser, Element.Natur));
+        public void WasserGegenNaturNeutral()
+            => Assert.AreEqual(ElementMatchup.NeutralMultiplier, ElementMatchup.GetMultiplier(Element.Wasser, Element.Natur));
 
         [Test]
-        public void FeuerSchwachGegenWasser()
-            => Assert.AreEqual(ElementMatchup.WeakMultiplier, ElementMatchup.GetMultiplier(Element.Feuer, Element.Wasser));
+        public void FeuerGegenWasserNeutral()
+            => Assert.AreEqual(ElementMatchup.NeutralMultiplier, ElementMatchup.GetMultiplier(Element.Feuer, Element.Wasser));
 
         // ===========================================================================
         // Magisches Dreieck (NEU in v4: Erde dazu, Licht/Dunkel/Erde als geschlossenes Dreieck)
@@ -59,16 +60,16 @@ namespace ArcaneKingdom.Domain.Tests
             => Assert.AreEqual(ElementMatchup.StrongMultiplier, ElementMatchup.GetMultiplier(Element.Erde, Element.Licht));
 
         [Test]
-        public void DunkelSchwachGegenLicht()
-            => Assert.AreEqual(ElementMatchup.WeakMultiplier, ElementMatchup.GetMultiplier(Element.Dunkel, Element.Licht));
+        public void DunkelGegenLichtNeutral()
+            => Assert.AreEqual(ElementMatchup.NeutralMultiplier, ElementMatchup.GetMultiplier(Element.Dunkel, Element.Licht));
 
         [Test]
-        public void ErdeSchwachGegenDunkel()
-            => Assert.AreEqual(ElementMatchup.WeakMultiplier, ElementMatchup.GetMultiplier(Element.Erde, Element.Dunkel));
+        public void ErdeGegenDunkelNeutral()
+            => Assert.AreEqual(ElementMatchup.NeutralMultiplier, ElementMatchup.GetMultiplier(Element.Erde, Element.Dunkel));
 
         [Test]
-        public void LichtSchwachGegenErde()
-            => Assert.AreEqual(ElementMatchup.WeakMultiplier, ElementMatchup.GetMultiplier(Element.Licht, Element.Erde));
+        public void LichtGegenErdeNeutral()
+            => Assert.AreEqual(ElementMatchup.NeutralMultiplier, ElementMatchup.GetMultiplier(Element.Licht, Element.Erde));
 
         // ===========================================================================
         // Cross-Dreieck: alles neutral
@@ -146,9 +147,8 @@ namespace ArcaneKingdom.Domain.Tests
         [Test]
         public void MultipliersStimmenMitDesignplanV4()
         {
-            // Designplan v4 Kap. 3.3: +10% Schaden bei "stark", -10% bei "schwach"
+            // Designplan v4 Kap. 3.3: NUR +10% Schaden bei "stark" — kein Schwäche-Malus.
             Assert.AreEqual(1.10f, ElementMatchup.StrongMultiplier, 0.001f);
-            Assert.AreEqual(0.90f, ElementMatchup.WeakMultiplier, 0.001f);
             Assert.AreEqual(1.00f, ElementMatchup.NeutralMultiplier, 0.001f);
         }
     }

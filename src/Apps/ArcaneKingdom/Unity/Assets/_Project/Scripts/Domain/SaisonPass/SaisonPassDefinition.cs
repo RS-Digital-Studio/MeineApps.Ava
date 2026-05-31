@@ -5,8 +5,8 @@ using System.Collections.Generic;
 namespace ArcaneKingdom.Domain.SaisonPass
 {
     /// <summary>
-    /// Konfiguration eines Saison-Passes (DESIGN.md Kap. 16.3).
-    /// 50 Stufen, parallel zur Arena-Saison (30 Tage).
+    /// Konfiguration eines Saison-Passes (Oekosystem v4 Kap. 4).
+    /// 30 Stufen über 30 Tage, ~35.000 EXP gesamt (Belohnungen an Meilensteinen 5/10/15/20/25/30).
     /// </summary>
     [Serializable]
     public sealed class SaisonPassDefinition
@@ -15,9 +15,9 @@ namespace ArcaneKingdom.Domain.SaisonPass
         public int Number { get; init; }
         public DateTime StartedAtUtc { get; init; }
         public DateTime EndsAtUtc { get; init; }
-        public int TotalTiers { get; init; } = 50;
-        public int XpPerTier { get; init; } = 1000;
-        public int HardCapTier { get; init; } = 100;
+        public int TotalTiers { get; init; } = 30;
+        public int XpPerTier { get; init; } = 1167;
+        public int HardCapTier { get; init; } = 30;
         public List<SaisonPassTierReward> FreeTrack { get; init; } = new();
         public List<SaisonPassTierReward> PremiumTrack { get; init; } = new();
     }

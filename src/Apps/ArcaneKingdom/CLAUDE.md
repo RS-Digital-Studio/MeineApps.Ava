@@ -48,7 +48,8 @@ Quelldokumente liegen unter `F:\AI\ComfyUI_windows_portable\ComfyUI\output\eva\S
 |-------|-------|
 | [README.md](README.md) | Quickstart fuer Entwickler |
 | [SETUP.md](SETUP.md) | Schritt-fuer-Schritt-Anleitung fuer Unity 6 (Pflichtlektuere beim ersten Open) |
-| [DESIGN.md](DESIGN.md) | **GDD v6.0** (autoritativ, basiert auf Designplan v4) |
+| [DESIGN.md](DESIGN.md) | **GDD v6.0** (autoritativ fuer das Soll-Design, basiert auf Designplan v4) |
+| [SPIELABLAUF.md](SPIELABLAUF.md) | **Code-verifizierter Ist-Spielablauf** (A-Z) + Implementierungsstand je System (LIVE/DOMAIN-ONLY/SKELETT) + GDD-vs-Code-Diskrepanzen + Verdrahtungs-Luecken zum MVP |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Folder-Layout, DI, Networking, Conventions |
 | [Server/SERVEROPS.md](Server/SERVEROPS.md) | Server-side Cloud-Functions (Anti-Cheat, Saison-Rewards) |
 | [Server/CloudFunctions/](Server/CloudFunctions/) | TypeScript-Cloud-Functions (8 Endpoints) |

@@ -1,0 +1,5 @@
+# Generierte Artefakte des Backtest-Labs — nicht einchecken.
+.kline-cache/
+reports/
+bin/
+obj/

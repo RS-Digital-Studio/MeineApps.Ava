@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement class="ak-screen" style="flex-grow: 1; background-color: rgb(13, 13, 26); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
-        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 16px;">
-            <ui:Label text="QUESTS" style="font-size: 22px; -unity-font-style: bold; color: rgb(245, 200, 66); flex-grow: 1;"/>
-            <ui:Button name="quest-close" text="X" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+    <ui:VisualElement class="ak-screen" style="flex-grow: 1; background-color: var(--ak-bg-base); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
+        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 16px; padding-left: 14px; padding-right: 14px; padding-top: 12px; padding-bottom: 12px; background-color: rgb(6, 6, 16); border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-left-color: var(--ak-border-gold); border-right-color: var(--ak-border-gold); border-top-color: var(--ak-border-gold); border-bottom-color: var(--ak-border-gold);">
+            <ui:Label text="QUESTS" class="ak-h2" style="flex-grow: 1;"/>
+            <ui:Button name="quest-close" text="X" class="ak-btn ak-btn--ghost ak-btn--icon"/>
         </ui:VisualElement>
         <ui:VisualElement name="quest-tabs" style="flex-direction: row; margin-bottom: 16px;"/>
         <ui:ScrollView style="flex-grow: 1;">

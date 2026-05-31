@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement name="chat-backdrop" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); justify-content: flex-end;">
-        <ui:VisualElement style="background-color: rgba(13, 13, 26, 0.95); border-top-left-radius: 16px; border-top-right-radius: 16px; padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 12px; height: 65%;">
+    <ui:VisualElement name="chat-backdrop" class="ak-modal-backdrop" style="justify-content: flex-end; align-items: stretch;">
+        <ui:VisualElement style="background-color: var(--ak-bg-base); border-top-left-radius: 16px; border-top-right-radius: 16px; border-top-width: 1px; border-left-width: 1px; border-right-width: 1px; border-color: var(--ak-border-gold); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 12px; height: 65%;">
 
-            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 12px;">
-                <ui:Label text="CHAT" style="font-size: 18px; -unity-font-style: bold; color: rgb(245, 200, 66); flex-grow: 1;"/>
-                <ui:Button name="chat-close" text="X" style="width: 32px; height: 32px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 12px; background-color: rgb(6, 6, 16); border-bottom-width: 1px; border-color: var(--ak-border-gold-soft); padding-left: 8px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                <ui:Label text="CHAT" class="ak-h2" style="flex-grow: 1;"/>
+                <ui:Button name="chat-close" text="X" class="ak-btn ak-btn--ghost ak-btn--icon"/>
             </ui:VisualElement>
 
             <ui:VisualElement name="chat-tabs" style="flex-direction: row; margin-bottom: 12px;"/>
 
-            <ui:ScrollView style="flex-grow: 1; margin-bottom: 12px;">
+            <ui:ScrollView class="ak-surface" style="flex-grow: 1; margin-bottom: 12px;">
                 <ui:VisualElement name="chat-messages"/>
             </ui:ScrollView>
 
-            <ui:VisualElement style="flex-direction: row;">
-                <ui:TextField name="chat-input" placeholder-text="Nachricht eingeben..." style="flex-grow: 1; margin-right: 8px; height: 40px;"/>
-                <ui:Button name="chat-send" text="Senden" style="width: 100px; height: 40px; background-color: rgb(255, 122, 0); color: rgb(255, 255, 255); -unity-font-style: bold;"/>
+            <ui:VisualElement style="flex-direction: row; align-items: center; background-color: rgb(6, 6, 16); border-top-width: 1px; border-color: var(--ak-border-gold-soft); padding-left: 8px; padding-right: 8px; padding-top: 8px; padding-bottom: 8px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                <ui:TextField name="chat-input" placeholder-text="Nachricht eingeben..." class="ak-input" style="flex-grow: 1; margin-right: 8px;"/>
+                <ui:Button name="chat-send" text="Senden" class="ak-btn ak-btn--accent" style="width: 100px;"/>
             </ui:VisualElement>
 
         </ui:VisualElement>

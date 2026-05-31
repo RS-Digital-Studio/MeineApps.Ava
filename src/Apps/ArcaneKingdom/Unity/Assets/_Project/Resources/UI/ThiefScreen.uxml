@@ -1,34 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement class="ak-screen" style="flex-grow: 1; background-color: rgb(13, 13, 26); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px;">
+    <ui:VisualElement class="ak-screen ak-fill ak-col" style="background-color: var(--ak-bg-base);">
 
-        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 16px;">
-            <ui:Label name="thief-level" text="LV 58" style="font-size: 12px; color: rgb(0, 0, 0); background-color: rgb(245, 200, 66); padding-left: 8px; padding-right: 8px; padding-top: 4px; padding-bottom: 4px; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;"/>
-            <ui:Label text="DIEB GESICHTET" style="font-size: 22px; -unity-font-style: bold; color: rgb(198, 40, 40); flex-grow: 1; margin-left: 12px;"/>
-            <ui:Label name="thief-timer" text="Flueсhtet in 01:59:34" style="font-size: 13px; color: rgb(245, 200, 66);"/>
-            <ui:Button name="thief-close" text="X" style="width: 36px; height: 36px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66); margin-left: 12px;"/>
+        <!-- Header -->
+        <ui:VisualElement class="ak-app-header">
+            <ui:Label name="thief-level" text="LV 58" class="ak-app-header__avatar-level"
+                      style="position: relative; bottom: auto; right: auto; margin-right: 12px;"/>
+            <ui:Label text="DIEB GESICHTET" class="ak-h3 ak-text--danger" style="flex-grow: 1;"/>
+            <ui:Label name="thief-timer" text="Flueсhtet in 01:59:34"
+                      class="ak-caption ak-text--accent" style="margin-right: 12px;"/>
+            <ui:Button name="thief-close" text="X" class="ak-btn ak-btn--icon ak-btn--ghost"/>
         </ui:VisualElement>
 
-        <ui:VisualElement style="align-items: center; margin-bottom: 24px;">
-            <ui:VisualElement style="width: 200px; height: 200px; background-color: rgba(74, 27, 154, 0.4); border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-left-radius: 100px; border-bottom-right-radius: 100px; border-left-width: 4px; border-right-width: 4px; border-top-width: 4px; border-bottom-width: 4px; border-left-color: rgb(198, 40, 40); border-right-color: rgb(198, 40, 40); border-top-color: rgb(198, 40, 40); border-bottom-color: rgb(198, 40, 40); margin-bottom: 16px;"/>
-            <ui:Label name="thief-name" text="Mysterioeser Dieb" style="font-size: 24px; -unity-font-style: bold; color: rgb(255, 255, 255);"/>
-        </ui:VisualElement>
+        <ui:ScrollView style="flex-grow: 1;">
+            <ui:VisualElement style="padding: 16px;">
 
-        <ui:VisualElement style="margin-bottom: 16px;">
-            <ui:VisualElement style="height: 24px; background-color: rgb(60, 60, 80); border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; overflow: hidden;">
-                <ui:VisualElement name="thief-hp-fill" style="height: 100%; width: 100%; background-color: rgb(198, 40, 40);"/>
+                <!-- Dieb-Portrait -->
+                <ui:VisualElement class="ak-center" style="margin-bottom: 24px;">
+                    <ui:VisualElement style="width: 200px; height: 200px; background-color: var(--ak-bg-surface-2); border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-left-radius: 100px; border-bottom-right-radius: 100px; border-left-width: 4px; border-right-width: 4px; border-top-width: 4px; border-bottom-width: 4px; border-left-color: var(--ak-danger); border-right-color: var(--ak-danger); border-top-color: var(--ak-danger); border-bottom-color: var(--ak-danger); margin-bottom: 16px;"/>
+                    <ui:Label name="thief-name" text="Mysterioeser Dieb" class="ak-h3"/>
+                </ui:VisualElement>
+
+                <!-- HP-Balken -->
+                <ui:VisualElement style="margin-bottom: 16px;">
+                    <ui:VisualElement class="ak-progress ak-progress--danger" style="height: 24px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-width: 1px; border-color: var(--ak-border-gold-soft);">
+                        <ui:VisualElement name="thief-hp-fill" class="ak-progress__fill" style="width: 100%;"/>
+                    </ui:VisualElement>
+                    <ui:Label name="thief-hp-text" text="16.724 / 16.724 HP" class="ak-body"
+                              style="-unity-text-align: middle-center; margin-top: 4px;"/>
+                </ui:VisualElement>
+
+                <!-- Info -->
+                <ui:VisualElement class="ak-surface" style="margin-bottom: 16px;">
+                    <ui:Label name="thief-discovered-by" text="Entdeckt von: ServerEvent" class="ak-caption"/>
+                    <ui:Label name="thief-last-attacker" text="Letzte Attacke: -" class="ak-caption" style="margin-top: 4px;"/>
+                    <ui:Label name="thief-attack-count" text="0 Kaempfe wurden gefuehrt" class="ak-caption" style="margin-top: 4px;"/>
+                </ui:VisualElement>
+
+                <!-- Aktionen -->
+                <ui:Button name="thief-attack" text="ANGREIFEN!" class="ak-btn ak-btn--lg ak-btn--danger"/>
+                <ui:Button name="thief-refresh" text="Aktualisieren" class="ak-btn ak-btn--ghost" style="margin-top: 8px;"/>
+
             </ui:VisualElement>
-            <ui:Label name="thief-hp-text" text="16.724 / 16.724 HP" style="font-size: 12px; color: rgb(255, 255, 255); -unity-text-align: middle-center; margin-top: 4px;"/>
-        </ui:VisualElement>
-
-        <ui:VisualElement style="margin-bottom: 16px;">
-            <ui:Label name="thief-discovered-by" text="Entdeckt von: ServerEvent" style="font-size: 12px; color: rgb(170, 170, 190);"/>
-            <ui:Label name="thief-last-attacker" text="Letzte Attacke: —" style="font-size: 12px; color: rgb(170, 170, 190);"/>
-            <ui:Label name="thief-attack-count" text="0 Kaempfe wurden gefuehrt" style="font-size: 12px; color: rgb(170, 170, 190);"/>
-        </ui:VisualElement>
-
-        <ui:Button name="thief-attack" text="ANGREIFEN!" style="height: 60px; background-color: rgb(198, 40, 40); color: rgb(255, 255, 255); font-size: 18px; -unity-font-style: bold; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;"/>
-        <ui:Button name="thief-refresh" text="Aktualisieren" style="height: 36px; margin-top: 8px; background-color: rgba(0, 0, 0, 0); color: rgb(170, 170, 190);"/>
-
+        </ui:ScrollView>
     </ui:VisualElement>
 </ui:UXML>

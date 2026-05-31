@@ -179,9 +179,9 @@ namespace ArcaneKingdom.UI.WorldMap
 
             // Aktuelle Prestige-Stufe der Welt
             var stufe = _saveCached?.Prestige?.Get(world.Id) ?? PrestigeStufe.Normal;
-            var stufeText = stufe == PrestigeStufe.Normal ? string.Empty : $"  ★ Prestige {stufe}";
+            var stufeText = stufe == PrestigeStufe.Normal ? string.Empty : $"  -  Prestige {stufe}";
             _currentWorldMeta.text =
-                $"Element: {world.ThemeElement}  •  Empfohlene Stufe: {world.RecommendedPlayerLevel}{stufeText}";
+                $"Element: {world.ThemeElement}  -  Empfohlene Stufe: {world.RecommendedPlayerLevel}{stufeText}";
 
             BuildNodesGrid();
             HideDetail();
@@ -318,10 +318,7 @@ namespace ArcaneKingdom.UI.WorldMap
             indexLbl.style.color = new StyleColor(Color.white);
             tile.Add(indexLbl);
 
-            var starsRow = new Label(BuildStarsString(stars));
-            starsRow.style.fontSize = 14;
-            starsRow.style.color = new StyleColor(new Color(0.95f, 0.78f, 0.30f));
-            tile.Add(starsRow);
+            tile.Add(BuildStarsRow(stars, 4, 14f));
 
             if (unlocked)
                 tile.AddManipulator(new Clickable(() => OnNodeClicked(node)));
@@ -329,11 +326,38 @@ namespace ArcaneKingdom.UI.WorldMap
             return tile;
         }
 
-        private static string BuildStarsString(int stars)
+        /// <summary>
+        /// Baut eine horizontale Sterne-Reihe aus star_sprite-Sprites (kein Glyph-Text → kein
+        /// Android-Tofu). Gefuellte Sterne: Gold-Tint + volle Deckkraft; leere: Opacity 0.3.
+        /// </summary>
+        private VisualElement BuildStarsRow(int stars, int max, float starSize)
         {
-            const int max = 4;
             stars = System.Math.Clamp(stars, 0, max);
-            return new string('★', stars) + new string('☆', max - stars);
+            var sprite = _uiAssets.GetStarSprite();
+            var gold = new Color(0.961f, 0.784f, 0.259f); // ~ --ak-accent (245,200,66)
+
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.Center;
+
+            for (var i = 0; i < max; i++)
+            {
+                var filled = i < stars;
+                var star = new VisualElement();
+                star.style.width = starSize;
+                star.style.height = starSize;
+                star.style.marginLeft = 1;
+                star.style.marginRight = 1;
+                if (sprite != null)
+                {
+                    star.style.backgroundImage = new StyleBackground(sprite);
+                    star.style.unityBackgroundScaleMode = new StyleEnum<ScaleMode>(ScaleMode.ScaleToFit);
+                    star.style.unityBackgroundImageTintColor = new StyleColor(gold);
+                }
+                star.style.opacity = filled ? 1f : 0.3f;
+                row.Add(star);
+            }
+            return row;
         }
 
         // ============================================================
@@ -364,7 +388,12 @@ namespace ArcaneKingdom.UI.WorldMap
 
             var progress = GetOrCreateProgress(_activeWorld!.Id);
             var stars = progress.StarsByNodeId.TryGetValue(_selectedNode.Id, out var s) ? s : 0;
-            _detailStars.text = BuildStarsString(stars);
+            // Sterne als Sprite-Reihe in das (gebundene) Label injizieren statt Glyph-Text.
+            _detailStars.text = string.Empty;
+            _detailStars.Clear();
+            var detailStarsRow = BuildStarsRow(stars, 4, 22f);
+            detailStarsRow.style.justifyContent = Justify.Center;
+            _detailStars.Add(detailStarsRow);
 
             BuildRewardsPanel(_selectedNode);
 
@@ -384,11 +413,11 @@ namespace ArcaneKingdom.UI.WorldMap
                 row.style.justifyContent = Justify.SpaceBetween;
                 row.style.marginBottom = 2;
 
-                var starsLbl = new Label(BuildStarsString(stars));
-                starsLbl.style.color = new StyleColor(new Color(0.95f, 0.78f, 0.30f));
-                row.Add(starsLbl);
+                var starsCol = BuildStarsRow(stars, 4, 12f);
+                starsCol.style.alignItems = Align.Center;
+                row.Add(starsCol);
 
-                var rewards = new Label($"{node.GoldReward(stars)} Gold • {node.ExpReward(stars)} EXP");
+                var rewards = new Label($"{node.GoldReward(stars)} Gold  -  {node.ExpReward(stars)} EXP");
                 rewards.AddToClassList("ak-caption");
                 row.Add(rewards);
 
@@ -457,7 +486,7 @@ namespace ArcaneKingdom.UI.WorldMap
             if (_saveCached == null) return;
             var totalStars = _saveCached.WorldProgress.Values.Sum(p => p.TotalStars);
             var maxStars = _worldCatalog.AllWorlds.Sum(w => w.Nodes.Count * 4);
-            _totalStarsLabel.text = $"{totalStars} / {maxStars} ★";
+            _totalStarsLabel.text = $"{totalStars} / {maxStars}";
         }
 
         private static StyleColor ElementBg(ArcaneKingdom.Domain.Cards.Element e) => e switch

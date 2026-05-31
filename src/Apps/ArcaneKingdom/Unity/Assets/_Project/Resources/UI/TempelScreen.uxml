@@ -1,20 +1,27 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(22, 16, 41);">
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
 
-        <ui:VisualElement class="ak-app-header">
-            <ui:Button name="back-button" text="‹ Zurueck"
+        <ui:VisualElement class="ak-app-header"
+                          style="border-bottom-width: 1px;
+                                 border-bottom-color: var(--ak-border-gold-soft);
+                                 background-color: var(--ak-bg-deep);">
+            <ui:Button name="back-button" text="Zurueck"
                        class="ak-btn ak-btn--sm ak-btn--ghost"
                        style="margin-right: 12;" />
-            <ui:Label text="Sternkarten-Tempel" class="ak-h3"
+            <ui:Label text="Sternkarten-Tempel" class="ak-h2"
                       style="flex-grow: 1;" />
         </ui:VisualElement>
 
         <ui:ScrollView style="flex-grow: 1;">
             <ui:VisualElement style="padding: 16;">
 
-                <!-- Sternpunkte-Übersicht -->
-                <ui:VisualElement class="ak-surface" style="padding: 12; margin-bottom: 16;">
+                <!-- Sternpunkte-Uebersicht -->
+                <ui:VisualElement class="ak-surface"
+                                  style="padding: 16; margin-bottom: 16;
+                                         border-width: 1px;
+                                         border-color: var(--ak-border-gold);
+                                         align-items: center;">
                     <ui:Label name="sternpunkte-available"
                               text="0 Sternpunkte"
                               class="ak-h2 ak-text--accent" />
@@ -22,44 +29,47 @@
                                       style="justify-content: space-around;
                                              margin-top: 8;">
                         <ui:VisualElement class="ak-col" style="align-items: center;">
+                            <ui:Label name="count-bronze" text="0" class="ak-h3 ak-text--accent" />
                             <ui:Label text="Bronze" class="ak-caption" />
-                            <ui:Label name="count-bronze" text="0" class="ak-h4" />
                         </ui:VisualElement>
                         <ui:VisualElement class="ak-col" style="align-items: center;">
+                            <ui:Label name="count-silber" text="0" class="ak-h3 ak-text--accent" />
                             <ui:Label text="Silber" class="ak-caption" />
-                            <ui:Label name="count-silber" text="0" class="ak-h4" />
                         </ui:VisualElement>
                         <ui:VisualElement class="ak-col" style="align-items: center;">
+                            <ui:Label name="count-gold" text="0" class="ak-h3 ak-text--accent" />
                             <ui:Label text="Gold" class="ak-caption" />
-                            <ui:Label name="count-gold" text="0" class="ak-h4" />
                         </ui:VisualElement>
                         <ui:VisualElement class="ak-col" style="align-items: center;">
+                            <ui:Label name="count-platin" text="0" class="ak-h3 ak-text--accent" />
                             <ui:Label text="Platin" class="ak-caption" />
-                            <ui:Label name="count-platin" text="0" class="ak-h4" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                     <ui:Label name="mythic-fragments" text="0/3 Mythic-Fragmente"
-                              class="ak-caption" style="margin-top: 8;" />
+                              class="ak-caption ak-text--accent" style="margin-top: 8;" />
                 </ui:VisualElement>
 
                 <!-- Login-Kalender -->
-                <ui:Label text="Taegliche Belohnung" class="ak-overline"
+                <ui:Label text="Taegliche Belohnung" class="ak-overline ak-text--accent"
                           style="margin-bottom: 8;" />
-                <ui:VisualElement class="ak-surface" style="padding: 12; margin-bottom: 16;">
+                <ui:VisualElement class="ak-surface"
+                                  style="padding: 12; margin-bottom: 16;
+                                         border-width: 1px;
+                                         border-color: var(--ak-border-gold-soft);">
                     <ui:VisualElement name="login-calendar"
                                       class="ak-row"
                                       style="flex-wrap: wrap;
                                              margin-bottom: 12;" />
                     <ui:Label name="claim-today-label"
                               text="Tag 1: 500 Gold + 1 Bronze-Sternkarte"
-                              class="ak-text" style="margin-bottom: 8;" />
+                              class="ak-body" style="margin-bottom: 12;" />
                     <ui:Button name="claim-today-button"
                                text="Heute abholen"
-                               class="ak-btn ak-btn--accent" />
+                               class="ak-btn ak-btn--accent ak-btn--lg" />
                 </ui:VisualElement>
 
                 <!-- Tempel-Eintausch -->
-                <ui:Label text="Tempel-Eintausch" class="ak-overline"
+                <ui:Label text="Tempel-Eintausch" class="ak-overline ak-text--accent"
                           style="margin-bottom: 8;" />
                 <ui:VisualElement name="exchange-list" class="ak-col" />
 

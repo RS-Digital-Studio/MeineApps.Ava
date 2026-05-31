@@ -5,24 +5,27 @@
         WorldMapScreen — Welt-Auswahl (Tabs) + Node-Grid + Detail-Panel.
     -->
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(22, 16, 41);">
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
 
         <!-- ================ HEADER ================ -->
-        <ui:VisualElement class="ak-app-header">
-            <ui:Button name="world-back-button" text="‹ Zurueck"
+        <ui:VisualElement class="ak-app-header"
+                          style="background-color: rgb(6, 6, 16);
+                                 border-bottom-width: 1;
+                                 border-bottom-color: var(--ak-border-gold-soft);">
+            <ui:Button name="world-back-button" text="Zurueck"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
-            <ui:Label name="world-title" text="Welt-Karte" class="ak-h3"
+            <ui:Label name="world-title" text="Welt-Karte" class="ak-h3 ak-text--accent"
                       style="flex-grow: 1;" />
-            <ui:Label name="world-total-stars" text="0 / 360 ★"
+            <ui:Label name="world-total-stars" text="0 / 360"
                       class="ak-body ak-text--accent" />
         </ui:VisualElement>
 
         <!-- ================ WELT-TABS (horizontal scroll) ================ -->
         <ui:ScrollView name="world-tabs-scroll" mode="Horizontal"
                        vertical-scroller-visibility="Hidden"
-                       style="height: 80; background-color: rgb(13, 8, 28);
+                       style="height: 80; background-color: rgb(6, 6, 16);
                               border-bottom-width: 1;
-                              border-bottom-color: rgba(255,255,255,0.06);">
+                              border-bottom-color: var(--ak-border-gold-soft);">
             <ui:VisualElement name="world-tabs-container"
                               style="flex-direction: row; padding: 8;" />
         </ui:ScrollView>
@@ -47,12 +50,13 @@
             <!-- Detail-Panel (rechts) -->
             <ui:VisualElement name="node-detail-panel"
                               class="ak-col" style="width: 280; padding: 16;
+                                                     background-color: rgb(6, 6, 16);
                                                      border-left-width: 1;
-                                                     border-left-color: rgba(255,255,255,0.06);">
+                                                     border-left-color: var(--ak-border-gold-soft);">
 
                 <ui:Label name="node-detail-empty" text="Waehle einen Node"
                           class="ak-body" style="-unity-text-align: middle-center;
-                                                  margin-top: 32;" />
+                                                  margin-top: 32; color: var(--ak-text-muted);" />
 
                 <ui:VisualElement name="node-detail-content" class="ak-hidden">
                     <ui:Label name="node-detail-name" text="Node" class="ak-h2"
@@ -72,8 +76,8 @@
                     <!-- Sterne (aktueller Fortschritt) -->
                     <ui:Label text="Beste Bewertung" class="ak-overline"
                               style="margin-bottom: 4;" />
-                    <ui:Label name="node-detail-stars" text="☆ ☆ ☆ ☆"
-                              class="ak-h3"
+                    <ui:Label name="node-detail-stars" text=""
+                              class="ak-h3 ak-text--accent"
                               style="-unity-text-align: middle-center; margin-bottom: 12;" />
 
                     <!-- Belohnungen -->

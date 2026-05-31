@@ -82,7 +82,7 @@ namespace ArcaneKingdom.UI.Modals
 
             _nodeName.text = _loc.Get(node.DisplayNameKey, node.Id);
             _bestStars.text = _ctx.BestStarsSoFar > 0
-                ? $"★ {_ctx.BestStarsSoFar}/4 erreicht"
+                ? $"Bestwert: {_ctx.BestStarsSoFar}/4 Sterne"
                 : "Noch nicht gespielt";
 
             ConfigureButton(_classicBtn, NodeDifficulty.Classic, node);
@@ -101,7 +101,7 @@ namespace ArcaneKingdom.UI.Modals
 
         private void ConfigureButton(Button btn, NodeDifficulty difficulty, NodeDefinition node)
         {
-            var stars = new string('★', (int)difficulty);
+            var starCount = (int)difficulty;
             var energy = difficulty.EnergyCost();
             var gold = node.GoldReward(difficulty);
             var label = difficulty switch
@@ -112,7 +112,7 @@ namespace ArcaneKingdom.UI.Modals
                 NodeDifficulty.Gott    => "Gott",
                 _ => difficulty.ToString()
             };
-            btn.text = $"{stars}\n{label}\n{energy} Energie • {gold:N0} Gold";
+            btn.text = $"{label}\n{starCount}/4 Sterne\n{energy} Energie - {gold:N0} Gold";
 
             var canAfford = _ctx.AvailableEnergy >= energy;
             btn.SetEnabled(canAfford);

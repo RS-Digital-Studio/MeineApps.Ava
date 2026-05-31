@@ -1,13 +1,16 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
 
     <ui:VisualElement class="ak-modal-backdrop ak-memory__backdrop"
-                      style="background-color: rgb(0,0,0);
+                      style="background-color: var(--ak-bg-overlay);
                              flex-grow: 1;
                              justify-content: center;
                              align-items: center;">
 
         <ui:VisualElement class="ak-modal ak-memory__panel"
-                          style="background-color: rgba(20, 14, 35, 0.95);
+                          style="background-color: var(--ak-bg-surface);
+                                 border-width: 1px;
+                                 border-color: var(--ak-border-gold);
+                                 border-radius: var(--ak-radius-lg);
                                  padding: 32;
                                  max-width: 600;
                                  min-width: 360;">
@@ -15,12 +18,14 @@
             <!-- Twist-Banner (nur bei Welt 8 sichtbar) -->
             <ui:VisualElement name="twist-banner" class="ak-memory__twist-banner"
                               style="display: None;
-                                     background-color: rgb(110, 30, 50);
+                                     background-color: var(--ak-bg-deep);
+                                     border-width: 1px;
+                                     border-color: var(--ak-danger);
                                      padding: 8;
                                      margin-bottom: 12;
-                                     border-radius: 4;">
+                                     border-radius: var(--ak-radius-sm);">
                 <ui:Label text="DER TWIST" class="ak-h3"
-                          style="text-align: center; color: rgb(255, 220, 220); letter-spacing: 2px;" />
+                          style="text-align: center; color: var(--ak-accent-light); letter-spacing: 2px;" />
             </ui:VisualElement>
 
             <!-- NPC-Portrait (nur sichtbar wenn NpcId gesetzt) -->
@@ -29,20 +34,22 @@
                                      width: 120;
                                      height: 120;
                                      align-self: center;
+                                     border-width: 2px;
+                                     border-color: var(--ak-border-gold-strong);
                                      border-radius: 60;
                                      margin-bottom: 12;
                                      -unity-background-scale-mode: scale-and-crop;" />
 
             <ui:Label name="fragment-title" text="Erinnerung 1: Ein Name"
                       class="ak-h2"
-                      style="text-align: center; color: rgb(220, 200, 230);
+                      style="text-align: center;
                              margin-bottom: 24;" />
 
             <ui:Label name="fragment-content"
                       text="Ein Name. Nythragor. Angst und Schuld."
-                      class="ak-text"
+                      class="ak-body"
                       style="text-align: center;
-                             color: rgb(200, 200, 200);
+                             color: var(--ak-text-secondary);
                              font-size: 16;
                              white-space: normal;
                              margin-bottom: 16;" />
@@ -50,16 +57,17 @@
             <ui:Label name="twist-reveal" text=""
                       class="ak-caption"
                       style="text-align: center;
-                             color: rgb(150, 150, 180);
+                             color: var(--ak-text-muted);
                              font-size: 12;
                              font-style: italic;
                              white-space: normal;
                              margin-bottom: 24;" />
 
             <ui:Button name="continue-button" text="Weiter"
-                       class="ak-btn ak-btn--accent"
+                       class="ak-btn ak-btn--accent ak-btn--lg"
                        style="align-self: center;
-                              min-width: 200;" />
+                              min-width: 200;
+                              min-height: 44;" />
 
         </ui:VisualElement>
     </ui:VisualElement>

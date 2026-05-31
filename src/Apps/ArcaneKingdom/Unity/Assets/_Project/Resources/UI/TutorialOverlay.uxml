@@ -11,7 +11,7 @@
 
         <!-- Backdrop (halbtransparent, blockt Clicks ausserhalb der Bubble) -->
         <ui:VisualElement name="tutorial-backdrop" class="ak-fill"
-                          style="background-color: rgba(0, 0, 0, 0.55);
+                          style="background-color: var(--ak-bg-overlay);
                                  pointer-events: auto;" />
 
         <!-- Speech-Bubble (Bottom-Center) -->
@@ -21,15 +21,15 @@
             <ui:Label name="tutorial-step-counter" text="Schritt 1 / 8"
                       class="ak-overline" style="margin-bottom: 4;" />
             <ui:Label name="tutorial-title" text="Willkommen!"
-                      class="ak-h3" style="margin-bottom: 8;" />
+                      class="ak-h2" style="margin-bottom: 8;" />
             <ui:Label name="tutorial-text" text="Hier lernst du das Spiel kennen."
                       class="ak-body"
                       style="white-space: normal; margin-bottom: 16;" />
             <ui:VisualElement class="ak-row" style="justify-content: space-between;">
                 <ui:Button name="tutorial-skip" text="Ueberspringen"
                            class="ak-btn ak-btn--sm ak-btn--ghost" />
-                <ui:Button name="tutorial-next" text="Weiter ▶"
-                           class="ak-btn ak-btn--primary"
+                <ui:Button name="tutorial-next" text="Weiter"
+                           class="ak-btn ak-btn--accent"
                            style="min-width: 120;" />
             </ui:VisualElement>
         </ui:VisualElement>

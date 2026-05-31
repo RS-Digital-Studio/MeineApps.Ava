@@ -87,13 +87,12 @@ namespace ArcaneKingdom.UI.BattleReport
             // Belohnungen / Rang-Aenderung
             if (_ctx.RankDelta.HasValue && _ctx.NewRank.HasValue)
             {
-                var arrow = _ctx.RankDelta.Value >= 0 ? "↑" : "↓";
-                _rankChange.text = $"{_ctx.RankDelta:+0;-0} Rangpunkte {arrow} Rang {_ctx.NewRank}";
+                var trend = _ctx.RankDelta.Value >= 0 ? "Aufstieg" : "Abstieg";
+                _rankChange.text = $"{_ctx.RankDelta:+0;-0} Rangpunkte  {trend}  Rang {_ctx.NewRank}";
             }
             else if (_ctx.IsVictory && _ctx.Stars > 0)
             {
-                var stars = new string('★', _ctx.Stars);
-                _rankChange.text = $"{stars}  +{_ctx.GoldReward:N0} Gold  +{_ctx.ExpReward} EXP";
+                _rankChange.text = $"{_ctx.Stars}/4 Sterne  +{_ctx.GoldReward:N0} Gold  +{_ctx.ExpReward} EXP";
             }
             else
             {
@@ -104,7 +103,7 @@ namespace ArcaneKingdom.UI.BattleReport
             if (!string.IsNullOrEmpty(_ctx.OpponentName))
             {
                 _opponentName.text = _ctx.OpponentLevel.HasValue
-                    ? $"{_ctx.OpponentName} — LV {_ctx.OpponentLevel}"
+                    ? $"{_ctx.OpponentName} - LV {_ctx.OpponentLevel}"
                     : _ctx.OpponentName;
             }
             else if (!string.IsNullOrEmpty(_ctx.NodeId))
@@ -113,7 +112,7 @@ namespace ArcaneKingdom.UI.BattleReport
             }
             else
             {
-                _opponentName.text = "—";
+                _opponentName.text = "-";
             }
 
             _battleTime.text = System.DateTime.Now.ToString("dd.MM.yyyy HH:mm");

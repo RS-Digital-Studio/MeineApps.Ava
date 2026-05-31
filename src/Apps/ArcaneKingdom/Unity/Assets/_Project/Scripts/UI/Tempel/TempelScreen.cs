@@ -270,7 +270,7 @@ namespace ArcaneKingdom.UI.Tempel
                 }
                 _sternService.Exchange(_cachedSave.Sternkarten.Inventory, cost);
                 await _save.MutateAsync(s => s, default);
-                _toast.Show($"✓ {_loc.Get("tempel.exchange.success") ?? "Eingetauscht"}: {optionKey} (-{cost} SP)", ToastKind.Success);
+                _toast.Show($"{_loc.Get("tempel.exchange.success") ?? "Eingetauscht"}: {optionKey} (-{cost} SP)", ToastKind.Success);
 
                 // TODO Phase 2: tatsaechliche Belohnung (Karte/Scrap) ins Inventar legen
             }

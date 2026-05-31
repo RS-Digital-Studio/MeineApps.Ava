@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement class="ak-screen" style="flex-grow: 1; background-color: rgb(13, 13, 26); align-items: center; justify-content: center; padding-left: 24px; padding-right: 24px;">
+    <ui:VisualElement class="ak-screen ak-center" style="flex-grow: 1; background-color: var(--ak-bg-base); padding-left: 24px; padding-right: 24px;">
 
-        <ui:VisualElement name="pvp-search-anim" style="width: 160px; height: 160px; background-color: rgba(74, 27, 154, 0.3); border-top-left-radius: 80px; border-top-right-radius: 80px; border-bottom-left-radius: 80px; border-bottom-right-radius: 80px; border-left-width: 4px; border-right-width: 4px; border-top-width: 4px; border-bottom-width: 4px; border-left-color: rgb(245, 200, 66); border-right-color: rgba(245, 200, 66, 0.2); border-top-color: rgb(245, 200, 66); border-bottom-color: rgba(245, 200, 66, 0.2); margin-bottom: 24px;"/>
+        <ui:VisualElement name="pvp-search-anim" style="width: 160px; height: 160px; background-color: var(--ak-bg-surface); border-top-left-radius: 80px; border-top-right-radius: 80px; border-bottom-left-radius: 80px; border-bottom-right-radius: 80px; border-left-width: 4px; border-right-width: 4px; border-top-width: 4px; border-bottom-width: 4px; border-left-color: var(--ak-accent); border-right-color: var(--ak-border-gold-soft); border-top-color: var(--ak-accent); border-bottom-color: var(--ak-border-gold-soft); margin-bottom: 28px;"/>
 
-        <ui:Label name="pvp-status" text="Suche Gegner..." style="font-size: 20px; -unity-font-style: bold; color: rgb(245, 200, 66); margin-bottom: 16px;"/>
+        <ui:Label name="pvp-status" text="Suche Gegner..." class="ak-h2" style="margin-bottom: 16px;"/>
 
-        <ui:Label name="pvp-opponent-info" text="" style="font-size: 14px; color: rgb(200, 200, 220); -unity-text-align: middle-center; white-space: normal; margin-bottom: 32px;"/>
+        <ui:Label name="pvp-opponent-info" text="" class="ak-body" style="-unity-text-align: middle-center; white-space: normal; margin-bottom: 32px;"/>
 
-        <ui:Label name="pvp-countdown" text="" style="font-size: 72px; -unity-font-style: bold; color: rgb(255, 122, 0); margin-bottom: 32px;"/>
+        <ui:Label name="pvp-countdown" text="" class="ak-h1 ak-text--accent" style="font-size: 72px; margin-bottom: 32px;"/>
 
-        <ui:Button name="pvp-cancel" text="Abbrechen" style="width: 180px; height: 44px; background-color: rgba(198, 40, 40, 0.6); color: rgb(255, 255, 255); border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;"/>
+        <ui:Button name="pvp-cancel" text="Abbrechen" class="ak-btn ak-btn--danger ak-btn--lg" style="width: 200px;"/>
 
     </ui:VisualElement>
 </ui:UXML>

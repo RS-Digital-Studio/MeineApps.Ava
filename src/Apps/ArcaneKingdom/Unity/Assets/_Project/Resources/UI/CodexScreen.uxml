@@ -1,30 +1,44 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
          editor-extension-mode="False">
 
-    <ui:VisualElement class="ak-fill ak-col" style="background-color: rgb(22, 16, 41);">
+    <!--
+        CodexScreen — Karten-Lexikon im Arcane-Realm-Stil.
+        Dunkler Token-BG, Gold-Header, Gold-betonte Filter-Leiste, zentriertes Karten-Grid.
+    -->
 
+    <ui:VisualElement class="ak-fill ak-col" style="background-color: var(--ak-bg-base);">
+
+        <!-- ================ HEADER ================ -->
         <ui:VisualElement class="ak-app-header">
-            <ui:Button name="codex-back-button" text="‹ Zurueck"
+            <ui:Button name="codex-back-button" text="Zurueck"
                        class="ak-btn ak-btn--sm ak-btn--ghost" style="margin-right: 12;" />
-            <ui:Label text="Codex" class="ak-h3" style="flex-grow: 1;" />
+            <ui:Label text="Codex" class="ak-h2" style="flex-grow: 1;" />
             <ui:Label name="codex-completion" text="0 / 0 entdeckt"
                       class="ak-h4 ak-text--accent" />
         </ui:VisualElement>
 
-        <!-- Filter -->
-        <ui:VisualElement class="ak-row" style="padding: 12; align-items: center;">
+        <!-- ================ FILTER-LEISTE ================ -->
+        <ui:VisualElement class="ak-row"
+                          style="align-items: center;
+                                 padding-top: 12;
+                                 padding-bottom: 12;
+                                 padding-left: 16;
+                                 padding-right: 16;
+                                 background-color: rgb(6, 6, 16);
+                                 border-bottom-width: 1;
+                                 border-bottom-color: var(--ak-border-gold-soft);">
             <ui:TextField name="codex-search" class="ak-input"
-                          style="flex-grow: 1; margin-right: 8; height: 34;" />
-            <ui:DropdownField name="codex-element-filter" label="" style="min-width: 120;" />
-            <ui:Toggle name="codex-owned-only" label="Nur entdeckte"
-                       style="margin-left: 12;" />
+                          style="flex-grow: 1; margin-right: 8;" />
+            <ui:DropdownField name="codex-element-filter" label=""
+                              style="min-width: 130; margin-right: 12;" />
+            <ui:Toggle name="codex-owned-only" label="Nur entdeckte" />
         </ui:VisualElement>
 
-        <!-- Karten-Grid -->
-        <ui:ScrollView style="flex-grow: 1;">
+        <!-- ================ KARTEN-GRID ================ -->
+        <ui:ScrollView style="flex-grow: 1;" horizontal-scroller-visibility="Hidden">
             <ui:VisualElement name="codex-grid"
                               style="flex-direction: row; flex-wrap: wrap;
-                                     justify-content: center; padding: 8;" />
+                                     justify-content: center; padding: 12;" />
         </ui:ScrollView>
     </ui:VisualElement>
 </ui:UXML>

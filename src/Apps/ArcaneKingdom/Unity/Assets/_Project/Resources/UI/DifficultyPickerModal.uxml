@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement name="difficulty-backdrop" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.75); align-items: center; justify-content: center;">
-        <ui:VisualElement name="difficulty-modal" style="width: 460px; max-width: 92%; background-color: rgb(26, 26, 46); border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; padding-left: 24px; padding-right: 24px; padding-top: 20px; padding-bottom: 20px; border-left-width: 2px; border-right-width: 2px; border-top-width: 2px; border-bottom-width: 2px; border-left-color: rgb(245, 200, 66); border-right-color: rgb(245, 200, 66); border-top-color: rgb(245, 200, 66); border-bottom-color: rgb(245, 200, 66);">
+    <ui:VisualElement name="difficulty-backdrop" class="ak-modal-backdrop">
+        <ui:VisualElement name="difficulty-modal" class="ak-modal ak-col" style="width: 460px; max-width: 92%;">
 
-            <ui:Label name="difficulty-node-name" text="Node-Name" style="font-size: 20px; -unity-font-style: bold; color: rgb(245, 200, 66); -unity-text-align: middle-center; margin-bottom: 4px;"/>
-            <ui:Label name="difficulty-best-stars" text="Noch nicht gespielt" style="font-size: 13px; color: rgb(170, 170, 190); -unity-text-align: middle-center; margin-bottom: 20px;"/>
+            <ui:Label name="difficulty-node-name" text="Node-Name" class="ak-h2" style="-unity-text-align: middle-center; margin-bottom: 4px;"/>
+            <ui:Label name="difficulty-best-stars" text="Noch nicht gespielt" class="ak-caption" style="-unity-text-align: middle-center; margin-bottom: 18px;"/>
 
-            <ui:Label text="Schwierigkeit waehlen:" style="font-size: 12px; color: rgb(200, 200, 220); margin-bottom: 12px;"/>
+            <ui:VisualElement class="ak-divider" style="margin-bottom: 16px;"/>
+
+            <ui:Label text="Schwierigkeit waehlen:" class="ak-overline" style="margin-bottom: 12px;"/>
 
             <ui:VisualElement style="flex-direction: row; flex-wrap: wrap; justify-content: space-between;">
-                <ui:Button name="difficulty-classic" text="★\nClassic\n1 Energie" style="width: 48%; height: 96px; margin-bottom: 12px; background-color: rgb(60, 60, 80); color: rgb(224, 224, 224); white-space: normal; -unity-font-style: bold; font-size: 14px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;"/>
-                <ui:Button name="difficulty-amateur" text="★★\nAmateur\n1 Energie" style="width: 48%; height: 96px; margin-bottom: 12px; background-color: rgb(80, 80, 100); color: rgb(105, 240, 174); white-space: normal; -unity-font-style: bold; font-size: 14px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;"/>
-                <ui:Button name="difficulty-profi" text="★★★\nProfi\n2 Energie" style="width: 48%; height: 96px; background-color: rgb(74, 27, 154); color: rgb(199, 138, 255); white-space: normal; -unity-font-style: bold; font-size: 14px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;"/>
-                <ui:Button name="difficulty-gott" text="★★★★\nGott\n3 Energie" style="width: 48%; height: 96px; background-color: rgb(255, 122, 0); color: rgb(255, 240, 200); white-space: normal; -unity-font-style: bold; font-size: 14px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;"/>
+                <ui:Button name="difficulty-classic" text="Classic" class="ak-btn ak-btn--ghost" style="width: 48%; min-height: 96px; margin-bottom: 12px;"/>
+                <ui:Button name="difficulty-amateur" text="Amateur" class="ak-btn" style="width: 48%; min-height: 96px; margin-bottom: 12px; border-left-color: var(--ak-success); border-right-color: var(--ak-success); border-top-color: var(--ak-success); border-bottom-color: var(--ak-success); color: var(--ak-success);"/>
+                <ui:Button name="difficulty-profi" text="Profi" class="ak-btn ak-btn--primary" style="width: 48%; min-height: 96px;"/>
+                <ui:Button name="difficulty-gott" text="Gott" class="ak-btn ak-btn--accent" style="width: 48%; min-height: 96px;"/>
             </ui:VisualElement>
 
-            <ui:Button name="difficulty-close" text="Abbrechen" style="height: 40px; margin-top: 16px; background-color: rgba(0, 0, 0, 0); color: rgb(170, 170, 190); font-size: 13px;"/>
+            <ui:Button name="difficulty-close" text="Abbrechen" class="ak-btn ak-btn--ghost" style="min-height: 44px; margin-top: 16px;"/>
 
         </ui:VisualElement>
     </ui:VisualElement>

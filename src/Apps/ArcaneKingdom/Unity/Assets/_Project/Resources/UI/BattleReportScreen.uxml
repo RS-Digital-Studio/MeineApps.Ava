@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" engine="UnityEngine.UIElements">
-    <ui:VisualElement class="ak-screen" style="flex-grow: 1; background-color: rgb(13, 13, 26); padding-left: 24px; padding-right: 24px; padding-top: 32px; padding-bottom: 24px; align-items: center;">
-        <ui:Label name="battle-report-banner" text="WIN" style="font-size: 64px; -unity-font-style: bold; color: rgb(105, 240, 174); margin-bottom: 24px;"/>
-        <ui:Label name="battle-report-rank-change" text="+0 Rangpunkte" style="font-size: 18px; color: rgb(245, 200, 66); margin-bottom: 48px;"/>
+    <ui:VisualElement class="ak-screen" style="flex-grow: 1; background-color: var(--ak-bg-base); padding-left: 24px; padding-right: 24px; padding-top: 32px; padding-bottom: 24px; align-items: center; justify-content: center;">
+        <ui:Label name="battle-report-banner" text="WIN" style="font-size: 64px; -unity-font-style: bold; color: var(--ak-accent); margin-bottom: 24px;"/>
+        <ui:Label name="battle-report-rank-change" text="+0 Rangpunkte" class="ak-text--accent" style="font-size: 18px; -unity-font-style: bold; margin-bottom: 48px;"/>
 
-        <ui:VisualElement style="width: 100%; max-width: 480px; background-color: rgb(26, 26, 46); padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
-            <ui:Label text="Gegner" style="font-size: 12px; color: rgb(170, 170, 190);"/>
-            <ui:Label name="battle-report-opponent" text="-" style="font-size: 16px; color: rgb(255, 255, 255); margin-bottom: 12px;"/>
-            <ui:Label text="Schlachtzeit" style="font-size: 12px; color: rgb(170, 170, 190);"/>
-            <ui:Label name="battle-report-time" text="-" style="font-size: 14px; color: rgb(200, 200, 220);"/>
+        <ui:VisualElement class="ak-surface" style="width: 100%; max-width: 480px; padding-left: 16px; padding-right: 16px; padding-top: 16px; padding-bottom: 16px; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-left-color: var(--ak-border-gold-soft); border-right-color: var(--ak-border-gold-soft); border-top-color: var(--ak-border-gold-soft); border-bottom-color: var(--ak-border-gold-soft);">
+            <ui:Label text="Gegner" class="ak-overline" style="margin-bottom: 2px;"/>
+            <ui:Label name="battle-report-opponent" text="-" class="ak-h4" style="margin-bottom: 12px;"/>
+            <ui:Label text="Schlachtzeit" class="ak-overline" style="margin-bottom: 2px;"/>
+            <ui:Label name="battle-report-time" text="-" class="ak-body" style="color: var(--ak-text-secondary);"/>
         </ui:VisualElement>
 
         <ui:VisualElement style="flex-direction: row; margin-top: 24px; width: 100%; max-width: 480px;">
-            <ui:Button name="battle-report-replay" text="Replay" style="flex-grow: 1; height: 44px; margin-right: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
-            <ui:Button name="battle-report-again" text="Nochmal" style="flex-grow: 1; height: 44px; margin-right: 8px; background-color: rgb(255, 122, 0); color: rgb(255, 255, 255); -unity-font-style: bold;"/>
-            <ui:Button name="battle-report-profile" text="Profil" style="flex-grow: 1; height: 44px; background-color: rgba(255, 255, 255, 0.08); color: rgb(245, 200, 66);"/>
+            <ui:Button name="battle-report-replay" text="Replay" class="ak-btn ak-btn--ghost" style="flex-grow: 1; min-height: 44px; margin-right: 8px;"/>
+            <ui:Button name="battle-report-again" text="Nochmal" class="ak-btn ak-btn--accent" style="flex-grow: 1; min-height: 44px; margin-right: 8px;"/>
+            <ui:Button name="battle-report-profile" text="Profil" class="ak-btn ak-btn--ghost" style="flex-grow: 1; min-height: 44px;"/>
         </ui:VisualElement>
 
-        <ui:Button name="battle-report-close" text="Schliessen" style="margin-top: 16px; background-color: rgba(0, 0, 0, 0); color: rgb(170, 170, 190);"/>
+        <ui:Button name="battle-report-close" text="Schliessen" class="ak-btn ak-btn--ghost ak-btn--sm" style="margin-top: 16px; min-height: 44px;"/>
     </ui:VisualElement>
 </ui:UXML>

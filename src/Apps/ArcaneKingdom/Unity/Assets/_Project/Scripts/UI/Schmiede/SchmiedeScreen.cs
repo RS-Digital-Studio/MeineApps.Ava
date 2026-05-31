@@ -263,7 +263,7 @@ namespace ArcaneKingdom.UI.Schmiede
                 }
             }
             _previewWarning.text = lastCopyWarnings.Count > 0
-                ? $"⚠ {_loc.Get("schmiede.last_copy_warning") ?? "Letzte Kopie"}: {string.Join(", ", lastCopyWarnings)}"
+                ? $"{_loc.Get("schmiede.last_copy_warning") ?? "Letzte Kopie"}: {string.Join(", ", lastCopyWarnings)}"
                 : string.Empty;
 
             _fuseButton.SetEnabled(_cachedSave.Currencies.Gold >= preview.GoldCost);

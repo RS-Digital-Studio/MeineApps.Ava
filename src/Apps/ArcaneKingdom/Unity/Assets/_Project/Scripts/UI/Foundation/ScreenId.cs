@@ -47,6 +47,7 @@ namespace ArcaneKingdom.UI.Foundation
         public const string PrestigeUpgradeOverlay = "overlay-prestige-upgrade";
         public const string MemoryFragmentOverlay = "overlay-memory-fragment";
         public const string EndingChoiceOverlay = "overlay-ending-choice";
+        public const string ConfirmOverlay = "overlay-confirm";
 
         // --- Spielplan v5 — Auth / Boot ---
         public const string Registration = "registration";

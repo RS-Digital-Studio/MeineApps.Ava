@@ -37,4 +37,29 @@ namespace ArcaneKingdom.UI.Modals
         public string? TargetWorldId { get; set; }
         public void Reset() => TargetWorldId = null;
     }
+
+    /// <summary>
+    /// Generischer Bestaetigungs-Dialog (<see cref="ConfirmModal"/>) fuer destruktive/teure
+    /// Operationen. Caller setzt bereits LOKALISIERTE Texte + die Aktion vor dem Push; das Modal
+    /// fuehrt <see cref="OnConfirmed"/> aus, wenn der Spieler bestaetigt, sonst nur Pop.
+    /// </summary>
+    public sealed class ConfirmContext
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string? ConfirmLabel { get; set; }
+        public string? CancelLabel { get; set; }
+        public bool Danger { get; set; }
+        public System.Action? OnConfirmed { get; set; }
+
+        public void Reset()
+        {
+            Title = string.Empty;
+            Message = string.Empty;
+            ConfirmLabel = null;
+            CancelLabel = null;
+            Danger = false;
+            OnConfirmed = null;
+        }
+    }
 }

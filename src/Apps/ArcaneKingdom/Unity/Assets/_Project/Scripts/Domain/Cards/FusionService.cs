@@ -78,33 +78,50 @@ namespace ArcaneKingdom.Domain.Cards
                 if (!r.IsSuccess) return FusionPreview.Failure(r.ErrorMessage ?? "Karte invalide");
             }
 
-            // Alle muessen gleiche Rasse + Rarity haben
             var firstDef = _cardDefinitions[inputs[0].CardDefinitionId];
-            foreach (var inst in inputs.Skip(1))
-            {
-                var def = _cardDefinitions[inst.CardDefinitionId];
-                if (def.Race != firstDef.Race || def.Rarity != firstDef.Rarity)
-                    return FusionPreview.Failure("Alle Karten muessen die gleiche Rasse und Seltenheit haben.");
-            }
 
-            // Lookup Config
+            // Config nach der Eingangs-Rarity ZUERST — die Karten-Validierung haengt vom
+            // AllowsDifferentCards-Flag ab (5*->6* erlaubt verschiedene Rassen).
             var config = CategoryFusionRules.GetConfig(firstDef.Rarity);
             if (config == null)
                 return FusionPreview.Failure($"Kein Crafting-Pfad fuer Rarity '{firstDef.Rarity}'.");
+
+            // Seltenheit muss IMMER gleich sein. Rasse nur bei Standard-Pfaden (1*-5* Upgrades);
+            // bei AllowsDifferentCards (5*->6*) stattdessen: paarweise VERSCHIEDENE Karten (Kap. 5.1).
+            foreach (var inst in inputs.Skip(1))
+            {
+                var def = _cardDefinitions[inst.CardDefinitionId];
+                if (def.Rarity != firstDef.Rarity)
+                    return FusionPreview.Failure("Alle Karten muessen die gleiche Seltenheit haben.");
+                if (!config.AllowsDifferentCards && def.Race != firstDef.Race)
+                    return FusionPreview.Failure("Alle Karten muessen die gleiche Rasse und Seltenheit haben.");
+            }
+            if (config.AllowsDifferentCards
+                && inputs.Select(i => i.CardDefinitionId).Distinct().Count() != inputs.Count)
+                return FusionPreview.Failure("Es muessen 3 verschiedene 5-Sterne-Karten sein.");
 
             // Anzahl pruefen
             if (inputs.Count != config.RequiredSameRaceCards)
                 return FusionPreview.Failure($"Erfordert genau {config.RequiredSameRaceCards} Karten (gegeben: {inputs.Count}).");
 
-            // Ergebnis: zufaellige Karte gleicher Rasse mit Ziel-Rarity (ausser bei Mythisch — feste Rezepte)
+            // Ergebnis-Pool: Mythisch -> zufaellige Nicht-Goetter-6* aus dem Mythisch-Pool
+            // (Designplan v4 Kap. 5.1 Z6 + 5.3; Goetter nur per festem Rezept, Kap. 5.2).
+            // Sonst: zufaellige Karte gleicher Rasse mit Ziel-Rarity.
+            List<CardDefinition> candidates;
             if (config.ResultRarity == Rarity.Mythisch)
-                return FusionPreview.Failure("6* Mythisch nur ueber feste Rezepte (siehe TryApplyFixedRecipe).");
-
-            var candidates = _cardDefinitions.Values
-                .Where(d => d.Race == firstDef.Race && d.Rarity == config.ResultRarity && !d.IsExclusive)
-                .ToList();
+            {
+                candidates = _cardDefinitions.Values
+                    .Where(d => d.Rarity == Rarity.Mythisch && d.Race != Race.Goetter && !d.IsExclusive)
+                    .ToList();
+            }
+            else
+            {
+                candidates = _cardDefinitions.Values
+                    .Where(d => d.Race == firstDef.Race && d.Rarity == config.ResultRarity && !d.IsExclusive)
+                    .ToList();
+            }
             if (candidates.Count == 0)
-                return FusionPreview.Failure($"Keine Karten von Rasse '{firstDef.Race}' und Rarity '{config.ResultRarity}'.");
+                return FusionPreview.Failure($"Keine passende Ergebnis-Karte fuer Rarity '{config.ResultRarity}'.");
 
             return FusionPreview.SuccessCategory(
                 resultPool: candidates.Select(d => d.Id).ToList(),

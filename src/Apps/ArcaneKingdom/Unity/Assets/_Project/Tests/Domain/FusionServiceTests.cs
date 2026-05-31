@@ -126,17 +126,74 @@ namespace ArcaneKingdom.Domain.Tests
         }
 
         [Test]
-        public void Kategorie_Fusion_Mythisch_Pfad_nicht_erlaubt()
+        public void Kategorie_Fusion_Mythisch_mit_3_verschiedenen_5star_erlaubt()
         {
-            // 5* -> 6*  ist via Kategorie-Fusion nicht erlaubt (nur ueber feste Rezepte)
-            var leg = MakeDef("leg", Race.Goetter, Rarity.Legendaer);
-            var defs = new Dictionary<string, CardDefinition> { ["leg"] = leg };
+            // K10: 5* -> 6* via Kategorie-Fusion (3 paarweise verschiedene Legendaer, Rasse egal)
+            // -> zufaellige Nicht-Goetter-Mythic + Mythischer Kern + 5 Mio Gold (Designplan v4 Kap. 5.1).
+            var l1 = MakeDef("l1", Race.Ritter, Rarity.Legendaer);
+            var l2 = MakeDef("l2", Race.Elfen, Rarity.Legendaer);
+            var l3 = MakeDef("l3", Race.Tiergeister, Rarity.Legendaer);
+            var myth = MakeDef("myth_ritter", Race.Ritter, Rarity.Mythisch);
+            var defs = new Dictionary<string, CardDefinition>
+            { ["l1"] = l1, ["l2"] = l2, ["l3"] = l3, ["myth_ritter"] = myth };
+            var svc = new FusionService(defs, Array.Empty<FusionRecipe>(), seed: 1);
+            var p = svc.PreviewCategoryFusion(new[] {
+                MakeInstance("i1","l1"), MakeInstance("i2","l2"), MakeInstance("i3","l3")
+            }, new FusionGuard());
+            Assert.IsTrue(p.IsSuccess, p.ErrorMessage);
+            Assert.AreEqual(5_000_000, p.GoldCost);
+            Assert.AreEqual("mythischer_kern", p.RequiredMaterialId);
+            CollectionAssert.Contains(p.ResultPool, "myth_ritter");
+        }
+
+        [Test]
+        public void Mythisch_Pool_schliesst_Goetter_aus()
+        {
+            var l1 = MakeDef("l1", Race.Ritter, Rarity.Legendaer);
+            var l2 = MakeDef("l2", Race.Elfen, Rarity.Legendaer);
+            var l3 = MakeDef("l3", Race.Tiergeister, Rarity.Legendaer);
+            var mRitter = MakeDef("m_ritter", Race.Ritter, Rarity.Mythisch);
+            var mGott = MakeDef("m_gott", Race.Goetter, Rarity.Mythisch);
+            var defs = new Dictionary<string, CardDefinition>
+            { ["l1"] = l1, ["l2"] = l2, ["l3"] = l3, ["m_ritter"] = mRitter, ["m_gott"] = mGott };
+            var svc = new FusionService(defs, Array.Empty<FusionRecipe>(), seed: 1);
+            var p = svc.PreviewCategoryFusion(new[] {
+                MakeInstance("i1","l1"), MakeInstance("i2","l2"), MakeInstance("i3","l3")
+            }, new FusionGuard());
+            Assert.IsTrue(p.IsSuccess, p.ErrorMessage);
+            CollectionAssert.Contains(p.ResultPool, "m_ritter");
+            CollectionAssert.DoesNotContain(p.ResultPool, "m_gott");
+        }
+
+        [Test]
+        public void Mythisch_braucht_3_verschiedene_Karten()
+        {
+            var leg = MakeDef("leg", Race.Ritter, Rarity.Legendaer);
+            var myth = MakeDef("myth", Race.Ritter, Rarity.Mythisch);
+            var defs = new Dictionary<string, CardDefinition> { ["leg"] = leg, ["myth"] = myth };
             var svc = new FusionService(defs, Array.Empty<FusionRecipe>(), seed: 1);
             var p = svc.PreviewCategoryFusion(new[] {
                 MakeInstance("i1","leg"), MakeInstance("i2","leg"), MakeInstance("i3","leg")
             }, new FusionGuard());
             Assert.IsFalse(p.IsSuccess);
-            StringAssert.Contains("Mythisch", p.ErrorMessage);
+            StringAssert.Contains("verschieden", p.ErrorMessage);
+        }
+
+        [Test]
+        public void Mythisch_braucht_gleiche_Rarity()
+        {
+            var l1 = MakeDef("l1", Race.Ritter, Rarity.Legendaer);
+            var l2 = MakeDef("l2", Race.Elfen, Rarity.Legendaer);
+            var epic = MakeDef("e1", Race.Tiergeister, Rarity.Epic);
+            var myth = MakeDef("myth", Race.Ritter, Rarity.Mythisch);
+            var defs = new Dictionary<string, CardDefinition>
+            { ["l1"] = l1, ["l2"] = l2, ["e1"] = epic, ["myth"] = myth };
+            var svc = new FusionService(defs, Array.Empty<FusionRecipe>(), seed: 1);
+            var p = svc.PreviewCategoryFusion(new[] {
+                MakeInstance("i1","l1"), MakeInstance("i2","l2"), MakeInstance("i3","e1")
+            }, new FusionGuard());
+            Assert.IsFalse(p.IsSuccess);
+            StringAssert.Contains("Seltenheit", p.ErrorMessage);
         }
 
         // --------------------------------------------------------------------

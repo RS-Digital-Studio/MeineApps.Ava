@@ -1690,3 +1690,17 @@ card.elder_drache.death,"Elder-Drache: ""Mein Feuer... erlischt nie ganz...""","
 card.kriegsmaschine.play,"Kriegsmaschine: ""Ziel erfasst. Vernichtung eingeleitet.""","War Machine: ""Target locked. Destruction initiated.""","Máquina de Guerra: ""Objetivo fijado. Destrucción iniciada.""",Machine de Guerre : « Cible verrouillée. Destruction lancée. »,"Macchina da Guerra: ""Bersaglio acquisito. Distruzione avviata.""","Máquina de Guerra: ""Alvo travado. Destruição iniciada."""
 card.kriegsmaschine.victory,"Kriegsmaschine: ""Befehl ausgeführt.""","War Machine: ""Command executed.""","Máquina de Guerra: ""Orden ejecutada.""",Machine de Guerre : « Ordre exécuté. »,"Macchina da Guerra: ""Comando eseguito.""","Máquina de Guerra: ""Comando executado."""
 card.kriegsmaschine.death,"Kriegsmaschine: ""System... versagt...""","War Machine: ""System... failing...""","Máquina de Guerra: ""Sistema... fallando...""",Machine de Guerre : « Système... défaillant... »,"Macchina da Guerra: ""Sistema... in avaria...""","Máquina de Guerra: ""Sistema... falhando..."""
+confirm.ok,Bestätigen,Confirm,Confirmar,Confirmer,Conferma,Confirmar
+confirm.cancel,Abbrechen,Cancel,Cancelar,Annuler,Annulla,Cancelar
+schmiede.no_save,Speicher nicht geladen,Save not loaded,Partida no cargada,Sauvegarde non chargée,Salvataggio non caricato,Save não carregado
+schmiede.max_selection,Max. 4 Karten wählbar,Max. 4 cards selectable,Máx. 4 cartas seleccionables,Max. 4 cartes sélectionnables,Max. 4 carte selezionabili,Máx. 4 cartas selecionáveis
+schmiede.select_cards,Karten auswählen,Select cards,Seleccionar cartas,Sélectionner des cartes,Seleziona carte,Selecionar cartas
+schmiede.fixed_recipe,Rezept,Recipe,Receta,Recette,Ricetta,Receita
+schmiede.random_result,Zufälliges Ergebnis,Random result,Resultado aleatorio,Résultat aléatoire,Risultato casuale,Resultado aleatório
+schmiede.last_copy_warning,Letzte Kopie,Last copy,Última copia,Dernière copie,Ultima copia,Última cópia
+schmiede.fuse_success,Geschmiedet,Forged,Forjado,Forgé,Forgiato,Forjado
+schmiede.gold_cost,{0} Gold,{0} Gold,{0} de oro,{0} or,{0} oro,{0} de ouro
+schmiede.mythic_hint,Ergebnis: zufällige 6-Sterne-Karte (keine Götter),Result: random 6-star card (no Gods),Resultado: carta de 6 estrellas aleatoria (sin Dioses),Résultat : carte 6 étoiles aléatoire (sans Dieux),Risultato: carta a 6 stelle casuale (niente Dei),Resultado: carta de 6 estrelas aleatória (sem Deuses)
+schmiede.confirm_title,6-Sterne schmieden?,Forge 6-star?,¿Forjar 6 estrellas?,Forger 6 étoiles ?,Forgiare a 6 stelle?,Forjar 6 estrelas?
+schmiede.confirm_mythic,"3 Fünf-Sterne-Karten, 5 Mio Gold und 1 Mythischen Kern unwiderruflich einsetzen?","Spend 3 five-star cards, 5M gold and 1 Mythic Core permanently?","¿Gastar 3 cartas de 5 estrellas, 5 M de oro y 1 Núcleo Mítico de forma permanente?","Dépenser 3 cartes 5 étoiles, 5 M d'or et 1 Noyau Mythique définitivement ?","Spendere 3 carte a 5 stelle, 5 mln d'oro e 1 Nucleo Mitico in modo permanente?","Gastar 3 cartas de 5 estrelas, 5 mi de ouro e 1 Núcleo Mítico permanentemente?"
+schmiede.confirm_ok,Schmieden,Forge,Forjar,Forger,Forgia,Forjar

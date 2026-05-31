@@ -23,8 +23,9 @@ namespace ArcaneKingdom.Domain.Economy
         /// <summary>Anzahl Mythischer Kern-Fragmente (3 Fragmente = 1 Mythischer Kern fuer 6*-Crafting).</summary>
         public int MythicCoreFragments { get; set; }
 
-        /// <summary>Fertig gecraftete Mythische Kerne (Material fuer 6*-Fusion). Wird von CraftMythicCore befuellt.</summary>
-        public int MythicCoresAvailable { get; set; }
+        // Hinweis: Fertig gecraftete Mythische Kerne werden NICHT hier, sondern auf der Slice-Ebene
+        // (SternkartenSaveSlice.MythicCoresAvailable) gehalten — das ist die Single-Source-of-Truth,
+        // die der Fusions-Konsument (FusionAppService.CountMaterial) liest. Siehe CraftMythicCore.
 
         /// <summary>Gesamt-Sternpunkte verfuegbar = sum(Karten × Werte) - SternpunkteSpent.</summary>
         public int AvailableSternpunkte =>
@@ -97,16 +98,21 @@ namespace ArcaneKingdom.Domain.Economy
             => inv.MythicCoreFragments >= SternkartenWerte.MythicFragmentsPerCore;
 
         /// <summary>
-        /// Verbraucht 3 Fragmente und schreibt 1 Mythischen Kern ins Inventar (MythicCoresAvailable).
-        /// Liefert die neue Gesamtzahl verfuegbarer Kerne.
+        /// Verbraucht 3 Fragmente (aus dem Inventar) und schreibt 1 Mythischen Kern auf die
+        /// Slice-Ebene (<see cref="ArcaneKingdom.Domain.Save.SternkartenSaveSlice.MythicCoresAvailable"/>)
+        /// — exakt das Feld, das die 6*-Fusion liest. Liefert die neue Gesamtzahl verfuegbarer Kerne.
+        ///
+        /// K10-Fix: Frueher schrieb diese Methode in ein zweites, redundantes Inventory-Feld, das die
+        /// Fusion nie las — gecraftete Kerne waren damit unsichtbar (6*-Crafting end-to-end tot).
         /// </summary>
-        public Result<int> CraftMythicCore(SternkartenInventory inv)
+        public Result<int> CraftMythicCore(ArcaneKingdom.Domain.Save.SternkartenSaveSlice slice)
         {
+            var inv = slice.Inventory;
             if (!CanCraftMythicCore(inv))
                 return Result<int>.Failure($"Brauche {SternkartenWerte.MythicFragmentsPerCore} Fragmente, habe {inv.MythicCoreFragments}.");
             inv.MythicCoreFragments -= SternkartenWerte.MythicFragmentsPerCore;
-            inv.MythicCoresAvailable++;   // M10: Kern wurde vorher nirgends gutgeschrieben -> Fragmente waren verloren.
-            return Result<int>.Success(inv.MythicCoresAvailable);
+            slice.MythicCoresAvailable++;
+            return Result<int>.Success(slice.MythicCoresAvailable);
         }
     }
 

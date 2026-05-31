@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+
+    <ui:VisualElement class="ak-modal-backdrop ak-bg-overlay"
+                      style="flex-grow: 1;
+                             justify-content: center;
+                             align-items: center;">
+
+        <ui:VisualElement class="ak-modal ak-bg-surface ak-bd-gold ak-rad-lg"
+                          style="border-width: 1px;
+                                 padding: 32;
+                                 max-width: 520;
+                                 min-width: 360;">
+
+            <ui:Label name="confirm-title" text="Bestätigen"
+                      class="ak-h2"
+                      style="text-align: center; margin-bottom: 16;" />
+
+            <ui:Label name="confirm-message" text=""
+                      class="ak-body ak-text--secondary"
+                      style="text-align: center;
+                             font-size: 15;
+                             white-space: normal;
+                             margin-bottom: 28;" />
+
+            <ui:VisualElement style="flex-direction: row; justify-content: center;">
+                <ui:Button name="confirm-cancel-button" text="Abbrechen"
+                           class="ak-btn ak-btn--ghost ak-btn--lg"
+                           style="min-width: 150; min-height: 44; margin-right: 14;" />
+                <ui:Button name="confirm-ok-button" text="Bestätigen"
+                           class="ak-btn ak-btn--accent ak-btn--lg"
+                           style="min-width: 150; min-height: 44;" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

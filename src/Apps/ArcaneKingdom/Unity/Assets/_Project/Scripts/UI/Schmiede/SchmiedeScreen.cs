@@ -38,6 +38,7 @@ namespace ArcaneKingdom.UI.Schmiede
         private readonly FusionAppService _fusion;
         private readonly ILocalizationService _loc;
         private readonly ToastService _toast;
+        private readonly ArcaneKingdom.UI.Modals.ConfirmContext _confirmCtx;
 
         // UI-Elemente
         private VisualElement _inputSlots = null!;
@@ -66,7 +67,8 @@ namespace ArcaneKingdom.UI.Schmiede
             FusionAppService fusion,
             ILocalizationService loc,
             ToastService toast,
-            UIAssetService uiAssets)
+            UIAssetService uiAssets,
+            ArcaneKingdom.UI.Modals.ConfirmContext confirmCtx)
         {
             _screenManager = screenManager;
             _save = save;
@@ -75,6 +77,7 @@ namespace ArcaneKingdom.UI.Schmiede
             _loc = loc;
             _toast = toast;
             _uiAssets = uiAssets;
+            _confirmCtx = confirmCtx;
         }
 
         protected override void BindElements(VisualElement root)
@@ -231,7 +234,7 @@ namespace ArcaneKingdom.UI.Schmiede
                 {
                     _previewTitle.text = recipe.ResultCardId;
                 }
-                _previewGoldCost.text = $"{recipe.GoldCost:N0} Gold";
+                _previewGoldCost.text = _loc.GetFormatted("schmiede.gold_cost", recipe.GoldCost.ToString("N0"));
                 _previewWarning.text = string.Empty;
                 _fuseButton.SetEnabled(_cachedSave.Currencies.Gold >= recipe.GoldCost);
                 return;
@@ -248,8 +251,14 @@ namespace ArcaneKingdom.UI.Schmiede
                 return;
             }
 
-            _previewTitle.text = $"{_loc.Get("schmiede.random_result") ?? "Zufaelliges Ergebnis"}: {preview.ResultPool!.Count} Karten moeglich";
-            _previewGoldCost.text = $"{preview.GoldCost:N0} Gold";
+            // Mythisch-Kategorie-Fusion (5*->6*) gesondert kenntlich machen.
+            var isMythic = preview.ResultPool!.Count > 0
+                && _catalog.TryFind(preview.ResultPool[0], out var firstResult)
+                && firstResult.Rarity == Rarity.Mythisch;
+            _previewTitle.text = isMythic
+                ? _loc.Get("schmiede.mythic_hint", "Ergebnis: zufällige 6-Sterne-Karte (keine Götter)")
+                : $"{_loc.Get("schmiede.random_result") ?? "Zufaelliges Ergebnis"}: {preview.ResultPool!.Count} Karten moeglich";
+            _previewGoldCost.text = _loc.GetFormatted("schmiede.gold_cost", preview.GoldCost.ToString("N0"));
 
             // Letzte-Kopie-Warnung
             var lastCopyWarnings = new List<string>();
@@ -273,7 +282,36 @@ namespace ArcaneKingdom.UI.Schmiede
         // Fuse-Aktion
         // ==========================================================================
 
-        private void OnFuseClicked() => RunFuseAsync().Forget();
+        private void OnFuseClicked()
+        {
+            if (_cachedSave == null) return;
+
+            // Mythisch-Kategorie-Fusion (5*->6*) ist teuer + irreversibel (5 Mio Gold, 1 Kern,
+            // 3 verbrauchte 5*) -> Bestaetigungs-Dialog (Projekt-Regel: Confirm vor destruktiven Ops).
+            var recipe = _fusion.FindMatchingRecipe(_selectedInstanceIds, _cachedSave);
+            if (recipe == null && IsMythicCategoryFusion())
+            {
+                _confirmCtx.Title = _loc.Get("schmiede.confirm_title", "6-Sterne schmieden?");
+                _confirmCtx.Message = _loc.Get("schmiede.confirm_mythic",
+                    "3 Fünf-Sterne-Karten, 5 Mio Gold und 1 Mythischen Kern unwiderruflich einsetzen?");
+                _confirmCtx.ConfirmLabel = _loc.Get("schmiede.confirm_ok", "Schmieden");
+                _confirmCtx.Danger = true;
+                _confirmCtx.OnConfirmed = () => RunFuseAsync().Forget();
+                _screenManager.PushAsync(ScreenId.ConfirmOverlay).Forget();
+                return;
+            }
+
+            RunFuseAsync().Forget();
+        }
+
+        /// <summary>True, wenn die aktuelle Auswahl eine Mythisch-Kategorie-Fusion (5*->6*) ergibt.</summary>
+        private bool IsMythicCategoryFusion()
+        {
+            if (_cachedSave == null) return false;
+            var preview = _fusion.PreviewCategoryFusion(_selectedInstanceIds, _cachedSave);
+            if (!preview.IsSuccess || preview.ResultPool == null || preview.ResultPool.Count == 0) return false;
+            return _catalog.TryFind(preview.ResultPool[0], out var d0) && d0.Rarity == Rarity.Mythisch;
+        }
 
         private async UniTaskVoid RunFuseAsync()
         {

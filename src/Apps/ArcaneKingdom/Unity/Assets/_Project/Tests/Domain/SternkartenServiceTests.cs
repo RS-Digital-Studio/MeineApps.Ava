@@ -83,23 +83,32 @@ namespace ArcaneKingdom.Domain.Tests
         [Test]
         public void Mythic_Core_aus_3_Fragmenten()
         {
+            // K10: Kern wird auf der Slice-Ebene gutgeschrieben (= dasselbe Feld, das die Fusion liest).
             var svc = new SternkartenService();
-            var inv = new SternkartenInventory { MythicCoreFragments = 3 };
-            Assert.IsTrue(svc.CanCraftMythicCore(inv));
-            var r = svc.CraftMythicCore(inv);
+            var slice = new ArcaneKingdom.Domain.Save.SternkartenSaveSlice
+            {
+                Inventory = new SternkartenInventory { MythicCoreFragments = 3 }
+            };
+            Assert.IsTrue(svc.CanCraftMythicCore(slice.Inventory));
+            var r = svc.CraftMythicCore(slice);
             Assert.IsTrue(r.IsSuccess);
             Assert.AreEqual(1, r.Value);
-            Assert.AreEqual(0, inv.MythicCoreFragments);
+            Assert.AreEqual(0, slice.Inventory.MythicCoreFragments);
+            Assert.AreEqual(1, slice.MythicCoresAvailable, "Kern muss auf der Slice-Ebene sichtbar sein (Fusion liest dieses Feld).");
         }
 
         [Test]
         public void Mythic_Core_fehlschlaegt_bei_zu_wenig_Fragmenten()
         {
             var svc = new SternkartenService();
-            var inv = new SternkartenInventory { MythicCoreFragments = 2 };
-            Assert.IsFalse(svc.CanCraftMythicCore(inv));
-            var r = svc.CraftMythicCore(inv);
+            var slice = new ArcaneKingdom.Domain.Save.SternkartenSaveSlice
+            {
+                Inventory = new SternkartenInventory { MythicCoreFragments = 2 }
+            };
+            Assert.IsFalse(svc.CanCraftMythicCore(slice.Inventory));
+            var r = svc.CraftMythicCore(slice);
             Assert.IsFalse(r.IsSuccess);
+            Assert.AreEqual(0, slice.MythicCoresAvailable);
         }
 
         // --------------------------------------------------------------------

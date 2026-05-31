@@ -39,11 +39,14 @@ namespace ArcaneKingdom.Domain.Cards
                     requiresScrapId: "epic_scrap",
                     resultRarity: Rarity.Legendaer),
 
-                // 5★ → 6★ verlangt 3 verschiedene Karten + Mythischer Kern (siehe Designplan v4 Kap. 5.1)
+                // 5★ → 6★: 3 paarweise VERSCHIEDENE 5★ (Rasse egal) + Mythischer Kern + 5 Mio Gold
+                // → zufaellige Nicht-Goetter-6★ (Designplan v4 Kap. 5.1 Tabelle Z6 + Kap. 5.3;
+                // Goetter nur per festem Rezept, Kap. 5.2). Material-ID muss "mythischer_kern" sein
+                // (FusionAppService.MythicCoreMaterialId), sonst wird der Kern nie geprueft/abgezogen.
                 Rarity.Legendaer     => new CategoryFusionConfig(
                     requiredSameRaceCards: 3,
                     goldCost: 5_000_000,
-                    requiresScrapId: "mythic_core",
+                    requiresScrapId: "mythischer_kern",
                     resultRarity: Rarity.Mythisch,
                     allowsDifferentCards: true),
 

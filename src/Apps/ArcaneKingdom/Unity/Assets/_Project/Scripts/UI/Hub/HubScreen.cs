@@ -30,6 +30,7 @@ namespace ArcaneKingdom.UI.Hub
         private readonly QuestService _questService;
         private readonly ToastService _toast;
         private readonly ArcaneKingdom.Game.World.PrestigeAppService _prestige;
+        private readonly ArcaneKingdom.Game.Hub.HubController _hubController;
         private readonly UIAssetService _uiAssets;
         private readonly ILocalizationService _loc;
 
@@ -56,6 +57,7 @@ namespace ArcaneKingdom.UI.Hub
                          QuestService questService,
                          ToastService toast,
                          ArcaneKingdom.Game.World.PrestigeAppService prestige,
+                         ArcaneKingdom.Game.Hub.HubController hubController,
                          UIAssetService uiAssets,
                          ILocalizationService loc)
         {
@@ -64,6 +66,7 @@ namespace ArcaneKingdom.UI.Hub
             _questService = questService;
             _toast = toast;
             _prestige = prestige;
+            _hubController = hubController;
             _uiAssets = uiAssets;
             _loc = loc;
         }
@@ -167,6 +170,10 @@ namespace ArcaneKingdom.UI.Hub
                     _loc.Get("hub.passive_income", "Passives Einkommen: +{0} Gold"),
                     incomeTick.Value.ToString("N0")), ToastKind.Success);
             }
+
+            // Energie-Regeneration (Spielplan v5 Kap. 7.6: 1 Energie / 6 Min bis Cap 60).
+            // Wird beim Hub-Eintritt aus der vergangenen Zeit nachberechnet.
+            await _hubController.RegenerateEnergyAsync(token);
 
             var result = await _save.LoadAsync(token);
             if (!result.IsSuccess)

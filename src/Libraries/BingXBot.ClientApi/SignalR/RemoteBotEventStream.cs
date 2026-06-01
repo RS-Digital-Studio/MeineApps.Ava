@@ -20,6 +20,9 @@ public sealed class RemoteBotEventStream : IBotEventStream
     private readonly ServerConnection _connection;
     private readonly ILogger<RemoteBotEventStream> _logger;
     private HubConnection? _hub;
+    // BaseUrl der aktuell aufgebauten SignalR-Verbindung. Damit unterscheidet der Changed-Handler
+    // einen reinen Token-Refresh (kein Neustart noetig) von einem echten Server-Wechsel.
+    private string? _connectedBaseUrl;
     private ConnectionStatus _status = ConnectionStatus.Disconnected;
 
     public ConnectionStatus Connection
@@ -58,7 +61,16 @@ public sealed class RemoteBotEventStream : IBotEventStream
     {
         _connection = connection;
         _logger = logger;
-        _connection.Changed += profile => { _ = RestartIfConnectedAsync(); };
+        _connection.Changed += profile =>
+        {
+            // Token-Refresh aendert nur Token/RefreshToken — der AccessTokenProvider holt den neuen
+            // Token beim naechsten (Re)Connect dynamisch. Ein SignalR-Neustart bei jedem Refresh waere
+            // unnoetig und riss die Verbindung ab (Event-Luecke + Konflikt mit WithAutomaticReconnect).
+            // Nur bei echtem Server-Wechsel (BaseUrl) oder Entkopplung neu verbinden.
+            var newUrl = _connection.IsPaired ? profile?.BaseUrl : null;
+            if (!string.Equals(newUrl, _connectedBaseUrl, StringComparison.OrdinalIgnoreCase))
+                _ = RestartIfConnectedAsync();
+        };
     }
 
     public async Task StartAsync(CancellationToken ct = default)
@@ -97,6 +109,7 @@ public sealed class RemoteBotEventStream : IBotEventStream
             Connection = ConnectionStatus.Connecting;
             await _hub.StartAsync(ct).ConfigureAwait(false);
             Connection = ConnectionStatus.Connected;
+            _connectedBaseUrl = profile.BaseUrl;
             _logger.LogInformation("Mit BingXBot-Server verbunden: {Url}", hubUrl);
         }
         catch (Exception ex)
@@ -112,6 +125,7 @@ public sealed class RemoteBotEventStream : IBotEventStream
         try { await _hub.StopAsync(ct).ConfigureAwait(false); } catch { }
         await _hub.DisposeAsync().ConfigureAwait(false);
         _hub = null;
+        _connectedBaseUrl = null;
         Connection = ConnectionStatus.Disconnected;
     }
 

@@ -619,8 +619,15 @@ public class BacktestEngine
 
                 if (slHit)
                 {
-                    // SL = StopMarket auf der echten Exchange → TakerFee
-                    simExchange.SetCurrentPrice(symbol, currentSignal.StopLoss!.Value);
+                    // SL = StopMarket auf der echten Exchange → TakerFee.
+                    // ADVERSE-GAP-MODELL: Schiesst die Kerze durch den SL (Gap/Wick-Through), ist der
+                    // reale Fill schlechter als der SL-Preis. Frueher fuellte der Backtest exakt am SL →
+                    // er unterschaetzte SL-Verluste (zu optimistisch). Jetzt den Worst-Case der Kerze
+                    // nehmen: Long → tiefstes Low, Short → hoechstes High.
+                    var slFill = pos.Side == Side.Buy
+                        ? Math.Min(currentSignal.StopLoss!.Value, currentCandle.Low)
+                        : Math.Max(currentSignal.StopLoss!.Value, currentCandle.High);
+                    simExchange.SetCurrentPrice(symbol, slFill);
                     await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
                     positionSignals.Remove(key);
                     exitTracking.Remove(key);

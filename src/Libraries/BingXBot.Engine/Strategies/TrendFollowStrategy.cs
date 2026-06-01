@@ -157,5 +157,8 @@ public sealed class TrendFollowStrategy : IStrategy
     public void Reset() { }
 
     public IStrategy Clone() => new TrendFollowStrategy(
-        _donchianPeriod, _emaPeriod, _atrPeriod, _adxPeriod, _adxMin, _atrSlMultiplier, _tp1Rrr, _tp2Rrr);
+        _donchianPeriod, _emaPeriod, _atrPeriod, _adxPeriod, _adxMin, _atrSlMultiplier, _tp1Rrr, _tp2Rrr,
+        // Chop-/Breakout-Filter MUSS mitkopiert werden — sonst laufen pro-Symbol-Klone (StrategyManager
+        // klont je {Symbol|TF}) ohne die Filter, der requireRisingAdx-/minBreakoutAtr-Schutz waere wirkungslos.
+        _requireRisingAdx, _minBreakoutAtr);
 }

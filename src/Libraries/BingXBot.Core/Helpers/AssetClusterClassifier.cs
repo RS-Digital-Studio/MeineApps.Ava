@@ -48,12 +48,18 @@ public static class AssetClusterClassifier
         if (Equals(asset, "ETH", "WETH", "STETH", "RETH", "CBETH", "WSTETH"))
             return AssetCluster.CryptoEthMajor;
 
-        // Alt-L1-Cluster: konkurrierende L1-Chains, korrelieren stark untereinander in Risk-On/Off.
-        if (Equals(asset, "SOL", "AVAX", "ADA", "DOT", "NEAR", "ATOM", "ALGO", "FTM", "TRX", "TON", "APT", "SUI", "INJ", "SEI", "TIA"))
+        // Alt-L1 / moderne Large-Cap-Alts: konkurrierende L1-Chains + neuere High-Beta-Large-Caps
+        // (L1/Infra/AI/RWA). Korrelieren in Risk-On/Off-Phasen stark untereinander und mit dem
+        // breiten Alt-Markt — bei einem Flash-Crash fallen sie gemeinsam. Frueher landeten HYPE/TAO/
+        // WLD/ENA/ONDO/FET u.a. im no-op CryptoOther → der Korrelations-Filter sah sie als unkorreliert
+        // (Klumpenrisiko bei mehreren gleichzeitigen Alt-Longs auf kleinem Konto).
+        if (Equals(asset, "SOL", "AVAX", "ADA", "DOT", "NEAR", "ATOM", "ALGO", "FTM", "TRX", "TON", "APT", "SUI", "INJ", "SEI", "TIA",
+                          "HYPE", "TAO", "WLD", "ENA", "ONDO", "FET", "RENDER", "RNDR", "ZRO", "ARB", "OP", "STRK", "ASTER", "KAS", "JTO", "JUP"))
             return AssetCluster.CryptoAltL1;
 
-        // Alt-DeFi-Cluster: DeFi-Bluechips + Lending/DEX-Tokens.
-        if (Equals(asset, "UNI", "AAVE", "LINK", "MKR", "SNX", "COMP", "CRV", "LDO", "GMX", "DYDX", "1INCH", "BAL", "SUSHI"))
+        // Alt-DeFi-Cluster: DeFi-Bluechips + Lending/DEX-/Perp-Plattform-Tokens.
+        if (Equals(asset, "UNI", "AAVE", "LINK", "MKR", "SNX", "COMP", "CRV", "LDO", "GMX", "DYDX", "1INCH", "BAL", "SUSHI",
+                          "PENDLE", "ETHFI", "ENS", "AERO"))
             return AssetCluster.CryptoAltDefi;
 
         // Meme-Cluster: hochvolatile Meme-Coins, hochkorreliert in Hype-Phasen.

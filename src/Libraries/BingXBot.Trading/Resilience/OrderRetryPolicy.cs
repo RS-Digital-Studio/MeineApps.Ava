@@ -1,4 +1,5 @@
 using System.Net;
+using BingXBot.Exchange;
 
 namespace BingXBot.Trading.Resilience;
 
@@ -23,10 +24,12 @@ public static class OrderRetryPolicy
     public static readonly int[] BackoffMs = { 100, 300, 1_000, 3_000 };
 
     /// <summary>
-    /// BingX-spezifische Error-Codes die als transient gelten (Retry sinnvoll).
-    /// 109400 = "service busy", 100410 = "request rate too high".
+    /// BingX-spezifische Error-Codes die PAUSCHAL als transient gelten (Retry sinnvoll).
+    /// 100410 = "request rate too high". 109400 ist NICHT enthalten, weil es doppeldeutig ist
+    /// ("service busy" UND "invalid parameters") — es wird in <see cref="ShouldRetry"/> nur bei
+    /// echten Last-/Busy-Meldungen (Message-gekoppelt) geretryt.
     /// </summary>
-    public static readonly int[] RetryableBingxCodes = { 109400, 100410 };
+    public static readonly int[] RetryableBingxCodes = { 100410 };
 
     /// <summary>
     /// Liefert das Backoff in Millisekunden vor dem n-ten Versuch (1-basiert: Attempt 1 = 0 ms).
@@ -51,12 +54,39 @@ public static class OrderRetryPolicy
         {
             if (apiEx.StatusCode.HasValue && ShouldRetryStatus(apiEx.StatusCode.Value))
                 return true;
-            if (apiEx.BingxCode.HasValue && IsRetryableBingxCode(apiEx.BingxCode.Value))
-                return true;
+            if (apiEx.BingxCode.HasValue)
+            {
+                if (IsRetryableBingxCode(apiEx.BingxCode.Value)) return true;
+                if (apiEx.BingxCode.Value == 109400) return Is109400Transient(apiEx.Message);
+            }
+            return false;
+        }
+        // Der REST-Client wirft BingXApiException (nicht OrderApiException). Ohne diesen Zweig war
+        // der BingX-Code-Retry toter Code → echte transiente Fehler (Rate/Last) beim Entry wurden
+        // NIE geretryt. WICHTIG: 109400 ist bei BingX DOPPELDEUTIG ("service busy" UND "invalid
+        // parameters"), daher NICHT pauschal retryen, sondern an die Message koppeln.
+        if (ex is BingXApiException be)
+        {
+            if (ShouldRetryStatus(be.ErrorCode)) return true;   // HTTP-Status im Code (429/5xx)
+            if (IsRetryableBingxCode(be.ErrorCode)) return true; // 100410 "rate too high" → sicher transient
+            if (be.ErrorCode == 109400) return Is109400Transient(be.ErrorMessage ?? be.Message);
             return false;
         }
         // Generische Exceptions: vorsichtig — nur retry wenn explizit als transient markiert.
         return false;
+    }
+
+    /// <summary>
+    /// Entscheidet, ob ein doppeldeutiger 109400-Fehler transient ist. BingX nutzt 109400 sowohl
+    /// fuer "service busy" (retrybar) als auch fuer "invalid parameters" (permanent). Nur bei echten
+    /// Last-/Busy-Meldungen retryen, nie bei Parameter-Validierungsfehlern.
+    /// </summary>
+    public static bool Is109400Transient(string? message)
+    {
+        var msg = (message ?? string.Empty).ToLowerInvariant();
+        var looksTransient = msg.Contains("busy") || msg.Contains("rate") || msg.Contains("try again");
+        var looksPermanent = msg.Contains("invalid") || msg.Contains("parameter") || msg.Contains("need to fill");
+        return looksTransient && !looksPermanent;
     }
 
     /// <summary>Pruet ob ein HTTP-Statuscode retry-tauglich ist.</summary>

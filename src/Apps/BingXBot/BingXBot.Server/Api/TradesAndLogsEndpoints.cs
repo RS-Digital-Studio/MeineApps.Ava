@@ -3,6 +3,7 @@ using BingXBot.Contracts.Dto;
 using BingXBot.Contracts.Services;
 using BingXBot.Core.Enums;
 using BingXBot.Server.Services;
+using BingXBot.Trading;
 using BotLogLevel = BingXBot.Core.Enums.LogLevel;
 
 namespace BingXBot.Server.Api;
@@ -69,13 +70,26 @@ public static class TradesAndLogsEndpoints
         // Server:LogBufferCapacity). Client nutzt das nach Reconnect oder App-Neustart, um
         // die Log-Historie wiederherzustellen — ohne wuerde LogView leer bleiben bis neue
         // Events kommen.
-        app.MapGet(ApiRoutes.Logs, (LogBufferService logs, int? page, int? pageSize, string? minLevel) =>
+        // DB-FALLBACK: Nach einem Server-Restart ist der RAM-Ringpuffer leer, obwohl die
+        // LogEntries-Tabelle die Historie persistiert haelt → frueher lieferte /logs faelschlich
+        // {items:[],totalCount:0} trotz voller DB. Bei leerem Puffer aus der DB nachladen.
+        app.MapGet(ApiRoutes.Logs, async (LogBufferService logs, BotDatabaseService db,
+            int? page, int? pageSize, string? minLevel, CancellationToken ct) =>
         {
             BotLogLevel? level = null;
             if (!string.IsNullOrWhiteSpace(minLevel) && Enum.TryParse<BotLogLevel>(minLevel, true, out var lvl))
                 level = lvl;
-            var result = logs.Query(page ?? 0, pageSize ?? 200, level);
-            return Results.Ok(result);
+
+            var size = pageSize ?? 200;
+            var result = logs.Query(page ?? 0, size, level);
+            if (result.TotalCount > 0)
+                return Results.Ok(result);
+
+            var dbLogs = await db.GetLogsAsync(size, level).ConfigureAwait(false);
+            var dtos = dbLogs
+                .Select(e => new LogEntryDto(e.Timestamp, e.Level, e.Category, e.Message, e.Symbol))
+                .ToList();
+            return Results.Ok(new PagedResult<LogEntryDto>(dtos, dtos.Count, 0, size));
         });
     }
 }

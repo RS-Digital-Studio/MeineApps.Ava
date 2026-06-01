@@ -35,8 +35,21 @@ public class OrderRetryPolicyTests
     [Fact]
     public void ShouldRetry_BingxRetryableCodes_True()
     {
-        OrderRetryPolicy.IsRetryableBingxCode(109400).Should().BeTrue();
+        // 100410 ("rate too high") ist sicher transient. 109400 ist NICHT pauschal retrybar, weil
+        // doppeldeutig ("service busy" UND "invalid parameters") — siehe Is109400Transient.
         OrderRetryPolicy.IsRetryableBingxCode(100410).Should().BeTrue();
+        OrderRetryPolicy.IsRetryableBingxCode(109400).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Is109400Transient_NurBeiBusyRateMeldung()
+    {
+        // 109400 doppeldeutig: nur bei echten Last-/Busy-Meldungen retryen.
+        OrderRetryPolicy.Is109400Transient("service busy, try again").Should().BeTrue();
+        OrderRetryPolicy.Is109400Transient("request rate exceeded").Should().BeTrue();
+        // Parameter-Validierungsfehler (z.B. der cancelAllAfter-Kill-Switch-Reject) → permanent.
+        OrderRetryPolicy.Is109400Transient("Invalid parameters, err:Need to fill timeOut").Should().BeFalse();
+        OrderRetryPolicy.Is109400Transient("").Should().BeFalse();
     }
 
     [Fact]

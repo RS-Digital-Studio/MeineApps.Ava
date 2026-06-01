@@ -22,6 +22,13 @@ public readonly struct IndicatorCacheKey : IEquatable<IndicatorCacheKey>
     public readonly int CandleCount;
     public readonly decimal LastClose;
     public readonly long LastOpenTimeTicks;
+    // M-9-analog (gegen Cross-Symbol-Kollision): Innerhalb eines Scans haben alle Symbole derselben
+    // TF dieselbe LastOpenTimeTicks und oft denselben CandleCount → LastClose war frueher das EINZIGE
+    // Unterscheidungsmerkmal. Zwei Coins mit gleichem letzten Close (Sub-Cent-Memecoins) bekamen
+    // denselben Cache-Eintrag → falsche Indikatoren fuer Trade-Entscheidungen. First-Candle einbeziehen
+    // (analog zum bereits gehaerteten Quotes-Cache) eliminiert die Kollision praktisch vollstaendig.
+    public readonly decimal FirstClose;
+    public readonly long FirstOpenTimeTicks;
     public readonly IndicatorType Indicator;
     public readonly int Param1; // Erste Periode (EMA, SMA, RSI, ATR, ADX, Stochastik lookback)
     public readonly int Param2; // Zweite Periode (MACD slow, BB stdDev*1000, Stochastik signal)
@@ -37,6 +44,9 @@ public readonly struct IndicatorCacheKey : IEquatable<IndicatorCacheKey>
             var last = candles[^1];
             LastClose = last.Close;
             LastOpenTimeTicks = last.OpenTime.Ticks;
+            var first = candles[0];
+            FirstClose = first.Close;
+            FirstOpenTimeTicks = first.OpenTime.Ticks;
         }
         Indicator = indicator;
         Param1 = p1;
@@ -49,6 +59,8 @@ public readonly struct IndicatorCacheKey : IEquatable<IndicatorCacheKey>
         CandleCount == other.CandleCount &&
         LastClose == other.LastClose &&
         LastOpenTimeTicks == other.LastOpenTimeTicks &&
+        FirstClose == other.FirstClose &&
+        FirstOpenTimeTicks == other.FirstOpenTimeTicks &&
         Indicator == other.Indicator &&
         Param1 == other.Param1 &&
         Param2 == other.Param2 &&
@@ -56,9 +68,14 @@ public readonly struct IndicatorCacheKey : IEquatable<IndicatorCacheKey>
 
     public override bool Equals(object? obj) => obj is IndicatorCacheKey k && Equals(k);
 
-    public override int GetHashCode() =>
-        HashCode.Combine(ScanGeneration, CandleCount, LastClose, LastOpenTimeTicks,
-            Indicator, Param1, Param2, Param3);
+    public override int GetHashCode()
+    {
+        var h = new HashCode();
+        h.Add(ScanGeneration); h.Add(CandleCount); h.Add(LastClose); h.Add(LastOpenTimeTicks);
+        h.Add(FirstClose); h.Add(FirstOpenTimeTicks);
+        h.Add(Indicator); h.Add(Param1); h.Add(Param2); h.Add(Param3);
+        return h.ToHashCode();
+    }
 }
 
 /// <summary>

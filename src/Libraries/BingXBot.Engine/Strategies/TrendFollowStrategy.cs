@@ -130,9 +130,15 @@ public sealed class TrendFollowStrategy : IStrategy
             if (risk <= 0m) return None("sl_geometry_error");
             var tp1 = close + _tp1Rrr * risk;
             var tp2 = close + _tp2Rrr * risk;
+            // DisableSmartBreakeven=true aktiviert den BE-Block im PriceTickerLoop (historisch invertiert
+            // benannt — der frühere ATR-Smart-BE wurde im Buch-Strip entfernt; true = "nutze den
+            // A-Bruch/2x-SL-BE"). Ohne dieses Flag bekam TrendFollow NIE Break-Even → die Rest-Position
+            // nach TP1 lief mit dem urspruenglichen 2.5xATR-SL ungeschuetzt. Mit NavPointA=0 greift hier
+            // der 2x-SL-Distanz-Trigger (BE bei 2R, also nach TP1@1.5R, vor TP2@3R).
             return new SignalResult(Signal.Long, Confidence(adxV), close, sl, tp1,
                 $"TrendFollow Long (ADX {adxV:F0}, Donchian-Breakout > {upBreakout:F4})",
-                TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV);
+                TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV,
+                DisableSmartBreakeven: true);
         }
 
         if (strongTrend && breakoutDown && trendDown)
@@ -142,9 +148,11 @@ public sealed class TrendFollowStrategy : IStrategy
             if (risk <= 0m) return None("sl_geometry_error");
             var tp1 = close - _tp1Rrr * risk;
             var tp2 = close - _tp2Rrr * risk;
+            // Siehe Long-Pfad: aktiviert den 2x-SL-Distanz-Break-Even auch fuer Short.
             return new SignalResult(Signal.Short, Confidence(adxV), close, sl, tp1,
                 $"TrendFollow Short (ADX {adxV:F0}, Donchian-Breakout < {loBreakout:F4})",
-                TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV);
+                TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV,
+                DisableSmartBreakeven: true);
         }
 
         return None("no_signal");

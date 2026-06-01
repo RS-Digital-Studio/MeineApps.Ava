@@ -311,6 +311,16 @@ Order-Pipeline (Scanner → Evaluate → RiskManager → Order) ist strategie-ag
 Strategie wählt `BotSettings.LastStrategyName`. Empirisch verglichen über das Backtest-Lab
 (`tools/BingXBacktestLab`) auf echten BingX-Klines.
 
+**`IStrategy.RequiresHigherTimeframeContext`** (Default true): Steuert ob der Scan W1/D1-Fahrplan-
+Kerzen pro Symbol lädt. SK = true (nutzt Fahrplan), TrendFollow = false (reiner H4-Navigator → spart
+2 Klines-Calls/Symbol). D1 für BTC wird unabhängig geladen (BTC-Health).
+
+**Break-Even-Gate** (`TradingServiceBase` PriceTickerLoop): Der BE-Block (A-Bruch ODER 2x-SL-Distanz,
+`BreakevenCalculator`) ist über `signal.DisableSmartBreakeven` aktiviert — historisch invertiert
+benannt (der frühere ATR-Smart-BE wurde im Buch-Strip entfernt; `true` = "nutze A-Bruch/2x-SL-BE").
+**Jede neue Strategie, die Break-Even will, MUSS `DisableSmartBreakeven: true` setzen** (SK + TrendFollow
+tun das; mit `NavPointA=0` greift der 2x-SL-Distanz-Trigger).
+
 | Strategie | Typ | H4-PF (3 Marktphasen, gefixt) | Status |
 |-----------|-----|-------------------------------|--------|
 | **TrendFollow-Fast** | Donchian(10)-Breakout in Trend-Richtung, EMA(34)+ADX/DMI, Market-Entry, ATR-SL, RRR 1.5/3.0 | **5.4 / 2.0 / 2.8** (alle 3 profitabel) | **Live-Default, H4-only** |

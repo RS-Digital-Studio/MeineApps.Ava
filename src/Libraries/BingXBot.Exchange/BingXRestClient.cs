@@ -34,7 +34,13 @@ public class BingXRestClient : IExchangeClient
 
     // Server-Zeitversatz in Millisekunden (lokal - server). Wird bei SyncServerTimeAsync() berechnet.
     // BingX erlaubt nur ±5s (recvWindow) — bei Systemzeit-Abweichung kommt Error 100421.
+    // Interlocked-Zugriff (Read/Exchange): wird beim periodischen Re-Sync aus einem anderen Thread
+    // geschrieben als gelesen — auf ARM64/Pi ohne Memory-Barrier sonst nicht garantiert sichtbar.
     private long _serverTimeOffsetMs;
+    // Letzter erfolgreicher Server-Zeit-Sync (UTC-Ticks). Trigger fuer periodischen Re-Sync im
+    // 24/7-Betrieb (die Pi-Uhr driftet zwischen NTP-Korrekturen → 100421 ohne Re-Sync).
+    private long _lastServerTimeSyncTicks;
+    private static readonly TimeSpan ServerTimeResyncInterval = TimeSpan.FromMinutes(10);
 
     /// <summary>Timeout fuer einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
@@ -90,8 +96,10 @@ public class BingXRestClient : IExchangeClient
                 var serverTime = result.Data.ServerTime;
                 // Netzwerk-Latenz halbieren: Schätzung der Server-Zeit zum Zeitpunkt der Anfrage
                 var localEstimate = (localBefore + localAfter) / 2;
-                _serverTimeOffsetMs = localEstimate - serverTime;
-                _logger.LogInformation("Server-Zeit synchronisiert (Offset: {Offset}ms)", _serverTimeOffsetMs);
+                var offset = localEstimate - serverTime;
+                Interlocked.Exchange(ref _serverTimeOffsetMs, offset);
+                Interlocked.Exchange(ref _lastServerTimeSyncTicks, DateTime.UtcNow.Ticks);
+                _logger.LogInformation("Server-Zeit synchronisiert (Offset: {Offset}ms)", offset);
             }
         }
         catch (Exception ex)
@@ -240,9 +248,20 @@ public class BingXRestClient : IExchangeClient
                 ? new Dictionary<string, string>(parameters)
                 : new Dictionary<string, string>();
 
+            // Periodischer Re-Sync (24/7-Drift-Schutz): Wenn der letzte Sync > Intervall her ist,
+            // einen Hintergrund-Re-Sync ausloesen (fire-and-forget, blockiert den Request nicht — der
+            // aktuelle Request nutzt noch den bisherigen Offset, der naechste den frischen). _lastSync
+            // sofort vorsetzen, damit nicht mehrere parallele Requests denselben Sync starten.
+            var lastSync = Interlocked.Read(ref _lastServerTimeSyncTicks);
+            if (lastSync > 0 && DateTime.UtcNow.Ticks - lastSync > ServerTimeResyncInterval.Ticks)
+            {
+                Interlocked.Exchange(ref _lastServerTimeSyncTicks, DateTime.UtcNow.Ticks);
+                _ = SyncServerTimeAsync();
+            }
+
             // Timestamp bei jedem Versuch neu setzen (muss aktuell sein)
             // Server-Offset abziehen falls synchronisiert (BingX Error 100421 bei >5s Abweichung)
-            var timestamp = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - _serverTimeOffsetMs).ToString();
+            var timestamp = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - Interlocked.Read(ref _serverTimeOffsetMs)).ToString();
             queryParams["timestamp"] = timestamp;
             queryParams["recvWindow"] = "5000"; // 5s Fenster gegen Replay-Angriffe
 
@@ -328,10 +347,12 @@ public class BingXRestClient : IExchangeClient
         (int)response.StatusCode == 429 || (int)response.StatusCode >= 500;
 
     /// <summary>
-    /// Konvertiert Unix-Millisekunden in DateTime (UTC).
+    /// Konvertiert Unix-Millisekunden in DateTime (UTC). Fehlendes/0-createTime (z.B. bei Amend-/
+    /// SL-Set-Order-Responses) wird auf UtcNow abgebildet statt auf 1970 — sonst gilt eine frisch
+    /// platzierte Order im Reconcile faelschlich als "uralt" und koennte vorzeitig als stale verworfen werden.
     /// </summary>
     private static DateTime FromUnixMs(long ms) =>
-        DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
+        ms <= 0 ? DateTime.UtcNow : DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
 
     /// <summary>
     /// Parst einen Decimal-String sicher (Invariant Culture).
@@ -640,26 +661,35 @@ public class BingXRestClient : IExchangeClient
         {
             foreach (var item in ordersArray.EnumerateArray())
             {
-                var detail = JsonSerializer.Deserialize<BingXOrderDetail>(item.GetRawText());
-                if (detail is null) continue;
+                // Pro-Element-Isolation: ein kaputtes Order-Element darf nicht den ganzen
+                // Open-Orders-Abruf abbrechen (sonst greift faelschlich der Missing-SL/TP-Reconcile).
+                try
+                {
+                    var detail = JsonSerializer.Deserialize<BingXOrderDetail>(item.GetRawText());
+                    if (detail is null) continue;
 
-                // ReduceOnly aus FlexibleStringConverter (true/false als string oder bool).
-                // Phase 0.1 (Finding 0.1): notwendig fuer Cancel-Filter, damit Bot-platzierte TP-Limits
-                // (LIMIT mit reduceOnly=true) beim Position-Close erkannt werden.
-                var reduceOnly = !string.IsNullOrEmpty(detail.ReduceOnly)
-                    && detail.ReduceOnly.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    // ReduceOnly aus FlexibleStringConverter (true/false als string oder bool).
+                    // Phase 0.1 (Finding 0.1): notwendig fuer Cancel-Filter, damit Bot-platzierte TP-Limits
+                    // (LIMIT mit reduceOnly=true) beim Position-Close erkannt werden.
+                    var reduceOnly = !string.IsNullOrEmpty(detail.ReduceOnly)
+                        && detail.ReduceOnly.Equals("true", StringComparison.OrdinalIgnoreCase);
 
-                orders.Add(new Order(
-                    detail.OrderId,
-                    detail.Symbol,
-                    ParseSide(detail.Side),
-                    ParseOrderType(detail.Type),
-                    ParseDecimal(detail.Price),
-                    ParseDecimal(detail.Quantity),
-                    string.IsNullOrEmpty(detail.StopPrice) ? null : ParseDecimal(detail.StopPrice),
-                    FromUnixMs(detail.CreateTime),
-                    ParseOrderStatus(detail.Status),
-                    ReduceOnly: reduceOnly));
+                    orders.Add(new Order(
+                        detail.OrderId,
+                        detail.Symbol,
+                        ParseSide(detail.Side),
+                        ParseOrderType(detail.Type),
+                        ParseDecimal(detail.Price),
+                        ParseDecimal(detail.Quantity),
+                        string.IsNullOrEmpty(detail.StopPrice) ? null : ParseDecimal(detail.StopPrice),
+                        FromUnixMs(detail.CreateTime),
+                        ParseOrderStatus(detail.Status),
+                        ReduceOnly: reduceOnly));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Open-Order-Element nicht deserialisierbar, uebersprungen: {Error}", ex.Message);
+                }
             }
         }
 
@@ -692,27 +722,37 @@ public class BingXRestClient : IExchangeClient
 
         foreach (var item in posArray.EnumerateArray())
         {
-            var detail = JsonSerializer.Deserialize<BingXPositionDetail>(item.GetRawText());
-            if (detail is null) continue;
+            // Pro-Element-Isolation: Ein einzelnes nicht deserialisierbares Element (Schema-Drift,
+            // unerwarteter Wert) darf NICHT den ganzen Positions-Abruf killen — sonst saehe der Bot
+            // KEINE Positionen mehr und betriebe kein SL-Management. Kaputtes Element ueberspringen.
+            try
+            {
+                var detail = JsonSerializer.Deserialize<BingXPositionDetail>(item.GetRawText());
+                if (detail is null) continue;
 
-            var quantity = ParseDecimal(detail.PositionAmt);
-            if (quantity == 0) continue; // Leere Position überspringen
+                var quantity = ParseDecimal(detail.PositionAmt);
+                if (quantity == 0) continue; // Leere Position überspringen
 
-            // PositionSide "LONG" → Buy, "SHORT" → Sell
-            var side = detail.PositionSide.Equals("LONG", StringComparison.OrdinalIgnoreCase)
-                ? Side.Buy
-                : Side.Sell;
+                // PositionSide "LONG" → Buy, "SHORT" → Sell
+                var side = detail.PositionSide.Equals("LONG", StringComparison.OrdinalIgnoreCase)
+                    ? Side.Buy
+                    : Side.Sell;
 
-            positions.Add(new Position(
-                detail.Symbol,
-                side,
-                ParseDecimal(detail.AvgPrice),
-                ParseDecimal(detail.MarkPrice),
-                Math.Abs(quantity),
-                ParseDecimal(detail.UnrealizedProfit),
-                ParseDecimal(detail.Leverage),
-                ParseMarginType(detail.MarginType),
-                DateTime.UtcNow)); // BingX liefert kein OpenTime in Positions-Response
+                positions.Add(new Position(
+                    detail.Symbol,
+                    side,
+                    ParseDecimal(detail.AvgPrice),
+                    ParseDecimal(detail.MarkPrice),
+                    Math.Abs(quantity),
+                    ParseDecimal(detail.UnrealizedProfit),
+                    ParseDecimal(detail.Leverage),
+                    ParseMarginType(detail.MarginType),
+                    DateTime.UtcNow)); // BingX liefert kein OpenTime in Positions-Response
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Positions-Element nicht deserialisierbar, uebersprungen: {Error}", ex.Message);
+            }
         }
 
         return positions;

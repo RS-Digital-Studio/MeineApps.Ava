@@ -18,9 +18,8 @@ public static class ScanHelper
 {
     /// <summary>
     /// Filtert Ticker nach Scanner-Kriterien (Volumen, Preisänderung, Black-/Whitelist).
-    /// Bei jedem Scan werden die Krypto-Kandidaten zufällig gemischt (Fisher-Yates-Shuffle).
+    /// Krypto-Kandidaten werden bei knappen Slots nach 24h-Volumen (Liquiditaet) priorisiert.
     /// </summary>
-    [ThreadStatic] private static Random? _rng;
 
     /// <summary>
     /// Multi-TF Standalone (15.04.2026): Filtert Kandidaten für eine bestimmte Navigator-TF.
@@ -172,9 +171,14 @@ public static class ScanHelper
         var unusedTradFiSlots = tradFiTargetSlots - tradFiResult.Count;
         var effectiveCryptoSlots = cryptoTargetSlots + unusedTradFiSlots;
 
-        // Krypto: Shuffle + Slot-Limit (Rotation fairer Pool)
-        var shuffled = ShuffleList(filteredCrypto);
-        var cryptoResult = shuffled.Take(effectiveCryptoSlots).ToList();
+        // Krypto: nach 24h-Volumen (Liquiditaet) priorisieren statt zufaellig shufflen. Bei knappen
+        // Trade-Slots (MaxOpenPositions) gewinnt damit Qualitaet statt Zufall — liquidere Symbole haben
+        // bessere Fills/engere Spreads und tendenziell sauberere Trends. (Der vollstaendige Wettbewerb
+        // ueber ConfluenceScore/ADX braucht einen Sammel-Sortier-Pass im Scan-Loop + Integration-Test.)
+        var cryptoResult = filteredCrypto
+            .OrderByDescending(t => t.Volume24h)
+            .Take(effectiveCryptoSlots)
+            .ToList();
 
         // Symmetrisch: Wenn Krypto weniger als Ziel füllt, ungenutzte Slots an TradFi
         var unusedCryptoSlots = effectiveCryptoSlots - cryptoResult.Count;
@@ -218,18 +222,6 @@ public static class ScanHelper
         return riskCheck;
     }
 
-    /// <summary>Fisher-Yates-Shuffle: Gibt eine neue zufällig gemischte Liste zurück.</summary>
-    private static List<Ticker> ShuffleList(List<Ticker> source)
-    {
-        _rng ??= new Random();
-        var list = new List<Ticker>(source);
-        for (int i = list.Count - 1; i > 0; i--)
-        {
-            int j = _rng.Next(i + 1);
-            (list[i], list[j]) = (list[j], list[i]);
-        }
-        return list;
-    }
 }
 
 /// <summary>Ergebnis der Kandidaten-Evaluation (Signal + Context + Candles für Korrelation).</summary>

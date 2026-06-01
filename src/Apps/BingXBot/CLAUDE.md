@@ -207,7 +207,7 @@ Daten-Pfad: `/var/lib/bingxbot`. SSH-Passwort `qwer`.
 
 | Service | Tick | Zweck |
 |---------|------|-------|
-| `BotAutoResumeService` | Once @ Start (15s Delay) | Reaktiviert Engine nach Crash/Reboot wenn `WasRunningOnShutdown=true`. Trade-Replay-Backfill aus Income-Records bei Heartbeat-Drift > 5 min. Public `BackfillFromBingxAsync` für Admin-Endpoint |
+| `BotAutoResumeService` | Once @ Start (15s) + Backfill-Loop (30 min) | Reaktiviert Engine nach Crash/Reboot wenn `WasRunningOnShutdown=true`. **Periodischer Trade-Backfill (30 min, letzte 3 h)** fängt native SL/TP-Closes bei laufendem Bot ein (Dedup gegen alle Live-Trades per Symbol+ExitTime). Public `BackfillFromBingxAsync` für Admin-Endpoint |
 | `BotHubEventForwarder` | Event-getrieben | Forward `IBotEventStream` → SignalR-Hub mit Log-Batching (250ms) und Throttling |
 | `EquitySnapshotService` | 5 min + Event | Persistiert Equity-Snapshot periodisch + sofort nach Trade-Close (2 s Debounce). Publiziert `EquityUpdate` an SignalR-Clients |
 | `DbLogPersistenceService` | 250 ms-Batch | Subscribed `LogEmitted`, schreibt im Batch in `LogEntries`. Toggle `EnableDbLogPersistence`, MinLevel-Filter |
@@ -524,7 +524,10 @@ JSON-Blob-Toleranz).
 3. Bei Heartbeat-Drift > 5 min und Live-Mode: `GetIncomeHistoryAsync` für Offline-Zeitfenster,
    REALIZED_PNL-Records → synthetische `CompletedTrade`-Backfills via `SaveTradeAsync` +
    `RiskManager.UpdateDailyStats` für heutige Trades.
-4. `IBotControlService.StartAsync` reaktiviert Engine im zuletzt aktiven Mode.
+4. `LiveTradingManager` ruft beim Live-Start `RiskManager.RestoreStats(dailyPnl, totalPnl, peakEquity)`
+   aus den persistierten Trades + Equity-Snapshots auf — ohne diese Rehydration starten Daily-Loss-Circuit
+   und Total-Drawdown-Schutz nach jedem Restart amnesisch (bei 0).
+5. `IBotControlService.StartAsync` reaktiviert Engine im zuletzt aktiven Mode.
 
 ### Live-Trade-Persistenz (Pflicht-Pfad)
 

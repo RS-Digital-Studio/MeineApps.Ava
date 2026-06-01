@@ -77,6 +77,12 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         // die ganze Hosting-Pipeline. ConnectAsync (BingX) kann mehrere Sekunden dauern.
         // BEWUSST eigenen CTS uebergeben, NICHT cancellationToken (Bug #5).
         _ = Task.Run(() => ResumeAsync(_lifetimeCts.Token), CancellationToken.None);
+
+        // Periodischer Trade-Backfill (entkoppelt von der Heartbeat-Drift-Bedingung): faengt
+        // verschwundene Live-Trades ein, die bei LAUFENDEM Bot durch native SL/TP-Fills geschlossen
+        // wurden und vom WebSocket-/Orphan-Pfad nicht als CompletedTrade gebucht wurden. Dedup-aware
+        // (BackfillIncomeRecordsAsync gegen alle Live-Trades), daher gefahrlos wiederholbar.
+        _ = Task.Run(() => PeriodicBackfillLoopAsync(_lifetimeCts.Token), CancellationToken.None);
         return Task.CompletedTask;
     }
 
@@ -225,6 +231,40 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
     }
 
     /// <summary>
+    /// Periodischer Trade-Backfill-Loop (alle 30 min). Holt die REALIZED_PNL-Income-Records der
+    /// letzten 3 h von BingX und bucht fehlende Trades dedup-aware in die DB. Deckt den Fall ab,
+    /// dass eine Live-Position bei laufendem Bot durch nativen SL/TP geschlossen wird, der zugehoerige
+    /// CompletedTrade aber weder ueber den WebSocket-Fill-Handler (nur Bot-TP-Limits) noch ueber den
+    /// Orphan-Reconcile gebucht wurde — genau die Ursache der verschwundenen LAB/BNB-Trades.
+    /// </summary>
+    private async Task PeriodicBackfillLoopAsync(CancellationToken ct)
+    {
+        // Erst den initialen Resume durchlaufen lassen (15 s InitialDelay + Puffer).
+        try { await Task.Delay(TimeSpan.FromMinutes(2), ct).ConfigureAwait(false); }
+        catch (OperationCanceledException) { return; }
+
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(30));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            {
+                try
+                {
+                    // BackfillFromBingxAsync prueft selbst auf Live-RestClient (kein Throw bei Paper/Stopped).
+                    var summary = await BackfillFromBingxAsync(DateTime.UtcNow.AddHours(-3), null, ct).ConfigureAwait(false);
+                    if (summary.Backfilled > 0)
+                        _logger.LogInformation("Periodischer Backfill: {Count} verpasste Live-Trades nachgebucht.", summary.Backfilled);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Periodischer Trade-Backfill-Tick fehlgeschlagen.");
+                }
+            }
+        }
+        catch (OperationCanceledException) { /* Shutdown */ }
+    }
+
     /// Snapshot-Report-Fix Befund 1 / A0.4 — Admin-Backfill der Trade-History aus BingX-Income-Records
     /// fuer einen frei waehlbaren Zeitraum. Erstmals oeffentlich exponiert, damit der Admin-Endpoint
     /// <c>/api/v1/admin/backfill-trades</c> nach Persistenz-Lecks die verlorenen Trades nachholen kann.
@@ -278,13 +318,17 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
 
         try
         {
-            // Dedup: bereits backfilled-Trades laden + ExitTime-Set bauen (1 s Toleranz beim Match).
-            var existing = await _dbService.GetTradesAsync(modeFilter: TradingMode.Live, limit: 500).ConfigureAwait(false);
-            var alreadyBackfilledTimes = new HashSet<long>();
+            // Dedup gegen ALLE Live-Trades (nicht nur "Backfilled"-Reason): Verhindert, dass ein
+            // bereits real gebuchter Trade (OnSlTpHit-/TP-Fill-Pfad) vom periodischen Backfill ein
+            // zweites Mal als synthetischer Trade eingespielt wird. Key = (Symbol, ExitTime-Sekunde),
+            // Match mit 1 s Toleranz. Frueher dedupte nur gegen Reason="Backfilled" → reale Live-Closes
+            // wurden bei laufendem Bot doppelt verbucht bzw. der Backfill lief gar nicht (nur bei Drift).
+            var existing = await _dbService.GetTradesAsync(modeFilter: TradingMode.Live, limit: 1000).ConfigureAwait(false);
+            var existingTradeKeys = new HashSet<(string Symbol, long Sec)>();
             foreach (var t in existing)
             {
-                if (t.Reason != null && t.Reason.StartsWith("Backfilled", StringComparison.OrdinalIgnoreCase))
-                    alreadyBackfilledTimes.Add(t.ExitTime.Ticks / TimeSpan.TicksPerSecond);
+                var sec = t.ExitTime.Ticks / TimeSpan.TicksPerSecond;
+                existingTradeKeys.Add((t.Symbol, sec));
             }
 
             var todayUtc = DateTime.UtcNow.Date;
@@ -299,8 +343,9 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                     continue;
 
                 var keyTime = rec.Time.Ticks / TimeSpan.TicksPerSecond;
-                if (alreadyBackfilledTimes.Contains(keyTime) ||
-                    alreadyBackfilledTimes.Contains(keyTime - 1) || alreadyBackfilledTimes.Contains(keyTime + 1))
+                if (existingTradeKeys.Contains((rec.Symbol, keyTime)) ||
+                    existingTradeKeys.Contains((rec.Symbol, keyTime - 1)) ||
+                    existingTradeKeys.Contains((rec.Symbol, keyTime + 1)))
                 {
                     skipped++;
                     continue;

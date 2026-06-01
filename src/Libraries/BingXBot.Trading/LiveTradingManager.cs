@@ -243,6 +243,39 @@ public class LiveTradingManager : IDisposable
                         $"Runtime-State wiederhergestellt: {runtimeState.Value.TradesToday} Trades heute, {runtimeState.Value.ConsecutiveLosses} Verluste in Folge"));
                 }
             }
+
+            // RiskManager-Stats rehydrieren (dailyPnl/totalPnl/peakEquity) aus den persistierten Trades +
+            // Equity-Snapshots. Ohne das resettet jeder Engine-Restart den Daily-Loss-Circuit und den
+            // Total-Drawdown-Schutz auf 0 (amnesisch) — der Schutz greift dann erst, wenn das Limit ein
+            // zweites Mal ab 0 erreicht wird. Strategie-Tageswechsel ist hier irrelevant (PnL ist
+            // konto-, nicht strategiebezogen).
+            try
+            {
+                var rm = _service.RiskManager;
+                if (rm != null)
+                {
+                    var liveTrades = await _dbService.GetTradesAsync(TradingMode.Live, limit: 5000);
+                    var todayUtc = DateTime.UtcNow.Date;
+                    decimal todayPnl = 0m, totalPnl = 0m;
+                    foreach (var t in liveTrades)
+                    {
+                        totalPnl += t.Pnl;
+                        if (t.ExitTime.Date == todayUtc) todayPnl += t.Pnl;
+                    }
+                    decimal peakEquity = 0m;
+                    foreach (var s in await _dbService.GetEquitySnapshotsAsync())
+                        if (s.Equity > peakEquity) peakEquity = s.Equity;
+
+                    rm.RestoreStats(todayPnl, totalPnl, peakEquity);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                        $"RiskManager-Stats rehydriert: HeutePnL={todayPnl:F2}, TotalPnL={totalPnl:F2}, PeakEquity={peakEquity:F2}"));
+                }
+            }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                    $"RiskManager-Stats-Rehydration fehlgeschlagen (nicht kritisch): {ex.Message}"));
+            }
             var savedExitStates = await _dbService.LoadExitStatesAsync();
             if (savedExitStates is { Count: > 0 })
             {

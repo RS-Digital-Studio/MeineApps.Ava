@@ -699,4 +699,29 @@ public class RiskManager : IRiskManager
             CurrentConsecutiveLosses = 0;
         }
     }
+
+    /// <summary>
+    /// Rehydriert nach einem Engine-Restart den realisierten Tages-PnL, den kumulativen PnL und die
+    /// Peak-Equity aus der Persistenz. Ohne diese Rekonstruktion startet der RiskManager nach JEDEM
+    /// Neustart mit dailyPnl=0/totalPnl=0/peakEquity=0 → der Daily-Loss-Circuit und der
+    /// Total-Drawdown-Schutz sind amnesisch und greifen erst wieder, wenn das Limit ein zweites Mal
+    /// (ab 0 gerechnet) erreicht wird. Wird beim Live-Start aus den heutigen + allen Live-Trades
+    /// sowie dem hoechsten Equity-Snapshot aufgerufen.
+    /// </summary>
+    /// <param name="todaysRealizedPnl">Summe der heute (UTC) realisierten Trade-PnLs.</param>
+    /// <param name="totalRealizedPnl">Summe aller realisierten Trade-PnLs (Laufzeit-Total).</param>
+    /// <param name="peakEquity">Hoechster bekannter Equity-Stand; ≤ 0 laesst die Peak-Equity uninitialisiert.</param>
+    public void RestoreStats(decimal todaysRealizedPnl, decimal totalRealizedPnl, decimal peakEquity)
+    {
+        lock (_lock)
+        {
+            _dailyPnl = todaysRealizedPnl;
+            _totalPnl = totalRealizedPnl;
+            if (peakEquity > 0m)
+            {
+                _peakEquity = peakEquity;
+                _peakEquityInitialized = true;
+            }
+        }
+    }
 }

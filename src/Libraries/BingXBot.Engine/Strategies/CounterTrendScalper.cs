@@ -70,8 +70,12 @@ public static class CounterTrendScalper
                     || IsNearLevel(counter.Point0, mainSeq.Extension200, 0.01m);
         if (!inTpZone) return null;
 
-        // 4. TP = halber Weg zum nächsten Haupt-Fib (eleventh level statt 161.8% → 200% → 261.8%)
-        var nextMainLevel = mainSeq.IsLong ? mainSeq.Extension1618 : mainSeq.Extension1618;
+        // 4. TP = halber Weg zwischen dem Haupt-Fib-Level und der Counter-Extension.
+        // HINWEIS: Frueher stand hier ein No-Op-Ternary (`mainSeq.IsLong ? Extension1618 : Extension1618`)
+        // — beide Zweige identisch, also keine Richtungs-Differenzierung. Die intendierte richtungs-
+        // abhaengige Auswahl des "naechsten Haupt-Fib" ist ungeklaert; bis dahin bewusst Extension1618
+        // fuer beide Richtungen (Verhalten unveraendert). CounterTrendScalper ist Opt-in (Default aus).
+        var nextMainLevel = mainSeq.Extension1618;
         var counterExt = counter.Extension1618;
         var tp = (nextMainLevel + counterExt) / 2m;
 

@@ -331,7 +331,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
 
             var pos = _positions[index];
             var exitPrice = GetPriceLocked(symbol);
-            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
+            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol, isMakerClose);
 
             // PnL berechnen — Fee-Rate je nach Order-Typ (Maker bei TP-Limit-Fill, Taker bei SL/Market-Close)
             var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, pos.Quantity);
@@ -403,7 +403,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             {
                 // Voller Close inline (Lock wird NICHT freigegeben, kein Re-Entrant-Aufruf)
                 var fullExitPrice = GetPriceLocked(symbol);
-                var fullExitSlippage = ApplySlippage(fullExitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
+                var fullExitSlippage = ApplySlippage(fullExitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol, isMakerClose);
                 var fullPnl = CalculatePnl(pos.Side, pos.EntryPrice, fullExitSlippage, pos.Quantity);
                 var fullClosingFee = closingFeeRate * pos.Quantity * fullExitSlippage;
                 var fullFeeKey = $"{pos.Symbol}_{pos.Side}";
@@ -422,7 +422,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             }
 
             var exitPrice = GetPriceLocked(symbol);
-            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
+            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol, isMakerClose);
 
             // PnL nur für den geschlossenen Teil (Fee-Rate s.o.: Maker bei TP1-Limit-Reduce, Taker bei Market-Reduce)
             var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, quantityToClose);
@@ -678,8 +678,14 @@ public class SimulatedExchange : IExchangeClient, IDisposable
     /// Bei aktiviertem dynamischen Modell: Slippage skaliert mit ATR-Perzentil und inversem Volumen.
     /// Spread wird zusätzlich als Bid-Ask-Kosten aufgeschlagen.
     /// </summary>
-    private decimal ApplySlippage(decimal price, Side side, string? symbol = null)
+    private decimal ApplySlippage(decimal price, Side side, string? symbol = null, bool isMakerFill = false)
     {
+        // Maker-Fill (Reduce-Only-Limit, z.B. TP1/TP2): fuellt EXAKT am Limit-Preis. Frueher wurde
+        // auch hier slippage + halber Spread aufgeschlagen → Backtest unterschaetzte die TP-Erloese
+        // (Taker-Fill-Modell auf einen Maker-Close). Nur Taker-Fills (Market-Entry, StopMarket-SL)
+        // tragen Slippage + Spread.
+        if (isMakerFill) return price;
+
         decimal slippageFactor;
 
         if (_settings.UseDynamicSlippage && symbol != null

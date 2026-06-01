@@ -48,32 +48,42 @@ public class RateLimiter : IRateLimiter, IDisposable
         var limit = _limits.GetValueOrDefault(category, 20);
         var semaphore = _semaphores.GetOrAdd(category, _ => new SemaphoreSlim(1, 1));
 
-        await semaphore.WaitAsync(ct).ConfigureAwait(false);
-        try
+        // Der Lock schuetzt NUR die Queue-Mutation. Die Wartezeit (Task.Delay) wird AUSSERHALB des
+        // Locks abgewartet — frueher lief Task.Delay im gehaltenen Lock und serialisierte damit ALLE
+        // parallelen Requests derselben Kategorie hinter dem ersten Wartenden (auch solche, die einen
+        // freien Slot gehabt haetten). Nach dem Warten wird erneut geprueft (Loop), da inzwischen ein
+        // anderer Request den Slot genommen haben koennte.
+        while (true)
         {
-            // Queue-Zugriff innerhalb des Semaphore-Locks - thread-safe
-            var timestamps = _timestamps.GetOrAdd(category, _ => new Queue<DateTime>());
-            var now = DateTime.UtcNow;
-
-            // Alte Timestamps entfernen (älter als 1 Sekunde)
-            while (timestamps.Count > 0 && timestamps.Peek() < now.AddSeconds(-1))
-                timestamps.Dequeue();
-
-            // Warten wenn Limit erreicht
-            if (timestamps.Count >= limit)
+            TimeSpan waitTime;
+            await semaphore.WaitAsync(ct).ConfigureAwait(false);
+            try
             {
+                var timestamps = _timestamps.GetOrAdd(category, _ => new Queue<DateTime>());
+                var now = DateTime.UtcNow;
+
+                // Alte Timestamps entfernen (aelter als 1 Sekunde)
+                while (timestamps.Count > 0 && timestamps.Peek() < now.AddSeconds(-1))
+                    timestamps.Dequeue();
+
+                if (timestamps.Count < limit)
+                {
+                    // Slot frei → sofort reservieren und raus.
+                    timestamps.Enqueue(now);
+                    return;
+                }
+
+                // Kein Slot → Wartezeit berechnen, Lock freigeben, ausserhalb warten, erneut versuchen.
                 var oldest = timestamps.Peek();
-                var waitTime = oldest.AddSeconds(1) - now;
-                if (waitTime > TimeSpan.Zero)
-                    await Task.Delay(waitTime, ct).ConfigureAwait(false);
-                timestamps.Dequeue();
+                waitTime = oldest.AddSeconds(1) - now;
+            }
+            finally
+            {
+                semaphore.Release();
             }
 
-            timestamps.Enqueue(DateTime.UtcNow);
-        }
-        finally
-        {
-            semaphore.Release();
+            if (waitTime > TimeSpan.Zero)
+                await Task.Delay(waitTime, ct).ConfigureAwait(false);
         }
     }
 

@@ -1175,25 +1175,50 @@ public class BingXRestClient : IExchangeClient
         DateTime? endTime = null,
         int limit = 100)
     {
-        var parameters = new Dictionary<string, string>
+        // Paginierung: BingX gibt pro Call max. pageSize Records zurueck. Bei MEHR Records im
+        // [startTime, endTime]-Fenster fielen ohne Paging Trades still weg (verpasster Backfill).
+        // Wir holen seitenweise und schieben endTime jeweils knapp vor den aeltesten Record der
+        // Vorseite, bis eine Seite weniger als pageSize liefert. Caller dedupt (Symbol+ExitTime).
+        var pageSize = Math.Clamp(limit, 1, 1000); // BingX-Max pro Call
+        var startMs = startTime.HasValue
+            ? new DateTimeOffset(startTime.Value.ToUniversalTime()).ToUnixTimeMilliseconds()
+            : (long?)null;
+        long? pageEndMs = endTime.HasValue
+            ? new DateTimeOffset(endTime.Value.ToUniversalTime()).ToUnixTimeMilliseconds()
+            : null;
+
+        var all = new List<IncomeRecord>();
+        const int maxPages = 20; // Hard-Cap (bis 20k Records) gegen Endlos-Schleife
+
+        for (var page = 0; page < maxPages; page++)
         {
-            ["limit"] = limit.ToString()
-        };
-        if (!string.IsNullOrEmpty(symbol)) parameters["symbol"] = symbol;
-        if (!string.IsNullOrEmpty(incomeType)) parameters["incomeType"] = incomeType;
-        // ToUniversalTime(): DateTime ohne Kind.Utc → DateTimeOffset nutzt lokale Timezone → falsche Timestamps
-        if (startTime.HasValue) parameters["startTime"] = new DateTimeOffset(startTime.Value.ToUniversalTime()).ToUnixTimeMilliseconds().ToString();
-        if (endTime.HasValue) parameters["endTime"] = new DateTimeOffset(endTime.Value.ToUniversalTime()).ToUnixTimeMilliseconds().ToString();
+            var parameters = new Dictionary<string, string> { ["limit"] = pageSize.ToString() };
+            if (!string.IsNullOrEmpty(symbol)) parameters["symbol"] = symbol;
+            if (!string.IsNullOrEmpty(incomeType)) parameters["incomeType"] = incomeType;
+            if (startMs.HasValue) parameters["startTime"] = startMs.Value.ToString();
+            if (pageEndMs.HasValue) parameters["endTime"] = pageEndMs.Value.ToString();
 
-        var data = await SendSignedRequestAsync<List<BingXIncomeDetail>>(
-            HttpMethod.Get,
-            "/openApi/swap/v2/user/income",
-            parameters,
-            "queries");
+            var data = await SendSignedRequestAsync<List<BingXIncomeDetail>>(
+                HttpMethod.Get,
+                "/openApi/swap/v2/user/income",
+                parameters,
+                "queries");
 
-        return data.Select(d => new IncomeRecord(
-            d.Symbol, d.IncomeType, ParseDecimal(d.Income), d.Asset,
-            d.Info, FromUnixMs(d.Time))).ToList();
+            if (data.Count == 0) break;
+
+            foreach (var d in data)
+                all.Add(new IncomeRecord(d.Symbol, d.IncomeType, ParseDecimal(d.Income), d.Asset, d.Info, FromUnixMs(d.Time)));
+
+            if (data.Count < pageSize) break; // letzte (Teil-)Seite erreicht
+
+            // Naechste Seite endet knapp vor dem aeltesten Record dieser Seite.
+            var oldestMs = long.MaxValue;
+            foreach (var d in data) if (d.Time < oldestMs) oldestMs = d.Time;
+            pageEndMs = oldestMs - 1;
+            if (startMs.HasValue && pageEndMs <= startMs.Value) break;
+        }
+
+        return all;
     }
 
     #endregion

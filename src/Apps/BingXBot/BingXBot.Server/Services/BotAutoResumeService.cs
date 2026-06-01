@@ -195,8 +195,10 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                 try
                 {
                     var since = lastHeartbeat.Value.AddMinutes(-1); // 1 min Sicherheits-Padding
+                    // limit = Page-Size (GetIncomeHistoryAsync paginiert intern bis alle Records im
+                    // Fenster geholt sind). 1000 = BingX-Max → weniger Paging-Calls.
                     var income = await _liveManager.RestClient.GetIncomeHistoryAsync(
-                        symbol: null, incomeType: "REALIZED_PNL", startTime: since, endTime: DateTime.UtcNow, limit: 100)
+                        symbol: null, incomeType: "REALIZED_PNL", startTime: since, endTime: DateTime.UtcNow, limit: 1000)
                         .ConfigureAwait(false);
 
                     if (income.Count == 0)
@@ -287,7 +289,7 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         {
             var income = await _liveManager.RestClient.GetIncomeHistoryAsync(
                 symbol: null, incomeType: "REALIZED_PNL",
-                startTime: fromUtc, endTime: endUtc, limit: 500)
+                startTime: fromUtc, endTime: endUtc, limit: 1000) // Page-Size; intern paginiert
                 .ConfigureAwait(false);
 
             if (income.Count == 0)

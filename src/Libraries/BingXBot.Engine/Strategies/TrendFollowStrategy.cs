@@ -64,6 +64,10 @@ public sealed class TrendFollowStrategy : IStrategy
     public string Description => "Donchian-Breakout in Trend-Richtung (EMA+ADX/DMI-Filter), ATR-SL, RRR 1.5/3.0";
     public IReadOnlyList<StrategyParameter> Parameters => [];
 
+    // TrendFollow ist ein reiner Navigator-TF-Donchian-Breakout — kein W1/D1-Fahrplan noetig.
+    // Erspart dem Scan zwei schwere Klines-Fetches pro Symbol (Pi-Rate-Limit-Budget).
+    public bool RequiresHigherTimeframeContext => false;
+
     public SignalResult Evaluate(MarketContext context)
     {
         var c = context.Candles;

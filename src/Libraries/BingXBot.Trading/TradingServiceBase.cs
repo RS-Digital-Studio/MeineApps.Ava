@@ -403,14 +403,20 @@ public abstract class TradingServiceBase : IDisposable
         _isRunning = false;
         _isPaused = false;
 
+        // Reihenfolge: ZUERST das Cancel-Signal an die Loops (RunLoop/PriceTicker/Heartbeat/Reconcile),
+        // DANN den gemeinsamen State leeren. Frueher wurde der State vor dem Cancel geleert → ein noch
+        // laufender Loop-Tick konnte auf bereits geloeschte Signale/ExitStates zugreifen. _isRunning=false
+        // + ct.IsCancellationRequested beenden die Loops am naechsten Tick.
+        // (Vollstaendiges Await der Loop-Tasks vor dem Clear waere sauberer, erfordert aber StopBase→async;
+        //  die Loops sind defensiv (ConcurrentDictionary + TryGetValue), daher genuegt die Reihenfolge.)
+        _cts?.Cancel();
+
         _positionSignals.Clear();
         _exitStates.Clear();
         _marginWarningsIssued.Clear();
         Interlocked.Exchange(ref _tradesToday, 0);
         OnSignalsClearedAll();
 
-        // N-4 Fix: Cancel vor Dispose damit laufende Tasks sauber beendet werden
-        _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;
 
@@ -1070,16 +1076,29 @@ public abstract class TradingServiceBase : IDisposable
         var navResults = new ConcurrentDictionary<(string Symbol, TimeFrame Nav), List<Candle>>();
         var filterResults = new ConcurrentDictionary<(string Symbol, TimeFrame Nav), List<Candle>?>();
 
+        // W1/D1-Fahrplan-Kerzen nur laden, wenn die aktive Strategie sie braucht (SK). TrendFollow
+        // ist ein reiner H4-Navigator → spart pro Kandidat zwei schwere Klines-Fetches (Pi-Budget).
+        // D1 fuer BTC wird unabhaengig geladen (BTC-Health unten braucht es).
+        var needsHtf = _strategyManager.CurrentTemplate?.RequiresHigherTimeframeContext ?? true;
+        var btcSym = tickers.FirstOrDefault(t => t.Symbol.StartsWith("BTC", StringComparison.OrdinalIgnoreCase))?.Symbol;
+
         var fetchTasks = candidates.SelectMany(ticker =>
         {
             var tasks = new List<Task>();
-            // W1/D1 shared
-            tasks.Add(FetchCandlesAsync(ticker.Symbol, TimeFrame.W1, 730, ct)
-                .ContinueWith(t => weeklyResults[ticker.Symbol] = t.IsCompletedSuccessfully ? t.Result : null,
-                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
-            tasks.Add(FetchCandlesAsync(ticker.Symbol, TimeFrame.D1, 365, ct)
-                .ContinueWith(t => dailyResults[ticker.Symbol] = t.IsCompletedSuccessfully ? t.Result : null,
-                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+            // W1 shared — nur wenn der Fahrplan gebraucht wird.
+            if (needsHtf)
+            {
+                tasks.Add(FetchCandlesAsync(ticker.Symbol, TimeFrame.W1, 730, ct)
+                    .ContinueWith(t => weeklyResults[ticker.Symbol] = t.IsCompletedSuccessfully ? t.Result : null,
+                        CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+            }
+            // D1 shared — wenn Fahrplan gebraucht wird ODER fuer BTC (BTC-Health).
+            if (needsHtf || string.Equals(ticker.Symbol, btcSym, StringComparison.OrdinalIgnoreCase))
+            {
+                tasks.Add(FetchCandlesAsync(ticker.Symbol, TimeFrame.D1, 365, ct)
+                    .ContinueWith(t => dailyResults[ticker.Symbol] = t.IsCompletedSuccessfully ? t.Result : null,
+                        CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+            }
 
             foreach (var tf in activeTfs)
             {

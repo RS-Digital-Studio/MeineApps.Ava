@@ -131,18 +131,25 @@ public class RiskManager : IRiskManager
             return new RiskCheckResult(false, $"News-Blackout: {context.ResolvedNewsBlackoutEvent}", 0m);
 
         // SK-Plan 3.5: Max Daily Loss Circuit-Breaker
-        // Nach Überschreitung werden bis UTC-00:00 keine neuen Entries erlaubt.
+        // Bezieht realisierte UND offene Buchverluste ein: ein grosser unrealisierter Verlust soll
+        // genauso neue Entries blockieren wie realisierter (sonst eroeffnet der Bot weiter, waehrend
+        // offene Positionen tief im Minus stehen). Nur die negativen UnrealizedPnl summieren —
+        // Gewinne einer Position duerfen die Verluste einer anderen nicht maskieren.
         if (_settings.MaxDailyLossPercent > 0 && context.Account.Balance > 0)
         {
+            decimal unrealizedLoss = 0m;
+            for (var i = 0; i < context.OpenPositions.Count; i++)
+                if (context.OpenPositions[i].UnrealizedPnl < 0)
+                    unrealizedLoss += context.OpenPositions[i].UnrealizedPnl; // <= 0
             lock (_lock)
             {
-                var realized = _dailyPnl;
-                if (realized < 0)
+                var combined = _dailyPnl + unrealizedLoss; // beide <= 0
+                if (combined < 0)
                 {
-                    var lossPct = Math.Abs(realized) / context.Account.Balance * 100m;
+                    var lossPct = Math.Abs(combined) / context.Account.Balance * 100m;
                     if (lossPct >= _settings.MaxDailyLossPercent)
                         return new RiskCheckResult(false,
-                            $"Daily-Loss-Circuit {lossPct:F1}% >= {_settings.MaxDailyLossPercent}% (Pause bis UTC-00:00)", 0m);
+                            $"Daily-Loss-Circuit {lossPct:F1}% >= {_settings.MaxDailyLossPercent}% (realisiert {_dailyPnl:F2}$ + offen {unrealizedLoss:F2}$)", 0m);
                 }
             }
         }
@@ -169,6 +176,19 @@ public class RiskManager : IRiskManager
                     return new RiskCheckResult(false,
                         $"Daily-Risk-Budget überschritten: {usedPct:F2}% > {_settings.MaxDailyRiskPercent}% (realisiert {realizedLoss:F2}$ + offen {openRisk:F2}$ + geplant {plannedRiskAmount:F2}$)", 0m);
             }
+        }
+
+        // Loss-Streak-Pause als EXPLIZITER Reject (statt generisches "Position-Groesse ist 0" nachdem
+        // GetPositionScalingFactor 0 liefert). Macht die Pause im Decision-Trail eindeutig sichtbar und
+        // spart die ATR-Berechnung + Sizing. Schwelle = LossStreakPauseAtCount.
+        if (_settings.EnableLossStreakDampening)
+        {
+            int losses;
+            lock (_lock) losses = CurrentConsecutiveLosses;
+            var pauseAt = Math.Max(1, _settings.LossStreakPauseAtCount);
+            if (losses >= pauseAt)
+                return new RiskCheckResult(false,
+                    $"Loss-Streak-Pause aktiv ({losses} >= {pauseAt} Verluste in Folge)", 0m);
         }
 
         // Phase 18 / A5 — ATR-Prozent fuer Volatility-Targeting durchreichen, sofern aktiviert UND Candles vorhanden.
@@ -222,9 +242,27 @@ public class RiskManager : IRiskManager
             }
         }
 
-        // BUCH-ONLY: Kein Liquidationspreis-Abstands-Check. Das Buch managed Risiko ueber
-        // Risk-Per-Trade (1-3%) und Positionsgroesse, nicht ueber Liquidationsdistanz.
         var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
+
+        // Liquidations-Safety-Net (User-Schutz, KEIN Buch-Risk-Management): Liegt der geplante SL
+        // JENSEITS des Liquidationspreises, wird die Position liquidiert BEVOR der SL greift —
+        // ein garantierter Totalverlust statt kontrolliertem SL-Verlust. Solche Trades lehnen wir ab.
+        // Greift nur bei Leverage > 2x (darunter gibt CalculateLiquidationPrice 0 zurueck) — relevant
+        // v.a. fuer hochgehebelte TradFi-Perps (NCFX 20x, NCSI 10x). Aendert keine Buch-Mechanik,
+        // sondern verhindert nur einen sicheren Margin-Call. (Buch-Strip entfernte den Distanz-CHECK;
+        // dieser Crash-Schutz ist davon unberuehrt.)
+        if (signal.StopLoss is { } slForLiq && slForLiq > 0 && leverage > 2m)
+        {
+            var liqSide = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+            var liqPrice = CalculateLiquidationPrice(entryPrice, leverage, liqSide);
+            if (liqPrice > 0)
+            {
+                var slBeyondLiq = liqSide == Side.Buy ? slForLiq <= liqPrice : slForLiq >= liqPrice;
+                if (slBeyondLiq)
+                    return new RiskCheckResult(false,
+                        $"SL jenseits Liquidation (SL={slForLiq:F8} vs Liq={liqPrice:F8} @ {leverage:F0}x) — garantierter Totalverlust, abgelehnt", 0m);
+            }
+        }
 
         // Margin-Aware-Cap (TradFi-Schutz, konfigurierbar):
         // Bei hohem Hebel (NCFX 20×, NCSI 10×) kann ein einzelner 5%-Risk-Trade trotz korrekter

@@ -543,14 +543,15 @@ public class RiskManagerTests
     [Fact]
     public void ValidateTrade_AtPauseThreshold_BlocksTrade()
     {
-        // Trade darf bei Erreichen der Pause-Schwelle nicht mehr durch — posSize wird auf 0 geclamped.
+        // Trade darf bei Erreichen der Pause-Schwelle nicht mehr durch. Seit dem expliziten
+        // Loss-Streak-Reject (statt verschleiertem "Position-Groesse ist 0") nennt der Reason die Pause.
         var settings = CreateTestSettings();
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         risk.SetConsecutiveLosses(settings.LossStreakPauseAtCount);
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
         var result = risk.ValidateTrade(signal, CreateContext());
         result.IsAllowed.Should().BeFalse();
-        result.RejectionReason.Should().Contain("0");
+        result.RejectionReason.Should().Contain("Loss-Streak-Pause");
     }
 
     // === Phase 18 / A4 — Cluster-Korrelations-Filter ===

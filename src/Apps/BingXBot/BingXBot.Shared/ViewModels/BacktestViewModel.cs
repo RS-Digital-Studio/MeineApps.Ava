@@ -264,28 +264,34 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 $"{tf}: {report.TotalTrades} Trades, Gesamt-PnL {report.TotalPnl:+0.00;-0.00} USDT"));
         }
 
-        // Aggregierte Metriken ins UI
-        TotalPnl = totalPnl;
-        TotalTrades = totalTrades;
-        WinRate = totalTrades > 0
-            ? (decimal)allTrades.Count(t => t.Pnl > 0) / totalTrades * 100m
-            : 0m;
-        PerTfSummary = string.Join("\n", perTfLines);
+        // Aggregierte Metriken + ObservableCollection ins UI — MUSS auf dem UI-Thread laufen
+        // (RunBacktestMultiTfAsync awaitet mit ConfigureAwait(false), der Block lief sonst auf einem
+        // ThreadPool-Thread; ObservableCollection ist nicht thread-safe → CollectionChanged vom
+        // falschen Thread crasht das gebundene ItemsControl). Analog zum Walk-Forward-Pfad.
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            TotalPnl = totalPnl;
+            TotalTrades = totalTrades;
+            WinRate = totalTrades > 0
+                ? (decimal)allTrades.Count(t => t.Pnl > 0) / totalTrades * 100m
+                : 0m;
+            PerTfSummary = string.Join("\n", perTfLines);
 
-        // Trades in UI-Collection (neueste zuerst)
-        Trades.Clear();
-        foreach (var trade in allTrades.OrderByDescending(t => t.ExitTime).Take(500))
-            Trades.Add(new BacktestTradeItem(
-                trade.Symbol,
-                trade.Side.ToString(),
-                trade.EntryPrice,
-                trade.ExitPrice,
-                trade.Pnl,
-                trade.Pnl > 0));
+            // Trades in UI-Collection (neueste zuerst)
+            Trades.Clear();
+            foreach (var trade in allTrades.OrderByDescending(t => t.ExitTime).Take(500))
+                Trades.Add(new BacktestTradeItem(
+                    trade.Symbol,
+                    trade.Side.ToString(),
+                    trade.EntryPrice,
+                    trade.ExitPrice,
+                    trade.Pnl,
+                    trade.Pnl > 0));
 
-        HasResult = true;
-        StatusText = $"Multi-TF-Test abgeschlossen: {totalTrades} Trades über {tfsToTest.Count} TFs";
-        IsRunning = false;
+            HasResult = true;
+            StatusText = $"Multi-TF-Test abgeschlossen: {totalTrades} Trades über {tfsToTest.Count} TFs";
+            IsRunning = false;
+        });
 
         _eventBus.PublishBacktestCompleted(new BacktestCompletedArgs
         {

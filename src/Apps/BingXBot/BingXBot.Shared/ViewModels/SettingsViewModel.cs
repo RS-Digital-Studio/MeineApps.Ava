@@ -137,8 +137,13 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         // Persisted Server-Profile pruefen
         UpdateServerStatus();
-        _serverConnection.Changed += _ => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateServerStatus);
+        // Benannter Handler statt anonymer Lambda — sonst ist in Dispose kein -= moeglich und die
+        // Singleton-ServerConnection haelt eine harte Referenz auf dieses VM (latenter Leak).
+        _serverConnection.Changed += OnServerConnectionChanged;
     }
+
+    private void OnServerConnectionChanged(BingXBot.ClientApi.Connection.ServerProfile? _) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateServerStatus);
 
     /// <summary>
     /// v1.5.2 Phase 4 / v1.5.5 Phase 9 — Multi-Client-Sync-Handler. SignalR feuert vom
@@ -166,6 +171,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _disposed = true;
         if (_settingsService != null)
             _settingsService.SettingsChanged -= OnSettingsChanged;
+        _serverConnection.Changed -= OnServerConnectionChanged;
     }
 
     private void UpdateServerStatus()

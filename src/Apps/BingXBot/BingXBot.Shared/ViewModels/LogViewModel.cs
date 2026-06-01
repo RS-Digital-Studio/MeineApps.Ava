@@ -11,9 +11,10 @@ namespace BingXBot.ViewModels;
 /// ViewModel für die Log-Ansicht (Bot-Aktivitäten, Fehler, Trade-Signale).
 /// Empfängt Log-Einträge über IBotEventStream (Local: BotEventBus-Adapter; Remote: SignalR).
 /// </summary>
-public partial class LogViewModel : ViewModelBase
+public partial class LogViewModel : ViewModelBase, IDisposable
 {
     private readonly IBotEventStream _eventStream;
+    private bool _disposed;
     // Queue statt List: Dequeue ist O(1), RemoveAt(0) auf List ist O(N)
     // Bei 5-20 Events/s und 1000 Eintraegen sonst spuerbarer UI-Stutter.
     private readonly Queue<LogDisplayItem> _allLogs = new();
@@ -116,6 +117,16 @@ public partial class LogViewModel : ViewModelBase
         _allLogs.Clear();
         LogEntries.Clear();
         EntryCount = 0;
+    }
+
+    // IBotEventStream ist DI-Singleton und haelt sonst eine harte Referenz auf dieses VM samt
+    // 1000-Eintrag-Queue. Konsistent zu den anderen event-abonnierenden VMs (ActivityFeed/TradeHistory).
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _eventStream.LogEmitted -= OnLogEmitted;
+        GC.SuppressFinalize(this);
     }
 }
 

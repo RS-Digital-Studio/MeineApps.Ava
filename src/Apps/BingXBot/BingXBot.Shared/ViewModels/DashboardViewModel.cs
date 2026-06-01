@@ -1751,12 +1751,19 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                     var snap = await _accountService.GetSnapshotAsync(ct).ConfigureAwait(false);
                     if (snap != null)
                     {
-                        Balance = snap.Balance;
-                        AvailableBalance = snap.Available;
-                        UnrealizedPnl = snap.UnrealizedPnl;
-                        TotalPnl = snap.RealizedPnlToday;  // heute realisierter PnL
-                        // "Bot starten um Account-Daten zu sehen"-Hinweis ausblenden sobald echte Daten da sind
-                        if (Balance > 0 || AvailableBalance > 0) HasAccountData = true;
+                        // Property-Setter triggern PropertyChanged + abgeleitete PnL-Farb-Bindings —
+                        // MUSS auf dem UI-Thread laufen (der Loop laeuft per ConfigureAwait(false) auf
+                        // einem ThreadPool-Thread). Off-UI-Thread-Mutation gebundener Controls crasht
+                        // auf Android (Hauptbetriebsmodus). Analog zum Positions-Block direkt darunter.
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            Balance = snap.Balance;
+                            AvailableBalance = snap.Available;
+                            UnrealizedPnl = snap.UnrealizedPnl;
+                            TotalPnl = snap.RealizedPnlToday;  // heute realisierter PnL
+                            // "Bot starten um Account-Daten zu sehen"-Hinweis ausblenden sobald echte Daten da sind
+                            if (Balance > 0 || AvailableBalance > 0) HasAccountData = true;
+                        });
                     }
 
                     // Status ebenfalls im Poll-Zyklus nachziehen (deckt verpasste SignalR-Pushes ab)

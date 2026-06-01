@@ -55,7 +55,9 @@ public static class TpOrderMatcher
         {
             if (o.Symbol != symbol) continue;
             if (o.Side != closeSide) continue;
-            if (!o.ReduceOnly) continue;
+            // KEIN ReduceOnly-Filter: Hedge-Mode liefert reduceOnly=false → Idempotenz-Probe fand
+            // den bot-platzierten TP nie → Doppel-TP-Place. Der Match auf Symbol+closeSide+Limit
+            // +Qty±Tol+Price±Tol ist auch ohne ReduceOnly eindeutig genug.
             if (o.Type != OrderType.Limit) continue;
             if (Math.Abs(o.Quantity - expectedQuantity) > qtyTolerance) continue;
             if (Math.Abs(o.Price - expectedPrice) > priceTolerance) continue;

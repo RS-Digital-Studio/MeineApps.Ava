@@ -46,13 +46,16 @@ public class TpOrderMatcherTests
     }
 
     [Fact]
-    public void FindMatchingTpOrder_NotReduceOnly_NoMatch()
+    public void FindMatchingTpOrder_NotReduceOnly_MatchesInHedgeMode()
     {
+        // HEDGE-MODE-FIX: Im Hedge-Mode liefert BingX reduceOnly=false fuer den bot-platzierten
+        // TP-Limit. Die Idempotenz-Probe muss trotzdem matchen (Symbol+closeSide+Limit+Qty+Price),
+        // sonst wird bei jedem Reconcile-Tick ein Doppel-TP platziert.
         var orders = new[]
         {
             MakeOrder("BTC-USDT", Side.Sell, OrderType.Limit, 0.1m, 51000m, reduceOnly: false)
         };
-        TpOrderMatcher.FindMatchingTpOrder(orders, "BTC-USDT", Side.Sell, 0.1m, 51000m).Should().BeNull();
+        TpOrderMatcher.FindMatchingTpOrder(orders, "BTC-USDT", Side.Sell, 0.1m, 51000m).Should().NotBeNull();
     }
 
     [Fact]

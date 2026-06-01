@@ -456,9 +456,41 @@ public partial class LiveTradingService
     {
         if (!_positionSignals.TryGetValue(posKey, out var signal) || signal.StopLoss is null)
         {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
-                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-SL erkannt, ABER kein Signal-SL bekannt — manueller Eingriff noetig (Position UNGESCHUETZT!)",
-                action.Symbol));
+            // Kein bekannter Signal-SL (manuell gestarteter Trade oder Recovery ohne Signal-Rekonstruktion).
+            // FRUEHER: nur Error-Log → die Echtgeld-Position blieb dauerhaft ungeschuetzt. Eine
+            // ungeschuetzte Position ist das groessere Risiko als ein evtl. zu weiter Auto-SL → wir setzen
+            // einen leverage-skalierten Notfall-SL (mind. 1.5 % vom Entry) und alarmieren den User.
+            try
+            {
+                var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+                var pos = positions.FirstOrDefault(p => p.Symbol == action.Symbol && p.Side == action.Side);
+                if (pos is null || pos.Quantity <= 0 || pos.EntryPrice <= 0)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                        $"{LogPrefix}{action.Symbol} {action.Side}: Missing-SL ohne Signal — Position nicht (mehr) abrufbar, kein Notfall-SL noetig",
+                        action.Symbol));
+                    return;
+                }
+
+                var fallbackPercent = Math.Max(0.015m, pos.Leverage > 0 ? 0.03m / pos.Leverage : 0.03m);
+                var emergencySl = pos.Side == Side.Buy
+                    ? pos.EntryPrice * (1m - fallbackPercent)
+                    : pos.EntryPrice * (1m + fallbackPercent);
+
+                await _restClient.SetPositionSlTpAsync(action.Symbol, action.Side, emergencySl, null).ConfigureAwait(false);
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
+                    $"{LogPrefix}{action.Symbol} {action.Side}: Missing-SL OHNE Signal — NOTFALL-SL @ {emergencySl:F8} gesetzt ({fallbackPercent:P1} vom Entry). Manuelle Pruefung empfohlen!",
+                    action.Symbol));
+                _eventBus.PublishNotification("Notfall-SL gesetzt",
+                    $"{action.Symbol} {action.Side}: Position hatte keinen SL — Auto-SL @ {emergencySl:F4} platziert.");
+            }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
+                    $"{LogPrefix}{action.Symbol} {action.Side}: Notfall-SL fehlgeschlagen ({ex.Message}) — Position UNGESCHUETZT bis naechster Reconcile!",
+                    action.Symbol));
+            }
             return;
         }
 

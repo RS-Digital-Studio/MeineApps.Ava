@@ -133,7 +133,12 @@ public static class PositionDriftAnalyzer
             foreach (var o in openOrders)
             {
                 if (o.Type != OrderType.StopMarket) continue;
-                if (!o.ReduceOnly) continue;
+                // KEIN ReduceOnly-Filter: BingX liefert im Hedge-Mode reduceOnly=false fuer ALLE
+                // Orders (siehe BingXRestClient.GetOpenOrdersAsync-Kommentar). Frueher wurde dadurch
+                // ein korrekt gesetzter nativer SL nicht erkannt → MissingStopLoss → Reconcile
+                // cancelte+re-placte den lebenden SL alle 60 s (schutzlose Fenster + hohe Cancel-Rate).
+                // Match auf (Symbol, closingSide, STOP_MARKET) ist eindeutig (MaxOpenPositionsPerSymbol=1,
+                // keine STOP_MARKET-Entry-Orders auf der Schliess-Seite einer offenen Position).
                 stopOrderSet.Add((o.Symbol, o.Side));
             }
 
@@ -167,7 +172,10 @@ public static class PositionDriftAnalyzer
                 foreach (var o in openOrders)
                 {
                     if (o.Type != OrderType.Limit) continue;
-                    if (!o.ReduceOnly) continue;
+                    // KEIN ReduceOnly-Filter (Hedge-Mode liefert false, siehe Missing-Stop-Block).
+                    // Match auf (Symbol, closingSide, LIMIT) ist eindeutig, da MaxOpenPositionsPerSymbol=1
+                    // und der Live-Default TrendFollow Market-Entry nutzt (keine Entry-Limits auf der
+                    // Schliess-Seite). Verhindert Dauer-Re-Place der bot-platzierten TP1/TP2-Limits.
                     tpOrderSet.Add((o.Symbol, o.Side));
                 }
 

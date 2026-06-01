@@ -502,52 +502,46 @@ public class BingXRestClient : IExchangeClient
     /// </summary>
     public async Task SetPositionSlTpAsync(string symbol, Side positionSide, decimal? stopLoss, decimal? takeProfit)
     {
-        // 1. Nur bestehende SL-Orders canceln (TP wird bot-seitig verwaltet, nicht nativ)
+        // CANCEL-AFTER-REPLACE: Frueher wurde der alte SL ZUERST gecancelt und erst danach der neue
+        // gesetzt — schlug Schritt 2/3 fehl (z.B. positionQty<=0), blieb die Position GANZ OHNE SL.
+        // Jetzt: Position pruefen → neuen SL platzieren → erst NACH Erfolg den alten canceln. So ist
+        // nie ein Fenster ganz ohne SL offen. Zusaetzlich Side-Filter beim Cancel (Hedge-Mode-sicher).
         if (stopLoss.HasValue && stopLoss.Value > 0)
         {
+            // 1. Positionsgroesse ZUERST abfragen (vor jedem Cancel). Wenn nicht abrufbar: abbrechen,
+            //    OHNE den bestehenden SL anzutasten — die Position bleibt mit ihrem alten SL geschuetzt.
+            decimal positionQty = 0;
             try
             {
-                var openOrders = await GetOpenOrdersAsync(symbol).ConfigureAwait(false);
-                foreach (var order in openOrders)
-                {
-                    // Nur STOP_MARKET canceln, nicht TAKE_PROFIT_MARKET
-                    if (order.Type == OrderType.StopMarket && order.Symbol == symbol)
-                        await CancelOrderAsync(order.OrderId, symbol).ConfigureAwait(false);
-                }
+                var positions = await GetPositionsAsync().ConfigureAwait(false);
+                var pos = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == positionSide);
+                if (pos != null)
+                    positionQty = _symbolInfoCache.TruncateQuantity(symbol, pos.Quantity);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Konnte bestehende SL-Orders nicht canceln: {Error}", ex.Message);
+                _logger.LogWarning("Konnte Positionsgroesse nicht abfragen fuer SL: {Error}", ex.Message);
             }
-        }
 
-        // 2. Aktuelle Positionsgröße abfragen (BingX akzeptiert quantity=0/closePosition nicht zuverlässig)
-        decimal positionQty = 0;
-        try
-        {
-            var positions = await GetPositionsAsync().ConfigureAwait(false);
-            var pos = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == positionSide);
-            if (pos != null)
-                positionQty = _symbolInfoCache.TruncateQuantity(symbol, pos.Quantity);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Konnte Positionsgröße nicht abfragen für SL: {Error}", ex.Message);
-        }
+            if (positionQty <= 0)
+            {
+                _logger.LogError(
+                    "SL-Place abgebrochen: Position fuer {Symbol} {Side} nicht abrufbar — bestehender SL bleibt UNVERAENDERT (kein Cancel).",
+                    symbol, positionSide);
+                throw new InvalidOperationException(
+                    $"SL-Place fuer {symbol} {positionSide}: Position-Quantity nicht ermittelbar (Abbruch VOR Cancel, alter SL bleibt erhalten).");
+            }
 
-        // 3. Neue SL-Order platzieren
-        var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
-        var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
+            var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
+            var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
 
-        if (stopLoss.HasValue && stopLoss.Value > 0)
-        {
             var roundedSlPrice = _symbolInfoCache.RoundPrice(symbol, stopLoss.Value);
             // Guard: Wenn Rundung den Preis auf 0 setzt (Micro-Cap mit zu niedriger Precision),
             // den ungerundeten Wert mit 8 Dezimalstellen verwenden statt 0 zu senden
             if (roundedSlPrice <= 0)
             {
                 roundedSlPrice = Math.Round(stopLoss.Value, 8, MidpointRounding.AwayFromZero);
-                _logger.LogWarning("SL-Preis für {Symbol} auf 0 gerundet, verwende 8 Dezimalstellen: {Price}", symbol, roundedSlPrice);
+                _logger.LogWarning("SL-Preis fuer {Symbol} auf 0 gerundet, verwende 8 Dezimalstellen: {Price}", symbol, roundedSlPrice);
             }
 
             var slParams = new Dictionary<string, string>
@@ -555,63 +549,46 @@ public class BingXRestClient : IExchangeClient
                 ["symbol"] = symbol,
                 ["side"] = SideToString(closeSide),
                 ["type"] = "STOP_MARKET",
-                ["stopPrice"] = roundedSlPrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                ["positionSide"] = positionSideStr,
-                ["workingType"] = "MARK_PRICE"
-            };
-
-            // NF29 Fix — Wenn keine Position abrufbar ist (positionQty==0), darf NICHT mit
-            // closePosition=true gesendet werden. BingX V2 unterstuetzt closePosition nicht
-            // zuverlaessig — bei Ignorierung oder Error bleibt die Position ohne SL ungeschuetzt.
-            // Vorher: blind closePosition=true → Position konnte still ohne SL bleiben. Jetzt:
-            // expliziter Throw, sodass der Caller darauf reagieren kann (z.B. Position-Refresh +
-            // Retry oder User-Notification).
-            if (positionQty <= 0)
-            {
-                _logger.LogError(
-                    "SL-Place abgebrochen: Position fuer {Symbol} {Side} nicht abrufbar — Position bleibt UNGESCHUETZT! Reconcile wird Re-Place versuchen.",
-                    symbol, positionSide);
-                throw new InvalidOperationException(
-                    $"SL-Place fuer {symbol} {positionSide}: Position-Quantity konnte nicht ermittelt werden (Aborted statt unsicherer closePosition=true).");
-            }
-
-            slParams["quantity"] = positionQty.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-            // Exception NICHT verschlucken: Wenn alte SL gecancelt aber neue fehlschlägt,
-            // ist die Position ungeschützt. Caller muss das wissen.
-            await SendSignedRequestAsync<BingXOrderData>(
-                HttpMethod.Post, "/openApi/swap/v2/trade/order", slParams, "orders");
-            _logger.LogInformation("SL-Order gesetzt: {Symbol} @ {Price} Qty={Qty}", symbol, stopLoss.Value, positionQty);
-        }
-
-        // TP wird NICHT nativ gesetzt: BingX native TP schließt die gesamte Position.
-        // Pyramid-Exit (TP1 30%, TP2 30%, Trailing 40%) wird bot-seitig im PriceTickerLoop gesteuert.
-        // Nur SL bleibt nativ als Sicherheitsnetz.
-        if (false && takeProfit.HasValue && takeProfit.Value > 0) // Deaktiviert - TP bot-seitig
-        {
-            var tpParams = new Dictionary<string, string>
-            {
-                ["symbol"] = symbol,
-                ["side"] = SideToString(closeSide),
-                ["type"] = "TAKE_PROFIT_MARKET",
-                ["quantity"] = "0",
-                ["stopPrice"] = takeProfit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["stopPrice"] = roundedSlPrice.ToString(CultureInfo.InvariantCulture),
                 ["positionSide"] = positionSideStr,
                 ["workingType"] = "MARK_PRICE",
-                ["closePosition"] = "true"
+                ["quantity"] = positionQty.ToString(CultureInfo.InvariantCulture)
             };
 
+            // 2. Neuen SL platzieren BEVOR der alte gecancelt wird. Exception NICHT verschlucken:
+            //    Schlaegt der Place fehl, bleibt der alte SL als Schutz erhalten und der Caller erfaehrt es.
+            var newSl = await SendSignedRequestAsync<BingXOrderData>(
+                HttpMethod.Post, "/openApi/swap/v2/trade/order", slParams, "orders");
+            var newOrderId = newSl?.Order?.OrderId;
+            _logger.LogInformation("SL-Order gesetzt: {Symbol} @ {Price} Qty={Qty}", symbol, stopLoss.Value, positionQty);
+
+            // 3. NACH erfolgreichem Place: alte STOP_MARKET der SCHLIESS-Seite canceln (Side-Filter!).
+            //    Ohne Side-Filter wuerde im Hedge-Mode der SL der Gegenposition mitgeloescht.
+            //    Den gerade platzierten SL (newOrderId) ueberspringen.
             try
             {
-                await SendSignedRequestAsync<BingXOrderData>(
-                    HttpMethod.Post, "/openApi/swap/v2/trade/order", tpParams, "orders");
-                _logger.LogInformation("TP-Order gesetzt: {Symbol} @ {Price}", symbol, takeProfit.Value);
+                var openOrders = await GetOpenOrdersAsync(symbol).ConfigureAwait(false);
+                foreach (var order in openOrders)
+                {
+                    if (order.Type == OrderType.StopMarket
+                        && order.Symbol == symbol
+                        && order.Side == closeSide
+                        && order.OrderId != newOrderId)
+                    {
+                        await CancelOrderAsync(order.OrderId, symbol).ConfigureAwait(false);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("TP-Order fehlgeschlagen: {Error}", ex.Message);
+                _logger.LogWarning("Konnte alte SL-Orders nach Replace nicht canceln: {Error}", ex.Message);
             }
         }
+
+        // TP wird NICHT nativ gesetzt: BingX native TP schliesst die GESAMTE Position, der Bot nutzt
+        // aber Pyramid-Exit (TP1 30%, TP2 30%, Rest Trailing) bot-seitig im PriceTickerLoop. Der
+        // takeProfit-Parameter bleibt nur fuer Interface-Konformitaet erhalten und wird ignoriert.
+        _ = takeProfit;
     }
 
     public async Task<bool> CancelOrderAsync(string orderId, string symbol)
@@ -1025,24 +1002,30 @@ public class BingXRestClient : IExchangeClient
 
     /// <summary>
     /// Kill-Switch: Aktiviert Auto-Cancel-Countdown auf BingX.
-    /// Wenn der Bot nicht innerhalb von timeoutMs refresht, cancelt BingX ALLE offenen Orders.
+    /// Wenn der Bot nicht innerhalb des Timeouts refresht, cancelt BingX ALLE offenen Orders.
     /// Muss periodisch (z.B. alle 60s) mit neuem Timeout aufgerufen werden.
+    /// WICHTIG: BingX erwartet <c>timeOut</c> in SEKUNDEN (gueltiger Bereich 10-120), NICHT in
+    /// Millisekunden. Frueher wurde 120000 (ms) gesendet → ausserhalb des Bereichs → BingX lehnte
+    /// mit Code 109400 "Need to fill timeOut" ab und der Dead-Man-Switch war dauerhaft inaktiv.
     /// </summary>
+    /// <param name="timeoutMs">Timeout in Millisekunden (wird intern in Sekunden umgerechnet und auf 10-120 s geclamped).</param>
     public async Task ActivateKillSwitchAsync(int timeoutMs = 120_000)
     {
+        var timeoutSeconds = Math.Clamp(timeoutMs / 1000, 10, 120);
         await SendSignedRequestAsync<BingXCancelAllAfterData>(
             HttpMethod.Post,
             "/openApi/swap/v2/trade/cancelAllAfter",
             new Dictionary<string, string>
             {
                 ["type"] = "ACTIVATE",
-                ["timeOut"] = timeoutMs.ToString()
+                ["timeOut"] = timeoutSeconds.ToString(CultureInfo.InvariantCulture)
             },
             "orders");
     }
 
     /// <summary>
     /// Kill-Switch deaktivieren (bei sauberem Bot-Stop).
+    /// BingX-Enum fuer Deaktivierung ist <c>CLOSE</c> (nicht CANCEL); <c>timeOut=0</c> stoppt den Countdown.
     /// </summary>
     public async Task DeactivateKillSwitchAsync()
     {
@@ -1051,7 +1034,8 @@ public class BingXRestClient : IExchangeClient
             "/openApi/swap/v2/trade/cancelAllAfter",
             new Dictionary<string, string>
             {
-                ["type"] = "CANCEL"
+                ["type"] = "CLOSE",
+                ["timeOut"] = "0"
             },
             "orders");
     }

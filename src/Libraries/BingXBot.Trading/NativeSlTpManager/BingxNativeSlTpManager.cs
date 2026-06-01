@@ -39,15 +39,22 @@ public sealed class BingxNativeSlTpManager : INativeSlTpManager
 
             foreach (var order in openOrders)
             {
-                var isNativeSlTp = order.Type is OrderType.StopMarket
+                // Side-Filter: Wenn die Schliess-Seite bekannt ist, NUR Orders dieser Seite canceln —
+                // sonst loescht der Cancel im Hedge-Mode den SL/TP der GEGENPOSITION mit.
+                var isNativeSlTp = (order.Type is OrderType.StopMarket
                                               or OrderType.TakeProfitMarket
-                                              or OrderType.TakeProfitLimit;
-
-                var isBotTpReduceOnly = order.Type == OrderType.Limit
-                    && order.ReduceOnly
+                                              or OrderType.TakeProfitLimit)
                     && (roCloseSide == null || order.Side == roCloseSide.Value);
 
-                if (isNativeSlTp || isBotTpReduceOnly)
+                // Bot-TP-Limits (Reduce-Only-LIMIT): Im Hedge-Mode liefert BingX ReduceOnly=false,
+                // deshalb bei bekannter Schliess-Seite auf order.Side matchen (kein ReduceOnly noetig);
+                // ohne bekannte Seite konservativ am ReduceOnly-Flag bleiben (kein Fremd-Limit canceln).
+                var isBotTpLimit = order.Type == OrderType.Limit
+                    && (roCloseSide != null
+                        ? order.Side == roCloseSide.Value
+                        : order.ReduceOnly);
+
+                if (isNativeSlTp || isBotTpLimit)
                 {
                     try { await _restClient.CancelOrderAsync(order.OrderId, symbol).ConfigureAwait(false); }
                     catch { /* Order möglicherweise bereits gecancelled */ }

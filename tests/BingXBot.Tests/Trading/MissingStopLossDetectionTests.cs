@@ -106,9 +106,12 @@ public class MissingStopLossDetectionTests
     }
 
     [Fact]
-    public void MissingStopLoss_NichtReduceOnly_GiltAlsFehlend()
+    public void MissingStopLoss_NichtReduceOnly_GiltAlsVorhanden_HedgeMode()
     {
-        // Ein STOP_MARKET ohne reduceOnly=true ist KEIN nativer Position-Schutz.
+        // HEDGE-MODE-FIX: BingX liefert im Hedge-Mode reduceOnly=false fuer ALLE Orders. Ein
+        // STOP_MARKET auf der Schliess-Seite (Sell fuer Long) IST der native SL — unabhaengig vom
+        // reduceOnly-Flag. Frueher galt er faelschlich als fehlend → Dauer-Re-Place des lebenden SL
+        // alle 60 s (schutzlose Cancel/Place-Fenster + hohe Cancel-Rate).
         var positions = new List<Position>
         {
             MakePos("SOL-USDT", Side.Buy, qty: 5m, entry: 100m),
@@ -118,7 +121,7 @@ public class MissingStopLossDetectionTests
             new Order(
                 OrderId: "x1", Symbol: "SOL-USDT", Side: Side.Sell, Type: OrderType.StopMarket,
                 Price: 0m, Quantity: 5m, StopPrice: 95m, CreateTime: DateTime.UtcNow,
-                Status: OrderStatus.New, ReduceOnly: false),  // ← fehlt
+                Status: OrderStatus.New, ReduceOnly: false),  // Hedge-Mode: BingX liefert immer false
         };
         var positionOpenedAt = new Dictionary<string, DateTime>
         {
@@ -135,7 +138,7 @@ public class MissingStopLossDetectionTests
             positionOpenedAt: positionOpenedAt,
             missingStopGraceWindow: Grace);
 
-        actions.Should().ContainSingle(a => a.Kind == PositionDriftAnalyzer.DriftKind.MissingStopLoss);
+        actions.Should().NotContain(a => a.Kind == PositionDriftAnalyzer.DriftKind.MissingStopLoss);
     }
 
     [Fact]

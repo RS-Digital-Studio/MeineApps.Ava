@@ -467,6 +467,14 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     risk.LossStreakPauseAtCount = saved.Risk.LossStreakPauseAtCount;
     risk.MinPositionSizeRetentionPercent = saved.Risk.MinPositionSizeRetentionPercent;
     risk.EnableLossStreakDampening = saved.Risk.EnableLossStreakDampening;
+    // Adaptive-Sizing-/Schutz-Features (waren ungemappt → fielen bei JEDEM Server-Restart auf Default
+    // zurueck: Korrelations-Filter auf 0=aus, Vol-Targeting/Equity-Scaling aus). User-Werte gingen verloren.
+    risk.MaxCorrelatedExposurePercent = saved.Risk.MaxCorrelatedExposurePercent;
+    risk.EnableVolatilityTargeting = saved.Risk.EnableVolatilityTargeting;
+    risk.VolatilityTargetPercent = saved.Risk.VolatilityTargetPercent;
+    risk.VolatilityScaleCap = saved.Risk.VolatilityScaleCap;
+    risk.EnableEquityCurveScaling = saved.Risk.EnableEquityCurveScaling;
+    risk.EquityCurveScalingThresholdPercent = saved.Risk.EquityCurveScalingThresholdPercent;
     // Dictionaries: nur uebernehmen wenn nicht-leer (Schutz vor Default-Reset bei alten Migration-Snapshots).
     if (saved.Risk.CategorySettings is { Count: > 0 })
         risk.CategorySettings = saved.Risk.CategorySettings;

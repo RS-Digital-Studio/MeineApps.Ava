@@ -306,6 +306,14 @@ public partial class App : Application
         risk.LossStreakPauseAtCount = saved.Risk.LossStreakPauseAtCount;
         risk.MinPositionSizeRetentionPercent = saved.Risk.MinPositionSizeRetentionPercent;
         risk.EnableLossStreakDampening = saved.Risk.EnableLossStreakDampening;
+        // Adaptive-Sizing-/Schutz-Features (waren ungemappt → fielen beim Settings-Restore auf Default
+        // zurueck: Korrelations-Filter aus, Vol-Targeting/Equity-Scaling aus). Analog zum Server-Restore.
+        risk.MaxCorrelatedExposurePercent = saved.Risk.MaxCorrelatedExposurePercent;
+        risk.EnableVolatilityTargeting = saved.Risk.EnableVolatilityTargeting;
+        risk.VolatilityTargetPercent = saved.Risk.VolatilityTargetPercent;
+        risk.VolatilityScaleCap = saved.Risk.VolatilityScaleCap;
+        risk.EnableEquityCurveScaling = saved.Risk.EnableEquityCurveScaling;
+        risk.EquityCurveScalingThresholdPercent = saved.Risk.EquityCurveScalingThresholdPercent;
         if (saved.Risk.CategorySettings != null && saved.Risk.CategorySettings.Count > 0)
             risk.CategorySettings = saved.Risk.CategorySettings;
         if (saved.Risk.PipScalingByTf is { Count: > 0 })

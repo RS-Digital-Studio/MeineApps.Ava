@@ -113,6 +113,9 @@ public class WorkerAvatarControl : Control
     private readonly SKCanvasView _canvasView;
     private SKBitmap? _currentBitmap;
     private bool _needsAnimation;
+    // Verhindert Duplikat-Eintraege in s_instances: RegisterForAnimation feuert bei jeder
+    // Property-Aenderung + Erst-Paint, darf die Instanz aber nur EINMAL eintragen.
+    private bool _isRegistered;
     private bool _hasAIPortrait;
     private bool _aiCheckDone; // Guard: AI-Nachladeprüfung nur einmal durchführen
     private int _stableHash;
@@ -214,7 +217,13 @@ public class WorkerAvatarControl : Control
         _needsAnimation = true;
         lock (s_lock)
         {
-            s_instances.Add(new WeakReference<WorkerAvatarControl>(this));
+            // Nur einmal eintragen — sonst sammeln sich pro Property-Change/Paint Duplikate an
+            // (unbegrenztes Listen-Wachstum + N-fache InvalidateSurface pro Tick fuer dieselbe Karte).
+            if (!_isRegistered)
+            {
+                s_instances.Add(new WeakReference<WorkerAvatarControl>(this));
+                _isRegistered = true;
+            }
             EnsureSharedTimerRunning();
         }
     }
@@ -222,7 +231,21 @@ public class WorkerAvatarControl : Control
     private void UnregisterFromAnimation()
     {
         _needsAnimation = false;
-        // Aufräumen passiert im Timer-Tick (WeakReference wird automatisch entfernt)
+        // Eigenen Eintrag aktiv entfernen (nicht auf den traegen Tick-Cleanup verlassen) — haelt
+        // s_instances und _isRegistered konsistent, sodass ein spaeteres Register sauber re-addet.
+        lock (s_lock)
+        {
+            if (!_isRegistered) return;
+            for (int i = s_instances.Count - 1; i >= 0; i--)
+            {
+                if (s_instances[i].TryGetTarget(out var control) && ReferenceEquals(control, this))
+                {
+                    s_instances.RemoveAt(i);
+                    break;
+                }
+            }
+            _isRegistered = false;
+        }
     }
 
     private static void EnsureSharedTimerRunning()
@@ -250,16 +273,26 @@ public class WorkerAvatarControl : Control
     {
         lock (s_lock)
         {
-            // Alle lebenden Instanzen invalidieren, tote entfernen
+            // Alle lebenden Instanzen invalidieren, tote/inaktive entfernen
             for (int i = s_instances.Count - 1; i >= 0; i--)
             {
-                if (s_instances[i].TryGetTarget(out var control) && control._needsAnimation)
+                if (s_instances[i].TryGetTarget(out var control))
                 {
-                    control._canvasView.InvalidateSurface();
+                    if (control._needsAnimation)
+                    {
+                        control._canvasView.InvalidateSurface();
+                    }
+                    else
+                    {
+                        // Lebende, aber nicht mehr animierte Instanz: Flag zuruecksetzen, sodass ein
+                        // spaeteres RegisterForAnimation sie wieder sauber eintraegt.
+                        control._isRegistered = false;
+                        s_instances.RemoveAt(i);
+                    }
                 }
                 else
                 {
-                    s_instances.RemoveAt(i);
+                    s_instances.RemoveAt(i); // toter Target
                 }
             }
 

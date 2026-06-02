@@ -15,6 +15,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IArTransferService _arTransferService;
     private readonly IMeasurementService _measurementService;
     private readonly IProjectService _projectService;
+    private readonly IHardwareModeService _hardwareMode;
     private readonly BackPressHelper _backPressHelper = new();
 
     // Child-ViewModels
@@ -45,6 +46,11 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private int _satelliteCount;
     [ObservableProperty] private float _horizontalAccuracy;
 
+    /// <summary>Adaptiver Betriebsmodus: true = RTK-Hardware-UI zeigen (Status-Bar voll,
+    /// BLE- + Abstecken-Tab sichtbar). false = reiner AR-Modus (schlanke Status-Bar,
+    /// Hardware-Tabs ausgeblendet). Wird vom <see cref="IHardwareModeService"/> gespeist.</summary>
+    [ObservableProperty] private bool _showRtkUi;
+
     // Export-Share-Banner: Nach erfolgreichem Export sichtbar, bietet Teilen/Öffnen an
     [ObservableProperty] private string? _lastExportPath;
     [ObservableProperty] private string _lastExportFileName = string.Empty;
@@ -67,6 +73,7 @@ public partial class MainViewModel : ViewModelBase
         IArTransferService arTransferService,
         IMeasurementService measurementService,
         IProjectService projectService,
+        IHardwareModeService hardwareMode,
         ConnectViewModel connectVm,
         SurveyViewModel surveyVm,
         TerrainViewModel terrainVm,
@@ -80,6 +87,7 @@ public partial class MainViewModel : ViewModelBase
         _arTransferService = arTransferService;
         _measurementService = measurementService;
         _projectService = projectService;
+        _hardwareMode = hardwareMode;
         ConnectVm = connectVm;
         SurveyVm = surveyVm;
         TerrainVm = terrainVm;
@@ -97,6 +105,14 @@ public partial class MainViewModel : ViewModelBase
             FixStatusText = _bleService.CurrentState.FixStatusText;
         });
         _bleService.AccuracyUpdated += (h, _) => Dispatcher.UIThread.Post(() => HorizontalAccuracy = h);
+
+        // Adaptiver Betriebsmodus: initial setzen + auf Aenderungen hoeren.
+        // Changed kommt vom BLE-Background-Thread → Dispatcher.
+        ShowRtkUi = _hardwareMode.ShowRtkUi;
+        _hardwareMode.Changed += () => Dispatcher.UIThread.Post(OnHardwareModeChanged);
+
+        // Settings → "RTK-Stab verbinden" navigiert zum (im AR-Modus ausgeblendeten) Connect-Screen.
+        SettingsVm.NavigationRequested += route => Navigate(route);
 
         // Back-Button
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
@@ -195,6 +211,17 @@ public partial class MainViewModel : ViewModelBase
         IsStakeoutActive = page == "Stakeout";
         IsConnectActive = page == "Connect";
         IsSettingsActive = page == "Settings";
+    }
+
+    /// <summary>Reagiert auf Moduswechsel (Stab verbunden/getrennt oder AR-Reset).
+    /// Aktualisiert die Tab-/Status-Bar-Sichtbarkeit und holt den Nutzer von einem
+    /// Tab weg, der im AR-Modus nicht mehr existiert (BLE/Abstecken).</summary>
+    private void OnHardwareModeChanged()
+    {
+        ShowRtkUi = _hardwareMode.ShowRtkUi;
+
+        if (!ShowRtkUi && (IsConnectActive || IsStakeoutActive))
+            Navigate("Survey");
     }
 
     public bool HandleBackPressed()

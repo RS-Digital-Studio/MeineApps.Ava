@@ -3,201 +3,347 @@
              xmlns:vm="using:SmartMeasure.Shared.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:conv="using:MeineApps.Core.Ava.Converters"
              x:Class="SmartMeasure.Shared.Views.SurveyView"
              x:CompileBindings="True"
              x:DataType="vm:SurveyViewModel">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="12" Margin="16">
+    <UserControl.Styles>
+        <!-- Sanfter Puls hinter dem AR-Kamera-Icon (Game Juice, dezent) -->
+        <Style Selector="Border.arGlow">
+            <Setter Property="Opacity" Value="0.4" />
+            <Style.Animations>
+                <Animation Duration="0:0:2.4" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.6" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Hero-CTA: leichtes Aufleuchten beim Druecken -->
+        <Style Selector="Button.arHero">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.arHero:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)" />
+        </Style>
+    </UserControl.Styles>
 
-            <!-- Live-Kompass mit Genauigkeits-Ring -->
-            <Border Background="{DynamicResource BgCardBrush}"
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="14" Margin="16,16,16,72">
+
+            <!-- ══════════════ AR-MODUS: Hero-Einstieg ══════════════ -->
+            <StackPanel Spacing="12" IsVisible="{Binding !ShowRtkUi}">
+
+                <!-- Grosser AR-Kamera-CTA -->
+                <Button Classes="arHero"
+                        Command="{Binding StartArCaptureCommand}"
+                        IsEnabled="{Binding !IsArBusy}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Padding="0" CornerRadius="{DynamicResource CardRadius}"
+                        Background="{DynamicResource ArHeroGradientBrush}"
+                        Foreground="White">
+                    <Grid RowDefinitions="Auto,Auto,Auto" Margin="20,26">
+                        <!-- Icon mit pulsierendem Glow -->
+                        <Panel Grid.Row="0" Height="84" HorizontalAlignment="Center">
+                            <Border Classes="arGlow" Width="84" Height="84" CornerRadius="42"
+                                    Background="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <mi:MaterialIcon Kind="CubeScan" Width="56" Height="56"
+                                             Foreground="White"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Panel>
+                        <TextBlock Grid.Row="1" Text="Mit AR-Kamera vermessen"
+                                   FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"
+                                   Margin="0,14,0,2" />
+                        <TextBlock Grid.Row="2"
+                                   Text="Kamera auf den Boden richten, Punkte antippen — ganz ohne Hardware."
+                                   FontSize="12.5" Opacity="0.92" TextWrapping="Wrap"
+                                   TextAlignment="Center" HorizontalAlignment="Center" MaxWidth="300" />
+                    </Grid>
+                </Button>
+
+                <!-- Ehrlicher Genauigkeits-Hinweis (Vertrauen statt Praezisions-Versprechen) -->
+                <Border Background="{DynamicResource BgCardBrush}"
+                        CornerRadius="{DynamicResource SmallRadius}" Padding="12,10">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <mi:MaterialIcon Kind="InformationOutline" Width="18" Height="18"
+                                         Foreground="{DynamicResource SecondaryBrush}"
+                                         VerticalAlignment="Top" Margin="0,1,0,0" />
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="AR-Genauigkeit ca. ±5–50 cm"
+                                       FontSize="12.5" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Ideal für Gartenplanung und Flächen. Für zentimetergenaue Grenzpunkte einen RTK-Stab verbinden (in Optionen)."
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- AR-Status (Busy / Meldung) -->
+                <Border IsVisible="{Binding ArStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="{DynamicResource BgElevatedBrush}"
+                        CornerRadius="{DynamicResource SmallRadius}" Padding="12,9"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="Information" Width="15" Height="15"
+                                         IsVisible="{Binding !IsArBusy}"
+                                         Foreground="{DynamicResource SecondaryBrush}" />
+                        <mi:MaterialIcon Kind="Loading" Width="15" Height="15"
+                                         IsVisible="{Binding IsArBusy}"
+                                         Foreground="{DynamicResource SecondaryBrush}" />
+                        <TextBlock Text="{Binding ArStatusText}" FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ══════════════ RTK-MODUS: Live-Hardware ══════════════ -->
+            <StackPanel Spacing="12" IsVisible="{Binding ShowRtkUi}">
+
+                <!-- Live-Kompass mit Genauigkeits-Ring -->
+                <Border Background="{DynamicResource BgCardBrush}"
+                        CornerRadius="{DynamicResource CardRadius}"
+                        Padding="8" HorizontalAlignment="Center">
+                    <labs:SKCanvasView x:Name="CompassCanvas" Width="200" Height="200" />
+                </Border>
+
+                <!-- Kompass-Warnung -->
+                <Border IsVisible="{Binding MagWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="#33FFC107" BorderBrush="{DynamicResource WarningBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource SmallRadius}" Padding="10,7">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="CompassOff" Width="16" Height="16"
+                                         Foreground="{DynamicResource WarningBrush}" />
+                        <TextBlock Text="{Binding MagWarning}" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Koordinaten-Anzeige -->
+                <Border Background="{DynamicResource BgCardBrush}"
+                        CornerRadius="{DynamicResource CardRadius}"
+                        Padding="{DynamicResource CardPadding}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Position" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Lat" FontSize="12"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LatText}"
+                                       FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Lon" FontSize="12"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LonText}"
+                                       FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Höhe" FontSize="12"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AltText}"
+                                       FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
+                                       Foreground="{DynamicResource SecondaryBrush}" />
+                        </Grid>
+
+                        <!-- Genauigkeit + Neigung -->
+                        <Grid ColumnDefinitions="*,*,*" Margin="0,8,0,0">
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                <TextBlock Text="H-Genauigkeit" FontSize="10"
+                                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                                <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource AccentBrush}">
+                                    <Run Text="±" /><Run Text="{Binding HorizontalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                <TextBlock Text="V-Genauigkeit" FontSize="10"
+                                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                                <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource AccentBrush}">
+                                    <Run Text="±" /><Run Text="{Binding VerticalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                <TextBlock Text="Neigung" FontSize="10"
+                                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                                <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}">
+                                    <Run Text="{Binding TiltAngle, StringFormat='{}{0:F1}'}" /><Run Text="°" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Schnell-Labels -->
+                <Border Background="{DynamicResource BgCardBrush}"
+                        CornerRadius="{DynamicResource CardRadius}" Padding="12,8">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Punkt-Label" FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <WrapPanel Orientation="Horizontal">
+                            <Button Content="Ecke" Margin="4,2" Padding="14,10" MinHeight="44"
+                                    CornerRadius="{DynamicResource SmallRadius}"
+                                    Command="{Binding SetQuickLabelCommand}" CommandParameter="Ecke"
+                                    Background="{DynamicResource BgElevatedBrush}"
+                                    Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <Button Content="Grenze" Margin="4,2" Padding="14,10" MinHeight="44"
+                                    CornerRadius="{DynamicResource SmallRadius}"
+                                    Command="{Binding SetQuickLabelCommand}" CommandParameter="Grenze"
+                                    Background="{DynamicResource BgElevatedBrush}"
+                                    Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <Button Content="Baum" Margin="4,2" Padding="14,10" MinHeight="44"
+                                    CornerRadius="{DynamicResource SmallRadius}"
+                                    Command="{Binding SetQuickLabelCommand}" CommandParameter="Baum"
+                                    Background="{DynamicResource BgElevatedBrush}"
+                                    Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <Button Content="Pfosten" Margin="4,2" Padding="14,10" MinHeight="44"
+                                    CornerRadius="{DynamicResource SmallRadius}"
+                                    Command="{Binding SetQuickLabelCommand}" CommandParameter="Pfosten"
+                                    Background="{DynamicResource BgElevatedBrush}"
+                                    Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <Button Content="Weg" Margin="4,2" Padding="14,10" MinHeight="44"
+                                    CornerRadius="{DynamicResource SmallRadius}"
+                                    Command="{Binding SetQuickLabelCommand}" CommandParameter="Weg"
+                                    Background="{DynamicResource BgElevatedBrush}"
+                                    Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        </WrapPanel>
+                        <TextBox Text="{Binding PointLabel}" Watermark="Eigenes Label..."
+                                 FontSize="14" Margin="0,4,0,0"
+                                 Background="{DynamicResource BgElevatedBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- PUNKT SETZEN + AR KAMERA -->
+                <Grid ColumnDefinitions="*,12,*">
+                    <Button Grid.Column="0"
+                            Command="{Binding SetPointCommand}"
+                            IsEnabled="{Binding IsBleConnected}"
+                            HorizontalAlignment="Stretch" Height="64"
+                            CornerRadius="{DynamicResource ButtonRadius}"
+                            Background="{DynamicResource PrimaryGradientBrush}"
+                            Foreground="White" FontSize="16" FontWeight="Bold"
+                            HorizontalContentAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="MapMarkerPlus" Width="24" Height="24" />
+                            <TextBlock Text="PUNKT" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Grid.Column="2"
+                            Command="{Binding StartArCaptureCommand}"
+                            IsEnabled="{Binding !IsArBusy}"
+                            HorizontalAlignment="Stretch" Height="64"
+                            CornerRadius="{DynamicResource ButtonRadius}"
+                            Background="{DynamicResource SecondaryGradientBrush}"
+                            Foreground="White" FontSize="16" FontWeight="Bold"
+                            HorizontalContentAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="CubeScan" Width="24" Height="24" />
+                            <TextBlock Text="AR KAMERA" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- Abstand zum letzten Punkt -->
+                <Border Background="{DynamicResource BgCardBrush}"
+                        CornerRadius="{DynamicResource SmallRadius}"
+                        Padding="12,8" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="RulerSquare" Width="16" Height="16"
+                                         Foreground="{DynamicResource SecondaryBrush}" />
+                        <TextBlock Text="Abstand:" FontSize="13"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding DistanceToLast}" FontSize="13" FontWeight="Bold"
+                                   Foreground="{DynamicResource SecondaryBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Debug-Panel (nur im Mock-Modus) -->
+                <Border IsVisible="{Binding IsMockMode}"
+                        Background="#22FF6B00"
+                        BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource SmallRadius}" Padding="10,6">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Debug-Simulation" FontSize="11" FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryBrush}" />
+                        <WrapPanel>
+                            <Button Content="Fix runter" Margin="2" Padding="8,6" FontSize="11"
+                                    Command="{Binding DebugCycleFixCommand}"
+                                    ToolTip.Tip="Fix-Quality zyklisch degradieren (RTK → Float → DGPS → NoFix)" />
+                            <Button Content="Paket-Loss" Margin="2" Padding="8,6" FontSize="11"
+                                    Command="{Binding DebugPacketLossCommand}"
+                                    ToolTip.Tip="Position-Updates 5s aussetzen" />
+                            <Button Content="Batterie" Margin="2" Padding="8,6" FontSize="11"
+                                    Command="{Binding DebugBatteryDrainCommand}"
+                                    ToolTip.Tip="Battery drain bis 15%" />
+                            <Button Content="Kompass" Margin="2" Padding="8,6" FontSize="11"
+                                    Command="{Binding DebugMagLossCommand}"
+                                    ToolTip.Tip="MagAccuracy auf 0 setzen (triggert Warning)" />
+                            <Button Content="Disconnect" Margin="2" Padding="8,6" FontSize="11"
+                                    Command="{Binding DebugSpuriousDisconnectCommand}"
+                                    ToolTip.Tip="Unerwarteten Disconnect simulieren" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ══════════════ GEMEINSAM: Projekt-Ergebnis ══════════════ -->
+
+            <!-- Live-Statistik (sichtbar sobald Punkte da sind, AR + RTK) -->
+            <Border IsVisible="{Binding HasPoints}"
+                    Background="{DynamicResource CardGradientBrush}"
                     CornerRadius="{DynamicResource CardRadius}"
-                    Padding="8" HorizontalAlignment="Center">
-                <labs:SKCanvasView x:Name="CompassCanvas"
-                                   Width="200" Height="200" />
+                    Padding="{DynamicResource CardPadding}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Aktuelle Messung" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <Grid ColumnDefinitions="*,*,*">
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding PointCount}" FontSize="24" FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource PrimaryBrush}" />
+                            <TextBlock Text="Punkte" FontSize="11" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding AreaText}" FontSize="24" FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Text="Fläche" FontSize="11" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding PerimeterText}" FontSize="24" FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource SecondaryBrush}" />
+                            <TextBlock Text="Umfang" FontSize="11" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
             </Border>
 
-            <!-- Koordinaten-Anzeige -->
-            <Border Background="{DynamicResource BgCardBrush}"
+            <!-- Messpunkte-Liste -->
+            <Border IsVisible="{Binding HasPoints}"
+                    Background="{DynamicResource BgCardBrush}"
                     CornerRadius="{DynamicResource CardRadius}"
                     Padding="{DynamicResource CardPadding}">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Position" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-
-                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Lat" FontSize="12"
-                                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LatText}"
-                                   FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Lon" FontSize="12"
-                                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LonText}"
-                                   FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Höhe" FontSize="12"
-                                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AltText}"
-                                   FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
-                                   Foreground="{DynamicResource SecondaryBrush}" />
-                    </Grid>
-
-                    <!-- Genauigkeit + Satelliten -->
-                    <Grid ColumnDefinitions="*,*,*" Margin="0,8,0,0">
-                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="H-Genauigkeit" FontSize="10"
-                                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-                            <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
-                                       Foreground="{DynamicResource AccentBrush}">
-                                <Run Text="±" /><Run Text="{Binding HorizontalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                            <TextBlock Text="V-Genauigkeit" FontSize="10"
-                                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-                            <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
-                                       Foreground="{DynamicResource AccentBrush}">
-                                <Run Text="±" /><Run Text="{Binding VerticalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="Neigung" FontSize="10"
-                                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-                            <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
-                                       Foreground="{DynamicResource TextSecondaryBrush}">
-                                <Run Text="{Binding TiltAngle, StringFormat='{}{0:F1}'}" /><Run Text="°" />
-                            </TextBlock>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Schnell-Labels -->
-            <Border Background="{DynamicResource BgCardBrush}"
-                    CornerRadius="{DynamicResource CardRadius}"
-                    Padding="12,8">
-                <StackPanel Spacing="6">
-                    <TextBlock Text="Punkt-Label" FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <WrapPanel Orientation="Horizontal">
-                        <Button Content="Ecke" Margin="4,2" Padding="14,10" MinHeight="44"
-                                CornerRadius="{DynamicResource SmallRadius}"
-                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Ecke"
-                                Background="{DynamicResource BgElevatedBrush}"
-                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <Button Content="Grenze" Margin="4,2" Padding="14,10" MinHeight="44"
-                                CornerRadius="{DynamicResource SmallRadius}"
-                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Grenze"
-                                Background="{DynamicResource BgElevatedBrush}"
-                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <Button Content="Baum" Margin="4,2" Padding="14,10" MinHeight="44"
-                                CornerRadius="{DynamicResource SmallRadius}"
-                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Baum"
-                                Background="{DynamicResource BgElevatedBrush}"
-                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <Button Content="Pfosten" Margin="4,2" Padding="14,10" MinHeight="44"
-                                CornerRadius="{DynamicResource SmallRadius}"
-                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Pfosten"
-                                Background="{DynamicResource BgElevatedBrush}"
-                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <Button Content="Weg" Margin="4,2" Padding="14,10" MinHeight="44"
-                                CornerRadius="{DynamicResource SmallRadius}"
-                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Weg"
-                                Background="{DynamicResource BgElevatedBrush}"
-                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                    </WrapPanel>
-                    <TextBox Text="{Binding PointLabel}" Watermark="Eigenes Label..."
-                             FontSize="14" Margin="0,4,0,0"
-                             Background="{DynamicResource BgElevatedBrush}"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                </StackPanel>
-            </Border>
-
-            <!-- PUNKT SETZEN + AR KAMERA Buttons -->
-            <Grid ColumnDefinitions="*,12,*">
-                <Button Grid.Column="0"
-                        Command="{Binding SetPointCommand}"
-                        HorizontalAlignment="Stretch" Height="64"
-                        CornerRadius="{DynamicResource ButtonRadius}"
-                        Background="{DynamicResource PrimaryGradientBrush}"
-                        Foreground="White" FontSize="16" FontWeight="Bold"
-                        HorizontalContentAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <mi:MaterialIcon Kind="MapMarkerPlus" Width="24" Height="24" />
-                        <TextBlock Text="PUNKT" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-
-                <Button Grid.Column="2"
-                        Command="{Binding StartArCaptureCommand}"
-                        HorizontalAlignment="Stretch" Height="64"
-                        CornerRadius="{DynamicResource ButtonRadius}"
-                        Background="{DynamicResource SecondaryGradientBrush}"
-                        Foreground="White" FontSize="16" FontWeight="Bold"
-                        HorizontalContentAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <mi:MaterialIcon Kind="Camera" Width="24" Height="24" />
-                        <TextBlock Text="AR KAMERA" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-            </Grid>
-
-            <!-- Abstand zum letzten Punkt -->
-            <Border Background="{DynamicResource BgCardBrush}"
-                    CornerRadius="{DynamicResource SmallRadius}"
-                    Padding="12,8" HorizontalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="RulerSquare" Width="16" Height="16"
-                                     Foreground="{DynamicResource SecondaryBrush}" />
-                    <TextBlock Text="Abstand:" FontSize="13"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <TextBlock Text="{Binding DistanceToLast}" FontSize="13" FontWeight="Bold"
-                               Foreground="{DynamicResource SecondaryBrush}" />
-                </StackPanel>
-            </Border>
-
-            <!-- Debug-Panel (nur im Mock-Modus) -->
-            <Border IsVisible="{Binding IsMockMode}"
-                    Background="#22FF6B00"
-                    BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1"
-                    CornerRadius="{DynamicResource SmallRadius}"
-                    Padding="10,6">
-                <StackPanel Spacing="4">
-                    <TextBlock Text="Debug-Simulation" FontSize="11" FontWeight="Bold"
-                               Foreground="{DynamicResource PrimaryBrush}" />
-                    <WrapPanel>
-                        <Button Content="Fix ↓" Margin="2" Padding="8,6" FontSize="11"
-                                Command="{Binding DebugCycleFixCommand}"
-                                ToolTip.Tip="Fix-Quality zyklisch degradieren (RTK → Float → DGPS → NoFix)" />
-                        <Button Content="Paket-Loss" Margin="2" Padding="8,6" FontSize="11"
-                                Command="{Binding DebugPacketLossCommand}"
-                                ToolTip.Tip="Position-Updates 5s aussetzen" />
-                        <Button Content="Batterie" Margin="2" Padding="8,6" FontSize="11"
-                                Command="{Binding DebugBatteryDrainCommand}"
-                                ToolTip.Tip="Battery drain bis 15%" />
-                        <Button Content="Kompass" Margin="2" Padding="8,6" FontSize="11"
-                                Command="{Binding DebugMagLossCommand}"
-                                ToolTip.Tip="MagAccuracy auf 0 setzen (triggert Warning)" />
-                        <Button Content="Disconnect" Margin="2" Padding="8,6" FontSize="11"
-                                Command="{Binding DebugSpuriousDisconnectCommand}"
-                                ToolTip.Tip="Unerwarteten Disconnect simulieren" />
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- Letzte Punkte -->
-            <Border Background="{DynamicResource BgCardBrush}"
-                    CornerRadius="{DynamicResource CardRadius}"
-                    Padding="{DynamicResource CardPadding}"
-                    Margin="0,0,0,60">
-                <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="Messpunkte" FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
                         <Button Grid.Column="1" Content="Löschen" FontSize="11" Padding="12,10" MinHeight="44"
                                 Command="{Binding ClearPointsCommand}"
                                 Background="Transparent"
@@ -219,12 +365,19 @@
                                         <StackPanel Grid.Column="1">
                                             <TextBlock Text="{Binding Label}" FontSize="13"
                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                                            <TextBlock FontSize="11"
-                                                       Foreground="{DynamicResource TextMutedBrush}">
-                                                <Run Text="{Binding Altitude}" />
-                                                <Run Text=" | " />
-                                                <Run Text="{Binding Accuracy}" />
-                                            </TextBlock>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Altitude}" FontSize="11"
+                                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                                <TextBlock Text="·" FontSize="11"
+                                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                                <TextBlock Text="{Binding Accuracy}" FontSize="11"
+                                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                                <Border CornerRadius="4" Padding="5,1"
+                                                        Background="{DynamicResource BgCardBrush}">
+                                                    <TextBlock Text="{Binding Quality}" FontSize="10" FontWeight="SemiBold"
+                                                               Foreground="{Binding QualityColor, Converter={x:Static conv:StringToColorBrushConverter.Instance}}" />
+                                                </Border>
+                                            </StackPanel>
                                         </StackPanel>
                                         <TextBlock Grid.Column="2" Text="{Binding Distance}"
                                                    FontSize="12" VerticalAlignment="Center"
@@ -236,6 +389,25 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
+
+            <!-- Leerzustand (AR-Modus, noch keine Punkte) -->
+            <Border IsVisible="{Binding !HasPoints}"
+                    Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="20,24" Margin="0,2,0,0">
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="MapMarkerOffOutline" Width="34" Height="34"
+                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     HorizontalAlignment="Center" />
+                    <TextBlock Text="Noch keine Messpunkte"
+                               FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="Starte oben die AR-Kamera und tippe Punkte im Garten an. Deine Fläche und Maße erscheinen dann hier."
+                               FontSize="12" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="280"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

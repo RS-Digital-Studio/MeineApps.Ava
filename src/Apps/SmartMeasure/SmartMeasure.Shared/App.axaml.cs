@@ -95,6 +95,9 @@ public class App : Application
         else
             services.AddSingleton<IArCaptureService, MockArCaptureService>();
 
+        // Adaptiver Betriebsmodus (AR-First vs RTK-Stab) — haengt von IBleService + Preferences ab.
+        services.AddSingleton<IHardwareModeService, HardwareModeService>();
+
         // Services
         services.AddSingleton<IMeasurementService, MeasurementService>();
         services.AddSingleton<ICoordinateService, CoordinateService>();

@@ -13,8 +13,39 @@
             <TextBlock Text="Einstellungen" FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4" />
 
-            <!-- Vermessungsstab -->
-            <Border Background="{DynamicResource CardGradientBrush}"
+            <!-- AR-Modus: RTK-Stab als optionale Hardware bewerben -->
+            <Border IsVisible="{Binding !ShowRtkUi}"
+                    Background="{DynamicResource CardGradientBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}"
+                    BorderBrush="{DynamicResource BgCardBrush}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="Bluetooth" Width="20" Height="20"
+                                         Foreground="{DynamicResource SecondaryBrush}" />
+                        <TextBlock Text="RTK-Vermessungsstab (optional)" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                    <TextBlock Text="Du misst aktuell mit der AR-Kamera (±5–50 cm). Für zentimetergenaue Grenz- und Höhenpunkte kannst du optional einen RTK-GPS-Stab per Bluetooth verbinden."
+                               FontSize="12.5" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <Button Command="{Binding ConnectRtkStickCommand}"
+                            HorizontalAlignment="Left" Padding="16,11" MinHeight="44"
+                            CornerRadius="{DynamicResource ButtonRadius}"
+                            Background="{DynamicResource BgElevatedBrush}"
+                            Foreground="{DynamicResource TextPrimaryBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="BluetoothConnect" Width="18" Height="18"
+                                             Foreground="{DynamicResource SecondaryBrush}" />
+                            <TextBlock Text="RTK-Stab verbinden" FontSize="13" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- RTK-Modus: Vermessungsstab-Einstellungen -->
+            <Border IsVisible="{Binding ShowRtkUi}"
+                    Background="{DynamicResource CardGradientBrush}"
                     CornerRadius="{DynamicResource CardRadius}"
                     Padding="{DynamicResource CardPadding}"
                     BorderBrush="{DynamicResource BgCardBrush}" BorderThickness="1">
@@ -46,6 +77,18 @@
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextMutedBrush}" />
                     </Grid>
+
+                    <Button Command="{Binding ResetToArModeCommand}"
+                            HorizontalAlignment="Left" Padding="14,10" MinHeight="44" Margin="0,4,0,0"
+                            CornerRadius="{DynamicResource SmallRadius}"
+                            Background="Transparent"
+                            Foreground="{DynamicResource TextMutedBrush}"
+                            ToolTip.Tip="Blendet die Hardware-Ansicht aus und startet wieder im reinen AR-Modus.">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <mi:MaterialIcon Kind="CubeScan" Width="16" Height="16" />
+                            <TextBlock Text="Zurück zum AR-Modus" FontSize="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
 
@@ -108,7 +151,7 @@
                     </TextBlock>
                     <TextBlock Text="3D-Grundstücksvermessung + Gartenplanung" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" />
-                    <TextBlock Text="RTK-GPS (±2cm) | AR-Kamera (±5-50cm)" FontSize="12"
+                    <TextBlock Text="AR-Kamera (±5–50 cm) · RTK-GPS optional (±2 cm)" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" />
                     <TextBlock Text="Export: CSV, GeoJSON, OBJ (Blender), PDF" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" />

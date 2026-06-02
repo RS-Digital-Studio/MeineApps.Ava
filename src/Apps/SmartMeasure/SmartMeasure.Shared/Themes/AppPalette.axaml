@@ -32,6 +32,16 @@
     <Color x:Key="RtkFloatColor">#FFC107</Color>
     <Color x:Key="RtkNoFixColor">#EF5350</Color>
 
+    <!-- AR-Modus Farben (Kontur-Cyan, aktive Kontur, Auswahl) -->
+    <Color x:Key="ArContourColor">#00BCD4</Color>
+    <Color x:Key="ArActiveColor">#FFEB3B</Color>
+    <Color x:Key="ArSelectedColor">#00BCD4</Color>
+
+    <!-- Mess-Konfidenz (AR-Genauigkeitsstufen) -->
+    <Color x:Key="ConfidenceHighColor">#4CAF50</Color>
+    <Color x:Key="ConfidenceMidColor">#FFC107</Color>
+    <Color x:Key="ConfidenceLowColor">#FF7043</Color>
+
     <!-- Terrain-Hoehenstufen -->
     <Color x:Key="TerrainLowColor">#1B5E20</Color>
     <Color x:Key="TerrainMidLowColor">#4CAF50</Color>
@@ -79,6 +89,12 @@
     <SolidColorBrush x:Key="RtkFixBrush" Color="{StaticResource RtkFixColor}" />
     <SolidColorBrush x:Key="RtkFloatBrush" Color="{StaticResource RtkFloatColor}" />
     <SolidColorBrush x:Key="RtkNoFixBrush" Color="{StaticResource RtkNoFixColor}" />
+    <SolidColorBrush x:Key="ArContourBrush" Color="{StaticResource ArContourColor}" />
+    <SolidColorBrush x:Key="ArActiveBrush" Color="{StaticResource ArActiveColor}" />
+    <SolidColorBrush x:Key="ArSelectedBrush" Color="{StaticResource ArSelectedColor}" />
+    <SolidColorBrush x:Key="ConfidenceHighBrush" Color="{StaticResource ConfidenceHighColor}" />
+    <SolidColorBrush x:Key="ConfidenceMidBrush" Color="{StaticResource ConfidenceMidColor}" />
+    <SolidColorBrush x:Key="ConfidenceLowBrush" Color="{StaticResource ConfidenceLowColor}" />
 
     <!-- Gradient Brushes -->
     <LinearGradientBrush x:Key="CardGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
@@ -113,6 +129,12 @@
 
     <LinearGradientBrush x:Key="SecondaryGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
         <GradientStop Color="#1565C0" Offset="0" />
+        <GradientStop Color="#2196F3" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- AR-Hero-CTA: Cyan-zu-Blau, signalisiert den AR-Kamera-Einstieg als Primaer-Aktion -->
+    <LinearGradientBrush x:Key="ArHeroGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#00BCD4" Offset="0" />
         <GradientStop Color="#2196F3" Offset="1" />
     </LinearGradientBrush>
 

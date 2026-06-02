@@ -7,7 +7,11 @@ namespace BingXBot.Server.Api;
 
 public static class AuthEndpoints
 {
-    private static readonly DateTime ProcessStart = DateTime.UtcNow;
+    // Prozessstart-Zeit fuer /health uptimeSeconds. Der explizite static ctor entfernt beforefieldinit,
+    // damit ProcessStart beim ersten Klassenzugriff (MapAuthEndpoints im Startup) gesetzt wird — sonst
+    // initialisierte das Feld erst beim ERSTEN /health-Hit (uptime startete bei 0 statt beim Prozessstart).
+    private static readonly DateTime ProcessStart;
+    static AuthEndpoints() => ProcessStart = DateTime.UtcNow;
 
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {

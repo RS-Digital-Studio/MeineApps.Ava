@@ -258,19 +258,16 @@ public partial class LiveTradingService
                     $"LIVE: {symbol} Position nach 3s nicht bei BingX registriert — Stage-2-TP-Place mit fallbackQty={fallbackQty:F8} versuchen",
                     symbol));
 
-                var stage2Tp1Qty = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
-                                   && signal.TakeProfit2.Value != signal.TakeProfit!.Value
-                    ? Math.Round(fallbackQty * _riskSettings.Tp1CloseRatio, 6)
-                    : Math.Round(fallbackQty, 6);
-                var stage2Tp2Qty = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
-                                   && signal.TakeProfit2.Value != signal.TakeProfit!.Value
-                    ? Math.Round(fallbackQty - stage2Tp1Qty, 6)
-                    : 0m;
+                // Min-Qty-aware Split (siehe SplitTpQuantity): winzige Positionen → ein Full-TP bei TP1.
+                var s2WantsTp2 = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
+                                 && signal.TakeProfit2.Value != signal.TakeProfit!.Value;
+                var (stage2Tp1Qty, stage2Tp2Qty, _) = SplitTpQuantity(
+                    symbol, fallbackQty, s2WantsTp2, signal.TakeProfit ?? 0m, signal.TakeProfit2 ?? signal.TakeProfit ?? 0m);
 
                 string? s2Tp1 = null, s2Tp2 = null;
                 if (signal.TakeProfit.HasValue && stage2Tp1Qty > 0)
                     s2Tp1 = await PlaceTpWithRetryAsync(symbol, side, stage2Tp1Qty, signal.TakeProfit!.Value, "TP1 Stage2").ConfigureAwait(false);
-                if (signal.TakeProfit2.HasValue && stage2Tp2Qty > 0)
+                if (s2WantsTp2 && stage2Tp2Qty > 0)
                     s2Tp2 = await PlaceTpWithRetryAsync(symbol, side, stage2Tp2Qty, signal.TakeProfit2!.Value, "TP2 Stage2").ConfigureAwait(false);
 
                 // Phase 0.2/0.3 — auch Stage-2-Erfolge ins ExitState schreiben, sonst greift der
@@ -354,6 +351,17 @@ public partial class LiveTradingService
             // Over-Close Guard: TP1+TP2 darf nie > Position
             if (tp1Qty + tp2Qty > actualQty)
                 tp2Qty = Math.Round(actualQty - tp1Qty, 6);
+
+            // Min-Qty-Guard (02.06.2026): Bei winzigen Positionen, deren Teilmenge unter die Min-Order
+            // faellt, kein Split — ein Full-TP bei TP1 (verhindert BingX-Reject, z.B. ETH 0.01/Min-Qty 0.01).
+            if (hasTp2 && (tp2Qty <= 0m
+                || !_restClient.MeetsMinimumOrder(symbol, tp1Qty, signal.TakeProfit!.Value)
+                || !_restClient.MeetsMinimumOrder(symbol, tp2Qty, signal.TakeProfit2!.Value)))
+            {
+                hasTp2 = false;
+                tp1Qty = Math.Round(actualQty, 6);
+                tp2Qty = 0m;
+            }
 
             // TP1 als LIMIT Reduce-Only (mit Retry bei Fehler)
             string? tp1OrderId = null;

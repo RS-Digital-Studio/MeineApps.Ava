@@ -29,6 +29,10 @@ public sealed class FakeExchangeClient : IExchangeClient
     public List<(string Symbol, Side Side, decimal Qty, decimal Price)> PlaceTpCalls { get; } = new();
     public List<(string OrderId, string Symbol)> CancelOrderCalls { get; } = new();
 
+    /// <summary>Test-Setup: Mindest-Order-Menge fuer den Min-Qty-Split-Guard (0 = keine Restriktion).</summary>
+    public decimal MinOrderQty { get; set; }
+    public bool MeetsMinimumOrder(string symbol, decimal quantity, decimal price) => quantity >= MinOrderQty;
+
     // ────────────────── Test-Setup-Helpers ──────────────────
     public FakeExchangeClient WithPosition(string symbol, Side side, decimal qty, decimal entry, decimal markPrice = 0m)
     {

@@ -16,7 +16,8 @@ namespace BingXBot.Tests.Trading;
 //
 // Reconcile-Verhalten:
 // 1. Orphan-Signal (Bot-Signal ohne Position) → nach Grace-Window entfernt
-// 2. Unmanaged-Position (Position ohne Signal) → nur Warning-Log, kein State-Change
+// 2. Unmanaged-Position (Position ohne Signal) → adoptiert: Signal (SL+TP+BE) registriert,
+//    Notfall-SL gesetzt wenn nativ keiner liegt (02.06.2026 — vorher nur Warning-Log)
 // 3. Pending-Entry (Limit-Order noch nicht gefuellt) → Grace-Ausnahme, kein Entfernen
 // 4. Alles konsistent → kein Log, kein State-Change
 public class ReconcilePositionsIntegrationTests
@@ -89,20 +90,119 @@ public class ReconcilePositionsIntegrationTests
     }
 
     [Fact]
-    public async Task ReconcilePositionsAsync_UnmanagedPosition_AendetStateNichtAberLoggt()
+    public async Task ReconcilePositionsAsync_UnmanagedPosition_WirdAdoptiert()
     {
-        // Exchange hat BTC-Long-Position, Bot kennt sie nicht → nur Warning, keine Modifikation.
+        // Exchange hat BTC-Long-Position, Bot kennt sie nicht (z.B. nach Crash ohne State-Persist).
+        // NEUES Verhalten (02.06.2026): Der Bot ADOPTIERT die Position statt sie nur zu loggen —
+        // registriert ein vollstaendiges Signal (SL+TP+BE) und setzt einen Notfall-SL, da kein nativer
+        // SL vorhanden ist. Eine ungeschuetzte Echtgeld-Position ist das groesste Risiko.
         var fake = new FakeExchangeClient().WithPosition("BTC-USDT", Side.Buy, qty: 0.1m, entry: 50000m);
         var service = CreateService(fake);
 
-        // Kein Signal im Bot → sollte Warning geben aber nichts aendern.
         service._positionSignals.Count.Should().Be(0);
 
         await service.ReconcilePositionsAsync(CancellationToken.None);
 
-        // Keine State-Aenderung (keine Signal-Registrierung, kein ClosePosition-Call)
-        service._positionSignals.Count.Should().Be(0);
+        // Adoptiert: Signal registriert, Position NICHT geschlossen.
+        service._positionSignals.ContainsKey("BTC-USDT_Buy").Should().BeTrue();
         fake.ClosePositionCalls.Should().BeEmpty();
+
+        // Notfall-SL via SetPositionSlTp gesetzt (Long → unter Entry), TP=null (TP laeuft ueber Limit-Pfad).
+        fake.SetSlTpCalls.Should().Contain(c =>
+            c.Symbol == "BTC-USDT" && c.Sl.HasValue && c.Sl.Value < 50000m && c.Tp == null);
+
+        // Registriertes Signal: SL unter Entry, TP1 aus RRR (1.5R) ueber Entry, Break-Even aktiv.
+        var sig = service._positionSignals["BTC-USDT_Buy"];
+        sig.StopLoss.Should().NotBeNull();
+        sig.StopLoss!.Value.Should().BeLessThan(50000m);
+        sig.TakeProfit.Should().NotBeNull();
+        sig.TakeProfit!.Value.Should().BeGreaterThan(50000m);
+        sig.DisableSmartBreakeven.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ReconcilePositionsAsync_UnmanagedPositionMitNativemSchutz_AdoptiertOhneNeueOrders()
+    {
+        // Unmanaged Long-Position die bereits nativen SL (StopMarket) + zwei TP-Limits hat
+        // (NASDAQ/CRCL-Szenario nach Crash). Adoption uebernimmt die ECHTEN SL/TP-Werte ins Signal
+        // und setzt KEINE neuen Orders — kein Notfall-SL noetig, keine TP-Duplikate.
+        var fake = new FakeExchangeClient()
+            .WithPosition("BTC-USDT", Side.Buy, qty: 0.1m, entry: 50000m)
+            .WithOpenOrderInstance(new Order(
+                OrderId: "sl1", Symbol: "BTC-USDT", Side: Side.Sell, Type: OrderType.StopMarket,
+                Price: 0m, Quantity: 0.1m, StopPrice: 49000m, CreateTime: DateTime.UtcNow,
+                Status: OrderStatus.New, ReduceOnly: false))
+            .WithOpenOrder("BTC-USDT", Side.Sell, OrderType.Limit, qty: 0.05m, price: 51000m)
+            .WithOpenOrder("BTC-USDT", Side.Sell, OrderType.Limit, qty: 0.05m, price: 52000m);
+        var service = CreateService(fake);
+
+        await service.ReconcilePositionsAsync(CancellationToken.None);
+
+        // Adoptiert mit echten Werten — KEIN neuer SL-Call (nativer SL existiert), kein Close.
+        service._positionSignals.ContainsKey("BTC-USDT_Buy").Should().BeTrue();
+        fake.SetSlTpCalls.Should().BeEmpty();
+        fake.ClosePositionCalls.Should().BeEmpty();
+
+        var sig = service._positionSignals["BTC-USDT_Buy"];
+        sig.StopLoss.Should().Be(49000m);    // nativer SL uebernommen
+        sig.TakeProfit.Should().Be(51000m);  // TP1 = naeher am Entry (Long → niedriger)
+        sig.TakeProfit2.Should().Be(52000m); // TP2 = weiter
+        sig.DisableSmartBreakeven.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ReconcilePositionsAsync_UnvollstaendigesRecoverySignal_WirdVervollstaendigt()
+    {
+        // Der RecoverOpenPositions-Start-Pfad registriert Recovery-Signale mit SL aber TakeProfit=null
+        // und DisableSmartBreakeven=false (Live-Befund 02.06.: SP500/ETH hatten SL, aber kein TP/BE).
+        // Die Adoption vervollstaendigt solche Signale jeden Durchgang: TP1/TP2 (aus RRR) + BE — ohne
+        // einen neuen SL-Call (der SL existiert bereits).
+        var fake = new FakeExchangeClient()
+            .WithPosition("BTC-USDT", Side.Buy, qty: 0.1m, entry: 50000m)
+            .WithOpenOrderInstance(new Order(
+                OrderId: "sl1", Symbol: "BTC-USDT", Side: Side.Sell, Type: OrderType.StopMarket,
+                Price: 0m, Quantity: 0.1m, StopPrice: 49000m, CreateTime: DateTime.UtcNow,
+                Status: OrderStatus.New, ReduceOnly: false));
+        var service = CreateService(fake);
+
+        // Recovery-Signal: SL gesetzt, KEIN TP, BE aus.
+        service._positionSignals["BTC-USDT_Buy"] = new SignalResult(
+            Signal.Long, 0.5m, 50000m, 49000m, null, "Recovery", DisableSmartBreakeven: false);
+
+        await service.ReconcilePositionsAsync(CancellationToken.None);
+
+        var sig = service._positionSignals["BTC-USDT_Buy"];
+        sig.StopLoss.Should().Be(49000m);                  // SL unveraendert (kein neuer SL-Call noetig)
+        sig.TakeProfit.Should().Be(50000m + 1.5m * 1000m); // TP1 = 1.5R (SL-Distanz 1000) = 51500
+        sig.TakeProfit2.Should().Be(50000m + 3.0m * 1000m);// TP2 = 3R = 53000
+        sig.DisableSmartBreakeven.Should().BeTrue();       // BE aktiviert
+        fake.SetSlTpCalls.Should().BeEmpty();              // kein SL-Re-Place noetig
+    }
+
+    [Fact]
+    public async Task ReconcilePositionsAsync_WinzigePosition_TpOhneSplit_FullTp1()
+    {
+        // ETH-Short 0.01 (= Min-Qty), nativer SL, KEINE TP-Limits, managed mit TP1+TP2.
+        // Der 50/50-Split (0.005) faellt unter die Min-Order-Qty 0.01 → KEIN Split: ein Full-TP bei
+        // TP1, und TP2 wird aus dem Signal entfernt (verhindert Endlos-Re-Place; Live-Befund 02.06.).
+        var fake = new FakeExchangeClient { MinOrderQty = 0.01m }
+            .WithPosition("ETH-USDT", Side.Sell, qty: 0.01m, entry: 1925m)
+            .WithOpenOrderInstance(new Order(
+                OrderId: "sl1", Symbol: "ETH-USDT", Side: Side.Buy, Type: OrderType.StopMarket,
+                Price: 0m, Quantity: 0.01m, StopPrice: 1995m, CreateTime: DateTime.UtcNow,
+                Status: OrderStatus.New, ReduceOnly: false));
+        var service = CreateService(fake);
+        service._positionSignals["ETH-USDT_Sell"] = new SignalResult(
+            Signal.Short, 0.5m, 1925m, 1995m, 1820m, "Test", TakeProfit2: 1716m, DisableSmartBreakeven: true);
+
+        await service.ReconcilePositionsAsync(CancellationToken.None);
+
+        // Genau EIN TP-Limit platziert, mit voller Qty 0.01 (kein 0.005-Split).
+        fake.PlaceTpCalls.Should().ContainSingle();
+        fake.PlaceTpCalls[0].Qty.Should().Be(0.01m);
+        fake.PlaceTpCalls[0].Price.Should().Be(1820m);
+        // TP2 aus dem Signal entfernt → kuenftige Durchgaenge jagen keinen ungueltigen TP2 nach.
+        service._positionSignals["ETH-USDT_Sell"].TakeProfit2.Should().BeNull();
     }
 
     [Fact]

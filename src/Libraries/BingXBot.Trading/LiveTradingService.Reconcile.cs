@@ -19,6 +19,11 @@ public partial class LiveTradingService
     /// </summary>
     private const int ReconcileIntervalSeconds = 60;
 
+    /// <summary>RRR-Stufen fuer die TP-Ableitung adoptierter Positionen ohne native TP-Limits
+    /// (TrendFollow-Konvention 1.5R/3.0R). Siehe <see cref="AdoptUnmanagedPositionsAsync"/>.</summary>
+    private const decimal AdoptTp1Rrr = 1.5m;
+    private const decimal AdoptTp2Rrr = 3.0m;
+
     private async Task ReconcileLoopAsync(CancellationToken ct)
     {
         // Initial-Delay: 30 s, damit nach Engine-Start genug Zeit fuer erste Scans+Position-Opens ist.
@@ -68,15 +73,9 @@ public partial class LiveTradingService
     {
         var positions = await _restClient.GetPositionsAsync(ct).ConfigureAwait(false);
 
-        // Snapshot der Bot-Keys (ConcurrentDictionary.Keys ist konsistent, nicht blockierend).
-        var botKeys = _positionSignals.Keys.ToArray();
-
-        // Pending-Symbol/Side — wenn Limit-Entry noch nicht gefuellt ist, ist "keine Position" OK.
-        var pendingSymbolSides = _pendingLimitOrders.Values
-            .Select(v => (v.Symbol, v.IsLong ? Side.Buy : Side.Sell))
-            .ToHashSet();
-
         // v1.5.1 Phase 3 — Open-Orders fuer Missing-Stop-Loss-Detection abrufen.
+        // 02.06.2026 hochgezogen: AdoptUnmanagedPositionsAsync braucht die OpenOrders, um native
+        // SL/TP zu erkennen, BEVOR botKeys/signalsExpectingTp gebaut werden.
         IReadOnlyList<Order>? openOrders = null;
         try
         {
@@ -87,6 +86,20 @@ public partial class LiveTradingService
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Reconcile",
                 $"OpenOrders-Abruf fehlgeschlagen — Missing-Stop-Detection in dieser Iteration uebersprungen: {ex.Message}"));
         }
+
+        // 02.06.2026 — Unmanaged Positionen (kein Bot-Signal, z.B. nach Crash-Recovery ohne sauberen
+        // State-Persist) adoptieren BEVOR der Drift-Analyzer laeuft: Notfall-SL setzen wenn nativ keiner
+        // liegt und ein vollstaendiges Signal (SL+TP1+TP2+BE) registrieren. Danach behandelt die normale
+        // Missing-Stop/Missing-TP-Maschinerie sie wie bot-eigene Positionen → jeder Durchgang geprueft.
+        await AdoptUnmanagedPositionsAsync(positions, openOrders, ct).ConfigureAwait(false);
+
+        // Snapshot der Bot-Keys NACH Adoption (ConcurrentDictionary.Keys ist konsistent, nicht blockierend).
+        var botKeys = _positionSignals.Keys.ToArray();
+
+        // Pending-Symbol/Side — wenn Limit-Entry noch nicht gefuellt ist, ist "keine Position" OK.
+        var pendingSymbolSides = _pendingLimitOrders.Values
+            .Select(v => (v.Symbol, v.IsLong ? Side.Buy : Side.Sell))
+            .ToHashSet();
 
         // PositionOpenedAt-Lookup (fuer 30-s-Grace-Window).
         var positionOpenedAt = (IReadOnlyDictionary<string, DateTime>)_positionOpenTimes;
@@ -161,6 +174,163 @@ public partial class LiveTradingService
                     await ReplaceMissingTakeProfitAsync(action, key, positions).ConfigureAwait(false);
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// 02.06.2026 — Adoptiert offene BingX-Positionen, fuer die der Bot KEIN Signal (mehr) haelt.
+    /// Tritt auf nach Crash/Restart ohne sauberen State-Persist (ExitStates verloren) oder wenn eine
+    /// Position ausserhalb des normalen Order-Pfads entstand. Ohne Adoption blieben diese Positionen
+    /// dauerhaft ungeschuetzt: der Drift-Analyzer meldet Missing-SL/TP nur fuer bot-managed Keys, und
+    /// der BE-Block im PriceTickerLoop braucht ein Signal — eine unmanaged Position bekam also weder
+    /// SL-Re-Place noch TP-Re-Place noch Break-Even (Live-Befund 02.06.: SP500 ohne SL, ETH ohne TP).
+    ///
+    /// Vorgehen pro unmanaged Position:
+    ///  1) Native SL/TP aus den OpenOrders lesen (StopMarket = SL, reduce-only LIMIT = TP1/TP2).
+    ///  2) Fehlt der native SL: sofort einen leverage-skalierten Notfall-SL setzen (Verlustbegrenzung
+    ///     hat Vorrang — eine ungeschuetzte Echtgeld-Position ist das groesste Risiko).
+    ///  3) Ein vollstaendiges Signal registrieren (Entry, SL, TP1, TP2, DisableSmartBreakeven=true).
+    ///     TP-Werte aus vorhandenen Limit-Orders (NASDAQ/CRCL behalten ihre echten TPs) oder, falls
+    ///     keine existieren, aus der SL-Distanz x RRR 1.5/3.0 abgeleitet (TrendFollow-Konvention).
+    ///
+    /// Danach ist die Position "managed": der Drift-Analyzer setzt fehlende Limit-TPs nach (Missing-TP-
+    /// Pfad) und der PriceTickerLoop zieht Break-Even — bei jedem Reconcile-Durchgang erneut geprueft.
+    /// </summary>
+    private async Task AdoptUnmanagedPositionsAsync(
+        IReadOnlyList<Position> positions, IReadOnlyList<Order>? openOrders, CancellationToken ct)
+    {
+        if (positions.Count == 0) return;
+
+        // Pending-Limit-Entries duerfen NICHT adoptiert werden — die Position ist evtl. noch nicht
+        // gefuellt bzw. der normale Fill-Pfad registriert gleich das echte Signal.
+        var pendingKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var v in _pendingLimitOrders.Values)
+            pendingKeys.Add($"{v.Symbol}_{(v.IsLong ? Side.Buy : Side.Sell)}");
+
+        foreach (var pos in positions)
+        {
+            if (pos.Quantity <= 0 || pos.EntryPrice <= 0) continue;
+            var key = $"{pos.Symbol}_{pos.Side}";
+            if (pendingKeys.Contains(key)) continue;            // Limit-Entry noch offen
+
+            // Vorhandenes Signal (falls die Position bereits — evtl. nur teilweise — managed ist).
+            // Der RecoverOpenPositions-Start-Pfad registriert Recovery-Signale mit TakeProfit=null und
+            // DisableSmartBreakeven=false → die Position hat dann SL, aber WEDER TP NOCH BE (Live-Befund
+            // 02.06.: SP500/ETH). Solche unvollstaendigen Signale werden hier ebenfalls vervollstaendigt.
+            _positionSignals.TryGetValue(key, out var existing);
+            if (existing is { TakeProfit: > 0 }) continue;      // bereits vollstaendig verwaltet (Signal mit TP)
+
+            var closingSide = pos.Side == Side.Buy ? Side.Sell : Side.Buy;
+
+            // 1) Native SL + TP-Limits dieser Position aus den OpenOrders ziehen.
+            //    Hedge-Mode liefert reduceOnly=false fuer ALLE Orders → Match auf (Symbol, closingSide, Type).
+            decimal? nativeSl = null;
+            var tpPrices = new List<decimal>();
+            if (openOrders != null)
+            {
+                foreach (var o in openOrders)
+                {
+                    if (o.Symbol != pos.Symbol || o.Side != closingSide) continue;
+                    if (o.Type == OrderType.StopMarket && o.StopPrice is > 0)
+                        nativeSl = o.StopPrice;
+                    else if (o.Type == OrderType.Limit && o.Price > 0)
+                        tpPrices.Add(o.Price);
+                }
+            }
+
+            // 2) SL bestimmen — Signal-SL/nativen nehmen, sonst sofort einen Notfall-SL setzen.
+            decimal slPrice;
+            if (existing?.StopLoss is > 0)
+            {
+                slPrice = existing.StopLoss.Value;             // Recovery hat den SL schon gesetzt
+            }
+            else if (nativeSl is > 0)
+            {
+                slPrice = nativeSl.Value;
+            }
+            else
+            {
+                var fallbackPercent = Math.Max(0.015m, pos.Leverage > 0 ? 0.03m / pos.Leverage : 0.03m);
+                slPrice = pos.Side == Side.Buy
+                    ? pos.EntryPrice * (1m - fallbackPercent)
+                    : pos.EntryPrice * (1m + fallbackPercent);
+                try
+                {
+                    await _restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, slPrice, null).ConfigureAwait(false);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
+                        $"{LogPrefix}{pos.Symbol} {pos.Side}: UNMANAGED Position ohne SL adoptiert — Notfall-SL @ {slPrice:F8} ({fallbackPercent:P1} vom Entry) gesetzt.",
+                        pos.Symbol));
+                    _eventBus.PublishNotification("Position adoptiert + abgesichert",
+                        $"{pos.Symbol} {pos.Side}: hatte keinen SL — Notfall-SL @ {slPrice:F4} gesetzt.");
+                }
+                catch (Exception ex)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
+                        $"{LogPrefix}{pos.Symbol} {pos.Side}: Notfall-SL fuer unmanaged Position fehlgeschlagen ({ex.Message}) — Signal trotzdem registriert, naechster Durchgang versucht erneut.",
+                        pos.Symbol));
+                    // Signal trotzdem registrieren, damit der Missing-Stop-Pfad es naechsten Tick erneut versucht.
+                }
+            }
+
+            // 3) TP1/TP2 bestimmen: vorhandene Limits bevorzugen, sonst aus SL-Distanz x RRR ableiten.
+            decimal tp1, tp2;
+            if (tpPrices.Count > 0)
+            {
+                // Long: TP1 ist der niedrigere (naeher am Entry), TP2 der hoehere. Short: umgekehrt.
+                if (pos.Side == Side.Buy) tpPrices.Sort();
+                else tpPrices.Sort((a, b) => b.CompareTo(a));
+                tp1 = tpPrices[0];
+                tp2 = tpPrices.Count > 1 ? tpPrices[1] : tpPrices[0];
+            }
+            else
+            {
+                var slDist = Math.Abs(pos.EntryPrice - slPrice);
+                tp1 = pos.Side == Side.Buy ? pos.EntryPrice + AdoptTp1Rrr * slDist : pos.EntryPrice - AdoptTp1Rrr * slDist;
+                tp2 = pos.Side == Side.Buy ? pos.EntryPrice + AdoptTp2Rrr * slDist : pos.EntryPrice - AdoptTp2Rrr * slDist;
+            }
+
+            // 4) Signal registrieren bzw. vervollstaendigen → Position ist ab jetzt voll bot-managed.
+            //    DisableSmartBreakeven=true aktiviert den BE-Block im PriceTickerLoop (NavPointA=0 → 2x-SL-Trigger).
+            var tpSource = tpPrices.Count > 0 ? "TP aus Limits" : "TP aus RRR 1.5/3.0";
+            if (existing == null)
+            {
+                var signal = new SignalResult(
+                    pos.Side == Side.Buy ? Signal.Long : Signal.Short,
+                    0.5m, pos.EntryPrice, slPrice, tp1,
+                    "Adoptiert: unmanaged Position abgesichert (SL+TP+BE rekonstruiert)",
+                    TakeProfit2: tp2, ConfluenceScore: 5, DisableSmartBreakeven: true);
+                RestorePositionSignal(pos.Symbol, pos.Side, signal);
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                    $"{LogPrefix}{pos.Symbol} {pos.Side}: adoptiert — SL={slPrice:F8}, TP1={tp1:F8}, TP2={tp2:F8}, BE aktiv ({tpSource}).",
+                    pos.Symbol));
+            }
+            else
+            {
+                // Recovery-Signal vervollstaendigen: TP1/TP2 + BE ergaenzen, SL/Entry behalten. Direkt-
+                // Update (kein RestorePositionSignal) — sonst wuerde dessen Fallback DisableSmartBreakeven
+                // vom alten Signal (=false) uebernehmen und das BE wieder abschalten.
+                var completed = existing with
+                {
+                    EntryPrice = existing.EntryPrice ?? pos.EntryPrice,
+                    StopLoss = slPrice,
+                    TakeProfit = tp1,
+                    TakeProfit2 = tp2,
+                    DisableSmartBreakeven = true
+                };
+                _positionSignals[key] = completed;
+                if (_exitStates.TryGetValue(key, out var es))
+                {
+                    es.Signal = completed;
+                    if (es.EntryPrice <= 0) es.EntryPrice = pos.EntryPrice;
+                }
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                    $"{LogPrefix}{pos.Symbol} {pos.Side}: Recovery-Signal vervollstaendigt — TP1={tp1:F8}, TP2={tp2:F8}, BE aktiviert ({tpSource}).",
+                    pos.Symbol));
+            }
+
+            ct.ThrowIfCancellationRequested();
         }
     }
 
@@ -257,14 +427,26 @@ public partial class LiveTradingService
                 return;
             }
 
-            // Mengen-Aufteilung wie in PlaceTpLimitOrdersAfterFillAsync, aber nur die FEHLENDE
-            // Seite wird wirklich platziert. Wenn TP1 bereits liegt, kalkuliert sich die TP2-Qty
-            // aus dem Rest (Position - Tp1-Reservierung).
-            var tp1Ratio = _riskSettings.Tp1CloseRatio;
-            var tp1Qty = hasTp2Signal
-                ? Math.Round(pos.Quantity * tp1Ratio, 6)
-                : Math.Round(pos.Quantity, 6);
-            var tp2Qty = hasTp2Signal ? Math.Round(pos.Quantity - tp1Qty, 6) : 0m;
+            // Mengen-Aufteilung Min-Qty-aware (nur die FEHLENDE Seite wird platziert). Bei winzigen
+            // Positionen, deren 50/50-Teilmenge unter die Min-Order-Groesse faellt, gibt es KEINEN
+            // Split, sondern einen Full-TP bei TP1 — verhindert BingX-Reject + Endlos-Re-Place
+            // (Live-Befund 02.06.: ETH-USDT 0.01 bei Min-Qty 0.01).
+            var (tp1Qty, tp2Qty, splitTp2) = SplitTpQuantity(
+                action.Symbol, pos.Quantity, hasTp2Signal, tp1Price, tp2Price ?? tp1Price);
+
+            // TP2 mengenmaessig nicht moeglich → dauerhaft aus dem Signal entfernen, damit kuenftige
+            // Reconcile-Durchgaenge nicht endlos einen ungueltigen TP2 nachjagen (early-return greift dann).
+            if (hasTp2Signal && !splitTp2)
+            {
+                hasTp2Signal = false;
+                tp2Price = null;
+                if (signal.TakeProfit2.HasValue)
+                {
+                    signal = signal with { TakeProfit2 = null };
+                    _positionSignals[posKey] = signal;
+                    if (_exitStates.TryGetValue(posKey, out var esNoTp2)) esNoTp2.Signal = signal;
+                }
+            }
 
             string? placedTp1 = null, placedTp2 = null;
             if (!tp1Alive && tp1Qty > 0)
@@ -496,7 +678,11 @@ public partial class LiveTradingService
 
         try
         {
-            await _restClient.SetPositionSlTpAsync(action.Symbol, action.Side, signal.StopLoss, signal.TakeProfit)
+            // NUR den SL re-placen (TP=null): der TP laeuft ueber den separaten Missing-TP-Pfad als
+            // reduce-only LIMIT (Multi-Stage TP1 50% / TP2 Rest). Wuerde man hier signal.TakeProfit
+            // mitgeben, legte BingX einen TAKE_PROFIT_MARKET an, der bei TP1 die GANZE Position
+            // schliesst und damit die 50/50-Teilschliessung aushebelt (+ Doppel-TP mit den Limits).
+            await _restClient.SetPositionSlTpAsync(action.Symbol, action.Side, signal.StopLoss, null)
                 .ConfigureAwait(false);
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
                 $"{LogPrefix}{action.Symbol} {action.Side}: Missing-SL → re-placed @ {signal.StopLoss:F8}",
@@ -508,5 +694,29 @@ public partial class LiveTradingService
                 $"{LogPrefix}{action.Symbol} {action.Side}: SL-Re-Place fehlgeschlagen ({ex.Message}) — Position UNGESCHUETZT bis naechster Reconcile-Durchlauf!",
                 action.Symbol));
         }
+    }
+
+    /// <summary>
+    /// 02.06.2026 — Teilt die Gesamt-Menge in TP1/TP2 gemaess Tp1CloseRatio. Wuerde der Split eine
+    /// Teilmenge unter die Min-Order-Groesse des Symbols druecken (kleine Position nahe Min-Qty, z.B.
+    /// ETH-USDT 0.01 bei Min-Qty 0.01), wird KEIN Split gemacht: ein einzelner Full-TP bei TP1
+    /// (Tp2Qty=0, HasTp2=false). Verhindert den BingX-Reject + Endlos-Re-Place bei winzigen Positionen.
+    /// </summary>
+    private (decimal Tp1Qty, decimal Tp2Qty, bool HasTp2) SplitTpQuantity(
+        string symbol, decimal totalQty, bool wantsTp2, decimal tp1Price, decimal tp2Price)
+    {
+        var full = Math.Round(totalQty, 6);
+        if (!wantsTp2 || full <= 0m) return (full, 0m, false);
+
+        var tp1Qty = Math.Round(totalQty * _riskSettings.Tp1CloseRatio, 6);
+        var tp2Qty = Math.Round(totalQty - tp1Qty, 6);
+
+        if (tp1Qty <= 0m || tp2Qty <= 0m
+            || !_restClient.MeetsMinimumOrder(symbol, tp1Qty, tp1Price)
+            || !_restClient.MeetsMinimumOrder(symbol, tp2Qty, tp2Price))
+        {
+            return (full, 0m, false);   // Position zu klein fuer einen sinnvollen Split → ein Full-TP
+        }
+        return (tp1Qty, tp2Qty, true);
     }
 }

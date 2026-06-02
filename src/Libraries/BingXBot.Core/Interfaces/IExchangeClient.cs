@@ -25,6 +25,14 @@ public interface IExchangeClient
     Task SyncServerTimeAsync();
     Task InitializeSymbolInfoAsync();
 
+    /// <summary>
+    /// Prueft ob (quantity, price) die Min-Order-Anforderungen des Symbols erfuellt (MinQty + MinNotional).
+    /// Wird vor TP-Mengen-Splits genutzt, um BingX-Rejects bei winzigen Teilmengen zu vermeiden
+    /// (z.B. ETH-USDT Min-Qty 0.01 → ein 50/50-Split auf 0.005 ist ungueltig). Default-Impl gibt true
+    /// zurueck (SimulatedExchange/Tests ohne echte Contract-Restriktionen).
+    /// </summary>
+    bool MeetsMinimumOrder(string symbol, decimal quantity, decimal price) => true;
+
     // ─────────── Positions ───────────
     Task<IReadOnlyList<Position>> GetPositionsAsync();
     Task<IReadOnlyList<Position>> GetPositionsAsync(CancellationToken ct);

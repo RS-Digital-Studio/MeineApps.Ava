@@ -77,6 +77,10 @@ public class BingXRestClient : IExchangeClient
     /// </summary>
     public Task InitializeSymbolInfoAsync() => _symbolInfoCache.InitializeAsync(_httpClient);
 
+    /// <inheritdoc/>
+    public bool MeetsMinimumOrder(string symbol, decimal quantity, decimal price)
+        => _symbolInfoCache.MeetsMinimumOrder(symbol, quantity, price);
+
     /// <summary>
     /// Synchronisiert die lokale Uhr mit dem BingX-Server.
     /// Berechnet den Offset (lokal - server) und nutzt ihn für alle signierten Requests.
@@ -1204,7 +1208,10 @@ public class BingXRestClient : IExchangeClient
                 parameters,
                 "queries");
 
-            if (data.Count == 0) break;
+            // BingX liefert bei leerem Fenster (und transient unter Last) `data:null` statt `data:[]`
+            // → ohne diesen Guard warf `data.Count` eine NullReferenceException, die den periodischen
+            //   Backfill (BotAutoResumeService, alle 30 min) reihenweise scheitern liess (Live 02.06.).
+            if (data is not { Count: > 0 }) break;
 
             foreach (var d in data)
                 all.Add(new IncomeRecord(d.Symbol, d.IncomeType, ParseDecimal(d.Income), d.Asset, d.Info, FromUnixMs(d.Time)));

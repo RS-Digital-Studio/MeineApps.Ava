@@ -237,6 +237,16 @@ public partial class App : Application
             // 4. Icon-System: Static Cleanup (nicht im DI-Container registriert)
             Icons.GameIcon.ClearCache();
             Icons.GameIconRenderer.Cleanup();
+
+            // 5. Statische Renderer-Caches (Shader/MaskFilter/Path/Bitmaps in static Feldern,
+            //    nicht im DI-Container) deterministisch freigeben — die DisposeStaticResources-
+            //    Methoden waren dokumentiert ("bei App-Shutdown aufrufen"), wurden aber nie aufgerufen.
+            Graphics.InventGameRenderer.DisposeStaticResources();
+            Graphics.BlueprintGameRenderer.DisposeStaticResources();
+            Graphics.CraftTextures.DisposeStaticResources();
+            Graphics.FireworksRenderer.DisposeStaticResources();
+            Graphics.GameCardRenderer.DisposeStaticResources();
+            Graphics.LoadingScreenRenderer.DisposeStaticResources();
         }
         catch
         {

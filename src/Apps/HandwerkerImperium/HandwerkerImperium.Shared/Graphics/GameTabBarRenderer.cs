@@ -338,6 +338,11 @@ public sealed class GameTabBarRenderer : IDisposable
         new(0, 0)                           // unten-links
     ];
     private readonly SKRoundRect _clipRRect = new();
+    // Wiederverwendbare SKRoundRects (analog _clipRRect) — die Tab-Bar ist dauerhaft sichtbar,
+    // daher kein per-Frame new SKRoundRect im Hot-Path (Aktiv-Indikator, Shop-/Settings-Icon).
+    private readonly SKRoundRect _indicatorRRect = new();
+    private readonly SKRoundRect _shopRRect = new();
+    private readonly SKRoundRect _handleRRect = new();
 
     private void DrawWoodWithCraftTexture(SKCanvas canvas, SKRect barBounds)
     {
@@ -454,13 +459,13 @@ public sealed class GameTabBarRenderer : IDisposable
 
         // Glow-Aura (breiter, transparent)
         _glowPaint.Color = GoldGlow;
-        using var indicatorRRect = new SKRoundRect(indicatorRect, 2f);
-        canvas.DrawRoundRect(indicatorRRect, _glowPaint);
+        _indicatorRRect.SetRect(indicatorRect, 2f, 2f);
+        canvas.DrawRoundRect(_indicatorRRect, _glowPaint);
 
-        // Goldener Strich
+        // Goldener Strich (gleiche Geometrie wie der Glow — _indicatorRRect bereits gesetzt)
         _fillPaint.Color = GoldColor;
         _fillPaint.Shader = null;
-        canvas.DrawRoundRect(indicatorRRect, _fillPaint);
+        canvas.DrawRoundRect(_indicatorRRect, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -917,9 +922,8 @@ public sealed class GameTabBarRenderer : IDisposable
         // --- Schaufenster (Holz-Rechteck) ---
         _fillPaint.Color = ShopWood.WithAlpha(alpha);
         _fillPaint.Shader = null;
-        using var shopRRect = new SKRoundRect(
-            new SKRect(shopLeft, shopTop, shopLeft + shopW, shopTop + shopH), 2f);
-        canvas.DrawRoundRect(shopRRect, _fillPaint);
+        _shopRRect.SetRect(new SKRect(shopLeft, shopTop, shopLeft + shopW, shopTop + shopH), 2f, 2f);
+        canvas.DrawRoundRect(_shopRRect, _fillPaint);
 
         // Fenster-Fläche (etwas dunkler)
         _fillPaint.Color = new SKColor(0x3E, 0x27, 0x23).WithAlpha(alpha);
@@ -1003,9 +1007,8 @@ public sealed class GameTabBarRenderer : IDisposable
         // --- Holzgriff (links) ---
         _fillPaint.Color = GearHandle.WithAlpha(alpha);
         _fillPaint.Shader = null;
-        using var handleRRect = new SKRoundRect(
-            new SKRect(cx - s * 0.7f, cy - s * 0.07f, cx - s * 0.15f, cy + s * 0.07f), 2f);
-        canvas.DrawRoundRect(handleRRect, _fillPaint);
+        _handleRRect.SetRect(new SKRect(cx - s * 0.7f, cy - s * 0.07f, cx - s * 0.15f, cy + s * 0.07f), 2f, 2f);
+        canvas.DrawRoundRect(_handleRRect, _fillPaint);
 
         // --- Zahnrad ---
         canvas.Save();
@@ -1135,5 +1138,9 @@ public sealed class GameTabBarRenderer : IDisposable
         _laurelPathRight?.Dispose();
         _stripePath?.Dispose();
         _lockArcPath?.Dispose();
+        _clipRRect?.Dispose();
+        _indicatorRRect?.Dispose();
+        _shopRRect?.Dispose();
+        _handleRRect?.Dispose();
     }
 }

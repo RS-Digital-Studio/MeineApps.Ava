@@ -1027,6 +1027,25 @@ public sealed class InventGameRenderer : IDisposable
     // KACHELN
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Origin-relativer Tile-Hintergrund-Gradient, gecacht per (Farbe, Breite, Hoehe).
+    // Caller translatiert den Canvas auf rect.Left/Top vor DrawRoundRect.
+    private readonly Dictionary<(uint argb, int w, int h), SKShader> _tileBgShaderCache = new();
+
+    private SKShader GetCachedTileBgShader(SKRect rect, SKColor bgColor)
+    {
+        var key = ((uint)bgColor, (int)rect.Width, (int)rect.Height);
+        if (_tileBgShaderCache.TryGetValue(key, out var cached))
+            return cached;
+
+        var shader = SKShader.CreateLinearGradient(
+            new SKPoint(0, 0),
+            new SKPoint(rect.Width, rect.Height),
+            new[] { bgColor, bgColor.WithAlpha((byte)(bgColor.Alpha * 0.7f)) },
+            null, SKShaderTileMode.Clamp);
+        _tileBgShaderCache[key] = shader;
+        return shader;
+    }
+
     private void DrawTile(SKCanvas canvas, SKRect rect, InventPartData part,
         bool isMemorizing, bool isPlaying, float tileSize)
     {
@@ -1044,16 +1063,17 @@ public sealed class InventGameRenderer : IDisposable
         var shadowRect = SKRect.Create(rect.Left + 2, rect.Top + 3, rect.Width, rect.Height);
         canvas.DrawRoundRect(shadowRect, cr, cr, _tileShadowPaint);
 
-        // Kachel-Hintergrund mit Gradient
-        // Perf: Shader aendert sich pro Kachel (Farbe variiert), nicht cachebar
-        using var bgShader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.Top),
-            new SKPoint(rect.Right, rect.Bottom),
-            new[] { bgColor, bgColor.WithAlpha((byte)(bgColor.Alpha * 0.7f)) },
-            null, SKShaderTileMode.Clamp);
+        // Kachel-Hintergrund mit Gradient — origin-relativer Shader gecacht per (Farbe, Groesse),
+        // Canvas wird vor DrawRoundRect translatiert (analog BlueprintGameRenderer.GetCachedTileBgShader).
+        // Vorher: pro Kachel pro Frame ein neuer SKShader + SKColor[2] (~20 Kacheln × 30fps). bgColor
+        // stammt aus wenigen Zustandsfarben -> der Cache bleibt winzig.
+        var bgShader = GetCachedTileBgShader(rect, bgColor);
+        canvas.Save();
+        canvas.Translate(rect.Left, rect.Top);
         _tileGradientPaint.Shader = bgShader;
-        canvas.DrawRoundRect(rect, cr, cr, _tileGradientPaint);
+        canvas.DrawRoundRect(0, 0, rect.Width, rect.Height, cr, cr, _tileGradientPaint);
         _tileGradientPaint.Shader = null;
+        canvas.Restore();
 
         // Oberer Highlight-Streifen (Glaseffekt) — gecachter Shader + Canvas-Translate
         if (s_tileHighlightShader == null || MathF.Abs(rect.Height - s_cachedTileHeight) > 0.1f)
@@ -1894,6 +1914,11 @@ public sealed class InventGameRenderer : IDisposable
         // Hintergrund-Shader-Cache
         _bgShaderCache?.Dispose();
         _bgShaderCache = null;
+
+        // Tile-Hintergrund-Gradient-Cache (pro Farbe/Groesse)
+        foreach (var shader in _tileBgShaderCache.Values)
+            shader.Dispose();
+        _tileBgShaderCache.Clear();
 
         // Instanz-Paints (dynamische Farben/Shader)
         _bgShaderPaint?.Dispose();

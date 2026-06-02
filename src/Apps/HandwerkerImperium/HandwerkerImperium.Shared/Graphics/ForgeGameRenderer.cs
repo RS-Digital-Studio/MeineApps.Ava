@@ -58,6 +58,9 @@ public sealed class ForgeGameRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     private float _animTime;
+    // Akkumulator fuer den Glut-Partikel-Spawn — frame-rate-unabhaengig statt (_animTime % period < dt),
+    // das bei grossem _animTime durch Float-Praezision driftet und FPS-abhaengig feuert.
+    private float _emberSpawnAccum;
     private float _hammerAnimTime;
     private bool _wasHammering;
     private int _prevHitsCompleted;
@@ -335,6 +338,7 @@ public sealed class ForgeGameRenderer : IDisposable
             _completionTime = 0;
             _sparkCount = 0;
             _smokeCount = 0;
+            _emberSpawnAccum = 0;
         }
 
         float padding = 14;
@@ -403,10 +407,15 @@ public sealed class ForgeGameRenderer : IDisposable
             if (_missFlashTime >= 0.25f) _missFlashTime = -1;
         }
 
-        // Esse-Glut-Partikel spawnen (kontinuierlich)
-        if (isPlaying && _animTime % 0.4f < deltaTime)
+        // Esse-Glut-Partikel spawnen (kontinuierlich, alle 0.4s — frame-rate-unabhaengig via Akkumulator)
+        if (isPlaying)
         {
-            SpawnEmber(bounds, padding, areaTop, areaHeight);
+            _emberSpawnAccum += deltaTime;
+            while (_emberSpawnAccum >= 0.4f)
+            {
+                _emberSpawnAccum -= 0.4f;
+                SpawnEmber(bounds, padding, areaTop, areaHeight);
+            }
         }
     }
 

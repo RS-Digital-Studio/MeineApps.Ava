@@ -416,6 +416,9 @@ public partial class App : Application
         services.AddSingleton<IAutoProductionService, AutoProductionService>();
         // V7 (): Lager-Service mit Slots/Stack-Limits/Reservierung
         services.AddSingleton<IWarehouseService, WarehouseService>();
+        // Lazy-Wrapper bricht den DI-Zirkel CraftingService <-> WarehouseService (WarehouseService
+        // haengt von ICraftingService ab; CraftingService braucht die effektiven Lager-Grenzen).
+        services.AddSingleton(sp => new Lazy<IWarehouseService>(sp.GetRequiredService<IWarehouseService>));
         // V7 (): Material-Markt
         services.AddSingleton<IMarketService, MarketService>();
         // V7 (, Plan Section 3.9): Gilden-Mega-Projekte

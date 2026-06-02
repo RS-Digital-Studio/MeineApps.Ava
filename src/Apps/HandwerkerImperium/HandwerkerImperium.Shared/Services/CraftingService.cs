@@ -21,8 +21,10 @@ public sealed class CraftingService : ICraftingService
     private readonly IResearchService? _research;
     // V7 (-4 Ressourcen-Plan, Section 8.1): Telemetrie-Events fuer Material-Loop.
     private readonly IAnalyticsService? _analytics;
-    // Lock verhindert Race Condition bei schnellem Doppelklick (Materialien doppelt verbraucht)
-    private readonly object _craftingLock = new();
+    // Lazy gegen DI-Zirkel (WarehouseService haengt von ICraftingService ab). Liefert die
+    // effektiven Lager-Grenzen (Logistik-Forschung + Mega-Projekt-Slots) statt der rohen state-Werte,
+    // damit manuelles Crafting dieselben Boni ehrt wie die Auto-Produktion.
+    private readonly Lazy<IWarehouseService>? _warehouse;
     // Gecachter Crafting-Speed-Bonus (Dirty-Flag statt Count-Vergleich)
     private decimal _cachedCraftingSpeedBonus;
     private bool _craftingSpeedCacheDirty = true;
@@ -41,12 +43,14 @@ public sealed class CraftingService : ICraftingService
         IGameStateService gameState,
         IIncomeCalculatorService incomeCalculator,
         IResearchService? research = null,
-        IAnalyticsService? analytics = null)
+        IAnalyticsService? analytics = null,
+        Lazy<IWarehouseService>? warehouse = null)
     {
         _gameState = gameState;
         _incomeCalculator = incomeCalculator;
         _research = research;
         _analytics = analytics;
+        _warehouse = warehouse;
         // Bei State-Wechsel (Prestige/Import/Reset) und Prestige-Shop-Kauf Cache invalidieren
         _gameState.StateLoaded += (_, _) => _craftingSpeedCacheDirty = true;
         _gameState.PrestigeShopPurchased += (_, _) => _craftingSpeedCacheDirty = true;
@@ -62,15 +66,16 @@ public sealed class CraftingService : ICraftingService
 
     public bool StartCrafting(string recipeId)
     {
-        // Lock verhindert Race Condition: Doppelklick könnte Materialien doppelt verbrauchen
-        // wenn Prüfung und Abzug nicht atomar erfolgen
-        lock (_craftingLock)
+        // Rezept finden (read-only, kein Lock noetig)
+        var recipe = CraftingRecipe.GetById(recipeId);
+        if (recipe == null) return false;
+
+        // Alle State-Mutationen (Material-Pruefung + Abzug + Job-Add) atomar unter dem ZENTRALEN
+        // State-Lock. Das schuetzt gleichzeitig gegen Doppelklick UND gegen den AutoSave-Serializer
+        // (Background-Thread, enumeriert CraftingInventory/ActiveCraftingJobs unter demselben Lock).
+        bool started = _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
-
-            // Rezept finden
-            var recipe = CraftingRecipe.GetById(recipeId);
-            if (recipe == null) return false;
 
             // V7: Cross-Workshop-Inputs erst ab Spielerlevel 100. Casual-Spieler brauchen
             // nur eigene Workshop-Inputs (Onboarding-Schutz, siehe Plan Section 5.3).
@@ -89,21 +94,10 @@ public sealed class CraftingService : ICraftingService
                 }
             }
 
-            // V7: Output-Stack-Limit pruefen — kein Crafting starten, wenn das Output
-            // nicht ins Lager passt (sonst Material verschwendet).
-            int currentOutput = state.CraftingInventory.GetValueOrDefault(recipe.OutputProductId, 0);
-            if (currentOutput == 0)
-            {
-                // Neuer Slot noetig
-                int usedSlots = 0;
-                foreach (var kv in state.CraftingInventory)
-                    if (kv.Value > 0) usedSlots++;
-                if (usedSlots >= state.WarehouseSlotCount) return false;
-            }
-            else if (currentOutput + recipe.OutputCount > state.WarehouseStackLimit)
-            {
-                return false; // Stack-Limit wuerde gesprengt
-            }
+            // V7: Output-Stack-/Slot-Limit pruefen — kein Crafting starten, wenn das Output nicht
+            // ins Lager passt (sonst Material verschwendet). Effektive Grenzen via WarehouseService
+            // (Logistik-Forschung + Mega-Projekt-Slots), Fallback auf rohe state-Werte ohne DI.
+            if (!CanStoreOutput(state, recipe.OutputProductId, recipe.OutputCount)) return false;
 
             // V7: Input-Produkte pruefen UND Reservierungen abziehen (atomar im Lock)
             foreach (var (productId, required) in effectiveInputs)
@@ -131,19 +125,39 @@ public sealed class CraftingService : ICraftingService
             if (craftingSpeedBonus > 0)
                 effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
 
-            var job = new CraftingJob
+            state.ActiveCraftingJobs.Add(new CraftingJob
             {
                 RecipeId = recipeId,
                 StartedAt = DateTime.UtcNow,
                 DurationSeconds = effectiveDuration
-            };
+            });
+            return true;
+        });
 
-            state.ActiveCraftingJobs.Add(job);
+        if (started) CraftingUpdated?.Invoke();
+        return started;
+    }
 
+    /// <summary>
+    /// Prueft ob <paramref name="count"/> Einheiten von <paramref name="outputId"/> ins Lager passen.
+    /// Nutzt die effektiven Lager-Grenzen aus <see cref="IWarehouseService"/> (Logistik-Forschung +
+    /// Mega-Projekt-Slots); ohne injizierten WarehouseService Fallback auf die rohen state-Werte.
+    /// Aufrufer muss bereits den State-Lock halten.
+    /// </summary>
+    private bool CanStoreOutput(GameState state, string outputId, int count)
+    {
+        if (_warehouse != null)
+            return _warehouse.Value.CanAddToInventory(outputId, count);
+
+        int current = state.CraftingInventory.GetValueOrDefault(outputId, 0);
+        if (current == 0)
+        {
+            int usedSlots = 0;
+            foreach (var kv in state.CraftingInventory)
+                if (kv.Value > 0) usedSlots++;
+            return usedSlots < state.WarehouseSlotCount;
         }
-
-        CraftingUpdated?.Invoke();
-        return true;
+        return current + count <= state.WarehouseStackLimit;
     }
 
     public void UpdateTimers()
@@ -165,50 +179,52 @@ public sealed class CraftingService : ICraftingService
 
     public bool CollectProduct(string jobId)
     {
-        var state = _gameState.State;
+        string? collectedOutputId = null;
+        int collectedCount = 0;
+        WorkshopType collectedWorkshop = default;
 
-        // Job anhand der eindeutigen JobId finden (nicht RecipeId — bei mehreren gleichen Rezepten sonst falsch)
-        var job = state.ActiveCraftingJobs.FirstOrDefault(j => j.JobId == jobId && j.IsComplete);
-        if (job == null) return false;
-
-        // Rezept nachschlagen für Output
-        var recipe = CraftingRecipe.GetById(job.RecipeId);
-        if (recipe == null) return false;
-
-        // Produkt zum Inventar hinzufügen
-        string outputId = recipe.OutputProductId;
-        int outputCount = recipe.OutputCount;
-
-        // V7: Stack-Limit harter Check — wenn Lager voll, bleibt der Job auf "completed" stehen
-        // bis Spieler Platz schafft. Verhindert Material-Burn nach langer Crafting-Zeit.
-        int currentStock = state.CraftingInventory.GetValueOrDefault(outputId, 0);
-        if (currentStock == 0)
+        // Mutation atomar unter dem State-Lock (schuetzt gegen den AutoSave-Serializer, der
+        // CraftingInventory/ActiveCraftingJobs auf dem Background-Thread enumeriert).
+        bool collected = _gameState.ExecuteWithLock(() =>
         {
-            int usedSlots = 0;
-            foreach (var kv in state.CraftingInventory)
-                if (kv.Value > 0) usedSlots++;
-            if (usedSlots >= state.WarehouseSlotCount) return false; // Lager voll
-        }
-        else if (currentStock + outputCount > state.WarehouseStackLimit)
-        {
-            return false; // Stack-Limit
-        }
+            var state = _gameState.State;
 
-        if (state.CraftingInventory.ContainsKey(outputId))
-            state.CraftingInventory[outputId] += outputCount;
-        else
-            state.CraftingInventory[outputId] = outputCount;
+            // Job anhand der eindeutigen JobId finden (nicht RecipeId — bei mehreren gleichen Rezepten sonst falsch)
+            var job = state.ActiveCraftingJobs.FirstOrDefault(j => j.JobId == jobId && j.IsComplete);
+            if (job == null) return false;
 
-        // Job entfernen
-        state.ActiveCraftingJobs.Remove(job);
+            var recipe = CraftingRecipe.GetById(job.RecipeId);
+            if (recipe == null) return false;
 
-        // V7 (-4 Telemetrie, Plan Section 8.1): material_crafted
+            string outputId = recipe.OutputProductId;
+            int outputCount = recipe.OutputCount;
+
+            // V7: Stack-Limit harter Check — wenn Lager voll, bleibt der Job auf "completed" stehen
+            // bis Spieler Platz schafft. Verhindert Material-Burn nach langer Crafting-Zeit.
+            if (!CanStoreOutput(state, outputId, outputCount)) return false;
+
+            if (state.CraftingInventory.ContainsKey(outputId))
+                state.CraftingInventory[outputId] += outputCount;
+            else
+                state.CraftingInventory[outputId] = outputCount;
+
+            state.ActiveCraftingJobs.Remove(job);
+
+            collectedOutputId = outputId;
+            collectedCount = outputCount;
+            collectedWorkshop = recipe.WorkshopType;
+            return true;
+        });
+
+        if (!collected) return false;
+
+        // V7 (-4 Telemetrie, Plan Section 8.1): material_crafted — ausserhalb des Locks
         _analytics?.TrackEvent("material_crafted", new Dictionary<string, object?>
         {
-            ["product_id"] = outputId,
-            ["tier"] = CraftingProduct.GetAllProducts().GetValueOrDefault(outputId)?.Tier ?? 0,
-            ["workshop"] = recipe.WorkshopType.ToString(),
-            ["count"] = outputCount
+            ["product_id"] = collectedOutputId,
+            ["tier"] = CraftingProduct.GetAllProducts().GetValueOrDefault(collectedOutputId!)?.Tier ?? 0,
+            ["workshop"] = collectedWorkshop.ToString(),
+            ["count"] = collectedCount
         });
 
         CraftingUpdated?.Invoke();
@@ -226,36 +242,46 @@ public sealed class CraftingService : ICraftingService
     /// </summary>
     public decimal SellProducts(string productId, int count)
     {
-        var state = _gameState.State;
+        if (count <= 0) return 0m;
 
-        int total = state.CraftingInventory.GetValueOrDefault(productId, 0);
-        int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
-        int sellable = Math.Max(0, total - reserved);
-        if (sellable <= 0 || count <= 0) return 0m;
+        int sellCount = 0;
+        decimal pricePerUnit = 0m;
+        decimal totalRevenue = 0m;
+        int tier = 0;
 
-        var allProducts = CraftingProduct.GetAllProducts();
-        if (!allProducts.TryGetValue(productId, out var product)) return 0m;
+        // Verfuegbarkeits-Pruefung + Inventar-Reduktion atomar unter dem State-Lock (schuetzt
+        // gegen den AutoSave-Serializer der CraftingInventory enumeriert).
+        _gameState.ExecuteWithLock(() =>
+        {
+            var state = _gameState.State;
+            int total = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
+            int sellable = Math.Max(0, total - reserved);
+            if (sellable <= 0) return;
 
-        // Tatsächlich verkaufte Menge
-        int sellCount = Math.Min(count, sellable);
+            var allProducts = CraftingProduct.GetAllProducts();
+            if (!allProducts.TryGetValue(productId, out var product)) return;
 
-        // Skalierenden Preis berechnen
-        decimal pricePerUnit = GetSellPrice(productId);
-        decimal totalRevenue = pricePerUnit * sellCount;
+            sellCount = Math.Min(count, sellable);
+            tier = product.Tier;
+            pricePerUnit = GetSellPrice(productId);
+            totalRevenue = pricePerUnit * sellCount;
 
-        // Inventar reduzieren
-        state.CraftingInventory[productId] -= sellCount;
-        if (state.CraftingInventory[productId] <= 0)
-            state.CraftingInventory.Remove(productId);
+            state.CraftingInventory[productId] -= sellCount;
+            if (state.CraftingInventory[productId] <= 0)
+                state.CraftingInventory.Remove(productId);
+        });
 
-        // Geld gutschreiben
+        if (sellCount <= 0) return 0m;
+
+        // Geld gutschreiben + Telemetrie ausserhalb des Locks
         _gameState.AddMoney(totalRevenue);
 
         // V7 (-4 Telemetrie, Plan Section 8.1): material_sold
         _analytics?.TrackEvent("material_sold", new Dictionary<string, object?>
         {
             ["product_id"] = productId,
-            ["tier"] = product.Tier,
+            ["tier"] = tier,
             ["count"] = sellCount,
             ["price_per_unit"] = (double)pricePerUnit,
             ["total_revenue"] = (double)totalRevenue,

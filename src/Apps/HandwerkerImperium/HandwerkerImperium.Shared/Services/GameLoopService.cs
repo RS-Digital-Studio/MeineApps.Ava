@@ -295,12 +295,16 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         {
             _lastAppliedSpecialEffectId = currentEventId;
 
-            // WorkerStrike: Alle Worker-Stimmungen um 20 senken (einmalig)
+            // WorkerStrike: Alle Worker-Stimmungen um 20 senken (einmalig).
+            // Unter dem State-Lock — sonst racet die Worker-Enumeration mit dem AutoSave-Serializer.
             if (eventEffects?.SpecialEffect == "mood_drop_all_20")
             {
-                foreach (var ws in state.Workshops)
-                foreach (var worker in ws.Workers)
-                    worker.Mood = Math.Max(0m, worker.Mood - 20m);
+                _gameStateService.ExecuteWithLock(() =>
+                {
+                    foreach (var ws in state.Workshops)
+                    foreach (var worker in ws.Workers)
+                        worker.Mood = Math.Max(0m, worker.Mood - 20m);
+                });
             }
 
             // Event-ReputationChange anwenden (einmalig bei Event-Start)
@@ -308,8 +312,11 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
             {
                 // v2.0.37: Tier-Wechsel erkennen + Event firen.
                 var tierBefore = state.Reputation.CurrentTier;
-                state.Reputation.ReputationScore = Math.Clamp(
-                    state.Reputation.ReputationScore + (int)eventEffects.ReputationChange, 0, 100);
+                _gameStateService.ExecuteWithLock(() =>
+                {
+                    state.Reputation.ReputationScore = Math.Clamp(
+                        state.Reputation.ReputationScore + (int)eventEffects.ReputationChange, 0, 100);
+                });
                 if (_gameStateService is GameStateService gss)
                     gss.RaiseReputationTierChangedIfNeeded(tierBefore);
             }
@@ -356,28 +363,33 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         }
 
         // 6. Track earnings per workshop
-        // Workers.Count > 0 als Guard statt GrossIncomePerSecond > 0 (vermeidet LINQ .Sum() pro Tick)
-        foreach (var ws in state.Workshops)
+        // Workers.Count > 0 als Guard statt GrossIncomePerSecond > 0 (vermeidet LINQ .Sum() pro Tick).
+        // Unter dem State-Lock — die Workshop-/Worker-Enumeration + decimal-Schreibzugriffe (TotalEarned)
+        // racen sonst mit dem AutoSave-Serializer (torn Decimal-Reads / "Collection was modified").
+        _gameStateService.ExecuteWithLock(() =>
         {
-            if (ws.Workers.Count > 0)
+            foreach (var ws in state.Workshops)
             {
-                var grossInc = ws.GrossIncomePerSecond;
-                if (grossInc > 0)
+                if (ws.Workers.Count > 0)
                 {
-                    // TotalEarned trackt absichtlich das Roh-Einkommen (GrossIncomePerSecond)
-                    // pro Workshop, OHNE globale Multiplikatoren (Events, Prestige, Rush etc.).
-                    // So bleibt die Workshop-Statistik vergleichbar und inflationsfrei.
-                    ws.TotalEarned += grossInc;
-                    for (int wi = 0; wi < ws.Workers.Count; wi++)
+                    var grossInc = ws.GrossIncomePerSecond;
+                    if (grossInc > 0)
                     {
-                        var worker = ws.Workers[wi];
-                        if (!worker.IsWorking) continue;
-                        // LevelFitFactor beruecksichtigen (Workshop-Level-Malus fuer niedrige Tiers)
-                        worker.TotalEarned += ws.BaseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
+                        // TotalEarned trackt absichtlich das Roh-Einkommen (GrossIncomePerSecond)
+                        // pro Workshop, OHNE globale Multiplikatoren (Events, Prestige, Rush etc.).
+                        // So bleibt die Workshop-Statistik vergleichbar und inflationsfrei.
+                        ws.TotalEarned += grossInc;
+                        for (int wi = 0; wi < ws.Workers.Count; wi++)
+                        {
+                            var worker = ws.Workers[wi];
+                            if (!worker.IsWorking) continue;
+                            // LevelFitFactor beruecksichtigen (Workshop-Level-Malus fuer niedrige Tiers)
+                            worker.TotalEarned += ws.BaseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
+                        }
                     }
                 }
             }
-        }
+        });
 
         // 7. Update worker states (mood, fatigue, XP)
         // _workerService + _researchService sind non-nullable — kein ?.

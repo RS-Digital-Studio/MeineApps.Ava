@@ -14,9 +14,10 @@ public sealed class WarehouseService : IWarehouseService
     private readonly ICraftingService _crafting;
     private readonly IResearchService? _research;
     private readonly IAnalyticsService? _analytics;
-    // Lock verhindert Race zwischen AddToInventory (Auto-Production) und Reservation
-    // (Order-Annahme aus UI). Inventar wuerde sonst in Dictionary inkonsistent.
-    private readonly object _warehouseLock = new();
+    // Kein eigener Lock mehr: ALLE Mutationen + enumerierenden Reads von CraftingInventory/
+    // ReservedInventory laufen ueber _gameState.ExecuteWithLock (= zentraler _stateLock). Nur so
+    // schliessen sie gegen den AutoSave-Serializer aus (der unter demselben Lock serialisiert) —
+    // ein separater Lock garantierte keinen gegenseitigen Ausschluss ("Collection was modified").
 
     public event Action? InventoryChanged;
     public event Action<WorkshopType, string>? WorkshopPaused;
@@ -73,16 +74,13 @@ public sealed class WarehouseService : IWarehouseService
         }
     }
 
-    public int UsedSlotCount
+    public int UsedSlotCount => _gameState.ExecuteWithLock(() =>
     {
-        get
-        {
-            int used = 0;
-            foreach (var kv in _gameState.State.CraftingInventory)
-                if (kv.Value > 0) used++;
-            return used;
-        }
-    }
+        int used = 0;
+        foreach (var kv in _gameState.State.CraftingInventory)
+            if (kv.Value > 0) used++;
+        return used;
+    });
 
     public int FreeSlotCount => Math.Max(0, EffectiveSlotCount - UsedSlotCount);
 
@@ -115,7 +113,7 @@ public sealed class WarehouseService : IWarehouseService
 
     public int MaxSlotCount => MaxSlots;
 
-    public decimal GetTotalWarehouseValue()
+    public decimal GetTotalWarehouseValue() => _gameState.ExecuteWithLock(() =>
     {
         decimal total = 0m;
         foreach (var (productId, count) in _gameState.State.CraftingInventory)
@@ -124,21 +122,24 @@ public sealed class WarehouseService : IWarehouseService
             total += _crafting.GetSellPrice(productId) * count;
         }
         return total;
-    }
+    });
 
     public bool CanAddToInventory(string productId, int count)
     {
         if (count <= 0) return true;
-        var state = _gameState.State;
-        int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
-        int effectiveLimit = CurrentStackLimit;
+        return _gameState.ExecuteWithLock(() =>
+        {
+            var state = _gameState.State;
+            int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            int effectiveLimit = CurrentStackLimit;
 
-        // Bereits belegter Slot: nur Stack-Limit pruefen
-        if (current > 0)
-            return current + count <= effectiveLimit;
+            // Bereits belegter Slot: nur Stack-Limit pruefen
+            if (current > 0)
+                return current + count <= effectiveLimit;
 
-        // Neuer Slot: Slot-Limit pruefen
-        return FreeSlotCount > 0 && count <= effectiveLimit;
+            // Neuer Slot: Slot-Limit pruefen
+            return FreeSlotCount > 0 && count <= effectiveLimit;
+        });
     }
 
     public int AddToInventory(string productId, int count, WorkshopType? sourceWorkshop = null)
@@ -149,7 +150,10 @@ public sealed class WarehouseService : IWarehouseService
         int overflow;
         bool slotBlocked; // True wenn kein Slot belegbar — Auto-Verkauf greift trotzdem
 
-        lock (_warehouseLock)
+        int capturedAdded = 0;
+        int capturedOverflow = 0;
+        bool capturedBlocked = false;
+        _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
@@ -157,22 +161,25 @@ public sealed class WarehouseService : IWarehouseService
             // Slot-Pruefung: Neuer Material-Typ braucht freien Slot
             if (current == 0 && FreeSlotCount <= 0)
             {
-                actuallyAdded = 0;
-                overflow = count;
-                slotBlocked = true;
+                capturedAdded = 0;
+                capturedOverflow = count;
+                capturedBlocked = true;
             }
             else
             {
                 int effectiveLimit = CurrentStackLimit;
                 int spaceInStack = effectiveLimit - current;
-                actuallyAdded = Math.Max(0, Math.Min(count, spaceInStack));
-                overflow = count - actuallyAdded;
-                slotBlocked = false;
+                capturedAdded = Math.Max(0, Math.Min(count, spaceInStack));
+                capturedOverflow = count - capturedAdded;
+                capturedBlocked = false;
 
-                if (actuallyAdded > 0)
-                    state.CraftingInventory[productId] = current + actuallyAdded;
+                if (capturedAdded > 0)
+                    state.CraftingInventory[productId] = current + capturedAdded;
             }
-        }
+        });
+        actuallyAdded = capturedAdded;
+        overflow = capturedOverflow;
+        slotBlocked = capturedBlocked;
 
         // Outside lock: Auto-Sell + Pause-Event
         if (overflow > 0)
@@ -217,7 +224,7 @@ public sealed class WarehouseService : IWarehouseService
     public bool TryReserve(string productId, int count)
     {
         if (count <= 0) return true;
-        lock (_warehouseLock)
+        bool ok = _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
@@ -225,15 +232,16 @@ public sealed class WarehouseService : IWarehouseService
             if (current - reserved < count) return false;
 
             state.ReservedInventory[productId] = reserved + count;
-        }
-        InventoryChanged?.Invoke();
-        return true;
+            return true;
+        });
+        if (ok) InventoryChanged?.Invoke();
+        return ok;
     }
 
     public bool ConsumeReserved(string productId, int count)
     {
         if (count <= 0) return true;
-        lock (_warehouseLock)
+        bool ok = _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
@@ -249,15 +257,16 @@ public sealed class WarehouseService : IWarehouseService
             state.CraftingInventory[productId] = current - count;
             if (state.CraftingInventory[productId] <= 0)
                 state.CraftingInventory.Remove(productId);
-        }
-        InventoryChanged?.Invoke();
-        return true;
+            return true;
+        });
+        if (ok) InventoryChanged?.Invoke();
+        return ok;
     }
 
     public bool ReleaseReserved(string productId, int count)
     {
         if (count <= 0) return true;
-        lock (_warehouseLock)
+        bool ok = _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
@@ -267,18 +276,19 @@ public sealed class WarehouseService : IWarehouseService
             state.ReservedInventory[productId] = reserved - toRelease;
             if (state.ReservedInventory[productId] <= 0)
                 state.ReservedInventory.Remove(productId);
-        }
-        InventoryChanged?.Invoke();
-        return true;
+            return true;
+        });
+        if (ok) InventoryChanged?.Invoke();
+        return ok;
     }
 
-    public int GetAvailable(string productId)
+    public int GetAvailable(string productId) => _gameState.ExecuteWithLock(() =>
     {
         var state = _gameState.State;
         int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
         int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
         return Math.Max(0, current - reserved);
-    }
+    });
 
     public AutoSellRule GetAutoSellRule(string productId)
     {

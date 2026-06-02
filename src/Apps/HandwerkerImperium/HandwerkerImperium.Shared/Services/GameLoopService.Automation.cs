@@ -113,19 +113,23 @@ public sealed partial class GameLoopService
         if (!state.Automation.AutoAssignWorkers || !_gameStateService.IsAutoAssignUnlocked)
             return;
 
-        // Idle Worker finden (nicht zugewiesen zu einem Workshop)
-        foreach (var ws in state.Workshops)
+        // Unter dem State-Lock — die Workshop-/Worker-Enumeration racet sonst mit dem AutoSave-Serializer.
+        _gameStateService.ExecuteWithLock(() =>
         {
-            if (ws.Workers.Count >= ws.MaxWorkers) continue;
-
-            // AutoAssign: Ruhende Worker mit niedriger Erschoepfung wieder arbeiten lassen
-            foreach (var worker in ws.Workers)
+            // Idle Worker finden (nicht zugewiesen zu einem Workshop)
+            foreach (var ws in state.Workshops)
             {
-                if (worker.IsResting && worker.Fatigue <= 20m)
+                if (ws.Workers.Count >= ws.MaxWorkers) continue;
+
+                // AutoAssign: Ruhende Worker mit niedriger Erschoepfung wieder arbeiten lassen
+                foreach (var worker in ws.Workers)
                 {
-                    worker.IsResting = false;
+                    if (worker.IsResting && worker.Fatigue <= 20m)
+                    {
+                        worker.IsResting = false;
+                    }
                 }
             }
-        }
+        });
     }
 }

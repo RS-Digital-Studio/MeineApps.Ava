@@ -287,11 +287,16 @@ public sealed partial class GameLoopService
         _lastExtraWorkerSlots = totalExtra;
         _lastLevelResistance = levelResistance;
 
-        foreach (var ws in state.Workshops)
+        // Unter dem State-Lock — Workshop-Enumeration + decimal-Schreibzugriff racen sonst mit dem
+        // AutoSave-Serializer.
+        _gameStateService.ExecuteWithLock(() =>
         {
-            ws.ExtraWorkerSlots = totalExtra;
-            ws.LevelResistanceBonus = levelResistance;
-        }
+            foreach (var ws in state.Workshops)
+            {
+                ws.ExtraWorkerSlots = totalExtra;
+                ws.LevelResistanceBonus = levelResistance;
+            }
+        });
     }
 
     /// <summary>

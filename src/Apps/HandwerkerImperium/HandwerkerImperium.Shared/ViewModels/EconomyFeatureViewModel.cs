@@ -421,11 +421,13 @@ internal sealed class EconomyFeatureViewModel
     {
         if (order.RequiredMaterials == null) return;
 
-        // Prüfen ob alle Items vorhanden
+        // Prüfen ob alle Items vorhanden — reservierte Mengen ausschliessen (konsistent mit
+        // CompleteMaterialOrder im Service; sonst Alert-Inkonsistenz bzw. Material-Doppelverwertung).
         var state = _gameStateService.State;
         foreach (var (productId, required) in order.RequiredMaterials)
         {
-            int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            int available = state.CraftingInventory.GetValueOrDefault(productId, 0)
+                          - state.ReservedInventory.GetValueOrDefault(productId, 0);
             if (available < required)
             {
                 // Nicht genug Materialien
@@ -901,9 +903,10 @@ internal sealed class EconomyFeatureViewModel
         {
             int upgradeCount = _host.BulkBuyAmount == 0 ? 10 : _host.BulkBuyAmount; // Max → zeige Preview für ~10 Level
             int targetLevel = Math.Min(workshop.Level + upgradeCount, Workshop.MaxLevel);
-            // Einkommen bei Ziel-Level basierend auf Base-Income-Formel berechnen
-            decimal currentBase = (decimal)Math.Pow(1.02, workshop.Level - 1) * workshop.Type.GetBaseIncomeMultiplier();
-            decimal targetBase = (decimal)Math.Pow(1.02, targetLevel - 1) * workshop.Type.GetBaseIncomeMultiplier();
+            // Einkommen bei Ziel-Level ueber die kanonische Formel (inkl. Meilenstein-Multiplikator);
+            // keine duplizierte Magic-Number 1.02 mehr — sonst driftet die Preview an Meilenstein-Leveln.
+            decimal currentBase = WorkshopFormulas.CalculateBaseIncomePerWorker(workshop.Level, workshop.Type);
+            decimal targetBase = WorkshopFormulas.CalculateBaseIncomePerWorker(targetLevel, workshop.Type);
             // Differenz berücksichtigt nur die Basis (Worker-Effekte skalieren proportional)
             decimal diff = (targetBase - currentBase) * Math.Max(1, workshop.Workers.Count);
             model.UpgradeIncomePreview = diff > 0 ? $"+{MoneyFormatter.FormatPerSecond(diff, 1)}" : "";

@@ -671,10 +671,13 @@ public sealed partial class GameStateService
 
         lock (_stateLock)
         {
-            // Prüfen ob alle Items vorhanden
+            // Prüfen ob alle Items vorhanden — reservierte Mengen (fuer einen akzeptierten
+            // Material-Offer-Auftrag gehalten) sind ausgeschlossen, sonst koennte dasselbe Material
+            // doppelt verwertet werden (MaterialOrder-Reward + Material-Offer-Bonus aus denselben Items).
             foreach (var (productId, required) in order.RequiredMaterials)
             {
-                int available = _state.CraftingInventory.GetValueOrDefault(productId, 0);
+                int available = _state.CraftingInventory.GetValueOrDefault(productId, 0)
+                              - _state.ReservedInventory.GetValueOrDefault(productId, 0);
                 if (available < required) return 0m;
             }
 

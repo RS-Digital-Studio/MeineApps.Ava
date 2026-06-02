@@ -237,9 +237,11 @@ public sealed class AutoProductionService : IAutoProductionService
             if (itemsProduced <= 0) continue;
 
             // V7: Offline-Production darf nicht mehr Items produzieren als ins Lager passen.
-            // Cap = (Stack-Limit - current) wenn Slot existiert, sonst Stack-Limit.
+            // Cap = (effektives Stack-Limit - current). Effektives Limit inkl. Logistik-Forschungs-
+            // Multiplikator (konsistent zum Online-Pfad AddToInventory), sonst Unter-Gutschrift.
             int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
-            int cap = state.WarehouseStackLimit - current;
+            int effectiveStackLimit = _warehouse?.CurrentStackLimit ?? state.WarehouseStackLimit;
+            int cap = effectiveStackLimit - current;
             if (cap <= 0) continue;
             if (itemsProduced > cap) itemsProduced = cap;
 

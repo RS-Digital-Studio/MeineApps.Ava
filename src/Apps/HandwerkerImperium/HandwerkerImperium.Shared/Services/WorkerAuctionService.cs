@@ -145,9 +145,17 @@ public sealed class WorkerAuctionService : IWorkerAuctionService
         AuctionUpdated?.Invoke(fresh);
 
         // Settle wenn die Auktions-Endzeit erreicht ist und Status noch Active war.
+        // Settle ist normalerweise dem Master-Client vorbehalten — sonst koennte ein Nicht-Master
+        // mit leicht veraltetem AllBids-Stand den falschen Gewinner bestimmen und per PUT ein
+        // korrektes Resultat ueberschreiben. Nicht-Master settlen nur als Fallback, wenn die Auktion
+        // deutlich ueberfaellig ist (Master vermutlich offline), damit gelocktes Bietergeld bei
+        // abwesendem Master nicht dauerhaft gebunden bleibt. Neue Gebote nach EndsAt sind ohnehin
+        // abgelehnt (PlaceBidAsync), daher ist das PUT beim Settle konsistent.
         if (fresh.Status == WorkerAuctionStatus.Active && DateTime.UtcNow > fresh.EndsAt)
         {
-            await SettleAsync(fresh).ConfigureAwait(false);
+            bool overdueFallback = DateTime.UtcNow > fresh.EndsAt.AddMinutes(2);
+            if (overdueFallback || await IsMasterClientAsync().ConfigureAwait(false))
+                await SettleAsync(fresh).ConfigureAwait(false);
         }
         else if (fresh.Status == WorkerAuctionStatus.Settled && prevStatus != WorkerAuctionStatus.Settled)
         {

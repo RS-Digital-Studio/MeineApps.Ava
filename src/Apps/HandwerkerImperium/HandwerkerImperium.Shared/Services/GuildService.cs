@@ -606,11 +606,10 @@ public sealed class GuildService : IGuildService, IDisposable
                 return false;
             }
 
-            // Wochenziel-Fortschritt aktualisieren - bei Fehler Rollback
-            if (!await _firebaseService.UpdateAsync($"guilds/{guildId}", new Dictionary<string, object>
-            {
-                ["weeklyProgress"] = guildData.WeeklyProgress + contributionLong
-            }))
+            // Wochenziel-Fortschritt ATOMAR serverseitig erhoehen (statt read-modify-write des
+            // geteilten Keys) — sonst ueberschreiben gleichzeitig spendende Mitglieder ihre Beitraege
+            // gegenseitig (Last-Write-Wins). Bei Fehler Rollback.
+            if (!await _firebaseService.IncrementAsync($"guilds/{guildId}/weeklyProgress", contributionLong))
             {
                 _gameStateService.AddMoney(amount);
                 return false;

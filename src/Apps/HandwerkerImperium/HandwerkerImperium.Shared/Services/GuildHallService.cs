@@ -217,7 +217,18 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
             if (string.IsNullOrEmpty(state.UnlockedAt))
                 state.UnlockedAt = DateTime.UtcNow.ToString("O");
 
-            await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{stateKey}", state);
+            // SetAsync wirft NICHT bei Rule-Rejection/Server-Fehler, sondern gibt false zurueck.
+            // Ohne diese Pruefung wurden die Kosten unbedingt verbucht -> bei abgelehntem Write
+            // (z.B. konkurrierender Upgrade-Abschluss eines anderen Mitglieds auf dem geteilten
+            // Knoten) verliert der Spieler GS+Geld ohne Level-Sprung.
+            if (!await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{stateKey}", state))
+            {
+                if (gsSpent > 0) _gameStateService.AddGoldenScrews(gsSpent, fromPurchase: true);
+                if (moneySpent > 0) _gameStateService.AddMoney(moneySpent);
+                gsSpent = 0;
+                moneySpent = 0;
+                return false;
+            }
 
             // Erfolgreich → kein Rollback nötig
             gsSpent = 0;
@@ -280,11 +291,23 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
 
                 if (now >= until)
                 {
-                    // Upgrade abgeschlossen
+                    // Upgrade abgeschlossen — Level nur lokal uebernehmen wenn der geteilte Write
+                    // akzeptiert wurde. Ein konkurrierender Abschluss eines anderen Mitglieds kann
+                    // den Write ablehnen (Rule data+1); dann lokalen Stand zuruecknehmen und im
+                    // naechsten Tick erneut versuchen (GET zeigt dann den fertigen Stand).
+                    var prevLevel = state.Level;
+                    var prevUpgradingUntil = state.UpgradingUntil;
                     state.Level++;
                     state.UpgradingUntil = "";
-                    await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{key}", state);
-                    anyCompleted = true;
+                    if (await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{key}", state))
+                    {
+                        anyCompleted = true;
+                    }
+                    else
+                    {
+                        state.Level = prevLevel;
+                        state.UpgradingUntil = prevUpgradingUntil;
+                    }
                 }
             }
 

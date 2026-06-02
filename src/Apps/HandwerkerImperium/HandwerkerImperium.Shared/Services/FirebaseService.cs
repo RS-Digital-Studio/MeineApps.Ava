@@ -390,6 +390,26 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
         }
     }
 
+    public async Task<bool> IncrementAsync(string path, long delta)
+    {
+        // Firebase ServerValue increment: der Server addiert delta atomar auf den vorhandenen Wert
+        // (0 falls nicht vorhanden). Race-frei gegen parallele Schreiber, anders als read-modify-write.
+        // Wir adressieren den Parent-Knoten und patchen den letzten Pfad-Segment-Key mit dem Sentinel.
+        int slash = path.LastIndexOf('/');
+        if (slash <= 0 || slash >= path.Length - 1)
+        {
+            _log.Error($"Firebase INCREMENT {path}: ungueltiger Pfad (braucht Parent/Key)");
+            return false;
+        }
+        var parent = path.Substring(0, slash);
+        var key = path.Substring(slash + 1);
+        var sentinel = new Dictionary<string, object>
+        {
+            [key] = new Dictionary<string, object> { [".sv"] = new Dictionary<string, object> { ["increment"] = delta } }
+        };
+        return await UpdateAsync(parent, sentinel).ConfigureAwait(false);
+    }
+
     public async Task<string?> PushAsync<T>(string path, T data)
     {
         try

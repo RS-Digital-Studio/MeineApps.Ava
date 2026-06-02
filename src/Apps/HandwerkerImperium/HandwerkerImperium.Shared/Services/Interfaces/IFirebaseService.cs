@@ -36,6 +36,13 @@ public interface IFirebaseService : IDisposable
     /// <summary>PATCH-Request (Teilweise aktualisieren). Gibt true bei Erfolg zurück, false bei Fehler.</summary>
     Task<bool> UpdateAsync(string path, Dictionary<string, object> updates);
 
+    /// <summary>
+    /// Server-seitiges atomares Increment auf einem einzelnen Zaehler-Knoten (Firebase ServerValue
+    /// increment). Race-frei gegen parallele Schreiber — im Gegensatz zu read-modify-write per
+    /// UpdateAsync. <paramref name="path"/> zeigt direkt auf den Zaehler. Gibt true bei Erfolg zurück.
+    /// </summary>
+    Task<bool> IncrementAsync(string path, long delta);
+
     /// <summary>POST-Request (Neuen Eintrag erstellen, gibt Key zurück).</summary>
     Task<string?> PushAsync<T>(string path, T data);
 

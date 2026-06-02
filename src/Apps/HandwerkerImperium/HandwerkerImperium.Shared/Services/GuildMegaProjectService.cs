@@ -134,13 +134,19 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
         int actualCount = Math.Min(count, stillNeeded);
         if (actualCount <= 0) return false;
 
-        // Spieler-Inventar atomar reduzieren
+        // Spieler-Inventar atomar unter dem State-Lock reduzieren (schuetzt gegen den
+        // AutoSave-Serializer, der CraftingInventory auf dem Background-Thread enumeriert).
         var state = _gameStateService.State;
-        int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
-        if (current < actualCount) return false;
-        state.CraftingInventory[productId] = current - actualCount;
-        if (state.CraftingInventory[productId] <= 0)
-            state.CraftingInventory.Remove(productId);
+        bool deducted = _gameStateService.ExecuteWithLock(() =>
+        {
+            int current = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            if (current < actualCount) return false;
+            state.CraftingInventory[productId] = current - actualCount;
+            if (state.CraftingInventory[productId] <= 0)
+                state.CraftingInventory.Remove(productId);
+            return true;
+        });
+        if (!deducted) return false;
 
         // Donation-Eintrag aktualisieren (lokal, dann PATCH)
         var playerId = _firebase.PlayerId!;
@@ -160,11 +166,17 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
 
         project.Contributions[productId] = alreadyDonated + actualCount;
 
-        // Atomarer PATCH — nur Contributions + Donations-Subpfad, kein Last-Write-Wins.
+        // Atomarer PATCH. contributions/{productId} ist ein GETEILTER Zaehler (mehrere Spender) —
+        // daher serverseitiges Increment statt absolutem read-modify-write-Wert, sonst gehen
+        // gleichzeitige Spenden verloren (Last-Write-Wins). donations/{playerId}/* sind per-Spieler-
+        // Subpfade ohne Konflikt und bleiben absolute Schreibvorgaenge.
         var path = GetFirebasePath(CurrentGuildId);
         var updates = new Dictionary<string, object>
         {
-            [$"contributions/{productId}"] = project.Contributions[productId],
+            [$"contributions/{productId}"] = new Dictionary<string, object>
+            {
+                [".sv"] = new Dictionary<string, object> { ["increment"] = (long)actualCount }
+            },
             [$"donations/{playerId}/playerName"] = playerName,
             [$"donations/{playerId}/totalValue"] = donation.TotalValue,
             [$"donations/{playerId}/itemCount"] = donation.ItemCount,

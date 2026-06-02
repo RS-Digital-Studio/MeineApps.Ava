@@ -7,13 +7,21 @@ using MeineApps.Core.Ava.Services;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// HMAC-SHA256-Signierung von Gilden-relevanten GameState-Werten.
+/// HMAC-SHA256-Signierung mit ZWEI Schluesseln fuer zwei verschiedene Vertrauensgrenzen:
 ///
-/// Signierte Felder: PlayerLevel, TotalPrestigeCount, Money, GoldenScrews, TotalOrdersCompleted.
-/// Diese Werte fliessen in Gilden-Leaderboards und Wochenziele ein.
+/// 1. <b>Lokaler Save-Key</b> (geraete-einzigartig, PackageSalt + Installations-GUID):
+///    Fuer die eigene <see cref="GameState.IntegritySignature"/>. Wird NUR auf demselben Geraet
+///    signiert und verifiziert (Schutz gegen lokales Save-Editing). Felder: PlayerLevel,
+///    TotalPrestigeCount, Money, GoldenScrews, TotalOrdersCompleted.
 ///
-/// Schluessel-Ableitung: HMAC-Key wird pro Geraet aus dem Package-Namen
-/// und einer persistierten Installations-GUID kombiniert. Kein hardcodierter Schluessel.
+/// 2. <b>Geteilter Multiplayer-Key</b> (geraete-uebergreifend identisch, nur PackageSalt):
+///    Fuer <see cref="ComputeStringHmac"/> — Co-op-Auftraege, Auktionen, Mega-Projekte.
+///    Diese Objekte werden von einem Spieler signiert und von ANDEREN Spielern validiert.
+///    Ein geraete-lokaler Key wuerde hier IMMER fehlschlagen (jeder Client haette einen anderen
+///    Key) und damit Co-op/Auktionen/Mega-Projekte zwischen echten Gildenmitgliedern komplett
+///    brechen. Der geteilte Key dient daher als geraete-uebergreifend konsistente Tamper-Evidence-
+///    Pruefsumme; die echte serverseitige Manipulations-Abwehr leisten die Firebase-Rules
+///    (Score-Range, Bid-Monotonie, write-once Claims).
 /// </summary>
 public sealed class GameIntegrityService : IGameIntegrityService
 {
@@ -26,6 +34,7 @@ public sealed class GameIntegrityService : IGameIntegrityService
     private const string PackageSalt = "com.meineapps.handwerkerimperium";
 
     private readonly byte[] _hmacKey;
+    private readonly byte[] _sharedHmacKey;
 
     public GameIntegrityService(IPreferencesService preferences)
     {
@@ -37,9 +46,13 @@ public sealed class GameIntegrityService : IGameIntegrityService
             preferences.Set(PrefKeyInstallationId, installId);
         }
 
-        // HMAC-Schluessel: SHA256(PackageSalt + InstallId)
+        // Lokaler Save-Key: SHA256(PackageSalt + InstallId) — geraete-einzigartig.
         // Ergibt 32 Byte (256 Bit) — optimale Laenge fuer HMAC-SHA256.
         _hmacKey = SHA256.HashData(Encoding.UTF8.GetBytes(PackageSalt + installId));
+
+        // Geteilter Multiplayer-Key: nur aus PackageSalt abgeleitet -> auf allen Geraeten identisch,
+        // sodass per HMAC signierte geteilte Firebase-Objekte cross-client validierbar bleiben.
+        _sharedHmacKey = SHA256.HashData(Encoding.UTF8.GetBytes(PackageSalt + "|shared-guild-hmac-v1"));
     }
 
     /// <inheritdoc/>
@@ -76,8 +89,10 @@ public sealed class GameIntegrityService : IGameIntegrityService
     /// <inheritdoc/>
     public string ComputeStringHmac(string payload)
     {
+        // GETEILTER Key — siehe Klassen-Doku: geteilte Multiplayer-Objekte werden von einem Spieler
+        // signiert und von anderen validiert, daher muss der Key geraete-uebergreifend identisch sein.
         var bytes = Encoding.UTF8.GetBytes(payload ?? string.Empty);
-        using var hmac = new HMACSHA256(_hmacKey);
+        using var hmac = new HMACSHA256(_sharedHmacKey);
         var hash = hmac.ComputeHash(bytes);
         return Convert.ToHexStringLower(hash);
     }

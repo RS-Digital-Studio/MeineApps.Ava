@@ -210,7 +210,7 @@
           ".validate": "newData.isString()"
         },
         "phase": {
-          ".validate": "newData.isString() && (newData.val() == 'attack' || newData.val() == 'defend' || newData.val() == 'endgame')"
+          ".validate": "newData.isString() && (newData.val() == 'attack' || newData.val() == 'defense' || newData.val() == 'evaluation' || newData.val() == 'completed' || newData.val() == 'defend' || newData.val() == 'endgame')"
         }
       }
     },

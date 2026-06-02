@@ -1,9 +1,15 @@
 # SmartMeasure — 3D-Grundstücksvermessung + Gartenplanung
 
-Privates Projekt. Zwei Erfassungsmodi: **RTK-GPS-Stab** (±2 cm, DIY-Hardware) und
-**AR-Kamera** (±5–50 cm, Samsung Galaxy S25 Ultra). Man geht durch den Garten, setzt
-Punkte, zeichnet Konturen → 3D-Geländemodell + 2D-Gartenplan. Export nach Blender,
-GeoJSON, DXF, KMZ, CSV, PDF. Nicht im Play Store.
+Privates Projekt. Zwei Erfassungsmodi: **AR-Kamera** (±5–50 cm, primär, ohne Hardware) und
+optional **RTK-GPS-Stab** (±2 cm, DIY-Hardware). Man geht durch den Garten, setzt Punkte,
+zeichnet Konturen → 3D-Geländemodell + 2D-Gartenplan. Export nach Blender, GeoJSON, DXF,
+KMZ, CSV, PDF. Nicht im Play Store.
+
+**AR-First (Default):** Die App wird vorwiegend mit der AR-Kamera OHNE RTK-Stab genutzt und
+startet daher im reinen AR-Modus — die gesamte RTK-Hardware-UI (Live-Kompass, BLE-Tab,
+Stab-Einstellungen, Stakeout) ist ausgeblendet, bis erstmals ein Stab verbunden wird. Danach
+merkt sich die App das (Preference) und zeigt die Hardware-UI dauerhaft. Steuerung über
+`IHardwareModeService` (siehe Abschnitt "Adaptiver Betriebsmodus").
 
 | Aspekt | Wert |
 |--------|------|
@@ -94,6 +100,7 @@ src/Apps/SmartMeasure/
 | Service | Aufgabe |
 |---------|---------|
 | `IAppPaths` | Plattform-abstrahierte Pfade (Android: `Context.FilesDir`, Desktop: `ApplicationData`) |
+| `IHardwareModeService` | Adaptiver Betriebsmodus AR-First vs RTK. `ShowRtkUi` = aktuell verbunden ODER je verbunden (Preference `sm.has_ever_connected_ble`). `Changed`-Event (BLE-Thread). `ResetToArMode()`. |
 | `IBleService` | BLE-Kommunikation zum Rover-Stab (plattform-spezifisch) |
 | `MockBleService` | Simuliert RTK-Daten + Edge-Cases für Desktop-Entwicklung |
 | `IArCaptureService` | AR-Kamera-Erfassung (Android: ARCore, Desktop: Mock) |
@@ -123,6 +130,33 @@ src/Apps/SmartMeasure/
 ---
 
 ## Architektur-Patterns
+
+### Adaptiver Betriebsmodus (AR-First)
+
+`IHardwareModeService` (Singleton) ist die zentrale Quelle für `ShowRtkUi`. Er hört auf
+`IBleService.StateChanged`, persistiert die Erst-Verbindung und feuert `Changed` (vom
+BLE-Background-Thread → Konsumenten marshallen via `Dispatcher.UIThread.Post`).
+
+```
+ShowRtkUi = IsConnected || HasEverConnectedBle   // sonst reiner AR-Modus
+```
+
+`MainViewModel`, `SurveyViewModel`, `SettingsViewModel` injizieren den Service und binden
+gegen `ShowRtkUi` / `!ShowRtkUi`:
+
+| View | AR-Modus (`!ShowRtkUi`) | RTK-Modus (`ShowRtkUi`) |
+|------|-------------------------|--------------------------|
+| MainView Status-Bar | schlanke Marken-Leiste + AR-Chip | volle Hardware-Bar (BLE/Fix/Sat/Akku) |
+| MainView Tab-Bar (`UniformGrid Rows="1"`) | 6 Tabs (BLE + Abstecken aus) | 8 Tabs |
+| SurveyView | AR-Hero-CTA + ehrlicher ±5-50cm-Hinweis + Live-Statistik | Kompass/Position/PUNKT-Button |
+| SettingsView | "RTK-Stab verbinden"-Einstieg | Stab-Optionen + "Zurück zum AR-Modus" |
+
+Wichtig: `UniformGrid Rows="1"` verteilt nur **sichtbare** Kinder — versteckte Tabs (BLE,
+Abstecken via `IsVisible="{Binding ShowRtkUi}"`) hinterlassen keine Lücke. Der Connect-Screen
+bleibt per `Navigate("Connect")` erreichbar, auch wenn sein Tab-Button ausgeblendet ist
+(Settings → `ConnectRtkStickCommand`). Der `PUNKT`-Button ist `IsEnabled="{Binding IsBleConnected}"`
+(vorher totes Steuerelement ohne Stab); die Punkte-Liste + Statistik wird aus
+`IMeasurementService.PointAdded/PointsReset` gespeist, damit AR-Punkte ebenso erscheinen.
 
 ### IAppPaths-Pattern (Android-Sandbox-Fix)
 
@@ -337,7 +371,10 @@ FrameLayout
 │   ├── ArBackgroundRenderer   Vertex+Fragment Shader für Camera-Textur
 │   └── IRenderer.OnDrawFrame  Session.Update() → Frame → Projektion
 ├── ArPointOverlayView     Transparenter Canvas (Punkte, Linien, Auswahl)
-└── Native Toolbar          Buttons (Punkt, Linie, Schließen, Undo, Redo, Löschen, Screenshot, ?, Fertig)
+└── Native Toolbar          7 Icon+Label-Buttons (VectorDrawables Resources/drawable/ic_ar_*):
+                            Punkt · Fläche · Schließen · Zurück · Vor · Mehr · Fertig.
+                            "Mehr" = PopupMenu (Maßband, Tachymeter, Abstecken, Löschen,
+                            Screenshot, Aufnahme, Hilfe). KEINE Emojis/Unicode als UI-Text.
 ```
 
 ### partial class Aufteilung
@@ -474,8 +511,14 @@ confidence =
 | AR Contour | #00BCD4 | Cyan — Kontur-Linien |
 | AR Active | #FFEB3B | Gelb — Aktive Kontur, gestrichelt |
 | AR Selected | #00BCD4 | Cyan — Ausgewählter Punkt, Glow |
+| ConfidenceHigh/Mid/Low | #4CAF50/#FFC107/#FF7043 | AR-Punkt-Konfidenz in der Punkte-Liste |
+| ArHeroGradient | #00BCD4→#2196F3 | AR-Kamera-Hero-CTA (SurveyView) |
 | Background | #1A1A2E | Dunkelblau |
 | Surface | #16213E | |
+
+Token-Definitionen in `Themes/AppPalette.axaml` (Brushes `ArContourBrush`, `ArActiveBrush`,
+`ConfidenceHigh/Mid/LowBrush`, `ArHeroGradientBrush`). AR-Overlay zeichnet weiter mit eigenen
+SKColor-Konstanten (native Activity ohne Avalonia-Theme-Zugriff).
 
 ---
 
@@ -527,6 +570,10 @@ confidence =
 | CSV-Labels mit `;` / Newline | RFC 4180 Quote-Escape in `ExportService.EscapeCsv` |
 | GardenPlanService.CalculatePolygonArea in Lat/Lon | Plausibilitäts-Check: wenn |x| < 180 && |y| < 90 → Warning + 0 |
 | FileProvider fehlt für Share-Intents | `<provider>` im Manifest + `Resources/xml/provider_paths.xml` |
+| AR-Transfer ohne GPS-Referenz → Exception, Messung verloren | `ArTransferService` setzt Fallback-Ursprung (Projekt-Schwerpunkt/Default); Maße bleiben translation-invariant korrekt |
+| AR-Confidence ging beim Transfer verloren | `arPoint.Confidence` → `SurveyPoint.Confidence` (RTK = 1.0); Anzeige in Punkte-Liste |
+| `Android.Content.Res` in `SmartMeasure.Android`-Namespace → CS0234 | `global::Android.Content.Res.…` (Namespace-Kollision App vs Android-SDK) |
+| `MockBleService` startet disconnected → Desktop zeigt AR-First-Modus | gewollt; RTK-UI via Settings → "RTK-Stab verbinden" → Connect-Screen testbar |
 | Blender Y/Z-Swap → falsche Normalen | Kein Swap — UTM-Koords sind bereits Blender-Standard (Z-up) |
 | Fan-Triangulation kaputt bei konkaven Polygonen | Ear-Clipping in `BlenderExportService` |
 | SurveyView-Handler akkumulieren | Handler-Dedup: `-=` vor `+=` in `DataContextChanged` |

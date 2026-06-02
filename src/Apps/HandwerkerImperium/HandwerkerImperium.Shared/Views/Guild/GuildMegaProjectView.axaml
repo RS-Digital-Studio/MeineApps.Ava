@@ -9,7 +9,7 @@
 
   <ScrollViewer VerticalScrollBarVisibility="Auto"
                 AutomationProperties.AutomationId="GuildBuildSite_Scroll">
-    <StackPanel Spacing="12" Margin="16,16,16,32">
+    <StackPanel Spacing="12" Margin="16,16,16,84">
 
       <!-- HEADER -->
       <Border Classes="CardElevated" CornerRadius="12" Padding="14">
@@ -136,19 +136,19 @@
                   </Grid>
 
                   <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="6">
-                    <Button Grid.Column="0" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="32"
+                    <Button Grid.Column="0" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="44"
                             IsEnabled="{Binding CanDonate}"
                             Command="{Binding $parent[ItemsControl].((vm:GuildMegaProjectViewModel)DataContext).Donate1Command}"
                             CommandParameter="{Binding}">
                       <TextBlock Text="{loc:Translate Donate1}" FontSize="11" FontWeight="SemiBold" />
                     </Button>
-                    <Button Grid.Column="1" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="32"
+                    <Button Grid.Column="1" Classes="Text" Padding="6,4" CornerRadius="6" MinHeight="44"
                             IsEnabled="{Binding CanDonate}"
                             Command="{Binding $parent[ItemsControl].((vm:GuildMegaProjectViewModel)DataContext).Donate10Command}"
                             CommandParameter="{Binding}">
                       <TextBlock Text="{loc:Translate Donate10}" FontSize="11" FontWeight="SemiBold" />
                     </Button>
-                    <Button Grid.Column="2" Classes="Primary" Padding="6,4" CornerRadius="6" MinHeight="32"
+                    <Button Grid.Column="2" Classes="Primary" Padding="6,4" CornerRadius="6" MinHeight="44"
                             IsEnabled="{Binding CanDonate}"
                             Command="{Binding $parent[ItemsControl].((vm:GuildMegaProjectViewModel)DataContext).DonateAllCommand}"
                             CommandParameter="{Binding}">

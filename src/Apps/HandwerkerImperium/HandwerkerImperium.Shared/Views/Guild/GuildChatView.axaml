@@ -103,7 +103,9 @@
     <!-- ================================================================= -->
     <!-- EINGABE                                                           -->
     <!-- ================================================================= -->
-    <Border Grid.Row="2" Padding="12,8"
+    <!-- Bottom-Margin 64dp: der native AdMob-Banner liegt als Overlay ~64dp ueber dem Bildschirm-
+         rand und wuerde sonst die Eingabeleiste + Send-Button verdecken. -->
+    <Border Grid.Row="2" Padding="12,8" Margin="0,0,0,64"
             Background="{DynamicResource SurfaceBrush}"
             BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource BorderBrush}">

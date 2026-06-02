@@ -146,21 +146,21 @@
 
               <!-- Zeile 3: Action-Buttons -->
               <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="6">
-                <Button Grid.Column="0" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="32"
+                <Button Grid.Column="0" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="44"
                         IsEnabled="{Binding CanSell}"
                         Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.SellOneCommand}"
                         CommandParameter="{Binding}"
                         AutomationProperties.AutomationId="Imperium_Btn_Sell1">
                   <TextBlock Text="{loc:Translate Sell1}" FontSize="11" FontWeight="SemiBold" />
                 </Button>
-                <Button Grid.Column="1" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="32"
+                <Button Grid.Column="1" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="44"
                         IsEnabled="{Binding CanSell}"
                         Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.SellTenCommand}"
                         CommandParameter="{Binding}"
                         AutomationProperties.AutomationId="Imperium_Btn_Sell10">
                   <TextBlock Text="{loc:Translate Sell10}" FontSize="11" FontWeight="SemiBold" />
                 </Button>
-                <Button Grid.Column="2" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="32"
+                <Button Grid.Column="2" Classes="Text" Padding="8,4" CornerRadius="6" MinHeight="44"
                         IsEnabled="{Binding CanSell}"
                         Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.SellAllOfSlotCommand}"
                         CommandParameter="{Binding}"
@@ -169,7 +169,7 @@
                 </Button>
 
                 <ToggleButton Grid.Column="4"
-                              MinHeight="32" Padding="8,4" CornerRadius="6"
+                              MinHeight="44" Padding="8,4" CornerRadius="6"
                               IsChecked="{Binding AutoSellEnabled, Mode=OneWay}"
                               Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).WarehouseVM.ToggleAutoSellCommand}"
                               CommandParameter="{Binding}"

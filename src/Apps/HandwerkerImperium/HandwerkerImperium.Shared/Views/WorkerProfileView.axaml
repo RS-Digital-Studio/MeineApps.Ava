@@ -54,7 +54,7 @@
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
       <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
-      <StackPanel Spacing="16" Margin="16,16,16,24">
+      <StackPanel Spacing="16" Margin="16,16,16,84">
 
         <!-- ============================================================= -->
         <!-- WORKER INFO CARD                                              -->

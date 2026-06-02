@@ -1,7 +1,7 @@
 # HandwerkerImperium.Android — Android-Host
 
 Android-Einstiegsprojekt (`net10.0-android`). Hostet das Shared-Projekt via Avalonia-12-Lifecycle.
-**Werbe-App** → referenziert `MeineApps.Core.Premium.Ava` (AdMob Banner + Rewarded + Google Play Billing).
+**Werbe-App** → referenziert `MeineApps.Core.Premium.Ava` (AdMob Rewarded + Google Play Billing; **kein Banner**).
 Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 
 ---
@@ -37,8 +37,7 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 - POST_NOTIFICATIONS Runtime-Permission anfordern (Android 13+ / API 33)
 - `_mainVm = App.Services.GetService<MainViewModel>()` → `ExitHintRequested` → Toast
 - `EnableImmersiveMode()`
-- `AdMobHelper.Initialize(this, callback)`:
-  - Banner-Ad: `_adMobHelper.AttachToActivity(this, BannerAdUnitId, adService, purchaseService, 64)`
+- `AdMobHelper.Initialize(this, callback)` (nur SDK-Initialisierung, **kein Banner** mehr):
   - Rewarded-Ad vorladen: `golden_screws` (häufigster Daily-Trigger) + `offline_double` (App-Start-Trigger)
   - `AdMobHelper.RequestConsent(this)` (GDPR EU-Consent-Form)
 
@@ -48,9 +47,9 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 
 | Methode | Was passiert |
 |---------|-------------|
-| `OnResume` | `_adMobHelper?.Resume()`, `_mainVm?.ResumeGameLoop()`, `EnableImmersiveMode()` |
-| `OnPause` | `_mainVm?.PauseGameLoopAsync().GetAwaiter().GetResult()` (synchron — verhindert Datenverlust bei OS-Kill), `_adMobHelper?.Pause()` |
-| `OnDestroy` | `App.DisposeServices()`, `_rewardedAdHelper?.Dispose()`, `_adMobHelper?.Dispose()` |
+| `OnResume` | `_mainVm?.ResumeGameLoop()`, `EnableImmersiveMode()` |
+| `OnPause` | `_mainVm?.PauseGameLoopAsync().GetAwaiter().GetResult()` (synchron — verhindert Datenverlust bei OS-Kill) |
+| `OnDestroy` | `App.DisposeServices()`, `_rewardedAdHelper?.Dispose()` |
 | `OnWindowFocusChanged` | `EnableImmersiveMode()` bei `hasFocus` (stellt Fullscreen nach Overlay-Fenstern wieder her) |
 
 **PauseGameLoopAsync synchron blockieren** ist bewusst: Android kann die App nach OnPause sofort
@@ -99,7 +98,6 @@ innere Klasse `ReviewRequestListener` (implementiert `Android.Gms.Tasks.IOnCompl
 | Theme | `@style/MyTheme.NoActionBar` |
 | ConfigChanges | `Orientation | ScreenSize | UiMode` |
 | Permissions | `INTERNET`, `RECEIVE_BOOT_COMPLETED`, `POST_NOTIFICATIONS`, `VIBRATE`, AdMob/Billing |
-| Ad-Banner-Höhe | 64 dp (sicherer Spacer für Adaptive Banner) |
 
 ---
 
@@ -108,8 +106,8 @@ innere Klasse `ReviewRequestListener` (implementiert `Android.Gms.Tasks.IOnCompl
 Android-spezifische Klassen werden per `<Compile Include="..." Link="..." />` ins Android-Projekt eingebunden:
 - `AndroidRewardedAdService.cs` — Rewarded Ads, 13 Placements
 - `AndroidPurchaseService.cs` — Google Play Billing v8
-- `AdMobHelper.cs` — Banner-Ad-Verwaltung
 - `RewardedAdHelper.cs` — Rewarded-Ad-Loading + Callback
+- (`AdMobHelper.cs` wird nur noch fuer `Initialize`/`RequestConsent` genutzt — kein Banner mehr)
 
 Details → [MeineApps.Core.Premium.Ava](../../../Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md).
 

@@ -27,7 +27,6 @@ namespace HandwerkerImperium;
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity
 {
-    private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
 
@@ -115,11 +114,8 @@ public class MainActivity : AvaloniaMainActivity
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>
         {
-            // Banner-Ad Layout vorbereiten und laden
-            _adMobHelper = new AdMobHelper();
-            var adService = App.Services.GetRequiredService<IAdService>();
-            var purchaseService = App.Services.GetRequiredService<IPurchaseService>();
-            _adMobHelper.AttachToActivity(this, AdConfig.GetBannerAdUnitId("HandwerkerImperium"), adService, purchaseService, 64);
+            // Kein Banner mehr — HandwerkerImperium monetarisiert ausschliesslich ueber Rewarded Ads.
+            // (Banner-Wiring entfernt; AdMobHelper.Initialize bleibt fuer die SDK-Initialisierung.)
 
             // Rewarded Ad vorladen: Default = golden_screws (haeufigster Daily-Trigger)
             _rewardedAdHelper!.Load(this, AdConfig.GetRewardedAdUnitId("HandwerkerImperium", "golden_screws"));
@@ -134,7 +130,6 @@ public class MainActivity : AvaloniaMainActivity
     protected override void OnResume()
     {
         base.OnResume();
-        _adMobHelper?.Resume();
         _mainVm?.ResumeGameLoop();
 
         // Immersive Mode nach Resume wiederherstellen (z.B. nach Ad-Anzeige)
@@ -147,7 +142,6 @@ public class MainActivity : AvaloniaMainActivity
         // Offline-Earnings verloren (basieren auf LastPlayedAt). PauseGameLoopAsync nutzt
         // durchgehend ConfigureAwait(false), daher kein UI-Thread-Deadlock beim GetResult().
         _mainVm?.PauseGameLoopAsync().GetAwaiter().GetResult();
-        _adMobHelper?.Pause();
         base.OnPause();
     }
 
@@ -253,7 +247,6 @@ public class MainActivity : AvaloniaMainActivity
         App.DisposeServices();
 
         _rewardedAdHelper?.Dispose();
-        _adMobHelper?.Dispose();
         base.OnDestroy();
     }
 }

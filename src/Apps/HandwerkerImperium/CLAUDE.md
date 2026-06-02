@@ -6,7 +6,7 @@ forschen, Gilden beitreten. Idle-Einkommen läuft passiv weiter, Mini-Games brin
 | Aspekt | Wert |
 |--------|------|
 | Package-ID | com.meineapps.handwerkerimperium |
-| Ads | Banner + Rewarded (13 Placements) |
+| Ads | Rewarded (13 Placements, kein Banner) |
 | Premium | 4,99 EUR Lifetime |
 
 Für generische Build-Befehle, Conventions und Architektur: [Haupt-CLAUDE.md](../../../CLAUDE.md)

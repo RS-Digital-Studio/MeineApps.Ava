@@ -13,16 +13,19 @@ dem Splash-Screen Progress-Updates liefert.
 
 ---
 
-## Pipeline-Schritte (parallel wo möglich)
+## Pipeline-Schritte (3 Schritte, parallel wo möglich)
 
 Die Pipeline wird in `App.axaml.cs → RunLoadingAsync()` ausgeführt:
 
-1. **GameAssetService Preload** — häufig benötigte WebP-Bitmaps vorladen (Workshop-Karten, Meister Hans, Worker-Avatare)
-2. **SkSL-Shader kompilieren** — `GameJuiceEngine`-Shader vorkompilieren (verhindert Hitch beim ersten Render)
-3. **Icons initialisieren** — `GameIconRenderer`-Cache aufbauen
-4. **Purchases initialisieren** — `IPurchaseService.InitializeAsync()` (Google Play Billing)
-5. **RemoteConfig laden** — `IRemoteConfigService.InitializeAsync()` (App funktioniert mit Defaults auch ohne Netz)
-6. **DailyBundle prüfen** — `IDailyBundleService.CheckAsync()`
+1. **Shader + ViewModel + Icons + Portraits** (Gewicht 40, parallel) — `ShaderPreloader.PreloadAll()`
+   (Task.Run), MainViewModel-Graph-Konstruktion (`Dispatcher.UIThread.InvokeAsync` — UI-Thread!),
+   alle 224 Bitmap-Icons (`GameIcon.PreloadAllAsync`), 20 Worker-Portraits (`IGameAssetService.PreloadAsync`).
+2. **GameInit** (Gewicht 35) — `MainViewModel.InitializeAsync()` (Spielstand laden, Orders, Rewards),
+   danach `IPurchaseService.InitializeAsync()` (Google Play Billing — nach SanitizeState, damit
+   RestorePurchases den echten Premium-Status wiederherstellt).
+3. **RemoteConfig + DailyBundle** (Gewicht 5) — `IRemoteConfigService.InitializeAsync()` mit 5s-Timeout
+   (App läuft mit Defaults auch ohne Netz), danach `IDailyBundleService.InitializeAsync()`; bei Timeout
+   übernimmt ein deferred `ContinueWith`-Hook die Bundle-Init nach erfolgreichem Fetch.
 
 ---
 
@@ -32,8 +35,11 @@ Die Pipeline wird in `App.axaml.cs → RunLoadingAsync()` ausgeführt:
 (800ms). Dies stellt sicher dass die Splash-Animation sichtbar ist auch wenn die Pipeline
 schneller als 800ms abgeschlossen ist. Der Wert liegt in `GameBalanceConstants` — nicht hardcoded.
 
-## Gotcha — Kein ViewModel im Pipeline-Code
+## Gotcha — MainViewModel-Konstruktion nur auf dem UI-Thread
 
-Die Pipeline darf KEINEN `MainViewModel` oder andere ViewModels auflösen. Diese werden
-erst nach der Pipeline in `RunLoadingAsync` aufgelöst und als DataContext gesetzt.
-Services (Singleton) können in der Pipeline frei genutzt werden.
+Die Pipeline löst den `MainViewModel` **by-design** auf (Schritt 1 baut den Graphen, Schritt 2 ruft
+`InitializeAsync()` — übernimmt was früher in `MainViewModel.InitializeAsync()` lag). Die Auflösung
+MUSS über `Dispatcher.UIThread.InvokeAsync(...)` laufen, NICHT über `Task.Run`: VM-Ctors erzeugen
+UI-thread-affine Objekte (`SolidColorBrush`), `DispatcherTimer` und Event-Abos. Da `MainViewModel`
+Singleton ist und `MainActivity` ihn ebenfalls früh auflöst, stellt der UI-Thread-Resolve sicher,
+dass der Graph deterministisch auf dem UI-Thread entsteht (kein latenter Background-Thread-Crash).

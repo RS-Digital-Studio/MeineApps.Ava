@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Loading;
@@ -30,7 +31,12 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
             ExecuteAsync = async () =>
             {
                 var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
-                var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
+                // Der MainViewModel-Objektgraph MUSS auf dem UI-Thread konstruiert werden: VM-Ctors
+                // erzeugen UI-thread-affine Objekte (SolidColorBrush etc.), DispatcherTimer und
+                // Event-Abos. Frueher per Task.Run auf einem ThreadPool-Thread — latente Crash-Falle
+                // und nichtdeterministisch (MainActivity loest denselben Singleton parallel auf).
+                var vmTask = Dispatcher.UIThread.InvokeAsync(
+                    () => services.GetRequiredService<MainViewModel>()).GetTask();
                 // Alle 224 Bitmap-Icons vorladen (WebP → SKBitmap → Avalonia IImage)
                 var iconsTask = Icons.GameIcon.PreloadAllAsync();
                 // 20 Worker-Portraits vorladen (10 Tiers x 2 Geschlechter → AI statt Pixel-Art)

@@ -1,14 +1,14 @@
 # AppChecker
 
-Automatisches Pruef-Tool fuer die Avalonia-Apps (aktuell 9, siehe Tabelle "Bekannte Apps").
-**33 Checker-Klassen, 200+ Pruefungen pro App.** Modulare Architektur mit `IChecker`-Interface
+Automatisches Pruef-Tool fuer die 12 Avalonia-Apps (siehe Tabelle "Bekannte Apps").
+**34 Checker-Klassen, 200+ Pruefungen pro App.** Modulare Architektur mit `IChecker`-Interface
 und Datei-Caching via `CheckContext`. Vollstaendige MVVM-Pattern-Abdeckung gemaess Architektur
 in der Haupt-CLAUDE.md.
 
 ## Verwendung
 
 ```bash
-# Alle 9 Apps (interaktiv) oder einzelne App
+# Alle 12 Apps (interaktiv) oder einzelne App
 dotnet run --project tools/AppChecker
 dotnet run --project tools/AppChecker RechnerPlus
 
@@ -44,11 +44,12 @@ tools/AppChecker/
 ├── IChecker.cs                      # Interface mit Check() + CheckGlobal()
 ├── Helpers/
 │   ├── ConsoleHelpers.cs            # WriteColor, PrintResult, PrintCategory
-│   ├── FileHelpers.cs               # FindSolutionRoot, LoadCsFiles, LoadAxamlFiles, CreateContext, IsSuppressed
+│   ├── FileHelpers.cs               # FindSolutionRoot, LoadCsFiles, LoadAxamlFiles, CreateContext, IsSuppressed,
+│   │                                # GetMainViewModel (aggregiert MainViewModel-Partials), AppUsesEmbeddedAssets
 │   ├── ResxHelpers.cs               # ExtractResxKeys
 │   └── DiHelpers.cs                 # ExtractConstructorVmParameters, ExtractDiRegistrations,
 │                                    # ExtractAllConstructorParameterTypes, ExtractGetServiceTypes
-└── Checkers/                        # 33 Checker-Klassen
+└── Checkers/                        # 34 Checker-Klassen
     │
     │  === Projekt + Build ===
     ├── ProjectBuildChecker.cs       # csproj, Versionen, RuntimeIdentifiers, TargetFramework
@@ -56,48 +57,50 @@ tools/AppChecker/
     │
     │  === Android ===
     ├── AndroidChecker.cs            # Manifest, Permissions, Icons, Mipmaps, AdMob Lifecycle
-    ├── AndroidGotchasChecker.cs     # grantUriPermissions, ${applicationId}, BackButton
+    ├── AndroidGotchasChecker.cs     # grantUriPermissions, ${applicationId} (nur ohne AndroidManifestPlaceholders), BackButton
     │
     │  === Avalonia UI ===
-    ├── AvaloniaUiChecker.cs         # MaterialIconStyles, SkiaThemeHelper, LocalizationService
-    ├── AvaloniaGotchasChecker.cs    # translate px, Selector, ScrollViewer, RenderTransform, …
-    ├── ThemeChecker.cs              # StaticResource Brush, AppPalette
+    ├── AvaloniaUiChecker.cs         # MaterialIconStyles, SkiaThemeHelper (nur wenn genutzt), LocalizationService
+    ├── AvaloniaGotchasChecker.cs    # translate px, Selector, ScrollViewer, RenderTransform, Popup-Anti-Pattern,
+    │                                # Avalonia-12-Migrationen (GetVisualRoot/SystemDecorations/AttachDevTools/IDataObject/FuncMultiValueConverter)
+    ├── ThemeChecker.cs              # StaticResource Brush, AppPalette (Style+ResourceInclude), inline Hex-Farben
     │
     │  === Assets + Lokalisierung ===
-    ├── LocalizationChecker.cs       # resx-Vollstaendigkeit, ueberfluessige Keys
-    ├── AssetsChecker.cs             # icon.png, MainWindow Icon-Referenz
+    ├── LocalizationChecker.cs       # resx 6-Sprachen dynamisch (Base de/en), GetString() ?? Fallback, ueberfluessige Keys
+    ├── AssetsChecker.cs             # icon.png, MainWindow Icon-Referenz (Assets-Pflicht nur bei avares://-Nutzung)
     │
-    │  === DI + ViewModel-Architektur ===
-    ├── DiRegistrationChecker.cs     # ConfigureServices, Cross-Check + ungenutzte Registrierungen
-    ├── VmWiringChecker.cs           # Tabs, Commands, LanguageChanged, UpdateLocalizedTexts
-    ├── ViewBindingsChecker.cs       # x:DataType (FAIL wenn fehlt + Bindings), View↔ViewModel-Paar
-    ├── NavigationChecker.cs         # Tab-Buttons, Tab-Count, Overlays, NavigationRequested
+    │  === DI + ViewModel-Architektur (MainViewModel-Partials werden aggregiert) ===
+    ├── DiRegistrationChecker.cs     # ConfigureServices ODER inline ServiceCollection, Cross-Check + ungenutzte Reg.
+    ├── VmWiringChecker.cs           # Tabs, Navigate/NavigateTo/SelectTab, LanguageChanged, UpdateLocalizedTexts, Overlays
+    ├── ViewBindingsChecker.cs       # x:DataType (FAIL wenn fehlt + Bindings), View↔ViewModel-Paar (Mobile-Varianten)
+    ├── NavigationChecker.cs         # Tab-Buttons, Tab-Count, CurrentPage (IsXxxActive-Pattern), NavigationRequested
     │
     │  === MVVM-Pattern (komplette Abdeckung) ===
-    ├── MvvmStrictChecker.cs              # App.Services-Locator, DataContext=, Click=, x:CompileBindings="False"
-    ├── ConstructorInjectionChecker.cs    # Parameterlose Ctors, new XxxService(), .Instance-Zugriff
-    ├── CommunityToolkitChecker.cs        # [ObservableProperty]/[RelayCommand]-Konsistenz, rohes INPC
+    ├── MvvmStrictChecker.cs              # App.Services/ServiceLocator-Locator, eigener DataContext=, Click=, x:CompileBindings="False"
+    ├── ConstructorInjectionChecker.cs    # Parameterlose Ctors (DI-registriert ok), new XxxService(), .Instance, static Instance
+    ├── CommunityToolkitChecker.cs        # [ObservableProperty]/[RelayCommand]-Konsistenz, rohes INPC, CommandParameter-Typ
     ├── AsyncRelayCommandChecker.cs       # async void [RelayCommand], CanExecute-Existenz
     ├── CodeBehindHygieneChecker.cs       # Code-Behind > 200/400 LOC, Service-Felder, async void
     ├── DataContextChangedPatternChecker.cs # Views mit VM-Events brauchen DataContextChanged/Detached
     ├── EventNamingConventionChecker.cs   # NavigationRequested/MessageRequested/... Naming + Signaturen
-    ├── ServiceConventionChecker.cs       # I{Name}Service-Konvention, Async-Suffix, Lifetime-Dup
-    ├── DispatcherUIThreadChecker.cs      # Task.Run mit Collection-Mutationen ohne Dispatcher
+    ├── ServiceConventionChecker.cs       # I{Name}Service-Konvention, Async-Suffix, Lifetime-Dup, God Interfaces (>10)
+    ├── DispatcherUIThreadChecker.cs      # Task.Run mit Collection-Mutationen / VM-Instanziierung ohne Dispatcher
     │
     │  === Ad-Layout ===
-    ├── AdLayoutChecker.cs           # Ad-Spacer 64dp, ScrollViewer Bottom-Margin, ShowBanner
+    ├── AdLayoutChecker.cs           # Ad-Spacer 64dp, ScrollViewer Bottom-Margin (geparst), ShowBanner
     │
     │  === Code-Qualitaet + Patterns ===
     ├── CodeQualityChecker.cs        # Debug.WriteLine + Console.WriteLine, ungenutzte Exception-Variablen
     ├── AsyncPatternsChecker.cs      # async void, fire-and-forget, leere catch-Bloecke
     ├── DateTimeChecker.cs           # DateTime.Now, Parse ohne RoundtripKind/InvariantCulture
     ├── SqliteChecker.cs             # InsertAsync ID-Bug, SemaphoreSlim
-    ├── SkiaSharpChecker.cs          # DPI (LocalClipBounds), InvalidateSurface, ArcTo 360
+    ├── SkiaSharpChecker.cs          # DPI (LocalClipBounds), InvalidateSurface, ArcTo 360, Per-Frame-Allokationen
     ├── BillingChecker.cs            # Play Billing v8 API-Aenderungen
     ├── UriLauncherChecker.cs        # Process.Start statt UriLauncher in Shared
     ├── EventCleanupChecker.cs       # += ohne -=, statische Event-Handler
-    ├── DisposableChecker.cs         # IDisposable-Felder ohne Dispose-Methode
-    └── HardcodedStringChecker.cs    # XAML Text=/Content=/ToolTip.Tip=/Title= mit deutschen User-Strings
+    ├── DisposableChecker.cs         # IDisposable-Felder ohne Dispose (static class + managed Lock-Primitive ausgenommen)
+    ├── HardcodedStringChecker.cs    # XAML Text=/Content=/...-User-Strings, Unicode-Symbole als UI-Text
+    └── DebugToolingChecker.cs       # AutomationProperties.AutomationId-Abdeckung, debug:DebugHelper.ShowName
 ```
 
 ## MVVM-Pattern-Abdeckung (vollstaendig)
@@ -105,8 +108,8 @@ tools/AppChecker/
 | MVVM-Aspekt aus Haupt-CLAUDE.md | Checker |
 |----------------------------------|---------|
 | `x:CompileBindings`/`x:DataType` auf jeder View-Root | `ViewBindingsChecker` |
-| Kein `App.Services.GetRequiredService<T>()` im View-Ctor | `MvvmStrictChecker` |
-| Kein `DataContext = ...` im Code-Behind | `MvvmStrictChecker` |
+| Kein `App.Services.GetRequiredService<T>()` / `ServiceLocator.Resolve<T>()` ausserhalb Composition Root | `MvvmStrictChecker` |
+| Kein eigener `DataContext = ...` im Code-Behind (Child-View-Init erlaubt) | `MvvmStrictChecker` |
 | Services per Constructor Injection (keine Property/Service-Locator) | `ConstructorInjectionChecker` |
 | Commands per `[RelayCommand]` (kein Click-Handler) | `MvvmStrictChecker`, `CommunityToolkitChecker`, `AsyncRelayCommandChecker` |
 | Sub-VMs als DI-Properties im MainViewModel | `DiRegistrationChecker`, `VmWiringChecker` |
@@ -123,6 +126,11 @@ tools/AppChecker/
 | `LanguageChanged` → `UpdateLocalizedTexts()` Cross-Check | `VmWiringChecker` |
 | Tab-Count View vs. ViewModel-Properties | `NavigationChecker` |
 | Android Back-Button + ExitHintRequested + Double-Back | `AndroidGotchasChecker` |
+| God Interfaces (>5 Methoden, ISP) + statische Singletons (`Xxx.Instance`) | `ServiceConventionChecker`, `ConstructorInjectionChecker` |
+| Popup-Anti-Pattern + Avalonia-12-API-Migrationen | `AvaloniaGotchasChecker` |
+| VM-Instanziierung auf Background-Thread (UI-Thread-Affinitaet) | `DispatcherUIThreadChecker` |
+| Hardcoded Hex-Farben + Unicode-Symbole als UI-Text (Icon-Strategie) | `ThemeChecker`, `HardcodedStringChecker` |
+| AutomationId + DebugHelper.ShowName (Test-/Debug-Tooling) | `DebugToolingChecker` |
 
 Tieferanalyse / Auto-Fix: Agent `mvvm-auditor` (opus, max).
 
@@ -162,6 +170,9 @@ Tieferanalyse / Auto-Fix: Agent `mvvm-auditor` (opus, max).
 | HandwerkerImperium | com.meineapps.handwerkerimperium | Ja |
 | BomberBlast | org.rsdigital.bomberblast | Ja |
 | RebornSaga | org.rsdigital.rebornsaga | Ja |
+| BingXBot | com.rsdigital.bingxbot | Nein |
+| GardenControl | com.rsdigital.gardencontrol | Nein |
+| SmartMeasure | com.rsdigital.smartmeasure | Nein |
 
 ## Ausgabeformat
 
@@ -187,7 +198,7 @@ Tieferanalyse / Auto-Fix: Agent `mvvm-auditor` (opus, max).
 
 = Summary =
   PASS: 926  INFO: 443  WARN: 558  FAIL: 2
-  1929 Checks in 6568ms (33 Checker, 9 Apps)
+  2581 Checks in 7200ms (34 Checker, 12 Apps)
 ```
 
 ## Neuen Checker hinzufuegen

@@ -49,6 +49,13 @@ class ConstructorInjectionChecker : IChecker
         int classesInstanceAccessInCtor = 0;
         int classesChecked = 0;
 
+        // DI-Registrierungen aus App.axaml.cs: dependency-freie, per DI registrierte Services
+        // (z.B. ApiService, LocalTcpMultiUserService) sind mit parameterlosem Ctor voellig DI-kompatibel.
+        var appAxamlCs = ctx.SharedCsFiles.FirstOrDefault(f => Path.GetFileName(f.FullPath) == "App.axaml.cs");
+        var diRegistrations = appAxamlCs != null
+            ? DiHelpers.ExtractDiRegistrations(appAxamlCs.Content)
+            : [];
+
         // ViewModels UND Services pruefen
         var candidates = ctx.SharedCsFiles
             .Where(f =>
@@ -102,12 +109,15 @@ class ConstructorInjectionChecker : IChecker
             bool hasParameterless = ctorMatches.Any(m => string.IsNullOrWhiteSpace(m.Groups[2].Value));
             bool hasParametrized = ctorMatches.Any(m => !string.IsNullOrWhiteSpace(m.Groups[2].Value));
 
-            // NUR parameterloser Ctor und nicht abstract: kritisch
-            if (hasParameterless && !hasParametrized && !isAbstract)
+            // NUR parameterloser Ctor und nicht abstract.
+            // Ein parameterloser Ctor ist mit DI vollstaendig kompatibel (dependency-freier Service):
+            // Wenn die Klasse per DI registriert ist, ist das legitim — kein Befund. Verdaechtige
+            // Ctor-Bodys (new XxxService()/.Instance) werden separat unten erkannt.
+            if (hasParameterless && !hasParametrized && !isAbstract && !diRegistrations.Contains(className))
             {
                 classesParameterless++;
-                results.Add(new(Severity.Warn, Category,
-                    $"{className} hat NUR parameterlosen Konstruktor in {file.RelativePath} → kein DI moeglich, Service-Locator-Verdacht"));
+                results.Add(new(Severity.Info, Category,
+                    $"{className} hat NUR parameterlosen Konstruktor in {file.RelativePath} und ist nicht im DI registriert → manuell pruefen (dependency-frei oder Service-Locator?)"));
             }
 
             // Ctor-Bodys auf "new XxxService()" und ".Instance" pruefen

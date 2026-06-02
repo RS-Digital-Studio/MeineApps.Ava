@@ -17,14 +17,17 @@ class MvvmStrictChecker : IChecker
 {
     public string Category => "MVVM-Strict";
 
-    // Regex fuer Service-Locator-Pattern (kommt sehr selten vor, daher genau matchen)
+    // Service-Locator-Pattern: App.Services.GetRequiredService<T> ODER ServiceLocator.Resolve/Get<T>
+    // (beide aus der Anti-Pattern-Tabelle der Haupt-CLAUDE.md).
     static readonly Regex ServiceLocatorRegex = new(
-        @"App\.Services(\?)?\.GetRequiredService\s*<",
+        @"App\.Services(\?)?\.GetRequiredService\s*<|\bServiceLocator\.(Resolve|Get|GetService|GetRequiredService)\s*<",
         RegexOptions.Compiled);
 
-    // DataContext = ... (Zuweisung, nicht Vergleich oder Binding)
+    // Zuweisung an den EIGENEN View-DataContext am Statement-Anfang (this.DataContext = / DataContext =).
+    // Bewusst NICHT erfasst: Object-Initializer (new ChildView { DataContext = ... }) und Member-Access
+    // (childControl.DataContext = ...) — das sind legitime, im Code erzeugte Child-Views (z.B. Lazy-MapView).
     static readonly Regex DataContextAssignRegex = new(
-        @"\bDataContext\s*=\s*(?!=)",
+        @"^(this\.)?DataContext\s*=\s*(?!=)",
         RegexOptions.Compiled);
 
     // public static T Instance / public static readonly T Instance in VMs
@@ -78,15 +81,16 @@ class MvvmStrictChecker : IChecker
                     {
                         viewServiceLocator++;
                         results.Add(new(Severity.Fail, Category,
-                            $"App.Services.GetRequiredService im View-Code-Behind in {file.RelativePath}:{i + 1} → Android-Crash-Pattern, Service ins ViewModel injizieren"));
+                            $"Service-Locator (App.Services/ServiceLocator) im View-Code-Behind in {file.RelativePath}:{i + 1} → Android-Crash-Pattern, Service ins ViewModel injizieren"));
                     }
 
-                    // DataContext = nur in MainWindow.axaml.cs erlaubt (Desktop-Composition Root)
-                    if (DataContextAssignRegex.IsMatch(trimmed) && fileName != "MainWindow.axaml.cs")
+                    // Eigener DataContext nur in MainWindow.axaml.cs (Desktop-Composition Root) und
+                    // MainView.axaml.cs (manche Apps setzen ihn dort) erlaubt.
+                    if (DataContextAssignRegex.IsMatch(trimmed) && fileName != "MainWindow.axaml.cs" && fileName != "MainView.axaml.cs")
                     {
                         viewDataContextAssign++;
                         results.Add(new(Severity.Fail, Category,
-                            $"DataContext-Zuweisung im Code-Behind in {file.RelativePath}:{i + 1} → ViewLocator setzt DataContext automatisch"));
+                            $"DataContext-Zuweisung an die eigene View im Code-Behind in {file.RelativePath}:{i + 1} → ViewLocator setzt DataContext automatisch"));
                     }
                 }
 
@@ -97,7 +101,7 @@ class MvvmStrictChecker : IChecker
                     {
                         vmServiceLocator++;
                         results.Add(new(Severity.Fail, Category,
-                            $"App.Services.GetRequiredService im ViewModel in {file.RelativePath}:{i + 1} → Service-Locator-Anti-Pattern, per Constructor injizieren"));
+                            $"Service-Locator (App.Services/ServiceLocator) im ViewModel in {file.RelativePath}:{i + 1} → Service-Locator-Anti-Pattern, per Constructor injizieren"));
                     }
 
                     if (StaticInstanceRegex.IsMatch(line))

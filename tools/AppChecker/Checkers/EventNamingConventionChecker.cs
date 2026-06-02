@@ -35,7 +35,9 @@ class EventNamingConventionChecker : IChecker
     static readonly Dictionary<string, string[]> ExpectedSignatures = new(StringComparer.Ordinal)
     {
         ["NavigationRequested"]    = ["Action<string>", "Action<NavigationRequest>"],
-        ["MessageRequested"]       = ["Action<string, string>"],
+        // Action<string,string> = (Titel, Body) im MainViewModel; Action<string> = kontextlose Child-VM-Message,
+        // deren Titel das MainViewModel beim Adaptieren ergaenzt (legitimes Parent-supplies-Title-Pattern).
+        ["MessageRequested"]       = ["Action<string, string>", "Action<string>"],
         ["FloatingTextRequested"]  = ["Action<string, string>", "EventHandler<(string, string)>"],
         ["ExitHintRequested"]      = ["Action<string>"],
         ["ClipboardRequested"]     = ["Action<string>"],

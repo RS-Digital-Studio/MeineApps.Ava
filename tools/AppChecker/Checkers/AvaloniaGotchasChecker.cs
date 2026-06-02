@@ -29,6 +29,7 @@ class AvaloniaGotchasChecker : IChecker
         int buttonText = 0;
         int itemsRepeater = 0;
         int renderTransformKeyframe = 0;
+        int popupUsage = 0;
 
         foreach (var file in ctx.AxamlFiles)
         {
@@ -126,6 +127,13 @@ class AvaloniaGotchasChecker : IChecker
                     if (itemsRepeater == 1) // Nur einmal pro Datei melden
                         results.Add(new(Severity.Info, Category, $"ItemsRepeater in {file.RelativePath}:{i + 1} → ItemsControl bevorzugen (einfacher)"));
                 }
+
+                // Popup fuer Picker/Dropdowns (Anti-Pattern: Desktop = eigenes OS-Fenster, Android = In-App → inkonsistent)
+                if (Regex.IsMatch(line, @"<(\w+:)?Popup\b") && !line.TrimStart().StartsWith("<!--"))
+                {
+                    popupUsage++;
+                    results.Add(new(Severity.Warn, Category, $"<Popup> in {file.RelativePath}:{i + 1} → inkonsistent (Desktop=OS-Fenster, Android=In-App). Inline Border/Panel mit IsVisible-Binding verwenden"));
+                }
             }
 
             // RenderTransform / TransformOperations als animierte Property in Style.Animations KeyFrames
@@ -150,6 +158,7 @@ class AvaloniaGotchasChecker : IChecker
         if (scrollViewerPadding == 0) results.Add(new(Severity.Pass, Category, "Kein ScrollViewer mit Padding"));
         if (tapGesture == 0) results.Add(new(Severity.Pass, Category, "Kein TapGestureRecognizer verwendet"));
         if (renderTransformKeyframe == 0) results.Add(new(Severity.Pass, Category, "Kein RenderTransform in KeyFrame-Animations"));
+        if (popupUsage == 0) results.Add(new(Severity.Pass, Category, "Kein <Popup> fuer Picker/Dropdowns (Inline-Border-Pattern)"));
     }
 
     void CheckCsGotchas(List<CheckResult> results, CheckContext ctx)
@@ -157,6 +166,7 @@ class AvaloniaGotchasChecker : IChecker
         int isAttachedCount = 0;
         int tryFindResourceCount = 0;
         int isAnimatingCount = 0;
+        int avalonia12MigrationCount = 0;
 
         foreach (var file in ctx.SharedCsFiles)
         {
@@ -166,11 +176,39 @@ class AvaloniaGotchasChecker : IChecker
                 if (trimmed.StartsWith("//")) continue;
                 if (FileHelpers.IsSuppressed(file.Lines, i)) continue;
 
-                // IsAttachedToVisualTree (entfernt in Avalonia 11.3)
-                if (trimmed.Contains("IsAttachedToVisualTree"))
+                // IsAttachedToVisualTree (entfernt seit Avalonia 11.3, auch in 12) — Member-Zugriff matchen
+                if (Regex.IsMatch(trimmed, @"\.IsAttachedToVisualTree\b"))
                 {
                     isAttachedCount++;
-                    results.Add(new(Severity.Fail, Category, $"IsAttachedToVisualTree in {file.RelativePath}:{i + 1} → entfernt in Avalonia 11.3, GetVisualRoot() != null verwenden"));
+                    results.Add(new(Severity.Fail, Category, $"IsAttachedToVisualTree in {file.RelativePath}:{i + 1} → entfernt seit Avalonia 11.3 (auch in 12), TopLevel.GetTopLevel(this) != null verwenden"));
+                }
+
+                // Avalonia 12: GetVisualRoot() ist veraltet → TopLevel.GetTopLevel(control)
+                if (Regex.IsMatch(trimmed, @"\.GetVisualRoot\s*\(\s*\)"))
+                {
+                    avalonia12MigrationCount++;
+                    results.Add(new(Severity.Warn, Category, $"GetVisualRoot() in {file.RelativePath}:{i + 1} → Avalonia 12: TopLevel.GetTopLevel(control) verwenden"));
+                }
+
+                // Avalonia 12: Window.SystemDecorations → Window.WindowDecorations
+                if (Regex.IsMatch(trimmed, @"\bSystemDecorations\b"))
+                {
+                    avalonia12MigrationCount++;
+                    results.Add(new(Severity.Warn, Category, $"SystemDecorations in {file.RelativePath}:{i + 1} → Avalonia 12: WindowDecorations verwenden"));
+                }
+
+                // Avalonia 12: AttachDevTools() → AttachDeveloperTools()
+                if (Regex.IsMatch(trimmed, @"\.AttachDevTools\s*\("))
+                {
+                    avalonia12MigrationCount++;
+                    results.Add(new(Severity.Warn, Category, $"AttachDevTools() in {file.RelativePath}:{i + 1} → Avalonia 12: AttachDeveloperTools() verwenden (Paket AvaloniaUI.DiagnosticsSupport)"));
+                }
+
+                // Avalonia 12: IDataObject/DataFormats (Plural) → DataTransfer/DataTransferItem/DataFormat (Singular)
+                if (Regex.IsMatch(trimmed, @"\bIDataObject\b") || Regex.IsMatch(trimmed, @"\bDataFormats\."))
+                {
+                    avalonia12MigrationCount++;
+                    results.Add(new(Severity.Warn, Category, $"IDataObject/DataFormats in {file.RelativePath}:{i + 1} → Avalonia 12: DataTransfer + DataTransferItem + DataFormat (Singular) verwenden"));
                 }
 
                 // TryFindResource statt TryGetResource
@@ -189,7 +227,8 @@ class AvaloniaGotchasChecker : IChecker
             }
         }
 
-        if (isAttachedCount == 0) results.Add(new(Severity.Pass, Category, "Kein IsAttachedToVisualTree (korrekt fuer Avalonia 11.3)"));
+        if (isAttachedCount == 0) results.Add(new(Severity.Pass, Category, "Kein IsAttachedToVisualTree (entfernt seit Avalonia 11.3)"));
+        if (avalonia12MigrationCount == 0) results.Add(new(Severity.Pass, Category, "Keine veralteten Avalonia-12-APIs (GetVisualRoot/SystemDecorations/AttachDevTools/IDataObject)"));
         if (tryFindResourceCount == 0) results.Add(new(Severity.Pass, Category, "Kein TryFindResource (TryGetResource wird verwendet)"));
     }
 }

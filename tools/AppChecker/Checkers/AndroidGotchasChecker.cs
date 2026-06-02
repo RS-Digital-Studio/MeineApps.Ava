@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using AppChecker.Helpers;
 
 namespace AppChecker.Checkers;
 
@@ -36,28 +37,55 @@ class AndroidGotchasChecker : IChecker
         else if (content.Contains("grantUriPermissions="))
             results.Add(new(Severity.Pass, Category, "grantUriPermissions korrekt geschrieben (mit 's')"));
 
-        // ${applicationId} → geht nicht in .NET Android
+        // ${applicationId} → wird in .NET Android NUR ersetzt, wenn der Placeholder via MSBuild-Property
+        // <AndroidManifestPlaceholders>applicationId=$(ApplicationId)</...> definiert ist. Ohne diese
+        // Definition bleibt der Platzhalter als Literal stehen (z.B. broken FileProvider-Authority).
         if (content.Contains("${applicationId}"))
-            results.Add(new(Severity.Fail, Category, "${applicationId} in AndroidManifest → .NET Android kennt keine Gradle-Placeholder, hardcodierten Package-Namen verwenden"));
+        {
+            bool placeholderDefined = HasManifestPlaceholder(ctx, "applicationId");
+            if (placeholderDefined)
+                results.Add(new(Severity.Pass, Category, "${applicationId} im Manifest, aber via AndroidManifestPlaceholders definiert (wird ersetzt)"));
+            else
+                results.Add(new(Severity.Fail, Category, "${applicationId} in AndroidManifest ohne <AndroidManifestPlaceholders>applicationId=...</> → bleibt unersetzt. Hardcodierten Package-Namen verwenden (wie alle anderen Apps) oder Placeholder im csproj definieren"));
+        }
         else
             results.Add(new(Severity.Pass, Category, "Keine ${applicationId} Gradle-Placeholder"));
     }
 
+    /// <summary>Prueft ob ein AndroidManifestPlaceholder-Key im Android-csproj oder Directory.Build.* definiert ist.</summary>
+    static bool HasManifestPlaceholder(CheckContext ctx, string key)
+    {
+        var candidates = new List<string>
+        {
+            Path.Combine(ctx.AndroidDir, $"{ctx.App.Name}.Android.csproj"),
+            Path.Combine(ctx.SolutionRoot, "Directory.Build.targets"),
+            Path.Combine(ctx.SolutionRoot, "Directory.Build.props"),
+        };
+        foreach (var path in candidates)
+        {
+            if (!File.Exists(path)) continue;
+            var text = File.ReadAllText(path);
+            if (Regex.IsMatch(text, @"<AndroidManifestPlaceholders>[^<]*\b" + Regex.Escape(key) + @"\s*="))
+                return true;
+        }
+        return false;
+    }
+
     void CheckBackButton(List<CheckResult> results, CheckContext ctx)
     {
-        var mainVm = ctx.SharedCsFiles.FirstOrDefault(f =>
-            f.FullPath.EndsWith("MainViewModel.cs") && f.FullPath.Contains("ViewModels"));
+        // Inhalt ueber ALLE MainViewModel-Partials aggregieren (HandleBackPressed liegt oft in .Navigation.cs).
+        var (mainVm, content) = FileHelpers.GetMainViewModel(ctx);
 
         if (mainVm == null) return;
 
         // HandleBackPressed in MainViewModel
-        if (mainVm.Content.Contains("HandleBackPressed"))
+        if (content.Contains("HandleBackPressed"))
             results.Add(new(Severity.Pass, Category, "HandleBackPressed in MainViewModel vorhanden"));
         else
             results.Add(new(Severity.Warn, Category, "HandleBackPressed fehlt in MainViewModel (Android Back-Button wird nicht behandelt)"));
 
         // ExitHintRequested Event
-        if (mainVm.Content.Contains("ExitHintRequested"))
+        if (content.Contains("ExitHintRequested"))
             results.Add(new(Severity.Pass, Category, "ExitHintRequested Event vorhanden (Double-Back-to-Exit)"));
         else
             results.Add(new(Severity.Warn, Category, "ExitHintRequested fehlt in MainViewModel"));

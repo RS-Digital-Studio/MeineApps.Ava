@@ -70,6 +70,49 @@ static class FileHelpers
             .ToList();
     }
 
+    /// <summary>
+    /// Aggregiert den Inhalt ALLER MainViewModel-Dateien einer App, inkl. der dokumentierten
+    /// Partial-Splits (MainViewModel.Navigation.cs, .Tabs.cs, .EventHandlers.cs, .Properties.cs —
+    /// siehe Haupt-CLAUDE.md "Service-Extraktion + Event-Cleanup"). Checker, die nur
+    /// "MainViewModel.cs" lesen, uebersehen sonst Logik in den Partials und erzeugen falsche
+    /// WARNs gerade bei Apps, die das empfohlene Partial-Pattern befolgen (HandwerkerImperium,
+    /// BomberBlast, RebornSaga).
+    /// </summary>
+    /// <returns>
+    /// Primary = die Haupt-Datei MainViewModel.cs (oder die erste gefundene Partial, sonst null).
+    /// Content = konkatenierter Inhalt aller MainViewModel*-Dateien (leer wenn keine existiert).
+    /// </returns>
+    public static (CsFile? Primary, string Content) GetMainViewModel(CheckContext ctx)
+    {
+        var files = ctx.SharedCsFiles
+            .Where(f => f.FullPath.Contains("ViewModels")
+                     && Path.GetFileName(f.FullPath).StartsWith("MainViewModel.", StringComparison.Ordinal))
+            .ToList();
+
+        if (files.Count == 0) return (null, string.Empty);
+
+        var primary = files.FirstOrDefault(f => Path.GetFileName(f.FullPath) == "MainViewModel.cs")
+                      ?? files[0];
+        var content = string.Join('\n', files.Select(f => f.Content));
+        return (primary, content);
+    }
+
+    /// <summary>
+    /// Heuristik: Nutzt die App eingebettete Avalonia-Assets (eigenen Shared/Assets-Ordner)?
+    /// True, wenn ein Shared/Assets-Ordner existiert ODER eine AXAML/CS eine app-eigene
+    /// avares://{App}/-Ressource bzw. einen relativen "/Assets/"-Pfad referenziert. Apps, die
+    /// ihre Grafik nur ueber Material.Icons + Android-Mipmaps + prozedurales SkiaSharp beziehen
+    /// (z.B. BingXBot/GardenControl/SmartMeasure), brauchen keinen Shared/Assets-Ordner.
+    /// </summary>
+    public static bool AppUsesEmbeddedAssets(CheckContext ctx)
+    {
+        if (Directory.Exists(Path.Combine(ctx.SharedDir, "Assets"))) return true;
+        bool InContent(string c) =>
+            c.Contains($"avares://{ctx.App.Name}/", StringComparison.Ordinal)
+            || c.Contains("\"/Assets/", StringComparison.Ordinal);
+        return ctx.AxamlFiles.Any(f => InContent(f.Content)) || ctx.SharedCsFiles.Any(f => InContent(f.Content));
+    }
+
     /// <summary>Erstellt den CheckContext fuer eine App (laedt alle Dateien gecacht)</summary>
     public static CheckContext CreateContext(AppDef app, string solutionRoot)
     {

@@ -39,14 +39,16 @@ class ThemeChecker : IChecker
         else
             results.Add(new(Severity.Fail, Category, "AppPalette.axaml fehlt → jede App braucht eine eigene Farbpalette in Themes/AppPalette.axaml"));
 
-        // AppPalette in App.axaml eingebunden
+        // AppPalette in App.axaml eingebunden — sowohl StyleInclude als auch ResourceInclude zulassen.
+        // AppPalette ist eine ResourceDictionary (Color/SolidColorBrush/...), gehoert daher korrekterweise
+        // via ResourceInclude in Application.Resources/MergedDictionaries (ein ResourceDictionary ist kein Style).
         var appAxaml = ctx.AxamlFiles.FirstOrDefault(f => Path.GetFileName(f.FullPath) == "App.axaml");
         if (appAxaml != null)
         {
-            if (Regex.IsMatch(appAxaml.Content, @"<StyleInclude\s+Source=""/Themes/AppPalette\.axaml"""))
+            if (Regex.IsMatch(appAxaml.Content, @"<(StyleInclude|ResourceInclude)\s+Source=""(avares://[^""]*)?/Themes/AppPalette\.axaml"""))
                 results.Add(new(Severity.Pass, Category, "AppPalette.axaml in App.axaml eingebunden"));
             else
-                results.Add(new(Severity.Fail, Category, "AppPalette.axaml nicht in App.axaml eingebunden → StyleInclude hinzufuegen"));
+                results.Add(new(Severity.Fail, Category, "AppPalette.axaml nicht in App.axaml eingebunden → ResourceInclude (Palette) bzw. StyleInclude hinzufuegen"));
         }
 
         return results;

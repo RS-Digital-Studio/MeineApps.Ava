@@ -42,7 +42,7 @@ class ProjectBuildChecker : IChecker
         if (File.Exists(sharedCsproj))
         {
             var content = File.ReadAllText(sharedCsproj);
-            CheckSharedCsproj(results, app, content);
+            CheckSharedCsproj(results, ctx, content);
         }
         else
             results.Add(new(Severity.Fail, Category, $"{app.Name}.Shared.csproj fehlt"));
@@ -127,8 +127,10 @@ class ProjectBuildChecker : IChecker
             results.Add(new(Severity.Fail, Category, "RuntimeIdentifiers fehlt in Android.csproj"));
     }
 
-    void CheckSharedCsproj(List<CheckResult> results, AppDef app, string content)
+    void CheckSharedCsproj(List<CheckResult> results, CheckContext ctx, string content)
     {
+        var app = ctx.App;
+
         // RootNamespace
         var nsMatch = Regex.Match(content, @"<RootNamespace>(.*?)</RootNamespace>");
         if (nsMatch.Success)
@@ -141,10 +143,13 @@ class ProjectBuildChecker : IChecker
         else
             results.Add(new(Severity.Info, Category, "RootNamespace nicht explizit gesetzt (Default wird verwendet)"));
 
-        // AvaloniaResource Include="Assets\**"
+        // AvaloniaResource Include="Assets\**" — nur relevant, wenn die App eingebettete Assets nutzt.
+        // Apps mit Material.Icons + Android-Mipmaps (kein Shared/Assets) brauchen kein AvaloniaResource-Item.
         if (content.Contains("AvaloniaResource") && content.Contains("Assets"))
             results.Add(new(Severity.Pass, Category, "AvaloniaResource Include Assets vorhanden"));
+        else if (FileHelpers.AppUsesEmbeddedAssets(ctx))
+            results.Add(new(Severity.Fail, Category, "AvaloniaResource Include=\"Assets\\**\" fehlt in Shared.csproj (App referenziert eingebettete Assets)"));
         else
-            results.Add(new(Severity.Fail, Category, "AvaloniaResource Include=\"Assets\\**\" fehlt in Shared.csproj"));
+            results.Add(new(Severity.Info, Category, "Kein AvaloniaResource/Assets-Item (App nutzt keine eingebetteten Avalonia-Assets)"));
     }
 }

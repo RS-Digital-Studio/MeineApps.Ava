@@ -40,10 +40,15 @@ class AvaloniaUiChecker : IChecker
         {
             var content = appAxamlCs.Content;
 
+            // RefreshColors() ist nur relevant, wenn die App SkiaThemeHelper ueberhaupt nutzt (Brush-Cache).
+            // Apps mit eigenem Theming (z.B. RequestedThemeVariant) oder hartcodierten SKColors brauchen es nicht.
+            bool usesSkiaThemeHelper = ctx.SharedCsFiles.Any(f => f.Content.Contains("SkiaThemeHelper"));
             if (content.Contains("SkiaThemeHelper.RefreshColors"))
                 results.Add(new(Severity.Pass, Category, "SkiaThemeHelper.RefreshColors() beim Start aufgerufen"));
+            else if (usesSkiaThemeHelper)
+                results.Add(new(Severity.Warn, Category, "SkiaThemeHelper genutzt aber RefreshColors() fehlt in App.axaml.cs"));
             else
-                results.Add(new(Severity.Warn, Category, "SkiaThemeHelper.RefreshColors() fehlt in App.axaml.cs"));
+                results.Add(new(Severity.Info, Category, "SkiaThemeHelper nicht genutzt (eigenes Theming) → RefreshColors() nicht noetig"));
 
             if (content.Contains("ILocalizationService"))
                 results.Add(new(Severity.Pass, Category, "ILocalizationService registriert"));

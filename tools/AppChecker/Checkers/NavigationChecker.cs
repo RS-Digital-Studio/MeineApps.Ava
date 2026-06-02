@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using AppChecker.Helpers;
 
 namespace AppChecker.Checkers;
 
@@ -13,8 +14,8 @@ class NavigationChecker : IChecker
         var app = ctx.App;
 
         var mainView = ctx.AxamlFiles.FirstOrDefault(f => Path.GetFileName(f.FullPath) == "MainView.axaml");
-        var mainVm = ctx.SharedCsFiles.FirstOrDefault(f =>
-            f.FullPath.EndsWith("MainViewModel.cs") && f.FullPath.Contains("ViewModels"));
+        // Inhalt ueber ALLE MainViewModel-Partials aggregieren.
+        var (mainVm, vmContent) = FileHelpers.GetMainViewModel(ctx);
 
         if (mainView == null)
         {
@@ -23,7 +24,6 @@ class NavigationChecker : IChecker
         }
 
         var viewContent = mainView.Content;
-        var vmContent = mainVm?.Content ?? "";
 
         // Tab-Buttons mit Command Binding
         var tabCommandMatches = Regex.Matches(viewContent, @"Command=""\{Binding\s+\w*(Navigate|Select)\w*Command\}""");
@@ -74,11 +74,18 @@ class NavigationChecker : IChecker
                 results.Add(new(Severity.Warn, Category, "Kein Ad-Spacer/Banner in MainView (Ad-App!)"));
         }
 
-        // Calculator-Overlay Cross-Check
+        // CurrentPage/Calculator-Overlay Cross-Check — View-seitige Verdrahtung breit erkennen:
+        // ContentControl/DataTemplate (Content-Swap) ODER das Tab-Pattern (IsVisible an IsXxxActive,
+        // siehe Projekt-CLAUDE.md "Tab-Navigation") ODER ein an Navigate-Command gebundener Button.
         if (mainVm != null && (vmContent.Contains("CurrentPage") || vmContent.Contains("CurrentCalculatorVm")))
         {
-            if (viewContent.Contains("CurrentPage") || viewContent.Contains("CurrentCalculatorVm") || viewContent.Contains("DataTemplate"))
-                results.Add(new(Severity.Pass, Category, "Calculator-Overlay mit DataTemplate/ContentControl verdrahtet"));
+            bool viewWired = viewContent.Contains("CurrentPage")
+                || viewContent.Contains("CurrentCalculatorVm")
+                || viewContent.Contains("DataTemplate")
+                || Regex.IsMatch(viewContent, @"Is\w+Active\b")
+                || Regex.IsMatch(viewContent, @"Command=""\{Binding\s+\w*Navigate\w*Command\}""");
+            if (viewWired)
+                results.Add(new(Severity.Pass, Category, "CurrentPage verdrahtet (ContentControl/DataTemplate oder IsXxxActive-Tab-Pattern)"));
             else
                 results.Add(new(Severity.Warn, Category, "CurrentPage/CurrentCalculatorVm in VM aber nicht in View verdrahtet"));
         }

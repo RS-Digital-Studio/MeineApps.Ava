@@ -88,17 +88,24 @@ class ViewBindingsChecker : IChecker
         else
             results.Add(new(Severity.Info, Category, $"{viewsWithoutVmNs}/{viewFiles.Count} Views ohne xmlns:vm (nicht alle brauchen es)"));
 
-        // View ↔ ViewModel Paar-Check (Resource-only Files ausnehmen)
+        // View ↔ ViewModel Paar-Check (Resource-only Files + reine Sub-Controls ausnehmen).
+        // Nur echte "*View"/"*ViewMobile"-Dateien pruefen — Cards/Overlays/Dialogs/Sheets ohne
+        // "View"-Suffix sind Sub-Controls, die ans Parent-DataContext binden (kein eigenes VM).
         int viewsWithVm = 0;
         var viewsWithoutVmList = new List<string>();
         foreach (var view in viewFiles)
         {
             var viewName = Path.GetFileNameWithoutExtension(view.FullPath);
-            // Resource-Files (App.axaml, AppPalette.axaml, *Theme.axaml) brauchen kein VM
             if (viewName is "App" or "AppPalette" || viewName.EndsWith("Theme") || viewName.EndsWith("Styles"))
                 continue;
-            var expectedVm = viewName.Replace("View", "ViewModel");
-            if (vmNames.Contains(expectedVm))
+            if (!viewName.EndsWith("View") && !viewName.EndsWith("ViewMobile"))
+                continue;
+
+            var expectedVm = ExpectedVmName(viewName);
+            // Gueltig, wenn ein gleichnamiges VM existiert ODER die View explizit ein VM via
+            // x:DataType deklariert (geteiltes VM, z.B. XxxViewMobile -> XxxViewModel).
+            bool declaresVm = Regex.IsMatch(view.Content, @"x:DataType\s*=\s*""(vm|viewmodels):\w*ViewModel""");
+            if (vmNames.Contains(expectedVm) || declaresVm)
                 viewsWithVm++;
             else
                 viewsWithoutVmList.Add(viewName);
@@ -107,14 +114,29 @@ class ViewBindingsChecker : IChecker
         if (viewsWithoutVmList.Count == 0)
             results.Add(new(Severity.Pass, Category, $"Alle {viewsWithVm} Views haben ein passendes ViewModel"));
         else
-            results.Add(new(Severity.Warn, Category, $"{viewsWithoutVmList.Count} Views ohne ViewModel: {string.Join(", ", viewsWithoutVmList.Take(5))}{(viewsWithoutVmList.Count > 5 ? "..." : "")}"));
+            // INFO statt WARN: ein fehlendes gleichnamiges VM ist legitim (geteiltes VM / Parent-Binding).
+            // Echte tote Bindings werden separat ueber den x:DataType-FAIL oben erkannt.
+            results.Add(new(Severity.Info, Category, $"{viewsWithoutVmList.Count} Views ohne gleichnamiges ViewModel (evtl. geteiltes VM/Parent-Binding): {string.Join(", ", viewsWithoutVmList.Take(5))}{(viewsWithoutVmList.Count > 5 ? "..." : "")}"));
 
         // VMs ohne View (INFO)
-        var viewNames = viewFiles.Select(f => Path.GetFileNameWithoutExtension(f.FullPath).Replace("View", "ViewModel")).ToHashSet();
+        var viewNames = viewFiles.Select(f => ExpectedVmName(Path.GetFileNameWithoutExtension(f.FullPath))).ToHashSet();
         var vmsWithoutView = vmNames.Where(vm => !viewNames.Contains(vm) && vm != "MainViewModel").ToList();
         if (vmsWithoutView.Count > 0)
             results.Add(new(Severity.Info, Category, $"{vmsWithoutView.Count} VMs ohne eigene View: {string.Join(", ", vmsWithoutView.Take(5))}{(vmsWithoutView.Count > 5 ? "..." : "")}"));
 
         return results;
+    }
+
+    /// <summary>
+    /// Erwarteter ViewModel-Name fuer eine View: schneidet ein "Mobile"-Suffix ab (Mobile-Varianten
+    /// teilen sich das VM der Desktop-View, ViewLocator-Konvention) und ersetzt nur das LETZTE "View"
+    /// durch "ViewModel" (statt First-Match: "DashboardView" -> "DashboardViewModel", nicht "...ModelView").
+    /// </summary>
+    static string ExpectedVmName(string viewName)
+    {
+        var baseName = Regex.Replace(viewName, "Mobile$", "");
+        int idx = baseName.LastIndexOf("View", StringComparison.Ordinal);
+        if (idx < 0) return baseName + "ViewModel";
+        return baseName[..idx] + "ViewModel" + baseName[(idx + 4)..];
     }
 }

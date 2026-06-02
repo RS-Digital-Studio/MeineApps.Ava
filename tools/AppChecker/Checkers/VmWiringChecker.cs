@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using AppChecker.Helpers;
 
 namespace AppChecker.Checkers;
 
@@ -11,8 +12,8 @@ class VmWiringChecker : IChecker
     {
         var results = new List<CheckResult>();
 
-        var mainVm = ctx.SharedCsFiles.FirstOrDefault(f =>
-            f.FullPath.EndsWith("MainViewModel.cs") && f.FullPath.Contains("ViewModels"));
+        // Inhalt ueber ALLE MainViewModel-Partials aggregieren (Navigation/Tabs/EventHandlers/Properties).
+        var (mainVm, content) = FileHelpers.GetMainViewModel(ctx);
         if (mainVm == null)
         {
             results.Add(new(Severity.Fail, Category, "MainViewModel.cs fehlt"));
@@ -20,7 +21,6 @@ class VmWiringChecker : IChecker
         }
 
         results.Add(new(Severity.Pass, Category, "MainViewModel.cs vorhanden"));
-        var content = mainVm.Content;
 
         // Tab/Screen Properties
         var activeProps = Regex.Matches(content, @"bool\s+Is(\w+)Active\b");
@@ -41,13 +41,14 @@ class VmWiringChecker : IChecker
         else
             results.Add(new(Severity.Info, Category, "Kein SelectedTab Property (evtl. Screen-basiert)"));
 
-        // NavigateTo Commands
-        if (Regex.IsMatch(content, @"\[RelayCommand\]") && Regex.IsMatch(content, @"void\s+(NavigateTo\w*|Select\w*Tab\w*)\s*\("))
-            results.Add(new(Severity.Pass, Category, "NavigateTo/SelectTab Commands vorhanden"));
-        else if (Regex.IsMatch(content, @"NavigateTo\w*\s*\("))
-            results.Add(new(Severity.Pass, Category, "NavigateTo Methode vorhanden"));
+        // Navigations-Commands: Navigate(string)/NavigateTo/GoTo/SelectTab sind alle gaengige Muster
+        // (GardenControl/SmartMeasure nutzen [RelayCommand] private void Navigate(string page)).
+        if (Regex.IsMatch(content, @"\[RelayCommand\]") && Regex.IsMatch(content, @"void\s+(Navigate\w*|GoTo\w*|Select\w*Tab\w*)\s*\("))
+            results.Add(new(Severity.Pass, Category, "Navigate/NavigateTo/SelectTab Commands vorhanden"));
+        else if (Regex.IsMatch(content, @"\b(Navigate\w*|GoTo\w*)\s*\("))
+            results.Add(new(Severity.Pass, Category, "Navigate/NavigateTo Methode vorhanden"));
         else
-            results.Add(new(Severity.Warn, Category, "Keine NavigateTo/SelectTab Commands gefunden"));
+            results.Add(new(Severity.Warn, Category, "Keine Navigate/NavigateTo/SelectTab Commands gefunden"));
 
         // LanguageChanged
         if (Regex.IsMatch(content, @"LanguageChanged\s*\+="))
@@ -65,16 +66,19 @@ class VmWiringChecker : IChecker
         else
             results.Add(new(Severity.Info, Category, "Keine MessageRequested Events verdrahtet"));
 
-        // Tab-Wechsel schliesst Overlays
-        bool hasOverlays = content.Contains("CurrentPage") || content.Contains("CurrentCalculatorVm") || content.Contains("IsOverlay");
+        // Tab-Wechsel schliesst Overlays — nur bei ECHTEN Overlay-Markern pruefen.
+        // 'CurrentPage' allein ist meist das Tab-/Seiten-Navigations-Property (Content-Swap), kein Overlay.
+        bool hasOverlays = content.Contains("IsOverlay")
+            || content.Contains("CurrentCalculatorVm")
+            || Regex.IsMatch(content, @"Is\w*(Popup|Drawer|Dialog|Sheet|Modal|Flyout)\w*Open\b");
         if (hasOverlays)
         {
-            if (Regex.IsMatch(content, @"On\w*SelectedTab\w*Changed|partial\s+void\s+On\w*Tab\w*Changed"))
-                results.Add(new(Severity.Pass, Category, "Tab-Wechsel Handler vorhanden (Overlay-Schliessung)"));
+            if (Regex.IsMatch(content, @"On\w*(SelectedTab|Tab|Page|CurrentPage)\w*Changed|partial\s+void\s+On\w*(Tab|Page)\w*Changed"))
+                results.Add(new(Severity.Pass, Category, "Tab-/Seiten-Wechsel Handler vorhanden (Overlay-Schliessung)"));
             else if (content.Contains("CurrentPage") && content.Contains("= null"))
                 results.Add(new(Severity.Pass, Category, "Overlay-Schliessung via CurrentPage = null"));
             else
-                results.Add(new(Severity.Warn, Category, "Overlays vorhanden aber kein Tab-Wechsel Handler fuer Schliessung"));
+                results.Add(new(Severity.Warn, Category, "Overlays vorhanden aber kein Tab-/Seiten-Wechsel Handler fuer Schliessung"));
         }
 
         // GoBackAction/NavigationRequested

@@ -26,12 +26,18 @@ class DiRegistrationChecker : IChecker
 
         var content = appAxamlCs.Content;
 
-        // ConfigureServices Methode
-        if (Regex.IsMatch(content, @"void\s+ConfigureServices\s*\(\s*IServiceCollection"))
+        // Composition Root: entweder eine ConfigureServices(IServiceCollection)-Methode ODER
+        // eine inline ServiceCollection + BuildServiceProvider() direkt in App.axaml.cs
+        // (GardenControl verdrahtet DI inline in OnFrameworkInitializationCompleted).
+        bool hasConfigureServices = Regex.IsMatch(content, @"void\s+ConfigureServices\s*\(\s*IServiceCollection");
+        bool hasInlineComposition = Regex.IsMatch(content, @"new\s+ServiceCollection\s*\(") && content.Contains("BuildServiceProvider");
+        if (hasConfigureServices)
             results.Add(new(Severity.Pass, Category, "ConfigureServices Methode vorhanden"));
+        else if (hasInlineComposition)
+            results.Add(new(Severity.Pass, Category, "DI-Composition-Root inline (ServiceCollection + BuildServiceProvider)"));
         else
         {
-            results.Add(new(Severity.Fail, Category, "ConfigureServices Methode fehlt"));
+            results.Add(new(Severity.Fail, Category, "Composition Root fehlt (weder ConfigureServices(IServiceCollection) noch ServiceCollection + BuildServiceProvider)"));
             return results;
         }
 
@@ -69,8 +75,7 @@ class DiRegistrationChecker : IChecker
             results.Add(new(Severity.Fail, Category, "MainViewModel nicht im DI registriert"));
 
         // Cross-Check: MainVM Constructor-Parameter vs. DI-Registrierungen
-        var mainVmFile = ctx.SharedCsFiles.FirstOrDefault(f =>
-            f.FullPath.EndsWith("MainViewModel.cs") && f.FullPath.Contains("ViewModels"));
+        var (mainVmFile, _) = FileHelpers.GetMainViewModel(ctx);
 
         var diRegistrations = DiHelpers.ExtractDiRegistrations(content);
 

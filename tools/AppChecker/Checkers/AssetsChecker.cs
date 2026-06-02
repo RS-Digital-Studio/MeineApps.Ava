@@ -25,8 +25,12 @@ class AssetsChecker : IChecker
             else
                 results.Add(new(Severity.Warn, Category, "icon.png fehlt in Assets/"));
         }
+        else if (Helpers.FileHelpers.AppUsesEmbeddedAssets(ctx))
+            // Kein Assets-Ordner, aber die App referenziert eingebettete Assets → echtes Problem.
+            results.Add(new(Severity.Warn, Category, "Assets-Verzeichnis fehlt, obwohl avares://-Assets referenziert werden"));
         else
-            results.Add(new(Severity.Fail, Category, "Assets-Verzeichnis fehlt"));
+            // Kein Assets-Ordner und keine Asset-Referenz: legitim (Material.Icons + Android-Mipmaps).
+            results.Add(new(Severity.Info, Category, "Kein Shared/Assets-Ordner (Icons via Material.Icons/Android-Mipmaps, keine eingebetteten Avalonia-Assets)"));
 
         // MainWindow.axaml referenziert Icon via avares://
         var mainWindowAxaml = ctx.AxamlFiles.FirstOrDefault(f => Path.GetFileName(f.FullPath) == "MainWindow.axaml");

@@ -77,7 +77,67 @@ class DispatcherUIThreadChecker : IChecker
         else if (taskRunMutations > 8)
             results.Add(new(Severity.Info, Category, $"...und {taskRunMutations - 8} weitere Task.Run-Bodies mit potenziellen Cross-Thread-Mutationen"));
 
+        CheckBackgroundVmInstantiation(results, ctx);
+
         return results;
+    }
+
+    // VM-Instanziierung im Body: GetRequiredService<XxxViewModel> oder new XxxViewModel(...)
+    static readonly Regex VmInstantiationRegex = new(
+        @"GetRequiredService\s*<\s*\w*ViewModel\s*>|new\s+\w*ViewModel\s*\(",
+        RegexOptions.Compiled);
+
+    /// <summary>
+    /// VM-Objektgraphen duerfen nie auf einem Background-Thread instanziiert werden — ViewModels erzeugen
+    /// im Ctor UI-Objekte (Brushes) mit UI-Thread-Affinitaet → Crash beim ersten Render
+    /// ("The calling thread cannot access this object"). Fix: Dispatcher.UIThread.InvokeAsync(...).
+    /// Prueft den gesamten Task.Run(...)-Aufruf (Block- UND Expression-Lambdas), inkl. App.axaml.cs.
+    /// </summary>
+    void CheckBackgroundVmInstantiation(List<CheckResult> results, CheckContext ctx)
+    {
+        int count = 0;
+        foreach (var file in ctx.SharedCsFiles)
+        {
+            if (file.FullPath.Contains("Graphics") || file.FullPath.Contains("Rendering")) continue;
+            var content = file.Content;
+
+            foreach (Match m in Regex.Matches(content, @"Task\.Run\s*\("))
+            {
+                int openParen = content.IndexOf('(', m.Index);
+                if (openParen < 0) continue;
+                int closeParen = FindMatchingParen(content, openParen);
+                if (closeParen <= openParen) continue;
+
+                var arg = content.Substring(openParen, closeParen - openParen + 1);
+                if (arg.Contains("Dispatcher.UIThread")) continue;   // korrekt auf UI-Thread gemarshallt
+                if (!VmInstantiationRegex.IsMatch(arg)) continue;
+
+                var lineNum = GetLineNumber(content, m.Index);
+                if (FileHelpers.IsSuppressed(file.Lines, lineNum - 1)) continue;
+
+                count++;
+                results.Add(new(Severity.Warn, Category,
+                    $"VM-Instanziierung im Task.Run-Body ohne Dispatcher.UIThread in {file.RelativePath}:{lineNum} → UI-Thread-Affinitaets-Crash (Brushes). Dispatcher.UIThread.InvokeAsync(...) verwenden"));
+            }
+        }
+
+        if (count == 0)
+            results.Add(new(Severity.Pass, Category, "Keine VM-Instanziierung auf Background-Thread (Task.Run)"));
+    }
+
+    static int FindMatchingParen(string content, int openParenIndex)
+    {
+        int depth = 0;
+        for (int i = openParenIndex; i < content.Length; i++)
+        {
+            if (content[i] == '(') depth++;
+            else if (content[i] == ')')
+            {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
     }
 
     static int FindMatchingBrace(string content, int startIndex)

@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
+using AppChecker.Helpers;
 
 namespace AppChecker.Checkers;
 
@@ -87,9 +89,10 @@ class AdLayoutChecker : IChecker
         {
             if (!view.Content.Contains("ScrollViewer")) continue;
 
-            // Prüfen ob Margin im ScrollViewer-Kind vorhanden
-            // Vereinfachte Heuristik: ScrollViewer vorhanden aber kein Margin="...60" oder Margin="...64" im Kontext
-            var hasBottomMargin = Regex.IsMatch(view.Content, @"Margin=""[^""]*(?:60|64|70|80)[^""]*""");
+            // Bottom-Margin korrekt parsen (4. bzw. 2. Margin-Komponente >= 60dp), statt nur
+            // die Substrings 60/64/70/80 zu suchen (sonst werden 90/100dp uebersehen und reine
+            // Horizontal-Margins faelschlich als Bottom-Margin gewertet).
+            var hasBottomMargin = HasSufficientBottomMargin(view.Content);
             if (!hasBottomMargin)
             {
                 missingMarginCount++;
@@ -106,14 +109,36 @@ class AdLayoutChecker : IChecker
 
     void CheckShowBanner(List<CheckResult> results, CheckContext ctx)
     {
-        var mainVm = ctx.SharedCsFiles.FirstOrDefault(f =>
-            f.FullPath.EndsWith("MainViewModel.cs") && f.FullPath.Contains("ViewModels"));
+        // Inhalt ueber ALLE MainViewModel-Partials aggregieren (ShowBanner liegt oft in .EventHandlers.cs).
+        var (mainVm, content) = FileHelpers.GetMainViewModel(ctx);
 
         if (mainVm == null) return;
 
-        if (mainVm.Content.Contains("ShowBanner"))
+        if (content.Contains("ShowBanner"))
             results.Add(new(Severity.Pass, Category, "ShowBanner() in MainViewModel vorhanden"));
         else
             results.Add(new(Severity.Warn, Category, "ShowBanner() fehlt in MainViewModel (Banner wird nicht angezeigt)"));
+    }
+
+    /// <summary>
+    /// Prueft, ob irgendein Margin-Attribut einen Bottom-Wert &gt;= minBottom dp hat.
+    /// Avalonia-Margin: "uniform" | "horizontal,vertical" | "left,top,right,bottom".
+    /// </summary>
+    static bool HasSufficientBottomMargin(string content, int minBottom = 60)
+    {
+        foreach (Match m in Regex.Matches(content, @"Margin\s*=\s*""([^""]+)"""))
+        {
+            var parts = m.Groups[1].Value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            string bottomStr = parts.Length switch
+            {
+                1 => parts[0],   // uniform
+                2 => parts[1],   // horizontal,vertical → vertical gilt fuer top+bottom
+                4 => parts[3],   // left,top,right,bottom
+                _ => ""
+            };
+            if (double.TryParse(bottomStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var bottom) && bottom >= minBottom)
+                return true;
+        }
+        return false;
     }
 }

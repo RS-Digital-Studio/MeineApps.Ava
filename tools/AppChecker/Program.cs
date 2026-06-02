@@ -6,7 +6,7 @@ using AppChecker.Checkers;
 using AppChecker.Helpers;
 using static AppChecker.Helpers.ConsoleHelpers;
 
-// AppChecker v2.1 - Automatisches Pruef-Tool fuer alle 9 Avalonia Android Apps
+// AppChecker v2.2 - Automatisches Pruef-Tool fuer alle 12 Avalonia Android Apps
 // 33 Checker-Klassen, 200+ Pruefungen
 //
 // CLI: dotnet run --project tools/AppChecker [APP_NAME] [--quiet|-q|--fail-only|-f|--json]
@@ -29,6 +29,9 @@ var allApps = new AppDef[]
     new("HandwerkerImperium", "com.meineapps.handwerkerimperium", true),
     new("BomberBlast", "org.rsdigital.bomberblast", true),
     new("RebornSaga", "org.rsdigital.rebornsaga", true),
+    new("BingXBot", "com.rsdigital.bingxbot", false),
+    new("GardenControl", "com.rsdigital.gardencontrol", false),
+    new("SmartMeasure", "com.rsdigital.smartmeasure", false),
 };
 
 IChecker[] checkers =
@@ -262,7 +265,7 @@ static void PrintPerAppSummary(List<(string Name, int P, int I, int W, int F, in
 static AppDef[] InteractiveAppSelection(AppDef[] apps, int checkerCount)
 {
     Console.WriteLine();
-    WriteColor($"=== AppChecker v2.1 ({checkerCount} Checker, 200+ Pruefungen) ===", ConsoleColor.White, true);
+    WriteColor($"=== AppChecker v2.2 ({checkerCount} Checker, 200+ Pruefungen) ===", ConsoleColor.White, true);
     Console.WriteLine();
     Console.WriteLine("Welche App(s) pruefen?");
     Console.WriteLine();
@@ -298,7 +301,7 @@ static AppDef[] InteractiveAppSelection(AppDef[] apps, int checkerCount)
 
 static void PrintHelp()
 {
-    Console.WriteLine("AppChecker v2.1 - Automatisches Pruef-Tool fuer 9 Avalonia-Apps");
+    Console.WriteLine("AppChecker v2.2 - Automatisches Pruef-Tool fuer 12 Avalonia-Apps");
     Console.WriteLine();
     Console.WriteLine("Verwendung:");
     Console.WriteLine("  dotnet run --project tools/AppChecker [APP_NAME] [OPTIONEN]");

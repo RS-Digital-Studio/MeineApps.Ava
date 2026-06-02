@@ -68,6 +68,9 @@ class DisposableChecker : IChecker
             for (int c = 0; c < classMatches.Count; c++)
             {
                 var classMatch = classMatches[c];
+                // static classes haben keinen Instanz-Lifetime → kein Instanz-Dispose moeglich/noetig.
+                // (z.B. ProjectThumbnailRenderer: static Paint-Cache fuer die Prozess-Lebenszeit.)
+                if (Regex.IsMatch(classMatch.Value, @"\bstatic\b")) continue;
                 int classStart = FindClassBodyStart(content, classMatch);
                 int classEnd = (c + 1 < classMatches.Count) ? classMatches[c + 1].Index : content.Length;
                 if (classStart < 0 || classStart >= classEnd) continue;
@@ -103,9 +106,19 @@ class DisposableChecker : IChecker
 
                 if (!hasDisposeMethod)
                 {
-                    classesWithFieldsNoDispose++;
                     var fieldList = string.Join(", ", fieldsInClass.Take(3).Select(f => $"{f.Type} {f.Name}"));
                     var more = fieldsInClass.Count > 3 ? $" (+{fieldsInClass.Count - 3} mehr)" : "";
+
+                    // Managed Lock-Primitive (SemaphoreSlim/ReaderWriterLockSlim/ManualResetEventSlim) allokieren
+                    // kein OS-Handle (solange kein AvailableWaitHandle abgerufen wird) → kein echter Leak, nur INFO.
+                    if (fieldsInClass.All(f => IsManagedLockPrimitive(f.Type)))
+                    {
+                        results.Add(new(Severity.Info, Category,
+                            $"{className} hat {fieldsInClass.Count} managed Lock-Primitive(e) ohne Dispose in {file.RelativePath} ({fieldList}{more}) → unkritisch (kein OS-Handle), Dispose optional"));
+                        continue;
+                    }
+
+                    classesWithFieldsNoDispose++;
                     var disposableHint = implementsIDisposable ? " (Klasse implementiert IDisposable aber keine Dispose-Methode)" : "";
                     results.Add(new(Severity.Warn, Category,
                         $"{className} hat {fieldsInClass.Count} IDisposable-Feld(er) aber keine Dispose-Methode in {file.RelativePath} → Memory-Leak: {fieldList}{more}{disposableHint}"));
@@ -137,6 +150,13 @@ class DisposableChecker : IChecker
 
         return results;
     }
+
+    /// <summary>Managed Lock-Primitive ohne OS-Handle — Dispose ist optional, kein echter Leak.</summary>
+    static bool IsManagedLockPrimitive(string type) => type switch
+    {
+        "SemaphoreSlim" or "ReaderWriterLockSlim" or "ManualResetEventSlim" => true,
+        _ => false
+    };
 
     static int FindClassBodyStart(string content, Match classMatch)
     {

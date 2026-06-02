@@ -22,6 +22,16 @@ class ServiceConventionChecker : IChecker
         @"^\s*(?:public|protected|internal|private)\s+(?:override\s+|virtual\s+|static\s+)*async\s+(?:Task|ValueTask)(?:<[^>]+>)?\s+(?<name>\w+)\s*\(",
         RegexOptions.Compiled | RegexOptions.Multiline);
 
+    // public interface IXxx ... { — Start eines Interfaces
+    static readonly Regex InterfaceDeclRegex = new(
+        @"(?:public|internal)\s+(?:partial\s+)?interface\s+(?<name>I\w+)\b[^{]*\{",
+        RegexOptions.Compiled);
+
+    // Methoden-Signatur in einem Interface-Body: "ReturnType Name(...);" (keine Properties { get; }, keine Events)
+    static readonly Regex InterfaceMethodRegex = new(
+        @"^\s*(?!//)[A-Za-z_][\w<>\[\],\.\s\?]*\s+\w+\s*\([^;{]*\)\s*;",
+        RegexOptions.Compiled | RegexOptions.Multiline);
+
     public List<CheckResult> Check(CheckContext ctx)
     {
         var results = new List<CheckResult>();
@@ -94,6 +104,39 @@ class ServiceConventionChecker : IChecker
             }
         }
 
+        // === 2b. God Interfaces (ISP-Verletzung: > 5 Methoden pro Interface) ===
+        int godInterfaces = 0;
+        foreach (var file in ctx.SharedCsFiles)
+        {
+            if (!Path.GetFileName(file.FullPath).StartsWith('I')) continue;
+            foreach (Match decl in InterfaceDeclRegex.Matches(file.Content))
+            {
+                var ifaceName = decl.Groups["name"].Value;
+                var body = ExtractInterfaceBody(file.Content, decl.Index + decl.Length);
+                if (body == null) continue;
+                var methodCount = InterfaceMethodRegex.Matches(body).Count;
+                if (methodCount > 5)
+                {
+                    var lineNum = GetLineNumber(file.Content, decl.Index);
+                    if (FileHelpers.IsSuppressed(file.Lines, lineNum - 1)) continue;
+                    // Abgestuft: 6-10 Methoden = INFO (oft vertretbar), > 10 = WARN (klarer ISP-Verstoss).
+                    if (methodCount > 10)
+                    {
+                        godInterfaces++;
+                        results.Add(new(Severity.Warn, Category,
+                            $"God Interface {ifaceName} mit {methodCount} Methoden in {file.RelativePath}:{lineNum} → ISP-Verletzung, pro Verantwortlichkeit ein Interface aufteilen"));
+                    }
+                    else
+                    {
+                        results.Add(new(Severity.Info, Category,
+                            $"Interface {ifaceName} mit {methodCount} Methoden in {file.RelativePath}:{lineNum} → grenzwertig (ISP: ein Interface pro Verantwortlichkeit)"));
+                    }
+                }
+            }
+        }
+        if (godInterfaces == 0)
+            results.Add(new(Severity.Pass, Category, "Keine God Interfaces (alle Interfaces <= 5 Methoden)"));
+
         // === 3. Lifetime-Doppel-Registrierung (gleicher Service-Typ 2x mit unterschiedlichem Lifetime) ===
         var appAxamlCs = ctx.SharedCsFiles.FirstOrDefault(f => Path.GetFileName(f.FullPath) == "App.axaml.cs");
         if (appAxamlCs != null)
@@ -143,6 +186,22 @@ class ServiceConventionChecker : IChecker
         "Invoke" or "InvokeAsync" => true,                         // Delegate-Invocation
         _ => false
     };
+
+    /// <summary>Extrahiert den Interface-Body ab der Position nach dem oeffnenden { (Brace-Matching).</summary>
+    static string? ExtractInterfaceBody(string content, int afterOpenBrace)
+    {
+        int depth = 1;
+        for (int i = afterOpenBrace; i < content.Length; i++)
+        {
+            if (content[i] == '{') depth++;
+            else if (content[i] == '}')
+            {
+                depth--;
+                if (depth == 0) return content.Substring(afterOpenBrace, i - afterOpenBrace);
+            }
+        }
+        return null;
+    }
 
     static int GetLineNumber(string content, int offset)
     {

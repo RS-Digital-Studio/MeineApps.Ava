@@ -66,6 +66,83 @@ class SkiaSharpChecker : IChecker
         if (invalidateVisualCount == 0) results.Add(new(Severity.Pass, Category, "Kein InvalidateVisual() (InvalidateSurface() wird korrekt verwendet)"));
         if (arcTo360Count == 0) results.Add(new(Severity.Pass, Category, "Kein ArcTo mit 360° Problem"));
 
+        CheckPerFrameAllocations(results, skiaFiles);
+
         return results;
+    }
+
+    // Paint-/Render-Methoden, deren Body pro Frame laeuft
+    static readonly Regex PaintMethodRegex = new(
+        @"\b(?:PaintSurface|OnPaint\w*|Render\w*|Draw\w*)\s*\([^)]*\)\s*",
+        RegexOptions.Compiled);
+
+    // Per-Frame-Allokationen, die GC-Druck/Stutter erzeugen (Paints/Filter gehoeren in Felder).
+    // SKColor/SKPoint/SKRect sind structs (keine Allokation) → bewusst NICHT erfasst.
+    static readonly Regex PerFrameAllocRegex = new(
+        @"new\s+SKPaint\b|SKMaskFilter\.Create\w*\s*\(",
+        RegexOptions.Compiled);
+
+    /// <summary>
+    /// Findet Per-Frame-Allokationen (new SKPaint / SKMaskFilter.Create*) innerhalb von Paint-/Render-Methoden.
+    /// Paints und Filter muessen als Felder gecacht werden — pro Frame neu erzeugen verursacht GC-Druck + UI-Stutter
+    /// (MeineApps.UI/CLAUDE.md). Feld-Initializer (private SKPaint _p = new(...)) werden NICHT erfasst.
+    /// </summary>
+    void CheckPerFrameAllocations(List<CheckResult> results, List<CsFile> skiaFiles)
+    {
+        int perFrameAllocs = 0;
+        foreach (var file in skiaFiles)
+        {
+            var content = file.Content;
+            foreach (Match m in PaintMethodRegex.Matches(content))
+            {
+                int braceStart = content.IndexOf('{', m.Index + m.Length);
+                if (braceStart < 0) continue;
+                // Zwischen Signatur und { darf nur Whitespace stehen (sonst Aufruf/Expression-Body, keine Methode)
+                if (content[(m.Index + m.Length)..braceStart].Any(c => !char.IsWhiteSpace(c))) continue;
+
+                int braceEnd = FindMatchingBrace(content, braceStart + 1);
+                if (braceEnd <= braceStart) continue;
+                var body = content.Substring(braceStart, braceEnd - braceStart);
+
+                foreach (Match a in PerFrameAllocRegex.Matches(body))
+                {
+                    var lineNum = GetLineNumber(content, braceStart + a.Index);
+                    if (FileHelpers.IsSuppressed(file.Lines, lineNum - 1)) continue;
+                    perFrameAllocs++;
+                    if (perFrameAllocs <= 10)
+                        results.Add(new(Severity.Warn, Category,
+                            $"Per-Frame-Allokation '{a.Value.Trim()}' in Paint-/Render-Methode in {file.RelativePath}:{lineNum} → Paint/Filter als Feld cachen (GC-Druck/UI-Stutter)"));
+                }
+            }
+        }
+        if (perFrameAllocs == 0)
+            results.Add(new(Severity.Pass, Category, "Keine Per-Frame-Allokationen (new SKPaint/SKMaskFilter) in Paint-Methoden"));
+        else if (perFrameAllocs > 10)
+            results.Add(new(Severity.Warn, Category, $"...und {perFrameAllocs - 10} weitere Per-Frame-Allokationen"));
+    }
+
+    static int FindMatchingBrace(string content, int startIndex)
+    {
+        int depth = 1;
+        for (int i = startIndex; i < content.Length; i++)
+        {
+            if (content[i] == '{') depth++;
+            else if (content[i] == '}')
+            {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    static int GetLineNumber(string content, int offset)
+    {
+        if (offset < 0) offset = 0;
+        if (offset > content.Length) offset = content.Length;
+        int line = 1;
+        for (int i = 0; i < offset; i++)
+            if (content[i] == '\n') line++;
+        return line;
     }
 }

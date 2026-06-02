@@ -35,6 +35,11 @@ class CommunityToolkitChecker : IChecker
         @":\s*[^{]*\bINotifyPropertyChanged\b",
         RegexOptions.Compiled);
 
+    // [RelayCommand] auf einer Methode mit Werttyp-Parameter (RelayCommand<int> etc.)
+    static readonly Regex ValueTypeCommandRegex = new(
+        @"\[RelayCommand[^\]]*\]\s*(?:private|public|protected|internal)?\s*(?:async\s+)?[\w<>\.\[\]]+\s+(\w+)\s*\(\s*(?:int|long|double|decimal|float|short|byte|bool)\b",
+        RegexOptions.Compiled);
+
     public List<CheckResult> Check(CheckContext ctx)
     {
         var results = new List<CheckResult>();
@@ -157,7 +162,52 @@ class CommunityToolkitChecker : IChecker
         if (rawInpcCount == 0)
             results.Add(new(Severity.Pass, Category, "Alle VMs erben von ObservableObject/ViewModelBase (kein rohes INotifyPropertyChanged)"));
 
+        CheckCommandParameterTypes(results, ctx);
+
         return results;
+    }
+
+    /// <summary>
+    /// CommandParameter ist in XAML immer string. CommandParameter="0" an ein RelayCommand&lt;int&gt;
+    /// uebergibt "0" (string), nicht int 0 → ArgumentException beim View-Attach (CanExecute).
+    /// Cross-Check: nur flaggen, wenn das gebundene Command tatsaechlich einen Werttyp-Parameter hat
+    /// (sonst wuerden z.B. Taschenrechner-Ziffern-Buttons mit string-Command faelschlich getroffen).
+    /// </summary>
+    void CheckCommandParameterTypes(List<CheckResult> results, CheckContext ctx)
+    {
+        var valueTypeCommands = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var file in ctx.SharedCsFiles.Where(f => f.FullPath.Contains("ViewModels")))
+        {
+            foreach (Match m in ValueTypeCommandRegex.Matches(file.Content))
+            {
+                var method = m.Groups[1].Value;
+                if (method.EndsWith("Async", StringComparison.Ordinal)) method = method[..^5];
+                valueTypeCommands.Add(method + "Command");
+            }
+        }
+        if (valueTypeCommands.Count == 0) return;
+
+        int mismatches = 0;
+        foreach (var view in ctx.AxamlFiles)
+        {
+            var lines = view.Content.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var cp = Regex.Match(lines[i], @"CommandParameter\s*=\s*""(-?\d+(?:[.,]\d+)?|true|false)""", RegexOptions.IgnoreCase);
+                if (!cp.Success) continue;
+
+                // Command="{Binding XxxCommand}" im selben Element (Fenster ±4 Zeilen)
+                var window = string.Join('\n', lines.Skip(Math.Max(0, i - 4)).Take(9));
+                var cmd = Regex.Match(window, @"Command\s*=\s*""\{(?:Compiled)?Binding\s+(\w+Command)\}""");
+                if (!cmd.Success || !valueTypeCommands.Contains(cmd.Groups[1].Value)) continue;
+
+                mismatches++;
+                results.Add(new(Severity.Warn, Category,
+                    $"CommandParameter=\"{cp.Groups[1].Value}\" (string) an {cmd.Groups[1].Value} (Werttyp-Parameter) in {view.RelativePath}:{i + 1} → ArgumentException bei CanExecute. VM-Methode auf string + TryParse, oder <sys:Int32> als Parameter"));
+            }
+        }
+        if (mismatches == 0)
+            results.Add(new(Severity.Pass, Category, "Keine CommandParameter-Typ-Mismatches (string-Literal an Werttyp-Command)"));
     }
 
     /// <summary>Heuristik: Steht diese Zeile innerhalb eines C#-Property-Setters?</summary>

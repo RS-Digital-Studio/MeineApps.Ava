@@ -64,6 +64,13 @@ class HardcodedStringChecker : IChecker
         @"(?<prop>[A-Z][A-Za-z]+(?:\.[A-Z][a-z]+)?)\s*=\s*""(?<value>[^""]+)""",
         RegexOptions.Compiled);
 
+    // Unicode-Symbole als UI-Text (Icon-Strategie verbietet sie): Arrows (2190-21FF), Technical (2300-23FF),
+    // Geometric Shapes (25A0-25FF), Misc Symbols (2600-26FF), Dingbats (2700-27BF), Misc Symbols & Arrows
+    // (2B00-2BFF). Bullet U+2022 bewusst NICHT erfasst (Listen-Bullets sind legitim).
+    static readonly Regex UiSymbolRegex = new(
+        @"[←-⇿⌀-⏿■-◿☀-⛿✀-➿⬀-⯿]",
+        RegexOptions.Compiled);
+
     // C# Toast/MessageBox-Patterns
     static readonly Regex CsToastPattern = new(
         @"(MessageRequested\?\.Invoke|ShowMessage|ShowToast|FloatingTextRequested\?\.Invoke|Toast\.MakeText|NotificationManager\.Show)\s*\(\s*""([^""]+)""",
@@ -74,6 +81,7 @@ class HardcodedStringChecker : IChecker
         var results = new List<CheckResult>();
         int xamlHardcoded = 0;
         int csHardcoded = 0;
+        int unicodeSymbols = 0;
         var userFacingSet = new HashSet<string>(UserFacingProps, StringComparer.OrdinalIgnoreCase);
 
         // === 1. AXAML: Hardcoded Text/Content/Watermark/Header/ToolTip.Tip ===
@@ -101,6 +109,20 @@ class HardcodedStringChecker : IChecker
                     var value = System.Net.WebUtility.HtmlDecode(rawValue);
 
                     if (!userFacingSet.Contains(prop)) continue;
+
+                    // Unicode-Symbol als UI-Text (Icon-Strategie: SvgIcon/MaterialIcon statt Glyphen)
+                    if (UiSymbolRegex.IsMatch(value))
+                    {
+                        unicodeSymbols++;
+                        if (unicodeSymbols <= 10)
+                        {
+                            var sym = UiSymbolRegex.Match(value).Value;
+                            results.Add(new(Severity.Warn, Category,
+                                $"Unicode-Symbol '{sym}' als {prop} in {file.RelativePath}:{i + 1} → SvgIcon/MaterialIcon verwenden (Icon-Strategie)"));
+                        }
+                        continue; // nicht zusaetzlich als Hardcoded-String werten
+                    }
+
                     if (IsTechnicalValue(value)) continue;
                     if (IsBindingOrResource(value)) continue;
                     if (!ContainsWordLikeContent(value)) continue;
@@ -135,6 +157,11 @@ class HardcodedStringChecker : IChecker
 
         if (xamlHardcoded > 15)
             results.Add(new(Severity.Warn, Category, $"...und {xamlHardcoded - 15} weitere hardcodierte AXAML-Strings"));
+
+        if (unicodeSymbols == 0)
+            results.Add(new(Severity.Pass, Category, "Keine Unicode-Symbole als UI-Text (Icon-Strategie eingehalten)"));
+        else if (unicodeSymbols > 10)
+            results.Add(new(Severity.Warn, Category, $"...und {unicodeSymbols - 10} weitere Unicode-Symbole als UI-Text"));
 
         // === 2. C#: Toast/MessageBox/FloatingText-Strings ohne GetString() ===
         foreach (var file in ctx.SharedCsFiles)

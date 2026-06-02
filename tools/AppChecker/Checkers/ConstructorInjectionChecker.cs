@@ -47,6 +47,7 @@ class ConstructorInjectionChecker : IChecker
         int classesNoExplicitCtor = 0;
         int classesNewServiceInCtor = 0;
         int classesInstanceAccessInCtor = 0;
+        int classesStaticInstance = 0;
         int classesChecked = 0;
 
         // DI-Registrierungen aus App.axaml.cs: dependency-freie, per DI registrierte Services
@@ -91,6 +92,20 @@ class ConstructorInjectionChecker : IChecker
             bool isAbstract = modifiers.Contains("abstract");
 
             classesChecked++;
+
+            // Statische Singleton-Deklaration (public static XxxService Instance) → Anti-Pattern (keine
+            // Test-Isolation, Lifetime-Bugs). Eigene Singletons gehoeren als Interface in den DI-Container.
+            var instanceDecl = Regex.Match(content, @"public\s+static\s+(?:readonly\s+)?(\w+)\??\s+Instance\b");
+            if (instanceDecl.Success && instanceDecl.Groups[1].Value == className)
+            {
+                var instLine = GetLineNumber(content, instanceDecl.Index);
+                if (!FileHelpers.IsSuppressed(file.Lines, instLine - 1))
+                {
+                    classesStaticInstance++;
+                    results.Add(new(Severity.Info, Category,
+                        $"{className} hat eine statische Instance ('public static {className} Instance') in {file.RelativePath}:{instLine} → Singleton-Anti-Pattern, als Interface per DI-Singleton verwenden"));
+                }
+            }
 
             // Alle Ctors dieser Klasse sammeln (Name == className)
             var ctorMatches = CtorRegex.Matches(content)
@@ -168,6 +183,8 @@ class ConstructorInjectionChecker : IChecker
             results.Add(new(Severity.Pass, Category, "Keine 'new XxxService()' Hard-Dependencies in Konstruktoren"));
         if (classesInstanceAccessInCtor == 0)
             results.Add(new(Severity.Pass, Category, "Keine '.Instance'-Service-Locator-Zugriffe in Konstruktoren"));
+        if (classesStaticInstance == 0)
+            results.Add(new(Severity.Pass, Category, "Keine statischen Singleton-Instances (public static Xxx Instance)"));
 
         return results;
     }

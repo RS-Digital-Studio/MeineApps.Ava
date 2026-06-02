@@ -17,6 +17,9 @@ class LocalizationChecker : IChecker
     {
         var results = new List<CheckResult>();
 
+        // GetString-Fallback unabhaengig vom resx-Verzeichnis pruefen (C#-Code-Check).
+        CheckGetStringFallbacks(results, ctx);
+
         var stringsDir = Path.Combine(ctx.SharedDir, "Resources", "Strings");
         if (!Directory.Exists(stringsDir))
         {
@@ -94,6 +97,33 @@ class LocalizationChecker : IChecker
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// GetString(key) ?? "fallback" ist toter Code: ILocalizationService.GetString liefert bei fehlendem
+    /// Key den Key-NAMEN zurueck (nie null) → der ?? -Fallback greift nie, die rohe Key-ID erscheint im UI.
+    /// Bei optionalen Keys den Miss explizit behandeln (var v = GetString(key); return v == key ? fallback : v;).
+    /// </summary>
+    void CheckGetStringFallbacks(List<CheckResult> results, CheckContext ctx)
+    {
+        int deadFallbacks = 0;
+        foreach (var file in ctx.SharedCsFiles)
+        {
+            for (int i = 0; i < file.Lines.Length; i++)
+            {
+                var trimmed = file.Lines[i].TrimStart();
+                if (trimmed.StartsWith("//")) continue;
+                if (FileHelpers.IsSuppressed(file.Lines, i)) continue;
+                if (!Regex.IsMatch(trimmed, @"GetString\s*\([^)]*\)\s*\?\?")) continue;
+
+                deadFallbacks++;
+                if (deadFallbacks <= 8)
+                    results.Add(new(Severity.Info, Category,
+                        $"GetString(...) ?? Fallback in {file.RelativePath}:{i + 1} → GetString liefert bei Miss den Key (nie null), ?? ist toter Code; Key-Miss explizit behandeln (v == key ? fallback : v)"));
+            }
+        }
+        if (deadFallbacks > 8)
+            results.Add(new(Severity.Info, Category, $"...und {deadFallbacks - 8} weitere GetString(...) ?? Fallback-Stellen"));
     }
 
     /// <summary>Extrahiert die Kultur aus einem Overlay-Dateinamen (AppStrings.de.resx -> "de", AppStrings.zh-CN.resx -> "zh-CN"). Base (AppStrings.resx) liefert null.</summary>

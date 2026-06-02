@@ -84,6 +84,7 @@ IChecker[] checkers =
     new EventCleanupChecker(),
     new DisposableChecker(),
     new HardcodedStringChecker(),
+    new DebugToolingChecker(),       // AutomationId + DebugHelper.ShowName
 ];
 
 // === CLI-Parsing ===

@@ -225,6 +225,14 @@ class AvaloniaGotchasChecker : IChecker
                     results.Add(new(Severity.Warn, Category, $"Property 'IsAnimating' in {file.RelativePath}:{i + 1} → kollidiert mit AvaloniaObject.IsAnimating()"));
                 }
             }
+
+            // Avalonia 12: FuncMultiValueConverter-Convert-Delegate nimmt IReadOnlyList<TIn> statt IEnumerable<TIn> (Datei-Level, mehrzeilig)
+            if (file.Content.Contains("FuncMultiValueConverter")
+                && Regex.IsMatch(file.Content, @"FuncMultiValueConverter[\s\S]{0,200}?IEnumerable<"))
+            {
+                avalonia12MigrationCount++;
+                results.Add(new(Severity.Warn, Category, $"FuncMultiValueConverter mit IEnumerable<TIn> in {file.RelativePath} → Avalonia 12: IReadOnlyList<TIn> verwenden"));
+            }
         }
 
         if (isAttachedCount == 0) results.Add(new(Severity.Pass, Category, "Kein IsAttachedToVisualTree (entfernt seit Avalonia 11.3)"));

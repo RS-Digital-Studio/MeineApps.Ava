@@ -3282,9 +3282,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var hint = snapped.type switch
             {
                 SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Vertex => "Vertex-Snap",
-                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.RightAngle => "⊥ 90°-Snap",
-                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Parallel => "∥ Parallel-Snap",
-                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Extension => "↗ Verlängerung",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.RightAngle => "90°-Snap",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Parallel => "Parallel-Snap",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Extension => "Verlängerung",
                 _ => null,
             };
             if (hint != null)

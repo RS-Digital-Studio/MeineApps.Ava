@@ -74,6 +74,7 @@ public class ArTransferService : IArTransferService
             {
                 result.GpsLatitude ??= 48.7758;
                 result.GpsLongitude ??= 9.1829;
+                result.GpsAltitude ??= 520.0; // plausibler DE-Default — sonst Hoehen relativ zu 0m Ellipsoid
             }
             System.Diagnostics.Debug.WriteLine(
                 "AR-Transfer: Keine GPS-Referenz — Fallback-Ursprung verwendet (Masse korrekt, Karten-Lage ungenau).");
@@ -219,11 +220,11 @@ public class ArTransferService : IArTransferService
                 FixQuality = ArFixQuality,
                 SatelliteCount = 0,
                 MagAccuracy = arPoint.MagAccuracyAtCapture,
-                // Echte Mess-Konfidenz durchreichen: RTK-Fusion = cm-genau (1.0),
-                // sonst die ARCore-Confidence des Punkts (Hit-Quality + Streuung + Tracking).
-                // Vorher ging dieser Wert beim Transfer verloren — der Nutzer konnte die
-                // Qualitaet seiner AR-Messung nicht mehr einschaetzen.
-                Confidence = isRtk ? 1f : arPoint.Confidence,
+                // Echte Mess-Konfidenz durchreichen: RTK-Fix (4) = cm-genau → 1.0, RTK-Float
+                // (5, ±10-50cm) ehrlicher 0.6, sonst die ARCore-Confidence des Punkts
+                // (Hit-Quality + Streuung + Tracking). Vorher ging dieser Wert beim Transfer
+                // verloren — der Nutzer konnte die Qualitaet seiner AR-Messung nicht einschaetzen.
+                Confidence = isRtk ? (result.RtkFixQuality == 4 ? 1f : 0.6f) : arPoint.Confidence,
                 Timestamp = arPoint.Timestamp,
                 Label = arPoint.Label,
                 // Plan-Kap. 5.6: Foto-Annotation pro Punkt durchreichen

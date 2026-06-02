@@ -144,8 +144,8 @@ public partial class ArCaptureActivity
                         _overlayView?.Invalidate();
                         ClearRecoveryState();
                         var hint = anchorsToRestore > 0
-                            ? $"✓ {totalPoints} Punkte wiederhergestellt — {anchorsToRestore} Geo-Anchors werden re-attached"
-                            : $"✓ {totalPoints} Punkte wiederhergestellt";
+                            ? $"{totalPoints} Punkte wiederhergestellt — {anchorsToRestore} Geo-Anchors werden re-attached"
+                            : $"{totalPoints} Punkte wiederhergestellt";
                         ShowTransientHint(hint);
                     });
                     builder.SetNegativeButton("Verwerfen", (_, _) => ClearRecoveryState());

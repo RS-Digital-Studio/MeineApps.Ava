@@ -110,18 +110,18 @@ public partial class ArCaptureActivity
 
     #region Kontur-Typ-Auswahl (Gartenplanung)
 
-    private static readonly (ArContourType Type, string Label, string Emoji)[]
+    private static readonly (ArContourType Type, string Label)[]
         ContourTypeOptions =
         [
-            (ArContourType.Weg,       "Weg",       "🛤"),
-            (ArContourType.Beet,      "Beet",      "🌸"),
-            (ArContourType.Mauer,     "Mauer",     "🧱"),
-            (ArContourType.Zaun,      "Zaun",      "🌳"),
-            (ArContourType.Terrasse,  "Terrasse",  "🏗"),
-            (ArContourType.Gebaeude,  "Gebäude",   "🏠"),
-            (ArContourType.Wasser,    "Wasser/Teich", "💧"),
-            (ArContourType.Grenze,    "Grenze",    "🔶"),
-            (ArContourType.Kante,     "Kante",     "📐"),
+            (ArContourType.Weg,       "Weg"),
+            (ArContourType.Beet,      "Beet"),
+            (ArContourType.Mauer,     "Mauer"),
+            (ArContourType.Zaun,      "Zaun"),
+            (ArContourType.Terrasse,  "Terrasse"),
+            (ArContourType.Gebaeude,  "Gebäude"),
+            (ArContourType.Wasser,    "Wasser/Teich"),
+            (ArContourType.Grenze,    "Grenze"),
+            (ArContourType.Kante,     "Kante"),
         ];
 
     /// <summary>
@@ -134,7 +134,7 @@ public partial class ArCaptureActivity
         try
         {
             var labels = ContourTypeOptions
-                .Select(o => $"{o.Emoji}  {o.Label}")
+                .Select(o => o.Label)
                 .ToArray();
 
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
@@ -191,7 +191,7 @@ public partial class ArCaptureActivity
         _overlayView?.Invalidate();
 
         var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == type).Label ?? type.ToString();
-        ShowTransientHint($"📐 Neue {typeLabel}-Kontur — Punkte tippen");
+        ShowTransientHint($"Neue {typeLabel}-Kontur — Punkte tippen");
         VibrateMedium();
     }
 
@@ -252,14 +252,15 @@ public partial class ArCaptureActivity
         {
             var sb = new System.Text.StringBuilder();
 
+            // Klartext-Marker statt Symbole: [OK] / [--] / [..] / [i] / [!]
             // ARCore-Session aktiv
-            sb.Append(_arSession != null ? "✓" : "✗");
-            sb.AppendLine($"  ARCore-Session: {(_arSession != null ? "läuft" : "fehlt")}");
+            sb.Append(_arSession != null ? "[OK] " : "[--] ");
+            sb.AppendLine($"ARCore-Session: {(_arSession != null ? "läuft" : "fehlt")}");
 
             // Kamera-Stabilität
             var stability = _stabilityMonitor?.StabilityScore ?? 0f;
-            sb.Append(stability >= 0.6f ? "✓" : "✗");
-            sb.AppendLine($"  Stabilität: {(int)(stability * 100)}% (≥ 60% nötig)");
+            sb.Append(stability >= 0.6f ? "[OK] " : "[--] ");
+            sb.AppendLine($"Stabilität: {(int)(stability * 100)}% (mind. 60% nötig)");
 
             // Magnetometer-Accuracy
             var magOk = _magneticAccuracy >= 2;
@@ -270,8 +271,8 @@ public partial class ArCaptureActivity
                 1 => "niedrig",
                 _ => "keine",
             };
-            sb.Append(magOk ? "✓" : "✗");
-            sb.AppendLine($"  Kompass: {magLabel} (mind. mittel)");
+            sb.Append(magOk ? "[OK] " : "[--] ");
+            sb.AppendLine($"Kompass: {magLabel} (mind. mittel)");
 
             // Erkannte Planes
             var planeCount = 0;
@@ -284,33 +285,33 @@ public partial class ArCaptureActivity
                             planeCount++;
             }
             catch { /* harmlos */ }
-            sb.Append(planeCount > 0 ? "✓" : "✗");
-            sb.AppendLine($"  Erkannte Flächen: {planeCount}");
+            sb.Append(planeCount > 0 ? "[OK] " : "[--] ");
+            sb.AppendLine($"Erkannte Flächen: {planeCount}");
 
             // Anchor-Count (Drift-Kompensation)
             var anchors = _anchorManager.CountTracking();
-            sb.AppendLine($"ℹ  Aktive Anchors: {anchors}");
+            sb.AppendLine($"[i]  Aktive Anchors: {anchors}");
 
             // Geospatial-API
-            sb.Append(_geospatialActive ? "✓" : "○");
-            sb.AppendLine($"  Geospatial-VPS: {(_geospatialActive ? "aktiv" : _geospatialEnabled ? "lokalisiert noch" : "deaktiviert")}");
+            sb.Append(_geospatialActive ? "[OK] " : "[..] ");
+            sb.AppendLine($"Geospatial-VPS: {(_geospatialActive ? "aktiv" : _geospatialEnabled ? "lokalisiert noch" : "deaktiviert")}");
 
             // GPS
-            sb.Append(_gpsLatitude.HasValue ? "✓" : "✗");
+            sb.Append(_gpsLatitude.HasValue ? "[OK] " : "[--] ");
             var gpsAcc = _gpsAccuracy.HasValue ? $"±{_gpsAccuracy.Value:F1}m" : "—";
-            sb.AppendLine($"  GPS: {(_gpsLatitude.HasValue ? "Fix" : "kein Fix")} ({gpsAcc})");
+            sb.AppendLine($"GPS: {(_gpsLatitude.HasValue ? "Fix" : "kein Fix")} ({gpsAcc})");
 
             // Tracking-Continuity
             var ratio = _frameCountTotal > 0
                 ? (float)_frameCountTracking / _frameCountTotal
                 : 1f;
-            sb.AppendLine($"ℹ  Tracking-Kontinuität: {(int)(ratio * 100)}%");
+            sb.AppendLine($"[i]  Tracking-Kontinuität: {(int)(ratio * 100)}%");
 
             // Thermal
             if (!string.IsNullOrEmpty(_thermalWarningText))
-                sb.AppendLine($"⚠  {_thermalWarningText}");
+                sb.AppendLine($"[!]  {_thermalWarningText}");
             if (!string.IsNullOrEmpty(_batteryWarningText))
-                sb.AppendLine($"⚠  {_batteryWarningText}");
+                sb.AppendLine($"[!]  {_batteryWarningText}");
 
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
             builder.SetTitle("Mess-Bereitschaft");
@@ -342,25 +343,27 @@ public partial class ArCaptureActivity
         {
             const string helpText =
                 "SmartMeasure AR-Modus\n\n" +
-                "◎ Punkt: Einzelne Messpunkte setzen\n" +
-                "─ Linie +: Kontur (Polygon) beginnen\n" +
-                "◯ Schließen: Aktive Kontur abschließen\n" +
-                "↶ ↷: Aktion rückgängig / wiederholen\n" +
-                "✖ Löschen: Ausgewählten Punkt löschen (bestätigt)\n" +
-                "📷: Screenshot als PNG speichern\n" +
-                "● REC: Session als MP4 aufzeichnen\n" +
-                "✔ Fertig: Session beenden und übertragen (bestätigt)\n\n" +
+                "Werkzeugleiste unten:\n" +
+                "Punkt — einzelne Messpunkte setzen\n" +
+                "Fläche — Kontur (Weg/Beet/Mauer/...) beginnen\n" +
+                "Schließen — aktive Kontur abschließen\n" +
+                "Zurück / Vor — Aktion rückgängig / wiederholen\n" +
+                "Mehr — Maßband, Tachymeter, Abstecken, Punkt löschen,\n" +
+                "        Screenshot, Aufnahme, Hilfe\n" +
+                "Fertig — Aufnahme beenden und ins Projekt übertragen\n\n" +
+                "Genauigkeit:\n" +
+                "AR misst auf ca. 5–50 cm genau — ideal für Gartenplanung\n" +
+                "und Flächen. Für zentimetergenaue Grenzpunkte einen\n" +
+                "RTK-Stab verbinden (in den App-Optionen).\n\n" +
                 "Tipps:\n" +
-                "• Crosshair-Farbe = Hit-Qualität\n" +
+                "Fadenkreuz-Farbe = Mess-Qualität:\n" +
                 "   Grün = Fläche erkannt (beste Qualität)\n" +
-                "   Gelb = Instant Placement (geschätzt)\n" +
-                "   Rot/Weiß = Kein Hit, Kamera bewegen\n" +
-                "• Long-Press auf Toolbar-Button = Tooltip\n" +
-                "• Punkt-Drag bewegt einen ausgewählten Punkt\n" +
-                "• Tap auf Bereitschafts-Badge zeigt Detail-Checkliste\n" +
-                "• Session wird nach jedem Punkt persistiert (Recovery)\n" +
-                "• Langsame Bewegung = bessere Tracking-Qualität\n" +
-                "• Gute Beleuchtung für Feature-Detection";
+                "   Gelb = geschätzt (Instant Placement)\n" +
+                "   Rot/Weiß = kein Treffer, Kamera langsam bewegen\n" +
+                "Langsame Bewegung und gute Beleuchtung verbessern die Qualität.\n" +
+                "Lange auf einen Button drücken zeigt seinen Namen.\n" +
+                "Tippen auf das Bereitschafts-Feld oben zeigt eine Checkliste.\n" +
+                "Deine Punkte werden laufend gesichert (Wiederherstellung).";
 
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
             builder.SetTitle("AR-Bedienung");
@@ -369,7 +372,7 @@ public partial class ArCaptureActivity
             builder.SetNeutralButton(_soundEnabled ? "Sound aus" : "Sound an", (_, _) =>
             {
                 SetSoundEnabled(!_soundEnabled);
-                ShowTransientHint(_soundEnabled ? "🔊 Sound aktiv" : "🔇 Sound aus");
+                ShowTransientHint(_soundEnabled ? "Sound aktiv" : "Sound aus");
             });
             builder.Show();
         }
@@ -397,24 +400,24 @@ public partial class ArCaptureActivity
             {
                 const string coachText =
                     "Willkommen im AR-Modus!\n\n" +
-                    "🎯 Crosshair (Bildmitte):\n" +
+                    "Du vermisst mit der Kamera — ganz ohne Zusatz-Hardware.\n" +
+                    "Genauigkeit ca. 5–50 cm, ideal für Garten und Flächen.\n\n" +
+                    "Fadenkreuz (Bildmitte):\n" +
                     "   Hier wird gemessen.\n" +
                     "   Grün = Fläche erkannt, Gelb = Schätzung,\n" +
-                    "   Rot = kein Hit (Kamera langsam bewegen).\n\n" +
-                    "📏 Erste Schritte:\n" +
-                    "   1. Bewege das Telefon langsam über den\n" +
-                    "      Boden bis grüne Flächen erscheinen.\n" +
-                    "   2. Ziele mit dem Crosshair und tippe\n" +
-                    "      irgendwo aufs Bild.\n" +
-                    "   3. Halte 1 Sekunde still — der Punkt\n" +
-                    "      wird gesetzt.\n\n" +
-                    "🛠 Toolbar unten:\n" +
-                    "   Punkt / Linie / Schließen / Löschen / Fertig.\n" +
-                    "   Long-Press auf einen Button für Tooltip.\n\n" +
-                    "✔ 'Fertig' überträgt deine Punkte ins Projekt.\n" +
-                    "✖ 'Löschen' und 'Fertig' fragen jeweils nach.\n\n" +
-                    "Tipp: Schau dir den ⏳-Badge oben links an —\n" +
-                    "er zeigt was für eine präzise Messung noch fehlt.";
+                    "   Rot = kein Treffer (Kamera langsam bewegen).\n\n" +
+                    "Erste Schritte:\n" +
+                    "   1. Telefon langsam über den Boden bewegen,\n" +
+                    "      bis grüne Flächen erscheinen.\n" +
+                    "   2. Mit dem Fadenkreuz zielen und aufs Bild tippen.\n" +
+                    "   3. Kurz still halten — der Punkt wird gesetzt.\n\n" +
+                    "Werkzeugleiste unten:\n" +
+                    "   Punkt, Fläche, Schließen, Zurück/Vor, Mehr, Fertig.\n" +
+                    "   Lange auf einen Button drücken zeigt seinen Namen.\n\n" +
+                    "'Fertig' überträgt deine Punkte ins Projekt.\n" +
+                    "'Löschen' und 'Fertig' fragen vorher nach.\n\n" +
+                    "Das Bereitschafts-Feld oben links zeigt, was für eine\n" +
+                    "präzise Messung noch fehlt.";
 
                 var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
                 builder.SetTitle("So funktioniert AR-Messen");

@@ -686,7 +686,7 @@ public sealed partial class ArPointOverlayView : View
                     var dh = p.Y - _points[0].Y;
                     if (MathF.Abs(dh) >= 0.02f)
                     {
-                        var text = dh > 0 ? $"▲ {dh:F2}m" : $"▼ {MathF.Abs(dh):F2}m";
+                        var text = dh > 0 ? $"+ {dh:F2}m" : $"- {MathF.Abs(dh):F2}m";
                         canvas.DrawText(text, sx + effectiveR + 4, sy + 28 * _density, _labelPaint);
                     }
                 }
@@ -694,7 +694,7 @@ public sealed partial class ArPointOverlayView : View
                 // StdDev-Label (Messgenauigkeit) — nur zeigen wenn nennenswert
                 if (stdDev > 0.005f)
                 {
-                    var sigmaText = $"σ={stdDev * 100:F1}cm";
+                    var sigmaText = $"±{stdDev * 100:F1}cm";
                     canvas.DrawText(sigmaText, sx + effectiveR + 4, sy + 42 * _density, _labelPaint);
                 }
             }
@@ -738,8 +738,8 @@ public sealed partial class ArPointOverlayView : View
                 TextAlign = Paint.Align.Center,
             };
             var text = label == null
-                ? "🎯 Keine Stakeout-Ziele"
-                : "🎯 Warte auf GPS / VPS …";
+                ? "Keine Stakeout-Ziele"
+                : "Warte auf GPS / VPS …";
             canvas.DrawText(text, cx, cyArrow + 5f * _density, textPaint);
             return;
         }
@@ -979,7 +979,7 @@ public sealed partial class ArPointOverlayView : View
         canvas.DrawText(count.ToString(), cx1, valueY, _footerValuePaint);
 
         var cx2 = rect.Left + colW * 1.5f;
-        canvas.DrawText("Σ", cx2, labelY, _footerLabelPaint);
+        canvas.DrawText("Summe", cx2, labelY, _footerLabelPaint);
         canvas.DrawText($"{_state.TapeMeasureTotalMeters:F2} m", cx2, valueY, _footerValuePaint);
     }
 
@@ -1111,7 +1111,7 @@ public sealed partial class ArPointOverlayView : View
             if (_state.HitHeightDelta.HasValue && MathF.Abs(_state.HitHeightDelta.Value) > 0.05f)
             {
                 var dh = _state.HitHeightDelta.Value;
-                label += dh > 0 ? $"  ▲{dh:F2}m" : $"  ▼{MathF.Abs(dh):F2}m";
+                label += dh > 0 ? $"  +{dh:F2}m" : $"  -{MathF.Abs(dh):F2}m";
             }
             canvas.DrawText(label, cx, cy + outerR + 18 * _density, _reticleTextPaint);
         }
@@ -1483,8 +1483,8 @@ public sealed partial class ArPointOverlayView : View
         // ReadinessIssues kommt aus ValidatePreMeasureConditions in ArCaptureActivity —
         // dort wird die Liste bereits aus AppStrings zusammengebaut, also auch lokalisiert.
         var text = _state.IsReadyToMeasure
-            ? $"✓ {_state.Labels.Ready}  {_state.TrackingQualityScore}%"
-            : $"⏳ {_state.ReadinessIssues}";
+            ? $"{_state.Labels.Ready}  {_state.TrackingQualityScore}%"
+            : $"{_state.ReadinessIssues}";
 
         var textWidth = _bannerTextPaint.MeasureText(text);
         var badgeW = textWidth + 2 * padding;

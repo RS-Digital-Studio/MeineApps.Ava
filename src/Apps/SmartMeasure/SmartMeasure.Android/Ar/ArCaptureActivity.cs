@@ -468,12 +468,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         SetContentView(rootLayout);
     }
 
-    // Toolbar-Buttons fuer aktiven Modus
+    // Toolbar-Buttons mit Mode-Highlight. Maßband/Abstecken/Tachymeter sitzen im "Mehr"-Menue.
     private Button? _btnPoint;
     private Button? _btnContour;
-    private Button? _btnTape;
-    private Button? _btnStakeout;
-    private Button? _btnTotalStation;
+    private Button? _btnMore;
 
     // Toolbar-Referenz für Nav-Bar-Safe-Area-Update bei OnApplyWindowInsets
     private HorizontalScrollView? _toolbarScrollView;
@@ -530,55 +528,25 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Toolbar-Buttons — Haptic + Gartenplanungs-Workflow:
         // Linie-Button öffnet Typ-Auswahl-Dialog (Weg/Beet/Mauer/Zaun/Rasen/Terrasse/Grenze)
         // Bei Typ-Auswahl wird aktive Kontur automatisch abgeschlossen + neue vom Typ gestartet.
-        _btnPoint = AddToolbarButton(toolbar, "\u25CE Punkt", density,
+        _btnPoint = AddToolbarButton(toolbar, Resource.Drawable.ic_ar_point, "Punkt", density,
             () => { VibrateLight(); SetMode(CaptureMode.Point); },
             tooltip: "Einzelne Messpunkte setzen", isActive: true);
-        _btnContour = AddToolbarButton(toolbar, "\u2500 Linie +", density,
+        _btnContour = AddToolbarButton(toolbar, Resource.Drawable.ic_ar_area, "Fläche", density,
             () => { VibrateLight(); ShowContourTypeDialog(); },
             tooltip: "Neue Kontur (Weg/Beet/Mauer/...) beginnen");
-        // Plan-Kap. 5.3: Tape-Measure-Modus. Tap = Mode aktivieren, Long-Press = Reset.
-        _btnTape = AddToolbarButton(toolbar, "\uD83D\uDCCF Mass", density,
-            () => { VibrateLight(); SetMode(CaptureMode.TapeMeasure); },
-            tooltip: "Ad-hoc-Distanz messen (kein Projekt-Save). Long-Press: zuruecksetzen");
-        if (_btnTape != null)
-        {
-            _btnTape.LongClick += (_, _) =>
-            {
-                VibrateMedium();
-                ResetTapeMeasure();
-            };
-        }
-        // Plan-Kap. 5.9: Stakeout-Modus \u2014 nur sinnvoll wenn Targets vorhanden sind.
-        // Sonst zeigen wir trotzdem den Button, aber mit Hint beim Aktivieren.
-        _btnStakeout = AddToolbarButton(toolbar, "\uD83C\uDFAF Absteck", density,
-            () => { VibrateLight(); SetMode(CaptureMode.Stakeout); },
-            tooltip: "Stakeout: Pfeil zum naechsten Ziel");
-        // Plan-Kap. 5.17: Total-Station-Modus
-        _btnTotalStation = AddToolbarButton(toolbar, "\uD83D\uDCD0 Tachy", density,
-            () => { VibrateLight(); ToggleTotalStationMode(); },
-            tooltip: "Total-Station: Stativ-Modus mit Depth-Tachymeter");
-        AddToolbarButton(toolbar, "\u25EF Schließen", density,
+        AddToolbarButton(toolbar, Resource.Drawable.ic_ar_close, "Schließen", density,
             () => { VibrateMedium(); CloseActiveContour(); },
             tooltip: "Aktive Kontur schließen (mind. 3 Punkte)");
-        AddToolbarButton(toolbar, "\u21B6", density,
+        AddToolbarButton(toolbar, Resource.Drawable.ic_ar_undo, "Zurück", density,
             () => { VibrateLight(); Undo(); },
-            tooltip: "Letzte Aktion r\u00FCckg\u00E4ngig");
-        AddToolbarButton(toolbar, "\u21B7", density,
+            tooltip: "Letzte Aktion rückgängig");
+        AddToolbarButton(toolbar, Resource.Drawable.ic_ar_redo, "Vor", density,
             () => { VibrateLight(); Redo(); },
             tooltip: "Aktion wiederholen");
-        AddToolbarButton(toolbar, "\u2716 Löschen", density,
-            ConfirmDeleteSelectedPoint,
-            tooltip: "Ausgew\u00E4hlten Punkt l\u00F6schen (mit Best\u00E4tigung)");
-        AddToolbarButton(toolbar, "\uD83D\uDCF7", density,
-            TakeScreenshot,
-            tooltip: "Screenshot als PNG speichern");
-        AddToolbarButton(toolbar, "\u25CF REC", density,
-            ToggleRecording,
-            tooltip: "Session als MP4 aufzeichnen");
-        AddToolbarButton(toolbar, "?", density,
-            ShowHelpDialog,
-            tooltip: "Hilfe + Bedienungsanleitung");
-        AddToolbarButton(toolbar, "\u2714 Fertig", density,
+        _btnMore = AddToolbarButton(toolbar, Resource.Drawable.ic_ar_more, "Mehr", density,
+            () => { VibrateLight(); ShowMoreMenu(_btnMore!); },
+            tooltip: "Weitere Werkzeuge (Maßband, Tachymeter, Aufnahme, Hilfe)");
+        AddToolbarButton(toolbar, Resource.Drawable.ic_ar_done, "Fertig", density,
             ConfirmFinishCapture,
             tooltip: "Aufnahme beenden und Punkte übertragen");
 
@@ -643,26 +611,31 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         root.AddView(_counterText);
     }
 
-    private Button AddToolbarButton(LinearLayout toolbar, string text, float density,
+    /// <summary>Toolbar-Button mit Vektor-Icon (oben) + kurzem Label (darunter). Ersetzt die
+    /// fruehere Emoji-/Unicode-Beschriftung durch saubere VectorDrawables (Material-Icons).</summary>
+    private Button AddToolbarButton(LinearLayout toolbar, int iconResId, string label, float density,
         Action onClick, string? tooltip = null, bool isActive = false)
     {
         var button = new Button(this)
         {
-            Text = text,
-            TextSize = 14 // vorher 11 — S25 Ultra hat 6.9" Display, braucht größere Touch-Targets
+            Text = label,
+            TextSize = 11, // kompaktes Label unter dem Icon
         };
         button.SetAllCaps(false);
         button.SetTextColor(Color.White);
+        // Icon ueber dem Label (CompoundDrawable top), durchgaengig in Weiss getoent.
+        button.SetCompoundDrawablesWithIntrinsicBounds(0, iconResId, 0, 0);
+        button.CompoundDrawableTintList = global::Android.Content.Res.ColorStateList.ValueOf(Color.White);
+        button.CompoundDrawablePadding = (int)(2 * density);
         button.SetBackgroundColor(isActive
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
-        // Padding großzügiger für präzisere Touches
-        button.SetPadding((int)(14 * density), 0, (int)(14 * density), 0);
+        button.SetPadding((int)(12 * density), (int)(4 * density), (int)(12 * density), (int)(4 * density));
         button.SetMinimumWidth(0);
         button.SetMinWidth(0);
-        // Höhe 56dp statt 44dp — Material Design Empfehlung für Toolbar-Buttons
+        // Höhe 64dp — Platz fuer Icon + Label, gut treffbar auf dem 6.9"-Display
         var lp = new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WrapContent, (int)(56 * density))
+            ViewGroup.LayoutParams.WrapContent, (int)(64 * density))
         {
             LeftMargin = (int)(4 * density),
             RightMargin = (int)(4 * density)
@@ -679,6 +652,41 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         toolbar.AddView(button);
         return button;
+    }
+
+    /// <summary>Overflow-Menue mit Sekundaer-/Profi-Werkzeugen — haelt die Haupt-Toolbar schlank.
+    /// Maßband-Reset erscheint nur im aktiven Maßband-Modus.</summary>
+    private void ShowMoreMenu(View anchor)
+    {
+        var menu = new global::Android.Widget.PopupMenu(this, anchor);
+        const int idTape = 1, idTapeReset = 2, idStakeout = 3, idTachy = 4,
+                  idDelete = 5, idScreenshot = 6, idRecord = 7, idHelp = 8;
+
+        menu.Menu!.Add(0, idTape, 0, "Maßband (Ad-hoc-Distanz)");
+        if (_captureMode == CaptureMode.TapeMeasure)
+            menu.Menu.Add(0, idTapeReset, 0, "Maßband zurücksetzen");
+        menu.Menu.Add(0, idStakeout, 0, "Abstecken (Ziele finden)");
+        menu.Menu.Add(0, idTachy, 0, "Tachymeter (Stativ-Modus)");
+        menu.Menu.Add(0, idDelete, 0, "Ausgewählten Punkt löschen");
+        menu.Menu.Add(0, idScreenshot, 0, "Screenshot speichern");
+        menu.Menu.Add(0, idRecord, 0, _isRecording ? "Aufnahme stoppen" : "Aufnahme starten");
+        menu.Menu.Add(0, idHelp, 0, "Hilfe");
+
+        menu.MenuItemClick += (_, e) =>
+        {
+            switch (e.Item!.ItemId)
+            {
+                case idTape: VibrateLight(); SetMode(CaptureMode.TapeMeasure); break;
+                case idTapeReset: VibrateMedium(); ResetTapeMeasure(); break;
+                case idStakeout: VibrateLight(); SetMode(CaptureMode.Stakeout); break;
+                case idTachy: VibrateLight(); ToggleTotalStationMode(); break;
+                case idDelete: ConfirmDeleteSelectedPoint(); break;
+                case idScreenshot: TakeScreenshot(); break;
+                case idRecord: ToggleRecording(); break;
+                case idHelp: ShowHelpDialog(); break;
+            }
+        };
+        menu.Show();
     }
 
     private void SetMode(CaptureMode mode)
@@ -717,23 +725,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             var hasTargets = _stakeoutTargets != null && _stakeoutTargets.Count > 0;
             if (!hasTargets)
-                ShowTransientHint("🎯 Keine Stakeout-Ziele — aus Stakeout-Tab oeffnen");
+                ShowTransientHint("Keine Stakeout-Ziele — aus Stakeout-Tab oeffnen");
             // Reset Cooldown-Distanz bei Mode-Aktivierung
             _stakeoutLastDistance = double.PositiveInfinity;
         }
 
+        // Nur die beiden Mode-Buttons der Haupt-Toolbar werden hervorgehoben. Maßband/
+        // Abstecken/Tachymeter sitzen im "Mehr"-Menue — der aktive Modus steht im _modeText.
         _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point
             ? Color.Argb(220, 255, 107, 0)    // Aktiv: kräftiges Orange
             : Color.Argb(80, 255, 255, 255));  // Inaktiv: dezent
-        _btnTape?.SetBackgroundColor(mode == CaptureMode.TapeMeasure
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
-        _btnStakeout?.SetBackgroundColor(mode == CaptureMode.Stakeout
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
-        _btnTotalStation?.SetBackgroundColor(mode == CaptureMode.TotalStation
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
         _btnContour?.SetBackgroundColor(mode == CaptureMode.Contour
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
@@ -782,7 +783,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var area = closedContour.CalculateArea();
             var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == closedContour.ContourType).Label
                 ?? closedContour.ContourType.ToString();
-            ShowTransientHint($"✓ {typeLabel}: {pts} Punkte, {area:F1} m²");
+            ShowTransientHint($"{typeLabel}: {pts} Punkte, {area:F1} m²");
         }
 
         UpdateCounter();
@@ -1136,7 +1137,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             RunOnUiThread(() =>
             {
                 lock (_dataLock) _points.Add(tsPoint);
-                ShowTransientHint($"📐 Punkt {_points.Count} stationiert " +
+                ShowTransientHint($"Punkt {_points.Count} stationiert " +
                     $"({tsPoint.GeoLatitude:F6}, {tsPoint.GeoLongitude:F6})");
                 VibrateLight();
                 _overlayView?.Invalidate();
@@ -1163,7 +1164,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 Toast.MakeText(this, $"Messung noch nicht bereit: {checkList}",
                     ToastLength.Long)?.Show();
-                ShowTransientHint($"⚠ {checkList}");
+                ShowTransientHint($"{checkList}");
             });
             VibrateWarning();
             return;
@@ -1178,7 +1179,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 Toast.MakeText(this, "Keine Fläche erkannt — Kamera langsam bewegen",
                     ToastLength.Short)?.Show();
-                ShowTransientHint("⚠ Keine Fläche");
+                ShowTransientHint("Keine Fläche");
             });
             return;
         }
@@ -1212,7 +1213,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             AddSampleFromHit(probe); // erster Sample
         }
 
-        ShowTransientHint("📐 Messung läuft...");
+        ShowTransientHint("Messung läuft...");
         VibrateLight();
     }
 
@@ -1313,7 +1314,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             RunOnUiThread(() =>
             {
-                ShowTransientHint("⚠ Tracking verloren — Punkt erneut anvisieren");
+                ShowTransientHint("Tracking verloren — Punkt erneut anvisieren");
                 VibrateWarning();
             });
             return;
@@ -1323,14 +1324,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Outlier-Detection (Plan Kap. 3.2 — min 6 statt vorher 3).
         if (sampler == null || sampler.Count < MinValidSampleCount)
         {
-            RunOnUiThread(() => ShowTransientHint($"⚠ Zu wenige Samples ({sampler?.Count ?? 0}/{MinValidSampleCount}) — erneut versuchen"));
+            RunOnUiThread(() => ShowTransientHint($"Zu wenige Samples ({sampler?.Count ?? 0}/{MinValidSampleCount}) — erneut versuchen"));
             return;
         }
 
         var result = sampler.ComputeRobustMedian();
         if (result == null)
         {
-            RunOnUiThread(() => ShowTransientHint("⚠ Zu viel Streuung — erneut versuchen"));
+            RunOnUiThread(() => ShowTransientHint("Zu viel Streuung — erneut versuchen"));
             return;
         }
 
@@ -1464,14 +1465,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     // kein Undo-Stack — Reset per Long-Press auf den Mass-Button).
                     _tapeMeasurePoints.Add(arPoint);
                     var total = ComputeTapeMeasureTotalMeters();
-                    ShowTransientHint($"📏 Punkt {_tapeMeasurePoints.Count}  Σ {total:F2} m");
+                    ShowTransientHint($"Punkt {_tapeMeasurePoints.Count}  ges. {total:F2} m");
                 }
                 else if (_captureMode == CaptureMode.Point)
                 {
                     _undoStack.Push(new AddPointAction(_dataLock, _points, arPoint));
                     _redoStack.Clear();
                     _points.Add(arPoint);
-                    ShowTransientHint($"✓ Punkt {_points.Count}  σ={stdDev * 100:F1}cm  ({validCount} Samples)");
+                    ShowTransientHint($"Punkt {_points.Count}  Streuung {stdDev * 100:F1}cm  ({validCount} Samples)");
                     // Plan-Kap. 5.6: Foto-Annotation pro Punkt (nicht im Tape-Modus —
                     // Ad-hoc-Messung braucht kein Foto, das wuerde nur Storage fressen).
                     CapturePhotoForPoint(arPoint);
@@ -1485,7 +1486,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _activeContour.Points.Add(arPoint);
                     var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _activeContour.ContourType).Label
                         ?? _activeContour.ContourType.ToString();
-                    ShowTransientHint($"✓ {typeLabel}: {_activeContour.Points.Count} Punkte");
+                    ShowTransientHint($"{typeLabel}: {_activeContour.Points.Count} Punkte");
                     // Foto auch fuer Kontur-Punkte (z.B. "Ecke Mauer Nord" mit Sichtbeleg).
                     CapturePhotoForPoint(arPoint);
                 }
@@ -2231,7 +2232,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                         _geospatialEnabled = false;
 
                         Toast.MakeText(this,
-                            $"⚠ Geospatial deaktiviert: {cfgEx.GetType().Name}: {userMsg}",
+                            $"Geospatial deaktiviert: {cfgEx.GetType().Name}: {userMsg}",
                             ToastLength.Long)?.Show();
                         global::Android.Util.Log.Warn("ArCapture",
                             $"Konnte nach Geospatial-Off konfigurieren → Geospatial war Ursache");
@@ -2252,7 +2253,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                         {
                             _arSession.Configure(config);
                             Toast.MakeText(this,
-                                $"⚠ Minimal-Config: {geoEx.GetType().Name}: {geoEx.Message}",
+                                $"Minimal-Config: {geoEx.GetType().Name}: {geoEx.Message}",
                                 ToastLength.Long)?.Show();
                         }
                         catch (Exception finalEx)
@@ -3280,7 +3281,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             var hint = snapped.type switch
             {
-                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Vertex => "◎ Vertex-Snap",
+                SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Vertex => "Vertex-Snap",
                 SmartMeasure.Shared.Services.ArSnapEngine.SnapType.RightAngle => "⊥ 90°-Snap",
                 SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Parallel => "∥ Parallel-Snap",
                 SmartMeasure.Shared.Services.ArSnapEngine.SnapType.Extension => "↗ Verlängerung",
@@ -3470,12 +3471,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (status >= 4) // Critical+
             {
                 _effectiveMultiFrameSampleTargetCount = 3;
-                warning = "🌡 Gerät kritisch heiß — Pause empfohlen";
+                warning = "Gerät kritisch heiß — Pause empfohlen";
             }
             else if (status >= 3) // Severe
             {
                 _effectiveMultiFrameSampleTargetCount = 5;
-                warning = "🌡 Gerät heiß — Präzision reduziert";
+                warning = "Gerät heiß — Präzision reduziert";
             }
             else if (status >= 2) // Moderate
             {
@@ -3514,8 +3515,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var level = bm.GetIntProperty((int)global::Android.OS.BatteryProperty.Capacity);
             _batteryWarningText = level switch
             {
-                > 0 and < 5  => $"🔋 Akku {level}% — Session wird beendet",
-                > 0 and < 15 => $"🔋 Akku {level}% — Session bald beenden",
+                > 0 and < 5  => $"Akku {level}% — Session wird beendet",
+                > 0 and < 15 => $"Akku {level}% — Session bald beenden",
                 _            => null,
             };
 
@@ -3535,7 +3536,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 {
                     RunOnUiThread(() =>
                     {
-                        ShowTransientHint($"🔋 Akku {level}% — Session wird beendet, alle Punkte werden gesichert");
+                        ShowTransientHint($"Akku {level}% — Session wird beendet, alle Punkte werden gesichert");
                         VibrateWarning();
                         // 1.2s warten damit der User den Hint sieht, dann FinishCapture.
                         _glSurfaceView?.PostDelayed(() =>
@@ -4265,7 +4266,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             RunOnUiThread(() =>
             {
                 VibrateMedium();
-                ShowTransientHint($"🎯 {target.Label} erreicht! (Distanz {distanceM * 100:F1} cm)");
+                ShowTransientHint($"{target.Label} erreicht! (Distanz {distanceM * 100:F1} cm)");
             });
         }
         _stakeoutLastDistance = distanceM;
@@ -4476,7 +4477,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _markersAlreadyLocalized.Add(imageName);
                     RunOnUiThread(() =>
                     {
-                        ShowTransientHint($"🎯 Marker erkannt: {marker.Name}");
+                        ShowTransientHint($"Marker erkannt: {marker.Name}");
                         VibrateMedium();
                     });
                 }
@@ -4645,7 +4646,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         ts.SetStationOrigin(s.Latitude.Value, s.Longitude.Value, s.Altitude ?? 0.0, heading);
         SetMode(CaptureMode.TotalStation);
-        ShowTransientHint($"📐 Stationiert ({s.Latitude.Value:F6}, {s.Longitude.Value:F6})");
+        ShowTransientHint($"Stationiert ({s.Latitude.Value:F6}, {s.Longitude.Value:F6})");
         VibrateMedium();
     }
 
@@ -4658,7 +4659,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var ts = App.Services?.GetService<ITotalStationService>();
         if (ts?.Station == null)
         {
-            ShowTransientHint("Bitte zuerst stationieren (📐 Tachy aktivieren)");
+            ShowTransientHint("Bitte zuerst stationieren (Tachy aktivieren)");
             return null;
         }
 
@@ -4704,7 +4705,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private void ResetTapeMeasure()
     {
         lock (_dataLock) _tapeMeasurePoints.Clear();
-        ShowTransientHint("📏 Maßband zurückgesetzt");
+        ShowTransientHint("Maßband zurückgesetzt");
         _overlayView?.Invalidate();
     }
 

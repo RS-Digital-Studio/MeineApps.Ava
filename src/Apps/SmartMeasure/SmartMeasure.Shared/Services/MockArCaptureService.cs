@@ -62,6 +62,8 @@ public class MockArCaptureService : IArCaptureService
         {
             StartedAt = DateTime.UtcNow,
             SessionDuration = TimeSpan.FromMinutes(5),
+            // Mock simuliert Handy-GPS (kein RTK-Stab) — die Standard-AR-ohne-Hardware-Quelle.
+            GpsSource = ArGpsSource.AndroidLocation,
             GpsLatitude = gpsLat,
             GpsLongitude = gpsLon,
             GpsAltitude = gpsAltEllipsoid,

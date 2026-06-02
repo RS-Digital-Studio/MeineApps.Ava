@@ -41,6 +41,14 @@ public class SurveyPoint
     /// <summary>BNO085 Magnetometer-Accuracy (0-3, >= 2 fuer Horizontal-Korrektur)</summary>
     public int MagAccuracy { get; set; }
 
+    /// <summary>
+    /// Mess-Konfidenz 0..1 (1 = sehr sicher). Bei AR-Punkten die echte ARCore-Confidence
+    /// aus Hit-Quality, Multi-Frame-Streuung und Tracking-Stabilitaet (siehe <c>ArPoint.Confidence</c>).
+    /// Bei RTK-Stab-Punkten 1.0 (cm-genau). 0 = unbekannt/nicht gesetzt. Wird in der Punkte-Liste
+    /// und im PDF-Bericht angezeigt, damit der Nutzer den Wert seiner Messung einschaetzen kann.
+    /// </summary>
+    public float Confidence { get; set; }
+
     /// <summary>Zeitpunkt der Messung (UTC)</summary>
     public DateTime Timestamp { get; set; }
 

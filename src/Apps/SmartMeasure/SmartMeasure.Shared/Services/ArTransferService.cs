@@ -55,8 +55,29 @@ public class ArTransferService : IArTransferService
 
     public async Task<int> TransferToProjectAsync(ArCaptureResult result, int projectId)
     {
+        // Ohne GPS-Referenz (z.B. Indoor, kein Fix) wuerde eine Georeferenzierung scheitern.
+        // Die Messung selbst (Distanzen, Flaechen, relative Form) ist aber translation-invariant
+        // und darf NICHT verloren gehen — frueher warf das hier eine Exception und der gesamte
+        // AR-Transfer ging verloren. Stattdessen setzen wir einen Fallback-Ursprung: den
+        // Schwerpunkt bereits vorhandener Projektpunkte, sonst einen neutralen Default. Masse
+        // bleiben exakt, nur die absolute Karten-Lage ist dann ein Platzhalter.
         if (!result.HasGpsReference)
-            throw new InvalidOperationException("AR-Ergebnis hat keine GPS-Referenz fuer Georeferenzierung");
+        {
+            var existing = await _projectService.GetProjectAsync(projectId);
+            if (existing != null && existing.Points.Count > 0)
+            {
+                result.GpsLatitude = existing.Points.Average(p => p.Latitude);
+                result.GpsLongitude = existing.Points.Average(p => p.Longitude);
+                result.GpsAltitude ??= existing.Points.Average(p => p.Altitude);
+            }
+            else
+            {
+                result.GpsLatitude ??= 48.7758;
+                result.GpsLongitude ??= 9.1829;
+            }
+            System.Diagnostics.Debug.WriteLine(
+                "AR-Transfer: Keine GPS-Referenz — Fallback-Ursprung verwendet (Masse korrekt, Karten-Lage ungenau).");
+        }
 
         var transferredCount = 0;
 
@@ -198,6 +219,11 @@ public class ArTransferService : IArTransferService
                 FixQuality = ArFixQuality,
                 SatelliteCount = 0,
                 MagAccuracy = arPoint.MagAccuracyAtCapture,
+                // Echte Mess-Konfidenz durchreichen: RTK-Fusion = cm-genau (1.0),
+                // sonst die ARCore-Confidence des Punkts (Hit-Quality + Streuung + Tracking).
+                // Vorher ging dieser Wert beim Transfer verloren — der Nutzer konnte die
+                // Qualitaet seiner AR-Messung nicht mehr einschaetzen.
+                Confidence = isRtk ? 1f : arPoint.Confidence,
                 Timestamp = arPoint.Timestamp,
                 Label = arPoint.Label,
                 // Plan-Kap. 5.6: Foto-Annotation pro Punkt durchreichen

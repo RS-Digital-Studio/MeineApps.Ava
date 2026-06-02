@@ -127,7 +127,6 @@ GameAssetService.PlatformAssetLoader  // Assets.Open("visuals/{path}")
 | `Helpers/` | AsyncExtensions, ProfanityFilter, PageNavigationHelper, HitTester | [Helpers/CLAUDE.md](Helpers/CLAUDE.md) |
 | `Loading/` | HandwerkerImperiumLoadingPipeline | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
 | `Controls/` | EmptyStateCard, WorkerAvatarControl | [Controls/CLAUDE.md](Controls/CLAUDE.md) |
-| `Behaviors/` | BottomSheetBehavior | [Behaviors/CLAUDE.md](Behaviors/CLAUDE.md) |
 | `Converters/` | App-eigene AXAML-Converter | [Converters/CLAUDE.md](Converters/CLAUDE.md) |
 
 Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (AppPalette.axaml, Amber #D97706),

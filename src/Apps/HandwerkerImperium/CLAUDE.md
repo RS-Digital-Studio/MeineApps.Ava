@@ -29,7 +29,6 @@ Für generische Build-Befehle, Conventions und Architektur: [Haupt-CLAUDE.md](..
 | Helpers (AsyncExtensions, ProfanityFilter, HitTester) | RunHandlerSafely, UtcDateTimeJsonConverter | [Shared/Helpers](HandwerkerImperium.Shared/Helpers/CLAUDE.md) |
 | Loading (HandwerkerImperiumLoadingPipeline) | Startup-Schritte, Splash-Mindestanzeige | [Shared/Loading](HandwerkerImperium.Shared/Loading/CLAUDE.md) |
 | Controls (EmptyStateCard, WorkerAvatarControl) | Shared-Timer-Pattern, WeakReference-Cleanup | [Shared/Controls](HandwerkerImperium.Shared/Controls/CLAUDE.md) |
-| Behaviors (BottomSheetBehavior) | translate()-Einheiten, TransformOperationsTransition | [Shared/Behaviors](HandwerkerImperium.Shared/Behaviors/CLAUDE.md) |
 | Converters (WorkshopColor, MoneyDisplay, ...) | WorkshopColorConverter Quelle-der-Wahrheit | [Shared/Converters](HandwerkerImperium.Shared/Converters/CLAUDE.md) |
 
 ---

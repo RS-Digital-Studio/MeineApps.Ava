@@ -13,9 +13,7 @@ nicht abdecken.
 | `WorkshopColorConverter.cs` | `WorkshopType` → `SolidColorBrush`. Einzige erlaubte Quelle neben `WorkshopTypeExtensions.GetColorHex()` |
 | `StringToGameIconKindConverter.cs` | `string` → `GameIconKind` für XAML-Bindings auf string-Properties |
 | `GreaterThanZeroConverter.cs` | `double/int` → `bool` (für IsVisible-Bindings auf Zählern) |
-| `LevelToProgressConverter.cs` | `int` Level → `double` XP-Bar-Fortschritt [0..1] |
 | `BoolToChallengeBackgroundConverter.cs` | `bool IsActive` → Challenge-Hintergrundfarbe (aktiviert vs. inaktiv) |
-| `DayToColumnConverter.cs` | `DayOfWeek` → Grid-Column-Index für Wochenkalender-Layouts |
 
 ---
 

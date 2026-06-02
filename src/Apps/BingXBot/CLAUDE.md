@@ -241,7 +241,22 @@ TradingServiceBase (abstrakt)
 | `RunLoopAsync` | 60s | Scanner → Klines (parallel) → Strategy.Evaluate → RiskManager.ValidateTrade → Order-Placement |
 | `PriceTickerLoopAsync` | 5s | SL/TP-Hit-Check, BE-Trigger, Partial-Close, Preis-Updates, TradFi-Stunden-Check, Pending-Limit-Reconcile, Stage-3-PendingTpRetry |
 | `HeartbeatLoopAsync` | 30s | `BotDatabaseService.SaveLastHeartbeatAsync` (für Crash-Recovery + Trade-Replay-Backfill) |
-| `ReconcileLoopAsync` | 60s (Live nur) | `PositionDriftAnalyzer` → Orphan/Unmanaged/MissingStop/MissingTp + Pending-Limit-Order-Stale-Expiry |
+| `ReconcileLoopAsync` | 60s (Live nur) | **Adoption unmanaged/unvollstaendiger Positionen** (`AdoptUnmanagedPositionsAsync`, s.u.) → `PositionDriftAnalyzer` → Orphan/Unmanaged/MissingStop/MissingTp + Pending-Limit-Order-Stale-Expiry |
+
+**Jede offene Position wird jeden Reconcile-Durchgang voll abgesichert** (`AdoptUnmanagedPositionsAsync`,
+laeuft VOR dem Analyzer): Positionen ohne Bot-Signal — oder mit unvollstaendigem Recovery-Signal
+(`TakeProfit=null`/`DisableSmartBreakeven=false`, wie `RecoverOpenPositions` sie beim Start anlegt) — werden
+adoptiert. Notfall-SL (`max(1.5%, 0.03/Leverage)`) wenn nativ keiner liegt, dann ein vollstaendiges Signal
+(SL+TP1+TP2+BE). TP aus vorhandenen Limit-Orders oder SL-Distanz × RRR 1.5/3.0. Vervollstaendigung per direktem
+`with`-Update (NICHT `RestorePositionSignal` — dessen Fallback uebernaehme sonst das alte `DisableSmartBreakeven=false`).
+
+- **`ReplaceMissingStop` setzt nur den SL** (`SetPositionSlTpAsync(…, null)`) — der TP laeuft ausschliesslich
+  ueber den reduce-only-LIMIT-Pfad (`ReplaceMissingTakeProfit`/`PlaceTpLimitOrdersAfterFill`). Ein nativer
+  `TAKE_PROFIT_MARKET` wuerde bei TP1 die ganze Position schliessen und die 50/50-Teilschliessung aushebeln.
+- **Min-Qty-aware TP-Split** (`SplitTpQuantity` + `IExchangeClient.MeetsMinimumOrder`): faellt eine 50/50-
+  Teilmenge unter die Symbol-Min-Qty (z.B. ETH 0.01 / Min-Qty 0.01 → 0.005), wird KEIN Split gemacht — ein
+  Full-TP bei TP1, TP2 wird aus dem Signal entfernt (verhindert BingX-Reject + Endlos-Re-Place). `MeetsMinimumOrder`
+  ist eine Default-Interface-Methode (`=> true`); nur `BingXRestClient` delegiert an den `SymbolInfoCache`.
 
 ### Multi-TF Standalone
 

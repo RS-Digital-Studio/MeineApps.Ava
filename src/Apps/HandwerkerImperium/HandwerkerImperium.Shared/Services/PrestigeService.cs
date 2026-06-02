@@ -916,7 +916,7 @@ public sealed partial class PrestigeService : IPrestigeService
         // (Unterhalb von Meister werden Buildings bereits oben via .Clear() zurückgesetzt)
 
         // === PRESERVED (nicht angefasst): ===
-        // - state.Prestige (PrestigeData mit Punkten, Shop-Items, Tier-Counts)
+        // - state.Prestige (PrestigeData mit Punkten, Tier-Counts; Shop-Items nur ab Platin, s.u.)
         // - state.UnlockedAchievements
         // - state.IsPremium
         // - state.Tutorial.SeenHints (kontextuelles Tutorial)
@@ -936,8 +936,20 @@ public sealed partial class PrestigeService : IPrestigeService
         // === Prestige-Pass bleibt permanent aktiv (einmaliger IAP-Kauf, nicht pro Prestige) ===
         // Nicht mehr zurückgesetzt - der Spieler zahlt einmal 2,99 EUR und hat dauerhaft +50% PP.
 
-        // Gold prestige preserves shop items (already in PrestigeData.PurchasedShopItems,
-        // which is not touched by reset). Nothing extra needed here.
+        // === RESET: Prestige-Shop-Items (ab Platin behalten, darunter loeschen) ===
+        // Ab Platin (tier.KeepsShopItems()) bleiben die mit PP gekauften Shop-Items erhalten.
+        // Darunter werden sie beim Reset geloescht — sonst widerspricht das tatsaechliche Verhalten
+        // dem modellierten Platin-Gate (KeepsShopItems) und den UI-"Behalten"-Listen (Vorschau == Reset).
+        if (!tier.KeepsShopItems())
+        {
+            state.Prestige.PurchasedShopItems.Clear();
+            state.Prestige.RepeatableItemCounts.Clear();
+            // Caches invalidieren: Prestige-Effekt-Cache, Offline-Stunden-Cache und der
+            // CraftingService-Speed-Cache (via PrestigeShopPurchased-Event).
+            _effectCacheDirty = true;
+            state.InvalidateMaxOfflineHoursCache();
+            _gameStateService.InvalidatePrestigeBonusCache();
+        }
 
         // === Speedrun: Neuen Run starten ===
         state.Prestige.RunStartTime = DateTime.UtcNow;

@@ -777,6 +777,10 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         {
             if (state.WarehouseSlotCount <= 0) state.WarehouseSlotCount = 20;
             if (state.WarehouseStackLimit <= 0) state.WarehouseStackLimit = 50;
+            // CraftingInventory VOR dem Dereferenzieren null-sichern — SanitizeState laeuft erst
+            // NACH der Migration, ein V6-Save ohne dieses Feld wuerde sonst eine NRE werfen und
+            // faelschlich als beschaedigt gelten (Datenverlust).
+            state.CraftingInventory ??= new Dictionary<string, int>();
             state.ReservedInventory ??= new Dictionary<string, int>();
             state.AutoSellRules ??= new Dictionary<string, AutoSellRule>();
             state.HeirloomItems ??= [];
@@ -817,6 +821,11 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (old.Version >= 2) return old;
 
         old.Version = 2;
+
+        // Collections null-sichern BEVOR iteriert wird — ein minimaler/manipulierter V1-Save ohne
+        // diese Felder wuerde sonst eine NRE werfen und faelschlich als beschaedigt gelten.
+        old.Workshops ??= [];
+        old.UnlockedWorkshopTypes ??= [];
 
         // Worker migrieren: alte Worker hatten feste 1.0 Effizienz
         foreach (var ws in old.Workshops)

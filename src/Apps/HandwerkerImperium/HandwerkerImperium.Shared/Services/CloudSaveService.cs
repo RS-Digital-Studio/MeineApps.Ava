@@ -29,7 +29,11 @@ public sealed class CloudSaveService : ICloudSaveService
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = false,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        // Muss identisch zu SaveGameService sein: erzwingt UTC fuer alle DateTime-Felder. Ohne den
+        // Converter deserialisiert STJ "Z"-Strings als Local und verschiebt .Date-basierte Tages-/
+        // Wochen-Resets um den Geraete-UTC-Offset — genau der Bug, gegen den der Converter lokal baut.
+        Converters = { new Helpers.UtcDateTimeJsonConverter() }
     };
 
     public CloudSaveService(IFirebaseService firebase, IGameIntegrityService integrity, ILogService log)

@@ -396,6 +396,10 @@ public sealed partial class MainViewModel
         BattlePassViewModel.UpdateLocalizedTexts();
         TournamentViewModel.UpdateLocalizedTexts();
         SeasonalEventViewModel.UpdateLocalizedTexts();
+        // Markt + Lager wurden bei Laufzeit-Sprachwechsel uebergangen — ihre via {Binding Title/
+        // EmptyMessage/Subtitle} gebundenen Texte blieben in der alten Sprache (gemischtsprachige UI).
+        MarketVM.UpdateLocalizedTexts();
+        WarehouseVM.UpdateLocalizedTexts();
     }
 
 }

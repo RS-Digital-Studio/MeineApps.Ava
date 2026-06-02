@@ -6727,4 +6727,18 @@
   <data name="PrestigeWhatYouLose" xml:space="preserve"><value>What you lose:</value></data>
   <data name="AscensionLockedHint" xml:space="preserve"><value>Reach Legende prestige 3 times to unlock Ascension</value></data>
   <data name="WarehouseLockedHint" xml:space="preserve"><value>Reach player level 50 to unlock the warehouse</value></data>
+  <data name="RepShopTitle" xml:space="preserve"><value>Reputation Shop</value></data>
+  <data name="RepShopDescription" xml:space="preserve"><value>Spend reputation for special perks. Reputation is earned via orders.</value></data>
+  <data name="RepShopBuyFailedTitle" xml:space="preserve"><value>Not enough reputation</value></data>
+  <data name="RepShopBuyFailedDesc" xml:space="preserve"><value>You need more reputation to buy this item.</value></data>
+  <data name="RepShopRegularCustomerName" xml:space="preserve"><value>Regular Customer Guarantee</value></data>
+  <data name="RepShopRegularCustomerDesc" xml:space="preserve"><value>Next 5 orders are regular customers — up to 1.5x reward.</value></data>
+  <data name="RepShopFasterDeliveryName" xml:space="preserve"><value>Faster Delivery</value></data>
+  <data name="RepShopFasterDeliveryDesc" xml:space="preserve"><value>Next supplier arrives 50% faster for 1 hour.</value></data>
+  <data name="RepShopWorkerMoodBoostName" xml:space="preserve"><value>Team Mood Boost</value></data>
+  <data name="RepShopWorkerMoodBoostDesc" xml:space="preserve"><value>All workers get +30 mood (instant).</value></data>
+  <data name="RepShopSkinWoodName" xml:space="preserve"><value>Workshop Skin "Wood Premium"</value></data>
+  <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Permanent cosmetic skin for all workshops.</value></data>
+  <data name="RepShopInsuranceName" xml:space="preserve"><value>Reputation Insurance</value></data>
+  <data name="RepShopInsuranceDesc" xml:space="preserve"><value>Next risk-miss costs no reputation.</value></data>
 </root>

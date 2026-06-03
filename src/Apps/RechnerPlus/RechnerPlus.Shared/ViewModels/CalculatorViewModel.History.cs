@@ -242,8 +242,8 @@ public sealed partial class CalculatorViewModel
         var hasMemory = _preferences.Get(MemoryHasKey, false);
         if (hasMemory)
         {
-            _memory = _preferences.Get(MemoryKey, 0.0);
-            _hasMemory = true;
+            Memory = _preferences.Get(MemoryKey, 0.0);
+            HasMemory = true;
         }
     }
 

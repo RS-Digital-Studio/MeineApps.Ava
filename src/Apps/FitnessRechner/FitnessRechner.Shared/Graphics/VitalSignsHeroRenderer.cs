@@ -446,24 +446,14 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         _textPaint.FakeBoldText = false;
         float kgY = qy + 16f * scale;
 
-        // Trend-Pfeil neben "kg"
-        string trendArrow;
+        // Trend-Pfeil-Farbe neben "kg" (der Pfeil selbst wird unten via 'arrow' gezeichnet)
         SKColor trendColor;
         if (state.WeightTrend < 0)
-        {
-            trendArrow = "kg \u2193"; // Pfeil runter
             trendColor = MedicalColors.WaterGreen;
-        }
         else if (state.WeightTrend > 0)
-        {
-            trendArrow = "kg \u2191"; // Pfeil hoch
             trendColor = MedicalColors.CriticalRed;
-        }
         else
-        {
-            trendArrow = "kg \u2192"; // Pfeil rechts
             trendColor = MedicalColors.TextMuted;
-        }
 
         // "kg" zeichnen
         canvas.DrawText("kg", qx - 6f * scale, kgY, _textPaint);

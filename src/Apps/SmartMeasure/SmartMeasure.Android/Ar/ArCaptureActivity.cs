@@ -238,7 +238,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     // UI-Referenzen
     private TextView? _modeText;
     private TextView? _counterText;
-    private TextView? _distanceText;
 
     // Letzter Frame fuer Hit-Testing.
     //
@@ -262,6 +261,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private float _reticleHitDistance;
     private float? _reticleHeightDelta;
     private ArHitQuality _reticleHitQuality;
+    // Welt-Position des aktuellen Reticle-Ziels (lokale ARCore-Meter). Wird in
+    // UpdateReticleState gesetzt (GL-Thread) und in BuildOverlayState (ebenfalls GL-Thread)
+    // gelesen, um die Live-Segment-Werte (Distanz/Hoehe/Steigung) vom letzten gesetzten
+    // Punkt zum Crosshair-Ziel zu berechnen. Beide laufen sequenziell im OnDrawFrame →
+    // kein Lock noetig. null wenn kein gueltiger Hit.
+    private (float x, float y, float z)? _reticleWorld;
 
     // Session-Recovery: temporärer Save nach jedem Punkt-Set
     private const string RecoveryKeyPoints = "ar.recovery.points";
@@ -286,7 +291,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     // Auto-Close Detection (für Kontur)
     private const float AutoCloseDistanceMeters = 0.3f; // 30cm — User kann Loop schließen
-    private (float x, float y)? _autoCloseScreenTarget;
 
     // Präzisions-Manager: Anchors + Multi-Frame-Averaging + Stabilität
     private readonly ArAnchorManager _anchorManager = new();
@@ -3864,14 +3868,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var cx = _viewportWidth / 2f;
         var cy = _viewportHeight / 2f;
 
-        var (quality, distance, heightDelta) = PerformReticleHitTest(frame, camera, cx, cy);
+        var (quality, distance, heightDelta, world) = PerformReticleHitTest(frame, camera, cx, cy);
 
         _reticleHitQuality = quality;
         _reticleHitDistance = distance;
         _reticleHeightDelta = heightDelta;
+        _reticleWorld = world;
     }
 
-    private (ArHitQuality quality, float distance, float? height) PerformReticleHitTest(
+    private (ArHitQuality quality, float distance, float? height, (float x, float y, float z)? world) PerformReticleHitTest(
         Frame frame, Google.AR.Core.Camera camera, float screenX, float screenY)
     {
         try
@@ -3900,21 +3905,25 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             global::Android.Util.Log.Warn("ArCapture", $"Reticle hit-test failed: {ex.Message}");
         }
 
-        return (ArHitQuality.None, 0f, null);
+        return (ArHitQuality.None, 0f, null, null);
     }
 
-    private (ArHitQuality, float, float?) BuildHitInfo(HitResult hit, ArHitQuality quality, Google.AR.Core.Camera camera)
+    private (ArHitQuality, float, float?, (float x, float y, float z)?) BuildHitInfo(HitResult hit, ArHitQuality quality, Google.AR.Core.Camera camera)
     {
         var pose = hit.HitPose;
         var cameraPose = camera.Pose;
-        if (pose == null || cameraPose == null) return (quality, 0f, null);
+        if (pose == null || cameraPose == null) return (quality, 0f, null, null);
 
         var dx = pose.Tx() - cameraPose.Tx();
         var dy = pose.Ty() - cameraPose.Ty();
         var dz = pose.Tz() - cameraPose.Tz();
         var distance = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
 
-        // Höhe relativ zum ersten Punkt
+        // Welt-Position des Ziels (lokale ARCore-Meter) — fuer Live-Segment-Werte.
+        var world = (pose.Tx(), pose.Ty(), pose.Tz());
+
+        // Höhe relativ zum ersten Punkt (Session-Referenz; das Live-Segment-ΔH zum LETZTEN
+        // Punkt wird separat in BuildOverlayState berechnet).
         float? heightDelta = null;
         lock (_dataLock)
         {
@@ -3924,7 +3933,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 heightDelta = pose.Ty() - _contours[0].Points[0].Y;
         }
 
-        return (quality, distance, heightDelta);
+        return (quality, distance, heightDelta, world);
     }
 
     /// <summary>
@@ -3966,6 +3975,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Live-Stats berechnen
         float liveArea = 0f, liveLength = 0f, heightRange = 0f;
         (float x, float y)? autoClose = null;
+
+        // Live-Segment ("Gummiband") vom letzten gesetzten Punkt zum Reticle-Ziel
+        bool showLiveSegment = false;
+        (float x, float y)? liveSegFromScreen = null;
+        float? liveSegHorizontal = null, liveSegSlope = null, liveSegHeight = null;
+        List<float>? activeContourSegMeters = null;
 
         lock (_dataLock)
         {

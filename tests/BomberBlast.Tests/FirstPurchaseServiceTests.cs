@@ -19,7 +19,7 @@ public class FirstPurchaseServiceTests
 
         svc.HasClaimed.Should().BeFalse();
         svc.IsAvailable.Should().BeTrue();
-        svc.GetBonusMultiplier().Should().Be(2.0f);
+        svc.GetBonusMultiplier("gem_pack_small").Should().Be(2.0f);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class FirstPurchaseServiceTests
 
         svc.HasClaimed.Should().BeTrue();
         svc.IsAvailable.Should().BeFalse();
-        svc.GetBonusMultiplier().Should().Be(1.0f);
+        svc.GetBonusMultiplier("gem_pack_small").Should().Be(1.0f);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class FirstPurchaseServiceTests
         // Neue Instanz mit gleichen Prefs (App-Restart-Simulation)
         var svc2 = new FirstPurchaseService(prefs);
         svc2.HasClaimed.Should().BeTrue();
-        svc2.GetBonusMultiplier().Should().Be(1.0f);
+        svc2.GetBonusMultiplier("gem_pack_small").Should().Be(1.0f);
     }
 
     [Fact]

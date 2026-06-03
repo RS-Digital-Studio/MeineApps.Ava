@@ -108,16 +108,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _alarmScheduler.AlarmPermissionMissing += OnAlarmPermissionMissing;
 
         // Overlay-Dismiss
-        _alarmOverlayViewModel.DismissRequested += OnOverlayDismissRequested;
+        AlarmOverlayViewModel.DismissRequested += OnOverlayDismissRequested;
 
         // Floating Text Events von Kind-ViewModels weiterleiten
-        _stopwatchViewModel.FloatingTextRequested += OnChildFloatingTextRequested;
-        _pomodoroViewModel.FloatingTextRequested += OnChildFloatingTextRequested;
-        _pomodoroViewModel.CelebrationRequested += OnChildCelebrationRequested;
+        StopwatchViewModel.FloatingTextRequested += OnChildFloatingTextRequested;
+        PomodoroViewModel.FloatingTextRequested += OnChildFloatingTextRequested;
+        PomodoroViewModel.CelebrationRequested += OnChildCelebrationRequested;
 
         // MessageRequested von Kind-ViewModels
-        _settingsViewModel.MessageRequested += OnChildMessageRequested;
-        _timerViewModel.MessageRequested += OnTimerMessageRequested;
+        SettingsViewModel.MessageRequested += OnChildMessageRequested;
+        TimerViewModel.MessageRequested += OnTimerMessageRequested;
     }
 
     private void OnTimerFinished(object? sender, TimerItem timer)
@@ -336,12 +336,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _timerService.TimerFinished -= OnTimerFinished;
         _alarmScheduler.AlarmTriggered -= OnAlarmTriggered;
         _alarmScheduler.AlarmPermissionMissing -= OnAlarmPermissionMissing;
-        _alarmOverlayViewModel.DismissRequested -= OnOverlayDismissRequested;
-        _stopwatchViewModel.FloatingTextRequested -= OnChildFloatingTextRequested;
-        _pomodoroViewModel.FloatingTextRequested -= OnChildFloatingTextRequested;
-        _pomodoroViewModel.CelebrationRequested -= OnChildCelebrationRequested;
-        _settingsViewModel.MessageRequested -= OnChildMessageRequested;
-        _timerViewModel.MessageRequested -= OnTimerMessageRequested;
+        AlarmOverlayViewModel.DismissRequested -= OnOverlayDismissRequested;
+        StopwatchViewModel.FloatingTextRequested -= OnChildFloatingTextRequested;
+        PomodoroViewModel.FloatingTextRequested -= OnChildFloatingTextRequested;
+        PomodoroViewModel.CelebrationRequested -= OnChildCelebrationRequested;
+        SettingsViewModel.MessageRequested -= OnChildMessageRequested;
+        TimerViewModel.MessageRequested -= OnTimerMessageRequested;
 
         _snackbarCts?.Cancel();
         _snackbarCts?.Dispose();

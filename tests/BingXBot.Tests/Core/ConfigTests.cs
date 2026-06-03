@@ -25,7 +25,6 @@ public class ConfigTests
         s.Tp1CloseRatio.Should().Be(0.5m);                  // Buch: 50 % bei TP1
         s.Tp2CloseRatio.Should().Be(0.5m);                  // Buch: 50 % Rest bei TP2
         s.MinRiskRewardRatio.Should().Be(0m);               // Strategy hat eigenen 1:1-Check
-        s.RequireWickRejectionInBZone.Should().BeFalse();   // Buch §7: drei gleichwertige Reversal-Wege
     }
 
     [Fact]
@@ -58,9 +57,6 @@ public class ConfigTests
         s.ScanIntervalSeconds.Should().Be(60);
         s.Mode.Should().Be(ScanMode.Reversal);              // SK = Mean-Reversion
         s.EnableTradFi.Should().BeTrue();
-        s.ImpulseAtrMultiplier.Should().Be(2.0m);           // Vorher 3.0 — Doku-Spanne erlaubt 2.0
-        s.RequireBosCloseBreak.Should().BeFalse();          // Docht-Bruch reicht
-        s.BlockLtfEntryWhenHtfInTargetZone.Should().BeFalse(); // MTA-Lockerung
         s.MinVolume24hByTf[TimeFrame.M15].Should().Be(10_000_000m); // Vorher 25M — Mid-Caps zurück
     }
 

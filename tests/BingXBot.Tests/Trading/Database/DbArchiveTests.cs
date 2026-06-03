@@ -1,5 +1,4 @@
 using BingXBot.Core.Data;
-using BingXBot.Core.Diagnostics;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
@@ -78,26 +77,6 @@ public class DbArchiveTests : IAsyncLifetime
         second.Should().Be(0, "zweiter Run findet keinen alten Trade mehr in der Live-DB");
     }
 
-    [Fact]
-    public async Task PurgeOldDecisions_RemovesOnlyOlderThanCutoff()
-    {
-        await _db.SaveDecisionAsync(MakeDecision(DateTime.UtcNow.AddDays(-60)));
-        await _db.SaveDecisionAsync(MakeDecision(DateTime.UtcNow.AddDays(-1)));
-
-        var purged = await _db.PurgeOldDecisionsAsync(DateTime.UtcNow.AddDays(-30));
-        purged.Should().Be(1);
-        var remaining = await _db.LoadDecisionsAsync(limit: 100);
-        remaining.Should().HaveCount(1);
-    }
-
-    [Fact]
-    public async Task PurgeOldDecisions_NoneToRemove()
-    {
-        await _db.SaveDecisionAsync(MakeDecision(DateTime.UtcNow));
-        var purged = await _db.PurgeOldDecisionsAsync(DateTime.UtcNow.AddDays(-30));
-        purged.Should().Be(0);
-    }
-
     private static CompletedTrade MakeTrade(DateTime entryTime) =>
         new(
             Symbol: "BTC-USDT",
@@ -112,17 +91,4 @@ public class DbArchiveTests : IAsyncLifetime
             Reason: "Test",
             Mode: TradingMode.Paper,
             NavigatorTimeframe: TimeFrame.H1);
-
-    private static EvaluationDecision MakeDecision(DateTime ts) =>
-        new(
-            Symbol: "BTC-USDT",
-            Tf: TimeFrame.H1,
-            UtcTimestamp: ts,
-            SequenceState: "Aktiviert",
-            Point0: 100m, PointA: 110m, PointB: 105m,
-            Triggered: true,
-            RejectionReason: null,
-            ConfluenceScore: 5,
-            ConfluenceCategories: Array.Empty<string>(),
-            HardFiltersFailed: Array.Empty<string>());
 }

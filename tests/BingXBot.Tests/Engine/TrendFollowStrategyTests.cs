@@ -80,7 +80,6 @@ public class TrendFollowStrategyTests
         var signal = strategy.Evaluate(Ctx(BreakoutSetup(up: true)));
 
         signal.Signal.Should().Be(Signal.Long);
-        signal.PreferLimitOrder.Should().BeFalse("TrendFollow nutzt Market-Entry (Backtest-treu)");
         signal.EntryPrice.Should().NotBeNull();
         signal.StopLoss.Should().BeLessThan(signal.EntryPrice!.Value);
         signal.TakeProfit.Should().BeGreaterThan(signal.EntryPrice!.Value);

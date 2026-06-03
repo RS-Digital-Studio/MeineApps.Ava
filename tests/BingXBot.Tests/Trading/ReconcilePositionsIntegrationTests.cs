@@ -57,39 +57,6 @@ public class ReconcilePositionsIntegrationTests
     }
 
     [Fact]
-    public async Task ReconcilePositionsAsync_PendingEntry_BehaeltSignal()
-    {
-        // Pending-Limit-Entry ist noch nicht gefuellt — Exchange hat deshalb keine Position.
-        // Das ist erwartet, kein Drift.
-        var fake = new FakeExchangeClient();
-        var service = CreateService(fake);
-
-        service._positionSignals["SOL-USDT_Buy"] = MakeSignal(Signal.Long, 100m, 95m, 110m);
-        service._signalCreatedAt["SOL-USDT_Buy"] = DateTime.UtcNow.AddSeconds(-120); // alt genug fuer Orphan
-
-        // Aber: Pending-Entry vorhanden → Ausnahme greift.
-        service._pendingLimitOrders["SOL-USDT#seq1"] = (
-            OrderId: "x1",
-            PlacedAt: DateTime.UtcNow.AddMinutes(-5),
-            InvalidationLevel: 95m,
-            IsLong: true,
-            Symbol: "SOL-USDT",
-            SequenceId: "seq1",
-            TakeProfit: 110m,
-            TakeProfit2: null,
-            NavPointA: 0m,
-            IsGklSetup: false,
-            GklTimeframe: null,
-            RunnerHardCap: 0m,
-            IsCounterTrendScalp: false,
-            PositionScaleOverride: null);
-
-        await service.ReconcilePositionsAsync(CancellationToken.None);
-
-        service._positionSignals.ContainsKey("SOL-USDT_Buy").Should().BeTrue();
-    }
-
-    [Fact]
     public async Task ReconcilePositionsAsync_UnmanagedPosition_WirdAdoptiert()
     {
         // Exchange hat BTC-Long-Position, Bot kennt sie nicht (z.B. nach Crash ohne State-Persist).

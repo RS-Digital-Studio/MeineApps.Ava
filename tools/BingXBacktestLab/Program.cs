@@ -74,6 +74,44 @@ var rateLimiter = new SimpleRateLimiter(TimeSpan.FromMilliseconds(120));
 var realClient = new BingXPublicClient(http, rateLimiter, NullLogger<BingXPublicClient>.Instance);
 var dataClient = new CachingPublicClient(realClient, cacheDir);
 
+// --- Sweep-Modus (Parameter-Grid + Walk-Forward)? Eigener Pfad, beendet danach. ---
+if (GetArg(argMap, "sweep", null) != null)
+{
+    var memData = new MemoryKlineCache(dataClient);
+    var scope = (GetArg(argMap, "sweep-grid", "extended") ?? "extended").ToLowerInvariant();
+    var trainSplit = decimal.Parse(GetArg(argMap, "train-split", "0.65")!, CultureInfo.InvariantCulture);
+    var topN = int.Parse(GetArg(argMap, "sweep-top", "20")!, CultureInfo.InvariantCulture);
+    var minTrades = int.Parse(GetArg(argMap, "sweep-min-trades", "50")!, CultureInfo.InvariantCulture);
+    var rankKey = (GetArg(argMap, "sweep-rank", "expectancy") ?? "expectancy").ToLowerInvariant();
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    return await Sweep.RunAsync(symbols, tfs, from, to, botSettings, memData,
+        scope, trainSplit, topN, minTrades, rankKey, parallelism, outDir, label);
+}
+
+// --- Compare-Modus (rollierender Walk-Forward, mehrere SL-Werte)? Eigener Pfad, beendet danach. ---
+if (GetArg(argMap, "compare", null) != null)
+{
+    var memData = new MemoryKlineCache(dataClient);
+    var slValues = GetList(argMap, "compare-sl", "2.5,3.0")
+        .Select(s => decimal.Parse(s, CultureInfo.InvariantCulture)).ToArray();
+    var windowDays = int.Parse(GetArg(argMap, "window-days", "180")!, CultureInfo.InvariantCulture);
+    var stepDays = int.Parse(GetArg(argMap, "step-days", "60")!, CultureInfo.InvariantCulture);
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    return await Sweep.CompareAsync(symbols, tfs, from, to, botSettings, memData,
+        slValues, windowDays, stepDays, parallelism, outDir, label);
+}
+
+// --- Full-Modus (durchgehender Voll-Zeitraum, mehrere SL-Werte)? Eigener Pfad, beendet danach. ---
+if (GetArg(argMap, "full", null) != null)
+{
+    var memData = new MemoryKlineCache(dataClient);
+    var slValues = GetList(argMap, "compare-sl", "2.5,2.75,3.0,3.25")
+        .Select(s => decimal.Parse(s, CultureInfo.InvariantCulture)).ToArray();
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    return await Sweep.FullAsync(symbols, tfs, from, to, botSettings, memData,
+        slValues, parallelism, outDir, label);
+}
+
 // --- Backtest-Matrix ---
 var results = new List<RunResult>();
 int total = strategies.Count * symbols.Count * tfs.Count;

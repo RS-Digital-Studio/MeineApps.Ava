@@ -340,7 +340,7 @@ TrendFollow-Fast, 3 Marktphasen) ist 2R optimal — aggressiveres BE schneidet G
 
 | Strategie | Typ | H4-PF (3 Marktphasen, gefixt) | Status |
 |-----------|-----|-------------------------------|--------|
-| **TrendFollow-Fast** | Donchian(10)-Breakout in Trend-Richtung, EMA(34)+ADX/DMI, Market-Entry, ATR-SL, RRR 1.5/3.0 | **5.4 / 2.0 / 2.8** (alle 3 profitabel) | **Live-Default, H4-only** |
+| **TrendFollow-Fast** | Donchian(10)-Breakout in Trend-Richtung, EMA(34)+ADX/DMI, Market-Entry, ATR-SL **×2.75**, RRR 1.5/3.0 | **5.4 / 2.0 / 2.8** (alle 3 profitabel) | **Live-Default, H4-only** |
 | TrendFollow (Standard, Don 20/EMA 50) | wie Fast, traegere Parameter | 5.3 / **0.95** / 1.7 (Mittelphase verlierend) | optional |
 | TrendFollow-Wide / -Strong | TrendFollow-Varianten | gemischt (Strong Mittelphase 0.78) | optional |
 | SkTrend | SK-Sequenz-Trigger + Trend-Filter + Market-Entry + ATR-SL ("reparierte SK") | OOS verlierend (PF 0.78) | nicht empfohlen |
@@ -354,6 +354,15 @@ Marktphasen): **H1 ist konsistent unprofitabel** (PF 0.4–0.99 ueber alle Strat
 ist die einzige Variante, die auf H4 in allen 3 Phasen profitabel ist. Realistischer Live-PF ~2 (NICHT die
 ungefixten 2.5+). Longs liefen 2023–2026 schwaecher (28–45 % WR) als Shorts — markphasen-abhaengig, offener
 Verbesserungs-Hebel. Umgeht den TradFi-Pip-Bug (ATR statt fixe Pips). Details + Lab → `tools/BingXBacktestLab/CLAUDE.md`.
+
+**SL-Tuning (Backtest-Lab-Sweep, 2026-06-03):** ATR-SL-Multiplikator von 2.5 auf **2.75** angehoben (in
+`StrategyFactory."TrendFollow-Fast"`). Parameter-Sweep + Walk-Forward (`tools/BingXBacktestLab --sweep`/`--full`,
+21 may-live-Symbole, durchgehend 2024-06..2026-05 = alle Marktphasen) bestaetigte ADX 18 / RRR 1.5-3.0 / BE 2.0 /
+Donchian 10 / EMA 34 als optimal — einziger verbesserter Hebel war der SL: **2.75 ist das robuste Optimum**
+(durchgehende 2J: PF 3.75 vs 2.53, WinRate 70.7 % vs 65.7 %, Shorts 76 % vs 65 % WR — der weitere Stop ueberlebt
+die Short-Whipsaws, adressiert den oben genannten Long/Short-Hebel). Glatter Peak (2.5↗**2.75**↘3.0↘3.25); >3.0
+bricht ein (Train-negativ + zu wenige Trades). Der Train/Test-Split favorisierte zunaechst faelschlich 3.0
+(Train-Peak-Artefakt) — erst der durchgehende 2J-Lauf (alle Phasen in einem Fenster) deckte 2.75 auf.
 
 `RuntimeState` (TradesToday, ConsecutiveLosses) wird mit dem Strategie-Namen getaggt:
 `LiveTradingManager` setzt die Loss-Streak bei Strategiewechsel zurueck. **Zusaetzlich** (Audit-Fix 31.05.):

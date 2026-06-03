@@ -20,7 +20,10 @@ public static class StrategyFactory
         // Trend-Following-Familie — Donchian-Breakout in Trend-Richtung, Market-Entry, ATR-SL, RRR-TP.
         "TrendFollow" => new TrendFollowStrategy(),
         // Schneller: kuerzere Donchian/EMA, mehr Signale auf niedrigeren TFs.
-        "TrendFollow-Fast" => new TrendFollowStrategy(donchianPeriod: 10, emaPeriod: 34, adxMin: 18m),
+        // atrSlMultiplier 2.75 (statt Default 2.5): Backtest-Lab-Sweep (--full, 21 may-live-Symbole,
+        // durchgehend 2024-06..2026-05, alle Marktphasen) → 2.75 ist das robuste SL-Optimum: PF 3.75 vs 2.53,
+        // WinRate 70.7 % vs 65.7 %, Shorts 76 % vs 65 % WR. Glatter Peak (2.5↗2.75↘3.0), >3.0 bricht ein.
+        "TrendFollow-Fast" => new TrendFollowStrategy(donchianPeriod: 10, emaPeriod: 34, adxMin: 18m, atrSlMultiplier: 2.75m),
         // Fast + Chop-Filter (ADX steigend) — gegen Seitwaerts-Whipsaw.
         "TrendFollow-Fast-Chop" => new TrendFollowStrategy(donchianPeriod: 10, emaPeriod: 34, adxMin: 18m, requireRisingAdx: true),
         // Fast + Mindest-Ausbruchsdistanz 0.5xATR — gegen Knapp-Fakeouts.

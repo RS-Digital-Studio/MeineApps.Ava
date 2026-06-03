@@ -397,8 +397,6 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     risk.EnableCrossTfPyramiding = saved.Risk.EnableCrossTfPyramiding;
     risk.PyramidMaxAddOns = saved.Risk.PyramidMaxAddOns;
     risk.PyramidScalePercent = saved.Risk.PyramidScalePercent;
-    // Stale-Pending-Limit-Order-Expiry (Default 6h)
-    risk.PendingLimitOrderMaxAgeHours = saved.Risk.PendingLimitOrderMaxAgeHours;
     // Runner-TP (opt-in)
     risk.EnableRunner = saved.Risk.EnableRunner;
     risk.RunnerPercent = saved.Risk.RunnerPercent;

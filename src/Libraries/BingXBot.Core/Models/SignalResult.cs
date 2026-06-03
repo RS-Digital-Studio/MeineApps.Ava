@@ -11,7 +11,6 @@ public record SignalResult(
     string Reason,
     decimal? TakeProfit2 = null,
     int ConfluenceScore = 0,
-    bool PreferLimitOrder = false,
     /// <summary>SK-Regel: SL NICHT in den Gewinn verschieben (B-C Korrektionen stoppen aus).</summary>
     bool DisableSmartBreakeven = false,
     /// <summary>SK-Regel: Zusätzlicher Entry (halbe Position) für Staffelung 50er voll + 66.7er halb.</summary>

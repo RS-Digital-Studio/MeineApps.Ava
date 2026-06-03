@@ -251,25 +251,6 @@ public class LiveTradingManager : IDisposable
                     $"ExitStates wiederhergestellt: {savedExitStates.Count} Position(en) mit Phase/OriginalQty/BE-State"));
             }
 
-            // Pending Limit-Orders wiederherstellen (TP-Recovery nach App-Neustart)
-            // ABGLEICH MIT BINGX: DB kann stale Orders enthalten (manuell gecancelt, gefüllt, expired).
-            // Nur Orders wiederherstellen die tatsächlich noch auf BingX offen sind.
-            var savedPendingOrders = await _dbService.LoadPendingLimitOrdersAsync();
-            if (savedPendingOrders is { Count: > 0 })
-            {
-                var reconciledOrders = await ReconcilePendingLimitOrdersAsync(savedPendingOrders);
-                if (reconciledOrders.Count > 0)
-                {
-                    _service.RestorePendingLimitOrders(reconciledOrders);
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                        $"Pending Limit-Orders wiederhergestellt: {reconciledOrders.Count} Order(s) mit TP-Werten"));
-                }
-                else if (savedPendingOrders.Count > 0)
-                {
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                        $"Keine Pending-Orders wiederhergestellt: {savedPendingOrders.Count} DB-Einträge waren veraltet (nicht mehr auf BingX)"));
-                }
-            }
         }
         catch (Exception ex)
         {
@@ -458,12 +439,6 @@ public class LiveTradingManager : IDisposable
                 catch { /* Best-effort */ }
             }
 
-            // DB aufräumen: Pending Limit-Orders clearen die jetzt als Positionen existieren
-            if (_dbService != null)
-            {
-                try { await _dbService.ClearPendingLimitOrdersAsync(); }
-                catch { /* best-effort */ }
-            }
         }
         catch (Exception ex)
         {
@@ -539,69 +514,6 @@ public class LiveTradingManager : IDisposable
     }
 
     /// <summary>
-    /// Gleicht gespeicherte Pending-Orders mit dem aktuellen BingX-Orderbuch ab.
-    /// Entfernt Einträge deren OrderId nicht mehr auf BingX existiert (gefüllt, gecancelt, expired)
-    /// und aktualisiert die DB mit der bereinigten Liste.
-    /// Bei API-Fehler: Fallback auf die gespeicherten Orders (best-effort, kein Abbruch).
-    /// </summary>
-    private async Task<Dictionary<string, PendingLimitOrderState>> ReconcilePendingLimitOrdersAsync(
-        Dictionary<string, PendingLimitOrderState> savedStates)
-    {
-        if (_restClient == null || savedStates.Count == 0) return savedStates;
-
-        try
-        {
-            // Alle aktuell offenen Orders von BingX holen (ohne Symbol-Filter → eine API-Call)
-            var allOpenOrders = await _restClient.GetOpenOrdersAsync();
-            var liveOrderIds = new HashSet<string>(allOpenOrders.Select(o => o.OrderId));
-
-            var valid = new Dictionary<string, PendingLimitOrderState>();
-            var staleSymbols = new List<string>();
-            foreach (var kvp in savedStates)
-            {
-                if (liveOrderIds.Contains(kvp.Value.OrderId))
-                {
-                    valid[kvp.Key] = kvp.Value;
-                }
-                else
-                {
-                    staleSymbols.Add(kvp.Key);
-                }
-            }
-
-            if (staleSymbols.Count > 0)
-            {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                    $"{staleSymbols.Count} Pending-Order(s) nicht mehr auf BingX → verworfen: {string.Join(", ", staleSymbols)}"));
-
-                // DB mit abgeglichener Liste aktualisieren damit wir beim nächsten Start sauber starten
-                if (_dbService != null)
-                {
-                    try
-                    {
-                        if (valid.Count > 0)
-                            await _dbService.SavePendingLimitOrdersAsync(valid);
-                        else
-                            await _dbService.ClearPendingLimitOrdersAsync();
-                    }
-                    catch { /* Best-effort: DB-Update nicht kritisch */ }
-                }
-            }
-
-            return valid;
-        }
-        catch (Exception ex)
-        {
-            // Bei API-Fehler: Fallback auf gespeicherte Orders (kein Abbruch).
-            // Sicherer Default als kompletter Verlust der Pending-Orders — Invalidierung
-            // greift ohnehin im PriceTickerLoop wenn Orders wirklich stale sind.
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
-                $"Pending-Order-Abgleich mit BingX fehlgeschlagen: {ex.Message} — nutze DB-Einträge unverändert"));
-            return savedStates;
-        }
-    }
-
-    /// <summary>
     /// Stoppt das Live-Trading. Offene Positionen bleiben auf BingX bestehen.
     /// _restClient bleibt erhalten bis Dispose() — verhindert NullRef in nachlaufenden Tasks.
     /// </summary>
@@ -625,13 +537,6 @@ public class LiveTradingManager : IDisposable
                     await _dbService.SaveExitStatesAsync(exitStates);
                 var (tradesToday, losses) = _service.GetRuntimeStateSnapshot();
                 await _dbService.SaveRuntimeStateAsync(tradesToday, losses, _activeStrategyName);
-
-                // Pending Limit-Orders persistieren (TP-Recovery nach Neustart)
-                var pendingOrders = _service.GetPendingLimitOrdersSnapshot();
-                if (pendingOrders.Count > 0)
-                    await _dbService.SavePendingLimitOrdersAsync(pendingOrders);
-                else
-                    await _dbService.ClearPendingLimitOrdersAsync();
             }
             catch { /* Best-effort: DB-Fehler darf Stop nicht blockieren */ }
         }
@@ -667,8 +572,6 @@ public class LiveTradingManager : IDisposable
                         await _dbService.SaveExitStatesAsync(exitStates);
                     var (tradesToday, losses) = _service.GetRuntimeStateSnapshot();
                     await _dbService.SaveRuntimeStateAsync(tradesToday, losses, _activeStrategyName);
-                    // EmergencyStop schließt alle Positionen → pending orders nicht mehr relevant
-                    await _dbService.ClearPendingLimitOrdersAsync();
                 }
             }
             catch { /* Best-effort: DB-Fehler darf EmergencyStop nicht blockieren */ }

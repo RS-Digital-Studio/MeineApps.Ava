@@ -109,18 +109,6 @@ public class RiskSettings
     /// </summary>
     public decimal BreakevenTriggerRMultiple { get; set; } = 2.0m;
 
-    /// <summary>
-    /// Maximale Lebensdauer einer pending Limit-Order in Stunden (Default 6h, 0 = aus).
-    /// Hintergrund: Wenn ein Symbol aus der Top-100 herausfällt, wird kein neues Signal mehr
-    /// generiert — die Cancel-Logik (<c>CancelStaleSequencePendingAsync</c>) löst nur bei NEUEM
-    /// Signal aus. Ohne Time-Expiry läuft die Order tagelang gegen einen toten Markt; bei
-    /// einer späten Reversal-Bewegung kann sie zufällig auf BC-Niveau füllen, obwohl die
-    /// Sequenz längst verfallen ist.
-    /// 6h ist eine konservative Obergrenze für M15/H1-Setups (typische BC-Hold-Zeit).
-    /// 0 deaktiviert den Filter (Backwards-Compat).
-    /// </summary>
-    public decimal PendingLimitOrderMaxAgeHours { get; set; } = 6m;
-
     // BUCH-ONLY: EnforceFahrplanAlignment entfernt. Das Buch kennt keinen "Trade gegen Fahrplan
     // blockieren"-Filter — die einzige Multi-TF-Regel ist die MTA in ScannerSettings
     // (BlockLtfEntryWhenHtfInTargetZone).

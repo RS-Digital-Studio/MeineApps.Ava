@@ -1,4 +1,4 @@
-using BingXBot.Core.Configuration;
+﻿using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
@@ -60,86 +60,6 @@ public partial class LiveTradingService : TradingServiceBase
     private readonly ConcurrentDictionary<string, decimal> _wsTickerPrices = new();
     /// <summary>True wenn der WebSocket-Ticker-Stream aktiv ist (für schnellere SL/TP-Prüfung).</summary>
     public bool IsWsTickerActive { get; private set; }
-    // SK-Buch Workflow 5.3: "Entry wird solange getradet wie er valide ist."
-    // Invalidation-Level = Sequenz-Invalidierung (Preis jenseits Point0 ≈ StopLoss).
-    // Wenn Preis den Invalidation-Level erreicht BEVOR die Limit-Entry gefüllt wurde → cancel.
-    //
-    // SK-Buch-Modell: Key-Format ist "{symbol}#{sequenceId}" — damit können
-    // beide Entry-Geschwister (Primary 50% / Additional 66.7% mit Suffix _Prim / _Add) für das
-    // gleiche Symbol gleichzeitig pending sein. Bei Sequenz-Invalidierung werden BEIDE gecancelt
-    // via CancelAllPendingForSequenceAsync(). Legacy-Keys ohne "#" werden toleriert (= "#_").
-    // TakeProfit/TakeProfit2: TP-Werte werden im Tuple gehalten, damit bei Signal-Rekonstruktion
-    // (Fill erkannt, aber _positionSignals leer nach 30s+) der TP nicht verloren geht.
-    // internal damit Tests pending-Entries fuer die Pending-Ausnahme im Reconcile setzen koennen.
-    //
-    // v1.4.0 Phase 0.7 (Finding 0.7) — zusaetzliche Strategy-Felder am Ende des Tuples:
-    // NavPointA / IsGklSetup / GklTimeframe / RunnerHardCap / IsCounterTrendScalp /
-    // PositionScaleOverride. Werden bei Inline-Rekonstruktion in OnBeforePriceTickerIteration
-    // gelesen, damit A-Bruch-BE / Runner / HighProb-Boost auch nach Signal-Verlust korrekt arbeiten.
-    internal readonly ConcurrentDictionary<string, (string OrderId, DateTime PlacedAt, decimal InvalidationLevel, bool IsLong, string Symbol, string? SequenceId, decimal? TakeProfit, decimal? TakeProfit2, decimal NavPointA, bool IsGklSetup, TimeFrame? GklTimeframe, decimal RunnerHardCap, bool IsCounterTrendScalp, decimal? PositionScaleOverride)> _pendingLimitOrders = new();
-
-    /// <summary>
-    /// Bildet den Dictionary-Key aus Symbol und SequenceId.
-    /// Symbol kann NICHT "#" enthalten (BingX-Format: "BTC-USDT"), daher ist "#" ein sicherer Separator.
-    /// Internal fuer Testbarkeit (BuildPendingKey/ExtractSymbolFromPendingKey-Roundtrip-Tests).
-    /// </summary>
-    internal static string BuildPendingKey(string symbol, string? sequenceId) =>
-        $"{symbol}#{sequenceId ?? "_"}";
-
-    /// <summary>
-    /// Extrahiert das Symbol aus einem Pending-Key. Legacy-Keys ohne "#" werden als reines Symbol interpretiert.
-    /// Internal fuer Testbarkeit.
-    /// </summary>
-    internal static string ExtractSymbolFromPendingKey(string key)
-    {
-        var idx = key.IndexOf('#');
-        return idx < 0 ? key : key.Substring(0, idx);
-    }
-
-    /// <summary>
-    /// Bekannte Entry-Suffixe für SequenceId: SK-Buch _Prim/_Add (ab v1.2.5), Legacy _L500/_L618/_L667
-    /// (Triple-Entry vor v1.2.5). Reihenfolge ist relevant — längste Matches zuerst, damit
-    /// _L500/_L618/_L667 nicht fälschlich einen kürzeren Teil matchen (hier trivial, aber defensiv).
-    /// </summary>
-    private static readonly string[] SequenceEntrySuffixes =
-    {
-        "_Prim", "_Add", "_L500", "_L618", "_L667"
-    };
-
-    /// <summary>
-    /// Extrahiert den Sequenz-Prefix ohne Entry-Suffix (_Prim/_Add, Legacy _L500/_L618/_L667) aus
-    /// einer SequenceId. Format laut SequenzKonzeptStrategy: "{symbol}_{navTf}_{point0}_{pointA}_{suffix}".
-    /// Rückgabe = Prefix ohne Suffix — matched beide Entry-Geschwister bei StartsWith-Vergleich.
-    /// Gibt null zurück wenn sequenceId keinen bekannten Entry-Suffix hat (kein Multi-Entry-Signal).
-    /// </summary>
-    private static string? GetSequencePrefix(string? sequenceId)
-    {
-        if (string.IsNullOrEmpty(sequenceId)) return null;
-        foreach (var suffix in SequenceEntrySuffixes)
-        {
-            if (sequenceId.EndsWith(suffix, StringComparison.Ordinal))
-                return sequenceId.Substring(0, sequenceId.Length - suffix.Length);
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// Kanonischer Sequenz-Key (19.04.2026, Stale-Sequence-Cleanup):
-    /// Gleich wie <see cref="GetSequencePrefix"/>, aber Fallback auf die vollständige SequenceId
-    /// wenn kein Entry-Suffix vorhanden ist (Single-Entry-Strategien haben keinen Suffix).
-    /// Wird genutzt um zu erkennen ob zwei Pending-Orders auf DERSELBEN Sequenz basieren
-    /// (Geschwister-Orders) oder auf unterschiedlichen (veraltete Sequenz → canceln).
-    /// </summary>
-    private static string? GetCanonicalSequenceKey(string? sequenceId)
-    {
-        if (string.IsNullOrEmpty(sequenceId)) return null;
-        foreach (var suffix in SequenceEntrySuffixes)
-        {
-            if (sequenceId.EndsWith(suffix, StringComparison.Ordinal))
-                return sequenceId.Substring(0, sequenceId.Length - suffix.Length);
-        }
-        return sequenceId;
-    }
     // Hard-Expiry (Safety-Net): Limit-Order läuft nach 48h ab selbst ohne Invalidierung
     // (Schutz gegen "vergessene" Orders bei Daten-/API-Ausfall, keine Buch-Regel).
     private const int LimitOrderHardExpiryHours = 48;
@@ -255,8 +175,6 @@ public partial class LiveTradingService : TradingServiceBase
                         catch { /* Best-effort: Order koennte bereits gecancelt sein */ }
                     }
                 }
-                // Interne pending-Limit-Tracking-Map leeren, damit kein Rueckstand bei Restart bleibt
-                _pendingLimitOrders.Clear();
             }
             catch (Exception cancelEx)
             {
@@ -336,20 +254,6 @@ public partial class LiveTradingService : TradingServiceBase
             var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
             var pos = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
 
-            // Auch Pending-Limit-Entries fuer (Symbol, Side) cancellen — sonst bleibt eine
-            // alte Limit-Entry-Order auf BingX und wird beim naechsten Reconcile-Tick gefuellt,
-            // direkt nachdem der User die Position manuell zugemacht hat.
-            var matchingPending = _pendingLimitOrders
-                .Where(kvp => kvp.Value.Symbol == symbol && kvp.Value.IsLong == (side == Side.Buy))
-                .Select(kvp => (kvp.Key, kvp.Value.OrderId, kvp.Value.SequenceId))
-                .ToList();
-            foreach (var (pKey, pOrderId, _) in matchingPending)
-            {
-                try { await _restClient.CancelOrderAsync(pOrderId, symbol).ConfigureAwait(false); }
-                catch { /* moeglicherweise schon gefuellt/gecancelt */ }
-                _pendingLimitOrders.TryRemove(pKey, out _);
-            }
-
             // Erst Close, dann Cancel (sicherer: bei Close-Fehler bleibt nativer SL als Schutz)
             await _restClient.ClosePositionAsync(symbol, side).ConfigureAwait(false);
             RemoveSignalByKey($"{symbol}_{side}");
@@ -377,11 +281,9 @@ public partial class LiveTradingService : TradingServiceBase
                 _eventBus.PublishTrade(trade);
             }
 
-            // Persistenz nachziehen: ExitState + Pending-Snapshot auf Platte,
+            // Persistenz nachziehen: ExitState auf Platte,
             // sonst kommen die Eintraege beim naechsten Pi-Restart aus der DB zurueck.
             try { await PersistExitStatesAsync().ConfigureAwait(false); }
-            catch { /* best-effort */ }
-            try { await PersistPendingLimitOrdersAsync().ConfigureAwait(false); }
             catch { /* best-effort */ }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
@@ -634,35 +536,13 @@ public partial class LiveTradingService : TradingServiceBase
             {
                 if (!positionKeys.Contains(key))
                 {
-                    // KRITISCH: Signal NICHT als verwaist entfernen solange eine Pending-Limit-Order für
-                    // das Symbol existiert. Limit-Orders können Minuten/Stunden unbefüllt bleiben. Ohne
-                    // diesen Schutz wird das Signal nach 30s entfernt, dann füllt die Order → Position
-                    // existiert, aber kein Signal → Fill-Detection stuck in "retry nächster Tick" Endlos-Loop
-                    // → TP wird nie platziert.
-                    //
-                    // Side aus dem posKey-Format ({symbol}_{Buy|Sell}) einmal extrahieren — sowohl fuer
-                    // den Side-spezifischen Pending-Schutz (Finding 0.4) als auch fuer den
+                    // Side aus dem posKey-Format ({symbol}_{Buy|Sell}) extrahieren — fuer den
                     // Reduce-Only-Filter im Cancel-Aufruf (Finding 0.1).
                     var symbol = key.Split('_')[0];
                     Side? sideOfKey = null;
                     var sideIdx = key.LastIndexOf('_');
                     if (sideIdx >= 0 && Enum.TryParse<Side>(key.AsSpan(sideIdx + 1), out var parsedSide))
                         sideOfKey = parsedSide;
-
-                    // Phase 0.4 Fix (Finding 0.4) — Side-Filter beim Pending-Schutz.
-                    // Vor v1.4.0: Long-Signal blieb stehen, wenn IRGENDEINE Pending fuer das Symbol
-                    // existierte — auch wenn die Pending in die Gegenrichtung lief (z.B. Short).
-                    // Im Hedge-Mode mit Long+Short parallel fuehrte das zu Zombie-Long-Signalen, die
-                    // Risiko-Berechnungen (DailyRisk, Recovery-TP) verzerrten.
-                    // Triple-Entry-Key {symbol}#{sequenceId} (Pending-Map) hat keine Side-Komponente —
-                    // Side liegt im Wert-Tuple (IsLong). Pending-Side wird aus IsLong projiziert.
-                    var hasMatchingPending = sideOfKey.HasValue
-                        ? _pendingLimitOrders.Values.Any(v =>
-                            v.Symbol == symbol
-                            && (v.IsLong ? Side.Buy : Side.Sell) == sideOfKey.Value)
-                        : _pendingLimitOrders.Values.Any(v => v.Symbol == symbol);
-                    if (hasMatchingPending)
-                        continue;
 
                     // Nur entfernen wenn Signal älter als 30 Sekunden (API-Latenz-Grace-Period)
                     if (_signalCreatedAt.TryGetValue(key, out var createdAt) && (now - createdAt).TotalSeconds > 30)
@@ -723,302 +603,6 @@ public partial class LiveTradingService : TradingServiceBase
             }
         }
 
-        // Pending Limit-Orders: Fill-Detection + Invalidation-Cancel (SK-Buch Workflow 5.3+6.9)
-        if (_pendingLimitOrders.Count > 0)
-        {
-            var now2 = DateTime.UtcNow;
-            // Tickers nur laden wenn Invalidation-Check nötig (einer der pending Orders ohne WS-Preis)
-            List<Ticker>? tickers = null;
-            // Triple-Entry Cascade-Schutz (18.04.2026 v1.2.4): Wenn eine Geschwister-Order bereits
-            // per CancelAllPendingForSequenceAsync gecancellt wurde, Prefix merken und Doppel-Cancel
-            // in derselben Iteration vermeiden.
-            var cascadedPrefixes = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var kvp in _pendingLimitOrders)
-            {
-                // Wenn Prefix bereits durch Geschwister-Invalidation cascade-cancelt → diesen Eintrag ueberspringen
-                if (!string.IsNullOrEmpty(kvp.Value.SequenceId))
-                {
-                    var cascadePrefix = GetSequencePrefix(kvp.Value.SequenceId);
-                    if (cascadePrefix != null && cascadedPrefixes.Contains(cascadePrefix))
-                    {
-                        _pendingLimitOrders.TryRemove(kvp.Key, out _);
-                        continue;
-                    }
-                }
-                // Side direkt aus pending-Order (verhindert Race mit _positionSignals-Initialisierung)
-                var expectedSide = kvp.Value.IsLong ? Side.Buy : Side.Sell;
-                // BUGFIX 24.04.2026: kvp.Key ist "{symbol}#{sequenceId}" (BuildPendingKey), aber Positions,
-                // REST-APIs und Log-Filter erwarten das reine BingX-Symbol (z.B. "BTC-USDT"). Ohne diese
-                // Trennung matchte kein p.Symbol den Key → filledPos immer null → TPs wurden nie gesetzt.
-                var sym = kvp.Value.Symbol;
-                var filledPos = positions.FirstOrDefault(p => p.Symbol == sym && p.Side == expectedSide);
-
-                if (filledPos != null && filledPos.Quantity > 0)
-                {
-                    var posKey = $"{sym}_{filledPos.Side}";
-
-                    // Race-Schutz Fill+Invalidation (18.04.2026 v1.2.4): Wenn der Fill-Preis bereits
-                    // jenseits des Invalidation-Levels liegt (Preis ist im selben Tick gefuellt UND
-                    // hat Point0 durchbrochen — z.B. Flash-Crash durch die gesamte BC-Zone), oeffnen
-                    // wir die Position nicht — sofort schliessen, keine TP platzieren. Ohne diesen
-                    // Schutz greift der normale SL-Hit-Pfad erst im naechsten Tick und kostet Slippage.
-                    var entryBeyondInvalidation = kvp.Value.IsLong
-                        ? filledPos.EntryPrice <= kvp.Value.InvalidationLevel
-                        : filledPos.EntryPrice >= kvp.Value.InvalidationLevel;
-                    if (entryBeyondInvalidation)
-                    {
-                        var raceReason = $"EntryPrice {filledPos.EntryPrice:F8} bereits jenseits Invalidation-Level {kvp.Value.InvalidationLevel:F8}";
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"LIVE: {sym} Race-Condition Fill+Invalidation — sofortiges Close ({raceReason})",
-                            sym));
-                        try
-                        {
-                            await _restClient.ClosePositionAsync(sym, filledPos.Side).ConfigureAwait(false);
-                            await CancelNativeSlTpOrdersAsync(sym, filledPos.Side).ConfigureAwait(false);
-                        }
-                        catch (Exception raceEx)
-                        {
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                                $"LIVE: {sym} Race-Close fehlgeschlagen: {raceEx.Message} — Position evtl. noch offen!",
-                                sym));
-                        }
-                        _pendingLimitOrders.TryRemove(kvp.Key, out _);
-                        RemoveSignalByKey(posKey);
-
-                        // Triple-Cascade auch im Race-Fall: Geschwister-Orders sind ebenfalls tot
-                        var raceSeqPrefix = GetSequencePrefix(kvp.Value.SequenceId);
-                        if (raceSeqPrefix != null && cascadedPrefixes.Add(raceSeqPrefix))
-                        {
-                            await CancelAllPendingForSequenceAsync(kvp.Value.Symbol, raceSeqPrefix).ConfigureAwait(false);
-                        }
-                        continue;
-                    }
-
-                    // Race-Schutz: Wenn Signal noch nicht in _positionSignals ist (RunLoop hat's
-                    // noch nicht gesetzt), max 6 Ticks (30s) warten — nächster Tick versucht erneut.
-                    // Ohne Schutz geht das TP verloren wenn PriceTickerLoop die Position sieht bevor
-                    // RunLoop das Signal registriert hat.
-                    // Nach 30s: Signal aus Pending-State rekonstruieren (SL aus InvalidationLevel,
-                    // kein TP). Verhindert Endlos-Loop wenn Signal gar nicht mehr kommt (z.B. nach
-                    // Verwaist-Cleanup oder App-Neustart zwischen Platzierung und Fill ohne TP-State).
-                    if (!_positionSignals.TryGetValue(posKey, out var sig))
-                    {
-                        var pendingAge = (now2 - kvp.Value.PlacedAt).TotalSeconds;
-                        if (pendingAge < 30)
-                        {
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
-                                $"LIVE: {sym} Limit gefüllt @ {filledPos.EntryPrice:F8}, aber Signal noch nicht registriert — retry nächster Tick", sym));
-                            continue; // _pendingLimitOrders NICHT entfernen
-                        }
-
-                        // Signal aus Pending-State rekonstruieren — TP/TP2 aus Tuple (v1.2.5):
-                        // Vorher ging TP verloren, Position lief ohne Exit-Ziel. Jetzt werden die bei
-                        // Platzierung gespeicherten TP-Werte uebernommen, sodass Partial-Close/Full-TP
-                        // im PriceTickerLoop wieder greifen.
-                        var recoveredTp = kvp.Value.TakeProfit;
-                        var recoveredTp2 = kvp.Value.TakeProfit2;
-                        var tpLogText = recoveredTp.HasValue
-                            ? $"TP1={recoveredTp:F8}" + (recoveredTp2.HasValue ? $" TP2={recoveredTp2:F8}" : "")
-                            : "TP unbekannt (Legacy-Eintrag ohne TP-Persist)";
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"LIVE: {sym} Signal nach {pendingAge:F0}s nicht registriert — rekonstruiere aus Pending-State (SL={kvp.Value.InvalidationLevel:F8}, {tpLogText})", sym));
-
-                        // v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder direkt aus Pending-Tuple
-                        // wiederbeleben (Place- und Restore-Pfade fuellen sie). Vor v1.4.0 fielen
-                        // hier NavPointA / RunnerHardCap / GKL / Counter-Trend / PositionScale
-                        // weg → A-Bruch-BE feuerte nie, Runner inactive, HighProb-Boost futsch.
-                        decimal? recoveredNavPointA = kvp.Value.NavPointA > 0 ? kvp.Value.NavPointA : null;
-                        decimal? recoveredHardCap = kvp.Value.RunnerHardCap > 0 ? kvp.Value.RunnerHardCap : null;
-
-                        var reconstructedSignal = new SignalResult(
-                            kvp.Value.IsLong ? Signal.Long : Signal.Short,
-                            0.5m,
-                            filledPos.EntryPrice,
-                            StopLoss: kvp.Value.InvalidationLevel,
-                            TakeProfit: recoveredTp,
-                            Reason: "Rekonstruiert nach Signal-Verlust (Verwaist-Cleanup oder Neustart)",
-                            TakeProfit2: recoveredTp2,
-                            DisableSmartBreakeven: true,
-                            SequenceId: kvp.Value.SequenceId,
-                            IsGklSetup: kvp.Value.IsGklSetup,
-                            GklTimeframe: kvp.Value.GklTimeframe,
-                            NavPointA: recoveredNavPointA,
-                            RunnerHardCap: recoveredHardCap,
-                            IsCounterTrendScalp: kvp.Value.IsCounterTrendScalp,
-                            PositionScaleOverride: kvp.Value.PositionScaleOverride);
-
-                        _positionSignals[posKey] = reconstructedSignal;
-                        OnSignalCreated(posKey);
-
-                        // Nativen SL auf BingX setzen damit Position geschützt ist.
-                        // TP NICHT hier setzen — PlaceTpLimitOrdersAfterFillAsync unten
-                        // uebernimmt das als Reduce-Only-LIMIT (SK-TP1/TP2-Staffelung).
-                        try
-                        {
-                            await _restClient.SetPositionSlTpAsync(sym, filledPos.Side, kvp.Value.InvalidationLevel, null).ConfigureAwait(false);
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                                $"LIVE: {sym} Nativer SL gesetzt: {kvp.Value.InvalidationLevel:F8}", sym));
-                        }
-                        catch (Exception slEx)
-                        {
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                                $"LIVE: {sym} SL-Recovery fehlgeschlagen: {slEx.Message} — Position UNGESCHÜTZT!", sym));
-                        }
-
-                        sig = reconstructedSignal;
-                    }
-
-                    _pendingLimitOrders.TryRemove(kvp.Key, out _);
-
-                    // Signal.EntryPrice auf echten Fill-Preis patchen (sig ist record → with).
-                    // Vorher enthielt Signal den Limit-Preis, der bei Slippage/Partial-Fill
-                    // vom Fill-Preis abweicht. Stufen-Logik (SL halbieren bei 1x, BE bei 2x)
-                    // rechnet jetzt konsistent mit dem tatsaechlichen Fill-Entry.
-                    sig = sig with { EntryPrice = filledPos.EntryPrice };
-                    _positionSignals[posKey] = sig;
-
-                    // ExitState mit echten Fill-Werten korrigieren:
-                    // Bei Order-Platzierung stand ticker.LastPrice als Proxy im ExitState.
-                    // Jetzt liefert BingX den tatsächlichen Fill-Preis und die gefüllte Menge.
-                    if (_exitStates.TryGetValue(posKey, out var exState))
-                    {
-                        exState.EntryPrice = filledPos.EntryPrice;
-                        exState.OriginalQuantity = filledPos.Quantity;
-                        exState.EntryTime = DateTime.UtcNow; // Fill-Zeit als Entry-Zeit
-                        exState.Signal = sig; // Gepatchtes Signal im ExitState halten
-                    }
-                    else
-                    {
-                        // Recovery-Pfad: Pending-Order aus DB recoverd, aber noch kein ExitState
-                        // (wurde bei RestorePendingLimitOrders nicht angelegt). Jetzt ist die
-                        // Order gefuellt → ExitState anlegen, damit A-Bruch-BE und TP1/TP2 greifen.
-                        _exitStates[posKey] = new PositionExitState
-                        {
-                            Signal = sig,
-                            Symbol = sym,
-                            Side = filledPos.Side,
-                            EntryPrice = filledPos.EntryPrice,
-                            OriginalQuantity = filledPos.Quantity,
-                            Tp2 = sig.TakeProfit2,
-                            EntryTime = DateTime.UtcNow,
-                            SequenceId = sig.SequenceId,
-                        };
-                    }
-
-                    // TP-Limit-Orders nachholen (konnten bei Limit-Entry nicht sofort platziert werden)
-                    if (sig.TakeProfit.HasValue && sig.TakeProfit.Value > 0)
-                    {
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                            $"LIVE: {sym} Limit-Entry @ {filledPos.EntryPrice:F8} gefüllt → TP-Limit-Orders werden platziert", sym));
-                        await PlaceTpLimitOrdersAfterFillAsync(sym, filledPos.Side, filledPos.Quantity, sig).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"LIVE: {sym} Limit-Entry gefüllt, aber Signal hat kein TakeProfit — nur PriceTickerLoop-Fallback aktiv", sym));
-                    }
-                    continue; // Nächste pending Order
-                }
-
-                // SK-Buch Workflow 5.3+6.9: Limit-Order läuft bis Sequenz invalid wird.
-                // Invalidation = Preis hat den StopLoss-Level erreicht (= ≈Point0, 78.6er).
-                // Preis-Quelle: WS-Ticker (live, <1s Lag) → Mark-Price aus Positions → Tickers-Snapshot
-                var currentPx = _wsTickerPrices.TryGetValue(sym, out var wsP) && wsP > 0
-                    ? wsP
-                    : positions.FirstOrDefault(p => p.Symbol == sym)?.MarkPrice ?? 0m;
-                if (currentPx <= 0)
-                {
-                    if (tickers == null)
-                    {
-                        var fetched = await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
-                        tickers = fetched?.ToList() ?? new List<Ticker>();
-                    }
-                    currentPx = tickers.FirstOrDefault(t => t.Symbol == sym)?.LastPrice ?? 0m;
-                }
-
-                var invalidated = currentPx > 0 && (kvp.Value.IsLong
-                    ? currentPx <= kvp.Value.InvalidationLevel   // Long: Preis fiel auf/unter 78.6er/Point0
-                    : currentPx >= kvp.Value.InvalidationLevel); // Short: Preis stieg auf/über 78.6er/Point0
-
-                // Hard-Expiry: Safety-Net gegen vergessene Orders bei Daten-Ausfall (nicht Buch-Regel)
-                var hardExpired = (now2 - kvp.Value.PlacedAt).TotalHours >= LimitOrderHardExpiryHours;
-
-                if (invalidated || hardExpired)
-                {
-                    try
-                    {
-                        await _restClient.CancelOrderAsync(kvp.Value.OrderId, sym).ConfigureAwait(false);
-                        var reason = invalidated
-                            ? $"Sequenz invalid (Preis {currentPx:F8} erreichte Invalidation-Level {kvp.Value.InvalidationLevel:F8})"
-                            : $"Hard-Expiry nach {LimitOrderHardExpiryHours}h";
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"{sym}: Limit-Order gecancellt — {reason}", sym));
-                    }
-                    catch { /* Order möglicherweise bereits gefüllt/gecancellt */ }
-                    _pendingLimitOrders.TryRemove(kvp.Key, out _);
-
-                    // Triple-Entry Cascade: Bei Invalidierung einer Entry-Geschwister-Order sind die
-                    // Geschwister (_Prim / _Add mit gleichem Prefix) mathematisch ebenfalls tot.
-                    if (invalidated || hardExpired)
-                    {
-                        var sequencePrefix = GetSequencePrefix(kvp.Value.SequenceId);
-                        if (sequencePrefix != null && cascadedPrefixes.Add(sequencePrefix))
-                        {
-                            await CancelAllPendingForSequenceAsync(kvp.Value.Symbol, sequencePrefix).ConfigureAwait(false);
-                        }
-                    }
-
-                    // Prüfe ob Position trotzdem teilweise gefüllt wurde
-                    try
-                    {
-                        var currentPos = positions.FirstOrDefault(p => p.Symbol == sym);
-                        if (currentPos != null && currentPos.Quantity > 0)
-                        {
-                            // Teilweise gefüllt: TP-Limit-Orders auf BingX canceln (falsche Qty)
-                            // und Signal/ExitState mit korrekter Quantity + Fill-Preis aktualisieren
-                            await CancelNativeSlTpOrdersAsync(sym, currentPos.Side).ConfigureAwait(false);
-                            var posKey = $"{sym}_{currentPos.Side}";
-                            if (_exitStates.TryGetValue(posKey, out var es))
-                            {
-                                es.OriginalQuantity = currentPos.Quantity;
-                                es.EntryPrice = currentPos.EntryPrice;
-                            }
-
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                                $"{sym}: Partial-Fill erkannt ({currentPos.Quantity:F4}), TP-Orders gecancellt, PriceTickerLoop übernimmt",
-                                sym));
-                        }
-                        else
-                        {
-                            // Nicht gefüllt: Signal + ExitState + TP-Orders komplett aufräumen
-                            // Suche passenden Key (Symbol_Buy oder Symbol_Sell)
-                            foreach (var side in new[] { Side.Buy, Side.Sell })
-                            {
-                                var posKey = $"{sym}_{side}";
-                                if (_positionSignals.ContainsKey(posKey))
-                                {
-                                    RemoveSignalByKey(posKey);
-                                    try { await CancelNativeSlTpOrdersAsync(sym, side).ConfigureAwait(false); }
-                                    catch { /* Best-effort */ }
-                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                                        $"{sym}: Nicht gefüllt, Signal + TP-Orders aufgeräumt", sym));
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception cleanupEx)
-                    {
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"{sym}: Cleanup nach Limit-Cancel fehlgeschlagen: {cleanupEx.Message}", sym));
-                    }
-                }
-            }
-
-            // Periodisches Save (18.04.2026 v1.2.4): Nach jeder Iteration den aktuellen Pending-State
-            // persistieren, falls Cancels/Fills passiert sind. Best-effort — fire-and-forget.
-            _ = PersistPendingLimitOrdersAsync();
-        }
 
         // Funding-Rate periodisch aktualisieren (alle 5 Min pro Symbol)
         if ((DateTime.UtcNow - _lastFundingRateUpdate).TotalMinutes >= 5 && positions.Count > 0)

@@ -436,36 +436,6 @@ public class BotDatabaseService
 
     // === Pending Limit Orders Persistenz (TP-Recovery nach App-Neustart) ===
 
-    /// <summary>
-    /// Speichert pending Limit-Orders für Recovery nach App-Neustart.
-    /// Ohne Persistenz geht nach Neustart die Fill-Detection verloren
-    /// und TP-Orders werden nie platziert.
-    /// </summary>
-    public async Task SavePendingLimitOrdersAsync(Dictionary<string, PendingLimitOrderState> pendingOrders)
-    {
-        EnsureInitialized();
-        var json = JsonSerializer.Serialize(pendingOrders);
-        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "PendingLimitOrders", Value = json });
-    }
-
-    /// <summary>Lädt gespeicherte Pending Limit-Orders für Crash-Recovery.</summary>
-    public async Task<Dictionary<string, PendingLimitOrderState>?> LoadPendingLimitOrdersAsync()
-    {
-        EnsureInitialized();
-        var entity = await _db!.FindAsync<SettingEntity>("PendingLimitOrders");
-        if (entity?.Value == null) return null;
-        try { return JsonSerializer.Deserialize<Dictionary<string, PendingLimitOrderState>>(entity.Value); }
-        catch { return null; }
-    }
-
-    /// <summary>Löscht gespeicherte Pending Limit-Orders (nach erfolgreicher Recovery).</summary>
-    public async Task ClearPendingLimitOrdersAsync()
-    {
-        EnsureInitialized();
-        try { await _db!.ExecuteAsync("DELETE FROM Settings WHERE Key='PendingLimitOrders'"); }
-        catch { /* best-effort */ }
-    }
-
     // === Backtest-Jobs (persistiert ueber Server-Restarts) ===
 
     public async Task UpsertBacktestJobAsync(BacktestJobEntity job)

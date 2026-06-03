@@ -37,16 +37,6 @@ public partial class LiveTradingService
                 if (!_isPaused)
                 {
                     await ReconcilePositionsAsync(ct).ConfigureAwait(false);
-                    // 04.05.2026 — Stale Pending-Limit-Orders mit Time-Expiry cancel (Default 6h).
-                    // Schützt gegen "Symbol aus Top-100 gefallen, Pending hängt tagelang" — siehe
-                    // RiskSettings.PendingLimitOrderMaxAgeHours.
-                    // Snapshot-Report-Fix Befund 3 / A0.7 — zusaetzlich OpenOrders durchreichen,
-                    // damit der Cleanup Recovery-Pending-Orders die auf BingX nicht mehr existieren
-                    // sofort entfernt (statt 6h zu warten).
-                    IReadOnlyList<Order>? openOrdersForPending = null;
-                    try { openOrdersForPending = await _restClient.GetOpenOrdersAsync().ConfigureAwait(false); }
-                    catch { /* best-effort — fallback auf Time-Expiry-only */ }
-                    await CancelExpiredPendingLimitOrdersAsync(openOrdersForPending).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) { break; }
@@ -96,10 +86,8 @@ public partial class LiveTradingService
         // Snapshot der Bot-Keys NACH Adoption (ConcurrentDictionary.Keys ist konsistent, nicht blockierend).
         var botKeys = _positionSignals.Keys.ToArray();
 
-        // Pending-Symbol/Side — wenn Limit-Entry noch nicht gefuellt ist, ist "keine Position" OK.
-        var pendingSymbolSides = _pendingLimitOrders.Values
-            .Select(v => (v.Symbol, v.IsLong ? Side.Buy : Side.Sell))
-            .ToHashSet();
+        // TrendFollow nutzt Market-Entry — keine Pending-Limit-Entries mehr (leeres Set).
+        var pendingSymbolSides = new HashSet<(string, Side)>();
 
         // PositionOpenedAt-Lookup (fuer 30-s-Grace-Window).
         var positionOpenedAt = (IReadOnlyDictionary<string, DateTime>)_positionOpenTimes;
@@ -201,17 +189,10 @@ public partial class LiveTradingService
     {
         if (positions.Count == 0) return;
 
-        // Pending-Limit-Entries duerfen NICHT adoptiert werden — die Position ist evtl. noch nicht
-        // gefuellt bzw. der normale Fill-Pfad registriert gleich das echte Signal.
-        var pendingKeys = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var v in _pendingLimitOrders.Values)
-            pendingKeys.Add($"{v.Symbol}_{(v.IsLong ? Side.Buy : Side.Sell)}");
-
         foreach (var pos in positions)
         {
             if (pos.Quantity <= 0 || pos.EntryPrice <= 0) continue;
             var key = $"{pos.Symbol}_{pos.Side}";
-            if (pendingKeys.Contains(key)) continue;            // Limit-Entry noch offen
 
             // Vorhandenes Signal (falls die Position bereits — evtl. nur teilweise — managed ist).
             // Der RecoverOpenPositions-Start-Pfad registriert Recovery-Signale mit TakeProfit=null und
@@ -568,10 +549,6 @@ public partial class LiveTradingService
                 openPositionKeys.Add($"{p.Symbol}_{p.Side}");
         }
 
-        var pendingKeys = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var v in _pendingLimitOrders.Values)
-            pendingKeys.Add($"{v.Symbol}_{(v.IsLong ? Side.Buy : Side.Sell)}");
-
         var now = DateTime.UtcNow;
         var staleRecoveryAge = TimeSpan.FromHours(1);
         var staleNormalAge = TimeSpan.FromMinutes(5);
@@ -585,7 +562,6 @@ public partial class LiveTradingService
             var key = kv.Key;
 
             if (openPositionKeys.Contains(key)) continue;
-            if (pendingKeys.Contains(key)) continue;
             if (!string.IsNullOrEmpty(state.Tp1LimitOrderId) && openOrderIds.Contains(state.Tp1LimitOrderId!)) continue;
             if (!string.IsNullOrEmpty(state.Tp2LimitOrderId) && openOrderIds.Contains(state.Tp2LimitOrderId!)) continue;
 

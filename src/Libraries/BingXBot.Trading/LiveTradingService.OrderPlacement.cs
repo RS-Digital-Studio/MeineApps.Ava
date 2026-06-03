@@ -49,15 +49,13 @@ public partial class LiveTradingService
             await _restClient.SetLeverageAsync(ticker.Symbol, leverage, side)
                 .ConfigureAwait(false);
 
-            // Order platzieren: Limit wenn bevorzugt und Entry-Preis vorhanden, sonst Market
-            var useLimit = signal?.PreferLimitOrder == true && signal.EntryPrice.HasValue && signal.EntryPrice.Value > 0;
+            // TrendFollow nutzt ausschliesslich Market-Entry (kein Limit-Pullback-Entry mehr).
 
             // v1.6.2 Phase 12 — SlippageGuard fuer Market-Orders.
             // Pragmatisch ohne dediziertes OrderBook-API: nutzen Ticker.AskPrice/BidPrice als
             // Best-Level-Proxy. Spread (Ask - Last) / Last ist eine konservative Slippage-Schaetzung.
-            // Bei Limit-Orders kein Check (Limit definiert Worst-Case-Fill selbst).
             // Schwelle per-Kategorie (Forex 0.05 %, Crypto 0.10 %, Stock 0.30 %), Fallback global.
-            if (!useLimit && _scannerSettings.SlippageGuardEnabled
+            if (_scannerSettings.SlippageGuardEnabled
                 && ticker.LastPrice > 0 && ticker.AskPrice > 0 && ticker.BidPrice > 0)
             {
                 var refPrice = ticker.LastPrice;
@@ -73,40 +71,8 @@ public partial class LiveTradingService
                     return false;
                 }
             }
-            var orderType = useLimit ? OrderType.Limit : OrderType.Market;
-            var limitPrice = useLimit ? signal!.EntryPrice : null;
-
-            if (useLimit)
-            {
-                // F9 Fix — Distance-Guard fuer Limit-Orders: Limit-Preis darf maximal
-                // GetMaxLimitOrderDistancePercent (kategorienspezifisch) vom aktuellen Markt
-                // entfernt sein. Schuetzt vor Fills auf "Geister-Levels" wenn der Markt
-                // zwischen Signal-Generation und Order-Place stark gelaufen ist.
-                // Sequence-Levels (Retracement 50/66.7%) liegen typischerweise <5% vom
-                // aktuellen Preis — groessere Distanzen sind ein Indikator fuer eine
-                // bereits gelaufene Sequenz oder veraltete Daten.
-                if (_scannerSettings.LimitDistanceGuardEnabled
-                    && ticker.LastPrice > 0 && limitPrice.HasValue && limitPrice.Value > 0)
-                {
-                    var distancePct = Math.Abs(limitPrice.Value - ticker.LastPrice) / ticker.LastPrice * 100m;
-                    var threshold = _scannerSettings.GetMaxLimitOrderDistancePercent(category);
-                    if (distancePct > threshold)
-                    {
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"{ticker.Symbol} [{category}]: Limit-Order geblockt — Distanz {distancePct:F2}% > Threshold {threshold:F2}% (Limit @ {limitPrice:F8}, Markt @ {ticker.LastPrice:F8})",
-                            ticker.Symbol));
-                        return false;
-                    }
-                }
-
-                // Stale-Sequence-Cleanup (19.04.2026): pending Orders auf veralteten Sequenzen
-                // fuer (Symbol, Seite) cancelln bevor die neue Limit-Order platziert wird.
-                // Schuetzt vor Fills auf alten Fib-Levels nach PointA-Shift.
-                await CancelStaleSequencePendingAsync(ticker.Symbol, side, signal?.SequenceId).ConfigureAwait(false);
-
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                    $"{ticker.Symbol}: Limit-Order bei {limitPrice:F8} (Pullback-Entry, Maker-Fee)", ticker.Symbol));
-            }
+            const OrderType orderType = OrderType.Market;
+            decimal? limitPrice = null;
 
             // TP wird NICHT im Haupt-Order gesetzt — stattdessen separate TP-Market-Orders
             // mit spezifischer Quantity (TP1 30% bei 161.8%, TP2 Rest bei 200%)
@@ -162,53 +128,12 @@ public partial class LiveTradingService
                 return false;
             }
 
-            // SK-Buch Workflow 5.3: Limit-Order bleibt valid bis Sequenz invalid wird.
-            // Invalidation-Level = SignalResult.StopLoss (78.6er gecappt, ≈ Point0).
-            // Key enthält SequenceId-Suffix (_Prim/_Add seit v1.2.5, Legacy _L500/_L618/_L667 vor dem
-            // Strip Phase 2) — damit Sibling-Entries separat getrackt + bei Invalidierung gemeinsam
-            // entfernt werden. Single/Dual-Entry nach Buch (Triple/Quad/Hex sind entfernt).
-            if (useLimit && order.OrderId != null && signal?.StopLoss.HasValue == true)
-            {
-                var isLong = side == Side.Buy;
-                var pendingKey = BuildPendingKey(ticker.Symbol, signal.SequenceId);
-                _pendingLimitOrders[pendingKey] = (order.OrderId, DateTime.UtcNow, signal.StopLoss.Value,
-                    isLong, ticker.Symbol, signal.SequenceId,
-                    signal.TakeProfit, signal.TakeProfit2,
-                    // v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder fuer Signal-Rekonstruktion
-                    NavPointA: signal.NavPointA ?? 0m,
-                    IsGklSetup: signal.IsGklSetup,
-                    GklTimeframe: signal.GklTimeframe,
-                    RunnerHardCap: signal.RunnerHardCap ?? 0m,
-                    IsCounterTrendScalp: signal.IsCounterTrendScalp,
-                    PositionScaleOverride: signal.PositionScaleOverride);
-
-                // v1.4.0 Phase 0.5 (Finding 0.5) — Synchroner Save BEFORE return.
-                // Vor v1.4.0 lief der Save als fire-and-forget; ein Sub-second-Crash zwischen
-                // In-Memory-Set und DB-Write fuehrte dazu, dass die Order auf BingX existierte,
-                // aber der Bot nach Restart nichts davon wusste → Ghost-Order, bei Fill kommt eine
-                // Position rein, die der Bot als unmanaged sieht (Reconcile warnt nur).
-                // Persistenz auf der Pi-SSD ist ~1-2 ms — kein Latenz-Impact auf Order-Flow.
-                await PersistPendingLimitOrdersAsync().ConfigureAwait(false);
-            }
-
             // TP1 + TP2 als LIMIT Reduce-Only Orders auf BingX (stackbar, Maker-Fee 0.02%)
             // Reguläre LIMIT-Orders mit reduceOnly=true: BingX erlaubt beliebig viele pro Position.
-            // Bei Entry-Limit-Orders: Überspringen — Position existiert noch nicht (pending).
-            // TP wird im PriceTickerLoop nachgeholt sobald die Limit-Order gefüllt ist.
-            if (!useLimit && signal?.TakeProfit.HasValue == true && signal.TakeProfit.Value > 0)
+            // Market-Entry → Position existiert sofort, TP wird direkt nach dem Fill platziert.
+            if (signal?.TakeProfit.HasValue == true && signal.TakeProfit.Value > 0)
             {
                 await PlaceTpLimitOrdersAfterFillAsync(ticker.Symbol, side, quantity, signal).ConfigureAwait(false);
-            }
-            else if (useLimit && signal?.TakeProfit.HasValue == true)
-            {
-                // Explizit zeigen dass TP bei Limit-Pending noch NICHT auf BingX ist — erst nach Fill.
-                // Ohne diesen Hinweis interpretieren User das Trade-Log ("TP1=... | TP2=...") fälschlich
-                // als "TP ist gesetzt" und suchen sie vergeblich im BingX-Orderbuch.
-                var tp1Str = signal.TakeProfit.Value.ToString("F8");
-                var tp2Str = signal.TakeProfit2.HasValue ? signal.TakeProfit2.Value.ToString("F8") : "---";
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                    $"LIVE: {ticker.Symbol} Limit-Order pending @ {limitPrice:F8} — TP1={tp1Str}, TP2={tp2Str} werden erst NACH Fill auf BingX platziert (Maker-Fee, nicht jetzt sichtbar im Orderbuch)",
-                    ticker.Symbol));
             }
 
             return true;
@@ -598,10 +523,8 @@ public partial class LiveTradingService
             var fillPrice = es.Signal.TakeProfit ?? 0m;
             // Maker-Fee — Bot-platzierte Reduce-Only-LIMIT ist Maker. Anteilige Entry-Fee
             // (proportional zur geschlossenen Menge) gegen Doppel-Buchung beim TP2-Fill.
-            // Fix K: Entry-Fee haengt vom Entry-Typ ab — Market-Entry (PreferLimitOrder=false, z.B.
-            // TrendFollow) ist TAKER, nur Limit-Pullback-Entry (SK) ist Maker. Die Exit-Fee bleibt
-            // Maker (Bot-Reduce-Only-Limit). Falsche Maker-Buchung unterschaetzte sonst die Kosten.
-            var entryFee = closedQty * es.EntryPrice * (es.Signal.PreferLimitOrder ? _makerFeeRate : _takerFeeRate);
+            // Market-Entry ist TAKER; die Exit-Fee bleibt Maker (Bot-Reduce-Only-Limit).
+            var entryFee = closedQty * es.EntryPrice * _takerFeeRate;
             var exitFee = closedQty * fillPrice * _makerFeeRate;
             var totalFee = entryFee + exitFee;
             var rawPnl = es.Side == Side.Buy
@@ -659,10 +582,8 @@ public partial class LiveTradingService
             if (closedQty <= 0m) closedQty = Math.Max(0m, totalEntryQty - alreadyClosedTp1);
 
             var fillPrice = es.Signal.TakeProfit ?? 0m;
-            // Fix K: Entry-Fee haengt vom Entry-Typ ab — Market-Entry (PreferLimitOrder=false, z.B.
-            // TrendFollow) ist TAKER, nur Limit-Pullback-Entry (SK) ist Maker. Die Exit-Fee bleibt
-            // Maker (Bot-Reduce-Only-Limit). Falsche Maker-Buchung unterschaetzte sonst die Kosten.
-            var entryFee = closedQty * es.EntryPrice * (es.Signal.PreferLimitOrder ? _makerFeeRate : _takerFeeRate);
+            // Market-Entry ist TAKER; die Exit-Fee bleibt Maker (Bot-Reduce-Only-Limit).
+            var entryFee = closedQty * es.EntryPrice * _takerFeeRate;
             var exitFee = closedQty * fillPrice * _makerFeeRate;
             var totalFee = entryFee + exitFee;
             var rawPnl = es.Side == Side.Buy
@@ -693,4 +614,11 @@ public partial class LiveTradingService
 
         return false;
     }
+
+    /// <summary>
+    /// Platziert TP-Orders für eine bestehende Position (Recovery nach App-Neustart).
+    /// Wird vom LiveTradingManager aufgerufen wenn eine Position ohne TP-Orders erkannt wird.
+    /// </summary>
+    public Task RecoverTpOrdersAsync(string symbol, Side side, decimal quantity, SignalResult signal) =>
+        PlaceTpLimitOrdersAfterFillAsync(symbol, side, quantity, signal);
 }

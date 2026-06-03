@@ -141,7 +141,7 @@ public sealed class TrendFollowStrategy : IStrategy
             // der 2x-SL-Distanz-Trigger (BE bei 2R, also nach TP1@1.5R, vor TP2@3R).
             return new SignalResult(Signal.Long, Confidence(adxV), close, sl, tp1,
                 $"TrendFollow Long (ADX {adxV:F0}, Donchian-Breakout > {upBreakout:F4})",
-                TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV,
+                TakeProfit2: tp2, ConfluenceScore: 5, EntryAtr: atrV,
                 DisableSmartBreakeven: true);
         }
 
@@ -155,7 +155,7 @@ public sealed class TrendFollowStrategy : IStrategy
             // Siehe Long-Pfad: aktiviert den 2x-SL-Distanz-Break-Even auch fuer Short.
             return new SignalResult(Signal.Short, Confidence(adxV), close, sl, tp1,
                 $"TrendFollow Short (ADX {adxV:F0}, Donchian-Breakout < {loBreakout:F4})",
-                TakeProfit2: tp2, ConfluenceScore: 5, PreferLimitOrder: false, EntryAtr: atrV,
+                TakeProfit2: tp2, ConfluenceScore: 5, EntryAtr: atrV,
                 DisableSmartBreakeven: true);
         }
 

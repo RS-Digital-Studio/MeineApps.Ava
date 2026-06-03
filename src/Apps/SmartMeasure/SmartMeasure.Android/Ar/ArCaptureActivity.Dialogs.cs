@@ -31,7 +31,7 @@ public partial class ArCaptureActivity
         {
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
             builder.SetTitle("Punkt löschen?");
-            builder.SetMessage("Der ausgewählte Punkt wird entfernt. Mit ↶ Rückgängig wiederherstellbar.");
+            builder.SetMessage("Der ausgewählte Punkt wird entfernt. Mit Rückgängig wiederherstellbar.");
             builder.SetPositiveButton("Löschen", (_, _) =>
             {
                 VibrateMedium();

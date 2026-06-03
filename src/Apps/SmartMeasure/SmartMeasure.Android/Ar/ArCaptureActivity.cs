@@ -897,7 +897,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             RunOnUiThread(() =>
             {
-                ShowTransientHint("↻ Rotation erkannt — bitte Punkt erneut anvisieren");
+                ShowTransientHint("Rotation erkannt — bitte Punkt erneut anvisieren");
                 VibrateWarning();
             });
         }
@@ -1197,7 +1197,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             RunOnUiThread(() =>
             {
-                ShowTransientHint("☁ Himmel-Bereich — bitte einen festen Punkt anvisieren");
+                ShowTransientHint("Himmel-Bereich — bitte einen festen Punkt anvisieren");
             });
             VibrateWarning();
             return;
@@ -2332,6 +2332,22 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _glSurfaceView?.OnPause();
         lock (_frameLock) { _lastFrame = null; }
         _stabilityMonitor?.Stop();
+
+        // Sampler abbrechen: nach OnPause laeuft kein OnDrawFrame mehr, der das 800ms-Fenster
+        // finalisieren wuerde. Sonst finalisiert der erste Frame nach OnResume mit Pre-Pause-
+        // Samples an inzwischen verschobener Kamera → falscher Punkt. (Analog OnConfigurationChanged.)
+        lock (_samplerLock)
+        {
+            _activeSampler = null;
+            _samplesCollected = 0;
+            _samplerActiveFrames = 0;
+            _samplerPauseFrames = 0;
+        }
+
+        // Wartende UI-Thread-HitTest-Ops verwerfen: ohne Render-Thread werden sie nie gedraint;
+        // ihre ManualResetEventSlim werden nach Timeout disposed → ein spaeterer Drain (nach
+        // OnResume) wuerde sonst auf ein disposed Event treffen. Caller laufen sauber ins Timeout.
+        lock (_pendingFrameOps) _pendingFrameOps.Clear();
     }
 
     #endregion
@@ -2775,7 +2791,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _overlayView?.SetSelectedIndex(-1);
         UpdateCounter();
         _overlayView?.Invalidate();
-        ShowTransientHint("↶ Rückgängig");
+        ShowTransientHint("Rückgängig");
         SaveRecoveryState();
     }
 
@@ -2791,7 +2807,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _undoStack.Push(action);
         UpdateCounter();
         _overlayView?.Invalidate();
-        ShowTransientHint("↷ Wiederholt");
+        ShowTransientHint("Wiederholt");
         SaveRecoveryState();
     }
 
@@ -3079,7 +3095,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                             Toast.MakeText(this,
                                 $"Screenshot: {System.IO.Path.GetFileName(pngPath)}",
                                 ToastLength.Short)?.Show();
-                            ShowTransientHint("📸 Screenshot gespeichert");
+                            ShowTransientHint("Screenshot gespeichert");
                         }
                         else
                         {
@@ -3415,7 +3431,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 _arSession.StopRecording();
                 _isRecording = false;
-                ShowTransientHint($"⏹ Recording gespeichert: {System.IO.Path.GetFileName(_currentRecordingPath)}");
+                ShowTransientHint($"Aufnahme gespeichert: {System.IO.Path.GetFileName(_currentRecordingPath)}");
                 VibrateMedium();
             }
             catch (Exception ex)
@@ -3439,7 +3455,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
                 _arSession.StartRecording(recordingConfig);
                 _isRecording = true;
-                ShowTransientHint("🔴 Recording läuft");
+                ShowTransientHint("Aufnahme läuft");
                 VibrateMedium();
             }
             catch (Exception ex)
@@ -3659,7 +3675,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 RunOnUiThread(() =>
                 {
-                    ShowTransientHint("💡 Helligkeit gewechselt — bitte erneut anvisieren");
+                    ShowTransientHint("Helligkeit gewechselt — bitte erneut anvisieren");
                     VibrateWarning();
                 });
             }
@@ -3997,34 +4013,69 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 liveLength += _activeContour.CalculateLength();
                 if (_activeContour.Points.Count >= 3)
                 {
-                    // Provisorische Fläche (als wäre sie geschlossen)
+                    // Provisorische Fläche (als wäre sie geschlossen). Defensive Kopie der
+                    // Punkt-Liste — CalculateArea ist read-only, aber so teilt der Temp-Contour
+                    // nicht die Live-Referenz.
                     var tempClosed = new ArContour
                     {
-                        Points = _activeContour.Points,
+                        Points = new List<ArPoint>(_activeContour.Points),
                         IsClosed = true,
                     };
                     liveArea += tempClosed.CalculateArea();
                 }
 
-                // Auto-Close-Detection: Reticle-Abstand zum ersten Kontur-Punkt
+                // Segment-Distanzen (horizontal) zwischen den gesetzten Kontur-Punkten — fuer
+                // die Inter-Punkt-Labels im Overlay (frueher leerer Stub).
+                if (_activeContour.Points.Count >= 2)
+                {
+                    activeContourSegMeters = new List<float>(_activeContour.Points.Count - 1);
+                    for (var i = 0; i < _activeContour.Points.Count - 1; i++)
+                        activeContourSegMeters.Add(_activeContour.Points[i].Distance2DTo(_activeContour.Points[i + 1]));
+                }
+
+                // Auto-Close-Detection: echter Welt-Abstand Reticle-Ziel → erster Kontur-Punkt
+                // (15 cm Grundriss-Radius, analog ArSnapEngine-VertexSnap). Robuster als die
+                // fruehere 80px-Screen-Heuristik (kein Zoom-/Distanz-Artefakt).
                 if (_captureMode == CaptureMode.Contour && _activeContour.Points.Count >= 3
-                    && _reticleHitQuality != ArHitQuality.None)
+                    && _reticleWorld is { } rwClose)
                 {
                     var first = _activeContour.Points[0];
-                    // Wir brauchen die Welt-Position des aktuellen Reticles — approximieren
-                    // via HitDistance + Kamera-Vorwärtsvektor (für jetzt: Screen-Distanz zum
-                    // ersten projizierten Kontur-Punkt als Näherung)
-                    var firstScreen = _projectedContourPoints.FirstOrDefault(p => p.contourIdx == -1 && p.pointIdx == 0);
-                    if (firstScreen != default)
+                    var cdx = rwClose.x - first.X;
+                    var cdz = rwClose.z - first.Z;
+                    if (MathF.Sqrt(cdx * cdx + cdz * cdz) < 0.15f)
                     {
-                        var rx = _viewportWidth / 2f;
-                        var ry = _viewportHeight / 2f;
-                        var sdx = firstScreen.screenX - rx;
-                        var sdy = firstScreen.screenY - ry;
-                        var screenDist = MathF.Sqrt(sdx * sdx + sdy * sdy);
-                        if (screenDist < 80) // px, entspricht ungefähr Reticle-Nähe
+                        var firstScreen = _projectedContourPoints.FirstOrDefault(p => p.contourIdx == -1 && p.pointIdx == 0);
+                        if (firstScreen != default)
                             autoClose = (firstScreen.screenX, firstScreen.screenY);
                     }
+                }
+            }
+
+            // Live-Segment ("Gummiband"): vom zuletzt gesetzten Punkt zum aktuellen Reticle-Ziel.
+            // Gilt im Contour- (aktive Kontur) und Point-Modus (letzter Einzelpunkt).
+            ArPoint? lastPlaced = null;
+            if (_captureMode == CaptureMode.Contour && _activeContour is { Points.Count: > 0 })
+                lastPlaced = _activeContour.Points[^1];
+            else if (_captureMode == CaptureMode.Point && _points.Count > 0)
+                lastPlaced = _points[^1];
+
+            if (lastPlaced != null && _reticleWorld is { } rw && _reticleHitQuality != ArHitQuality.None)
+            {
+                var sdx = rw.x - lastPlaced.X;
+                var sdy = rw.y - lastPlaced.Y;
+                var sdz = rw.z - lastPlaced.Z;
+                liveSegHorizontal = MathF.Sqrt(sdx * sdx + sdz * sdz);          // Grundriss
+                liveSegSlope = MathF.Sqrt(sdx * sdx + sdy * sdy + sdz * sdz);   // schraeg (3D)
+                liveSegHeight = sdy;                                            // ΔH (signiert)
+
+                // Startpunkt-Screen-Position. Frustum-Clip: nur zeichnen, wenn der letzte
+                // Punkt tatsaechlich im Bild liegt — sonst springt das Gummiband ins Nirgendwo.
+                var ls = WorldToScreen(lastPlaced, _mvpMatrixScratch);
+                if (ls is { } lsv && lsv.x >= 0 && lsv.x <= _viewportWidth
+                    && lsv.y >= 0 && lsv.y <= _viewportHeight)
+                {
+                    liveSegFromScreen = lsv;
+                    showLiveSegment = true;
                 }
             }
 
@@ -4107,6 +4158,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             TapeMeasureSegmentMeters = BuildTapeMeasureSegmentMeters(),
             TapeMeasureTotalMeters = ComputeTapeMeasureTotalMetersLocked(),
             IsTapeMeasureMode = _captureMode == CaptureMode.TapeMeasure,
+            // Live-Segment ("Gummiband") + Kontur-Segment-Distanzen
+            ShowLiveSegment = showLiveSegment,
+            LiveSegmentFromScreen = liveSegFromScreen,
+            LiveSegmentHorizontalMeters = liveSegHorizontal,
+            LiveSegmentSlopeMeters = liveSegSlope,
+            LiveSegmentHeightDelta = liveSegHeight,
+            ActiveContourSegmentMeters = activeContourSegMeters,
             // Plan-Kap. 5.9: Stakeout-Daten fuer das Overlay
             IsStakeoutMode = _captureMode == CaptureMode.Stakeout,
             StakeoutDistanceMeters = ReadStakeoutDistance(),

@@ -178,6 +178,36 @@ public sealed class ArOverlayState
     /// <summary>True wenn <see cref="ArCaptureActivity"/> aktuell im Tape-Measure-Mode laeuft.</summary>
     public bool IsTapeMeasureMode { get; init; }
 
+    // ── Live-Segment ("Gummiband" vom letzten gesetzten Punkt zum Crosshair-Ziel) ──
+    // Wird im Point-/Contour-Modus gesetzt, sobald >=1 Punkt gesetzt ist und das Reticle
+    // einen gueltigen Hit hat. Zeigt dem Nutzer beim Zeichnen live Distanz + Hoehenunterschied.
+
+    /// <summary>True: das Live-Segment-Gummiband soll gezeichnet werden.</summary>
+    public bool ShowLiveSegment { get; init; }
+
+    /// <summary>Screen-Position des zuletzt gesetzten Punkts (Startpunkt des Gummibands).
+    /// null wenn der Punkt ausserhalb des Sichtfelds liegt → dann kein Gummiband.</summary>
+    public (float screenX, float screenY)? LiveSegmentFromScreen { get; init; }
+
+    /// <summary>Horizontale Distanz (Grundriss, X/Z) letzter Punkt → Reticle-Ziel in Metern.
+    /// Primaerwert beim Vermessen (Flaechen/Grenzen werden im Grundriss gemessen).</summary>
+    public float? LiveSegmentHorizontalMeters { get; init; }
+
+    /// <summary>Schraege 3D-Distanz (inkl. Hoehe) letzter Punkt → Reticle-Ziel in Metern.
+    /// Zusatzwert (z.B. Pflasterlaenge am Hang).</summary>
+    public float? LiveSegmentSlopeMeters { get; init; }
+
+    /// <summary>Hoehenunterschied (Reticle-Ziel.Y − letzter Punkt.Y) in Metern. Vorzeichen:
+    /// positiv = Ziel hoeher als letzter Punkt.</summary>
+    public float? LiveSegmentHeightDelta { get; init; }
+
+    /// <summary>Horizontale Welt-Distanzen (Meter) zwischen aufeinanderfolgenden Punkten der
+    /// AKTIVEN Kontur, in Reihenfolge. Eintrag i = Distanz Punkt i → Punkt i+1. Wird in
+    /// <see cref="ArPointOverlayView"/> zwischen den projizierten Kontur-Punkten gelabelt
+    /// (fuellt den frueher leeren Stub in DrawInterPointDistances). null/leer wenn keine
+    /// aktive Kontur.</summary>
+    public IReadOnlyList<float>? ActiveContourSegmentMeters { get; init; }
+
     /// <summary>Plan-Kap. 5.9: True wenn der Stakeout-Modus aktiv ist.</summary>
     public bool IsStakeoutMode { get; init; }
 

@@ -100,6 +100,12 @@ public sealed partial class ArPointOverlayView : View
     private readonly Paint _transientHintBgPaint;
     private readonly Paint _transientHintTextPaint;
 
+    // Live-Segment ("Gummiband" letzter Punkt → Crosshair): gestrichelte Linie + Werte-Pille
+    private readonly Paint _segLinePaint;
+    private readonly Paint _segPillBgPaint;
+    private readonly Paint _segValuePaint;
+    private readonly Paint _segSubPaint;
+
     private readonly float _density;
 
     public ArPointOverlayView(Context context, List<ArPoint> points, List<ArContour> contours)
@@ -296,6 +302,35 @@ public sealed partial class ArPointOverlayView : View
         };
         _footerValuePaint.SetShadowLayer(2f, 0f, 0f, Color.Black);
 
+        // Live-Segment: gestrichelte Linie (Farbe wird pro Frame nach HitQuality gesetzt),
+        // dunkle Pille mit grossem Hauptwert + kleiner ΔH/Steigung-Zeile.
+        _segLinePaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(235, 255, 235, 59),
+            StrokeWidth = 3f * _density,
+            StrokeCap = Paint.Cap.Round,
+        };
+        _segLinePaint.SetStyle(Paint.Style.Stroke);
+        _segLinePaint.SetPathEffect(new DashPathEffect([12f * _density, 6f * _density], 0));
+
+        _segPillBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(225, 18, 18, 28) };
+        _segPillBgPaint.SetStyle(Paint.Style.Fill);
+
+        _segValuePaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.White,
+            TextSize = 16f * _density,
+            TextAlign = Paint.Align.Center,
+            FakeBoldText = true,
+        };
+
+        _segSubPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(235, 190, 215, 255),
+            TextSize = 11f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+
         _transientHintBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(220, 76, 175, 80) };
         _transientHintBgPaint.SetStyle(Paint.Style.Fill);
 
@@ -402,6 +437,10 @@ public sealed partial class ArPointOverlayView : View
         _footerValuePaint.Dispose();
         _transientHintBgPaint.Dispose();
         _transientHintTextPaint.Dispose();
+        _segLinePaint.Dispose();
+        _segPillBgPaint.Dispose();
+        _segValuePaint.Dispose();
+        _segSubPaint.Dispose();
         base.OnDetachedFromWindow();
     }
 
@@ -429,6 +468,11 @@ public sealed partial class ArPointOverlayView : View
 
         // 5. Distanz-Labels zwischen ALLEN aufeinanderfolgenden Punkten
         DrawInterPointDistances(canvas);
+
+        // 5c. Live-Segment ("Gummiband") vom letzten gesetzten Punkt zum Crosshair —
+        // unter dem Reticle, damit das Reticle obenauf liegt.
+        if (_state.ShowLiveSegment)
+            DrawRubberBand(canvas, width, height);
 
         // 6. Reticle mit HitQuality-Färbung (nur bei Tracking)
         if (_state.IsTracking)
@@ -1055,22 +1099,92 @@ public sealed partial class ArPointOverlayView : View
             canvas.DrawText($"{dist:F2}m", midX, midY - 10 * _density, _distancePaint);
         }
 
-        // Kontur-Distanz-Labels (aktive Kontur)
+        // Kontur-Distanz-Labels (aktive Kontur). Die Welt-Distanzen (horizontal) liefert der
+        // GL-Thread in ActiveContourSegmentMeters — der Overlay-View kennt nur Screen-Pixel,
+        // daher die separate Liste (analog TapeMeasureSegmentMeters).
         var activePts = _projectedContourPoints
             .Where(p => p.contourIdx == -1)
             .OrderBy(p => p.pointIdx)
             .ToList();
 
-        if (_contours.Count > 0 || activePts.Count > 0)
+        var segMeters = _state.ActiveContourSegmentMeters;
+        if (segMeters != null && activePts.Count >= 2)
         {
-            // Aktive Kontur hat eigenen Punkt-Pool — wir rekonstruieren die Distanzen aus der
-            // Live-Liste der contour points. Punkte kommen aus _contours[-1] = _activeContour,
-            // aber wir haben keinen direkten Zugriff — wir nutzen Screen-Distanzen als Approximation.
-            // Besser wäre eine separate Liste der Welt-Distanzen vom GL-Thread, für jetzt:
-            // Wir zeigen Label nur wenn wir zwei aufeinanderfolgende Welt-Punkte haben.
-            // Fallback: wir skippen es hier, die Live-Length wird im Stats-Panel gezeigt.
+            for (var i = 0; i < activePts.Count - 1 && i < segMeters.Count; i++)
+            {
+                var a = activePts[i];
+                var b = activePts[i + 1];
+                var midX = (a.screenX + b.screenX) / 2f;
+                var midY = (a.screenY + b.screenY) / 2f;
+                canvas.DrawText(FormatMeters(segMeters[i]), midX, midY - 10 * _density, _distancePaint);
+            }
         }
     }
+
+    /// <summary>Live-Segment-Gummiband: gestrichelte Linie vom zuletzt gesetzten Punkt zum
+    /// Crosshair + schwebende Werte-Pille (Horizontaldistanz gross, ΔH + Steigung klein) am
+    /// Linien-Mittelpunkt. Zeigt dem Vermesser beim Zeichnen kontinuierlich Strecke und
+    /// Hoehenunterschied zum Vorgaengerpunkt — der primaere Mess-Wert am Blickpunkt.</summary>
+    private void DrawRubberBand(Canvas canvas, int width, int height)
+    {
+        if (_state.LiveSegmentFromScreen is not { } from) return;
+
+        var cx = _state.ReticleX > 0 ? _state.ReticleX : width / 2f;
+        var cy = _state.ReticleY > 0 ? _state.ReticleY : height / 2f;
+
+        // Linienfarbe nach HitQuality (gleiche Codierung wie Reticle + gesetzte Punkte).
+        _segLinePaint.Color = _state.HitQuality switch
+        {
+            ArHitQuality.Plane => Color.Argb(235, 76, 175, 80),
+            ArHitQuality.Point => Color.Argb(235, 255, 107, 0),
+            ArHitQuality.InstantPlacement => Color.Argb(235, 255, 235, 59),
+            _ => Color.Argb(200, 255, 255, 255),
+        };
+        canvas.DrawLine(from.screenX, from.screenY, cx, cy, _segLinePaint);
+
+        if (_state.LiveSegmentHorizontalMeters is not { } horiz) return;
+
+        var mainText = FormatMeters(horiz);
+        string? sub = null;
+        if (_state.LiveSegmentHeightDelta is { } dh)
+        {
+            var slope = horiz > 0.05f ? $"   {dh / horiz * 100f:+0.0;-0.0;0.0} %" : "";
+            sub = $"ΔH {dh:+0.00;-0.00;0.00} m{slope}";
+        }
+
+        var mx = (from.screenX + cx) * 0.5f;
+        var my = (from.screenY + cy) * 0.5f;
+        DrawValuePill(canvas, mx, my, mainText, sub);
+    }
+
+    /// <summary>Abgerundete dunkle Pille mit zentriertem Hauptwert + optionaler Unterzeile.
+    /// Halbtransparenter Hintergrund garantiert Lesbarkeit auch bei Sonne (statt nur Schatten).</summary>
+    private void DrawValuePill(Canvas canvas, float centerX, float centerY, string main, string? sub)
+    {
+        var padH = 11f * _density;
+        var padV = 6f * _density;
+        var mainW = _segValuePaint.MeasureText(main);
+        var subW = sub != null ? _segSubPaint.MeasureText(sub) : 0f;
+        var w = MathF.Max(mainW, subW) + padH * 2f;
+        var mainLineH = 19f * _density;
+        var subLineH = sub != null ? 15f * _density : 0f;
+        var h = padV * 2f + mainLineH + subLineH;
+
+        var left = centerX - w / 2f;
+        var top = centerY - h / 2f;
+        var r = 8f * _density;
+        canvas.DrawRoundRect(left, top, left + w, top + h, r, r, _segPillBgPaint);
+
+        var mainBaseline = top + padV + mainLineH - 5f * _density;
+        canvas.DrawText(main, centerX, mainBaseline, _segValuePaint);
+        if (sub != null)
+            canvas.DrawText(sub, centerX, mainBaseline + subLineH, _segSubPaint);
+    }
+
+    /// <summary>Meter-Formatierung: unter 1 m in cm (Vermesser denken bei Feindistanzen in cm),
+    /// ab 1 m in Metern mit 2 Nachkommastellen.</summary>
+    private static string FormatMeters(float meters)
+        => MathF.Abs(meters) < 1f ? $"{meters * 100f:F0} cm" : $"{meters:F2} m";
 
     private void DrawReticle(Canvas canvas, int width, int height)
     {

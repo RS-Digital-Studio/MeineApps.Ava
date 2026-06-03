@@ -11,6 +11,11 @@ public static class AppColors
     public const string StatusActive = "#4CAF50";
     public const string StatusPaused = "#FF9800";
 
+    // Hellere Gradient-Endfarben für den Status-Ring (TodayView SkiaGradientRing).
+    public const string StatusIdleLight = "#BDBDBD";
+    public const string StatusActiveLight = "#81C784";
+    public const string StatusPausedLight = "#FFB74D";
+
     // === Balance-Farben ===
     public const string BalancePositive = "#4CAF50";
     public const string BalanceNegative = "#F44336";

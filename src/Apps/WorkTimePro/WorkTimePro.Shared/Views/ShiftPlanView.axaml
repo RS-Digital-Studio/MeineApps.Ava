@@ -239,7 +239,7 @@
                 BoxShadow="{DynamicResource ModalShadow}">
           <StackPanel Spacing="16">
             <TextBlock Text="{loc:Translate ShiftPattern}"
-                       Classes="PageTitle" />
+                       Classes="TitleLarge" />
 
             <!-- Name -->
             <StackPanel Spacing="4">

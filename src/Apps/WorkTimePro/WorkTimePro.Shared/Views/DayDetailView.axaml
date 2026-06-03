@@ -43,7 +43,7 @@
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="DayDetail_HeaderCard">
           <StackPanel Spacing="8">
             <TextBlock AutomationProperties.AutomationId="DayDetail_TxtDate" Text="{Binding DateDisplay}"
-                       Classes="PageTitle"
+                       Classes="TitleLarge"
                        HorizontalAlignment="Center" />
 
             <StackPanel Orientation="Horizontal"

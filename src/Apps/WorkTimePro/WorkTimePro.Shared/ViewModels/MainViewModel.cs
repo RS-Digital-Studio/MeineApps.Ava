@@ -229,6 +229,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // === Observable Properties ===
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RingStartColor))]
+    [NotifyPropertyChangedFor(nameof(RingEndColor))]
+    [NotifyPropertyChangedFor(nameof(IsActivelyWorking))]
     private TrackingStatus _currentStatus = TrackingStatus.Idle;
 
     [ObservableProperty]
@@ -380,6 +383,27 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // Derived properties
     public bool IsWorking => CurrentStatus == TrackingStatus.Working || CurrentStatus == TrackingStatus.OnBreak;
     public bool HasCheckedIn => CurrentStatus != TrackingStatus.Idle;
+
+    // Nur echtes Arbeiten (nicht Pause) — steuert Glow/Pulsation des Status-Rings,
+    // damit der Ring in der Pause ruht (vorher an IsWorking, das auch in der Pause true ist).
+    public bool IsActivelyWorking => CurrentStatus == TrackingStatus.Working;
+
+    // Status-Ring-Farben (gebunden an SkiaGradientRing.StartColor/EndColor). Folgen der
+    // gleichen Status-Semantik wie Badge/Button: Idle grau, Working grün, Pause orange
+    // (vorher fest grün → optischer Bruch in Pause/Idle).
+    public Color RingStartColor => Color.Parse(CurrentStatus switch
+    {
+        TrackingStatus.Working => AppColors.StatusActive,
+        TrackingStatus.OnBreak => AppColors.StatusPaused,
+        _ => AppColors.StatusIdle
+    });
+
+    public Color RingEndColor => Color.Parse(CurrentStatus switch
+    {
+        TrackingStatus.Working => AppColors.StatusActiveLight,
+        TrackingStatus.OnBreak => AppColors.StatusPausedLight,
+        _ => AppColors.StatusIdleLight
+    });
 
     public MaterialIconKind StatusIconKind => CurrentStatus switch
     {

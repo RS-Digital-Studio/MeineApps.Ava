@@ -384,7 +384,7 @@
                      HorizontalAlignment="Center"
                      TextWrapping="Wrap" TextAlignment="Center" />
           <StackPanel Spacing="8">
-            <Button Classes="Filled"
+            <Button Classes="Primary"
                     AutomationProperties.AutomationId="Vacation_BtnWatchAd"
                     Command="{Binding WatchAdCommand}"
                     HorizontalAlignment="Stretch"

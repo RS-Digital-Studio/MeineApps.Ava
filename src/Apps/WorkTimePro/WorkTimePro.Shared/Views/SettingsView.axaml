@@ -12,6 +12,26 @@
     <conv:RoundingDisplayConverter x:Key="RoundingDisplayConverter" />
   </UserControl.Resources>
 
+  <UserControl.Styles>
+    <!-- Premium-Karte: dezente Opacity-Shimmer-Animation (analog FinanzRechner/HandwerkerRechner;
+         die Klasse war zuvor undefiniert → No-op). -->
+    <Style Selector="Border.PremiumShimmer">
+      <Style.Animations>
+        <Animation Duration="0:0:3" IterationCount="INFINITE" Easing="LinearEasing">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.85" />
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="Opacity" Value="1" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0.85" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
+
   <Grid>
   <ScrollViewer VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="Settings_ScrollViewer"
                 IsHitTestVisible="{Binding !IsImportConfirmVisible}">
@@ -131,43 +151,43 @@
                      Margin="0,4,0,0" />
 
           <WrapPanel Orientation="Horizontal">
-            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="44">
+            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkMonday" IsChecked="{Binding MondayEnabled}" />
               <TextBlock Text="{loc:Translate Monday}" FontSize="13"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="44">
+            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkTuesday" IsChecked="{Binding TuesdayEnabled}" />
               <TextBlock Text="{loc:Translate Tuesday}" FontSize="13"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="44">
+            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkWednesday" IsChecked="{Binding WednesdayEnabled}" />
               <TextBlock Text="{loc:Translate Wednesday}" FontSize="13"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="44">
+            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkThursday" IsChecked="{Binding ThursdayEnabled}" />
               <TextBlock Text="{loc:Translate Thursday}" FontSize="13"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="44">
+            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkFriday" IsChecked="{Binding FridayEnabled}" />
               <TextBlock Text="{loc:Translate Friday}" FontSize="13"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="44">
+            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkSaturday" IsChecked="{Binding SaturdayEnabled}" />
               <TextBlock Text="{loc:Translate Saturday}" FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="44">
+            <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkSunday" IsChecked="{Binding SundayEnabled}" />
               <TextBlock Text="{loc:Translate Sunday}" FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}"

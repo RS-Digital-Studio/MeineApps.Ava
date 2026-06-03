@@ -249,6 +249,8 @@ confidence =
 | Coach-Marks beim 1. AR-Start | Show-once Dialog (Crosshair/Workflow/Toolbar). Key `ar.coachmarks.shown`. "Später nochmal" lässt Pref unverändert → nächster Start zeigt erneut |
 | Persistente System-Banner | `ArOverlayState.ThermalWarning` + `BatteryWarning` als persistente Top-Banner unter dem Tracking-Banner (vs. TransientHint-Fade) |
 | Live-Footer-Bar | Über der Toolbar mit Punkte/Länge/Fläche in großer Schrift (`ArPointOverlayView.DrawLiveFooter`) |
+| Live-Segment ("Gummiband") | Beim Punkt-/Kontur-Zeichnen: gestrichelte Linie vom zuletzt gesetzten Punkt zum Crosshair + schwebende Pille mit **Horizontaldistanz** (groß), **ΔH** + **Steigung %** (klein), HitQuality-gefärbt. Reticle-Weltpos wird in `BuildHitInfo` gespeichert → `BuildOverlayState` rechnet `Distance2DTo` (horizontal) / `DistanceTo` (schräg) / Y-Delta. Felder: `ArOverlayState.ShowLiveSegment` + `LiveSegment{FromScreen,Horizontal,Slope,HeightDelta}`. Render: `ArPointOverlayView.DrawRubberBand`/`DrawValuePill`. Frustum-geclippt (kein Springen). Distanzen < 1 m in cm (`FormatMeters`) |
+| Kontur-Segment-Labels | Gesetzte aktive-Kontur-Segmente zeigen ihre horizontale Welt-Distanz zwischen den Punkten (`ActiveContourSegmentMeters` vom GL-Thread, gerendert in `DrawInterPointDistances` — früher leerer Stub) |
 | Readiness-Badge Tap | Badge oben links klickbar (`ReadinessBadgeBounds`). Detail-Dialog mit Checkliste je Condition (Stabilität / Kompass / Planes / GPS / Geospatial / Tracking-Continuity) |
 | Recovery-Bestätigungs-Dialog | "X Punkte aus letzter Sitzung wiederherstellen?" mit Wiederherstellen/Verwerfen — statt Auto-Restore. Earth-Anchors parallel re-attached |
 

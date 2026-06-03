@@ -23,10 +23,12 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 **KRITISCH (Avalonia 12 Android):** `OnFrameworkInitializationCompleted` (DI-Build) läuft in
 `AvaloniaAndroidApplication.OnCreate` — also **VOR** `MainActivity.OnCreate`, das die Factories
 setzt. Daher werden diese vier Services **lazy** registriert (Factory-Prüfung im Resolve-Lambda,
-NICHT als Build-Zeit-`if`) und `MainViewModel` wird auf Android **verzögert** via
-`Dispatcher.UIThread.Post` aufgelöst — sonst friert der Objektgraph die Mock-Fallbacks ein
-(Bug-Historie: `MockArCaptureService` → 10 Punkte ohne Kamera). Desktop löst sofort auf und lässt
-die Factories null → Fallbacks/Mocks (gewollt). Generisches Pattern → [Core.Ava-CLAUDE.md](../../../Libraries/MeineApps.Core.Ava/CLAUDE.md) „Threading & Lifecycle".
+NICHT als Build-Zeit-`if`) und `MainViewModel` wird auf Android im
+`IActivityApplicationLifetime.MainViewFactory`-Lambda aufgelöst — `AvaloniaActivity` ruft die
+Factory aus `InitializeAvaloniaView` (in `MainActivity.OnCreate.base`) auf, also deterministisch
+NACH der Factory-Setzung → echte Android-Services statt Mock (Bug-Historie:
+`MockArCaptureService` → 10 Punkte ohne Kamera). Desktop löst sofort auf und lässt die Factories
+null → Fallbacks/Mocks (gewollt). Generisches Pattern → [Core.Ava-CLAUDE.md](../../../Libraries/MeineApps.Core.Ava/CLAUDE.md) „Threading & Lifecycle".
 
 ### `ConfigureServices` — Reihenfolge (Abhängigkeiten beachten!)
 
@@ -49,9 +51,12 @@ die Factories null → Fallbacks/Mocks (gewollt). Generisches Pattern → [Core.
 DI bauen → Lifetime-Branch:
 - **Desktop** (`IClassicDesktopStyleApplicationLifetime`, 450×900): `MainViewModel` sofort holen,
   `MainView` als `DataContext`, `InitializeAsync()`. Factories null → Mocks (gewollt).
-- **Android** (`ISingleViewApplicationLifetime`): `MainView` **ohne** DataContext setzen, dann
-  `MainViewModel` **verzögert** via `Dispatcher.UIThread.Post` auflösen (läuft nach
-  `MainActivity.OnCreate` → echte Android-Services statt Mock; siehe Factory-Hinweis oben).
+- **Android** (`IActivityApplicationLifetime` — VOR `ISingleViewApplicationLifetime` prüfen, das
+  Android-Lifetime implementiert beide): `activity.MainViewFactory = () => { MainViewModel auflösen;
+  InitializeAsync(); return new MainView { DataContext = vm }; }`. Die Factory wird von
+  `AvaloniaActivity` in `MainActivity.OnCreate.base` aufgerufen → erster Resolve liegt NACH der
+  Factory-Setzung → echte Android-Services statt Mock (siehe Factory-Hinweis oben).
+- **iOS-Fallback** (`ISingleViewApplicationLifetime`): sofortiges Auflösen, `MainView` mit DataContext.
 
 Kein Splash-Schirm — `InitializeAsync()` ist aktuell leer (kein langer Startup-Load nötig).
 Fehler werden nicht geschluckt sondern weitergeworfen (Logcat-Sichtbarkeit auf Android).

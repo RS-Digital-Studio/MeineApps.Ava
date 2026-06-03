@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Threading;
 using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMeasure.Shared.Services;
@@ -58,24 +57,33 @@ public class App : Application
 
                 _ = _mainVm.InitializeAsync();
             }
-            else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+            else if (ApplicationLifetime is IActivityApplicationLifetime activity)
             {
-                // Android (Avalonia 12): OnFrameworkInitializationCompleted laeuft bereits in
-                // AvaloniaAndroidApplication.OnCreate — also VOR MainActivity.OnCreate, das die
-                // Platform-Factories (AR/BLE/AppPaths/Voice) erst setzt. Wuerde das MainViewModel
-                // hier sofort aufgeloest, bekaeme der gesamte Objektgraph die Mock-Fallbacks
-                // injiziert (MockArCaptureService → 10 Punkte ohne Kamera, MockBleService, ...).
-                // Deshalb das Aufloesen via Dispatcher verzoegern: der Post laeuft nach
-                // MainActivity.OnCreate, sodass die echten Android-Services greifen. Zusammen mit
-                // der Lazy-Registrierung in ConfigureServices ist die Service-Wahl damit korrekt.
-                var mainView = new MainView();
-                singleView.MainView = mainView;
-                Dispatcher.UIThread.Post(() =>
+                // Android (Avalonia 12): Das Lifetime ist IActivityApplicationLifetime. Seine
+                // MainViewFactory wird von AvaloniaActivity.OnCreate (via InitializeAvaloniaView)
+                // aufgerufen — und zwar WAEHREND MainActivity.OnCreate.base, also NACH der
+                // Platform-Factory-Setzung dort. OnFrameworkInitializationCompleted selbst laeuft
+                // bereits in AvaloniaAndroidApplication.OnCreate, VOR MainActivity.OnCreate. Daher
+                // das MainViewModel ERST in der Factory aufloesen (nicht hier sofort) — sonst sind
+                // App.ArCaptureServiceFactory & Co. noch null → Mock-Services injiziert
+                // (MockArCaptureService → 10 Punkte ohne Kamera). Zusammen mit der Lazy-Registrierung
+                // in ConfigureServices greifen so deterministisch die echten Android-Services.
+                // (ISingleViewApplicationLifetime.MainView ist auf Android laut Avalonia nur
+                // eingeschraenkt unterstuetzt — MainViewFactory ist der vorgesehene Weg.)
+                activity.MainViewFactory = () =>
                 {
                     _mainVm = Services.GetRequiredService<MainViewModel>();
-                    mainView.DataContext = _mainVm;
                     _ = _mainVm.InitializeAsync();
-                });
+                    return new MainView { DataContext = _mainVm };
+                };
+            }
+            else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+            {
+                // iOS-Fallback (Avalonia 12 nutzt dort weiter SingleView). Keine zu spaet gesetzten
+                // Platform-Factories — sofortiges Aufloesen ist hier korrekt.
+                _mainVm = Services.GetRequiredService<MainViewModel>();
+                singleView.MainView = new MainView { DataContext = _mainVm };
+                _ = _mainVm.InitializeAsync();
             }
         }
         catch (Exception ex)
@@ -98,8 +106,9 @@ public class App : Application
         // laeuft VOR MainActivity.OnCreate (siehe dortigen Kommentar) — beim DI-Build sind die
         // Platform-Factories also noch null. Eine Build-Zeit-Pruefung (if (Factory != null))
         // wuerde dauerhaft den Mock-Fallback einbrennen. Das Lambda liest die Factory erst beim
-        // ersten Resolve, der durch das verzoegerte MainViewModel-Aufloesen nach der
-        // Factory-Setzung liegt → echte Android-Services statt Mock.
+        // ersten Resolve — und der liegt im MainViewFactory-Lambda (Android-Branch oben), das
+        // AvaloniaActivity erst in MainActivity.OnCreate.base aufruft, also NACH der
+        // Factory-Setzung → echte Android-Services statt Mock.
         services.AddSingleton<IAppPaths>(_ =>
             AppPathsFactory != null ? AppPathsFactory() : new AppPaths());
 

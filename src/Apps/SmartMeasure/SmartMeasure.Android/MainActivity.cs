@@ -38,12 +38,12 @@ public class MainActivity : AvaloniaMainActivity
     {
         // Avalonia 12 Android: OnFrameworkInitializationCompleted (DI-Build) laeuft bereits in
         // AvaloniaAndroidApplication.OnCreate (Application-Ebene) — also VOR diesem
-        // MainActivity.OnCreate. Die Platform-Factories werden hier dennoch (vor base.OnCreate)
-        // gesetzt; damit sie greifen, registriert App.axaml.cs die betroffenen Services LAZY
-        // (Factory-Pruefung im Resolve-Lambda) und loest das MainViewModel verzoegert via
-        // Dispatcher auf — der erste Resolve liegt damit NACH dieser Factory-Setzung, sodass die
-        // echten Android-Services statt der Mock-Fallbacks injiziert werden.
-        // Frueher lief dieser Code in CustomizeAppBuilder.
+        // MainActivity.OnCreate. Die Platform-Factories MUESSEN daher hier vor base.OnCreate
+        // gesetzt werden: base.OnCreate (unten) ruft via AvaloniaActivity.InitializeAvaloniaView
+        // die App.MainViewFactory auf, und ERST dort loest App.axaml.cs das MainViewModel auf.
+        // Zusammen mit der Lazy-Service-Registrierung in App.axaml.cs liegt der erste Resolve
+        // damit deterministisch NACH dieser Factory-Setzung → echte Android-Services statt
+        // Mock-Fallbacks. Frueher lief dieser Code in CustomizeAppBuilder.
 
         // IAppPaths MUSS vor dem DI-Build gesetzt werden — ProjectService-Ctor hängt davon ab.
         // Context.FilesDir garantiert sandbox-sicheren Pfad auf allen Android-ROMs.

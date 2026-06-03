@@ -81,7 +81,11 @@ public partial class StatisticsView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.PauseSegments == null || _vm.PauseSegments.Length == 0) return;
+        if (_vm?.PauseSegments == null || _vm.PauseSegments.Length == 0)
+        {
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         DonutChartVisualization.Render(canvas, bounds, _vm.PauseSegments,
@@ -92,7 +96,11 @@ public partial class StatisticsView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.WeeklyLabels == null || _vm.WeeklyLabels.Length == 0) return;
+        if (_vm?.WeeklyLabels == null || _vm.WeeklyLabels.Length == 0)
+        {
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         WeeklyWorkChartVisualization.Render(canvas, bounds,
@@ -103,7 +111,11 @@ public partial class StatisticsView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.OvertimeDailyBalance == null || _vm.OvertimeDailyBalance.Length == 0) return;
+        if (_vm?.OvertimeDailyBalance == null || _vm.OvertimeDailyBalance.Length == 0)
+        {
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         OvertimeSplineVisualization.Render(canvas, bounds,
@@ -114,7 +126,11 @@ public partial class StatisticsView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.WeekdayLabels == null || _vm.WeekdayLabels.Length == 0) return;
+        if (_vm?.WeekdayLabels == null || _vm.WeekdayLabels.Length == 0)
+        {
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         WeekdayRadialVisualization.Render(canvas, bounds,
@@ -126,7 +142,11 @@ public partial class StatisticsView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.ProjectSegments == null || _vm.ProjectSegments.Length == 0) return;
+        if (_vm?.ProjectSegments == null || _vm.ProjectSegments.Length == 0)
+        {
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         DonutChartVisualization.Render(canvas, bounds, _vm.ProjectSegments,
@@ -137,7 +157,11 @@ public partial class StatisticsView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.EmployerSegments == null || _vm.EmployerSegments.Length == 0) return;
+        if (_vm?.EmployerSegments == null || _vm.EmployerSegments.Length == 0)
+        {
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         DonutChartVisualization.Render(canvas, bounds, _vm.EmployerSegments,

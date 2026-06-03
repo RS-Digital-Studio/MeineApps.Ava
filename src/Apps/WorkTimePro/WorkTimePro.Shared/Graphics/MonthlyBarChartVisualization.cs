@@ -146,6 +146,11 @@ public static class MonthlyBarChartVisualization
             float midY = (chartTop + chartBottom) / 2f;
             float scaleY = (chartH / 2f) / cumRange;
 
+            // 0-Referenzlinie der Saldo-Kurve (sonst ist nicht ablesbar, wo 0 liegt)
+            _gridPaint.StrokeWidth = 1f;
+            _gridPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Warning, 45);
+            canvas.DrawLine(chartLeft, midY, chartRight, midY, _gridPaint);
+
             var points = new SKPoint[count];
             for (int i = 0; i < count; i++)
             {
@@ -166,6 +171,14 @@ public static class MonthlyBarChartVisualization
                 _dotPaint.Color = SkiaThemeHelper.Warning;
                 canvas.DrawCircle(points[i], 3f, _dotPaint);
             }
+
+            // Saldo-Endwert-Label am letzten Punkt
+            float lastCum = cumulativeBalance[count - 1];
+            _textPaint.Color = SkiaThemeHelper.Warning;
+            _valueFont.Size = 9f;
+            canvas.DrawText($"{(lastCum >= 0 ? "+" : "")}{lastCum:F0}h",
+                points[count - 1].X, points[count - 1].Y - 6f,
+                SKTextAlign.Center, _valueFont, _textPaint);
         }
     }
 

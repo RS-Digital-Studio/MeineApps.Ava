@@ -203,7 +203,7 @@
               <!-- 0h -->
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
-                        Background="{DynamicResource CardBrush}" />
+                        Background="{DynamicResource CalendarEmptyBrush}" />
                 <TextBlock Text="0h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
@@ -248,7 +248,7 @@
               <!-- >10h -->
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
-                        Background="{DynamicResource ErrorBrush}" />
+                        Background="{DynamicResource HeatmapOvertimeBrush}" />
                 <TextBlock Text="&gt;10h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />

@@ -170,6 +170,9 @@
       <SolidColorBrush x:Key="HeatmapMediumBrush" Color="#81C784" />
       <SolidColorBrush x:Key="HeatmapNormalBrush" Color="#4CAF50" />
       <SolidColorBrush x:Key="HeatmapHighBrush" Color="#388E3C" />
+      <!-- Deckungsgleich mit AppColors.HeatmapOvertime / CalendarDarkEmpty (Legende = Zellfarbe) -->
+      <SolidColorBrush x:Key="HeatmapOvertimeBrush" Color="#F44336" />
+      <SolidColorBrush x:Key="CalendarEmptyBrush" Color="#2A2A2A" />
 
       <!-- Theme Identifier -->
       <x:String x:Key="ThemeName">WorkTimePro</x:String>

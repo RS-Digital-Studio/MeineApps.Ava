@@ -105,7 +105,7 @@ public static class OvertimeSplineVisualization
         float barW = Math.Min(xStep * 0.4f, 8f);
         for (int i = 0; i < count; i++)
         {
-            float x = chartLeft + i * xStep;
+            float x = count == 1 ? chartLeft + chartW * 0.5f : chartLeft + i * xStep;
             float barTop, barBottom;
 
             if (dailyBalance[i] >= 0)
@@ -185,6 +185,20 @@ public static class OvertimeSplineVisualization
             _dotPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Warning, 60);
             _dotPaint.MaskFilter = _blur4;
             canvas.DrawCircle(lastPt, 6f, _dotPaint);
+            _dotPaint.MaskFilter = null;
+        }
+        else if (count == 1)
+        {
+            // Einzelner Datenpunkt: kumulativen Wert als Endpunkt-Dot (mit Glow) zeigen
+            // (eine Spline braucht mind. 2 Punkte → vorher wurde gar nichts gezeichnet).
+            float x = chartLeft + chartW * 0.5f;
+            float y = chartTop + ((maxVal - cumulativeBalance[0]) / range) * chartH;
+            var pt = new SKPoint(x, y);
+            _dotPaint.Color = SkiaThemeHelper.Warning;
+            canvas.DrawCircle(pt, 4f, _dotPaint);
+            _dotPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Warning, 60);
+            _dotPaint.MaskFilter = _blur4;
+            canvas.DrawCircle(pt, 6f, _dotPaint);
             _dotPaint.MaskFilter = null;
         }
 

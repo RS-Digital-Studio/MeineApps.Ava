@@ -57,23 +57,20 @@ public sealed class DbArchiveService : IHostedService, IDisposable
         try
         {
             var retentionMonths = _config.GetValue<int?>("Server:ArchiveRetentionMonths") ?? 12;
-            var decisionDays = _config.GetValue<int?>("Server:ArchiveDecisionDays") ?? 30;
             var settingsDays = _config.GetValue<int?>("Server:ArchiveSettingsDays") ?? 90;
 
             var tradeCutoff = nowUtc.AddMonths(-retentionMonths);
-            var decisionCutoff = nowUtc.AddDays(-decisionDays);
             var settingsCutoff = nowUtc.AddDays(-settingsDays);
 
             var archiveDir = Path.Combine(Path.GetDirectoryName(_paths.DatabasePath) ?? ".", "archives");
 
             var archived = await _db.ArchiveTradesAsync(tradeCutoff, archiveDir).ConfigureAwait(false);
-            var purgedDec = await _db.PurgeOldDecisionsAsync(decisionCutoff).ConfigureAwait(false);
             await _db.PurgeOldSettingsChangesAsync(settingsCutoff).ConfigureAwait(false);
 
             _logger.LogInformation(
                 "DbArchive erfolgreich: {Archived} Trades archiviert (cutoff {TradeCutoff:yyyy-MM-dd}), " +
-                "{PurgedDec} Decisions geloescht (cutoff {DecCutoff:yyyy-MM-dd}), Settings-History gepurged (cutoff {SetCutoff:yyyy-MM-dd}).",
-                archived, tradeCutoff, purgedDec, decisionCutoff, settingsCutoff);
+                "Settings-History gepurged (cutoff {SetCutoff:yyyy-MM-dd}).",
+                archived, tradeCutoff, settingsCutoff);
         }
         catch (Exception ex)
         {

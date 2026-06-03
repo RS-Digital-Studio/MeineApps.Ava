@@ -65,7 +65,6 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
         _stream.BacktestCompleted += OnBacktestCompleted;
         _stream.SettingsChanged += OnSettingsChanged;
         _stream.ConnectionDegraded += OnConnectionDegraded;
-        _stream.EvaluationDecided += OnEvaluationDecided;
         // Periodischer Flush des Log-Buffers (alle 250 ms).
         _logFlushTimer = new Timer(_ => FlushLogBuffer(), null, LogFlushInterval, LogFlushInterval);
         _logger.LogInformation("BotHubEventForwarder gestartet");
@@ -89,7 +88,6 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
         _stream.BacktestCompleted -= OnBacktestCompleted;
         _stream.SettingsChanged -= OnSettingsChanged;
         _stream.ConnectionDegraded -= OnConnectionDegraded;
-        _stream.EvaluationDecided -= OnEvaluationDecided;
         _logFlushTimer?.Dispose();
         _logFlushTimer = null;
         FlushLogBuffer(); // Letzte Logs noch durchsenden
@@ -147,7 +145,6 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
     private void OnBacktestCompleted(BacktestResultDto dto) => Fire(HubMethods.BacktestCompleted, dto);
     private void OnSettingsChanged(FullSettingsDto dto) => Fire(HubMethods.SettingsChanged, dto);
     private void OnConnectionDegraded(ConnectionDegradedDto dto) => Fire(HubMethods.ConnectionDegraded, dto);
-    private void OnEvaluationDecided(EvaluationDecisionDto dto) => Fire(HubMethods.EvaluationDecided, dto);
 
     private void OnTickerUpdate(TickerUpdateDto dto)
     {

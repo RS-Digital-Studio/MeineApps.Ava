@@ -113,28 +113,6 @@ public abstract class TradingServiceBase : IDisposable
     protected internal BotDatabaseService? _dbService { get; set; }
 
     /// <summary>
-    /// Snapshot-Report-Fix Befund 2 / A1.3 — Set bereits geloggter Triggered-Sequenz-Keys.
-    /// Verhindert dass dieselbe Setup-Triggered-Decision in jedem Scan-Tick erneut persistiert
-    /// wird (im Snapshot vom 2026-05-17 stand ZEC-USDT_M15 60× drin, obwohl die Order genau einmal
-    /// platziert wurde). Set bleibt fuer die Bot-Laufzeit — nach Stop/Start ist es leer (neue
-    /// Sequenz, neue Logs).
-    /// </summary>
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _loggedTriggeredSequences = new();
-
-    /// <summary>
-    /// Helper fuer A1.3: baut den Dedup-Key aus Symbol + TF + SequenceState + Point0/PointA/PointB.
-    /// Wenn Sequenz-Punkte fehlen (NULL), wird kein Key gebaut — dann wird nicht dedupliziert
-    /// (Fail-Open: lieber doppelt loggen als gar nicht).
-    /// </summary>
-    private static string? BuildDecisionDedupKey(BingXBot.Core.Diagnostics.EvaluationDecision d)
-    {
-        if (string.IsNullOrEmpty(d.Symbol)) return null;
-        if (d.Point0 is null && d.PointA is null && d.PointB is null) return null;
-        return string.Create(System.Globalization.CultureInfo.InvariantCulture,
-            $"{d.Symbol}|{d.Tf}|{d.SequenceState}|{d.Point0}|{d.PointA}|{d.PointB}");
-    }
-
-    /// <summary>
     /// Optionaler Hook: wird nach erfolgreicher Trade-Persistenz aufgerufen.
     /// Server nutzt das, um den Equity-Snapshot in derselben Transaktionsgrenze zu schreiben.
     /// </summary>
@@ -1181,18 +1159,7 @@ public abstract class TradingServiceBase : IDisposable
                 // Phase 18 / A7 — Time-of-Day Session-Filter (Crypto). Default = All → no-op.
                 // TradFi-Symbole haben ihre eigene Marktoeffnung-Pruefung (siehe TradingHoursFilter.IsMarketOpen).
                 if (!Engine.Filters.TradingHoursFilter.IsSessionAllowed(DateTime.UtcNow, _botSettings.EnabledSessions))
-                {
-                    if (_botSettings.EnableDecisionTrail)
-                    {
-                        var sessionDecision = new BingXBot.Core.Diagnostics.EvaluationDecision(
-                            ticker.Symbol, navTf, DateTime.UtcNow, "SessionFilter",
-                            null, null, null, false,
-                            BingXBot.Core.Diagnostics.RejectionReasons.OutsideAllowedSession,
-                            0, Array.Empty<string>(), Array.Empty<string>());
-                        _eventBus.PublishEvaluationDecision(sessionDecision);
-                    }
                     continue;
-                }
 
                 if (!navResults.TryGetValue((ticker.Symbol, navTf), out var navCandles) || navCandles.Count < 50)
                     continue;

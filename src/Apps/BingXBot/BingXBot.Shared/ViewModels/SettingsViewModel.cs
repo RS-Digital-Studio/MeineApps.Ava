@@ -82,16 +82,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _ = _settingsPersistence.SaveAllAsync();
     }
 
-    // === v1.5.2 Phase 4 / v1.5.5 Phase 9 — Decision-Trail + Trade-Push-Notifications ===
-    [ObservableProperty] private bool _enableDecisionTrail;
+    // === v1.5.5 Phase 9 — Trade-Push-Notifications ===
     [ObservableProperty] private bool _enableTradePushNotifications;
-
-    partial void OnEnableDecisionTrailChanged(bool value)
-    {
-        _botSettings.EnableDecisionTrail = value;
-        if (_suppressSave) return;
-        _ = _settingsPersistence.SaveAllAsync();
-    }
 
     partial void OnEnableTradePushNotificationsChanged(bool value)
     {
@@ -123,7 +115,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _settingsPersistence = settingsPersistence;
         _settingsService = settingsService;
         _theme = botSettings.ThemePreference;
-        _enableDecisionTrail = botSettings.EnableDecisionTrail;
         _enableTradePushNotifications = botSettings.EnableTradePushNotifications;
 
         // v1.5.2 Phase 4 / v1.5.5 Phase 9 — Multi-Client-Sync. Wenn ein anderer Client die
@@ -157,7 +148,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             _suppressSave = true;
             try
             {
-                EnableDecisionTrail = snapshot.Bot.EnableDecisionTrail;
                 EnableTradePushNotifications = snapshot.Bot.EnableTradePushNotifications;
                 Theme = snapshot.Bot.ThemePreference;
             }

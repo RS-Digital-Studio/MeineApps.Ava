@@ -174,28 +174,18 @@ public partial class App : Application
                         ls.RaiseChanged();
                 });
 
-                // v1.5.2 Phase 4 / v1.5.3 Phase 5 — Im Local-Mode (Desktop standalone) muessen
-                // wir die neuen Services aktiv verdrahten:
-                // - DecisionTrailBuffer subscribt auf BotEventBus.EvaluationDecided + persistiert in DB.
-                // - TradeStatsAggregator wird durch Resolve aktiviert (Konstruktor abonniert TradeCompleted)
-                //   und mit den letzten 10.000 Trades aus der DB rebuildet.
+                // v1.5.3 Phase 5 — Im Local-Mode (Desktop standalone) muss der
+                // TradeStatsAggregator aktiv verdrahtet werden: Resolve aktiviert ihn (Konstruktor
+                // abonniert TradeCompleted) und rebuildet mit den letzten 10.000 Trades aus der DB.
                 try
                 {
-                    var bus = Services.GetRequiredService<BotEventBus>();
-                    var buffer = Services.GetRequiredService<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
-                    bus.EvaluationDecided += (_, decision) =>
-                    {
-                        buffer.Append(decision);
-                        _ = db.SaveDecisionAsync(decision); // Best-effort
-                    };
-
                     var aggregator = Services.GetRequiredService<BingXBot.Trading.Stats.TradeStatsAggregator>();
                     var pastTrades = await db.GetTradesAsync(modeFilter: null, limit: 10_000).ConfigureAwait(false);
                     aggregator.ReplayFromTrades(pastTrades);
                 }
                 catch (Exception wireEx)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Local-Mode Trail/Stats Wire-up fehlgeschlagen: {wireEx.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Local-Mode Stats Wire-up fehlgeschlagen: {wireEx.Message}");
                 }
             }
             catch (Exception ex)
@@ -376,8 +366,7 @@ public partial class App : Application
         bot.EnableDesktopNotifications = saved.EnableDesktopNotifications;
         bot.SimulatedFundingRatePercent = saved.SimulatedFundingRatePercent;
         bot.WasRunningOnShutdown = saved.WasRunningOnShutdown;              // 24.04.2026: konsistent zum Server
-        // v1.5.2 Phase 4 / v1.5.5 Phase 9 — Decision-Trail + Trade-Push Toggles
-        bot.EnableDecisionTrail = saved.EnableDecisionTrail;
+        // v1.5.5 Phase 9 — Trade-Push Toggle
         bot.EnableTradePushNotifications = saved.EnableTradePushNotifications;
         // Referenzen in BotSettings auf die DI-Singletons zeigen (analog Server Program.cs)
         bot.Risk = risk;
@@ -551,11 +540,9 @@ public partial class App : Application
 
         // v1.5.2 Phase 4 — Decision-Trail-Buffer + v1.5.3 Phase 5 — TradeStatsAggregator.
         // Im Remote-Mode unbenutzt (Server haelt seine eigene Instanz und pusht via SignalR).
-        // Im Local-Mode (Desktop standalone) brauchen wir die hier, damit der Decision-Trail
-        // und die Trade-Stats funktionieren.
+        // Im Local-Mode (Desktop standalone) brauchen wir die Trade-Stats hier.
         if (!remoteMode)
         {
-            services.AddSingleton<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
             services.AddSingleton<BingXBot.Trading.Stats.TradeStatsAggregator>();
         }
 
@@ -630,8 +617,7 @@ public partial class App : Application
         services.AddSingleton<RiskSettingsViewModel>();
         services.AddSingleton<LogViewModel>();
         services.AddSingleton<SettingsViewModel>();
-        // v1.6.0 Phase 10 + 14 — Diagnose- und Audit-Trail-VMs (Lazy via Lazy<T>, falls nicht eager genutzt).
-        services.AddSingleton<DecisionTrailViewModel>();
+        // v1.6.0 Phase 14 — Audit-Trail-VM (Lazy via Lazy<T>, falls nicht eager genutzt).
         services.AddSingleton<SettingsHistoryViewModel>();
 
         // Lazy-Wrapper: DI-Container unterstuetzt Lazy<T> nicht out-of-the-box.

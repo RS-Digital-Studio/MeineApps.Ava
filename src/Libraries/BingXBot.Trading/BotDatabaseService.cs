@@ -35,11 +35,6 @@ public class BotDatabaseService
     /// </summary>
     private const int CurrentSchemaVersion = 12;
 
-    /// <summary>v1.5.2 Phase 4 — Maximale Anzahl Decision-Eintraege in der DB.</summary>
-    public const int MaxDecisionEntries = 50_000;
-    /// <summary>Trim-Batch-Groesse beim Ringpuffer-Cleanup.</summary>
-    private const int DecisionCleanupBatch = 5_000;
-
     /// <summary>
     /// JSON-Optionen fuer BotSettings (24.04.2026): Enums werden als String geschrieben (forward-kompatibel,
     /// menschlich lesbar in der DB), int-Werte werden weiterhin akzeptiert (backward-kompatibel zu alten
@@ -137,8 +132,6 @@ public class BotDatabaseService
         await _db.CreateTableAsync<LogEntity>();
         await _db.CreateTableAsync<SettingEntity>();
         await _db.CreateTableAsync<BacktestJobEntity>();
-        // v1.5.2 Phase 4 — Decision-Trail-Tabelle (idempotent dank CreateTableAsync).
-        await _db.CreateTableAsync<EvaluationDecisionEntity>();
         // v1.6.3 Phase 14 — Settings-Audit-Trail-Tabelle.
         await _db.CreateTableAsync<SettingsChangeEntity>();
 
@@ -149,9 +142,6 @@ public class BotDatabaseService
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EquitySnapshots_Time ON EquitySnapshots (Time)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Timestamp ON LogEntries (Timestamp DESC)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Level ON LogEntries (Level)");
-        // v1.5.2 Phase 4 — Decision-Trail-Indices fuer Filter-Queries.
-        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EvaluationDecisions_Ts ON EvaluationDecisions (Timestamp DESC)");
-        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EvaluationDecisions_Reason ON EvaluationDecisions (RejectionReason)");
         // v1.6.3 Phase 14 — Settings-Audit-Trail-Indices.
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_SettingsChanges_Ts ON SettingsChanges (Timestamp DESC)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_SettingsChanges_Field ON SettingsChanges (Field)");
@@ -564,108 +554,6 @@ public class BotDatabaseService
             throw new InvalidOperationException("BotDatabaseService nicht initialisiert. InitializeAsync() zuerst aufrufen.");
     }
 
-    // === v1.5.2 Phase 4 — Decision-Trail Persistenz ==========================================
-
-    private int _decisionInsertCount;
-
-    /// <summary>
-    /// Persistiert eine einzelne Decision. Triggert nach <see cref="MaxDecisionEntries"/> Eintraegen
-    /// einen Trim-Lauf (loescht <see cref="DecisionCleanupBatch"/> aelteste Eintraege).
-    /// Best-effort — ein Schreibfehler darf den Hot-Path nicht blockieren.
-    /// </summary>
-    public async Task SaveDecisionAsync(BingXBot.Core.Diagnostics.EvaluationDecision decision)
-    {
-        EnsureInitialized();
-        var entity = new EvaluationDecisionEntity
-        {
-            Timestamp = decision.UtcTimestamp,
-            Symbol = decision.Symbol,
-            Tf = (int)decision.Tf,
-            SequenceState = decision.SequenceState,
-            Point0 = decision.Point0,
-            PointA = decision.PointA,
-            PointB = decision.PointB,
-            Triggered = decision.Triggered,
-            RejectionReason = decision.RejectionReason,
-            ConfluenceScore = decision.ConfluenceScore,
-            CategoriesJson = JsonSerializer.Serialize(decision.ConfluenceCategories),
-            HardFiltersJson = JsonSerializer.Serialize(decision.HardFiltersFailed),
-        };
-
-        try
-        {
-            await _db!.InsertAsync(entity).ConfigureAwait(false);
-        }
-        catch
-        {
-            // Hot-Path-tolerant — nicht eskalieren.
-            return;
-        }
-
-        var count = System.Threading.Interlocked.Increment(ref _decisionInsertCount);
-        if (count >= 1_000)
-        {
-            System.Threading.Interlocked.Exchange(ref _decisionInsertCount, 0);
-            await TrimDecisionsAsync().ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>
-    /// Liefert die letzten Decisions, optional gefiltert nach Symbol/TF/Reason/Since.
-    /// Ergebnis ist absteigend sortiert nach Timestamp.
-    /// </summary>
-    public async Task<List<BingXBot.Core.Diagnostics.EvaluationDecision>> LoadDecisionsAsync(
-        string? symbol = null,
-        BingXBot.Core.Enums.TimeFrame? tf = null,
-        string? rejectionReason = null,
-        DateTime? since = null,
-        int limit = 200)
-    {
-        EnsureInitialized();
-        var query = _db!.Table<EvaluationDecisionEntity>();
-        if (!string.IsNullOrEmpty(symbol))
-            query = query.Where(d => d.Symbol == symbol);
-        if (tf.HasValue)
-        {
-            var tfInt = (int)tf.Value;
-            query = query.Where(d => d.Tf == tfInt);
-        }
-        if (!string.IsNullOrEmpty(rejectionReason))
-            query = query.Where(d => d.RejectionReason == rejectionReason);
-        if (since.HasValue)
-        {
-            var sinceVal = since.Value;
-            query = query.Where(d => d.Timestamp >= sinceVal);
-        }
-
-        var entities = await query.OrderByDescending(d => d.Timestamp).Take(limit).ToListAsync().ConfigureAwait(false);
-        return entities.Select(EntityToDecision).ToList();
-    }
-
-    private static BingXBot.Core.Diagnostics.EvaluationDecision EntityToDecision(EvaluationDecisionEntity e)
-    {
-        IReadOnlyList<string> categories;
-        IReadOnlyList<string> hardFilters;
-        try { categories = JsonSerializer.Deserialize<List<string>>(e.CategoriesJson) ?? new List<string>(); }
-        catch { categories = Array.Empty<string>(); }
-        try { hardFilters = JsonSerializer.Deserialize<List<string>>(e.HardFiltersJson) ?? new List<string>(); }
-        catch { hardFilters = Array.Empty<string>(); }
-
-        return new BingXBot.Core.Diagnostics.EvaluationDecision(
-            Symbol: e.Symbol,
-            Tf: (BingXBot.Core.Enums.TimeFrame)e.Tf,
-            UtcTimestamp: e.Timestamp,
-            SequenceState: e.SequenceState,
-            Point0: e.Point0,
-            PointA: e.PointA,
-            PointB: e.PointB,
-            Triggered: e.Triggered,
-            RejectionReason: e.RejectionReason,
-            ConfluenceScore: e.ConfluenceScore,
-            ConfluenceCategories: categories,
-            HardFiltersFailed: hardFilters);
-    }
-
     // === v1.6.3 Phase 14 — Settings-Audit-Trail Persistenz ====================================
 
     /// <summary>
@@ -781,20 +669,6 @@ public class BotDatabaseService
     }
 
     /// <summary>
-    /// v1.6.1 Phase 11 — Loescht Evaluation-Decisions aelter als <paramref name="cutoff"/>.
-    /// Decisions sind Diagnose-Daten, brauchen keine 12-Monate-Archivierung.
-    /// </summary>
-    public async Task<int> PurgeOldDecisionsAsync(DateTime cutoff)
-    {
-        EnsureInitialized();
-        var stale = await _db!.Table<EvaluationDecisionEntity>()
-            .Where(e => e.Timestamp < cutoff)
-            .ToListAsync().ConfigureAwait(false);
-        foreach (var s in stale) await _db.DeleteAsync(s).ConfigureAwait(false);
-        return stale.Count;
-    }
-
-    /// <summary>
     /// v1.6.4 Phase 13 — Sucht den letzten Settings-Snapshot vor <paramref name="atUtc"/>.
     /// Liefert das deserialisierte BotSettings-Objekt oder null wenn kein Snapshot existiert.
     /// Wird vom Trade-Replay-Runner aufgerufen, um Settings zur Trade-Zeit zu rekonstruieren.
@@ -856,26 +730,6 @@ public class BotDatabaseService
         }
 
         return combined.OrderByDescending(t => t.ExitTime).Take(limit).ToList();
-    }
-
-    /// <summary>
-    /// Trim — wenn die Tabelle ueber <see cref="MaxDecisionEntries"/> wachsen wuerde, werden die
-    /// aeltesten Eintraege geloescht. Best-effort, Fehler werden geschluckt.
-    /// </summary>
-    public async Task TrimDecisionsAsync()
-    {
-        EnsureInitialized();
-        try
-        {
-            var count = await _db!.Table<EvaluationDecisionEntity>().CountAsync().ConfigureAwait(false);
-            if (count > MaxDecisionEntries)
-            {
-                await _db.ExecuteAsync(
-                    $"DELETE FROM EvaluationDecisions WHERE Id IN (SELECT Id FROM EvaluationDecisions ORDER BY Timestamp ASC LIMIT {DecisionCleanupBatch})")
-                    .ConfigureAwait(false);
-            }
-        }
-        catch { /* best-effort */ }
     }
 
     /// <summary>

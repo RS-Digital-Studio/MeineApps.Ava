@@ -238,22 +238,6 @@
               </Button>
             </Grid>
 
-            <!-- Decision-Trail (Phase 10A — v1.6.0 Diagnose) -->
-            <Grid ColumnDefinitions="Auto,*">
-              <Border Grid.Column="0" Classes="NavIndicator"
-                      Classes.Active="{Binding IsDecisionTrailActive}" />
-              <Button Grid.Column="1" Classes="NavButton"
-                      Classes.Active="{Binding IsDecisionTrailActive}"
-                      Command="{Binding NavigateToCommand}"
-                      CommandParameter="DecisionTrail"
-                      ToolTip.Tip="Entscheidungs-Log: Warum wurden Signale verworfen?">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                  <mi:MaterialIcon Kind="MagnifyScan" Width="20" Height="20" />
-                  <TextBlock Text="Entscheidungs-Log" VerticalAlignment="Center" FontSize="13" />
-                </StackPanel>
-              </Button>
-            </Grid>
-
             <!-- Settings-History (Phase 14 — Audit-Trail) -->
             <Grid ColumnDefinitions="Auto,*">
               <Border Grid.Column="0" Classes="NavIndicator"

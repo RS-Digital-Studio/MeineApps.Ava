@@ -62,9 +62,6 @@ public static class ApiRoutes
     // Android-FCM Device-Registrierung (optional, Phase 5.7)
     public const string DevicesFcm = ApiPrefix + "/devices/fcm";
 
-    // v1.5.2 Phase 4 — Decision-Trail / Rejection-Log
-    public const string Decisions = ApiPrefix + "/decisions";
-
     // v1.5.3 Phase 5 — Per-TF + Per-Category Trade-Stats
     public const string StatsBreakdown = ApiPrefix + "/stats/breakdown";
 

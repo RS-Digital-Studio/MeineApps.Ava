@@ -24,8 +24,6 @@ public static class HubMethods
     public const string ScannerResult = nameof(ScannerResult);
     public const string ConnectionDegraded = nameof(ConnectionDegraded);
     public const string SettingsChanged = nameof(SettingsChanged);
-    /// <summary>v1.5.2 Phase 4 — pro Strategy-Evaluation eine Decision (Reject/Success).</summary>
-    public const string EvaluationDecided = nameof(EvaluationDecided);
 
     // Client -> Server (Invoke)
     public const string SubscribeSymbol = nameof(SubscribeSymbol);

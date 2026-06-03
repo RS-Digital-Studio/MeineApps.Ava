@@ -52,8 +52,6 @@ public sealed class RemoteBotEventStream : IBotEventStream
     public event Action<BacktestResultDto>? BacktestCompleted;
     public event Action<FullSettingsDto>? SettingsChanged;
     public event Action<ConnectionDegradedDto>? ConnectionDegraded;
-    /// <summary>v1.5.2 Phase 4 — Decision-Trail Live-Forward von Server.</summary>
-    public event Action<EvaluationDecisionDto>? EvaluationDecided;
 
     public RemoteBotEventStream(ServerConnection connection, ILogger<RemoteBotEventStream> logger)
     {
@@ -172,7 +170,6 @@ public sealed class RemoteBotEventStream : IBotEventStream
         hub.On<BacktestResultDto>(HubMethods.BacktestCompleted, dto => BacktestCompleted?.Invoke(dto));
         hub.On<FullSettingsDto>(HubMethods.SettingsChanged, dto => SettingsChanged?.Invoke(dto));
         hub.On<ConnectionDegradedDto>(HubMethods.ConnectionDegraded, dto => ConnectionDegraded?.Invoke(dto));
-        hub.On<EvaluationDecisionDto>(HubMethods.EvaluationDecided, dto => EvaluationDecided?.Invoke(dto));
     }
 
     public void Dispose()

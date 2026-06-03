@@ -86,8 +86,6 @@ services.AddSingleton<PaperTradingService>(sp =>
 });
 services.AddSingleton<LiveTradingManager>();
 
-// v1.5.2 Phase 4 — Decision-Trail-Buffer (In-Memory + DB-Persistenz, Capacity 5000).
-services.AddSingleton<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
 
 // v1.5.3 Phase 5 — Trade-Stats-Aggregator (Singleton, lebt mit dem Server).
 services.AddSingleton<BingXBot.Trading.Stats.TradeStatsAggregator>();
@@ -316,8 +314,7 @@ app.MapMetricsEndpoints();
 app.MapPrometheusScrapingEndpoint();
 app.MapTradesAndLogsEndpoints();
 app.MapBacktestEndpoints();
-// v1.5.2 Phase 4 / v1.5.3 Phase 5 — Decision-Trail + Stats-Breakdown
-app.MapDecisionsEndpoints();
+// v1.5.3 Phase 5 — Stats-Breakdown
 app.MapStatsEndpoints();
 
 // SignalR-Hub
@@ -329,21 +326,6 @@ app.MapHub<BotHub>(BingXBot.Contracts.Api.ApiRoutes.BotHubPath);
 {
     var stream = app.Services.GetRequiredService<IBotEventStream>();
     await stream.StartAsync();
-}
-
-// v1.5.2 Phase 4 — EvaluationDecided-Event-Subscriber: legt Decisions in den Buffer +
-// persistiert in DB. Hot-Path-Schutz greift im TradingServiceBase (EnableDecisionTrail-Check),
-// hier nur Forward.
-{
-    var bus = app.Services.GetRequiredService<BingXBot.Trading.BotEventBus>();
-    var buffer = app.Services.GetRequiredService<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
-    var decisionDb = app.Services.GetRequiredService<BotDatabaseService>();
-    bus.EvaluationDecided += (_, decision) =>
-    {
-        buffer.Append(decision);
-        // Fire-and-forget DB-Save — best-effort, blockiert den Hot-Path nicht.
-        _ = decisionDb.SaveDecisionAsync(decision);
-    };
 }
 
 // v1.5.3 Phase 5 — TradeStatsAggregator initial aus DB rebuilden, damit Stats nach
@@ -517,8 +499,7 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     bot.EnableDesktopNotifications = saved.EnableDesktopNotifications;
     bot.SimulatedFundingRatePercent = saved.SimulatedFundingRatePercent;
     bot.WasRunningOnShutdown = saved.WasRunningOnShutdown;
-    // v1.5.2 Phase 4 / v1.5.5 Phase 9 — Decision-Trail + Trade-Push Toggles
-    bot.EnableDecisionTrail = saved.EnableDecisionTrail;
+    // v1.5.5 Phase 9 — Trade-Push Toggle
     bot.EnableTradePushNotifications = saved.EnableTradePushNotifications;
 
     // Referenzen in BotSettings zeigen auf die DI-Singletons

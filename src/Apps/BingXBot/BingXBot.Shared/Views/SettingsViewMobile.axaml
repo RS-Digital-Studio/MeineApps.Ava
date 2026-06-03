@@ -268,18 +268,6 @@
 
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Decision-Trail" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Phase 4: Reject-Log" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableDecisionTrail}" />
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
-
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="Trade-Push" FontSize="13"
                          Foreground="{DynamicResource AppTextBrush}" />
               <TextBlock Text="Phase 9: FCM Open/Close" FontSize="11"

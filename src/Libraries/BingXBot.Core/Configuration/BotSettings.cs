@@ -50,31 +50,6 @@ public class BotSettings
     public ThemePreference ThemePreference { get; set; } = ThemePreference.Dark;
 
     /// <summary>
-    /// v1.5.2 Phase 4 — Decision-Trail / Rejection-Log aktivieren.
-    /// Default true — der Trail haelt eine Diagnose-Liste der letzten N Strategy-Evaluations
-    /// (warum hat das Setup nicht gefeuert?) im Memory-Ringpuffer (5000 Eintraege).
-    /// Bei false: Hot-Path baut keine <c>EvaluationDecision</c>-Records (kein Allocation-Overhead).
-    /// </summary>
-    public bool EnableDecisionTrail { get; set; } = true;
-
-    /// <summary>
-    /// Snapshot-Report-Fix Befund 2 / A1.1: <c>state_not_activated</c>-Eintraege in den Decision-Trail
-    /// aufnehmen. Default <b>false</b>, weil das im Snapshot vom 2026-05-17 ueber <b>81 %</b> aller
-    /// Decisions ausmachte (39.340 von 48.326) — der eigentliche Trail wird damit unbrauchbar fuer die
-    /// "warum greift mein Setup nicht?"-Frage. Bei true wird das Rauschen wieder mit-persistiert
-    /// (gewuenscht beim Tuning der State-Machine selbst).
-    /// </summary>
-    public bool DecisionTrailIncludeNotActivated { get; set; } = false;
-
-    /// <summary>
-    /// Snapshot-Report-Fix Befund 2 / A1.3: Idempotenz-Check fuer Trigger-Decisions.
-    /// Wenn true (Default), wird ein Triggered-Eintrag fuer dieselbe Sequenz nur einmal pro
-    /// Bot-Laufzeit geloggt — verhindert das ZEC-USDT-M15-Cluster (60× dieselbe Sequenz im
-    /// Snapshot vom 2026-05-17, obwohl die Order laengst platziert ist).
-    /// </summary>
-    public bool DecisionTrailDeduplicateTriggers { get; set; } = true;
-
-    /// <summary>
     /// v1.5.5 Phase 9 — Trade-Push-Notifications via FCM (TradeOpened / TradeClosed / SL-Hit).
     /// Default true — Pi-Server pusht Trade-Events an gepairte Mobile-Clients. Bei false
     /// wird der TradePushSubscriber ausgehaengt und feuert nicht mehr.

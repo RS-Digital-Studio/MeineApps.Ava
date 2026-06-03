@@ -40,8 +40,6 @@ public sealed class LocalBotEventStream : IBotEventStream
     public event Action<BacktestResultDto>? BacktestCompleted;
     public event Action<FullSettingsDto>? SettingsChanged;
     public event Action<ConnectionDegradedDto>? ConnectionDegraded;
-    /// <summary>v1.5.2 Phase 4 — Decision-Trail-Forward.</summary>
-    public event Action<EvaluationDecisionDto>? EvaluationDecided;
 
     /// <summary>
     /// Wird vom ServerHealthWatchdog aufgerufen wenn sich der BingX-Verbindungsstatus aendert.
@@ -75,8 +73,6 @@ public sealed class LocalBotEventStream : IBotEventStream
         _bus.TickerUpdate += HandleTickerUpdate;
         _bus.BtcPriceUpdate += HandleBtcPriceUpdate;
         _bus.ScannerSweep += HandleScannerSweep;
-        // v1.5.2 Phase 4 — Decision-Trail Forward auf den IBotEventStream.
-        _bus.EvaluationDecided += HandleEvaluationDecided;
 
         // v1.3.0 K1: Backtest-Progress + Completed werden vom LocalBacktestService-eigenen
         // Progress-Callback gefeuert. Wir subscriben optional hier — im Client-Standalone
@@ -101,24 +97,6 @@ public sealed class LocalBotEventStream : IBotEventStream
     private void HandleBacktestProgress(BacktestProgressDto dto) => BacktestProgress?.Invoke(dto);
     private void HandleBacktestCompleted(BacktestResultDto dto) => BacktestCompleted?.Invoke(dto);
     private void HandleSettingsChanged(FullSettingsDto dto) => SettingsChanged?.Invoke(dto);
-
-    /// <summary>v1.5.2 Phase 4 — Mappt Domain-Decision auf Wire-DTO und feuert das Stream-Event.</summary>
-    private void HandleEvaluationDecided(object? sender, BingXBot.Core.Diagnostics.EvaluationDecision d)
-    {
-        EvaluationDecided?.Invoke(new EvaluationDecisionDto(
-            UtcTimestamp: d.UtcTimestamp,
-            Symbol: d.Symbol,
-            Tf: (int)d.Tf,
-            SequenceState: d.SequenceState,
-            Point0: d.Point0,
-            PointA: d.PointA,
-            PointB: d.PointB,
-            Triggered: d.Triggered,
-            RejectionReason: d.RejectionReason,
-            ConfluenceScore: d.ConfluenceScore,
-            ConfluenceCategories: d.ConfluenceCategories,
-            HardFiltersFailed: d.HardFiltersFailed));
-    }
 
     private void HandleBotState(object? sender, BotState state)
     {
@@ -263,7 +241,6 @@ public sealed class LocalBotEventStream : IBotEventStream
         _bus.TickerUpdate -= HandleTickerUpdate;
         _bus.BtcPriceUpdate -= HandleBtcPriceUpdate;
         _bus.ScannerSweep -= HandleScannerSweep;
-        _bus.EvaluationDecided -= HandleEvaluationDecided;
         if (_backtest != null)
         {
             _backtest.ProgressReceived -= HandleBacktestProgress;

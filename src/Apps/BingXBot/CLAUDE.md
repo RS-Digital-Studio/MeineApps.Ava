@@ -364,6 +364,14 @@ die Short-Whipsaws, adressiert den oben genannten Long/Short-Hebel). Glatter Pea
 bricht ein (Train-negativ + zu wenige Trades). Der Train/Test-Split favorisierte zunaechst faelschlich 3.0
 (Train-Peak-Artefakt) — erst der durchgehende 2J-Lauf (alle Phasen in einem Fenster) deckte 2.75 auf.
 
+**Verworfene Hebel (2026-06-03, alle backtest-schlechter als der Stand — nicht erneut probieren):** D1-Timeframe
+(PF 0.61, nur 17 Trades/2J), Runner/ATR-Trailing statt festem TP2 (PF 2.90 vs 3.75 — das Trailing stoppt normale
+Pullbacks aus), Chop-Filter `requireRisingAdx` (PF 3.26) und Mindest-Ausbruch-Filter `minBreakoutAtr` (PF 2.21,
+WinRate 54 %). **Lehre:** zusaetzliche Entry-Filter gegen Trendwende-Fakeouts werfen mehr gute Trades weg als
+schlechte — die Fakeout-Verluste sind im RRR 1.5/3.0 + weiten ATR-SL bereits eingepreist (70.7 % WinRate zeigt,
+dass EMA34/ADX18/DMI als Basisfilter genuegen). TrendFollow-Fast ist parametrisch **ausgereizt**; echte weitere
+Verbesserung nur noch ueber Live-Validierung (Backtest-Live-Gap) oder Regime-Switch, nicht ueber mehr Backtest-Tuning.
+
 `RuntimeState` (TradesToday, ConsecutiveLosses) wird mit dem Strategie-Namen getaggt:
 `LiveTradingManager` setzt die Loss-Streak bei Strategiewechsel zurueck. **Zusaetzlich** (Audit-Fix 31.05.):
 der UTC-Tageswechsel ruft `RiskManager.SetConsecutiveLosses(0)` — ohne das blieb der RiskManager-Counter

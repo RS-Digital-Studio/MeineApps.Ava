@@ -68,12 +68,6 @@ public class BotEventBus
     public event EventHandler<BingXBot.Core.Diagnostics.EvaluationDecision>? EvaluationDecided;
 
     /// <summary>
-    /// Phase 18 / H2 — News-Service-Health-Edge-Transition. Args: (isDegraded, failureCount, reason).
-    /// Subscriber: LocalBotEventStream → SignalR-Hub → UI-Banner.
-    /// </summary>
-    public event EventHandler<(bool IsDegraded, int FailureCount, string? Reason)>? NewsServiceHealthChanged;
-
-    /// <summary>
     /// Watchdog-Event: pro Scan-Iteration (Success oder Failure) gefeuert. Subscriber:
     /// <c>StaleEngineDetector</c> nutzt das als zuverlaessigen Activity-Indikator (statt
     /// nur ScannerResult/TradeOpened) — entdeckt auch Hangs in denen der Scan-Loop selbst
@@ -84,10 +78,6 @@ public class BotEventBus
     /// <summary>Publiziert einen Scan-Cycle-Abschluss (success + duration + optionaler error).</summary>
     public void PublishScanCycle(bool success, double durationSeconds, string? errorMessage) =>
         ScanCycleCompleted?.Invoke(this, new ScanCycleEventArgs(DateTime.UtcNow, success, errorMessage, durationSeconds));
-
-    /// <summary>Phase 18 / H2 — Publish-Helper fuer den News-Service-Health-Event.</summary>
-    public void PublishNewsServiceHealthChanged(bool isDegraded, int failureCount, string? reason)
-        => NewsServiceHealthChanged?.Invoke(this, (isDegraded, failureCount, reason));
 
     /// <summary>Ob mindestens ein Subscriber für LogEmitted registriert ist. Prüfen VOR LogEntry-Allokation.</summary>
     public bool HasLogSubscribers => LogEmitted != null;

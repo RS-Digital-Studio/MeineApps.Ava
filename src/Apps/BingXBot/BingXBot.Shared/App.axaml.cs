@@ -4,7 +4,6 @@ using Avalonia.Markup.Xaml;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Interfaces;
 using BingXBot.Engine;
-using BingXBot.Engine.News;
 using BingXBot.Exchange;
 using BingXBot.ClientApi.Connection;
 using BingXBot.ClientApi.Pairing;
@@ -296,8 +295,6 @@ public partial class App : Application
         risk.RunnerPercent = saved.Risk.RunnerPercent;
         risk.RunnerTrailingAtrMultiplier = saved.Risk.RunnerTrailingAtrMultiplier;
         risk.BreakevenTriggerRMultiple = saved.Risk.BreakevenTriggerRMultiple;
-        // News + DailyRisk (User-Ausnahme: MaxDailyRiskPercent bleibt drin)
-        risk.NewsBlackoutMinutes = saved.Risk.NewsBlackoutMinutes;
         risk.MaxRiskPercentPerTrade = saved.Risk.MaxRiskPercentPerTrade;
         risk.MaxDailyLossPercent = saved.Risk.MaxDailyLossPercent;
         risk.MaxDailyRiskPercent = saved.Risk.MaxDailyRiskPercent;          // war 24.04.2026 ungemappt
@@ -570,10 +567,6 @@ public partial class App : Application
         // News-Filter (SK-System Punkt 11 — Masterclass-Compliance):
         // Standalone-Desktop/Android: Default Stub (keine Netz-Abhängigkeit, graceful degradation).
         // Remote-Modus ignoriert den Service — der RiskManager lebt auf dem Server.
-        // Aktivierung HTTP: BotSettings um News-Endpoint erweitern und hier einen HttpEconomicCalendarService
-        // registrieren (analog BingXBot.Server/Program.cs).
-        services.AddSingleton<IEconomicCalendarService, StubEconomicCalendarService>();
-
         // Trading Services — ScannerResultsCache wird via Setter injiziert (vermeidet zirkuläre DI)
         services.AddSingleton<PaperTradingService>(sp =>
         {

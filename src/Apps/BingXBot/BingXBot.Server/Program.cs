@@ -2,7 +2,6 @@ using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Interfaces;
 using BingXBot.Engine;
-using BingXBot.Engine.News;
 using BingXBot.Exchange;
 using BingXBot.Server;
 using BingXBot.Server.Api;
@@ -79,29 +78,6 @@ services.AddSingleton<StrategyManager>();
 
 // News-Filter (SK-System Punkt 11 — Masterclass-Compliance):
 // HTTP-Impl nur wenn "News:Endpoint" konfiguriert — sonst Stub (leere Liste, graceful degradation).
-// Der Stub ist bewusst der Default: ohne Endpoint wollen wir keinen Crash, keine Blockade.
-// Produktions-Setup: "News:Endpoint" = TradingEconomics-URL mit ?c=guest:guest&importance=3
-// (oder bezahlter API-Key via "News:ApiKey").
-services.AddSingleton<IEconomicCalendarService>(sp =>
-{
-    var cfg = sp.GetRequiredService<IConfiguration>();
-    var endpoint = cfg.GetValue<string>("News:Endpoint");
-    if (string.IsNullOrWhiteSpace(endpoint))
-        return new StubEconomicCalendarService();
-
-    // Dedizierte HttpClient-Instanz — nicht aus dem DI-Singleton (siehe BingXPublicClient oben).
-    var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-    var logger = sp.GetRequiredService<ILogger<HttpEconomicCalendarService>>();
-    var config = new HttpEconomicCalendarConfig
-    {
-        Endpoint = endpoint,
-        ApiKey = cfg.GetValue<string>("News:ApiKey"),
-        Format = Enum.TryParse<NewsFeedFormat>(cfg.GetValue<string>("News:Format"), true, out var fmt)
-            ? fmt
-            : NewsFeedFormat.TradingEconomics
-    };
-    return new HttpEconomicCalendarService(http, config, logger);
-});
 services.AddSingleton<PaperTradingService>(sp =>
 {
     var svc = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<PaperTradingService>(sp);
@@ -457,8 +433,6 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     risk.RunnerPercent = saved.Risk.RunnerPercent;
     risk.RunnerTrailingAtrMultiplier = saved.Risk.RunnerTrailingAtrMultiplier;
     risk.BreakevenTriggerRMultiple = saved.Risk.BreakevenTriggerRMultiple;
-    // News + DailyRisk (User-Ausnahme: MaxDailyRiskPercent bleibt drin)
-    risk.NewsBlackoutMinutes = saved.Risk.NewsBlackoutMinutes;
     risk.MaxRiskPercentPerTrade = saved.Risk.MaxRiskPercentPerTrade;
     risk.MaxDailyLossPercent = saved.Risk.MaxDailyLossPercent;
     risk.MaxDailyRiskPercent = saved.Risk.MaxDailyRiskPercent;          // ← war 24.04.2026 ungemappt → User-Wert ging verloren

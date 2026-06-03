@@ -321,10 +321,6 @@ public abstract class TradingServiceBase : IDisposable
     protected void StartBase(RiskManager riskManager)
     {
         _riskManager = riskManager;
-        // Phase 18 / H2 — RiskManager-Health-Hook auf den BotEventBus verdrahten.
-        // Edge-Transitions (degraded/recovered) erreichen darüber LocalBotEventStream → SignalR → UI.
-        _riskManager.NewsServiceHealthChanged = (isDeg, count, reason) =>
-            _eventBus.PublishNewsServiceHealthChanged(isDeg, count, reason);
         // K-5 Fix: Cancel VOR Dispose — sonst laufen alte Loops weiter (ObjectDisposedException
         // wird nicht von catch(OperationCanceledException) gefangen)
         _cts?.Cancel();
@@ -1155,16 +1151,6 @@ public abstract class TradingServiceBase : IDisposable
         // 5. Evaluierung: pro Symbol × aktive TF — sequenziell (Order-Platzierung muss sequenziell sein)
         var orderPlaced = false;
 
-        // Phase 18 / B1 — News-Blackout 1× pro Scan-Tick auflösen (statt N× sync-over-async im Hot-Path).
-        // Bei Service-Fehlern liefert ResolveActiveNewsBlackoutAsync null → graceful pass, B4-Counter zaehlt mit.
-        string? resolvedNewsBlackout = null;
-        if (_riskManager != null)
-        {
-            try { resolvedNewsBlackout = await _riskManager.ResolveActiveNewsBlackoutAsync(ct).ConfigureAwait(false); }
-            catch (OperationCanceledException) { throw; }
-            catch { /* ResolveActiveNewsBlackoutAsync schluckt + loggt schon, hier nur Belt-and-Suspenders */ }
-        }
-
         // Multi-TF Standalone: Scanner-Result pro TF sammeln für /api/v1/scanner/results
         var scanSymbolsByTf = activeTfs.ToDictionary(
             tf => tf,
@@ -1233,8 +1219,7 @@ public abstract class TradingServiceBase : IDisposable
                         NavigatorTimeframe: navTf,
                         ScannerSettings: _scannerSettings,
                         RiskSettings: _riskSettings,
-                        FundingRatePercent: fundingForStrategy,
-                        ResolvedNewsBlackoutEvent: resolvedNewsBlackout);
+                        FundingRatePercent: fundingForStrategy);
                     // Phase 18 / H6 — Tracing + Counter pro Strategy-Evaluation.
                     Telemetry.BotTelemetry.StrategyEvaluations.Add(1,
                         new System.Collections.Generic.KeyValuePair<string, object?>("symbol", ticker.Symbol),

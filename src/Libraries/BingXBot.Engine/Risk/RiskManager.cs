@@ -4,7 +4,6 @@ using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine.Indicators;
-using BingXBot.Engine.News;
 using Microsoft.Extensions.Logging;
 
 namespace BingXBot.Engine.Risk;
@@ -13,8 +12,6 @@ public class RiskManager : IRiskManager
 {
     private readonly RiskSettings _settings;
     private readonly ILogger<RiskManager> _logger;
-    /// <summary>Task 1.2 — News-Kalender-Service. Null = News-Blackout deaktiviert.</summary>
-    private readonly IEconomicCalendarService? _newsCalendar;
     // Drawdown basiert auf realisierten + unrealisierten Verlusten.
     // Unrealisierte Verluste offener Positionen fliessen in den taeglichen Drawdown ein.
     private decimal _dailyPnl;
@@ -41,11 +38,10 @@ public class RiskManager : IRiskManager
     private bool _peakEquityInitialized;
     private readonly object _lock = new();
 
-    public RiskManager(RiskSettings settings, ILogger<RiskManager> logger, IEconomicCalendarService? newsCalendar = null)
+    public RiskManager(RiskSettings settings, ILogger<RiskManager> logger)
     {
         _settings = settings;
         _logger = logger;
-        _newsCalendar = newsCalendar;
     }
 
     /// <summary>Überladung ohne Funding-Rate und Leverage (Abwärtskompatibilität).</summary>
@@ -122,13 +118,6 @@ public class RiskManager : IRiskManager
         // Explizite Balance-Prüfung mit klarer Meldung (erleichtert Debugging bei Drawdown=100%)
         if (context.Account.AvailableBalance <= 0)
             return new RiskCheckResult(false, "Keine verfügbare Balance — kein Trade möglich", 0m);
-
-        // Phase 18 / B1 — News-Blackout zweite Schicht (Strategy ist erste). Liest Pre-Resolved
-        // aus dem MarketContext, vermeidet damit den fruehren GetAwaiter().GetResult()-Call pro
-        // Trade-Validierung. Wenn weder Pre-Resolved noch Calendar verfuegbar sind: graceful
-        // degradation (Bot tradet weiter, B4 Health-Check meldet defekten News-Service separat).
-        if (_settings.NewsBlackoutMinutes > 0 && !string.IsNullOrEmpty(context.ResolvedNewsBlackoutEvent))
-            return new RiskCheckResult(false, $"News-Blackout: {context.ResolvedNewsBlackoutEvent}", 0m);
 
         // SK-Plan 3.5: Max Daily Loss Circuit-Breaker
         // Bezieht realisierte UND offene Buchverluste ein: ein grosser unrealisierter Verlust soll
@@ -591,69 +580,6 @@ public class RiskManager : IRiskManager
 
     /// <summary>Aufeinanderfolgende Verluste aktuell.</summary>
     public int CurrentConsecutiveLosses { get; private set; }
-
-    /// <summary>
-    /// Phase 18 / B1 — Pre-Resolved News-Blackout-Event-Name (oder null) als async Helper.
-    /// Wird vom <c>TradingServiceBase</c> einmal pro Scan-Tick aufgerufen und in den
-    /// <see cref="MarketContext.ResolvedNewsBlackoutEvent"/> aller Symbol-Evaluationen gepusht —
-    /// ersetzt den frueheren GetAwaiter().GetResult()-Pfad pro Symbol.
-    /// </summary>
-    public async Task<string?> ResolveActiveNewsBlackoutAsync(CancellationToken ct = default)
-    {
-        if (_newsCalendar == null || _settings.NewsBlackoutMinutes <= 0) return null;
-        try
-        {
-            var ev = await _newsCalendar.GetActiveBlackoutEventAsync(
-                DateTime.UtcNow, _settings.NewsBlackoutMinutes, ct).ConfigureAwait(false);
-            ResetNewsCheckFailures();
-            if (ev == null) return null;
-            return $"{ev.Name} ({ev.Country} {ev.TimeUtc:HH:mm} UTC)";
-        }
-        catch (Exception ex)
-        {
-            // Phase 18 / B4 — Failure-Counter + structured Log statt stillem Schlucken.
-            var newCount = Interlocked.Increment(ref _newsCheckFailureCount);
-            _logger.LogWarning(ex, "News-Blackout-Probe fehlgeschlagen (Failure #{Count}) — Trade wird ohne Filter durchgewinkt", newCount);
-            // Phase 18 / H2 — Edge-Transition: ab Threshold die UI informieren.
-            if (newCount >= NewsServiceDegradedThreshold && !_lastNewsServiceDegraded)
-            {
-                _lastNewsServiceDegraded = true;
-                NewsServiceHealthChanged?.Invoke(true, newCount, $"News-Probe {newCount}× in Folge fehlgeschlagen ({ex.GetType().Name}).");
-            }
-            return null;
-        }
-    }
-
-    /// <summary>Phase 18 / B4 — Anzahl konsekutiver News-Service-Failures.</summary>
-    private int _newsCheckFailureCount;
-    public int NewsCheckFailureCount => _newsCheckFailureCount;
-
-    /// <summary>Phase 18 / B4 — Reset des News-Failure-Counters bei erfolgreichem Probe.</summary>
-    public void ResetNewsCheckFailures()
-    {
-        var was = Interlocked.Exchange(ref _newsCheckFailureCount, 0);
-        // Phase 18 / H2 — Recovery-Edge-Transition: war degraded → Recovery-Event publishen.
-        if (was >= NewsServiceDegradedThreshold && !_lastNewsServiceDegraded)
-        {
-            // Bereits unter Threshold gemeldet, nichts zu tun.
-        }
-        else if (was >= NewsServiceDegradedThreshold && _lastNewsServiceDegraded)
-        {
-            _lastNewsServiceDegraded = false;
-            NewsServiceHealthChanged?.Invoke(false, 0, "Recovery: News-Probe wieder erfolgreich.");
-        }
-    }
-
-    /// <summary>Phase 18 / H2 — Schwelle ab der News-Service als degraded gemeldet wird (5 Failures).</summary>
-    private const int NewsServiceDegradedThreshold = 5;
-    /// <summary>Phase 18 / H2 — Edge-Transition-State fuer NewsServiceHealthChanged.</summary>
-    private bool _lastNewsServiceDegraded;
-    /// <summary>
-    /// Phase 18 / H2 — Callback-Hook fuer Edge-Transition (degraded → recovered und umgekehrt).
-    /// TradingServiceBase verdrahtet das auf <c>LocalBotEventStream.PublishNewsServiceDegraded</c>.
-    /// Args: (isDegraded, failureCount, reason).
-    /// </summary>
-    public Action<bool, int, string?>? NewsServiceHealthChanged { get; set; }
 
     /// <summary>
     /// Setzt CurrentConsecutiveLosses auf einen externen Wert (v1.2.5).

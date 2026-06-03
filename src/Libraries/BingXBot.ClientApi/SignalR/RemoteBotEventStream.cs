@@ -54,8 +54,6 @@ public sealed class RemoteBotEventStream : IBotEventStream
     public event Action<ConnectionDegradedDto>? ConnectionDegraded;
     /// <summary>v1.5.2 Phase 4 — Decision-Trail Live-Forward von Server.</summary>
     public event Action<EvaluationDecisionDto>? EvaluationDecided;
-    /// <summary>Phase 18 / H2 — News-Service-Health Live-Forward von Server.</summary>
-    public event Action<NewsServiceDegradedDto>? NewsServiceDegraded;
 
     public RemoteBotEventStream(ServerConnection connection, ILogger<RemoteBotEventStream> logger)
     {
@@ -175,8 +173,6 @@ public sealed class RemoteBotEventStream : IBotEventStream
         hub.On<FullSettingsDto>(HubMethods.SettingsChanged, dto => SettingsChanged?.Invoke(dto));
         hub.On<ConnectionDegradedDto>(HubMethods.ConnectionDegraded, dto => ConnectionDegraded?.Invoke(dto));
         hub.On<EvaluationDecisionDto>(HubMethods.EvaluationDecided, dto => EvaluationDecided?.Invoke(dto));
-        // Phase 18 / H2 — News-Service-Health-Edge.
-        hub.On<NewsServiceDegradedDto>(HubMethods.NewsServiceDegraded, dto => NewsServiceDegraded?.Invoke(dto));
     }
 
     public void Dispose()

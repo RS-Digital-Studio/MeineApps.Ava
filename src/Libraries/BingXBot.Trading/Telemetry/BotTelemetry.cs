@@ -40,9 +40,6 @@ public static class BotTelemetry
     /// <summary>Anzahl Order-Retry-Attempts (Phase 8 / A2).</summary>
     public static readonly Counter<long> OrderRetries =
         Meter.CreateCounter<long>("bingxbot.orders.retries", "retries", "Order-Retry-Versuche");
-    /// <summary>Anzahl News-Service-Probe-Failures (B4 / H2).</summary>
-    public static readonly Counter<long> NewsProbeFailures =
-        Meter.CreateCounter<long>("bingxbot.news.probe_failures", "failures", "News-Service-Probe-Fehler");
 
     /// <summary>
     /// Phase 18 / H6 — Helper: Startet eine Activity nur wenn ein Listener aktiv ist.

@@ -47,8 +47,7 @@ public static class MetricsEndpoints
                     rollingTradesCount = rm.RecentTrades.Count,
                     rollingWinRate = rm.RollingWinRate,
                     rollingProfitFactor = rm.RollingProfitFactor,
-                    rollingSharpeRatio = rm.RollingSharpeRatio,
-                    newsCheckFailureCount = rm.NewsCheckFailureCount
+                    rollingSharpeRatio = rm.RollingSharpeRatio
                 },
                 fcm = new
                 {

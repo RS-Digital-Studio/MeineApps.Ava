@@ -265,14 +265,6 @@ public class RiskSettings
     /// </summary>
     public decimal MaxDailyLossPercent { get; set; } = 0m;
 
-    /// <summary>
-    /// Task 1.2 — News-Blackout-Fenster in Minuten um High-Impact-Events (FOMC/NFP/CPI/ECB/BoE/BoJ).
-    /// Buch-Masterclass Step 1: "Vor extrem wichtigen Ereignissen solltest du keine Limit-Orders
-    /// offen in Korrekturboxen liegen haben." Default 30min (±30 um Event-Zeit).
-    /// 0 = deaktiviert (wenn kein EconomicCalendarService verfügbar auch ignoriert).
-    /// </summary>
-    public int NewsBlackoutMinutes { get; set; } = 30;
-
     // === Phase 18 / SK-Plan 4.8 + 5.1 — Adaptive Position-Scaling ===
     /// <summary>
     /// SK-Plan 4.8 (Buch S.13) — Loss-Streak-Dampening.

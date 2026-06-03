@@ -61,13 +61,6 @@ public interface IBotEventStream : IDisposable
     // (Reject mit Reason oder Success). Client kann die im Live-Stream zeigen ohne GET-Polling.
     event Action<EvaluationDecisionDto>? EvaluationDecided;
 
-    /// <summary>
-    /// Phase 18 / H2 — News-Service-Health. Wird gepushed wenn der News-Calendar-Service
-    /// degradiert (≥5 Failures in Folge bei <c>RiskManager.ResolveActiveNewsBlackoutAsync</c>)
-    /// oder sich erholt. UI zeigt das als Banner analog ConnectionDegraded.
-    /// </summary>
-    event Action<NewsServiceDegradedDto>? NewsServiceDegraded;
-
     /// <summary>Startet die Verbindung (Client-Remote: SignalR Connect; Server-Local: No-Op).</summary>
     Task StartAsync(CancellationToken ct = default);
 

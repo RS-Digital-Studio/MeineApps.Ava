@@ -144,7 +144,7 @@ public sealed class AndroidAudioService : AudioService
     {
         try
         {
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.S)
+            if (OperatingSystem.IsAndroidVersionAtLeast(31))
                 InitializeVibratorApi31();
             else
                 InitializeVibratorLegacy();
@@ -155,6 +155,7 @@ public sealed class AndroidAudioService : AudioService
         }
     }
 
+    [global::System.Runtime.Versioning.SupportedOSPlatform("android31.0")]
     private void InitializeVibratorApi31()
     {
         var vibratorManager = (VibratorManager?)_activity.GetSystemService(
@@ -164,10 +165,11 @@ public sealed class AndroidAudioService : AudioService
 
     private void InitializeVibratorLegacy()
     {
-#pragma warning disable CS0618 // VibratorService deprecated ab API 31
+        // Legacy-Pfad fuer < API 31: VibratorService ist dort die einzige Quelle, ab 31 deprecated.
+#pragma warning disable CS0618, CA1422 // VibratorService deprecated ab API 31 — bewusst fuer aeltere Geraete
         _vibrator = (Vibrator?)_activity.GetSystemService(
             global::Android.Content.Context.VibratorService);
-#pragma warning restore CS0618
+#pragma warning restore CS0618, CA1422
     }
 
     public override void PlaySfx(GameSfx sfx)
@@ -273,16 +275,17 @@ public sealed class AndroidAudioService : AudioService
 
         try
         {
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
             {
                 var effect = VibrationEffect.CreateOneShot(durationMs, VibrationEffect.DefaultAmplitude);
                 if (effect != null) _vibrator.Vibrate(effect);
             }
             else
             {
-#pragma warning disable CS0618
+                // Legacy-Pfad fuer < API 26: Vibrate(long) ist dort die einzige Variante, ab 26 deprecated.
+#pragma warning disable CS0618, CA1422
                 _vibrator.Vibrate(durationMs);
-#pragma warning restore CS0618
+#pragma warning restore CS0618, CA1422
             }
         }
         catch

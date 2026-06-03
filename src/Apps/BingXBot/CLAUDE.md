@@ -334,7 +334,9 @@ Kerzen pro Symbol lädt. SK = true (nutzt Fahrplan), TrendFollow = false (reiner
 `BreakevenCalculator`) ist über `signal.DisableSmartBreakeven` aktiviert — historisch invertiert
 benannt (der frühere ATR-Smart-BE wurde im Buch-Strip entfernt; `true` = "nutze A-Bruch/2x-SL-BE").
 **Jede neue Strategie, die Break-Even will, MUSS `DisableSmartBreakeven: true` setzen** (SK + TrendFollow
-tun das; mit `NavPointA=0` greift der 2x-SL-Distanz-Trigger).
+tun das; mit `NavPointA=0` greift der Distanz-Trigger). Der Distanz-Trigger ist konfigurierbar via
+`RiskSettings.BreakevenTriggerRMultiple` (Default 2.0 = BE bei 2R; 0 = nur A-Bruch). Empirisch (Backtest-Lab,
+TrendFollow-Fast, 3 Marktphasen) ist 2R optimal — aggressiveres BE schneidet Gewinner zu frueh ab.
 
 | Strategie | Typ | H4-PF (3 Marktphasen, gefixt) | Status |
 |-----------|-----|-------------------------------|--------|

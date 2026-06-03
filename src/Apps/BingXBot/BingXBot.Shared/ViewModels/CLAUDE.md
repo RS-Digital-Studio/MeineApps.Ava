@@ -9,15 +9,14 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | Datei | Zweck |
 |-------|-------|
 | `MainViewModel.cs` | Hält alle Sub-VMs. Tab-Navigation via `CurrentPageViewModel` + `ViewLocator`. Back-Press-Flow, `ExitHintRequested`-Event für Android-Toast. |
-| `DashboardViewModel.cs` | Balance, offene Positionen, Bot-Start/Stop, SK-Ampel, Equity-Chart, Activity-Feed, News-Service-Banner, Live/Paper-Umschaltung. |
+| `DashboardViewModel.cs` | Balance, offene Positionen, Bot-Start/Stop, Equity-Chart, Activity-Feed, Live/Paper-Umschaltung. |
 | `ScannerViewModel.cs` | Scanner-Einstellungen, Live-Scan-Ergebnisse, aktive TF-Auswahl. |
-| `StrategyViewModel.cs` | SK-System-Parameter-Editor (Confluence, BOS, Pivot, Swing-Strength). |
+| `StrategyViewModel.cs` | Aktive Strategie-Parameter-Anzeige (TrendFollow-Fast, H4-only). |
 | `BacktestViewModel.cs` | Backtest-Start/Abort, `PerformanceReport`-Anzeige, Walk-Forward, Trade-Replay. |
 | `TradeHistoryViewModel.cs` | Trade-Liste mit Filter (Symbol/TF/Modus/Zeitraum). Hört `BotEventBus.TradeCompleted`. |
 | `RiskSettingsViewModel.cs` | Risiko-Parameter (Sizing, DD-Limits, Korrelation, Vol-Targeting, Cross-TF-Pyramiding). |
 | `LogViewModel.cs` | Live-Log mit Level/Kategorie-Filter. Hört `BotEventBus.LogEmitted`. |
-| `SettingsViewModel.cs` | API-Keys, Server-Verbindung, Pairing, Theme, Push-Notifications, Decision-Trail-Toggle. |
-| `DecisionTrailViewModel.cs` | Decision-Trail-Ansicht mit Filter nach Symbol/TF/Reject-Reason/OnlyRejected. |
+| `SettingsViewModel.cs` | API-Keys, Server-Verbindung, Pairing, Theme, Push-Notifications. |
 | `SettingsHistoryViewModel.cs` | Settings-Audit-Trail (wer hat wann was geändert). |
 | `ActivityFeedViewModel.cs` | Top-20-Einträge des Activity-Feeds (Live-Ereignisse). |
 | `BtcTickerViewModel.cs` | BTC-USDT-Preis-Anzeige als Markt-Indikator in der Top-Bar. |

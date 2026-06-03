@@ -5,7 +5,7 @@ Wird von `BingXBot.Android` und `BingXBot.Desktop` referenziert. Die Trading-Eng
 Backend-Libraries (`BingXBot.Trading`, `BingXBot.Engine`, etc.) — kein Trading-Code hier.
 
 Generische Conventions → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
-App-Überblick + Trading-Architektur + SK-System → [../CLAUDE.md](../CLAUDE.md).
+App-Überblick + Trading-Architektur → [../CLAUDE.md](../CLAUDE.md).
 
 ---
 
@@ -26,6 +26,7 @@ Registriert **alles als Singleton**. Besonderheiten:
   Local-Mode → Local-Impls + `LocalBotEventStream` + `DecisionTrailBuffer` + `TradeStatsAggregator`.
 - **`LocalBotEventStream`** wird im Remote-Mode NICHT registriert — sonst tote Subscriptions auf dem
   `BotEventBus`.
+- **`DecisionTrailBuffer`** wird nur im Local-Mode registriert (Remote hat keinen RAM-Puffer).
 - **`ValidateOnBuild = true`** im `ServiceProviderOptions` — fängt fehlende Konstruktor-Params beim
   App-Start statt beim ersten Resolve.
 - **`Lazy<T>`-Wrapper** (`LazyDiService<T>`): `services.AddTransient(typeof(Lazy<>), typeof(LazyDiService<>))`
@@ -53,8 +54,7 @@ Läuft auf Background-Thread. Exceptions nur loggen — App muss auch ohne DB/Ne
 **Local-Mode:**
 1. `BotDatabaseService.InitializeAsync()` + `LoadSettingsAsync()`.
 2. `RestoreSettingsFromDb()` auf UI-Thread (Dispatcher.UIThread.Post).
-3. `DecisionTrailBuffer` auf `BotEventBus.EvaluationDecided` subscriben + DB-Persist.
-4. `TradeStatsAggregator` mit den letzten 10.000 Trades aus DB rebuilden.
+3. `TradeStatsAggregator` mit den letzten 10.000 Trades aus DB rebuilden.
 
 **Remote-Mode:**
 1. `RefreshRemoteSettingsAsync()` — REST GET /settings, `RestoreSettingsFromDb` auf lokale Singletons.

@@ -9,15 +9,14 @@ Generische UI-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | View | Desktop | Mobile | Zweck |
 |------|---------|--------|-------|
 | Main | `MainView` | `MainViewMobile` | Shell mit Tab-Bar (Desktop) bzw. Bottom-Nav + More-Sheet (Android) |
-| Dashboard | `DashboardView` | `DashboardViewMobile` | Balance, Positionen, Bot-Controls, Equity-Chart, SK-Ampel |
+| Dashboard | `DashboardView` | `DashboardViewMobile` | Balance, Positionen, Bot-Controls, Equity-Chart |
 | Scanner | `ScannerView` | `ScannerViewMobile` | Live-Scan-Ergebnisse, Filter, TF-Auswahl |
-| Strategy | `StrategyView` | `StrategyViewMobile` | SK-Parameter-Editor, TF-Visualisierung |
+| Strategy | `StrategyView` | `StrategyViewMobile` | Aktive Strategie-Parameter (TrendFollow-Fast) |
 | Backtest | `BacktestView` | `BacktestViewMobile` | Historischer Test, Walk-Forward, Trade-Replay |
 | TradeHistory | `TradeHistoryView` | `TradeHistoryViewMobile` | Trade-Liste, gefiltert |
 | RiskSettings | `RiskSettingsView` | `RiskSettingsViewMobile` | Risiko-Parameter |
 | Log | `LogView` | `LogViewMobile` | Live-Log mit Level/Kategorie-Filter |
 | Settings | `SettingsView` | `SettingsViewMobile` | API-Keys, Server, Pairing, Theme, Push |
-| DecisionTrail | `DecisionTrailView` | `DecisionTrailViewMobile` | Decision-Trail mit Filter |
 | SettingsHistory | `SettingsHistoryView` | `SettingsHistoryViewMobile` | Settings-Audit-Trail |
 | — | `MainWindow` | — | Desktop-Fenster-Host (`IClassicDesktopStyleApplicationLifetime`) |
 

@@ -1,13 +1,13 @@
 # BingXBot — Trading Bot für BingX Perpetual Futures
 
-Automatisierter SK-System-Trading-Bot mit Client/Server-Architektur. Server läuft 24/7 auf
+Automatisierter Trading-Bot mit Client/Server-Architektur (TrendFollow-Strategie). Server läuft 24/7 auf
 Raspberry Pi 5, Steuerung über Desktop (Windows/Linux) und Android-App. Handel auf BingX
 USDT-margined Perpetual Futures (Crypto + TradFi-Perps via NC-Prefix).
 
 | Aspekt | Wert |
 |--------|------|
 | Topologie | Pi-Server (Engine, 24/7) + Desktop/Android Remote-Clients |
-| Strategie | **TrendFollow-Fast** (Donchian-Breakout, Live-Default seit 31.05.2026, H4-only) + SK-System (Reversal, optional) — Multi-TF Standalone |
+| Strategie | **TrendFollow-Fast** (Donchian-Breakout, H4-only) — Live-Default seit 31.05.2026 |
 | Exchange | BingX Perpetual Futures (USDT-M) |
 | Pi-Server | `steuerung@raspberrypi.local` (systemd-Service `bingxbot.service`) |
 
@@ -55,7 +55,7 @@ Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CL
 | `BingXBot.Core/Models/` | `BingXBot.Core.Models` |
 | `BingXBot.Core/Diagnostics/` | `BingXBot.Core.Diagnostics` |
 | `BingXBot.Contracts/Dtos/` | `BingXBot.Contracts.Dtos` |
-| `BingXBot.Engine/Indicators/` | `BingXBot.Engine.Indicators` |
+| `BingXBot.Engine/Indicators/`, `BingXBot.Engine/Services/` | `BingXBot.Engine.Indicators`, `BingXBot.Engine.Services` |
 | `BingXBot.Trading/Services/` | `BingXBot.Trading.Services` |
 | `BingXBot.Server/Api/` | `BingXBot.Server.Api` |
 | `BingXBot.Server/Services/` | `BingXBot.Server.Services` |
@@ -73,7 +73,7 @@ src/
 │   ├── BingXBot.Core/         # Domain (Models, Enums, DB-Entities, Interfaces, Helpers, Diagnostics)
 │   ├── BingXBot.Contracts/    # DTOs, REST-Routen, Hub-Methoden, Service-Interfaces
 │   ├── BingXBot.Exchange/     # BingXRestClient + WebSocket-Client, RateLimiter, SymbolInfoCache
-│   ├── BingXBot.Engine/       # SK-Strategie + Indikatoren + Confluence-Scoring + News-Service
+│   ├── BingXBot.Engine/       # Strategien (TrendFollow-Familie) + Indikatoren + Scanner-Filter
 │   ├── BingXBot.Backtest/     # BacktestEngine + SimulatedExchange + PerformanceReport + WalkForwardRunner
 │   ├── BingXBot.Trading/      # TradingServiceBase + Live/Paper/Manager + DB-Service + Telemetry
 │   └── BingXBot.ClientApi/    # HTTP- + SignalR-Remote-Impls + PairingClient (für Desktop/Android)
@@ -123,7 +123,7 @@ Wenn `ServerProfile` gesetzt ist, registriert die DI Remote-Service-Impls; sonst
 | `ITradeHistoryService` | Trades aus DB | `LocalTradeHistoryService` | `RemoteTradeHistoryService` |
 | `IBotEventStream` | SignalR-Events (Push) | `LocalBotEventStream` | `RemoteBotEventStream` |
 | `IBacktestControlService` | Backtest-Control | `LocalBacktestService` | `RemoteBacktestService` |
-| `IStrategyCatalog` | Strategie-Metadaten | `LocalStrategyCatalog` | — (kein Remote-Impl) |
+| `IStrategyCatalog` | Strategie-Metadaten + aktive Konfig | `LocalStrategyCatalog` | — (kein Remote-Impl) |
 | `IStatsService` | Stats-Breakdown (TF × Category × Mode) | `LocalStatsService` | `RemoteStatsService` |
 
 ### REST-Routen (`/api/v1/...`)
@@ -139,7 +139,6 @@ Wenn `ServerProfile` gesetzt ist, registriert die DI Remote-Service-Impls; sonst
 | Trades & Logs | `/trades`, `/trades/summary`, `/scanner/results`, `/logs` |
 | Backtest | `/backtest/start`, `/backtest/{jobId}`, `/backtest/{jobId}/result`, `/backtest/{jobId}/cancel`, `/backtest/replay-trade/{tradeId}` |
 | Credentials | `/credentials/status`, `/credentials` (PUT) |
-| Decisions | `/decisions` (Decision-Trail-Query) |
 | Stats | `/stats/breakdown` |
 | Devices | `/devices/fcm` (FCM-Token-Registrierung) |
 
@@ -167,8 +166,6 @@ Server pusht Events (throttled wo nötig):
 | `BacktestCompleted` | — | Backtest-Ergebnis |
 | `ScannerResult` | per Sweep | Scanner-Symbol-Liste pro TF |
 | `ConnectionDegraded` | Edge-Transition | BingX-Connection-Status |
-| `EvaluationDecided` | per Evaluate | Decision-Trail-Eintrag |
-| `NewsServiceDegraded` | Edge-Transition | News-Service-Health-Status |
 | `SettingsChanged` | bei Save | Multi-Client-Sync |
 
 Client-Invokes: `SubscribeSymbol`, `UnsubscribeSymbol`, `SetLogFilter`, `Ping`.
@@ -213,7 +210,7 @@ Daten-Pfad: `/var/lib/bingxbot`. SSH-Passwort `qwer`.
 | `DbLogPersistenceService` | 250 ms-Batch | Subscribed `LogEmitted`, schreibt im Batch in `LogEntries`. Toggle `EnableDbLogPersistence`, MinLevel-Filter |
 | `ServerHealthWatchdog` | 30s | BingX `GetServerTimeAsync`-Probe + Clock-Drift-Detection (warn 2s, degrade 4s — recvWindow 5s) |
 | `DbBackupService` | Daily @ 03:00 UTC | SQLite VACUUM + File.Copy nach `{DataDir}/backups/bot-YYYY-MM-DD.db`, 7-Tage-Retention |
-| `DbArchiveService` | Monthly @ 1. 04:00 UTC | Trades > 90d in `bot-archive-{YYYY-MM}.db`, Decisions-/SettingsChanges-Purge |
+| `DbArchiveService` | Monthly @ 1. 04:00 UTC | Trades > 90d in `bot-archive-{YYYY-MM}.db`, SettingsChanges-Purge |
 | `AdaptiveTfDisableService` | 60min | Auto-disable TFs mit WinRate < Threshold und ≥ MinSample, Re-Probing nach Cutoff |
 | `StaleEngineDetector` | 10min | FCM-Push wenn Bot Running aber > 6h ohne Scanner/Trade-Aktivität |
 | `FcmPushService` | Event-getrieben | Trade-Push (TradeOpened/Closed/SL-Hit) an Mobile via Firebase-Admin-SDK |
@@ -258,28 +255,19 @@ adoptiert. Notfall-SL (`max(1.5%, 0.03/Leverage)`) wenn nativ keiner liegt, dann
   Full-TP bei TP1, TP2 wird aus dem Signal entfernt (verhindert BingX-Reject + Endlos-Re-Place). `MeetsMinimumOrder`
   ist eine Default-Interface-Methode (`=> true`); nur `BingXRestClient` delegiert an den `SymbolInfoCache`.
 
-### Multi-TF Standalone
+### Navigator-Timeframe-Architektur
 
-**Ein** SK-Strategy-Service evaluiert pro Symbol alle aktiven Navigator-Timeframes parallel.
+**Die aktive Strategie (TrendFollow-Fast) evaluiert pro Symbol einen Navigator-Timeframe (H4).**
 
-| Aktive TF | Default-Konfig |
-|-----------|----------------|
-| W1 | Fahrplan-Bias (übergeordnete Marktanalyse) |
-| D1 | Navigator + Fahrplan |
-| H4 | Navigator + Fahrplan |
-| H1 | Navigator (Filter-TF: M15) |
-| M15 | Navigator (Filter-TF: M5) |
-
-Pro Symbol-Evaluate-Aufruf wird die `MarketContext.NavigatorTimeframe` gesetzt; die
-Strategie greift auf Navigator-Candles + Filter-TF-Candles zu.
-
-`AmpelStatus` ist `Dictionary<TimeFrame, string>` — pro TF separater Status für UI.
+| Konfiguration | Wert |
+|---------------|------|
+| Navigator-TF | H4 (Donnchian-10-Breakout + EMA-34 + ADX-18) |
+| Market-Entry | Market-Order an Breakout-Signal |
+| Stop-Loss | ATR × 2.75 (empirisch optimal, Backtest-Sweep 2024–2026) |
+| Take-Profit | TP1 @ 50% close (RRR 1.5), TP2 @ 100% (RRR 3.0) |
 
 **Dedup pro Position**: Key `{symbol}_{side}` — eine BingX-Position pro (Symbol, Side).
-Wenn ein TF-Signal offen ist, werden weitere TF-Signale für gleiche Seite geskippt.
-
-**Strategie-Kloning**: Pro `{symbol}|{tf}` ein eigener `SequenceStateMachine`-Instance,
-um Cross-Contamination zwischen Symbolen + TFs zu vermeiden.
+Wenn ein Signal offen ist, werden neue Signals für gleiche Seite geskippt.
 
 ### Order-Pfad (Live)
 
@@ -295,14 +283,6 @@ BingxNativeSlTpManager (native SL/TP-Cancel + Update)
 PendingLimitOrders-Persist → Stage-3-Retry-Loop bei BingX-Hochlast
 ```
 
-### News-Blackout (Pre-Resolved)
-
-`TradingServiceBase` ruft 1× pro Scan-Tick `RiskManager.ResolveActiveNewsBlackoutAsync`
-und füllt `MarketContext.ResolvedNewsBlackoutEvent`. Die `SequenzKonzeptStrategy` und
-der zweite RiskManager-Check lesen den Cache (kein Sync-over-Async pro Symbol-Tick).
-
-Bei News-Service-Failure ≥ 5× → `NewsServiceHealthChanged`-Event → UI-Banner
-"News-Filter degradiert".
 
 ### Composition-Bibliotheken
 
@@ -343,17 +323,13 @@ TrendFollow-Fast, 3 Marktphasen) ist 2R optimal — aggressiveres BE schneidet G
 | **TrendFollow-Fast** | Donchian(10)-Breakout in Trend-Richtung, EMA(34)+ADX/DMI, Market-Entry, ATR-SL **×2.75**, RRR 1.5/3.0 | **5.4 / 2.0 / 2.8** (alle 3 profitabel) | **Live-Default, H4-only** |
 | TrendFollow (Standard, Don 20/EMA 50) | wie Fast, traegere Parameter | 5.3 / **0.95** / 1.7 (Mittelphase verlierend) | optional |
 | TrendFollow-Wide / -Strong | TrendFollow-Varianten | gemischt (Strong Mittelphase 0.78) | optional |
-| SkTrend | SK-Sequenz-Trigger + Trend-Filter + Market-Entry + ATR-SL ("reparierte SK") | OOS verlierend (PF 0.78) | nicht empfohlen |
-| SK-System | Reversal nach Stefan Kassing (Limit-Entry in Korrektur-Zone) | H4 backtest-ok, aber Limit-Entry → **live unrentabel** (12 % WR live) | optional |
 
-**Warum TrendFollow-Fast (H4-only) Live-Default ist:** Das SK-Reversal-System lieferte live nur ~12 % WinRate /
-PF 0.11 (enge SL ~0.3 %, RRR 1.2, kaputter Short-Pfad, Loss-Streak-Pause → Dauerstillstand). TrendFollow handelt
-**mit** dem Markt, weite ATR-SL, hohes RRR, **Market-Entry** (backtest-treu — minimaler Backtest-Live-Gap, anders
-als SKs Limit-Entry mit 48 %-Backtest-vs-12 %-Live-Gap). Empirisch (gefixtes Lab, echte Klines, 3 disjunkte
-Marktphasen): **H1 ist konsistent unprofitabel** (PF 0.4–0.99 ueber alle Strategien) → nur H4. **TrendFollow-Fast**
-ist die einzige Variante, die auf H4 in allen 3 Phasen profitabel ist. Realistischer Live-PF ~2 (NICHT die
-ungefixten 2.5+). Longs liefen 2023–2026 schwaecher (28–45 % WR) als Shorts — markphasen-abhaengig, offener
-Verbesserungs-Hebel. Umgeht den TradFi-Pip-Bug (ATR statt fixe Pips). Details + Lab → `tools/BingXBacktestLab/CLAUDE.md`.
+**Warum TrendFollow-Fast (H4-only) Live-Default ist:** TrendFollow handelt **mit** dem Markt, mit weiter ATR-SL,
+hohem RRR und **Market-Entry** — minimaler Backtest-Live-Gap. Empirisch (gefixtes Lab, echte Klines, 3 disjunkte
+Marktphasen): **H1 ist konsistent unprofitabel** (PF 0.4–0.99 über alle Strategien) → nur H4. **TrendFollow-Fast**
+ist die einzige Variante, die auf H4 in allen 3 Phasen profitabel ist. Realistischer Live-PF ~2. Longs liefen 2023–2026
+schwächer (28–45% WR) als Shorts — marktphasen-abhängig, offener Verbesserungs-Hebel. Umgeht den TradFi-Pip-Bug (ATR statt fixe Pips).
+Details + Lab → `tools/BingXBacktestLab/CLAUDE.md`.
 
 **SL-Tuning (Backtest-Lab-Sweep, 2026-06-03):** ATR-SL-Multiplikator von 2.5 auf **2.75** angehoben (in
 `StrategyFactory."TrendFollow-Fast"`). Parameter-Sweep + Walk-Forward (`tools/BingXBacktestLab --sweep`/`--full`,
@@ -377,74 +353,6 @@ Verbesserung nur noch ueber Live-Validierung (Backtest-Live-Gap) oder Regime-Swi
 der UTC-Tageswechsel ruft `RiskManager.SetConsecutiveLosses(0)` — ohne das blieb der RiskManager-Counter
 bei ≥ PauseAtCount stehen → Scaling 0 → kein Trade → selbsterhaltende Dauerpause (die SK-Falle).
 
-## SK-System (Sequenz-Konzept Strategie)
-
-Implementierung von Stefan Kassings Sequenz-Konzept (SK-Buch + Algorithmische Strukturpunkte
-+ Technische Spezifikation, alle drei DOCX in `src/Apps/BingXBot/`). Multi-TF Standalone
-seit Frühjahr 2026. **Hinweis:** Seit 31.05.2026 nicht mehr Live-Default (siehe Strategien-Tabelle oben) —
-bleibt als optionale, vollständig implementierte Strategie erhalten.
-
-### Sequenz-Phasen (`SmState`)
-
-```
-Suche0 (Origin)
-   ↓ Pivot erkannt + ATR-Impuls + BOS
-SucheA (Impuls-Ende lokalisieren, Trailing High/Low)
-   ↓ Korrektur startet (50-78.6% Retracement)
-SucheB (Korrektur-Ende lokalisieren, Box-Logik)
-   ↓ Trigger-Kerze (Wick-Rejection / Pinbar / Engulfing)
-Aktiviert (Position kann eröffnet werden, BC-Zone primär @ 50% / 66.7%)
-   ↓ Preis erreicht Extension200 (TP2)
-Abgearbeitet (Sequenz fertig, Reset auf Suche0 oder Bias-Flip)
-```
-
-### Confluence-Scoring (`SkConfluenceScorer`)
-
-`MaxScore` wird dynamisch aus `Enum.GetValues<ConfluenceCategory>()` berechnet (keine Magic).
-GklMasterZone und HighProbabilityZone zählen +2, alle anderen +1.
-
-| Kategorie | Gewicht |
-|-----------|---------|
-| `PriceAction`, `FibonacciGoldenPocket`, `FahrplanAlignment`, `HigherTfSequence`, `VolumeSpike`, `BcklReEntry`, `FavorableFundingRate` | 1 |
-| `GklMasterZone`, `HighProbabilityZone` | 2 |
-
-### Aktive Buch-Hardfilter (Default-Stand)
-
-| Setting | Default | Buch-Stand | Bemerkung |
-|---------|---------|------------|-----------|
-| `ImpulseAtrMultiplier` | `2.0` | 3.0 | Doku-Spanne erlaubt 2.0; mehr Sequenzen in liquiden Perps |
-| `RequireBosOnActivation` | `true` | true | BOS bleibt Pflicht (Strukturpunkte §3) |
-| `RequireBosCloseBreak` | `false` | true (§3) | Docht-Bruch reicht; Buch-strikter Body-Close per UI aktivierbar |
-| `AdaptiveSwingStrength` / `PivotLeftBars=5` / `PivotRightBars=3` | `true/5/3` | §5B | Asymmetrische Pivots aktiv |
-| `RequireWickRejectionInBZone` | `false` | true (§5C) | Buch §7 lässt drei gleichwertige Reversal-Wege zu |
-| `BlockLtfEntryWhenHtfInTargetZone` | `false` | true (Spec §7) | MTA als opt-in; Counter-Setups in HTF-Targets bleiben handelbar |
-| `EnableConfluenceOverlapDetection` | `true` | true | "Heiliger Gral" Bonus-Confluence |
-| News-Filter (`HttpEconomicCalendarService`) | opt-in | empfohlen | Via `News:Endpoint`-Config aktivieren |
-
-### Bewusste User-Abweichungen vom Buch
-
-| Regel | Buch | Projekt |
-|-------|------|---------|
-| Risiko pro Trade | 1-3 % | **5 %** (`MaxRiskPercentPerTrade`, RiskManager-Cap) |
-| Margin-Anteil je Trade | 1-3 % | **10 %** (`MaxPositionSizePercent`) |
-| Loss-Streak-Halve | 3 Losses | **4 Losses** (`LossStreakHalveAtCount`) |
-| Loss-Streak-Pause | 5 Losses | **7 Losses** (`LossStreakPauseAtCount`) |
-| Margin-Cap (Σ aller offenen Margins) | — | **80 %** (`MaxTotalMarginPercent`, 0 = aus) |
-| Conservative-Mode darf in SucheB einsteigen | nicht spezifiziert | aktiv bei LTF-Reversal |
-| Counter-Trend-Scalper | "manche Trader" (hochriskant) | Default `false`, opt-in |
-| Runner-TP (5-10 % über 200 %) | "manche Trader" | Default `false`, opt-in |
-| TP-Toleranz Krypto | 5 Pips (~0.005 %) | 0.03 % |
-| `EntryMode.Both` (Aggressive-Limit + LTF-Bonus) | Strikt entweder/oder | Mischmodus |
-| `MaxDailyDrawdownPercent`/`MaxDailyLossPercent`/`MaxDailyRiskPercent` | Nicht im Buch | User-Safety-Net, beibehalten |
-| Cross-TF-Pyramiding (`EnableCrossTfPyramiding`) | Nicht im Buch | Default false, opt-in |
-| Per-Kategorie-Slippage (`MaxSlippagePercentByCategory`) | Nicht im Buch | Crypto 0.10 % / Forex 0.05 % / Stock 0.30 % / Index+Commodity 0.20 % |
-
-### Plan-Dokumente
-
-- `src/Apps/BingXBot/SK_BUCH_COMPLIANCE_PLAN.md` — 25 Masterclass-Punkte mit Tests
-- `src/Apps/BingXBot/MULTI_TF_STANDALONE_PLAN.md` — Multi-TF-Architektur
-- `src/Apps/BingXBot/PLAN_SERVER_MODE.md` — Client/Server-Architektur
-
 ---
 
 ## RiskManager (Risikomanagement)
@@ -453,7 +361,7 @@ GklMasterZone und HighProbabilityZone zählen +2, alle anderen +1.
 
 - **Position-Sizing**: Risiko-basiert — `maxLoss / slDistance` (enger SL = größere Position).
   SL ist **Pflicht**, ohne SL wird Trade abgelehnt.
-- **`MaxRiskPercentPerTrade`**: Default **5%** (User-Entscheidung, siehe SK-Plan).
+- **`MaxRiskPercentPerTrade`**: Default **5%** (bewusste User-Entscheidung).
 - **Drawdown-Limits**: Täglich + gesamt. Peak-Equity-Tracking für Total-Drawdown.
 - **Liquidation-Check**: Isolated-Margin-Formel `(1 - MMR) / Leverage`. Bei ≤ 2x Leverage
   deaktiviert (kein Liquidations-Risiko).
@@ -461,7 +369,7 @@ GklMasterZone und HighProbabilityZone zählen +2, alle anderen +1.
   (Default 80 %) der Wallet-Balance — TradFi-Schutz bei Hebel 20×/10×. 0 = Filter aus.
 - **Daily-Loss-Circuit**: Nach Überschreitung keine neuen Entries bis UTC-00:00.
 - **Daily-Risk-Budget**: Realisierte + offene + geplante Risiken ≤ `MaxDailyRiskPercent`
-  (SK-Buch S.13: 1-3%).
+  (konservativer Richtwert: 1-3%).
 - **StopLossSanityGuard** (`BingXBot.Core/Services/`): Pure-Function-Validator vor jedem
   SL-Push (BE-Trigger, Runner-Trail, Partial-Close-SL/TP, Recovery-BE,
   `BingxNativeSlTpManager.UpdateNativeStopLossAsync`). Reject = WARNING + Push verweigert.
@@ -542,9 +450,8 @@ SQLite WAL-Modus für Multi-Mode-Concurrency. Schema-Versioning via `RunMigratio
 | `Logs` | Log-Einträge (LogEntity) |
 | `Settings` | JSON-blob pro Settings-Block (Risk/Scanner/Bot/Backtest) + `AutoResumeFlag` + `LastHeartbeatUtc` als separate Keys |
 | `BacktestJobs` | Backtest-Job-Metadaten (BacktestJobEntity) |
-| `EvaluationDecisions` | Decision-Trail (Migration v11), 50000-Eintrag-Trim mit Index auf Timestamp/Symbol/Reason |
 | `SettingsChanges` | Audit-Trail für Settings-Diffs (Migration v12) |
-| `RuntimeState` | TradesToday, ConsecutiveLosses, ExitStates, PendingLimitOrders (JSON-Blobs für Crash-Recovery) |
+| `RuntimeState` | TradesToday, ConsecutiveLosses, ExitStates (JSON-Blobs für Crash-Recovery) |
 
 ### Schema-Migration
 
@@ -621,9 +528,7 @@ Zentrale `ActivitySource "BingXBot.Trading"` + `Meter` für OpenTelemetry-Integr
 | `bingxbot.trades.opened` | — | Geöffnete Trades |
 | `bingxbot.trades.closed` | reason | Geschlossene Trades |
 | `bingxbot.risk.rejects` | reason | RiskManager-Ablehnungen |
-| `bingxbot.decisions.logged` | — | Decision-Trail-Eintraege |
 | `bingxbot.orders.retries` | ex (Exception-Type) | Order-Retry-Versuche |
-| `bingxbot.news.probe_failures` | — | News-Service-Probe-Fehler |
 
 `BotTelemetry.StartActivity(name)` startet Activity nur wenn ein OTel-Listener aktiv ist
 (no-op overhead in Standalone-/Test-Setups).
@@ -638,50 +543,6 @@ Zentrale `ActivitySource "BingXBot.Trading"` + `Meter` für OpenTelemetry-Integr
 
 Beide Metrics-Endpoints sind in `PublicPaths` (kein Auth nötig — Pi steht hinter Tailscale).
 
-### Decision-Trail (`DecisionTrailBuffer`)
-
-5000-Einträge-Ringpuffer im RAM, parallel persistiert in `EvaluationDecisions`-Tabelle.
-Pro `Strategy.Evaluate` ein Record (Reject mit Code aus `RejectionReasons` oder Success).
-UI-View `DecisionTrailView` mit Filter nach Symbol/TF/Reject-Reason/OnlyRejected.
-
-`RejectionReasons`-Konstanten:
-
-| Code | Auslöser |
-|------|----------|
-| `news_blackout` | News-Blackout-Fenster aktiv |
-| `state_not_activated` | SK-State noch nicht `Aktiviert` |
-| `impulse_below_atr` | Impuls-Distanz unter ATR × Multiplier |
-| `no_htf_confluence` | HTF-Hard-Gate: weder GKL noch Zone-Overlap |
-| `score_below_min` | Confluence-Score unter `MinConfluenceScore` |
-| `rrr_too_small` | RRR < 1.0 |
-| `box_close_violated` | Wick-Rejection in B-Zone fehlt (`RequireBoxCloseOnEntry`) |
-| `missing_wick_rejection` | Pinbar/Engulfing fehlt |
-| `mta_target_zone_block` | HTF in Zielzone, LTF-Block |
-| `entries_already_triggered` | Beide Entry-Levels bereits getriggert |
-| `missing_strukturpunkte` | Point0/PointA fehlt |
-| `counter_trend_inactive` | Counter-Trend-Scalp deaktiviert |
-| `slippage_too_high` | Order-Book-Slippage > Threshold |
-| `tf_auto_disabled` | TF wegen schlechter WinRate auto-disabled |
-| `correlation_limit_exceeded` | Cluster-Margin > Limit |
-| `outside_allowed_session` | Trade ausserhalb erlaubter Session |
-| `news_service_unavailable` | News-Service degradiert + RequireNewsFilter aktiv |
-| `insufficient_data` | Nicht genug Candles im Navigator-TF |
-| `no_sequence` | State &lt; SucheB — typisch in Seitwärts-Phasen |
-| `sequence_not_constructable` | ToSequence liefert null (defensiv) |
-| `bos_volume_below_threshold` | BOS-Kerze unter Volumen-SMA (`RequireBosVolumeBreakout`) |
-| `sl_geometry_error` | SL- oder TP-Geometrie falsch |
-| `sl_distance_zero` | SL-Distanz = 0 (Position-Sizing-Schutz) |
-| `other` | Generischer Reject — sollte nach A1.2 kaum noch auftreten |
-
-### Decision-Trail-Hygiene (Snapshot-Report A1.x)
-
-`TradingServiceBase` filtert vor `PublishEvaluationDecision`:
-- `BotSettings.DecisionTrailIncludeNotActivated` (Default false) blockt
-  `state_not_activated`-Eintraege (vorher 81 % Rauschen).
-- `BotSettings.DecisionTrailDeduplicateTriggers` (Default true) loggt Triggered-Decisions
-  fuer dieselbe Sequenz nur einmal pro Bot-Laufzeit (verhindert ZEC-60×-Cluster).
-  Dedup-Key = `Symbol|TF|SequenceState|Point0|PointA|PointB`. Set wird bei Stop/Start
-  geleert.
 
 ### Trade-Stats (`TradeStatsAggregator`)
 
@@ -697,15 +558,14 @@ mit den letzten 10000 Trades aus DB rebuildet. Endpoint `/api/v1/stats/breakdown
 
 | View | Zweck |
 |------|-------|
-| `DashboardView` | Balance, Positionen, Bot-Controls, Strategie, Equity-Chart, SK-Ampel pro TF, News-Service-Banner |
-| `ScannerView` | Live-Scan mit Volumen/Momentum-Filter + Scanner-Settings (Multi-TF, Filter, Slippage, Adaptive-TF) |
-| `StrategyView` | Parameter-Editor + TF-Visualisierung |
+| `DashboardView` | Balance, Positionen, Bot-Controls, Equity-Chart, Aktive Strategie-Info |
+| `ScannerView` | Live-Scan mit Volumen/Momentum-Filter + Scanner-Settings |
+| `StrategyView` | Aktive Strategie-Parameter (TrendFollow-Fast, H4-only) |
 | `BacktestView` | Historischer Test mit `PerformanceReport` + Walk-Forward + Trade-Replay |
 | `TradeHistoryView` | Alle Trades filterbar (Modus/Symbol/Zeitraum/TF-Badge) |
 | `RiskSettingsView` | Risiko-Parameter (Risk/Margin/DD/Korrelation/Vol-Targeting/Pyramiding) |
 | `LogView` | Live-Log mit Level/Kategorie-Filter |
-| `SettingsView` | API-Keys, Server-Verbindung, Pairing, Theme, Push-Notifications, Decision-Trail |
-| `DecisionTrailView` | Decision-Trail mit Filter |
+| `SettingsView` | API-Keys, Server-Verbindung, Pairing, Theme, Push-Notifications |
 | `SettingsHistoryView` | Settings-Audit-Trail |
 
 Mobile-Variante via `ViewLocator`-Konvention: `DashboardView` → `DashboardViewMobile`,
@@ -717,7 +577,6 @@ ausgewählt zur Laufzeit über `App.IsMobileShell`.
 |----------|-------|
 | `EquityChartRenderer` | Linien-Chart Equity-Kurve |
 | `DrawdownChartRenderer` | Drawdown-Visualisierung (Underwater-Chart) |
-| `InteractiveChartRenderer` | SK-Sequenz-Overlay (Punkt 0/A/B + Fibonacci-Levels + Trade-Marker) |
 | `PnlCalendarRenderer` | Tages-PnL-Heatmap |
 | `FearGreedGaugeRenderer` | Gauge-Anzeige für Fear & Greed / Markt-Sentiment |
 | `CorrelationMatrixRenderer` | Korrelations-Matrix für Cluster-Visualisierung |
@@ -734,9 +593,6 @@ ausgewählt zur Laufzeit über `App.IsMobileShell`.
 | `BotStateChanged` | MainVM |
 | `MarginWarning` | DashboardVM |
 | `TradingModeChanged` | MainVM (Statusleiste Paper/Live) |
-| `SkAmpelUpdated` | DashboardVM, StrategyVM |
-| `EvaluationDecided` | DecisionTrailBuffer + LocalBotEventStream |
-| `NewsServiceHealthChanged` | LocalBotEventStream → SignalR → UI-Banner |
 | `PositionUpdated`, `EquityUpdate`, `TickerUpdate`, `BtcPriceUpdate`, `ScannerSweep` | LocalBotEventStream → SignalR |
 
 ### ViewModel-DI-Pattern
@@ -779,9 +635,9 @@ Bei Verdacht: Agent `mvvm-auditor` oder Skill `mvvm-check`.
 
 ### Settings-Klassen
 
-- `RiskSettings` — Position-Sizing, DD-Limits, Korrelation, Vol-Targeting, Cluster, Equity-Scaling, Cross-TF-Pyramiding, BC-Zone-Entry-Strategie, Entry-Mode, SL-Buffer, TP-Ratios, Runner
-- `ScannerSettings` — ActiveTimeframes, Volume/PriceChange-Filter pro TF, BOS-Anker-Bars, Pivot-Bars, Confluence-Settings, Adaptive-TF-Disable, Slippage-Guard, Funding-Bonus + Multiplier, Magic-Number-Properties (NavigatorSwingStrength, BcklReEntryCooldownCandles)
-- `BotSettings` — UseRemoteMode, ServerUrl, LastMode, WasRunningOnShutdown, Theme, PaperInitialBalance, Decision-Trail-Toggle, Trade-Push-Toggle, EnabledSessions
+- `RiskSettings` — Position-Sizing, DD-Limits, Korrelation, Vol-Targeting, Cluster, Equity-Scaling, Cross-TF-Pyramiding, SL-Buffer, TP-Ratios, Runner
+- `ScannerSettings` — ActiveTimeframes, Volume/PriceChange-Filter, Slippage-Guard, Funding-Bonus + Multiplier, Adaptive-TF-Disable
+- `BotSettings` — UseRemoteMode, ServerUrl, LastMode, WasRunningOnShutdown, Theme, PaperInitialBalance, Trade-Push-Toggle, EnabledSessions
 
 ### Settings-Sync (Multi-Client)
 
@@ -838,7 +694,7 @@ ungenutzte TradFi-Slots → Krypto.
 | Forex | 20× | 500× | 3% / 1% |
 | Stock | 3× | 25× | 3% / 1% |
 
-MinRRR per Kategorie: 1.0 (SK-Buch S.13).
+MinRRR per Kategorie: 1.0.
 
 ### Handelszeiten (`TradingHoursFilter`)
 
@@ -908,7 +764,6 @@ MinRRR per Kategorie: 1.0 (SK-Buch S.13).
 - **Manueller Close**: `_liveManager.CommissionTakerRate` statt hardcodierter 0.0005m — echte PnL für History
 - **Backtest-Trades NIEMALS in DB speichern** — flutet sonst bei jedem Run
 - **SL ist PFLICHT**: `RiskManager.ValidateTrade` lehnt Trade ohne SL ab
-- **Sync-over-Async im Hot-Path verboten** — News-Blackout per `MarketContext.ResolvedNewsBlackoutEvent` pre-resolved 1× pro Scan-Tick
 - **Margin-Aware-Cap (TradFi)**: bei Hebel 20×/10× würde 5%-Risk-Trade fast gesamte verfügbare Margin binden — `RiskManager` cappt Σ(Margins) ≤ 60% × Wallet-Balance
 - **Runner-Trail-SL MUSS an Exchange gepusht werden**: `PositionExitState.RunnerLastPushedSl` + `RunnerLastPushUtc` (0.15% Delta UND 10s seit letztem Push), sonst lebt SL nur im Memory und Crash verliert Runner-Gewinn
 - **ExitState-Persist nach kritischen Mutationen**: `PersistExitStatesAsync`-Hook in `TradingServiceBase` (no-op) + Override in `LiveTradingService` (SQLite-WAL-Write). Aufruf-Punkte: TP1/TP2-LimitOrderId set/null (Stage-1+Stage-2+WS-Fill), Phase Initial→Tp1Hit, RunnerActive=true, BreakevenSet=true. Vorher: Persist nur in `LiveTradingManager.StopAsync`/`EmergencyStopAsync` — Hot-Crash zwischen TP-Place und Stop verlor die OrderId-Zuordnung
@@ -918,14 +773,12 @@ MinRRR per Kategorie: 1.0 (SK-Buch S.13).
 - **Recovery-Signale via OnSignalCreated tracken**: `RestorePositionSignal` ruft am Ende `OnSignalCreated(key)` → `_signalCreatedAt`/`_positionOpenTimes` werden gesetzt → Reconcile-Grace-Windows (Orphan 90 s, MissingStop 30 s) greifen auch für recovered Positionen
 - **Backtest streamt RiskManager-Updates pro Tick**: `UpdateDailyStats` läuft während der Iteration über neu abgeschlossene Trades (`lastCompletedTradeCount`-Tracker), Tageswechsel-Reset über `currentCandle.CloseTime.Date`. Vorher: `UpdateDailyStats` nur final-Loop → `LossStreakDampening`, `EquityCurveScaling` und `MaxDailyLoss-Circuit` haben im Backtest nie gefeuert, Ergebnisse waren systematisch zu optimistisch
 
-### Pending-Limit-Orders + Recovery
+### Pending-Limit-Orders (TP-Recovery) + Recovery
 
 - **Persist synchron VOR `return`**: `await PersistPendingLimitOrdersAsync` (NICHT fire-and-forget) — sonst kann Sub-second-Crash zwischen In-Memory-Set und DB-Write zu Ghost-Orders führen
 - **PendingTpRetry-Stage-2/3**: bei BingX-Hochlast (Funding-Settlement) Position erst nach Sekunden sichtbar — Stage 2 platziert mit `fallbackQty`, Stage 3 retried in PriceTickerLoop max 30s
 - **Pending-Symbol-Side im Reconcile**: `PositionDriftAnalyzer` schliesst Pending-Limit-Entries vom OrphanSignal-Check aus
 - **Stale Pending-Cleanup**: `RiskSettings.PendingLimitOrderMaxAgeHours` (Default 6h) — schützt gegen Symbol-aus-Top-100-gefallen + Pending hängt tagelang gegen toten Markt
-- **Triple-Sibling-Key** (`_Prim` + `_Add`): `BuildPendingKey` baut `{symbol}#{sequenceId}` — Reconcile-Loop nutzt `kvp.Value.Symbol` für REST-API-Calls, NICHT `kvp.Key` (Key enthält SequenceId-Suffix)
-- **Strategy-Felder im Pending**: NavPointA, IsGklSetup, GklTimeframe, RunnerHardCap, IsCounterTrendScalp, PositionScaleOverride werden im Pending persistiert + bei Recovery rekonstruiert (sonst BE-Trigger feuert nie nach Restart)
 
 ### Mathematik / Metriken
 
@@ -1011,12 +864,6 @@ dotnet publish src/Apps/BingXBot/BingXBot.Android -c Release   # AAB für Play C
 | `BingXBot.Shared/Graphics/CLAUDE.md` | SkiaSharp-Renderer, Paint-Cache |
 | `BingXBot.Shared/Converters/CLAUDE.md` | NullableDecimalConverter, StaleOpacityConverter |
 | `BingXBot.Shared/Services/CLAUDE.md` | RemoteSettingsAutoSync |
-| `src/Apps/BingXBot/SK_BUCH_COMPLIANCE_PLAN.md` | SK-System Master-Plan (25 Punkte, 5 Phasen) |
-| `src/Apps/BingXBot/MULTI_TF_STANDALONE_PLAN.md` | Multi-TF-Architektur-Plan |
-| `src/Apps/BingXBot/PLAN_SERVER_MODE.md` | Client/Server-Architektur-Plan |
-| `src/Apps/BingXBot/Algorithmische Erkennung der Strukturpunkte.docx` | Strukturpunkte-Doku (Pivot, ATR×3, BOS, Volumen, Wick) |
-| `src/Apps/BingXBot/SK-System_ Das komplette Handbuch.docx` | SK-Buch (Stefan Kassing) |
-| `src/Apps/BingXBot/SK-System_ Technische Spezifikation.docx` | Technische Spec (Konstanten, State-Machine, Setup-Typen) |
 | `~/.claude/projects/F--Meine-Apps-Ava/memory/bingxbot.md` | Memory: Trading-Domain-Notizen |
 | `~/.claude/projects/F--Meine-Apps-Ava/memory/reference_pi_ssh.md` | Memory: Pi-SSH-Zugang |
 | `~/.claude/projects/F--Meine-Apps-Ava/memory/feedback_bingxbot_dailyrisk_bleibt.md` | Memory: User-Ausnahmen vom SK-Buch |

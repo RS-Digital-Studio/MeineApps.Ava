@@ -4,6 +4,7 @@
              xmlns:models="using:WorkTimePro.Models"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="WorkTimePro.Views.VacationView"
              x:DataType="vm:VacationViewModel"
              x:CompileBindings="True"
@@ -53,37 +54,26 @@
                   IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
       <StackPanel Spacing="16" Margin="16">
 
-        <!-- ==================== Quota Card ==================== -->
+        <!-- ==================== Quota Card (SkiaSharp-Ring-Gauge) ==================== -->
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="Vacation_QuotaCard">
-          <Grid RowDefinitions="Auto,Auto,Auto"
-                ColumnDefinitions="*,Auto" RowSpacing="8">
+          <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8">
             <TextBlock Grid.Row="0" Grid.Column="0"
                        Text="{loc:Translate VacationAccount}"
                        FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Grid.Row="0" Grid.Column="1"
-                       AutomationProperties.AutomationId="Vacation_TxtQuota"
-                       Text="{Binding QuotaDisplay}"
-                       FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
-                       Foreground="{DynamicResource PrimaryBrush}" />
-
-            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2"
-                         AutomationProperties.AutomationId="Vacation_QuotaProgress"
-                         Value="{Binding ProgressPercent}"
-                         Maximum="1"
-                         Foreground="{DynamicResource PrimaryBrush}" />
-
-            <TextBlock Grid.Row="2" Grid.Column="0"
-                       AutomationProperties.AutomationId="Vacation_TxtProgressDisplay"
-                       Text="{Binding ProgressDisplay}"
-                       FontSize="{StaticResource FontSizeLabelMd}"
-                       Foreground="{DynamicResource TextSecondaryBrush}" />
-            <Button Grid.Row="2" Grid.Column="1"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <Button Grid.Row="0" Grid.Column="1"
                     AutomationProperties.AutomationId="Vacation_BtnEditQuota"
                     Content="{loc:Translate Edit}"
                     Classes="Outlined Small"
                     Command="{Binding EditQuotaCommand}"
                     IsVisible="{Binding IsPremium}" />
+
+            <skia:SKCanvasView Grid.Row="1" Grid.ColumnSpan="2"
+                               x:Name="QuotaGaugeCanvas"
+                               Height="210"
+                               AutomationProperties.AutomationId="Vacation_QuotaGauge"
+                               PaintSurface="OnPaintQuotaGauge" />
           </Grid>
         </Border>
 

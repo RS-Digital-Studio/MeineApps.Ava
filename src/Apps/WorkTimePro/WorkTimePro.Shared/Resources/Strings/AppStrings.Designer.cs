@@ -1307,6 +1307,15 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Taken ähnelt.
+        /// </summary>
+        internal static string Taken {
+            get {
+                return ResourceManager.GetString("Taken", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Charts ähnelt.
         /// </summary>
         internal static string Charts {

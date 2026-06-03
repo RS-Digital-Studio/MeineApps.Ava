@@ -74,14 +74,6 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
     [ObservableProperty]
     private int _editCarryOverDays;
 
-    [ObservableProperty]
-    private string _quotaDisplay = "";
-
-    [ObservableProperty]
-    private string _progressDisplay = "";
-
-    [ObservableProperty]
-    private double _progressPercent;
 
     // For new vacation
     [ObservableProperty]
@@ -164,15 +156,8 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
             // Load statistics
             Statistics = await _vacationService.GetStatisticsAsync(SelectedYear);
 
-            // Quota display
-            QuotaDisplay = $"{Statistics.TakenDays}/{Statistics.AvailableDays} {AppStrings.Days}";
-            ProgressPercent = Statistics.UsedPercent / 100.0;
-            ProgressDisplay = $"{Statistics.RemainingDays} {AppStrings.Remaining}";
-
-            if (Statistics.PlannedDays > 0)
-            {
-                ProgressDisplay += $" ({Statistics.PlannedDays} {AppStrings.Planned})";
-            }
+            // Quota wird als SkiaSharp-Ring-Gauge (VacationQuotaGaugeVisualization) aus
+            // Statistics gerendert — kein separater Display-String/ProgressBar mehr nötig.
 
             // Load vacation entries
             var entries = await _vacationService.GetVacationEntriesAsync(SelectedYear);

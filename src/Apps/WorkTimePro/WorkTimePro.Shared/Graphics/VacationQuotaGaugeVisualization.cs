@@ -22,10 +22,7 @@ public static class VacationQuotaGaugeVisualization
     // Gecachter Blur-Filter (statt CreateBlur pro Frame / pro Ring → 3 Ringe × Frame native Allokationen gespart)
     private static readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
 
-    // Farben für Verbrauchsstufen
-    private static readonly SKColor _lowUsage = new(0x22, 0xC5, 0x5E);    // Grün (<50%)
-    private static readonly SKColor _mediumUsage = new(0xF5, 0x9E, 0x0B);  // Amber (50-80%)
-    private static readonly SKColor _highUsage = new(0xEF, 0x44, 0x44);    // Rot (>80%)
+    // Verbrauchsstufen-Farben kommen aus SkiaThemeHelper (Success/Warning/Error) — siehe Render().
 
     // Ring-Farben
     private static readonly SKColor _usedColor = new(0x38, 0xBD, 0xF8);    // Blau (Genommen)
@@ -52,9 +49,13 @@ public static class VacationQuotaGaugeVisualization
     {
         if (totalDays <= 0) return;
 
+        // Unten Platz für die 3-spaltige Legende reservieren, damit sie auf breiten
+        // (Karten-)Canvases nicht unter die Unterkante rutscht.
+        const float legendReserve = 46f;
+        float ringAreaH = MathF.Max(bounds.Height - legendReserve, 40f);
         float cx = bounds.MidX;
-        float cy = bounds.MidY;
-        float maxR = MathF.Min(bounds.Width, bounds.Height) / 2f - 8f;
+        float cy = bounds.Top + ringAreaH / 2f;
+        float maxR = MathF.Min(bounds.Width, ringAreaH) / 2f - 8f;
 
         // 3 Ringe: außen (Genommen), mitte (Geplant), innen (Rest)
         float ringWidth = maxR * 0.12f;
@@ -81,7 +82,9 @@ public static class VacationQuotaGaugeVisualization
 
         // === Zentraler Text ===
         float usedPercent = (usedDays / totalDays) * 100f;
-        SKColor valueColor = usedPercent < 50 ? _lowUsage : usedPercent < 80 ? _mediumUsage : _highUsage;
+        SKColor valueColor = usedPercent < 50 ? SkiaThemeHelper.Success
+            : usedPercent < 80 ? SkiaThemeHelper.Warning
+            : SkiaThemeHelper.Error;
 
         // Hauptwert: "12/30"
         _textPaint.Color = valueColor;
@@ -97,8 +100,8 @@ public static class VacationQuotaGaugeVisualization
         canvas.DrawText(daysLabel, cx, cy + _valueFont.Size * 0.15f + _ringLabelFont.Size + 4f,
             SKTextAlign.Center, _ringLabelFont, _textPaint);
 
-        // === Legende unter den Ringen ===
-        float legendY = cy + maxR + 8f;
+        // === Legende unter den Ringen (im reservierten Bereich) ===
+        float legendY = bounds.Top + ringAreaH + 2f;
         float legendSpacing = bounds.Width / 3f;
         float legendStartX = bounds.Left + legendSpacing / 2f;
 

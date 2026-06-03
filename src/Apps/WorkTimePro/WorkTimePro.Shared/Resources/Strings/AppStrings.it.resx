@@ -568,4 +568,5 @@
   <data name="VacationMaxCarryOver" xml:space="preserve">
     <value>Riporto max. (giorni, 0 = illimitato)</value>
   </data>
+  <data name="Taken" xml:space="preserve"><value>Presi</value></data>
 </root>

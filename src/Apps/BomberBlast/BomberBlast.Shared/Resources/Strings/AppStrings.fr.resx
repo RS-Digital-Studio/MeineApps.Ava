@@ -4241,10 +4241,16 @@
   <data name="WhatsNew_2_0_62_BulletOverlay" xml:space="preserve"><value>Les overlays modaux (Nouveautés, dialogues de confirmation) affichent à nouveau le bon contenu — bug DataContext résolu</value></data>
   <data name="WhatsNew_2_0_62_BulletPolish" xml:space="preserve"><value>De nombreux petits ajustements suite à l'audit interne — routage plus propre, moins de blocages dans les sous-onglets</value></data>
   <data name="WhatsNew_2_0_63_Title" xml:space="preserve"><value>Jeu équitable &amp; prise en main améliorée</value></data>
-  <data name="WhatsNew_2_0_64_Title" xml:space="preserve"><value>En Développement</value></data>
+  <data name="WhatsNew_2_0_64_Title" xml:space="preserve"><value>Plus fluide, plus équitable, plus épuré</value></data>
   <data name="WhatsNew_2_0_63_BulletBoss" xml:space="preserve"><value>Les boss ne subissent plus de dégâts qu'une seule fois par explosion — les combats de boss sont à nouveau calculés équitablement</value></data>
   <data name="WhatsNew_2_0_63_BulletLeague" xml:space="preserve"><value>Ligue &amp; Saison : la fin de saison, le calcul des promotions et la suppression de votre entrée fonctionnent maintenant de manière fiable</value></data>
   <data name="WhatsNew_2_0_63_BulletCards" xml:space="preserve"><value>L'amélioration de carte rembourse vos ressources en cas d'échec — plus de mise perdue</value></data>
   <data name="WhatsNew_2_0_63_BulletUi" xml:space="preserve"><value>Zones tactiles agrandies et changement de langue qui met désormais à jour toutes les sections du profil instantanément</value></data>
   <data name="WhatsNew_2_0_63_BulletStability" xml:space="preserve"><value>Nombreuses corrections de plantages, de mémoire et de rendu détectées lors des tests internes</value></data>
+  <data name="WhatsNew_2_0_64_BulletSmooth" xml:space="preserve"><value>Un gameplay plus fluide : nous ne sauvegardons plus en pleine partie ; pièces, succès et collection sont enregistrés à la fin du match. Ta progression reste protégée, même en pause ou en changeant d'application.</value></data>
+  <data name="WhatsNew_2_0_64_BulletPauseUx" xml:space="preserve"><value>Un terrain de jeu épuré : un seul bouton pause, désormais en haut à gauche. L'aide contextuelle (?) a rejoint le menu pause — moins de boutons à l'écran, tout à portée quand tu en as besoin.</value></data>
+  <data name="WhatsNew_2_0_64_BulletPoison" xml:space="preserve"><value>Équilibrage du poison corrigé : les ennemis subissaient les dégâts de poison deux fois trop vite par erreur. Le poison agit de nouveau exactement une fois par seconde, comme prévu.</value></data>
+  <data name="WhatsNew_2_0_64_BulletFairDaily" xml:space="preserve"><value>Des compétitions quotidiennes équitables : le Défi du jour et la Course quotidienne se déroulent désormais à l'identique pour chaque joueur. Les drops Nova sont de nouveau reproductibles — mêmes conditions, classements équitables.</value></data>
+  <data name="WhatsNew_2_0_64_BulletPremiumXp" xml:space="preserve"><value>Le bonus Vétéran Premium fonctionne enfin : le bonus de +5% d'XP par saison premium terminée est désormais appliqué correctement et accélère ta progression dans le Pass de combat.</value></data>
+  <data name="WhatsNew_2_0_64_BulletStability" xml:space="preserve"><value>Plus de stabilité et d'équité : réglages de notifications respectés, missions hebdomadaires correctes au passage d'année, sauvegarde renforcée et combats de boss plus fluides grâce à un rendu optimisé.</value></data>
 </root>

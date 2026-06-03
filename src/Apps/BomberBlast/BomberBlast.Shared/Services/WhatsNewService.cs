@@ -132,12 +132,25 @@ public sealed class WhatsNewService : IWhatsNewService
                 L("WhatsNew_2_0_63_BulletStability", "Zahlreiche Absturz-, Speicher- und Render-Fixes aus dem internen Spieletester-Durchlauf"),
             }
         }),
+        ("2.0.64", () => new WhatsNewEntry
+        {
+            Title = L("WhatsNew_2_0_64_Title", "Flüssiger, fairer, aufgeräumter"),
+            Bullets = new[]
+            {
+                L("WhatsNew_2_0_64_BulletSmooth", "Flüssigeres Gameplay: Wir speichern nicht mehr mitten in der Runde — Münzen, Erfolge und Sammlung werden erst nach dem Spiel gesichert. Dein Fortschritt bleibt geschützt, auch wenn du pausierst oder die App wechselst."),
+                L("WhatsNew_2_0_64_BulletPauseUx", "Aufgeräumtes Spielfeld: nur noch ein Pause-Button, jetzt oben links. Die kontext-sensitive Hilfe (?) ist ins Pause-Menü gewandert — weniger Knöpfe im Bild, alles griffbereit, wenn du es brauchst."),
+                L("WhatsNew_2_0_64_BulletPoison", "Gift-Balancing korrigiert: Gegner haben durch Gift-Felder versehentlich doppelt so schnell Schaden genommen. Gift tickt jetzt wieder genau einmal pro Sekunde — wie vorgesehen."),
+                L("WhatsNew_2_0_64_BulletFairDaily", "Faire tägliche Wettbewerbe: Tages-Challenge und Daily-Race laufen jetzt für alle Spieler exakt gleich ab. Nova-Drops sind wieder reproduzierbar — gleiche Bedingungen, faire Bestenlisten."),
+                L("WhatsNew_2_0_64_BulletPremiumXp", "Premium-Veteranen-Boost wirkt endlich: Der XP-Bonus von +5% pro abgeschlossener Premium-Saison wird jetzt korrekt angerechnet und beschleunigt deinen Battle-Pass-Fortschritt."),
+                L("WhatsNew_2_0_64_BulletStability", "Mehr Stabilität und Fairness: respektierte Push-Einstellungen, korrekte Wochen-Missionen am Jahreswechsel, abgesicherte Speicherung und flüssigere Boss-Kämpfe durch optimiertes Rendering."),
+            }
+        }),
         // OFFENER ENTWICKLUNGSEINTRAG fuer naechste Version — Bullets pro Aenderung anhaengen,
         // beim naechsten Release-Trigger wird dieser Eintrag finalisiert + ein neuer leerer angehaengt.
         // Solange Bullets leer sind, filtert GetEntries() den Eintrag heraus (kein leerer Dialog).
-        ("2.0.64", () => new WhatsNewEntry
+        ("2.0.65", () => new WhatsNewEntry
         {
-            Title = L("WhatsNew_2_0_64_Title", "In Entwicklung"),
+            Title = L("WhatsNew_2_0_65_Title", "In Entwicklung"),
             Bullets = Array.Empty<string>()
         }),
     ];

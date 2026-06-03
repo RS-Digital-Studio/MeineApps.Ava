@@ -90,9 +90,9 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- CAMERA & BARCODE (CameraX + ML Kit)                              -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.AndroidX.Camera.Camera2" Version="1.5.3.1" />
-    <PackageVersion Include="Xamarin.AndroidX.Camera.Lifecycle" Version="1.5.3.1" />
-    <PackageVersion Include="Xamarin.AndroidX.Camera.View" Version="1.5.3.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Camera2" Version="1.6.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Lifecycle" Version="1.6.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.View" Version="1.6.1" />
     <PackageVersion Include="Xamarin.Google.MLKit.BarcodeScanning" Version="117.3.0.7" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->

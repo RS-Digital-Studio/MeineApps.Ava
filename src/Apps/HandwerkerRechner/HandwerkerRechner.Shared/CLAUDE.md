@@ -54,11 +54,11 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 
 | Ordner | Inhalt | Doku |
 |--------|--------|------|
-| `ViewModels/` | MainViewModel, ICalculatorViewModel, Tab-Navigation, Back-Press, alle 19+4 VMs | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
+| `ViewModels/` | MainViewModel, ICalculatorViewModel, Tab-Navigation, Back-Press, 19 Calculator- + 6 Business-VMs | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
 | `Views/` | AXAML-Views, CalculatorViewBase, Floor/Premium-Unterordner | [Views/CLAUDE.md](Views/CLAUDE.md) |
 | `Services/` | 7 App-Services (Project, Quote, Export, FavoritesService …) | [Services/CLAUDE.md](Services/CLAUDE.md) |
 | `Models/` | CraftEngine (Domänen-Berechnungen), Project, Quote, CalculatorCategory | [Models/CLAUDE.md](Models/CLAUDE.md) |
-| `Graphics/` | 20 SkiaSharp-Renderer + Splash-Renderer + Background-Renderer | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
+| `Graphics/` | 21 Visualisierungen + Splash-Renderer + Background-Renderer (23 Dateien) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
 | `Loading/` | Startup-Pipeline | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
 | `Converters/` | XAML-Converter | [Converters/CLAUDE.md](Converters/CLAUDE.md) |
 

@@ -39,11 +39,11 @@ löst die 19 Calculator-Views auf.
 | Composition Root, DI, Namespaces | `App.axaml.cs`, alle Service-/VM-Registrierungen, Loading-Start | [HandwerkerRechner.Shared](HandwerkerRechner.Shared/CLAUDE.md) |
 | Android-Host | `AndroidApp`, `MainActivity`, AdMob-Setup, Linked-Files, Immersive | [HandwerkerRechner.Android](HandwerkerRechner.Android/CLAUDE.md) |
 | Desktop-Host | `Program.cs` | [HandwerkerRechner.Desktop](HandwerkerRechner.Desktop/CLAUDE.md) |
-| ViewModels (alle 23) | MainViewModel, ICalculatorViewModel, 19 Calculator-VMs, Debounce-Pattern, Back-Press | [Shared/ViewModels](HandwerkerRechner.Shared/ViewModels/CLAUDE.md) |
-| Views (alle 27) | CalculatorViewBase, Floor/Premium-Views, ViewLocator-Routing, Hintergrund-Loop | [Shared/Views](HandwerkerRechner.Shared/Views/CLAUDE.md) |
+| ViewModels (25) | MainViewModel, ICalculatorViewModel, 19 Calculator-VMs + 6 Business-VMs, Debounce-Pattern, Back-Press | [Shared/ViewModels](HandwerkerRechner.Shared/ViewModels/CLAUDE.md) |
+| Views (26 .axaml + CalculatorViewBase) | CalculatorViewBase, Floor/Premium-Views, ViewLocator-Routing, Hintergrund-Loop | [Shared/Views](HandwerkerRechner.Shared/Views/CLAUDE.md) |
 | Services (7 App-Services) | ProjectService, QuoteService, CalculatorFactoryService, Export, Favoriten | [Shared/Services](HandwerkerRechner.Shared/Services/CLAUDE.md) |
 | Domänen-Modelle & CraftEngine | 19 Berechnungsalgorithmen, Result-Records, Plausibilitäts-Bounds | [Shared/Models](HandwerkerRechner.Shared/Models/CLAUDE.md) |
-| SkiaSharp-Renderer (22) | Alle Visualisierungen + Splash-Renderer + BlueprintBackground | [Shared/Graphics](HandwerkerRechner.Shared/Graphics/CLAUDE.md) |
+| SkiaSharp-Renderer (23) | 21 Visualisierungen + Splash-Renderer + BlueprintBackground | [Shared/Graphics](HandwerkerRechner.Shared/Graphics/CLAUDE.md) |
 | Startup-Pipeline | `HandwerkerRechnerLoadingPipeline`, Shader-Preload, VM-Instanziierung | [Shared/Loading](HandwerkerRechner.Shared/Loading/CLAUDE.md) |
 | XAML-Converter | `IsNotNullConverter`, `IntEqualsConverter` | [Shared/Converters](HandwerkerRechner.Shared/Converters/CLAUDE.md) |
 

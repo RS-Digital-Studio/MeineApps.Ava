@@ -84,7 +84,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         // Wire History navigation und Messages
         HistoryViewModel.NavigationRequested += OnHistoryNavigation;
-        HistoryViewModel.MessageRequested += OnChildMessage;
 
         // Wire Settings Messages
         SettingsViewModel.MessageRequested += OnChildMessage;
@@ -443,7 +442,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             calc.FloatingTextRequested += OnChildFloatingText;
             calc.ClipboardRequested += OnClipboardRequested;
             calc.CalculationPerformed += OnCalculationPerformed;
-            if (projectId != null) _ = calc.LoadFromProjectIdAsync(projectId);
+            // LoadSafeAsync statt nacktem Fire-and-forget: einheitlicher Exception-Schutz für alle 19 VMs
+            if (projectId != null) _ = LoadSafeAsync(calc.LoadFromProjectIdAsync(projectId));
         }
     }
 
@@ -762,7 +762,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         ProjectsViewModel.NavigationRequested -= OnProjectNavigation;
         ProjectsViewModel.MessageRequested -= OnChildMessage;
         HistoryViewModel.NavigationRequested -= OnHistoryNavigation;
-        HistoryViewModel.MessageRequested -= OnChildMessage;
 
         ProjectTemplatesViewModel.NavigationRequested -= OnTemplateNavigation;
         ProjectTemplatesViewModel.MessageRequested -= OnChildMessage;

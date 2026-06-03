@@ -180,7 +180,7 @@ F:\Meine_Apps_Ava\
 │       ├── ZeitManager/                 # Timer/Stoppuhr/Alarm (werbefrei)
 │       ├── FinanzRechner/               # 6 Finanzrechner + Budget-Tracker
 │       ├── FitnessRechner/              # BMI/Kalorien/Barcode-Scanner
-│       ├── HandwerkerRechner/           # 11 Bau-Rechner (5 Free + 6 Premium)
+│       ├── HandwerkerRechner/           # 19 Rechner (5 Floor + 14 Premium, alle frei)
 │       ├── WorkTimePro/                 # Arbeitszeiterfassung + Export
 │       ├── HandwerkerImperium/          # Idle-Game (Werkstätten + Arbeiter)
 │       ├── BomberBlast/                 # Bomberman-Klon (SkiaSharp, Landscape)

@@ -39,8 +39,8 @@ public static class HourlyRateVisualization
 
     public static void Render(SKCanvas canvas, SKRect bounds,
         double netLaborCost, double overheadAmount, double vatAmount, double totalGross,
-        string netLabel = "Netto", string overheadLabel = "Aufschlag",
-        string vatLabel = "MwSt", string totalLabel = "Gesamt brutto",
+        string netLabel = "Net", string overheadLabel = "Overhead",
+        string vatLabel = "VAT", string totalLabel = "Gross total",
         float alpha = 1f)
     {
         if (totalGross <= 0) return;

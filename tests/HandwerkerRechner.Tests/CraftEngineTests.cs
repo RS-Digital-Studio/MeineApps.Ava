@@ -5,7 +5,7 @@ using HandwerkerRechner.Models;
 namespace HandwerkerRechner.Tests;
 
 /// <summary>
-/// Tests für die CraftEngine - alle 16 Rechner-Funktionen.
+/// Tests für die CraftEngine - die 19 Rechner-Funktionen.
 /// Prüft Korrektheit, Grenzfälle und Fehlerbehandlung.
 /// </summary>
 public class CraftEngineTests

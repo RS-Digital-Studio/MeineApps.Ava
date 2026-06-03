@@ -2,12 +2,13 @@ namespace HandwerkerRechner.Models;
 
 /// <summary>
 /// Berechnungs-Engine für alle Handwerker-Rechner.
-/// Schützt gegen User-Input-Extremwerte (Infinity/NaN/OverflowException) durch Plausibilitäts-Limits.
+/// Schützt gegen User-Input-Extremwerte (Infinity/NaN) durch Plausibilitäts-Limits.
 /// </summary>
 public sealed class CraftEngine
 {
     /// <summary>
-    /// Plausibilitäts-Limits gegen Crash-Inputs (User tippt 1e308 → Infinity → Math.Ceiling wirft).
+    /// Plausibilitäts-Limits gegen Extrem-Inputs (User tippt 1e308 → Infinity → (int)Math.Ceiling
+    /// saturiert unter unchecked zu int.MaxValue, d.h. unsinnige Riesenergebnisse statt Crash).
     /// Werte sind großzügig dimensioniert, decken alle realistischen Handwerker-Szenarien ab.
     /// </summary>
     private static class Limits

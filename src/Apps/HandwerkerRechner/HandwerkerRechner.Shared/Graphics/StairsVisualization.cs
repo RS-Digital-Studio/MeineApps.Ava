@@ -1,3 +1,4 @@
+using MeineApps.Core.Ava.Localization;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
@@ -139,8 +140,13 @@ public static class StairsVisualization
                 SkiaThemeHelper.TextMuted, 8f);
         }
 
-        // DIN-Status
-        string dinText = isDinCompliant ? "DIN OK" : (isComfortable ? "Grenzwertig" : "Nicht DIN-konform");
+        // DIN-Status (lokalisiert — engl./span./etc. Nutzer dürfen kein Deutsch sehen)
+        var loc = LocalizationManager.Service;
+        string dinText = isDinCompliant
+            ? (loc?.GetString("VizDinOk") ?? "DIN OK")
+            : (isComfortable
+                ? (loc?.GetString("VizDinBorderline") ?? "Borderline")
+                : (loc?.GetString("VizDinNotCompliant") ?? "Not DIN-compliant"));
         _dinPaint.Color = dinColor;
         SkiaBlueprintCanvas.DrawMeasurementText(canvas,
             dinText,

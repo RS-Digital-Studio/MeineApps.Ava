@@ -1,3 +1,4 @@
+using MeineApps.Core.Ava.Localization;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
@@ -150,7 +151,13 @@ public static class ElectricalVisualization
 
         float maxVal = Math.Max(0.01f, costPerYear);
         float[] values = { costPerDay, costPerMonth, costPerYear };
-        string[] labels = { "Tag", "Monat", "Jahr" };
+        var loc = LocalizationManager.Service;
+        string[] labels =
+        {
+            loc?.GetString("VizDay") ?? "Day",
+            loc?.GetString("VizMonth") ?? "Month",
+            loc?.GetString("VizYear") ?? "Year"
+        };
         SKColor[] colors = { SkiaThemeHelper.Success, SkiaThemeHelper.Warning, SkiaThemeHelper.Accent };
 
         // X-Achse

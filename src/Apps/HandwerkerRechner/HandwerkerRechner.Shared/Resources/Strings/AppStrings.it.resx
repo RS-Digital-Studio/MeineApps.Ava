@@ -2217,4 +2217,22 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="DefaultProductB" xml:space="preserve">
     <value>Prodotto B</value>
   </data>
+  <data name="VizDinOk" xml:space="preserve">
+    <value>DIN OK</value>
+  </data>
+  <data name="VizDinBorderline" xml:space="preserve">
+    <value>Al limite</value>
+  </data>
+  <data name="VizDinNotCompliant" xml:space="preserve">
+    <value>Non conforme</value>
+  </data>
+  <data name="VizDay" xml:space="preserve">
+    <value>Giorno</value>
+  </data>
+  <data name="VizMonth" xml:space="preserve">
+    <value>Mese</value>
+  </data>
+  <data name="VizYear" xml:space="preserve">
+    <value>Anno</value>
+  </data>
 </root>

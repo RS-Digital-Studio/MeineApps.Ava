@@ -2509,4 +2509,22 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="DefaultProductB" xml:space="preserve">
     <value>Produkt B</value>
   </data>
+  <data name="VizDinOk" xml:space="preserve">
+    <value>DIN OK</value>
+  </data>
+  <data name="VizDinBorderline" xml:space="preserve">
+    <value>Grenzwertig</value>
+  </data>
+  <data name="VizDinNotCompliant" xml:space="preserve">
+    <value>Nicht DIN-konform</value>
+  </data>
+  <data name="VizDay" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="VizMonth" xml:space="preserve">
+    <value>Monat</value>
+  </data>
+  <data name="VizYear" xml:space="preserve">
+    <value>Jahr</value>
+  </data>
 </root>

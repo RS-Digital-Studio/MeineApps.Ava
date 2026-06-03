@@ -66,7 +66,7 @@ public static class CostBreakdownVisualization
     /// <param name="currencySymbol">Währungssymbol (z.B. "€")</param>
     /// <param name="totalLabel">Label für Gesamtsumme (z.B. "Gesamt")</param>
     public static void Render(SKCanvas canvas, SKRect bounds,
-        CostItem[] items, string currencySymbol = "€", string totalLabel = "Gesamt")
+        CostItem[] items, string currencySymbol = "€", string totalLabel = "Total")
     {
         if (items.Length == 0) return;
 

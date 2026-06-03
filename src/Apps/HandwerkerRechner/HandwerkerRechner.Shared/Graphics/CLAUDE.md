@@ -49,7 +49,7 @@ Code-Behind ruft direkt `InvalidateSurface()` bei PropertyChanged.
 
 ## Lokalisierung in Visualisierungen
 
-4 Visualisierungen (Tile, Grout, Garden, Concrete) holen Labels via
+6 Visualisierungen (Tile, Grout, Garden, Concrete, Stairs, Electrical) holen Labels via
 `LocalizationManager.Service?.GetString("VizXxx")`. **Hardcodierte deutsche Strings sind verboten** —
 englische Nutzer würden „Verschnitt" statt „Waste" sehen.
 

@@ -569,6 +569,8 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
 
     public void Dispose()
     {
+        // Auch im Dispose abmelden (robuster Pfad, falls Dispose ohne vorheriges Cleanup läuft). -= ist idempotent.
+        _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
         _debounceTimer?.Dispose();
         _debounceTimer = null;
     }

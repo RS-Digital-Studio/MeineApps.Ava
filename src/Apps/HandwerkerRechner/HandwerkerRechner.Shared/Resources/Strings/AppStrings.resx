@@ -2494,4 +2494,22 @@ Coverage decreases on rough surfaces!</value>
   <data name="DefaultProductB" xml:space="preserve">
     <value>Product B</value>
   </data>
+  <data name="VizDinOk" xml:space="preserve">
+    <value>DIN OK</value>
+  </data>
+  <data name="VizDinBorderline" xml:space="preserve">
+    <value>Borderline</value>
+  </data>
+  <data name="VizDinNotCompliant" xml:space="preserve">
+    <value>Not DIN-compliant</value>
+  </data>
+  <data name="VizDay" xml:space="preserve">
+    <value>Day</value>
+  </data>
+  <data name="VizMonth" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="VizYear" xml:space="preserve">
+    <value>Year</value>
+  </data>
 </root>

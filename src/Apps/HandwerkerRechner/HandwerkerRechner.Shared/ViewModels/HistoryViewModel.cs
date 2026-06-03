@@ -17,7 +17,6 @@ public sealed partial class HistoryViewModel : ViewModelBase
     private readonly ILocalizationService _localization;
 
     public event Action<string>? NavigationRequested;
-    public event Action<string, string>? MessageRequested;
 
     [ObservableProperty] private ObservableCollection<CalculationHistoryGroup> _groups = new();
     [ObservableProperty] private bool _isEmpty = true;

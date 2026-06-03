@@ -780,6 +780,8 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
 
     public void Dispose()
     {
+        // Auch im Dispose abmelden (robuster Pfad, falls Dispose ohne vorheriges Cleanup läuft). -= ist idempotent.
+        _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
         _debounceTimer?.Dispose();
         _debounceTimer = null;
     }

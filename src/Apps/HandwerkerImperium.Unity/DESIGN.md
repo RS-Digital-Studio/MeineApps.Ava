@@ -4130,12 +4130,16 @@ auto-complete wenn PerfectRatingCounts[type] >= threshold
 
 ### 31.1 HMAC-Signierung (GameIntegrityService 1:1)
 
-**Schlüssel-Ableitung (gerätegebunden, NIE hardcodiert):** Beim ersten Start wird eine Installations-GUID
-(`Guid.NewGuid().ToString("N")`) erzeugt und persistiert (Preference-Key `game_integrity_install_id`).
-Daraus `_hmacKey = SHA256(UTF8(PackageSalt + installId))` → 32 Byte / 256 Bit. PackageSalt =
-`com.meineapps.handwerkerimperium`. Auf Mobile kann der Install-Seed zusätzlich in Android-Keystore/iOS-Keychain
-gehärtet werden. Die Beta-App-ID lautet `com.meineapps.handwerkerimperium2.beta` — der PackageSalt bleibt aber
-identisch zur Avalonia-Version, damit Cloud-Saves geräteübergreifend re-signierbar sind.
+**Schlüssel-Ableitung — ZWEI Schlüssel (gerätegebunden + geteilt, NIE hardcodiert):** Beim ersten Start wird
+eine Installations-GUID (`Guid.NewGuid().ToString("N")`) erzeugt und persistiert (Preference-Key
+`game_integrity_install_id`). PackageSalt = `com.meineapps.handwerkerimperium` (identisch zur Avalonia-Version,
+damit Cloud-Saves geräteübergreifend re-signierbar sind — die Beta-App-ID `com.meineapps.handwerkerimperium2.beta`
+ändert den Salt NICHT).
+1. **Lokaler Save-Key** `_hmacKey = SHA256(UTF8(PackageSalt + installId))` → 32 Byte / 256 Bit, GERÄTE-EINZIGARTIG.
+   Nur für die `GameState.IntegritySignature`. Auf Mobile kann der Install-Seed zusätzlich im Android-Keystore/
+   iOS-Keychain gehärtet werden.
+2. **Geteilter Multiplayer-Key** `_sharedHmacKey = SHA256(UTF8(PackageSalt + "|shared-guild-hmac-v1"))` → ohne
+   installId, auf allen Geräten identisch. Wird von `ComputeStringHmac` benutzt (s.u.).
 
 **GameState-Snapshot-Signatur** (`GameState.IntegritySignature`, HMAC-SHA256 als Lower-Hex):
 Payload kultur-invariant `"{PlayerLevel}|{Prestige.TotalPrestigeCount}|{Money:F2}|{GoldenScrews}|{Statistics.TotalOrdersCompleted}"`.
@@ -4143,8 +4147,9 @@ Genau diese **5 Felder** werden signiert (nicht der ganze State). Verifikation v
 `CryptographicOperations.FixedTimeEquals` über `Convert.FromHexString` der gespeicherten Signatur gegen frisch
 berechnete Bytes (timing-sicher; ungültiges Hex → false).
 
-**Einzelwert-HMAC** (`ComputeStringHmac(payload)`, generischer Lower-Hex-Helper) für serverseitig gespiegelte
-Werte der Big-Bet-Features. Folgende Werte sind einzeln HMAC-signiert:
+**Einzelwert-HMAC** (`ComputeStringHmac(payload)`, Lower-Hex-Helper mit dem **geteilten** `_sharedHmacKey` —
+NICHT dem geräte-lokalen Key, sonst scheitert die Cross-Client-Validierung zwischen Gildenmitgliedern) für
+serverseitig gespiegelte Werte der Big-Bet-Features. Folgende Werte sind einzeln HMAC-signiert:
 - Money (decimal, `F2`)
 - GoldenScrews (int)
 - BossDamage (int)

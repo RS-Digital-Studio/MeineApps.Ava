@@ -1422,11 +1422,15 @@ public static void ImportFromRESX()
 
 > **Quelle: ORIGINAL_WERTE Bereich 08 §4 + Bereich 05 §15. Werte verbindlich, nichts ändern.**
 
-**Schlüssel-Ableitung (gerätegebunden, kein hardcodierter Key):**
+**Schlüssel-Ableitung — ZWEI Schlüssel für zwei Vertrauensgrenzen (kein hardcodierter Key):**
 - Preference-Key `game_integrity_install_id`. PackageSalt = `com.meineapps.handwerkerimperium`.
-- Installations-GUID (`Guid.NewGuid().ToString("N")`, persistiert) →
-  `_hmacKey = SHA256.HashData(UTF8(PackageSalt + installId))` → 32 Byte (256 Bit).
-- Weil der Key gerätegebunden ist, wird ein Cloud-Save beim Download **neu signiert** (s. 8.4).
+- **Lokaler Save-Key** `_hmacKey = SHA256(UTF8(PackageSalt + installId))` — Installations-GUID
+  (`Guid.NewGuid().ToString("N")`, persistiert), GERÄTE-EINZIGARTIG (32 Byte). Nur für die lokale
+  `GameState.IntegritySignature`. Weil gerätegebunden, wird ein Cloud-Save beim Download **neu signiert** (s. 8.4).
+- **Geteilter Multiplayer-Key** `_sharedHmacKey = SHA256(UTF8(PackageSalt + "|shared-guild-hmac-v1"))` —
+  OHNE installId, daher auf ALLEN Geräten identisch (32 Byte). Wird von `ComputeStringHmac` benutzt, damit
+  geteilte Firebase-Objekte (Co-op/Auktion/Mega-Projekt) cross-client validierbar bleiben. Ein geräte-lokaler
+  Key würde diese Validierung IMMER scheitern lassen.
 
 **GameState-Signatur (Hauptintegrität):**
 - Signierte Felder (Payload, kulturunabhängig):
@@ -1438,7 +1442,7 @@ public static void ImportFromRESX()
 ```csharp
 public interface IHmacSigner
 {
-    /// <summary>HMAC-SHA256(payload, gerätegebundener Key) als lower-Hex.</summary>
+    /// <summary>HMAC-SHA256(payload, GETEILTER Multiplayer-Key) als lower-Hex (cross-client validierbar).</summary>
     string ComputeStringHmac(string payload);
 
     /// <summary>Signiert GameState (Payload aus PlayerLevel|PrestigeCount|Money:F2|GoldenScrews|TotalOrders).</summary>
@@ -1450,15 +1454,16 @@ public interface IHmacSigner
 public sealed class HmacSha256Signer(IPreferencesService prefs) : IHmacSigner
 {
     private const string PackageSalt = "com.meineapps.handwerkerimperium";
-    private readonly byte[] _hmacKey = DeriveKey(prefs);   // SHA256(PackageSalt + installId)
+    private readonly byte[] _hmacKey = DeriveLocalKey(prefs);     // SHA256(PackageSalt + installId) — geräte-lokal
+    private readonly byte[] _sharedHmacKey = DeriveSharedKey();   // SHA256(PackageSalt + "|shared-guild-hmac-v1") — geräte-übergreifend
 
     public string ComputeStringHmac(string payload)
     {
-        using var hmac = new HMACSHA256(_hmacKey);
+        using var hmac = new HMACSHA256(_sharedHmacKey);          // GETEILTER Key, NICHT _hmacKey!
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
-        return Convert.ToHexString(hash).ToLowerInvariant();   // lower-Hex, NICHT Base64
+        return Convert.ToHexString(hash).ToLowerInvariant();      // lower-Hex, NICHT Base64
     }
-    // ComputeSignature / VerifySignature → Payload-Format + FixedTimeEquals s.o.
+    // ComputeSignature / VerifySignature nutzen den geräte-lokalen _hmacKey → Payload-Format + FixedTimeEquals s.o.
 }
 ```
 
@@ -1468,10 +1473,13 @@ werden per atomarem PATCH aktualisiert und über Firebase-Rules `validate` begre
 
 | Kontext | Salt | Signierte (stabile) Felder | NICHT signiert (PATCH) |
 |---------|------|----------------------------|------------------------|
-| GameState | (gerätegebundener Key) | PlayerLevel, PrestigeCount, Money, GoldenScrews, TotalOrders | — |
-| Co-op-Auftrag | `coop-order-v1` | OrderId, CreatedBy, InvitedPlayer, BaseReward, MiniGameType | Score, Status, ExpiresAt |
-| Mega-Projekt | `guild-mega-project-v1` | ProjectId, (int)Type, CreatedAt (`:O`) | Contributions, Donations, CompletedAt |
-| Auktion | (ComputeStringHmac) | AuctionId, WorkerTier, WorkerName, Status, HighestBidderId, HighestBid, sortierte AllBids | — |
+| GameState | geräte-lokaler `_hmacKey` | PlayerLevel, PrestigeCount, Money, GoldenScrews, TotalOrders | — |
+| Co-op-Auftrag | `coop-order-v1` (geteilter Key) | OrderId, CreatedBy, InvitedPlayer, BaseReward, MiniGameType | Score, Status, ExpiresAt |
+| Mega-Projekt | `guild-mega-project-v1` (geteilter Key) | ProjectId, (int)Type, CreatedAt (`:O`) | Contributions, Donations, CompletedAt |
+| Auktion | `worker-auction-v1` (geteilter Key) | AuctionId, WorkerTier, WorkerName, Status, HighestBidderId, HighestBid, sortierte AllBids | — |
+
+> Nur die **GameState**-Signatur nutzt den geräte-lokalen `_hmacKey`. Co-op, Auktion und Mega-Projekt
+> werden über `ComputeStringHmac` mit dem **geteilten** `_sharedHmacKey` signiert (cross-client validierbar).
 
 Die in CLAUDE.md § 13.2 gelisteten kritischen Werte (Money, GoldenScrews, BossDamage, AuctionBid,
 CoopOrderScore, MegaProjectContribution) werden über diese Signaturen bzw. Rule-`validate` abgesichert.

@@ -398,8 +398,8 @@ expressions · Records für immutable DTOs/Events · File-scoped Namespaces · R
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.1.2 | Rewarded (kein Banner) | 4,99 Premium | Produktion |
-| BomberBlast | v2.0.63 | Rewarded (kein Banner) | 1,99 remove_ads | Produktion |
+| HandwerkerImperium | v2.1.3 | Rewarded (kein Banner) | 4,99 Premium | Produktion |
+| BomberBlast | v2.0.64 | Rewarded (kein Banner) | 1,99 remove_ads | Produktion |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 | BingXBot | v1.8.1 | Nein | Nein | Entwicklung (Pi + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |

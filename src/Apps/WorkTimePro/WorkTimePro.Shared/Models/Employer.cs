@@ -68,12 +68,6 @@ public class Employer
     }
 
     /// <summary>
-    /// Status-Icon
-    /// </summary>
-    [Ignore]
-    public string StatusIcon => IsDefault ? Helpers.Icons.Star : (IsActive ? Helpers.Icons.CircleSlice8 : Helpers.Icons.CircleOutline);
-
-    /// <summary>
     /// Wöchentliche Stunden als TimeSpan
     /// </summary>
     [Ignore]

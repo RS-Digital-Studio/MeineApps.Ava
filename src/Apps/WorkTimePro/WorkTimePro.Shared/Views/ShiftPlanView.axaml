@@ -225,7 +225,7 @@
       <Panel IsVisible="{Binding IsPatternEditorVisible}" AutomationProperties.AutomationId="ShiftPlan_EditorOverlay">
 
         <!-- Backdrop -->
-        <Border Background="#80000000"
+        <Border Background="{DynamicResource OverlayBrush}"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch" />
 

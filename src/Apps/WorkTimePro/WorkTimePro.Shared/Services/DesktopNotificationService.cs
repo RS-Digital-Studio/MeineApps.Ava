@@ -148,9 +148,4 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
         return text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")
                    .Replace("\"", "&quot;").Replace("'", "&apos;");
     }
-
-    private static string EscapeShell(string text)
-    {
-        return text.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("$", "\\$").Replace("`", "\\`");
-    }
 }

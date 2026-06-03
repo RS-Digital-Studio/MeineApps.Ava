@@ -113,6 +113,38 @@
       </Border>
     </Panel>
 
+    <!-- Persistentes Nachrichten-Overlay (Fehler/Hinweise): ersetzt den fluechtigen, auf 80
+         Zeichen gekuerzten FloatingText fuer MessageRequested, damit z.B. eine fehlgeschlagene
+         Speicherung nicht uebersehen wird. Letztes Grid-Kind + hoher ZIndex = liegt oben;
+         hit-test-sichtbarer Backdrop faengt Taps ab (kein Touch-Durchfall). -->
+    <Border x:Name="MessageOverlay"
+            Grid.RowSpan="3"
+            ZIndex="20"
+            IsVisible="False"
+            Background="{DynamicResource ModalBackdropBrush}"
+            AutomationProperties.AutomationId="Main_MessageOverlay">
+      <Border Classes="Card"
+              MaxWidth="360"
+              Margin="32"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Center">
+        <StackPanel Spacing="{StaticResource SpacingLg}">
+          <TextBlock x:Name="MessageOverlayTitle"
+                     Classes="SectionTitle"
+                     Text="" TextWrapping="Wrap" />
+          <TextBlock x:Name="MessageOverlayText"
+                     Text="" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSizeBodyMd}"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <Button x:Name="MessageOverlayOk"
+                  Classes="Primary"
+                  Content="{loc:Translate OK}"
+                  HorizontalAlignment="Right"
+                  AutomationProperties.AutomationId="Main_MessageOverlayOk" />
+        </StackPanel>
+      </Border>
+    </Border>
+
     <!-- Game Juice Overlays -->
     <controls:FloatingTextOverlay x:Name="FloatingTextCanvas"
                                    AutomationProperties.AutomationId="Main_FloatingTextOverlay"

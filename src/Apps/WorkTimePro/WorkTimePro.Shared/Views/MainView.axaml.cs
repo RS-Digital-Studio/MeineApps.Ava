@@ -32,6 +32,9 @@ public partial class MainView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         KeyDown += OnKeyDown;
+        // Reine View-State-Aktion (Overlay schließen) — im Code-Behind verdrahtet statt als
+        // XAML-Click, konsistent mit der MessageRequested→OnMessage-Code-Behind-Logik.
+        MessageOverlayOk.Click += OnMessageOverlayOk;
         Focusable = true;
     }
 
@@ -288,16 +291,16 @@ public partial class MainView : UserControl
     {
         System.Diagnostics.Debug.WriteLine($"[WorkTimePro] {title}: {message}");
 
-        // Fehlermeldungen als FloatingText anzeigen (Titel + Nachricht für Kontext)
-        var color = Color.Parse("#F44336"); // Rot für Fehler
-        var w = FloatingTextCanvas.Bounds.Width;
-        if (w < 10) w = 300;
-        var h = FloatingTextCanvas.Bounds.Height;
-        if (h < 10) h = 400;
-        // Nachricht kürzen falls zu lang (max 80 Zeichen für FloatingText)
-        var displayText = string.IsNullOrWhiteSpace(message) ? title : message;
-        if (displayText.Length > 80)
-            displayText = displayText[..77] + "...";
-        FloatingTextCanvas.ShowFloatingText(displayText, w * 0.5, Math.Max(80, h * 0.3), color, 14);
+        // Persistentes Overlay statt fluechtigem FloatingText: voller Text, muss aktiv mit OK
+        // bestaetigt werden — so geht eine fehlgeschlagene Aktion (z.B. Speichern) nicht verloren.
+        MessageOverlayTitle.Text = title;
+        MessageOverlayText.Text = message;
+        MessageOverlayText.IsVisible = !string.IsNullOrWhiteSpace(message);
+        MessageOverlay.IsVisible = true;
+    }
+
+    private void OnMessageOverlayOk(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        MessageOverlay.IsVisible = false;
     }
 }

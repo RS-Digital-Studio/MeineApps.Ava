@@ -32,11 +32,14 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(IsStatisticsActive));
         OnPropertyChanged(nameof(IsSettingsActive));
 
-        // Daten für den jeweiligen Tab neu laden (zentraler Forget-Helper)
+        // Daten für den jeweiligen Tab neu laden (zentraler Forget-Helper).
+        // Lokalisierter Wrapper zuerst (string.Format), ex.Message als eingebettetes Detail —
+        // konsistent mit allen anderen Fehlerstellen (sonst zeigt der Nutzer rohen, oft
+        // englischen Framework-Text).
         LoadTabDataAsync(value).Forget(ex =>
             MessageRequested?.Invoke(
                 AppStrings.Error,
-                ex.Message ?? AppStrings.ErrorLoading ?? "Tab load failed"));
+                string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     [RelayCommand]

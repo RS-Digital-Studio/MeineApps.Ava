@@ -550,4 +550,22 @@
   <data name="WarningSixMonthAvgExceeds" xml:space="preserve">
     <value>§3 ArbZG: 6-Monats-Durchschnitt {0:F1}h/Tag übersteigt die 8h-Grenze</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>Sprache</value>
+  </data>
+  <data name="BackupImportConfirmText" xml:space="preserve">
+    <value>Backup vom {0} wiederherstellen? Alle aktuellen Daten werden überschrieben.</value>
+  </data>
+  <data name="VacationSkippedWorkedDays" xml:space="preserve">
+    <value>({0} Tage mit erfasster Arbeitszeit übersprungen)</value>
+  </data>
+  <data name="VacationRangeCapped" xml:space="preserve">
+    <value>(auf 30 Tage begrenzt)</value>
+  </data>
+  <data name="VacationCarryOverExpires" xml:space="preserve">
+    <value>Resturlaub verfällt (31.03.)</value>
+  </data>
+  <data name="VacationMaxCarryOver" xml:space="preserve">
+    <value>Max. Übertrag (Tage, 0 = unbegrenzt)</value>
+  </data>
 </root>

@@ -181,11 +181,4 @@ public class WorkMonth
         }
     }
 
-    /// <summary>
-    /// Status-Text für Abschluss
-    /// </summary>
-    public string LockStatusDisplay => IsLocked
-        ? $"{Helpers.Icons.Lock} {AppStrings.MonthLocked}"
-        : $"{Helpers.Icons.Pencil} {AppStrings.MonthOpen}";
-
 }

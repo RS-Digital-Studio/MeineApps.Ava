@@ -51,11 +51,5 @@ public class HolidayEntry
     /// </summary>
     [Ignore]
     public string WeekdayDisplay => Date.ToString("dddd");
-
-    /// <summary>
-    /// Icon
-    /// </summary>
-    [Ignore]
-    public string Icon => Helpers.Icons.PartyPopper;
 }
 

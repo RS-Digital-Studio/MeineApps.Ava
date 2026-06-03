@@ -26,6 +26,11 @@ public interface ITrialService
     int DaysRemaining { get; }
 
     /// <summary>
+    /// Total trial duration in days (single source of truth for the progress display).
+    /// </summary>
+    int TrialDurationDays { get; }
+
+    /// <summary>
     /// Whether trial is currently active (started and not expired)
     /// </summary>
     bool IsTrialActive { get; }

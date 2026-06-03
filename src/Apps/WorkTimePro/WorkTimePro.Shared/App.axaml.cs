@@ -152,8 +152,35 @@ public partial class App : Application
         catch (Exception ex)
         {
             Debug.WriteLine($"[WorkTimePro] Loading-Pipeline fehlgeschlagen: {ex}");
-            // Splash trotzdem ausblenden, damit App nicht blockiert
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                // DataContext trotzdem setzen — sonst bleibt die MainView leer/ungebunden ohne
+                // jede Rückmeldung. Das ViewModel meldet Folgefehler dann über sein eigenes
+                // MessageRequested-Overlay; der Nutzer kann die App weiter bedienen / neu laden.
+                try
+                {
+                    var mainVm = Services.GetService<MainViewModel>();
+                    if (mainVm != null)
+                    {
+                        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                            && desktop.MainWindow != null)
+                            desktop.MainWindow.DataContext = mainVm;
+                        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView
+                                 && singleView.MainView != null)
+                            singleView.MainView.DataContext = mainVm;
+                    }
+                }
+                catch (Exception bindEx)
+                {
+                    Debug.WriteLine($"[WorkTimePro] Fallback-DataContext fehlgeschlagen: {bindEx}");
+                }
+
+                // Fehler kurz auf dem Splash sichtbar machen, dann ausblenden (App nicht blockieren).
+                splash.StatusText = AppStrings.ErrorLoading is { } fmt
+                    ? string.Format(fmt, ex.Message)
+                    : ex.Message;
+                splash.FadeOut();
+            });
         }
     }
 

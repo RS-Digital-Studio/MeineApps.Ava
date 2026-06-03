@@ -34,6 +34,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private bool _disposed;
     private Task? _initTask;
 
+    // Reentrancy-Guard für den 1s-Timer: verhindert überlappende UpdateLiveDataAsync-Ticks
+    // bei DB-Latenz > 1s (System.Timers.Timer feuert mit AutoReset=true unabhängig vom Handler).
+    private int _liveUpdateGate;
+
+    // Aktuell angezeigtes Datum — für Mitternachts-Rollover bei dauerhaft offener App
+    // (Nachtschicht-Zielgruppe): wechselt das Datum, wird der Tag neu geladen.
+    private DateTime _trackedDate = DateTime.Today;
+
     // Gecachte Settings (werden in LoadDataAsync und OnSettingsChanged aktualisiert)
     private WorkSettings? _cachedSettings;
 
@@ -50,7 +58,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // (vorher: bool _suppressNoteDebounce konnte bei Exception in LoadDataAsync hängen bleiben).
     private readonly AsyncDebouncer _noteDebouncer = new(TimeSpan.FromMilliseconds(1500));
     private TimeEntry? _lastUndoEntry;
-    private TrackingStatus _statusBeforeUndo;
 
     // Event-Handler-Referenzen für sauberes Dispose
     // Typed Wiring statt Reflection: jeder Subscriber-VM merkt sich seine eigenen Handler-Delegates,
@@ -382,12 +389,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _ => MaterialIconKind.Play
     };
 
-    // Localized Button Texts
+    // Localized Button Texts (Icon kommt als MaterialIcon im XAML, nicht als MDI-Glyph im Text)
     public string PauseButtonText => CurrentStatus == TrackingStatus.OnBreak
-        ? $"{Icons.Coffee} {AppStrings.EndPause}"
-        : $"{Icons.Coffee} {AppStrings.Break}";
+        ? AppStrings.EndPause
+        : AppStrings.Break;
 
-    public string ShowDayDetailsText => $"{Icons.FileDocument} {AppStrings.ShowDayDetails}";
+    public string ShowDayDetailsText => AppStrings.ShowDayDetails;
 
     // === Commands ===
 
@@ -406,11 +413,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 case TrackingStatus.Idle:
                     var checkInEntry = await _timeTracking.CheckInAsync();
                     _haptic.Click();
-                    ShowUndo(checkInEntry, TrackingStatus.Idle, AppStrings.CheckIn);
+                    ShowUndo(checkInEntry, AppStrings.CheckIn);
                     break;
 
                 case TrackingStatus.Working:
-                    var statusBefore = CurrentStatus;
                     var checkOutEntry = await _timeTracking.CheckOutAsync();
                     _haptic.HeavyClick();
 
@@ -425,7 +431,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                     if (overtime.TotalMinutes > 1)
                         FloatingTextRequested?.Invoke($"+{overtime.TotalHours:F1}h", "overtime");
 
-                    ShowUndo(checkOutEntry, statusBefore, AppStrings.CheckOut);
+                    ShowUndo(checkOutEntry, AppStrings.CheckOut);
                     break;
 
                 case TrackingStatus.OnBreak:
@@ -490,6 +496,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
             // Today
             var today = await _timeTracking.GetTodayAsync();
+
+            // Datum aktualisieren (auch für Mitternachts-Rollover-Reload)
+            _trackedDate = DateTime.Today;
+            TodayDateDisplay = DateTime.Today.ToString("D");
 
             // Load entries
             var entries = await _database.GetTimeEntriesAsync(today.Id);
@@ -585,11 +595,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>
     /// Zeigt den Undo-Button für 5 Sekunden nach CheckIn/CheckOut
     /// </summary>
-    private void ShowUndo(TimeEntry entry, TrackingStatus previousStatus, string actionText)
+    private void ShowUndo(TimeEntry entry, string actionText)
     {
         _undoCts?.Cancel();
         _lastUndoEntry = entry;
-        _statusBeforeUndo = previousStatus;
         UndoMessage = $"{actionText} - {AppStrings.Undo}?";
         IsUndoVisible = true;
 
@@ -730,6 +739,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
 
+        // Mitternachts-Rollover: läuft die App über Mitternacht offen (Nachtschicht),
+        // auf den neuen Tag umstellen und neu laden, damit Datum/IsToday/Live-Daten stimmen.
+        if (DateTime.Today != _trackedDate)
+        {
+            _trackedDate = DateTime.Today;
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(LoadDataAsync);
+            return;
+        }
+
         try
         {
             // Ein einziger Snapshot statt 5+ separater DB-Queries pro Sekunde
@@ -820,7 +838,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Timer-Event sekündlich → zentraler Forget-Helper statt async void mit try/catch.
         // Nach Dispose ist UpdateLiveDataAsync ein No-Op (_disposed-Guard); Forget meldet sonstige
         // Fehler an die zentrale Stelle ohne sekündlich MessageRequested zu spammen.
-        ForgetExtensions.RunForget(UpdateLiveDataAsync);
+        // Reentrancy-Guard: läuft der vorherige Tick noch (DB-Latenz > 1s), diesen Tick überspringen.
+        if (Interlocked.CompareExchange(ref _liveUpdateGate, 1, 0) != 0)
+            return;
+        ForgetExtensions.RunForget(
+            async () =>
+            {
+                try { await UpdateLiveDataAsync(); }
+                finally { Interlocked.Exchange(ref _liveUpdateGate, 0); }
+            });
     }
 
     public void Dispose()
@@ -854,6 +880,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // ihr Cleanup-Pfad muss explizit aufgerufen werden (sonst leakt z.B. der
         // AutoSave-CancellationTokenSource in SettingsVm bis zum Prozessende).
         (SettingsVm as IDisposable)?.Dispose();
+        (DayDetailVm as IDisposable)?.Dispose();
 
         GC.SuppressFinalize(this);
     }

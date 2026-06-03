@@ -1,4 +1,5 @@
 using System.Globalization;
+using WorkTimePro.Helpers;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
 
@@ -26,6 +27,7 @@ public sealed class CalculationService : ICalculationService
         if (entries.Count == 0)
         {
             workDay.ActualWorkMinutes = 0;
+            workDay.UnroundedWorkMinutes = 0;
             workDay.FirstCheckIn = null;
             workDay.LastCheckOut = null;
             workDay.BalanceMinutes = -workDay.TargetWorkMinutes;
@@ -46,6 +48,11 @@ public sealed class CalculationService : ICalculationService
         // Netto-Arbeitszeit (Brutto - Pausen)
         var totalPauseMinutes = workDay.ManualPauseMinutes + workDay.AutoPauseMinutes;
         var netMinutes = Math.Max(0, totalMinutes - totalPauseMinutes);
+
+        // Ungerundete Netto-Zeit als Grundlage für gesetzliche Prüfungen festhalten,
+        // BEVOR die optionale Abrechnungs-Rundung greift (sonst verschiebt RoundingMinutes
+        // den §3-ArbZG-6-Monats-Durchschnitt).
+        workDay.UnroundedWorkMinutes = netMinutes;
 
         // Zeitrundung anwenden (falls konfiguriert)
         if (settings.RoundingMinutes > 0)
@@ -112,11 +119,14 @@ public sealed class CalculationService : ICalculationService
         var lastCheckOut = entries.LastOrDefault(e => e.Type == EntryType.CheckOut);
         if (lastCheckIn != null && (lastCheckOut == null || lastCheckIn.Timestamp > lastCheckOut.Timestamp))
         {
-            bruttoMinutes += (int)Math.Round((DateTime.Now - lastCheckIn.Timestamp).TotalMinutes);
+            bruttoMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, DateTime.Now));
         }
 
-        // Gesetzlich vorgeschriebene Pause
-        var requiredPauseMinutes = settings.GetRequiredPauseMinutes(bruttoMinutes);
+        // Gesetzlich vorgeschriebene Pause — §4 ArbZG bemisst die Pausenstaffel an der
+        // ARBEITSZEIT (netto), nicht an der Brutto-Präsenz. Bereits erfasste manuelle
+        // Pausen daher abziehen, sonst wird in Randfällen fälschlich eine Auto-Pause ergänzt.
+        var netWorkMinutes = Math.Max(0, bruttoMinutes - workDay.ManualPauseMinutes);
+        var requiredPauseMinutes = settings.GetRequiredPauseMinutes(netWorkMinutes);
         var difference = requiredPauseMinutes - workDay.ManualPauseMinutes;
         var existingAutoPause = pauses.FirstOrDefault(p => p.IsAutoPause);
 
@@ -371,8 +381,12 @@ public sealed class CalculationService : ICalculationService
         if (!settings.LegalComplianceEnabled)
             return warnings;
 
+        // Gesetzliche Prüfungen auf der UNGERUNDETEN Netto-Zeit (RoundingMinutes ist eine
+        // reine Abrechnungs-Rundung und darf die ArbZG-Bewertung nicht verschieben).
+        var legalMinutes = workDay.UnroundedWorkMinutes;
+
         // Maximale Arbeitszeit (10h nach ArbZG)
-        if (workDay.ActualWorkMinutes > settings.MaxDailyHours * 60)
+        if (legalMinutes > settings.MaxDailyHours * 60)
         {
             warnings.Add(string.Format(AppStrings.WarningDailyWorkTimeExceeds, settings.MaxDailyHours));
         }
@@ -382,7 +396,7 @@ public sealed class CalculationService : ICalculationService
         // Vacation, Sick, Feiertage zählen als Werktag mit 0h Arbeitszeit
         // (Tage werden mitgezählt, gearbeitete Minuten = 0).
         // Sonntage werden NICHT mitgezählt (kein Werktag im Sinne des ArbZG).
-        if (workDay.ActualWorkMinutes > 8 * 60)
+        if (legalMinutes > 8 * 60)
         {
             var sixMonthsAgo = workDay.Date.AddMonths(-6);
             var recentDays = await _database.GetWorkDaysAsync(sixMonthsAgo, workDay.Date);
@@ -395,7 +409,7 @@ public sealed class CalculationService : ICalculationService
                 if (d.DayOfWeek == DayOfWeek.Sunday) continue; // §3 ArbZG: Werktage Mo-Sa
                 weekdayCount++;
                 if (dayMap.TryGetValue(d, out var entry))
-                    totalMinutes += entry.ActualWorkMinutes; // Bei Vacation/Sick = 0
+                    totalMinutes += entry.UnroundedWorkMinutes; // Bei Vacation/Sick = 0
             }
 
             // Mindest-Datengrundlage ~10 Wochen Werktage, sonst keine aussagekräftige Aussage
@@ -412,13 +426,13 @@ public sealed class CalculationService : ICalculationService
             }
         }
 
-        // Pausenregelung
-        if (workDay.ActualWorkMinutes > 6 * 60 && workDay.ManualPauseMinutes + workDay.AutoPauseMinutes < 30)
+        // Pausenregelung (§4 ArbZG — ebenfalls auf ungerundeter Arbeitszeit)
+        if (legalMinutes > 6 * 60 && workDay.ManualPauseMinutes + workDay.AutoPauseMinutes < 30)
         {
             warnings.Add(AppStrings.WarningMinPause30);
         }
 
-        if (workDay.ActualWorkMinutes > 9 * 60 && workDay.ManualPauseMinutes + workDay.AutoPauseMinutes < 45)
+        if (legalMinutes > 9 * 60 && workDay.ManualPauseMinutes + workDay.AutoPauseMinutes < 45)
         {
             warnings.Add(AppStrings.WarningMinPause45);
         }
@@ -483,7 +497,9 @@ public sealed class CalculationService : ICalculationService
             }
             else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
             {
-                totalMinutes += (int)Math.Round((entry.Timestamp - lastCheckIn.Timestamp).TotalMinutes);
+                // DST-bewusst: tatsächlich verstrichene Zeit (korrigiert Sommer-/Winterzeit-Sprung
+                // bei über die Umstellung laufenden Schichten).
+                totalMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, entry.Timestamp));
                 lastCheckOut = entry.Timestamp;
                 lastCheckIn = null;
             }

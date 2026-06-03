@@ -84,7 +84,9 @@ public sealed class CalendarExportService : ICalendarExportService
         IcsLine(sb,"CALSCALE:GREGORIAN");
         IcsLine(sb,"METHOD:PUBLISH");
         IcsLine(sb,"X-WR-CALNAME:WorkTimePro");
-        IcsLine(sb,"X-WR-TIMEZONE:Europe/Berlin");
+        // Bewusst KEIN X-WR-TIMEZONE: Arbeitszeiten werden als Ortszeit gespeichert und als
+        // "floating time" (ohne TZID/Z) exportiert — sollen auf jedem Gerät als dieselbe
+        // Wanduhrzeit erscheinen. X-WR-TIMEZONE ohne VTIMEZONE wäre inkonsistent.
 
         // Arbeitstage als Events
         foreach (var day in workDays.OrderBy(d => d.Date))
@@ -201,9 +203,6 @@ public sealed class CalendarExportService : ICalendarExportService
         var title = statusName;
         if (!string.IsNullOrEmpty(vacation.Note))
             title += $": {vacation.Note}";
-
-        var daysText = string.Format(AppStrings.VacationDaysEnteredFormat ?? "{0}/{1}",
-            vacation.Days, vacation.Days);
 
         IcsLine(sb,"BEGIN:VEVENT");
         IcsLine(sb,$"UID:worktimepro-vacation-{vacation.Id}-{vacation.StartDate:yyyyMMdd}@meineapps");

@@ -290,7 +290,7 @@
     <!-- ==================== Quota Edit Overlay ==================== -->
     <Border IsVisible="{Binding IsEditingQuota}"
             AutomationProperties.AutomationId="Vacation_QuotaOverlay"
-            Background="#CC000000"
+            Background="{DynamicResource ModalBackdropBrush}"
             ZIndex="99"
             Grid.RowSpan="2">
       <Border Background="{DynamicResource CardBrush}"
@@ -354,7 +354,7 @@
     <!-- ==================== Rewarded Ad Overlay ==================== -->
     <Border IsVisible="{Binding ShowRewardedAdOverlay}"
             AutomationProperties.AutomationId="Vacation_AdOverlay"
-            Background="#CC000000"
+            Background="{DynamicResource ModalBackdropBrush}"
             ZIndex="100"
             Grid.RowSpan="2">
       <Border Background="{DynamicResource CardBrush}"

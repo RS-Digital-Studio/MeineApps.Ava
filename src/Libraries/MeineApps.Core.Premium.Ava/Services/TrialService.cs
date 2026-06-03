@@ -19,6 +19,7 @@ public sealed class TrialService : ITrialService
     public DateTime? TrialStartDate => _trialStartDate;
     public bool IsTrialStarted => _trialStartDate.HasValue;
     public bool HasSeenTrialOffer => _hasSeenTrialOffer;
+    public int TrialDurationDays => TrialDays;
 
     public int DaysRemaining
     {

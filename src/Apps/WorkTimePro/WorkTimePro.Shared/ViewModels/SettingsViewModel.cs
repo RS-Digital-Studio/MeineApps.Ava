@@ -289,6 +289,23 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     [ObservableProperty]
     private int _vacationDaysPerYear = 30;
 
+    /// <summary>Resturlaub-Übertrag verfällt zum Stichtag (BUrlG: regulär 31.03.).</summary>
+    [ObservableProperty]
+    private bool _vacationCarryOverExpires = true;
+
+    /// <summary>Maximaler Resturlaub-Übertrag in Tagen (0 = unbegrenzt).</summary>
+    [ObservableProperty]
+    private int _vacationMaxCarryOverDays;
+
+    partial void OnVacationCarryOverExpiresChanged(bool value) => ScheduleAutoSave();
+
+    partial void OnVacationMaxCarryOverDaysChanged(int value)
+    {
+        if (value < 0) VacationMaxCarryOverDays = 0;
+        else if (value > 365) VacationMaxCarryOverDays = 365;
+        else ScheduleAutoSave();
+    }
+
     // === Holidays ===
 
     [ObservableProperty]
@@ -378,7 +395,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         }
     }
 
-    public string BuyPremiumButtonText => $"{Icons.Rocket} {AppStrings.BuyPremium}";
+    public string BuyPremiumButtonText => AppStrings.BuyPremium;
 
     // Reminder time displays
     public string MorningReminderTimeDisplay => MorningReminderTime.ToString(@"hh\:mm");
@@ -493,6 +510,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
             // Vacation
             VacationDaysPerYear = _settings.VacationDaysPerYear;
+            VacationCarryOverExpires = _settings.VacationCarryOverExpires;
+            VacationMaxCarryOverDays = _settings.VacationMaxCarryOverDays;
 
             // Auto-Pause
             AutoPauseEnabled = _settings.AutoPauseEnabled;
@@ -578,6 +597,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
             // Vacation
             _settings.VacationDaysPerYear = VacationDaysPerYear;
+            _settings.VacationCarryOverExpires = VacationCarryOverExpires;
+            _settings.VacationMaxCarryOverDays = VacationMaxCarryOverDays;
 
             // Auto-Pause
             _settings.AutoPauseEnabled = AutoPauseEnabled;
@@ -727,6 +748,15 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     [ObservableProperty]
     private string _lastBackupDisplay = "";
 
+    // Inline-Confirm-Overlay vor dem destruktiven Import (überschreibt ALLE aktuellen Daten).
+    [ObservableProperty]
+    private bool _isImportConfirmVisible;
+
+    [ObservableProperty]
+    private string _importConfirmText = "";
+
+    private string? _pendingImportPath;
+
     [RelayCommand]
     private async Task ExportBackupAsync()
     {
@@ -759,14 +789,15 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         }
     }
 
+    /// <summary>
+    /// Schritt 1: jüngstes lokales Backup ermitteln und Bestätigung anfordern.
+    /// Der eigentliche (destruktive) Import läuft erst nach Bestätigung in <see cref="ConfirmImportAsync"/>.
+    /// </summary>
     [RelayCommand]
     private async Task ImportBackupAsync()
     {
-        // TODO: Dateiauswahl-Dialog benötigt plattformspezifische Implementierung
-        // Aktuell wird das neueste lokale Backup importiert
         try
         {
-            IsLoading = true;
             var backups = await _backupService.GetLocalBackupsAsync();
 
             if (backups.Count == 0)
@@ -777,12 +808,36 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
                 return;
             }
 
-            // Neuestes Backup importieren
+            // Jüngstes Backup vormerken; Bestätigung mit Datum + Überschreib-Warnung anzeigen.
             var latest = backups[0];
-            var filePath = Path.Combine(
+            _pendingImportPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "WorkTimePro", "Backups", latest.FileName);
 
+            ImportConfirmText = string.Format(
+                AppStrings.BackupImportConfirmText ?? "Backup vom {0} wiederherstellen? Alle aktuellen Daten werden überschrieben.",
+                latest.DateDisplay);
+            IsImportConfirmVisible = true;
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
+        }
+    }
+
+    /// <summary>Schritt 2: Import nach Bestätigung durchführen (überschreibt alle aktuellen Daten).</summary>
+    [RelayCommand]
+    private async Task ConfirmImportAsync()
+    {
+        IsImportConfirmVisible = false;
+        var filePath = _pendingImportPath;
+        _pendingImportPath = null;
+        if (string.IsNullOrEmpty(filePath))
+            return;
+
+        try
+        {
+            IsLoading = true;
             var success = await _backupService.ImportBackupFromFileAsync(filePath);
 
             if (success)
@@ -808,6 +863,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         {
             IsLoading = false;
         }
+    }
+
+    /// <summary>Bricht den vorgemerkten Import ab.</summary>
+    [RelayCommand]
+    private void CancelImport()
+    {
+        IsImportConfirmVisible = false;
+        _pendingImportPath = null;
     }
 
     // === Helper methods ===
@@ -846,10 +909,13 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         }
         else if (IsInTrial)
         {
+            // Trial-Dauer aus der einzigen Quelle (ITrialService) statt hartkodiert — TrialService
+            // gewährt 14 Tage; eine feste 7 hier ergibt in der ersten Woche Progress > 100%.
+            var trialDays = _trialService.TrialDurationDays;
             PremiumStatusText = string.Format(AppStrings.TrialDaysLeft, TrialDaysLeft);
             PremiumStatusColor = AppColors.PremiumTrial;
-            TrialProgress = TrialDaysLeft / 7.0;
-            TrialProgressText = $"{TrialDaysLeft} / 7";
+            TrialProgress = trialDays > 0 ? (double)TrialDaysLeft / trialDays : 0;
+            TrialProgressText = $"{TrialDaysLeft} / {trialDays}";
         }
         else if (_trialService.IsTrialExpired)
         {

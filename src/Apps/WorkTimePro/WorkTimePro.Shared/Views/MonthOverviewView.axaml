@@ -251,8 +251,7 @@
         </Border>
 
         <!-- ==================== Month Lock/Unlock Buttons ==================== -->
-        <Button Content="{Binding LockMonthButtonText}"
-                AutomationProperties.AutomationId="Month_BtnLock"
+        <Button AutomationProperties.AutomationId="Month_BtnLock"
                 Classes="Primary"
                 Command="{Binding LockMonthCommand}"
                 IsVisible="{Binding !IsLocked}"
@@ -261,13 +260,13 @@
                 CornerRadius="12"
                 Padding="16,12"
                 MinHeight="44">
-          <Button.Tag>
-            <mi:MaterialIcon Kind="Lock" Width="16" Height="16" Foreground="White" />
-          </Button.Tag>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Lock" Width="16" Height="16" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LockMonthButtonText}" VerticalAlignment="Center" />
+          </StackPanel>
         </Button>
 
-        <Button Content="{Binding UnlockMonthButtonText}"
-                AutomationProperties.AutomationId="Month_BtnUnlock"
+        <Button AutomationProperties.AutomationId="Month_BtnUnlock"
                 Classes="Secondary"
                 Command="{Binding UnlockMonthCommand}"
                 IsVisible="{Binding IsLocked}"
@@ -276,9 +275,10 @@
                 CornerRadius="12"
                 Padding="16,12"
                 MinHeight="44">
-          <Button.Tag>
-            <mi:MaterialIcon Kind="LockOpen" Width="16" Height="16" />
-          </Button.Tag>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="LockOpen" Width="16" Height="16" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding UnlockMonthButtonText}" VerticalAlignment="Center" />
+          </StackPanel>
         </Button>
 
         <!-- Bottom Spacer (Ad-Banner) -->

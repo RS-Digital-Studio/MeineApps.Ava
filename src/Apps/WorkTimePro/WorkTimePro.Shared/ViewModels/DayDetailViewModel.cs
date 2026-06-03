@@ -15,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel für Tagesdetails mit Bearbeitung von Zeiteinträgen und Pausen
 /// </summary>
-public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSource, IMessageSource
+public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSource, IMessageSource, IDisposable
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
@@ -639,6 +639,14 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
         return true;
     }
 
+    public void Dispose()
+    {
+        // Letztes Lade-Token freigeben (wird bei jedem Tageswechsel ersetzt; sonst bliebe das
+        // jeweils letzte CTS bis Prozessende undisposed — konsistent zum Pattern in SettingsVm).
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = null;
+    }
 }
 
 /// <summary>

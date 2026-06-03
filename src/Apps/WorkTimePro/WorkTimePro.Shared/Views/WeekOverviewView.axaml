@@ -68,11 +68,15 @@
       </Border>
 
       <!-- Today Button -->
-      <Button Content="{Binding TodayButtonText}"
-              AutomationProperties.AutomationId="Week_BtnToday"
+      <Button AutomationProperties.AutomationId="Week_BtnToday"
               Classes="Secondary"
               Command="{Binding GoToTodayCommand}"
-              HorizontalAlignment="Center" />
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <mi:MaterialIcon Kind="CalendarToday" Width="18" Height="18" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding TodayButtonText}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
 
       <!-- ==================== Week Summary ==================== -->
       <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="Week_SummaryCard">

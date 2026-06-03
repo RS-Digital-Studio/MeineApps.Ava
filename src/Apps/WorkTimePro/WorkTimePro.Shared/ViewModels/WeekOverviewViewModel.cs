@@ -107,8 +107,8 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
     partial void OnVacationDaysChanged(int value) => OnPropertyChanged(nameof(HasVacationDays));
     partial void OnSickDaysChanged(int value) => OnPropertyChanged(nameof(HasSickDays));
 
-    // Localized texts
-    public string TodayButtonText => $"{Icons.CalendarToday} {AppStrings.Today}";
+    // Localized texts (Icon kommt als MaterialIcon im XAML)
+    public string TodayButtonText => AppStrings.Today;
 
     // === Commands ===
 

@@ -231,7 +231,10 @@ public sealed class BackupService : IBackupService
         var vacationQuotas = await _database.GetAllVacationQuotasAsync().ConfigureAwait(false);
         var projects = await _database.GetProjectsAsync(true).ConfigureAwait(false);
         var employers = await _database.GetEmployersAsync(true).ConfigureAwait(false);
-        var shiftPatterns = await _database.GetShiftPatternsAsync().ConfigureAwait(false);
+        // GetAllShiftPatternsAsync statt GetShiftPatternsAsync: liefert auch inaktive Muster
+        // (FK-Ziele der ShiftAssignments) und vermeidet die Default-Anlage als Seiteneffekt.
+        var shiftPatterns = await _database.GetAllShiftPatternsAsync().ConfigureAwait(false);
+        var shiftAssignments = await _database.GetAllShiftAssignmentsAsync().ConfigureAwait(false);
 
         var data = new BackupData
         {
@@ -247,7 +250,8 @@ public sealed class BackupService : IBackupService
             VacationQuotas = vacationQuotas,
             Projects = projects,
             Employers = employers,
-            ShiftPatterns = shiftPatterns
+            ShiftPatterns = shiftPatterns,
+            ShiftAssignments = shiftAssignments
         };
 
         // WICHTIG: Deep-Clone via JSON-Roundtrip damit das Backup vollständig vom DB-Tracking
@@ -392,7 +396,8 @@ public sealed class BackupService : IBackupService
             data.VacationQuotas,
             data.Projects,
             data.Employers,
-            data.ShiftPatterns).ConfigureAwait(false);
+            data.ShiftPatterns,
+            data.ShiftAssignments).ConfigureAwait(false);
     }
 
     public async Task<bool> DeleteBackupAsync(string backupId)
@@ -509,7 +514,8 @@ public sealed class BackupService : IBackupService
             if (backupData.WorkDays?.Count > 50_000 ||
                 backupData.TimeEntries?.Count > 200_000 ||
                 backupData.PauseEntries?.Count > 200_000 ||
-                backupData.VacationEntries?.Count > 10_000)
+                backupData.VacationEntries?.Count > 10_000 ||
+                backupData.ShiftAssignments?.Count > 50_000)
                 return false;
 
             // FK-Integrität prüfen: TimeEntry.WorkDayId muss in WorkDays existieren
@@ -520,6 +526,15 @@ public sealed class BackupService : IBackupService
                     return false;
                 if (backupData.PauseEntries != null &&
                     backupData.PauseEntries.Any(p => !workDayIds.Contains(p.WorkDayId)))
+                    return false;
+            }
+
+            // FK-Integrität: ShiftAssignment.ShiftPatternId muss in ShiftPatterns existieren
+            if (backupData.ShiftAssignments != null && backupData.ShiftAssignments.Count > 0)
+            {
+                var patternIds = new HashSet<int>(
+                    backupData.ShiftPatterns?.Select(p => p.Id) ?? Enumerable.Empty<int>());
+                if (backupData.ShiftAssignments.Any(a => !patternIds.Contains(a.ShiftPatternId)))
                     return false;
             }
 
@@ -836,4 +851,5 @@ public class BackupData
     public List<Project>? Projects { get; set; }
     public List<Employer>? Employers { get; set; }
     public List<ShiftPattern>? ShiftPatterns { get; set; }
+    public List<ShiftAssignment>? ShiftAssignments { get; set; }
 }

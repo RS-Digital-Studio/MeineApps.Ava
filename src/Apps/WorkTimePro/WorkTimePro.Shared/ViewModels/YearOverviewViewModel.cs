@@ -320,5 +320,4 @@ public class MonthSummary
     public string TargetTimeDisplay => TimeFormatter.FormatMinutes(TargetMinutes);
     public string BalanceDisplay => TimeFormatter.FormatBalance(BalanceMinutes);
     public string BalanceColor => BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
-    public string LockIcon => IsLocked ? Icons.Lock : "";
 }

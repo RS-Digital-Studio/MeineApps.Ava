@@ -36,6 +36,13 @@ public class WorkDay
     public int ActualWorkMinutes { get; set; }
 
     /// <summary>
+    /// Ungerundete Netto-Arbeitszeit in Minuten. Grundlage für gesetzliche Prüfungen
+    /// (§3/§4 ArbZG), damit die optionale Abrechnungs-Rundung (RoundingMinutes) die
+    /// Compliance-Auswertung nicht verschiebt. Bei deaktivierter Rundung == ActualWorkMinutes.
+    /// </summary>
+    public int UnroundedWorkMinutes { get; set; }
+
+    /// <summary>
     /// Manuelle Pausenzeit in Minuten (echte Pausen)
     /// </summary>
     public int ManualPauseMinutes { get; set; }

@@ -113,6 +113,11 @@ public sealed class ReminderService : IReminderService, IDisposable
             case TrackingStatus.Working:
                 // Eingecheckt → Morgen-Reminder canceln, Timer starten
                 await _notification.CancelNotificationAsync(MorningReminderId);
+                // WICHTIG: Cache der laufenden Arbeitszeit füllen, BEVOR die Timer ihre Restdauer
+                // aus GetCurrentSessionDuration() berechnen. Beim Resume einer bereits laufenden
+                // Session (App mittags neu geöffnet) ist der Cache sonst 0 → Pause-/Überstunden-
+                // Warnung würde die volle Schwelle ab jetzt statt ab CheckIn rechnen.
+                await _tracking.GetCurrentWorkTimeAsync();
                 StartPauseTimer(settings);
                 StartOvertimeTimer(settings);
                 break;

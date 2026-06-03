@@ -162,6 +162,13 @@
       <!-- Modal-Hintergrund-Overlay (75% schwarz statt OverlayColor 50%) -->
       <SolidColorBrush x:Key="ModalBackdropBrush" Color="#CC000000" />
 
+      <!-- Kalender-Heatmap-Stufen (Werte gespiegelt aus AppColors.Heatmap*; der SkiaSharp-
+           Renderer nutzt die AppColors-Konstanten, die XAML-Legende diese Brushes). -->
+      <SolidColorBrush x:Key="HeatmapLightBrush" Color="#C8E6C9" />
+      <SolidColorBrush x:Key="HeatmapMediumBrush" Color="#81C784" />
+      <SolidColorBrush x:Key="HeatmapNormalBrush" Color="#4CAF50" />
+      <SolidColorBrush x:Key="HeatmapHighBrush" Color="#388E3C" />
+
       <!-- Theme Identifier -->
       <x:String x:Key="ThemeName">WorkTimePro</x:String>
       <x:Boolean x:Key="IsDarkTheme">True</x:Boolean>

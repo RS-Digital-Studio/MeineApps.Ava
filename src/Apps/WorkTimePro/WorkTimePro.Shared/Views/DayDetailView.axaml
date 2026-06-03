@@ -374,7 +374,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_TimeEntryOverlay"
             IsVisible="{Binding IsTimeEntryOverlayVisible}"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             ZIndex="10">
       <Border Classes="Card" Margin="0"
               VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
@@ -466,7 +466,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_PauseOverlay"
             IsVisible="{Binding IsPauseOverlayVisible}"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             ZIndex="10">
       <Border Classes="Card" Margin="0"
               VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
@@ -545,7 +545,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_ConfirmDeleteOverlay"
             IsVisible="{Binding IsConfirmDeleteVisible}"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             ZIndex="10"
             PointerPressed="OnOverlayBackgroundPressed">
       <Border Classes="Card" Margin="0"
@@ -590,7 +590,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_StatusSelectionOverlay"
             IsVisible="{Binding IsStatusSelectionVisible}"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             ZIndex="10">
       <Border Classes="Card" Margin="0"
               VerticalAlignment="Bottom" HorizontalAlignment="Stretch"

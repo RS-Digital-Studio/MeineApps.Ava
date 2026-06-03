@@ -37,9 +37,12 @@ public sealed class AndroidNotificationService : INotificationService
         var manager = (NotificationManager?)context.GetSystemService(Context.NotificationService);
         if (manager == null) return;
 
-        var channel = new NotificationChannel(ChannelId, "Erinnerungen", NotificationImportance.High)
+        // Lokalisierter Channel-Name (in den Android-System-Einstellungen sichtbar).
+        // CreateNotificationChannel ist idempotent — überschreibt Name/Description bei Sprachwechsel.
+        var channelName = WorkTimePro.Resources.Strings.AppStrings.Reminders;
+        var channel = new NotificationChannel(ChannelId, channelName, NotificationImportance.High)
         {
-            Description = "WorkTimePro Erinnerungen"
+            Description = $"WorkTimePro — {channelName}"
         };
         channel.EnableVibration(true);
 
@@ -73,9 +76,10 @@ public sealed class AndroidNotificationService : INotificationService
         var alarmManager = (AlarmManager?)context.GetSystemService(Context.AlarmService);
         if (alarmManager == null) return Task.CompletedTask;
 
-        // Exact-Alarm-Permission prüfen (Android 12+)
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.S && !alarmManager.CanScheduleExactAlarms())
-            return Task.CompletedTask;
+        // Exact-Alarm-Permission prüfen (Android 12+). Fehlt sie (vom System/Nutzer entzogen),
+        // NICHT still abbrechen — sonst feuert die Erinnerung gar nicht. Stattdessen auf den
+        // inexakten, Doze-tauglichen Alarm zurückfallen (Reminder darf etwas ungenau sein).
+        var canExact = Build.VERSION.SdkInt < BuildVersionCodes.S || alarmManager.CanScheduleExactAlarms();
 
         var intent = new Intent(context, typeof(ReminderReceiver));
         intent.PutExtra("title", title);
@@ -90,8 +94,11 @@ public sealed class AndroidNotificationService : INotificationService
 
         if (pendingIntent != null)
         {
-            // SetExactAndAllowWhileIdle für Reminder (kein AlarmClock nötig)
-            alarmManager.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerMs, pendingIntent);
+            if (canExact)
+                alarmManager.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerMs, pendingIntent);
+            else
+                // Fallback: inexakter Doze-tauglicher Alarm (feuert ggf. etwas verzögert, aber feuert)
+                alarmManager.SetAndAllowWhileIdle(AlarmType.RtcWakeup, triggerMs, pendingIntent);
         }
 
         return Task.CompletedTask;

@@ -249,7 +249,7 @@
     <!-- ==================== Rewarded Ad Overlay ==================== -->
     <Border IsVisible="{Binding ShowRewardedAdOverlay}"
             AutomationProperties.AutomationId="Year_AdOverlay"
-            Background="#CC000000"
+            Background="{DynamicResource ModalBackdropBrush}"
             ZIndex="100"
             Grid.RowSpan="2">
       <Border Background="{DynamicResource CardBrush}"

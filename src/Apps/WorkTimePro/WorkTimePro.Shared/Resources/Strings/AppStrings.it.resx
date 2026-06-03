@@ -550,4 +550,22 @@
   <data name="WarningSixMonthAvgExceeds" xml:space="preserve">
     <value>§3 ArbZG: Media 6 mesi {0:F1}h/giorno supera il limite di 8h</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>Lingua</value>
+  </data>
+  <data name="BackupImportConfirmText" xml:space="preserve">
+    <value>Ripristinare il backup del {0}? Tutti i dati attuali verranno sovrascritti.</value>
+  </data>
+  <data name="VacationSkippedWorkedDays" xml:space="preserve">
+    <value>({0} giorni con orario di lavoro registrato ignorati)</value>
+  </data>
+  <data name="VacationRangeCapped" xml:space="preserve">
+    <value>(limitato a 30 giorni)</value>
+  </data>
+  <data name="VacationCarryOverExpires" xml:space="preserve">
+    <value>Riporto scade (31/03)</value>
+  </data>
+  <data name="VacationMaxCarryOver" xml:space="preserve">
+    <value>Riporto max. (giorni, 0 = illimitato)</value>
+  </data>
 </root>

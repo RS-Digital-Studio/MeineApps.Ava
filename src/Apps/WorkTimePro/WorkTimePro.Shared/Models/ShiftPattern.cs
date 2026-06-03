@@ -108,21 +108,6 @@ public class ShiftPattern
     public string DurationDisplay => $"{(int)WorkDuration.TotalHours}:{WorkDuration.Minutes:D2}";
 
     /// <summary>
-    /// Typ-Icon
-    /// </summary>
-    [Ignore]
-    public string TypeIcon => Type switch
-    {
-        ShiftType.Early => Helpers.Icons.WeatherSunsetUp,
-        ShiftType.Late => Helpers.Icons.WeatherSunsetDown,
-        ShiftType.Night => Helpers.Icons.WeatherNight,
-        ShiftType.Normal => Helpers.Icons.WhiteBalanceSunny,
-        ShiftType.Flexible => Helpers.Icons.Sync,
-        ShiftType.Off => Helpers.Icons.Beach,
-        _ => Helpers.Icons.CalendarMonth
-    };
-
-    /// <summary>
     /// Standard-Schichtmuster erstellen
     /// </summary>
     public static List<ShiftPattern> GetDefaultPatterns()

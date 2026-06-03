@@ -145,11 +145,15 @@
 
           <!-- Pause Button -->
           <Button AutomationProperties.AutomationId="Today_BtnTogglePause"
-                  Content="{Binding PauseButtonText}"
                   Classes="Secondary"
                   Command="{Binding TogglePauseCommand}"
                   HorizontalAlignment="Center"
-                  IsVisible="{Binding IsWorking}" />
+                  IsVisible="{Binding IsWorking}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Coffee" Width="18" Height="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding PauseButtonText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
 
         </StackPanel>
       </Border>
@@ -372,11 +376,15 @@
 
       <!-- Day Details Button -->
       <Button AutomationProperties.AutomationId="Today_BtnDayDetails"
-              Content="{Binding ShowDayDetailsText}"
               Classes="Secondary"
               Command="{Binding NavigateToDayDetailCommand}"
               HorizontalAlignment="Stretch"
-              HorizontalContentAlignment="Center" />
+              HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <mi:MaterialIcon Kind="FileDocument" Width="18" Height="18" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding ShowDayDetailsText}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
 
       <!-- ==================== Quick Navigation Section ==================== -->
       <TextBlock AutomationProperties.AutomationId="Today_TxtMoreFeatures"

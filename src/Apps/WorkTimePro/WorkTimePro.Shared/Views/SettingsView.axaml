@@ -12,7 +12,9 @@
     <conv:RoundingDisplayConverter x:Key="RoundingDisplayConverter" />
   </UserControl.Resources>
 
-  <ScrollViewer VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="Settings_ScrollViewer">
+  <Grid>
+  <ScrollViewer VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="Settings_ScrollViewer"
+                IsHitTestVisible="{Binding !IsImportConfirmVisible}">
     <StackPanel Spacing="12" Margin="16" AutomationProperties.AutomationId="Settings_RootPanel">
 
       <!-- Header -->
@@ -56,12 +58,16 @@
           </StackPanel>
 
           <Button AutomationProperties.AutomationId="Settings_BtnBuyPremium"
-                  Content="{Binding BuyPremiumButtonText}"
                   Classes="Primary"
                   Command="{Binding PurchasePremiumCommand}"
                   IsVisible="{Binding !IsPremium}"
                   HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center" />
+                  HorizontalContentAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Rocket" Width="18" Height="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding BuyPremiumButtonText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
 
           <Button AutomationProperties.AutomationId="Settings_BtnRestorePurchases"
                   Content="{loc:Translate RestorePurchases}"
@@ -379,6 +385,29 @@
           <TextBlock Text="{loc:Translate VacationDefault}"
                      FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
+
+          <!-- Resturlaub-Übertrag: Verfall + Obergrenze -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{loc:Translate VacationCarryOverExpires}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <ToggleSwitch Grid.Column="1"
+                          AutomationProperties.AutomationId="Settings_TsVacationCarryExpires"
+                          IsChecked="{Binding VacationCarryOverExpires}"
+                          OnContent="" OffContent="" />
+          </Grid>
+
+          <Grid ColumnDefinitions="*,100">
+            <TextBlock Text="{loc:Translate VacationMaxCarryOver}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1"
+                     AutomationProperties.AutomationId="Settings_TbVacationMaxCarry"
+                     Text="{Binding VacationMaxCarryOverDays}"
+                     HorizontalContentAlignment="Center" />
+          </Grid>
         </StackPanel>
       </Border>
 
@@ -656,5 +685,30 @@
 
     </StackPanel>
   </ScrollViewer>
+
+    <!-- Import-Bestätigung: Restore überschreibt ALLE aktuellen Daten → vorher bestätigen.
+         Backdrop fängt Taps ab (kein Touch-Durchfall), ScrollViewer ist währenddessen gegated. -->
+    <Border IsVisible="{Binding IsImportConfirmVisible}"
+            Background="{DynamicResource ModalBackdropBrush}"
+            AutomationProperties.AutomationId="Settings_ImportConfirmOverlay">
+      <Border Classes="Card" MaxWidth="360" Margin="32"
+              VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel Spacing="{StaticResource SpacingLg}">
+          <TextBlock Classes="SectionTitle" Text="{loc:Translate Backup}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding ImportConfirmText}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSizeBodyMd}"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}" HorizontalAlignment="Right">
+            <Button Classes="Text" Content="{loc:Translate Cancel}"
+                    Command="{Binding CancelImportCommand}"
+                    AutomationProperties.AutomationId="Settings_ImportCancelButton" />
+            <Button Classes="Primary" Content="{loc:Translate OK}"
+                    Command="{Binding ConfirmImportCommand}"
+                    AutomationProperties.AutomationId="Settings_ImportConfirmButton" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
 
 </UserControl>

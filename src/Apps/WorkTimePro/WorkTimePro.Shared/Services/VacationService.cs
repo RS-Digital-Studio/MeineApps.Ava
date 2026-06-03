@@ -35,12 +35,38 @@ public sealed class VacationService : IVacationService
 
         // Genommene und geplante Urlaubstage berechnen
         var entries = await GetVacationEntriesAsync(year);
-        var (taken, planned) = CalculateTakenAndPlanned(entries);
+        var (taken, planned) = await CalculateTakenAndPlannedAsync(entries);
 
         quota.TakenDays = taken;
         quota.PlannedDays = planned;
 
+        // Verfall des Übertrags zum Stichtag (BUrlG: regulär 31.03.) — NUR in-memory für die
+        // Anzeige, der persistierte Datensatz bleibt unangetastet. Bereits genutzter Übertrag
+        // (durch Urlaub vor dem Stichtag) bleibt erhalten, der ungenutzte Rest verfällt.
+        var settings = await _database.GetSettingsAsync();
+        if (quota.CarryOverDays > 0 && IsCarryOverExpired(year, settings))
+        {
+            quota.CarryOverDays = Math.Min(quota.TakenDays, quota.CarryOverDays);
+        }
+
         return quota;
+    }
+
+    /// <summary>
+    /// Prüft, ob der Resturlaub-Übertrag für ein Jahr zum konfigurierten Stichtag verfallen ist.
+    /// </summary>
+    private static bool IsCarryOverExpired(int year, WorkSettings settings)
+    {
+        if (!settings.VacationCarryOverExpires)
+            return false;
+
+        // Stichtag-Datum robust bilden (ungültige Tag/Monat-Kombinationen abfangen)
+        var month = Math.Clamp(settings.VacationCarryOverExpiryMonth, 1, 12);
+        var maxDay = DateTime.DaysInMonth(year, month);
+        var day = Math.Clamp(settings.VacationCarryOverExpiryDay, 1, maxDay);
+        var deadline = new DateTime(year, month, day);
+
+        return DateTime.Today > deadline;
     }
 
     public async Task SaveQuotaAsync(VacationQuota quota)
@@ -125,7 +151,7 @@ public sealed class VacationService : IVacationService
     {
         var quota = await GetQuotaAsync(year, employerId);
         var entries = await GetVacationEntriesAsync(year);
-        var (taken, planned) = CalculateTakenAndPlanned(entries);
+        var (taken, planned) = await CalculateTakenAndPlannedAsync(entries);
 
         var stats = new VacationStatistics
         {
@@ -148,10 +174,19 @@ public sealed class VacationService : IVacationService
     public async Task<int> CarryOverRemainingDaysAsync(int fromYear, int toYear, int? employerId = null)
     {
         var fromQuota = await GetQuotaAsync(fromYear, employerId);
-        var remaining = fromQuota.RemainingDays;
+
+        // Übertrag NUR aus dem reinen Jahresanspruch des Vorjahres (TotalDays − TakenDays),
+        // NICHT aus AvailableDays inkl. Vorjahres-Übertrag → verhindert Kompoundierung über
+        // mehrere Jahre (sonst würde nie verfallender Rest endlos weitergeschleppt).
+        var remaining = Math.Max(0, fromQuota.TotalDays - fromQuota.TakenDays);
 
         if (remaining <= 0)
             return 0;
+
+        // Obergrenze anwenden (0 = unbegrenzt)
+        var settings = await _database.GetSettingsAsync();
+        if (settings.VacationMaxCarryOverDays > 0)
+            remaining = Math.Min(remaining, settings.VacationMaxCarryOverDays);
 
         var toQuota = await GetQuotaAsync(toYear, employerId);
         toQuota.CarryOverDays = remaining;
@@ -164,9 +199,11 @@ public sealed class VacationService : IVacationService
 
     /// <summary>
     /// Berechnet genommene und geplante Urlaubstage aus Einträgen.
-    /// Laufende Urlaube (StartDate &lt; heute UND EndDate >= heute) werden anteilig aufgeteilt.
+    /// Laufende Urlaube (StartDate &lt; heute UND EndDate >= heute) werden über die tatsächlichen
+    /// Werktage zwischen Start und gestern aufgeteilt (statt über das Kalendertag-Verhältnis) —
+    /// das ist wochenend-/feiertags-genau.
     /// </summary>
-    private static (int taken, int planned) CalculateTakenAndPlanned(List<VacationEntry> entries)
+    private async Task<(int taken, int planned)> CalculateTakenAndPlannedAsync(List<VacationEntry> entries)
     {
         var today = DateTime.Today;
         var taken = 0;
@@ -184,18 +221,13 @@ public sealed class VacationService : IVacationService
                 // Komplett in der Zukunft
                 planned += e.Days;
             }
-            else
+            else if (e.Days > 0)
             {
-                // Laufender Urlaub: anteilig aufteilen
-                var totalDays = (e.EndDate - e.StartDate).Days + 1;
-                var pastDays = (today - e.StartDate).Days;
-                if (totalDays > 0 && e.Days > 0)
-                {
-                    var pastRatio = (double)pastDays / totalDays;
-                    var pastWorkDays = (int)Math.Round(e.Days * pastRatio);
-                    taken += pastWorkDays;
-                    planned += e.Days - pastWorkDays;
-                }
+                // Laufender Urlaub: bereits vergangene Werktage (bis einschließlich gestern) zählen
+                var pastWorkDays = await CalculateWorkDaysAsync(e.StartDate, today.AddDays(-1));
+                pastWorkDays = Math.Clamp(pastWorkDays, 0, e.Days);
+                taken += pastWorkDays;
+                planned += e.Days - pastWorkDays;
             }
         }
 

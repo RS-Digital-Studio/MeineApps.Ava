@@ -74,7 +74,7 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
     private bool _showAds = true;
 
     // Localized texts
-    public string TodayButtonText => $"{Icons.CalendarToday} {AppStrings.Today}";
+    public string TodayButtonText => AppStrings.Today;
 
     // === Status Overlay ===
 
@@ -320,8 +320,11 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
     /// </summary>
     public async Task SetVacationRangeAsync(DateTime startDate, int days)
     {
-        days = Math.Min(days, 30);
+        const int maxDays = 30;
+        var capped = days > maxDays;
+        days = Math.Min(days, maxDays);
 
+        var skipped = 0;
         for (var i = 0; i < days; i++)
         {
             var date = startDate.AddDays(i);
@@ -331,12 +334,26 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
                 continue;
 
             var workDay = await _database.GetOrCreateWorkDayAsync(date);
+
+            // Tage mit bereits erfasster Arbeitszeit NICHT still mit Urlaub überschreiben —
+            // sonst verschwindet ein gestempelter Tag kommentarlos hinter dem Urlaubs-Status.
+            if (workDay.ActualWorkMinutes > 0)
+            {
+                skipped++;
+                continue;
+            }
+
             workDay.Status = DayStatus.Vacation;
             workDay.Note = $"{AppStrings.Vacation} ({startDate:dd.MM} - {startDate.AddDays(days - 1):dd.MM})";
             await _database.SaveWorkDayAsync(workDay);
         }
 
-        MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.VacationDaysEnteredFormat, days, startDate.ToString("dd.MM.yyyy")));
+        var msg = string.Format(AppStrings.VacationDaysEnteredFormat, days, startDate.ToString("dd.MM.yyyy"));
+        if (skipped > 0)
+            msg += " " + string.Format(AppStrings.VacationSkippedWorkedDays ?? "({0} Tage mit erfasster Arbeitszeit übersprungen)", skipped);
+        if (capped)
+            msg += " " + (AppStrings.VacationRangeCapped ?? "(auf 30 Tage begrenzt)");
+        MessageRequested?.Invoke(AppStrings.Info, msg);
         await LoadDataAsync();
     }
 

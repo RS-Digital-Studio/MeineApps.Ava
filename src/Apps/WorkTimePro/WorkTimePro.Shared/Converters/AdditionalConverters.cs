@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia.Data;
 using Avalonia.Data.Converters;
 using WorkTimePro.Resources.Strings;
 
@@ -15,7 +16,9 @@ public class InvertBoolConverter : IValueConverter
         {
             return !boolValue;
         }
-        return false;
+        // Bei null/Nicht-bool nicht hart 'false' liefern (würde invertierte IsVisible-Logik
+        // bei null-Quelle in den falschen Zustand kippen) — Binding unverändert lassen.
+        return BindingOperations.DoNothing;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -24,28 +27,29 @@ public class InvertBoolConverter : IValueConverter
         {
             return !boolValue;
         }
-        return false;
+        return BindingOperations.DoNothing;
     }
 }
 
 /// <summary>
-/// Konvertiert einen Integer (> 0) zu Bool
+/// Konvertiert einen numerischen Wert (> 0) zu Bool
 /// </summary>
 public class IntToBoolConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is int intValue)
+        // int, long und double abdecken (nicht nur int) — sonst false bei long/double-Quellen
+        return value switch
         {
-            return intValue > 0;
-        }
-        return false;
+            int i => i > 0,
+            long l => l > 0,
+            double d => d > 0,
+            _ => false
+        };
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
+        => BindingOperations.DoNothing;
 }
 
 /// <summary>
@@ -60,7 +64,7 @@ public class StringToBoolConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return BindingOperations.DoNothing;
     }
 }
 
@@ -76,7 +80,7 @@ public class NullToBoolConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return BindingOperations.DoNothing;
     }
 }
 
@@ -92,7 +96,7 @@ public class StringNotNullConverter : IValueConverter
         => _inner.Convert(value, targetType, parameter, culture);
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => BindingOperations.DoNothing;
 }
 
 /// <summary>
@@ -113,6 +117,6 @@ public class RoundingDisplayConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return BindingOperations.DoNothing;
     }
 }

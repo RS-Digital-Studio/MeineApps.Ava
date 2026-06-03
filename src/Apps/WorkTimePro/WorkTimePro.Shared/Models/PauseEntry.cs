@@ -57,7 +57,8 @@ public class PauseEntry
         {
             if (EndTime == null)
                 return TimeSpan.Zero;
-            var duration = EndTime.Value - StartTime;
+            // DST-bewusst: tatsächlich verstrichene Zeit (korrigiert Sommer-/Winterzeit-Sprung)
+            var duration = Helpers.DurationMath.RealElapsed(StartTime, EndTime.Value);
             // Negative Dauer bei Mitternachts-Übergang abfangen
             if (duration < TimeSpan.Zero)
                 duration += TimeSpan.FromHours(24);
@@ -97,12 +98,6 @@ public class PauseEntry
     /// </summary>
     [Ignore]
     public string EndTimeDisplay => EndTime?.ToString("HH:mm") ?? "--:--";
-
-    /// <summary>
-    /// Icon for auto-pause (Lightning) or empty
-    /// </summary>
-    [Ignore]
-    public string AutoPauseIcon => IsAutoPause ? Helpers.Icons.Lightning : "";
 
     /// <summary>
     /// Läuft die Pause noch?

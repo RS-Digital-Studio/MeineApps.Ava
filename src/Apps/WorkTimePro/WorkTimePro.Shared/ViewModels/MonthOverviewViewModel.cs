@@ -91,8 +91,8 @@ public sealed partial class MonthOverviewViewModel : ViewModelBase, INavigationS
     [ObservableProperty]
     private bool _showAds = true;
 
-    public string LockMonthButtonText => $"{Icons.Lock} {AppStrings.CloseMonth}";
-    public string UnlockMonthButtonText => $"{Icons.LockOpen} {AppStrings.UnlockMonth}";
+    public string LockMonthButtonText => AppStrings.CloseMonth;
+    public string UnlockMonthButtonText => AppStrings.UnlockMonth;
 
     // === Commands ===
 

@@ -43,9 +43,9 @@
   <data name="Week" xml:space="preserve"><value>Semaine</value></data>
   <data name="WeekOverview" xml:space="preserve"><value>Apercu hebdomadaire</value></data>
   <data name="ThisWeek" xml:space="preserve"><value>Cette semaine</value></data>
-  <data name="WorkedDays" xml:space="preserve"><value>Jours travailles</value></data>
+  <data name="WorkedDays" xml:space="preserve"><value>Jours travaillés</value></data>
   <data name="Month" xml:space="preserve"><value>Mois</value></data>
-  <data name="MonthOverview" xml:space="preserve"><value>Apercu mensuel</value></data>
+  <data name="MonthOverview" xml:space="preserve"><value>Aperçu mensuel</value></data>
   <data name="MonthBalance" xml:space="preserve"><value>Solde mensuel</value></data>
   <data name="CumulativeBalance" xml:space="preserve"><value>Solde cumule</value></data>
   <data name="CloseMonth" xml:space="preserve"><value>Cloturer le mois</value></data>
@@ -55,9 +55,9 @@
   <data name="Calendar" xml:space="preserve"><value>Calendrier</value></data>
   <data name="Legend" xml:space="preserve"><value>Legende</value></data>
   <data name="Statistics" xml:space="preserve"><value>Statistiques</value></data>
-  <data name="Period" xml:space="preserve"><value>Periode</value></data>
+  <data name="Period" xml:space="preserve"><value>Période</value></data>
   <data name="Quarter" xml:space="preserve"><value>Trimestre</value></data>
-  <data name="Year" xml:space="preserve"><value>Annee</value></data>
+  <data name="Year" xml:space="preserve"><value>Année</value></data>
   <data name="TotalWorkTime" xml:space="preserve"><value>Temps de travail total</value></data>
   <data name="Overtime" xml:space="preserve"><value>Heures supplementaires</value></data>
   <data name="AveragePerDay" xml:space="preserve"><value>Moyenne par jour</value></data>
@@ -65,8 +65,8 @@
   <data name="OvertimeTrend" xml:space="preserve"><value>Evolution des heures sup.</value></data>
   <data name="DayStatus_WorkDay" xml:space="preserve"><value>Jour de travail</value></data>
   <data name="DayStatus_Weekend" xml:space="preserve"><value>Week-end</value></data>
-  <data name="DayStatus_Vacation" xml:space="preserve"><value>Conges</value></data>
-  <data name="DayStatus_Holiday" xml:space="preserve"><value>Jour ferie</value></data>
+  <data name="DayStatus_Vacation" xml:space="preserve"><value>Congés</value></data>
+  <data name="DayStatus_Holiday" xml:space="preserve"><value>Jour férié</value></data>
   <data name="DayStatus_Sick" xml:space="preserve"><value>Maladie</value></data>
   <data name="DayStatus_HomeOffice" xml:space="preserve"><value>Teletravail</value></data>
   <data name="DayStatus_BusinessTrip" xml:space="preserve"><value>Deplacement pro</value></data>
@@ -175,9 +175,9 @@
   <data name="PauseStats" xml:space="preserve"><value>Pauses</value></data>
   <data name="Manual" xml:space="preserve"><value>Manuel</value></data>
   <data name="Auto" xml:space="preserve"><value>Auto</value></data>
-  <data name="Vacation" xml:space="preserve"><value>Conges</value></data>
-  <data name="VacationDaysPerYear" xml:space="preserve"><value>Jours de conges par an</value></data>
-  <data name="VacationDefault" xml:space="preserve"><value>Par defaut: 30 jours</value></data>
+  <data name="Vacation" xml:space="preserve"><value>Congés</value></data>
+  <data name="VacationDaysPerYear" xml:space="preserve"><value>Jours de congés par an</value></data>
+  <data name="VacationDefault" xml:space="preserve"><value>Par défaut : 30 jours</value></data>
   <data name="IndividualHoursPerDay" xml:space="preserve"><value>Heures individuelles par jour</value></data>
   <data name="SelectRegion" xml:space="preserve"><value>Choisir la region</value></data>
   <data name="Saved" xml:space="preserve"><value>Enregistre</value></data>
@@ -186,7 +186,7 @@
   <data name="Home" xml:space="preserve"><value>Domicile</value></data>
   <data name="Holiday" xml:space="preserve"><value>Ferie</value></data>
   <data name="AvgPerDay" xml:space="preserve"><value>Moy/jour</value></data>
-  <data name="WorkedDaysCount" xml:space="preserve"><value>Jours travailles</value></data>
+  <data name="WorkedDaysCount" xml:space="preserve"><value>Jours travaillés</value></data>
   <data name="Export" xml:space="preserve"><value>Exporter</value></data>
   <data name="ExportAs" xml:space="preserve"><value>Exporter sous...</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Exportation reussie</value></data>
@@ -204,7 +204,7 @@
   <data name="AddNewVacation" xml:space="preserve"><value>Ajouter de nouveaux conges</value></data>
   <data name="From" xml:space="preserve"><value>De</value></data>
   <data name="To" xml:space="preserve"><value>A</value></data>
-  <data name="WorkDaysFormat" xml:space="preserve"><value>{0} jours ouvres</value></data>
+  <data name="WorkDaysFormat" xml:space="preserve"><value>{0} jours ouvrés</value></data>
   <data name="Type" xml:space="preserve"><value>Type</value></data>
   <data name="NoteOptional" xml:space="preserve"><value>Note (optionnel)</value></data>
   <data name="AddVacation" xml:space="preserve"><value>Ajouter conges</value></data>
@@ -231,9 +231,9 @@
   <data name="YearOverview" xml:space="preserve"><value>Apercu annuel</value></data>
   <data name="ActualTime" xml:space="preserve"><value>Reel</value></data>
   <data name="TargetTime" xml:space="preserve"><value>Objectif</value></data>
-  <data name="WorkDaysTotal" xml:space="preserve"><value>Jours travailles</value></data>
+  <data name="WorkDaysTotal" xml:space="preserve"><value>Jours travaillés</value></data>
   <data name="AvgPerDayShort" xml:space="preserve"><value>Moy/jour</value></data>
-  <data name="VacationLabel" xml:space="preserve"><value>Conges</value></data>
+  <data name="VacationLabel" xml:space="preserve"><value>Congés</value></data>
   <data name="SickLabel" xml:space="preserve"><value>Maladie</value></data>
   <data name="DaysFormat" xml:space="preserve"><value>{0} jours</value></data>
   <data name="PdfExport" xml:space="preserve"><value>Export PDF</value></data>
@@ -549,5 +549,23 @@
   <data name="DayNotePlaceholder" xml:space="preserve"><value>Sur quoi avez-vous travaillé aujourd'hui ?</value></data>
   <data name="WarningSixMonthAvgExceeds" xml:space="preserve">
     <value>§3 ArbZG: Moyenne sur 6 mois {0:F1}h/jour dépasse la limite de 8h</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Langue</value>
+  </data>
+  <data name="BackupImportConfirmText" xml:space="preserve">
+    <value>Restaurer la sauvegarde du {0} ? Toutes les données actuelles seront écrasées.</value>
+  </data>
+  <data name="VacationSkippedWorkedDays" xml:space="preserve">
+    <value>({0} jours avec temps de travail enregistré ignorés)</value>
+  </data>
+  <data name="VacationRangeCapped" xml:space="preserve">
+    <value>(limité à 30 jours)</value>
+  </data>
+  <data name="VacationCarryOverExpires" xml:space="preserve">
+    <value>Report expire (31/03)</value>
+  </data>
+  <data name="VacationMaxCarryOver" xml:space="preserve">
+    <value>Report max. (jours, 0 = illimité)</value>
   </data>
 </root>

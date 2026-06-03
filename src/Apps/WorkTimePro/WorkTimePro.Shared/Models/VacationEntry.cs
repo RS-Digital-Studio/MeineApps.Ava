@@ -82,19 +82,6 @@ public class VacationEntry
     public string DaysDisplay => string.Format(AppStrings.DaysFormat, Days);
 
     /// <summary>
-    /// Type-Icon
-    /// </summary>
-    [Ignore]
-    public string TypeIcon => Type switch
-    {
-        DayStatus.Vacation => Icons.Beach,
-        DayStatus.Sick => Icons.Thermometer,
-        DayStatus.SpecialLeave => Icons.Gift,
-        DayStatus.UnpaidLeave => Icons.PowerSleep,
-        _ => Icons.CalendarMonth
-    };
-
-    /// <summary>
     /// MaterialIconKind for vacation type
     /// </summary>
     [Ignore]

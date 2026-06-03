@@ -118,10 +118,5 @@ public class Project
         }
     }
 
-    /// <summary>
-    /// Status-Badge
-    /// </summary>
-    [Ignore]
-    public string StatusBadge => IsActive ? Helpers.Icons.CircleSlice8 : Helpers.Icons.CircleOutline;
 }
 

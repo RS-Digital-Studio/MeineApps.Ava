@@ -46,9 +46,7 @@ public interface IDatabaseService
     Task<VacationQuota?> GetVacationQuotaAsync(int year, int? employerId = null);
     Task SaveVacationQuotaAsync(VacationQuota quota);
 
-    // === HolidayEntry ===
-    Task<List<HolidayEntry>> GetHolidaysAsync(int year, string region);
-    Task SaveHolidaysAsync(List<HolidayEntry> holidays);
+    // === HolidayEntry (In-Memory via HolidayCalculator, keine DB-Persistenz) ===
     Task<bool> IsHolidayAsync(DateTime date, string region);
 
     // === Project ===
@@ -74,6 +72,8 @@ public interface IDatabaseService
     Task<ShiftAssignment?> GetShiftAssignmentAsync(DateTime date);
     Task<int> SaveShiftAssignmentAsync(ShiftAssignment assignment);
     Task DeleteShiftAssignmentAsync(int id);
+    Task<List<ShiftAssignment>> GetAllShiftAssignmentsAsync();
+    Task<List<ShiftPattern>> GetAllShiftPatternsAsync();
 
     // === Month lock ===
     Task LockMonthAsync(int year, int month);
@@ -104,7 +104,8 @@ public interface IDatabaseService
         List<VacationQuota>? vacationQuotas,
         List<Project>? projects,
         List<Employer>? employers,
-        List<ShiftPattern>? shiftPatterns);
+        List<ShiftPattern>? shiftPatterns,
+        List<ShiftAssignment>? shiftAssignments);
 
     // === Backup methods ===
     Task<List<WorkDay>> GetAllWorkDaysAsync();

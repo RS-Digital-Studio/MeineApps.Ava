@@ -22,7 +22,7 @@ namespace WorkTimePro.Resources.Strings {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class AppStrings {
+    public class AppStrings {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace WorkTimePro.Resources.Strings {
         ///   Gibt die zwischengespeicherte ResourceManager-Instanz zurück, die von dieser Klasse verwendet wird.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WorkTimePro.Resources.Strings.AppStrings", typeof(AppStrings).Assembly);
@@ -828,7 +828,7 @@ namespace WorkTimePro.Resources.Strings {
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Reminders ähnelt.
         /// </summary>
-        internal static string Reminders {
+        public static string Reminders {
             get {
                 return ResourceManager.GetString("Reminders", resourceCulture);
             }
@@ -2678,6 +2678,30 @@ namespace WorkTimePro.Resources.Strings {
         internal static string WarningSixMonthAvgExceeds {
             get {
                 return ResourceManager.GetString("WarningSixMonthAvgExceeds", resourceCulture);
+            }
+        }
+
+        internal static string Language {
+            get {
+                return ResourceManager.GetString("Language", resourceCulture);
+            }
+        }
+
+        internal static string BackupImportConfirmText {
+            get {
+                return ResourceManager.GetString("BackupImportConfirmText", resourceCulture);
+            }
+        }
+
+        internal static string VacationSkippedWorkedDays {
+            get {
+                return ResourceManager.GetString("VacationSkippedWorkedDays", resourceCulture);
+            }
+        }
+
+        internal static string VacationRangeCapped {
+            get {
+                return ResourceManager.GetString("VacationRangeCapped", resourceCulture);
             }
         }
     }

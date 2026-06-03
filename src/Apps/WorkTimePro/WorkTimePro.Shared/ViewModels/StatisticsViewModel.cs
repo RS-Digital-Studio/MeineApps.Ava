@@ -216,17 +216,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
     public bool HasWeekdayData => WeekdayAvgHours.Length > 0;
     public bool HasNoTableData => TableDays.Count == 0;
 
-    // Lokalisierte Titel
-    public string ChartsButtonText => $"{Icons.ChartBar} {AppStrings.Charts}";
-    public string TableButtonText => $"{Icons.FileDocument} {AppStrings.Table}";
-    public string PauseStatsTitle => $"{Icons.Coffee} {AppStrings.PauseStats}";
-    public string AutoPauseLabel => $"{AppStrings.Auto} {Icons.Lightning}";
-    public string WeeklyChartTitle => $"{Icons.ChartBar} {AppStrings.WeeklyWorkTimeChart}";
-    public string OvertimeChartTitle => $"{Icons.TrendingUp} {AppStrings.OvertimeTrendChart}";
-    public string WeekdayChartTitle => $"{Icons.CalendarWeek} {AppStrings.WeekdayAverage}";
-    public string ProjectChartTitle => $"{Icons.Briefcase} {AppStrings.ProjectDistribution}";
-    public string EmployerChartTitle => $"{Icons.AccountGroup} {AppStrings.EmployerDistribution}";
-    public string WorkTimeTableTitle => $"{Icons.FileDocument} {AppStrings.WorkTimeTable}";
+    // (Frühere Icon-Titel-Properties entfernt — waren ungenutzt; die StatisticsView
+    //  beschriftet Charts/Buttons direkt über loc:Translate.)
 
     // === Commands ===
 
@@ -394,7 +385,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
         ShowExportFormatOverlay = false;
     }
 
-    public string ExportButtonText => $"{Icons.Export} {AppStrings.Export}";
 
     // === Rewarded Ad Commands ===
 

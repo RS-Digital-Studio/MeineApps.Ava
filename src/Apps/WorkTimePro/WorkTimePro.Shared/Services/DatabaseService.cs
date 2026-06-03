@@ -106,6 +106,20 @@ public sealed class DatabaseService : IDatabaseService
             System.Diagnostics.Debug.WriteLine($"DatabaseService: Legacy-Migration fehlgeschlagen: {ex.Message}");
         }
 
+        // Backfill: UnroundedWorkMinutes (neue Spalte) für Altdaten mit ActualWorkMinutes
+        // initialisieren. Die ungerundete Original-Zeit ist für historische Tage nicht mehr
+        // rekonstruierbar — ActualWorkMinutes ist die beste Näherung (= bisheriges Verhalten).
+        try
+        {
+            await _database.ExecuteAsync(
+                "UPDATE WorkDays SET UnroundedWorkMinutes = ActualWorkMinutes " +
+                "WHERE UnroundedWorkMinutes = 0 AND ActualWorkMinutes <> 0");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DatabaseService: UnroundedWorkMinutes-Backfill fehlgeschlagen: {ex.Message}");
+        }
+
         return _database;
     }
 
@@ -219,7 +233,14 @@ public sealed class DatabaseService : IDatabaseService
     public async Task DeleteWorkDayAsync(int id)
     {
         var db = await GetDatabaseAsync();
-        await db.DeleteAsync<WorkDay>(id);
+        // Kind-Zeilen mitlöschen (kein FK-Cascade in sqlite-net) — sonst verwaisen TimeEntries/
+        // PauseEntries und blähen Backup-Export/Queries auf. Atomar in einer Transaction.
+        await db.RunInTransactionAsync(conn =>
+        {
+            conn.Execute("DELETE FROM TimeEntries WHERE WorkDayId = ?", id);
+            conn.Execute("DELETE FROM PauseEntries WHERE WorkDayId = ?", id);
+            conn.Delete<WorkDay>(id);
+        });
     }
 
     // ==================== TimeEntry ====================
@@ -469,43 +490,16 @@ public sealed class DatabaseService : IDatabaseService
 
     // ==================== HolidayEntry ====================
 
-    public async Task<List<HolidayEntry>> GetHolidaysAsync(int year, string region)
+    // Hinweis: Feiertage werden ausschließlich über HolidayCalculator (In-Memory) berechnet.
+    // Die frühere DB-gestützte Persistenz (GetHolidaysAsync(year,region)/SaveHolidaysAsync)
+    // wurde nie befüllt und ist entfernt — IsHolidayAsync rechnet jetzt direkt.
+
+    public Task<bool> IsHolidayAsync(DateTime date, string region)
     {
-        var db = await GetDatabaseAsync();
-        var holidays = await db.Table<HolidayEntry>()
-            .Where(h => h.Year == year && h.Region == region)
-            .OrderBy(h => h.Date)
-            .ToListAsync();
-
-        // Feiertage werden über HolidayService berechnet (In-Memory, kein DB-Fallback nötig)
-
-        return holidays;
-    }
-
-    public async Task SaveHolidaysAsync(List<HolidayEntry> holidays)
-    {
-        // Transaktion statt einzelner Inserts/Updates (16 Feiertage = 1 Transaktion statt 16 Roundtrips)
-        var db = await GetDatabaseAsync();
-        await db.RunInTransactionAsync(conn =>
-        {
-            foreach (var holiday in holidays)
-            {
-                if (holiday.Id == 0)
-                    conn.Insert(holiday);
-                else
-                    conn.Update(holiday);
-            }
-        });
-    }
-
-    public async Task<bool> IsHolidayAsync(DateTime date, string region)
-    {
-        var db = await GetDatabaseAsync();
-        var dateOnly = date.Date;
-        var holiday = await db.Table<HolidayEntry>()
-            .Where(h => h.Date == dateOnly && h.Region == region)
-            .FirstOrDefaultAsync();
-        return holiday != null;
+        // In-Memory-Berechnung (HolidayCalculator) statt Lookup in der nie befüllten
+        // Holidays-Tabelle — so greift die Feiertags-Auto-Erkennung in GetOrCreateWorkDayAsync
+        // tatsächlich. Kein DI-Zyklus, da HolidayCalculator abhängigkeitsfrei ist.
+        return Task.FromResult(HolidayCalculator.IsHoliday(date, region));
     }
 
     // ==================== Project ====================
@@ -707,6 +701,20 @@ public sealed class DatabaseService : IDatabaseService
         await db.DeleteAsync<ShiftAssignment>(id);
     }
 
+    public async Task<List<ShiftAssignment>> GetAllShiftAssignmentsAsync()
+    {
+        var db = await GetDatabaseAsync();
+        return await db.Table<ShiftAssignment>().ToListAsync();
+    }
+
+    // Für Backup: ALLE Muster (auch inaktive), ohne Default-Anlage-Seiteneffekt von
+    // GetShiftPatternsAsync — sonst fehlen FK-Ziele der ShiftAssignments beim Restore.
+    public async Task<List<ShiftPattern>> GetAllShiftPatternsAsync()
+    {
+        var db = await GetDatabaseAsync();
+        return await db.Table<ShiftPattern>().ToListAsync();
+    }
+
     // ==================== Month lock ====================
 
     public async Task LockMonthAsync(int year, int month)
@@ -813,7 +821,8 @@ public sealed class DatabaseService : IDatabaseService
         List<VacationQuota>? vacationQuotas,
         List<Project>? projects,
         List<Employer>? employers,
-        List<ShiftPattern>? shiftPatterns)
+        List<ShiftPattern>? shiftPatterns,
+        List<ShiftAssignment>? shiftAssignments)
     {
         var db = await GetDatabaseAsync();
 
@@ -851,6 +860,11 @@ public sealed class DatabaseService : IDatabaseService
 
             if (shiftPatterns != null)
                 foreach (var item in shiftPatterns)
+                    conn.Insert(item);
+
+            // ShiftAssignments NACH ShiftPatterns (FK auf ShiftPatternId) und Employers
+            if (shiftAssignments != null)
+                foreach (var item in shiftAssignments)
                     conn.Insert(item);
         });
     }

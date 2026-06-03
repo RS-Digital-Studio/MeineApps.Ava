@@ -14,6 +14,9 @@
     <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Avalonia.Labs.Controls" />
     <PackageReference Include="sqlite-net-pcl" />
+    <!-- Explizit, damit bundle_green 2.1.11 (16-KB-Page-aligned, Android 16) greift statt
+         der transitiv von sqlite-net-pcl gezogenen 2.1.2 (XA0141). -->
+    <PackageReference Include="SQLitePCLRaw.bundle_green" />
   </ItemGroup>
 
   <ItemGroup>

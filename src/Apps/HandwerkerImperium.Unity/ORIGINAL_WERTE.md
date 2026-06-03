@@ -216,7 +216,10 @@ Quelle: `GameBalanceConstants.MilestoneMultipliers` (array von (Level, Multiplie
 
 `IsMilestoneLevel(level)` = level ist exakt einer dieser Levels.
 `GetMilestoneMultiplierForLevel(level)` = Einzel-Multiplikator des exakten Levels (sonst 1.0).
-Doc-Kommentar: kumulativ ~84.6x bei Level 1000.
+Kumulativer Multiplikator bei Level 1000 = Produkt aller 16 Milestones = **~1500x**
+(1.15·1.30·1.30·1.45·1.60·1.45·1.30·1.60·1.60·1.60·2.00·1.70·1.65·1.60·1.60·3.00 = 1499.86).
+Der Code-Doc-Kommentar (`WorkshopFormulas.cs:71`) nennt veraltet "~921x" — bei der 1:1-Portierung
+gilt der reale Produktwert ~1500x, nicht der Kommentar.
 
 ### 2.7 MaxWorkers-Formel
 
@@ -271,9 +274,19 @@ Quelle: `Models/Workshop.cs` (RebirthStars 0-5, extern aus `GameState.WorkshopSt
 | 4 | +100% | -20% | +2 |
 | 5 | +150% | -25% | +3 |
 
-(GS-Kosten pro Stern sind NICHT in den hier gelesenen Dateien — sie liegen im RebirthService, der nicht
-zum Leseauftrag gehoerte. App-CLAUDE.md nennt: 1=100, 2=250, 3=500, 4=500, 5=1000 GS — nicht aus diesen
-Quelldateien verifiziert.)
+**Rebirth-Kosten pro nächstem Stern** (Quelle: `Services/RebirthService.cs` `RebirthCosts` — Tupel
+`(Goldschrauben, Geld-Prozent des aktuellen Geldes)`):
+
+| Stern | Goldschrauben | Geld-Anteil |
+|-------|---------------|-------------|
+| 1 | 50 | 10% |
+| 2 | 125 | 15% |
+| 3 | 250 | 20% |
+| 4 | 200 | 25% |
+| 5 | 400 | 30% |
+
+`moneyCost = state.Money * moneyPercent` wird in `DoRebirth` ZUSÄTZLICH zu den Goldschrauben fällig.
+Die früher hier zitierten 100/250/500/500/1000 GS (ohne Geld-Anteil) waren veraltet.
 
 ---
 
@@ -755,8 +768,9 @@ Quelle: `Models/GameBalanceConstants.cs`
 
 ## Anmerkungen zu nicht in den gelesenen Quelldateien gefundenen Werten
 
-- **Rebirth-GS-Kosten pro Stern**: liegen im `RebirthService` (nicht im Leseauftrag). App-CLAUDE.md nennt
-  1=100, 2=250, 3=500, 4=500, 5=1000 GS — NICHT aus den hier gelesenen Modell-Dateien verifiziert.
+- **Rebirth-Kosten pro Stern**: verifiziert in `Services/RebirthService.cs` (`RebirthCosts`):
+  Goldschrauben 50/125/250/200/400 PLUS Geld-Anteil 10%/15%/20%/25%/30% des aktuellen Geldes
+  (siehe Abschnitt 2.10).
 - **`MaxInterns`**: Interface-Konstante `IWorkerService.MaxInterns` (Interface nicht gelesen). App-CLAUDE.md
   nennt 2 — nicht aus den gelesenen Dateien verifiziert.
 - **Research-Unlocks** (`mgmt_04` Headhunter Pool 5→8, `mgmt_10` S-Tier): via `IResearchService.GetTotalEffects()`
@@ -904,12 +918,18 @@ Dann **in dieser exakten Reihenfolge** (jeweils nur wenn Bedingung > 0):
 | 6 | Gilde Income-Bonus | `*= (1 + GuildMembership.IncomeBonus)` | `GuildMembership != null && IncomeBonus > 0` |
 | 7 | Gilde Research-Income | `*= (1 + gm.ResearchIncomeBonus)` | `ResearchIncomeBonus > 0` |
 | 8 | Gilde Research-Efficiency | `*= (1 + gm.ResearchEfficiencyBonus)` | `ResearchEfficiencyBonus > 0` |
-| 9 | VIP Income | `*= (1 + _vipService.IncomeBonus)` | `IncomeBonus > 0` |
-| 10 | Manager Income (Summe) | `*= (1 + totalManagerIncome)` | siehe unten |
-| 11 | Manager Efficiency (Summe, SEPARAT) | `*= (1 + totalManagerEfficiency)` | siehe unten |
-| 12 | Premium | `*= 1.5` | `state.IsPremium` |
-| 13 | Eternal Mastery | `*= (1 + _eternalMastery.IncomeBonus)` | `_eternalMastery.IsActive` |
-| 14 | Heirloom (Erbstuecke) | `*= (1 + heirloomBonus)` | `heirloomBonus > 0` |
+| 9 | Gilde Hall-Income | `*= (1 + gm.HallIncomeBonus)` | `HallIncomeBonus > 0` |
+| 10 | Gilde Hall-Everything | `*= (1 + gm.HallEverythingBonus)` | `HallEverythingBonus > 0` |
+| 11 | VIP Income | `*= (1 + _vipService.IncomeBonus)` | `IncomeBonus > 0` |
+| 12 | Manager Income (Summe) | `*= (1 + totalManagerIncome)` | siehe unten |
+| 13 | Manager Efficiency (Summe, SEPARAT) | `*= (1 + totalManagerEfficiency)` | siehe unten |
+| 14 | Premium | `*= 1.5` | `state.IsPremium` |
+| 15 | Eternal Mastery | `*= (1 + _eternalMastery.IncomeBonus)` | `_eternalMastery.IsActive` |
+| 16 | Heirloom (Erbstuecke) | `*= (1 + heirloomBonus)` | `heirloomBonus > 0` |
+
+Die beiden Gildenhallen-Faktoren (#9/#10) liegen NACH Gilde-Research-Efficiency und VOR VIP
+(`IncomeCalculatorService.cs:84-87`). Sie werden von Gildenhallen-Gebäuden gesetzt
+(`Guild.cs:101/113/148/152`) — eine 1:1-Portierung ohne sie untergewichtet das Gildenhallen-Einkommen.
 
 Wichtig: **Manager Income und Manager Efficiency werden als ZWEI separate Multiplikatoren angewandt** (nicht summiert).
 `totalManagerIncome` = Summe von `GetManagerBonusForWorkshop(wsType, IncomeBoost)` ueber alle Workshops + `GetGlobalManagerBonus(IncomeBoost)`.
@@ -944,7 +964,8 @@ _cachedCosts  = totalCosts / 3600                            // Kosten pro Stund
 Quelle: `IncomeCalculatorService.CalculateCraftingSellMultiplier(...)`
 
 Start `mult = 1.0`. Reihenfolge: Prestige-Income → Research-Eff (Cap 50%) → Event → TaxAudit (×0.90) →
-MasterTools → Gilde (Income + ResearchIncome + ResearchEfficiency) → VIP → Rebirth-Income → Premium (×1.5).
+MasterTools → Gilde (Income + ResearchIncome + ResearchEfficiency + **HallIncome + HallEverything**) →
+VIP → Rebirth-Income → Premium (×1.5). (Hall-Boni: `IncomeCalculatorService.cs:320-323`.)
 Dann Soft-Cap:
 ```
 SoftCap = GameBalanceConstants.CraftingSellMultiplierSoftCap = 8.0
@@ -957,8 +978,9 @@ return Min(mult, 12.0)
 
 ## 4. Income-Soft-Cap (tier-skalierend)
 
-Quelle: `IncomeCalculatorService.ApplySoftCap(state, grossIncome)`. Konstante `SoftCapThreshold = 8.0m` ist
-deklariert, wird aber im aktuellen Code NICHT direkt benutzt (nur die Tier-Switch-Werte + `default => 8.0`).
+Quelle: `IncomeCalculatorService.ApplySoftCap(state, grossIncome)`. Es gibt **KEINE** benannte Konstante
+`SoftCapThreshold` — die Schwelle ist tier-abhängig per Inline-`switch` (siehe Tier-Schwellen). `8.0` ist
+NUR der `_ => 8.0m`-Default-Zweig des switch (zugleich der Silver-Wert), kein eigener Schwellen-const.
 
 Early-Return: wenn `state.TotalIncomePerSecond <= 0` → `grossIncome` unveraendert zurueck.
 
@@ -1299,7 +1321,11 @@ Start `multiplier = 1`. Multiplikativ in dieser Reihenfolge:
 4) Event RewardMultiplier:     wenn aktiv && Effect.RewardMultiplier != 1.0 && (AffectedWorkshop == null || == order.WorkshopType): *= Effect.RewardMultiplier
 5) Stammkunde:                 wenn IsRegularCustomerOrder && customer gefunden: *= customer.BonusMultiplier
 6) Prestige-Shop OrderReward:  shopOrderBonus = Min(_cachedOrderRewardBonus, 1.0); wenn >0: *= (1 + shopOrderBonus)   // Cap +100%
+7) Gilde Hall-OrderReward:     wenn GuildMembership.HallOrderRewardBonus > 0: *= (1 + HallOrderRewardBonus)
+8) Gilde Hall-Everything:      wenn GuildMembership.HallEverythingBonus > 0: *= (1 + HallEverythingBonus)
 ```
+Die beiden Gildenhallen-Faktoren (7/8) liegen NACH Prestige-Shop-OrderReward und VOR dem Sqrt-Soft-Cap
+(`GameStateService.Orders.cs:373-376`) — sind also mit-gedeckelt.
 Soft-Cap (Sqrt auf Ueberschuss):
 ```
 cap = GameBalanceConstants.OrderRewardMultiplierSoftCap = 10.0
@@ -2358,6 +2384,7 @@ craftingSpeedBonus = PrestigeShopCraftingSpeedBonus
                    + Research.CraftingSpeedBonus
                    + MaterialAffinityBonus
                    + GuildMembership.MegaProjectCraftingSpeedBonus
+                   + GuildMembership.HallCraftingSpeedBonus
 if craftingSpeedBonus > 0:
    effectiveDuration = Max(1, (int)(DurationSeconds * (1 - Min(craftingSpeedBonus, 0.50))))
 ```
@@ -2886,7 +2913,7 @@ Reihenfolge der Akkumulation (`bonusPp` startet 0):
 | Bedingung | Bonus-PP | Cap | Konstante |
 |-----------|----------|-----|-----------|
 | Perfect Ratings: `+1 PP` je 10 Perfects (`Statistics.PerfectRatings / 10`) | `perfectBlocks × 1` | max +5 | `BonusPpPerPerfectBlock = 1`, `BonusPpPerfectRatingsCap = 5` |
-| Voll erforschte Research-Branch: `+2 PP` pro komplettem Branch (alle Nodes der Branch `IsResearched`, mind. 1 Node in Branch) | `+2` pro Branch | (kein expliziter Cap; faktisch max +6 bei 3 Branches) | `BonusPpFullBranch = 2` |
+| Voll erforschte Research-Branch: `+2 PP` pro komplettem Branch (alle Nodes der Branch `IsResearched`, mind. 1 Node in Branch) | `+2` pro Branch | (kein expliziter Cap; faktisch max +8 bei **4** Branches) | `BonusPpFullBranch = 2` |
 | Alle Gebäude auf Level 5 (`Buildings.Count >= 7` UND alle `Level >= 5`) | `+1` | — | `BonusPpAllBuildingsMax = 1` |
 | Level-Überschuss: `+0.05 PP` pro Level über `tier.GetRequiredLevel()` | `floor( extraLevels × 0.05 )` | max +5 | `BonusPpPerExtraLevel = 0.05`, `BonusPpExtraLevelCap = 5` |
 
@@ -3473,9 +3500,9 @@ VIP, Manager, Premium ×1.5) multipliziert:
 if (_eternalMastery != null && _eternalMastery.IsActive)
     grossIncome *= (1m + _eternalMastery.IncomeBonus);
 ```
-Danach Heirloom-Bonus (siehe Abschnitt 8). Income-Soft-Cap-Schwelle im IncomeCalculator:
-`SoftCapThreshold = 8.0m` (privates const, betrifft den Gesamt-Multiplikator, nicht EternalMastery
-direkt).
+Danach Heirloom-Bonus (siehe Abschnitt 8). Der Income-Soft-Cap im IncomeCalculator ist tier-abhängig
+(4.0x–20.0x je Prestige-Tier + Ascension-Floor, siehe Abschnitt 4) — es gibt KEINE benannte Konstante
+`SoftCapThreshold`; `8.0` ist nur der switch-Default-/Silver-Zweig.
 
 ---
 
@@ -3962,7 +3989,7 @@ Quelle: `Models/GuildHall.cs` (`GuildBuildingDefinition.GetAll()`, `GuildHallEff
 - Beispiel-Kosten: Lv1 = 10 GS / 500 000; Lv2 = 20 GS / 1 250 000; Lv3 = 40 GS / 3 125 000;
   Lv4 = 80 GS / 7 812 500; Lv5 = 160 GS / 19 531 250.
 
-### Upgrade-Timer-Dauern (`UpgradeDurations`, Stunden, Tier = Ziel-Level, min 5)
+### Upgrade-Timer-Dauern (`UpgradeDurations`, Stunden, Tier = `Min(aktuelles Level + 1, 5)` — auf 5 gedeckelt)
 
 | Tier | Stunden |
 |------|--------:|
@@ -6132,12 +6159,14 @@ Quelle: `Services/WhatsNewService.cs`
 
 ### 9.1 Release-Einträge
 
-`s_releases` (Tuple-Array `(Version, FeatureKeys[])`, aufsteigend sortiert) — **2 Einträge**:
+`s_releases` (Tuple-Array `(Version, FeatureKeys[])`, aufsteigend sortiert) — **4 Einträge**:
 
 | Version | FeatureKeys (RESX) |
 |---------|--------------------|
 | 2.0.36 | WhatsNewBell, WhatsNewStrategyEV, WhatsNewReputation |
 | 2.0.37 | WhatsNewReputationShop, WhatsNewImperiumTabs, WhatsNewWhatsNewItself |
+| 2.1.2 | WhatsNewMinigameFlow, WhatsNewBalancingPolish, WhatsNewCraftingStability, WhatsNewGuildHallBonuses, WhatsNewEconomySaveFixes |
+| 2.1.3 | WhatsNewGuildMultiplayerLive, WhatsNewNoBannerAds, WhatsNewPrestigeShopReset, WhatsNewFairCostsAndMaterials, WhatsNewSaveStabilityV213, WhatsNewSmoothnessAndTouch |
 
 ### 9.2 Mechanik (`ShowWhatsNewIfNeededAsync`)
 
@@ -6167,7 +6196,7 @@ Quelle: `Services/WhatsNewService.cs`
 | MiniGame-Typen (Enum) | **13** | 10 Routen/Renderer, 8 perfekt-zählbar |
 | Mastery-Tiers | 3 (Bronze 50/Silver 200/Gold 1000 → 5/15/50 GS) | — |
 | MiniGame-Routen | **10** | — |
-| WhatsNew-Releases | **2** (2.0.36, 2.0.37) | — |
+| WhatsNew-Releases | **4** (2.0.36, 2.0.37, 2.1.2, 2.1.3) | — |
 | WelcomeBack-Typen | **3** (StarterPack/Premium/Standard) | — |
 
 Werte, die NICHT in den gelesenen Dateien standen und ggf. anderswo zu suchen sind:
@@ -6501,14 +6530,23 @@ Android-Impl: AndroidPlayGamesService (Leaderboards/Achievements/Cloud Save, nic
 **Quelle: GameIntegrityService.cs**
 
 - Preference-Key `game_integrity_install_id`. PackageSalt = `com.meineapps.handwerkerimperium`.
-- **Schluessel-Ableitung:** Installations-GUID (`Guid.NewGuid().ToString("N")`, persistiert) +
-  `_hmacKey = SHA256.HashData(UTF8(PackageSalt + installId))` → 32 Byte (256 Bit). Kein hardcodierter Schluessel, geraete-gebunden.
+- **ZWEI Schluessel für zwei Vertrauensgrenzen** (`GameIntegrityService.cs:36-55`):
+  1. **Lokaler Save-Key** `_hmacKey = SHA256(UTF8(PackageSalt + installId))` — Installations-GUID
+     (`Guid.NewGuid().ToString("N")`, persistiert), GERÄTE-EINZIGARTIG. Nur für die lokale
+     `GameState.IntegritySignature` (`ComputeSignature`/`VerifySignature`).
+  2. **Geteilter Multiplayer-Key** `_sharedHmacKey = SHA256(UTF8(PackageSalt + "|shared-guild-hmac-v1"))`
+     — OHNE installId, daher auf ALLEN Geräten identisch. Wird von `ComputeStringHmac` benutzt (s.u.).
+  Je 32 Byte (256 Bit), kein hardcodierter Schluessel.
 - **Signierte Felder (Payload-Format):** `"{PlayerLevel}|{Prestige.TotalPrestigeCount}|{Money:F2}|{GoldenScrews}|{Statistics.TotalOrdersCompleted}"`
   (kulturunabhaengig, `string.Create(null, stackalloc char[128], ...)`).
 - HMAC-SHA256 ueber UTF8(payload), als Hex-String (lower) in `GameState.IntegritySignature`.
 - `VerifySignature`: `Convert.FromHexString` der gespeicherten Signatur, timing-sicherer
   `CryptographicOperations.FixedTimeEquals` gegen frisch berechnete Bytes. Ungueltiges Hex → false.
-- `ComputeStringHmac(payload)`: generischer HMAC-Helper (lower-Hex) — fuer Gilden-Co-op/Auktionen/Mega-Projekte.
+- `ComputeStringHmac(payload)`: HMAC-Helper (lower-Hex) mit dem **geteilten** `_sharedHmacKey` (NICHT dem
+  geräte-lokalen `_hmacKey`!) — für Gilden-Co-op/Auktionen/Mega-Projekte. Diese Objekte werden von einem
+  Spieler signiert und von ANDEREN validiert; ein geräte-lokaler Key würde die Cross-Client-Validierung
+  IMMER brechen. Server-seitige Manipulations-Abwehr leisten zusätzlich die Firebase-Rules.
+  Beleg: `GameIntegrityService.cs:90-98`.
 
 ---
 

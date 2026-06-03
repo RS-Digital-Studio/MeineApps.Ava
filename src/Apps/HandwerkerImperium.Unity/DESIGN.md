@@ -291,24 +291,30 @@ WENN Economy-Spez (IncomeModifier -0.05):      gross ×= 0.95
 
 **Schritt 4 — globale Multiplikatoren (auf die Summe aller Workshops, `IncomeCalculatorService`):**
 ```
-GrossTotal = (Σ aller Workshop-GrossIncomePerSecond)
-           × (1 + ResearchBonus)
+GrossTotal = (Σ aller Workshop-GrossIncomePerSecond × PrestigeMultiplier[HARD-Cap 20×, in der Basis])
+           × (1 + PrestigeShopIncomeBonus)    // Prestige-Shop-Income
+           × (1 + ResearchBonus)              // Research-Effizienz, Cap +50%
+           × EventMultiplier                  // inkl. TaxAudit ×0.90
            × (1 + MasterToolBonus)            // 0% bis +74% (Summe aller 12 gesammelten Tools, siehe § 14)
-           × (1 + GuildBonus)                 // Gilden-Research/HQ
-           × ManagerIncomeBoost               // globale + workshop-gebundene IncomeBoost-Manager (siehe 4.9)
-           × PrestigeMultiplier               // permanenter Multiplikator, HARD-Cap 20× (Tier-Werte bis 64× sind VOR dem Cap)
-           × EventMultiplier
+           × (1 + GuildIncome) × (1 + GuildResearchIncome) × (1 + GuildResearchEfficiency)
+           × (1 + HallIncomeBonus) × (1 + HallEverythingBonus)   // Gildenhallen-Boni — NICHT weglassen
            × VipMultiplier
+           × (1 + ManagerIncomeBoost) × (1 + ManagerEfficiencyBoost)   // ZWEI separate Manager-Faktoren
+           × PremiumMultiplier                // ×1.5 wenn Premium
            × EternalMasteryMultiplier         // siehe § 25
-           × SoftCapFactor                    // tier-skalierende log2-Dämpfung auf den MULTIPLIKATOR (siehe § 30)
+           × (1 + HeirloomBonus)              // aktive + permanente Erbstücke
+           ; danach SoftCapFactor             // tier-skalierende log2-Dämpfung auf den MULTIPLIKATOR (siehe § 30)
 ```
-Reihenfolge und Soft-Cap-Mechanik exakt wie im Original `IncomeCalculatorService.ApplySoftCap`
-(Schwelle = Multiplikator-Einheit, nicht €/s).
+Die **exakte** multiplikative Reihenfolge (inkl. PrestigeMultiplier in der Income-Basis) ist in § 30.1
+definiert und dort maßgeblich; diese Übersicht zeigt alle beteiligten Faktoren. Soft-Cap-Mechanik exakt
+wie im Original `IncomeCalculatorService.ApplySoftCap` (Schwelle = Multiplikator-Einheit, nicht €/s).
 
 ### 4.4 Milestone-Multiplikatoren (Level-Boni, 16 Stufen)
 
 Quelle: `GameBalanceConstants.MilestoneMultipliers`. `CalculateMilestoneMultiplier(level)` = Produkt
-**aller** Multiplikatoren mit `milestoneLevel <= level` (kumulativ). Kumulativ ~84.6x bei Level 1000.
+**aller** Multiplikatoren mit `milestoneLevel <= level` (kumulativ). Kumulativ **~1500x** bei Level 1000
+(Produkt aller 16 Milestones = 1499.86). Der veraltete Code-Doc-Kommentar nennt "~921x" — maßgeblich
+ist der reale Produktwert ~1500x.
 
 | # | Level | Multiplikator | Hinweis |
 |---|-------|---------------|---------|
@@ -1034,15 +1040,18 @@ Maßgeblich: **13 Enum-Typen, 10 Renderer, 8 perfekt-zählbar.**
 
 ### 7.2 Rating-System (`MiniGameRating`)
 
-Quelle: `Models/Enums/MiniGameResult.cs` (Reward-/XP-Prozentwerte). Es gibt **kein** 1.5x-Bonus —
-Perfect ist die volle 100%-Auszahlung.
+Quelle: `Models/Enums/MiniGameResult.cs` (`GetRewardPercentage` / `GetXpPercentage`). Reward UND XP
+nutzen dieselbe Skala mit **Perfect = 150%** (Bonus). Spread Miss→Perfect = 7.5x. Konsistent mit §6.1a.
 
 | Rating | Reward/XP-Anteil |
 |--------|------------------|
-| **Perfect** | 100% |
-| **Good** | 75% |
+| **Perfect** | 150% |
+| **Good** | 100% |
 | **Ok** | 50% |
-| **Miss** | 0% |
+| **Miss** | 20% |
+
+> Nicht verwechseln: Die separate Skala Perfect=100% / Good=75% / Ok=50% / Miss=0% ist das
+> **DailyChallenge-Score-Mapping** (`DailyChallengeService.cs:572-578`), NICHT die Reward-/XP-Auszahlung.
 
 (Bei Risk-Strategie wirken Miss-Ergebnisse zusätzlich auf die Reputation — siehe Order-/Reputation-Abschnitt.)
 
@@ -1440,7 +1449,7 @@ Quelle: `PrestigeService.Challenges.cs` (`CalculateBonusPrestigePoints`), `GameB
 | Bonus | Wert | Cap | Konstante |
 |-------|------|-----|-----------|
 | Per 10 Perfect Ratings (`Statistics.PerfectRatings / 10`) | +1 PP je Block | max +5 | BonusPpPerPerfectBlock=1, BonusPpPerfectRatingsCap=5 |
-| Voll erforschte Research-Branch (alle Nodes der Branch `IsResearched`, mind. 1 Node) | +2 PP je Branch | faktisch max +6 (3 Branches) | BonusPpFullBranch=2 |
+| Voll erforschte Research-Branch (alle Nodes der Branch `IsResearched`, mind. 1 Node) | +2 PP je Branch | faktisch max +8 (**4** Branches: Tools/Management/Marketing/Logistics) | BonusPpFullBranch=2 |
 | Alle Gebäude auf Level 5 (`Buildings.Count >= 7` UND alle `Level >= 5`) | +1 PP | — | BonusPpAllBuildingsMax=1 |
 | Per Level über `tier.GetRequiredLevel()` | floor(extraLevels × 0.05) | max +5 | BonusPpPerExtraLevel=0.05, BonusPpExtraLevelCap=5 |
 
@@ -1743,6 +1752,7 @@ craftingSpeedBonus = PrestigeShopCraftingSpeedBonus
                    + Research.CraftingSpeedBonus
                    + MaterialAffinityBonus
                    + GuildMembership.MegaProjectCraftingSpeedBonus
+                   + GuildMembership.HallCraftingSpeedBonus
 if craftingSpeedBonus > 0:
    effectiveDuration = Max(1, (int)(DurationSeconds × (1 − Min(craftingSpeedBonus, 0.50))))
 ```
@@ -1760,7 +1770,11 @@ Zwei getrennte Mechanismen (1:1 Original, `AutoProductionService`):
 | MasterSmith | 60s (`AutoProductionMasterSmithInterval`) |
 | InnovationLab | 120s (`AutoProductionInnovationLabInterval`) |
 
-Menge je Zyklus: `mainCount = 5 + Min(playerLevel / 50, 10)` (5..15).
+Menge je Zyklus: **1 Item pro arbeitendem Worker** (`workingWorkers`), via
+`WarehouseService.AddToInventory(productId, workingWorkers, type)`. Workshops ohne arbeitenden Worker
+produzieren nichts. (Die früher hier zitierte Formel `5 + Min(playerLevel/50, 10)` gehört zur
+**MaterialOrder-Generierung** in `OrderGeneratorService`, NICHT zur Auto-Produktion — Beleg:
+`AutoProductionService.cs:68-78`.)
 
 **Higher-Tier-Auto-Craft** (`AutoCraftHigherTiers`) — wird pauschal alle 360 GameLoop-Ticks (~6 min) aufgerufen, KEINE workshop-/tier-spezifischen Intervalle. Pro Aufruf max. 1 Rezept je Workshop. T3 ab `AutoCraftTier3UnlockLevel`, sonst T2 ab `AutoCraftTier2UnlockLevel` (Workshop-Level-Gates).
 
@@ -3354,8 +3368,10 @@ if (_eternalMastery != null && _eternalMastery.IsActive)
     grossIncome *= (1 + _eternalMastery.IncomeBonus);
 ```
 
-Der Income-Soft-Cap-Schwellenwert im IncomeCalculator (`SoftCapThreshold = 8.0`) betrifft den
-Gesamt-**Multiplikator** (grossIncome/baseIncome), nicht EternalMastery direkt.
+Der Income-Soft-Cap im IncomeCalculator ist tier-abhängig (4.0x–20.0x je Prestige-Tier + Ascension-Floor,
+siehe §30.2) und betrifft den Gesamt-**Multiplikator** (grossIncome/baseIncome), nicht EternalMastery
+direkt. Es gibt KEINE benannte Konstante `SoftCapThreshold` — der Wert 8.0 ist nur der switch-Default-/
+Silver-Zweig.
 
 ---
 
@@ -3736,7 +3752,7 @@ Alle Texte in 6 Sprachen (DE/EN/ES/FR/IT/PT). Englisch ist Basis-Sprache für Fa
 
 ### 29.3 Ad-Placements (13)
 
-1. **golden_screws** — 10 GS, 4h Cooldown
+1. **golden_screws** — 12 GS, 4h Cooldown
 2. **shop_reward** — Cash/Boost, 3h Cooldown
 3. **score_double** — Mini-Game-Score verdoppeln
 4. **market_refresh** — Worker-Markt neu würfeln
@@ -3761,7 +3777,7 @@ Alle Texte in 6 Sprachen (DE/EN/ES/FR/IT/PT). Englisch ist Basis-Sprache für Fa
 | Weekly-Mission (pro Mission / Alle-fertig-Bonus) | T0:5 … T8:35 / Alle-fertig 50–120 |
 | Achievements | 5-50 |
 | Daily-Login | 1-25 (Tag 30 = 25) |
-| Rewarded Ad (`golden_screws`) | 10 |
+| Rewarded Ad (`golden_screws`) | 12 |
 | Live-Event Tier 0/1/2 | 25 / 75 / 200 |
 | Tournament Gold/Silver/Bronze | 30+Asc×5 / 15+Asc×3 / 5+Asc |
 | Workshop-/Prestige-Meilensteine | 2-50 / 5-100 |
@@ -3891,7 +3907,7 @@ Dann **in dieser exakten Reihenfolge** (jeder Faktor nur, wenn seine Bedingung e
 
 | # | Faktor | Operation | Bedingung / Cap |
 |---|--------|-----------|-----------------|
-| 1 | Prestige-Shop Income | `× (1 + prestigeIncomeBonus)` | `prestigeIncomeBonus` summiert, HART bei **+300%** gedeckelt |
+| 1 | Prestige-Shop Income | `× (1 + prestigeIncomeBonus)` | `prestigeIncomeBonus` summiert; der **+300%**-Deckel (`Math.Min(…, 3.0)`) wird im **GameLoop-Cache (online)** gesetzt — offline (`OfflineProgressService`) wird der Bonus ungedeckelt berechnet |
 | 2 | Research-Effizienz | `× (1 + min(EfficiencyBonus, 0.50))` | Cap **+50%** |
 | 3 | Event-Multiplikator | `× eventEffects.IncomeMultiplier` | aktives Event |
 | 4 | TaxAudit-Steuer | `× 0.90` | Event-SpecialEffect `tax_10_percent` |
@@ -3899,12 +3915,14 @@ Dann **in dieser exakten Reihenfolge** (jeder Faktor nur, wenn seine Bedingung e
 | 6 | Gilde Income-Bonus | `× (1 + GuildMembership.IncomeBonus)` | Mitglied |
 | 7 | Gilde Research-Income | `× (1 + ResearchIncomeBonus)` | > 0 |
 | 8 | Gilde Research-Efficiency | `× (1 + ResearchEfficiencyBonus)` | > 0 |
-| 9 | VIP Income | `× (1 + VIP.IncomeBonus)` | > 0 |
-| 10 | Manager Income (Summe) | `× (1 + totalManagerIncome)` | workshop-spezifisch + global |
-| 11 | Manager Efficiency (Summe, **separat**) | `× (1 + totalManagerEfficiency)` | workshop-spezifisch + global |
-| 12 | Premium | `× 1.5` | `IsPremium` |
-| 13 | Eternal Mastery | `× (1 + EternalMastery.IncomeBonus)` | aktiv |
-| 14 | Heirloom (Erbstücke) | `× (1 + heirloomBonus)` | siehe unten |
+| 9 | Gilde Hall-Income | `× (1 + HallIncomeBonus)` | > 0 (Gildenhalle TradingPost) |
+| 10 | Gilde Hall-Everything | `× (1 + HallEverythingBonus)` | > 0 (universeller Hall-Bonus) |
+| 11 | VIP Income | `× (1 + VIP.IncomeBonus)` | > 0 |
+| 12 | Manager Income (Summe) | `× (1 + totalManagerIncome)` | workshop-spezifisch + global |
+| 13 | Manager Efficiency (Summe, **separat**) | `× (1 + totalManagerEfficiency)` | workshop-spezifisch + global |
+| 14 | Premium | `× 1.5` | `IsPremium` |
+| 15 | Eternal Mastery | `× (1 + EternalMastery.IncomeBonus)` | aktiv |
+| 16 | Heirloom (Erbstücke) | `× (1 + heirloomBonus)` | siehe unten |
 
 Danach: **Soft-Cap (§30.2)**.
 
@@ -3941,7 +3959,7 @@ sonst:
     IsSoftCapActive = false; SoftCapReductionPercent = 0
 ```
 
-(`SoftCapThreshold = 8.0` ist als Konstante deklariert, dient aber nur als `default`-Tier-Wert.)
+(Es gibt KEINE benannte Konstante `SoftCapThreshold` — `8.0` ist nur der `default`-/Silver-Zweig des Tier-`switch`.)
 
 ### 30.3 Offline-Income (4-stufige Staffelung + Schutz)
 
@@ -4020,8 +4038,10 @@ multiplier = 1
 4) Event RewardMultiplier:     × Event.RewardMultiplier                     [wenn aktiv & Workshop passt]
 5) Stammkunde:                 × customer.BonusMultiplier                   (1.1×–1.5×, ab >5 Perfects)
 6) Prestige-Shop OrderReward:  × (1 + min(orderRewardBonus, 1.0))           // eigener Cap +100%
+7) Gilde Hall-OrderReward:     × (1 + HallOrderRewardBonus)                 [wenn > 0]
+8) Gilde Hall-Everything:      × (1 + HallEverythingBonus)                  [wenn > 0]
 
-Soft-Cap (Sqrt auf Überschuss, OrderRewardMultiplierSoftCap = 10.0):
+Soft-Cap (Sqrt auf Überschuss, OrderRewardMultiplierSoftCap = 10.0; die Hall-Boni 7/8 liegen VOR dem Cap):
 wenn multiplier > 10.0:  multiplier = 10.0 + √(multiplier − 10.0)
    // Beispiel: roh 15× → 10 + √5 ≈ 12.24×
 ```
@@ -4089,7 +4109,7 @@ XpForLevel(L) = (L <= 1) ? 0 : (int)(100 × (L − 1)^1.2)        // kumulativer
 
 ```
 mult = 1.0 × (Prestige-Income) × (1 + min(Research-Eff, 0.50)) × Event × TaxAudit(0.90)
-       × MasterTools × Gilde × VIP × Rebirth-Income × Premium(1.5)
+       × MasterTools × Gilde[Income + ResearchIncome + ResearchEfficiency + HallIncome + HallEverything] × VIP × Rebirth-Income × Premium(1.5)
 Soft-Cap:  wenn mult > 8.0:  mult = 8.0 + log₂(1 + (mult − 8.0));   return min(mult, 12.0)
            // CraftingSellMultiplierSoftCap = 8.0, HardCap = 12.0
 ```

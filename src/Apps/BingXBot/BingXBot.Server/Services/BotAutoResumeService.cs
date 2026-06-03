@@ -53,6 +53,14 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
     /// </summary>
     private readonly CancellationTokenSource _lifetimeCts = new();
 
+    /// <summary>
+    /// Dispose-Guard: Der Service ist als Singleton UND via <c>AddHostedService(sp =&gt; sp.GetRequiredService&lt;…&gt;())</c>
+    /// registriert — der DI-Container trackt dieselbe Instanz ueber beide Descriptors und ruft <see cref="Dispose"/>
+    /// beim Shutdown zweimal auf. Ohne Guard wirft das zweite <c>_lifetimeCts.Cancel()</c> eine
+    /// <see cref="ObjectDisposedException"/> (Dispose MUSS idempotent sein — .NET-Guideline).
+    /// </summary>
+    private bool _disposed;
+
     public BotAutoResumeService(
         IBotControlService botControl,
         BotSettings botSettings,
@@ -402,6 +410,8 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         _lifetimeCts.Cancel();
         _lifetimeCts.Dispose();
     }

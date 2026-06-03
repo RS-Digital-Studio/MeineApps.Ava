@@ -77,10 +77,6 @@ public abstract class TradingServiceBase : IDisposable
     // protected internal: protected fuer Subklassen (Live/Paper), internal fuer BingXBot.Tests
     // (InternalsVisibleTo in BingXBot.Trading.csproj). Erlaubt Integration-Tests des Reconcile-Flows.
     protected internal readonly ConcurrentDictionary<string, SignalResult> _positionSignals = new();
-    // SK-System: Letzter Status für Scan-Summary (wird auf Symbol-Klonen evaluiert, nicht auf dem Template)
-    private string _lastSkStatus = "";
-    // Multi-TF Standalone: Letzter nicht-blockierter SK-Status pro TF (für Ampel-UI)
-    private readonly Dictionary<TimeFrame, string> _lastSkStatusByTf = new();
     // Wiederverwendbares Dictionary für Ticker-Preise (ConcurrentDictionary für Thread-Safety
     // da PriceTickerLoop und RunLoopAsync parallel laufen)
     private readonly ConcurrentDictionary<string, decimal> _tickerPriceMap = new();
@@ -1252,47 +1248,6 @@ public abstract class TradingServiceBase : IDisposable
                         act?.SetTag("signal", signal.Signal.ToString());
                     }
 
-                    if (strategy is Engine.Strategies.SequenzKonzeptStrategy skInst
-                        && !string.IsNullOrEmpty(skInst.LastStatus) && !skInst.LastStatus.Contains("—"))
-                    {
-                        _lastSkStatus = $"{ticker.Symbol} [{navTf}]: {skInst.LastStatus}";
-                        _lastSkStatusByTf[navTf] = $"{ticker.Symbol}: {skInst.LastStatus}";
-                    }
-
-                    // v1.5.2 Phase 4 — Decision-Trail-Eintrag publishen.
-                    // Nur wenn EnableDecisionTrail=true UND mindestens ein Subscriber existiert
-                    // (typisch DecisionTrailBuffer). Hot-Path-Schutz: bei null kein Allocation-Overhead.
-                    //
-                    // Snapshot-Report-Fix Befund 2 / A1.1: state_not_activated-Eintraege standardmaessig
-                    // unterdruecken (Default 81 % Rauschen). Robert kann via DecisionTrailIncludeNotActivated
-                    // wieder einschalten wenn er die State-Machine selbst tunt.
-                    //
-                    // Snapshot-Report-Fix Befund 2 / A1.3: Idempotenz-Check fuer Trigger-Decisions —
-                    // dieselbe Sequenz nur einmal pro Bot-Laufzeit loggen (verhindert ZEC-60×-Spam).
-                    if (_botSettings.EnableDecisionTrail
-                        && strategy is Engine.Strategies.SequenzKonzeptStrategy decSk
-                        && decSk.LastEvaluationDecision != null)
-                    {
-                        var decision = decSk.LastEvaluationDecision;
-                        var shouldPublish = true;
-
-                        if (!_botSettings.DecisionTrailIncludeNotActivated
-                            && string.Equals(decision.RejectionReason,
-                                BingXBot.Core.Diagnostics.RejectionReasons.StateNotActivated, StringComparison.Ordinal))
-                        {
-                            shouldPublish = false;
-                        }
-                        else if (decision.Triggered && _botSettings.DecisionTrailDeduplicateTriggers)
-                        {
-                            var seqKey = BuildDecisionDedupKey(decision);
-                            if (seqKey != null && !_loggedTriggeredSequences.TryAdd(seqKey, 1))
-                                shouldPublish = false;
-                        }
-
-                        if (shouldPublish)
-                            _eventBus.PublishEvaluationDecision(decision);
-                    }
-
                     // Scanner-Ergebnis pro TF sammeln (auch für Signal.None — zeigt Status im UI)
                     var symbolDto = new ScannerSymbolDto(
                         Symbol: ticker.Symbol,
@@ -1308,14 +1263,7 @@ public abstract class TradingServiceBase : IDisposable
                         listForTf.Add(symbolDto);
 
                     if (signal.Signal == Signal.None)
-                    {
-                        if (_eventBus.HasLogSubscribers && strategy is Engine.Strategies.SequenzKonzeptStrategy)
-                        {
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "SK",
-                                $"{LogPrefix}{ticker.Symbol} [{navTf}]: {signal.Reason}", ticker.Symbol));
-                        }
                         continue;
-                    }
 
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Scanner",
                         $"{LogPrefix}{ticker.Symbol} [{navTf}]: {signal.Signal} Signal (Confidence: {signal.Confidence:P0}) - {signal.Reason}",
@@ -1514,17 +1462,6 @@ public abstract class TradingServiceBase : IDisposable
             }
         }
 
-        // SK-Ampel pro TF publizieren (UI zeigt Status-Tabelle pro Navigator-TF)
-        if (_lastSkStatusByTf.Count > 0)
-        {
-            var ampelSnapshot = new Dictionary<TimeFrame, string>(_lastSkStatusByTf);
-            // Fehlende aktive TFs mit "—" auffüllen, damit die UI alle 4 Zeilen zeigt
-            foreach (var tf in activeTfs)
-                if (!ampelSnapshot.ContainsKey(tf))
-                    ampelSnapshot[tf] = "—";
-            _eventBus.PublishSkAmpel(ampelSnapshot);
-        }
-
         // Scanner-Cache pro TF aktualisieren (für /api/v1/scanner/results)
         if (_scannerCache != null)
         {
@@ -1562,16 +1499,9 @@ public abstract class TradingServiceBase : IDisposable
         var strategyInfo = _strategyManager.CurrentTemplate?.Name ?? "n/a";
         var posCount = positions.Count;
 
-        // SK-System: Detaillierten Status des zuletzt evaluierten Symbols anzeigen
-        var skStatus = "";
-        if (!string.IsNullOrEmpty(_lastSkStatus))
-        {
-            skStatus = $" | SK: {_lastSkStatus}";
-        }
-
         var scanSummary = $"{candidates.Count} Kandidaten | {strategyInfo} | " +
             $"Positionen: {posCount}/{_riskSettings.MaxOpenPositions} | " +
-            $"{elapsed:F1}s | Nächster: {nextScanFinal:HH:mm:ss}{skStatus}";
+            $"{elapsed:F1}s | Nächster: {nextScanFinal:HH:mm:ss}";
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner", $"{LogPrefix}{scanSummary}"));
 
         // Indikator-Cache nach Scan-Durchlauf leeren (Daten sind beim nächsten Scan veraltet)

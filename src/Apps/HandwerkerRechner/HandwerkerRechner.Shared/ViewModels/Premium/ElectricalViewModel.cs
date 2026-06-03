@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -238,10 +239,10 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
                     break;
 
                 case 2: // Ohms Law
-                    double? v = string.IsNullOrEmpty(OhmsVoltage) ? null : double.TryParse(OhmsVoltage, out var vv) ? vv : null;
-                    double? i = string.IsNullOrEmpty(OhmsCurrent) ? null : double.TryParse(OhmsCurrent, out var ii) ? ii : null;
-                    double? r = string.IsNullOrEmpty(OhmsResistance) ? null : double.TryParse(OhmsResistance, out var rr) ? rr : null;
-                    double? p = string.IsNullOrEmpty(OhmsPower) ? null : double.TryParse(OhmsPower, out var pp) ? pp : null;
+                    double? v = ParseDecimal(OhmsVoltage);
+                    double? i = ParseDecimal(OhmsCurrent);
+                    double? r = ParseDecimal(OhmsResistance);
+                    double? p = ParseDecimal(OhmsPower);
 
                     var filledCount = (v.HasValue ? 1 : 0) + (i.HasValue ? 1 : 0) + (r.HasValue ? 1 : 0) + (p.HasValue ? 1 : 0);
                     if (filledCount < 2)
@@ -278,6 +279,19 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         {
             IsCalculating = false;
         }
+    }
+
+    /// <summary>
+    /// Parst eine freie Zahleneingabe kulturunabhängig: akzeptiert sowohl '.' als auch ','
+    /// als Dezimaltrennzeichen (InvariantCulture zuerst, dann CurrentCulture als Fallback).
+    /// Verhindert, dass z.B. "2.5" auf DE-Geräten als ungültig verworfen wird.
+    /// </summary>
+    private static double? ParseDecimal(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var inv)) return inv;
+        if (double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out var cur)) return cur;
+        return null;
     }
 
     private async Task SaveToHistoryAsync()

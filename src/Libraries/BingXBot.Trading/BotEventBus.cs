@@ -33,9 +33,6 @@ public class BotEventBus
     /// <summary>Trading-Modus gewechselt (true = Paper, false = Live). Für Statusleiste im MainViewModel.</summary>
     public event EventHandler<bool>? TradingModeChanged;
 
-    /// <summary>Multi-TF Standalone: SK-Ampel-Status pro Navigator-TF (einmal pro Scan-Zyklus).</summary>
-    public event EventHandler<Dictionary<TimeFrame, string>>? SkAmpelUpdated;
-
     // ══════════════════════════════════════════════════════════════════════
     // Live-Events fuer Remote-Clients (v1.3.0 Fix K1):
     // Ohne diese Events sehen Desktop/Android im Remote-Modus weder Positionen live,
@@ -116,10 +113,6 @@ public class BotEventBus
 
     /// <summary>Trading-Modus Wechsel melden (Paper/Live) — MainViewModel hört mit für Statusleiste.</summary>
     public void PublishTradingMode(bool isPaper) => TradingModeChanged?.Invoke(this, isPaper);
-
-    /// <summary>Multi-TF Standalone: SK-Ampel pro TF. Dict mit einer Zeile pro aktiver Navigator-TF.</summary>
-    public void PublishSkAmpel(Dictionary<TimeFrame, string> ampel) =>
-        SkAmpelUpdated?.Invoke(this, ampel);
 
     /// <summary>Feuert wenn eine neue Position eroeffnet wurde. <paramref name="navTf"/> = Navigator-TF des ausloesenden Signals.</summary>
     public void PublishTradeOpened(Position p, TimeFrame navTf) =>

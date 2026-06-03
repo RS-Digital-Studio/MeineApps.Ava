@@ -255,7 +255,7 @@ public sealed class CraftEngine
             Watts = watts,
             KwhPerDay = kwhPerDay,
             CostPerDay = costPerDay,
-            CostPerMonth = costPerDay * 30,
+            CostPerMonth = costPerDay * 365 / 12, // Jahr als Basis (365 Tage), Monat = Jahr/12 → 12×Monat == Jahr
             CostPerYear = costPerDay * 365
         };
     }
@@ -318,6 +318,10 @@ public sealed class CraftEngine
     public MetalWeightResult CalculateMetalWeight(MetalType metal, ProfileType profile, double length,
         double dimension1, double dimension2 = 0, double wallThickness = 0)
     {
+        // Negativ-/Null-Eingaben absichern (sonst negatives bzw. falsch-positives Gewicht)
+        if (length <= 0 || dimension1 <= 0)
+            return new MetalWeightResult { Metal = metal, Profile = profile };
+
         var density = GetMetalDensity(metal);
         double volume = 0;
 
@@ -909,12 +913,15 @@ public sealed class CraftEngine
         double tileLMm = tileLengthCm * 10;
         double tileWMm = tileWidthCm * 10;
 
-        // Industrieformel: V = Fläche × ((L+B)/(L×B)) × Fugenbreite × Fugentiefe
-        // Ergebnis in mm³ pro m² → umrechnen in cm³ → kg mit Dichte
+        // Industrieformel: Verbrauch [kg/m²] = ((L+B)/(L×B)) × Fugenbreite × Fugentiefe × Dichte
+        // Einheiten-Herleitung (alle Längen in mm, ρ in g/cm³):
+        //   (1/mm) × mm × mm = mm Fugenvolumen je mm² Fläche
+        //   × 1e6 (mm²/m²) ÷ 1000 (mm³→cm³) ÷ 1000 (g→kg) = Faktor 1
+        // → die Formel ergibt direkt kg/m², ohne zusätzlichen /1000-Faktor.
         double groutDensity = 1.6; // g/cm³ (Standard-Fugenmasse)
 
         // Fugenmasse-Verbrauch in kg/m²
-        double consumptionPerSqm = ((tileLMm + tileWMm) / (tileLMm * tileWMm)) * groutWidthMm * groutDepthMm * groutDensity / 1000.0;
+        double consumptionPerSqm = ((tileLMm + tileWMm) / (tileLMm * tileWMm)) * groutWidthMm * groutDepthMm * groutDensity;
 
         double totalKg = areaSqm * consumptionPerSqm;
 

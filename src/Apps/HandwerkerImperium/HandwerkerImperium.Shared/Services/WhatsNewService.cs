@@ -31,9 +31,12 @@ public sealed class WhatsNewService : IWhatsNewService
     {
         ("2.0.36", ["WhatsNewBell", "WhatsNewStrategyEV", "WhatsNewReputation"]),
         ("2.0.37", ["WhatsNewReputationShop", "WhatsNewImperiumTabs", "WhatsNewWhatsNewItself"]),
-        // Eintrag fuer die aktuelle Version (2.1.2) — bei jeder funktionalen Aenderung
-        // kumulativ erweitern, beim naechsten Release neuen leeren Eintrag anhaengen.
         ("2.1.2", ["WhatsNewMinigameFlow", "WhatsNewBalancingPolish", "WhatsNewCraftingStability", "WhatsNewGuildHallBonuses", "WhatsNewEconomySaveFixes"]),
+        // Eintrag fuer die aktuelle Version (2.1.3) — bei jeder funktionalen Aenderung
+        // kumulativ erweitern, beim naechsten Release neuen Eintrag fuer die Folge-Version anhaengen.
+        // WICHTIG: Jeder Key MUSS in den RESX (neutral + de/en/es/fr/it/pt) existieren — GetString gibt
+        // bei Miss den ROHEN Key-Namen zurueck (kein Fallback-Helper), sonst zeigt der Dialog die Key-ID.
+        ("2.1.3", ["WhatsNewGuildMultiplayerLive", "WhatsNewNoBannerAds", "WhatsNewPrestigeShopReset", "WhatsNewFairCostsAndMaterials", "WhatsNewSaveStabilityV213", "WhatsNewSmoothnessAndTouch"]),
     };
 
     public WhatsNewService(

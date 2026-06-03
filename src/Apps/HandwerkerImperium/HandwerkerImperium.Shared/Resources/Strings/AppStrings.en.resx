@@ -6756,4 +6756,22 @@
   <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
     <value>Further economy and save fixes: fair order and regular-customer rewards, a closed reward loophole and more robust save games</value>
   </data>
+  <data name="WhatsNewGuildMultiplayerLive" xml:space="preserve">
+    <value>Guild multiplayer now works properly: co-op orders, worker auctions and mega-projects run reliably between real players, donations no longer get lost, and guild wars can finally be started</value>
+  </data>
+  <data name="WhatsNewNoBannerAds" xml:space="preserve">
+    <value>No more banner ads: the app now shows only optional rewarded ads that you start yourself – more room for your empire</value>
+  </data>
+  <data name="WhatsNewPrestigeShopReset" xml:space="preserve">
+    <value>Prestige balancing sharpened: shop items bought with prestige points are now kept only from Platinum upward – preview and reset finally match, and your prestige points are fully preserved as before</value>
+  </data>
+  <data name="WhatsNewFairCostsAndMaterials" xml:space="preserve">
+    <value>Fair costs and materials: the upgrade costs shown during the Inflation-Era challenge now exactly match what's charged (Max-buy included), and a material double-use trick has been closed</value>
+  </data>
+  <data name="WhatsNewSaveStabilityV213" xml:space="preserve">
+    <value>More robust save games: warehouse and crafting actions can no longer silently swallow a save, cloud restore no longer shifts your daily and weekly resets, and older save games are no longer mistaken for corrupted</value>
+  </data>
+  <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
+    <value>Smoother and easier to use: fewer hitches and lower battery drain thanks to optimised rendering, plus bigger, more reliable touch buttons in market, warehouse and guild</value>
+  </data>
 </root>

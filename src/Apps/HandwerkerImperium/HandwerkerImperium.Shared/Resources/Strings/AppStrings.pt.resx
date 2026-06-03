@@ -6677,4 +6677,22 @@
   <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
     <value>Mais correções de economia e salvamento: recompensas justas de pedidos e clientes fiéis, uma brecha de recompensa fechada e jogos salvos mais robustos</value>
   </data>
+  <data name="WhatsNewGuildMultiplayerLive" xml:space="preserve">
+    <value>O multijogador de guilda agora funciona como deve: pedidos cooperativos, leilões de trabalhadores e megaprojetos funcionam de forma confiável entre jogadores reais, as doações não se perdem mais e as guerras de guilda finalmente podem ser iniciadas</value>
+  </data>
+  <data name="WhatsNewNoBannerAds" xml:space="preserve">
+    <value>Acabaram os anúncios em banner: o app agora só mostra anúncios recompensados opcionais que você mesmo inicia – mais espaço para o seu império</value>
+  </data>
+  <data name="WhatsNewPrestigeShopReset" xml:space="preserve">
+    <value>Equilíbrio de prestígio ajustado: itens da loja comprados com pontos de prestígio agora só são mantidos a partir de Platina; prévia e reinício finalmente coincidem, e seus pontos de prestígio continuam totalmente preservados como antes</value>
+  </data>
+  <data name="WhatsNewFairCostsAndMaterials" xml:space="preserve">
+    <value>Custos e materiais justos: os custos de melhoria mostrados durante o desafio Era da Inflação agora correspondem exatamente ao que é cobrado (incluindo a compra Máx), e um truque de uso duplo de materiais foi corrigido</value>
+  </data>
+  <data name="WhatsNewSaveStabilityV213" xml:space="preserve">
+    <value>Jogos salvos mais robustos: ações de armazém e fabricação não podem mais engolir um salvamento em silêncio, a restauração na nuvem não desloca mais seus reinícios diários e semanais, e jogos salvos antigos não são mais confundidos com corrompidos</value>
+  </data>
+  <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
+    <value>Mais fluido e agradável de usar: menos travadinhas e menor consumo de bateria graças ao rendering otimizado, além de botões de toque maiores e mais confiáveis no mercado, no armazém e na guilda</value>
+  </data>
 </root>

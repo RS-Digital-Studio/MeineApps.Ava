@@ -6683,4 +6683,22 @@
   <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
     <value>Ulteriori correzioni di economia e salvataggio: ricompense eque per ordini e clienti abituali, una falla nelle ricompense chiusa e salvataggi più robusti</value>
   </data>
+  <data name="WhatsNewGuildMultiplayerLive" xml:space="preserve">
+    <value>Il multigiocatore di gilda ora funziona davvero: ordini cooperativi, aste dei lavoratori e megaprogetti girano in modo affidabile tra giocatori reali, le donazioni non vanno più perse e le guerre di gilda si possono finalmente avviare</value>
+  </data>
+  <data name="WhatsNewNoBannerAds" xml:space="preserve">
+    <value>Niente più banner pubblicitari: l'app mostra solo annunci con ricompensa opzionali che avvii tu stesso – più spazio per il tuo impero</value>
+  </data>
+  <data name="WhatsNewPrestigeShopReset" xml:space="preserve">
+    <value>Bilanciamento prestigio rifinito: gli oggetti del negozio comprati con i punti prestigio ora si conservano solo dal Platino in su; anteprima e reset finalmente coincidono e i tuoi punti prestigio restano interamente preservati come prima</value>
+  </data>
+  <data name="WhatsNewFairCostsAndMaterials" xml:space="preserve">
+    <value>Costi e materiali equi: i costi di potenziamento mostrati durante la sfida Era dell'Inflazione ora corrispondono esattamente a quanto viene addebitato (acquisto Max incluso) ed è stato chiuso un trucco di doppio uso dei materiali</value>
+  </data>
+  <data name="WhatsNewSaveStabilityV213" xml:space="preserve">
+    <value>Salvataggi più robusti: le azioni di magazzino e crafting non possono più ingoiare un salvataggio in silenzio, il ripristino dal cloud non sposta più i tuoi reset giornalieri e settimanali e i salvataggi più vecchi non vengono più scambiati per corrotti</value>
+  </data>
+  <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
+    <value>Più fluido e comodo da usare: meno scatti e minor consumo di batteria grazie al rendering ottimizzato, oltre a pulsanti touch più grandi e affidabili in mercato, magazzino e gilda</value>
+  </data>
 </root>

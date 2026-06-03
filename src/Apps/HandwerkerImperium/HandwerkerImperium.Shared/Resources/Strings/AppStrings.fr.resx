@@ -6676,4 +6676,22 @@
   <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
     <value>Autres corrections d'économie et de sauvegarde : récompenses équitables des commandes et clients fidèles, faille de récompense corrigée et sauvegardes plus robustes</value>
   </data>
+  <data name="WhatsNewGuildMultiplayerLive" xml:space="preserve">
+    <value>Le multijoueur de guilde fonctionne enfin correctement : les commandes coop, les enchères d'ouvriers et les mégaprojets s'exécutent de manière fiable entre vrais joueurs, les dons ne se perdent plus et les guerres de guilde peuvent enfin être lancées</value>
+  </data>
+  <data name="WhatsNewNoBannerAds" xml:space="preserve">
+    <value>Fini les bannières publicitaires : l'appli n'affiche plus que des publicités récompensées optionnelles que tu lances toi-même – plus de place pour ton empire</value>
+  </data>
+  <data name="WhatsNewPrestigeShopReset" xml:space="preserve">
+    <value>Équilibrage du prestige affiné : les objets de boutique achetés avec des points de prestige ne sont désormais conservés qu'à partir de Platine ; l'aperçu et la réinitialisation correspondent enfin, et tes points de prestige restent intégralement préservés comme avant</value>
+  </data>
+  <data name="WhatsNewFairCostsAndMaterials" xml:space="preserve">
+    <value>Coûts et matériaux équitables : les coûts d'amélioration affichés pendant le défi Ère de l'Inflation correspondent désormais exactement à ce qui est prélevé (achat Max inclus), et une astuce de double utilisation des matériaux a été corrigée</value>
+  </data>
+  <data name="WhatsNewSaveStabilityV213" xml:space="preserve">
+    <value>Sauvegardes plus robustes : les actions d'entrepôt et de fabrication ne peuvent plus avaler une sauvegarde en silence, la restauration cloud ne décale plus tes réinitialisations quotidiennes et hebdomadaires, et les anciennes sauvegardes ne sont plus prises à tort pour corrompues</value>
+  </data>
+  <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
+    <value>Plus fluide et plus agréable à utiliser : moins de saccades et une consommation de batterie réduite grâce à un rendu optimisé, ainsi que des boutons tactiles plus grands et plus fiables dans le marché, l'entrepôt et la guilde</value>
+  </data>
 </root>

@@ -6675,4 +6675,22 @@
   <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
     <value>Más correcciones de economía y guardado: recompensas justas de pedidos y clientes habituales, un fallo de recompensas cerrado y partidas guardadas más robustas</value>
   </data>
+  <data name="WhatsNewGuildMultiplayerLive" xml:space="preserve">
+    <value>El multijugador de gremio ahora funciona correctamente: los pedidos cooperativos, las subastas de trabajadores y los megaproyectos funcionan de forma fiable entre jugadores reales, las donaciones ya no se pierden y por fin se pueden iniciar guerras de gremio</value>
+  </data>
+  <data name="WhatsNewNoBannerAds" xml:space="preserve">
+    <value>Se acabaron los anuncios de banner: la app ahora solo muestra anuncios recompensados opcionales que tú mismo inicias – más espacio para tu imperio</value>
+  </data>
+  <data name="WhatsNewPrestigeShopReset" xml:space="preserve">
+    <value>Equilibrio de prestigio afinado: los objetos de tienda comprados con puntos de prestigio ahora solo se conservan a partir de Platino; la vista previa y el reinicio coinciden, y tus puntos de prestigio se mantienen intactos como siempre</value>
+  </data>
+  <data name="WhatsNewFairCostsAndMaterials" xml:space="preserve">
+    <value>Costes y materiales justos: los costes de mejora mostrados durante el desafío Era de Inflación ahora coinciden exactamente con lo que se cobra (compra Máx incluida), y se ha cerrado un truco de doble uso de materiales</value>
+  </data>
+  <data name="WhatsNewSaveStabilityV213" xml:space="preserve">
+    <value>Partidas guardadas más robustas: las acciones de almacén y fabricación ya no pueden tragarse un guardado en silencio, la restauración en la nube ya no desplaza tus reinicios diarios y semanales, y las partidas antiguas ya no se confunden con corruptas</value>
+  </data>
+  <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
+    <value>Más fluido y cómodo de usar: menos tirones y menor consumo de batería gracias a un renderizado optimizado, además de botones táctiles más grandes y fiables en mercado, almacén y gremio</value>
+  </data>
 </root>

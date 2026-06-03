@@ -7016,4 +7016,22 @@
   <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
     <value>Weitere Wirtschafts- und Speicher-Korrekturen: faire Auftrags- und Stammkunden-Belohnungen, geschlossene Belohnungs-Lücke und robustere Spielstände</value>
   </data>
+  <data name="WhatsNewGuildMultiplayerLive" xml:space="preserve">
+    <value>Gilden-Multiplayer funktioniert jetzt richtig: Co-op-Aufträge, Worker-Auktionen und Mega-Projekte laufen zuverlässig zwischen echten Mitspielern, Spenden gehen nicht mehr verloren und Gildenkriege lassen sich endlich starten</value>
+  </data>
+  <data name="WhatsNewNoBannerAds" xml:space="preserve">
+    <value>Keine Banner-Werbung mehr: Die App zeigt nur noch optionale Rewarded Ads, die du selbst startest – mehr Platz für dein Imperium</value>
+  </data>
+  <data name="WhatsNewPrestigeShopReset" xml:space="preserve">
+    <value>Prestige-Balancing nachgeschärft: Mit Prestige-Punkten gekaufte Shop-Items bleiben jetzt erst ab Platin erhalten – Vorschau und Reset stimmen überein, deine Prestige-Punkte bleiben wie gehabt voll erhalten</value>
+  </data>
+  <data name="WhatsNewFairCostsAndMaterials" xml:space="preserve">
+    <value>Faire Kosten und Materialien: Die bei der Inflationszeit-Herausforderung angezeigten Upgrade-Kosten entsprechen jetzt exakt dem Abzug (auch im Max-Kauf), und ein Material-Doppelverwertungs-Trick wurde geschlossen</value>
+  </data>
+  <data name="WhatsNewSaveStabilityV213" xml:space="preserve">
+    <value>Robustere Spielstände: Lager- und Crafting-Aktionen können das Speichern nicht mehr stillschweigend verschlucken, Cloud-Wiederherstellung verschiebt deine Tages- und Wochen-Resets nicht mehr, und ältere Spielstände werden nicht mehr fälschlich als beschädigt erkannt</value>
+  </data>
+  <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
+    <value>Flüssiger und angenehmer zu bedienen: weniger Ruckler und geringerer Akkuverbrauch durch optimiertes Rendering, plus größere, zuverlässigere Touch-Buttons in Markt, Lager und Gilde</value>
+  </data>
 </root>

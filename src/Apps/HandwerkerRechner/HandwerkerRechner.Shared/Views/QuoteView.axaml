@@ -6,6 +6,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="HandwerkerRechner.Views.QuoteView"
              x:DataType="vm:QuoteViewModel"
              x:CompileBindings="True"
@@ -73,34 +74,13 @@
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="Quote_ProgressLoading" />
 
-        <!-- Leer-Zustand -->
-        <StackPanel IsVisible="{Binding !HasQuotes}"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Spacing="16"
-                    Margin="32"
-                    AutomationProperties.AutomationId="Quote_EmptyState">
-          <mi:MaterialIcon Kind="FileDocumentOutline" Width="64" Height="64"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center" />
-          <TextBlock Text="{loc:Translate NoQuotesSaved}"
-                     FontSize="16" FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextSecondaryBrush}"
-                     HorizontalAlignment="Center"
-                     TextWrapping="Wrap"
-                     TextAlignment="Center" />
-          <Button Command="{Binding CreateNewQuoteCommand}"
-                  Classes="Primary"
-                  HorizontalAlignment="Center"
-                  MinHeight="44"
-                  AutomationProperties.Name="Erstes Angebot erstellen"
-                  AutomationProperties.AutomationId="Quote_BtnFirstNew">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
-              <TextBlock Text="{Binding NewQuoteText}" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-        </StackPanel>
+        <!-- Leer-Zustand (einheitlich via EmptyStateView, konsistent mit History/Projects) -->
+        <controls:EmptyStateView IsVisible="{Binding !HasQuotes}"
+                                 AutomationProperties.AutomationId="Quote_EmptyState"
+                                 Icon="FileDocumentOutline"
+                                 Title="{loc:Translate NoQuotesSaved}"
+                                 ActionText="{Binding NewQuoteText}"
+                                 ActionCommand="{Binding CreateNewQuoteCommand}" />
 
         <!-- Angebots-Liste -->
         <ScrollViewer IsVisible="{Binding HasQuotes}"

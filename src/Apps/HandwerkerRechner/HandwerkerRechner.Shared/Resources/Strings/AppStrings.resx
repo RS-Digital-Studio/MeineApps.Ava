@@ -2512,4 +2512,7 @@ Coverage decreases on rough surfaces!</value>
   <data name="VizYear" xml:space="preserve">
     <value>Year</value>
   </data>
+  <data name="SaveFailedMessage" xml:space="preserve">
+    <value>Saving failed. Please check available storage and try again.</value>
+  </data>
 </root>

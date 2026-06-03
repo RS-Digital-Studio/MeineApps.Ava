@@ -2235,4 +2235,7 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="VizYear" xml:space="preserve">
     <value>Anno</value>
   </data>
+  <data name="SaveFailedMessage" xml:space="preserve">
+    <value>Salvataggio non riuscito. Controlla lo spazio disponibile e riprova.</value>
+  </data>
 </root>

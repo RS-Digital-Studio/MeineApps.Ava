@@ -7,6 +7,9 @@ namespace HandwerkerRechner.Services;
 /// </summary>
 public interface IQuoteService
 {
+    /// <summary>Wird ausgelöst, wenn das Speichern fehlschlägt (z.B. Speicher voll/Schreibschutz) — die UI zeigt einen Hinweis statt stillem Datenverlust.</summary>
+    event Action? SaveFailed;
+
     /// <summary>Alle Angebote laden (sortiert nach Erstellungsdatum, neueste zuerst)</summary>
     Task<List<Quote>> LoadAllQuotesAsync();
 

@@ -2235,4 +2235,7 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   <data name="VizYear" xml:space="preserve">
     <value>An</value>
   </data>
+  <data name="SaveFailedMessage" xml:space="preserve">
+    <value>Échec de l'enregistrement. Vérifiez l'espace disponible et réessayez.</value>
+  </data>
 </root>

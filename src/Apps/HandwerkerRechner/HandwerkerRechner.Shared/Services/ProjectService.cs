@@ -159,6 +159,9 @@ public sealed class ProjectService : IProjectService
     /// </summary>
     private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
+    /// <summary>Wird ausgelöst, wenn das Speichern fehlschlägt (z.B. Speicher voll/Schreibschutz).</summary>
+    public event Action? SaveFailed;
+
     private async Task SaveToFileInternalAsync()
     {
         try
@@ -168,7 +171,8 @@ public sealed class ProjectService : IProjectService
         }
         catch (Exception)
         {
-            // Save failed silently - data remains in cache
+            // Speichern fehlgeschlagen — Daten bleiben im Cache; UI benachrichtigen statt stillem Verlust
+            SaveFailed?.Invoke();
         }
     }
 }

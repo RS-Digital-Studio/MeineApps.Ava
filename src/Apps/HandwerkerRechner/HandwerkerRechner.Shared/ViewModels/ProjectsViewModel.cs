@@ -66,7 +66,13 @@ public sealed partial class ProjectsViewModel : ViewModelBase
         _exportService = exportService;
         _fileShareService = fileShareService;
         _photoPickerService = photoPickerService;
+
+        // Speicher-Fehler des Services an die UI melden (statt stillem Datenverlust). Singleton↔Singleton → keine Abmeldung nötig.
+        _projectService.SaveFailed += OnSaveFailed;
     }
+
+    private void OnSaveFailed() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        MessageRequested?.Invoke(_localization.GetString("Error"), _localization.GetString("SaveFailedMessage")));
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 

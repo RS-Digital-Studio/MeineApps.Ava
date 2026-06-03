@@ -2236,4 +2236,7 @@ Valores típicos:
   <data name="VizYear" xml:space="preserve">
     <value>Año</value>
   </data>
+  <data name="SaveFailedMessage" xml:space="preserve">
+    <value>Error al guardar. Comprueba el espacio disponible e inténtalo de nuevo.</value>
+  </data>
 </root>

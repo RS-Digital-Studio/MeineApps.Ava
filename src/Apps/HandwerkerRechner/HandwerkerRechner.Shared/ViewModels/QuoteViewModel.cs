@@ -111,7 +111,13 @@ public sealed partial class QuoteViewModel : ViewModelBase
         _localization = localization;
         _exportService = exportService;
         _fileShareService = fileShareService;
+
+        // Speicher-Fehler des Services an die UI melden (statt stillem Datenverlust). Singleton↔Singleton → keine Abmeldung nötig.
+        _quoteService.SaveFailed += OnSaveFailed;
     }
+
+    private void OnSaveFailed() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        MessageRequested?.Invoke(_localization.GetString("Error"), _localization.GetString("SaveFailedMessage")));
 
     [RelayCommand]
     public async Task LoadQuotesAsync()

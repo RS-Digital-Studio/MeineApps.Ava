@@ -143,6 +143,9 @@ public sealed class QuoteService : IQuoteService
         }
     }
 
+    /// <summary>Wird ausgelöst, wenn das Speichern fehlschlägt (z.B. Speicher voll/Schreibschutz).</summary>
+    public event Action? SaveFailed;
+
     private async Task SaveToFileAsync()
     {
         try
@@ -152,7 +155,8 @@ public sealed class QuoteService : IQuoteService
         }
         catch
         {
-            // Fehler beim Speichern - Daten bleiben im Cache
+            // Speichern fehlgeschlagen — Daten bleiben im Cache; UI benachrichtigen statt stillem Verlust
+            SaveFailed?.Invoke();
         }
     }
 }

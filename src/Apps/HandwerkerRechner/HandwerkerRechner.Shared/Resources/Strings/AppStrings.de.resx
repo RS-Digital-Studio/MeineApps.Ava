@@ -2527,4 +2527,7 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="VizYear" xml:space="preserve">
     <value>Jahr</value>
   </data>
+  <data name="SaveFailedMessage" xml:space="preserve">
+    <value>Speichern fehlgeschlagen. Bitte Speicherplatz prüfen und erneut versuchen.</value>
+  </data>
 </root>

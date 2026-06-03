@@ -542,7 +542,7 @@
             <StackPanel Orientation="Horizontal" Spacing="12">
               <mi:MaterialIcon Kind="FileExcel" Width="24" Height="24" Foreground="{DynamicResource ExcelAccentBrush}" />
               <StackPanel>
-                <TextBlock Text="Excel" FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
+                <TextBlock Text="{loc:Translate FormatExcel}" FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{loc:Translate ExportExcelDesc}" FontSize="{StaticResource FontSizeCaption}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />

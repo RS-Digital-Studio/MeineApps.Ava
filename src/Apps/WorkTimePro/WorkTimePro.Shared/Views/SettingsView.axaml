@@ -81,6 +81,7 @@
                   Classes="Primary"
                   Command="{Binding PurchasePremiumCommand}"
                   IsVisible="{Binding !IsPremium}"
+                  IsEnabled="{Binding !IsLoading}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -94,6 +95,7 @@
                   Classes="Secondary"
                   Command="{Binding RestorePurchasesCommand}"
                   IsVisible="{Binding !IsPremium}"
+                  IsEnabled="{Binding !IsLoading}"
                   FontSize="{StaticResource FontSizeLabelMd}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
@@ -608,6 +610,7 @@
                   Content="{loc:Translate ExportBackup}"
                   Classes="Secondary"
                   Command="{Binding ExportBackupCommand}"
+                  IsEnabled="{Binding !IsLoading}"
                   FontSize="{StaticResource FontSizeBodySm}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
@@ -616,6 +619,7 @@
                   Content="{loc:Translate ImportBackup}"
                   Classes="Secondary"
                   Command="{Binding ImportBackupCommand}"
+                  IsEnabled="{Binding !IsLoading}"
                   FontSize="{StaticResource FontSizeBodySm}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />

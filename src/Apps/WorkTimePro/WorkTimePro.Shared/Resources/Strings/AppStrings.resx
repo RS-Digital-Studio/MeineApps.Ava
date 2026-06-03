@@ -1245,4 +1245,5 @@
     <value>Max. carry-over (days, 0 = unlimited)</value>
   </data>
   <data name="Taken" xml:space="preserve"><value>Taken</value></data>
+  <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
 </root>

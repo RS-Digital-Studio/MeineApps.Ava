@@ -569,4 +569,5 @@
     <value>Máx. traspaso (días, 0 = ilimitado)</value>
   </data>
   <data name="Taken" xml:space="preserve"><value>Tomados</value></data>
+  <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
 </root>

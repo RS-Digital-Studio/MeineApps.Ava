@@ -569,4 +569,5 @@
     <value>Max. Übertrag (Tage, 0 = unbegrenzt)</value>
   </data>
   <data name="Taken" xml:space="preserve"><value>Genommen</value></data>
+  <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
 </root>

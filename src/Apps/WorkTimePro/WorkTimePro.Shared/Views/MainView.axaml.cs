@@ -55,9 +55,14 @@ public partial class MainView : UserControl
         _tabLabels[3] = this.FindControl<TextBlock>("TabLabelStatistics");
         _tabLabels[4] = this.FindControl<TextBlock>("TabLabelSettings");
 
-        // Initialer Tab-State
-        UpdateTabHighlighting(0);
-        UpdateTabIndicator(0);
+        // Initialer Tab-State: aktuellen Tab aus dem VM (nicht hart 0 — sonst Desync bei Re-Attach)
+        var tab = _vm?.CurrentTab ?? 0;
+        UpdateTabHighlighting(tab);
+        UpdateTabIndicator(tab);
+
+        // Bei Größenänderung (v.a. Desktop-Resize) den Indikator neu positionieren,
+        // sonst driftet er aus der aktiven Tab-Spalte.
+        SizeChanged += OnMainViewSizeChanged;
 
         // Hintergrund-Render-Loop starten (~5fps)
         _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
@@ -111,6 +116,13 @@ public partial class MainView : UserControl
 
         DataContextChanged -= OnDataContextChanged;
         KeyDown -= OnKeyDown;
+        SizeChanged -= OnMainViewSizeChanged;
+    }
+
+    private void OnMainViewSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        // Indikator-Offset hängt an Bounds.Width → bei Resize neu setzen.
+        UpdateTabIndicator(_vm?.CurrentTab ?? 0);
     }
 
     // =====================================================================

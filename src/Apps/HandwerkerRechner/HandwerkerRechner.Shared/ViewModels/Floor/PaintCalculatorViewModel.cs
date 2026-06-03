@@ -455,7 +455,7 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         var title = _localization.GetString("CalcPaint") ?? "Paint";
         var text = $"{title}\n" +
                    $"─────────────\n" +
-                   $"{_localization.GetString("TotalArea") ?? "Total area"}: {TotalAreaDisplay}\n" +
+                   $"{_localization.GetString("TotalAreaWithCoats") ?? "Total area (with coats)"}: {TotalAreaDisplay}\n" +
                    $"{_localization.GetString("LitersNeeded") ?? "Liters needed"}: {LitersNeededDisplay}\n" +
                    $"{_localization.GetString("Coats") ?? "Coats"}: {NumberOfCoats}";
 
@@ -494,7 +494,7 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
 
             var results = new Dictionary<string, string>
             {
-                [_localization.GetString("TotalArea") ?? "Total area"] = TotalAreaDisplay,
+                [_localization.GetString("TotalAreaWithCoats") ?? "Total area (with coats)"] = TotalAreaDisplay,
                 [_localization.GetString("LitersNeeded") ?? "Liters needed"] = LitersNeededDisplay
             };
             if (ShowCost && PricePerLiter > 0)
@@ -538,7 +538,7 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
 
             var results = new Dictionary<string, string>
             {
-                [_localization.GetString("TotalArea") ?? "Total area"] = TotalAreaDisplay,
+                [_localization.GetString("TotalAreaWithCoats") ?? "Total area (with coats)"] = TotalAreaDisplay,
                 [_localization.GetString("LitersNeeded") ?? "Liters needed"] = LitersNeededDisplay
             };
             if (ShowCost && PricePerLiter > 0)

@@ -135,6 +135,9 @@
     <value>Propriétés de la peinture</value>
   </data>
   <data name="TotalArea" xml:space="preserve">
+    <value>Surface totale</value>
+  </data>
+  <data name="TotalAreaWithCoats" xml:space="preserve">
     <value>Surface totale (avec couches)</value>
   </data>
   <data name="BoardDimensions" xml:space="preserve">

@@ -135,6 +135,9 @@
     <value>Proprietà vernice</value>
   </data>
   <data name="TotalArea" xml:space="preserve">
+    <value>Area totale</value>
+  </data>
+  <data name="TotalAreaWithCoats" xml:space="preserve">
     <value>Area totale (con mani)</value>
   </data>
   <data name="BoardDimensions" xml:space="preserve">

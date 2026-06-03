@@ -135,6 +135,9 @@
     <value>Farbeigenschaften</value>
   </data>
   <data name="TotalArea" xml:space="preserve">
+    <value>Gesamtfläche</value>
+  </data>
+  <data name="TotalAreaWithCoats" xml:space="preserve">
     <value>Gesamtfläche (mit Anstrichen)</value>
   </data>
   <data name="BoardDimensions" xml:space="preserve">

@@ -56,7 +56,7 @@
 
             <!-- Area -->
             <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate TotalArea}"
+              <TextBlock Text="{loc:Translate TotalAreaWithCoats}"
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Paint_TxtBoxArea" Text="{Binding Area}"
@@ -213,7 +213,7 @@
             <!-- Total Area -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0"
-                         Text="{loc:Translate TotalArea}"
+                         Text="{loc:Translate TotalAreaWithCoats}"
                          FontSize="14"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Paint_TxtTotalArea" Grid.Column="1"

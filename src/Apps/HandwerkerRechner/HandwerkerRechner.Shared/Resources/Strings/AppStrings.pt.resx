@@ -135,6 +135,9 @@
     <value>Propriedades da tinta</value>
   </data>
   <data name="TotalArea" xml:space="preserve">
+    <value>Área total</value>
+  </data>
+  <data name="TotalAreaWithCoats" xml:space="preserve">
     <value>Área total (com demãos)</value>
   </data>
   <data name="BoardDimensions" xml:space="preserve">

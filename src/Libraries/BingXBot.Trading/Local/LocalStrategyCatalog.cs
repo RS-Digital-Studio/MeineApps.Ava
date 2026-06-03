@@ -5,7 +5,7 @@ namespace BingXBot.Trading.Local;
 
 /// <summary>
 /// Server-seitiger Strategie-Katalog: Liefert alle registrierten Strategien + deren Parameter-Metadaten.
-/// Nach dem SK-Buch-Refactoring ist nur noch "SK-System" aktiv.
+/// Aktiv ist nur noch die TrendFollow-Familie (Live-Default: TrendFollow-Fast).
 /// </summary>
 public sealed class LocalStrategyCatalog : IStrategyCatalog
 {
@@ -28,7 +28,7 @@ public sealed class LocalStrategyCatalog : IStrategyCatalog
 
     private static string GetDescription(string name) => name switch
     {
-        "SK-System" => "Sequenz-Konzept-Strategie — strikt 1:1 nach Tradebook Stefan Kassing. Fibonacci-Retracements, MTFA Weekly→M30, Fix-Pip-SL.",
+        "TrendFollow-Fast" => "Trend-Following (schnell) — Donchian(10)-Breakout in Trend-Richtung, EMA(34)+ADX/DMI-Filter, Market-Entry, ATR-SL ×2.75, RRR 1.5/3.0.",
         _ => string.Empty
     };
 }

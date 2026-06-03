@@ -358,36 +358,6 @@ public static class IndicatorHelper
         return result;
     }
 
-    /// <summary>
-    /// ZigZag-Indikator via Skender: Erkennt signifikante Swing-Punkte basierend auf prozentualem Preischange.
-    /// Gibt SwingPoints zurück die mit SequenceDetector.FindSwingPoints kreuzvalidiert werden können.
-    /// </summary>
-    public static List<SwingPoint> CalculateZigZag(IReadOnlyList<Candle> candles, decimal percentChange = 3.0m)
-    {
-        if (candles.Count < 10) return [];
-
-        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.ZigZag, (int)(percentChange * 10));
-        if (TryCacheGet(key, out var cached))
-            return (List<SwingPoint>)cached;
-
-        var quotes = ToQuotes(candles);
-        var results = quotes.GetZigZag(EndType.HighLow, percentChange).ToList();
-        var swings = new List<SwingPoint>();
-
-        for (int i = 0; i < results.Count; i++)
-        {
-            var r = results[i];
-            if (r.PointType == null) continue;
-
-            var isHigh = r.PointType == "H";
-            var price = isHigh ? candles[i].High : candles[i].Low;
-            swings.Add(new SwingPoint(price, i, candles[i].CloseTime, isHigh));
-        }
-
-        _cache.TryAdd(key, swings);
-        return swings;
-    }
-
     /// <summary>Stochastik (%K und %D) - Momentum-Oszillator mit Glättung.</summary>
     public static (IReadOnlyList<decimal?> K, IReadOnlyList<decimal?> D) CalculateStochastic(
         IReadOnlyList<Candle> candles, int lookbackPeriods = 14, int signalPeriods = 3, int smoothPeriods = 3)

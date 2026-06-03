@@ -166,7 +166,7 @@ Diese Weichen bilden das Fundament des Remakes:
 |-----|------|
 | Average Frame-Rate (High-End) | 60 FPS (± 2) |
 | Average Frame-Rate (Low-End, z.B. Galaxy A50) | 30 FPS (± 3) |
-| App-Größe (Android-AAB) | < 250 MB |
+| App-Größe (Android-AAB) | < 250 MB (setzt Play-Asset-Delivery voraus: On-Demand/Fast-Follow je Welt-Gruppe; das 2D-Original ist bereits ~95 MB) |
 | App-Größe nach Install (mit Addressables) | < 800 MB |
 | Cloud-Save-Sync-Success | ≥ 99.5 % |
 | Save-Migration alt→neu Erfolgsrate | ≥ 99 % (siehe ARCHITECTURE: Legacy-Save-Import) |
@@ -181,7 +181,8 @@ Diese Weichen bilden das Fundament des Remakes:
 
 ### 5.1 Content (identisch)
 
-- **Spielfeld:** 15×10-Grid (`GameGrid.cs`), `CellType` Empty/Indestructible/Destructible/Exit.
+- **Spielfeld:** 15×10-Grid (`GameGrid.cs`), `CellType` mit 9 Werten: Empty/Wall/Block/Exit +
+  Ice/Conveyor/Teleporter/LavaCrack/PlatformGap (5 Welt-Mechanik-Zellen für Welt 2/3/4/5/9).
 - **5 Helden:** Default, SpeedySam, BrickBoris, TwinTina, LuckyLola — mit ihren exakten Start-Stats,
   Multiplikatoren und `HeroTrait` (QuickPocket/DemolitionExpert/DoubleDetonation/LuckyDrops) und
   Unlock-Bedingungen (`HeroDefinition.cs`).
@@ -189,7 +190,8 @@ Diese Weichen bilden das Fundament des Remakes:
   Tanker, Ghost, Splitter, Mimic — plus Elite-Flag (1.2× Speed, 2× HP, 3× Punkte) (`EnemyType.cs`).
 - **5 Bosse:** StoneGolem, IceDragon, FireDemon, ShadowMaster, FinalBoss — jedes 10. Level, Boss-Typ
   rotiert alle 2 Welten, Duo-Encounter Welt 9 (FinalBoss + ShadowMaster) und Welt 10 (2× FinalBoss).
-  8 Boss-Modifier (`BossModifier.cs`).
+  8 Boss-Modifier (`BossModifier.cs`). Dazu **Mini-Boss-System** auf L7/L17/.../L97 (9 Mini-Bosse,
+  jeweils der Welt-Boss-Typ mit 50 % HP/Punkten) plus Bonus-Level auf jedem 5. Level (außer Boss-Level).
 - **12 PowerUps:** BombUp, Fire, Speed, Wallpass, Detonator, Bombpass, Flamepass, Mystery (35 s
   Unverwundbarkeit), Kick, LineBomb, PowerBomb, Skull — plus Cure (Curse-Heilung). Level-basierte
   Freischaltung via `GetUnlockLevel()` (`PowerUpType.cs`).
@@ -197,7 +199,7 @@ Diese Weichen bilden das Fundament des Remakes:
   Gravity, Poison, TimeWarp, Mirror, Vortex, Phantom, Nova, BlackHole) + Standard-Bombe. Rarities
   exakt aus `CardCatalog.cs`. Verlangsamungs-Stacking multiplikativ.
 - **10 Welten × 10 Level = 100 Story-Level** + **Master-Mode (Reborn)** nach L100. 12 Layout-Typen
-  (`Level.cs`), 8-Layout-Pool pro Welt, 5 Mutatoren ab Welt 6 (`LevelLayoutGenerator.cs`).
+  (`Level.cs`), 8-Layout-Pool pro Welt, 4 Mutatoren ab Welt 4/5 (`LevelLayoutGenerator.cs`).
 - **Welt-Story-Beats:** 10 Welt-Intros + 9 Welt-Outros (Cliffhanger), one-shot, 6 Sprachen
   (`IWorldStoryService`). **Das Original hat bereits eine Story — sie wird übernommen und in 3D inszeniert.**
 - **Roguelike-Dungeon:** 16 Buffs (5 Common/5 Rare/2 Epic/4 Legendary), 5 Synergien (Bombardier,
@@ -217,11 +219,11 @@ Diese Weichen bilden das Fundament des Remakes:
   (deterministisch aus Saison-Nummer) (`BattlePassService.cs`).
 - **Achievements:** **72 Achievements** in 5 Kategorien (Progress/Mastery/Combat/Skill/Challenge),
   JSON-Persistenz (`AchievementService.cs`).
-- **Wirtschaft:** Coins + Gems + DungeonCoins. **9 permanente Shop-Upgrades** (`UpgradeType.cs`,
-  Preise 700-17.000 Coins), Card-Crafting (Coin-Sink), Coin/Gem-**Overflow-Guard**
+- **Wirtschaft:** Coins + Gems + DungeonCoins. **12 permanente Shop-Upgrades** (9 Stat + 3 Bomb-Unlocks)
+  (`UpgradeType.cs`, Preise 700-17.000 Coins), Card-Crafting (Coin-Sink), Coin/Gem-**Overflow-Guard**
   (`(long)Balance + amount` Clamp). Dungeon-Trennung (Shop-Upgrades gelten nicht im Dungeon).
-- **Live-Service:** Daily-Reward (7-Tage + Comeback), 3 Daily-Missions (14er-Pool), 5 Weekly-Missions
-  (14er-Pool), 8 Wochen-Events (deterministisch via ISO-Wochen-Seed), saisonale Events
+- **Live-Service:** Daily-Reward (7-Tage + Comeback), 3 Daily-Missions (17er-Pool), 5 Weekly-Missions
+  (17er-Pool), 8 Wochen-Events (deterministisch via ISO-Wochen-Seed), saisonale Events
   (Halloween/Christmas/NewYear/Summer), Lucky-Spin (9 Segmente, Pity-Counter, Drop-Rate-Disclosure),
   Rotating-Deals, Starter-Pack, First-Purchase-×2.
 - **Determinismus-Bausteine:** `DeterministicRandom` (xoshiro256+, integer-bit-stabil), `ReplayCapture`
@@ -244,7 +246,8 @@ Diese Weichen bilden das Fundament des Remakes:
 - **Audio:** 7-Kanal-AudioBus, Spatial-Pan, Anti-Repeat-Pool, Cinematic-Stinger, adaptive Music-Boost.
   Basis Kenney CC0 — in der Neuauflage **aufgewertet** (siehe §6).
 - **Tutorial + Onboarding:** T1 Movement / T2 Bombs / T3 PowerUps (3 Phasen), Feature-Unlock-Choreographie
-  (L10 DailyChallenge, L20 Dungeon, L30 LineBomb, L40 PowerBomb, L50 BossRush, L100 MasterMode),
+  (L10 DailyChallenge, L20 Dungeon, L30 LineBomb, L40 PowerBomb, L50 BossRush, L60 hero_trait_slot2,
+  L70 boss_modifier_preview, L80 cosmetic_legendary_tier, L90 master_mode_preview, L100 MasterMode),
   Discovery-System, What's-New, Re-Engagement-Push.
 
 ---
@@ -304,10 +307,10 @@ Local-Coop/Versus zum Launch, Online-Co-op später — als Erweiterung des bewä
 | Phase | Zeitrahmen | Hauptziel |
 |-------|-----------|-----------|
 | **Phase 0** | Monat 1 | Setup: Unity-Skelett, CI, Firebase, Asmdefs. Pure-Domain-Code-Port (Combo/Dungeon/Liga/Determinismus-Bausteine). |
-| **Phase 1** | Monat 2-4 | Single-Player-Core: 15×10-Grid, 5 Helden, 14 Bomben-Typen, 12 PowerUps, 12 Gegner, 5 Bosse, 100 Level in 10 Welten, Layouts/Mutatoren, HUD. |
-| **Phase 2** | Monat 4-6 | Meta-Layer: Wirtschaft (Coins/Gems/DungeonCoins), 9 Shop-Upgrades, Karten/Deck/Crafting, Battle Pass (30 Tiers), Cloud-Save + Legacy-Import, 72 Achievements, Tutorial. |
+| **Phase 1** | Monat 2-4 | Single-Player-Core: 15×10-Grid, 5 Helden, 14 Bomben-Typen, 12 PowerUps, 12 Gegner, 5 Bosse, 100 Level in 10 Welten, Layouts/Mutatoren, HUD. **Determinismus-Pflicht ab hier:** alle Gameplay-Random über `IRngProvider`, Sim-Loop über `FixedTimestepRunner` (60 Hz). |
+| **Phase 2** | Monat 4-6 | Meta-Layer: Wirtschaft (Coins/Gems/DungeonCoins), 12 Shop-Upgrades, Karten/Deck/Crafting, Battle Pass (30 Tiers), Cloud-Save + Legacy-Import, 72 Achievements, Tutorial. |
 | **Phase 3** | Monat 6-8 | Live-Service + Dungeon: Roguelike-Dungeon (16 Buffs/5 Synergien), Liga (5×3 + Daily-Race), Daily/Weekly/Events, Lucky-Spin, Clan, Master-Mode. |
-| **Phase 4** | Monat 8-9 | Determinismus-Integration + Multiplayer-Foundation: Sim/Render-Trennung, `IRngProvider` überall, Local-Coop/Versus. |
+| **Phase 4** | Monat 8-9 | Determinismus-Feinschliff (Float-Quantisierung, Online-Re-Sim, Sim/Render-Trennung) + Multiplayer-Foundation: hash-stabiler Versus-Determinismus, Local-Coop/Versus. (`IRngProvider`-Routing + Fixed-Step sind bereits ab Phase 1 integriert.) |
 | **Phase 5** | Monat 8-10 | Polish: 3D-Art aller Welten/Helden/Gegner/Bosse, VFX Graph, adaptive Music, Welt-Story-Cutscenes in 3D, Cosmetics. |
 | **Phase 6** | Monat 10-11 | Closed Beta DACH, Save-Migration-Test mit Alt-Spielern, Performance-Pass (Low-End), LiveOps-Tooling. |
 | **Phase 7** | Monat 12 | **Soft-Launch DACH** + Saison 1. |
@@ -322,15 +325,16 @@ nicht launch-kritisch.)
 
 ## 9. Risiko-Summary
 
-> Vollständiges Register in [ROADMAP.md](ROADMAP.md#risiken). Top-5:
+> Vollständiges Register in [ROADMAP.md](ROADMAP.md#risiken). Top-6:
 
 | # | Risiko | Wahrscheinlichkeit | Impact | Mitigation |
 |---|--------|--------------------|--------|------------|
 | 1 | **Save-Migration alt→neu** verliert Spielstände echter Spieler | Mittel | Hoch | Feld-für-Feld-Mapping der 35 Keys, UID-Bridging `bomberblast-league`→`bomberblast-arena`, ausgiebiger Test mit Alt-Accounts vor Launch (siehe ARCHITECTURE: Legacy-Save-Import) |
 | 2 | **Float-Determinismus** für Replay/Online-MP nicht bit-stabil (IL2CPP/ARM64 ↔ Server) | Hoch | Mittel | Determinismus-Mandat: Fixed-Point/Quantisierung für hash-relevante Zustände; Online-MP ist optional/Post-Launch, daher kein Launch-Blocker; Lockstep statt Rollback als Fallback |
 | 3 | **3D-Performance** auf Low-End (30 FPS, 4-Spieler) | Mittel | Hoch | Hardware-Tier-System (aus Original), LOD, VFX-Skalierung, dedizierte Low-End-Tests pro Sprint |
-| 4 | **Feature-Parität** unvollständig (Original ist sehr umfangreich: ~117 Services) | Mittel | Hoch | Vollständige Parity-Matrix Original-System → Unity-Äquivalent als Pflicht-Checkliste (inkl. Live-Service-Glue: GameTracking/RotatingDeals/VIP/Push) |
+| 4 | **Feature-Parität** unvollständig (Original ist sehr umfangreich: ~117 Services, ~165 klassifizierte Systeme gesamt inkl. Core/Models/Graphics/Input/UI) | Mittel | Hoch | Vollständige Parity-Matrix Original-System → Unity-Äquivalent als Pflicht-Checkliste (inkl. Live-Service-Glue: GameTracking/RotatingDeals/VIP/Push) |
 | 5 | **Scope** durch optionalen Multiplayer aufgebläht | Mittel | Mittel | Single-Player + Feature-Parität zuerst; MP strikt als Post-Core-Plus, kein Launch-Gate |
+| 6 | **Determinismus-Integration** in den Single-Player-Loop (Replay-CI-Gate, Daily-Race, Anti-Cheat) ist Neu-Arbeit ab Phase 1 — im Original sind die Bausteine vorhanden, aber NICHT in den Game-Loop integriert (Live-Pfad nutzt `System.Random`) | Hoch | Mittel | `IRngProvider`-Routing aller ~50 Random-Calls + `FixedTimestepRunner` von Phase 1 an verbindlich; Determinismus-Replay-Suite als Pflicht-CI-Check pro PR (Float-Quantisierung/Online-Re-Sim folgen in Phase 4) |
 
 ---
 

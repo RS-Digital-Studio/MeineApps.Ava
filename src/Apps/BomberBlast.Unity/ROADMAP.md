@@ -154,7 +154,7 @@
 | Photon Fusion 2 (Pricing siehe unten) | 0-3.000 |
 | Linear / GitHub Projects | 600 |
 | Notion Team | 720 |
-| ComfyUI/Hunyuan3D (siehe ASSETS_AI.md, mostly free) | 200 (GPU-Cloud-Backup) |
+| ComfyUI/TRELLIS/TripoSG (siehe ASSETS_AI.md, mostly free) | 200 (GPU-Cloud-Backup) |
 | **Total Tools** | **28.905 EUR** |
 
 ### 2.3 Infrastruktur-Kosten (12 Monate Pre-Launch, niedrige Nutzung)
@@ -271,6 +271,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 - [ ] 5 Bosse (StoneGolem/IceDragon/FireDemon/ShadowMaster/FinalBoss) + Phase/Enrage (1-2 davon polished)
 - [ ] 10 Welten × 10 Level = 100 Levels (mit Placeholder-Visuals)
 - [ ] LevelLayoutGenerator (portiert) mit 12 Layouts + 5 Mutatoren
+- [ ] **Determinismus-Pflicht ab hier:** alle Gameplay-Random über `IRngProvider`, Sim-Loop über `FixedTimestepRunner` (60 Hz) — Voraussetzung für Daily-Race (Phase 3) und Replay-Re-Sim (Phase 4)
 - [ ] Combo-System (portiert)
 - [ ] HUD (Joystick, Bomb-Button, Detonator, Card-Quickswap, Combo-Anzeige, Lives, Coins)
 - [ ] Vibration + Audio-Hooks
@@ -293,7 +294,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 
 **Deliverables:**
 - [ ] Coin/Gem/DungeonCoin-Economy (Overflow-Guard, portiert)
-- [ ] Shop mit 9 permanenten Upgrades (UpgradeType — Haupt-Coin-Sink) + 3 Shop-Bomben
+- [ ] Shop mit 12 permanenten Upgrades (UpgradeType — Haupt-Coin-Sink: 9 Stat-Upgrades + 3 Bomb-Unlocks IceBomb/FireBomb/StickyBomb)
 - [ ] Card-System: Deck (4 Basis + 1 freischaltbar), Quickswap, Crafting (Coin-Sink)
 - [ ] Deck-Builder UI
 - [ ] Battle Pass v1 (30 Tiers, Free/Premium, 10 Themes)
@@ -327,7 +328,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 - [ ] Roguelike-Dungeon (16 Buffs, 5 Synergien, 5 Raum-Typen, 8 Floor-Modifier, Node-Map 10×3, 8 Dungeon-Upgrades)
 - [ ] Master-Mode (Reborn nach L100) + Boss-Rush + Survival + Quick-Play
 - [ ] Liga-System (5 Tiers × 3 Subs, 14-Tage-Saison, **Perzentil-Promotion**) — Domain-Port
-- [ ] Liga-NPC-Backfill + Daily-Race-Modus (deterministisches Tageslevel)
+- [ ] Liga-NPC-Backfill + Daily-Race-Modus (deterministisches Tageslevel — setzt das ab Phase 1 integrierte `IRngProvider`-Routing + `FixedTimestepRunner` voraus)
 - [ ] Live-Events: 8 Wochen-Events (ISO-Seed), saisonale Events, Lucky-Spin (9 Segmente, Pity), Rotating-Deals
 - [ ] Profanity-Filter (portiert/extrahiert), Report-Funktion
 - [ ] Clan-System (`FirebaseClanService` voll integriert: Create/Join/Chat/Leaderboard — portiert)
@@ -350,20 +351,21 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 - Liga-Saison-Reset via Cloud Function getestet, erste Daily-Race-Submissions
 - Live-Event-Rotation deterministisch korrekt
 
-### Phase 4 — Determinismus-Integration + Multiplayer-Foundation (Monat 8-9, optional/Plus)
+### Phase 4 — Determinismus-Feinschliff + Multiplayer-Foundation (Monat 8-9, optional/Plus)
 
-**Hauptziel:** Determinismus integriert (Voraussetzung für Replay/Online-MP); Local-Coop/Versus spielbar.
+**Hauptziel:** Float-Determinismus + Sim/Render-Feinschliff (Voraussetzung für Replay-Re-Sim/Online-MP); Local-Coop/Versus spielbar.
+**Voraussetzung:** `IRngProvider`-Routing aller Gameplay-Random-Calls und der `FixedTimestepRunner`-Sim-Loop (60 Hz) sind bereits ab **Phase 1** (Single-Player-Core) integriert und vor dem Daily-Race (Phase 3) verbindlich. Phase 4 enthält nur den hash-stabilen Feinschliff darauf.
 **Online-Versus ist optionales Post-Launch-Feature — kein Launch-Blocker (siehe PLAN §9 Risiko #2/#5).**
 
 **Deliverables:**
-- [ ] **Determinismus-Integration:** alle Gameplay-Random über `IRngProvider`, Sim/Render-Trennung, 60-Hz-Fixed-Step
 - [ ] Float-Determinismus-Strategie (Fixed-Point/Quantisierung vor State-Hash) — siehe ARCHITECTURE §13.0
-- [ ] Determinismus-Replay-Suite (CI-Gate)
+- [ ] Sim/Render-Trennung-Feinschliff + Online-Re-Sim (Server-Replay)
+- [ ] Determinismus-Replay-Suite (CI-Gate) auf hash-stabilem Sim-Zustand
 - [ ] Local-Coop/Versus (2 Spieler an einem Gerät/Gamepads, dual Input-Routing)
 - [ ] *(später/optional)* Online-Co-op (Photon Realtime), Online-Versus (Photon Fusion) + Server-Re-Sim-Anti-Cheat
 
 **Team-Fokus:**
-- Lead Dev: Determinismus-Integration, Local-MP, (optional) Photon
+- Lead Dev: Float-Determinismus-Feinschliff, Local-MP, (optional) Photon
 - Junior Dev: Replay-Suite, Local-Coop-Camera/Input
 - Lead Artist: Welt 8-10 + FinalBoss
 - UI/UX: Local-MP-Setup + Settlement-Modal
@@ -374,7 +376,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 - Local-2-Spieler-Match spielbar
 - (optional) Online-Co-op-Match Editor + Build
 
-### Phase 5 — Polish + Visuals + Audio (Monat 9-11)
+### Phase 5 — Polish + Visuals + Audio (Monat 8-10, überlappt mit Phase 4)
 
 **Hauptziel:** Production-Quality-Look + Audio.
 
@@ -451,7 +453,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 - D1-Retention: ≥ 35 %
 - D7-Retention: ≥ 15 %
 - D30-Retention: ≥ 8 %
-- ARPDAU: 0.30 EUR
+- ARPDAU: 0,12 EUR
 - Crash-Free-Rate: ≥ 99 %
 
 ### Phase 8 — EU-Launch + iOS (Monat 13-14)
@@ -469,7 +471,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 **KPIs (Wochen 9-16):**
 - Downloads: 500k
 - D1-Retention: ≥ 30 %
-- ARPDAU: 0.35 EUR
+- ARPDAU: 0,15 EUR
 
 ### Phase 9 — Global-Launch + Steam-Demo (Monat 15-16)
 
@@ -484,7 +486,7 @@ Photon Fusion Pricing (Stand 2026): ~0,001 EUR pro CCU pro Match-Minute.
 **KPIs (Wochen 17-26):**
 - Downloads: 3-5M
 - D7-Retention: ≥ 10 %
-- ARPDAU: 0.40 EUR
+- ARPDAU: 0,18 EUR
 - Crash-Free-Rate: ≥ 99.5 %
 
 ### Phase 10 — Steam-Full-Launch + Live-Service (Monat 17-18+)
@@ -983,6 +985,8 @@ Bei Tournament-Mode:
 | T8 | Unity-Version-Update-Breaking-Changes | Niedrig | Mittel | Version pinnen, Update-Sprints planmäßig |
 | T9 | Firebase-Quota-Limits (RTDB-Schreibrate) | Mittel | Hoch | Frühzeitig auf Firestore-Sharding evaluieren, Cache-Layer |
 | T10 | *(nur falls Voice eingeführt)* AI-Voice-Qualität schwankt | Niedrig | Niedrig | Voice ist deferred/optional; Original ist voice-los — kein Launch-Risiko |
+| T11 | **Determinismus-Integration in den Single-Player-Loop** — im Original sind die Bausteine vorhanden, aber NICHT in den Game-Loop integriert (Live-Pfad nutzt `System.Random`). Neu-Arbeit ab Phase 1, launch-relevant (Daily-Race + Anti-Cheat hängen davon ab) | Hoch | Mittel | `IRngProvider`-Routing aller ~50 Random-Calls + `FixedTimestepRunner` ab Phase 1 verbindlich; Determinismus-Replay-Suite als Pflicht-CI-Gate, das Merges blockt; Float-Quantisierung/Online-Re-Sim folgen in Phase 4 |
+| T12 | **Cross-Save Wallet-/Entitlement-Fragmentierung** (Steam-Wallet vs. Google/Apple-IAP) — extern gekaufte Entitlements dürfen auf iOS/Android nicht regelwidrig als kaufbar/aktiviert erscheinen (Store-Compliance) | Mittel | Hoch | Plattform-getrennte Entitlement-Buckets, Server als Single-Source-of-Truth; Steam-erworbene Inhalte auf Mobile read-only/ausgeblendet; Apple/Google-IAP-Richtlinien-Review vor Cross-Save-Aktivierung |
 
 ### 12.2 Game-Design-Risiken
 
@@ -1144,7 +1148,7 @@ Diese Entscheidungen müssen vor oder während Phase 0-1 geklärt werden:
 | Datum | Version | Änderung | Autor |
 |-------|---------|----------|-------|
 | 2026-05-26 | v0.1 | Initial-ROADMAP mit 18-Mo-Plan, Team, Marketing, Compliance, Risiken | Robert Schneider + Claude |
-| 2026-05-30 | **v0.2** | **Auf treuen 3D-Remake ausgerichtet: Deliverables = Feature-Parität mit dem Original (5 Helden, 12 Gegner, 5 Bosse, 13 Karten, 30 BP-Tiers, 72 Achievements, 9 Shop-Upgrades, Dungeon, Liga 5×3+Perzentil). Phase 4 = Determinismus-Integration + Local-MP; Online-MP/Esports/Voice als optionale Post-Launch-Plus markiert. Sci-Fi-Reste (Vex/Mech-Wars/PULSE-VOLT/Royale/Affixe/Talente) entfernt; Legacy-Save-Import als Pflicht-Checklistenpunkt** | Robert Schneider + Claude |
+| 2026-05-30 | **v0.2** | **Auf treuen 3D-Remake ausgerichtet: Deliverables = Feature-Parität mit dem Original (5 Helden, 12 Gegner, 5 Bosse, 13 Karten, 30 BP-Tiers, 72 Achievements, 12 Shop-Upgrades, Dungeon, Liga 5×3+Perzentil). Phase 4 = Determinismus-Integration + Local-MP; Online-MP/Esports/Voice als optionale Post-Launch-Plus markiert. Sci-Fi-Reste (Vex/Mech-Wars/PULSE-VOLT/Royale/Affixe/Talente) entfernt; Legacy-Save-Import als Pflicht-Checklistenpunkt** | Robert Schneider + Claude |
 
 ---
 

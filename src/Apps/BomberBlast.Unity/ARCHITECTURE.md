@@ -62,9 +62,9 @@
 | **Input** | **New Input System** | 1.19+ | Action-basiert, Multi-Touch + Gamepad + Keyboard in einer Abstraktion |
 | **UI (statisch)** | **UI Toolkit** | (Unity-built-in) | Deklarativ, USS-stylebar, schneller iterierbar |
 | **UI (Animation)** | **UGUI** | 2.0+ | DOTween + RectTransform-Animation flexibler |
-| **TMP** | **TextMeshPro** | 3.2+ | Standard, SDF-Font-Rendering |
+| **TMP** | **TextMeshPro** | (in com.unity.ugui 2.0.0 integriert) | Standard, SDF-Font-Rendering — in Unity 6 Teil von UGUI, kein separates Paket |
 | **Animation** | **DOTween** | Pro v1.2.7+ | Tweens für UI + Camera + Custom-Animations |
-| **Cinemachine** | **Cinemachine** | 3.x | Procedural Camera, Damping, Confine, Impulse |
+| **Cinemachine** | **Cinemachine** | 3.x | Procedural Camera, Damping, CinemachineConfiner2D/3D, CinemachineImpulseSource/-Listener |
 | **Timeline** | **Unity Timeline** | 1.8+ | Welt-Cutscenes, Cinematic-Sequenzen |
 | **VFX** | **VFX Graph** | 17.0+ | GPU-Compute-Shader-Particles |
 | **Particle System** | **Built-in** | Unity 6 | Backup für simple Effekte (Trail, Pickup) |
@@ -143,7 +143,6 @@
     "com.unity.nuget.newtonsoft-json": "3.2.2",
     "com.unity.render-pipelines.universal": "17.0.4",
     "com.unity.test-framework": "1.5.1",
-    "com.unity.textmeshpro": "3.2.0-pre.10",
     "com.unity.timeline": "1.8.12",
     "com.unity.ugui": "2.0.0",
     "com.unity.visualeffectgraph": "17.0.x",
@@ -320,7 +319,7 @@ Assets/_Project/Scripts/
 │   │   ├── DungeonCoin.cs
 │   │   ├── OverflowGuard.cs
 │   │   └── Shop/
-│   │       ├── UpgradeType.cs        (9 permanente Upgrades — Haupt-Coin-Sink)
+│   │       ├── UpgradeType.cs        (12 permanente Upgrades: 9 Stat + 3 Bomb-Unlocks — Haupt-Coin-Sink)
 │   │       ├── PlayerUpgrades.cs
 │   │       └── ShopUpgrade.cs
 │   ├── League/
@@ -615,7 +614,7 @@ RootLifetimeScope (Boot-Scene, DontDestroyOnLoad)
    ├─ CardCatalog            (13 Karten)
    ├─ DungeonBuffDatabase    (16 Buffs)
    ├─ AchievementDatabase    (72 Achievements)
-   ├─ ShopUpgradeConfig      (9 Upgrades)
+   ├─ ShopUpgradeConfig      (12 Upgrades: 9 Stat + 3 Bomb-Unlocks)
    ├─ BalancingConfig
    ├─ EconomyConfig
    └─ NetworkConfig          (nur für optionalen Multiplayer)
@@ -801,7 +800,7 @@ public class HeroDefinition : ScriptableObject
     public string DescriptionKey;
     public int StartMaxBombs = 1;
     public int StartFireRange = 2;
-    public int StartSpeedLevel = 0;         // 0-3, BASE_SPEED 80 + Level*20
+    public int StartSpeedLevel = 0;         // 0-3, BASE_SPEED 100 + Level*20
     public int StartLives = 3;
     public float CoinPickupMultiplier = 1f;
     public float PowerUpDropMultiplier = 1f;
@@ -827,14 +826,14 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
 - `power_ups.json` (**12 PowerUps + Cure**)
 - `enemies.json` (**12 Enemies** + Elite-Flag)
 - `bosses.json` (**5 Bosse** + 8 Modifier)
-- `worlds.json` (10 Welten + 100 Level, 12 Layouts, 5 Mutatoren) — *(folgt im Content-Sprint)*
+- `worlds.json` (10 Welten + 100 Level, 12 Layouts, 4 Mutatoren) — *(folgt im Content-Sprint)*
 - `achievements.json` (**72 Achievements** in 5 Kategorien)
 - `dungeon.json` (16 Buffs, 5 Synergien, 5 Raum-Typen, 8 Floor-Modifier, 8 Dungeon-Upgrades)
-- `daily_missions.json` (14er-Pool), `weekly_missions.json` (14er-Pool)
+- `daily_missions.json` (17er-Pool), `weekly_missions.json` (17er-Pool)
 - `events.json` (**8 Wochen-Events** + 4 saisonale)
 - `battle_pass_s1.json` (30 Tiers, Saison-1-Rewards)
 - `cosmetics.json` (**98 Items**: 32 Trails / 33 Frames / 33 Victories + Skins)
-- `shop_upgrades.json` (9 permanente Upgrades + 3 Shop-Spezial-Bomben)
+- `shop_upgrades.json` (12 permanente Upgrades: 9 Stat-Upgrades + 3 Bomb-Unlocks IceBomb/FireBomb/StickyBomb)
 - `balancing.json` (Stat-Curves, Drop-Gewichte, Combo-Boni)
 - `localization_de.json`, `localization_en.json`, ... (6 Sprachen initial)
 - `tutorial.json` (3 Tutorial-Phasen: Movement/Bombs/PowerUps)
@@ -842,7 +841,7 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
 - `world_story.json` (10 Welt-Intros + 9 Welt-Outros)
 
 > Keine `talents.json` / `affixes.json` — Talent-Baeume und Affix-System gehoeren zur verworfenen
-> Sci-Fi-Reinvention. Progression laeuft ueber die 9 permanenten Shop-Upgrades (siehe DESIGN §16.2).
+> Sci-Fi-Reinvention. Progression laeuft ueber die 12 permanenten Shop-Upgrades (9 Stat + 3 Bomb-Unlocks, siehe DESIGN §16.2).
 
 ### 6.3 Save-Schema (Firebase RTDB)
 
@@ -859,7 +858,6 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
    │     frameId: string,
    │     trailId: string,
    │     victoryId: string,
-   │     sprayId: string,
    │     createdAt: ServerValue.TIMESTAMP,
    │     lastSeenAt: ServerValue.TIMESTAMP
    │   }
@@ -868,9 +866,10 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
    │     gems: number,
    │     dungeon_coins: number      // nur 3 Waehrungen (wie Original)
    │   }
-   ├── shop_upgrades {              // 9 permanente Upgrades (PlayerUpgrades / UpgradeType)
+   ├── shop_upgrades {              // 12 permanente Upgrades (PlayerUpgrades / UpgradeType)
    │     startBombs, startFire, startSpeed, extraLives, scoreMultiplier,
-   │     timeBonus, shieldStart, coinBonus, powerUpLuck   // jeweils Level-Wert
+   │     timeBonus, shieldStart, coinBonus, powerUpLuck,    // 9 Stat-Upgrades
+   │     iceBomb, fireBomb, stickyBomb   // 3 Bomb-Unlocks — jeweils Level-Wert
    │   }
    ├── inventory
    │   ├── heroes {
@@ -927,7 +926,8 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
    │   }
    ├── crashCount: number,
    ├── version: number,            // Save-Schema-Version
-   └── schemaVersion: number       // Current = 1
+   └── schemaVersion: number       // Current = 1 (neues arena-Schema; die Legacy-Import-Bruecke
+                                    // liest weiterhin das Original-V3-Schema ein — kein Konflikt, getrennte Projekte, siehe §6.5)
 
 /clans/{clanId}/
    ├── info { name, tag, country, language, level, motto, leaderId, createdAt }
@@ -1059,7 +1059,7 @@ public class PvpNetworkPlayer : NetworkBehaviour
     [Networked] public NetworkBool IsAlive { get; set; }
     [Networked] public TickTimer InvulnerableUntil { get; set; }
     
-    [Networked, Capacity(8)] public NetworkArray<BombInstance> ActiveBombs => default;
+    [Networked, Capacity(8)] public NetworkArray<BombNetState> ActiveBombs => default;
     
     public override void Spawned()
     {
@@ -1089,7 +1089,21 @@ public class PvpNetworkPlayer : NetworkBehaviour
         // ...
     }
 }
+
+// Netz-Repräsentation der Bombe: blittable INetworkStruct (kein managed Reference-Typ).
+public struct BombNetState : INetworkStruct
+{
+    public Vector2Int Cell;   // Grid-Position
+    public int Timer;         // Rest-Ticks bis Zündung
+    public byte Type;         // BombType-Index
+    // ... weitere unmanaged Felder (Range, OwnerSlot)
+}
 ```
+
+> Fusion synchronisiert nur unmanaged- bzw. `INetworkStruct`-Typen — **keine** managed
+> Reference-Klassen. `BombInstance` ist managed und bleibt der Render-/Domain-Typ; `BombNetState`
+> ist die schlanke, blittable Netz-Repräsentation, die in der `NetworkArray<>` liegt. Pro Tick
+> wird zwischen beiden gemappt.
 
 ### 8.3 Snapshot-Größen (Schätzung)
 
@@ -1101,9 +1115,14 @@ Pro Tick zusätzlich:
 - Grid-State (Blöcke zerstört) → 150 Bits = 19 Bytes
 - Particle-Spawn-Events → < 50 Bytes
 
-**Total pro Snapshot: ~250 Bytes**
-**Pro Sekunde bei 30 Hz: ~7.5 KB**
-**Match (10 Min) ≈ 4.5 MB Bandwidth pro Spieler — akzeptabel für 4G**
+**Total pro Snapshot: ~250 Bytes (Brutto-Obergrenze, voller State)**
+**Pro Sekunde bei 30 Hz: ~7.5 KB (Brutto-Obergrenze)**
+**Match (10 Min) ≈ 4.5 MB Bandwidth pro Spieler — Brutto-Obergrenze, akzeptabel für 4G**
+
+> Diese Zahlen sind eine **Brutto-Obergrenze** (voller State pro Tick). Fusion überträgt
+> tatsächlich **delta-komprimiert** (nur geänderte `[Networked]`-Properties, plus Range-/
+> Bit-Packing) — der reale Traffic liegt im Match deutlich darunter, weil sich pro Tick nur
+> wenige Felder ändern.
 
 ### 8.4 Rollback-Mechanik
 
@@ -1273,35 +1292,35 @@ Heuristiken:
 ### 11.2 Beispiel: submitMatchResult.ts
 
 ```typescript
-import * as functions from 'firebase-functions';
+import { onCall, HttpsError } from 'firebase-functions/https';
 import * as admin from 'firebase-admin';
 
 admin.initializeApp();
 const db = admin.database();
 
-export const submitMatchResult = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Login required');
+export const submitMatchResult = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Login required');
   }
-  const uid = context.auth.uid;
-  const { matchId, mode, players, seed, result, replayBase64 } = data;
+  const uid = request.auth.uid;
+  const { matchId, mode, players, seed, result, replayBase64 } = request.data;
 
   // Rate-Limit: Max 1 Submit pro 30s pro UID
   const lastSubmit = await db.ref(`/players/${uid}/lastMatchSubmit`).once('value');
   const lastSubmitMs = lastSubmit.val() || 0;
   if (Date.now() - lastSubmitMs < 30_000) {
-    throw new functions.https.HttpsError('resource-exhausted', 'Rate limit');
+    throw new HttpsError('resource-exhausted', 'Rate limit');
   }
 
   // Schema-Validation (Zod oder Joi)
-  if (!validateMatchSubmission(data)) {
-    throw new functions.https.HttpsError('invalid-argument', 'Invalid schema');
+  if (!validateMatchSubmission(request.data)) {
+    throw new HttpsError('invalid-argument', 'Invalid schema');
   }
 
   // Anti-Replay: matchId noch nicht vorhanden?
   const existing = await db.ref(`/matches/${matchId}`).once('value');
   if (existing.exists()) {
-    throw new functions.https.HttpsError('already-exists', 'Match already submitted');
+    throw new HttpsError('already-exists', 'Match already submitted');
   }
 
   // Speichern Match + Replay-Blob
@@ -1332,8 +1351,10 @@ export const submitMatchResult = functions.https.onCall(async (data, context) =>
 ### 11.3 Beispiel: validateMatch.ts (Pub/Sub-Trigger)
 
 ```typescript
-export const validateMatch = functions.pubsub.topic('validate-match').onPublish(async (msg) => {
-  const { matchId, uid } = msg.json;
+import { onMessagePublished } from 'firebase-functions/pubsub';
+
+export const validateMatch = onMessagePublished('validate-match', async (event) => {
+  const { matchId, uid } = event.data.message.json;
 
   // Lade Match aus DB
   const matchSnap = await db.ref(`/matches/${matchId}`).once('value');
@@ -1364,9 +1385,11 @@ export const validateMatch = functions.pubsub.topic('validate-match').onPublish(
 ### 11.4 Beispiel: accountDelete.ts (DSGVO Art-17)
 
 ```typescript
-export const accountDelete = functions.https.onCall(async (data, context) => {
-  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
-  const uid = context.auth.uid;
+import { onCall, HttpsError } from 'firebase-functions/https';
+
+export const accountDelete = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+  const uid = request.auth.uid;
 
   // 1. Liga-Einträge löschen (alle Saisons)
   await db.ref(`/leagues`).once('value').then(async (snap) => {
@@ -1524,7 +1547,9 @@ service firebase.storage {
 
 ```typescript
 // CloudFunctions/src/photonWebhook.ts
-export const photonWebhook = functions.https.onRequest(async (req, res) => {
+import { onRequest } from 'firebase-functions/https';
+
+export const photonWebhook = onRequest(async (req, res) => {
   const { Type, GameId, ActorNr, UserId, AuthCookie } = req.body;
   
   switch (Type) {
@@ -1582,8 +1607,8 @@ public interface IRngProvider
     float NextFloat();
     bool NextBool(float probability);
     void Seed(ulong seed);
-    ulong GetState();
-    void SetState(ulong state);
+    (ulong, ulong, ulong, ulong) GetState();
+    void SetState(ulong s0, ulong s1, ulong s2, ulong s3);
 }
 
 public class DeterministicRngProvider : IRngProvider
@@ -1599,12 +1624,17 @@ public class DeterministicRngProvider : IRngProvider
     public float NextFloat() => _rng.NextSingle();
     public bool NextBool(float p) => _rng.NextSingle() < p;
     public void Seed(ulong s) => _rng = new DeterministicRandom(s);
-    public ulong GetState() => _rng.GetState();
-    public void SetState(ulong s) => _rng.SetState(s);
+    public (ulong, ulong, ulong, ulong) GetState() => _rng.GetState();
+    public void SetState(ulong s0, ulong s1, ulong s2, ulong s3) => _rng.SetState(s0, s1, s2, s3);
 }
 ```
 
-`DeterministicRandom` = xoshiro256+ aus altem Code (Public Domain).
+`DeterministicRandom` = xoshiro256+ aus altem Code (Public Domain). Die `DeterministicRandom`-Klasse
+selbst (256-Bit-State, `GetState`/`SetState` als Vierer-Tupel, `Next(int)`/`Next(int, int)`/
+`NextDouble()`/`NextSingle()`/`NextBool()`) wird 1:1 übernommen. Das `IRngProvider`-Interface
+darüber ist eine **bewusste Erweiterung** (`NextInt(min, max)`, `NextFloat()`,
+`NextBool(probability)`, `Seed(ulong)`) — kein 1:1-Port der Original-API, sondern ein Adapter,
+der die Provider-Semantik vereinheitlicht und das xoshiro-Backend kapselt.
 
 ### 13.3 SystemRngProvider (für Visual-Random)
 
@@ -1829,7 +1859,7 @@ Auto-Aktivierung bei <20 % Akku:
 | `Worlds.1-3` | Welt 1-3 Assets | Sync, im AAB | 80 MB |
 | `Worlds.4-10` | Welt 4-10 Assets | Lazy, nach World-Unlock | 200 MB |
 | `VFX.Bombs` | VFX-Graph für 22 Bomben | Pre-Load mit Game-Scene | 50 MB |
-| `VFX.HeroSkills` | Hero-Ultimate-VFX | Pre-Load mit Hero-Pick | 30 MB |
+| `VFX.HeroTraits` | Hero-Trait-/Skin-VFX (passive Traits, keine Ultimates) | Pre-Load mit Hero-Pick | 30 MB |
 | `Audio.BGM` | Welt-Music-Loops | Streaming | 100 MB (alle Welten) |
 | `Audio.SFX` | Sound-Effects | Pre-Load | 50 MB |
 | `Audio.Voice` | Hero-VoiceLines (alle Sprachen) | Lazy nach Sprach-Wahl | 150 MB pro Sprache |
@@ -2256,7 +2286,7 @@ Funnel-Events:
 | `level_start` | worldId, levelId, heroId | Story-Match-Start |
 | `level_complete` | worldId, levelId, stars, durationSec | Story-Match-End |
 | `pvp_match_start` | mode, region | PvP-Match-Start |
-| `pvp_match_end` | mode, result, durationSec, mmrChange | PvP-Match-End |
+| `pvp_match_end` | mode, result, durationSec, leaguePointsChange | PvP-Match-End |
 | `coop_match_start` | mode, partyCount | Co-op-Match-Start |
 | `coop_match_end` | mode, result, durationSec | Co-op-Match-End |
 | `purchase_start` | productId | IAP-Initiated |
@@ -2291,7 +2321,7 @@ Funnel-Events:
 ### 22.2 Port-Checkliste (Priority-2, Sprint 3-4)
 
 - [ ] `Core/LevelGeneration/LevelGenerator.cs` + `MutatorEffects.cs` → `BomberBlast.Domain/Worlds/`
-- [ ] `Models/Levels/LevelLayoutGenerator.cs` (**12 Layouts** + 5 Mutatoren) → `BomberBlast.Domain/Worlds/Layouts/`
+- [ ] `Models/Levels/LevelLayoutGenerator.cs` (**12 Layouts** + 4 Mutatoren) → `BomberBlast.Domain/Worlds/Layouts/`
 - [ ] `Models/Cards/CardCatalog.cs` (**13 Karten** + Standard-Bombe = 14 BombTypes) → `BomberBlast.Domain/Bombs/`
 - [ ] `AI/PathFinding/AStar.cs` → `BomberBlast.Domain/Enemies/AI/`
 - [ ] BFS + DangerZone-Code → `BomberBlast.Domain/Enemies/AI/`
@@ -2302,7 +2332,7 @@ Funnel-Events:
 - [ ] `Services/BattlePassService.cs` (**30 Tiers**, XP-Tier, 10 Themes) → `BomberBlast.Domain/BattlePass/`
 - [ ] `Services/AchievementService.cs` (**72 Definitionen**, 5 Kategorien) → `BomberBlast.Domain/Achievements/`
 - [ ] `Services/CoinService.cs` + `GemService.cs` + DungeonCoins (Overflow-Guard) → `BomberBlast.Domain/Economy/`
-- [ ] `Services/ShopService.cs` + `Models/UpgradeType.cs` + `PlayerUpgrades.cs` (**9 permanente Upgrades** — Haupt-Coin-Sink!) → `BomberBlast.Domain/Economy/Shop/`
+- [ ] `Services/ShopService.cs` + `Models/UpgradeType.cs` + `PlayerUpgrades.cs` (**12 permanente Upgrades**: 9 Stat + 3 Bomb-Unlocks — Haupt-Coin-Sink!) → `BomberBlast.Domain/Economy/Shop/`
 - [ ] `Services/CardService.cs` (Deck, Crafting) + `DungeonService.cs` + `DungeonUpgradeService.cs` (16 Buffs, 5 Synergien, 8 Upgrades) → `BomberBlast.Domain/`
 - [ ] `Services/DailyChallengeService.cs` (Tages-Seed), `DailyMissionService.cs`, `WeeklyChallengeService.cs`, `WeeklyContentService.cs` → `BomberBlast.Domain/Modes/` bzw. `LiveOps/`
 - [ ] `Services/EventCalendarService.cs` (**8 Wochen-Events**, ISO-Wochen-Seed) + `EventService.cs` (saisonal) → `BomberBlast.LiveOps/Events/`
@@ -2343,8 +2373,8 @@ Funnel-Events:
 | Class | PascalCase | `BattleController`, `BombDefinition` |
 | Interface | `I`-Prefix + PascalCase | `IBombService`, `INetworkService` |
 | Method | PascalCase | `PlaceBomb()`, `ProcessInput()` |
-| Field (private) | `_camelCase` | `private int _currentMana` |
-| Property | PascalCase | `public int CurrentMana { get; }` |
+| Field (private) | `_camelCase` | `private int _fireRange` |
+| Property | PascalCase | `public int FireRange { get; }` |
 | Constant | `UPPER_SNAKE` | `private const int MAX_BOMBS = 8` |
 | Event | `On{Verb}{Past}` (Unity-Standard) | `OnBombPlaced`, `OnPlayerDied` |
 | ScriptableObject Asset | PascalCase + `_` für ID | `Hero_Default.asset`, `Bomb_Frost.asset` |

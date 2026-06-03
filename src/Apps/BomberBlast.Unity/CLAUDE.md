@@ -121,10 +121,10 @@ Inputs in PvP/Co-op via `ReplayCapture.RecordTick(input)` aufzeichnen.
 
 - **Status (aus dem Original):** Im produktiven BomberBlast ist Determinismus nur **Foundation,
   NICHT integriert** — der Live-Loop nutzt `System.Random`. Die Integration (alle ~50
-  Random-Calls auf `IRngProvider`, Sim/Render-Trennung) ist **Neu-Arbeit** dieses Projekts,
+  Gameplay-Random-Calls auf `IRngProvider`, Sim/Render-Trennung) ist **Neu-Arbeit** dieses Projekts,
   kein reiner Port.
 - **Visual-Random** (Particle-Jitter, Screen-Shake, Camera-Tremor) ist **bewusst NICHT
-  deterministisch** (sonst künstlich wirkend) → separater `[Inject(Id = "visual")] IRngProvider`.
+  deterministisch** (sonst künstlich wirkend) → separater `[Inject] [Key("visual")] IRngProvider`.
 - **Float-Mandat:** `DeterministicRandom` (xoshiro256+) ist nur **integer**-bit-stabil. Für
   hash-stabile Sim (Replay-Re-Sim / Online-Versus): **Fixed-Point/Integer** für hash-relevante
   Zustände ODER dokumentierte Quantisierung **vor** dem State-Hash — float-Physik divergiert

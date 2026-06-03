@@ -51,7 +51,7 @@
 - **Animation**: Cascadeur für AI-assistierte Keyframes, DeepMotion/RADiCAL für Video-to-Motion. Mixamo bleibt für Standard-Humanoid-Skeletts.
 - **Workflow-JSONs versioniert** unter `F:\AI\ComfyUI_workflows\bomberblast_unity\` mit Git-LFS.
 - **Output-Format:** GLB für Pipeline-Transport, FBX nach Cleanup für Unity-Import.
-- **Polygon-Budget Mobile** (Mid-Tier-Android, 3 GB RAM Ziel): siehe [§12](#12-asset-kategorien--budgets-mech-setting).
+- **Polygon-Budget Mobile** (Mid-Tier-Android, 3 GB RAM Ziel): siehe [§12](#12-asset-kategorien--budgets-neon-arcade).
 
 ---
 
@@ -76,8 +76,8 @@
                               │
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│ Stage 3: Blender-Cleanup (5-10min/Asset, batchbar via Python)      │
-│  Decimate, UV-Repair, Origin/Scale, Normals, FBX-Export            │
+│ Stage 3: Blender-Cleanup (Props 5-10min, Chars: Retopo separat)    │
+│  Decimate (Props) / Retopo (Chars), UV-Repair, Scale, FBX-Export   │
 └────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -181,7 +181,7 @@
 
 | Komponente | Mindest | Empfohlen |
 |-----------|---------|-----------|
-| GPU | RTX 3090 (24 GB) | RTX 4090 / 5090 (24-32 GB) — TRELLIS 2 + Hunyuan-Alternativen wollen 16 GB+ |
+| GPU | RTX 3090 (24 GB) | RTX 4090 / 5090 (24-32 GB) — TRELLIS 2 + TripoSG wollen 16 GB+ |
 | RAM | 32 GB | 64 GB (Blender bei Hi-Poly-Imports) |
 | CPU | 8 Cores | 16 Cores (parallele Blender-Cleanups) |
 | Disk | 1 TB NVMe | 2 TB NVMe (Modelle + Workspace) |
@@ -231,13 +231,13 @@ Alternativen-Installation: **ComfyUI-Manager** (One-Click).
 ```
 F:\AI\ComfyUI_workflows\bomberblast_unity\
 ├── 00_style_reference\
-│   ├── mech_neon_cyberpunk\        (15-20 Style-Refs)
+│   ├── world_neon_arcade\          (15-20 Style-Refs)
 │   ├── bomb_arcade_neon\
-│   ├── tile_industrial\
-│   └── boss_megacorp\
+│   ├── tile_world_themes\
+│   └── boss_world_themes\          (StoneGolem/IceDragon/FireDemon/ShadowMaster/FinalBoss)
 ├── 01_concept_2d\                   (Stage 1)
-│   ├── sdxl_mech_lora.json
-│   ├── flux_mech_iter.json          (interne Iteration, nicht Production-Output)
+│   ├── sdxl_hero_lora.json
+│   ├── flux_hero_iter.json          (interne Iteration, nicht Production-Output)
 │   └── concept_to_orthographic_views.json
 ├── 02_image_to_3d\                  (Stage 2)
 │   ├── trellis2_full_quality.json
@@ -329,10 +329,17 @@ Für Prop-Batches (z.B. 20 Power-Ups): `02_image_to_3d/batch_props.json` mit Que
 
 ## 7. Stage 3 — Blender-Cleanup
 
+> **Wichtig — Decimate ≠ Retopo:** TRELLIS-2/SPAR3D liefern 50-200k Tris mit unsauberer
+> Triangle-Soup-Topologie. Für **animierbare Charaktere** (Helden, Gegner, Bosse) reicht Decimate
+> **nicht** — sie brauchen echte **Retopologie** (saubere Quad-Loops an Schulter/Hüfte/Knie/Ellbogen,
+> sonst zerreißt das Deform beim Skinning). Der "5-10min/Asset"-Wert gilt nur für **statische Props**
+> (Schritt-Liste unten). Charakter-Retopo ist Handarbeit (QuadRemesher/RetopoFlow, ~1-3h/Asset) bzw.
+> wird über Cloud-Quad-Output (Rodin Gen-2.5 Quad-Mesh) abgekürzt.
+
 Pflicht-Schritte pro Asset (Template: `F:\AI\Blender\bomberblast_unity_cleanup.blend`):
 
 1. **Import GLB** (Standard-Importer).
-2. **Decimate-Modifier** (Collapse, Ratio aus Budget-Tabelle, [§12](#12-asset-kategorien--budgets-mech-setting)).
+2. **Decimate (Props) / Retopo (Charaktere)** (Decimate-Ratio bzw. Ziel-Quad-Count aus Budget-Tabelle, [§12](#12-asset-kategorien--budgets-neon-arcade)).
 3. **UV-Repair:** Smart UV Project mit Margin 0.02 bei Überlappung.
 4. **Origin** auf Boden-Mitte setzen (`Set Origin > Origin to Geometry` + manuell Z=0).
 5. **Scale anwenden** (`Ctrl+A > Scale`) — 1 Blender-Unit = 1 Meter = 1 Unity-Unit.
@@ -342,7 +349,7 @@ Pflicht-Schritte pro Asset (Template: `F:\AI\Blender\bomberblast_unity_cleanup.b
    - Pfad: `F:\AI\3d_output\bomberblast_unity\{kategorie}\{asset_id}.fbx`
    - Optionen: `Apply Scalings: FBX Units Scale`, `Forward: -Z`, `Up: Y`, `Embed Textures: ja`.
 
-**Automatisierung:** `F:\AI\Blender\scripts\bomberblast_batch_cleanup.py` (Python) für GLB-Batches. ~30s pro Asset im Headless-Modus.
+**Automatisierung:** `F:\AI\Blender\scripts\bomberblast_batch_cleanup.py` (Python) für **Prop-GLB-Batches** (Decimate-Path). ~30s pro Asset im Headless-Modus. Charaktere mit Retopo-Bedarf laufen **nicht** batch — Handarbeit pro Asset.
 
 ---
 
@@ -382,9 +389,9 @@ Für ein App-spezifisches Material-Set (z.B. "Cyber-Stahl mit Neon-Ätzung") eig
 
 | Asset-Typ | Tool | Grund |
 |-----------|------|-------|
-| Standard-Humanoid (Player-Mechs in T-Pose) | **Mixamo** | Beste Animation-Library, perfekt für humanoid |
-| Boss mit ungewöhnlicher Proportionierung (4 Arme, Beine ungleich) | **Tripo Auto-Rigging** oder **AccuRIG 2** | Universal-Rig funktioniert auch bei non-humanoid |
-| Mech mit komplexem Skelett (Vehicle-Klasse) | **Cascadeur Quick-Rigging-Tool** | Drag-and-Drop-Joint-Mapping |
+| Standard-Humanoid (Helden in T-Pose, humanoide Gegner) | **Mixamo** | Beste Animation-Library — nur bei Standard-Humanoid-Proportionen verlässlich |
+| Humanoider Boss (FireDemon, ShadowMaster, FinalBoss) | **Mixamo** ODER **AccuRIG 2** | Auto-Rig greift bei aufrechter humanoider Silhouette |
+| **Non-humanoider Boss (IceDragon, StoneGolem, Multi-Cell)** | **Hand-Rigging in Blender** (+ AccuRIG-Versuch als Startpunkt) | Auto-Rig/Mixamo scheitern an Vierbeiner/Multi-Cell-Topologie → Skelett + Weights von Hand, Animation per **Hand-Keyframing** (kein Mocap-Retarget) |
 
 ### 9.2 Animation-Quellen
 
@@ -414,8 +421,12 @@ Insgesamt: ~7 Animations, geteilt über 5 Helden = ~7 Basis-Clips + Skin-Variant
 ### 9.4 Boss-Animations
 
 Bosse brauchen größere Animation-Sets (Mehrkomponenten-Hitboxes, Phase-Wechsel). Empfehlung:
-- Cinematic-Animationen (Reveal, Phase-2-Transition): per Hand in **Cascadeur**.
-- Standard-Loops (Idle, Attack): aus Mixamo, retargeted.
+- **Humanoide Bosse** (FireDemon, ShadowMaster, FinalBoss): Standard-Loops (Idle, Attack) aus
+  Mixamo retargeted, Cinematics (Reveal, Phase-2-Transition) per Hand in **Cascadeur**.
+- **Non-humanoide Bosse** (IceDragon, StoneGolem): kein Mixamo-Retarget möglich — **alle** Clips
+  (Idle, Attack, Enrage, Death) per **Hand-Keyframing** in Cascadeur/Blender auf das Hand-Rig.
+- Das Zeitbudget der Pilot-Tabelle (Boss "2 Tage") deckt **nur Modeling + Texturing** —
+  Hand-Rigging und Hand-Animation der non-humanoiden Bosse kommen separat obendrauf.
 
 ---
 
@@ -446,7 +457,7 @@ BomberBlast.Unity Addressables:
 ├── Tiles_World{1..10}      # Pro Welt eine Gruppe (lazy bei Level-Start)
 ├── Bosses_Standard         # 4 Standard-Bosse (lazy bei Boss-Level)
 ├── Bosses_Final            # FinalBoss + Duo-Varianten (lazy)
-├── MiniBosses              # 9 Mini-Bosse (lazy)
+│                           # (Mini-Bosse brauchen keine eigene Group — Prefab-Variant des Welt-Boss-Assets)
 ├── Environment_World{1..10} # Props pro Welt
 ├── UI3D                    # Hologramme, 3D-Buttons, Karten-Backs
 └── Audio_Music + Audio_SFX # Stage 7 Output
@@ -522,13 +533,15 @@ Bis dahin: Announcer/Feedback rein über SFX-Stinger (Cinematic-Bus), keine gesp
 | **Tiles/Blocks** (10 Welten × 4 Typen) | 40 | 800 | 400 | 200 | ✅ Direkt, Tiling-Check |
 | **Floor-Tiles** (10 Welten) | 10 | 400 | 200 | 100 | ✅ Direkt |
 | **Karten-FX-Meshes** (10 Spezial-Karten) | 10 | 1 500 | — | — | ✅ Direkt |
-| **Standard-Bosse** (StoneGolem, IceDragon, FireDemon, ShadowMaster) | 4 | 18 000 | 9 000 | 4 500 | ✅ + Mixamo |
+| **Standard-Bosse** (StoneGolem, IceDragon, FireDemon, ShadowMaster) | 4 | 18 000 | 9 000 | 4 500 | ⚠️ humanoide (FireDemon/ShadowMaster) + Mixamo; non-humanoide (StoneGolem/IceDragon) Hand-Rig |
 | **FinalBoss + Duo-Varianten** | 3 | 25 000 | 12 000 | 6 000 | ⚠️ TRELLIS-Basis + Cloud-Polish |
-| **Mini-Bosse** (L7/L17/.../L97) | 9 | 8 000 | 4 000 | 2 000 | ✅ + Mixamo |
+| **Mini-Bosse** (L7/L17/.../L97) | 0 (Reskin) | — | — | — | ♻️ kein eigenes Modell — reskinter Welt-Boss (50 % HP/Punkte) |
 | **Environment-Props** (Crates, Pipes, Trash, Holo-Displays) | ~50 | 600 | 300 | 150 | ✅ Direkt |
 | **UI-3D-Hologramme** | ~20 | 500 | — | — | ✅ Direkt |
 
-**Total:** ~210 Modelle + ~30 Re-Texture-Varianten = **~240 Asset-Slots**.
+**Total:** ~210 Modelle + ~30 Re-Texture-Varianten = **~240 Asset-Slots**. Die 9 Mini-Bosse
+(L7/L17/.../L97) sind **nicht** mitgezählt — sie sind reskinte Welt-Bosse (50 % HP/Punkte) und
+brauchen kein eigenes Modell, nur eine Material-/Skalierungs-Variante des jeweiligen Welt-Boss-Assets.
 
 ### 12.2 Texture-Auflösungen
 
@@ -549,7 +562,11 @@ Bis dahin: Announcer/Feedback rein über SFX-Stinger (Cinematic-Bus), keine gesp
 | SFX | 44.1 kHz | 16-bit | ADPCM (Loop-fähig) | <50 KB |
 | Voice-Lines | 44.1 kHz | 16-bit | Vorbis Quality 0.6 | ~80 KB/sec |
 
-**Total-Audio-Budget:** ~80-120 MB (alle Sprachen, kompressed) — passt in den 200-MB-AAB-Rahmen.
+**Total-Audio-Budget:** ~80-120 MB (alle Sprachen, kompressed). Zusammen mit ~210 3D-Modellen
+(+ LODs/Texturen) sprengt das den 200-MB-Base-APK-Rahmen — der Gesamt-Build passt nur mit
+**Play Asset Delivery** (On-Demand-/Fast-Follow-Asset-Packs für Welt-Tile-Sets, Bosse, Audio)
+unter ~250 MB. Zur Einordnung: das 2D-Original ist bereits ~95 MB. Bootstrap-Assets (Logo,
+Default-Material, Welt-1) bleiben im Base-AAB, alles andere kommt per Asset-Pack/Addressables nach.
 
 ---
 
@@ -629,14 +646,16 @@ Pro Asset-Metadata-JSON ein Eintrag `"license_source": "Rodin Gen-2.5 Free Tier"
 | 1 | Held "Default" (Pilot Echo) | Held | SDXL+LoRA → TRELLIS 2 → Mixamo-Rig | Animiert in Unity, < 12k Tris LOD0, Neon-Style-LoRA hält |
 | 2 | Bombe "Standard" | Bomb | SPAR3D → Blender-Cleanup → Unity | < 1.5k Tris, Emissive-Glow funktioniert |
 | 3 | Block "Destructible (Welt 1)" | Tile | TripoSG → Tile-Check 4× nebeneinander | Naht-frei, < 800 Tris |
-| 4 | Boss "StoneGolem" | Boss | TRELLIS 2 → AccuRIG 2 → Cascadeur-Polish | Phase-1 + Enrage (Material-Swap), Multi-Cell-Hitbox |
+| 4 | Boss "StoneGolem" (non-humanoid) | Boss | TRELLIS 2 → Hand-Retopo → Hand-Rig + Hand-Keyframing (Cascadeur) | Phase-1 + Enrage (Material-Swap), Multi-Cell-Hitbox |
 | 5 | PowerUp "BombUp" + "Fire" | PowerUp | SDXL → SPAR3D → URP + Glow | URP-Glow funktioniert, < 1k Tris |
 | **Audio-Pilot** | Welt-1-Theme (2min) | Music | Stable Audio 3 + Mastering | LUFS −16 ±1, Loop sauber |
 
 > Kein Voice-Pilot — Voice ist deferred (Original ist voice-los). Stattdessen ein SFX-Pilot (Bomben-Explosion
 > + Combo-Stinger) zur Validierung der Audio-Bus-/Spatial-Pipeline.
 
-**Zeitplan:** 5 Arbeitstage (Held 1 Tag, Bomb+Block 1 Tag, Boss 2 Tage, PowerUps 0.5 Tage, Audio 0.5 Tage).
+**Zeitplan:** ~5 Arbeitstage Pilot — Held 1 Tag, Bomb+Block 1 Tag, Boss 2 Tage (**nur Modeling +
+Texturing**; Hand-Retopo, Hand-Rigging und Hand-Keyframing des non-humanoiden StoneGolem kommen
+mit ~2-3 Tagen separat obendrauf), PowerUps 0.5 Tage, Audio 0.5 Tage.
 
 **Output:** Lessons-Learned in `F:\AI\ComfyUI_workflows\bomberblast_unity\pilot_log.md` mit:
 - Tatsächliche Generations-Zeit pro Asset
@@ -683,20 +702,20 @@ F:\AI\
 
 ```json
 {
-  "asset_id": "mech_striker_v1",
-  "category": "player_mech",
+  "asset_id": "hero_default_v1",
+  "category": "player_hero",
   "stage_1_concept": {
     "model": "sdxl_1.0",
     "lora": "bomberblast_neon_v1@0.85",
     "prompt": "...",
     "seed": 123456,
-    "output_png": "concept_2d/mech_striker_v1.png"
+    "output_png": "concept_2d/hero_default_v1.png"
   },
   "stage_2_3d": {
     "tool": "trellis_2",
     "version": "2.0",
-    "input_png": "concept_2d/mech_striker_v1.png",
-    "raw_glb": "raw_glb/mech_striker_v1.glb",
+    "input_png": "concept_2d/hero_default_v1.png",
+    "raw_glb": "raw_glb/hero_default_v1.glb",
     "duration_seconds": 47
   },
   "stage_5_rig": {
@@ -716,7 +735,7 @@ F:\AI\
 
 | Risiko | Wahrscheinlichkeit | Auswirkung | Mitigation |
 |--------|-------------------|------------|------------|
-| TRELLIS-2-Qualität reicht nicht für Player-Mech-Detailgrad | Mittel | Hoch | Cloud-Fallback Rodin Gen-2.5 für 8 Player-Mechs (Free Tier, ~10$ Credits gesamt) |
+| TRELLIS-2-Qualität reicht nicht für Helden-Detailgrad | Mittel | Hoch | Cloud-Fallback Rodin Gen-2.5 für die 5 Helden (Free Tier, ~10$ Credits gesamt) |
 | Stil-Drift über > 50 Assets | Mittel | Mittel | Style-LoRA Pflicht ab Pilot-Erfolg, festes Prompt-Template versioniert |
 | Mixamo versagt bei nicht-standard-humanoid Mech | Hoch | Mittel | Tripo Auto-Rig oder AccuRIG 2 als Fallback |
 | ASTC zu groß auf Mid-Tier-Android | Niedrig | Mittel | Texture-Atlas-Pflicht für Tiles/Props, Mip-Bias +1 pro Klasse |

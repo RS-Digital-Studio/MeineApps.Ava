@@ -96,9 +96,12 @@ Figuren. Die Cliffhanger-Struktur (Outro deutet auf nächste Welt) wird beibehal
 - **10 Welten × 10 Level = 100 Story-Level.** Jedes 10. Level ist ein Boss-Level (L10, L20, …, L100).
 - **Boss-Rotation:** Boss-Typ rotiert alle 2 Welten (5 Bosse → 10 Welten). Welt 9 (L90) und Welt 10
   (L100) sind **Duo-Boss-Encounter** (siehe §7).
+- **Mini-Boss-Level** auf L7/L17/…/L97 (9 Mid-World-Encounter): gleicher Boss-Typ wie der
+  Welt-Hauptboss, aber **50 % HP und 50 % Punkte** (Trainings-Encounter, `ConfigureMiniBossLevel`).
+- **Bonus-Level** auf jedem 5. Level (L5, L15, …), ausgenommen Boss-Level (`ConfigureBonusLevel`).
 - **Layout-Pool pro Welt:** 8 von 12 Layouts; Welt 1 einsteigerfreundlich (einfache Layouts), Welt 5+
   voller Pool (`LevelLayoutGenerator`).
-- **Mutatoren ab Welt 6** auf den Leveln x3/x6/x9 jeder Welt (siehe §11.x / §4).
+- **Mutatoren ab Welt 4** (Intro-Phase, nur L36), volle x3/x6/x9-Kadenz ab Welt 5 jeder Welt (siehe §11.x / §4).
 - **Master-Mode (Reborn)** nach L100-Abschluss (siehe §11).
 
 ### 3.2 Welt-Themes
@@ -125,18 +128,21 @@ gebaut. (Die konkreten Welt-Namen/Themes werden aus `WorldPalette`/`ProceduralTe
 | 11 | **Islands** | Insel-Cluster mit Lücken |
 | 12 | **Chaos** | Zufallsverteilte Wände |
 
-### 3.4 Mutatoren (5, ab Welt 6, Level x3/x6/x9)
+### 3.4 Mutatoren (4, ab Welt 4 Intro, volle x3/x6/x9-Kadenz ab Welt 5)
 
-`AllPowerBombs`, `DoubleSpeed`, `InvisibleBlocks`, `NoTimer`, `MirrorControls`. Mutator-Level schenken
-**3 garantierte Sterne** (Schwierigkeit = Belohnung, nicht Strafe). `GetMutatorDisplayName` für UI.
+`AllPowerBombs`, `DoubleSpeed`, `InvisibleBlocks`, `NoTimer`. Welt 4 ist Intro-Phase (nur L36),
+ab Welt 5 volle x3/x6/x9-Kadenz. Mutator-Level schenken **3 garantierte Sterne**
+(Schwierigkeit = Belohnung, nicht Strafe). `GetMutatorDisplayName` für UI.
 
 ---
 
 ## 4. Spielfeld & Grid
 
 - **15×10-Grid** (`GameGrid.cs`), Landscape-only.
-- **`CellType`:** Empty, Indestructible, Destructible, Exit.
-- **Destructible Blocks** droppen PowerUps/Karten (Drop-Chance hero-/upgrade-moduliert).
+- **`CellType` (9 Werte):** Empty, Wall, Block, Exit + die 5 Welt-Mechanik-Zellen Ice, Conveyor,
+  Teleporter, LavaCrack, PlatformGap (Welt 2/3/4/5/9). (Im Code heißen die festen Wände `Wall`,
+  die zerstörbaren Blöcke `Block`; "Indestructible"/"Destructible" stehen nur im Doc-Kommentar.)
+- **Block-Zellen (`Block`)** droppen PowerUps/Karten (Drop-Chance hero-/upgrade-moduliert).
 - **Pre-Turn-Buffering** (`Player.cs`): Richtung wird gepuffert, Turn bei 40 % Zellzentrum-Nähe.
 - **[3D]** Das Grid wird als 3D-Bodenfläche mit erhöhten Block-Meshes gerendert; Top-Down-Kamera
   (leicht geneigt für Tiefe), dynamische Schatten der Blöcke, 3D-Explosions-Volumen.
@@ -158,7 +164,7 @@ gebaut. (Die konkreten Welt-Namen/Themes werden aus `WorldPalette`/`ProceduralTe
 | **TwinTina** | 2 | 1 | 0 | 3 | **DoubleDetonation** (Bomben zünden zweimal nacheinander) | `gems_500` (Direct-Buy) |
 | **LuckyLola** | 1 | 2 | 0 | 3 | PowerUp-Drop ×1.20, **LuckyDrops** | `ach_jackpot` |
 
-- **SpeedLevel 0-3:** `BASE_SPEED(80px/s) + Level × 20`.
+- **SpeedLevel 0-3:** `BASE_SPEED(100px/s) + Level × 20`.
 - **HeroTrait-Enum:** None, DoubleDetonation, LuckyDrops, DemolitionExpert, QuickPocket.
 - **Hero-Skins** als Cosmetics (siehe §17), Body-/Accent-Farbe pro Hero.
 
@@ -182,7 +188,7 @@ gebaut. (Die konkreten Welt-Namen/Themes werden aus `WorldPalette`/`ProceduralTe
 | **Tanker** | Langsam | A* | überlebt 1 Explosion (2 Hits nötig) | 5+ |
 | **Ghost** | Schnell | — | periodisch unsichtbar (3 s sichtbar / 2 s unsichtbar) | 7+ |
 | **Splitter** | — | Random | spaltet sich bei Tod in 2 Mini-Splitter | 7+ |
-| **Mimic** | Stationär → Angriff | — | tarnt sich als PowerUp | 8+ |
+| **Mimic** | Stationär → Angriff | — | tarnt sich als Block | 8+ |
 
 **Elite-Variante** (`Enemy.IsElite`): 1.2× Speed, 2× HP, 3× Punkte, lila pulsierender Glow. Modifiziert
 bestehende Gegner-Typen.
@@ -201,11 +207,11 @@ bestehende Gegner-Typen.
 
 | Boss | Welt-Slot (Rotation alle 2 Welten) | Banner-Name |
 |------|-----------------------------------|-------------|
-| **StoneGolem** | W1/… | `STONE GOLEM` |
-| **IceDragon** | W2/… | `ICE DRAGON` |
-| **FireDemon** | W3/… | `FIRE DEMON` |
-| **ShadowMaster** | W4/… (+ Welt-9-Duo) | `SHADOW MASTER` |
-| **FinalBoss** | W5/… (+ W9/W10-Duo) | `FINAL BOSS` |
+| **StoneGolem** | W1-2 | `STONE GOLEM` |
+| **IceDragon** | W3-4 | `ICE DRAGON` |
+| **FireDemon** | W5-6 | `FIRE DEMON` |
+| **ShadowMaster** | W7-8 (+ L90-Duo) | `SHADOW MASTER` |
+| **FinalBoss** | W9-10 (L90-Duo mit ShadowMaster + L100 2× FinalBoss) | `FINAL BOSS` |
 
 - **Duo-Boss-Encounter:** Welt 9 (L90) = FinalBoss **+** ShadowMaster; Welt 10 (L100) = 2× FinalBoss.
   Banner mit `&` verbunden bzw. Plural.
@@ -259,8 +265,8 @@ bestehende Gegner-Typen.
 ### 8.2 Deck, Drops, Crafting
 
 - **Deck:** 4 Basis-Slots + 1 freischaltbar (20 Gems). `ActiveCardSlot` per HUD-Tap wechselbar.
-- **Drop-Gewichtung:** 60 % Common, 25 % Rare, 12 % Epic, 3 % Legendary.
-- **Card-Crafting (Coin-Sink):** 5 Common + 2.000 C → 1 Rare; 5 Rare + 8.000 C → 1 Epic; 5 Epic + 25.000 C → 1 Legendary.
+- **Drop-Gewichtung (Basis, welt-moduliert):** 57 % Common, 25 % Rare, 12 % Epic, 6 % Legendary.
+- **Card-Crafting (Coin-Sink):** 5 Common + 1.000 C → 1 Rare; 5 Rare + 4.000 C → 1 Epic; 5 Epic + 12.500 C → 1 Legendary.
 - **Verlangsamungs-Stacking** multiplikativ: Frost 0.5× · TimeWarp 0.5× · BlackHole 0.3×.
 - `OwnedCard` (CardId + Level + Count), `ICardService` verwaltet Deck/Upgrade/Crafting.
 
@@ -280,7 +286,7 @@ bestehende Gegner-Typen.
 | **Wallpass** | Durch zerstörbare Blöcke laufen | bis Tod | 15 |
 | **Mystery** | **35 s Unverwundbarkeit** | temporär | 15 |
 | **Cure** | Heilt Curse-Status sofort (grünes Kreuz) | sofort | 15 |
-| **Skull** | Curse: 4 Typen (Diarrhea/Slow/Constipation/ReverseControls), 10 s | temporär (Strafe) | 20 |
+| **Skull** | Curse: 4 Typen (Diarrhea/Slow/Constipation/ReverseControls), 6 s | temporär (Strafe) | 20 |
 | **Detonator** | Manuelle Bomben-Zündung | bis Tod | 25 |
 | **Bombpass** | Durch eigene Bomben laufen | bis Tod | 25 |
 | **Flamepass** | Immun gegen Explosionen (nicht gegen Gegner) | bis Tod | 35 |
@@ -321,7 +327,7 @@ bestehende Gegner-Typen.
 | Modus | Beschreibung | Belohnung |
 |-------|--------------|-----------|
 | **Story** | 100 Level in 10 Welten, Sterne-Rating | Coins, Sterne, Karten, PowerUp-Discovery |
-| **Master-Mode (Reborn)** | Nach L100: Gegner ×1.5 Speed, Typ-Upgrade (Ballom→Minvo, Onil→Pass, Doll→Pontan), separater Persistenz-Pfad (`IMasterModeService`) | Master-Sterne (Normal-Sterne unberührt) |
+| **Master-Mode (Reborn)** | Nach L100: Gegner ×1.2 Speed, Typ-Upgrade (Ballom→Minvo, Onil→Pass, Doll→Pontan, Minvo→Pass, Kondoria→Pontan, Ovapi→Pontan), separater Persistenz-Pfad (`IMasterModeService`) | Master-Sterne (Normal-Sterne unberührt) |
 | **Daily-Challenge** | Tägliches deterministisches Level (Tages-Seed `yyyy×10000+MM×100+dd`), Streak-Tracking | Coins + Daily-Token |
 | **Quick-Play** | Zufalls-Level | Coins (kein Sterne-Update) |
 | **Survival** | Endlos bis Tod (`SurvivalSpawner`) | Coins + Highscore |
@@ -329,8 +335,8 @@ bestehende Gegner-Typen.
 | **Boss-Rush** | 5-Boss-Sequenz (`IBossRushService`), ISO-Year-Week-Reset | Boss-Coins + Karten |
 | **Daily-Race** | 1 deterministisches Tages-Level weltweit, schnellster Run gewinnt (separate Liga) | Race-Coins + Daily-Race-Liga |
 
-Zusätzlich: **Weekly-Challenge** (5 Missionen/Woche aus 14er-Pool, Montag-Reset) und **Daily-Missions**
-(3/Tag aus 14er-Pool, Mitternacht-UTC) als Aufgaben-Layer über den Modi.
+Zusätzlich: **Weekly-Challenge** (5 Missionen/Woche aus 17er-Pool, Montag-Reset) und **Daily-Missions**
+(3/Tag aus 17er-Pool, Mitternacht-UTC) als Aufgaben-Layer über den Modi.
 
 > **[Integration]** Im Original laufen die Mode-Klassen parallel zu Bool-Flags; die `UpdateLogic`-Hooks
 > sind teils noch nicht aus der GameEngine migriert. Im Remake werden die Modi sauber als
@@ -360,8 +366,8 @@ Zusätzlich: **Weekly-Challenge** (5 Missionen/Woche aus 14er-Pool, Montag-Reset
 ### 12.2 16 Buffs (`DungeonBuff.cs`)
 
 - **5 Common:** ExtraBomb, ExtraFire, SpeedBoost, CoinBonus, BombTimer.
-- **5 Rare:** u.a. BlastRadius, Crit-Chance, Bomb-Crit, Affix-/Shield-on-Hit, Reflect.
-- **2 Epic:** u.a. ExtraLife, Combo-Multiplier / Heal-on-Crit.
+- **5 Rare:** Shield, ReloadSpecialBombs, EnemySlow, BlastRadius, PowerUpMagnet.
+- **2 Epic:** ExtraLife, FireImmunity.
 - **4 Legendary:** Berserker, TimeFreeze, GoldRush, Phantom.
 
 > Hinweis: Common-Pool ist ExtraBomb/ExtraFire/SpeedBoost/CoinBonus/BombTimer (ExtraLife ist Epic,
@@ -477,11 +483,11 @@ Battle-Pass-Premium + Battle-Pass-Plus als IAP (siehe §16). **Keine** Zufalls-B
 
 ### 16.2 Shop (permanente Upgrades)
 
-**9 permanente Shop-Upgrades** (`UpgradeType.cs`, Preise 700-17.000 Coins):
+**12 permanente Shop-Upgrades** (`UpgradeType.cs`, 9 Stat-Upgrades + 3 Bomb-Unlocks, Preise 700-17.000 Coins):
 StartBombs (max 3), StartFire (max 3), StartSpeed (max 1; Preiskurve [1.200/2.500/7.000]),
 ExtraLives (max 2), ScoreMultiplier (max 3), TimeBonus (max 1), ShieldStart (max 1),
-CoinBonus (max 2; L2 +60 %), PowerUpLuck (max 2). Zusätzlich Freischaltung der 3 Shop-Spezial-Bomben
-(Ice/Fire/Sticky).
+CoinBonus (max 2; L2 +60 %), PowerUpLuck (max 2). Dazu die 3 als gleichwertige UpgradeType-Enum-Member
+geführten Shop-Spezial-Bomben-Freischaltungen IceBomb/FireBomb/StickyBomb.
 
 > **Wichtig:** Dieses permanente Stat-Upgrade-System ist der zentrale Coin-Sink und bleibt **erhalten**
 > (die frühere Plan-Version v0.2 hatte es durch Hero-Talent-Bäume ersetzt — das wird verworfen).
@@ -545,8 +551,8 @@ Cosmetic-Shop (Gems), Lucky-Spin.
 ### 18.1 Wiederkehrende Aufgaben
 
 - **Daily-Reward:** 7-Tage-Login-Bonus + Comeback-Bonus (> 3 Tage inaktiv) (`IDailyRewardService`).
-- **Daily-Missions:** 3/Tag aus 14er-Pool, Mitternacht-UTC-Reset (`IDailyMissionService`).
-- **Weekly-Missions:** 5/Woche aus 14er-Pool, Montag-Reset (`IWeeklyChallengeService`).
+- **Daily-Missions:** 3/Tag aus 17er-Pool, Mitternacht-UTC-Reset (`IDailyMissionService`).
+- **Weekly-Missions:** 5/Woche aus 17er-Pool, Montag-Reset (`IWeeklyChallengeService`).
 
 ### 18.2 Events
 
@@ -587,6 +593,10 @@ Cosmetic-Shop (Gems), Lucky-Spin.
 | L30 | LineBomb |
 | L40 | PowerBomb |
 | L50 | Boss-Rush |
+| L60 | Hero-Trait-Slot 2 (`hero_trait_slot2`) |
+| L70 | Boss-Modifier-Preview (`boss_modifier_preview`) |
+| L80 | Cosmetic-Legendary-Tier (`cosmetic_legendary_tier`) |
+| L90 | Master-Mode-Preview (`master_mode_preview`) |
 | L100 | Master-Mode |
 | `ach_master_100` | Champion-Skin |
 
@@ -716,7 +726,7 @@ Sim/Render-Trennung, ggf. Fixed-Point für hash-stabile Sim). Bis dahin: Local-M
 | Datum | Version | Änderung | Autor |
 |-------|---------|----------|-------|
 | 2026-05-26 | v0.1 | Initial-DESIGN mit Sci-Fi-Reinvention (8 Mech-Helden, OmniCorp, PvP-Arena) | Robert Schneider + Claude |
-| 2026-05-30 | **v0.2** | **Komplett neu auf treuen 3D-Remake: echtes BomberBlast-Game-Design (5 Helden, 12 Gegner, 5 Bosse, 12 PowerUps, 13 Karten, 100 Level, 16 Dungeon-Buffs/5 Synergien, Liga 5×3 + Perzentil, 30 BP-Tiers, 72 Achievements, 9 Shop-Upgrades, 98 Cosmetics) — alle Werte code-verifiziert; 3D/Besser/NEU markiert** | Robert Schneider + Claude |
+| 2026-05-30 | **v0.2** | **Komplett neu auf treuen 3D-Remake: echtes BomberBlast-Game-Design (5 Helden, 12 Gegner, 5 Bosse, 12 PowerUps, 13 Karten, 100 Level, 16 Dungeon-Buffs/5 Synergien, Liga 5×3 + Perzentil, 30 BP-Tiers, 72 Achievements, 12 Shop-Upgrades, 98 Cosmetics) — alle Werte code-verifiziert; 3D/Besser/NEU markiert** | Robert Schneider + Claude |
 
 ---
 

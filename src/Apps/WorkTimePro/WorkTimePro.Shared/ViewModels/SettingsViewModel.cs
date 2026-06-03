@@ -409,10 +409,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
     public string BuyPremiumButtonText => AppStrings.BuyPremium;
 
-    // Reminder time displays
-    public string MorningReminderTimeDisplay => MorningReminderTime.ToString(@"hh\:mm");
-    public string EveningReminderTimeDisplay => EveningReminderTime.ToString(@"hh\:mm");
-
     partial void OnAutoPauseEnabledChanged(bool value) => ScheduleAutoSave();
     partial void OnMorningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
     partial void OnEveningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
@@ -423,14 +419,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
     partial void OnMorningReminderTimeChanged(TimeSpan value)
     {
-        OnPropertyChanged(nameof(MorningReminderTimeDisplay));
         ScheduleAutoSave();
         ScheduleReminderReschedule();
     }
 
     partial void OnEveningReminderTimeChanged(TimeSpan value)
     {
-        OnPropertyChanged(nameof(EveningReminderTimeDisplay));
         ScheduleAutoSave();
         ScheduleReminderReschedule();
     }
@@ -769,9 +763,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
     // === Backup Export/Import ===
 
-    [ObservableProperty]
-    private string _lastBackupDisplay = "";
-
     // Inline-Confirm-Overlay vor dem destruktiven Import (überschreibt ALLE aktuellen Daten).
     [ObservableProperty]
     private bool _isImportConfirmVisible;
@@ -791,7 +782,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
             if (result.Success)
             {
-                LastBackupDisplay = DateTime.Now.ToString("g");
                 MessageRequested?.Invoke(
                     AppStrings.Backup ?? "Backup",
                     AppStrings.BackupExportSuccess ?? "Backup erfolgreich exportiert");

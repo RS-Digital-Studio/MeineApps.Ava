@@ -15,7 +15,6 @@ public static class DayTimelineVisualization
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _tickPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.5f };
     private static readonly SKFont _hourFont = new() { Size = 9f };
-    private static readonly SKFont _labelFont = new() { Size = 10f };
 
     /// <summary>
     /// Ein Zeitblock im Tagesverlauf.

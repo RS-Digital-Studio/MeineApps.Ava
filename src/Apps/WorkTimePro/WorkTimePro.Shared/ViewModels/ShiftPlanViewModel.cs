@@ -4,7 +4,6 @@ using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
-using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
 using WorkTimePro.Services;
@@ -12,29 +11,22 @@ using WorkTimePro.Services;
 namespace WorkTimePro.ViewModels;
 
 /// <summary>
-/// ViewModel for shift plan page (Premium feature)
-/// Phase 9: Shift plan UI
+/// ViewModel for shift plan page (kostenloses Feature, kein Gate).
 /// </summary>
 public sealed partial class ShiftPlanViewModel : ViewModelBase, INavigationSource, IMessageSource
 {
     private readonly IShiftService _shiftService;
     private readonly IDatabaseService _database;
-    private readonly IPurchaseService _purchaseService;
-    private readonly ITrialService _trialService;
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
 
     public ShiftPlanViewModel(
         IShiftService shiftService,
-        IDatabaseService database,
-        IPurchaseService purchaseService,
-        ITrialService trialService)
+        IDatabaseService database)
     {
         _shiftService = shiftService;
         _database = database;
-        _purchaseService = purchaseService;
-        _trialService = trialService;
     }
 
     // === Properties ===
@@ -59,9 +51,6 @@ public sealed partial class ShiftPlanViewModel : ViewModelBase, INavigationSourc
 
     [ObservableProperty]
     private bool _isLoading;
-
-    [ObservableProperty]
-    private bool _showAds = true;
 
     [ObservableProperty]
     private bool _isEditing;
@@ -138,9 +127,6 @@ public sealed partial class ShiftPlanViewModel : ViewModelBase, INavigationSourc
 
             // Load week days
             await LoadWeekAsync();
-
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (Exception ex)
         {

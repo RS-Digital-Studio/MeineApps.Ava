@@ -1,84 +1,14 @@
 namespace WorkTimePro.Services;
 
 /// <summary>
-/// Service Interface for cloud backup (Premium feature)
-/// Supports Google Drive and OneDrive
+/// Service Interface for local JSON backup (Export/Import).
 /// </summary>
 public interface IBackupService
 {
     /// <summary>
-    /// Current cloud provider
-    /// </summary>
-    Models.CloudProvider CurrentProvider { get; }
-
-    /// <summary>
-    /// Is the user authenticated?
-    /// </summary>
-    bool IsAuthenticated { get; }
-
-    /// <summary>
-    /// Email of the authenticated user
-    /// </summary>
-    string? UserEmail { get; }
-
-    /// <summary>
-    /// Date of the last backup
-    /// </summary>
-    DateTime? LastBackupDate { get; }
-
-    /// <summary>
-    /// Date of the last sync
-    /// </summary>
-    DateTime? LastSyncDate { get; }
-
-    /// <summary>
-    /// Event when auth status changes
-    /// </summary>
-    event EventHandler<bool>? AuthStatusChanged;
-
-    /// <summary>
     /// Event for backup progress (0-100)
     /// </summary>
     event EventHandler<int>? ProgressChanged;
-
-    // === Authentication ===
-
-    /// <summary>
-    /// Sign in with Google Drive
-    /// </summary>
-    Task<bool> SignInWithGoogleAsync();
-
-    /// <summary>
-    /// Sign in with OneDrive
-    /// </summary>
-    Task<bool> SignInWithMicrosoftAsync();
-
-    /// <summary>
-    /// Sign out
-    /// </summary>
-    Task SignOutAsync();
-
-    // === Backup ===
-
-    /// <summary>
-    /// Create and upload backup
-    /// </summary>
-    Task<BackupResult> CreateBackupAsync();
-
-    /// <summary>
-    /// List available backups
-    /// </summary>
-    Task<List<BackupInfo>> GetAvailableBackupsAsync();
-
-    /// <summary>
-    /// Restore a backup
-    /// </summary>
-    Task<bool> RestoreBackupAsync(string backupId);
-
-    /// <summary>
-    /// Delete a backup
-    /// </summary>
-    Task<bool> DeleteBackupAsync(string backupId);
 
     // === Lokaler Export/Import (ohne Cloud-Auth) ===
 
@@ -104,41 +34,6 @@ public interface IBackupService
     /// Listet alle lokalen Backups (ohne Cloud-Auth).
     /// </summary>
     Task<List<BackupInfo>> GetLocalBackupsAsync();
-
-    // === Disk-Safety-Backup (Crash-Recovery) ===
-
-    /// <summary>
-    /// Liefert das jüngste Safety-Backup, falls beim letzten Restore/Import ein
-    /// Prozess-Kill stattfand. Wenn null, ist keine Recovery offen.
-    /// </summary>
-    Task<BackupInfo?> GetPendingSafetyBackupAsync();
-
-    /// <summary>
-    /// Stellt das jüngste Safety-Backup wieder her und löscht die Safety-Datei.
-    /// </summary>
-    Task<bool> RecoverPendingSafetyAsync();
-
-    /// <summary>
-    /// User lehnt Recovery ab → alle Safety-Dateien löschen, damit der Dialog nicht erneut erscheint.
-    /// </summary>
-    Task DismissPendingSafetyAsync();
-
-    // === Auto-Sync ===
-
-    /// <summary>
-    /// Enable/disable auto-sync
-    /// </summary>
-    Task SetAutoSyncEnabledAsync(bool enabled);
-
-    /// <summary>
-    /// Is auto-sync enabled?
-    /// </summary>
-    bool IsAutoSyncEnabled { get; }
-
-    /// <summary>
-    /// Sync now manually
-    /// </summary>
-    Task<SyncResult> SyncNowAsync();
 }
 
 /// <summary>
@@ -186,33 +81,4 @@ public class BackupInfo
     /// Formatted date
     /// </summary>
     public string DateDisplay => CreatedAt.ToString("dd.MM.yyyy HH:mm");
-}
-
-/// <summary>
-/// Result of a sync operation
-/// </summary>
-public class SyncResult
-{
-    public bool Success { get; set; }
-    public DateTime Timestamp { get; set; }
-    public int UploadedItems { get; set; }
-    public int DownloadedItems { get; set; }
-    public int ConflictsResolved { get; set; }
-    public string? ErrorMessage { get; set; }
-    public SyncDirection Direction { get; set; }
-}
-
-/// <summary>
-/// Sync direction
-/// </summary>
-public enum SyncDirection
-{
-    /// <summary>Bidirectional (default)</summary>
-    Bidirectional = 0,
-
-    /// <summary>Upload only</summary>
-    UploadOnly = 1,
-
-    /// <summary>Download only</summary>
-    DownloadOnly = 2
 }

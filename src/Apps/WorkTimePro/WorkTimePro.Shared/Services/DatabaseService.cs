@@ -408,15 +408,6 @@ public sealed class DatabaseService : IDatabaseService
 
     // ==================== VacationEntry ====================
 
-    public async Task<List<VacationEntry>> GetVacationsAsync(int year)
-    {
-        var db = await GetDatabaseAsync();
-        return await db.Table<VacationEntry>()
-            .Where(v => v.Year == year)
-            .OrderBy(v => v.StartDate)
-            .ToListAsync();
-    }
-
     public async Task<List<VacationEntry>> GetVacationEntriesAsync(DateTime start, DateTime end)
     {
         var db = await GetDatabaseAsync();

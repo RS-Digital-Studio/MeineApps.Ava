@@ -191,9 +191,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
     private bool _hasEmployers;
 
     [ObservableProperty]
-    private bool _isPremium;
-
-    [ObservableProperty]
     private bool _isLoading;
 
     [ObservableProperty]

@@ -36,7 +36,6 @@ public interface IDatabaseService
     Task SaveSettingsAsync(WorkSettings settings);
 
     // === VacationEntry ===
-    Task<List<VacationEntry>> GetVacationsAsync(int year);
     Task<List<VacationEntry>> GetVacationEntriesAsync(DateTime start, DateTime end);
     Task<VacationEntry?> GetVacationEntryAsync(int id);
     Task<int> SaveVacationEntryAsync(VacationEntry entry);

@@ -172,13 +172,6 @@ public sealed partial class MonthOverviewViewModel : ViewModelBase, INavigationS
     }
 
     [RelayCommand]
-    private async Task GoToTodayAsync()
-    {
-        SelectedMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-        await LoadDataAsync();
-    }
-
-    [RelayCommand]
     private async Task LockMonthAsync()
     {
         if (CurrentMonth == null) return;
@@ -194,14 +187,6 @@ public sealed partial class MonthOverviewViewModel : ViewModelBase, INavigationS
 
         await _database.UnlockMonthAsync(SelectedMonth.Year, SelectedMonth.Month);
         await LoadDataAsync();
-    }
-
-    [RelayCommand]
-    private void SelectWeek(WorkWeek? week)
-    {
-        if (week == null) return;
-        // Navigate to week overview
-        NavigationRequested?.Invoke("WeekOverviewPage");
     }
 
     [RelayCommand]

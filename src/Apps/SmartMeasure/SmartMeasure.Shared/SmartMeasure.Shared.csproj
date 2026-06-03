@@ -25,8 +25,8 @@
     <!-- DI -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
 
-    <!-- Karten (OpenStreetMap) -->
-    <PackageReference Include="Mapsui.Avalonia" />
+    <!-- Karten (OpenStreetMap) — Avalonia-12-Variante (Code/XAML identisch zu Mapsui.Avalonia) -->
+    <PackageReference Include="Mapsui.Avalonia12" />
 
     <!-- Datenbank -->
     <PackageReference Include="sqlite-net-pcl" />

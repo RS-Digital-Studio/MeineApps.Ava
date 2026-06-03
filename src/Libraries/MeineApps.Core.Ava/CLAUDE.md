@@ -256,6 +256,19 @@ App-Logik → jeweilige App-CLAUDE.md.)
   `LanguageChanged`-Handler null-safe (`Xxx?.UpdateLocalizedTexts()`).
 - **Fade-Flimmern bei View-/Tab-Wechsel:** Opacity=0 muss **vor** dem Binding-Update gesetzt
   werden — `PageTransitionStarting`/`OnActivePageChanging()` feuert vor dem Wertwechsel.
+- **`OnFrameworkInitializationCompleted` läuft auf Android VOR `MainActivity.OnCreate`.** In
+  Avalonia 12 ruft `AvaloniaAndroidApplication.OnCreate` (Application-Ebene) via
+  `SetupWithLifetime` → `OnFrameworkInitializationCompleted` auf — also bevor `MainActivity.OnCreate`
+  die Platform-Factories (`App.XxxServiceFactory`) setzt. Zwei Konsequenzen für den Composition Root:
+  (1) **Platform-Services lazy registrieren** — Factory-Prüfung im Resolve-Lambda
+  (`AddSingleton<IFoo>(sp => XxxFactory != null ? XxxFactory(sp) : new Fallback())`), **nie** als
+  Build-Zeit-`if (XxxFactory != null)` (sonst wird beim `BuildServiceProvider` der Mock/Fallback
+  fest eingebrannt, weil die Factory dann noch null ist). (2) **MainViewModel nicht sofort in
+  `OnFrameworkInitializationCompleted` auflösen** — sonst friert der ganze Objektgraph die
+  Fallbacks ein. Den Resolve via `Dispatcher.UIThread.Post` (Android-Branch) hinter
+  `MainActivity.OnCreate` schieben (HandwerkerImperium tut das implizit über seine Loading-Pipeline).
+  Symptom bei Missachtung: Mock-Services laufen auf echter Hardware (z.B. SmartMeasure zog den
+  `MockArCaptureService` statt ARCore → 10 simulierte Punkte ohne Kamera).
 
 ### Daten & Persistenz
 

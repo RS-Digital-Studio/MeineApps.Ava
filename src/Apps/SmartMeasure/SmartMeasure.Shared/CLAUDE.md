@@ -11,7 +11,7 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../CLAUDE.md). App-Überbl
 
 Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locator anderswo).
 
-### Plattform-Factory-Properties (vor DI-Build setzen)
+### Plattform-Factory-Properties (LAZY ausgewertet)
 
 | Property | Setter | Fallback |
 |----------|--------|---------|
@@ -20,8 +20,13 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 | `App.ArCaptureServiceFactory` | `MainActivity.OnCreate` (vor `base.OnCreate`) | `MockArCaptureService` |
 | `App.VoiceAnnotationServiceFactory` | `MainActivity.OnCreate` (vor `base.OnCreate`) | `NullVoiceAnnotationService` |
 
-Alle vier Factories werden ausgewertet bevor `ConfigureServices` den DI-Container baut. Android setzt
-sie in `OnCreate` VOR `base.OnCreate`. Desktop lässt sie null → Fallbacks greifen.
+**KRITISCH (Avalonia 12 Android):** `OnFrameworkInitializationCompleted` (DI-Build) läuft in
+`AvaloniaAndroidApplication.OnCreate` — also **VOR** `MainActivity.OnCreate`, das die Factories
+setzt. Daher werden diese vier Services **lazy** registriert (Factory-Prüfung im Resolve-Lambda,
+NICHT als Build-Zeit-`if`) und `MainViewModel` wird auf Android **verzögert** via
+`Dispatcher.UIThread.Post` aufgelöst — sonst friert der Objektgraph die Mock-Fallbacks ein
+(Bug-Historie: `MockArCaptureService` → 10 Punkte ohne Kamera). Desktop löst sofort auf und lässt
+die Factories null → Fallbacks/Mocks (gewollt). Generisches Pattern → [Core.Ava-CLAUDE.md](../../../Libraries/MeineApps.Core.Ava/CLAUDE.md) „Threading & Lifecycle".
 
 ### `ConfigureServices` — Reihenfolge (Abhängigkeiten beachten!)
 
@@ -41,10 +46,13 @@ sie in `OnCreate` VOR `base.OnCreate`. Desktop lässt sie null → Fallbacks gre
 
 ### `OnFrameworkInitializationCompleted`
 
-DI bauen → `MainViewModel` holen → `MainView` als `DataContext` setzen →
-`_mainVm.InitializeAsync()` (fire-and-forget).
-Desktop: `IClassicDesktopStyleApplicationLifetime.MainWindow` (450×900).
-Android: `ISingleViewApplicationLifetime.MainView`.
+DI bauen → Lifetime-Branch:
+- **Desktop** (`IClassicDesktopStyleApplicationLifetime`, 450×900): `MainViewModel` sofort holen,
+  `MainView` als `DataContext`, `InitializeAsync()`. Factories null → Mocks (gewollt).
+- **Android** (`ISingleViewApplicationLifetime`): `MainView` **ohne** DataContext setzen, dann
+  `MainViewModel` **verzögert** via `Dispatcher.UIThread.Post` auflösen (läuft nach
+  `MainActivity.OnCreate` → echte Android-Services statt Mock; siehe Factory-Hinweis oben).
+
 Kein Splash-Schirm — `InitializeAsync()` ist aktuell leer (kein langer Startup-Load nötig).
 Fehler werden nicht geschluckt sondern weitergeworfen (Logcat-Sichtbarkeit auf Android).
 

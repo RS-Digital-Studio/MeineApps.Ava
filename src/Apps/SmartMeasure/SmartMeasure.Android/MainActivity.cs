@@ -36,9 +36,14 @@ public class MainActivity : AvaloniaMainActivity
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        // Avalonia 12: Factory-Setups MUESSEN vor base.OnCreate gesetzt sein — diese werden
-        // beim ersten DI-Build (innerhalb von base.OnCreate → OnFrameworkInitializationCompleted)
-        // ausgewertet. Frueher lief dieser Code in CustomizeAppBuilder.
+        // Avalonia 12 Android: OnFrameworkInitializationCompleted (DI-Build) laeuft bereits in
+        // AvaloniaAndroidApplication.OnCreate (Application-Ebene) — also VOR diesem
+        // MainActivity.OnCreate. Die Platform-Factories werden hier dennoch (vor base.OnCreate)
+        // gesetzt; damit sie greifen, registriert App.axaml.cs die betroffenen Services LAZY
+        // (Factory-Pruefung im Resolve-Lambda) und loest das MainViewModel verzoegert via
+        // Dispatcher auf — der erste Resolve liegt damit NACH dieser Factory-Setzung, sodass die
+        // echten Android-Services statt der Mock-Fallbacks injiziert werden.
+        // Frueher lief dieser Code in CustomizeAppBuilder.
 
         // IAppPaths MUSS vor dem DI-Build gesetzt werden — ProjectService-Ctor hängt davon ab.
         // Context.FilesDir garantiert sandbox-sicheren Pfad auf allen Android-ROMs.

@@ -309,13 +309,13 @@ public class AlarmActivity : Activity
                 }
 
                 // Loop aktivieren (API 28+)
-                if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+                if (OperatingSystem.IsAndroidVersionAtLeast(28))
                 {
                     _ringtone.Looping = true;
                 }
 
                 // Langsam ansteigende Lautstärke (API 28+)
-                if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+                if (OperatingSystem.IsAndroidVersionAtLeast(28))
                 {
                     _currentVolume = 0.1f;
                     _ringtone.Volume = _currentVolume;
@@ -341,7 +341,7 @@ public class AlarmActivity : Activity
         {
             if (_ringtone == null || !_ringtone.IsPlaying) return;
             _currentVolume = Math.Min(1.0f, _currentVolume + 0.1f);
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+            if (OperatingSystem.IsAndroidVersionAtLeast(28))
             {
                 _ringtone.Volume = _currentVolume;
             }
@@ -374,17 +374,17 @@ public class AlarmActivity : Activity
     {
         try
         {
-            _vibrator = (Vibrator?)GetSystemService(VibratorService);
+            _vibrator = GetVibrator();
             if (_vibrator?.HasVibrator == true)
             {
                 var pattern = new long[] { 0, 500, 200, 500, 200, 500, 1000 };
-                if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+                if (OperatingSystem.IsAndroidVersionAtLeast(26))
                 {
                     _vibrator.Vibrate(VibrationEffect.CreateWaveform(pattern, 0)!); // 0 = repeat from index 0
                 }
                 else
                 {
-#pragma warning disable CA1422
+#pragma warning disable CA1422 // Vibrate(long[], int) ab API 26 veraltet — Legacy-Pfad fuer < 26
                     _vibrator.Vibrate(pattern, 0);
 #pragma warning restore CA1422
                 }
@@ -394,6 +394,23 @@ public class AlarmActivity : Activity
         {
             // Vibration ist optional
         }
+    }
+
+    /// <summary>
+    /// Liefert den Vibrator. Ab API 31 ueber VibratorManager (Context.VibratorService ist
+    /// dort veraltet), darunter ueber den klassischen System-Service.
+    /// </summary>
+    private Vibrator? GetVibrator()
+    {
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
+        {
+            var manager = (VibratorManager?)GetSystemService(VibratorManagerService);
+            return manager?.DefaultVibrator;
+        }
+
+#pragma warning disable CA1422 // Context.VibratorService ab API 31 veraltet — Legacy-Pfad fuer < 31
+        return (Vibrator?)GetSystemService(VibratorService);
+#pragma warning restore CA1422
     }
 
     private void StopVibration()

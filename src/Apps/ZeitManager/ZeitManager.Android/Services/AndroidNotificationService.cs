@@ -34,7 +34,7 @@ public sealed class AndroidNotificationService : INotificationService
 
     private static void CreateNotificationChannels()
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.O) return;
+        if (!OperatingSystem.IsAndroidVersionAtLeast(26)) return;
 
         var context = Application.Context;
         var manager = (NotificationManager?)context.GetSystemService(Context.NotificationService);
@@ -72,19 +72,21 @@ public sealed class AndroidNotificationService : INotificationService
     {
         var context = Application.Context;
 
-        if (!NotificationManagerCompat.From(context).AreNotificationsEnabled())
+        var manager = NotificationManagerCompat.From(context);
+        if (manager is null || !manager.AreNotificationsEnabled())
             return Task.CompletedTask;
 
-        var builder = new NotificationCompat.Builder(context, AlarmChannelIdV2)
-            .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
-            .SetContentTitle(title)
-            .SetContentText(body)
-            .SetPriority(NotificationCompat.PriorityHigh)
-            .SetAutoCancel(true)
-            .SetCategory(NotificationCompat.CategoryAlarm);
+        var builder = new NotificationCompat.Builder(context, AlarmChannelIdV2);
+        builder.SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo);
+        builder.SetContentTitle(title);
+        builder.SetContentText(body);
+        builder.SetPriority(NotificationCompat.PriorityHigh);
+        builder.SetAutoCancel(true);
+        builder.SetCategory(NotificationCompat.CategoryAlarm);
 
-        var manager = NotificationManagerCompat.From(context);
-        manager.Notify(StableHash(actionId ?? "default"), builder.Build());
+        var notification = builder.Build();
+        if (notification is null) return Task.CompletedTask;
+        manager.Notify(StableHash(actionId ?? "default"), notification);
 
         return Task.CompletedTask;
     }
@@ -96,7 +98,7 @@ public sealed class AndroidNotificationService : INotificationService
         if (alarmManager == null) return Task.CompletedTask;
 
         // Check exact alarm permission on Android 12+
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.S && !alarmManager.CanScheduleExactAlarms())
+        if (OperatingSystem.IsAndroidVersionAtLeast(31) && !alarmManager.CanScheduleExactAlarms())
             return Task.CompletedTask;
 
         var intent = new Intent(context, typeof(AlarmReceiver));
@@ -129,7 +131,7 @@ public sealed class AndroidNotificationService : INotificationService
 
     public bool CanScheduleExactAlarms()
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.S) return true;
+        if (!OperatingSystem.IsAndroidVersionAtLeast(31)) return true;
         var alarmManager = (AlarmManager?)Application.Context.GetSystemService(Context.AlarmService);
         return alarmManager?.CanScheduleExactAlarms() ?? false;
     }
@@ -151,7 +153,7 @@ public sealed class AndroidNotificationService : INotificationService
         }
 
         var manager = NotificationManagerCompat.From(context);
-        manager.Cancel(StableHash(id));
+        manager?.Cancel(StableHash(id));
 
         return Task.CompletedTask;
     }

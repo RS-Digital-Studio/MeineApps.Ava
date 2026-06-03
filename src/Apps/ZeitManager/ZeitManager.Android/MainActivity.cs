@@ -122,7 +122,20 @@ public class MainActivity : AvaloniaMainActivity
             string? uri = null;
             if (resultCode == Result.Ok && data != null)
             {
-                var ringtoneUri = data.GetParcelableExtra(RingtoneManager.ExtraRingtonePickedUri) as global::Android.Net.Uri;
+                global::Android.Net.Uri? ringtoneUri;
+                if (OperatingSystem.IsAndroidVersionAtLeast(33))
+                {
+                    // Typisierte Ueberladung ab API 33 (alte Variante dort veraltet)
+                    ringtoneUri = (global::Android.Net.Uri?)data.GetParcelableExtra(
+                        RingtoneManager.ExtraRingtonePickedUri,
+                        global::Java.Lang.Class.FromType(typeof(global::Android.Net.Uri)));
+                }
+                else
+                {
+#pragma warning disable CA1422 // GetParcelableExtra(string?) ab API 33 veraltet — Legacy-Pfad fuer < 33
+                    ringtoneUri = data.GetParcelableExtra(RingtoneManager.ExtraRingtonePickedUri) as global::Android.Net.Uri;
+#pragma warning restore CA1422
+                }
                 uri = ringtoneUri?.ToString();
             }
 

@@ -56,7 +56,8 @@ public class AlarmReceiver : BroadcastReceiver
     private static void ShowBackupNotification(Context context, string title, string body, string id,
         int snoozeDuration, string? alarmTone)
     {
-        if (!NotificationManagerCompat.From(context).AreNotificationsEnabled())
+        var notificationManager = NotificationManagerCompat.From(context);
+        if (notificationManager is null || !notificationManager.AreNotificationsEnabled())
             return;
 
         var tapIntent = new Intent(context, typeof(AlarmActivity));
@@ -73,19 +74,20 @@ public class AlarmReceiver : BroadcastReceiver
             context, stableId, tapIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var builder = new NotificationCompat.Builder(context, AndroidNotificationService.AlarmChannelIdV2)
-            .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
-            .SetContentTitle(title)
-            .SetContentText(body)
-            .SetPriority(NotificationCompat.PriorityMax)
-            .SetAutoCancel(true)
-            .SetCategory(NotificationCompat.CategoryAlarm)
-            .SetContentIntent(pendingTapIntent)
-            .SetFullScreenIntent(pendingTapIntent, true)
-            .SetOngoing(true); // Nicht wegwischbar solange Alarm aktiv
+        var builder = new NotificationCompat.Builder(context, AndroidNotificationService.AlarmChannelIdV2);
+        builder.SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo);
+        builder.SetContentTitle(title);
+        builder.SetContentText(body);
+        builder.SetPriority(NotificationCompat.PriorityMax);
+        builder.SetAutoCancel(true);
+        builder.SetCategory(NotificationCompat.CategoryAlarm);
+        builder.SetContentIntent(pendingTapIntent);
+        builder.SetFullScreenIntent(pendingTapIntent, true);
+        builder.SetOngoing(true); // Nicht wegwischbar solange Alarm aktiv
 
-        var manager = NotificationManagerCompat.From(context);
-        manager.Notify(stableId, builder.Build());
+        var notification = builder.Build();
+        if (notification is null) return;
+        notificationManager.Notify(stableId, notification);
     }
 
     private static void AcquireWakeLock(Context context)

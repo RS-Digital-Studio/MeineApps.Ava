@@ -26,15 +26,16 @@ public class TimerForegroundService : Service
 
     private Notification CreateNotification(string title, string body)
     {
-        var builder = new NotificationCompat.Builder(this, ChannelId)
-            .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
-            .SetContentTitle(title)
-            .SetContentText(body)
-            .SetOngoing(true)
-            .SetCategory(NotificationCompat.CategoryService)
-            .SetPriority(NotificationCompat.PriorityLow);
+        var builder = new NotificationCompat.Builder(this, ChannelId);
+        builder.SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo);
+        builder.SetContentTitle(title);
+        builder.SetContentText(body);
+        builder.SetOngoing(true);
+        builder.SetCategory(NotificationCompat.CategoryService);
+        builder.SetPriority(NotificationCompat.PriorityLow);
 
-        return builder.Build()!;
+        return builder.Build()
+            ?? throw new InvalidOperationException("NotificationCompat.Builder lieferte keine Notification.");
     }
 
     public static void UpdateNotification(Context context, string timerName, string remaining)
@@ -43,7 +44,7 @@ public class TimerForegroundService : Service
         intent.PutExtra("timer_name", timerName);
         intent.PutExtra("remaining", remaining);
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
         {
             context.StartForegroundService(intent);
         }

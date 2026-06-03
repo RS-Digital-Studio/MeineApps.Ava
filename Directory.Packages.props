@@ -80,7 +80,7 @@
     <!-- Xamarin.GooglePlayServices.Ads.Lite 124.x, daher 123er Familie    -->
     <!-- bleibt um R8-Dexer-Duplicates (zzov) zu vermeiden.                -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.Firebase.Messaging" Version="124.1.2" />
+    <PackageVersion Include="Xamarin.Firebase.Messaging" Version="125.0.2" />
     <PackageVersion Include="Xamarin.Firebase.Config" Version="123.1.0" />
 
     <!-- Transitive dependency von Ads.Lite: JVM-Variante muss excluded werden,

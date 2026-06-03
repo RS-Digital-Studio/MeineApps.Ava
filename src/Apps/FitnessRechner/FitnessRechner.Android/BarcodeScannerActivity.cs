@@ -158,11 +158,16 @@ public class BarcodeScannerActivity : AndroidX.AppCompat.App.AppCompatActivity
             var mainExecutor = ContextCompat.GetMainExecutor(this)!;
             preview.SetSurfaceProvider(mainExecutor, _previewView.SurfaceProvider);
 
-            // Image Analysis fuer Barcode-Erkennung
+            // Image Analysis fuer Barcode-Erkennung.
+            // SetTargetResolution ist ab CameraX 1.6 deprecated; bewusst beibehalten — 1280x720 ist
+            // die getestete Scan-Aufloesung, der ResolutionSelector-Ersatz nutzt eine andere
+            // Auswahl-Heuristik und wuerde das Erkennungsverhalten veraendern.
+#pragma warning disable CS0618
             var imageAnalysis = new ImageAnalysis.Builder()!
                 .SetTargetResolution(new global::Android.Util.Size(1280, 720))!
                 .SetBackpressureStrategy(ImageAnalysis.StrategyKeepOnlyLatest)!
                 .Build()!;
+#pragma warning restore CS0618
 
             var executor = Executors.NewSingleThreadExecutor()!;
             imageAnalysis.SetAnalyzer(executor, new BarcodeAnalyzer(OnBarcodeFound));
@@ -238,8 +243,9 @@ public class BarcodeScannerActivity : AndroidX.AppCompat.App.AppCompatActivity
                 return;
             }
 
+            var rotation = imageProxy.ImageInfo?.RotationDegrees ?? 0;
             var inputImage = Xamarin.Google.MLKit.Vision.Common.InputImage
-                .FromMediaImage(mediaImage, imageProxy.ImageInfo.RotationDegrees);
+                .FromMediaImage(mediaImage, rotation);
 
             _scanner.Process(inputImage)!
                 .AddOnSuccessListener(new BarcodeSuccessListener(barcode =>
@@ -334,8 +340,8 @@ public class BarcodeScannerActivity : AndroidX.AppCompat.App.AppCompatActivity
 
         protected override void OnDraw(Canvas? canvas)
         {
-            base.OnDraw(canvas);
             if (canvas == null) return;
+            base.OnDraw(canvas);
 
             var width = canvas.Width;
             var height = canvas.Height;

@@ -266,52 +266,6 @@
       </Border>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- v1.5.x — Optimization-Plan-Toggles (opt-in, Default aus)         -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <Border Classes="RiskCard">
-        <StackPanel Spacing="14">
-          <TextBlock Text="Erweiterte Filter (opt-in)" FontWeight="SemiBold" FontSize="14"
-                     Foreground="{DynamicResource AppTextBrush}" Margin="0,0,0,4" />
-
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="HTF-Confluence Hard-Gate" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Phase 1: Signale nur mit GKL-Hit oder HTF-Zone-Overlap (W1/D1)."
-                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding RequireHtfConfluenceForEntry}" />
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
-
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Min. Confluence-Score" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Phase 1: Hard-Gate auf Confluence-Score 0-11 (0 = aus, 4-6 empfohlen)."
-                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <NumericUpDown Grid.Column="1" Classes="RiskNumeric"
-                           Value="{Binding MinConfluenceScore}"
-                           Minimum="0" Maximum="11" Increment="1" FormatString="0" />
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
-
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Asymmetrisches CRV (TP aus HTF)" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Phase 2: SL bleibt LTF, TP1/TP2 kommen aus HTF-Sequenz (nur GKL-Setups)."
-                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseAsymmetricCrv}" />
-          </Grid>
-        </StackPanel>
-      </Border>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme)            -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"

@@ -253,49 +253,6 @@
                        Foreground="{DynamicResource TextMutedBrush}"
                        TextWrapping="Wrap" MaxWidth="500" />
 
-            <!-- Watchdog-Banner (24.04.2026): Erscheint wenn Bot gestoppt ODER Engine still ist. -->
-            <Border IsVisible="{Binding IsAmpelStale}"
-                    Background="{DynamicResource WarningBrush}"
-                    CornerRadius="6" Padding="10,8" Margin="0,8,0,0">
-              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="AlertOutline" Width="16" Height="16"
-                                 Foreground="{DynamicResource PrimaryContrastBrush}"
-                                 VerticalAlignment="Center" />
-                <TextBlock Text="{Binding IdleHintText}" FontSize="11"
-                           Foreground="{DynamicResource PrimaryContrastBrush}"
-                           TextWrapping="Wrap" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
-
-            <!-- Multi-TF Standalone: SK-Ampel pro Navigator-TF -->
-            <Border Background="{DynamicResource AppBackgroundAltBrush}" CornerRadius="6"
-                    Padding="10,8" Margin="0,8,0,0"
-                    IsVisible="{Binding SkAmpelRows.Count}"
-                    Opacity="{Binding IsAmpelStale, Converter={x:Static conv:StaleOpacityConverter.Instance}}">
-              <StackPanel Spacing="4">
-                <TextBlock Text="Sequence-Ampel (pro Timeframe)" FontSize="10" FontWeight="SemiBold"
-                           Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                <ItemsControl ItemsSource="{Binding SkAmpelRows}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Grid ColumnDefinitions="40,*" Margin="0,2">
-                        <Border Grid.Column="0" Background="{DynamicResource AppAccentBrush}"
-                                CornerRadius="3" Padding="4,1" HorizontalAlignment="Left"
-                                VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Timeframe}" FontSize="10" FontWeight="Bold"
-                                     Foreground="{DynamicResource PrimaryContrastBrush}" />
-                        </Border>
-                        <TextBlock Grid.Column="1" Text="{Binding Status}" FontSize="11"
-                                   Foreground="{DynamicResource AppTextBrush}"
-                                   VerticalAlignment="Center" Margin="8,0,0,0"
-                                   TextTrimming="CharacterEllipsis" />
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </Border>
-
             <!-- v1.6.0 Phase 10B — Stats-Breakdown (TF × Category × Mode) -->
             <Border Background="{DynamicResource AppBackgroundAltBrush}" CornerRadius="6"
                     Padding="10,8" Margin="0,8,0,0"
@@ -793,12 +750,6 @@
                       <TextBlock Text="{Binding Leverage, StringFormat='{}{0:F0}x'}" FontSize="11"
                                  FontFamily="Consolas, Courier New, monospace"
                                  Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
-                      <!-- Strategie-Badge -->
-                      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="3" Padding="4,1"
-                              VerticalAlignment="Center" IsVisible="{Binding StrategyName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <TextBlock Text="{Binding StrategyName}" FontSize="9" FontWeight="Bold"
-                                   Foreground="{DynamicResource AppWarningBrush}" />
-                      </Border>
                       <!-- TF-Badge (Multi-TF Standalone) -->
                       <Border Background="{DynamicResource AppAccentBrush}" CornerRadius="3" Padding="4,1"
                               VerticalAlignment="Center" IsVisible="{Binding TimeframeBadge, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -847,16 +798,8 @@
                       </TextBlock>
                     </StackPanel>
 
-                    <!-- Zeile 3: Info-Chips (Confluence, Charakter, Haltezeit) -->
+                    <!-- Zeile 3: Info-Chips (Haltezeit) -->
                     <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
-                      <!-- Confluence-Score Badge -->
-                      <Border CornerRadius="3" Padding="4,1" IsVisible="{Binding ConfluenceScore}"
-                              Background="{DynamicResource SurfaceBrush}">
-                        <TextBlock FontSize="9" FontFamily="Consolas, Courier New, monospace"
-                                   Foreground="{DynamicResource AppWarningBrush}">
-                          <Run Text="C:" /><Run Text="{Binding ConfluenceScore}" />
-                        </TextBlock>
-                      </Border>
                       <!-- Haltezeit -->
                       <TextBlock Text="{Binding HoldTimeText}" FontSize="9"
                                  Foreground="{DynamicResource AppTextSecondaryBrush}"

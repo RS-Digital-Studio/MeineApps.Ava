@@ -14,9 +14,6 @@ using System.Net.Http;
 
 namespace BingXBot.ViewModels;
 
-/// <summary>Multi-TF Standalone: Eine Zeile der SK-Ampel-Tabelle (pro Navigator-TF).</summary>
-public record SkAmpelRow(string Timeframe, string Status);
-
 /// <summary>
 /// Anzeige-Modell fuer einen einzelnen Activity-Feed-Eintrag.
 /// </summary>
@@ -90,10 +87,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _canStart = true;
 
     // === Strategie-Auswahl + aktive Timeframes (Multi-TF Standalone) ===
-    [ObservableProperty] private string _selectedStrategy = "SK-System";
+    [ObservableProperty] private string _selectedStrategy = "TrendFollow-Fast";
     [ObservableProperty] private string _strategyDescription = "";
-    /// <summary>True wenn SK-System aktiv (Multi-TF Standalone hat immer SK-System).</summary>
-    [ObservableProperty] private bool _isSkSystem = true;
     public string[] AvailableStrategies => StrategyFactory.AvailableStrategies;
 
     // TF-Checkboxen für Multi-TF Standalone
@@ -102,18 +97,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _tfH1Active = true;
     [ObservableProperty] private bool _tfM15Active = true;
 
-    /// <summary>Multi-TF Standalone: Sequence-Ampel pro Navigator-TF (eine Zeile pro aktiver TF).</summary>
-    public ObservableCollection<SkAmpelRow> SkAmpelRows { get; } = new();
-
-    // === Watchdog (24.04.2026) ===
-    /// <summary>
-    /// Schwelle ab wann ein SK-Ampel-Update als "veraltet" gilt.
-    /// Reaction auf Bug 24.04.2026: Engine war 3 Tage idle und UI zeigte "sucheB" als ob es live waere.
-    /// </summary>
-    private static readonly TimeSpan AmpelStaleThreshold = TimeSpan.FromMinutes(5);
-    private DateTime _lastAmpelUpdateUtc = DateTime.MinValue;
-    private Avalonia.Threading.DispatcherTimer? _watchdogTimer;
-
     // === v1.6.0 Phase 10B — Stats-Breakdown-Card (TF × Category × Mode) ===
     private readonly IStatsService? _statsService;
     private Avalonia.Threading.DispatcherTimer? _statsRefreshTimer;
@@ -121,12 +104,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     public ObservableCollection<BingXBot.Contracts.Dto.TradeStatsBreakdownRowDto> StatsBreakdown { get; } = new();
     [ObservableProperty] private bool _isStatsLoading;
     [ObservableProperty] private string _statsStatusText = "";
-
-    /// <summary>True wenn der Bot nicht im Running-State ist ODER seit ≥ 5 min kein Engine-Update kam.</summary>
-    [ObservableProperty] private bool _isAmpelStale = true;
-
-    /// <summary>Erklaert dem User warum die Ampel veraltet ist (deutsch, in-VM lokalisiert).</summary>
-    [ObservableProperty] private string _idleHintText = "Bot läuft nicht — Status veraltet. Auf Start drücken.";
 
     /// <summary>Phase 18 / H2 — News-Service-Health-Banner. true = News-Filter degradiert.</summary>
     [ObservableProperty] private bool _isNewsServiceDegraded;
@@ -163,8 +140,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     partial void OnBotStatusStateChanged(BotState value)
     {
         OnPropertyChanged(nameof(StatusDotColor));
-        // Watchdog: State-Wechsel triggert sofortige Re-Evaluation (z.B. Stop -> stale=true sofort).
-        EvaluateAmpelStaleness();
     }
 
     // Markt-Kategorie-Änderungen an ScannerSettings weiterleiten
@@ -340,9 +315,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             ? "Simuliertes Trading ohne echtes Geld"
             : (HasApiKeys ? "Echtes Trading mit BingX - Handelt automatisch!" : "API-Keys erforderlich! Gehe zu Einstellungen.");
 
-        // Letzte Strategie + Trading-Modus aus persistierten Settings laden.
-        // Nach Buch-Refactoring (12.04.2026) ist SK-System die einzige Strategie —
-        // unbekannte persistierte Alt-Namen werden auf SK-System gemappt.
+        // Letzte Strategie aus persistierten Settings laden.
+        // TrendFollow ist die einzige Strategie — unbekannte/veraltete Alt-Namen (z.B. das
+        // entfernte SK-System) werden auf den Live-Default TrendFollow-Fast gemappt.
         if (!string.IsNullOrEmpty(_botSettings.LastStrategyName)
             && StrategyFactory.AvailableStrategies.Contains(_botSettings.LastStrategyName))
         {
@@ -350,8 +325,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         }
         else
         {
-            SelectedStrategy = "SK-System";
-            _botSettings.LastStrategyName = "SK-System";
+            SelectedStrategy = "TrendFollow-Fast";
+            _botSettings.LastStrategyName = "TrendFollow-Fast";
         }
         OnSelectedStrategyChanged(SelectedStrategy);
 
@@ -374,17 +349,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         // Trade-Markers + Metriken-Refresh bei jedem Trade-Abschluss
         _eventBus.TradeCompleted += OnTradeCompletedForMarkers;
 
-        // Multi-TF Standalone: SK-Ampel pro TF empfangen + in UI-Collection pflegen
-        _eventBus.SkAmpelUpdated += OnSkAmpelUpdated;
-
         // Initialen Trading-Modus an MainViewModel melden (Statusleiste)
         _eventBus.PublishTradingMode(IsPaperMode);
-
-        // Watchdog (24.04.2026): Re-Evaluiere Stale-Status alle 30 s.
-        _watchdogTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
-        _watchdogTimer.Tick += (_, _) => EvaluateAmpelStaleness();
-        _watchdogTimer.Start();
-        EvaluateAmpelStaleness();
 
         // v1.6.0 Phase 10B — Stats-Breakdown 30 s Refresh.
         if (_statsService != null)
@@ -441,9 +407,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             var strategy = StrategyFactory.Create(value);
             StrategyDescription = strategy.Description;
             _botSettings.LastStrategyName = value;
-
-            // SK-System: Buch hat feste W1/D1/H4/H1/M30 Hierarchie → Trading-Mode irrelevant
-            IsSkSystem = value == "SK-System";
 
             _ = _settingsPersistence.SaveAllAsync();
         }
@@ -1080,7 +1043,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     // Ausgewählte Position für Chart-Overlay
     [ObservableProperty] private PositionDisplayItem? _selectedPosition;
 
-    /// <summary>Wählt eine Position aus und zeigt ihren Chart + SK-Overlay an.</summary>
+    /// <summary>Wählt eine Position aus und zeigt ihren Chart-Overlay an.</summary>
     [RelayCommand]
     private async Task SelectPosition(PositionDisplayItem? pos)
     {
@@ -1093,7 +1056,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             // Deselektieren → zurück zu BTC
             SelectedPosition = null;
             await BtcTicker.SwitchSymbolCommand.ExecuteAsync("BTC-USDT");
-            BtcTicker.SequenceOverlay = null;
             UpdateChartOverlay();
             return;
         }
@@ -1108,9 +1070,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         var signal = FindPositionSignal(pos.Symbol, pos.Side);
         BtcTicker.ActiveOverlay = new ActivePositionOverlay(
             pos.EntryPrice, signal?.StopLoss, signal?.TakeProfit, signal?.TakeProfit2, pos.Side);
-
-        // SK-Sequenz-Overlay: On-demand aus den gerade geladenen Chart-Candles berechnen
-        BtcTicker.SequenceOverlay = BuildSequenceOverlay(BtcTicker.BtcCandles);
     }
 
     /// <summary>Aktualisiert die Trade-Markers und Positions-Overlay auf dem Chart.</summary>
@@ -1122,7 +1081,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             var signal = FindPositionSignal(SelectedPosition.Symbol, SelectedPosition.Side);
             BtcTicker.ActiveOverlay = new ActivePositionOverlay(
                 SelectedPosition.EntryPrice, signal?.StopLoss, signal?.TakeProfit, signal?.TakeProfit2, SelectedPosition.Side);
-            // SequenceOverlay bleibt vom SelectPosition-Call erhalten (wird dort berechnet)
             return;
         }
 
@@ -1138,97 +1096,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             BtcTicker.ActiveOverlay = null;
         }
-        BtcTicker.SequenceOverlay = null;
-    }
-
-    /// <summary>Berechnet SK-Sequenz-Overlay on-demand aus den Chart-Candles.</summary>
-    private static SequenceOverlay? BuildSequenceOverlay(IReadOnlyList<Candle> candles)
-    {
-        if (candles.Count < 50) return null;
-
-        var seq = Engine.Indicators.SequenceDetector.DetectSequence(candles, 5, 0.5m, true);
-        if (seq == null) return null;
-
-        return new SequenceOverlay(
-            seq.Point0.Price, seq.PointA.Price, seq.PointB?.Price,
-            seq.Retracement500, seq.Retracement559, seq.Retracement618,
-            seq.Retracement667, seq.Retracement71, seq.Retracement786,
-            seq.Extension1618, seq.Extension200,
-            seq.Extension2618, seq.Extension4236,
-            seq.IsLong);
-    }
-
-    /// <summary>
-    /// <summary>Multi-TF Standalone: Aktualisiert die SK-Ampel-Tabelle im UI (1 Zeile pro TF).</summary>
-    private void OnSkAmpelUpdated(object? sender, Dictionary<Core.Enums.TimeFrame, string> ampel)
-    {
-        // Watchdog: Engine-Lebenszeichen registrieren (auch fuer EvaluateAmpelStaleness).
-        _lastAmpelUpdateUtc = DateTime.UtcNow;
-
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            // Reihenfolge: absteigend (D1 → H4 → H1 → M15)
-            var ordered = ampel.OrderByDescending(kv =>
-                kv.Key switch
-                {
-                    Core.Enums.TimeFrame.W1 => 7,
-                    Core.Enums.TimeFrame.D1 => 6,
-                    Core.Enums.TimeFrame.H4 => 5,
-                    Core.Enums.TimeFrame.H1 => 4,
-                    Core.Enums.TimeFrame.M30 => 3,
-                    Core.Enums.TimeFrame.M15 => 2,
-                    Core.Enums.TimeFrame.M5 => 1,
-                    _ => 0
-                }).ToList();
-
-            SkAmpelRows.Clear();
-            foreach (var kv in ordered)
-            {
-                var label = kv.Key switch
-                {
-                    Core.Enums.TimeFrame.D1 => "1D",
-                    Core.Enums.TimeFrame.H4 => "4H",
-                    Core.Enums.TimeFrame.H1 => "1H",
-                    Core.Enums.TimeFrame.M15 => "15m",
-                    Core.Enums.TimeFrame.M5 => "5m",
-                    _ => kv.Key.ToString()
-                };
-                SkAmpelRows.Add(new SkAmpelRow(label, kv.Value));
-            }
-
-            EvaluateAmpelStaleness();
-        });
-    }
-
-    /// <summary>
-    /// Watchdog-Logik (24.04.2026): Setzt <see cref="IsAmpelStale"/> + <see cref="IdleHintText"/>
-    /// abhaengig vom Bot-State und Alter des letzten SK-Ampel-Events.
-    /// </summary>
-    private void EvaluateAmpelStaleness()
-    {
-        var ageOk = _lastAmpelUpdateUtc != DateTime.MinValue
-                    && (DateTime.UtcNow - _lastAmpelUpdateUtc) <= AmpelStaleThreshold;
-        var botRunning = BotStatusState == BotState.Running;
-        var stale = !botRunning || !ageOk;
-
-        if (stale)
-        {
-            if (!botRunning)
-            {
-                IdleHintText = "Bot läuft nicht — angezeigte Ampel-Werte sind veraltet. Auf Start drücken.";
-            }
-            else
-            {
-                var ageMin = _lastAmpelUpdateUtc == DateTime.MinValue
-                    ? 0
-                    : (int)(DateTime.UtcNow - _lastAmpelUpdateUtc).TotalMinutes;
-                IdleHintText = ageMin <= 0
-                    ? "Bot läuft, aber noch keine Engine-Updates. Bitte einen Moment warten."
-                    : $"Letztes Engine-Update vor {ageMin} min — Engine prüft nichts. Logs prüfen.";
-            }
-        }
-
-        IsAmpelStale = stale;
     }
 
     /// Erstellt ein PositionDisplayItem mit CloseRequested-Verdrahtung und SL/TP aus dem Service.
@@ -1257,8 +1124,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             item.StopLoss = signal.StopLoss;
             item.TakeProfit = signal.TakeProfit;
-            item.ConfluenceScore = signal.ConfluenceScore;
-            item.StrategyName = signal.DisableSmartBreakeven ? "SK" : "CTP";
         }
 
         // Multi-TF Standalone: Navigator-TF aus ExitState → Badge
@@ -1406,14 +1271,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         // EventBus-Handler sauber abmelden (verhindert Zugriff auf disposed-te Objekte)
         _eventBus.TradeCompleted -= OnTradeCompletedForMarkers;
-        _eventBus.SkAmpelUpdated -= OnSkAmpelUpdated;
 
-        // Watchdog-Timer (24.04.2026) sauber stoppen — sonst feuert er nach Dispose weiter.
-        if (_watchdogTimer != null)
-        {
-            _watchdogTimer.Stop();
-            _watchdogTimer = null;
-        }
         if (_statsRefreshTimer != null)
         {
             _statsRefreshTimer.Stop();

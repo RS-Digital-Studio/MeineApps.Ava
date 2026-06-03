@@ -32,8 +32,8 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _backtestCts;
 
     [ObservableProperty] private string _symbol = "BTC-USDT";
-    [ObservableProperty] private string _selectedStrategy = "SK-System";
-    [ObservableProperty] private string _selectedTimeFrame = "H1";
+    [ObservableProperty] private string _selectedStrategy = "TrendFollow-Fast";
+    [ObservableProperty] private string _selectedTimeFrame = "H4";
     [ObservableProperty] private DateTimeOffset? _startDate = DateTimeOffset.UtcNow.AddDays(-30);
     [ObservableProperty] private DateTimeOffset? _endDate = DateTimeOffset.UtcNow;
     [ObservableProperty] private decimal _initialBalance = 1000m;
@@ -232,7 +232,7 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
                 Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
                 MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
-                HtfTimeFrame = Engine.Strategies.SequenzKonzeptStrategy.GetFilterTimeframe(tf),
+                HtfTimeFrame = BingXBot.Core.Helpers.TimeFrameHelper.GetFilterTimeframe(tf),
             };
 
             BacktestEngine engine = _publicClient != null
@@ -389,7 +389,7 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
                 // Filter-TF gemäß Live-Mapping: D1→H4, H4→H1, H1→M15, M15→M5.
                 // BacktestEngine lädt diese als FilterTimeframeCandles (= dasselbe wie Live).
-                HtfTimeFrame = Engine.Strategies.SequenzKonzeptStrategy.GetFilterTimeframe(timeFrame),
+                HtfTimeFrame = BingXBot.Core.Helpers.TimeFrameHelper.GetFilterTimeframe(timeFrame),
             };
 
             // BacktestEngine: Echte Marktdaten wenn Public Client verfügbar, sonst Demo
@@ -570,7 +570,7 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
                 Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
                 MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
-                HtfTimeFrame = SequenzKonzeptStrategy.GetFilterTimeframe(timeFrame),
+                HtfTimeFrame = BingXBot.Core.Helpers.TimeFrameHelper.GetFilterTimeframe(timeFrame),
             };
 
             var progressReporter = new Progress<(int Window, int Total)>(p =>

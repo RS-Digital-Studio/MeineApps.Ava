@@ -21,17 +21,3 @@ public record ActivePositionOverlay(
     decimal? TakeProfit,
     decimal? TakeProfit2,
     Side Side);
-
-/// <summary>
-/// SK-System Sequenz-Overlay: Fibonacci-Level + 0-A-B-Punkte im Chart.
-/// Buch-konforme Level: 50/55.9/61.8/66.7/71/78.6 Retracement, 161.8/200/261.8/423.6 Extension.
-/// </summary>
-public record SequenceOverlay(
-    decimal Point0, decimal PointA, decimal? PointB,
-    // Fibonacci-Retracement Level (Buch-Tabelle)
-    decimal Ret500, decimal Ret559, decimal Ret618,
-    decimal Ret667, decimal Ret71, decimal Ret786,
-    // Fibonacci-Extension Level (Buch-Tabelle)
-    decimal Ext1618, decimal Ext200,
-    decimal Ext2618, decimal Ext4236,
-    bool IsLong);

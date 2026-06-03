@@ -93,8 +93,8 @@ public partial class DashboardView : UserControl
     {
         if (e.PropertyName == nameof(BtcTickerViewModel.BtcPriceChange))
             UpdateBtcChangeColor();
-        // ActiveOverlay, SequenceOverlay oder Indikator-Änderung → Chart neu zeichnen
-        if (e.PropertyName is nameof(BtcTickerViewModel.ActiveOverlay) or nameof(BtcTickerViewModel.Indicators) or nameof(BtcTickerViewModel.SequenceOverlay))
+        // ActiveOverlay oder Indikator-Änderung → Chart neu zeichnen
+        if (e.PropertyName is nameof(BtcTickerViewModel.ActiveOverlay) or nameof(BtcTickerViewModel.Indicators))
         {
             if (this.FindControl<SKCanvasView>("BtcChartCanvas") is { } canvas)
                 canvas.InvalidateSurface();
@@ -175,8 +175,7 @@ public partial class DashboardView : UserControl
         var markers = _vm.BtcTicker.TradeMarkers.Count > 0 ? _vm.BtcTicker.TradeMarkers.ToList() : null;
 
         _vm.BtcTicker.ChartRenderer.Render(canvas, bounds, _vm.BtcTicker.BtcCandles.ToList(),
-            markers, _vm.BtcTicker.ActiveOverlay, _vm.BtcTicker.Indicators,
-            _vm.BtcTicker.SequenceOverlay);
+            markers, _vm.BtcTicker.ActiveOverlay, _vm.BtcTicker.Indicators);
     }
 
     private void OnDrawdownPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

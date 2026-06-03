@@ -1111,7 +1111,7 @@ public abstract class TradingServiceBase : IDisposable
                             navResults[(ticker.Symbol, tf)] = t.Result;
                     }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
 
-                var filterTf = Engine.Strategies.SequenzKonzeptStrategy.GetFilterTimeframe(tf);
+                var filterTf = BingXBot.Core.Helpers.TimeFrameHelper.GetFilterTimeframe(tf);
                 if (filterTf.HasValue && filterTf.Value != TimeFrame.D1 && filterTf.Value != TimeFrame.W1)
                 {
                     var fDays = GetFilterLookbackDays(filterTf.Value);

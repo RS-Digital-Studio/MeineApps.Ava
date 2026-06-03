@@ -41,11 +41,6 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private decimal _tp2CloseRatio;
     [ObservableProperty] private decimal _minRiskRewardRatio;
 
-    // === v1.5.x Optimization-Plan-2026-05 — opt-in Toggles ===
-    [ObservableProperty] private bool _requireHtfConfluenceForEntry;   // Phase 1
-    [ObservableProperty] private int _minConfluenceScore;              // Phase 1 quantitatives Gate
-    [ObservableProperty] private bool _useAsymmetricCrv;               // Phase 2
-
     // === v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme) ===
     [ObservableProperty] private bool _enableCrossTfPyramiding;
     [ObservableProperty] private int _pyramidMaxAddOns;
@@ -144,10 +139,6 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
             Tp2CloseRatio = _riskSettings.Tp2CloseRatio;
             MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio;
 
-            // v1.5.x Optimization-Plan-Toggles
-            RequireHtfConfluenceForEntry = _riskSettings.RequireHtfConfluenceForEntry;
-            MinConfluenceScore = _riskSettings.MinConfluenceScore;
-            UseAsymmetricCrv = _riskSettings.UseAsymmetricCrv;
             EnableCrossTfPyramiding = _riskSettings.EnableCrossTfPyramiding;
             PyramidMaxAddOns = _riskSettings.PyramidMaxAddOns;
             PyramidScalePercent = _riskSettings.PyramidScalePercent;
@@ -187,9 +178,6 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
         _riskSettings.Tp1CloseRatio = Tp1CloseRatio;
         _riskSettings.Tp2CloseRatio = Tp2CloseRatio;
         _riskSettings.MinRiskRewardRatio = MinRiskRewardRatio;
-        _riskSettings.RequireHtfConfluenceForEntry = RequireHtfConfluenceForEntry;
-        _riskSettings.MinConfluenceScore = MinConfluenceScore;
-        _riskSettings.UseAsymmetricCrv = UseAsymmetricCrv;
         _riskSettings.EnableCrossTfPyramiding = EnableCrossTfPyramiding;
         _riskSettings.PyramidMaxAddOns = PyramidMaxAddOns;
         _riskSettings.PyramidScalePercent = PyramidScalePercent;
@@ -246,9 +234,6 @@ public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
     partial void OnTp1CloseRatioChanged(decimal value) => MarkDirty();
     partial void OnTp2CloseRatioChanged(decimal value) => MarkDirty();
     partial void OnMinRiskRewardRatioChanged(decimal value) => MarkDirty();
-    partial void OnRequireHtfConfluenceForEntryChanged(bool value) => MarkDirty();
-    partial void OnMinConfluenceScoreChanged(int value) => MarkDirty();
-    partial void OnUseAsymmetricCrvChanged(bool value) => MarkDirty();
     partial void OnEnableCrossTfPyramidingChanged(bool value) => MarkDirty();
     partial void OnPyramidMaxAddOnsChanged(int value) => MarkDirty();
     partial void OnPyramidScalePercentChanged(decimal value) => MarkDirty();

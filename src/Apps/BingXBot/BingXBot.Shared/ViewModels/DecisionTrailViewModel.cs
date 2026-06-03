@@ -37,20 +37,14 @@ public partial class DecisionTrailViewModel : ViewModelBase, IDisposable
     /// <summary>Verfuegbare RejectionReason-Konstanten fuer den Filter-Picker.</summary>
     public IReadOnlyList<string> AvailableReasons { get; } = new[]
     {
-        RejectionReasons.NewsBlackout,
-        RejectionReasons.StateNotActivated,
-        RejectionReasons.ImpulseBelowAtr,
-        RejectionReasons.NoHtfConfluence,
-        RejectionReasons.ScoreBelowMin,
         RejectionReasons.RrrTooSmall,
-        RejectionReasons.BoxCloseViolated,
-        RejectionReasons.MissingWickRejection,
-        RejectionReasons.MtaTargetZoneBlock,
-        RejectionReasons.EntriesAlreadyTriggered,
-        RejectionReasons.MissingStrukturpunkte,
-        RejectionReasons.CounterTrendInactive,
+        RejectionReasons.SlGeometryError,
+        RejectionReasons.SlDistanceZero,
         RejectionReasons.SlippageTooHigh,
+        RejectionReasons.CorrelationLimitExceeded,
+        RejectionReasons.OutsideAllowedSession,
         RejectionReasons.TfAutoDisabled,
+        RejectionReasons.InsufficientData,
         RejectionReasons.Other,
     };
 

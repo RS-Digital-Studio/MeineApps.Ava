@@ -38,9 +38,6 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
     // Aktive Position (SL/TP/Entry-Overlay auf dem Chart)
     [ObservableProperty] private ActivePositionOverlay? _activeOverlay;
 
-    // SK-Sequenz-Overlay (Fibonacci-Level, A-B-C Punkte, Korrekturzonen)
-    [ObservableProperty] private SequenceOverlay? _sequenceOverlay;
-
     // Interaktiver Renderer (hält ChartState: Viewport, Crosshair, Zoom)
     public InteractiveChartRenderer ChartRenderer { get; } = new();
 

@@ -9,8 +9,8 @@ namespace BingXBot.Engine.Strategies;
 /// </summary>
 public static class StrategyFactory
 {
-    /// <summary>Verfügbare Strategien für die UI/Produktion.</summary>
-    public static readonly string[] AvailableStrategies = ["SK-System", "TrendFollow"];
+    /// <summary>Verfügbare Strategien für die UI/Produktion. Live-Default: TrendFollow-Fast.</summary>
+    public static readonly string[] AvailableStrategies = ["TrendFollow-Fast"];
 
     /// <summary>Erstellt eine neue IStrategy-Instanz basierend auf dem Namen.</summary>
     public static IStrategy Create(string name) => name switch

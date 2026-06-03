@@ -88,22 +88,6 @@ public class InteractiveChartRenderer
     private static readonly SKPaint Tp2Label = new() { Color = Tp2Color, IsAntialias = true };
     private static readonly SKPaint EntryLabel = new() { Color = EntryColor, IsAntialias = true };
 
-    // SK-Sequenz-Overlay Farben
-    private static readonly SKColor FibColor = SKColor.Parse("#FFD700");        // Gold für Fib-Level
-    private static readonly SKColor GklZoneColor = SKColor.Parse("#10B981");    // Grün für GKL-Zone
-    private static readonly SKColor BuyZoneColor = SKColor.Parse("#3B82F6");    // Blau für Buy-Zone
-    // SK-VERIFY: Abweichung #4 — SK-Nomenklatur: 0-A-B statt A-B-C
-    private static readonly SKColor Point0Color = SKColor.Parse("#F59E0B");     // Amber für Punkt 0
-    private static readonly SKColor PointAColor = SKColor.Parse("#06B6D4");     // Cyan für Punkt A
-    private static readonly SKColor PointBColor = SKColor.Parse("#D946EF");     // Magenta für Punkt B
-
-    private static readonly SKPaint FibLinePaint = new() { Color = FibColor.WithAlpha(70), StrokeWidth = 0.8f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([3f, 5f], 0) };
-    private static readonly SKPaint FibLabelPaint = new() { Color = FibColor.WithAlpha(180), IsAntialias = true };
-    private static readonly SKPaint GklZonePaint = new() { Color = GklZoneColor.WithAlpha(20), Style = SKPaintStyle.Fill };
-    private static readonly SKPaint BuyZonePaint = new() { Color = BuyZoneColor.WithAlpha(12), Style = SKPaintStyle.Fill };
-    private static readonly SKPaint ExtLinePaint = new() { Color = FibColor.WithAlpha(90), StrokeWidth = 1f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
-    private static readonly SKPaint SeqLinePaint = new() { Color = SKColor.Parse("#94A3B8").WithAlpha(60), StrokeWidth = 1f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([2f, 3f], 0) };
-    private static readonly SKFont FibFont = new(SKTypeface.Default, 9);
     private static readonly SKFont PointFont = new(SKTypeface.Default, 11);
 
     // 04.05.2026 — Per-Frame-Allokationen aus Render-Methoden ausgelagert.
@@ -113,12 +97,6 @@ public class InteractiveChartRenderer
     private static readonly SKPaint PriceLabelPaint = new() { IsAntialias = true };
     private static readonly SKPaint ProfitZonePaint = new() { Color = TpColor.WithAlpha(15), Style = SKPaintStyle.Fill };
     private static readonly SKPaint LossZonePaint = new() { Color = SlColor.WithAlpha(15), Style = SKPaintStyle.Fill };
-    private static readonly SKPaint Tp1ExtLinePaint = new() { Color = TpColor.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
-    private static readonly SKPaint Tp1ExtLabelPaint = new() { Color = TpColor.WithAlpha(200), IsAntialias = true };
-    private static readonly SKPaint Tp2ExtLinePaint = new() { Color = Tp2Color.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
-    private static readonly SKPaint Tp2ExtLabelPaint = new() { Color = Tp2Color.WithAlpha(200), IsAntialias = true };
-    private static readonly SKPaint BadgeBgPaint = new() { Color = SKColor.Parse("#1E1E2E").WithAlpha(200), Style = SKPaintStyle.Fill };
-    private static readonly SKPaint BadgeTextPaint = new() { Color = FibColor, IsAntialias = true };
     private static readonly SKPaint MarkerCircleFillPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
     private static readonly SKPaint MarkerCircleBorderPaint = new() { Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true };
     private static readonly SKPaint MarkerTextPaint = new() { Color = SKColors.White, IsAntialias = true };
@@ -137,8 +115,7 @@ public class InteractiveChartRenderer
     public void Render(SKCanvas canvas, SKRect bounds, IReadOnlyList<Candle> candles,
         IReadOnlyList<TradeMarker>? markers = null,
         ActivePositionOverlay? overlay = null,
-        ChartIndicatorData? indicators = null,
-        SequenceOverlay? sequenceOverlay = null)
+        ChartIndicatorData? indicators = null)
     {
         canvas.Clear(BgColor);
 
@@ -239,10 +216,6 @@ public class InteractiveChartRenderer
         canvas.DrawLine(priceArea.Left, lastY, priceArea.Right, lastY, PriceLinePaint);
         PriceLabelPaint.Color = lastBull ? BullColor : BearColor;
         canvas.DrawText($"{lastPrice:F1}", priceArea.Right + 3, lastY + 4, LabelFont, PriceLabelPaint);
-
-        // Layer 7: SK-Sequenz-Overlay (Fib-Level, GKL-Zone, A-B-C Punkte)
-        if (sequenceOverlay != null)
-            DrawSequenceOverlay(canvas, priceArea, minP, maxP, sequenceOverlay);
 
         // Layer 8: SL/TP-Overlay
         if (overlay != null)
@@ -394,104 +367,6 @@ public class InteractiveChartRenderer
             DrawZone(canvas, area, entryY, tpY, ProfitZonePaint);
             DrawZone(canvas, area, entryY, slY, LossZonePaint);
         }
-    }
-
-    // ═══ SK-Sequenz-Overlay ═══
-
-    private static void DrawSequenceOverlay(SKCanvas canvas, SKRect area, decimal min, decimal max, SequenceOverlay seq)
-    {
-        // 1. GKL-Zone (55.9-66.7%) — halbtransparentes grünes Rechteck
-        var gklTop = MapY(Math.Max(seq.Ret559, seq.Ret667), area, min, max);
-        var gklBot = MapY(Math.Min(seq.Ret559, seq.Ret667), area, min, max);
-        if (gklBot > area.Top && gklTop < area.Bottom)
-            canvas.DrawRect(area.Left, Math.Max(gklTop, area.Top), area.Width,
-                Math.Min(gklBot, area.Bottom) - Math.Max(gklTop, area.Top), GklZonePaint);
-
-        // 2. Buy-Zone (50-66.7%) — breiteres halbtransparentes blaues Rechteck
-        var buyTop = MapY(Math.Max(seq.Ret500, seq.Ret667), area, min, max);
-        var buyBot = MapY(Math.Min(seq.Ret500, seq.Ret667), area, min, max);
-        if (buyBot > area.Top && buyTop < area.Bottom)
-            canvas.DrawRect(area.Left, Math.Max(buyTop, area.Top), area.Width,
-                Math.Min(buyBot, area.Bottom) - Math.Max(buyTop, area.Top), BuyZonePaint);
-
-        // 3. Fibonacci-Retracement-Linien (Buch-Tabelle: 50/55.9/61.8/66.7/71/78.6)
-        DrawFibLine(canvas, area, min, max, seq.Ret500, "50%");
-        DrawFibLine(canvas, area, min, max, seq.Ret559, "55.9%");
-        DrawFibLine(canvas, area, min, max, seq.Ret618, "61.8%");
-        DrawFibLine(canvas, area, min, max, seq.Ret667, "66.7%");
-        DrawFibLine(canvas, area, min, max, seq.Ret71,  "71%");
-        DrawFibLine(canvas, area, min, max, seq.Ret786, "78.6%");
-
-        // 4. Extension-Linien (Buch-Tabelle: TP1 161.8%, TP2 200%, Runner 261.8%, Max 423.6%)
-        DrawHLine(canvas, area, min, max, seq.Ext1618, Tp1ExtLinePaint, "TP1 161.8%", Tp1ExtLabelPaint);
-        DrawHLine(canvas, area, min, max, seq.Ext200, Tp2ExtLinePaint, "TP2 200%", Tp2ExtLabelPaint);
-        DrawExtLine(canvas, area, min, max, seq.Ext2618, "261.8%");
-        DrawExtLine(canvas, area, min, max, seq.Ext4236, "423.6%");
-
-        // 5. 0-A-B Punkt-Marker (SK-Nomenklatur)
-        DrawPointMarker(canvas, area, min, max, seq.Point0, "0", Point0Color);
-        DrawPointMarker(canvas, area, min, max, seq.PointA, "A", PointAColor);
-        if (seq.PointB.HasValue)
-            DrawPointMarker(canvas, area, min, max, seq.PointB.Value, "B", PointBColor);
-
-        // 6. 0→A→B Verbindungslinie
-        var p0Y = MapY(seq.Point0, area, min, max);
-        var aY = MapY(seq.PointA, area, min, max);
-        // Punkte am linken Drittel verteilen (da wir keine X-Zeitposition haben)
-        var p0X = area.Left + area.Width * 0.15f;
-        var aX = area.Left + area.Width * 0.30f;
-        if (p0Y >= area.Top && p0Y <= area.Bottom && aY >= area.Top && aY <= area.Bottom)
-            canvas.DrawLine(p0X, p0Y, aX, aY, SeqLinePaint);
-        if (seq.PointB.HasValue)
-        {
-            var bY = MapY(seq.PointB.Value, area, min, max);
-            var bX = area.Left + area.Width * 0.45f;
-            if (aY >= area.Top && aY <= area.Bottom && bY >= area.Top && bY <= area.Bottom)
-                canvas.DrawLine(aX, aY, bX, bY, SeqLinePaint);
-        }
-
-        // 7. Richtungs-Badge oben links (Buch-konform: Long/Short, keine Wellen-/Typ-Klassifikation)
-        var badge = $"SK {(seq.IsLong ? "Long" : "Short")}";
-        var badgeRect = new SKRect(area.Left + 5, area.Top + 5, area.Left + 5 + badge.Length * 7f + 10, area.Top + 22);
-        canvas.DrawRoundRect(badgeRect, 4, 4, BadgeBgPaint);
-        canvas.DrawText(badge, area.Left + 10, area.Top + 18, FibFont, BadgeTextPaint);
-    }
-
-    private static void DrawFibLine(SKCanvas canvas, SKRect area, decimal min, decimal max, decimal price, string label)
-    {
-        var y = MapY(price, area, min, max);
-        if (y < area.Top || y > area.Bottom) return;
-        canvas.DrawLine(area.Left, y, area.Right, y, FibLinePaint);
-        canvas.DrawText($"{label} {price:G6}", area.Left + 3, y - 3, FibFont, FibLabelPaint);
-    }
-
-    private static void DrawExtLine(SKCanvas canvas, SKRect area, decimal min, decimal max, decimal price, string label)
-    {
-        var y = MapY(price, area, min, max);
-        if (y < area.Top || y > area.Bottom) return;
-        canvas.DrawLine(area.Left, y, area.Right, y, ExtLinePaint);
-        canvas.DrawText($"Ext {label}", area.Left + 3, y - 3, FibFont, FibLabelPaint);
-    }
-
-    private static void DrawPointMarker(SKCanvas canvas, SKRect area, decimal min, decimal max,
-        decimal price, string label, SKColor color)
-    {
-        var y = MapY(price, area, min, max);
-        if (y < area.Top || y > area.Bottom) return;
-
-        // Position horizontal (linkes Drittel, da keine X-Zeitinfo)
-        var x = label switch { "A" => area.Left + area.Width * 0.15f, "B" => area.Left + area.Width * 0.30f, _ => area.Left + area.Width * 0.45f };
-
-        // Kreis mit Buchstabe — gecachte Paints, Color wird pro Marker gesetzt (UI-Thread, kein Race).
-        MarkerCircleFillPaint.Color = color.WithAlpha(40);
-        MarkerCircleBorderPaint.Color = color.WithAlpha(180);
-        canvas.DrawCircle(x, y, 10, MarkerCircleFillPaint);
-        canvas.DrawCircle(x, y, 10, MarkerCircleBorderPaint);
-        canvas.DrawText(label, x - 3.5f, y + 4, PointFont, MarkerTextPaint);
-
-        // Preis-Label neben dem Punkt
-        MarkerPricePaint.Color = color.WithAlpha(200);
-        canvas.DrawText($"{price:G6}", x + 14, y + 4, SmallFont, MarkerPricePaint);
     }
 
     // ═══ Position-Overlay ═══

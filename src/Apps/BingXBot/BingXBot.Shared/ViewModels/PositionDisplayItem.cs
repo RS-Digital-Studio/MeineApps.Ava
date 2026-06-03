@@ -25,19 +25,13 @@ public partial class PositionDisplayItem : ObservableObject
     [ObservableProperty] private decimal? _takeProfit;
     [ObservableProperty] private decimal? _trailingStop; // In Prozent
 
-    // Erweiterte Infos (SK-System + Risiko)
-    [ObservableProperty] private int _confluenceScore;
-    [ObservableProperty] private string _strategyName = "";
-    [ObservableProperty] private string _characterPattern = "";
+    // Erweiterte Infos (Risiko)
     [ObservableProperty] private string _holdTimeText = "";
     [ObservableProperty] private decimal _liquidationPrice;
     [ObservableProperty] private bool _isSelected;
 
     /// <summary>Multi-TF Standalone: Navigator-TF als Badge-Text ("D1" / "4H" / "1H" / "15m").</summary>
     [ObservableProperty] private string _timeframeBadge = "";
-
-    /// <summary>SK-Sequenz-Daten für Chart-Overlay (null bei Nicht-SK-Trades).</summary>
-    public SequenceOverlay? SequenceOverlay { get; set; }
 
     // Berechnete Properties
     public bool IsProfit => Pnl > 0;

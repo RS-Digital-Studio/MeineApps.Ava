@@ -50,4 +50,18 @@ public static class TimeFrameHelper
         TimeFrame.MN1 => TimeSpan.FromDays(30),
         _ => TimeSpan.FromHours(1)
     };
+
+    /// <summary>
+    /// Filter-TF-Staffel (nächst-tiefere TF): D1→H4, H4→H1, H1→M15, M15→M5, W1→D1.
+    /// Steuert, welche zusätzlichen Filter-Timeframe-Kerzen der Multi-TF-Scan pro Navigator-TF lädt.
+    /// </summary>
+    public static TimeFrame? GetFilterTimeframe(TimeFrame navTf) => navTf switch
+    {
+        TimeFrame.D1 => TimeFrame.H4,
+        TimeFrame.H4 => TimeFrame.H1,
+        TimeFrame.H1 => TimeFrame.M15,
+        TimeFrame.M15 => TimeFrame.M5,
+        TimeFrame.W1 => TimeFrame.D1,
+        _ => null,
+    };
 }

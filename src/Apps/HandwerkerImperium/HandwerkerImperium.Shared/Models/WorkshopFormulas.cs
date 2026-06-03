@@ -132,7 +132,7 @@ public static class WorkshopFormulas
     /// <summary>
     /// Upgrade-Kosten mit allen Rabatten (Rebirth, Prestige-Shop, VIP).
     /// </summary>
-    public static decimal CalculateUpgradeCost(int level, decimal rebirthDiscount, decimal prestigeDiscount, decimal vipReduction)
+    public static decimal CalculateUpgradeCost(int level, decimal rebirthDiscount, decimal prestigeDiscount, decimal vipReduction, decimal challengeMultiplier = 1.0m)
     {
         if (level >= Workshop.MaxLevel) return 0;
         decimal baseCost = CalculateRawLevelCost(level);
@@ -143,6 +143,11 @@ public static class WorkshopFormulas
             baseCost *= (1m - Math.Min(prestigeDiscount, GameBalanceConstants.PrestigeDiscountCap));
         if (vipReduction > 0)
             baseCost *= (1m - vipReduction);
+
+        // Challenge "Inflationszeit": Kosten-Multiplikator (z.B. x2), pro Level gerundet —
+        // IDENTISCH zur Abzugslogik in GameStateService.Workshop.cs, damit Anzeige == Abzug.
+        if (challengeMultiplier > 1.0m)
+            return Math.Round(baseCost * challengeMultiplier, 0);
 
         return baseCost;
     }
@@ -162,14 +167,18 @@ public static class WorkshopFormulas
     /// <summary>
     /// Bulk-Upgrade Gesamtkosten für N Level ab currentLevel.
     /// </summary>
-    public static decimal CalculateBulkUpgradeCost(int currentLevel, int count, decimal discountFactor)
+    public static decimal CalculateBulkUpgradeCost(int currentLevel, int count, decimal discountFactor, decimal challengeMultiplier = 1.0m)
     {
         if (count <= 0 || currentLevel >= Workshop.MaxLevel) return 0;
         decimal total = 0;
         int maxUpgrades = Math.Min(count, Workshop.MaxLevel - currentLevel);
         for (int i = 0; i < maxUpgrades; i++)
         {
-            total += CalculateRawLevelCost(currentLevel + i) * discountFactor;
+            decimal levelCost = CalculateRawLevelCost(currentLevel + i) * discountFactor;
+            // Challenge-Multiplikator pro Level gerundet — identisch zur Abzugslogik.
+            if (challengeMultiplier > 1.0m)
+                levelCost = Math.Round(levelCost * challengeMultiplier, 0);
+            total += levelCost;
         }
         return total;
     }
@@ -181,7 +190,7 @@ public static class WorkshopFormulas
     /// MaxLevel=1000 spart das ~999 Math.Pow-Calls pro Aufruf (Bulk-Buy-Hot-Path im
     /// Dashboard: bis zu 9990 Math.Pow/s auf 10 Workshops im Max-Modus).
     /// </summary>
-    public static (int count, decimal cost) CalculateMaxAffordableUpgrades(int currentLevel, decimal budget, decimal discountFactor)
+    public static (int count, decimal cost) CalculateMaxAffordableUpgrades(int currentLevel, decimal budget, decimal discountFactor, decimal challengeMultiplier = 1.0m)
     {
         if (budget <= 0 || currentLevel >= Workshop.MaxLevel) return (0, 0);
 
@@ -201,7 +210,7 @@ public static class WorkshopFormulas
 
             // Knick bei Lv500 → ab dort reduzierter Exponent. Wir rekalibrieren via Math.Pow
             // genau einmal beim Uebergang, danach laeuft wieder die inkrementelle Kette.
-            // Overflow-Schutz: inkrementelle Kette auf decimal.MaxValue klemmen (sonst Throw im extremen Late-Game).
+            // Overflow-Schutz: Kette auf decimal.MaxValue klemmen (sonst Throw im extremen Late-Game).
             if (i > 0)
             {
                 if (level == 501)
@@ -215,6 +224,9 @@ public static class WorkshopFormulas
             }
 
             decimal lvlCost = currentRawCost * discountFactor;
+            // Challenge-Multiplikator pro Level gerundet (identisch zur Abzugslogik), overflow-sicher.
+            if (challengeMultiplier > 1.0m)
+                lvlCost = lvlCost > decimal.MaxValue / challengeMultiplier ? decimal.MaxValue : Math.Round(lvlCost * challengeMultiplier, 0);
             // Overflow-sichere Budget-Pruefung (kein "total + lvlCost", das ueberlaufen koennte).
             if (lvlCost > budget - total) break;
             total += lvlCost;

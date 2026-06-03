@@ -40,12 +40,10 @@ public sealed partial class GameStateService
             if (workshop == null || !workshop.CanUpgrade)
                 return false;
 
+            // Inflationszeit-Multiplikator steckt bereits in workshop.UpgradeCost
+            // (Single-Source via Workshop.ChallengeUpgradeCostMultiplier) — kein separater Abzug,
+            // sonst doppelt. So entsprechen angezeigte und abgezogene Kosten exakt.
             cost = workshop.UpgradeCost;
-
-            // Challenge: Inflationszeit verdoppelt Upgrade-Kosten
-            var challengeMultiplier = ChallengeConstraints?.GetUpgradeCostMultiplier() ?? 1.0m;
-            if (challengeMultiplier > 1.0m)
-                cost = Math.Round(cost * challengeMultiplier, 0);
 
             if (_state.Money < cost)
                 return false;
@@ -95,16 +93,12 @@ public sealed partial class GameStateService
             moneyBefore = _state.Money;
             int maxUpgrades = count == 0 ? Workshop.MaxLevel - workshop.Level : count;
 
-            // Challenge: Inflationszeit verdoppelt Upgrade-Kosten (identisch mit TryUpgradeWorkshop)
-            var challengeMultiplier = ChallengeConstraints?.GetUpgradeCostMultiplier() ?? 1.0m;
-
             for (int i = 0; i < maxUpgrades; i++)
             {
                 if (!workshop.CanUpgrade) break;
 
+                // Inflationszeit-Multiplikator steckt bereits in workshop.UpgradeCost (Single-Source).
                 var cost = workshop.UpgradeCost;
-                if (challengeMultiplier > 1.0m)
-                    cost = Math.Round(cost * challengeMultiplier, 0);
                 if (_state.Money < cost) break;
 
                 _state.Money -= cost;

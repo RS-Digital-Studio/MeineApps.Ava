@@ -75,10 +75,17 @@ public sealed partial class GameLoopService
         // Upgrade-Discount + VIP-Kosten-Reduktion auf alle Workshops setzen (nur bei Invalidierung statt pro Tick)
         // Immer setzen, auch bei 0 → nach Prestige-Reset muessen alte Discounts geloescht werden
         decimal vipCostReduction = _vipService?.CostReduction ?? 0m;
+        // Challenge "Inflationszeit" (x2 Upgrade-Kosten) fuer die ANZEIGE auf alle Workshops setzen,
+        // damit die angezeigten Kosten dem Abzug entsprechen. Source-of-Truth fuer den Wert ist
+        // ChallengeConstraintService.GetUpgradeCostMultiplier(); Challenges aendern sich nur beim
+        // Prestige → selbe Invalidierung wie UpgradeDiscount. Der Abzug setzt den Prop zusaetzlich frisch.
+        decimal challengeUpgradeMultiplier =
+            state.Prestige.ActiveChallenges.Contains(HandwerkerImperium.Models.Enums.PrestigeChallengeType.Inflationszeit) ? 2.0m : 1.0m;
         for (int i = 0; i < state.Workshops.Count; i++)
         {
             state.Workshops[i].UpgradeDiscount = _cachedPrestigeUpgradeDiscount;
             state.Workshops[i].VipCostReduction = vipCostReduction;
+            state.Workshops[i].ChallengeUpgradeCostMultiplier = challengeUpgradeMultiplier;
         }
     }
 }

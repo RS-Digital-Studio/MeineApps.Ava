@@ -237,7 +237,7 @@ public class Workshop
     /// <summary>Upgrade-Kosten mit allen Rabatten (Rebirth, Prestige-Shop, VIP).</summary>
     [JsonIgnore]
     public decimal UpgradeCost =>
-        WorkshopFormulas.CalculateUpgradeCost(Level, RebirthUpgradeDiscount, UpgradeDiscount, VipCostReduction);
+        WorkshopFormulas.CalculateUpgradeCost(Level, RebirthUpgradeDiscount, UpgradeDiscount, VipCostReduction, ChallengeUpgradeCostMultiplier);
 
     /// <summary>
     /// VIP-Kosten-Reduktion (0.0-0.10). Wird extern von GameLoopService gesetzt.
@@ -245,17 +245,25 @@ public class Workshop
     [JsonIgnore]
     public decimal VipCostReduction { get; set; }
 
+    /// <summary>
+    /// Challenge-"Inflationszeit"-Kosten-Multiplikator (1.0 = aus, 2.0 = aktiv). Wird extern
+    /// gesetzt (GameLoopService pro Invalidierung + Abzugspfad frisch), damit die angezeigten
+    /// Upgrade-Kosten exakt den abgezogenen Kosten entsprechen.
+    /// </summary>
+    [JsonIgnore]
+    public decimal ChallengeUpgradeCostMultiplier { get; set; } = 1.0m;
+
     /// <summary>Kombinierter Rabattfaktor aus Rebirth + Prestige-Shop + VIP.</summary>
     private decimal GetCombinedDiscountFactor() =>
         WorkshopFormulas.CalculateDiscountFactor(RebirthUpgradeDiscount, UpgradeDiscount, VipCostReduction);
 
     /// <summary>Bulk-Upgrade Gesamtkosten für N Level.</summary>
     public decimal GetBulkUpgradeCost(int count) =>
-        WorkshopFormulas.CalculateBulkUpgradeCost(Level, count, GetCombinedDiscountFactor());
+        WorkshopFormulas.CalculateBulkUpgradeCost(Level, count, GetCombinedDiscountFactor(), ChallengeUpgradeCostMultiplier);
 
     /// <summary>Maximale leistbare Upgrades bei gegebenem Budget.</summary>
     public (int count, decimal cost) GetMaxAffordableUpgrades(decimal budget) =>
-        WorkshopFormulas.CalculateMaxAffordableUpgrades(Level, budget, GetCombinedDiscountFactor());
+        WorkshopFormulas.CalculateMaxAffordableUpgrades(Level, budget, GetCombinedDiscountFactor(), ChallengeUpgradeCostMultiplier);
 
     /// <summary>
     /// Cost to unlock this workshop (one-time).

@@ -7,13 +7,13 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- AVALONIA CORE (Basis: 12.0.2)                                   -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Avalonia" Version="12.0.2" />
-    <PackageVersion Include="Avalonia.Desktop" Version="12.0.2" />
-    <PackageVersion Include="Avalonia.Android" Version="12.0.2" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.2" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.2" />
-    <PackageVersion Include="Avalonia.Skia" Version="12.0.2" />
-    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1" />
+    <PackageVersion Include="Avalonia" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Android" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Skia" Version="12.0.4" />
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.2" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- ICONS                                                            -->
@@ -31,18 +31,18 @@
     <!-- MVVM & BEHAVIORS                                                 -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
+    <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="12.0.0.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- GRAPHICS & CHARTS                                                -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="SkiaSharp" Version="3.119.4-preview.1.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Android" Version="3.119.4-preview.1.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.4-preview.1.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4-preview.1.1" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Android" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
     <PackageVersion Include="Avalonia.Labs.Controls" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Labs.Lottie" Version="12.0.2" />
-    <PackageVersion Include="SkiaSharp.Skottie" Version="3.119.4-preview.1.1" />
+    <PackageVersion Include="SkiaSharp.Skottie" Version="3.119.4" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DATABASE                                                         -->
@@ -81,7 +81,7 @@
     <!-- bleibt um R8-Dexer-Duplicates (zzov) zu vermeiden.                -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Xamarin.Firebase.Messaging" Version="124.1.2" />
-    <PackageVersion Include="Xamarin.Firebase.Config" Version="123.0.1.2" />
+    <PackageVersion Include="Xamarin.Firebase.Config" Version="123.1.0" />
 
     <!-- Transitive dependency von Ads.Lite: JVM-Variante muss excluded werden,
          da .android-Variante dieselben Klassen enthaelt (D8 duplicate type error) -->
@@ -104,14 +104,14 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DI & LOGGING                                                     -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- CRYPTOGRAPHY                                                    -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.7" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.8" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TRADING INDICATORS                                              -->
@@ -130,19 +130,19 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="System.Device.Gpio" Version="4.2.0" />
     <PackageVersion Include="Iot.Device.Bindings" Version="4.2.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TESTING                                                          -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
-    <PackageVersion Include="FluentAssertions" Version="8.9.0" />
-    <PackageVersion Include="coverlet.collector" Version="10.0.0" />
-    <PackageVersion Include="Avalonia.Headless" Version="12.0.2" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.0.2" />
+    <PackageVersion Include="FluentAssertions" Version="8.10.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="Avalonia.Headless" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.0.4" />
     <PackageVersion Include="Verify.Xunit" Version="28.4.0" />
     <PackageVersion Include="FsCheck.Xunit" Version="3.3.3" />
     <PackageVersion Include="OpenTelemetry" Version="1.15.3" />

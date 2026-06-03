@@ -31,7 +31,8 @@ public static class MonthlyBarChartVisualization
     /// <param name="cumulativeBalance">Kumulative Bilanz pro Monat (optional)</param>
     public static void Render(SKCanvas canvas, SKRect bounds,
         string[] monthLabels, float[] workHours, float[] targetHours,
-        bool showCumulative = false, float[]? cumulativeBalance = null)
+        bool showCumulative = false, float[]? cumulativeBalance = null,
+        bool showBars = true)
     {
         int count = monthLabels.Length;
         if (count == 0 || workHours.Length != count || targetHours.Length != count) return;
@@ -65,7 +66,7 @@ public static class MonthlyBarChartVisualization
         _axisFont.Size = 9f;
 
         float gridStep = maxVal <= 100 ? 20f : maxVal <= 200 ? 40f : 50f;
-        for (float v = 0; v <= maxVal; v += gridStep)
+        for (float v = 0; showBars && v <= maxVal; v += gridStep)
         {
             float y = chartBottom - (v / maxVal) * chartH;
             canvas.DrawLine(chartLeft, y, chartRight, y, _gridPaint);
@@ -82,7 +83,7 @@ public static class MonthlyBarChartVisualization
             float fraction = workHours[i] / maxVal;
             float barH = fraction * chartH;
 
-            if (barH > 1f)
+            if (showBars && barH > 1f)
             {
                 float barTop = chartBottom - barH;
 
@@ -115,7 +116,7 @@ public static class MonthlyBarChartVisualization
             }
 
             // Soll-Markierung
-            if (targetHours[i] > 0)
+            if (showBars && targetHours[i] > 0)
             {
                 float targetY = chartBottom - (targetHours[i] / maxVal) * chartH;
                 _targetPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Warning, 120);

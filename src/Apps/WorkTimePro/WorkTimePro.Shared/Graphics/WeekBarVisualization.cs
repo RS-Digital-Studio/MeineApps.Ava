@@ -49,7 +49,7 @@ public static class WeekBarVisualization
             maxHours = Math.Max(maxHours, actualHours[i]);
             maxHours = Math.Max(maxHours, targetHours[i]);
         }
-        maxHours *= 1.1f; // 10% Luft oben
+        maxHours *= 1.15f; // 15% Luft oben (Platz für das Werte-Label über dem höchsten Balken)
 
         float barW = chartW / 7f;
         float barMaxW = Math.Min(barW - 10f, 32f);
@@ -119,7 +119,8 @@ public static class WeekBarVisualization
                 string valueStr = actualHours[i] >= 10 ? $"{actualHours[i]:F0}" : $"{actualHours[i]:F1}";
                 _textPaint.Color = SkiaThemeHelper.TextSecondary;
                 _valueFont.Size = 10f;
-                float valueY = chartBottom - barH - 4f;
+                // Label nach oben begrenzen, damit es bei hohen Balken nicht aus dem Bereich rutscht.
+                float valueY = Math.Max(chartBottom - barH - 4f, bounds.Top + padding + 10f);
                 canvas.DrawText(valueStr, barCx, valueY, SKTextAlign.Center, _valueFont, _textPaint);
             }
 

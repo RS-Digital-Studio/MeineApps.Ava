@@ -71,9 +71,11 @@ public partial class YearOverviewView : UserControl
         if (_vm?.CumulativeBalanceData == null || _vm.CumulativeBalanceData.Length == 0) return;
 
         var bounds = canvas.LocalClipBounds;
-        // Balance-Chart: Monatliche Balken + kumulative Linie
+        // Balance-Chart: NUR die kumulative Saldo-Spline (keine Balken — die stehen
+        // bereits im Monats-Chart darüber; sonst wirkt es doppelt).
         MonthlyBarChartVisualization.Render(canvas, bounds,
             _vm.MonthLabels, _vm.MonthlyWorkHoursData, _vm.MonthlyTargetHoursData,
-            showCumulative: true, cumulativeBalance: _vm.CumulativeBalanceData);
+            showCumulative: true, cumulativeBalance: _vm.CumulativeBalanceData,
+            showBars: false);
     }
 }

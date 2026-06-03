@@ -36,7 +36,8 @@ public sealed class DesktopAudioService : IAudioService, IDisposable
     private MusicTrack _currentTrack = MusicTrack.None;
     private readonly object _musicLock = new();
     private const float MusicMaxVolume = 0.5f;
-    private const float SfxVolume = 0.85f;
+    // Interne SFX-Mix-Decke. Der vom Nutzer steuerbare Faktor kommt aus Settings.SfxVolume (Property).
+    private const float SfxMixLevel = 0.85f;
 
     // Crossfade
     private System.Timers.Timer? _crossfadeTimer;
@@ -89,6 +90,35 @@ public sealed class DesktopAudioService : IAudioService, IDisposable
             if (!value) StopMusic();
         }
     }
+
+    /// <summary>F-19: SFX-Volume 0..1 (persistiert in Settings, Default 1.0). Skaliert die NAudio-SFX-Voices.</summary>
+    public float SfxVolume
+    {
+        get => _gameStateService.State.Settings.SfxVolume;
+        set => _gameStateService.State.Settings.SfxVolume = Math.Clamp(value, 0f, 1f);
+    }
+
+    /// <summary>F-19: Music-Volume 0..1 (persistiert in Settings, Default 1.0). Wirkt sofort auf laufende Musik (ausser waehrend Crossfade).</summary>
+    public float MusicVolume
+    {
+        get => _gameStateService.State.Settings.MusicVolume;
+        set
+        {
+            var clamped = Math.Clamp(value, 0f, 1f);
+            _gameStateService.State.Settings.MusicVolume = clamped;
+            // Sofort auf laufende NAudio-Musik anwenden — ausser ein Crossfade rampt gerade selbst die Lautstaerke.
+            if (OperatingSystem.IsWindows() && _crossfadeTimer == null)
+            {
+                lock (_musicLock)
+                {
+                    try { if (_musicOut != null) _musicOut.Volume = EffectiveMusicVolume; } catch { }
+                }
+            }
+        }
+    }
+
+    /// <summary>Effektiver Music-Pegel: interne Decke × nutzergesteuerter <see cref="MusicVolume"/>.</summary>
+    private float EffectiveMusicVolume => MusicMaxVolume * MusicVolume;
 
     public DesktopAudioService(IGameStateService gameStateService)
     {
@@ -150,7 +180,7 @@ public sealed class DesktopAudioService : IAudioService, IDisposable
         {
             // NAudio.Vorbis: VorbisWaveReader fuer OGG-Vorbis.
             var reader = new VorbisWaveReader(path);
-            var waveOut = new WaveOutEvent { Volume = SfxVolume };
+            var waveOut = new WaveOutEvent { Volume = SfxMixLevel * SfxVolume };
             waveOut.Init(reader);
 
             // Cleanup wenn fertig
@@ -234,7 +264,7 @@ public sealed class DesktopAudioService : IAudioService, IDisposable
 
                 var reader = new VorbisWaveReader(path);
                 _musicLoop = new LoopStream(reader);
-                _musicOut = new WaveOutEvent { Volume = crossfade ? 0f : MusicMaxVolume };
+                _musicOut = new WaveOutEvent { Volume = crossfade ? 0f : EffectiveMusicVolume };
                 _musicOut.Init(_musicLoop);
                 _musicReader = reader;
                 _musicOut.Play();
@@ -332,7 +362,7 @@ public sealed class DesktopAudioService : IAudioService, IDisposable
         var t = (float)Math.Clamp(elapsed / CrossfadeDurationMs, 0, 1);
         try
         {
-            if (_musicOut != null) _musicOut.Volume = MusicMaxVolume * t;
+            if (_musicOut != null) _musicOut.Volume = EffectiveMusicVolume * t;
         }
         catch { }
         if (t >= 1f) StopCrossfadeTimer();

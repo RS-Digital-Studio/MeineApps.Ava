@@ -20,7 +20,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `Bomb.cs` | BombType, FireRange, PlantedAt, IsDetonator, Slide-State |
 | `Explosion.cs` | Zellen-Liste, Schaden-Radius, OwnerType |
 | `PowerUp.cs` | PowerUpType, Unlock-Level |
-| `PowerUpType.cs` | 12 Typen: BombUp/Fire/Speed/Wallpass/Detonator/Bombpass/Flamepass/Mystery/Kick/LineBomb/PowerBomb/Skull |
+| `PowerUpType.cs` | 13 Typen: BombUp/Fire/Speed/Wallpass/Detonator/Bombpass/Flamepass/Mystery/Kick/LineBomb/PowerBomb/Skull/Cure. **Cure muss als LETZTER Wert bleiben** — Skull-Persistenz darf nicht durch Enum-Verschiebung brechen. |
 | `EnemyType.cs` | 12 Typen: 8 Basis + Tanker/Ghost/Splitter/Mimic |
 | `Direction.cs` | Up/Down/Left/Right/None |
 | `BossModifier.cs` | 8 Modifier-Typen (Shielded/Healing/Summoner/…) + `RollForWorld(world, rng)` |
@@ -39,7 +39,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | Datei | Zweck |
 |-------|-------|
 | `Level.cs` | LevelNumber, WorldIndex, Layout-Typ, aktive Mutator |
-| `LevelLayoutGenerator.cs` | **Static**. 12 Layout-Typen (`LevelLayout`-Enum in Level.cs), Pool 8 Layouts pro Welt, `GenerateDailyChallengeLevel(seed)`, `GetMutatorDisplayName`. KEINE DI. |
+| `LevelLayoutGenerator.cs` | **Static**. 12 Layout-Typen (`LevelLayout`-Enum in Level.cs), Pool 8 Layouts pro Welt, `GenerateLevel(levelNumber)`, `GenerateDailyChallengeLevel(seed)`. KEINE DI. |
 
 ### `Dungeon/`
 
@@ -56,18 +56,18 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `BombCard.cs` | 14 Bomben-Karten-Typen mit Level + Rarity |
+| `BombCard.cs` | Karten-Definition: BombType, Rarity, Uses-pro-Level, Upgrade-/Direktkauf-Kosten |
 | `OwnedCard.cs` | Besessene Karte: CardId + Level + Count |
-| `CardCatalog.cs` | Statische Liste aller Karten-Definitionen |
+| `CardCatalog.cs` | 13 Bomben-Karten (3 Common + 4 Rare + 4 Epic + 2 Legendary), `MaxDeckSlots = 5`, `DefaultDeckSlots = 4` |
 
 ### `BattlePass/`
 
 | Datei | Zweck |
 |-------|-------|
-| `BattlePassData.cs` | Saison-Daten: Tier, XP, Theme, `XpBoostStartTicks` |
+| `BattlePassData.cs` | Saison-Daten: Tier, XP, Theme (deterministisch aus SeasonNumber), `XpBoostStartTicks` (Anti-Cheat-Anchor), Legacy-Rewards + Premium-Veteran-Bonus |
 | `BattlePassTier.cs` | Tier-Definition: Level, Free/Premium-Reward, XP-Schwelle |
 | `BattlePassReward.cs` | Reward-Payload: Coins/Gems/Cards/Cosmetics |
-| `BattlePassTheme.cs` | 10 Themes + `BattlePassThemeExtensions` (Farben, Icon-Hints, RESX-Keys) |
+| `BattlePassTheme.cs` | 10 Themes (Classic + 9 Saison-Themes) + `BattlePassThemeExtensions` (Farben, Icon-Hints, RESX-Keys, `GetThemeForSeason`) |
 
 ### `Cosmetics/`
 
@@ -104,7 +104,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `CloudSaveData.cs` | 35 Persistenz-Keys, `ChooseBest()` (TotalStars→Wealth→Cards→Keys.Count→Timestamp→Cloud-Default), `BuildCloudSaveData()` |
+| `CloudSaveData.cs` | Persistenz-Keys als `Dictionary<string, string>`, `ChooseBest()` (TotalStars→Wealth→Cards→Keys.Count→Timestamp→Cloud-Default), `MergeBest()` (Per-Field-Max, verhindert Data-Loss bei minimal divergierten Ständen) |
 | `CloudSaveSchemaMigrator.cs` | `CurrentSchemaVersion = 3`, `TryMigrateAndValidate()`. V1→V2→V3-Migrationen. Läuft VOR `ApplyCloudData`. **DeleteCloudSaveAsync muss `Version = CurrentSchemaVersion` setzen** (nie hardcoded 1). |
 | `BomberBlastIapSkus.cs` | IAP-SKU-Konstanten (`remove_ads`, Gem-Pakete, BattlePass-Plus, VIP) |
 | `SkinDefinition.cs` | Spieler-Skin: ID, Name-Key, UnlockCondition, PreviewColor |

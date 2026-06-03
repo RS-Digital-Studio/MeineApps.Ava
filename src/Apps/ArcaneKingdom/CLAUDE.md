@@ -6,7 +6,7 @@ anderen Apps bewusst machen.
 
 | Aspekt | Wert |
 |--------|------|
-| Status | Pre-MVP (Konzept-Phase abgeschlossen) |
+| Status | Pre-MVP |
 | Tech | Unity 6 (6000.4.8f1) + C# (.NET Standard 2.1) |
 | Plattform | Android (Phase 1), iOS (Phase 2 ab Monat 26+) |
 | Render-Pipeline | URP 17.x (optional aktivieren, siehe SETUP.md) |
@@ -16,29 +16,23 @@ anderen Apps bewusst machen.
 | Welten | 10 Welten (Elderwald → Drachenfeste) mit Story-Mythologie |
 | Farbpalette | Gold #f5c842 auf #0a0a18 (UI-Leitfarbe) · Royal-Purple #6B46C1 (Sekundär-Akzent/Brand) |
 
-> Pflichtlektuere VOR Aenderungen: [DESIGN.md](DESIGN.md) (v6, Quelle der Wahrheit) und [ARCHITECTURE.md](ARCHITECTURE.md).
-> Generische Repo-Konventionen siehe [Haupt-CLAUDE.md](../../../CLAUDE.md).
+> Pflichtlektuere VOR Aenderungen: [DESIGN.md](DESIGN.md) (GDD v6.0, Soll-Design) und
+> [SPIELABLAUF.md](SPIELABLAUF.md) (code-verifizierter Ist-Stand) — bei Soll/Ist-Konflikten
+> gewinnt der Code. Generische Repo-Konventionen siehe [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
 ---
 
-## Designplan-Quellen
+## Spec-Quellen & Verhaeltnis zum Code
 
-Die aktuelle Spec ist die Kombination aus **Spielplan v5 FINAL** (Master, Maerz 2026)
-und **Arcane Legends Designplan v1** (Karten-Details). Der Code geht **ueber** die
-Spec hinaus (5 Rassen statt 4, 6 Elemente statt 5, 6 Seltenheiten statt 5, 10 Welten
-statt 9, plus Helden-Passivs/Sternkarten/Prestige-pro-Welt/Memory-Fragments) — diese
-Erweiterungen sind bewusst, der Plan ist ein **Subset** des Codes.
+`DESIGN.md` (GDD v6.0) ist die **autoritative Soll-Spec**; sie konsolidiert die v4-Designdokumente
+(Designplan v4 + Story v4 + Kartenliste v4 + Skills v4 + Oekosystem v4). Der **Code ist die Wahrheit
+für den Ist-Stand** — er erweitert das Soll bewusst (5 Rassen, 6 Elemente Doppel-Dreieck, 6 Seltenheiten,
+10 Welten, plus Helden-Passivs/Sternkarten/Prestige-pro-Welt/Memory-Fragments).
 
-| Quelldokument | Inhalt |
-|---------------|--------|
-| `Spielplan_v5_FINAL.docx` | Master-Spielplan (Login/Hub/Karten/Crafting/Welten/Kampf/Dieb/Arena/Gilde/Chat/Merit/Events) |
-| `Arcane_Legends_Designplan.docx` | Karten-Spec V1 (4 Rassen × 25 Karten, Skills, Crafting, Saison) |
-| `Implementierungsplan_Login_HubWelt_1.docx` | Splash/Login/Registration/Auto-Login + Hub-Stadt-UX |
-| `files.zip → Implementierungsplan_KOMPLETT.docx` | 19 Sub-Screens vollstaendig spezifiziert |
-| `Design_Entwurf_Login_HubWelt.html` | UI-Design-Referenz |
-| `karten_vorlage.html` | Karten-Vorlage |
-
-Quelldokumente liegen unter `F:\AI\ComfyUI_windows_portable\ComfyUI\output\eva\Spiele Ideen Ordner\Ideen\`.
+`SPIELABLAUF.md` fuehrt den code-verifizierten A-Z-Ablauf samt Implementierungsstand je System
+(LIVE/DOMAIN-ONLY/SKELETT) und GDD-vs-Code-Diskrepanzen. `REFERENZ_ABGLEICH.md` ist die
+Soll-Ist-Angleichungs-Roadmap an die Original-Referenz. Die DOCX-/HTML-Quelldokumente liegen unter
+`F:\AI\ComfyUI_windows_portable\ComfyUI\output\eva\Spiele Ideen Ordner\Ideen\`.
 
 ---
 
@@ -48,11 +42,13 @@ Quelldokumente liegen unter `F:\AI\ComfyUI_windows_portable\ComfyUI\output\eva\S
 |-------|-------|
 | [README.md](README.md) | Quickstart fuer Entwickler |
 | [SETUP.md](SETUP.md) | Schritt-fuer-Schritt-Anleitung fuer Unity 6 (Pflichtlektuere beim ersten Open) |
-| [DESIGN.md](DESIGN.md) | **GDD v6.0** (autoritativ fuer das Soll-Design, basiert auf Designplan v4) |
-| [SPIELABLAUF.md](SPIELABLAUF.md) | **Code-verifizierter Ist-Spielablauf** (A-Z) + Implementierungsstand je System (LIVE/DOMAIN-ONLY/SKELETT) + GDD-vs-Code-Diskrepanzen + Verdrahtungs-Luecken zum MVP |
+| [FIREBASE_SETUP.md](FIREBASE_SETUP.md) | Firebase-Projekt/SDK-Einrichtung (Auth/RTDB/Analytics) |
+| [DESIGN.md](DESIGN.md) | **GDD v6.0** — autoritatives Soll-Design |
+| [SPIELABLAUF.md](SPIELABLAUF.md) | **Code-verifizierter Ist-Spielablauf** (A-Z) + Implementierungsstand je System (LIVE/DOMAIN-ONLY/SKELETT) + GDD-vs-Code-Diskrepanzen |
+| [REFERENZ_ABGLEICH.md](REFERENZ_ABGLEICH.md) | Soll-Ist-Angleichungs-Roadmap an die Original-Referenz |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Folder-Layout, DI, Networking, Conventions |
 | [Server/SERVEROPS.md](Server/SERVEROPS.md) | Server-side Cloud-Functions (Anti-Cheat, Saison-Rewards) |
-| [Server/CloudFunctions/](Server/CloudFunctions/) | TypeScript-Cloud-Functions (8 Endpoints) |
+| [Server/CloudFunctions/](Server/CloudFunctions/) | TypeScript-Cloud-Functions (Skelett) |
 | [Unity/](Unity/) | Das eigentliche Unity-Projekt |
 
 ---
@@ -314,16 +310,11 @@ PendingClaims-Check und Quest-Restore — die Hub-View selbst enthält keine Spi
 
 ---
 
-## Wichtige Konventionen (Auszug)
+## Konventionen (Unity-spezifisch)
 
-> Vollstaendig in [ARCHITECTURE.md Kapitel 11](ARCHITECTURE.md#11-conventions).
-
-### Code
-
-- **Namespaces:** `ArcaneKingdom.{Module}` (z.B. `ArcaneKingdom.Battle`)
-- **Kommentare auf Deutsch** (siehe globale Conventions, Umlaute erlaubt im Code)
-- **UniTask statt Task<T>**, `_camelCase` fuer private Fields, `PascalCase` fuer Properties/Methoden
-- **Nullable Reference Types aktiv** (`#nullable enable`)
+> Code-/Folder-Conventions vollstaendig in [ARCHITECTURE.md Kapitel 11](ARCHITECTURE.md#11-conventions);
+> Tech-Stack-Abweichungen zu den Avalonia-Apps siehe Tabelle oben (UniTask statt Task, VContainer statt
+> Microsoft.Extensions.DI, `#nullable enable`, Namespaces `ArcaneKingdom.{Module}`).
 
 ### Lokalisierungs-Keys (Pattern)
 
@@ -341,36 +332,48 @@ PendingClaims-Check und Quest-Restore — die Hub-View selbst enthält keine Spi
 
 ## DI-Pattern (VContainer)
 
-```csharp
-public class RootLifetimeScope : LifetimeScope
-{
-    protected override void Configure(IContainerBuilder builder)
-    {
-        builder.Register<ILogger, UnityLogger>(Lifetime.Singleton);
-        builder.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
-        builder.Register<ISaveService, FirebaseSaveService>(Lifetime.Singleton);
-        builder.Register<INetworkService, PhotonNetworkService>(Lifetime.Singleton);
-        builder.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);
+`RootLifetimeScope` (Bootstrap-Assembly) liegt als persistentes GameObject auf der Boot-Scene.
+Es validiert zuerst die drei Pflicht-Scene-Slots (`balancingConfig`, `audioService`, `uiRoot`) und
+wirft bei nicht verdrahtetem Slot eine lokalisierte `InvalidOperationException` (statt eines diffusen
+Resolve-/NullRef-Crash an entfernter Stelle). Danach delegiert es die eigentliche Registrierung:
 
-        builder.RegisterInstance(_balancingConfig);
-        builder.RegisterInstance(_cardDatabase);
-    }
+```csharp
+protected override void Configure(IContainerBuilder builder)
+{
+    // … Pflicht-Slots prüfen (sonst InvalidOperationException) …
+    builder.RegisterInstance(balancingConfig);
+    builder.RegisterComponent(audioService).AsImplementedInterfaces();   // IAudioService
+    builder.RegisterComponent(uiRoot);
+
+    GameInstaller.RegisterServices(builder);   // alle Game-Services/Controller (Game-Assembly)
+    UIBootstrap.RegisterAllScreens(builder);   // ScreenManager, Factory, Toasts + alle Screens
+    builder.RegisterEntryPoint<BootEntryPoint>();
 }
 ```
+
+**Service-Registrierung lebt in `GameInstaller.RegisterServices`** (`Game/Bootstrap/`) — beim Hinzufuegen
+eines neuen Services dort eintragen, sonst schlaegt der Resolve fehl. Registriert sind u.a.
+`IAuthService → FirebaseAuthService`, `ISaveService<PlayerSave> → FirebaseSaveService`,
+`IAnalyticsService → FirebaseAnalyticsService`, `ILocalizationService → CsvLocalizationService`,
+`IIapService → UnityIapService`, `INotificationService → NotificationService` plus alle Controller
+(`HubController`, `BattleController`, …) und Domain-Services als Singletons.
+
+**Photon ist noch NICHT verdrahtet:** trotz "Firebase + Photon" im Tech-Stack existiert (noch) kein
+`INetworkService`/`PhotonNetworkService` — PvP-Matchmaking ist Skelett.
 
 ---
 
 ## Save-System (Firebase als Source-of-Truth)
 
-Save-Schema **v3** (mit v4-Erweiterungen):
+`SaveMigrator.CurrentSchemaVersion = 4`. Migration laeuft additiv (`MigrateToV2/V3/V4`), jede Stufe
+initialisiert ihre Slices null-safe — alte Saves verlieren keinen Fortschritt.
 
-| Slice | Inhalt |
-|-------|--------|
-| Basis (v1) | Profile, Currencies, Cards, Decks, World-Progress |
-| v2-Erweiterungen | Achievements, Friends, Chat, Saison-Pass v2 |
-| **v3-Erweiterungen (Designplan v4)** | Prestige-Slice (Map<worldId, Stufe>), Sternkarten-Inventar, Memory-Fragmente, Hero-Passiv-Wahl, Karten-Persoenlichkeit-Gesehen-Tracking, Event-Punkte |
-
-`SaveMigrator.CurrentSchemaVersion = 3` bei Implementierung.
+| Schema | Slices |
+|--------|--------|
+| v1 (Basis) | Profile, Currencies, Cards, Decks, World-Progress |
+| v2 | Achievements, Friends, Chat, Saison-Pass, TutorialProgress/PendingClaims/PityCounters/TitlesUnlocked |
+| v3 (Designplan v4) | Prestige (`PrestigeSaveSlice`), Sternkarten (`SternkartenSaveSlice`), Story (`StorySaveSlice` — Race-Wahl + Memory-Fragmente), Events (`EventSaveSlice`), `FavoritedCardInstanceIds` (Fusions-Schutz) |
+| **v4** | Quest-Zustand (`QuestSaveSlice`) |
 
 ---
 
@@ -392,35 +395,12 @@ Save-Schema **v3** (mit v4-Erweiterungen):
 
 ## Implementierungsstand
 
-### Implementiert
-
-| Bereich | Details |
-|---------|---------|
-| **Projekt-Skelett** | 6 Unity-Scenes (Boot/Hub/Battle/Arena/Guild/GuildWorld), 6 asmdefs + Tests-asmdefs, GDD v6.0, CI-Pipeline (GitHub Actions, EditMode-Tests + Android-AAB) |
-| **Domain-Modelle** | Race (5), Element (6, Doppel-Dreieck), Rarity (6), HeroFaehigkeitsTyp (5 Passivs), CardDefinition mit Personality + Last-Will, WorldDefinition mit Story-Mythologie |
-| **Daten** | 162 Karten (cards.json), 10 Welten (worlds.json), Story-Fragmente, Fusions-Rezepte, Prestige-Balancing, Sternkarten-Tempel, Premium-Shop, Event-Kalender, alle weiteren JSON-Dateien (vollstaendige Liste → Abschnitt "Daten-Files") |
-| **BattleEngine** | Deterministisch (DeterministicRng/Mulberry32), replay-faehig (BattleStateSerializer), Helden-Passivs, Karten-Persoenlichkeit-Events, Status-Effekte (8 Typen), DoT-Tick, Control/Synergy-Cases |
-| **Services (Domain)** | FusionService, PrestigeService, SternkartenService, LoginTracker, DeckValidator, CardUpgradeService, CollectionExchangeService, Thief/Merit/Arena/Territory-Services |
-| **Application-Layer** | FusionAppService, PrestigeAppService, LoginRewardController — DI-Wiring in GameInstaller |
-| **Save-System** | Schema v3 (PrestigeSaveSlice, SternkartenSaveSlice, StorySaveSlice, EventSaveSlice, FavoritedCardInstanceIds), SaveMigrator.MigrateToV3 |
-| **Lokalisierung** | DE + EN fuer Hero-Passivs, 10 Welt-Stories, 10 Erinnerungs-Fragmente, 8 NPCs, 6 Saeulen, Mythologie |
-| **Tests** | 30 Domain-Test-Klassen, ~165 Test-Cases (FusionService, PrestigeService, SternkartenService, HeroPassiv-Battle, Karten-Persoenlichkeit) |
-| **Editor-Tools** | DataImporter, CardPreview, LocalizationCheck, BalancingDashboard |
-| **Cloud-Functions** | Skelett (8 TypeScript-Endpoints unter `Server/CloudFunctions/`) |
-| **User-Flow** | BootEntryPoint → Splash → Login/Registration → Hub-Welt. WorldMap → DifficultyPicker → Battle → BattleReport. LoginController.RunLoginAsync (E-Mail-Login) |
-| **UI (implementiert)** | SplashScreen, RegistrationScreen, DifficultyPickerModal, RuneScreen, PlayerProfileScreen, ShopScreen, QuestCenterScreen, MeritRankingScreen, BattleReportScreen, ThiefScreen, GuildWorldMapScreen, ChatOverlay, PvpMatchmakingScreen, CollectionTradeScreen, **HubScreen (Gebäude-Welt, Arcane-Realm-Design)** |
-| **Theme** | ArcaneTheme.uss (Tokens → Common → Components via @import), V6Components.uss, Gold-Border-Tokens, alle ak-* und ak-hub-* Klassen |
-
-### Noch ausstehend
-
-| Bereich | Details |
-|---------|---------|
-| Kampf-UI | Drag&Drop, Mana-Orbs, Damage-Numbers, Personality-Line-Anzeige |
-| Welt-1-UI | Elderwald-Karte mit 10 Nodes |
-| Inventar-Sub-Systeme | Rune-Fragment + EXP-Potion |
-| Firebase-Integration | Unity SDK, Auth/RTDB/Analytics verdrahten |
-| Cloud-Functions | Staging-Deploy |
-| Assets | Karten-Artworks, Sound-Assets |
+Der code-verifizierte Ist-Stand je System (LIVE / DOMAIN-ONLY / SKELETT), die offenen
+Verdrahtungs-Luecken bis MVP und die GDD-vs-Code-Diskrepanzen stehen in
+[SPIELABLAUF.md](SPIELABLAUF.md) — dort gepflegt, **nicht** hier (vermeidet veraltete Status-Listen).
+Architektur-Fixpunkte: Domain-Logik weitgehend fertig (BattleEngine deterministisch, Fusion/Prestige/
+Sternkarten/Thief/Merit/Arena/Territory als Domain-Services), Verdrahtung lueckenhaft, **kein Firebase-/
+Photon-/IAP-SDK** real eingebunden (Stubs/Skelette).
 
 ---
 

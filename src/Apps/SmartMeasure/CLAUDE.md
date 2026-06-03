@@ -1,15 +1,9 @@
 # SmartMeasure — 3D-Grundstücksvermessung + Gartenplanung
 
-Privates Projekt. Zwei Erfassungsmodi: **AR-Kamera** (±5–50 cm, primär, ohne Hardware) und
-optional **RTK-GPS-Stab** (±2 cm, DIY-Hardware). Man geht durch den Garten, setzt Punkte,
-zeichnet Konturen → 3D-Geländemodell + 2D-Gartenplan. Export nach Blender, GeoJSON, DXF,
-KMZ, CSV, PDF. Nicht im Play Store.
-
-**AR-First (Default):** Die App wird vorwiegend mit der AR-Kamera OHNE RTK-Stab genutzt und
-startet daher im reinen AR-Modus — die gesamte RTK-Hardware-UI (Live-Kompass, BLE-Tab,
-Stab-Einstellungen, Stakeout) ist ausgeblendet, bis erstmals ein Stab verbunden wird. Danach
-merkt sich die App das (Preference) und zeigt die Hardware-UI dauerhaft. Steuerung über
-`IHardwareModeService` (siehe Abschnitt "Adaptiver Betriebsmodus").
+Privates Projekt (nicht im Play Store). Zwei Erfassungsmodi: **AR-Kamera** (±5–50 cm, primär,
+ohne Hardware) und optional **RTK-GPS-Stab** (±2 cm, DIY-Hardware). Man geht durch den Garten,
+setzt Punkte, zeichnet Konturen → 3D-Geländemodell + 2D-Gartenplan. Export nach Blender,
+GeoJSON, DXF, KMZ, CSV, PDF.
 
 | Aspekt | Wert |
 |--------|------|
@@ -18,7 +12,7 @@ merkt sich die App das (Preference) und zeigt die Hardware-UI dauerhaft. Steueru
 | ARCore-Paket | Vapolia.Google.ARCore 1.47.1 |
 | BLE-Paket | InTheHand.BluetoothLE |
 
-Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md).
+Generische Build-Befehle, Conventions, Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
 ---
 
@@ -36,106 +30,36 @@ Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `SmartMeasure.Shared/Ap
 (Factory-Properties → DI-Build → `MainViewModel`) → ViewLocator löst die 9 Views.
 Desktop nutzt `MockBleService` + `MockArCaptureService` statt echter Hardware.
 
-## Doku-Karte — Detail liegt beim jeweiligen Bereich
+### Doku-Karte — Detail liegt beim jeweiligen Bereich
 
-| Bereich | Inhalt | Doku |
-|---------|--------|------|
-| Composition Root, DI, Factories | `App.axaml.cs`, Service-/VM-Registrierung, Lifecycle | [SmartMeasure.Shared](SmartMeasure.Shared/CLAUDE.md) |
-| Android-Host | `AndroidApp`, `MainActivity`, AR-Brücke, BLE, Permissions, FileProvider | [SmartMeasure.Android](SmartMeasure.Android/CLAUDE.md) |
-| Desktop-Host | `Program.cs`, Mock-Modus | [SmartMeasure.Desktop](SmartMeasure.Desktop/CLAUDE.md) |
-| ViewModels (Navigation, Messung, Terrain, Gartenplan, Projekte, ...) | MainVM, SurveyVM, TerrainVM, ... | [Shared/ViewModels](SmartMeasure.Shared/ViewModels/CLAUDE.md) |
-| Views (AXAML, Touch, Lazy-Map, SKCanvasView-Pattern) | 9 Views | [Shared/Views](SmartMeasure.Shared/Views/CLAUDE.md) |
-| Services (Geo-Algorithmen, BLE-Mock, Export, AR-Math, ...) | 20+ Interfaces + Impls | [Shared/Services](SmartMeasure.Shared/Services/CLAUDE.md) |
-| Models (SQLite-Entities, TerrainMesh, AR-Typen) | SurveyPoint, GardenElement, TerrainMesh, ... | [Shared/Models](SmartMeasure.Shared/Models/CLAUDE.md) |
-| SkiaSharp-Renderer (Terrain, GardenPlan, Kompass, Stakeout) | 5 Renderer | [Shared/Graphics](SmartMeasure.Shared/Graphics/CLAUDE.md) |
+| Bereich | Doku |
+|---------|------|
+| Composition Root, DI, Factory-Reihenfolge, Lifecycle | [SmartMeasure.Shared](SmartMeasure.Shared/CLAUDE.md) |
+| Android-Host, AR-Brücke, BLE-Service, Permissions, FileProvider | [SmartMeasure.Android](SmartMeasure.Android/CLAUDE.md) |
+| Desktop-Host, Mock-Modus | [SmartMeasure.Desktop](SmartMeasure.Desktop/CLAUDE.md) |
+| ViewModels (Navigation, Messung, Terrain, ...) | [Shared/ViewModels](SmartMeasure.Shared/ViewModels/CLAUDE.md) |
+| Views (AXAML, Touch, Lazy-Map, SKCanvasView-Pattern) | [Shared/Views](SmartMeasure.Shared/Views/CLAUDE.md) |
+| Services (Geo-Algorithmen, BLE-Mock, Export, AR-Math) + Gotchas | [Shared/Services](SmartMeasure.Shared/Services/CLAUDE.md) |
+| Models (SQLite-Entities, TerrainMesh, AR-Typen) | [Shared/Models](SmartMeasure.Shared/Models/CLAUDE.md) |
+| SkiaSharp-Renderer (Terrain, GardenPlan, Kompass, Stakeout) + Farbpalette | [Shared/Graphics](SmartMeasure.Shared/Graphics/CLAUDE.md) |
+| DIY-Hardware-Detail (Stückliste, Firmware, Verkabelung) | Memory `smartmeasure.md` |
 
-Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (AppPalette, Orange #FF6B00),
-`Shared/Resources/Strings/` (AppStrings.resx, 6 Sprachen), `Shared/Assets/`.
-
----
-
-## Build & Zielframework
-
-| Projekt | Framework | Befehl |
-|---------|-----------|--------|
-| `SmartMeasure.Shared` | `net10.0` | `dotnet build src/Apps/SmartMeasure/SmartMeasure.Shared` |
-| `SmartMeasure.Desktop` | `net10.0` | `dotnet run --project src/Apps/SmartMeasure/SmartMeasure.Desktop` |
-| `SmartMeasure.Android` | `net10.0-android` | `dotnet build src/Apps/SmartMeasure/SmartMeasure.Android` |
-
-## Namespace-Konvention
-
-| Ordner | Namespace |
-|--------|-----------|
-| `SmartMeasure.Shared/ViewModels/` | `SmartMeasure.ViewModels` |
-| `SmartMeasure.Shared/Views/` | `SmartMeasure.Views` |
-| `SmartMeasure.Shared/Services/` | `SmartMeasure.Services` |
-| `SmartMeasure.Shared/Models/` | `SmartMeasure.Models` |
-| `SmartMeasure.Shared/Graphics/` | `SmartMeasure.Graphics` |
+Diese Datei trägt nur, was **app-übergreifend** ist: den AR-First-Betriebsmodus (spannt über
+alle VMs/Views), die übergreifenden Datenflüsse, die ARCore-Capture-Activity (UX + AR-Features)
+und die Hardware-BOM-Eckdaten. Service-/Renderer-/Algorithmus-Detail und die Gotcha-Tabellen
+leben in den jeweiligen Unterordner-Dateien (siehe Doku-Karte) — hier nicht wiederholt.
 
 ---
 
-## Projekt-Struktur
+## Adaptiver Betriebsmodus (AR-First) — Kern-Architektur
 
-```
-src/Apps/SmartMeasure/
-├── SmartMeasure.Shared/
-│   ├── ViewModels/        # 9 ViewModels (Connect, Survey, Terrain, GardenPlan, Map, Projects, Stakeout, Settings, Main)
-│   ├── Views/             # 9 Views mit x:CompileBindings="True" (inkl. StakeoutView + MainView)
-│   ├── Services/          # Interfaces + Shared-Impls (AppPaths, MockBleService, MockArCaptureService, ...)
-│   ├── Models/            # SurveyPoint, SurveyProject, NtripConfig, MaterialEstimate, StickState,
-│   │                      # GardenElement, StakeoutTarget, TerrainMesh, ArPoint, ArContour, ArCaptureResult
-│   └── Graphics/          # 5 SkiaSharp-Renderer (Terrain, GardenPlan, SurveyLive, Stakeout, Thumbnail)
-├── SmartMeasure.Desktop/
-│   └── Program.cs         # Einstiegspunkt. Kein eigener Service-Ordner — Desktop nutzt Shared-Impls
-└── SmartMeasure.Android/
-    ├── Ar/                # ArCaptureActivity, ArBackgroundRenderer, ArPointOverlayView,
-    │                      # AndroidArCaptureService, ArAnchorManager, ArPrecisionHelpers, ArOverlayState
-    └── Services/          # AndroidBleService, AndroidAppPaths, MeasurementForegroundService
-```
-
----
-
-## Services
-
-| Service | Aufgabe |
-|---------|---------|
-| `IAppPaths` | Plattform-abstrahierte Pfade (Android: `Context.FilesDir`, Desktop: `ApplicationData`) |
-| `IHardwareModeService` | Adaptiver Betriebsmodus AR-First vs RTK. `ShowRtkUi` = aktuell verbunden ODER je verbunden (Preference `sm.has_ever_connected_ble`). `Changed`-Event (BLE-Thread). `ResetToArMode()`. |
-| `IBleService` | BLE-Kommunikation zum Rover-Stab (plattform-spezifisch) |
-| `MockBleService` | Simuliert RTK-Daten + Edge-Cases für Desktop-Entwicklung |
-| `IArCaptureService` | AR-Kamera-Erfassung (Android: ARCore, Desktop: Mock) |
-| `IArTransferService` | AR-Punkte → SurveyPoints (GPS-Fusion, Heading-Rotation, Geoid-Korrektur) |
-| `IMeasurementService` | Punkt-Verwaltung, Abstände, Flächen. `ReplacePoints` + `PointsReset`-Event für Batch-Load |
-| `ICoordinateService` | WGS84 ↔ UTM (Transverse-Mercator). `ToUtmFixedZone` für konsistente Zone über Grenzen |
-| `IGeoidService` | EGM96 Ellipsoid→NN, hardcoded 2°-Grid für DE (±0,5–1 m). Toggle bei Firmware-MSL |
-| `ITerrainService` | Bowyer-Watson Delaunay, Konturlinien, Volumen, Convex Hull |
-| `IGardenPlanService` | Gartenelemente CRUD, PointsJson v2 (WGS84 absolut), v1-Legacy-Fallback |
-| `IProjectService` | SQLite-Persistenz (Projekte, Punkte, Elemente). `DeleteProject` atomar in Transaktion |
-| `IExportService` | CSV, GeoJSON, DXF, KMZ, PDF |
-| `IBlenderExportService` | OBJ + MTL (Y/Z kein Swap — UTM-Koords sind bereits Blender-Standard Z-up) |
-| `ArSnapEngine` | Geometrische Snap-Hilfen: Vertex (15cm), Right-Angle (5°), Parallel (3°), Extension (10cm zur Verlaengerung, min 5cm jenseits Edge-Ende). Stateless, in Shared damit testbar. |
-| `ArPoseSampler` | Multi-Frame-HitTest-Averaging: Median + ±3σ-Outlier-Filter + Mittel auf bereinigten Samples. In Shared. |
-| `ArMathHelpers` | `ApplyBowditchCorrection` + `ExtractHeadingFromQuaternion` + `ExtractPitchFromQuaternion`. Pure Mathematik, in Shared. `ArPrecisionHelpers` delegiert dorthin. |
-| `IDifferentialSnapshotService` | Vergleicht zwei Vermessungs-Snapshots desselben Grundstuecks (Greedy-Nearest-Neighbor, 3D-Distanz inkl. Hoehe). Liefert Moved/Unchanged/Added/Removed. |
-| `IGnssConditionService` | NOAA Kp + F10.7-Solar-Flux via HTTP (Cache 1h). Klassifiziert Good/Fair/Poor + Empfehlung. UI in `ConnectView`. |
-| `IVolumeService` | Prism/Layered/Frustum-Volumen aus geschlossenen Konturen + Material-Schaetzung (8 Standard-Materialien). UI in `GardenPlanView`. |
-| `ITotalStationService` | Stationierung + Radial-Projektion (Distanz+Bearing+Pitch → Lat/Lon). Aktiv via `CaptureMode.TotalStation`. |
-| `ILeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/sigma^2. Kein Math.NET noetig. |
-| `IVoiceAnnotationService` | Android: `AndroidVoiceAnnotationService` mit `SpeechRecognizer` (Transkript, kein Audio-File). Desktop: `NullVoiceAnnotationService`. |
-| `ISurveyReportService` | `SurveyReportService` mit PdfSharpCore — Cover, Punkt-Tabelle mit Foto-Thumbnails, Material-Estimate, optional Differential. |
-| `IMultiUserSessionService` | `LocalTcpMultiUserService` — TCP-NDJSON-Protokoll auf Port 5119, kein extra SignalR-Package. |
-| `ISceneReconstructionService` | `SceneReconstructionService` mit Voxel-Filter + PLY/OBJ-Punktwolke-Export. Meshing in Blender/MeshLab. |
-| `IArSessionLike` | `AndroidArSession` (Frame-Provider-Wrapper) + `MockArSession` (Tests). |
-
----
-
-## Architektur-Patterns
-
-### Adaptiver Betriebsmodus (AR-First)
+Die App startet im reinen AR-Modus: die gesamte RTK-Hardware-UI (Live-Kompass, BLE-Tab,
+Stab-Einstellungen, Stakeout) ist ausgeblendet, bis erstmals ein Stab verbunden wird. Danach
+merkt sich die App das (Preference) und zeigt die Hardware-UI dauerhaft.
 
 `IHardwareModeService` (Singleton) ist die zentrale Quelle für `ShowRtkUi`. Er hört auf
-`IBleService.StateChanged`, persistiert die Erst-Verbindung und feuert `Changed` (vom
-BLE-Background-Thread → Konsumenten marshallen via `Dispatcher.UIThread.Post`).
+`IBleService.StateChanged`, persistiert die Erst-Verbindung (Preference `sm.has_ever_connected_ble`)
+und feuert `Changed` (vom BLE-Background-Thread → Konsumenten marshallen via `Dispatcher.UIThread.Post`).
 
 ```
 ShowRtkUi = IsConnected || HasEverConnectedBle   // sonst reiner AR-Modus
@@ -148,55 +72,19 @@ gegen `ShowRtkUi` / `!ShowRtkUi`:
 |------|-------------------------|--------------------------|
 | MainView Status-Bar | schlanke Marken-Leiste + AR-Chip | volle Hardware-Bar (BLE/Fix/Sat/Akku) |
 | MainView Tab-Bar (`UniformGrid Rows="1"`) | 6 Tabs (BLE + Abstecken aus) | 8 Tabs |
-| SurveyView | AR-Hero-CTA + ehrlicher ±5-50cm-Hinweis + Live-Statistik | Kompass/Position/PUNKT-Button |
-| SettingsView | "RTK-Stab verbinden"-Einstieg | Stab-Optionen + "Zurück zum AR-Modus" |
+| SurveyView | AR-Hero-CTA + ehrlicher ±5–50 cm-Hinweis + Live-Statistik | Kompass/Position/PUNKT-Button |
+| SettingsView | "RTK-Stab verbinden"-Einstieg | Stab-Optionen + "Zurück zum AR-Modus" (`ResetToArMode`) |
 
 Wichtig: `UniformGrid Rows="1"` verteilt nur **sichtbare** Kinder — versteckte Tabs (BLE,
 Abstecken via `IsVisible="{Binding ShowRtkUi}"`) hinterlassen keine Lücke. Der Connect-Screen
 bleibt per `Navigate("Connect")` erreichbar, auch wenn sein Tab-Button ausgeblendet ist
-(Settings → `ConnectRtkStickCommand`). Der `PUNKT`-Button ist `IsEnabled="{Binding IsBleConnected}"`
-(vorher totes Steuerelement ohne Stab); die Punkte-Liste + Statistik wird aus
-`IMeasurementService.PointAdded/PointsReset` gespeist, damit AR-Punkte ebenso erscheinen.
+(Settings → `ConnectRtkStickCommand`). Der `PUNKT`-Button ist `IsEnabled="{Binding IsBleConnected}"`;
+die Punkte-Liste + Statistik wird aus `IMeasurementService.PointAdded/PointsReset` gespeist,
+damit AR-Punkte ebenso erscheinen.
 
-### IAppPaths-Pattern (Android-Sandbox-Fix)
+---
 
-`Environment.SpecialFolder.LocalApplicationData` crasht auf Android im DI-Kontext.
-Immer `IAppPaths` per Constructor-Injection verwenden:
-
-```csharp
-// App.axaml.cs
-public static Func<IAppPaths>? AppPathsFactory { get; set; }
-
-// MainActivity.cs — VOR DI-Build registrieren
-App.AppPathsFactory = () => new AndroidAppPaths(this);
-```
-
-Betroffen: `ProjectService`, `SettingsViewModel`, `ProjectsViewModel`, `ExportService` — alle
-müssen `IAppPaths` per DI bekommen, NIEMALS `Environment.GetFolderPath` direkt aufrufen.
-
-### AR-Capture-Pattern (Separate Activity)
-
-`ArCaptureActivity` ist eine native `AppCompatActivity` (kein Avalonia).
-Brücke via `TaskCompletionSource<ArCaptureResult?>` in `AndroidArCaptureService`.
-Factory-Pattern analog zu BleService und AppPaths:
-
-```csharp
-// App.axaml.cs
-public static Func<IServiceProvider, IArCaptureService>? ArCaptureServiceFactory { get; set; }
-```
-
-TCS-Lock-Pattern + Status-Enum: `IArCaptureService.LastCompletionStatus`
-(`Success | UserCancelled | Error`) + `LastError`-Klartext erlauben dem UI-Layer
-User-Abbruch von echten Fehlern zu trennen. Der `SurveyViewModel` zeigt
-unterschiedliche Meldungen je nach Status, statt pauschal "AR abgebrochen".
-
-### AR-Overlay-Lokalisierung (`ArOverlayLabels`)
-
-`ArCaptureActivity` ist eine native Activity ohne Avalonia-DI. Lokalisierte
-Strings werden einmalig in `OnCreate` via `LoadLocalizedLabels()` aus
-`AppStrings.*` gelesen und als `ArOverlayLabels`-Record in jedem `ArOverlayState`-
-Snapshot mitgegeben. Sprachwechsel mid-AR-Session passieren nicht (Modal-Fullscreen),
-daher reicht ein Snapshot pro Session.
+## Übergreifende Datenflüsse
 
 ### RTK-GPS Datenfluss
 
@@ -207,8 +95,7 @@ ESP32-Rover → BLE GATT → AndroidBleService.OnCharacteristicChanged
   → Tilt-Korrektur (vertikal immer, horizontal nur bei MagAccuracy ≥ 2)
   → PointReceived-Event (Background-Thread)
   → SurveyViewModel.OnPointReceived (via Dispatcher.UIThread.Post)
-  → MeasurementService.AddPoint
-  → PointAdded-Event → Terrain/Map/GardenPlan-VMs
+  → MeasurementService.AddPoint → PointAdded-Event → Terrain/Map/GardenPlan-VMs
 ```
 
 ### AR → Terrain Transfer
@@ -217,7 +104,7 @@ ESP32-Rover → BLE GATT → AndroidBleService.OnCharacteristicChanged
 ArCaptureActivity → ConsumeLastResult → AndroidArCaptureService → TCS
   → SurveyViewModel.ArCaptureCompleted-Event
   → MainViewModel: ArTransferService.TransferToProjectAsync
-    → RotateAndProject (ARCore +Z = hinten — Rotation-Formel korrekt)
+    → RotateAndProject (ARCore +Z = hinten — Rotations-Formel siehe Services-CLAUDE.md)
     → IGeoidService für Höhen-Korrektur
     → ProjectService.AddPointAsync + AddGardenElementAsync
 ```
@@ -243,36 +130,6 @@ ProjectsViewModel.ExportXxxAsync
   → MainActivity: Share-Intent (FileProvider) oder Open-Intent (MIME-Type)
 ```
 
-FileProvider-Authority: `{packageId}.fileprovider` + `Resources/xml/provider_paths.xml`.
-
-### PointsJson v2 (GardenElement)
-
-```json
-{"v":2,"points":[[lat,lon],...]}
-```
-
-v1-Legacy (lokale UTM-Meter) wird gelesen aber nicht geschrieben.
-`GardenElement.LocalPoints` ist `[SQLite.Ignore]` — transient, wird bei Projekt-Load
-oder Schwerpunkt-Änderung aus `GardenPlanService.GetLocalPoints` neu projiziert.
-ArTransferService persistiert direkt v2 (kein UTM-Zwischenschritt).
-
----
-
-## Präzisions-Pipeline
-
-### Koordinaten (CoordinateService)
-
-`ToLocalMetric` nutzt UTM-Projektion (statt 111320-Approximation) — spart ~8 cm auf 100 m.
-`ToUtmFixedZone(lat, lon, zone)` projiziert in erzwungene Zone — konsistent über Zonengrenzen.
-Zonen-Abweichungs-Warnung bei >3° Longitude-Distanz vom Schwerpunkt.
-
-### Geoid-Korrektur (EGM96, ~-48 m in DE)
-
-`IGeoidService.EllipsoidToGeoid(lat, lon, altEllipsoid)` → NN-Höhe.
-Hardcoded 2°-Grid 46–56°N, 4–16°E mit bilinearer Interpolation.
-Außerhalb: 48 m Pauschal-Fallback + Debug-Warnung.
-`IsClientCorrectionEnabled=false` wenn Firmware bereits MSL sendet.
-
 ### Tilt-Korrektur (Antenne → Stabspitze)
 
 ```
@@ -281,61 +138,150 @@ east_off  = stabHeight * sin(tilt) * sin(azimuth)       // nur MagAccuracy ≥ 2
 north_off = stabHeight * sin(tilt) * cos(azimuth)       // nur MagAccuracy ≥ 2
 ```
 
-Bei 5°/1,8 m Stab: 15,7 cm horizontaler Versatz. `SetStabHeightAsync` setzt Wert im Service.
+Bei 5°/1,8 m Stab: 15,7 cm horizontaler Versatz. `SetStabHeightAsync` setzt Wert im BLE-Service.
 
-### ARCore Rotations-Formel (KRITISCH — typische Fehlerquelle)
+---
 
-ARCore: +X = rechts, +Y = oben, **+Z = hinten** (vom Gerät weg).
-Bei heading=0 zeigt -Z nach Norden. Korrekte Rotation:
+## ARCore-Capture-Activity (Android)
 
-```csharp
-eastOffset  = arX * cosH - arZ * sinH
-nordOffset  = -arX * sinH - arZ * cosH
+`ArCaptureActivity` ist eine native `AppCompatActivity` (kein Avalonia), als `partial class`
+über drei Files verteilt (Datei-/Verantwortungs-Trennung). Brücke ins Shared-Projekt via
+`TaskCompletionSource<ArCaptureResult?>` in `AndroidArCaptureService` (Factory-Wiring →
+[Android-CLAUDE.md](SmartMeasure.Android/CLAUDE.md)). TCS-Lock-Pattern + Status-Enum
+`IArCaptureService.LastCompletionStatus` (`Success | UserCancelled | Error`) + `LastError`
+erlauben dem UI-Layer, User-Abbruch von echten Fehlern zu trennen (`SurveyViewModel` zeigt
+unterschiedliche Meldungen je Status).
+
+### Layout (3 Schichten)
+
+```
+FrameLayout
+├── GLSurfaceView          OpenGL ES 3.0 Kamera-Preview (ArBackgroundRenderer)
+├── ArPointOverlayView     Transparenter Canvas (Punkte, Linien, Auswahl)
+└── Native Toolbar          7 Icon+Label-Buttons (VectorDrawables Resources/drawable/ic_ar_*):
+                            Punkt · Fläche · Schließen · Zurück · Vor · Mehr · Fertig.
+                            "Mehr" = PopupMenu (Maßband, Tachymeter, Abstecken, Löschen,
+                            Screenshot, Aufnahme, Hilfe). KEINE Emojis/Unicode als UI-Text.
 ```
 
-Naive Formel `arX*cosH + arZ*sinH` bricht bei heading ≠ 0°.
+### Lokalisierung (`ArOverlayLabels`)
 
-### Bowyer-Watson Delaunay (TerrainService)
+Die Activity hat keine Avalonia-DI. Lokalisierte Strings werden einmalig in `OnCreate` via
+`LoadLocalizedLabels()` aus `AppStrings.*` gelesen und als `ArOverlayLabels`-Record in jedem
+`ArOverlayState`-Snapshot mitgegeben. Sprachwechsel mid-AR-Session passiert nicht
+(Modal-Fullscreen) → ein Snapshot pro Session genügt.
 
-Härtung für RTK-Genauigkeit (±2 cm):
+### Capture-Modi (`CaptureMode`)
 
-| Maßnahme | Grund |
-|----------|-------|
-| Punkt-Dedup bei 1 mm | RTK-Streuung → numerisch instabile Circumcircle-Determinante |
-| CCW-Winding (`NormalizeWinding`) | Circumcircle-Test setzt CCW voraus |
-| Epsilon `1e-12` in `IsInCircumcircle` | Endless-Loop bei quasi-kollinearen Punkten |
-| Super-Triangle Faktor 10 | Robustheit bei engen Point-Sets |
-| Konturlinien-Perturbation `1e-9` | Vertex-Hit → Doppel-Intersection |
-| `PickLongestSegment` | 3-Intersection-Fall bei nahen Vertices |
-| Convex-Hull (Andrew's Monotone Chain) | `CalculateArea2D` braucht geordnete Polygon-Punkte |
-| Face-Normalen vorberechnet | Spart 24 k sqrt/s beim 60-fps-Dreh |
+| Mode | Verhalten |
+|------|-----------|
+| `Point` | Einzelne Messpunkte ins Projekt + Undo-Stack + Foto-Annotation. |
+| `Contour` | Aktive Kontur (Weg/Beet/Mauer/...) — Mehrfach-Tap + `CloseActiveContour` mit Bowditch-Correction + Foto-Annotation pro Punkt. |
+| `TapeMeasure` | Ad-hoc-Distanz. Eigener Buffer `_tapeMeasurePoints`, kein Projekt-Save, kein Undo, kein Foto. Long-Press auf Maß-Button = Reset. Footer zeigt Σ Strecken-Summe. |
+| `Stakeout` | Pfeil + Distanz + Target-Label zum nächsten unerreichten Ziel. Targets via `IArCaptureService.SetStakeoutTargets`. Hysterese-Reached bei ≤ 10 cm (von > 30 cm kommend). |
+| `TotalStation` | Stationierung + Radial-Projektion (Distanz + Bearing + Pitch → Lat/Lon) via `ITotalStationService`. |
+
+### Marker-Overlays
+
+- **Site-Marker** (`IArCaptureService.SetSitePoints`): bestehende Projekt-`SurveyPoints` werden
+  vor Session-Start übergeben. Sobald Geospatial-Tracking aktiv ist, erzeugt
+  `CreatePendingSiteAnchors` Earth-Anchors (max 2/Frame). Render als dezente graue Kreise — neue
+  Punkte landen im selben Koordinatensystem.
+- **RTK-Stab Live-Marker**: bei verbundenem BLE-Stab + Geospatial-Tracking refresht
+  `UpdateRtkStabAnchor` 1×/s den Earth-Anchor an der aktuellen Stab-Position. Render:
+  pulsierender Marker (1 Hz Sinus) + Fix-Quality-Farbe (Grün = RTK-Fix, Gelb = Float,
+  Orange = DGPS, Rot = GPS-only). `PostInvalidateDelayed(33)` hält die Pulse-Animation.
+
+### ARCore-Features aktiv
+
+| Feature | Zweck |
+|---------|-------|
+| `ArAnchorManager` | Drift-Kompensation: Anchor pro gesetztem Punkt, RefreshAnchors pro Frame |
+| `ArPoseSampler` (Shared.Services) | Multi-Frame-Averaging (15 Samples / 800 ms), Median + ±3σ-Outlier-Filter |
+| `ArStabilityMonitor` (in `ArAnchorManager.cs`) | EMA über Gyro + Accel, StabilityScore 0..1, Block bei < 0,6 |
+| `ArPrecisionHelpers` | Depth-Sanity, Depth-Fallback (Instant-Placement), Ground-Plane, Heading-Extraktion, Semantic-Label, Sky-Check. Math-Helfer delegiert an `ArMathHelpers` (Shared) |
+| `ArSnapEngine` (Shared.Services) | Vertex (15 cm), Right-Angle (5°), Parallel (3°), Extension (10 cm) |
+| Geospatial API (VPS) | `earth.CameraGeospatialPose` → Heading ±5° statt ±15–30° (Metall-immun) |
+| Earth-Anchors | Persistent über Session-Ende via VPS re-lokalisierbar — Recovery-Restore queued Punkte für Re-Attach sobald Earth-Tracking aktiv |
+| Raw Depth + Confidence | Pixel mit Confidence > 0,3 (Random-Noise-Filter) |
+| Scene Semantics | `SemanticMode.Enabled` — Sky + Instant-Placement-Kombi wird abgelehnt, sonst Label in `ArPoint.SemanticLabel` |
+| Light-Estimation | `LightEstimate.PixelIntensity` — Helligkeits-Sprung > 40 % bricht laufendes Sampling ab (2 s Cooldown) |
+| RTK-AR-Fusion | `IBleService`-Snapshot via `App.Services` — RTK-Position als GPS-Anker (±2 cm) statt Android-LocationManager (±5 m). `ArGpsSource`-Enum trackt die Quelle bis in `ArTransferService` (kein 50 cm-Min, kein 100×-Faktor für RTK) |
+| Augmented Images (ArUco) | AugmentedImageDatabase + Erkennungs-Loop + Auto-Anchor an eingemessener Position |
+| Session Recovery | State in SharedPreferences nach jedem Punkt, max 30 Min alt |
+| Recording API | MP4 in `ExternalFilesDir/Recordings/`, `SetAutoStopOnPause(true)` |
+
+**Bewusst NICHT aktiviert:** Cloud Anchors (kostenpflichtig — Earth-Anchor-Cache ist Default),
+Shared Camera/Camera2 (Vapolia-Binding unvollständig).
+
+### Bowditch-Korrektur
+
+Bei Kontur-Close: Schlussfehler-Vektor proportional zur Distanz auf alle Zwischenpunkte
+verteilen. Nur aktiv bei 1 cm–2 m Schlussfehler (kleiner: unnötig, größer: Fehler-Detection).
+
+### Foto-Annotation pro Punkt
+
+Bei jedem AR-Punkt (Point + Contour, NICHT TapeMeasure) macht `CapturePhotoForPoint` via
+`PixelCopy.Request` einen JPEG-Snapshot des reinen Kamera-Frames (ohne Overlay) und legt ihn in
+`IAppPaths.PhotosFolder` ab (`pt_<timestamp>_<guid>.jpg`, Quality 80, ~200 KB). `ArPoint.PhotoPath`
+wird sofort gesetzt, der Disk-Write läuft asynchron → PDF-Bericht muss `File.Exists` prüfen.
+Pfad wandert durch `ArTransferService` in `SurveyPoint.PhotoPath`.
+
+### Confidence-Formel
+
+```
+confidence =
+    Hit-Quality     (0.1 Instant / 0.2 Point / 0.3 Plane)
+  + StdDev          (0.3 wenn σ=0, linear auf 0 bei σ=5 cm)
+  + Stability       (0.2 × StabilityScore)
+  + Anchor-Bonus    (+0.2 wenn Anchor erstellt)
+→ max 1.0
+```
+
+### UX-Features (AR-Modus)
+
+| Feature | Beschreibung |
+|---------|-------------|
+| Bestätigungs-Dialoge | Löschen + Fertig fragen vor destruktiver Aktion (`ConfirmDeleteSelectedPoint`, `ConfirmFinishCapture`) |
+| Sound beim Punkt-Setzen | `MediaActionSound.SHUTTER_CLICK` zusätzlich zur Vibration. SharedPreferences-Key `ar.sound.enabled` (Default an). Toggle im Help-Dialog. |
+| Pop-Animation neuer Punkte | 250 ms Scale-Easing in `ArPointOverlayView.DrawPoints` — junge Punkte (< 250 ms alt) starten 2.2× groß, schrumpfen mit Ease-Out-Quadratic |
+| Tooltips auf Toolbar-Buttons | Long-Press zeigt `Button.TooltipText` (API 26+) |
+| Coach-Marks beim 1. AR-Start | Show-once Dialog (Crosshair/Workflow/Toolbar). Key `ar.coachmarks.shown`. "Später nochmal" lässt Pref unverändert → nächster Start zeigt erneut |
+| Persistente System-Banner | `ArOverlayState.ThermalWarning` + `BatteryWarning` als persistente Top-Banner unter dem Tracking-Banner (vs. TransientHint-Fade) |
+| Live-Footer-Bar | Über der Toolbar mit Punkte/Länge/Fläche in großer Schrift (`ArPointOverlayView.DrawLiveFooter`) |
+| Readiness-Badge Tap | Badge oben links klickbar (`ReadinessBadgeBounds`). Detail-Dialog mit Checkliste je Condition (Stabilität / Kompass / Planes / GPS / Geospatial / Tracking-Continuity) |
+| Recovery-Bestätigungs-Dialog | "X Punkte aus letzter Sitzung wiederherstellen?" mit Wiederherstellen/Verwerfen — statt Auto-Restore. Earth-Anchors parallel re-attached |
+
+### S25-Ultra-Spezifika
+
+- `LightEstimationMode.EnvironmentalHdr` wenn RAM ≥ 8 GB
+- Multi-Sample-Count: 15 (High-End) / 10 (Normal) / 5 (Thermal Severe)
+- `PowerManager.CurrentThermalStatus` alle 60 Frames prüfen
+- `OnApplyWindowInsets` liest Punch-Hole-Cutout → `ArOverlayState.TopInsetPixels`
 
 ---
 
 ## Hardware (nicht Teil der Solution)
+
+Eckdaten; vollständige Stückliste, Firmware, Verkabelung → Memory `smartmeasure.md`.
 
 ### Rover-Stab (~285–375 EUR)
 
 - ESP32-S3-WROOM + ZED-F9P (RTK, ±2 cm) + L1/L2 Multi-Band-Antenne
 - BNO085 (9-Achsen IMU, Sensor Fusion, Tilt + Kompass)
 - **AP2112K-3.3 LDO** — NIEMALS AMS1117 (1,1 V Dropout, stirbt bei halbem Akku!)
-- SSD1306 OLED, Piezo, WS2812B RGB LED, 2× Taster (GPIO 4 + 5)
+- SSD1306 OLED, Piezo, WS2812B RGB LED, 2× Taster
 - 2× 18650 parallel (6000 mAh, ~10 h), TP4056 USB-C
 - Alu-Rohr 1,5 m + Edelstahl-Spitze + **PETG**-Gehäuse (kein PLA — UV-spröde!)
 
-**ESP32-S3 Pin-Belegung:**
-- GPIO 8/9: I2C (BNO085 + SSD1306)
-- GPIO 17/18: UART1 (ZED-F9P)
-- GPIO 38: WS2812B (**NICHT GPIO 48** — oft reserviert auf DevKits!)
-- GPIO 1 (ADC1_CH0): Akku-Spannung
+**ESP32-S3 Pin-Belegung:** GPIO 8/9 I2C (BNO085 + SSD1306) · GPIO 17/18 UART1 (ZED-F9P) ·
+GPIO 38 WS2812B (**NICHT GPIO 48** — oft reserviert auf DevKits!) · GPIO 1 (ADC1_CH0) Akku-Spannung.
 
 ### BLE GATT-Profil
 
 - Position @2 Hz: 3× float64 (Lat, Lon, Alt Ellipsoid — App korrigiert zu NN)
-- Fix Quality: uint8 (0=NoFix, 4=RTK-Fix, 5=Float)
-- Accuracy: 2× float32 (H-cm, V-cm)
-- Orientation @5 Hz: 3× float32 (Pitch, Roll, Yaw)
-- Battery @0,1 Hz: uint8
+- Fix Quality: uint8 (0=NoFix, 4=RTK-Fix, 5=Float) · Accuracy: 2× float32 (H-cm, V-cm)
+- Orientation @5 Hz: 3× float32 (Pitch, Roll, Yaw) · Battery @0,1 Hz: uint8
 - Point Trigger: SurveyPoint komplett bei Knopfdruck (inkl. TiltAngle + TiltAzimuth)
 - Write: StabHeight, NTRIP-Config, WiFi-Config
 - ESP-IDF: `esp_coex_preference_set(ESP_COEX_PREFER_WIFI)` — NTRIP hat Priorität
@@ -347,286 +293,46 @@ ESP32-S3 + ZED-F9P + NTRIP-Server auf Port 2101. Handy-Hotspot verbindet Basis +
 
 ---
 
-## BLE-Architektur (AndroidBleService)
+## App-spezifische Conventions
 
-- `RequestMtu(247)` in `OnConnected` VOR `DiscoverServices` (BLE 5.3 DLE, default 23 reicht nicht für 48-Byte-Pakete)
-- Write-Queue via `SemaphoreSlim` + `OnCharacteristicWrite`-Acknowledgment (BLE-Writes nicht parallel!)
-- `BinaryPrimitives.ReadDoubleLittleEndian` statt `BitConverter` (ESP32 = little-endian, explizit)
-- Exponential-Backoff-Reconnect: 1 s → 2 s → 4 s → 10 s, max 5 Versuche
+### Mock-Modus (Desktop-Entwicklung)
 
-**NTRIP-Config-Validation:**
-- Port ∈ [1, 65535]
-- Mountpoint ohne `:` (zerstört ESP32-Protokoll)
-- `partial void OnNtripXxxChanged` persistiert via `IPreferencesService`
+- `MockBleService` + `MockArCaptureService` ersetzen Hardware. `MockBleService` startet
+  disconnected → Desktop zeigt AR-First-Modus (gewollt; RTK-UI via Settings testbar).
+- Debug-Panel in SurveyView nur bei `IsMockMode=true`. Edge-Cases: `CycleFixDegradation`,
+  `SimulatePacketLoss`, `SimulateBatteryDrain`, `SimulateMagLoss`, `SimulateSpuriousDisconnect`.
 
----
+### Thread-Safety (AR-Activity-spezifisch)
 
-## ARCore-Architektur
+- Alle BLE-Events via `Dispatcher.UIThread.Post` marshallen.
+- `_dataLock` in `ArCaptureActivity` für alle Zugriffe auf `_points`, `_contours`, `_activeContour`.
+  Undo/Redo-Actions halten Lock-Reference + setzen Lock bei Mutation.
+- `_frameLock` für `_lastFrame` (GL-Thread schreibt, UI-Thread liest).
+- `RunOnUiThread` für alle Overlay-State-Updates.
 
-### ArCaptureActivity Layout (3 Schichten)
+### Android-Build
 
-```
-FrameLayout
-├── GLSurfaceView          OpenGL ES 3.0 Kamera-Preview
-│   ├── ArBackgroundRenderer   Vertex+Fragment Shader für Camera-Textur
-│   └── IRenderer.OnDrawFrame  Session.Update() → Frame → Projektion
-├── ArPointOverlayView     Transparenter Canvas (Punkte, Linien, Auswahl)
-└── Native Toolbar          7 Icon+Label-Buttons (VectorDrawables Resources/drawable/ic_ar_*):
-                            Punkt · Fläche · Schließen · Zurück · Vor · Mehr · Fertig.
-                            "Mehr" = PopupMenu (Maßband, Tachymeter, Abstecken, Löschen,
-                            Screenshot, Aufnahme, Hilfe). KEINE Emojis/Unicode als UI-Text.
-```
-
-### partial class Aufteilung
-
-`ArCaptureActivity` ist als `partial class` über drei Files verteilt, um die Datei
-unter 4000 Zeilen zu halten und Verantwortlichkeiten zu trennen:
-
-| Datei | Inhalt |
-|-------|--------|
-| `ArCaptureActivity.cs` | OnCreate/OnResume/OnPause/OnDestroy, CreateToolbar, OnDrawFrame, Touch-Handling, FinishCapture, GL-Rendering, Sensors, Geospatial, Thermal/Battery, Haptic, Sound, Screenshot, Snap-to-Edge |
-| `ArCaptureActivity.Dialogs.cs` | ConfirmDelete, ConfirmFinish, ShowContourTypeDialog + StartNewContour + UpdateModeButtonHighlight, ShowCompassCalibrationHint, ShowReadinessDetailDialog, ShowHelpDialog, ShowCoachMarksIfNeeded + PersistCoachMarksShown, `ContourTypeOptions`-Tabelle |
-| `ArCaptureActivity.Recovery.cs` | SaveRecoveryState, TryRestoreRecoveryState (mit Bestätigungs-Dialog), ClearRecoveryState, Earth-Anchor-Re-Attach-Queue |
-
-ArPointOverlayView ist ebenfalls `partial sealed` markiert (Drawing-Methoden-Split vorbereitet, noch nicht durchgeführt).
-
-### S25-Ultra-Spezifika
-
-- `LightEstimationMode.EnvironmentalHdr` wenn RAM ≥ 8 GB (High-End-Check)
-- Multi-Sample-Count: 15 (High-End) / 10 (Normal) / 5 (Thermal Severe)
-- `PowerManager.CurrentThermalStatus` alle 60 Frames prüfen
-- `OnApplyWindowInsets` liest Punch-Hole-Cutout → `ArOverlayState.TopInsetPixels`
-- BLE MTU 247 (BLE 5.3 DLE voll ausgenutzt)
-
-### Capture-Modi (`CaptureMode`)
-
-| Mode | Verhalten |
-|------|-----------|
-| `Point` | Einzelne Messpunkte ins Projekt + Undo-Stack + Foto-Annotation. |
-| `Contour` | Aktive Kontur (Weg/Beet/Mauer/...) — Mehrfach-Tap + `CloseActiveContour` mit Bowditch-Correction + Foto-Annotation pro Punkt. |
-| `TapeMeasure` | Ad-hoc-Distanz (Apple-Measure-Klon, Plan-Kap. 5.3). Eigener Buffer `_tapeMeasurePoints`, kein Projekt-Save, kein Undo, kein Foto. Long-Press auf Mass-Button = Reset. Footer zeigt Σ Strecken-Summe. |
-| `Stakeout` | Plan-Kap. 5.9: Pfeil + Distanz + Target-Label zum naechsten unerreichten Ziel. Targets via `IArCaptureService.SetStakeoutTargets` durchgereicht. Hysterese-Reached bei ≤10cm (von >30cm kommend). |
-
-### Site-Marker (`IArCaptureService.SetSitePoints`, Plan-Kap. 5.2)
-
-Bestehende Projekt-`SurveyPoints` werden vor Session-Start an die Activity uebergeben.
-Sobald Geospatial-Tracking aktiv ist, erzeugt `CreatePendingSiteAnchors` Earth-Anchors
-(max 2 pro Frame). Render als dezente graue Kreise — neue Punkte landen im selben
-Koordinatensystem. Geoid-Korrektur grob via 48m-Pauschal (DE-Naehrung).
-
-### RTK-Stab Live-Marker (Plan-Kap. 5.8)
-
-Bei verbundenem BLE-Stab + Geospatial-Tracking refresht `UpdateRtkStabAnchor` 1x/s
-den Earth-Anchor an der aktuellen Stab-Position. Alter Anchor wird detacht, neuer
-erzeugt. Render: pulsierender Marker (1Hz Sinus) + Fix-Quality-Farbe
-(Gruen=RTK-Fix, Gelb=Float, Orange=DGPS, Rot=GPS-only). PostInvalidateDelayed(33)
-haelt die Pulse-Animation.
-
-### UX-Features (AR-Modus)
-
-| Feature | Beschreibung |
-|---------|-------------|
-| Bestätigungs-Dialoge | Löschen + Fertig fragen vor destruktiver Aktion (`ConfirmDeleteSelectedPoint`, `ConfirmFinishCapture`) |
-| Sound beim Punkt-Setzen | `MediaActionSound.SHUTTER_CLICK` zusätzlich zur Vibration. SharedPreferences-Key `ar.sound.enabled` (Default an). Toggle im Help-Dialog. |
-| Pop-Animation neuer Punkte | 250ms Scale-Easing in `ArPointOverlayView.DrawPoints` — junge Punkte (Timestamp <250ms alt) starten 2.2× groß und schrumpfen mit Ease-Out-Quadratic |
-| Tooltips auf Toolbar-Buttons | Long-Press zeigt `Button.TooltipText` (API 26+) |
-| Coach-Marks beim 1. AR-Start | Show-once Dialog erklärt Crosshair/Workflow/Toolbar. SharedPreferences-Key `ar.coachmarks.shown`. "Später nochmal" lässt den Pref unverändert → nächster Start zeigt erneut |
-| Persistente System-Banner | `ArOverlayState.ThermalWarning` + `BatteryWarning` werden als persistente Top-Banner unter dem Tracking-Banner gezeichnet — bleiben sichtbar solange das System-Event andauert (vs. TransientHint-Fade) |
-| Live-Footer-Bar | Über der Toolbar mit Punkte/Länge/Fläche in großer Schrift (`ArPointOverlayView.DrawLiveFooter`) — primärer Mess-Wert-Anker neben dem kleineren Stats-Panel oben rechts |
-| Readiness-Badge Tap | Badge oben links ist klickbar (`ArPointOverlayView.ReadinessBadgeBounds` publiziert Tap-Target). Öffnet Detail-Dialog mit Checkliste je Condition (Stabilität / Kompass / Planes / GPS / Geospatial / Tracking-Continuity) |
-| Recovery-Bestätigungs-Dialog | Statt automatischem Restore + Toast: Dialog "X Punkte aus letzter Sitzung wiederherstellen?" mit Wiederherstellen/Verwerfen-Buttons. Earth-Anchors werden parallel re-attached. |
-| Verstärkter Toolbar-BG | Dichteres ARGB(235,18,18,28) statt halb-transparent (war bei sonnigem Garten kaum lesbar) + dünne weiße Trennlinie oben |
-
-**Geplante Erweiterung (postponed):** Einhand-Layout (Toolbar vertikal links/rechts statt unten).
-Würde Reorganisation aller Position-Logik in `DrawTrackingBanner`/`DrawSystemWarningBanners`/
-`DrawStatsPanel`/`DrawNorthArrow`/`DrawScaleBar`/`DrawLiveFooter`/`DrawReadinessBadge` benötigen.
-Pref-Key vorgesehen: `ar.toolbar.position` (Werte `bottom`/`left`/`right`).
-
-### ARCore-Features aktiv
-
-| Feature | Zweck |
-|---------|-------|
-| `ArAnchorManager` | Drift-Kompensation: Anchor pro gesetztem Punkt, RefreshAnchors pro Frame |
-| `ArPoseSampler` (Shared.Services) | Multi-Frame-Averaging (15 Samples / 800 ms), Median + ±3σ-Outlier-Filter |
-| `ArStabilityMonitor` (in `ArAnchorManager.cs`) | EMA über Gyro + Accel, StabilityScore 0..1, Block bei <0,6 |
-| `ArPrecisionHelpers` | Depth-Sanity, Depth-Fallback fuer Instant-Placement, Ground-Plane, ARCore-Heading-Extraktion, Semantic-Label-Read, Sky-Check. Delegiert Math-Helfer an `ArMathHelpers` (Shared) |
-| `ArMathHelpers` (Shared.Services) | Bowditch-Correction + Quaternion→Heading/Pitch — pure Mathematik, in Unit-Tests direkt fahrbar |
-| Geospatial API (VPS) | `earth.CameraGeospatialPose` → Heading ±5° statt ±15–30° (Metall-immun) |
-| Earth-Anchors | Persistent über Session-Ende via VPS re-lokalisierbar — Recovery-Restore queued Punkte fuer Re-Attach sobald Earth-Tracking aktiv ist |
-| Raw Depth + Confidence | Pixel mit Confidence > 0,3 (Random-Noise-Filter) |
-| Scene Semantics | `SemanticMode.Enabled` aktiv ausgelesen — Sky+Instant-Placement-Kombi wird abgelehnt, sonst Label in `ArPoint.SemanticLabel` |
-| Light-Estimation | `LightEstimate.PixelIntensity` ausgelesen — Helligkeits-Sprung >40% bricht laufendes Sampling ab (2s Cooldown) |
-| RTK-AR-Fusion | `IBleService`-Snapshot via `App.Services` — RTK-Position als GPS-Anker (±2cm) statt Android-LocationManager (±5m). `ArGpsSource`-Enum trackt die Quelle bis in `ArTransferService` (kein 50cm-Min, kein 100x-Faktor fuer RTK) |
-| Session Recovery | State in SharedPreferences nach jedem Punkt, max 30 Min. alt |
-| Recording API | MP4 in `ExternalFilesDir/Recordings/`, `SetAutoStopOnPause(true)` |
-
-**Bewusst NICHT aktiviert:** Augmented Images (Marker-Druck nötig — vorgesehen fuer ArUco-Roadmap-Feature), Cloud Anchors (kostenpflichtig — Earth-Anchor-Cache ist die Default-Variante), Shared Camera/Camera2 (Vapolia-Binding unvollständig).
-
-### Bowditch-Korrektur (klassische Vermessung)
-
-Bei Kontur-Close: Schlussfehler-Vektor proportional zur Distanz auf alle Zwischenpunkte verteilen.
-Nur aktiv bei 1 cm–2 m Schlussfehler (kleiner: unnötig, größer: Fehler-Detection).
-
-### Foto-Annotation pro Punkt (Plan-Kap. 5.6)
-
-Bei jedem AR-Punkt (Point + Contour, NICHT TapeMeasure) macht `CapturePhotoForPoint`
-via `PixelCopy.Request` einen JPEG-Snapshot des reinen Kamera-Frames (ohne Overlay)
-und legt ihn in `IAppPaths.PhotosFolder` ab. Dateiname `pt_<timestamp>_<guid>.jpg`,
-JPEG-Quality 80 (~200KB pro Foto). `ArPoint.PhotoPath` wird sofort gesetzt, der
-Disk-Write laeuft asynchron — PDF-Bericht muss `File.Exists` pruefen. Pfad wandert
-durch `ArTransferService` in `SurveyPoint.PhotoPath`.
-
-### Confidence-Formel
-
-```
-confidence =
-    Hit-Quality     (0.1 Instant / 0.2 Point / 0.3 Plane)
-  + StdDev          (0.3 wenn σ=0, linear auf 0 bei σ=5cm)
-  + Stability       (0.2 × StabilityScore)
-  + Anchor-Bonus    (+0.2 wenn Anchor erstellt)
-→ max 1.0
-```
-
----
-
-## SkiaSharp-Renderer
-
-| Renderer | Besonderheit |
-|----------|-------------|
-| `TerrainRenderer` | Painter's Algorithm auf Kamera-Z (nicht Screen-Y), gecachte screenX/Y/Z-Arrays, Lichtvektor rotiert (nicht Normale), Höhen-Legende als `LinearGradient`-Shader statt 400 DrawLines |
-| `GardenPlanRenderer` | Min/Max in 1-Pass (nicht 6× LINQ), gecachter Preview-Path + SKPoint-Array, `element.LocalPoints` direkt (kein PointsJson-Re-Parse pro Frame) |
-| `SurveyLiveRenderer` | Nordpfeil-Path gecacht, Shader-Caching für Fix-Glow, SKFont-API |
-| `StakeoutRenderer` | Pfeil-Farbe distanz-codiert (grün <10 cm / gelb <1 m / orange <5 m / rot >5 m), Länge wächst bis 80 % Radius |
-| `ProjectThumbnailRenderer` | Statisch mit gecachten Paints, SKFont-API |
-
----
-
-## Farbpalette
-
-| Token | Hex | Bedeutung |
-|-------|-----|-----------|
-| Primary | #FF6B00 | Orange — Messpunkte, AR-Punkte |
-| Secondary | #2196F3 | Blau — Linien |
-| Accent | #4CAF50 | Grün — RTK Fix |
-| AR Contour | #00BCD4 | Cyan — Kontur-Linien |
-| AR Active | #FFEB3B | Gelb — Aktive Kontur, gestrichelt |
-| AR Selected | #00BCD4 | Cyan — Ausgewählter Punkt, Glow |
-| ConfidenceHigh/Mid/Low | #4CAF50/#FFC107/#FF7043 | AR-Punkt-Konfidenz in der Punkte-Liste |
-| ArHeroGradient | #00BCD4→#2196F3 | AR-Kamera-Hero-CTA (SurveyView) |
-| Background | #1A1A2E | Dunkelblau |
-| Surface | #16213E | |
-
-Token-Definitionen in `Themes/AppPalette.axaml` (Brushes `ArContourBrush`, `ArActiveBrush`,
-`ConfidenceHigh/Mid/LowBrush`, `ArHeroGradientBrush`). AR-Overlay zeichnet weiter mit eigenen
-SKColor-Konstanten (native Activity ohne Avalonia-Theme-Zugriff).
-
----
-
-## Conventions
-
-### Naming
-
-- MockBleService + MockArCaptureService → Desktop-Entwicklung ohne Hardware
-- Debug-Panel in SurveyView nur sichtbar bei `IsMockMode=true`
-- `IsMockMode` schaltet Edge-Cases frei: `CycleFixDegradation`, `SimulatePacketLoss`, `SimulateBatteryDrain`, `SimulateMagLoss`, `SimulateSpuriousDisconnect`
-
-### Thread-Safety
-
-- Alle BLE-Events via `Dispatcher.UIThread.Post` marshallen
-- `_dataLock` in ArCaptureActivity für alle Zugriffe auf `_points`, `_contours`, `_activeContour`
-- Undo/Redo-Actions halten Lock-Reference + setzen Lock bei Mutation
-- `_frameLock` für `_lastFrame` (GL-Thread schreibt, UI-Thread liest)
-- `RunOnUiThread` für alle Overlay-State-Updates
-
-### Android
-
-- `OperatingSystem.IsAndroidVersionAtLeast(31)` statt `Build.VERSION.SdkInt` (Static-Analyzer)
-- `SupportedOSPlatformVersion=26` im csproj
-- `RunAOTCompilation=false` + `AndroidEnableProguard=false` (Mapsui/NTS brauchen Reflection)
-- ArCaptureActivity Theme: `@style/MyTheme.Fullscreen` (AppCompat, NICHT `android:Theme.Black`)
-
----
-
-## Aktive Gotchas
-
-| Problem | Fix |
-|---------|-----|
-| `LocalApplicationData` crasht auf Android im DI | `IAppPaths`-Pattern überall — auch in `SettingsViewModel` + `ProjectsViewModel` |
-| ARCore `Frame.Dispose()` → Use-after-Dispose | KEIN Dispose auf `_lastFrame` — ARCore verwaltet Lifecycle |
-| `ByteBuffer`-Leak in ArBackgroundRenderer | Gecachter `ByteBuffer` statt pro-Frame `AllocateDirect` |
-| BLE MTU-Default 23 zu klein | `RequestMtu(247)` in `OnConnected` VOR `DiscoverServices` |
-| BLE parallele Writes → Korruption | `SemaphoreSlim` + `OnCharacteristicWrite`-Acknowledgment |
-| ARCore `+Z = hinten` naiv falsch | `east = arX*cosH - arZ*sinH`, `nord = -arX*sinH - arZ*cosH` |
-| Bowyer-Watson bei kollinearen Punkten | 1 mm Dedup + CCW-Winding + Epsilon `1e-12` |
-| Shoelace-Fläche auf ungeordneten Punkten | Convex-Hull (Andrew's Monotone Chain) vorher |
-| Konturlinie exakt auf Vertex | Höhe um `1e-9` perturbieren + Dedup intersections |
-| MeasurementService 111320 m/Grad | `ICoordinateService.ToLocalMetric` (UTM) — spart 8 cm/100 m |
-| GardenElement-Konturen driften | PointsJson v2 (WGS84 absolut) + `LocalPoints` transient neu projiziert |
-| RTK-Höhe ~48 m Offset zu NN | `IGeoidService` (EGM96) in `ParsePointData` + `ArTransferService` |
-| Stab-Neigung sabotiert Präzision | App-seitige Tilt-Korrektur (vertikal immer, horizontal bei MagAccuracy ≥ 2) |
-| O(N²)-Triangulation bei Projekt-Load | `MeasurementService.ReplacePoints` + `PointsReset` (1 Event statt N) |
-| Mapsui MapControl crasht beim Start | Lazy-Init via Code-Behind (nicht XAML) — erst bei Karten-Tab-Aktivierung |
-| PdfSharpCore crasht auf Android | Lazy XFont-Properties + `AndroidFontResolver` (/system/fonts/) |
-| CSV-Labels mit `;` / Newline | RFC 4180 Quote-Escape in `ExportService.EscapeCsv` |
-| GardenPlanService.CalculatePolygonArea in Lat/Lon | Plausibilitäts-Check: wenn |x| < 180 && |y| < 90 → Warning + 0 |
-| FileProvider fehlt für Share-Intents | `<provider>` im Manifest + `Resources/xml/provider_paths.xml` |
-| AR-Transfer ohne GPS-Referenz → Exception, Messung verloren | `ArTransferService` setzt Fallback-Ursprung (Projekt-Schwerpunkt/Default); Maße bleiben translation-invariant korrekt |
-| AR-Confidence ging beim Transfer verloren | `arPoint.Confidence` → `SurveyPoint.Confidence` (RTK = 1.0); Anzeige in Punkte-Liste |
-| `Android.Content.Res` in `SmartMeasure.Android`-Namespace → CS0234 | `global::Android.Content.Res.…` (Namespace-Kollision App vs Android-SDK) |
-| `MockBleService` startet disconnected → Desktop zeigt AR-First-Modus | gewollt; RTK-UI via Settings → "RTK-Stab verbinden" → Connect-Screen testbar |
-| Blender Y/Z-Swap → falsche Normalen | Kein Swap — UTM-Koords sind bereits Blender-Standard (Z-up) |
-| Fan-Triangulation kaputt bei konkaven Polygonen | Ear-Clipping in `BlenderExportService` |
-| SurveyView-Handler akkumulieren | Handler-Dedup: `-=` vor `+=` in `DataContextChanged` |
-| NTRIP-Mountpoint mit `:` | `CanSendNtripConfig`-Validation: kein `:` im Mountpoint |
-| WS2812B auf GPIO 48 | GPIO 48 oft reserviert auf ESP32-S3-DevKits → GPIO 38 |
-| AP2112K vs AMS1117 | AMS1117 hat 1,1 V Dropout → stirbt bei halbem Akku. Nur AP2112K! |
+- `OperatingSystem.IsAndroidVersionAtLeast(31)` statt `Build.VERSION.SdkInt` (Static-Analyzer).
+- `SupportedOSPlatformVersion=26` im csproj.
+- `RunAOTCompilation=false` + `AndroidEnableProguard=false` (Mapsui/NTS brauchen Reflection).
+- `ArCaptureActivity` Theme: `@style/MyTheme.Fullscreen` (AppCompat, NICHT `android:Theme.Black`).
+- `global::Android.Content.Res.…` voll qualifizieren (Namespace-Kollision App vs. Android-SDK → CS0234).
 
 ---
 
 ## Build
 
 ```bash
-dotnet run --project src/Apps/SmartMeasure/SmartMeasure.Desktop
+dotnet build src/Apps/SmartMeasure/SmartMeasure.Shared
+dotnet run   --project src/Apps/SmartMeasure/SmartMeasure.Desktop
 dotnet build src/Apps/SmartMeasure/SmartMeasure.Android
 ```
 
 ---
 
-## Roadmap (Plan-Status — komplett)
-
-Alle 30 Plan-Items + 12 Folge-UI/Logik-Aufgaben sind umgesetzt. Tests: **96 gruen**.
-
-| Kap. | Stand |
-|------|-------|
-| 3.1-3.7 | Alle umgesetzt (RTK-AR-Fusion, Tracking-Loss, Earth-Anchor-Re-Attach, PruneStopped, Light-Estimation, Scene-Semantics + Sky-Filter, Depth-Fallback, Snap-Engine V/R/P/E). |
-| 4.1-4.14 | Alle umgesetzt. |
-| 5.2 | Persistente Sites via Earth-Anchor-Cache + UI-Verkettung in `SurveyViewModel.StartArCaptureAsync`. |
-| 5.3 | Tape-Measure-Modus + Toolbar. |
-| 5.4 | Volumen-Service (Prism/Layered/Frustum + Materialien) + UI-Panel in `GardenPlanView`. |
-| 5.5 | `SceneReconstructionService` mit Voxel-Filter + PLY/OBJ-Punktwolke-Export. Poisson-Mesh in Blender/MeshLab. |
-| 5.6 | Foto-Annotation pro Punkt + Foto-Thumbnails im PDF. |
-| 5.7 | ArUco-/Augmented-Image-Marker: AugmentedImageDatabase + Erkennungs-Loop + Auto-Anchor an eingemessener Position. |
-| 5.8 | RTK-Stab Live-Position in AR. |
-| 5.9 | Stakeout-AR mit Pfeil + Reached-Hysterese. |
-| 5.11 | `LocalTcpMultiUserService` — TCP-NDJSON-Broadcast statt SignalR (kein Extra-Package). |
-| 5.12 | `AndroidVoiceAnnotationService` mit `SpeechRecognizer`. |
-| 5.13 | Differential-Snapshot-Service + UI-Compare in `ProjectsView`. |
-| 5.14 | `SurveyReportService` mit PdfSharpCore (Cover, Punkte+Fotos, Materialien, optional Differential). |
-| 5.15 | Quality-Heatmap mit echter Per-Patch-FeaturePoint-Density (GetAllTrackables(Point)). |
-| 5.16 | `GnssConditionService` mit NOAA Kp + F10.7 + UI-Anzeige in `ConnectView`. |
-| 5.17 | Total-Station als `CaptureMode.TotalStation` + Toolbar + Stationieren-Flow + Depth-API-Tachymeter. |
-| 5.18 | `LeastSquaresAdjustmentService` mit Position-based Dynamics. |
-| 7.3 | `AndroidArSession`-Wrapper + `MockArSession` in Tests. AnchorManager-Refactor steht noch aus (Anchors sind tief in ARCore-API verzahnt). |
-
-Verbleibende Bonus-/Nice-to-Have-Punkte aus dem Plan:
-- Sketch-Overlay auf Foto-Annotationen (5.6 Bonus)
-- Audio-File-Speicherung parallel zum Transkript (5.12 Bonus, blockiert durch Mic-Kanal-Konflikt)
-- WiFi-Direct-Setup (5.11 — TCP funktioniert auf existierendem WiFi/Hotspot)
-- AnchorManager-Refactor auf `IArSessionLike` (7.3 Vollendung)
-- NREL Solar-API zusaetzlich zu NOAA F10.7 (5.16 — braucht API-Key)
-
 ## Verweise
 
-- Hardware-Detail: `~/.claude/projects/F--Meine-Apps-Ava/memory/smartmeasure.md`
-- Globale Conventions (DI, MVVM, DateTime, Thread-Safety): `F:\Meine_Apps_Ava\CLAUDE.md`
-- Globale Gotchas SkiaSharp/Rendering: `src/UI/MeineApps.UI/CLAUDE.md`; Avalonia/MVVM/Android-Framework-Fallstricke: `src/Libraries/MeineApps.Core.Ava/CLAUDE.md` (Abschnitt "Framework-Fallstricke")
+- Hardware-Detail: Memory `smartmeasure.md`
+- DI/MVVM/DateTime/Thread-Safety, Naming, Localization: [Haupt-CLAUDE.md](../../../CLAUDE.md)
+- SkiaSharp/Rendering-Gotchas: [MeineApps.UI](../../../UI/MeineApps.UI/CLAUDE.md)
+- Avalonia/MVVM/Android-Framework-Fallstricke: [MeineApps.Core.Ava](../../../Libraries/MeineApps.Core.Ava/CLAUDE.md)

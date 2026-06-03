@@ -1,7 +1,7 @@
 # AppChecker
 
 Automatisches Pruef-Tool fuer die 12 Avalonia-Apps (siehe Tabelle "Bekannte Apps").
-**34 Checker-Klassen, 200+ Pruefungen pro App.** Modulare Architektur mit `IChecker`-Interface
+**33 Checker-Klassen, 200+ Pruefungen pro App.** Modulare Architektur mit `IChecker`-Interface
 und Datei-Caching via `CheckContext`. Vollstaendige MVVM-Pattern-Abdeckung gemaess Architektur
 in der Haupt-CLAUDE.md.
 
@@ -83,7 +83,7 @@ tools/AppChecker/
     ├── CodeBehindHygieneChecker.cs       # Code-Behind > 200/400 LOC, Service-Felder, async void
     ├── DataContextChangedPatternChecker.cs # Views mit VM-Events brauchen DataContextChanged/Detached
     ├── EventNamingConventionChecker.cs   # NavigationRequested/MessageRequested/... Naming + Signaturen
-    ├── ServiceConventionChecker.cs       # I{Name}Service-Konvention, Async-Suffix, Lifetime-Dup, God Interfaces (>10)
+    ├── ServiceConventionChecker.cs       # I{Name}Service-Konvention, Async-Suffix, Lifetime-Dup, God Interfaces (6-10 = INFO, >10 = WARN)
     ├── DispatcherUIThreadChecker.cs      # Task.Run mit Collection-Mutationen / VM-Instanziierung ohne Dispatcher
     │
     │  === Ad-Layout ===

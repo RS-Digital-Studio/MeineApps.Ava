@@ -10,7 +10,7 @@ Billing-/Linked-Files). Generische Android-Patterns → [Haupt-CLAUDE.md](../../
 |-------|-------|
 | `AndroidApp.cs` | `AvaloniaAndroidApplication<App>` — Avalonia initialisiert sich hier **einmal pro Prozess**. `CustomizeAppBuilder().WithInterFont()`. |
 | `MainActivity.cs` | `AvaloniaMainActivity` (kein `<App>`-Generic mehr in Avalonia 12). Factory-Wiring + Lifecycle + `AndroidHapticService`. |
-| `AndroidManifest.xml` | Package `com.meineapps.rechnerplus`, `MyTheme.NoActionBar`, keine Ad-/Billing-Permissions. |
+| `AndroidManifest.xml` | Package `com.meineapps.rechnerplus`, `MyTheme.NoActionBar`, `INTERNET`-Permission, `AD_ID` explizit entfernt (`tools:node="remove"`), keine Billing-Permissions. |
 | `Resources/mipmap-*` | App-Icon (`appicon`, `appicon_round`). |
 | `Resources/values/styles.xml` | `MyTheme.NoActionBar`. |
 

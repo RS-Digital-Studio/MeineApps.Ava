@@ -3,7 +3,7 @@
 > Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Körperfett),
-Tracking-Charts, Nahrungsmittel-Suche (114 lokal + Open Food Facts API), Intervallfasten,
+Tracking-Charts, Nahrungsmittel-Suche (99 lokal + Open Food Facts API), Intervallfasten,
 Aktivitäts-Tracking, Rezept-Editor und Gamification.
 
 | Aspekt | Wert |
@@ -41,7 +41,7 @@ Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `FitnessRechner.Shared/
 | Desktop-Host | `Program.cs` | [FitnessRechner.Desktop](FitnessRechner.Desktop/CLAUDE.md) |
 | ViewModels | MainVM (+ Dashboard-Partial), ProgressVM (4 Partials), Calculator-VMs | [Shared/ViewModels](FitnessRechner.Shared/ViewModels/CLAUDE.md) |
 | Views | AXAML-Views, Barcode-Flow, Calculator-Views | [Shared/Views](FitnessRechner.Shared/Views/CLAUDE.md) |
-| SkiaSharp-Renderer | VitalOS Medical Design System (13 Renderer + MedicalColors) | [Shared/Graphics](FitnessRechner.Shared/Graphics/CLAUDE.md) |
+| SkiaSharp-Renderer | VitalOS Medical Design System (15 Renderer + MedicalColors) | [Shared/Graphics](FitnessRechner.Shared/Graphics/CLAUDE.md) |
 | Services | Domain-Services (Tracking, Food, Gamification, Fasting, Activity, Reminders) | [Shared/Services](FitnessRechner.Shared/Services/CLAUDE.md) |
 | Models | Datenmodelle, FitnessEngine (5 Berechnungen), Result-Records | [Shared/Models](FitnessRechner.Shared/Models/CLAUDE.md) |
 | Converters | Tab-Farb-, Food-Kategorie- und Utility-Converter | [Shared/Converters](FitnessRechner.Shared/Converters/CLAUDE.md) |

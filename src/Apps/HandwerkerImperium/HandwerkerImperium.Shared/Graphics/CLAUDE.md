@@ -1,4 +1,4 @@
-# Graphics — SkiaSharp-Renderer (~55 Dateien)
+# Graphics — SkiaSharp-Renderer (59 Dateien)
 
 App-eigene SkiaSharp-Visualisierungen. Alle Renderer mit Instanz-SKPaint/SKFont/SKPath/SKShader
 implementieren `IDisposable` mit `_disposed`-Guard.
@@ -12,11 +12,21 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) →
 | Klasse | Typ |
 |--------|-----|
 | Alle MiniGame-Renderer (Sawing, Pipe, Wiring, Painting, Blueprint, RoofTiling, DesignPuzzle, Inspection, Forge, Invent) | `IDisposable`, Instanz-Felder |
-| `LuckySpinWheelRenderer`, `OdometerRenderer`, `WorkshopCardRenderer`, `WorkshopSceneRenderer` | `IDisposable`, Instanz-Felder |
-| `CityRenderer`, `CityWeatherSystem`, `GameJuiceEngine`, `MeisterHansRenderer` | `IDisposable`, Instanz-Felder |
-| `MaterialIconRenderer` | DI-Singleton, `IDisposable` (Bitmap-Cache pro ProductId) |
-| **`GameCardRenderer`**, **`WorkshopGameCardRenderer`**, **`ResearchIconRenderer`** | `static class` — kein `IDisposable` nötig |
-| **`FireworksRenderer`**, **`LoadingScreenRenderer`** | `sealed class`, aber alle Felder `static readonly` — kein `IDisposable` |
+| `LuckySpinWheelRenderer`, `OdometerRenderer`, `WorkshopSceneRenderer` | `IDisposable`, Instanz-Felder |
+| `CityRenderer`, `CityWeatherSystem`, `GameJuiceEngine` | `IDisposable`, Instanz-Felder |
+| `MarketChartRenderer`, `MaterialIconRenderer`, `PrestigeCinematicRenderer`, `RewardCeremonyRenderer` | `IDisposable`, Instanz-Felder |
+| `GameTabBarRenderer`, `GameBackgroundRenderer`, `ScreenTransitionRenderer` | `IDisposable`, Instanz-Felder |
+| `ResearchTreeRenderer`, `GuildResearchTreeRenderer`, `ResearchCelebrationRenderer` | `IDisposable`, Instanz-Felder |
+| `ResearchActiveRenderer`, `ResearchBackgroundRenderer`, `ResearchBranchBannerRenderer`, `ResearchLabRenderer`, `ResearchTabRenderer` | `IDisposable`, Instanz-Felder |
+| `GuildHallHeaderRenderer`, `GuildHallSceneRenderer`, `GuildBossRenderer`, `GuildLeagueBadgeRenderer` | `IDisposable`, Instanz-Felder |
+| `GuildAchievementRenderer`, `GuildWarDashboardRenderer`, `GuildWarLogRenderer`, `GuildResearchBackgroundRenderer` | `IDisposable`, Instanz-Felder |
+| `PrestigeRoadmapRenderer`, `CoinFlyAnimation` | `IDisposable`, Instanz-Felder |
+| **`WorkshopCardRenderer`**, **`WorkshopGameCardRenderer`**, **`MeisterHansRenderer`** | `static class` — kein `IDisposable` nötig |
+| **`GameCardRenderer`**, **`ResearchIconRenderer`**, **`GuildResearchIconRenderer`** | `static class` — kein `IDisposable` nötig |
+| **`FtueSpotlightRenderer`**, **`CjkFontResolver`**, **`RarityFrameRenderer`** | `static class` — kein `IDisposable` nötig |
+| **`ResearchItemRenderer`**, **`CraftTextures`** | `static class` — kein `IDisposable` nötig |
+| **`FireworksRenderer`**, **`LoadingScreenRenderer`**, **`WorkerAvatarRenderer`** | `sealed class`, alle Felder `static readonly` — kein `IDisposable` |
+| **`AnimationManager`**, **`EasingFunctions`** | keine SKPaint-Felder — kein `IDisposable` |
 
 `App.DisposeServices()` → `GameJuiceEngine.Dispose()` → Renderer-Dispose-Kaskaden.
 
@@ -26,15 +36,15 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) →
 
 | Datei | Zweck |
 |-------|-------|
-| `GameJuiceEngine.cs` | ScreenShake, RadialBurst, CoinsFlyToWallet, SparkleEffect (Struct-Pool max 200). `ReduceMotion`-Flag |
+| `GameJuiceEngine.cs` | ScreenShake, RadialBurst, CoinsFlyToWallet, SparkleEffect, Vignette (Struct-Pool max 200). `ReduceMotion`-Flag |
 | `FpsProfile.cs` | Plattformadaptive FPS-Profile (Low/Medium/High). `CurrentChanged`-Event für Live-Update |
 | `GameTabBarRenderer.cs` | Tab-Bar-Renderer (SkiaSharp, kein XAML). Ersetzt XAML-Tab-Bar komplett |
-| `CityRenderer.cs` | AI-Bitmap + Wetter-Overlay (saisonal, Event-gesteuert, 2× Partikel-Intensität) |
-| `CityWeatherSystem.cs` | Regen+Regenbogen, Sonne+Shimmer, Blätter, Schnee, Kirschblüten (80 Struct-Pool) |
-| `WorkshopCardRenderer.cs` | 10 thematische Szenen (AI-Bitmap + Level-Overlays: Sterne Lv250+, Gold-Aura Lv500+, Shimmer Lv1000) |
-| `WorkshopGameCardRenderer.cs` | AI-Bitmap, gecacht im `GameAssetService`. `Initialize(assetService)` in `App.axaml.cs` |
+| `CityRenderer.cs` | AI-Bitmap + Wetter-Overlay (saisonal, Event-gesteuert) |
+| `CityWeatherSystem.cs` | Regen+Regenbogen, Sonne+Shimmer, Blätter, Schnee, Kirschblüten (160 Struct-Pool, ×2 bei Events) |
+| `WorkshopCardRenderer.cs` | `static` — 10 thematische Szenen (AI-Bitmap + Level-Overlays: Sterne Lv250+, Gold-Aura Lv500+, Shimmer Lv1000) |
+| `WorkshopGameCardRenderer.cs` | `static` — AI-Bitmap, gecacht im `GameAssetService`. `Initialize(assetService)` in `App.axaml.cs` |
 | `WorkerAvatarRenderer.cs` | Pixel-Art (6 Hauttöne, Tier-Farbe+Sterne, Mood, RarityFrame, Idle-Bobbing+Blinzeln). Gecacht in `GameAssetService`. `InitializeAssetService(assetService)` in `App.axaml.cs` |
-| `MeisterHansRenderer.cs` | 4 Stimmungen, Idle-Bobbing, Blinzel-Animation (120×120). `Initialize(assetService)` in `App.axaml.cs` |
+| `MeisterHansRenderer.cs` | `static` — 4 Stimmungen, Idle-Bobbing, Blinzel-Animation (120×120). `Initialize(assetService)` in `App.axaml.cs` |
 | `OdometerRenderer.cs` | Animierte Geld-Anzeige, rollende Ziffern, Suffix-Crossfade, Gold-Flash |
 | `CoinFlyAnimation.cs` | 8–16 Münzen auf Bezier-Kurven, HUD-Pulse bei Ankunft |
 | `LuckySpinWheelRenderer.cs` | 8 Segmente, Nieten-Rand, Spin-Animation ~60fps. Gecacht: 11 SKPaint + 1 SKFont + 13 SKShader + 2 SKMaskFilter |
@@ -42,20 +52,23 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) →
 | `RewardCeremonyRenderer.cs` | Full-Screen: Scale-In, Confetti (120), Feuerwerk, 5 CeremonyTypes, 4s Tap-to-Dismiss |
 | `ResearchIconRenderer.cs` | `static`, gecachte `_cachedPath` + `_labelFont` + `_crownFont` — alle Icons sequenziell |
 | `GuildResearchIconRenderer.cs` | `static`, gecachte `_cachedPath` |
-| `ResearchTreeRenderer.cs` | 45-Node Forschungsbaum, Branch-Tabs |
-| `GuildResearchTreeRenderer.cs` | 18-Node Gilden-Forschungsbaum |
+| `ResearchTreeRenderer.cs` | Forschungsbaum, Branch-Tabs |
+| `GuildResearchTreeRenderer.cs` | Gilden-Forschungsbaum |
 | `MaterialIconRenderer.cs` | DI-Singleton. Procedural 128×128 Bitmaps pro ProductId (gecacht). 3 SKPaint + 1 SKFont |
 | `MarketChartRenderer.cs` | Preis-Verlaufskurve für Material-Markt-Heatmap |
 | `HandwerkerImperiumSplashRenderer.cs` | Splash (Werkstatt-Szene + Meister Hans). Erbt von `SplashRendererBase` |
 | `ScreenTransitionRenderer.cs` | View-Übergangs-Effekte |
-| `FtueSpotlightRenderer.cs` | FTUE-Spotlight-Overlay (Spotlight-Ausschnitt + abgedunkelter Rest) |
-| `CjkFontResolver.cs` | Fallback-Font-Resolver für CJK-Zeichen in SkiaSharp-Text |
+| `FtueSpotlightRenderer.cs` | `static` — FTUE-Spotlight-Overlay (Spotlight-Ausschnitt + abgedunkelter Rest) |
+| `CjkFontResolver.cs` | `static` — Fallback-Font-Resolver für CJK-Zeichen in SkiaSharp-Text |
 | `GameBackgroundRenderer.cs` | App-Hintergrund-Renderer für MainView |
 | `AnimationManager.cs` | Zentrale Animation-State-Verwaltung für mehrere gleichzeitige Animationen |
 | `EasingFunctions.cs` | Easing-Bibliothek (CubicEaseOut, CubicEaseIn, Bounce, Spring, ...) |
-| `CraftTextures.cs` | Prozedurale Craft-Texturen (Holz, Metall, Stein, Leder), Shader-Cache bei Bounds-Änderung |
-| `RarityFrameRenderer.cs` | Seltenheits-Rahmen (Common/Uncommon/Rare/Epic/Legendary) für Worker-Karten |
+| `CraftTextures.cs` | `static` — Prozedurale Craft-Texturen (Holz, Metall, Stein, Leder), Shader-Cache bei Bounds-Änderung |
+| `RarityFrameRenderer.cs` | `static` — Seltenheits-Rahmen (Common/Uncommon/Rare/Epic/Legendary) für Worker-Karten |
 | `GameCardRenderer.cs` | `static` — Karten-Layout (Hintergrund, Typ-Farbe, Text) |
+| `PrestigeRoadmapRenderer.cs` | Prestige-Fortschritts-Übersicht (Tier-Roadmap) |
+| **Guild-Renderer** | `GuildHallHeaderRenderer`, `GuildHallSceneRenderer`, `GuildBossRenderer`, `GuildLeagueBadgeRenderer`, `GuildAchievementRenderer`, `GuildWarDashboardRenderer`, `GuildWarLogRenderer`, `GuildResearchBackgroundRenderer` — Gilden-Views |
+| **Research-Renderer** | `ResearchActiveRenderer`, `ResearchBackgroundRenderer`, `ResearchBranchBannerRenderer`, `ResearchCelebrationRenderer`, `ResearchItemRenderer`, `ResearchLabRenderer`, `ResearchTabRenderer` — Forschungs-Views |
 
 ---
 
@@ -70,8 +83,8 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) →
 | WorkerAvatar | 5fps | 8fps | 10fps |
 | MainView (BG+TabBar) | 10fps | 15fps | 15fps |
 
-Platform-Default: Android=Medium, Desktop=High. `FpsProfile.CurrentChanged`-Event:
-`WorkerAvatarControl` subscribed für Live-Update.
+Platform-Default: Android=Medium, Desktop=High. `FpsProfile.SetCurrent(quality)` feuert
+`FpsProfile.CurrentChanged`-Event; `WorkerAvatarControl` und andere Views subscriben für Live-Update.
 
 ---
 

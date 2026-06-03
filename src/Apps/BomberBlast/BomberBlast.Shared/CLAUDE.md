@@ -57,10 +57,11 @@ Feature-Unlocks) läuft in `OnAppeared()` try/catch-geschützt.
 
 ### `DisposeServices()`
 
-Lazy-aufgelöste VMs (Game/Shop/LevelSelect/Deck/Dungeon/GemShop/LuckySpinVm/ProfileVm)
-werden nur disposed wenn sie instanziiert wurden. `GameRenderer` wird **nicht** disposed
-(Android-OnDestroy ist kein echter Process-Kill, Renderer würde mit invaliden SKPaint crashen).
-`InputManager` disposen (NeonJoystick: 20 SKPaint + 5 SKPath).
+Lazy-aufgelöste VMs (GameVm über `mainVm.GameVm`-Null-Check; Shop/LevelSelect/Menu/Deck/
+Dungeon/GemShop/LuckySpin/ProfileVm über `mainVm.XxxVm as IDisposable`) werden nur disposed
+wenn sie instanziiert wurden. `GameRenderer` wird **nicht** disposed (Android-OnDestroy ist
+kein echter Process-Kill, Renderer würde mit invaliden SKPaint crashen). `InputManager`
+disposen (NeonJoystick: 20 SKPaint + 5 SKPath).
 
 ### Platform-Factories (vor `base.OnCreate` registrieren)
 
@@ -80,14 +81,15 @@ Desktop-Fallbacks: `NullSoundService`, `NullVibrationService`, `NullPushNotifica
 
 ### DI-Konfiguration
 
-**37 Services** + **25 ViewModels** (alle Singleton außer `WhatsNewViewModel` + `BottomTabBarViewModel` → Transient).
+**~65 Services** + **27 ViewModels** (alle Singleton außer `WhatsNewViewModel` → Transient;
+`BottomTabBarViewModel` ist **Singleton**, da genau eine BottomTabBar existiert).
 
 Besonderheiten:
 - `services.AddLazyResolution()` → `LazyServiceExtensions.cs` für zirkuläre Abhängigkeiten.
-- **4 Feature-Module** als Singletons registriert mit Lazy-Lambda-Auflösung für die zwei
+- **5 Feature-Module** als Singletons registriert mit Lazy-Lambda-Auflösung für die zwei
   Zirkel (`BottomTabController`↔`NavigationCoordinator`,
   `NavigationCoordinator`↔`LifecycleHub`) — Lambda läuft erst zur Laufzeit.
-- `MainViewModelDependencies` aggregiert 32 Ctor-Parameter.
+- `MainViewModelDependencies` aggregiert 34 Ctor-Parameter (11 Eager-VMs + 15 Lazy-VMs + 8 Services).
 - `IRngProvider` → `DeterministicRngProvider` (xoshiro256+, Seed aus `DateTime.UtcNow.Ticks`).
 
 ---
@@ -117,7 +119,7 @@ Besonderheiten:
 | Ordner | Inhalt | Doku |
 |--------|--------|------|
 | `AI/` | A\*-Pathfinding, BFS Safe-Cell, Danger-Zone | [AI/CLAUDE.md](AI/CLAUDE.md) |
-| `Controls/` | SkiaSharp-Canvas-Controls (GameButton, Achievement, Shop) | [Controls/CLAUDE.md](Controls/CLAUDE.md) |
+| `Controls/` | SkiaSharp-Canvas-Controls (GameButton, Achievement, Shop, Medal, EmptyState, MenuBackground) | [Controls/CLAUDE.md](Controls/CLAUDE.md) |
 | `Converters/` | AXAML-Converter (ActiveView, Bool→Opacity, GameIconKind) | [Converters/CLAUDE.md](Converters/CLAUDE.md) |
 | `Core/` | GameEngine (Partial), GameState, Modes, Combat, Audio, Multiplayer, Replay | [Core/CLAUDE.md](Core/CLAUDE.md) |
 | `Extensions/` | `LazyServiceExtensions` für DI-Zirkel | [Extensions/CLAUDE.md](Extensions/CLAUDE.md) |
@@ -127,9 +129,9 @@ Besonderheiten:
 | `Loading/` | `BomberBlastLoadingPipeline`, `LoadingTips` | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
 | `Models/` | Entities, Grid, Levels, Dungeon, Cards, BattlePass, Cosmetics, CloudSave | [Models/CLAUDE.md](Models/CLAUDE.md) |
 | `Navigation/` | NavigationCoordinator, BottomTabController, NavigationRouteParser | [Navigation/CLAUDE.md](Navigation/CLAUDE.md) |
-| `Services/` | 37 Services + Interfaces + DialogPresenter + Logging-Provider | [Services/CLAUDE.md](Services/CLAUDE.md) |
-| `ViewModels/` | 25 ViewModels + ChildViewModelRegistry + LifecycleHub + Feature-Module | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
-| `Views/` | 30 Views + Components (GameView, MainView, BottomTabBar, Overlays) | [Views/CLAUDE.md](Views/CLAUDE.md) |
+| `Services/` | ~65 Services + Interfaces + DialogPresenter + Logging-Provider | [Services/CLAUDE.md](Services/CLAUDE.md) |
+| `ViewModels/` | 27 ViewModels + ChildViewModelRegistry + LifecycleHub + 5 Feature-Module | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
+| `Views/` | 26 Views + 5 Components (GameView, MainView, BottomTabBar, Overlays) | [Views/CLAUDE.md](Views/CLAUDE.md) |
 
 Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (AppPalette.axaml, Orange #FF6B35),
 `Resources/Strings/` (`AppStrings.resx`, 6 Sprachen), `Assets/` (Bild-Assets),

@@ -68,7 +68,7 @@ GameLoopService (1s-Takt, Partial: cs + Automation + PeriodicChecks + PrestigeCa
 
 | Facade | Bündelt | Konsument |
 |--------|---------|-----------|
-| `IGuildFacade` | 7 Gilde-Services (Guild, Invite, Research, Chat, WarSeason, Boss, Hall, Tip, Achievement) | `GuildViewModel` |
+| `IGuildFacade` | 9 Gilde-Services (Guild, Invite, Research, Chat, WarSeason, Boss, Hall, Tip, Achievement) | `GuildViewModel` |
 | `IGuildTickService` | 5 Tick-Services (Boss, Hall, Achievement, WarSeason, WorkerAuction) | `GameLoopService` |
 | `IMissionsFacade` | 5 Mission-Services (DailyChallenge, WeeklyMission, LuckySpin, QuickJob, Goal) | `MissionsFeatureViewModel` |
 
@@ -118,8 +118,8 @@ Auto-Stop bei 0 Subscribern, Pause/Resume für App-Lifecycle.
 | `SeasonalEventService` | 4 saisonale Events/Jahr, SP-Währung, Event-Shop |
 | `BattlePassService` | 30-Tier Saison (30 Tage), Free/Premium-Track, XP-Boost |
 | `WhatsNewService` | Versionierter Feature-Dialog. RESX-Key-Miss gibt Key-Namen zurück (nie null) — `L(key, default)`-Helper erkennt den Miss |
-| `RemoteConfigService` | `DefaultsRemoteConfigService` liest eingebettete Config — App funktioniert ohne Firebase-Backend |
-| `CloudSaveService` | Local-First, Push-Debounce 5s |
+| `RemoteConfigService` | Liest aus `remote_config/*` in Firebase, cached letztes Ergebnis in Preferences. Offline-Start fällt auf gecachte Werte zurück, Erststart auf Code-Defaults (kein eingebettetes Asset). |
+| `CloudSaveService` | Liest/schreibt unter `cloud_saves/{playerId}`. HMAC-Resign nach Download (gerätegebunden). Direkter Firebase-Write, kein Debounce. |
 | `FirebaseService` | Firebase REST: Anonymous Auth + Realtime Database |
 
 ---

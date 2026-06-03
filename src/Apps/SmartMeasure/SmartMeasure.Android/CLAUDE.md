@@ -15,20 +15,23 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `Ar/ArCaptureActivity.cs` | Native `AppCompatActivity` für ARCore-Session (kein Avalonia). GL + Canvas + Toolbar. |
 | `Ar/ArCaptureActivity.Dialogs.cs` | Partial: Bestätigungs-Dialoge, Kontur-Typ-Dialog, Coach-Marks. |
 | `Ar/ArCaptureActivity.Recovery.cs` | Partial: State-Persistenz, Restore-Dialog, Earth-Anchor-Re-Attach-Queue. |
+| `Ar/AndroidArCaptureService.cs` | `IArCaptureService`-Impl: startet `ArCaptureActivity` via Intent, TCS-Bridge, `LastCompletionStatus` + `LastError`. |
+| `Ar/AndroidArSession.cs` | `IArSessionLike`-Wrapper um `Google.AR.Core.Session` — entkoppelt Pose/HitTest-Logik von ARCore. |
 | `Ar/ArBackgroundRenderer.cs` | OpenGL ES 3.0 Kamera-Preview (Vertex+Fragment-Shader für Camera-Textur). |
 | `Ar/ArPointOverlayView.cs` | Transparenter Canvas (Punkte, Linien, Toolbar-Overlay). `partial sealed`. |
 | `Ar/ArAnchorManager.cs` | Drift-Kompensation via Earth-Anchors. Enthält auch `ArStabilityMonitor`. |
 | `Ar/ArPrecisionHelpers.cs` | Depth-Sanity, Ground-Plane, Semantic-Label, Sky-Check. Delegiert Math an `ArMathHelpers` (Shared). |
 | `Ar/ArOverlayState.cs` | Snapshot-Record: alle Render-Parameter + lokalisierte Labels + System-Banner. |
 | `Services/AndroidBleService.cs` | BLE GATT-Kommunikation zum RTK-Stab. MTU 247, Write-Queue, Reconnect-Backoff. |
-| `Services/AndroidAppPaths.cs` | `IAppPaths`-Impl: `Context.FilesDir` → sandbox-sichere Pfade. |
+| `Services/AndroidAppPaths.cs` | `IAppPaths`-Impl: `Context.FilesDir` + `GetExternalFilesDir("Exports")` → sandbox-sichere Pfade. |
+| `Services/AndroidVoiceAnnotationService.cs` | `IVoiceAnnotationService`-Impl: Android `SpeechRecognizer`, 5 s Aufnahme, liefert Transkript. |
 | `Services/MeasurementForegroundService.cs` | Android Foreground-Service (Notification), verhindert Doze-Kill während BLE aktiv. |
 
 ---
 
 ## MainActivity — Reihenfolge in `OnCreate`
 
-**VOR `base.OnCreate`** (Factories werden beim DI-Build ausgewertet, der in `base.OnCreate` passiert):
+**VOR `base.OnCreate`** (DI-Build läuft in `AvaloniaAndroidApplication.OnCreate` auf Application-Ebene — also noch vor diesem `MainActivity.OnCreate`. `base.OnCreate` hier ruft `InitializeAvaloniaView` auf, das `App.MainViewFactory` auslöst und erst dann das `MainViewModel` auflöst. Factories müssen daher VOR `base.OnCreate` gesetzt sein):
 
 ```
 App.AppPathsFactory = () => new AndroidAppPaths(this)
@@ -100,7 +103,7 @@ Pfade: `Resources/xml/provider_paths.xml`.
 - `RequestMtu(247)` in `OnConnected` VOR `DiscoverServices` (BLE 5.3 DLE, 48-Byte-Pakete brauchen mehr als MTU 23).
 - Write-Queue via `SemaphoreSlim` + `OnCharacteristicWrite`-Acknowledgment (BLE-Writes nicht parallel!).
 - `BinaryPrimitives.ReadDoubleLittleEndian` statt `BitConverter` (ESP32 = little-endian, explizit sicherer).
-- Exponential-Backoff-Reconnect: 1 s → 2 s → 4 s → 10 s, max 5 Versuche.
+- Exponential-Backoff-Reconnect: 1 s → 2 s → 4 s → 8 s → 10 s (cap), max 5 Versuche. Formel: `Math.Min(1000 * 2^(attempt-1), 10000)`.
 
 ---
 

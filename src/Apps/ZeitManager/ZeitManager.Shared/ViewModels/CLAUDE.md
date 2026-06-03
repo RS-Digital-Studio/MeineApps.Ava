@@ -30,13 +30,16 @@ Reihenfolge in `HandleBackPressed()`:
 
 ## MainViewModel — Event-Relay
 
-Events von Kind-ViewModels werden im `MainViewModel`-Ctor verdrahtet und nach oben weitergeleitet:
+Events von Kind-ViewModels und Services werden im `MainViewModel`-Ctor verdrahtet und nach oben weitergeleitet:
 - `_stopwatchViewModel.FloatingTextRequested` + `_pomodoroViewModel.FloatingTextRequested` →
   `FloatingTextRequested` (MainView hört zu).
 - `_pomodoroViewModel.CelebrationRequested` → `CelebrationRequested`.
-- `_timerService.TimerFinished` → `AlarmOverlayViewModel.ShowForTimer()` + Celebration.
-- `_alarmScheduler.AlarmTriggered` → `AlarmOverlayViewModel.ShowForAlarm()`.
+- `_timerService.TimerFinished` → `AlarmOverlayViewModel.ShowForTimer()` + Celebration + `IsAlarmOverlayVisible = true`.
+- `_alarmScheduler.AlarmTriggered` → `AlarmOverlayViewModel.ShowForAlarm()` + `IsAlarmOverlayVisible = true`.
+- `_alarmScheduler.AlarmPermissionMissing` → `ShowSnackbar()` (lokalisierter Fehlertext).
 - `_settingsViewModel.MessageRequested` + `_timerViewModel.MessageRequested` → `ShowSnackbar()`.
+- `_alarmOverlayViewModel.DismissRequested` → `IsAlarmOverlayVisible = false`.
+- `_backPressHelper.ExitHintRequested` → `ExitHintRequested`-Event (MainView zeigt Toast).
 - Alle Events werden in `Dispose()` sauber abgemeldet.
 
 ## Initialisierung (WaitForInitializationAsync)
@@ -61,5 +64,5 @@ SkiaSharp-Renderer zu vermeiden.
 ## PomodoroViewModel — Statistik-Daten
 
 `WeekDays` (7 `DayStatistic`-Einträge mit `DayName`, `Sessions`, `IsToday`) und
-`HeatmapDays` (Array von `(Date, Count)`-Tupeln) werden nach jeder Session-Persistierung aktualisiert.
-Die `PomodoroView` rendert sie direkt per SkiaSharp — kein ItemsControl.
+`HeatmapDays` (`PomodoroStatisticsVisualization.DayData[]`) werden nach jeder Session-Persistierung
+aktualisiert. Die `PomodoroView` rendert sie direkt per SkiaSharp — kein ItemsControl.

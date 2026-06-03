@@ -8,10 +8,10 @@ AXAML-Views mit Code-Behind (ausschließlich UI-Logik). Compiled Bindings Pflich
 
 | Datei | Zweck |
 |-------|-------|
-| `MainView.axaml(.cs)` | Tab-Layout, Bottom-Sheet-Gesten, FloatingText-Overlay. |
-| `CalculatorView.axaml(.cs)` | VFD-/Burst-Timer, Keyboard, Landscape-Layout. |
-| `ConverterView.axaml(.cs)` | Swap-Animation. |
-| `SettingsView.axaml(.cs)` | Einstellungen. |
+| `MainView.axaml(.cs)` | Tab-Layout, Verlauf-Swipe-Gesten, animierter Hintergrund (`CalculatorBackgroundRenderer`), Onboarding-Flow, FloatingText-Overlay. |
+| `CalculatorView.axaml(.cs)` | VFD-/Burst-Animations-Steuerung, Keyboard-Mapping, Landscape-Layout, Swipe-to-Backspace, Funktionsgraph-Ein-/Ausblendung, Error-Shake, Copy-Feedback. |
+| `ConverterView.axaml(.cs)` | Swap-Rotation-Animation, Clipboard-Copy-Event. |
+| `SettingsView.axaml(.cs)` | Einstellungen (kein eigener Code-Behind-Logik). |
 
 ## UI-Patterns
 
@@ -33,3 +33,23 @@ Landscape → Spalte 0 (40%): Display + FunctionGraph + ModeSelector + Scientifi
 
 `_autoSwitchedToScientific`-Flag verhindert, dass manueller Scientific-Modus beim Zurückdrehen
 überschrieben wird — bei neuen Modus-Wechsel-Pfaden beibehalten.
+
+## Verlauf-Swipe (`MainView.axaml.cs`)
+
+Swipe-up öffnet, Swipe-down schließt den Verlaufs-Bottom-Sheet — aber nur wenn Calculator-Tab
+aktiv ist. Implementiert über Tunnel-Routing (`PointerPressedEvent`/`PointerReleasedEvent`)
+damit Gesten auch über Buttons registriert werden. Cooldown (`HistoryToggleCooldownMs = 500 ms`)
+verhindert versehentliches Sofort-Wiederholen.
+
+## Onboarding (`MainView.axaml.cs`)
+
+Startet nach `Splash.PreloadCompleted`, 500 ms verzögert. Drei Schritte (Display → Button-Grid →
+Mode-Selector), jeder als `OnboardingTooltip` an unterschiedlicher vertikaler Position.
+`Dismissed`-Event wird pro Schritt frisch an- und abgemeldet um Mehrfachauslösungen zu vermeiden.
+`_vm.IsOnboardingCompleted` wird abgefragt bevor der Flow beginnt; am Ende `MarkOnboardingCompleted()`.
+
+## Hintergrund-Render-Loop (`MainView.axaml.cs`)
+
+`CalculatorBackgroundRenderer` läuft via `DispatcherTimer` mit ~5 fps (200 ms-Intervall).
+Timer wird in `OnAttachedToVisualTree` gestartet und in `OnDetachedFromVisualTree` mit
+`Dispose()` des Renderers gestoppt — kein Memory Leak.

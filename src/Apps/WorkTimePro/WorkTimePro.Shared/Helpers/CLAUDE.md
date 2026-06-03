@@ -20,8 +20,8 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `FormatBalance(int)` | Minuten (auch negativ) | `"+H:MM"` / `"-H:MM"` | `90` → `"+1:30"` |
 | `GetStatusName(DayStatus)` | `DayStatus`-Enum | Lokalisierter String | `DayStatus.Vacation` → `AppStrings.DayStatus_Vacation` |
 
-`WorkDay` (Model) importiert `TimeFormatter` direkt (`using static`) für `TargetWorkDisplay`,
-`ActualWorkDisplay`, `BalanceDisplay` Properties.
+`WorkDay`, `WorkWeek` und `WorkMonth` importieren `TimeFormatter` per `using static WorkTimePro.Helpers.TimeFormatter`
+für alle Display-Properties (`TargetWorkDisplay`, `ActualWorkDisplay`, `BalanceDisplay`, …).
 
 ## DurationMath
 
@@ -31,8 +31,8 @@ liefert falsche Werte (Spring-Forward: real 1h weniger, Fall-Back: 1h mehr).
 
 | Methode | Zweck |
 |---------|-------|
-| `RealElapsed(start, end)` | Tatsächlich verstrichene `TimeSpan`, DST-korrigiert (zieht die UTC-Offset-Differenz ab). |
-| `RealElapsedMinutes(start, end)` | Dasselbe als `double` Minuten. |
+| `RealElapsed(start, end)` | Tatsächlich verstrichene `TimeSpan`, DST-korrigiert. Sind beide Zeitpunkte `DateTimeKind.Utc`, direkte Differenz (kein Offset-Abzug nötig). Sonst: `(end - start) - (offset(end) - offset(start))`. |
+| `RealElapsedMinutes(start, end)` | Dasselbe als `double` Minuten (`TotalMinutes`). |
 
-Nutzt `TimeZoneInfo.GetUtcOffset` (wirft — anders als `ConvertTimeToUtc` — bei mehrdeutigen/
-ungültigen Zeiten keine Exception). Zwei UTC-Zeitpunkte werden direkt subtrahiert.
+Nutzt `TimeZoneInfo.GetUtcOffset` statt `ConvertTimeToUtc`, weil Letzteres bei mehrdeutigen oder
+ungültigen lokalen Zeiten (z.B. übersprungene Stunde beim Spring-Forward) eine Exception wirft.

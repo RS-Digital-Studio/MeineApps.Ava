@@ -46,3 +46,7 @@ expliziter Nutzer-Aktion in Settings).
 **Overloads für decimal + double:** `Format`, `FormatSigned`, `FormatCompactSigned`,
 `FormatAxis`, `FormatInvariant` existieren für beide Typen. Bei Aufrufen mit Literal `0`
 immer disambiguieren: `CurrencyHelper.Format(0m)` statt `Format(0)`.
+
+**Hilfsmethoden für `CountUpBehavior`:** `GetSuffix()` gibt `" €"` (Symbol nach Betrag)
+bzw. `""` zurück; `GetPrefix()` gibt `"$"` (Symbol vor Betrag) bzw. `""` zurück.
+Damit kann das Behavior das Symbol korrekt anhängen ohne die Zahl selbst zu formatieren.

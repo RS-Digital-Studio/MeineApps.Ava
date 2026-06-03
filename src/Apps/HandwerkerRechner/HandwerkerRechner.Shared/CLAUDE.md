@@ -52,15 +52,17 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 
 ## Unterordner
 
-| Ordner | Inhalt | Doku |
-|--------|--------|------|
-| `ViewModels/` | MainViewModel, ICalculatorViewModel, Tab-Navigation, Back-Press, 19 Calculator- + 6 Business-VMs | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
-| `Views/` | AXAML-Views, CalculatorViewBase, Floor/Premium-Unterordner | [Views/CLAUDE.md](Views/CLAUDE.md) |
-| `Services/` | 7 App-Services (Project, Quote, Export, FavoritesService …) | [Services/CLAUDE.md](Services/CLAUDE.md) |
-| `Models/` | CraftEngine (Domänen-Berechnungen), Project, Quote, CalculatorCategory | [Models/CLAUDE.md](Models/CLAUDE.md) |
-| `Graphics/` | 21 Visualisierungen + Splash-Renderer + Background-Renderer (23 Dateien) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
-| `Loading/` | Startup-Pipeline | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
-| `Converters/` | XAML-Converter | [Converters/CLAUDE.md](Converters/CLAUDE.md) |
+Detail-Doku je Unterordner → [App-CLAUDE.md Doku-Karte](../CLAUDE.md).
+
+| Ordner | Inhalt |
+|--------|--------|
+| `ViewModels/` | MainViewModel, ICalculatorViewModel, 19 Calculator-VMs (Transient) + 6 Business-VMs (Singleton) |
+| `Views/` | AXAML-Views, CalculatorViewBase, Floor/Premium-Unterordner |
+| `Services/` | 8 App-Services: ProjectService, QuoteService, FavoritesService, ProjectTemplateService, MaterialPriceService, MaterialExportService, PhotoPickerService, CalculatorFactoryService |
+| `Models/` | CraftEngine (Domänen-Berechnungen), Project, Quote, CalculatorCategory |
+| `Graphics/` | 21 Visualisierungen + HandwerkerRechnerSplashRenderer + BlueprintBackgroundRenderer (23 Dateien) |
+| `Loading/` | HandwerkerRechnerLoadingPipeline |
+| `Converters/` | IsNotNullConverter, IntEqualsConverter |
 
 Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (`AppPalette.axaml`, Blau #3B82F6),
 `Resources/Strings/` (`AppStrings.resx`, 6 Sprachen), `Assets/` (Bild-Assets).

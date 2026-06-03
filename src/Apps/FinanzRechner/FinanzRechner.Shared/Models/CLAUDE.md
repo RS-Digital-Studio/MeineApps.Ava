@@ -13,13 +13,13 @@ Datenebene der App. Alle Geldwerte als `decimal` (außer `FinanceEngine`-Berechn
 | `Expense.cs` | `Expense`, `TransactionType` (Expense/Income/Transfer), `ExpenseCategory`, `MonthSummary`, `ExpenseFilter`, `ExpenseGroup` |
 | `Account.cs` | `Account`, `AccountBalance` |
 | `Budget.cs` | `Budget`, `BudgetStatus`, `BudgetAlertLevel` (Safe/Warning/Exceeded) |
-| `RecurringTransaction.cs` | `RecurringTransaction`, `RecurringPattern` (Daily/Weekly/Monthly/Yearly) |
+| `RecurringTransaction.cs` | `RecurringTransaction`, `RecurrencePattern` (Daily/Weekly/Biweekly/Monthly/Yearly) |
 | `SavingsGoal.cs` | `SavingsGoal` mit `ProgressPercent` (computed, `decimal`) |
-| `DebtEntry.cs` | `DebtEntry` mit Zahlungshistorie |
+| `DebtEntry.cs` | `DebtEntry` mit berechneten Tilgungseigenschaften (`EstimatedMonthsRemaining`, `TotalInterestRemaining`, `PayoffPercent`) |
 | `SplitItem.cs` | `SplitItem` — Kategorie + Betrag für Split-Transaktionen |
-| `BudgetDisplayItem.cs` | `BudgetDisplayItem : ObservableObject` — VM-nähes Anzeigeobjekt mit `CategoryName` Property |
+| `BudgetDisplayItem.cs` | `BudgetDisplayItem : ObservableObject` — Anzeigeobjekt für HomeView mit `[ObservableProperty] CategoryName` (damit Sprachwechsel ohne Rebuild reagiert) |
 | `BudgetAnalysisReport.cs` | Report-Datenstruktur für Budget-Analyse-Overlay |
-| `FinancialScore.cs` | `FinancialScore` + `FinancialForecast` — Ergebnisse der Analyse-Services |
+| `FinancialScore.cs` | `FinancialScore` (Score 0–100, Note A+–F, `ScoreFactor`-Liste, Tipps) + `ScoreFactor` + `FinancialForecast` |
 | `MonthComparison.cs` | Vergleichsdaten aktueller Monat vs. Vormonat |
 | `CategoryDisplayItem.cs` | Display-Helper für Kategorie-Picker in UI |
 | `CustomCategory.cs` | Benutzerdefinierte Kategorie (Id, Name, Icon, ColorHex) |

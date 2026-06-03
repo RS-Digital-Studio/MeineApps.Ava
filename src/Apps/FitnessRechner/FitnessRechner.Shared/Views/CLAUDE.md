@@ -10,7 +10,7 @@ Alle Views folgen ViewModel-First (DataContext per ViewLocator, `x:CompileBindin
 
 | Datei | Zweck |
 |-------|-------|
-| `MainView.axaml(.cs)` | Haupt-Container: SkiaSharp-Background + Tab-Bar (DispatcherTimer 33ms), ContentControl für Tab-Content, Ad-Spacer (56dp), Render-Loop-Delegation an HomeView |
+| `MainView.axaml(.cs)` | Haupt-Container: SkiaSharp-Background + Tab-Bar (DispatcherTimer 33ms), ContentControl für Tab-Content, Ad-Spacer (64dp), Render-Loop-Delegation an HomeView |
 | `HomeView.axaml(.cs)` | Dashboard: VitalSignsHero-Canvas, QuickAction-Buttons, StreakCard, ChallengeCard, LevelProgressBar — alle via SkiaSharp-Renderer |
 | `ProgressView.axaml(.cs)` | 5 Sub-Tabs (Weight, BMI, BodyFat, Water/Calories, Aktivitäten) + Tracking-Einträge + Charts |
 | `FoodSearchView.axaml(.cs)` | Suchfeld + Ergebnisliste (lokal + API), Quick-Add-Panel (Orange Gradient), Favoriten, Rezepte |
@@ -18,6 +18,7 @@ Alle Views folgen ViewModel-First (DataContext per ViewLocator, `x:CompileBindin
 | `AchievementsView.axaml(.cs)` | Achievement-Grid (5 Kategorien), Fortschrittsanzeige |
 | `ActivityView.axaml(.cs)` | Aktivitäts-Auswahl (30 Aktivitäten in 4 Kategorien), Dauer-Eingabe, History |
 | `FastingView.axaml(.cs)` | Intervallfasten-Timer, Preset-Auswahl (16:8/18:6/20:4/Custom), History |
+| `RecipeView.axaml(.cs)` | Rezept-Editor (Zutaten, Nährwerte) — lädt via `RecipeViewModel.OnAppearingAsync()` |
 | `BarcodeScannerView.axaml(.cs)` | Scanner-Ergebnis-View (nicht die Camera-View — die ist `BarcodeScannerActivity` in Android-Projekt). Desktop: manuelle Texteingabe |
 | `MainWindow.axaml(.cs)` | Desktop-only: Fenster-Container ohne eigene Logik |
 | `Calculators/BmiView.axaml(.cs)` | BMI-Rechner: `CalculatorHeader`-Canvas + Eingabe-Form + `BmiGauge`-Canvas |
@@ -59,10 +60,10 @@ Spezialfälle:
 
 ## Ad-Banner-Spacer
 
-`MainView` hat `RowDefinitions="*,Auto,Auto"`:
+`MainView` hat `RowDefinitions="*,Auto,64"`:
 - Row 0: Tab-Content
-- Row 1: Ad-Spacer `56dp` (Adaptive Banner kann bis 60dp+ hoch sein)
-- Row 2: Tab-Bar (`MedicalTabBarRenderer`, 64dp via SkiaSharp)
+- Row 1: Ad-Spacer `64dp` (`IsVisible` per Binding, nur wenn Banner aktiv)
+- Row 2: Tab-Bar (`MedicalTabBarRenderer`, 64dp via SkiaSharp, fix deklariert)
 
 **ScrollViewer-Inhalte** in Sub-Views brauchen mindestens `Margin Bottom="60"` auf dem
 direkten Kind-Element, damit Content nicht hinter dem Banner verschwindet.

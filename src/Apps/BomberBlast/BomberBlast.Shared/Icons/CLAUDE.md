@@ -32,8 +32,17 @@ xmlns:icons="using:BomberBlast.Icons"
 ## Skia-Nutzung (SkiaSharp-Canvas)
 
 ```csharp
-// Gecachte SKPath → einmal rendern, beliebig oft wiederverwenden
-GameIconRenderer.Render(canvas, GameIconKind.Star, x, y, size, paint);
+// Gecachte SKPath (ConcurrentDictionary) — einmal parsen, beliebig oft zeichnen.
+// F0/F1-Präfixe (EvenOdd-Fill-Rule) werden vor SKPath.ParseSvgPathData entfernt.
+
+// Zentriert an Position mit Größe:
+GameIconRenderer.DrawAt(canvas, GameIconKind.Star, centerX, centerY, size, paint);
+
+// Explizite Bounds (SKRect):
+GameIconRenderer.Draw(canvas, GameIconKind.Bomb, bounds, paint);
+
+// Cache bei App-Shutdown leeren:
+GameIconRenderer.Cleanup();
 ```
 
 ---

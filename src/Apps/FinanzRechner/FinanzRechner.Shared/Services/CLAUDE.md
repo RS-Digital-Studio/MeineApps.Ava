@@ -18,7 +18,6 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IFinancialAnalysisService` / `FinancialAnalysisService` | Score, Monatsvergleich, Prognose, Nettovermögen. **Keine eigene Persistenz** — berechnet aus den anderen Services. |
 | `IExportService` / `ExportService` | CSV + PDF (PdfSharpCore). Delegiert Datei-Teilen an `IFileShareService`. |
 | `IFileDialogService` / `FileDialogService` | `StorageProvider.SaveFilePickerAsync` / `OpenFilePickerAsync`. |
-| `IFileShareService` | Plattformspezifisch (Factory-Pattern): Android = `AndroidFileShareService` (Intent.ActionSend), Desktop = `DesktopFileShareService` (Clipboard-Fallback). |
 | `INotificationService` / `NotificationService` | In-App-Benachrichtigungen für Daueraufträge und Budget-Alerts. |
 
 ---
@@ -27,7 +26,7 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Service |
 |-------|---------|
-| `expenses.json` | `IExpenseService` (inkl. Budgets + Recurring-Transaktionen) |
+| `expenses.json` + `budgets.json` + `recurring_transactions.json` + `notifications.json` | `IExpenseService` (separate Dateien, alle vom ExpenseService verwaltet) |
 | `accounts.json` | `IAccountService` |
 | `savings_goals.json` | `ISavingsGoalService` |
 | `debts.json` | `IDebtService` |
@@ -75,8 +74,14 @@ weitergereicht — schnelle Tab-Wechsel brechen laufende Berechnungen sofort ab.
 
 ---
 
-## Export-Pfad Android
+## Export-Pfad
 
-`ExportService.GetExportDirectory()` gibt den Android external-files-path zurück. Nach Export
-**immer** `IFileShareService.ShareFileAsync()` aufrufen. FileDialog-Fallback auf hardcodierte
-Pfade wenn `StorageProvider` nicht verfügbar.
+`ExportService` ruft intern `_fileShareService.GetExportDirectory("FinanzRechner")` auf
+(`IFileShareService` aus Core.Ava — Android: external-files-path, Desktop: Downloads-Ordner).
+Nach dem Schreiben in dieses Verzeichnis **immer** `IFileShareService.ShareFileAsync()` aufrufen —
+`ExportService` übernimmt das selbst, ViewModels rufen nur `IExportService.ExportToCsvAsync()`/
+`ExportToPdfAsync()` auf.
+
+`IFileShareService` lebt in `MeineApps.Core.Ava` (nicht lokal) — Implementierungen:
+`AndroidFileShareService` (Intent.ActionSend) und `DesktopFileShareService` (Downloads-Fallback).
+Details → [Core.Ava/CLAUDE.md](../../../../../../Libraries/MeineApps.Core.Ava/CLAUDE.md).

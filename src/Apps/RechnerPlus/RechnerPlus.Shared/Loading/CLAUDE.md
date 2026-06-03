@@ -1,14 +1,20 @@
 # Loading — Startup-Pipeline
 
+> Pipeline-Framework (`LoadingPipelineBase`, `LoadingStep`, `ShaderPreloader`) →
+> [MeineApps.UI](../../../../UI/MeineApps.UI/CLAUDE.md). Aufruf aus `App.axaml.cs` →
+> [RechnerPlus.Shared](../CLAUDE.md).
+
 | Datei | Zweck |
 |-------|-------|
-| `RechnerPlusLoadingPipeline.cs` | Erbt `LoadingPipelineBase` ([MeineApps.UI](../../../../UI/MeineApps.UI/CLAUDE.md)). Wird in `App.axaml.cs` → `RunLoadingAsync` ausgeführt. |
+| `RechnerPlusLoadingPipeline.cs` | Erbt `LoadingPipelineBase`. Registriert die Lade-Schritte mit Gewichtung für den Fortschrittsbalken. |
 
-Schritte (sequentiell, gewichteter Fortschritt):
+## Schritte
 
-1. **CalcLib-Warm-Up** (im `MainViewModel`-Ctor) — JIT/Parser aufwärmen.
-2. **History-Persistenz laden** (`IHistoryService` aus `IPreferencesService`-JSON).
-3. **Memory-Persistenz laden** (M-Register aus Preferences).
+Ein einziger gewichteter Schritt (Weight 40):
+
+**Shader + ViewModel** — `ShaderPreloader.PreloadAll()` und `MainViewModel`-Auflösung aus
+dem DI-Container laufen **parallel** (`Task.WhenAll`). Reihenfolge ist egal, weil beide
+voneinander unabhängig sind. Der Shader-Preload verhindert Jank beim ersten Rendern.
 
 `App.axaml.cs` hält die Splash mindestens **800 ms** sichtbar, damit die Sweep-Wellen-Animation
-abläuft.
+vollständig abläuft (Details → [RechnerPlus.Shared](../CLAUDE.md)).

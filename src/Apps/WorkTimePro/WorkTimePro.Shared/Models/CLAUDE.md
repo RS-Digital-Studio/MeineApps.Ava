@@ -7,22 +7,21 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `WorkDay.cs` | Zentrales Modell: Datum, Status, Soll/Ist-Minuten, Pausen, Saldo, Lock-Flag, Notiz. `[Ignore]`-Properties für berechnete Anzeige-Werte. |
-| `TimeEntry.cs` | CheckIn/CheckOut-Eintrag: `Type` (CheckIn/CheckOut), `Timestamp` (Ortszeit!), optionale `ProjectId`. UNIQUE-Index auf `(WorkDayId, Timestamp, Type)`. |
+| `WorkDay.cs` | Zentrales Modell: Datum, Status, Soll/Ist-Minuten, Pausen, Saldo, Lock-Flag, Notiz. `[Ignore]`-Properties für berechnete Anzeige-Werte (TimeSpan, BalanceDisplay, BalanceColor, StatusIconKind u.a.). |
+| `TimeEntry.cs` | CheckIn/CheckOut-Eintrag: `Type` (CheckIn/CheckOut), `Timestamp` (Ortszeit), optionale `ProjectId`/`EmployerId`. `[Indexed]` auf `WorkDayId`. |
 | `PauseEntry.cs` | Pausen-Eintrag: `Start`/`End` (nullable), `Type` (Manual/Auto). FK auf `WorkDayId`. |
-| `VacationEntry.cs` | Urlaubs-Eintrag: `Date`, `Status` (VacationStatus), `EmployerId`, optionaler Text. |
-| `VacationQuota.cs` | Urlaubs-Kontingent pro Jahr + optionaler `EmployerId`. |
-| `HolidayEntry.cs` | Feiertag: `Date`, `Name`, `Region` (DE-BY etc.), gespeichert je Jahr+Region-Kombination. |
-| `WorkSettings.cs` | Singleton-Zeile (FirstOrDefault + Insert wenn leer). Enthält Soll-Stunden, Stundenlohn, Reminder-Zeiten, WorkDays-JSON, CloudProvider. Gecachtes `GetHoursForDay()`. |
-| `WorkDay.cs` (computed) | `[Ignore]`-Properties: `TargetWorkTime`, `ActualWorkTime`, `Balance`, `BalanceDisplay`, `BalanceColor` (via `AppColors`), `StatusIconKind` (MaterialIconKind). |
-| `WorkWeek.cs` | Aggregation einer Woche: Liste von WorkDays, berechnete Saldo-Summe. |
-| `WorkMonth.cs` | Aggregation eines Monats: Liste von WorkWeeks + Feiertagsliste. |
+| `VacationEntry.cs` | Urlaubs-Eintrag: `StartDate`/`EndDate`, `Days`, `Type` (DayStatus: Vacation/Sick/SpecialLeave/UnpaidLeave), `IsApproved`, optionaler Text. |
+| `VacationQuota.cs` | Urlaubs-Kontingent pro Jahr + optionaler `EmployerId`. Berechnete Properties: `AvailableDays`, `RemainingDays`, `UsedPercent`. |
+| `HolidayEntry.cs` | Feiertag: `Date`, `Name`, `Region` (DE-BY etc.), `IsNational`, gespeichert je Jahr+Region-Kombination. |
+| `WorkSettings.cs` | Singleton-Zeile (FirstOrDefault + Insert wenn leer). Enthält Soll-Stunden, Stundenlohn, Reminder-Zeiten, `WorkDays` (kommagetrennte Wochentage), `DailyHoursPerDay` (JSON: individuelle Tagesstunden). Gecachte `WorkDaysArray`-Property und `GetHoursForDay()`-Methode. |
+| `WorkWeek.cs` | Aggregation einer Woche: Liste von WorkDays, berechnete Saldo-/Fortschritts-Properties. |
+| `WorkMonth.cs` | Aggregation eines Monats: Liste von WorkWeeks + Liste von WorkDays, kumulierter Saldo. |
 | `Project.cs` | Projekt: `Name`, `Color`, `IsActive` (Soft-Delete). |
-| `Employer.cs` | Arbeitgeber: `Name`, `IsDefault`-Flag. `SetDefaultAsync` via 2 SQL-UPDATEs. |
-| `ShiftPattern.cs` | Wiederkehrendes Schichtmuster: `Name`, `ShiftType`, Wiederholungsregel. |
-| `ShiftDayItem.cs` | UI-Hilfsmodell für Schichtplan-Kalender (kein DB-Mapping). |
+| `Employer.cs` | Arbeitgeber: `Name`, `IsDefault`-Flag, `WeeklyHours`, `Color`. Berechnete Properties: `Initials` (Avatar), `DailyHours`. |
+| `ShiftPattern.cs` | Wiederkehrendes Schichtmuster: `Name`, `ShiftType`, Start-/Endzeit (Ticks), `BreakMinutes`, `Color`. Enthält auch `ShiftAssignment` (DB-Tabelle `ShiftAssignments`): ordnet ein `ShiftPattern` einem Datum zu. |
+| `ShiftDayItem.cs` | UI-Hilfsmodell für Schichtplan-Kalender (kein DB-Mapping, `ObservableObject`). |
 | `Enums.cs` | Alle App-Enums (siehe unten). |
-| `../AppColors.cs` | Statische Farbkonstanten für ViewModels (ersetzt Magic-Strings). |
+| `../AppColors.cs` | Statische Farbkonstanten für ViewModels (Namespace `WorkTimePro`, ersetzt Magic-Strings). |
 
 ## Enums
 
@@ -54,19 +53,23 @@ static readonly Fields gecacht (verhindert Parse im 1s-Timer).
 
 **Wichtige Gruppen:**
 - Status: `StatusIdle` (#9E9E9E), `StatusActive` (#4CAF50), `StatusPaused` (#FF9800)
+- Gradient-Varianten: `StatusIdleLight`, `StatusActiveLight`, `StatusPausedLight` (für SkiaGradientRing)
 - Balance: `BalancePositive` (#4CAF50), `BalanceNegative` (#F44336)
 - Kalender-Heatmap: `HeatmapLight` .. `HeatmapOvertime` (5 Abstufungen)
+- Kalender-Hintergrund/Text: `CalendarDark*` / `CalendarLight*` (8 Konstanten)
 - Premium-Status: `PremiumActive` .. `PremiumFree` (4)
 - Chart-Farben: `ChartColors[]` (10 Einträge)
 
 ## StatusIconKind
 
-`WorkDay.StatusIconKind` liefert `MaterialIconKind` (kein MDI-Font-String mehr):
+`WorkDay.StatusIconKind` liefert `MaterialIconKind` (kein MDI-Font-String):
 `DayStatus.WorkDay → Briefcase`, `Vacation → Beach`, `Sick → Thermometer`, etc.
 Alle Views binden auf diese Property — kein direktes Enum-zu-Icon-Mapping im XAML.
+`TimeEntry` und `VacationEntry` haben ebenfalls `TypeIconKind` (MaterialIconKind).
 
-## Gotcha — TimeEntry UNIQUE-Index
+## Gotcha — Kein DB-seitiger UNIQUE auf TimeEntry
 
-`TimeEntry` hat UNIQUE auf `(WorkDayId, Timestamp, Type)` — Anti-Duplikat-Schutz bei
-Doppel-Taps. `InsertAsync()` kann bei Violation fehlschlagen. NIEMALS `InsertOrReplaceAsync`
-für TimeEntries verwenden (würde Daten überschreiben).
+`TimeEntry` hat nur `[Indexed]` auf `WorkDayId`, **keinen** UNIQUE-Index auf
+`(WorkDayId, Timestamp, Type)`. Duplikat-Schutz bei Doppel-Taps muss im Service
+(`ITimeTrackingService`) implementiert werden. `InsertAsync()` wirft bei versehentlichen
+Duplikaten keine DB-Exception — daher vor dem Insert prüfen.

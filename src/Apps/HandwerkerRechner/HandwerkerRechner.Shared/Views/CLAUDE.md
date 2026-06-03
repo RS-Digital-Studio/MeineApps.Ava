@@ -8,7 +8,7 @@ Views für alle 4 Tabs + 19 Calculator-Overlays + Business-Views. Generische MVV
 | Datei | Zweck |
 |-------|-------|
 | `MainView.axaml(.cs)` | App-Shell: Blueprint-Hintergrund (RowSpan 3, IsHitTestVisible=false), 4-Tab-ContentControl, Calculator-Overlay (ContentControl mit ViewLocator). Background-Renderer-Loop (200ms, 5 FPS). |
-| `MainWindow.axaml(.cs)` | Desktop-Fenster-Wrapper (minWidth 400, minHeight 700). |
+| `MainWindow.axaml(.cs)` | Desktop-Fenster-Wrapper (MinWidth 360, MinHeight 500, Startgröße 400×750). |
 | `CalculatorViewBase.cs` | Abstrakte Basisklasse für alle 19 Calculator-Views (DataContext-PropertyChanged-Pattern). |
 | `HistoryView.axaml(.cs)` | Expander pro Rechner-Typ, SwipeToReveal-Löschen, Tap → Rechner öffnen. |
 | `ProjectsView.axaml(.cs)` | CRUD-Liste, Foto-Thumbnails, Navigation zu Rechner mit Projekt-ID. |
@@ -38,19 +38,27 @@ Views für alle 4 Tabs + 19 Calculator-Overlays + Business-Views. Generische MVV
 ## CalculatorViewBase — Pattern
 
 Basisklasse für alle 19 Calculator-Views. Kapselt die `PropertyChanged`-Subscription auf
-dem ViewModel mit sauberem Ab-/Anmeldung bei DataContext-Wechsel:
+dem ViewModel mit sauberem Ab-/Anmeldung bei DataContext-Wechsel.
+
+Zwei abstrakte/virtuelle Methoden zum Überschreiben:
 
 ```csharp
-// Abgeleitete View überschreibt:
-protected override bool ShouldInvalidateOnPropertyChanged(string? propertyName)
-    => propertyName?.Contains("Result") == true;  // Standard-Filter
+// Virtual mit Default (true wenn PropertyName "Result" enthält):
+protected virtual bool ShouldInvalidateOnPropertyChanged(string? propertyName)
+    => propertyName?.Contains("Result") == true;
 
-protected override void OnResultPropertyChanged()
-    => _visualization?.StartAnimation();  // oder InvalidateSurface()
+// Abstrakt — jede View implementiert ihre eigene Reaktion:
+protected abstract void OnResultPropertyChanged();
+// Beispiel animierte View:   TileVisualization.StartAnimation();
+// Beispiel statische View:   ((SKCanvasView?)sender)?.InvalidateSurface();
 ```
 
-Für statische Views (HourlyRate, MaterialCompare, AreaMeasure) — Filtert spezifische Properties
-und ruft direkt `InvalidateSurface()` auf ohne Animation-Loop.
+Statische Views (HourlyRate, MaterialCompare, AreaMeasure) überschreiben zusätzlich
+`ShouldInvalidateOnPropertyChanged` mit spezifischen Property-Filtern statt dem
+generischen "Result"-Pattern.
+
+Hilfsmethode `RequestAnimationFrame(sender)` für Views, deren Renderer `NeedsRedraw`
+meldet (animierte Darstellungen mit mehreren Frames).
 
 ## Background-Render-Loop (MainView)
 
@@ -76,8 +84,9 @@ Namens-Konvention: `{Namespace}.ViewModels.{Sub}.{Name}ViewModel` → `{Namespac
 ```xml
 <Border Classes="Card" Height="220" ClipToBounds="True"
         IsVisible="{Binding HasResult}">
-    <avaloniaLabs:SKCanvasView PaintSurface="OnPaintVisualization" />
+    <skia:SKCanvasView PaintSurface="OnPaintVisualization" />
 </Border>
+<!-- xmlns:skia="using:Avalonia.Labs.Controls" -->
 ```
 
 Code-Behind mit Named-Handler-Pattern (explizites Unsubscribe bei DataContext-Wechsel via

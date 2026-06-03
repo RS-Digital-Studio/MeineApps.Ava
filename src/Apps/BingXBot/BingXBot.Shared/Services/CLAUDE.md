@@ -8,7 +8,7 @@ Alle Trading-Domain-Services (Local/Remote-Impls, BotEventBus, DB) leben in den 
 
 | Datei | Zweck |
 |-------|-------|
-| `RemoteSettingsAutoSync.cs` | Subscribed `IBotEventStream.ConnectionChanged`. Bei jedem Re-Connect werden die Server-Settings via `App.RefreshRemoteSettingsAsync()` neu in die Client-DI-Singletons gespielt. Verhindert den "Client überschreibt Server-Werte beim nächsten Save"-Fall nach Reconnect. |
+| `RemoteSettingsAutoSync.cs` | Subscribed `IBotEventStream.ConnectionChanged`. Bei jedem Re-Connect werden die Server-Settings via dem injizierten `Func<Task> refreshAsync` (= `App.RefreshRemoteSettingsAsync`) neu in die Client-DI-Singletons gespielt. Verhindert den "Client überschreibt Server-Werte beim nächsten Save"-Fall nach Reconnect. |
 
 ## Settings-Sync-Architektur
 
@@ -20,15 +20,17 @@ IBotEventStream.SettingsChanged
 
 IBotEventStream.ConnectionChanged (auf jedem Re-Connect)
     → RemoteSettingsAutoSync
-        → App.RefreshRemoteSettingsAsync()   (REST GET /settings, dann RestoreSettingsFromDb)
+        → refreshAsync()   (REST GET /settings, dann RestoreSettingsFromDb)
 ```
 
-**Debounce-Schutz**: `RemoteSettingsAutoSync.MarkRefreshed()` setzt einen 2s-Debounce nach dem
-App-Start-Refresh. Verhindert einen doppelten Refresh wenn `ConnectionChanged` unmittelbar nach
-dem manuellen Startup-Refresh feuert (Race-Window-Bug 27.04.2026).
+**Debounce-Schutz**: `RemoteSettingsAutoSync.MarkRefreshed()` setzt `_lastRefreshUtc = DateTime.UtcNow`.
+Verhindert einen doppelten Refresh wenn `ConnectionChanged` unmittelbar nach dem initialen
+Startup-Refresh feuert (2s-Fenster). `MarkRefreshed` muss vom Aufrufer nach dem Initial-Refresh
+explizit aufgerufen werden — sonst ist `_lastRefreshUtc = DateTime.MinValue` und der erste
+`ConnectionChanged` triggert stets einen redundanten zweiten Refresh (Race-Quelle).
 
 ## ISettingsPersistenceService (Ziel-Migration)
 
 Neue ViewModels sollen `ISettingsPersistenceService.SaveAllAsync()` per DI injizieren statt
-`App.SaveAllSettingsAsync()` (statischer Legacy-Wrapper). `SettingsPersistenceService` ist in der
-Contracts-Library und dort registriert.
+`App.SaveAllSettingsAsync()` (statischer Legacy-Wrapper). Interface in `BingXBot.Contracts`,
+Impl `SettingsPersistenceService` in `BingXBot.Trading`, registriert als Singleton in `App.axaml.cs`.

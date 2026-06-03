@@ -8,7 +8,7 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `WavGenerator.cs` | Generiert PCM WAV-Bytes in-memory (Sinuston, 44100 Hz, 16-bit mono, ~50ms Fade-Out). Kein Heap-Alloc nach `MemoryStream`. |
+| `WavGenerator.cs` | Generiert PCM WAV-Bytes in-memory (Sinuston, 44100 Hz, 16-bit mono, ~50ms Fade-Out). `MemoryStream` mit vorallozierter Kapazität; `ToArray()` am Ende ist der einzige Alloc. |
 | `SoundDefinitions.cs` | 6 eingebaute Töne (`default`, `alert_high`, `alert_low`, `chime`, `bell`, `digital`) mit Frequenz/Dauer-Mapping via `GetToneParams(soundId)`. |
 | `TimeFormatHelper.cs` | `HH:MM:SS.cs`-Formatierung (Stunden optional). Plattformneutral, auch in ViewModel-Strings genutzt. |
 | `HashHelper.cs` | Deterministischer String-Hash (Djb2-Variante, `hash = hash * 31 + c`). Gleicher Algorithmus wie `AndroidNotificationService.StableHash`. |
@@ -25,9 +25,10 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 `string.GetHashCode()` ist **nicht deterministisch** (ändert sich zwischen App-Neustarts
 wegen .NET-Randomization). `AndroidNotificationService` und `AlarmActivity` verwenden stabile
 IDs für Notification-IDs, die über Neustarts hinweg konsistent bleiben müssen.
-`HashHelper.StableHash()` implementiert denselben Algorithmus wie `StableHash` in
-`AndroidNotificationService` — beide müssen synchron gehalten werden, da Notification-IDs
-beim Neustart der App dieselben Werte haben müssen wie beim Erstellen.
+`HashHelper.StableHash()` nutzt den Algorithmus `hash = 17; foreach (char c) hash = hash * 31 + c`
+mit `Math.Abs` am Ende. `AndroidNotificationService.StableHash` implementiert denselben
+Algorithmus — beide müssen synchron gehalten werden, da Notification-IDs beim Neustart der
+App dieselben Werte haben müssen wie beim Erstellen.
 
 ## SoundItem.Uri — nullable
 

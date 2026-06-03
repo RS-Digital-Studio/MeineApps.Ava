@@ -23,14 +23,14 @@ Google Play Billing, FileShareService). Generische Android-Patterns →
 
 ## MainActivity — Reihenfolge in `OnCreate`
 
-**Vor `base.OnCreate`** (Platform-Hooks/Factories, die `this` brauchen):
+**Vor `base.OnCreate`** (Platform-Factories, die `this` brauchen — Reihenfolge einhalten, da DI beim `base.OnCreate` aufgebaut wird):
 - Unhandled-Exception-Handler registrieren (Android + AppDomain + TaskScheduler).
 - `App.RewardedAdServiceFactory` → `AndroidRewardedAdService(_rewardedAdHelper, purchaseService, "FitnessRechner")`.
 - `App.PurchaseServiceFactory` → `AndroidPurchaseService(this, preferencesService, adService)`.
-- `App.FileShareServiceFactory` → `AndroidFileShareService(this)`.
-- `App.BarcodeServiceFactory` → `AndroidBarcodeService(this)` (Instanz in `_barcodeService` für Activity-Result-Delegation).
-- `App.HapticServiceFactory` → `AndroidHapticService(this)`.
-- `App.SoundServiceFactory` → `AndroidFitnessSoundService(this)`.
+- `App.FileShareServiceFactory` → `() => new AndroidFileShareService(this)` (kein `sp`-Parameter).
+- `_barcodeService = new AndroidBarcodeService(this)` + `App.BarcodeServiceFactory = () => _barcodeService` (Instanz vorab für Activity-Result-Delegation speichern).
+- `App.HapticServiceFactory` → `() => new AndroidHapticService(this)`.
+- `App.SoundServiceFactory` → `() => new AndroidFitnessSoundService(this)`.
 - `App.ReminderServiceFactory` → `AndroidReminderService(this, preferencesService)`.
 
 **Nach `base.OnCreate`:**
@@ -78,9 +78,8 @@ Puffer auf älteren Geräten, weil das System die Kamera-Permission nicht sofort
 
 - Package: `com.meineapps.fitnessrechner`
 - Theme: `@style/MyTheme.NoActionBar`
-- Permissions: `CAMERA` (Barcode-Scanner), `RECEIVE_BOOT_COMPLETED` + `USE_EXACT_ALARM`
-  (Reminder-AlarmManager), `POST_NOTIFICATIONS` (Android 13+), `INTERNET` (Open Food Facts API),
-  `VIBRATE` (Haptic)
+- Permissions: `CAMERA` (Barcode-Scanner), `INTERNET` + `ACCESS_NETWORK_STATE` (Open Food Facts API), `BILLING` (In-App-Käufe)
+- FileProvider: `com.meineapps.fitnessrechner.fileprovider` (für `AndroidFileShareService`)
 - `Resources/mipmap-*`: App-Icon (`appicon`, `appicon_round`)
 - `Resources/values/styles.xml`: `MyTheme.NoActionBar`
 

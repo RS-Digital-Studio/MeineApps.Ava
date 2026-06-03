@@ -35,8 +35,8 @@ Fünf Projekte — Server auf dem Pi, Avalonia-Client auf Desktop + Android:
 └── Solar: 50W Panel + 12V Akku + Laderegler
 ```
 
-Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `GardenControl.Shared/App.axaml.cs`
-(DI + Pi-Erkennung + Lifecycle-Zweig) → `MainViewModel` (6 Tabs) → `ViewLocator` löst Views.
+Composition-Flow: Host → `App.axaml.cs` (DI + Pi-Erkennung + Lifecycle-Zweig) → `MainViewModel` (6 Tabs).
+Details → [GardenControl.Shared/CLAUDE.md](GardenControl.Shared/CLAUDE.md).
 **Werbefrei** → keine `MeineApps.Core.Premium.Ava`-Referenz.
 
 ## Projekte
@@ -90,9 +90,9 @@ Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (`AppPalette.a
 
 - Server als systemd-Service (immer an, auch ohne Display)
 - Desktop-App startet automatisch in Fullscreen (Auto-Login + Autostart)
-- Pi-Erkennung in `App.axaml.cs`: Prüft `/proc/device-tree/model` → auto-connect localhost
-- Touch-optimierte Styles (`TouchStyles.axaml`): Min. 44dp Touch-Targets
 - Install-Skript: `install-pi5.sh` (I2C, .NET, Auto-Login, Kiosk)
+- Touch-optimierte Styles (`TouchStyles.axaml`): Min. 44dp Touch-Targets
+- Pi-Erkennung und Kiosk-Lifecycle-Zweig → [GardenControl.Shared/CLAUDE.md](GardenControl.Shared/CLAUDE.md)
 
 ## Server-Komponenten (GardenControl.Server)
 
@@ -102,9 +102,10 @@ Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (`AppPalette.a
 |--------|---------|
 | `IGpioService` / `GpioService` | Relais-Steuerung über `System.Device.Gpio` |
 | `ISensorService` / `SensorService` | ADC-Werte via `Iot.Device.Ads1115` |
-| `MockHardwareService` | Implementiert beide Interfaces ohne echte Hardware (Desktop-Entwicklung) |
+| `MockGpioService` | GPIO-Mock ohne echte Hardware (Desktop-Entwicklung) |
+| `MockSensorService` | Sensor-Mock mit simulierten Feuchtewerten (langsames Austrocknen + Rauschen) |
 
-Mock-Erkennung: automatisch wenn `/sys/class/gpio` nicht vorhanden ist.
+Mock-Erkennung: automatisch wenn `/sys/class/gpio` nicht vorhanden ist (`Program.cs` prüft `Directory.Exists("/sys/class/gpio")`).
 
 ### `Services/`
 
@@ -124,14 +125,10 @@ Mock-Erkennung: automatisch wenn `/sys/class/gpio` nicht vorhanden ist.
 ## Build-Befehle
 
 ```bash
-# Entwicklung (Mock-Hardware, kein Pi nötig)
+# Entwicklung lokal (Mock-Hardware, kein Pi nötig)
 dotnet run --project src/Apps/GardenControl/GardenControl.Desktop
 
-# Alles bauen
-dotnet build src/Apps/GardenControl/GardenControl.Desktop
-dotnet build src/Apps/GardenControl/GardenControl.Server
-
-# Pi cross-compile
+# Pi cross-compile (linux-arm64, self-contained)
 dotnet publish src/Apps/GardenControl/GardenControl.Server  -c Release -r linux-arm64 --self-contained
 dotnet publish src/Apps/GardenControl/GardenControl.Desktop -c Release -r linux-arm64 --self-contained
 
@@ -140,6 +137,7 @@ bash src/Apps/GardenControl/GardenControl.Server/Install/deploy.sh gardencontrol
 ```
 
 Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)).
+Android-AAB-Build → [GardenControl.Android/CLAUDE.md](GardenControl.Android/CLAUDE.md).
 
 ---
 

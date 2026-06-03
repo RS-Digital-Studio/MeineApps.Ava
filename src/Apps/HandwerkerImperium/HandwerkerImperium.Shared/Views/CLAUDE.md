@@ -11,14 +11,14 @@ Generische AXAML-Patterns → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 ```
 Views/
 ├── MainView.axaml          # 5-Tab-Navigation, Dialoge als UserControls
-├── DashboardView.axaml     # 423 Z., Header+City+Workshop-Grid (Code-Behind für IUiEffectBus)
-├── ImperiumView.axaml      # 171 Z., Sub-Tab-Router (kein Code-Behind)
+├── DashboardView.axaml     # City-Skyline + Workshop-Karten (Code-Behind: IUiEffectBus + Render-Loop)
+├── ImperiumView.axaml      # Sub-Tab-Router (kein Code-Behind)
 ├── MissionenView.axaml     # Daily/Weekly/QuickJobs/LuckySpin
 ├── GuildView.axaml         # 5-Tab-Hub (Übersicht/Kampf/Forschung/Chat/Mitglieder)
 ├── ShopView.axaml          # IAP, GS-Pakete, Whale-Bundles
 ├── SettingsView.axaml      # Grafik, Audio, Sprache, Premium, CrossPromo, Referral
 ├── OrderView.axaml         # Auftrags-Details, MaterialOffer
-├── PrestigeView.axaml      # Tier-Auswahl, Challenges, Heirloom-Selection
+├── PrestigeView.axaml      # Tier-Auswahl, Challenges, Heirloom-Selection (Direct-Bound)
 ├── WorkshopView.axaml      # Workshop-Kauf/Upgrade/Spezialisierung/Rebirth
 ├── WorkerMarketView.axaml  # Marktpool, Hire
 ├── WorkerProfileView.axaml # Training, Bonus, Praktikant-Promotion
@@ -37,15 +37,20 @@ Views/
 ├── ReputationShopView.axaml # Reputations-Shop
 ├── FtueOverlay.axaml       # FTUE-Spotlight-Overlay
 ├── MainWindow.axaml        # Desktop-Container (kein Android-Äquivalent)
-├── Dashboard/              # AutomationPanel, BannerStrip, OrdersQuickJobsSection,
+├── Dashboard/              # DashboardHeader, AutomationPanel, BannerStrip, OrdersQuickJobsSection,
 │                           #   DailyChallengeSection, WeeklyMissionSection
 ├── Imperium/               # WorkshopsSection, WarehouseSection, WorkersSection,
 │                           #   ResearchSection, EquipmentSection, AscensionSection
-├── Dialogs/                # AchievementDialog, StoryDialog, HintDialog, LevelUpDialog,
-│                           #   AlertDialog, ConfirmDialog, PrestigeConfirmationDialog,
-│                           #   NotificationCenterView, WhatsNewDialog
-├── Guild/                  # GuildView-Sub-Views (Research, Boss, Hall, War, Chat, Members, ...)
-│                           #   GuildBuildSiteView (Mega-Projekt)
+├── Dialogs/                # AchievementDialog, StoryDialog, ContextualHintDialog, AlertDialog,
+│                           #   ConfirmDialog, PrestigeSummaryDialog, DailyRewardDialog,
+│                           #   OfflineEarningsDialog, WelcomeBackOfferDialog,
+│                           #   NotificationCenterPopup, WorkerProfileDialog
+├── Guild/                  # GuildHallView, GuildResearchView, GuildWarView, GuildBossView,
+│                           #   GuildWarSeasonView, GuildChatView, GuildMembersView,
+│                           #   GuildCoopOrderView, GuildInviteView, GuildAchievementsView,
+│                           #   GuildMegaProjectView (Mega-Projekt Material-Spenden-Pipeline)
+├── Auctions/               # WorkerAuctionView
+├── Settings/               # CrossPromoCard, ReferralCard
 └── MiniGames/              # 10 MiniGame-Views (eine pro WorkshopType)
 ```
 
@@ -54,58 +59,60 @@ Views/
 ## MainView-Layout-Pattern
 
 ```axaml
-<!-- Row 0: Content — 4 Direct-Bound + 1 ContentControl für Sub-Pages -->
-<!-- Row 1: Ad-Spacer 64dp (kein Banner bei BomberBlast, aber HI hat Banner) -->
-<!-- Row 2: GameTabBarRenderer (SkiaSharp, kein XAML Tab-Bar) -->
-<Grid RowDefinitions="*,Auto,Auto">
+<!-- Row 0: Content (Direct-Bound + ContentControl für Sub-Pages) -->
+<!-- Row 1: TabBar (SKCanvasView, 68dp) — bei Sub-Views durch Breadcrumb-Leiste ersetzt -->
+<Grid RowDefinitions="*,Auto">
 ```
 
-**Lazy-Loading via ContentControl**: Statt 25+ `IsVisible`-Views ein einzelnes
-`ContentControl Content="{Binding ActivePageContent}"`. Der ViewLocator rendert nur
-die aktive Sub-Page. Die 4 Haupt-Tabs (Dashboard/Imperium/Missionen/GuildView) bleiben
-Direct-Bound mit `IsVisible` für schnelle Tab-Wechsel ohne ViewLocator-Overhead.
+**Kein separater Ad-Spacer als eigene Row** — HandwerkerImperium hat kein Banner-Ad (nur Rewarded).
+Der 60dp `Margin` am unteren Ende von ScrollViewer-Inhalten gilt für die TabBar-Höhe (68dp).
+
+**4 Direct-Bound-Views** (bleiben dauerhaft materialisiert, `IsVisible`-Toggle für schnelle Tab-Wechsel):
+- `DashboardView` (`IsDashboardActive`)
+- `ImperiumView` (`IsBuildingsActive`)
+- `MissionenView` (`IsMissionenActive`)
+- `PrestigeView` (`IsPrestigeActive`)
+
+**Lazy-Loading via ContentControl**: Alle anderen Sub-Views (GuildView, ShopView, WorkshopView, …)
+laufen über `ContentControl Content="{Binding ActivePageContent}"`. ViewLocator materialisiert
+die Sub-View erst beim ersten Switch — kein Speicher für inaktive Views.
 
 ---
 
 ## DashboardView Code-Behind
 
-`DashboardView.axaml.cs` ist die einzige View mit substantiellem Code-Behind —
-**erlaubt** weil es ausschließlich Bus-Subscription für UI-Effekte ist:
+`DashboardView.axaml.cs` hat das umfangreichste Code-Behind aller Views — erlaubt, weil es
+ausschließlich UI-Rendering und UI-Effekte umfasst:
+
+- **City-Skyline-Render-Loop** via `IFrameClock` (5/10/30fps adaptiv) — DashboardIdle bei
+  ruhigem Zustand, DashboardActive bei aktiven Juice-Effekten
+- **Workshop-Karten-Touch-Handling** — Tap-vs-Scroll-Erkennung (WorkshopCardHitTester),
+  Hold-to-Upgrade-Timer (120ms Tick), Scroll-Abbruch via Tunnel-Events
+- **`IUiEffectBus`-Subscription** für FloatingText und Partikel-Effekte:
 
 ```csharp
-protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-{
-    base.OnAttachedToVisualTree(e);
-    _uiEffectBus.FloatingTextRequested += OnFloatingText;
-    _uiEffectBus.CelebrationRequested  += OnCelebration;
-}
+// Im Ctor (Bus ist Singleton — kein VM-Lifecycle-Abhängigkeit)
+_uiEffectBus.FloatingTextRequested += OnFloatingTextRequested;    // Text-Overlay
+_uiEffectBus.FloatingTextRequested += OnFloatingTextForParticles; // Münz-Partikel + Confetti
 
-protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-{
-    _uiEffectBus.FloatingTextRequested -= OnFloatingText;
-    _uiEffectBus.CelebrationRequested  -= OnCelebration;
-    base.OnDetachedFromVisualTree(e);
-}
+// Cleanup in OnDetachedFromVisualTree
+_uiEffectBus.FloatingTextRequested -= OnFloatingTextRequested;
+_uiEffectBus.FloatingTextRequested -= OnFloatingTextForParticles;
 ```
 
-Kein ViewModel-Code im Code-Behind — nur Bus-Subscription und Canvas-Weiterleitung.
+- **Parallax-Scroll**: `ScrollViewer.ScrollChanged` → `HeaderBorder.RenderTransform`
+  (`translateY = -offset * 0.3`, max 20px), gecacht via `_headerBorder`-Field
+- **Live-Countdown-Timer** (1Hz `DispatcherTimer`) — aktualisiert INPC-Events auf Live-Auftrags-POCOs
+  (`RaiseLiveCountdownChanged()`) damit der rote LIVE-Badge synchron bleibt
+
+Kein ViewModel-Code im Code-Behind — kein Navigieren, keine Geschäftslogik.
 
 ---
 
 ## Scroll-Pattern
 
 `ScrollViewer`-Kind-Elemente brauchen mindestens 60dp `Margin` (NICHT `Padding`) am unteren
-Ende für das Ad-Banner. Avalonia `Padding` auf `ScrollViewer` verhindert Scrollen.
-
----
-
-## Imperium-Sub-Tabs
-
-`ImperiumSubTab`-Enum (V7): Workshops / **Warehouse** / Workers / Research / Equipment / Ascension.
-
-- Warehouse-Tab: Immer sichtbar, gesperrt via Lock-Icon-Overlay bis Spielerlevel 50
-- Ascension-Tab: Immer sichtbar, gesperrt via Lock-Icon-Overlay bis `LegendeCount >= 3`
-- Beide IMMER sichtbar (Layout-Stabilität) — KEIN `IsVisible=false`
+Ende für die TabBar. Avalonia `Padding` auf `ScrollViewer` verhindert Scrollen.
 
 ---
 

@@ -79,7 +79,7 @@ DI bauen → `locService.Initialize()` + `LocalizationManager.Initialize()` →
 |--------|--------|------|
 | `ViewModels/` | MainVM + Dashboard-Partial, ProgressVM (4 Partials), Calculator-VMs | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
 | `Views/` | AXAML-Views (Home, Progress, FoodSearch, Settings, Barcode, Fasting, Activity) + Calculator-Views | [Views/CLAUDE.md](Views/CLAUDE.md) |
-| `Graphics/` | VitalOS Medical Design System (13 Renderer + `MedicalColors`) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
+| `Graphics/` | VitalOS Medical Design System (15 Renderer + `MedicalColors`) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
 | `Services/` | Domain-Services (Tracking, Food, Gamification, Fasting, Activity, Reminders) | [Services/CLAUDE.md](Services/CLAUDE.md) |
 | `Models/` | Datenmodelle, `FitnessEngine` (5 Berechnungen), Result-Records | [Models/CLAUDE.md](Models/CLAUDE.md) |
 | `Converters/` | Tab-Farb-, Food-Kategorie- und Utility-Converter | [Converters/CLAUDE.md](Converters/CLAUDE.md) |
@@ -87,11 +87,3 @@ DI bauen → `locService.Initialize()` + `LocalizationManager.Initialize()` →
 
 Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (`AppPalette.axaml`, Cyan #06B6D4),
 `Resources/Strings/` (`AppStrings.resx`, 6 Sprachen), `Assets/` (Bild-Assets).
-
----
-
-## Build
-
-```bash
-dotnet build src/Apps/FitnessRechner/FitnessRechner.Shared
-```

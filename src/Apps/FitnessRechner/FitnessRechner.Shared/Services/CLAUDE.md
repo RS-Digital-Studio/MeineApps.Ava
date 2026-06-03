@@ -10,9 +10,9 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Interface | Zweck |
 |-------|-----------|-------|
-| `TrackingService.cs` | `ITrackingService` | JSON-Persistenz `TrackingEntry` (tracking.json). Thread-Safe (2x `SemaphoreSlim`: Load + Write). 1-min Backup-Intervall. `EntryAdded`-Event für Streak-Trigger |
-| `FoodSearchService.cs` | `IFoodSearchService` | Fuzzy Matching auf 114 lokalen Foods + Open Food Facts. Favorites + Recipes. `FoodLogAdded`-Event. Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` (N+1-Query-Fix). Lowercase-Cache im static-Ctor |
-| `FoodDatabase.cs` | — | 114 Nahrungsmittel mit lokalisierten Namen + Aliase (statische Liste, kein File-I/O) |
+| `TrackingService.cs` | `ITrackingService` | JSON-Persistenz `TrackingEntry` (tracking.json). Thread-Safe (2x `SemaphoreSlim`: `_loadLock` + `_writeLock`). 1-min Backup-Intervall. `EntryAdded`-Event für Streak-Trigger |
+| `FoodSearchService.cs` | `IFoodSearchService` | Fuzzy Matching auf 99 lokalen Foods + Open Food Facts. Favorites + Recipes. `FoodLogAdded`-Event. Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` (N+1-Query-Fix). Lowercase-Cache im static-Ctor. 3x `SemaphoreSlim`: `_loadLock` (Log-Schreiben + Lesen), `_favoritesLock`, `_recipesLock` |
+| `FoodDatabase.cs` | — | 99 Nahrungsmittel mit lokalisierten Namen + Aliase (statische Liste, kein File-I/O) |
 | `BarcodeLookupService.cs` | `IBarcodeLookupService` | Open Food Facts API. `_barcodeCache` Dictionary mit `SemaphoreSlim` |
 | `ScanLimitService.cs` | `IScanLimitService` | Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad (+5). Preferences-basiert |
 | `DesktopBarcodeService.cs` | `IBarcodeService` | Desktop-Fallback: gibt `null` zurück → View zeigt manuelle Eingabe |
@@ -33,15 +33,16 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 kcal = MET × Gewicht_kg × Dauer_h
 ```
 
-Kategorien: Cardio (Laufen 8.0, Radfahren 6.0, Schwimmen 7.0, ...), Kraft (Gewichtheben 5.0,
-Sit-Ups 3.0, ...), Sport (Fußball 7.0, Tennis 6.0, ...), Alltag (Spazierengehen 3.5, ...).
+Kategorien: Cardio (Joggen 7.0, Laufen 9.8, Radfahren 6.0, Schwimmen 7.0, Seilspringen 11.0, ...),
+Kraft (Gewichtheben 5.0, Yoga 2.5, CrossFit 8.0, ...), Sport (Fußball 7.0, Tennis 7.0, Klettern 8.0, ...),
+Alltag (Gartenarbeit 3.5, Treppensteigen 8.8, ...).
 
 ---
 
 ## `FoodSearchService` — Architektur-Details
 
 **Lowercase-Cache:** Im `static`-Konstruktor einmalig berechnet — verhindert
-`ToLowerInvariant()` bei jeder Suche über alle 114 Foods.
+`ToLowerInvariant()` bei jeder Suche über alle 99 Foods.
 
 **Batch-Methoden:** `GetFoodLogsInRangeAsync(start, end)` und `GetDailySummariesInRangeAsync`
 laden einmal alle Logs in den gewünschten Zeitraum statt N einzelne Queries (N+1-Query-Fix für
@@ -62,8 +63,8 @@ exakten Match, Alias-Match und Prefix-Match priorisiert.
 
 ```
 TrackingService.EntryAdded
-  → StreakService.UpdateStreak
-      → StreakMilestoneReached (Confetti via MainViewModel.CelebrationRequested)
+  → StreakService.RecordActivity()
+      → bool (Meilenstein?) → Confetti via MainViewModel.CelebrationRequested
 
 AchievementService.AchievementUnlocked(id, xp)
   → LevelService.AddXp(xp)

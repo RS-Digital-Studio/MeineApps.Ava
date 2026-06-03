@@ -13,7 +13,7 @@ Generische Loading-Patterns → [MeineApps.UI](../../../../UI/MeineApps.UI/CLAUD
 
 | Schritt | Name | Gewicht | Inhalt |
 |---------|------|---------|--------|
-| 1 | Init (45%) | 45 | `IDatabaseService.InitializeAsync()` + `ShaderPreloader.PreloadAll()` + `IPurchaseService.InitializeAsync()` **parallel** via `Task.WhenAll`. Danach (sequenziell): `IReminderService.InitializeAsync()` (hängt von DB ab). |
+| 1 | Init (45%) | 45 | `IDatabaseService.InitializeAsync()` + `ShaderPreloader.PreloadAll()` + `IPurchaseService.InitializeAsync()` **parallel** via `Task.WhenAll`. Danach (sequenziell): `IReminderService.InitializeAsync()` (hängt von DB ab). Kaufstatus wird parallel abgeglichen, damit Premium-Status nach Geräte-/Datenwechsel sofort korrekt ist. |
 | 2 | ViewModel (20%) | 20 | `MainViewModel` aus DI auflösen + `WaitForInitializationAsync()`. |
 
 **Warum Reminder sequenziell nach DB?** `ReminderService.InitializeAsync()` liest Settings aus

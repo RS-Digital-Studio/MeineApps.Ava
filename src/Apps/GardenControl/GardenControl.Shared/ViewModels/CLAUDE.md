@@ -10,12 +10,12 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | Datei | Zweck |
 |-------|-------|
 | `MainViewModel.cs` | Tab-Navigation, Verbindungsmanagement, Fehler-Banner, Back-Press-Flow, `ExitHintRequested`. Implementiert `IAsyncDisposable`. |
-| `DashboardViewModel.cs` | Live-Übersicht aller Zonen: Feuchtigkeitswerte, Systemstatus, Wetterinfo, Schnellaktionen (Start/Stopp/Notstopp). Enthält `ZoneDisplayItem` (ObservableObject). |
-| `ZoneControlViewModel.cs` | Manuelle Ventil-/Pumpen-Steuerung mit konfigurierbarer Dauer. `TestAllZones()` fährt alle aktivierten Zonen nacheinander an. |
+| `DashboardViewModel.cs` | Live-Übersicht aller Zonen: Feuchtigkeitswerte, Systemstatus, Wetterinfo, Schnellaktionen (Start/Stopp/Notstopp). Definiert `ZoneDisplayItem` (ObservableObject). |
+| `ZoneControlViewModel.cs` | Manuelle Ventil-/Pumpen-Steuerung mit konfigurierbarer Dauer. Verwendet `ZoneDisplayItem`. `TestAllZones()` fährt alle aktivierten Zonen nacheinander an. |
 | `ScheduleViewModel.cs` | Automatik-Konfiguration: Schwellenwerte, Bewässerungsdauer, Cooldown, Poll-Intervall, Zeitpläne. Enthält `ZoneConfigItem` + `ScheduleItem`. |
 | `CalibrationViewModel.cs` | Sensor-Kalibrierung (Trocken/Nass-Referenzwerte). Live-ADC-Werte via SignalR. Enthält `CalibrationItem`. |
 | `HistoryViewModel.cs` | Verlaufsdaten: Feuchtigkeitsverlauf-Chart-Daten, Bewässerungsereignisse, Statistiken. Zeitfilter (1h, 6h, 24h, 7d, 30d). Debouncing via `SemaphoreSlim`. |
-| `SettingsViewModel.cs` | Server-URL, Verbindungstest, Server-Info. Feuert `ServerUrlChanged` → MainViewModel reagiert mit Reconnect. |
+| `SettingsViewModel.cs` | Server-URL konfigurieren, Verbindungstest (`TestConnectionCommand`), Server-Config anzeigen (`RefreshServerInfoCommand`). Feuert `ServerUrlChanged` → MainViewModel reagiert mit Reconnect. |
 
 ## Tab-Navigation (MainViewModel)
 
@@ -62,14 +62,15 @@ _connection.SystemStatusReceived += status =>
 **Nie** direkt in einem SignalR-Callback auf ObservableCollection oder `[ObservableProperty]`
 schreiben — das löst Property-Changed-Events auf dem falschen Thread aus.
 
-## ZoneDisplayItem (in DashboardViewModel + ZoneControlViewModel)
+## ZoneDisplayItem (definiert in DashboardViewModel.cs)
 
 `ZoneDisplayItem` ist ein `ObservableObject` das von `ZoneStatusDto` befüllt wird.
+Wird sowohl in `DashboardViewModel` als auch in `ZoneControlViewModel` genutzt.
 `Update(ZoneStatusDto)` setzt alle Properties inkl. Zustandstext + -farbe (switch expression):
 
 | State | Text | Farbe |
 |-------|------|-------|
-| `Watering` | "Bewässert (Ns)" | `#2196F3` Blau |
+| `Watering` | `"Bewässert ({N}s)"` (verbleibende Sekunden dynamisch) | `#2196F3` Blau |
 | `Cooldown` | "Abkühlphase" | `#FF9800` Orange |
 | `Error` | "Fehler" | `#F44336` Rot |
 | Default | "Bereit" | `#4CAF50` Grün |

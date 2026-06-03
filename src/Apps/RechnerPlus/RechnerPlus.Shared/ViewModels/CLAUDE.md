@@ -13,8 +13,8 @@ Alle ViewModels sind **Singleton** (in `App.axaml.cs` registriert) und werden vo
 | `CalculatorViewModel.Calculations.cs` | Eingabe, Berechnung, wissenschaftliche Funktionen. |
 | `CalculatorViewModel.Display.cs` | `RawDisplay`, `FormatResult`, Preview, Klammern. |
 | `CalculatorViewModel.History.cs` | Undo/Redo, History-Commands, Clipboard, Memory. |
-| `ConverterViewModel.cs` | 11 Einheiten-Kategorien, Swap-Animation. |
-| `SettingsViewModel.cs` | Zahlenformat, Dezimalstellen, Haptic-Toggle. |
+| `ConverterViewModel.cs` | 11 Einheiten-Kategorien, Swap (suppressConvert-Flag). |
+| `SettingsViewModel.cs` | Zahlenformat, Dezimalstellen, Haptic-Toggle, Sprach-Auswahl. |
 
 ## CalcLib-Integration
 
@@ -23,7 +23,7 @@ Alle ViewModels sind **Singleton** (in `App.axaml.cs` registriert) und werden vo
 
 ```csharp
 var result = _engine.Factorial(n);
-if (!result.IsSuccess) { ShowError(result.ErrorMessage); return; }
+if (result.IsError) { ShowError(result.ErrorMessage); return; }
 SetDisplayFromResult(result.Value);
 ```
 
@@ -47,8 +47,8 @@ Tausender-/Dezimaltrenner, `double.Parse()` schlägt damit auf manchen Locales l
 ## History- & Memory-Persistenz
 
 `IHistoryService` (CalcLib) speichert nicht selbst — das VM serialisiert per `IPreferencesService`
-als JSON (`LoadHistoryFromPreferences()` beim Start, `SaveHistoryToPreferences()` nach jeder
-Berechnung). M-Register überleben Neustart (Preferences); `MC` löscht auch aus Preferences.
+als JSON (`LoadHistory()` beim Start, `SaveHistory()` nach jeder Berechnung). M-Register überleben
+Neustart (Preferences); `MC` löscht auch aus Preferences.
 
 ## Back-Navigation (`MainViewModel.HandleBackPressed`)
 

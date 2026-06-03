@@ -1,7 +1,7 @@
 # Graphics — SkiaSharp-Renderer
 
-5 SkiaSharp-Renderer für Geo-Visualisierungen. Alle implementieren `IDisposable` (gecachte Paints).
-`Render()`-Methoden werden vom jeweiligen Code-Behind auf `PaintSurface` aufgerufen.
+5 SkiaSharp-Renderer für Geo-Visualisierungen. Die vier instanzbasierten Renderer implementieren `IDisposable` (gecachte Paints/Fonts/Shader). `ProjectThumbnailRenderer` ist `static` (statische Paint-Felder, kein `IDisposable`).
+`Render(SKCanvas canvas, SKRect bounds, …)`-Methoden werden vom jeweiligen Code-Behind im `PaintSurface`-Handler aufgerufen.
 SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → [MeineApps.UI](../../../../UI/MeineApps.UI/CLAUDE.md).
 
 ---

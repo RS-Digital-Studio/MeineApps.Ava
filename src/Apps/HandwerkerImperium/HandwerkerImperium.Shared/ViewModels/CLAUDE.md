@@ -1,7 +1,7 @@
 # ViewModels — Composition & Feature-Logik
 
 Alle ViewModels sind **Singleton** (in `App.axaml.cs` registriert), Ausnahme:
-`EconomyFeatureViewModel` (per `new` in MainViewModel.Economy.cs).
+`EconomyFeatureViewModel` (per `new` in `MainViewModel.Economy.cs`).
 Nur UI-Logik — Domänen-Berechnungen liegen in Services.
 Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
@@ -14,21 +14,21 @@ liegt in Coordinator-Services + Feature-VMs. MainViewModel implementiert 5 Host-
 (`INavigationHost`, `IWelcomeFlowHost`, `IStartupHost`, `IProgressionFeedbackHost`, `IGameTickHost`)
 und verdrahtet Coordinator-Services über `AttachHost(this)` im Ctor.
 
-| Datei | Z. | Inhalt |
-|-------|----|----|
-| `MainViewModel.cs` | 478 | Service-Felder, Konstruktor, Coordinator-/Host-Wiring |
-| `MainViewModel.EventHandlers.cs` | 401 | Money, Order, Lieferant, Event-System, Cinematic, Reputation, StateLoaded, Premium, Sprachwechsel |
-| `MainViewModel.Properties.cs` | 399 | ObservableProperties, Computed-Properties, Events, Child-VM-Exposures |
-| `MainViewModel.Tabs.cs` | 368 | ActivePage-Enum, IsXxxActive, ActivePageContent, Imperium-Sub-Tabs |
-| `MainViewModel.Navigation.cs` | 296 | Tab-Auswahl-Commands, HandleBackPressed, Child-Navigation-Routing |
-| `MainViewModel.Helpers.cs` | 182 | FormatMoney, UpdateNetIncomeHeader, UpdateWorkerWarning, Money-Animation, EternalMastery-Refresh |
-| `MainViewModel.Dialogs.cs` | 171 | Dialog-Weiterleitungen, Prestige-Durchführung, Notification-Center-Routing |
-| `MainViewModel.Lifecycle.cs` | 169 | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose |
-| `MainViewModel.Host.cs` | 163 | 5 Host-Interface-Implementierungen |
-| `MainViewModel.Economy.cs` | 161 | RelayCommand-Forwarder zu EconomyFeatureViewModel |
-| `MainViewModel.Automation.cs` | 132 | Automation-Property-Wrapper (GameState.Automation), Reputation-Tier-Properties |
-| `MainViewModel.Missions.cs` | 28 | LuckySpin-Overlay-Steuerung |
-| `MainViewModel.Init.cs` | 15 | InitializeAsync-Forwarder an GameStartupCoordinator |
+| Datei | Inhalt |
+|-------|--------|
+| `MainViewModel.cs` | Service-Felder, Konstruktor, Coordinator-/Host-Wiring |
+| `MainViewModel.EventHandlers.cs` | Money, Order, Lieferant, Event-System, Cinematic, Reputation, StateLoaded, Premium, Sprachwechsel |
+| `MainViewModel.Properties.cs` | ObservableProperties, Computed-Properties, Events, Child-VM-Exposures |
+| `MainViewModel.Tabs.cs` | ActivePage-Enum, IsXxxActive, ActivePageContent, Imperium-Sub-Tabs |
+| `MainViewModel.Navigation.cs` | Tab-Auswahl-Commands, HandleBackPressed, Child-Navigation-Routing |
+| `MainViewModel.Helpers.cs` | FormatMoney, UpdateNetIncomeHeader, UpdateWorkerWarning, Money-Animation, EternalMastery-Refresh |
+| `MainViewModel.Dialogs.cs` | Dialog-Weiterleitungen, Prestige-Durchführung, Notification-Center-Routing |
+| `MainViewModel.Lifecycle.cs` | PauseGameLoop, ResumeGameLoop, OnLiveOrderSpawned, Dispose |
+| `MainViewModel.Host.cs` | 5 Host-Interface-Implementierungen |
+| `MainViewModel.Economy.cs` | RelayCommand-Forwarder zu EconomyFeatureViewModel |
+| `MainViewModel.Automation.cs` | Automation-Property-Wrapper (GameState.Automation), Reputation-Tier-Properties |
+| `MainViewModel.Missions.cs` | LuckySpin-Overlay-Steuerung |
+| `MainViewModel.Init.cs` | InitializeAsync-Forwarder an GameStartupCoordinator |
 
 **Bewusst beibehalten im MainViewModel** (Auslagerung würde AXAML-Bindings brechen):
 - Tab-Select-Commands + RelayCommand-Forwarder (`Navigation.cs`, `Economy.cs`)
@@ -41,16 +41,16 @@ und verdrahtet Coordinator-Services über `AttachHost(this)` im Ctor.
 `DialogViewModel` ist Coordinator + Confirm-Dialog-Properties + `IDialogService`-Impl.
 `PrestigeConfirmationViewModel` ist eine **eigenständige VM** (kein Partial).
 
-| Datei | Z. | Inhalt |
-|-------|----|----|
-| `DialogViewModel.cs` | 269 | Service-Felder, Konstruktor, Confirm-Dialog, ShowAlert/Confirm, IsAnyDialogVisible, Prestige-Summary, Reputation-Info |
-| `DialogViewModel.Achievement.cs` | 25 | Achievement-Dialog |
-| `DialogViewModel.Alert.cs` | 29 | Alert-Dialog |
-| `DialogViewModel.Hint.cs` | 106 | Hint-Dialog |
-| `DialogViewModel.LevelUp.cs` | 30 | LevelUp-Dialog |
-| `DialogViewModel.PrestigeSummary.cs` | 45 | Post-Prestige-Summary |
-| `DialogViewModel.Story.cs` | 152 | Story-Dialog |
-| **`PrestigeConfirmationViewModel.cs`** | **380** | **Eigenständige VM** — Prestige-Tier-Auswahl + Heirloom-Selektion. XAML-Bindings: `DialogVM.PrestigeConfirmation.X` |
+| Datei | Inhalt |
+|-------|--------|
+| `DialogViewModel.cs` | Service-Felder, Konstruktor, Confirm-Dialog, ShowAlert/Confirm, IsAnyDialogVisible, Prestige-Summary, Reputation-Info |
+| `DialogViewModel.Achievement.cs` | Achievement-Dialog |
+| `DialogViewModel.Alert.cs` | Alert-Dialog |
+| `DialogViewModel.Hint.cs` | Hint-Dialog |
+| `DialogViewModel.LevelUp.cs` | LevelUp-Dialog |
+| `DialogViewModel.PrestigeSummary.cs` | Post-Prestige-Summary |
+| `DialogViewModel.Story.cs` | Story-Dialog |
+| **`PrestigeConfirmationViewModel.cs`** | **Eigenständige VM** — Prestige-Tier-Auswahl + Heirloom-Selektion. XAML-Bindings: `DialogVM.PrestigeConfirmation.X` |
 
 ---
 
@@ -58,12 +58,12 @@ und verdrahtet Coordinator-Services über `AttachHost(this)` im Ctor.
 
 | ViewModel | Instanziierung | Kernverantwortung |
 |-----------|---------------|------------------|
-| `HeaderViewModel` | DI Singleton | 16 Properties: Money, Level, GoldenScrews, XP, Net-Income |
-| `PrestigeBannerViewModel` | DI Singleton | 18 Properties: IsPrestigeAvailable, Tier-Preview |
-| `GoalBannerViewModel` | DI Singleton | CurrentGoal + NavigateToGoalCommand, INavigationService direkt |
-| `WelcomeFlowViewModel` | DI Singleton | 14 Props + Welcome-Flow-Logik in `.Logic.cs` Partial |
+| `HeaderViewModel` | DI Singleton | Money, Level, GoldenScrews, XP, Net-Income u.a. |
+| `PrestigeBannerViewModel` | DI Singleton | IsPrestigeAvailable, Tier-Preview u.a. |
+| `GoalBannerViewModel` | DI Singleton | CurrentGoal + NavigateToGoalCommand, nutzt `INavigationService` direkt |
+| `WelcomeFlowViewModel` | DI Singleton | Welcome-Flow-Logik in `.Logic.cs` Partial |
 | `MissionsFeatureViewModel` | DI Singleton | Daily/Weekly/QuickJobs/LuckySpin-Props |
-| `EconomyFeatureViewModel` | `new` in MainViewModel.Economy.cs | Workshop/Order/Rush-Commands |
+| `EconomyFeatureViewModel` | `new` in `MainViewModel.Economy.cs` | Workshop/Order/Rush-Commands |
 
 ---
 
@@ -115,7 +115,7 @@ Alle 10 MiniGame-VMs erben von `BaseMiniGameViewModel`:
 - Direktstart: `StartGameAsync()` sofort ohne Start-Button
 - `GameRestarted`-Event in `SetOrderId()` — alle Views abonnieren es für `StartRenderLoop()`
 - `ContinueCommand` hat Reentrancy-Guard `if (!IsResultShown) return;`
-- Countdown 350ms nach 50+ Spielen
+- Countdown-Delay: 700 ms pro Schritt, verkürzt auf 350 ms nach 50+ gespielten MiniGames
 
 ---
 
@@ -160,19 +160,6 @@ Alle async-Methoden in `GuildViewModel`, `SettingsViewModel`, `ShopViewModel` un
 ## INavigable
 
 `INavigable`-Interface mit `NavigationRequested`-Event ermöglicht Child-VMs
-die Navigation ohne direkte MainViewModel-Abhängigkeit:
-
-```csharp
-// Child-VM:
-public event Action<string>? NavigationRequested;
-NavigationRequested?.Invoke("route");
-
-// MainViewModel.Navigation.cs:
-_childVm.NavigationRequested += route => NavigationService.NavigateToRoute(route);
-```
-
-## Aktiver Gotcha — was NICHT in ViewModels gehört
-
-- Keine `App.Services.GetRequiredService<T>()` im View-Ctor (Android-Crash-Pattern)
-- Keine direkten AdMob-/Billing-Calls — nur über `IRewardedAdService` / `IPurchaseService`
-- Keine `DateTime.Now` — immer `DateTime.UtcNow`
+die Navigation ohne direkte MainViewModel-Abhängigkeit. `MainViewModel.Navigation.cs`
+fängt alle Child-`NavigationRequested`-Events ab und delegiert an `_navigationService?.NavigateToRoute(route)`.
+Generisches Muster → [Haupt-CLAUDE.md](../../../../../CLAUDE.md) (Navigation Pattern).

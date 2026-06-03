@@ -16,7 +16,9 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 - **`ConfigureServices(IServiceCollection)`** — alles **Singleton**:
   - Core: `IPreferencesService` → `PreferencesService("FinanzRechner")`.
   - Premium: `services.AddMeineAppsPremium()` + Android-Factory-Overrides
-    (`RewardedAdServiceFactory`, `PurchaseServiceFactory`, `FileShareServiceFactory`).
+    (`RewardedAdServiceFactory`, `PurchaseServiceFactory`).
+  - Plattform-Factory: `FileShareServiceFactory` (`Func<IFileShareService>?`, kein `IServiceProvider`-Parameter —
+    Android setzt `AndroidFileShareService`, Desktop nutzt `DesktopFileShareService` als Default).
   - Lokalisierung: `ILocalizationService` → `LocalizationService(AppStrings.ResourceManager, …)`.
   - App-Services: `IFileDialogService`, `IFileShareService` (Platform-Factory oder
     `DesktopFileShareService`), `INotificationService`, `IExpenseService`, `IExportService`,
@@ -61,7 +63,7 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 |--------|--------|------|
 | `ViewModels/` | MainViewModel + alle Sub-VMs, Partials, Calculator-VMs | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
 | `Views/` | 18 AXAML-Views, Behaviors, Overlay-Patterns | [Views/CLAUDE.md](Views/CLAUDE.md) |
-| `Services/` | 8 Interface/Impl-Paare (Persistenz, Export, Analyse) | [Services/CLAUDE.md](Services/CLAUDE.md) |
+| `Services/` | 9 Interface/Impl-Paare (Persistenz, Export, Analyse) | [Services/CLAUDE.md](Services/CLAUDE.md) |
 | `Models/` | Datenmodelle, Enums, FinanceEngine + Result-Records | [Models/CLAUDE.md](Models/CLAUDE.md) |
 | `Graphics/` | 12 SkiaSharp-Renderer + ChartHelper | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
 | `Converters/` | 18 IValueConverter-Implementierungen | [Converters/CLAUDE.md](Converters/CLAUDE.md) |

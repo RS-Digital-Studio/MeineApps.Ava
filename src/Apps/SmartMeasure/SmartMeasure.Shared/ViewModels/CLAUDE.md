@@ -11,7 +11,7 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Verantwortlichkeit |
 |-------|-------------------|
-| `MainViewModel.cs` | Tab-Navigation (8 Seiten), Status-Bar (BLE/Fix/Sat), AR-Transfer-Orchestrierung, Export-Banner, Back-Button, ForegroundService-Kopplung |
+| `MainViewModel.cs` | 8 `IsXxxActive`-Properties (Navigation), Status-Bar (BLE/Fix/Sat), AR-Transfer-Orchestrierung, Export-Banner, Back-Button, ForegroundService-Kopplung |
 | `SurveyViewModel.cs` | Live-Position (BLE-Events), Punkte empfangen/anzeigen, AR-Capture starten, `CompassRenderer` versorgen |
 | `TerrainViewModel.cs` | Mesh berechnen (Bowyer-Watson via `ITerrainService`), Konturlinien, Rotation/Zoom/Pan, `TerrainRenderer` steuern |
 | `GardenPlanViewModel.cs` | Gartenelemente CRUD, `GardenPlanRenderer` steuern, Volumen-Panel, PointsJson v2 |
@@ -75,8 +75,9 @@ MIME-Type aus Dateiendung: `.pdf` / `.csv` / `.geojson` / `.kmz` / `.dxf` / `.ob
 - `IsMockMode = bleService is MockBleService` — steuert Debug-Panel-Sichtbarkeit.
 - `RecentPoints` ist `ObservableCollection<SurveyPointDisplay>` (Insert an Position 0 = neueste oben).
 - Label wird beim nächsten `PointReceived`-Event auf dem Punkt gesetzt und danach zurückgesetzt.
-- Fix-Verlust setzt alle Live-Werte zurück (`ResetLivePositionUi`), damit keine Stale-Daten gemessen werden.
-- MagWarning erscheint wenn `MagAccuracy < 2 && IsConnected` — Horizontal-Tilt-Korrektur greift nicht.
+- Fix-Verlust (FixQuality == 0) setzt alle Live-Werte zurück (`ResetLivePositionUi`), damit keine Stale-Daten gemessen werden.
+- `MagWarning` (string) ist nicht leer wenn `state.MagAccuracy < 2 && state.IsConnected` — Horizontal-Tilt-Korrektur greift nicht.
+- Statistik (`PointCount`, `AreaText`, `PerimeterText`) wird aus `IMeasurementService.PointAdded/PointsReset` gespeist — AR-Punkte erscheinen damit ebenso wie RTK-Stab-Punkte.
 
 ---
 

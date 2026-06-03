@@ -13,8 +13,8 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
   - Core: `IPreferencesService` → `PreferencesService("RechnerPlus")`, `ILocalizationService` →
     `LocalizationService(AppStrings.ResourceManager, …)`.
   - CalcLib: `CalculatorEngine`, `ExpressionParser`, `IHistoryService` → `HistoryService`.
-  - Plattform: `IHapticService` ← `HapticServiceFactory?.Invoke(sp)` (Android setzt Factory) ??
-    `NoOpHapticService` (Desktop).
+  - Plattform: `IHapticService` — Android setzt `HapticServiceFactory` in `MainActivity`,
+    Desktop fällt auf `NoOpHapticService` zurück.
   - ViewModels: `CalculatorViewModel` (Ctor-Injection von Engine/Parser/Loc/History/Prefs/Haptic),
     `ConverterViewModel`, `SettingsViewModel`, `MainViewModel`.
 - **`OnFrameworkInitializationCompleted()`** — DI bauen → `SkiaThemeHelper.RefreshColors()` →
@@ -29,6 +29,7 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 
 | Ordner | Namespace |
 |--------|-----------|
+| Root (`App.axaml.cs`) | `RechnerPlus` |
 | `ViewModels/` | `RechnerPlus.ViewModels` |
 | `Views/` | `RechnerPlus.Views` |
 | `Graphics/` | `RechnerPlus.Graphics` |
@@ -41,7 +42,7 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 |--------|--------|------|
 | `ViewModels/` | MainViewModel + Calculator/Converter/Settings-VMs, Rechen-/Display-Logik | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
 | `Views/` | AXAML-Views + UI-Patterns (Button-Grid, Keyboard, Landscape) | [Views/CLAUDE.md](Views/CLAUDE.md) |
-| `Graphics/` | SkiaSharp-Renderer (VFD-Display, Result-Burst, Function-Graph, Splash) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
+| `Graphics/` | SkiaSharp-Renderer (VFD-Display, Result-Burst, Function-Graph, Circuit-Board-Hintergrund, Splash) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
 | `Controls/` | App-eigene Custom Controls | [Controls/CLAUDE.md](Controls/CLAUDE.md) |
 | `Loading/` | Startup-Pipeline | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
 

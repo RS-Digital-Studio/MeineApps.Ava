@@ -1,6 +1,7 @@
 # ViewModels — UI-Logik & Feature-Module
 
-25 ViewModels (alle Singleton außer `WhatsNewViewModel` + `BottomTabBarViewModel` → Transient).
+27 ViewModels (alle Singleton, außer `WhatsNewViewModel` → Transient laut DI-Registrierung;
+`BottomTabBarViewModel` → Singleton, da genau eine BottomTabBar existiert).
 Nur UI-Logik — Domänenlogik delegiert an Services/GameEngine.
 Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
@@ -10,7 +11,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 ## MainViewModel-Kompositor
 
 `MainViewModel` (~480 LOC) ist ein reiner **Compositor** — er bündelt 5 Feature-Module
-und forward deren State als Properties an `MainView.axaml`-Bindings.
+und forwarded deren State als Properties an `MainView.axaml`-Bindings.
 Alle bestehenden AXAML-Bindings (`{Binding MenuVm}`, `{Binding ActiveView}`,
 `{Binding IsAnyDialogOpen}`, …) treffen auf Forwarder-Properties.
 
@@ -18,11 +19,16 @@ Alle bestehenden AXAML-Bindings (`{Binding MenuVm}`, `{Binding ActiveView}`,
 
 | Modul | Datei | Verantwortung |
 |-------|-------|--------------|
-| `INavigationCoordinator` | `Navigation/NavigationCoordinator.cs` | ActiveView + 26 Routen, CloudSave-Race-Guard |
+| `INavigationCoordinator` | `Navigation/NavigationCoordinator.cs` | ActiveView + Routen, CloudSave-Race-Guard |
 | `IBottomTabController` | `Navigation/BottomTabController.cs` | 4 Sub-Tabs, bidirektionale View↔Tab-Sync |
 | `IDialogPresenter` | `Services/DialogPresenter.cs` | Alert/Confirm/IsAnyDialogOpen-Aggregat |
 | `IChildViewModelRegistry` | `ChildViewModelRegistry.cs` | 11 Eager + 15 Lazy VMs, EnsureXxx()-Methoden |
 | `ILifecycleHub` | `LifecycleHub.cs` | HandleBackPressed, CloudSaveInitTask, OnAdUnavailable |
+
+**Hinweis:** `NavigationCoordinator.cs` und `BottomTabController.cs` liegen in
+`BomberBlast.Shared/Navigation/`, nicht im ViewModels-Ordner. Im
+`ViewModels/Navigation/`-Unterordner liegen nur `NavigationQueryParser.cs` und
+`NavigationRouteMapper.cs` (Hilfsklassen für Routen-Parsing).
 
 ### State-Sync-Pattern
 
@@ -35,12 +41,12 @@ subscribed und ruft `OnPropertyChanged` für betroffene Forwarder.
 
 Verwaltet 11 Eager + 15 Lazy VMs:
 
-**Eager** (sofort instanziiert, Kern-Navigation): MainMenu, Game, LevelSelect, Settings,
-Help, HighScores, GameOver, Victory, BossRush, PlayHub, BottomTabBar.
+**Eager** (sofort instanziiert, Kern-Navigation): MainMenu, LevelSelect, Settings,
+HighScores, GameOver, Help, Victory, BossRush, WhatsNew, PlayHub, BottomTabBar.
 
-**Lazy** (bei Bedarf via `EnsureXxx()`): Shop, Achievements, DailyChallenge, LuckySpin,
+**Lazy** (bei Bedarf via `EnsureXxx()`): Game, Shop, Achievements, DailyChallenge, LuckySpin,
 WeeklyChallenge, Statistics, QuickPlay, Deck, Dungeon, BattlePass, Collection, League,
-Profile, GemShop, WhatsNew.
+Profile, GemShop.
 
 ### EnsureXxx()-Pattern
 
@@ -74,7 +80,9 @@ VMs sind `sealed` → NSubstitute kann nicht mocken → Helper als Testbarkeits-
 
 | Methode/Property | Beschreibung |
 |-----------------|-------------|
-| `HandleBackPressed()` | Hierarchische Android-Back-Navigation: Overlays → Sub-Pages → Double-Back-to-Exit |
+| `HandleBackPressed()` | Hierarchische Android-Back-Navigation: Dialoge → Score-Double-Overlay → Pause/Resume → Sub-Pages → Double-Back-to-Exit |
+| `OnAppPaused()` | Dialoge abbrechen, Spiel pausieren, Musik stoppen |
+| `OnAppResumed()` | Musik wieder aufnehmen (außer im Game-Pause-Overlay) |
 | `CloudSaveInitTask` | Im Ctor gestartet (Cloud-Pull). `NavigationCoordinator` wartet darauf (3s-Cap). |
 | `OnAdUnavailable()` | Rewarded-Ad nicht verfügbar — zeigt Dialog via `IDialogPresenter` |
 
@@ -84,21 +92,33 @@ VMs sind `sealed` → NSubstitute kann nicht mocken → Helper als Testbarkeits-
 
 | ViewModel | Partial-Files | Besonderheit |
 |-----------|--------------|-------------|
-| `MainViewModel.cs` | — | Compositor, 5 Feature-Module, `IDisposable`, `OnAppeared()` |
-| `MainMenuViewModel.cs` | `.Dashboard.cs`, `.Onboarding.cs` | Daily-Reward, Comeback-Bonus, Feature-Unlocks in `OnAppeared()` |
-| `GameViewModel.cs` | — | GameEngine-Wrapper, Gamepad-API, `IsAnyOverlayOpen`-Aggregat |
+| `MainViewModel.cs` | — | Compositor, 5 Feature-Module, `OnAppeared()` |
+| `MainMenuViewModel.cs` | `.Dashboard.cs`, `.Onboarding.cs` | Daily-Reward, Comeback-Bonus, Feature-Unlocks in `OnAppearing()` |
+| `GameViewModel.cs` | — | GameEngine-Wrapper, Gamepad-API, `IsAnyOverlayOpen`-Aggregat, `IDisposable` |
 | `ShopViewModel.cs` | `.Upgrades.cs`, `.Deals.cs`, `.Skins.cs` | `IDisposable` (BalanceChanged-Subscription) |
 | `LevelSelectViewModel.cs` | — | World-Grid, Stars-Display, `IDisposable` |
-| `MainMenuViewModel.cs` | `.Dashboard.cs`, `.Onboarding.cs` | `IDisposable` (DispatcherTimer) |
-| `ProfileViewModel.cs` | `.Customize.cs` | Cosmetics-Galerie, `IDisposable` |
+| `SettingsViewModel.cs` | — | App-Einstellungen, AlertRequested + ConfirmationRequested |
+| `HighScoresViewModel.cs` | — | Score-Liste |
+| `HelpViewModel.cs` | — | Hilfe-Seiten |
+| `GameOverViewModel.cs` | — | Tod-Screen, ConfirmationRequested |
+| `VictoryViewModel.cs` | — | Sieges-Screen |
+| `BossRushViewModel.cs` | — | Boss-Rush-Modus |
+| `PlayHubViewModel.cs` | — | Spielmodi-Auswahl |
+| `BottomTabBarViewModel.cs` | — | Tab-Brushes (Active/Inactive), `IDisposable` (Hub-Subscription) |
+| `WhatsNewViewModel.cs` | — | What's-New-Modal, `Closed`-Event |
+| `ProfileViewModel.cs` | `.Customize.cs` | Cosmetics-Galerie, DSGVO-Export, Account-Delete, `IDisposable` |
 | `DeckViewModel.cs` | — | Karten-Verwaltung, Crafting, `IDisposable` |
-| `DungeonViewModel.cs` | — | Roguelike-Run-Flow, Buff-Selection |
+| `DungeonViewModel.cs` | — | Roguelike-Run-Flow, Buff-Selection, Ad + IAP wiring |
 | `BattlePassViewModel.cs` | — | 30-Tier Saison, Free/Premium-Track-Anzeige |
 | `LeagueViewModel.cs` | — | Leaderboard, NPC-Backfill-Anzeige |
-| `ProfileViewModel.cs` | `.Customize.cs` | DSGVO-Export, Account-Delete |
 | `LuckySpinViewModel.cs` | — | Glücksrad-Animation, Pity-Anzeige, `IDisposable` |
-| `WhatsNewViewModel.cs` | — | **Transient** — wird via `Services.GetService<WhatsNewViewModel>()` erzeugt |
-| `BottomTabBarViewModel.cs` | — | **Transient** — View hat eigene Instanz |
+| `AchievementsViewModel.cs` | — | Achievement-Liste |
+| `CollectionViewModel.cs` | — | Cosmetics-Sammlung |
+| `StatisticsViewModel.cs` | — | Spielstatistiken |
+| `DailyChallengeViewModel.cs` | — | Tägliche Herausforderung |
+| `WeeklyChallengeViewModel.cs` | — | Wöchentliche Herausforderung |
+| `QuickPlayViewModel.cs` | — | Schnellstart |
+| `GemShopViewModel.cs` | — | Edelstein-Shop, ConfirmationRequested |
 
 ---
 
@@ -107,13 +127,15 @@ VMs sind `sealed` → NSubstitute kann nicht mocken → Helper als Testbarkeits-
 | Datei | Zweck |
 |-------|-------|
 | `INavigable.cs` | `event Action<NavigationRequest>? NavigationRequested`. Alle Child-VMs implementieren es. |
-| `IGameJuiceEmitter.cs` | Einheitliches Interface für FloatingText + Celebration (LevelSelectVM, MainMenuVM, ShopVM, GameOverVM, ProfileVM). |
-| `NavigationRequest.cs` | Record-Typen: `GoGame`, `GoBack`, `GoShop`, `GoLeague`, … |
-| `ActiveView.cs` | Enum mit allen 26 Navigations-Zielen. Basis für `ActiveViewEqualsConverter`. |
+| `IGameJuiceEmitter.cs` | Drei Interfaces: `IFloatingTextEmitter`, `ICelebrationEmitter`, `IGameJuiceEmitter` (Kombo). Getrennt damit VMs ohne Celebration (z.B. `GameOverViewModel`) nicht CS0067 erzeugen. |
+| `NavigationRequest.cs` | Typsichere Record-Typen: `GoGame`, `GoMainMenu`, `GoBack`, `GoShop`, `GoLeague`, `GoResetThen(Then)`, … (22 Records). |
+| `ActiveView.cs` | Enum mit allen Navigations-Zielen. Basis für `ActiveViewEqualsConverter`. |
 | `ProfileTab.cs` | Enum für Profile-Sub-Tabs. |
-| `MainViewModelDependencies.cs` | Dependency-Aggregat: fasst 32 Ctor-Parameter zusammen. |
+| `MainViewModelDependencies.cs` | Dependency-Aggregat: fasst 34 Ctor-Parameter zusammen (11 Eager-VMs + 15 Lazy-VMs + 8 Services). |
 | `IChildViewModelRegistry.cs` | Interface für Registry (Testbarkeit). |
 | `ILifecycleHub.cs` | Interface für LifecycleHub. |
+| `Navigation/NavigationQueryParser.cs` | Query-Parameter-Parsing für Routen-Strings. |
+| `Navigation/NavigationRouteMapper.cs` | Record-Routen-Typen auf `ActiveView`-Enum mappen. |
 
 ---
 

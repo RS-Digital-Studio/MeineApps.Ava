@@ -57,6 +57,9 @@ Idempotent via `_servicesDisposed`-Flag (OnDestroy kann mehrfach feuern).
 3. `ServiceProvider as IDisposable` — disposed automatisch ALLE registrierten IDisposable-Singletons
    in Reverse-Resolution-Order
 4. `Icons.GameIcon.ClearCache()` + `Icons.GameIconRenderer.Cleanup()` — statisch, nicht im DI
+5. Statische Renderer-Caches: `InventGameRenderer`, `BlueprintGameRenderer`, `CraftTextures`,
+   `FireworksRenderer`, `GameCardRenderer`, `LoadingScreenRenderer` — je `DisposeStaticResources()`
+   (Shader/MaskFilter/Path/Bitmaps in static Feldern, nicht im DI-Container)
 
 ### Platform-Factories (VOR `base.OnCreate` in MainActivity)
 
@@ -82,7 +85,7 @@ GameAssetService.PlatformAssetLoader  // Assets.Open("visuals/{path}")
 | Game-Loop | `IGameStateService`, `ISaveGameService`, `IGameLoopService`, `IIncomeCalculatorService` |
 | Coordinator | `IGameStartupCoordinator`, `IProgressionFeedbackCoordinator`, `IGameTickCoordinator`, `ICinematicCoordinator` |
 | Navigation | `INavigationService`, `IDialogOrchestrator`, `IMiniGameNavigator` |
-| Gilde | `IGuildFacade` (bündelt 7 Sub-Services), `IGuildTickService` (Facade für 5 Tick-Services) |
+| Gilde | `IGuildFacade` (bündelt 9 Sub-Services), `IGuildTickService` (Facade für 5 Tick-Services) |
 | Facade | `IMissionsFacade` (bündelt 5 Mission-Services) |
 | Live-Ops | `ILiveEventService`, `ILiveEventScoreTracker`, `IWhatsNewService`, `ISeasonalEventService`, `IBattlePassService` |
 | VMs | `MainViewModel`, `DialogViewModel`, `MissionsFeatureViewModel`, `HeaderViewModel`, `PrestigeBannerViewModel`, `WelcomeFlowViewModel`, `GoalBannerViewModel`, alle MiniGame-VMs, alle Guild-Sub-VMs |

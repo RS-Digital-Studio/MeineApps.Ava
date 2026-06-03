@@ -9,7 +9,7 @@ fliegen beim Build auf. Generische AXAML-Conventions → [Haupt-CLAUDE.md](../..
 
 | Datei | Zweck |
 |-------|-------|
-| `MainView.axaml(.cs)` | Shell: 4-Tab-Bar (56 dp), Ad-Spacer (64 dp), FinanceBackgroundRenderer (Grid.RowSpan=3) |
+| `MainView.axaml(.cs)` | Shell: 4-Tab-Bar (56 dp), Ad-Spacer (64 dp), `BackgroundCanvas` (SKCanvasView, Grid.RowSpan=3) mit `FinanceBackgroundRenderer` (~5fps-Timer) |
 | `HomeView.axaml(.cs)` | Dashboard: FinanceDashboardRenderer, SkiaGradientRing, Sparkline, MiniRing, Expense-Donut, Quick-Add FAB, Calculator-Grid |
 | `ExpenseTrackerView.axaml(.cs)` | Expense-Liste, Monatsnavigation, SwipeToReveal, Undo-Snackbar, AddExpense-Overlay |
 | `StatisticsView.axaml(.cs)` | 2× Donut, TrendLine, Monatsvergleich, CSV/PDF-Export |
@@ -39,7 +39,9 @@ MainView Grid: RowDefinitions="*,Auto,Auto"
   Row 2  Tab-Bar (56 dp)
 ```
 
-`FinanceBackgroundRenderer` wird mit `Grid.Row="0" Grid.RowSpan="3"` hinter allen Layern gezeichnet.
+`BackgroundCanvas` (SKCanvasView) liegt mit `Grid.RowSpan="3"` hinter allen Layern; `FinanceBackgroundRenderer`
+rendert darauf via `OnBackgroundPaintSurface`. Der Timer läuft mit ~5fps (200ms Interval) dauerhaft,
+solange `MainView` im Visual Tree hängt — Cleanup in `OnDetachedFromVisualTree`.
 
 ---
 
@@ -83,7 +85,7 @@ gestapelt werden; der Hit-Test greift zuverlässig auf Allen Plattformen.
 unterschiedliche `RenderTransform`-Typen. Lösung: Panel-Wrapper erhält StaggerFadeIn (Scale-X/Y),
 Button-Kind erhält TapScale (Tap-Scale) — zwei unabhängige RenderTransform-Ebenen.
 
-**Undo-Countdown:** ScaleX 1→0 über 5 s als visueller Fortschrittsbalken in Undo-Snackbars.
+**Undo-Countdown:** CSS-Klasse `UndoTimer` — Opacity 1→0 über 5 s (LinearEasing, FillMode=Forward). Kein ScaleX.
 
 **ItemsControl statt ItemsRepeater:** Avalonia-12-ItemsRepeater hat Re-Mount-Probleme bei
 `Clear+Add`. Bei realistischen User-Daten (< 100 Tagesgruppen, < 30 Transaktionen pro Tag)

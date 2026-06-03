@@ -6,16 +6,17 @@ auf `SKCanvas` gezeichnet. SkiaSharp-Grundlagen, Paint-Lifecycle, DPI und MaskFi
 
 ## Kern-Regel: Statische Paints
 
-Alle `SKPaint` / `SKFont` / `SKMaskFilter` / `SKPath` sind `static readonly`. `Cleanup()` bleibt
-bewusst leer — statische Ressourcen leben für die gesamte App-Lifetime.
+Alle `SKPaint` / `SKFont` / `SKMaskFilter` / `SKPath` sind `static readonly`. `Cleanup()` der
+Layer-Renderer gibt gecachte Shader (z.B. `GroundRenderer._fadeShader`) frei — NICHT die
+statischen Paints selbst (die leben für die gesamte App-Lifetime).
 Kommentar-Pflicht: `// _glowBlur ist static readonly — NICHT disposen`
 
 ## Unterverzeichnisse
 
 | Verzeichnis | Inhalt |
 |-------------|--------|
-| `Backgrounds/` | `BackgroundCompositor`, `SceneDef/SceneDefinitions` (14 Szenen), 5 Layer-Renderer |
-| `Characters/` | `CharacterRenderer` (Fassade), `SpriteCharacterRenderer` (Blinzeln, Crossfade), `CharacterDefinitions` (11), `SpriteDefinitions`, `Emotion` |
+| `Backgrounds/` | `BackgroundCompositor`, `SceneDef/SceneDefinitions` (15 Szenen), 5 Layer-Renderer |
+| `Characters/` | `CharacterRenderer` (Fassade), `SpriteCharacterRenderer` (Blinzeln, Mund-Animation), `CharacterDefinitions` (11), `SpriteDefinitions`, `Emotion` |
 | `Effects/` | `ParticleSystem`, `GlitchEffect`, `ScreenShake`, `MangaPanelRenderer`, `SplashArtRenderer` |
 | `Map/` | `OverworldRenderer`, `NodeRenderer`, `PathRenderer` |
 | `UI/` | `UIRenderer`, `DialogBoxRenderer`, `TypewriterRenderer`, `ChoiceButtonRenderer`, `StatusWindowRenderer` |
@@ -23,10 +24,12 @@ Kommentar-Pflicht: `// _glowBlur ist static readonly — NICHT disposen`
 
 ## Backgrounds
 
-`BackgroundCompositor` orchestriert 6 Layer-Renderer:
+`BackgroundCompositor` orchestriert 5 Layer-Renderer mit Hybrid-Rendering: AI-generierter
+Hintergrund als Basis (Cover-Fit) + prozedurale SkiaSharp-Overlays (Partikel, Licht). Ohne
+AI-Assets greift der prozedurale Fallback.
 
 ```
-BackgroundCompositor.RenderBack()      // Sky + Elements + Ground + PointLights
+BackgroundCompositor.RenderBack()      // AI-Bild oder prozeduraler Fallback (Sky, Elements, Ground) + PointLights
 BackgroundCompositor.BeginLighting()   // SaveLayer mit Ambient ColorFilter
   // ... Charaktere rendern ...
 BackgroundCompositor.EndLighting()     // Restore
@@ -42,8 +45,12 @@ BackgroundCompositor.RenderFront()     // Foreground + Partikel
 | `SceneParticleRenderer` | 12 deterministische Partikel-Typen (kein Heap-State) |
 | `ForegroundRenderer` | 5 Typen über Charakteren (GrassBlade, Fog, Branch, Cobweb, LightRay) mit Safezone-Clip |
 
-`SceneDef` (positional record) + `SceneDefinitions` (14 statische Szenen, Dictionary
-case-insensitive). Rückwärtskompatible Keys: `"forest"→ForestDay`, `"dungeon"→DungeonHalls`.
+`SceneDef` (positional record) + `SceneDefinitions` (15 statische Szenen, Dictionary
+case-insensitive). Rückwärtskompatible Keys: `"forest"→ForestDay`, `"dungeon"→DungeonHalls`,
+`"village"→VillageSquare`, `"tower"→TowerLibrary`, `"castle"→CastleHall`.
+
+**15 Szenen:** SystemVoid, Title, ForestDay, ForestNight, Campfire, VillageSquare, VillageTavern,
+DungeonHalls, DungeonBoss, TowerLibrary, TowerSummit, Battlefield, CastleHall, DarkCastle, Dreamworld.
 
 ## Characters
 
@@ -52,9 +59,12 @@ Rein Sprite-basiertes System — kein prozeduraler Fallback. Fehlendes Asset = n
 | Klasse | Zweck |
 |--------|-------|
 | `CharacterRenderer` | Fassade: `DrawPortrait` / `DrawFullBody` / `DrawIcon`, aktiv/inaktiv-Dimming |
-| `SpriteCharacterRenderer` | Blinzeln (unabhängig pro Charakter), Crossfade 150 ms, Mund-Animation (3 Frames) |
-| `CharacterDefinitions` | 11 Definitionen (3 Protagonist-Klassen + 6 NPCs + 2 Bosse), `GetById()` |
+| `SpriteCharacterRenderer` | Blinzeln (unabhängig pro Charakter, `CharacterAnimState`), Mund-Animation (3 Frames), Idle-Breathing |
+| `CharacterDefinitions` | 11 Definitionen (3 Protagonist-Klassen + 5 NPCs + 3 Spezial), `GetById()` / `GetProtagonist(classType)` |
 | `SpriteDefinitions` | `Pose`-Enum (Standing/Battle/Sitting/Kneeling/Floating/Lying/Running) |
+
+**Kein Crossfade:** Die Alpha-0→1-Crossfade-Logik wurde entfernt, da sie zu Portrait/FullBody-Zappeln
+geführt hat. Sprites werden immer mit voller Deckkraft gezeichnet.
 
 **Asset-Pfade:**
 ```
@@ -71,11 +81,13 @@ enemies/{enemyId}.webp
 
 | System | Pattern |
 |--------|---------|
-| `ParticleSystem` | Struct-basiert, 11 Presets (MagicSparkle, LevelUpGlow, SystemGlitch, BloodSplatter, AmbientFloat + 6 Element-Presets) |
+| `ParticleSystem` | Struct-basiert, 11 Presets (Basis: MagicSparkle, LevelUpGlow, SystemGlitch, BloodSplatter, AmbientFloat — Element: FireBurst, IceShard, LightningStrike, WindGust, HolyLight, ShadowVoid) |
 | `GlitchEffect` | Horizontale Verschiebung + RGB-Split — `static readonly SKPaint` für jeden Kanal |
 | `ScreenShake` | Canvas-Translation (3 px normal, 5 px kritisch), Exponential-Decay |
 | `MangaPanelRenderer` | Screen in Panels splitten (dynamische Anzahl + Winkel) |
-| `DissolveTransition` | `SKPath` als Instanzfeld mit `Rewind()` statt `new` pro Frame |
+| `SplashArtRenderer` | Splash-Art-Darstellung für Szenen-Übergänge |
+
+`DissolveTransition` lebt in `Engine/Transitions/`, nicht hier.
 
 ## UI
 

@@ -14,7 +14,7 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `MainActivity.cs` | `AvaloniaMainActivity` (kein `<App>`-Generic in Avalonia 12). Factory-Wiring, AdMob-Setup, Lifecycle, Back-Button. |
 | `AndroidAudioService.cs` | `IAudioService`-Impl via SoundPool (SFX) + MediaPlayer (Musik + Crossfade). AudioFocus-Listener für Telefonanrufe. Erhält `IGameStateService` für Lautstärke-Einstellungen. |
 | `AndroidNotificationService.cs` | Lokale Push-Benachrichtigungen (8 Trigger), AlarmManager, NotificationChannel. |
-| `AndroidPlayGamesService.cs` | Google Play Games Services v2 — Leaderboards, Achievements, Cloud Save. |
+| `AndroidPlayGamesService.cs` | Google Play Games Services v2 — Sign-In, Leaderboards, Achievements. Cloud Save ist Stub (Snapshots-API fehlt im NuGet-Binding 121.0.0.2). |
 | `BootReceiver.cs` | `BroadcastReceiver` — stellt nach Geräte-Neustart geplante Benachrichtigungen wieder her. |
 | `NotificationReceiver.cs` | `BroadcastReceiver` — empfängt AlarmManager-PendingIntents und postet Notifications. |
 

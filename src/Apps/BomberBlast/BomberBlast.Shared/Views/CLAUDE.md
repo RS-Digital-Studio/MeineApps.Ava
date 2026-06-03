@@ -1,6 +1,6 @@
 # Views — AXAML-Views & UI-Patterns
 
-30 Views + 4 Component-Overlays. ViewModel-First, Compiled Bindings Pflicht.
+26 Views + 5 Components. ViewModel-First, Compiled Bindings Pflicht.
 Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
@@ -14,7 +14,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `GameView.axaml(.cs)` | `GameViewModel` | SKCanvasView, 3-stufige VM-Subscription, `IsHitTestVisible="{Binding !IsAnyOverlayOpen}"` |
 | `MainMenuView.axaml(.cs)` | `MainMenuViewModel` | Dashboard + Season-Banner |
 | `LevelSelectView.axaml(.cs)` | `LevelSelectViewModel` | Welt-Grid via SkiaSharp-Visualization |
-| `ShopView.axaml(.cs)` | `ShopViewModel` | Torn-Metal-Buttons, 3 Sub-Tabs |
+| `ShopView.axaml(.cs)` | `ShopViewModel` | Torn-Metal-Buttons, scrollbare Sektions-Liste (Upgrades + 8 Sektionen: PowerUps, Mechanics, Skins, BombSkins, ExplosionSkins, Trails, Victories, Frames) |
 | `BattlePassView.axaml(.cs)` | `BattlePassViewModel` | **Einzige echte Virtualisierung**: `ListBox + VirtualizingStackPanel Horizontal` (60+ Tiers) |
 | `DungeonView.axaml(.cs)` | `DungeonViewModel` | Node-Map, Buff-Selection-Overlay |
 | `LeagueView.axaml(.cs)` | `LeagueViewModel` | Firebase-Leaderboard-Anzeige |
@@ -43,7 +43,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `BottomTabBar.axaml(.cs)` | **Transient BottomTabBarViewModel** — View hat eigene Instanz. 5 Tabs mit GameIcon. |
+| `BottomTabBar.axaml(.cs)` | **Singleton BottomTabBarViewModel** — DataContext per `{Binding BottomTabVm}` aus MainViewModel gesetzt. 4 Tabs (Home, Play, Shop, Profile) mit GameIcon. |
 | `WhatsNewOverlay.axaml(.cs)` | **Transient WhatsNewViewModel** — Modal-Overlay. Getrennte DataContext-/x:DataType-Ebenen (AXAML-Compiled-Binding-Pattern, korrekt in Avalonia 12). |
 | `DailyRewardOverlay.axaml(.cs)` | Daily-Login-Bonus-Anzeige, animiert. |
 | `OnboardingOverlay.axaml(.cs)` | D0-Modal-Gate — verhindert Neulings-Überforderung am ersten Start. |

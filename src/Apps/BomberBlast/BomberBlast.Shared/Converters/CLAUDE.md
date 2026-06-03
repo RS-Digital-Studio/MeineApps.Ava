@@ -8,24 +8,27 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `ActiveViewEqualsConverter.cs` | `ActiveView`-Enum == `ConverterParameter` → `bool`. Wird für Tab-/View-Sichtbarkeit verwendet (`Classes.Active`-Binding in AXAML). |
-| `BoolToOpacityConverter.cs` | `bool` → `double` (true=1.0, false=0.0). Fade-Effekt für Disabled-States. |
-| `StringToGameIconKindConverter.cs` | String-Key → `GameIconKind`-Enum. Erlaubt dynamische Icon-Bindungen ohne Code-Behind. |
+| `ActiveViewEqualsConverter.cs` | `ActiveView`-Enum == `ConverterParameter` → `bool`. Wird für Tab-/View-Sichtbarkeit verwendet (`Classes.Active`-Binding in AXAML). ConverterParameter-Strings werden beim ersten Aufruf in `ActiveView` geparst und in einem `ConcurrentDictionary` gecacht — kein Enum-Parse-Overhead pro Frame. |
+| `BoolToOpacityConverter.cs` | `bool` → `double` (true=0.25, false=0.0). Hintergrund-Tint für aktiven Tab. Optionaler `ConverterParameter`-Override (z.B. `"0.5"`) erlaubt andere Intensitäten. |
+| `StringToGameIconKindConverter.cs` | String → `GameIconKind`-Enum. Erlaubt dynamische Icon-Bindungen aus ViewModels. Fallback bei unbekanntem String: `GameIconKind.HelpCircle`. |
 
 ---
 
 ## Nutzungs-Pattern
 
+Alle Converter exponieren eine statische `Instance`-Property und werden per `x:Static` eingebunden
+(kein `StaticResource`-Eintrag in App.axaml nötig):
+
 ```axaml
 <!-- ActiveView-Converter: Tab-Hervorhebung -->
 <Border Classes.Active="{Binding ActiveView,
-    Converter={StaticResource ActiveViewEqualsConverter},
+    Converter={x:Static conv:ActiveViewEqualsConverter.Instance},
     ConverterParameter=Game}" />
 
-<!-- GameIconKind aus String-Binding (z.B. RemoteConfig-Icon-Keys) -->
+<!-- GameIconKind aus String-Binding (z.B. ViewModel-Property) -->
 <icons:GameIcon Kind="{Binding IconKey,
-    Converter={StaticResource StringToGameIconKindConverter}}" />
+    Converter={x:Static conv:StringToGameIconKindConverter.Instance}}" />
 ```
 
-`ActiveViewEqualsConverter` ist der Kern des `ActiveView`-Enum-Patterns (statt 17
-`IsXxxActive`-Booleans in der Root-CLAUDE.md beschrieben).
+`ActiveViewEqualsConverter` ist der Kern des `ActiveView`-Enum-Patterns — ein einziges Enum
+statt vieler `IsXxxActive`-Booleans im ViewModel.

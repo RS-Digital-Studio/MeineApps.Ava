@@ -11,9 +11,17 @@ ist Android-first (Landscape, Touch-Input). Generische Desktop-Publishing-Befehl
 | `Program.cs` | Entry Point. `BuildAvaloniaApp().UsePlatformDetect().WithInterFont().LogToTrace()` → `StartWithClassicDesktopLifetime(args)`. |
 
 App läuft über `IClassicDesktopStyleApplicationLifetime` → `MainWindow` (siehe
-`BomberBlast.Shared/App.axaml.cs`, Desktop-Branch). Keine plattformspezifischen Service-Implementierungen —
-`ISoundService`/`IVibrationService`/`IPushNotificationService`/`IPlayGamesService`/`ICloudSaveService`
-fallen auf ihre jeweiligen Null-Implementierungen zurück. Keine Platform-Factories gesetzt.
+`BomberBlast.Shared/App.axaml.cs`, Desktop-Branch). Keine Platform-Factories gesetzt —
+plattformspezifische Services fallen auf ihre Fallback-Implementierungen zurück:
+
+| Interface | Desktop-Fallback |
+|-----------|-----------------|
+| `ISoundService` | `NullSoundService` |
+| `IVibrationService` | `NullVibrationService` |
+| `IPushNotificationService` | `NullPushNotificationService` |
+| `IPlayGamesService` | `NullPlayGamesService` |
+| `ICloudSaveService` | `NullCloudSaveService` |
+| `IRemoteConfigService` | `DefaultsRemoteConfigService` (liest `remote_config_defaults.json`) |
 
 ## Build / Run
 

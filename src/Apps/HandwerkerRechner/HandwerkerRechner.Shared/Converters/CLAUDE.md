@@ -1,28 +1,30 @@
 # Converters — XAML-Wertkonverter
 
 Namespace: `HandwerkerRechner.Converters`. Kleine, app-spezifische `IValueConverter`-Klassen
-für XAML-Bindings. Registriert in `App.axaml` als `<StaticResource>`.
+für XAML-Bindings. Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ## Dateien
 
 | Datei | Klasse | Zweck |
 |-------|--------|-------|
-| `IsNotNullConverter.cs` | `IsNotNullConverter` | `value != null` → `bool`. Für `IsVisible`-Bindings auf nullable ViewModels. |
-| `IntEqualsConverter.cs` | `IntEqualsConverter` | `int` == `ConverterParameter` → `bool`. Für Tab-Highlighting. Singleton (`Instance`). |
+| `IsNotNullConverter.cs` | `IsNotNullConverter` | `value != null` → `bool`. Vorhanden, aktuell aber ungenutzt — Views verwenden stattdessen `{x:Static StringConverters.IsNotNullOrEmpty}`. |
+| `IntEqualsConverter.cs` | `IntEqualsConverter` | `int` == `ConverterParameter` → `bool`. Für Sub-View-Selektion in Multi-Rechner-Views. Singleton (`Instance`). |
 
-## Nutzung
+## Registrierung
+
+`IntEqualsConverter` wird **lokal pro View** als Ressource registriert (nicht global in `App.axaml`):
 
 ```xml
-<!-- IsNotNullConverter: Calculator-Overlay sichtbar wenn CurrentCalculatorVm != null -->
-IsVisible="{Binding CurrentCalculatorVm, Converter={StaticResource IsNotNull}}"
+<!-- In der View-Ressourcensektion, z.B. ElectricalView.axaml, GardenView.axaml, RoofSolarView.axaml, MetalView.axaml -->
+<conv:IntEqualsConverter x:Key="IntEquals" />
 
-<!-- IntEqualsConverter: Tab aktiv wenn SelectedTab == 0 -->
-IsSelected="{Binding SelectedTab, Converter={StaticResource IntEquals}, ConverterParameter=0}"
+<!-- Nutzung: Panels je nach SelectedCalculator ein-/ausblenden -->
+<Panel IsVisible="{Binding SelectedCalculator, Converter={StaticResource IntEquals}, ConverterParameter=0}">
 ```
 
-## Gotcha — CommandParameter ist immer string
+## Gotcha — ConverterParameter ist immer string
 
 `IntEqualsConverter` parst `ConverterParameter` als `string` via `int.TryParse()`.
-Das ist korrekt — XAML `ConverterParameter="0"` ist IMMER `string`, nie `int`.
-Für Commands mit `int`-Parameter: `CommandParameter` auf `string` ändern + `int.TryParse()`
-intern im Command (siehe Haupt-CLAUDE.md Troubleshooting-Tabelle).
+Das ist korrekt — XAML übergibt `ConverterParameter="0"` immer als `string`, nie als `int`.
+Ohne `int.TryParse()` würde der Vergleich `value is int` vs. `parameter is string` immer `false`
+liefern und alle Panels wären sichtbar oder unsichtbar.

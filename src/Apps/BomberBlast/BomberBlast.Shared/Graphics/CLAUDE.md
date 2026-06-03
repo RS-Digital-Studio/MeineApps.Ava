@@ -47,9 +47,10 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `TrailSystem.cs` | 40 Structs | Charakter-Spuren, Ghost-Afterimages, Boss-Trails |
 | `ParticleSystem.cs` | dynamisch | General-Purpose-Pool, Cap via `HardwareTier` |
 
-**Adaptives Frame-Skipping**: 5-Frame-Ring-Buffer. Wenn Ø > 40ms (< 25 FPS) → alle
-atmosphärischen Systeme für ≥ 500ms ausgesetzt. Hysterese-Exit bei < 28ms.
-`SkipAtmosphere` kombiniert manuellen `ReducedEffects`-Toggle mit adaptiver Entscheidung.
+**Adaptives Frame-Skipping**: 5-Frame-Ring-Buffer (`_frameTimeBuffer[5]`). Wenn Ø > 50ms
+(≤ 20 FPS) → alle atmosphärischen Systeme für ≥ 1,0 s ausgesetzt (`SkipHoldMinSeconds`).
+Hysterese-Exit bei Ø < 36ms (≥ 27 FPS). `SkipAtmosphere` kombiniert manuellen
+`ReducedEffects`-Toggle mit adaptiver Entscheidung (`_adaptiveSkipActive`).
 
 ---
 
@@ -107,9 +108,10 @@ var bounds = canvas.LocalClipBounds;
 // toString im Render-Loop: statische String-Arrays für bekannte Wertebereiche
 ```
 
-**BombFxTheme-Lookup**: `BombFxTheme[] Lookup` (10 Welten × 3 Visual-Styles = 30 Themes).
-Custom-Cosmetics behalten ihre Farben (nur Default-Skin). Bei Welt-Wechsel:
-`SetWorldTheme()` → `UpdateExplosionSkinColors()`.
+**BombFxTheme**: Drei statische Arrays (`ClassicBombFx`, `NeonBombFx`, `RetroBombFx`),
+je 10 Einträge (eine Welt pro Eintrag). `SetWorldTheme(worldIndex)` wählt das passende Array
+nach `_styleService.CurrentStyle` aus und setzt `_bombFxTheme`. Custom-Cosmetics behalten
+ihre Farben (nur Default-Skin). Bei Welt-Wechsel: `SetWorldTheme()` → `UpdateExplosionSkinColors()`.
 
 **ShaderEffects.Logger**: Statischer Sink, wird in `App.axaml.cs` nach
 `BuildServiceProvider()` gesetzt. `DisposeSharedResources()` in `App.DisposeServices()`.

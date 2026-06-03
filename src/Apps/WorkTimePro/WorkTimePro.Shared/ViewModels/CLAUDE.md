@@ -10,15 +10,15 @@ gehalten. Nur UI-Logik — Berechnungen delegieren an Services. Generische MVVM-
 |-------|-------|
 | `MainViewModel.cs` | Today-Tab (CheckIn/Out, Live-Timer, Undo, Notiz-Debounce, Earnings-Ticker), Back-Press-Flow, Child-VM-Holding, Settings-Propagation. |
 | `MainViewModel.Navigation.cs` | Tab-Switching (5 Tabs), Sub-Page-Flags (`IsDayDetailActive` etc.), `HandleNavigation` (Route-Parser), Typed Event-Wiring (kein Reflection). |
-| `WeekOverviewViewModel.cs` | Wochenübersicht mit `WeekBarVisualization`. |
+| `WeekOverviewViewModel.cs` | Wochenübersicht — stellt Daten-Arrays für `WeekBarVisualization` (in `Graphics/`) bereit. |
 | `CalendarViewModel.cs` | Kalender mit Heatmap — kein `LoadDataAsync()` im Konstruktor (Lazy: erst beim Tab-Wechsel). |
-| `StatisticsViewModel.cs` | Statistiken (5 Perioden: Week/Month/Quarter/Year/Custom), Rewarded-Ad-Gate für Quartal/Jahr. |
-| `SettingsViewModel.cs` | Einstellungen mit Debounce-AutoSave (800ms), `SettingsChanged` Event. |
+| `StatisticsViewModel.cs` | Statistiken (5 Perioden: Week/Month/Quarter/Year/Custom), Rewarded-Ad-Gate für erweiterte Statistiken. |
+| `SettingsViewModel.cs` | Einstellungen mit Debounce-AutoSave (800ms via `ScheduleAutoSave`), `SettingsChanged` Event. |
 | `DayDetailViewModel.cs` | Tagesdetail (SelectedDate, manuelle Buchungen, Lock/Unlock). |
-| `MonthOverviewViewModel.cs` | Monatsübersicht mit `MonthlyBarChartVisualization`. |
+| `MonthOverviewViewModel.cs` | Monatsübersicht — stellt Daten-Arrays für `MonthlyBarChartVisualization` (in `Graphics/`) bereit. |
 | `YearOverviewViewModel.cs` | Jahresübersicht mit Heatmap-Kalender, navigiert zu MonthOverview. |
-| `VacationViewModel.cs` | Urlaubsverwaltung (9 Status-Typen, Resturlaub, Rewarded-Ad-Gate). |
-| `ShiftPlanViewModel.cs` | Schichtplanung (wiederkehrende Muster, Einzelzuweisungen). |
+| `VacationViewModel.cs` | Urlaubsverwaltung (DayStatus-Typen, Resturlaub, Rewarded-Ad-Gate). |
+| `ShiftPlanViewModel.cs` | Schichtplanung (wiederkehrende Muster, Einzelzuweisungen) — kein Premium-Gate. |
 
 ## MainViewModel — Kern-Architektur
 
@@ -32,7 +32,7 @@ Konstruktor:
  └─ _initTask = InitializeAsync()   ← sofort starten, kein fire-and-forget
 
 1s-Timer:
- └─ OnUpdateTimerElapsed → ForgetExtensions.RunForget(UpdateLiveDataAsync)
+ └─ OnUpdateTimerElapsed → Reentrancy-Guard (Interlocked) → ForgetExtensions.RunForget(UpdateLiveDataAsync)
      └─ GetLiveDataSnapshotAsync()  ← ein Snapshot statt 5+ DB-Queries/s
 ```
 
@@ -49,7 +49,7 @@ awaiten dies, um Race-Condition bei schnellem Tap nach Start zu verhindern.
 | 3 | `IsStatisticsActive` | `StatisticsVm.LoadDataAsync()` |
 | 4 | `IsSettingsActive` | `SettingsVm.LoadDataAsync()` |
 
-`OnCurrentTabChanged` → `LoadTabDataAsync(tab)` via `Forget()` (async, keine Race-Conditions).
+`OnCurrentTabChanged` → `LoadTabDataAsync(tab)` via `.Forget(ex => ...)` (async, keine Race-Conditions).
 
 ## Sub-Page-Navigation (5 Sub-Pages)
 
@@ -62,12 +62,14 @@ Sub-Pages werden durch `Is{Name}Active`-Flags gesteuert (kein Avalonia Shell):
 - `"WeekOverviewPage"` → Tab 1 (WeekVm) wechseln.
 - `".."` / `"back"` → `GoBack()` / `CloseAllSubPages()`.
 
-**DateTime in Routen:** IMMER `CultureInfo.InvariantCulture` + `DateTimeStyles.RoundtripKind` beim Parse.
+**DateTime in Routen:** IMMER `CultureInfo.InvariantCulture` + `DateTimeStyles.RoundtripKind` beim Parse
+(ISO-Routen sind locale-unabhängig — globale Konvention, hier im Route-Parser angewendet).
 
 ## Settings-Pattern
 
-`SettingsViewModel.ScheduleAutoSave`: Lambda muss `async` sein — ohne `async` wird Task verworfen,
-Exceptions verschwinden stillschweigend.
+`SettingsViewModel.ScheduleAutoSave`: enthält `_ = Task.Run(async () => { ... })` mit
+`InvokeAsync(async () => await SaveSettingsAsync())`. Das innere Lambda muss `async` sein — ohne
+`async` wird der innere Task verworfen und Exceptions werden stillschweigend geschluckt.
 
 `SettingsChanged` ist `EventHandler<bool>` — `bool` signalisiert ob Tab-Reload nötig ist (strukturelle
 Änderungen wie Arbeitszeitänderungen = `true`, kosmetische wie Reminder-Zeiten = `false`).
@@ -83,7 +85,7 @@ Status neu laden. Vor jedem neuen Undo: `_undoCts?.Cancel()` (verhindert paralle
 
 ## Notiz-Debounce
 
-`OnTodayNoteChanged` → `_noteDebouncer.Trigger(SaveNoteAsync)` (1500ms, `AsyncDebouncer`).
+`OnTodayNoteChanged` → `_noteDebouncer.Trigger(async _ => { ... })` (1500ms, `AsyncDebouncer`).
 Während `LoadDataAsync`: `using (_noteDebouncer.Pause())` — verhindert Race zwischen DB-Load
 und User-Eingabe ohne Suppress-Flag, das bei Exception hängen bleiben kann.
 
@@ -100,7 +102,7 @@ Handler-Delegates werden in `_navHandlers` / `_msgHandlers` gelistet → `Dispos
 sicher ab (kein Event-Leak bei Singleton-Lifetime).
 
 `IDisposable.Dispose()` auf `MainViewModel`: Timer stoppen, alle Events abmelden, Child-VMs
-die `IDisposable` implementieren (z.B. `SettingsViewModel`) ebenfalls disposen.
+die `IDisposable` implementieren (z.B. `SettingsViewModel`, `DayDetailViewModel`) ebenfalls disposen.
 
 ## Gotchas
 
@@ -111,3 +113,6 @@ die `IDisposable` implementieren (z.B. `SettingsViewModel`) ebenfalls disposen.
   UI-Meldungen verdrahtet ist.
 - **Tab-Reload vs. Lazy:** `OnCurrentTabChanged` → `LoadTabDataAsync` lädt IMMER neu. Sub-Page-
   Commands (DayDetail, Month, Year, Vacation, ShiftPlan) sind `async` und awaiten `LoadDataAsync`.
+- **Reentrancy-Guard 1s-Timer:** `_liveUpdateGate` per `Interlocked.CompareExchange` verhindert
+  überlappende `UpdateLiveDataAsync`-Ticks bei DB-Latenz > 1s (`System.Timers.Timer` feuert mit
+  `AutoReset=true` unabhängig vom Handler).

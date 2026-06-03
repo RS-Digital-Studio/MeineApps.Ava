@@ -12,9 +12,10 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 |-------|-------|
 | `AndroidApp.cs` | `AvaloniaAndroidApplication<App>` — Avalonia initialisiert sich hier **einmal pro Prozess**. `CustomizeAppBuilder().WithInterFont()`. |
 | `MainActivity.cs` | `AvaloniaMainActivity` (kein `<App>`-Generic in Avalonia 12). Factory-Wiring + AdMob-Init + Lifecycle + Immersive. |
-| `AndroidManifest.xml` | Package `com.meineapps.finanzrechner`, `MyTheme.NoActionBar`, Internet-Permission (AdMob). |
+| `AndroidManifest.xml` | Package `com.meineapps.finanzrechner` (aus `Directory.Build.targets`), `MyTheme.NoActionBar`, Internet + Network-State + Billing-Permissions, AdMob-Application-ID, `FileProvider` für `AndroidFileShareService`. |
 | `Resources/mipmap-*` | App-Icon (`appicon`, `appicon_round`). |
 | `Resources/values/styles.xml` | `MyTheme.NoActionBar`. |
+| `Resources/xml/file_paths.xml` | FileProvider-Pfade für Datei-Sharing via `AndroidFileShareService`. |
 
 ---
 
@@ -30,6 +31,7 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 - `EnableImmersiveMode()` (StatusBar + NavigationBar ausblenden).
 - `_mainVm = App.Services.GetService<MainViewModel>()` → `ExitHintRequested` → `Toast`.
 - `AdMobHelper.Initialize(this, callback)` — im Callback:
+  - `_adMobHelper = new AdMobHelper()` wird hier instanziiert (erst nach SDK-Init gültig).
   - `_adMobHelper.AttachToActivity(this, AdConfig.GetBannerAdUnitId("FinanzRechner"), adService, purchaseService, 56)`.
   - `_rewardedAdHelper.Load(this, AdConfig.GetRewardedAdUnitId("FinanzRechner"))`.
   - `AdMobHelper.RequestConsent(this)` (GDPR Consent-Form EU).
@@ -41,7 +43,8 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 - `OnDestroy` → `_rewardedAdHelper?.Dispose()` + `_adMobHelper?.Dispose()`.
 
 **Back-Button:** `OnBackPressed()` delegiert an `_mainVm.HandleBackPressed()`; sonst
-`MoveTaskToBack(true)`.
+`MoveTaskToBack(true)`. `enableOnBackInvokedCallback=false` im Manifest hält das deprecated
+`OnBackPressed`-Pattern aktiv (API 33+ Opt-out).
 
 ---
 

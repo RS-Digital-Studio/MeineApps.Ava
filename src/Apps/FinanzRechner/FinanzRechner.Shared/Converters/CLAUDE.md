@@ -1,8 +1,8 @@
 # Converters — IValueConverter-Implementierungen
 
 18 Converter für die spezifischen Darstellungs-Anforderungen des Finanz-Trackers.
-Alle als `public class XxxConverter : IValueConverter` implementiert, viele mit
-statischer `Instance`-Property für XAML-Ressourcen-Wiederverwendung.
+Alle als `public class XxxConverter : IValueConverter` implementiert mit statischer
+`Instance`-Property für XAML-Ressourcen-Wiederverwendung.
 Generische Converter-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ---
@@ -11,12 +11,12 @@ Generische Converter-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md)
 
 | Datei | Konvertierung |
 |-------|---------------|
-| `CategoryToIconConverter.cs` | `ExpenseCategory` → Emoji-Icon-String (delegiert an `CategoryLocalizationHelper.GetCategoryIcon`) |
-| `CategoryToStringConverter.cs` | `ExpenseCategory` → lokalisierter Name (delegiert an `CategoryLocalizationHelper.GetLocalizedName`) |
-| `CategoryToColorBrushConverter.cs` | `ExpenseCategory` (oder `CustomCategoryId`) → farbiger `SolidColorBrush` für Kategorie-Chips |
-| `TransactionTypeToColorConverter.cs` | `TransactionType` → Farbe (Income=grün, Expense=rot, Transfer=cyan) |
+| `CategoryToIconConverter.cs` | `ExpenseCategory` → `MaterialIconKind`-Enum (direkt, keine Delegation an Helper) |
+| `CategoryToStringConverter.cs` | `ExpenseCategory` (oder `null` → „Alle Kategorien") → lokalisierter Name (delegiert an `CategoryLocalizationHelper.GetLocalizedName`) |
+| `CategoryToColorBrushConverter.cs` | `ExpenseCategory` → `SolidColorBrush`; optionaler Parameter als Opacity-Float (`"0.2"` → 20 % Alpha, für Hintergrund-Variante) |
+| `TransactionTypeToColorConverter.cs` | `TransactionType` → Farbe via `TryGetResource("ExpenseColor"/"IncomeColor")`; Transfer → `FallbackGray`; Fallback: Rot/Grün/Grau |
 | `TransactionTypeToggleColorConverter.cs` | `TransactionType` → Toggle-Button Akzentfarbe |
-| `TransactionTypeToPrefixConverter.cs` | `TransactionType` → Vorzeichen-String (`+` / `-` / `⇄`) |
+| `TransactionTypeToPrefixConverter.cs` | `TransactionType` → Vorzeichen-String (`+` für Income, `-` für Expense/Transfer) |
 | `TransactionTypeFontAttributesConverter.cs` | `TransactionType` → FontWeight (Income=Bold) |
 | `TransactionTypeToValueConverter.cs` | `(TransactionType, decimal Amount)` → vorzeichenbehafteter Wert |
 | `AlertLevelToColorConverter.cs` | `BudgetAlertLevel` → Farbe (Safe=grün, Warning=gelb, Exceeded=rot) |
@@ -25,7 +25,7 @@ Generische Converter-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md)
 | `FilterTypeToStringConverter.cs` | `FilterType`-Enum → lokalisierter Filter-Label |
 | `SortOptionToStringConverter.cs` | `SortOption`-Enum → lokalisierter Sort-Label |
 | `PatternToStringConverter.cs` | `RecurringPattern`-Enum → lokalisierter Wiederholungs-Label |
-| `BoolToStringConverter.cs` | `bool` → konfigurierbarer Text (Parameter: "TrueText|FalseText") |
+| `BoolToStringConverter.cs` | `bool` → konfigurierbarer Text (Parameter: `"TrueText|FalseText"`) |
 | `BoolToResourceColorConverter.cs` | `bool` → Farbe aus AppPalette-Ressource |
 | `BoolToDoubleConverter.cs` | `bool` → `double` (z.B. Opacity, Scale) via Parameter |
 | `EnumToBoolConverter.cs` | `Enum`-Wert == Parameter → `bool` (Radio-Button-Binding) |
@@ -38,9 +38,9 @@ Für Income/Expense/Transfer IMMER `{DynamicResource …}` nutzen statt direkter
 — damit Farb-Änderungen zentral in `Themes/AppPalette.axaml` greifen:
 
 ```xml
-IncomeBrush          #22C55E
-ExpenseBrush         #EF4444
-TransferBrush        #06B6D4
+IncomeBrush             #22C55E
+ExpenseBrush            #EF4444
+TransferBrush           #06B6D4
 IncomeBackgroundBrush   #3322C55E  (20 % Alpha)
 ExpenseBackgroundBrush  #33EF4444
 TransferBackgroundBrush #3306B6D4

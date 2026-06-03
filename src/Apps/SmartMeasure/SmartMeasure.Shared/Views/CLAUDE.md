@@ -13,7 +13,7 @@ Generische MVVM/View-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md)
 | `MainView.axaml.cs` | Lazy-MapView: `MapContainer` wird erst bei erster Aktivierung mit `MapView` befüllt |
 | `SurveyView.axaml.cs` | `SKCanvasView` für Kompass, Handler-Dedup im `DataContextChanged` |
 | `TerrainView.axaml.cs` | Touch/Mouse-Handler: Drag=Rotation, Rechts/Mitte=Pan, Wheel=Zoom |
-| `GardenPlanView.axaml.cs` | Gartenelemente-Liste + Volumen-Panel, SkiaSharp-Canvas |
+| `GardenPlanView.axaml.cs` | `SKCanvasView` für Gartenplan-Renderer, Tap-to-draw + Pan + Zoom, Materialliste + Volumen-Panel unten |
 | `MapView.axaml.cs` | Mapsui `MapControl` (Lazy-Init über MainView) |
 | `ProjectsView.axaml.cs` | `EnsureInitializedAsync()` on `Loaded` (einmaliges Init-Trigger-Pattern) |
 | `ConnectView.axaml.cs` | BLE-Scan-Liste, NTRIP-Formular, GNSS-Condition-Panel |
@@ -39,7 +39,7 @@ mapContainer.Child = new MapView { DataContext = vm.MapVm };
 
 ---
 
-## SKCanvasView-Pattern (SurveyView, TerrainView, StakeoutView)
+## SKCanvasView-Pattern (SurveyView, TerrainView, GardenPlanView, StakeoutView)
 
 SKCanvasView benötigt Code-Behind, weil `PaintSurface` und `InvalidateSurface()` nicht über
 reine Bindings zugänglich sind. Schematisch:
@@ -72,6 +72,21 @@ private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
 | Mausrad / Pinch | Zoom, geclampt 0,2–5,0 |
 
 Touch-Events delegieren sofort an `_vm.HandleDrag/HandlePan/HandleZoom` → Renderer aktualisiert sich.
+
+---
+
+## GardenPlanView Touch-Interaktion
+
+| Geste | Aktion |
+|-------|--------|
+| Tap (Bewegung < 10 px) | `OnCanvasTapped(relX, relY)` — Zeichnungspunkt hinzufügen |
+| Drag | Pan (`HandlePan`) |
+| Mausrad / Pinch | Zoom (`HandleZoom`) |
+
+**Tap-Threshold:** 10 px Bewegungsdistanz trennt Tap von Pan. Canvas-Koordinate wird relativ zur
+Viewport-Mitte und `Renderer.PanX/PanY` berechnet. Wenn `Renderer.LastScale < 0.001` (noch kein
+erster Paint), wird erst `InvalidateSurface()` aufgerufen bevor der Tap verarbeitet wird —
+sonst stumm verworfen, weil der Renderer die Koordinate nicht skalieren kann.
 
 ---
 

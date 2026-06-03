@@ -4,4 +4,4 @@ Custom Controls, die nur RechnerPlus betreffen. Geteilte Controls → [MeineApps
 
 | Datei | Zweck |
 |-------|-------|
-| `ExpressionHighlightControl.cs` | Syntax-Highlighting des Ausdrucks: Zahlen `TextPrimary`, Operatoren `Primary`+Bold, Klammern `Muted`. Brushes (`_cachedPrimary/_cachedText/_cachedMuted`) gecacht, invalidiert bei `ActualThemeVariantChanged`. |
+| `ExpressionHighlightControl.cs` | Syntax-Highlighting des Ausdrucks (erbt von `TextBlock`). Operatoren: `PrimaryBrush`+Bold, Klammern: `TextMutedBrush`, Zahlen: `TextMutedBrush`. Brushes (`_cachedPrimary`/`_cachedText`/`_cachedMuted`) gecacht, invalidiert bei `ActualThemeVariantChanged` (Attach/Detach-Pattern). Ausdrücke > 50 Zeichen werden ungeparst als einzelner Muted-Run ausgegeben (Performance-Grenze). |

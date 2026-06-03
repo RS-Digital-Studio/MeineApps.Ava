@@ -1,21 +1,15 @@
 # Loading — Startup-Pipeline
 
-Startup-Sequenz die blockierende Initialisierung vom App-Start entkoppelt und
-dem Splash-Screen Progress-Updates liefert.
+`HandwerkerImperiumLoadingPipeline` erbt von `LoadingPipelineBase` (aus `MeineApps.UI.Loading`).
+Entkoppelt blockierende Initialisierung vom App-Start und meldet Fortschritt über die
+Basisklassen-Infrastruktur an den Splash-Screen.
 
----
-
-## Dateien
-
-| Datei | Zweck |
-|-------|-------|
-| `HandwerkerImperiumLoadingPipeline.cs` | Führt alle Startup-Schritte sequential/parallel aus. Meldet Fortschritt via `ProgressChanged(double progress, string text)` an Splash |
+Aufruf: `App.axaml.cs → RunLoadingAsync()` — dort wird auch die Mindest-Anzeigedauer
+(`GameBalanceConstants.SplashMinimumDisplayMs`, 800ms) abgewartet.
 
 ---
 
 ## Pipeline-Schritte (3 Schritte, parallel wo möglich)
-
-Die Pipeline wird in `App.axaml.cs → RunLoadingAsync()` ausgeführt:
 
 1. **Shader + ViewModel + Icons + Portraits** (Gewicht 40, parallel) — `ShaderPreloader.PreloadAll()`
    (Task.Run), MainViewModel-Graph-Konstruktion (`Dispatcher.UIThread.InvokeAsync` — UI-Thread!),
@@ -23,17 +17,11 @@ Die Pipeline wird in `App.axaml.cs → RunLoadingAsync()` ausgeführt:
 2. **GameInit** (Gewicht 35) — `MainViewModel.InitializeAsync()` (Spielstand laden, Orders, Rewards),
    danach `IPurchaseService.InitializeAsync()` (Google Play Billing — nach SanitizeState, damit
    RestorePurchases den echten Premium-Status wiederherstellt).
-3. **RemoteConfig + DailyBundle** (Gewicht 5) — `IRemoteConfigService.InitializeAsync()` mit 5s-Timeout
+3. **RemoteConfig** (Gewicht 5) — `IRemoteConfigService.InitializeAsync()` mit 5s-Timeout
    (App läuft mit Defaults auch ohne Netz), danach `IDailyBundleService.InitializeAsync()`; bei Timeout
    übernimmt ein deferred `ContinueWith`-Hook die Bundle-Init nach erfolgreichem Fetch.
 
 ---
-
-## Gotcha — Splash-Mindestanzeigedauer
-
-`RunLoadingAsync` wartet nach der Pipeline auf `GameBalanceConstants.SplashMinimumDisplayMs`
-(800ms). Dies stellt sicher dass die Splash-Animation sichtbar ist auch wenn die Pipeline
-schneller als 800ms abgeschlossen ist. Der Wert liegt in `GameBalanceConstants` — nicht hardcoded.
 
 ## Gotcha — MainViewModel-Konstruktion nur auf dem UI-Thread
 

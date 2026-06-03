@@ -17,7 +17,7 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `AndroidPushNotificationService.cs` | FCM + `AlarmManager`-basierte lokale Notifications. POST_NOTIFICATIONS-Permission (Android 13+). |
 | `BomberBlastMessagingService.cs` | `FirebaseMessagingService`-Subclass: `OnNewToken` → `RaiseTokenRefresh()`, Data-Payload → eigene Notification.Builder. Manifest: `org.rsdigital.bomberblast.BomberBlastMessagingService`. |
 | `NotificationReceiver.cs` | `BroadcastReceiver` — postet Local-Notifications aus AlarmManager-PendingIntent-Extras. |
-| `FirebaseRemoteConfigService.cs` | Erbt von `DefaultsRemoteConfigService`. Cloud-Fetch überschreibt Keys via `SetOverride(key, value)`. |
+| `FirebaseRemoteConfigService.cs` | Erbt von `DefaultsRemoteConfigService`. Cloud-Fetch überschreibt Keys via `ApplyRawRemoteValue(key, raw)`. |
 | `AndroidManifest.xml` | Package `org.rsdigital.bomberblast`, `MyTheme.NoActionBar`, `ScreenOrientation.Landscape`, AdMob + Billing-Permissions, Notification-Channels. |
 | `Resources/mipmap-*/` | App-Icons (`appicon`, `appicon_round`). |
 | `Resources/values/styles.xml` | `MyTheme.NoActionBar`. |
@@ -73,8 +73,8 @@ Events werden konsumiert (`return true`) und nicht an Avalonia weitergeleitet.
 
 | Callback | Aktion |
 |----------|--------|
-| `OnResume` | `EnableImmersiveMode()`, `AdMobHelper.Resume()`, `ReEngagementScheduler.CancelAll()`, `RemoteConfig.FetchAndActivateAsync()` |
-| `OnPause` | `AdMobHelper.Pause()`, `ReEngagementScheduler.ScheduleAll()` |
+| `OnResume` | `EnableImmersiveMode()`, `_mainVm.OnAppResumed()`, `AdMobHelper.Resume()`, `ReEngagementScheduler.CancelAll()`, `RemoteConfig.FetchAndActivateAsync()` |
+| `OnPause` | `_mainVm.OnAppPaused()`, `AdMobHelper.Pause()`, `PreferencesService.FlushPending()` (Persistenz-Flush bei Hintergrundwechsel), `ReEngagementScheduler.ScheduleAll()` |
 | `OnWindowFocusChanged(true)` | `EnableImmersiveMode()` (Wiederherstellung nach kurzer System-UI-Sichtbarkeit) |
 | `OnBackPressed` | `_mainVm.HandleBackPressed()` → bei false: `base.OnBackPressed()` |
 | `OnRequestPermissionsResult` | `AndroidPushNotificationService.OnPermissionResult()` (POST_NOTIFICATIONS TCS-Auflösung) |

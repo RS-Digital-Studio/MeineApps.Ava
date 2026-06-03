@@ -11,8 +11,9 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `AndroidApp.cs` | `AvaloniaAndroidApplication<App>` — Avalonia initialisiert sich hier **einmal pro Prozess**. `CustomizeAppBuilder().WithInterFont()`. |
 | `MainActivity.cs` | `AvaloniaMainActivity` (kein `<App>`-Generic in Avalonia 12). Factory-Wiring + AdMob-Init + Lifecycle + Back-Button-Delegation. |
 | `Services/AndroidHapticService.cs` | `IHapticService`-Impl über `Vibrator`: `Tick`/`Click`/`HeavyClick` nutzen `VibrationEffect` (API Q+) mit ms-Vibrate-Fallback. |
-| `Services/AndroidNotificationService.cs` | `INotificationService`-Impl: `worktimepro_reminder` NotificationChannel, `SetExactAndAllowWhileIdle`-Planung, stabiler Hash für Notification-IDs. |
+| `Services/AndroidNotificationService.cs` | `INotificationService`-Impl: `worktimepro_reminder` NotificationChannel, `SetExactAndAllowWhileIdle`-Planung mit inexaktem Fallback (`SetAndAllowWhileIdle`) wenn Exact-Alarm-Permission fehlt, stabiler Hash für Notification-IDs. |
 | `Services/ReminderReceiver.cs` | `BroadcastReceiver` — wird von `AlarmManager` auch bei geschlossener App gefeuert. Zeigt Notification via `NotificationManagerCompat`. |
+| `Services/BootReceiver.cs` | `BroadcastReceiver` für `BOOT_COMPLETED` + `MY_PACKAGE_REPLACED` — plant AlarmManager-Alarme nach Gerät-Neustart neu (AlarmManager-Alarme werden beim Reboot verworfen). Baut minimalen Service-Graph ohne App.Services. |
 | `AndroidManifest.xml` | Package `com.meineapps.worktimepro`, `MyTheme.NoActionBar`, Permissions: `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, FileProvider für Export-Share. |
 | `Resources/mipmap-*` | App-Icon (`appicon`, `appicon_round`). |
 | `Resources/values/styles.xml` | `MyTheme.NoActionBar`. |
@@ -55,12 +56,19 @@ Liegt in `Services/AndroidHapticService.cs`. `IHapticService`-Impl über `Vibrat
 `VibrationEffect.EffectTick`/`EffectClick`/`EffectHeavyClick` (API Q+), ms-Fallback für ältere
 Geräte. Wird per Factory ins Shared-DI injiziert (kein direkter Konstruktor-Aufruf in Views).
 
-## AndroidNotificationService + ReminderReceiver
+## AndroidNotificationService + ReminderReceiver + BootReceiver
 
 - `worktimepro_reminder` Channel mit `NotificationImportance.High`.
 - Notification-IDs per `StableHash(id)` (deterministisch zwischen Neustarts).
+- Exact-Alarm-Fallback: Fehlt `SCHEDULE_EXACT_ALARM`-Permission (Android 12+, vom Nutzer
+  entziehbar), fällt die Planung auf `SetAndAllowWhileIdle` zurück — Reminder feuert etwas
+  verzögert, aber feuert überhaupt (statt stumm abzubrechen).
 - `ReminderReceiver`: `[BroadcastReceiver(Exported = false)]` — reagiert auf AlarmManager-Intents,
   auch wenn App nicht läuft.
+- `BootReceiver`: `[BroadcastReceiver(Exported = true)]` für `BOOT_COMPLETED` +
+  `MY_PACKAGE_REPLACED` — plant Alarme nach Reboot neu. Baut eigenständig einen minimalen
+  Service-Graph (`DatabaseService`, `ReminderService`, …), weil `App.Services` beim
+  Boot-Broadcast nicht verfügbar ist.
 
 ## Build
 

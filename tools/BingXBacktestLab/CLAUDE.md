@@ -1,8 +1,8 @@
 # BingXBacktestLab — Empirischer Strategie-Vergleich
 
 Konsolen-Tool, das BingXBot-Strategien auf **echten BingX-Klines** backtestet und vergleicht.
-Nicht in der Solution (`MeineApps.Ava.sln`) — standalone via `dotnet run --project`. Diente der
-datengetriebenen Entscheidung TrendFollow vs. SK-System (31.05.2026).
+Nicht in der Solution (`MeineApps.Ava.sln`) — standalone via `dotnet run --project`. Dient der
+datengetriebenen Entscheidung zwischen Strategien und Parametern.
 
 ## Verwendung
 
@@ -35,7 +35,7 @@ Default = CPU-Kerne). Backtests sind deterministisch (SimulatedExchange-RNG seed
 
 | Modus | Zweck | Kern-Args |
 |-------|-------|-----------|
-| `--sweep` | Grid über TrendFollow-Achsen (Don/EMA/ADX/SL/RRR + BE + TP1-Split), Walk-Forward Train→OOS-Test | `--sweep-grid focused\|extended\|sl-fine`, `--train-split 0.65`, `--sweep-top 25`, `--sweep-min-trades 60`, `--sweep-rank expectancy\|pf\|totalpnl` |
+| `--sweep` | Grid über TrendFollow-Achsen (Don/EMA/ADX/SL/RRR + BE + TP1-Split), Walk-Forward Train→OOS-Test | `--sweep-grid focused\|extended\|sl-fine`, `--train-split 0.65`, `--sweep-top 20`, `--sweep-min-trades 50`, `--sweep-rank expectancy\|pf\|totalpnl` |
 | `--full` | Mehrere SL-Werte (sonst Live-Default) durchgehend über den GANZEN Zeitraum (alle Phasen, kein Split) | `--compare-sl "2.5,2.75,3.0,3.25"` |
 | `--compare` | Dieselben SL-Werte über rollierende, überlappende Fenster — Konsistenz/Robustheit pro Phase | `--compare-sl …`, `--window-days 180`, `--step-days 60` |
 
@@ -44,18 +44,19 @@ Default = CPU-Kerne). Backtests sind deterministisch (SimulatedExchange-RNG seed
 BE + TP1-Split kommen aus den Settings — **Achtung: den TP1-Split liest der Backtest aus
 `BacktestSettings.Tp1CloseRatio`, NICHT aus `RiskSettings`** (sonst tunt der Sweep ins Leere).
 
-**Methodik-Lehre (2026-06-03 SL-Tuning):** Der Train/Test-Split kann einen Parameter über einen Train-Peak-
-Artefakt fälschlich favorisieren (hier SL 3.0). Der durchgehende `--full`-Lauf über 2 Jahre (= alle Phasen in
-einem Fenster) ist bei wenigen offenen Achsen die ehrlichere Entscheidungsbasis — er deckte SL **2.75** als
-robustes Optimum für TrendFollow-Fast auf (glatter Peak 2.5↗2.75↘3.0). Reports: `reports/sweep-*.md`,
+**Methodik-Gotcha Train/Test-Split:** Ein Train/Test-Split kann einen Parameter über einen Train-Peak-Artefakt
+fälschlich favorisieren. Der durchgehende `--full`-Lauf über mehrere Jahre (= alle Phasen in einem Fenster) ist
+bei wenigen offenen Achsen die ehrlichere Entscheidungsbasis. Reports: `reports/sweep-*.md`,
 `full-*.md`, `compare-*.md` (+ `.json`, gitignored).
 
 ## Architektur
 
 - `Program.cs` — Arg-Parsing, Backtest-Matrix (Strategie × Symbol × TF), Aggregation.
+- `Sweep.cs` — `Sweep.RunAsync` (Walk-Forward-Sweep), `Sweep.FullAsync` (Voll-Zeitraum), `Sweep.CompareAsync` (rollierender Vergleich).
 - `CachingPublicClient.cs` — Decorator um `BingXPublicClient`, cached Klines als JSON in
-  `.kline-cache/` (Re-Runs instant, kein Rate-Limit-Druck). Cache-Key = Symbol+TF+from+to.
-- `SimpleRateLimiter` (in Program.cs) — fixes 120ms-Delay zwischen Live-Requests.
+  `.kline-cache/` (Re-Runs instant, kein Rate-Limit-Druck). Cache-Key = Symbol+TF+from+to (SHA1-Hash).
+- `MemoryKlineCache.cs` — In-Memory-Decorator vor `CachingPublicClient` für den Sweep (spart Disk-JSON-Deserialisierung bei tausenden Wiederholungen derselben Klines, thread-safe via `ConcurrentDictionary`).
+- `SimpleRateLimiter` (in `Program.cs`) — fixes 120ms-Delay zwischen Live-Requests.
 - `live-settings.json` — Snapshot der Pi-Live-Config (Risk/Scanner/Backtest) für realistische Läufe.
 
 `.kline-cache/`, `reports/`, `bin/`, `obj/` sind gitignored (generierte Artefakte).

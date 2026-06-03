@@ -7,7 +7,7 @@ Generische Converter (Bool→Visibility, etc.) kommen aus `MeineApps.Core.Ava`.
 
 | Datei | Zweck |
 |-------|-------|
-| `NullableDecimalConverter.cs` | `decimal?` ↔ `string` für TextBox-Bindings (SL/TP-Felder). Leeres Feld → null. Kein Exponential-Format (Krypto-Preise wie 0.00005625 müssen lesbar bleiben). Komma und Punkt als Dezimaltrennzeichen akzeptiert. Ungültiger Input → `BindingNotification.Error` (roter Rahmen, kein Crash). |
+| `NullableDecimalConverter.cs` | `decimal?` ↔ `string` für TextBox-Bindings (SL/TP-Felder). Leeres Feld → null. Kein Exponential-Format (Krypto-Preise wie 0.00005625 müssen lesbar bleiben). Komma und Punkt als Dezimaltrennzeichen akzeptiert. Ungültiger Input → `BindingNotification.Error` (roter Rahmen, kein Crash). Property `DecimalPlaces` (Default 2) ist vorhanden, wird beim `"F20".TrimEnd('0')`-Pfad aber nicht genutzt — die Ausgabe trimmt immer auf signifikante Stellen. |
 | `StaleOpacityConverter.cs` | `bool` (IsStale) → `double` Opacity: true → 0.40, false → 1.0. Dimmt eine Anzeige visuell wenn der Scan-Watchdog Inaktivität meldet. |
 
 ## Verwendungs-Pattern
@@ -15,10 +15,11 @@ Generische Converter (Bool→Visibility, etc.) kommen aus `MeineApps.Core.Ava`.
 Beide Converter sind als `static readonly Instance`-Singletons verfügbar:
 
 ```xaml
-<!-- In View-Resources oder direkt als StaticResource -->
-<BingXBot:NullableDecimalConverter x:Key="DecimalConverter"/>
-<!-- oder inline -->
+<!-- Bevorzugte Form: inline via x:Static (kein Resource-Eintrag nötig) -->
 Converter="{x:Static converters:NullableDecimalConverter.Instance}"
+
+<!-- Alternativ als StaticResource in View-Resources -->
+<converters:NullableDecimalConverter x:Key="DecimalConverter"/>
 ```
 
 ## Gotcha — Krypto-Dezimalformat

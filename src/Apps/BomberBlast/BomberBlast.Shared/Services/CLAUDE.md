@@ -1,6 +1,6 @@
 # Services — Domänen-Services
 
-37 Services (alle Singleton), vollständig als Interface abstrahiert.
+Alle Services sind Singleton und vollständig als Interface abstrahiert.
 Business-Logik (Economy, Persistenz, Firebase, Live-Ops, Audio) gehört ausschließlich hierher —
 nie in ViewModels oder GameEngine (außer Render-/Loop-nahe Aufrufe via Interface).
 Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
@@ -16,7 +16,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 |---------|-------------------|--------------|
 | `ICoinService` / `CoinService` | `Add(amount)`, `Spend(amount)`, `Balance` | Overflow-Guard via `(long)Balance + amount` + Clamp `int.MaxValue`. `Load()` clampt < 0 auf 0 + Corruption-Flag |
 | `IGemService` / `GemService` | analog CoinService | Zweite Währung (NUR Gameplay, kein direkter IAP-Kauf) |
-| `IShopService` / `ShopService` | `GetUpgradeLevel(type)`, `Purchase(type)` | 9 permanente Upgrades, Preise 700-17.000 Coins |
+| `IShopService` / `ShopService` | `GetShopItems()`, `TryPurchase(type)` | 12 Upgrade-Typen (StartBombs/StartFire/StartSpeed/ExtraLives/ScoreMultiplier/TimeBonus/ShieldStart/CoinBonus/PowerUpLuck/IceBomb/FireBomb/StickyBomb) |
 
 ### Fortschritt & Persistenz
 
@@ -42,8 +42,9 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `IEventCalendarService` / `EventCalendarService` | Wöchentlicher Calendar via ISO-Week-Seed. Pool 8 Event-Typen. 12-Wochen-Vorschau-API. |
 | `IEventService` / `EventService` | Saisonale Events (Halloween/Christmas/NewYear/Summer). Aktuellen Event ermitteln. |
 | `IRotatingDealsService` / `RotatingDealsService` | 3 täglich + 1 wöchentlich, 20-50% Rabatt. Mitternacht-UTC-Reset. |
-| `IRemoteConfigService` / `DefaultsRemoteConfigService` | Laedt `Resources/remote_config_defaults.json`. Android-Override via `FirebaseRemoteConfigService`. 23 Keys via `RemoteConfigKeys`. |
+| `IRemoteConfigService` / `DefaultsRemoteConfigService` | Lädt `Resources/remote_config_defaults.json`. Android-Override via `FirebaseRemoteConfigService`. 23 Keys via `RemoteConfigKeys`. |
 | `IWeeklyContentService` / `WeeklyContentService` | 8 WeeklyModifier + 4 WeeklyReward + 3 Boss-Modifier pro Woche (ISO-Week-deterministisch). |
+| `IGameStyleService` / `GameStyleService` | Visueller Render-Stil (Classic/Neon/Retro), `StyleChanged`-Event, persistiert. |
 
 ### Firebase & Cloud
 
@@ -62,16 +63,17 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `IDailyChallengeService` / `DailyChallengeService` | Tägliches deterministisches Level (Seed: `yyyy*10000+MM*100+dd`), Streak-Tracking. |
 | `IDailyMissionService` / `DailyMissionService` | 3 tägliche Missionen aus 14er-Pool, Mitternacht-UTC-Reset. |
 | `IWeeklyChallengeService` / `WeeklyChallengeService` | 5 wöchentliche Missionen aus 14er-Pool, Montag-Reset. |
-| `ILuckySpinService` / `LuckySpinService` | 8 Segmente gewichtet, 1× gratis/Tag. Pity-Counter: nach 50 Spins garantierter Jackpot (`SpinsSinceLastJackpot` persistiert). `GetDropRates()` für Compliance. |
+| `ILuckySpinService` / `LuckySpinService` | 9 Segmente gewichtet, 1× gratis/Tag. Pity-Threshold 25 (Hard-Pity), Soft-Pity ab Spin 15 (schrittweise Jackpot-Chance). `GetDropRates()` für Compliance. |
 | `IBattlePassService` / `BattlePassService` | 30-Tier Saison, XP-basiert, Free/Premium-Track. XP-Boost via Hybridtimer. |
+| `IDailyAchievementsService` / `DailyAchievementsService` | 3 tägliche Mini-Ziele aus 5er-Pool (200 Coins je), Mitternacht-Lokal-Reset, deterministisch via Tages-ID. |
 
 ### Spieler-Progression
 
 | Service | Beschreibung |
 |---------|-------------|
-| `IAchievementService` / `AchievementService` | 72 Achievements in 5 Kategorien, JSON-Persistenz, Dirty-Flag, `FlushIfDirty()` |
-| `ICardService` / `CardService` | 14 Bomben-Karten, Deck (4+1 Slots), Upgrade, Crafting (5 Common→1 Rare, 5 Rare→1 Epic, 5 Epic→1 Legendary) |
-| `IDungeonService` / `DungeonService` | Roguelike-Run-State, 16 Buffs, Eintritt-Logic (1×/Tag gratis, 500 Coins, 3 Gems, Rewarded) |
+| `IAchievementService` / `AchievementService` | 72 Achievements in 5 Kategorien, JSON-Persistenz, Dirty-Flag + 500ms-Debounce, `FlushIfDirty()` |
+| `ICardService` / `CardService` | 13 Bomben-Karten (3 Common/4 Rare/4 Epic/2 Legendary), Deck (4+1 Slots, 5. Slot für 20 Gems), Upgrade, Crafting (5 Common→1 Rare / 5 Rare→1 Epic / 5 Epic→1 Legendary) |
+| `IDungeonService` / `DungeonService` | Roguelike-Run-State, 16 Buffs, Eintritt: 1×/Tag gratis, 500 Coins, 3 Gems, Rewarded Ad; dazu einmaliger **Lite-Run** (3 Floors, Onboarding) |
 | `IDungeonUpgradeService` / `DungeonUpgradeService` | 8 permanente Dungeon-Upgrades (DungeonCoins) |
 | `ICustomizationService` / `CustomizationService` | Spieler-Skins (98 Cosmetics: Trails/Frames/Victories) |
 | `ICollectionService` / `CollectionService` | Sammlungs-Album: Gegner/Bosse/PowerUps, `FlushIfDirty()` |
@@ -115,6 +117,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `IBottomTabHub` / `BottomTabHub` | Tab-State + Pref-Persistenz für `BottomTabController`. |
 | `ILoadoutService` / `LoadoutService` | Pre-Run Boosts pro Story-Level (max 2 Boosts). |
 | `IBossRushService` / `BossRushService` | 5-Boss-Sequenz, ISO-8601-Year-Week-Reset. |
+| `ID0ModalGate` / `D0ModalGate` | D0-Session-Priorisierung: Am ersten Start darf nur EIN Modal erscheinen (Reihenfolge: WhatsNew > DailyReward > FeatureUnlock > Discovery). Ab D1 transparent. |
 
 ---
 

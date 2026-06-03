@@ -27,25 +27,28 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort do
 | `GroutVisualization.cs` | Premium | Fliesengitter mit proportionalen Fugenlinien, Bemaßungen, Info-Box. |
 | `CostBreakdownVisualization.cs` | Shared | Horizontale gestapelte Kostenbalken mit Segmenten, Prozent-Labels, Legende. Wiederverwendbar. |
 | `MaterialStackVisualization.cs` | Shared | Material-Icon-Reihe (10 Typen: Eimer, Sack, Rolle, Paket, Box, Platte, Kabel, Stange) mit Mengen. |
-| `MaterialCompareVisualization.cs` | Shared | Vergleichs-Balken (statisch, kein AnimatedVisualizationBase). |
-| `HourlyRateVisualization.cs` | Shared | Stundenverrechnungssatz-Darstellung (statisch). |
-| `AreaMeasureVisualization.cs` | Shared | Aufmaß-Fläche mit Beschriftung (statisch). |
+| `MaterialCompareVisualization.cs` | Shared | Vergleichs-Balken. |
+| `HourlyRateVisualization.cs` | Shared | Stundenverrechnungssatz-Darstellung. |
+| `AreaMeasureVisualization.cs` | Shared | Aufmaß-Fläche mit Beschriftung. |
 | `HandwerkerRechnerSplashRenderer.cs` | Splash | "Das Maßband": Holz-Hintergrund + gelbes Maßband als Fortschrittsbalken (cm-Markierungen, Bleistift), 12 Sägespäne-Partikel. Erbt von `SplashRendererBase`. |
 
 ## Renderer-Pattern
 
-Alle **statischen** Renderer: `public static void Render(SKCanvas, SKRect, ...)` mit gecachten
-`static readonly SKPaint`-Feldern, inklusive `_layerPaint` für Alpha-Fade-In (`SaveLayer`).
+Alle 21 Visualisierungen sind **statische Klassen** (`public static class`) mit
+`public static void Render(SKCanvas, SKRect, ...)` und gecachten `static readonly SKPaint`-Feldern,
+inklusive `_layerPaint` für Alpha-Fade-In via `canvas.SaveLayer(...)`.
 
-`BlueprintBackgroundRenderer` ist **instanz-basiert** (zustandsbehaftet: Drift-Offset, Partikel-
-Positionen) — kein `static`-Pattern, wird in `MainView` als Field gehalten und in
-`OnDetachedFromVisualTree` disposed.
+`AnimatedVisualizationBase` wird **nicht vererbt**, sondern als `static readonly`-Feld gehalten:
 
-## Animation-Pattern
+```csharp
+private static readonly AnimatedVisualizationBase _animation = new() { ... };
+public static void StartAnimation() => _animation.StartAnimation();
+public static bool NeedsRedraw => _animation.IsAnimating;
+```
 
-17 Renderer erben von `AnimatedVisualizationBase` (`StartAnimation()`/`NeedsRedraw`-Feedback-Loop).
-3 Renderer (`HourlyRate`, `MaterialCompare`, `AreaMeasure`) sind statisch ohne Animation —
-Code-Behind ruft direkt `InvalidateSurface()` bei PropertyChanged.
+`BlueprintBackgroundRenderer` ist die einzige Ausnahme: **instanz-basiert** (zustandsbehaftet —
+Drift-Offset, Partikel-Positionen), kein `static`-Pattern, wird in `MainView` als Field gehalten
+und in `OnDetachedFromVisualTree` disposed.
 
 ## Lokalisierung in Visualisierungen
 
@@ -55,6 +58,8 @@ englische Nutzer würden „Verschnitt" statt „Waste" sehen.
 
 ## Gotcha — InsulationVisualization Pre-Computed Arrays
 
-`InsulationVisualization` nutzt `_epsRandoms`/`_woodFiberRandoms` als pre-computed `static`
-Arrays — `Random.Shared.NextDouble()` pro Frame würde sichtbar wackeln (unterschiedliche Partikel
-bei jedem Redraw statt stabiler Textur).
+`InsulationVisualization` nutzt drei pre-computed `static readonly float[]`-Arrays:
+`_epsRandoms` (90 Werte), `_mineralWoolRandoms` (8 Werte), `_woodFiberRandoms` (60 Werte).
+Alle werden einmalig mit `new Random(42)` befüllt (deterministischer Seed). Das verhindert
+sichtbares Wackeln — `Random.Shared.NextDouble()` pro Frame würde bei jedem Redraw
+unterschiedliche Partikel erzeugen statt einer stabilen Textur.

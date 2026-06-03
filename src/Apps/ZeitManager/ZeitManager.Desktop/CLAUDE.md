@@ -10,9 +10,13 @@ ist Android-first. Generische Desktop-Publishing-Befehle → [Haupt-CLAUDE.md](.
 | `Program.cs` | Entry Point. `AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().LogToTrace()` → `StartWithClassicDesktopLifetime(args)`. |
 
 App läuft über `IClassicDesktopStyleApplicationLifetime` → `MainWindow` (siehe
-`ZeitManager.Shared/App.axaml.cs`). `ConfigurePlatformServices` wird NICHT gesetzt →
-Fallback auf `DesktopNotificationService`. `IShakeDetectionService` → `DesktopShakeDetectionService`
-(simuliert Shake per Button, kein Accelerometer). `IHapticService` → `NoOpHapticService`.
+`ZeitManager.Shared/App.axaml.cs`). `ConfigurePlatformServices` wird NICHT gesetzt:
+
+| Service | Desktop-Impl | Anmerkung |
+|---------|-------------|-----------|
+| `INotificationService` | `DesktopNotificationService` | Vollwertige OS-Benachrichtigungen: PowerShell-Toast (Windows), `notify-send` (Linux). Scheduling per `ConcurrentDictionary`+`Task.Delay`. |
+| `IShakeDetectionService` | `DesktopShakeDetectionService` | Kein physischer Sensor (`HasPhysicalSensor = false`). `SimulateShake()` feuert `ShakeDetected`-Event — für manuelle Tests. |
+| `IHapticService` | `NoOpHapticService` | Keine Vibrations-Hardware auf Desktop (definiert in `MeineApps.Core.Ava`). |
 
 ## Build / Run
 

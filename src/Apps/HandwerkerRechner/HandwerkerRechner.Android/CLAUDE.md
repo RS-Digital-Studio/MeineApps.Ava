@@ -33,8 +33,12 @@ Android-Projekt bindet via `<Compile Include … Link="…" />` aus `MeineApps.C
 - `EnableImmersiveMode()` (StatusBar + NavigationBar ausblenden; API 30+ via `InsetsController`,
   sonst `SystemUiVisibility`-Fallback). Auch in `OnResume` + `OnWindowFocusChanged`.
 - `MainViewModel` aus DI holen, `ExitHintRequested` → `Toast`.
-- `AdMobHelper.Initialize(this, callback)` → im Callback: `_adMobHelper.AttachToActivity(…, 56)` (Tab-Bar-Höhe 56),
+- `AdMobHelper.Initialize(this, callback)` → im Callback wird `_adMobHelper = new AdMobHelper()`
+  instanziiert, dann `_adMobHelper.AttachToActivity(…, 56)` (Tab-Bar-Höhe 56),
   `_rewardedAdHelper.Load(…)`, `AdMobHelper.RequestConsent` (GDPR EU).
+
+**Weitere Lifecycle-Hooks:** `OnPause` → `_adMobHelper?.Pause()` · `OnResume` →
+`_adMobHelper?.Resume()` + `EnableImmersiveMode()`.
 
 **Ad-Placement:** `AdConfig.GetBannerAdUnitId("HandwerkerRechner")` + `GetRewardedAdUnitId("HandwerkerRechner")`.
 

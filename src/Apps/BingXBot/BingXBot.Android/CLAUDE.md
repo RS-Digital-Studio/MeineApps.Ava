@@ -9,9 +9,10 @@ Referenz (kein AdMob, kein Billing). Generische Android-Patterns → [Haupt-CLAU
 | Datei | Zweck |
 |-------|-------|
 | `AndroidApp.cs` | `AvaloniaAndroidApplication<App>` — Bootstrap einmal pro Prozess. `CustomizeAppBuilder().WithInterFont()`. |
+| `AndroidAppPaths.cs` | `IAppPaths`-Impl für Android. Legt alle Pfade unter `Context.FilesDir/BingXBot/` ab (`bot.db`, `credentials.dat`, `Client/connection.json`). |
 | `MainActivity.cs` | `AvaloniaMainActivity` (non-generic, Avalonia 12). Factory-Wiring VOR `base.OnCreate`, Back-Button-Delegation. |
-| `AndroidManifest.xml` | Package `com.meineapps.bingxbot`. Permissions: INTERNET, ACCESS_NETWORK_STATE, VIBRATE, POST_NOTIFICATIONS. |
-| `Resources/xml/network_security_config.xml` | Cleartext nur für LAN/Tailscale/localhost — öffentliche Domains erzwingen HTTPS. |
+| `AndroidManifest.xml` | Permissions: INTERNET, ACCESS_NETWORK_STATE, VIBRATE, POST_NOTIFICATIONS. |
+| `Resources/xml/network_security_config.xml` | Cleartext für RFC1918 (10/172/192), CGNAT/Tailscale (`*.ts.net`), mDNS (`*.local`), localhost — alle anderen Domains erzwingen HTTPS. |
 | `Resources/mipmap-*` | App-Icon (`appicon`, `appicon_round`). |
 | `Resources/values/styles.xml` | `MyTheme.NoActionBar`. |
 
@@ -22,12 +23,12 @@ Referenz (kein AdMob, kein Billing). Generische Android-Patterns → [Haupt-CLAU
 
 ```csharp
 App.AppPathsFactory = () => new AndroidAppPaths(this);
-// AndroidAppPaths nutzt Context.FilesDir — KEIN Environment.SpecialFolder.UserProfile (crasht auf Android)
+// AndroidAppPaths nutzt Context.FilesDir — KEIN Environment.SpecialFolder (liefert auf Android unzuverlässige Pfade)
 ```
 
 **Nach `base.OnCreate`:**
-- `MainViewModel` aus `App.Services` holen.
-- `ExitHintRequested`-Event → `Toast.MakeText` (Double-Back-to-Exit).
+- `MainViewModel` via `App.Services?.GetService<MainViewModel>()` holen (nullable — DI ggf. noch nicht bereit).
+- `ExitHintRequested`-Event → `RunOnUiThread(() => Toast.MakeText(...).Show())` (Double-Back-to-Exit).
 
 ## Back-Button
 

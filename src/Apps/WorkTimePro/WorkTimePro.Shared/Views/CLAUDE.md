@@ -1,6 +1,6 @@
 # Views — UI-Patterns & AXAML-Struktur
 
-12 AXAML-Views + `MainWindow`. Alle Views nutzen `x:CompileBindings="True"` + `x:DataType`.
+11 App-Views + `MainWindow` (12 AXAML-Dateien). Alle Views nutzen `x:CompileBindings="True"` + `x:DataType`.
 Generische MVVM/AXAML-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ## Dateien
@@ -22,12 +22,14 @@ Generische MVVM/AXAML-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md
 
 ## Overlay-Pattern (IsAnyOverlayVisible)
 
-Alle Views mit Overlays (z.B. Edit-Overlay, Bestätigungs-Dialog) nutzen:
+Views mit Overlays deaktivieren den `ScrollViewer` per Hit-Test, sobald ein Overlay aktiv ist.
+Auf Android ist ZIndex für Hit-Testing wirkungslos — Touch fällt sonst durch das Overlay in
+die darunterliegende ScrollView.
 
 ```csharp
-// Im ViewModel:
-public bool IsAnyOverlayVisible => IsEditOverlayVisible || IsConfirmDeleteVisible;
-partial void OnIsEditOverlayVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+// Im ViewModel (VM-spezifische Overlay-Properties werden verknüpft):
+public bool IsAnyOverlayVisible => IsOverlayA || IsOverlayB;
+partial void OnIsOverlayAChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
 ```
 
 ```xml
@@ -35,29 +37,28 @@ partial void OnIsEditOverlayVisibleChanged(bool value) => OnPropertyChanged(name
 <ScrollViewer IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
 ```
 
-Verhindert Touch-Durch-Fall bei ZIndex-Overlays (Android: ZIndex für Hit-Testing wirkungslos).
 Betrifft: `DayDetailView`, `StatisticsView`, `VacationView`, `YearOverviewView`.
 
 ## Ad-Banner-Layout (MainView)
 
-`RowDefinitions="*,Auto,Auto"` → Row 0 Content, Row 1 Ad-Spacer (56dp für WorkTimePro), Row 2 Tab-Bar.
-`IsAdBannerVisible` Binding auf den Spacer — wird von `MainViewModel` gesteuert (`_adService.ShowBanner()`).
+`RowDefinitions="*,Auto,Auto"` → Row 0 Content, Row 1 Ad-Spacer (**64dp** für WorkTimePro), Row 2 Tab-Bar.
+`IsAdBannerVisible` Binding auf den Spacer — wird von `MainViewModel` gesteuert (`_adService.BannerVisible` Property).
 
 ## Keyboard-Shortcuts (Desktop)
 
 `MainView.axaml.cs` `OnKeyDown`:
-- `F5` → Refresh
-- `1`–`5` → Tab-Wechsel
-- `Escape` → Sub-Page schließen
-- `Ctrl+Z` → Undo
+- `F5` → `LoadDataCommand`
+- `1`–`5` → Tab-Wechsel (via `SelectXxxTabCommand`)
+- `Escape` → Sub-Page schließen (`GoBackCommand`)
+- `Ctrl+Z` → Undo (`UndoLastActionCommand`, nur wenn `IsUndoVisible`)
 
 Shortcuts NICHT im ViewModel — reine UI-Tastatur-Navigation, akzeptables Code-Behind.
 
-## Compiled Bindings
+## DataTemplate x:DataType
 
-`x:CompileBindings="True"` + `x:DataType="vm:XxxViewModel"` auf jeder View-Root.
-`VacationView`-ComboBox DataTemplate: `x:DataType="vm:VacationTypeItem"` (sonst Reflection).
+`VacationView`- und `CalendarView`-ComboBox DataTemplates nutzen `x:DataType="vm:VacationTypeItem"` —
+sonst Reflection statt Compiled Bindings.
 
 ## Tab-Bar Höhe
 
-Tab-Bar-Höhe: **56dp** (kein SkiaSharp-Renderer, Ad-Banner-Spacer separat).
+Tab-Bar-Höhe: **56dp** (kein SkiaSharp-Renderer, Ad-Banner-Spacer separat mit 64dp).

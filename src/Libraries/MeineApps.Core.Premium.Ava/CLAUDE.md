@@ -1,6 +1,8 @@
 # MeineApps.Core.Premium.Ava — Monetization Library
 
-Monetarisierungs-Library für alle 6 werbe-unterstützten Apps: AdMob (Banner + Rewarded), Google Play Billing v8, 14-Tage-Trial und In-App Review.
+Monetarisierungs-Library für die werbe-unterstützten Apps: AdMob (Banner + Rewarded), Google Play Billing v8, 14-Tage-Trial und In-App Review. Aktuell konsumieren HandwerkerRechner, FinanzRechner, FitnessRechner, WorkTimePro, HandwerkerImperium und BomberBlast die echten Ad-IDs; RebornSaga ist verdrahtet, aber die AdMob-IDs sind noch Platzhalter (`AdConfig.RebornSaga`). RechnerPlus und ZeitManager referenzieren die Library **nicht**.
+
+Android-Linked-Files liegen im Namespace `MeineApps.Core.Premium.Ava.Droid`, der reine .NET-Code in `MeineApps.Core.Premium.Ava.Services`/`.Extensions`/`.Controls`.
 
 ## Zielframework
 
@@ -36,7 +38,7 @@ Versionen zentral in `Directory.Packages.props`.
 | `Services/IAdService.cs` | Interface | Banner + Rewarded Ad State |
 | `Services/AdMobService.cs` | Service | Ad-State-Verwaltung (Singleton) |
 | `Services/AdConfig.cs` | Konfiguration | Alle AdMob-IDs der 6 Apps (1 Publisher-Account) |
-| `Services/IRewardedAdService.cs` | Interface | `IsAvailable`, `ShowRewardedAdAsync()` |
+| `Services/IRewardedAdService.cs` | Interface | `IsAvailable`, `ShowAdAsync()` / `ShowAdAsync(placement)`, `Disable()`, `AdUnavailable`-Event |
 | `Services/RewardedAdService.cs` | Desktop-Fallback | Simuliert Rewarded Ads (immer true) |
 | `Services/IPurchaseService.cs` | Interface | Kauf, Restore, IsAvailable |
 | `Services/PurchaseService.cs` | Basis-Klasse | Preference-basierter State, virtuelle Kauf-Methoden |
@@ -89,43 +91,34 @@ Jedes Android-App-Projekt bindet sie explizit ein:
 
 Warum: Die Android-Typen (`Activity`, `View`, `BillingClient`) existieren nur im `net10.0-android`-TFM. Das Library-Projekt zielt auf `net10.0`, kann diese Typen also nicht referenzieren. Linked Files lösen das ohne Code-Duplikation.
 
-### Factory-Pattern für Platform-Services
+### Factory-Override nach `AddMeineAppsPremium()`
 
-Plattformspezifische Services werden nicht per DI registriert, sondern über statische Factories in `App.axaml.cs` injiziert. So bleibt das Shared-Projekt frei von Android-Abhängigkeiten.
+Generisches Factory-Pattern (statische `App.*Factory`-Properties, gesetzt in `MainActivity.cs`) → Root-CLAUDE.md, Abschnitt "Android Platform-Services". Library-spezifisch ist nur, **wie** der Desktop-Default überschrieben wird:
 
-```csharp
-// App.axaml.cs (Shared)
-public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
-public static Func<IServiceProvider, IPurchaseService>? PurchaseServiceFactory { get; set; }
-
-// ServiceCollectionExtensions.cs überschreibt nach AddMeineAppsPremium():
-if (App.RewardedAdServiceFactory != null)
-    services.AddSingleton(App.RewardedAdServiceFactory);
-```
+1. `AddMeineAppsPremium()` (in `Extensions/ServiceCollectionExtensions.cs`) registriert die **Desktop-Defaults** als Singletons: `AdMobService`, `PurchaseService` (Stub), `TrialService`, `RewardedAdService` (Simulator). Es kennt die `App.*Factory`-Properties **nicht**.
+2. Den Android-Override macht jede App selbst in ihrem `ConfigureServices` (`App.axaml.cs`), **nach** `AddMeineAppsPremium()` — die zuletzt registrierte `AddSingleton`-Zuweisung gewinnt:
 
 ```csharp
-// MainActivity.cs (Android) — VOR base.OnCreate()
-App.RewardedAdServiceFactory = sp =>
-    new AndroidRewardedAdService(helper, sp.GetRequiredService<IPurchaseService>());
-App.PurchaseServiceFactory = sp =>
-    new AndroidPurchaseService(this, sp.GetRequiredService<IPreferencesService>(),
-                               sp.GetRequiredService<IAdService>());
+// App.axaml.cs (Shared) — ConfigureServices
+services.AddMeineAppsPremium();
+if (RewardedAdServiceFactory != null)
+    services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+if (PurchaseServiceFactory != null)
+    services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
 ```
+
+Für eine app-eigene Purchase-Implementierung ohne Factory existiert zusätzlich
+`AddMeineAppsPremium<TPurchaseService>()`.
 
 ### AdConfig Multi-Placement
 
-`AdConfig.cs` enthält alle AdMob-IDs für alle 6 Apps unter einem Publisher-Account (`ca-app-pub-2588160251469436`). Jede App hat eigene Banner-IDs, App-IDs und placement-spezifische Rewarded-IDs.
+`AdConfig.cs` enthält alle AdMob-IDs aller Apps unter einem Publisher-Account (`ca-app-pub-2588160251469436`). Jede App hat eine eigene `static`-Klasse mit `AppId`, `BannerAdUnitId` und placement-spezifischen Rewarded-IDs. Im `#if DEBUG`-Pfad liefern `GetBannerAdUnitId`/`GetRewardedAdUnitId` immer die Google-Test-IDs — Produktions-IDs nur im Release-Build.
 
 ```csharp
-// RewardedAdHelper.cs
-public async Task<bool> LoadAndShowAsync(string placement)
-{
-    var adUnitId = AdConfig.GetRewardedAdUnitId(AppId, placement);
-    // ...
-}
+var adUnitId = AdConfig.GetRewardedAdUnitId("BomberBlast", placement);
 ```
 
-Neue Rewarded-Placements → in `AdConfig.cs` eintragen, sonst `null`-Rückgabe und kein Ad.
+`GetRewardedAdUnitId(appName, placement)` matcht per `(appName, placement)`-Tupel. Unbekanntes Placement → App-Default-Placement (`(app, _)`-Arm); unbekannte App oder leere ID → Google-Test-ID (nie `null`, nie leer). **Folge:** Ein vertipptes Placement liefert still eine falsche/Default-Ad statt zu fehlschlagen — neue Placements daher zwingend mit eigenem Arm in `AdConfig.cs` eintragen. Mehrere Placements dürfen sich vorübergehend eine ID teilen (z.B. `RewardedRushBoost = RewardedGoldenScrews`), bis eigene IDs im AdMob-Dashboard existieren.
 
 ### Banner-Positionierung (FrameLayout Overlay)
 
@@ -147,10 +140,10 @@ Tab-Bar-Höhen für `tabBarHeightDp`-Parameter:
 
 ### Purchase-Restore beim App-Start
 
-Alle 6 Loading-Pipelines müssen `IPurchaseService.InitializeAsync()` parallel im ersten Lade-Schritt aufrufen. Ohne diesen Aufruf sehen Premium-Nutzer nach Geräte- oder Datenwechsel wieder Werbung, weil der lokale `is_premium` Preference-Key fehlt.
+Jede Loading-Pipeline einer werbe-App muss `IPurchaseService.InitializeAsync()` parallel im ersten Lade-Schritt aufrufen. Ohne diesen Aufruf sehen Premium-Nutzer nach Geräte- oder Datenwechsel wieder Werbung, weil der lokale `is_premium` Preference-Key fehlt.
 
 ```csharp
-// LoadingPipeline.cs (alle 6 Apps)
+// LoadingPipeline.cs
 await Task.WhenAll(
     _purchaseService.InitializeAsync(),   // Stellt Käufe/Abos via Google Play wieder her
     // ... weitere parallele Lade-Schritte
@@ -231,12 +224,7 @@ ad.Show(_activity, this);
 
 ### D8 Duplicate Class (Transitiv-Abhängigkeit)
 
-`Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` kollidiert mit `...Annotation.Android`. Fix in `Directory.Build.targets`:
-
-```xml
-<PackageReference Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm"
-                  ExcludeAssets="all" PrivateAssets="all" />
-```
+`Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` (transitiv über die Billing-/Ads-Pakete) kollidiert mit `...Annotation.Android`. Der Fix (`ExcludeAssets="all"` in `Directory.Build.targets`) ist projektweit und in der Root-CLAUDE.md dokumentiert (Build-Konfiguration, D8/DEX). Hier nur als Verursacher-Hinweis: tritt nur in Apps auf, die diese Library einbinden.
 
 ### Content hinter Ad-Banner abgeschnitten
 
@@ -255,10 +243,6 @@ using Android.Gms.Tasks;   // für Task/IOnCompleteListener
 
 `ReviewInfo` ist eine Klasse, NICHT `IReviewInfo`.
 
-### Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel
-
-`PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium`-Preference-Key fehlt. Fix: `IPurchaseService.InitializeAsync()` in der Loading-Pipeline parallel zum ersten Schritt aufrufen (siehe "Purchase-Restore beim App-Start" oben). Stellt Käufe + Abos via Google Play Billing wieder her.
-
 ### `MediaPlayer.PrepareAsync()` gibt void zurück
 
 Android-Java-Binding-Eigenheit: `PrepareAsync()` ist void, kein `Task`. Stattdessen `Prepare()` synchron verwenden oder mit `TaskCompletionSource` + `Prepared`-Event arbeiten.
@@ -267,7 +251,7 @@ Android-Java-Binding-Eigenheit: `PrepareAsync()` ist void, kein `Task`. Stattdes
 
 ## Verweise
 
-- AdMob-, Billing- und Ad-Banner-Layout-Gotchas: Abschnitt "Kritische Gotchas" oben in dieser Datei (kanonische Heimat)
-- App-spezifische Premium-Konfiguration → jeweilige `src/Apps/{App}/CLAUDE.md`
-- Architektur, DI-/Factory-Pattern, Build-Konfiguration → [Haupt-CLAUDE.md](../../../CLAUDE.md)
+- AdMob-, Billing- und Ad-Banner-Layout-Gotchas → Abschnitt "Kritische Gotchas" oben (kanonische Heimat)
+- App-spezifische Premium-Konfiguration (welche Placements wo getriggert werden) → jeweilige `src/Apps/{App}/CLAUDE.md`
+- Generisches Factory-Pattern, DI-Lifetimes, Build-/D8-Konfiguration → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 - NuGet-Versionen → `Directory.Packages.props`

@@ -2,13 +2,13 @@
 
 Jede View existiert in zwei Varianten: Desktop (`XyzView`) und Mobile (`XyzViewMobile`).
 Der `ViewLocator` wählt zur Laufzeit anhand von `App.IsMobileShell` automatisch die richtige Variante.
-Generische UI-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
+Generische MVVM-/Compiled-Binding-/DI-Regeln → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ## Dateien
 
 | View | Desktop | Mobile | Zweck |
 |------|---------|--------|-------|
-| Main | `MainView` | `MainViewMobile` | Shell mit Tab-Bar (Desktop) bzw. Bottom-Nav + More-Sheet (Android) |
+| Main | `MainView` | `MainViewMobile` | Shell mit Tab-Bar (Desktop) bzw. Bottom-Nav + More-Drawer (Android) |
 | Dashboard | `DashboardView` | `DashboardViewMobile` | Balance, Positionen, Bot-Controls, Equity-Chart |
 | Scanner | `ScannerView` | `ScannerViewMobile` | Live-Scan-Ergebnisse, Filter, TF-Auswahl |
 | Strategy | `StrategyView` | `StrategyViewMobile` | Aktive Strategie-Parameter (TrendFollow-Fast) |
@@ -20,34 +20,29 @@ Generische UI-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | SettingsHistory | `SettingsHistoryView` | `SettingsHistoryViewMobile` | Settings-Audit-Trail |
 | — | `MainWindow` | — | Desktop-Fenster-Host (`IClassicDesktopStyleApplicationLifetime`) |
 
-## Pflicht-Konventionen (MVVM-Strict)
-
-- `x:CompileBindings="True"` + `x:DataType` auf **jeder** View-Root.
-- **KEIN** `DataContext = ...` im Code-Behind — `ViewLocator` setzt das.
-- **KEIN** `App.Services.GetRequiredService<T>()` im View-Ctor — Android-Crash-Pattern.
-- Commands per `[RelayCommand]`, keine Click-Handler.
-- Bei VM-Events (z.B. `NavigationRequested`): `DataContextChanged`-Pattern — sauber an-/abmelden.
-
 ## Virtualisierung (Pflicht bei langen Listen)
 
 `TradeHistoryView`, `LogView`, `BacktestView` (Trade-Replay-Liste) und `ScannerView` (Scan-Ergebnisse)
-**müssen** `VirtualizingStackPanel` oder `RecyclingItemsPanel` verwenden. Ohne Virtualisierung
-friert die UI bei großen Datensätzen (100+ Einträge) ein.
+verwenden `VirtualizingStackPanel`. Ohne Virtualisierung friert die UI bei großen Datensätzen
+(100+ Einträge) ein.
 
-## Mobile-Navigation — More-Sheet
+## Mobile-Navigation — More-Drawer
 
-Auf Android zeigt `MainViewMobile` eine Bottom-Tab-Bar mit 4 Haupt-Tabs (Dashboard, Scanner,
-TradeHistory, Log). Seltenere Views (Strategie, Backtest, Risiko, Settings, Diagnose) öffnet
-ein Bottom-Sheet via `MainViewModel.IsMoreDrawerOpen = true`.
+`MainViewMobile` zeigt eine Bottom-Tab-Bar mit **5 Tabs** (Dashboard, Scanner, TradeHistory, Log,
+Mehr). Der "Mehr"-Tab öffnet ein Bottom-Sheet (`DrawerSheet`) via `MainViewModel.ToggleMoreDrawerCommand`.
+Das Sheet liegt als Overlay über dem `ContentControl` und enthält vier seltenere Views: Strategie,
+Backtest, RiskSettings, Settings.
 
-**Warum kein ZIndex-Overlay?** Avalonia `ZIndex` auf Grid-Kindern funktioniert auf Android
-nicht für Hit-Testing — Touch-Events gehen durch. Das Sheet nutzt Content-Swap statt Overlay.
+**Warum kein ZIndex-Overlay für die Haupt-Navigation?** Avalonia `ZIndex` auf Grid-Kindern
+funktioniert auf Android nicht für Hit-Testing — Touch-Events gehen durch. Das More-Sheet umgeht
+das, weil es das gesamte Overlay selbst managed (`IsVisible`-Binding + Scrim).
 
-## UI-Stil
+## UI-Stil (BingX-spezifisch)
 
 - **Monospace-Zahlen** (Consolas) für Preise, PnL und Metriken — proportionale Schrift lässt
   Spalten zittern bei Updates.
 - **Dark-Mode Default** via `ThemeVariant.Dark`. Theme ist via `BotSettings.ThemePreference`
   umstellbar (Dark/Light/System).
-- **Keyboard-Shortcuts** (Desktop): Ctrl+1–8 für Tab-Navigation, F5/F6/F7/F12 für Bot-Kontrolle,
+- **Keyboard-Shortcuts** (Desktop): Ctrl+1–8 für Tab-Navigation, F5/F6/F7/F12 für Bot-Kontrolle
+  (F5=Start, F6=Pause, F7=Stop, F12=Notfall-Stop — definiert in `DashboardView`),
   Escape navigiert zum Dashboard.

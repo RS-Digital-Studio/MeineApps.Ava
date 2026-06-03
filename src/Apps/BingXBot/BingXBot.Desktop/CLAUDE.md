@@ -18,11 +18,12 @@ App läuft über `IClassicDesktopStyleApplicationLifetime` → `MainWindow` (sie
 ## Modus-Auswahl
 
 Der Modus (Standalone vs. Remote-Client) wird NICHT per Kommandozeile gesteuert, sondern
-über das Vorhandensein der `connection.json`-Datei:
+über das Vorhandensein von `ClientProfilePath` (`connection.json`):
 
-- **Datei fehlt** → Standalone (Engine im Prozess, BingX-Credentials lokal via DPAPI).
+- **Datei fehlt** → Standalone (Engine im Prozess, BingX-Credentials lokal via DPAPI auf Windows / AES-CBC auf Linux).
 - **Datei vorhanden** → Remote-Client (HTTP + SignalR, keine lokale Engine).
 
+Pfade: Windows `%APPDATA%\BingXBot\Client\connection.json`, Linux `~/.config/BingXBot/Client/connection.json`.
 Pairing über Settings → "Server verbinden" in der App.
 
 ## Build / Run
@@ -31,5 +32,5 @@ Pairing über Settings → "Server verbinden" in der App.
 dotnet run     --project src/Apps/BingXBot/BingXBot.Desktop
 dotnet publish src/Apps/BingXBot/BingXBot.Desktop -c Release -r win-x64 --self-contained true
 dotnet publish src/Apps/BingXBot/BingXBot.Desktop -c Release -r linux-x64 --self-contained true
-# Ausgabe: F:\BingXBot-Client\
+# Ausgabe: bin/Release/net10.0/{rid}/publish/
 ```

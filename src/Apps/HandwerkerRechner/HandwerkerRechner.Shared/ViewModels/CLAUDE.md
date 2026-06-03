@@ -51,15 +51,15 @@ setzen `CurrentPage = null` und triggern bei Projects/History automatisch einen 
 **Rewarded-Counter:** `_calculationCount` wird bei jedem `CalculationPerformed`-Event erhöht.
 Ab 3 Berechnungen → `_rewardedAdService.ShowAdAsync("calculation_ad")` (außer bei Premium).
 
-**Favoriten:** `IFavoritesService` → `FavoriteCalculators`-Collection (ObservableCollection).
-19 `IsFavXxx`-Properties für Compiled-Binding-kompatibles Stern-Toggle.
-`NotifyFavoriteProperties()` aktualisiert alle 19 Properties nach `FavoritesChanged`.
+**Favoriten:** `IFavoritesService` → `FavoriteCalculators`-Collection (ObservableCollection<FavoriteItem>).
+20 `IsFavXxx`-Properties für Compiled-Binding-kompatibles Stern-Toggle.
+`NotifyFavoriteProperties()` aktualisiert alle 20 Properties nach `FavoritesChanged`.
 
 **Localization:** Gezielte Invalidierung via `LocalizedPropertyNames`-Array (nicht
 `OnPropertyChanged(string.Empty)` — das würde alle Bindings im Visual-Tree auslösen → 50-150ms Stutter).
 
 **Back-Navigation:** 1. SaveDialog schließen → 2. Calculator schließen → 3. Nicht-Calculator-VM
-schließen → 4. Nicht-Home-Tab → Home → 5. Double-Back-to-Exit via `BackPressHelper`.
+schließen (Templates, Quotes) → 4. Nicht-Home-Tab → Home → 5. Double-Back-to-Exit via `BackPressHelper`.
 
 ## ICalculatorViewModel — Vertrag
 
@@ -83,7 +83,7 @@ Alle 19 Calculator-VMs berechnen automatisch 300 ms nach letzter Eingabe-Änderu
 partial void OnXxxChanged() => ScheduleAutoCalculate();
 // ScheduleAutoCalculate: Timer.Change(300ms) — wiederverwendet statt Dispose/New
 // Timer-Callback: Dispatcher.UIThread.Post(() => _ = Calculate())
-// History-Save: separater 2s-Debounce via ScheduleDebouncedSave
+// History-Save: _historyService.ScheduleDebouncedSave(...) — Service übernimmt Debounce
 ```
 
 `_isCalculating` als Reentrancy-Schutz in `Calculate()`. `Reset()` disposed Timer.
@@ -97,6 +97,6 @@ Alle VMs: `IDisposable` (Timer + Event-Subscriptions). `Cleanup()` ist API-Konsi
 - **PlasterType/ScreedType Enum-Routing:** Tipp-sichere Enums statt String-Vergleich.
   `CalculateXxx(area, thickness, PlasterType.Gypsum)` — nie String-"Gipsputz" übergeben.
 - **`GetString(key)` gibt NIEMALS null zurück:** `LocalizationService` gibt den Key-Namen zurück
-  wenn der Key fehlt. `?? "fallback"` ist toter Code — Fehlende RESX-Keys mit dem Key-Namen sichtbar.
-- **History-Save-Race (ProjectsVM):** `_initTask = InitializeAsync()` speichern;
-  in allen öffentlichen Commands `await _initTask` abwarten — sonst `_list.Clear()` raced mit User.
+  wenn der Key fehlt. `?? "fallback"` ist toter Code — fehlende RESX-Keys werden mit dem Key-Namen sichtbar.
+- **ProjectsViewModel Lade-Guard:** `LoadProjectsAsync` prüft `IsLoading` gegen Doppel-Aufruf.
+  Kein `_initTask`-Pattern — der Service ist zustandslos; Race-Schutz sitzt im `IProjectService`.

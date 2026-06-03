@@ -14,7 +14,7 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort do
 | `MedicalColors.cs` | Static | Farb-Konstanten, EKG-Daten (24 Punkte), Timing-Konstanten (72 BPM = 1.2 Beats/s), Hintergrund-Gradient |
 | `MedicalBackgroundRenderer.cs` | Instance | 5-Layer Hintergrund: Teal-Gradient, Grid, EKG-Linie, schwebende Partikel, Vignette |
 | `MedicalTabBarRenderer.cs` | Instance | Holografische Tab-Bar (64dp, 4 Tabs, Cyan-Glow auf aktivem Tab) |
-| `MedicalCardRenderer.cs` | Static | Universeller Card-Hintergrund: Surface `#D90F1D32` + HUD-Brackets + Akzent-Linie |
+| `MedicalCardRenderer.cs` | Static | Universeller Card-Hintergrund: Surface mit 85 % Alpha + HUD-Brackets + Akzent-Linie |
 | `VitalSignsHeroRenderer.cs` | Instance | Dashboard Vital Signs Monitor (300dp, 4 Quadranten, EKG-Ring, Center-Score) |
 | `QuickActionButtonRenderer.cs` | Static | Holografische Quick-Action Buttons: +kg (lila), +250ml (grün), +kcal (orange); 3s Puls-Animation, Press-Effekt Scale 0.95 |
 | `StreakCardRenderer.cs` | Static | Medical Streak-Anzeige: pulsierendes Herz, Mini-EKG |
@@ -38,8 +38,9 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort do
 | Sekundär | `#14B8A6` Teal, `#3B82F6` Electric Blue | Hintergrund-Verläufe |
 | Hintergrund | `#142832` → `#0A1824` | Teal Deep / Teal Dark |
 | Surface | `#1E3844` | Cards |
-| Card-Surface | `#D90F1D32` | Universeller Card-Hintergrund |
-| Card-Border | `#1A06B6D4` (Standard), `#4D06B6D4` (holografisch) | Cyan-Glow |
+| Card-Surface | `MedicalColors.Surface.WithAlpha(217)` (~85 % Alpha) | Universeller Card-Hintergrund |
+| Card-Border HUD | `MedicalColors.Cyan.WithAlpha(77)` (30 %) | HUD-Brackets |
+| Card-Border Top | `MedicalColors.Cyan.WithAlpha(100)` | Obere Cyan-Kante |
 | Weight | `#8B5CF6` Lila | Feature-Farbe |
 | BMI | `#3B82F6` Blau | Feature-Farbe |
 | Wasser | `#22C55E` Grün | Feature-Farbe |
@@ -49,7 +50,7 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort do
 
 ## EKG-Konfiguration
 
-24-Punkt-Array in `MedicalColors.EkgData`: P-Welle + QRS-Komplex + T-Welle + Baseline.
+24-Punkt-Array in `MedicalColors.EkgWave`: P-Welle (6) + QRS-Komplex (6) + T-Welle (8) + Baseline (4).
 Herzschlag: 72 BPM (1.2 Beats/Sekunde). Wird in `MedicalBackgroundRenderer` (floating EKG),
 `VitalSignsHeroRenderer` (animierter Ring), `StreakCardRenderer` (Mini-EKG) und
 `CalculatorHeaderRenderer` (statisch) verwendet.
@@ -80,7 +81,10 @@ Herzschlag: 72 BPM (1.2 Beats/Sekunde). Wird in `MedicalBackgroundRenderer` (flo
 
 - **`MedicalCardRenderer` universell:** Wird von allen 5 Calculator-Views, ProgressView-Cards und
   HomeView-Cards aufgerufen. Änderungen wirken sich auf die gesamte App aus.
-- **`HealthTrendVisualization` Catmull-Rom:** Benötigt mindestens 4 Datenpunkte für glatte
-  Kurven. Bei < 4 Punkten auf lineare Interpolation fallback.
+- **`HealthTrendVisualization` Catmull-Rom:** Funktioniert ab 3 Punkten (Catmull-Rom mit
+  Edge-Mirroring). Fallbacks für 0 (leerer Pfad), 1 (Punkt), 2 (gerade Linie) Datenpunkte
+  sind vorhanden — kein Mindest-Crash.
 - **`CalculatorHeaderRenderer` Feature-Farbe als Parameter:** Jeder Rechner übergibt seine
-  Feature-Farbe (`#8B5CF6` BMI, `#F59E0B` Kalorien, ...) — kein hardcoded Cyan.
+  Feature-Farbe (BMI → `MedicalColors.BmiBlue` `#3B82F6`, Gewicht/Idealgewicht →
+  `MedicalColors.WeightPurple` `#8B5CF6`, Kalorien → `MedicalColors.CalorieAmber` `#F59E0B`,
+  Wasser → `MedicalColors.WaterGreen` `#22C55E`) — kein hardcoded Cyan.

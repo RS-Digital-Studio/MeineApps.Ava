@@ -10,7 +10,7 @@ Helpers aus [MeineApps.UI](../../../../UI/MeineApps.UI/CLAUDE.md). SkiaSharp-Gru
 |-------|-------|
 | `VfdDisplayVisualization.cs` | 7-Segment-VFD-Röhren-Simulation: Cyan-Grün (#00FFB0)/Rot bei Fehler, Ghost-Segmente, subtiles Flicker (~7 Hz). `_glowPaint.MaskFilter` im Field-Initializer (kein Leak). Timer 33 ms ab `OnAttachedToVisualTree`. |
 | `ResultBurstVisualization.cs` | Expandierender Lichtring + 8 Partikel-Strahlen bei `=` (Cubic ease-out, 500 ms). |
-| `FunctionGraphVisualization.cs` | Mini-Graph für sin/cos/tan/sqrt/log/ln/x²/1/x. Asymptoten → Pfad-Unterbrechung statt `DrawLine`. |
+| `FunctionGraphVisualization.cs` | Mini-Graph für sin/cos/tan/sqrt/log/ln/x²/x³/1/x/abs. Asymptoten → Pfad-Unterbrechung statt `DrawLine`. |
 | `CalculatorBackgroundRenderer.cs` | "Digital Circuit Board"-Hintergrund (4 Layer, ~5 fps, gecachte Paints, Shader-Cache nur bei Größenänderung). |
 | `RechnerPlusSplashRenderer.cs` | Splash (Tasten-Matrix + LCD). Erbt von `SplashRendererBase`. |
 

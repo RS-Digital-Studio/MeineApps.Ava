@@ -66,8 +66,3 @@ Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (`AppPalette.axaml
 Isekai System Blue #4A90D9), `Resources/Strings/` (`AppStrings.resx`, 6 Sprachen), `Assets/`,
 `Icons/` (`RebornSaga.Icons`).
 
-## Build
-
-```bash
-dotnet build src/Apps/RebornSaga/RebornSaga.Shared
-```

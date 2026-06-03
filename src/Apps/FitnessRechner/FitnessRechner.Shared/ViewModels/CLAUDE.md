@@ -32,8 +32,8 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ## Tab-Navigation (`MainViewModel`)
 
-4 Tabs: **Home** (`IsHomeTabActive`), **Progress** (`IsProgressTabActive`),
-**Food Search** (`IsFoodTabActive`), **Settings** (`IsSettingsTabActive`).
+4 Tabs, gesteuert über `SelectedTab` (int 0–3). Tab-Status-Properties:
+`IsHomeActive`, `IsProgressActive`, `IsFoodActive`, `IsSettingsActive`.
 
 `OnAppearingAsync()` wird bei jedem Tab-Wechsel auf dem Ziel-ViewModel aufgerufen — lädt
 Dashboard-Daten, Streak, Level, Challenge neu.
@@ -60,13 +60,13 @@ Direkter Zugriff für SkiaSharp-Renderer ohne Converter:
 
 | Property | Typ | Bedeutung |
 |----------|-----|-----------|
-| `RawWeight` | `double` | Aktuelles Gewicht in kg |
-| `RawBmi` | `double` | Aktueller BMI-Wert |
-| `RawWaterMl` | `int` | Heutige Wasser-Einnahme in ml |
-| `RawWaterGoalMl` | `int` | Tagesziel Wasser in ml |
-| `RawCalories` | `int` | Heutige Kalorien |
-| `RawCalorieGoal` | `int` | Tagesziel Kalorien |
-| `WeightTrend` | `double` | Differenz zum Vortag (+ Zunahme, - Abnahme) |
+| `RawWeight` | `float` | Aktuelles Gewicht in kg |
+| `RawBmi` | `float` | Aktueller BMI-Wert |
+| `RawWaterMl` | `float` | Heutige Wasser-Einnahme in ml |
+| `RawWaterGoalMl` | `float` | Tagesziel Wasser in ml |
+| `RawCalories` | `float` | Heutige Kalorien |
+| `RawCalorieGoal` | `float` | Tagesziel Kalorien |
+| `WeightTrend` | `int` | Richtungsindikator: +1 Zunahme, 0 stabil, -1 Abnahme (Schwelle ±0,2 kg) |
 | `BmiCategoryText` | `string` | Lokalisierte BMI-Kategorie |
 
 ---
@@ -83,10 +83,12 @@ ins aktuelle Datum — Meal-Typen bleiben erhalten, Datums-Timestamp wird auf To
 
 ## Back-Navigation (`MainViewModel.HandleBackPressed`)
 
-1. Offener Calculator → Calculator schließen, zurück zu Tab-Übersicht.
-2. Barcode-Scanner aktiv → abbrechen.
-3. Nicht auf Home-Tab → `IsHomeTabActive = true`.
-4. Home-Tab → Double-Back-to-Exit via `BackPressHelper`.
+1. Dashboard-Overlays (Achievements, Weight/Water Quick-Add) → schließen.
+2. Offener Calculator (`CurrentPage != null`) → `CurrentPage = null`.
+3. ProgressVM-Overlays (Analysis, Export, FoodSearch, AddForm, AddFoodPanel) → schließen.
+4. ActivityVM/RecipeVM-Overlays → schließen.
+5. Nicht auf Home-Tab → `SelectedTab = 0`.
+6. Home-Tab → Double-Back-to-Exit via `BackPressHelper`.
 
 ---
 
@@ -96,11 +98,13 @@ ins aktuelle Datum — Meal-Typen bleiben erhalten, Datums-Timestamp wird auf To
 (`UndoTimeoutMs = 5000`) zentral. Alle ViewModels + Services referenzieren `PreferenceKeys`
 statt lokaler Konstanten.
 
-Key-Gruppen:
-- **Streak:** `streak_current`, `streak_best`, `streak_last_log_date`
-- **Gamification:** `fitness_xp`, `fitness_level`, `achievements_unlocked`,
-  `achievements_progress`, `challenge_completed_date`, `total_meals_logged`,
-  `total_barcodes_scanned`, `distinct_foods_tracked`, `calculators_used_mask`
+Key-Gruppen (C#-Konstantennamen aus `PreferenceKeys`):
+- **Streak:** `StreakCurrent`, `StreakBest`, `StreakLastLogDate`
+- **Gamification:** `FitnessXp`, `FitnessLevel`, `AchievementsUnlocked`,
+  `AchievementsProgress`, `ChallengeCompletedDate`
+- **Gamification-Zähler:** `TotalMealsLogged`, `TotalBarcodesScanned`,
+  `DistinctFoodsTracked`, `CalculatorsUsedMask`
+- **Ziele:** `CalorieGoal`, `WaterGoal`, `WeightGoal`
 - **Extended Food DB:** `ExtendedFoodDbExpiry` (ISO 8601 UTC, `DateTimeStyles.RoundtripKind`)
 
 ### Calculator-Bitmask
@@ -114,13 +118,23 @@ Calculator-VMs per OR-Verknüpfung in Preferences gesetzt.
 ## Gamification — Ereignis-Kette
 
 ```
-TrackingService.EntryAdded → StreakService.UpdateStreak → StreakService.StreakMilestoneReached
-                                                        → MainViewModel.CelebrationRequested (Confetti)
+TrackingService.EntryAdded / FoodSearchService.FoodLogAdded
+  → MainViewModel.RecordStreakActivity()
+      → StreakService.RecordActivity() → bool isMilestone
+          → isMilestone == true: CelebrationRequested (Confetti) + FloatingTextRequested
 
-AchievementService.AchievementUnlocked → LevelService.AddXp → LevelService.LevelUp
-                                       → MainViewModel.FloatingTextRequested ("+XP")
+AchievementService.AchievementUnlocked(titleKey, xpReward)
+  → LevelService.AddXp(xpReward)
+  → MainViewModel.FloatingTextRequested (Achievement-Text)
+  → MainViewModel.CelebrationRequested
 
-ChallengeService.ChallengeCompleted → LevelService.AddXp
+LevelService.LevelUp(newLevel)
+  → MainViewModel.FloatingTextRequested ("Level Up!")
+  → MainViewModel.CelebrationRequested
+
+ChallengeService.ChallengeCompleted(xpReward)
+  → LevelService.AddXp(xpReward)
+  → MainViewModel.FloatingTextRequested (Challenge-Text)
 ```
 
 ---

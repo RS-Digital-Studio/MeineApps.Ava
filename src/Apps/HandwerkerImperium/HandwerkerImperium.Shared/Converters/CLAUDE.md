@@ -9,10 +9,10 @@ nicht abdecken.
 
 | Datei | Zweck |
 |-------|-------|
-| `MoneyDisplayConverter.cs` | Formatiert `double` → lokalisierte Geld-Anzeige mit K/M/B-Suffix |
-| `WorkshopColorConverter.cs` | `WorkshopType` → `SolidColorBrush`. Einzige erlaubte Quelle neben `WorkshopTypeExtensions.GetColorHex()` |
+| `MoneyDisplayConverter.cs` | Formatiert `decimal` → Geld-Anzeige über `MoneyFormatter`; ConverterParameter: `"perhour"`, `"persecond"`, `"~"` (Prefix), Default = kompakt |
+| `WorkshopColorConverter.cs` | `WorkshopType` → `SolidColorBrush`. ConverterParameter: `"bg"` (20% Opacity), `"bg40"` (40%), `"bg60"` (60%), Default = voll opak. Brushes gecacht (max 40 Einträge: 10 Typen × 4 Alpha-Varianten) |
 | `StringToGameIconKindConverter.cs` | `string` → `GameIconKind` für XAML-Bindings auf string-Properties |
-| `GreaterThanZeroConverter.cs` | `double/int` → `bool` (für IsVisible-Bindings auf Zählern) |
+| `GreaterThanZeroConverter.cs` | `int/double/decimal/long/float` → `bool` (für IsVisible-Bindings auf Zählern) |
 | `BoolToChallengeBackgroundConverter.cs` | `bool IsActive` → Challenge-Hintergrundfarbe (aktiviert vs. inaktiv) |
 
 ---

@@ -1,32 +1,12 @@
 # MeineApps.UI — Shared UI Component Library
 
-Wiederverwendbare UI-Bausteine für alle 12 Avalonia-Apps. Enthält Custom Controls, Behaviors,
-SkiaSharp-Visualisierungen, GPU-Shader und das Loading-Pipeline-Framework.
+Wiederverwendbare UI-Bausteine für alle 12 Avalonia-Apps: Custom Controls, Behaviors,
+SkiaSharp-Visualisierungen, SkSL-GPU-Shader und das Loading-Pipeline-Framework. Stack, Build und
+Paket-Versionen → Haupt-CLAUDE.md (`Directory.Packages.props`).
 
-## Zielframework
-
-- .NET 10.0
-- C# 14
-- Avalonia 12.0.2
-
-## Build
-
-```bash
-dotnet build src/UI/MeineApps.UI/MeineApps.UI.csproj
-```
-
-## Abhängigkeiten
-
-| Package | Zweck |
-|---------|-------|
-| `Avalonia` | UI-Framework |
-| `Avalonia.Xaml.Behaviors` | `TapScaleBehavior`, `FadeInBehavior`, etc. |
-| `Material.Icons.Avalonia` | 7000+ SVG-Icons |
-| `SkiaSharp` | 2D Graphics, GPU-Shader (SkSL) |
-| `Avalonia.Labs.Lottie` | `LottieAnimationView` |
-| `MeineApps.Core.Ava` | `ViewModelBase`, `ThemeColors.axaml`, Converters |
-
-Versionen zentral in `Directory.Packages.props`.
+**Abhängigkeits-Grenze:** `MeineApps.UI` referenziert nur `MeineApps.Core.Ava` (für
+`ThemeColors.axaml`, Converter) — NIE `MeineApps.Core.Premium.Ava` (Premium hängt von UI ab,
+nicht umgekehrt). Build: `dotnet build src/UI/MeineApps.UI/MeineApps.UI.csproj`.
 
 ---
 
@@ -51,7 +31,7 @@ Versionen zentral in `Directory.Packages.props`.
 | `SkiaCelebrationOverlay.cs` | Custom Control | Confetti-System (SkiaSharp, Glow, Sternformen, Blitz-Flash) |
 | `CelebrationOverlay.cs` | Legacy | Border-basiertes Confetti — nicht mehr verwenden |
 | `LottieAnimationView.cs` | Custom Control | Lottie-Wrapper mit OneShot-Modus + AnimationCompleted Event |
-| `SvgIcon.cs` | Custom Control | SVG-Path-Icon mit StreamGeometry aus `Assets/Icons/AppIcons.axaml` (Kind-Property, ViewBox-Auto-Scale) |
+| `SvgIcon.cs` | ContentControl | SVG-Path-Icon, lädt StreamGeometry aus `Assets/Icons/AppIcons.axaml` per `Icon_{Kind}`-Key (`Kind`-Property, ViewBox-Auto-Scale) |
 | `TooltipBubble.cs` | Custom Control | Onboarding-Tooltip (Tap-to-Dismiss, FadeIn/FadeOut via Transitions) |
 | `AnimatedNumberText.cs` | Custom Control | TextBlock mit CubicEaseOut-Interpolation bei Wertänderung |
 | `NotificationBadge.cs` | Custom Control | Runder Badge-Punkt (Count=0 unsichtbar, -1 = Punkt, >0 = Zahl + Bounce) |
@@ -67,6 +47,7 @@ Versionen zentral in `Directory.Packages.props`.
 | `StaggerFadeInBehavior.cs` | Gestaffelter Fade-In für Listen (Index-Auto-Erkennung) |
 | `CountUpBehavior.cs` | Zählt TextBlock von 0 auf Zielwert (Format, Suffix, CultureName, UseSignedPrefix) |
 | `SwipeToRevealBehavior.cs` | Swipe-to-Reveal (Delete-Layer, Spring-Back, ScrollViewer-kompatibel) |
+| `LongPressBehavior.cs` | Long-Press (`DurationMs`, `Command`, `CommandParameter`); unterdrückt nachfolgenden Click bei Trigger |
 
 ### SkiaSharp Controls & Helpers
 
@@ -115,36 +96,25 @@ Versionen zentral in `Directory.Packages.props`.
 
 ---
 
-## Icon-Strategie (verbindlich fuer alle Apps)
+## SvgIcon — geteilte Icon-Library
 
-**Keine Unicode-Symbole als UI-Text** (z. B. ▼ ▲ ★ ← →). Symbole/Icons werden ueber eine der drei
-Quellen eingebunden:
+Die verbindliche Icon-Strategie (drei zugelassene Quellen, Verbot von Unicode-Symbolen als
+UI-Text) steht in der Haupt-CLAUDE.md → "Icon-Strategie". Hier nur das Library-Spezifische:
 
-1. **Geteilte SVG-Library** (`MeineApps.UI/Assets/Icons/AppIcons.axaml`)
-   - StreamGeometry-Definitionen unter `Icon_{Name}`-Keys (z. B. `Icon_ChevronDown`).
-   - Verwendung via `<ui:SvgIcon Kind="ChevronDown" Width="16" Height="16" Foreground="..."/>`
-     (xmlns:ui="using:MeineApps.UI.Controls").
-   - **Erste Wahl** fuer einfache, geteilte Glyphen (Chevron, Arrow, Check, Star, Crown, Plus/Minus, …).
-   - Neue Icons werden hier ergaenzt, nicht pro App dupliziert.
+`SvgIcon` ist die erste Wahl für einfache geteilte Glyphen (Chevron, Arrow, Check, Star, Crown,
+Plus/Minus, …). Es lädt eine `StreamGeometry` aus `Assets/Icons/AppIcons.axaml` über den
+`Icon_{Kind}`-Key und skaliert auf die 24×24-ViewBox:
 
-2. **Material.Icons.Avalonia** (Package, 7000+ Icons)
-   - Verwendung via `<materialIcons:MaterialIcon Kind="MagnifyClose" />`.
-   - Fuer Icons die nicht in `AppIcons.axaml` definiert sind und nicht App-spezifisch sein muessen.
+```axaml
+<ui:SvgIcon Kind="ChevronDown" Width="16" Height="16" Foreground="..." />
+<!-- xmlns:ui="using:MeineApps.UI.Controls" -->
+```
 
-3. **App-spezifische Icon-Klasse** (nur fuer Apps mit eigenem Visual-Stil)
-   - `BomberBlast.Icons.GameIcon` (Neon-Arcade-Pfade) und `RebornSaga.Icons.SagaIcon`
-     (Isekai-System-Stil) bleiben app-eigen, weil die Pfade visuell auf die Stilrichtung
-     abgestimmt sind. Keine generischen Apps duerfen eigene Icon-Systeme einfuehren.
-
-**Generieren neuer SVG-Icons:**
-- Path-Data manuell schreiben (24x24 ViewBox-Standard) ODER bestehende Material/Tabler/Phosphor
-  SVGs als CC0-Vorlage importieren und in `AppIcons.axaml` als StreamGeometry eintragen.
-- Anschliessend in dieser CLAUDE.md unter der `SvgIcon`-Zeile dokumentieren falls erkennbar.
-
-**Niemals erlaubt:**
-- `<TextBlock Text="▼"/>` oder `Text="★"` als visueller Pfeil/Stern.
-- Apps die neu eigene GameIcon-Enums anlegen, ohne dass das visuelle Konzept (Neon-Arcade /
-  Anime / etc.) das rechtfertigt.
+**Neue Glyphe ergänzen:** Path-Data manuell (24×24-ViewBox) oder eine CC0-Vorlage
+(Material/Tabler/Phosphor) als `<StreamGeometry x:Key="Icon_{Name}">` in `AppIcons.axaml`
+eintragen — nie pro App duplizieren. App-eigene Icon-Klassen (`BomberBlast.Icons.GameIcon`,
+`RebornSaga.Icons.SagaIcon`) bleiben app-lokal, weil ihre Pfade auf den jeweiligen Visual-Stil
+abgestimmt sind.
 
 ## Architektur-Patterns
 
@@ -170,9 +140,11 @@ xmlns:behaviors="using:MeineApps.UI.Behaviors"
 xmlns:i="using:Avalonia.Xaml.Interactivity"
 ```
 
-### DynamicResource-Pattern
+### DynamicResource-Keys (von dieser Library erwartet)
 
-Alle Komponenten verwenden ausschließlich `DynamicResource`-Keys aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`. Keine hardcodierten Farben. Wichtige Keys:
+Alle Komponenten ziehen ihre Farben per `DynamicResource` aus
+`MeineApps.Core.Ava/Themes/ThemeColors.axaml` (keine hardcodierten Farben → Root Anti-Patterns).
+Eine App, die diese Controls einbindet, muss diese Keys definiert haben:
 
 | Key | Verwendung |
 |-----|-----------|
@@ -184,9 +156,11 @@ Alle Komponenten verwenden ausschließlich `DynamicResource`-Keys aus `MeineApps
 | `TextMutedBrush` | Sekundärtext, Captions |
 | `BorderSubtleBrush` | Track-Farbe für Fortschrittsringe |
 
-### Compiled Bindings
+### Property-basiert, keine VM-Bindings
 
-Alle Views die Controls aus dieser Library verwenden müssen `x:CompileBindings="True"` setzen. Controls selbst haben keine Bindings auf externe ViewModels — sie sind rein Property-basiert (StyledProperties, DirectProperties).
+Die Controls dieser Library binden NIE auf externe ViewModels — sie sind rein Property-basiert
+(StyledProperties/DirectProperties) und damit in jeder App ohne DataContext-Annahme nutzbar.
+Compiled Bindings auf den konsumierenden Views sind global Pflicht (→ Haupt-CLAUDE.md).
 
 ### SkiaThemeHelper in App.axaml.cs initialisieren
 
@@ -373,6 +347,5 @@ SkiaHeatShimmerEffect.DrawForgeHeat(canvas, bounds, time);
 
 - Design-Tokens (Spacing, Radius, Farben): `src/Libraries/MeineApps.Core.Ava/Themes/ThemeColors.axaml`
 - App-Farbpaletten (Primary-Farbe pro App): Haupt-CLAUDE.md → "App-Portfolio → App-Farbpaletten"
-- Rendering-Gotchas (DonutChart, SKMaskFilter, RenderTransform, SKCanvasView): Abschnitt "Gotchas" oben in dieser Datei
 - Avalonia-/MVVM-Framework-Fallstricke: `src/Libraries/MeineApps.Core.Ava/CLAUDE.md`
 - App-spezifische Splash-Renderer: jeweils `src/Apps/{App}/{App}.Shared/Graphics/{App}SplashRenderer.cs`

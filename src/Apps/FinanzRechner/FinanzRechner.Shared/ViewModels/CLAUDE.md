@@ -36,9 +36,9 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 Jede VM hat ein eigenes Stale-Flag — lädt nur bei tatsächlichen Änderungen neu:
 
 - `StatisticsViewModel.InvalidateCache()` + `_isDataStale` — lädt nur bei Änderungen neu.
-- `ExpenseTrackerViewModel.DataChanged` Event → `MainViewModel._isHomeDataStale = true`.
-- `BudgetsViewModel.DataChanged` + `RecurringTransactionsViewModel.DataChanged` → MainViewModel.
-- `MainViewModel._isHomeDataStale` lauscht auf alle drei `DataChanged`-Events.
+- `MainViewModel._isHomeDataStale` wird von **allen** `DataChanged`-Events gesetzt:
+  `ExpenseTrackerViewModel`, `BudgetsViewModel`, `RecurringTransactionsViewModel`,
+  `AccountsViewModel`, `SavingsGoalsViewModel`, `DebtTrackerViewModel`, `CustomCategoriesViewModel`.
 
 ---
 
@@ -63,6 +63,10 @@ CalculateCommand     → öffnet/berechnet immer neu (kein HasResult-Guard!)
 `double.IsFinite()` PFLICHT vor `_financeEngine.CalculateXxx` — ungültige Eingaben (NaN,
 Infinity) erzeugen sonst OverflowException aus der Engine.
 
+Alle Calculator-VMs haben einen **Debounce-Timer** (300 ms): Property-Änderungen triggern
+`ScheduleAutoCalculate()`, das nach 300 ms `Calculate()` auf dem UI-Thread aufruft. Der Timer
+wird in `Dispose()` freigegeben.
+
 Nach Berechnung: CSS-Klasse `ResultFlash` auf dem Ergebnis-Panel (Gold-Aufleuchten).
 
 ---
@@ -72,13 +76,15 @@ Nach Berechnung: CSS-Klasse `ResultFlash` auf dem Ergebnis-Panel (Gold-Aufleucht
 1. BudgetAnalysis-Overlay schließen
 2. BudgetAd-Overlay schließen
 3. QuickAdd-Overlay schließen
-4. RestoreDialog (Settings) schließen
-5. AddExpense-Overlay (Tracker) schließen
-6. SubPage-Dialoge (AddBudget/AddRecurring) schließen
-7. SubPage schließen (GoBack `".."`)
-8. Calculator schließen
-9. Tab → Home
-10. Double-Back-Exit (2 s Fenster, `BackPressHelper`, RESX-Key `PressBackToExit`)
+4. RestoreDialog (Settings, nur wenn Tab == 3) schließen
+5. AddExpense-Overlay (Tracker, nur wenn Tab == 1) schließen
+6. SubPage-interne Dialoge schließen (AddBudget, AddRecurring, Accounts-Dialog/Transfer,
+   SavingsGoals-Dialog/AdjustDialog, DebtTracker-Dialog/PaymentDialog, CustomCategories-Dialog),
+   danach SubPage selbst schließen
+7. Calculator schließen
+8. Tab → Home
+9. Double-Back-Exit (2 s Fenster, `BackPressHelper`, RESX-Key `PressBackToExit`,
+   Event `ExitHintRequested`)
 
 ---
 

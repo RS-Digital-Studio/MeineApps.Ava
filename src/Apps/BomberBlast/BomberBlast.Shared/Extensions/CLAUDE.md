@@ -27,8 +27,10 @@ Registrierungen abgeschlossen und der Zirkel existiert nicht mehr.
 // Registrierung in App.axaml.cs:
 services.AddLazyResolution();
 
-// Verwendung im Ctor:
-public class NavigationCoordinator(
-    ...,
-    Func<ILifecycleHub> lifecycleHubProvider)   // Lazy-Lambda aus DI
+// Verwendung im Ctor (beliebiger Service):
+public class CardService(
+    IPreferencesService preferences,
+    Lazy<IAchievementService> achievementService,   // aufgelöst erst bei erstem .Value-Zugriff
+    Lazy<IWeeklyChallengeService> weeklyService,
+    Lazy<IDailyMissionService> dailyMissionService)
 ```

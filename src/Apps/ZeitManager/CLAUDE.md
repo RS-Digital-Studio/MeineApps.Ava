@@ -74,10 +74,9 @@ Desktop: Callbacks bleiben null, kein Foreground-Service-Aufruf.
 
 ## Abhängigkeiten
 
-- `MeineApps.Core.Ava`, `MeineApps.UI`
-- `sqlite-net-pcl` + `SQLitePCLRaw.bundle_green`
-- `SkiaSharp` + `Avalonia.Labs.Controls`
-- **Kein `MeineApps.Core.Premium` — komplett werbefrei**
+Libraries: `MeineApps.Core.Ava`, `MeineApps.UI`. Zusätzlich `Avalonia.Labs.Controls`.
+Package-Versionen zentral in `Directory.Packages.props` (→ Haupt-CLAUDE.md).
+**Kein `MeineApps.Core.Premium` — komplett werbefrei, keine Linked-Files.**
 
 ---
 

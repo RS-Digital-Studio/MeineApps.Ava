@@ -35,14 +35,15 @@ null → Fallbacks/Mocks (gewollt). Generisches Pattern → [Core.Ava-CLAUDE.md]
 1. **`IAppPaths`** — MUSS als erstes registriert werden (`ProjectService`, `ExportService`, `SettingsViewModel` hängen davon ab).
 2. **`IPreferencesService`** → `PreferencesService("SmartMeasure")`.
 3. **`IBleService`** / **`IArCaptureService`** — plattform-spezifisch oder Mock.
-4. **Fachliche Services** (alle Singleton): `IMeasurementService`, `ICoordinateService`,
+4. **`IHardwareModeService`** — hängt von `IBleService` ab (Schritt 3), muss danach kommen.
+5. **Fachliche Services** (alle Singleton): `IMeasurementService`, `ICoordinateService`,
    `IGeoidService`, `ITerrainService`, `IGardenPlanService`, `IProjectService`,
    `IExportService`, `IBlenderExportService`, `IArTransferService`,
    `IDifferentialSnapshotService`, `IGnssConditionService`, `IVolumeService`,
    `ITotalStationService`, `ILeastSquaresAdjustmentService`,
    `IVoiceAnnotationService`, `ISurveyReportService`, `ISceneReconstructionService`,
    `IMultiUserSessionService`.
-5. **ViewModels** (alle Singleton): `MainViewModel`, `ConnectViewModel`, `SurveyViewModel`,
+6. **ViewModels** (alle Singleton): `MainViewModel`, `ConnectViewModel`, `SurveyViewModel`,
    `TerrainViewModel`, `GardenPlanViewModel`, `MapViewModel`, `ProjectsViewModel`,
    `StakeoutViewModel`, `SettingsViewModel`.
 

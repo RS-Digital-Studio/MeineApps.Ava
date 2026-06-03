@@ -2,17 +2,18 @@
 
 Enthält die Domänenklassen (reine Daten) und die `CraftEngine` (Berechnungslogik).
 Namespace: `HandwerkerRechner.Models`.
+Conventions, Architektur und Patterns → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ## Dateien
 
 | Datei | Zweck |
 |-------|-------|
-| `CraftEngine.cs` | Alle 19 Berechnungsalgorithmen + Result-Records + Enums. Schutz gegen Infinity/NaN. |
+| `CraftEngine.cs` | 28 Berechnungsalgorithmen + Result-Records + Enums. Schutz gegen Infinity/NaN. |
 | `Project.cs` | Gespeichertes Handwerker-Projekt: GUID-ID, Name, CalculatorType, DataJson, Fotos, Notizen. |
-| `ProjectTemplate.cs` | Vorlage mit Property-Key/Value-Paaren (konsistent mit Calculator-VM-Keys). |
-| `MaterialPrice.cs` | Material-Preis pro Region/Land. |
-| `Quote.cs` | Angebot: QuoteItems, MwSt/Marge-Berechnung, `QuoteStatus`-Enum. |
-| `CalculatorCategory.cs` | Enum für die Kategorie eines gespeicherten Projekts (CalculatorType). |
+| `ProjectTemplate.cs` | Vorlage mit `TemplateCalculatorEntry`-Liste (Route, CalculatorType, DefaultValues-Dictionary). |
+| `MaterialPrice.cs` | Material-Preis mit `DefaultPrice` (Deutschland-Durchschnitt) und `CustomPrice` (Benutzer-Override). `EffectivePrice` wählt automatisch. |
+| `Quote.cs` | Angebot: `QuoteItem`-Liste, MwSt/Marge-Berechnung, `QuoteStatus`-Enum, `QuoteItemType`-Enum. |
+| `CalculatorCategory.cs` | Enum `CalculatorCategory` (Gruppen) + Enum `CalculatorType` (28 einzelne Rechner). |
 
 ## CraftEngine — Design-Entscheidungen
 
@@ -35,26 +36,46 @@ Division-durch-Null-Schutz als Inline-Guard: `if (area <= 0) area = 0.001`.
 
 ### DIN-konforme Algorithmen
 
-- **Treppen (DIN 18065):** Schrittmaßregel `2h + g = 63 cm`. `IsComfortable` (59-65 cm),
-  `IsDinCompliant` (Höhe 14-21 cm, Auftritt 21-35 cm).
+- **Treppen (DIN 18065):** Schrittmaßregel `2h + g = 63 cm`. `IsComfortable` (59–65 cm),
+  `IsDinCompliant` (Höhe 14–21 cm, Auftritt 21–35 cm).
 - **Kabelquerschnitt (DIN VDE 0100-520):** Standardquerschnitte `{1.5, 2.5, 4.0, …, 120.0}` mm².
   3%-Limit (Beleuchtung), 5% für Steckdosen.
 - **Drehstrom-Faktor:** `√3` statt `2` wenn `isThreePhase=true` (400V-Drehstrom-Sternpunkt).
+  Gilt sowohl für `CalculateVoltageDrop` als auch `CalculateCableSize`.
 
 ### Fugenmasse-Formel (GroutResult)
 
 Industrieformel für Verbrauch in kg/m²:
 
 ```
-consumptionPerSqm = ((L_mm + B_mm) / (L_mm × B_mm)) × Fugenbreite × Fugentiefe × Dichte / 1000
+consumptionPerSqm = ((L_mm + B_mm) / (L_mm × B_mm)) × Fugenbreite_mm × Fugentiefe_mm × Dichte
 ```
 
-Alle Maße intern in mm umgerechnet. 10% Reserve inkludiert. Eimer à 5 kg als Einheit.
+Alle Maße intern in mm. Die Formel ergibt direkt kg/m² (ohne zusätzlichen /1000-Faktor —
+die Einheiten heben sich heraus). 10% Reserve inkludiert. Eimer à 5 kg als Einheit.
 
 ### Result-Records
 
 Alle Berechnungsergebnisse als immutable `record`-Typen (`init`-only Properties).
 Kein Zustand in Results — Calculator-VMs cachen nur den jeweils letzten Result.
+
+## Rechner-Übersicht (CalculatorType — 28 Einträge)
+
+| Kategorie | Rechner | FREE/PREMIUM |
+|-----------|---------|--------------|
+| Boden & Wand | Tiles, Wallpaper, Paint, Flooring, ConcreteSlab, ConcreteStrip, ConcreteColumn | FREE |
+| Raum/Trockenbau | DrywallFraming, Baseboard | PREMIUM |
+| Elektriker | VoltageDrop, PowerCost, OhmsLaw | PREMIUM |
+| Schlosser/Metall | MetalWeight, ThreadDrill | PREMIUM |
+| Garten & Landschaft | Paving, Soil, PondLiner | PREMIUM |
+| Dach & Solar | RoofPitch, RoofTiles, SolarYield | PREMIUM |
+| Treppen | Stairs | PREMIUM |
+| Putz | Plaster | PREMIUM |
+| Estrich | Screed | PREMIUM |
+| Dämmung | Insulation | PREMIUM |
+| Leitungsquerschnitt | CableSizing | PREMIUM |
+| Fugenmasse | Grout | PREMIUM |
+| Profi-Werkzeuge | HourlyRate, MaterialCompare, AreaMeasure | PREMIUM |
 
 ## Project — DataJson-Cache
 
@@ -67,8 +88,10 @@ Kein Zustand in Results — Calculator-VMs cachen nur den jeweils letzten Result
 Alle Geldwerte in `Quote` sind **berechnete Properties** (kein Persistieren):
 
 ```csharp
-public double SubtotalNet => Items.Sum(i => i.Total);
+public double SubtotalNet  => Items.Sum(i => i.Total);
 public double MarginAmount => SubtotalNet * MarginPercent / 100;
+public double TotalNet     => SubtotalNet + MarginAmount;
+public double VatAmount    => TotalNet * VatPercent / 100;
 public double TotalGross   => TotalNet + VatAmount;
 ```
 

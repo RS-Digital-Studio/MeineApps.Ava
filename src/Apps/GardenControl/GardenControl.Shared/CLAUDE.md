@@ -24,16 +24,19 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 **Android-Zweig** (`IActivityApplicationLifetime`): `MainViewFactory = () => new MainView { DataContext = _mainVm }`.
 Avalonia 12 ruft die Factory pro Activity-Instanz neu auf — `_mainVm` bleibt Singleton im DI-Container.
 
+**iOS-Fallback** (`ISingleViewApplicationLifetime`): `singleView.MainView = new MainView { DataContext = _mainVm }`.
+Derselbe Singleton-`_mainVm` — keine separate Initialisierung nötig.
+
 **Cleanup**: `desktop.ShutdownRequested` → `await _mainVm.DisposeAsync()` (SignalR-Verbindung sauber trennen).
 
 ## Namespace-Konvention
 
 | Ordner | Namespace |
 |--------|-----------|
-| `ViewModels/` | `GardenControl.ViewModels` |
-| `Views/` | `GardenControl.Views` |
-| `Services/` | `GardenControl.Services` |
-| `Controls/` | `GardenControl.Controls` |
+| `ViewModels/` | `GardenControl.Shared.ViewModels` |
+| `Views/` | `GardenControl.Shared.Views` |
+| `Services/` | `GardenControl.Shared.Services` |
+| `Controls/` | `GardenControl.Shared.Controls` |
 
 ## Unterordner
 

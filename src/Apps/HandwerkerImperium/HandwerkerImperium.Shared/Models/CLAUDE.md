@@ -38,11 +38,11 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `Worker.cs` | 10 Tiers (F–Legendary), EffectiveEfficiency-Formel, MaterialAffinity-Enum. `HiringCost` persistiert (`[JsonPropertyName("hiringCost")]`) — Marktpreise bleiben nach Neustart korrekt |
 | `Order.cs` | Alle Order-Typen, MaterialOffer-Felder, PausedAt/AccumulatedPauseDuration, ExpiresAt |
 | `Workshop.cs` | WorkshopType-Enum, Spezialisierung, Rebirth-Sterne |
-| `CraftingRecipe.cs` | 30 Rezepte (10 Workshops × 3 Tiers). `GetEffectiveInputs()` filtert Cross-Workshop-Inputs unter Spielerlevel 100 |
-| `Research.cs` | 45 Forschungs-Nodes, Branches (Management/Craft/Logistics + Guild-spezifisch) |
-| `ResearchTree.cs` | Node-Graph, Abhängigkeits-Checks |
-| `MasterTool.cs` | 12 Artefakte, 5 Seltenheiten, Freischalt-Bedingungen |
-| `GuildResearch.cs` | 18 Gilde-Forschungen, 6 Kategorien, Effekte |
+| `CraftingRecipe.cs` | 33 Rezepte (10 Workshops × 3 Tiers + 3 Tier-4-Manufaktur). `GetEffectiveInputs()` filtert Cross-Workshop-Inputs unter Spielerlevel 100 |
+| `Research.cs` | Research-Datenklasse (persistiert). Branches: Tools/Management/Marketing/Logistics |
+| `ResearchTree.cs` | Statischer Katalog aller ~57 Nodes (`CreateAll()` + Branch-Methoden), Abhängigkeits-Ketten |
+| `MasterTool.cs` | 12 Artefakte (`MasterToolDefinition`), 5 Seltenheiten, Freischalt-Bedingungen |
+| `GuildResearch.cs` | 18 Gilde-Forschungen (`GuildResearchDefinition`), 6 Kategorien, Effekte |
 | `PrestigeData.cs` | Prestige-Verlauf, Meilensteine, Challenges, PrestigesSinceLastWeeklyReward |
 | `AscensionData.cs` | 6 Perks × MaxLevel 3, AP-Punkte |
 | `AscensionPerk.cs` | Perk-Definition + Effekt-Beschreibung |
@@ -52,15 +52,15 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 ## Enums (Models/Enums/)
 
 Wichtige Enums: `ActivePage`, `WorkshopType`, `WorkerTier`, `PrestigeTier`, `OrderType`,
-`WorkshopSpecializationType`, `ResearchBranch`, `GraphicsQuality`, `ImperiumSubTab`,
-`CustomerReputationTier`, `MaterialAffinity`.
+`SpecializationType` (in `WorkshopSpecialization.cs`), `ResearchBranch`, `GraphicsQuality`,
+`ImperiumSubTab`, `CustomerReputationTier`, `MaterialAffinity`.
 
 ---
 
 ## Firebase-DTOs (Models/Firebase/)
 
 DTOs für Firebase Realtime Database: `FirebaseGuildData`, `FirebaseGuildMember`,
-`FirebaseCoopOrder`, `FirebaseWorkerAuction`, `FirebaseGuildMegaProject`.
+`CoopOrderState`, `WorkerAuctionState`, `GuildMegaProject`, `GuildWar`, `Gift`, `ChatMessage`.
 HMAC-Signierung über stabile Felder (kein `updatedAt` in der Hash-Basis — ändert sich bei jedem Write).
 
 ---

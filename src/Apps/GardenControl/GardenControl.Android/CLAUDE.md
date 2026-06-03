@@ -10,7 +10,7 @@ AdMob-/Billing-/Linked-Files). Generische Android-Patterns → [Haupt-CLAUDE.md]
 |-------|-------|
 | `AndroidApp.cs` | `AvaloniaAndroidApplication<App>` — Avalonia initialisiert sich hier **einmal pro Prozess**. `CustomizeAppBuilder().WithInterFont()`. |
 | `MainActivity.cs` | `AvaloniaMainActivity` (kein `<App>`-Generic in Avalonia 12). VM-Referenz für Back-Button + Exit-Toast. |
-| `AndroidManifest.xml` | Package `com.meineapps.gardencontrol`, `MyTheme.NoActionBar`, Netzwerk-Permissions. |
+| `AndroidManifest.xml` | `MyTheme.NoActionBar`, Netzwerk-Permissions. Package-ID `com.rsdigital.gardencontrol` steht in der `.csproj`. |
 | `Resources/values/styles.xml` | `MyTheme.NoActionBar`. |
 | `Resources/mipmap-*` | App-Icon. |
 

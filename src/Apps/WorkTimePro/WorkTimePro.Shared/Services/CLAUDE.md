@@ -12,13 +12,13 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `ICalculationService` | `CalculationService` | Netto-Arbeitszeit, Auto-Pause, Saldo, §3 ArbZG Compliance |
 | `IExportService` | `ExportService` | PDF (PdfSharpCore), Excel (ClosedXML), CSV |
 | `ICalendarExportService` | `CalendarExportService` | ICS (RFC 5545, importierbar in Google/Apple/Outlook) |
-| `IVacationService` | `VacationService` | 9 Status-Typen, Resturlaub, Übertrag |
+| `IVacationService` | `VacationService` | 9 Abwesenheits-Typen (DayStatus-Subset), Resturlaub, Übertrag |
 | `IHolidayService` | `HolidayService` | DE (16 BL), AT (9 BL), CH (12 Kantone) |
 | `IProjectService` | `ProjectService` | Projekte: CRUD + Stunden-Aggregation aus TimeEntry |
 | `IShiftService` | `ShiftService` | Schichtplanung: wiederkehrende Muster + Einzelzuweisungen |
 | `IEmployerService` | `EmployerService` | Arbeitgeber: Default-Flag, Stunden-Aggregation |
 | `IBackupService` | `BackupService` | JSON-Backup/Restore mit Safety-Backup, BulkRestore |
-| `INotificationService` | `DesktopNotificationService` / `AndroidNotificationService` | Plattform-abstrakt |
+| `INotificationService` | `DesktopNotificationService` (Shared) / `AndroidNotificationService` (in `.Android`) | Plattform-abstrakt |
 | `IReminderService` | `ReminderService` | 5 Reminder-Typen, subscribed auf `StatusChanged` |
 
 ## DatabaseService — Architektur
@@ -37,8 +37,8 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 Arbeitszeiten (CheckIn/Out, Pausen) verwenden **`DateTime.Now`** (Ortszeit), weil alle
 Anzeigen lokale Uhrzeiten erwarten. Audit-Timestamps (`CreatedAt`/`ModifiedAt`) verwenden `DateTime.UtcNow`.
 
-`GetLiveDataSnapshotAsync()` liefert WorkTime, PauseTime, TimeUntilEnd in **einem** Snapshot
-(3 DB-Queries statt 5+) — verhindert Query-Sturm im 1s-Timer.
+`GetLiveDataSnapshotAsync()` liefert WorkTime, PauseTime, TimeUntilEnd + Today-WorkDay in
+**einem** Snapshot (3 DB-Queries statt 5+) — verhindert Query-Sturm im 1s-Timer.
 
 `_cachedWorkTimeTicks` als `long` + `Interlocked`-Zugriff: `TimeSpan` (8 Bytes) ist auf 32-Bit
 nicht atomar lesbar — daher als Ticks gespeichert.

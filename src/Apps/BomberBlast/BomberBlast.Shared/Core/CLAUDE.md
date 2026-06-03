@@ -1,6 +1,6 @@
 # Core — GameEngine & Simulation
 
-Herz der Spiellogik. `GameEngine` (~7.450 LOC, 5 Partials), Modes, Combat, Audio, Multiplayer-
+Herz der Spiellogik. `GameEngine` (~7.300 LOC, 5 Partials), Modes, Combat, Audio, Multiplayer-
 und Replay-Foundation. Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
@@ -19,7 +19,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 ### Game Loop
 
 ```
-DispatcherTimer (16ms) → GameView.OnTimerTick()
+DispatcherTimer (16ms) → GameView.OnRenderTick()
     → GameEngine.Update(deltaTime)          # Physik, AI, Bomben, State
     → canvas.InvalidateSurface()            # Triggert PaintSurface
     → GameEngine.RenderFrame(canvas)        # Render-Delegation
@@ -41,7 +41,12 @@ Exceptions hängen keinen SaveLayer-Stack auf. `InputManager.Dispose()` ist idem
 interface IGameMode {
     string ModeTag { get; }
     void Initialize(GameModeContext ctx);
+    void OnLevelStart(GameModeContext ctx);
     void UpdateLogic(float deltaTime, GameModeContext ctx);
+    void OnEnemyKilled(GameModeContext ctx);
+    void OnBombExploded(GameModeContext ctx);
+    void OnPlayerHit(GameModeContext ctx);
+    float GetScoreModifier(GameModeContext ctx);
     bool OnLevelComplete(GameModeContext ctx);
     void OnGameOver(GameModeContext ctx);
     void Cleanup(GameModeContext ctx);
@@ -51,6 +56,11 @@ interface IGameMode {
 8 Implementierungen in `Modes/GameModes.cs` (alle erben von `GameModeBase` mit no-op-Defaults):
 `StoryMode`, `MasterMode`, `DailyChallengeMode`, `QuickPlayMode`, `SurvivalMode`,
 `DungeonMode`, `BossRushMode`, `DailyRaceMode`.
+
+**Aktueller Stand**: Das Framework ist ein Skeleton. Die bestehenden 8 Modi laufen noch parallel
+zu den Bool-Flags in `GameEngine.cs` (`_isStoryMode`, `_isSurvivalMode` usw.). Neue Modi
+**müssen** `IGameMode` implementieren — kein weiterer Bool-Flag. Migration der alten Modi
+läuft inkrementell.
 
 **Property-Alias-Pattern für State-Migration** (DungeonMode):
 
@@ -64,10 +74,6 @@ private DungeonMode? DungeonModeState => _currentMode as DungeonMode;
 
 30+ Aufrufstellen bleiben unverändert, State lebt im Mode-Objekt.
 
-**Wichtig**: `UpdateLogic`/`OnLevelComplete`-Hooks werden aktuell aufgerufen
-(`GameEngine.Update` ruft `_currentMode?.UpdateLogic` + `OnGameOver`). Bool-Flag-Routing-
-Switch bleibt als Hot-Path-Convenience — Property-Match wäre pro Frame teurer.
-
 ---
 
 ## Unterordner
@@ -76,7 +82,7 @@ Switch bleibt als Hot-Path-Convenience — Property-Match wäre pro Frame teurer
 
 | Datei | Zweck |
 |-------|-------|
-| `IGameMode.cs` | Plugin-Interface |
+| `IGameMode.cs` | Plugin-Interface + `GameModeContext` |
 | `GameModes.cs` | 8 Implementierungen + `GameModeBase` |
 | `SurvivalSpawner.cs` | Static, zustandslos — `SurvivalMode` hält den State |
 
@@ -84,9 +90,9 @@ Switch bleibt als Hot-Path-Convenience — Property-Match wäre pro Frame teurer
 
 | Datei | Zweck |
 |-------|-------|
-| `ComboSystem.cs` | Instanz-Klasse: Kill-Fenster, Score-Bonus, Slow-Mo-Trigger. In `GameEngine` als `_comboSystem`-Field. `_comboCount/_comboTimer` in GameEngine sind read-only Aliases → Renderer-Kompatibilität |
+| `ComboSystem.cs` | Instanz-Klasse: Kill-Fenster, Score-Bonus, Slow-Mo-Trigger. In `GameEngine.Collision.cs` als `_comboSystem`-Field instanziiert. `_comboCount/_comboTimer` in GameEngine sind read-only Aliases → Renderer-Kompatibilität |
 | `SpecialExplosionEffects.cs` | Static, 13 `Handle*`-Methoden, `ExplosionEffectsContext` (Callback-Delegates für Engine-Mutations) |
-| `EnemyPositionIndex.cs` | Singleton (DI), O(1)-Spatial-Lookup via Dirty-Flag-Rebuild |
+| `EnemyPositionIndex.cs` | Direkt in `GameEngine.Collision.cs` als Feld instanziiert (`new()`), kein DI. O(1)-Spatial-Lookup, Listen-Reuse, periodischer Cleanup alle 120 Aufrufe |
 
 ### `LevelGeneration/`
 
@@ -104,7 +110,7 @@ Switch bleibt als Hot-Path-Convenience — Property-Match wäre pro Frame teurer
 | Datei | Zweck |
 |-------|-------|
 | `AudioBus.cs` | 7-Kanal-Volume-Bus (Master/Music/Ambient/Sfx/Ui/Voice/Cinematic) |
-| `AudioBusMixer.cs` | Duck-API (`Duck(bus, multiplier, duration)`) + Boost-API (`Boost(bus, multiplier, duration)`, Cap 1.5). Recovery: Duck linear 2.0/s, Boost linear 0.5/s |
+| `AudioBusMixer.cs` | Duck-API (`Duck(bus, multiplier, duration)`) + `DuckForCinematic()`-Convenience. Recovery: linear abklingend via `Update(float)`. |
 | `SoundVariationPool.cs` | Anti-Repeat-Pool (Brawl-Stars-Pattern). Suffix `_a/_b/_c/_d`. |
 | `AudioSpatial.cs` | Stereo-Pan via GridX/Grid.Width. Distance-Falloff, Equal-Power-Crossfade. |
 
@@ -116,7 +122,8 @@ Switch bleibt als Hot-Path-Convenience — Property-Match wäre pro Frame teurer
 
 ### `Multiplayer/`
 
-Nur Foundation. Engine-Integration ist eigener Sprint.
+Engine-Integration teilweise vorhanden: `GameEngine.cs` hat `EnableMultiplayer()`,
+`UpdatePlayer2Movement()`, `IsCoOpGameOver()`, `TryPlaceBombPlayer2()`. Wire-up vollständig.
 
 | Datei | Zweck |
 |-------|-------|
@@ -140,18 +147,20 @@ Nur Foundation. Engine-Integration ist eigener Sprint.
 | `GameLoopSettings.cs` | TargetFps (30/60) via `IPreferencesService`. `Initialize()` in App.axaml.cs aufrufen. |
 | `SoundManager.cs` | `PlayPooled()`, `PlayAt(grid)`, `PlayStinger(key)`, `PlayVoice(key)`. ±5% Pitch + ±10% Volume-Variation. |
 | `DeterministicRandom.cs` | xoshiro256+, Public Domain, SplitMix64-Seed. `GetState/SetState` für Replay. |
-| `FixedTimestepRunner.cs` | 60-Hz-Akkumulator. Via Flag im Engine-Update aktivierbar (Foundation, nicht default). |
-| `IRngProvider.cs` | Interface für deterministischen RNG. DI: `DeterministicRngProvider`. Visual-Random bleibt `SystemRngProvider`. |
+| `FixedTimestepRunner.cs` | 60-Hz-Akkumulator. Via `GameEngine.FixedTimestepEnabled` aktivierbar. |
+| `IRngProvider.cs` | Interface für deterministischen RNG. Im Variable-Mode `SystemRngProvider`, im Fixed-Mode `DeterministicRngProvider`. |
 | `ReplayCapture.cs` | 1-Byte/Tick Input-Stream. Schema-V1. 108k-Tick-Cap = 30 min @ 60 Hz, ~5-10 KB RLE. |
 
 ---
 
 ## Wichtige Gotchas
 
-### StartRenderLoop() — kein StopRenderLoop()
+### StartRenderTimer() — kein StopRenderTimer() wenn Loop pausiert werden soll
 
-In `StartRenderLoop()` NUR `_renderTimer?.Stop()` aufrufen.
-`StopRenderLoop()` setzt `_gameCanvas = null` → Render-Loop-Tod nach nächstem Tick.
+`StartRenderTimer()` und `StopRenderTimer()` leben in `GameView.axaml.cs` (nicht in Core).
+`StopRenderTimer()` entfernt den Tick-Handler und setzt `_renderTimer = null` — dadurch wird
+der Loop nach dem nächsten Tick nicht mehr ausgeführt. Korrekte Pause: nur `_renderTimer.Stop()`
+ohne Tick-Handler-Entfernung.
 
 ### Cinematic.Stop() bei Mode-Wechsel
 

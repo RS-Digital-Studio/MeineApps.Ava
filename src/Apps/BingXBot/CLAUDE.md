@@ -7,7 +7,7 @@ USDT-margined Perpetual Futures (Crypto + TradFi-Perps via NC-Prefix).
 | Aspekt | Wert |
 |--------|------|
 | Topologie | Pi-Server (Engine, 24/7) + Desktop/Android Remote-Clients |
-| Strategie | **TrendFollow-Fast** (Donchian-Breakout, H4-only) — Live-Default seit 31.05.2026 |
+| Strategie | **TrendFollow-Fast** (Donchian-Breakout, H4-only) — Live-Default |
 | Exchange | BingX Perpetual Futures (USDT-M) |
 | Pi-Server | `steuerung@raspberrypi.local` (systemd-Service `bingxbot.service`) |
 
@@ -303,55 +303,33 @@ Aus `LiveTradingService` extrahierte pure-function- und Manager-Klassen:
 
 Alle Strategien implementieren `IStrategy` (`Evaluate(MarketContext) → SignalResult`). Die
 Order-Pipeline (Scanner → Evaluate → RiskManager → Order) ist strategie-agnostisch; die aktive
-Strategie wählt `BotSettings.LastStrategyName`. Empirisch verglichen über das Backtest-Lab
-(`tools/BingXBacktestLab`) auf echten BingX-Klines.
+Strategie wählt `BotSettings.LastStrategyName`. **Produktiv freigeschaltet ist nur
+`TrendFollow-Fast`** (`StrategyFactory.AvailableStrategies`). `Create()` kennt zusätzlich die
+Backtest-Vergleichsvarianten `TrendFollow`, `-Wide`, `-Strong`, `-Fast-Chop`, `-Fast-BO`,
+`-Fast-ChopBO` — sie dienen nur dem Lab-Vergleich (`tools/BingXBacktestLab`) und stehen nicht in
+der UI-Auswahl. Strategie-Tuning, Sweep-Ergebnisse und verworfene Hebel → `tools/BingXBacktestLab/CLAUDE.md`.
 
-**`IStrategy.RequiresHigherTimeframeContext`** (Default true): Steuert ob der Scan W1/D1-Fahrplan-
-Kerzen pro Symbol lädt. SK = true (nutzt Fahrplan), TrendFollow = false (reiner H4-Navigator → spart
-2 Klines-Calls/Symbol). D1 für BTC wird unabhängig geladen (BTC-Health).
+**`TrendFollow-Fast`**: Donchian(10)-Breakout in Trend-Richtung, EMA(34) + ADX(18)/DMI,
+Market-Entry, ATR-SL **×2.75**, RRR 1.5/3.0, **H4-only** (H1 ist konsistent unprofitabel). Handelt
+**mit** dem Markt mit weitem Stop und hohem RRR → minimaler Backtest-Live-Gap. ATR-SL statt fixer
+Pips umgeht den TradFi-Pip-Bug. Die Parameter (ADX 18 / RRR 1.5-3.0 / BE 2.0 / Donchian 10 / EMA 34 /
+SL 2.75) sind per Walk-Forward über alle Marktphasen optimiert.
+
+**`IStrategy.RequiresHigherTimeframeContext`** (Default true): steuert, ob der Scan W1/D1-Fahrplan-
+Kerzen pro Symbol lädt. TrendFollow gibt **false** zurück (reiner H4-Navigator → spart 2 Klines-Calls/
+Symbol, Pi-Rate-Limit-Budget). D1 für BTC wird unabhängig geladen (BTC-Health).
 
 **Break-Even-Gate** (`TradingServiceBase` PriceTickerLoop): Der BE-Block (A-Bruch ODER 2x-SL-Distanz,
-`BreakevenCalculator`) ist über `signal.DisableSmartBreakeven` aktiviert — historisch invertiert
-benannt (der frühere ATR-Smart-BE wurde im Buch-Strip entfernt; `true` = "nutze A-Bruch/2x-SL-BE").
-**Jede neue Strategie, die Break-Even will, MUSS `DisableSmartBreakeven: true` setzen** (SK + TrendFollow
-tun das; mit `NavPointA=0` greift der Distanz-Trigger). Der Distanz-Trigger ist konfigurierbar via
-`RiskSettings.BreakevenTriggerRMultiple` (Default 2.0 = BE bei 2R; 0 = nur A-Bruch). Empirisch (Backtest-Lab,
-TrendFollow-Fast, 3 Marktphasen) ist 2R optimal — aggressiveres BE schneidet Gewinner zu frueh ab.
-
-| Strategie | Typ | H4-PF (3 Marktphasen, gefixt) | Status |
-|-----------|-----|-------------------------------|--------|
-| **TrendFollow-Fast** | Donchian(10)-Breakout in Trend-Richtung, EMA(34)+ADX/DMI, Market-Entry, ATR-SL **×2.75**, RRR 1.5/3.0 | **5.4 / 2.0 / 2.8** (alle 3 profitabel) | **Live-Default, H4-only** |
-| TrendFollow (Standard, Don 20/EMA 50) | wie Fast, traegere Parameter | 5.3 / **0.95** / 1.7 (Mittelphase verlierend) | optional |
-| TrendFollow-Wide / -Strong | TrendFollow-Varianten | gemischt (Strong Mittelphase 0.78) | optional |
-
-**Warum TrendFollow-Fast (H4-only) Live-Default ist:** TrendFollow handelt **mit** dem Markt, mit weiter ATR-SL,
-hohem RRR und **Market-Entry** — minimaler Backtest-Live-Gap. Empirisch (gefixtes Lab, echte Klines, 3 disjunkte
-Marktphasen): **H1 ist konsistent unprofitabel** (PF 0.4–0.99 über alle Strategien) → nur H4. **TrendFollow-Fast**
-ist die einzige Variante, die auf H4 in allen 3 Phasen profitabel ist. Realistischer Live-PF ~2. Longs liefen 2023–2026
-schwächer (28–45% WR) als Shorts — marktphasen-abhängig, offener Verbesserungs-Hebel. Umgeht den TradFi-Pip-Bug (ATR statt fixe Pips).
-Details + Lab → `tools/BingXBacktestLab/CLAUDE.md`.
-
-**SL-Tuning (Backtest-Lab-Sweep, 2026-06-03):** ATR-SL-Multiplikator von 2.5 auf **2.75** angehoben (in
-`StrategyFactory."TrendFollow-Fast"`). Parameter-Sweep + Walk-Forward (`tools/BingXBacktestLab --sweep`/`--full`,
-21 may-live-Symbole, durchgehend 2024-06..2026-05 = alle Marktphasen) bestaetigte ADX 18 / RRR 1.5-3.0 / BE 2.0 /
-Donchian 10 / EMA 34 als optimal — einziger verbesserter Hebel war der SL: **2.75 ist das robuste Optimum**
-(durchgehende 2J: PF 3.75 vs 2.53, WinRate 70.7 % vs 65.7 %, Shorts 76 % vs 65 % WR — der weitere Stop ueberlebt
-die Short-Whipsaws, adressiert den oben genannten Long/Short-Hebel). Glatter Peak (2.5↗**2.75**↘3.0↘3.25); >3.0
-bricht ein (Train-negativ + zu wenige Trades). Der Train/Test-Split favorisierte zunaechst faelschlich 3.0
-(Train-Peak-Artefakt) — erst der durchgehende 2J-Lauf (alle Phasen in einem Fenster) deckte 2.75 auf.
-
-**Verworfene Hebel (2026-06-03, alle backtest-schlechter als der Stand — nicht erneut probieren):** D1-Timeframe
-(PF 0.61, nur 17 Trades/2J), Runner/ATR-Trailing statt festem TP2 (PF 2.90 vs 3.75 — das Trailing stoppt normale
-Pullbacks aus), Chop-Filter `requireRisingAdx` (PF 3.26) und Mindest-Ausbruch-Filter `minBreakoutAtr` (PF 2.21,
-WinRate 54 %). **Lehre:** zusaetzliche Entry-Filter gegen Trendwende-Fakeouts werfen mehr gute Trades weg als
-schlechte — die Fakeout-Verluste sind im RRR 1.5/3.0 + weiten ATR-SL bereits eingepreist (70.7 % WinRate zeigt,
-dass EMA34/ADX18/DMI als Basisfilter genuegen). TrendFollow-Fast ist parametrisch **ausgereizt**; echte weitere
-Verbesserung nur noch ueber Live-Validierung (Backtest-Live-Gap) oder Regime-Switch, nicht ueber mehr Backtest-Tuning.
+`BreakevenCalculator`) ist über `signal.DisableSmartBreakeven` aktiviert — invertiert benannt
+(der frühere ATR-Smart-BE wurde entfernt; `true` = "nutze A-Bruch/2x-SL-BE"). **Jede neue Strategie,
+die Break-Even will, MUSS `DisableSmartBreakeven: true` setzen** (TrendFollow tut das; mit `NavPointA=0`
+greift der Distanz-Trigger). Der Distanz-Trigger ist konfigurierbar via
+`RiskSettings.BreakevenTriggerRMultiple` (Default 2.0 = BE bei 2R; 0 = nur A-Bruch).
 
 `RuntimeState` (TradesToday, ConsecutiveLosses) wird mit dem Strategie-Namen getaggt:
-`LiveTradingManager` setzt die Loss-Streak bei Strategiewechsel zurueck. **Zusaetzlich** (Audit-Fix 31.05.):
-der UTC-Tageswechsel ruft `RiskManager.SetConsecutiveLosses(0)` — ohne das blieb der RiskManager-Counter
-bei ≥ PauseAtCount stehen → Scaling 0 → kein Trade → selbsterhaltende Dauerpause (die SK-Falle).
+`LiveTradingManager` setzt die Loss-Streak bei Strategiewechsel zurück. **Zusätzlich** ruft der
+UTC-Tageswechsel `RiskManager.SetConsecutiveLosses(0)` — ohne das blieb der RiskManager-Counter
+bei ≥ PauseAtCount stehen → Scaling 0 → kein Trade → selbsterhaltende Dauerpause.
 
 ---
 
@@ -373,7 +351,7 @@ bei ≥ PauseAtCount stehen → Scaling 0 → kein Trade → selbsterhaltende Da
 - **StopLossSanityGuard** (`BingXBot.Core/Services/`): Pure-Function-Validator vor jedem
   SL-Push (BE-Trigger, Runner-Trail, Partial-Close-SL/TP, Recovery-BE,
   `BingxNativeSlTpManager.UpdateNativeStopLossAsync`). Reject = WARNING + Push verweigert.
-  Schuetzt vor "Long-SL ueber Entry" (DOGE-Bug aus dem Snapshot vom 2026-05-17).
+  Schützt vor "Long-SL über Entry" (fehlerhaft platzierter SL auf der falschen Entry-Seite).
   Buffer `MaxBreakevenBufferPercent=0.5 %` ueber/unter Entry erlaubt — Werte darueber nur
   mit `RunnerActive=true`.
 
@@ -450,14 +428,13 @@ SQLite WAL-Modus für Multi-Mode-Concurrency. Schema-Versioning via `RunMigratio
 | `Logs` | Log-Einträge (LogEntity) |
 | `Settings` | JSON-blob pro Settings-Block (Risk/Scanner/Bot/Backtest) + `AutoResumeFlag` + `LastHeartbeatUtc` als separate Keys |
 | `BacktestJobs` | Backtest-Job-Metadaten (BacktestJobEntity) |
-| `SettingsChanges` | Audit-Trail für Settings-Diffs (Migration v12) |
+| `SettingsChanges` | Diff-Trail für Settings-Änderungen |
 | `RuntimeState` | TradesToday, ConsecutiveLosses, ExitStates (JSON-Blobs für Crash-Recovery) |
 
 ### Schema-Migration
 
-`RunMigrationsAsync` läuft bei Start. Aktuelle Versionen-Marker in CLAUDE.md NICHT
-dokumentiert (sind Code, nicht Doku). Schema-Änderungen sind additiv (kein `ALTER TABLE`,
-JSON-Blob-Toleranz).
+`RunMigrationsAsync` läuft bei Start. Schema-Änderungen sind additiv (kein `ALTER TABLE`,
+JSON-Blob-Toleranz) — Versions-Marker leben im Code, nicht hier.
 
 ### Backup + Archiv
 
@@ -484,8 +461,8 @@ JSON-Blob-Toleranz).
 
 `TradingServiceBase.ProcessCompletedTrade` ruft Fire-and-Forget
 `_dbService.SaveTradeAsync(trade)` auf — **alle** TP1/TP2/SL/Manual-Close-Pfade laufen
-darüber. Ohne diesen Hook (vor Mai 2026) sah die DB **keine** Live-Trades; SignalR-Push
-hielt sie nur im Client-RAM. Bei Fehler wird `LogLevel.Error` mit Trade-Kontext geloggt.
+darüber. Dieser Hook ist Pflicht: ohne ihn sähe die DB **keine** Live-Trades, SignalR-Push
+hielte sie nur im Client-RAM. Bei Fehler wird `LogLevel.Error` mit Trade-Kontext geloggt.
 
 `PostTradePersistHook` (optional) wird nach erfolgreichem `SaveTradeAsync` aufgerufen —
 verwendet für `EquitySnapshotService` (separater Equity-Punkt nach Close).
@@ -566,7 +543,7 @@ mit den letzten 10000 Trades aus DB rebuildet. Endpoint `/api/v1/stats/breakdown
 | `RiskSettingsView` | Risiko-Parameter (Risk/Margin/DD/Korrelation/Vol-Targeting/Pyramiding) |
 | `LogView` | Live-Log mit Level/Kategorie-Filter |
 | `SettingsView` | API-Keys, Server-Verbindung, Pairing, Theme, Push-Notifications |
-| `SettingsHistoryView` | Settings-Audit-Trail |
+| `SettingsHistoryView` | Settings-Änderungs-Historie (Diff-Trail) |
 
 Mobile-Variante via `ViewLocator`-Konvention: `DashboardView` → `DashboardViewMobile`,
 ausgewählt zur Laufzeit über `App.IsMobileShell`.
@@ -580,6 +557,7 @@ ausgewählt zur Laufzeit über `App.IsMobileShell`.
 | `PnlCalendarRenderer` | Tages-PnL-Heatmap |
 | `FearGreedGaugeRenderer` | Gauge-Anzeige für Fear & Greed / Markt-Sentiment |
 | `CorrelationMatrixRenderer` | Korrelations-Matrix für Cluster-Visualisierung |
+| `InteractiveChartRenderer` | Candlestick-Chart mit Zoom/Pan (Trade-Replay, Backtest) |
 
 ### `BotEventBus` (Singleton, ViewModel-zu-ViewModel)
 
@@ -604,30 +582,18 @@ Alle Child-VMs bekommen `IBotEventStream` (Local oder Remote) und ggf. weitere S
 Interfaces per Constructor-Injection. Optionale Parameter mit `?` für Demo-Modus ohne
 Exchange-Verbindung.
 
-### UI-Conventions
+### UI-Conventions (BingX-spezifisch)
 
-- Compiled Bindings (`x:CompileBindings="True"` + `x:DataType`) auf JEDER View-Root
+Generische MVVM-/Compiled-Binding-/DI-Regeln → [Haupt-CLAUDE.md](../../../CLAUDE.md). BingX-eigen:
+
 - Virtualisierung (`VirtualizingStackPanel`) in TradeHistory, Log, Backtest, Scanner
 - Monospace-Zahlen (Consolas) für Preise/PnL/Metriken
 - Dark-Mode Default (`ThemeVariant.Dark`), via `BotSettings.ThemePreference` umstellbar
 - Farbpalette: Primary `#3B82F6`, Background `#1E1E2E`, Profit `#10B981`, Loss `#EF4444`
 - Keyboard-Shortcuts: Ctrl+1–8 Navigation, F5/F6/F7/F12 Bot-Kontrolle, Escape → Dashboard
-
----
-
-## MVVM-Regeln (Strict, sonst Android-Crash)
-
-- `x:CompileBindings="True"` + `x:DataType` auf jeder View-Root
-- **KEIN** `App.Services.GetRequiredService<T>()` im View-Ctor — Android-Crash-Pattern
-- **KEIN** `DataContext = ...` im Code-Behind — `ViewLocator` setzt das
-- Services per Constructor-Injection ins ViewModel, **nicht** in die View
-- Commands per `[RelayCommand]`, keine Click-Handler im Code-Behind
-- Sub-VMs als DI-Properties im MainViewModel
-- `CurrentPageViewModel` + einzelnes `<ContentControl Content="{Binding CurrentPageViewModel}"/>`
-  — keine 8 gestapelten Border (Mobile-Shell-Crash)
-- Komplexe Views mit VM-Events: `DataContextChanged`-Pattern (sauber ab/anmelden)
-
-Bei Verdacht: Agent `mvvm-auditor` oder Skill `mvvm-check`.
+- **Mobile-Shell-Crash-Schutz**: ein einzelnes `<ContentControl Content="{Binding CurrentPageViewModel}"/>`
+  statt 8 gestapelter Border (Android lädt sonst alle 8 Views parallel im Konstruktor → Crash).
+- Komplexe Views mit VM-Events: `DataContextChanged`-Pattern (sauber ab/anmelden).
 
 ---
 
@@ -645,7 +611,7 @@ Bei Verdacht: Agent `mvvm-auditor` oder Skill `mvvm-check`.
 - `LocalBotEventStream` forwarded an `IBotEventStream.SettingsChanged`.
 - `BotHubEventForwarder` pusht via SignalR an alle Clients.
 - `RemoteSettingsService.RaiseChanged` ruft alle abonnierten ViewModels die ihren `LoadFromSettings`-Pfad neu durchlaufen.
-- Audit-Trail: `LocalSettingsService` baut Diff vor jedem Save → `SettingsChanges`-Tabelle.
+- Diff-Trail: `LocalSettingsService` baut Diff vor jedem Save → `SettingsChanges`-Tabelle.
 
 ### Settings-Persistenz-Race-Schutz
 
@@ -704,11 +670,10 @@ MinRRR per Kategorie: 1.0.
 - 7×24-Varianten (`Symbol.Contains("724")`): immer offen
 - Funding-Settlement ±5min Pause für ALLE Perps (Krypto + TradFi)
 
-### DateTime-Pattern
+### DateTime (BingX-API-spezifisch)
 
-- Persistenz: IMMER `DateTime.UtcNow` (NIE `DateTime.Now`)
-- Format: ISO 8601 `"O"` → `dt.ToString("O", CultureInfo.InvariantCulture)`
-- Parse: IMMER `DateTime.Parse(str, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)`
+Generisches UTC-/ISO-8601-Pattern → [Haupt-CLAUDE.md](../../../CLAUDE.md). BingX-eigen:
+
 - BingX `incomeType`: `REALIZED_PNL`, `FUNDING_FEE`, `TRADING_FEE`, `INSURANCE_CLEAR`, `ADL`, `TRANSFER`
 - BingX-API: `startTime.Value.ToUniversalTime()` für `DateTimeOffset` (sonst lokale Timezone)
 
@@ -722,15 +687,11 @@ MinRRR per Kategorie: 1.0.
 | Index | `entryPrice * 0.0001` |
 | Commodity | `entryPrice * 0.0001` |
 
-### Naming Conventions
+### Naming (BingX-spezifisch)
 
-| Element | Convention | Beispiel |
-|---------|-----------|----------|
-| ViewModel | Suffix `ViewModel` | `DashboardViewModel` |
-| View | Suffix `View` (oder `ViewMobile`) | `DashboardView`, `DashboardViewMobile` |
-| Service Interface | `I{Name}Service` | `IBotControlService` |
-| Service Implementation | `Local{Name}Service` / `Remote{Name}Service` / `{Name}Service` | `LocalBotControlService` |
-| Events | PascalCase EventHandler oder Action-Delegate | `TradeCompleted`, `NavigationRequested` |
+Generisches Naming → [Haupt-CLAUDE.md](../../../CLAUDE.md). BingX-eigen: Service-Impls tragen
+das Modus-Präfix `Local{Name}Service` / `Remote{Name}Service` (z.B. `LocalBotControlService`,
+`RemoteBotControlService`); Mobile-View-Varianten haben den Suffix `ViewMobile` (`DashboardViewMobile`).
 
 ---
 

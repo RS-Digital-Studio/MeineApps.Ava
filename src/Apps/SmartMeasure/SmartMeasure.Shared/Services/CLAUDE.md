@@ -32,7 +32,7 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `ISurveyReportService` | `SurveyReportService` | PdfSharpCore: Cover, Punkt-Tabelle + Foto-Thumbnails, Materialien, optional Differential |
 | `ISceneReconstructionService` | `SceneReconstructionService` | Voxel-Filter + PLY/OBJ-Punktwolke-Export |
 | `IMultiUserSessionService` | `LocalTcpMultiUserService` | TCP-NDJSON-Broadcast Port 5119, kein extra SignalR-Package |
-| `IArSessionLike` | `AndroidArSession` (Frame-Provider), `MockArSession` (Tests) | Testbarkeits-Wrapper |
+| `IArSessionLike` | `AndroidArSession` (Frame-Provider), `MockArSession` (Tests) | Testbarkeits-Wrapper — Pattern-Stub, noch nicht produktiv verkabelt |
 | `ArSnapEngine` | Stateless | Snap-Hilfen: Vertex (15 cm), Right-Angle (5°), Parallel (3°), Extension (10 cm) |
 | `ArPoseSampler` | Stateless | Multi-Frame HitTest-Averaging: Median + ±3σ-Outlier-Filter, 15 Samples/800 ms |
 | `ArMathHelpers` | Static | Bowditch-Correction, Quaternion→Heading/Pitch — reine Mathematik, in Unit-Tests direkt testbar |

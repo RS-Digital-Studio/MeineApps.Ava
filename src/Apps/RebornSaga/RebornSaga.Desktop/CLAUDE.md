@@ -9,10 +9,11 @@ ist Android-first (Portrait-Spiel). Generische Desktop-Publishing-Befehle → [H
 |-------|-------|
 | `Program.cs` | Entry Point. `BuildAvaloniaApp().UsePlatformDetect().WithInterFont().LogToTrace()` → `StartWithClassicDesktopLifetime(args)`. |
 
-App läuft über `IClassicDesktopStyleApplicationLifetime` → `MainWindow.Content = new MainView()`
-(siehe `RebornSaga.Shared/App.axaml.cs`). Keine plattformspezifischen Service-Implementierungen:
-`IAudioService` → Desktop-Stub `AudioService`, kein Android-Factory. Rewarded Ads → Desktop-Simulator
-(kein echter AdMob).
+App läuft über `IClassicDesktopStyleApplicationLifetime` → `MainWindow.Content = new MainView()`,
+`MainWindow.DataContext = Services.GetRequiredService<MainViewModel>()`, `ShutdownRequested` →
+`App.DisposeServices()` (siehe `RebornSaga.Shared/App.axaml.cs`). Keine plattformspezifischen
+Service-Implementierungen: `IAudioService` → Desktop-Stub `AudioService` (kein `AudioServiceFactory`
+gesetzt). Rewarded Ads → Desktop-Simulator (kein echter AdMob).
 
 ## Build / Run
 

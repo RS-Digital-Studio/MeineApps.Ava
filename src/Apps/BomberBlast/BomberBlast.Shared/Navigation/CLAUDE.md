@@ -12,7 +12,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | Datei | Zweck |
 |-------|-------|
 | `INavigationCoordinator.cs` | Interface: `NavigateToRouteAsync(string)`, `NavigateTo(NavigationRequest)`, `HideAll()`, `ActiveView`-Property, `ActiveViewChanged`-Event |
-| `NavigationCoordinator.cs` | Implementierung: 26 Routen-Cases, CloudSave-Init-Race-Guard (3s-Cap), `StateChanged`-Event |
+| `NavigationCoordinator.cs` | Implementierung: 26 Routen-Cases, CloudSave-Init-Race-Guard (3s-Cap), `ActiveViewChanged`-Event |
 | `IBottomTabController.cs` | Interface: 4 Sub-Tab-Bools, `IsBottomTabBarVisible`, 7 `SwitchToXxxTab()`-Methoden |
 | `BottomTabController.cs` | Implementierung: bidirektionale `ActiveView ↔ BottomTab`-Sync via `IBottomTabHub` |
 | `NavigationRouteParser.cs` | `Parse(route)` → `NavigationRequest`, `RequiresCloudSaveInit(baseRoute)` |
@@ -42,7 +42,8 @@ DI-Factory aufgelöst (in `App.axaml.cs`).
 ### Route-Parsing
 
 `NavigationRouteParser.Parse(route)` trennt Base-Route von Query-String
-(`"game?mode=bossrush"` → `GoGame { Mode = "bossrush" }`).
+(`"Game?mode=bossrush"` → BaseRoute `"Game"`, Query `"mode=bossrush"`).
+Löst außerdem Compound-Routen auf: `"//MainMenu/Game?mode=story"` → BaseRoute `"Game"`, Query `"mode=story"`.
 
 ### CloudSave-Init-Race-Guard
 
@@ -71,8 +72,8 @@ Bottom-Tab automatisch aktualisiert — und umgekehrt.
 // Typsichere Navigation statt String-Konstanten:
 NavigationRequested?.Invoke(new GoGame(Mode: "story", Floor: 0));
 NavigationRequested?.Invoke(new GoBack());
-NavigationRequested?.Invoke(new GoShop(Section: "upgrades"));
+NavigationRequested?.Invoke(new GoShop());
 ```
 
 `INavigable`-Interface auf allen Child-VMs: `event Action<NavigationRequest>? NavigationRequested`.
-`ChildViewModelRegistry.WireCommon` subscribed darauf und routet an `NavigationCoordinator.NavigateTo`.
+`ChildViewModelWiring.WireCommon` subscribed darauf und routet an `NavigationCoordinator.NavigateTo`.

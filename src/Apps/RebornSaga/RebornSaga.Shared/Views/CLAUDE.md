@@ -8,13 +8,14 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `MainView.axaml(.cs)` | Einzige View: `SKCanvasView` + 60fps `DispatcherTimer`, DPI-skalierte Touch-Koordinaten, Event-Verdrahtung. |
-| `MainWindow.axaml(.cs)` | Desktop-only: Fenster-Wrapper für `MainView`. |
+| `MainView.axaml(.cs)` | Einzige View: `SKCanvasView` + 60fps `DispatcherTimer`, DPI-skalierte Touch-Koordinaten, KeyDown-Event-Verdrahtung. |
+| `MainWindow.axaml(.cs)` | Desktop-only: leerer Fenster-Wrapper (450×800, MinWidth 360, MinHeight 640). `MainView` wird von `Program.cs` als Content gesetzt, nicht per XAML. |
 
 ## MainView — Game-Loop-Pattern
 
 ```csharp
-// OnAttachedToVisualTree: Game-Loop starten
+// StartGameLoop(): Falls bereits laufend, nur _gameLoopTimer?.Stop() —
+// NICHT StopGameLoop() aufrufen, da dieses _gameLoopTimer auf null setzt.
 _gameLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
 _gameLoopTimer.Tick += (_, _) =>
 {
@@ -25,9 +26,10 @@ _gameLoopTimer.Tick += (_, _) =>
 };
 ```
 
-- **Timer-Start:** Nur `_gameLoopTimer?.Stop()` (kein `StopGameLoop()` — das nullt Canvas-Referenz).
-- **`OnDetachedFromVisualTree`:** `StopGameLoop()` + alle Events abmelden.
+- **`OnAttachedToVisualTree`:** Events verdrahten (`PaintSurface`, `PointerPressed/Moved/Released`, `KeyDown`), dann `InitializeServicesAsync()` (fire-and-forget) und `StartGameLoop()`.
+- **`OnDetachedFromVisualTree`:** `StopGameLoop()` (stoppt Timer, setzt `_gameLoopTimer = null`, stoppt `Stopwatch`) + alle Events abmelden inkl. `DataContextChanged`.
 - **`DataContextChanged`:** `_vm = DataContext as MainViewModel` — saubere Referenz ohne cast-Fehler.
+- **`KeyDown`:** Wird in `OnAttachedToVisualTree` angemeldet und an `_vm?.HandleKeyDown(e.Key)` delegiert (Desktop-Tastatursteuerung).
 
 ## DPI-skalierte Touch-Koordinaten (KRITISCH)
 
@@ -45,8 +47,9 @@ private SKPoint GetSkiaPoint(PointerEventArgs e)
 
 `_lastBounds` wird in `OnPaintSurface` aus `canvas.LocalClipBounds` gesetzt.
 `_controlWidth/Height` aus `GameCanvas.Bounds.Width/Height` (Avalonia-Koordinaten).
+Guard: wenn `_controlWidth/Height < 1` → direkte Übergabe ohne Skalierung.
 
 ## Service-Initialisierung
 
-`InitializeServicesAsync()` in `OnAttachedToVisualTree` — fire-and-forget mit try/catch.
+`InitializeServicesAsync()` delegiert an `_vm.InitializeAsync()` (fire-and-forget mit leerem catch).
 `TitleScene` + `AssetDownloadScene` funktionieren ohne geladene Daten, daher kein Blocking.

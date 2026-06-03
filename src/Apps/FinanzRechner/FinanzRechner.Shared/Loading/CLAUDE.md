@@ -17,12 +17,12 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 **Schritt 1 — DB+Shader (Weight 40):** Alle Services + Shader parallel via `Task.WhenAll`:
 - `IExpenseService.InitializeAsync()` (expenses.json lesen)
+- `Task.Run(() => ShaderPreloader.PreloadAll())` (GPU-Shader kompilieren)
+- `IPurchaseService.InitializeAsync()` (Premium-Status mit Google Play abgleichen)
 - `IAccountService.InitializeAsync()` (accounts.json lesen)
 - `ISavingsGoalService.InitializeAsync()` (savings_goals.json lesen)
 - `IDebtService.InitializeAsync()` (debts.json lesen)
 - `ICustomCategoryService.InitializeAsync()` (custom_categories.json lesen)
-- `IPurchaseService.InitializeAsync()` (Premium-Status mit Google Play abgleichen)
-- `Task.Run(() => ShaderPreloader.PreloadAll())` (GPU-Shader kompilieren)
 
 Danach: Währungs-Preset aus Preferences laden und `CurrencyHelper.Configure(preset)`.
 

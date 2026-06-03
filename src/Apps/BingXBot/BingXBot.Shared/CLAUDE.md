@@ -23,12 +23,11 @@ Registriert **alles als Singleton**. Besonderheiten:
   `Environment.SpecialFolder.UserProfile` crasht auf Android.
 - **Modus-Conditional**: `IsRemoteModeEnabled()` prüft ob `client/connection.json` existiert.
   Remote-Mode → Remote-Impls (`RemoteBotControlService`, `RemoteBotEventStream`, etc.).
-  Local-Mode → Local-Impls + `LocalBotEventStream` + `DecisionTrailBuffer` + `TradeStatsAggregator`.
+  Local-Mode → Local-Impls + `LocalBotEventStream` + `TradeStatsAggregator`.
 - **`LocalBotEventStream`** wird im Remote-Mode NICHT registriert — sonst tote Subscriptions auf dem
   `BotEventBus`.
-- **`DecisionTrailBuffer`** wird nur im Local-Mode registriert (Remote hat keinen RAM-Puffer).
-- **`ValidateOnBuild = true`** im `ServiceProviderOptions` — fängt fehlende Konstruktor-Params beim
-  App-Start statt beim ersten Resolve.
+- **`ValidateOnBuild = true` + `ValidateScopes = true`** im `ServiceProviderOptions` — fängt fehlende
+  Konstruktor-Params und Scope-Verletzungen beim App-Start statt beim ersten Resolve.
 - **`Lazy<T>`-Wrapper** (`LazyDiService<T>`): `services.AddTransient(typeof(Lazy<>), typeof(LazyDiService<>))`
   aktiviert `Lazy<T>`-Injection für alle Typen. Nötig weil `Microsoft.Extensions.DependencyInjection`
   `Lazy<T>` nicht out-of-the-box auflöst.
@@ -53,7 +52,9 @@ Läuft auf Background-Thread. Exceptions nur loggen — App muss auch ohne DB/Ne
 
 **Local-Mode:**
 1. `BotDatabaseService.InitializeAsync()` + `LoadSettingsAsync()`.
-2. `RestoreSettingsFromDb()` auf UI-Thread (Dispatcher.UIThread.Post).
+2. `RestoreSettingsFromDb()` + `ApplyTheme(saved.ThemePreference)` + `LocalSettingsService.RaiseChanged()`
+   auf UI-Thread (`Dispatcher.UIThread.Post`) — stellt sicher dass Bindings den DB-Stand statt
+   Singleton-Defaults sehen, und das Theme sofort aktiv ist.
 3. `TradeStatsAggregator` mit den letzten 10.000 Trades aus DB rebuilden.
 
 **Remote-Mode:**
@@ -71,20 +72,12 @@ Remote-Re-Connect. **Nicht einsparen** — die DI-Singletons sind die Binding-Qu
 ### Default-Snapshot-Sanity-Check (`LooksLikeFreshDefault`)
 
 Verhindert, dass ein Auth-Fehler oder Race beim Remote-Settings-Refresh echte Server-Werte mit
-Konstruktor-Defaults überschreibt. Prüft ob `MaxLeverage + MaxOpenPositions + MaxPositionSizePercent +
-MaxTotalDrawdownPercent` gleichzeitig auf Konstruktor-Default stehen — wenn ja, Snapshot verwerfen.
-
----
-
-## Namespace-Konvention
-
-| Ordner | Namespace |
-|--------|-----------|
-| `ViewModels/` | `BingXBot.ViewModels` |
-| `Views/` | `BingXBot.Views` |
-| `Graphics/` | `BingXBot.Graphics` |
-| `Converters/` | `BingXBot.Converters` |
-| `Services/` | `BingXBot.Services` |
+Konstruktor-Defaults überschreibt. Prüft **beide** Bereiche gleichzeitig — nur wenn alle
+Felder auf Default stehen, wird der Snapshot verworfen:
+- **Risk**: `MaxLeverage`, `MaxOpenPositions`, `MaxPositionSizePercent`, `MaxTotalDrawdownPercent`
+  alle auf Konstruktor-Default.
+- **Scanner**: `ActiveTimeframes` entspricht der Default-Liste (Count + SequenceEqual) und
+  `MaxResults` auf Default-Wert.
 
 ---
 

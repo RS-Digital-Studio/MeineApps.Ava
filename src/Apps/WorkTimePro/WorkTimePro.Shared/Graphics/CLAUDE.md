@@ -1,7 +1,8 @@
 # Graphics — SkiaSharp-Visualisierungen
 
-11 App-eigene SkiaSharp-Visualisierungen + Splash + animierter Hintergrund ("Professional Dashboard"-
-Charakter). Nutzen `SkiaThemeHelper` + Helpers aus [MeineApps.UI](../../../../UI/MeineApps.UI/CLAUDE.md).
+9 App-eigene SkiaSharp-Visualisierungen + Splash + animierter Hintergrund + Empty-State-Helper
+("Professional Dashboard"-Charakter). Nutzen `SkiaThemeHelper` + Helpers aus
+[MeineApps.UI](../../../../UI/MeineApps.UI/CLAUDE.md).
 SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort dokumentiert.
 
 ## Dateien
@@ -18,7 +19,8 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort do
 | `StatsSummaryGaugeVisualization.cs` | 4 Halbkreis-Gauges: Arbeitszeit/Überstunden/Schnitt/Quote. |
 | `MonthWeekProgressVisualization.cs` | Alle Wochen eines Monats als Gradient-Balken in einem Canvas. |
 | `WorkTimeProSplashRenderer.cs` | "Die Stechuhr": Stempelzyklus (3s) + 10 Business-Partikel. Erbt von `SplashRendererBase`. |
-| `WorkspaceBackgroundRenderer.cs` | "Professional Dashboard": 5-Layer animierter Hintergrund (~5fps, 0 GC/Frame). |
+| `WorkspaceBackgroundRenderer.cs` | "Professional Dashboard": 5-Layer animierter Hintergrund (~5fps, 0 GC/Frame). `sealed class`, implementiert `IDisposable`. |
+| `ChartEmptyState.cs` | Zentrierter "Keine Daten"-Platzhalter (`static class`). Verhindert, dass leere Karten kaputt wirken. Nutzt `SkiaThemeHelper.TextMuted`. |
 
 Geteilte Controls aus `MeineApps.UI` (nicht hier implementiert):
 - `LinearProgressVisualization` (Gradient-Fortschrittsbalken + Glow, in `WeekOverviewView`)
@@ -36,8 +38,10 @@ verhindert LINQ-Aufruf pro Sekunde im 1s-Update-Zyklus.
 
 5 Layer mit gecachten Paints. `~5fps` genügt für einen subtilen animierten Hintergrund.
 KEINE Objekt-Allokation im Render-Pfad — gecachte `SKPaint`-Felder, keine `new SKPaint()` pro Frame.
+`Dispose()` muss aufgerufen werden, wenn der Renderer nicht mehr benötigt wird.
 
 ## Static Visualizations
 
-`DayTimelineVisualization` ist eine `static class` (alle Methoden `static`, keine Instanz-State).
-Paint-Felder sind `static readonly` initialisiert — kein Leak, kein Dispose nötig (Prozess-Lifetime).
+`DayTimelineVisualization`, `ChartEmptyState` und die meisten Chart-Klassen sind `static class`
+(alle Methoden `static`, keine Instanz-State). Paint-Felder sind `static readonly` initialisiert —
+kein Leak, kein Dispose nötig (Prozess-Lifetime).

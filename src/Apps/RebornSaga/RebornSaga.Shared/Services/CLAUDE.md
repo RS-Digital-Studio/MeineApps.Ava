@@ -10,19 +10,19 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 |-------|---------|-------|
 | `StoryEngine.cs` | `StoryEngine` | Kapitel-Navigation, Condition-Parser, StoryEffects (EXP/Gold/Karma/Flags). **`SetPlayer()` nach jedem Load/Neues-Spiel pflicht!** |
 | `BattleEngine.cs` | `BattleEngine` | Schadensberechnung, Element-System (6 Elemente, 1,5×/0,5× Modifikatoren), Crits. |
-| `SkillService.cs` | `SkillService` | 15 Skills/Klasse, 5 Stufen, Freischaltung per Level. `LoadSkills()` muss in `InitializeServicesAsync` aufgerufen werden. |
+| `SkillService.cs` | `SkillService` | Skills in 5 Tiers (1–5), Evolution via Mastery-Zähler (`UseSkill()`). `LoadSkills()` muss in `InitializeServicesAsync` aufgerufen werden. |
 | `InventoryService.cs` | `InventoryService` | Items verwalten, Ausrüsten, Stack-Verwaltung. `LoadItems()` muss in `InitializeServicesAsync` aufgerufen werden. |
-| `AffinityService.cs` | `AffinityService` | Bond-Stufen (0–100) für 5 NPCs (Aria, Luna, Kael, Aldric, Vex). |
-| `FateTrackingService.cs` | `FateTrackingService` | Karma (−100 bis +100), Entscheidungs-Log, FateFlags. Karma-Änderungen via `ModifyKarma()` + Player.Karma sync. |
+| `AffinityService.cs` | `AffinityService` | Bond-Punkte (0–100) → Bond-Level (1–5) für 5 NPCs (Aria, Luna, Kael, Aldric, Vex). `BondLevelUp`-Event bei Stufenaufstieg. |
+| `FateTrackingService.cs` | `FateTrackingService` | Karma (−100 bis +100), Entscheidungs-Log, FateFlags. Karma-Änderungen via `RecordDecision()` (loggt + clamp). |
 | `CodexService.cs` | `CodexService` | Enzyklopädie (Charaktere, Orte, Lore), nach Kategorien sortiert. |
-| `ProgressionService.cs` | `ProgressionService` | EXP via `AwardExp()`, Level-Up-Events, `LevelUpOccurred` Event. |
+| `ProgressionService.cs` | `ProgressionService` | EXP via `AwardExp()`, Gold via `AwardGold()`, `LevelUp`-Event (Player, Anzahl Level-Ups). Skill-Evolution via `RecordSkillUse()`. |
 | `SaveGameService.cs` | `SaveGameService` | SQLite, 3 Slots, Auto-Save bei Knoten-Wechsel, `SemaphoreSlim(1,1)` gegen parallele Saves, `IDisposable` (SQLite `CloseAsync`). |
-| `GoldService.cs` | `GoldService` | Gold addieren/abziehen (`Math.Clamp(0, int.MaxValue)`), Rewarded-Video-Cooldown (3×/Tag). |
+| `GoldService.cs` | `GoldService` | Gold addieren/abziehen (Clamp auf `[0, MaxGold=9_999_999]`), Rewarded-Video-Cooldown (3×/Tag, 500 G). |
 | `ChapterUnlockService.cs` | `ChapterUnlockService` | K6–K10 per Gold freischalten, `SemaphoreSlim(1,1)` gegen Doppel-Unlock. |
 | `TutorialService.cs` | `TutorialService` | Erstbesucher-Hints per `IPreferencesService`. `ShouldShow(key)` + `MarkSeen(key)`. |
 | `DailyService.cs` | `DailyService` | Login-Bonus (Gold), Prophezeiung (RESX-Keys Prophecy_0–13), Login-Streak. |
-| `EnemyLoader.cs` | `EnemyLoader` | Lazy-Load aus `enemies.json`, `GetById()` gibt geklonten Enemy zurück (defensive copy). |
-| `SpriteCache.cs` | `SpriteCache` | LRU-Cache (max 30 Bilder), thread-safe, `IDisposable`. `PeekPixels()` für `ComputeContentBounds`. Wird von `CharacterRenderer` + `BackgroundCompositor` genutzt. |
+| `EnemyLoader.cs` | `EnemyLoader` | **Statische Klasse** (kein DI-Singleton). Lazy-Load aus `enemies.json` beim ersten Zugriff, `GetById()` gibt geklonten Enemy zurück (defensive copy). |
+| `SpriteCache.cs` | `SpriteCache` | LRU-Cache (max 30 Bilder, max 80 MB), thread-safe (`lock`), `IDisposable`. `PeekPixels()` in `ComputeContentBounds()` vermeidet JNI-Overhead. Wird von `CharacterRenderer` + `BackgroundCompositor` genutzt. |
 | `AssetDeliveryService.cs` | `AssetDeliveryService` | Firebase Storage REST API, SHA256-Hash-Verifikation, Delta-Updates. Stream-basierter Download, Retry (3× exponentieller Backoff), temporäre Dateien. |
 | `IAssetDeliveryService.cs` | Interface | Trennt `AssetDownloadScene` von der konkreten Implementierung. |
 | `AudioService.cs` | `AudioService` | Desktop-Stub (kein Sound). Android-Override via `App.AudioServiceFactory` → `AndroidAudioService`. |
@@ -52,7 +52,7 @@ alliance_aria        (Fallback: Flags.Contains)
 | `SaveGameService` | `SemaphoreSlim(1,1)` + `IDisposable` (SQLite CloseAsync) |
 | `ChapterUnlockService` | `SemaphoreSlim(1,1)` gegen Doppel-Unlock |
 | `SpriteCache` | `lock` auf internem Dictionary |
-| `GoldService` | `Math.Clamp(0, int.MaxValue)` in Add/Remove |
+| `GoldService` | `Math.Min/Max` + `MaxGold=9_999_999` in Add/Remove |
 
 ### Asset-Delivery
 

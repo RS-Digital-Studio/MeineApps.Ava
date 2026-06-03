@@ -131,6 +131,10 @@ public sealed class BattlePassService : IBattlePassService
         if (IsXpBoostActive)
             amount *= 2;
 
+        // Premium-Veteranen-Boost (+5% kumulativ pro abgeschlossener Premium-Saison) anwenden.
+        if (PremiumVeteranBoost > 1.0f)
+            amount = (int)Math.Round(amount * PremiumVeteranBoost);
+
         int tierUps = _data.AddXp(amount);
 
         if (tierUps > 0)
@@ -306,7 +310,11 @@ public sealed class BattlePassService : IBattlePassService
 
     private void SaveData()
     {
-        var json = JsonSerializer.Serialize(_data, JsonOptions);
-        _preferences.Set(DATA_KEY, json);
+        try
+        {
+            var json = JsonSerializer.Serialize(_data, JsonOptions);
+            _preferences.Set(DATA_KEY, json);
+        }
+        catch { /* Speichern fehlgeschlagen — graceful degrade wie Kern-Services (CoinService) */ }
     }
 }

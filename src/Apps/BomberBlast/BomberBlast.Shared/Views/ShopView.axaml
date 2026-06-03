@@ -13,8 +13,8 @@
   <UserControl.Resources>
     <DataTemplate x:Key="SkinItemTemplate" x:DataType="models:SkinDisplayItem">
       <Border CornerRadius="12"
-              Padding="12"
-              Margin="6"
+              Padding="10"
+              Margin="4"
               MinWidth="200" MaxWidth="280"
               BoxShadow="0 2 8 0 #30000000"
               Opacity="{Binding CardOpacity}">
@@ -154,8 +154,8 @@
     <!-- Gemeinsames PowerUp/Mechanik-Template -->
     <DataTemplate x:Key="PowerUpItemTemplate" x:DataType="models:PowerUpDisplayItem">
       <Border CornerRadius="12"
-              Padding="12"
-              Margin="6"
+              Padding="10"
+              Margin="4"
               MinWidth="200" MaxWidth="280"
               BoxShadow="0 2 8 0 #30000000"
               Opacity="{Binding CardOpacity}">
@@ -305,7 +305,7 @@
       <ScrollViewer Grid.Row="1"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="12,8,12,100" Spacing="16">
+        <StackPanel Margin="8,6,8,80" Spacing="12">
 
           <!-- ═══════════════════════════════════════════════
                SHOP-UPGRADES
@@ -322,8 +322,8 @@
               <DataTemplate x:DataType="models:ShopDisplayItem">
                 <Border Background="{DynamicResource CardColor}"
                         CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
+                        Padding="10"
+                        Margin="4"
                         MinWidth="200" MaxWidth="280"
                         BoxShadow="0 2 8 0 #30000000">
                   <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
@@ -426,8 +426,8 @@
                FÄHIGKEITEN (PowerUps)
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="{DynamicResource GoldAccentBrush}">
             <Border.Background>
@@ -454,8 +454,8 @@
                WELT-MECHANIKEN
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="#2196F3">
             <Border.Background>
@@ -482,8 +482,8 @@
                SPIELER-SKINS
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="#00BCD4">
             <Border.Background>
@@ -510,8 +510,8 @@
                BOMBEN-SKINS
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="#FF6D00">
             <Border.Background>
@@ -538,8 +538,8 @@
                EXPLOSIONS-SKINS
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="#F44336">
             <Border.Background>
@@ -566,8 +566,8 @@
                TRAILS
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="#4CAF50">
             <Border.Background>
@@ -594,8 +594,8 @@
                SIEGES-ANIMATIONEN
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="#9C27B0">
             <Border.Background>
@@ -622,8 +622,8 @@
                PROFILRAHMEN
                ═══════════════════════════════════════════════ -->
           <Border CornerRadius="8"
-                  Padding="14,10"
-                  Margin="0,8,0,0"
+                  Padding="12,8"
+                  Margin="0,4,0,0"
                   BorderThickness="3,0,0,0"
                   BorderBrush="#3B82F6">
             <Border.Background>

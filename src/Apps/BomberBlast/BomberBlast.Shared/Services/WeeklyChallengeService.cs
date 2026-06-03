@@ -65,9 +65,12 @@ public sealed class WeeklyChallengeService : TimedMissionServiceBase, IWeeklyCha
     /// </summary>
     protected override int GetPeriodId(DateTime date)
     {
-        var cal = System.Globalization.CultureInfo.InvariantCulture.Calendar;
-        int week = cal.GetWeekOfYear(date, System.Globalization.CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-        return date.Year * 100 + week;
+        // ISOWeek liefert Wochennummer UND zugehöriges ISO-Jahr konsistent — verhindert
+        // Perioden-Kollision an Jahresgrenzen (z.B. 29.-31.12. = ISO-Woche 1 des Folgejahres,
+        // wo Calendar.GetWeekOfYear week=1 mit date.Year=Vorjahr kombiniert hätte).
+        int week = System.Globalization.ISOWeek.GetWeekOfYear(date);
+        int isoYear = System.Globalization.ISOWeek.GetYear(date);
+        return isoYear * 100 + week;
     }
 
     /// <summary>Nächster Montag 00:00 UTC</summary>

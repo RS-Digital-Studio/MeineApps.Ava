@@ -45,7 +45,7 @@
     <Grid RowDefinitions="Auto,Auto,*" Margin="14,8,14,8">
 
       <!-- ═══ Header (Back + Titel) ═══ -->
-      <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,8">
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,6">
         <Button Grid.Column="0" Classes="Secondary GameButton"
                 Command="{Binding GoBackCommand}"
                 Width="44" Height="44" Padding="0"
@@ -63,7 +63,7 @@
 
       <!-- ═══ Tab-Bar (5 Tabs) ═══ -->
       <Border Grid.Row="1" Background="#CC0D0D1A" Padding="6,4" CornerRadius="10"
-              Margin="0,0,0,8">
+              Margin="0,0,0,6">
         <Grid ColumnDefinitions="*,*,*,*,*">
 
           <Border Grid.Column="0" Classes="ProfileTab"
@@ -123,11 +123,14 @@
       <Panel Grid.Row="2">
 
         <!-- Tab 1: Übersicht (existing Profile-Inhalt) -->
+        <!-- Bottom-Margin 72: haelt den Inhalt ueber der 64dp App-Tab-Bar (Overlay), sonst
+             wird die untere Stats-Reihe verdeckt. -->
         <Border IsVisible="{Binding IsOverviewTab}"
+                Margin="0,0,0,72"
                 AutomationProperties.AutomationId="Profile_Content_Overview">
           <Grid ColumnDefinitions="*,1.5*">
             <!-- LINKS: Spieler-Karte -->
-            <Border Grid.Column="0" CornerRadius="16" Padding="20" VerticalAlignment="Top"
+            <Border Grid.Column="0" CornerRadius="16" Padding="14" VerticalAlignment="Top"
                     Margin="0,0,8,0">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
@@ -135,7 +138,7 @@
                   <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
                 </LinearGradientBrush>
               </Border.Background>
-              <StackPanel Spacing="14" HorizontalAlignment="Center">
+              <StackPanel Spacing="10" HorizontalAlignment="Center">
                 <Border Width="84" Height="84" CornerRadius="42"
                         BorderThickness="2" BoxShadow="0 0 20 0 #50FFD700"
                         HorizontalAlignment="Center">
@@ -197,7 +200,7 @@
             </Border>
 
             <!-- RECHTS: Stats-Grid -->
-            <StackPanel Grid.Column="1" Spacing="10" Margin="8,0,0,0" VerticalAlignment="Center">
+            <StackPanel Grid.Column="1" Spacing="6" Margin="8,0,0,0" VerticalAlignment="Center">
               <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
                 <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
                         CornerRadius="12" Padding="14,12" Margin="0,0,6,6"
@@ -291,7 +294,7 @@
         <Border IsVisible="{Binding IsCustomizeTab}"
                 AutomationProperties.AutomationId="Profile_Content_Customize">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="14" Margin="0,0,0,12">
+            <StackPanel Spacing="10" Margin="0,0,0,72">
 
               <!-- Hint-Banner -->
               <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8"

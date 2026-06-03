@@ -702,9 +702,11 @@ public sealed partial class GameEngine
             var enemyCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
             if (enemyCell == null || !enemyCell.IsPoisoned) continue;
 
-            // Schaden alle 1s (über PoisonTimer mod 1.0 gesteuert)
+            // Schaden alle 1s (über PoisonTimer mod 1.0 gesteuert). Nur EIN Trigger-Fenster
+            // pro Sekunde (timerMod nahe 0) — die frühere OR-Bedingung (>0.95 ODER <deltaTime)
+            // feuerte zweimal pro Sekunde (Gegner-Gift doppelt so schnell wie spezifiziert).
             float timerMod = enemyCell.PoisonTimer % 1.0f;
-            if (timerMod > 0.95f || timerMod < deltaTime)
+            if (timerMod < deltaTime)
             {
                 if (enemy.TakeDamage())
                 {

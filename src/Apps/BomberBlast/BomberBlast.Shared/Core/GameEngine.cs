@@ -110,6 +110,10 @@ public sealed partial class GameEngine : IDisposable
     {
         _fixedTimestep.Enabled = true;
         _rngProvider = new DeterministicRngProvider(seed);
+        // Auch _pontanRandom seeden — sim-relevante Direkt-Nutzer (Nova-Bomben-PowerUp-Drop in
+        // SpecialExplosionEffects.HandleNova) gehen NICHT über EngineRngNext und wären sonst auf
+        // Daily-Challenge/Daily-Race nicht deterministisch (unfaires Leaderboard).
+        _pontanRandom = new Random((int)seed);
     }
 
     // Phase 18e — Engine-internal RNG-Helpers. Im Fixed-Mode geht alles über RngProvider
@@ -647,7 +651,7 @@ public sealed partial class GameEngine : IDisposable
     private bool _pontanEarlyWarningTriggered;
     private bool _pontanFinalWarningTriggered;
     private const int PONTAN_MIN_DISTANCE = 5; // Mindestabstand zum Spieler
-    private readonly Random _pontanRandom = new(); // Wiederverwendbar statt new Random() pro Aufruf
+    private Random _pontanRandom = new(); // Wiederverwendbar statt new Random() pro Aufruf; in SetDeterministicSeed neu geseedet
 
     // Lazy-initialisierter Context fuer SpecialExplosionEffects (v2.0.30+ Extract aus GameEngine.Explosion.cs).
     // Erst beim ersten Aufruf erzeugt → _grid muss dann bereits initialisiert sein (im Ctor via new GameGrid()).

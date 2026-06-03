@@ -140,7 +140,9 @@ public sealed partial class GameRenderer
         if (boss.IsEnraged)
         {
             float pulse = 0.7f + MathF.Sin(_globalTimer * 10f) * 0.3f;
-            byte alpha = (byte)(60 * pulse);
+            // Auf 8er-Stufen quantisieren, damit der ColorFilter-Cache tatsächlich greift
+            // (sonst änderte sich alpha durch die Sinus-Pulsation fast jeden Frame → Neu-Allokation/Frame).
+            byte alpha = (byte)((int)(60 * pulse) & ~7);
             if (alpha != _lastEnrageAlpha || _enrageColorFilter == null)
             {
                 _enrageColorFilter?.Dispose();

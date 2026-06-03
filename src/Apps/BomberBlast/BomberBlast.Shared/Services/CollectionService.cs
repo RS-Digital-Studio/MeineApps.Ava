@@ -525,9 +525,13 @@ public sealed class CollectionService : ICollectionService
 
     private void Save()
     {
-        var json = JsonSerializer.Serialize(_data, JsonOptions);
-        _preferences.Set(PersistenceKey, json);
-        _isDirty = false;
-        _lastSaveTime = DateTime.UtcNow;
+        try
+        {
+            var json = JsonSerializer.Serialize(_data, JsonOptions);
+            _preferences.Set(PersistenceKey, json);
+            _isDirty = false;
+            _lastSaveTime = DateTime.UtcNow;
+        }
+        catch { /* Speichern fehlgeschlagen — graceful degrade wie Kern-Services (CoinService) */ }
     }
 }

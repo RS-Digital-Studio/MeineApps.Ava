@@ -117,7 +117,11 @@ public sealed class CloudSaveService : ICloudSaveService
         "BattlePassPlus_Active",
         "BattlePassPlus_Season",
         "Vip_ExpiresAtUtc",
-        "Vip_DailyClaimedDate"
+        "Vip_DailyClaimedDate",
+
+        // StarterPack-Kaufflag — muss synchen, sonst lässt sich das net-positive Paket
+        // (+20 Gems, +3 Rare-Karten, +3001 Netto-Coins) pro Reinstall/Gerätewechsel erneut einlösen.
+        "StarterPackData"
     ];
 
     /// <summary>

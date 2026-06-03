@@ -65,6 +65,15 @@ public sealed class ReEngagementScheduler : IReEngagementScheduler
             return;
         }
 
+        // DSGVO Art. 7(3): In-App-Consent muss wirksam sein (Widerruf so einfach wie Erteilung).
+        // PrivacyCenter persistiert den Toggle unter "Privacy_PushNotifications" (Default true).
+        if (!_prefs.Get("Privacy_PushNotifications", true))
+        {
+            _logger.LogInformation("ReEngagement: Push-Consent (in-App) deaktiviert → keine Reminder, bestehende stornieren.");
+            CancelAll();
+            return;
+        }
+
         try
         {
             ScheduleD1();

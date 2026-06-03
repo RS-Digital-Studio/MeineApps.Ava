@@ -114,7 +114,7 @@ public static class TornMetalRenderer
     private static void DrawMetalBody(SKCanvas canvas, float w, float h,
         SKColor baseColor, int seed, float damage)
     {
-        _metalPath.Reset();
+        _metalPath.Rewind();
 
         float cornerRadius = Math.Min(w, h) * 0.14f;
         float tearSize = Math.Min(w, h) * 0.28f * damage;
@@ -273,7 +273,7 @@ public static class TornMetalRenderer
         {
             if (Hash(seed, 200 + i) > 0.6f + (1f - damage) * 0.3f) continue;
 
-            _crackPath.Reset();
+            _crackPath.Rewind();
 
             // Riss-Startpunkt (am Rand oder nahe dem Rand)
             float startX = w * (0.15f + Hash(seed, 210 + i) * 0.7f);

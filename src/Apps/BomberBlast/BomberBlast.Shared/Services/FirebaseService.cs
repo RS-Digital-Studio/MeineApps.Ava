@@ -67,9 +67,12 @@ public sealed class FirebaseService : IFirebaseService
             if (_idToken != null && DateTime.UtcNow < _tokenExpiry)
                 return;
 
-            // Gespeicherte Credentials laden
-            var savedUid = _preferences.Get<string?>(PrefKeyUid, null);
-            var savedRefreshToken = _preferences.Get<string?>(PrefKeyRefreshToken, null);
+            // Gespeicherte Credentials laden. Memory-First: bereits geladene In-Memory-Credentials
+            // haben Vorrang vor Preferences. So überlebt die UID ein _preferences.Clear() während der
+            // Account-Löschung (DSGVO Art. 17) — der Liga-Delete trifft dann die ECHTE alte UID statt
+            // versehentlich einen frischen anonymen Account anzulegen und dessen leeren Pfad zu löschen.
+            var savedUid = !string.IsNullOrEmpty(_uid) ? _uid : _preferences.Get<string?>(PrefKeyUid, null);
+            var savedRefreshToken = !string.IsNullOrEmpty(_refreshToken) ? _refreshToken : _preferences.Get<string?>(PrefKeyRefreshToken, null);
 
             if (!string.IsNullOrEmpty(savedUid) && !string.IsNullOrEmpty(savedRefreshToken))
             {

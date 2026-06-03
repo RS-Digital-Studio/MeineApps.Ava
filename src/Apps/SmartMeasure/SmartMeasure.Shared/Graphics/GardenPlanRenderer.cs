@@ -32,6 +32,10 @@ public sealed class GardenPlanRenderer : IDisposable
         [GardenElementType.Mauer] = new SKColor(239, 83, 80),
         [GardenElementType.Zaun] = new SKColor(239, 83, 80, 150),
         [GardenElementType.Terrasse] = new SKColor(215, 204, 200),
+        [GardenElementType.Grenze] = new SKColor(255, 193, 7),     // Bernstein — Grundstuecksgrenze
+        [GardenElementType.Gebaeude] = new SKColor(144, 164, 176), // Blaugrau — Gebaeude-Grundriss
+        [GardenElementType.Wasser] = new SKColor(66, 165, 245),    // Blau — Teich/Wasserflaeche
+        [GardenElementType.Kante] = new SKColor(255, 138, 101),    // Orange — Kante/Bordstein
     };
 
     // Gecachte Paints
@@ -92,7 +96,19 @@ public sealed class GardenPlanRenderer : IDisposable
     {
         canvas.Clear(_bgPaint.Color);
 
-        if (x.Length == 0)
+        // Element-Konturpunkte einmal aufloesen (LocalPoints gecacht; ParsePoints nur Fallback).
+        // So zeigt der Tab auch reine AR-Konturen (Weg/Beet/Mauer ohne Einzel-Messpunkte) korrekt.
+        var drawList = new List<(GardenElement el, List<(double x, double y)> pts)>();
+        if (elements != null)
+        {
+            foreach (var el in elements)
+            {
+                var pts = el.LocalPoints ?? _gardenPlanService.ParsePoints(el.PointsJson);
+                if (pts.Count >= 2) drawList.Add((el, pts));
+            }
+        }
+
+        if (x.Length == 0 && drawList.Count == 0)
         {
             canvas.DrawText("Keine Messpunkte vorhanden",
                 bounds.MidX, bounds.MidY,
@@ -104,15 +120,24 @@ public sealed class GardenPlanRenderer : IDisposable
         canvas.Save();
         canvas.Translate(bounds.MidX + PanX, bounds.MidY + PanY);
 
-        // Min/Max in einem Pass berechnen (spart 4x O(n) LINQ-Aufrufe)
-        double minX = x[0], maxX = x[0], minY = y[0], maxY = y[0];
-        for (int i = 1; i < x.Length; i++)
+        // Min/Max ueber Messpunkte UND Element-Konturen (sonst landen reine Konturen ausserhalb
+        // bzw. werden nicht zentriert/skaliert).
+        double minX = double.MaxValue, maxX = double.MinValue, minY = double.MaxValue, maxY = double.MinValue;
+        for (int i = 0; i < x.Length; i++)
         {
             if (x[i] < minX) minX = x[i];
             if (x[i] > maxX) maxX = x[i];
             if (y[i] < minY) minY = y[i];
             if (y[i] > maxY) maxY = y[i];
         }
+        foreach (var (_, pts) in drawList)
+            foreach (var (px, py) in pts)
+            {
+                if (px < minX) minX = px;
+                if (px > maxX) maxX = px;
+                if (py < minY) minY = py;
+                if (py > maxY) maxY = py;
+            }
 
         var rangeX = maxX - minX;
         var rangeY = maxY - minY;
@@ -129,32 +154,30 @@ public sealed class GardenPlanRenderer : IDisposable
         if (ShowGrid)
             DrawGrid(canvas, scale, centerX, centerY, minX, maxX, minY, maxY, range);
 
-        if (elements != null)
+        foreach (var (element, pts) in drawList)
         {
-            foreach (var element in elements)
+            var color = ElementColors.GetValueOrDefault(element.ElementType, new SKColor(128, 128, 128));
+
+            switch (element.ElementType)
             {
-                // LocalPoints wird vom ViewModel auf die aktuelle Referenz gemappt.
-                // Fallback auf ParsePoints (v1-Legacy) wenn der Cache noch nicht gefüllt ist.
-                var pts = element.LocalPoints ?? _gardenPlanService.ParsePoints(element.PointsJson);
-                if (pts.Count < 2) continue;
-
-                var color = ElementColors.GetValueOrDefault(element.ElementType, new SKColor(128, 128, 128));
-
-                switch (element.ElementType)
-                {
-                    case GardenElementType.Weg:
-                        DrawPolyline(canvas, pts, centerX, centerY, scale, color, element.Width * (float)scale);
-                        break;
-                    case GardenElementType.Beet:
-                    case GardenElementType.Rasen:
-                    case GardenElementType.Terrasse:
-                        DrawFilledPolygon(canvas, pts, centerX, centerY, scale, color);
-                        break;
-                    case GardenElementType.Mauer:
-                    case GardenElementType.Zaun:
-                        DrawPolyline(canvas, pts, centerX, centerY, scale, color, 3f);
-                        break;
-                }
+                // Flaechen → gefuelltes Polygon
+                case GardenElementType.Beet:
+                case GardenElementType.Rasen:
+                case GardenElementType.Terrasse:
+                case GardenElementType.Gebaeude:
+                case GardenElementType.Wasser:
+                    DrawFilledPolygon(canvas, pts, centerX, centerY, scale, color);
+                    break;
+                // Weg → breite Linie (Breite massstabsgetreu)
+                case GardenElementType.Weg:
+                    DrawPolyline(canvas, pts, centerX, centerY, scale, color, element.Width * (float)scale);
+                    break;
+                // Linien (Mauer/Zaun/Grenze/Kante) + jeder kuenftige Typ → schlanke Linie.
+                // default verhindert, dass neue Typen unsichtbar bleiben (frueherer Bug:
+                // Grenze/Gebaeude/Wasser/Kante hatten keinen Case → wurden gar nicht gezeichnet).
+                default:
+                    DrawPolyline(canvas, pts, centerX, centerY, scale, color, 3f);
+                    break;
             }
         }
 

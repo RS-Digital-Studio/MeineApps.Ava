@@ -77,8 +77,12 @@ public partial class TerrainViewModel : ViewModelBase
         Mesh = _terrainService.CreateMesh(x, y, z);
         PointCount = points.Count;
 
-        // Labels
-        Labels = points.Select(p => p.Label ?? string.Empty).ToArray();
+        // Labels nur, wenn der interne Punkt-Dedup (CreateMesh, 1-mm-Toleranz) KEINE Punkte
+        // entfernt hat — sonst waeren die Labels gegen die Mesh-Vertices verschoben und wuerden
+        // am falschen Punkt erscheinen. Lieber keine Labels als falsch zugeordnete.
+        Labels = Mesh.VertexCount == points.Count
+            ? points.Select(p => p.Label ?? string.Empty).ToArray()
+            : null;
 
         // Konturlinien
         ContourLines = _terrainService.CreateContourLines(Mesh, ContourInterval);

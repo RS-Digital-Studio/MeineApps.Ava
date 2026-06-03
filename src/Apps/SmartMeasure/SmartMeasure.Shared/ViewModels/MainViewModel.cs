@@ -185,7 +185,10 @@ public partial class MainViewModel : ViewModelBase
                 var count = await _arTransferService.TransferToProjectAsync(result, project.Id);
                 MessageRequested?.Invoke("AR-Capture", $"{count} Punkte übertragen");
 
-                // GardenPlan mit neuen Konturen aktualisieren
+                // GardenPlan mit neuen Konturen aktualisieren. CurrentProjectId MUSS gesetzt
+                // werden — sonst persistiert manuelles Nachzeichnen im Garten-Tab nicht
+                // (FinishDrawingAsync prueft CurrentProjectId > 0) → stiller Datenverlust.
+                GardenPlanVm.CurrentProjectId = project.Id;
                 await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
             }
             catch (Exception ex)

@@ -60,9 +60,6 @@ public partial class LiveTradingService : TradingServiceBase
     private readonly ConcurrentDictionary<string, decimal> _wsTickerPrices = new();
     /// <summary>True wenn der WebSocket-Ticker-Stream aktiv ist (für schnellere SL/TP-Prüfung).</summary>
     public bool IsWsTickerActive { get; private set; }
-    // Hard-Expiry (Safety-Net): Limit-Order läuft nach 48h ab selbst ohne Invalidierung
-    // (Schutz gegen "vergessene" Orders bei Daten-/API-Ausfall, keine Buch-Regel).
-    private const int LimitOrderHardExpiryHours = 48;
     // Throttle für SL-Sync auf BingX nach BE-Anpassung (max 1 API-Call pro 30s pro Symbol)
     private readonly ConcurrentDictionary<string, DateTime> _lastTrailingSyncTimes = new();
     // WebSocket-Ticker Event-Handler (gespeichert für sauberes Abmelden in Dispose)

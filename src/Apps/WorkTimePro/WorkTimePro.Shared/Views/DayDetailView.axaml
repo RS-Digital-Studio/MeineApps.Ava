@@ -221,6 +221,7 @@
                                        IsVisible="{Binding HasNote}" />
                           </StackPanel>
                           <Button Grid.Column="2" Classes="Text"
+                                  AutomationProperties.AutomationId="DayDetail_EntryEditButton"
                                   MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).EditEntryCommand}"
                                   CommandParameter="{Binding .}">
@@ -228,6 +229,7 @@
                                              Foreground="{DynamicResource PrimaryBrush}" />
                           </Button>
                           <Button Grid.Column="3" Classes="Text"
+                                  AutomationProperties.AutomationId="DayDetail_EntryDeleteButton"
                                   MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).DeleteEntryCommand}"
                                   CommandParameter="{Binding .}">
@@ -325,6 +327,7 @@
                                            Margin="4,0" />
                           <!-- Edit-Button (nur manuelle Pausen) -->
                           <Button Grid.Column="3" Classes="Text"
+                                  AutomationProperties.AutomationId="DayDetail_PauseEditButton"
                                   MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).EditPauseCommand}"
                                   CommandParameter="{Binding .}"
@@ -333,6 +336,7 @@
                                              Foreground="{DynamicResource PrimaryBrush}" />
                           </Button>
                           <Button Grid.Column="4" Classes="Text"
+                                  AutomationProperties.AutomationId="DayDetail_PauseDeleteButton"
                                   MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).DeletePauseCommand}"
                                   CommandParameter="{Binding .}"
@@ -618,6 +622,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:StatusOption">
                 <Button Width="170" Margin="4"
+                        AutomationProperties.AutomationId="DayDetail_StatusOptionButton"
                         MinHeight="44"
                         Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).SelectStatusCommand}"
                         CommandParameter="{Binding Status}"

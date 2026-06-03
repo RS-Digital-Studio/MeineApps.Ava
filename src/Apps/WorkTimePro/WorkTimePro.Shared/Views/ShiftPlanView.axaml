@@ -91,6 +91,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="models:ShiftPattern">
                     <Button Classes="Text" Padding="0"
+                            AutomationProperties.AutomationId="ShiftPlan_SelectPatternButton"
                             MinHeight="44"
                             Command="{Binding $parent[UserControl].((vm:ShiftPlanViewModel)DataContext).SelectPatternCommand}"
                             CommandParameter="{Binding .}">
@@ -166,6 +167,7 @@
 
                       <!-- Shift -->
                       <Button Grid.Column="1" Classes="Text" Padding="0"
+                              AutomationProperties.AutomationId="ShiftPlan_AssignPatternButton"
                               MinHeight="44"
                               Command="{Binding $parent[UserControl].((vm:ShiftPlanViewModel)DataContext).AssignShiftCommand}"
                               CommandParameter="{Binding .}"
@@ -191,6 +193,7 @@
 
                       <!-- Delete Button -->
                       <Button Grid.Column="3" Classes="Text"
+                              AutomationProperties.AutomationId="ShiftPlan_ClearDayButton"
                               MinWidth="44" MinHeight="44"
                               Command="{Binding $parent[UserControl].((vm:ShiftPlanViewModel)DataContext).ClearDayCommand}"
                               CommandParameter="{Binding .}">

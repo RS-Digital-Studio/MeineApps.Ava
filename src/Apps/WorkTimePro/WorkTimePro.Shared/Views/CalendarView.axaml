@@ -128,6 +128,7 @@
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:CalendarDay">
                         <Button Classes="Text"
+                                AutomationProperties.AutomationId="Calendar_DayButton"
                                 Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SelectDayCommand}"
                                 CommandParameter="{Binding .}"
                                 Width="48" Height="48"

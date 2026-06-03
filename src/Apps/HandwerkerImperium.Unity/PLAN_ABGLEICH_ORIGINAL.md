@@ -1033,13 +1033,13 @@ SEASONAL (SeasonalEventService + SeasonalEvent.cs): 4x/Jahr, jeweils 1.-14. des 
 
 SEASON-STORYLINE (SeasonStorylineCatalog): 4 Saisons x 5 Kapitel = 20 Story-Beats, getriggert an BP-Tiers 1/10/25/40/50, mit exakten MoneyReward/GoldenScrewReward/XpReward pro Kapitel (z.B. Spring Ch1 100k/5GS/200XP ... Ch5 100M/100GS/7500XP).
 
-DAILY-CHALLENGE (DailyChallengeService): 3 Challenges/Tag (+1 VIP Silver+), 9-stufiges Tier-System nach Level (<=5..>750), 14 Challenge-Typen tier-gegated, exakte TargetValue-/Reward-Formeln je Typ/Tier, incomeBase=max(levelFloor, NetIncome*600), AllCompletedBonus 500€+tier-GS(6-15), Retry-via-Ad.
+DAILY-CHALLENGE (DailyChallengeService): 3 Challenges/Tag (+1 VIP Silver+), 9-stufiges Tier-System nach Level (<=5..>750), 15 Challenge-Typen tier-gegated, exakte TargetValue-/Reward-Formeln je Typ/Tier, incomeBase=max(levelFloor, NetIncome*600), AllCompletedBonus 500€+tier-GS(6-15), Retry-via-Ad.
 
 DAILY-REWARD (DailyRewardService + DailyReward.cs): 30-TAGE-Zyklus mit exakter Tabelle (Tag1 500€..Tag30 100k€/1000XP/25GS), Streak-Tracking, Streak-Rescue (StreakBeforeBreak), BonusType SpeedBoost/XpBoost auf Tag 7/14/21/28/30, GetScaledMoney = max(fest, sqrt(Day)*NetIncome*60, cap 900s). KEIN Premium-Verdopplung im Service.
 
 DAILY-BUNDLE (DailyBundleService): 7 Slots (Mo-So) aus RemoteConfig-JSON, Rotation 00:00 UTC, IAP-SKU + Bonus-GS/Money/SpeedHours.
 
-WEEKLY-MISSION (WeeklyMissionService): 5 Missionen/Woche (+1 VIP Gold+), Reset Montag 00:00 UTC, 14 Typen, Zielwerte 3-5x Daily, AllCompletedBonus tier-GS(50-120).
+WEEKLY-MISSION (WeeklyMissionService): 5 Missionen/Woche (+1 VIP Gold+), Reset Montag 00:00 UTC, 15 Typen, Zielwerte 3-5x Daily, AllCompletedBonus tier-GS(50-120).
 
 TOURNAMENT (TournamentService + Tournament.cs): woechentliche MiniGame-Turniere, 3 Play-Games-Leaderboard-IDs, 3 Gratis-Teilnahmen/Tag dann 5 GS, zufaelliger MiniGame-Typ/Woche, Top-3-Scores, Reward-Tiers Gold(Rang1-3)/Silver(4-6)/Bronze(7-9) mit Ascension-Skalierung, simulierte Gegner als Fallback.
 
@@ -1197,17 +1197,17 @@ SHOP/IAP: Premium 4.99€ (+50% Income, +100% GS, Auto-Claim), 3 Whale-Bundles (
 
 - **Original:** WeeklyMissionService.cs (5 + VIP Gold+)
 - **Plan:** PLAN.md:735 '4 Weekly-Missions', PLAN.md:1631, DESIGN nennt keine Werte
-- **Problem:** Der Plan sagt mehrfach '4 Weekly-Missions' (PLAN.md:735, 1631). Original: 5 Missionen/Woche (missionCount = 5 + ExtraWeeklyMissions, VIP Gold+ => 6). Ausserdem fehlen alle Werte: 9-Tier-System nach Level, 14 Mission-Typen tier-gegated, Zielwerte 3-5x Daily, incomeBase=max(level*150, NetIncome*3000), GS-Reward 5-35 nach Tier, AllCompletedBonus 50-120 GS, Reset Montag 00:00 UTC, CompleteDailyChallenges-Mission via ChallengeCompleted-Event. Nur 'dito' (PLAN.md:495) als Spezifikation.
-- **Korrektur:** Count auf 5 (+VIP) korrigieren. Tier-System, 14 Typen mit TargetValue-Tabellen, GS-Rewards, incomeBase-Formel und AllCompletedBonus uebernehmen.
-- **Verifikation:** WeeklyMissionService.cs:158 missionCount = 5 + _vipService.ExtraWeeklyMissions (Gold+ => 6). WeeklyMissionType-Enum hat 14 Werte. Plan sagt mehrfach '4 Weekly-Missions' (PLAN.md:735, 1631) und keine Tier-/Wert-Spezifikation (PLAN.md:495 'dito'). Falsche Zahl (4 statt 5) + fehlende Werte. Reale Luecke/Fehler.
+- **Problem:** Der Plan sagt mehrfach '4 Weekly-Missions' (PLAN.md:735, 1631). Original: 5 Missionen/Woche (missionCount = 5 + ExtraWeeklyMissions, VIP Gold+ => 6). Ausserdem fehlen alle Werte: 9-Tier-System nach Level, 15 Mission-Typen tier-gegated, Zielwerte 3-5x Daily, incomeBase=max(level*150, NetIncome*3000), GS-Reward 5-35 nach Tier, AllCompletedBonus 50-120 GS, Reset Montag 00:00 UTC, CompleteDailyChallenges-Mission via ChallengeCompleted-Event. Nur 'dito' (PLAN.md:495) als Spezifikation.
+- **Korrektur:** Count auf 5 (+VIP) korrigieren. Tier-System, 15 Typen mit TargetValue-Tabellen, GS-Rewards, incomeBase-Formel und AllCompletedBonus uebernehmen.
+- **Verifikation:** WeeklyMissionService.cs:158 missionCount = 5 + _vipService.ExtraWeeklyMissions (Gold+ => 6). WeeklyMissionType-Enum hat 15 Werte. Plan sagt mehrfach '4 Weekly-Missions' (PLAN.md:735, 1631) und keine Tier-/Wert-Spezifikation (PLAN.md:495 'dito'). Falsche Zahl (4 statt 5) + fehlende Werte. Reale Luecke/Fehler.
 
-### 6.19 [MAJOR · wrong] Daily-Challenge-Typen unvollstaendig: '5 Types' statt 14 + Tier-System fehlt
+### 6.19 [MAJOR · wrong] Daily-Challenge-Typen unvollstaendig: '5 Types' statt 15 + Tier-System fehlt
 
-- **Original:** DailyChallengeService.cs (14 Typen, 9 Tiers)
+- **Original:** DailyChallengeService.cs (15 Typen, 9 Tiers)
 - **Plan:** PLAN.md:734 '5 Daily-Challenge-Types', PLAN.md:494 'dito'
-- **Problem:** Plan sagt '5 Daily-Challenge-Types'. Original hat 14 Typen (CompleteOrders, EarnMoney, UpgradeWorkshop, HireWorker, CompleteQuickJob, PlayMiniGames, AchieveMinigameScore, TrainWorker, CompleteCrafting, AchievePerfectStreak, ReachWorkshopLevel, ProduceItems, SellItems, CompleteMaterialOrder, CollectEquipment) tier-gegated (Basis 7, Tier5+ +4, Tier6+ +4, Tier7+ +1). Plus: 3 Challenges/Tag (+VIP Silver+), 9-Tier-System nach Level, exakte TargetValue/Reward-Formeln je Typ/Tier, incomeBase=max(levelFloor=max(level*30, level^2/2), NetIncome*600), GS 1-6 nach Tier, AllCompletedBonus 500€ + 6-15 GS, Retry-via-Ad (HasRetriedWithAd). Komplett fehlend.
-- **Korrektur:** Alle 14 Typen mit Tier-Gating, das 9-Tier-Level-Mapping, die TargetValue/Reward-Formeln je Typ, incomeBase-Formel, GS-Staffelung und AllCompletedBonus spezifizieren.
-- **Verifikation:** DailyChallengeType-Enum hat 14 Werte (CompleteOrders..CollectEquipment), DailyChallengeService:198 challengeCount = 3 + ExtraDailyChallenges, tier-gegated (Basis 7, Tier5/6/7 Erweiterungen), TargetValue/Reward tier-switch, AllCompletedBonus, Retry-via-Ad. Plan sagt '5 Daily-Challenge-Types' (PLAN.md:734, 1630). Falsche Typenzahl + fehlendes Tier-System. Reale Luecke/Fehler.
+- **Problem:** Plan sagt '5 Daily-Challenge-Types'. Original hat 15 Typen (CompleteOrders, EarnMoney, UpgradeWorkshop, HireWorker, CompleteQuickJob, PlayMiniGames, AchieveMinigameScore, TrainWorker, CompleteCrafting, AchievePerfectStreak, ReachWorkshopLevel, ProduceItems, SellItems, CompleteMaterialOrder, CollectEquipment) tier-gegated (Basis 7, Tier5+ +4, Tier6+ +4, Tier7+ +1). Plus: 3 Challenges/Tag (+VIP Silver+), 9-Tier-System nach Level, exakte TargetValue/Reward-Formeln je Typ/Tier, incomeBase=max(levelFloor=max(level*30, level^2/2), NetIncome*600), GS 1-6 nach Tier, AllCompletedBonus 500€ + 6-15 GS, Retry-via-Ad (HasRetriedWithAd). Komplett fehlend.
+- **Korrektur:** Alle 15 Typen mit Tier-Gating, das 9-Tier-Level-Mapping, die TargetValue/Reward-Formeln je Typ, incomeBase-Formel, GS-Staffelung und AllCompletedBonus spezifizieren.
+- **Verifikation:** DailyChallengeType-Enum hat 15 Werte (CompleteOrders..CollectEquipment), DailyChallengeService:198 challengeCount = 3 + ExtraDailyChallenges, tier-gegated (Basis 7, Tier5/6/7 Erweiterungen), TargetValue/Reward tier-switch, AllCompletedBonus, Retry-via-Ad. Plan sagt '5 Daily-Challenge-Types' (PLAN.md:734, 1630). Falsche Typenzahl + fehlendes Tier-System. Reale Luecke/Fehler.
 
 ### 6.20 [MAJOR · wrong] VIP-Multiplikator-Verwechslung in Reward-Formel (3.0 vs VIP-Income-Bonus)
 

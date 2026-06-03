@@ -44,7 +44,7 @@ Avalonia-Original bleibt produktiv. Cutover erst nach erfolgreicher Beta.
 | Asset-Loading | Addressables 2.9.1 | NICHT `Resources.Load` (außer Bootstrap) |
 | Audio | Unity AudioMixer | plattformneutral (war Avalonia-Schmerzpunkt) |
 | Animation | Animator + DOTween + Timeline | NICHT CSS-Hacks (war Avalonia-Schmerzpunkt) |
-| Camera | Cinemachine 2.10+ | Orbit + Pan + Impulse-Shake |
+| Camera | Cinemachine 3.x | Orbit + Pan + Impulse-Shake (Unity-6-Default `com.unity.cinemachine`, API-inkompatibel zu 2.10) |
 | UI | UI Toolkit (statische Screens) + uGUI (animierte) | gemischt nach Bedarf |
 | Text | TextMesh Pro | Typografie/Rich-Text (NICHT uGUI Text) |
 | Input | New Input System 1.19.0 | Touch-Gesten nativ (NICHT Legacy Input) |
@@ -118,10 +118,11 @@ werden → `[Inject]`-Field oder Method-Injection.
 **Lifetimes:** Domain-Calculators / Game-Services / Platform-Services / Coordinators → Singleton.
 Transient-Modal-ViewModels → Transient. Scene-Controller → Scoped (Scene-Scope).
 
-**Container-Facades gegen Service-Sprawl** (aus Avalonia übernommen, da Original ~91 Services hat):
-`IGuildFacade` (9 Gilden-Services), `IWorkerFacade`, `IProgressionFacade` (Prestige/Rebirth/
-Ascension/EternalMastery), `IMissionsFacade` (5 Services). Bündeln zusammengehörige Services
-hinter einem Interface.
+**Container-Facades gegen Service-Sprawl** (Original hat ~91 Services): Aus Avalonia übernommen
+sind `IGuildFacade` (9 Gilden-Services) und `IMissionsFacade` (5 Services). NEUE
+Unity-Strukturentscheidungen sind `IWorkerFacade` und `IProgressionFacade` (Prestige/Rebirth/
+Ascension/EternalMastery) — im Avalonia-Original existieren diese beiden nicht. Bündeln
+zusammengehörige Services hinter einem Interface.
 
 ---
 

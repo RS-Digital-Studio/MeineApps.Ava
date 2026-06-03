@@ -291,9 +291,9 @@ Assets/
 - Input System 1.19.0 (Package Registry)
 - Addressables 2.9.1
 - Localization 1.5.11
-- TextMeshPro (über `Window → TextMeshPro → Import TMP Essential Resources`)
+- TextMeshPro (in Unity 6 Teil von uGUI `com.unity.ugui` — KEIN eigenes Paket; Essentials via `Window → TextMeshPro → Import TMP Essential Resources`)
 - Timeline 1.8.12
-- Cinemachine 2.10+ (oder 3.x falls verfügbar)
+- Cinemachine 3.x (`com.unity.cinemachine`, Unity-6-Default; API-inkompatibel zu 2.10)
 - Mobile Notifications 2.4.3
 - Test Framework 1.5.1
 
@@ -314,11 +314,17 @@ Editiere `Unity/Packages/manifest.json`:
     "com.unity.timeline": "1.8.12",
     "com.unity.mobile.notifications": "2.4.3",
     "com.unity.test-framework": "1.5.1",
-    "com.unity.textmeshpro": "3.0.6",
-    "com.unity.cinemachine": "2.10.2"
+    "com.unity.cinemachine": "3.1.0"
   }
 }
 ```
+
+> **Kein `com.unity.textmeshpro`-Pin:** In Unity 6 ist TextMesh Pro Teil von uGUI
+> (`com.unity.ugui`, built-in) — das frühere Standalone-Paket `com.unity.textmeshpro` 3.0.6 ist
+> nicht mehr installierbar. TMP-Essentials werden einmalig per
+> `Window → TextMeshPro → Import TMP Essential Resources` importiert (§ 5.1), nicht via Manifest.
+> Cinemachine ist auf 3.x (`com.unity.cinemachine`) gepinnt — Unity 6 liefert Cinemachine 3.x
+> standardmäßig; die alte 2.10er-Linie ist API-inkompatibel und hier nicht zu verwenden.
 
 ### 5.3 DOTween (über Unity Asset Store)
 

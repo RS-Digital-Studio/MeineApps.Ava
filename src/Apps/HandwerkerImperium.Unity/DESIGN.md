@@ -43,6 +43,7 @@
 32. [Telemetrie-Events](#32-telemetrie-events)
 33. [Handwerker-Stadt-Hub-Design](#33-handwerker-stadt-hub-design)
 34. [Mega-Projekte (Cathedral, HQ)](#34-mega-projekte-cathedral-hq)
+34a. [Solo-Retention-Systeme (Tournament, Daily-Challenge, Weekly-Mission, Goal, WelcomeBack)](#34a-solo-retention-systeme-tournament-daily-challenge-weekly-mission-goal-welcomeback)
 35. [Future / Phase 2](#35-future--phase-2)
 36. [Konsistenz mit ASSETS_AI.md](#36-konsistenz-mit-assets_aimd)
 37. [Links](#37-links)
@@ -143,7 +144,7 @@ Separater Render-Tick (`FrameClockService`, ~30 Hz) treibt nur die Präsentation
 
 ### 2.1 Narrative
 
-Der Spieler erbt die alte **Werkstatt seines Großonkels Meister Hans** in einer kleinen Stadt. Meister Hans ist über die Jahre zur lokalen Legende geworden und führt den Spieler als **Mentor-Stimme** (Voice-Cloned, eigene Aufnahmen, EU-konforme Lizenzkette) durch das Spiel.
+Der Spieler erbt die alte **Werkstatt seines Großonkels Meister Hans** in einer kleinen Stadt. Meister Hans ist über die Jahre zur lokalen Legende geworden und führt den Spieler als **Mentor-Stimme** (ElevenLabs-Standard-Voice, kein Cloning, EU-konforme Lizenzkette) durch das Spiel.
 
 **Meister Hans erscheint:**
 - Im Splash-Screen (Voice-Intro)
@@ -1739,7 +1740,7 @@ Alle drei sind heirloom-fähig (`IsHeirloomEligible = true`).
 Reihenfolge unter `_craftingLock` (`CraftingService.StartCrafting`):
 1. Rezept laden; `effectiveInputs = GetEffectiveInputs(recipe, playerLevel)` (§10.7).
 2. **Tier-1-Goldkosten:** wenn `recipe.Tier == 1 && effectiveInputs.Count == 0`: `materialCost = product.BaseValue × 0.20` (= 20% des BaseValue; z.B. planks 500 → 100 Gold). `CanAfford` + `TrySpendMoney`. → Geld-Senke.
-3. **Output-Stack-Limit-Check:** bei Bestand 0 → freier Slot nötig (`usedSlots >= WarehouseSlotCount` → Abbruch; Code prueft gegen die **Basis**-Slots `WarehouseSlotCount`, NICHT `EffectiveSlotCount` mit Research-/Gilden-Bonus); sonst `currentOutput + OutputCount > CurrentStackLimit` → Abbruch.
+3. **Output-Stack-Limit-Check (`CanStoreOutput`):** bei Bestand 0 → freier Slot nötig, sonst `currentOutput + OutputCount > CurrentStackLimit` → Abbruch. **Maßgeblich ist `EffectiveSlotCount`:** der produktive Pfad (`_warehouse != null`) delegiert an `WarehouseService.CanAddToInventory`, das gegen `FreeSlotCount` = `EffectiveSlotCount − UsedSlotCount` prüft, also gegen **Basis + Research (`BonusSlotsFromResearch`) + Mega-Projekt (`BonusSlotsFromGuildMegaProject`)** (Beleg `CraftingService.CanStoreOutput` + `WarehouseService.EffectiveSlotCount`/`CanAddToInventory`). Nur der **DI-lose Fallback** (`_warehouse == null`, kein injizierter WarehouseService) prüft gegen die reinen **Basis**-Slots `WarehouseSlotCount` (`usedSlots >= WarehouseSlotCount` → Abbruch).
 4. **Input-Verfügbarkeit:** für jeden Input `available = CraftingInventory[id] − ReservedInventory[id]`; bei `< required` → Abbruch. Sonst Inputs abziehen.
 5. Crafting-Speed-Bonus berechnen (§10.5), Job mit `StartedAt=UtcNow`, `DurationSeconds=effectiveDuration` in `ActiveCraftingJobs`.
 
@@ -4430,6 +4431,139 @@ NavMesh-Pathfinding für realistisches Verhalten.
 
 ---
 
+## 34a. Solo-Retention-Systeme (Tournament, Daily-Challenge, Weekly-Mission, Goal, WelcomeBack)
+
+Diese fünf Systeme tauchen im Save-Schema (§ über `GameState`/`DailyProgress`-Slices), in den
+GS-Reward-Tabellen (§29) und den VIP-Perks auf, hatten bisher aber keine eigene Mechanik-Sektion.
+Alle Werte 1:1 aus dem Avalonia-Code; jede Untersektion nennt ihre Quelle. Diese Systeme sind
+**solo** (Single-Player) und nicht zu verwechseln mit den Gilden-Pendants: Daily-Challenge ≠
+Daily-Reward (§19), Weekly-Mission ≠ Gilden-Wochenziel (§17).
+
+### 34a.1 Tournament (wöchentlich, MiniGame)
+
+Quelle: `TournamentService.cs`, `Models/Tournament.cs` (ORIGINAL_WERTE Block 06 § 8).
+
+- **Wöchentlich**, startet Montag 00:00 UTC (`GetCurrentMonday`). Bei Wochenwechsel neues Turnier mit
+  **zufälligem MiniGame-Typ** aus dem Pool aller 10 (Sawing, PipePuzzle, WiringGame, PaintingGame,
+  RoofTiling, Blueprint, DesignPuzzle, Inspection, ForgeGame, InventGame). `IsExpired`: `UtcNow >
+  WeekStart + 7 Tage`. **Eigener Save-Slice** `CurrentTournament` (`Tournament?`, default null).
+- **Teilnahmen:** 3 Gratis-Teilnahmen/Tag (`FreeEntriesRemaining = max(0, 3 − EntriesUsedToday)`,
+  Reset bei neuem UTC-Tag), danach **5 Goldschrauben** Extra-Versuch (`EntryCost`). `RecordScore`
+  ignoriert score ≤ 0 und zieht ggf. die 5 GS via `TrySpendGoldenScrews` ab.
+- **Scoring (`AddScore`):** hält Top-3 (`BestScores`, absteigend); `TotalScore = Summe der Top-3`.
+- **Statistik:** `TotalTournamentsPlayed++` pro `RecordScore`; `TotalTournamentsWon++` nur bei Gold-Claim.
+- **Play-Games-Leaderboards:** WeeklyScore `CgkloeDjOZMKEAIQFA`, TournamentWins `CgkloeDjOZMKEAIQFQ`,
+  HighScore `CgkloeDjOZMKEAIQFg`. **NPC-Fallback:** sind keine Online-Einträge verfügbar, werden 9
+  simulierte Gegner generiert (`GenerateSimulatedOpponents(playerLevel)`: Namen HandwerkerMax,
+  BaumeisterPro, WerkstattKing, MeisterFritz, HammerHans, SchrauberLisa, ProfiAnna, BaustelleKurt,
+  WerkzeugOtto; `baseScore = max(100, playerLevel*15)`, `score = baseScore * (0.4 + rnd*1.2)`).
+- **Reward-Tiers** (rang-basiert, `ClaimRewards`; einmalig via `RewardsClaimed`, nur wenn `TotalScore > 0`;
+  `netPerSecond = max(0, NetIncomePerSecond)`, `AscensionLevel = Ascension.AscensionLevel`):
+
+| Tier | Rang | GS-Belohnung | Geld-Belohnung |
+|------|------|--------------|----------------|
+| Gold | 1–3 | `30 + AscensionLevel*5` | `max(100.000, netPerSecond*600)` (10 Min) |
+| Silver | 4–6 | `15 + AscensionLevel*3` | `max(50.000, netPerSecond*300)` (5 Min) |
+| Bronze | 7–9 | `5 + AscensionLevel*1` | `max(20.000, netPerSecond*120)` (2 Min) |
+| None | 10 / kein Eintrag | 0 | 0 |
+
+### 34a.2 Daily-Challenge (solo, 3/Tag)
+
+Quelle: `DailyChallengeService.cs`, `Models/DailyChallenge.cs` (ORIGINAL_WERTE Block 06 § 5). **Nicht**
+mit dem Daily-Reward-30-Tage-Zyklus (§19) verwechseln. Eigener Save-Slice `DailyChallengeState`.
+
+- **15 Challenge-Typen** (Enum `DailyChallengeType`, IDs 0–14: CompleteOrders, EarnMoney,
+  UpgradeWorkshop, HireWorker, CompleteQuickJob, PlayMiniGames, AchieveMinigameScore, TrainWorker,
+  CompleteCrafting, AchievePerfectStreak, ReachWorkshopLevel, ProduceItems, SellItems,
+  CompleteMaterialOrder, CollectEquipment).
+- **3 aktiv/Tag**, +1 ab VIP Silver (`challengeCount = 3 + VipService.ExtraDailyChallenges`). Reset bei
+  neuem UTC-Tag (`CheckAndResetIfNewDay`, Zeitmanipulations-Schutz). Typen werden zufällig ohne
+  Wiederholung aus dem nach Tier verfügbaren Pool gezogen.
+- **Tier-System** (Level-basiert, identisch zu Weekly): T0 ≤5, T1 6–15, T2 16–30, T3 31–50, T4 51–100,
+  T5 101–300, T6 301–500, T7 501–750, T8 ≥751. Verfügbarkeit pro Tier:
+  Basis (immer) = CompleteOrders/EarnMoney/UpgradeWorkshop/HireWorker/CompleteQuickJob/PlayMiniGames/
+  AchieveMinigameScore; ab T5 + TrainWorker/CompleteCrafting/ProduceItems/SellItems; ab T6 +
+  AchievePerfectStreak/CompleteMaterialOrder/CollectEquipment; ab T7 + ReachWorkshopLevel.
+- **Belohnung je Challenge** (`CreateChallenge`): `netPerSecond = max(0, NetIncomePerSecond)`,
+  `levelFloor = max(level*30, level*level/2)`, `incomeBase = max(levelFloor, netPerSecond*600)`;
+  MoneyReward = `round(incomeBase * Faktor)` (Faktor je Typ), XpReward = `Basis + level*2`. **GS je Tier:**
+  T ≤4 → `min(1+tier, 2)`; T5 → 3, T6 → 4, T7 → 5, T8 → 6.
+- **Retry per Ad** (`RetryChallenge`): setzt `CurrentValue=0`, `IsCompleted=false`, `HasRetriedWithAd=true`
+  (nur wenn nicht abgeschlossen, noch nicht genutzt, `CurrentValue>0`).
+- **Alle-fertig-Bonus:** 500 € (`AllCompletedBonusAmount`) + GS je Tier (`AllCompletedBonusScrews`:
+  T ≤4 → 6, T5 → 8, T6 → 10, T7 → 12, T8 → 15); sammelt vorher alle offenen Einzelbelohnungen ein.
+- **Event** `ChallengeCompleted` (false→true) speist die Weekly-Mission `CompleteDailyChallenges`.
+
+### 34a.3 Weekly-Mission (solo, 5/Woche)
+
+Quelle: `WeeklyMissionService.cs`, `Models/WeeklyMission.cs` (ORIGINAL_WERTE Block 06 § 7). **Nicht** mit
+dem Gilden-Wochenziel (§17) verwechseln. Eigener Save-Slice `WeeklyMissionState`.
+
+- **15 Missions-Typen** (Enum `WeeklyMissionType`, IDs 0–14: CompleteOrders, EarnMoney,
+  UpgradeWorkshops, HireWorkers, PlayMiniGames, CompleteDailyChallenges, AchievePerfectRatings,
+  TrainWorkers, CompleteCraftings, AchievePerfectStreak, ReachWorkshopLevels, ProduceItems, SellItems,
+  CompleteMaterialOrders, CollectEquipment).
+- **5 Missionen/Woche**, +1 ab VIP Gold (`missionCount = 5 + VipService.ExtraWeeklyMissions`). Reset:
+  nächster Montag 00:00 UTC nach `LastWeeklyReset` (`GetNextMonday`, Zeitmanipulations-Schutz). Tier-System
+  identisch zu Daily (§34a.2). Verfügbarkeit: Basis = CompleteOrders/EarnMoney/UpgradeWorkshops/
+  HireWorkers/PlayMiniGames/CompleteDailyChallenges/AchievePerfectRatings; ab T5 + TrainWorkers/
+  CompleteCraftings/ProduceItems/SellItems; ab T6 + AchievePerfectStreak/CompleteMaterialOrders/
+  CollectEquipment; ab T7 + ReachWorkshopLevels.
+- **Belohnung je Mission** (`CreateMission`): `incomeBase = max(level*150, netPerSecond*3000)` (~50 Min,
+  5× Daily); MoneyReward = `round(incomeBase * Faktor)`, XpReward = `Basis + level*5`. **GS je Tier:**
+  T0 → 5, T1 → 7, T2 → 9, T3 → 11, T4 → 15, T5 → 18, T6 → 22, T7 → 28, T8 → 35.
+- **Alle-fertig-Bonus-GS** (`AllCompletedBonusScrews`): T ≤4 → 50, T5 → 60, T6 → 75, T7 → 90, T8 → 120;
+  erfordert alle Missionen abgeschlossen, sammelt zuvor alle offenen Einzelbelohnungen ein.
+
+### 34a.4 Goal (dynamisches "Nächstes Ziel")
+
+Quelle: `GoalService.cs`, `Models/GameGoal.cs` (ORIGINAL_WERTE Block 07 § 3). `GameGoal`-Felder:
+Description, RewardHint, Progress (0.0–1.0), NavigationRoute, IconKind (Material-Icon, default
+"TrendingUp"), Priority (kleiner = höher). `GetCurrentGoal()` cacht (Dirty-Flag), invalidiert bei
+StateLoaded; `CalculateBestGoal()` gibt das erste passende Ziel der höchsten Prio zurück.
+
+**Prioritätskette (0 = höchste, 11 Stufen):**
+
+| Prio | Block | Bedingung (Kurz) | Route | IconKind |
+|------|-------|------------------|-------|----------|
+| 0 | FindBeginnerGoal | PlayerLevel < 10 && TotalPrestigeCount == 0 | dashboard | variiert |
+| 1 | Workshop-Meilenstein nahe | Meilenstein 1–5 Level entfernt | dashboard | TrendingUp |
+| 2 | Prestige verfügbar | GetHighestAvailableTier != None | prestige | StarFourPoints |
+| 3 | Nächster Workshop | günstigster Locked, `0 < remaining < Money*5` | dashboard | LockOpenVariant |
+| 4 | Gebäude-Upgrade | Level ≥5, IsBuilt, Level <5, `Money ≥ Cost*0.5` | imperium | HomeCity |
+| 5 | Nächster Worker-Tier | `Money ≥ cost*0.3 && Money < cost*3` | workers | AccountArrowUp |
+| 6 | FindWorkshopRebirthGoal | WS Level ≥995 && Sterne <5 | dashboard | StarShooting |
+| 7 | FindAscensionGoal | `CanAscend` | prestige | ArrowUpBoldCircle |
+| 8 | FindAllWorkshopsMaxGoal | atMax ≥6 && atMax < totalUnlocked | dashboard | ChartBar |
+| 9 | FindNextRebirthStarGoal | WS Level ≥900 && Sterne <5 | dashboard | Star |
+| 10 | FindStretchGoal (A/B) | Sterne sammelbar bzw. niedrigster WS < MaxLevel | dashboard | StarCircle / TrendingUp |
+
+- **Workshop-Meilensteine (Prio 1):** `[25, 50, 75, 100, 150, 200, 225, 250, 350, 500, 1000]`; Trigger wenn
+  `diff = milestone − Level ∈ (0, 5]`. RewardHint = `x{GetMilestoneMultiplierForLevel(milestone)} Income Boost!`.
+- **Anfänger-Ziele (Prio 0):** nur PlayerLevel <10 && TotalPrestigeCount ==0; erstes zutreffend:
+  (1) Erst-Upgrade `firstWorkshop.Level ≤1 && TotalMoneySpent ==0`; (2) "Accept first order" `TotalOrdersCompleted ==0`;
+  (3) `{Workshop} → Lv.10` wenn `Level <10`; (4) Fallback `Reach Level {5 falls Level<5, sonst 10}`.
+- **Rebirth-Bonus-Text:** 1★ +15%, 2★ +35%, 3★ +60%, 4★ +100%, 5★ +150%.
+
+### 34a.5 WelcomeBack (Rückkehrer-Angebot)
+
+Quelle: `WelcomeBackService.cs`, `Models/WelcomeBackOffer.cs` / `WelcomeBackOfferType` (ORIGINAL_WERTE
+Block 07 § 8). `CheckAndGenerateOffer()` prüft `absence = UtcNow − LastPlayedAt`; **else-if-Kette (exklusiv,
+ein Angebot)** in Reihenfolge StarterPack → Premium → Standard. `netPerSecond = max(1m, NetIncomePerSecond)`.
+Existiert ein aktives, nicht-abgelaufenes Angebot, wird kein neues erzeugt; Abgelaufenes wird verworfen.
+
+| Typ | Bedingung | GS | Money-Reward | XP | Ablauf |
+|-----|-----------|----|--------------|----|--------|
+| StarterPack | PlayerLevel ≥5 && !ClaimedStarterPack (**einmalig**) | 10 | 50.000 (fix) | 0 | +24 h |
+| Premium | absence ≥ 72 h | 8 | `max(5000, min(round(netPerSecond*3600), 1.000.000.000))` (1 h, Cap 1 Mrd.) | 0 | +24 h |
+| Standard | absence ≥ 24 h | 5 | `max(2000, min(round(netPerSecond*1800), 500.000.000))` (30 min, Cap 500 Mio.) | 0 | +24 h |
+
+- **ClaimOffer()** (nur wenn nicht abgelaufen): zahlt Money/GS/XP aus; StarterPack → `ClaimedStarterPack=true`;
+  `ActiveWelcomeBackOffer=null`. **DismissOffer()**: `ActiveWelcomeBackOffer=null` (keine Belohnung).
+  **Event** `OfferGenerated`. Eigener Save-Slice `WelcomeBackOffer`.
+
+---
+
 ## 35. Future / Phase 2
 
 > **Grundsatz:** Die Unity-Beta bildet das produktive Avalonia-Original mechanisch 1:1 ab. Die folgenden
@@ -4480,7 +4614,7 @@ NavMesh-Pathfinding für realistisches Verhalten.
 | 10 Werkstätten + Modul-Setup | § 7.2 |
 | Worker-Mood-States (4) | § 8.3 |
 | Material-Affinity (5 Props) | § 8.4 |
-| Master-Tools-Glow | § 8.5 |
+| Master-Tools-Glow | § 8.6 |
 | Worker-Animationen | § 9.2 |
 | Workshop-Idle-Particle-FX | § 9.4 |
 | Audio-Plan (BGM + SFX + Voice) | § 11 |

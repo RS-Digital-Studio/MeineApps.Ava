@@ -4943,7 +4943,7 @@ Quelle: DailyChallengeService.GetTier(level).
 `incomeBase = max(levelFloor, netPerSecond * 600)`. MoneyReward = `round(incomeBase * Faktor)`.
 GS-Reward nach Tier: Tier ≤4 → `min(1+tier, 2)`; 5→3, 6→4, 7→5, 8→6.
 
-### 5.5 Alle 14 Challenge-Typen (TargetValue je Tier, Reward-Formeln)
+### 5.5 Alle 15 Challenge-Typen (TargetValue je Tier, Reward-Formeln)
 
 Quelle: DailyChallengeService.CreateChallenge + DailyChallenge.cs (Enum).
 TargetValue-Spalten: Tier0..Tier8 (leere Zelle = Typ in diesem Tier nicht verfügbar).
@@ -5022,7 +5022,7 @@ Quelle: `Services/WeeklyMissionService.cs`, `Models/WeeklyMission.cs`.
 MoneyReward = `round(incomeBase * Faktor)`. XpReward = `Basis + level*5`.
 GS-Reward nach Tier: T0→5, T1→7, T2→9, T3→11, T4→15, T5→18, T6→22, T7→28, T8→35.
 
-### 7.4 Alle 14 Missions-Typen (TargetValue je Tier, Reward-Formeln)
+### 7.4 Alle 15 Missions-Typen (TargetValue je Tier, Reward-Formeln)
 
 Quelle: WeeklyMissionService.CreateMission + WeeklyMission.cs (Enum). TargetValue Tier0..Tier8.
 

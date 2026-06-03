@@ -466,15 +466,15 @@ Pro Worker: **4 Gesichtstexturen** (Happy / Neutral / Sad / Frustrated) auf sepa
 
 ### 8.5 Worker-Equipment (sichtbar getragen)
 
-Das Original kennt **4 Equipment-Typen** (Helm, Handschuhe, Stiefel, Gürtel) in **4 Rarities** (Common/Uncommon/Rare/Epic) — Quelle: [ORIGINAL_WERTE.md § 6](ORIGINAL_WERTE.md). Jeder Worker hat **genau 1 Equipment-Slot** (`EquippedItem`), kein Multi-Slot. In 3D wird das getragene Stück sichtbar an den passenden Bone-Slot des Workers gehängt (Helm → Kopf, Handschuhe → Hände, Stiefel → Füße, Gürtel → Hüfte).
+Das Original kennt **4 Equipment-Typen** (Helm, Handschuhe, Stiefel, Gürtel) in **4 Rarities** (Common/Uncommon/Rare/Epic) — Quelle: [ORIGINAL_WERTE.md Block 03 § 6](ORIGINAL_WERTE.md). Jeder Worker hat **genau 1 Equipment-Slot** (`EquippedItem`), kein Multi-Slot. In 3D wird das getragene Stück sichtbar an den passenden Bone-Slot des Workers gehängt (Helm → Kopf, Handschuhe → Hände, Stiefel → Füße, Gürtel → Hüfte).
 
 - **16 Modelle** (4 Typen × 4 Rarities), klein (LOD0 ~300 Tris). Kein Re-Modeling pro Worker.
-- **Rarity-Visualisierung** über Material + Farbe (Rarity-Color aus ORIGINAL_WERTE.md § 6.4: Common #9E9E9E, Uncommon #4CAF50, Rare #2196F3, Epic #9C27B0) + Emissive-Akzent bei Epic.
+- **Rarity-Visualisierung** über Material + Farbe (Rarity-Color aus ORIGINAL_WERTE Block 03 § 6.4: Common #9E9E9E, Uncommon #4CAF50, Rare #2196F3, Epic #9C27B0) + Emissive-Akzent bei Epic.
 - **Generation:** SPAR3D (kleine Props) + Material-Recolor pro Rarity. Workflow: `03_texture_decals/equipment_rarity_recolor.json`.
 
 ### 8.6 Master-Tool Glow + Emissive
 
-12 Master-Tools brauchen Glow-FX (Gold-Hammer, Crystal-Chisel, etc.) — Quelle: [ORIGINAL_WERTE.md § 5](ORIGINAL_WERTE.md), Rarity Common→Legendary:
+12 Master-Tools brauchen Glow-FX (Gold-Hammer, Crystal-Chisel, etc.) — Quelle: [ORIGINAL_WERTE.md Block 03 § 5](ORIGINAL_WERTE.md), Rarity Common→Legendary:
 
 - Albedo + Normal Standard.
 - **Emissive-Map** für Glow-Bereiche, in Unity via `URP/Lit Emission`. Glow-Intensität skaliert mit MasterToolRarity.
@@ -511,7 +511,7 @@ Insgesamt: ~8 Anim-Clips × 20 Workers = 160 Animation-Slots. Mixamo deckt 6 dav
 
 ### 9.3 Mood-State-Sync
 
-Animator-State-Machine pro Worker. **Mood-Schwellen 1:1 aus dem Original** ([DESIGN.md § 5.3](DESIGN.md) / [ORIGINAL_WERTE.md § 3.4](ORIGINAL_WERTE.md)): Happy ab 80, Neutral ab 50, kritisch unter 20, `WillQuit` bei Mood < 20):
+Animator-State-Machine pro Worker. **Mood-Schwellen 1:1 aus dem Original** ([DESIGN.md § 5.3](DESIGN.md) / [ORIGINAL_WERTE.md Block 01 § 3.4](ORIGINAL_WERTE.md)): Happy ab 80, Neutral ab 50, kritisch unter 20, `WillQuit` bei Mood < 20):
 
 ```
 Idle_Happy   ─── (Mood < 80) ──> Idle_Neutral
@@ -578,7 +578,7 @@ HandwerkerImperium.Unity Addressables:
 ├── Workshops_Basic          # 10 Basis-Werkstätten + Sub-Module (immer)
 ├── Workshops_Decals_Lv{1..5} # Decal-Material-Sets (lazy bei Upgrade)
 ├── Workshops_Specialization # 3 Spez. (Efficiency/Quality/Economy) × 10 (lazy)
-├── Buildings                # 7 Buildings (Office/Storage/TrainingCenter/Canteen/Showroom/… — DESIGN.md § 7), je 5 Level-Stufen via Decal
+├── Buildings                # 7 Buildings (Office/Storage/TrainingCenter/Canteen/Showroom/… — DESIGN.md § 15), je 5 Level-Stufen via Decal
 ├── Workers_TierF_to_C       # Basis-Tiers (immer) — Tiers F/E/D/C × m/w
 ├── Workers_TierB_to_S       # Höhere Tiers (lazy bei Erst-Hire) — B/A/S × m/w
 ├── Workers_TierSS_to_Legendary # SS/SSS/Legendary × m/w (lazy)
@@ -588,8 +588,8 @@ HandwerkerImperium.Unity Addressables:
 ├── MasterTools              # 12 Artefakte (lazy bei Unlock)
 ├── CityTiles_World{1..10}   # Pro Welt-Theme (lazy bei Theme-Wechsel)
 ├── MegaProjects             # 2 Templates (Cathedral + HQ) + Bauphasen (lazy)
-├── Guild_Hall_Buildings     # 10 Hall-Gebäude (DESIGN.md § 33) (lazy bei Gilden-Beitritt)
-├── Guild_Bosses             # 6 Boss-Modelle (StoneGolem/IronTitan/… — DESIGN.md § 33) (lazy)
+├── Guild_Hall_Buildings     # 10 Hall-Gebäude (DESIGN.md § 17.5) (lazy bei Gilden-Beitritt)
+├── Guild_Bosses             # 6 Boss-Modelle (StoneGolem/IronTitan/… — DESIGN.md § 17.4) (lazy)
 ├── MiniGames_{1..13}        # 13 MiniGame-Typen, 10 distinkte Renderer/Prop-Sets (lazy)
 ├── Cosmetics_Event          # Skins, saisonale Event-Visuals (Spring/Summer/Fall/Winter) (lazy)
 ├── Prestige_Cinematic       # Hero-Assets (lazy bei Prestige)
@@ -728,26 +728,26 @@ Stückzahlen sind 1:1 aus dem realen Spielinhalt abgeleitet (Quelle: [ORIGINAL_W
 | **Workshop-Sub-Module** (Schild/Werkbank/Lager × 10) | 30 | 800 | 400 | 200 | Ja (Modul-Split) |
 | **Workshop-Upgrade-Decals (Lv1-5 × 10)** | 50 (Material-Sets) | (Re-Tex) | — | — | Ja (Stage 4) |
 | **Workshop-Specialization** (Eff/Qual/Eco × 10) | 30 (Re-Tex) | (Re-Tex) | — | — | Ja (Stage 4) |
-| **Buildings (7 Typen)** — DESIGN.md § 7 | 7 | 3 000 | 1 500 | 750 | Ja + Modular |
+| **Buildings (7 Typen)** — DESIGN.md § 15 | 7 | 3 000 | 1 500 | 750 | Ja + Modular |
 | **Building-Upgrade-Decals (Lv1-5 × 7)** | 35 (Material-Sets) | (Re-Tex) | — | — | Ja (Stage 4) |
 | **Arbeiter-Basis (10 Tiers × m/w)** — DESIGN.md § 5 | 20 | 5 000 | 2 500 | 1 200 | Ja + Mixamo |
 | **Arbeiter-Affinity-Props** (5 Material-Affinitäten) | 5 | 400 | 200 | 100 | Ja |
 | **Worker-Mood-Face-Textures** (4 States × 20 Worker) | 80 (Tex) | (Tex) | — | — | Ja (Stage 4) |
-| **Worker-Equipment** (4 Typen × 4 Rarities, sichtbar getragen) — ORIGINAL_WERTE.md § 6 | 16 | 300 | 150 | 80 | Ja |
+| **Worker-Equipment** (4 Typen × 4 Rarities, sichtbar getragen) — ORIGINAL_WERTE Block 03 § 6 | 16 | 300 | 150 | 80 | Ja |
 | **Tier-1-Crafting-Produkte** (10) | 10 | 800 | 400 | 200 | Ja |
 | **Tier-2-Crafting-Produkte** (10) | 10 | 1 200 | 600 | 300 | Ja |
 | **Tier-3-Crafting-Produkte** (10) | 10 | 1 800 | 900 | 450 | Ja |
 | **Tier-4-Crafting-Produkte** (Villa, Skyscraper, Imperium-HQ; IsHeirloomEligible) | 3 | 5 000 | 2 500 | 1 200 | Ja, Hero |
-| **Master-Tools (12 Artefakte)** — ORIGINAL_WERTE.md § 5 | 12 | 600 | 300 | 150 | Ja + Glow |
+| **Master-Tools (12 Artefakte)** — ORIGINAL_WERTE Block 03 § 5 | 12 | 600 | 300 | 150 | Ja + Glow |
 | **City-Tiles (10 Welt-Themes × 8 Tiles)** | 80 | 1 200 | 600 | 300 | Ja (Batch, Tiling-Check) |
-| **Gilden-Hall-Gebäude (10)** — DESIGN.md § 33 | 10 | 3 000 | 1 500 | 750 | Ja + Modular (Level = Größe/Glow) |
-| **Gilden-Bosse (6 Typen)** — DESIGN.md § 33 / ORIGINAL_WERTE.md § 4 | 6 | 8 000 | 4 000 | 2 000 | Cloud-Polish (animierte 3D-Modelle, eigene Arena) |
+| **Gilden-Hall-Gebäude (10)** — DESIGN.md § 17.5 | 10 | 3 000 | 1 500 | 750 | Ja + Modular (Level = Größe/Glow) |
+| **Gilden-Bosse (6 Typen)** — DESIGN.md § 17.4 / ORIGINAL_WERTE Block 05 § 4 | 6 | 8 000 | 4 000 | 2 000 | Cloud-Polish (animierte 3D-Modelle, eigene Arena) |
 | **Mega-Projekte (2 Templates: Cathedral, HQ)** je 5 Bauphasen | 2 (+10 Phasen-Stufen) | 12 000 | 6 000 | 3 000 | Cloud-Polish |
 | **MiniGame-Props** (13 MiniGame-Typen, 10 distinkte Renderer — DESIGN.md § 7) | ~40 | 400 | 200 | 100 | Ja |
 | **Cosmetics / Event-Visuals** (Skins + 4 saisonale Themes Spring/Summer/Fall/Winter) | ~20 | 1 000 | 500 | 250 | Ja |
 | **Prestige-Cinematic-Hero** | 5 | 20 000 | — | — | Cloud + Polish |
 
-**Total geometrische unique Models:** ~250 + ~111 Re-Texture/Decal-Sets (50 Workshop-Decals + 35 Building-Decals + 80 Mood-Faces + 30 Specialization) = **mehrere hundert Asset-Slots**. Aktuelle Aufschlüsselung in PLAN.md Anhang C. Erbstücke sind kein eigenes Modell — die 3 IsHeirloomEligible-T4-Produkte werden mit Material-Aura-Overlay wiederverwendet.
+**Total geometrische unique Models:** ~250 + ~195 Re-Texture/Decal-Sets (50 Workshop-Decals + 35 Building-Decals + 80 Mood-Faces + 30 Specialization) = **mehrere hundert Asset-Slots**. Aktuelle Aufschlüsselung in PLAN.md Anhang C. Erbstücke sind kein eigenes Modell — die 3 IsHeirloomEligible-T4-Produkte werden mit Material-Aura-Overlay wiederverwendet.
 
 ### 12.2 Texture-Auflösungen
 

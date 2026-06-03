@@ -119,7 +119,7 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 - [ ] **Tests:** Migration-Tests V7→V8, Sanitize-Tests (20+ Tests)
 
 **Asset-Pipeline-Start (parallel):**
-- [ ] Briefing an 3D-Artist (3D-Werkstatt-Konzept-Sheet)
+- [ ] KI-Asset-Pipeline aufsetzen (3D-Werkstatt-Konzept-Sheet als ComfyUI/TRELLIS-Prompt-Vorlage)
 - [ ] Style-Guide schreiben (low-poly, stylized, low-fi)
 
 **Output:**
@@ -180,7 +180,7 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 - [ ] **Editor-Tool:** Addressables-Catalog-Builder im Menü
 
 **Asset-Pipeline:**
-- [ ] Erste 3D-Werkstatt-Modelle vom Artist (Holzwerkstatt — Test-Asset)
+- [ ] Erste 3D-Werkstatt-Modelle aus der KI-Pipeline (Holzwerkstatt — Test-Asset)
 
 **Output:**
 - Addressables läuft
@@ -461,19 +461,26 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 **Output:**
 - Vollständiges V7-System
 
-### Woche 28: Markt + Reputation + Equipment + Master-Tools + Gebäude + Achievements
+### Woche 28 (Mehr-Wochen-Block): Markt + Reputation + Equipment + QuickJob + Master-Tools + Gebäude + Achievements
 
-> Sammelwoche für die verbleibenden Single-Player-Systeme. Funktional vollständig; Inhalts-Polish
-> (alle 109 Achievement-Texte, finale 3D-Trophäen) wird in der Content-Complete-Phase verifiziert.
+> **Scope-Hinweis (Realismus):** Dies ist der dichteste Single-Player-Block — sieben Subsysteme inkl.
+> 12 Master-Tools, 7 Gebäuden und 109 Achievements lassen sich **nicht** in einer einzelnen Kalenderwoche
+> bauen. Der Block ist daher als **Mehr-Wochen-Scope** (realistisch ~2-3 Wochen) zu lesen und wird in zwei
+> Teil-Pässe (28a/28b) gegliedert. Funktional vollständig; Inhalts-Polish (alle 109 Achievement-Texte,
+> finale 3D-Trophäen) wird in der Content-Complete-Phase verifiziert. Die Phase-4-Grenze (W28) markiert das
+> Ende des Single-Player-Funktionsumfangs, nicht eine harte 7-Tage-Kapazität.
 
-**Tasks:**
+**Teil-Pass 28a — Wirtschaft & Progression:**
 - [ ] `MarketService` mit Sinus-Welle, Buy/Sell mit Strafzoll, Event-Modulation (DESIGN.md § 12, Unlock via logi_05)
 - [ ] **Reputation-System** (Score 0-100, Tiers, Reward-Multiplikator, Decay, Tier-Up-Effekte — DESIGN.md § 13) inkl. **Reputation-Shop (5 Items, Unlock ab Score 60 — § 13.8)**
 - [ ] **Equipment-System** (4 Rarity, Typen/Slots, 3 Stats, Erwerb, Prestige-Preservation — DESIGN.md § 16)
+- [ ] **QuickJob / Schnellaufträge (eigenständiges Subsystem):** `QuickJobService` (Rotation alle 15/12/10/8 min nach Prestige, 5 Jobs gleichzeitig, Tages-Limit 20-40 + Prestige-Shop-Bonus, MiniGame-Kopplung pro Workshop, eigene Reward-/Difficulty-Formel, Tages-Reset — ORIGINAL_WERTE § QuickJob)
+
+**Teil-Pass 28b — Artefakte, Gebäude & Achievements:**
 - [ ] **Master-Tools (12 Artefakte)** inkl. Mini-Game-Kopplung (DESIGN.md § 14)
 - [ ] **Gebäude (7 Stück)** mit Effekten (DESIGN.md § 15)
 - [ ] **AchievementService** mit **109 Spieler-Achievements (17 Kategorien — DESIGN.md § 18)** + 3D-Trophäen-Cinematic
-- [ ] **Tests:** Market-Pricing, Reputation-Tiers, Equipment-Rolls, Master-Tool-Boni, Achievement-Trigger (30+ Tests)
+- [ ] **Tests:** Market-Pricing, Reputation-Tiers, Equipment-Rolls, QuickJob-Rotation/Rewards, Master-Tool-Boni, Achievement-Trigger (35+ Tests, über beide Teil-Pässe verteilt)
 
 **Output:**
 - Phase 4 abgeschlossen → Single-Player funktional vollständig (Inhalts-Verifikation in Content-Complete-Phase)
@@ -483,8 +490,10 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 ## Phase 5: Gilden + Multiplayer + Live-Ops (Woche 29-38)
 
 > Deckt **alle** Online- und Live-Ops-Systeme aus DESIGN.md ab: komplettes Gilden-System (§ 17),
-> Daily-Reward (§ 19), Lucky-Spin (§ 20), BattlePass (§ 21), Live-/Random-Events (§ 22), Saisonale
-> Events + Event-Shop (§ 23), Story-Chapters (§ 26), Notifications (§ 28) und Monetarisierung (§ 29).
+> Daily-Reward (§ 19), Lucky-Spin (§ 20), BattlePass (§ 21), Daily-Challenge + Weekly-Mission +
+> Tournament (eigenständige Missions-/Wettbewerbs-Systeme), Live-/Random-Events (§ 22), Saisonale
+> Events + Event-Shop (§ 23), Story-Chapters (§ 26), Notifications + WelcomeBack + WhatsNew (§ 28)
+> und Monetarisierung (§ 29).
 
 ### Woche 29: Firebase-Realtime-DB-Integration
 
@@ -573,7 +582,9 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 - [ ] Profanity-Filter (DE/EN/ES/FR/IT/PT)
 - [ ] `PushNotificationService` (**8 Trigger — DESIGN.md § 28.1**) + Notification-Scheduler
 - [ ] **In-App-Bell / NotificationCenter (DESIGN.md § 28.2)** + Lokalisierung (§ 28.3)
-- [ ] **Tests:** Profanity-Filter, Notification-Trigger (10+ Tests)
+- [ ] **WelcomeBack (3 Offer-Typen):** `WelcomeBackService` (StarterPack einmalig ab Level 5, Premium ab 72h Abwesenheit, Standard ab 24h; Geld-/GS-/XP-Belohnung mit harten Money-Caps, 24h-Ablauf, Angebot in der In-App-Bell sammelbar — ORIGINAL_WERTE § WelcomeBack)
+- [ ] **WhatsNew (Versions-Feature-Dialog):** `WhatsNewService` (kumulativer Update-Dialog, sortierte Versions-/Feature-Key-Arrays, `LastWhatsNewVersion`-Vergleich, Brandneue-Spieler-Skip, `lastSeen`-Persistenz vor Render gegen Doppel-Anzeige — ORIGINAL_WERTE § WhatsNew)
+- [ ] **Tests:** Profanity-Filter, Notification-Trigger, WelcomeBack-Offer-Auswahl/Caps, WhatsNew-Versions-Diff (15+ Tests)
 
 **Output:**
 - Chat + Notifications (Push + In-App-Bell) live
@@ -604,8 +615,11 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 - [ ] **Daily-Reward** (30-Tage-Zyklus, Streak + Skalierung, VIP Auto-Claim — DESIGN.md § 19)
 - [ ] **Lucky-Spin** (8 Slots, Gewichte/Belohnungen, Verfügbarkeits-Priorität — DESIGN.md § 20)
 - [ ] **BattlePass** (`BattlePassService`, 50 Tier, 30-Tage-Saison, Free + Premium-Track, XP-Schwellen, Saison-Theme-Rotation, Premium-Lock-in — DESIGN.md § 21)
-- [ ] **Daily/Weekly:** `DailyChallengeService` (5 Types, Rotation) + `WeeklyMissionService` (4 Missions) + `IMissionsFacade`
-- [ ] **Tests:** Daily-Streak, Spin-Gewichte, BattlePass-Tier/XP, Challenge-Rotation (25+ Tests)
+- [ ] **Daily-Challenge (eigenständiges Solo-System):** `DailyChallengeService` (15 Challenge-Types, 3/Tag + VIP-Bonus, Tier-Skalierung, Auto-Tracking via GameState-Events, Alle-fertig-Bonus — DESIGN.md / ORIGINAL_WERTE § Daily-Challenge). NICHT mit Daily-Reward verwechseln.
+- [ ] **Weekly-Mission (eigenständiges Solo-System):** `WeeklyMissionService` (15 Mission-Types, 5/Woche + VIP-Bonus, höhere Belohnungen als Daily, Wochen-Reset, Alle-fertig-Bonus — ORIGINAL_WERTE § Weekly-Mission). NICHT mit dem Gilden-Wochenziel verwechseln.
+- [ ] **Tournament (wöchentliches MiniGame-Turnier):** `TournamentService` (eigener Service + Save-Slice `CurrentTournament`, wöchentlicher Zufalls-MiniGame-Typ, 3 Gratis-Teilnahmen/Tag dann 5 GS Entry, 9 simulierte Gegner als Fallback, Play-Games-Leaderboards, Gold/Silver/Bronze-Reward nach Rang — ORIGINAL_WERTE § Tournament)
+- [ ] `IMissionsFacade` (bündelt DailyChallenge, WeeklyMission, LuckySpin, QuickJob, Goal)
+- [ ] **Tests:** Daily-Streak, Spin-Gewichte, BattlePass-Tier/XP, Daily-Challenge-Rotation, Weekly-Mission-Reset, Tournament-Reward-Tiers (30+ Tests)
 
 **Output:**
 - Tägliche/wöchentliche Live-Ops-Schleifen komplett
@@ -829,15 +843,18 @@ ComfyUI/lokale Modelle + Cloud-Polish für Hero-Assets — kein klassisches Outs
 | Ascension + Heirloom + Eternal-Mastery | Meta-Prestige, Permanent-Heirlooms, Soft-Cap-Bonus | Phase 4 (W25) + live ab Phase 8 |
 | Crafting | 33 Rezepte (T1-T4) + 8 Tools + Lager (V7) + Markt | Phase 4 (W26-28) |
 | Equipment | 4 Rarity, Slots, Stats | Phase 4 (W28) |
+| QuickJob / Schnellaufträge | eigenes Subsystem: Rotation 15/12/10/8 min, 5 Jobs, Tages-Limit 20-40 + Shop-Bonus, MiniGame-Kopplung | Phase 4 (W28) |
 | Master-Tools | 12 Artefakte | Phase 4 (W28) |
 | Gebäude | 7 Stück | Phase 4 (W28) |
 | Gilden | max 20 Mitglieder, Guild-Research (18), Hall (10), Bosse (6), Mega-Projekte (2), War-Season, Chat, Guild-Achievements (33) | Phase 5 (W30-36) |
 | Daily-Reward / Lucky-Spin / BattlePass | 30-Tage / 8 Slots / 50 Tier | Phase 5 (W37) |
+| Daily-Challenge / Weekly-Mission / Tournament | Solo-Systeme: Daily 9 Types (3/Tag) · Weekly 9 Types (5/Woche) · Tournament wöchentl. MiniGame (eigener Service + Save-Slice, 9 Sim-Gegner, Play-Games-Leaderboard) | Phase 5 (W37) |
 | Live-/Random-/Saisonale Events + Event-Shop | 4 Live + 8 Random + 4 Saisons | Phase 5 (W38) |
 | Monetarisierung | Imperium-Pass, IAP-Bundles, 13 Ad-Placements, VIP, Referral | Phase 5 (W38) |
 | Story | 60 Kapitel (40 + 20) + Meister-Hans-Voice | Phase 6 (W45) + Inhalt Phase 8 |
 | FTUE + ContextualHints | 10 Schritte + 32 Hints | Phase 6 (W45) |
 | Notifications | 8 Push-Trigger + In-App-Bell | Phase 5 (W35) |
+| WelcomeBack + WhatsNew | WelcomeBack (3 Offer-Typen: StarterPack/Premium/Standard, Money-Caps) · WhatsNew (kumulativer Versions-Feature-Dialog) | Phase 5 (W35) |
 | Anti-Cheat | HMAC, Server-Validation, Sanitizer, Rate-Limits | Phase 5 (W36) |
 | Telemetrie | Event-Katalog (snake_case), 11 User-Properties | Phase 6 (W46) |
 | City-Hub | 80 City-Tiles, Camera, Worker-Bewegung | Phase 3/6 + Assets |
@@ -964,13 +981,14 @@ Finalisierung für 1:1-Vollständigkeit — ersetzt alle 2D-Beta-Platzhalter dur
 - [ ] **Go/No-Go-Decision:** Single-Player-Vision erreicht?
 
 ### Meilenstein 4: Single-Player funktional vollständig (Ende Woche 28)
-- [ ] Forschung (72 Nodes), Prestige + Prestige-Shop (25), Crafting (33 Rezepte), Reputation + Reputation-Shop (5), Equipment, Master-Tools (12), Gebäude (7), Achievements (109) laufen
+- [ ] Forschung (72 Nodes), Prestige + Prestige-Shop (25), Crafting (33 Rezepte), Reputation + Reputation-Shop (5), Equipment, QuickJob, Master-Tools (12), Gebäude (7), Achievements (109) laufen
 - [ ] 200+ Tests grün
 - [ ] **Go/No-Go-Decision:** Multiplayer + Live-Ops starten?
 
 ### Meilenstein 5: Multiplayer + Live-Ops (Ende Woche 38)
 - [ ] Gilden komplett (max 20 Mitglieder, Guild-Research 18, Hall 10, Bosse 6, Mega-Projekte 2, War-Season, Chat, Guild-Achievements 33)
-- [ ] Daily-Reward + Lucky-Spin + BattlePass + Live-/Saison-Events + Monetarisierung
+- [ ] Daily-Reward + Lucky-Spin + BattlePass + Daily-Challenge + Weekly-Mission + Tournament + Live-/Saison-Events + Monetarisierung
+- [ ] Notifications + WelcomeBack + WhatsNew
 - [ ] Anti-Cheat aktiv
 - [ ] **Go/No-Go-Decision:** Polish-Phase starten?
 

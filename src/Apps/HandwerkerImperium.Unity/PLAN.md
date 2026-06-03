@@ -86,7 +86,7 @@ Die Avalonia-Version hat 10 fertige Werkstätten, 10 Mini-Games, vollständige G
 - **Kein Reboot der Spielmechanik** — Es ist eine **Re-Implementation**, kein neues Spiel. Alle Mechaniken, Formeln und Balancing-Werte bleiben **1:1 identisch** zum Avalonia-Original (verbindlich: [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) + [DESIGN.md](DESIGN.md)). "Besser/3D" betrifft ausschließlich die Präsentation (Grafik, 3D, Hub, Cinematics, Audio, Input, UI-Tech) — niemals Mechanik oder Balance.
 - **Kein MMO** — Bleibt Idle/Async, kein Live-PvP (außer optional Phase 2)
 - **Kein Cross-Save** zwischen Avalonia & Unity — beide Versionen werden parallel betrieben, getrennte Save-Slots
-- **Kein Re-Launch im Play Store** — Update der bestehenden App im Hauptpaket (`com.meineapps.handwerkerimperium`), Migration in der App via Save-Konverter
+- **Closed Beta unter eigener App-ID** (`com.meineapps.handwerkerimperium2.beta`) — die getroffene Migrations-Entscheidung (§ 17.2): Avalonia-Original bleibt produktiv auf bestehender App-ID, die Unity-Version läuft zunächst ausschließlich als Closed Beta. **Kein Save-Konverter im MVP** — Beta-Tester starten frisch. Der finale Cutover (z.B. In-Place-Update via Save-Konverter) wird **erst nach erfolgreicher Beta** entschieden und ist ein **Post-Beta-Schritt**, kein MVP-Feature (Optionen A/B/C → § 17.2).
 - **iOS nicht in Phase 1** — Vorbereitet im Code (Unity ist Cross-Platform), aber Build/Submission später
 
 ---
@@ -126,11 +126,14 @@ Die Avalonia-Version hat 10 fertige Werkstätten, 10 Mini-Games, vollständige G
 | `com.firebase.unity.functions` | latest | Cloud Functions Calls |
 | `com.firebase.unity.messaging` | latest | FCM Push-Notifications |
 | `com.firebase.unity.remoteconfig` | latest | Live-Balancing |
-| `com.firebase.unity.analytics` | latest | Telemetrie |
 | `com.firebase.unity.crashlytics` | latest | Error-Tracking |
 | `com.google.play.billing` | 6.x | IAP (Premium, Whale-Bundles) |
-| `com.google.android.ads.mobile` | latest | AdMob (Banner + Rewarded) |
+| `com.google.android.ads.mobile` | latest | AdMob (**nur Rewarded** — Original-HWI nutzt KEIN Banner; 13 Rewarded-Placements) |
 | `com.google.play.review` | latest | In-App Review |
+
+> **Kein Analytics-SDK:** Das Original nutzt eine **REST-Analytics-Pipeline** (`AnalyticsService` →
+> `IFirebaseService`, gebatcht nach `analytics_events/{YYYY-MM-DD}/`), **kein** `com.firebase.unity.analytics`.
+> Telemetrie wird in Unity gleich umgesetzt (REST über die Realtime-DB), siehe DESIGN § 32 + ARCHITECTURE.
 
 ### 2.3 Optionale Packages
 
@@ -336,7 +339,7 @@ public class GameInstaller : LifetimeScope
 
         // Platform
         builder.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
-        builder.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);
+        builder.Register<IAnalyticsService, RestAnalyticsService>(Lifetime.Singleton); // REST-Pipeline, KEIN Analytics-SDK
         builder.Register<IRewardedAdService, AdMobRewardedAdService>(Lifetime.Singleton);
         builder.Register<IPurchaseService, GooglePlayBillingService>(Lifetime.Singleton);
         builder.Register<INotificationService, MobileNotificationService>(Lifetime.Singleton);
@@ -438,9 +441,9 @@ public class GameLoopService : IGameLoop, ITickable, IInitializable
 | 60s | QuickJob-Rotation, Order-Expiry, AutoAssign |
 | 60s/Off20 | Guild Boss Tick |
 | 60s/Off40 | Guild Hall Tick |
-| 180s | AutoCraft T1 |
+| 180s | Auto-Produktion Tier-1 (Standard; MasterSmith 60s, InnovationLab 120s — Werte: DESIGN § 10.6) |
 | 300s | Event-Check, Guild-Achievements, War-Season |
-| 360s | AutoCraft T2-T4 |
+| 360 Ticks | Auto-Craft höherer Tiers (pauschal, KEIN per-Tier-Split; DESIGN § 10.6) |
 
 ### 4.4 MVVM-Light Pattern (Unity-Adaption)
 
@@ -483,7 +486,7 @@ Coordinators und Feature-VMs subscriben nur auf Events, die sie wirklich brauche
 
 | Komponente | Avalonia-Quelle | Unity-Ziel |
 |------------|-----------------|------------|
-| **Datenmodelle (113 Files)** | `Models/*.cs` | `Domain/Models/*.cs` (records statt classes) |
+| **Datenmodelle (77 Models)** | `Models/*.cs` | `Domain/Models/*.cs` (records statt classes) |
 | `GameState` (1032 Z., v7) | `Models/GameState.cs` | `Domain/HwiSave.cs` |
 | `Workshop`, `Worker`, `Order` | dito | dito |
 | **Berechnungs-Logik (IncomeCalculator)** | `Services/IncomeCalculatorService.cs` (335 Z.) | `Domain/Calculators/IncomeCalculator.cs` |
@@ -585,26 +588,12 @@ Kurz-Eckdaten (keine abweichende Zweitquelle):
 
 ### 6.3 Aufträge (6 Types)
 
-**Werte/Mechanik (verbindlich):** [DESIGN.md § 6](DESIGN.md#6-aufträge-6-types--3-strategien) — Order-Types § 6.1, Reward-/XP-Formel § 6.1a, Strategien § 6.2, Live-Orders § 6.3, Material-Orders § 6.4. Die folgende Übersicht ist nur eine Kurz-Orientierung.
+**Werte/Mechanik (verbindlich):** [DESIGN.md § 6](DESIGN.md#6-aufträge-6-types--3-strategien) — Order-Types § 6.1, Reward-/XP-Formel § 6.1a, Strategien (Safe/Standard/Risk) § 6.2, Live-Orders § 6.3, Material-Orders § 6.4. **Bei Konflikt gilt DESIGN/ORIGINAL_WERTE** — dieser Abschnitt führt **keine eigene Werttabelle** mehr, um Abweichungen zu vermeiden.
 
-| Type | Reward-Multiplier | Special |
-|------|--------------------|---------|
-| Quick-Order | 0.6x | 5min Deadline, niedriges Risiko |
-| Standard | 1.0x | Standard-Auftrag |
-| Large | 1.8x | Mehr Tasks, längere Deadline |
-| Cooperation | 2.5x | Mehrere Worker, Gilden-Co-op möglich |
-| Weekly | 3.0x | 7 Tage, sehr hoch belohnt |
-| MaterialOrder | 1.8x | Verbrauchen Crafting-Inventar |
-
-**3 Strategien pro Auftrag:**
-- **Safe:** 0.75x Reward, +50% Zone, +30% Zeit
-- **Standard:** 1.0x Reward
-- **Risk:** 2.0x Reward, -50% Zone, +30% Tempo, Hard-Fail → 0 € + -10 Rep
-
-**Live-Orders:**
-- VIP-Kunden, 25s-Spawn, max 5 gleichzeitig
-- 3x Reward, 2.5x XP
-- Auto-Accept-Option (Premium)
+Kurz-Eckdaten (keine abweichende Zweitquelle):
+- 6 Order-Types: Quick (0.6x), Standard (1.0x), Large (1.8x), Cooperation (2.5x), Weekly (3.0x), MaterialOrder (1.8x). Vollständige Multiplikatoren/Task-Counts/Unlocks: DESIGN § 6.1.
+- **Deadlines:** **Nur Weekly (7 Tage) und MaterialOrder (4h)** haben eine Deadline. Quick/Standard/Large/Cooperation haben **KEINE Deadline** (das frühere "Quick 5min Deadline" war falsch — die 5 min sind die Annahme-Frist eines **Co-op-Einladungs-Auftrags**, nicht eine Quick-Order-Frist; Beleg ORIGINAL_WERTE § 1.6 / DESIGN § 6.1).
+- Live-Orders: VIP-Kunden, 25s-Spawn, max 5 gleichzeitig, Auto-Accept-Option (Premium) — exakte Reward-/XP-Multiplikatoren siehe DESIGN § 6.3.
 
 **Unity-Verbesserungen:**
 - Live-Orders als **3D-Kunden-NPCs** die zur Werkstatt laufen
@@ -1253,7 +1242,7 @@ public class BalancingConfig : ScriptableObject
 - Mini-Games: 3-10 GS
 - Daily Challenges: ~12 GS
 - Achievements: 5-50 GS
-- Rewarded Ad: 10 GS
+- Rewarded Ad (golden_screws): 12 GS (ShopViewModel.cs:927 `AddGoldenScrews(12)`)
 - Daily Login: 1-25 GS
 - Workshop-Milestones: 2-50 GS
 - Premium verdoppelt Gameplay-Quellen (nicht IAP-Käufe)
@@ -1276,17 +1265,19 @@ Play-Store-Katalog zu übernehmen, **nicht** zu erfinden.
 ### 11.5 Ads (1:1 aus Avalonia)
 
 Über Google Mobile Ads Unity SDK. **Verbindliche Cooldowns/Reward-Werte (RemoteConfig, ORIGINAL_WERTE § 06):**
-`golden_screws` 4h-Cooldown (`GoldenScrewAdReward = 8`), `shop_reward` 3h-Cooldown, max **3** Premium-Ad-Rewards/Tag.
+`golden_screws` 4h-Cooldown (**12 GS** — `ShopViewModel.cs:927 AddGoldenScrews(12)`, v2.0.37: 8 → 12), `shop_reward` 3h-Cooldown, max **3** Premium-Ad-Rewards/Tag.
 Weitere Rewarded-Placements (1:1 aus Avalonia, exakte Liste gegen den AdReward-Enum verifizieren):
 score_double, market_refresh, workshop_speedup, workshop_unlock, worker_hire_bonus, research_speedup,
 daily_challenge_retry, achievement_boost, offline_double, rush_boost, lucky_spin.
 
-### 11.6 Saison-System
+### 11.6 Saison- & Event-System
 
-- 30-Tage-BattlePass
-- 4 Live-Events parallel pro Jahr
-- Saison-Story-Chapters
-- Saison-spezifische Cosmetics
+**Sauber getrennt — zwei unabhängige Systeme (verbindlich: DESIGN § 22/§ 23, ORIGINAL_WERTE § 02/§ 03):**
+
+- **BattlePass:** 30-Tage-Saison (Free + Premium), eigene 30-Tier-Progression.
+- **Live-Events** (`LiveEventService`, RemoteConfig-getrieben): **4 Templates** (DoubleReward / BossRush / CoopMarathon / MiniGameMastery), **einzeln aktiv** (nicht "4 parallel"), Limited-Time, 3-Tier-Reward.
+- **Saison-Events** (`SeasonalEventService`): **4 pro Jahr** (Spring/Summer/Autumn/Winter, je 4 Wochen). Saison-spezifische Story-Chapters.
+- **Saison-Event-Shop:** **6 funktionale Items pro Saison** (4 Basis-Items + 2 saison-einzigartige Items, in SP-Währung) — **KEINE Cosmetics/Skins** (Seasonal-Shop hat keine Skins; SeasonColor/SeasonIcon nur UI-Theming — ORIGINAL_WERTE § 3.3/§ 3.4).
 
 ---
 
@@ -1477,17 +1468,25 @@ unity-builder \
 
 ## 15. Roadmap
 
+> **Verbindlich ist [ROADMAP.md](ROADMAP.md)** (8 Phasen / 72 Wochen, wochenweise aufgeschlüsselt).
+> Dort ist **1.0 = vollständige 1:1-Parität** zur Avalonia-Version (alle Systeme inkl. Ascension,
+> War-Season, Mega-Projekte, Bosse, Hall verifiziert), erreicht über eine Beta-gestufte
+> Reihenfolge: funktional vollständige Closed Beta (Ende W52) → Content-Complete (W53-66) →
+> 1.0-Launch (W67-72). Die folgende Tabelle ist nur eine grobe Monats-Orientierung — bei
+> Abweichung gilt ROADMAP.md.
+
 ### Übersicht
 
-| Phase | Zeitraum | Meilenstein | Spielbar? |
-|-------|----------|-------------|-----------|
-| 1 | Monat 1-2 | Tech-Foundation | Boot-Scene |
-| 2 | Monat 2-3 | Core-Loop-Prototyp | 1 Werkstatt + 1 Mini-Game |
-| 3 | Monat 3-5 | Werkstätten + Worker + Orders | Alle 10 Werkstätten |
-| 4 | Monat 5-7 | Forschung + Prestige + Crafting | Single-Player komplett |
-| 5 | Monat 7-9 | Gilden + Multiplayer | Online-Features |
-| 6 | Monat 9-11 | Polish: 3D-Visualisierung, Shader, Audio | Beta-Ready |
-| 7 | Monat 11-12 | Beta + Launch | Production |
+| Phase | Wochen | Monate | Meilenstein |
+|-------|--------|--------|-------------|
+| 1: Tech-Foundation | 1-8 | M 1-2 | Boot-Scene + DI + Save + Auth |
+| 2: Core-Loop-Prototyp | 9-12 | M 2-3 | 1 Werkstatt + 1 Mini-Game spielbar |
+| 3: Werkstätten + Worker + Orders | 13-20 | M 3-5 | Alle 10 Werkstätten, 6 Order-Types |
+| 4: Forschung + Prestige + Crafting | 21-28 | M 5-7 | Single-Player komplett |
+| 5: Gilden + Multiplayer + Live-Ops | 29-38 | M 7-9 | Online-Features + Daily/Weekly/BattlePass/Live-Events |
+| 6: Polish (3D, Shader, Audio) | 39-46 | M 9-11 | Beta-Ready, alle 3D-Effekte |
+| 7: Closed Beta | 47-52 | M 11-12 | Funktional vollständige Closed Beta (alle Systeme spielbar) |
+| 8: Content-Complete + 1.0 | 53-72 | M 13-18 | Voller Inhalt + verifizierte 1:1-Parität → Production-Launch |
 
 ### Phase 1: Tech-Foundation (Monat 1-2)
 
@@ -1604,9 +1603,15 @@ unity-builder \
 
 ## 16. MVP-Definition
 
-> Mechanik/Werte aller MVP-Inhalte sind verbindlich in [DESIGN.md](DESIGN.md)/[ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) festgelegt; "im MVP" = im Production-Launch enthalten.
+> **MVP = Zwischenschritt, NICHT der finale Launch-Scope.** Der MVP entspricht der **funktional
+> vollständigen Closed Beta** (ROADMAP.md Phase 7, Ende W52): alle Kern-Systeme spielbar, einige
+> Meta-/Online-Systeme zunächst reduziert. **Der finale 1.0-Launch ist die volle 1:1-Parität**
+> ([ROADMAP.md](ROADMAP.md) Phase 8) — Ascension, Prestige Meister + Legende, Kriegssaison,
+> Mega-Projekte, alle 6 Bosse und alle 10 Hall-Gebäude sind **zwingend im 1.0-Release** enthalten
+> (siehe Vollständigkeits-Matrix in ROADMAP.md), nur in der Beta-Reihenfolge nachgelagert.
+> Mechanik/Werte aller Inhalte sind verbindlich in [DESIGN.md](DESIGN.md)/[ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) festgelegt.
 
-### IM MVP (zum Production-Launch):
+### IM MVP (= funktional vollständige Closed Beta, ROADMAP.md Phase 7):
 
 **Single-Player:**
 - Alle 10 Werkstätten (Max-Level **1000**, Rebirth-Trigger; DESIGN § 4)
@@ -1623,8 +1628,8 @@ unity-builder \
 - Markt
 - **109 Achievements** (17 Kategorien)
 - Daily-Reward (30-Tage) + Lucky-Spin (8 Slots)
-- 5 Daily-Challenge-Types
-- 4 Weekly-Missions
+- Daily-Challenges: **15 Typen**, **3 aktiv pro Tag** (+1 VIP ab Silver) — DailyChallengeService.cs
+- Weekly-Missions: **15 Typen**, **5 aktiv pro Woche** (+1 VIP ab Gold) — WeeklyMissionService.cs
 - BattlePass: **50 Tiers**, 30-Tage-Saison (Free + Premium)
 - Tutorial / FTUE (**10 Schritte**)
 
@@ -1670,7 +1675,10 @@ unity-builder \
 - iOS: **NICHT im MVP** (Phase 2)
 - Desktop: **NICHT im MVP** (Phase 3, falls Nachfrage)
 
-### NACH MVP (Post-Launch in den ersten 3-6 Monaten):
+### NACH MVP, aber VOR 1.0 (zwingend für die 1:1-Parität — ROADMAP.md Phase 8 / Vollständigkeits-Matrix):
+
+> Diese Systeme sind **Pflicht zum 1.0-Launch**, nur in der Beta-Reihenfolge nach dem MVP-Stand
+> nachgelagert. Sie sind **kein** "optionales Post-Launch", sondern Teil der vollen Parität.
 
 - Ascension-System
 - Prestige Meister + Legende
@@ -1679,10 +1687,13 @@ unity-builder \
 - Boss 3-6
 - Hall-Gebäude 6-10
 - 5 weitere Mini-Games als 3D
+- Worker-Voice-Lines (separate Stimmen pro Worker)
+- Saisonale Events (Event-Shop, 4 Saisons/Jahr)
+
+### POST-1.0 (genuin optional, nach erreichter Parität):
+
 - Day/Night-Cycle
 - Live-Wetter
-- Worker-Voice-Lines
-- Saisonale Live-Events
 - iOS-Launch
 - Cosmetic-DLC
 
@@ -1789,7 +1800,7 @@ Falls Unity-Version kritische Bugs hat:
 
 ### Woche 2-4 (Domain-Port)
 
-1. Datenmodelle aus Avalonia portieren (113 Files → ~80 records)
+1. Datenmodelle aus Avalonia portieren (77 Models → records)
 2. Domain-Tests aus Avalonia portieren (Unit-Tests sind bereits unabhängig von UI)
 3. IncomeCalculator, OrderGenerator, PrestigeRules portieren
 4. DataImporter implementieren

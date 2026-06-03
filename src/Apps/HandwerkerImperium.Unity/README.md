@@ -26,7 +26,7 @@
 2. **Setup:** Folge [SETUP.md](SETUP.md) (Unity, Firebase, KI-Pipeline)
 3. **Spielmechanik:** Lies [DESIGN.md](DESIGN.md) (alle Werte, Mechaniken, Mega-Projekte)
 4. **Code:** Lies [CLAUDE.md](CLAUDE.md) (Conventions) und [ARCHITECTURE.md](ARCHITECTURE.md) (Tech-Details)
-5. **Roadmap:** [ROADMAP.md](ROADMAP.md) (52-Wochen-Sprint-Plan)
+5. **Roadmap:** [ROADMAP.md](ROADMAP.md) (72-Wochen-Sprint-Plan)
 6. **Assets:** [ASSETS_AI.md](ASSETS_AI.md) (KI-Asset-Pipeline)
 
 ### Existierende Codebase anschauen
@@ -65,25 +65,25 @@ ls src/Apps/HandwerkerImperium.Unity/
 
 ### Strategie & Planung
 
-| Datei | Beschreibung | Größe |
-|-------|--------------|-------|
-| [PLAN.md](PLAN.md) | Strategischer Plan: Vision, Tech-Stack, Architektur, was 1:1/umgebaut/neu, Roadmap-Übersicht, MVP, Risiken | ~1200 Zeilen |
-| [DESIGN.md](DESIGN.md) | Game Design Document: 35 Sektionen, alle Werte 1:1 aus ORIGINAL_WERTE.md, Meister-Hans-Persona, Handwerker-Stadt | ~1400 Zeilen |
-| [ROADMAP.md](ROADMAP.md) | 52-Wochen-Sprint-Plan: 7 Phasen, KI-Pipeline parallel, Milestones | ~700 Zeilen |
+| Datei | Beschreibung |
+|-------|--------------|
+| [PLAN.md](PLAN.md) | Strategischer Plan: Vision, Tech-Stack, Architektur, was 1:1/umgebaut/neu, Roadmap-Übersicht, MVP, Risiken |
+| [DESIGN.md](DESIGN.md) | Game Design Document: 37 Sektionen, alle Werte 1:1 aus ORIGINAL_WERTE.md, Meister-Hans-Persona, Handwerker-Stadt |
+| [ROADMAP.md](ROADMAP.md) | 72-Wochen-Sprint-Plan: 8 Phasen, KI-Pipeline parallel, Milestones |
 
 ### Code & Conventions
 
-| Datei | Beschreibung | Größe |
-|-------|--------------|-------|
-| [CLAUDE.md](CLAUDE.md) | Projekt-Conventions: Namespaces, DI, MVVM-Light, Tests, bekannte Probleme | ~700 Zeilen |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Code-Level-Spec: VContainer-Reg, EventBus, Save-Pipeline, Firebase-Pfade | ~900 Zeilen |
+| Datei | Beschreibung |
+|-------|--------------|
+| [CLAUDE.md](CLAUDE.md) | Projekt-Conventions: Namespaces, DI, MVVM-Light, Tests, bekannte Probleme |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Code-Level-Spec: VContainer-Reg, EventBus, Save-Pipeline, Firebase-Pfade |
 
 ### Assets
 
-| Datei | Beschreibung | Größe |
-|-------|--------------|-------|
-| [ASSETS_AI.md](ASSETS_AI.md) | KI-Asset-Pipeline: TRELLIS 2 + ComfyUI + Blender + Mixamo + Stable Audio + ElevenLabs, EU-konform | ~920 Zeilen |
-| [SETUP.md](SETUP.md) | First-Time-Setup: Unity, Firebase, ComfyUI, ElevenLabs, Adobe CC | folgt |
+| Datei | Beschreibung |
+|-------|--------------|
+| [ASSETS_AI.md](ASSETS_AI.md) | KI-Asset-Pipeline: TRELLIS 2 + ComfyUI + Blender + Mixamo + Stable Audio + ElevenLabs, EU-konform |
+| [SETUP.md](SETUP.md) | First-Time-Setup: Unity, Firebase, ComfyUI, ElevenLabs, Adobe CC (folgt) |
 
 ---
 
@@ -151,6 +151,7 @@ Ein **3D-stylized Idle-Incremental-Game** mit aktiven Mini-Games. Der Spieler er
 - 12 Master-Tools (+74% Income)
 - Gilde + Co-op-Orders + 6 Bosse + Mega-Projekte (Cathedral, HQ)
 - BattlePass (50 Tier, 30-Tage-Saison)
+- 109 Achievements (17 Kategorien)
 - 4 Saisons pro Jahr
 
 **Endgame:**
@@ -261,7 +262,7 @@ HandwerkerImperium.Unity/
 ├── DESIGN.md             ← Game Design Document
 ├── CLAUDE.md             ← Conventions für Claude Code
 ├── ARCHITECTURE.md       ← Tech-Details
-├── ROADMAP.md            ← 52-Wochen-Plan
+├── ROADMAP.md            ← 72-Wochen-Plan
 ├── ASSETS_AI.md          ← KI-Asset-Pipeline
 ├── SETUP.md              ← First-Time-Setup
 │

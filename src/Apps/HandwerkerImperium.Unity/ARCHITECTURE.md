@@ -87,6 +87,10 @@
 
 ## 2. Assembly-Definitions
 
+> **Package- & Tool-Versionen (Unity, URP, VContainer, UniTask, Newtonsoft.Json, Addressables, …)
+> sind NICHT hier dupliziert — Single-Source ist CLAUDE.md § 2 (Tech-Stack).** Diese Datei nennt
+> Pakete nur namentlich; verbindlich ist immer die dort gelistete Version.
+
 ### 2.1 Asmdef-Dateien
 
 | Datei | Dependencies | Allow-Unsafe |
@@ -148,6 +152,7 @@ public sealed class RootLifetimeScope : LifetimeScope
 {
     [SerializeField] private BalancingConfig _balancingConfig;
     [SerializeField] private UnityAudioServiceBehaviour _audioService;
+    [SerializeField] private UnityParticleServiceBehaviour _particleService;
 
     protected override void Configure(IContainerBuilder builder)
     {
@@ -226,6 +231,9 @@ public sealed class RootLifetimeScope : LifetimeScope
         b.Register<AscensionService>(Lifetime.Singleton);
         b.Register<EternalMasteryService>(Lifetime.Singleton);   // Findings: fehlte
         b.Register<MiniGameMasteryService>(Lifetime.Singleton);  // Findings: fehlte — eager (subscribt PerfectRatingIncremented)
+        // IProgressionFacade ist eine NEUE Unity-Struktur-Entscheidung (Service-Sprawl-Bündelung), KEIN
+        // Avalonia-Pattern: das Original kennt nur IGuildFacade + IMissionsFacade. Analog wäre IWorkerFacade
+        // (CLAUDE.md §5) ebenfalls eine Unity-Neuerung — bündelt nur, ändert keine Mechanik/Werte.
         b.Register<IProgressionFacade, ProgressionFacade>(Lifetime.Singleton);
 
         // Story / Goals / Hints — Findings: alle drei fehlten
@@ -262,7 +270,7 @@ public sealed class RootLifetimeScope : LifetimeScope
     {
         // Firebase
         b.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
-        b.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);   // Batching/Queue-Cap/Consent (§ 10.7)
+        b.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);   // REST-Pipeline (PATCH nach analytics_events/, KEIN Firebase-Analytics-SDK), Batching/Queue-Cap/Consent (§ 10.7, DESIGN § 32)
         b.Register<ICrashlyticsService, FirebaseCrashlyticsService>(Lifetime.Singleton);
         b.Register<IRemoteConfigService, FirebaseRemoteConfigService>(Lifetime.Singleton); // Offline-Cache/Kill-Switches (§ 10.6)
         b.Register<ICloudFunctionsService, FirebaseCloudFunctionsService>(Lifetime.Singleton);
@@ -284,8 +292,10 @@ public sealed class RootLifetimeScope : LifetimeScope
         b.Register<IPlayReviewService, GooglePlayReviewService>(Lifetime.Singleton);
         b.Register<IReviewService, ReviewService>(Lifetime.Singleton);   // Milestone-Timing + 14d-Cooldown (§ 16.4)
 
-        // Audio (MonoBehaviour-Service)
+        // Audio + Particles (MonoBehaviour-Services — brauchen AudioSource- bzw. ParticleSystem-Pools, s. § 6.2).
+        // Beide via RegisterComponent (NICHT als POCO-Singleton). HapticFeedbackService bleibt POCO (oben).
         b.RegisterComponent(_audioService).AsImplementedInterfaces();
+        b.RegisterComponent(_particleService).AsImplementedInterfaces();
 
         // Security
         b.Register<IHmacSigner, HmacSha256Signer>(Lifetime.Singleton);   // = GameIntegrityService (§ 16.1)
@@ -654,12 +664,12 @@ public record NotificationTappedEvent(string NotificationId) : IGameEvent;
 
 ### 6.2 Spezialfälle
 
-**MonoBehaviour-Services:**
+**MonoBehaviour-Services** (via `RegisterComponent(...).AsImplementedInterfaces()`, s. § 3 RegisterPlatform):
 - AudioService (braucht AudioSource-Komponenten)
 - ParticleService (braucht ParticleSystem-Pool)
-- HapticFeedbackService (kann POCO sein)
 
-→ Diese werden via `RegisterComponent(...).AsImplementedInterfaces()` registriert.
+**POCO-Services (Singleton via Ctor-Injection, KEIN RegisterComponent):**
+- HapticFeedbackService (`UnityHapticFeedbackService` — braucht keine Szenen-Komponente)
 
 **Lazy-Resolution (für selten genutzte Services):**
 ```csharp
@@ -671,7 +681,7 @@ b.RegisterFactory<IExpensiveService>(container => () => container.Resolve<IExpen
 
 ## 7. Game-Loop
 
-### 7.1 GameLoopService (MonoBehaviour + ITickable)
+### 7.1 GameLoopService (POCO via VContainer — `IStartable` + `ITickable`, KEIN MonoBehaviour)
 
 ```csharp
 public sealed class GameLoopService(
@@ -868,6 +878,43 @@ public sealed class LocalFirstSaveService<T>(
 }
 ```
 
+### 8.1a Save-Serializer (Newtonsoft.Json — wire-format-identisch zum Avalonia-Save)
+
+> **Load-bearing für Avalonia-Save-Kompatibilität.** Das Wire-Format MUSS Byte-für-Byte zum
+> produktiven Avalonia-Save passen, sonst scheitert die Avalonia→Unity-Migration (PLAN § 10.3).
+> Beleg: `CloudSaveService.cs` (Avalonia) serialisiert mit **camelCase-Naming** +
+> **UTC-DateTime-Converter** (`PropertyNamingPolicy = JsonNamingPolicy.CamelCase`,
+> `Converters = { new UtcDateTimeJsonConverter() }`). Unity nutzt statt `System.Text.Json`
+> **Newtonsoft.Json** (IL2CPP-tauglich, CLAUDE.md § 2 Tech-Stack) und muss exakt dasselbe Format
+> erzeugen: `CamelCasePropertyNamesContractResolver` + portierter UTC-DateTime-Converter.
+
+```csharp
+public interface ISaveSerializer<T>
+{
+    string Serialize(T data);
+    T Deserialize(string json);
+    int ReadSchemaVersion(string json);   // liest nur das Versionsfeld, ohne voll zu deserialisieren
+}
+
+public sealed class JsonSaveSerializer<T> : ISaveSerializer<T>
+{
+    // Wire-format-identisch zum Avalonia-CloudSaveService: camelCase + UTC-erzwingender DateTime-Converter.
+    // Ohne den UTC-Converter liest Newtonsoft "Z"-Strings als Local und verschiebt .Date-basierte
+    // Tages-/Wochen-Resets um den Geräte-UTC-Offset (derselbe Bug, gegen den das Original baut).
+    private static readonly JsonSerializerSettings _settings = new()
+    {
+        ContractResolver = new CamelCasePropertyNamesContractResolver(),
+        DateParseHandling = DateParseHandling.None,         // DateTime ausschließlich über den Converter
+        Converters = { new UtcDateTimeJsonConverter() },    // "O"-Format, DateTimeStyles.RoundtripKind, Kind=Utc
+        Formatting = Formatting.None,
+    };
+
+    public string Serialize(T data) => JsonConvert.SerializeObject(data, _settings);
+    public T Deserialize(string json) => JsonConvert.DeserializeObject<T>(json, _settings)!;
+    public int ReadSchemaVersion(string json) => JObject.Parse(json)["schemaVersion"]?.Value<int>() ?? 1;
+}
+```
+
 ### 8.2 Save-Trigger
 
 | Trigger | Mechanismus | Entspricht Original |
@@ -972,6 +1019,10 @@ public sealed class HwiSaveMigrator(ILogger logger) : ISaveMigrator<HwiSave>
     // Realistischer Pfad analog ORIGINAL_WERTE Bereich 08 §1.2 (SaveGameService.MigrateState):
     //   V3→V4 und V4→V5 sind im Original zusammengefasst (Legacy-Forward-Properties deserialisieren
     //   flache V4-Felder direkt in die Sub-Objekte) — KEIN eigener MigrateV3ToV4.
+    // HINWEIS zur PLAN-Skizze (PLAN § 10.2): Dort steht aus Übersichtsgründen eine explizite
+    //   `if (fromVersion < 4) MigrateV3ToV4(...)`-Zeile. Das ist NUR Notation — im echten Avalonia-Code
+    //   existiert dieser Schritt nicht; V3 springt direkt auf V5. Maßgeblich ist dieser Pfad hier, nicht
+    //   die PLAN-Skizze. (Eine PLAN-`MigrateV3ToV4` wäre ein reiner No-Op/Version-Bump auf 4.)
     public int CurrentSchemaVersion => 8;
 
     public HwiSave Migrate(HwiSave save, int fromVersion)

@@ -398,17 +398,6 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     risk.Tp1CloseRatio = saved.Risk.Tp1CloseRatio;
     risk.Tp2CloseRatio = saved.Risk.Tp2CloseRatio;
     risk.MinRiskRewardRatio = saved.Risk.MinRiskRewardRatio;
-    // SK-Buch + Strukturpunkte-Doku Compliance (v1.2.8)
-    risk.BCZoneEntryStrategy = saved.Risk.BCZoneEntryStrategy;
-    risk.EntryMode = saved.Risk.EntryMode;                              // User-Ausnahme: EntryMode.Both bleibt drin
-    risk.RequireWickRejectionInBZone = saved.Risk.RequireWickRejectionInBZone;
-    risk.RequireBoxCloseOnEntry = saved.Risk.RequireBoxCloseOnEntry;
-    risk.HighProbabilityPositionMultiplier = saved.Risk.HighProbabilityPositionMultiplier;
-    // Phase 3 — Heiliger Gral als Hard-Gate (opt-in, default false / 0)
-    risk.RequireHtfConfluenceForEntry = saved.Risk.RequireHtfConfluenceForEntry;
-    risk.MinConfluenceScore = saved.Risk.MinConfluenceScore;
-    // v1.5.0 Phase 2 — Asymmetrisches CRV (opt-in, default false)
-    risk.UseAsymmetricCrv = saved.Risk.UseAsymmetricCrv;
     // v1.5.4 Phase 7 — Funding-Rate Soft-Bonus
     scanner.EnableFundingRateBonus = saved.Scanner.EnableFundingRateBonus;
     scanner.FundingRateBonusThresholdPercent = saved.Scanner.FundingRateBonusThresholdPercent;
@@ -479,27 +468,6 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     scanner.MinVolume24hTradFi = saved.Scanner.MinVolume24hTradFi;
     scanner.MinPriceChangeTradFi = saved.Scanner.MinPriceChangeTradFi;
 #pragma warning restore CS0618
-    // Bias-Flip + Counter-Trend-Scalper (v1.2.7+)
-    scanner.EnableBiasFlip = saved.Scanner.EnableBiasFlip;
-    scanner.EnableCounterTrendScalp = saved.Scanner.EnableCounterTrendScalp;
-    // SK-Buch Strukturpunkte-Doku Compliance (v1.2.8) — alle BOS/Pivot/Swing-Filter
-    scanner.ImpulseAtrMultiplier = saved.Scanner.ImpulseAtrMultiplier;
-    scanner.RequireBosVolumeBreakout = saved.Scanner.RequireBosVolumeBreakout;
-    scanner.BosVolumeMultiplier = saved.Scanner.BosVolumeMultiplier;
-    scanner.RequireBosCloseBreak = saved.Scanner.RequireBosCloseBreak;
-    scanner.BosAnchorSwingStrength = saved.Scanner.BosAnchorSwingStrength;
-    scanner.BosAnchorLeftBars = saved.Scanner.BosAnchorLeftBars;
-    scanner.BosAnchorRightBars = saved.Scanner.BosAnchorRightBars;
-    scanner.AdaptiveSwingStrength = saved.Scanner.AdaptiveSwingStrength;
-    scanner.SwingStrengthMin = saved.Scanner.SwingStrengthMin;
-    scanner.SwingStrengthMax = saved.Scanner.SwingStrengthMax;
-    scanner.SwingStrengthAtrThresholdLow = saved.Scanner.SwingStrengthAtrThresholdLow;
-    scanner.SwingStrengthAtrThresholdHigh = saved.Scanner.SwingStrengthAtrThresholdHigh;
-    scanner.PivotLeftBars = saved.Scanner.PivotLeftBars;
-    scanner.PivotRightBars = saved.Scanner.PivotRightBars;
-    // MTA + Confluence-Overlap
-    scanner.BlockLtfEntryWhenHtfInTargetZone = saved.Scanner.BlockLtfEntryWhenHtfInTargetZone;
-    scanner.EnableConfluenceOverlapDetection = saved.Scanner.EnableConfluenceOverlapDetection;
 
     // Multi-TF Standalone (15.04.2026)
     if (saved.Scanner.ActiveTimeframes is { Count: > 0 })

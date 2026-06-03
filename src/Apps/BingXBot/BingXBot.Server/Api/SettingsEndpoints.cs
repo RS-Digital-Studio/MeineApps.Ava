@@ -132,9 +132,6 @@ public static class SettingsEndpoints
         if (dto.MaxResults < 1 || dto.MaxResults > 1000) { reason = "MaxResults muss 1..1000 sein."; return false; }
         if (dto.MinVolume24h < 0) { reason = "MinVolume24h darf nicht negativ sein."; return false; }
 #pragma warning restore CS0618
-        if (dto.ImpulseAtrMultiplier < 0 || dto.ImpulseAtrMultiplier > 100) { reason = "ImpulseAtrMultiplier muss 0..100 sein."; return false; }
-        if (dto.PivotLeftBars < 1 || dto.PivotLeftBars > 50) { reason = "PivotLeftBars muss 1..50 sein."; return false; }
-        if (dto.PivotRightBars < 1 || dto.PivotRightBars > 50) { reason = "PivotRightBars muss 1..50 sein."; return false; }
         if (dto.MaxSlippagePercent < 0m || dto.MaxSlippagePercent > 10m) { reason = "MaxSlippagePercent muss 0..10 sein."; return false; }
         if (dto.MaxSlippagePercentByCategory != null)
         {

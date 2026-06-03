@@ -2,32 +2,6 @@ using BingXBot.Core.Enums;
 
 namespace BingXBot.Core.Configuration;
 
-/// <summary>
-/// Task 3.1 — Entry-Staffelung im BC-Zone-Korrekturbereich.
-/// Bestimmt wie viele parallele Entry-Levels ausgelöst werden.
-/// </summary>
-/// <summary>
-/// Task 4.3 — Entry-Modus nach SK-Buch Masterclass.
-/// Buch: Aggressiv (Limit-Order direkt) oder konservativ (auf LTF-Reversal warten).
-/// </summary>
-public enum EntryMode
-{
-    /// <summary>Aggressiv: Limit-Order direkt an 50/55.9/66.7% — wie bisher.</summary>
-    Aggressive,
-    /// <summary>Konservativ: Signal NUR wenn Preis in Korrekturbox UND LTF-Reversal bestätigt.</summary>
-    Conservative,
-    /// <summary>Beide: Aggressiv-Limits + zusätzlich LTF-Trigger als Bonus (Default).</summary>
-    Both
-}
-
-public enum BCZoneEntryStrategy
-{
-    /// <summary>Nur Primary-Entry bei 50% Retracement (aggressivste Buch-Variante).</summary>
-    Single,
-    /// <summary>Primary @ 50% + Additional @ 66.7% — Buch-Standard (Anker an beiden Box-Enden).</summary>
-    Dual
-}
-
 /// <summary>Marktspezifische Risk-Overrides. Fehlende Kategorien nutzen globale RiskSettings-Defaults.</summary>
 public record MarketCategorySettings
 {
@@ -97,83 +71,6 @@ public class RiskSettings
     /// Empfehlung: 30 %. Schuetzt vor "3× BTC durch BTC/ETH/SOL parallel"-Disasters bei Flash-Crashes.
     /// </summary>
     public decimal MaxCorrelatedExposurePercent { get; set; } = 0m;
-
-    /// <summary>
-    /// Task 3.1 — Entry-Staffelung im BC-Zone-Korrekturbereich.
-    /// Dual = Buch-Standard (Primary @ 50% + Additional @ 66.7%).
-    /// Triple ergänzt Mid @ 55.9%, Quad + Hex erweitern auf 4/6 Levels.
-    /// </summary>
-    public BCZoneEntryStrategy BCZoneEntryStrategy { get; set; } = BCZoneEntryStrategy.Dual;
-
-    /// <summary>
-    /// Task 4.3 — Entry-Modus (aggressiv mit Limit-Order oder konservativ mit LTF-Reversal-Bestätigung).
-    /// Default <see cref="EntryMode.Both"/>: Aggressive-Limits werden platziert, zusätzlich LTF-Trigger
-    /// als bonus-Confluence. Conservative-Only: Signal NUR bei bestätigtem LTF-Reversal.
-    /// </summary>
-    public EntryMode EntryMode { get; set; } = EntryMode.Both;
-
-    /// <summary>
-    /// Strukturpunkte-Doku §5C: Wenn true wird auch in Modus <see cref="EntryMode.Both"/> und
-    /// <see cref="EntryMode.Aggressive"/> eine Pinbar- ODER Engulfing-Bestätigung in der B-Zone erzwungen
-    /// und Micro-Sequence als Reversal-Trigger verworfen.
-    /// Default: false — Buch §7 lässt drei gleichwertige Reversal-Wege zu (Pinbar/Engulfing/Micro-Sequence).
-    /// Der frühere True-Default war eine strikte Profi-Erweiterung; standardmäßig deaktiviert lockert er
-    /// die Trade-Frequenz spürbar in liquiden Märkten, ohne den Conservative-Mode zu schwächen
-    /// (Conservative erzwingt LtfReversal sowieso, dann reicht eine Reversal-Variante).
-    /// </summary>
-    public bool RequireWickRejectionInBZone { get; set; } = false;
-
-    /// <summary>
-    /// Spec §4 Confirmation-Mode: Die Trigger-Kerze muss mit dem Body INNERHALB oder ÜBER der Korrekturbox
-    /// (Long: >= Box-Unterkante; Short: &lt;= Box-Oberkante) schließen; der Docht darf rausstehen.
-    /// Wenn true wird diese Regel zusätzlich zum Reversal-Pattern erzwungen (Block bei Body-Close unter/über der Box).
-    /// Default: false — Buch-Masterclass §8 "Kerzen im Korrekturbereich" sagt: "Solange der Kerzenkörper
-    /// innerhalb oder oberhalb der Box schließt, ist das Setup valide" — also ist die Regel ein Filter auf
-    /// starke negative Closes, nicht ein zusätzliches Muss-Gate für den Entry. Der frühere True-Default
-    /// hat zu viele valide Setups blockiert (Box-Poke + Reversal).
-    /// </summary>
-    public bool RequireBoxCloseOnEntry { get; set; } = false;
-
-    /// <summary>
-    /// Spec §7 ("Heiliger Gral"): Positions-Multiplikator wenn der Overlap-Check eine <c>HighProbabilityZone</c>
-    /// markiert (HTF-GKL überlappt mit LTF-BC oder LTF-EXT-1.618-Gegenrichtung). Skaliert die Basis-Positionsgröße.
-    /// 1.0 = kein Boost (Default), &gt;1.0 = mehr Risiko in High-Probability-Zonen.
-    /// Wirksame Obergrenze: <see cref="MaxPositionSizePercent"/> greift weiterhin.
-    /// </summary>
-    public decimal HighProbabilityPositionMultiplier { get; set; } = 1.0m;
-
-    /// <summary>
-    /// Spec §7 (B19, Phase 3) — "Heiliger Gral" als Hard-Gate (opt-in, default false).
-    /// Wenn true: Signal wird nur generiert, wenn ENTWEDER ein HTF-GKL-Hit (Multi-TF-GKL-Detector)
-    /// ODER ein Confluence-Zone-Overlap (HTF-Zielzone × LTF-BC) für die geplante Richtung vorliegt.
-    /// Filtert Low-Quality-Setups raus, die nur isoliert auf der Navigator-TF Sinn machen.
-    /// Empfohlen für aggressives Risk-Profil (5%/Trade) als Quality-Boost — kostet Trades-pro-Tag,
-    /// erhöht aber WinRate und vermeidet "Phantom-Setups" gegen die übergeordnete Marktstruktur.
-    /// </summary>
-    public bool RequireHtfConfluenceForEntry { get; set; } = false;
-
-    /// <summary>
-    /// Phase 3 — Quantitatives Confluence-Score-Hard-Gate (opt-in, default 0 = aus).
-    /// Wenn &gt; 0: Signal wird nur generiert wenn der berechnete <c>SkConfluenceScorer</c>-Score
-    /// diesen Mindestwert erreicht. Score-Skala: 0-10 (8 Standard-Kategorien à 1 Punkt + HighProbabilityZone à 2).
-    /// Empfehlung: 4-6 für aggressives Filtern. 0 = bestehende Verhalten (Score nur als Confidence-Info).
-    /// Wirkt komplementär zu <see cref="RequireHtfConfluenceForEntry"/> — beide AND-verknüpft.
-    /// </summary>
-    public int MinConfluenceScore { get; set; } = 0;
-
-    /// <summary>
-    /// v1.5.0 Phase 2 — Asymmetrisches CRV (opt-in, default false).
-    /// Wenn true UND Signal ist GKL-Setup (<see cref="SignalResult.IsGklSetup"/> = true):
-    /// SL kommt weiterhin vom LTF-Setup (Point0 + Buffer), aber TP1/TP2 werden aus der
-    /// uebergeordneten HTF-Sequenz gelesen — TP1 = HTF-Ext161.8, TP2 = HTF-Ext200.
-    /// Verbessert das Chance-Risk-Verhaeltnis bei Multi-TF-Confluence-Setups (HTF-Strecken
-    /// sind weiter, der LTF-SL bleibt eng). Buch-Spec konform.
-    /// Sanity-Guard: Wenn HTF-Ext1618 das LTF-Ext1618 um Faktor &gt; 5 ueberschreitet,
-    /// wird auf LTF-Ext1618 × 3 hard-gecappt — schuetzt vor kaputten HTF-Sequenzen.
-    /// Voraussetzung: Phase 1 Hard-Gate sollte aktiv sein, sonst gibt es nicht zwingend
-    /// pro Trade eine HTF-Sequenz.
-    /// </summary>
-    public bool UseAsymmetricCrv { get; set; } = false;
 
     // === v1.7.0 Phase 16 — Cross-TF-Position-Pyramidisierung (User-Ausnahme, NICHT im Buch) ===
     /// <summary>

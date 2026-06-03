@@ -52,7 +52,7 @@ if (File.Exists(settingsPath))
         PropertyNameCaseInsensitive = true,
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
     }) ?? new BotSettings();
-    Console.WriteLine($"Settings geladen: MinConfluenceScore={botSettings.Risk.MinConfluenceScore}, EntryMode={botSettings.Risk.EntryMode}, MinRRR={botSettings.Risk.MinRiskRewardRatio}, ScannerMode={botSettings.Scanner.Mode}");
+    Console.WriteLine($"Settings geladen: MinRRR={botSettings.Risk.MinRiskRewardRatio}, ScannerMode={botSettings.Scanner.Mode}");
 }
 else
 {

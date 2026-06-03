@@ -25,7 +25,7 @@
             <TextBlock Grid.Column="1"
                        AutomationProperties.AutomationId="Calendar_TxtMonthDisplay"
                        Text="{Binding MonthDisplay}"
-                       FontSize="20" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center" />
@@ -55,24 +55,24 @@
           <Grid ColumnDefinitions="*,*">
             <StackPanel Grid.Column="0" HorizontalAlignment="Center">
               <TextBlock Text="{loc:Translate WorkTime}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{Binding TotalWorkDisplay}"
                          AutomationProperties.AutomationId="Calendar_TxtTotalWork"
-                         FontSize="24" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" HorizontalAlignment="Center">
               <TextBlock Text="{loc:Translate Balance}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{Binding BalanceDisplay}"
                          AutomationProperties.AutomationId="Calendar_TxtBalance"
-                         FontSize="24" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                          Foreground="{Binding BalanceColor}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -86,31 +86,31 @@
             <!-- Weekday Header -->
             <Grid ColumnDefinitions="*,*,*,*,*,*,*" Height="30">
               <TextBlock Grid.Column="0" Text="{loc:Translate Mon}"
-                         FontSize="12" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1" Text="{loc:Translate Tue}"
-                         FontSize="12" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Grid.Column="2" Text="{loc:Translate Wed}"
-                         FontSize="12" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Grid.Column="3" Text="{loc:Translate Thu}"
-                         FontSize="12" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Grid.Column="4" Text="{loc:Translate Fri}"
-                         FontSize="12" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Grid.Column="5" Text="{loc:Translate Sat}"
-                         FontSize="12" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Grid.Column="6" Text="{loc:Translate Sun}"
-                         FontSize="12" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Grid>
@@ -143,7 +143,7 @@
                               <Grid>
                                 <!-- Day number -->
                                 <TextBlock Text="{Binding DayNumber}"
-                                           FontSize="14"
+                                           FontSize="{StaticResource FontSizeBodyMd}"
                                            Foreground="{Binding TextColor}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
@@ -195,7 +195,7 @@
         <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="Calendar_LegendCard">
           <StackPanel Spacing="8">
             <TextBlock AutomationProperties.AutomationId="Calendar_TxtLegend" Text="{loc:Translate Legend}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <WrapPanel Orientation="Horizontal"
@@ -204,7 +204,7 @@
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource CardBrush}" />
-                <TextBlock Text="0h" FontSize="12"
+                <TextBlock Text="0h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -213,7 +213,7 @@
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapLightBrush}" />
-                <TextBlock Text="&lt;4h" FontSize="12"
+                <TextBlock Text="&lt;4h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -222,7 +222,7 @@
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapMediumBrush}" />
-                <TextBlock Text="4-6h" FontSize="12"
+                <TextBlock Text="4-6h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -231,7 +231,7 @@
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapNormalBrush}" />
-                <TextBlock Text="6-8h" FontSize="12"
+                <TextBlock Text="6-8h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -240,7 +240,7 @@
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapHighBrush}" />
-                <TextBlock Text="8-10h" FontSize="12"
+                <TextBlock Text="8-10h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -249,7 +249,7 @@
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource ErrorBrush}" />
-                <TextBlock Text="&gt;10h" FontSize="12"
+                <TextBlock Text="&gt;10h" FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -283,7 +283,7 @@
             <TextBlock Grid.Column="1"
                        AutomationProperties.AutomationId="Calendar_TxtSetStatus"
                        Text="{loc:Translate SetStatus}"
-                       FontSize="20" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center" />
@@ -304,7 +304,7 @@
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding OverlayDateDisplay}"
                          AutomationProperties.AutomationId="Calendar_TxtOverlayDate"
-                         FontSize="16" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -320,7 +320,7 @@
                                Foreground="{DynamicResource PrimaryBrush}" />
               <TextBlock Text="{Binding OverlayExistingStatusText}"
                          AutomationProperties.AutomationId="Calendar_TxtExistingStatus"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
@@ -330,7 +330,7 @@
           <Border Classes="Card" Padding="16">
             <StackPanel Spacing="12">
               <TextBlock Text="{loc:Translate Type}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <ComboBox AutomationProperties.AutomationId="Calendar_CmbStatusType"
                         ItemsSource="{Binding AvailableStatusTypes}"
@@ -349,14 +349,14 @@
           <Border Classes="Card" Padding="16">
             <StackPanel Spacing="12">
               <TextBlock Text="{loc:Translate DateRange}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
 
               <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,8,Auto">
                 <!-- From -->
                 <TextBlock Grid.Row="0" Grid.Column="0"
                            Text="{loc:Translate From}"
-                           FontSize="12"
+                           FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <CalendarDatePicker Grid.Row="2" Grid.Column="0"
                                     AutomationProperties.AutomationId="Calendar_DpkStartDate"
@@ -366,7 +366,7 @@
                 <!-- To -->
                 <TextBlock Grid.Row="0" Grid.Column="2"
                            Text="{loc:Translate To}"
-                           FontSize="12"
+                           FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <CalendarDatePicker Grid.Row="2" Grid.Column="2"
                                     AutomationProperties.AutomationId="Calendar_DpkEndDate"
@@ -377,7 +377,7 @@
               <!-- Calculated work days -->
               <TextBlock Text="{Binding OverlayCalculatedDaysDisplay}"
                          AutomationProperties.AutomationId="Calendar_TxtCalculatedDays"
-                         FontSize="13" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -387,7 +387,7 @@
           <Border Classes="Card" Padding="16">
             <StackPanel Spacing="8">
               <TextBlock Text="{loc:Translate NoteOptional}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Calendar_TxtOverlayNote"
                        Text="{Binding OverlayNote}"

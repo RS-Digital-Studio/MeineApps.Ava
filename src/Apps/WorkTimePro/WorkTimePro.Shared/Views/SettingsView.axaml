@@ -40,7 +40,7 @@
       <!-- Header -->
       <TextBlock AutomationProperties.AutomationId="Settings_TxtTitle"
                  Text="{loc:Translate Settings}"
-                 FontSize="22" FontWeight="Bold"
+                 FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                  Foreground="{DynamicResource TextPrimaryBrush}"
                  Margin="0,4,0,4" />
 
@@ -49,9 +49,9 @@
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Crown" Width="24" Height="24"
-                             Foreground="#FFD700" />
+                             Foreground="{DynamicResource PremiumGoldBrush}" />
             <TextBlock Text="{loc:Translate PremiumStatus}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -62,14 +62,14 @@
                   CornerRadius="12" Padding="16,8"
                   HorizontalAlignment="Center">
             <TextBlock AutomationProperties.AutomationId="Settings_TxtPremiumStatus" Text="{Binding PremiumStatusText}"
-                       FontSize="15" FontWeight="Bold"
-                       Foreground="White" />
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryContrastBrush}" />
           </Border>
 
           <!-- Trial Progress -->
           <StackPanel Spacing="4" IsVisible="{Binding IsInTrial}" AutomationProperties.AutomationId="Settings_TrialProgress">
             <TextBlock AutomationProperties.AutomationId="Settings_TxtTrialProgress" Text="{Binding TrialProgressText}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <ProgressBar AutomationProperties.AutomationId="Settings_PbTrialProgress" Value="{Binding TrialProgress}"
                          Maximum="1"
@@ -94,7 +94,7 @@
                   Classes="Secondary"
                   Command="{Binding RestorePurchasesCommand}"
                   IsVisible="{Binding !IsPremium}"
-                  FontSize="12"
+                  FontSize="{StaticResource FontSizeLabelMd}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
         </StackPanel>
@@ -107,7 +107,7 @@
             <mi:MaterialIcon Kind="ClockOutline" Width="20" Height="20"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate WorkTimeSettings}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -116,7 +116,7 @@
           <Grid ColumnDefinitions="*,120">
             <TextBlock AutomationProperties.AutomationId="Settings_TxtDailyTarget"
                        Text="{loc:Translate DailyTarget}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
@@ -131,7 +131,7 @@
           <Grid ColumnDefinitions="*,120">
             <TextBlock AutomationProperties.AutomationId="Settings_TxtWeeklyTarget"
                        Text="{loc:Translate WeeklyTarget}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
@@ -146,50 +146,50 @@
 
           <!-- Work Days -->
           <TextBlock Text="{loc:Translate WorkDays}"
-                     FontSize="12"
+                     FontSize="{StaticResource FontSizeLabelMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      Margin="0,4,0,0" />
 
           <WrapPanel Orientation="Horizontal">
             <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkMonday" IsChecked="{Binding MondayEnabled}" />
-              <TextBlock Text="{loc:Translate Monday}" FontSize="13"
+              <TextBlock Text="{loc:Translate Monday}" FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkTuesday" IsChecked="{Binding TuesdayEnabled}" />
-              <TextBlock Text="{loc:Translate Tuesday}" FontSize="13"
+              <TextBlock Text="{loc:Translate Tuesday}" FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkWednesday" IsChecked="{Binding WednesdayEnabled}" />
-              <TextBlock Text="{loc:Translate Wednesday}" FontSize="13"
+              <TextBlock Text="{loc:Translate Wednesday}" FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkThursday" IsChecked="{Binding ThursdayEnabled}" />
-              <TextBlock Text="{loc:Translate Thursday}" FontSize="13"
+              <TextBlock Text="{loc:Translate Thursday}" FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkFriday" IsChecked="{Binding FridayEnabled}" />
-              <TextBlock Text="{loc:Translate Friday}" FontSize="13"
+              <TextBlock Text="{loc:Translate Friday}" FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkSaturday" IsChecked="{Binding SaturdayEnabled}" />
-              <TextBlock Text="{loc:Translate Saturday}" FontSize="13"
+              <TextBlock Text="{loc:Translate Saturday}" FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,16,8" MinHeight="{DynamicResource MinTouchTarget}">
               <CheckBox AutomationProperties.AutomationId="Settings_ChkSunday" IsChecked="{Binding SundayEnabled}" />
-              <TextBlock Text="{loc:Translate Sunday}" FontSize="13"
+              <TextBlock Text="{loc:Translate Sunday}" FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
@@ -201,7 +201,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
             <ToggleSwitch AutomationProperties.AutomationId="Settings_TsIndividualHours" IsChecked="{Binding UseIndividualHours}" OnContent="" OffContent="" />
             <TextBlock Text="{loc:Translate IndividualHoursPerDay}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -209,31 +209,31 @@
           <StackPanel Spacing="8" IsVisible="{Binding UseIndividualHours}">
             <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                   ColumnSpacing="8" RowSpacing="4">
-              <TextBlock Grid.Row="0" Text="{loc:Translate Monday}" FontSize="13" VerticalAlignment="Center"
+              <TextBlock Grid.Row="0" Text="{loc:Translate Monday}" FontSize="{StaticResource FontSizeBodySm}" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBox Grid.Row="0" Grid.Column="1" AutomationProperties.AutomationId="Settings_TbMondayHours" Text="{Binding MondayHours}" />
 
-              <TextBlock Grid.Row="1" Text="{loc:Translate Tuesday}" FontSize="13" VerticalAlignment="Center"
+              <TextBlock Grid.Row="1" Text="{loc:Translate Tuesday}" FontSize="{StaticResource FontSizeBodySm}" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="Settings_TbTuesdayHours" Text="{Binding TuesdayHours}" />
 
-              <TextBlock Grid.Row="2" Text="{loc:Translate Wednesday}" FontSize="13" VerticalAlignment="Center"
+              <TextBlock Grid.Row="2" Text="{loc:Translate Wednesday}" FontSize="{StaticResource FontSizeBodySm}" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBox Grid.Row="2" Grid.Column="1" AutomationProperties.AutomationId="Settings_TbWednesdayHours" Text="{Binding WednesdayHours}" />
 
-              <TextBlock Grid.Row="3" Text="{loc:Translate Thursday}" FontSize="13" VerticalAlignment="Center"
+              <TextBlock Grid.Row="3" Text="{loc:Translate Thursday}" FontSize="{StaticResource FontSizeBodySm}" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBox Grid.Row="3" Grid.Column="1" AutomationProperties.AutomationId="Settings_TbThursdayHours" Text="{Binding ThursdayHours}" />
 
-              <TextBlock Grid.Row="4" Text="{loc:Translate Friday}" FontSize="13" VerticalAlignment="Center"
+              <TextBlock Grid.Row="4" Text="{loc:Translate Friday}" FontSize="{StaticResource FontSizeBodySm}" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBox Grid.Row="4" Grid.Column="1" AutomationProperties.AutomationId="Settings_TbFridayHours" Text="{Binding FridayHours}" />
 
-              <TextBlock Grid.Row="5" Text="{loc:Translate Saturday}" FontSize="13" VerticalAlignment="Center"
+              <TextBlock Grid.Row="5" Text="{loc:Translate Saturday}" FontSize="{StaticResource FontSizeBodySm}" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Grid.Row="5" Grid.Column="1" AutomationProperties.AutomationId="Settings_TbSaturdayHours" Text="{Binding SaturdayHours}" />
 
-              <TextBlock Grid.Row="6" Text="{loc:Translate Sunday}" FontSize="13" VerticalAlignment="Center"
+              <TextBlock Grid.Row="6" Text="{loc:Translate Sunday}" FontSize="{StaticResource FontSizeBodySm}" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Grid.Row="6" Grid.Column="1" AutomationProperties.AutomationId="Settings_TbSundayHours" Text="{Binding SundayHours}" />
             </Grid>
@@ -244,7 +244,7 @@
           <!-- Zeitrundung -->
           <Grid ColumnDefinitions="*,140">
             <TextBlock Text="{loc:Translate TimeRounding}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <ComboBox Grid.Column="1"
@@ -263,7 +263,7 @@
           <!-- Stundenlohn -->
           <Grid ColumnDefinitions="*,120">
             <TextBlock Text="{loc:Translate HourlyRate}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <NumericUpDown Grid.Column="1"
@@ -286,7 +286,7 @@
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate AutoPause}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
@@ -297,12 +297,12 @@
           </Grid>
 
           <TextBlock Text="{loc:Translate AutoPauseDescription}"
-                     FontSize="12"
+                     FontSize="{StaticResource FontSizeLabelMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
 
           <Grid ColumnDefinitions="*,100" IsVisible="{Binding AutoPauseEnabled}">
             <TextBlock Text="{loc:Translate AutoPauseAfterHours}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
@@ -313,7 +313,7 @@
 
           <Grid ColumnDefinitions="*,100" IsVisible="{Binding AutoPauseEnabled}">
             <TextBlock Text="{loc:Translate PauseMinutes}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
@@ -331,7 +331,7 @@
             <mi:MaterialIcon Kind="Bell" Width="20" Height="20"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate Reminders}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -341,7 +341,7 @@
             <ToggleSwitch AutomationProperties.AutomationId="Settings_TsMorningReminder" IsChecked="{Binding MorningReminderEnabled}" OnContent="" OffContent="" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate MorningReminder}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TimePicker Grid.Column="2"
@@ -357,7 +357,7 @@
             <ToggleSwitch AutomationProperties.AutomationId="Settings_TsEveningReminder" IsChecked="{Binding EveningReminderEnabled}" OnContent="" OffContent="" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate EveningReminder}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TimePicker Grid.Column="2"
@@ -372,7 +372,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ToggleSwitch AutomationProperties.AutomationId="Settings_TsPauseReminder" IsChecked="{Binding PauseReminderEnabled}" OnContent="" OffContent="" />
             <TextBlock Text="{loc:Translate BreakReminder}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -386,14 +386,14 @@
             <mi:MaterialIcon Kind="Beach" Width="20" Height="20"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate Vacation}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
 
           <Grid ColumnDefinitions="*,100">
             <TextBlock Text="{loc:Translate VacationDaysPerYear}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
@@ -403,13 +403,13 @@
           </Grid>
 
           <TextBlock Text="{loc:Translate VacationDefault}"
-                     FontSize="12"
+                     FontSize="{StaticResource FontSizeLabelMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
 
           <!-- Resturlaub-Übertrag: Verfall + Obergrenze -->
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="{loc:Translate VacationCarryOverExpires}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <ToggleSwitch Grid.Column="1"
@@ -420,7 +420,7 @@
 
           <Grid ColumnDefinitions="*,100">
             <TextBlock Text="{loc:Translate VacationMaxCarryOver}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
@@ -438,13 +438,13 @@
             <mi:MaterialIcon Kind="PartyPopper" Width="20" Height="20"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate Holidays}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
 
           <TextBlock Text="{loc:Translate Region}"
-                     FontSize="12"
+                     FontSize="{StaticResource FontSizeLabelMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
 
           <ComboBox AutomationProperties.AutomationId="Settings_CmbRegion"
@@ -462,7 +462,7 @@
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate LegalCompliance}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
@@ -473,7 +473,7 @@
           </Grid>
 
           <TextBlock Text="{loc:Translate LegalComplianceDescription}"
-                     FontSize="12"
+                     FontSize="{StaticResource FontSizeLabelMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
         </StackPanel>
       </Border>
@@ -486,7 +486,7 @@
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate OvertimeWarning}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
@@ -498,7 +498,7 @@
 
           <Grid ColumnDefinitions="*,100" IsVisible="{Binding OvertimeWarningEnabled}">
             <TextBlock Text="{loc:Translate OvertimeWarningHours}"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
@@ -516,7 +516,7 @@
             <mi:MaterialIcon Kind="Translate" Width="20" Height="20"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate Language}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -593,14 +593,14 @@
             <mi:MaterialIcon Kind="CloudUpload" Width="20" Height="20"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate Backup}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
 
           <!-- Lokales Backup -->
           <TextBlock Text="{loc:Translate LocalBackup}"
-                     FontSize="13" FontWeight="SemiBold"
+                     FontSize="{StaticResource FontSizeBodySm}" FontWeight="SemiBold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      Margin="0,4,0,0" />
 
@@ -608,7 +608,7 @@
                   Content="{loc:Translate ExportBackup}"
                   Classes="Secondary"
                   Command="{Binding ExportBackupCommand}"
-                  FontSize="13"
+                  FontSize="{StaticResource FontSizeBodySm}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
 
@@ -616,7 +616,7 @@
                   Content="{loc:Translate ImportBackup}"
                   Classes="Secondary"
                   Command="{Binding ImportBackupCommand}"
-                  FontSize="13"
+                  FontSize="{StaticResource FontSizeBodySm}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
 
@@ -625,7 +625,7 @@
           <!-- Cloud-Backup (noch nicht verfügbar) -->
           <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBlock Text="{loc:Translate CloudBackup}"
-                       FontSize="13" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeBodySm}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        VerticalAlignment="Center" />
             <Border Background="{DynamicResource PrimaryBrush}"
@@ -633,13 +633,13 @@
                     VerticalAlignment="Center"
                     Opacity="0.8">
               <TextBlock Text="{loc:Translate ComingSoon}"
-                         FontSize="10" FontWeight="Bold"
-                         Foreground="White" />
+                         FontSize="{StaticResource FontSizeLabelSm}" FontWeight="Bold"
+                         Foreground="{DynamicResource PrimaryContrastBrush}" />
             </Border>
           </StackPanel>
 
           <TextBlock Text="{loc:Translate CloudBackupNotAvailable}"
-                     FontSize="12"
+                     FontSize="{StaticResource FontSizeLabelMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextWrapping="Wrap" />
         </StackPanel>
@@ -652,20 +652,20 @@
             <mi:MaterialIcon Kind="BookOpen" Width="20" Height="20"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate LegalSources}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
 
           <TextBlock Text="{loc:Translate LegalSourcesDescription}"
-                     FontSize="12"
+                     FontSize="{StaticResource FontSizeLabelMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
 
           <Button AutomationProperties.AutomationId="Settings_BtnArbZG"
                   Content="{loc:Translate LegalSourceArbZG}"
                   Classes="Secondary"
                   Command="{Binding OpenArbZGCommand}"
-                  FontSize="13"
+                  FontSize="{StaticResource FontSizeBodySm}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
 
@@ -673,7 +673,7 @@
                   Content="{loc:Translate LegalSourceHolidays}"
                   Classes="Secondary"
                   Command="{Binding OpenHolidaysSourceCommand}"
-                  FontSize="13"
+                  FontSize="{StaticResource FontSizeBodySm}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
         </StackPanel>
@@ -695,7 +695,7 @@
       <!-- App Version -->
       <TextBlock AutomationProperties.AutomationId="Settings_TxtAppVersion"
                  Text="{Binding AppVersion}"
-                 FontSize="12"
+                 FontSize="{StaticResource FontSizeLabelMd}"
                  Foreground="{DynamicResource TextSecondaryBrush}"
                  HorizontalAlignment="Center"
                  Margin="0,8" />

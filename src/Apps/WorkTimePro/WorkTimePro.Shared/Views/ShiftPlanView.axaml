@@ -26,7 +26,7 @@
         </Button>
         <TextBlock Text="{loc:Translate ShiftPlan}"
                    AutomationProperties.AutomationId="ShiftPlan_TxtTitle"
-                   FontSize="18" FontWeight="Bold"
+                   FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    VerticalAlignment="Center" />
       </StackPanel>
@@ -51,12 +51,12 @@
             <StackPanel Grid.Column="1" HorizontalAlignment="Center">
               <TextBlock Text="{Binding WeekDisplay}"
                          AutomationProperties.AutomationId="ShiftPlan_TxtWeekDisplay"
-                         FontSize="18" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{Binding TotalHoursDisplay}"
                          AutomationProperties.AutomationId="ShiftPlan_TxtTotalHours"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -74,7 +74,7 @@
         <Border Grid.Row="1" Classes="Card StatsCard" AutomationProperties.AutomationId="ShiftPlan_PatternCard" Margin="16,8">
           <StackPanel Spacing="8">
             <TextBlock Text="{loc:Translate SelectShiftPattern}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
 
             <!-- Horizontal Shift Pattern List -->
@@ -100,12 +100,12 @@
                               MinWidth="80">
                         <StackPanel HorizontalAlignment="Center">
                           <TextBlock Text="{Binding Name}"
-                                     FontSize="12" FontWeight="Bold"
-                                     Foreground="White"
+                                     FontSize="{StaticResource FontSizeLabelMd}" FontWeight="Bold"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}"
                                      HorizontalAlignment="Center" />
                           <TextBlock Text="{Binding TimeRangeDisplay}"
-                                     FontSize="10"
-                                     Foreground="White" Opacity="0.8"
+                                     FontSize="{StaticResource FontSizeLabelSm}"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}" Opacity="0.8"
                                      HorizontalAlignment="Center" />
                         </StackPanel>
                       </Border>
@@ -123,7 +123,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate NoEntries}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -157,10 +157,10 @@
                       <!-- Day -->
                       <StackPanel Grid.Column="0">
                         <TextBlock Text="{Binding DayName}"
-                                   FontSize="16" FontWeight="Bold"
+                                   FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding DateDisplay}"
-                                   FontSize="12"
+                                   FontSize="{StaticResource FontSizeLabelMd}"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
 
@@ -175,8 +175,8 @@
                                 Padding="12,8"
                                 MinWidth="100">
                           <TextBlock Text="{Binding PatternName}"
-                                     FontSize="14"
-                                     Foreground="White"
+                                     FontSize="{StaticResource FontSizeBodyMd}"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}"
                                      HorizontalAlignment="Center" />
                         </Border>
                       </Button>
@@ -184,7 +184,7 @@
                       <!-- Work Time -->
                       <TextBlock Grid.Column="2"
                                  Text="{Binding WorkTimeDisplay}"
-                                 FontSize="12"
+                                 FontSize="{StaticResource FontSizeLabelMd}"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center"
                                  Margin="8,0" />
@@ -244,7 +244,7 @@
             <!-- Name -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate Name}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PatternName}"
                        AutomationProperties.AutomationId="ShiftPlan_TxtPatternName"
@@ -255,7 +255,7 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
               <StackPanel Grid.Column="0" Spacing="4">
                 <TextBlock Text="{loc:Translate Start}"
-                           FontSize="12"
+                           FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding PatternStartTimeDisplay}"
                          AutomationProperties.AutomationId="ShiftPlan_TxtStartTime"
@@ -264,7 +264,7 @@
 
               <StackPanel Grid.Column="1" Spacing="4">
                 <TextBlock Text="{loc:Translate End}"
-                           FontSize="12"
+                           FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding PatternEndTimeDisplay}"
                          AutomationProperties.AutomationId="ShiftPlan_TxtEndTime"
@@ -275,7 +275,7 @@
             <!-- Color Selection -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate Color}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Classes="Text" Padding="0"

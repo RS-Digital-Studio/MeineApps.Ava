@@ -111,6 +111,8 @@
 
       <!-- Zusätzliche semantische Brushes (für Cards, Warnungen, Fehler-Hinweise) -->
       <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource BorderSubtleColor}" />
+      <!-- Premium-Gold (Crown-Icon, einheitlich in Settings + Vacation) -->
+      <SolidColorBrush x:Key="PremiumGoldBrush" Color="#FFD700" />
       <SolidColorBrush x:Key="ErrorLightBrush" Color="{DynamicResource ErrorBackgroundColor}" />
       <SolidColorBrush x:Key="WarningLightBrush" Color="{DynamicResource WarningBackgroundColor}" />
 

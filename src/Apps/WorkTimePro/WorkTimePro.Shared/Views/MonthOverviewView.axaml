@@ -26,7 +26,7 @@
         </Button>
         <TextBlock Text="{loc:Translate MonthOverview}"
                    AutomationProperties.AutomationId="Month_TxtTitle"
-                   FontSize="18" FontWeight="Bold"
+                   FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    VerticalAlignment="Center" />
       </StackPanel>
@@ -50,7 +50,7 @@
                         VerticalAlignment="Center">
               <TextBlock Text="{Binding MonthDisplay}"
                          AutomationProperties.AutomationId="Month_TxtMonthDisplay"
-                         FontSize="20" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          HorizontalAlignment="Center" />
               <StackPanel Orientation="Horizontal"
@@ -60,7 +60,7 @@
                 <mi:MaterialIcon Kind="Lock" Width="12" Height="12"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{loc:Translate Completed}"
-                           FontSize="12"
+                           FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </StackPanel>
@@ -82,63 +82,63 @@
             <!-- Work Time -->
             <StackPanel Grid.Column="0" Grid.Row="0">
               <TextBlock Text="{loc:Translate WorkTime}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{Binding WorkTimeDisplay}"
                          AutomationProperties.AutomationId="Month_TxtWorkTime"
-                         FontSize="26" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
             <!-- Target -->
             <StackPanel Grid.Column="1" Grid.Row="0">
               <TextBlock Text="{loc:Translate Target}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{Binding TargetTimeDisplay}"
                          AutomationProperties.AutomationId="Month_TxtTarget"
-                         FontSize="26"
+                         FontSize="{StaticResource FontSizeHeadlineMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
 
             <!-- Month Balance -->
             <StackPanel Grid.Column="0" Grid.Row="1">
               <TextBlock Text="{loc:Translate MonthBalance}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{Binding BalanceDisplay}"
                          AutomationProperties.AutomationId="Month_TxtBalance"
-                         FontSize="22" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                          Foreground="{Binding BalanceColor}" />
             </StackPanel>
 
             <!-- Cumulative Balance -->
             <StackPanel Grid.Column="1" Grid.Row="1">
               <TextBlock Text="{loc:Translate CumulativeBalance}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{Binding CumulativeBalanceDisplay}"
                          AutomationProperties.AutomationId="Month_TxtCumulativeBalance"
-                         FontSize="22" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                          Foreground="{Binding CumulativeBalanceColor}" />
             </StackPanel>
 
             <!-- Work Days -->
             <StackPanel Grid.Column="0" Grid.Row="2">
               <TextBlock Text="{loc:Translate WorkDaysTotal}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <TextBlock Text="{Binding WorkedDays}"
                            AutomationProperties.AutomationId="Month_TxtWorkedDays"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="/"
-                           FontSize="16"
+                           FontSize="{StaticResource FontSizeBodyLg}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TargetDays}"
                            AutomationProperties.AutomationId="Month_TxtTargetDays"
-                           FontSize="16"
+                           FontSize="{StaticResource FontSizeBodyLg}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </StackPanel>
@@ -158,11 +158,11 @@
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding VacationDays}"
                          AutomationProperties.AutomationId="Month_TxtVacationDays"
-                         FontSize="18" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                          Foreground="{DynamicResource InfoBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate Vacation}"
-                         FontSize="11"
+                         FontSize="{StaticResource FontSizeCaption}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -174,11 +174,11 @@
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding SickDays}"
                          AutomationProperties.AutomationId="Month_TxtSickDays"
-                         FontSize="18" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                          Foreground="{DynamicResource ErrorBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate Sick}"
-                         FontSize="11"
+                         FontSize="{StaticResource FontSizeCaption}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -190,11 +190,11 @@
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding HolidayDays}"
                          AutomationProperties.AutomationId="Month_TxtHolidayDays"
-                         FontSize="18" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                          Foreground="{DynamicResource WarningBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate Holiday}"
-                         FontSize="11"
+                         FontSize="{StaticResource FontSizeCaption}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -208,7 +208,7 @@
               <mi:MaterialIcon Kind="CalendarWeek" Width="20" Height="20"
                                Foreground="{DynamicResource PrimaryBrush}" />
               <TextBlock Text="{loc:Translate Weeks}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
@@ -220,7 +220,7 @@
                     <Grid ColumnDefinitions="Auto,*,Auto,60" ColumnSpacing="12">
                       <TextBlock Grid.Column="0"
                                  Text="{Binding WeekDisplay}"
-                                 FontSize="14" FontWeight="Bold"
+                                 FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                                  Foreground="{DynamicResource AccentBrush}"
                                  VerticalAlignment="Center" />
 
@@ -232,13 +232,13 @@
 
                       <TextBlock Grid.Column="2"
                                  Text="{Binding ActualWorkDisplay}"
-                                 FontSize="14"
+                                 FontSize="{StaticResource FontSizeBodyMd}"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
                                  VerticalAlignment="Center" />
 
                       <TextBlock Grid.Column="3"
                                  Text="{Binding BalanceDisplay}"
-                                 FontSize="14" FontWeight="Bold"
+                                 FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                                  Foreground="{Binding BalanceColor}"
                                  VerticalAlignment="Center"
                                  HorizontalAlignment="Right" />

@@ -92,11 +92,11 @@
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="{Binding StatusIconKind}"
                                Width="18" Height="18"
-                               Foreground="White" />
+                               Foreground="{DynamicResource PrimaryContrastBrush}" />
               <TextBlock Text="{Binding StatusText}"
                          AutomationProperties.AutomationId="Today_TxtStatus"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="White"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
+                         Foreground="{DynamicResource PrimaryContrastBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
           </Border>
@@ -131,12 +131,12 @@
                     RenderTransformOrigin="50%,50%">
               <mi:MaterialIcon Kind="{Binding StatusIconKind}"
                                Width="48" Height="48"
-                               Foreground="White" />
+                               Foreground="{DynamicResource PrimaryContrastBrush}" />
             </Button>
             <!-- Fortschritts-Prozent unter dem Button -->
             <TextBlock Text="{Binding DayProgressPercent}"
                        AutomationProperties.AutomationId="Today_TxtProgressPercent"
-                       FontSize="12" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeLabelMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Bottom"
@@ -167,7 +167,7 @@
           <TextBlock Grid.Column="0"
                      AutomationProperties.AutomationId="Today_TxtUndoMessage"
                      Text="{Binding UndoMessage}"
-                     Foreground="White" FontWeight="SemiBold"
+                     Foreground="{DynamicResource PrimaryContrastBrush}" FontWeight="SemiBold"
                      VerticalAlignment="Center" />
           <Button Grid.Column="1"
                   AutomationProperties.AutomationId="Today_BtnUndo"
@@ -177,9 +177,9 @@
                   MinHeight="{DynamicResource MinTouchTarget}"
                   CornerRadius="4" Padding="12,4">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="Undo" Width="16" Height="16" Foreground="White" />
+              <mi:MaterialIcon Kind="Undo" Width="16" Height="16" Foreground="{DynamicResource PrimaryContrastBrush}" />
               <TextBlock Text="{loc:Translate Undo}"
-                         Foreground="White" FontWeight="Bold" />
+                         Foreground="{DynamicResource PrimaryContrastBrush}" FontWeight="Bold" />
             </StackPanel>
           </Button>
         </Grid>
@@ -195,11 +195,11 @@
                       HorizontalAlignment="Center">
             <TextBlock Text="{Binding CurrentWorkTime}"
                        AutomationProperties.AutomationId="Today_TxtWorkTime"
-                       FontSize="24" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate WorkTime}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
           </StackPanel>
@@ -209,11 +209,11 @@
                       HorizontalAlignment="Center">
             <TextBlock Text="{Binding CurrentPauseTime}"
                        AutomationProperties.AutomationId="Today_TxtPauseTime"
-                       FontSize="24" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{DynamicResource WarningBrush}"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate Break}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
           </StackPanel>
@@ -224,11 +224,11 @@
             <TextBlock x:Name="BalanceTextBlock"
                        Text="{Binding BalanceTime}"
                        AutomationProperties.AutomationId="Today_TxtBalance"
-                       FontSize="24" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{Binding BalanceColor}"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate Balance}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
           </StackPanel>
@@ -238,11 +238,11 @@
                       HorizontalAlignment="Center">
             <TextBlock Text="{Binding TargetWorkTime}"
                        AutomationProperties.AutomationId="Today_TxtTarget"
-                       FontSize="16"
+                       FontSize="{StaticResource FontSizeBodyLg}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate Target}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
           </StackPanel>
@@ -253,11 +253,11 @@
                       IsVisible="{Binding HasCheckedIn}">
             <TextBlock Text="{Binding FirstCheckIn}"
                        AutomationProperties.AutomationId="Today_TxtFirstCheckIn"
-                       FontSize="16"
+                       FontSize="{StaticResource FontSizeBodyLg}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate Start}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
           </StackPanel>
@@ -280,17 +280,17 @@
                            VerticalAlignment="Center" />
           <StackPanel Grid.Column="1" Margin="12,0,0,0">
             <TextBlock Text="{loc:Translate EstimatedEnd}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{Binding RemainingTodayText}"
                        AutomationProperties.AutomationId="Today_TxtRemainingToday"
-                       FontSize="14" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
           <TextBlock Grid.Column="2"
                      Text="{Binding EstimatedEndTime}"
                      AutomationProperties.AutomationId="Today_TxtEstimatedEnd"
-                     FontSize="24" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                      Foreground="{DynamicResource InfoBrush}"
                      VerticalAlignment="Center" />
         </Grid>
@@ -311,10 +311,10 @@
             <TextBlock x:Name="EarningsTextBlock"
                        Text="{Binding TodayEarnings}"
                        AutomationProperties.AutomationId="Today_TxtEarnings"
-                       FontSize="24" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock Text="{loc:Translate TodayEarnings}"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
           </StackPanel>
         </StackPanel>
@@ -334,11 +334,11 @@
                            Foreground="{DynamicResource WarningBrush}" />
           <StackPanel>
             <TextBlock Text="{loc:Translate AutoPauseAdded}"
-                       FontSize="14" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                        Foreground="{DynamicResource WarningBrush}" />
             <TextBlock Text="{Binding AutoPauseInfo}"
                        AutomationProperties.AutomationId="Today_TxtAutoPauseInfo"
-                       FontSize="12"
+                       FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource WarningBrush}" />
           </StackPanel>
         </StackPanel>
@@ -353,7 +353,7 @@
             <mi:MaterialIcon Kind="NoteTextOutline" Width="18" Height="18"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate DayNote}"
-                       FontSize="13" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeBodySm}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -392,7 +392,7 @@
       <!-- ==================== Quick Navigation Section ==================== -->
       <TextBlock AutomationProperties.AutomationId="Today_TxtMoreFeatures"
                  Text="{loc:Translate MoreFeatures}"
-                 FontSize="18" FontWeight="Bold"
+                 FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                  Foreground="{DynamicResource TextPrimaryBrush}"
                  Margin="0,8,0,0" />
 
@@ -421,10 +421,10 @@
           <StackPanel HorizontalAlignment="Center" Spacing="4">
             <mi:MaterialIcon Kind="CalendarMonth"
                              Width="24" Height="24"
-                             Foreground="White"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate MonthOverview}"
-                       FontSize="11" Foreground="White"
+                       FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
           </StackPanel>
@@ -451,10 +451,10 @@
           <StackPanel HorizontalAlignment="Center" Spacing="4">
             <mi:MaterialIcon Kind="ChartBar"
                              Width="24" Height="24"
-                             Foreground="White"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate YearOverview}"
-                       FontSize="11" Foreground="White"
+                       FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
           </StackPanel>
@@ -481,10 +481,10 @@
           <StackPanel HorizontalAlignment="Center" Spacing="4">
             <mi:MaterialIcon Kind="Beach"
                              Width="24" Height="24"
-                             Foreground="White"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate Vacation}"
-                       FontSize="11" Foreground="White"
+                       FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
           </StackPanel>
@@ -511,10 +511,10 @@
           <StackPanel HorizontalAlignment="Center" Spacing="4">
             <mi:MaterialIcon Kind="SwapHorizontal"
                              Width="24" Height="24"
-                             Foreground="White"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate ShiftPlan}"
-                       FontSize="11" Foreground="White"
+                       FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
           </StackPanel>

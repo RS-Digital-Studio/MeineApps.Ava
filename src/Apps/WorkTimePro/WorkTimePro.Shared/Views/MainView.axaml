@@ -213,7 +213,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                x:Name="TabIconToday" />
               <TextBlock Text="{loc:Translate Today}"
-                         FontSize="10" HorizontalAlignment="Center"
+                         FontSize="{StaticResource FontSizeLabelSm}" HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          x:Name="TabLabelToday" />
             </StackPanel>
@@ -231,7 +231,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                x:Name="TabIconWeek" />
               <TextBlock Text="{loc:Translate Week}"
-                         FontSize="10" HorizontalAlignment="Center"
+                         FontSize="{StaticResource FontSizeLabelSm}" HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          x:Name="TabLabelWeek" />
             </StackPanel>
@@ -249,7 +249,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                x:Name="TabIconCalendar" />
               <TextBlock Text="{loc:Translate Calendar}"
-                         FontSize="10" HorizontalAlignment="Center"
+                         FontSize="{StaticResource FontSizeLabelSm}" HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          x:Name="TabLabelCalendar" />
             </StackPanel>
@@ -267,7 +267,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                x:Name="TabIconStatistics" />
               <TextBlock Text="{loc:Translate Statistics}"
-                         FontSize="10" HorizontalAlignment="Center"
+                         FontSize="{StaticResource FontSizeLabelSm}" HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          x:Name="TabLabelStatistics" />
             </StackPanel>
@@ -285,7 +285,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                x:Name="TabIconSettings" />
               <TextBlock Text="{loc:Translate Settings}"
-                         FontSize="10" HorizontalAlignment="Center"
+                         FontSize="{StaticResource FontSizeLabelSm}" HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          x:Name="TabLabelSettings" />
             </StackPanel>

@@ -27,7 +27,7 @@
         </Button>
         <TextBlock AutomationProperties.AutomationId="DayDetail_TxtTitle"
                    Text="{loc:Translate DayDetails}"
-                   FontSize="18" FontWeight="Bold"
+                   FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    VerticalAlignment="Center" />
       </StackPanel>
@@ -53,7 +53,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="DayDetail_TxtStatus"
                          Text="{Binding StatusDisplay}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
               <Button AutomationProperties.AutomationId="DayDetail_BtnChangeStatus"
@@ -77,7 +77,7 @@
                 <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
                                  Foreground="{DynamicResource ErrorBrush}" />
                 <TextBlock Text="{loc:Translate LockedMonthClosure}"
-                           FontSize="12"
+                           FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource ErrorBrush}" />
               </StackPanel>
             </Border>
@@ -92,33 +92,33 @@
             <!-- Work Time -->
             <StackPanel Grid.Column="0" Grid.Row="0">
               <TextBlock Text="{loc:Translate WorkTime}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="DayDetail_TxtWorkTime"
                          Text="{Binding WorkTimeDisplay}"
-                         FontSize="24" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
             <!-- Balance -->
             <StackPanel Grid.Column="1" Grid.Row="0">
               <TextBlock Text="{loc:Translate Balance}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="DayDetail_TxtBalance"
                          Text="{Binding BalanceDisplay}"
-                         FontSize="24" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                          Foreground="{Binding BalanceColor}" />
             </StackPanel>
 
             <!-- Manual Break -->
             <StackPanel Grid.Column="0" Grid.Row="1">
               <TextBlock Text="{loc:Translate ManualBreak}"
-                         FontSize="12"
+                         FontSize="{StaticResource FontSizeLabelMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="DayDetail_TxtPauseTime"
                          Text="{Binding PauseTimeDisplay}"
-                         FontSize="18"
+                         FontSize="{StaticResource FontSizeTitleSm}"
                          Foreground="{DynamicResource WarningBrush}" />
             </StackPanel>
 
@@ -126,7 +126,7 @@
             <StackPanel Grid.Column="1" Grid.Row="1">
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <TextBlock Text="{loc:Translate AutoPause}"
-                           FontSize="12"
+                           FontSize="{StaticResource FontSizeLabelMd}"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <mi:MaterialIcon Kind="FlashOutline" Width="12" Height="12"
                                  Foreground="{DynamicResource WarningBrush}"
@@ -134,7 +134,7 @@
               </StackPanel>
               <TextBlock AutomationProperties.AutomationId="DayDetail_TxtAutoPause"
                          Text="{Binding AutoPauseDisplay}"
-                         FontSize="18"
+                         FontSize="{StaticResource FontSizeTitleSm}"
                          Foreground="{DynamicResource WarningBrush}"
                          Opacity="0.7" />
             </StackPanel>
@@ -155,14 +155,14 @@
               <mi:MaterialIcon Kind="InformationOutline" Width="18" Height="18"
                                Foreground="{DynamicResource ErrorBrush}" />
               <TextBlock Text="{loc:Translate LegalWarningsTitle}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                          Foreground="{DynamicResource ErrorBrush}" />
             </StackPanel>
             <ItemsControl ItemsSource="{Binding Warnings}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
                   <TextBlock Text="{Binding}"
-                             FontSize="12"
+                             FontSize="{StaticResource FontSizeLabelMd}"
                              Foreground="{DynamicResource ErrorBrush}"
                              Padding="0,2" />
                 </DataTemplate>
@@ -179,7 +179,7 @@
                 <mi:MaterialIcon Kind="ClockOutline" Width="20" Height="20"
                                  Foreground="{DynamicResource PrimaryBrush}" />
                 <TextBlock AutomationProperties.AutomationId="DayDetail_TxtTimeEntries" Text="{loc:Translate TimeEntries}"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -214,9 +214,9 @@
                                            Foreground="{DynamicResource PrimaryBrush}"
                                            VerticalAlignment="Center" Margin="0,0,12,0" />
                           <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding FullDisplay}" FontSize="14" FontWeight="Bold"
+                            <TextBlock Text="{Binding FullDisplay}" FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="{Binding Note}" FontSize="12"
+                            <TextBlock Text="{Binding Note}" FontSize="{StaticResource FontSizeLabelMd}"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        IsVisible="{Binding HasNote}" />
                           </StackPanel>
@@ -250,7 +250,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate NoEntries}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center"
                          Margin="0,8,0,0" />
@@ -266,7 +266,7 @@
                 <mi:MaterialIcon Kind="Coffee" Width="20" Height="20"
                                  Foreground="{DynamicResource WarningBrush}" />
                 <TextBlock AutomationProperties.AutomationId="DayDetail_TxtPauses" Text="{loc:Translate Pauses}"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            VerticalAlignment="Center" />
               </StackPanel>
@@ -303,17 +303,17 @@
                           <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                               <TextBlock Text="{Binding StartTimeDisplay}"
-                                         FontSize="14" FontWeight="Bold"
+                                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                                          Foreground="{DynamicResource TextPrimaryBrush}" />
                               <TextBlock Text="&#x2013;"
-                                         FontSize="14"
+                                         FontSize="{StaticResource FontSizeBodyMd}"
                                          Foreground="{DynamicResource TextSecondaryBrush}" />
                               <TextBlock Text="{Binding EndTimeDisplay}"
-                                         FontSize="14" FontWeight="Bold"
+                                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                                          Foreground="{DynamicResource TextPrimaryBrush}" />
                             </StackPanel>
                             <TextBlock Text="{Binding DurationDisplay}"
-                                       FontSize="12"
+                                       FontSize="{StaticResource FontSizeLabelMd}"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                           </StackPanel>
                           <mi:MaterialIcon Grid.Column="2"
@@ -356,7 +356,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate NoBreaksRecorded}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center"
                          Margin="0,8,0,0" />
@@ -385,13 +385,13 @@
           <!-- Titel -->
           <TextBlock AutomationProperties.AutomationId="DayDetail_TxtTimeEntryOverlayTitle"
                      Text="{Binding TimeEntryOverlayTitle}"
-                     FontSize="20" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
 
           <!-- Typ-Toggle (CheckIn / CheckOut) -->
           <StackPanel Spacing="4">
             <TextBlock Text="{loc:Translate EntryType}"
-                       FontSize="13"
+                       FontSize="{StaticResource FontSizeBodySm}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <Grid ColumnDefinitions="*,*" Height="40">
               <!-- CheckIn aktiv -->
@@ -434,7 +434,7 @@
               <TextBlock Text="{loc:Translate HoursShort}" Classes="Caption" HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
-            <TextBlock Text=":" FontSize="28" FontWeight="Medium" VerticalAlignment="Center"
+            <TextBlock Text=":" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Medium" VerticalAlignment="Center"
                        Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
             <StackPanel Spacing="2">
               <controls:WheelPicker AutomationProperties.AutomationId="DayDetail_WpEditMinute" Value="{Binding EditMinute}" Minimum="0" Maximum="59" FormatString="D2" />
@@ -477,13 +477,13 @@
           <!-- Titel -->
           <TextBlock AutomationProperties.AutomationId="DayDetail_TxtPauseOverlayTitle"
                      Text="{Binding PauseOverlayTitle}"
-                     FontSize="20" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
 
           <!-- Startzeit -->
           <StackPanel Spacing="4">
             <TextBlock Text="{loc:Translate StartTime}"
-                       FontSize="13"
+                       FontSize="{StaticResource FontSizeBodySm}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
               <StackPanel Spacing="2">
@@ -491,7 +491,7 @@
                 <TextBlock Text="{loc:Translate HoursShort}" Classes="Caption" HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
-              <TextBlock Text=":" FontSize="28" FontWeight="Medium" VerticalAlignment="Center"
+              <TextBlock Text=":" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Medium" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
               <StackPanel Spacing="2">
                 <controls:WheelPicker AutomationProperties.AutomationId="DayDetail_WpPauseStartMinute" Value="{Binding PauseStartMinute}" Minimum="0" Maximum="59" FormatString="D2" />
@@ -504,7 +504,7 @@
           <!-- Endzeit -->
           <StackPanel Spacing="4">
             <TextBlock Text="{loc:Translate EndTime}"
-                       FontSize="13"
+                       FontSize="{StaticResource FontSizeBodySm}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
               <StackPanel Spacing="2">
@@ -512,7 +512,7 @@
                 <TextBlock Text="{loc:Translate HoursShort}" Classes="Caption" HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
-              <TextBlock Text=":" FontSize="28" FontWeight="Medium" VerticalAlignment="Center"
+              <TextBlock Text=":" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Medium" VerticalAlignment="Center"
                          Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
               <StackPanel Spacing="2">
                 <controls:WheelPicker AutomationProperties.AutomationId="DayDetail_WpPauseEndMinute" Value="{Binding PauseEndMinute}" Minimum="0" Maximum="59" FormatString="D2" />
@@ -560,7 +560,7 @@
             <mi:MaterialIcon Kind="AlertCircleOutline" Width="24" Height="24"
                              Foreground="{DynamicResource ErrorBrush}" />
             <TextBlock Text="{loc:Translate ConfirmDelete}"
-                       FontSize="20" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -568,7 +568,7 @@
           <!-- Nachricht -->
           <TextBlock AutomationProperties.AutomationId="DayDetail_TxtConfirmDeleteMessage"
                      Text="{Binding ConfirmDeleteMessage}"
-                     FontSize="14"
+                     FontSize="{StaticResource FontSizeBodyMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextWrapping="Wrap" />
 
@@ -603,7 +603,7 @@
             <mi:MaterialIcon Kind="TagOutline" Width="24" Height="24"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate SelectStatus}"
-                       FontSize="20" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -629,7 +629,7 @@
                     <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="20" Height="20"
                                      Foreground="{DynamicResource PrimaryBrush}" />
                     <TextBlock Grid.Column="1" Text="{Binding DisplayName}"
-                               FontSize="14"
+                               FontSize="{StaticResource FontSizeBodyMd}"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center"
                                Margin="10,0,0,0" />

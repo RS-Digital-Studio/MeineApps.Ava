@@ -71,8 +71,6 @@ public interface IDatabaseService
     Task<ShiftAssignment?> GetShiftAssignmentAsync(DateTime date);
     Task<int> SaveShiftAssignmentAsync(ShiftAssignment assignment);
     Task DeleteShiftAssignmentAsync(int id);
-    Task<List<ShiftAssignment>> GetAllShiftAssignmentsAsync();
-    Task<List<ShiftPattern>> GetAllShiftPatternsAsync();
 
     // === Month lock ===
     Task LockMonthAsync(int year, int month);
@@ -84,32 +82,6 @@ public interface IDatabaseService
     Task<int> GetTotalWorkMinutesAsync(DateTime startDate, DateTime endDate);
     Task<int> GetTotalOvertimeMinutesAsync(DateTime startDate, DateTime endDate);
 
-    // === Clear (für Restore) ===
-    /// <summary>
-    /// Löscht alle Daten aus allen Tabellen (für sauberes Restore).
-    /// Settings werden nicht gelöscht (werden überschrieben).
-    /// </summary>
-    Task ClearAllDataAsync();
-
-    /// <summary>
-    /// Batch-Insert aller Backup-Daten in einer Transaction (5-10x schneller als einzelne SaveAsync-Aufrufe).
-    /// Daten werden direkt eingefügt (keine Upsert-Logik, DB muss vorher geleert sein).
-    /// </summary>
-    Task BulkRestoreAsync(
-        List<WorkDay>? workDays,
-        List<TimeEntry>? timeEntries,
-        List<PauseEntry>? pauseEntries,
-        List<VacationEntry>? vacationEntries,
-        List<VacationQuota>? vacationQuotas,
-        List<Project>? projects,
-        List<Employer>? employers,
-        List<ShiftPattern>? shiftPatterns,
-        List<ShiftAssignment>? shiftAssignments);
-
-    // === Backup methods ===
-    Task<List<WorkDay>> GetAllWorkDaysAsync();
-    Task<List<TimeEntry>> GetAllTimeEntriesAsync();
-    Task<List<PauseEntry>> GetAllPauseEntriesAsync();
-    Task<List<VacationEntry>> GetAllVacationEntriesAsync();
-    Task<List<VacationQuota>> GetAllVacationQuotasAsync();
+    // Backup/Restore-spezifische Tabellen-Reads + ClearAll/BulkRestore wurden nach
+    // IBackupDataAccess ausgelagert (ISP — nur BackupService nutzt sie).
 }

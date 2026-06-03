@@ -6,7 +6,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// SQLite database service for WorkTime Pro
 /// </summary>
-public sealed class DatabaseService : IDatabaseService
+public sealed class DatabaseService : IDatabaseService, IBackupDataAccess
 {
     private SQLiteAsyncConnection? _database;
     private readonly string _dbPath;

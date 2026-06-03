@@ -212,6 +212,8 @@ public partial class App : Application
 
         // App Services
         services.AddSingleton<IDatabaseService, DatabaseService>();
+        // Backup-spezifischer DB-Zugriff teilt die DatabaseService-Singleton-Instanz (ISP-Cut).
+        services.AddSingleton<IBackupDataAccess>(sp => (DatabaseService)sp.GetRequiredService<IDatabaseService>());
         services.AddSingleton<ICalculationService, CalculationService>();
         services.AddSingleton<ITimeTrackingService, TimeTrackingService>();
         services.AddSingleton<ICalendarExportService>(sp =>

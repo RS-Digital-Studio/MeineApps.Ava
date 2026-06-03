@@ -25,7 +25,7 @@ public sealed class BackupService : IBackupService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    private readonly IDatabaseService _database;
+    private readonly IBackupDataAccess _database;
     private readonly IFileShareService _fileShareService;
 
     private static string BackupDirectory => Path.Combine(
@@ -49,7 +49,7 @@ public sealed class BackupService : IBackupService
     private const string SAFETY_FILE_EXT = ".json";
     private const int SAFETY_RETENTION_COUNT = 3;
 
-    public BackupService(IDatabaseService database, IFileShareService fileShareService)
+    public BackupService(IBackupDataAccess database, IFileShareService fileShareService)
     {
         _database = database;
         _fileShareService = fileShareService;

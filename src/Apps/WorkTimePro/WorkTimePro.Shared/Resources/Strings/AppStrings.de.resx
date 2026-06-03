@@ -185,7 +185,7 @@
   <data name="Sick" xml:space="preserve"><value>Krank</value></data>
   <data name="Home" xml:space="preserve"><value>Home</value></data>
   <data name="Holiday" xml:space="preserve"><value>Feiertag</value></data>
-  <data name="AvgPerDay" xml:space="preserve"><value>⌀/Tag</value></data>
+  <data name="AvgPerDay" xml:space="preserve"><value>Durchschn./Tag</value></data>
   <data name="WorkedDaysCount" xml:space="preserve"><value>Arbeitstage</value></data>
   <data name="Export" xml:space="preserve"><value>Exportieren</value></data>
   <data name="ExportAs" xml:space="preserve"><value>Exportieren als...</value></data>
@@ -232,7 +232,7 @@
   <data name="ActualTime" xml:space="preserve"><value>Ist-Zeit</value></data>
   <data name="TargetTime" xml:space="preserve"><value>Soll-Zeit</value></data>
   <data name="WorkDaysTotal" xml:space="preserve"><value>Arbeitstage</value></data>
-  <data name="AvgPerDayShort" xml:space="preserve"><value>Ø pro Tag</value></data>
+  <data name="AvgPerDayShort" xml:space="preserve"><value>Durchschn./Tag</value></data>
   <data name="VacationLabel" xml:space="preserve"><value>Urlaub</value></data>
   <data name="SickLabel" xml:space="preserve"><value>Krank</value></data>
   <data name="DaysFormat" xml:space="preserve"><value>{0} Tage</value></data>
@@ -322,7 +322,7 @@
   <data name="ChartHours" xml:space="preserve"><value>Stunden</value></data>
   <data name="ChartDaily" xml:space="preserve"><value>Täglich</value></data>
   <data name="ChartCumulative" xml:space="preserve"><value>Kumuliert</value></data>
-  <data name="ChartAvgHours" xml:space="preserve"><value>&#8960; Stunden</value></data>
+  <data name="ChartAvgHours" xml:space="preserve"><value>Durchschn. Stunden</value></data>
   <data name="ChartWorkHours" xml:space="preserve"><value>Arbeitsstunden</value></data>
   <data name="ChartCumulativeBalance" xml:space="preserve"><value>Kum. Saldo</value></data>
 
@@ -369,10 +369,10 @@
     <value>Diese Funktion erfordert Premium.</value>
   </data>
   <data name="WatchVideoOnce" xml:space="preserve">
-    <value>Video schauen → Einmalig nutzen</value>
+    <value>Video schauen – Einmalig nutzen</value>
   </data>
   <data name="BuyPremiumUnlimited" xml:space="preserve">
-    <value>Premium kaufen → Unbegrenzt</value>
+    <value>Premium kaufen – Unbegrenzt</value>
   </data>
   <data name="VideoRewardSuccess" xml:space="preserve">
     <value>Funktion freigeschaltet!</value>

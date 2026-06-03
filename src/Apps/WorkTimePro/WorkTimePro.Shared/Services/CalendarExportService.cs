@@ -247,7 +247,7 @@ public sealed class CalendarExportService : ICalendarExportService
         lines.Add($"{AppStrings.Balance}: {TimeFormatter.FormatBalance(day.BalanceMinutes)}");
 
         if (day.Status != DayStatus.WorkDay)
-            lines.Add($"Status: {TimeFormatter.GetStatusName(day.Status)}");
+            lines.Add($"{AppStrings.TableStatus}: {TimeFormatter.GetStatusName(day.Status)}");
 
         if (!string.IsNullOrEmpty(day.Note))
             lines.Add($"{AppStrings.Note}: {day.Note}");

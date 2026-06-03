@@ -86,13 +86,13 @@
   <data name="BreakReminder" xml:space="preserve"><value>Promemoria pausa</value></data>
   <data name="OvertimeWarning" xml:space="preserve"><value>Avviso straordinari</value></data>
   <data name="OvertimeWarningHours" xml:space="preserve"><value>Avvisa da ore/giorno</value></data>
-  <data name="Holidays" xml:space="preserve"><value>Festivita</value></data>
+  <data name="Holidays" xml:space="preserve"><value>Festività</value></data>
   <data name="Region" xml:space="preserve"><value>Regione</value></data>
   <data name="LegalSources" xml:space="preserve"><value>Fonti legali</value></data>
-  <data name="LegalSourcesDescription" xml:space="preserve"><value>Le regolamentazioni sulle pause e i limiti dell'orario di lavoro si basano sulla legge tedesca sull'orario di lavoro (ArbZG). Questa app non e un prodotto ufficiale del governo.</value></data>
+  <data name="LegalSourcesDescription" xml:space="preserve"><value>Le regolamentazioni sulle pause e i limiti dell'orario di lavoro si basano sulla legge tedesca sull'orario di lavoro (ArbZG). Questa app non è un prodotto ufficiale del governo.</value></data>
   <data name="LegalSourceArbZG" xml:space="preserve"><value>Legge sull'orario di lavoro (ArbZG)</value></data>
-  <data name="LegalSourceHolidays" xml:space="preserve"><value>Festivita ufficiali (BMI)</value></data>
-  <data name="LegalCompliance" xml:space="preserve"><value>Conformita orario lavoro</value></data>
+  <data name="LegalSourceHolidays" xml:space="preserve"><value>Festività ufficiali (BMI)</value></data>
+  <data name="LegalCompliance" xml:space="preserve"><value>Conformità orario lavoro</value></data>
   <data name="LegalComplianceDescription" xml:space="preserve"><value>Mostra avvisi di non conformita (max. 10h/giorno, min. 11h riposo)</value></data>
   <data name="SaveSettings" xml:space="preserve"><value>Salva impostazioni</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>Informativa sulla privacy</value></data>
@@ -100,7 +100,7 @@
   <data name="PremiumStatus" xml:space="preserve"><value>Stato Premium</value></data>
   <data name="PremiumActive" xml:space="preserve"><value>Premium attivo</value></data>
   <data name="TrialDaysLeft" xml:space="preserve"><value>Prova: {0} giorni rimanenti</value></data>
-  <data name="FreeVersion" xml:space="preserve"><value>Versione gratuita con pubblicita</value></data>
+  <data name="FreeVersion" xml:space="preserve"><value>Versione gratuita con pubblicità</value></data>
   <data name="BuyPremium" xml:space="preserve"><value>Acquista Premium</value></data>
   <data name="RestorePurchases" xml:space="preserve"><value>Ripristina acquisti</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annulla</value></data>
@@ -150,7 +150,7 @@
   <data name="TrialOfferStart" xml:space="preserve"><value>14 giorni di prova gratis</value></data>
   <data name="TrialOfferBuyNow" xml:space="preserve"><value>Acquista ora</value></data>
   <data name="TrialStartedTitle" xml:space="preserve"><value>Prova avviata!</value></data>
-  <data name="TrialStartedMessage" xml:space="preserve"><value>Ora hai {0} giorni Premium senza pubblicita. Buon divertimento!</value></data>
+  <data name="TrialStartedMessage" xml:space="preserve"><value>Ora hai {0} giorni Premium senza pubblicità. Buon divertimento!</value></data>
 
   <!-- Purchase Options -->
   <data name="PurchaseOptionTitle" xml:space="preserve"><value>Scegli Premium</value></data>
@@ -185,7 +185,7 @@
   <data name="Sick" xml:space="preserve"><value>Malattia</value></data>
   <data name="Home" xml:space="preserve"><value>Casa</value></data>
   <data name="Holiday" xml:space="preserve"><value>Festivo</value></data>
-  <data name="AvgPerDay" xml:space="preserve"><value>Med/giorno</value></data>
+  <data name="AvgPerDay" xml:space="preserve"><value>Media/giorno</value></data>
   <data name="WorkedDaysCount" xml:space="preserve"><value>Giorni lavorativi</value></data>
   <data name="Export" xml:space="preserve"><value>Esporta</value></data>
   <data name="ExportAs" xml:space="preserve"><value>Esporta come...</value></data>
@@ -232,7 +232,7 @@
   <data name="ActualTime" xml:space="preserve"><value>Effettivo</value></data>
   <data name="TargetTime" xml:space="preserve"><value>Obiettivo</value></data>
   <data name="WorkDaysTotal" xml:space="preserve"><value>Giorni lavorativi</value></data>
-  <data name="AvgPerDayShort" xml:space="preserve"><value>Med/giorno</value></data>
+  <data name="AvgPerDayShort" xml:space="preserve"><value>Media/giorno</value></data>
   <data name="VacationLabel" xml:space="preserve"><value>Ferie</value></data>
   <data name="SickLabel" xml:space="preserve"><value>Malattia</value></data>
   <data name="DaysFormat" xml:space="preserve"><value>{0} giorni</value></data>
@@ -255,7 +255,7 @@
   <data name="DeleteBreakConfirm" xml:space="preserve"><value>Eliminare la pausa?</value></data>
   <data name="DeleteVacationConfirm" xml:space="preserve"><value>Eliminare le ferie?</value></data>
   <data name="DeleteVacationMessage" xml:space="preserve"><value>Vuoi davvero eliminare queste ferie?</value></data>
-  <data name="Yes" xml:space="preserve"><value>Si</value></data>
+  <data name="Yes" xml:space="preserve"><value>Sì</value></data>
   <data name="No" xml:space="preserve"><value>No</value></data>
   <data name="SelectDayType" xml:space="preserve"><value>Seleziona tipo di giorno</value></data>
   <data name="Regular" xml:space="preserve"><value>Normale</value></data>
@@ -268,7 +268,7 @@
   <data name="ChangeStatus" xml:space="preserve"><value>Cambia stato</value></data>
   <data name="ShowDetails" xml:space="preserve"><value>Mostra dettagli</value></data>
   <data name="EnterVacation" xml:space="preserve"><value>Registra ferie</value></data>
-  <data name="MultiDayVacation" xml:space="preserve"><value>Ferie (piu giorni)</value></data>
+  <data name="MultiDayVacation" xml:space="preserve"><value>Ferie (più giorni)</value></data>
   <data name="ReportSick" xml:space="preserve"><value>Segnala malattia</value></data>
   <data name="ResetStatus" xml:space="preserve"><value>Ripristina stato</value></data>
   <data name="EnterVacationTitle" xml:space="preserve"><value>Registra ferie</value></data>
@@ -287,7 +287,7 @@
   <data name="BreakStartTime" xml:space="preserve"><value>Ora di inizio pausa:</value></data>
   <data name="BreakEndTime" xml:space="preserve"><value>Ora di fine pausa:</value></data>
   <data name="AutoBreakInfo" xml:space="preserve"><value>Le pause automatiche vengono calcolate automaticamente e non possono essere modificate manualmente.</value></data>
-  <data name="CloseMonthConfirm" xml:space="preserve"><value>Vuoi chiudere {0}? Le registrazioni non potranno piu essere modificate.</value></data>
+  <data name="CloseMonthConfirm" xml:space="preserve"><value>Vuoi chiudere {0}? Le registrazioni non potranno più essere modificate.</value></data>
   <data name="UnlockMonthConfirm" xml:space="preserve"><value>Vuoi sbloccare {0}?</value></data>
   <data name="Unlock" xml:space="preserve"><value>Sblocca</value></data>
   <data name="Note" xml:space="preserve"><value>Nota</value></data>
@@ -300,7 +300,7 @@
   <data name="NoWorkDaysInPeriod" xml:space="preserve"><value>Il periodo selezionato non contiene giorni lavorativi.</value></data>
   <data name="PremiumFeature" xml:space="preserve"><value>Funzione Premium</value></data>
   <data name="PremiumRequired" xml:space="preserve"><value>Questa funzione richiede Premium. Aggiorna ora!</value></data>
-  <data name="PdfExportPremium" xml:space="preserve"><value>L'esportazione PDF e una funzione Premium.</value></data>
+  <data name="PdfExportPremium" xml:space="preserve"><value>L'esportazione PDF è una funzione Premium.</value></data>
   <data name="ExportFailedMessage" xml:space="preserve"><value>Esportazione fallita: {0}</value></data>
   <data name="SpecialLeave" xml:space="preserve"><value>Permesso speciale</value></data>
   <data name="UnpaidLeave" xml:space="preserve"><value>Permesso non retribuito</value></data>
@@ -322,7 +322,7 @@
   <data name="ChartHours" xml:space="preserve"><value>Ore</value></data>
   <data name="ChartDaily" xml:space="preserve"><value>Giornaliero</value></data>
   <data name="ChartCumulative" xml:space="preserve"><value>Cumulativo</value></data>
-  <data name="ChartAvgHours" xml:space="preserve"><value>&#8960; Ore</value></data>
+  <data name="ChartAvgHours" xml:space="preserve"><value>Ore medie</value></data>
   <data name="ChartWorkHours" xml:space="preserve"><value>Ore di lavoro</value></data>
   <data name="ChartCumulativeBalance" xml:space="preserve"><value>Saldo cum.</value></data>
 
@@ -369,10 +369,10 @@
     <value>Questa funzione richiede Premium.</value>
   </data>
   <data name="WatchVideoOnce" xml:space="preserve">
-    <value>Guarda Video → Usa una volta</value>
+    <value>Guarda Video – Usa una volta</value>
   </data>
   <data name="BuyPremiumUnlimited" xml:space="preserve">
-    <value>Acquista Premium → Illimitato</value>
+    <value>Acquista Premium – Illimitato</value>
   </data>
   <data name="VideoRewardSuccess" xml:space="preserve">
     <value>Funzione sbloccata!</value>

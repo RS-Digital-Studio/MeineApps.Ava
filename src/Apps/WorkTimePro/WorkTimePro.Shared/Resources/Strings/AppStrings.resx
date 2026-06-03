@@ -978,10 +978,10 @@
     <value>This feature requires Premium.</value>
   </data>
   <data name="WatchVideoOnce" xml:space="preserve">
-    <value>Watch Video → Use Once</value>
+    <value>Watch Video – Use Once</value>
   </data>
   <data name="BuyPremiumUnlimited" xml:space="preserve">
-    <value>Buy Premium → Unlimited</value>
+    <value>Buy Premium – Unlimited</value>
   </data>
   <data name="VideoRewardSuccess" xml:space="preserve">
     <value>Feature unlocked!</value>

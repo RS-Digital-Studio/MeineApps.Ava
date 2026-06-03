@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using MeineApps.UI.SkiaSharp;
 using WorkTimePro.Graphics;
+using WorkTimePro.Resources.Strings;
 using WorkTimePro.ViewModels;
 
 namespace WorkTimePro.Views;
@@ -118,7 +119,7 @@ public partial class StatisticsView : UserControl
         var bounds = canvas.LocalClipBounds;
         WeekdayRadialVisualization.Render(canvas, bounds,
             _vm.WeekdayLabels, _vm.WeekdayAvgHours, _vm.WeekdayTargetPerDay,
-            centerLabel: "\u00d8/Tag");
+            centerLabel: AppStrings.AvgPerDayShort);
     }
 
     private void OnPaintProjectDonut(object? sender, SKPaintSurfaceEventArgs e)

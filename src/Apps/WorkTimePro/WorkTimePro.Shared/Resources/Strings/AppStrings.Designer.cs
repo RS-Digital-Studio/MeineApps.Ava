@@ -1505,6 +1505,15 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Avg/day ähnelt.
+        /// </summary>
+        internal static string AvgPerDayShort {
+            get {
+                return ResourceManager.GetString("AvgPerDayShort", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Work days ähnelt.
         /// </summary>
         internal static string WorkedDaysCount {

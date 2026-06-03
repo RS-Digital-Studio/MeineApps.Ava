@@ -25,7 +25,7 @@ public class BootReceiver : BroadcastReceiver
 
         // Async-Arbeit über GoAsync() abwickeln (OnReceive selbst muss schnell zurückkehren).
         var pending = GoAsync();
-        _ = RescheduleAsync().ContinueWith(_ => pending.Finish());
+        _ = RescheduleAsync().ContinueWith(_ => pending?.Finish());
     }
 
     private static async Task RescheduleAsync()

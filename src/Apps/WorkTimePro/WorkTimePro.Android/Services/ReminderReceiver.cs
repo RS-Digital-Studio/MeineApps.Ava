@@ -24,7 +24,8 @@ public class ReminderReceiver : BroadcastReceiver
 
     private static void ShowNotification(Context context, string title, string body, string id)
     {
-        if (!NotificationManagerCompat.From(context).AreNotificationsEnabled())
+        var manager = NotificationManagerCompat.From(context);
+        if (manager == null || !manager.AreNotificationsEnabled())
             return;
 
         // Tap öffnet die App
@@ -38,18 +39,21 @@ public class ReminderReceiver : BroadcastReceiver
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
         }
 
-        var builder = new NotificationCompat.Builder(context, "worktimepro_reminder")
-            .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
-            .SetContentTitle(title)
-            .SetContentText(body)
-            .SetPriority(NotificationCompat.PriorityHigh)
-            .SetAutoCancel(true)
-            .SetCategory(NotificationCompat.CategoryReminder);
+        // Setter werden einzeln auf der nicht-null Builder-Instanz aufgerufen (statt Fluent-Chain),
+        // weil die AndroidX-Bindings für SetXxx() einen nullable Builder zurückgeben (CS8602 im Chain).
+        var builder = new NotificationCompat.Builder(context, "worktimepro_reminder");
+        builder.SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo);
+        builder.SetContentTitle(title);
+        builder.SetContentText(body);
+        builder.SetPriority(NotificationCompat.PriorityHigh);
+        builder.SetAutoCancel(true);
+        builder.SetCategory(NotificationCompat.CategoryReminder);
 
         if (pendingTapIntent != null)
             builder.SetContentIntent(pendingTapIntent);
 
-        var manager = NotificationManagerCompat.From(context);
-        manager.Notify(AndroidNotificationService.StableHash(id), builder.Build());
+        var notification = builder.Build();
+        if (notification != null)
+            manager.Notify(AndroidNotificationService.StableHash(id), notification);
     }
 }

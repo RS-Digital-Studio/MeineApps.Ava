@@ -46,8 +46,9 @@ public class MainActivity : AvaloniaMainActivity
         // Immersive Fullscreen aktivieren
         EnableImmersiveMode();
 
-        // POST_NOTIFICATIONS Permission (Android 13+)
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
+        // POST_NOTIFICATIONS Permission (Android 13+ / API 33). OperatingSystem-Guard,
+        // damit der CA1416-Analyzer den API-33-Konstantenzugriff als geschützt erkennt.
+        if (OperatingSystem.IsAndroidVersionAtLeast(33))
         {
             RequestPermissions([Manifest.Permission.PostNotifications], 100);
         }

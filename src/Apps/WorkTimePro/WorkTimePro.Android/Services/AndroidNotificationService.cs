@@ -31,9 +31,12 @@ public sealed class AndroidNotificationService : INotificationService
 
     private static void CreateNotificationChannel()
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.O) return;
+        // NotificationChannel-API erst ab API 26 (Oreo) verfügbar. OperatingSystem-Guard,
+        // damit der CA1416-Analyzer den geschützten Zweig erkennt.
+        if (!OperatingSystem.IsAndroidVersionAtLeast(26)) return;
 
         var context = Application.Context;
+        if (context == null) return;
         var manager = (NotificationManager?)context.GetSystemService(Context.NotificationService);
         if (manager == null) return;
 
@@ -52,20 +55,25 @@ public sealed class AndroidNotificationService : INotificationService
     public Task ShowNotificationAsync(string title, string body, string? actionId = null)
     {
         var context = Application.Context;
-
-        if (!NotificationManagerCompat.From(context).AreNotificationsEnabled())
-            return Task.CompletedTask;
-
-        var builder = new NotificationCompat.Builder(context, ChannelId)
-            .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
-            .SetContentTitle(title)
-            .SetContentText(body)
-            .SetPriority(NotificationCompat.PriorityHigh)
-            .SetAutoCancel(true)
-            .SetCategory(NotificationCompat.CategoryReminder);
+        if (context == null) return Task.CompletedTask;
 
         var manager = NotificationManagerCompat.From(context);
-        manager.Notify(StableHash(actionId ?? "default"), builder.Build());
+        if (manager == null || !manager.AreNotificationsEnabled())
+            return Task.CompletedTask;
+
+        // Setter werden einzeln auf der nicht-null Builder-Instanz aufgerufen (statt Fluent-Chain),
+        // weil die AndroidX-Bindings für SetXxx() einen nullable Builder zurückgeben (CS8602 im Chain).
+        var builder = new NotificationCompat.Builder(context, ChannelId);
+        builder.SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo);
+        builder.SetContentTitle(title);
+        builder.SetContentText(body);
+        builder.SetPriority(NotificationCompat.PriorityHigh);
+        builder.SetAutoCancel(true);
+        builder.SetCategory(NotificationCompat.CategoryReminder);
+
+        var notification = builder.Build();
+        if (notification != null)
+            manager.Notify(StableHash(actionId ?? "default"), notification);
 
         return Task.CompletedTask;
     }
@@ -79,7 +87,7 @@ public sealed class AndroidNotificationService : INotificationService
         // Exact-Alarm-Permission prüfen (Android 12+). Fehlt sie (vom System/Nutzer entzogen),
         // NICHT still abbrechen — sonst feuert die Erinnerung gar nicht. Stattdessen auf den
         // inexakten, Doze-tauglichen Alarm zurückfallen (Reminder darf etwas ungenau sein).
-        var canExact = Build.VERSION.SdkInt < BuildVersionCodes.S || alarmManager.CanScheduleExactAlarms();
+        var canExact = !OperatingSystem.IsAndroidVersionAtLeast(31) || alarmManager.CanScheduleExactAlarms();
 
         var intent = new Intent(context, typeof(ReminderReceiver));
         intent.PutExtra("title", title);
@@ -106,17 +114,25 @@ public sealed class AndroidNotificationService : INotificationService
 
     public bool CanScheduleExactAlarms()
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.S) return true;
-        var alarmManager = (AlarmManager?)Application.Context.GetSystemService(Context.AlarmService);
+        if (!OperatingSystem.IsAndroidVersionAtLeast(31)) return true;
+        var context = Application.Context;
+        if (context == null) return false;
+        var alarmManager = (AlarmManager?)context.GetSystemService(Context.AlarmService);
         return alarmManager?.CanScheduleExactAlarms() ?? false;
     }
 
     public bool AreNotificationsEnabled()
-        => NotificationManagerCompat.From(Application.Context).AreNotificationsEnabled();
+    {
+        var context = Application.Context;
+        if (context == null) return false;
+        var manager = NotificationManagerCompat.From(context);
+        return manager != null && manager.AreNotificationsEnabled();
+    }
 
     public Task CancelNotificationAsync(string id)
     {
         var context = Application.Context;
+        if (context == null) return Task.CompletedTask;
         var alarmManager = (AlarmManager?)context.GetSystemService(Context.AlarmService);
         if (alarmManager == null) return Task.CompletedTask;
 
@@ -132,7 +148,7 @@ public sealed class AndroidNotificationService : INotificationService
 
         // Auch angezeigte Notification entfernen
         var manager = NotificationManagerCompat.From(context);
-        manager.Cancel(StableHash(id));
+        manager?.Cancel(StableHash(id));
 
         return Task.CompletedTask;
     }

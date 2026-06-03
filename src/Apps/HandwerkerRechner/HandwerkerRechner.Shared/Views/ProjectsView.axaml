@@ -217,7 +217,7 @@
           </StackPanel>
 
           <TextBox Text="{Binding EditingNotes, Mode=TwoWay}"
-                   Watermark="{loc:Translate ProjectNotesPlaceholder}"
+                   PlaceholderText="{loc:Translate ProjectNotesPlaceholder}"
                    AcceptsReturn="True"
                    TextWrapping="Wrap"
                    MinHeight="120" MaxHeight="200" />

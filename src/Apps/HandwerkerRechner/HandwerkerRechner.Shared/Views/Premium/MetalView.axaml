@@ -106,7 +106,7 @@
                   <TextBlock Text="{loc:Translate LengthM}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Length}" Watermark="mm"
+                  <TextBox Text="{Binding Length}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxLength" />
                 </StackPanel>
 
@@ -114,7 +114,7 @@
                   <TextBlock Text="{loc:Translate Dimension1}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Dimension1}" Watermark="mm"
+                  <TextBox Text="{Binding Dimension1}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxDimension1" />
                 </StackPanel>
 
@@ -122,7 +122,7 @@
                   <TextBlock Text="{loc:Translate Dimension2}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Dimension2}" Watermark="mm"
+                  <TextBox Text="{Binding Dimension2}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxDimension2" />
                 </StackPanel>
 
@@ -130,7 +130,7 @@
                   <TextBlock Text="{loc:Translate WallThickness}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding WallThickness}" Watermark="mm"
+                  <TextBox Text="{Binding WallThickness}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxWallThickness" />
                 </StackPanel>
 
@@ -139,7 +139,7 @@
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PricePerKg}"
-                           Watermark="EUR/kg"
+                           PlaceholderText="EUR/kg"
                            AutomationProperties.AutomationId="Metal_TxtBoxPricePerKg" />
                 </StackPanel>
               </StackPanel>
@@ -408,7 +408,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Metal_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Metal_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

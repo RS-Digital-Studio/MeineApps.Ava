@@ -68,7 +68,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding FloorArea}"
-                       Watermark="m²"
+                       PlaceholderText="m²"
                        AutomationProperties.AutomationId="Screed_TxtBoxFloorArea" />
             </StackPanel>
 
@@ -78,7 +78,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding ThicknessCm}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        AutomationProperties.AutomationId="Screed_TxtBoxThickness" />
             </StackPanel>
 
@@ -102,7 +102,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerBag}"
-                       Watermark="EUR"
+                       PlaceholderText="EUR"
                        AutomationProperties.AutomationId="Screed_TxtBoxPricePerBag" />
             </StackPanel>
           </StackPanel>
@@ -336,7 +336,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Screed_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Screed_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

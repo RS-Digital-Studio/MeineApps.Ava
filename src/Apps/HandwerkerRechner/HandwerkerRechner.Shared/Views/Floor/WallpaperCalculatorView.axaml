@@ -60,7 +60,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxWallLength" Text="{Binding WallLength}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -70,7 +70,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxRoomHeight" Text="{Binding RoomHeight}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -105,13 +105,13 @@
                   <TextBlock Text="{loc:Translate DoorWidth}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxDoorWidth"
-                           Text="{Binding DoorWidth}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding DoorWidth}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
                 <StackPanel Grid.Column="4" Spacing="4">
                   <TextBlock Text="{loc:Translate DoorHeight}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxDoorHeight"
-                           Text="{Binding DoorHeight}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding DoorHeight}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
               </Grid>
 
@@ -130,13 +130,13 @@
                   <TextBlock Text="{loc:Translate WindowWidth}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxWindowWidth"
-                           Text="{Binding WindowWidth}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding WindowWidth}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
                 <StackPanel Grid.Column="4" Spacing="4">
                   <TextBlock Text="{loc:Translate WindowHeight}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxWindowHeight"
-                           Text="{Binding WindowHeight}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding WindowHeight}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
               </Grid>
 
@@ -164,7 +164,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxRollLength" Text="{Binding RollLength}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -174,7 +174,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxRollWidth" Text="{Binding RollWidth}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -184,7 +184,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxPatternRepeat" Text="{Binding PatternRepeat}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -203,7 +203,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxPrice" Text="{Binding PricePerRoll}"
-                       Watermark="EUR"
+                       PlaceholderText="EUR"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -383,7 +383,7 @@
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxProjectName" Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined" />
           <Grid ColumnDefinitions="*,12,*">
             <Button AutomationProperties.AutomationId="Wallpaper_BtnCancelSave" Grid.Column="0"

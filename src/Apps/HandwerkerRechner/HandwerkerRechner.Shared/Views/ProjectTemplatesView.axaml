@@ -286,7 +286,7 @@
             <TextBlock Text="{Binding ProjectNameLabel}"
                        FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBox Text="{Binding NewProjectName}"
-                     Watermark="{Binding ProjectNameLabel}"
+                     PlaceholderText="{Binding ProjectNameLabel}"
                      Classes="Outlined"
                      AutomationProperties.AutomationId="Templates_TxtBoxProjectName" />
           </StackPanel>

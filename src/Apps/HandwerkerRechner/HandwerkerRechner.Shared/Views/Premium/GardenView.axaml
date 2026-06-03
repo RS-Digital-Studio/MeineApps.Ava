@@ -86,7 +86,7 @@
                   <TextBlock Text="{loc:Translate UnitSquareMeters}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding PavingArea}" Watermark="m²"
+                  <TextBox Text="{Binding PavingArea}" PlaceholderText="m²"
                            AutomationProperties.AutomationId="Garden_TxtBoxPavingArea" />
                 </StackPanel>
 
@@ -94,7 +94,7 @@
                   <TextBlock Text="{loc:Translate StoneLength}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding StoneLength}" Watermark="cm"
+                  <TextBox Text="{Binding StoneLength}" PlaceholderText="cm"
                            AutomationProperties.AutomationId="Garden_TxtBoxStoneLength" />
                 </StackPanel>
 
@@ -102,7 +102,7 @@
                   <TextBlock Text="{loc:Translate StoneWidth}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding StoneWidth}" Watermark="cm"
+                  <TextBox Text="{Binding StoneWidth}" PlaceholderText="cm"
                            AutomationProperties.AutomationId="Garden_TxtBoxStoneWidth" />
                 </StackPanel>
 
@@ -110,7 +110,7 @@
                   <TextBlock Text="{loc:Translate JointWidth}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding JointWidth}" Watermark="mm"
+                  <TextBox Text="{Binding JointWidth}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Garden_TxtBoxJointWidth" />
                 </StackPanel>
 
@@ -119,7 +119,7 @@
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PricePerStone}"
-                           Watermark="EUR"
+                           PlaceholderText="EUR"
                            AutomationProperties.AutomationId="Garden_TxtBoxPricePerStone" />
                 </StackPanel>
               </StackPanel>
@@ -230,7 +230,7 @@
                   <TextBlock Text="{loc:Translate UnitSquareMeters}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding SoilArea}" Watermark="m²"
+                  <TextBox Text="{Binding SoilArea}" PlaceholderText="m²"
                            AutomationProperties.AutomationId="Garden_TxtBoxSoilArea" />
                 </StackPanel>
 
@@ -238,7 +238,7 @@
                   <TextBlock Text="{loc:Translate Depth}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding SoilDepth}" Watermark="cm"
+                  <TextBox Text="{Binding SoilDepth}" PlaceholderText="cm"
                            AutomationProperties.AutomationId="Garden_TxtBoxSoilDepth" />
                 </StackPanel>
 
@@ -246,7 +246,7 @@
                   <TextBlock Text="{loc:Translate UnitLiters}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding BagLiters}" Watermark="L"
+                  <TextBox Text="{Binding BagLiters}" PlaceholderText="L"
                            AutomationProperties.AutomationId="Garden_TxtBoxBagLiters" />
                 </StackPanel>
 
@@ -255,7 +255,7 @@
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PricePerBag}"
-                           Watermark="EUR"
+                           PlaceholderText="EUR"
                            AutomationProperties.AutomationId="Garden_TxtBoxPricePerBag" />
                 </StackPanel>
               </StackPanel>
@@ -366,7 +366,7 @@
                   <TextBlock Text="{loc:Translate PondLength}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding PondLength}" Watermark="m"
+                  <TextBox Text="{Binding PondLength}" PlaceholderText="m"
                            AutomationProperties.AutomationId="Garden_TxtBoxPondLength" />
                 </StackPanel>
 
@@ -374,7 +374,7 @@
                   <TextBlock Text="{loc:Translate PondWidth}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding PondWidth}" Watermark="m"
+                  <TextBox Text="{Binding PondWidth}" PlaceholderText="m"
                            AutomationProperties.AutomationId="Garden_TxtBoxPondWidth" />
                 </StackPanel>
 
@@ -382,7 +382,7 @@
                   <TextBlock Text="{loc:Translate PondDepth}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding PondDepth}" Watermark="m"
+                  <TextBox Text="{Binding PondDepth}" PlaceholderText="m"
                            AutomationProperties.AutomationId="Garden_TxtBoxPondDepth" />
                 </StackPanel>
 
@@ -390,7 +390,7 @@
                   <TextBlock Text="{loc:Translate Overlap}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Overlap}" Watermark="m"
+                  <TextBox Text="{Binding Overlap}" PlaceholderText="m"
                            AutomationProperties.AutomationId="Garden_TxtBoxOverlap" />
                 </StackPanel>
 
@@ -399,7 +399,7 @@
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PricePerSqmLiner}"
-                           Watermark="EUR/m²"
+                           PlaceholderText="EUR/m²"
                            AutomationProperties.AutomationId="Garden_TxtBoxPricePerSqmLiner" />
                 </StackPanel>
               </StackPanel>
@@ -576,7 +576,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Garden_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Garden_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

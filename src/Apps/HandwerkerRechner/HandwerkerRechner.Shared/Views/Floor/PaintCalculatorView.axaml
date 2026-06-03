@@ -60,7 +60,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Paint_TxtBoxArea" Text="{Binding Area}"
-                       Watermark="m&#x00B2;"
+                       PlaceholderText="m&#x00B2;"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -70,7 +70,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Paint_TxtBoxCoverage" Text="{Binding CoveragePerLiter}"
-                       Watermark="m&#x00B2;/L"
+                       PlaceholderText="m&#x00B2;/L"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -80,7 +80,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Paint_TxtBoxCoats" Text="{Binding NumberOfCoats}"
-                       Watermark="1-3"
+                       PlaceholderText="1-3"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -115,13 +115,13 @@
                   <TextBlock Text="{loc:Translate DoorWidth}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Paint_TxtBoxDoorWidth"
-                           Text="{Binding DoorWidth}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding DoorWidth}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
                 <StackPanel Grid.Column="4" Spacing="4">
                   <TextBlock Text="{loc:Translate DoorHeight}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Paint_TxtBoxDoorHeight"
-                           Text="{Binding DoorHeight}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding DoorHeight}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
               </Grid>
 
@@ -140,13 +140,13 @@
                   <TextBlock Text="{loc:Translate WindowWidth}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Paint_TxtBoxWindowWidth"
-                           Text="{Binding WindowWidth}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding WindowWidth}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
                 <StackPanel Grid.Column="4" Spacing="4">
                   <TextBlock Text="{loc:Translate WindowHeight}" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox AutomationProperties.AutomationId="Paint_TxtBoxWindowHeight"
-                           Text="{Binding WindowHeight}" Watermark="m" Classes="Outlined" />
+                           Text="{Binding WindowHeight}" PlaceholderText="m" Classes="Outlined" />
                 </StackPanel>
               </Grid>
 
@@ -174,7 +174,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Paint_TxtBoxPrice" Text="{Binding PricePerLiter}"
-                       Watermark="EUR"
+                       PlaceholderText="EUR"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -342,7 +342,7 @@
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox AutomationProperties.AutomationId="Paint_TxtBoxProjectName" Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined" />
           <Grid ColumnDefinitions="*,12,*">
             <Button AutomationProperties.AutomationId="Paint_BtnCancelSave" Grid.Column="0"

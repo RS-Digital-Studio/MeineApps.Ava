@@ -63,7 +63,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding WallLength}"
-                       Watermark="m" Classes="Outlined"
+                       PlaceholderText="m" Classes="Outlined"
                        AutomationProperties.AutomationId="Drywall_TxtBoxWallLength" />
             </StackPanel>
 
@@ -73,7 +73,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding WallHeight}"
-                       Watermark="m" Classes="Outlined"
+                       PlaceholderText="m" Classes="Outlined"
                        AutomationProperties.AutomationId="Drywall_TxtBoxWallHeight" />
             </StackPanel>
 
@@ -95,7 +95,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerSqm}"
-                       Watermark="EUR" Classes="Outlined"
+                       PlaceholderText="EUR" Classes="Outlined"
                        AutomationProperties.AutomationId="Drywall_TxtBoxPricePerSqm" />
             </StackPanel>
           </StackPanel>
@@ -289,7 +289,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Drywall_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Drywall_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

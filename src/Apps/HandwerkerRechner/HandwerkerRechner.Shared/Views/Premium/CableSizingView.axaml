@@ -68,7 +68,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding CurrentAmps}"
-                       Watermark="A"
+                       PlaceholderText="A"
                        AutomationProperties.AutomationId="CableSizing_TxtBoxCurrentAmps" />
             </StackPanel>
 
@@ -78,7 +78,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding CableLength}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        AutomationProperties.AutomationId="CableSizing_TxtBoxCableLength" />
             </StackPanel>
 
@@ -114,7 +114,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding MaxDropPercent}"
-                       Watermark="%"
+                       PlaceholderText="%"
                        AutomationProperties.AutomationId="CableSizing_TxtBoxMaxDrop" />
             </StackPanel>
           </StackPanel>
@@ -325,7 +325,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="CableSizing_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="CableSizing_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

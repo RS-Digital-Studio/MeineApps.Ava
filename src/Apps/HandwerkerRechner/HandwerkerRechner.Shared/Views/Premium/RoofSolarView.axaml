@@ -86,7 +86,7 @@
                   <TextBlock Text="{loc:Translate Run}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Run}" Watermark="m"
+                  <TextBox Text="{Binding Run}" PlaceholderText="m"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxRun" />
                 </StackPanel>
 
@@ -94,7 +94,7 @@
                   <TextBlock Text="{loc:Translate Rise}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Rise}" Watermark="m"
+                  <TextBox Text="{Binding Rise}" PlaceholderText="m"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxRise" />
                 </StackPanel>
               </StackPanel>
@@ -194,7 +194,7 @@
                   <TextBlock Text="{loc:Translate UnitSquareMeters}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding RoofArea}" Watermark="m²"
+                  <TextBox Text="{Binding RoofArea}" PlaceholderText="m²"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxRoofArea" />
                 </StackPanel>
 
@@ -202,7 +202,7 @@
                   <TextBlock Text="{loc:Translate TilesPerSqm}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding TilesPerSqm}" Watermark="/ m²"
+                  <TextBox Text="{Binding TilesPerSqm}" PlaceholderText="/ m²"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxTilesPerSqm" />
                 </StackPanel>
 
@@ -211,7 +211,7 @@
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PricePerTile}"
-                           Watermark="EUR"
+                           PlaceholderText="EUR"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxPricePerTile" />
                 </StackPanel>
               </StackPanel>
@@ -322,7 +322,7 @@
                   <TextBlock Text="{loc:Translate UnitSquareMeters}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding SolarRoofArea}" Watermark="m²"
+                  <TextBox Text="{Binding SolarRoofArea}" PlaceholderText="m²"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxSolarRoofArea" />
                 </StackPanel>
 
@@ -330,7 +330,7 @@
                   <TextBlock Text="{loc:Translate PanelEfficiency}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding PanelEfficiency}" Watermark="%"
+                  <TextBox Text="{Binding PanelEfficiency}" PlaceholderText="%"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxPanelEfficiency" />
                 </StackPanel>
 
@@ -348,7 +348,7 @@
                   <TextBlock Text="{loc:Translate TiltDegrees}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding TiltDegrees}" Watermark="°"
+                  <TextBox Text="{Binding TiltDegrees}" PlaceholderText="°"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxTiltDegrees" />
                 </StackPanel>
 
@@ -357,7 +357,7 @@
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding SolarSystemCost}"
-                           Watermark="EUR"
+                           PlaceholderText="EUR"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxSolarSystemCost" />
                 </StackPanel>
               </StackPanel>
@@ -545,7 +545,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="RoofSolar_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="RoofSolar_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

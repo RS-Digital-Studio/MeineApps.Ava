@@ -63,7 +63,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxRoomLength"
                        Text="{Binding RoomLength}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -74,7 +74,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxRoomWidth"
                        Text="{Binding RoomWidth}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -94,7 +94,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxBoardLength"
                        Text="{Binding BoardLength}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -105,7 +105,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxBoardWidth"
                        Text="{Binding BoardWidth}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -125,7 +125,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxWaste"
                        Text="{Binding WastePercentage}"
-                       Watermark="%"
+                       PlaceholderText="%"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -136,7 +136,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxPrice"
                        Text="{Binding PricePerBoard}"
-                       Watermark="EUR"
+                       PlaceholderText="EUR"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -324,7 +324,7 @@
                      HorizontalAlignment="Center" />
           <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxProjectName"
                    Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined" />
           <Grid ColumnDefinitions="*,12,*">
             <Button AutomationProperties.AutomationId="Flooring_BtnCancelSave"

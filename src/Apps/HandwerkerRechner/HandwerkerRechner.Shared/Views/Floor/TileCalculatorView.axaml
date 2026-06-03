@@ -64,7 +64,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Tile_TxtBoxRoomLength"
                        Text="{Binding RoomLength}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -75,7 +75,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Tile_TxtBoxRoomWidth"
                        Text="{Binding RoomWidth}"
-                       Watermark="m"
+                       PlaceholderText="m"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -95,7 +95,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Tile_TxtBoxTileLength"
                        Text="{Binding TileLength}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -106,7 +106,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Tile_TxtBoxTileWidth"
                        Text="{Binding TileWidth}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -126,7 +126,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Tile_TxtBoxWaste"
                        Text="{Binding WastePercentage}"
-                       Watermark="%"
+                       PlaceholderText="%"
                        Classes="Outlined" />
             </StackPanel>
 
@@ -137,7 +137,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Tile_TxtBoxPrice"
                        Text="{Binding PricePerTile}"
-                       Watermark="EUR"
+                       PlaceholderText="EUR"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -366,7 +366,7 @@
                      HorizontalAlignment="Center" />
           <TextBox AutomationProperties.AutomationId="Tile_TxtBoxProjectName"
                    Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined" />
           <Grid ColumnDefinitions="*,12,*">
             <Button AutomationProperties.AutomationId="Tile_BtnCancelSave"

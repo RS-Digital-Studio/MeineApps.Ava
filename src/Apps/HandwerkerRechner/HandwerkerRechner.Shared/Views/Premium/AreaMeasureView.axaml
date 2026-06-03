@@ -191,7 +191,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding Dim1Label}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding Dimension1}" Watermark="m" Classes="Outlined"
+              <TextBox Text="{Binding Dimension1}" PlaceholderText="m" Classes="Outlined"
                        AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim1" />
             </StackPanel>
 
@@ -199,7 +199,7 @@
             <StackPanel Spacing="4" IsVisible="{Binding ShowDim2}">
               <TextBlock Text="{Binding Dim2Label}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding Dimension2}" Watermark="m" Classes="Outlined"
+              <TextBox Text="{Binding Dimension2}" PlaceholderText="m" Classes="Outlined"
                        AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim2" />
             </StackPanel>
 
@@ -207,7 +207,7 @@
             <StackPanel Spacing="4" IsVisible="{Binding ShowDim3}">
               <TextBlock Text="{loc:Translate CutoutLength}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding Dimension3}" Watermark="m" Classes="Outlined"
+              <TextBox Text="{Binding Dimension3}" PlaceholderText="m" Classes="Outlined"
                        AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim3" />
             </StackPanel>
 
@@ -215,7 +215,7 @@
             <StackPanel Spacing="4" IsVisible="{Binding ShowDim4}">
               <TextBlock Text="{loc:Translate CutoutWidth}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding Dimension4}" Watermark="m" Classes="Outlined"
+              <TextBox Text="{Binding Dimension4}" PlaceholderText="m" Classes="Outlined"
                        AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim4" />
             </StackPanel>
 
@@ -223,7 +223,7 @@
             <StackPanel Spacing="4" IsVisible="{Binding ShowDim5}">
               <TextBlock Text="{loc:Translate BaseB}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding Dimension5}" Watermark="m" Classes="Outlined"
+              <TextBox Text="{Binding Dimension5}" PlaceholderText="m" Classes="Outlined"
                        AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim5" />
             </StackPanel>
           </StackPanel>
@@ -425,7 +425,7 @@
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="AreaMeasure_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

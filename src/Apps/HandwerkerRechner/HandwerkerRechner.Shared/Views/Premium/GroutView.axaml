@@ -69,7 +69,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding AreaSqm}"
-                       Watermark="m²" Classes="Outlined"
+                       PlaceholderText="m²" Classes="Outlined"
                        AutomationProperties.AutomationId="Grout_TxtBoxArea" />
             </StackPanel>
 
@@ -79,7 +79,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding TileLengthCm}"
-                       Watermark="cm" Classes="Outlined"
+                       PlaceholderText="cm" Classes="Outlined"
                        AutomationProperties.AutomationId="Grout_TxtBoxTileLength" />
             </StackPanel>
 
@@ -89,7 +89,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding TileWidthCm}"
-                       Watermark="cm" Classes="Outlined"
+                       PlaceholderText="cm" Classes="Outlined"
                        AutomationProperties.AutomationId="Grout_TxtBoxTileWidth" />
             </StackPanel>
 
@@ -99,7 +99,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding GroutWidthMm}"
-                       Watermark="mm" Classes="Outlined"
+                       PlaceholderText="mm" Classes="Outlined"
                        AutomationProperties.AutomationId="Grout_TxtBoxWidth" />
             </StackPanel>
 
@@ -109,7 +109,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding GroutDepthMm}"
-                       Watermark="mm" Classes="Outlined"
+                       PlaceholderText="mm" Classes="Outlined"
                        AutomationProperties.AutomationId="Grout_TxtBoxDepth" />
             </StackPanel>
 
@@ -119,7 +119,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerKg}"
-                       Watermark="EUR/kg" Classes="Outlined"
+                       PlaceholderText="EUR/kg" Classes="Outlined"
                        AutomationProperties.AutomationId="Grout_TxtBoxPricePerKg" />
             </StackPanel>
           </StackPanel>
@@ -302,7 +302,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Grout_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Grout_TxtBoxSaveProjectName" />
           <Grid ColumnDefinitions="*,8,*">

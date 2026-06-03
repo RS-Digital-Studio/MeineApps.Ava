@@ -68,7 +68,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding WallArea}"
-                       Watermark="m²"
+                       PlaceholderText="m²"
                        AutomationProperties.AutomationId="Plaster_TxtBoxWallArea" />
             </StackPanel>
 
@@ -78,7 +78,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding ThicknessMm}"
-                       Watermark="mm"
+                       PlaceholderText="mm"
                        AutomationProperties.AutomationId="Plaster_TxtBoxThickness" />
             </StackPanel>
 
@@ -103,7 +103,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerBag}"
-                       Watermark="EUR"
+                       PlaceholderText="EUR"
                        AutomationProperties.AutomationId="Plaster_TxtBoxPricePerBag" />
             </StackPanel>
           </StackPanel>
@@ -315,7 +315,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Plaster_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Plaster_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

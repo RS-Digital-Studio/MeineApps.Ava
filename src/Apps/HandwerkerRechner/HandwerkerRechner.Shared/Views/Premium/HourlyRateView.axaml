@@ -66,7 +66,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding HourlyRateLabel}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding HourlyRate}" Watermark="€/h" Classes="Outlined"
+              <TextBox Text="{Binding HourlyRate}" PlaceholderText="€/h" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxHourlyRate" />
             </StackPanel>
 
@@ -74,7 +74,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding WorkHoursLabel}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding WorkHours}" Watermark="h" Classes="Outlined"
+              <TextBox Text="{Binding WorkHours}" PlaceholderText="h" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxWorkHours" />
             </StackPanel>
 
@@ -82,7 +82,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding BreakMinutesLabel}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding BreakMinutes}" Watermark="min" Classes="Outlined"
+              <TextBox Text="{Binding BreakMinutes}" PlaceholderText="min" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxBreakMinutes" />
             </StackPanel>
 
@@ -90,7 +90,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding WorkerCountLabel}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding Workers}" Watermark="1" Classes="Outlined"
+              <TextBox Text="{Binding Workers}" PlaceholderText="1" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxWorkers" />
             </StackPanel>
           </StackPanel>
@@ -111,7 +111,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding OverheadPercentLabel}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding OverheadPercent}" Watermark="%" Classes="Outlined"
+              <TextBox Text="{Binding OverheadPercent}" PlaceholderText="%" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxOverhead" />
             </StackPanel>
 
@@ -119,7 +119,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding VatPercentLabel}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding VatPercent}" Watermark="%" Classes="Outlined"
+              <TextBox Text="{Binding VatPercent}" PlaceholderText="%" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxVat" />
             </StackPanel>
           </StackPanel>
@@ -320,7 +320,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="HourlyRate_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="HourlyRate_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

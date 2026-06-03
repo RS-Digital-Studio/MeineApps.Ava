@@ -87,7 +87,7 @@
                   <TextBlock Text="{loc:Translate Voltage}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Voltage}" Watermark="V"
+                  <TextBox Text="{Binding Voltage}" PlaceholderText="V"
                            AutomationProperties.AutomationId="Electrical_TxtBoxVoltage" />
                 </StackPanel>
 
@@ -95,7 +95,7 @@
                   <TextBlock Text="{loc:Translate Current}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Current}" Watermark="A"
+                  <TextBox Text="{Binding Current}" PlaceholderText="A"
                            AutomationProperties.AutomationId="Electrical_TxtBoxCurrent" />
                 </StackPanel>
 
@@ -103,7 +103,7 @@
                   <TextBlock Text="{loc:Translate CableLength}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding CableLength}" Watermark="m"
+                  <TextBox Text="{Binding CableLength}" PlaceholderText="m"
                            AutomationProperties.AutomationId="Electrical_TxtBoxCableLength" />
                 </StackPanel>
 
@@ -111,7 +111,7 @@
                   <TextBlock Text="{loc:Translate CrossSection}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding CrossSection}" Watermark="mm²"
+                  <TextBox Text="{Binding CrossSection}" PlaceholderText="mm²"
                            AutomationProperties.AutomationId="Electrical_TxtBoxCrossSection" />
                 </StackPanel>
 
@@ -131,7 +131,7 @@
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding CablePrice}"
-                           Watermark="EUR"
+                           PlaceholderText="EUR"
                            AutomationProperties.AutomationId="Electrical_TxtBoxCablePrice" />
                 </StackPanel>
               </StackPanel>
@@ -253,7 +253,7 @@
                   <TextBlock Text="{loc:Translate Power}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding Watts}" Watermark="W"
+                  <TextBox Text="{Binding Watts}" PlaceholderText="W"
                            AutomationProperties.AutomationId="Electrical_TxtBoxWatts" />
                 </StackPanel>
 
@@ -261,7 +261,7 @@
                   <TextBlock Text="{loc:Translate HoursPerDay}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding HoursPerDay}" Watermark="h"
+                  <TextBox Text="{Binding HoursPerDay}" PlaceholderText="h"
                            AutomationProperties.AutomationId="Electrical_TxtBoxHoursPerDay" />
                 </StackPanel>
 
@@ -269,7 +269,7 @@
                   <TextBlock Text="{loc:Translate PricePerKwh}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding PricePerKwh}" Watermark="€/kWh"
+                  <TextBox Text="{Binding PricePerKwh}" PlaceholderText="€/kWh"
                            AutomationProperties.AutomationId="Electrical_TxtBoxPricePerKwh" />
                 </StackPanel>
               </StackPanel>
@@ -385,7 +385,7 @@
                   <TextBlock Text="{loc:Translate VoltageU}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding OhmsVoltage}" Watermark="V"
+                  <TextBox Text="{Binding OhmsVoltage}" PlaceholderText="V"
                            AutomationProperties.AutomationId="Electrical_TxtBoxOhmsVoltage" />
                 </StackPanel>
 
@@ -393,7 +393,7 @@
                   <TextBlock Text="{loc:Translate CurrentI}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding OhmsCurrent}" Watermark="A"
+                  <TextBox Text="{Binding OhmsCurrent}" PlaceholderText="A"
                            AutomationProperties.AutomationId="Electrical_TxtBoxOhmsCurrent" />
                 </StackPanel>
 
@@ -401,7 +401,7 @@
                   <TextBlock Text="{loc:Translate ResistanceR}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding OhmsResistance}" Watermark="Ω"
+                  <TextBox Text="{Binding OhmsResistance}" PlaceholderText="Ω"
                            AutomationProperties.AutomationId="Electrical_TxtBoxOhmsResistance" />
                 </StackPanel>
 
@@ -409,7 +409,7 @@
                   <TextBlock Text="{loc:Translate PowerP}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding OhmsPower}" Watermark="W"
+                  <TextBox Text="{Binding OhmsPower}" PlaceholderText="W"
                            AutomationProperties.AutomationId="Electrical_TxtBoxOhmsPower" />
                 </StackPanel>
               </StackPanel>
@@ -585,7 +585,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Electrical_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Electrical_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

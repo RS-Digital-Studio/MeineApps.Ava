@@ -58,19 +58,19 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate FloorHeight}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding FloorHeight}" Watermark="cm" Classes="Outlined"
+              <TextBox Text="{Binding FloorHeight}" PlaceholderText="cm" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxFloorHeight" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StairWidth}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding StairWidth}" Watermark="cm" Classes="Outlined"
+              <TextBox Text="{Binding StairWidth}" PlaceholderText="cm" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxStairWidth" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate CustomStepCount}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding CustomStepCount}" Watermark="0 = auto" Classes="Outlined"
+              <TextBox Text="{Binding CustomStepCount}" PlaceholderText="0 = auto" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxCustomStepCount" />
             </StackPanel>
           </StackPanel>
@@ -86,7 +86,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerStep}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding PricePerStep}" Watermark="EUR" Classes="Outlined"
+              <TextBox Text="{Binding PricePerStep}" PlaceholderText="EUR" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxPricePerStep" />
             </StackPanel>
           </StackPanel>
@@ -322,7 +322,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Stairs_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Stairs_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

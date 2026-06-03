@@ -68,7 +68,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding Area}"
-                       Watermark="m&#178;"
+                       PlaceholderText="m&#178;"
                        AutomationProperties.AutomationId="Insulation_TxtBoxArea" />
             </StackPanel>
 
@@ -78,7 +78,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding CurrentUValue}"
-                       Watermark="W/(m&#178;&#183;K)"
+                       PlaceholderText="W/(m&#178;&#183;K)"
                        AutomationProperties.AutomationId="Insulation_TxtBoxCurrentU" />
             </StackPanel>
 
@@ -88,7 +88,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding TargetUValue}"
-                       Watermark="W/(m&#178;&#183;K)"
+                       PlaceholderText="W/(m&#178;&#183;K)"
                        AutomationProperties.AutomationId="Insulation_TxtBoxTargetU" />
             </StackPanel>
 
@@ -113,7 +113,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerSqm}"
-                       Watermark="EUR"
+                       PlaceholderText="EUR"
                        AutomationProperties.AutomationId="Insulation_TxtBoxPricePerSqm" />
             </StackPanel>
           </StackPanel>
@@ -325,7 +325,7 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Insulation_TxtSaveDialogTitle" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="Insulation_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

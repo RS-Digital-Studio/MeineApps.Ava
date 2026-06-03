@@ -64,7 +64,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding AreaLabel}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding Area}" Watermark="m²" Classes="Outlined"
+              <TextBox Text="{Binding Area}" PlaceholderText="m²" Classes="Outlined"
                        AutomationProperties.AutomationId="MatCompare_TxtBoxArea" />
             </StackPanel>
           </StackPanel>
@@ -100,7 +100,7 @@
                 <TextBlock Text="{Binding PricePerUnitLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
-                <TextBox Text="{Binding PriceA}" Watermark="€" Classes="Outlined"
+                <TextBox Text="{Binding PriceA}" PlaceholderText="€" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxPriceA" />
               </StackPanel>
 
@@ -109,7 +109,7 @@
                 <TextBlock Text="{Binding ConsumptionLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
-                <TextBox Text="{Binding ConsumptionA}" Watermark="/ m²" Classes="Outlined"
+                <TextBox Text="{Binding ConsumptionA}" PlaceholderText="/ m²" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxConsumptionA" />
               </StackPanel>
 
@@ -117,7 +117,7 @@
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding WasteLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBox Text="{Binding WasteA}" Watermark="%" Classes="Outlined"
+                <TextBox Text="{Binding WasteA}" PlaceholderText="%" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxWasteA" />
               </StackPanel>
             </StackPanel>
@@ -150,7 +150,7 @@
                 <TextBlock Text="{Binding PricePerUnitLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
-                <TextBox Text="{Binding PriceB}" Watermark="€" Classes="Outlined"
+                <TextBox Text="{Binding PriceB}" PlaceholderText="€" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxPriceB" />
               </StackPanel>
 
@@ -159,7 +159,7 @@
                 <TextBlock Text="{Binding ConsumptionLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
-                <TextBox Text="{Binding ConsumptionB}" Watermark="/ m²" Classes="Outlined"
+                <TextBox Text="{Binding ConsumptionB}" PlaceholderText="/ m²" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxConsumptionB" />
               </StackPanel>
 
@@ -167,7 +167,7 @@
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding WasteLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBox Text="{Binding WasteB}" Watermark="%" Classes="Outlined"
+                <TextBox Text="{Binding WasteB}" PlaceholderText="%" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxWasteB" />
               </StackPanel>
             </StackPanel>
@@ -326,7 +326,7 @@
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined"
                    AutomationProperties.AutomationId="MatCompare_TxtBoxProjectName" />
           <Grid ColumnDefinitions="*,12,*">

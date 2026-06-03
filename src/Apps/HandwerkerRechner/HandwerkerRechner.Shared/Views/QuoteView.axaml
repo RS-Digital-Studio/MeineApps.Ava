@@ -283,7 +283,7 @@
 
                   <!-- Bezeichnung -->
                   <TextBox Text="{Binding NewItemDescription}"
-                           Watermark="{Binding ItemDescriptionLabel}"
+                           PlaceholderText="{Binding ItemDescriptionLabel}"
                            Classes="Outlined"
                            AutomationProperties.AutomationId="Quote_TxtBoxNewDesc" />
 
@@ -291,7 +291,7 @@
                     <!-- Menge -->
                     <TextBox Grid.Column="0"
                              Text="{Binding NewItemQuantity}"
-                             Watermark="{Binding ItemQuantityLabel}"
+                             PlaceholderText="{Binding ItemQuantityLabel}"
                              Classes="Outlined"
                              AutomationProperties.AutomationId="Quote_TxtBoxNewQty" />
                     <!-- Einheit -->
@@ -306,7 +306,7 @@
                     <!-- Einzelpreis -->
                     <TextBox Grid.Column="0"
                              Text="{Binding NewItemUnitPrice}"
-                             Watermark="{Binding ItemUnitPriceLabel}"
+                             PlaceholderText="{Binding ItemUnitPriceLabel}"
                              Classes="Outlined"
                              AutomationProperties.AutomationId="Quote_TxtBoxNewPrice" />
                     <!-- Typ (Material/Arbeit/Sonstiges) -->
@@ -350,14 +350,14 @@
                 <StackPanel Grid.Column="0" Spacing="4">
                   <TextBlock Text="{Binding MarginLabel}"
                              FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding MarginPercent}" Watermark="%" Classes="Outlined"
+                  <TextBox Text="{Binding MarginPercent}" PlaceholderText="%" Classes="Outlined"
                            AutomationProperties.AutomationId="Quote_TxtBoxMargin" />
                 </StackPanel>
                 <!-- MwSt -->
                 <StackPanel Grid.Column="2" Spacing="4">
                   <TextBlock Text="{Binding VatLabel}"
                              FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding VatPercent}" Watermark="%" Classes="Outlined"
+                  <TextBox Text="{Binding VatPercent}" PlaceholderText="%" Classes="Outlined"
                            AutomationProperties.AutomationId="Quote_TxtBoxVat" />
                 </StackPanel>
               </Grid>

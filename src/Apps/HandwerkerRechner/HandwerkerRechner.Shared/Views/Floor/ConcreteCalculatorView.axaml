@@ -66,17 +66,17 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate SlabLength}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabLength" Text="{Binding SlabLength}" Watermark="m" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabLength" Text="{Binding SlabLength}" PlaceholderText="m" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate SlabWidth}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabWidth" Text="{Binding SlabWidth}" Watermark="m" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabWidth" Text="{Binding SlabWidth}" PlaceholderText="m" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate SlabHeight}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabHeight" Text="{Binding SlabHeight}" Watermark="cm" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabHeight" Text="{Binding SlabHeight}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -91,17 +91,17 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StripLength}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripLength" Text="{Binding StripLength}" Watermark="m" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripLength" Text="{Binding StripLength}" PlaceholderText="m" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StripWidth}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripWidth" Text="{Binding StripWidth}" Watermark="cm" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripWidth" Text="{Binding StripWidth}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StripDepth}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripDepth" Text="{Binding StripDepth}" Watermark="cm" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripDepth" Text="{Binding StripDepth}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -116,12 +116,12 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate ColumnDiameter}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxColumnDiameter" Text="{Binding ColumnDiameter}" Watermark="cm" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxColumnDiameter" Text="{Binding ColumnDiameter}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate ColumnHeight}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxColumnHeight" Text="{Binding ColumnHeight}" Watermark="cm" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxColumnHeight" Text="{Binding ColumnHeight}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -143,12 +143,12 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerBag}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerBag" Text="{Binding PricePerBag}" Watermark="EUR" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerBag" Text="{Binding PricePerBag}" PlaceholderText="EUR" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerCubicMeter}"
                          FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerM3" Text="{Binding PricePerCubicMeter}" Watermark="EUR" Classes="Outlined" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerM3" Text="{Binding PricePerCubicMeter}" PlaceholderText="EUR" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -350,7 +350,7 @@
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxProjectName" Text="{Binding SaveProjectName}"
-                   Watermark="{loc:Translate ProjectName}"
+                   PlaceholderText="{loc:Translate ProjectName}"
                    Classes="Outlined" />
           <Grid ColumnDefinitions="*,12,*">
             <Button AutomationProperties.AutomationId="Concrete_BtnCancelSave" Grid.Column="0"

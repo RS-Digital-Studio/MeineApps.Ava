@@ -59,7 +59,7 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- IN-APP PURCHASES (Google Play Billing)                            -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.Android.Google.BillingClient" Version="8.3.0.2" />
+    <PackageVersion Include="Xamarin.Android.Google.BillingClient" Version="9.0.0" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- IN-APP REVIEW (Google Play Review API)                            -->

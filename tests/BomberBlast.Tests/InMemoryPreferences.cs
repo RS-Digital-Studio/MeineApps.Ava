@@ -27,4 +27,9 @@ public class InMemoryPreferences : IPreferencesService
     public void Remove(string key) => _store.Remove(key);
 
     public void Clear() => _store.Clear();
+
+    // Persistenz-Gate: no-op fuer In-Memory (kein Disk-IO, das ausgesetzt werden muesste).
+    public void SuspendPersistence() { }
+    public void ResumePersistence() { }
+    public void FlushPending() { }
 }

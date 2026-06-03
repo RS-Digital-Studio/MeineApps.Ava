@@ -281,12 +281,6 @@ public sealed partial class GameEngine
         // Input-Controls rendern (NICHT vom Shake beeinflusst)
         _inputManager.Render(canvas, screenWidth, screenHeight);
 
-        // Pause-Button rendern (nur Android, nur im Playing-State)
-        if (_state == GameState.Playing && OperatingSystem.IsAndroid())
-        {
-            RenderPauseButton(canvas);
-        }
-
         // Timer-Warnung rendern (pulsierender roter Rand unter 30s)
         if (_state == GameState.Playing && _timer.IsWarning)
         {
@@ -845,34 +839,6 @@ public sealed partial class GameEngine
         canvas.DrawRect(0, screenHeight - borderWidth, screenWidth, borderWidth, _overlayBgPaint);
         canvas.DrawRect(0, 0, borderWidth, screenHeight, _overlayBgPaint);
         canvas.DrawRect(screenWidth - borderWidth, 0, borderWidth, screenHeight, _overlayBgPaint);
-    }
-
-    private void RenderPauseButton(SKCanvas canvas)
-    {
-        float x = PAUSE_BUTTON_MARGIN;
-        float y = PAUSE_BUTTON_MARGIN + BannerTopOffset;
-        float size = PAUSE_BUTTON_SIZE;
-
-        // Halbtransparenter Hintergrund-Kreis
-        _overlayBgPaint.Color = new SKColor(0, 0, 0, 120);
-        canvas.DrawCircle(x + size / 2, y + size / 2, size / 2, _overlayBgPaint);
-
-        // Zwei vertikale Pause-Balken
-        _overlayTextPaint.Color = SKColors.White;
-        _overlayTextPaint.MaskFilter = null;
-        _overlayTextPaint.Style = SKPaintStyle.Fill;
-
-        float barW = size * 0.15f;
-        float barH = size * 0.4f;
-        float cx = x + size / 2;
-        float cy = y + size / 2;
-        float gap = size * 0.1f;
-
-        canvas.DrawRect(cx - gap - barW, cy - barH / 2, barW, barH, _overlayTextPaint);
-        canvas.DrawRect(cx + gap, cy - barH / 2, barW, barH, _overlayTextPaint);
-
-        // Style zurücksetzen
-        _overlayTextPaint.Style = SKPaintStyle.StrokeAndFill;
     }
 
     private void RenderPontanWarning(SKCanvas canvas)

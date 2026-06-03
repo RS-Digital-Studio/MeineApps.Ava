@@ -35,6 +35,9 @@ public class GoldServiceTests
         public bool ContainsKey(string key) => _store.ContainsKey(key);
         public void Remove(string key) => _store.Remove(key);
         public void Clear() => _store.Clear();
+        public void SuspendPersistence() { }
+        public void ResumePersistence() { }
+        public void FlushPending() { }
     }
 
     /// <summary>

@@ -14,6 +14,9 @@ public sealed class PreferencesService : IPreferencesService, IDisposable
     private Dictionary<string, JsonElement> _preferences = new();
     private readonly object _lock = new();
     private Timer? _saveTimer;
+    // Wenn true werden Disk-Writes ausgesetzt; aufgestaute Aenderungen merkt sich _pendingSave.
+    private bool _suspended;
+    private bool _pendingSave;
 
     public PreferencesService(string? appName = null)
     {
@@ -102,11 +105,51 @@ public sealed class PreferencesService : IPreferencesService, IDisposable
     {
         lock (_lock)
         {
+            // Persistenz pausiert (z.B. laufendes Spiel): nur vormerken, nicht auf Disk schreiben.
+            if (_suspended)
+            {
+                _pendingSave = true;
+                return;
+            }
+
             if (_saveTimer == null)
                 _saveTimer = new Timer(_ => SaveNow(), null, 500, Timeout.Infinite);
             else
                 _saveTimer.Change(500, Timeout.Infinite);
         }
+    }
+
+    public void SuspendPersistence()
+    {
+        lock (_lock)
+        {
+            _suspended = true;
+        }
+    }
+
+    public void ResumePersistence()
+    {
+        bool flush;
+        lock (_lock)
+        {
+            if (!_suspended) return;
+            _suspended = false;
+            flush = _pendingSave;
+            _pendingSave = false;
+        }
+        // SaveNow() nimmt selbst _lock — daher ausserhalb des lock-Blocks aufrufen.
+        if (flush) SaveNow();
+    }
+
+    public void FlushPending()
+    {
+        bool flush;
+        lock (_lock)
+        {
+            flush = _pendingSave;
+            _pendingSave = false;
+        }
+        if (flush) SaveNow();
     }
 
     /// <summary>

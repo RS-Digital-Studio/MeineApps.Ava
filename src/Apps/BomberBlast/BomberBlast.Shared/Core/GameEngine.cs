@@ -720,15 +720,6 @@ public sealed partial class GameEngine : IDisposable
     // Tutorial
     private float _tutorialWarningTimer;
 
-    // Pause-Button (Touch-Geräte, oben-links)
-    // v2.0.60 (B-C12 + B-E16): PAUSE_BUTTON_SIZE 40→52 (konsistent mit GameView.axaml).
-    // Hit-Test-Toleranz +14dp (war +10) für Mid-Tier-Android mit großen Daumen.
-    private const float PAUSE_BUTTON_SIZE = 52f;
-    private const float PAUSE_BUTTON_MARGIN = 10f;
-    private const float PAUSE_BUTTON_HIT_TOLERANCE = 14f;
-    /// <summary>Callback für Pause-Anfrage vom Touch-Button</summary>
-    public event Action? PauseRequested;
-
     // Score-Aufschlüsselung (für Level-Complete Summary Screen)
     public int LastTimeBonus { get; private set; }
     public int LastEfficiencyBonus { get; private set; }
@@ -823,20 +814,8 @@ public sealed partial class GameEngine : IDisposable
 
     public void OnTouchStart(float x, float y, float screenWidth, float screenHeight, long pointerId = 0)
     {
-        // Pause-Button prüfen (oben-links, nur wenn Android / Touch)
-        if (_state == GameState.Playing && OperatingSystem.IsAndroid())
-        {
-            float pauseRight = PAUSE_BUTTON_MARGIN + PAUSE_BUTTON_SIZE;
-            float pauseTop = PAUSE_BUTTON_MARGIN + BannerTopOffset;
-            float pauseBottom = pauseTop + PAUSE_BUTTON_SIZE;
-            if (x <= pauseRight + PAUSE_BUTTON_HIT_TOLERANCE
-                && y >= pauseTop - PAUSE_BUTTON_HIT_TOLERANCE
-                && y <= pauseBottom + PAUSE_BUTTON_HIT_TOLERANCE)
-            {
-                PauseRequested?.Invoke();
-                return;
-            }
-        }
+        // Pause läuft ausschließlich über den XAML-Pause-Button (GameView, links oben) / PauseCommand —
+        // kein gerenderter Touch-Pause-Button mehr (vermeidet zweiten Pause-Button im Spielfeld).
 
         // Discovery-Hint: Tap zum Schließen
         if (_discoveryOverlay.IsActive && _state == GameState.Playing)

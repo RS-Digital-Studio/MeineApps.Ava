@@ -63,6 +63,11 @@ public class SettingsViewModelTests
         saveGameSvc.SaveAsync().Returns(Task.CompletedTask);
         saveGameSvc.ExportSaveAsync().Returns(Task.FromResult<string>(null!));
 
+        // ReferralCardViewModel.Refresh() liest State.Referral bereits im Ctor → erst NACH
+        // dem stateSvc.State-Setup konstruieren (sonst NullReferenceException).
+        var referralSvc = Substitute.For<IReferralService>();
+        var referralVm = new ReferralCardViewModel(referralSvc, stateSvc, localizationSvc, dialogSvc);
+
         var vm = new SettingsViewModel(
             audioSvc,
             localizationSvc,
@@ -72,7 +77,8 @@ public class SettingsViewModelTests
             playGamesSvc,
             hintSvc,
             dialogSvc,
-            crossPromoVm);
+            crossPromoVm,
+            referralVm);
 
         return (vm, stateSvc, purchaseSvc);
     }

@@ -32,6 +32,9 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     private readonly IReviewService _reviewService;
     private readonly IGameAssetService _assetService;
     private readonly ILogger<GameViewModel> _logger;
+    // Persistenz wird waehrend des laufenden Spiels ausgesetzt (Anti-Ruckeln): Coin-/Achievement-/
+    // Collection-Saves stauen sich im Speicher und werden erst nach dem Spiel auf Disk geschrieben.
+    private readonly MeineApps.Core.Ava.Services.IPreferencesService _preferences;
     // Vermeidet doppelte Preload-Triggerings pro Welt (fire-and-forget Task schmeisst sonst Warnings)
     private int _lastPreloadedWorldIndex = -1;
     private readonly Stopwatch _frameStopwatch = new();
@@ -153,6 +156,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IRetentionService retentionService,
         IWorldStoryService worldStoryService,
         ITutorialService tutorialService,
+        MeineApps.Core.Ava.Services.IPreferencesService preferences,
         MeineApps.Core.Ava.Localization.ILocalizationService? localizationService = null)
     {
         _gameEngine = gameEngine;
@@ -164,6 +168,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _assetService = assetService;
         _logger = logger;
         _tutorialService = tutorialService;
+        _preferences = preferences;
         _localizationService = localizationService;
 
         // Phase 24b — RetentionService property-injecten damit GameEngine.PlayFirstWinCinematic
@@ -253,12 +258,10 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _gameEngine.GameOver -= HandleGameOver;
         _gameEngine.LevelComplete -= HandleLevelComplete;
         _gameEngine.CoinsEarned -= HandleCoinsEarned;
-        _gameEngine.PauseRequested -= HandlePauseRequested;
         _gameEngine.TutorialSkipRequested -= HandleTutorialSkipRequested;
         _gameEngine.GameOver += HandleGameOver;
         _gameEngine.LevelComplete += HandleLevelComplete;
         _gameEngine.CoinsEarned += HandleCoinsEarned;
-        _gameEngine.PauseRequested += HandlePauseRequested;
         _gameEngine.TutorialSkipRequested += HandleTutorialSkipRequested;
 
         if (!_isInitialized)
@@ -302,7 +305,6 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _gameEngine.GameOver -= HandleGameOver;
         _gameEngine.LevelComplete -= HandleLevelComplete;
         _gameEngine.CoinsEarned -= HandleCoinsEarned;
-        _gameEngine.PauseRequested -= HandlePauseRequested;
         _gameEngine.TutorialSkipRequested -= HandleTutorialSkipRequested;
     }
 
@@ -388,6 +390,9 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     private void StartGameLoop()
     {
         _isGameLoopRunning = true;
+        // Disk-Persistenz aussetzen: waehrend des Spiels gewonnene Coins/Achievements/Collection
+        // werden nur im Speicher gehalten — kein JSON-Serialize + File-Write im Render-Loop (Anti-Ruckeln).
+        _preferences.SuspendPersistence();
         // Erstes Frame anstoßen
         InvalidateCanvasRequested?.Invoke();
     }
@@ -395,6 +400,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     private void StopGameLoop()
     {
         _isGameLoopRunning = false;
+        // Spiel beendet/pausiert/Overlay → aufgestauten Fortschritt jetzt einmal auf Disk schreiben.
+        _preferences.ResumePersistence();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -486,10 +493,12 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     /// </summary>
     public void OnKeyDown(Key key)
     {
-        // Escape schaltet Pause um
+        // Escape: zuerst ContextHelp zurück ins Pause-Menü, sonst Pause umschalten.
         if (key == Key.Escape)
         {
-            if (_gameEngine.State == GameState.Playing)
+            if (IsContextHelpVisible)
+                CloseContextHelp();
+            else if (_gameEngine.State == GameState.Playing)
                 Pause();
             else if (_gameEngine.State == GameState.Paused)
                 Resume();
@@ -522,10 +531,12 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     /// </summary>
     public void OnGamepadButtonDown(BomberBlast.Input.GamepadButton button)
     {
-        // Start = Pause (analog zu Escape)
+        // Start = Pause (analog zu Escape); im ContextHelp zuerst zurück ins Pause-Menü.
         if (button == BomberBlast.Input.GamepadButton.Start)
         {
-            if (IsPaused)
+            if (IsContextHelpVisible)
+                CloseContextHelp();
+            else if (IsPaused)
                 Resume();
             else
                 Pause();
@@ -665,23 +676,26 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         ContextHelpTip2 = tip2;
         ContextHelpTip3 = tip3;
 
-        // Spiel pausieren — analog zur Pause-Mechanik, aber ohne IsPaused=true
-        // (das wuerde das Pause-Overlay zeigen statt des ContextHelp-Overlays).
+        // Wird aus dem Pause-Overlay geöffnet: Engine bleibt pausiert, Pause-Overlay ausblenden
+        // und stattdessen das ContextHelp-Overlay zeigen (kein Overlay-Stapel / Z-Konflikt).
         if (_gameEngine.State == GameState.Playing)
             _gameEngine.Pause();
 
+        IsPaused = false;
         IsContextHelpVisible = true;
     }
 
     /// <summary>
-    /// Schliesst das ContextHelp-Overlay und nimmt das Spiel wieder auf.
+    /// Schliesst das ContextHelp-Overlay und kehrt ins Pause-Overlay zurück.
     /// </summary>
     [RelayCommand]
     private void CloseContextHelp()
     {
         if (!IsContextHelpVisible) return;
         IsContextHelpVisible = false;
-        _gameEngine.Resume();
+        // Zurück zum Pause-Overlay (ContextHelp wird von dort geöffnet) — Engine bleibt pausiert,
+        // der Spieler nimmt das Spiel über den Resume-Button wieder auf.
+        IsPaused = true;
     }
 
     // Gate gegen Double-Ad-Race: Tap zweimal auf Score-Verdoppeln-Button
@@ -796,11 +810,6 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     {
         _lastCoinsEarned = coins;
         _lastIsLevelComplete = isLevelComplete;
-    }
-
-    private void HandlePauseRequested()
-    {
-        Dispatcher.UIThread.Post(() => Pause());
     }
 
     /// <summary>
@@ -956,7 +965,6 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _gameEngine.GameOver -= HandleGameOver;
         _gameEngine.LevelComplete -= HandleLevelComplete;
         _gameEngine.CoinsEarned -= HandleCoinsEarned;
-        _gameEngine.PauseRequested -= HandlePauseRequested;
         _gameEngine.TutorialSkipRequested -= HandleTutorialSkipRequested;
 
         _preloadCts?.Cancel();

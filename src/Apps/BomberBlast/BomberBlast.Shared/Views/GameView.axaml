@@ -17,34 +17,11 @@
                          IsHitTestVisible="{Binding !IsAnyOverlayOpen}" />
     </Border>
 
-    <!-- Tutorial-Replay-Pin: kontext-sensitive Hilfe waehrend Gameplay (v2.0.37).
-         Audit H03: 24dp Top-Margin + 24dp Right-Margin als Safe-Area-Puffer gegen Notch/Cutout
-         auf Pixel 4+/Galaxy S10+ Landscape. -->
-    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-            Margin="0,24,24,0"
-            Width="44" Height="44"
-            Background="#80000000"
-            Foreground="White"
-            BorderBrush="#33FFFFFF"
-            BorderThickness="1"
-            CornerRadius="22"
-            Padding="0"
-            HorizontalContentAlignment="Center"
-            VerticalContentAlignment="Center"
-            Command="{Binding ShowContextHelpCommand}"
-            IsVisible="{Binding !IsContextHelpVisible}"
-            AutomationProperties.AutomationId="Game_BtnContextHelp"
-            ToolTip.Tip="{loc:Translate ContextHelpTitle}">
-      <icons:GameIcon Kind="HelpCircle" Width="22" Height="22" Foreground="White" />
-    </Button>
-
-    <!-- Pause-Button : Mobile-Pause-Trigger neben dem ?-Button.
-         Audit H03: 24dp Top-Margin + 76dp Right-Margin (Cutout-Safe).
-         v2.0.60 (B-C12): 44dp→52dp + Opacity 80→A0 + Margin/CornerRadius angepasst.
-         Vergrößert auf Mid-Tier-Android-Phones besser anklickbar (Material Design 48dp+).
-         Sichtbar nur waehrend Gameplay (nicht im ContextHelp / nicht bereits pausiert). -->
-    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-            Margin="0,24,76,0"
+    <!-- Pause-Button : einziger In-Game-Button, LINKS oben (Safe-Area-Puffer 24dp gegen Notch/Cutout).
+         Sichtbar nur waehrend aktivem Gameplay (kein Overlay offen). Die kontext-sensitive Hilfe
+         (ContextHelp / "?") ist ins Pause-Overlay gewandert — kein separater ?-Button mehr im Spielfeld. -->
+    <Button HorizontalAlignment="Left" VerticalAlignment="Top"
+            Margin="24,24,0,0"
             Width="52" Height="52"
             Background="#A0000000"
             Foreground="White"
@@ -55,7 +32,7 @@
             HorizontalContentAlignment="Center"
             VerticalContentAlignment="Center"
             Command="{Binding PauseCommand}"
-            IsVisible="{Binding !IsContextHelpVisible}"
+            IsVisible="{Binding !IsAnyOverlayOpen}"
             AutomationProperties.AutomationId="Game_BtnPause"
             AutomationProperties.Name="{loc:Translate PauseButtonTooltip}"
             ToolTip.Tip="{loc:Translate PauseButtonTooltip}">
@@ -292,6 +269,22 @@
                     Margin="6,6,0,0"
                     AutomationProperties.AutomationId="Game_BtnQuitToMenu" />
           </Grid>
+
+          <!-- Hilfe / Tipps: kontext-sensitive Spielhilfe — vom Spielfeld ins Pause-Menü verschoben.
+               Öffnet das ContextHelp-Overlay (blendet das Pause-Overlay aus, kehrt beim Schließen dorthin zurück). -->
+          <Button Command="{Binding ShowContextHelpCommand}"
+                  Classes="Secondary"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Height="44"
+                  CornerRadius="10"
+                  AutomationProperties.AutomationId="Game_BtnPauseHelp">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <icons:GameIcon Kind="HelpCircle" Width="20" Height="20" Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ContextHelpTitle}" FontSize="14"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
         </StackPanel>
       </Border>
     </Border>

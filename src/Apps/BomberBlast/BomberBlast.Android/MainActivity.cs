@@ -166,6 +166,12 @@ public class MainActivity : AvaloniaMainActivity
 
         _adMobHelper?.Pause();
 
+        // Persistenz-Flush: Waehrend des Spiels werden Disk-Writes ausgesetzt (Anti-Ruckeln, siehe
+        // GameViewModel.StartGameLoop). Beim Wechsel in den Hintergrund aufgestauten Fortschritt jetzt
+        // sichern, damit ein moeglicher App-Kill keinen Verlust verursacht. Suspend-Zustand bleibt erhalten.
+        try { App.Services?.GetService<IPreferencesService>()?.FlushPending(); }
+        catch { /* Best-Effort */ }
+
         //.3 : Re-Engagement-Notifications planen.
         // App geht in den Hintergrund, plane D1/D3/D7-Reminders fuer inaktive Spieler.
         try

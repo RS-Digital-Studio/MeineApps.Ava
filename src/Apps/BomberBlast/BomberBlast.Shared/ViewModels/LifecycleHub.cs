@@ -101,7 +101,9 @@ public sealed class LifecycleHub : ILifecycleHub, IDisposable
         // 3. Im Spiel: Pause/Resume.
         if (activeView == ActiveView.Game && gameVm is not null)
         {
-            if (gameVm.IsPaused)
+            if (gameVm.IsContextHelpVisible)
+                gameVm.CloseContextHelpCommand.Execute(null);
+            else if (gameVm.IsPaused)
                 gameVm.ResumeCommand.Execute(null);
             else if (gameVm.State == GameState.Playing)
                 gameVm.PauseCommand.Execute(null);

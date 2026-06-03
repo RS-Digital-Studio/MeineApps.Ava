@@ -33,7 +33,7 @@
     </Border>
 
     <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Month_ScrollViewer">
-      <StackPanel Spacing="12" Margin="16">
+      <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}">
 
         <!-- ==================== Month Navigation ==================== -->
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="Month_NavCard">
@@ -216,7 +216,7 @@
             <ItemsControl ItemsSource="{Binding Weeks}" AutomationProperties.AutomationId="Month_WeeksList">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:WorkWeek">
-                  <Border Classes="Card" Padding="16" Margin="0,2">
+                  <Border Classes="Card" Padding="{StaticResource ThicknessLg}" Margin="0,2">
                     <Grid ColumnDefinitions="Auto,*,Auto,60" ColumnSpacing="12">
                       <TextBlock Grid.Column="0"
                                  Text="{Binding WeekDisplay}"
@@ -257,7 +257,7 @@
                 IsVisible="{Binding !IsLocked}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                CornerRadius="12"
+                CornerRadius="{StaticResource RadiusLg}"
                 Padding="16,12"
                 MinHeight="44">
           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -272,7 +272,7 @@
                 IsVisible="{Binding IsLocked}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                CornerRadius="12"
+                CornerRadius="{StaticResource RadiusLg}"
                 Padding="16,12"
                 MinHeight="44">
           <StackPanel Orientation="Horizontal" Spacing="8">

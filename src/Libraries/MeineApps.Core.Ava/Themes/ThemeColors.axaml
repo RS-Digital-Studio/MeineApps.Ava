@@ -16,6 +16,13 @@
       <x:Double x:Key="Spacing2Xl">32</x:Double>
       <x:Double x:Key="Spacing3Xl">48</x:Double>
 
+      <!-- Uniform Thickness-Tokens (für Padding/Margin; additiv) -->
+      <Thickness x:Key="ThicknessXs">4</Thickness>
+      <Thickness x:Key="ThicknessSm">8</Thickness>
+      <Thickness x:Key="ThicknessMd">12</Thickness>
+      <Thickness x:Key="ThicknessLg">16</Thickness>
+      <Thickness x:Key="ThicknessXl">24</Thickness>
+
       <!-- Corner Radius System -->
       <CornerRadius x:Key="RadiusSm">4</CornerRadius>
       <CornerRadius x:Key="RadiusMd">8</CornerRadius>

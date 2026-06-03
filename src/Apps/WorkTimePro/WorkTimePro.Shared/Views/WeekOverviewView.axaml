@@ -10,10 +10,10 @@
              x:CompileBindings="True">
 
   <ScrollViewer AutomationProperties.AutomationId="Week_ScrollViewer">
-    <StackPanel Spacing="16" Margin="16" AutomationProperties.AutomationId="Week_RootPanel">
+    <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Week_RootPanel">
 
       <!-- ==================== Week Navigation ==================== -->
-      <Border Classes="CardElevated StatsCard" Padding="16" AutomationProperties.AutomationId="Week_NavCard">
+      <Border Classes="CardElevated StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Week_NavCard">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <Button Grid.Column="0" Classes="Text"
                   MinWidth="48" MinHeight="48"
@@ -53,7 +53,7 @@
               IsVisible="{Binding HasPredictiveInsight}"
               Background="{DynamicResource PrimaryBrush}"
               Opacity="0.85"
-              CornerRadius="12"
+              CornerRadius="{StaticResource RadiusLg}"
               Padding="14,10">
         <StackPanel Orientation="Horizontal" Spacing="10"
                     HorizontalAlignment="Center">
@@ -79,7 +79,7 @@
       </Button>
 
       <!-- ==================== Week Summary ==================== -->
-      <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="Week_SummaryCard">
+      <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Week_SummaryCard">
         <StackPanel Spacing="16">
 
           <!-- Progress Bar -->
@@ -183,12 +183,12 @@
       </Border>
 
       <!-- ==================== SkiaSharp Wochen-Balkendiagramm ==================== -->
-      <Border Classes="Card StatsCard" Padding="8" Height="200" AutomationProperties.AutomationId="Week_ChartCard">
+      <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessSm}" Height="200" AutomationProperties.AutomationId="Week_ChartCard">
         <skia:SKCanvasView x:Name="WeekBarCanvas" AutomationProperties.AutomationId="Week_ChartCanvas" PaintSurface="OnPaintWeekBars" />
       </Border>
 
       <!-- ==================== Days List ==================== -->
-      <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="Week_DaysListCard">
+      <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Week_DaysListCard">
         <StackPanel Spacing="8">
           <TextBlock Text="{loc:Translate DaysThisWeek}"
                      AutomationProperties.AutomationId="Week_TxtDaysTitle"
@@ -205,7 +205,7 @@
                         HorizontalContentAlignment="Stretch"
                         Margin="0,2" Padding="0"
                         MinHeight="64">
-                  <Border Padding="0" Margin="0" MinHeight="64" CornerRadius="12"
+                  <Border Padding="0" Margin="0" MinHeight="64" CornerRadius="{StaticResource RadiusLg}"
                           Background="{DynamicResource CardBrush}"
                           BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                     <Grid ColumnDefinitions="4,Auto,*,Auto,60">

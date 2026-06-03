@@ -96,7 +96,7 @@
                             Command="{Binding $parent[UserControl].((vm:ShiftPlanViewModel)DataContext).SelectPatternCommand}"
                             CommandParameter="{Binding .}">
                       <Border Background="{Binding Color}"
-                              CornerRadius="12"
+                              CornerRadius="{StaticResource RadiusLg}"
                               Padding="12,8"
                               MinWidth="80">
                         <StackPanel HorizontalAlignment="Center">
@@ -149,7 +149,7 @@
             <ItemsControl ItemsSource="{Binding WeekDays}" AutomationProperties.AutomationId="ShiftPlan_DaysList">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ShiftDayItem">
-                  <Border Classes="Card" Padding="16" Margin="0,2"
+                  <Border Classes="Card" Padding="{StaticResource ThicknessLg}" Margin="0,2"
                           BorderThickness="{Binding TodayBorderThickness}"
                           BorderBrush="{DynamicResource PrimaryBrush}"
                           Opacity="{Binding DayOpacity}">
@@ -173,7 +173,7 @@
                               CommandParameter="{Binding .}"
                               HorizontalAlignment="Left">
                         <Border Background="{Binding PatternColor}"
-                                CornerRadius="8"
+                                CornerRadius="{StaticResource RadiusMd}"
                                 Padding="12,8"
                                 MinWidth="100">
                           <TextBlock Text="{Binding PatternName}"
@@ -218,7 +218,7 @@
                 Content="{loc:Translate TodayButton}"
                 Classes="Primary"
                 CornerRadius="24"
-                Margin="16"
+                Margin="{StaticResource ThicknessLg}"
                 Command="{Binding GoToTodayCommand}"
                 HorizontalAlignment="Center" />
 
@@ -235,8 +235,8 @@
         <!-- Modal Content -->
         <Border Background="{DynamicResource SurfaceBrush}"
                 AutomationProperties.AutomationId="ShiftPlan_EditorCard"
-                CornerRadius="16"
-                Padding="24"
+                CornerRadius="{StaticResource RadiusXl}"
+                Padding="{StaticResource ThicknessXl}"
                 Margin="32"
                 VerticalAlignment="Center"
                 BoxShadow="{DynamicResource ModalShadow}">
@@ -286,35 +286,35 @@
                         Command="{Binding SetPatternColorCommand}"
                         CommandParameter="#1565C0">
                   <Border Background="#1565C0" Width="48" Height="48"
-                          CornerRadius="8" />
+                          CornerRadius="{StaticResource RadiusMd}" />
                 </Button>
                 <Button Classes="Text" Padding="0"
                         AutomationProperties.AutomationId="ShiftPlan_BtnColorGreen"
                         Command="{Binding SetPatternColorCommand}"
                         CommandParameter="#2E7D32">
                   <Border Background="#2E7D32" Width="48" Height="48"
-                          CornerRadius="8" />
+                          CornerRadius="{StaticResource RadiusMd}" />
                 </Button>
                 <Button Classes="Text" Padding="0"
                         AutomationProperties.AutomationId="ShiftPlan_BtnColorOrange"
                         Command="{Binding SetPatternColorCommand}"
                         CommandParameter="#F57C00">
                   <Border Background="#F57C00" Width="48" Height="48"
-                          CornerRadius="8" />
+                          CornerRadius="{StaticResource RadiusMd}" />
                 </Button>
                 <Button Classes="Text" Padding="0"
                         AutomationProperties.AutomationId="ShiftPlan_BtnColorRed"
                         Command="{Binding SetPatternColorCommand}"
                         CommandParameter="#C62828">
                   <Border Background="#C62828" Width="48" Height="48"
-                          CornerRadius="8" />
+                          CornerRadius="{StaticResource RadiusMd}" />
                 </Button>
                 <Button Classes="Text" Padding="0"
                         AutomationProperties.AutomationId="ShiftPlan_BtnColorPurple"
                         Command="{Binding SetPatternColorCommand}"
                         CommandParameter="#6A1B9A">
                   <Border Background="#6A1B9A" Width="48" Height="48"
-                          CornerRadius="8" />
+                          CornerRadius="{StaticResource RadiusMd}" />
                 </Button>
               </StackPanel>
             </StackPanel>

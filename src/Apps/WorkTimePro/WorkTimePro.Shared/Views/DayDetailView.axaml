@@ -37,7 +37,7 @@
     <!-- IsHitTestVisible=False wenn ein Overlay aktiv ist (verhindert Touch-Durchfall auf Android) -->
     <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="DayDetail_ScrollViewer"
                   IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
-      <StackPanel Spacing="12" Margin="16">
+      <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}">
 
         <!-- ==================== Header with Date and Status ==================== -->
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="DayDetail_HeaderCard">
@@ -69,7 +69,7 @@
             <!-- Locked Badge -->
             <Border AutomationProperties.AutomationId="DayDetail_LockedBadge"
                     Background="{DynamicResource ErrorLightBrush}"
-                    CornerRadius="8"
+                    CornerRadius="{StaticResource RadiusMd}"
                     Padding="8,4"
                     HorizontalAlignment="Center"
                     IsVisible="{Binding IsLocked}">
@@ -147,8 +147,8 @@
                 Background="{DynamicResource ErrorLightBrush}"
                 BorderBrush="{DynamicResource ErrorBrush}"
                 BorderThickness="1"
-                CornerRadius="12"
-                Padding="12"
+                CornerRadius="{StaticResource RadiusLg}"
+                Padding="{StaticResource ThicknessMd}"
                 IsVisible="{Binding HasWarnings}">
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -172,7 +172,7 @@
         </Border>
 
         <!-- ==================== Time Entries (Timeline) ==================== -->
-        <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="DayDetail_TimeEntriesCard">
+        <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="DayDetail_TimeEntriesCard">
           <StackPanel Spacing="12">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
@@ -207,7 +207,7 @@
                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Panel>
                       <!-- Eintrag-Card -->
-                      <Border Grid.Column="1" Classes="Card" Padding="12" Margin="0,2">
+                      <Border Grid.Column="1" Classes="Card" Padding="{StaticResource ThicknessMd}" Margin="0,2">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                           <mi:MaterialIcon Grid.Column="0" Kind="{Binding TypeIconKind}"
                                            Width="20" Height="20"
@@ -261,7 +261,7 @@
         </Border>
 
         <!-- ==================== Breaks (Timeline) ==================== -->
-        <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="DayDetail_PausesCard">
+        <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="DayDetail_PausesCard">
           <StackPanel Spacing="12">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
@@ -294,7 +294,7 @@
                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Panel>
                       <!-- Eintrag-Card -->
-                      <Border Grid.Column="1" Classes="Card" Padding="12" Margin="0,2">
+                      <Border Grid.Column="1" Classes="Card" Padding="{StaticResource ThicknessMd}" Margin="0,2">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                           <mi:MaterialIcon Grid.Column="0"
                                            Kind="Coffee"
@@ -621,14 +621,14 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:StatusOption">
-                <Button Width="170" Margin="4"
+                <Button Width="170" Margin="{StaticResource ThicknessXs}"
                         AutomationProperties.AutomationId="DayDetail_StatusOptionButton"
                         MinHeight="44"
                         Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).SelectStatusCommand}"
                         CommandParameter="{Binding Status}"
                         HorizontalContentAlignment="Left"
                         Padding="12,10"
-                        CornerRadius="12"
+                        CornerRadius="{StaticResource RadiusLg}"
                         Background="Transparent">
                   <Grid ColumnDefinitions="Auto,*,Auto">
                     <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="20" Height="20"

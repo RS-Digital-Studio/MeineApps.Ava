@@ -52,7 +52,7 @@
     <!-- IsHitTestVisible=False wenn Overlay aktiv (verhindert Touch-Durchfall auf Android) -->
     <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Vacation_ScrollViewer"
                   IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
-      <StackPanel Spacing="16" Margin="16">
+      <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}">
 
         <!-- ==================== Quota Card (SkiaSharp-Ring-Gauge) ==================== -->
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="Vacation_QuotaCard">
@@ -187,7 +187,7 @@
         <ItemsControl ItemsSource="{Binding VacationEntries}" AutomationProperties.AutomationId="Vacation_EntryList">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:VacationEntry">
-              <Border Classes="Card" Padding="12" Margin="0,2">
+              <Border Classes="Card" Padding="{StaticResource ThicknessMd}" Margin="0,2">
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                   <mi:MaterialIcon Grid.Column="0"
                                    Kind="{Binding TypeIconKind}"
@@ -245,7 +245,7 @@
         <ItemsControl ItemsSource="{Binding Holidays}" AutomationProperties.AutomationId="Vacation_HolidayList">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:HolidayEntry">
-              <Border Classes="Card" Padding="12" Margin="0,2">
+              <Border Classes="Card" Padding="{StaticResource ThicknessMd}" Margin="0,2">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <mi:MaterialIcon Grid.Column="0"
                                    Kind="PartyPopper"
@@ -286,8 +286,8 @@
             Grid.RowSpan="2">
       <Border Background="{DynamicResource CardBrush}"
               AutomationProperties.AutomationId="Vacation_QuotaOverlayCard"
-              CornerRadius="16"
-              Padding="24"
+              CornerRadius="{StaticResource RadiusXl}"
+              Padding="{StaticResource ThicknessXl}"
               MaxWidth="360"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
@@ -350,8 +350,8 @@
             Grid.RowSpan="2">
       <Border Background="{DynamicResource CardBrush}"
               AutomationProperties.AutomationId="Vacation_AdOverlayCard"
-              CornerRadius="16"
-              Padding="24"
+              CornerRadius="{StaticResource RadiusXl}"
+              Padding="{StaticResource ThicknessXl}"
               MaxWidth="340"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">

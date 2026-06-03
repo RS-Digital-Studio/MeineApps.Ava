@@ -10,10 +10,10 @@
   <Grid>
     <!-- Main Calendar Content -->
     <ScrollViewer AutomationProperties.AutomationId="Calendar_ScrollViewer" IsVisible="{Binding !IsOverlayVisible}">
-      <StackPanel Spacing="16" Margin="16" AutomationProperties.AutomationId="Calendar_RootPanel">
+      <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Calendar_RootPanel">
 
         <!-- ==================== Month Navigation ==================== -->
-        <Border Classes="CardElevated StatsCard" Padding="16" AutomationProperties.AutomationId="Calendar_MonthNavCard">
+        <Border Classes="CardElevated StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Calendar_MonthNavCard">
           <Grid ColumnDefinitions="Auto,*,Auto">
             <Button Grid.Column="0" Classes="Text"
                     AutomationProperties.AutomationId="Calendar_BtnPrevMonth"
@@ -51,7 +51,7 @@
         </Button>
 
         <!-- ==================== Month Summary ==================== -->
-        <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="Calendar_SummaryCard">
+        <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Calendar_SummaryCard">
           <Grid ColumnDefinitions="*,*">
             <StackPanel Grid.Column="0" HorizontalAlignment="Center">
               <TextBlock Text="{loc:Translate WorkTime}"
@@ -80,7 +80,7 @@
         </Border>
 
         <!-- ==================== Calendar Grid ==================== -->
-        <Border Classes="Card StatsCard" Padding="8" AutomationProperties.AutomationId="Calendar_GridCard">
+        <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessSm}" AutomationProperties.AutomationId="Calendar_GridCard">
           <StackPanel Spacing="4">
 
             <!-- Weekday Header -->
@@ -193,7 +193,7 @@
         </Border>
 
         <!-- ==================== Heatmap Legend ==================== -->
-        <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="Calendar_LegendCard">
+        <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Calendar_LegendCard">
           <StackPanel Spacing="8">
             <TextBlock AutomationProperties.AutomationId="Calendar_TxtLegend" Text="{loc:Translate Legend}"
                        FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
@@ -202,7 +202,7 @@
             <WrapPanel Orientation="Horizontal"
                        HorizontalAlignment="Center">
               <!-- 0h -->
-              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="{StaticResource ThicknessXs}">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource CalendarEmptyBrush}" />
                 <TextBlock Text="0h" FontSize="{StaticResource FontSizeLabelMd}"
@@ -211,7 +211,7 @@
               </StackPanel>
 
               <!-- <4h -->
-              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="{StaticResource ThicknessXs}">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapLightBrush}" />
                 <TextBlock Text="&lt;4h" FontSize="{StaticResource FontSizeLabelMd}"
@@ -220,7 +220,7 @@
               </StackPanel>
 
               <!-- 4-6h -->
-              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="{StaticResource ThicknessXs}">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapMediumBrush}" />
                 <TextBlock Text="4-6h" FontSize="{StaticResource FontSizeLabelMd}"
@@ -229,7 +229,7 @@
               </StackPanel>
 
               <!-- 6-8h -->
-              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="{StaticResource ThicknessXs}">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapNormalBrush}" />
                 <TextBlock Text="6-8h" FontSize="{StaticResource FontSizeLabelMd}"
@@ -238,7 +238,7 @@
               </StackPanel>
 
               <!-- 8-10h -->
-              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="{StaticResource ThicknessXs}">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapHighBrush}" />
                 <TextBlock Text="8-10h" FontSize="{StaticResource FontSizeLabelMd}"
@@ -247,7 +247,7 @@
               </StackPanel>
 
               <!-- >10h -->
-              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="{StaticResource ThicknessXs}">
                 <Border Width="16" Height="16" CornerRadius="2"
                         Background="{DynamicResource HeatmapOvertimeBrush}" />
                 <TextBlock Text="&gt;10h" FontSize="{StaticResource FontSizeLabelMd}"
@@ -270,7 +270,7 @@
             Background="{DynamicResource BackgroundBrush}"
             ZIndex="10">
       <ScrollViewer AutomationProperties.AutomationId="Calendar_OverlayScrollViewer">
-        <StackPanel Spacing="16" Margin="16">
+        <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}">
 
           <!-- Header with close button -->
           <Grid ColumnDefinitions="Auto,*,Auto">
@@ -298,7 +298,7 @@
           </Grid>
 
           <!-- Selected date display -->
-          <Border Classes="CardElevated" Padding="16" AutomationProperties.AutomationId="Calendar_OverlayDateCard">
+          <Border Classes="CardElevated" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Calendar_OverlayDateCard">
             <StackPanel HorizontalAlignment="Center" Spacing="4">
               <mi:MaterialIcon Kind="CalendarToday" Width="32" Height="32"
                                Foreground="{DynamicResource PrimaryBrush}"
@@ -312,7 +312,7 @@
           </Border>
 
           <!-- Existing status info -->
-          <Border Classes="Card" Padding="12"
+          <Border Classes="Card" Padding="{StaticResource ThicknessMd}"
                   AutomationProperties.AutomationId="Calendar_ExistingStatusCard"
                   IsVisible="{Binding OverlayHasExistingStatus}">
             <StackPanel Orientation="Horizontal" Spacing="8"
@@ -328,7 +328,7 @@
           </Border>
 
           <!-- Status type selection -->
-          <Border Classes="Card" Padding="16">
+          <Border Classes="Card" Padding="{StaticResource ThicknessLg}">
             <StackPanel Spacing="12">
               <TextBlock Text="{loc:Translate Type}"
                          FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
@@ -347,7 +347,7 @@
           </Border>
 
           <!-- Date range -->
-          <Border Classes="Card" Padding="16">
+          <Border Classes="Card" Padding="{StaticResource ThicknessLg}">
             <StackPanel Spacing="12">
               <TextBlock Text="{loc:Translate DateRange}"
                          FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
@@ -385,7 +385,7 @@
           </Border>
 
           <!-- Note -->
-          <Border Classes="Card" Padding="16">
+          <Border Classes="Card" Padding="{StaticResource ThicknessLg}">
             <StackPanel Spacing="8">
               <TextBlock Text="{loc:Translate NoteOptional}"
                          FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
@@ -407,7 +407,7 @@
                     Command="{Binding SaveStatusCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    Padding="12">
+                    Padding="{StaticResource ThicknessMd}">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="ContentSave" Width="20" Height="20" />
                 <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
@@ -421,7 +421,7 @@
                     IsVisible="{Binding OverlayHasExistingStatus}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    Padding="12">
+                    Padding="{StaticResource ThicknessMd}">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="DeleteOutline" Width="20" Height="20"
                                  Foreground="{DynamicResource ErrorBrush}" />
@@ -437,7 +437,7 @@
                     Command="{Binding CancelOverlayCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    Padding="12">
+                    Padding="{StaticResource ThicknessMd}">
               <TextBlock Text="{loc:Translate Cancel}" />
             </Button>
           </StackPanel>

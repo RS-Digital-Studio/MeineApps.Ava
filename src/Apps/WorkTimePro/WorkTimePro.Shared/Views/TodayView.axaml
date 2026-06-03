@@ -67,7 +67,7 @@
   </UserControl.Styles>
 
   <ScrollViewer AutomationProperties.AutomationId="Today_ScrollViewer">
-    <StackPanel Spacing="12" Margin="16" AutomationProperties.AutomationId="Today_RootPanel">
+    <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Today_RootPanel">
 
       <!-- Date Header -->
       <TextBlock Text="{Binding TodayDateDisplay}"
@@ -76,12 +76,12 @@
                  HorizontalAlignment="Center" />
 
       <!-- ==================== Status Card ==================== -->
-      <Border Classes="CardElevated StatsCard" Padding="24" AutomationProperties.AutomationId="Today_StatusCard">
+      <Border Classes="CardElevated StatsCard" Padding="{StaticResource ThicknessXl}" AutomationProperties.AutomationId="Today_StatusCard">
         <StackPanel Spacing="20">
 
           <!-- Status Badge mit BrushTransition -->
           <Border AutomationProperties.AutomationId="Today_StatusBadge" Background="{Binding StatusColor}"
-                  CornerRadius="16"
+                  CornerRadius="{StaticResource RadiusXl}"
                   Padding="16,8"
                   HorizontalAlignment="Center">
             <Border.Transitions>
@@ -160,7 +160,7 @@
       </Border>
 
       <!-- ==================== Undo Bar ==================== -->
-      <Border AutomationProperties.AutomationId="Today_UndoBar" Background="{DynamicResource WarningBrush}" CornerRadius="8" Padding="12,8"
+      <Border AutomationProperties.AutomationId="Today_UndoBar" Background="{DynamicResource WarningBrush}" CornerRadius="{StaticResource RadiusMd}" Padding="12,8"
               IsVisible="{Binding IsUndoVisible}"
               HorizontalAlignment="Stretch">
         <Grid ColumnDefinitions="*,Auto">
@@ -175,7 +175,7 @@
                   Background="Transparent"
                   BorderThickness="1" BorderBrush="White"
                   MinHeight="{DynamicResource MinTouchTarget}"
-                  CornerRadius="4" Padding="12,4">
+                  CornerRadius="{StaticResource RadiusSm}" Padding="12,4">
             <StackPanel Orientation="Horizontal" Spacing="4">
               <mi:MaterialIcon Kind="Undo" Width="16" Height="16" Foreground="{DynamicResource PrimaryContrastBrush}" />
               <TextBlock Text="{loc:Translate Undo}"
@@ -186,7 +186,7 @@
       </Border>
 
       <!-- ==================== Time Metrics Card ==================== -->
-      <Border Classes="Card StatsCard" Padding="16" AutomationProperties.AutomationId="Today_MetricsCard">
+      <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Today_MetricsCard">
         <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto"
               RowSpacing="12">
 
@@ -267,10 +267,10 @@
 
       <!-- ==================== Predictive Insight Card (nur bei aktivem Tracking) ==================== -->
       <Border AutomationProperties.AutomationId="Today_InsightCard"
-              Classes="Card StatsCard" Padding="12"
+              Classes="Card StatsCard" Padding="{StaticResource ThicknessMd}"
               BorderBrush="{DynamicResource InfoBrush}"
               BorderThickness="1"
-              CornerRadius="12"
+              CornerRadius="{StaticResource RadiusLg}"
               IsVisible="{Binding HasInsight}">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <mi:MaterialIcon Grid.Column="0"
@@ -297,10 +297,10 @@
       </Border>
 
       <!-- ==================== Earnings Card (nur wenn Stundenlohn konfiguriert) ==================== -->
-      <Border AutomationProperties.AutomationId="Today_EarningsCard" Classes="Card StatsCard" Padding="12"
+      <Border AutomationProperties.AutomationId="Today_EarningsCard" Classes="Card StatsCard" Padding="{StaticResource ThicknessMd}"
               BorderBrush="{DynamicResource SuccessBrush}"
               BorderThickness="1"
-              CornerRadius="12"
+              CornerRadius="{StaticResource RadiusLg}"
               IsVisible="{Binding HasEarnings}">
         <StackPanel Orientation="Horizontal" Spacing="12"
                     HorizontalAlignment="Center">
@@ -325,8 +325,8 @@
               Background="{DynamicResource WarningLightBrush}"
               BorderBrush="{DynamicResource WarningBrush}"
               BorderThickness="1"
-              CornerRadius="12"
-              Padding="12"
+              CornerRadius="{StaticResource RadiusLg}"
+              Padding="{StaticResource ThicknessMd}"
               IsVisible="{Binding HasAutoPause}">
         <StackPanel Orientation="Horizontal" Spacing="12">
           <mi:MaterialIcon Kind="FlashOutline"
@@ -345,9 +345,9 @@
       </Border>
 
       <!-- ==================== Tagesnotiz ==================== -->
-      <Border Classes="Card StatsCard" Padding="12"
+      <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessMd}"
               AutomationProperties.AutomationId="Today_NoteCard"
-              CornerRadius="12">
+              CornerRadius="{StaticResource RadiusLg}">
         <StackPanel Spacing="8">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="NoteTextOutline" Width="18" Height="18"
@@ -368,7 +368,7 @@
       </Border>
 
       <!-- SkiaSharp Tages-Timeline (Arbeitsblöcke + Pausen) -->
-      <Border Classes="Card StatsCard" Padding="8"
+      <Border Classes="Card StatsCard" Padding="{StaticResource ThicknessSm}"
               AutomationProperties.AutomationId="Today_TimelineCard"
               IsVisible="{Binding HasCheckedIn}">
         <Border Height="56" ClipToBounds="True">
@@ -409,7 +409,7 @@
                 HorizontalContentAlignment="Center"
                 VerticalContentAlignment="Center"
                 Height="80"
-                CornerRadius="12"
+                CornerRadius="{StaticResource RadiusLg}"
                 Background="{DynamicResource SecondaryBrush}"
                 RenderTransform="scale(1)"
                 RenderTransformOrigin="50%,50%">
@@ -439,7 +439,7 @@
                 HorizontalContentAlignment="Center"
                 VerticalContentAlignment="Center"
                 Height="80"
-                CornerRadius="12"
+                CornerRadius="{StaticResource RadiusLg}"
                 Background="{DynamicResource SecondaryBrush}"
                 RenderTransform="scale(1)"
                 RenderTransformOrigin="50%,50%">
@@ -469,7 +469,7 @@
                 HorizontalContentAlignment="Center"
                 VerticalContentAlignment="Center"
                 Height="80"
-                CornerRadius="12"
+                CornerRadius="{StaticResource RadiusLg}"
                 Background="{DynamicResource InfoBrush}"
                 RenderTransform="scale(1)"
                 RenderTransformOrigin="50%,50%">
@@ -499,7 +499,7 @@
                 HorizontalContentAlignment="Center"
                 VerticalContentAlignment="Center"
                 Height="80"
-                CornerRadius="12"
+                CornerRadius="{StaticResource RadiusLg}"
                 Background="{DynamicResource WarningBrush}"
                 RenderTransform="scale(1)"
                 RenderTransformOrigin="50%,50%">

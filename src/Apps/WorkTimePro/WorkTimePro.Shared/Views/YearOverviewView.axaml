@@ -61,7 +61,7 @@
 
     <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Year_ScrollViewer"
                   IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
-      <StackPanel Spacing="16" Margin="16">
+      <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}">
 
         <!-- ==================== Year Summary Card ==================== -->
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="Year_SummaryCard">
@@ -218,7 +218,7 @@
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Stretch"
                       Padding="0" Margin="0,2">
-                <Border Classes="Card" Padding="12" Margin="0">
+                <Border Classes="Card" Padding="{StaticResource ThicknessMd}" Margin="0">
                   <Grid ColumnDefinitions="*,Auto,Auto,60" ColumnSpacing="8">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
                       <TextBlock Text="{Binding MonthName}" FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
@@ -254,8 +254,8 @@
             Grid.RowSpan="2">
       <Border Background="{DynamicResource CardBrush}"
               AutomationProperties.AutomationId="Year_AdOverlayCard"
-              CornerRadius="16"
-              Padding="24"
+              CornerRadius="{StaticResource RadiusXl}"
+              Padding="{StaticResource ThicknessXl}"
               MaxWidth="340"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">

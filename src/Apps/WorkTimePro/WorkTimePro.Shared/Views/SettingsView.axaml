@@ -35,7 +35,7 @@
   <Grid>
   <ScrollViewer VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="Settings_ScrollViewer"
                 IsHitTestVisible="{Binding !IsImportConfirmVisible}">
-    <StackPanel Spacing="12" Margin="16" AutomationProperties.AutomationId="Settings_RootPanel">
+    <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Settings_RootPanel">
 
       <!-- Header -->
       <TextBlock AutomationProperties.AutomationId="Settings_TxtTitle"
@@ -59,7 +59,7 @@
           <!-- Status Badge -->
           <Border AutomationProperties.AutomationId="Settings_PremiumBadge"
                   Background="{Binding PremiumStatusColor}"
-                  CornerRadius="12" Padding="16,8"
+                  CornerRadius="{StaticResource RadiusLg}" Padding="16,8"
                   HorizontalAlignment="Center">
             <TextBlock AutomationProperties.AutomationId="Settings_TxtPremiumStatus" Text="{Binding PremiumStatusText}"
                        FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
@@ -633,7 +633,7 @@
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        VerticalAlignment="Center" />
             <Border Background="{DynamicResource PrimaryBrush}"
-                    CornerRadius="8" Padding="8,2"
+                    CornerRadius="{StaticResource RadiusMd}" Padding="8,2"
                     VerticalAlignment="Center"
                     Opacity="0.8">
               <TextBlock Text="{loc:Translate ComingSoon}"

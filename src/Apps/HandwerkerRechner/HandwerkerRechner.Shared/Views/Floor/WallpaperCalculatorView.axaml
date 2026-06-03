@@ -16,7 +16,7 @@
     <!-- Row 0: Header with Back Button + Title       -->
     <!-- ============================================ -->
     <Border AutomationProperties.AutomationId="Wallpaper_Header" Grid.Row="0"
-            Background="{DynamicResource WarningBrush}"
+            Background="{DynamicResource HeaderGradientBrush}"
             Padding="16,12,16,20"
             CornerRadius="0,0,24,24">
       <Grid ColumnDefinitions="Auto,*">

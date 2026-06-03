@@ -16,15 +16,10 @@
 
     <!-- Header (Pink Akzent, Standard-Layout: 40x40 Back-Btn, Icon-Border, CornerRadius) -->
     <Border Grid.Row="0"
+            Background="{DynamicResource HeaderGradientBrush}"
             Padding="16,12,16,20"
             CornerRadius="0,0,24,24"
             AutomationProperties.AutomationId="Grout_HeaderBorder">
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="#EC4899" Offset="0" />
-          <GradientStop Color="#DB2777" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
                 Background="#33FFFFFF"

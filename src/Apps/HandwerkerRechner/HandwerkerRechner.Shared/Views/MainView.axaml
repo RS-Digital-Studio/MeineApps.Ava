@@ -87,15 +87,9 @@
         <ScrollViewer AutomationProperties.AutomationId="Main_ScrollHome">
           <StackPanel Spacing="0">
 
-            <!-- ========== Hero-Header (Amber/Orange Gradient) ========== -->
-            <Border AutomationProperties.AutomationId="Main_HeroHeader" CornerRadius="0,0,16,16" Padding="20,20,20,16">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="#F59E0B" Offset="0" />
-                  <GradientStop Color="{DynamicResource SecondaryColor}" Offset="0.5" />
-                  <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
-                </LinearGradientBrush>
-              </Border.Background>
+            <!-- ========== Hero-Header (Blueprint-Blau Gradient = Marken-Identität) ========== -->
+            <Border AutomationProperties.AutomationId="Main_HeroHeader" CornerRadius="0,0,16,16" Padding="20,20,20,16"
+                    Background="{DynamicResource HeaderGradientBrush}">
               <StackPanel Spacing="8" HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
                   <Border Width="36" Height="36" CornerRadius="18" Background="#33FFFFFF">
@@ -172,13 +166,8 @@
                   <behaviors:TapScaleBehavior PressedScale="0.97"/>
                   <behaviors:FadeInBehavior Duration="300"/>
                 </i:Interaction.Behaviors>
-                <Border Classes="PremiumShimmer" CornerRadius="16" Padding="18" ClipToBounds="True">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="{DynamicResource AccentColor}" Offset="0" />
-                      <GradientStop Color="{DynamicResource SecondaryColor}" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
+                <Border Classes="PremiumShimmer" CornerRadius="16" Padding="18" ClipToBounds="True"
+                        Background="{DynamicResource PremiumGradientBrush}">
                   <Panel>
                     <Ellipse Width="100" Height="100"
                              Opacity="0.1" Fill="White"

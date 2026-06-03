@@ -16,7 +16,7 @@
 
     <!-- Zeile 0: Header -->
     <Border Grid.Row="0"
-            Background="{DynamicResource AccentBrush}"
+            Background="{DynamicResource HeaderGradientBrush}"
             Padding="16,12,16,20"
             CornerRadius="0,0,24,24"
             AutomationProperties.AutomationId="MatCompare_HeaderBorder">

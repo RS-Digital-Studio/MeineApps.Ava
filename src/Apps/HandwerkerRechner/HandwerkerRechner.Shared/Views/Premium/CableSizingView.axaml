@@ -15,15 +15,10 @@
 
     <!-- Header: Amber Gradient -->
     <Border Grid.Row="0"
+            Background="{DynamicResource HeaderGradientBrush}"
             Padding="16,12,16,20"
             CornerRadius="0,0,24,24"
             AutomationProperties.AutomationId="CableSizing_HeaderBorder">
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="#F59E0B" Offset="0" />
-          <GradientStop Color="#D97706" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
                 Background="#33FFFFFF"

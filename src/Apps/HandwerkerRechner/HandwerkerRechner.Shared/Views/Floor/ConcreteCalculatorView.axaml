@@ -14,7 +14,7 @@
 
     <!-- Row 0: Header -->
     <Border AutomationProperties.AutomationId="Concrete_Header" Grid.Row="0"
-            Background="{DynamicResource WarningBrush}"
+            Background="{DynamicResource HeaderGradientBrush}"
             Padding="16,12,16,20"
             CornerRadius="0,0,24,24">
       <Grid ColumnDefinitions="Auto,*">

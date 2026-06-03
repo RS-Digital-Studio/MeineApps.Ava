@@ -615,12 +615,6 @@ public sealed class CraftEngine
 
     #region Treppen (PREMIUM)
 
-    /// <summary>
-    /// Berechnet Treppenmaße nach DIN 18065 (Schrittmaßregel)
-    /// </summary>
-    /// <param name="floorHeight">Geschosshöhe in cm</param>
-    /// <param name="stairWidth">Treppenbreite in cm</param>
-    /// <param name="customStepCount">Manuelle Stufenanzahl (0 = automatisch berechnen)</param>
     // DIN 18065 Treppen-Konstanten
     private const double OptimalStepHeightCm = 17.5;
     private const double StepMeasureOptimalCm = 63.0; // Schrittmaßregel: 2h + g = 63 cm

@@ -263,8 +263,11 @@ public class CraftEngineTests
 
         ergebnis.KwhPerDay.Should().BeApproximately(0.48, 0.001);
         ergebnis.CostPerDay.Should().BeApproximately(0.144, 0.001);
-        ergebnis.CostPerMonth.Should().BeApproximately(0.144 * 30, 0.001);
+        // Monat = Jahr/12 (konsistent: 12 × Monat == Jahr), nicht Tag × 30
+        ergebnis.CostPerMonth.Should().BeApproximately(0.144 * 365 / 12, 0.001);
         ergebnis.CostPerYear.Should().BeApproximately(0.144 * 365, 0.001);
+        // Konsistenz-Garantie: 12 Monate ergeben exakt ein Jahr
+        (ergebnis.CostPerMonth * 12).Should().BeApproximately(ergebnis.CostPerYear, 0.001);
     }
 
     [Fact]
@@ -707,10 +710,14 @@ public class CraftEngineTests
         var ergebnis = CraftEngine.CalculateGrout(10, 30, 30, 5, 10, 2.5);
 
         ergebnis.AreaSqm.Should().Be(10);
-        ergebnis.TotalKg.Should().BeGreaterThan(0);
+        // Magnituden-Check gegen physikalischen Sollwert (deckt Einheiten-Fehler auf):
+        // ((300+300)/(300*300)) * 5 * 10 * 1.6 = 0,533 kg/m²  →  10 m² * 0,533 = 5,33 kg
+        ergebnis.ConsumptionPerSqm.Should().BeApproximately(0.533, 0.01);
+        ergebnis.TotalKg.Should().BeApproximately(5.333, 0.05);
         // 10% Reserve muss eingerechnet sein
         ergebnis.TotalWithReserveKg.Should().BeApproximately(ergebnis.TotalKg * 1.1, 0.001);
-        ergebnis.BucketsNeeded.Should().BeGreaterThan(0);
+        // 5,33 kg + 10% = 5,87 kg → 2 Eimer à 5 kg
+        ergebnis.BucketsNeeded.Should().Be(2);
     }
 
     [Fact]

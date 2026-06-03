@@ -170,7 +170,9 @@ public class WorkDay
     /// Farbe für Saldo (grün = plus, rot = minus)
     /// </summary>
     [Ignore]
-    public string BalanceColor => BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
+    public string BalanceColor => ActualWorkMinutes == 0 && TargetWorkMinutes == 0
+        ? AppColors.StatusIdle  // soll-loser Tag (Wochenende/leer): neutral statt grün
+        : BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 
     /// <summary>
     /// Ist der Tag abgeschlossen? (Hat Check-Out)

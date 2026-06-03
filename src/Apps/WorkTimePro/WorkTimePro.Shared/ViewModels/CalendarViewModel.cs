@@ -490,6 +490,11 @@ public class CalendarDay
             if (Status == DayStatus.Weekend)
                 return IsDarkTheme ? AppColors.CalendarTextDarkWeekend : AppColors.CalendarTextLightWeekend;
 
+            // Auf hellen Heatmap-Pastellzellen (wenig Stunden) dunklen Text für Kontrast (WCAG-AA);
+            // die dunkleren/gesättigten Stufen tragen weiterhin hellen Text.
+            if (HasData && WorkMinutes < 360)
+                return AppColors.CalendarTextLight;
+
             return IsDarkTheme ? AppColors.CalendarTextDark : AppColors.CalendarTextLight;
         }
     }
@@ -519,6 +524,16 @@ public class CalendarDay
         DayStatus.Training => MaterialIconKind.BookOpenPageVariant,
         DayStatus.CompensatoryTime => MaterialIconKind.SwapHorizontal,
         _ => MaterialIconKind.Circle
+    };
+
+    /// <summary>Status-Icon-Farbe je Status (statt einheitlich blau); auf der dunklen Leer-Zelle gut lesbar.</summary>
+    public string StatusIconColor => Status switch
+    {
+        DayStatus.Vacation => AppColors.StatusActive,
+        DayStatus.Sick => AppColors.BalanceNegative,
+        DayStatus.Holiday => AppColors.StatusPaused,
+        DayStatus.HomeOffice or DayStatus.BusinessTrip or DayStatus.Training => AppColors.Primary,
+        _ => AppColors.StatusIdle
     };
 
     public bool HasStatusIcon => Status != DayStatus.WorkDay &&

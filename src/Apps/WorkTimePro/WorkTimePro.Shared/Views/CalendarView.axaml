@@ -151,7 +151,7 @@
                                 <mi:MaterialIcon Kind="{Binding StatusIconKind}"
                                                  IsVisible="{Binding HasStatusIcon}"
                                                  Width="12" Height="12"
-                                                 Foreground="{DynamicResource PrimaryBrush}"
+                                                 Foreground="{Binding StatusIconColor}"
                                                  HorizontalAlignment="Right"
                                                  VerticalAlignment="Bottom"
                                                  Margin="0,0,2,2" />

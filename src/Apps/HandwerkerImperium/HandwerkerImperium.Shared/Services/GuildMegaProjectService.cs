@@ -170,7 +170,9 @@ public sealed class GuildMegaProjectService : IGuildMegaProjectService
         // daher serverseitiges Increment statt absolutem read-modify-write-Wert, sonst gehen
         // gleichzeitige Spenden verloren (Last-Write-Wins). donations/{playerId}/* sind per-Spieler-
         // Subpfade ohne Konflikt und bleiben absolute Schreibvorgaenge.
-        var path = GetFirebasePath(CurrentGuildId);
+        var guildId = CurrentGuildId;
+        if (string.IsNullOrEmpty(guildId)) return false;
+        var path = GetFirebasePath(guildId);
         var updates = new Dictionary<string, object>
         {
             [$"contributions/{productId}"] = new Dictionary<string, object>

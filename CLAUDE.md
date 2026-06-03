@@ -144,14 +144,20 @@ protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e
 
 ### Testbarkeit
 
-`tests/` ist für xUnit-v3-Test-Projekte (.NET 10) vorgesehen. **Beim Hinzufügen oder Ändern
-testbarer Logik** (Berechnungen, Konvertierungen, Zustandsverwaltung, Parser, Algorithmen)
-gehören passende Unit-Tests ins zugehörige Test-Projekt. Nicht nötig für reine UI-Verdrahtung,
-triviale Property-Wrapper oder Code, der ausschließlich Avalonia/Android-APIs aufruft.
+`tests/` enthält **12 Test-Projekte** — eines je App plus `MeineApps.CalcLib.Tests`. Stack:
+**xUnit 2.x** + NSubstitute (Mocks) + FluentAssertions + coverlet (Coverage). UI-nahe Tests
+laufen headless über `Avalonia.Headless` (z.B. HandwerkerImperium, BomberBlast, RechnerPlus).
 
-Aktuell hat nur `MeineApps.CalcLib` Tests. Domain-Code in Apps (`GameLoopService`,
-`OrderGeneratorService`, BingXBot SK-System, …) sukzessive testbar machen — Services per
-Interface von Plattform-APIs entkoppeln.
+> **Kein xUnit v3:** `Avalonia.Headless.XUnit` zieht `xunit.v3` transitiv und kollidiert mit
+> der xunit-2.x-Linie. Werden echte Headless-UI-Tests gebraucht, in ein eigenes
+> xunit.v3-Projekt extrahieren statt die Solution-weite Version zu wechseln.
+
+**Beim Hinzufügen oder Ändern testbarer Logik** (Berechnungen, Konvertierungen,
+Zustandsverwaltung, Parser, Algorithmen) gehören passende Unit-Tests ins zugehörige
+Test-Projekt. Nicht nötig für reine UI-Verdrahtung, triviale Property-Wrapper oder Code, der
+ausschließlich Avalonia/Android-APIs aufruft. Domain-Code (`GameLoopService`,
+`OrderGeneratorService`, BingXBot SK-System, …) per Interface von Plattform-APIs entkoppeln,
+damit er testbar bleibt.
 
 ---
 
@@ -167,10 +173,12 @@ F:\Meine_Apps_Ava\
 ├── Releases/                       # meineapps.keystore, CHANGELOGs, AABs
 │
 ├── src/
-│   ├── Libraries/
+│   ├── Libraries/                       # Geteilte Bibliotheken (keine Referenz auf Apps)
 │   │   ├── MeineApps.CalcLib/            # Calculator-Engine (Tokenizer + Parser + Evaluator)
 │   │   ├── MeineApps.Core.Ava/          # Preferences, Lokalisierung, Themes, Converters, ViewLocator
-│   │   └── MeineApps.Core.Premium.Ava/  # AdMob, Google Play Billing, Trial (Android-Linked-Files)
+│   │   ├── MeineApps.Core.Premium.Ava/  # AdMob, Google Play Billing, Trial (Android-Linked-Files)
+│   │   └── BingXBot.*                    # Trading-Backend, geteilt zwischen Server/Clients/Backtest:
+│   │                                     #   .Core .Contracts .Engine .Exchange .Trading .Backtest .ClientApi
 │   │
 │   ├── UI/
 │   │   └── MeineApps.UI/                # Custom Controls, Behaviors, SkiaSharp, GPU-Shader, Loading-Pipeline
@@ -185,19 +193,25 @@ F:\Meine_Apps_Ava\
 │       ├── HandwerkerImperium/          # Idle-Game (Werkstätten + Arbeiter)
 │       ├── BomberBlast/                 # Bomberman-Klon (SkiaSharp, Landscape)
 │       ├── RebornSaga/                  # Anime Isekai-RPG (volle SkiaSharp-Engine)
-│       ├── BingXBot/                    # Trading Bot (Pi-Server 24/7 + Desktop + Android Remote)
-│       ├── GardenControl/               # Bewässerungssteuerung (Pi-Server + Desktop + Android)
+│       ├── BingXBot/                    # Trading Bot — .Shared .Android .Desktop + .Server (Pi 24/7)
+│       ├── GardenControl/               # Bewässerung — .Core .Shared .Android .Desktop + .Server (Pi)
 │       ├── SmartMeasure/                # 3D-Grundstücksvermessung (RTK-GPS, privat)
 │       ├── ArcaneKingdom/               # TCG + RPG  (Unity 6)
 │       ├── BomberBlast.Unity/           # Treuer 3D-Remake des Originals (Unity 6 + URP)
 │       └── HandwerkerImperium.Unity/    # Neuentwicklung parallel zur Avalonia-Version (Unity 6)
 │
-├── tools/
-│   ├── AppChecker/                      # 33 Checker, 200+ Prüfungen
-│   ├── StoreAssetGenerator/             # Play-Store-Assets (SkiaSharp)
-│   └── SocialPostGenerator/             # Social-Media-Posts + Promo-Bilder
+├── tools/                               # .NET-Tools (via dotnet run) + Python-Skripte
+│   ├── AppChecker/                      # .NET — 33 Checker, 200+ Prüfungen
+│   ├── StoreAssetGenerator/             # .NET — Play-Store-Assets (SkiaSharp)
+│   ├── SocialPostGenerator/             # .NET — Social-Media-Posts + Promo-Bilder
+│   ├── BingXBacktestLab/                # .NET — Strategie-Backtest auf echten Klines (standalone, nicht in .sln)
+│   ├── BingXBotTrainer/                 # Python — ONNX-Modell-Training (BingXBot)
+│   ├── ContentPipeline/                 # Python — Google-Sheets-Sync für Game-Content/Übersetzungen
+│   ├── SkAnalytics/                     # Python — Positions-/Snapshot-Analyse
+│   ├── SoundForge/                      # Python — Audio-Generierung (+ lufs-mastering.sh)
+│   └── screenshot-mcp/                  # MCP-Server für Screenshots
 │
-└── tests/                               # xUnit v3 (aktuell nur CalcLib)
+└── tests/                               # xUnit 2.x — 12 Projekte (je App + MeineApps.CalcLib)
 ```
 
 ---
@@ -384,10 +398,10 @@ expressions · Records für immutable DTOs/Events · File-scoped Namespaces · R
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.1.1 | Rewarded (kein Banner) | 4,99 Premium | Produktion |
+| HandwerkerImperium | v2.1.2 | Rewarded (kein Banner) | 4,99 Premium | Produktion |
 | BomberBlast | v2.0.63 | Rewarded (kein Banner) | 1,99 remove_ads | Produktion |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
-| BingXBot | v1.8.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android Remote) |
+| BingXBot | v1.8.1 | Nein | Nein | Entwicklung (Pi + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
 | SmartMeasure | v1.1.6 | Nein | Nein | Entwicklung (privat, RTK-GPS) |
 | ArcaneKingdom (Unity) | v0.0.2 | TBD | Diamanten-Packs | Pre-MVP |
@@ -436,6 +450,10 @@ dotnet publish src/Apps/{App}/{App}.Desktop -c Release -r win-x64     # bzw. lin
 # Android Release (AAB) → bin/Release/net10.0-android/publish/
 dotnet publish src/Apps/{App}/{App}.Android -c Release
 
+# Tests (xUnit 2.x — je App ein Projekt + CalcLib)
+dotnet test tests/{App}.Tests                    # einzelnes Test-Projekt
+dotnet test MeineApps.Ava.sln                    # alle Tests
+
 # AppChecker (33 Checker, 200+ Prüfungen)
 dotnet run --project tools/AppChecker            # alle Apps
 dotnet run --project tools/AppChecker {App}      # einzelne App
@@ -470,16 +488,30 @@ Versionen zentral in `Directory.Packages.props`. Kern:
 
 | Package | Version | Zweck |
 |---------|---------|-------|
-| Avalonia | 12.0.2 | UI-Framework |
+| Avalonia | 12.0.2 | UI-Framework (migriert von MAUI) |
 | Material.Icons.Avalonia | 3.0.2 | 7000+ SVG-Icons |
 | CommunityToolkit.Mvvm | 8.4.2 | MVVM |
 | Xaml.Behaviors.Avalonia | 12.0.0 | Behaviors |
 | SkiaSharp (+ Skottie) | 3.119.4-preview.1.1 | 2D-Graphics + SkSL GPU-Shader (von Avalonia 12 erzwungener Preview) |
 | Avalonia.Labs.Lottie | 12.0.2 | Lottie-Animationen |
 | AvaloniaUI.DiagnosticsSupport | 2.2.1 | DevTools (Debug-only) |
+| sqlite-net-pcl | 1.9.172 | Datenbank |
+| **Premium (Android)** | | |
+| Xamarin.GooglePlayServices.Ads.Lite | 124.0.0.5 | AdMob (+ UserMessagingPlatform 4.0.0.2) |
 | Xamarin.Android.Google.BillingClient | 8.3.0.2 | Google Play Billing v8 |
 | Xamarin.Google.Android.Play.Review | 2.0.2.7 | In-App Review |
-| sqlite-net-pcl | 1.9.172 | Datenbank |
+| Xamarin.GooglePlayServices.Games.V2 | 121.0.0.3 | Play Games Services v2 |
+| Xamarin.Firebase.Messaging / .Config | 124.1.2 / 123.0.1.2 | Push + Remote Config (kein Crashlytics/Analytics) |
+| **Feature-spezifisch** | | |
+| Xamarin.AndroidX.Camera.* / MLKit.BarcodeScanning | 1.5.3.1 / 117.3.0.7 | Kamera + Barcode (FitnessRechner) |
+| PdfSharpCore / ClosedXML | 1.3.67 / 0.105.0 | PDF-/Excel-Export (WorkTimePro) |
+| Skender.Stock.Indicators | 2.7.1 | Trading-Indikatoren (BingXBot) |
+| Microsoft.AspNetCore.SignalR.Client | 10.0.7 | Server-Remote (BingXBot, GardenControl) |
+| System.Device.Gpio / Iot.Device.Bindings | 4.2.0 | Raspberry-Pi-GPIO (GardenControl) |
+| Mapsui.Avalonia / InTheHand.BluetoothLE / Vapolia.Google.ARCore | 5.0.2 / 4.0.44 / 1.47.1 | Karten + BLE + AR (SmartMeasure) |
+| **Test** | | |
+| xunit (+ runner.visualstudio) | 2.9.3 / 3.1.5 | Test-Framework (v2-Linie, kein v3) |
+| NSubstitute / FluentAssertions / coverlet.collector | 5.3.0 / 8.9.0 / 10.0.0 | Mocks / Assertions / Coverage |
 
 ### Keystore
 
@@ -555,8 +587,14 @@ konkreter zu ihrem Gebiet. **Gotchas/Troubleshooting leben in der Domänen-Datei
 | BomberBlast.Unity | [src/Apps/BomberBlast.Unity/CLAUDE.md](src/Apps/BomberBlast.Unity/CLAUDE.md) |
 | HandwerkerImperium.Unity | [src/Apps/HandwerkerImperium.Unity/CLAUDE.md](src/Apps/HandwerkerImperium.Unity/CLAUDE.md) |
 
-**Tools:** [AppChecker](tools/AppChecker/CLAUDE.md) ·
+**Tools (.NET, eigene CLAUDE.md):** [AppChecker](tools/AppChecker/CLAUDE.md) ·
 [StoreAssetGenerator](tools/StoreAssetGenerator/CLAUDE.md) ·
-[SocialPostGenerator](tools/SocialPostGenerator/CLAUDE.md)
+[SocialPostGenerator](tools/SocialPostGenerator/CLAUDE.md) ·
+[BingXBacktestLab](tools/BingXBacktestLab/CLAUDE.md)
+**Python-Skripte (README statt CLAUDE.md):** `BingXBotTrainer`, `ContentPipeline`, `SkAnalytics`, `SoundForge`.
 
-Firebase-Security-Rules: `database.rules.json` (aktuell nur HandwerkerImperium).
+Die `BingXBot.*`-Backend-Libraries (`src/Libraries/`) und die `*.Server`-Projekte sind in der
+[BingXBot-App-CLAUDE.md](src/Apps/BingXBot/CLAUDE.md) bzw.
+[GardenControl-App-CLAUDE.md](src/Apps/GardenControl/CLAUDE.md) dokumentiert (keine eigene Lib-CLAUDE.md).
+
+Firebase-Security-Rules: `database.rules.json` (Root, aktuell nur HandwerkerImperium).

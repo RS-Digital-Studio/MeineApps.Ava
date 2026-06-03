@@ -1523,7 +1523,7 @@ NavigationRequested?.Invoke(new GoGame(Mode: "bossrush", Floor: 0));
 ### GameEngine-Events (kein `On`-Prefix)
 
 `GameOver`, `LevelComplete`, `Victory`, `ScoreChanged`, `CoinsEarned`,
-`PauseRequested`, `DirectionChanged`, `DungeonFloorComplete`,
+`DirectionChanged`, `DungeonFloorComplete`,
 `DungeonBuffSelection`, `DungeonRunEnd`
 
 ### ViewModels-Lifecycle

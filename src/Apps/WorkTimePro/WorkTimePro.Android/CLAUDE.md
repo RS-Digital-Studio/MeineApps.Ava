@@ -53,8 +53,11 @@ und `AndroidFileShareService.cs` werden per `<Compile Include="..." Link="..." /
 ## AndroidHapticService
 
 Liegt in `Services/AndroidHapticService.cs`. `IHapticService`-Impl über `Vibrator`:
-`VibrationEffect.EffectTick`/`EffectClick`/`EffectHeavyClick` (API Q+), ms-Fallback für ältere
-Geräte. Wird per Factory ins Shared-DI injiziert (kein direkter Konstruktor-Aufruf in Views).
+`VibrationEffect.EffectTick`/`EffectClick`/`EffectHeavyClick` (API 29+), ms-`Vibrate(long)`-Fallback
+für API 24-28. Wird per Factory ins Shared-DI injiziert (kein direkter Konstruktor-Aufruf in Views).
+Versions-Guards laufen über `OperatingSystem.IsAndroidVersionAtLeast(X)` (der CA1416-Analyzer
+erkennt diesen Guard, `Build.VERSION.SdkInt`-Vergleiche dagegen nicht); die API-29-Effekt-Konstanten
+werden erst innerhalb des Guards gelesen (`HapticKind`-Enum statt direkter Konstanten-Übergabe).
 
 ## AndroidNotificationService + ReminderReceiver + BootReceiver
 
@@ -69,6 +72,10 @@ Geräte. Wird per Factory ins Shared-DI injiziert (kein direkter Konstruktor-Auf
   `MY_PACKAGE_REPLACED` — plant Alarme nach Reboot neu. Baut eigenständig einen minimalen
   Service-Graph (`DatabaseService`, `ReminderService`, …), weil `App.Services` beim
   Boot-Broadcast nicht verfügbar ist.
+- Versions-Guards (`NotificationChannel` API 26, `CanScheduleExactAlarms` API 31) über
+  `OperatingSystem.IsAndroidVersionAtLeast(X)` (CA1416-tauglich). `NotificationCompat.Builder`
+  wird Setter-für-Setter auf der nicht-null Instanz konfiguriert statt als Fluent-Chain — die
+  AndroidX-Bindings geben aus `SetXxx()` einen nullable `Builder` zurück (sonst CS8602 im Chain).
 
 ## Build
 

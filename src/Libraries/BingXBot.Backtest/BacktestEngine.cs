@@ -529,7 +529,7 @@ public class BacktestEngine
                         var currentPrice = pos.Side == Side.Buy ? currentCandle.High : currentCandle.Low;
                         var decision = BreakevenCalculator.Evaluate(
                             pos.Side, currentPrice, exitState.EntryPrice,
-                            origSignal.StopLoss.Value, exitState.NavPointA);
+                            origSignal.StopLoss.Value, exitState.NavPointA, riskSettings?.BreakevenTriggerRMultiple ?? 2.0m);
 
                         if (decision.HasValue)
                         {

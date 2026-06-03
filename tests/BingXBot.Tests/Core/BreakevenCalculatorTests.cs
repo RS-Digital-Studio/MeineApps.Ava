@@ -101,6 +101,46 @@ public class BreakevenCalculatorTests
         result.Value.TriggerName.Should().StartWith("A-Bruch");
     }
 
+    // ────────────────── Konfigurierbarer Trigger-Multiplikator (02.06.2026) ──────────────────
+
+    [Fact]
+    public void TriggerMultiple15_Long_FeuertBeim15xSlLevel()
+    {
+        // Entry 100, SL 95 → SL-Distanz 5. 1.5x-Ziel = 107.5. Price 108 erreicht es → BE bei Entry+0,2 %.
+        var result = BreakevenCalculator.Evaluate(Side.Buy, price: 108m, entryPrice: 100m, originalStopLoss: 95m, navPointA: 0m, triggerRMultiple: 1.5m);
+
+        result.Should().NotBeNull();
+        result!.Value.NewStopLoss.Should().Be(100.2m);
+        result.Value.TriggerName.Should().Contain("SL-Distanz"); // Multiplikator-Trigger (kein A-Bruch)
+    }
+
+    [Fact]
+    public void TriggerMultiple15_Long_Bei107FeuertNichtMehr()
+    {
+        // Mit Multiplikator 1.5 ist das Ziel 107.5 — Price 107 liegt darunter → kein Trigger.
+        // (Mit dem alten festen 2.0 waere das Ziel 110 gewesen, also ebenfalls kein Trigger;
+        //  dieser Test sichert die Grenze des kleineren Multiplikators ab.)
+        var result = BreakevenCalculator.Evaluate(Side.Buy, price: 107m, entryPrice: 100m, originalStopLoss: 95m, navPointA: 0m, triggerRMultiple: 1.5m);
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void TriggerMultiple0_Long_DistanzTriggerDeaktiviert()
+    {
+        // triggerRMultiple=0 schaltet den Distanz-Trigger ab. Ohne NavPointA → kein BE, egal wie weit.
+        var result = BreakevenCalculator.Evaluate(Side.Buy, price: 200m, entryPrice: 100m, originalStopLoss: 95m, navPointA: 0m, triggerRMultiple: 0m);
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void TriggerMultiple0_Long_ABruchBleibtAktiv()
+    {
+        // Auch mit deaktiviertem Distanz-Trigger feuert der A-Bruch weiter (SK-Pfad).
+        var result = BreakevenCalculator.Evaluate(Side.Buy, price: 106m, entryPrice: 100m, originalStopLoss: 95m, navPointA: 105m, triggerRMultiple: 0m);
+        result.Should().NotBeNull();
+        result!.Value.TriggerName.Should().StartWith("A-Bruch");
+    }
+
     // ────────────────── Edge Cases & Guards ──────────────────
 
     [Fact]

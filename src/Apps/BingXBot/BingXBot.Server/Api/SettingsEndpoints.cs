@@ -120,6 +120,7 @@ public static class SettingsEndpoints
         if (dto.LossStreakPauseAtCount < 1 || dto.LossStreakPauseAtCount > 50) { reason = "LossStreakPauseAtCount muss 1..50 sein."; return false; }
         if (dto.LossStreakPauseAtCount < dto.LossStreakHalveAtCount) { reason = "LossStreakPauseAtCount muss >= LossStreakHalveAtCount sein."; return false; }
         if (dto.MinPositionSizeRetentionPercent < 0m || dto.MinPositionSizeRetentionPercent > 1m) { reason = "MinPositionSizeRetentionPercent muss 0..1 sein."; return false; }
+        if (dto.BreakevenTriggerRMultiple < 0m || dto.BreakevenTriggerRMultiple > 10m) { reason = "BreakevenTriggerRMultiple muss 0..10 sein."; return false; }
         return true;
     }
 

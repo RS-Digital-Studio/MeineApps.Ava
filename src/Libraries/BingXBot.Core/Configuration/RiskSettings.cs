@@ -203,6 +203,16 @@ public class RiskSettings
     public decimal RunnerTrailingAtrMultiplier { get; set; } = 2.0m;
 
     /// <summary>
+    /// Break-Even-Trigger als Vielfaches der SL-Distanz (R-Multiple). Sobald der Preis
+    /// <c>Entry ± BreakevenTriggerRMultiple × |Entry − SL|</c> in Profit-Richtung erreicht, zieht der
+    /// SL auf Break-Even (siehe <see cref="BingXBot.Core.Services.BreakevenCalculator"/>). Default 2.0
+    /// (= BE bei 2R, historisch). 1.5 ≈ BE sobald das TP1-Level (1.5R bei TrendFollow) erreicht ist —
+    /// die Rest-Position nach der TP1-Teilschliessung laeuft dann risikofrei. 0 deaktiviert den
+    /// 2x-SL-BE-Trigger (nur der A-Bruch-Trigger bleibt aktiv, fuer SK relevant).
+    /// </summary>
+    public decimal BreakevenTriggerRMultiple { get; set; } = 2.0m;
+
+    /// <summary>
     /// Maximale Lebensdauer einer pending Limit-Order in Stunden (Default 6h, 0 = aus).
     /// Hintergrund: Wenn ein Symbol aus der Top-100 herausfällt, wird kein neues Signal mehr
     /// generiert — die Cancel-Logik (<c>CancelStaleSequencePendingAsync</c>) löst nur bei NEUEM

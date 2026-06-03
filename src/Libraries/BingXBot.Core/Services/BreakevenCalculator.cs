@@ -44,12 +44,16 @@ public static class BreakevenCalculator
     /// <see cref="BreakevenDecision"/> wenn ein Trigger greift, sonst <c>null</c>.
     /// Bei gleichzeitigem Feuer gewinnt A-Bruch (bucheigene Prio, 0,5 %-Puffer).
     /// </returns>
+    /// <param name="triggerRMultiple">SL-Distanz-Vielfaches fuer den (vormals fixen 2x-)BE-Trigger.
+    /// Default 2.0. 1.5 ≈ BE wenn TP1-Level erreicht. &lt;= 0 deaktiviert den Distanz-Trigger
+    /// (nur A-Bruch bleibt aktiv). Steuerbar via <see cref="BingXBot.Core.Configuration.RiskSettings.BreakevenTriggerRMultiple"/>.</param>
     public static BreakevenDecision? Evaluate(
         Side side,
         decimal price,
         decimal entryPrice,
         decimal originalStopLoss,
-        decimal navPointA)
+        decimal navPointA,
+        decimal triggerRMultiple = 2.0m)
     {
         if (entryPrice <= 0m || originalStopLoss <= 0m || price <= 0m)
             return null;
@@ -69,20 +73,20 @@ public static class BreakevenCalculator
             }
         }
 
-        // Prio 2: 2x SL-Distanz (User-Ausnahme, 0,2 % Puffer)
+        // Prio 2: N x SL-Distanz (konfigurierbar, 0,2 % Puffer). triggerRMultiple<=0 → Trigger aus.
         var slDistance = Math.Abs(entryPrice - originalStopLoss);
-        if (slDistance > 0m)
+        if (triggerRMultiple > 0m && slDistance > 0m)
         {
-            var twoXTarget = isLong
-                ? entryPrice + 2m * slDistance
-                : entryPrice - 2m * slDistance;
-            var twoXHit = isLong ? price >= twoXTarget : price <= twoXTarget;
-            if (twoXHit)
+            var nxTarget = isLong
+                ? entryPrice + triggerRMultiple * slDistance
+                : entryPrice - triggerRMultiple * slDistance;
+            var nxHit = isLong ? price >= nxTarget : price <= nxTarget;
+            if (nxHit)
             {
                 var sl = isLong
                     ? entryPrice * (1m + TwoXSlBufferPct)
                     : entryPrice * (1m - TwoXSlBufferPct);
-                return new BreakevenDecision(sl, $"2x SL-Distanz (Ziel={twoXTarget:F8})");
+                return new BreakevenDecision(sl, $"{triggerRMultiple:0.##}x SL-Distanz (Ziel={nxTarget:F8})");
             }
         }
 

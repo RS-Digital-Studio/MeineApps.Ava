@@ -456,6 +456,7 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     risk.EnableRunner = saved.Risk.EnableRunner;
     risk.RunnerPercent = saved.Risk.RunnerPercent;
     risk.RunnerTrailingAtrMultiplier = saved.Risk.RunnerTrailingAtrMultiplier;
+    risk.BreakevenTriggerRMultiple = saved.Risk.BreakevenTriggerRMultiple;
     // News + DailyRisk (User-Ausnahme: MaxDailyRiskPercent bleibt drin)
     risk.NewsBlackoutMinutes = saved.Risk.NewsBlackoutMinutes;
     risk.MaxRiskPercentPerTrade = saved.Risk.MaxRiskPercentPerTrade;

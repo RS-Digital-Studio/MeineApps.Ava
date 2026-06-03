@@ -634,7 +634,7 @@ public abstract class TradingServiceBase : IDisposable
                     {
                         var decision = BreakevenCalculator.Evaluate(
                             pos.Side, price, skState.EntryPrice,
-                            signal.StopLoss.Value, skState.NavPointA);
+                            signal.StopLoss.Value, skState.NavPointA, _riskSettings.BreakevenTriggerRMultiple);
 
                         if (decision.HasValue)
                         {

@@ -295,6 +295,7 @@ public partial class App : Application
         risk.EnableRunner = saved.Risk.EnableRunner;
         risk.RunnerPercent = saved.Risk.RunnerPercent;
         risk.RunnerTrailingAtrMultiplier = saved.Risk.RunnerTrailingAtrMultiplier;
+        risk.BreakevenTriggerRMultiple = saved.Risk.BreakevenTriggerRMultiple;
         // News + DailyRisk (User-Ausnahme: MaxDailyRiskPercent bleibt drin)
         risk.NewsBlackoutMinutes = saved.Risk.NewsBlackoutMinutes;
         risk.MaxRiskPercentPerTrade = saved.Risk.MaxRiskPercentPerTrade;

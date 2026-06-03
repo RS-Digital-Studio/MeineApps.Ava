@@ -468,7 +468,7 @@ public partial class LiveTradingService : TradingServiceBase
     /// Funding-Rate-Prefetch (v1.2.5): Pro Scan die Funding fuer max 50 Crypto-Kandidaten laden,
     /// deren Rate nicht im Cache ist. TradFi-Symbole ausgenommen (oft kein Funding auf BingX).
     /// Parallel mit Semaphore (gleicher Rate-Limit-Budget wie Klines-Loader).
-    /// Ergebnis: SkConfluenceScorer + MarketFilter-FundingCheck sehen bei neuen Signalen
+    /// Ergebnis: MarketFilter-FundingCheck + Strategy-Evaluate sehen bei neuen Signalen
     /// die echte Funding-Rate statt 0.
     /// </summary>
     protected override async Task PreloadScanDataAsync(IReadOnlyList<Ticker> candidates, CancellationToken ct)

@@ -1116,7 +1116,7 @@ public abstract class TradingServiceBase : IDisposable
 
         // 4c. Scan-Prefetch-Hook (v1.2.5): Subklassen koennen hier zusaetzliche Daten laden,
         // die pro Scan einmalig sind (z.B. Funding-Rates fuer Kandidaten ohne Cache). Damit
-        // sehen neue Signale im SkConfluenceScorer/MarketFilter korrekte Funding-Werte statt 0.
+        // sehen neue Signale im MarketFilter/Strategy-Evaluate korrekte Funding-Werte statt 0.
         try { await PreloadScanDataAsync(candidates, ct).ConfigureAwait(false); }
         catch (Exception ex)
         {

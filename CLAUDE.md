@@ -403,7 +403,7 @@ expressions · Records für immutable DTOs/Events · File-scoped Namespaces · R
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 | BingXBot | v1.8.1 | Nein | Nein | Entwicklung (Pi + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
-| SmartMeasure | v1.1.6 | Nein | Nein | Entwicklung (privat, RTK-GPS) |
+| SmartMeasure | v1.1.7 | Nein | Nein | Entwicklung (privat, RTK-GPS) |
 | ArcaneKingdom (Unity) | v0.0.2 | TBD | Diamanten-Packs | Pre-MVP |
 | BomberBlast.Unity | — | TBD | TBD | Pre-MVP (Beta parallel) |
 | HandwerkerImperium.Unity | — | TBD | TBD | Pre-MVP (Beta parallel) |

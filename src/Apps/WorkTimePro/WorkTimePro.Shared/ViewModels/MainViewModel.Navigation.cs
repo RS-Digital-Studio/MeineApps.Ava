@@ -87,8 +87,9 @@ public sealed partial class MainViewModel
     {
         try
         {
-            // Zurück-Navigation
-            if (route == ".." || route.Contains("back", StringComparison.OrdinalIgnoreCase))
+            // Zurück-Navigation (exakter Vergleich statt Contains — sonst träfe jede Route,
+            // die zufällig "back" enthält, fälschlich die Zurück-Logik).
+            if (route == ".." || route.Equals("back", StringComparison.OrdinalIgnoreCase))
             {
                 GoBack();
                 return;

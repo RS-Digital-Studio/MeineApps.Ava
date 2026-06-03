@@ -73,9 +73,6 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
     [ObservableProperty]
     private bool _showAds = true;
 
-    // Localized texts
-    public string TodayButtonText => AppStrings.Today;
-
     // === Status Overlay ===
 
     [ObservableProperty]

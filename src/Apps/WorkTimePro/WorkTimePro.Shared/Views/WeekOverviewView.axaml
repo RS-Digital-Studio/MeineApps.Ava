@@ -74,7 +74,7 @@
               HorizontalAlignment="Center">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <mi:MaterialIcon Kind="CalendarToday" Width="18" Height="18" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding TodayButtonText}" VerticalAlignment="Center" />
+          <TextBlock Text="{loc:Translate Today}" VerticalAlignment="Center" />
         </StackPanel>
       </Button>
 

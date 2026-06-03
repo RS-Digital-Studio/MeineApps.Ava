@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -70,8 +71,28 @@ public sealed partial class ShiftPlanViewModel : ViewModelBase, INavigationSourc
 
     // Derived properties
     public bool HasNoPatterns => ShiftPatterns.Count == 0;
-    public string PatternStartTimeDisplay => PatternStartTime.ToString(@"hh\:mm");
-    public string PatternEndTimeDisplay => PatternEndTime.ToString(@"hh\:mm");
+
+    // Editierbare Anzeige der Schichtzeiten: Setter parst "HH:mm" zurück in die TimeSpan-
+    // Quelle (vorher getter-only → TwoWay-Binding der TextBox schrieb nie zurück).
+    public string PatternStartTimeDisplay
+    {
+        get => PatternStartTime.ToString(@"hh\:mm");
+        set
+        {
+            if (TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out var ts))
+                PatternStartTime = ts;
+        }
+    }
+
+    public string PatternEndTimeDisplay
+    {
+        get => PatternEndTime.ToString(@"hh\:mm");
+        set
+        {
+            if (TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out var ts))
+                PatternEndTime = ts;
+        }
+    }
 
     partial void OnPatternStartTimeChanged(TimeSpan value) => OnPropertyChanged(nameof(PatternStartTimeDisplay));
     partial void OnPatternEndTimeChanged(TimeSpan value) => OnPropertyChanged(nameof(PatternEndTimeDisplay));

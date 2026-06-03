@@ -67,6 +67,16 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         HolidayRegions = regions.Select(r => r.Name).ToArray();
 
         _purchaseService.PremiumStatusChanged += OnPurchaseStatusChanged;
+        _localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    /// <summary>
+    /// VM-komponierte (nicht via {loc:Translate} gebundene) Texte bei Sprachwechsel auffrischen.
+    /// </summary>
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(BuyPremiumButtonText));
+        UpdatePremiumStatus();
     }
 
     // === Work time settings ===
@@ -357,6 +367,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
             "pt" => 5,
             _ => 0
         };
+        // Sprache tatsächlich umschalten + persistieren (LocalizationService speichert selbst).
+        _localization.SetLanguage(langCode);
     }
 
     // === Premium ===
@@ -535,6 +547,18 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
             // Work time law
             LegalComplianceEnabled = _settings.LegalComplianceEnabled;
+
+            // Language - aktuellen Sprachindex aus dem LocalizationService ableiten
+            // (während _isInitializing löst das keinen AutoSave aus).
+            SelectedLanguageIndex = _localization.CurrentLanguage switch
+            {
+                "en" => 1,
+                "es" => 2,
+                "fr" => 3,
+                "it" => 4,
+                "pt" => 5,
+                _ => 0
+            };
 
             // Premium
             UpdatePremiumStatus();
@@ -943,6 +967,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         _reminderRescheduleCts?.Cancel();
         _reminderRescheduleCts?.Dispose();
         _purchaseService.PremiumStatusChanged -= OnPurchaseStatusChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
         GC.SuppressFinalize(this);
     }
 }

@@ -94,8 +94,10 @@ public sealed class CalendarExportService : ICalendarExportService
             if (day.ActualWorkMinutes == 0 && day.Status == DayStatus.WorkDay)
                 continue; // Tage ohne Einträge überspringen
 
-            // Feiertage und Wochenenden als ganztägige Events
-            if (day.Status == DayStatus.Holiday || day.Status == DayStatus.Weekend)
+            // Feiertage und Wochenenden OHNE Arbeitszeit als ganztägige Events.
+            // MIT Arbeitszeit (Wochenend-/Feiertagsarbeit) fallen sie durch zum
+            // Check-in/out-Pfad unten, sonst gingen die erfassten Zeiten verloren.
+            if (day.ActualWorkMinutes == 0 && (day.Status == DayStatus.Holiday || day.Status == DayStatus.Weekend))
             {
                 AppendAllDayEvent(sb, day);
                 continue;

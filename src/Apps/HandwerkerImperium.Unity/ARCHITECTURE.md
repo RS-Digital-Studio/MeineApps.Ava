@@ -1898,7 +1898,7 @@ Datei: `Server/SERVEROPS.md` (folgt separat)
 1. `validateIapReceipt` — Google-Play-Receipt prüfen, Premium/SKU bestätigen
 2. `validateMiniGameScore` — Score-Plausibilität (Wertebereich), kein Re-Scoring
 3. `settleBattlePassRewards` — Claim-Idempotenz + Persistenz der client-berechneten Tier-Rewards
-4. `createGuild` — Gilden-Anlage, Eindeutigkeit (Tag/Code)
+4. `createGuild` — Gilden-Anlage mit eindeutiger GuildId (Original `FirebaseGuildData` hat KEIN `tag`-Feld; Eindeutigkeit kommt aus der GuildId, nicht aus einem Gilden-Tag)
 5. `onPlayerWriteValidate` — HMAC-/Wertebereich-Trigger auf Spieler-Writes
 6. `onReportReceived` — Spieler-Reports verarbeiten
 7. `onWarSeasonCompleted` — Saison-Abschluss, League-Verteilung

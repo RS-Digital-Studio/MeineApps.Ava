@@ -748,11 +748,23 @@ Kurz-Orientierung (permanenter Einkommens-Bonus pro Tier, `GetPermanentMultiplie
 **Tabs:**
 1. **Dashboard:** 3D-City-Übersicht, Auto-Collect-Buttons, Live-Orders
 2. **Imperium:** Sub-Tab-Router (Workshops/Warehouse/Workers/Research/Equipment/Ascension)
-3. **Missionen:** Daily/Weekly/QuickJobs/LuckySpin/BattlePass
+3. **Missionen:** Sub-Bereiche **Heute** (Daily-Challenge, QuickJobs, LuckySpin) + **Wettbewerbe** (Weekly-Mission, **Tournament**, BattlePass) — 1:1 wie Original (`MissionenView`)
 4. **Gilde:** Übersicht/Boss/Research/Chat/Mitglieder (eigene 3D-Szene optional)
 5. **Shop:** IAP, Goldschrauben-Pakete, Equipment
 
 **Stack:** UI Toolkit für statische Screens, uGUI für animierte (Mini-Games, Dialoge mit Stinger-FX).
+
+### 7.1a Navigations-Vollständigkeit (Pflicht)
+
+Das Tab-Konzept MUSS **alle** funktionalen Original-Views erreichbar machen — kein Screen ohne
+Einstieg. Die 3D-/UX-Präsentation und die genaue Verschachtelung dürfen sich ändern, die
+Erreichbarkeit **jeder** Route nicht (1:1 zur Routen-Liste in `MainViewModel.Navigation.cs`).
+Über die 5 Tabs hinaus brauchen einen klaren Einstieg:
+
+- **Header-/Settings-Menü:** Settings, Statistics, Achievements-Liste, Notification-Center (Bell-Icon).
+- **Dashboard / Imperium:** Buildings-Management (7 Gebäude), Crafting (33 Rezepte + aktive Jobs),
+  Material-Markt (Buy/Sell, Heatmap), Worker-Markt (Pool, Hire), ReputationShop (ab Score ≥ 60).
+- **Missionen → Wettbewerbe:** Tournament. **Missionen / Event-Banner:** SeasonalEvent + Event-Shop.
 
 ### 7.2 Werkstatt-Detail (Workshop.unity, additive)
 
@@ -841,7 +853,7 @@ guild_war_seasons/{seasonId}                 → Kriegssaison (+ leagues/, guild
 | `validateIapReceipt` | Google Play Receipt validieren |
 | `validateMiniGameScore` | Score-Sanity-Check (Max-Score pro Mini-Game) |
 | `settleBattlePassRewards` | Saison-Reward-Verteilung |
-| `createGuild` | Tag-Eindeutigkeits-Transaction |
+| `createGuild` | Gilden-Anlage mit eindeutiger GuildId (Original `FirebaseGuildData` hat KEIN Tag-Feld) |
 | `onPlayerWriteValidate` | DB-Listener für Schema + Cap-Prüfung |
 | `onReportReceived` | Auto-Mute nach N Reports |
 | `onWarSeasonCompleted` | Belohnungs-Verteilung |

@@ -412,7 +412,7 @@ In Firebase Console:
       }
     },
     "guilds": {
-      ".indexOn": ["tag", "lastActive"],
+      ".indexOn": ["name", "leagueId"],
       "$guildId": {
         ".read": "auth != null",
         ".write": "auth != null"

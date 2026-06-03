@@ -4170,7 +4170,7 @@ Geräteverlust, nicht gegen lokales Save-Editing (dafür greift der Save-Sanitiz
 - `validateMiniGameScore` — Score-Cap pro Mini-Game
 - `validateIapReceipt` — Google Play Receipt
 - `settleBattlePassRewards` — Saison-Reward-Verteilung
-- `createGuild` — Tag-Eindeutigkeit (Transaction)
+- `createGuild` — Gilden-Anlage mit eindeutiger GuildId (kein Tag-Feld im Original)
 - `onPlayerWriteValidate` — Schema + Cap-Check
 - `onReportReceived` — Auto-Mute nach N Reports
 - `onWarSeasonCompleted` — Belohnungs-Verteilung

@@ -59,7 +59,7 @@ App-weite Mechanik-Landkarte. Konkrete Implementierung jeweils in der verlinkten
 | Dungeon | Roguelike: Floor 1-10+, 16 Buffs, 5 Synergien, Node-Map 10×3, eigener Persistenz-Pfad | Core, Models, Services |
 | Karten/Deck | 14 Bomben-Typen (3 Shop + 10 Karten + Default), 4+1 Slots, Crafting, Drop-Gewichtung | Services (`ICardService`), Models |
 | Combo | Kill-Fenster 2s, ×2-×10+ Score-Bonus, Slow-Mo bei MEGA/ULTRA | Core (`Combat/ComboSystem`) |
-| Economy | Coins (Level-Score-basiert) + Gems (nur Gameplay), 9 Shop-Upgrades, Overflow-Guard | Services (`ICoinService`/`IGemService`/`IShopService`) |
+| Economy | Coins (Level-Score-basiert) + Gems (nur Gameplay), 12 Shop-Upgrades (9 Stat + 3 Bomb-Unlocks), Overflow-Guard | Services (`ICoinService`/`IGemService`/`IShopService`) |
 | Liga | 5 Tiers (Bronze-Diamant) + Sub-Tiers, 14-Tage-Saisons, Firebase + NPC-Backfill, Daily-Race | Services, Models (`League/`) |
 | Live-Ops | Battle-Pass (30 Tier, Theme-Rotation), Event-Calendar, RotatingDeals, LuckySpin (Pity 25), Weekly-Content | Services |
 | Cosmetics | 98 Definitionen: 32 Trails + 33 Frames + 33 Victories | Models (`Cosmetics/`), Graphics |

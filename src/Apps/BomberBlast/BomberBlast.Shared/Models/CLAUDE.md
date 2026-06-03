@@ -32,7 +32,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 |-------|-------|
 | `GameGrid.cs` | 15×10 Grid, Cell-Array, Accessor-Methoden |
 | `Cell.cs` | CellType, `IsDestructible`, enthält Entities-Referenz |
-| `CellType.cs` | Empty/Indestructible/Destructible/Exit |
+| `CellType.cs` | 9 Werte: Empty/Wall/Block/Exit + Ice/Conveyor/Teleporter/LavaCrack/PlatformGap (5 Welt-Mechanik-Zellen für Welt 2/3/4/5/9) |
 
 ### `Levels/`
 
@@ -119,5 +119,5 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 | `SkinDisplayItem.cs` | Skin-Galerie-Anzeige-Hilfsobjekt |
 | `PowerUpDisplayItem.cs` | PowerUp-Discovery-Anzeige-Hilfsobjekt |
 | `PlayerUpgrades.cs` | Persistierte Shop-Upgrade-Level pro UpgradeType |
-| `UpgradeType.cs` | Enum: 9 permanente Shop-Upgrades |
+| `UpgradeType.cs` | Enum: 12 permanente Shop-Upgrades (9 Stat-Upgrades + 3 Bomb-Unlocks IceBomb/FireBomb/StickyBomb) |
 | `Rarity.cs` | Enum: Common/Rare/Epic/Legendary mit Drop-Gewichtung |

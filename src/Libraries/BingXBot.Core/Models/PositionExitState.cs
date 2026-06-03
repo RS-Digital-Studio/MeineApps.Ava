@@ -64,19 +64,6 @@ public class PositionExitState
     public bool IsRecovered { get; set; }
 
     /// <summary>
-    /// SK-Plan 5.5: Sequenz-Identifier (symbol_point0_pointA) für Re-Entry-Budget.
-    /// Nach SL: Wenn diese Sequenz noch intakt (Point 0 nicht überschritten) und BC-Zone wieder erreicht,
-    /// max. 1 Re-Entry mit halber Position erlaubt.
-    /// </summary>
-    public string? SequenceId { get; set; }
-
-    /// <summary>
-    /// SK-Plan 5.5: Ob bereits ein Re-Entry für diese Sequenz verbraucht wurde.
-    /// Strikt max. 1 — verhindert Serienverluste bei kaputten Setups.
-    /// </summary>
-    public bool ReentryUsed { get; set; }
-
-    /// <summary>
     /// Multi-TF Standalone: Navigator-TF des auslösenden Signals (D1/H4/H1/M5).
     /// Wird beim Trade-Close an <see cref="CompletedTrade.NavigatorTimeframe"/> weitergereicht.
     /// </summary>

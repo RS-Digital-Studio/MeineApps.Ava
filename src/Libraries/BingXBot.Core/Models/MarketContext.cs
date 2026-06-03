@@ -35,10 +35,6 @@ public record MarketContext(
     decimal? Btc24hChangePercent = null,
     /// <summary>SK-Plan 5.8: Alt-Median 24h-Change (für Dominance-Proxy). Null = nicht verfügbar.</summary>
     decimal? AltMedian24hChangePercent = null,
-    /// <summary>SK-Plan 5.6: Symbol-Qualitäts-Score (WinRate 0-100). Null = unbekannt/neu.</summary>
-    decimal? SymbolQualityWinRate = null,
-    /// <summary>SK-Plan 5.6: Anzahl historischer Trades für Qualitäts-Bewertung.</summary>
-    int SymbolQualityTradeCount = 0,
-    /// <summary>SK-Plan 4.9: Aktueller Zeitstempel (Live: UtcNow, Backtest: Candle-Zeit).
+    /// <summary>Aktueller Zeitstempel (Live: UtcNow, Backtest: Candle-Zeit).
     /// Null = Live-Modus, Scorer fällt auf DateTime.UtcNow zurück.</summary>
     DateTime? NowUtc = null);

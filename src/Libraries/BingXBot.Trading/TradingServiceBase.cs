@@ -210,19 +210,17 @@ public abstract class TradingServiceBase : IDisposable
     {
         var key = $"{symbol}_{side}";
 
-        // Wenn ExitState bereits aus DB geladen wurde, SK-kritische Felder vom Original-Signal übernehmen.
-        // BingX liefert nur SL/TP aus Conditional-Orders (STOP_MARKET/TAKE_PROFIT_MARKET) — SK-System nutzt
+        // Wenn ExitState bereits aus DB geladen wurde, kritische Felder vom Original-Signal übernehmen.
+        // BingX liefert nur SL/TP aus Conditional-Orders (STOP_MARKET/TAKE_PROFIT_MARKET) — der Bot nutzt
         // aber LIMIT Reduce-Only für TPs, die nicht als TP-Typ erkannt werden. Ohne Fallback auf das
-        // Original-Signal gehen TakeProfit, TakeProfit2, DisableSmartBreakeven (SK-BE Workflow 4.2 "A-Bruch")
-        // und IsAdditionalEntry verloren.
+        // Original-Signal gehen TakeProfit, TakeProfit2 und DisableSmartBreakeven (A-Bruch-BE) verloren.
         if (_exitStates.TryGetValue(key, out var existingState) && existingState.Signal != null)
         {
             signal = signal with
             {
                 TakeProfit = signal.TakeProfit ?? existingState.Signal.TakeProfit,
                 TakeProfit2 = signal.TakeProfit2 ?? existingState.Signal.TakeProfit2,
-                DisableSmartBreakeven = existingState.Signal.DisableSmartBreakeven,
-                IsAdditionalEntry = existingState.Signal.IsAdditionalEntry
+                DisableSmartBreakeven = existingState.Signal.DisableSmartBreakeven
             };
         }
 
@@ -1368,7 +1366,6 @@ public abstract class TradingServiceBase : IDisposable
                         Signal = signal, Symbol = ticker.Symbol, Side = side,
                         EntryPrice = ticker.LastPrice, OriginalQuantity = positionSizeStd,
                         Tp2 = signal.TakeProfit2,
-                        SequenceId = signal.SequenceId,
                         NavigatorTimeframe = navTf,
                         NavPointA = signal.NavPointA ?? 0m,       // A-Bruch-BE-Trigger (Buch-Masterclass)
                         RunnerAtrBase = signal.EntryAtr ?? 0m,    // Task 4.7: Trailing-ATR-Basis

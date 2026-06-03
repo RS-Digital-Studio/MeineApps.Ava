@@ -96,15 +96,17 @@ public static class LevelProgressRenderer
         using var textPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = MedicalColors.Cyan,
-            TextSize = 12f,
-            FakeBoldText = true,
-            TextAlign = SKTextAlign.Center
+            Color = MedicalColors.Cyan
+        };
+        using var textFont = new SKFont
+        {
+            Size = 12f,
+            Embolden = true
         };
 
-        var metrics = textPaint.FontMetrics;
+        var metrics = textFont.Metrics;
         float textY = cy - (metrics.Ascent + metrics.Descent) / 2f;
-        canvas.DrawText(level.ToString(), cx, textY, textPaint);
+        canvas.DrawText(level.ToString(), cx, textY, SKTextAlign.Center, textFont, textPaint);
     }
 
     // =====================================================================
@@ -187,7 +189,7 @@ public static class LevelProgressRenderer
     // XP-Text (mit Cache, 30fps Render-Loop darf nicht pro Frame messen+allokieren)
     // =====================================================================
 
-    private static readonly SKPaint s_measurePaint = new() { TextSize = 10f };
+    private static readonly SKFont s_measureFont = new() { Size = 10f };
     // ThreadStatic + Single-Entry: Cache gilt nur fuer letzten Text je Thread → kein Leak.
     [ThreadStatic] private static string? s_lastXpText;
     [ThreadStatic] private static float s_lastXpWidth;
@@ -199,7 +201,7 @@ public static class LevelProgressRenderer
     {
         if (xpText == s_lastXpText) return s_lastXpWidth;
         s_lastXpText = xpText;
-        s_lastXpWidth = s_measurePaint.MeasureText(xpText);
+        s_lastXpWidth = s_measureFont.MeasureText(xpText);
         return s_lastXpWidth;
     }
 
@@ -211,13 +213,12 @@ public static class LevelProgressRenderer
         using var paint = new SKPaint
         {
             IsAntialias = true,
-            Color = MedicalColors.TextMuted,
-            TextSize = 10f,
-            TextAlign = SKTextAlign.Right
+            Color = MedicalColors.TextMuted
         };
+        using var font = new SKFont { Size = 10f };
 
-        var metrics = paint.FontMetrics;
+        var metrics = font.Metrics;
         float textY = centerY - (metrics.Ascent + metrics.Descent) / 2f;
-        canvas.DrawText(xpText, right, textY, paint);
+        canvas.DrawText(xpText, right, textY, SKTextAlign.Right, font, paint);
     }
 }

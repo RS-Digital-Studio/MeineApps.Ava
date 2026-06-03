@@ -146,17 +146,19 @@ public static class QuickActionButtonRenderer
         using var paint = new SKPaint
         {
             IsAntialias = true,
-            Color = MedicalColors.TextPrimary,
-            TextSize = LabelFontSize,
-            FakeBoldText = true,
-            TextAlign = SKTextAlign.Left
+            Color = MedicalColors.TextPrimary
+        };
+        using var font = new SKFont
+        {
+            Size = LabelFontSize,
+            Embolden = true
         };
 
         // Vertikale Zentrierung: Textmetrik verwenden
-        var metrics = paint.FontMetrics;
+        var metrics = font.Metrics;
         float textY = cy - (metrics.Ascent + metrics.Descent) / 2f;
 
-        canvas.DrawText(label, x, textY, paint);
+        canvas.DrawText(label, x, textY, SKTextAlign.Left, font, paint);
     }
 
     // =====================================================================

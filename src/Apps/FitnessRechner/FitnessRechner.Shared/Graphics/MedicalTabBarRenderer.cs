@@ -42,7 +42,8 @@ public sealed class MedicalTabBarRenderer : IDisposable
     private readonly SKPaint _edgePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
     private readonly SKPaint _iconPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _iconStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
-    private readonly SKPaint _labelPaint = new() { IsAntialias = true, TextAlign = SKTextAlign.Center };
+    private readonly SKPaint _labelPaint = new() { IsAntialias = true };
+    private readonly SKFont _labelFont = new();
     private readonly SKPaint _underlinePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _underlineGlowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _separatorPaint = new() { IsAntialias = false, Style = SKPaintStyle.Stroke, StrokeWidth = 0.5f };
@@ -256,8 +257,8 @@ public sealed class MedicalTabBarRenderer : IDisposable
         if (string.IsNullOrEmpty(text)) return;
 
         _labelPaint.Color = MedicalColors.Cyan;
-        _labelPaint.TextSize = 11f;
-        canvas.DrawText(text, centerX, y, _labelPaint);
+        _labelFont.Size = 11f;
+        canvas.DrawText(text, centerX, y, SKTextAlign.Center, _labelFont, _labelPaint);
     }
 
     // =====================================================================
@@ -559,6 +560,7 @@ public sealed class MedicalTabBarRenderer : IDisposable
         _underlinePaint.Dispose();
         _underlineGlowPaint.Dispose();
         _separatorPaint.Dispose();
+        _labelFont.Dispose();
 
         // MaskFilter
         _underlineGlow.Dispose();

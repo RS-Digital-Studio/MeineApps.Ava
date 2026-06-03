@@ -98,15 +98,18 @@ public static class BodyFatRenderer
         canvas.DrawPath(arcPath, arcPaint);
 
         // Prozentwert in der Mitte
+        float percentTextSize = radius * 0.4f;
         using var textPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SkiaThemeHelper.TextPrimary,
-            TextSize = radius * 0.4f,
-            TextAlign = SKTextAlign.Center,
-            FakeBoldText = true
+            Color = SkiaThemeHelper.TextPrimary
         };
-        canvas.DrawText($"{bodyFatPercent:F1}%", ringCx, ringCy + textPaint.TextSize * 0.35f, textPaint);
+        using var textFont = new SKFont
+        {
+            Size = percentTextSize,
+            Embolden = true
+        };
+        canvas.DrawText($"{bodyFatPercent:F1}%", ringCx, ringCy + percentTextSize * 0.35f, SKTextAlign.Center, textFont, textPaint);
     }
 
     private static void DrawSilhouette(SKCanvas canvas, float cx, float cy, float scale, float bodyFatPercent, bool isMale, SKColor color)

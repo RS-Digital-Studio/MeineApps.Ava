@@ -77,6 +77,7 @@ public sealed class VitalSignsHeroRenderer : IDisposable
     private readonly SKPaint _segmentPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _linePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.5f };
     private readonly SKPaint _textPaint = new() { IsAntialias = true };
+    private readonly SKFont _textFont = new();
     private readonly SKPaint _centerPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _centerRingPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private readonly SKPaint _arcPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3f, StrokeCap = SKStrokeCap.Round };
@@ -435,15 +436,14 @@ public sealed class VitalSignsHeroRenderer : IDisposable
 
         // Gewichtswert
         _textPaint.Color = MedicalColors.TextPrimary;
-        _textPaint.TextSize = 18f * scale;
-        _textPaint.FakeBoldText = true;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        canvas.DrawText(state.Weight.ToString("F1"), qx, qy + 4f * scale, _textPaint);
+        _textFont.Size = 18f * scale;
+        _textFont.Embolden = true;
+        canvas.DrawText(state.Weight.ToString("F1"), qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // "kg" Label
         _textPaint.Color = MedicalColors.TextMuted;
-        _textPaint.TextSize = 10f * scale;
-        _textPaint.FakeBoldText = false;
+        _textFont.Size = 10f * scale;
+        _textFont.Embolden = false;
         float kgY = qy + 16f * scale;
 
         // Trend-Pfeil-Farbe neben "kg" (der Pfeil selbst wird unten via 'arrow' gezeichnet)
@@ -456,13 +456,13 @@ public sealed class VitalSignsHeroRenderer : IDisposable
             trendColor = MedicalColors.TextMuted;
 
         // "kg" zeichnen
-        canvas.DrawText("kg", qx - 6f * scale, kgY, _textPaint);
+        canvas.DrawText("kg", qx - 6f * scale, kgY, SKTextAlign.Center, _textFont, _textPaint);
 
         // Trend-Pfeil
         _textPaint.Color = trendColor;
-        _textPaint.TextSize = 12f * scale;
+        _textFont.Size = 12f * scale;
         string arrow = state.WeightTrend < 0 ? "\u2193" : state.WeightTrend > 0 ? "\u2191" : "\u2192";
-        canvas.DrawText(arrow, qx + 10f * scale, kgY, _textPaint);
+        canvas.DrawText(arrow, qx + 10f * scale, kgY, SKTextAlign.Center, _textFont, _textPaint);
     }
 
     /// <summary>
@@ -477,20 +477,19 @@ public sealed class VitalSignsHeroRenderer : IDisposable
 
         // BMI-Wert
         _textPaint.Color = MedicalColors.TextPrimary;
-        _textPaint.TextSize = 18f * scale;
-        _textPaint.FakeBoldText = true;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        canvas.DrawText(state.Bmi.ToString("F1"), qx, qy + 4f * scale, _textPaint);
+        _textFont.Size = 18f * scale;
+        _textFont.Embolden = true;
+        canvas.DrawText(state.Bmi.ToString("F1"), qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // Kategorie-Text (farbcodiert)
         SKColor categoryColor = GetBmiCategoryColor(state.BmiCategory);
         _textPaint.Color = categoryColor;
-        _textPaint.TextSize = 10f * scale;
-        _textPaint.FakeBoldText = false;
+        _textFont.Size = 10f * scale;
+        _textFont.Embolden = false;
         string categoryText = state.BmiCategory ?? "";
         // Kuerzen wenn zu lang
         if (categoryText.Length > 12) categoryText = categoryText[..12];
-        canvas.DrawText(categoryText, qx, qy + 16f * scale, _textPaint);
+        canvas.DrawText(categoryText, qx, qy + 16f * scale, SKTextAlign.Center, _textFont, _textPaint);
     }
 
     /// <summary>
@@ -511,10 +510,9 @@ public sealed class VitalSignsHeroRenderer : IDisposable
             waterText = state.WaterMl.ToString("F0") + "ml";
 
         _textPaint.Color = MedicalColors.TextPrimary;
-        _textPaint.TextSize = 18f * scale;
-        _textPaint.FakeBoldText = true;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        canvas.DrawText(waterText, qx, qy + 4f * scale, _textPaint);
+        _textFont.Size = 18f * scale;
+        _textFont.Embolden = true;
+        canvas.DrawText(waterText, qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // Mini-Arc fuer Fortschritt
         float progress = state.WaterGoalMl > 0 ? Math.Clamp(state.WaterMl / state.WaterGoalMl, 0f, 1f) : 0f;
@@ -534,16 +532,15 @@ public sealed class VitalSignsHeroRenderer : IDisposable
 
         // Kalorien-Wert
         _textPaint.Color = MedicalColors.TextPrimary;
-        _textPaint.TextSize = 18f * scale;
-        _textPaint.FakeBoldText = true;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        canvas.DrawText(state.Calories.ToString("F0"), qx, qy + 4f * scale, _textPaint);
+        _textFont.Size = 18f * scale;
+        _textFont.Embolden = true;
+        canvas.DrawText(state.Calories.ToString("F0"), qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // "kcal" Label
         _textPaint.Color = MedicalColors.TextMuted;
-        _textPaint.TextSize = 10f * scale;
-        _textPaint.FakeBoldText = false;
-        canvas.DrawText("kcal", qx, qy + 16f * scale, _textPaint);
+        _textFont.Size = 10f * scale;
+        _textFont.Embolden = false;
+        canvas.DrawText("kcal", qx, qy + 16f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // Mini-Arc fuer Fortschritt
         float progress = state.CalorieGoal > 0 ? Math.Clamp(state.Calories / state.CalorieGoal, 0f, 1f) : 0f;
@@ -578,16 +575,15 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         // Score-Zahl
         float scale = halfSize / 140f;
         _textPaint.Color = MedicalColors.TextPrimary;
-        _textPaint.TextSize = 24f * scale;
-        _textPaint.FakeBoldText = true;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        canvas.DrawText(state.DailyScore.ToString(), cx, cy + 3f * scale, _textPaint);
+        _textFont.Size = 24f * scale;
+        _textFont.Embolden = true;
+        canvas.DrawText(state.DailyScore.ToString(), cx, cy + 3f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // "Score" Label darunter
         _textPaint.Color = MedicalColors.TextMuted;
-        _textPaint.TextSize = 9f * scale;
-        _textPaint.FakeBoldText = false;
-        canvas.DrawText("Score", cx, cy + 15f * scale, _textPaint);
+        _textFont.Size = 9f * scale;
+        _textFont.Embolden = false;
+        canvas.DrawText("Score", cx, cy + 15f * scale, SKTextAlign.Center, _textFont, _textPaint);
     }
 
     // =====================================================================
@@ -855,6 +851,7 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         _segmentPaint.Dispose();
         _linePaint.Dispose();
         _textPaint.Dispose();
+        _textFont.Dispose();
         _centerPaint.Dispose();
         _centerRingPaint.Dispose();
         _arcPaint.Dispose();

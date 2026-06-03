@@ -100,11 +100,10 @@ public class MoistureChartControl : Control
                 using var titlePaint = new SKPaint
                 {
                     Color = new SKColor(240, 244, 248),
-                    TextSize = 13f,
-                    IsAntialias = true,
-                    Typeface = InterSemiBold
+                    IsAntialias = true
                 };
-                canvas.DrawText(_title, paddingLeft, 18f, titlePaint);
+                using var titleFont = new SKFont { Size = 13f, Typeface = InterSemiBold };
+                canvas.DrawText(_title, paddingLeft, 18f, titleFont, titlePaint);
             }
 
             // Grid-Linien (horizontal, alle 25%)
@@ -116,16 +115,15 @@ public class MoistureChartControl : Control
             using var labelPaint = new SKPaint
             {
                 Color = new SKColor(90, 122, 150),
-                TextSize = 10f,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Right
+                IsAntialias = true
             };
+            using var labelFont = new SKFont { Size = 10f };
 
             for (var i = 0; i <= 4; i++)
             {
                 var y = paddingTop + chartHeight * (1 - i / 4f);
                 canvas.DrawLine(paddingLeft, y, width - paddingRight, y, gridPaint);
-                canvas.DrawText($"{i * 25}%", paddingLeft - 4, y + 4, labelPaint);
+                canvas.DrawText($"{i * 25}%", paddingLeft - 4, y + 4, SKTextAlign.Right, labelFont, labelPaint);
             }
 
             // Schwellenwert-Linie (gestrichelt, orange)
@@ -143,10 +141,10 @@ public class MoistureChartControl : Control
             using var thresholdLabel = new SKPaint
             {
                 Color = new SKColor(255, 167, 38),
-                TextSize = 9f,
                 IsAntialias = true
             };
-            canvas.DrawText($"Schwelle {_threshold}%", width - paddingRight - 70, thresholdY - 4, thresholdLabel);
+            using var thresholdFont = new SKFont { Size = 9f };
+            canvas.DrawText($"Schwelle {_threshold}%", width - paddingRight - 70, thresholdY - 4, thresholdFont, thresholdLabel);
 
             if (_points == null || _points.Count < 2) return;
 
@@ -233,10 +231,9 @@ public class MoistureChartControl : Control
             using var timePaint = new SKPaint
             {
                 Color = new SKColor(90, 122, 150),
-                TextSize = 9f,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center
+                IsAntialias = true
             };
+            using var timeFont = new SKFont { Size = 9f };
 
             var timeLabels = Math.Min(6, _points.Count);
             for (var i = 0; i < timeLabels; i++)
@@ -244,7 +241,7 @@ public class MoistureChartControl : Control
                 var idx = i * (_points.Count - 1) / Math.Max(timeLabels - 1, 1);
                 var x = paddingLeft + (float)((_points[idx].TimestampUtc.Ticks - minTime) / (double)timeRange) * chartWidth;
                 var timeStr = _points[idx].TimestampUtc.ToLocalTime().ToString("HH:mm");
-                canvas.DrawText(timeStr, x, height - 6f, timePaint);
+                canvas.DrawText(timeStr, x, height - 6f, SKTextAlign.Center, timeFont, timePaint);
             }
         }
 

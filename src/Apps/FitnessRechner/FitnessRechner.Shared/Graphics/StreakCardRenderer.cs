@@ -199,30 +199,31 @@ public static class StreakCardRenderer
         using var labelPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = MedicalColors.TextMuted,
-            TextSize = 10f,
-            TextAlign = SKTextAlign.Left
+            Color = MedicalColors.TextMuted
         };
+        using var labelFont = new SKFont { Size = 10f };
 
-        var labelMetrics = labelPaint.FontMetrics;
+        var labelMetrics = labelFont.Metrics;
         float labelY = centerY - 6f - labelMetrics.Descent;
-        canvas.DrawText("VITAL STREAK", left, labelY, labelPaint);
+        canvas.DrawText("VITAL STREAK", left, labelY, SKTextAlign.Left, labelFont, labelPaint);
 
         // Wert: Streak-Zahl + " TAGE"
         using var valuePaint = new SKPaint
         {
             IsAntialias = true,
-            Color = hasStreak ? MedicalColors.TextPrimary : MedicalColors.TextDimmed,
-            TextSize = 20f,
-            FakeBoldText = true,
-            TextAlign = SKTextAlign.Left
+            Color = hasStreak ? MedicalColors.TextPrimary : MedicalColors.TextDimmed
+        };
+        using var valueFont = new SKFont
+        {
+            Size = 20f,
+            Embolden = true
         };
 
-        var valueMetrics = valuePaint.FontMetrics;
+        var valueMetrics = valueFont.Metrics;
         float valueY = centerY + 10f - valueMetrics.Ascent / 2f;
 
         string streakText = hasStreak ? $"{currentStreak} TAGE" : "0 TAGE";
-        canvas.DrawText(streakText, left, valueY, valuePaint);
+        canvas.DrawText(streakText, left, valueY, SKTextAlign.Left, valueFont, valuePaint);
     }
 
     // =====================================================================
@@ -240,16 +241,15 @@ public static class StreakCardRenderer
         using var textPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = MedicalColors.TextMuted,
-            TextSize = 10f,
-            TextAlign = SKTextAlign.Right
+            Color = MedicalColors.TextMuted
         };
+        using var textFont = new SKFont { Size = 10f };
 
         // Cache: Best-Streak-Text aendert sich nur bei Meilensteinen, nicht pro Frame
         if (text != s_lastBestText)
         {
             s_lastBestText = text;
-            s_lastBestWidth = textPaint.MeasureText(text);
+            s_lastBestWidth = textFont.MeasureText(text);
         }
         float textWidth = s_lastBestWidth;
         float paddingH = 8f;
@@ -273,9 +273,9 @@ public static class StreakCardRenderer
         canvas.DrawRoundRect(badgeRect, 6f, 6f, bgPaint);
 
         // Text
-        var metrics = textPaint.FontMetrics;
+        var metrics = textFont.Metrics;
         float textY = badgeRect.MidY - (metrics.Ascent + metrics.Descent) / 2f;
-        canvas.DrawText(text, right - paddingH, textY, textPaint);
+        canvas.DrawText(text, right - paddingH, textY, SKTextAlign.Right, textFont, textPaint);
 
         return badgeWidth;
     }

@@ -110,17 +110,18 @@ public static class CalorieRingRenderer
 
         // TDEE-Text in der Mitte
         using var textPaint = new SKPaint { IsAntialias = true };
+        using var textFont = new SKFont();
 
         textPaint.Color = SkiaThemeHelper.TextPrimary;
-        textPaint.TextSize = Math.Max(14f, r3 * 0.35f);
-        textPaint.TextAlign = SKTextAlign.Center;
-        textPaint.FakeBoldText = true;
-        canvas.DrawText($"{tdee:F0}", cx, cy + textPaint.TextSize * 0.15f, textPaint);
+        float tdeeTextSize = Math.Max(14f, r3 * 0.35f);
+        textFont.Size = tdeeTextSize;
+        textFont.Embolden = true;
+        canvas.DrawText($"{tdee:F0}", cx, cy + tdeeTextSize * 0.15f, SKTextAlign.Center, textFont, textPaint);
 
-        textPaint.TextSize = Math.Max(8f, r3 * 0.18f);
-        textPaint.FakeBoldText = false;
+        textFont.Size = Math.Max(8f, r3 * 0.18f);
+        textFont.Embolden = false;
         textPaint.Color = SkiaThemeHelper.TextMuted;
-        canvas.DrawText("kcal", cx, cy + r3 * 0.35f, textPaint);
+        canvas.DrawText("kcal", cx, cy + r3 * 0.35f, SKTextAlign.Center, textFont, textPaint);
 
         // Legende unten
         float legendY = cy + maxRadius + strokeW + 14f;
@@ -228,11 +229,9 @@ public static class CalorieRingRenderer
         using var labelPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SkiaThemeHelper.TextMuted,
-            TextSize = 9f,
-            TextAlign = SKTextAlign.Left,
-            FakeBoldText = false
+            Color = SkiaThemeHelper.TextMuted
         };
-        canvas.DrawText(label, x + 7f, y + 3.5f, labelPaint);
+        using var labelFont = new SKFont { Size = 9f };
+        canvas.DrawText(label, x + 7f, y + 3.5f, SKTextAlign.Left, labelFont, labelPaint);
     }
 }

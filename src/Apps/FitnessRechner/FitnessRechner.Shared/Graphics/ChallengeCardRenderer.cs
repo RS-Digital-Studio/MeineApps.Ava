@@ -248,22 +248,23 @@ public static class ChallengeCardRenderer
         using var labelPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SKColors.White.WithAlpha(179), // 70%
-            TextSize = 9f,
-            TextAlign = SKTextAlign.Left
+            Color = SKColors.White.WithAlpha(179) // 70%
         };
+        using var labelFont = new SKFont { Size = 9f };
 
         float labelY = centerY - 16f;
-        canvas.DrawText("DAILY MISSION", left, labelY, labelPaint);
+        canvas.DrawText("DAILY MISSION", left, labelY, SKTextAlign.Left, labelFont, labelPaint);
 
         // Titel
         using var titlePaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SKColors.White,
-            TextSize = 13f,
-            FakeBoldText = true,
-            TextAlign = SKTextAlign.Left
+            Color = SKColors.White
+        };
+        using var titleFont = new SKFont
+        {
+            Size = 13f,
+            Embolden = true
         };
 
         float titleY = labelY + 14f;
@@ -271,16 +272,17 @@ public static class ChallengeCardRenderer
         // nicht bei 30fps pro Frame laeuft (Challenge-Titel wechselt nur 1x/Tag).
         float maxTitleWidth = right - left;
         string displayTitle;
-        if (title == s_lastTitleInput && Math.Abs(maxTitleWidth - s_lastTitleMaxWidth) < 0.5f)
+        if (title == s_lastTitleInput && s_lastTitleOutput is not null
+            && Math.Abs(maxTitleWidth - s_lastTitleMaxWidth) < 0.5f)
         {
             displayTitle = s_lastTitleOutput;
         }
         else
         {
             displayTitle = title;
-            if (titlePaint.MeasureText(displayTitle) > maxTitleWidth)
+            if (titleFont.MeasureText(displayTitle) > maxTitleWidth)
             {
-                while (displayTitle.Length > 3 && titlePaint.MeasureText(displayTitle + "...") > maxTitleWidth)
+                while (displayTitle.Length > 3 && titleFont.MeasureText(displayTitle + "...") > maxTitleWidth)
                     displayTitle = displayTitle[..^1];
                 displayTitle += "...";
             }
@@ -288,7 +290,7 @@ public static class ChallengeCardRenderer
             s_lastTitleMaxWidth = maxTitleWidth;
             s_lastTitleOutput = displayTitle;
         }
-        canvas.DrawText(displayTitle, left, titleY, titlePaint);
+        canvas.DrawText(displayTitle, left, titleY, SKTextAlign.Left, titleFont, titlePaint);
 
         // Progress-Bar
         float barTop = titleY + 8f;
@@ -379,13 +381,15 @@ public static class ChallengeCardRenderer
         using var textPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SKColors.White,
-            TextSize = 10f,
-            FakeBoldText = true,
-            TextAlign = SKTextAlign.Center
+            Color = SKColors.White
+        };
+        using var textFont = new SKFont
+        {
+            Size = 10f,
+            Embolden = true
         };
 
-        float textWidth = textPaint.MeasureText(text);
+        float textWidth = textFont.MeasureText(text);
         float paddingH = 8f;
         float paddingV = 4f;
         float badgeWidth = textWidth + paddingH * 2f;
@@ -407,9 +411,9 @@ public static class ChallengeCardRenderer
         canvas.DrawRoundRect(badgeRect, 6f, 6f, bgPaint);
 
         // Text
-        var metrics = textPaint.FontMetrics;
+        var metrics = textFont.Metrics;
         float textY = badgeRect.MidY - (metrics.Ascent + metrics.Descent) / 2f;
-        canvas.DrawText(text, badgeRect.MidX, textY, textPaint);
+        canvas.DrawText(text, badgeRect.MidX, textY, SKTextAlign.Center, textFont, textPaint);
 
         return badgeWidth;
     }

@@ -230,34 +230,33 @@ public static class CalculatorHeaderRenderer
         float textX = bounds.Left + BackButtonMargin + BackButtonSize + 16f;
         float textY = bounds.MidY;
 
+        // Gemeinsames Font (Inter Bold, TitleFontSize) für Glow und Haupttext
+        using var titleTypeface = SKTypeface.FromFamilyName("Inter", SKFontStyleWeight.Bold,
+            SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
+        using var titleFont = new SKFont(titleTypeface, TitleFontSize);
+
         // Subtiler Glow
         using var glowPaint = new SKPaint
         {
             IsAntialias = true,
             Color = SKColors.White.WithAlpha((byte)(255 * TitleGlowAlpha)),
-            TextSize = TitleFontSize,
-            Typeface = SKTypeface.FromFamilyName("Inter", SKFontStyleWeight.Bold,
-                SKFontStyleWidth.Normal, SKFontStyleSlant.Upright),
             MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, TitleGlowBlur)
         };
 
         // Vertikal zentrieren
-        var metrics = glowPaint.FontMetrics;
+        var metrics = titleFont.Metrics;
         float centerY = textY - (metrics.Ascent + metrics.Descent) / 2f;
 
-        canvas.DrawText(title, textX, centerY, glowPaint);
+        canvas.DrawText(title, textX, centerY, SKTextAlign.Left, titleFont, glowPaint);
 
         // Haupttext
         using var textPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SKColors.White,
-            TextSize = TitleFontSize,
-            Typeface = SKTypeface.FromFamilyName("Inter", SKFontStyleWeight.Bold,
-                SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            Color = SKColors.White
         };
 
-        canvas.DrawText(title, textX, centerY, textPaint);
+        canvas.DrawText(title, textX, centerY, SKTextAlign.Left, titleFont, textPaint);
     }
 
     // =====================================================================

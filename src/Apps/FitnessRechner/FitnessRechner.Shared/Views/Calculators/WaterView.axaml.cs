@@ -64,6 +64,7 @@ public partial class WaterView : UserControl
     private static readonly SKPaint _waterPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _glanzPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true };
+    private static readonly SKFont _textFont = new();
 
     /// <summary>Einfaches Wasserglas mit Füllstand und Wellen.</summary>
     private static void DrawWaterGlass(SKCanvas canvas, SKRect bounds, float fillPercent)
@@ -130,9 +131,8 @@ public partial class WaterView : UserControl
 
         // Prozent-Text unter dem Glas
         _textPaint.Color = SkiaThemeHelper.TextSecondary;
-        _textPaint.TextSize = 12f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        canvas.DrawText($"{fillPercent * 100:F0}%", cx, bottom + 16f, _textPaint);
+        _textFont.Size = 12f;
+        canvas.DrawText($"{fillPercent * 100:F0}%", cx, bottom + 16f, SKTextAlign.Center, _textFont, _textPaint);
     }
 
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;

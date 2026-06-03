@@ -158,17 +158,17 @@ public static class BmiGaugeRenderer
 
         // Text-Paint für BMI-Wert und Zonen-Labels
         using var textPaint = new SKPaint { IsAntialias = true };
+        using var textFont = new SKFont();
 
         // BMI-Wert Text unter dem Gauge
         textPaint.Color = SkiaThemeHelper.TextPrimary;
-        textPaint.TextSize = Math.Max(18f, radius * 0.22f);
-        textPaint.TextAlign = SKTextAlign.Center;
-        textPaint.FakeBoldText = true;
-        canvas.DrawText($"{bmiValue:F1}", cx, cy + radius * 0.35f, textPaint);
+        textFont.Size = Math.Max(18f, radius * 0.22f);
+        textFont.Embolden = true;
+        canvas.DrawText($"{bmiValue:F1}", cx, cy + radius * 0.35f, SKTextAlign.Center, textFont, textPaint);
 
         // Zonen-Labels (klein, unter dem Bogen) - MedicalColors.TextMuted
-        textPaint.TextSize = Math.Max(8f, radius * 0.1f);
-        textPaint.FakeBoldText = false;
+        textFont.Size = Math.Max(8f, radius * 0.1f);
+        textFont.Embolden = false;
         textPaint.Color = MedicalColors.TextMuted;
 
         float labelRadius = radius + strokeW * 0.5f + 10f;
@@ -179,7 +179,7 @@ public static class BmiGaugeRenderer
             float rad = angle * MathF.PI / 180f;
             float lx = cx + MathF.Cos(rad) * labelRadius;
             float ly = cy + MathF.Sin(rad) * labelRadius;
-            canvas.DrawText(text, lx, ly, textPaint);
+            canvas.DrawText(text, lx, ly, SKTextAlign.Center, textFont, textPaint);
         }
 
         // --- Scan-Line-Sweep (von oben nach unten, 5s Zyklus) ---

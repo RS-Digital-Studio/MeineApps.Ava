@@ -117,30 +117,29 @@ public class MoistureGaugeControl : Control
         private static readonly SKPaint _textPaint = new()
         {
             Color = SKColors.White,
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Typeface = InterBold
+            IsAntialias = true
         };
         private static readonly SKPaint _unitPaint = new()
         {
             Color = new SKColor(138, 164, 188),
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Left,
-            Typeface = InterSemiBold
+            IsAntialias = true
         };
         private static readonly SKPaint _namePaint = new()
         {
             Color = new SKColor(138, 164, 188),
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Typeface = InterSemiBold
+            IsAntialias = true
         };
         private static readonly SKPaint _statusPaint = new()
         {
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Typeface = InterSemiBold
+            IsAntialias = true
         };
+
+        // Gecachte Fonts (SkiaSharp 3.x) - Typeface fix, Size wird pro Frame mutiert.
+        // Leben bis Prozess-Ende - kein Dispose noetig.
+        private static readonly SKFont _textFont = new() { Typeface = InterBold };
+        private static readonly SKFont _unitFont = new() { Typeface = InterSemiBold };
+        private static readonly SKFont _nameFont = new() { Typeface = InterSemiBold };
+        private static readonly SKFont _statusFont = new() { Typeface = InterSemiBold };
 
         // Gecachter Sweep-Gradient-Shader (Farben und Positionen konstant)
         // Wird neu erstellt wenn Center-Punkt sich aendert (Bounds-Wechsel)
@@ -243,30 +242,30 @@ public class MoistureGaugeControl : Control
                 centerY + MathF.Sin(thresholdRad) * markerOuter,
                 _markerPaint);
 
-            // Prozentwert in der Mitte - gecachter _textPaint
+            // Prozentwert in der Mitte - gecachter _textPaint/_textFont
             var percentText = $"{_moisture:F0}";
-            _textPaint.TextSize = size * 0.22f;
-            canvas.DrawText(percentText, centerX, centerY + _textPaint.TextSize * 0.1f, _textPaint);
+            _textFont.Size = size * 0.22f;
+            canvas.DrawText(percentText, centerX, centerY + _textFont.Size * 0.1f, SKTextAlign.Center, _textFont, _textPaint);
 
-            // %-Zeichen kleiner - gecachter _unitPaint
-            _unitPaint.TextSize = size * 0.09f;
-            var percentWidth = _textPaint.MeasureText(percentText);
-            canvas.DrawText("%", centerX + percentWidth / 2f + 2, centerY - _textPaint.TextSize * 0.15f, _unitPaint);
+            // %-Zeichen kleiner - gecachter _unitPaint/_unitFont
+            _unitFont.Size = size * 0.09f;
+            var percentWidth = _textFont.MeasureText(percentText);
+            canvas.DrawText("%", centerX + percentWidth / 2f + 2, centerY - _textFont.Size * 0.15f, SKTextAlign.Left, _unitFont, _unitPaint);
 
-            // Zone-Name unter dem Wert - gecachter _namePaint
+            // Zone-Name unter dem Wert - gecachter _namePaint/_nameFont
             if (!string.IsNullOrEmpty(_zoneName))
             {
-                _namePaint.TextSize = size * 0.08f;
-                canvas.DrawText(_zoneName.ToUpper(), centerX, centerY + size * 0.18f, _namePaint);
+                _nameFont.Size = size * 0.08f;
+                canvas.DrawText(_zoneName.ToUpper(), centerX, centerY + size * 0.18f, SKTextAlign.Center, _nameFont, _namePaint);
             }
 
-            // Status-Text am unteren Bogenrand - gecachter _statusPaint
+            // Status-Text am unteren Bogenrand - gecachter _statusPaint/_statusFont
             if (!string.IsNullOrEmpty(_statusText))
             {
                 _statusPaint.Color = _isWatering
                     ? new SKColor(66, 165, 245) : new SKColor(102, 187, 106);
-                _statusPaint.TextSize = size * 0.07f;
-                canvas.DrawText(_statusText, centerX, centerY + size * 0.32f, _statusPaint);
+                _statusFont.Size = size * 0.07f;
+                canvas.DrawText(_statusText, centerX, centerY + size * 0.32f, SKTextAlign.Center, _statusFont, _statusPaint);
             }
         }
 

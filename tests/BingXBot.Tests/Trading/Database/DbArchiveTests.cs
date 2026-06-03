@@ -16,7 +16,7 @@ public class DbArchiveTests : IAsyncLifetime
     private string _archiveDir = "";
     private BotDatabaseService _db = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), "bingxbot-archive-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
@@ -27,10 +27,10 @@ public class DbArchiveTests : IAsyncLifetime
         await _db.InitializeAsync();
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         try { Directory.Delete(_tempDir, recursive: true); } catch { }
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     [Fact]

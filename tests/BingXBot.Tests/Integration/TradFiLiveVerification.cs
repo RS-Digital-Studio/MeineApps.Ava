@@ -6,7 +6,6 @@ using BingXBot.Exchange;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
-using Xunit.Abstractions;
 
 // Tests prüfen Legacy-Single-TF-Pfade absichtlich. Migration auf ByTf-Maps in v1.4.x.
 #pragma warning disable CS0618

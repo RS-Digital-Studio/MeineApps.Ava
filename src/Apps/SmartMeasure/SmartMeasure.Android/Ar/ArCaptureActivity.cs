@@ -391,8 +391,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         _sessionStart = DateTime.UtcNow;
 
-        // Vibrator für Haptic-Feedback (Samsung-optimierte Predefined-Effects auf API 29+)
-        _vibrator = GetSystemService(VibratorService) as global::Android.OS.Vibrator;
+        // Vibrator für Haptic-Feedback (Samsung-optimierte Predefined-Effects auf API 29+).
+        // Ab API 31 ist Context.VibratorService deprecated → über VibratorManager beziehen.
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
+        {
+            var vibratorManager = GetSystemService(VibratorManagerService)
+                as global::Android.OS.VibratorManager;
+            _vibrator = vibratorManager?.DefaultVibrator;
+        }
+        else
+        {
+            _vibrator = GetSystemService(VibratorService) as global::Android.OS.Vibrator;
+        }
 
         // MediaActionSound + Settings-Flag laden. Sound wird beim Punkt-Setzen + Kontur-Schließen
         // gespielt, lässt sich via SharedPreferences "ar.sound.enabled" abschalten.
@@ -666,15 +676,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         const int idTape = 1, idTapeReset = 2, idStakeout = 3, idTachy = 4,
                   idDelete = 5, idScreenshot = 6, idRecord = 7, idHelp = 8;
 
-        menu.Menu!.Add(0, idTape, 0, "Maßband (Ad-hoc-Distanz)");
+        var popupMenu = menu.Menu!;
+        popupMenu.Add(0, idTape, 0, "Maßband (Ad-hoc-Distanz)");
         if (_captureMode == CaptureMode.TapeMeasure)
-            menu.Menu.Add(0, idTapeReset, 0, "Maßband zurücksetzen");
-        menu.Menu.Add(0, idStakeout, 0, "Abstecken (Ziele finden)");
-        menu.Menu.Add(0, idTachy, 0, "Tachymeter (Stativ-Modus)");
-        menu.Menu.Add(0, idDelete, 0, "Ausgewählten Punkt löschen");
-        menu.Menu.Add(0, idScreenshot, 0, "Screenshot speichern");
-        menu.Menu.Add(0, idRecord, 0, _isRecording ? "Aufnahme stoppen" : "Aufnahme starten");
-        menu.Menu.Add(0, idHelp, 0, "Hilfe");
+            popupMenu.Add(0, idTapeReset, 0, "Maßband zurücksetzen");
+        popupMenu.Add(0, idStakeout, 0, "Abstecken (Ziele finden)");
+        popupMenu.Add(0, idTachy, 0, "Tachymeter (Stativ-Modus)");
+        popupMenu.Add(0, idDelete, 0, "Ausgewählten Punkt löschen");
+        popupMenu.Add(0, idScreenshot, 0, "Screenshot speichern");
+        popupMenu.Add(0, idRecord, 0, _isRecording ? "Aufnahme stoppen" : "Aufnahme starten");
+        popupMenu.Add(0, idHelp, 0, "Hilfe");
 
         menu.MenuItemClick += (_, e) =>
         {
@@ -905,6 +916,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     /// <summary>Back-Button → Cancel (kein Result). Konsument bekommt
     /// <see cref="Result.Canceled"/> und kein altes <see cref="_lastResult"/>.</summary>
+    // OnBackPressed ist ab API 33 deprecated (OnBackInvokedCallback) — die AR-Activity ist
+    // eine native AppCompatActivity, ein Umstieg auf OnBackInvokedDispatcher waere ein eigenes Feature.
+#pragma warning disable CA1422
     public override void OnBackPressed()
     {
         if (System.Threading.Interlocked.Exchange(ref _finished, 1) == 0)
@@ -914,6 +928,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
         base.OnBackPressed();
     }
+#pragma warning restore CA1422
 
     private void UpdateCounter()
     {
@@ -1713,6 +1728,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
                 // Rotationsmatrix aus Quaternion extrahieren (fuer X/Z-Ebene)
                 var q = pose.GetRotationQuaternion();
+                if (q == null || q.Length < 4) continue;
                 float qx = q[0], qy = q[1], qz = q[2], qw = q[3];
                 float r00 = 1 - 2 * (qy * qy + qz * qz);
                 float r02 = 2 * (qx * qz + qw * qy);
@@ -2735,6 +2751,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
                 // Rotationsmatrix aus Quaternion (wie in SnapToPlaneEdge)
                 var pq = pose.GetRotationQuaternion();
+                if (pq == null || pq.Length < 4) continue;
                 float pqx = pq[0], pqy = pq[1], pqz = pq[2], pqw = pq[3];
                 float pr00 = 1 - 2 * (pqy * pqy + pqz * pqz);
                 float pr02 = 2 * (pqx * pqz + pqw * pqy);
@@ -3128,7 +3145,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var dir = GetExternalFilesDir("Screenshots")?.AbsolutePath
-                ?? global::Android.OS.Environment.DirectoryPictures;
+                ?? global::Android.OS.Environment.DirectoryPictures
+                ?? FilesDir?.AbsolutePath;
+            if (string.IsNullOrEmpty(dir)) return null;
             Directory.CreateDirectory(dir);
             var path = System.IO.Path.Combine(dir, $"SmartMeasure_{timestamp}.png");
             using var stream = File.OpenWrite(path);
@@ -3444,7 +3463,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             try
             {
                 var dir = GetExternalFilesDir("Recordings")?.AbsolutePath
-                    ?? global::Android.OS.Environment.DirectoryMovies;
+                    ?? global::Android.OS.Environment.DirectoryMovies
+                    ?? FilesDir?.AbsolutePath;
+                if (string.IsNullOrEmpty(dir))
+                {
+                    ShowTransientHint("Aufnahme nicht möglich: kein Speicherpfad");
+                    return;
+                }
                 Directory.CreateDirectory(dir);
                 _currentRecordingPath = System.IO.Path.Combine(dir,
                     $"SmartMeasure_{DateTime.Now:yyyyMMdd_HHmmss}.mp4");
@@ -3586,17 +3611,25 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// Confirm, Reject, ToggleOn). Auf S25 Ultra nutzt das Samsung's Premium-Haptics-Engine.
     /// Fallback auf alte Vibrator-API für Kompatibilität.
     /// </summary>
-    private void HapticConfirm() => TryPerformHaptic(global::Android.Views.FeedbackConstants.Confirm);
+    // FeedbackConstants.Confirm/Reject existieren erst ab API 30 — der Enum-Zugriff
+    // selbst wird daher in TryPerformHaptic hinter den Versions-Guard gezogen. Auf
+    // älteren Geräten greift direkt der VibrateLight-Fallback.
+    private void HapticConfirm() => TryPerformHaptic(HapticKind.Confirm);
 
-    private void HapticReject() => TryPerformHaptic(global::Android.Views.FeedbackConstants.Reject);
+    private void HapticReject() => TryPerformHaptic(HapticKind.Reject);
 
-    private void TryPerformHaptic(global::Android.Views.FeedbackConstants constant)
+    private enum HapticKind { Confirm, Reject }
+
+    private void TryPerformHaptic(HapticKind kind)
     {
         try
         {
             var root = _glSurfaceView?.RootView ?? Window?.DecorView;
             if (root != null && OperatingSystem.IsAndroidVersionAtLeast(30))
             {
+                var constant = kind == HapticKind.Confirm
+                    ? global::Android.Views.FeedbackConstants.Confirm
+                    : global::Android.Views.FeedbackConstants.Reject;
                 root.PerformHapticFeedback(constant);
                 return;
             }
@@ -3996,7 +4029,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         bool showLiveSegment = false;
         (float x, float y)? liveSegFromScreen = null;
         float? liveSegHorizontal = null, liveSegSlope = null, liveSegHeight = null;
-        List<float>? activeContourSegMeters = null;
+        List<(float horizontal, float heightDelta)>? activeContourSegMeters = null;
 
         lock (_dataLock)
         {
@@ -4024,13 +4057,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     liveArea += tempClosed.CalculateArea();
                 }
 
-                // Segment-Distanzen (horizontal) zwischen den gesetzten Kontur-Punkten — fuer
-                // die Inter-Punkt-Labels im Overlay (frueher leerer Stub).
+                // Segment-Werte (horizontale Distanz + Hoehenunterschied) zwischen den gesetzten
+                // Kontur-Punkten — fuer die Inter-Punkt-Pillen im Overlay. So bleiben Distanz UND
+                // ΔH stehen, nachdem der Punkt gesetzt wurde (frueher leerer Stub).
                 if (_activeContour.Points.Count >= 2)
                 {
-                    activeContourSegMeters = new List<float>(_activeContour.Points.Count - 1);
+                    activeContourSegMeters = new List<(float, float)>(_activeContour.Points.Count - 1);
                     for (var i = 0; i < _activeContour.Points.Count - 1; i++)
-                        activeContourSegMeters.Add(_activeContour.Points[i].Distance2DTo(_activeContour.Points[i + 1]));
+                    {
+                        var a = _activeContour.Points[i];
+                        var b = _activeContour.Points[i + 1];
+                        activeContourSegMeters.Add((a.Distance2DTo(b), b.Y - a.Y));
+                    }
                 }
 
                 // Auto-Close-Detection: echter Welt-Abstand Reticle-Ziel → erster Kontur-Punkt
@@ -4164,7 +4202,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             LiveSegmentHorizontalMeters = liveSegHorizontal,
             LiveSegmentSlopeMeters = liveSegSlope,
             LiveSegmentHeightDelta = liveSegHeight,
-            ActiveContourSegmentMeters = activeContourSegMeters,
+            ActiveContourSegments = activeContourSegMeters,
             // Plan-Kap. 5.9: Stakeout-Daten fuer das Overlay
             IsStakeoutMode = _captureMode == CaptureMode.Stakeout,
             StakeoutDistanceMeters = ReadStakeoutDistance(),

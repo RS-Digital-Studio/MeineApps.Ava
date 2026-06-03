@@ -201,12 +201,12 @@ public sealed class ArOverlayState
     /// positiv = Ziel hoeher als letzter Punkt.</summary>
     public float? LiveSegmentHeightDelta { get; init; }
 
-    /// <summary>Horizontale Welt-Distanzen (Meter) zwischen aufeinanderfolgenden Punkten der
-    /// AKTIVEN Kontur, in Reihenfolge. Eintrag i = Distanz Punkt i → Punkt i+1. Wird in
-    /// <see cref="ArPointOverlayView"/> zwischen den projizierten Kontur-Punkten gelabelt
-    /// (fuellt den frueher leeren Stub in DrawInterPointDistances). null/leer wenn keine
-    /// aktive Kontur.</summary>
-    public IReadOnlyList<float>? ActiveContourSegmentMeters { get; init; }
+    /// <summary>Pro Segment der AKTIVEN Kontur: horizontale Welt-Distanz (Grundriss, Meter) +
+    /// Hoehenunterschied ΔH (Meter, signiert: Punkt i+1.Y − Punkt i.Y). Eintrag i = Segment
+    /// Punkt i → Punkt i+1. Wird in <see cref="ArPointOverlayView"/> als Pille zwischen den
+    /// projizierten Kontur-Punkten gelabelt (Distanz + ΔH) — so bleiben die Werte stehen,
+    /// nachdem der Punkt gesetzt wurde. null/leer wenn keine aktive Kontur.</summary>
+    public IReadOnlyList<(float horizontal, float heightDelta)>? ActiveContourSegments { get; init; }
 
     /// <summary>Plan-Kap. 5.9: True wenn der Stakeout-Modus aktiv ist.</summary>
     public bool IsStakeoutMode { get; init; }

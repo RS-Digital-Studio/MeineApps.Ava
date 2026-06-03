@@ -1085,7 +1085,8 @@ public sealed partial class ArPointOverlayView : View
     /// <summary>Distanz-Labels zwischen ALLEN aufeinanderfolgenden Punkten — vorher nur zwischen letzten 2.</summary>
     private void DrawInterPointDistances(Canvas canvas)
     {
-        // Einzelpunkte in Reihenfolge
+        // Einzelpunkte (Point-Modus): horizontale Distanz + ΔH zwischen aufeinanderfolgenden
+        // Punkten als Pille — bleibt nach dem Setzen stehen.
         var sortedPts = _projectedPoints.OrderBy(p => p.pointIndex).ToList();
         for (var i = 1; i < sortedPts.Count; i++)
         {
@@ -1093,32 +1094,41 @@ public sealed partial class ArPointOverlayView : View
             var prev = sortedPts[i - 1];
             if (curr.pointIndex >= _points.Count || prev.pointIndex >= _points.Count) continue;
 
-            var dist = _points[curr.pointIndex].DistanceTo(_points[prev.pointIndex]);
+            var pa = _points[prev.pointIndex];
+            var pb = _points[curr.pointIndex];
             var midX = (curr.screenX + prev.screenX) / 2f;
             var midY = (curr.screenY + prev.screenY) / 2f;
-            canvas.DrawText($"{dist:F2}m", midX, midY - 10 * _density, _distancePaint);
+            DrawSegmentPill(canvas, midX, midY, pa.Distance2DTo(pb), pb.Y - pa.Y);
         }
 
-        // Kontur-Distanz-Labels (aktive Kontur). Die Welt-Distanzen (horizontal) liefert der
-        // GL-Thread in ActiveContourSegmentMeters — der Overlay-View kennt nur Screen-Pixel,
-        // daher die separate Liste (analog TapeMeasureSegmentMeters).
+        // Aktive Kontur: horizontale Distanz + ΔH pro gesetztem Segment (Welt-Werte vom
+        // GL-Thread in ActiveContourSegments — der Overlay-View kennt nur Screen-Pixel).
         var activePts = _projectedContourPoints
             .Where(p => p.contourIdx == -1)
             .OrderBy(p => p.pointIdx)
             .ToList();
 
-        var segMeters = _state.ActiveContourSegmentMeters;
-        if (segMeters != null && activePts.Count >= 2)
+        var segs = _state.ActiveContourSegments;
+        if (segs != null && activePts.Count >= 2)
         {
-            for (var i = 0; i < activePts.Count - 1 && i < segMeters.Count; i++)
+            for (var i = 0; i < activePts.Count - 1 && i < segs.Count; i++)
             {
                 var a = activePts[i];
                 var b = activePts[i + 1];
                 var midX = (a.screenX + b.screenX) / 2f;
                 var midY = (a.screenY + b.screenY) / 2f;
-                canvas.DrawText(FormatMeters(segMeters[i]), midX, midY - 10 * _density, _distancePaint);
+                DrawSegmentPill(canvas, midX, midY, segs[i].horizontal, segs[i].heightDelta);
             }
         }
+    }
+
+    /// <summary>Gesetztes Segment: Pille mit Distanz (Haupt) + ΔH (Unterzeile, nur wenn ≥ 5 mm).
+    /// Identischer Stil wie das Live-Gummiband → die Werte "frieren ein", sobald der naechste
+    /// Punkt gesetzt ist.</summary>
+    private void DrawSegmentPill(Canvas canvas, float midX, float midY, float horizontal, float heightDelta)
+    {
+        var sub = MathF.Abs(heightDelta) >= 0.005f ? $"ΔH {heightDelta:+0.00;-0.00;0.00} m" : null;
+        DrawValuePill(canvas, midX, midY, FormatMeters(horizontal), sub);
     }
 
     /// <summary>Live-Segment-Gummiband: gestrichelte Linie vom zuletzt gesetzten Punkt zum

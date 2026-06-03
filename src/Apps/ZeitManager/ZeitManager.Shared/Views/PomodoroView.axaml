@@ -277,7 +277,7 @@
 
               <!-- Aufgabenname (optional) -->
               <TextBox Text="{Binding CurrentTaskName, Mode=TwoWay}"
-                       Watermark="{Binding TaskNamePlaceholderText}"
+                       PlaceholderText="{Binding TaskNamePlaceholderText}"
                        MaxLength="100"
                        AutomationProperties.AutomationId="Pomodoro_TaskNameInput" />
 

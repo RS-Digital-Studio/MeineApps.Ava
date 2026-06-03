@@ -71,7 +71,7 @@
       </Grid>
       <Grid ColumnDefinitions="*,Auto">
         <TextBox Grid.Column="0" Text="{Binding SymbolFilter}"
-                 Watermark="Symbol filtern (z.B. BTC-USDT)" FontSize="13" />
+                 PlaceholderText="Symbol filtern (z.B. BTC-USDT)" FontSize="13" />
         <Button Grid.Column="1"
                 Command="{Binding ClearFilterCommand}"
                 Background="{DynamicResource SurfaceBrush}"

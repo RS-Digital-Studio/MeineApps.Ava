@@ -102,7 +102,7 @@
                             </StackPanel>
                             <TextBox Text="{Binding Principal}"
                                      AutomationProperties.AutomationId="CompoundInterest_InputPrincipal"
-                                     Watermark="0.00"
+                                     PlaceholderText="0.00"
                                      TextInputOptions.ContentType="Number"
                                      Background="{DynamicResource ButtonFunctionBgBrush}"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -123,7 +123,7 @@
                             </StackPanel>
                             <TextBox Text="{Binding AnnualRate}"
                                      AutomationProperties.AutomationId="CompoundInterest_InputAnnualRate"
-                                     Watermark="0.00"
+                                     PlaceholderText="0.00"
                                      TextInputOptions.ContentType="Number"
                                      Background="{DynamicResource ButtonFunctionBgBrush}"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -144,7 +144,7 @@
                             </StackPanel>
                             <TextBox Text="{Binding Years}"
                                      AutomationProperties.AutomationId="CompoundInterest_InputYears"
-                                     Watermark="1"
+                                     PlaceholderText="1"
                                      TextInputOptions.ContentType="Digits"
                                      Background="{DynamicResource ButtonFunctionBgBrush}"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -165,7 +165,7 @@
                             </StackPanel>
                             <TextBox Text="{Binding CompoundingsPerYear}"
                                      AutomationProperties.AutomationId="CompoundInterest_InputCompoundings"
-                                     Watermark="12"
+                                     PlaceholderText="12"
                                      TextInputOptions.ContentType="Digits"
                                      Background="{DynamicResource ButtonFunctionBgBrush}"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>

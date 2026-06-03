@@ -344,7 +344,7 @@
                      AutomationProperties.AutomationId="Timer_TxtCreateTitle" />
 
           <TextBox Text="{Binding NewTimerName, Mode=TwoWay}"
-                   Watermark="{Binding $parent[UserControl].((vm:TimerViewModel)DataContext).CreateTimerText}"
+                   PlaceholderText="{Binding $parent[UserControl].((vm:TimerViewModel)DataContext).CreateTimerText}"
                    AutomationProperties.AutomationId="Timer_InputTimerName" />
 
           <!-- Time Pickers (Drum Wheel) -->

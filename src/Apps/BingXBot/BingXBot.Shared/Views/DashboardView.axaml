@@ -383,7 +383,7 @@
             <AutoCompleteBox Grid.Column="1" Text="{Binding WatchlistInput, Mode=TwoWay}"
                              ItemsSource="{Binding AvailableSymbols}"
                              FilterMode="ContainsOrdinal"
-                             Watermark="Symbol eingeben (z.B. BTC-USDT)"
+                             PlaceholderText="Symbol eingeben (z.B. BTC-USDT)"
                              FontSize="12" Margin="10,0" MinimumPrefixLength="1"
                              ToolTip.Tip="Verfügbare Symbole werden automatisch vorgeschlagen" />
             <Button Grid.Column="2" Content="Hinzufügen" Command="{Binding AddToWatchlistCommand}"

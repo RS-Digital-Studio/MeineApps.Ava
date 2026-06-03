@@ -464,13 +464,13 @@
           <!-- Betrag -->
           <TextBox AutomationProperties.AutomationId="Main_InputQuickAmount"
                    Text="{Binding QuickAddAmount}"
-                   Watermark="{Binding QuickAddAmountPlaceholder}"
+                   PlaceholderText="{Binding QuickAddAmountPlaceholder}"
                    FontSize="18" />
 
           <!-- Beschreibung -->
           <TextBox AutomationProperties.AutomationId="Main_InputQuickDescription"
                    Text="{Binding QuickAddDescription}"
-                   Watermark="{Binding QuickAddDescriptionPlaceholder}" />
+                   PlaceholderText="{Binding QuickAddDescriptionPlaceholder}" />
 
           <!-- Kategorie-Chips mit farbigem Hintergrund -->
           <ItemsControl AutomationProperties.AutomationId="Main_QuickCategoryChips"

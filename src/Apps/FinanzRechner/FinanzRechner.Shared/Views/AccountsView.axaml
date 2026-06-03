@@ -156,8 +156,8 @@
                     BoxShadow="0 8 32 0 #40000000">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding AddAccountText}" FontSize="20" FontWeight="Bold" />
-                    <TextBox Text="{Binding EditName}" Watermark="{Binding AccountNameText}" />
-                    <TextBox Text="{Binding EditBalance}" Watermark="{Binding InitialBalanceText}" />
+                    <TextBox Text="{Binding EditName}" PlaceholderText="{Binding AccountNameText}" />
+                    <TextBox Text="{Binding EditBalance}" PlaceholderText="{Binding InitialBalanceText}" />
                     <ComboBox SelectedIndex="{Binding EditTypeIndex}" HorizontalAlignment="Stretch">
                         <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountCheckingText, FallbackValue=Girokonto}" />
                         <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountSavingsText, FallbackValue=Sparkonto}" />
@@ -200,8 +200,8 @@
                     BoxShadow="0 8 32 0 #40000000">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding TransferText}" FontSize="20" FontWeight="Bold" />
-                    <TextBox Text="{Binding TransferAmount}" Watermark="{Binding AmountText}" />
-                    <TextBox Text="{Binding TransferDescription}" Watermark="{Binding DescriptionOptionalText}" />
+                    <TextBox Text="{Binding TransferAmount}" PlaceholderText="{Binding AmountText}" />
+                    <TextBox Text="{Binding TransferDescription}" PlaceholderText="{Binding DescriptionOptionalText}" />
                     <TextBlock Text="{Binding FromAccountText}" FontSize="13" Opacity="0.7" />
                     <ComboBox SelectedIndex="{Binding TransferFromIndex}"
                               ItemsSource="{Binding AccountBalances}"

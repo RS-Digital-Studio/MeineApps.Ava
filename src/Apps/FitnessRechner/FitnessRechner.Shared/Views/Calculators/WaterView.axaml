@@ -49,7 +49,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="Water_TxtBoxWeight"
                        Text="{Binding Weight}"
-                       Watermark="kg"
+                       PlaceholderText="kg"
                        TextInputOptions.ContentType="Number"
                        Classes="Outlined" />
             </StackPanel>
@@ -65,7 +65,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="Water_TxtBoxActivity"
                        Text="{Binding ActivityMinutes}"
-                       Watermark="{loc:Translate Minutes}"
+                       PlaceholderText="{loc:Translate Minutes}"
                        TextInputOptions.ContentType="Digits"
                        Classes="Outlined" />
             </StackPanel>

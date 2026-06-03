@@ -106,7 +106,7 @@
                             </StackPanel>
                             <TextBox Text="{Binding CurrentAmount}"
                                      AutomationProperties.AutomationId="Inflation_InputCurrentAmount"
-                                     Watermark="0.00"
+                                     PlaceholderText="0.00"
                                      TextInputOptions.ContentType="Number"
                                      Background="{DynamicResource ButtonFunctionBgBrush}"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -127,7 +127,7 @@
                             </StackPanel>
                             <TextBox Text="{Binding AnnualInflationRate}"
                                      AutomationProperties.AutomationId="Inflation_InputInflationRate"
-                                     Watermark="0.00"
+                                     PlaceholderText="0.00"
                                      TextInputOptions.ContentType="Number"
                                      Background="{DynamicResource ButtonFunctionBgBrush}"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -148,7 +148,7 @@
                             </StackPanel>
                             <TextBox Text="{Binding Years}"
                                      AutomationProperties.AutomationId="Inflation_InputYears"
-                                     Watermark="1"
+                                     PlaceholderText="1"
                                      TextInputOptions.ContentType="Digits"
                                      Background="{DynamicResource ButtonFunctionBgBrush}"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>

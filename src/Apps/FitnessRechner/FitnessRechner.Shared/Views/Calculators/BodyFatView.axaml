@@ -62,7 +62,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="BodyFat_TxtBoxHeight"
                        Text="{Binding Height}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -79,7 +79,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="BodyFat_TxtBoxNeck"
                        Text="{Binding Neck}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -96,7 +96,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="BodyFat_TxtBoxWaist"
                        Text="{Binding Waist}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -114,7 +114,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="BodyFat_TxtBoxHip"
                        Text="{Binding Hip}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />

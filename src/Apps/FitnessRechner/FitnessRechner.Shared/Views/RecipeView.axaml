@@ -268,7 +268,7 @@
                          FontSize="13" FontWeight="SemiBold"
                          Foreground="#06B6D4" />
               <TextBox Text="{Binding RecipeName}"
-                       Watermark="{loc:Translate RecipeName}"
+                       PlaceholderText="{loc:Translate RecipeName}"
                        Background="Transparent"
                        BorderBrush="#2606B6D4"
                        Height="NaN" />
@@ -282,7 +282,7 @@
                          FontSize="13" FontWeight="SemiBold"
                          Foreground="#06B6D4" />
               <TextBox Text="{Binding RecipeDescription}"
-                       Watermark="{loc:Translate RecipeDescription}"
+                       PlaceholderText="{loc:Translate RecipeDescription}"
                        Background="Transparent"
                        BorderBrush="#2606B6D4"
                        Height="NaN"
@@ -398,7 +398,7 @@
                                    VerticalAlignment="Center" />
                   <TextBox Grid.Column="1"
                            Text="{Binding IngredientSearchQuery}"
-                           Watermark="{loc:Translate SearchFoodPlaceholder}"
+                           PlaceholderText="{loc:Translate SearchFoodPlaceholder}"
                            Background="Transparent"
                            BorderThickness="0"
                            Height="NaN" />
@@ -452,7 +452,7 @@
                                      Minimum="1" Maximum="10000"
                                      Increment="10"
                                      FormatString="F0"
-                                     Watermark="g"
+                                     PlaceholderText="g"
                                      HorizontalAlignment="Stretch" />
                       <TextBlock Grid.Column="1" Text="g" Foreground="White"
                                  VerticalAlignment="Center" FontSize="14" />

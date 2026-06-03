@@ -39,7 +39,7 @@
                        VerticalAlignment="Center" />
           </StackPanel>
           <TextBox Text="{Binding BlacklistText, Mode=TwoWay}"
-                   Watermark="z.B. SHIB,DOGE"
+                   PlaceholderText="z.B. SHIB,DOGE"
                    FontSize="13"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    Background="{DynamicResource SurfaceBrush}"
@@ -54,7 +54,7 @@
                        VerticalAlignment="Center" />
           </StackPanel>
           <TextBox Text="{Binding WhitelistText, Mode=TwoWay}"
-                   Watermark="z.B. BTC,ETH,SOL"
+                   PlaceholderText="z.B. BTC,ETH,SOL"
                    FontSize="13"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    Background="{DynamicResource SurfaceBrush}"

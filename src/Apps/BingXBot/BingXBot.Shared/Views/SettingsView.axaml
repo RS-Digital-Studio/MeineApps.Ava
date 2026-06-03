@@ -85,7 +85,7 @@
             <TextBlock Text="API-Key" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="SettingsInput" Text="{Binding ApiKey}"
-                     Watermark="BingX API-Key eingeben..."
+                     PlaceholderText="BingX API-Key eingeben..."
                      ToolTip.Tip="BingX API-Key (nicht der Secret)" />
           </StackPanel>
 
@@ -95,7 +95,7 @@
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="SettingsInput" Text="{Binding ApiSecret}"
                      PasswordChar="*"
-                     Watermark="BingX API-Secret eingeben..."
+                     PlaceholderText="BingX API-Secret eingeben..."
                      ToolTip.Tip="BingX API-Secret (wird verschlüsselt gespeichert)" />
           </StackPanel>
 
@@ -208,7 +208,7 @@
             <TextBlock Text="Server-URL" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="SettingsInput" Text="{Binding ServerUrl}"
-                     Watermark="http://bingxbot.local:5050"
+                     PlaceholderText="http://bingxbot.local:5050"
                      IsEnabled="{Binding !ServerPaired}"
                      ToolTip.Tip="mDNS-Name oder Tailscale/LAN-IP + Port des Pi-Servers" />
           </StackPanel>
@@ -218,7 +218,7 @@
             <TextBlock Text="Geräte-Name (für Server-Log)" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="SettingsInput" Text="{Binding PairedDeviceName}"
-                     Watermark="z.B. Desktop-Robert"
+                     PlaceholderText="z.B. Desktop-Robert"
                      IsEnabled="{Binding !ServerPaired}" />
           </StackPanel>
 
@@ -239,7 +239,7 @@
             <TextBlock Text="Pairing-Code (vom Pi ablesen)" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="SettingsInput" Text="{Binding PairingCode}"
-                     Watermark="6-stelliger Code"
+                     PlaceholderText="6-stelliger Code"
                      MaxLength="6"
                      FontSize="18" FontWeight="Bold"
                      HorizontalContentAlignment="Center" />

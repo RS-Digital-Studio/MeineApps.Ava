@@ -192,7 +192,7 @@
                          HorizontalAlignment="Center"
                          TextWrapping="Wrap" TextAlignment="Center" />
               <TextBox Text="{Binding NameInput}"
-                       Watermark="{loc:Translate GuildPlayerNamePlaceholder}"
+                       PlaceholderText="{loc:Translate GuildPlayerNamePlaceholder}"
                        MaxLength="20"
                        HorizontalAlignment="Stretch" />
               <Button Classes="Primary"
@@ -243,7 +243,7 @@
                   IsVisible="{Binding IsInviteCodeInputVisible}" Margin="0,0,0,4">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
               <TextBox Text="{Binding JoinCodeInput}"
-                       Watermark="{loc:Translate InviteCodePlaceholder}"
+                       PlaceholderText="{loc:Translate InviteCodePlaceholder}"
                        MaxLength="6"
                        HorizontalAlignment="Stretch" />
               <Button Grid.Column="1" Classes="Primary"
@@ -443,7 +443,7 @@
 
             <!-- Name -->
             <TextBox Text="{Binding CreateGuildName}"
-                     Watermark="{loc:Translate GuildNamePlaceholder}"
+                     PlaceholderText="{loc:Translate GuildNamePlaceholder}"
                      MaxLength="24"
                      HorizontalAlignment="Stretch" />
 

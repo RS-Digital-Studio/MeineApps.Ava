@@ -157,7 +157,7 @@
             </StackPanel>
 
             <!-- Aktivitäts-Suche -->
-            <TextBox Watermark="{Binding ActivitySearchPlaceholder}"
+            <TextBox PlaceholderText="{Binding ActivitySearchPlaceholder}"
                      Text="{Binding ActivitySearchQuery, Mode=TwoWay}"
                      FontSize="14" CornerRadius="8" />
 
@@ -258,7 +258,7 @@
             </Border>
 
             <!-- Notiz (optional) -->
-            <TextBox Watermark="{loc:Translate NoteOptional}"
+            <TextBox PlaceholderText="{loc:Translate NoteOptional}"
                      Text="{Binding ActivityNote, Mode=TwoWay}"
                      FontSize="14" CornerRadius="8"
                      MaxLength="200" />

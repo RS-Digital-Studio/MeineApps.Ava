@@ -57,7 +57,7 @@
       <Grid ColumnDefinitions="*,Auto">
         <TextBox Grid.Column="0"
                  Text="{Binding BidInput, Mode=TwoWay}"
-                 Watermark="{loc:Translate AuctionBidPlaceholder}"
+                 PlaceholderText="{loc:Translate AuctionBidPlaceholder}"
                  MinHeight="44"
                  AutomationProperties.AutomationId="Auction_Tx_BidInput" />
         <Button Grid.Column="1"

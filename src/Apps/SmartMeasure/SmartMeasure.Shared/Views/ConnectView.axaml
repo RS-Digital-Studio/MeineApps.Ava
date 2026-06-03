@@ -107,22 +107,22 @@
                     <TextBlock Text="NTRIP (Korrekturdaten)" FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
 
-                    <TextBox Text="{Binding NtripServer}" Watermark="Server (IP oder Hostname)"
+                    <TextBox Text="{Binding NtripServer}" PlaceholderText="Server (IP oder Hostname)"
                              Background="{DynamicResource BgElevatedBrush}"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBox Grid.Column="0" Text="{Binding NtripMountpoint}" Watermark="Mountpoint"
+                        <TextBox Grid.Column="0" Text="{Binding NtripMountpoint}" PlaceholderText="Mountpoint"
                                  Background="{DynamicResource BgElevatedBrush}"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBox Grid.Column="1" Text="{Binding NtripPort}" Watermark="Port" Width="80"
+                        <TextBox Grid.Column="1" Text="{Binding NtripPort}" PlaceholderText="Port" Width="80"
                                  Background="{DynamicResource BgElevatedBrush}"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                     </Grid>
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <TextBox Grid.Column="0" Text="{Binding NtripUser}" Watermark="Benutzer"
+                        <TextBox Grid.Column="0" Text="{Binding NtripUser}" PlaceholderText="Benutzer"
                                  Background="{DynamicResource BgElevatedBrush}"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBox Grid.Column="1" Text="{Binding NtripPassword}" Watermark="Passwort"
+                        <TextBox Grid.Column="1" Text="{Binding NtripPassword}" PlaceholderText="Passwort"
                                  PasswordChar="*"
                                  Background="{DynamicResource BgElevatedBrush}"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -145,10 +145,10 @@
                     <TextBlock Text="WiFi (Hotspot)" FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
 
-                    <TextBox Text="{Binding WifiSsid}" Watermark="SSID"
+                    <TextBox Text="{Binding WifiSsid}" PlaceholderText="SSID"
                              Background="{DynamicResource BgElevatedBrush}"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBox Text="{Binding WifiPassword}" Watermark="Passwort" PasswordChar="*"
+                    <TextBox Text="{Binding WifiPassword}" PlaceholderText="Passwort" PasswordChar="*"
                              Background="{DynamicResource BgElevatedBrush}"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
 

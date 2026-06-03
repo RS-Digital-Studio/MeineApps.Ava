@@ -274,7 +274,7 @@
             <!-- Alarm Name -->
             <TextBox Text="{Binding AlarmName, Mode=TwoWay}"
                      AutomationProperties.AutomationId="Alarm_TxtBoxName"
-                     Watermark="{Binding AlarmNamePlaceholderText}" />
+                     PlaceholderText="{Binding AlarmNamePlaceholderText}" />
 
             <!-- Weekday Toggles (runde Buttons) -->
             <StackPanel Spacing="8">

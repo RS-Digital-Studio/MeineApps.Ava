@@ -209,11 +209,11 @@
                     BoxShadow="0 8 32 0 #40000000">
                 <StackPanel Spacing="14">
                     <TextBlock Text="{Binding AddDebtText}" FontSize="20" FontWeight="Bold" />
-                    <TextBox Text="{Binding EditName}" Watermark="{Binding AddDebtText}" />
-                    <TextBox Text="{Binding EditOriginalAmount}" Watermark="{Binding AmountText}" />
-                    <TextBox Text="{Binding EditRemainingAmount}" Watermark="{Binding AmountText}" />
-                    <TextBox Text="{Binding EditInterestRate}" Watermark="{Binding InterestRateLabelText}" />
-                    <TextBox Text="{Binding EditMonthlyPayment}" Watermark="{Binding MonthlyRateText}" />
+                    <TextBox Text="{Binding EditName}" PlaceholderText="{Binding AddDebtText}" />
+                    <TextBox Text="{Binding EditOriginalAmount}" PlaceholderText="{Binding AmountText}" />
+                    <TextBox Text="{Binding EditRemainingAmount}" PlaceholderText="{Binding AmountText}" />
+                    <TextBox Text="{Binding EditInterestRate}" PlaceholderText="{Binding InterestRateLabelText}" />
+                    <TextBox Text="{Binding EditMonthlyPayment}" PlaceholderText="{Binding MonthlyRateText}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <Button Grid.Column="0" Content="{Binding CancelText}"
                                 Command="{Binding CancelDialogCommand}"
@@ -247,7 +247,7 @@
                     BoxShadow="0 8 32 0 #40000000">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding MakePaymentText}" FontSize="20" FontWeight="Bold" />
-                    <TextBox Text="{Binding PaymentAmount}" Watermark="{Binding PaymentAmountText}" />
+                    <TextBox Text="{Binding PaymentAmount}" PlaceholderText="{Binding PaymentAmountText}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <Button Grid.Column="0" Content="{Binding CancelText}"
                                 Command="{Binding CancelDialogCommand}"

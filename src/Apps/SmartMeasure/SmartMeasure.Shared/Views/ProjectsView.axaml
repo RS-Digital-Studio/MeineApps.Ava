@@ -12,7 +12,7 @@
         <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" Padding="12,8">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBox Grid.Column="0" Text="{Binding NewProjectName}"
-                         Watermark="Neues Projekt..." FontSize="14"
+                         PlaceholderText="Neues Projekt..." FontSize="14"
                          Background="{DynamicResource BgCardBrush}"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
                 <Button Grid.Column="1" Command="{Binding CreateProjectCommand}"

@@ -267,7 +267,7 @@
                          FontSize="13" Foreground="{DynamicResource TextMutedBrush}" />
               <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <TextBox AutomationProperties.AutomationId="Progress_TxtGoalInput" Text="{Binding WeightGoal}"
-                         Watermark="{loc:Translate WeightGoalKg}" />
+                         PlaceholderText="{loc:Translate WeightGoalKg}" />
                 <TextBlock Grid.Column="1" Text="kg" FontSize="14"
                            Foreground="{DynamicResource TextMutedBrush}"
                            VerticalAlignment="Center" />
@@ -335,11 +335,11 @@
               <TextBlock Text="{loc:Translate AddWeight}"
                          FontSize="18" FontWeight="Bold" Foreground="White" />
               <TextBox AutomationProperties.AutomationId="Progress_TxtAddValue" Text="{Binding NewValue}"
-                       Watermark="{loc:Translate WeightValue}" />
+                       PlaceholderText="{loc:Translate WeightValue}" />
               <CalendarDatePicker AutomationProperties.AutomationId="Progress_DateAdd" SelectedDate="{Binding NewDate}"
                                   HorizontalAlignment="Stretch" />
               <TextBox AutomationProperties.AutomationId="Progress_TxtAddNote" Text="{Binding NewNote}"
-                       Watermark="{loc:Translate NotePlaceholder}" />
+                       PlaceholderText="{loc:Translate NotePlaceholder}" />
               <Grid ColumnDefinitions="*,8,*">
                 <Button AutomationProperties.AutomationId="Progress_BtnAddCancel" Grid.Column="0"
                         Command="{Binding ToggleAddFormCommand}"
@@ -777,11 +777,11 @@
             <StackPanel Spacing="12">
               <TextBlock Text="{Binding IsBmiSelected, Converter={StaticResource BmiBodyFatConverter}}"
                          FontSize="18" FontWeight="Bold" Foreground="White" />
-              <TextBox Text="{Binding NewValue}" Watermark="{loc:Translate Input}" />
+              <TextBox Text="{Binding NewValue}" PlaceholderText="{loc:Translate Input}" />
               <CalendarDatePicker SelectedDate="{Binding NewDate}"
                                   HorizontalAlignment="Stretch" />
               <TextBox Text="{Binding NewNote}"
-                       Watermark="{loc:Translate NotePlaceholder}" />
+                       PlaceholderText="{loc:Translate NotePlaceholder}" />
               <Grid ColumnDefinitions="*,8,*">
                 <Button Grid.Column="0"
                         Command="{Binding ToggleAddFormCommand}"
@@ -887,7 +887,7 @@
               <Grid ColumnDefinitions="*,8,Auto">
                 <TextBox AutomationProperties.AutomationId="Progress_TxtWaterGoalInput" Grid.Column="0"
                          Text="{Binding DailyWaterGoal}"
-                         Watermark="ml" />
+                         PlaceholderText="ml" />
                 <Button AutomationProperties.AutomationId="Progress_BtnSaveWaterGoal" Grid.Column="2" Classes="Primary"
                         Command="{Binding SetWaterGoalCommand}"
                         HorizontalContentAlignment="Center">
@@ -1166,7 +1166,7 @@
                                  Margin="0,0,10,0" />
                 <TextBox AutomationProperties.AutomationId="Progress_TxtFoodSearch" Grid.Column="1"
                          Text="{Binding SearchQuery}"
-                         Watermark="{loc:Translate SearchFoodPlaceholder}"
+                         PlaceholderText="{loc:Translate SearchFoodPlaceholder}"
                          Background="Transparent"
                          BorderThickness="0"
                          Height="NaN" />
@@ -1192,7 +1192,7 @@
                 <!-- Portion -->
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                   <TextBox AutomationProperties.AutomationId="Progress_TxtPortion" Text="{Binding PortionGrams}"
-                           Watermark="{loc:Translate AmountGrams}" />
+                           PlaceholderText="{loc:Translate AmountGrams}" />
                   <TextBlock Grid.Column="1" Text="g"
                              Foreground="{DynamicResource TextMutedBrush}"
                              VerticalAlignment="Center" FontSize="14" />
@@ -1310,7 +1310,7 @@
               <Grid ColumnDefinitions="*,8,Auto">
                 <TextBox AutomationProperties.AutomationId="Progress_TxtCalorieGoalInput" Grid.Column="0"
                          Text="{Binding DailyCalorieGoal}"
-                         Watermark="kcal" />
+                         PlaceholderText="kcal" />
                 <Button AutomationProperties.AutomationId="Progress_BtnSaveCalorieGoal" Grid.Column="2" Classes="Primary"
                         Command="{Binding SetCalorieGoalCommand}"
                         HorizontalContentAlignment="Center">

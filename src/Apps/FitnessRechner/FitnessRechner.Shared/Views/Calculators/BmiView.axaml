@@ -41,7 +41,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="Bmi_TxtBoxWeight"
                        Text="{Binding Weight}"
-                       Watermark="kg"
+                       PlaceholderText="kg"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -58,7 +58,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="Bmi_TxtBoxHeight"
                        Text="{Binding Height}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />

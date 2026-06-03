@@ -81,7 +81,7 @@
         <TextBox Grid.Column="1"
                  AutomationProperties.AutomationId="Food_TxtBoxSearch"
                  Text="{Binding SearchQuery}"
-                 Watermark="{loc:Translate SearchFoodPlaceholder}"
+                 PlaceholderText="{loc:Translate SearchFoodPlaceholder}"
                  Background="Transparent"
                  BorderThickness="0"
                  Height="NaN" />
@@ -222,7 +222,7 @@
                              Minimum="1" Maximum="10000"
                              Increment="50"
                              FormatString="F0"
-                             Watermark="kcal"
+                             PlaceholderText="kcal"
                              HorizontalAlignment="Stretch" />
               <TextBlock Grid.Column="1" Text="kcal" Foreground="White"
                          VerticalAlignment="Center" FontSize="14" FontWeight="Bold" />
@@ -230,7 +230,7 @@
             <!-- Beschreibung (optional) -->
             <TextBox AutomationProperties.AutomationId="Food_TxtBoxQuickAddName"
                      Text="{Binding QuickAddName}"
-                     Watermark="{loc:Translate QuickAddFoodName}"
+                     PlaceholderText="{loc:Translate QuickAddFoodName}"
                      Background="Transparent"
                      Foreground="White"
                      BorderBrush="#66FFFFFF"
@@ -305,7 +305,7 @@
                              Minimum="1" Maximum="10000"
                              Increment="10"
                              FormatString="F0"
-                             Watermark="{loc:Translate AmountGrams}"
+                             PlaceholderText="{loc:Translate AmountGrams}"
                              HorizontalAlignment="Stretch" />
               <TextBlock Grid.Column="1" Text="g" Foreground="White"
                          VerticalAlignment="Center" FontSize="14" />

@@ -44,7 +44,7 @@
                     HorizontalAlignment="Stretch" />
           <TextBox AutomationProperties.AutomationId="Conv_InputValue"
                    Text="{Binding InputValue}"
-                   Watermark="{Binding EnterValueText}"
+                   PlaceholderText="{Binding EnterValueText}"
                    FontSize="18"
                    HorizontalAlignment="Stretch" />
         </StackPanel>

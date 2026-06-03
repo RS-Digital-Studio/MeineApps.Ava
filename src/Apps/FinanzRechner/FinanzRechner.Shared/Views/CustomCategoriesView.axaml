@@ -187,7 +187,7 @@
                     BoxShadow="0 8 32 0 #40000000">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding AddCategoryText}" FontSize="20" FontWeight="Bold" />
-                    <TextBox Text="{Binding EditName}" Watermark="{Binding CategoryNameText}" />
+                    <TextBox Text="{Binding EditName}" PlaceholderText="{Binding CategoryNameText}" />
                     <ComboBox SelectedIndex="{Binding EditTypeIndex}" HorizontalAlignment="Stretch">
                         <ComboBoxItem Content="{Binding ExpenseCategoriesText}" />
                         <ComboBoxItem Content="{Binding IncomeCategoriesText}" />

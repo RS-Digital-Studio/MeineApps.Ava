@@ -39,7 +39,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="Calories_TxtBoxWeight"
                        Text="{Binding Weight}"
-                       Watermark="kg"
+                       PlaceholderText="kg"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -56,7 +56,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="Calories_TxtBoxHeight"
                        Text="{Binding Height}"
-                       Watermark="cm"
+                       PlaceholderText="cm"
                        TextInputOptions.ContentType="Number"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -73,7 +73,7 @@
               </StackPanel>
               <TextBox AutomationProperties.AutomationId="Calories_TxtBoxAge"
                        Text="{Binding Age}"
-                       Watermark="{loc:Translate Years}"
+                       PlaceholderText="{loc:Translate Years}"
                        TextInputOptions.ContentType="Digits"
                        Background="{DynamicResource ButtonFunctionBgBrush}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />

@@ -82,7 +82,7 @@
                     AutomationProperties.AutomationId="ExpenseTracker_Panel_SearchFilter">
 
           <!-- SearchBar -->
-          <TextBox Watermark="{Binding SearchTransactionsText}"
+          <TextBox PlaceholderText="{Binding SearchTransactionsText}"
                    Text="{Binding SearchTerm}"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    Background="{DynamicResource InputBackgroundBrush}"
@@ -178,7 +178,7 @@
                              FontSize="12"
                              AutomationProperties.AutomationId="Tracker_TxtMinAmount" />
                   <TextBox Text="{Binding MinAmountFilter}"
-                           Watermark="0"
+                           PlaceholderText="0"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            Background="{DynamicResource InputBackgroundBrush}"
                            AutomationProperties.AutomationId="Tracker_InputMinAmount" />
@@ -190,7 +190,7 @@
                              FontSize="12"
                              AutomationProperties.AutomationId="Tracker_TxtMaxAmount" />
                   <TextBox Text="{Binding MaxAmountFilter}"
-                           Watermark="0"
+                           PlaceholderText="0"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            Background="{DynamicResource InputBackgroundBrush}"
                            AutomationProperties.AutomationId="Tracker_InputMaxAmount" />
@@ -608,7 +608,7 @@
                        FontSize="32" FontWeight="Bold"
                        TextAlignment="Center"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       Watermark="0.00"
+                       PlaceholderText="0.00"
                        Background="{DynamicResource InputBackgroundBrush}"
                        AutomationProperties.AutomationId="Tracker_InputAmount" />
             </StackPanel>
@@ -777,7 +777,7 @@
 
               <!-- Note (optional) -->
               <TextBox Text="{Binding NewExpenseNote}"
-                       Watermark="{Binding NoteText}"
+                       PlaceholderText="{Binding NoteText}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        Background="{DynamicResource InputBackgroundBrush}"
                        AutomationProperties.AutomationId="Tracker_InputNote" />

@@ -125,7 +125,7 @@
             <TextBlock Text="Symbol" FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBox Text="{Binding SymbolFilter}"
-                     Watermark="z.B. BTC-USDT"
+                     PlaceholderText="z.B. BTC-USDT"
                      HorizontalAlignment="Stretch" />
           </StackPanel>
 

@@ -72,7 +72,7 @@
                      Foreground="White" HorizontalAlignment="Center" />
           <TextBox Text="{Binding ChallengeAnswer, Mode=TwoWay}"
                    AutomationProperties.AutomationId="AlarmOverlay_MathAnswerInput"
-                   Watermark="{Binding ChallengeAnswerHintText}"
+                   PlaceholderText="{Binding ChallengeAnswerHintText}"
                    HorizontalAlignment="Stretch" FontSize="20"
                    HorizontalContentAlignment="Center" />
           <Button Classes="Primary" Content="{Binding ChallengeSubmitText}"

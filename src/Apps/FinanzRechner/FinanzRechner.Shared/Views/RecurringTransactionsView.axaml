@@ -371,12 +371,12 @@
                 </Panel>
               </Grid>
 
-              <TextBox Watermark="{Binding DescriptionWatermarkText}"
+              <TextBox PlaceholderText="{Binding DescriptionWatermarkText}"
                        AutomationProperties.AutomationId="Recurring_InputDescription"
                        Text="{Binding Description}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
-              <TextBox Watermark="{Binding AmountWatermarkText}"
+              <TextBox PlaceholderText="{Binding AmountWatermarkText}"
                        AutomationProperties.AutomationId="Recurring_InputAmount"
                        Text="{Binding Amount}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -456,7 +456,7 @@
                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                   HorizontalAlignment="Stretch" />
 
-              <TextBox Watermark="{Binding NoteWatermarkText}"
+              <TextBox PlaceholderText="{Binding NoteWatermarkText}"
                        AutomationProperties.AutomationId="Recurring_InputNote"
                        Text="{Binding Note}"
                        Foreground="{DynamicResource TextPrimaryBrush}" />

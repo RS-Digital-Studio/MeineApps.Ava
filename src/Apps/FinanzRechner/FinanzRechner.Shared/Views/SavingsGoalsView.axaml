@@ -176,11 +176,11 @@
                     BoxShadow="0 8 32 0 #40000000">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding AddGoalText}" FontSize="20" FontWeight="Bold" />
-                    <TextBox Text="{Binding EditName}" Watermark="{Binding GoalNameHintText}" />
-                    <TextBox Text="{Binding EditTargetAmount}" Watermark="{Binding TargetAmountText}" />
-                    <TextBox Text="{Binding EditCurrentAmount}" Watermark="{Binding AlreadySavedText}" />
+                    <TextBox Text="{Binding EditName}" PlaceholderText="{Binding GoalNameHintText}" />
+                    <TextBox Text="{Binding EditTargetAmount}" PlaceholderText="{Binding TargetAmountText}" />
+                    <TextBox Text="{Binding EditCurrentAmount}" PlaceholderText="{Binding AlreadySavedText}" />
                     <CalendarDatePicker SelectedDate="{Binding EditDeadline}"
-                                        Watermark="{Binding DeadlineOptionalText}"
+                                        PlaceholderText="{Binding DeadlineOptionalText}"
                                         HorizontalAlignment="Stretch" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <Button Grid.Column="0" Content="{Binding CancelText}"
@@ -215,7 +215,7 @@
                     BoxShadow="0 8 32 0 #40000000">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding AdjustAmountText}" FontSize="20" FontWeight="Bold" />
-                    <TextBox Text="{Binding AdjustAmount}" Watermark="{Binding AmountText}" />
+                    <TextBox Text="{Binding AdjustAmount}" PlaceholderText="{Binding AmountText}" />
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <RadioButton Content="{Binding DepositText}" IsChecked="{Binding AdjustIsDeposit}" />
                         <RadioButton Content="{Binding WithdrawalText}" IsChecked="{Binding !AdjustIsDeposit}" />

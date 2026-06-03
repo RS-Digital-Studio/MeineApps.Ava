@@ -98,7 +98,7 @@
             <TextBlock Text="Server-URL" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="MobileInput" Text="{Binding ServerUrl}"
-                     Watermark="http://bingxbot.local:5050"
+                     PlaceholderText="http://bingxbot.local:5050"
                      IsEnabled="{Binding !ServerPaired}" />
           </StackPanel>
 
@@ -106,7 +106,7 @@
             <TextBlock Text="Geräte-Name (optional)" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="MobileInput" Text="{Binding PairedDeviceName}"
-                     Watermark="z.B. Handy-Robert"
+                     PlaceholderText="z.B. Handy-Robert"
                      IsEnabled="{Binding !ServerPaired}" />
           </StackPanel>
 
@@ -126,7 +126,7 @@
             <TextBlock Text="Pairing-Code (vom Pi ablesen)" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="MobileInput" Text="{Binding PairingCode}"
-                     Watermark="6-stelliger Code"
+                     PlaceholderText="6-stelliger Code"
                      MaxLength="6"
                      FontSize="22" FontWeight="Bold"
                      HorizontalContentAlignment="Center"
@@ -185,7 +185,7 @@
             <TextBlock Text="API-Key" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="MobileInput" Text="{Binding ApiKey}"
-                     Watermark="BingX API-Key eingeben..." />
+                     PlaceholderText="BingX API-Key eingeben..." />
           </StackPanel>
 
           <StackPanel Spacing="4">
@@ -193,7 +193,7 @@
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="MobileInput" Text="{Binding ApiSecret}"
                      PasswordChar="*"
-                     Watermark="BingX API-Secret (verschlüsselt)" />
+                     PlaceholderText="BingX API-Secret (verschlüsselt)" />
           </StackPanel>
 
           <Grid ColumnDefinitions="*,8,*">

@@ -117,7 +117,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <TextBox Text="{Binding WhitelistText, Mode=TwoWay}" Watermark="z.B. BTC,ETH,SOL"
+            <TextBox Text="{Binding WhitelistText, Mode=TwoWay}" PlaceholderText="z.B. BTC,ETH,SOL"
                      FontSize="13" />
           </StackPanel>
 
@@ -130,7 +130,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <TextBox Text="{Binding BlacklistText, Mode=TwoWay}" Watermark="z.B. SHIB,DOGE"
+            <TextBox Text="{Binding BlacklistText, Mode=TwoWay}" PlaceholderText="z.B. SHIB,DOGE"
                      FontSize="13" />
           </StackPanel>
 

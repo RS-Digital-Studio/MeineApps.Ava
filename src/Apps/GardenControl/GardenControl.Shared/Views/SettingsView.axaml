@@ -22,7 +22,7 @@
                                FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                        <TextBox Text="{Binding ServerUrl}" Watermark="http://192.168.178.XX:5000"
+                        <TextBox Text="{Binding ServerUrl}" PlaceholderText="http://192.168.178.XX:5000"
                                  FontSize="14" />
                         <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,8" CornerRadius="8"
                                 Background="{DynamicResource PrimaryBrush}"

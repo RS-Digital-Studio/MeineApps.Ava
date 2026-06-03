@@ -59,7 +59,7 @@
               IsVisible="{Binding !HasUsedReferralCode}">
           <TextBox Grid.Column="0"
                    Text="{Binding EnteredCode, Mode=TwoWay}"
-                   Watermark="{loc:Translate ReferralEnterCodePlaceholder}"
+                   PlaceholderText="{loc:Translate ReferralEnterCodePlaceholder}"
                    FontSize="14"
                    MaxLength="6"
                    AutomationProperties.AutomationId="Referral_Tb_EnterCode" />

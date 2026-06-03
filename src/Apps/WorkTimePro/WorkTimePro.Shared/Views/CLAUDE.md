@@ -9,7 +9,7 @@ Generische MVVM/AXAML-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md
 |-------|-------|
 | `MainView.axaml(.cs)` | Haupt-Container: Tab-Bar (5 Tabs), Content-Area (Today/Week/Calendar/Stats/Settings), Sub-Page-Overlays, Ad-Banner-Spacer. |
 | `MainWindow.axaml(.cs)` | Desktop-Shell (`Window`). Enthält nur `MainView`. |
-| `TodayView.axaml(.cs)` | Heute-Ansicht: Status-Ring (`CircularProgressControl`, `SkiaGradientRing`), CheckIn/Out-Button, LiveData, Timeline, Earnings-Ticker. |
+| `TodayView.axaml(.cs)` | Heute-Ansicht: Status-Ring (`SkiaGradientRing`), CheckIn/Out-Button, LiveData, Timeline, Earnings-Ticker. |
 | `WeekOverviewView.axaml(.cs)` | Wochenübersicht: `WeekBarVisualization` + `LinearProgressVisualization`. |
 | `CalendarView.axaml(.cs)` | Monatskalender mit Heatmap + Overlay-Pattern. |
 | `StatisticsView.axaml(.cs)` | Statistiken (5 Perioden), Rewarded-Ad-Gate für Quartal/Jahr. |

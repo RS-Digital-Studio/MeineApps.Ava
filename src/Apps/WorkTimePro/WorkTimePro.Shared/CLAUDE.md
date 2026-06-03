@@ -1,7 +1,7 @@
 # WorkTimePro.Shared — Composition Root & App-Logik
 
 Plattformneutrales Shared-Projekt (`net10.0`). Enthält die gesamte App-Logik (ViewModels, Views,
-Services, Models, Graphics, Controls) und wird von `WorkTimePro.Android` und `WorkTimePro.Desktop`
+Services, Models, Graphics) und wird von `WorkTimePro.Android` und `WorkTimePro.Desktop`
 referenziert. Generische Conventions → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 App-Überblick → [../CLAUDE.md](../CLAUDE.md).
 
@@ -46,7 +46,6 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 | `Services/` | `WorkTimePro.Services` |
 | `Models/` | `WorkTimePro.Models` |
 | `Graphics/` | `WorkTimePro.Graphics` |
-| `Controls/` | `WorkTimePro.Controls` |
 | `Converters/` | `WorkTimePro.Converters` |
 | `Helpers/` | `WorkTimePro.Helpers` |
 | `Loading/` | `WorkTimePro.Loading` |
@@ -60,9 +59,8 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 | `Services/` | 13 Interfaces + Implementierungen (DB, Zeiterfassung, Export, Backup, Reminder, ...) | [Services/CLAUDE.md](Services/CLAUDE.md) |
 | `Models/` | SQLite-Entitäten, Enums, berechnete Properties, AppColors | [Models/CLAUDE.md](Models/CLAUDE.md) |
 | `Graphics/` | 11 SkiaSharp-Visualisierungen + Splash + Background | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
-| `Controls/` | `CircularProgressControl` (Avalonia Custom Control) | [Controls/CLAUDE.md](Controls/CLAUDE.md) |
 | `Converters/` | App-eigene `IValueConverter`-Implementierungen | [Converters/CLAUDE.md](Converters/CLAUDE.md) |
-| `Helpers/` | `TimeFormatter`, `Icons` (MDI-Codepoints) | [Helpers/CLAUDE.md](Helpers/CLAUDE.md) |
+| `Helpers/` | `TimeFormatter`, `DurationMath` (DST-bewusste Dauer) | [Helpers/CLAUDE.md](Helpers/CLAUDE.md) |
 | `Loading/` | `WorkTimeProLoadingPipeline` (Startup-Sequenz) | [Loading/CLAUDE.md](Loading/CLAUDE.md) |
 
 Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (`AppPalette.axaml`, Blau #4F8BF9),

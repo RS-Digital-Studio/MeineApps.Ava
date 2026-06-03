@@ -45,9 +45,8 @@ für Export und erweiterte Statistiken.
 | Services (13 Interfaces) | DB, Zeiterfassung, Export, Backup, Reminder, Notification, ... | [Shared/Services](WorkTimePro.Shared/Services/CLAUDE.md) |
 | Models & Enums | SQLite-Entitäten, Enums, AppColors, DateTime-Konvention | [Shared/Models](WorkTimePro.Shared/Models/CLAUDE.md) |
 | SkiaSharp-Renderer (11 Visualisierungen) | Timeline, Bars, Gauges, Splash, Background | [Shared/Graphics](WorkTimePro.Shared/Graphics/CLAUDE.md) |
-| Custom Controls | `CircularProgressControl` (IsPulsing!) | [Shared/Controls](WorkTimePro.Shared/Controls/CLAUDE.md) |
 | Converter | `InvertBool`, `IntToBool`, `RoundingDisplay`, ... | [Shared/Converters](WorkTimePro.Shared/Converters/CLAUDE.md) |
-| Helpers | `TimeFormatter`, `Icons` (MDI-Codepoints) | [Shared/Helpers](WorkTimePro.Shared/Helpers/CLAUDE.md) |
+| Helpers | `TimeFormatter`, `DurationMath` (DST-bewusste Dauer) | [Shared/Helpers](WorkTimePro.Shared/Helpers/CLAUDE.md) |
 | Startup-Pipeline | `WorkTimeProLoadingPipeline` (2 Schritte, Parallel-Init) | [Shared/Loading](WorkTimePro.Shared/Loading/CLAUDE.md) |
 
 Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (AppPalette, Blau #4F8BF9),

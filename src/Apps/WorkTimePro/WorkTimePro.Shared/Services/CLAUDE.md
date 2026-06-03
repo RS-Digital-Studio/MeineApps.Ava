@@ -52,6 +52,13 @@ Mitternachts-Übergang: `LoadStatusAsync` prüft auch den gestrigen WorkDay (Nac
 - **§3 ArbZG**: 6-Monats-Durchschnitt ≤ 8h/Tag über Mo–Sa (Sonntage ausgeschlossen),
   Vacation/Sick zählen als 0h, Mindest-Schwelle 60 Werktage.
 
+## HolidayCalculator — reine Feiertagsberechnung
+
+`static class` (kein Interface, kein DI). Berechnet Feiertage in-memory für DE (16 BL),
+AT (9 BL), CH (12 Kantone) und setzt `Region`/`Year` auf jedem Eintrag. Bewusst
+abhängigkeitsfrei, damit sowohl `HolidayService` (mit Cache) als auch
+`DatabaseService.IsHolidayAsync` sie nutzen können **ohne DI-Zyklus**.
+
 ## ExportService — Anti-N+1
 
 `GetTimeEntriesForWorkDaysAsync(List<int>)`: Batch-Query für alle WorkDay-IDs auf einmal.

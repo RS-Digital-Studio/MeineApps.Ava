@@ -1,4 +1,4 @@
-# Helpers — Formatierung & Icon-Konstanten
+# Helpers — Formatierung & Dauer-Berechnung
 
 Utility-Klassen die keine Abhängigkeiten haben und in mehreren ViewModels/Models genutzt werden.
 Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
@@ -8,7 +8,7 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | Datei | Zweck |
 |-------|-------|
 | `TimeFormatter.cs` | Statische Formatierungsmethoden für Zeiten und Status. |
-| `Icons.cs` | MDI (Material Design Icons) Codepoint-Konstanten für FontFamily="MDI". |
+| `DurationMath.cs` | DST-bewusste Dauer-Berechnung (Arbeitszeit über die Zeitumstellung). |
 
 ## TimeFormatter
 
@@ -23,13 +23,16 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 `WorkDay` (Model) importiert `TimeFormatter` direkt (`using static`) für `TargetWorkDisplay`,
 `ActualWorkDisplay`, `BalanceDisplay` Properties.
 
-## Icons
+## DurationMath
 
-`static class` mit `const string` MDI-Codepoints (Unicode-Escapes) für `FontFamily="MDI"`
-(materialdesignicons-webfont.ttf v7.x). Kategorien: Navigation, Zeit-Tracking, Work-Status,
-Kalender, Charts, Aktionen, Premium, Schichttypen.
+`static class` für DST-bewusste Dauer-Berechnung. Arbeitszeiten werden als Ortszeit
+(`DateTime.Now`) gespeichert; eine naive Subtraktion über die Sommer-/Winterzeit-Umstellung
+liefert falsche Werte (Spring-Forward: real 1h weniger, Fall-Back: 1h mehr).
 
-**Achtung:** `Icons.*`-Strings sind für Text-Bindings gedacht (zusammen mit MDI-FontFamily).
-Für Icon-Controls `<mi:MaterialIcon Kind="..."/>` verwenden — das ist die bevorzugte Methode
-(automatisches Sizing, Caching, kein Font-Setup nötig). `Icons.*` nur dort wo das Icon als
-Teil eines zusammengesetzten Label-Strings erscheint (z.B. `$"{Icons.Coffee} {AppStrings.Break}"`).
+| Methode | Zweck |
+|---------|-------|
+| `RealElapsed(start, end)` | Tatsächlich verstrichene `TimeSpan`, DST-korrigiert (zieht die UTC-Offset-Differenz ab). |
+| `RealElapsedMinutes(start, end)` | Dasselbe als `double` Minuten. |
+
+Nutzt `TimeZoneInfo.GetUtcOffset` (wirft — anders als `ConvertTimeToUtc` — bei mehrdeutigen/
+ungültigen Zeiten keine Exception). Zwei UTC-Zeitpunkte werden direkt subtrahiert.

@@ -570,4 +570,5 @@
   </data>
   <data name="Taken" xml:space="preserve"><value>Pris</value></data>
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
+  <data name="ReminderNotificationsOff" xml:space="preserve"><value>Les notifications sont désactivées pour WorkTime Pro — les rappels ne seront pas délivrés tant que vous ne les activez pas dans les paramètres système.</value></data>
 </root>

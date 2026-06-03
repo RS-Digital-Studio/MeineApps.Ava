@@ -33,6 +33,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     private readonly IReminderService _reminderService;
     private readonly IBackupService _backupService;
     private readonly IHolidayService _holidayService;
+    private readonly INotificationService _notificationService;
 
     private WorkSettings? _settings;
     private bool _disposed;
@@ -51,7 +52,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         IPurchaseService purchaseService,
         IReminderService reminderService,
         IBackupService backupService,
-        IHolidayService holidayService)
+        IHolidayService holidayService,
+        INotificationService notificationService)
     {
         _database = database;
         _localization = localization;
@@ -60,6 +62,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         _reminderService = reminderService;
         _backupService = backupService;
         _holidayService = holidayService;
+        _notificationService = notificationService;
 
         // Regionen aus HolidayService laden (DE + AT + CH)
         var regions = _holidayService.GetAvailableRegions();
@@ -410,10 +413,21 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     public string BuyPremiumButtonText => AppStrings.BuyPremium;
 
     partial void OnAutoPauseEnabledChanged(bool value) => ScheduleAutoSave();
-    partial void OnMorningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
-    partial void OnEveningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
-    partial void OnPauseReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
-    partial void OnOvertimeWarningEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
+    partial void OnMorningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); if (value) WarnIfNotificationsDisabled(); }
+    partial void OnEveningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); if (value) WarnIfNotificationsDisabled(); }
+    partial void OnPauseReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); if (value) WarnIfNotificationsDisabled(); }
+    partial void OnOvertimeWarningEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); if (value) WarnIfNotificationsDisabled(); }
+
+    /// <summary>
+    /// Hinweis, wenn ein Reminder eingeschaltet wird, System-Benachrichtigungen aber deaktiviert
+    /// sind (sonst würden Erinnerungen still verschluckt). Nutzt das verdrahtete MessageRequested.
+    /// </summary>
+    private void WarnIfNotificationsDisabled()
+    {
+        if (_isInitializing) return;
+        if (!_notificationService.AreNotificationsEnabled())
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.ReminderNotificationsOff);
+    }
     partial void OnLegalComplianceEnabledChanged(bool value) => ScheduleAutoSave();
     partial void OnSelectedRegionIndexChanged(int value) => ScheduleAutoSave();
 

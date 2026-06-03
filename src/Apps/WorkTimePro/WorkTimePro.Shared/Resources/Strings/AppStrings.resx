@@ -1246,4 +1246,5 @@
   </data>
   <data name="Taken" xml:space="preserve"><value>Taken</value></data>
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
+  <data name="ReminderNotificationsOff" xml:space="preserve"><value>Notifications are disabled for WorkTime Pro — reminders won't be delivered until you enable them in your system settings.</value></data>
 </root>

@@ -59,6 +59,8 @@ public sealed class DesktopNotificationService : INotificationService
 
     public bool CanScheduleExactAlarms() => true;
 
+    public bool AreNotificationsEnabled() => true;
+
     public Task CancelNotificationAsync(string id)
     {
         CancelNotificationSync(id);

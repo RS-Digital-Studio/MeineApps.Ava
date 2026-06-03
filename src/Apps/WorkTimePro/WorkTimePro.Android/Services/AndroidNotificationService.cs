@@ -111,6 +111,9 @@ public sealed class AndroidNotificationService : INotificationService
         return alarmManager?.CanScheduleExactAlarms() ?? false;
     }
 
+    public bool AreNotificationsEnabled()
+        => NotificationManagerCompat.From(Application.Context).AreNotificationsEnabled();
+
     public Task CancelNotificationAsync(string id)
     {
         var context = Application.Context;

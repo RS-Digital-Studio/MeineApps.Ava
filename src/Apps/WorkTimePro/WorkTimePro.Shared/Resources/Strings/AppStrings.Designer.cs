@@ -1325,6 +1325,15 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die dem Hinweis "Benachrichtigungen deaktiviert" ähnelt.
+        /// </summary>
+        internal static string ReminderNotificationsOff {
+            get {
+                return ResourceManager.GetString("ReminderNotificationsOff", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Charts ähnelt.
         /// </summary>
         internal static string Charts {

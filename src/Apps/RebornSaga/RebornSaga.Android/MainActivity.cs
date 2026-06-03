@@ -87,7 +87,6 @@ public class MainActivity : AvaloniaMainActivity
         base.OnPause();
     }
 
-    [System.Obsolete("Avalonia nutzt OnBackPressed")]
     public override void OnBackPressed()
     {
         if (_mainVm != null && _mainVm.HandleBackPressed())

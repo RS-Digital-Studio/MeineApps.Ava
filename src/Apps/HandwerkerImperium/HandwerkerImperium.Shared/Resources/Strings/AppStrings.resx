@@ -7020,4 +7020,19 @@
   <data name="PrestigeWhatYouLose" xml:space="preserve"><value>What you lose:</value></data>
   <data name="AscensionLockedHint" xml:space="preserve"><value>Reach Legende prestige 3 times to unlock Ascension</value></data>
   <data name="WarehouseLockedHint" xml:space="preserve"><value>Reach player level 50 to unlock the warehouse</value></data>
+  <data name="WhatsNewMinigameFlow" xml:space="preserve">
+    <value>Mini-games in multi-step orders now run smoothly across all tasks – the timing bar stays animated from the second round on</value>
+  </data>
+  <data name="WhatsNewBalancingPolish" xml:space="preserve">
+    <value>Balancing polish: intern efficiency and Inflation-Era upgrade costs corrected, material market prices now stable across sessions</value>
+  </data>
+  <data name="WhatsNewCraftingStability" xml:space="preserve">
+    <value>More stable crafting and warehouse system: correct cost charging and no more rare save hiccups</value>
+  </data>
+  <data name="WhatsNewGuildHallBonuses" xml:space="preserve">
+    <value>Guild hall bonuses now apply: income, order rewards, crafting speed and weekly goals finally benefit from your upgraded guild buildings</value>
+  </data>
+  <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
+    <value>Further economy and save fixes: fair order and regular-customer rewards, a closed reward loophole and more robust save games</value>
+  </data>
 </root>

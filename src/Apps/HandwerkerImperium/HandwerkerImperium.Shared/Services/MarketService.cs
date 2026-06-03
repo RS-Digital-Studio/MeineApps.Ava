@@ -164,21 +164,33 @@ public sealed class MarketService : IMarketService
     public decimal TrySell(string productId, int count)
     {
         if (count <= 0 || !IsMarketAvailable) return 0m;
-        var state = _gameState.State;
-        int total = state.CraftingInventory.GetValueOrDefault(productId, 0);
-        int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
-        int sellable = Math.Max(0, total - reserved);
-        if (sellable <= 0) return 0m;
 
-        int sellCount = Math.Min(count, sellable);
-        decimal pricePer = GetSellPrice(productId);
-        decimal revenue = pricePer * sellCount;
+        decimal revenue = 0m;
+        decimal pricePer = 0m;
+        int sellCount = 0;
 
-        state.CraftingInventory[productId] = total - sellCount;
-        if (state.CraftingInventory[productId] <= 0)
-            state.CraftingInventory.Remove(productId);
+        // ExecuteWithLock: Inventar-Mutation + Geldgutschrift gegen den AutoSave-Serializer
+        // absichern (sonst "Collection was modified" auf CraftingInventory im Background-Thread).
+        _gameState.ExecuteWithLock(() =>
+        {
+            var state = _gameState.State;
+            int total = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            int reserved = state.ReservedInventory.GetValueOrDefault(productId, 0);
+            int sellable = Math.Max(0, total - reserved);
+            if (sellable <= 0) return;
 
-        _gameState.AddMoney(revenue);
+            sellCount = Math.Min(count, sellable);
+            pricePer = GetSellPrice(productId);
+            revenue = pricePer * sellCount;
+
+            state.CraftingInventory[productId] = total - sellCount;
+            if (state.CraftingInventory[productId] <= 0)
+                state.CraftingInventory.Remove(productId);
+
+            _gameState.AddMoney(revenue);
+        });
+
+        if (sellCount <= 0) return 0m;
 
         // V7 (Telemetrie, Plan Section 8.1): material_market_trade (sell)
         _analytics?.TrackEvent("material_market_trade", new Dictionary<string, object?>

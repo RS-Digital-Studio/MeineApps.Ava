@@ -92,6 +92,17 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         }
     }
 
+    /// <summary>
+    /// Gildenhallen-Wochenziel-Bonus + universeller "Alles"-Bonus als Multiplikator (>= 1.0).
+    /// Diese Hall-Effekte wurden bislang berechnet, aber nie auf die Wochenziel-Belohnung angewendet.
+    /// </summary>
+    private decimal GetGuildWeeklyRewardFactor()
+    {
+        var gm = _gameStateService.State.GuildMembership;
+        if (gm == null) return 1m;
+        return 1m + gm.HallWeeklyRewardBonus + gm.HallEverythingBonus;
+    }
+
     public void ClaimMission(string missionId)
     {
         var state = _gameStateService.State.WeeklyMissionState;
@@ -102,11 +113,12 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
 
         mission.IsClaimed = true;
 
-        // Belohnungen gutschreiben
-        _gameStateService.AddMoney(mission.MoneyReward);
-        _gameStateService.AddXp(mission.XpReward);
+        // Belohnungen gutschreiben (inkl. Gildenhallen-Wochenziel-/Alles-Bonus)
+        decimal weeklyFactor = GetGuildWeeklyRewardFactor();
+        _gameStateService.AddMoney(Math.Round(mission.MoneyReward * weeklyFactor, 0));
+        _gameStateService.AddXp((int)Math.Round(mission.XpReward * weeklyFactor));
         if (mission.GoldenScrewReward > 0)
-            _gameStateService.AddGoldenScrews(mission.GoldenScrewReward);
+            _gameStateService.AddGoldenScrews((int)Math.Round(mission.GoldenScrewReward * weeklyFactor));
 
         MissionProgressChanged?.Invoke();
     }
@@ -122,14 +134,15 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         if (state.AllCompletedBonusClaimed)
             return;
 
-        // Zuerst alle unclaimten Einzelbelohnungen einsammeln
+        // Zuerst alle unclaimten Einzelbelohnungen einsammeln (inkl. Gildenhallen-Bonus)
+        decimal weeklyFactor = GetGuildWeeklyRewardFactor();
         foreach (var mission in state.Missions.Where(m => m.IsCompleted && !m.IsClaimed))
         {
             mission.IsClaimed = true;
-            _gameStateService.AddMoney(mission.MoneyReward);
-            _gameStateService.AddXp(mission.XpReward);
+            _gameStateService.AddMoney(Math.Round(mission.MoneyReward * weeklyFactor, 0));
+            _gameStateService.AddXp((int)Math.Round(mission.XpReward * weeklyFactor));
             if (mission.GoldenScrewReward > 0)
-                _gameStateService.AddGoldenScrews(mission.GoldenScrewReward);
+                _gameStateService.AddGoldenScrews((int)Math.Round(mission.GoldenScrewReward * weeklyFactor));
         }
 
         // Bonus

@@ -6661,4 +6661,19 @@
   <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Skin cosmétique permanent pour tous les ateliers.</value></data>
   <data name="RepShopInsuranceName" xml:space="preserve"><value>Assurance Réputation</value></data>
   <data name="RepShopInsuranceDesc" xml:space="preserve"><value>Le prochain risque raté ne coûte pas de réputation.</value></data>
+  <data name="WhatsNewMinigameFlow" xml:space="preserve">
+    <value>Les mini-jeux des commandes en plusieurs étapes s'enchaînent désormais sans accroc sur toutes les tâches – la barre de timing reste animée dès le deuxième tour</value>
+  </data>
+  <data name="WhatsNewBalancingPolish" xml:space="preserve">
+    <value>Équilibrage affiné : efficacité des stagiaires et coûts d'amélioration de l'Ère de l'inflation corrigés, prix du marché des matériaux désormais stables d'une session à l'autre</value>
+  </data>
+  <data name="WhatsNewCraftingStability" xml:space="preserve">
+    <value>Système d'artisanat et d'entrepôt plus stable : facturation correcte des coûts et plus de rares blocages à la sauvegarde</value>
+  </data>
+  <data name="WhatsNewGuildHallBonuses" xml:space="preserve">
+    <value>Les bonus du hall de guilde s'appliquent enfin : revenus, récompenses de commandes, vitesse d'artisanat et objectifs hebdomadaires profitent de vos bâtiments de guilde améliorés</value>
+  </data>
+  <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
+    <value>Autres corrections d'économie et de sauvegarde : récompenses équitables des commandes et clients fidèles, faille de récompense corrigée et sauvegardes plus robustes</value>
+  </data>
 </root>

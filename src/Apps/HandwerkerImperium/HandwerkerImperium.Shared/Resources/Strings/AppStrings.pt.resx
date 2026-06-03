@@ -6662,4 +6662,19 @@
   <data name="WorkerMoodCriticalNotif" xml:space="preserve"><value>Mestre Hans: „Sua equipe precisa de atenção - o humor está crítico!"</value></data>
   <data name="CraftingInventoryEmptyTitle" xml:space="preserve"><value>Nada fabricado ainda</value></data>
   <data name="CraftingInventoryEmptyText" xml:space="preserve"><value>Inicie uma receita acima &#8212; seus itens prontos aparecerão aqui e podem ser vendidos.</value></data>
+  <data name="WhatsNewMinigameFlow" xml:space="preserve">
+    <value>Os minijogos de pedidos com várias etapas agora funcionam de forma fluida em todas as tarefas – a barra de tempo continua animada a partir da segunda rodada</value>
+  </data>
+  <data name="WhatsNewBalancingPolish" xml:space="preserve">
+    <value>Ajuste de balanceamento: eficiência dos estagiários e custos de melhoria da Era da Inflação corrigidos; preços do mercado de materiais agora estáveis entre sessões</value>
+  </data>
+  <data name="WhatsNewCraftingStability" xml:space="preserve">
+    <value>Sistema de fabricação e armazém mais estável: cobrança de custos correta e sem raros travamentos ao salvar</value>
+  </data>
+  <data name="WhatsNewGuildHallBonuses" xml:space="preserve">
+    <value>Os bônus do salão da guilda agora se aplicam: renda, recompensas de pedidos, velocidade de fabricação e metas semanais finalmente se beneficiam dos seus edifícios de guilda aprimorados</value>
+  </data>
+  <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
+    <value>Mais correções de economia e salvamento: recompensas justas de pedidos e clientes fiéis, uma brecha de recompensa fechada e jogos salvos mais robustos</value>
+  </data>
 </root>

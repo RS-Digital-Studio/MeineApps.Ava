@@ -643,12 +643,16 @@ public sealed class WorkerService : IWorkerService
             var ws = state.GetOrCreateWorkshop(workshop);
             if (ws.Workers.Count >= ws.MaxWorkers) return false;
 
-            // F-Tier-Praktikant: 0 EUR Lohn, Effizienz 0.5x (per .Tier=F implizit).
+            // F-Tier-Praktikant: 0 EUR Lohn. Efficiency explizit in der F-Tier-Range rollen
+            // (wie CreateForTier) — sonst greift der Worker-Default 1.0 und der kostenlose
+            // Praktikant waere 2-3x staerker als ein bezahlter F-Arbeiter (~C-Tier-Niveau).
             var intern = new Worker
             {
                 Id = Guid.NewGuid().ToString(),
                 Name = $"Praktikant {Random.Shared.Next(1000, 9999)}",
                 Tier = WorkerTier.F,
+                Efficiency = WorkerTier.F.GetMinEfficiency()
+                           + (WorkerTier.F.GetMaxEfficiency() - WorkerTier.F.GetMinEfficiency()) * (decimal)Random.Shared.NextDouble(),
                 Mood = 80m,
                 Fatigue = 0m,
                 AssignedWorkshop = workshop,
@@ -674,6 +678,8 @@ public sealed class WorkerService : IWorkerService
             w.InternAwaitingPromotion = false;
             w.InternProgressTicks = 0;
             w.Tier = WorkerTier.E;
+            // Efficiency in die E-Tier-Range heben (Praktikant startete in der F-Range darunter).
+            w.Efficiency = Math.Clamp(w.Efficiency, WorkerTier.E.GetMinEfficiency(), WorkerTier.E.GetMaxEfficiency());
             // Standard E-Tier-Lohn-Skalierung — Tier-Default wird beim naechsten Lohn-Tick angewandt.
             w.WagePerHour = WorkerTier.E.GetWagePerHour();
             _gameState.State.InvalidateIncomeCache();

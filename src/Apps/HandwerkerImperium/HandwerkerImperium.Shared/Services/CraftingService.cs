@@ -81,6 +81,13 @@ public sealed class CraftingService : ICraftingService
             // nur eigene Workshop-Inputs (Onboarding-Schutz, siehe Plan Section 5.3).
             var effectiveInputs = CraftingRecipe.GetEffectiveInputs(recipe, state.PlayerLevel);
 
+            // V7: Output-Stack-/Slot-Limit pruefen — kein Crafting starten, wenn das Output nicht
+            // ins Lager passt (sonst Material verschwendet). Effektive Grenzen via WarehouseService
+            // (Logistik-Forschung + Mega-Projekt-Slots), Fallback auf rohe state-Werte ohne DI.
+            // WICHTIG: VOR dem Tier-1-Goldabzug pruefen — sonst geht bei vollem Lager die Tier-1-
+            // Materialkostenbuchung verloren (Geld weg, kein Job).
+            if (!CanStoreOutput(state, recipe.OutputProductId, recipe.OutputCount)) return false;
+
             // Tier-1 Rezepte: Materialkosten in Gold (20% des Basis-Verkaufspreises)
             // Verhindert kostenlose Geld-Generierung ohne Senke
             if (recipe.Tier == 1 && effectiveInputs.Count == 0)
@@ -93,11 +100,6 @@ public sealed class CraftingService : ICraftingService
                     _gameState.TrySpendMoney(materialCost);
                 }
             }
-
-            // V7: Output-Stack-/Slot-Limit pruefen — kein Crafting starten, wenn das Output nicht
-            // ins Lager passt (sonst Material verschwendet). Effektive Grenzen via WarehouseService
-            // (Logistik-Forschung + Mega-Projekt-Slots), Fallback auf rohe state-Werte ohne DI.
-            if (!CanStoreOutput(state, recipe.OutputProductId, recipe.OutputCount)) return false;
 
             // V7: Input-Produkte pruefen UND Reservierungen abziehen (atomar im Lock)
             foreach (var (productId, required) in effectiveInputs)
@@ -121,7 +123,8 @@ public sealed class CraftingService : ICraftingService
             decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state)
                                        + (_research?.GetTotalEffects().CraftingSpeedBonus ?? 0m)
                                        + GetMaterialAffinityBonus(state, recipe)
-                                       + (state.GuildMembership?.MegaProjectCraftingSpeedBonus ?? 0m);
+                                       + (state.GuildMembership?.MegaProjectCraftingSpeedBonus ?? 0m)
+                                       + (state.GuildMembership?.HallCraftingSpeedBonus ?? 0m);
             if (craftingSpeedBonus > 0)
                 effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
 

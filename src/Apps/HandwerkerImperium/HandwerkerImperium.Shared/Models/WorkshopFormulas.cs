@@ -68,7 +68,7 @@ public static class WorkshopFormulas
 
     /// <summary>
     /// Multiplikator-Meilensteine (AdVenture-Capitalist "Bumpy Progression"-Pattern).
-    /// Kumulativ: ~84.6x bei Level 1000.
+    /// Kumulativ: ~921x bei Level 1000 (Produkt aller MilestoneMultipliers).
     /// </summary>
     public static decimal CalculateMilestoneMultiplier(int level)
     {
@@ -201,20 +201,22 @@ public static class WorkshopFormulas
 
             // Knick bei Lv500 → ab dort reduzierter Exponent. Wir rekalibrieren via Math.Pow
             // genau einmal beim Uebergang, danach laeuft wieder die inkrementelle Kette.
+            // Overflow-Schutz: inkrementelle Kette auf decimal.MaxValue klemmen (sonst Throw im extremen Late-Game).
             if (i > 0)
             {
                 if (level == 501)
                     currentRawCost = CalculateRawLevelCost(level);
                 else if (level > 500)
-                    currentRawCost *= expReduced;
-                else if (level == 1)
-                    currentRawCost = CalculateRawLevelCost(level);
+                    currentRawCost = currentRawCost > decimal.MaxValue / expReduced ? decimal.MaxValue : currentRawCost * expReduced;
+                else if (level == 2)
+                    currentRawCost = CalculateRawLevelCost(level); // Re-Baseline: Lv1-Sonderfall (100) liegt nicht auf der Kurve 200*1.07^(level-1)
                 else
-                    currentRawCost *= expNormal;
+                    currentRawCost = currentRawCost > decimal.MaxValue / expNormal ? decimal.MaxValue : currentRawCost * expNormal;
             }
 
             decimal lvlCost = currentRawCost * discountFactor;
-            if (total + lvlCost > budget) break;
+            // Overflow-sichere Budget-Pruefung (kein "total + lvlCost", das ueberlaufen koennte).
+            if (lvlCost > budget - total) break;
             total += lvlCost;
             count++;
         }

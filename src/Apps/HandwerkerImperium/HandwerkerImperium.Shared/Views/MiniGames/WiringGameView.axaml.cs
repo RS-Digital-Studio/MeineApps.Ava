@@ -122,13 +122,10 @@ public partial class WiringGameView : UserControl
 
 
     /// <summary>
-    /// Stoppt den Render-Loop und gibt Canvas-Referenz frei.
+    /// Stoppt den Render-Loop. Die Canvas-Referenz bleibt erhalten, damit der Loop
+    /// bei Multi-Task-Orders (GameRestarted) wieder aufgezogen werden kann.
     /// </summary>
-    private void StopRenderLoop()
-    {
-        _renderLoop.Stop();
-        _gameCanvas = null;
-    }
+    private void StopRenderLoop() => _renderLoop.Stop();
 
     /// <summary>
     /// PaintSurface-Handler: Extrahiert Kabel-Daten aus dem ViewModel

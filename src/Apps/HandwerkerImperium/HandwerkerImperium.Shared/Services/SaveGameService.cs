@@ -776,7 +776,10 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         if (state.Version < 7)
         {
             if (state.WarehouseSlotCount <= 0) state.WarehouseSlotCount = 20;
-            if (state.WarehouseStackLimit <= 0) state.WarehouseStackLimit = 50;
+            // L6-Fix: Stack-Limit symmetrisch zum Sanitize-Clamp (50..9999) klemmen, BEVOR die
+            // Truncation dagegen rechnet — sonst kuerzt ein manipuliertes Limit (z.B. 1) das
+            // Inventar irreversibel, obwohl Sanitize es danach ohnehin auf >=50 anhebt.
+            state.WarehouseStackLimit = Math.Clamp(state.WarehouseStackLimit <= 0 ? 50 : state.WarehouseStackLimit, 50, 9999);
             // CraftingInventory VOR dem Dereferenzieren null-sichern — SanitizeState laeuft erst
             // NACH der Migration, ein V6-Save ohne dieses Feld wuerde sonst eine NRE werfen und
             // faelschlich als beschaedigt gelten (Datenverlust).
@@ -803,8 +806,13 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
                 if (allProducts.TryGetValue(productId, out var product))
                     compensation += product.BaseValue * overflow;
             }
+            // L7-Fix: Kompensation auch auf TotalMoneyEarned fuehren — sonst kappt der
+            // Sanitize-Money-Cap (Math.Max(1e15, TotalMoneyEarned)) die Auszahlung teilweise weg.
             if (compensation > 0)
+            {
                 state.Money += compensation;
+                state.TotalMoneyEarned += compensation;
+            }
 
             state.Version = 7;
         }

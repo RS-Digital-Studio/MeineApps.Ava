@@ -6668,4 +6668,19 @@
   <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Skin cosmetica permanente per tutte le officine.</value></data>
   <data name="RepShopInsuranceName" xml:space="preserve"><value>Assicurazione Reputazione</value></data>
   <data name="RepShopInsuranceDesc" xml:space="preserve"><value>Il prossimo errore di rischio non costa reputazione.</value></data>
+  <data name="WhatsNewMinigameFlow" xml:space="preserve">
+    <value>I minigiochi degli ordini in più fasi ora scorrono fluidi su tutte le attività: la barra del tempo resta animata dal secondo round</value>
+  </data>
+  <data name="WhatsNewBalancingPolish" xml:space="preserve">
+    <value>Rifinitura del bilanciamento: corrette l'efficienza dei tirocinanti e i costi di potenziamento dell'Era dell'inflazione; prezzi del mercato dei materiali ora stabili tra le sessioni</value>
+  </data>
+  <data name="WhatsNewCraftingStability" xml:space="preserve">
+    <value>Sistema di crafting e magazzino più stabile: addebito dei costi corretto e niente più rari blocchi al salvataggio</value>
+  </data>
+  <data name="WhatsNewGuildHallBonuses" xml:space="preserve">
+    <value>I bonus della sede del gilda ora si applicano: entrate, ricompense degli ordini, velocità di crafting e obiettivi settimanali beneficiano finalmente dei tuoi edifici del gilda potenziati</value>
+  </data>
+  <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
+    <value>Ulteriori correzioni di economia e salvataggio: ricompense eque per ordini e clienti abituali, una falla nelle ricompense chiusa e salvataggi più robusti</value>
+  </data>
 </root>

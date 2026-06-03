@@ -6660,4 +6660,19 @@
   <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Aspecto cosmético permanente para todos los talleres.</value></data>
   <data name="RepShopInsuranceName" xml:space="preserve"><value>Seguro de Reputación</value></data>
   <data name="RepShopInsuranceDesc" xml:space="preserve"><value>El próximo fallo de riesgo no cuesta reputación.</value></data>
+  <data name="WhatsNewMinigameFlow" xml:space="preserve">
+    <value>Los minijuegos de los pedidos de varias fases ahora funcionan con fluidez en todas las tareas: la barra de tiempo sigue animada desde la segunda ronda</value>
+  </data>
+  <data name="WhatsNewBalancingPolish" xml:space="preserve">
+    <value>Ajuste de balance: corregidas la eficiencia de los becarios y los costes de mejora de la Era de Inflación; precios del mercado de materiales ahora estables entre sesiones</value>
+  </data>
+  <data name="WhatsNewCraftingStability" xml:space="preserve">
+    <value>Sistema de fabricación y almacén más estable: cobro de costes correcto y sin raros bloqueos al guardar</value>
+  </data>
+  <data name="WhatsNewGuildHallBonuses" xml:space="preserve">
+    <value>Los bonos del salón del gremio ahora se aplican: ingresos, recompensas de pedidos, velocidad de fabricación y objetivos semanales por fin se benefician de tus edificios del gremio mejorados</value>
+  </data>
+  <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
+    <value>Más correcciones de economía y guardado: recompensas justas de pedidos y clientes habituales, un fallo de recompensas cerrado y partidas guardadas más robustas</value>
+  </data>
 </root>

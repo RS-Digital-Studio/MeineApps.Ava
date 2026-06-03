@@ -31,6 +31,9 @@ public sealed class WhatsNewService : IWhatsNewService
     {
         ("2.0.36", ["WhatsNewBell", "WhatsNewStrategyEV", "WhatsNewReputation"]),
         ("2.0.37", ["WhatsNewReputationShop", "WhatsNewImperiumTabs", "WhatsNewWhatsNewItself"]),
+        // Eintrag fuer die aktuelle Version (2.1.2) — bei jeder funktionalen Aenderung
+        // kumulativ erweitern, beim naechsten Release neuen leeren Eintrag anhaengen.
+        ("2.1.2", ["WhatsNewMinigameFlow", "WhatsNewBalancingPolish", "WhatsNewCraftingStability", "WhatsNewGuildHallBonuses", "WhatsNewEconomySaveFixes"]),
     };
 
     public WhatsNewService(

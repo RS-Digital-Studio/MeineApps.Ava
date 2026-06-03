@@ -18,8 +18,6 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
     private readonly IManagerService? _managerService;
     private readonly IEternalMasteryService? _eternalMastery;
 
-    private const decimal SoftCapThreshold = 8.0m;
-
     public IncomeCalculatorService(
         IEventService? eventService = null,
         IResearchService? researchService = null,
@@ -70,7 +68,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
             grossIncome *= (1m + state.GuildMembership.IncomeBonus);
 
-        // Gilden-Forschungs-Boni
+        // Gilden-Forschungs-Boni + Gildenhallen-Boni
         if (state.GuildMembership != null)
         {
             var gm = state.GuildMembership;
@@ -80,6 +78,13 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
 
             if (gm.ResearchEfficiencyBonus > 0)
                 grossIncome *= (1m + gm.ResearchEfficiencyBonus);
+
+            // Gildenhalle: Einkommens-Bonus (TradingPost) + universeller "Alles"-Bonus.
+            // Diese Hall-Effekte wurden bislang berechnet+angezeigt, aber nie angewendet.
+            if (gm.HallIncomeBonus > 0)
+                grossIncome *= (1m + gm.HallIncomeBonus);
+            if (gm.HallEverythingBonus > 0)
+                grossIncome *= (1m + gm.HallEverythingBonus);
         }
 
         // VIP-Einkommens-Bonus (nach allen anderen Boni, VOR dem Soft-Cap)
@@ -221,9 +226,20 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
             decimal softened = threshold + (decimal)Math.Log(1.0 + (double)excess, 2.0);
             grossIncome = state.TotalIncomePerSecond * softened;
 
-            // Soft-Cap-Info für UI-Transparenz
-            state.IsSoftCapActive = true;
-            state.SoftCapReductionPercent = (int)Math.Round((1.0m - softened / effectiveMultiplier) * 100m);
+            // Soft-Cap-Info für UI-Transparenz. Nur als "aktiv" markieren, wenn tatsaechlich
+            // gedaempft wird — knapp ueber der Schwelle ist softened > effectiveMultiplier
+            // (log2(1+x) > x fuer 0<x<1), also KEINE Reduktion; sonst verfruehter
+            // "Bonus cap reached!"-Hinweis trotz minimalem Bonus.
+            if (softened < effectiveMultiplier)
+            {
+                state.IsSoftCapActive = true;
+                state.SoftCapReductionPercent = Math.Max(0, (int)Math.Round((1.0m - softened / effectiveMultiplier) * 100m));
+            }
+            else
+            {
+                state.IsSoftCapActive = false;
+                state.SoftCapReductionPercent = 0;
+            }
         }
         else
         {
@@ -291,15 +307,20 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (mtBonus > 0)
             mult *= (1m + mtBonus);
 
-        // Gilden-Boni
+        // Gilden-Boni (inkl. Gildenhalle, analog CalculateGrossIncome)
         if (state.GuildMembership != null)
         {
-            if (state.GuildMembership.IncomeBonus > 0)
-                mult *= (1m + state.GuildMembership.IncomeBonus);
-            if (state.GuildMembership.ResearchIncomeBonus > 0)
-                mult *= (1m + state.GuildMembership.ResearchIncomeBonus);
-            if (state.GuildMembership.ResearchEfficiencyBonus > 0)
-                mult *= (1m + state.GuildMembership.ResearchEfficiencyBonus);
+            var gm = state.GuildMembership;
+            if (gm.IncomeBonus > 0)
+                mult *= (1m + gm.IncomeBonus);
+            if (gm.ResearchIncomeBonus > 0)
+                mult *= (1m + gm.ResearchIncomeBonus);
+            if (gm.ResearchEfficiencyBonus > 0)
+                mult *= (1m + gm.ResearchEfficiencyBonus);
+            if (gm.HallIncomeBonus > 0)
+                mult *= (1m + gm.HallIncomeBonus);
+            if (gm.HallEverythingBonus > 0)
+                mult *= (1m + gm.HallEverythingBonus);
         }
 
         // VIP-Einkommens-Bonus

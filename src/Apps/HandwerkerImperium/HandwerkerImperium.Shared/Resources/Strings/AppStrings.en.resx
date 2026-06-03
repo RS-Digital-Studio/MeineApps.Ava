@@ -6741,4 +6741,19 @@
   <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Permanent cosmetic skin for all workshops.</value></data>
   <data name="RepShopInsuranceName" xml:space="preserve"><value>Reputation Insurance</value></data>
   <data name="RepShopInsuranceDesc" xml:space="preserve"><value>Next risk-miss costs no reputation.</value></data>
+  <data name="WhatsNewMinigameFlow" xml:space="preserve">
+    <value>Mini-games in multi-step orders now run smoothly across all tasks – the timing bar stays animated from the second round on</value>
+  </data>
+  <data name="WhatsNewBalancingPolish" xml:space="preserve">
+    <value>Balancing polish: intern efficiency and Inflation-Era upgrade costs corrected, material market prices now stable across sessions</value>
+  </data>
+  <data name="WhatsNewCraftingStability" xml:space="preserve">
+    <value>More stable crafting and warehouse system: correct cost charging and no more rare save hiccups</value>
+  </data>
+  <data name="WhatsNewGuildHallBonuses" xml:space="preserve">
+    <value>Guild hall bonuses now apply: income, order rewards, crafting speed and weekly goals finally benefit from your upgraded guild buildings</value>
+  </data>
+  <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
+    <value>Further economy and save fixes: fair order and regular-customer rewards, a closed reward loophole and more robust save games</value>
+  </data>
 </root>

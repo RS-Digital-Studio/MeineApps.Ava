@@ -7001,4 +7001,19 @@
   <data name="PrestigeWhatYouLose" xml:space="preserve"><value>Was du verlierst:</value></data>
   <data name="AscensionLockedHint" xml:space="preserve"><value>3× Legende-Prestige nötig, um Ascension freizuschalten</value></data>
   <data name="WarehouseLockedHint" xml:space="preserve"><value>Spieler-Level 50 nötig, um das Lager freizuschalten</value></data>
+  <data name="WhatsNewMinigameFlow" xml:space="preserve">
+    <value>Minispiele bei mehrteiligen Aufträgen laufen jetzt über alle Aufgaben flüssig – die Timing-Leiste bleibt ab der zweiten Runde animiert</value>
+  </data>
+  <data name="WhatsNewBalancingPolish" xml:space="preserve">
+    <value>Balancing-Feinschliff: Praktikanten-Effizienz und Inflationszeit-Upgrade-Kosten korrigiert, Material-Marktpreise jetzt stabil über Sitzungen hinweg</value>
+  </data>
+  <data name="WhatsNewCraftingStability" xml:space="preserve">
+    <value>Stabileres Crafting- und Lager-System: korrekte Kosten-Buchung und keine seltenen Speicher-Hänger mehr</value>
+  </data>
+  <data name="WhatsNewGuildHallBonuses" xml:space="preserve">
+    <value>Gildenhallen-Boni wirken jetzt: Einkommen, Auftragsbelohnungen, Crafting-Tempo und Wochenziele profitieren endlich von deinen ausgebauten Gilden-Gebäuden</value>
+  </data>
+  <data name="WhatsNewEconomySaveFixes" xml:space="preserve">
+    <value>Weitere Wirtschafts- und Speicher-Korrekturen: faire Auftrags- und Stammkunden-Belohnungen, geschlossene Belohnungs-Lücke und robustere Spielstände</value>
+  </data>
 </root>

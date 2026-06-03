@@ -366,6 +366,16 @@ public sealed partial class GameStateService
         if (shopOrderBonus > 0)
             multiplier *= (1m + shopOrderBonus);
 
+        // Gildenhalle: Auftragsbelohnungs-Bonus + universeller "Alles"-Bonus (vor dem Soft-Cap,
+        // also gedeckelt). Diese Hall-Effekte wurden bislang berechnet, aber nie angewendet.
+        if (_state.GuildMembership != null)
+        {
+            if (_state.GuildMembership.HallOrderRewardBonus > 0)
+                multiplier *= (1m + _state.GuildMembership.HallOrderRewardBonus);
+            if (_state.GuildMembership.HallEverythingBonus > 0)
+                multiplier *= (1m + _state.GuildMembership.HallEverythingBonus);
+        }
+
         // Soft-Cap: Diminishing Returns auf den Gesamt-Multiplikator
         // Verhindert Multiplikator-Explosion bei voll ausgebauten Spielern
         decimal cap = GameBalanceConstants.OrderRewardMultiplierSoftCap;
@@ -391,6 +401,9 @@ public sealed partial class GameStateService
         decimal moneyReward;
         int xpReward;
         MiniGameRating avgRating;
+        CustomerReputationTier tierBefore = default;
+        CustomerReputationTier tierAfter = default;
+        bool reputationTierChanged = false;
 
         lock (_stateLock)
         {
@@ -403,13 +416,17 @@ public sealed partial class GameStateService
             xpReward = order.FinalXp;
 
             // V7 (): Material-Offer-Bonus — gilt VOR Combo/Doppel-Boosts.
-            if (order.MaterialOfferAccepted && order.MaterialOfferBonusMultiplier > 0)
+            if (order.MaterialOfferAccepted)
             {
-                decimal bonusFactor = 1m + (decimal)order.MaterialOfferBonusMultiplier;
-                moneyReward *= bonusFactor;
-                xpReward = (int)(xpReward * bonusFactor);
+                if (order.MaterialOfferBonusMultiplier > 0)
+                {
+                    decimal bonusFactor = 1m + (decimal)order.MaterialOfferBonusMultiplier;
+                    moneyReward *= bonusFactor;
+                    xpReward = (int)(xpReward * bonusFactor);
+                }
 
-                // Reservierte Materialien konsumieren (atomar im selben Lock).
+                // L9-Fix: Reservierte Materialien IMMER konsumieren wenn akzeptiert (auch ohne
+                // Bonus) — sonst bleibt die Reservierung als Orphan in ReservedInventory haengen.
                 ConsumeOrderMaterialReservation(order);
             }
 
@@ -467,19 +484,29 @@ public sealed partial class GameStateService
             }
             // v2.0.37: Tier-Snapshot vor Aenderung — Event triggert Confetti/FloatingText
             // im MainViewModel, wenn der Spieler in einen neuen Tier aufsteigt.
-            var tierBeforeRating = _state.Reputation.CurrentTier;
+            // L11-Fix: Tier-Wechsel NUR im Lock ermitteln (RecomputeTier mutiert CurrentTier);
+            // das Event wird NACH dem Lock gefeuert (Doc-Kontrakt: Subscriber nicht unter _stateLock).
+            tierBefore = _state.Reputation.CurrentTier;
             _state.Reputation.AddRating(stars, reputationBonus);
-            RaiseReputationTierChangedIfNeeded(tierBeforeRating);
+            reputationTierChanged = _state.Reputation.RecomputeTier(out _);
+            tierAfter = _state.Reputation.CurrentTier;
 
-            // Stammkunden-Tracking bei Perfect Rating
+            // Stammkunden-Tracking bei Perfect Rating.
+            // M8-Fix: Lookup primaer ueber CustomerId (konsistent mit dem Reward-Lookup in
+            // CalculateOrderRewardMultiplierUnlocked). Fallback auf Name nur fuer den Erstkontakt
+            // (Order hat noch keine CustomerId). Beim Neuanlegen wird order.CustomerId verankert.
             if (avgRating == MiniGameRating.Perfect && !string.IsNullOrEmpty(order.CustomerName))
             {
                 RegularCustomer? existingCustomer = null;
                 for (int i = 0; i < _state.Reputation.RegularCustomers.Count; i++)
                 {
-                    if (_state.Reputation.RegularCustomers[i].Name == order.CustomerName)
+                    var rc = _state.Reputation.RegularCustomers[i];
+                    bool match = !string.IsNullOrEmpty(order.CustomerId)
+                        ? rc.Id == order.CustomerId
+                        : rc.Name == order.CustomerName;
+                    if (match)
                     {
-                        existingCustomer = _state.Reputation.RegularCustomers[i];
+                        existingCustomer = rc;
                         break;
                     }
                 }
@@ -496,15 +523,18 @@ public sealed partial class GameStateService
                 }
                 else
                 {
-                    // Neuen Stammkunden anlegen
-                    _state.Reputation.RegularCustomers.Add(new RegularCustomer
+                    // Neuen Stammkunden anlegen und die Identitaet im Order verankern,
+                    // damit Folge-Auftraege per Id (nicht Name) korrekt zugeordnet werden.
+                    var newCustomer = new RegularCustomer
                     {
                         Name = order.CustomerName,
                         PreferredWorkshop = order.WorkshopType,
                         PerfectOrderCount = 1,
                         LastOrder = DateTime.UtcNow,
                         AvatarSeed = order.CustomerAvatarSeed
-                    });
+                    };
+                    _state.Reputation.RegularCustomers.Add(newCustomer);
+                    order.CustomerId = newCustomer.Id;
                     // Max 20 Stammkunden (älteste entfernen)
                     while (_state.Reputation.RegularCustomers.Count > 20)
                         _state.Reputation.RegularCustomers.RemoveAt(0);
@@ -519,6 +549,11 @@ public sealed partial class GameStateService
         // Grant rewards (these have their own locks)
         AddMoney(moneyReward);
         AddXp(xpReward);
+
+        // L11-Fix: Reputation-Tier-Event AUSSERHALB des Locks feuern (Subscriber machen
+        // Confetti/Dialog/Audio — laut Doc-Kontrakt nicht unter gehaltenem _stateLock).
+        if (reputationTierChanged)
+            ReputationTierChanged?.Invoke(this, new ReputationTierChangedEventArgs(tierBefore, tierAfter));
 
         OrderCompleted?.Invoke(this, new OrderCompletedEventArgs(
             order, moneyReward, xpReward, avgRating));
@@ -593,10 +628,15 @@ public sealed partial class GameStateService
                 order.MaterialOfferAccepted = false;
             }
 
-            _state.AvailableOrders.Add(order);
+            // M6-Fix: Live-Auftraege beim Abbruch VERWERFEN statt zurueckzulegen.
+            // StartOrder setzt ExpiresAt=null → eine zurueckgelegte Live-Order wuerde nie
+            // expiren (ExpireOldLiveOrders ueberspringt ExpiresAt==null), und ihr Premium-3x-
+            // Multiplikator liesse sich durch Abbrechen/Neustarten beliebig oft re-applizieren.
             _state.ActiveOrder = null;
             // v2.0.35 Feature A: Workshop auch aus Parallel-Slot entfernen.
             _state.ParallelOrdersByWorkshop.Remove(order.WorkshopType);
+            if (order.IsLive) return;
+            _state.AvailableOrders.Add(order);
         }
     }
 

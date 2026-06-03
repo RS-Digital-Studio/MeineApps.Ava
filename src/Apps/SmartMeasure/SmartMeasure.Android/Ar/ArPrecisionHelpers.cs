@@ -259,15 +259,16 @@ public static class ArPrecisionHelpers
             var dy = Math.Clamp((int)(screenY / viewportHeight * dh), 0, dh - 1);
 
             var planes = depthImage.GetPlanes();
-            if (planes == null || planes.Length == 0 || planes[0]?.Buffer == null) return null;
+            var plane = planes?.Length > 0 ? planes[0] : null;
+            var planeBuffer = plane?.Buffer;
+            if (plane == null || planeBuffer == null) return null;
 
-            var plane = planes[0];
             var offset = dy * plane.RowStride + dx * plane.PixelStride;
-            if (offset + 1 >= plane.Buffer.Capacity()) return null;
+            if (offset + 1 >= planeBuffer.Capacity()) return null;
 
-            plane.Buffer.Position(offset);
-            var low = plane.Buffer.Get() & 0xFF;
-            var high = plane.Buffer.Get() & 0xFF;
+            planeBuffer.Position(offset);
+            var low = planeBuffer.Get() & 0xFF;
+            var high = planeBuffer.Get() & 0xFF;
             var depthMm = low | (high << 8);
             if (depthMm == 0) return null;
 
@@ -307,15 +308,16 @@ public static class ArPrecisionHelpers
             var sy = Math.Clamp((int)(screenY / viewportHeight * sh), 0, sh - 1);
 
             var planes = semImage.GetPlanes();
-            if (planes == null || planes.Length == 0 || planes[0]?.Buffer == null)
+            var plane = planes?.Length > 0 ? planes[0] : null;
+            var planeBuffer = plane?.Buffer;
+            if (plane == null || planeBuffer == null)
                 return ArSemanticLabel.None;
 
-            var plane = planes[0];
             var offset = sy * plane.RowStride + sx * plane.PixelStride;
-            if (offset >= plane.Buffer.Capacity()) return ArSemanticLabel.None;
+            if (offset >= planeBuffer.Capacity()) return ArSemanticLabel.None;
 
-            plane.Buffer.Position(offset);
-            var raw = plane.Buffer.Get() & 0xFF;
+            planeBuffer.Position(offset);
+            var raw = planeBuffer.Get() & 0xFF;
 
             // ARCore Semantic-Labels sind 0..11. Werte ausserhalb behandeln wir als Unlabeled.
             return raw <= 11 ? (ArSemanticLabel)raw : ArSemanticLabel.Unlabeled;

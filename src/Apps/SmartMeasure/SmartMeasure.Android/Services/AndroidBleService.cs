@@ -214,8 +214,8 @@ public sealed class AndroidBleService : IBleService, IDisposable
 
             _writeAckTcs = new TaskCompletionSource<bool>();
 
-            characteristic.SetValue(command);
-            if (!gatt.WriteCharacteristic(characteristic))
+            var payload = System.Text.Encoding.UTF8.GetBytes(command);
+            if (!WriteCharacteristicValue(gatt, characteristic, payload))
             {
                 System.Diagnostics.Debug.WriteLine($"BLE WriteCharacteristic abgelehnt: {command}");
                 return;
@@ -345,17 +345,69 @@ public sealed class AndroidBleService : IBleService, IDisposable
         var descriptor = characteristic.GetDescriptor(CccdDescriptorUuid);
         if (descriptor != null)
         {
-            descriptor.SetValue(BluetoothGattDescriptor.EnableNotificationValue?.ToArray());
-            gatt.WriteDescriptor(descriptor);
+            var cccdValue = BluetoothGattDescriptor.EnableNotificationValue?.ToArray()
+                ?? [0x01, 0x00];
+            WriteDescriptorValue(gatt, descriptor, cccdValue);
         }
     }
 
+    /// <summary>
+    /// Schreibt einen Characteristic-Wert. Ab API 33 (Android 13) wird die moderne
+    /// <c>WriteCharacteristic(characteristic, value, writeType)</c>-Überladung genutzt
+    /// (liefert einen Status-Code), auf älteren Geräten der deprecatete SetValue+Write-Pfad.
+    /// </summary>
+    private static bool WriteCharacteristicValue(BluetoothGatt gatt,
+        BluetoothGattCharacteristic characteristic, byte[] value)
+    {
+        if (OperatingSystem.IsAndroidVersionAtLeast(33))
+        {
+            // 0 == BluetoothStatusCodes.Success
+            return gatt.WriteCharacteristic(characteristic, value,
+                (int)characteristic.WriteType) == 0;
+        }
+
+#pragma warning disable CA1422 // SetValue/WriteCharacteristic(characteristic) deprecated ab API 33 — Fallback für < 33
+        characteristic.SetValue(value);
+        return gatt.WriteCharacteristic(characteristic);
+#pragma warning restore CA1422
+    }
+
+    /// <summary>
+    /// Schreibt einen Descriptor-Wert (z.B. CCCD zum Aktivieren von Notifications). Ab API 33
+    /// die moderne <c>WriteDescriptor(descriptor, value)</c>-Überladung, sonst der deprecatete Pfad.
+    /// </summary>
+    private static void WriteDescriptorValue(BluetoothGatt gatt,
+        BluetoothGattDescriptor descriptor, byte[] value)
+    {
+        if (OperatingSystem.IsAndroidVersionAtLeast(33))
+        {
+            gatt.WriteDescriptor(descriptor, value);
+            return;
+        }
+
+#pragma warning disable CA1422 // SetValue/WriteDescriptor(descriptor) deprecated ab API 33 — Fallback für < 33
+        descriptor.SetValue(value);
+        gatt.WriteDescriptor(descriptor);
+#pragma warning restore CA1422
+    }
+
+    // Legacy-Pfad (< API 33): der Wert muss per GetValue() geholt werden.
     internal void OnCharacteristicChanged(BluetoothGattCharacteristic characteristic)
     {
         if (_isDisposed) return;
 
-        var uuid = characteristic.Uuid;
+#pragma warning disable CA1422 // GetValue() deprecated ab API 33 — nur erreichbar über den Legacy-Callback (< 33)
         var data = characteristic.GetValue();
+#pragma warning restore CA1422
+        OnCharacteristicChanged(characteristic, data);
+    }
+
+    // Moderner Pfad (API 33+): der Wert kommt direkt aus dem Callback (kein GetValue() nötig).
+    internal void OnCharacteristicChanged(BluetoothGattCharacteristic characteristic, byte[]? data)
+    {
+        if (_isDisposed) return;
+
+        var uuid = characteristic.Uuid;
         if (data == null || data.Length == 0) return;
 
         try
@@ -582,11 +634,21 @@ public sealed class AndroidBleService : IBleService, IDisposable
                 System.Diagnostics.Debug.WriteLine($"BLE ServiceDiscovery fehlgeschlagen: {status}");
         }
 
+        // Legacy-Callback (< API 33): Android ruft auf neueren Geräten nur noch die Wert-Überladung
+        // unten auf — diese hier bleibt für API 26–32 aktiv und holt den Wert via GetValue().
         public override void OnCharacteristicChanged(BluetoothGatt? gatt,
             BluetoothGattCharacteristic? characteristic)
         {
+            if (OperatingSystem.IsAndroidVersionAtLeast(33)) return;
             if (characteristic != null)
                 service.OnCharacteristicChanged(characteristic);
+        }
+
+        // Moderner Callback (API 33+): liefert den Wert direkt mit, kein GetValue() nötig.
+        public override void OnCharacteristicChanged(BluetoothGatt? gatt,
+            BluetoothGattCharacteristic characteristic, byte[] value)
+        {
+            service.OnCharacteristicChanged(characteristic, value);
         }
 
         public override void OnCharacteristicWrite(BluetoothGatt? gatt,

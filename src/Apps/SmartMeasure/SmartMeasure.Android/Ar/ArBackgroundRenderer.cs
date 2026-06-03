@@ -152,7 +152,8 @@ public sealed class ArBackgroundRenderer : IDisposable
     private void UploadVertexBuffer()
     {
         var buffer = Java.Nio.ByteBuffer.AllocateDirect(QuadVertices.Length * 4)!;
-        buffer.Order(Java.Nio.ByteOrder.NativeOrder());
+        // NativeOrder() liefert immer eine gültige ByteOrder (nur nullable annotiert)
+        buffer.Order(Java.Nio.ByteOrder.NativeOrder()!);
         var floatBuffer = buffer.AsFloatBuffer()!;
         floatBuffer.Put(QuadVertices);
         floatBuffer.Position(0);
@@ -167,7 +168,8 @@ public sealed class ArBackgroundRenderer : IDisposable
         if (_texCoordByteBuffer == null)
         {
             _texCoordByteBuffer = Java.Nio.ByteBuffer.AllocateDirect(_texCoords.Length * 4)!;
-            _texCoordByteBuffer.Order(Java.Nio.ByteOrder.NativeOrder());
+            // NativeOrder() liefert immer eine gültige ByteOrder (nur nullable annotiert)
+            _texCoordByteBuffer.Order(Java.Nio.ByteOrder.NativeOrder()!);
             _texCoordFloatBuffer = _texCoordByteBuffer.AsFloatBuffer()!;
         }
 

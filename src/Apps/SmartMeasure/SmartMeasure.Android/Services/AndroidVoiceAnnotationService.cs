@@ -48,7 +48,7 @@ public sealed class AndroidVoiceAnnotationService : IVoiceAnnotationService
 
         var intent = new Intent(RecognizerIntent.ActionRecognizeSpeech);
         intent.PutExtra(RecognizerIntent.ExtraLanguageModel, RecognizerIntent.LanguageModelFreeForm);
-        intent.PutExtra(RecognizerIntent.ExtraLanguage, _context.Resources?.Configuration?.Locale?.ToString() ?? "de-DE");
+        intent.PutExtra(RecognizerIntent.ExtraLanguage, GetCurrentLocaleTag());
         intent.PutExtra(RecognizerIntent.ExtraMaxResults, 1);
         intent.PutExtra(RecognizerIntent.ExtraSpeechInputCompleteSilenceLengthMillis, maxSeconds * 1000);
         intent.PutExtra(RecognizerIntent.ExtraSpeechInputMinimumLengthMillis, 1000);
@@ -71,6 +71,26 @@ public sealed class AndroidVoiceAnnotationService : IVoiceAnnotationService
         });
 
         return tcs.Task;
+    }
+
+    /// <summary>Aktuelles Locale-Tag (z.B. "de-DE"). Ab API 24 (Nougat) liefert
+    /// <c>Configuration.Locales</c> die LocaleList — der direkte <c>Configuration.Locale</c>-Zugriff
+    /// ist seither deprecated. MinSdk 26 erfüllt den Guard immer; der Fallback bleibt aus
+    /// Robustheit erhalten.</summary>
+    private string GetCurrentLocaleTag()
+    {
+        var config = _context.Resources?.Configuration;
+        if (config == null) return "de-DE";
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(24))
+        {
+            var locale = config.Locales?.Get(0);
+            if (locale != null) return locale.ToString() ?? "de-DE";
+        }
+
+#pragma warning disable CA1422 // Configuration.Locale deprecated ab API 24 — Fallback für < 24
+        return config.Locale?.ToString() ?? "de-DE";
+#pragma warning restore CA1422
     }
 
     /// <summary>Java-Listener-Wrapper. <c>IRecognitionListener</c> ist ein Java-Interface,

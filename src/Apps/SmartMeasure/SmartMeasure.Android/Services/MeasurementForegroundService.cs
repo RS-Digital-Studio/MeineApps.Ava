@@ -88,18 +88,21 @@ public sealed class MeasurementForegroundService : Service
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
         }
 
-        var builder = new NotificationCompat.Builder(this, ChannelId)
-            .SetContentTitle("SmartMeasure")
-            .SetContentText("Vermessung aktiv — Verbindung zum Stab wird gehalten")
-            .SetSmallIcon(global::Android.Resource.Drawable.IcMenuCompass)
-            .SetOngoing(true)
-            .SetPriority(NotificationCompat.PriorityLow)
-            .SetCategory(NotificationCompat.CategoryService);
+        // Die Fluent-Setter von NotificationCompat.Builder sind als nullable annotiert,
+        // geben aber immer denselben Builder zurück — über die lokale Variable verketten,
+        // damit der Nullable-Analyzer keinen möglichen Null-Verweis sieht.
+        var builder = new NotificationCompat.Builder(this, ChannelId);
+        builder.SetContentTitle("SmartMeasure");
+        builder.SetContentText("Vermessung aktiv — Verbindung zum Stab wird gehalten");
+        builder.SetSmallIcon(global::Android.Resource.Drawable.IcMenuCompass);
+        builder.SetOngoing(true);
+        builder.SetPriority(NotificationCompat.PriorityLow);
+        builder.SetCategory(NotificationCompat.CategoryService);
 
         if (pendingIntent != null)
             builder.SetContentIntent(pendingIntent);
 
-        return builder.Build();
+        return builder.Build() ?? throw new InvalidOperationException("NotificationCompat.Builder.Build() lieferte null");
     }
 
     /// <summary>Convenience-Helper: Service starten.</summary>

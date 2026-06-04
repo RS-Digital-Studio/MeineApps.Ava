@@ -102,13 +102,16 @@ private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlu
 _paint.MaskFilter?.Dispose();
 _paint.MaskFilter = SKMaskFilter.CreateBlur(...);
 
-// SKPaint + SKColorFilter (+ ImageFilter): pro Frame pro Entity = nativer, FINALISIERBARER Müll
-// → Gen0/Gen1-GC-Pause = periodischer Frame-Freeze (auf Mono-AOT-Android verstärkt). using/Dispose
-// gibt nur den Handle frei, der managed Wrapper muss trotzdem durch die Finalizer-Queue.
-// OutlineRenderHelper cacht Paint+ColorFilter Single-Slot (wie den Dilate-Filter). Render-Call-Sites
-// vermeiden Per-Frame-Closures via gecachter Delegates + mutable "current"-Felder (kein Lambda/foreach).
-// WICHTIG: Der volle Spielfeld-Render läuft bereits ab GameState.Starting (Countdown), nicht erst
-// ab Playing — Per-Frame-Allokationen erzeugen den Stutter also ab Frame 1.
+// GPU-STALL statt GC (live auf Galaxy S25 profiliert): SaveLayer + ImageFilter (Dilate/Blur),
+// advanced BlendModes (SoftLight/Screen/Multiply/Overlay → Full-Screen-Destination-Read) und
+// Full-Screen-Gradient-Shader pro Frame fallen auf dem Avalonia-Skia-Backend auf einen extrem
+// langsamen Pfad (~1,2 s PRO Outline-SaveLayer!). Das war der periodische Stutter — NICHT GC
+// (FrameProfiler zeigte gc=0/alloc=0 bei rend=3800ms). Konsequenzen:
+//   - Outline ohne SaveLayer+ImageFilter (Single-Pass; OutlineRenderHelper-Offset-Variante ohne ImageFilter bereit).
+//   - BlendModes HW-fähig halten: SrcOver/Plus/Modulate statt SoftLight/Screen/Multiply.
+//   - Statische Full-Screen-Gradienten (Vignette) EINMAL in ein winziges Bild rendern + pro Frame blitten.
+// WICHTIG: Der volle Spielfeld-Render läuft bereits ab GameState.Starting (Countdown) — solche
+// teuren Render-Operationen erzeugen den Stutter ab Frame 1. Diagnose: FrameProfiler/RenderProbe (Tag BBPERF).
 
 // DPI: IMMER canvas.LocalClipBounds — nie e.Info.Width/Height (physische Pixel)
 var bounds = canvas.LocalClipBounds;

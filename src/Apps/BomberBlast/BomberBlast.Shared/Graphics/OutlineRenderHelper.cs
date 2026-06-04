@@ -49,6 +49,15 @@ public static class OutlineRenderHelper
     private static SKImageFilter? _cachedDilateFilter;
     private static float _cachedRadius = -1f;
 
+    // Outline-Paint + ColorFilter werden gecacht (analog zum Dilate-Filter). Beide sind NATIVE,
+    // finalisierbare SkiaSharp-Objekte — pro Frame neu zu allokieren erzeugte ~2 finalisierbare
+    // Objekte je Outline-Entity (Gegner/Spieler) PRO Frame und damit Gen0/Gen1-GC-Druck im
+    // Render-Hot-Path (sichtbarer periodischer Stutter ab dem ersten gerenderten Frame).
+    private static SKPaint? _cachedOutlinePaint;
+    private static SKColorFilter? _cachedColorFilter;
+    private static SKColor _cachedPaintColor;
+    private static float _cachedPaintRadius = -1f;
+
     /// <summary>
     /// Rendert die <paramref name="renderAction"/> mit Outline-Ring drumherum.
     /// </summary>
@@ -64,15 +73,7 @@ public static class OutlineRenderHelper
         float radius = DefaultRadius)
     {
         var color = outlineColor ?? DefaultOutlineColor;
-
-        var dilateFilter = GetOrCreateDilateFilter(radius);
-        using var colorFilter = SKColorFilter.CreateBlendMode(color, SKBlendMode.SrcIn);
-        using var outlinePaint = new SKPaint
-        {
-            ImageFilter = dilateFilter,
-            ColorFilter = colorFilter,
-            IsAntialias = true,
-        };
+        var outlinePaint = GetOrCreateOutlinePaint(color, radius);
 
         // Pass 1: Outline (dilatierter, eingefärbter Sprite)
         canvas.SaveLayer(outlinePaint);
@@ -81,6 +82,40 @@ public static class OutlineRenderHelper
 
         // Pass 2: Original-Sprite ON TOP des Outline-Rings
         renderAction(canvas);
+    }
+
+    /// <summary>
+    /// Gibt den gecachten Outline-Paint (inkl. ColorFilter + Dilate-ImageFilter) zurück.
+    /// Single-Slot-Cache (outlineColor/radius sind in der Praxis konstant) — vermeidet die
+    /// native Per-Frame-Allokation von SKPaint + SKColorFilter im Render-Hot-Path.
+    /// </summary>
+    private static SKPaint GetOrCreateOutlinePaint(SKColor color, float radius)
+    {
+        lock (_filterLock)
+        {
+            // GetOrCreateDilateFilter kann den gecachten Dilate-Filter bei Radius-Wechsel ersetzen
+            // (und den alten disposen) — der Referenz-Check unten schützt den gecachten Paint dann
+            // vor einem use-after-dispose seines ImageFilters.
+            var dilateFilter = GetOrCreateDilateFilter(radius);
+            if (_cachedOutlinePaint == null
+                || _cachedPaintColor != color
+                || Math.Abs(_cachedPaintRadius - radius) > 0.01f
+                || !ReferenceEquals(_cachedOutlinePaint.ImageFilter, dilateFilter))
+            {
+                _cachedOutlinePaint?.Dispose();
+                _cachedColorFilter?.Dispose();
+                _cachedColorFilter = SKColorFilter.CreateBlendMode(color, SKBlendMode.SrcIn);
+                _cachedOutlinePaint = new SKPaint
+                {
+                    ImageFilter = dilateFilter,
+                    ColorFilter = _cachedColorFilter,
+                    IsAntialias = true,
+                };
+                _cachedPaintColor = color;
+                _cachedPaintRadius = radius;
+            }
+            return _cachedOutlinePaint;
+        }
     }
 
     /// <summary>
@@ -109,6 +144,11 @@ public static class OutlineRenderHelper
     {
         lock (_filterLock)
         {
+            _cachedOutlinePaint?.Dispose();
+            _cachedOutlinePaint = null;
+            _cachedColorFilter?.Dispose();
+            _cachedColorFilter = null;
+            _cachedPaintRadius = -1f;
             _cachedDilateFilter?.Dispose();
             _cachedDilateFilter = null;
             _cachedRadius = -1f;

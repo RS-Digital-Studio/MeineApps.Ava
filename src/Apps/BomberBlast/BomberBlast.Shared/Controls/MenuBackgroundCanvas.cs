@@ -59,18 +59,20 @@ public class MenuBackgroundCanvas : UserControl
     }
 
     /// <summary>
-    /// Reagiert auf IsVisible- und Theme-Änderungen.
-    /// Im Timer-Tick wird zusätzlich IsEffectivelyVisible geprüft — das stoppt die
-    /// Rendering-Arbeit auch wenn ein Parent-Container (z.B. PageView-Border in MainView)
-    /// unsichtbar gesetzt wird. Sonst würden alle ~20 Menü-Canvases parallel Frames rendern.
+    /// Reagiert auf (effektive) Sichtbarkeits- und Theme-Änderungen.
+    /// IsEffectivelyVisible deckt auch den Fall ab, dass ein Parent-Container (z.B. der
+    /// PageView-Border in MainView beim Wechsel ins Spiel) unsichtbar gesetzt wird — dann
+    /// wird der 30-fps-Timer KOMPLETT gestoppt statt nur im Tick zu skippen (sonst tickt er
+    /// während des gesamten Spiels als UI-Thread-Dauerlast weiter, da die eigene IsVisible-
+    /// Property unverändert bleibt). Der IsEffectivelyVisible-Guard im Tick bleibt als Netz.
     /// </summary>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == IsVisibleProperty)
+        if (change.Property == IsVisibleProperty || change.Property == IsEffectivelyVisibleProperty)
         {
-            if (change.GetNewValue<bool>())
+            if (IsEffectivelyVisible)
                 StartIfVisible();
             else
                 Stop();

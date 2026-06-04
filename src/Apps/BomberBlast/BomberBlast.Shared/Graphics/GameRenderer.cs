@@ -834,6 +834,12 @@ public sealed partial class GameRenderer : IDisposable
         // Kosmetik-Trail aus CustomizationService laden
         _trailSystem.ActiveCosmeticTrail = _customizationService.ActiveTrail;
 
+        // Einmalig erstellte Outline-Render-Delegates (kein Per-Frame-Closure im Render-Loop).
+        // Sie lesen die _outlineXxx-Felder, die unmittelbar vor dem Aufruf gesetzt werden.
+        _renderOutlineEnemy = c => RenderEnemy(c, _outlineEnemy!, _outlineGrid!);
+        _renderOutlinePowerUp = c => RenderPowerUp(c, _outlinePowerUp!);
+        _renderOutlinePlayer = c => RenderPlayer(c, _outlinePlayer!);
+
         _styleService.StyleChanged += OnStyleChanged;
     }
 
@@ -1070,7 +1076,10 @@ public sealed partial class GameRenderer : IDisposable
         foreach (var powerUp in powerUps)
         {
             if (powerUp.IsActive && powerUp.IsVisible)
-                RenderEntityWithOptionalOutline(canvas, powerUp, c => RenderPowerUp(c, powerUp));
+            {
+                _outlinePowerUp = powerUp;
+                RenderEntityWithOptionalOutline(canvas, powerUp, _renderOutlinePowerUp);
+            }
         }
 
         foreach (var bomb in bombs)
@@ -1090,7 +1099,11 @@ public sealed partial class GameRenderer : IDisposable
         RenderBurningTrails(canvas, enemies);
 
         foreach (var enemy in enemies)
-            RenderEntityWithOptionalOutline(canvas, enemy, c => RenderEnemy(c, enemy, grid));
+        {
+            _outlineEnemy = enemy;
+            _outlineGrid = grid;
+            RenderEntityWithOptionalOutline(canvas, enemy, _renderOutlineEnemy);
+        }
 
         // Boss Angriffs-Warnung und HP-Balken (über den Gegnern, unter dem Spieler)
         foreach (var enemy in enemies)
@@ -1104,7 +1117,10 @@ public sealed partial class GameRenderer : IDisposable
         }
 
         if (player != null)
-            RenderEntityWithOptionalOutline(canvas, player, c => RenderPlayer(c, player));
+        {
+            _outlinePlayer = player;
+            RenderEntityWithOptionalOutline(canvas, player, _renderOutlinePlayer);
+        }
 
         // Dynamische Beleuchtung (Lichtquellen aus Bomben, Explosionen, Lava etc.)
         if (!SkipAtmosphere)
@@ -1206,6 +1222,18 @@ public sealed partial class GameRenderer : IDisposable
     /// Bei <see cref="SkipAtmosphere"/> faellt es auf den normalen Single-Pass zurueck
     /// (Outline kostet 2x DrawCalls — bei Stutter ist der Frame-Gewinn wichtiger).
     /// </summary>
+    // Outline-Render ohne Per-Frame-Closure: Statt pro Entity pro Frame ein neues Lambda
+    // (Display-Class + Delegate) zu allokieren, werden diese "current"-Felder vor dem Aufruf
+    // gesetzt und von den einmalig im Ctor erstellten Delegates (_renderOutlineXxx) gelesen.
+    // Render läuft synchron auf dem UI-Thread (DispatcherTimer) → Setzen+Lesen ist sicher.
+    private Enemy? _outlineEnemy;
+    private GameGrid? _outlineGrid;
+    private PowerUp? _outlinePowerUp;
+    private Player? _outlinePlayer;
+    private readonly Action<SKCanvas> _renderOutlineEnemy;
+    private readonly Action<SKCanvas> _renderOutlinePowerUp;
+    private readonly Action<SKCanvas> _renderOutlinePlayer;
+
     private void RenderEntityWithOptionalOutline(
         SKCanvas canvas,
         BomberBlast.Models.Entities.Entity entity,

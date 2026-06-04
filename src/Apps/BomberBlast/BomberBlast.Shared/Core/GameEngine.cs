@@ -337,8 +337,8 @@ public sealed partial class GameEngine : IDisposable
     /// <summary>
     /// Phase 18 — Mode-Plugin-Framework Logic-Hook-Verkabelung (ARCH-1 aus Phase-15-Audit).
     /// Erstellt einen GameModeContext für die aktuellen Engine-State-Werte. Wird vor jedem
-    /// IGameMode-Hook-Aufruf gebaut. Allokation ist 1× pro Frame im Hot-Path — akzeptabel,
-    /// da Modes aktuell no-op-Defaults haben (Phase 19+ migriert echte Logic in Mode-Klassen).
+    /// IGameMode-Hook-Aufruf gebaut. GameModeContext ist ein readonly struct → die Erzeugung
+    /// liegt auf dem Stack (keine Per-Frame-Heap-Allokation), auch wenn sie im Hot-Path passiert.
     /// </summary>
     private BomberBlast.Core.Modes.GameModeContext BuildModeContext() => new()
     {

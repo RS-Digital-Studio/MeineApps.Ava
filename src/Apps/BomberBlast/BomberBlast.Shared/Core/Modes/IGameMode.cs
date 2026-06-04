@@ -77,8 +77,10 @@ public interface IGameMode
 /// <summary>
 /// Engine-State-Bridge für Mode-Plugins. Liefert Zugriff auf Player, Grid, Services etc.
 /// Plugins dürfen NIEMALS direkt auf GameEngine-Felder zugreifen — nur über diesen Context.
+/// <para>readonly struct: wird pro Frame (UpdateLogic-Hook) + pro Kill/Hit neu gebaut. Als struct
+/// landet die kurzlebige Bridge auf dem Stack statt auf dem GC-Heap — keine Per-Frame-Allokation.</para>
 /// </summary>
-public sealed class GameModeContext
+public readonly struct GameModeContext
 {
     /// <summary>Aktueller Spieler.</summary>
     public required BomberBlast.Models.Entities.Player Player { get; init; }

@@ -102,6 +102,14 @@ private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlu
 _paint.MaskFilter?.Dispose();
 _paint.MaskFilter = SKMaskFilter.CreateBlur(...);
 
+// SKPaint + SKColorFilter (+ ImageFilter): pro Frame pro Entity = nativer, FINALISIERBARER Müll
+// → Gen0/Gen1-GC-Pause = periodischer Frame-Freeze (auf Mono-AOT-Android verstärkt). using/Dispose
+// gibt nur den Handle frei, der managed Wrapper muss trotzdem durch die Finalizer-Queue.
+// OutlineRenderHelper cacht Paint+ColorFilter Single-Slot (wie den Dilate-Filter). Render-Call-Sites
+// vermeiden Per-Frame-Closures via gecachter Delegates + mutable "current"-Felder (kein Lambda/foreach).
+// WICHTIG: Der volle Spielfeld-Render läuft bereits ab GameState.Starting (Countdown), nicht erst
+// ab Playing — Per-Frame-Allokationen erzeugen den Stutter also ab Frame 1.
+
 // DPI: IMMER canvas.LocalClipBounds — nie e.Info.Width/Height (physische Pixel)
 var bounds = canvas.LocalClipBounds;
 

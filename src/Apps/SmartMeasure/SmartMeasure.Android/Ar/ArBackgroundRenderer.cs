@@ -202,19 +202,26 @@ public sealed class ArBackgroundRenderer : IDisposable
 
     public void Dispose()
     {
-        if (_programId != 0)
+        // GL-Objekte freigeben — in try/catch, weil Dispose nach dem EGL-Kontext-Teardown laufen
+        // kann (synchroner Aufruf aus OnDestroy ohne aktiven Kontext). Der Java-NIO-Buffer-Dispose
+        // unten ist kontextunabhängig und MUSS laufen, sonst Native-Memory-Leak pro Session.
+        try
         {
-            GLES20.GlDeleteProgram(_programId);
-            _programId = 0;
-        }
+            if (_programId != 0)
+            {
+                GLES20.GlDeleteProgram(_programId);
+                _programId = 0;
+            }
 
-        if (_vertexBuffer != 0 || _texCoordBuffer != 0)
-        {
-            var buffers = new[] { _vertexBuffer, _texCoordBuffer };
-            GLES20.GlDeleteBuffers(2, buffers, 0);
-            _vertexBuffer = 0;
-            _texCoordBuffer = 0;
+            if (_vertexBuffer != 0 || _texCoordBuffer != 0)
+            {
+                var buffers = new[] { _vertexBuffer, _texCoordBuffer };
+                GLES20.GlDeleteBuffers(2, buffers, 0);
+                _vertexBuffer = 0;
+                _texCoordBuffer = 0;
+            }
         }
+        catch { /* kein aktiver GL-Kontext — die Objekte werden mit dem Kontext ohnehin zerstört */ }
 
         _texCoordByteBuffer?.Dispose();
         _texCoordByteBuffer = null;

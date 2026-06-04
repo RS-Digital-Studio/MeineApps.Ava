@@ -140,12 +140,21 @@ public partial class ArCaptureActivity
                                     foreach (var p in c.Points) EnqueueIfGeo(p);
                         }
 
+                        // Wiederhergestellte Aktion ist bewusst NICHT undobar — der Undo-Stack
+                        // gehört zur alten (toten) Session. Punkte OHNE Geo-Bezug beziehen sich auf
+                        // das alte ARCore-Koordinatensystem (pro Session neu) und können in der
+                        // neuen Sitzung verschoben erscheinen — das wird dem Nutzer kommuniziert.
                         UpdateCounter();
                         _overlayView?.Invalidate();
                         ClearRecoveryState();
-                        var hint = anchorsToRestore > 0
-                            ? $"{totalPoints} Punkte wiederhergestellt — {anchorsToRestore} Geo-Anchors werden re-attached"
-                            : $"{totalPoints} Punkte wiederhergestellt";
+                        var localCount = totalPoints - anchorsToRestore;
+                        string hint;
+                        if (anchorsToRestore == 0 && totalPoints > 0)
+                            hint = $"{totalPoints} Punkte wiederhergestellt — ohne Geo-Bezug, Lage kann in dieser Sitzung abweichen";
+                        else if (localCount > 0)
+                            hint = $"{totalPoints} Punkte wiederhergestellt — {anchorsToRestore} mit Geo-Anchor, {localCount} ohne Geo-Bezug (Lage kann abweichen)";
+                        else
+                            hint = $"{totalPoints} Punkte wiederhergestellt — {anchorsToRestore} Geo-Anchors werden re-attached";
                         ShowTransientHint(hint);
                     });
                     builder.SetNegativeButton("Verwerfen", (_, _) => ClearRecoveryState());

@@ -106,6 +106,54 @@ public partial class ArCaptureActivity
         }
     }
 
+    /// <summary>Abbruch/Zurück mit Bestätigung: bei bereits erfassten Daten erst nachfragen
+    /// (Symmetrie zu <see cref="ConfirmFinishCapture"/>). Ein Fehl-Tap auf X oder eine Back-Geste
+    /// am Display-Rand verwirft sonst eine ganze Vermessungs-Session ohne jede Rückfrage.</summary>
+    private void ConfirmDiscardAndExit()
+    {
+        int totalPoints;
+        lock (_dataLock)
+        {
+            totalPoints = _points.Count + _contours.Sum(c => c.Points.Count)
+                + (_activeContour?.Points.Count ?? 0);
+        }
+
+        if (totalPoints == 0)
+        {
+            CancelAndFinish();
+            return;
+        }
+
+        try
+        {
+            var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
+            builder.SetTitle("Aufnahme verwerfen?");
+            builder.SetMessage($"{totalPoints} erfasste Punkt(e) gehen verloren. " +
+                "Mit \"Übernehmen\" stattdessen ins Projekt übertragen.");
+            builder.SetPositiveButton("Verwerfen", (_, _) => CancelAndFinish());
+            builder.SetNeutralButton("Übernehmen", (_, _) => { VibrateMedium(); FinishCapture(); });
+            builder.SetNegativeButton("Weiter messen", (_, _) => { });
+            builder.Show();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"ConfirmDiscard failed: {ex.Message}");
+            CancelAndFinish();
+        }
+    }
+
+    /// <summary>Bricht die Session ab (Result.Canceled) und schließt die Activity — mit dem
+    /// Doppel-Submit-Guard, der auch FinishCapture/OnBackPressed schützt.</summary>
+    private void CancelAndFinish()
+    {
+        if (System.Threading.Interlocked.Exchange(ref _finished, 1) == 0)
+        {
+            lock (_lastResultLock) _lastResult = null;
+            SetResult(Result.Canceled);
+        }
+        Finish();
+    }
+
     #endregion
 
     #region Kontur-Typ-Auswahl (Gartenplanung)
@@ -193,24 +241,8 @@ public partial class ArCaptureActivity
     {
         lock (_dataLock)
         {
-            if (_activeContour != null)
-            {
-                if (_activeContour.Points.Count >= 3)
-                {
-                    _activeContour.IsClosed = true;
-                    foreach (var p in _activeContour.Points)
-                    {
-                        if (!string.IsNullOrEmpty(p.AnchorId))
-                        {
-                            _anchorManager.Detach(p.AnchorId);
-                            p.AnchorId = null;
-                        }
-                    }
-                    ArPrecisionHelpers.ApplyBowditchCorrection(_activeContour);
-                    _contours.Add(_activeContour);
-                }
-                _activeContour = null;
-            }
+            // Aktive Freihand-Kontur einheitlich abschliessen (>=3 committen, sonst verwerfen).
+            FinalizeOrDiscardActiveContour();
             _rectangleCorners.Clear();
         }
 
@@ -232,30 +264,13 @@ public partial class ArCaptureActivity
     /// </summary>
     private void StartNewContour(ArContourType type)
     {
-        // Aktive Kontur abschließen wenn genug Punkte (sonst wegwerfen)
         lock (_dataLock)
         {
-            if (_activeContour != null)
-            {
-                if (_activeContour.Points.Count >= 3)
-                {
-                    _activeContour.IsClosed = true;
-                    // Anchors detachen damit Bowditch nicht überschrieben wird (K1-Fix)
-                    foreach (var p in _activeContour.Points)
-                    {
-                        if (!string.IsNullOrEmpty(p.AnchorId))
-                        {
-                            _anchorManager.Detach(p.AnchorId);
-                            p.AnchorId = null;
-                        }
-                    }
-                    ArPrecisionHelpers.ApplyBowditchCorrection(_activeContour);
-                    _contours.Add(_activeContour);
-                }
-                _activeContour = null;
-            }
-            // Eine evtl. begonnene Rechteck-Basiskante beim Wechsel zu Freihand verwerfen
-            // (sonst bleibt sie als verwaister Zwischenzustand hängen — analog StartRectangleMode).
+            // Aktive Kontur einheitlich abschliessen: ab 3 Punkten committen (mit Bowditch +
+            // Anchor-Detach + Undo-Eintrag), unter 3 Punkten verwerfen — dieselbe Logik wie
+            // SetMode/FinishCapture/StartRectangleMode (vorher inline dupliziert ohne Undo).
+            FinalizeOrDiscardActiveContour();
+            // Eine evtl. begonnene Rechteck-Basiskante beim Wechsel zu Freihand verwerfen.
             _rectangleCorners.Clear();
         }
 

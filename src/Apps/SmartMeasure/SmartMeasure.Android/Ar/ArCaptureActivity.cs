@@ -62,8 +62,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly float[] _projectionMatrix = new float[16];
     private readonly float[] _viewMatrix = new float[16];
     private ArBackgroundRenderer? _backgroundRenderer;
-    private int _viewportWidth;
-    private int _viewportHeight;
+    // volatile: in OnSurfaceChanged (GL-Thread) gesetzt, u.a. in PlaceTotalStationPoint
+    // (UI-Thread) gelesen — Sichtbarkeit über die Thread-Grenze garantieren.
+    private volatile int _viewportWidth;
+    private volatile int _viewportHeight;
 
     // Overlay
     private ArPointOverlayView? _overlayView;
@@ -73,7 +75,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly List<ArContour> _contours = [];
     private ArContour? _activeContour;
     private DateTime _sessionStart;
-    private CaptureMode _captureMode = CaptureMode.Point;
+    // volatile: vom UI-Thread (SetMode) geschrieben, vom GL-Thread (BuildOverlayState) jeden
+    // Frame gelesen. Ohne Barrier könnte der GL-Thread auf ARM einen veralteten Modus cachen →
+    // falscher Modus-Branch (z.B. Tape-Punkte im falschen Buffer). Alle anderen primitiven
+    // Cross-Thread-Flags der Klasse sind ebenfalls volatile.
+    private volatile CaptureMode _captureMode = CaptureMode.Point;
 
     /// <summary>Tape-Measure-Buffer (Plan-Kap. 5.3). Punkte hier landen NICHT im
     /// ArCaptureResult — Ad-hoc-Messung, Buffer wird beim Mode-Wechsel oder Long-Click
@@ -170,6 +176,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     // (Sensor-Thread) und gelesen (GL-/UI-Thread) — Nullable<float> ist ein 8-Byte-Struct
     // und damit NICHT atomic. Lösung: int-Bits eines float, NaN = "kein Wert", via
     // Volatile.Read/Write.
+    // _gps*-Felder werden von mehreren Threads geschrieben (BLE-PositionUpdated, GPS-Location-
+    // Listener, GPS-Averaging) und in FinishCapture gelesen. Nullable<double>/<float> sind nicht
+    // atomar → Torn-Reads (Lat von Fix A, Lon von Fix B). _gpsLock klammert jeden Schreib-
+    // Cluster UND die Lesung, sodass der GPS-Anker immer aus EINEM konsistenten Fix stammt.
+    private readonly object _gpsLock = new();
     private double? _gpsLatitude;
     private double? _gpsLongitude;
     private double? _gpsAltitude;
@@ -221,6 +232,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     // Drag-Startposition fuer Undo
     private (float x, float y, float z)? _dragStartPos;
+    private string? _dragStartAnchorId;
 
     // Punkt-Editor State (Einzel- oder Kontur-Punkt)
     private int _selectedPointIndex = -1;
@@ -238,7 +250,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     // ein realistischer User pro Session macht und hält die RAM-Belegung deckelig.
     private const int MaxUndoStackSize = 200;
     private readonly BoundedStack<IArAction> _undoStack = new(MaxUndoStackSize);
-    private readonly Stack<IArAction> _redoStack = new();
+    // Redo ebenfalls gedeckelt (war unbeschränkt) — sonst hält wiederholtes Undo/Redo-Togglen
+    // hunderte Actions samt ArPoint-Graph im Speicher, entgegen der MaxUndoStackSize-Absicht.
+    private readonly BoundedStack<IArAction> _redoStack = new(MaxUndoStackSize);
 
     // Screen-Positionen der projizierten Punkte (wird pro Frame aktualisiert)
     private readonly List<(float screenX, float screenY, int pointIndex)> _projectedPoints = [];
@@ -349,7 +363,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     // Magnetometer-Accuracy (0=keine bis 3=hoch) — vom Sensor-Thread geschrieben, GL-Thread gelesen
     private volatile int _magneticAccuracy = 3;
-    private volatile bool _lowMagAccuracyWarned;
+    // int-Flag + Interlocked statt volatile bool: das check-then-set unten muss atomar sein,
+    // sonst können zwei schnell aufeinanderfolgende Accuracy-Events beide das Gate passieren
+    // und zwei Kalibrierungs-Dialoge öffnen.
+    private int _lowMagAccuracyWarned;
 
     // Tracking-Quality-History — vom GL-Thread inkrementiert, von UI-Thread in FinishCapture gelesen
     private volatile int _frameCountTracking;
@@ -589,11 +606,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             LeftMargin = (int)(16 * density)
         };
         backButton.LayoutParameters = backParams;
-        backButton.Click += (_, _) =>
-        {
-            SetResult(Result.Canceled);
-            Finish();
-        };
+        backButton.Click += (_, _) => ConfirmDiscardAndExit();
         root.AddView(backButton);
 
         // Modus-Anzeige (oben rechts)
@@ -654,8 +667,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
         button.SetPadding((int)(12 * density), (int)(4 * density), (int)(12 * density), (int)(4 * density));
-        button.SetMinimumWidth(0);
-        button.SetMinWidth(0);
+        // Touch-Target-Mindestbreite 48dp (Accessibility) — kurze Labels wie "Vor"/"Mehr"
+        // ergäben sonst < 48dp breite Tap-Ziele.
+        button.SetMinimumWidth((int)(48 * density));
+        button.SetMinWidth((int)(48 * density));
         // Höhe 64dp — Platz fuer Icon + Label, gut treffbar auf dem 6.9"-Display
         var lp = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.WrapContent, (int)(64 * density))
@@ -691,7 +706,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             popupMenu.Add(0, idTapeReset, 0, "Maßband zurücksetzen");
         popupMenu.Add(0, idStakeout, 0, "Abstecken (Ziele finden)");
         popupMenu.Add(0, idTachy, 0, "Tachymeter (Stativ-Modus)");
-        popupMenu.Add(0, idDelete, 0, "Ausgewählten Punkt löschen");
+        // Löschen nur aktivieren, wenn ein Punkt ausgewählt ist — sonst ist der Eintrag
+        // ausgegraut statt einen toten Klick mit leiser "Kein Punkt"-Meldung zu erzeugen.
+        var hasSelection = _selectedPointIndex >= 0 || _isContourPointSelected;
+        popupMenu.Add(0, idDelete, 0, "Ausgewählten Punkt löschen")!.SetEnabled(hasSelection);
         popupMenu.Add(0, idScreenshot, 0, "Screenshot speichern");
         popupMenu.Add(0, idRecord, 0, _isRecording ? "Aufnahme stoppen" : "Aufnahme starten");
         popupMenu.Add(0, idHelp, 0, "Hilfe");
@@ -720,15 +738,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Zwischenansicht sieht.
         lock (_dataLock)
         {
-            if (_activeContour != null && _activeContour.Points.Count > 0)
-            {
-                _contours.Add(_activeContour);
-                _activeContour = null;
-            }
-            else
-            {
-                _activeContour = null;
-            }
+            // Aktive Kontur einheitlich abschliessen: ab 3 Punkten committen (mit Bowditch +
+            // Anchor-Detach + Undo-Eintrag), unter 3 Punkten verwerfen. Vorher landete jede
+            // 1-2-Punkt-Kontur ungeschlossen + ohne Anchor-Detach dauerhaft in _contours.
+            FinalizeOrDiscardActiveContour();
 
             // Transiente Rechteck-Ecken beim Modus-Wechsel verwerfen — sonst koennte eine
             // halb gesetzte Basiskante in einem anderen Modus weiterleben.
@@ -768,6 +781,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _btnContour?.SetBackgroundColor(mode is CaptureMode.Contour or CaptureMode.Rectangle
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
+        // "Mehr"-Button hervorheben, solange ein Spezial-Modus aus dem Overflow-Menü aktiv ist
+        // (Maßband/Abstecken/Tachymeter) — sonst leuchtet KEIN Button und der Nutzer merkt nicht,
+        // dass er den Modus gewechselt hat (z.B. Tape-Punkte landen dann nicht im Projekt).
+        _btnMore?.SetBackgroundColor(mode is CaptureMode.TapeMeasure or CaptureMode.Stakeout or CaptureMode.TotalStation
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
     }
 
     /// <summary>
@@ -780,31 +799,94 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// Die Punkte werden dadurch static (nicht mehr drift-korrigiert), aber das ist OK —
     /// eine geschlossene Kontur ist per Definition eine fertige Messung.
     /// </summary>
+    /// <summary>
+    /// Gemeinsame Abschluss-Logik einer aktiven Kontur (Voraussetzung: &gt;= 3 Punkte, wird vom
+    /// Aufrufer geprüft). Detacht die Anchors (sonst überschreibt RefreshAllAnchors die
+    /// Bowditch-Korrektur), wendet Bowditch an, verschiebt die Kontur nach <see cref="_contours"/>
+    /// und pusht GENAU EINE undobare <see cref="AddContourAction"/>. Die Einzel-Punkt-Actions der
+    /// Kontur werden durch den <c>IsClosed</c>-Schutz in <see cref="AddContourPointAction"/> /
+    /// <see cref="DeleteContourPointAction"/> neutralisiert — so kann ein Undo nach dem Schließen
+    /// die fertige, Bowditch-korrigierte Fläche nicht mehr korrumpieren.
+    /// MUSS unter <see cref="_dataLock"/> laufen. Liefert das Bowditch-Ergebnis (für eine
+    /// Schlussfehler-Warnung) und die committete Kontur via <paramref name="committed"/>.
+    /// </summary>
+    private ArMathHelpers.BowditchResult CommitActiveContour(out ArContour committed)
+    {
+        var contour = _activeContour!;
+        contour.IsClosed = true;
+        foreach (var p in contour.Points)
+        {
+            if (!string.IsNullOrEmpty(p.AnchorId))
+            {
+                _anchorManager.Detach(p.AnchorId);
+                p.AnchorId = null;
+            }
+        }
+        var bowditch = ArPrecisionHelpers.ApplyBowditchCorrection(contour);
+        _contours.Add(contour);
+        _activeContour = null;
+        _undoStack.Push(new AddContourAction(_dataLock, _contours, contour));
+        _redoStack.Clear();
+        committed = contour;
+        return bowditch;
+    }
+
+    /// <summary>
+    /// Schließt die aktive Kontur beim Verlassen des Kontur-Modus einheitlich ab: ab 3 Punkten
+    /// via <see cref="CommitActiveContour"/> (mit Anchor-Detach, Bowditch, Undo-Eintrag), eine
+    /// unfertige Linie (&lt; 3 Punkte) wird verworfen — Anchors freigegeben, mit Hinweis, wenn
+    /// schon Punkte gesetzt waren (vorher stiller Datenverlust bzw. ungeschlossener Müll-Eintrag).
+    /// MUSS unter <see cref="_dataLock"/> laufen.
+    /// </summary>
+    private void FinalizeOrDiscardActiveContour()
+    {
+        if (_activeContour == null) return;
+
+        if (_activeContour.Points.Count >= 3)
+        {
+            var bowditch = CommitActiveContour(out _);
+            if (bowditch == ArMathHelpers.BowditchResult.TooLarge)
+                ShowTransientHint("Großer Schlussfehler — Kontur prüfen (Tracking-Drift?)");
+            return;
+        }
+
+        var discarded = _activeContour.Points.Count;
+        foreach (var p in _activeContour.Points)
+        {
+            if (!string.IsNullOrEmpty(p.AnchorId))
+            {
+                _anchorManager.Detach(p.AnchorId);
+                p.AnchorId = null;
+            }
+        }
+        _activeContour = null;
+        if (discarded > 0)
+            ShowTransientHint($"Unfertige Linie ({discarded} {(discarded == 1 ? "Punkt" : "Punkte")}) verworfen");
+    }
+
     private void CloseActiveContour()
     {
         ArContour? closedContour = null;
+        var bowditch = ArMathHelpers.BowditchResult.Degenerate;
+        var tooFew = false;
         lock (_dataLock)
         {
-            if (_activeContour == null || _activeContour.Points.Count < 3) return;
-            _activeContour.IsClosed = true;
-
-            // Schritt 1: Anchors der Kontur-Punkte detachen — sonst überschreibt
-            // RefreshAllAnchors die Bowditch-Korrektur im nächsten Frame
-            foreach (var p in _activeContour.Points)
+            if (_activeContour == null || _activeContour.Points.Count < 3)
             {
-                if (!string.IsNullOrEmpty(p.AnchorId))
-                {
-                    _anchorManager.Detach(p.AnchorId);
-                    p.AnchorId = null;
-                }
+                // Bewusst NICHT verwerfen — der Schließen-Button bei zu wenigen Punkten soll
+                // den User nur hinweisen, damit er weiterzeichnen kann.
+                tooFew = true;
             }
+            else
+            {
+                bowditch = CommitActiveContour(out closedContour);
+            }
+        }
 
-            // Schritt 2: Bowditch-Correction — Schlussfehler proportional verteilen
-            ArPrecisionHelpers.ApplyBowditchCorrection(_activeContour);
-
-            _contours.Add(_activeContour);
-            closedContour = _activeContour;
-            _activeContour = null;
+        if (tooFew)
+        {
+            ShowTransientHint("Mindestens 3 Punkte zum Schließen nötig");
+            return;
         }
 
         if (closedContour != null)
@@ -813,7 +895,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var area = closedContour.CalculateArea();
             var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == closedContour.ContourType).Label
                 ?? closedContour.ContourType.ToString();
-            ShowTransientHint($"{typeLabel}: {pts} Punkte, {area:F1} m²");
+            ShowTransientHint(bowditch == ArMathHelpers.BowditchResult.TooLarge
+                ? $"{typeLabel}: {pts} Punkte — großer Schlussfehler, bitte prüfen!"
+                : $"{typeLabel}: {pts} Punkte, {area:F1} m²");
         }
 
         UpdateCounter();
@@ -919,9 +1003,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         List<ArContour> contoursCopy;
         lock (_dataLock)
         {
-            if (_activeContour != null && _activeContour.Points.Count > 0)
-                _contours.Add(_activeContour);
-            _activeContour = null;
+            // Aktive Kontur einheitlich abschliessen: ab 3 Punkten committen, sonst verwerfen.
+            // Vorher landete eine angefangene 1-2-Punkt-Linie ungefiltert im Ergebnis.
+            FinalizeOrDiscardActiveContour();
 
             // Eine halb gesetzte Rechteck-Basiskante ist unfertig → verwerfen (analog SetMode).
             _rectangleCorners.Clear();
@@ -946,12 +1030,26 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Bevorzuge Geospatial-Werte (VPS) über rohe GPS/Magnetometer wenn verfügbar.
         // Snapshot atomar lesen — Cross-Thread-Sicherheit gegen GL-Thread-Update.
         var geoSnap = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
-        var finalLat = geoSnap?.Latitude ?? _gpsLatitude;
-        var finalLon = geoSnap?.Longitude ?? _gpsLongitude;
-        var finalAlt = geoSnap?.Altitude ?? _gpsAltitude;
+        // GPS-Anker atomar als EINEN konsistenten Fix lesen (mehrere BLE-/Location-Writer).
+        double? gpsLat, gpsLon, gpsAlt;
+        float? gpsAcc;
+        int rtkFix;
+        ArGpsSource gpsSource;
+        lock (_gpsLock)
+        {
+            gpsLat = _gpsLatitude;
+            gpsLon = _gpsLongitude;
+            gpsAlt = _gpsAltitude;
+            gpsAcc = _gpsAccuracy;
+            rtkFix = _rtkFixQuality;
+            gpsSource = _gpsSource;
+        }
+        var finalLat = geoSnap?.Latitude ?? gpsLat;
+        var finalLon = geoSnap?.Longitude ?? gpsLon;
+        var finalAlt = geoSnap?.Altitude ?? gpsAlt;
         var finalGpsAcc = _geospatialActive && geoHAcc.HasValue
             ? geoHAcc.Value
-            : _gpsAccuracy;
+            : gpsAcc;
         var finalHeading = _geospatialActive && geoSnap != null
             ? geoSnap.Heading
             : _magneticHeading;
@@ -975,10 +1073,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             GeospatialHorizontalAccuracy = geoHAcc,
             GeospatialHeadingAccuracy = geoHeadingAcc,
             // Plan 3.1: GPS-Source + RTK-FixQuality für Accuracy-Berechnung in ArTransferService
-            GpsSource = _gpsSource == ArGpsSource.None && finalLat.HasValue
+            GpsSource = gpsSource == ArGpsSource.None && finalLat.HasValue
                 ? ArGpsSource.AndroidLocation
-                : _gpsSource,
-            RtkFixQuality = _rtkFixQuality,
+                : gpsSource,
+            RtkFixQuality = rtkFix,
         };
         lock (_lastResultLock) _lastResult = captureResult;
 
@@ -1024,12 +1122,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 #pragma warning disable CA1422
     public override void OnBackPressed()
     {
-        if (System.Threading.Interlocked.Exchange(ref _finished, 1) == 0)
-        {
-            lock (_lastResultLock) _lastResult = null;
-            SetResult(Result.Canceled);
-        }
-        base.OnBackPressed();
+        // Statt sofort abzubrechen: bei erfassten Daten erst nachfragen (verhindert Datenverlust
+        // durch versehentliche Back-Geste). Ohne Daten schließt ConfirmDiscardAndExit direkt.
+        // KEIN base.OnBackPressed() — sonst würde die Activity trotz Dialog sofort schließen.
+        ConfirmDiscardAndExit();
     }
 #pragma warning restore CA1422
 
@@ -1054,11 +1150,19 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         if (e == null) return base.OnTouchEvent(e);
 
         var density = Resources!.DisplayMetrics!.Density;
-        var toolbarHeight = 64 * density;
 
-        // Toolbar-Bereich ignorieren (View-Höhe statt DisplayMetrics, korrekt bei Fullscreen)
+        // Toolbar-Bereich ignorieren (View-Höhe statt DisplayMetrics, korrekt bei Fullscreen).
+        // Die Toolbar belegt 80dp + Navigations-Inset (nicht nur 64dp) — sonst setzt ein Tap auf
+        // den oberen Button-Rand gleichzeitig einen Geister-Messpunkt im Hintergrund.
+        var toolbarZone = 80 * density + _bottomInsetPx;
         var viewHeight = _glSurfaceView?.Height ?? Resources.DisplayMetrics!.HeightPixels;
-        if (e.GetY() > viewHeight - toolbarHeight)
+        if (e.GetY() > viewHeight - toolbarZone)
+            return base.OnTouchEvent(e);
+
+        // Top-Safe-Zone: der obere Streifen enthält nur UI-Chrome (Zurück-Button, Zähler,
+        // Modus-Text, Nordpfeil) — ein Tap dort darf keinen Messpunkt setzen. Badge + Nordpfeil
+        // werden zusätzlich gezielt in HandleTouchDown abgefangen.
+        if (e.GetY() < _topInsetPx + 56 * density)
             return base.OnTouchEvent(e);
 
         switch (e.Action)
@@ -1084,6 +1188,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _touchDownY = e.GetY();
         _isDragging = false;
         _dragStartPos = null;
+        _dragStartAnchorId = null;
 
         // Readiness-Badge tap → Detail-Panel öffnen. VOR der normalen Punkt-Selection,
         // damit ein versehentlicher Punkt-Set im Badge-Bereich nicht passiert.
@@ -1108,10 +1213,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var selectRadius = SELECT_RADIUS_DP * density;
         FindNearestProjectedPoint(_touchDownX, _touchDownY, selectRadius);
 
-        // Startposition merken fuer Undo
+        // Startposition + Anchor merken fuer Undo (Anchor wird beim Verschieben überschrieben).
         var selectedPoint = GetSelectedArPoint();
         if (selectedPoint != null)
+        {
             _dragStartPos = (selectedPoint.X, selectedPoint.Y, selectedPoint.Z);
+            _dragStartAnchorId = selectedPoint.AnchorId;
+        }
 
         return true;
     }
@@ -1180,13 +1288,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (_dragStartPos.HasValue && p != null)
             {
                 var (oldX, oldY, oldZ) = _dragStartPos.Value;
-                _undoStack.Push(new MovePointAction(p, oldX, oldY, oldZ, p.X, p.Y, p.Z));
+                _undoStack.Push(new MovePointAction(p, oldX, oldY, oldZ, p.X, p.Y, p.Z,
+                    _dragStartAnchorId, p.AnchorId));
                 _redoStack.Clear();
             }
         }
 
         _isDragging = false;
         _dragStartPos = null;
+        _dragStartAnchorId = null;
         return true;
     }
 
@@ -1258,7 +1368,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (tsPoint == null) return;
             RunOnUiThread(() =>
             {
-                lock (_dataLock) _points.Add(tsPoint);
+                lock (_dataLock)
+                {
+                    // Undo-Eintrag wie im Point-Modus — sonst nimmt "Zurück" den falschen
+                    // Punkt zurück und der Tachymeter-Punkt bleibt unentfernbar.
+                    _undoStack.Push(new AddPointAction(_dataLock, _points, tsPoint));
+                    _redoStack.Clear();
+                    _points.Add(tsPoint);
+                }
                 ShowTransientHint($"Punkt {_points.Count} stationiert " +
                     $"({tsPoint.GeoLatitude:F6}, {tsPoint.GeoLongitude:F6})");
                 VibrateLight();
@@ -1273,7 +1390,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             if (_activeSampler != null)
             {
+                // Reject-Haptik: der Hint kann bei stockendem Frame-Push untergehen, die
+                // Vibration signalisiert dem zügig tippenden Vermesser "noch nicht".
                 ShowTransientHint("Sample läuft, bitte kurz warten...");
+                HapticReject();
                 return;
             }
         }
@@ -1407,7 +1527,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     /// <summary>
     /// Schließt das Sampling-Fenster ab: Median berechnen, Outlier filtern, Anchor erstellen,
-    /// Punkt in Liste einfügen. Kann von GL-Thread oder UI-Thread aufgerufen werden.
+    /// Punkt in Liste einfügen. Wird ausschließlich vom GL-Thread (UpdateSamplingIfActive in
+    /// OnDrawFrame) aufgerufen — die Reticle-/Frame-Felder werden GL-Thread-intern gelesen.
     /// </summary>
     private void FinalizeSampling()
     {
@@ -1480,19 +1601,30 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         var stability = _stabilityMonitor?.StabilityScore ?? 0.5f;
 
-        // Depth-Sanity-Check: Vergleich Hit-Distance vs Depth-Image am Target-Pixel.
-        // _reticleHitDistance wurde in der letzten Reticle-Update-Phase berechnet und ist
-        // repräsentativ für die Entfernung Kamera → Ziel.
+        // Depth-Sanity-Check: Depth-Map am Tap-Pixel gegen die Distanz Kamera → gemessener
+        // Punkt vergleichen. WICHTIG: die echte Distanz zum (gesampelten) Tap-Punkt nehmen,
+        // NICHT _reticleHitDistance — die gilt nur für die Bildmitte, der Tap ist aber frei
+        // platzierbar. Sonst wird Depth von Pixel A gegen die Distanz von Pixel B geprüft.
         var depthMultiplier = 1.0f;
         try
         {
             Frame? frame;
             lock (_frameLock) frame = _lastFrame;
-            if (frame != null && _viewportWidth > 0 && _viewportHeight > 0 && _reticleHitDistance > 0)
+            if (frame != null && _viewportWidth > 0 && _viewportHeight > 0)
             {
-                depthMultiplier = ArPrecisionHelpers.DepthSanityMultiplier(
-                    frame, _sampleTargetX, _sampleTargetY,
-                    _reticleHitDistance, _viewportWidth, _viewportHeight);
+                var hitDistance = _reticleHitDistance;
+                var camPose = frame.Camera?.Pose;
+                if (camPose != null)
+                {
+                    var cdx = x - camPose.Tx();
+                    var cdy = y - camPose.Ty();
+                    var cdz = z - camPose.Tz();
+                    hitDistance = MathF.Sqrt(cdx * cdx + cdy * cdy + cdz * cdz);
+                }
+                if (hitDistance > 0)
+                    depthMultiplier = ArPrecisionHelpers.DepthSanityMultiplier(
+                        frame, _sampleTargetX, _sampleTargetY,
+                        hitDistance, _viewportWidth, _viewportHeight);
             }
         }
         catch { /* Depth optional */ }
@@ -1665,16 +1797,22 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         ArPoint? result = null;
         using var done = new System.Threading.ManualResetEventSlim(false);
-        lock (_pendingFrameOps)
+        Action<Frame> op = _ =>
         {
-            _pendingFrameOps.Add(_ =>
-            {
-                try { result = HitTestAt(screenX, screenY); }
-                finally { done.Set(); }
-            });
-        }
+            try { result = HitTestAt(screenX, screenY); }
+            // Der Caller kann nach Timeout das Event bereits disposed haben (using) — dann
+            // ignorieren statt eine ObjectDisposedException im GL-Thread zu schlucken.
+            finally { try { done.Set(); } catch (ObjectDisposedException) { /* Caller gab auf */ } }
+        };
+        lock (_pendingFrameOps) _pendingFrameOps.Add(op);
+
         // GL-Thread macht continuous rendering — Op wird im nächsten Frame ausgeführt.
-        done.Wait(timeoutMs);
+        if (!done.Wait(timeoutMs))
+        {
+            // Timeout (GL-Thread-Stall oder OnPause leerte die Queue): Op zurückziehen, damit
+            // ein späterer Drain nicht auf das gleich disposed Event Set() ruft.
+            lock (_pendingFrameOps) _pendingFrameOps.Remove(op);
+        }
         return result;
     }
 
@@ -1963,41 +2101,50 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         if (_bleService == null) return false;
         if (!_bleService.IsConnected) return false;
 
-        var state = _bleService.CurrentState;
+        var state = _bleService.GetStateSnapshot();
         if (state.FixQuality < 4) return false;
         if (!state.Latitude.HasValue || !state.Longitude.HasValue) return false;
 
         var lat = state.Latitude.Value;
         var lon = state.Longitude.Value;
 
-        _gpsLatitude = lat;
-        _gpsLongitude = lon;
-        _gpsAltitude = state.Altitude;
         // StickState hat cm — wir konvertieren auf m und limitieren auf 2cm minimum.
         // RTK-Float (FixQuality=5) kann 5-30cm Accuracy haben, RTK-Fix (4) typisch 1-3cm.
-        _gpsAccuracy = MathF.Max(state.HorizontalAccuracy / 100f, 0.02f);
-        _gpsSource = ArGpsSource.RtkRover;
-        _rtkFixQuality = state.FixQuality;
+        var rtkAcc = MathF.Max(state.HorizontalAccuracy / 100f, 0.02f);
+        lock (_gpsLock)
+        {
+            _gpsLatitude = lat;
+            _gpsLongitude = lon;
+            _gpsAltitude = state.Altitude;
+            _gpsAccuracy = rtkAcc;
+            _gpsSource = ArGpsSource.RtkRover;
+            _rtkFixQuality = state.FixQuality;
+        }
 
         // GPS-Sample-Liste mit dem RTK-Wert seeden, damit FinalizeGpsAveraging nicht
         // ein leeres Sample-Set nutzt.
         lock (_gpsSamples)
         {
-            _gpsSamples.Add((lat, lon, state.Altitude, _gpsAccuracy));
+            _gpsSamples.Add((lat, lon, state.Altitude, rtkAcc));
         }
 
         // Live-Updates abonnieren (2 Hz vom Rover). User kann den Stab während der
         // Session umstecken; jede neue Position aktualisiert den Anker.
         _rtkPositionHandler = (newLat, newLon, newAlt) =>
         {
-            var s = _bleService.CurrentState;
+            // Läuft auf dem BLE-Thread und kann nach OnDestroy noch in-flight sein.
+            if (IsDestroyed || IsFinishing) return;
+            var s = _bleService.GetStateSnapshot();
             if (s.FixQuality < 4) return; // Fix verloren → keinen schlechteren Wert übernehmen
 
-            _gpsLatitude = newLat;
-            _gpsLongitude = newLon;
-            _gpsAltitude = newAlt;
-            _gpsAccuracy = MathF.Max(s.HorizontalAccuracy / 100f, 0.02f);
-            _rtkFixQuality = s.FixQuality;
+            lock (_gpsLock)
+            {
+                _gpsLatitude = newLat;
+                _gpsLongitude = newLon;
+                _gpsAltitude = newAlt;
+                _gpsAccuracy = MathF.Max(s.HorizontalAccuracy / 100f, 0.02f);
+                _rtkFixQuality = s.FixQuality;
+            }
         };
         _bleService.PositionUpdated += _rtkPositionHandler;
 
@@ -2047,10 +2194,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
             if (location != null)
             {
-                _gpsLatitude = location.Latitude;
-                _gpsLongitude = location.Longitude;
-                _gpsAltitude = location.HasAltitude ? location.Altitude : null;
-                _gpsAccuracy = location.HasAccuracy ? location.Accuracy : null;
+                lock (_gpsLock)
+                {
+                    _gpsLatitude = location.Latitude;
+                    _gpsLongitude = location.Longitude;
+                    _gpsAltitude = location.HasAltitude ? location.Altitude : null;
+                    _gpsAccuracy = location.HasAccuracy ? location.Accuracy : null;
+                }
 
                 lock (_gpsSamples)
                 {
@@ -2188,9 +2338,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             };
             activity._magneticAccuracy = acc;
 
-            if (acc < 2 && !activity._lowMagAccuracyWarned)
+            // Atomar: nur der erste Übergang auf "gewarnt" zeigt den Dialog.
+            if (acc < 2 && System.Threading.Interlocked.CompareExchange(
+                    ref activity._lowMagAccuracyWarned, 1, 0) == 0)
             {
-                activity._lowMagAccuracyWarned = true;
                 activity.RunOnUiThread(() => activity.ShowCompassCalibrationHint());
             }
         }
@@ -2458,6 +2609,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_frameLock) { _lastFrame = null; }
         _stabilityMonitor?.Stop();
 
+        // SetAutoStopOnPause(true) hat die MP4-Aufnahme mit dem Session-Pause bereits beendet.
+        // _isRecording sonst stale → das "Mehr"-Menü zeigt weiter "Aufnahme stoppen" und neue
+        // Mess-Aktivität nach Resume wird nicht aufgezeichnet.
+        if (_isRecording)
+        {
+            _isRecording = false;
+            _currentRecordingPath = null;
+        }
+
         // Sampler abbrechen: nach OnPause laeuft kein OnDrawFrame mehr, der das 800ms-Fenster
         // finalisieren wuerde. Sonst finalisiert der erste Frame nach OnResume mit Pre-Pause-
         // Samples an inzwischen verschobener Kamera → falscher Punkt. (Analog OnConfigurationChanged.)
@@ -2561,6 +2721,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // gezählt, FinalizeSampling kann darauf einen unsicheren Punkt verwerfen.
             UpdateSamplingIfActive(isTracking);
 
+            // Thermal + Battery + Anchor-Cleanup alle 60 Frames (~1x/s) — bewusst TRACKING-
+            // UNABHÄNGIG: gerade bei Tracking-Verlust arbeitet ARCore am härtesten (Re-Lokalisierung)
+            // und das Gerät heizt auf; der Akku-Auto-Finish (Datensicherung vor OS-Kill) muss
+            // ebenfalls feuern, und PruneStopped räumt die bei flackerndem Tracking auflaufenden
+            // gestoppten Anchors. Vorher lag der Block im if(isTracking) und schwieg genau dann.
+            _thermalCheckFrameCounter++;
+            if (_thermalCheckFrameCounter >= 60)
+            {
+                _thermalCheckFrameCounter = 0;
+                CheckThermalStatus();
+                CheckBatteryStatus();
+                _anchorManager.PruneStopped();
+            }
+
             if (isTracking)
             {
                 _frameCountTracking++;
@@ -2625,20 +2799,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                         _heatmapFrameCounter = 0;
                         UpdateQualityHeatmap();
                     }
-                }
-
-                // Thermal + Battery + Anchor-Cleanup alle 60 Frames (~1x/s).
-                // PruneStopped() entfernt Anchors deren Trackable verloren ging — ohne diesen
-                // periodischen Cleanup wächst das Anchor-Dictionary bei langen Sessions oder
-                // flackerndem Tracking bis zum Hard-Limit, neue Punkt-Sets bekommen dann
-                // keinen Anchor mehr (→ Confidence-Anchor-Bonus 0.2 fällt weg).
-                _thermalCheckFrameCounter++;
-                if (_thermalCheckFrameCounter >= 60)
-                {
-                    _thermalCheckFrameCounter = 0;
-                    CheckThermalStatus();
-                    CheckBatteryStatus();
-                    _anchorManager.PruneStopped();
                 }
 
                 // Punkt-Positionen fuer Overlay in Screen-Koordinaten umrechnen
@@ -2913,8 +3073,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var action = _undoStack.Pop();
         action.Undo();
         _redoStack.Push(action);
-        _selectedPointIndex = -1;
-        _overlayView?.SetSelectedIndex(-1);
+        ClearSelection();
         UpdateCounter();
         _overlayView?.Invalidate();
         ShowTransientHint("Rückgängig");
@@ -2931,10 +3090,23 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var action = _redoStack.Pop();
         action.Redo();
         _undoStack.Push(action);
+        ClearSelection();
         UpdateCounter();
         _overlayView?.Invalidate();
         ShowTransientHint("Wiederholt");
         SaveRecoveryState();
+    }
+
+    /// <summary>Setzt die KOMPLETTE Punkt-Selektion zurück (Einzel- UND Kontur-Indizes). Nach
+    /// einer Listen-Mutation (Undo/Redo/Insert) verschieben sich Indizes — eine stale Selektion
+    /// würde sonst beim nächsten Löschen/Verschieben den falschen Punkt treffen.</summary>
+    private void ClearSelection()
+    {
+        _selectedPointIndex = -1;
+        _selectedContourIdx = -1;
+        _selectedContourPointIdx = -1;
+        _isContourPointSelected = false;
+        _overlayView?.SetSelectedIndex(-1);
     }
 
     #region Haptic Feedback
@@ -3333,10 +3505,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (s.acc.HasValue && s.acc.Value < minAcc) minAcc = s.acc.Value;
         }
 
-        _gpsLatitude = avgLat / totalWeight;
-        _gpsLongitude = avgLon / totalWeight;
-        if (altCount > 0) _gpsAltitude = avgAlt / totalWeight;
-        _gpsAccuracy = minAcc < float.MaxValue ? minAcc : _gpsAccuracy;
+        lock (_gpsLock)
+        {
+            _gpsLatitude = avgLat / totalWeight;
+            _gpsLongitude = avgLon / totalWeight;
+            if (altCount > 0) _gpsAltitude = avgAlt / totalWeight;
+            _gpsAccuracy = minAcc < float.MaxValue ? minAcc : _gpsAccuracy;
+        }
 
         // Plan Kap. 4.5: Sample-Liste freigeben — nach Averaging brauchen wir die
         // einzelnen Werte nicht mehr und der Cap (200) würde bei Recovery + lange laufender
@@ -3622,14 +3797,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // PowerManager.ThermalStatus ist int (1=Light, 2=Moderate, 3=Severe, 4=Critical, 5=Emergency)
             var status = (int)pm.CurrentThermalStatus;
             string? warning;
+            // WICHTIG: Das Sample-Ziel darf NIE unter MinValidSampleCount fallen — sonst
+            // verwirft FinalizeSampling JEDEN Punkt ("Zu wenige Samples") und es lässt sich
+            // bei Hitze gar nichts mehr messen, genau im Outdoor-Hauptszenario.
             if (status >= 4) // Critical+
             {
-                _effectiveMultiFrameSampleTargetCount = 3;
+                _effectiveMultiFrameSampleTargetCount = MinValidSampleCount;
                 warning = "Gerät kritisch heiß — Pause empfohlen";
             }
             else if (status >= 3) // Severe
             {
-                _effectiveMultiFrameSampleTargetCount = 5;
+                _effectiveMultiFrameSampleTargetCount = MinValidSampleCount + 1;
                 warning = "Gerät heiß — Präzision reduziert";
             }
             else if (status >= 2) // Moderate
@@ -3926,8 +4104,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     }
 
     /// <summary>
-    /// Median der ARCore-Heading-Samples (Circular Median).
-    /// Liefert null wenn zu wenige Samples.
+    /// Zirkulärer MITTELWERT der ARCore-Heading-Samples (atan2 der sin-/cos-Summen) — robust
+    /// gegen den 360°-/0°-Sprung. Liefert null wenn zu wenige Samples.
     /// </summary>
     private float? FinalizeArCoreHeading()
     {
@@ -3937,10 +4115,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         var sinSum = samples.Sum(h => MathF.Sin(h * MathF.PI / 180f));
         var cosSum = samples.Sum(h => MathF.Cos(h * MathF.PI / 180f));
-        var medianRad = MathF.Atan2(sinSum / samples.Length, cosSum / samples.Length);
-        var medianDeg = medianRad * 180f / MathF.PI;
-        if (medianDeg < 0) medianDeg += 360f;
-        return medianDeg;
+        var meanRad = MathF.Atan2(sinSum / samples.Length, cosSum / samples.Length);
+        var meanDeg = meanRad * 180f / MathF.PI;
+        if (meanDeg < 0) meanDeg += 360f;
+        return meanDeg;
     }
 
     /// <summary>
@@ -3997,21 +4175,19 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     #region Transient-Hint
 
+    // Vom UI-Thread (Touch/Dialoge) gesetzt, vom GL-Thread (BuildOverlayState) konsumiert.
+    // Volatile.Write sichert die Sichtbarkeit des Schreibens, Interlocked.Exchange holt+löscht
+    // atomar — verhindert verlorene Hints über die Thread-Grenze.
     private string? _currentTransientHint;
 
     private void ShowTransientHint(string text)
     {
-        _currentTransientHint = text;
-        // State mit Hint in den nächsten Overlay-Update packen
-        // Wird im Frame-Update-Zyklus aufgegriffen
+        // Wird im nächsten Frame-Update-Zyklus von ConsumeTransientHint aufgegriffen.
+        System.Threading.Volatile.Write(ref _currentTransientHint, text);
     }
 
     private string? ConsumeTransientHint()
-    {
-        var hint = _currentTransientHint;
-        _currentTransientHint = null;
-        return hint;
-    }
+        => System.Threading.Interlocked.Exchange(ref _currentTransientHint, null);
 
     #endregion
 
@@ -4483,7 +4659,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
         else if (_bleService is { IsConnected: true } && _bleService.CurrentState.FixQuality >= 4)
         {
-            var s = _bleService.CurrentState;
+            var s = _bleService.GetStateSnapshot();
             curLat = s.Latitude;
             curLon = s.Longitude;
             curHeadingDeg = _magneticHeading;
@@ -4542,13 +4718,21 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         if (_stakeoutLastDistance > 0.30 && distanceM <= StakeoutReachedThresholdMeters)
         {
             target.IsReached = true;
+            // Hysterese für das NÄCHSTE Target zurücksetzen: ein direkt benachbartes Ziel
+            // (bereits < 30 cm — im Vermessungs-Kontext der Normalfall) würde sonst klemmen,
+            // weil _stakeoutLastDistance auf ~10 cm steht und die ">30 cm → <10 cm"-Bedingung
+            // erst nach Weglaufen + Zurück greift.
+            _stakeoutLastDistance = double.PositiveInfinity;
             RunOnUiThread(() =>
             {
                 VibrateMedium();
                 ShowTransientHint($"{target.Label} erreicht! (Distanz {distanceM * 100:F1} cm)");
             });
         }
-        _stakeoutLastDistance = distanceM;
+        else
+        {
+            _stakeoutLastDistance = distanceM;
+        }
 
         lock (_stakeoutSnapshotLock)
         {
@@ -4647,7 +4831,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             ClearRtkStabAnchor();
             return;
         }
-        var state = _bleService.CurrentState;
+        var state = _bleService.GetStateSnapshot();
         if (state.FixQuality < 1 || !state.Latitude.HasValue || !state.Longitude.HasValue)
         {
             ClearRtkStabAnchor();
@@ -4812,8 +4996,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 lock (_dataLock) _sitePointAnchors.Add(marker);
                 created++;
+                _siteAnchorsCreated++;
             }
-            _siteAnchorsCreated++;
+            else
+            {
+                // Anchor-Erstellung transient fehlgeschlagen (Earth kurz instabil oder Hard-Limit
+                // momentan erreicht) — diesen Site-Punkt NICHT überspringen, sondern im nächsten
+                // Frame erneut versuchen. Vorher sprang der Zähler trotzdem weiter → Marker dauerhaft weg.
+                break;
+            }
         }
     }
 
@@ -4912,7 +5103,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             ShowTransientHint("Stab nicht verbunden — Total-Station braucht RTK-Anker");
             return;
         }
-        var s = _bleService.CurrentState;
+        var s = _bleService.GetStateSnapshot();
         if (s.FixQuality < 4 || !s.Latitude.HasValue || !s.Longitude.HasValue)
         {
             ShowTransientHint("Kein RTK-Fix am Stab — bitte warten oder NTRIP pruefen");
@@ -5062,17 +5253,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Pending Frame-Ops verwerfen — Caller-Threads warten mit Timeout, kein Hang.
         lock (_pendingFrameOps) _pendingFrameOps.Clear();
 
-        // OpenGL-Ressourcen aufraeumen (Textur + Renderer)
+        // OpenGL-Ressourcen aufraeumen. NICHT via QueueEvent — nach OnPause (läuft immer vor
+        // OnDestroy) ist der GL-Thread pausiert und arbeitet seine Queue erst beim nächsten
+        // OnResume ab, das nie kommt → der Java-NIO-Direct-Buffer im Renderer würde leaken.
+        // Daher synchron; die GL-Delete-Calls sind gegen den fehlenden EGL-Kontext abgesichert.
         if (_cameraTextureId != 0)
         {
-            _glSurfaceView?.QueueEvent(() =>
-            {
-                GLES20.GlDeleteTextures(1, new[] { _cameraTextureId }, 0);
-                _backgroundRenderer?.Dispose();
-                _backgroundRenderer = null;
-            });
+            try { GLES20.GlDeleteTextures(1, new[] { _cameraTextureId }, 0); }
+            catch { /* kein aktiver GL-Kontext mehr */ }
             _cameraTextureId = 0;
         }
+        _backgroundRenderer?.Dispose();
+        _backgroundRenderer = null;
 
         _arSession?.Close();
         _arSession = null;
@@ -5133,8 +5325,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     private sealed class AddContourPointAction(object lockObj, ArContour contour, ArPoint point) : IArAction
     {
-        public void Undo() { lock (lockObj) contour.Points.Remove(point); }
-        public void Redo() { lock (lockObj) contour.Points.Add(point); }
+        // IsClosed-Schutz: Nach Kontur-Schluss (Bowditch-korrigiert) darf ein Undo keinen Punkt
+        // mehr aus der fertigen Fläche entfernen/einfügen — das würde sie korrumpieren. Die ganze
+        // geschlossene Kontur wird stattdessen über die AddContourAction zurückgenommen.
+        public void Undo() { lock (lockObj) { if (!contour.IsClosed) contour.Points.Remove(point); } }
+        public void Redo() { lock (lockObj) { if (!contour.IsClosed) contour.Points.Add(point); } }
     }
 
     // Eine komplett gesetzte Kontur (z.B. ein abgeschlossenes Rechteck) als Ganzes
@@ -5147,16 +5342,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     private sealed class DeleteContourPointAction(object lockObj, ArContour contour, int index, ArPoint point) : IArAction
     {
-        public void Undo() { lock (lockObj) contour.Points.Insert(Math.Min(index, contour.Points.Count), point); }
-        public void Redo() { lock (lockObj) contour.Points.Remove(point); }
+        // IsClosed-Schutz analog AddContourPointAction — keine Punkt-Mutation an einer fertigen Kontur.
+        public void Undo() { lock (lockObj) { if (!contour.IsClosed) contour.Points.Insert(Math.Min(index, contour.Points.Count), point); } }
+        public void Redo() { lock (lockObj) { if (!contour.IsClosed) contour.Points.Remove(point); } }
     }
 
     private sealed class MovePointAction(ArPoint point,
         float oldX, float oldY, float oldZ,
-        float newX, float newY, float newZ) : IArAction
+        float newX, float newY, float newZ,
+        string? oldAnchorId, string? newAnchorId) : IArAction
     {
-        public void Undo() { point.X = oldX; point.Y = oldY; point.Z = oldZ; }
-        public void Redo() { point.X = newX; point.Y = newY; point.Z = newZ; }
+        // AnchorId mitrestaurieren — sonst zieht RefreshAllAnchors den Punkt im nächsten Frame
+        // wieder auf die Move-Position (Undo wirkte ohne das nur einen Frame lang).
+        public void Undo() { point.X = oldX; point.Y = oldY; point.Z = oldZ; point.AnchorId = oldAnchorId; }
+        public void Redo() { point.X = newX; point.Y = newY; point.Z = newZ; point.AnchorId = newAnchorId; }
     }
 
     /// <summary>

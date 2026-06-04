@@ -543,6 +543,7 @@ public sealed partial class ArPointOverlayView : View
         if (_projectedPoints.Count == 0 && _projectedContourPoints.Count == 0
             && _points.Count == 0 && _contours.Count == 0
             && _state.RectangleCornerCount == 0
+            && !_state.IsStakeoutMode && !_state.IsTapeMeasureMode
             && _state.IsTracking)
         {
             string hint;
@@ -1531,8 +1532,9 @@ public sealed partial class ArPointOverlayView : View
         }
         else
         {
-            // "PLANES" ist ein technischer Begriff (AR-Tracking), bleibt englisch — kein RESX-Key.
-            canvas.DrawText("PLANES", x, y, _statsLabelPaint);
+            // "Flächen" — deutsch, konsistent mit dem Readiness-Dialog ("Erkannte Flächen"),
+            // verständlicher als "PLANES" für die AR-First-Laien-Zielgruppe.
+            canvas.DrawText("FLÄCHEN", x, y, _statsLabelPaint);
             canvas.DrawText(_state.DetectedPlaneCount.ToString(),
                 x + 50 * _density, y, _statsTextPaint);
         }
@@ -1729,12 +1731,19 @@ public sealed partial class ArPointOverlayView : View
         var badgeY = MathF.Max(_state.TopInsetPixels + 110 * _density, 100 * _density);
         var badgeH = 32f * _density;
 
-        // Text: "BEREIT" (lokalisiert) oder Checkliste der fehlenden Bedingungen.
-        // ReadinessIssues kommt aus ValidatePreMeasureConditions in ArCaptureActivity —
-        // dort wird die Liste bereits aus AppStrings zusammengebaut, also auch lokalisiert.
-        var text = _state.IsReadyToMeasure
-            ? $"{_state.Labels.Ready}  {_state.TrackingQualityScore}%"
-            : $"{_state.ReadinessIssues}";
+        // Text: "BEREIT" (lokalisiert) oder die WICHTIGSTE fehlende Bedingung + Tap-Hinweis "(i)".
+        // Die volle ReadinessIssues-Liste (·-getrennt) machte das Badge sonst fast bildschirmbreit
+        // und überlappte Stats-Panel/Nordpfeil; die komplette Checkliste öffnet der Tap aufs Badge.
+        string text;
+        if (_state.IsReadyToMeasure)
+        {
+            text = $"{_state.Labels.Ready}  {_state.TrackingQualityScore}%";
+        }
+        else
+        {
+            var firstIssue = (_state.ReadinessIssues ?? "").Split('·')[0].Trim();
+            text = string.IsNullOrEmpty(firstIssue) ? "Nicht bereit  (i)" : $"{firstIssue}  (i)";
+        }
 
         var textWidth = _bannerTextPaint.MeasureText(text);
         var badgeW = textWidth + 2 * padding;

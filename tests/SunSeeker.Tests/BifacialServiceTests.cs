@@ -80,8 +80,9 @@ public class BifacialServiceTests
     [Fact]
     public void DunklerUntergrund_EmpfiehltHelleUnterlage()
     {
+        // Asphalt (Albedo 0,12) ist dunkel -> Dark-Ground-Tipp-Key.
         var advice = _svc.GetAdvice(GroundType.Asphalt, PanelProfile.Ps400Bifacial);
 
-        advice.Tips.Should().Contain(t => t.Contains("Plane") || t.Contains("Kies"));
+        advice.Tips.Should().Contain("BifacialTipDarkGround");
     }
 }

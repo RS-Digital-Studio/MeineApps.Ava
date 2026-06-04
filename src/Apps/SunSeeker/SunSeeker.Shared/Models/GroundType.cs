@@ -36,18 +36,18 @@ public static class GroundTypeExtensions
         _ => 0.20,
     };
 
-    /// <summary>Deutscher Anzeigename.</summary>
-    public static string DisplayName(this GroundType ground) => ground switch
+    /// <summary>Lokalisierungs-Key des Anzeigenamens (UI loest ihn ueber GetString auf).</summary>
+    public static string LocKey(this GroundType ground) => ground switch
     {
-        GroundType.Grass => "Gras / Rasen",
-        GroundType.Soil => "Erde / Mutterboden",
-        GroundType.Asphalt => "Asphalt (dunkel)",
-        GroundType.Concrete => "Beton",
-        GroundType.Sand => "Sand",
-        GroundType.Gravel => "Heller Kies",
-        GroundType.WhiteSurface => "Weisse Plane / Flaeche",
-        GroundType.Snow => "Schnee",
-        GroundType.Water => "Wasser",
-        _ => ground.ToString(),
+        GroundType.Grass => "GroundGrass",
+        GroundType.Soil => "GroundSoil",
+        GroundType.Asphalt => "GroundAsphalt",
+        GroundType.Concrete => "GroundConcrete",
+        GroundType.Sand => "GroundSand",
+        GroundType.Gravel => "GroundGravel",
+        GroundType.WhiteSurface => "GroundWhiteSurface",
+        GroundType.Snow => "GroundSnow",
+        GroundType.Water => "GroundWater",
+        _ => "GroundGrass",
     };
 }

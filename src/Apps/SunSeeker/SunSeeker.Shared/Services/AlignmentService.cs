@@ -22,7 +22,6 @@ public sealed class AlignmentService(ISolarPositionService solarPosition) : IAli
 
         double targetAzimuth;
         double targetTilt;
-        string explanation;
 
         switch (goal)
         {
@@ -33,14 +32,12 @@ public sealed class AlignmentService(ISolarPositionService solarPosition) : IAli
                 {
                     targetAzimuth = sun.Azimuth;
                     targetTilt = Math.Clamp(sun.Zenith, 0.0, 90.0);
-                    explanation = "Direkt auf die aktuelle Sonne ausgerichtet — maximale Leistung jetzt.";
                 }
                 else
                 {
                     // Sonne unter dem Horizont: auf den naechsten Sonnen-Hoechststand zeigen.
                     targetAzimuth = southAzimuth;
                     targetTilt = Math.Clamp(absLat, 0.0, 90.0);
-                    explanation = "Sonne steht unter dem Horizont — Richtwert fuer den naechsten Tag.";
                 }
                 break;
             }
@@ -51,26 +48,23 @@ public sealed class AlignmentService(ISolarPositionService solarPosition) : IAli
                 var times = _solarPosition.GetSunTimes(location, date);
                 targetAzimuth = southAzimuth;
                 targetTilt = Math.Clamp(90.0 - times.NoonElevation, 0.0, 90.0);
-                explanation = "Sued, Neigung senkrecht zur heutigen Mittagssonne — bester Tagesertrag.";
                 break;
             }
 
             case AlignmentGoal.WinterYield:
                 targetAzimuth = southAzimuth;
                 targetTilt = Math.Clamp(absLat * 0.875 + 19.2, 0.0, 90.0);
-                explanation = "Sued, steiler Winterwinkel fuer die tiefstehende Sonne.";
                 break;
 
             case AlignmentGoal.AnnualYield:
             default:
                 targetAzimuth = southAzimuth;
                 targetTilt = Math.Clamp(absLat * 0.76 + 3.1, 0.0, 90.0);
-                explanation = "Sued, flacher Festwinkel fuer den hoechsten Jahresertrag.";
                 break;
         }
 
         var kickstand = panel.NearestKickstand(targetTilt);
-        return new AlignmentRecommendation(goal, targetAzimuth, targetTilt, kickstand, explanation);
+        return new AlignmentRecommendation(goal, targetAzimuth, targetTilt, kickstand);
     }
 
     public AlignmentState Evaluate(SolarPosition sun, double panelAzimuth, double panelTilt, AlignmentRecommendation recommendation)

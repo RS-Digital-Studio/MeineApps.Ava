@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="TabAlign" xml:space="preserve"><value>Orienter</value></data>
+  <data name="TabPower" xml:space="preserve"><value>Puissance</value></data>
+  <data name="TabDashboard" xml:space="preserve"><value>Tableau de bord</value></data>
+  <data name="LocationPending" xml:space="preserve"><value>Localisation en cours...</value></data>
+  <data name="CardSunPosition" xml:space="preserve"><value>POSITION ACTUELLE DU SOLEIL</value></data>
+  <data name="LabelAzimuth" xml:space="preserve"><value>Direction (azimut)</value></data>
+  <data name="LabelElevation" xml:space="preserve"><value>Hauteur (élévation)</value></data>
+  <data name="SunAboveHorizon" xml:space="preserve"><value>Soleil au-dessus de l'horizon</value></data>
+  <data name="SunBelowHorizon" xml:space="preserve"><value>Soleil sous l'horizon</value></data>
+  <data name="CardSunPath" xml:space="preserve"><value>TRAJECTOIRE DU SOLEIL AUJOURD'HUI</value></data>
+  <data name="CardSunTimes" xml:space="preserve"><value>HEURES DU SOLEIL</value></data>
+  <data name="LabelSunrise" xml:space="preserve"><value>Lever</value></data>
+  <data name="LabelSolarNoon" xml:space="preserve"><value>Midi solaire</value></data>
+  <data name="LabelSunset" xml:space="preserve"><value>Coucher</value></data>
+  <data name="CardPanelGoal" xml:space="preserve"><value>PANNEAU &amp; OBJECTIF</value></data>
+  <data name="LabelPanel" xml:space="preserve"><value>Panneau</value></data>
+  <data name="LabelGoal" xml:space="preserve"><value>Objectif d'orientation</value></data>
+  <data name="CardRecommendation" xml:space="preserve"><value>ORIENTATION RECOMMANDÉE</value></data>
+  <data name="LabelDirection" xml:space="preserve"><value>Direction</value></data>
+  <data name="LabelTilt" xml:space="preserve"><value>Inclinaison</value></data>
+  <data name="CardBifacial" xml:space="preserve"><value>SOL &amp; GAIN BIFACIAL</value></data>
+  <data name="GoalNowMaximum" xml:space="preserve"><value>Maximum maintenant (mobile)</value></data>
+  <data name="GoalTodayYield" xml:space="preserve"><value>Rendement journalier</value></data>
+  <data name="GoalAnnualYield" xml:space="preserve"><value>Rendement annuel (fixe)</value></data>
+  <data name="GoalWinterYield" xml:space="preserve"><value>Utilisation hivernale (incliné)</value></data>
+  <data name="ExplNowMaximum" xml:space="preserve"><value>Orienté directement vers le soleil actuel — puissance maximale maintenant.</value></data>
+  <data name="ExplNowNight" xml:space="preserve"><value>Soleil sous l'horizon — valeur indicative pour le lendemain.</value></data>
+  <data name="ExplTodayYield" xml:space="preserve"><value>Sud, inclinaison perpendiculaire au soleil de midi d'aujourd'hui — meilleur rendement journalier.</value></data>
+  <data name="ExplAnnualYield" xml:space="preserve"><value>Sud, angle fixe modéré pour le rendement annuel maximal.</value></data>
+  <data name="ExplWinterYield" xml:space="preserve"><value>Sud, angle hivernal élevé pour un soleil bas sur l'horizon.</value></data>
+  <data name="GroundGrass" xml:space="preserve"><value>Herbe / Gazon</value></data>
+  <data name="GroundSoil" xml:space="preserve"><value>Terre / Sol naturel</value></data>
+  <data name="GroundAsphalt" xml:space="preserve"><value>Asphalte (sombre)</value></data>
+  <data name="GroundConcrete" xml:space="preserve"><value>Béton</value></data>
+  <data name="GroundSand" xml:space="preserve"><value>Sable</value></data>
+  <data name="GroundGravel" xml:space="preserve"><value>Gravier clair</value></data>
+  <data name="GroundWhiteSurface" xml:space="preserve"><value>Bâche / surface blanche</value></data>
+  <data name="GroundSnow" xml:space="preserve"><value>Neige</value></data>
+  <data name="GroundWater" xml:space="preserve"><value>Eau</value></data>
+  <data name="KickstandSelect" xml:space="preserve"><value>Choisir l'angle {0}°</value></data>
+  <data name="YieldDirect" xml:space="preserve"><value>{0}% de l'irradiance directe pour cette orientation</value></data>
+  <data name="NoDirectYield" xml:space="preserve"><value>Aucun rendement direct (soleil sous l'horizon)</value></data>
+  <data name="BifacialGain" xml:space="preserve"><value>+{0}–{1}% de gain (face arrière)</value></data>
+  <data name="NotBifacial" xml:space="preserve"><value>Panneau non bifacial</value></data>
+  <data name="TiltBonusTip" xml:space="preserve"><value>Conseil : incliner ~{0}° de plus sur ce type de sol</value></data>
+  <data name="AlbedoLabel" xml:space="preserve"><value>Albédo {0}</value></data>
+  <data name="BifacialTipNotBifacial" xml:space="preserve"><value>Ce panneau n'est pas bifacial — le sol a peu d'influence sur le rendement.</value></data>
+  <data name="BifacialTipBrightGround" xml:space="preserve"><value>Sol très clair — idéal pour la face arrière. Gain bifacial maximal possible ici.</value></data>
+  <data name="BifacialTipMediumGround" xml:space="preserve"><value>Sol moyennement clair — bon rendement sur la face arrière.</value></data>
+  <data name="BifacialTipDarkGround" xml:space="preserve"><value>Sol sombre — une bâche blanche ou du gravier clair peut presque doubler le gain bifacial.</value></data>
+  <data name="BifacialTipBackFree" xml:space="preserve"><value>Garder la face arrière dégagée : éviter sac, mur sombre ou véhicule juste derrière.</value></data>
+  <data name="BifacialTipRaise" xml:space="preserve"><value>Surélever légèrement le panneau aide la face arrière (plus de sol visible, moins d'auto-ombrage).</value></data>
+  <data name="BifacialTipSteepSnow" xml:space="preserve"><value>Sur sol très clair (neige / surface blanche), choisir l'angle de support plus élevé.</value></data>
+  <data name="CardAlignTitle" xml:space="preserve"><value>ORIENTER</value></data>
+  <data name="GuidanceInitial" xml:space="preserve"><value>Orienter le panneau vers le soleil</value></data>
+  <data name="GuidanceHoldFlat" xml:space="preserve"><value>Poser le téléphone à plat sur la surface du panneau</value></data>
+  <data name="GuidanceAzimuthOk" xml:space="preserve"><value>Direction correcte</value></data>
+  <data name="GuidanceTurnWest" xml:space="preserve"><value>Tourner de {0}° vers l'ouest (gauche)</value></data>
+  <data name="GuidanceTurnEast" xml:space="preserve"><value>Tourner de {0}° vers l'est (droite)</value></data>
+  <data name="TiltOk" xml:space="preserve"><value>Inclinaison correcte</value></data>
+  <data name="TiltFlatter" xml:space="preserve"><value>Réduire l'inclinaison de {0}°</value></data>
+  <data name="TiltSteeper" xml:space="preserve"><value>Augmenter l'inclinaison de {0}°</value></data>
+  <data name="QualityExcellent" xml:space="preserve"><value>Orientation parfaite</value></data>
+  <data name="QualityGood" xml:space="preserve"><value>Bien orienté</value></data>
+  <data name="QualityFair" xml:space="preserve"><value>Ajustement nécessaire</value></data>
+  <data name="QualityPoor" xml:space="preserve"><value>Mal orienté</value></data>
+  <data name="QualityMeasuring" xml:space="preserve"><value>Mesure de l'orientation en cours</value></data>
+  <data name="GainShort" xml:space="preserve"><value>{0}% de l'irradiance directe</value></data>
+  <data name="SunInfo" xml:space="preserve"><value>Soleil : {0}° {1} · {2}° de hauteur</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Régler l'angle de support à {0}° sur le panneau</value></data>
+  <data name="TiltToMeasure" xml:space="preserve"><value>— incliner —</value></data>
+  <data name="WarnCalibration" xml:space="preserve"><value>Calibrer la boussole (mouvement en huit) et poser le téléphone à plat sur la surface inclinée du panneau. Les métaux et aimants perturbent la mesure.</value></data>
+  <data name="LabelPanelDirection" xml:space="preserve"><value>Direction du panneau (réel)</value></data>
+  <data name="LabelTargetDirection" xml:space="preserve"><value>Direction cible</value></data>
+  <data name="LabelTiltCurrent" xml:space="preserve"><value>Inclinaison actuelle :</value></data>
+  <data name="LabelTargetShort" xml:space="preserve"><value>Cible :</value></data>
+  <data name="HintHoldPhone" xml:space="preserve"><value>Tenir le téléphone écran vers l'avant, à plat contre la face avant du panneau (côté soleil).</value></data>
+  <data name="CardPower" xml:space="preserve"><value>PUISSANCE SOLAIRE</value></data>
+  <data name="LabelCurrent" xml:space="preserve"><value>Actuel</value></data>
+  <data name="HintDemo" xml:space="preserve"><value>Données de démonstration basées sur la position du soleil. La connexion réelle à l'Anker C2000 (Cloud-MQTT) sera ajoutée prochainement.</value></data>
+  <data name="CardTrend" xml:space="preserve"><value>HISTORIQUE (dernières minutes)</value></data>
+  <data name="LabelDailyYield" xml:space="preserve"><value>Rendement journalier</value></data>
+  <data name="LabelPeak" xml:space="preserve"><value>Pic aujourd'hui</value></data>
+  <data name="StateConnectedDemo" xml:space="preserve"><value>Connecté (données de démo)</value></data>
+  <data name="StateConnected" xml:space="preserve"><value>Connecté</value></data>
+  <data name="StateConnecting" xml:space="preserve"><value>Connexion...</value></data>
+  <data name="StateError" xml:space="preserve"><value>Erreur de connexion</value></data>
+  <data name="StateDisconnected" xml:space="preserve"><value>Déconnecté</value></data>
+</root>

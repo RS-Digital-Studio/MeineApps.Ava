@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:vm="using:SunSeeker.Shared.ViewModels"
              xmlns:models="using:SunSeeker.Shared.Models"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="900"
@@ -64,14 +65,14 @@
 
             <Border Classes="card">
                 <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="AKTUELLER SONNENSTAND" />
+                    <TextBlock Classes="cardTitle" Text="{loc:Translate Key=CardSunPosition}" />
                     <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Classes="label" Text="Richtung (Azimut)" />
+                            <TextBlock Classes="label" Text="{loc:Translate Key=LabelAzimuth}" />
                             <TextBlock Classes="bigValue" Text="{Binding SunAzimuthText}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1">
-                            <TextBlock Classes="label" Text="Hoehe (Elevation)" />
+                            <TextBlock Classes="label" Text="{loc:Translate Key=LabelElevation}" />
                             <TextBlock Classes="bigValue" Text="{Binding SunElevationText}" />
                         </StackPanel>
                     </Grid>
@@ -81,25 +82,25 @@
 
             <Border Classes="card">
                 <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="SONNENBAHN HEUTE" />
+                    <TextBlock Classes="cardTitle" Text="{loc:Translate Key=CardSunPath}" />
                     <labs:SKCanvasView x:Name="SunPathCanvas" Height="160" />
                 </StackPanel>
             </Border>
 
             <Border Classes="card">
                 <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="SONNENZEITEN" />
+                    <TextBlock Classes="cardTitle" Text="{loc:Translate Key=CardSunTimes}" />
                     <Grid ColumnDefinitions="*,*,*">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Classes="label" Text="Aufgang" />
+                            <TextBlock Classes="label" Text="{loc:Translate Key=LabelSunrise}" />
                             <TextBlock Classes="value" Text="{Binding SunriseText}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1">
-                            <TextBlock Classes="label" Text="Hoechststand" />
+                            <TextBlock Classes="label" Text="{loc:Translate Key=LabelSolarNoon}" />
                             <TextBlock Classes="value" Text="{Binding SolarNoonText}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Classes="label" Text="Untergang" />
+                            <TextBlock Classes="label" Text="{loc:Translate Key=LabelSunset}" />
                             <TextBlock Classes="value" Text="{Binding SunsetText}" />
                         </StackPanel>
                     </Grid>
@@ -108,8 +109,8 @@
 
             <Border Classes="card">
                 <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="PANEL &amp; ZIEL" />
-                    <TextBlock Classes="label" Text="Panel" Margin="0,0,0,4" />
+                    <TextBlock Classes="cardTitle" Text="{loc:Translate Key=CardPanelGoal}" />
+                    <TextBlock Classes="label" Text="{loc:Translate Key=LabelPanel}" Margin="0,0,0,4" />
                     <ComboBox ItemsSource="{Binding Panels}" SelectedItem="{Binding SelectedPanel}"
                               HorizontalAlignment="Stretch" Margin="0,0,0,10">
                         <ComboBox.ItemTemplate>
@@ -118,7 +119,7 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBlock Classes="label" Text="Ausricht-Ziel" Margin="0,0,0,4" />
+                    <TextBlock Classes="label" Text="{loc:Translate Key=LabelGoal}" Margin="0,0,0,4" />
                     <ComboBox ItemsSource="{Binding Goals}" SelectedItem="{Binding SelectedGoal}"
                               HorizontalAlignment="Stretch">
                         <ComboBox.ItemTemplate>
@@ -132,14 +133,14 @@
 
             <Border Classes="card">
                 <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="EMPFOHLENE AUSRICHTUNG" />
+                    <TextBlock Classes="cardTitle" Text="{loc:Translate Key=CardRecommendation}" />
                     <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Classes="label" Text="Richtung" />
+                            <TextBlock Classes="label" Text="{loc:Translate Key=LabelDirection}" />
                             <TextBlock Classes="bigValue" Text="{Binding TargetAzimuthText}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1">
-                            <TextBlock Classes="label" Text="Neigung" />
+                            <TextBlock Classes="label" Text="{loc:Translate Key=LabelTilt}" />
                             <TextBlock Classes="bigValue" Text="{Binding TargetTiltText}" />
                         </StackPanel>
                     </Grid>
@@ -162,7 +163,7 @@
 
             <Border Classes="card">
                 <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="UNTERGRUND &amp; BIFAZIAL-MEHRERTRAG" />
+                    <TextBlock Classes="cardTitle" Text="{loc:Translate Key=CardBifacial}" />
                     <ComboBox ItemsSource="{Binding Grounds}" SelectedItem="{Binding SelectedGround}"
                               HorizontalAlignment="Stretch" Margin="0,0,0,10">
                         <ComboBox.ItemTemplate>

@@ -2,7 +2,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
+using SunSeeker.Shared.Resources.Strings;
 using SunSeeker.Shared.Services;
 using SunSeeker.Shared.ViewModels;
 using SunSeeker.Shared.Views;
@@ -33,6 +36,12 @@ public class App : Application
             var services = new ServiceCollection();
             ConfigureServices(services);
             Services = services.BuildServiceProvider();
+
+            // Lokalisierung initialisieren (Geraetesprache erkennen/persistieren) BEVOR die erste
+            // View geladen wird — die {loc:Translate}-Markup-Extension loest beim View-Load auf.
+            var localization = Services.GetRequiredService<ILocalizationService>();
+            localization.Initialize();
+            LocalizationManager.Initialize(localization);
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -79,6 +88,11 @@ public class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Lokalisierung (Preferences fuer die persistierte Sprachwahl).
+        services.AddSingleton<IPreferencesService>(_ => new PreferencesService("SunSeeker"));
+        services.AddSingleton<ILocalizationService>(sp =>
+            new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
+
         // Plattform-Factory LAZY auswerten (Avalonia-12-Android: DI-Build laeuft vor
         // MainActivity.OnCreate). Build-Zeit-Pruefung wuerde den Mock-Fallback einbrennen.
         services.AddSingleton<ILocationService>(sp =>

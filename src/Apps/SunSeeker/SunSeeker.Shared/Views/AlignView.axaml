@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:vm="using:SunSeeker.Shared.ViewModels"
              xmlns:models="using:SunSeeker.Shared.Models"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="900"
@@ -32,7 +33,7 @@
     <ScrollViewer>
         <StackPanel Margin="{DynamicResource PagePadding}">
 
-            <TextBlock Text="AUSRICHTEN" FontSize="14" FontWeight="Bold" Margin="0,4,0,12"
+            <TextBlock Text="{loc:Translate Key=CardAlignTitle}" FontSize="14" FontWeight="Bold" Margin="0,4,0,12"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Panel + Ziel -->
@@ -81,24 +82,24 @@
                                                 Foreground="{DynamicResource WarningBrush}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Margin="8,0,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource WarningBrush}" FontSize="12"
-                               Text="Kompass kalibrieren (Acht-Bewegung) und das Handy flach an die geneigte Panel-Flaeche halten. Metall/Magnete stoeren." />
+                               Text="{loc:Translate Key=WarnCalibration}" />
                 </Grid>
             </Border>
 
             <!-- Ist vs Soll -->
             <Border Classes="card">
                 <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
-                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="label" Text="Panel-Richtung (Ist)" />
-                    <TextBlock Grid.Row="0" Grid.Column="1" Classes="label" Text="Soll-Richtung" />
+                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="label" Text="{loc:Translate Key=LabelPanelDirection}" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Classes="label" Text="{loc:Translate Key=LabelTargetDirection}" />
                     <TextBlock Grid.Row="1" Grid.Column="0" Classes="value" Text="{Binding PanelAzimuthText}" />
                     <TextBlock Grid.Row="1" Grid.Column="1" Classes="value"
                                Foreground="{DynamicResource AccentLightBrush}" Text="{Binding TargetAzimuthText}" />
                     <Grid Grid.Row="2" Grid.Column="0" ColumnDefinitions="Auto,Auto" ColumnSpacing="6">
-                        <TextBlock Classes="label" Text="Neigung Ist:" VerticalAlignment="Center" />
+                        <TextBlock Classes="label" Text="{loc:Translate Key=LabelTiltCurrent}" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="1" Classes="value" FontSize="15" Text="{Binding PanelTiltText}" />
                     </Grid>
                     <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="6">
-                        <TextBlock Classes="label" Text="Soll:" VerticalAlignment="Center" />
+                        <TextBlock Classes="label" Text="{loc:Translate Key=LabelTargetShort}" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="1" Classes="value" FontSize="15"
                                    Foreground="{DynamicResource AccentLightBrush}" Text="{Binding TargetTiltText}" />
                     </Grid>
@@ -119,7 +120,7 @@
             </Grid>
             <TextBlock Text="{Binding SunInfoText}" Classes="label" Margin="26,0,0,8" />
 
-            <TextBlock Text="Handy mit dem Bildschirm flach an die Panel-Vorderseite (zur Sonne) halten."
+            <TextBlock Text="{loc:Translate Key=HintHoldPhone}"
                        Classes="label" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
                        HorizontalAlignment="Center" Margin="0,0,0,12" />
         </StackPanel>

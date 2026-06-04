@@ -85,7 +85,7 @@ public class AlignmentServiceTests
     public void Evaluate_PanelDirektAufSonne_VollerErtrag()
     {
         var sun = new SolarPosition(150, 40, Noon);
-        var rec = new AlignmentRecommendation(AlignmentGoal.NowMaximum, 150, 50, 50, "");
+        var rec = new AlignmentRecommendation(AlignmentGoal.NowMaximum, 150, 50, 50);
 
         // Panel-Azimut = Sonnen-Azimut, Neigung = Zenitwinkel (90 - 40) -> Sonne senkrecht.
         var state = _align.Evaluate(sun, panelAzimuth: 150, panelTilt: 50, rec);
@@ -101,7 +101,7 @@ public class AlignmentServiceTests
     {
         // Bei tilt = 0 gilt cos(AOI) = sin(Elevation), unabhaengig vom Azimut.
         var sun = new SolarPosition(123, 30, Noon);
-        var rec = new AlignmentRecommendation(AlignmentGoal.TodayYield, 180, 0, 0, "");
+        var rec = new AlignmentRecommendation(AlignmentGoal.TodayYield, 180, 0, 0);
 
         var state = _align.Evaluate(sun, panelAzimuth: 0, panelTilt: 0, rec);
 
@@ -113,7 +113,7 @@ public class AlignmentServiceTests
     {
         // Sonne im Sueden, Panel steil nach Norden gerichtet.
         var sun = new SolarPosition(180, 40, Noon);
-        var rec = new AlignmentRecommendation(AlignmentGoal.NowMaximum, 0, 80, 80, "");
+        var rec = new AlignmentRecommendation(AlignmentGoal.NowMaximum, 0, 80, 80);
 
         var state = _align.Evaluate(sun, panelAzimuth: 0, panelTilt: 80, rec);
 
@@ -125,7 +125,7 @@ public class AlignmentServiceTests
     public void Evaluate_NachtsKeinErtrag()
     {
         var sun = new SolarPosition(0, -10, Noon); // Sonne unter Horizont
-        var rec = new AlignmentRecommendation(AlignmentGoal.NowMaximum, 180, 35, 35, "");
+        var rec = new AlignmentRecommendation(AlignmentGoal.NowMaximum, 180, 35, 35);
 
         var state = _align.Evaluate(sun, panelAzimuth: 180, panelTilt: 35, rec);
 
@@ -137,7 +137,7 @@ public class AlignmentServiceTests
     public void Evaluate_AzimutFehler_IstVorzeichenbehaftetUndNormalisiert()
     {
         var sun = new SolarPosition(180, 45, Noon);
-        var rec = new AlignmentRecommendation(AlignmentGoal.AnnualYield, 180, 35, 35, "");
+        var rec = new AlignmentRecommendation(AlignmentGoal.AnnualYield, 180, 35, 35);
 
         // Panel 10 Grad oestlich von Sued.
         var state = _align.Evaluate(sun, panelAzimuth: 190, panelTilt: 35, rec);

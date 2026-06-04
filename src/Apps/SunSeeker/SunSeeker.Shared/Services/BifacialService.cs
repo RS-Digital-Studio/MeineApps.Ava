@@ -38,30 +38,31 @@ public sealed class BifacialService : IBifacialService
         return new BifacialAdvice(ground, albedo, gainLow, gainHigh, tiltBonus, tips);
     }
 
+    /// <summary>
+    /// Liefert Lokalisierungs-KEYS (keine fertigen Texte) — der UI-Layer loest sie ueber GetString
+    /// auf, damit der Service sprachneutral + testbar bleibt.
+    /// </summary>
     private static IReadOnlyList<string> BuildTips(GroundType ground, double albedo, PanelProfile panel)
     {
-        var tips = new List<string>();
-
         if (!panel.IsBifacial)
-        {
-            tips.Add("Dieses Panel ist nicht bifazial — der Untergrund beeinflusst den Ertrag kaum.");
-            return tips;
-        }
+            return ["BifacialTipNotBifacial"];
+
+        var tips = new List<string>();
 
         // Untergrund-Bewertung
         if (albedo >= 0.55)
-            tips.Add("Sehr heller Untergrund — ideal fuer die Rueckseite. Hier holst du den maximalen Mehrertrag.");
+            tips.Add("BifacialTipBrightGround");
         else if (albedo >= 0.30)
-            tips.Add("Mittelheller Untergrund — solider Rueckseiten-Ertrag.");
+            tips.Add("BifacialTipMediumGround");
         else
-            tips.Add("Dunkler Untergrund — eine helle Plane oder hellen Kies unterlegen kann den Mehrertrag nahezu verdoppeln.");
+            tips.Add("BifacialTipDarkGround");
 
         // Konkrete Hebel (aus der Recherche)
-        tips.Add("Rueckseite frei halten: keinen Rucksack, dunkle Wand oder das Fahrzeug direkt dahinter stellen.");
-        tips.Add("Etwas hoeher aufstellen hilft der Rueckseite (mehr Boden im Blickfeld, weniger Selbstverschattung).");
+        tips.Add("BifacialTipBackFree");
+        tips.Add("BifacialTipRaise");
 
         if (panel.HasFixedTilts && panel.KickstandTilts.Count > 1)
-            tips.Add("Bei sehr hellem Untergrund (Schnee/weisse Flaeche) den steileren Standwinkel waehlen.");
+            tips.Add("BifacialTipSteepSnow");
 
         return tips;
     }

@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MeineApps.Core.Ava.Localization;
 using SunSeeker.Shared.Graphics;
 using SunSeeker.Shared.Models;
 using SunSeeker.Shared.Services;
@@ -25,6 +27,7 @@ public partial class AlignViewModel : ObservableObject, IDisposable
     private readonly IHeadingService _heading;
     private readonly ISolarPositionService _solar;
     private readonly IAlignmentService _alignment;
+    private readonly ILocalizationService _loc;
 
     private DispatcherTimer? _timer;
     private bool _active;
@@ -33,23 +36,25 @@ public partial class AlignViewModel : ObservableObject, IDisposable
 
     public AlignViewModel(
         ILocationService location, IHeadingService heading,
-        ISolarPositionService solar, IAlignmentService alignment)
+        ISolarPositionService solar, IAlignmentService alignment, ILocalizationService loc)
     {
         _location = location;
         _heading = heading;
         _solar = solar;
         _alignment = alignment;
+        _loc = loc;
 
         Panels = new ObservableCollection<PanelProfile>(PanelProfile.All);
         Goals = new ObservableCollection<GoalOption>(
         [
-            new(AlignmentGoal.NowMaximum, "Jetzt maximal (mobil)"),
-            new(AlignmentGoal.TodayYield, "Heutiger Tagesertrag"),
-            new(AlignmentGoal.AnnualYield, "Jahresertrag (fest)"),
-            new(AlignmentGoal.WinterYield, "Winterbetrieb (steil)"),
+            new(AlignmentGoal.NowMaximum, loc.GetString("GoalNowMaximum")),
+            new(AlignmentGoal.TodayYield, loc.GetString("GoalTodayYield")),
+            new(AlignmentGoal.AnnualYield, loc.GetString("GoalAnnualYield")),
+            new(AlignmentGoal.WinterYield, loc.GetString("GoalWinterYield")),
         ]);
         _selectedPanel = Panels[0];
         _selectedGoal = Goals[0];
+        _azimuthGuidance = loc.GetString("GuidanceInitial");
 
         _heading.Changed += OnHeadingChanged;
         _location.LocationChanged += OnLocationChanged;
@@ -66,7 +71,7 @@ public partial class AlignViewModel : ObservableObject, IDisposable
     [ObservableProperty] private PanelProfile _selectedPanel;
     [ObservableProperty] private GoalOption _selectedGoal;
 
-    [ObservableProperty] private string _azimuthGuidance = "Panel zur Sonne ausrichten";
+    [ObservableProperty] private string _azimuthGuidance = "";
     [ObservableProperty] private string _tiltGuidance = "";
     [ObservableProperty] private string _panelAzimuthText = "—";
     [ObservableProperty] private string _panelTiltText = "—";
@@ -146,7 +151,7 @@ public partial class AlignViewModel : ObservableObject, IDisposable
         Renderer.Quality = state.Quality;
 
         // Text-Anzeigen
-        PanelAzimuthText = reliable ? $"{panelAzimuth:0}° {Compass(panelAzimuth)}" : "— neigen —";
+        PanelAzimuthText = reliable ? $"{panelAzimuth:0}° {Compass(panelAzimuth)}" : _loc.GetString("TiltToMeasure");
         PanelTiltText = $"{panelTilt:0}°";
         TargetAzimuthText = $"{_recommendation.TargetAzimuth:0}° {Compass(_recommendation.TargetAzimuth)}";
         TargetTiltText = $"{_recommendation.RecommendedKickstandTilt:0}°";
@@ -157,46 +162,48 @@ public partial class AlignViewModel : ObservableObject, IDisposable
         TiltGuidance = BuildTiltGuidance(panelTilt - _recommendation.RecommendedKickstandTilt);
 
         GainText = sun.IsDaylight
-            ? $"{state.DirectGainFactor * 100:0}% der Direktstrahlung"
-            : "Sonne unter dem Horizont";
+            ? string.Format(_loc.GetString("GainShort"), Num(state.DirectGainFactor * 100))
+            : _loc.GetString("SunBelowHorizon");
         QualityText = QualityLabel(state.Quality, reliable);
-        SunInfoText = $"Sonne: {sun.Azimuth:0}° {Compass(sun.Azimuth)} · {sun.Elevation:0}° hoch";
+        SunInfoText = string.Format(_loc.GetString("SunInfo"),
+            Num(sun.Azimuth), Compass(sun.Azimuth), Num(sun.Elevation));
 
         ShowKickstandHint = SelectedPanel.HasFixedTilts;
         KickstandHint = SelectedPanel.HasFixedTilts
-            ? $"Standwinkel {_recommendation.RecommendedKickstandTilt:0}° am Panel einstellen"
+            ? string.Format(_loc.GetString("KickstandHintAlign"), Num(_recommendation.RecommendedKickstandTilt))
             : "";
 
         InvalidateRequested?.Invoke();
     }
 
-    private static string BuildAzimuthGuidance(double azimuthError, bool reliable)
+    private string BuildAzimuthGuidance(double azimuthError, bool reliable)
     {
         if (!reliable)
-            return "Handy flach an die Panel-Flaeche halten";
+            return _loc.GetString("GuidanceHoldFlat");
         var abs = Math.Abs(azimuthError);
-        if (abs < 3) return "Richtung passt";
+        if (abs < 3) return _loc.GetString("GuidanceAzimuthOk");
         // azimuthError = panel - soll. Positiv -> Panel zu weit oestlich -> nach Westen/links drehen.
-        var direction = azimuthError > 0 ? "nach Westen (links)" : "nach Osten (rechts)";
-        return $"{abs:0}° {direction} drehen";
+        return string.Format(_loc.GetString(azimuthError > 0 ? "GuidanceTurnWest" : "GuidanceTurnEast"), Num(abs));
     }
 
-    private static string BuildTiltGuidance(double tiltError)
+    private string BuildTiltGuidance(double tiltError)
     {
         var abs = Math.Abs(tiltError);
-        if (abs < 3) return "Neigung passt";
-        return tiltError > 0 ? $"{abs:0}° flacher stellen" : $"{abs:0}° steiler stellen";
+        if (abs < 3) return _loc.GetString("TiltOk");
+        return string.Format(_loc.GetString(tiltError > 0 ? "TiltFlatter" : "TiltSteeper"), Num(abs));
     }
 
-    private static string QualityLabel(AlignmentQuality quality, bool reliable) => !reliable
-        ? "Ausrichtung wird gemessen"
-        : quality switch
+    private string QualityLabel(AlignmentQuality quality, bool reliable) => !reliable
+        ? _loc.GetString("QualityMeasuring")
+        : _loc.GetString(quality switch
         {
-            AlignmentQuality.Excellent => "Perfekt ausgerichtet",
-            AlignmentQuality.Good => "Gut ausgerichtet",
-            AlignmentQuality.Fair => "Noch justieren",
-            _ => "Schlecht ausgerichtet",
-        };
+            AlignmentQuality.Excellent => "QualityExcellent",
+            AlignmentQuality.Good => "QualityGood",
+            AlignmentQuality.Fair => "QualityFair",
+            _ => "QualityPoor",
+        });
+
+    private static string Num(double value) => value.ToString("0", CultureInfo.CurrentCulture);
 
     private static string Compass(double azimuth)
     {

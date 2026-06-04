@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="TabAlign" xml:space="preserve"><value>Align</value></data>
+  <data name="TabPower" xml:space="preserve"><value>Power</value></data>
+  <data name="TabDashboard" xml:space="preserve"><value>Overview</value></data>
+  <data name="LocationPending" xml:space="preserve"><value>Locating...</value></data>
+  <data name="CardSunPosition" xml:space="preserve"><value>CURRENT SUN POSITION</value></data>
+  <data name="LabelAzimuth" xml:space="preserve"><value>Direction (Azimuth)</value></data>
+  <data name="LabelElevation" xml:space="preserve"><value>Altitude (Elevation)</value></data>
+  <data name="SunAboveHorizon" xml:space="preserve"><value>Sun above the horizon</value></data>
+  <data name="SunBelowHorizon" xml:space="preserve"><value>Sun below the horizon</value></data>
+  <data name="CardSunPath" xml:space="preserve"><value>SUN PATH TODAY</value></data>
+  <data name="CardSunTimes" xml:space="preserve"><value>SUN TIMES</value></data>
+  <data name="LabelSunrise" xml:space="preserve"><value>Sunrise</value></data>
+  <data name="LabelSolarNoon" xml:space="preserve"><value>Solar Noon</value></data>
+  <data name="LabelSunset" xml:space="preserve"><value>Sunset</value></data>
+  <data name="CardPanelGoal" xml:space="preserve"><value>PANEL &amp; GOAL</value></data>
+  <data name="LabelPanel" xml:space="preserve"><value>Panel</value></data>
+  <data name="LabelGoal" xml:space="preserve"><value>Alignment Goal</value></data>
+  <data name="CardRecommendation" xml:space="preserve"><value>RECOMMENDED ALIGNMENT</value></data>
+  <data name="LabelDirection" xml:space="preserve"><value>Direction</value></data>
+  <data name="LabelTilt" xml:space="preserve"><value>Tilt</value></data>
+  <data name="CardBifacial" xml:space="preserve"><value>GROUND &amp; BIFACIAL EXTRA YIELD</value></data>
+  <data name="GoalNowMaximum" xml:space="preserve"><value>Max now (mobile)</value></data>
+  <data name="GoalTodayYield" xml:space="preserve"><value>Today's daily yield</value></data>
+  <data name="GoalAnnualYield" xml:space="preserve"><value>Annual yield (fixed)</value></data>
+  <data name="GoalWinterYield" xml:space="preserve"><value>Winter mode (steep)</value></data>
+  <data name="ExplNowMaximum" xml:space="preserve"><value>Aimed directly at the current sun — maximum power right now.</value></data>
+  <data name="ExplNowNight" xml:space="preserve"><value>Sun is below the horizon — reference value for the next day.</value></data>
+  <data name="ExplTodayYield" xml:space="preserve"><value>South, tilt perpendicular to today's noon sun — best daily yield.</value></data>
+  <data name="ExplAnnualYield" xml:space="preserve"><value>South, flat fixed angle for the highest annual yield.</value></data>
+  <data name="ExplWinterYield" xml:space="preserve"><value>South, steep winter angle for the low-lying sun.</value></data>
+  <data name="GroundGrass" xml:space="preserve"><value>Grass / Lawn</value></data>
+  <data name="GroundSoil" xml:space="preserve"><value>Soil / Topsoil</value></data>
+  <data name="GroundAsphalt" xml:space="preserve"><value>Asphalt (dark)</value></data>
+  <data name="GroundConcrete" xml:space="preserve"><value>Concrete</value></data>
+  <data name="GroundSand" xml:space="preserve"><value>Sand</value></data>
+  <data name="GroundGravel" xml:space="preserve"><value>Light Gravel</value></data>
+  <data name="GroundWhiteSurface" xml:space="preserve"><value>White Tarp / Surface</value></data>
+  <data name="GroundSnow" xml:space="preserve"><value>Snow</value></data>
+  <data name="GroundWater" xml:space="preserve"><value>Water</value></data>
+  <data name="KickstandSelect" xml:space="preserve"><value>Select kickstand angle {0}°</value></data>
+  <data name="YieldDirect" xml:space="preserve"><value>{0}% of direct irradiance at this orientation</value></data>
+  <data name="NoDirectYield" xml:space="preserve"><value>No direct yield (sun below horizon)</value></data>
+  <data name="BifacialGain" xml:space="preserve"><value>+{0}–{1}% extra yield (backside)</value></data>
+  <data name="NotBifacial" xml:space="preserve"><value>Panel is not bifacial</value></data>
+  <data name="TiltBonusTip" xml:space="preserve"><value>Tip: tilt ~{0}° steeper for this ground type</value></data>
+  <data name="AlbedoLabel" xml:space="preserve"><value>Albedo {0}</value></data>
+  <data name="BifacialTipNotBifacial" xml:space="preserve"><value>This panel is not bifacial — the ground has little effect on yield.</value></data>
+  <data name="BifacialTipBrightGround" xml:space="preserve"><value>Very bright ground — ideal for the backside. Get the maximum extra yield here.</value></data>
+  <data name="BifacialTipMediumGround" xml:space="preserve"><value>Medium-bright ground — solid backside yield.</value></data>
+  <data name="BifacialTipDarkGround" xml:space="preserve"><value>Dark ground — placing a light tarp or light gravel underneath can nearly double the extra yield.</value></data>
+  <data name="BifacialTipBackFree" xml:space="preserve"><value>Keep the backside clear: don't place a bag, dark wall, or vehicle directly behind it.</value></data>
+  <data name="BifacialTipRaise" xml:space="preserve"><value>Mounting slightly higher helps the backside (more ground in view, less self-shading).</value></data>
+  <data name="BifacialTipSteepSnow" xml:space="preserve"><value>With very bright ground (snow/white surface), choose the steeper kickstand angle.</value></data>
+  <data name="CardAlignTitle" xml:space="preserve"><value>ALIGN</value></data>
+  <data name="GuidanceInitial" xml:space="preserve"><value>Point panel toward the sun</value></data>
+  <data name="GuidanceHoldFlat" xml:space="preserve"><value>Hold phone flat against the panel surface</value></data>
+  <data name="GuidanceAzimuthOk" xml:space="preserve"><value>Direction is correct</value></data>
+  <data name="GuidanceTurnWest" xml:space="preserve"><value>Rotate {0}° west (left)</value></data>
+  <data name="GuidanceTurnEast" xml:space="preserve"><value>Rotate {0}° east (right)</value></data>
+  <data name="TiltOk" xml:space="preserve"><value>Tilt is correct</value></data>
+  <data name="TiltFlatter" xml:space="preserve"><value>Tilt {0}° flatter</value></data>
+  <data name="TiltSteeper" xml:space="preserve"><value>Tilt {0}° steeper</value></data>
+  <data name="QualityExcellent" xml:space="preserve"><value>Perfectly aligned</value></data>
+  <data name="QualityGood" xml:space="preserve"><value>Well aligned</value></data>
+  <data name="QualityFair" xml:space="preserve"><value>Fine-tune alignment</value></data>
+  <data name="QualityPoor" xml:space="preserve"><value>Poorly aligned</value></data>
+  <data name="QualityMeasuring" xml:space="preserve"><value>Measuring alignment</value></data>
+  <data name="GainShort" xml:space="preserve"><value>{0}% of direct irradiance</value></data>
+  <data name="SunInfo" xml:space="preserve"><value>Sun: {0}° {1} · {2}° high</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Set kickstand to {0}° on the panel</value></data>
+  <data name="TiltToMeasure" xml:space="preserve"><value>— tilt —</value></data>
+  <data name="WarnCalibration" xml:space="preserve"><value>Calibrate compass (figure-eight motion) and hold phone flat against the tilted panel surface. Metal/magnets cause interference.</value></data>
+  <data name="LabelPanelDirection" xml:space="preserve"><value>Panel Direction (Actual)</value></data>
+  <data name="LabelTargetDirection" xml:space="preserve"><value>Target Direction</value></data>
+  <data name="LabelTiltCurrent" xml:space="preserve"><value>Tilt (Actual):</value></data>
+  <data name="LabelTargetShort" xml:space="preserve"><value>Target:</value></data>
+  <data name="HintHoldPhone" xml:space="preserve"><value>Hold phone with screen flat against the front of the panel (facing the sun).</value></data>
+  <data name="CardPower" xml:space="preserve"><value>SOLAR POWER</value></data>
+  <data name="LabelCurrent" xml:space="preserve"><value>Current</value></data>
+  <data name="HintDemo" xml:space="preserve"><value>Demo data based on sun position. Real integration with the Anker C2000 (Cloud-MQTT) coming soon.</value></data>
+  <data name="CardTrend" xml:space="preserve"><value>HISTORY (last few minutes)</value></data>
+  <data name="LabelDailyYield" xml:space="preserve"><value>Daily Yield</value></data>
+  <data name="LabelPeak" xml:space="preserve"><value>Peak today</value></data>
+  <data name="StateConnectedDemo" xml:space="preserve"><value>Connected (Demo Data)</value></data>
+  <data name="StateConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="StateConnecting" xml:space="preserve"><value>Connecting...</value></data>
+  <data name="StateError" xml:space="preserve"><value>Connection Error</value></data>
+  <data name="StateDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+</root>

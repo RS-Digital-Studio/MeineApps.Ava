@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MeineApps.Core.Ava.Localization;
 using SunSeeker.Shared.Graphics;
 using SunSeeker.Shared.Models;
 using SunSeeker.Shared.Services;
@@ -21,6 +22,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly ISolarPositionService _solar;
     private readonly IAlignmentService _alignment;
     private readonly IBifacialService _bifacial;
+    private readonly ILocalizationService _loc;
 
     private DispatcherTimer? _timer;
     private bool _initialized;
@@ -35,27 +37,30 @@ public partial class DashboardViewModel : ObservableObject
         ILocationService location,
         ISolarPositionService solar,
         IAlignmentService alignment,
-        IBifacialService bifacial)
+        IBifacialService bifacial,
+        ILocalizationService loc)
     {
         _location = location;
         _solar = solar;
         _alignment = alignment;
         _bifacial = bifacial;
+        _loc = loc;
 
         Panels = new ObservableCollection<PanelProfile>(PanelProfile.All);
         Goals = new ObservableCollection<GoalOption>(
         [
-            new(AlignmentGoal.NowMaximum, "Jetzt maximal (mobil)"),
-            new(AlignmentGoal.TodayYield, "Heutiger Tagesertrag"),
-            new(AlignmentGoal.AnnualYield, "Jahresertrag (fest)"),
-            new(AlignmentGoal.WinterYield, "Winterbetrieb (steil)"),
+            new(AlignmentGoal.NowMaximum, loc.GetString("GoalNowMaximum")),
+            new(AlignmentGoal.TodayYield, loc.GetString("GoalTodayYield")),
+            new(AlignmentGoal.AnnualYield, loc.GetString("GoalAnnualYield")),
+            new(AlignmentGoal.WinterYield, loc.GetString("GoalWinterYield")),
         ]);
         Grounds = new ObservableCollection<GroundOption>(
-            Enum.GetValues<GroundType>().Select(g => new GroundOption(g, g.DisplayName())).ToList());
+            Enum.GetValues<GroundType>().Select(g => new GroundOption(g, loc.GetString(g.LocKey()))).ToList());
 
         _selectedPanel = Panels[0];
         _selectedGoal = Goals[0];
         _selectedGround = Grounds[0];
+        _locationText = loc.GetString("LocationPending");
     }
 
     public ObservableCollection<PanelProfile> Panels { get; }
@@ -66,7 +71,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] private GoalOption _selectedGoal;
     [ObservableProperty] private GroundOption _selectedGround;
 
-    [ObservableProperty] private string _locationText = "Standort wird ermittelt...";
+    [ObservableProperty] private string _locationText = "";
     [ObservableProperty] private string _clockText = "";
     [ObservableProperty] private string _sunAzimuthText = "—";
     [ObservableProperty] private string _sunElevationText = "—";
@@ -128,7 +133,7 @@ public partial class DashboardViewModel : ObservableObject
 
         var sun = _solar.GetPosition(location, nowUtc);
         IsDaylight = sun.IsDaylight;
-        DaylightText = sun.IsDaylight ? "Sonne ueber dem Horizont" : "Sonne unter dem Horizont";
+        DaylightText = _loc.GetString(sun.IsDaylight ? "SunAboveHorizon" : "SunBelowHorizon");
         SunAzimuthText = $"{sun.Azimuth:0}° {Compass(sun.Azimuth)}";
         SunElevationText = $"{sun.Elevation:0.0}°";
 
@@ -154,39 +159,52 @@ public partial class DashboardViewModel : ObservableObject
         TargetAzimuthText = $"{rec.TargetAzimuth:0}° {Compass(rec.TargetAzimuth)}";
         TargetTiltText = $"{rec.TargetTilt:0}° Neigung";
         ShowKickstand = panel.HasFixedTilts;
-        KickstandText = panel.HasFixedTilts ? $"Standwinkel {rec.RecommendedKickstandTilt:0}° waehlen" : "";
-        RecommendationExplanation = rec.Explanation;
+        KickstandText = panel.HasFixedTilts
+            ? string.Format(_loc.GetString("KickstandSelect"), Num(rec.RecommendedKickstandTilt))
+            : "";
+        RecommendationExplanation = _loc.GetString(ExplanationKey(SelectedGoal.Goal, sun.IsDaylight));
 
         if (sun.IsDaylight)
         {
             var state = _alignment.Evaluate(sun, rec.TargetAzimuth, rec.RecommendedKickstandTilt, rec);
-            CurrentYieldText = $"{state.DirectGainFactor * 100:0}% der Direktstrahlung bei dieser Ausrichtung";
+            CurrentYieldText = string.Format(_loc.GetString("YieldDirect"), Num(state.DirectGainFactor * 100));
         }
         else
         {
-            CurrentYieldText = "Kein direkter Ertrag (Sonne unter dem Horizont)";
+            CurrentYieldText = _loc.GetString("NoDirectYield");
         }
 
         var advice = _bifacial.GetAdvice(SelectedGround.Ground, panel);
         IsBifacial = panel.IsBifacial;
-        AlbedoText = $"Albedo {advice.Albedo:0.00}";
+        AlbedoText = string.Format(_loc.GetString("AlbedoLabel"), advice.Albedo.ToString("0.00", CultureInfo.CurrentCulture));
         if (panel.IsBifacial)
         {
-            BifacialGainText = $"+{advice.EstimatedGainLow * 100:0}–{advice.EstimatedGainHigh * 100:0}% Mehrertrag (Rueckseite)";
+            BifacialGainText = string.Format(_loc.GetString("BifacialGain"),
+                Num(advice.EstimatedGainLow * 100), Num(advice.EstimatedGainHigh * 100));
             TiltBonusText = advice.TiltBonusDegrees >= 1
-                ? $"Tipp: bei diesem Untergrund ~{advice.TiltBonusDegrees:0}° steiler stellen"
+                ? string.Format(_loc.GetString("TiltBonusTip"), Num(advice.TiltBonusDegrees))
                 : "";
         }
         else
         {
-            BifacialGainText = "Panel nicht bifazial";
+            BifacialGainText = _loc.GetString("NotBifacial");
             TiltBonusText = "";
         }
 
         BifacialTips.Clear();
-        foreach (var tip in advice.Tips)
-            BifacialTips.Add(tip);
+        foreach (var tipKey in advice.Tips)
+            BifacialTips.Add(_loc.GetString(tipKey));
     }
+
+    private static string ExplanationKey(AlignmentGoal goal, bool isDaylight) => goal switch
+    {
+        AlignmentGoal.NowMaximum => isDaylight ? "ExplNowMaximum" : "ExplNowNight",
+        AlignmentGoal.TodayYield => "ExplTodayYield",
+        AlignmentGoal.WinterYield => "ExplWinterYield",
+        _ => "ExplAnnualYield",
+    };
+
+    private static string Num(double value) => value.ToString("0", CultureInfo.CurrentCulture);
 
     private static string FormatLocation(GeoLocation l)
     {

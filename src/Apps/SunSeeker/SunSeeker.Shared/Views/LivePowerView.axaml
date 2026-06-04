@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:vm="using:SunSeeker.Shared.ViewModels"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="900"
              x:Class="SunSeeker.Shared.Views.LivePowerView"
@@ -27,7 +28,7 @@
         <StackPanel Margin="{DynamicResource PagePadding}">
 
             <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,12">
-                <TextBlock Grid.Column="0" Text="SOLAR-LEISTUNG" FontSize="14" FontWeight="Bold"
+                <TextBlock Grid.Column="0" Text="{loc:Translate Key=CardPower}" FontSize="14" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="label" VerticalAlignment="Center" />
             </Grid>
@@ -35,7 +36,7 @@
             <!-- Aktuelle Leistung gross -->
             <Border Classes="card">
                 <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="Aktuell" Classes="label" HorizontalAlignment="Center" />
+                    <TextBlock Text="{loc:Translate Key=LabelCurrent}" Classes="label" HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding CurrentWattsText}" FontSize="48" FontWeight="Bold"
                                Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center" />
                 </StackPanel>
@@ -49,14 +50,14 @@
                                                 Foreground="{DynamicResource InfoBrush}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Margin="8,0,0,0" TextWrapping="Wrap" FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="Demo-Daten aus dem Sonnenstand. Die echte Anbindung an die Anker C2000 (Cloud-MQTT) folgt." />
+                               Text="{loc:Translate Key=HintDemo}" />
                 </Grid>
             </Border>
 
             <!-- Trend-Chart -->
             <Border Classes="card">
                 <StackPanel>
-                    <TextBlock Text="VERLAUF (letzte Minuten)" Classes="label" Margin="0,0,0,8" />
+                    <TextBlock Text="{loc:Translate Key=CardTrend}" Classes="label" Margin="0,0,0,8" />
                     <labs:SKCanvasView x:Name="ChartCanvas" Height="180" />
                 </StackPanel>
             </Border>
@@ -65,14 +66,14 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <Border Grid.Column="0" Classes="card" Margin="0">
                     <StackPanel>
-                        <TextBlock Text="Tagesertrag" Classes="label" />
+                        <TextBlock Text="{loc:Translate Key=LabelDailyYield}" Classes="label" />
                         <TextBlock Text="{Binding TodayEnergyText}" FontSize="22" FontWeight="Bold"
                                    Foreground="{DynamicResource AccentLightBrush}" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="1" Classes="card" Margin="0">
                     <StackPanel>
-                        <TextBlock Text="Spitze heute" Classes="label" />
+                        <TextBlock Text="{loc:Translate Key=LabelPeak}" Classes="label" />
                         <TextBlock Text="{Binding PeakWattsText}" FontSize="22" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>

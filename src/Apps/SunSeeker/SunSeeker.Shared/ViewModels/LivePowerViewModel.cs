@@ -1,5 +1,6 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MeineApps.Core.Ava.Localization;
 using SunSeeker.Shared.Graphics;
 using SunSeeker.Shared.Models;
 using SunSeeker.Shared.Services;
@@ -16,18 +17,21 @@ public partial class LivePowerViewModel : ObservableObject, IDisposable
     private const int WindowSize = 300; // ~5 Minuten bei 1 Hz
 
     private readonly IAnkerMonitorService _anker;
+    private readonly ILocalizationService _loc;
     private readonly List<PowerSample> _samples = [];
 
     private double _peakWatts;
     private double _energyWh;
     private DateTime? _lastSampleUtc;
 
-    public LivePowerViewModel(IAnkerMonitorService anker)
+    public LivePowerViewModel(IAnkerMonitorService anker, ILocalizationService loc)
     {
         _anker = anker;
+        _loc = loc;
         _anker.SampleReceived += OnSampleReceived;
         _anker.StateChanged += OnStateChanged;
         IsSimulated = anker.IsSimulated;
+        _stateText = loc.GetString("StateDisconnected");
     }
 
     public event Action? InvalidateRequested;
@@ -37,7 +41,7 @@ public partial class LivePowerViewModel : ObservableObject, IDisposable
     public IReadOnlyList<PowerSample> Samples => _samples;
 
     [ObservableProperty] private string _currentWattsText = "—";
-    [ObservableProperty] private string _stateText = "Getrennt";
+    [ObservableProperty] private string _stateText = "";
     [ObservableProperty] private string _todayEnergyText = "0 Wh";
     [ObservableProperty] private string _peakWattsText = "0 W";
     [ObservableProperty] private bool _isSimulated;
@@ -77,13 +81,13 @@ public partial class LivePowerViewModel : ObservableObject, IDisposable
         InvalidateRequested?.Invoke();
     }
 
-    private string StateLabel(AnkerConnectionState state) => state switch
+    private string StateLabel(AnkerConnectionState state) => _loc.GetString(state switch
     {
-        AnkerConnectionState.Connected => IsSimulated ? "Verbunden (Demo-Daten)" : "Verbunden",
-        AnkerConnectionState.Connecting => "Verbinde...",
-        AnkerConnectionState.Error => "Verbindungsfehler",
-        _ => "Getrennt",
-    };
+        AnkerConnectionState.Connected => IsSimulated ? "StateConnectedDemo" : "StateConnected",
+        AnkerConnectionState.Connecting => "StateConnecting",
+        AnkerConnectionState.Error => "StateError",
+        _ => "StateDisconnected",
+    });
 
     public void Dispose()
     {

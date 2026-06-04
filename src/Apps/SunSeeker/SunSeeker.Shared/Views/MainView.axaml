@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:vm="using:SunSeeker.Shared.ViewModels"
              xmlns:views="using:SunSeeker.Shared.Views"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="900"
@@ -53,7 +54,7 @@
                             <materialIcons:MaterialIcon Kind="CompassOutline" Width="24" Height="24"
                                                         HorizontalAlignment="Center"
                                                         Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Ausrichten" FontSize="12" HorizontalAlignment="Center"
+                            <TextBlock Text="{loc:Translate Key=TabAlign}" FontSize="12" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" />
                         </StackPanel>
                     </Grid>
@@ -67,7 +68,7 @@
                             <materialIcons:MaterialIcon Kind="FlashOutline" Width="24" Height="24"
                                                         HorizontalAlignment="Center"
                                                         Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Leistung" FontSize="12" HorizontalAlignment="Center"
+                            <TextBlock Text="{loc:Translate Key=TabPower}" FontSize="12" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" />
                         </StackPanel>
                     </Grid>
@@ -81,7 +82,7 @@
                             <materialIcons:MaterialIcon Kind="ViewDashboardOutline" Width="24" Height="24"
                                                         HorizontalAlignment="Center"
                                                         Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="Uebersicht" FontSize="12" HorizontalAlignment="Center"
+                            <TextBlock Text="{loc:Translate Key=TabDashboard}" FontSize="12" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" />
                         </StackPanel>
                     </Grid>

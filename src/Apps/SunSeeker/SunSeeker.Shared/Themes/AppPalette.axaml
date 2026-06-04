@@ -1,0 +1,124 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SunSeeker Farbpalette - Solar / Sonnen-Dashboard        -->
+    <!-- Warmes Sonnen-Amber auf daemmrigem Dunkel               -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+
+    <!-- Primaerfarbe: Sonnen-Amber (CTA, aktive Elemente, Sonne) -->
+    <Color x:Key="PrimaryColor">#FFB300</Color>
+    <Color x:Key="PrimaryLightColor">#FFC947</Color>
+    <Color x:Key="PrimaryDarkColor">#FF8F00</Color>
+
+    <!-- Sekundaer: Himmelblau (Himmel, Sonnenbahn) -->
+    <Color x:Key="SecondaryColor">#29B6F6</Color>
+    <Color x:Key="SecondaryLightColor">#73D1FF</Color>
+    <Color x:Key="SecondaryDarkColor">#0288D1</Color>
+
+    <!-- Akzent: Gruen (guter Ertrag, Erfolg) -->
+    <Color x:Key="AccentColor">#43A047</Color>
+    <Color x:Key="AccentLightColor">#66BB6A</Color>
+    <Color x:Key="AccentDarkColor">#2E7D32</Color>
+
+    <!-- Status -->
+    <Color x:Key="SuccessColor">#43A047</Color>
+    <Color x:Key="WarningColor">#FFC107</Color>
+    <Color x:Key="DangerColor">#EF5350</Color>
+    <Color x:Key="InfoColor">#29B6F6</Color>
+
+    <!-- Ausricht-Qualitaet (Ampel) -->
+    <Color x:Key="QualityExcellentColor">#43A047</Color>
+    <Color x:Key="QualityGoodColor">#9CCC65</Color>
+    <Color x:Key="QualityFairColor">#FFC107</Color>
+    <Color x:Key="QualityPoorColor">#EF5350</Color>
+
+    <!-- Sonne / Nacht / Daemmerung (Sonnenbahn-Visualisierung) -->
+    <Color x:Key="SunColor">#FFD54F</Color>
+    <Color x:Key="SunGlowColor">#FFB300</Color>
+    <Color x:Key="HorizonColor">#FF7043</Color>
+    <Color x:Key="NightColor">#3949AB</Color>
+
+    <!-- Hintergrund (daemmriges Dunkel) -->
+    <Color x:Key="BgPrimaryColor">#14182B</Color>
+    <Color x:Key="BgSecondaryColor">#1B2138</Color>
+    <Color x:Key="BgCardColor">#222A45</Color>
+    <Color x:Key="BgCardHoverColor">#2B3556</Color>
+    <Color x:Key="BgElevatedColor">#324068</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryColor">#F0EDE6</Color>
+    <Color x:Key="TextSecondaryColor">#9AA4BD</Color>
+    <Color x:Key="TextMutedColor">#5C6580</Color>
+
+    <!-- Solid Brushes -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="PrimaryLightBrush" Color="{StaticResource PrimaryLightColor}" />
+    <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDarkColor}" />
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
+    <SolidColorBrush x:Key="SecondaryLightBrush" Color="{StaticResource SecondaryLightColor}" />
+    <SolidColorBrush x:Key="SecondaryDarkBrush" Color="{StaticResource SecondaryDarkColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentLightBrush" Color="{StaticResource AccentLightColor}" />
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="{StaticResource BgPrimaryColor}" />
+    <SolidColorBrush x:Key="BgSecondaryBrush" Color="{StaticResource BgSecondaryColor}" />
+    <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCardColor}" />
+    <SolidColorBrush x:Key="BgCardHoverBrush" Color="{StaticResource BgCardHoverColor}" />
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="{StaticResource BgElevatedColor}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
+    <SolidColorBrush x:Key="QualityExcellentBrush" Color="{StaticResource QualityExcellentColor}" />
+    <SolidColorBrush x:Key="QualityGoodBrush" Color="{StaticResource QualityGoodColor}" />
+    <SolidColorBrush x:Key="QualityFairBrush" Color="{StaticResource QualityFairColor}" />
+    <SolidColorBrush x:Key="QualityPoorBrush" Color="{StaticResource QualityPoorColor}" />
+    <SolidColorBrush x:Key="SunBrush" Color="{StaticResource SunColor}" />
+    <SolidColorBrush x:Key="SunGlowBrush" Color="{StaticResource SunGlowColor}" />
+    <SolidColorBrush x:Key="HorizonBrush" Color="{StaticResource HorizonColor}" />
+    <SolidColorBrush x:Key="NightBrush" Color="{StaticResource NightColor}" />
+
+    <!-- Gradient Brushes -->
+    <LinearGradientBrush x:Key="CardGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#222A45" Offset="0" />
+        <GradientStop Color="#1C2440" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="HeaderGradientBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="#14182B" Offset="0" />
+        <GradientStop Color="#222A45" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#FFB300" Offset="0" />
+        <GradientStop Color="#FF8F00" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="SunGradientBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFD54F" Offset="0" />
+        <GradientStop Color="#FF8F00" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Daemmerungs-Himmel: Nacht oben, Horizont-Orange unten (Sonnenbahn-Hintergrund) -->
+    <LinearGradientBrush x:Key="SkyGradientBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#14182B" Offset="0" />
+        <GradientStop Color="#3949AB" Offset="0.55" />
+        <GradientStop Color="#FF7043" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#2E7D32" Offset="0" />
+        <GradientStop Color="#43A047" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Spacing / Design Tokens -->
+    <CornerRadius x:Key="CardRadius">16</CornerRadius>
+    <CornerRadius x:Key="ButtonRadius">12</CornerRadius>
+    <CornerRadius x:Key="SmallRadius">8</CornerRadius>
+    <Thickness x:Key="CardPadding">20</Thickness>
+    <Thickness x:Key="PagePadding">16</Thickness>
+
+</ResourceDictionary>

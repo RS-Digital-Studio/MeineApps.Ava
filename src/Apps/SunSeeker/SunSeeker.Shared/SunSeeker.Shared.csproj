@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shared Libraries -->
+    <ProjectReference Include="..\..\..\Libraries\MeineApps.Core.Ava\MeineApps.Core.Ava.csproj" />
+    <ProjectReference Include="..\..\..\UI\MeineApps.UI\MeineApps.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avalonia -->
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+    <PackageReference Include="SkiaSharp" />
+
+    <!-- MVVM -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+
+    <!-- DI -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

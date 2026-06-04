@@ -390,9 +390,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Immutable Snapshot der Geospatial-Pose. Cross-Thread-sicher via
     /// Volatile-Reference-Swap — ein Reader sieht entweder den alten oder den neuen
     /// Snapshot, niemals einen halben Zustand. Null = noch nichts empfangen.</summary>
+    /// <param name="Altitude">VPS-Ellipsoid-Höhe der KAMERA zum Snapshot-Zeitpunkt.</param>
+    /// <param name="CameraLocalY">ARCore-Welt-Y der Kamera zum SELBEN Zeitpunkt. Aus der Differenz
+    /// (Altitude − CameraLocalY) ergibt sich der konstante Offset ARCore-Y → VPS-Ellipsoidhöhe,
+    /// mit dem die Höhe eines beliebigen Hit-Punkts berechnet wird: <c>Altitude + (hitY − CameraLocalY)</c>.
+    /// Ohne das bekäme jeder Punkt die Kamera-/Augenhöhe statt seiner Gelände-Höhe.</param>
     private sealed record GeospatialSnapshot(
         double Latitude, double Longitude, double Altitude,
-        float HorizontalAccuracy, float Heading, float HeadingAccuracy);
+        float HorizontalAccuracy, float Heading, float HeadingAccuracy,
+        float CameraLocalY);
 
     private GeospatialSnapshot? _lastGeoSnapshot; // gelesen via Volatile.Read
 
@@ -1645,6 +1651,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Pose-Aktualisierung den Snapshot wechseln.
         var geoSnapshot = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
 
+        // Geo-Position des HIT-PUNKTS (Lat/Lon/Ellipsoid-Alt) — exakt via ARCore-Earth, sonst
+        // Kamera-Snapshot + ARCore-Höhenkorrektur. Vorher bekam jeder Punkt die KAMERA-Position
+        // (Lat/Lon + Augenhöhe) statt seiner echten Gelände-Position → Geländemodell flach + Lage versetzt.
+        var (hitGeoLat, hitGeoLon, hitGeoAlt, hitGeoHAcc) = ResolveHitGeoPose(anchorPose, y, geoSnapshot);
+
         // Camera-Pitch zum Capture-Zeitpunkt (Plan Kap. 4.2). Steiler Pitch ⇒ ungenauere Tiefe;
         // wird in den SurveyPoint übernommen und kann später in Berichten/Quality-Score genutzt werden.
         float capturePitchDeg = 0f;
@@ -1673,11 +1684,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             Timestamp = DateTime.UtcNow,
             Confidence = Math.Clamp(confidence, 0f, 1f),
 
-            // Geospatial-Snapshot (±1-3m Genauigkeit über VPS, wenn aktiv)
-            GeoLatitude = geoSnapshot?.Latitude,
-            GeoLongitude = geoSnapshot?.Longitude,
-            GeoAltitude = geoSnapshot?.Altitude,
-            GeoHorizontalAccuracy = geoSnapshot?.HorizontalAccuracy,
+            // Geospatial-Geo-Position des HIT-PUNKTS (±1-3m via VPS), aufgelöst oben.
+            GeoLatitude = hitGeoLat,
+            GeoLongitude = hitGeoLon,
+            GeoAltitude = hitGeoAlt,
+            GeoHorizontalAccuracy = hitGeoHAcc,
 
             // Capture-Zeitpunkt-Metadaten (Plan Kap. 4.2)
             CameraPitchDeg = capturePitchDeg,
@@ -2755,7 +2766,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 SampleArCoreHeading(camera);
 
                 // Geospatial Pose sampeln (VPS via Google Street View Matching)
-                UpdateGeospatialPose();
+                UpdateGeospatialPose(camera);
 
                 // Plan-Kap. 3.5: LightEstimate auswerten — bei abruptem Helligkeits-Sprung
                 // (Lampe an/aus, Wolke vor Sonne) Sampling unterbrechen, weil ARCore-Feature-
@@ -3707,8 +3718,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var y = ArPrecisionHelpers.FindGroundPlaneY(_arSession);
         if (y.HasValue)
         {
-            _groundPlaneYValue = y.Value;
-            _groundPlaneYSet = true;
+            // Den TIEFSTEN (niedrigsten Y) erkannten Boden über die Session behalten — das ist
+            // typisch der echte Boden (Rasen), nicht eine erhöhte Plane (Terrasse/Tisch). Vorher
+            // wurde der Wert alle 30 Frames mit der gerade GRÖSSTEN Plane überschrieben → die
+            // Höhenreferenz sprang, sobald eine andere Plane die größte wurde.
+            if (!_groundPlaneYSet || y.Value < _groundPlaneYValue)
+            {
+                _groundPlaneYValue = y.Value;
+                _groundPlaneYSet = true;
+            }
         }
     }
 
@@ -4011,7 +4029,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// Aktualisiert _lastGeoLatitude/Longitude/etc. die beim Punkt-Set in ArPoint geschrieben werden.
     /// Sampelt Accuracy-Werte für Final-Report.
     /// </summary>
-    private void UpdateGeospatialPose()
+    private void UpdateGeospatialPose(Camera? camera)
     {
         if (!_geospatialEnabled || _arSession == null) return;
 
@@ -4033,13 +4051,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var pose = earth.CameraGeospatialPose;
             if (pose == null) return;
 
+            // ARCore-Welt-Y der Kamera zum selben Zeitpunkt wie die VPS-Höhe festhalten —
+            // erlaubt später, die echte Gelände-Höhe jedes Hit-Punkts statt der Kamerahöhe abzuleiten.
+            var camLocalY = camera?.Pose?.Ty() ?? 0f;
+
             var snapshot = new GeospatialSnapshot(
                 Latitude: pose.Latitude,
                 Longitude: pose.Longitude,
                 Altitude: pose.Altitude,
                 HorizontalAccuracy: (float)pose.HorizontalAccuracy,
                 Heading: (float)pose.Heading,
-                HeadingAccuracy: (float)pose.HeadingAccuracy);
+                HeadingAccuracy: (float)pose.HeadingAccuracy,
+                CameraLocalY: camLocalY);
             System.Threading.Volatile.Write(ref _lastGeoSnapshot, snapshot);
 
             // Samples für Final-Report (Median)
@@ -4059,6 +4082,45 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             global::Android.Util.Log.Warn("ArCapture", $"Geospatial-Update fehlgeschlagen: {ex.Message}");
             _geospatialActive = false;
         }
+    }
+
+    /// <summary>
+    /// Liefert die Geo-Position (Lat/Lon/WGS84-Ellipsoid-Alt/H-Acc) eines HIT-PUNKTS, nicht der
+    /// Kamera. Primär via <c>earth.GetGeospatialPose(hitPose)</c> (ARCore rechnet die exakte
+    /// Geo-Position der lokalen Pose). Fallback: Kamera-Snapshot, dessen Höhe per ARCore-Y-Differenz
+    /// (hitY − Kamera-Y) auf die Hit-Höhe korrigiert wird (Lat/Lon bleibt dann kamera-nah).
+    /// Liefert (null,…) wenn Geospatial inaktiv.
+    /// </summary>
+    private (double? lat, double? lon, double? alt, float? hAcc) ResolveHitGeoPose(
+        Pose? hitPose, float hitY, GeospatialSnapshot? snapshot)
+    {
+        if (!_geospatialActive) return (null, null, null, null);
+
+        // Primär: exakte Geo-Pose des Hit-Punkts direkt von ARCore-Earth.
+        if (hitPose != null)
+        {
+            try
+            {
+                var earth = _arSession?.Earth;
+                if (earth != null && earth.TrackingState == TrackingState.Tracking)
+                {
+                    var gp = earth.GetGeospatialPose(hitPose);
+                    if (gp != null)
+                        return (gp.Latitude, gp.Longitude, gp.Altitude, (float)gp.HorizontalAccuracy);
+                }
+            }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Warn("ArCapture", $"GetGeospatialPose(hit) fehlgeschlagen: {ex.Message}");
+            }
+        }
+
+        // Fallback: Kamera-Snapshot, Höhe per ARCore-Y-Differenz auf den Hit-Punkt korrigiert.
+        if (snapshot != null)
+            return (snapshot.Latitude, snapshot.Longitude,
+                    snapshot.Altitude + (hitY - snapshot.CameraLocalY), snapshot.HorizontalAccuracy);
+
+        return (null, null, null, null);
     }
 
     /// <summary>Median-Accuracy aus Geospatial-Samples berechnen (für Report).</summary>

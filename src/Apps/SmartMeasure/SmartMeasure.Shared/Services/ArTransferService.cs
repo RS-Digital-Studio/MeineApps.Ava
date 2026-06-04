@@ -136,7 +136,9 @@ public class ArTransferService : IArTransferService
 
         var gpsLat = result.GpsLatitude!.Value;
         var gpsLon = result.GpsLongitude!.Value;
-        var gpsAlt = result.GpsAltitude ?? 0.0;
+        // Fehlt die GPS-Höhe (Network-Provider liefert oft keine), plausiblen Ellipsoid-Default
+        // ~568 m (≈520 m NN in DE) nutzen statt 0.0 — sonst landen alle Punkte bei ~−48 m NN.
+        var gpsAlt = result.GpsAltitude ?? 568.0;
         var headingDeg = result.MagneticHeading ?? 0f;
         var gpsAccuracy = result.GpsAccuracy ?? 5f;
 
@@ -198,9 +200,15 @@ public class ArTransferService : IArTransferService
                 finalAccuracyCm = fallbackAccuracyCm;
             }
 
-            // Android Location.Altitude / ARCore-Geospatial-Altitude sind WGS84-Ellipsoid.
-            // Korrektur nach NN analog BLE-Pfad (in DE ~48m Differenz).
-            var finalAlt = _geoidService.EllipsoidToGeoid(finalLat, finalLon, finalAltEllipsoid);
+            // Android Location.Altitude / ARCore-Geospatial-Altitude sind WGS84-Ellipsoid →
+            // nach NN korrigieren (in DE ~48m Differenz).
+            // AUSNAHME: Bei RTK-Quelle OHNE VPS-Punkt ist gpsAlt bereits MSL (der BLE-Service hat
+            // die Geoid-Korrektur schon angewandt). Eine zweite Korrektur würde die Höhe ~48m zu
+            // tief machen — genau im genauesten (±2cm) Modus.
+            var altIsAlreadyMsl = isRtk && !arPoint.GeoLatitude.HasValue;
+            var finalAlt = altIsAlreadyMsl
+                ? finalAltEllipsoid
+                : _geoidService.EllipsoidToGeoid(finalLat, finalLon, finalAltEllipsoid);
 
             // VerticalAccuracy ist nach Plan-Kap. 4.1 konservativ schlechter als die
             // horizontale (GPS-Höhe hat höheres VDOP, AR-Höhe kommt zusätzlich aus

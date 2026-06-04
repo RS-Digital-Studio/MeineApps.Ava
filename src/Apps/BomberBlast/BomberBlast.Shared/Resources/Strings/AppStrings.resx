@@ -4626,4 +4626,7 @@
   <data name="WhatsNew_2_0_64_BulletFairDaily" xml:space="preserve"><value>Fair daily competitions: the Daily Challenge and Daily Race now play out identically for every player. Nova drops are reproducible again — same conditions, fair leaderboards.</value></data>
   <data name="WhatsNew_2_0_64_BulletPremiumXp" xml:space="preserve"><value>Premium Veteran boost finally works: the +5% XP bonus per completed premium season is now applied correctly and speeds up your Battle Pass progress.</value></data>
   <data name="WhatsNew_2_0_64_BulletStability" xml:space="preserve"><value>More stability and fairness: respected push settings, correct weekly missions across the year boundary, hardened saving and smoother boss fights thanks to optimized rendering.</value></data>
+  <data name="WhatsNew_2_0_65_Title" xml:space="preserve"><value>Buttery-Smooth Gameplay</value></data>
+  <data name="WhatsNew_2_0_65_BulletSmooth" xml:space="preserve"><value>Noticeably smoother gameplay: the occasional stutter every few seconds is gone. We replaced a costly graphics effect with a lightweight alternative — the playfield runs smoothly from the very first second, even during the start countdown.</value></data>
+  <data name="WhatsNew_2_0_65_BulletFlicker" xml:space="preserve"><value>A steadier image: the occasional flash of the screen and background is fixed — lighting and borders now stay perfectly consistent.</value></data>
 </root>

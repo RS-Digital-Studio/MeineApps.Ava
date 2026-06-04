@@ -5325,5 +5325,10 @@ namespace BomberBlast.Resources.Strings {
         internal static string ProfileCustomizeFrame => ResourceManager.GetString("ProfileCustomizeFrame", resourceCulture)!;
         internal static string ProfileCustomizeApplied => ResourceManager.GetString("ProfileCustomizeApplied", resourceCulture)!;
 
+        // What's New 2.0.65
+        internal static string WhatsNew_2_0_65_Title => ResourceManager.GetString("WhatsNew_2_0_65_Title", resourceCulture)!;
+        internal static string WhatsNew_2_0_65_BulletSmooth => ResourceManager.GetString("WhatsNew_2_0_65_BulletSmooth", resourceCulture)!;
+        internal static string WhatsNew_2_0_65_BulletFlicker => ResourceManager.GetString("WhatsNew_2_0_65_BulletFlicker", resourceCulture)!;
+
     }
 }

@@ -150,7 +150,18 @@ public sealed class WhatsNewService : IWhatsNewService
         // Solange Bullets leer sind, filtert GetEntries() den Eintrag heraus (kein leerer Dialog).
         ("2.0.65", () => new WhatsNewEntry
         {
-            Title = L("WhatsNew_2_0_65_Title", "In Entwicklung"),
+            Title = L("WhatsNew_2_0_65_Title", "Butterweiches Gameplay"),
+            Bullets = new[]
+            {
+                L("WhatsNew_2_0_65_BulletSmooth", "Deutlich flüssigeres Spiel: Das gelegentliche Stocken alle paar Sekunden ist verschwunden. Wir haben einen aufwändigen Grafik-Effekt durch eine schonende Variante ersetzt — das Spielfeld läuft jetzt von der ersten Sekunde an rund, schon während des Start-Countdowns."),
+                L("WhatsNew_2_0_65_BulletFlicker", "Ruhigeres Bild: Das gelegentliche Aufleuchten von Bildschirm und Hintergrund ist behoben — Beleuchtung und Ränder bleiben jetzt konstant."),
+            }
+        }),
+        // OFFENER ENTWICKLUNGSEINTRAG fuer naechste Version — Bullets pro Aenderung anhaengen,
+        // beim naechsten Release-Trigger wird dieser Eintrag finalisiert + ein neuer leerer angehaengt.
+        ("2.0.66", () => new WhatsNewEntry
+        {
+            Title = L("WhatsNew_2_0_66_Title", "In Entwicklung"),
             Bullets = Array.Empty<string>()
         }),
     ];

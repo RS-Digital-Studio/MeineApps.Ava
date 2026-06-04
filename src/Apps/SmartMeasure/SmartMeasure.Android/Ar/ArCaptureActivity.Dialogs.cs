@@ -124,25 +124,34 @@ public partial class ArCaptureActivity
             (ArContourType.Kante,     "Kante"),
         ];
 
+    /// <summary>Beschriftung des gefuehrten Rechteck-/Quadrat-Eintrags — steht als erste Option
+    /// oben im Flaechen-Dialog (vor den Freihand-Kontur-Typen).</summary>
+    private const string RectangleEntryLabel = "Rechteck / Quadrat (rechtwinklig)";
+
     /// <summary>
-    /// Zeigt Typ-Auswahl-Dialog. Bei Auswahl wird aktive Kontur abgeschlossen (falls vorhanden)
-    /// und neue Kontur vom gewählten Typ gestartet. Ermöglicht Multi-Kontur-Zeichnung für
-    /// Gartenplanung (z.B. 3 Wege + 2 Beete + 1 Mauer in einer Session).
+    /// Zeigt den Flaechen-Dialog. Erste Option ist die gefuehrte Rechteck-/Quadrat-Methode,
+    /// danach die Freihand-Kontur-Typen. Bei Typ-Auswahl wird die aktive Kontur abgeschlossen
+    /// (falls vorhanden) und eine neue vom gewählten Typ gestartet — ermöglicht Multi-Kontur-
+    /// Zeichnung für Gartenplanung (z.B. 3 Wege + 2 Beete + 1 Rechteck-Terrasse pro Session).
     /// </summary>
     private void ShowContourTypeDialog()
     {
         try
         {
-            var labels = ContourTypeOptions
-                .Select(o => o.Label)
-                .ToArray();
+            // Index 0 = gefuehrtes Rechteck, danach die Freihand-Kontur-Typen.
+            var labels = new string[ContourTypeOptions.Length + 1];
+            labels[0] = RectangleEntryLabel;
+            for (var i = 0; i < ContourTypeOptions.Length; i++)
+                labels[i + 1] = ContourTypeOptions[i].Label;
 
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
-            builder.SetTitle("Neue Kontur — Typ wählen");
+            builder.SetTitle("Fläche zeichnen — Methode wählen");
             builder.SetItems(labels, (_, e) =>
             {
-                var selected = ContourTypeOptions[e.Which];
-                StartNewContour(selected.Type);
+                if (e.Which == 0)
+                    ShowRectangleTypeDialog();
+                else
+                    StartNewContour(ContourTypeOptions[e.Which - 1].Type);
             });
             builder.SetNegativeButton("Abbrechen", (_, _) => { });
             builder.Show();
@@ -151,6 +160,70 @@ public partial class ArCaptureActivity
         {
             global::Android.Util.Log.Warn("ArCapture", $"ContourTypeDialog failed: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Zweite Stufe der Rechteck-Methode: Garten-Typ des Rechtecks wählen (Terrasse, Beet, ...).
+    /// Default-Vorauswahl ist Terrasse — die häufigste rechtwinklige Garten-Fläche.
+    /// </summary>
+    private void ShowRectangleTypeDialog()
+    {
+        try
+        {
+            var labels = ContourTypeOptions.Select(o => o.Label).ToArray();
+
+            var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
+            builder.SetTitle("Rechteck/Quadrat — Typ wählen");
+            builder.SetItems(labels, (_, e) => StartRectangleMode(ContourTypeOptions[e.Which].Type));
+            builder.SetNegativeButton("Abbrechen", (_, _) => { });
+            builder.Show();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"RectangleTypeDialog failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Startet den gefuehrten Rechteck-Modus vom gewählten Typ. Schließt eine aktive Freihand-
+    /// Kontur ab (wie <see cref="StartNewContour"/>) und leert einen evtl. halb gesetzten
+    /// Rechteck-Buffer.
+    /// </summary>
+    private void StartRectangleMode(ArContourType type)
+    {
+        lock (_dataLock)
+        {
+            if (_activeContour != null)
+            {
+                if (_activeContour.Points.Count >= 3)
+                {
+                    _activeContour.IsClosed = true;
+                    foreach (var p in _activeContour.Points)
+                    {
+                        if (!string.IsNullOrEmpty(p.AnchorId))
+                        {
+                            _anchorManager.Detach(p.AnchorId);
+                            p.AnchorId = null;
+                        }
+                    }
+                    ArPrecisionHelpers.ApplyBowditchCorrection(_activeContour);
+                    _contours.Add(_activeContour);
+                }
+                _activeContour = null;
+            }
+            _rectangleCorners.Clear();
+        }
+
+        _currentContourType = type;
+        _captureMode = CaptureMode.Rectangle;
+
+        UpdateModeButtonHighlight();
+        UpdateCounter();
+        _overlayView?.Invalidate();
+
+        var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == type).Label ?? type.ToString();
+        ShowTransientHint($"Rechteck {typeLabel}: erste Ecke der Basiskante tippen");
+        VibrateMedium();
     }
 
     /// <summary>
@@ -181,6 +254,9 @@ public partial class ArCaptureActivity
                 }
                 _activeContour = null;
             }
+            // Eine evtl. begonnene Rechteck-Basiskante beim Wechsel zu Freihand verwerfen
+            // (sonst bleibt sie als verwaister Zwischenzustand hängen — analog StartRectangleMode).
+            _rectangleCorners.Clear();
         }
 
         _currentContourType = type;
@@ -200,7 +276,8 @@ public partial class ArCaptureActivity
         _btnPoint?.SetBackgroundColor(_captureMode == CaptureMode.Point
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
-        _btnContour?.SetBackgroundColor(_captureMode == CaptureMode.Contour
+        // Der "Fläche"-Button deckt Freihand-Kontur UND Rechteck ab.
+        _btnContour?.SetBackgroundColor(_captureMode is CaptureMode.Contour or CaptureMode.Rectangle
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
 
@@ -208,9 +285,12 @@ public partial class ArCaptureActivity
         {
             var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _currentContourType).Label
                 ?? _currentContourType.ToString();
-            _modeText.Text = _captureMode == CaptureMode.Point
-                ? "Modus: Punkt"
-                : $"Modus: {typeLabel}";
+            _modeText.Text = _captureMode switch
+            {
+                CaptureMode.Point => "Modus: Punkt",
+                CaptureMode.Rectangle => $"Modus: Rechteck {typeLabel}",
+                _ => $"Modus: {typeLabel}",
+            };
         }
     }
 

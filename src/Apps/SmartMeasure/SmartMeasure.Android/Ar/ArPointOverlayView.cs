@@ -474,6 +474,10 @@ public sealed partial class ArPointOverlayView : View
         if (_state.ShowLiveSegment)
             DrawRubberBand(canvas, width, height);
 
+        // 5d. Rechteck-/Quadrat-Vorschau (gefuehrte 3-Punkt-Methode) — unter dem Reticle.
+        if (_state.IsRectangleMode)
+            DrawRectanglePreview(canvas, width, height);
+
         // 6. Reticle mit HitQuality-Färbung (nur bei Tracking)
         if (_state.IsTracking)
             DrawReticle(canvas, width, height);
@@ -534,14 +538,20 @@ public sealed partial class ArPointOverlayView : View
         // 13. Transient-Hint (falls aktiv)
         DrawTransientHint(canvas, width, height);
 
-        // 13. Empty-State wenn keine Punkte/Konturen
+        // 13. Empty-State wenn keine Punkte/Konturen (im Rechteck-Modus erst, solange noch
+        // keine Ecke gesetzt wurde — danach fuehrt die Transient-Hint durch die Schritte).
         if (_projectedPoints.Count == 0 && _projectedContourPoints.Count == 0
             && _points.Count == 0 && _contours.Count == 0
+            && _state.RectangleCornerCount == 0
             && _state.IsTracking)
         {
-            var hint = _projectedPlanes.Count == 0
-                ? "Bewege die Kamera langsam über den Boden..."
-                : "Tippe auf eine Fläche um einen Punkt zu setzen";
+            string hint;
+            if (_projectedPlanes.Count == 0)
+                hint = "Bewege die Kamera langsam über den Boden...";
+            else if (_state.IsRectangleMode)
+                hint = "Rechteck: erste Ecke der Basiskante antippen";
+            else
+                hint = "Tippe auf eine Fläche um einen Punkt zu setzen";
             canvas.DrawText(hint, width / 2f, height / 2f + 60 * _density, _hintPaint);
         }
     }
@@ -1080,6 +1090,122 @@ public sealed partial class ArPointOverlayView : View
             canvas.DrawCircle(sx, sy, r, endPaint);
             canvas.DrawCircle(sx, sy, r, endOutline);
         }
+    }
+
+    /// <summary>
+    /// Live-Vorschau des gefuehrten Rechtecks/Quadrats: gesetzte Ecken als Marken, die
+    /// Basiskante bzw. das aufgespannte Rechteck als Polygon (Fill + Kanten) plus Laenge/
+    /// Tiefe/Flaeche als Pillen. Gruen-getoent + "Quadrat"-Unterzeile, wenn der Quadrat-Snap greift.
+    /// </summary>
+    private void DrawRectanglePreview(Canvas canvas, int width, int height)
+    {
+        var corners = _state.RectangleCornerScreenPoints;
+        var preview = _state.RectanglePreviewScreenPoints;
+        var cx = _state.ReticleX > 0 ? _state.ReticleX : width / 2f;
+        var cy = _state.ReticleY > 0 ? _state.ReticleY : height / 2f;
+
+        var accent = _state.RectangleIsSquare
+            ? Color.Argb(255, 76, 175, 80)     // Gruen bei Quadrat-Snap
+            : Color.Argb(255, 255, 107, 0);    // Orange sonst
+
+        using var edgePaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = accent,
+            StrokeWidth = 4f * _density,
+            StrokeCap = Paint.Cap.Round,
+            StrokeJoin = Paint.Join.Round,
+        };
+        edgePaint.SetStyle(Paint.Style.Stroke);
+
+        using var fillPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = _state.RectangleIsSquare
+                ? Color.Argb(60, 76, 175, 80)
+                : Color.Argb(45, 255, 107, 0),
+        };
+        fillPaint.SetStyle(Paint.Style.Fill);
+
+        // Branch-Entscheidung gegen die ECHTE Eckenzahl (nicht die ggf. frustum-geclippte
+        // Screen-Liste — sonst kollabiert die Vorschau, wenn eine Ecke hinter die Kamera kommt).
+        var cornerCount = _state.RectangleCornerCount;
+
+        if (preview != null && preview.Count == 4)
+        {
+            // Vollstaendiges Rechteck (2 Ecken gesetzt + alle vier Ecken projizierbar)
+            using var path = new global::Android.Graphics.Path();
+            path.MoveTo(preview[0].screenX, preview[0].screenY);
+            for (var i = 1; i < 4; i++)
+                path.LineTo(preview[i].screenX, preview[i].screenY);
+            path.Close();
+            canvas.DrawPath(path, fillPaint);
+            canvas.DrawPath(path, edgePaint);
+
+            // Kanten-Pillen: Basislaenge (Kante 0->1), Tiefe (Kante 1->2)
+            DrawEdgeLabel(canvas, preview[0], preview[1], FormatMeters(_state.RectangleLengthMeters));
+            DrawEdgeLabel(canvas, preview[1], preview[2], FormatMeters(_state.RectangleDepthMeters));
+
+            // Flaeche + ggf. Quadrat-Hinweis im Zentrum. Schwelle = Builder-Minimum (0,05²),
+            // damit auch sehr kleine gueltige Rechtecke eine Flaechen-Pille bekommen.
+            var mcx = (preview[0].screenX + preview[2].screenX) * 0.5f;
+            var mcy = (preview[0].screenY + preview[2].screenY) * 0.5f;
+            // Vom Reticle wegschieben, falls das Zentrum zu nah an der Bildmitte liegt
+            // (bei kleinen/zentrierten Rechtecken sonst Overlap mit Reticle + Distanz-Label).
+            if (MathF.Abs(mcy - cy) < 46f * _density && MathF.Abs(mcx - cx) < 80f * _density)
+                mcy = cy + 52f * _density;
+            if (_state.RectangleAreaMeters >= 0.0025f)
+                DrawValuePill(canvas, mcx, mcy, $"{_state.RectangleAreaMeters:F2} m²",
+                    _state.RectangleIsSquare ? "Quadrat" : null);
+        }
+        else if (cornerCount == 2 && corners is { Count: 2 })
+        {
+            // 2 Ecken gesetzt, aber das Tiefen-Polygon (noch) nicht voll projizierbar
+            // (kein Reticle-Hit oder Gegenecke hinter der Kamera) → nur die Basiskante.
+            canvas.DrawLine(corners[0].screenX, corners[0].screenY,
+                corners[1].screenX, corners[1].screenY, edgePaint);
+            DrawEdgeLabel(canvas, corners[0], corners[1], FormatMeters(_state.RectangleLengthMeters));
+        }
+        else if (cornerCount == 1 && corners is { Count: 1 })
+        {
+            // 1 Ecke gesetzt → gestrichelte Live-Basiskante zur Reticle-Position.
+            using var dash = new Paint(PaintFlags.AntiAlias)
+            {
+                Color = accent,
+                StrokeWidth = 3f * _density,
+            };
+            dash.SetStyle(Paint.Style.Stroke);
+            using var dashEffect = new global::Android.Graphics.DashPathEffect(
+                [12f * _density, 8f * _density], 0f);
+            dash.SetPathEffect(dashEffect);
+            canvas.DrawLine(corners[0].screenX, corners[0].screenY, cx, cy, dash);
+        }
+
+        // Gesetzte Eckmarken obenauf
+        if (corners is { Count: > 0 })
+        {
+            using var cornerFill = new Paint(PaintFlags.AntiAlias) { Color = accent };
+            cornerFill.SetStyle(Paint.Style.Fill);
+            using var cornerOutline = new Paint(PaintFlags.AntiAlias)
+            {
+                Color = Color.Argb(255, 0, 0, 0),
+                StrokeWidth = 2f * _density,
+            };
+            cornerOutline.SetStyle(Paint.Style.Stroke);
+            var cr = 7f * _density;
+            foreach (var (sx, sy) in corners)
+            {
+                canvas.DrawCircle(sx, sy, cr, cornerFill);
+                canvas.DrawCircle(sx, sy, cr, cornerOutline);
+            }
+        }
+    }
+
+    /// <summary>Distanz-Pille am Mittelpunkt einer Kante.</summary>
+    private void DrawEdgeLabel(Canvas canvas,
+        (float screenX, float screenY) a, (float screenX, float screenY) b, string text)
+    {
+        var mx = (a.screenX + b.screenX) * 0.5f;
+        var my = (a.screenY + b.screenY) * 0.5f;
+        DrawValuePill(canvas, mx, my, text, null);
     }
 
     /// <summary>Distanz-Labels zwischen ALLEN aufeinanderfolgenden Punkten — vorher nur zwischen letzten 2.</summary>

@@ -208,6 +208,38 @@ public sealed class ArOverlayState
     /// nachdem der Punkt gesetzt wurde. null/leer wenn keine aktive Kontur.</summary>
     public IReadOnlyList<(float horizontal, float heightDelta)>? ActiveContourSegments { get; init; }
 
+    // ── Rechteck-/Quadrat-Modus (geführte 3-Punkt-Methode) ──
+    // Aufgespannt aus zwei gesetzten Ecken (Basiskante) + Reticle-Ziel (Tiefe). Die Activity
+    // projiziert die vier rechtwinkligen Ecken in Screen-Koordinaten; das Overlay zeichnet
+    // daraus die Live-Vorschau (Polygon + Maße + Quadrat-Indikator).
+
+    /// <summary>True wenn der Rechteck-Modus aktiv ist (Toolbar-Highlight, Empty-State-Hint).</summary>
+    public bool IsRectangleMode { get; init; }
+
+    /// <summary>Anzahl bereits gesetzter Rechteck-Eckpunkte (0, 1 oder 2) — steuert den
+    /// Vorschau-Zustand und die Anleitungs-Hint im Overlay.</summary>
+    public int RectangleCornerCount { get; init; }
+
+    /// <summary>Die bereits gesetzten Rechteck-Ecken als Screen-Koordinaten (0–2 Punkte).
+    /// Werden als orange Eckmarken gezeichnet.</summary>
+    public IReadOnlyList<(float screenX, float screenY)>? RectangleCornerScreenPoints { get; init; }
+
+    /// <summary>Die vier Vorschau-Ecken des aufgespannten Rechtecks als Screen-Koordinaten
+    /// (umlaufend). null wenn noch keine zwei Ecken gesetzt sind oder das Reticle keinen Hit hat.</summary>
+    public IReadOnlyList<(float screenX, float screenY)>? RectanglePreviewScreenPoints { get; init; }
+
+    /// <summary>True wenn die Vorschau gerade auf ein Quadrat gesnappt ist (gleiche Seitenlängen).</summary>
+    public bool RectangleIsSquare { get; init; }
+
+    /// <summary>Basislänge der Vorschau (erste Kante) in Metern — für das Kanten-Label.</summary>
+    public float RectangleLengthMeters { get; init; }
+
+    /// <summary>Tiefe der Vorschau (senkrecht zur Basiskante) in Metern — für das Kanten-Label.</summary>
+    public float RectangleDepthMeters { get; init; }
+
+    /// <summary>Grundrissfläche der Vorschau in m² — für das Mittelpunkt-Label.</summary>
+    public float RectangleAreaMeters { get; init; }
+
     /// <summary>Plan-Kap. 5.9: True wenn der Stakeout-Modus aktiv ist.</summary>
     public bool IsStakeoutMode { get; init; }
 

@@ -80,6 +80,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// auf den Tape-Button geleert.</summary>
     private readonly List<ArPoint> _tapeMeasurePoints = [];
 
+    /// <summary>Bereits gesetzte Ecken der laufenden Rechteck-Erfassung (max 2 = Basiskante).
+    /// Der dritte Tipp schliesst das Rechteck via <see cref="ArRectangleBuilder"/> zu einer
+    /// geschlossenen <see cref="ArContour"/> ab. Geschuetzt durch <see cref="_dataLock"/>.</summary>
+    private readonly List<ArPoint> _rectangleCorners = [];
+
+    /// <summary>Quadrat-Snap fuer den Rechteck-Modus: zieht die Tiefe auf die Basislaenge,
+    /// wenn sie nahe genug liegt (Robert-Wunsch: gefuehrtes Quadrat ohne Millimeter-Pingelei).</summary>
+    private const bool RectangleSquareSnapEnabled = true;
+
     /// <summary>Plan-Kap. 5.9: Statische Bruecke fuer Stakeout-Targets. Der Caller
     /// (MainViewModel, StakeoutViewModel) setzt die Liste vor dem Activity-Start;
     /// ArCaptureActivity liest sie in OnCreate und reset im OnDestroy.</summary>
@@ -720,6 +729,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 _activeContour = null;
             }
+
+            // Transiente Rechteck-Ecken beim Modus-Wechsel verwerfen — sonst koennte eine
+            // halb gesetzte Basiskante in einem anderen Modus weiterleben.
+            _rectangleCorners.Clear();
         }
 
         _captureMode = mode;
@@ -729,6 +742,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _modeText.Text = mode switch
             {
                 CaptureMode.Contour => "Modus: Linie",
+                CaptureMode.Rectangle => "Modus: Rechteck",
                 CaptureMode.TapeMeasure => "Modus: Maßband",
                 CaptureMode.Stakeout => "Modus: Absteck",
                 CaptureMode.TotalStation => "Modus: Total-Station",
@@ -750,7 +764,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point
             ? Color.Argb(220, 255, 107, 0)    // Aktiv: kräftiges Orange
             : Color.Argb(80, 255, 255, 255));  // Inaktiv: dezent
-        _btnContour?.SetBackgroundColor(mode == CaptureMode.Contour
+        // Der "Fläche"-Button deckt sowohl Freihand-Kontur als auch Rechteck ab.
+        _btnContour?.SetBackgroundColor(mode is CaptureMode.Contour or CaptureMode.Rectangle
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
     }
@@ -808,6 +823,91 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _modeText.Text = "Kontur geschlossen";
     }
 
+    /// <summary>
+    /// Verarbeitet einen gesetzten Eckpunkt im Rechteck-Modus. MUSS unter <see cref="_dataLock"/>
+    /// aufgerufen werden (aus dem FinalizeSampling-UI-Thread-Block).
+    ///
+    /// Erste zwei Tipps sammeln die Basiskante in <see cref="_rectangleCorners"/>; der dritte
+    /// legt die Tiefe fest und schliesst via <see cref="ArRectangleBuilder"/> ein exakt
+    /// rechtwinkliges Rechteck (bzw. Quadrat per Snap) als geschlossene <see cref="ArContour"/> ab.
+    /// </summary>
+    private void HandleRectangleCornerPlaced(ArPoint corner)
+    {
+        // Phase 1: Basiskante sammeln (Ecke 1 + 2)
+        if (_rectangleCorners.Count < 2)
+        {
+            _rectangleCorners.Add(corner);
+            CapturePhotoForPoint(corner);
+            ShowTransientHint(_rectangleCorners.Count == 1
+                ? "Ecke 1/2 gesetzt — zweite Ecke der Basiskante anvisieren"
+                : "Basiskante steht — jetzt die Tiefe anvisieren und tippen");
+            return;
+        }
+
+        // Phase 2: dritter Tipp = Tiefe → rechtwinkliges Rechteck konstruieren
+        var result = ArRectangleBuilder.Compute(
+            _rectangleCorners[0], _rectangleCorners[1], corner, RectangleSquareSnapEnabled);
+        if (result == null)
+        {
+            ShowTransientHint("Rechteck zu flach — Tiefe deutlicher anvisieren");
+            VibrateWarning();
+            return;
+        }
+
+        // Original-Messecken (mit Anchor) wiederverwenden; Anchors detachen, damit
+        // RefreshAllAnchors die konstruierte, starre Rechteck-Form nicht verzieht
+        // (analog CloseActiveContour — eine fertige Flaeche ist eine fertige Messung).
+        var c0 = _rectangleCorners[0];
+        var c1 = _rectangleCorners[1];
+        foreach (var p in new[] { c0, c1 })
+        {
+            if (!string.IsNullOrEmpty(p.AnchorId))
+            {
+                _anchorManager.Detach(p.AnchorId);
+                p.AnchorId = null;
+            }
+        }
+
+        // Position der Messecken exakt auf die Ergebnis-Ebene setzen (no-op bei flachem
+        // Boden, korrigiert minimale Hoehen-Inkonsistenz bei Neigung).
+        c0.X = result.Corners[0].X; c0.Y = result.Corners[0].Y; c0.Z = result.Corners[0].Z;
+        c1.X = result.Corners[1].X; c1.Y = result.Corners[1].Y; c1.Z = result.Corners[1].Z;
+
+        // Konstruierte Gegenecken: Confidence/HitQuality konservativ aus den Messpunkten ableiten.
+        var avgConfidence = (c0.Confidence + c1.Confidence + corner.Confidence) / 3f;
+        var minHitQuality = Math.Min(c0.HitQuality, Math.Min(c1.HitQuality, corner.HitQuality));
+        ArPoint MakeCorner(ArRectangleBuilder.Corner src) => new()
+        {
+            X = src.X,
+            Y = src.Y,
+            Z = src.Z,
+            Confidence = avgConfidence,
+            HitQuality = minHitQuality,
+            Timestamp = DateTime.UtcNow,
+            MagAccuracyAtCapture = corner.MagAccuracyAtCapture,
+        };
+        var c2 = MakeCorner(result.Corners[2]);
+        var c3 = MakeCorner(result.Corners[3]);
+
+        var rectangle = new ArContour
+        {
+            ContourType = _currentContourType,
+            IsClosed = true,
+            Points = [c0, c1, c2, c3],
+        };
+        _contours.Add(rectangle);
+        _undoStack.Push(new AddContourAction(_dataLock, _contours, rectangle));
+        _redoStack.Clear();
+        _rectangleCorners.Clear();
+
+        var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _currentContourType).Label
+            ?? _currentContourType.ToString();
+        var shape = result.IsSquare ? "Quadrat" : "Rechteck";
+        ShowTransientHint(
+            $"{shape} {typeLabel}: {result.LengthMeters:F2} × {result.DepthMeters:F2} m, {result.AreaMeters:F1} m²");
+        VibrateMedium();
+    }
+
     private void FinishCapture()
     {
         // Doppel-Submit-Guard: Back-Button + Toolbar-Fertig duerfen nicht doppelt feuern.
@@ -822,6 +922,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (_activeContour != null && _activeContour.Points.Count > 0)
                 _contours.Add(_activeContour);
             _activeContour = null;
+
+            // Eine halb gesetzte Rechteck-Basiskante ist unfertig → verwerfen (analog SetMode).
+            _rectangleCorners.Clear();
 
             pointsCopy = new List<ArPoint>(_points);
             contoursCopy = new List<ArContour>(_contours);
@@ -1495,6 +1598,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     // Plan-Kap. 5.6: Foto-Annotation pro Punkt (nicht im Tape-Modus —
                     // Ad-hoc-Messung braucht kein Foto, das wuerde nur Storage fressen).
                     CapturePhotoForPoint(arPoint);
+                }
+                else if (_captureMode == CaptureMode.Rectangle)
+                {
+                    // Gefuehrtes 3-Punkt-Rechteck: erste zwei Tipps = Basiskante, dritter
+                    // schliesst die rechtwinklige Flaeche ab. Laeuft unter _dataLock.
+                    HandleRectangleCornerPlaced(arPoint);
                 }
                 else
                 {
@@ -4031,6 +4140,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         float? liveSegHorizontal = null, liveSegSlope = null, liveSegHeight = null;
         List<(float horizontal, float heightDelta)>? activeContourSegMeters = null;
 
+        // Rechteck-Vorschau (gefuehrte 3-Punkt-Methode)
+        var isRectMode = _captureMode == CaptureMode.Rectangle;
+        var rectCornerCount = 0;
+        List<(float, float)>? rectCornerScreen = null;
+        List<(float, float)>? rectPreviewScreen = null;
+        var rectIsSquare = false;
+        float rectLen = 0f, rectDepth = 0f, rectArea = 0f;
+
         lock (_dataLock)
         {
             // Alle Konturen
@@ -4114,6 +4231,48 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 {
                     liveSegFromScreen = lsv;
                     showLiveSegment = true;
+                }
+            }
+
+            // Rechteck-Vorschau: gesetzte Ecken + (ab 2 Ecken) das live aufgespannte Rechteck
+            // aus der Reticle-Tiefe projizieren. WorldToScreen nutzt die in ProjectPointsToScreen
+            // gefuellte MVP-Matrix (gleicher Frame).
+            if (isRectMode)
+            {
+                rectCornerCount = _rectangleCorners.Count;
+                if (rectCornerCount > 0)
+                {
+                    rectCornerScreen = new List<(float, float)>(rectCornerCount);
+                    foreach (var rc in _rectangleCorners)
+                    {
+                        var s = WorldToScreen(rc, _mvpMatrixScratch);
+                        if (s.HasValue) rectCornerScreen.Add(s.Value);
+                    }
+                }
+
+                if (rectCornerCount == 2 && _reticleWorld is { } rwRect
+                    && _reticleHitQuality != ArHitQuality.None)
+                {
+                    var probe = new ArPoint { X = rwRect.x, Y = rwRect.y, Z = rwRect.z };
+                    var rectResult = ArRectangleBuilder.Compute(
+                        _rectangleCorners[0], _rectangleCorners[1], probe, RectangleSquareSnapEnabled);
+                    if (rectResult != null)
+                    {
+                        var pts = new List<(float, float)>(4);
+                        foreach (var corner in rectResult.Corners)
+                        {
+                            var s = WorldToScreen(
+                                new ArPoint { X = corner.X, Y = corner.Y, Z = corner.Z },
+                                _mvpMatrixScratch);
+                            if (s.HasValue) pts.Add(s.Value);
+                        }
+                        // Nur als gueltige Vorschau werten, wenn alle vier Ecken im Bild liegen.
+                        if (pts.Count == 4) rectPreviewScreen = pts;
+                        rectIsSquare = rectResult.IsSquare;
+                        rectLen = rectResult.LengthMeters;
+                        rectDepth = rectResult.DepthMeters;
+                        rectArea = rectResult.AreaMeters;
+                    }
                 }
             }
 
@@ -4203,6 +4362,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             LiveSegmentSlopeMeters = liveSegSlope,
             LiveSegmentHeightDelta = liveSegHeight,
             ActiveContourSegments = activeContourSegMeters,
+            // Rechteck-/Quadrat-Vorschau (gefuehrte 3-Punkt-Methode)
+            IsRectangleMode = isRectMode,
+            RectangleCornerCount = rectCornerCount,
+            RectangleCornerScreenPoints = rectCornerScreen,
+            RectanglePreviewScreenPoints = rectPreviewScreen,
+            RectangleIsSquare = rectIsSquare,
+            RectangleLengthMeters = rectLen,
+            RectangleDepthMeters = rectDepth,
+            RectangleAreaMeters = rectArea,
             // Plan-Kap. 5.9: Stakeout-Daten fuer das Overlay
             IsStakeoutMode = _captureMode == CaptureMode.Stakeout,
             StakeoutDistanceMeters = ReadStakeoutDistance(),
@@ -4934,7 +5102,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         /// <summary>Plan-Kap. 5.17: Total-Station-Modus. Phone auf Stativ ueber RTK-Stab.
         /// Reticle-Hit liefert via Depth-API + ARCore-Heading die Ziel-Lat/Lon ueber
         /// <see cref="ITotalStationService"/>.</summary>
-        TotalStation
+        TotalStation,
+        /// <summary>Gefuehrte 3-Punkt-Rechteck-/Quadrat-Erfassung: zwei Tipps spannen die
+        /// Basiskante auf, der dritte legt die Tiefe fest. <see cref="ArRectangleBuilder"/>
+        /// erzwingt rechte Winkel im Grundriss und snappt bei Bedarf auf ein Quadrat.</summary>
+        Rectangle
     }
 
     #region Undo/Redo Actions
@@ -4963,6 +5135,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     {
         public void Undo() { lock (lockObj) contour.Points.Remove(point); }
         public void Redo() { lock (lockObj) contour.Points.Add(point); }
+    }
+
+    // Eine komplett gesetzte Kontur (z.B. ein abgeschlossenes Rechteck) als Ganzes
+    // zuruecknehmen/wiederherstellen. Redo fuegt nur ein, wenn nicht schon vorhanden.
+    private sealed class AddContourAction(object lockObj, List<ArContour> list, ArContour contour) : IArAction
+    {
+        public void Undo() { lock (lockObj) list.Remove(contour); }
+        public void Redo() { lock (lockObj) { if (!list.Contains(contour)) list.Add(contour); } }
     }
 
     private sealed class DeleteContourPointAction(object lockObj, ArContour contour, int index, ArPoint point) : IArAction

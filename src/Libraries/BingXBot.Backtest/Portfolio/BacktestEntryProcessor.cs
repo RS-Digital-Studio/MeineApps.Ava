@@ -21,6 +21,12 @@ internal static class BacktestEntryProcessor
     /// Fuehrt einen Trade aus (Long/Short via RiskManager + PlaceOrder + Exit-State-Tracking)
     /// bzw. schliesst Positionen bei Close-Signalen.
     /// </summary>
+    /// <param name="adaptLeverage">
+    /// Tatsaechliches Kategorie-Leverage (Live-Spiegel: <c>(int)catSettings.MaxLeverage</c>). 0 (Default) reicht
+    /// den Single-Symbol-Pfad wie bisher an die 2-Param-<c>ValidateTrade</c> durch (Leverage-Default greift im
+    /// RiskManager). &gt; 0 (Portfolio-Pfad) ruft die 4-Param-Ueberladung mit <c>fundingRate: null, actualLeverage</c>
+    /// auf — so wirkt im risk-basierten Sizing dasselbe Kategorie-Leverage wie live (GAP 3).
+    /// </param>
     public static async Task ProcessEntryAsync(
         SimulatedExchange simExchange,
         IRiskManager riskManager,
@@ -31,12 +37,17 @@ internal static class BacktestEntryProcessor
         Dictionary<string, SignalResult> positionSignals,
         Dictionary<string, BacktestExitState> exitTracking,
         IReadOnlyList<Position> positions,
-        ILogger logger)
+        ILogger logger,
+        int adaptLeverage = 0)
     {
         // Trade ausführen wenn Signal (SK-Buch: keine Regime-Filter, SK hat eigene Workflow-Regeln)
         if (signal.Signal is Signal.Long or Signal.Short)
         {
-            var riskCheck = riskManager.ValidateTrade(signal, riskContext);
+            // adaptLeverage == 0 → 2-Param-Pfad (Single-Symbol, unveraendert). > 0 → 4-Param (Portfolio):
+            // dasselbe Kategorie-Leverage wie Live (TradingServiceBase reicht (int)catSettings.MaxLeverage durch).
+            var riskCheck = adaptLeverage > 0
+                ? riskManager.ValidateTrade(signal, riskContext, currentFundingRate: null, actualLeverage: adaptLeverage)
+                : riskManager.ValidateTrade(signal, riskContext);
             if (riskCheck.IsAllowed && riskCheck.AdjustedPositionSize > 0)
             {
                 var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;

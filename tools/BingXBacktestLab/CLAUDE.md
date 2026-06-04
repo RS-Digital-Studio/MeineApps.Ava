@@ -27,6 +27,44 @@ dotnet run --project tools/BingXBacktestLab -c Release -- \
 Output: Console-Tabelle + `reports/report-{label}.md` + `.json`. Aggregat pro Strategie
 (WinRate, PF, Expectancy/Trade, Σ PnL, RRR, MaxDD, **Long/Short-Aufschlüsselung**) + Detail pro TF.
 
+## Portfolio-Modus (`--portfolio`) — Spiegelbild des Live-Bots
+
+Der Default-Matrix-Pfad fährt **pro Symbol eine eigene `BacktestEngine` mit eigenem 1000-USDT-Konto**
+und summiert nur die PnLs. Dadurch feuern die **konto-weiten** Risk-Gates NIE (MaxOpenPositions,
+MaxTotalMargin, Korrelations-Cluster, Daily-Loss/Drawdown), und das risk-basierte Sizing tradet jedes
+Symbol mit „frischen" 1000 USDT. `--portfolio` fährt stattdessen **EIN gemeinsames Konto über alle
+Symbole, zeitlich gemergt** (`PortfolioBacktestEngine`) → die Gates greifen und das Sizing teilt sich
+die eine (sinkende/steigende) Equity. So wird der Backtest zum Spiegelbild des Live-Bots.
+
+```bash
+dotnet run --project tools/BingXBacktestLab -c Release -- \
+  --portfolio --preset may-live --tfs H4 \
+  --from 2022-06-01 --to 2026-06-01 --balance 158 --label portfolio-smoke
+```
+
+| Arg | Default | Zweck |
+|-----|---------|-------|
+| `--portfolio` | — | aktiviert den Portfolio-Pfad (beendet danach) |
+| `--balance` | 158 | Start-Balance des EINEN Kontos → `Backtest.InitialBalance` |
+| `--tfs` | (erstes Element) | nur die erste TF wird als Nav-TF genutzt (H4-only, TrendFollow-Fast) |
+| `--strategies` | (erstes Element) | nur die erste Strategie (Live: TrendFollow-Fast) |
+
+Fokus **TrendFollow-Fast (H4-only)**: `RequiresHigherTimeframeContext=false`, kein Entry-TF-Sub-Loop →
+ein `MarketContext` pro H4-Kerze (Direktpfad). Output: `reports/portfolio-{label}.md`/`.json` mit Σ PnL,
+echter **Konto-MaxDD%** (aus der Equity-Curve), WinRate, PF, Long/Short-Split, Trade-Anzahl + **pro-Symbol-
+Breakdown**. Lädt `BingXSymbolInfoProvider` (Min-Order/Min-Notional spiegeln die Live-Reject-Semantik).
+
+**Architektur** (`src/Libraries/BingXBot.Backtest/Portfolio/`): `MergedTimeline` (alle H4-CloseTimes
+sortiert+dedupliziert, kein Look-Ahead) · `PortfolioSymbolState` (pro Symbol: Nav-Kerzen, inkr. `navIdx`,
+EIGENE Strategie-Instanz — kein geteilter Indikator-State) · `PortfolioBacktestEngine` (1 `SimulatedExchange`
++ 1 `RiskManager`, iteriert die Timeline: Tageswechsel 1×/Kalendertag konto-weit, Preise aller Symbole
+setzen, NF8-OpenRisk portfolio-weit, **Exits zuerst** dann **Entries** nach 24h-Volumen absteigend, NF9-
+Stream, Equity-Snapshot ~1×/Tag = alle 6 H4-Schritte). Exit/Entry teilen sich `BacktestExitProcessor`/
+`BacktestEntryProcessor` mit der Single-Engine (KEINE Duplikation). **Bit-Identität-Gotcha:** Evaluate nutzt
+den **pre-exit** Positions-Snapshot (wie die Single-Engine — sonst Re-Entry auf der Exit-Kerze = Look-Ahead);
+ValidateTrade/Entry nutzt den **frischen** Snapshot (damit intra-Step-Entries früherer Symbole für die Gates
+sichtbar sind). Der Single-Engine-Pfad bleibt unberührt (`ProcessEntryAsync`-Param `adaptLeverage=0`).
+
 ## Parameter-Sweep & Walk-Forward (`--sweep` / `--full` / `--compare` / `--axis`)
 
 Vier Modi finden datengetrieben bessere Parameter (statt manuell `settings.json` zu variieren). Alle nutzen

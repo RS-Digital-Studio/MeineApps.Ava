@@ -1,5 +1,6 @@
 # Generierte Artefakte des Backtest-Labs — nicht einchecken.
 .kline-cache/
+.symbolinfo-cache/
 reports/
 bin/
 obj/

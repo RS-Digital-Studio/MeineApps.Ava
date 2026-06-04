@@ -3,6 +3,8 @@ using System.Text;
 using System.Text.Json;
 using BingXBacktestLab;
 using BingXBot.Backtest;
+using BingXBot.Backtest.Portfolio;
+using BingXBot.Backtest.Reports;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
@@ -123,6 +125,40 @@ if (GetArg(argMap, "axis", null) != null)
     var (title, variants) = BuildAxisVariants(axis, valuesArg);
     return await Sweep.AxisAsync(title, variants, symbols, tfs, from, to, botSettings, memData,
         parallelism, outDir, label);
+}
+
+// --- Portfolio-Modus: EIN gemeinsames Konto ueber alle Symbole, zeitlich gemergt. Eigener Pfad, beendet danach. ---
+//     Macht den Backtest zum Spiegelbild des Live-Bots: konto-weite Risk-Gates (MaxOpenPositions,
+//     MaxTotalMargin, Korrelation, Daily-Loss/Drawdown) feuern, Sizing teilt sich die EINE Equity.
+if (GetArg(argMap, "portfolio", null) != null)
+{
+    var balance = decimal.Parse(GetArg(argMap, "balance", "158")!, CultureInfo.InvariantCulture);
+    botSettings.Backtest.InitialBalance = balance;
+    // Portfolio-Fokus = Live-Strategie TrendFollow-Fast (H4-only). Nur wenn der User explizit
+    // --strategies setzt, wird dessen erster Eintrag genutzt (der --strategies-Default "SK-System"
+    // existiert in der StrategyFactory nicht mehr → wuerde sonst werfen).
+    var portfolioStrategy = GetArg(argMap, "strategies", null) is { Length: > 0 } explicitStrat
+        ? explicitStrat.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[0]
+        : "TrendFollow-Fast";
+    var navTf = tfs.Count > 0 ? tfs[0] : TimeFrame.H4;
+
+    Console.WriteLine($"PORTFOLIO-Modus: 1 Konto ({balance:F0} USDT) ueber {symbols.Count} Symbole, Strategie {portfolioStrategy}, Nav-TF {navTf}");
+    Console.WriteLine($"  Gates: MaxOpenPositions={botSettings.Risk.MaxOpenPositions} | MaxTotalMargin={botSettings.Risk.MaxTotalMarginPercent}% | MaxCorrelated={botSettings.Risk.MaxCorrelatedExposurePercent}%");
+    Console.WriteLine();
+
+    var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
+    var portfolioEngine = new PortfolioBacktestEngine(dataClient, symbolInfo, NullLogger<PortfolioBacktestEngine>.Instance);
+
+    // Beobachte die maximal gleichzeitig offenen Positionen — Beweis, dass der konto-weite
+    // MaxOpenPositions-Gate greift (GAP 1: die alte Single-Symbol-Summe hatte effektiv unbegrenzt viele).
+    var maxConcurrentOpen = 0;
+    var pReport = await portfolioEngine.RunAsync(symbols, navTf, from, to, botSettings, portfolioStrategy,
+        onStepOpenPositions: c => maxConcurrentOpen = Math.Max(maxConcurrentOpen, c));
+
+    Console.WriteLine($"Cache: {dataClient.CacheHits} Hits / {dataClient.CacheMisses} Misses");
+    Console.WriteLine($"Max. gleichzeitig offene Positionen: {maxConcurrentOpen} (Gate MaxOpenPositions={botSettings.Risk.MaxOpenPositions})\n");
+    WritePortfolioReport(pReport, symbols, navTf, from, to, balance, botSettings, portfolioStrategy, label!, outDir, maxConcurrentOpen);
+    return 0;
 }
 
 // --- Backtest-Matrix ---
@@ -340,6 +376,106 @@ static string? FindToolDir()
         dir = Directory.GetParent(dir)?.FullName;
     }
     return null;
+}
+
+// Schreibt den Portfolio-Report (Console + Markdown + JSON): Σ PnL, echte Konto-MaxDD% (aus
+// Equity-Curve via PerformanceReport.FromTrades), WinRate, PF, Long/Short-Split, Trade-Anzahl,
+// plus pro-Symbol-Breakdown (Trades.GroupBy(Symbol)).
+static void WritePortfolioReport(PerformanceReport report, List<string> symbols, TimeFrame navTf,
+    DateTime from, DateTime to, decimal balance, BotSettings settings, string strategyName, string label,
+    string outDir, int maxConcurrentOpen)
+{
+    var trades = report.Trades;
+    var longs = trades.Where(t => t.Side == Side.Buy).ToList();
+    var shorts = trades.Where(t => t.Side == Side.Sell).ToList();
+    decimal longPnl = longs.Sum(t => t.Pnl), shortPnl = shorts.Sum(t => t.Pnl);
+    decimal longWr = longs.Count > 0 ? 100m * longs.Count(t => t.Pnl > 0) / longs.Count : 0m;
+    decimal shortWr = shorts.Count > 0 ? 100m * shorts.Count(t => t.Pnl > 0) / shorts.Count : 0m;
+
+    Console.WriteLine("=== PORTFOLIO-Ergebnis (1 gemeinsames Konto) ===");
+    Console.WriteLine($"  Start-Balance : {balance:F2} USDT");
+    Console.WriteLine($"  End-Balance   : {balance + report.TotalPnl:F2} USDT");
+    Console.WriteLine($"  Σ PnL         : {report.TotalPnl:F2} USDT ({(balance > 0 ? report.TotalPnl / balance * 100m : 0m):F1}%)");
+    Console.WriteLine($"  Trades        : {report.TotalTrades} (Win {report.WinningTrades} / Loss {report.LosingTrades})");
+    Console.WriteLine($"  WinRate       : {report.WinRate:F1}%");
+    Console.WriteLine($"  ProfitFactor  : {FmtPf(report.ProfitFactor)}");
+    Console.WriteLine($"  Konto-MaxDD   : {report.MaxDrawdownPercent:F1}% ({report.MaxDrawdown:F2} USDT)");
+    Console.WriteLine($"  Sharpe        : {report.SharpeRatio:F2}");
+    Console.WriteLine($"  Long          : {longs.Count} @ {longWr:F0}% WR, ΣPnL {longPnl:F2}");
+    Console.WriteLine($"  Short         : {shorts.Count} @ {shortWr:F0}% WR, ΣPnL {shortPnl:F2}");
+    Console.WriteLine();
+
+    // Pro-Symbol-Breakdown.
+    var bySymbol = trades.GroupBy(t => t.Symbol)
+        .Select(g =>
+        {
+            var n = g.Count();
+            var wins = g.Count(t => t.Pnl > 0);
+            var gw = g.Where(t => t.Pnl > 0).Sum(t => t.Pnl);
+            var gl = Math.Abs(g.Where(t => t.Pnl < 0).Sum(t => t.Pnl));
+            return new
+            {
+                Symbol = g.Key,
+                Trades = n,
+                WinRate = n > 0 ? 100m * wins / n : 0m,
+                ProfitFactor = gl > 0 ? gw / gl : (gw > 0 ? 999m : 0m),
+                Pnl = g.Sum(t => t.Pnl)
+            };
+        })
+        .OrderByDescending(x => x.Pnl)
+        .ToList();
+
+    Console.WriteLine("  Pro Symbol (Σ PnL absteigend):");
+    foreach (var s in bySymbol)
+        Console.WriteLine($"    {s.Symbol,-14} Trades={s.Trades,3} WR={s.WinRate,5:F1}% PF={FmtPf(s.ProfitFactor),5} ΣPnL={s.Pnl,9:F2}");
+
+    // --- Markdown ---
+    var sb = new StringBuilder();
+    sb.AppendLine($"# Portfolio-Backtest — {label}");
+    sb.AppendLine($"1 gemeinsames Konto | Strategie {strategyName} | Nav-TF {navTf}");
+    sb.AppendLine($"Zeitraum {from:yyyy-MM-dd}..{to:yyyy-MM-dd} | {symbols.Count} Symbole | Start-Balance {balance:F2} USDT");
+    sb.AppendLine($"Gates: MaxOpenPositions={settings.Risk.MaxOpenPositions}, MaxTotalMargin={settings.Risk.MaxTotalMarginPercent}%, MaxCorrelated={settings.Risk.MaxCorrelatedExposurePercent}%");
+    sb.AppendLine();
+    sb.AppendLine("## Konto-Ergebnis");
+    sb.AppendLine("| Metrik | Wert |");
+    sb.AppendLine("|---|---|");
+    sb.AppendLine($"| Start-Balance | {balance:F2} USDT |");
+    sb.AppendLine($"| End-Balance | {balance + report.TotalPnl:F2} USDT |");
+    sb.AppendLine($"| Σ PnL | {report.TotalPnl:F2} USDT ({(balance > 0 ? report.TotalPnl / balance * 100m : 0m):F1}%) |");
+    sb.AppendLine($"| Trades | {report.TotalTrades} (Win {report.WinningTrades} / Loss {report.LosingTrades}) |");
+    sb.AppendLine($"| WinRate | {report.WinRate:F1}% |");
+    sb.AppendLine($"| ProfitFactor | {FmtPf(report.ProfitFactor)} |");
+    sb.AppendLine($"| Konto-MaxDD% | {report.MaxDrawdownPercent:F1}% ({report.MaxDrawdown:F2} USDT) |");
+    sb.AppendLine($"| Max. gleichzeitig offen | {maxConcurrentOpen} (Gate {settings.Risk.MaxOpenPositions}) |");
+    sb.AppendLine($"| Sharpe | {report.SharpeRatio:F2} |");
+    sb.AppendLine($"| Ø Haltezeit | {report.AverageHoldTime:hh\\:mm} |");
+    sb.AppendLine($"| Long | {longs.Count} @ {longWr:F0}% WR / ΣPnL {longPnl:F2} |");
+    sb.AppendLine($"| Short | {shorts.Count} @ {shortWr:F0}% WR / ΣPnL {shortPnl:F2} |");
+    sb.AppendLine();
+    sb.AppendLine("## Pro Symbol");
+    sb.AppendLine("| Symbol | Trades | WinRate | PF | Σ PnL |");
+    sb.AppendLine("|---|---|---|---|---|");
+    foreach (var s in bySymbol)
+        sb.AppendLine($"| {s.Symbol} | {s.Trades} | {s.WinRate:F1}% | {FmtPf(s.ProfitFactor)} | {s.Pnl:F2} |");
+
+    Directory.CreateDirectory(outDir);
+    var mdPath = Path.Combine(outDir, $"portfolio-{label}.md");
+    File.WriteAllText(mdPath, sb.ToString());
+    var jsonPath = Path.Combine(outDir, $"portfolio-{label}.json");
+    File.WriteAllText(jsonPath, JsonSerializer.Serialize(new
+    {
+        from, to, navTf = navTf.ToString(), symbolCount = symbols.Count, startBalance = balance,
+        totalPnl = report.TotalPnl, endBalance = balance + report.TotalPnl,
+        report.TotalTrades, report.WinningTrades, report.LosingTrades, report.WinRate,
+        report.ProfitFactor, report.MaxDrawdownPercent, report.MaxDrawdown, report.SharpeRatio,
+        maxConcurrentOpen, maxOpenGate = settings.Risk.MaxOpenPositions,
+        longCount = longs.Count, longWinRate = longWr, longPnl,
+        shortCount = shorts.Count, shortWinRate = shortWr, shortPnl,
+        perSymbol = bySymbol
+    }, new JsonSerializerOptions { WriteIndented = true }));
+
+    Console.WriteLine($"\nReport: {mdPath}");
+    Console.WriteLine($"JSON  : {jsonPath}");
 }
 
 // ============================================================================

@@ -446,6 +446,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _coachMarksShown = soundPrefs?.GetBoolean("ar.coachmarks.shown", false) ?? false;
         // Plan-Kap. 5.15: Quality-Heatmap-Toggle (Default: aus, weil visuell aufdringlich)
         _heatmapEnabled = soundPrefs?.GetBoolean("ar.heatmap.enabled", false) ?? false;
+        // Boden-Raster (3D-Tiefenanker) — Default an, weil es die Szene räumlich verankert.
+        _showGroundGrid = soundPrefs?.GetBoolean("ar.grid.enabled", true) ?? true;
 
         // Stabilitäts-Monitor für präzise Punkt-Erfassung
         _stabilityMonitor = new ArStabilityMonitor(this);
@@ -707,7 +709,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     {
         var menu = new global::Android.Widget.PopupMenu(this, anchor);
         const int idTape = 1, idTapeReset = 2, idStakeout = 3, idTachy = 4,
-                  idDelete = 5, idScreenshot = 6, idRecord = 7, idHelp = 8;
+                  idDelete = 5, idScreenshot = 6, idRecord = 7, idHelp = 8, idGrid = 9;
 
         var popupMenu = menu.Menu!;
         popupMenu.Add(0, idTape, 0, "Maßband (Ad-hoc-Distanz)");
@@ -719,6 +721,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // ausgegraut statt einen toten Klick mit leiser "Kein Punkt"-Meldung zu erzeugen.
         var hasSelection = _selectedPointIndex >= 0 || _isContourPointSelected;
         popupMenu.Add(0, idDelete, 0, "Ausgewählten Punkt löschen")!.SetEnabled(hasSelection);
+        popupMenu.Add(0, idGrid, 0, _showGroundGrid ? "Bodenraster ausblenden" : "Bodenraster einblenden");
         popupMenu.Add(0, idScreenshot, 0, "Screenshot speichern");
         popupMenu.Add(0, idRecord, 0, _isRecording ? "Aufnahme stoppen" : "Aufnahme starten");
         popupMenu.Add(0, idHelp, 0, "Hilfe");
@@ -732,12 +735,25 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 case idStakeout: VibrateLight(); SetMode(CaptureMode.Stakeout); break;
                 case idTachy: VibrateLight(); ToggleTotalStationMode(); break;
                 case idDelete: ConfirmDeleteSelectedPoint(); break;
+                case idGrid: VibrateLight(); ToggleGroundGrid(); break;
                 case idScreenshot: TakeScreenshot(); break;
                 case idRecord: ToggleRecording(); break;
                 case idHelp: ShowHelpDialog(); break;
             }
         };
         menu.Show();
+    }
+
+    /// <summary>Blendet das Boden-Raster ein/aus und merkt sich die Wahl. Bei ausgeschaltetem
+    /// Grid leert der nächste Frame den Builder → das Overlay erhält null und zeichnet nichts.</summary>
+    private void ToggleGroundGrid()
+    {
+        _showGroundGrid = !_showGroundGrid;
+        GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private)?
+            .Edit()?.PutBoolean("ar.grid.enabled", _showGroundGrid)?.Apply();
+        if (!_showGroundGrid)
+            _overlayView?.UpdateGroundGrid(null); // sofort entfernen, nicht erst nächsten Frame
+        ShowTransientHint(_showGroundGrid ? "Bodenraster ein" : "Bodenraster aus");
     }
 
     private void SetMode(CaptureMode mode)
@@ -2893,7 +2909,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 }
 
                 // Punkt-Positionen fuer Overlay in Screen-Koordinaten umrechnen
-                ProjectPointsToScreen();
+                ProjectPointsToScreen(camera);
 
                 // Live-HitTest am Reticle (Bildmitte) — zeigt Nutzer was bei Tap getroffen wird
                 UpdateReticleState(frame, camera);
@@ -2944,6 +2960,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// in Reihenfolge ihrer Tap-Erfassung.</summary>
     private readonly List<(float screenX, float screenY)> _projectedTapeMeasureBuilder = [];
 
+    /// <summary>Boden-Raster: projizierte Linien-Segmente (x1,y1,x2,y2,depth) auf der
+    /// erkannten Ground-Plane. Verankert die AR-Szene visuell im Raum (3D-Tiefenwirkung).
+    /// GL-Thread-only, wird pro Frame in <see cref="ProjectGroundGrid"/> neu gefuellt.</summary>
+    private readonly List<(float x1, float y1, float x2, float y2, float depth)> _projectedGroundGridBuilder = [];
+    private bool _showGroundGrid = true;
+
     /// <summary>Reusable Builder fuer Site-Marker (Plan-Kap. 5.2) — projizierte Earth-
     /// Anchor-Positionen bestehender Projekt-Punkte mit Label.</summary>
     private readonly List<(float screenX, float screenY, string label)> _projectedSiteMarkersBuilder = [];
@@ -2961,7 +2983,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private int _heatmapFrameCounter;
     private bool _heatmapEnabled;
 
-    private void ProjectPointsToScreen()
+    private void ProjectPointsToScreen(Google.AR.Core.Camera camera)
     {
         global::Android.Opengl.Matrix.MultiplyMM(_mvpMatrixScratch, 0, _projectionMatrix, 0, _viewMatrix, 0);
 
@@ -3054,17 +3076,98 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Erkannte Planes projizieren
         var projectedPlanes = ProjectPlanesToScreen(_mvpMatrixScratch);
 
+        // Boden-Raster auf der Ground-Plane projizieren (3D-Tiefenanker der Szene)
+        ProjectGroundGrid(camera, _mvpMatrixScratch);
+
         // Overlay auf UI-Thread aktualisieren. Die Builder leben auf dem GL-Thread weiter —
         // wir kopieren NUR einmal in eine Übergabe-Liste statt zweifach (vorher: erst Builder,
         // dann eine zusaetzliche Snapshot-Copy unter dem _projectedPoints-Lock).
         var ptsForUi = new List<(float, float, int, float, float, float, float)>(_projectedPointsBuilder);
         var cPtsForUi = new List<(float, float, int, int, float)>(_projectedContourPointsBuilder);
+        var gridForUi = _projectedGroundGridBuilder.Count > 0
+            ? new List<(float, float, float, float, float)>(_projectedGroundGridBuilder)
+            : null;
 
         RunOnUiThread(() =>
         {
             _overlayView?.UpdateProjectedPositions(ptsForUi, cPtsForUi);
             _overlayView?.UpdateProjectedPlanes(projectedPlanes);
+            _overlayView?.UpdateGroundGrid(gridForUi);
         });
+    }
+
+    /// <summary>
+    /// Projiziert ein 1-m-Boden-Raster auf der erkannten Ground-Plane in Screen-Koordinaten.
+    /// Verankert die AR-Szene visuell im Raum (der entscheidende 3D-Tiefeneindruck in AR).
+    /// Segmentweise projiziert + distanz-gecullt, damit am Near-Plane-Rand keine ganzen Linien
+    /// wegspringen und ferne Zellen den Hot-Path nicht fluten. Alloc-frei (Struct-Closure).
+    /// </summary>
+    private void ProjectGroundGrid(Google.AR.Core.Camera camera, float[] mvp)
+    {
+        _projectedGroundGridBuilder.Clear();
+        if (!_showGroundGrid || !_groundPlaneYSet) return;
+        var pose = camera.Pose;
+        if (pose == null) return;
+
+        const float Step = 1.0f;     // 1-m-Raster (semantischer Vermessungs-Maßstab)
+        const float Radius = 5.0f;   // 5 m Ausdehnung um die Kamera
+        var groundY = _groundPlaneYValue;
+        var camX = pose.Tx();
+        var camZ = pose.Tz();
+        // Raster-Zentrum auf das Welt-Gitter snappen → Linien stehen still im Raum (kein Mitwandern).
+        var cx0 = MathF.Round(camX / Step) * Step;
+        var cz0 = MathF.Round(camZ / Step) * Step;
+        var xMin = cx0 - Radius;
+        var zMin = cz0 - Radius;
+        var steps = (int)MathF.Round(2 * Radius / Step);
+        var maxDist = Radius * 1.55f;
+
+        // Lokale Funktion (Struct-Closure, keine Heap-Alloc): Boden-Welt → Screen + Clip-Tiefe.
+        (float sx, float sy)? Proj(float wx, float wz)
+        {
+            var clipX = mvp[0] * wx + mvp[4] * groundY + mvp[8] * wz + mvp[12];
+            var clipY = mvp[1] * wx + mvp[5] * groundY + mvp[9] * wz + mvp[13];
+            var clipW = mvp[3] * wx + mvp[7] * groundY + mvp[11] * wz + mvp[15];
+            if (clipW <= 0.05f) return null;
+            return ((clipX / clipW + 1f) * 0.5f * _viewportWidth,
+                    (1f - clipY / clipW) * 0.5f * _viewportHeight);
+        }
+
+        // Linien parallel zur X-Achse (konstantes z), segmentweise.
+        for (var zi = 0; zi <= steps; zi++)
+        {
+            var z = zMin + zi * Step;
+            for (var xi = 0; xi < steps; xi++)
+            {
+                var xa = xMin + xi * Step;
+                var xb = xa + Step;
+                var mx = xa + Step * 0.5f;
+                var dist = MathF.Sqrt((mx - camX) * (mx - camX) + (z - camZ) * (z - camZ));
+                if (dist > maxDist) continue;
+                var a = Proj(xa, z);
+                var b = Proj(xb, z);
+                if (a.HasValue && b.HasValue)
+                    _projectedGroundGridBuilder.Add((a.Value.sx, a.Value.sy, b.Value.sx, b.Value.sy, dist));
+            }
+        }
+
+        // Linien parallel zur Z-Achse (konstantes x), segmentweise.
+        for (var xi = 0; xi <= steps; xi++)
+        {
+            var x = xMin + xi * Step;
+            for (var zi = 0; zi < steps; zi++)
+            {
+                var za = zMin + zi * Step;
+                var zb = za + Step;
+                var mz = za + Step * 0.5f;
+                var dist = MathF.Sqrt((x - camX) * (x - camX) + (mz - camZ) * (mz - camZ));
+                if (dist > maxDist) continue;
+                var a = Proj(x, za);
+                var b = Proj(x, zb);
+                if (a.HasValue && b.HasValue)
+                    _projectedGroundGridBuilder.Add((a.Value.sx, a.Value.sy, b.Value.sx, b.Value.sy, dist));
+            }
+        }
     }
 
     /// <summary>

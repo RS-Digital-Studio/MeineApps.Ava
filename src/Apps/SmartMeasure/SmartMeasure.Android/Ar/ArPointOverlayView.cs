@@ -32,6 +32,9 @@ public sealed partial class ArPointOverlayView : View
     // Wiederverwendete Sortier-Liste (Painter, fern→nah) — keine LINQ-Allokation im Hot-Path.
     private readonly List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> _pointDrawOrder = [];
     private List<List<(float screenX, float screenY)>> _projectedPlanes = [];
+    // Projiziertes Boden-Raster (x1,y1,x2,y2,dist) — verankert die Szene räumlich. dist = Welt-
+    // Distanz zur Kamera für den Tiefen-Fade (nahe Linien kräftig, ferne ausgeblendet).
+    private List<(float x1, float y1, float x2, float y2, float dist)>? _groundGridSegments;
     private ArOverlayState _state = new();
     private int _selectedIndex = -1;
     private bool _showPlanes = true;
@@ -59,12 +62,13 @@ public sealed partial class ArPointOverlayView : View
     private readonly Paint _contourLinePaint;
     private readonly Paint _contourPointPaint;
     private readonly Paint _activeContourPaint;
-    private readonly Paint _activeContourFillPaint;
+    private readonly Paint _gradientFillPaint;
     private readonly Paint _labelPaint;
     private readonly Paint _hintPaint;
     private readonly Paint _distancePaint;
     private readonly Paint _planeFillPaint;
     private readonly Paint _planeEdgePaint;
+    private readonly Paint _groundGridPaint;
     private readonly Paint _snapIndicatorPaint;
 
     // Reticle Paints
@@ -155,8 +159,10 @@ public sealed partial class ArPointOverlayView : View
         _activeContourPaint.SetStyle(Paint.Style.Stroke);
         _activeContourPaint.SetPathEffect(new DashPathEffect([10f * _density, 5f * _density], 0));
 
-        _activeContourFillPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(50, 255, 235, 59) };
-        _activeContourFillPaint.SetStyle(Paint.Style.Fill);
+        // Flächen-Füllung mit vertikalem Tiefen-Gradient (Shader wird pro Polygon gesetzt) —
+        // gibt geschlossenen Flächen plastisches Volumen statt flacher Einfärbung.
+        _gradientFillPaint = new Paint(PaintFlags.AntiAlias);
+        _gradientFillPaint.SetStyle(Paint.Style.Fill);
 
         _labelPaint = new Paint(PaintFlags.AntiAlias)
         {
@@ -190,6 +196,14 @@ public sealed partial class ArPointOverlayView : View
             StrokeWidth = 1.5f * _density,
         };
         _planeEdgePaint.SetStyle(Paint.Style.Stroke);
+
+        // Boden-Raster: dezente helle Linien, Alpha wird pro Segment für den Tiefen-Fade gesetzt.
+        _groundGridPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = Color.Argb(70, 220, 230, 240),
+            StrokeWidth = 1f * _density,
+        };
+        _groundGridPaint.SetStyle(Paint.Style.Stroke);
 
         _snapIndicatorPaint = new Paint(PaintFlags.AntiAlias)
         {
@@ -377,6 +391,13 @@ public sealed partial class ArPointOverlayView : View
         Invalidate();
     }
 
+    /// <summary>Übernimmt das projizierte Boden-Raster (null = aus / kein Ground-Tracking).</summary>
+    public void UpdateGroundGrid(List<(float x1, float y1, float x2, float y2, float dist)>? segments)
+    {
+        _groundGridSegments = segments;
+        Invalidate();
+    }
+
     /// <summary>Plan-Kap. 5.15: Heatmap-Berechnung im GL-Thread braucht den letzten
     /// Plane-Snapshot. View liefert die Live-Liste zur Iteration — Caller darf nicht
     /// mutieren. List&lt;List&lt;...&gt;&gt; kann nicht als IReadOnlyList&lt;IReadOnlyList&gt;
@@ -419,12 +440,13 @@ public sealed partial class ArPointOverlayView : View
         _contourPointPaint.Dispose();
         _activeContourPaint.PathEffect?.Dispose();
         _activeContourPaint.Dispose();
-        _activeContourFillPaint.Dispose();
+        _gradientFillPaint.Dispose();
         _labelPaint.Dispose();
         _hintPaint.Dispose();
         _distancePaint.Dispose();
         _planeFillPaint.Dispose();
         _planeEdgePaint.Dispose();
+        _groundGridPaint.Dispose();
         _snapIndicatorPaint.Dispose();
         _reticleOuterPaint.Dispose();
         _reticleInnerPaint.Dispose();
@@ -462,12 +484,15 @@ public sealed partial class ArPointOverlayView : View
         var pointRadius = 8f * _density;
         var contourPointRadius = 5f * _density;
 
+        // 0. Boden-Raster (3D-Tiefenanker der Szene) — ganz hinten, unter allen Messdaten.
+        DrawGroundGrid(canvas);
+
         // 1. Erkannte Planes
         if (_showPlanes)
             DrawDetectedPlanes(canvas);
 
-        // 2. Aktive Kontur-Fläche (halbtransparent, wenn >= 3 Punkte)
-        DrawActiveContourFill(canvas);
+        // 2. Kontur-Flächen (geschlossen typ-gefärbt + aktiv) mit Tiefen-Gradient
+        DrawContourFills(canvas);
 
         // 3. Kontur-Linien + Auto-Close-Vorschau
         DrawContourLines(canvas, contourPointRadius);
@@ -568,6 +593,26 @@ public sealed partial class ArPointOverlayView : View
         }
     }
 
+    /// <summary>Zeichnet das projizierte Boden-Raster mit Tiefen-Fade (nahe Linien kräftig,
+    /// ferne ausgeblendet) — erzeugt den räumlichen Boden-Bezug der AR-Szene.</summary>
+    private void DrawGroundGrid(Canvas canvas)
+    {
+        var segs = _groundGridSegments;
+        if (segs == null || segs.Count == 0) return;
+
+        const float nearDist = 1.5f;
+        const float farDist = 7.75f;
+        const int nearAlpha = 85;
+        const int farAlpha = 10;
+
+        foreach (var (x1, y1, x2, y2, dist) in segs)
+        {
+            var t = Math.Clamp((dist - nearDist) / (farDist - nearDist), 0f, 1f);
+            _groundGridPaint.Alpha = (int)(nearAlpha + (farAlpha - nearAlpha) * t);
+            canvas.DrawLine(x1, y1, x2, y2, _groundGridPaint);
+        }
+    }
+
     private void DrawDetectedPlanes(Canvas canvas)
     {
         foreach (var plane in _projectedPlanes)
@@ -584,22 +629,60 @@ public sealed partial class ArPointOverlayView : View
         }
     }
 
-    private void DrawActiveContourFill(Canvas canvas)
+    /// <summary>Füllt geschlossene Konturen (Typ-Farbe) und die aktive Kontur (Accent) mit einem
+    /// vertikalen Tiefen-Gradient — plastisches Flächen-Volumen statt flacher Einfärbung.</summary>
+    private void DrawContourFills(Canvas canvas)
     {
+        // Geschlossene Konturen typ-gefärbt füllen (unter den Linien).
+        var groups = _projectedContourPoints
+            .Where(p => p.contourIdx >= 0)
+            .GroupBy(p => p.contourIdx);
+        foreach (var g in groups)
+        {
+            var idx = g.Key;
+            if (idx >= _contours.Count || !_contours[idx].IsClosed) continue;
+            var pts = g.OrderBy(p => p.pointIdx).Select(p => (p.screenX, p.screenY)).ToList();
+            if (pts.Count < 3) continue;
+            FillPolygonGradient(canvas, pts, GetContourTypeColor(_contours[idx].ContourType));
+        }
+
+        // Aktive Kontur (Accent) füllen, sobald sie eine Fläche aufspannt.
         var activePts = _projectedContourPoints
             .Where(p => p.contourIdx == -1)
             .OrderBy(p => p.pointIdx)
             .Select(p => (p.screenX, p.screenY))
             .ToList();
+        if (activePts.Count >= 3)
+            FillPolygonGradient(canvas, activePts, C.Accent);
+    }
 
-        if (activePts.Count < 3) return;
+    /// <summary>Zeichnet ein gefülltes Polygon mit vertikalem Alpha-Gradient (oben dezent, unten
+    /// kräftiger) in der Basisfarbe. Shader wird pro Polygon erzeugt — bei den wenigen gleichzeitig
+    /// sichtbaren Flächen einer AR-Session vernachlässigbar gegenüber dem Kamera-Frame-Upload.</summary>
+    private void FillPolygonGradient(Canvas canvas, List<(float screenX, float screenY)> pts, Color baseColor)
+    {
+        float minY = float.MaxValue, maxY = float.MinValue;
+        foreach (var (_, sy) in pts)
+        {
+            if (sy < minY) minY = sy;
+            if (sy > maxY) maxY = sy;
+        }
+        if (maxY - minY < 1f) maxY = minY + 1f;
 
         using var path = new global::Android.Graphics.Path();
-        path.MoveTo(activePts[0].screenX, activePts[0].screenY);
-        for (var i = 1; i < activePts.Count; i++)
-            path.LineTo(activePts[i].screenX, activePts[i].screenY);
+        path.MoveTo(pts[0].screenX, pts[0].screenY);
+        for (var i = 1; i < pts.Count; i++)
+            path.LineTo(pts[i].screenX, pts[i].screenY);
         path.Close();
-        canvas.DrawPath(path, _activeContourFillPaint);
+
+        using var shader = new LinearGradient(
+            0, minY, 0, maxY,
+            Color.Argb(38, baseColor.R, baseColor.G, baseColor.B),
+            Color.Argb(96, baseColor.R, baseColor.G, baseColor.B),
+            Shader.TileMode.Clamp!);
+        _gradientFillPaint.SetShader(shader);
+        canvas.DrawPath(path, _gradientFillPaint);
+        _gradientFillPaint.SetShader(null);
     }
 
     /// <summary>Farbe pro ArContourType (für Multi-Kontur-Visualisierung in Gartenplanung).</summary>
@@ -661,8 +744,12 @@ public sealed partial class ArPointOverlayView : View
                     paint);
             }
 
-            foreach (var (sx, sy, _, _, _) in sorted)
-                canvas.DrawCircle(sx, sy, pointRadius, _contourPointPaint);
+            // Konturpunkte perspektivisch skalieren (nah = größer) — konsistent mit Einzelpunkten.
+            foreach (var (sx, sy, _, _, depth) in sorted)
+            {
+                var ds = Math.Clamp(MarkerReferenceDepth / MathF.Max(depth, 0.3f), 0.5f, 1.7f);
+                canvas.DrawCircle(sx, sy, pointRadius * ds, _contourPointPaint);
+            }
 
             // Nummer am ersten Punkt für aktive Kontur
             if (isActive && sorted.Count > 0)
@@ -1160,14 +1247,6 @@ public sealed partial class ArPointOverlayView : View
         };
         edgePaint.SetStyle(Paint.Style.Stroke);
 
-        using var fillPaint = new Paint(PaintFlags.AntiAlias)
-        {
-            Color = _state.RectangleIsSquare
-                ? Color.Argb(60, 76, 175, 80)
-                : Color.Argb(45, 255, 107, 0),
-        };
-        fillPaint.SetStyle(Paint.Style.Fill);
-
         // Branch-Entscheidung gegen die ECHTE Eckenzahl (nicht die ggf. frustum-geclippte
         // Screen-Liste — sonst kollabiert die Vorschau, wenn eine Ecke hinter die Kamera kommt).
         var cornerCount = _state.RectangleCornerCount;
@@ -1180,7 +1259,11 @@ public sealed partial class ArPointOverlayView : View
             for (var i = 1; i < 4; i++)
                 path.LineTo(preview[i].screenX, preview[i].screenY);
             path.Close();
-            canvas.DrawPath(path, fillPaint);
+            // Plastischer Tiefen-Gradient in der Akzentfarbe (grün bei Quadrat-Snap, sonst orange).
+            FillPolygonGradient(canvas,
+                [(preview[0].screenX, preview[0].screenY), (preview[1].screenX, preview[1].screenY),
+                 (preview[2].screenX, preview[2].screenY), (preview[3].screenX, preview[3].screenY)],
+                accent);
             canvas.DrawPath(path, edgePaint);
 
             // Kanten-Pillen: Basislaenge (Kante 0->1), Tiefe (Kante 1->2)

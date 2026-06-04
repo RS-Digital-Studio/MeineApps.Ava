@@ -85,6 +85,41 @@ den **pre-exit** Positions-Snapshot (wie die Single-Engine — sonst Re-Entry au
 ValidateTrade/Entry nutzt den **frischen** Snapshot (damit intra-Step-Entries früherer Symbole für die Gates
 sichtbar sind). Der Single-Engine-Pfad bleibt unberührt (`ProcessEntryAsync`-Param `adaptLeverage=0`).
 
+## Portfolio-Sweep (`--portfolio-sweep`) — Parameter-Variation auf dem EINEN Konto
+
+Spannt ein Grid über die Strategie-/Risk-Stellschrauben (**SL / BE / TP-RRR / TP1-Split**) auf und fährt für
+**jede Kombi einen vollen `PortfolioBacktestEngine`-Lauf über alle Symbole auf EINEM gemeinsamen Konto** (alle
+Gates aktiv = live-treu). Beantwortet die Frage: *Dreht IRGENDEINE Parameter-Kombination das live-getreue
+Portfolio-Ergebnis ins Plus?* — im Gegensatz zum Single-Symbol-`--sweep`, der auf isolierten 1000-USDT-Konten
+pro Symbol läuft (Gates feuern nie → unrealistisch). **Donchian/EMA/ADX bleiben FIX auf Live (10/34/18)**, weil
+der Live-Bot diese nicht variiert; nur SL/BE/RRR/TP1-Split werden gedreht.
+
+```bash
+dotnet run --project tools/BingXBacktestLab -c Release -- \
+  --portfolio-sweep --settings pi-live-settings.json --preset may-live --tfs H4 \
+  --from 2022-06-01 --to 2026-06-01 --balance 158 --sweep-grid full --label psweep-mayl-4y
+```
+
+| Arg | Default | Zweck |
+|-----|---------|-------|
+| `--portfolio-sweep` | — | aktiviert den Portfolio-Sweep-Pfad (beendet danach) |
+| `--sweep-grid` | full | `full` = 5×3×3×3 = **135 Kombis** (SL{2.0,2.5,2.75,3.0,3.5} × RRR{1.5/3.0,2.0/4.0,1.5/4.0} × BE{1.5,2.0,2.5} × TP1{0.3,0.5,0.7}) · `focused` = 3×2×2×2 = 24 Kombis (Schnelldurchlauf). Baseline-Kombi immer enthalten. |
+| `--balance` | 158 | Start-Balance des EINEN Kontos → `Backtest.InitialBalance` |
+| `--scanner-filter` / `--btc-health` | true | Live-Spiegel-Vorfilter (GAP 11 / GAP 4), wie `--portfolio` → `false` zum Abschalten |
+| `--sweep-parallel` | CPU-Kerne | Kombis laufen parallel (`Parallel.ForEachAsync`); Klines werden via `MemoryKlineCache` einmal vorab warmgeladen (sequenzieller Baseline-Lauf), dann teilen alle Threads den RAM-Cache. |
+
+Jede Kombi ist teuer (ein Voll-Lauf über alle Symbole), daher das fokussierte Grid statt des vollen
+Don/EMA/ADX-Kreuzprodukts. SL/RRR gehen über `PortfolioBacktestEngine.RunAsync(trendFollowOverride: …)`
+(`TrendFollowParams`-Struct → frische `TrendFollowStrategy` pro Symbol), BE über `Risk.BreakevenTriggerRMultiple`,
+TP1-Split über **`Backtest.Tp1CloseRatio`** (NICHT `RiskSettings` — wie beim Single-Sweep). Die Baseline lebt in
+`PortfolioSweep.Baseline` (SL2.75/RRR1.5-3.0/BE2.0/TP1×0.5). Report `reports/portfolio-sweep-{label}.md`/`.json`:
+alle Kombis nach Σ PnL absteigend, Baseline markiert + ihr Rang, klare Aussage (schlägt beste Kombi Baseline?
+dreht irgendeine ins Plus?). Top-10 in der Console.
+
+**Engine-Override (`trendFollowOverride`):** `PortfolioBacktestEngine.RunAsync` nimmt optional `TrendFollowParams?`.
+Priorität: explizite `strategyFactory` (Tests) > `trendFollowOverride` (Sweep) > `StrategyFactory.Create` (Default).
+Ohne Override unverändert → bestehende `--portfolio`-Läufe bit-identisch (`PortfolioVsSingleRegressionTest`).
+
 ## Parameter-Sweep & Walk-Forward (`--sweep` / `--full` / `--compare` / `--axis`)
 
 Vier Modi finden datengetrieben bessere Parameter (statt manuell `settings.json` zu variieren). Alle nutzen

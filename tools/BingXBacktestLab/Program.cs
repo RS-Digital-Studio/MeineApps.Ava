@@ -7,6 +7,7 @@ using BingXBot.Backtest.Portfolio;
 using BingXBot.Backtest.Reports;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine.Risk;
@@ -76,6 +77,32 @@ var rateLimiter = new SimpleRateLimiter(TimeSpan.FromMilliseconds(120));
 var realClient = new BingXPublicClient(http, rateLimiter, NullLogger<BingXPublicClient>.Instance);
 var dataClient = new CachingPublicClient(realClient, cacheDir);
 
+// --- Top-N-Coins nach 24h-Volumen (spiegelt Live-Scanner OnlyTopByVolume/TopCoinsCount) ---
+//     Ueberschreibt --symbols/--preset. --include-tradfi steuert, ob TradFi-Perps (NC-Prefix) mitlaufen.
+if (GetArg(argMap, "top-coins", null) != null)
+{
+    var topN = int.Parse(GetArg(argMap, "top-coins", "100")!, CultureInfo.InvariantCulture);
+    var includeTradFi = GetArg(argMap, "include-tradfi", "true") != "false";
+    Console.WriteLine($"Lade Top-{topN} Symbole nach 24h-Volumen (TradFi={includeTradFi})...");
+    var allTickers = await realClient.GetAllTickersAsync();
+    var ranked = allTickers
+        .Where(t => t.Symbol.EndsWith("-USDT", StringComparison.OrdinalIgnoreCase)
+                    && SymbolClassifier.IsApiTradeable(t.Symbol)
+                    && (includeTradFi || !SymbolClassifier.IsTradFi(t.Symbol)))
+        .OrderByDescending(t => t.Volume24h)
+        .Take(topN)
+        .Select(t => t.Symbol)
+        .ToList();
+    if (ranked.Count > 0)
+    {
+        symbols = ranked;
+        var nTradFi = symbols.Count(SymbolClassifier.IsTradFi);
+        Console.WriteLine($"  -> {symbols.Count} Symbole ({symbols.Count - nTradFi} Crypto + {nTradFi} TradFi)");
+    }
+    else
+        Console.WriteLine("  WARNUNG: keine Ticker geladen — nutze --preset/--symbols-Fallback.");
+}
+
 // --- Sweep-Modus (Parameter-Grid + Walk-Forward)? Eigener Pfad, beendet danach. ---
 if (GetArg(argMap, "sweep", null) != null)
 {
@@ -125,6 +152,28 @@ if (GetArg(argMap, "axis", null) != null)
     var (title, variants) = BuildAxisVariants(axis, valuesArg);
     return await Sweep.AxisAsync(title, variants, symbols, tfs, from, to, botSettings, memData,
         parallelism, outDir, label);
+}
+
+// --- Portfolio-Sweep: variiert SL/BE/TP-RRR/TP1-Split ueber das EINE gemeinsame Konto. ---
+//     Jede Kombi = ein voller PortfolioBacktestEngine-Lauf ueber alle Symbole (teuer → fokussiertes Grid,
+//     Klines einmal in den RAM-Cache, Kombis parallel). Findet, ob IRGENDEINE Kombi das live-getreue
+//     Portfolio-Ergebnis ins Plus dreht. Donchian/EMA/ADX bleiben fix auf Live (der Live-Bot variiert sie nicht).
+if (GetArg(argMap, "portfolio-sweep", null) != null)
+{
+    var balance = decimal.Parse(GetArg(argMap, "balance", "158")!, CultureInfo.InvariantCulture);
+    var navTf = tfs.Count > 0 ? tfs[0] : TimeFrame.H4;
+    var scope = (GetArg(argMap, "sweep-grid", "full") ?? "full").ToLowerInvariant();
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+
+    // Live-Spiegel-Vorfilter (GAP 11 + GAP 4): im Sweep standardmaessig AN ("alles wie in live"),
+    // per --scanner-filter false / --btc-health false abschaltbar (Diagnose).
+    botSettings.Backtest.EnableScannerPrefilter = GetArg(argMap, "scanner-filter", "true") != "false";
+    botSettings.Backtest.EnableBtcHealthScale = GetArg(argMap, "btc-health", "true") != "false";
+
+    var memData = new MemoryKlineCache(dataClient);
+    var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
+    return await PortfolioSweep.RunAsync(symbols, navTf, from, to, botSettings, memData, symbolInfo,
+        balance, scope, parallelism, outDir, label);
 }
 
 // --- Portfolio-Modus: EIN gemeinsames Konto ueber alle Symbole, zeitlich gemergt. Eigener Pfad, beendet danach. ---

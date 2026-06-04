@@ -14,6 +14,22 @@ using Microsoft.Extensions.Logging;
 namespace BingXBot.Backtest.Portfolio;
 
 /// <summary>
+/// Variierte TrendFollow-Stellschrauben fuer den Portfolio-Sweep. Nur SL/RRR werden gedreht
+/// (Donchian/EMA/ADX bleiben auf dem Live-Stand, weil der Live-Bot sie nicht variiert). Wird
+/// ueber <see cref="PortfolioBacktestEngine.RunAsync"/> reingereicht; <c>null</c> = Default-Pfad
+/// (<see cref="StrategyFactory.Create"/>), bestehende Laeufe bleiben bit-identisch.
+/// </summary>
+/// <param name="DonchianPeriod">Donchian-Kanal-Periode (Live TrendFollow-Fast: 10).</param>
+/// <param name="EmaPeriod">EMA-Trendfilter-Periode (Live: 34).</param>
+/// <param name="AdxMin">ADX-Mindeststaerke (Live: 18).</param>
+/// <param name="AtrSlMultiplier">SL = N×ATR (Live: 2.75).</param>
+/// <param name="Tp1Rrr">TP1-RRR (Live: 1.5).</param>
+/// <param name="Tp2Rrr">TP2-RRR (Live: 3.0).</param>
+public readonly record struct TrendFollowParams(
+    int DonchianPeriod, int EmaPeriod, decimal AdxMin,
+    decimal AtrSlMultiplier, decimal Tp1Rrr, decimal Tp2Rrr);
+
+/// <summary>
 /// Portfolio-Backtest ueber EIN gemeinsames Konto fuer alle Symbole, zeitlich gemergt.
 /// Spiegelbild des Live-Bots: die konto-weiten Risk-Gates (MaxOpenPositions, MaxTotalMargin,
 /// Korrelations-Cluster, Daily-Loss/Drawdown-Circuit) sehen ALLE offenen Positionen gleichzeitig,
@@ -56,11 +72,21 @@ public sealed class PortfolioBacktestEngine
         IProgress<int>? progress = null,
         CancellationToken ct = default,
         Func<string, IStrategy>? strategyFactory = null,
-        Action<int>? onStepOpenPositions = null)
+        Action<int>? onStepOpenPositions = null,
+        TrendFollowParams? trendFollowOverride = null)
     {
-        // Tests koennen eine deterministische Strategie injizieren (erzwungene Signale fuer Gates-Tests).
-        // Default = StrategyFactory.Create — Lab/Produktiv-Pfad unveraendert.
-        var createStrategy = strategyFactory ?? StrategyFactory.Create;
+        // Strategie-Quelle, in absteigender Prioritaet:
+        //   1. explizite strategyFactory (Tests injizieren deterministische Strategien fuer Gates-Tests)
+        //   2. trendFollowOverride (Portfolio-Sweep variiert SL/RRR pro Kombi, Donchian/EMA/ADX live-fix)
+        //   3. StrategyFactory.Create (Lab/Produktiv-Default — Pfad bit-identisch)
+        // Wichtig: pro Symbol eine FRISCHE Instanz (kein geteilter Indikator-State) → die Factory wird
+        // pro Symbol aufgerufen, der Override baut jedes Mal eine neue TrendFollowStrategy.
+        Func<string, IStrategy> createStrategy = strategyFactory
+            ?? (trendFollowOverride is { } tf
+                ? _ => new TrendFollowStrategy(
+                    donchianPeriod: tf.DonchianPeriod, emaPeriod: tf.EmaPeriod, atrPeriod: 14, adxPeriod: 14,
+                    adxMin: tf.AdxMin, atrSlMultiplier: tf.AtrSlMultiplier, tp1Rrr: tf.Tp1Rrr, tp2Rrr: tf.Tp2Rrr)
+                : StrategyFactory.Create);
         // 1. Pro Symbol Nav-Kerzen laden, Warmup, eigene Strategie-Instanz.
         var states = new List<PortfolioSymbolState>();
         foreach (var symbol in symbols)

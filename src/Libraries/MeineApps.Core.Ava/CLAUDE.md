@@ -67,6 +67,14 @@ performance-kritische Phasen (laufendes Spiel) pausieren — In-Memory-Stand ble
 aufgestaute Änderungen werden beim Resume bzw. via `FlushPending()` (z.B. App-Background-Hook)
 einmalig geschrieben. Suspend ist idempotent.
 
+**Gotcha:** Suspend pausiert NUR den Disk-Write (`ScheduleSave`/`SaveNow`), NICHT die
+In-Memory-Serialisierung in `Set<T>`. `Set` ruft IMMER `JsonSerializer.SerializeToElement(value)`
+auf — auch im suspendierten Zustand. Ein Hot-Path, der pro Frame/Event `Set` aufruft (z.B.
+Game-Tracking pro Gegner-Kill), erzeugt also weiterhin Serialize-Allokationen → GC-Druck im
+Render-Loop. Konsequenz: Performance-kritische Services im Spiel **dirty-markieren + debouncen**
+(Dirty-Flag, Zeit-Debounce, `FlushIfDirty()` am Level-Ende) statt pro Event zu serialisieren —
+SuspendPersistence allein reicht gegen Gameplay-Stutter nicht.
+
 ### `IHapticService` / `NoOpHapticService`
 
 Haptik-Abstraktion. `NoOpHapticService` ist der Desktop-Fallback (keine Vibrations-Hardware).

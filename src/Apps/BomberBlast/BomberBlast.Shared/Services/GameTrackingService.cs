@@ -359,5 +359,9 @@ public sealed class GameTrackingService : IGameTrackingService
     {
         _achievements.FlushIfDirty();
         _collection.FlushIfDirty();
+        // Weekly/Daily-Missionen werden im Gameplay nur dirty-markiert (Debounce gegen Serialize-Sturm) —
+        // hier am Level-Ende den ausstehenden Fortschritt persistieren.
+        _weekly.FlushIfDirty();
+        _daily.FlushIfDirty();
     }
 }

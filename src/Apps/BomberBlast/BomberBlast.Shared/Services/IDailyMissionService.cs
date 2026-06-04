@@ -35,4 +35,9 @@ public interface IDailyMissionService
     /// <summary>All-Complete-Bonus einsammeln</summary>
     int ClaimAllCompleteBonus();
 
+    /// <summary>
+    /// Erzwingt einen ausstehenden Save (Dirty-Debounce wird im Gameplay-Hot-Path genutzt).
+    /// Wird am Level-Ende über GameTrackingService.FlushIfDirty aufgerufen.
+    /// </summary>
+    void FlushIfDirty();
 }

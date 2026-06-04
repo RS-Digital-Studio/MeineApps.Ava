@@ -15,6 +15,15 @@ public abstract class TimedMissionServiceBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new();
 
+    // Hot-Path-Schutz: Im Gameplay feuert TrackProgress pro Gegner-Kill/Combo/PowerUp (mehrfach
+    // pro Frame bei Ketten-Explosionen). Ohne Debounce serialisierte jeder Aufruf das JSON synchron
+    // auf dem UI-Thread → aufgestauter Gen0-Muell → periodische GC-Pause (sichtbarer Stutter auf
+    // Mono-AOT-Android). Dirty-Flag + Debounce wie AchievementService; FlushIfDirty() am Level-Ende
+    // (GameTrackingService.FlushIfDirty) erzwingt den finalen Save.
+    private const int SaveDebounceMs = 1500;
+    private bool _isDirty;
+    private DateTime _lastSaveTime = DateTime.MinValue;
+
     private readonly IPreferencesService _preferences;
     protected readonly IBattlePassService BattlePassService;
     protected readonly ILeagueService LeagueService;
@@ -134,21 +143,29 @@ public abstract class TimedMissionServiceBase
         EnsureInitialized();
 
         bool anyCompleted = false;
+        bool changed = false;
         foreach (var mission in _missions)
         {
             if (mission.Type == type && !mission.IsCompleted)
             {
-                mission.CurrentCount = Math.Min(mission.CurrentCount + amount, mission.TargetCount);
+                int newCount = Math.Min(mission.CurrentCount + amount, mission.TargetCount);
+                if (newCount != mission.CurrentCount)
+                {
+                    mission.CurrentCount = newCount;
+                    changed = true;
+                }
                 if (mission.IsCompleted)
                     anyCompleted = true;
             }
         }
 
-        if (anyCompleted || amount > 0)
+        // Nur persistieren wenn sich wirklich ein Fortschritt geaendert hat. Der fruehere
+        // "anyCompleted || amount > 0"-Guard war wegen amount-Default=1 IMMER wahr und serialisierte
+        // JEDEN Kill 2x JSON — auch wenn keine Mission dieses Typs aktiv/offen war (Stutter-Wurzel).
+        if (changed)
         {
-            // Fortschritt in Data synchronisieren
             SyncMissionsToData();
-            Save();
+            MarkDirty();
         }
 
         // Subtyp-spezifische Aktion bei abgeschlossener Mission
@@ -292,12 +309,34 @@ public abstract class TimedMissionServiceBase
         return new MissionPersistenceData();
     }
 
+    /// <summary>
+    /// Markiert die Daten als geaendert und speichert nur, wenn das Debounce-Fenster ueberschritten
+    /// ist. Verhindert den JSON-Serialize-Sturm im Gameplay-Hot-Path (Kill/Combo/PowerUp pro Frame).
+    /// </summary>
+    private void MarkDirty()
+    {
+        _isDirty = true;
+        if ((DateTime.UtcNow - _lastSaveTime).TotalMilliseconds >= SaveDebounceMs)
+            Save();
+    }
+
+    /// <summary>
+    /// Erzwingt das Speichern falls das Dirty-Flag gesetzt ist (z.B. am Level-Ende ueber
+    /// GameTrackingService.FlushIfDirty oder beim App-Background-Hook).
+    /// </summary>
+    public void FlushIfDirty()
+    {
+        if (_isDirty) Save();
+    }
+
     private void Save()
     {
         try
         {
             string json = JsonSerializer.Serialize(_data, JsonOptions);
             _preferences.Set(PreferencesKey, json);
+            _isDirty = false;
+            _lastSaveTime = DateTime.UtcNow;
         }
         catch
         {

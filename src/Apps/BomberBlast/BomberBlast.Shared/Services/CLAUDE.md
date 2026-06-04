@@ -61,8 +61,15 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 |---------|-------------|
 | `IDailyRewardService` / `DailyRewardService` | 7-Tage Login-Bonus + Comeback-Bonus (> 3 Tage inaktiv). Anti-Cheat-Hybridtimer (Tick64 + UTC). |
 | `IDailyChallengeService` / `DailyChallengeService` | Tägliches deterministisches Level (Seed: `yyyy*10000+MM*100+dd`), Streak-Tracking. |
-| `IDailyMissionService` / `DailyMissionService` | 3 tägliche Missionen aus 14er-Pool, Mitternacht-UTC-Reset. |
-| `IWeeklyChallengeService` / `WeeklyChallengeService` | 5 wöchentliche Missionen aus 14er-Pool, Montag-Reset. |
+| `IDailyMissionService` / `DailyMissionService` | 3 tägliche Missionen aus 14er-Pool, Mitternacht-UTC-Reset. Erbt `TimedMissionServiceBase`. |
+| `IWeeklyChallengeService` / `WeeklyChallengeService` | 5 wöchentliche Missionen aus 14er-Pool, Montag-Reset. Erbt `TimedMissionServiceBase`. |
+
+`TimedMissionServiceBase` (Basis von Daily+Weekly): `TrackProgress` wird im Gameplay pro Gegner-Kill/
+Combo/PowerUp aufgerufen (von `GameTrackingService`). Daher **Change-Guard** (nur speichern wenn sich
+ein `CurrentCount` wirklich erhöht — sonst serialisierte JEDER Kill 2x JSON, auch ohne aktive Mission)
++ **Dirty-Flag + Debounce** (1,5 s, analog `AchievementService`) + `FlushIfDirty()`. `GameTrackingService.FlushIfDirty()`
+ruft `_weekly`/`_daily`/`_achievements`/`_collection` am Level-Ende — dort wird der ausstehende Save erzwungen.
+Hintergrund (SuspendPersistence stoppt nur Disk-I/O, nicht Serialize) → Core.Ava-CLAUDE.md.
 | `ILuckySpinService` / `LuckySpinService` | 9 Segmente gewichtet, 1× gratis/Tag. Pity-Threshold 25 (Hard-Pity), Soft-Pity ab Spin 15 (schrittweise Jackpot-Chance). `GetDropRates()` für Compliance. |
 | `IBattlePassService` / `BattlePassService` | 30-Tier Saison, XP-basiert, Free/Premium-Track. XP-Boost via Hybridtimer. |
 | `IDailyAchievementsService` / `DailyAchievementsService` | 3 tägliche Mini-Ziele aus 5er-Pool (200 Coins je), Mitternacht-Lokal-Reset, deterministisch via Tages-ID. |

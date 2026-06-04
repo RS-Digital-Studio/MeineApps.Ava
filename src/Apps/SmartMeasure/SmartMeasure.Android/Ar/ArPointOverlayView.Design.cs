@@ -64,6 +64,12 @@ public sealed partial class ArPointOverlayView
     private readonly global::Android.Graphics.Path _offScreenArrowPath = new();
     private Paint _offScreenArrowPaint = null!;
 
+    // 3D-Marker: Bodenschatten, Höhen-Stab, Marker-Nummer/Label (zentriert).
+    private Paint _groundShadowPaint = null!;
+    private Paint _heightStickPaint = null!;
+    private Paint _markerNumPaint = null!;
+    private Paint _markerLabelPaint = null!;
+
     private void InitDesignPaints()
     {
         _panelFillPaint = new Paint(PaintFlags.AntiAlias) { Color = C.SurfaceBase };
@@ -76,6 +82,35 @@ public sealed partial class ArPointOverlayView
         _offScreenArrowPath.LineTo(-s * 0.7f, s * 0.7f);
         _offScreenArrowPath.LineTo(-s * 0.7f, -s * 0.7f);
         _offScreenArrowPath.Close();
+
+        _groundShadowPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(75, 0, 0, 0) };
+        _groundShadowPaint.SetStyle(Paint.Style.Fill);
+
+        _heightStickPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = C.Accent,
+            StrokeWidth = 2.5f * _density,
+            StrokeCap = Paint.Cap.Round,
+        };
+        _heightStickPaint.SetStyle(Paint.Style.Stroke);
+
+        _markerNumPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = C.TextPrimary,
+            TextSize = 10f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+        _markerNumPaint.SetTypeface(FontMedium);
+        _markerNumPaint.SetShadowLayer(2f * _density, 0f, 1f, Color.Argb(190, 0, 0, 0));
+
+        _markerLabelPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = C.TextPrimary,
+            TextSize = 11f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+        _markerLabelPaint.SetTypeface(FontMedium);
+        _markerLabelPaint.SetShadowLayer(3f * _density, 0f, 1f, Color.Argb(200, 0, 0, 0));
 
         _panelBorderPaint = new Paint(PaintFlags.AntiAlias)
         {

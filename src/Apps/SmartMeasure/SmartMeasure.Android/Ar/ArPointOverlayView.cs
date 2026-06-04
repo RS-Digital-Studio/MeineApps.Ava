@@ -25,9 +25,12 @@ public sealed partial class ArPointOverlayView : View
     private readonly List<ArPoint> _points;
     private readonly List<ArContour> _contours;
 
-    // Projizierte Screen-Positionen (vom GL-Thread aktualisiert)
-    private List<(float screenX, float screenY, int pointIndex)> _projectedPoints = [];
-    private List<(float screenX, float screenY, int contourIdx, int pointIdx)> _projectedContourPoints = [];
+    // Projizierte Screen-Positionen (vom GL-Thread aktualisiert) — mit Tiefe + Bodenprojektion
+    // für die räumliche (3D) Darstellung: perspektivische Marker, Höhen-Stäbe, Tiefensortierung.
+    private List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> _projectedPoints = [];
+    private List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> _projectedContourPoints = [];
+    // Wiederverwendete Sortier-Liste (Painter, fern→nah) — keine LINQ-Allokation im Hot-Path.
+    private readonly List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> _pointDrawOrder = [];
     private List<List<(float screenX, float screenY)>> _projectedPlanes = [];
     private ArOverlayState _state = new();
     private int _selectedIndex = -1;
@@ -121,7 +124,7 @@ public sealed partial class ArPointOverlayView : View
 
         InitDesignPaints(); // Design-System-Paints (Panel/Border/Schatten) — Tokens in ArPointOverlayView.Design.cs
 
-        _pointPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(255, 255, 107, 0) };
+        _pointPaint = new Paint(PaintFlags.AntiAlias) { Color = C.Accent };
         _pointPaint.SetStyle(Paint.Style.Fill);
 
         _pointOutlinePaint = new Paint(PaintFlags.AntiAlias)
@@ -360,8 +363,8 @@ public sealed partial class ArPointOverlayView : View
     }
 
     public void UpdateProjectedPositions(
-        List<(float screenX, float screenY, int pointIndex)> points,
-        List<(float screenX, float screenY, int contourIdx, int pointIdx)> contourPoints)
+        List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> points,
+        List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> contourPoints)
     {
         _projectedPoints = points;
         _projectedContourPoints = contourPoints;
@@ -658,7 +661,7 @@ public sealed partial class ArPointOverlayView : View
                     paint);
             }
 
-            foreach (var (sx, sy, _, _) in sorted)
+            foreach (var (sx, sy, _, _, _) in sorted)
                 canvas.DrawCircle(sx, sy, pointRadius, _contourPointPaint);
 
             // Nummer am ersten Punkt für aktive Kontur
@@ -673,98 +676,129 @@ public sealed partial class ArPointOverlayView : View
     /// <summary>Dauer der Pop-In-Animation für neue Punkte in Millisekunden.</summary>
     private const int PointBornAnimationMs = 250;
 
+    /// <summary>Referenz-Tiefe (m) für die perspektivische Marker-Skalierung: ein Punkt in
+    /// dieser Entfernung wird in Normalgröße gezeichnet, näher = größer, ferner = kleiner.</summary>
+    private const float MarkerReferenceDepth = 2.5f;
+
     private void DrawPoints(Canvas canvas, float pointRadius)
     {
+        if (_projectedPoints.Count == 0) return;
+
         var nowUtc = DateTime.UtcNow;
         var anyAnimating = false;
 
-        foreach (var (sx, sy, idx) in _projectedPoints)
-        {
-            if (idx == _selectedIndex)
-                canvas.DrawCircle(sx, sy, pointRadius * 2f, _selectedPaint);
+        // Painter-Algorithmus: ferne Punkte zuerst, damit nahe Marker + Stäbe sie überdecken.
+        // 3D-Tiefenwirkung entsteht erst durch korrekte Zeichenreihenfolge.
+        _pointDrawOrder.Clear();
+        _pointDrawOrder.AddRange(_projectedPoints);
+        _pointDrawOrder.Sort(static (a, b) => b.depth.CompareTo(a.depth));
 
-            // Confidence-basierte Darstellung: niedrige Confidence → kleinerer/blassere Punkt
+        foreach (var (sx, sy, idx, depth, gx, gy, _) in _pointDrawOrder)
+        {
+            // Perspektive: nahe Punkte wirken groß, ferne klein. Begrenzt, damit ein Punkt
+            // direkt vor der Linse nicht den ganzen Screen einnimmt (1.9×) bzw. ferne Punkte
+            // noch antippbar bleiben (0.45×).
+            var depthScale = Math.Clamp(MarkerReferenceDepth / MathF.Max(depth, 0.3f), 0.45f, 1.9f);
+
             var confidence = 1f;
-            int hitQuality = 3;
             float stdDev = 0f;
             DateTime timestamp = nowUtc;
             if (idx < _points.Count)
             {
                 confidence = _points[idx].Confidence;
-                hitQuality = _points[idx].HitQuality;
                 stdDev = _points[idx].PositionStdDev;
                 timestamp = _points[idx].Timestamp;
             }
+            // Confidence-Ampel ersetzt das kryptische ~/?-HitQuality-Zeichen: grün/gelb/rot
+            // direkt als Marker-Outline-Ring (siehe unten).
+            var confColor = confidence >= 0.7f ? C.Good : confidence >= 0.45f ? C.Medium : C.Poor;
 
-            // Plan Kap. 4.12: Punkt-Radius nicht mit Confidence schrumpfen lassen — bei
-            // niedriger Confidence sonst kaum sichtbar (4.8 dp). Stattdessen Mindest-Radius
-            // halten (6 dp via 0.75 * pointRadius bei pointRadius=8dp) und Confidence über
-            // Outline-Stärke signalisieren (dünn = unsicher, dick = sicher).
-            var effectiveR = MathF.Max(pointRadius * 0.75f, pointRadius * (0.85f + 0.15f * confidence));
-            var alpha = (int)(255 * (0.5f + 0.5f * confidence));
-            // Outline-Stroke skaliert mit Confidence: 1.0 dp bei conf=0, 3.0 dp bei conf=1.
-            var outlineStroke = (1f + 2f * confidence) * _density;
+            var effectiveR = MathF.Max(pointRadius * 0.75f, pointRadius * (0.85f + 0.15f * confidence)) * depthScale;
 
-            // Pop-In-Animation: junge Punkte starten 2.2× groß und schrumpfen auf normalgröße.
-            // Ease-out-Quadratic. Dauer = PointBornAnimationMs.
+            // Pop-In-Animation: junge Punkte starten 2.2× groß und schrumpfen auf Normalgröße.
             var ageMs = (nowUtc - timestamp).TotalMilliseconds;
             if (ageMs >= 0 && ageMs < PointBornAnimationMs)
             {
                 var t = (float)(ageMs / PointBornAnimationMs);
                 var ease = 1f - (1f - t) * (1f - t); // Ease-out-Quadratic
-                var scale = 2.2f - 1.2f * ease;
-                effectiveR *= scale;
+                effectiveR *= 2.2f - 1.2f * ease;
                 anyAnimating = true;
             }
 
-            _pointPaint.Alpha = alpha;
-            canvas.DrawCircle(sx, sy, effectiveR, _pointPaint);
-            // Outline mit confidence-skaliertem Stroke — Plan Kap. 4.12.
-            var originalStroke = _pointOutlinePaint.StrokeWidth;
-            _pointOutlinePaint.StrokeWidth = outlineStroke;
-            canvas.DrawCircle(sx, sy, effectiveR, _pointOutlinePaint);
-            _pointOutlinePaint.StrokeWidth = originalStroke;
-            _pointPaint.Alpha = 255;
-
-            // Hit-Quality-Indikator: kleines Symbol oberhalb des Punktes
-            if (hitQuality < 3)
+            // ── 3D-Höhenbezug: Bodenschatten + Stab vom Boden zum Punkt ──────────────────
+            // Macht die Höhe über Grund räumlich lesbar (Punkt schwebt über seinem Schatten).
+            var stickPx = gy - sy;                          // >0 wenn Punkt über seiner Bodenprojektion
+            var hasStick = stickPx > 6f * _density;
+            if (hasStick)
             {
-                var qualityText = hitQuality == 2 ? "~" : "?";
-                canvas.DrawText(qualityText, sx - 3, sy - effectiveR - 4, _labelPaint);
+                // Bodenschatten: flache, perspektivisch gestauchte Ellipse am Fußpunkt.
+                var shW = effectiveR * 1.15f;
+                var shH = effectiveR * 0.42f;
+                canvas.DrawOval(gx - shW, gy - shH, gx + shW, gy + shH, _groundShadowPaint);
+
+                // Fußpunkt-Tick (kurze Querlinie am Boden) — verankert den Stab sichtbar.
+                _heightStickPaint.Color = WithAlpha(confColor, 130);
+                _heightStickPaint.StrokeWidth = MathF.Max(1.5f * _density, 2f * _density * depthScale);
+                canvas.DrawLine(gx - 5f * _density, gy, gx + 5f * _density, gy, _heightStickPaint);
+
+                // Höhen-Stab: Linie Boden → Punkt, in Confidence-Farbe.
+                _heightStickPaint.Color = WithAlpha(confColor, 210);
+                _heightStickPaint.StrokeWidth = MathF.Max(1.5f * _density, 2.5f * _density * depthScale);
+                canvas.DrawLine(gx, gy, sx, sy, _heightStickPaint);
             }
 
-            canvas.DrawText($"{idx + 1}", sx + effectiveR + 4, sy - 4, _labelPaint);
+            // ── Marker selbst ────────────────────────────────────────────────────────────
+            if (idx == _selectedIndex)
+                canvas.DrawCircle(sx, sy, effectiveR + 7f * _density, _selectedPaint);
 
-            if (idx < _points.Count)
+            canvas.DrawCircle(sx, sy, effectiveR, _pointPaint);
+
+            // Confidence-Ring statt weißer Outline: Farbe codiert Messqualität (Ampel).
+            var origColor = _pointOutlinePaint.Color;
+            var origStroke = _pointOutlinePaint.StrokeWidth;
+            _pointOutlinePaint.Color = confColor;
+            _pointOutlinePaint.StrokeWidth = MathF.Max(1.75f * _density, 2.5f * _density * depthScale);
+            canvas.DrawCircle(sx, sy, effectiveR, _pointOutlinePaint);
+            _pointOutlinePaint.Color = origColor;
+            _pointOutlinePaint.StrokeWidth = origStroke;
+
+            // Punkt-Nummer im Marker-Zentrum — bei sehr kleinen fernen Markern weglassen.
+            if (effectiveR >= 7f * _density)
+                canvas.DrawText($"{idx + 1}", sx, sy + 3.5f * _density, _markerNumPaint);
+
+            // Höhen-Delta am Stab-Kopf (relativ zum ersten Punkt) — die wichtigste 3D-Info,
+            // immer sichtbar (nicht nur bei Auswahl), aber bei winzigen fernen Markern gespart.
+            if (idx > 0 && idx < _points.Count && effectiveR >= 6f * _density)
+            {
+                var dh = _points[idx].Y - _points[0].Y;
+                if (MathF.Abs(dh) >= 0.02f)
+                {
+                    var text = dh > 0 ? $"+{dh:0.00} m" : $"−{MathF.Abs(dh):0.00} m";
+                    canvas.DrawText(text, sx, sy - effectiveR - 7f * _density, _markerLabelPaint);
+                }
+            }
+
+            // Progressive Disclosure: Label, σ und Kameradistanz nur am SELEKTIERTEN Punkt —
+            // hält die Szene ruhig, Details auf Abruf.
+            if (idx == _selectedIndex && idx < _points.Count)
             {
                 var p = _points[idx];
-
-                // Label
+                var ly = sy + effectiveR + 16f * _density;
                 if (!string.IsNullOrEmpty(p.Label))
-                    canvas.DrawText(p.Label!, sx + effectiveR + 4, sy + 14 * _density, _labelPaint);
-
-                // Höhen-Delta-Label (relativ zum ersten Punkt)
-                if (idx > 0 && _points.Count > 0)
                 {
-                    var dh = p.Y - _points[0].Y;
-                    if (MathF.Abs(dh) >= 0.02f)
-                    {
-                        var text = dh > 0 ? $"+ {dh:F2}m" : $"- {MathF.Abs(dh):F2}m";
-                        canvas.DrawText(text, sx + effectiveR + 4, sy + 28 * _density, _labelPaint);
-                    }
+                    canvas.DrawText(p.Label!, sx, ly, _markerLabelPaint);
+                    ly += 15f * _density;
                 }
-
-                // StdDev-Label (Messgenauigkeit) — nur zeigen wenn nennenswert
                 if (stdDev > 0.005f)
                 {
-                    var sigmaText = $"±{stdDev * 100:F1}cm";
-                    canvas.DrawText(sigmaText, sx + effectiveR + 4, sy + 42 * _density, _labelPaint);
+                    canvas.DrawText($"±{stdDev * 100:F1} cm", sx, ly, _markerLabelPaint);
+                    ly += 15f * _density;
                 }
+                canvas.DrawText($"{depth:0.0} m", sx, ly, _markerLabelPaint);
             }
         }
 
         // Solange Pop-In-Animation läuft, alle 16ms neu zeichnen (60fps).
-        // Frame-Updates vom GL-Thread sind nicht garantiert wenn Tracking pausiert.
         if (anyAnimating)
             PostInvalidateDelayed(16);
     }

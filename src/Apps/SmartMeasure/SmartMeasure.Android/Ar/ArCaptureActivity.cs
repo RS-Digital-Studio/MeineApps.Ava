@@ -255,8 +255,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly BoundedStack<IArAction> _redoStack = new(MaxUndoStackSize);
 
     // Screen-Positionen der projizierten Punkte (wird pro Frame aktualisiert)
-    private readonly List<(float screenX, float screenY, int pointIndex)> _projectedPoints = [];
-    private readonly List<(float screenX, float screenY, int contourIdx, int pointIdx)> _projectedContourPoints = [];
+    // 3D-Projektion: zusätzlich Tiefe (depth) + Bodenprojektion (groundX/Y) + Welt-Höhe pro Punkt
+    // — für perspektivische Marker-Skalierung, Höhen-Stäbe und Tiefensortierung im Overlay.
+    private readonly List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> _projectedPoints = [];
+    private readonly List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> _projectedContourPoints = [];
+    private readonly ArPoint _groundProbe = new(); // wiederverwendet für Bodenprojektion (GL-Thread-only)
 
     // UI-Referenzen
     private TextView? _modeText;
@@ -1322,7 +1325,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             for (var i = 0; i < _projectedPoints.Count; i++)
             {
-                var (px, py, _) = _projectedPoints[i];
+                var (px, py, _, _, _, _, _) = _projectedPoints[i];
                 var dx = screenX - px;
                 var dy = screenY - py;
                 var dist = dx * dx + dy * dy;
@@ -1340,7 +1343,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             for (var i = 0; i < _projectedContourPoints.Count; i++)
             {
-                var (px, py, cIdx, pIdx) = _projectedContourPoints[i];
+                var (px, py, cIdx, pIdx, _) = _projectedContourPoints[i];
                 var dx = screenX - px;
                 var dy = screenY - py;
                 var dist = dx * dx + dy * dy;
@@ -2932,10 +2935,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Reusable Builder fuer Einzelpunkt-Projektionen. Wird unter _dataLock befuellt,
     /// dann atomar in _projectedPoints uebernommen — verhindert Per-Frame
     /// <c>new List&lt;...&gt;()</c>-Allocations (Plan Kap. 4.8). GL-Thread-only.</summary>
-    private readonly List<(float screenX, float screenY, int pointIndex)> _projectedPointsBuilder = [];
+    private readonly List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> _projectedPointsBuilder = [];
 
     /// <summary>Reusable Builder fuer Kontur-Punkt-Projektionen (analog Builder oben).</summary>
-    private readonly List<(float screenX, float screenY, int contourIdx, int pointIdx)> _projectedContourPointsBuilder = [];
+    private readonly List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> _projectedContourPointsBuilder = [];
 
     /// <summary>Reusable Builder fuer Tape-Measure-Punkte (Plan-Kap. 5.3) — Screen-Koordinaten
     /// in Reihenfolge ihrer Tap-Erfassung.</summary>
@@ -2969,22 +2972,32 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Punkte-Snapshot unter Lock erstellen (GL-Thread liest, UI-Thread schreibt)
         lock (_dataLock)
         {
-            // Einzelpunkte projizieren
+            // Einzelpunkte projizieren — inkl. Tiefe + Bodenprojektion (Höhen-Stäbe/Schatten).
+            var gpY = _groundPlaneYSet ? _groundPlaneYValue : (float?)null;
             for (var i = 0; i < _points.Count; i++)
             {
-                var screen = WorldToScreen(_points[i], _mvpMatrixScratch);
-                if (screen.HasValue)
-                    _projectedPointsBuilder.Add((screen.Value.x, screen.Value.y, i));
+                var p = _points[i];
+                var screen = WorldToScreen(p, _mvpMatrixScratch);
+                if (!screen.HasValue) continue;
+                // Fußpunkt = der Punkt auf die Boden-Ebene heruntergesetzt (für den Höhen-Stab).
+                float gx = screen.Value.x, gy = screen.Value.y;
+                if (gpY is { } y && p.Y - y > 0.03f)
+                {
+                    _groundProbe.X = p.X; _groundProbe.Y = y; _groundProbe.Z = p.Z;
+                    var gs = WorldToScreen(_groundProbe, _mvpMatrixScratch);
+                    if (gs.HasValue) { gx = gs.Value.x; gy = gs.Value.y; }
+                }
+                _projectedPointsBuilder.Add((screen.Value.x, screen.Value.y, i, screen.Value.depth, gx, gy, p.Y));
             }
 
-            // Kontur-Punkte projizieren
+            // Kontur-Punkte projizieren (mit Tiefe für Perspektiv-Strichbreite)
             for (var ci = 0; ci < _contours.Count; ci++)
             {
                 for (var pi = 0; pi < _contours[ci].Points.Count; pi++)
                 {
                     var screen = WorldToScreen(_contours[ci].Points[pi], _mvpMatrixScratch);
                     if (screen.HasValue)
-                        _projectedContourPointsBuilder.Add((screen.Value.x, screen.Value.y, ci, pi));
+                        _projectedContourPointsBuilder.Add((screen.Value.x, screen.Value.y, ci, pi, screen.Value.depth));
                 }
             }
 
@@ -2995,7 +3008,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 {
                     var screen = WorldToScreen(_activeContour.Points[pi], _mvpMatrixScratch);
                     if (screen.HasValue)
-                        _projectedContourPointsBuilder.Add((screen.Value.x, screen.Value.y, -1, pi));
+                        _projectedContourPointsBuilder.Add((screen.Value.x, screen.Value.y, -1, pi, screen.Value.depth));
                 }
             }
 
@@ -3044,8 +3057,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Overlay auf UI-Thread aktualisieren. Die Builder leben auf dem GL-Thread weiter —
         // wir kopieren NUR einmal in eine Übergabe-Liste statt zweifach (vorher: erst Builder,
         // dann eine zusaetzliche Snapshot-Copy unter dem _projectedPoints-Lock).
-        var ptsForUi = new List<(float, float, int)>(_projectedPointsBuilder);
-        var cPtsForUi = new List<(float, float, int, int)>(_projectedContourPointsBuilder);
+        var ptsForUi = new List<(float, float, int, float, float, float, float)>(_projectedPointsBuilder);
+        var cPtsForUi = new List<(float, float, int, int, float)>(_projectedContourPointsBuilder);
 
         RunOnUiThread(() =>
         {
@@ -3058,7 +3071,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// Einzelnen 3D-Punkt in Screen-Koordinaten umrechnen.
     /// Gibt null zurueck wenn der Punkt hinter der Kamera liegt.
     /// </summary>
-    private (float x, float y)? WorldToScreen(ArPoint point, float[] mvpMatrix)
+    private (float x, float y, float depth)? WorldToScreen(ArPoint point, float[] mvpMatrix)
     {
         // Homogene Koordinaten
         var clipX = mvpMatrix[0] * point.X + mvpMatrix[4] * point.Y + mvpMatrix[8] * point.Z + mvpMatrix[12];
@@ -3076,7 +3089,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var screenX = (ndcX + 1.0f) * 0.5f * _viewportWidth;
         var screenY = (1.0f - ndcY) * 0.5f * _viewportHeight; // Y invertiert
 
-        return (screenX, screenY);
+        // clipW ≈ perspektivische Tiefe (Kamera-Distanz entlang Blickachse) — für die räumliche
+        // Darstellung (Perspektiv-Skalierung + Tiefensortierung). War bisher nur der Clip-Test.
+        return (screenX, screenY, clipW);
     }
 
     /// <summary>Erkannte ARCore-Planes in Screen-Koordinaten projizieren</summary>
@@ -4548,7 +4563,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 if (ls is { } lsv && lsv.x >= 0 && lsv.x <= _viewportWidth
                     && lsv.y >= 0 && lsv.y <= _viewportHeight)
                 {
-                    liveSegFromScreen = lsv;
+                    liveSegFromScreen = (lsv.x, lsv.y);
                     showLiveSegment = true;
                 }
                 else if (ls is { } off)
@@ -4571,7 +4586,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     foreach (var rc in _rectangleCorners)
                     {
                         var s = WorldToScreen(rc, _mvpMatrixScratch);
-                        if (s.HasValue) rectCornerScreen.Add(s.Value);
+                        if (s.HasValue) rectCornerScreen.Add((s.Value.x, s.Value.y));
                     }
                 }
 
@@ -4589,7 +4604,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                             var s = WorldToScreen(
                                 new ArPoint { X = corner.X, Y = corner.Y, Z = corner.Z },
                                 _mvpMatrixScratch);
-                            if (s.HasValue) pts.Add(s.Value);
+                            if (s.HasValue) pts.Add((s.Value.x, s.Value.y));
                         }
                         // Nur als gueltige Vorschau werten, wenn alle vier Ecken im Bild liegen.
                         if (pts.Count == 4) rectPreviewScreen = pts;

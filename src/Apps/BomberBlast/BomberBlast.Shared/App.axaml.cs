@@ -402,32 +402,31 @@ public partial class App : Application
         // Premium Services (Ads, Purchases)
         services.AddMeineAppsPremium();
 
-        // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
-        if (RewardedAdServiceFactory != null)
-            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
-
-        // Android-Override: Echte Google Play Billing statt Stub
-        if (PurchaseServiceFactory != null)
-            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+        // Android-Override: Echte Rewarded Ads + Google Play Billing statt Desktop-Defaults.
+        // WICHTIG (Avalonia 12): Factory-Pruefung MUSS lazy IM Resolve-Lambda passieren (gleiches
+        // ?.Invoke(sp) ?? Fallback-Muster wie Push/RemoteConfig weiter unten), NICHT als Build-Zeit-
+        // Guard. ConfigureServices laeuft in AvaloniaAndroidApplication.OnCreate VOR
+        // MainActivity.OnCreate, wo die Factories gesetzt werden — ein Build-Zeit-Guard brennt sonst
+        // den Desktop-Simulator ein: kein Ad-Video, Belohnung trotzdem; IAP tot.
+        services.AddSingleton<IRewardedAdService>(sp =>
+            RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
+        services.AddSingleton<IPurchaseService>(sp =>
+            PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
-        // Google Play Games Services
-        if (PlayGamesServiceFactory != null)
-            services.AddSingleton<IPlayGamesService>(sp => PlayGamesServiceFactory!(sp));
-        else
-            services.AddSingleton<IPlayGamesService, NullPlayGamesService>();
+        // Google Play Games Services (lazy IM Lambda, siehe Avalonia-12-Hinweis oben)
+        services.AddSingleton<IPlayGamesService>(sp =>
+            PlayGamesServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<NullPlayGamesService>(sp));
 
         // Game Services
         services.AddSingleton<IProgressService, ProgressService>();
         services.AddSingleton<IHighScoreService, HighScoreService>();
-        // Android-Override: Echte Sounds statt NullSoundService
-        if (SoundServiceFactory != null)
-            services.AddSingleton<ISoundService>(sp => SoundServiceFactory!(sp));
-        else
-            services.AddSingleton<ISoundService, NullSoundService>();
+        // Android-Override: Echte Sounds statt NullSoundService (lazy IM Lambda, siehe Hinweis oben)
+        services.AddSingleton<ISoundService>(sp =>
+            SoundServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<NullSoundService>(sp));
         services.AddSingleton<IGameStyleService, GameStyleService>();
         services.AddSingleton<ICoinService, CoinService>();
         services.AddSingleton<IGemService, GemService>();
@@ -451,11 +450,9 @@ public partial class App : Application
         services.AddSingleton<IFirebaseService, FirebaseService>();
         services.AddSingleton<ILeagueService, LeagueService>();
 
-        // Cloud Save (Android-Override: Echte Google Drive Cloud Saves statt NullCloudSaveService)
-        if (CloudSaveServiceFactory != null)
-            services.AddSingleton<ICloudSaveService>(sp => CloudSaveServiceFactory!(sp));
-        else
-            services.AddSingleton<ICloudSaveService, NullCloudSaveService>();
+        // Cloud Save (Android-Override lazy IM Lambda, siehe Avalonia-12-Hinweis oben)
+        services.AddSingleton<ICloudSaveService>(sp =>
+            CloudSaveServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<NullCloudSaveService>(sp));
 
         services.AddSingleton<IStarterPackService, StarterPackService>();
         services.AddSingleton<IRotatingDealsService, RotatingDealsService>();
@@ -524,11 +521,9 @@ public partial class App : Application
         //.1  — BottomTabHub (Foundation, UI-Refactor deferred).
         services.AddSingleton<IBottomTabHub, BottomTabHub>();
 
-        // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
-        if (VibrationServiceFactory != null)
-            services.AddSingleton<IVibrationService>(sp => VibrationServiceFactory!(sp));
-        else
-            services.AddSingleton<IVibrationService, NullVibrationService>();
+        // Vibration (Android-Override lazy IM Lambda, siehe Avalonia-12-Hinweis oben)
+        services.AddSingleton<IVibrationService>(sp =>
+            VibrationServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<NullVibrationService>(sp));
         services.AddSingleton<IGameTrackingService, GameTrackingService>();
         services.AddSingleton<IGameAssetService, GameAssetService>();
         services.AddSingleton<SoundManager>();

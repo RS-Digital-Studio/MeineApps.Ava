@@ -265,13 +265,18 @@ public partial class App : Application
         // Premium Services (Ads, Purchases)
         services.AddMeineAppsPremium();
 
-        // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
-        if (RewardedAdServiceFactory != null)
-            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
-
-        // Android-Override: Echte Google Play Billing statt Stub
-        if (PurchaseServiceFactory != null)
-            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+        // Android-Override: Echte Rewarded Ads + Google Play Billing statt Desktop-Defaults.
+        // WICHTIG (Avalonia 12): Die Factory-Pruefung MUSS lazy IM Resolve-Lambda passieren, NICHT
+        // als Build-Zeit-Guard (if Factory != null). ConfigureServices + BuildServiceProvider laufen
+        // in AvaloniaAndroidApplication.OnCreate (Application-Ebene) VOR MainActivity.OnCreate, wo die
+        // Platform-Factories gesetzt werden. Ein Build-Zeit-Guard brennt sonst dauerhaft den
+        // Desktop-Simulator/-Stub ein: RewardedAdService liefert true OHNE Video (Belohnung trotzdem),
+        // IAP/Restore tot. Das Lambda liest die Factory erst beim ersten Resolve (MainViewModel-Graph
+        // in der Loading-Pipeline, via Dispatcher.UIThread.InvokeAsync) — also NACH der Setzung.
+        services.AddSingleton<IRewardedAdService>(sp =>
+            RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
+        services.AddSingleton<IPurchaseService>(sp =>
+            PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>
@@ -303,21 +308,17 @@ public partial class App : Application
         // v2.0.36: Mini-Game-Mastery (Bronze/Silver/Gold pro Mini-Game-Type) — subscribed
         // direkt auf IGameStateService.PerfectRatingIncremented im Constructor.
         services.AddSingleton<IMiniGameMasteryService, MiniGameMasteryService>();
-        services.AddSingleton<IAudioService, AudioService>();
-        services.AddSingleton<INotificationService, NotificationService>();
-        services.AddSingleton<IPlayGamesService, PlayGamesService>();
 
-        // Android-Override: Plattformspezifischer Audio-Service
-        if (AudioServiceFactory != null)
-            services.AddSingleton<IAudioService>(sp => AudioServiceFactory!(sp));
-
-        // Android-Override: Plattformspezifischer Notification-Service
-        if (NotificationServiceFactory != null)
-            services.AddSingleton<INotificationService>(sp => NotificationServiceFactory!(sp));
-
-        // Android-Override: Google Play Games Service
-        if (PlayGamesServiceFactory != null)
-            services.AddSingleton<IPlayGamesService>(sp => PlayGamesServiceFactory!(sp));
+        // Android-Override (lazy IM Lambda, siehe Avalonia-12-Hinweis beim RewardedAd-Block oben):
+        // Audio/Notification/Play-Games fallen sonst auf ihre Desktop-Defaults zurueck, weil der
+        // Build-Zeit-Guard zur ConfigureServices-Zeit greift, bevor MainActivity.OnCreate die
+        // Factories setzt. Fallback via ActivatorUtilities (konstruiert den Default-Typ DI-aufgeloest).
+        services.AddSingleton<IAudioService>(sp =>
+            AudioServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<AudioService>(sp));
+        services.AddSingleton<INotificationService>(sp =>
+            NotificationServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<NotificationService>(sp));
+        services.AddSingleton<IPlayGamesService>(sp =>
+            PlayGamesServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PlayGamesService>(sp));
 
         services.AddSingleton<IDailyRewardService, DailyRewardService>();
         services.AddSingleton<IIncomeCalculatorService, IncomeCalculatorService>();

@@ -8,8 +8,14 @@ public interface IBleService
     /// <summary>Ist der Stab verbunden?</summary>
     bool IsConnected { get; }
 
-    /// <summary>Aktueller Stab-Status</summary>
+    /// <summary>Aktueller Stab-Status (Live-Objekt, für UI-Binding). Wird vom BLE-Thread
+    /// feldweise mutiert — für threadsichere Mehrfeld-Lesungen <see cref="GetStateSnapshot"/> nutzen.</summary>
     StickState CurrentState { get; }
+
+    /// <summary>Liefert eine in sich konsistente Momentaufnahme des Stab-Status. Anders als
+    /// <see cref="CurrentState"/> garantiert die Kopie, dass alle Felder (Lat/Lon/Alt/Fix)
+    /// aus DEMSELBEN BLE-Paket stammen — verhindert verzahnte Reads über die Thread-Grenze.</summary>
+    StickState GetStateSnapshot();
 
     /// <summary>Status hat sich geaendert</summary>
     event Action<StickState>? StateChanged;

@@ -45,6 +45,8 @@ public sealed class MockBleService : IBleService, IDisposable
     public bool IsConnected => _isConnected;
     public StickState CurrentState { get; } = new();
 
+    public StickState GetStateSnapshot() => CurrentState.Snapshot();
+
     public event Action<StickState>? StateChanged;
     public event Action<SurveyPoint>? PointReceived;
     public event Action<double, double, double>? PositionUpdated;

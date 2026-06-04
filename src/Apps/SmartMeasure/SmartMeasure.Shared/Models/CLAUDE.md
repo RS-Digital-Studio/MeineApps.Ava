@@ -15,7 +15,7 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `GardenElement.cs` | SQLite-Entity: Polygon/Linie mit `PointsJson` (v2: WGS84, v1: legacy UTM). `LocalPoints` ist `[Ignore]` + transient. `GardenElementType`-Enum: Weg, Beet, Rasen, Mauer, Zaun, Terrasse, Grenze, Gebäude, Wasser, Kante |
 | `TerrainMesh.cs` | Immutable Delaunay-Gitter: Vertex-Arrays X/Y/Z, Triangle-Index-Array, vorberechnete Normalen, Bounding Box. `ContourLine` (Isohypse) ebenfalls in dieser Datei |
 | `StakeoutTarget.cs` | Absteck-Ziel (Lat/Lon/Altitude/Label). `ObservableObject` + `[ObservableProperty]` auf `IsReached` + `BestDistance` (live UI-Update). `StakeoutTargetSource`-Enum: `SurveyPoint` / `GardenElement` |
-| `StickState.cs` | BLE-Snapshot: Fix-Quality, Accuracy, Tilt, Battery, MagAccuracy, NtripStatus, SatelliteCount, laufende Position (Lat/Lon/Altitude nullable) |
+| `StickState.cs` | BLE-Snapshot: Fix-Quality, Accuracy, Tilt, Battery, MagAccuracy, NtripStatus, SatelliteCount, laufende Position (Lat/Lon/Altitude nullable). `Snapshot()` = flache Kopie für threadsichere Mehrfeld-Lesungen (der BLE-Thread mutiert das Live-Objekt feldweise) |
 | `NtripConfig.cs` | NTRIP-Konfiguration: Server, Port, Mountpoint, Username, Password, `IsOwnBase`, ProfileName |
 | `MaterialEstimate.cs` | Berechneter Materialbedarf: `Material`-String, Menge, Einheit, `QuantityWithSafety` (+15 %). Kein Typ-Enum — `Material` ist Freitext |
 | `ArPoint.cs` | AR-Messpunkt: ARCore-Koordinaten + Confidence + SemanticLabel (`ArSemanticLabel`-Enum) + PhotoPath + optionale Geo-Koordinaten (VPS) + Tracking-Metadaten |

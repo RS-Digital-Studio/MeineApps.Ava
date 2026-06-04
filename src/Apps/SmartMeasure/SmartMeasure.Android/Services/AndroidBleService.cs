@@ -73,6 +73,11 @@ public sealed class AndroidBleService : IBleService, IDisposable
     public bool IsConnected => _isConnected;
     public StickState CurrentState { get; } = new();
 
+    public StickState GetStateSnapshot()
+    {
+        lock (_stateLock) return CurrentState.Snapshot();
+    }
+
     public event Action<StickState>? StateChanged;
     public event Action<SurveyPoint>? PointReceived;
     public event Action<double, double, double>? PositionUpdated;
@@ -447,10 +452,14 @@ public sealed class AndroidBleService : IBleService, IDisposable
         var altMsl = _geoidService.EllipsoidToGeoid(lat, lon, altEllipsoid);
 
         // Position auch im CurrentState ablegen (Plan 3.1 RTK-AR-Fusion) — die AR-Activity
-        // konsumiert CurrentState ohne den Event abonnieren zu müssen.
-        CurrentState.Latitude = lat;
-        CurrentState.Longitude = lon;
-        CurrentState.Altitude = altMsl;
+        // konsumiert CurrentState ohne den Event abonnieren zu müssen. Unter _stateLock, damit
+        // GetStateSnapshot() Lat/Lon/Alt nie verzahnt mit einem halben Update liest.
+        lock (_stateLock)
+        {
+            CurrentState.Latitude = lat;
+            CurrentState.Longitude = lon;
+            CurrentState.Altitude = altMsl;
+        }
 
         PositionUpdated?.Invoke(lat, lon, altMsl);
     }
@@ -555,13 +564,16 @@ public sealed class AndroidBleService : IBleService, IDisposable
     {
         if (data.Length < 13) return;
         var span = data.AsSpan();
-        CurrentState.BatteryLevel = data[0];
-        CurrentState.FixQuality = data[1];
-        CurrentState.SatelliteCount = data[2];
-        CurrentState.NtripStatus = data[3];
-        CurrentState.MagAccuracy = data[4];
-        CurrentState.HorizontalAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(5, 4));
-        CurrentState.VerticalAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(9, 4));
+        lock (_stateLock)
+        {
+            CurrentState.BatteryLevel = data[0];
+            CurrentState.FixQuality = data[1];
+            CurrentState.SatelliteCount = data[2];
+            CurrentState.NtripStatus = data[3];
+            CurrentState.MagAccuracy = data[4];
+            CurrentState.HorizontalAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(5, 4));
+            CurrentState.VerticalAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(9, 4));
+        }
 
         StateChanged?.Invoke(CurrentState);
         FixQualityChanged?.Invoke(CurrentState.FixQuality);

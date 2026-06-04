@@ -57,4 +57,24 @@ public class StickState
         1 => "GPS",
         _ => "KEIN FIX"
     };
+
+    /// <summary>Erzeugt eine flache Kopie. Der BLE-Service mutiert das Live-Objekt feldweise
+    /// auf dem GATT-Callback-Thread; Konsumenten (z.B. die AR-Activity) holen sich über
+    /// <c>IBleService.GetStateSnapshot()</c> eine in sich konsistente Momentaufnahme statt
+    /// die einzelnen <c>double?</c>-Felder einzeln (und damit potenziell verzahnt) zu lesen.</summary>
+    public StickState Snapshot() => new()
+    {
+        IsConnected = IsConnected,
+        BatteryLevel = BatteryLevel,
+        FixQuality = FixQuality,
+        HorizontalAccuracy = HorizontalAccuracy,
+        VerticalAccuracy = VerticalAccuracy,
+        SatelliteCount = SatelliteCount,
+        TiltAngle = TiltAngle,
+        NtripStatus = NtripStatus,
+        MagAccuracy = MagAccuracy,
+        Latitude = Latitude,
+        Longitude = Longitude,
+        Altitude = Altitude,
+    };
 }

@@ -12,7 +12,7 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 |-----------|------|-------|
 | `IAppPaths` | `AppPaths` (Desktop), `AndroidAppPaths` | Sandbox-sichere Pfade |
 | `IHardwareModeService` | `HardwareModeService` | Adaptiver Betriebsmodus AR-First vs RTK (`ShowRtkUi`). Persistiert Erst-Verbindung, `Changed`-Event vom BLE-Thread. Details → [App-CLAUDE.md](../../CLAUDE.md) "Adaptiver Betriebsmodus" |
-| `IBleService` | `MockBleService` (Desktop), `AndroidBleService` | BLE-Kommunikation zum Rover-Stab |
+| `IBleService` | `MockBleService` (Desktop), `AndroidBleService` | BLE-Kommunikation zum Rover-Stab. `GetStateSnapshot()` liefert eine in sich konsistente Kopie (alle Felder aus DEMSELBEN BLE-Paket) für threadsichere Mehrfeld-Lesungen — `CurrentState` ist das vom GATT-Thread feldweise mutierte Live-Objekt (nur für UI-Binding) |
 | `IArCaptureService` | `MockArCaptureService` (Desktop), `AndroidArCaptureService` | AR-Kamera-Erfassung |
 | `IArTransferService` | `ArTransferService` | AR-Punkte → SurveyPoints (GPS-Fusion, Heading-Rotation, Geoid) |
 | `IMeasurementService` | `MeasurementService` | Punkt-Verwaltung, Abstände, Flächen. `ReplacePoints` + `PointsReset`-Event |

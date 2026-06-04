@@ -158,12 +158,14 @@ public partial class App : Application
         services.AddMeineAppsPremium();
 
         // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
-        if (RewardedAdServiceFactory != null)
-            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+        // lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve (nach MainActivity) gelesen
+        services.AddSingleton<IRewardedAdService>(sp =>
+            RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
 
         // Android-Override: Echte Google Play Billing statt Stub
-        if (PurchaseServiceFactory != null)
-            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+        // lazy, Avalonia-12-Factory-Timing
+        services.AddSingleton<IPurchaseService>(sp =>
+            PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>
@@ -177,17 +179,15 @@ public partial class App : Application
         services.AddSingleton<IQuoteService, QuoteService>();
 
         // Export Services - Plattformspezifisch: Android setzt Factory, Desktop nutzt Default
-        if (FileShareServiceFactory != null)
-            services.AddSingleton(FileShareServiceFactory());
-        else
-            services.AddSingleton<IFileShareService, DesktopFileShareService>();
+        // lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve (nach MainActivity) gelesen
+        services.AddSingleton<IFileShareService>(sp =>
+            FileShareServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<DesktopFileShareService>(sp));
         services.AddSingleton<IMaterialExportService, MaterialExportService>();
 
         // Photo-Picker: Plattformspezifisch via Factory oder Desktop-Default
-        if (PhotoPickerServiceFactory != null)
-            services.AddSingleton(PhotoPickerServiceFactory());
-        else
-            services.AddSingleton<IPhotoPickerService, DesktopPhotoPickerService>();
+        // lazy, Avalonia-12-Factory-Timing
+        services.AddSingleton<IPhotoPickerService>(sp =>
+            PhotoPickerServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<DesktopPhotoPickerService>(sp));
 
         // Engine
         services.AddSingleton<CraftEngine>();

@@ -135,12 +135,14 @@ public partial class App : Application
         services.AddMeineAppsPremium();
 
         // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
-        if (RewardedAdServiceFactory != null)
-            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+        // (lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen)
+        services.AddSingleton<IRewardedAdService>(sp =>
+            RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
 
         // Android-Override: Echte Google Play Billing statt Stub
-        if (PurchaseServiceFactory != null)
-            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+        // (lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen)
+        services.AddSingleton<IPurchaseService>(sp =>
+            PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 
         // Asset-Delivery (Firebase Storage → lokaler Cache)
         services.AddSingleton<IAssetDeliveryService, AssetDeliveryService>();
@@ -168,10 +170,9 @@ public partial class App : Application
         services.AddSingleton<DailyService>();
 
         // Audio (Desktop-Stub, Android-Override via Factory)
-        if (AudioServiceFactory != null)
-            services.AddSingleton<IAudioService>(sp => AudioServiceFactory!(sp));
-        else
-            services.AddSingleton<IAudioService, AudioService>();
+        // (lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen)
+        services.AddSingleton<IAudioService>(sp =>
+            AudioServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<AudioService>(sp));
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

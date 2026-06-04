@@ -147,12 +147,14 @@ public partial class App : Application
         services.AddMeineAppsPremium();
 
         // Android-Überschreibung: Echte Rewarded Ads statt Desktop-Simulator
-        if (RewardedAdServiceFactory != null)
-            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+        // lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen
+        services.AddSingleton<IRewardedAdService>(sp =>
+            RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
 
         // Android-Überschreibung: Echte Google Play Billing statt Stub
-        if (PurchaseServiceFactory != null)
-            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+        // lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen
+        services.AddSingleton<IPurchaseService>(sp =>
+            PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 
         // Lokalisierung
         services.AddSingleton<ILocalizationService>(sp =>
@@ -161,10 +163,9 @@ public partial class App : Application
         // App-Services
         services.AddSingleton<IFileDialogService, FileDialogService>();
         // Plattformspezifisch: Android setzt Factory, Desktop nutzt Default
-        if (FileShareServiceFactory != null)
-            services.AddSingleton(FileShareServiceFactory());
-        else
-            services.AddSingleton<IFileShareService, DesktopFileShareService>();
+        // lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen
+        services.AddSingleton<IFileShareService>(sp =>
+            FileShareServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<DesktopFileShareService>(sp));
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IExpenseService>(sp =>
             new ExpenseService(

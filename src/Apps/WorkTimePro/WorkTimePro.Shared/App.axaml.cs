@@ -193,22 +193,23 @@ public partial class App : Application
         services.AddMeineAppsPremium();
 
         // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
-        if (RewardedAdServiceFactory != null)
-            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+        // lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen (nach MainActivity)
+        services.AddSingleton<IRewardedAdService>(sp =>
+            RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
 
         // Android-Override: Echte Google Play Billing statt Stub
-        if (PurchaseServiceFactory != null)
-            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+        // lazy, Avalonia-12-Factory-Timing
+        services.AddSingleton<IPurchaseService>(sp =>
+            PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
         // Plattformspezifisch: Android setzt Factory, Desktop nutzt Default
-        if (FileShareServiceFactory != null)
-            services.AddSingleton(FileShareServiceFactory());
-        else
-            services.AddSingleton<IFileShareService, DesktopFileShareService>();
+        // lazy, Avalonia-12-Factory-Timing
+        services.AddSingleton<IFileShareService>(sp =>
+            FileShareServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<DesktopFileShareService>(sp));
 
         // App Services
         services.AddSingleton<IDatabaseService, DatabaseService>();
@@ -234,17 +235,15 @@ public partial class App : Application
         services.AddSingleton<IBackupService, BackupService>();
 
         // Notification + Reminder Services
-        if (NotificationServiceFactory != null)
-            services.AddSingleton(NotificationServiceFactory());
-        else
-            services.AddSingleton<INotificationService, DesktopNotificationService>();
+        // lazy, Avalonia-12-Factory-Timing
+        services.AddSingleton<INotificationService>(sp =>
+            NotificationServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<DesktopNotificationService>(sp));
         services.AddSingleton<IReminderService, ReminderService>();
 
         // Haptic Feedback (Desktop: NoOp, Android setzt via HapticServiceFactory)
-        if (HapticServiceFactory != null)
-            services.AddSingleton(HapticServiceFactory());
-        else
-            services.AddSingleton<IHapticService, NoOpHapticService>();
+        // lazy, Avalonia-12-Factory-Timing
+        services.AddSingleton<IHapticService>(sp =>
+            HapticServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<NoOpHapticService>(sp));
 
         // ViewModels (alle Singleton - MainVM hält Child-VMs per Constructor Injection)
         services.AddSingleton<WeekOverviewViewModel>();

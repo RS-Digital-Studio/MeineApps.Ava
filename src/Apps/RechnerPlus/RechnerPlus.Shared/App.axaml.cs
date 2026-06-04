@@ -130,11 +130,9 @@ public partial class App : Application
         services.AddSingleton<MeineApps.CalcLib.ExpressionParser>();
         services.AddSingleton<MeineApps.CalcLib.IHistoryService, MeineApps.CalcLib.HistoryService>();
 
-        // Haptic Feedback (Desktop: NoOp)
-        if (HapticServiceFactory != null)
-            services.AddSingleton(HapticServiceFactory);
-        else
-            services.AddSingleton<IHapticService>(new NoOpHapticService());
+        // Haptic Feedback (Desktop: NoOp) — lazy, Avalonia-12-Factory-Timing
+        services.AddSingleton<IHapticService>(sp =>
+            HapticServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<NoOpHapticService>(sp));
 
         // ViewModels (alle Singleton - werden von MainViewModel gehalten)
         services.AddSingleton<CalculatorViewModel>(sp =>

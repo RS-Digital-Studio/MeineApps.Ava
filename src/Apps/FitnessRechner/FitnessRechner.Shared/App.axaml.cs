@@ -170,27 +170,23 @@ public partial class App : Application
         // Premium Services (Ads, Purchases)
         services.AddMeineAppsPremium();
 
-        // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
-        if (RewardedAdServiceFactory != null)
-            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+        // Android-Override: Echte Rewarded Ads statt Desktop-Simulator (lazy, Avalonia-12-Factory-Timing)
+        services.AddSingleton<IRewardedAdService>(sp =>
+            RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
 
-        // Android-Override: Echte Google Play Billing statt Stub
-        if (PurchaseServiceFactory != null)
-            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+        // Android-Override: Echte Google Play Billing statt Stub (lazy, Avalonia-12-Factory-Timing)
+        services.AddSingleton<IPurchaseService>(sp =>
+            PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 
         services.AddSingleton<IScanLimitService, ScanLimitService>();
 
-        // File Share Service (Desktop: Datei oeffnen, Android: Share Intent)
-        if (FileShareServiceFactory != null)
-            services.AddSingleton<IFileShareService>(_ => FileShareServiceFactory!());
-        else
-            services.AddSingleton<IFileShareService, DesktopFileShareService>();
+        // File Share Service (Desktop: Datei oeffnen, Android: Share Intent) (lazy, Avalonia-12-Factory-Timing)
+        services.AddSingleton<IFileShareService>(sp =>
+            FileShareServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<DesktopFileShareService>(sp));
 
-        // Barcode Service (Desktop: Fallback ohne Kamera, Android: CameraX + ML Kit)
-        if (BarcodeServiceFactory != null)
-            services.AddSingleton<IBarcodeService>(_ => BarcodeServiceFactory!());
-        else
-            services.AddSingleton<IBarcodeService, DesktopBarcodeService>();
+        // Barcode Service (Desktop: Fallback ohne Kamera, Android: CameraX + ML Kit) (lazy, Avalonia-12-Factory-Timing)
+        services.AddSingleton<IBarcodeService>(sp =>
+            BarcodeServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<DesktopBarcodeService>(sp));
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>
@@ -208,21 +204,15 @@ public partial class App : Application
         services.AddSingleton<IFastingService, FastingService>();
         services.AddSingleton<IActivityService, ActivityService>();
 
-        // Plattform-Services (Haptic, Sound, Reminders)
-        if (HapticServiceFactory != null)
-            services.AddSingleton<IHapticService>(_ => HapticServiceFactory!());
-        else
-            services.AddSingleton<IHapticService, NoOpHapticService>();
+        // Plattform-Services (Haptic, Sound, Reminders) (lazy, Avalonia-12-Factory-Timing)
+        services.AddSingleton<IHapticService>(sp =>
+            HapticServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<NoOpHapticService>(sp));
 
-        if (SoundServiceFactory != null)
-            services.AddSingleton<IFitnessSoundService>(_ => SoundServiceFactory!());
-        else
-            services.AddSingleton<IFitnessSoundService, NoOpFitnessSoundService>();
+        services.AddSingleton<IFitnessSoundService>(sp =>
+            SoundServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<NoOpFitnessSoundService>(sp));
 
-        if (ReminderServiceFactory != null)
-            services.AddSingleton<IReminderService>(sp => ReminderServiceFactory!(sp));
-        else
-            services.AddSingleton<IReminderService, ReminderService>();
+        services.AddSingleton<IReminderService>(sp =>
+            ReminderServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<ReminderService>(sp));
 
         // ViewModels (Haupt-VMs als Singleton, Calculator-VMs als Transient)
         services.AddSingleton<MainViewModel>();

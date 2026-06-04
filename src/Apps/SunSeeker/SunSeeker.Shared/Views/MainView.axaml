@@ -35,12 +35,15 @@
             <Panel IsVisible="{Binding IsDashboardActive}">
                 <views:DashboardView DataContext="{Binding Dashboard}" />
             </Panel>
+            <Panel IsVisible="{Binding IsPowerActive}">
+                <views:LivePowerView DataContext="{Binding Power}" />
+            </Panel>
         </Grid>
 
         <!-- Tab-Bar -->
         <Border Grid.Row="1" Background="{DynamicResource BgSecondaryBrush}"
                 BorderBrush="{DynamicResource BgElevatedBrush}" BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="*,*">
+            <Grid ColumnDefinitions="*,*,*">
                 <Button Grid.Column="0" Classes="tab" Command="{Binding ShowAlignCommand}">
                     <Grid RowDefinitions="3,Auto">
                         <Border Grid.Row="0" Height="3" Width="40" CornerRadius="2"
@@ -55,7 +58,21 @@
                         </StackPanel>
                     </Grid>
                 </Button>
-                <Button Grid.Column="1" Classes="tab" Command="{Binding ShowDashboardCommand}">
+                <Button Grid.Column="1" Classes="tab" Command="{Binding ShowPowerCommand}">
+                    <Grid RowDefinitions="3,Auto">
+                        <Border Grid.Row="0" Height="3" Width="40" CornerRadius="2"
+                                Background="{DynamicResource PrimaryBrush}"
+                                IsVisible="{Binding IsPowerActive}" />
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <materialIcons:MaterialIcon Kind="FlashOutline" Width="24" Height="24"
+                                                        HorizontalAlignment="Center"
+                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Leistung" FontSize="12" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Button>
+                <Button Grid.Column="2" Classes="tab" Command="{Binding ShowDashboardCommand}">
                     <Grid RowDefinitions="3,Auto">
                         <Border Grid.Row="0" Height="3" Width="40" CornerRadius="2"
                                 Background="{DynamicResource PrimaryBrush}"

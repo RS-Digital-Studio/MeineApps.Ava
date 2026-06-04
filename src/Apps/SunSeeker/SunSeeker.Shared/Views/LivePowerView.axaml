@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:vm="using:SunSeeker.Shared.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="900"
+             x:Class="SunSeeker.Shared.Views.LivePowerView"
+             x:CompileBindings="True" x:DataType="vm:LivePowerViewModel"
+             Background="{DynamicResource BgPrimaryBrush}">
+
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{DynamicResource CardGradientBrush}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource CardRadius}" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Margin="{DynamicResource PagePadding}">
+
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,12">
+                <TextBlock Grid.Column="0" Text="SOLAR-LEISTUNG" FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="label" VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- Aktuelle Leistung gross -->
+            <Border Classes="card">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Aktuell" Classes="label" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding CurrentWattsText}" FontSize="48" FontWeight="Bold"
+                               Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- Demo-Hinweis -->
+            <Border Background="{DynamicResource BgElevatedBrush}" CornerRadius="{DynamicResource SmallRadius}"
+                    Padding="12,8" Margin="0,0,0,12" IsVisible="{Binding IsSimulated}">
+                <Grid ColumnDefinitions="Auto,*">
+                    <materialIcons:MaterialIcon Grid.Column="0" Kind="FlaskOutline" Width="18" Height="18"
+                                                Foreground="{DynamicResource InfoBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Margin="8,0,0,0" TextWrapping="Wrap" FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Text="Demo-Daten aus dem Sonnenstand. Die echte Anbindung an die Anker C2000 (Cloud-MQTT) folgt." />
+                </Grid>
+            </Border>
+
+            <!-- Trend-Chart -->
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Text="VERLAUF (letzte Minuten)" Classes="label" Margin="0,0,0,8" />
+                    <labs:SKCanvasView x:Name="ChartCanvas" Height="180" />
+                </StackPanel>
+            </Border>
+
+            <!-- Kennzahlen -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Border Grid.Column="0" Classes="card" Margin="0">
+                    <StackPanel>
+                        <TextBlock Text="Tagesertrag" Classes="label" />
+                        <TextBlock Text="{Binding TodayEnergyText}" FontSize="22" FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentLightBrush}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="card" Margin="0">
+                    <StackPanel>
+                        <TextBlock Text="Spitze heute" Classes="label" />
+                        <TextBlock Text="{Binding PeakWattsText}" FontSize="22" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

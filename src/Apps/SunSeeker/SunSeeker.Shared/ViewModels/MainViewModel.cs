@@ -10,17 +10,20 @@ namespace SunSeeker.Shared.ViewModels;
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
-    public MainViewModel(DashboardViewModel dashboard, AlignViewModel align)
+    public MainViewModel(DashboardViewModel dashboard, AlignViewModel align, LivePowerViewModel power)
     {
         Dashboard = dashboard;
         Align = align;
+        Power = power;
     }
 
     public DashboardViewModel Dashboard { get; }
     public AlignViewModel Align { get; }
+    public LivePowerViewModel Power { get; }
 
     [ObservableProperty] private bool _isAlignActive = true;
     [ObservableProperty] private bool _isDashboardActive;
+    [ObservableProperty] private bool _isPowerActive;
 
     public async Task InitializeAsync()
     {
@@ -33,6 +36,7 @@ public partial class MainViewModel : ObservableObject
     private void ShowAlign()
     {
         IsDashboardActive = false;
+        IsPowerActive = false;
         IsAlignActive = true;
     }
 
@@ -40,12 +44,27 @@ public partial class MainViewModel : ObservableObject
     private void ShowDashboard()
     {
         IsAlignActive = false;
+        IsPowerActive = false;
         IsDashboardActive = true;
+    }
+
+    [RelayCommand]
+    private void ShowPower()
+    {
+        IsAlignActive = false;
+        IsDashboardActive = false;
+        IsPowerActive = true;
     }
 
     partial void OnIsAlignActiveChanged(bool value)
     {
         if (value) Align.Activate();
         else Align.Deactivate();
+    }
+
+    partial void OnIsPowerActiveChanged(bool value)
+    {
+        if (value) Power.Activate();
+        else Power.Deactivate();
     }
 }

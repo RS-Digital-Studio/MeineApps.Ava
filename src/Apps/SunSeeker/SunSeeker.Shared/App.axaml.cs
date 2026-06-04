@@ -19,6 +19,9 @@ public class App : Application
     /// <summary>Plattform-spezifischer Heading-Provider (Android: SensorManager, Desktop: Mock).</summary>
     public static Func<IServiceProvider, IHeadingService>? HeadingServiceFactory { get; set; }
 
+    /// <summary>Anker-Powerstation-Monitor (echte Cloud-MQTT-Anbindung oder Mock).</summary>
+    public static Func<IServiceProvider, IAnkerMonitorService>? AnkerMonitorServiceFactory { get; set; }
+
     private MainViewModel? _mainVm;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
@@ -84,6 +87,13 @@ public class App : Application
         services.AddSingleton<IHeadingService>(sp =>
             HeadingServiceFactory != null ? HeadingServiceFactory(sp) : new MockHeadingService());
 
+        services.AddSingleton<IAnkerMonitorService>(sp =>
+            AnkerMonitorServiceFactory != null
+                ? AnkerMonitorServiceFactory(sp)
+                : new MockAnkerMonitorService(
+                    sp.GetRequiredService<ISolarPositionService>(),
+                    sp.GetRequiredService<ILocationService>()));
+
         // Plattformneutrale Kern-Engine (reine Berechnung, testbar).
         services.AddSingleton<ISolarPositionService, SolarPositionService>();
         services.AddSingleton<IAlignmentService, AlignmentService>();
@@ -92,6 +102,7 @@ public class App : Application
         // ViewModels
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<AlignViewModel>();
+        services.AddSingleton<LivePowerViewModel>();
         services.AddSingleton<MainViewModel>();
     }
 }

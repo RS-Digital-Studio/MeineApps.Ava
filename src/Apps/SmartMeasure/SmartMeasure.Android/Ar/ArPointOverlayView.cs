@@ -1167,7 +1167,7 @@ public sealed partial class ArPointOverlayView : View
         }
         else if (cornerCount == 1 && corners is { Count: 1 })
         {
-            // 1 Ecke gesetzt → gestrichelte Live-Basiskante zur Reticle-Position.
+            // 1 Ecke gesetzt → gestrichelte Live-Basiskante zur Reticle-Position + Distanz-Pille.
             using var dash = new Paint(PaintFlags.AntiAlias)
             {
                 Color = accent,
@@ -1178,6 +1178,11 @@ public sealed partial class ArPointOverlayView : View
                 [12f * _density, 8f * _density], 0f);
             dash.SetPathEffect(dashEffect);
             canvas.DrawLine(corners[0].screenX, corners[0].screenY, cx, cy, dash);
+
+            // Live-Distanz der entstehenden Basiskante am Linien-Mittelpunkt (nur bei Reticle-Hit).
+            if (_state.RectangleLengthMeters > 0.001f)
+                DrawValuePill(canvas, (corners[0].screenX + cx) * 0.5f, (corners[0].screenY + cy) * 0.5f,
+                    FormatMeters(_state.RectangleLengthMeters), null);
         }
 
         // Gesetzte Eckmarken obenauf

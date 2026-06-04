@@ -4450,6 +4450,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                         rectArea = rectResult.AreaMeters;
                     }
                 }
+                else if (rectCornerCount == 1 && _reticleWorld is { } rwBase
+                    && _reticleHitQuality != ArHitQuality.None)
+                {
+                    // Live-Länge der entstehenden Basiskante: Horizontaldistanz (Grundriss X/Z)
+                    // von der ersten Ecke zum Reticle-Ziel — wird als Pille am Gummiband gezeigt,
+                    // damit der Nutzer beim Aufspannen der Basiskante die Strecke sieht.
+                    var dx = rwBase.x - _rectangleCorners[0].X;
+                    var dz = rwBase.z - _rectangleCorners[0].Z;
+                    rectLen = MathF.Sqrt(dx * dx + dz * dz);
+                }
             }
 
             // Höhen-Range

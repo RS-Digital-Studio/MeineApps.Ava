@@ -4,9 +4,9 @@
     <OutputType>Exe</OutputType>
     <ApplicationId>com.rsdigital.smartmeasure</ApplicationId>
     <ApplicationTitle>SmartMeasure</ApplicationTitle>
-    <ApplicationVersion>14</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
-    <Version>1.2.0</Version>
+    <ApplicationVersion>15</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.1</ApplicationDisplayVersion>
+    <Version>1.2.1</Version>
 
     <!-- Min-API 26 (Android 8.0) — deckt NotificationChannel, FileProvider, PendingIntent.Immutable ab.
          BLE-Scan (API 31+) und ForegroundServiceType (API 29+) werden zur Laufzeit via

@@ -33,6 +33,11 @@ public static class StrategyFactory
         // Strenger Trendfilter: nur sehr starke Trends (ADX >= 25), langsame EMA.
         "TrendFollow-Strong" => new TrendFollowStrategy(donchianPeriod: 30, emaPeriod: 100, adxMin: 25m, atrSlMultiplier: 3.0m, tp1Rrr: 1.5m, tp2Rrr: 3.5m),
 
+        // Mean-Reversion-Falsifikationsexperiment (NICHT in AvailableStrategies — nur Lab-Test, noch nicht
+        // produktiv). Bollinger-Band-Fade im Range-Regime (ADX<20) gegen den nicht-organischen Flow
+        // zwangsliquidierter Retail-Trader. Standard-Params festgenagelt (Overfitting-Schutz).
+        "MeanReversion" => new MeanReversionStrategy(),
+
         _ => throw new ArgumentException($"Unbekannte Strategie: {name}")
     };
 }

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SunSeeker.Shared.Graphics;
 using SunSeeker.Shared.Models;
 using SunSeeker.Shared.Services;
 
@@ -23,6 +24,12 @@ public partial class DashboardViewModel : ObservableObject
 
     private DispatcherTimer? _timer;
     private bool _initialized;
+    private DateOnly _dayArcDate;
+
+    /// <summary>Wird vom Code-Behind abonniert, um das Sonnenbahn-Diagramm neu zu zeichnen.</summary>
+    public event Action? SunPathInvalidateRequested;
+
+    public SunPathRenderer SunPathRenderer { get; } = new();
 
     public DashboardViewModel(
         ILocationService location,
@@ -92,6 +99,7 @@ public partial class DashboardViewModel : ObservableObject
             Dispatcher.UIThread.Post(() =>
             {
                 LocationText = FormatLocation(newLoc);
+                _dayArcDate = default; // Sonnenbahn fuer den neuen Standort neu berechnen
                 Refresh();
             });
 
@@ -123,6 +131,18 @@ public partial class DashboardViewModel : ObservableObject
         DaylightText = sun.IsDaylight ? "Sonne ueber dem Horizont" : "Sonne unter dem Horizont";
         SunAzimuthText = $"{sun.Azimuth:0}° {Compass(sun.Azimuth)}";
         SunElevationText = $"{sun.Elevation:0.0}°";
+
+        // Sonnenbahn-Diagramm: die Tagesbahn nur bei Datums-/Standortwechsel neu berechnen.
+        var today = DateOnly.FromDateTime(nowUtc);
+        if (today != _dayArcDate)
+        {
+            _dayArcDate = today;
+            SunPathRenderer.DayArc = _solar.GetDayArc(location, today, 10);
+        }
+        SunPathRenderer.CurrentAzimuth = sun.Azimuth;
+        SunPathRenderer.CurrentElevation = sun.Elevation;
+        SunPathRenderer.IsDaylight = sun.IsDaylight;
+        SunPathInvalidateRequested?.Invoke();
 
         var times = _solar.GetSunTimes(location, DateOnly.FromDateTime(nowUtc));
         SunriseText = times.PolarNight ? "—" : times.PolarDay ? "geht nicht unter" : FormatLocalTime(times.SunriseUtc);

@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:labs="using:Avalonia.Labs.Controls"
              xmlns:vm="using:SunSeeker.Shared.ViewModels"
              xmlns:models="using:SunSeeker.Shared.Models"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="900"
@@ -75,6 +76,13 @@
                         </StackPanel>
                     </Grid>
                     <TextBlock Classes="label" Text="{Binding DaylightText}" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Classes="cardTitle" Text="SONNENBAHN HEUTE" />
+                    <labs:SKCanvasView x:Name="SunPathCanvas" Height="160" />
                 </StackPanel>
             </Border>
 

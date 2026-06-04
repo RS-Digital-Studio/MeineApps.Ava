@@ -18,7 +18,8 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `Ar/AndroidArCaptureService.cs` | `IArCaptureService`-Impl: startet `ArCaptureActivity` via Intent, TCS-Bridge, `LastCompletionStatus` + `LastError`. |
 | `Ar/AndroidArSession.cs` | `IArSessionLike`-Wrapper um `Google.AR.Core.Session` — entkoppelt Pose/HitTest-Logik von ARCore. |
 | `Ar/ArBackgroundRenderer.cs` | OpenGL ES 3.0 Kamera-Preview (Vertex+Fragment-Shader für Camera-Textur). |
-| `Ar/ArPointOverlayView.cs` | Transparenter Canvas (Punkte, Linien, Toolbar-Overlay). `partial sealed`. |
+| `Ar/ArPointOverlayView.cs` | Transparenter Canvas: gesamtes HUD (3D-Punkte, Linien, Flächen, Boden-Raster, Banner, Pillen, Footer, Modus-Chip, Stats, Readiness-Badge). `partial sealed`. |
+| `Ar/ArPointOverlayView.Design.cs` | Design-System des Overlays: semantische Farb-Tokens (Klasse `C`), Typo-Schnitte, `DrawPanel`/`DrawStatusDot` — das EINE Glas-Panel-Primitiv für alle HUD-Container. |
 | `Ar/ArAnchorManager.cs` | Drift-Kompensation via Earth-Anchors. Enthält auch `ArStabilityMonitor`. |
 | `Ar/ArPrecisionHelpers.cs` | Depth-Sanity, Ground-Plane, Semantic-Label, Sky-Check. Delegiert Math an `ArMathHelpers` (Shared). |
 | `Ar/ArOverlayState.cs` | Snapshot-Record: alle Render-Parameter + lokalisierte Labels + System-Banner. |

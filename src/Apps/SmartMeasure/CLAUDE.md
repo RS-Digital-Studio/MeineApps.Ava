@@ -157,12 +157,22 @@ unterschiedliche Meldungen je Status).
 ```
 FrameLayout
 ├── GLSurfaceView          OpenGL ES 3.0 Kamera-Preview (ArBackgroundRenderer)
-├── ArPointOverlayView     Transparenter Canvas (Punkte, Linien, Auswahl)
+├── ArPointOverlayView     Transparenter Canvas (Punkte, Linien, Auswahl, gesamtes HUD)
 └── Native Toolbar          7 Icon+Label-Buttons (VectorDrawables Resources/drawable/ic_ar_*):
                             Punkt · Fläche · Schließen · Zurück · Vor · Mehr · Fertig.
+                            "Fertig" = grüner CTA, aktiver Modus = Akzent (Farb-Konstanten
+                            ToolbarAccent/Inactive/Cta, an das Overlay-Design-System angeglichen).
                             "Mehr" = PopupMenu (Maßband, Tachymeter, Abstecken, Löschen,
-                            Screenshot, Aufnahme, Hilfe). KEINE Emojis/Unicode als UI-Text.
+                            Bodenraster ein/aus, Screenshot, Aufnahme, Hilfe).
+                            KEINE Emojis/Unicode als UI-Text.
 ```
+
+Das gesamte HUD (Banner, Pillen, Footer, Modus-Chip, Stats, Readiness-Badge, Empty-State)
+wird im Canvas über **ein** Glas-Panel-Primitiv gezeichnet — `ArPointOverlayView.Design.cs`
+hält die semantischen Farb-Tokens (Klasse `C`), Typo-Schnitte und `DrawPanel`/`DrawStatusDot`.
+Status wird über die **Border-/Dot-Farbe** codiert (Ampel Good/Medium/Poor), nicht über
+vollflächige Knallpanels. Modus + Punkt-Zähler laufen über den Canvas-Modus-Chip
+(`DrawModeChip`, gespeist aus `BuildModeChipLabel`) — **keine** nativen TextViews mehr.
 
 ### Lokalisierung (`ArOverlayLabels`)
 
@@ -245,7 +255,15 @@ confidence =
 |---------|-------------|
 | Bestätigungs-Dialoge | Löschen + Fertig fragen vor destruktiver Aktion (`ConfirmDeleteSelectedPoint`, `ConfirmFinishCapture`) |
 | Sound beim Punkt-Setzen | `MediaActionSound.SHUTTER_CLICK` zusätzlich zur Vibration. SharedPreferences-Key `ar.sound.enabled` (Default an). Toggle im Help-Dialog. |
-| Pop-Animation neuer Punkte | 250 ms Scale-Easing in `ArPointOverlayView.DrawPoints` — junge Punkte (< 250 ms alt) starten 2.2× groß, schrumpfen mit Ease-Out-Quadratic |
+| 3D-Punkt-Darstellung | `DrawPoints` zeichnet räumlich: Painter-Tiefensortierung (fern→nah), perspektivische Marker-Skalierung (0,45×–1,9× um 2,5 m Referenz), Bodenschatten-Ellipse + Höhen-Stab zur Bodenprojektion, Confidence-Ampel-Ring (grün/gelb/rot) statt `~/?`-Zeichen, ΔH am Stab-Kopf. Tiefe + Bodenprojektion kommen aus `WorldToScreen` (liefert Clip-Tiefe) + `ProjectPointsToScreen` (groundX/groundY/worldY je Punkt) |
+| Pop-Animation neuer Punkte | 250 ms Scale-Easing in `DrawPoints` — junge Punkte (< 250 ms alt) starten 2.2× groß, schrumpfen mit Ease-Out-Quadratic |
+| Boden-Raster (3D-Anker) | 1-m-Gitter auf der Ground-Plane, GL-seitig segmentweise projiziert + distanz-gecullt (`ProjectGroundGrid`, alloc-frei via Struct-Closure), Tiefen-Fade im `DrawGroundGrid`. Toggle im Mehr-Menü, Pref `ar.grid.enabled` (Default an). Verankert die Szene räumlich |
+| Plastische Flächen | Geschlossene Konturen (Typ-Farbe), aktive Kontur (Akzent) und Rechteck-Vorschau (grün/orange je Quadrat-Snap) mit vertikalem Tiefen-Gradient (`FillPolygonGradient`) statt flacher Füllung |
+| Modus/Schritt-Chip | Permanenter Glas-Chip oben mittig (`DrawModeChip`): Modus-Titel + nächster Schritt/Fortschritt (`BuildModeChipLabel`). Führt durch geführte Modi ("1. Ecke → 2. Ecke → Tiefe"), zeigt Kontur-Typ. Ersetzt native Modus-/Zähler-TextViews |
+| Crosshair-Punktsetzung | Punkte werden immer am Crosshair (Bildmitte) gesetzt, nicht an der Tap-Position — passend zu den am Crosshair angezeigten Live-Distanzen (`HandleTouchUp` → `PlaceNewPoint(viewport/2)`) |
+| Off-Screen-Distanz | Liegt der Vorpunkt außerhalb des Bildes, zeigt `DrawOffScreenLiveSegment` Distanz/ΔH am Crosshair + Rand-Pfeil zur Richtung (`LiveSegmentActive` + `LiveSegmentOffScreenDirectionDeg` aus `BuildOverlayState`) |
+| Farbcodierte Hinweise | Transient-Hinweise nach Schweregrad (`TransientSeverity` Info/Success/Warning) → Panel-Ton + Status-Dot. `ShowTransientHint` hat optionalen Severity-Parameter (Default Info, atomar via Record-Feld) |
+| Dialoge mit Status-/Typ-Dots | Kontur-/Rechteck-Typ-Dialoge zeigen farbigen Typ-Punkt je Eintrag (`DotListAdapter`, Farbe via `ArPointOverlayView.GetContourTypeColor`); Readiness-Dialog mit Status-Dots (grün/rot/bernstein/grau) als nicht-klickbare Zeilen (`BuildDotRow`) |
 | Tooltips auf Toolbar-Buttons | Long-Press zeigt `Button.TooltipText` (API 26+) |
 | Coach-Marks beim 1. AR-Start | Show-once Dialog (Crosshair/Workflow/Toolbar). Key `ar.coachmarks.shown`. "Später nochmal" lässt Pref unverändert → nächster Start zeigt erneut |
 | Persistente System-Banner | `ArOverlayState.ThermalWarning` + `BatteryWarning` als persistente Top-Banner unter dem Tracking-Banner (vs. TransientHint-Fade) |

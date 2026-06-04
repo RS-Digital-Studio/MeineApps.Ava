@@ -342,13 +342,24 @@ public class ArTransferServiceTests
     }
 
     [Fact]
-    public async Task TransferToProjectAsync_OhneGpsReferenz_Wirft()
+    public async Task TransferToProjectAsync_OhneGpsReferenz_NutztFallbackUrsprung()
     {
-        var (svc, _, _) = MakeService();
+        // Frueher warf das ohne GPS-Referenz — seit dem AR-First-Umbau wird stattdessen ein
+        // Fallback-Ursprung gesetzt (Schwerpunkt vorhandener Projektpunkte, sonst DE-Default),
+        // damit die translation-invariante Messung (Distanzen/Flaechen) NICHT verloren geht.
+        // Nur die absolute Karten-Lage ist dann ein Platzhalter.
+        var (svc, projects, meas) = MakeService();
         var result = new ArCaptureResult(); // kein GPS
+        result.Points.Add(new ArPoint { X = 0, Y = 0, Z = -1 });
 
-        await svc.Awaiting(s => s.TransferToProjectAsync(result, 1))
-            .Should().ThrowAsync<InvalidOperationException>();
+        var count = await svc.TransferToProjectAsync(result, 1);
+
+        count.Should().Be(1);                          // Punkt wurde uebertragen, kein Wurf
+        result.HasGpsReference.Should().BeTrue();      // Fallback-Ursprung wurde gesetzt
+        result.GpsLatitude.Should().NotBeNull();
+        result.GpsLongitude.Should().NotBeNull();
+        await projects.Received().AddPointAsync(1, Arg.Any<SurveyPoint>());
+        meas.Received().AddPoint(Arg.Any<SurveyPoint>());
     }
 
     [Fact]

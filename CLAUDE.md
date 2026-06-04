@@ -1,6 +1,6 @@
 # Meine Apps — Workspace-Architektur
 
-Multi-Plattform App-Studio. **12 Avalonia-Apps** (Android + Windows + Linux, Avalonia 12 +
+Multi-Plattform App-Studio. **13 Avalonia-Apps** (Android + Windows + Linux, Avalonia 12 +
 .NET 10, C# 14 — migriert von MAUI) und **3 Unity-6-Projekte**. Diese Datei beschreibt
 **Architektur & Struktur** des Workspaces. Generische Arbeitsweise → globale CLAUDE.md.
 Domänen-Details, Gotchas und Troubleshooting → jeweilige Library-/App-CLAUDE.md.
@@ -144,7 +144,7 @@ protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e
 
 ### Testbarkeit
 
-`tests/` enthält **12 Test-Projekte** — eines je App plus `MeineApps.CalcLib.Tests`. Stack:
+`tests/` enthält **13 Test-Projekte** — eines je App plus `MeineApps.CalcLib.Tests`. Stack:
 **xUnit 2.x** + NSubstitute (Mocks) + FluentAssertions + coverlet (Coverage). UI-nahe Tests
 laufen headless über `Avalonia.Headless` (z.B. HandwerkerImperium, BomberBlast, RechnerPlus).
 
@@ -183,7 +183,7 @@ F:\Meine_Apps_Ava\
 │   ├── UI/
 │   │   └── MeineApps.UI/                # Custom Controls, Behaviors, SkiaSharp, GPU-Shader, Loading-Pipeline
 │   │
-│   └── Apps/                            # 12 Avalonia-Apps + 3 Unity-Projekte
+│   └── Apps/                            # 13 Avalonia-Apps + 3 Unity-Projekte
 │       ├── RechnerPlus/                 # Taschenrechner (werbefrei)
 │       ├── ZeitManager/                 # Timer/Stoppuhr/Alarm (werbefrei)
 │       ├── FinanzRechner/               # 6 Finanzrechner + Budget-Tracker
@@ -196,6 +196,7 @@ F:\Meine_Apps_Ava\
 │       ├── BingXBot/                    # Trading Bot — .Shared .Android .Desktop + .Server (Pi 24/7)
 │       ├── GardenControl/               # Bewässerung — .Core .Shared .Android .Desktop + .Server (Pi)
 │       ├── SmartMeasure/                # 3D-Grundstücksvermessung (RTK-GPS, privat)
+│       ├── SunSeeker/                   # Solarpanel-Ausrichtung (Sonnenstand, Bifazial, privat)
 │       ├── ArcaneKingdom/               # TCG + RPG  (Unity 6)
 │       ├── BomberBlast.Unity/           # Treuer 3D-Remake des Originals (Unity 6 + URP)
 │       └── HandwerkerImperium.Unity/    # Neuentwicklung parallel zur Avalonia-Version (Unity 6)
@@ -211,7 +212,7 @@ F:\Meine_Apps_Ava\
 │   ├── SoundForge/                      # Python — Audio-Generierung (+ lufs-mastering.sh)
 │   └── screenshot-mcp/                  # MCP-Server für Screenshots
 │
-└── tests/                               # xUnit 2.x — 12 Projekte (je App + MeineApps.CalcLib)
+└── tests/                               # xUnit 2.x — 13 Projekte (je App + MeineApps.CalcLib)
 ```
 
 ---
@@ -419,6 +420,7 @@ expressions · Records für immutable DTOs/Events · File-scoped Namespaces · R
 | BingXBot | v1.8.1 | Nein | Nein | Entwicklung (Pi + Desktop + Android Remote) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
 | SmartMeasure | v1.1.9 | Nein | Nein | Entwicklung (privat, RTK-GPS) |
+| SunSeeker | v0.1.0 | Nein | Nein | Entwicklung (privat, Solar-Ausrichtung) |
 | ArcaneKingdom (Unity) | v0.0.2 | TBD | Diamanten-Packs | Pre-MVP |
 | BomberBlast.Unity | — | TBD | TBD | Pre-MVP (Beta parallel) |
 | HandwerkerImperium.Unity | — | TBD | TBD | Pre-MVP (Beta parallel) |
@@ -443,6 +445,7 @@ Design-Tokens (Spacing, Radius, Fonts) kommen aus `MeineApps.Core.Ava/Themes/The
 | BingXBot | #3B82F6 Blau | Dark Trading Terminal |
 | GardenControl | #2E7D32 Grün | Natur/Garten Dashboard |
 | SmartMeasure | #FF6B00 Orange | Technisch-Professionell |
+| SunSeeker | #FFB300 Sonnen-Amber | Solar / Dämmerungs-Dashboard |
 | ArcaneKingdom (Unity) | #f5c842 Gold (UI-Leitfarbe) · #6B46C1 Royal-Purple (Sekundär-Akzent) | Dark-Fantasy TCG, "Arcane Realm"-Design (eigenes USS-Theme) |
 
 ---
@@ -598,6 +601,7 @@ konkreter zu ihrem Gebiet. **Gotchas/Troubleshooting leben in der Domänen-Datei
 | BingXBot | [src/Apps/BingXBot/CLAUDE.md](src/Apps/BingXBot/CLAUDE.md) |
 | GardenControl | [src/Apps/GardenControl/CLAUDE.md](src/Apps/GardenControl/CLAUDE.md) |
 | SmartMeasure | [src/Apps/SmartMeasure/CLAUDE.md](src/Apps/SmartMeasure/CLAUDE.md) |
+| SunSeeker | [src/Apps/SunSeeker/CLAUDE.md](src/Apps/SunSeeker/CLAUDE.md) |
 | ArcaneKingdom (Unity) | [src/Apps/ArcaneKingdom/CLAUDE.md](src/Apps/ArcaneKingdom/CLAUDE.md) |
 | BomberBlast.Unity | [src/Apps/BomberBlast.Unity/CLAUDE.md](src/Apps/BomberBlast.Unity/CLAUDE.md) |
 | HandwerkerImperium.Unity | [src/Apps/HandwerkerImperium.Unity/CLAUDE.md](src/Apps/HandwerkerImperium.Unity/CLAUDE.md) |

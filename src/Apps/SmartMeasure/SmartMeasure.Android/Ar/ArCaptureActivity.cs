@@ -264,6 +264,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     // UI-Referenzen — Modus + Punkt-Zähler werden design-konsistent als Canvas-Chip
     // (ArPointOverlayView.DrawModeChip) gerendert, nicht mehr als native TextViews.
 
+    // Toolbar-Farben (an das Overlay-Design-System angeglichen: Akzent #FF7A1A, Abschluss-Grün
+    // #26C67A). Aktiver Modus = gefüllter Akzent, Fertig = grüner CTA, Rest dezent.
+    private static readonly Color ToolbarAccent = Color.Argb(225, 255, 122, 26);
+    private static readonly Color ToolbarInactive = Color.Argb(70, 255, 255, 255);
+    private static readonly Color ToolbarCta = Color.Argb(230, 38, 198, 122);
+
     // Letzter Frame fuer Hit-Testing.
     //
     // ARCore-Frames sind nicht offiziell cross-thread-safe — die JNI-Referenz bleibt
@@ -598,7 +604,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             tooltip: "Weitere Werkzeuge (Maßband, Tachymeter, Aufnahme, Hilfe)");
         AddToolbarButton(toolbar, Resource.Drawable.ic_ar_done, "Fertig", density,
             ConfirmFinishCapture,
-            tooltip: "Aufnahme beenden und Punkte übertragen");
+            tooltip: "Aufnahme beenden und Punkte übertragen", isCta: true);
 
         scrollView.AddView(toolbar);
         root.AddView(scrollView);
@@ -626,7 +632,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Toolbar-Button mit Vektor-Icon (oben) + kurzem Label (darunter). Ersetzt die
     /// fruehere Emoji-/Unicode-Beschriftung durch saubere VectorDrawables (Material-Icons).</summary>
     private Button AddToolbarButton(LinearLayout toolbar, int iconResId, string label, float density,
-        Action onClick, string? tooltip = null, bool isActive = false)
+        Action onClick, string? tooltip = null, bool isActive = false, bool isCta = false)
     {
         var button = new Button(this)
         {
@@ -639,9 +645,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         button.SetCompoundDrawablesWithIntrinsicBounds(0, iconResId, 0, 0);
         button.CompoundDrawableTintList = global::Android.Content.Res.ColorStateList.ValueOf(Color.White);
         button.CompoundDrawablePadding = (int)(2 * density);
-        button.SetBackgroundColor(isActive
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
+        // Fertig = grüner CTA (primäre Abschluss-Aktion), aktiver Modus = Akzent, Rest dezent.
+        button.SetBackgroundColor(isCta ? ToolbarCta : isActive ? ToolbarAccent : ToolbarInactive);
         button.SetPadding((int)(12 * density), (int)(4 * density), (int)(12 * density), (int)(4 * density));
         // Touch-Target-Mindestbreite 48dp (Accessibility) — kurze Labels wie "Vor"/"Mehr"
         // ergäben sonst < 48dp breite Tap-Ziele.
@@ -755,19 +760,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         // Nur die beiden Mode-Buttons der Haupt-Toolbar werden hervorgehoben. Maßband/
         // Abstecken/Tachymeter sitzen im "Mehr"-Menue — der aktive Modus steht im Modus-Chip.
-        _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point
-            ? Color.Argb(220, 255, 107, 0)    // Aktiv: kräftiges Orange
-            : Color.Argb(80, 255, 255, 255));  // Inaktiv: dezent
+        _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point ? ToolbarAccent : ToolbarInactive);
         // Der "Fläche"-Button deckt sowohl Freihand-Kontur als auch Rechteck ab.
         _btnContour?.SetBackgroundColor(mode is CaptureMode.Contour or CaptureMode.Rectangle
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
+            ? ToolbarAccent : ToolbarInactive);
         // "Mehr"-Button hervorheben, solange ein Spezial-Modus aus dem Overflow-Menü aktiv ist
         // (Maßband/Abstecken/Tachymeter) — sonst leuchtet KEIN Button und der Nutzer merkt nicht,
         // dass er den Modus gewechselt hat (z.B. Tape-Punkte landen dann nicht im Projekt).
         _btnMore?.SetBackgroundColor(mode is CaptureMode.TapeMeasure or CaptureMode.Stakeout or CaptureMode.TotalStation
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
+            ? ToolbarAccent : ToolbarInactive);
     }
 
     /// <summary>

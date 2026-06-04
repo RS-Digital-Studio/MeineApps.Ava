@@ -76,8 +76,7 @@ public sealed partial class ArPointOverlayView : View
     private readonly Paint _reticleInnerPaint;
     private readonly Paint _reticleTextPaint;
 
-    // Tracking-Banner
-    private readonly Paint _bannerBgPaint;
+    // Tracking-Banner (Hintergrund jetzt via DrawPanel — kein eigener BG-Paint mehr)
     private readonly Paint _bannerTextPaint;
 
     // Stats-Panel
@@ -98,18 +97,15 @@ public sealed partial class ArPointOverlayView : View
     private readonly Paint _scalePaint;
     private readonly Paint _scaleTextPaint;
 
-    // Live-Footer (Umfang / Fläche / Punkte) direkt über der Toolbar.
-    private readonly Paint _footerBgPaint;
+    // Live-Footer (Umfang / Fläche / Punkte) direkt über der Toolbar (BG via DrawPanel).
     private readonly Paint _footerLabelPaint;
     private readonly Paint _footerValuePaint;
 
-    // Transient-Hint
-    private readonly Paint _transientHintBgPaint;
+    // Transient-Hint (BG via DrawPanel)
     private readonly Paint _transientHintTextPaint;
 
-    // Live-Segment ("Gummiband" letzter Punkt → Crosshair): gestrichelte Linie + Werte-Pille
+    // Live-Segment ("Gummiband" letzter Punkt → Crosshair): gestrichelte Linie + Werte-Pille (BG via DrawPanel)
     private readonly Paint _segLinePaint;
-    private readonly Paint _segPillBgPaint;
     private readonly Paint _segValuePaint;
     private readonly Paint _segSubPaint;
 
@@ -230,9 +226,6 @@ public sealed partial class ArPointOverlayView : View
         };
         _reticleTextPaint.SetShadowLayer(4f, 0f, 0f, Color.Black);
 
-        _bannerBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(220, 244, 67, 54) };
-        _bannerBgPaint.SetStyle(Paint.Style.Fill);
-
         _bannerTextPaint = new Paint(PaintFlags.AntiAlias)
         {
             Color = C.TextPrimary,
@@ -304,9 +297,6 @@ public sealed partial class ArPointOverlayView : View
         _scaleTextPaint.SetShadowLayer(3f, 0f, 0f, Color.Black);
 
         // Live-Footer-Paints — größere Schrift als Stats-Panel weil das Footer-Info primär ist.
-        _footerBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(220, 18, 18, 28) };
-        _footerBgPaint.SetStyle(Paint.Style.Fill);
-
         _footerLabelPaint = new Paint(PaintFlags.AntiAlias)
         {
             Color = C.TextSecondary,
@@ -335,9 +325,6 @@ public sealed partial class ArPointOverlayView : View
         _segLinePaint.SetStyle(Paint.Style.Stroke);
         _segLinePaint.SetPathEffect(new DashPathEffect([12f * _density, 6f * _density], 0));
 
-        _segPillBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(225, 18, 18, 28) };
-        _segPillBgPaint.SetStyle(Paint.Style.Fill);
-
         _segValuePaint = new Paint(PaintFlags.AntiAlias)
         {
             Color = C.TextPrimary,
@@ -353,9 +340,6 @@ public sealed partial class ArPointOverlayView : View
             TextAlign = Paint.Align.Center,
         };
         _segSubPaint.SetTypeface(FontRegular);
-
-        _transientHintBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(220, 76, 175, 80) };
-        _transientHintBgPaint.SetStyle(Paint.Style.Fill);
 
         _transientHintTextPaint = new Paint(PaintFlags.AntiAlias)
         {
@@ -451,7 +435,6 @@ public sealed partial class ArPointOverlayView : View
         _reticleOuterPaint.Dispose();
         _reticleInnerPaint.Dispose();
         _reticleTextPaint.Dispose();
-        _bannerBgPaint.Dispose();
         _bannerTextPaint.Dispose();
         _statsBgPaint.Dispose();
         _statsTextPaint.Dispose();
@@ -463,13 +446,10 @@ public sealed partial class ArPointOverlayView : View
         _autoCloseRingPaint.Dispose();
         _scalePaint.Dispose();
         _scaleTextPaint.Dispose();
-        _footerBgPaint.Dispose();
         _footerLabelPaint.Dispose();
         _footerValuePaint.Dispose();
-        _transientHintBgPaint.Dispose();
         _transientHintTextPaint.Dispose();
         _segLinePaint.Dispose();
-        _segPillBgPaint.Dispose();
         _segValuePaint.Dispose();
         _segSubPaint.Dispose();
         base.OnDetachedFromWindow();

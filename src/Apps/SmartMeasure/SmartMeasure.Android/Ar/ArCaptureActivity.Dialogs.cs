@@ -288,13 +288,10 @@ public partial class ArCaptureActivity
 
     private void UpdateModeButtonHighlight()
     {
-        _btnPoint?.SetBackgroundColor(_captureMode == CaptureMode.Point
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
+        _btnPoint?.SetBackgroundColor(_captureMode == CaptureMode.Point ? ToolbarAccent : ToolbarInactive);
         // Der "Fläche"-Button deckt Freihand-Kontur UND Rechteck ab.
         _btnContour?.SetBackgroundColor(_captureMode is CaptureMode.Contour or CaptureMode.Rectangle
-            ? Color.Argb(220, 255, 107, 0)
-            : Color.Argb(80, 255, 255, 255));
+            ? ToolbarAccent : ToolbarInactive);
 
         // Der aktive Modus inkl. Kontur-Typ läuft jetzt über den Canvas-Modus-Chip
         // (BuildModeChipLabel pro Frame) — kein nativer Modus-Text mehr.

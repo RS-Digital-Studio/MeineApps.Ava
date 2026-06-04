@@ -3,8 +3,8 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
-using BingXBot.Core.Services;
 using BingXBot.Backtest.Simulation;
+using BingXBot.Backtest.Portfolio;
 using BingXBot.Backtest.Reports;
 using BingXBot.Engine.Indicators;
 using Microsoft.Extensions.Logging;
@@ -476,239 +476,28 @@ public class BacktestEngine
             }
 
             // SL/TP-Check auf offene Positionen mit echten Werten aus dem Signal
-            // positions ist bereits eine Kopie (IReadOnlyList aus SimulatedExchange), kein ToList() nötig
-            foreach (var pos in positions)
-            {
-                var key = $"{pos.Symbol}_{pos.Side}";
-                if (!positionSignals.TryGetValue(key, out var origSignal))
-                    continue;
+            // (extrahiert in BacktestExitProcessor — wiederverwendbar fuer den Portfolio-Backtest).
+            await BacktestExitProcessor.ProcessExitsAsync(
+                simExchange, positions, positionSignals, exitTracking,
+                settings, riskSettings, symbol, currentCandle).ConfigureAwait(false);
 
-                // --- SK Multi-Stage Exit: TP1 Partial Close (161.8%), TP2 Rest (200%+Buffer) ---
-                // BE-Trigger via zentralem BreakevenCalculator (identisch zu LiveTradingService):
-                //   1) A-Bruch (Buch, 0,5 % Puffer) 2) 2x SL-Distanz (User-Ausnahme, 0,2 % Puffer).
-                // Candle-Extreme (High bei Long, Low bei Short) sind der Preis-Proxy pro Candle —
-                // so feuert der Trigger beim ersten Wick-Touch, konsistent zum Live-Tick-Verhalten.
-                if (exitTracking.TryGetValue(key, out var exitState))
-                {
-                    // Runner-Trailing (EnableRunner): Nach TP1 laeuft der Rest mit ATR-Chandelier-Trailing-Stop
-                    // statt festem TP2. Spiegelt die Live-Runner-Mechanik (TradingServiceBase) im Backtest,
-                    // damit "fester TP2 vs Trailing" empirisch A/B-getestet werden kann.
-                    if (exitState.RunnerActive)
-                    {
-                        var trailMul = riskSettings?.RunnerTrailingAtrMultiplier ?? 2.0m;
-                        var trailDist = exitState.RunnerAtrBase > 0m
-                            ? exitState.RunnerAtrBase * trailMul
-                            : exitState.EntryPrice * 0.01m;
-                        decimal trailSl;
-                        bool trailHit;
-                        if (pos.Side == Side.Buy)
-                        {
-                            if (currentCandle.High > exitState.RunnerTrailAnchor) exitState.RunnerTrailAnchor = currentCandle.High;
-                            trailSl = exitState.RunnerTrailAnchor - trailDist;
-                            trailHit = currentCandle.Low <= trailSl;
-                        }
-                        else
-                        {
-                            if (exitState.RunnerTrailAnchor <= 0m || currentCandle.Low < exitState.RunnerTrailAnchor) exitState.RunnerTrailAnchor = currentCandle.Low;
-                            trailSl = exitState.RunnerTrailAnchor + trailDist;
-                            trailHit = currentCandle.High >= trailSl;
-                        }
-                        if (trailHit)
-                        {
-                            simExchange.SetCurrentPrice(symbol, trailSl);
-                            await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
-                            positionSignals.Remove(key);
-                            exitTracking.Remove(key);
-                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
-                        }
-                        continue; // Runner-Position hat eigene Exit-Logik — kein BE/TP1/Standard-Check.
-                    }
-
-                    if (!exitState.BreakevenSet && origSignal.StopLoss.HasValue)
-                    {
-                        var currentPrice = pos.Side == Side.Buy ? currentCandle.High : currentCandle.Low;
-                        var decision = BreakevenCalculator.Evaluate(
-                            pos.Side, currentPrice, exitState.EntryPrice,
-                            origSignal.StopLoss.Value, exitState.NavPointA, riskSettings?.BreakevenTriggerRMultiple ?? 2.0m);
-
-                        if (decision.HasValue)
-                        {
-                            positionSignals[key] = positionSignals[key] with { StopLoss = decision.Value.NewStopLoss };
-                            exitState.BreakevenSet = true;
-                        }
-                    }
-
-                    // TP1-Check: Partial Close (50% bei 161.8% Extension)
-                    var tp1Hit = false;
-                    if (!exitState.PartialClosed && origSignal.TakeProfit.HasValue
-                        && settings.Tp1CloseRatio > 0 && settings.Tp1CloseRatio < 1m)
-                    {
-                        tp1Hit = pos.Side == Side.Buy
-                            ? currentCandle.High >= origSignal.TakeProfit.Value
-                            : currentCandle.Low <= origSignal.TakeProfit.Value;
-                    }
-
-                    if (tp1Hit)
-                    {
-                        var closeQty = Math.Round(exitState.OriginalQuantity * settings.Tp1CloseRatio, 6);
-                        if (closeQty > 0)
-                        {
-                            simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
-                            // TP1 = Limit-Reduce-Only auf der echten Exchange → MakerFee
-                            await simExchange.ReducePositionAsync(symbol, pos.Side, closeQty, isMakerClose: true).ConfigureAwait(false);
-                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
-                        }
-                        exitState.PartialClosed = true;
-                        if (riskSettings?.EnableRunner == true && exitState.RunnerAtrBase > 0m)
-                        {
-                            // Trailing-Variante: Rest laeuft mit ATR-Trailing-Stop statt festem TP2.
-                            // Start-Anker = TP1-Preis; kein festes TP-Ziel mehr (TakeProfit=null), SL bleibt.
-                            exitState.RunnerActive = true;
-                            exitState.RunnerTrailAnchor = origSignal.TakeProfit!.Value;
-                            positionSignals[key] = origSignal with { TakeProfit = null };
-                        }
-                        else
-                        {
-                            // Baseline: TP2 (200%+Buffer) als neues Ziel, SL bleibt (Buch 4.3).
-                            positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
-                        }
-                        continue;
-                    }
-
-                    // BUCH-ONLY: Kein Time-Exit.
-                }
-
-                // --- Standard SL/TP-Check (Fallback und finale Prüfung) ---
-                // Auch bei Multi-Stage: prüft den aktuellen SL/TP (ggf. bereits auf BE/TP2 verschoben)
-                var currentSignal = positionSignals[key]; // Kann durch Multi-Stage modifiziert sein
-                var slHit = false;
-                var tpHit = false;
-
-                // Wenn beide (SL+TP) in einer Candle getroffen werden:
-                // Candle-Richtung entscheidet welcher zuerst erreicht wurde.
-                // Bullish Candle (Close>Open) → Preis ging zuerst hoch → TP bei Long wahrscheinlicher.
-                // Bearish Candle (Close<Open) → Preis ging zuerst runter → SL bei Long wahrscheinlicher.
-                if (pos.Side == Side.Buy)
-                {
-                    var slTriggered = currentSignal.StopLoss.HasValue && currentCandle.Low <= currentSignal.StopLoss.Value;
-                    var tpTriggered = currentSignal.TakeProfit.HasValue && currentCandle.High >= currentSignal.TakeProfit.Value;
-                    if (slTriggered && tpTriggered)
-                    {
-                        if (currentCandle.Close > currentCandle.Open)
-                            tpHit = true; // Bullish → TP zuerst
-                        else
-                            slHit = true; // Bearish → SL zuerst
-                    }
-                    else if (slTriggered) slHit = true;
-                    else if (tpTriggered) tpHit = true;
-                }
-                else // Short
-                {
-                    var slTriggered = currentSignal.StopLoss.HasValue && currentCandle.High >= currentSignal.StopLoss.Value;
-                    var tpTriggered = currentSignal.TakeProfit.HasValue && currentCandle.Low <= currentSignal.TakeProfit.Value;
-                    if (slTriggered && tpTriggered)
-                    {
-                        if (currentCandle.Close < currentCandle.Open)
-                            tpHit = true; // Bearish → TP zuerst für Short
-                        else
-                            slHit = true; // Bullish → SL zuerst für Short
-                    }
-                    else if (slTriggered) slHit = true;
-                    else if (tpTriggered) tpHit = true;
-                }
-
-                if (slHit)
-                {
-                    // SL = StopMarket auf der echten Exchange → TakerFee.
-                    // ADVERSE-GAP-MODELL: Schiesst die Kerze durch den SL (Gap/Wick-Through), ist der
-                    // reale Fill schlechter als der SL-Preis. Frueher fuellte der Backtest exakt am SL →
-                    // er unterschaetzte SL-Verluste (zu optimistisch). Jetzt den Worst-Case der Kerze
-                    // nehmen: Long → tiefstes Low, Short → hoechstes High.
-                    var slFill = pos.Side == Side.Buy
-                        ? Math.Min(currentSignal.StopLoss!.Value, currentCandle.Low)
-                        : Math.Max(currentSignal.StopLoss!.Value, currentCandle.High);
-                    simExchange.SetCurrentPrice(symbol, slFill);
-                    await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
-                    positionSignals.Remove(key);
-                    exitTracking.Remove(key);
-                    simExchange.SetCurrentPrice(symbol, currentCandle.Close);
-                }
-                else if (tpHit)
-                {
-                    // TP2 = Limit-Reduce-Only auf der echten Exchange → MakerFee
-                    simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
-                    await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: true).ConfigureAwait(false);
-                    positionSignals.Remove(key);
-                    exitTracking.Remove(key);
-                    simExchange.SetCurrentPrice(symbol, currentCandle.Close);
-                }
-            }
-
-            // Trade ausführen wenn Signal (SK-Buch: keine Regime-Filter, SK hat eigene Workflow-Regeln)
-            if (signal.Signal is Signal.Long or Signal.Short)
-            {
-                // MarketContext für RiskManager: gleiche Zuordnung wie bei der Strategy.
-                var riskContext = new MarketContext(
-                    symbol, contextCandles, ticker, positions, account,
-                    FilterTimeframeCandles: htfContext,
-                    Category: category,
-                    DailyCandles: dailyPrefix,
-                    WeeklyCandles: weeklyPrefix,
-                    NavigatorTimeframe: timeFrame,
-                    ScannerSettings: scannerSettings,
-                    RiskSettings: riskSettings,
-                    NowUtc: currentCandle.CloseTime);
-                var riskCheck = riskManager.ValidateTrade(signal, riskContext);
-                if (riskCheck.IsAllowed && riskCheck.AdjustedPositionSize > 0)
-                {
-                    var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
-                    try
-                    {
-                        var order = await simExchange.PlaceOrderAsync(new OrderRequest(
-                            symbol, side, OrderType.Market, riskCheck.AdjustedPositionSize)).ConfigureAwait(false);
-
-                        // Nur SL/TP-Tracking speichern wenn Order tatsaechlich gefuellt wurde
-                        if (order.Status == OrderStatus.Filled)
-                        {
-                            var key = $"{symbol}_{side}";
-                            positionSignals[key] = signal;
-
-                            // Exit State erstellen (SK-Buch: Partial Close 50/50 + A-Bruch-BE + Time-Exit)
-                            exitTracking[key] = new BacktestExitState
-                            {
-                                EntryPrice = order.Price,
-                                OriginalQuantity = riskCheck.AdjustedPositionSize,
-                                EntryTime = currentCandle.CloseTime,
-                                Tp2 = signal.TakeProfit2,
-                                NavPointA = signal.NavPointA ?? 0m,
-                                RunnerAtrBase = signal.EntryAtr ?? 0m,
-                            };
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning("Order fehlgeschlagen: {Error}", ex.Message);
-                    }
-                }
-            }
-            else if (signal.Signal is Signal.CloseLong)
-            {
-                if (positions.Any(p => p.Side == Side.Buy))
-                {
-                    await simExchange.ClosePositionAsync(symbol, Side.Buy).ConfigureAwait(false);
-                    positionSignals.Remove($"{symbol}_{Side.Buy}");
-                    exitTracking.Remove($"{symbol}_{Side.Buy}");
-                }
-            }
-            else if (signal.Signal is Signal.CloseShort)
-            {
-                if (positions.Any(p => p.Side == Side.Sell))
-                {
-                    await simExchange.ClosePositionAsync(symbol, Side.Sell).ConfigureAwait(false);
-                    positionSignals.Remove($"{symbol}_{Side.Sell}");
-                    exitTracking.Remove($"{symbol}_{Side.Sell}");
-                }
-            }
+            // Trade ausführen wenn Signal (SK-Buch: keine Regime-Filter, SK hat eigene Workflow-Regeln).
+            // MarketContext für RiskManager: gleiche Zuordnung wie bei der Strategy. Der Kontext-Bau bleibt
+            // hier (braucht viele loop-lokale Variablen); die Entry-Logik selbst wandert in den Processor
+            // (wiederverwendbar fuer den Portfolio-Backtest).
+            var riskContext = new MarketContext(
+                symbol, contextCandles, ticker, positions, account,
+                FilterTimeframeCandles: htfContext,
+                Category: category,
+                DailyCandles: dailyPrefix,
+                WeeklyCandles: weeklyPrefix,
+                NavigatorTimeframe: timeFrame,
+                ScannerSettings: scannerSettings,
+                RiskSettings: riskSettings,
+                NowUtc: currentCandle.CloseTime);
+            await BacktestEntryProcessor.ProcessEntryAsync(
+                simExchange, riskManager, signal, riskContext, symbol, currentCandle,
+                positionSignals, exitTracking, positions, _logger).ConfigureAwait(false);
 
             // NF9 Fix — Neu abgeschlossene Trades dieser Iteration in den RiskManager streamen,
             // damit LossStreakDampening, EquityCurveScaling und MaxDailyLoss-Circuit korrekt
@@ -954,32 +743,5 @@ public class BacktestEngine
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
-    /// <summary>Tracking-State für Multi-Stage Exit im Backtest.</summary>
-    private sealed class BacktestExitState
-    {
-        /// <summary>Einstiegspreis der Position (für Break-Even-Berechnung).</summary>
-        public decimal EntryPrice { get; init; }
-        /// <summary>Ursprüngliche Positionsgröße (für Partial-Close-Berechnung).</summary>
-        public decimal OriginalQuantity { get; init; }
-        /// <summary>Zeitpunkt des Einstiegs (für Time-Exit).</summary>
-        public DateTime EntryTime { get; init; }
-        /// <summary>Zweites Take-Profit-Ziel (200% + Buffer).</summary>
-        public decimal? Tp2 { get; set; }
-        /// <summary>Ob TP1 bereits erreicht und Partial Close ausgeführt wurde.</summary>
-        public bool PartialClosed { get; set; }
-        /// <summary>SK-Buch Masterclass: BE bereits gesetzt (ausgelöst durch A-Bruch).</summary>
-        public bool BreakevenSet { get; set; }
-        /// <summary>Navigator-PointA für den A-Bruch-BE-Trigger. 0 = unbekannt (kein BE möglich).</summary>
-        public decimal NavPointA { get; init; }
-
-        // === Runner-Trailing (Task 4.7 / EnableRunner) ===
-        /// <summary>Runner aktiv: Rest-Position laeuft nach TP2 mit ATR-Trailing-Stop weiter.</summary>
-        public bool RunnerActive { get; set; }
-        /// <summary>Bestpreis seit Runner-Aktivierung (Trailing-Anker).</summary>
-        public decimal RunnerTrailAnchor { get; set; }
-        /// <summary>ATR-Basis fuer die Trailing-Distanz (aus SignalResult.EntryAtr).</summary>
-        public decimal RunnerAtrBase { get; init; }
     }
 }

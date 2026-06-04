@@ -70,6 +70,10 @@ public sealed partial class ArPointOverlayView
     private Paint _markerNumPaint = null!;
     private Paint _markerLabelPaint = null!;
 
+    // Modus-Chip (oben mittig): Titel kräftig + Schritt-Detail dezent, beide zentriert.
+    private Paint _modeChipTitlePaint = null!;
+    private Paint _modeChipDetailPaint = null!;
+
     private void InitDesignPaints()
     {
         _panelFillPaint = new Paint(PaintFlags.AntiAlias) { Color = C.SurfaceBase };
@@ -111,6 +115,22 @@ public sealed partial class ArPointOverlayView
         };
         _markerLabelPaint.SetTypeface(FontMedium);
         _markerLabelPaint.SetShadowLayer(3f * _density, 0f, 1f, Color.Argb(200, 0, 0, 0));
+
+        _modeChipTitlePaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = C.TextPrimary,
+            TextSize = 14f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+        _modeChipTitlePaint.SetTypeface(FontMedium);
+
+        _modeChipDetailPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = C.TextSecondary,
+            TextSize = 11.5f * _density,
+            TextAlign = Paint.Align.Center,
+        };
+        _modeChipDetailPaint.SetTypeface(FontRegular);
 
         _panelBorderPaint = new Paint(PaintFlags.AntiAlias)
         {

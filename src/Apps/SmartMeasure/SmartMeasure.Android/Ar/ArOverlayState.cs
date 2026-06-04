@@ -114,6 +114,15 @@ public sealed class ArOverlayState
     /// <summary>Single-Shot Confirmation-Text (nach Undo/Redo/Punkt-Set).</summary>
     public string? TransientHint { get; init; }
 
+    /// <summary>Permanenter Modus-Chip oben mittig: aktiver Erfassungs-Modus als Kurztitel
+    /// ("Punkt", "Linie", "Rechteck", "Maßband", "Abstecken", "Tachymeter"). Ersetzt den
+    /// früheren nativen Modus-Text — design-konsistent als Glas-Chip gerendert.</summary>
+    public string ModeChipTitle { get; init; } = "Punkt";
+
+    /// <summary>Sekundärzeile des Modus-Chips: nächster Schritt bzw. Status ("2. Ecke antippen",
+    /// "3 Punkte", "1/4 Ziele"). null = nur der Titel wird gezeigt.</summary>
+    public string? ModeChipDetail { get; init; }
+
     /// <summary>Anzahl aktiver Anchors (für Quality-Indikator — mehr Anchors = mehr Drift-Kompensation).</summary>
     public int AnchorCount { get; init; }
 

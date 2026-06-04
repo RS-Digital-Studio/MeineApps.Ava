@@ -261,9 +261,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> _projectedContourPoints = [];
     private readonly ArPoint _groundProbe = new(); // wiederverwendet für Bodenprojektion (GL-Thread-only)
 
-    // UI-Referenzen
-    private TextView? _modeText;
-    private TextView? _counterText;
+    // UI-Referenzen — Modus + Punkt-Zähler werden design-konsistent als Canvas-Chip
+    // (ArPointOverlayView.DrawModeChip) gerendert, nicht mehr als native TextViews.
 
     // Letzter Frame fuer Hit-Testing.
     //
@@ -620,42 +619,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         backButton.Click += (_, _) => ConfirmDiscardAndExit();
         root.AddView(backButton);
 
-        // Modus-Anzeige (oben rechts)
-        _modeText = new TextView(this)
-        {
-            Text = "Modus: Punkt",
-            TextSize = 14,
-        };
-        _modeText.SetTextColor(Color.White);
-        _modeText.SetShadowLayer(4f, 0f, 0f, Color.Black);
-        var modeParams = new FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.WrapContent,
-            ViewGroup.LayoutParams.WrapContent)
-        {
-            Gravity = GravityFlags.Top | GravityFlags.End,
-            TopMargin = (int)(24 * density),
-            RightMargin = (int)(16 * density)
-        };
-        _modeText.LayoutParameters = modeParams;
-        root.AddView(_modeText);
-
-        // Punkt-Zaehler (oben mitte)
-        _counterText = new TextView(this)
-        {
-            Text = "Punkte: 0",
-            TextSize = 14,
-        };
-        _counterText.SetTextColor(Color.White);
-        _counterText.SetShadowLayer(4f, 0f, 0f, Color.Black);
-        var counterParams = new FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.WrapContent,
-            ViewGroup.LayoutParams.WrapContent)
-        {
-            Gravity = GravityFlags.Top | GravityFlags.CenterHorizontal,
-            TopMargin = (int)(24 * density)
-        };
-        _counterText.LayoutParameters = counterParams;
-        root.AddView(_counterText);
+        // Modus + Punkt-Zähler werden als design-konsistenter Glas-Chip im Canvas-Overlay
+        // gerendert (ArPointOverlayView.DrawModeChip), nicht mehr als native TextViews.
     }
 
     /// <summary>Toolbar-Button mit Vektor-Icon (oben) + kurzem Label (darunter). Ersetzt die
@@ -775,17 +740,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         _captureMode = mode;
 
-        // Modus-Text + Button-Highlighting aktualisieren
-        if (_modeText != null)
-            _modeText.Text = mode switch
-            {
-                CaptureMode.Contour => "Modus: Linie",
-                CaptureMode.Rectangle => "Modus: Rechteck",
-                CaptureMode.TapeMeasure => "Modus: Maßband",
-                CaptureMode.Stakeout => "Modus: Absteck",
-                CaptureMode.TotalStation => "Modus: Total-Station",
-                _ => "Modus: Punkt",
-            };
+        // Modus-Anzeige läuft jetzt über den Canvas-Chip (BuildModeChipLabel pro Frame) —
+        // hier nur noch Toolbar-Button-Highlighting.
 
         // Stakeout: Hint wenn keine Targets bereitstehen (Plan-Kap. 5.9)
         if (mode == CaptureMode.Stakeout)
@@ -798,7 +754,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
 
         // Nur die beiden Mode-Buttons der Haupt-Toolbar werden hervorgehoben. Maßband/
-        // Abstecken/Tachymeter sitzen im "Mehr"-Menue — der aktive Modus steht im _modeText.
+        // Abstecken/Tachymeter sitzen im "Mehr"-Menue — der aktive Modus steht im Modus-Chip.
         _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point
             ? Color.Argb(220, 255, 107, 0)    // Aktiv: kräftiges Orange
             : Color.Argb(80, 255, 255, 255));  // Inaktiv: dezent
@@ -927,9 +883,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         UpdateCounter();
         _overlayView?.Invalidate();
-
-        if (_modeText != null)
-            _modeText.Text = "Kontur geschlossen";
     }
 
     /// <summary>
@@ -1156,16 +1109,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     private void UpdateCounter()
     {
-        // _contours.Sum iteriert die Liste — ohne Lock kann ein parallel laufender
-        // Add InvalidOperationException werfen.
-        int total;
-        lock (_dataLock)
-        {
-            total = _points.Count + _contours.Sum(c => c.Points.Count)
-                + (_activeContour?.Points.Count ?? 0);
-        }
-        if (_counterText != null)
-            _counterText.Text = $"Punkte: {total}";
+        // Der Punkt-Zähler läuft jetzt über den Canvas-Modus-Chip (BuildModeChipLabel, pro
+        // Frame). Bei Datenänderungen außerhalb eines Tracking-Frames (Undo/Redo, Löschen,
+        // Kontur-Schluss) hier trotzdem ein Redraw anstoßen — thread-safe via PostInvalidate.
+        _overlayView?.PostInvalidate();
     }
 
     #region Touch → Auswahl / Drag / Hit-Test
@@ -4446,6 +4393,50 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private string? ConsumeTransientHint()
         => System.Threading.Interlocked.Exchange(ref _currentTransientHint, null);
 
+    /// <summary>Baut Titel + Schritt-/Status-Detail für den permanenten Modus-Chip aus dem
+    /// aktiven Erfassungs-Modus und den Live-Counts. Der Detail-Text führt durch geführte Modi
+    /// (Rechteck-Schritte) bzw. zeigt den Fortschritt (Linie/Maßband/Abstecken).</summary>
+    private (string title, string? detail) BuildModeChipLabel(
+        int pointCount, int activeContourCount, int rectCornerCount, int tapeCount)
+    {
+        static string PointsWord(int n) => n == 1 ? "Punkt" : "Punkte";
+
+        string CurrentContourTypeLabel()
+            => ContourTypeOptions.FirstOrDefault(o => o.Type == _currentContourType).Label
+               ?? _currentContourType.ToString();
+
+        switch (_captureMode)
+        {
+            case CaptureMode.Rectangle:
+                var step = rectCornerCount switch
+                {
+                    0 => "1. Ecke antippen",
+                    1 => "2. Ecke antippen",
+                    _ => "Tiefe anvisieren",
+                };
+                return ("Rechteck", step);
+            case CaptureMode.Contour:
+                // Titel = Kontur-Typ (Weg/Beet/Mauer/...) statt generisch "Linie" — informativer.
+                return (CurrentContourTypeLabel(), activeContourCount == 0
+                    ? "1. Punkt antippen"
+                    : $"{activeContourCount} {PointsWord(activeContourCount)}");
+            case CaptureMode.TapeMeasure:
+                return ("Maßband", tapeCount == 0
+                    ? "Startpunkt antippen"
+                    : $"{tapeCount} {PointsWord(tapeCount)}");
+            case CaptureMode.Stakeout:
+                var reached = _stakeoutTargets?.Count(t => t.IsReached) ?? 0;
+                var total = _stakeoutTargets?.Count ?? 0;
+                return ("Abstecken", total > 0 ? $"{reached}/{total} Ziele" : "Keine Ziele");
+            case CaptureMode.TotalStation:
+                return ("Tachymeter", "Punkt anvisieren");
+            default: // Point
+                return ("Punkt", pointCount == 0
+                    ? "Boden antippen"
+                    : $"{pointCount} {PointsWord(pointCount)}");
+        }
+    }
+
     #endregion
 
     #region Live-Stats + Reticle
@@ -4583,8 +4574,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var rectIsSquare = false;
         float rectLen = 0f, rectDepth = 0f, rectArea = 0f;
 
+        // Modus-Chip-Counts (unter Lock erfasst, Strings nach dem Lock gebaut)
+        int chipPointCount = 0, chipActiveContourCount = 0, chipTapeCount = 0;
+
         lock (_dataLock)
         {
+            chipPointCount = _points.Count;
+            chipActiveContourCount = _activeContour?.Points.Count ?? 0;
+            chipTapeCount = _tapeMeasurePoints.Count;
+
             // Alle Konturen
             foreach (var c in _contours)
             {
@@ -4771,6 +4769,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var stability = _stabilityMonitor?.StabilityScore ?? 1f;
         var anchorCount = _anchorManager.CountTracking();
 
+        var (modeChipTitle, modeChipDetail) = BuildModeChipLabel(
+            chipPointCount, chipActiveContourCount, rectCornerCount, chipTapeCount);
+
         return new ArOverlayState
         {
             IsTracking = isTracking,
@@ -4788,6 +4789,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             HeightRangeMeters = heightRange,
             AutoCloseTarget = autoClose,
             TransientHint = ConsumeTransientHint(),
+            ModeChipTitle = modeChipTitle,
+            ModeChipDetail = modeChipDetail,
             AnchorCount = anchorCount,
             StabilityScore = stability,
             IsSampling = isSampling,

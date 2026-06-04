@@ -296,17 +296,8 @@ public partial class ArCaptureActivity
             ? Color.Argb(220, 255, 107, 0)
             : Color.Argb(80, 255, 255, 255));
 
-        if (_modeText != null)
-        {
-            var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _currentContourType).Label
-                ?? _currentContourType.ToString();
-            _modeText.Text = _captureMode switch
-            {
-                CaptureMode.Point => "Modus: Punkt",
-                CaptureMode.Rectangle => $"Modus: Rechteck {typeLabel}",
-                _ => $"Modus: {typeLabel}",
-            };
-        }
+        // Der aktive Modus inkl. Kontur-Typ läuft jetzt über den Canvas-Modus-Chip
+        // (BuildModeChipLabel pro Frame) — kein nativer Modus-Text mehr.
     }
 
     #endregion

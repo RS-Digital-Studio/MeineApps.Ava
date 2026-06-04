@@ -571,6 +571,11 @@ public sealed partial class ArPointOverlayView : View
         // 12. Ready-Badge + Quality-Score (oben links)
         DrawReadinessBadge(canvas);
 
+        // 12b. Modus-Chip (oben mittig): aktiver Modus + nächster Schritt. Nur bei Tracking,
+        // sonst belegt das Tracking-Banner die obere Mitte.
+        if (_state.IsTracking)
+            DrawModeChip(canvas, width);
+
         // 13. Transient-Hint (falls aktiv)
         DrawTransientHint(canvas, width, height);
 
@@ -584,12 +589,21 @@ public sealed partial class ArPointOverlayView : View
         {
             string hint;
             if (_projectedPlanes.Count == 0)
-                hint = "Bewege die Kamera langsam über den Boden...";
+                hint = "Bewege die Kamera langsam über den Boden…";
             else if (_state.IsRectangleMode)
                 hint = "Rechteck: erste Ecke der Basiskante antippen";
             else
                 hint = "Tippe auf eine Fläche um einen Punkt zu setzen";
-            canvas.DrawText(hint, width / 2f, height / 2f + 60 * _density, _hintPaint);
+
+            // Dezentes Glas-Panel um den Hinweis (design-konsistent, besser lesbar auf hellem Boden).
+            var hintW = _hintPaint.MeasureText(hint);
+            var hcx = width / 2f;
+            var panelH = 44f * _density;
+            var panelTop = height / 2f + 40f * _density;
+            var hpadH = 20f * _density;
+            _panelRect.Set(hcx - hintW / 2f - hpadH, panelTop, hcx + hintW / 2f + hpadH, panelTop + panelH);
+            DrawPanel(canvas, _panelRect, RadiusPanel, PanelTone.Neutral, raised: true);
+            canvas.DrawText(hint, hcx, panelTop + panelH / 2f + 5f * _density, _hintPaint);
         }
     }
 
@@ -1932,6 +1946,46 @@ public sealed partial class ArPointOverlayView : View
         ReadinessBadgeBounds.Set(
             rect.Left - tapPad, rect.Top - tapPad,
             rect.Right + tapPad, rect.Bottom + tapPad);
+    }
+
+    /// <summary>Permanenter Modus-Chip oben mittig: aktiver Erfassungs-Modus (Titel) + nächster
+    /// Schritt bzw. Fortschritt (Detail). Design-konsistenter Glas-Chip mit Accent-Border +
+    /// Status-Dot — ersetzt den früheren nativen Modus-Text und Punkt-Zähler.</summary>
+    private void DrawModeChip(Canvas canvas, int width)
+    {
+        var title = _state.ModeChipTitle;
+        if (string.IsNullOrEmpty(title)) return;
+        var detail = _state.ModeChipDetail;
+        var hasDetail = !string.IsNullOrEmpty(detail);
+
+        var top = _state.TopInsetPixels + 12f * _density;
+        var titleW = _modeChipTitlePaint.MeasureText(title);
+        var detailW = hasDetail ? _modeChipDetailPaint.MeasureText(detail) : 0f;
+        var dotSpace = 16f * _density;          // Akzent-Dot links + Abstand
+        var padH = 16f * _density;
+        var contentW = MathF.Max(titleW, detailW);
+        var panelW = contentW + dotSpace + 2f * padH;
+        var panelH = (hasDetail ? 46f : 36f) * _density;
+
+        var cx = width / 2f;
+        var left = cx - panelW / 2f;
+        _panelRect.Set(left, top, left + panelW, top + panelH);
+        DrawPanel(canvas, _panelRect, RadiusPill, PanelTone.Accent, raised: true);
+
+        // Akzent-Dot links — signalisiert den aktiven Modus.
+        DrawStatusDot(canvas, left + padH * 0.75f, top + panelH / 2f, C.Accent);
+
+        // Texte zentriert (leichter Rechts-Offset, damit sie nicht in den Dot laufen).
+        var textCx = cx + dotSpace * 0.25f;
+        if (hasDetail)
+        {
+            canvas.DrawText(title, textCx, top + 20f * _density, _modeChipTitlePaint);
+            canvas.DrawText(detail!, textCx, top + 37f * _density, _modeChipDetailPaint);
+        }
+        else
+        {
+            canvas.DrawText(title, textCx, top + panelH / 2f + 5f * _density, _modeChipTitlePaint);
+        }
     }
 
     private void DrawTransientHint(Canvas canvas, int width, int height)

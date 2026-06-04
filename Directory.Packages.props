@@ -71,6 +71,10 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Xamarin.GooglePlayServices.Games.V2" Version="121.0.0.3" />
 
+    <!-- FusedLocationProvider (SmartMeasure GPS-Fallback, Dual-Frequency L1+L5). 121er-Linie
+         passend zur Games.V2-Basement-Version, vermeidet Play-Services-Duplicate-Classes. -->
+    <PackageVersion Include="Xamarin.GooglePlayServices.Location" Version="121.3.0.9" />
+
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- FIREBASE (Cloud Messaging / Remote Config)                        -->
     <!-- Crashlytics + Analytics raus: Crashlytics braucht Gradle-Plugin   -->

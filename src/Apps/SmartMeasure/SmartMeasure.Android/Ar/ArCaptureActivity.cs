@@ -2221,36 +2221,108 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 }
             }
 
-            // Aktive Updates über 5 Sekunden sammeln.
-            // Provider abhängig von Permission-Level.
-            var provider = hasFine
-                ? global::Android.Locations.LocationManager.GpsProvider
-                : global::Android.Locations.LocationManager.NetworkProvider;
-
-            var listener = new GpsSampleListener(this);
-            try
+            // Aktive Updates über 5 Sekunden sammeln. FusedLocationProvider bevorzugt
+            // (Hardware-Fusion + Dual-Frequency-GNSS L1+L5 → ~±1-3m statt ±3-8m), LocationManager
+            // als Fallback, falls Google Play Services fehlt.
+            var usedFused = TryStartFusedLocationUpdates(hasFine);
+            GpsSampleListener? legacyListener = null;
+            if (!usedFused)
             {
-                locationManager.RequestLocationUpdates(provider, 500L, 0f, listener);
-                _activeLocationListeners.Add((locationManager, listener));
-            }
-            catch (Exception ex)
-            {
-                global::Android.Util.Log.Warn("ArCapture",
-                    $"RequestLocationUpdates({provider}) failed: {ex.Message}");
+                var provider = hasFine
+                    ? global::Android.Locations.LocationManager.GpsProvider
+                    : global::Android.Locations.LocationManager.NetworkProvider;
+                legacyListener = new GpsSampleListener(this);
+                try
+                {
+                    locationManager.RequestLocationUpdates(provider, 500L, 0f, legacyListener);
+                    _activeLocationListeners.Add((locationManager, legacyListener));
+                }
+                catch (Exception ex)
+                {
+                    global::Android.Util.Log.Warn("ArCapture",
+                        $"RequestLocationUpdates({provider}) failed: {ex.Message}");
+                }
             }
 
-            // Nach 5s Listener abmelden und Median bilden
+            // Nach 5s abmelden und Median bilden
             Window?.DecorView?.PostDelayed(() =>
             {
                 if (IsFinishing || IsDestroyed) return;
-                try { locationManager.RemoveUpdates(listener); } catch { /* OK */ }
-                _activeLocationListeners.Remove((locationManager, listener));
+                StopFusedLocationUpdates();
+                if (legacyListener != null)
+                {
+                    try { locationManager.RemoveUpdates(legacyListener); } catch { /* OK */ }
+                    _activeLocationListeners.Remove((locationManager, legacyListener));
+                }
                 FinalizeGpsAveraging();
             }, 5000);
         }
         catch (Exception ex)
         {
             global::Android.Util.Log.Warn("ArCapture", $"GPS nicht verfuegbar: {ex.Message}");
+        }
+    }
+
+    private global::Android.Gms.Location.IFusedLocationProviderClient? _fusedLocationClient;
+    private FusedGpsCallback? _fusedGpsCallback;
+
+    /// <summary>Startet hochpräzise Standort-Updates über den FusedLocationProvider (Google Play
+    /// Services). Nutzt auf dem S25 Ultra die Dual-Frequency-GNSS (L1+L5) + Sensor-Fusion.
+    /// Liefert false, wenn Play Services fehlt → der Aufrufer nutzt dann den LocationManager.</summary>
+    private bool TryStartFusedLocationUpdates(bool hasFine)
+    {
+        try
+        {
+            _fusedLocationClient ??= global::Android.Gms.Location.LocationServices
+                .GetFusedLocationProviderClient(this);
+            var priority = hasFine
+                ? global::Android.Gms.Location.Priority.PriorityHighAccuracy
+                : global::Android.Gms.Location.Priority.PriorityBalancedPowerAccuracy;
+            var request = new global::Android.Gms.Location.LocationRequest.Builder(priority, 1000L)
+                .SetMinUpdateIntervalMillis(500L)
+                .Build();
+            _fusedGpsCallback = new FusedGpsCallback(this);
+            _fusedLocationClient.RequestLocationUpdates(request, _fusedGpsCallback,
+                global::Android.OS.Looper.MainLooper);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture",
+                $"FusedLocationProvider nicht verfügbar, Fallback auf LocationManager: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>Meldet die FusedLocationProvider-Updates ab (idempotent).</summary>
+    private void StopFusedLocationUpdates()
+    {
+        try
+        {
+            if (_fusedLocationClient != null && _fusedGpsCallback != null)
+                _fusedLocationClient.RemoveLocationUpdates(_fusedGpsCallback);
+        }
+        catch { /* OK — Client evtl. schon weg */ }
+        _fusedGpsCallback = null;
+    }
+
+    /// <summary>Füttert die FusedLocationProvider-Fixes in denselben GPS-Sample-Puffer wie der
+    /// LocationManager-Pfad — FinalizeGpsAveraging bildet daraus das gewichtete Mittel.</summary>
+    private sealed class FusedGpsCallback(ArCaptureActivity activity)
+        : global::Android.Gms.Location.LocationCallback
+    {
+        public override void OnLocationResult(global::Android.Gms.Location.LocationResult result)
+        {
+            foreach (var loc in result.Locations)
+            {
+                if (loc == null) continue;
+                lock (activity._gpsSamples)
+                {
+                    activity._gpsSamples.Add((loc.Latitude, loc.Longitude,
+                        loc.HasAltitude ? loc.Altitude : (double?)null,
+                        loc.HasAccuracy ? loc.Accuracy : (float?)null));
+                }
+            }
         }
     }
 
@@ -2628,6 +2700,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _isRecording = false;
             _currentRecordingPath = null;
         }
+
+        // FusedLocationProvider-Updates stoppen (Strom; läuft sonst im Hintergrund weiter).
+        StopFusedLocationUpdates();
 
         // Sampler abbrechen: nach OnPause laeuft kein OnDrawFrame mehr, der das 800ms-Fenster
         // finalisieren wuerde. Sonst finalisiert der erste Frame nach OnResume mit Pre-Pause-
@@ -5307,6 +5382,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             try { mgr.RemoveUpdates(listener); } catch { /* OK */ }
         }
         _activeLocationListeners.Clear();
+        StopFusedLocationUpdates();
 
         // RTK-PositionUpdated-Handler abmelden (Plan 3.1) — sonst hält der BleService
         // die Lambda-Referenz auf diese Activity und verhindert GC.

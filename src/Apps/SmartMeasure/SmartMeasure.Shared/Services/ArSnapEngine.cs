@@ -114,7 +114,10 @@ public static class ArSnapEngine
     }
 
     /// <summary>Findet den nächsten existierenden Punkt innerhalb des Snap-Radius (2D auf X/Z).
-    /// Y wird vom Snap-Ziel übernommen — sonst springt der Punkt höhenmäßig.</summary>
+    /// Nur X/Z werden gesnappt — die gemessene Höhe (<paramref name="hitY"/>) bleibt erhalten,
+    /// sonst erbt der Punkt am Hang die fremde Höhe des Snap-Ziels und verfälscht das
+    /// 3D-Geländemodell. Konsistent mit Right-Angle/Parallel/Extension (alle reichen hitY durch);
+    /// ein Höhensprung beim Loop-Schließen wird ohnehin von der Bowditch-Korrektur verteilt.</summary>
     private static (float x, float y, float z)? TryVertexSnap(
         float hitX, float hitY, float hitZ,
         IReadOnlyList<ArPoint>? points)
@@ -137,7 +140,7 @@ public static class ArSnapEngine
         }
 
         if (best == null) return null;
-        return (best.X, best.Y, best.Z);
+        return (best.X, hitY, best.Z);
     }
 
     /// <summary>

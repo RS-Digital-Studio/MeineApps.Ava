@@ -30,7 +30,7 @@ public class ArPoseSamplerTests
         r.Value.z.Should().BeApproximately(-2.00f, 0.02f);
         r.Value.stdDev.Should().BeLessThan(0.05f);
         r.Value.validCount.Should().BeGreaterThan(3);
-        r.Value.maxHitQuality.Should().Be(3);
+        r.Value.hitQuality.Should().Be(3); // Median der Hit-Qualities [3,3,3,2,3]
     }
 
     [Fact]
@@ -52,6 +52,25 @@ public class ArPoseSamplerTests
         r!.Value.x.Should().BeApproximately(1.025f, 0.05f);
         r.Value.z.Should().BeApproximately(-2.0f, 0.05f);
         r.Value.validCount.Should().Be(10); // Outlier raus, alle Cluster-Samples drin
+    }
+
+    [Fact]
+    public void ComputeRobustMedian_ZweiterPassFiltertNachgezogenenOutlier()
+    {
+        // 10 enge Cluster-Samples (x=1.0) + grober Outlier (x=1.5) + moderater Outlier (x=1.25).
+        // Pass 1 (gegen den Median) fängt nur den groben; der moderate zieht das Mittel und wird
+        // erst vom zweiten Pass (gegen das Mittel) entfernt. Ohne den zweiten Pass läge das
+        // Ergebnis bei ~1.023 statt 1.0.
+        var s = new ArPoseSampler();
+        for (var i = 0; i < 10; i++)
+            s.Add(1.0f, 0f, -2.0f, 3);
+        s.Add(1.5f, 0f, -2.0f, 1);  // grober Outlier
+        s.Add(1.25f, 0f, -2.0f, 1); // moderater Outlier
+
+        var r = s.ComputeRobustMedian();
+        r.Should().NotBeNull();
+        r!.Value.x.Should().BeApproximately(1.0f, 0.01f); // beide Outlier raus
+        r.Value.validCount.Should().Be(10);
     }
 
     [Fact]

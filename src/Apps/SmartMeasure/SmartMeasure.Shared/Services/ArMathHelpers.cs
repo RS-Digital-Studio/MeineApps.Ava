@@ -9,18 +9,34 @@ namespace SmartMeasure.Shared.Services;
 /// </summary>
 public static class ArMathHelpers
 {
+    /// <summary>Ergebnis von <see cref="ApplyBowditchCorrection"/> — erlaubt dem Aufrufer,
+    /// einen zu großen Schlussfehler dem Nutzer als Warnung zu melden statt ihn still zu
+    /// schlucken.</summary>
+    public enum BowditchResult
+    {
+        /// <summary>Korrektur angewandt (Schlussfehler 1 cm – 2 m).</summary>
+        Applied,
+        /// <summary>Schlussfehler &lt; 1 cm — Korrektur unnötig, Kontur ist sauber geschlossen.</summary>
+        TooSmall,
+        /// <summary>Schlussfehler &gt; 2 m — NICHT korrigiert. Deutet auf einen Tracking-/Mess-
+        /// Fehler hin; Fläche/Umfang sind unzuverlässig, der Nutzer sollte gewarnt werden.</summary>
+        TooLarge,
+        /// <summary>Kontur entartet (offen, &lt; 3 Punkte oder Gesamtstrecke ~0).</summary>
+        Degenerate,
+    }
+
     /// <summary>
     /// Bowditch-Correction (Compass Rule): Klassische Vermessungs-Technik. Wenn ein
     /// geschlossener Polygonzug einen Schlussfehler hat (letzter Punkt ≠ erster), wird der
     /// Fehler proportional zur zurückgelegten Distanz auf alle Zwischenpunkte verteilt.
     /// Nach der Korrektur wird der letzte Punkt explizit exakt auf den ersten gesetzt
     /// (Float-Akkumulations-Rundungsfehler eliminieren).
-    /// Nur aktiv bei 1 cm – 2 m Schlussfehler (kleiner: unnoetig, groesser: Fehler-Detect).
+    /// Nur aktiv bei 1 cm – 2 m Schlussfehler. Der Rückgabewert macht einen zu großen
+    /// Schlussfehler (&gt; 2 m) sichtbar, damit der Aufrufer warnen kann — vorher still verworfen.
     /// </summary>
-    public static void ApplyBowditchCorrection(ArContour contour)
+    public static BowditchResult ApplyBowditchCorrection(ArContour contour)
     {
-        if (!contour.IsClosed) return;
-        if (contour.Points.Count < 3) return;
+        if (!contour.IsClosed || contour.Points.Count < 3) return BowditchResult.Degenerate;
 
         var first = contour.Points[0];
         var last = contour.Points[^1];
@@ -31,7 +47,8 @@ public static class ArMathHelpers
         var dz = first.Z - last.Z;
 
         var errorMag = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
-        if (errorMag < 0.01f || errorMag > 2.0f) return;
+        if (errorMag < 0.01f) return BowditchResult.TooSmall;
+        if (errorMag > 2.0f) return BowditchResult.TooLarge;
 
         // Kumulative Distanzen entlang des Polygonzugs
         var cumDist = new float[contour.Points.Count];
@@ -40,7 +57,7 @@ public static class ArMathHelpers
             cumDist[i] = cumDist[i - 1] + contour.Points[i].DistanceTo(contour.Points[i - 1]);
 
         var totalDist = cumDist[^1];
-        if (totalDist < 0.01f) return;
+        if (totalDist < 0.01f) return BowditchResult.Degenerate;
 
         for (var i = 1; i < contour.Points.Count; i++)
         {
@@ -54,6 +71,7 @@ public static class ArMathHelpers
         contour.Points[^1].X = first.X;
         contour.Points[^1].Y = first.Y;
         contour.Points[^1].Z = first.Z;
+        return BowditchResult.Applied;
     }
 
     /// <summary>

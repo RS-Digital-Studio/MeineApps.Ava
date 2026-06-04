@@ -151,6 +151,10 @@ public static class ArPrecisionHelpers
             var diff = MathF.Abs(depthMeters - hitDistanceMeters);
             var relDiff = hitDistanceMeters > 0.1f ? diff / hitDistanceMeters : diff;
 
+            // Bewusst: eine durch den Depth-Sensor BESTÄTIGTE Tiefe (<5 cm Abweichung) gibt
+            // einen Bonus (1.2). Fehlende/unsichere Depth-Daten liefern neutral 1.0 (kein
+            // Malus) — Geräte ohne Depth-Sensor werden also nicht bestraft, bekommen aber
+            // diesen Vertrauens-Bonus nicht. Schlechte Übereinstimmung straft (0.8/0.5).
             if (diff < 0.05f) return 1.2f;
             if (relDiff < 0.15f) return 1.0f;
             if (relDiff < 0.30f) return 0.8f;
@@ -440,8 +444,10 @@ public static class ArPrecisionHelpers
 
     /// <summary>Delegation an <see cref="ArMathHelpers.ApplyBowditchCorrection"/>. Wrapper
     /// bleibt fuer existierende Aufrufer (ArCaptureActivity) — die echte Logik lebt in
-    /// Shared/Services damit Unit-Tests sie direkt referenzieren koennen.</summary>
-    public static void ApplyBowditchCorrection(ArContour contour)
+    /// Shared/Services damit Unit-Tests sie direkt referenzieren koennen. Reicht das
+    /// <see cref="ArMathHelpers.BowditchResult"/> durch, damit der Aufrufer bei einem zu
+    /// großen Schlussfehler warnen kann.</summary>
+    public static ArMathHelpers.BowditchResult ApplyBowditchCorrection(ArContour contour)
         => ArMathHelpers.ApplyBowditchCorrection(contour);
 
     /// <summary>
@@ -473,9 +479,11 @@ public static class ArPrecisionHelpers
         // Anchors: bis zu +10 (viele stabile Anker = gute Session)
         score += Math.Min(10, anchorCount);
 
-        // StdDev-Penalty: -5 für jeden cm durchschnittliche Messgenauigkeit
+        // StdDev-Penalty: -5 pro cm durchschnittlicher Streuung (avgPositionStdDev ist in
+        // Metern → ×500 = 5/cm), gedeckelt auf -40, damit ein einzelner Ausreißer-Punkt den
+        // Session-Score nicht komplett auf 0 zieht.
         if (avgPositionStdDev > 0.001f)
-            score -= (int)(avgPositionStdDev * 500);
+            score -= Math.Min(40, (int)(avgPositionStdDev * 500));
 
         return Math.Clamp(score, 0, 100);
     }

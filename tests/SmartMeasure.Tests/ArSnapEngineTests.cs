@@ -100,7 +100,7 @@ public class ArSnapEngineTests
         type.Should().Be(ArSnapEngine.SnapType.Vertex);
         x.Should().Be(0.9f);
         z.Should().Be(-1f);
-        y.Should().Be(0.5f); // Y wird vom Vertex uebernommen
+        y.Should().Be(0f); // nur X/Z gesnappt — die gemessene Höhe (hitY=0) bleibt erhalten
     }
 
     // ===== Parallel-Snap (Plan-Kap. 3.7) =====
@@ -217,7 +217,7 @@ public class ArSnapEngineTests
 
         type.Should().Be(ArSnapEngine.SnapType.Vertex);
         x.Should().Be(0f);
-        y.Should().Be(0.3f);
+        y.Should().Be(0f); // nur X/Z gesnappt — die gemessene Höhe (hitY=0) bleibt erhalten
         z.Should().Be(-2f);
     }
 }

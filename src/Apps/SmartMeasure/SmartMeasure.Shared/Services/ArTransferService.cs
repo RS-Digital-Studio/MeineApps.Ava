@@ -74,7 +74,10 @@ public class ArTransferService : IArTransferService
             {
                 result.GpsLatitude ??= 48.7758;
                 result.GpsLongitude ??= 9.1829;
-                result.GpsAltitude ??= 520.0; // plausibler DE-Default — sonst Hoehen relativ zu 0m Ellipsoid
+                // Ellipsoid-Höhe (~568 m): nach der Geoid-Korrektur (~−48 m in DE) ergibt das
+                // eine plausible NN-Höhe von ~520 m. Vorher stand hier 520 (eine NN-Größe), die
+                // fälschlich als Ellipsoid einging → ~48 m Offset im Platzhalter.
+                result.GpsAltitude ??= 568.0;
             }
             System.Diagnostics.Debug.WriteLine(
                 "AR-Transfer: Keine GPS-Referenz — Fallback-Ursprung verwendet (Masse korrekt, Karten-Lage ungenau).");
@@ -220,11 +223,15 @@ public class ArTransferService : IArTransferService
                 FixQuality = ArFixQuality,
                 SatelliteCount = 0,
                 MagAccuracy = arPoint.MagAccuracyAtCapture,
-                // Echte Mess-Konfidenz durchreichen: RTK-Fix (4) = cm-genau → 1.0, RTK-Float
-                // (5, ±10-50cm) ehrlicher 0.6, sonst die ARCore-Confidence des Punkts
-                // (Hit-Quality + Streuung + Tracking). Vorher ging dieser Wert beim Transfer
-                // verloren — der Nutzer konnte die Qualitaet seiner AR-Messung nicht einschaetzen.
-                Confidence = isRtk ? (result.RtkFixQuality == 4 ? 1f : 0.6f) : arPoint.Confidence,
+                // Echte Mess-Konfidenz: Die RTK-Position ist nur der GPS-Anker des Session-
+                // Ursprungs — die einzelnen Punkt-Lagen (X/Z lokal) stammen weiterhin aus
+                // ARCore-HitTests. Der RTK-Fix wirkt daher als CEILING (Fix=1.0, Float=0.7)
+                // und wird mit der echten ARCore-Punktgüte (Hit-Quality + Streuung + Tracking)
+                // MULTIPLIZIERT, statt sie zu ersetzen. Sonst bekäme ein Punkt mit 8 cm
+                // Streuung und Instant-Placement fälschlich Confidence 1.0.
+                Confidence = isRtk
+                    ? arPoint.Confidence * (result.RtkFixQuality == 4 ? 1f : 0.7f)
+                    : arPoint.Confidence,
                 Timestamp = arPoint.Timestamp,
                 Label = arPoint.Label,
                 // Plan-Kap. 5.6: Foto-Annotation pro Punkt durchreichen

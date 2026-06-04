@@ -13,8 +13,11 @@ public class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
 
-    /// <summary>Plattform-spezifischer Positions-Provider (Android: FusedLocation, Desktop: Mock).</summary>
+    /// <summary>Plattform-spezifischer Positions-Provider (Android: LocationManager, Desktop: Mock).</summary>
     public static Func<IServiceProvider, ILocationService>? LocationServiceFactory { get; set; }
+
+    /// <summary>Plattform-spezifischer Heading-Provider (Android: SensorManager, Desktop: Mock).</summary>
+    public static Func<IServiceProvider, IHeadingService>? HeadingServiceFactory { get; set; }
 
     private MainViewModel? _mainVm;
 
@@ -77,6 +80,9 @@ public class App : Application
         // MainActivity.OnCreate). Build-Zeit-Pruefung wuerde den Mock-Fallback einbrennen.
         services.AddSingleton<ILocationService>(sp =>
             LocationServiceFactory != null ? LocationServiceFactory(sp) : new MockLocationService());
+
+        services.AddSingleton<IHeadingService>(sp =>
+            HeadingServiceFactory != null ? HeadingServiceFactory(sp) : new MockHeadingService());
 
         // Plattformneutrale Kern-Engine (reine Berechnung, testbar).
         services.AddSingleton<ISolarPositionService, SolarPositionService>();

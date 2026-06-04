@@ -179,6 +179,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunSeeker.Desktop", "src\Ap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunSeeker.Tests", "tests\SunSeeker.Tests\SunSeeker.Tests.csproj", "{907DBB53-BDE0-4EFE-BDA4-5A13FE9F8870}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunSeeker.Android", "src\Apps\SunSeeker\SunSeeker.Android\SunSeeker.Android.csproj", "{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -997,6 +999,18 @@ Global
 		{907DBB53-BDE0-4EFE-BDA4-5A13FE9F8870}.Release|x64.Build.0 = Release|Any CPU
 		{907DBB53-BDE0-4EFE-BDA4-5A13FE9F8870}.Release|x86.ActiveCfg = Release|Any CPU
 		{907DBB53-BDE0-4EFE-BDA4-5A13FE9F8870}.Release|x86.Build.0 = Release|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Debug|x64.Build.0 = Debug|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Debug|x86.Build.0 = Debug|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Release|x64.ActiveCfg = Release|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Release|x64.Build.0 = Release|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Release|x86.ActiveCfg = Release|Any CPU
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1084,6 +1098,7 @@ Global
 		{BBB7B94B-6E11-D9F1-7BA6-9ECA82DB22BF} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{011A28DE-78BE-4E34-BA7E-C1F379FA9B17} = {EC4E6CB9-D1A1-6E81-2CD9-36C39FBF9348}
 		{907DBB53-BDE0-4EFE-BDA4-5A13FE9F8870} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC} = {EC4E6CB9-D1A1-6E81-2CD9-36C39FBF9348}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EAAEA93B-578B-49A5-AAF0-F6B6A6D6CD31}

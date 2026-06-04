@@ -104,6 +104,8 @@ public partial class MainViewModel : ObservableObject
                 Refresh();
             });
 
+        _location.Start(); // Live-GPS-Updates (Android); auf Desktop ein No-op.
+
         _initialized = true;
         Refresh();
 

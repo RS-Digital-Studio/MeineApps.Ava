@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Internet (Anker-Cloud-MQTT fuer Live-Watt, spaeter) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- GPS (Standort fuer Sonnenstandsberechnung + Missweisung) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Keine Werbe-ID (rein privat) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
+                     tools:node="remove" />
+
+    <application
+        android:allowBackup="false"
+        android:largeHeap="true"
+        android:icon="@mipmap/appicon"
+        android:roundIcon="@mipmap/appicon_round"
+        android:label="SunSeeker"
+        android:theme="@style/MyTheme.NoActionBar" />
+</manifest>

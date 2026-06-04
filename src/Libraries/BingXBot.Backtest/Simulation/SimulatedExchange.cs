@@ -39,10 +39,15 @@ public class SimulatedExchange : IExchangeClient, IDisposable
     // kollabierende Sharpe-Annualisierung und falsche EntryTime/ExitTime-Werte verursacht hat).
     private DateTime _currentBacktestTime = DateTime.UtcNow;
 
-    public SimulatedExchange(BacktestSettings settings)
+    // Optionaler Min-Order-Provider: Spiegelt die Live-Reject-Semantik (BingXRestClient.PlaceOrderAsync)
+    // im Portfolio-Backtest. Null bei der Single-Symbol-Engine → kein Min-Order-Effekt (Backward-Compat).
+    private readonly ISymbolInfoProvider? _symbolInfo;
+
+    public SimulatedExchange(BacktestSettings settings, ISymbolInfoProvider? symbolInfo = null)
     {
         _settings = settings;
         _balance = settings.InitialBalance;
+        _symbolInfo = symbolInfo;
     }
 
     /// <summary>
@@ -170,7 +175,25 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                 // Market-Order sofort fuellen
                 var basePrice = GetPriceLocked(request.Symbol);
                 var fillPrice = ApplySlippage(basePrice, request.Side, request.Symbol);
-                var fee = _settings.TakerFee * request.Quantity * fillPrice;
+
+                // Min-Order/Min-Notional-Check (GAP 2): Spiegelt BingXRestClient.PlaceOrderAsync.
+                // Nur aktiv wenn ein Provider gesetzt ist (Portfolio-Backtest mit kleinem Konto);
+                // bei _symbolInfo == null bleibt das Verhalten EXAKT unveraendert (Single-Symbol-Engine).
+                // Live nutzt den Ticker-Preis (basePrice) fuer den Notional-Check, nicht den Slippage-Fill.
+                var effectiveQty = request.Quantity;
+                if (_symbolInfo != null)
+                {
+                    effectiveQty = _symbolInfo.TruncateQuantity(request.Symbol, request.Quantity);
+                    if (effectiveQty <= 0 || !_symbolInfo.MeetsMinimumOrder(request.Symbol, effectiveQty, basePrice))
+                    {
+                        var minRejected = new Order(orderId, request.Symbol, request.Side, request.Type,
+                            fillPrice, request.Quantity, request.StopPrice, _currentBacktestTime,
+                            OrderStatus.Rejected, RejectionReason: "MinOrder");
+                        return Task.FromResult(minRejected);
+                    }
+                }
+
+                var fee = _settings.TakerFee * effectiveQty * fillPrice;
 
                 // Leverage aus Settings holen (Default: 10x)
                 var leverageKey = $"{request.Symbol}_{request.Side}";
@@ -178,7 +201,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                 var effectiveLeverage = leverage > 0 ? leverage : 1;
 
                 // Margin-Check: Benoetigte Margin berechnen und pruefen ob genug verfuegbar
-                var requiredMargin = request.Quantity * fillPrice / effectiveLeverage;
+                var requiredMargin = effectiveQty * fillPrice / effectiveLeverage;
                 var unrealizedPnl = _positions.Sum(p =>
                 {
                     var cp = _currentPrices.GetValueOrDefault(p.Symbol, p.EntryPrice);
@@ -206,8 +229,8 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                 {
                     // Position vergroessern (Durchschnittspreis berechnen)
                     var pos = _positions[existing];
-                    var totalQty = pos.Quantity + request.Quantity;
-                    var avgPrice = (pos.EntryPrice * pos.Quantity + fillPrice * request.Quantity) / totalQty;
+                    var totalQty = pos.Quantity + effectiveQty;
+                    var avgPrice = (pos.EntryPrice * pos.Quantity + fillPrice * effectiveQty) / totalQty;
                     // Gesamte Opening-Fee akkumulieren (bestehende + neue)
                     var existingOpenFee = _positionOpenFees.GetValueOrDefault($"{pos.Symbol}_{pos.Side}", 0m);
                     _positionOpenFees[$"{pos.Symbol}_{pos.Side}"] = existingOpenFee + fee;
@@ -230,7 +253,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                         request.Side,
                         fillPrice,
                         fillPrice,
-                        request.Quantity,
+                        effectiveQty,
                         0m,
                         effectiveLeverage,
                         MarginType.Isolated,
@@ -239,7 +262,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
 
                 _positionsDirty = true;
                 var filledOrder = new Order(orderId, request.Symbol, request.Side, request.Type,
-                    fillPrice, request.Quantity, request.StopPrice, _currentBacktestTime, OrderStatus.Filled);
+                    fillPrice, effectiveQty, request.StopPrice, _currentBacktestTime, OrderStatus.Filled);
 
                 return Task.FromResult(filledOrder);
             }

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Exchange.Models;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ namespace BingXBot.Exchange;
 /// Wird einmal beim Start geladen und bleibt für die gesamte Session gültig.
 /// Thread-safe durch ConcurrentDictionary.
 /// </summary>
-public class SymbolInfoCache
+public class SymbolInfoCache : ISymbolInfoProvider
 {
     private readonly ConcurrentDictionary<string, SymbolInfo> _cache = new();
     private readonly ILogger _logger;

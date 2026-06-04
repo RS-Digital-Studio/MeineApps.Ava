@@ -1,5 +1,6 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Core.Services;
 using BingXBot.Backtest.Simulation;
@@ -26,7 +27,8 @@ internal static class BacktestExitProcessor
         BacktestSettings settings,
         RiskSettings? riskSettings,
         string symbol,
-        Candle currentCandle)
+        Candle currentCandle,
+        ISymbolInfoProvider? symbolInfo = null)
     {
         // SL/TP-Check auf offene Positionen mit echten Werten aus dem Signal
         // positions ist bereits eine Kopie (IReadOnlyList aus SimulatedExchange), kein ToList() nötig
@@ -104,9 +106,32 @@ internal static class BacktestExitProcessor
                 if (tp1Hit)
                 {
                     var closeQty = Math.Round(exitState.OriginalQuantity * settings.Tp1CloseRatio, 6);
+
+                    // Min-Qty-Guard (GAP 2): Spiegelt SplitTpQuantity/MeetsMinimumOrder aus
+                    // LiveTradingService.OrderPlacement.cs. Faellt die TP1-Teilmenge oder der TP2-Rest
+                    // unter die Min-Order, kein Split → Full-TP bei TP1 (verhindert BingX-Reject auf
+                    // winzige Teilmengen, z.B. ETH 0.01 / Min-Qty 0.01). Nur aktiv mit Provider.
+                    var tp1Price = origSignal.TakeProfit!.Value;
+                    var remainderQty = Math.Round(exitState.OriginalQuantity - closeQty, 6);
+                    var foldToFullTp = symbolInfo != null && closeQty > 0 &&
+                        (remainderQty <= 0m
+                         || !symbolInfo.MeetsMinimumOrder(symbol, closeQty, tp1Price)
+                         || !symbolInfo.MeetsMinimumOrder(symbol, remainderQty, tp1Price));
+
+                    if (foldToFullTp)
+                    {
+                        // Full-TP: gesamte verbleibende Position bei TP1 schliessen, kein TP2-Bein.
+                        simExchange.SetCurrentPrice(symbol, tp1Price);
+                        await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: true).ConfigureAwait(false);
+                        simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+                        positionSignals.Remove(key);
+                        exitTracking.Remove(key);
+                        continue;
+                    }
+
                     if (closeQty > 0)
                     {
-                        simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
+                        simExchange.SetCurrentPrice(symbol, tp1Price);
                         // TP1 = Limit-Reduce-Only auf der echten Exchange → MakerFee
                         await simExchange.ReducePositionAsync(symbol, pos.Side, closeQty, isMakerClose: true).ConfigureAwait(false);
                         simExchange.SetCurrentPrice(symbol, currentCandle.Close);

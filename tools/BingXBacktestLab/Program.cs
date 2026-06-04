@@ -112,6 +112,19 @@ if (GetArg(argMap, "full", null) != null)
         slValues, parallelism, outDir, label);
 }
 
+// --- Achsen-Sweep (--axis be|tp|sl|tp1split): isolierte OFAT-Kurve EINER Stellschraube ---
+//     --axis-values ueberschreibt die Default-Werteliste. Alle anderen Achsen = Live-Baseline.
+if (GetArg(argMap, "axis", null) != null)
+{
+    var memData = new MemoryKlineCache(dataClient);
+    var axis = (GetArg(argMap, "axis", "be") ?? "be").ToLowerInvariant();
+    var valuesArg = GetArg(argMap, "axis-values", null);
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    var (title, variants) = BuildAxisVariants(axis, valuesArg);
+    return await Sweep.AxisAsync(title, variants, symbols, tfs, from, to, botSettings, memData,
+        parallelism, outDir, label);
+}
+
 // --- Backtest-Matrix ---
 var results = new List<RunResult>();
 int total = strategies.Count * symbols.Count * tfs.Count;
@@ -259,6 +272,47 @@ static List<string> GetList(Dictionary<string, string> map, string key, string d
     (GetArg(map, key, def) ?? def).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
 static TimeFrame ParseTf(string s) => Enum.Parse<TimeFrame>(s, ignoreCase: true);
+
+static List<decimal> ParseDecList(string s) =>
+    s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+     .Select(x => decimal.Parse(x, CultureInfo.InvariantCulture)).ToList();
+
+// Baut die OFAT-Varianten fuer eine Achse: variiert nur diese eine Stellschraube auf der
+// Live-Baseline. RRR-Achse erwartet "r1/r2"-Paare (z.B. "1.5/3.0,2.0/4.0").
+static (string Title, List<(string Label, ParamCombo Combo)> Variants) BuildAxisVariants(string axis, string? valuesArg)
+{
+    var b = Sweep.Baseline;
+    switch (axis)
+    {
+        case "sl":
+            return ("Stop-Loss (ATR-Multiplikator)",
+                ParseDecList(valuesArg ?? "2.0,2.5,2.75,3.0,3.25,3.5")
+                    .Select(v => ($"SL×{v:0.00}", b with { AtrSl = v })).ToList());
+        case "be":
+            // 0 = BE-Distanz-Trigger aus (nur A-Bruch, bei TrendFollow NavPointA=0 → nie BE).
+            return ("Break-Even-Trigger (R-Multiple)",
+                ParseDecList(valuesArg ?? "0,1.0,1.5,2.0,2.5,3.0")
+                    .Select(v => ($"BE{v:0.0}R", b with { BeTrigger = v })).ToList());
+        case "tp1split":
+            // Anteil, der bei TP1 geschlossen wird (1.0 = alles bei TP1, kein TP2-Runner-Rest).
+            return ("TP1-Teilschliessung (Close-Ratio)",
+                ParseDecList(valuesArg ?? "0.3,0.5,0.7,1.0")
+                    .Select(v => ($"TP1x{v:0.00}", b with { Tp1Split = v })).ToList());
+        case "tp":
+            var pairs = (valuesArg ?? "1.0/2.0,1.2/2.5,1.5/3.0,1.5/4.0,2.0/4.0,2.0/5.0,2.5/5.0")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var tpVariants = pairs.Select(p =>
+            {
+                var xy = p.Split('/', StringSplitOptions.TrimEntries);
+                var r1 = decimal.Parse(xy[0], CultureInfo.InvariantCulture);
+                var r2 = decimal.Parse(xy[1], CultureInfo.InvariantCulture);
+                return ($"RRR{r1:0.0}/{r2:0.0}", b with { Rrr1 = r1, Rrr2 = r2 });
+            }).ToList();
+            return ("Take-Profit (RRR1/RRR2)", tpVariants);
+        default:
+            throw new ArgumentException($"Unbekannte Achse: {axis} (erlaubt: sl, be, tp, tp1split)");
+    }
+}
 
 static List<string> ResolveSymbols(string? explicitList, string? preset)
 {

@@ -27,17 +27,25 @@ dotnet run --project tools/BingXBacktestLab -c Release -- \
 Output: Console-Tabelle + `reports/report-{label}.md` + `.json`. Aggregat pro Strategie
 (WinRate, PF, Expectancy/Trade, Σ PnL, RRR, MaxDD, **Long/Short-Aufschlüsselung**) + Detail pro TF.
 
-## Parameter-Sweep & Walk-Forward (`--sweep` / `--full` / `--compare`)
+## Parameter-Sweep & Walk-Forward (`--sweep` / `--full` / `--compare` / `--axis`)
 
-Drei Modi finden datengetrieben bessere Parameter (statt manuell `settings.json` zu variieren). Alle nutzen
+Vier Modi finden datengetrieben bessere Parameter (statt manuell `settings.json` zu variieren). Alle nutzen
 einen In-Memory-Kline-Cache (`MemoryKlineCache`) vor dem Disk-Cache + parallele Ausführung (`--sweep-parallel`,
 Default = CPU-Kerne). Backtests sind deterministisch (SimulatedExchange-RNG seed 42 → parallel-sicher).
 
 | Modus | Zweck | Kern-Args |
 |-------|-------|-----------|
 | `--sweep` | Grid über TrendFollow-Achsen (Don/EMA/ADX/SL/RRR + BE + TP1-Split), Walk-Forward Train→OOS-Test | `--sweep-grid focused\|extended\|sl-fine`, `--train-split 0.65`, `--sweep-top 20`, `--sweep-min-trades 50`, `--sweep-rank expectancy\|pf\|totalpnl` |
+| `--axis` | **Isolierter OFAT-Sweep EINER Stellschraube** (`sl`/`be`/`tp`/`tp1split`) durchgehend über den GANZEN Zeitraum, alle anderen Achsen = Live-Baseline. Ehrlichster Einzeleffekt ohne Achsen-Kopplung | `--axis be`, `--axis-values "0,1.0,1.5,2.0,2.5,3.0"` (bei `tp` RRR-Paare: `"1.5/3.0,2.0/4.0"`) |
 | `--full` | Mehrere SL-Werte (sonst Live-Default) durchgehend über den GANZEN Zeitraum (alle Phasen, kein Split) | `--compare-sl "2.5,2.75,3.0,3.25"` |
 | `--compare` | Dieselben SL-Werte über rollierende, überlappende Fenster — Konsistenz/Robustheit pro Phase | `--compare-sl …`, `--window-days 180`, `--step-days 60` |
+
+`--axis` ist der Schwester-Modus zu `--full` (das nur SL kann) für BE/TP/TP1-Split. Die Live-Baseline lebt
+zentral in `Sweep.Baseline` (spiegelt `StrategyFactory.Create("TrendFollow-Fast")` + RiskSettings-Defaults:
+Don10/EMA34/ADX18/**SL×2.75**/RRR1.5-3.0/BE2.0/TP1-Split50%) — bei Live-Parameter-Änderungen mitziehen.
+**Phasen-Gotcha:** Der durchgehende Lauf bevorzugt bei TP/TP1-Split die weiteren Ziele (Gewinner-laufen-lassen),
+weil das 2-Jahres-ΣPnL von der jüngsten Bull-Phase dominiert wird. Immer phasenweise (3 disjunkte Fenster)
+gegenprüfen — weite TPs verlieren in Bärenphasen ~2× mehr (Bull-Overfitting). Reports: `reports/axis-*.md`.
 
 **Scoring:** `--sweep` rankt nach **Worst-of-both** (`min(Train, Test)`) — bestraft Overfitting (Train≫Test)
 *und* Test-Glück (Test≫Train). TrendFollow-Parameter sind Strategie-Konstruktor-Argumente (direkt instanziiert),

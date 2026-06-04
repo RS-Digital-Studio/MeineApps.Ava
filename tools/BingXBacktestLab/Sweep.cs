@@ -67,9 +67,13 @@ internal sealed record ComboResult(ParamCombo Combo, PhaseResult Train, PhaseRes
 
 internal static class Sweep
 {
-    /// <summary>Live-Default (TrendFollow-Fast, BE 2.0, TP1-Split 50%) als Vergleichs-Baseline.</summary>
+    /// <summary>Live-Default (TrendFollow-Fast) als Vergleichs-Baseline — spiegelt exakt
+    /// <c>StrategyFactory.Create("TrendFollow-Fast")</c> + RiskSettings-Defaults:
+    /// Don10/EMA34/ADX18/SL×2.75/RRR1.5-3.0/BE2.0/TP1-Split50%. SL ist 2.75 (nicht 2.5) —
+    /// das ist der live deployte Wert (StrategyFactory), den der --full-Sweep als robustes
+    /// SL-Optimum bestaetigt hat.</summary>
     public static readonly ParamCombo Baseline = new(
-        Donchian: 10, Ema: 34, AdxMin: 18m, AtrSl: 2.5m, Rrr1: 1.5m, Rrr2: 3.0m,
+        Donchian: 10, Ema: 34, AdxMin: 18m, AtrSl: 2.75m, Rrr1: 1.5m, Rrr2: 3.0m,
         BeTrigger: 2.0m, Tp1Split: 0.5m);
 
     public static List<ParamCombo> BuildGrid(string scope)
@@ -356,6 +360,81 @@ internal static class Sweep
             var r = res[ci];
             Console.WriteLine($"{slValues[ci],6:0.00} {r.Trades,5} {r.WinRate,6:F1}% {FmtPf(r.ProfitFactor),6} {r.Expectancy,8:F3} {r.TotalPnl,9:F1} " +
                 $"  {r.LongTrades,3}@{r.LongWinRate,3:F0}%/{r.LongPnl,7:F0}  {r.ShortTrades,3}@{r.ShortWinRate,3:F0}%/{r.ShortPnl,7:F0}");
+        }
+        Console.WriteLine($"\nReport: {mdPath}");
+        return 0;
+    }
+
+    // ========================================================================
+    //  Isolierter Ein-Achsen-Sweep (--axis): OFAT (One-Factor-At-A-Time). Variiert EINE
+    //  Stellschraube (SL / BE / TP-RRR / TP1-Split) ueber den ganzen Zeitraum, alle anderen
+    //  Achsen bleiben auf dem Live-Stand (Baseline). Ehrlichste Entscheidungsbasis pro Achse —
+    //  zeigt den reinen Effekt einer Stellschraube ohne Achsen-Kopplung (im Gegensatz zum
+    //  vollen --sweep-Grid, dessen Sieger eine bestimmte Kombination ist).
+    // ========================================================================
+    public static async Task<int> AxisAsync(
+        string axisTitle, IReadOnlyList<(string Label, ParamCombo Combo)> variants,
+        IReadOnlyList<string> symbols, IReadOnlyList<TimeFrame> tfs, DateTime from, DateTime to,
+        BotSettings baseSettings, IPublicMarketDataClient data,
+        int parallelism, string outDir, string? label)
+    {
+        Console.WriteLine($"=== Isolierter Achsen-Sweep (OFAT): {axisTitle} ===");
+        Console.WriteLine($"Varianten  : {string.Join(", ", variants.Select(v => v.Label))}");
+        Console.WriteLine($"Baseline   : {Baseline.Label}");
+        Console.WriteLine($"Zeitraum   : {from:yyyy-MM-dd} .. {to:yyyy-MM-dd} (durchgehend, kein Split)");
+        Console.WriteLine($"Symbole    : {symbols.Count} | TFs: {string.Join(",", tfs)}");
+        Console.WriteLine();
+
+        var res = new PhaseResult[variants.Count];
+        Console.WriteLine($"Variante 1/{variants.Count} ({variants[0].Label}) sequenziell (warmt Cache)...");
+        res[0] = await EvaluateAsync(variants[0].Combo, symbols, tfs, from, to, data, baseSettings, default);
+        if (variants.Count > 1)
+        {
+            Console.WriteLine($"Restliche {variants.Count - 1} Varianten parallel...");
+            var pOpts = new ParallelOptions { MaxDegreeOfParallelism = parallelism };
+            await Parallel.ForEachAsync(Enumerable.Range(1, variants.Count - 1), pOpts, async (vi, ct) =>
+            {
+                res[vi] = await EvaluateAsync(variants[vi].Combo, symbols, tfs, from, to, data, baseSettings, ct);
+            });
+        }
+
+        // Report
+        var stamp = label ?? "axis";
+        Directory.CreateDirectory(outDir);
+        var sb = new StringBuilder();
+        sb.AppendLine($"# Isolierter Achsen-Sweep — {axisTitle} — {stamp}");
+        sb.AppendLine();
+        sb.AppendLine($"- Variierte Achse: **{axisTitle}** (alle anderen Achsen = Live-Baseline)");
+        sb.AppendLine($"- Baseline (Live): {Baseline.Label}");
+        sb.AppendLine($"- Zeitraum: {from:yyyy-MM-dd} .. {to:yyyy-MM-dd} (durchgehend — alle Marktphasen in einem Fenster)");
+        sb.AppendLine($"- Symbole: {symbols.Count} | TFs: {string.Join("/", tfs)}");
+        sb.AppendLine();
+        sb.AppendLine("| Variante | n | WinRate | PF | Exp/Trade | ΣPnL | Long (n@WR/PnL) | Short (n@WR/PnL) |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|");
+        for (int vi = 0; vi < variants.Count; vi++)
+        {
+            var r = res[vi];
+            var marker = variants[vi].Combo.Equals(Baseline) ? " *(Baseline/Live)*" : "";
+            sb.AppendLine($"| **{variants[vi].Label}**{marker} | {r.Trades} | {r.WinRate:F1}% | {FmtPf(r.ProfitFactor)} | {r.Expectancy:F3} | {r.TotalPnl:F1} | " +
+                $"{r.LongTrades}@{r.LongWinRate:F0}%/{r.LongPnl:F0} | {r.ShortTrades}@{r.ShortWinRate:F0}%/{r.ShortPnl:F0} |");
+        }
+        var mdPath = Path.Combine(outDir, $"axis-{stamp}.md");
+        File.WriteAllText(mdPath, sb.ToString());
+        var jsonPath = Path.Combine(outDir, $"axis-{stamp}.json");
+        File.WriteAllText(jsonPath, JsonSerializer.Serialize(new
+        {
+            axisTitle, from, to, baseline = Baseline.Label,
+            results = variants.Select((v, vi) => new { v.Label, isBaseline = v.Combo.Equals(Baseline), v.Combo, result = res[vi] })
+        }, new JsonSerializerOptions { WriteIndented = true }));
+
+        // Console-Tabelle
+        Console.WriteLine($"\n{"Variante",-14} {"n",5} {"WR",7} {"PF",6} {"Exp",8} {"ΣPnL",9} {"Long",18} {"Short",18}");
+        for (int vi = 0; vi < variants.Count; vi++)
+        {
+            var r = res[vi];
+            var marker = variants[vi].Combo.Equals(Baseline) ? " <Baseline" : "";
+            Console.WriteLine($"{variants[vi].Label,-14} {r.Trades,5} {r.WinRate,6:F1}% {FmtPf(r.ProfitFactor),6} {r.Expectancy,8:F3} {r.TotalPnl,9:F1} " +
+                $"  {r.LongTrades,3}@{r.LongWinRate,3:F0}%/{r.LongPnl,7:F0}  {r.ShortTrades,3}@{r.ShortWinRate,3:F0}%/{r.ShortPnl,7:F0}{marker}");
         }
         Console.WriteLine($"\nReport: {mdPath}");
         return 0;

@@ -186,15 +186,18 @@ public partial class ArCaptureActivity
     {
         try
         {
-            // Index 0 = gefuehrtes Rechteck, danach die Freihand-Kontur-Typen.
-            var labels = new string[ContourTypeOptions.Length + 1];
-            labels[0] = RectangleEntryLabel;
-            for (var i = 0; i < ContourTypeOptions.Length; i++)
-                labels[i + 1] = ContourTypeOptions[i].Label;
+            // Index 0 = gefuehrtes Rechteck, danach die Freihand-Kontur-Typen, jeweils mit Typ-Punkt.
+            var items = new List<(string, Color)>(ContourTypeOptions.Length + 1)
+            {
+                (RectangleEntryLabel, ToolbarAccent),
+            };
+            foreach (var opt in ContourTypeOptions)
+                items.Add((opt.Label, ArPointOverlayView.GetContourTypeColor(opt.Type)));
 
+            var density = Resources?.DisplayMetrics?.Density ?? 1f;
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
             builder.SetTitle("Fläche zeichnen — Methode wählen");
-            builder.SetItems(labels, (_, e) =>
+            builder.SetAdapter(new DotListAdapter(this, items, density), (_, e) =>
             {
                 if (e.Which == 0)
                     ShowRectangleTypeDialog();
@@ -218,11 +221,15 @@ public partial class ArCaptureActivity
     {
         try
         {
-            var labels = ContourTypeOptions.Select(o => o.Label).ToArray();
+            var items = ContourTypeOptions
+                .Select(o => (o.Label, ArPointOverlayView.GetContourTypeColor(o.Type)))
+                .ToList();
+            var density = Resources?.DisplayMetrics?.Density ?? 1f;
 
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
             builder.SetTitle("Rechteck/Quadrat — Typ wählen");
-            builder.SetItems(labels, (_, e) => StartRectangleMode(ContourTypeOptions[e.Which].Type));
+            builder.SetAdapter(new DotListAdapter(this, items, density),
+                (_, e) => StartRectangleMode(ContourTypeOptions[e.Which].Type));
             builder.SetNegativeButton("Abbrechen", (_, _) => { });
             builder.Show();
         }
@@ -333,20 +340,25 @@ public partial class ArCaptureActivity
         VibrateLight();
         try
         {
-            var sb = new System.Text.StringBuilder();
+            // Farbcodierte Status-Dots statt [OK]/[--]-Klartext: grün ok, rot fehlt,
+            // bernstein Achtung/lädt, grau reine Info.
+            var good = Color.Argb(255, 38, 198, 122);
+            var poor = Color.Argb(255, 235, 77, 75);
+            var medium = Color.Argb(255, 245, 176, 65);
+            var info = Color.Argb(255, 150, 160, 175);
 
-            // Klartext-Marker statt Symbole: [OK] / [--] / [..] / [i] / [!]
+            var rows = new List<(string, Color)>();
+
             // ARCore-Session aktiv
-            sb.Append(_arSession != null ? "[OK] " : "[--] ");
-            sb.AppendLine($"ARCore-Session: {(_arSession != null ? "läuft" : "fehlt")}");
+            rows.Add(($"ARCore-Session: {(_arSession != null ? "läuft" : "fehlt")}",
+                _arSession != null ? good : poor));
 
             // Kamera-Stabilität
             var stability = _stabilityMonitor?.StabilityScore ?? 0f;
-            sb.Append(stability >= 0.6f ? "[OK] " : "[--] ");
-            sb.AppendLine($"Stabilität: {(int)(stability * 100)}% (mind. 60% nötig)");
+            rows.Add(($"Stabilität: {(int)(stability * 100)}% (mind. 60% nötig)",
+                stability >= 0.6f ? good : poor));
 
             // Magnetometer-Accuracy
-            var magOk = _magneticAccuracy >= 2;
             var magLabel = _magneticAccuracy switch
             {
                 3 => "hoch",
@@ -354,8 +366,7 @@ public partial class ArCaptureActivity
                 1 => "niedrig",
                 _ => "keine",
             };
-            sb.Append(magOk ? "[OK] " : "[--] ");
-            sb.AppendLine($"Kompass: {magLabel} (mind. mittel)");
+            rows.Add(($"Kompass: {magLabel} (mind. mittel)", _magneticAccuracy >= 2 ? good : poor));
 
             // Erkannte Planes
             var planeCount = 0;
@@ -368,37 +379,45 @@ public partial class ArCaptureActivity
                             planeCount++;
             }
             catch { /* harmlos */ }
-            sb.Append(planeCount > 0 ? "[OK] " : "[--] ");
-            sb.AppendLine($"Erkannte Flächen: {planeCount}");
+            rows.Add(($"Erkannte Flächen: {planeCount}", planeCount > 0 ? good : poor));
 
-            // Anchor-Count (Drift-Kompensation)
-            var anchors = _anchorManager.CountTracking();
-            sb.AppendLine($"[i]  Aktive Anchors: {anchors}");
+            // Anchor-Count (Drift-Kompensation) — reine Info
+            rows.Add(($"Aktive Anchors: {_anchorManager.CountTracking()}", info));
 
             // Geospatial-API
-            sb.Append(_geospatialActive ? "[OK] " : "[..] ");
-            sb.AppendLine($"Geospatial-VPS: {(_geospatialActive ? "aktiv" : _geospatialEnabled ? "lokalisiert noch" : "deaktiviert")}");
+            rows.Add(($"Geospatial-VPS: {(_geospatialActive ? "aktiv" : _geospatialEnabled ? "lokalisiert noch" : "deaktiviert")}",
+                _geospatialActive ? good : _geospatialEnabled ? medium : info));
 
             // GPS
-            sb.Append(_gpsLatitude.HasValue ? "[OK] " : "[--] ");
             var gpsAcc = _gpsAccuracy.HasValue ? $"±{_gpsAccuracy.Value:F1}m" : "—";
-            sb.AppendLine($"GPS: {(_gpsLatitude.HasValue ? "Fix" : "kein Fix")} ({gpsAcc})");
+            rows.Add(($"GPS: {(_gpsLatitude.HasValue ? "Fix" : "kein Fix")} ({gpsAcc})",
+                _gpsLatitude.HasValue ? good : poor));
 
-            // Tracking-Continuity
-            var ratio = _frameCountTotal > 0
-                ? (float)_frameCountTracking / _frameCountTotal
-                : 1f;
-            sb.AppendLine($"[i]  Tracking-Kontinuität: {(int)(ratio * 100)}%");
+            // Tracking-Continuity — reine Info
+            var ratio = _frameCountTotal > 0 ? (float)_frameCountTracking / _frameCountTotal : 1f;
+            rows.Add(($"Tracking-Kontinuität: {(int)(ratio * 100)}%", info));
 
-            // Thermal
+            // Thermal / Battery — Warnungen
             if (!string.IsNullOrEmpty(_thermalWarningText))
-                sb.AppendLine($"[!]  {_thermalWarningText}");
+                rows.Add((_thermalWarningText!, medium));
             if (!string.IsNullOrEmpty(_batteryWarningText))
-                sb.AppendLine($"[!]  {_batteryWarningText}");
+                rows.Add((_batteryWarningText!, medium));
+
+            var density = Resources?.DisplayMetrics?.Density ?? 1f;
+            var list = new global::Android.Widget.LinearLayout(this)
+            {
+                Orientation = global::Android.Widget.Orientation.Vertical,
+            };
+            var padTop = (int)(8 * density);
+            list.SetPadding((int)(8 * density), padTop, (int)(8 * density), padTop);
+            foreach (var (label, dot) in rows)
+                list.AddView(BuildDotRow(label, dot, density));
+            var scroll = new global::Android.Widget.ScrollView(this);
+            scroll.AddView(list);
 
             var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
             builder.SetTitle("Mess-Bereitschaft");
-            builder.SetMessage(sb.ToString());
+            builder.SetView(scroll);
             builder.SetPositiveButton("Schließen", (_, _) => { });
             if (_magneticAccuracy < 2)
             {
@@ -412,6 +431,58 @@ public partial class ArCaptureActivity
         catch (Exception ex)
         {
             global::Android.Util.Log.Warn("ArCapture", $"ReadinessDetail-Dialog failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Baut eine nicht-klickbare Info-Zeile mit farbigem Status-Punkt links (für den
+    /// Readiness-Dialog). Punkt = GradientDrawable-Oval als linkes CompoundDrawable.</summary>
+    private global::Android.Views.View BuildDotRow(string label, Color dot, float density)
+    {
+        var tv = new global::Android.Widget.TextView(this) { Text = label, TextSize = 15 };
+        var padH = (int)(16 * density);
+        var padV = (int)(9 * density);
+        tv.SetPadding(padH, padV, padH, padV);
+        tv.Gravity = global::Android.Views.GravityFlags.CenterVertical;
+
+        var size = (int)(12 * density);
+        var drawable = new global::Android.Graphics.Drawables.GradientDrawable();
+        drawable.SetShape(global::Android.Graphics.Drawables.ShapeType.Oval);
+        drawable.SetColor(dot);
+        drawable.SetBounds(0, 0, size, size);
+        tv.SetCompoundDrawables(drawable, null, null, null);
+        tv.CompoundDrawablePadding = (int)(14 * density);
+        return tv;
+    }
+
+    /// <summary>Listen-Adapter für AlertDialogs mit farbigem Status-/Typ-Punkt links neben jedem
+    /// Eintrag — ersetzt die reinen Text-Listen (SetItems) durch eine visuell codierte Auswahl.</summary>
+    private sealed class DotListAdapter(
+        Context context, IReadOnlyList<(string Label, Color Dot)> items, float density)
+        : global::Android.Widget.BaseAdapter
+    {
+        public override int Count => items.Count;
+        public override Java.Lang.Object? GetItem(int position) => null;
+        public override long GetItemId(int position) => position;
+
+        public override global::Android.Views.View GetView(
+            int position, global::Android.Views.View? convertView, global::Android.Views.ViewGroup? parent)
+        {
+            var tv = convertView as global::Android.Widget.TextView
+                     ?? new global::Android.Widget.TextView(context) { TextSize = 16 };
+            tv.Text = items[position].Label;
+            var padH = (int)(20 * density);
+            var padV = (int)(13 * density);
+            tv.SetPadding(padH, padV, padH, padV);
+            tv.Gravity = global::Android.Views.GravityFlags.CenterVertical;
+
+            var size = (int)(14 * density);
+            var drawable = new global::Android.Graphics.Drawables.GradientDrawable();
+            drawable.SetShape(global::Android.Graphics.Drawables.ShapeType.Oval);
+            drawable.SetColor(items[position].Dot);
+            drawable.SetBounds(0, 0, size, size);
+            tv.SetCompoundDrawables(drawable, null, null, null);
+            tv.CompoundDrawablePadding = (int)(16 * density);
+            return tv;
         }
     }
 

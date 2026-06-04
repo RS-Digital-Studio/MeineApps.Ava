@@ -680,7 +680,7 @@ public sealed partial class ArPointOverlayView : View
     }
 
     /// <summary>Farbe pro ArContourType (für Multi-Kontur-Visualisierung in Gartenplanung).</summary>
-    private static Color GetContourTypeColor(ArContourType type) => type switch
+    internal static Color GetContourTypeColor(ArContourType type) => type switch
     {
         ArContourType.Weg        => Color.Argb(220, 144, 164, 174), // Blaugrau
         ArContourType.Beet       => Color.Argb(220, 109, 76, 65),   // Braun
@@ -1973,15 +1973,27 @@ public sealed partial class ArPointOverlayView : View
         if (string.IsNullOrEmpty(_state.TransientHint)) return;
         if (Java.Lang.JavaSystem.CurrentTimeMillis() > _transientHintUntilMs) return;
 
+        // Schweregrad → Panel-Ton + Status-Dot (Info neutral, Erfolg grün, Warnung bernstein).
+        var (tone, dotColor) = _state.TransientHintSeverity switch
+        {
+            TransientSeverity.Success => (PanelTone.Good, C.Good),
+            TransientSeverity.Warning => (PanelTone.Medium, C.Medium),
+            _ => (PanelTone.Neutral, C.Neutral),
+        };
+
         var textWidth = _transientHintTextPaint.MeasureText(_state.TransientHint);
-        var bannerW = textWidth + 32 * _density;
+        var dotSpace = 18 * _density;
+        var bannerW = textWidth + 32 * _density + dotSpace;
         var bannerH = 32 * _density;
         var cx = width / 2f;
         var top = height - 140 * _density;
+        var left = cx - bannerW / 2f;
 
-        var rect = new RectF(cx - bannerW / 2f, top, cx + bannerW / 2f, top + bannerH);
-        DrawPanel(canvas, rect, RadiusPill, PanelTone.Neutral, raised: true);
-        canvas.DrawText(_state.TransientHint, cx, top + bannerH / 2f + 5 * _density, _transientHintTextPaint);
+        var rect = new RectF(left, top, left + bannerW, top + bannerH);
+        DrawPanel(canvas, rect, RadiusPill, tone, raised: true);
+        DrawStatusDot(canvas, left + 13 * _density, top + bannerH / 2f, dotColor);
+        canvas.DrawText(_state.TransientHint, left + dotSpace + (textWidth + 32 * _density) / 2f,
+            top + bannerH / 2f + 5 * _density, _transientHintTextPaint);
 
         // Nächster Redraw für Ablauf
         PostInvalidateDelayed(200);

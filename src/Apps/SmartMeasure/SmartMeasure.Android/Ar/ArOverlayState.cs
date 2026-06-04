@@ -42,6 +42,17 @@ public sealed record ArOverlayLabels(
 }
 
 /// <summary>
+/// Schweregrad eines kurzlebigen Hinweises (Transient-Hint). Steuert Panel-Ton + Status-Dot:
+/// Info = neutral, Success = grün (Aktion gelang), Warning = bernstein (Achtung/Wiederholung nötig).
+/// </summary>
+public enum TransientSeverity
+{
+    Info,
+    Success,
+    Warning
+}
+
+/// <summary>
 /// Qualität eines AR-HitTest-Ergebnisses. Bestimmt Reticle-Farbe und Punkt-Confidence.
 /// </summary>
 public enum ArHitQuality
@@ -113,6 +124,9 @@ public sealed class ArOverlayState
 
     /// <summary>Single-Shot Confirmation-Text (nach Undo/Redo/Punkt-Set).</summary>
     public string? TransientHint { get; init; }
+
+    /// <summary>Schweregrad des <see cref="TransientHint"/> — färbt Panel-Ton + Status-Dot.</summary>
+    public TransientSeverity TransientHintSeverity { get; init; } = TransientSeverity.Info;
 
     /// <summary>Permanenter Modus-Chip oben mittig: aktiver Erfassungs-Modus als Kurztitel
     /// ("Punkt", "Linie", "Rechteck", "Maßband", "Abstecken", "Tachymeter"). Ersetzt den

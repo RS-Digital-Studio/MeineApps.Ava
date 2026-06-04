@@ -753,7 +753,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             var hasTargets = _stakeoutTargets != null && _stakeoutTargets.Count > 0;
             if (!hasTargets)
-                ShowTransientHint("Keine Stakeout-Ziele — aus Stakeout-Tab oeffnen");
+                ShowTransientHint("Keine Stakeout-Ziele — aus Stakeout-Tab oeffnen", TransientSeverity.Warning);
             // Reset Cooldown-Distanz bei Mode-Aktivierung
             _stakeoutLastDistance = double.PositiveInfinity;
         }
@@ -828,7 +828,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             var bowditch = CommitActiveContour(out _);
             if (bowditch == ArMathHelpers.BowditchResult.TooLarge)
-                ShowTransientHint("Großer Schlussfehler — Kontur prüfen (Tracking-Drift?)");
+                ShowTransientHint("Großer Schlussfehler — Kontur prüfen (Tracking-Drift?)", TransientSeverity.Warning);
             return;
         }
 
@@ -843,7 +843,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
         _activeContour = null;
         if (discarded > 0)
-            ShowTransientHint($"Unfertige Linie ({discarded} {(discarded == 1 ? "Punkt" : "Punkte")}) verworfen");
+            ShowTransientHint($"Unfertige Linie ({discarded} {(discarded == 1 ? "Punkt" : "Punkte")}) verworfen", TransientSeverity.Warning);
     }
 
     private void CloseActiveContour()
@@ -867,7 +867,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         if (tooFew)
         {
-            ShowTransientHint("Mindestens 3 Punkte zum Schließen nötig");
+            ShowTransientHint("Mindestens 3 Punkte zum Schließen nötig", TransientSeverity.Warning);
             return;
         }
 
@@ -877,9 +877,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var area = closedContour.CalculateArea();
             var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == closedContour.ContourType).Label
                 ?? closedContour.ContourType.ToString();
-            ShowTransientHint(bowditch == ArMathHelpers.BowditchResult.TooLarge
+            var tooLarge = bowditch == ArMathHelpers.BowditchResult.TooLarge;
+            ShowTransientHint(tooLarge
                 ? $"{typeLabel}: {pts} Punkte — großer Schlussfehler, bitte prüfen!"
-                : $"{typeLabel}: {pts} Punkte, {area:F1} m²");
+                : $"{typeLabel}: {pts} Punkte, {area:F1} m²",
+                tooLarge ? TransientSeverity.Warning : TransientSeverity.Success);
         }
 
         UpdateCounter();
@@ -912,7 +914,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _rectangleCorners[0], _rectangleCorners[1], corner, RectangleSquareSnapEnabled);
         if (result == null)
         {
-            ShowTransientHint("Rechteck zu flach — Tiefe deutlicher anvisieren");
+            ShowTransientHint("Rechteck zu flach — Tiefe deutlicher anvisieren", TransientSeverity.Warning);
             VibrateWarning();
             return;
         }
@@ -1088,7 +1090,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             RunOnUiThread(() =>
             {
-                ShowTransientHint("Rotation erkannt — bitte Punkt erneut anvisieren");
+                ShowTransientHint("Rotation erkannt — bitte Punkt erneut anvisieren", TransientSeverity.Warning);
                 VibrateWarning();
             });
         }
@@ -1352,7 +1354,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _points.Add(tsPoint);
                 }
                 ShowTransientHint($"Punkt {_points.Count} stationiert " +
-                    $"({tsPoint.GeoLatitude:F6}, {tsPoint.GeoLongitude:F6})");
+                    $"({tsPoint.GeoLatitude:F6}, {tsPoint.GeoLongitude:F6})", TransientSeverity.Success);
                 VibrateLight();
                 _overlayView?.Invalidate();
                 SaveRecoveryState();
@@ -1381,7 +1383,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 Toast.MakeText(this, $"Messung noch nicht bereit: {checkList}",
                     ToastLength.Long)?.Show();
-                ShowTransientHint($"{checkList}");
+                ShowTransientHint($"{checkList}", TransientSeverity.Warning);
             });
             VibrateWarning();
             return;
@@ -1396,7 +1398,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 Toast.MakeText(this, "Keine Fläche erkannt — Kamera langsam bewegen",
                     ToastLength.Short)?.Show();
-                ShowTransientHint("Keine Fläche");
+                ShowTransientHint("Keine Fläche", TransientSeverity.Warning);
             });
             return;
         }
@@ -1410,7 +1412,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             RunOnUiThread(() =>
             {
-                ShowTransientHint("Himmel-Bereich — bitte einen festen Punkt anvisieren");
+                ShowTransientHint("Himmel-Bereich — bitte einen festen Punkt anvisieren", TransientSeverity.Warning);
             });
             VibrateWarning();
             return;
@@ -1532,7 +1534,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             RunOnUiThread(() =>
             {
-                ShowTransientHint("Tracking verloren — Punkt erneut anvisieren");
+                ShowTransientHint("Tracking verloren — Punkt erneut anvisieren", TransientSeverity.Warning);
                 VibrateWarning();
             });
             return;
@@ -1542,14 +1544,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Outlier-Detection (Plan Kap. 3.2 — min 6 statt vorher 3).
         if (sampler == null || sampler.Count < MinValidSampleCount)
         {
-            RunOnUiThread(() => ShowTransientHint($"Zu wenige Samples ({sampler?.Count ?? 0}/{MinValidSampleCount}) — erneut versuchen"));
+            RunOnUiThread(() => ShowTransientHint($"Zu wenige Samples ({sampler?.Count ?? 0}/{MinValidSampleCount}) — erneut versuchen", TransientSeverity.Warning));
             return;
         }
 
         var result = sampler.ComputeRobustMedian();
         if (result == null)
         {
-            RunOnUiThread(() => ShowTransientHint("Zu viel Streuung — erneut versuchen"));
+            RunOnUiThread(() => ShowTransientHint("Zu viel Streuung — erneut versuchen", TransientSeverity.Warning));
             return;
         }
 
@@ -1699,14 +1701,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     // kein Undo-Stack — Reset per Long-Press auf den Mass-Button).
                     _tapeMeasurePoints.Add(arPoint);
                     var total = ComputeTapeMeasureTotalMeters();
-                    ShowTransientHint($"Punkt {_tapeMeasurePoints.Count}  ges. {total:F2} m");
+                    ShowTransientHint($"Punkt {_tapeMeasurePoints.Count}  ges. {total:F2} m", TransientSeverity.Success);
                 }
                 else if (_captureMode == CaptureMode.Point)
                 {
                     _undoStack.Push(new AddPointAction(_dataLock, _points, arPoint));
                     _redoStack.Clear();
                     _points.Add(arPoint);
-                    ShowTransientHint($"Punkt {_points.Count}  Streuung {stdDev * 100:F1}cm  ({validCount} Samples)");
+                    ShowTransientHint($"Punkt {_points.Count}  Streuung {stdDev * 100:F1}cm  ({validCount} Samples)", TransientSeverity.Success);
                     // Plan-Kap. 5.6: Foto-Annotation pro Punkt (nicht im Tape-Modus —
                     // Ad-hoc-Messung braucht kein Foto, das wuerde nur Storage fressen).
                     CapturePhotoForPoint(arPoint);
@@ -3547,7 +3549,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                             Toast.MakeText(this,
                                 $"Screenshot: {System.IO.Path.GetFileName(pngPath)}",
                                 ToastLength.Short)?.Show();
-                            ShowTransientHint("Screenshot gespeichert");
+                            ShowTransientHint("Screenshot gespeichert", TransientSeverity.Success);
                         }
                         else
                         {
@@ -3895,7 +3897,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 _arSession.StopRecording();
                 _isRecording = false;
-                ShowTransientHint($"Aufnahme gespeichert: {System.IO.Path.GetFileName(_currentRecordingPath)}");
+                ShowTransientHint($"Aufnahme gespeichert: {System.IO.Path.GetFileName(_currentRecordingPath)}", TransientSeverity.Success);
                 VibrateMedium();
             }
             catch (Exception ex)
@@ -3912,7 +3914,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     ?? FilesDir?.AbsolutePath;
                 if (string.IsNullOrEmpty(dir))
                 {
-                    ShowTransientHint("Aufnahme nicht möglich: kein Speicherpfad");
+                    ShowTransientHint("Aufnahme nicht möglich: kein Speicherpfad", TransientSeverity.Warning);
                     return;
                 }
                 Directory.CreateDirectory(dir);
@@ -4029,7 +4031,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 {
                     RunOnUiThread(() =>
                     {
-                        ShowTransientHint($"Akku {level}% — Session wird beendet, alle Punkte werden gesichert");
+                        ShowTransientHint($"Akku {level}% — Session wird beendet, alle Punkte werden gesichert", TransientSeverity.Warning);
                         VibrateWarning();
                         // 1.2s warten damit der User den Hint sieht, dann FinishCapture.
                         _glSurfaceView?.PostDelayed(() =>
@@ -4156,7 +4158,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 RunOnUiThread(() =>
                 {
-                    ShowTransientHint("Helligkeit gewechselt — bitte erneut anvisieren");
+                    ShowTransientHint("Helligkeit gewechselt — bitte erneut anvisieren", TransientSeverity.Warning);
                     VibrateWarning();
                 });
             }
@@ -4381,17 +4383,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     #region Transient-Hint
 
     // Vom UI-Thread (Touch/Dialoge) gesetzt, vom GL-Thread (BuildOverlayState) konsumiert.
-    // Volatile.Write sichert die Sichtbarkeit des Schreibens, Interlocked.Exchange holt+löscht
-    // atomar — verhindert verlorene Hints über die Thread-Grenze.
-    private string? _currentTransientHint;
+    // Ein einzelnes Record-Feld (Text + Severity) wird via Interlocked.Exchange atomar
+    // getauscht — so können die beiden zusammengehörigen Werte nicht zerreißen.
+    private sealed record TransientHintData(string Text, TransientSeverity Severity);
+    private TransientHintData? _currentTransientHint;
 
-    private void ShowTransientHint(string text)
+    private void ShowTransientHint(string text, TransientSeverity severity = TransientSeverity.Info)
     {
         // Wird im nächsten Frame-Update-Zyklus von ConsumeTransientHint aufgegriffen.
-        System.Threading.Volatile.Write(ref _currentTransientHint, text);
+        System.Threading.Volatile.Write(ref _currentTransientHint, new TransientHintData(text, severity));
     }
 
-    private string? ConsumeTransientHint()
+    private TransientHintData? ConsumeTransientHint()
         => System.Threading.Interlocked.Exchange(ref _currentTransientHint, null);
 
     /// <summary>Baut Titel + Schritt-/Status-Detail für den permanenten Modus-Chip aus dem
@@ -4773,6 +4776,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var (modeChipTitle, modeChipDetail) = BuildModeChipLabel(
             chipPointCount, chipActiveContourCount, rectCornerCount, chipTapeCount);
 
+        var transientHint = ConsumeTransientHint();
+
         return new ArOverlayState
         {
             IsTracking = isTracking,
@@ -4789,7 +4794,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             LiveLengthMeters = liveLength,
             HeightRangeMeters = heightRange,
             AutoCloseTarget = autoClose,
-            TransientHint = ConsumeTransientHint(),
+            TransientHint = transientHint?.Text,
+            TransientHintSeverity = transientHint?.Severity ?? TransientSeverity.Info,
             ModeChipTitle = modeChipTitle,
             ModeChipDetail = modeChipDetail,
             AnchorCount = anchorCount,
@@ -5009,7 +5015,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             RunOnUiThread(() =>
             {
                 VibrateMedium();
-                ShowTransientHint($"{target.Label} erreicht! (Distanz {distanceM * 100:F1} cm)");
+                ShowTransientHint($"{target.Label} erreicht! (Distanz {distanceM * 100:F1} cm)", TransientSeverity.Success);
             });
         }
         else
@@ -5223,7 +5229,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _markersAlreadyLocalized.Add(imageName);
                     RunOnUiThread(() =>
                     {
-                        ShowTransientHint($"Marker erkannt: {marker.Name}");
+                        ShowTransientHint($"Marker erkannt: {marker.Name}", TransientSeverity.Success);
                         VibrateMedium();
                     });
                 }
@@ -5376,20 +5382,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var ts = App.Services?.GetService<ITotalStationService>();
         if (ts == null)
         {
-            ShowTransientHint("Total-Station-Service nicht verfuegbar");
+            ShowTransientHint("Total-Station-Service nicht verfuegbar", TransientSeverity.Warning);
             return;
         }
 
         // Origin = aktuelle RTK-Stab-Position (gestaubt durch BLE)
         if (_bleService is not { IsConnected: true })
         {
-            ShowTransientHint("Stab nicht verbunden — Total-Station braucht RTK-Anker");
+            ShowTransientHint("Stab nicht verbunden — Total-Station braucht RTK-Anker", TransientSeverity.Warning);
             return;
         }
         var s = _bleService.GetStateSnapshot();
         if (s.FixQuality < 4 || !s.Latitude.HasValue || !s.Longitude.HasValue)
         {
-            ShowTransientHint("Kein RTK-Fix am Stab — bitte warten oder NTRIP pruefen");
+            ShowTransientHint("Kein RTK-Fix am Stab — bitte warten oder NTRIP pruefen", TransientSeverity.Warning);
             return;
         }
 
@@ -5399,7 +5405,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         ts.SetStationOrigin(s.Latitude.Value, s.Longitude.Value, s.Altitude ?? 0.0, heading);
         SetMode(CaptureMode.TotalStation);
-        ShowTransientHint($"Stationiert ({s.Latitude.Value:F6}, {s.Longitude.Value:F6})");
+        ShowTransientHint($"Stationiert ({s.Latitude.Value:F6}, {s.Longitude.Value:F6})", TransientSeverity.Success);
         VibrateMedium();
     }
 
@@ -5412,7 +5418,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var ts = App.Services?.GetService<ITotalStationService>();
         if (ts?.Station == null)
         {
-            ShowTransientHint("Bitte zuerst stationieren (Tachy aktivieren)");
+            ShowTransientHint("Bitte zuerst stationieren (Tachy aktivieren)", TransientSeverity.Warning);
             return null;
         }
 
@@ -5424,7 +5430,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             frame, screenX, screenY, _viewportWidth, _viewportHeight);
         if (!depth.HasValue)
         {
-            ShowTransientHint("Keine Depth-Daten am Reticle — naeher heran/anders zielen");
+            ShowTransientHint("Keine Depth-Daten am Reticle — naeher heran/anders zielen", TransientSeverity.Warning);
             return null;
         }
 
@@ -5458,7 +5464,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private void ResetTapeMeasure()
     {
         lock (_dataLock) _tapeMeasurePoints.Clear();
-        ShowTransientHint("Maßband zurückgesetzt");
+        ShowTransientHint("Maßband zurückgesetzt", TransientSeverity.Success);
         _overlayView?.Invalidate();
     }
 

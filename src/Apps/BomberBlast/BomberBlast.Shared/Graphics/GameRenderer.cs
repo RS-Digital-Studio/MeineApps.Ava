@@ -4,6 +4,7 @@ using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Models.Levels;
 using BomberBlast.Services;
+using BomberBlast.Core.Diagnostics; // TEMP-DIAGNOSE: RenderProbe (Render-Phasen-Timing)
 using SkiaSharp;
 
 namespace BomberBlast.Graphics;
@@ -126,9 +127,12 @@ public sealed partial class GameRenderer : IDisposable
     private SKShader? _bgShader;
     private int _bgShaderWorldIndex = -1;
     private float _bgShaderHeight;
-    private SKShader? _vignetteShader;
-    private float _vignetteShaderW, _vignetteShaderH;
-    private int _vignetteShaderWorldIndex = -1;
+    // Vignette als gecachtes Bild (statt Full-Screen-RadialGradient pro Frame — der kostete ~24ms/Frame
+    // durch per-Pixel-sqrt und hielt die atmosphaerischen Frames ueber der Frame-Skip-Schwelle, was
+    // das periodische "Aufleuchten" verursachte). Einmal gerendert, pro Frame nur Bild-Blit (~1ms).
+    private SKImage? _vignetteImage;
+    private float _vignetteImageW, _vignetteImageH;
+    private int _vignetteImageWorldIndex = -1;
 
     // Aktuelle Palette (wird bei Style-Wechsel getauscht)
     private StylePalette _palette;
@@ -1026,6 +1030,9 @@ public sealed partial class GameRenderer : IDisposable
         float remainingTime, int score, int lives, Cell? exitCell = null,
         List<Cell>? specialEffectCells = null)
     {
+        // TEMP-DIAGNOSE: Canvas fuer Phasen-Flush registrieren (ordnet GPU-Zeit der jeweiligen Phase zu).
+        RenderProbe.FlushTarget = canvas;
+
         // Rainbow-Explosion: Farben nur alle 3 Frames aktualisieren (HSL-Berechnung sparen)
         if (_customizationService.ExplosionSkin.Id == "expl_rainbow")
         {
@@ -1035,23 +1042,31 @@ public sealed partial class GameRenderer : IDisposable
         }
 
         // Hintergrund mit Welt-Gradient (statt canvas.Clear)
-        RenderBackground(canvas, _screenWidth, _screenHeight);
+        using (RenderProbe.Measure("background"))
+            RenderBackground(canvas, _screenWidth, _screenHeight);
 
         // Saisonales Event-Tint subtil ueber Hintergrund (v2.0.42, Plan Task 3.4)
-        RenderEventTint(canvas, _screenWidth, _screenHeight);
+        using (RenderProbe.Measure("eventTint"))
+            RenderEventTint(canvas, _screenWidth, _screenHeight);
 
         // Hintergrund-Elemente (Bäume, Zahnräder, Stalaktiten etc. am Rand)
         if (!SkipAtmosphere)
-            RenderBackgroundElements(canvas, _screenWidth, _screenHeight);
+        {
+            using (RenderProbe.Measure("bgElements"))
+                RenderBackgroundElements(canvas, _screenWidth, _screenHeight);
+        }
 
         // Ambient-Partikel (unter dem Grid, über dem Hintergrund)
         if (!SkipAtmosphere)
         {
-            canvas.Save();
-            canvas.Translate(_offsetX, _offsetY);
-            canvas.Scale(_scale);
-            _ambientParticles.Render(canvas, _globalTimer);
-            canvas.Restore();
+            using (RenderProbe.Measure("ambient"))
+            {
+                canvas.Save();
+                canvas.Translate(_offsetX, _offsetY);
+                canvas.Scale(_scale);
+                _ambientParticles.Render(canvas, _globalTimer);
+                canvas.Restore();
+            }
         }
 
         // Canvas-Zustand sichern und Transformation fuer Spielfeld anwenden
@@ -1059,7 +1074,8 @@ public sealed partial class GameRenderer : IDisposable
         canvas.Translate(_offsetX, _offsetY);
         canvas.Scale(_scale);
 
-        RenderGrid(canvas, grid);
+        using (RenderProbe.Measure("grid"))
+            RenderGrid(canvas, grid);
         RenderSpecialBombCellEffects(canvas, grid);
         RenderAfterglow(canvas, grid);
         RenderDangerWarning(canvas, grid, bombs);
@@ -1068,9 +1084,12 @@ public sealed partial class GameRenderer : IDisposable
         // Trail-System: Fußabdrücke, Geister-Spuren, Feuer-Trails, Kosmetik-Trails (auf dem Boden, unter Entities)
         if (!SkipAtmosphere)
         {
-            _trailSystem.ActiveCosmeticTrail = _customizationService.ActiveTrail;
-            _trailSystem.Update(_lastDeltaTime, player, enemies, _globalTimer);
-            _trailSystem.Render(canvas, _globalTimer);
+            using (RenderProbe.Measure("trail"))
+            {
+                _trailSystem.ActiveCosmeticTrail = _customizationService.ActiveTrail;
+                _trailSystem.Update(_lastDeltaTime, player, enemies, _globalTimer);
+                _trailSystem.Render(canvas, _globalTimer);
+            }
         }
 
         foreach (var powerUp in powerUps)
@@ -1118,21 +1137,30 @@ public sealed partial class GameRenderer : IDisposable
 
         if (player != null)
         {
-            _outlinePlayer = player;
-            RenderEntityWithOptionalOutline(canvas, player, _renderOutlinePlayer);
+            using (RenderProbe.Measure("playerOut"))
+            {
+                _outlinePlayer = player;
+                RenderEntityWithOptionalOutline(canvas, player, _renderOutlinePlayer);
+            }
         }
 
         // Dynamische Beleuchtung (Lichtquellen aus Bomben, Explosionen, Lava etc.)
         if (!SkipAtmosphere)
         {
-            _dynamicLighting.Clear();
-            CollectLightSources(canvas, grid, bombs, explosions, enemies, powerUps, player, exitCell, specialEffectCells);
-            _dynamicLighting.Render(canvas);
+            using (RenderProbe.Measure("lighting"))
+            {
+                _dynamicLighting.Clear();
+                CollectLightSources(canvas, grid, bombs, explosions, enemies, powerUps, player, exitCell, specialEffectCells);
+                _dynamicLighting.Render(canvas);
+            }
         }
 
         // Wetter-Partikel (über dem Grid, unter HUD)
         if (!SkipAtmosphere)
-            _weatherSystem.Render(canvas);
+        {
+            using (RenderProbe.Measure("weather"))
+                _weatherSystem.Render(canvas);
+        }
 
         // Saisonales Event-Overlay-Particles (v2.0.42, Plan Task 3.4)
         // Schneeflocken/Pumpkin-Funken/Feuerwerk/Bubbles ueber dem Grid, unter HUD.
@@ -1167,15 +1195,24 @@ public sealed partial class GameRenderer : IDisposable
                     player.X * _scale + _offsetX,
                     player.Y * _scale + _offsetY);
             }
-            _shaderEffects.RenderPostProcessing(canvas, _screenWidth, _screenHeight, _globalTimer);
-
-            // Vignette + Stimmungsbeleuchtung (über allem, unter HUD)
-            RenderVignette(canvas, _screenWidth, _screenHeight);
-            RenderMoodLighting(canvas, _screenWidth, _screenHeight);
+            using (RenderProbe.Measure("shaderPost"))
+                _shaderEffects.RenderPostProcessing(canvas, _screenWidth, _screenHeight, _globalTimer);
         }
 
+        // Vignette + Stimmungsbeleuchtung IMMER rendern (nicht skipbar) — beide sind jetzt billig
+        // (gecachtes Vignette-Bild + SrcOver-Tint). Würden sie mit dem adaptiven Frame-Skipping
+        // an-/ausgeschaltet, würde der Bildschirm periodisch hell/dunkel "aufleuchten".
+        using (RenderProbe.Measure("vignette"))
+            RenderVignette(canvas, _screenWidth, _screenHeight);
+        using (RenderProbe.Measure("mood"))
+            RenderMoodLighting(canvas, _screenWidth, _screenHeight);
+
         // HUD zeichnen (nicht mit Spiel skaliert)
-        RenderHUD(canvas, remainingTime, score, lives, player);
+        using (RenderProbe.Measure("hud"))
+            RenderHUD(canvas, remainingTime, score, lives, player);
+
+        // TEMP-DIAGNOSE: Phasen-Zeiten 1x/s loggen (BBPHASE).
+        RenderProbe.EndFrame();
     }
 
     /// <summary>
@@ -1239,10 +1276,12 @@ public sealed partial class GameRenderer : IDisposable
         BomberBlast.Models.Entities.Entity entity,
         Action<SKCanvas> render)
     {
-        if (entity.RenderOutline && !SkipAtmosphere)
-            OutlineRenderHelper.RenderWithOutline(canvas, render);
-        else
-            render(canvas);
+        // Outline-Pass deaktiviert: Auf dem Avalonia-Skia-Backend kostet der Dilate-ImageFilter ~1,2 s
+        // pro Sprite (Stutter-Hauptursache, live profiliert); auch die ImageFilter-freie Offset-Variante
+        // (SaveLayer + Mehrfach-Draw) skaliert mit der Entity-Zahl und trug zum Rest-Stutter bei.
+        // Daher Single-Pass-Render. OutlineRenderHelper bleibt für eine künftige Reaktivierung erhalten.
+        _ = entity;
+        render(canvas);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1305,7 +1344,7 @@ public sealed partial class GameRenderer : IDisposable
         _eventShapePath.Dispose();
         _floorCacheBitmap?.Dispose();
         _bgShader?.Dispose();
-        _vignetteShader?.Dispose();
+        _vignetteImage?.Dispose();
         _hudComboBlur.Dispose();
         _bgPath.Dispose();
         _charPath1.Dispose();

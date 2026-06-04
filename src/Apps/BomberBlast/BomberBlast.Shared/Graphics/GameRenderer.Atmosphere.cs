@@ -66,39 +66,68 @@ public sealed partial class GameRenderer
     /// </summary>
     private void RenderVignette(SKCanvas canvas, float screenWidth, float screenHeight)
     {
-        // Gecachter Shader (nur neu erstellen bei Welt-Wechsel oder Größenänderung)
-        if (_vignetteShader == null || _vignetteShaderWorldIndex != _currentWorldIndex ||
-            MathF.Abs(_vignetteShaderW - screenWidth) > 1f || MathF.Abs(_vignetteShaderH - screenHeight) > 1f)
+        // Gecachtes Bild (nur neu erstellen bei Welt-Wechsel oder Größenänderung). Der frühere
+        // Full-Screen-RadialGradient-Fill pro Frame (~24ms durch per-Pixel-sqrt) war der größte
+        // atmosphärische Posten und Auslöser des Frame-Skip-Flackerns.
+        if (_vignetteImage == null || _vignetteImageWorldIndex != _currentWorldIndex ||
+            MathF.Abs(_vignetteImageW - screenWidth) > 1f || MathF.Abs(_vignetteImageH - screenHeight) > 1f)
         {
-            _vignetteShader?.Dispose();
-            byte vignetteAlpha = _currentWorldIndex switch
-            {
-                2 => 100,  // Cavern
-                4 => 110,  // Inferno
-                7 => 100,  // Volcano
-                9 => 120,  // ShadowRealm
-                _ => 60
-            };
-
-            float cx = screenWidth / 2f;
-            float cy = screenHeight / 2f;
-            float radius = MathF.Sqrt(cx * cx + cy * cy);
-
-            _vignetteShader = SKShader.CreateRadialGradient(
-                new SKPoint(cx, cy),
-                radius,
-                [new SKColor(0, 0, 0, 0), new SKColor(0, 0, 0, vignetteAlpha)],
-                [0.5f, 1.0f],
-                SKShaderTileMode.Clamp);
-            _vignetteShaderW = screenWidth;
-            _vignetteShaderH = screenHeight;
-            _vignetteShaderWorldIndex = _currentWorldIndex;
+            _vignetteImage?.Dispose();
+            _vignetteImage = CreateVignetteImage(screenWidth, screenHeight);
+            _vignetteImageW = screenWidth;
+            _vignetteImageH = screenHeight;
+            _vignetteImageWorldIndex = _currentWorldIndex;
         }
 
-        _fillPaint.Shader = _vignetteShader;
-        _fillPaint.MaskFilter = null;
-        canvas.DrawRect(0, 0, screenWidth, screenHeight, _fillPaint);
-        _fillPaint.Shader = null;
+        if (_vignetteImage != null)
+        {
+            // Bilinear hochskaliert (Halbauflösungs-Bild) — bei einem glatten Gradient unsichtbar.
+            canvas.DrawImage(_vignetteImage,
+                new SKRect(0, 0, screenWidth, screenHeight),
+                new SKSamplingOptions(SKFilterMode.Linear));
+        }
+    }
+
+    /// <summary>
+    /// Rendert die Welt-abhängige Vignette EINMALIG in ein Halbauflösungs-Bild (radialer Alpha-
+    /// Gradient, transparent in der Mitte, dunkel am Rand). Wird nur bei Welt-/Größenwechsel aufgerufen.
+    /// </summary>
+    private SKImage? CreateVignetteImage(float screenWidth, float screenHeight)
+    {
+        byte vignetteAlpha = _currentWorldIndex switch
+        {
+            2 => 100,  // Cavern
+            4 => 110,  // Inferno
+            7 => 100,  // Volcano
+            9 => 120,  // ShadowRealm
+            _ => 60
+        };
+
+        // Sehr kleine Auflösung (aspect-korrekt): Der radiale Gradient ist glatt, das Upscaling auf
+        // Vollbild ist unsichtbar. Klein = winziger GPU-Upload + billiger Bilinear-Blit pro Frame
+        // (ein halb-/voll-auflösendes Vignette-Bild wird pro Frame zur GPU geladen → ~24ms, Regression).
+        const int w = 256;
+        int h = Math.Max(1, (int)(256f * screenHeight / MathF.Max(1f, screenWidth)));
+        var info = new SKImageInfo(w, h, SKColorType.Rgba8888, SKAlphaType.Premul);
+        using var surface = SKSurface.Create(info);
+        if (surface == null) return null;
+
+        var c = surface.Canvas;
+        c.Clear(SKColors.Transparent);
+
+        float cx = w / 2f;
+        float cy = h / 2f;
+        float radius = MathF.Sqrt(cx * cx + cy * cy);
+        using var shader = SKShader.CreateRadialGradient(
+            new SKPoint(cx, cy),
+            radius,
+            [new SKColor(0, 0, 0, 0), new SKColor(0, 0, 0, vignetteAlpha)],
+            [0.5f, 1.0f],
+            SKShaderTileMode.Clamp);
+        using var p = new SKPaint { Shader = shader };
+        c.DrawRect(0, 0, w, h, p);
+
+        return surface.Snapshot();
     }
 
     /// <summary>

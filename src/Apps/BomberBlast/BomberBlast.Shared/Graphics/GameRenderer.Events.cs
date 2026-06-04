@@ -257,7 +257,8 @@ public partial class GameRenderer
         var tintColor = new SKColor(EventAccentColor.Red, EventAccentColor.Green, EventAccentColor.Blue, tintAlpha);
         _eventPaint.Color = tintColor;
         _eventPaint.Style = SKPaintStyle.Fill;
-        _eventPaint.BlendMode = SKBlendMode.Multiply; // gemischter Tint, nicht Vollfarbe
+        // Modulate (Src*Dst, HW-beschleunigt) statt Multiply (advanced → Full-Screen-Destination-Read).
+        _eventPaint.BlendMode = SKBlendMode.Modulate;
         canvas.DrawRect(0, 0, w, h, _eventPaint);
         _eventPaint.BlendMode = SKBlendMode.SrcOver;
     }

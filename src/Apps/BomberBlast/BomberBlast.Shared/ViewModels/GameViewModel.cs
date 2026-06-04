@@ -38,6 +38,8 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     // Vermeidet doppelte Preload-Triggerings pro Welt (fire-and-forget Task schmeisst sonst Warnings)
     private int _lastPreloadedWorldIndex = -1;
     private readonly Stopwatch _frameStopwatch = new();
+    // TEMP-DIAGNOSE: Live-Frame-Profiler (Inter-Frame-Zeit, Update/Render-Split, GC, Allokations-Rate).
+    private readonly Core.Diagnostics.FrameProfiler _frameProfiler = new();
     private CancellationTokenSource _gameEventCts = new();
     private bool _isInitialized;
     private bool _disposed;
@@ -414,21 +416,33 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     /// </summary>
     public void OnPaintSurface(SKCanvas canvas, int width, int height)
     {
+        // TEMP-DIAGNOSE: Inter-Frame-Zeit + Update/Render-Split fuer den FrameProfiler messen.
+        double rawFrameMs = 0, updMs = 0, rendMs = 0;
+        bool profile = _isGameLoopRunning;
+
         // Spielzustand aktualisieren wenn der Loop laeuft
         if (_isGameLoopRunning)
         {
             // Stopwatch ist praeziser und guenstiger als DateTime.Now
+            rawFrameMs = _frameStopwatch.Elapsed.TotalMilliseconds; // echte (ungecappte) Inter-Frame-Zeit
             float deltaTime = (float)_frameStopwatch.Elapsed.TotalSeconds;
             _frameStopwatch.Restart();
 
             // Delta-Zeit begrenzen um große Spruenge zu verhindern
             deltaTime = Math.Min(deltaTime, MAX_DELTA_TIME);
 
+            long updStart = Stopwatch.GetTimestamp();
             _gameEngine.Update(deltaTime);
+            updMs = (Stopwatch.GetTimestamp() - updStart) * 1000.0 / Stopwatch.Frequency;
         }
 
         // Immer aktuellen Zustand rendern
+        long rendStart = Stopwatch.GetTimestamp();
         _gameEngine.Render(canvas, width, height);
+        rendMs = (Stopwatch.GetTimestamp() - rendStart) * 1000.0 / Stopwatch.Frequency;
+
+        if (profile)
+            _frameProfiler.Record(rawFrameMs, updMs, rendMs, _gameEngine.State);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

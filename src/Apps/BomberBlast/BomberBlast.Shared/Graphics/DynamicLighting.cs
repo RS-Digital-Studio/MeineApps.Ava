@@ -22,12 +22,15 @@ public sealed class DynamicLighting
     private readonly LightSource[] _lights = new LightSource[MAX_LIGHTS];
     private int _lightCount;
 
-    // Gepoolter Paint für Licht-Rendering
+    // Gepoolter Paint für Licht-Rendering.
+    // BlendMode Plus (additiv, HW-beschleunigt) statt Screen: Screen ist ein "advanced" Blend-Mode,
+    // der auf dem Avalonia-Skia-GPU-Backend einen Destination-Read erzwingt (teuer, trug zum Stutter
+    // bei). Plus gibt einen sehr ähnlichen additiven Glow-Look ohne Backdrop-Read.
     private readonly SKPaint _lightPaint = new()
     {
         Style = SKPaintStyle.Fill,
         IsAntialias = true,
-        BlendMode = SKBlendMode.Screen
+        BlendMode = SKBlendMode.Plus
     };
 
     // Gepoolte Arrays für Gradient-Erstellung (vermeidet pro-Licht Heap-Allokation)

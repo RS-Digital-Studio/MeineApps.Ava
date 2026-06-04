@@ -56,23 +56,30 @@ public class MenuBackgroundCanvas : UserControl
         // Automatisch starten/stoppen bei Visual-Tree-Änderungen
         AttachedToVisualTree += (_, _) => StartIfVisible();
         DetachedFromVisualTree += (_, _) => Stop();
+        // Parent-Visibility-Wechsel (PageView-Border in MainView beim Wechsel ins Spiel):
+        // IsEffectivelyVisible hat keine eigene AvaloniaProperty → EffectiveViewportChanged feuert,
+        // wenn der Parent (un)sichtbar wird. Dann Timer KOMPLETT stoppen/neu starten, statt ihn
+        // 30fps-leerlaufen zu lassen (UI-Thread-Dauerlast waehrend des ganzen Spiels).
+        EffectiveViewportChanged += (_, _) =>
+        {
+            if (IsEffectivelyVisible) StartIfVisible();
+            else Stop();
+        };
     }
 
     /// <summary>
-    /// Reagiert auf (effektive) Sichtbarkeits- und Theme-Änderungen.
-    /// IsEffectivelyVisible deckt auch den Fall ab, dass ein Parent-Container (z.B. der
-    /// PageView-Border in MainView beim Wechsel ins Spiel) unsichtbar gesetzt wird — dann
-    /// wird der 30-fps-Timer KOMPLETT gestoppt statt nur im Tick zu skippen (sonst tickt er
-    /// während des gesamten Spiels als UI-Thread-Dauerlast weiter, da die eigene IsVisible-
-    /// Property unverändert bleibt). Der IsEffectivelyVisible-Guard im Tick bleibt als Netz.
+    /// Reagiert auf IsVisible- und Theme-Änderungen. Den Parent-Visibility-Fall (PageView-Border
+    /// in MainView wird beim Wechsel ins Spiel unsichtbar) deckt der EffectiveViewportChanged-Handler
+    /// im Ctor ab — die eigene IsVisible-Property bleibt dabei unverändert. Der IsEffectivelyVisible-
+    /// Guard im Tick bleibt zusätzlich als Sicherheitsnetz.
     /// </summary>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == IsVisibleProperty || change.Property == IsEffectivelyVisibleProperty)
+        if (change.Property == IsVisibleProperty)
         {
-            if (IsEffectivelyVisible)
+            if (change.GetNewValue<bool>())
                 StartIfVisible();
             else
                 Stop();

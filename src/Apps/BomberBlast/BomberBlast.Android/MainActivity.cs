@@ -37,6 +37,9 @@ public class MainActivity : AvaloniaMainActivity
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // TEMP-DIAGNOSE: FrameProfiler-Output nach Logcat (Tag BBPERF). Live via `adb logcat -s BBPERF:I`.
+        BomberBlast.Core.Diagnostics.FrameProfiler.Sink = msg => Android.Util.Log.Info("BBPERF", msg);
+
         // Rewarded Ad Helper + Factory MUSS vor base.OnCreate (DI) registriert werden
         _rewardedAdHelper = new RewardedAdHelper();
         App.RewardedAdServiceFactory = sp =>

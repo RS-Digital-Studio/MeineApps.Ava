@@ -24,7 +24,7 @@ Die meisten Controls folgen dem gleichen Pattern:
 2. `PaintSurface += OnPaintSurface` im Ctor, Delegation an den zugehörigen Renderer.
 3. Für Controls mit Animation (`EmptyStateCanvas`, `MenuBackgroundCanvas`): eigener `DispatcherTimer` (33 ms ≈ 30 fps), Start/Stop über `AttachedToVisualTree`/`DetachedFromVisualTree`-Events.
 
-`MenuBackgroundCanvas` weicht ab: erbt von `UserControl`, baut intern einen `SKCanvasView` als `Content`. Stoppt seinen 30-fps-Timer auf `IsEffectivelyVisibleProperty`-Änderung **komplett** (nicht nur Tick-Skip) — sonst tickt er nach dem Wechsel ins Spiel als UI-Thread-Dauerlast weiter, weil nur der Parent-Border `IsVisible=false` wird, die eigene `IsVisible`-Property aber unverändert bleibt. Der `IsEffectivelyVisible`-Guard im Tick bleibt als Sicherheitsnetz.
+`MenuBackgroundCanvas` weicht ab: erbt von `UserControl`, baut intern einen `SKCanvasView` als `Content`. Stoppt seinen 30-fps-Timer per `EffectiveViewportChanged`-Handler **komplett** (nicht nur Tick-Skip), wenn `IsEffectivelyVisible` false wird — sonst tickt er nach dem Wechsel ins Spiel als UI-Thread-Dauerlast weiter, weil nur der Parent-Border `IsVisible=false` wird, die eigene `IsVisible`-Property aber unverändert bleibt (und `IsEffectivelyVisible` keine eigene `AvaloniaProperty` hat, auf die man im `OnPropertyChanged` reagieren könnte). Der `IsEffectivelyVisible`-Guard im Tick bleibt als Sicherheitsnetz.
 
 ### Torn-Metal-Buttons (`GameButtonCanvas`)
 

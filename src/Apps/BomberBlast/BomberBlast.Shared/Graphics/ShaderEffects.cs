@@ -264,12 +264,13 @@ half4 main(float2 coord) {
 
     private void RenderColorGrading(SKCanvas canvas, float w, float h)
     {
-        // SoftLight-Blend: Erhöht Kontrast und verschiebt Farbtöne subtil
-        // Ergänzt MoodLighting das mit SrcOver nur tönend wirkt
-        _overlayPaint.Color = _gradingColor.WithAlpha(_gradingAlpha);
-        _overlayPaint.BlendMode = SKBlendMode.SoftLight;
-        canvas.DrawRect(0, 0, w, h, _overlayPaint);
+        // SrcOver statt SoftLight: SoftLight ist ein "advanced" Blend-Mode, der auf dem Avalonia-Skia-
+        // GPU-Backend einen Full-Screen-Destination-Read erzwingt (teuer → Rest-Stutter). SrcOver ist
+        // HW-beschleunigt. Der subtile Kontrast-Boost entfällt dabei, die Welt-Farbtönung bleibt;
+        // Alpha reduziert (SrcOver tönt direkter als SoftLight), damit der Effekt subtil bleibt.
+        _overlayPaint.Color = _gradingColor.WithAlpha((byte)(_gradingAlpha / 2));
         _overlayPaint.BlendMode = SKBlendMode.SrcOver;
+        canvas.DrawRect(0, 0, w, h, _overlayPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

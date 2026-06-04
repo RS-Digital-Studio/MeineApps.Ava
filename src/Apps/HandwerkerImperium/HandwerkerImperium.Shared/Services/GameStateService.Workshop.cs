@@ -166,6 +166,10 @@ public sealed partial class GameStateService
         return true;
     }
 
+    /// <inheritdoc />
+    public void RaiseWorkerHired(WorkshopType type, Worker worker, decimal cost, int totalWorkers)
+        => WorkerHired?.Invoke(this, new WorkerHiredEventArgs(type, worker, cost, totalWorkers));
+
     public bool IsWorkshopUnlocked(WorkshopType type)
     {
         return _state.IsWorkshopUnlocked(type);

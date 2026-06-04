@@ -38,7 +38,10 @@ public sealed class WorkerService : IWorkerService
 
     public bool HireWorker(Worker worker, WorkshopType workshop)
     {
-        return _gameState.ExecuteWithLock(() =>
+        decimal hiringCost = 0m;
+        int workerCount = 0;
+
+        var hired = _gameState.ExecuteWithLock(() =>
         {
             var state = _gameState.State;
             var ws = state.GetOrCreateWorkshop(workshop);
@@ -47,7 +50,7 @@ public sealed class WorkerService : IWorkerService
             if (ws.Workers.Count >= ws.MaxWorkers) return false;
 
             // Kosten: Level-skalierte Anstellungskosten vom Worker (bereits in LoadMarket berechnet)
-            var hiringCost = worker.HiringCost > 0 ? worker.HiringCost : worker.Tier.GetHiringCost(state.PlayerLevel);
+            hiringCost = worker.HiringCost > 0 ? worker.HiringCost : worker.Tier.GetHiringCost(state.PlayerLevel);
             var hiringScrewCost = worker.Tier.GetHiringScrewCost();
             if (!_gameState.CanAfford(hiringCost)) return false;
             if (hiringScrewCost > 0 && !_gameState.CanAffordGoldenScrews(hiringScrewCost)) return false;
@@ -65,8 +68,17 @@ public sealed class WorkerService : IWorkerService
 
             state.Statistics.TotalWorkersHired++;
             state.InvalidateIncomeCache();
+            workerCount = ws.Workers.Count;
             return true;
         });
+
+        // WorkerHired-Event NACH dem Lock feuern (GameStateService ist der Event-Hub).
+        // Triggert WorkshopViewModel-/Host-Refresh (sonst zeigt der Workshop nach Markt-Hire
+        // weiter 0 Arbeiter) sowie Achievements, BattlePass, FTUE und DailyChallenge.
+        if (hired)
+            _gameState.RaiseWorkerHired(workshop, worker, hiringCost, workerCount);
+
+        return hired;
     }
 
     public bool FireWorker(string workerId)

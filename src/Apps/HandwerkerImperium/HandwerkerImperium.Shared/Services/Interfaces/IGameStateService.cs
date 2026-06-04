@@ -144,6 +144,14 @@ public interface IGameStateService
     /// <summary>Versucht einen Arbeiter fuer eine Werkstatt einzustellen.</summary>
     bool TryHireWorker(WorkshopType type);
 
+    /// <summary>
+    /// Feuert das <see cref="WorkerHired"/>-Event. GameStateService ist der zentrale Event-Hub;
+    /// das eigentliche Markt-Hiring (ausgewaehlter Arbeiter) liegt im WorkerService, der diese
+    /// Methode nach erfolgreichem Einstellen aufruft. Ohne den Aufruf verpassen alle Subscriber
+    /// (WorkshopViewModel-Refresh, Achievements, BattlePass, FTUE, DailyChallenge) das Markt-Hiring.
+    /// </summary>
+    void RaiseWorkerHired(WorkshopType type, Worker worker, decimal cost, int totalWorkers);
+
     /// <summary>Prueft ob eine Werkstatt beim aktuellen Spieler-Level freigeschaltet ist.</summary>
     bool IsWorkshopUnlocked(WorkshopType type);
 

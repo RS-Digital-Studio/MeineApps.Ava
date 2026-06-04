@@ -349,6 +349,21 @@ public class MainActivity : AvaloniaMainActivity
 `CustomizeAppBuilder()` zog von `MainActivity` nach `AvaloniaAndroidApplication<TApp>.OnCreate`.
 `ISingleViewApplicationLifetime` funktioniert weiter als Android-Fallback.
 
+> **Platform-Factory-Registrierung MUSS lazy sein (Avalonia-12-Reihenfolge).**
+> `OnFrameworkInitializationCompleted` (→ `ConfigureServices` + `BuildServiceProvider`) läuft in
+> `AvaloniaAndroidApplication<App>.OnCreate` auf **Application-Ebene VOR `MainActivity.OnCreate`**,
+> wo die `App.*Factory`-Properties gesetzt werden. Die DI-Registrierung der Platform-Services
+> (Ads, Purchase, Audio, Sound, Notification, PlayGames, Vibration, CloudSave, FileShare, Haptic, …)
+> darf die Factory daher **niemals zur Build-Zeit prüfen** (`if (Factory != null) AddSingleton(...)`)
+> — der Guard greift immer auf `null` und brennt den Desktop-/Null-Default ein (Rewarded-Ad gibt
+> Belohnung ohne Video, IAP tot, kein Sound/Haptik …). Stattdessen die Factory **im Resolve-Lambda**
+> lesen, das erst beim ersten Resolve (nach `MainActivity.OnCreate`) läuft:
+> ```csharp
+> services.AddSingleton<IYyy>(sp =>
+>     YyyFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<DefaultImpl>(sp));
+> ```
+> Registrierungs-Details + warum → [Premium-Library-CLAUDE.md](src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) (Factory-Override).
+
 **Clipboard (Avalonia 12):**
 
 ```csharp

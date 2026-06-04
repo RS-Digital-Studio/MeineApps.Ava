@@ -96,16 +96,19 @@ Warum: Die Android-Typen (`Activity`, `View`, `BillingClient`) existieren nur im
 Generisches Factory-Pattern (statische `App.*Factory`-Properties, gesetzt in `MainActivity.cs`) → Root-CLAUDE.md, Abschnitt "Android Platform-Services". Library-spezifisch ist nur, **wie** der Desktop-Default überschrieben wird:
 
 1. `AddMeineAppsPremium()` (in `Extensions/ServiceCollectionExtensions.cs`) registriert die **Desktop-Defaults** als Singletons: `AdMobService`, `PurchaseService` (Stub), `TrialService`, `RewardedAdService` (Simulator). Es kennt die `App.*Factory`-Properties **nicht**.
-2. Den Android-Override macht jede App selbst in ihrem `ConfigureServices` (`App.axaml.cs`), **nach** `AddMeineAppsPremium()` — die zuletzt registrierte `AddSingleton`-Zuweisung gewinnt:
+2. Den Android-Override macht jede App selbst in ihrem `ConfigureServices` (`App.axaml.cs`), **nach** `AddMeineAppsPremium()` — die zuletzt registrierte `AddSingleton`-Zuweisung gewinnt. Die Factory-Prüfung **muss lazy IM Resolve-Lambda** passieren, **niemals** als Build-Zeit-Guard (`if (Factory != null)`):
 
 ```csharp
 // App.axaml.cs (Shared) — ConfigureServices
 services.AddMeineAppsPremium();
-if (RewardedAdServiceFactory != null)
-    services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
-if (PurchaseServiceFactory != null)
-    services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
+// RICHTIG: Factory wird erst beim ersten Resolve gelesen
+services.AddSingleton<IRewardedAdService>(sp =>
+    RewardedAdServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<RewardedAdService>(sp));
+services.AddSingleton<IPurchaseService>(sp =>
+    PurchaseServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<PurchaseService>(sp));
 ```
+
+> **KRITISCH (Avalonia 12):** `App.OnFrameworkInitializationCompleted` (und damit `ConfigureServices` + `BuildServiceProvider`) läuft in `AvaloniaAndroidApplication<App>.OnCreate` — also auf **Application-Ebene VOR `MainActivity.OnCreate`**, wo die `App.*Factory`-Properties gesetzt werden. Ein Build-Zeit-Guard (`if (RewardedAdServiceFactory != null) AddSingleton(...)`) wird daher **immer übersprungen** (Factory noch `null`) und brennt den Desktop-Default dauerhaft ein: der `RewardedAdService`-Simulator liefert nach 1 s `true` **ohne Video** (Belohnung wird trotzdem gewährt), `PurchaseService`-Stub macht IAP/Restore tot. Das Lazy-Lambda liest die Factory erst beim ersten Resolve (MainViewModel-Graph, nach `MainActivity.OnCreate`) → echte Android-Services. Gilt für **alle** Platform-Factories (Audio, Sound, Notification, PlayGames, Vibration, CloudSave, FileShare, …), nicht nur Premium. Fallback via `ActivatorUtilities.CreateInstance<TDefault>(sp)` (DI-aufgelöster Default-Konstruktor) — `using Microsoft.Extensions.DependencyInjection;` nötig.
 
 Für eine app-eigene Purchase-Implementierung ohne Factory existiert zusätzlich
 `AddMeineAppsPremium<TPurchaseService>()`.

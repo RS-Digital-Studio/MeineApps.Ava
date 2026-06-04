@@ -45,15 +45,24 @@ public class BingXPublicClient : IPublicMarketDataClient
         var interval = TimeFrameHelper.ToIntervalString(tf);
         var candleDuration = TimeFrameHelper.ToDuration(tf);
         var allCandles = new List<Candle>();
-        var currentStart = from;
 
-        while (currentStart < to && !ct.IsCancellationRequested)
+        // BingX' swap/v3/quote/klines IGNORIERT startTime und liefert immer nur die juengsten
+        // <=1440 Kerzen bis endTime (bei H4 ~240 Tage / 8 Monate). Vorwaerts-Paging (startTime
+        // vorschieben) brach deshalb nach EINEM Batch ab → Mehrjahres-Backtests bekamen faktisch
+        // nur ~8 Monate Daten. Loesung: RUECKWAERTS paginieren — endTime schrittweise vor die
+        // jeweils aelteste geladene Kerze schieben, bis 'from' erreicht ist, keine Daten mehr
+        // kommen, oder kein Fortschritt mehr moeglich ist (Anfang der verfuegbaren Historie).
+        var currentEnd = to;
+        var startMs = new DateTimeOffset(DateTime.SpecifyKind(from, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+        const int maxBatches = 60; // Schutz-Cap (60 × ~8 Monate ≈ 40 Jahre) gegen API-Macken-Endlosschleifen.
+
+        for (int batch = 0; batch < maxBatches && currentEnd > from && !ct.IsCancellationRequested; batch++)
         {
             await _rateLimiter.WaitForSlotAsync("queries", ct).ConfigureAwait(false);
 
-            var startMs = new DateTimeOffset(DateTime.SpecifyKind(currentStart, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
-            var endMs = new DateTimeOffset(DateTime.SpecifyKind(to, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+            var endMs = new DateTimeOffset(DateTime.SpecifyKind(currentEnd, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
 
+            // startTime wird von BingX ignoriert, schadet aber nicht — endTime steuert das Fenster.
             var url = $"{BaseUrl}/openApi/swap/v3/quote/klines?symbol={symbol}&interval={interval}&limit=1440&startTime={startMs}&endTime={endMs}";
 
             try
@@ -92,22 +101,17 @@ public class BingXPublicClient : IPublicMarketDataClient
                     ));
                 }
 
-                // Nächster Batch: nach der letzten Candle
-                var lastTime = DateTimeOffset.FromUnixTimeMilliseconds(result.Data.Max(k => k.Time)).UtcDateTime;
-                var newStart = lastTime.Add(candleDuration);
+                // Naechster (aelterer) Batch: endTime knapp vor die aelteste Kerze dieses Batches.
+                var batchOldest = DateTimeOffset.FromUnixTimeMilliseconds(result.Data.Min(k => k.Time)).UtcDateTime;
+                var newEnd = batchOldest.Add(-candleDuration);
 
-                _logger.LogDebug("Geladen: {Count} Candles bis {Time}", result.Data.Count, lastTime);
+                _logger.LogDebug("Geladen: {Count} Candles, aelteste {Time}", result.Data.Count, batchOldest);
 
-                // Abbruch wenn: (1) weniger Candles als erwartet UND (2) wir nicht weiter vorankommen
-                // BingX liefert max 1440 pro Batch. Bei exakt 1440 → nächster Batch.
-                // Bei <1440: Normalerweise fertig. ABER: Bei manchen TFs liefert die API
-                // weniger als 1440 obwohl noch Daten existieren (API-Inkonsistenz).
-                // Daher: Nur abbrechen wenn wir nicht vorankommen (lastTime nahe endTime).
-                if (result.Data.Count < 1440 && newStart >= to)
-                    break;
-                if (newStart <= currentStart)
-                    break; // Endlos-Loop-Schutz: Kein Fortschritt
-                currentStart = newStart;
+                if (batchOldest <= from)
+                    break; // 'from' erreicht — genug Historie geladen.
+                if (newEnd >= currentEnd)
+                    break; // Endlos-Loop-Schutz: kein Fortschritt nach hinten.
+                currentEnd = newEnd;
             }
             catch (OperationCanceledException)
             {
@@ -120,7 +124,7 @@ public class BingXPublicClient : IPublicMarketDataClient
             }
         }
 
-        // Duplikate entfernen und sortieren
+        // Duplikate entfernen und chronologisch sortieren (Rueckwaerts-Paging liefert absteigend).
         return allCandles
             .DistinctBy(c => c.OpenTime)
             .OrderBy(c => c.OpenTime)

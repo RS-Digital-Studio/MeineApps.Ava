@@ -90,6 +90,8 @@ public class App : Application
         services.AddSingleton<IBifacialService, BifacialService>();
 
         // ViewModels
+        services.AddSingleton<DashboardViewModel>();
+        services.AddSingleton<AlignViewModel>();
         services.AddSingleton<MainViewModel>();
     }
 }

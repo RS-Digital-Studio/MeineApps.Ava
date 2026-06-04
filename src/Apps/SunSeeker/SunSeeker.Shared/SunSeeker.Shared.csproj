@@ -17,6 +17,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Material.Icons.Avalonia" />
     <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
 
     <!-- MVVM -->
     <PackageReference Include="CommunityToolkit.Mvvm" />

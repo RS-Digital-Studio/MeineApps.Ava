@@ -4,200 +4,72 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:vm="using:SunSeeker.Shared.ViewModels"
-             xmlns:models="using:SunSeeker.Shared.Models"
+             xmlns:views="using:SunSeeker.Shared.Views"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="900"
              x:Class="SunSeeker.Shared.Views.MainView"
              x:CompileBindings="True" x:DataType="vm:MainViewModel"
              Background="{DynamicResource BgPrimaryBrush}">
 
     <UserControl.Styles>
-        <!-- Karten-Container -->
-        <Style Selector="Border.card">
-            <Setter Property="Background" Value="{DynamicResource CardGradientBrush}" />
-            <Setter Property="CornerRadius" Value="{DynamicResource CardRadius}" />
-            <Setter Property="Padding" Value="{DynamicResource CardPadding}" />
-            <Setter Property="Margin" Value="0,0,0,12" />
+        <Style Selector="Button.tab">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0,6" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="CornerRadius" Value="0" />
         </Style>
-        <Style Selector="TextBlock.cardTitle">
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,0,0,8" />
-        </Style>
-        <Style Selector="TextBlock.label">
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-            <Setter Property="FontSize" Value="13" />
-        </Style>
-        <Style Selector="TextBlock.value">
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-        <Style Selector="TextBlock.bigValue">
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
-            <Setter Property="FontSize" Value="26" />
-            <Setter Property="FontWeight" Value="Bold" />
+        <Style Selector="Button.tab:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource BgCardHoverBrush}" />
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer>
-        <StackPanel Margin="{DynamicResource PagePadding}">
+    <Grid RowDefinitions="*,Auto">
 
-            <!-- Header -->
-            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4,0,16">
-                <materialIcons:MaterialIcon Grid.Column="0" Kind="WeatherSunny" Width="30" Height="30"
-                                            Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Text="SunSeeker" FontSize="24" FontWeight="Bold" Margin="10,0,0,0"
-                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="{Binding ClockText}" FontSize="16"
-                           Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
-                           FontFamily="monospace" />
+        <!-- Tab-Inhalte: Wrapper-Panel traegt IsVisible (geerbter MainViewModel-DataContext),
+             die Child-View setzt ihren eigenen DataContext. -->
+        <Grid Grid.Row="0">
+            <Panel IsVisible="{Binding IsAlignActive}">
+                <views:AlignView DataContext="{Binding Align}" />
+            </Panel>
+            <Panel IsVisible="{Binding IsDashboardActive}">
+                <views:DashboardView DataContext="{Binding Dashboard}" />
+            </Panel>
+        </Grid>
+
+        <!-- Tab-Bar -->
+        <Border Grid.Row="1" Background="{DynamicResource BgSecondaryBrush}"
+                BorderBrush="{DynamicResource BgElevatedBrush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,*">
+                <Button Grid.Column="0" Classes="tab" Command="{Binding ShowAlignCommand}">
+                    <Grid RowDefinitions="3,Auto">
+                        <Border Grid.Row="0" Height="3" Width="40" CornerRadius="2"
+                                Background="{DynamicResource PrimaryBrush}"
+                                IsVisible="{Binding IsAlignActive}" />
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <materialIcons:MaterialIcon Kind="CompassOutline" Width="24" Height="24"
+                                                        HorizontalAlignment="Center"
+                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Ausrichten" FontSize="12" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Button>
+                <Button Grid.Column="1" Classes="tab" Command="{Binding ShowDashboardCommand}">
+                    <Grid RowDefinitions="3,Auto">
+                        <Border Grid.Row="0" Height="3" Width="40" CornerRadius="2"
+                                Background="{DynamicResource PrimaryBrush}"
+                                IsVisible="{Binding IsDashboardActive}" />
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <materialIcons:MaterialIcon Kind="ViewDashboardOutline" Width="24" Height="24"
+                                                        HorizontalAlignment="Center"
+                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Uebersicht" FontSize="12" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Button>
             </Grid>
-
-            <!-- Standort -->
-            <Border Classes="card">
-                <Grid ColumnDefinitions="Auto,*">
-                    <materialIcons:MaterialIcon Grid.Column="0" Kind="MapMarker" Width="20" Height="20"
-                                                Foreground="{DynamicResource SecondaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="{Binding LocationText}" Classes="value" Margin="10,0,0,0"
-                               VerticalAlignment="Center" />
-                </Grid>
-            </Border>
-
-            <!-- Sonnenstand -->
-            <Border Classes="card">
-                <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="AKTUELLER SONNENSTAND" />
-                    <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Classes="label" Text="Richtung (Azimut)" />
-                            <TextBlock Classes="bigValue" Text="{Binding SunAzimuthText}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Classes="label" Text="Hoehe (Elevation)" />
-                            <TextBlock Classes="bigValue" Text="{Binding SunElevationText}" />
-                        </StackPanel>
-                    </Grid>
-                    <TextBlock Classes="label" Text="{Binding DaylightText}" />
-                </StackPanel>
-            </Border>
-
-            <!-- Sonnenzeiten -->
-            <Border Classes="card">
-                <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="SONNENZEITEN" />
-                    <Grid ColumnDefinitions="*,*,*">
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Classes="label" Text="Aufgang" />
-                            <TextBlock Classes="value" Text="{Binding SunriseText}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Classes="label" Text="Hoechststand" />
-                            <TextBlock Classes="value" Text="{Binding SolarNoonText}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Classes="label" Text="Untergang" />
-                            <TextBlock Classes="value" Text="{Binding SunsetText}" />
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Auswahl Panel + Ziel -->
-            <Border Classes="card">
-                <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="PANEL &amp; ZIEL" />
-                    <TextBlock Classes="label" Text="Panel" Margin="0,0,0,4" />
-                    <ComboBox ItemsSource="{Binding Panels}" SelectedItem="{Binding SelectedPanel}"
-                              HorizontalAlignment="Stretch" Margin="0,0,0,10">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:PanelProfile">
-                                <TextBlock Text="{Binding Name}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <TextBlock Classes="label" Text="Ausricht-Ziel" Margin="0,0,0,4" />
-                    <ComboBox ItemsSource="{Binding Goals}" SelectedItem="{Binding SelectedGoal}"
-                              HorizontalAlignment="Stretch">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:GoalOption">
-                                <TextBlock Text="{Binding Label}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
-            </Border>
-
-            <!-- Empfehlung -->
-            <Border Classes="card">
-                <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="EMPFOHLENE AUSRICHTUNG" />
-                    <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Classes="label" Text="Richtung" />
-                            <TextBlock Classes="bigValue" Text="{Binding TargetAzimuthText}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Classes="label" Text="Neigung" />
-                            <TextBlock Classes="bigValue" Text="{Binding TargetTiltText}" />
-                        </StackPanel>
-                    </Grid>
-                    <Border IsVisible="{Binding ShowKickstand}" Background="{DynamicResource BgElevatedBrush}"
-                            CornerRadius="{DynamicResource SmallRadius}" Padding="10,6" Margin="0,0,0,8">
-                        <TextBlock Text="{Binding KickstandText}" Foreground="{DynamicResource PrimaryLightBrush}"
-                                   FontWeight="SemiBold" />
-                    </Border>
-                    <TextBlock Classes="label" Text="{Binding RecommendationExplanation}" TextWrapping="Wrap"
-                               Margin="0,0,0,8" />
-                    <Grid ColumnDefinitions="Auto,*">
-                        <materialIcons:MaterialIcon Grid.Column="0" Kind="SolarPower" Width="18" Height="18"
-                                                    Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1" Text="{Binding CurrentYieldText}" Margin="8,0,0,0"
-                                   Foreground="{DynamicResource AccentLightBrush}" FontWeight="SemiBold"
-                                   VerticalAlignment="Center" TextWrapping="Wrap" />
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Untergrund + Bifazial -->
-            <Border Classes="card">
-                <StackPanel>
-                    <TextBlock Classes="cardTitle" Text="UNTERGRUND &amp; BIFAZIAL-MEHRERTRAG" />
-                    <ComboBox ItemsSource="{Binding Grounds}" SelectedItem="{Binding SelectedGround}"
-                              HorizontalAlignment="Stretch" Margin="0,0,0,10">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:GroundOption">
-                                <TextBlock Text="{Binding Label}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                        <TextBlock Grid.Column="0" Text="{Binding BifacialGainText}" Classes="value"
-                                   Foreground="{DynamicResource AccentLightBrush}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Column="1" Text="{Binding AlbedoText}" Classes="label" VerticalAlignment="Center" />
-                    </Grid>
-                    <TextBlock Text="{Binding TiltBonusText}" Classes="label"
-                               Foreground="{DynamicResource PrimaryLightBrush}" TextWrapping="Wrap"
-                               IsVisible="{Binding IsBifacial}" Margin="0,0,0,8" />
-                    <ItemsControl ItemsSource="{Binding BifacialTips}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="x:String">
-                                <Grid ColumnDefinitions="Auto,*" Margin="0,3">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbOnOutline"
-                                                                Width="15" Height="15" Margin="0,2,0,0"
-                                                                Foreground="{DynamicResource WarningBrush}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding}" Classes="label" Margin="8,0,0,0"
-                                               TextWrapping="Wrap" />
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <TextBlock Text="Phase 1 — Live-Ausrichtung per Kompass/Neigung und AR-Sonnenbahn folgen."
-                       Classes="label" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
-                       HorizontalAlignment="Center" Margin="0,4,0,12" />
-        </StackPanel>
-    </ScrollViewer>
+        </Border>
+    </Grid>
 </UserControl>

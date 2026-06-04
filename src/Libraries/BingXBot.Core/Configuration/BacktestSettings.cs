@@ -44,4 +44,27 @@ public class BacktestSettings
 
     /// <summary>Entry-Timeframe (M30 für SK-Buch).</summary>
     public BingXBot.Core.Enums.TimeFrame? EntryTimeFrame { get; set; }
+
+    // === Live-Spiegel-Vorfilter (nur Portfolio-Backtest) ===
+    // Schaltet die Live-Scanner-/BTC-Health-Pfade im PortfolioBacktestEngine zu, damit der Backtest
+    // EXAKT wie der Live-Bot filtert + sized. Default = false (Backward-Compat: bestehende Laeufe
+    // bleiben bit-identisch). Im --portfolio-Lab-Modus standardmaessig AN ("alles wie in live").
+
+    /// <summary>
+    /// GAP 11: Live-Scanner-Vorfilter (MinVolume24h + MinPriceChange pro Nav-TF, kategorie-spezifisch
+    /// Crypto/TradFi wie <c>ScanHelper.FilterCandidatesForTimeframe</c>) + TradFi-Marktstunden
+    /// (<c>TradingHoursFilter.IsMarketOpen</c>) + Crypto-Session-Bitmask
+    /// (<c>TradingHoursFilter.IsSessionAllowed</c>). Symbol/Zeitschritt, der den Filter nicht passiert,
+    /// erzeugt keinen Entry-Versuch. Nur im <c>PortfolioBacktestEngine</c> wirksam.
+    /// </summary>
+    public bool EnableScannerPrefilter { get; set; }
+
+    /// <summary>
+    /// GAP 4: BTC-Health-Positionsskalierung (<c>MarketFilter.CalculateBtcHealth</c> pro Zeitschritt aus
+    /// inkrementellen BTC-D1/H4-Slices). Bei Crypto: harter Block wenn <c>AllowLong/AllowShort</c>=false,
+    /// sonst Multiplikation der Positionsgroesse mit <c>PositionScale</c> (0.65..1.0). Die SK-Score-Skalierung
+    /// (ConfluenceScore ≥10→1.25 / ≥5→1.0 / sonst→0.75) ist an dieses Flag gekoppelt (live-treues Sizing).
+    /// Nur im <c>PortfolioBacktestEngine</c> wirksam.
+    /// </summary>
+    public bool EnableBtcHealthScale { get; set; }
 }

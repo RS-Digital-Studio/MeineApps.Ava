@@ -142,8 +142,14 @@ if (GetArg(argMap, "portfolio", null) != null)
         : "TrendFollow-Fast";
     var navTf = tfs.Count > 0 ? tfs[0] : TimeFrame.H4;
 
+    // GAP 11 + GAP 4: Live-Spiegel-Vorfilter. Im --portfolio-Modus standardmaessig AN ("alles wie in live"),
+    // per --scanner-filter false / --btc-health false fuer Diagnose abschaltbar.
+    botSettings.Backtest.EnableScannerPrefilter = GetArg(argMap, "scanner-filter", "true") != "false";
+    botSettings.Backtest.EnableBtcHealthScale = GetArg(argMap, "btc-health", "true") != "false";
+
     Console.WriteLine($"PORTFOLIO-Modus: 1 Konto ({balance:F0} USDT) ueber {symbols.Count} Symbole, Strategie {portfolioStrategy}, Nav-TF {navTf}");
     Console.WriteLine($"  Gates: MaxOpenPositions={botSettings.Risk.MaxOpenPositions} | MaxTotalMargin={botSettings.Risk.MaxTotalMarginPercent}% | MaxCorrelated={botSettings.Risk.MaxCorrelatedExposurePercent}%");
+    Console.WriteLine($"  Live-Spiegel: Scanner-Vorfilter (GAP 11)={(botSettings.Backtest.EnableScannerPrefilter ? "AN" : "aus")} | BTC-Health-Scale + SK-Score (GAP 4)={(botSettings.Backtest.EnableBtcHealthScale ? "AN" : "aus")} | Sessions={botSettings.EnabledSessions}");
     Console.WriteLine();
 
     var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));

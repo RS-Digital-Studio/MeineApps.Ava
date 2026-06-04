@@ -1,9 +1,11 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Backtest.Reports;
 using BingXBot.Backtest.Simulation;
+using BingXBot.Engine.Filters;
 using BingXBot.Engine.Indicators;
 using BingXBot.Engine.Risk;
 using BingXBot.Engine.Strategies;
@@ -94,6 +96,32 @@ public sealed class PortfolioBacktestEngine
         _logger.LogInformation("Portfolio-Backtest: {Symbols} Symbole, {TF}, {From}..{To}",
             states.Count, navTf, from.ToString("yyyy-MM-dd"), to.ToString("yyyy-MM-dd"));
 
+        // GAP 11 / GAP 4: Live-Spiegel-Vorfilter aktiv? (siehe BacktestSettings.EnableScannerPrefilter/EnableBtcHealthScale).
+        var enableScannerPrefilter = settings.Backtest.EnableScannerPrefilter;
+        var enableBtcHealthScale = settings.Backtest.EnableBtcHealthScale;
+        if (enableScannerPrefilter || enableBtcHealthScale)
+            _logger.LogInformation("Portfolio-Live-Spiegel: Scanner-Vorfilter={Scan}, BTC-Health-Scale={Btc}",
+                enableScannerPrefilter, enableBtcHealthScale);
+
+        // GAP 4: BTC-USDT D1 + H4 separat vorladen (zusaetzlich zu den Universe-Symbolen) — fuer die
+        // BTC-Health-Berechnung pro Zeitschritt. Inkrementelle Slices (kein Look-Ahead) entlang der Timeline.
+        // CalculateBtcHealth braucht D1 >= 55 und H4 >= 20 Kerzen — sonst bleibt btcHealth fuer den Schritt null.
+        List<Candle>? btcD1 = null;
+        List<Candle>? btcH4 = null;
+        if (enableBtcHealthScale)
+        {
+            // D1 frueher beginnen lassen, damit zu Backtest-Start genug D1-Warmup (>=55) vorliegt.
+            var btcFrom = from.AddDays(-120);
+            btcD1 = await _publicClient.GetKlinesAsync("BTC-USDT", TimeFrame.D1, btcFrom, to, ct).ConfigureAwait(false);
+            btcH4 = await _publicClient.GetKlinesAsync("BTC-USDT", TimeFrame.H4, btcFrom, to, ct).ConfigureAwait(false);
+            if (btcD1.Count == 0 || btcH4.Count == 0)
+            {
+                _logger.LogWarning("Portfolio: BTC-Health-Scale aktiv, aber BTC-USDT D1/H4 nicht ladbar (D1={D1}, H4={H4}) — Scale wird uebersprungen.",
+                    btcD1.Count, btcH4.Count);
+                enableBtcHealthScale = false;
+            }
+        }
+
         // 2. EIN Konto + EIN RiskManager.
         var bt = settings.Backtest;
         using var simExchange = new SimulatedExchange(bt, _symbolInfo);
@@ -119,6 +147,10 @@ public sealed class PortfolioBacktestEngine
         // Kerzen-Volumen × Preis (Quote-Volumen). Wird pro Timeline-Schritt fuer die aktiven Symbole sortiert.
         var activeBuffer = new List<PortfolioSymbolState>(states.Count);
 
+        // GAP 4: inkrementelle BTC-D1/H4-Indizes entlang der Timeline (kein Look-Ahead — nur Kerzen mit CloseTime <= t).
+        var btcD1Idx = -1;
+        var btcH4Idx = -1;
+
         for (var step = 0; step < timeline.Count; step++)
         {
             ct.ThrowIfCancellationRequested();
@@ -126,6 +158,22 @@ public sealed class PortfolioBacktestEngine
             progress?.Report((int)((double)step / timeline.Count * 100));
 
             simExchange.SetCurrentBacktestTime(t);
+
+            // GAP 4: BTC-Health fuer diesen Zeitschritt aus inkrementellen D1/H4-Slices (CloseTime <= t).
+            BtcHealthResult? btcHealth = null;
+            if (enableBtcHealthScale)
+            {
+                while (btcD1Idx < btcD1!.Count - 1 && btcD1[btcD1Idx + 1].CloseTime <= t) btcD1Idx++;
+                while (btcH4Idx < btcH4!.Count - 1 && btcH4[btcH4Idx + 1].CloseTime <= t) btcH4Idx++;
+                // CalculateBtcHealth braucht D1 >= 55 und H4 >= 20 (Live: D1 > 55, H4 > 20).
+                if (btcD1Idx + 1 >= 55 && btcH4Idx + 1 >= 20)
+                {
+                    var d1Slice = new CandleSlice(btcD1, 0, btcD1Idx + 1);
+                    var h4Slice = new CandleSlice(btcH4!, 0, btcH4Idx + 1);
+                    // Funding=0: Backtest hat keine historischen Funding-Rates pro BTC-Kerze (Live nutzt Live-Cache).
+                    btcHealth = MarketFilter.CalculateBtcHealth(d1Slice, h4Slice, 0m);
+                }
+            }
 
             // a. Tageswechsel EINMAL pro Kalendertag konto-weit (nicht pro Symbol).
             if (t.Date != lastDate)
@@ -205,6 +253,21 @@ public sealed class PortfolioBacktestEngine
             foreach (var s in activeBuffer)
             {
                 var candle = s.CurrentCandle;
+
+                // GAP 11: Live-Scanner-Vorfilter VOR der Strategie-Evaluation (wie TradingServiceBase:
+                // FilterCandidatesForTimeframe → IsMarketOpen → IsSessionAllowed). Symbol/Zeitschritt, der
+                // den Filter nicht passiert, erzeugt keinen Entry-Versuch. Flag aus → kein Effekt (Backward-Compat).
+                if (enableScannerPrefilter)
+                {
+                    var scanTicker = BuildScanTicker(s, candle);
+                    if (!PassesScannerFilter(scanTicker, s.Category, navTf, settings.Scanner))
+                        continue;
+                    if (!TradingHoursFilter.IsMarketOpen(s.Symbol, candle.CloseTime))
+                        continue;
+                    if (!TradingHoursFilter.IsSessionAllowed(candle.CloseTime, settings.EnabledSessions))
+                        continue;
+                }
+
                 var contextCandles = s.ContextSlice(200);
 
                 var halfSpread = candle.Close * bt.SpreadPercent / 100m / 2m;
@@ -259,7 +322,7 @@ public sealed class PortfolioBacktestEngine
 
                 await BacktestEntryProcessor.ProcessEntryAsync(
                     simExchange, riskManager, signal, context, s.Symbol, candle,
-                    positionSignals, exitTracking, freshPositions, _logger, adaptLeverage).ConfigureAwait(false);
+                    positionSignals, exitTracking, freshPositions, _logger, adaptLeverage, btcHealth).ConfigureAwait(false);
             }
 
             // g. NF9: neu abgeschlossene Trades konto-weit in den RiskManager streamen.
@@ -338,5 +401,61 @@ public sealed class PortfolioBacktestEngine
             openRisk += Math.Abs(pos.EntryPrice - sig.StopLoss.Value) * pos.Quantity;
         }
         riskManager.SetOpenRiskEstimate(openRisk);
+    }
+
+    /// <summary>
+    /// GAP 11: Baut einen synthetischen 24h-Ticker fuer den Scanner-Vorfilter aus den letzten 6 H4-Kerzen
+    /// (= ein Handelstag bei H4). <c>Volume24h</c> = Σ(Kerzen-Volumen × Close) der letzten 6 Kerzen
+    /// (Quote-Volumen in USDT, wie der Live-Ticker es liefert — NICHT das Basis-Volumen). <c>PriceChangePercent24h</c>
+    /// = (Close − Close_vor_6_Kerzen) / Close_vor_6_Kerzen × 100. Bei &lt; 6 vorliegenden Kerzen wird mit
+    /// den verfuegbaren gerechnet (Warmup garantiert ohnehin &gt;= 50 Kerzen vor dem ersten Trade).
+    /// </summary>
+    private static Ticker BuildScanTicker(PortfolioSymbolState s, Candle candle)
+    {
+        var idx = s.NavIdx;
+        var lookback = Math.Min(6, idx + 1);
+        decimal quoteVol = 0m;
+        for (var i = idx - lookback + 1; i <= idx; i++)
+            quoteVol += s.Nav[i].Volume * s.Nav[i].Close;
+
+        var refIdx = idx - lookback;                       // Close vor dem 24h-Fenster
+        var prevClose = refIdx >= 0 ? s.Nav[refIdx].Close : s.Nav[Math.Max(0, idx - lookback + 1)].Close;
+        var changePct = prevClose > 0m ? (candle.Close - prevClose) / prevClose * 100m : 0m;
+
+        return new Ticker(s.Symbol, candle.Close, candle.Close, candle.Close, quoteVol, changePct, candle.CloseTime);
+    }
+
+    /// <summary>
+    /// GAP 11: Per-Symbol-Spiegel von <c>ScanHelper.FilterCandidatesForTimeframe</c>/<c>FilterCandidatesCore</c>
+    /// (ScanHelper liegt in BingXBot.Trading → vom Backtest nicht referenzierbar, daher hier nachgebaut).
+    /// Prueft NUR die per-Symbol-Praedikate (Whitelist-Prioritaet, MinVolume24h + MinPriceChange
+    /// kategorie-spezifisch Crypto/TradFi, TradFi-100k-Floor, Blacklist). Die portfolio-weite 60/40-Quote +
+    /// MaxResults-Selektion ist hier irrelevant — das Symbol-Universum ist im Backtest fix vorgegeben.
+    /// </summary>
+    private static bool PassesScannerFilter(Ticker t, MarketCategory category, TimeFrame navTf, ScannerSettings settings)
+    {
+        // Whitelist hat Prioritaet: wenn gesetzt, nur diese Symbole (ohne Volume/Change-Filter — wie ScanHelper).
+        if (settings.Whitelist.Count > 0)
+            return settings.Whitelist.Contains(t.Symbol);
+
+        var isTradFi = SymbolClassifier.IsTradFi(t.Symbol);
+
+#pragma warning disable CS0618 // Legacy-Single-TF-Fallback wenn die ByTf-Map keinen Wert hat (wie ScanHelper).
+        var minVol = isTradFi
+            ? (settings.MinVolume24hTradFiByTf.TryGetValue(navTf, out var vt) && vt > 0 ? vt : settings.MinVolume24hTradFi)
+            : (settings.MinVolume24hByTf.TryGetValue(navTf, out var vc) && vc > 0 ? vc : settings.MinVolume24h);
+        var minChg = isTradFi
+            ? (settings.MinPriceChangeTradFiByTf.TryGetValue(navTf, out var pt) && pt >= 0 ? pt : settings.MinPriceChangeTradFi)
+            : (settings.MinPriceChangeByTf.TryGetValue(navTf, out var pc) && pc >= 0 ? pc : settings.MinPriceChange);
+#pragma warning restore CS0618
+
+        // TradFi-Sanity-Floor 100k (wie ScanHelper.FilterCandidatesCore).
+        if (isTradFi) minVol = Math.Max(100_000m, minVol);
+
+        if (t.Volume24h < minVol) return false;
+        if (minChg > 0m && Math.Abs(t.PriceChangePercent24h) < minChg) return false;
+        if (settings.Blacklist.Count > 0 && settings.Blacklist.Contains(t.Symbol)) return false;
+
+        return true;
     }
 }

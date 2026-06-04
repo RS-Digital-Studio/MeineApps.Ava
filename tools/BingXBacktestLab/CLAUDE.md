@@ -48,6 +48,26 @@ dotnet run --project tools/BingXBacktestLab -c Release -- \
 | `--balance` | 158 | Start-Balance des EINEN Kontos → `Backtest.InitialBalance` |
 | `--tfs` | (erstes Element) | nur die erste TF wird als Nav-TF genutzt (H4-only, TrendFollow-Fast) |
 | `--strategies` | (erstes Element) | nur die erste Strategie (Live: TrendFollow-Fast) |
+| `--scanner-filter` | true | GAP 11: Live-Scanner-Vorfilter (`Backtest.EnableScannerPrefilter`) → `false` zum Abschalten (Diagnose) |
+| `--btc-health` | true | GAP 4: BTC-Health-Positionsskalierung + SK-Score-Scale (`Backtest.EnableBtcHealthScale`) → `false` zum Abschalten |
+
+**Live-Spiegel-Vorfilter (GAP 11 + GAP 4)** — im `--portfolio`-Modus **standardmäßig AN** ("alles wie in live"),
+per `--scanner-filter false` / `--btc-health false` abschaltbar. Die Console-Ausgabe zeigt den aktiven Status.
+Beide Pfade wirken **nur** im `PortfolioBacktestEngine` (Default `false` in `BacktestSettings` → Single-Engine +
+bestehende Portfolio-Läufe ohne Flags bleiben bit-identisch).
+
+- **Scanner-Vorfilter** (`PassesScannerFilter`): pro Symbol/H4-Kerze einen synthetischen 24h-Ticker bauen
+  (`Volume24h` = Σ Kerzen-Volumen×Close der letzten 6 H4-Kerzen = Quote-Volumen USDT; `PriceChangePercent24h` =
+  Δ über 6 Kerzen) und gegen `MinVolume24hByTf`/`MinPriceChangeByTf` (kategorie-spezifisch Crypto/TradFi, wie
+  `ScanHelper.FilterCandidatesForTimeframe` — nachgebaut, da `BingXBot.Trading` vom Backtest nicht referenzierbar)
+  prüfen, plus `TradingHoursFilter.IsMarketOpen` (TradFi-Marktstunden) + `IsSessionAllowed` (Crypto-Session-Bitmask).
+  Symbol/Kerze, die den Filter nicht passiert, erzeugt keinen Entry.
+- **BTC-Health** (`MarketFilter.CalculateBtcHealth`): BTC-USDT D1+H4 separat vorladen (ab `from.AddDays(-120)` für
+  D1-Warmup ≥55), pro Zeitschritt inkrementeller Slice → harter Block bei Crypto + `!AllowLong/AllowShort`, sonst
+  `PositionScale`-Multiplikation. SK-Score-Scale (`ConfluenceScore` ≥10→1.25/≥5→1.0/_→0.75) ist an dies Flag
+  gekoppelt. Skalierung wirkt im `BacktestEntryProcessor` auf `AdjustedPositionSize` VOR PlaceOrder; die platzierte
+  (skalierte) Menge wird auch als `OriginalQuantity` gespeichert (TP1/TP2-50/50-Proportionen live-treu). Funding=0
+  (kein historischer Per-Kerze-Funding-Cache) → der Score liegt mit neutralem Funding-Bonus zwischen −2 und +4.
 
 Fokus **TrendFollow-Fast (H4-only)**: `RequiresHigherTimeframeContext=false`, kein Entry-TF-Sub-Loop →
 ein `MarketContext` pro H4-Kerze (Direktpfad). Output: `reports/portfolio-{label}.md`/`.json` mit Σ PnL,

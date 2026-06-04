@@ -37,6 +37,8 @@ public sealed class WhatsNewService : IWhatsNewService
         // WICHTIG: Jeder Key MUSS in den RESX (neutral + de/en/es/fr/it/pt) existieren — GetString gibt
         // bei Miss den ROHEN Key-Namen zurueck (kein Fallback-Helper), sonst zeigt der Dialog die Key-ID.
         ("2.1.3", ["WhatsNewGuildMultiplayerLive", "WhatsNewNoBannerAds", "WhatsNewPrestigeShopReset", "WhatsNewFairCostsAndMaterials", "WhatsNewSaveStabilityV213", "WhatsNewSmoothnessAndTouch"]),
+        // Release v2.1.4 — Fixes seit 2.1.3 (Belohnungs-/Kauf-Reparatur, Markt-UI).
+        ("2.1.4", ["WhatsNewV214RewardsRestored", "WhatsNewV214WorkerCountInstant"]),
     };
 
     public WhatsNewService(

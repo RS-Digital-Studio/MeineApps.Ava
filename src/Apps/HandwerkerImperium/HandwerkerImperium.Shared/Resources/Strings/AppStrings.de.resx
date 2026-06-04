@@ -7034,4 +7034,10 @@
   <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
     <value>Flüssiger und angenehmer zu bedienen: weniger Ruckler und geringerer Akkuverbrauch durch optimiertes Rendering, plus größere, zuverlässigere Touch-Buttons in Markt, Lager und Gilde</value>
   </data>
+  <data name="WhatsNewV214RewardsRestored" xml:space="preserve">
+    <value>Belohnungs-Videos und der Imperium-Pass funktionieren wieder zuverlässig: Ein Fehler hatte auf manchen Geräten verhindert, dass Rewarded-Belohnungen und Käufe korrekt ankamen — jetzt behoben.</value>
+  </data>
+  <data name="WhatsNewV214WorkerCountInstant" xml:space="preserve">
+    <value>Die Arbeiter-Anzahl im Markt aktualisiert sich jetzt sofort nach dem Anheuern — keine veraltete Anzeige mehr.</value>
+  </data>
 </root>

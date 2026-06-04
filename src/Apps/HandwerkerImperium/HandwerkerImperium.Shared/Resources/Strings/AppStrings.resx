@@ -7053,4 +7053,10 @@
   <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
     <value>Smoother and easier to use: fewer hitches and lower battery drain thanks to optimised rendering, plus bigger, more reliable touch buttons in market, warehouse and guild</value>
   </data>
+  <data name="WhatsNewV214RewardsRestored" xml:space="preserve">
+    <value>Rewarded videos and the Imperium Pass are working reliably again: a bug had prevented rewarded rewards and purchases from arriving correctly on some devices – now fixed</value>
+  </data>
+  <data name="WhatsNewV214WorkerCountInstant" xml:space="preserve">
+    <value>The worker count in the market now updates instantly after hiring – no more stale display</value>
+  </data>
 </root>

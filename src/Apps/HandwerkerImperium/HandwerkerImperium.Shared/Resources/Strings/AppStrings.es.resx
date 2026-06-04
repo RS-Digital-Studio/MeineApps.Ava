@@ -6693,4 +6693,10 @@
   <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
     <value>Más fluido y cómodo de usar: menos tirones y menor consumo de batería gracias a un renderizado optimizado, además de botones táctiles más grandes y fiables en mercado, almacén y gremio</value>
   </data>
+  <data name="WhatsNewV214RewardsRestored" xml:space="preserve">
+    <value>Los vídeos recompensados y el Pase Imperium vuelven a funcionar de forma fiable: un error impedía que las recompensas y las compras llegaran correctamente en algunos dispositivos — ya solucionado.</value>
+  </data>
+  <data name="WhatsNewV214WorkerCountInstant" xml:space="preserve">
+    <value>El recuento de trabajadores en el mercado ahora se actualiza al instante tras contratar — sin más datos desactualizados.</value>
+  </data>
 </root>

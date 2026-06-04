@@ -6694,4 +6694,10 @@
   <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
     <value>Plus fluide et plus agréable à utiliser : moins de saccades et une consommation de batterie réduite grâce à un rendu optimisé, ainsi que des boutons tactiles plus grands et plus fiables dans le marché, l'entrepôt et la guilde</value>
   </data>
+  <data name="WhatsNewV214RewardsRestored" xml:space="preserve">
+    <value>Les vidéos récompensées et le Passe Imperium fonctionnent à nouveau de manière fiable : un bug empêchait les récompenses et les achats d'arriver correctement sur certains appareils — maintenant corrigé.</value>
+  </data>
+  <data name="WhatsNewV214WorkerCountInstant" xml:space="preserve">
+    <value>Le nombre de travailleurs sur le marché se met maintenant à jour instantanément après l'embauche — plus d'affichage obsolète.</value>
+  </data>
 </root>

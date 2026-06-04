@@ -6701,4 +6701,10 @@
   <data name="WhatsNewSmoothnessAndTouch" xml:space="preserve">
     <value>Più fluido e comodo da usare: meno scatti e minor consumo di batteria grazie al rendering ottimizzato, oltre a pulsanti touch più grandi e affidabili in mercato, magazzino e gilda</value>
   </data>
+  <data name="WhatsNewV214RewardsRestored" xml:space="preserve">
+    <value>I video premiati e l'Imperium Pass funzionano di nuovo in modo affidabile: un bug impediva che le ricompense e gli acquisti arrivassero correttamente su alcuni dispositivi — ora risolto.</value>
+  </data>
+  <data name="WhatsNewV214WorkerCountInstant" xml:space="preserve">
+    <value>Il numero di lavoratori nel mercato si aggiorna ora immediatamente dopo l'assunzione — nessun dato obsoleto.</value>
+  </data>
 </root>

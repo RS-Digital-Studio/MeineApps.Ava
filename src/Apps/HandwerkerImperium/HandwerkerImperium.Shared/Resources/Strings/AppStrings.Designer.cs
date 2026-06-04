@@ -1830,5 +1830,9 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string AutoCompleteAvailable => ResourceManager.GetString("AutoCompleteAvailable", resourceCulture) ?? "";
 
         public static string AutoCompleteHint => ResourceManager.GetString("AutoCompleteHint", resourceCulture) ?? "";
+
+        public static string WhatsNewV214RewardsRestored => ResourceManager.GetString("WhatsNewV214RewardsRestored", resourceCulture) ?? "";
+
+        public static string WhatsNewV214WorkerCountInstant => ResourceManager.GetString("WhatsNewV214WorkerCountInstant", resourceCulture) ?? "";
     }
 }

@@ -33,6 +33,19 @@ Composition-Flow: Host (`Program.cs` / `AndroidApp`+`MainActivity`) → `SunSeek
 Resolve-Lambda ausgewertet (Avalonia-12-Android-Reihenfolge → [Haupt-CLAUDE.md](../../../CLAUDE.md),
 Abschnitt „Platform-Factory-Registrierung").
 
+### Doku-Karte (Pyramide)
+
+| Bereich | Doku |
+|---------|------|
+| Composition Root, DI, Lifecycle, Namespaces | [SunSeeker.Shared](SunSeeker.Shared/CLAUDE.md) |
+| Android-Host, Sensoren, Permissions, Manifest | [SunSeeker.Android](SunSeeker.Android/CLAUDE.md) |
+| Desktop-Host, Mock-Modus | [SunSeeker.Desktop](SunSeeker.Desktop/CLAUDE.md) |
+| Engine + Plattform-Services | [Shared/Services](SunSeeker.Shared/Services/CLAUDE.md) |
+| Navigator + Tab-VMs (Lifecycle, Lokalisierung) | [Shared/ViewModels](SunSeeker.Shared/ViewModels/CLAUDE.md) |
+| AXAML-Views, SKCanvasView, `{loc:Translate}` | [Shared/Views](SunSeeker.Shared/Views/CLAUDE.md) |
+| Datenmodelle (Records, sprachneutrale Keys) | [Shared/Models](SunSeeker.Shared/Models/CLAUDE.md) |
+| SkiaSharp-Renderer (Kompass, Sonnenbahn, Power) | [Shared/Graphics](SunSeeker.Shared/Graphics/CLAUDE.md) |
+
 ### Navigation (Tabs)
 
 `MainViewModel` ist der Navigator mit drei Tabs (Tab-Bar unten, Wrapper-Panel-Pattern fuer den
@@ -125,8 +138,15 @@ physikalisch plausiblen Verlauf aus dem Sonnenstand (UI weist via `IsSimulated` 
   (Sonne = Richtung), aber eine native Kamera-Activity + Sensor-Projektion. Geraetegebunden. Das
   2D-Sonnenbahn-Diagramm (Uebersicht-Tab) deckt den Kern-Nutzen bereits offline ab.
 - **App-Icon**: aktuell Platzhalter (SmartMeasure-Icon kopiert). Eigenes Sonnen-Icon erzeugen.
-- **Lokalisierung**: UI-Strings deutsch hardcodiert; RESX (6 Sprachen) bei Bedarf.
 - **PS400-Winkel verifizieren**: bestaetigen, ob die bifaziale PS400-Variante wirklich nur 35° fix kann.
+
+## Lokalisierung
+
+6 Sprachen (DE/EN/ES/FR/IT/PT) via `AppStrings.*.resx` (neutral = EN). Statische Labels in den
+Views via `{loc:Translate Key=...}`, dynamische in den VMs via `ILocalizationService.GetString`.
+Engine bleibt sprachneutral (Enum-/Tipp-**Keys**, keine UI-Texte). Kein Laufzeit-Sprachwechsel-UI
+(Gerätesprache beim Start). Test-Abdeckung: `LocalizationTests` (Einbettung, Vollständigkeit,
+Platzhalter-Erhalt).
 
 ---
 

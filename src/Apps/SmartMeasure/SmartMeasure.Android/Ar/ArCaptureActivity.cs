@@ -1281,8 +1281,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             }
             else
             {
-                // Kein Punkt getroffen → neuen Punkt per Hit-Test setzen
-                PlaceNewPoint(e.GetX(), e.GetY());
+                // Neuen Punkt am CROSSHAIR (Bildmitte) setzen, NICHT an der Tap-Position — so wird
+                // exakt der Punkt gemessen, dessen Live-Distanz/Tiefe das Reticle anzeigt. Der Tap
+                // ist nur der Auslöser; anvisiert wird mit dem Crosshair (Standard in AR-Mess-Apps).
+                PlaceNewPoint(_viewportWidth / 2f, _viewportHeight / 2f);
             }
         }
         else if (_isDragging && (_selectedPointIndex >= 0 || _isContourPointSelected))
@@ -4451,6 +4453,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         bool showLiveSegment = false;
         (float x, float y)? liveSegFromScreen = null;
         float? liveSegHorizontal = null, liveSegSlope = null, liveSegHeight = null;
+        var liveSegActive = false;
+        float? liveSegOffScreenDir = null;
         List<(float horizontal, float heightDelta)>? activeContourSegMeters = null;
 
         // Rechteck-Vorschau (gefuehrte 3-Punkt-Methode)
@@ -4535,15 +4539,23 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 liveSegHorizontal = MathF.Sqrt(sdx * sdx + sdz * sdz);          // Grundriss
                 liveSegSlope = MathF.Sqrt(sdx * sdx + sdy * sdy + sdz * sdz);   // schraeg (3D)
                 liveSegHeight = sdy;                                            // ΔH (signiert)
+                liveSegActive = true; // Distanz/ΔH gültig — UNABHÄNGIG von der Sichtbarkeit des Vorpunkts
 
-                // Startpunkt-Screen-Position. Frustum-Clip: nur zeichnen, wenn der letzte
-                // Punkt tatsaechlich im Bild liegt — sonst springt das Gummiband ins Nirgendwo.
+                // Startpunkt-Screen-Position. Liegt der letzte Punkt im Bild → volles Gummiband.
+                // Liegt er ausserhalb (oder hinter der Kamera) → KEIN Gummiband, aber Distanz/ΔH
+                // werden trotzdem am Reticle gezeigt (liveSegActive) + Rand-Pfeil zur Richtung.
                 var ls = WorldToScreen(lastPlaced, _mvpMatrixScratch);
                 if (ls is { } lsv && lsv.x >= 0 && lsv.x <= _viewportWidth
                     && lsv.y >= 0 && lsv.y <= _viewportHeight)
                 {
                     liveSegFromScreen = lsv;
                     showLiveSegment = true;
+                }
+                else if (ls is { } off)
+                {
+                    // Vor der Kamera, aber ausserhalb des Bildes → Richtung Bildmitte → Punkt.
+                    liveSegOffScreenDir = MathF.Atan2(off.y - _viewportHeight / 2f,
+                        off.x - _viewportWidth / 2f) * 180f / MathF.PI;
                 }
             }
 
@@ -4680,6 +4692,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             IsTapeMeasureMode = _captureMode == CaptureMode.TapeMeasure,
             // Live-Segment ("Gummiband") + Kontur-Segment-Distanzen
             ShowLiveSegment = showLiveSegment,
+            LiveSegmentActive = liveSegActive,
+            LiveSegmentOffScreenDirectionDeg = liveSegOffScreenDir,
             LiveSegmentFromScreen = liveSegFromScreen,
             LiveSegmentHorizontalMeters = liveSegHorizontal,
             LiveSegmentSlopeMeters = liveSegSlope,

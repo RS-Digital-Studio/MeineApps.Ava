@@ -185,6 +185,17 @@ public sealed class ArOverlayState
     /// <summary>True: das Live-Segment-Gummiband soll gezeichnet werden.</summary>
     public bool ShowLiveSegment { get; init; }
 
+    /// <summary>True sobald ein vorheriger Punkt existiert UND das Reticle einen Hit hat — die
+    /// Distanz/ΔH-Werte sind dann gültig, UNABHÄNGIG davon, ob der vorherige Punkt im Bild liegt.
+    /// Erlaubt dem Overlay, Distanz+Höhenunterschied am Reticle anzuzeigen, auch wenn der
+    /// vorherige Punkt off-screen oder hinter der Kamera ist.</summary>
+    public bool LiveSegmentActive { get; init; }
+
+    /// <summary>Richtung (Screen-Winkel, Grad, 0=rechts, im Uhrzeigersinn) vom Reticle/Bildmitte
+    /// zum vorherigen Punkt, wenn dieser AUSSERHALB des Bildes liegt (für einen Rand-Pfeil).
+    /// null wenn der vorherige Punkt im Bild ist oder die Richtung unbestimmt (hinter Kamera).</summary>
+    public float? LiveSegmentOffScreenDirectionDeg { get; init; }
+
     /// <summary>Screen-Position des zuletzt gesetzten Punkts (Startpunkt des Gummibands).
     /// null wenn der Punkt ausserhalb des Sichtfelds liegt → dann kein Gummiband.</summary>
     public (float screenX, float screenY)? LiveSegmentFromScreen { get; init; }

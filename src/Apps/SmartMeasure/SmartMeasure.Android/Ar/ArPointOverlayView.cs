@@ -119,6 +119,8 @@ public sealed partial class ArPointOverlayView : View
 
         _density = context.Resources!.DisplayMetrics!.Density;
 
+        InitDesignPaints(); // Design-System-Paints (Panel/Border/Schatten) — Tokens in ArPointOverlayView.Design.cs
+
         _pointPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(255, 255, 107, 0) };
         _pointPaint.SetStyle(Paint.Style.Fill);
 
@@ -216,27 +218,29 @@ public sealed partial class ArPointOverlayView : View
 
         _bannerTextPaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.White,
+            Color = C.TextPrimary,
             TextSize = 14f * _density,
             TextAlign = Paint.Align.Center,
-            FakeBoldText = true,
         };
+        _bannerTextPaint.SetTypeface(FontMedium);
 
         _statsBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(180, 0, 0, 0) };
         _statsBgPaint.SetStyle(Paint.Style.Fill);
 
         _statsTextPaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.White,
-            TextSize = 13f * _density,
-            FakeBoldText = true,
+            Color = C.TextPrimary,
+            TextSize = 14f * _density,
         };
+        _statsTextPaint.SetTypeface(FontMedium);
 
         _statsLabelPaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.Argb(180, 255, 255, 255),
-            TextSize = 10f * _density,
+            Color = C.TextSecondary,
+            TextSize = 11f * _density,
+            LetterSpacing = 0.06f,
         };
+        _statsLabelPaint.SetTypeface(FontRegular);
 
         _northArrowPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(240, 239, 83, 80) };
         _northArrowPaint.SetStyle(Paint.Style.Fill);
@@ -288,19 +292,20 @@ public sealed partial class ArPointOverlayView : View
 
         _footerLabelPaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.Argb(200, 255, 255, 255),
-            TextSize = 10f * _density,
+            Color = C.TextSecondary,
+            TextSize = 11f * _density,
             TextAlign = Paint.Align.Center,
+            LetterSpacing = 0.06f, // gesperrte Versal-Labels = klassisches Instrument-Panel-Signal
         };
+        _footerLabelPaint.SetTypeface(FontRegular);
 
         _footerValuePaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.White,
-            TextSize = 16f * _density,
+            Color = C.TextPrimary,
+            TextSize = 17f * _density,
             TextAlign = Paint.Align.Center,
-            FakeBoldText = true,
         };
-        _footerValuePaint.SetShadowLayer(2f, 0f, 0f, Color.Black);
+        _footerValuePaint.SetTypeface(FontMedium);
 
         // Live-Segment: gestrichelte Linie (Farbe wird pro Frame nach HitQuality gesetzt),
         // dunkle Pille mit grossem Hauptwert + kleiner ΔH/Steigung-Zeile.
@@ -318,29 +323,30 @@ public sealed partial class ArPointOverlayView : View
 
         _segValuePaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.White,
-            TextSize = 16f * _density,
+            Color = C.TextPrimary,
+            TextSize = 17f * _density,
             TextAlign = Paint.Align.Center,
-            FakeBoldText = true,
         };
+        _segValuePaint.SetTypeface(FontMedium);
 
         _segSubPaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.Argb(235, 190, 215, 255),
+            Color = C.TextSecondary,
             TextSize = 11f * _density,
             TextAlign = Paint.Align.Center,
         };
+        _segSubPaint.SetTypeface(FontRegular);
 
         _transientHintBgPaint = new Paint(PaintFlags.AntiAlias) { Color = Color.Argb(220, 76, 175, 80) };
         _transientHintBgPaint.SetStyle(Paint.Style.Fill);
 
         _transientHintTextPaint = new Paint(PaintFlags.AntiAlias)
         {
-            Color = Color.White,
+            Color = C.TextPrimary,
             TextSize = 13f * _density,
             TextAlign = Paint.Align.Center,
-            FakeBoldText = true,
         };
+        _transientHintTextPaint.SetTypeface(FontMedium);
     }
 
     private static void BuildNorthArrowPath(global::Android.Graphics.Path path, float size)
@@ -473,6 +479,8 @@ public sealed partial class ArPointOverlayView : View
         // unter dem Reticle, damit das Reticle obenauf liegt.
         if (_state.ShowLiveSegment)
             DrawRubberBand(canvas, width, height);
+        else if (_state.LiveSegmentActive)
+            DrawOffScreenLiveSegment(canvas, width, height); // Distanz/ΔH wenn Vorpunkt off-screen
 
         // 5d. Rechteck-/Quadrat-Vorschau (gefuehrte 3-Punkt-Methode) — unter dem Reticle.
         if (_state.IsRectangleMode)
@@ -1021,7 +1029,7 @@ public sealed partial class ArPointOverlayView : View
         var sidePad = 16 * _density;
         var rect = new RectF(sidePad, footerTop, width - sidePad, footerTop + footerH);
 
-        canvas.DrawRoundRect(rect, 10 * _density, 10 * _density, _footerBgPaint);
+        DrawPanel(canvas, rect, RadiusPanel);
 
         // 2 Spalten: Punkte / Summe
         var colW = (rect.Width()) / 2f;
@@ -1299,12 +1307,47 @@ public sealed partial class ArPointOverlayView : View
         DrawValuePill(canvas, mx, my, mainText, sub);
     }
 
+    /// <summary>Live-Distanz + ΔH zum vorherigen Punkt am Reticle anzeigen, wenn der Vorpunkt
+    /// AUSSERHALB des Bildes liegt (Gummiband nicht zeichenbar). Plus Rand-Pfeil zur Richtung,
+    /// damit der Nutzer sieht, wo der Bezugspunkt ist. Behebt: "Distanz/Höhe verschwindet,
+    /// sobald der vorherige Punkt aus dem Bild wandert".</summary>
+    private void DrawOffScreenLiveSegment(Canvas canvas, int width, int height)
+    {
+        if (_state.LiveSegmentHorizontalMeters is not { } horiz) return;
+        var cx = _state.ReticleX > 0 ? _state.ReticleX : width / 2f;
+        var cy = _state.ReticleY > 0 ? _state.ReticleY : height / 2f;
+
+        var mainText = FormatMeters(horiz);
+        string? sub = null;
+        if (_state.LiveSegmentHeightDelta is { } dh)
+        {
+            var slope = horiz > 0.05f ? $"   {dh / horiz * 100f:+0.0;-0.0;0.0} %" : "";
+            sub = $"ΔH {dh:+0.00;-0.00;0.00} m{slope}";
+        }
+        // Feste Pille unter dem Reticle (kein Gummiband-Mittelpunkt vorhanden).
+        DrawValuePill(canvas, cx, cy + 72 * _density, mainText, sub);
+
+        // Rand-Pfeil in Richtung des Off-Screen-Punkts (falls vor der Kamera, Richtung bekannt).
+        if (_state.LiveSegmentOffScreenDirectionDeg is { } dirDeg)
+        {
+            var rad = dirDeg * MathF.PI / 180f;
+            var margin = 72f * _density;
+            var px = cx + MathF.Cos(rad) * (width / 2f - margin);
+            var py = cy + MathF.Sin(rad) * (height / 2f - margin);
+            canvas.Save();
+            canvas.Translate(px, py);
+            canvas.Rotate(dirDeg);
+            canvas.DrawPath(_offScreenArrowPath, _offScreenArrowPaint);
+            canvas.Restore();
+        }
+    }
+
     /// <summary>Abgerundete dunkle Pille mit zentriertem Hauptwert + optionaler Unterzeile.
     /// Halbtransparenter Hintergrund garantiert Lesbarkeit auch bei Sonne (statt nur Schatten).</summary>
     private void DrawValuePill(Canvas canvas, float centerX, float centerY, string main, string? sub)
     {
-        var padH = 11f * _density;
-        var padV = 6f * _density;
+        var padH = 12f * _density;
+        var padV = 8f * _density;
         var mainW = _segValuePaint.MeasureText(main);
         var subW = sub != null ? _segSubPaint.MeasureText(sub) : 0f;
         var w = MathF.Max(mainW, subW) + padH * 2f;
@@ -1314,8 +1357,8 @@ public sealed partial class ArPointOverlayView : View
 
         var left = centerX - w / 2f;
         var top = centerY - h / 2f;
-        var r = 8f * _density;
-        canvas.DrawRoundRect(left, top, left + w, top + h, r, r, _segPillBgPaint);
+        _pillRect.Set(left, top, left + w, top + h);
+        DrawPanel(canvas, _pillRect, RadiusPill, PanelTone.Neutral, raised: true);
 
         var mainBaseline = top + padV + mainLineH - 5f * _density;
         canvas.DrawText(main, centerX, mainBaseline, _segValuePaint);
@@ -1335,10 +1378,10 @@ public sealed partial class ArPointOverlayView : View
 
         var color = _state.HitQuality switch
         {
-            ArHitQuality.Plane => Color.Argb(240, 76, 175, 80),   // Grün
-            ArHitQuality.Point => Color.Argb(240, 255, 107, 0),   // Orange
-            ArHitQuality.InstantPlacement => Color.Argb(240, 255, 235, 59), // Gelb
-            _ => Color.Argb(180, 255, 255, 255),                   // Weiß (kein Hit)
+            ArHitQuality.Plane => C.Good,                 // Smaragd — sicherer Plane-Hit
+            ArHitQuality.Point => C.Medium,               // Bernstein — Feature-Point
+            ArHitQuality.InstantPlacement => C.Medium,    // Bernstein — Instant-Schätzung
+            _ => C.Neutral,                               // neutral-grau — kein Hit
         };
 
         _reticleOuterPaint.Color = color;
@@ -1435,9 +1478,10 @@ public sealed partial class ArPointOverlayView : View
         // Banner unter Top-Inset + Nord-Pfeil positionieren
         var top = MathF.Max(_state.TopInsetPixels + 64 * _density, 80 * _density);
         var bannerHeight = 40 * _density;
-        var rect = new RectF(20 * _density, top, width - 20 * _density, top + bannerHeight);
-
-        canvas.DrawRoundRect(rect, 8 * _density, 8 * _density, _bannerBgPaint);
+        _panelRect.Set(20 * _density, top, width - 20 * _density, top + bannerHeight);
+        // Glas-Panel mit rotem Border + Status-Dot statt vollflächigem Rot — seriöser, blendet nicht.
+        DrawPanel(canvas, _panelRect, RadiusPanel, PanelTone.Poor);
+        DrawStatusDot(canvas, _panelRect.Left + 18 * _density, top + bannerHeight / 2f, C.Poor);
 
         var text = _state.TrackingFailureReason ?? "Tracking verloren";
         var textY = top + bannerHeight / 2f + _bannerTextPaint.TextSize / 3f;
@@ -1464,25 +1508,22 @@ public sealed partial class ArPointOverlayView : View
 
         if (!string.IsNullOrEmpty(_state.ThermalWarning))
         {
-            DrawWarningBanner(canvas, width, top, bannerH,
-                _state.ThermalWarning!, Color.Argb(230, 230, 81, 0)); // Orange
+            DrawWarningBanner(canvas, width, top, bannerH, _state.ThermalWarning!, C.Medium);
             top += bannerH + gap;
         }
 
         if (!string.IsNullOrEmpty(_state.BatteryWarning))
         {
-            DrawWarningBanner(canvas, width, top, bannerH,
-                _state.BatteryWarning!, Color.Argb(230, 245, 124, 0)); // Amber
+            DrawWarningBanner(canvas, width, top, bannerH, _state.BatteryWarning!, C.Medium);
         }
     }
 
     private void DrawWarningBanner(Canvas canvas, int width, float top, float height,
-        string text, Color bgColor)
+        string text, Color dotColor)
     {
-        var rect = new RectF(20 * _density, top, width - 20 * _density, top + height);
-        using var bgPaint = new Paint(PaintFlags.AntiAlias) { Color = bgColor };
-        bgPaint.SetStyle(Paint.Style.Fill);
-        canvas.DrawRoundRect(rect, 6 * _density, 6 * _density, bgPaint);
+        _panelRect.Set(20 * _density, top, width - 20 * _density, top + height);
+        DrawPanel(canvas, _panelRect, RadiusPanel, PanelTone.Medium);
+        DrawStatusDot(canvas, _panelRect.Left + 18 * _density, top + height / 2f, dotColor);
         var textY = top + height / 2f + _bannerTextPaint.TextSize / 3f;
         canvas.DrawText(text, width / 2f, textY, _bannerTextPaint);
     }
@@ -1513,7 +1554,7 @@ public sealed partial class ArPointOverlayView : View
         var top = panelTop;
 
         var rect = new RectF(right - panelW, top, right, top + panelH);
-        canvas.DrawRoundRect(rect, 8 * _density, 8 * _density, _statsBgPaint);
+        DrawPanel(canvas, rect, RadiusPanel);
 
         var x = rect.Left + padding;
         var y = rect.Top + padding + 12 * _density;
@@ -1689,7 +1730,8 @@ public sealed partial class ArPointOverlayView : View
         var sidePad = 16 * _density;
         var rect = new RectF(sidePad, footerTop, width - sidePad, footerTop + footerH);
 
-        canvas.DrawRoundRect(rect, 10 * _density, 10 * _density, _footerBgPaint);
+        // Footer = primäre Mess-Summe → Accent-Border wenn Punkte gesetzt sind.
+        DrawPanel(canvas, rect, RadiusPanel, pointCount > 0 ? PanelTone.Accent : PanelTone.Neutral);
 
         // 3 Spalten: Punkte / Länge / Fläche. Plan-Kap. 4.11: Lokalisierte Labels.
         var fLabels = _state.Labels;
@@ -1751,23 +1793,21 @@ public sealed partial class ArPointOverlayView : View
         }
 
         var textWidth = _bannerTextPaint.MeasureText(text);
-        var badgeW = textWidth + 2 * padding;
+        var dotSpace = 18 * _density;
+        var badgeW = textWidth + 2 * padding + dotSpace;
 
-        // Farbe nach Quality-Score
-        var bgColor = _state.IsReadyToMeasure
-            ? _state.TrackingQualityScore >= 80
-                ? Color.Argb(220, 76, 175, 80)      // Grün
-                : Color.Argb(220, 139, 195, 74)     // Hellgrün
+        // Status über Ton (Border) + Status-Dot links, NICHT über vollflächige Knallfarbe.
+        var (tone, dotColor) = _state.IsReadyToMeasure
+            ? (PanelTone.Good, C.Good)
             : _state.TrackingQualityScore >= 50
-                ? Color.Argb(220, 255, 193, 7)      // Gelb
-                : Color.Argb(220, 244, 67, 54);     // Rot
-
-        using var bgPaint = new Paint(PaintFlags.AntiAlias) { Color = bgColor };
-        bgPaint.SetStyle(Paint.Style.Fill);
+                ? (PanelTone.Medium, C.Medium)
+                : (PanelTone.Poor, C.Poor);
 
         var rect = new RectF(badgeX, badgeY, badgeX + badgeW, badgeY + badgeH);
-        canvas.DrawRoundRect(rect, 8f * _density, 8f * _density, bgPaint);
-        canvas.DrawText(text, badgeX + badgeW / 2f, badgeY + badgeH / 2f + 5 * _density, _bannerTextPaint);
+        DrawPanel(canvas, rect, RadiusPanel, tone);
+        DrawStatusDot(canvas, rect.Left + 13 * _density, badgeY + badgeH / 2f, dotColor);
+        canvas.DrawText(text, rect.Left + dotSpace + (textWidth + 2 * padding) / 2f,
+            badgeY + badgeH / 2f + 5 * _density, _bannerTextPaint);
 
         // Bounds publizieren für Tap-Detection in der Activity. Etwas vergrößert (8dp) damit
         // dünne Finger leichter treffen.
@@ -1789,7 +1829,7 @@ public sealed partial class ArPointOverlayView : View
         var top = height - 140 * _density;
 
         var rect = new RectF(cx - bannerW / 2f, top, cx + bannerW / 2f, top + bannerH);
-        canvas.DrawRoundRect(rect, 16 * _density, 16 * _density, _transientHintBgPaint);
+        DrawPanel(canvas, rect, RadiusPill, PanelTone.Neutral, raised: true);
         canvas.DrawText(_state.TransientHint, cx, top + bannerH / 2f + 5 * _density, _transientHintTextPaint);
 
         // Nächster Redraw für Ablauf

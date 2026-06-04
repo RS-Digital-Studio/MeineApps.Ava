@@ -36,6 +36,7 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `ArSnapEngine` | Stateless | Snap-Hilfen: Vertex (15 cm), Right-Angle (5°), Parallel (3°), Extension (10 cm) |
 | `ArPoseSampler` | Stateless | Multi-Frame HitTest-Averaging: Median + ±3σ-Outlier-Filter, 15 Samples/800 ms |
 | `ArMathHelpers` | Static | Bowditch-Correction, Quaternion→Heading/Pitch — reine Mathematik, in Unit-Tests direkt testbar |
+| `ArRectangleBuilder` | Static | Geführte 3-Punkt-Rechteck-/Quadrat-Konstruktion: rechte Winkel im Grundriss (X/Z), Quadrat-Snap (10 % Toleranz), Höhen-Ebene durch die 3 Messpunkte. Plattformneutral + unit-getestet; von der AR-Activity im Rechteck-Modus genutzt |
 
 ---
 

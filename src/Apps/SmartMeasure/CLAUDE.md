@@ -177,6 +177,7 @@ Die Activity hat keine Avalonia-DI. Lokalisierte Strings werden einmalig in `OnC
 |------|-----------|
 | `Point` | Einzelne Messpunkte ins Projekt + Undo-Stack + Foto-Annotation. |
 | `Contour` | Aktive Kontur (Weg/Beet/Mauer/...) — Mehrfach-Tap + `CloseActiveContour` mit Bowditch-Correction + Foto-Annotation pro Punkt. |
+| `Rectangle` | Geführte 3-Punkt-Rechteck-/Quadrat-Erfassung: zwei Tipps spannen die Basiskante auf, der dritte legt die Tiefe fest. `ArRectangleBuilder` (Shared, testbar) erzwingt rechte Winkel im Grundriss (X/Z) und snappt bei ~10 % Toleranz auf ein Quadrat; Höhen werden auf die Ebene durch die drei Messpunkte projiziert. Ergebnis ist eine geschlossene `ArContour` (Typ aus dem Flächen-Dialog). Anchors der Ecken werden detacht (starre Form, kein Drift-Verzug). Live-Vorschau (Polygon + Länge/Tiefe/Fläche + Quadrat-Indikator) im Overlay. Einstieg über den **Flächen**-Button → erster Dialog-Eintrag „Rechteck / Quadrat". |
 | `TapeMeasure` | Ad-hoc-Distanz. Eigener Buffer `_tapeMeasurePoints`, kein Projekt-Save, kein Undo, kein Foto. Long-Press auf Maß-Button = Reset. Footer zeigt Σ Strecken-Summe. |
 | `Stakeout` | Pfeil + Distanz + Target-Label zum nächsten unerreichten Ziel. Targets via `IArCaptureService.SetStakeoutTargets`. Hysterese-Reached bei ≤ 10 cm (von > 30 cm kommend). |
 | `TotalStation` | Stationierung + Radial-Projektion (Distanz + Bearing + Pitch → Lat/Lon) via `ITotalStationService`. |

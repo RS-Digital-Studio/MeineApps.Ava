@@ -6,6 +6,7 @@ using BingXBot.Core.Models;
 using BingXBot.Backtest.Reports;
 using BingXBot.Backtest.Simulation;
 using BingXBot.Engine.Indicators;
+using BingXBot.Engine.Portfolio;
 using Microsoft.Extensions.Logging;
 
 namespace BingXBot.Backtest.Portfolio;
@@ -137,42 +138,19 @@ public sealed class CrossSectionalMomentumEngine(
         return PerformanceReport.FromTrades(completed, equityCurve, bt.InitialBalance);
     }
 
-    /// <summary>Berechnet Momentum (ROC, optional ATR%-bereinigt) fuer ein Symbol am aktuellen NavIdx.</summary>
-    private static decimal? Momentum(PortfolioSymbolState s, XsecParams p)
-    {
-        var i = s.NavIdx;
-        if (i < p.LookbackCandles) return null;
-        var past = s.Nav[i - p.LookbackCandles].Close;
-        var now = s.Nav[i].Close;
-        if (past <= 0m || now <= 0m) return null;
-        var roc = now / past - 1m;
-        if (!p.RiskAdjusted) return roc;
-        // Vol-bereinigt: ROC / (ATR/Close). Normalisiert ueber unterschiedlich volatile Symbole.
-        var atr = IndicatorHelper.CalculateAtr(s.ContextSlice(p.LookbackCandles + 20), 14);
-        var lastAtr = atr.Count > 0 && atr[^1].HasValue ? atr[^1]!.Value : 0m;
-        var atrPct = lastAtr > 0m ? lastAtr / now : 0m;
-        return atrPct > 0m ? roc / atrPct : roc;
-    }
-
     private async Task RebalanceAsync(
         SimulatedExchange sim, List<PortfolioSymbolState> states, BotSettings settings, XsecParams p,
         int slots, HashSet<string> leverageSet, DateTime t, CancellationToken ct)
     {
-        // 1. Momentum aller eligiblen Symbole.
-        var ranked = states
+        // 1.+2. Ziel-Korb ueber den GETEILTEN MomentumBasketCalculator (identisch zur Live-Logik):
+        // Slice = letzte Lookback+20 Kerzen bis zur aktuellen (candles[^1] = jetzt) → ROC + ATR%-Ranking.
+        var universe = states
             .Where(s => s.NavIdx >= p.LookbackCandles && t >= s.TradingStartCloseTime)
-            .Select(s => (State: s, Mom: Momentum(s, p)))
-            .Where(x => x.Mom.HasValue)
-            .OrderByDescending(x => x.Mom!.Value)
+            .Select(s => (s.Symbol, (IReadOnlyList<Candle>)s.ContextSlice(p.LookbackCandles + 20)))
             .ToList();
-        if (ranked.Count == 0) return;
-
-        // 2. Ziel-Korb: Top-LongK (Momentum > 0) long, Bottom-ShortK (Momentum < 0) short.
-        var target = new Dictionary<string, Side>();
-        foreach (var x in ranked.Where(x => x.Mom!.Value > 0m).Take(p.LongK))
-            target[x.State.Symbol] = Side.Buy;
-        foreach (var x in ranked.Where(x => x.Mom!.Value < 0m).OrderBy(x => x.Mom!.Value).Take(p.ShortK))
-            target[x.State.Symbol] = Side.Sell;
+        if (universe.Count == 0) return;
+        var target = MomentumBasketCalculator.ComputeBasket(
+            universe, p.LookbackCandles, p.LongK, p.ShortK, p.RiskAdjusted);
 
         // 3. Bestehende Positionen, die NICHT (mehr) zum Ziel-Korb passen (Symbol raus ODER Seite gedreht), schliessen.
         var positions = await sim.GetPositionsAsync().ConfigureAwait(false);

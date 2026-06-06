@@ -21,6 +21,12 @@
     <!-- Kamera (AR-Capture) -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- Galerie-Speicherung (Screenshots/Aufnahmen via MediaStore). Ab Android 10 (API 29)
+         braucht das Schreiben eigener Medien KEINE Permission — daher maxSdkVersion=28, nur
+         fuer aeltere Geraete (minSdk 26). -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="28" />
+
     <!-- ARCore Hardware-Feature (optional, damit App auch ohne AR-Support installierbar ist) -->
     <uses-feature android:name="android.hardware.camera.ar" android:required="false" />
 

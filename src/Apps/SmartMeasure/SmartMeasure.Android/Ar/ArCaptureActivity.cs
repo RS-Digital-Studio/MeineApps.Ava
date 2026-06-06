@@ -2662,13 +2662,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_frameLock) { _lastFrame = null; }
         _stabilityMonitor?.Stop();
 
-        // SetAutoStopOnPause(true) hat die MP4-Aufnahme mit dem Session-Pause bereits beendet.
-        // _isRecording sonst stale → das "Mehr"-Menü zeigt weiter "Aufnahme stoppen" und neue
-        // Mess-Aktivität nach Resume wird nicht aufgezeichnet.
+        // SetAutoStopOnPause(true) hat die MP4-Aufnahme mit dem Session-Pause (oben _arSession.Pause())
+        // bereits beendet und die Datei finalisiert → jetzt in die Galerie kopieren (ohne UI-Hinweis,
+        // die App ist im Hintergrund). Deckt auch den "Fertig"-Fall ab (FinishCapture→Finish→OnPause).
+        // _isRecording sonst stale → das "Mehr"-Menü zeigt weiter "Aufnahme stoppen".
         if (_isRecording)
         {
+            var cachePath = _currentRecordingPath;
             _isRecording = false;
             _currentRecordingPath = null;
+            FinalizeRecordingToGallery(cachePath, showHint: false);
         }
 
         // FusedLocationProvider-Updates stoppen (Strom; läuft sonst im Hintergrund weiter).
@@ -3549,16 +3552,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     using var canvas = new Canvas(bitmap);
                     overlay.Draw(canvas);
 
-                    // Auf I/O-Thread speichern, damit UI nicht blockt
-                    var pngPath = SaveBitmapAsPng(bitmap);
+                    // In die Galerie schreiben (MediaStore) — laeuft hier bereits auf dem
+                    // PixelCopy-Background-Thread, blockt also den UI-Thread nicht.
+                    var galleryUri = SaveBitmapAsPng(bitmap);
                     RunOnUiThread(() =>
                     {
-                        if (pngPath != null)
+                        if (galleryUri != null)
                         {
-                            Toast.MakeText(this,
-                                $"Screenshot: {System.IO.Path.GetFileName(pngPath)}",
+                            Toast.MakeText(this, "Screenshot in Galerie gespeichert",
                                 ToastLength.Short)?.Show();
-                            ShowTransientHint("Screenshot gespeichert", TransientSeverity.Success);
+                            ShowTransientHint("Screenshot in Galerie gespeichert", TransientSeverity.Success);
                         }
                         else
                         {
@@ -3585,20 +3588,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
     }
 
+    /// <summary>Speichert das Screenshot-Bitmap in die Galerie (Pictures/SmartMeasure) via
+    /// MediaStore — sichtbar in der Foto-Galerie, ueberlebt die Deinstallation, keine Storage-
+    /// Permission (API 29+). Liefert die content://-Uri als String, oder null bei Fehler.</summary>
     private string? SaveBitmapAsPng(global::Android.Graphics.Bitmap bitmap)
     {
         try
         {
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var dir = GetExternalFilesDir("Screenshots")?.AbsolutePath
-                ?? global::Android.OS.Environment.DirectoryPictures
-                ?? FilesDir?.AbsolutePath;
-            if (string.IsNullOrEmpty(dir)) return null;
-            Directory.CreateDirectory(dir);
-            var path = System.IO.Path.Combine(dir, $"SmartMeasure_{timestamp}.png");
-            using var stream = File.OpenWrite(path);
-            bitmap.Compress(global::Android.Graphics.Bitmap.CompressFormat.Png!, 100, stream);
-            return path;
+            var displayName = $"SmartMeasure_{DateTime.UtcNow:yyyyMMdd_HHmmss}.png";
+            return MediaStoreGallery.SaveBitmap(ContentResolver!, bitmap, displayName,
+                global::Android.Graphics.Bitmap.CompressFormat.Png!, "image/png");
         }
         catch (Exception ex)
         {
@@ -3887,14 +3886,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Thread-safe getter für Ground-Plane-Y (null wenn noch nicht erkannt).</summary>
     private float? GetGroundPlaneY() => _groundPlaneYSet ? _groundPlaneYValue : null;
 
-    #region Recording API (MP4-Session-Archiv)
+    #region Recording API (MP4-Session-Aufnahme → Galerie)
 
     private bool _isRecording;
     private string? _currentRecordingPath;
 
     /// <summary>
-    /// Startet/stoppt Session-Recording. ARCore speichert Camera-Feed + Sensor-Metadata
-    /// als MP4. Kann später in Playback-Mode abgespielt werden für Nachbetrachtung.
+    /// Startet/stoppt die AR-Session-Aufnahme. ARCore zeichnet Kamera-Feed + Sensor-Metadaten
+    /// zunaechst als MP4 in den App-Cache (ExternalFilesDir) auf; nach dem Stopp wird die fertige
+    /// Datei in die Galerie (Movies/SmartMeasure) kopiert — sichtbar in der Video-Galerie,
+    /// ueberlebt die Deinstallation. "Cache-then-copy" ist crash-robuster als direkt in eine
+    /// MediaStore-Uri aufzunehmen (kein verwaister Pending-Eintrag bei Prozess-Kill).
     /// </summary>
     private void ToggleRecording()
     {
@@ -3905,8 +3907,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             try
             {
                 _arSession.StopRecording();
+                var cachePath = _currentRecordingPath;
                 _isRecording = false;
-                ShowTransientHint($"Aufnahme gespeichert: {System.IO.Path.GetFileName(_currentRecordingPath)}", TransientSeverity.Success);
+                _currentRecordingPath = null;
+                FinalizeRecordingToGallery(cachePath, showHint: true);
                 VibrateMedium();
             }
             catch (Exception ex)
@@ -3918,9 +3922,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             try
             {
-                var dir = GetExternalFilesDir("Recordings")?.AbsolutePath
-                    ?? global::Android.OS.Environment.DirectoryMovies
-                    ?? FilesDir?.AbsolutePath;
+                var dir = GetExternalFilesDir("Recordings")?.AbsolutePath ?? FilesDir?.AbsolutePath;
                 if (string.IsNullOrEmpty(dir))
                 {
                     ShowTransientHint("Aufnahme nicht möglich: kein Speicherpfad", TransientSeverity.Warning);
@@ -3928,7 +3930,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 }
                 Directory.CreateDirectory(dir);
                 _currentRecordingPath = System.IO.Path.Combine(dir,
-                    $"SmartMeasure_{DateTime.Now:yyyyMMdd_HHmmss}.mp4");
+                    $"SmartMeasure_{DateTime.UtcNow:yyyyMMdd_HHmmss}.mp4");
 
                 var recordingConfig = new global::Google.AR.Core.RecordingConfig(_arSession);
                 recordingConfig.SetMp4DatasetFilePath(_currentRecordingPath);
@@ -3945,6 +3947,44 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 Toast.MakeText(this, $"Recording-Fehler: {ex.Message}", ToastLength.Short)?.Show();
             }
         }
+    }
+
+    /// <summary>Kopiert die fertige Cache-MP4 im Hintergrund in die Galerie (Movies/SmartMeasure)
+    /// und loescht danach die Cache-Datei. Nutzt den Application-ContentResolver, damit die
+    /// Operation einen Activity-Tod (OnPause→OnDestroy) ueberlebt. <paramref name="showHint"/> nur
+    /// beim expliziten Stopp (Activity lebt) — beim Auto-Stop via OnPause ist die App im Hintergrund.</summary>
+    private void FinalizeRecordingToGallery(string? cachePath, bool showHint)
+    {
+        if (string.IsNullOrEmpty(cachePath)) return;
+        var resolver = ApplicationContext?.ContentResolver;
+        if (resolver == null) return;
+
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                if (!File.Exists(cachePath)) return;
+                var uri = MediaStoreGallery.CopyVideo(resolver, cachePath,
+                    System.IO.Path.GetFileName(cachePath), "video/mp4");
+                if (uri != null)
+                    try { File.Delete(cachePath); } catch { /* Cache-Rest ist harmlos */ }
+
+                if (showHint)
+                {
+                    try
+                    {
+                        RunOnUiThread(() => ShowTransientHint(
+                            uri != null ? "Aufnahme in Galerie gespeichert" : "Aufnahme konnte nicht gespeichert werden",
+                            uri != null ? TransientSeverity.Success : TransientSeverity.Warning));
+                    }
+                    catch { /* Activity evtl. schon beendet */ }
+                }
+            }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Warn("ArCapture", $"FinalizeRecordingToGallery failed: {ex.Message}");
+            }
+        });
     }
 
     #endregion

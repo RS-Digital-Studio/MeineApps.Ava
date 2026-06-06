@@ -5,7 +5,5 @@
      Android-FS ist case-sensitive, daher MUSS der path-Attribut exakt "Exports/" sein. -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-files-path name="external_exports" path="Exports/" />
-    <external-files-path name="screenshots" path="Screenshots/" />
-    <external-files-path name="recordings" path="Recordings/" />
     <files-path name="internal" path="." />
 </paths>

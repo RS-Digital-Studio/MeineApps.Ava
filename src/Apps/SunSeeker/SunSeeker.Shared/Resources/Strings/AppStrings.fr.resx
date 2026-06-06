@@ -47,6 +47,10 @@
   <data name="AnkerSettings" xml:space="preserve"><value>Paramètres</value></data>
   <data name="AnkerHintGoogle" xml:space="preserve"><value>Compte Google ? Définissez d'abord un mot de passe dans l'application Anker via ‚Mot de passe oublié', puis connectez-vous ici avec votre e-mail et ce mot de passe.</value></data>
   <data name="AnkerErrorMissing" xml:space="preserve"><value>E-mail et mot de passe requis</value></data>
+  <data name="ArOpen" xml:space="preserve"><value>Soleil dans la caméra</value></data>
+  <data name="ArHint" xml:space="preserve"><value>Dirigez la caméra vers le ciel</value></data>
+  <data name="ArSunrise" xml:space="preserve"><value>Lever</value></data>
+  <data name="ArSunset" xml:space="preserve"><value>Coucher</value></data>
   <data name="TabAlign" xml:space="preserve"><value>Orienter</value></data>
   <data name="TabPower" xml:space="preserve"><value>Puissance</value></data>
   <data name="TabDashboard" xml:space="preserve"><value>Tableau de bord</value></data>

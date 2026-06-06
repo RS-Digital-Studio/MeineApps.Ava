@@ -47,6 +47,10 @@
   <data name="AnkerSettings" xml:space="preserve"><value>Definições</value></data>
   <data name="AnkerHintGoogle" xml:space="preserve"><value>Conta Google? Defina primeiro uma palavra-passe na app Anker através de ‚Esqueci a palavra-passe' e depois inicie sessão aqui com o seu e-mail e essa palavra-passe.</value></data>
   <data name="AnkerErrorMissing" xml:space="preserve"><value>E-mail e palavra-passe obrigatórios</value></data>
+  <data name="ArOpen" xml:space="preserve"><value>Sol na câmara</value></data>
+  <data name="ArHint" xml:space="preserve"><value>Aponte a câmara para o céu</value></data>
+  <data name="ArSunrise" xml:space="preserve"><value>Nascer</value></data>
+  <data name="ArSunset" xml:space="preserve"><value>Pôr do sol</value></data>
   <data name="TabAlign" xml:space="preserve"><value>Alinhar</value></data>
   <data name="TabPower" xml:space="preserve"><value>Potência</value></data>
   <data name="TabDashboard" xml:space="preserve"><value>Visão Geral</value></data>

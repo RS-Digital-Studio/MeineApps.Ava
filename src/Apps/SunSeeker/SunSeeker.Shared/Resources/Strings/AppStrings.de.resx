@@ -47,6 +47,10 @@
   <data name="AnkerSettings" xml:space="preserve"><value>Einstellungen</value></data>
   <data name="AnkerHintGoogle" xml:space="preserve"><value>Google-Konto? Setze in der Anker-App zuerst per ‚Passwort vergessen' ein Passwort und melde dich hier mit E-Mail und diesem Passwort an.</value></data>
   <data name="AnkerErrorMissing" xml:space="preserve"><value>E-Mail und Passwort erforderlich</value></data>
+  <data name="ArOpen" xml:space="preserve"><value>Sonne in der Kamera</value></data>
+  <data name="ArHint" xml:space="preserve"><value>Richte die Kamera zum Himmel</value></data>
+  <data name="ArSunrise" xml:space="preserve"><value>Aufgang</value></data>
+  <data name="ArSunset" xml:space="preserve"><value>Untergang</value></data>
   <!-- Navigation -->
   <data name="TabAlign" xml:space="preserve"><value>Ausrichten</value></data>
   <data name="TabPower" xml:space="preserve"><value>Leistung</value></data>

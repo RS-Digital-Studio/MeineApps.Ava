@@ -14,6 +14,7 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IAlignmentService` / `AlignmentService` | Soll-Ausrichtung je `AlignmentGoal` (Faustformeln solarpaneltilt.com) + Einfallswinkel/cosine-loss (PVPMC/Sandia). Hängt von `ISolarPositionService` ab. |
 | `IBifacialService` / `BifacialService` | Albedo → Mehrertrags-Bereich, Steilwinkel-Zuschlag, Tipp-**Keys**. |
 | `SunMath` (internal static) | Deg/Rad, Winkel-Normalisierung, Julianisches Datum (Meeus). |
+| `SunArProjection` (static) | Projiziert eine Welt-Richtung (Azimut/Elevation) auf den Kamera-Bildschirm (FOV + Roll) — für das AR-Sonnenbahn-Overlay. Lineare gnomonische Näherung, unit-getestet. Genutzt von `SunSeeker.Android/Ar/`. |
 
 **Sprachneutralität:** Die Engine gibt KEINE fertigen UI-Texte zurück — `AlignmentRecommendation`
 hat keine Erklärung (das VM lokalisiert per `Goal`), `BifacialService.GetAdvice().Tips` liefert

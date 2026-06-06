@@ -19,5 +19,10 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" />
+
+    <!-- CameraX (AR-Sonnenbahn-Overlay: Live-Kamera-Vorschau) -->
+    <PackageReference Include="Xamarin.AndroidX.Camera.Camera2" />
+    <PackageReference Include="Xamarin.AndroidX.Camera.Lifecycle" />
+    <PackageReference Include="Xamarin.AndroidX.Camera.View" />
   </ItemGroup>
 </Project>

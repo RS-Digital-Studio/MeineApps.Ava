@@ -47,6 +47,10 @@
   <data name="AnkerSettings" xml:space="preserve"><value>Settings</value></data>
   <data name="AnkerHintGoogle" xml:space="preserve"><value>Google account? First set a password in the Anker app via 'Forgot password', then sign in here with your email and that password.</value></data>
   <data name="AnkerErrorMissing" xml:space="preserve"><value>Email and password are required</value></data>
+  <data name="ArOpen" xml:space="preserve"><value>Sun in the camera</value></data>
+  <data name="ArHint" xml:space="preserve"><value>Point the camera at the sky</value></data>
+  <data name="ArSunrise" xml:space="preserve"><value>Sunrise</value></data>
+  <data name="ArSunset" xml:space="preserve"><value>Sunset</value></data>
   <data name="TabAlign" xml:space="preserve"><value>Align</value></data>
   <data name="TabPower" xml:space="preserve"><value>Power</value></data>
   <data name="TabDashboard" xml:space="preserve"><value>Overview</value></data>

@@ -10,12 +10,13 @@ Android-Einstiegsprojekt (`net10.0-android`). Hostet das Shared-Projekt via Aval
 | Datei | Zweck |
 |-------|-------|
 | `AndroidApp.cs` | `AvaloniaAndroidApplication<App>` — Avalonia-Bootstrap einmal pro Prozess. `WithInterFont()`. |
-| `MainActivity.cs` | `AvaloniaMainActivity`. Setzt `App.LocationServiceFactory` + `App.HeadingServiceFactory` VOR `base.OnCreate`, fragt Location-Permission an, startet GPS nach Grant. |
+| `MainActivity.cs` | `AvaloniaMainActivity`. Setzt `App.LocationServiceFactory` + `App.HeadingServiceFactory` + `App.LaunchSunAr` VOR `base.OnCreate`, fragt Location-Permission an, startet GPS nach Grant. |
 | `Services/AndroidLocationService.cs` | `ILocationService` via nativem `LocationManager` (GPS + Network). Kein Google Play Services — Kilometer-Genauigkeit genügt fürs Sonnenstand. `ILocationListener`. |
 | `Services/AndroidHeadingService.cs` | `IHeadingService` via `SensorManager`: `RotationVector` → Azimut der Display-Normale + Neigung, `GeomagneticField`-Missweisung (`SetLocation`), Accuracy-Status. `ISensorEventListener`. |
-| `AndroidManifest.xml` | Permissions: Internet, ACCESS_FINE/COARSE_LOCATION. AD_ID entfernt (privat). |
-| `Resources/values/styles.xml` | `MyTheme.NoActionBar` (Edge-to-Edge) + `MyTheme.Fullscreen` (für spätere AR-Kamera). |
-| `Resources/mipmap-*` | App-Icon (aktuell **Platzhalter** von SmartMeasure — eigenes Sonnen-Icon offen). |
+| `Ar/` | AR-Sonnenbahn-Overlay (CameraX-Kamera-Activity + Canvas-Overlay) → [Ar/CLAUDE.md](Ar/CLAUDE.md). |
+| `AndroidManifest.xml` | Permissions: Internet, ACCESS_FINE/COARSE_LOCATION, **CAMERA** (AR, `uses-feature required=false`). AD_ID entfernt (privat). |
+| `Resources/values/styles.xml` | `MyTheme.NoActionBar` (Edge-to-Edge) + `MyTheme.Fullscreen` (AR-Kamera-Activity). |
+| `Resources/drawable/` + `mipmap-anydpi-v26/` | Eigenes adaptives Sonnen-Vektor-Icon (`appicon_*`). |
 
 ---
 
@@ -28,6 +29,7 @@ _locationService = new AndroidLocationService(this)
 _headingService  = new AndroidHeadingService(this)
 App.LocationServiceFactory = _ => _locationService
 App.HeadingServiceFactory  = _ => _headingService
+App.LaunchSunAr            = () => StartActivity(typeof(SunArActivity))   // AR-Overlay-Hook
 ```
 
 **NACH `base.OnCreate`:** `RequestLocationPermissionIfNeeded()` (natives `CheckSelfPermission`/

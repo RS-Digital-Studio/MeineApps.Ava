@@ -130,12 +130,19 @@ Architektur, Flow + Gotchas (Google-OAuth-Passwort, a6-TLV, mTLS, Trigger) →
 
 ---
 
+## AR-Sonnenbahn-Overlay (Kamera)
+
+„Sonne durch die Kamera": blendet Tagesbahn + aktuelle Sonnenposition über das Live-Kamerabild ein.
+Kein ARCore-Tracking — Sonnenrichtung aus Ort + Zeit, Bildposition aus Rotationsvektor-Sensor + FOV.
+Native CameraX-Activity in `SunSeeker.Android/Ar/`, testbare Projektion in
+`SunSeeker.Shared/Services/SunArProjection.cs`. Einstieg: Button im Übersicht-Tab (nur Android, via
+`App.LaunchSunAr`-Hook). Details → [Ar/CLAUDE.md](SunSeeker.Android/Ar/CLAUDE.md).
+
+---
+
 ## Offene Punkte
 
-- **Kamera-AR-Sonnenbahn**: optionales „Sonne durch die Kamera"-Overlay. Braucht kein ARCore-Tracking
-  (Sonne = Richtung), aber eine native Kamera-Activity + Sensor-Projektion. Gerätegebunden. Das
-  2D-Sonnenbahn-Diagramm (Übersicht-Tab) deckt den Kern-Nutzen bereits offline ab.
-- **PS400-Winkel verifizieren**: bestätigen, ob die bifaziale PS400-Variante wirklich nur 35° fix kann.
+- **PS400-Winkel verifizieren**: bestätigen, ob die bifaziale PS400-Variante wirklich nur 35° fix kann (am Panel).
 
 App-Icon: eigenes adaptives Vektor-Icon (goldene Sonne auf Dämmerungs-Verlauf, `Resources/drawable/appicon_*.xml`).
 

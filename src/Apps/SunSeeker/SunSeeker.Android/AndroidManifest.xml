@@ -10,6 +10,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- Kamera (AR-Sonnenbahn-Overlay) — optional, App läuft auch ohne -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <!-- Keine Werbe-ID (rein privat) -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"
                      tools:node="remove" />

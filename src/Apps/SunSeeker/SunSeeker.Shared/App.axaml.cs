@@ -26,6 +26,9 @@ public class App : Application
     /// <summary>Anker-Powerstation-Monitor (echte Cloud-MQTT-Anbindung oder Mock).</summary>
     public static Func<IServiceProvider, IAnkerMonitorService>? AnkerMonitorServiceFactory { get; set; }
 
+    /// <summary>Öffnet das AR-Sonnenbahn-Overlay (Android: native Kamera-Activity). Auf Desktop null → Button ausgeblendet.</summary>
+    public static Action? LaunchSunAr { get; set; }
+
     private MainViewModel? _mainVm;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);

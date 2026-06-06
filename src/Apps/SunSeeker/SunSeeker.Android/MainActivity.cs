@@ -1,10 +1,12 @@
 using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
 using Android.Widget;
 using Avalonia.Android;
 using Microsoft.Extensions.DependencyInjection;
+using SunSeeker.Android.Ar;
 using SunSeeker.Android.Services;
 using SunSeeker.Shared;
 using SunSeeker.Shared.ViewModels;
@@ -35,6 +37,7 @@ public class MainActivity : AvaloniaMainActivity
         _headingService = new AndroidHeadingService(this);
         App.LocationServiceFactory = _ => _locationService;
         App.HeadingServiceFactory = _ => _headingService;
+        App.LaunchSunAr = () => StartActivity(new Intent(this, typeof(SunArActivity)));
 
         base.OnCreate(savedInstanceState);
 

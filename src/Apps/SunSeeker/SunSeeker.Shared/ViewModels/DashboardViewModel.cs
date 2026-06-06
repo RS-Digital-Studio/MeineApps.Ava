@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
 using SunSeeker.Shared.Graphics;
 using SunSeeker.Shared.Models;
@@ -32,6 +33,13 @@ public partial class DashboardViewModel : ObservableObject
     public event Action? SunPathInvalidateRequested;
 
     public SunPathRenderer SunPathRenderer { get; } = new();
+
+    /// <summary>True, wenn das AR-Sonnenbahn-Overlay verfügbar ist (Android-Kamera-Activity verdrahtet).</summary>
+    public bool IsSunArAvailable { get; } = App.LaunchSunAr is not null;
+
+    /// <summary>Öffnet das AR-Sonnenbahn-Overlay (native Kamera-Activity, nur Android).</summary>
+    [RelayCommand]
+    private void OpenSunAr() => App.LaunchSunAr?.Invoke();
 
     public DashboardViewModel(
         ILocationService location,

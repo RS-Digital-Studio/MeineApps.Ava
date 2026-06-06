@@ -25,6 +25,8 @@ public sealed class FakeExchangeClient : IExchangeClient
     // ────────────────── Call-Recorder ──────────────────
     public List<string> CallLog { get; } = new();
     public List<(string Symbol, Side Side)> ClosePositionCalls { get; } = new();
+    public List<(string Symbol, Side Side, decimal Qty)> PlaceOrderCalls { get; } = new();
+    public List<(string Symbol, int Leverage, Side Side)> SetLeverageCalls { get; } = new();
     public List<(string Symbol, Side Side, decimal? Sl, decimal? Tp)> SetSlTpCalls { get; } = new();
     public List<(string Symbol, Side Side, decimal Qty, decimal Price)> PlaceTpCalls { get; } = new();
     public List<(string OrderId, string Symbol)> CancelOrderCalls { get; } = new();
@@ -32,6 +34,13 @@ public sealed class FakeExchangeClient : IExchangeClient
     /// <summary>Test-Setup: Mindest-Order-Menge fuer den Min-Qty-Split-Guard (0 = keine Restriktion).</summary>
     public decimal MinOrderQty { get; set; }
     public bool MeetsMinimumOrder(string symbol, decimal quantity, decimal price) => quantity >= MinOrderQty;
+
+    /// <summary>Test-Setup: wenn true, entfernt <see cref="ClosePositionAsync"/> die Position NICHT
+    /// (simuliert einen fehlgeschlagenen Close fuer Rebalancer-Safety-Tests).</summary>
+    public bool FailCloses { get; set; }
+
+    /// <summary>Test-Setup: Konto-Equity, die <see cref="GetAccountInfoAsync"/> meldet.</summary>
+    public decimal AccountEquity { get; set; } = 10000m;
 
     // ────────────────── Test-Setup-Helpers ──────────────────
     public FakeExchangeClient WithPosition(string symbol, Side side, decimal qty, decimal entry, decimal markPrice = 0m)
@@ -113,7 +122,7 @@ public sealed class FakeExchangeClient : IExchangeClient
     public Task<AccountInfo> GetAccountInfoAsync()
     {
         CallLog.Add("GetAccountInfoAsync");
-        return Task.FromResult(new AccountInfo(Balance: 10000m, AvailableBalance: 10000m, UnrealizedPnl: 0m, UsedMargin: 0m, Equity: 10000m, RealizedPnl: 0m));
+        return Task.FromResult(new AccountInfo(Balance: AccountEquity, AvailableBalance: AccountEquity, UnrealizedPnl: 0m, UsedMargin: 0m, Equity: AccountEquity, RealizedPnl: 0m));
     }
 
     public Task<(decimal TakerRate, decimal MakerRate)> GetCommissionRateAsync()
@@ -125,6 +134,7 @@ public sealed class FakeExchangeClient : IExchangeClient
     public Task SetLeverageAsync(string symbol, int leverage, Side side)
     {
         CallLog.Add($"SetLeverageAsync({symbol},{leverage},{side})");
+        SetLeverageCalls.Add((symbol, leverage, side));
         return Task.CompletedTask;
     }
 
@@ -152,7 +162,8 @@ public sealed class FakeExchangeClient : IExchangeClient
     {
         CallLog.Add($"ClosePositionAsync({symbol},{side})");
         ClosePositionCalls.Add((symbol, side));
-        lock (_lock) _positions.RemoveAll(p => p.Symbol == symbol && p.Side == side);
+        if (!FailCloses)
+            lock (_lock) _positions.RemoveAll(p => p.Symbol == symbol && p.Side == side);
         return Task.CompletedTask;
     }
 
@@ -169,6 +180,7 @@ public sealed class FakeExchangeClient : IExchangeClient
     public Task<Order> PlaceOrderAsync(OrderRequest request, decimal lastPrice = 0m)
     {
         CallLog.Add($"PlaceOrderAsync({request.Symbol},{request.Side},{request.Quantity})");
+        PlaceOrderCalls.Add((request.Symbol, request.Side, request.Quantity));
         var order = new Order(
             OrderId: $"fake-{Interlocked.Increment(ref _orderIdCounter)}",
             Symbol: request.Symbol,

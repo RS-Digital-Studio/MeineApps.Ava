@@ -14,6 +14,13 @@ public interface IRiskManager
     void UpdateDailyStats(CompletedTrade completedTrade);
     void ResetDailyStats();
 
+    /// <summary>
+    /// Setzt die aktuelle Verlustserie (CurrentConsecutiveLosses). Live nutzt das, um BE-Exits
+    /// nicht als Verlust zu zaehlen (Buch 6.8) und die Serie beim Tageswechsel zurueckzusetzen.
+    /// Der Backtest spiegelt dieses Verhalten ueber <c>BacktestRiskAccounting</c>.
+    /// </summary>
+    void SetConsecutiveLosses(int value);
+
     /// <summary>Setzt alle Statistiken zurück inkl. Peak-Equity (für kompletten Bot-Reset).</summary>
     void ResetAll();
 

@@ -491,11 +491,17 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             var equity = _balance + unrealizedPnl;
             var availableBalance = Math.Max(0, equity - usedMargin);
 
+            // Balance = reines Wallet (realized PnL + initial), OHNE uPnL — exakt die Live-Semantik
+            // (BingXRestClient.GetAccountInfoAsync, Z. 1145: balance.Balance ohne uPnL, Equity separat).
+            // KRITISCH: RiskManager rechnet equity = Account.Balance + Account.UnrealizedPnl selbst
+            // (RiskManager.cs:214/308/417). Wuerde Balance bereits uPnL enthalten, ergaebe das
+            // _balance + 2×uPnL → doppelte uPnL-Zaehlung → Drawdown-/Risk-Gates und Sizing verzerrt.
             var info = new AccountInfo(
-                equity,
+                _balance,
                 availableBalance,
                 unrealizedPnl,
-                usedMargin);
+                usedMargin,
+                equity);
 
             return Task.FromResult(info);
         }

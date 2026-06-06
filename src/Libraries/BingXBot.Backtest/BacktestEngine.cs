@@ -313,6 +313,9 @@ public class BacktestEngine
             if (currentDate != lastBacktestDate)
             {
                 riskManager.ResetDailyStats();
+                // Live resettet die Verlustserie beim Tageswechsel mit (TradingServiceBase.cs:454),
+                // sonst bleibt CurrentConsecutiveLosses >= LossStreakPauseAtCount stehen → Dauerpause.
+                riskManager.SetConsecutiveLosses(0);
                 lastBacktestDate = currentDate;
             }
 
@@ -506,7 +509,7 @@ public class BacktestEngine
             var completedAfterTick = simExchange.GetCompletedTrades();
             while (lastCompletedTradeCount < completedAfterTick.Count)
             {
-                riskManager.UpdateDailyStats(completedAfterTick[lastCompletedTradeCount]);
+                BacktestRiskAccounting.RecordCompletedTrade(riskManager, completedAfterTick[lastCompletedTradeCount]);
                 lastCompletedTradeCount++;
             }
 
@@ -543,7 +546,7 @@ public class BacktestEngine
         // gemacht — das hat alle bereits gestreamten Trades doppelt aktualisiert.
         while (lastCompletedTradeCount < completedTrades.Count)
         {
-            riskManager.UpdateDailyStats(completedTrades[lastCompletedTradeCount]);
+            BacktestRiskAccounting.RecordCompletedTrade(riskManager, completedTrades[lastCompletedTradeCount]);
             lastCompletedTradeCount++;
         }
 

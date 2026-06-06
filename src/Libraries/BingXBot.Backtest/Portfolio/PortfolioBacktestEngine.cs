@@ -191,8 +191,9 @@ public sealed class PortfolioBacktestEngine
             {
                 while (btcD1Idx < btcD1!.Count - 1 && btcD1[btcD1Idx + 1].CloseTime <= t) btcD1Idx++;
                 while (btcH4Idx < btcH4!.Count - 1 && btcH4[btcH4Idx + 1].CloseTime <= t) btcH4Idx++;
-                // CalculateBtcHealth braucht D1 >= 55 und H4 >= 20 (Live: D1 > 55, H4 > 20).
-                if (btcD1Idx + 1 >= 55 && btcH4Idx + 1 >= 20)
+                // CalculateBtcHealth braucht — exakt wie Live (TradingServiceBase.cs:1108) — D1 > 55
+                // und H4 > 20 Kerzen. btcD1Idx+1 = Anzahl Kerzen bis inkl. Index → strikt >, nicht >=.
+                if (btcD1Idx + 1 > 55 && btcH4Idx + 1 > 20)
                 {
                     var d1Slice = new CandleSlice(btcD1, 0, btcD1Idx + 1);
                     var h4Slice = new CandleSlice(btcH4!, 0, btcH4Idx + 1);
@@ -205,6 +206,9 @@ public sealed class PortfolioBacktestEngine
             if (t.Date != lastDate)
             {
                 riskManager.ResetDailyStats();
+                // Verlustserie beim Tageswechsel mit-zuruecksetzen (Live: TradingServiceBase.cs:454),
+                // sonst haengt der Counter dauerhaft >= LossStreakPauseAtCount → selbsterhaltende Pause.
+                riskManager.SetConsecutiveLosses(0);
                 lastDate = t.Date;
             }
 
@@ -355,7 +359,7 @@ public sealed class PortfolioBacktestEngine
             var completedAfterStep = simExchange.GetCompletedTrades();
             while (lastCompletedTradeCount < completedAfterStep.Count)
             {
-                riskManager.UpdateDailyStats(completedAfterStep[lastCompletedTradeCount]);
+                BacktestRiskAccounting.RecordCompletedTrade(riskManager, completedAfterStep[lastCompletedTradeCount]);
                 lastCompletedTradeCount++;
             }
 
@@ -392,7 +396,7 @@ public sealed class PortfolioBacktestEngine
             .ToList();
         while (lastCompletedTradeCount < completedTrades.Count)
         {
-            riskManager.UpdateDailyStats(completedTrades[lastCompletedTradeCount]);
+            BacktestRiskAccounting.RecordCompletedTrade(riskManager, completedTrades[lastCompletedTradeCount]);
             lastCompletedTradeCount++;
         }
 

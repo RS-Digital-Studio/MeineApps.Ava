@@ -35,6 +35,14 @@ public sealed partial class ArPointOverlayView : View
     // hält screenX/screenY + den ECHTEN Welt-pointIdx, damit die Segment-Werte korrekt zugeordnet
     // bleiben, auch wenn ein Zwischenpunkt frustum-geclippt fehlt. Keine LINQ-Allokation pro Frame.
     private readonly List<(float screenX, float screenY, int pointIdx)> _activeContourScreenScratch = [];
+    // Single-Pass-Gruppierung der Kontur-Punkte (contourIdx, start, count) statt LINQ-GroupBy pro
+    // Frame. _projectedContourPoints liegt zusammenhängend je contourIdx + aufsteigend nach pointIdx
+    // vor (siehe ProjectPointsToScreen), daher reicht ein linearer Pass. Geteilt von Füllung + Linien.
+    private readonly List<(int contourIdx, int start, int count)> _contourSegments = [];
+    private readonly List<(float screenX, float screenY)> _contourPolyScratch = [];
+    // Marker-Nummern als lazy wachsender Cache (Index 0..N-1 → "1".."N") — vermeidet die
+    // Per-Punkt-String-Interpolation $"{idx+1}" in jedem Frame. Index-stabil gegen RemoveAt.
+    private string[] _markerNumberCache = [];
     private List<List<(float screenX, float screenY)>> _projectedPlanes = [];
     // Projiziertes Boden-Raster (x1,y1,x2,y2,dist) — verankert die Szene räumlich. dist = Welt-
     // Distanz zur Kamera für den Tiefen-Fade (nahe Linien kräftig, ferne ausgeblendet).
@@ -96,6 +104,9 @@ public sealed partial class ArPointOverlayView : View
 
     // Auto-Close-Ring
     private readonly Paint _autoCloseRingPaint;
+
+    // Wiederverwendeter Path für Flächen-Füllungen (FillPolygonGradient) — Reset statt new pro Frame.
+    private readonly global::Android.Graphics.Path _gradientPath = new();
 
     // Maßstab
     private readonly Paint _scalePaint;
@@ -448,6 +459,7 @@ public sealed partial class ArPointOverlayView : View
         _compassAccRingPaint.Dispose();
         _northArrowPath.Dispose();
         _autoCloseRingPaint.Dispose();
+        _gradientPath.Dispose();
         _scalePaint.Dispose();
         _scaleTextPaint.Dispose();
         _footerLabelPaint.Dispose();
@@ -475,6 +487,10 @@ public sealed partial class ArPointOverlayView : View
         // 1. Erkannte Planes
         if (_showPlanes)
             DrawDetectedPlanes(canvas);
+
+        // 2+3. Kontur-Flächen + -Linien teilen sich die Single-Pass-Gruppierung (statt LINQ-GroupBy
+        // je Methode pro Frame). Bei leerem _projectedContourPoints bleibt die Liste leer → kein Draw.
+        RebuildContourSegments();
 
         // 2. Kontur-Flächen (geschlossen typ-gefärbt + aktiv) mit Tiefen-Gradient
         DrawContourFills(canvas);
@@ -628,36 +644,59 @@ public sealed partial class ArPointOverlayView : View
         }
     }
 
+    /// <summary>Zerlegt <see cref="_projectedContourPoints"/> in einem linearen Pass in Segmente
+    /// (contourIdx, start, count). Die Liste liegt bereits zusammenhängend je contourIdx +
+    /// aufsteigend nach pointIdx vor (ProjectPointsToScreen pusht Kontur für Kontur), daher ohne
+    /// LINQ-GroupBy/OrderBy/ToList. Wird einmal pro Frame in OnDraw gebaut, von Füllung + Linien
+    /// geteilt.</summary>
+    private void RebuildContourSegments()
+    {
+        _contourSegments.Clear();
+        var list = _projectedContourPoints;
+        var i = 0;
+        while (i < list.Count)
+        {
+            var ci = list[i].contourIdx;
+            var start = i;
+            while (i < list.Count && list[i].contourIdx == ci) i++;
+            _contourSegments.Add((ci, start, i - start));
+        }
+    }
+
     /// <summary>Füllt geschlossene Konturen (Typ-Farbe) und die aktive Kontur (Accent) mit einem
-    /// vertikalen Tiefen-Gradient — plastisches Flächen-Volumen statt flacher Einfärbung.</summary>
+    /// vertikalen Tiefen-Gradient — plastisches Flächen-Volumen statt flacher Einfärbung. Nutzt die
+    /// in <see cref="RebuildContourSegments"/> gebauten Segmente (keine Per-Frame-LINQ-Allokation).</summary>
     private void DrawContourFills(Canvas canvas)
     {
         // Geschlossene Konturen typ-gefärbt füllen (unter den Linien).
-        var groups = _projectedContourPoints
-            .Where(p => p.contourIdx >= 0)
-            .GroupBy(p => p.contourIdx);
-        foreach (var g in groups)
+        foreach (var (ci, start, count) in _contourSegments)
         {
-            var idx = g.Key;
-            if (idx >= _contours.Count || !_contours[idx].IsClosed) continue;
-            var pts = g.OrderBy(p => p.pointIdx).Select(p => (p.screenX, p.screenY)).ToList();
-            if (pts.Count < 3) continue;
-            FillPolygonGradient(canvas, pts, GetContourTypeColor(_contours[idx].ContourType));
+            if (ci < 0 || count < 3) continue;
+            if (ci >= _contours.Count || !_contours[ci].IsClosed) continue;
+            FillContourSegment(canvas, start, count, GetContourTypeColor(_contours[ci].ContourType));
         }
 
-        // Aktive Kontur (Accent) füllen, sobald sie eine Fläche aufspannt.
-        var activePts = _projectedContourPoints
-            .Where(p => p.contourIdx == -1)
-            .OrderBy(p => p.pointIdx)
-            .Select(p => (p.screenX, p.screenY))
-            .ToList();
-        if (activePts.Count >= 3)
-            FillPolygonGradient(canvas, activePts, C.Accent);
+        // Aktive Kontur (Accent) zuletzt füllen, sobald sie eine Fläche aufspannt — liegt obenauf.
+        foreach (var (ci, start, count) in _contourSegments)
+            if (ci == -1 && count >= 3)
+                FillContourSegment(canvas, start, count, C.Accent);
+    }
+
+    /// <summary>Füllt ein Kontur-Segment [start, start+count) aus <see cref="_projectedContourPoints"/>
+    /// via wiederverwendetem Polygon-Puffer mit dem Tiefen-Gradient.</summary>
+    private void FillContourSegment(Canvas canvas, int start, int count, Color baseColor)
+    {
+        _contourPolyScratch.Clear();
+        var end = start + count;
+        for (var k = start; k < end; k++)
+            _contourPolyScratch.Add((_projectedContourPoints[k].screenX, _projectedContourPoints[k].screenY));
+        FillPolygonGradient(canvas, _contourPolyScratch, baseColor);
     }
 
     /// <summary>Zeichnet ein gefülltes Polygon mit vertikalem Alpha-Gradient (oben dezent, unten
-    /// kräftiger) in der Basisfarbe. Shader wird pro Polygon erzeugt — bei den wenigen gleichzeitig
-    /// sichtbaren Flächen einer AR-Session vernachlässigbar gegenüber dem Kamera-Frame-Upload.</summary>
+    /// kräftiger) in der Basisfarbe. Path wird wiederverwendet (Reset statt new); der Shader hängt
+    /// an Geometrie + Farbe und wird pro Polygon erzeugt — bei den wenigen gleichzeitig sichtbaren
+    /// Flächen einer AR-Session vernachlässigbar gegenüber dem Kamera-Frame-Upload.</summary>
     private void FillPolygonGradient(Canvas canvas, List<(float screenX, float screenY)> pts, Color baseColor)
     {
         float minY = float.MaxValue, maxY = float.MinValue;
@@ -668,11 +707,11 @@ public sealed partial class ArPointOverlayView : View
         }
         if (maxY - minY < 1f) maxY = minY + 1f;
 
-        using var path = new global::Android.Graphics.Path();
-        path.MoveTo(pts[0].screenX, pts[0].screenY);
+        _gradientPath.Reset();
+        _gradientPath.MoveTo(pts[0].screenX, pts[0].screenY);
         for (var i = 1; i < pts.Count; i++)
-            path.LineTo(pts[i].screenX, pts[i].screenY);
-        path.Close();
+            _gradientPath.LineTo(pts[i].screenX, pts[i].screenY);
+        _gradientPath.Close();
 
         using var shader = new LinearGradient(
             0, minY, 0, maxY,
@@ -680,7 +719,7 @@ public sealed partial class ArPointOverlayView : View
             Color.Argb(96, baseColor.R, baseColor.G, baseColor.B),
             Shader.TileMode.Clamp!);
         _gradientFillPaint.SetShader(shader);
-        canvas.DrawPath(path, _gradientFillPaint);
+        canvas.DrawPath(_gradientPath, _gradientFillPaint);
         _gradientFillPaint.SetShader(null);
     }
 
@@ -700,16 +739,13 @@ public sealed partial class ArPointOverlayView : View
 
     private void DrawContourLines(Canvas canvas, float pointRadius)
     {
-        var contourGroups = _projectedContourPoints
-            .GroupBy(p => p.contourIdx)
-            .OrderBy(g => g.Key);
-
-        foreach (var group in contourGroups)
+        // Segmente liegen in Builder-Reihenfolge vor (geschlossene Konturen, dann aktive zuletzt) —
+        // die aktive Kontur wird damit obenauf gezeichnet. Daten kommen aus dem geteilten Single-Pass.
+        foreach (var (ci, start, count) in _contourSegments)
         {
-            var sorted = group.OrderBy(p => p.pointIdx).ToList();
-            if (sorted.Count < 1) continue;
-
-            var isActive = group.Key == -1;
+            if (count < 1) continue;
+            var end = start + count;
+            var isActive = ci == -1;
 
             // Abgeschlossene Konturen: typ-spezifische Farbe statt einheitlich cyan
             Paint paint;
@@ -717,9 +753,9 @@ public sealed partial class ArPointOverlayView : View
             {
                 paint = _activeContourPaint;
             }
-            else if (group.Key >= 0 && group.Key < _contours.Count)
+            else if (ci >= 0 && ci < _contours.Count)
             {
-                _contourLinePaint.Color = GetContourTypeColor(_contours[group.Key].ContourType);
+                _contourLinePaint.Color = GetContourTypeColor(_contours[ci].ContourType);
                 paint = _contourLinePaint;
             }
             else
@@ -727,34 +763,36 @@ public sealed partial class ArPointOverlayView : View
                 paint = _contourLinePaint;
             }
 
-            for (var i = 1; i < sorted.Count; i++)
+            for (var k = start + 1; k < end; k++)
             {
                 canvas.DrawLine(
-                    sorted[i - 1].screenX, sorted[i - 1].screenY,
-                    sorted[i].screenX, sorted[i].screenY,
+                    _projectedContourPoints[k - 1].screenX, _projectedContourPoints[k - 1].screenY,
+                    _projectedContourPoints[k].screenX, _projectedContourPoints[k].screenY,
                     paint);
             }
 
-            if (!isActive && group.Key >= 0 && group.Key < _contours.Count && _contours[group.Key].IsClosed)
+            if (!isActive && ci >= 0 && ci < _contours.Count && _contours[ci].IsClosed)
             {
                 canvas.DrawLine(
-                    sorted[^1].screenX, sorted[^1].screenY,
-                    sorted[0].screenX, sorted[0].screenY,
+                    _projectedContourPoints[end - 1].screenX, _projectedContourPoints[end - 1].screenY,
+                    _projectedContourPoints[start].screenX, _projectedContourPoints[start].screenY,
                     paint);
             }
 
             // Konturpunkte perspektivisch skalieren (nah = größer) — konsistent mit Einzelpunkten.
-            foreach (var (sx, sy, _, _, depth) in sorted)
+            for (var k = start; k < end; k++)
             {
-                var ds = Math.Clamp(MarkerReferenceDepth / MathF.Max(depth, 0.3f), 0.5f, 1.7f);
-                canvas.DrawCircle(sx, sy, pointRadius * ds, _contourPointPaint);
+                var depth = _projectedContourPoints[k].depth;
+                var ds = Math.Clamp(MarkerReferenceDepth / MathF.Max(depth, 0.3f), MarkerScaleMin, MarkerScaleMax);
+                canvas.DrawCircle(_projectedContourPoints[k].screenX, _projectedContourPoints[k].screenY,
+                    pointRadius * ds, _contourPointPaint);
             }
 
             // Nummer am ersten Punkt für aktive Kontur
-            if (isActive && sorted.Count > 0)
+            if (isActive)
             {
-                canvas.DrawText("1", sorted[0].screenX + pointRadius + 4,
-                    sorted[0].screenY - 4, _labelPaint);
+                canvas.DrawText("1", _projectedContourPoints[start].screenX + pointRadius + 4,
+                    _projectedContourPoints[start].screenY - 4, _labelPaint);
             }
         }
     }
@@ -765,6 +803,12 @@ public sealed partial class ArPointOverlayView : View
     /// <summary>Referenz-Tiefe (m) für die perspektivische Marker-Skalierung: ein Punkt in
     /// dieser Entfernung wird in Normalgröße gezeichnet, näher = größer, ferner = kleiner.</summary>
     private const float MarkerReferenceDepth = 2.5f;
+
+    /// <summary>Clamp-Grenzen der perspektivischen Marker-Skalierung (um <see cref="MarkerReferenceDepth"/>):
+    /// nahe Punkte bleiben unter 1,9× (kein Vollbild-Marker), ferne über 0,45× (noch antippbar).
+    /// Einzel- UND Kontur-Punkte nutzen dieselben Grenzen — konsistenter Tiefeneindruck.</summary>
+    private const float MarkerScaleMin = 0.45f;
+    private const float MarkerScaleMax = 1.9f;
 
     private void DrawPoints(Canvas canvas, float pointRadius)
     {
@@ -784,7 +828,7 @@ public sealed partial class ArPointOverlayView : View
             // Perspektive: nahe Punkte wirken groß, ferne klein. Begrenzt, damit ein Punkt
             // direkt vor der Linse nicht den ganzen Screen einnimmt (1.9×) bzw. ferne Punkte
             // noch antippbar bleiben (0.45×).
-            var depthScale = Math.Clamp(MarkerReferenceDepth / MathF.Max(depth, 0.3f), 0.45f, 1.9f);
+            var depthScale = Math.Clamp(MarkerReferenceDepth / MathF.Max(depth, 0.3f), MarkerScaleMin, MarkerScaleMax);
 
             var confidence = 1f;
             float stdDev = 0f;
@@ -850,7 +894,7 @@ public sealed partial class ArPointOverlayView : View
 
             // Punkt-Nummer im Marker-Zentrum — bei sehr kleinen fernen Markern weglassen.
             if (effectiveR >= 7f * _density)
-                canvas.DrawText($"{idx + 1}", sx, sy + 3.5f * _density, _markerNumPaint);
+                canvas.DrawText(MarkerNumber(idx), sx, sy + 3.5f * _density, _markerNumPaint);
 
             // Höhen-Delta am Stab-Kopf (relativ zum ersten Punkt) — die wichtigste 3D-Info,
             // immer sichtbar (nicht nur bei Auswahl), aber bei winzigen fernen Markern gespart.
@@ -887,6 +931,20 @@ public sealed partial class ArPointOverlayView : View
         // Solange Pop-In-Animation läuft, alle 16ms neu zeichnen (60fps).
         if (anyAnimating)
             PostInvalidateDelayed(16);
+    }
+
+    /// <summary>Liefert die 1-basierte Marker-Beschriftung für <paramref name="idx"/> aus einem
+    /// lazy wachsenden Cache — vermeidet die Per-Punkt-String-Allokation $"{idx+1}" in jedem Frame.
+    /// Index-stabil: das Mapping idx → "idx+1" bleibt auch nach RemoveAt gültig.</summary>
+    private string MarkerNumber(int idx)
+    {
+        if (idx >= _markerNumberCache.Length)
+        {
+            var grown = new string[idx + 8];
+            Array.Copy(_markerNumberCache, grown, _markerNumberCache.Length);
+            _markerNumberCache = grown;
+        }
+        return _markerNumberCache[idx] ??= (idx + 1).ToString();
     }
 
     /// <summary>Plan-Kap. 5.9: Stakeout-Overlay — grosser Richtungs-Pfeil (relativ zur
@@ -1147,7 +1205,8 @@ public sealed partial class ArPointOverlayView : View
         var footerMargin = 8 * _density;
         var footerTop = height - toolbarOffset - footerH - footerMargin;
         var sidePad = 16 * _density;
-        var rect = new RectF(sidePad, footerTop, width - sidePad, footerTop + footerH);
+        _panelRect.Set(sidePad, footerTop, width - sidePad, footerTop + footerH);
+        var rect = _panelRect;
 
         DrawPanel(canvas, rect, RadiusPanel);
 
@@ -1676,7 +1735,8 @@ public sealed partial class ArPointOverlayView : View
         var right = width - 16 * _density;
         var top = panelTop;
 
-        var rect = new RectF(right - panelW, top, right, top + panelH);
+        _panelRect.Set(right - panelW, top, right, top + panelH);
+        var rect = _panelRect;
         DrawPanel(canvas, rect, RadiusPanel);
 
         var x = rect.Left + padding;
@@ -1851,7 +1911,8 @@ public sealed partial class ArPointOverlayView : View
         var footerMargin = 8 * _density;
         var footerTop = height - toolbarOffset - footerH - footerMargin;
         var sidePad = 16 * _density;
-        var rect = new RectF(sidePad, footerTop, width - sidePad, footerTop + footerH);
+        _panelRect.Set(sidePad, footerTop, width - sidePad, footerTop + footerH);
+        var rect = _panelRect;
 
         // Footer = primäre Mess-Summe → Accent-Border wenn Punkte gesetzt sind.
         DrawPanel(canvas, rect, RadiusPanel, pointCount > 0 ? PanelTone.Accent : PanelTone.Neutral);
@@ -1926,7 +1987,8 @@ public sealed partial class ArPointOverlayView : View
                 ? (PanelTone.Medium, C.Medium)
                 : (PanelTone.Poor, C.Poor);
 
-        var rect = new RectF(badgeX, badgeY, badgeX + badgeW, badgeY + badgeH);
+        _panelRect.Set(badgeX, badgeY, badgeX + badgeW, badgeY + badgeH);
+        var rect = _panelRect;
         DrawPanel(canvas, rect, RadiusPanel, tone);
         DrawStatusDot(canvas, rect.Left + 13 * _density, badgeY + badgeH / 2f, dotColor);
         canvas.DrawText(text, rect.Left + dotSpace + (textWidth + 2 * padding) / 2f,
@@ -2001,7 +2063,8 @@ public sealed partial class ArPointOverlayView : View
         var top = height - 140 * _density;
         var left = cx - bannerW / 2f;
 
-        var rect = new RectF(left, top, left + bannerW, top + bannerH);
+        _pillRect.Set(left, top, left + bannerW, top + bannerH);
+        var rect = _pillRect;
         DrawPanel(canvas, rect, RadiusPill, tone, raised: true);
         DrawStatusDot(canvas, left + 13 * _density, top + bannerH / 2f, dotColor);
         canvas.DrawText(_state.TransientHint, left + dotSpace + (textWidth + 32 * _density) / 2f,

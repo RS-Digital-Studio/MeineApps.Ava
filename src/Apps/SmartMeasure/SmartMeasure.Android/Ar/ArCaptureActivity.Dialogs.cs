@@ -172,6 +172,15 @@ public partial class ArCaptureActivity
             (ArContourType.Kante,     "Kante"),
         ];
 
+    /// <summary>Anzeigbare Beschriftung eines Kontur-Typs. foreach über das Array statt
+    /// LINQ-FirstOrDefault mit Closure — alloc-frei, daher auch im Per-Frame-Modus-Chip nutzbar.</summary>
+    private static string ContourTypeLabel(ArContourType type)
+    {
+        foreach (var o in ContourTypeOptions)
+            if (o.Type == type) return o.Label;
+        return type.ToString();
+    }
+
     /// <summary>Beschriftung des gefuehrten Rechteck-/Quadrat-Eintrags — steht als erste Option
     /// oben im Flaechen-Dialog (vor den Freihand-Kontur-Typen).</summary>
     private const string RectangleEntryLabel = "Rechteck / Quadrat (rechtwinklig)";

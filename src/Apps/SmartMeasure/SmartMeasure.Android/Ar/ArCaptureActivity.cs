@@ -875,8 +875,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             var pts = closedContour.Points.Count;
             var area = closedContour.CalculateArea();
-            var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == closedContour.ContourType).Label
-                ?? closedContour.ContourType.ToString();
+            var typeLabel = ContourTypeLabel(closedContour.ContourType);
             var tooLarge = bowditch == ArMathHelpers.BowditchResult.TooLarge;
             ShowTransientHint(tooLarge
                 ? $"{typeLabel}: {pts} Punkte — großer Schlussfehler, bitte prüfen!"
@@ -965,8 +964,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _redoStack.Clear();
         _rectangleCorners.Clear();
 
-        var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _currentContourType).Label
-            ?? _currentContourType.ToString();
+        var typeLabel = ContourTypeLabel(_currentContourType);
         var shape = result.IsSquare ? "Quadrat" : "Rechteck";
         ShowTransientHint(
             $"{shape} {typeLabel}: {result.LengthMeters:F2} × {result.DepthMeters:F2} m, {result.AreaMeters:F1} m²");
@@ -1726,8 +1724,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _undoStack.Push(new AddContourPointAction(_dataLock, _activeContour, arPoint));
                     _redoStack.Clear();
                     _activeContour.Points.Add(arPoint);
-                    var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _activeContour.ContourType).Label
-                        ?? _activeContour.ContourType.ToString();
+                    var typeLabel = ContourTypeLabel(_activeContour.ContourType);
                     ShowTransientHint($"{typeLabel}: {_activeContour.Points.Count} Punkte");
                     // Foto auch fuer Kontur-Punkte (z.B. "Ecke Mauer Nord" mit Sichtbeleg).
                     CapturePhotoForPoint(arPoint);
@@ -2751,14 +2748,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // garantiert auf dem GL-Thread mit aktuellem Frame.
             DrainPendingFrameOps(frame);
 
-            // Texturkoordinaten von ARCore holen (Display-Rotation beruecksichtigen)
-            var texCoords = new float[8];
+            // Texturkoordinaten von ARCore holen (Display-Rotation beruecksichtigen).
+            // Wiederverwendete Scratch-Buffer (kein Per-Frame-float[]) — UpdateTexCoords kopiert
+            // den Inhalt synchron in den nativen GL-Buffer, hält also keine Referenz.
             frame.TransformCoordinates2d(
                 Coordinates2d.OpenglNormalizedDeviceCoordinates,
-                new float[] { -1, -1, 1, -1, -1, 1, 1, 1 },
+                NdcQuadCoords,
                 Coordinates2d.TextureNormalized,
-                texCoords);
-            _backgroundRenderer?.UpdateTexCoords(texCoords);
+                _texCoordsScratch);
+            _backgroundRenderer?.UpdateTexCoords(_texCoordsScratch);
 
             // Kamera-Hintergrund rendern
             _backgroundRenderer?.Draw(_cameraTextureId);
@@ -2897,6 +2895,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Reusable MVP-Matrix-Buffer (16 float) — vermeidet float[]-Allocation pro Frame.
     /// GL-Thread-only, kein Lock.</summary>
     private readonly float[] _mvpMatrixScratch = new float[16];
+
+    /// <summary>Konstante NDC-Quad-Ecken für die Kamera-Textur-Transformation — als static readonly
+    /// statt Per-Frame-Array-Literal.</summary>
+    private static readonly float[] NdcQuadCoords = { -1, -1, 1, -1, -1, 1, 1, 1 };
+
+    /// <summary>Reusable Output-Buffer (8 float) für die transformierten Textur-Koordinaten —
+    /// vermeidet new float[8] pro Frame. UpdateTexCoords kopiert den Inhalt synchron in den
+    /// nativen GL-Buffer (kein Aliasing über den Frame hinaus). GL-Thread-only.</summary>
+    private readonly float[] _texCoordsScratch = new float[8];
 
     /// <summary>Reusable Builder fuer Einzelpunkt-Projektionen. Wird unter _dataLock befuellt,
     /// dann atomar in _projectedPoints uebernommen — verhindert Per-Frame
@@ -4397,18 +4404,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private TransientHintData? ConsumeTransientHint()
         => System.Threading.Interlocked.Exchange(ref _currentTransientHint, null);
 
+    /// <summary>Singular/Plural von "Punkt" — geteilt von Modus-Chip und Punkt-Setz-Hint.</summary>
+    private static string PointsWord(int n) => n == 1 ? "Punkt" : "Punkte";
+
     /// <summary>Baut Titel + Schritt-/Status-Detail für den permanenten Modus-Chip aus dem
     /// aktiven Erfassungs-Modus und den Live-Counts. Der Detail-Text führt durch geführte Modi
     /// (Rechteck-Schritte) bzw. zeigt den Fortschritt (Linie/Maßband/Abstecken).</summary>
     private (string title, string? detail) BuildModeChipLabel(
         int pointCount, int activeContourCount, int rectCornerCount, int tapeCount)
     {
-        static string PointsWord(int n) => n == 1 ? "Punkt" : "Punkte";
-
-        string CurrentContourTypeLabel()
-            => ContourTypeOptions.FirstOrDefault(o => o.Type == _currentContourType).Label
-               ?? _currentContourType.ToString();
-
         switch (_captureMode)
         {
             case CaptureMode.Rectangle:
@@ -4421,7 +4425,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 return ("Rechteck", step);
             case CaptureMode.Contour:
                 // Titel = Kontur-Typ (Weg/Beet/Mauer/...) statt generisch "Linie" — informativer.
-                return (CurrentContourTypeLabel(), activeContourCount == 0
+                return (ContourTypeLabel(_currentContourType), activeContourCount == 0
                     ? "1. Punkt antippen"
                     : $"{activeContourCount} {PointsWord(activeContourCount)}");
             case CaptureMode.TapeMeasure:
@@ -4600,14 +4604,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 liveLength += _activeContour.CalculateLength();
                 if (_activeContour.Points.Count >= 3)
                 {
-                    // Provisorische Fläche (als wäre sie geschlossen). Defensive Kopie der
-                    // Punkt-Liste — CalculateArea ist read-only, aber so teilt der Temp-Contour
-                    // nicht die Live-Referenz.
-                    var tempClosed = new ArContour
-                    {
-                        Points = new List<ArPoint>(_activeContour.Points),
-                        IsClosed = true,
-                    };
+                    // Provisorische Fläche (als wäre sie geschlossen). CalculateArea ist read-only,
+                    // und der ganze Block läuft unter _dataLock (kein Nebenläufer mutiert die Liste)
+                    // → die Live-Punktliste direkt teilen statt sie pro Frame zu kopieren.
+                    var tempClosed = new ArContour { Points = _activeContour.Points, IsClosed = true };
                     liveArea += tempClosed.CalculateArea();
                 }
 
@@ -4731,16 +4731,19 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 }
             }
 
-            // Höhen-Range
+            // Höhen-Range (max - min) in einem einzigen Pass mit float-Lokalen — keine Zwischen-
+            // liste + zwei LINQ-Durchläufe pro Frame.
             if (_points.Count > 0 || _contours.Count > 0)
             {
-                var allY = new List<float>();
-                foreach (var p in _points) allY.Add(p.Y);
-                foreach (var c in _contours) foreach (var p in c.Points) allY.Add(p.Y);
-                if (_activeContour != null) foreach (var p in _activeContour.Points) allY.Add(p.Y);
+                float minY = float.MaxValue, maxY = float.MinValue;
+                var n = 0;
+                foreach (var p in _points) { if (p.Y < minY) minY = p.Y; if (p.Y > maxY) maxY = p.Y; n++; }
+                foreach (var c in _contours)
+                    foreach (var p in c.Points) { if (p.Y < minY) minY = p.Y; if (p.Y > maxY) maxY = p.Y; n++; }
+                if (_activeContour != null)
+                    foreach (var p in _activeContour.Points) { if (p.Y < minY) minY = p.Y; if (p.Y > maxY) maxY = p.Y; n++; }
 
-                if (allY.Count > 1)
-                    heightRange = allY.Max() - allY.Min();
+                if (n > 1) heightRange = maxY - minY;
             }
         }
 

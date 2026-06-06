@@ -51,26 +51,33 @@ internal static class BacktestExitProcessor
                 if (exitState.RunnerActive)
                 {
                     var trailMul = riskSettings?.RunnerTrailingAtrMultiplier ?? 2.0m;
+                    // Fallback wie Live (TradingServiceBase.cs:729): price × 0,01 × trailMul, wenn kein ATR.
                     var trailDist = exitState.RunnerAtrBase > 0m
                         ? exitState.RunnerAtrBase * trailMul
-                        : exitState.EntryPrice * 0.01m;
+                        : currentCandle.Close * 0.01m * trailMul;
                     decimal trailSl;
                     bool trailHit;
+                    bool capHit;
                     if (pos.Side == Side.Buy)
                     {
                         if (currentCandle.High > exitState.RunnerTrailAnchor) exitState.RunnerTrailAnchor = currentCandle.High;
                         trailSl = exitState.RunnerTrailAnchor - trailDist;
                         trailHit = currentCandle.Low <= trailSl;
+                        capHit = exitState.RunnerHardCap > 0m && currentCandle.High >= exitState.RunnerHardCap;
                     }
                     else
                     {
                         if (exitState.RunnerTrailAnchor <= 0m || currentCandle.Low < exitState.RunnerTrailAnchor) exitState.RunnerTrailAnchor = currentCandle.Low;
                         trailSl = exitState.RunnerTrailAnchor + trailDist;
                         trailHit = currentCandle.High >= trailSl;
+                        capHit = exitState.RunnerHardCap > 0m && currentCandle.Low <= exitState.RunnerHardCap;
                     }
-                    if (trailHit)
+                    if (trailHit || capHit)
                     {
-                        simExchange.SetCurrentPrice(symbol, trailSl);
+                        // Hard-Cap-Exit am Cap-Preis (Live: TradingServiceBase.cs:780-792); bei
+                        // gleichzeitigem Trail+Cap konservativ den Trail-SL nehmen (schlechterer Fill).
+                        var exitPrice = (capHit && !trailHit) ? exitState.RunnerHardCap : trailSl;
+                        simExchange.SetCurrentPrice(symbol, exitPrice);
                         await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
                         positionSignals.Remove(key);
                         exitTracking.Remove(key);
@@ -137,19 +144,10 @@ internal static class BacktestExitProcessor
                         simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                     }
                     exitState.PartialClosed = true;
-                    if (riskSettings?.EnableRunner == true && exitState.RunnerAtrBase > 0m)
-                    {
-                        // Trailing-Variante: Rest laeuft mit ATR-Trailing-Stop statt festem TP2.
-                        // Start-Anker = TP1-Preis; kein festes TP-Ziel mehr (TakeProfit=null), SL bleibt.
-                        exitState.RunnerActive = true;
-                        exitState.RunnerTrailAnchor = origSignal.TakeProfit!.Value;
-                        positionSignals[key] = origSignal with { TakeProfit = null };
-                    }
-                    else
-                    {
-                        // Baseline: TP2 (200%+Buffer) als neues Ziel, SL bleibt (Buch 4.3).
-                        positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
-                    }
+                    // Rest zielt jetzt auf TP2 (200 %+Buffer), SL bleibt (Buch 4.3). Der Runner wird
+                    // ERST bei TP2-Hit aktiviert (Live: TradingServiceBase.cs:822-847) — NICHT schon bei
+                    // TP1. Bis dahin laeuft der Rest mit festem TP2-Ziel wie im Nicht-Runner-Fall.
+                    positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
                     continue;
                 }
 
@@ -213,8 +211,34 @@ internal static class BacktestExitProcessor
             }
             else if (tpHit)
             {
-                // TP2 = Limit-Reduce-Only auf der echten Exchange → MakerFee
-                simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
+                var tpPrice = currentSignal.TakeProfit!.Value;
+                var runnerPct = riskSettings?.RunnerPercent ?? 0m;
+
+                // Live (TradingServiceBase.cs:822-847): Bei TP2-Hit (nach TP1) + EnableRunner den Rest
+                // NICHT voll schliessen, sondern auf RunnerPercent × OriginalQuantity reduzieren — der
+                // verbleibende Anteil laeuft als Runner mit ATR-Trailing + Hard-Cap weiter. Greift nur
+                // nach TP1 (PartialClosed) und einmalig (nicht wenn Runner schon aktiv).
+                if (exitTracking.TryGetValue(key, out var tp2State)
+                    && riskSettings?.EnableRunner == true && !tp2State.RunnerActive && tp2State.PartialClosed
+                    && runnerPct > 0m && runnerPct < 1m && tp2State.OriginalQuantity > 0m)
+                {
+                    var runnerKeep = tp2State.OriginalQuantity * runnerPct;
+                    var tp2CloseQty = Math.Round(pos.Quantity - runnerKeep, 6);
+                    if (tp2CloseQty > 0m && runnerKeep > 0m)
+                    {
+                        simExchange.SetCurrentPrice(symbol, tpPrice);
+                        // TP2-Teil-Close = Limit-Reduce-Only → MakerFee.
+                        await simExchange.ReducePositionAsync(symbol, pos.Side, tp2CloseQty, isMakerClose: true).ConfigureAwait(false);
+                        simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+                        tp2State.RunnerActive = true;
+                        tp2State.RunnerTrailAnchor = tpPrice;          // Anker = TP2-Preis (Live: price bei Hit)
+                        positionSignals[key] = currentSignal with { TakeProfit = null }; // kein festes Ziel mehr, SL bleibt
+                        continue;
+                    }
+                }
+
+                // Standard-Voll-Close (TP ohne Runner-Rest, oder Runner deaktiviert) → MakerFee (Limit-Reduce-Only).
+                simExchange.SetCurrentPrice(symbol, tpPrice);
                 await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: true).ConfigureAwait(false);
                 positionSignals.Remove(key);
                 exitTracking.Remove(key);

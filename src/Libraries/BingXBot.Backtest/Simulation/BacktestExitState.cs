@@ -25,4 +25,10 @@ internal sealed class BacktestExitState
     public decimal RunnerTrailAnchor { get; set; }
     /// <summary>ATR-Basis fuer die Trailing-Distanz (aus SignalResult.EntryAtr).</summary>
     public decimal RunnerAtrBase { get; init; }
+    /// <summary>
+    /// Runner Hard-Cap-Preis (423,6 %-Extension, aus SignalResult.RunnerHardCap). 0 = kein Cap.
+    /// Spiegelt den Live-Hard-Cap-Exit (TradingServiceBase.cs:780-792): der Runner wird bei Erreichen
+    /// dieses Preises zwangsgeschlossen, auch wenn der Trailing-Stop noch nicht getroffen wurde.
+    /// </summary>
+    public decimal RunnerHardCap { get; init; }
 }

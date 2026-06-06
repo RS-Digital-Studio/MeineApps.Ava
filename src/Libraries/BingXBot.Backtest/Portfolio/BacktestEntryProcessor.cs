@@ -119,6 +119,7 @@ internal static class BacktestEntryProcessor
                             Tp2 = signal.TakeProfit2,
                             NavPointA = signal.NavPointA ?? 0m,
                             RunnerAtrBase = signal.EntryAtr ?? 0m,
+                            RunnerHardCap = signal.RunnerHardCap ?? 0m,   // Live: TradingServiceBase.cs:1372
                         };
                     }
                 }

@@ -2,9 +2,12 @@ using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
+using Android.Widget;
 using Avalonia.Android;
+using Microsoft.Extensions.DependencyInjection;
 using SunSeeker.Android.Services;
 using SunSeeker.Shared;
+using SunSeeker.Shared.ViewModels;
 
 namespace SunSeeker.Android;
 
@@ -22,11 +25,12 @@ public class MainActivity : AvaloniaMainActivity
 
     private AndroidLocationService? _locationService;
     private AndroidHeadingService? _headingService;
+    private MainViewModel? _mainVm;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        // Platform-Factories MUESSEN vor base.OnCreate gesetzt werden (Avalonia-12-Reihenfolge:
-        // base.OnCreate loest via MainViewFactory das MainViewModel auf, das die Services zieht).
+        // Platform-Factories MÜSSEN vor base.OnCreate gesetzt werden (Avalonia-12-Reihenfolge:
+        // base.OnCreate löst via MainViewFactory das MainViewModel auf, das die Services zieht).
         _locationService = new AndroidLocationService(this);
         _headingService = new AndroidHeadingService(this);
         App.LocationServiceFactory = _ => _locationService;
@@ -34,8 +38,24 @@ public class MainActivity : AvaloniaMainActivity
 
         base.OnCreate(savedInstanceState);
 
+        // MainViewModel ist jetzt aufgelöst (via MainViewFactory in base.OnCreate) — Exit-Hinweis verdrahten.
+        _mainVm = App.Services.GetService<MainViewModel>();
+        if (_mainVm != null)
+            _mainVm.ExitHintRequested += msg =>
+                RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short)?.Show());
+
         RequestLocationPermissionIfNeeded();
     }
+
+#pragma warning disable CA1422 // OnBackPressed ab API 33 veraltet, aber für ältere API-Level nötig
+    public override void OnBackPressed()
+    {
+        // Erst die VM-Logik (Tab-Wechsel / Double-Back); sonst App in den Hintergrund.
+        if (_mainVm != null && _mainVm.HandleBackPressed())
+            return;
+        MoveTaskToBack(true);
+    }
+#pragma warning restore CA1422
 
     private void RequestLocationPermissionIfNeeded()
     {

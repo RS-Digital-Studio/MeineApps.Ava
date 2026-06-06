@@ -5,10 +5,10 @@ namespace SunSeeker.Shared.Graphics;
 
 /// <summary>
 /// Live-Ausricht-Kompass. Norden ist oben fix. Drei Marker auf dem Ring: die SONNE (golden,
-/// Position aus Azimut/Elevation), die SOLL-Ausrichtung (gruen) und die aktuelle PANEL-Richtung
-/// (kraeftiger Pfeil, Farbe = Ausricht-Qualitaet). Im Zentrum ein Neigungs-Bogen (Ist gegen Soll)
-/// und die Live-Werte. Gecachte Paints/Fonts (keine Allokation pro Frame), Shader-Caching fuer
-/// den Qualitaets-Glow.
+/// Position aus Azimut/Elevation), die SOLL-Ausrichtung (grün) und die aktuelle PANEL-Richtung
+/// (kräftiger Pfeil, Farbe = Ausricht-Qualität). Im Zentrum ein Neigungs-Bogen (Ist gegen Soll)
+/// und die Live-Werte. Gecachte Paints/Fonts (keine Allokation pro Frame), Shader-Caching für
+/// den Qualitäts-Glow.
 /// </summary>
 public sealed class SunCompassRenderer : IDisposable
 {
@@ -58,6 +58,7 @@ public sealed class SunCompassRenderer : IDisposable
     private readonly SKPaint _tiltTrackPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 6f, Color = TiltTrackColor, StrokeCap = SKStrokeCap.Round };
     private readonly SKPaint _tiltTargetPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 6f, Color = TargetColor, StrokeCap = SKStrokeCap.Round };
     private readonly SKPaint _tiltValuePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 6f, StrokeCap = SKStrokeCap.Round };
+    private readonly SKPaint _tiltTickPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3f };
     private readonly SKPaint _centerTextPaint = new() { IsAntialias = true, Color = TextColor };
     private readonly SKPaint _centerDimPaint = new() { IsAntialias = true, Color = TextDimColor };
 
@@ -149,7 +150,7 @@ public sealed class SunCompassRenderer : IDisposable
 
         if (IsDaylight)
         {
-            // Glow proportional zur Elevation (hoeher = greller)
+            // Glow proportional zur Elevation (höher = greller)
             var elevNorm = (float)Math.Clamp(SunElevation / 60.0, 0.1, 1.0);
             _sunGlowPaint.Shader?.Dispose();
             _sunGlowPaint.Shader = SKShader.CreateRadialGradient(
@@ -223,7 +224,7 @@ public sealed class SunCompassRenderer : IDisposable
         var targetFrac = (float)Math.Clamp(TargetTilt / 90.0, 0, 1);
         DrawTiltTick(canvas, cx, cy, radius, targetFrac, TargetColor, 10f);
 
-        // Ist-Wert (Bogen von 0 bis PanelTilt), qualitaetsgefaerbt
+        // Ist-Wert (Bogen von 0 bis PanelTilt), qualitätsgefärbt
         var panelFrac = (float)Math.Clamp(PanelTilt / 90.0, 0, 1);
         _tiltValuePaint.Color = (AzimuthReliable ? QualityColor(Quality) : new SKColor(120, 124, 140)).WithAlpha(220);
         using var valueArc = new SKPath();
@@ -237,10 +238,10 @@ public sealed class SunCompassRenderer : IDisposable
         var rad = angleDeg * Math.PI / 180.0;
         var dx = (float)Math.Cos(rad);
         var dy = (float)Math.Sin(rad);
-        using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3f, Color = color };
+        _tiltTickPaint.Color = color;
         canvas.DrawLine(
             cx + dx * (radius - len), cy + dy * (radius - len),
-            cx + dx * (radius + len), cy + dy * (radius + len), paint);
+            cx + dx * (radius + len), cy + dy * (radius + len), _tiltTickPaint);
     }
 
     private void DrawCenterText(SKCanvas canvas, float cx, float cy)
@@ -281,6 +282,7 @@ public sealed class SunCompassRenderer : IDisposable
         _tiltTrackPaint.Dispose();
         _tiltTargetPaint.Dispose();
         _tiltValuePaint.Dispose();
+        _tiltTickPaint.Dispose();
         _centerTextPaint.Dispose();
         _centerDimPaint.Dispose();
         _cardinalFont.Dispose();

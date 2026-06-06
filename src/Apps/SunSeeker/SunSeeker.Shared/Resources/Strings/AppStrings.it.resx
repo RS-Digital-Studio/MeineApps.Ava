@@ -37,6 +37,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="BackPressToExit" xml:space="preserve"><value>Premi di nuovo indietro per uscire</value></data>
   <data name="TabAlign" xml:space="preserve"><value>Orienta</value></data>
   <data name="TabPower" xml:space="preserve"><value>Potenza</value></data>
   <data name="TabDashboard" xml:space="preserve"><value>Panoramica</value></data>

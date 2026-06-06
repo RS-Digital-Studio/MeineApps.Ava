@@ -47,6 +47,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4,0,16">
                 <materialIcons:MaterialIcon Grid.Column="0" Kind="WeatherSunny" Width="30" Height="30"
                                             Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" />
+                <!-- AppChecker:ignore — Markenname, in keiner Sprache übersetzt -->
                 <TextBlock Grid.Column="1" Text="SunSeeker" FontSize="24" FontWeight="Bold" Margin="10,0,0,0"
                            Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2" Text="{Binding ClockText}" FontSize="16"

@@ -75,6 +75,12 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _modeText = "Paper-Modus";
     [ObservableProperty] private string _modeDescription = "Simuliertes Trading ohne echtes Geld";
 
+    /// <summary>
+    /// Engine-Wahl: false = Scalper (TrendFollow-Fast, per-Symbol-Scan), true = Cross-Sectional-Momentum
+    /// (market-neutraler Korb, monatlicher Rebalance). Wirkt im Remote-Modus (Pi) ueber BotStartRequest.Engine.
+    /// </summary>
+    [ObservableProperty] private bool _isCrossSectional;
+
     // === Live-Trading Zustand ===
     [ObservableProperty] private bool _hasApiKeys;
     [ObservableProperty] private string _liveStatusText = "API-Keys nicht konfiguriert";
@@ -303,6 +309,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         // Trading-Modus aus persistierten Settings übernehmen (Paper vs Live).
         // Ohne das Load war der User nach App-Neustart immer wieder im Paper-Mode, obwohl zuletzt Live lief.
         IsPaperMode = _botSettings.LastMode != TradingMode.Live;
+        // Engine-Wahl (Scalper/Cross-Sectional) ebenfalls aus den persistierten Settings uebernehmen.
+        IsCrossSectional = _botSettings.LastEngineMode == Core.Enums.EngineMode.CrossSectional;
         ModeText = IsPaperMode ? "Paper-Modus" : "Live-Modus";
         ModeDescription = IsPaperMode
             ? "Simuliertes Trading ohne echtes Geld"
@@ -479,7 +487,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             var req = new BingXBot.Contracts.Dto.BotStartRequest(
                 Mode: requestedMode,
                 InitialBalance: IsPaperMode ? _botSettings.PaperInitialBalance : null,
-                ActiveTimeframes: _scannerSettings.ActiveTimeframes.ToList());
+                ActiveTimeframes: _scannerSettings.ActiveTimeframes.ToList(),
+                Engine: IsCrossSectional ? Core.Enums.EngineMode.CrossSectional : Core.Enums.EngineMode.Scalper);
 
             var status = await _botControl.StartAsync(req);
 

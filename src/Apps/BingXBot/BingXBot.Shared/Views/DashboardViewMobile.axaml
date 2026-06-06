@@ -186,6 +186,12 @@
                        Foreground="{DynamicResource AppWarningBrush}"
                        TextWrapping="Wrap"
                        IsVisible="{Binding !IsPaperMode}" />
+
+            <!-- Engine-Wahl: Scalper vs. Cross-Sectional-Momentum (market-neutral, 1x; nur Remote/Pi). -->
+            <ToggleSwitch IsChecked="{Binding IsCrossSectional}"
+                          IsEnabled="{Binding !IsRunning}"
+                          OnContent="Cross-Sectional (market-neutral)"
+                          OffContent="Scalper (TrendFollow)" />
           </StackPanel>
         </Border>
 

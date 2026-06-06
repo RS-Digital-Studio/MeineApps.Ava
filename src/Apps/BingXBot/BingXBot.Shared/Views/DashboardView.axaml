@@ -362,6 +362,14 @@
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center" TextWrapping="Wrap"
                        TextAlignment="Center" />
+
+            <!-- Engine-Wahl: Scalper (TrendFollow) vs. Cross-Sectional-Momentum (market-neutral, 1x). -->
+            <ToggleSwitch IsChecked="{Binding IsCrossSectional}"
+                          IsEnabled="{Binding !IsRunning}"
+                          OnContent="Cross-Sectional (market-neutral)"
+                          OffContent="Scalper (TrendFollow)"
+                          HorizontalAlignment="Center"
+                          ToolTip.Tip="Engine: Scalper = per-Symbol-Breakout. Cross-Sectional = long staerkste / short schwaechste Coins, monatlicher Rebalance, 1x (nur Remote/Pi)." />
           </StackPanel>
         </Border>
       </Grid>

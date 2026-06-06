@@ -9,7 +9,7 @@
     <item name="android:windowLightStatusBar">false</item>
   </style>
 
-  <!-- Fullscreen AppCompat-Theme fuer die spaetere ARCore-Kamera-Activity. -->
+  <!-- Fullscreen AppCompat-Theme für die spätere ARCore-Kamera-Activity. -->
   <style name="MyTheme.Fullscreen" parent="Theme.AppCompat.NoActionBar">
     <item name="android:windowFullscreen">true</item>
     <item name="android:windowBackground">@android:color/black</item>

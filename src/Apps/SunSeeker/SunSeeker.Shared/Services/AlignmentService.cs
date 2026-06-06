@@ -5,7 +5,7 @@ namespace SunSeeker.Shared.Services;
 
 /// <summary>
 /// Berechnet Soll-Ausrichtung und Live-Einfallswinkel. Die Festwinkel-Faustformeln
-/// (Jahres-/Winter-Optimum) stammen aus solarpaneltilt.com und gelten fuer Breiten 25-50 Grad;
+/// (Jahres-/Winter-Optimum) stammen aus solarpaneltilt.com und gelten für Breiten 25-50 Grad;
 /// das Jahres-Optimum liegt bewusst FLACHER als der Breitengrad, weil im Winter Diffuslicht
 /// dominiert. Der Einfallswinkel folgt der Standard-PVPMC/Sandia-Formel
 /// (cos(AOI) = sin(elev)*cos(tilt) + cos(elev)*sin(tilt)*cos(sonnenAz - panelAz)).
@@ -16,7 +16,7 @@ public sealed class AlignmentService(ISolarPositionService solarPosition) : IAli
 
     public AlignmentRecommendation GetRecommendation(GeoLocation location, DateTime utcNow, AlignmentGoal goal, PanelProfile panel)
     {
-        // Optimale Himmelsrichtung: aequatorwaerts (Sued auf der Nord-, Nord auf der Suedhalbkugel).
+        // Optimale Himmelsrichtung: äquatorwärts (Süd auf der Nord-, Nord auf der Südhalbkugel).
         var southAzimuth = location.IsNorthernHemisphere ? 180.0 : 0.0;
         var absLat = Math.Abs(location.Latitude);
 
@@ -35,7 +35,7 @@ public sealed class AlignmentService(ISolarPositionService solarPosition) : IAli
                 }
                 else
                 {
-                    // Sonne unter dem Horizont: auf den naechsten Sonnen-Hoechststand zeigen.
+                    // Sonne unter dem Horizont: auf den nächsten Sonnen-Höchststand zeigen.
                     targetAzimuth = southAzimuth;
                     targetTilt = Math.Clamp(absLat, 0.0, 90.0);
                 }
@@ -92,7 +92,7 @@ public sealed class AlignmentService(ISolarPositionService solarPosition) : IAli
     }
 
     /// <summary>
-    /// Ampel aus der Abweichung von Soll. Azimut-Fehler wird gegenueber Tilt-Fehler abgewertet
+    /// Ampel aus der Abweichung von Soll. Azimut-Fehler wird gegenüber Tilt-Fehler abgewertet
     /// (Faktor 0,6), weil der Ertrag laut Literatur deutlich toleranter gegen Azimut- als gegen
     /// Tilt-Abweichungen ist.
     /// </summary>

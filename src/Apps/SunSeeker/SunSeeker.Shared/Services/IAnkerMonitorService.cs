@@ -7,7 +7,7 @@ public enum AnkerConnectionState { Disconnected, Connecting, Connected, Error }
 
 /// <summary>
 /// Liefert die Live-Solar-Eingangsleistung der Anker-Powerstation. Die echte Anbindung der
-/// C2000 Gen 2 erfolgt ueber Ankers Cloud-MQTT (inoffiziell) und benoetigt Anker-Zugangsdaten;
+/// C2000 Gen 2 erfolgt über Ankers Cloud-MQTT (inoffiziell) und benötigt Anker-Zugangsdaten;
 /// bis dahin liefert die Mock-Implementierung einen physikalisch plausiblen Verlauf aus dem
 /// Sonnenstand.
 /// </summary>
@@ -17,7 +17,7 @@ public interface IAnkerMonitorService
 
     double CurrentSolarWatts { get; }
 
-    /// <summary>True, wenn die Werte simuliert sind (kein echtes Geraet) — die UI weist darauf hin.</summary>
+    /// <summary>True, wenn die Werte simuliert sind (kein echtes Gerät) — die UI weist darauf hin.</summary>
     bool IsSimulated { get; }
 
     event EventHandler<PowerSample>? SampleReceived;

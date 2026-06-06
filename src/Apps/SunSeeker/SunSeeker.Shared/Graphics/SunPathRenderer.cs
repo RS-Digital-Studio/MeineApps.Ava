@@ -5,9 +5,9 @@ namespace SunSeeker.Shared.Graphics;
 
 /// <summary>
 /// Sonnenbahn-Diagramm (Himmelsdiagramm): die Tagesbahn der Sonne als Kurve in den Achsen
-/// Azimut (X, Ost-Sued-West) und Elevation (Y, Hoehe ueber Horizont), plus die aktuelle
-/// Sonnenposition und die Horizontlinie. Zeigt auf einen Blick Tageslaenge, Sonnenhoehe und
-/// Auf-/Untergangsrichtung. Vollstaendig offline.
+/// Azimut (X, Ost-Süd-West) und Elevation (Y, Höhe über Horizont), plus die aktuelle
+/// Sonnenposition und die Horizontlinie. Zeigt auf einen Blick Tageslänge, Sonnenhöhe und
+/// Auf-/Untergangsrichtung. Vollständig offline.
 /// </summary>
 public sealed class SunPathRenderer : IDisposable
 {
@@ -58,12 +58,12 @@ public sealed class SunPathRenderer : IDisposable
             canvas.DrawText($"{el}°", plot.Left - 4f, y + 3f, SKTextAlign.Right, _font, _textPaint);
         }
 
-        // X-Marker (Ost/Sued/West)
+        // X-Marker (Ost/Süd/West)
         DrawAzimuthLabel(canvas, X(90), plot.Bottom, "O");
         DrawAzimuthLabel(canvas, X(180), plot.Bottom, "S");
         DrawAzimuthLabel(canvas, X(270), plot.Bottom, "W");
 
-        // Tagesbahn (nur Punkte ueber dem Horizont)
+        // Tagesbahn (nur Punkte über dem Horizont)
         var daylightPoints = DayArc.Where(p => p.Elevation >= -1).ToList();
         if (daylightPoints.Count >= 2)
         {

@@ -3,8 +3,8 @@ using SunSeeker.Shared.Models;
 namespace SunSeeker.Shared.Services;
 
 /// <summary>
-/// Desktop-/Test-Ersatz fuer den Positions-Provider. Liefert einen festen, per
-/// <see cref="SetLocation"/> aenderbaren Standort (Default: Berlin). Kein echtes GPS.
+/// Desktop-/Test-Ersatz für den Positions-Provider. Liefert einen festen, per
+/// <see cref="SetLocation"/> änderbaren Standort (Default: Berlin). Kein echtes GPS.
 /// </summary>
 public sealed class MockLocationService : ILocationService
 {

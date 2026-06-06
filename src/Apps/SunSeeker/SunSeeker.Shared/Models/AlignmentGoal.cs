@@ -7,15 +7,15 @@ namespace SunSeeker.Shared.Models;
 public enum AlignmentGoal
 {
     /// <summary>Maximale Leistung JETZT: Panel direkt auf die aktuelle Sonne (Azimut = Sonnen-Azimut,
-    /// Neigung = Zenitwinkel). Sinnvoll fuer ein mobiles Panel, das man tagsueber neu ausrichten kann.</summary>
+    /// Neigung = Zenitwinkel). Sinnvoll für ein mobiles Panel, das man tagsüber neu ausrichten kann.</summary>
     NowMaximum,
 
-    /// <summary>Bester Festwinkel fuer den heutigen Tag: Sued, Neigung = Zenitwinkel der Mittagssonne.</summary>
+    /// <summary>Bester Festwinkel für den heutigen Tag: Süd, Neigung = Zenitwinkel der Mittagssonne.</summary>
     TodayYield,
 
-    /// <summary>Bester Festwinkel fuer den Jahresertrag (quasi-feste Aufstellung): Sued, flacher Winkel.</summary>
+    /// <summary>Bester Festwinkel für den Jahresertrag (quasi-feste Aufstellung): Süd, flacher Winkel.</summary>
     AnnualYield,
 
-    /// <summary>Steiler Winterwinkel (autarke Winter-Nutzung, tiefstehende Sonne): Sued, steil.</summary>
+    /// <summary>Steiler Winterwinkel (autarke Winter-Nutzung, tiefstehende Sonne): Süd, steil.</summary>
     WinterYield,
 }

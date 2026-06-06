@@ -9,8 +9,8 @@ namespace SunSeeker.Android.Services;
 
 /// <summary>
 /// Positions-Provider auf Basis des nativen <see cref="LocationManager"/> (kein Google Play
-/// Services). Fuer die Sonnenstandsberechnung genuegt grobe Genauigkeit (der Sonnen-Azimut
-/// aendert sich ueber Kilometer vernachlaessigbar), daher GPS + Network-Provider ohne
+/// Services). Für die Sonnenstandsberechnung genügt grobe Genauigkeit (der Sonnen-Azimut
+/// ändert sich über Kilometer vernachlässigbar), daher GPS + Network-Provider ohne
 /// FusedLocation. Erbt von <see cref="Java.Lang.Object"/>, weil <see cref="ILocationListener"/>
 /// ein Java-Interface ist.
 /// </summary>

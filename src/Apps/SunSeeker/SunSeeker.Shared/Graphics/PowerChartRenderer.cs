@@ -4,9 +4,9 @@ using SunSeeker.Shared.Models;
 namespace SunSeeker.Shared.Graphics;
 
 /// <summary>
-/// Live-Trend der Solar-Leistung (Watt ueber Zeit). Gefuellte Flaeche + Linie + aktueller Punkt,
+/// Live-Trend der Solar-Leistung (Watt über Zeit). Gefüllte Fläche + Linie + aktueller Punkt,
 /// Y-Gitter mit Watt-Beschriftung. Erwartet eine zeitlich aufsteigend sortierte Sample-Liste.
-/// Gecachte Paints; der Flaechen-Shader wird nur bei Groessen-/Skalen-Aenderung neu erzeugt.
+/// Gecachte Paints; der Flächen-Shader wird nur bei Größen-/Skalen-Änderung neu erzeugt.
 /// </summary>
 public sealed class PowerChartRenderer : IDisposable
 {

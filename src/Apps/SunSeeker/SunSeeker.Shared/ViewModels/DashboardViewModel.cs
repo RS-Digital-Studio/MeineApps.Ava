@@ -10,7 +10,7 @@ using SunSeeker.Shared.Services;
 namespace SunSeeker.Shared.ViewModels;
 
 /// <summary>
-/// Uebersichts-Tab: zeigt live Standort, Sonnenstand, Sonnenzeiten, die empfohlene
+/// Übersichts-Tab: zeigt live Standort, Sonnenstand, Sonnenzeiten, die empfohlene
 /// Soll-Ausrichtung je Ziel/Panel und die Bifazial-Empfehlung je Untergrund.
 /// </summary>
 public partial class DashboardViewModel : ObservableObject
@@ -104,7 +104,7 @@ public partial class DashboardViewModel : ObservableObject
             Dispatcher.UIThread.Post(() =>
             {
                 LocationText = FormatLocation(newLoc);
-                _dayArcDate = default; // Sonnenbahn fuer den neuen Standort neu berechnen
+                _dayArcDate = default; // Sonnenbahn für den neuen Standort neu berechnen
                 Refresh();
             });
 
@@ -223,8 +223,8 @@ public partial class DashboardViewModel : ObservableObject
     }
 }
 
-/// <summary>Auswahl-Eintrag fuer das Ausricht-Ziel (Enum + deutsches Label).</summary>
+/// <summary>Auswahl-Eintrag für das Ausricht-Ziel (Enum + deutsches Label).</summary>
 public sealed record GoalOption(AlignmentGoal Goal, string Label);
 
-/// <summary>Auswahl-Eintrag fuer den Untergrund (Enum + deutsches Label).</summary>
+/// <summary>Auswahl-Eintrag für den Untergrund (Enum + deutsches Label).</summary>
 public sealed record GroundOption(GroundType Ground, string Label);

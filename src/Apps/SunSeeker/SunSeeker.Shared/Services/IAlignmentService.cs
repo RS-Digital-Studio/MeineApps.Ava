@@ -8,7 +8,7 @@ namespace SunSeeker.Shared.Services;
 /// </summary>
 public interface IAlignmentService
 {
-    /// <summary>Empfohlene Soll-Ausrichtung fuer das gewuenschte Ziel.</summary>
+    /// <summary>Empfohlene Soll-Ausrichtung für das gewünschte Ziel.</summary>
     AlignmentRecommendation GetRecommendation(GeoLocation location, DateTime utcNow, AlignmentGoal goal, PanelProfile panel);
 
     /// <summary>Bewertet die aktuelle Panel-Ausrichtung gegen Empfehlung und Sonnenstand.</summary>

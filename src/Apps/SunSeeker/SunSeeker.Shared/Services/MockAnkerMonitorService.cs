@@ -6,9 +6,9 @@ namespace SunSeeker.Shared.Services;
 
 /// <summary>
 /// Simuliert die Solar-Eingangsleistung physikalisch plausibel aus dem aktuellen Sonnenstand:
-/// Leistung skaliert mit dem Sinus der Sonnen-Elevation (Luftmassen-/Einstrahlungs-Naeherung),
+/// Leistung skaliert mit dem Sinus der Sonnen-Elevation (Luftmassen-/Einstrahlungs-Näherung),
 /// gedeckelt auf die Panel-Nennleistung, plus leichte "Wolken"-Schwankung. Nachts 0 W.
-/// Ersetzt die (noch fehlende) echte Anker-Cloud-MQTT-Anbindung fuer Entwicklung + Demo.
+/// Ersetzt die (noch fehlende) echte Anker-Cloud-MQTT-Anbindung für Entwicklung + Demo.
 /// </summary>
 public sealed class MockAnkerMonitorService : IAnkerMonitorService, IDisposable
 {

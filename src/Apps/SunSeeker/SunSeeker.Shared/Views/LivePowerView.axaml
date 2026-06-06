@@ -33,7 +33,7 @@
                 <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="label" VerticalAlignment="Center" />
             </Grid>
 
-            <!-- Aktuelle Leistung gross -->
+            <!-- Aktuelle Leistung groß -->
             <Border Classes="card">
                 <StackPanel HorizontalAlignment="Center">
                     <TextBlock Text="{loc:Translate Key=LabelCurrent}" Classes="label" HorizontalAlignment="Center" />

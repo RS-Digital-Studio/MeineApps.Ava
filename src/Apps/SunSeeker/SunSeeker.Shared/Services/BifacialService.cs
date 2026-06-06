@@ -4,15 +4,15 @@ namespace SunSeeker.Shared.Services;
 
 /// <summary>
 /// Bifazial-Logik. Der Mehrertrag (Bifacial Gain) wird konservativ als Bereich aus der Albedo
-/// geschaetzt — dominanter Hebel laut Literatur: "doppelte Albedo ~ doppelter Mehrertrag".
-/// Die Werte sind fuer ein bodennahes Einzelpanel bewusst vorsichtig gewaehlt (grosse
-/// Ground-Mount-Studien liegen hoeher). Bifaziale Panels profitieren bei hoher Albedo von
-/// STEILERER Neigung (Rueckseite sieht mehr Boden) — daher der Tilt-Zuschlag (+0 bis +11 Grad).
+/// geschätzt — dominanter Hebel laut Literatur: "doppelte Albedo ~ doppelter Mehrertrag".
+/// Die Werte sind für ein bodennahes Einzelpanel bewusst vorsichtig gewählt (große
+/// Ground-Mount-Studien liegen höher). Bifaziale Panels profitieren bei hoher Albedo von
+/// STEILERER Neigung (Rückseite sieht mehr Boden) — daher der Tilt-Zuschlag (+0 bis +11 Grad).
 /// </summary>
 public sealed class BifacialService : IBifacialService
 {
-    private const double MaxGain = 0.30;        // Deckel fuer ein mobiles Einzelpanel
-    private const double TiltBonusMax = 11.0;   // max. Steilwinkel-Zuschlag bei hoechster Albedo
+    private const double MaxGain = 0.30;        // Deckel für ein mobiles Einzelpanel
+    private const double TiltBonusMax = 11.0;   // max. Steilwinkel-Zuschlag bei höchster Albedo
     private const double AlbedoLow = 0.20;      // ab hier beginnt ein nennenswerter Zuschlag
     private const double AlbedoHigh = 0.85;     // Schnee
 
@@ -39,7 +39,7 @@ public sealed class BifacialService : IBifacialService
     }
 
     /// <summary>
-    /// Liefert Lokalisierungs-KEYS (keine fertigen Texte) — der UI-Layer loest sie ueber GetString
+    /// Liefert Lokalisierungs-KEYS (keine fertigen Texte) — der UI-Layer löst sie über GetString
     /// auf, damit der Service sprachneutral + testbar bleibt.
     /// </summary>
     private static IReadOnlyList<string> BuildTips(GroundType ground, double albedo, PanelProfile panel)

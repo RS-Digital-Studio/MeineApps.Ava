@@ -27,7 +27,7 @@
 
     <Grid RowDefinitions="*,Auto">
 
-        <!-- Tab-Inhalte: Wrapper-Panel traegt IsVisible (geerbter MainViewModel-DataContext),
+        <!-- Tab-Inhalte: Wrapper-Panel trägt IsVisible (geerbter MainViewModel-DataContext),
              die Child-View setzt ihren eigenen DataContext. -->
         <Grid Grid.Row="0">
             <Panel IsVisible="{Binding IsAlignActive}">

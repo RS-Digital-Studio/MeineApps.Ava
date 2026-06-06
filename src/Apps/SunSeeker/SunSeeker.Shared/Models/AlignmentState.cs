@@ -1,6 +1,6 @@
 namespace SunSeeker.Shared.Models;
 
-/// <summary>Bewertung der Ausricht-Genauigkeit fuer eine Ampel-Anzeige.</summary>
+/// <summary>Bewertung der Ausricht-Genauigkeit für eine Ampel-Anzeige.</summary>
 public enum AlignmentQuality { Excellent, Good, Fair, Poor }
 
 /// <summary>

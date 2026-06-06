@@ -9,10 +9,10 @@ namespace SunSeeker.Android.Services;
 
 /// <summary>
 /// Heading-Provider aus den nativen Bewegungssensoren. Nutzt <see cref="SensorType.RotationVector"/>
-/// (Sensor-Fusion aus Accelerometer + Gyroskop + Magnetometer) fuer die Orientierung und
-/// <see cref="SensorType.Gravity"/> ist implizit ueber den Rotationsvektor enthalten.
+/// (Sensor-Fusion aus Accelerometer + Gyroskop + Magnetometer) für die Orientierung und
+/// <see cref="SensorType.Gravity"/> ist implizit über den Rotationsvektor enthalten.
 ///
-/// Konvention: Das Geraet wird flach an die geneigte Panel-Flaeche gehalten. Die Geraete-Z-Achse
+/// Konvention: Das Gerät wird flach an die geneigte Panel-Fläche gehalten. Die Geräte-Z-Achse
 /// (Display-Normale) entspricht dann der Panel-Normale. Aus ihrer Welt-Orientierung (3. Spalte der
 /// Rotationsmatrix; Welt = Ost/Nord/Hoch) folgt der Azimut (horizontale Projektion) und die Neigung
 /// (Winkel gegen die Vertikale). Magnetischer Azimut wird per <see cref="GeomagneticField"/>
@@ -88,7 +88,7 @@ public sealed class AndroidHeadingService : Java.Lang.Object, IHeadingService, I
 
     private void ComputeAndEmit()
     {
-        // Geraete-Z-Achse (Display-Normale) in Weltkoordinaten = 3. Spalte der Rotationsmatrix
+        // Geräte-Z-Achse (Display-Normale) in Weltkoordinaten = 3. Spalte der Rotationsmatrix
         // (row-major 3x3). Welt: X = Ost, Y = Nord, Z = Hoch.
         float zx = _rotationMatrix[2];
         float zy = _rotationMatrix[5];
@@ -98,11 +98,11 @@ public sealed class AndroidHeadingService : Java.Lang.Object, IHeadingService, I
         var magneticAzimuth = System.Math.Atan2(zx, zy) * 180.0 / System.Math.PI;
         if (magneticAzimuth < 0) magneticAzimuth += 360.0;
 
-        // Neigung der Flaeche gegen die Horizontale: 0 = flach (Z senkrecht), 90 = senkrecht.
+        // Neigung der Fläche gegen die Horizontale: 0 = flach (Z senkrecht), 90 = senkrecht.
         var horizontal = System.Math.Sqrt(zx * zx + zy * zy);
         var tilt = System.Math.Atan2(horizontal, System.Math.Abs(zz)) * 180.0 / System.Math.PI;
 
-        // Bei (fast) flacher Flaeche ist die horizontale Projektion zu klein -> Azimut instabil.
+        // Bei (fast) flacher Fläche ist die horizontale Projektion zu klein -> Azimut instabil.
         var reliable = horizontal > 0.12 && _accuracy >= HeadingAccuracy.Low;
 
         var trueAzimuth = magneticAzimuth + _declination;

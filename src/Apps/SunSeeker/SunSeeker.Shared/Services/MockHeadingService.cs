@@ -3,8 +3,8 @@ using SunSeeker.Shared.Models;
 namespace SunSeeker.Shared.Services;
 
 /// <summary>
-/// Desktop-/Test-Ersatz fuer die Bewegungssensoren. Liefert eine feste, per
-/// <see cref="SetReading"/> aenderbare Messung (Default: Sued, 35 Grad geneigt). Kein echter Sensor.
+/// Desktop-/Test-Ersatz für die Bewegungssensoren. Liefert eine feste, per
+/// <see cref="SetReading"/> änderbare Messung (Default: Süd, 35 Grad geneigt). Kein echter Sensor.
 /// </summary>
 public sealed class MockHeadingService : IHeadingService
 {

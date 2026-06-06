@@ -10,7 +10,7 @@ using SunSeeker.Shared.Services;
 namespace SunSeeker.Shared.ViewModels;
 
 /// <summary>
-/// Live-Ausricht-Tab. Liest Geraete-Azimut + Neigung (Heading-Sensor), berechnet den aktuellen
+/// Live-Ausricht-Tab. Liest Geräte-Azimut + Neigung (Heading-Sensor), berechnet den aktuellen
 /// Einfallswinkel zur Sonne und die Abweichung von der Soll-Ausrichtung und gibt konkrete
 /// Dreh-/Neigungs-Anweisungen. Konvention: Das Handy flach mit dem Bildschirm an die
 /// Panel-Vorderseite (zur Sonne) halten — dann entspricht die Display-Normale der Panel-Normale.
@@ -84,7 +84,7 @@ public partial class AlignViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _kickstandHint = "";
     [ObservableProperty] private bool _showKickstandHint;
 
-    /// <summary>Tab wird sichtbar: Sensoren starten, Live-Update-Timer fuer den Sonnenstand starten.</summary>
+    /// <summary>Tab wird sichtbar: Sensoren starten, Live-Update-Timer für den Sonnenstand starten.</summary>
     public void Activate()
     {
         if (_active) return;
@@ -139,7 +139,7 @@ public partial class AlignViewModel : ObservableObject, IDisposable
 
         var state = _alignment.Evaluate(sun, panelAzimuth, panelTilt, _recommendation);
 
-        // Renderer fuettern
+        // Renderer füttern
         Renderer.PanelAzimuth = panelAzimuth;
         Renderer.TargetAzimuth = _recommendation.TargetAzimuth;
         Renderer.SunAzimuth = sun.Azimuth;
@@ -182,7 +182,7 @@ public partial class AlignViewModel : ObservableObject, IDisposable
             return _loc.GetString("GuidanceHoldFlat");
         var abs = Math.Abs(azimuthError);
         if (abs < 3) return _loc.GetString("GuidanceAzimuthOk");
-        // azimuthError = panel - soll. Positiv -> Panel zu weit oestlich -> nach Westen/links drehen.
+        // azimuthError = panel - soll. Positiv -> Panel zu weit östlich -> nach Westen/links drehen.
         return string.Format(_loc.GetString(azimuthError > 0 ? "GuidanceTurnWest" : "GuidanceTurnEast"), Num(abs));
     }
 

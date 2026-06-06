@@ -58,11 +58,11 @@ public partial class LivePowerViewModel : ObservableObject, IDisposable
 
     private void AddSample(PowerSample sample)
     {
-        // Energie integrieren (Wh) ueber das tatsaechliche Zeitintervall.
+        // Energie integrieren (Wh) über das tatsächliche Zeitintervall.
         if (_lastSampleUtc is { } last)
         {
             var hours = (sample.TimestampUtc - last).TotalHours;
-            if (hours is > 0 and < 0.1) // Plausibilitaet (kein Riesensprung nach Reconnect)
+            if (hours is > 0 and < 0.1) // Plausibilität (kein Riesensprung nach Reconnect)
                 _energyWh += sample.SolarWatts * hours;
         }
         _lastSampleUtc = sample.TimestampUtc;

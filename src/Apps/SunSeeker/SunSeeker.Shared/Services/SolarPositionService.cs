@@ -5,17 +5,17 @@ namespace SunSeeker.Shared.Services;
 
 /// <summary>
 /// Sonnenstandsberechnung nach dem NOAA Solar Calculator (Algorithmus basiert auf Jean Meeus,
-/// "Astronomical Algorithms"). Genauigkeit der Sonnenposition besser als ~0,01 Grad fuer die
-/// Jahre 1800-2100 — weit genauer als fuer eine Panel-Ausrichtung noetig. Vollstaendig offline.
+/// "Astronomical Algorithms"). Genauigkeit der Sonnenposition besser als ~0,01 Grad für die
+/// Jahre 1800-2100 — weit genauer als für eine Panel-Ausrichtung nötig. Vollständig offline.
 ///
-/// Schritte: Julianisches Datum -> Julianisches Jahrhundert -> geometrische mittlere Laenge und
-/// Anomalie der Sonne -> Mittelpunktsgleichung -> wahre/scheinbare Laenge -> Schiefe der Ekliptik
+/// Schritte: Julianisches Datum -> Julianisches Jahrhundert -> geometrische mittlere Länge und
+/// Anomalie der Sonne -> Mittelpunktsgleichung -> wahre/scheinbare Länge -> Schiefe der Ekliptik
 /// -> Deklination + Zeitgleichung -> wahre Ortszeit -> Stundenwinkel -> Zenit/Elevation/Azimut.
 /// </summary>
 public sealed class SolarPositionService : ISolarPositionService
 {
     /// <summary>Geometrischer Zenitwinkel des Sonnenmittelpunkts bei Auf-/Untergang
-    /// (90 Grad + 50 Bogenminuten fuer Refraktion + scheinbaren Sonnenradius).</summary>
+    /// (90 Grad + 50 Bogenminuten für Refraktion + scheinbaren Sonnenradius).</summary>
     private const double SunriseZenith = 90.833;
 
     public SolarPosition GetPosition(GeoLocation location, DateTime utc)
@@ -29,7 +29,7 @@ public sealed class SolarPositionService : ISolarPositionService
         var eqTime = EquationOfTime(t);        // Minuten
 
         // Wahre Sonnenzeit (Minuten) aus der UTC-Tageszeit, korrigiert um Zeitgleichung
-        // und Laengengrad (4 Minuten pro Grad oestlich).
+        // und Längengrad (4 Minuten pro Grad östlich).
         var utcMinutes = u.TimeOfDay.TotalMinutes;
         var trueSolarTime = Mod(utcMinutes + eqTime + 4.0 * location.Longitude, 1440.0);
 
@@ -55,8 +55,8 @@ public sealed class SolarPositionService : ISolarPositionService
 
     public SunTimes GetSunTimes(GeoLocation location, DateOnly date)
     {
-        // Deklination + Zeitgleichung bei (ungefaehrem) Sonnenmittag berechnen — eine
-        // Iteration genuegt fuer Genauigkeit deutlich unter einer Minute.
+        // Deklination + Zeitgleichung bei (ungefährem) Sonnenmittag berechnen — eine
+        // Iteration genügt für Genauigkeit deutlich unter einer Minute.
         var noonGuessUtc = new DateTime(date.Year, date.Month, date.Day, 12, 0, 0, DateTimeKind.Utc);
         var t = JulianCentury(ToJulianDay(noonGuessUtc));
 
@@ -120,7 +120,7 @@ public sealed class SolarPositionService : ISolarPositionService
         return Rad2Deg(Math.Asin(Math.Clamp(sinDecl, -1.0, 1.0)));
     }
 
-    /// <summary>Geometrische mittlere Laenge der Sonne (Grad, 0..360).</summary>
+    /// <summary>Geometrische mittlere Länge der Sonne (Grad, 0..360).</summary>
     private static double GeomMeanLongSun(double t)
         => Normalize360(280.46646 + t * (36000.76983 + t * 0.0003032));
 
@@ -141,10 +141,10 @@ public sealed class SolarPositionService : ISolarPositionService
              + Math.Sin(3 * mRad) * 0.000289;
     }
 
-    /// <summary>Wahre Laenge der Sonne (Grad).</summary>
+    /// <summary>Wahre Länge der Sonne (Grad).</summary>
     private static double SunTrueLongitude(double t) => GeomMeanLongSun(t) + SunEquationOfCenter(t);
 
-    /// <summary>Scheinbare Laenge der Sonne (Grad), korrigiert um Nutation/Aberration.</summary>
+    /// <summary>Scheinbare Länge der Sonne (Grad), korrigiert um Nutation/Aberration.</summary>
     private static double SunApparentLongitude(double t)
     {
         var omega = 125.04 - 1934.136 * t;
@@ -207,8 +207,8 @@ public sealed class SolarPositionService : ISolarPositionService
             : Normalize360(540.0 - azCore);
     }
 
-    /// <summary>Atmosphaerische Refraktion (Grad) als Funktion der scheinbaren Elevation.
-    /// NOAA-Naeherung; nahe dem Horizont am groessten (~0,57 Grad).</summary>
+    /// <summary>Atmosphärische Refraktion (Grad) als Funktion der scheinbaren Elevation.
+    /// NOAA-Näherung; nahe dem Horizont am größten (~0,57 Grad).</summary>
     private static double AtmosphericRefraction(double elevationDeg)
     {
         if (elevationDeg > 85.0) return 0.0;

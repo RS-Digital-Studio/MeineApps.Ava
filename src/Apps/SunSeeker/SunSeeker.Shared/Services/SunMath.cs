@@ -1,8 +1,8 @@
 namespace SunSeeker.Shared.Services;
 
 /// <summary>
-/// Geteilte Winkel-/Zeit-Mathematik fuer die Sonnenstands- und Ausricht-Berechnung.
-/// Reine, deterministische Funktionen ohne Plattform-Abhaengigkeit.
+/// Geteilte Winkel-/Zeit-Mathematik für die Sonnenstands- und Ausricht-Berechnung.
+/// Reine, deterministische Funktionen ohne Plattform-Abhängigkeit.
 /// </summary>
 internal static class SunMath
 {

@@ -11,7 +11,7 @@ public interface ILocationService
     /// <summary>Letzte bekannte Position, oder null bevor ein Fix vorliegt.</summary>
     GeoLocation? Current { get; }
 
-    /// <summary>Ist ein Positions-Provider verfuegbar (Permission erteilt, GPS an)?</summary>
+    /// <summary>Ist ein Positions-Provider verfügbar (Permission erteilt, GPS an)?</summary>
     bool IsAvailable { get; }
 
     /// <summary>Feuert bei jeder neuen Position (kann vom Background-Thread kommen).</summary>

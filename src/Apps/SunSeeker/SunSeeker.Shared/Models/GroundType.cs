@@ -1,8 +1,8 @@
 namespace SunSeeker.Shared.Models;
 
 /// <summary>
-/// Untergrund unter dem Panel. Entscheidend fuer bifaziale Module: Die Rueckseite erntet
-/// vom Boden reflektiertes Licht — je heller der Untergrund (hoehere Albedo), desto hoeher
+/// Untergrund unter dem Panel. Entscheidend für bifaziale Module: Die Rückseite erntet
+/// vom Boden reflektiertes Licht — je heller der Untergrund (höhere Albedo), desto höher
 /// der Mehrertrag. Albedo-Werte sind Mittelwerte aus der Literatur (RatedPower, TheGreenWatt,
 /// NREL); sie schwanken mit Feuchte, Alter und Verschmutzung.
 /// </summary>
@@ -30,13 +30,13 @@ public static class GroundTypeExtensions
         GroundType.Concrete => 0.30,
         GroundType.Sand => 0.35,
         GroundType.Gravel => 0.55,        // heller Kies
-        GroundType.WhiteSurface => 0.75,  // weisse Plane / Membran
+        GroundType.WhiteSurface => 0.75,  // weiße Plane / Membran
         GroundType.Snow => 0.85,          // frischer Schnee
         GroundType.Water => 0.08,
         _ => 0.20,
     };
 
-    /// <summary>Lokalisierungs-Key des Anzeigenamens (UI loest ihn ueber GetString auf).</summary>
+    /// <summary>Lokalisierungs-Key des Anzeigenamens (UI löst ihn über GetString auf).</summary>
     public static string LocKey(this GroundType ground) => ground switch
     {
         GroundType.Grass => "GroundGrass",

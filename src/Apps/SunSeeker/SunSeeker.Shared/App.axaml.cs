@@ -37,8 +37,8 @@ public class App : Application
             ConfigureServices(services);
             Services = services.BuildServiceProvider();
 
-            // Lokalisierung initialisieren (Geraetesprache erkennen/persistieren) BEVOR die erste
-            // View geladen wird — die {loc:Translate}-Markup-Extension loest beim View-Load auf.
+            // Lokalisierung initialisieren (Gerätesprache erkennen/persistieren) BEVOR die erste
+            // View geladen wird — die {loc:Translate}-Markup-Extension löst beim View-Load auf.
             var localization = Services.GetRequiredService<ILocalizationService>();
             localization.Initialize();
             LocalizationManager.Initialize(localization);
@@ -46,7 +46,7 @@ public class App : Application
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 // Desktop nutzt die Mock-Services (keine Hardware) — Factories bleiben null,
-                // daher ist sofortiges Aufloesen korrekt.
+                // daher ist sofortiges Auflösen korrekt.
                 _mainVm = Services.GetRequiredService<MainViewModel>();
                 desktop.MainWindow = new Window
                 {
@@ -59,7 +59,7 @@ public class App : Application
             }
             else if (ApplicationLifetime is IActivityApplicationLifetime activity)
             {
-                // Android (Avalonia 12): MainViewModel ERST in der Factory aufloesen — sie wird von
+                // Android (Avalonia 12): MainViewModel ERST in der Factory auflösen — sie wird von
                 // AvaloniaActivity in MainActivity.OnCreate.base aufgerufen, also NACH der
                 // Platform-Factory-Setzung dort. Zusammen mit der Lazy-Registrierung in
                 // ConfigureServices greifen so die echten Android-Services statt der Mocks.
@@ -88,13 +88,13 @@ public class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Lokalisierung (Preferences fuer die persistierte Sprachwahl).
+        // Lokalisierung (Preferences für die persistierte Sprachwahl).
         services.AddSingleton<IPreferencesService>(_ => new PreferencesService("SunSeeker"));
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
-        // Plattform-Factory LAZY auswerten (Avalonia-12-Android: DI-Build laeuft vor
-        // MainActivity.OnCreate). Build-Zeit-Pruefung wuerde den Mock-Fallback einbrennen.
+        // Plattform-Factory LAZY auswerten (Avalonia-12-Android: DI-Build läuft vor
+        // MainActivity.OnCreate). Build-Zeit-Prüfung würde den Mock-Fallback einbrennen.
         services.AddSingleton<ILocationService>(sp =>
             LocationServiceFactory != null ? LocationServiceFactory(sp) : new MockLocationService());
 

@@ -1,8 +1,8 @@
 namespace SunSeeker.Shared.Models;
 
 /// <summary>
-/// Beschreibt ein physisches Solarpanel: Nennleistung, ob bifazial, und die verfuegbaren
-/// Aufstellwinkel des Standfusses (Kickstand). Ein leeres <see cref="KickstandTilts"/>
+/// Beschreibt ein physisches Solarpanel: Nennleistung, ob bifazial, und die verfügbaren
+/// Aufstellwinkel des Standfußes (Kickstand). Ein leeres <see cref="KickstandTilts"/>
 /// bedeutet ein frei verstellbares Panel (beliebiger Winkel einstellbar).
 /// </summary>
 public sealed record PanelProfile(
@@ -12,10 +12,10 @@ public sealed record PanelProfile(
     IReadOnlyList<double> KickstandTilts,
     string? Notes = null)
 {
-    /// <summary>Anker SOLIX PS400 Bifazial — fester 35-Grad-Kickstand, Front + Rueckseite.</summary>
+    /// <summary>Anker SOLIX PS400 Bifazial — fester 35-Grad-Kickstand, Front + Rückseite.</summary>
     public static readonly PanelProfile Ps400Bifacial = new(
         "Anker SOLIX PS400 (Bifazial)", 400, true, [35],
-        "Fester 35-Grad-Standwinkel. Bifazial: Rueckseite erntet reflektiertes Licht.");
+        "Fester 35-Grad-Standwinkel. Bifazial: Rückseite erntet reflektiertes Licht.");
 
     /// <summary>Anker SOLIX PS400 (monofazial) — Kickstand 30/40/50/80 Grad.</summary>
     public static readonly PanelProfile Ps400 = new(
@@ -33,8 +33,8 @@ public sealed record PanelProfile(
     public bool HasFixedTilts => KickstandTilts.Count > 0;
 
     /// <summary>
-    /// Naechster verfuegbarer Kickstand-Winkel zum gewuenschten Neigungswinkel. Bei einem
-    /// frei verstellbaren Panel (keine festen Winkel) wird der Wunschwinkel selbst zurueckgegeben.
+    /// Nächster verfügbarer Kickstand-Winkel zum gewünschten Neigungswinkel. Bei einem
+    /// frei verstellbaren Panel (keine festen Winkel) wird der Wunschwinkel selbst zurückgegeben.
     /// </summary>
     public double NearestKickstand(double desiredTilt)
     {

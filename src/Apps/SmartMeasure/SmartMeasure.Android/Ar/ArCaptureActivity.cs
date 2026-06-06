@@ -753,7 +753,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             var hasTargets = _stakeoutTargets != null && _stakeoutTargets.Count > 0;
             if (!hasTargets)
-                ShowTransientHint("Keine Stakeout-Ziele — aus Stakeout-Tab oeffnen", TransientSeverity.Warning);
+                ShowTransientHint("Keine Stakeout-Ziele — aus Stakeout-Tab öffnen", TransientSeverity.Warning);
             // Reset Cooldown-Distanz bei Mode-Aktivierung
             _stakeoutLastDistance = double.PositiveInfinity;
         }
@@ -967,7 +967,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var typeLabel = ContourTypeLabel(_currentContourType);
         var shape = result.IsSquare ? "Quadrat" : "Rechteck";
         ShowTransientHint(
-            $"{shape} {typeLabel}: {result.LengthMeters:F2} × {result.DepthMeters:F2} m, {result.AreaMeters:F1} m²");
+            $"{shape} {typeLabel}: {result.LengthMeters:F2} × {result.DepthMeters:F2} m, {result.AreaMeters:F1} m²",
+            TransientSeverity.Success);
         VibrateMedium();
     }
 
@@ -1725,7 +1726,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _redoStack.Clear();
                     _activeContour.Points.Add(arPoint);
                     var typeLabel = ContourTypeLabel(_activeContour.ContourType);
-                    ShowTransientHint($"{typeLabel}: {_activeContour.Points.Count} Punkte");
+                    var ptCount = _activeContour.Points.Count;
+                    ShowTransientHint($"{typeLabel}: {ptCount} {PointsWord(ptCount)}", TransientSeverity.Success);
                     // Foto auch fuer Kontur-Punkte (z.B. "Ecke Mauer Nord" mit Sichtbeleg).
                     CapturePhotoForPoint(arPoint);
                 }
@@ -5385,7 +5387,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var ts = App.Services?.GetService<ITotalStationService>();
         if (ts == null)
         {
-            ShowTransientHint("Total-Station-Service nicht verfuegbar", TransientSeverity.Warning);
+            ShowTransientHint("Total-Station-Service nicht verfügbar", TransientSeverity.Warning);
             return;
         }
 
@@ -5398,7 +5400,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var s = _bleService.GetStateSnapshot();
         if (s.FixQuality < 4 || !s.Latitude.HasValue || !s.Longitude.HasValue)
         {
-            ShowTransientHint("Kein RTK-Fix am Stab — bitte warten oder NTRIP pruefen", TransientSeverity.Warning);
+            ShowTransientHint("Kein RTK-Fix am Stab — bitte warten oder NTRIP prüfen", TransientSeverity.Warning);
             return;
         }
 
@@ -5433,7 +5435,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             frame, screenX, screenY, _viewportWidth, _viewportHeight);
         if (!depth.HasValue)
         {
-            ShowTransientHint("Keine Depth-Daten am Reticle — naeher heran/anders zielen", TransientSeverity.Warning);
+            ShowTransientHint("Keine Depth-Daten am Reticle — näher heran/anders zielen", TransientSeverity.Warning);
             return null;
         }
 

@@ -342,7 +342,8 @@ public partial class ArCaptureActivity
 
     /// <summary>
     /// Detail-Checkliste der Mess-Bereitschafts-Conditions. Wird beim Tap auf das Badge geöffnet.
-    /// Wertet jede einzelne Bedingung aus und zeigt ✓/✗ mit Kurzerklärung + Wert.
+    /// Wertet jede einzelne Bedingung aus und zeigt sie als Zeile mit farbigem Status-Punkt
+    /// (grün ok / rot fehlt / bernstein Achtung / grau Info) plus Kurzerklärung + Wert.
     /// </summary>
     private void ShowReadinessDetailDialog()
     {

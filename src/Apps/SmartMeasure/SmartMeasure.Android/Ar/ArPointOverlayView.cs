@@ -580,21 +580,17 @@ public sealed partial class ArPointOverlayView : View
         // 13. Transient-Hint (falls aktiv)
         DrawTransientHint(canvas, width, height);
 
-        // 13. Empty-State wenn keine Punkte/Konturen (im Rechteck-Modus erst, solange noch
-        // keine Ecke gesetzt wurde — danach fuehrt die Transient-Hint durch die Schritte).
+        // 13. Empty-State: zentraler Schwenk-Hinweis NUR solange noch kein Boden erkannt ist.
+        // Sobald Planes da sind, führt allein der modusspezifische Modus-Chip oben ("1. Punkt
+        // antippen" / "1. Ecke antippen" / "Boden antippen") — so entfällt der frühere doppelte
+        // bzw. in sich abweichende zentrale Hint (vorher Einzelpunkt-Sprache auch im Kontur-Modus).
         if (_projectedPoints.Count == 0 && _projectedContourPoints.Count == 0
             && _points.Count == 0 && _contours.Count == 0
             && _state.RectangleCornerCount == 0
             && !_state.IsStakeoutMode && !_state.IsTapeMeasureMode
-            && _state.IsTracking)
+            && _state.IsTracking && _projectedPlanes.Count == 0)
         {
-            string hint;
-            if (_projectedPlanes.Count == 0)
-                hint = "Bewege die Kamera langsam über den Boden…";
-            else if (_state.IsRectangleMode)
-                hint = "Rechteck: erste Ecke der Basiskante antippen";
-            else
-                hint = "Tippe auf eine Fläche um einen Punkt zu setzen";
+            const string hint = "Bewege die Kamera langsam über den Boden…";
 
             // Dezentes Glas-Panel um den Hinweis (design-konsistent, besser lesbar auf hellem Boden).
             var hintW = _hintPaint.MeasureText(hint);

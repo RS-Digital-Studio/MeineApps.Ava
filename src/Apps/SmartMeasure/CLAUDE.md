@@ -219,8 +219,9 @@ Die Activity hat keine Avalonia-DI. Lokalisierte Strings werden einmalig in `OnC
 | Light-Estimation | `LightEstimate.PixelIntensity` — Helligkeits-Sprung > 40 % bricht laufendes Sampling ab (2 s Cooldown) |
 | RTK-AR-Fusion | `IBleService`-Snapshot via `App.Services` — RTK-Position als GPS-Anker (±2 cm) statt Android-LocationManager (±5 m). `ArGpsSource`-Enum trackt die Quelle bis in `ArTransferService` (kein 50 cm-Min, kein 100×-Faktor für RTK) |
 | Augmented Images (ArUco) | AugmentedImageDatabase + Erkennungs-Loop + Auto-Anchor an eingemessener Position |
-| Session Recovery | State in SharedPreferences nach jedem Punkt, max 30 Min alt |
-| Recording API | MP4 in `ExternalFilesDir/Recordings/`, `SetAutoStopOnPause(true)` |
+| Session Recovery | State in SharedPreferences nach jedem Punkt, max 30 Min alt (nur nicht-abgeschlossene Sessions; bei "Fertig" geloescht) |
+| Vorlade-Punkte | Bestehende Projekt-Punkte werden beim AR-Start GEO-UNABHAENGIG relativ als `ArPoint.IsPreloaded` in `_points` geladen (Bridge `SetPreloadPoints`), gedaempft + "Lage relativ" gekennzeichnet. Gehen NIE ins Result/Recovery und sind aus allen Mess-Berechnungen + Snap ausgeschlossen (Korruptions-/Duplikat-Schutz). Ergaenzt die Earth-Anchor-Site-Marker (die VPS brauchen) |
+| Screenshot/Recording | In die Galerie via MediaStore (`Pictures/SmartMeasure` / `Movies/SmartMeasure`, `MediaStoreGallery`), nicht mehr app-intern. Recording cache-then-copy (App-Cache → Galerie nach Stop/OnPause). `SetAutoStopOnPause(true)` |
 
 **Bewusst NICHT aktiviert:** Cloud Anchors (kostenpflichtig — Earth-Anchor-Cache ist Default),
 Shared Camera/Camera2 (Vapolia-Binding unvollständig).

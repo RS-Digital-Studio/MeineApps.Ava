@@ -23,6 +23,7 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `Ar/ArAnchorManager.cs` | Drift-Kompensation via Earth-Anchors. Enthält auch `ArStabilityMonitor`. |
 | `Ar/ArPrecisionHelpers.cs` | Depth-Sanity, Ground-Plane, Semantic-Label, Sky-Check. Delegiert Math an `ArMathHelpers` (Shared). |
 | `Ar/ArOverlayState.cs` | Snapshot-Record: alle Render-Parameter + lokalisierte Labels + System-Banner. |
+| `Ar/MediaStoreGallery.cs` | Speichert Screenshots (Bild) + Aufnahmen (Video) via MediaStore in `Pictures/SmartMeasure` / `Movies/SmartMeasure` (IS_PENDING-geschuetzt, Cleanup bei Fehler). Sichtbar in der Galerie, ueberlebt Deinstall, keine Permission ab API 29. |
 | `Services/AndroidBleService.cs` | BLE GATT-Kommunikation zum RTK-Stab. MTU 247, Write-Queue, Reconnect-Backoff. |
 | `Services/AndroidAppPaths.cs` | `IAppPaths`-Impl: `Context.FilesDir` + `GetExternalFilesDir("Exports")` → sandbox-sichere Pfade. |
 | `Services/AndroidVoiceAnnotationService.cs` | `IVoiceAnnotationService`-Impl: Android `SpeechRecognizer`, 5 s Aufnahme, liefert Transkript. |

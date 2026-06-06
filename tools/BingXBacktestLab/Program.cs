@@ -103,6 +103,37 @@ if (GetArg(argMap, "top-coins", null) != null)
         Console.WriteLine("  WARNUNG: keine Ticker geladen — nutze --preset/--symbols-Fallback.");
 }
 
+// --- Phasen-Screen: jede Strategie ueber 4 disjunkte Marktphasen auf dem Portfolio-Mirror. Eigener Pfad. ---
+//     Findet eine Strategie, die in JEDER Phase profitabel ist (Robustheit), nicht nur aggregiert (Overfit).
+if (GetArg(argMap, "phase-screen", null) != null)
+{
+    var balance = decimal.Parse(GetArg(argMap, "balance", "158")!, CultureInfo.InvariantCulture);
+    var navTf = tfs.Count > 0 ? tfs[0] : TimeFrame.H4;
+    botSettings.Backtest.EnableScannerPrefilter = GetArg(argMap, "scanner-filter", "true") != "false";
+    botSettings.Backtest.EnableBtcHealthScale = GetArg(argMap, "btc-health", "true") != "false";
+    // --strategies (kommagetrennt) ueberschreibt das Default-Set; sonst PhaseScreen.DefaultStrategies.
+    var screenStrategies = GetArg(argMap, "strategies", null) is { Length: > 0 } sList
+        ? sList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        : PhaseScreen.DefaultStrategies;
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    var memData = new MemoryKlineCache(dataClient);
+    var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
+    return await PhaseScreen.RunAsync(screenStrategies, PhaseScreen.DefaultPhases(), symbols, navTf,
+        botSettings, memData, symbolInfo, balance, parallelism, outDir, label);
+}
+
+// --- Xsec-Screen: Cross-Sectional-Momentum-Configs ueber 4 Phasen (strukturell phasen-robust). Eigener Pfad. ---
+if (GetArg(argMap, "xsec", null) != null)
+{
+    var balance = decimal.Parse(GetArg(argMap, "balance", "158")!, CultureInfo.InvariantCulture);
+    var navTf = tfs.Count > 0 ? tfs[0] : TimeFrame.H4;
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    var memData = new MemoryKlineCache(dataClient);
+    var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
+    return await XsecScreen.RunAsync(XsecScreen.DefaultConfigs(), PhaseScreen.DefaultPhases(), symbols, navTf,
+        botSettings, memData, symbolInfo, balance, parallelism, outDir, label);
+}
+
 // --- Sweep-Modus (Parameter-Grid + Walk-Forward)? Eigener Pfad, beendet danach. ---
 if (GetArg(argMap, "sweep", null) != null)
 {

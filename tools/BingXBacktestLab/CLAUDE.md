@@ -139,6 +139,38 @@ dreht irgendeine ins Plus?). Top-10 in der Console.
 Priorität: explizite `strategyFactory` (Tests) > `trendFollowOverride` (Sweep) > `StrategyFactory.Create` (Default).
 Ohne Override unverändert → bestehende `--portfolio`-Läufe bit-identisch (`PortfolioVsSingleRegressionTest`).
 
+## Phasen-Robustheit (`--phase-screen`) — Strategie in JEDER Marktphase profitabel?
+
+Testet jede Strategie über **4 disjunkte ~1-Jahres-Phasen** (Bear/Recovery/Bull/Recent, `PhaseScreen.DefaultPhases`)
+auf dem live-getreuen Portfolio-Mirror. Rangmetrik = **schlechteste Phasen-Rendite** (Anti-Overfitting: nicht
+aggregiert, sondern „in welcher Phase ist die Strategie am schwächsten?"). `--strategies A,B,C` überschreibt das
+Default-Set (TrendFollow-Familie + MeanReversion). Befund: **KEINE direktionale IStrategy ist in allen 4 Phasen
+positiv** — 2022-Bear killt jede (absolute Richtung kippt immer irgendwo).
+
+```bash
+dotnet run --project tools/BingXBacktestLab -c Release -- \
+  --phase-screen --preset may-live --balance 158.36 --settings pi-live-settings.json --label ps-existing
+```
+
+## Cross-Sectional-Momentum (`--xsec`) — strukturell phasen-robust
+
+Eigene Engine (`CrossSectionalMomentumEngine`, kein IStrategy): long die Top-K / short die Bottom-K Symbole nach
+vol-bereinigtem Momentum, periodischer Rebalance, EIN Konto. **Relativ statt absolut → funktioniert in Bull UND
+Bear.** Ranking/Korb-Bildung im geteilten `BingXBot.Engine/Portfolio/MomentumBasketCalculator` (Backtest + künftig
+Live nutzen DENSELBEN → Parität). `--xsec` fährt `XsecScreen.DefaultConfigs` über die 4 Phasen.
+
+```bash
+dotnet run --project tools/BingXBacktestLab -c Release -- \
+  --xsec --top-coins 80 --include-tradfi true --balance 158.36 --settings pi-live-settings.json --label xsec
+```
+
+**Validierter Befund:** `L120/R126/radj/lev1` (20-Tage-Momentum, monatlicher Rebalance, market-neutral,
+vol-bereinigt, **1x Leverage**) ist in ALLEN 4 Phasen positiv (Σ +64..+172% über alle Universen × Kontogrößen).
+Zwei Schlüssel: (1) **Leverage ist der Killer** — lev1 Bear +10%, lev5 Bear −81% (`XsecParams.LeverageCap`).
+(2) **Slot-Anzahl K skaliert mit Universums-Breite** — schmal (Top-30/80) → 3L-3S, breit (Top-150) → 5L-5S. Konto
+≥1000 USDT entfernt Min-Order-Fragmentierung. `XsecParams`: Lookback/Rebalance/LongK/ShortK/RiskAdjusted/AtrStop/
+LeverageCap. **Caveat:** Survivorship-Bias (Top-N = heutiges Top-N, rückwirkend) → Zahlen optimistisch verzerrt.
+
 ## Parameter-Sweep & Walk-Forward (`--sweep` / `--full` / `--compare` / `--axis`)
 
 Vier Modi finden datengetrieben bessere Parameter (statt manuell `settings.json` zu variieren). Alle nutzen

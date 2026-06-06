@@ -231,6 +231,29 @@ TradingServiceBase (abstrakt)
                           LiveTradingManager (Lifecycle: Connect, Recovery, Commission, Server-Zeit-Sync)
 ```
 
+### Cross-Sectional-Momentum-Modus (`EngineMode.CrossSectional`)
+
+**Zweite, market-neutrale Engine NEBEN dem Scalper** (opt-in, kein Eingriff in TradingServiceBase). Long die
+staerksten / short die schwaechsten Coins nach vol-bereinigtem Momentum, monatlicher Wall-Clock-Rebalance, 1x.
+Backtest-validiert phasen-robust (Details → `tools/BingXBacktestLab/CLAUDE.md` + Memory `bingxbot.md`).
+
+```
+CrossSectionalManager (Lifecycle: Paper=SimulatedExchange / Live=BingXRestClient + zwingend Hedge)
+  └─ CrossSectionalTradingService (Wall-Clock-Rebalance-Loop, Korb-State persistiert, Paper-Hooks)
+       ├─ MomentumBasketCalculator (BingXBot.Engine/Portfolio — geteilt mit Backtest, identisches Ranking)
+       └─ CrossSectionalRebalancer (Close-vor-Open, Min-Order, Leverage-Cap, kein Hedge bei Fehl-Close)
+```
+
+- **`EngineMode {Scalper, CrossSectional}`** ist orthogonal zu `TradingMode` (Paper/Live = sim vs. echt).
+  `BotStartRequest.Engine` (Default Scalper), `BotSettings.LastEngineMode`+`CrossSectional`. `LocalBotControlService`
+  waehlt anhand (Mode, Engine); es laeuft immer nur eine Engine (`_lifecycleLock`).
+- **Trigger:** Dashboard-ToggleSwitch „Cross-Sectional" (Remote/Pi) ODER `POST /api/v1/bot/start
+  { Mode, Engine: CrossSectional }`. `CurrentBasket` = aktueller Soll-Korb.
+- **Sicherheit:** Hedge-Mode zwingend (long+short); Reconciliation schliesst vor dem Oeffnen und verifiziert Closes;
+  Korb + `LastRebalanceUtc` als `xsec-state.json` neben der DB (Crash-Recovery: Korb adoptieren statt sofort ranken).
+- **Offen:** Standalone-Desktop-Local-Start ist Scalper-only (Pi/Remote ist der Produktionspfad); Settings-Endpoint
+  fuer `CrossSectionalSettings` (nutzt validierte Defaults); Live-per-Trade-PnL-Records (Paper komplett via Sim).
+
 ### `TradingServiceBase`-Loops
 
 | Loop | Intervall | Aufgaben |

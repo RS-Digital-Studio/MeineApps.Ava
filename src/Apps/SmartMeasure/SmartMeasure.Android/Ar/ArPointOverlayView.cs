@@ -456,6 +456,7 @@ public sealed partial class ArPointOverlayView : View
         _segLinePaint.Dispose();
         _segValuePaint.Dispose();
         _segSubPaint.Dispose();
+        DisposeDesignPaints(); // Design-System-Paints/-Path (ArPointOverlayView.Design.cs)
         base.OnDetachedFromWindow();
     }
 

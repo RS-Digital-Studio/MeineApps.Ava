@@ -178,4 +178,23 @@ public sealed partial class ArPointOverlayView
         _panelFillPaint.Color = color;
         canvas.DrawCircle(cx, cy, radiusDp * _density, _panelFillPaint);
     }
+
+    /// <summary>Gibt alle in <see cref="InitDesignPaints"/> erzeugten nativen Paint-/Path-Peers
+    /// frei. Wird aus <c>OnDetachedFromWindow</c> aufgerufen — das Paint-Lifecycle der Design-
+    /// Tokens lebt damit vollständig in dieser Datei (analog zum Ctor-/Detach-Vertrag der
+    /// übrigen Paints). Ohne diesen Aufruf leakt jede AR-Session 10 Paints + 1 Path.</summary>
+    private void DisposeDesignPaints()
+    {
+        _panelFillPaint.Dispose();
+        _panelBorderPaint.Dispose();
+        _panelShadowPaint.Dispose();
+        _offScreenArrowPaint.Dispose();
+        _groundShadowPaint.Dispose();
+        _heightStickPaint.Dispose();
+        _markerNumPaint.Dispose();
+        _markerLabelPaint.Dispose();
+        _modeChipTitlePaint.Dispose();
+        _modeChipDetailPaint.Dispose();
+        _offScreenArrowPath.Dispose();
+    }
 }

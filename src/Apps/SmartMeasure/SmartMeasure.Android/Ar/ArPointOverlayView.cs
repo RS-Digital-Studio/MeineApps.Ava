@@ -31,6 +31,10 @@ public sealed partial class ArPointOverlayView : View
     private List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> _projectedContourPoints = [];
     // Wiederverwendete Sortier-Liste (Painter, fern→nah) — keine LINQ-Allokation im Hot-Path.
     private readonly List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> _pointDrawOrder = [];
+    // Wiederverwendeter Puffer für die sichtbaren Punkte der aktiven Kontur (Inter-Punkt-Pillen) —
+    // hält screenX/screenY + den ECHTEN Welt-pointIdx, damit die Segment-Werte korrekt zugeordnet
+    // bleiben, auch wenn ein Zwischenpunkt frustum-geclippt fehlt. Keine LINQ-Allokation pro Frame.
+    private readonly List<(float screenX, float screenY, int pointIdx)> _activeContourScreenScratch = [];
     private List<List<(float screenX, float screenY)>> _projectedPlanes = [];
     // Projiziertes Boden-Raster (x1,y1,x2,y2,dist) — verankert die Szene räumlich. dist = Welt-
     // Distanz zur Kamera für den Tiefen-Fade (nahe Linien kräftig, ferne ausgeblendet).
@@ -1337,12 +1341,14 @@ public sealed partial class ArPointOverlayView : View
     private void DrawInterPointDistances(Canvas canvas)
     {
         // Einzelpunkte (Point-Modus): horizontale Distanz + ΔH zwischen aufeinanderfolgenden
-        // Punkten als Pille — bleibt nach dem Setzen stehen.
-        var sortedPts = _projectedPoints.OrderBy(p => p.pointIndex).ToList();
-        for (var i = 1; i < sortedPts.Count; i++)
+        // Punkten als Pille — bleibt nach dem Setzen stehen. _projectedPoints liegt bereits
+        // aufsteigend nach pointIndex vor (ProjectPointsToScreen pusht i=0..n), daher direkt
+        // iterieren — keine Per-Frame-Sortierung/-Liste. Die Distanz kommt aus den echten
+        // Punkt-Objekten (Index-robust), egal welche Zwischenpunkte off-screen wandern.
+        for (var i = 1; i < _projectedPoints.Count; i++)
         {
-            var curr = sortedPts[i];
-            var prev = sortedPts[i - 1];
+            var curr = _projectedPoints[i];
+            var prev = _projectedPoints[i - 1];
             if (curr.pointIndex >= _points.Count || prev.pointIndex >= _points.Count) continue;
 
             var pa = _points[prev.pointIndex];
@@ -1354,22 +1360,27 @@ public sealed partial class ArPointOverlayView : View
 
         // Aktive Kontur: horizontale Distanz + ΔH pro gesetztem Segment (Welt-Werte vom
         // GL-Thread in ActiveContourSegments — der Overlay-View kennt nur Screen-Pixel).
-        var activePts = _projectedContourPoints
-            .Where(p => p.contourIdx == -1)
-            .OrderBy(p => p.pointIdx)
-            .ToList();
-
+        // ActiveContourSegments ist lückenlos über die ECHTEN Punkt-Indizes gebaut (Eintrag i =
+        // Segment Punkt i→i+1), die projizierten Screen-Punkte können dagegen frustum-geclippt
+        // fehlen. Daher das Segment über den ECHTEN pointIdx greifen und nur echte Nachbar-Paare
+        // (pointIdx+1) beschriften — sonst landet die Strecke des falschen Segments am falschen Ort.
         var segs = _state.ActiveContourSegments;
-        if (segs != null && activePts.Count >= 2)
+        if (segs == null) return;
+
+        _activeContourScreenScratch.Clear();
+        foreach (var p in _projectedContourPoints)
+            if (p.contourIdx == -1)
+                _activeContourScreenScratch.Add((p.screenX, p.screenY, p.pointIdx));
+
+        for (var i = 0; i < _activeContourScreenScratch.Count - 1; i++)
         {
-            for (var i = 0; i < activePts.Count - 1 && i < segs.Count; i++)
-            {
-                var a = activePts[i];
-                var b = activePts[i + 1];
-                var midX = (a.screenX + b.screenX) / 2f;
-                var midY = (a.screenY + b.screenY) / 2f;
-                DrawSegmentPill(canvas, midX, midY, segs[i].horizontal, segs[i].heightDelta);
-            }
+            var a = _activeContourScreenScratch[i];
+            var b = _activeContourScreenScratch[i + 1];
+            if (b.pointIdx != a.pointIdx + 1) continue;        // Lücke durch geclippten Zwischenpunkt
+            if (a.pointIdx < 0 || a.pointIdx >= segs.Count) continue;
+            var midX = (a.screenX + b.screenX) / 2f;
+            var midY = (a.screenY + b.screenY) / 2f;
+            DrawSegmentPill(canvas, midX, midY, segs[a.pointIdx].horizontal, segs[a.pointIdx].heightDelta);
         }
     }
 

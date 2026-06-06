@@ -86,6 +86,16 @@ services.AddSingleton<PaperTradingService>(sp =>
 });
 services.AddSingleton<LiveTradingManager>();
 
+// Cross-Sectional-Momentum-Modus (market-neutraler Korb, opt-in via BotStartRequest.Engine=CrossSectional).
+// Eigener Manager neben LiveTradingManager/PaperTradingService — der LocalBotControlService waehlt anhand
+// des EngineMode. State-Datei (Korb + LastRebalanceUtc) neben die DB ins Data-Dir (Pi: /var/lib/bingxbot).
+services.AddSingleton<CrossSectionalSettings>();
+services.AddSingleton<BingXBot.Trading.CrossSectional.CrossSectionalManager>(sp =>
+{
+    var paths = sp.GetRequiredService<IAppPaths>();
+    var stateFile = Path.Combine(Path.GetDirectoryName(paths.DatabasePath) ?? AppContext.BaseDirectory, "xsec-state.json");
+    return Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<BingXBot.Trading.CrossSectional.CrossSectionalManager>(sp, stateFile);
+});
 
 // v1.5.3 Phase 5 — Trade-Stats-Aggregator (Singleton, lebt mit dem Server).
 services.AddSingleton<BingXBot.Trading.Stats.TradeStatsAggregator>();

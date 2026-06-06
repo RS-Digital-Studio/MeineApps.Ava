@@ -73,7 +73,8 @@ public record EquityPointDto(
 public record BotStartRequest(
     TradingMode Mode,
     decimal? InitialBalance = null,
-    IReadOnlyList<TimeFrame>? ActiveTimeframes = null);
+    IReadOnlyList<TimeFrame>? ActiveTimeframes = null,
+    EngineMode Engine = EngineMode.Scalper);
 
 /// <summary>Paginierter Result-Wrapper.</summary>
 public record PagedResult<T>(

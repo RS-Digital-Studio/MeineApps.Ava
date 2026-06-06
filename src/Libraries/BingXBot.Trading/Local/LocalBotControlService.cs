@@ -30,6 +30,7 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
 {
     private readonly LiveTradingManager _liveManager;
     private readonly PaperTradingService _paperService;
+    private readonly CrossSectional.CrossSectionalManager? _xsecManager;
     private readonly BotSettings _botSettings;
     private readonly ScannerSettings _scannerSettings;
     private readonly BotEventBus _eventBus;
@@ -60,10 +61,12 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
         BotEventBus eventBus,
         StrategyManager strategyManager,
         BotDatabaseService? db = null,
-        ISecureStorageService? secureStorage = null)
+        ISecureStorageService? secureStorage = null,
+        CrossSectional.CrossSectionalManager? xsecManager = null)
     {
         _liveManager = liveManager;
         _paperService = paperService;
+        _xsecManager = xsecManager;
         _botSettings = botSettings;
         _scannerSettings = scannerSettings;
         _eventBus = eventBus;
@@ -105,27 +108,32 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
             //     Client das im UI als Fehler zeigen kann. Stummes Ignorieren fuehrte vorher
             //     zu "Dashboard sagt Live, Pi laeuft Paper" — der User merkt es nicht und
             //     denkt der Start hat geklappt.
-            var runningMode = _paperService.IsRunning ? TradingMode.Paper
-                              : _liveManager.IsRunning ? TradingMode.Live
-                              : (TradingMode?)null;
+            // Laufende Engine ermitteln (Scalper Paper/Live ODER Cross-Sectional). Es laeuft immer nur eine
+            // (der _lifecycleLock + die exklusiven Manager garantieren das).
+            (TradingMode Mode, EngineMode Engine)? running =
+                (_xsecManager?.IsRunning ?? false) ? (_botSettings.LastMode, EngineMode.CrossSectional)
+                : _paperService.IsRunning ? (TradingMode.Paper, EngineMode.Scalper)
+                : _liveManager.IsRunning ? (TradingMode.Live, EngineMode.Scalper)
+                : null;
 
-            if (runningMode.HasValue)
+            if (running.HasValue)
             {
-                if (runningMode.Value == request.Mode)
+                if (running.Value == (request.Mode, request.Engine))
                 {
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-                        $"Start ignoriert: Engine laeuft bereits in {runningMode.Value}-Modus."));
+                        $"Start ignoriert: Engine laeuft bereits ({running.Value.Mode}/{running.Value.Engine})."));
                     return GetStatus();
                 }
 
-                _lastError = $"Bot laeuft bereits als {runningMode.Value}. Bitte zuerst Stop klicken, dann Mode wechseln.";
+                _lastError = $"Bot laeuft bereits als {running.Value.Mode}/{running.Value.Engine}. Bitte zuerst Stop klicken, dann wechseln.";
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
-                    $"Mode-Wechsel {runningMode.Value} -> {request.Mode} abgelehnt: Engine laeuft bereits. User muss erst stoppen."));
+                    $"Wechsel {running.Value.Mode}/{running.Value.Engine} -> {request.Mode}/{request.Engine} abgelehnt: Engine laeuft bereits."));
                 return GetStatus();
             }
 
             _lastError = null;
             _botSettings.LastMode = request.Mode;
+            _botSettings.LastEngineMode = request.Engine;
 
             if (request.ActiveTimeframes is { Count: > 0 })
             {
@@ -136,7 +144,15 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
 
             try
             {
-                if (request.Mode == TradingMode.Paper)
+                if (request.Engine == EngineMode.CrossSectional)
+                {
+                    // Cross-Sectional-Momentum (market-neutraler Korb). Eigener Manager, kein per-Symbol-Scan.
+                    // Paper = SimulatedExchange, Live = BingXRestClient (Hedge zwingend). Kein StrategyManager noetig.
+                    if (_xsecManager == null)
+                        throw new InvalidOperationException("Cross-Sectional-Modus nicht verfuegbar (Manager nicht registriert).");
+                    await _xsecManager.StartAsync(request.Mode, request.InitialBalance).ConfigureAwait(false);
+                }
+                else if (request.Mode == TradingMode.Paper)
                 {
                     // Strategie aktivieren — sonst greift der ScanAndTradeAsync-Guard
                     // (`_strategyManager.CurrentTemplate == null`) und der Bot logged stumm
@@ -199,6 +215,10 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
                 {
                     await _liveManager.StopAsync().ConfigureAwait(false);
                 }
+                if (_xsecManager?.IsRunning == true)
+                {
+                    await _xsecManager.StopAsync().ConfigureAwait(false);
+                }
                 _uptime.Reset();
             }
             catch (Exception ex)
@@ -232,6 +252,10 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
                 if (_liveManager.IsRunning)
                 {
                     await _liveManager.EmergencyStopAsync().ConfigureAwait(false);
+                }
+                if (_xsecManager?.IsRunning == true)
+                {
+                    await _xsecManager.EmergencyStopAsync().ConfigureAwait(false);
                 }
                 _uptime.Reset();
             }
@@ -279,6 +303,13 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
         // (DB-Persist, RiskManager-Stats, EventBus.PublishTrade, ExitState-Cleanup) durchlaeuft.
         // Vorher ging das via _restClient.ClosePositionAsync direkt an BingX vorbei — Bot blieb
         // im Dunklen, Trade landete weder in der DB noch im SignalR-Stream.
+        // Cross-Sectional: ueber die Execution-Exchange des Managers schliessen (Paper-Sim oder Live-Rest).
+        if (_xsecManager?.IsRunning == true)
+        {
+            if (_xsecManager.RestClient is { } xrest) { await xrest.ClosePositionAsync(symbol, side).ConfigureAwait(false); return; }
+            if (_xsecManager.PaperExchange is { } xpaper) { await xpaper.ClosePositionAsync(symbol, side).ConfigureAwait(false); return; }
+        }
+
         if (_liveManager.IsRunning && _liveManager.Service is { } liveSvc)
         {
             await liveSvc.ClosePositionExternalAsync(symbol, side).ConfigureAwait(false);

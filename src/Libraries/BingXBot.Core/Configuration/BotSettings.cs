@@ -8,6 +8,10 @@ public class BotSettings
     public ScannerSettings Scanner { get; set; } = new();
     public BacktestSettings Backtest { get; set; } = new();
     public TradingMode LastMode { get; set; } = TradingMode.Paper;
+    /// <summary>Welche Engine zuletzt lief (Scalper = per-Symbol-Scanner, CrossSectional = Momentum-Korb).</summary>
+    public EngineMode LastEngineMode { get; set; } = EngineMode.Scalper;
+    /// <summary>Cross-Sectional-Momentum-Parameter (nur relevant bei LastEngineMode=CrossSectional).</summary>
+    public CrossSectionalSettings CrossSectional { get; set; } = new();
     public string? LastStrategyName { get; set; }
     public Dictionary<string, string> StrategyParameters { get; set; } = new();
     public bool ShowBtcTicker { get; set; } = true;

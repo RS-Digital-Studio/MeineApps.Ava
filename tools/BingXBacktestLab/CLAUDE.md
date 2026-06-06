@@ -85,6 +85,25 @@ den **pre-exit** Positions-Snapshot (wie die Single-Engine — sonst Re-Entry au
 ValidateTrade/Entry nutzt den **frischen** Snapshot (damit intra-Step-Entries früherer Symbole für die Gates
 sichtbar sind). Der Single-Engine-Pfad bleibt unberührt (`ProcessEntryAsync`-Param `adaptLeverage=0`).
 
+### Live-Paritaet — drei Mechaniken, die live-treu bleiben MÜSSEN (nicht reintroduzieren!)
+
+1. **`AccountInfo.Balance` = reines Wallet (`_balance`), OHNE uPnL** (`SimulatedExchange.GetAccountInfoAsync`).
+   Live liefert Wallet als `Balance` + Equity separat (`BingXRestClient.cs:1145`). Der `RiskManager` rechnet
+   `equity = Balance + UnrealizedPnl` selbst — würde `Balance` schon uPnL enthalten, ergäbe das `_balance + 2×uPnL`
+   (Doppelzählung): Drawdown ~verdoppelt → MaxTotalDrawdown-Freeze feuert zu früh → künstlich wenige Trades.
+2. **Abgeschlossene Trades über `BacktestRiskAccounting.RecordCompletedTrade` verbuchen, nie `UpdateDailyStats`
+   direkt.** Letzteres zählt jeden `Pnl<0` (inkl. Break-Even-Ausstoppung) als Verlust; live (`ProcessCompletedTrade`)
+   erkennt BE-Exits (Buch 6.8) und resettet die Serie. Zusätzlich beim Tageswechsel `SetConsecutiveLosses(0)`
+   (live: `TradingServiceBase.cs:454`) — sonst Dauerpause bei `LossStreakPauseAtCount`.
+3. **Runner ist 3-stufig** (`BacktestExitProcessor`): TP1 schließt `Tp1CloseRatio` und setzt **TP2** als Ziel
+   (kein Runner bei TP1); erst bei **TP2-Hit** + `EnableRunner` wird auf `RunnerPercent×OriginalQuantity` reduziert,
+   nur dieser Rest trailt (ATR) bis Trail-Hit **oder** `RunnerHardCap` (423,6%). Spiegelt `TradingServiceBase.cs:822-847`.
+
+**Bewusst NICHT gespiegelt:** Funding-Settlement-`CheckSession` (Live re-scannt alle 15min und steigt danach
+trotzdem ein → hartes `continue` wäre untreuer) · BTC-Health-Funding (kein historischer Per-Kerze-Cache → 0) ·
+Single-`BacktestEngine` hat keine Gates/Prefilter/BTC-Health/Min-Order → **nur `--portfolio` ist das Spiegelbild**.
+No-Freeze-Diagnose (echte Trade-Frequenz/Edge ohne Drawdown-Bremse): `--settings pilive-nofreeze.json`.
+
 ## Portfolio-Sweep (`--portfolio-sweep`) — Parameter-Variation auf dem EINEN Konto
 
 Spannt ein Grid über die Strategie-/Risk-Stellschrauben (**SL / BE / TP-RRR / TP1-Split**) auf und fährt für

@@ -33,6 +33,49 @@
                 <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="label" VerticalAlignment="Center" />
             </Grid>
 
+            <!-- Anker-Verbindung (echte Live-Watt-Anbindung) -->
+            <Border Classes="card">
+                <StackPanel>
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <materialIcons:MaterialIcon Grid.Column="0" Kind="PowerPlugOutline" Width="18" Height="18"
+                                                    Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Margin="8,0,0,0" Text="{loc:Translate Key=AnkerCardTitle}"
+                                   FontSize="14" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Command="{Binding ToggleAnkerSettingsCommand}" Background="Transparent"
+                                Padding="6" IsVisible="{Binding IsConfigured}"
+                                AutomationProperties.AutomationId="AnkerSettingsToggleButton"
+                                ToolTip.Tip="{loc:Translate Key=AnkerSettings}">
+                            <materialIcons:MaterialIcon Kind="Cog" Width="20" Height="20"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </Button>
+                    </Grid>
+
+                    <StackPanel IsVisible="{Binding ShowAnkerSettings}" Margin="0,10,0,0" Spacing="8">
+                        <TextBlock Text="{loc:Translate Key=AnkerHintGoogle}" Classes="label" TextWrapping="Wrap" />
+                        <TextBox Text="{Binding AnkerEmail}" PlaceholderText="{loc:Translate Key=AnkerEmail}"
+                                 AutomationProperties.AutomationId="AnkerEmailTextBox" />
+                        <TextBox Text="{Binding AnkerPassword}" PasswordChar="●"
+                                 PlaceholderText="{loc:Translate Key=AnkerPassword}"
+                                 AutomationProperties.AutomationId="AnkerPasswordTextBox" />
+                        <TextBox Text="{Binding AnkerCountry}" MaxLength="2"
+                                 PlaceholderText="{loc:Translate Key=AnkerCountry}"
+                                 AutomationProperties.AutomationId="AnkerCountryTextBox" />
+                        <TextBlock Text="{Binding AnkerErrorText}" Foreground="{DynamicResource DangerBrush}"
+                                   FontSize="12" TextWrapping="Wrap" IsVisible="{Binding HasAnkerError}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Button Grid.Column="0" Content="{loc:Translate Key=AnkerConnect}"
+                                    Command="{Binding ConnectAnkerCommand}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    AutomationProperties.AutomationId="AnkerConnectButton" />
+                            <Button Grid.Column="1" Content="{loc:Translate Key=AnkerForget}"
+                                    Command="{Binding ForgetAnkerCommand}" IsVisible="{Binding IsConfigured}"
+                                    AutomationProperties.AutomationId="AnkerForgetButton" />
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Aktuelle Leistung groß -->
             <Border Classes="card">
                 <StackPanel HorizontalAlignment="Center">

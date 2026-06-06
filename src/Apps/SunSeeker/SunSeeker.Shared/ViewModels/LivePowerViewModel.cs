@@ -1,9 +1,12 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using SunSeeker.Shared.Graphics;
 using SunSeeker.Shared.Models;
 using SunSeeker.Shared.Services;
+using SunSeeker.Shared.Services.Anker;
 
 namespace SunSeeker.Shared.ViewModels;
 
@@ -18,20 +21,29 @@ public partial class LivePowerViewModel : ObservableObject, IDisposable
 
     private readonly IAnkerMonitorService _anker;
     private readonly ILocalizationService _loc;
+    private readonly IPreferencesService _prefs;
     private readonly List<PowerSample> _samples = [];
 
     private double _peakWatts;
     private double _energyWh;
     private DateTime? _lastSampleUtc;
 
-    public LivePowerViewModel(IAnkerMonitorService anker, ILocalizationService loc)
+    public LivePowerViewModel(IAnkerMonitorService anker, ILocalizationService loc, IPreferencesService prefs)
     {
         _anker = anker;
         _loc = loc;
+        _prefs = prefs;
         _anker.SampleReceived += OnSampleReceived;
         _anker.StateChanged += OnStateChanged;
         IsSimulated = anker.IsSimulated;
         _stateText = loc.GetString("StateDisconnected");
+
+        var creds = AnkerCredentialStore.Load(prefs);
+        _ankerEmail = creds?.Email ?? "";
+        _ankerPassword = creds?.Password ?? "";
+        _ankerCountry = creds?.CountryId ?? "DE";
+        _isConfigured = AnkerCredentialStore.Has(prefs);
+        _showAnkerSettings = !_isConfigured;
     }
 
     public event Action? InvalidateRequested;
@@ -46,12 +58,70 @@ public partial class LivePowerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _peakWattsText = "0 W";
     [ObservableProperty] private bool _isSimulated;
 
+    // Anker-Zugangsdaten + Verbindungssteuerung
+    [ObservableProperty] private string _ankerEmail;
+    [ObservableProperty] private string _ankerPassword;
+    [ObservableProperty] private string _ankerCountry;
+    [ObservableProperty] private bool _isConfigured;
+    [ObservableProperty] private bool _showAnkerSettings;
+    [ObservableProperty] private string _ankerErrorText = "";
+    [ObservableProperty] private bool _hasAnkerError;
+
+    partial void OnAnkerErrorTextChanged(string value) => HasAnkerError = !string.IsNullOrWhiteSpace(value);
+
     public void Activate() => _ = _anker.ConnectAsync();
 
     public void Deactivate() => _anker.Disconnect();
 
+    /// <summary>Blendet das Zugangsdaten-Formular ein/aus.</summary>
+    [RelayCommand]
+    private void ToggleAnkerSettings() => ShowAnkerSettings = !ShowAnkerSettings;
+
+    /// <summary>Speichert die Zugangsdaten und verbindet neu (echte Anker-Cloud + MQTT).</summary>
+    [RelayCommand]
+    private void ConnectAnker()
+    {
+        if (string.IsNullOrWhiteSpace(AnkerEmail) || string.IsNullOrWhiteSpace(AnkerPassword))
+        {
+            AnkerErrorText = _loc.GetString("AnkerErrorMissing");
+            return;
+        }
+
+        AnkerCredentialStore.Save(_prefs, new AnkerCredentials(
+            AnkerEmail, AnkerPassword, string.IsNullOrWhiteSpace(AnkerCountry) ? "DE" : AnkerCountry));
+        IsConfigured = true;
+        ShowAnkerSettings = false;
+        AnkerErrorText = "";
+        Reconnect();
+    }
+
+    /// <summary>Verwirft die Zugangsdaten und fällt auf den Demo-Modus zurück.</summary>
+    [RelayCommand]
+    private void ForgetAnker()
+    {
+        AnkerCredentialStore.Clear(_prefs);
+        AnkerPassword = "";
+        IsConfigured = false;
+        ShowAnkerSettings = true;
+        AnkerErrorText = "";
+        Reconnect();
+    }
+
+    private void Reconnect()
+    {
+        _anker.Disconnect();
+        _ = _anker.ConnectAsync();
+    }
+
     private void OnStateChanged(object? sender, AnkerConnectionState state)
-        => Dispatcher.UIThread.Post(() => StateText = StateLabel(state));
+        => Dispatcher.UIThread.Post(() =>
+        {
+            IsSimulated = _anker.IsSimulated;
+            StateText = StateLabel(state);
+            AnkerErrorText = state == AnkerConnectionState.Error && _anker is AnkerMonitorService { LastError: { } err }
+                ? err
+                : "";
+        });
 
     private void OnSampleReceived(object? sender, PowerSample sample)
         => Dispatcher.UIThread.Post(() => AddSample(sample));

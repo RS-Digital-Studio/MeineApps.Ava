@@ -38,6 +38,15 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="BackPressToExit" xml:space="preserve"><value>Zum Beenden erneut zurück drücken</value></data>
+  <data name="AnkerCardTitle" xml:space="preserve"><value>Anker-Verbindung</value></data>
+  <data name="AnkerEmail" xml:space="preserve"><value>E-Mail</value></data>
+  <data name="AnkerPassword" xml:space="preserve"><value>Passwort</value></data>
+  <data name="AnkerCountry" xml:space="preserve"><value>Ländercode (z. B. DE)</value></data>
+  <data name="AnkerConnect" xml:space="preserve"><value>Verbinden</value></data>
+  <data name="AnkerForget" xml:space="preserve"><value>Trennen</value></data>
+  <data name="AnkerSettings" xml:space="preserve"><value>Einstellungen</value></data>
+  <data name="AnkerHintGoogle" xml:space="preserve"><value>Google-Konto? Setze in der Anker-App zuerst per ‚Passwort vergessen' ein Passwort und melde dich hier mit E-Mail und diesem Passwort an.</value></data>
+  <data name="AnkerErrorMissing" xml:space="preserve"><value>E-Mail und Passwort erforderlich</value></data>
   <!-- Navigation -->
   <data name="TabAlign" xml:space="preserve"><value>Ausrichten</value></data>
   <data name="TabPower" xml:space="preserve"><value>Leistung</value></data>

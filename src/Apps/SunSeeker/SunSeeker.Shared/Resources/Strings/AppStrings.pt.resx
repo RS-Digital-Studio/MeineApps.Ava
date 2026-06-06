@@ -38,6 +38,15 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="BackPressToExit" xml:space="preserve"><value>Pressione voltar novamente para sair</value></data>
+  <data name="AnkerCardTitle" xml:space="preserve"><value>Ligação Anker</value></data>
+  <data name="AnkerEmail" xml:space="preserve"><value>E-mail</value></data>
+  <data name="AnkerPassword" xml:space="preserve"><value>Palavra-passe</value></data>
+  <data name="AnkerCountry" xml:space="preserve"><value>Código do país (ex. DE)</value></data>
+  <data name="AnkerConnect" xml:space="preserve"><value>Ligar</value></data>
+  <data name="AnkerForget" xml:space="preserve"><value>Desligar</value></data>
+  <data name="AnkerSettings" xml:space="preserve"><value>Definições</value></data>
+  <data name="AnkerHintGoogle" xml:space="preserve"><value>Conta Google? Defina primeiro uma palavra-passe na app Anker através de ‚Esqueci a palavra-passe' e depois inicie sessão aqui com o seu e-mail e essa palavra-passe.</value></data>
+  <data name="AnkerErrorMissing" xml:space="preserve"><value>E-mail e palavra-passe obrigatórios</value></data>
   <data name="TabAlign" xml:space="preserve"><value>Alinhar</value></data>
   <data name="TabPower" xml:space="preserve"><value>Potência</value></data>
   <data name="TabDashboard" xml:space="preserve"><value>Visão Geral</value></data>

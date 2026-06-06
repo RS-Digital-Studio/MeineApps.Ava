@@ -24,5 +24,8 @@
 
     <!-- DI -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+
+    <!-- MQTT (Anker-Cloud-Live-Watt-Anbindung, mTLS) -->
+    <PackageReference Include="MQTTnet" />
   </ItemGroup>
 </Project>

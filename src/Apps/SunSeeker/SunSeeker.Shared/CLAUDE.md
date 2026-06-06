@@ -16,7 +16,7 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 |----------|--------|---------|
 | `App.LocationServiceFactory` | `MainActivity.OnCreate` (vor `base.OnCreate`) | `MockLocationService` |
 | `App.HeadingServiceFactory` | `MainActivity.OnCreate` (vor `base.OnCreate`) | `MockHeadingService` |
-| `App.AnkerMonitorServiceFactory` | (noch keiner) | `MockAnkerMonitorService` |
+| `App.AnkerMonitorServiceFactory` | (kein Android-Override nötig — plattformneutral) | `AnkerMonitorService` (echt; Demo-Fallback ohne Zugangsdaten) |
 
 **KRITISCH (Avalonia 12 Android):** `OnFrameworkInitializationCompleted` (DI-Build) läuft VOR
 `MainActivity.OnCreate`. Daher die Plattform-Services **lazy** im Resolve-Lambda registrieren und
@@ -27,7 +27,8 @@ Generisches Pattern → [Core.Ava-CLAUDE.md](../../../Libraries/MeineApps.Core.A
 
 1. `IPreferencesService` (`PreferencesService("SunSeeker")`) + `ILocalizationService`
    (`LocalizationService(AppStrings.ResourceManager, prefs)`).
-2. Plattform-Services LAZY: `ILocationService`, `IHeadingService`, `IAnkerMonitorService`.
+2. Plattform-Services LAZY: `ILocationService`, `IHeadingService`; `MockAnkerMonitorService` (Demo-Quelle)
+   + `IAnkerMonitorService` → `AnkerMonitorService` (echte Anker-Cloud/MQTT, Demo-Fallback).
 3. Engine (Singleton): `ISolarPositionService`, `IAlignmentService`, `IBifacialService`.
 4. ViewModels (Singleton): `DashboardViewModel`, `AlignViewModel`, `LivePowerViewModel`, `MainViewModel`.
 

@@ -527,6 +527,7 @@ Versionen zentral in `Directory.Packages.props`. Kern:
 | Microsoft.AspNetCore.SignalR.Client | 10.0.7 | Server-Remote (BingXBot, GardenControl) |
 | System.Device.Gpio / Iot.Device.Bindings | 4.2.0 | Raspberry-Pi-GPIO (GardenControl) |
 | Mapsui.Avalonia / InTheHand.BluetoothLE / Vapolia.Google.ARCore | 5.0.2 / 4.0.44 / 1.47.1 | Karten + BLE + AR (SmartMeasure) |
+| MQTTnet | 5.0.1.1416 | Anker-Cloud-Live-Watt via mTLS-MQTT (SunSeeker) |
 | **Test** | | |
 | xunit (+ runner.visualstudio) | 2.9.3 / 3.1.5 | Test-Framework (v2-Linie, kein v3) |
 | NSubstitute / FluentAssertions / coverlet.collector | 5.3.0 / 8.9.0 / 10.0.0 | Mocks / Assertions / Coverage |

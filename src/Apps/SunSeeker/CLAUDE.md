@@ -73,7 +73,7 @@ Reine Berechnung in `SunSeeker.Shared/Services/` — ohne Plattform-API, unit-ge
 |-----------|----------------|---------|-------|
 | `ILocationService` | `MockLocationService` (fester Standort) | `AndroidLocationService` (nativer `LocationManager`) | Position für Sonnenstand + Missweisung. Bewusst kein Google Play Services — Kilometer-Genauigkeit genügt. |
 | `IHeadingService` | `MockHeadingService` | `AndroidHeadingService` (`RotationVector` + `GeomagneticField` + Neigung) | Geräte-Azimut (Display-Normale) + Neigung. Missweisung via `SetLocation`. |
-| `IAnkerMonitorService` | `MockAnkerMonitorService` (Watt aus Sonnenstand) | — (echte MQTT-Anbindung offen) | Live-Solar-Eingangsleistung. |
+| `IAnkerMonitorService` | `MockAnkerMonitorService` (Demo: Watt aus Sonnenstand) | `AnkerMonitorService` (Shared, plattformneutral — echte Cloud + mTLS-MQTT) | Live-Solar-Eingangsleistung; Demo-Fallback ohne Zugangsdaten. Details → [Services/Anker](SunSeeker.Shared/Services/Anker/CLAUDE.md). |
 
 ### SkiaSharp-Renderer (`Graphics/`)
 
@@ -120,20 +120,18 @@ Lage ist der Azimut instabil (`AzimuthReliable = false`) → die UI fordert zum 
 
 ## Anker-Hardware-Anbindung (Live-Watt)
 
-Die C2000 Gen 2 (A1783) hat BLE + WLAN; **keine offizielle API**. Live-Solar-Watt sind über
-Ankers Cloud-MQTT erreichbar (inoffiziell, reverse-engineered — `thomluther/anker-solix-api`,
-PV-Feld `a6` = `dc_input_power`/Watt). Anker-Account nötig, jederzeit von Anker kappbar. Die
-lokale BLE-Lib unterstützt die C2000 Gen 2 nicht. Eine .NET-Reimplementierung (Cloud-Login +
-MQTT-Subscribe) ist der risikoärmere Weg. Bis dahin liefert `MockAnkerMonitorService` einen
-physikalisch plausiblen Verlauf aus dem Sonnenstand (UI weist via `IsSimulated` darauf hin).
+Die C2000 Gen 2 (A1783) hat **keine offizielle API**; Live-Solar-Watt kommen über Ankers
+Cloud-MQTT (inoffiziell, reverse-engineered — `thomluther/anker-solix-api`). Implementiert in
+`SunSeeker.Shared/Services/Anker/` (`AnkerMonitorService`): Login (ECDH/AES) → Geräteliste →
+mTLS-MQTT (Port 8883) → A1783-Feld `a6/04` = DC-Eingang/Watt. Zugangsdaten gibt der Nutzer im
+Leistungs-Tab ein; ohne Zugangsdaten läuft der `MockAnkerMonitorService` als Demo (`IsSimulated`).
+Architektur, Flow + Gotchas (Google-OAuth-Passwort, a6-TLV, mTLS, Trigger) →
+[Services/Anker/CLAUDE.md](SunSeeker.Shared/Services/Anker/CLAUDE.md).
 
 ---
 
 ## Offene Punkte
 
-- **Echte Anker-Live-Watt-Anbindung**: `AndroidAnkerMonitorService` (Cloud-Login + MQTT-Subscribe,
-  `MQTTnet`). Braucht Anker-Account-Zugangsdaten + das Gerät zum Protokoll-Test. Reiner
-  Service-Austausch (Factory `App.AnkerMonitorServiceFactory`).
 - **Kamera-AR-Sonnenbahn**: optionales „Sonne durch die Kamera"-Overlay. Braucht kein ARCore-Tracking
   (Sonne = Richtung), aber eine native Kamera-Activity + Sensor-Projektion. Gerätegebunden. Das
   2D-Sonnenbahn-Diagramm (Übersicht-Tab) deckt den Kern-Nutzen bereits offline ab.

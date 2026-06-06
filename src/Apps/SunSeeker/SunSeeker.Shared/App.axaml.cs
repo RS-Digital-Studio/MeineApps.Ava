@@ -7,6 +7,7 @@ using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 using SunSeeker.Shared.Resources.Strings;
 using SunSeeker.Shared.Services;
+using SunSeeker.Shared.Services.Anker;
 using SunSeeker.Shared.ViewModels;
 using SunSeeker.Shared.Views;
 
@@ -101,12 +102,18 @@ public class App : Application
         services.AddSingleton<IHeadingService>(sp =>
             HeadingServiceFactory != null ? HeadingServiceFactory(sp) : new MockHeadingService());
 
+        // Demo-Quelle (Watt aus Sonnenstand) — Fallback des echten Monitors, wenn keine Anker-Zugangsdaten gesetzt sind.
+        services.AddSingleton<MockAnkerMonitorService>(sp => new MockAnkerMonitorService(
+            sp.GetRequiredService<ISolarPositionService>(),
+            sp.GetRequiredService<ILocationService>()));
+
+        // Echte Anker-Cloud-/MQTT-Anbindung (plattformneutral via MQTTnet). Factory-Override bleibt möglich.
         services.AddSingleton<IAnkerMonitorService>(sp =>
             AnkerMonitorServiceFactory != null
                 ? AnkerMonitorServiceFactory(sp)
-                : new MockAnkerMonitorService(
-                    sp.GetRequiredService<ISolarPositionService>(),
-                    sp.GetRequiredService<ILocationService>()));
+                : new AnkerMonitorService(
+                    sp.GetRequiredService<IPreferencesService>(),
+                    sp.GetRequiredService<MockAnkerMonitorService>()));
 
         // Plattformneutrale Kern-Engine (reine Berechnung, testbar).
         services.AddSingleton<ISolarPositionService, SolarPositionService>();

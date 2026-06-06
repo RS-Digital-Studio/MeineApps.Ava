@@ -9,7 +9,7 @@ ViewModel-First, Constructor Injection, `CommunityToolkit.Mvvm` (`[ObservablePro
 |-----------|-------|
 | `MainViewModel` | Navigator: hält die 3 Tab-VMs, `IsAlignActive`/`IsPowerActive`/`IsDashboardActive` + `Show*`-Commands. Ruft bei Tab-Wechsel `Activate()`/`Deactivate()` der sensor-/monitor-gebundenen Tabs (Akku sparen). Default-Tab: Ausrichten. |
 | `AlignViewModel` | Live-Ausrichtung: liest `IHeadingService` (Azimut/Neigung), berechnet AOI + Soll-Abweichung, gibt Dreh-/Neigungs-Anweisungen. Hält `SunCompassRenderer`. `IDisposable`. |
-| `LivePowerViewModel` | Live-Watt + Trend + Tagesertrag (Wh-Integration) + Spitze. Hält `PowerChartRenderer`. `IDisposable`. |
+| `LivePowerViewModel` | Live-Watt + Trend + Tagesertrag (Wh-Integration) + Spitze. Hält `PowerChartRenderer`. `IDisposable`. Plus Anker-Zugangsdaten-Eingabe (E-Mail/Passwort/Land) + `Connect`/`Forget`/`ToggleSettings`-Commands; speichert via `AnkerCredentialStore` und triggert Reconnect (echte Anbindung → [Services/Anker](../Services/Anker/CLAUDE.md)). |
 | `DashboardViewModel` | Übersicht: Standort, Sonnenstand, Sonnenbahn (`SunPathRenderer`), Sonnenzeiten, Empfehlung, Bifazial. App-langer Timer. |
 
 `GoalOption`/`GroundOption` (Records) leben in `DashboardViewModel.cs` — Enum + lokalisiertes Label.

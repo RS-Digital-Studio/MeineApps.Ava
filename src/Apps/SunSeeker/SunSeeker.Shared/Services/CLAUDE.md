@@ -25,7 +25,11 @@ Lokalisierungs-**Keys** (z.B. `BifacialTipDarkGround`). So bleibt sie testbar + 
 |-----------|----------------|------------------------------------------|
 | `ILocationService` | `MockLocationService` | `AndroidLocationService` (`LocationManager`) |
 | `IHeadingService` | `MockHeadingService` | `AndroidHeadingService` (`SensorManager`) |
-| `IAnkerMonitorService` | `MockAnkerMonitorService` (Watt aus Sonnenstand) | — (echte Cloud-MQTT-Anbindung offen) |
+| `IAnkerMonitorService` | `MockAnkerMonitorService` (Watt aus Sonnenstand) | `AnkerMonitorService` (echte Cloud + MQTT, plattformneutral) → [Anker/CLAUDE.md](Anker/CLAUDE.md) |
+
+`AnkerMonitorService` (in `Anker/`) ist die produktive Live-Watt-Anbindung der C2000 Gen 2; ohne
+hinterlegte Zugangsdaten fällt sie auf den `MockAnkerMonitorService` als Demo zurück. Details +
+Gotchas (Google-OAuth-Passwort, a6-TLV, mTLS) → [Anker/CLAUDE.md](Anker/CLAUDE.md).
 
 `IHeadingService.SetLocation` wird vom `AlignViewModel` bei Standortänderung aufgerufen (Missweisung).
 

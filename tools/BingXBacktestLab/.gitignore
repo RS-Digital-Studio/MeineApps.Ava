@@ -4,4 +4,7 @@
 reports/
 bin/
 obj/
-tools/BingXBacktestLab/pi-live-settings.json
+# Pi-Live-Config-Snapshots (enthalten echte Balance) + abgeleitete Test-Varianten — NIE einchecken.
+# Pfad ist relativ zu DIESER .gitignore (Tool-Ordner), daher ohne tools/BingXBacktestLab/-Praefix.
+pi-live-settings.json
+pilive-*.json

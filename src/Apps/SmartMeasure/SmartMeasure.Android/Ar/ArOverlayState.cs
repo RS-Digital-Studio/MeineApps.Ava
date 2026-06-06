@@ -9,6 +9,7 @@ namespace SmartMeasure.Android.Ar;
 public sealed record ArOverlayLabels(
     string Points,
     string Area,
+    string Planes,
     string Length,
     string HeightDelta,
     string Anchors,
@@ -27,6 +28,7 @@ public sealed record ArOverlayLabels(
     public static ArOverlayLabels GermanDefaults { get; } = new(
         Points: "PUNKTE",
         Area: "FLÄCHE",
+        Planes: "FLÄCHEN",
         Length: "LÄNGE",
         HeightDelta: "ΔH",
         Anchors: "ANKER",

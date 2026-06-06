@@ -425,6 +425,9 @@
   <data name="ArStatArea" xml:space="preserve">
     <value>SURFACE</value>
   </data>
+  <data name="ArStatPlanes" xml:space="preserve">
+    <value>PLANS</value>
+  </data>
   <data name="ArStatLength" xml:space="preserve">
     <value>LONGUEUR</value>
   </data>

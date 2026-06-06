@@ -206,6 +206,7 @@ namespace SmartMeasure.Shared.Resources.Strings {
         // AR-Capture Stats-Panel + Tracking-Reasons (Plan-Kap. 4.11)
         public static string ArStatPoints => ResourceManager.GetString("ArStatPoints", resourceCulture) ?? "";
         public static string ArStatArea => ResourceManager.GetString("ArStatArea", resourceCulture) ?? "";
+        public static string ArStatPlanes => ResourceManager.GetString("ArStatPlanes", resourceCulture) ?? "";
         public static string ArStatLength => ResourceManager.GetString("ArStatLength", resourceCulture) ?? "";
         public static string ArStatHeightDelta => ResourceManager.GetString("ArStatHeightDelta", resourceCulture) ?? "";
         public static string ArStatAnchors => ResourceManager.GetString("ArStatAnchors", resourceCulture) ?? "";

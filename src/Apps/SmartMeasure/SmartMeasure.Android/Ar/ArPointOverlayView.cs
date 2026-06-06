@@ -1757,9 +1757,9 @@ public sealed partial class ArPointOverlayView : View
         }
         else
         {
-            // "Flächen" — deutsch, konsistent mit dem Readiness-Dialog ("Erkannte Flächen"),
-            // verständlicher als "PLANES" für die AR-First-Laien-Zielgruppe.
-            canvas.DrawText("FLÄCHEN", x, y, _statsLabelPaint);
+            // Anzahl erkannter Planes — lokalisiert (DE "FLÄCHEN"), konsistent mit den übrigen
+            // Stats-Zeilen, die ebenfalls aus dem Labels-Snapshot kommen.
+            canvas.DrawText(labels.Planes, x, y, _statsLabelPaint);
             canvas.DrawText(_state.DetectedPlaneCount.ToString(),
                 x + 50 * _density, y, _statsTextPaint);
         }

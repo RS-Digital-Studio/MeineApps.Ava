@@ -5486,6 +5486,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         return new ArOverlayLabels(
             Points: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatPoints,
             Area: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatArea,
+            Planes: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatPlanes,
             Length: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatLength,
             HeightDelta: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatHeightDelta,
             Anchors: SmartMeasure.Shared.Resources.Strings.AppStrings.ArStatAnchors,

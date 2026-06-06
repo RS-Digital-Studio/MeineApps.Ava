@@ -32,6 +32,7 @@ var allApps = new AppDef[]
     new("BingXBot", "com.rsdigital.bingxbot", false),
     new("GardenControl", "com.rsdigital.gardencontrol", false),
     new("SmartMeasure", "com.rsdigital.smartmeasure", false),
+    new("SunSeeker", "com.rsdigital.sunseeker", false),
 };
 
 IChecker[] checkers =

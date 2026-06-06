@@ -41,20 +41,28 @@ class VmWiringChecker : IChecker
         else
             results.Add(new(Severity.Info, Category, "Kein SelectedTab Property (evtl. Screen-basiert)"));
 
-        // Navigations-Commands: Navigate(string)/NavigateTo/GoTo/SelectTab sind alle gaengige Muster
-        // (GardenControl/SmartMeasure nutzen [RelayCommand] private void Navigate(string page)).
-        if (Regex.IsMatch(content, @"\[RelayCommand\]") && Regex.IsMatch(content, @"void\s+(Navigate\w*|GoTo\w*|Select\w*Tab\w*)\s*\("))
+        // Navigations-Commands: Navigate(string)/NavigateTo/GoTo/SelectTab/Show* sind alle gaengige Muster
+        // (GardenControl/SmartMeasure nutzen [RelayCommand] private void Navigate(string page);
+        // SunSeeker nutzt [RelayCommand] private void ShowXxx() + IsXxxActive-Tab-Pattern).
+        if (Regex.IsMatch(content, @"\[RelayCommand\]") && Regex.IsMatch(content, @"void\s+(Navigate\w*|GoTo\w*|Select\w*Tab\w*|Show\w*)\s*\("))
             results.Add(new(Severity.Pass, Category, "Navigate/NavigateTo/SelectTab Commands vorhanden"));
         else if (Regex.IsMatch(content, @"\b(Navigate\w*|GoTo\w*)\s*\("))
             results.Add(new(Severity.Pass, Category, "Navigate/NavigateTo Methode vorhanden"));
         else
             results.Add(new(Severity.Warn, Category, "Keine Navigate/NavigateTo/SelectTab Commands gefunden"));
 
-        // LanguageChanged
+        // LanguageChanged: nur relevant, wenn die App zur Laufzeit die Sprache wechseln kann
+        // (SetLanguage-Aufruf irgendwo im Shared-Code). Apps ohne Sprachumschalter nutzen die
+        // Geraetesprache (einmalig beim Start) — dann waere eine Subscription toter Code (z.B. SunSeeker).
         if (Regex.IsMatch(content, @"LanguageChanged\s*\+="))
             results.Add(new(Severity.Pass, Category, "LanguageChanged Event abonniert"));
         else
-            results.Add(new(Severity.Warn, Category, "LanguageChanged Event nicht abonniert"));
+        {
+            bool hasRuntimeSwitch = ctx.SharedCsFiles.Any(f => Regex.IsMatch(f.Content, @"\.SetLanguage\s*\("));
+            results.Add(hasRuntimeSwitch
+                ? new(Severity.Warn, Category, "LanguageChanged Event nicht abonniert (App hat Laufzeit-Sprachumschaltung via SetLanguage)")
+                : new(Severity.Info, Category, "Keine LanguageChanged-Subscription noetig (Geraetesprache, kein Laufzeit-Sprachumschalter)"));
+        }
 
         // UpdateLocalizedTexts Cross-Check
         CheckUpdateLocalizedTexts(results, ctx, content);

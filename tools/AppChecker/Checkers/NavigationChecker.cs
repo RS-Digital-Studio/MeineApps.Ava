@@ -25,8 +25,8 @@ class NavigationChecker : IChecker
 
         var viewContent = mainView.Content;
 
-        // Tab-Buttons mit Command Binding
-        var tabCommandMatches = Regex.Matches(viewContent, @"Command=""\{Binding\s+\w*(Navigate|Select)\w*Command\}""");
+        // Tab-Buttons mit Command Binding (Navigate/Select/Show — SunSeeker: ShowAlignCommand etc.)
+        var tabCommandMatches = Regex.Matches(viewContent, @"Command=""\{Binding\s+\w*(Navigate|Select|Show)\w*Command\}""");
         var tabButtonCount = tabCommandMatches.Count;
 
         if (tabButtonCount > 0)

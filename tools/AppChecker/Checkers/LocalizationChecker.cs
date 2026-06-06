@@ -54,18 +54,19 @@ class LocalizationChecker : IChecker
             .OrderBy(t => t.Lang)
             .ToList();
 
-        // Designer.cs
+        // ResourceManager-Accessor: entweder generiertes AppStrings.Designer.cs (typed Properties)
+        // ODER ein schlankes hand-gepflegtes AppStrings.cs (nur ResourceManager, key-basierte
+        // Lokalisierung via ILocalizationService.GetString/{loc:Translate} — z.B. SunSeeker).
         var designerCs = Path.Combine(stringsDir, "AppStrings.Designer.cs");
-        if (File.Exists(designerCs))
-        {
-            var fileInfo = new FileInfo(designerCs);
-            if (fileInfo.Length > 100)
-                results.Add(new(Severity.Pass, Category, "AppStrings.Designer.cs vorhanden und nicht leer"));
-            else
-                results.Add(new(Severity.Warn, Category, "AppStrings.Designer.cs ist fast leer"));
-        }
+        var appStringsCs = Path.Combine(stringsDir, "AppStrings.cs");
+        if (File.Exists(designerCs) && new FileInfo(designerCs).Length > 100)
+            results.Add(new(Severity.Pass, Category, "AppStrings.Designer.cs vorhanden und nicht leer"));
+        else if (File.Exists(appStringsCs) && File.ReadAllText(appStringsCs).Contains("ResourceManager"))
+            results.Add(new(Severity.Pass, Category, "AppStrings.cs (ResourceManager-Accessor, key-basierte Lokalisierung) vorhanden"));
+        else if (File.Exists(designerCs))
+            results.Add(new(Severity.Warn, Category, "AppStrings.Designer.cs ist fast leer"));
         else
-            results.Add(new(Severity.Warn, Category, "AppStrings.Designer.cs fehlt (wird beim Build generiert)"));
+            results.Add(new(Severity.Warn, Category, "AppStrings.Designer.cs / AppStrings.cs fehlt (ResourceManager-Accessor)"));
 
         // Key-Vergleich
         var baseKeys = ResxHelpers.ExtractResxKeys(baseResx);

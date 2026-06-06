@@ -206,10 +206,14 @@ public partial class SurveyViewModel : ViewModelBase
                 return;
             }
 
-            // Plan-Kap. 5.2: Bestehende Projekt-Punkte als Site-Marker in die AR-Session
-            // mitnehmen — neue Erfassungen landen dann im selben Koordinatensystem.
+            // Bestehende Projekt-Punkte in die AR-Session mitnehmen — als graue Earth-Site-Marker
+            // (Plan-Kap. 5.2, nur bei aktivem VPS sichtbar) UND als Geo-unabhaengige Vorlade-Punkte
+            // ("alles noch da", Lage relativ — sichtbar auch im reinen AR-Modus). Beide aus
+            // derselben Quelle; Vorlade-Punkte gehen nicht ins Ergebnis zurueck.
             var sitePoints = _measurementService.CurrentPoints;
-            _arCaptureService.SetSitePoints(sitePoints.Count > 0 ? [.. sitePoints] : null);
+            IReadOnlyList<SurveyPoint>? snapshot = sitePoints.Count > 0 ? [.. sitePoints] : null;
+            _arCaptureService.SetSitePoints(snapshot);
+            _arCaptureService.SetPreloadPoints(snapshot);
 
             ArStatusText = "AR-Kamera aktiv...";
             ArCaptureResult? result;
@@ -219,9 +223,9 @@ public partial class SurveyViewModel : ViewModelBase
             }
             finally
             {
-                // Site-Points-Bruecke zuruecksetzen — naechster Aufruf soll keine veralteten
-                // Punkte erben.
+                // Bruecken zuruecksetzen — naechster Aufruf soll keine veralteten Punkte erben.
                 _arCaptureService.SetSitePoints(null);
+                _arCaptureService.SetPreloadPoints(null);
             }
 
             if (result != null && result.TotalPointCount > 0)

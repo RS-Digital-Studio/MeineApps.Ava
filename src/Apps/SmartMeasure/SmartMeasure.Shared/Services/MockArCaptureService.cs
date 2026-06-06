@@ -41,6 +41,9 @@ public class MockArCaptureService : IArCaptureService
     /// <summary>Mock hat keine Earth-Anchors — Site-Points werden ignoriert. Plan Kap. 5.2.</summary>
     public void SetSitePoints(IReadOnlyList<SurveyPoint>? points) { /* no-op */ }
 
+    /// <summary>Mock hat keine AR-Session — Vorlade-Punkte werden ignoriert.</summary>
+    public void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points) { /* no-op */ }
+
     /// <summary>Mock hat keine ARCore-Augmented-Images — Marker werden ignoriert. Plan Kap. 5.7.</summary>
     public void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers) { /* no-op */ }
 

@@ -118,6 +118,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_sitePointsLock) _pendingSitePoints = points;
     }
 
+    /// <summary>Statische Bruecke fuer VORLADE-Punkte: bestehende Projekt-Punkte werden beim
+    /// Session-Start als aktive, sichtbare (aber relativ platzierte, "Lage relativ") Punkte in
+    /// <see cref="_points"/> geladen — damit "alles noch da" ist, auch ohne Geo/VPS. Sie gehen
+    /// NICHT ins ArCaptureResult zurueck (Korruptions-/Duplikat-Schutz).</summary>
+    private static readonly object _preloadPointsLock = new();
+    private static IReadOnlyList<SurveyPoint>? _pendingPreloadPoints;
+    public static void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points)
+    {
+        lock (_preloadPointsLock) _pendingPreloadPoints = points;
+    }
+
     /// <summary>Plan-Kap. 5.7: Statische Bruecke fuer Referenz-Marker. Augmented-Images-
     /// Datenbank wird beim Activity-Start aus dieser Liste aufgebaut.</summary>
     private static readonly object _markerLock = new();
@@ -133,6 +144,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Site-Points dieser Session (Snapshot zu OnCreate). Werden NICHT ins
     /// ArCaptureResult zurueckgegeben — reine Visualisierungs-Layer.</summary>
     private IReadOnlyList<SurveyPoint>? _sitePoints;
+
+    /// <summary>Vorlade-Punkte dieser Session (Snapshot zu OnCreate). Werden in
+    /// <see cref="LoadPreloadPoints"/> relativ in <see cref="_points"/> geladen.</summary>
+    private IReadOnlyList<SurveyPoint>? _preloadPoints;
+
+    /// <summary>Anzahl der zu Session-Beginn vorgeladenen Punkte (am Anfang von
+    /// <see cref="_points"/>). Die Wahrheit fuer den Korruptions-Schutz ist aber das Flag
+    /// <see cref="ArPoint.IsPreloaded"/> (index-unabhaengig); diese Zahl dient nur als
+    /// Konsistenz-Pruefung/Diagnose.</summary>
+    private int _preloadedPointCount;
 
     /// <summary>Bereits via Earth-Anchor instanzierte Site-Punkte als ArPoint-Marker.
     /// Werden im OnDrawFrame iterativ angelegt (max 2 pro Frame) sobald
@@ -465,6 +486,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_stakeoutTargetsLock) _stakeoutTargets = _pendingStakeoutTargets;
         // Site-Points aus statischer Bruecke uebernehmen (Plan-Kap. 5.2).
         lock (_sitePointsLock) _sitePoints = _pendingSitePoints;
+        // Vorlade-Punkte aus statischer Bruecke uebernehmen (Geo-unabhaengiges "alles noch da").
+        lock (_preloadPointsLock) _preloadPoints = _pendingPreloadPoints;
         // Referenz-Marker aus statischer Bruecke uebernehmen (Plan-Kap. 5.7).
         lock (_markerLock) _referenceMarkers = _pendingMarkers;
         if (_referenceMarkers != null)
@@ -490,6 +513,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             CaptureGpsPosition();
         }
         CaptureSensorData();
+
+        // Bestehende Projekt-Punkte als sichtbare Vorlade-Punkte laden (Geo-unabhaengig, Lage
+        // relativ) — VOR der Recovery, damit der Preload-Block am Listenanfang konsistent bleibt.
+        LoadPreloadPoints();
 
         // Session-Recovery: Falls vorhandene temp-Daten aus abgestürzter Session → wiederherstellen
         TryRestoreRecoveryState();
@@ -990,7 +1017,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // Eine halb gesetzte Rechteck-Basiskante ist unfertig → verwerfen (analog SetMode).
             _rectangleCorners.Clear();
 
-            pointsCopy = new List<ArPoint>(_points);
+            // KORRUPTIONS-/DUPLIKAT-SCHUTZ: Vorgeladene Projekt-Punkte (IsPreloaded) gehen NIE ins
+            // Result. Sonst wuerden sie in ArTransferService.TransferToProjectAsync via AddPoint
+            // dupliziert UND ihre Original-Geo in der neuen (anders verankerten) Session neu/falsch
+            // berechnet. Das Flag ist die index-unabhaengige Wahrheit (Undo/Delete verschiebt Indizes).
+            pointsCopy = _points.Where(p => !p.IsPreloaded).ToList();
             contoursCopy = new List<ArContour>(_contours);
         }
 
@@ -1065,6 +1096,68 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         SetResult(Result.Ok, new Intent());
         Finish();
+    }
+
+    /// <summary>Laedt die bestehenden Projekt-Punkte (<see cref="_preloadPoints"/>) als sichtbare,
+    /// aktive Punkte in <see cref="_points"/> — relativ zum Schwerpunkt platziert (Form erhalten),
+    /// GEO-UNABHAENGIG. Jede ARCore-Session hat ein eigenes Koordinatensystem, daher ist die
+    /// absolute Lage zwangslaeufig relativ; die Punkte werden als <see cref="ArPoint.IsPreloaded"/>
+    /// markiert (gedaempft gezeichnet, nicht undobar) und gehen NICHT ins ArCaptureResult zurueck.
+    /// So bleibt "alles noch da", ohne Duplikate oder Geo-Korruption im Projekt.</summary>
+    private void LoadPreloadPoints()
+    {
+        var src = _preloadPoints;
+        if (src == null || src.Count == 0) return;
+
+        // Nur Punkte mit gueltiger Geo-Position koennen relativ platziert werden.
+        var valid = new List<SurveyPoint>(src.Count);
+        foreach (var sp in src)
+            if (sp.Latitude is > -90 and < 90 && sp.Longitude is > -180 and < 180
+                && (sp.Latitude != 0 || sp.Longitude != 0))
+                valid.Add(sp);
+        if (valid.Count == 0) return;
+
+        ICoordinateService? coord = null;
+        try { coord = App.Services?.GetService<ICoordinateService>(); }
+        catch { /* Mock-Pfad ohne DI: harmlos */ }
+        if (coord == null) return;
+
+        // Schwerpunkt als lokaler Ursprung — das Cluster erscheint um die Kamera-Startposition.
+        var refLat = valid.Average(p => p.Latitude);
+        var refLon = valid.Average(p => p.Longitude);
+        var refAlt = valid.Average(p => p.Altitude);
+
+        var loaded = new List<ArPoint>(valid.Count);
+        foreach (var sp in valid)
+        {
+            var (east, north, up) = coord.LatLonToLocal(
+                sp.Latitude, sp.Longitude, sp.Altitude, refLat, refLon, refAlt);
+            // ARCore: +X = Ost, +Z = hinten (-Z = Nord), +Y = oben → Form bleibt erhalten.
+            loaded.Add(new ArPoint
+            {
+                X = (float)east,
+                Y = (float)up,
+                Z = (float)(-north),
+                Confidence = sp.Confidence,
+                HitQuality = 3,
+                Label = sp.Label,
+                Timestamp = sp.Timestamp,
+                IsPreloaded = true,
+                // Original-Geo bewusst NICHT setzen: Preload-Punkte gehen nie in den Transfer,
+                // und gesetzte Geo wuerde sie faelschlich in die Earth-Anchor-Site-Marker-Logik ziehen.
+            });
+        }
+
+        lock (_dataLock)
+        {
+            _points.InsertRange(0, loaded);
+            _preloadedPointCount = loaded.Count;
+        }
+
+        UpdateCounter();
+        ShowTransientHint(
+            $"{loaded.Count} {PointsWord(loaded.Count)} aus Projekt geladen — Lage relativ, zum genauen Weitermessen neu referenzieren",
+            TransientSeverity.Info);
     }
 
     /// <summary>
@@ -1285,12 +1378,18 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _selectedContourPointIdx = -1;
         _isContourPointSelected = false;
 
-        // Einzelpunkte durchsuchen
+        // Einzelpunkte durchsuchen. Vorgeladene Punkte ("Lage relativ", nur Orientierung) sind
+        // NICHT selektierbar — also nicht verschiebbar/loeschbar. Sonst koennte der Nutzer die
+        // Orientierungs-Referenz zerstoeren und _preloadedPointCount/Undo-Stack inkonsistent machen.
+        // Lock-Reihenfolge _projectedPoints → _dataLock ist konsistent (kein anderer Pfad nestet
+        // _dataLock → _projectedPoints).
         lock (_projectedPoints)
+        lock (_dataLock)
         {
             for (var i = 0; i < _projectedPoints.Count; i++)
             {
-                var (px, py, _, _, _, _, _) = _projectedPoints[i];
+                var (px, py, ptIdx, _, _, _, _) = _projectedPoints[i];
+                if (ptIdx >= 0 && ptIdx < _points.Count && _points[ptIdx].IsPreloaded) continue;
                 var dx = screenX - px;
                 var dy = screenY - py;
                 var dist = dx * dx + dy * dy;
@@ -3735,7 +3834,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_dataLock)
         {
             // Snapshots — Snap-Engine darf nicht auf Listen iterieren die parallel mutiert werden.
-            existing = new List<ArPoint>(_points);
+            // KORREKTHEIT: Vorgeladene Punkte (IsPreloaded) liegen in einem RELATIVEN
+            // Koordinatensystem (anderer Ursprung als die neue ARCore-Session). Sie duerfen NICHT
+            // als Snap-Ziel dienen — sonst snappt eine echte neue Messung auf eine Geister-Position
+            // und ihre gespeicherten X/Y/Z werden korrupt.
+            existing = new List<ArPoint>(_points.Count);
+            foreach (var p in _points) if (!p.IsPreloaded) existing.Add(p);
             foreach (var c in _contours) existing.AddRange(c.Points);
             if (_activeContour != null)
             {
@@ -4066,17 +4170,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
             // Auto-Finish: nur 1x feuern, nur wenn Session noch laeuft und tatsaechlich
             // Daten erfasst wurden (leere Session zu speichern ist sinnlos).
-            if (level > 0 && level < 5
-                && System.Threading.Interlocked.CompareExchange(ref _batteryAutoFinishFired, 1, 0) == 0
-                && _finished == 0)
+            if (level > 0 && level < 5 && _finished == 0)
             {
+                // Nur ECHTE Mess-Daten zaehlen — vorgeladene Punkte (IsPreloaded) sind reine
+                // Orientierung und gehen ohnehin nicht ins Result. Sonst feuert der Auto-Finish
+                // auf einer faktisch leeren Session ("alle Punkte gesichert", obwohl nichts geht).
                 var hasData = false;
                 lock (_dataLock)
-                    hasData = _points.Count > 0
+                {
+                    foreach (var p in _points) if (!p.IsPreloaded) { hasData = true; break; }
+                    hasData = hasData
                         || _contours.Count > 0
                         || (_activeContour?.Points.Count ?? 0) > 0;
+                }
 
-                if (hasData)
+                // Flag erst setzen, wenn wirklich gefeuert wird — sonst brennt eine reine
+                // Preload-Session den Auto-Finish-Trigger fuer spaetere echte Messungen ab.
+                if (hasData
+                    && System.Threading.Interlocked.CompareExchange(ref _batteryAutoFinishFired, 1, 0) == 0)
                 {
                     RunOnUiThread(() =>
                     {
@@ -4555,12 +4666,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var world = (pose.Tx(), pose.Ty(), pose.Tz());
 
         // Höhe relativ zum ersten Punkt (Session-Referenz; das Live-Segment-ΔH zum LETZTEN
-        // Punkt wird separat in BuildOverlayState berechnet).
+        // Punkt wird separat in BuildOverlayState berechnet). Vorgeladene Punkte liegen in einem
+        // RELATIVEN Koordinatensystem (anderer Schwerpunkt-Ursprung) → als Referenz ungeeignet,
+        // sonst wird ΔH bedeutungslos. Daher ersten NICHT-vorgeladenen Punkt als Referenz nehmen.
         float? heightDelta = null;
         lock (_dataLock)
         {
-            if (_points.Count > 0)
-                heightDelta = pose.Ty() - _points[0].Y;
+            ArPoint? sessionRef = null;
+            foreach (var p in _points) { if (!p.IsPreloaded) { sessionRef = p; break; } }
+            if (sessionRef != null)
+                heightDelta = pose.Ty() - sessionRef.Y;
             else if (_contours.Count > 0 && _contours[0].Points.Count > 0)
                 heightDelta = pose.Ty() - _contours[0].Points[0].Y;
         }
@@ -4629,7 +4744,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         lock (_dataLock)
         {
-            chipPointCount = _points.Count;
+            // Nur in DIESER Session gesetzte Punkte zaehlen — vorgeladene (IsPreloaded) sind
+            // Orientierung, keine neue Messung.
+            foreach (var p in _points) if (!p.IsPreloaded) chipPointCount++;
             chipActiveContourCount = _activeContour?.Points.Count ?? 0;
             chipTapeCount = _tapeMeasurePoints.Count;
 
@@ -4690,8 +4807,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             ArPoint? lastPlaced = null;
             if (_captureMode == CaptureMode.Contour && _activeContour is { Points.Count: > 0 })
                 lastPlaced = _activeContour.Points[^1];
-            else if (_captureMode == CaptureMode.Point && _points.Count > 0)
-                lastPlaced = _points[^1];
+            else if (_captureMode == CaptureMode.Point)
+            {
+                // Letzten in DIESER Session gesetzten Punkt suchen — vorgeladene Punkte (am
+                // Listenanfang, relatives Koordinatensystem) duerfen kein Live-Segment spannen,
+                // sonst zeigt das "Gummiband" eine bedeutungslose Distanz/ΔH ueber gemischte Systeme.
+                for (var i = _points.Count - 1; i >= 0; i--)
+                    if (!_points[i].IsPreloaded) { lastPlaced = _points[i]; break; }
+            }
 
             if (lastPlaced != null && _reticleWorld is { } rw && _reticleHitQuality != ArHitQuality.None)
             {
@@ -4779,7 +4902,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 float minY = float.MaxValue, maxY = float.MinValue;
                 var n = 0;
-                foreach (var p in _points) { if (p.Y < minY) minY = p.Y; if (p.Y > maxY) maxY = p.Y; n++; }
+                // Vorgeladene Punkte liegen in relativer Hoehe (anderes System) → nicht mischen.
+                foreach (var p in _points) { if (p.IsPreloaded) continue; if (p.Y < minY) minY = p.Y; if (p.Y > maxY) maxY = p.Y; n++; }
                 foreach (var c in _contours)
                     foreach (var p in c.Points) { if (p.Y < minY) minY = p.Y; if (p.Y > maxY) maxY = p.Y; n++; }
                 if (_activeContour != null)

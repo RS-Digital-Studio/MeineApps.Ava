@@ -106,6 +106,14 @@ public class ArPoint
     /// <summary>Zeitpunkt der Erfassung (UTC)</summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
+    /// <summary>True bei Punkten, die zu Session-Beginn aus dem bestehenden Projekt VORGELADEN
+    /// wurden (Orientierung "alles noch da"). Sie sind relativ platziert (keine gueltige
+    /// Verankerung in der neuen ARCore-Session → Lage relativ), werden optisch gedaempft
+    /// gezeichnet, sind NICHT undobar und gehen beim FinishCapture NICHT ins
+    /// <see cref="ArCaptureResult"/> zurueck — so entstehen keine Duplikate und die
+    /// Original-Geo-Koordinaten im Projekt bleiben unberuehrt.</summary>
+    public bool IsPreloaded { get; set; }
+
     /// <summary>Euklidischer Abstand zu einem anderen Punkt in Metern</summary>
     public float DistanceTo(ArPoint other)
     {

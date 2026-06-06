@@ -813,6 +813,12 @@ public sealed partial class ArPointOverlayView : View
         var nowUtc = DateTime.UtcNow;
         var anyAnimating = false;
 
+        // Session-Referenzhöhe für das ΔH am Stab-Kopf: erster NICHT-vorgeladener Punkt.
+        // Vorgeladene Punkte liegen in einem relativen Koordinatensystem (anderer Ursprung) und
+        // taugen nicht als Höhenreferenz — sonst zeigt jeder Mess-Punkt ein bedeutungsloses ΔH.
+        float? sessionRefY = null;
+        foreach (var p in _points) { if (!p.IsPreloaded) { sessionRefY = p.Y; break; } }
+
         // Painter-Algorithmus: ferne Punkte zuerst, damit nahe Marker + Stäbe sie überdecken.
         // 3D-Tiefenwirkung entsteht erst durch korrekte Zeichenreihenfolge.
         _pointDrawOrder.Clear();
@@ -835,6 +841,15 @@ public sealed partial class ArPointOverlayView : View
                 stdDev = _points[idx].PositionStdDev;
                 timestamp = _points[idx].Timestamp;
             }
+
+            // Vorgeladene Projekt-Punkte ("Lage relativ") gedämpft zeichnen — ohne Confidence-
+            // Ampel, Bodenschatten, Höhen-Stab oder Pop-Animation (die suggerieren Verankerung).
+            if (idx < _points.Count && _points[idx].IsPreloaded)
+            {
+                DrawPreloadMarker(canvas, sx, sy, idx, depthScale, pointRadius);
+                continue;
+            }
+
             // Confidence-Ampel ersetzt das kryptische ~/?-HitQuality-Zeichen: grün/gelb/rot
             // direkt als Marker-Outline-Ring (siehe unten).
             var confColor = confidence >= 0.7f ? C.Good : confidence >= 0.45f ? C.Medium : C.Poor;
@@ -892,11 +907,11 @@ public sealed partial class ArPointOverlayView : View
             if (effectiveR >= 7f * _density)
                 canvas.DrawText(MarkerNumber(idx), sx, sy + 3.5f * _density, _markerNumPaint);
 
-            // Höhen-Delta am Stab-Kopf (relativ zum ersten Punkt) — die wichtigste 3D-Info,
-            // immer sichtbar (nicht nur bei Auswahl), aber bei winzigen fernen Markern gespart.
-            if (idx > 0 && idx < _points.Count && effectiveR >= 6f * _density)
+            // Höhen-Delta am Stab-Kopf (relativ zum ersten Mess-Punkt der Session) — die wichtigste
+            // 3D-Info, immer sichtbar (nicht nur bei Auswahl), aber bei winzigen fernen Markern gespart.
+            if (sessionRefY is { } refY && idx < _points.Count && effectiveR >= 6f * _density)
             {
-                var dh = _points[idx].Y - _points[0].Y;
+                var dh = _points[idx].Y - refY;
                 if (MathF.Abs(dh) >= 0.02f)
                 {
                     var text = dh > 0 ? $"+{dh:0.00} m" : $"−{MathF.Abs(dh):0.00} m";
@@ -941,6 +956,43 @@ public sealed partial class ArPointOverlayView : View
             _markerNumberCache = grown;
         }
         return _markerNumberCache[idx] ??= (idx + 1).ToString();
+    }
+
+    /// <summary>Anzahl der in DIESER Session gemessenen Punkte (ohne vorgeladene) plus aller
+    /// Kontur-Punkte — für Footer/Stats. Vorgeladene Punkte ("Lage relativ") sind reine
+    /// Orientierung und zaehlen nicht als neue Messung. Alloc-frei (kein LINQ).</summary>
+    private int CountMeasuredPoints()
+    {
+        var n = 0;
+        foreach (var p in _points) if (!p.IsPreloaded) n++;
+        foreach (var c in _contours) n += c.Points.Count;
+        return n;
+    }
+
+    /// <summary>Zeichnet einen vorgeladenen Projekt-Punkt gedämpft: gestrichelter Neutral-Ring +
+    /// dezenter Kern + Nummer. Bewusst ohne Confidence-Ampel, Bodenschatten und Höhen-Stab — diese
+    /// "Lage relativ"-Punkte sind in der neuen Session nicht verankert, die Darstellung darf keine
+    /// Präzision/Verankerung vortäuschen.</summary>
+    private void DrawPreloadMarker(Canvas canvas, float sx, float sy, int idx, float depthScale, float pointRadius)
+    {
+        var r = pointRadius * 0.8f * depthScale;
+
+        // Dezenter Kern (gedämpftes Neutral) + gestrichelter Ring drumherum.
+        var origFill = _pointPaint.Color;
+        _pointPaint.Color = WithAlpha(C.Neutral, 90);
+        canvas.DrawCircle(sx, sy, r * 0.4f, _pointPaint);
+        _pointPaint.Color = origFill;
+
+        canvas.DrawCircle(sx, sy, r, _preloadRingPaint);
+
+        // Punkt-Nummer dezent (bei genug Größe).
+        if (r >= 7f * _density)
+        {
+            var origNum = _markerNumPaint.Color;
+            _markerNumPaint.Color = WithAlpha(C.TextSecondary, 175);
+            canvas.DrawText(MarkerNumber(idx), sx, sy + 3.5f * _density, _markerNumPaint);
+            _markerNumPaint.Color = origNum;
+        }
     }
 
     /// <summary>Plan-Kap. 5.9: Stakeout-Overlay — grosser Richtungs-Pfeil (relativ zur
@@ -1409,6 +1461,9 @@ public sealed partial class ArPointOverlayView : View
 
             var pa = _points[prev.pointIndex];
             var pb = _points[curr.pointIndex];
+            // Vorgeladene Punkte liegen in einem relativen Koordinatensystem — Distanzen zu/zwischen
+            // ihnen waeren bedeutungslos (gemischte Systeme). Keine Mess-Pille zeichnen.
+            if (pa.IsPreloaded || pb.IsPreloaded) continue;
             var midX = (curr.screenX + prev.screenX) / 2f;
             var midY = (curr.screenY + prev.screenY) / 2f;
             DrawSegmentPill(canvas, midX, midY, pa.Distance2DTo(pb), pb.Y - pa.Y);
@@ -1717,7 +1772,7 @@ public sealed partial class ArPointOverlayView : View
             : $"{seconds}s";
 
         // Nur zeigen wenn es was zu zeigen gibt
-        var pointCount = _points.Count + _contours.Sum(c => c.Points.Count);
+        var pointCount = CountMeasuredPoints();
         if (pointCount == 0 && _state.DetectedPlaneCount == 0) return;
 
         var panelW = 150 * _density;
@@ -1899,7 +1954,7 @@ public sealed partial class ArPointOverlayView : View
         }
 
         // Nur zeigen wenn überhaupt etwas zu zeigen ist
-        var pointCount = _points.Count + _contours.Sum(c => c.Points.Count);
+        var pointCount = CountMeasuredPoints();
         if (_state.IsTracking && pointCount == 0) return;
 
         var toolbarOffset = 80 * _density + _state.BottomInsetPixels;

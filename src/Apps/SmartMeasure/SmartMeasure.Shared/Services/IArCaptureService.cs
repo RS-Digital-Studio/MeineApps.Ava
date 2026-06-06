@@ -49,6 +49,14 @@ public interface IArCaptureService
     /// gehen NICHT ins ArCaptureResult zurueck.</summary>
     void SetSitePoints(IReadOnlyList<SurveyPoint>? points);
 
+    /// <summary>Laedt bestehende Projekt-Punkte als sichtbare VORLADE-Punkte in die AR-Session,
+    /// damit beim erneuten Start "alles noch da" ist. Anders als <see cref="SetSitePoints"/>
+    /// (graue Earth-Marker, nur bei aktivem VPS) werden sie GEO-UNABHAENGIG relativ platziert
+    /// (Form erhalten) und klar als "Lage relativ" gekennzeichnet — der Geo-unabhaengige Pfad
+    /// fuer den reinen AR-Modus. Sie gehen bewusst NICHT ins ArCaptureResult zurueck (kein
+    /// Duplikat, keine Geo-Ueberschreibung). Volle Bearbeitung mit Verankerung folgt spaeter.</summary>
+    void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points);
+
     /// <summary>Plan-Kap. 5.7: ArUco-/Augmented-Image-Marker fuer die naechste AR-Session
     /// vorbereiten. Sobald die Activity einen davon im Sichtfeld erkennt, kann sie sich
     /// instantan im Vermessungs-Koordinatensystem ausrichten — Vorteil: funktioniert auch

@@ -25,7 +25,10 @@ public partial class ArCaptureActivity
             List<ArContour> contoursCopy;
             lock (_dataLock)
             {
-                pointsCopy = new List<ArPoint>(_points);
+                // Vorgeladene Punkte (IsPreloaded) gehoeren nicht in den Recovery-State — sie
+                // kommen beim naechsten Start ohnehin frisch aus dem Projekt. Sonst doppelter
+                // Lade-Pfad (Preload + Recovery-Restore) und inkonsistenter _preloadedPointCount.
+                pointsCopy = _points.Where(p => !p.IsPreloaded).ToList();
                 contoursCopy = new List<ArContour>(_contours);
                 if (_activeContour != null && _activeContour.Points.Count > 0)
                     contoursCopy.Add(_activeContour);

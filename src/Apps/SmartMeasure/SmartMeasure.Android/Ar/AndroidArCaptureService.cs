@@ -46,6 +46,11 @@ public sealed class AndroidArCaptureService : IArCaptureService
     public void SetSitePoints(IReadOnlyList<SurveyPoint>? points)
         => ArCaptureActivity.SetSitePoints(points);
 
+    /// <summary>Vorlade-Punkte (Geo-unabhaengig, "Lage relativ") — delegiert an die statische
+    /// Bruecke in <see cref="ArCaptureActivity.SetPreloadPoints"/>.</summary>
+    public void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points)
+        => ArCaptureActivity.SetPreloadPoints(points);
+
     /// <summary>Plan Kap. 5.7: Delegiert an die statische Bruecke in
     /// <see cref="ArCaptureActivity.SetReferenceMarkers"/>.</summary>
     public void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers)

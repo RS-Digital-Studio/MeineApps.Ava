@@ -74,6 +74,10 @@ public sealed partial class ArPointOverlayView
     private Paint _modeChipTitlePaint = null!;
     private Paint _modeChipDetailPaint = null!;
 
+    // Vorlade-Punkt-Ring: gestrichelt + gedämpft (Neutral). Signalisiert "Lage relativ, nur
+    // Orientierung" — bewusst KEINE Confidence-Ampel/kein Höhen-Stab (die suggerieren Verankerung).
+    private Paint _preloadRingPaint = null!;
+
     private void InitDesignPaints()
     {
         _panelFillPaint = new Paint(PaintFlags.AntiAlias) { Color = C.SurfaceBase };
@@ -131,6 +135,15 @@ public sealed partial class ArPointOverlayView
             TextAlign = Paint.Align.Center,
         };
         _modeChipDetailPaint.SetTypeface(FontRegular);
+
+        _preloadRingPaint = new Paint(PaintFlags.AntiAlias)
+        {
+            Color = WithAlpha(C.Neutral, 165),
+            StrokeWidth = 2f * _density,
+        };
+        _preloadRingPaint.SetStyle(Paint.Style.Stroke);
+        _preloadRingPaint.SetPathEffect(new global::Android.Graphics.DashPathEffect(
+            [7f * _density, 5f * _density], 0f));
 
         _panelBorderPaint = new Paint(PaintFlags.AntiAlias)
         {
@@ -195,6 +208,8 @@ public sealed partial class ArPointOverlayView
         _markerLabelPaint.Dispose();
         _modeChipTitlePaint.Dispose();
         _modeChipDetailPaint.Dispose();
+        _preloadRingPaint.PathEffect?.Dispose();
+        _preloadRingPaint.Dispose();
         _offScreenArrowPath.Dispose();
     }
 }

@@ -68,10 +68,11 @@ public class AlignmentServiceTests
     }
 
     [Fact]
-    public void Kickstand_Ps400Bifacial_ImmerFestwinkel35()
+    public void Kickstand_Ps400Bifacial_StufenlosUebernimmtWunschwinkel()
     {
+        // PS400 Bifazial ist stufenlos verstellbar -> kein Snapping, Kickstand == Optimum.
         var rec = _align.GetRecommendation(Berlin, Noon, AlignmentGoal.WinterYield, PanelProfile.Ps400Bifacial);
-        rec.RecommendedKickstandTilt.Should().Be(35);
+        rec.RecommendedKickstandTilt.Should().Be(rec.TargetTilt);
     }
 
     [Fact]

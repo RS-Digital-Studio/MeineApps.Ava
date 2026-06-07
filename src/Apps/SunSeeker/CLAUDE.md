@@ -11,7 +11,7 @@ und Rückseiten-Freiheit.
 |--------|------|
 | Plattformen | Desktop (Entwicklung/Mock) + Android (Samsung Galaxy S25 Ultra) |
 | Vertrieb | Privat, kein AdMob/IAP |
-| Ziel-Hardware | Anker SOLIX PS400 (Bifazial, fester 35-Grad-Kickstand) + C2000 Gen 2 Powerstation |
+| Ziel-Hardware | Anker SOLIX PS400 (Bifazial, stufenlos verstellbarer Standwinkel) + C2000 Gen 2 Powerstation |
 
 Generische Build-Befehle, Conventions, Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md).
 
@@ -108,7 +108,9 @@ und ruft `Render(canvas, LocalClipBounds, …)` im `PaintSurface`-Handler (Handl
 | `WinterYield` | Süd, steiler Winterwinkel. |
 
 Bei festem Kickstand snappt `PanelProfile.NearestKickstand` auf den nächsten realen Standwinkel
-(PS400 Bifazial: fix 35°; PS400 mono: 30/40/50/80°).
+(PS400 mono: 30/40/50/80°). Stufenlos verstellbare Panels (PS400 Bifazial, generisch) übernehmen den
+Optimum-Winkel direkt. Das ViewModel zielt immer auf das Optimum (`TargetTilt`); bei festen Winkeln
+erklärt der Hang-Hinweis, die Differenz über die Aufstell-Neigung zu holen (→ [ViewModels](SunSeeker.Shared/ViewModels/CLAUDE.md)).
 
 ### Ausricht-Konvention (AlignView)
 
@@ -142,7 +144,8 @@ Native CameraX-Activity in `SunSeeker.Android/Ar/`, testbare Projektion in
 
 ## Offene Punkte
 
-- **PS400-Winkel verifizieren**: bestätigen, ob die bifaziale PS400-Variante wirklich nur 35° fix kann (am Panel).
+- Keine offenen Hardware-Punkte. (PS400 Bifazial verifiziert: **stufenlos verstellbarer** Standwinkel,
+  kein fester 35°-Kickstand.)
 
 App-Icon: eigenes adaptives Vektor-Icon (goldene Sonne auf Dämmerungs-Verlauf, `Resources/drawable/appicon_*.xml`).
 

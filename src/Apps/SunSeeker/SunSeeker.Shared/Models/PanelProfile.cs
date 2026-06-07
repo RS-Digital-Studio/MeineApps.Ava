@@ -12,10 +12,10 @@ public sealed record PanelProfile(
     IReadOnlyList<double> KickstandTilts,
     string? Notes = null)
 {
-    /// <summary>Anker SOLIX PS400 Bifazial — fester 35-Grad-Kickstand, Front + Rückseite.</summary>
+    /// <summary>Anker SOLIX PS400 Bifazial — stufenlos verstellbarer Standwinkel, Front + Rückseite.</summary>
     public static readonly PanelProfile Ps400Bifacial = new(
-        "Anker SOLIX PS400 (Bifazial)", 400, true, [35],
-        "Fester 35-Grad-Standwinkel. Bifazial: Rückseite erntet reflektiertes Licht.");
+        "Anker SOLIX PS400 (Bifazial)", 400, true, [],
+        "Stufenlos verstellbarer Standwinkel. Bifazial: Rückseite erntet reflektiertes Licht.");
 
     /// <summary>Anker SOLIX PS400 (monofazial) — Kickstand 30/40/50/80 Grad.</summary>
     public static readonly PanelProfile Ps400 = new(

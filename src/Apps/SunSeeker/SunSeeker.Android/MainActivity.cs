@@ -38,6 +38,8 @@ public class MainActivity : AvaloniaMainActivity
         App.LocationServiceFactory = _ => _locationService;
         App.HeadingServiceFactory = _ => _headingService;
         App.LaunchSunAr = () => StartActivity(new Intent(this, typeof(SunArActivity)));
+        // Anker-mTLS nativ (Androids SSLContext/KeyManager) — .NET-SslStream kann kein Client-Zertifikat.
+        App.AnkerSecureStreamFactory = AndroidAnkerTls.ConnectAsync;
 
         base.OnCreate(savedInstanceState);
 

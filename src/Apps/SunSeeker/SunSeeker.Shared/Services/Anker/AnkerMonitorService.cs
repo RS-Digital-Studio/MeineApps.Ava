@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
@@ -138,10 +139,40 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
             throw new AnkerCloudException(0, "Keine MQTT-Zugangsdaten erhalten (get_user_mqtt_info leer)");
 
         var clientCert = LoadClientCertificate(_mqttInfo);
-        using var rootCa = X509Certificate2.CreateFromPem(_mqttInfo.RootCaPem);
 
-        var factory = new MqttClientFactory();
-        _mqtt = factory.CreateMqttClient();
+        var clientId = $"{_mqttInfo.ThingName}_{Random.Shared.Next(0, 99999):D5}";
+        var optionsBuilder = new MqttClientOptionsBuilder()
+            .WithTcpServer(_mqttInfo.EndpointAddr, 8883)
+            .WithClientId(clientId)
+            .WithCleanSession(true)
+            .WithProtocolVersion(MqttProtocolVersion.V311);
+
+        var nativeTls = App.AnkerSecureStreamFactory;
+        if (nativeTls is not null)
+        {
+            // Android: SslStream beherrscht kein Client-Zertifikat-mTLS (Interop+AndroidCrypto+SslException)
+            // → TLS plattform-nativ aufbauen (SSLContext/KeyManager) und MQTTnet nur den fertigen Stream
+            // durchreichen. Client-Cert als PKCS12 (zufälliges Passwort) an den nativen Aufbau übergeben.
+            var pfxPassword = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16));
+            var pkcs12 = clientCert.Export(X509ContentType.Pkcs12, pfxPassword);
+            var tlsStream = await nativeTls(
+                new AnkerTlsParams(_mqttInfo.EndpointAddr, 8883, pkcs12, pfxPassword, _mqttInfo.RootCaPem), ct);
+            _mqtt = new MqttClientFactory().CreateMqttClient(
+                new PreConnectedMqttAdapterFactory(tlsStream, new DnsEndPoint(_mqttInfo.EndpointAddr, 8883), clientCert));
+        }
+        else
+        {
+            // Desktop: MQTTnet baut TCP+TLS selbst — Client-Zertifikat funktioniert dort.
+            optionsBuilder.WithTlsOptions(o =>
+            {
+                o.UseTls(true);
+                o.WithSslProtocols(System.Security.Authentication.SslProtocols.Tls12);
+                o.WithClientCertificates([clientCert]);
+                o.WithCertificateValidationHandler(ctx => ValidateServerCert(ctx, _mqttInfo.RootCaPem));
+            });
+            _mqtt = new MqttClientFactory().CreateMqttClient();
+        }
+
         _mqtt.ApplicationMessageReceivedAsync += OnMqttMessageAsync;
         _mqtt.DisconnectedAsync += _ =>
         {
@@ -156,22 +187,7 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
             return Task.CompletedTask;
         };
 
-        var clientId = $"{_mqttInfo.ThingName}_{Random.Shared.Next(0, 99999):D5}";
-        var options = new MqttClientOptionsBuilder()
-            .WithTcpServer(_mqttInfo.EndpointAddr, 8883)
-            .WithClientId(clientId)
-            .WithCleanSession(true)
-            .WithProtocolVersion(MqttProtocolVersion.V311)
-            .WithTlsOptions(o =>
-            {
-                o.UseTls(true);
-                o.WithSslProtocols(System.Security.Authentication.SslProtocols.Tls12);
-                o.WithClientCertificates([clientCert]);
-                o.WithCertificateValidationHandler(ctx => ValidateServerCert(ctx, _mqttInfo.RootCaPem));
-            })
-            .Build();
-
-        await _mqtt.ConnectAsync(options, ct);
+        await _mqtt.ConnectAsync(optionsBuilder.Build(), ct);
 
         foreach (var dev in _devices)
         {

@@ -14,8 +14,10 @@ Service-Conventions → [../CLAUDE.md](../CLAUDE.md).
 | `AnkerCrypto` | Login-Krypto: ECDH (NIST P-256) gegen fest hinterlegten Server-Public-Key → 32-Byte-Raw-Secret (`DeriveRawSecretAgreement`) → AES-256-CBC (Key = Secret, IV = Secret[0..16], PKCS7, Base64). Plus `GToken` (MD5-Hex des user_id) und `TimezoneHeader`. |
 | `AnkerHexFrame` | Proprietärer Binär-Frame (base64 in der MQTT-Message, **nicht** verschlüsselt): `TryDecode` (TLV-Parser) + `A1783DcInputWatts`/`A1783BatterySoc` + `BuildRealtimeTrigger` (msgtype 0057 inkl. XOR-Checksumme). |
 | `AnkerCloudClient` | HTTPS: `passport/login` → `get_relate_and_bind_devices` → `get_user_mqtt_info`. Regionaler Host (EU/COM nach Ländercode). |
-| `AnkerMonitorService` | `IAnkerMonitorService`-Impl: orchestriert Login → MQTT (mTLS) → Subscribe → Trigger → Decode. Demo-Fallback (`MockAnkerMonitorService`) ohne Zugangsdaten. |
+| `AnkerMonitorService` | `IAnkerMonitorService`-Impl: orchestriert Login → MQTT (mTLS) → Subscribe → Trigger → Decode. Demo-Fallback (`MockAnkerMonitorService`) ohne Zugangsdaten. Auto-Reconnect mit Backoff. |
 | `AnkerCredentialStore` | Liest/schreibt E-Mail/Passwort/Land im `IPreferencesService` (einziger Ort der Pref-Keys). |
+| `AnkerMqttChannel` (`PreConnectedMqttChannel` + `PreConnectedMqttAdapterFactory`) | Reicht MQTTnet einen bereits aufgebauten (TLS-)Stream durch — für den Android-nativen mTLS-Weg (s.u.). Bildet die Default-Adapter-Factory 1:1 nach, ersetzt nur den Channel. `ConnectAsync` = No-Op. |
+| `AndroidAnkerTls` (in `SunSeeker.Android/Services/`) | Baut die mTLS-Verbindung NATIV via `SSLContext`+`KeyManagerFactory`+`SSLSocket` und liefert einen Duplex-Stream. Über `App.AnkerSecureStreamFactory` injiziert. |
 
 `AnkerCloudModels.cs` (in `Models/`): `AnkerCredentials`, `AnkerSession`, `AnkerDevice`, `AnkerMqttInfo`.
 
@@ -55,14 +57,17 @@ Service-Conventions → [../CLAUDE.md](../CLAUDE.md).
 - **Release-Härtung (offen):** `JsonSerializer.Serialize(new {…})` im Trigger nutzt Reflection — bei aggressivem
   Trimming/Native-AOT prüfen (Debug-Deploy unkritisch; aktuell keine IL-Warnung).
 - **Inoffiziell** — Anker kann den Zugang jederzeit ändern/kappen; firmwareabhängig.
-- **mTLS-Client-Zertifikat scheitert auf .NET-Android (`SslStream`-Limitierung).** Am Gerät verifiziert
-  (Galaxy S25 Ultra): Login/Geräteliste/MQTT-Info OK, aber der MQTTnet-TLS-Handshake mit Client-Cert wirft
-  `MqttCommunicationException → AuthenticationException → Interop+AndroidCrypto+SslException`. Das ist eine
-  bekannte .NET-Android-Limitierung (dotnet/runtime #74292, #109641 → #109532), KEIN Cert-/Logik-Fehler.
-  Auf Desktop funktioniert derselbe Pfad. **Lösung:** Client-Cert-TLS nativ über Androids `SSLContext` +
-  `KeyManager` + `SSLSocket` aufbauen (Java-Interop in `SunSeeker.Android`) und den resultierenden Stream
-  über einen eigenen MQTTnet-Channel (`IMqttClientAdapterFactory`/`IMqttChannel`) einspeisen; als
-  Plattform-Factory injizieren (analog Location/Heading). Bis dahin läuft der Demo-Fallback.
+- **mTLS-Client-Zertifikat geht NICHT über .NET-`SslStream` auf Android (gelöst via nativem Channel).**
+  `SslStream` kann auf Android keine Client-Zertifikate (bekannte .NET-Limitierung, dotnet/runtime #74292,
+  #109641 → #109532) → MQTTnets eingebautes TLS wirft `MqttCommunicationException → AuthenticationException
+  → Interop+AndroidCrypto+SslException`. **Plattform-Split (am Galaxy S25 Ultra mit echter C2000 verifiziert):**
+  - **Android:** TLS-Handshake nativ über `SSLContext` + `KeyManagerFactory` + `SSLSocket` (`AndroidAnkerTls`,
+    Client-Cert als PKCS12 in einen Java-`KeyStore`, Server-Trust = System-CAs/Amazon Root CA 1). Der fertige
+    Duplex-Stream wird via `App.AnkerSecureStreamFactory` an `AnkerMonitorService` gereicht und über
+    `PreConnectedMqttAdapterFactory`/`PreConnectedMqttChannel` in MQTTnet eingespeist (MQTTnet macht nur noch
+    das MQTT-Protokoll, kein TCP/TLS).
+  - **Desktop:** unverändert MQTTnets eingebautes TLS mit `WithClientCertificates` (Client-Cert funktioniert dort).
+  - Der Zweig wird über `App.AnkerSecureStreamFactory != null` gewählt (gesetzt in `MainActivity.OnCreate`).
 
 ---
 

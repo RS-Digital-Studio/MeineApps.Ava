@@ -29,6 +29,13 @@ public class App : Application
     /// <summary>Öffnet das AR-Sonnenbahn-Overlay (Android: native Kamera-Activity). Auf Desktop null → Button ausgeblendet.</summary>
     public static Action? LaunchSunAr { get; set; }
 
+    /// <summary>
+    /// Baut die mTLS-Verbindung zum Anker-MQTT-Broker plattform-nativ auf und liefert den fertigen
+    /// (TLS-)Stream. Android setzt das (Androids SSLContext/KeyManager — .NET-SslStream kann kein
+    /// Client-Zertifikat-mTLS). Auf Desktop null → AnkerMonitorService baut TCP+TLS selbst via MQTTnet.
+    /// </summary>
+    public static Func<Services.Anker.AnkerTlsParams, CancellationToken, Task<System.IO.Stream>>? AnkerSecureStreamFactory { get; set; }
+
     private MainViewModel? _mainVm;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);

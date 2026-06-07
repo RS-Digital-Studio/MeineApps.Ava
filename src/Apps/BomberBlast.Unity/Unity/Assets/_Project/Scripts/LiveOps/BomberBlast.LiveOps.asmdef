@@ -1,0 +1,26 @@
+{
+    "name": "BomberBlast.LiveOps",
+    "rootNamespace": "BomberBlast.LiveOps",
+    "references": [
+        "BomberBlast.Core",
+        "BomberBlast.Domain",
+        "BomberBlast.Game",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "Unity.Localization",
+        "Unity.Nuget.Newtonsoft-Json",
+        "UniTask",
+        "UniTask.Linq",
+        "VContainer",
+        "VContainer.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

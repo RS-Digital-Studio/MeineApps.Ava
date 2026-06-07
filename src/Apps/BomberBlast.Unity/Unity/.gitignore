@@ -1,0 +1,21 @@
+# Unity-Standard-Ignore (BomberBlast.Unity)
+Library/
+Temp/
+Obj/
+obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+MemoryCaptures/
+
+# Von Unity generierte Projekt-/Solution-Dateien
+*.csproj
+*.sln
+*.user
+
+# IDE-/OS-Artefakte
+.vs/
+.vscode/
+.idea/
+.DS_Store

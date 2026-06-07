@@ -1,0 +1,23 @@
+{
+    "name": "BomberBlast.Bootstrap",
+    "rootNamespace": "BomberBlast.Bootstrap",
+    "references": [
+        "BomberBlast.Core",
+        "BomberBlast.Domain",
+        "BomberBlast.Game",
+        "BomberBlast.UI",
+        "BomberBlast.LiveOps",
+        "UniTask",
+        "VContainer",
+        "VContainer.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

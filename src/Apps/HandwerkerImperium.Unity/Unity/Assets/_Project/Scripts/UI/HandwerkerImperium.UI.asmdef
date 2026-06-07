@@ -1,0 +1,27 @@
+{
+    "name": "HandwerkerImperium.UI",
+    "rootNamespace": "HandwerkerImperium.UI",
+    "references": [
+        "HandwerkerImperium.Core",
+        "HandwerkerImperium.Domain",
+        "HandwerkerImperium.Game",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem",
+        "Unity.Localization",
+        "Unity.UIElements",
+        "UnityEngine.UI",
+        "UniTask",
+        "UniTask.Linq",
+        "VContainer",
+        "VContainer.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

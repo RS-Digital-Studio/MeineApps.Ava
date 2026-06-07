@@ -1,0 +1,24 @@
+{
+    "name": "BomberBlast.Editor",
+    "rootNamespace": "BomberBlast.Editor",
+    "references": [
+        "BomberBlast.Core",
+        "BomberBlast.Domain",
+        "BomberBlast.Game",
+        "BomberBlast.UI",
+        "Unity.Addressables.Editor",
+        "Unity.Localization.Editor",
+        "Unity.Nuget.Newtonsoft-Json"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

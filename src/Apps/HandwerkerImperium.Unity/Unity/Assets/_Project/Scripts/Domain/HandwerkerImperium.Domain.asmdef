@@ -1,0 +1,17 @@
+{
+    "name": "HandwerkerImperium.Domain",
+    "rootNamespace": "HandwerkerImperium.Domain",
+    "references": [
+        "HandwerkerImperium.Core",
+        "Unity.Nuget.Newtonsoft-Json"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

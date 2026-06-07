@@ -1,0 +1,24 @@
+{
+    "name": "HandwerkerImperium.Editor",
+    "rootNamespace": "HandwerkerImperium.Editor",
+    "references": [
+        "HandwerkerImperium.Core",
+        "HandwerkerImperium.Domain",
+        "HandwerkerImperium.Game",
+        "HandwerkerImperium.UI",
+        "Unity.Addressables.Editor",
+        "Unity.Localization.Editor",
+        "Unity.Nuget.Newtonsoft-Json"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

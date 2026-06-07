@@ -1,0 +1,26 @@
+{
+    "name": "BomberBlast.Game",
+    "rootNamespace": "BomberBlast.Game",
+    "references": [
+        "BomberBlast.Core",
+        "BomberBlast.Domain",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "Unity.InputSystem",
+        "Unity.Localization",
+        "Unity.Nuget.Newtonsoft-Json",
+        "UniTask",
+        "UniTask.Linq",
+        "VContainer",
+        "VContainer.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

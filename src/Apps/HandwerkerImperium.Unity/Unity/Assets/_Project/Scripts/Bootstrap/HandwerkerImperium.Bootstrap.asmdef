@@ -1,0 +1,22 @@
+{
+    "name": "HandwerkerImperium.Bootstrap",
+    "rootNamespace": "HandwerkerImperium.Bootstrap",
+    "references": [
+        "HandwerkerImperium.Core",
+        "HandwerkerImperium.Domain",
+        "HandwerkerImperium.Game",
+        "HandwerkerImperium.UI",
+        "UniTask",
+        "VContainer",
+        "VContainer.Unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

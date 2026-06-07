@@ -1,0 +1,17 @@
+{
+    "name": "BomberBlast.Domain",
+    "rootNamespace": "BomberBlast.Domain",
+    "references": [
+        "BomberBlast.Core",
+        "Unity.Nuget.Newtonsoft-Json"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

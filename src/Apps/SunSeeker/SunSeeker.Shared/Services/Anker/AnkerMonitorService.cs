@@ -32,7 +32,10 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
     private List<AnkerDevice> _devices = [];
     private AnkerMqttInfo? _mqttInfo;
     private System.Timers.Timer? _triggerTimer;
+    private System.Timers.Timer? _reconnectTimer;
+    private int _reconnectAttempts;
     private bool _demoActive;
+    private bool _wantConnected; // true, solange eine echte Verbindung gehalten/wiederhergestellt werden soll
 
     public AnkerMonitorService(IPreferencesService prefs, MockAnkerMonitorService demo)
     {
@@ -70,14 +73,19 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
             }
 
             IsSimulated = false;
+            _wantConnected = true;
             LastError = null;
             SetState(AnkerConnectionState.Connecting);
             await ConnectRealAsync(creds, cancellationToken);
         }
         catch (Exception ex)
         {
-            LastError = ex is AnkerCloudException ace ? ace.Message : ex.Message;
+            LastError = ex is AnkerCloudException ace ? ace.Message : DescribeException(ex);
             SetState(AnkerConnectionState.Error);
+            // Vorübergehende (Netzwerk-/TLS-)Fehler mit Backoff erneut versuchen; echte Cloud-Fehler
+            // (falsches Passwort, Konto) NICHT — die muss der Nutzer beheben.
+            if (_wantConnected && ex is not AnkerCloudException)
+                ScheduleReconnect();
         }
         finally
         {
@@ -89,6 +97,7 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
 
     private async Task DisconnectAsync()
     {
+        _wantConnected = false; // vor StopInternalAsync setzen → der MQTT-DisconnectedAsync-Handler reconnectet nicht
         await _gate.WaitAsync();
         try
         {
@@ -102,6 +111,7 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
 
     private void StartDemo()
     {
+        _wantConnected = false;
         _demoActive = true;
         IsSimulated = true;
         _ = _demo.ConnectAsync();
@@ -135,7 +145,14 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
         _mqtt.ApplicationMessageReceivedAsync += OnMqttMessageAsync;
         _mqtt.DisconnectedAsync += _ =>
         {
-            if (!_demoActive) SetState(AnkerConnectionState.Connecting);
+            // Unerwarteter Abbruch (Token abgelaufen, Netzwerk, Broker): mit Backoff neu verbinden —
+            // der frische Login erneuert zugleich das abgelaufene Token. Bei gewolltem Trennen ist
+            // _wantConnected bereits false.
+            if (_wantConnected && !_demoActive)
+            {
+                SetState(AnkerConnectionState.Connecting);
+                ScheduleReconnect();
+            }
             return Task.CompletedTask;
         };
 
@@ -165,6 +182,7 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
         }
 
         SetState(AnkerConnectionState.Connected);
+        _reconnectAttempts = 0; // erfolgreicher Connect → Backoff zurücksetzen
         await PublishTriggerAsync(ct);
 
         _triggerTimer = new System.Timers.Timer(30_000) { AutoReset = true };
@@ -287,6 +305,7 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
 
     private async Task StopInternalAsync()
     {
+        CancelReconnect();
         _demoActive = false;
         _demo.Disconnect();
 
@@ -309,6 +328,42 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
         CurrentSolarWatts = 0;
     }
 
+    // ── Reconnect mit exponentiellem Backoff ──────────────────────────────────
+
+    /// <summary>Plant einen Wiederverbindungsversuch (5/10/20/40/60 s Backoff). Ein erneuter
+    /// <see cref="ConnectAsync"/> macht einen frischen Login (erneuert das Token) und MQTT-Connect.</summary>
+    private void ScheduleReconnect()
+    {
+        if (!_wantConnected) return;
+        var attempt = Interlocked.Increment(ref _reconnectAttempts);
+        var delayMs = Math.Min(60_000d, 5_000d * Math.Pow(2, Math.Min(attempt - 1, 4)));
+        _reconnectTimer?.Stop();
+        _reconnectTimer?.Dispose();
+        _reconnectTimer = new System.Timers.Timer(delayMs) { AutoReset = false };
+        _reconnectTimer.Elapsed += (_, _) =>
+        {
+            if (_wantConnected && !_demoActive) _ = ConnectAsync();
+        };
+        _reconnectTimer.Start();
+    }
+
+    private void CancelReconnect()
+    {
+        _reconnectTimer?.Stop();
+        _reconnectTimer?.Dispose();
+        _reconnectTimer = null;
+    }
+
+    /// <summary>Vollständige Exception-Kette (Typ + Message je Ebene) — macht die eigentliche Ursache
+    /// hinter generischen Meldungen wie "The SSL connection could not be established" sichtbar.</summary>
+    private static string DescribeException(Exception ex)
+    {
+        var parts = new List<string>();
+        for (Exception? e = ex; e is not null; e = e.InnerException)
+            parts.Add($"{e.GetType().Name}: {e.Message}");
+        return string.Join(" -> ", parts);
+    }
+
     private void SetState(AnkerConnectionState state)
     {
         if (State == state) return;
@@ -318,7 +373,9 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
 
     public void Dispose()
     {
+        _wantConnected = false;
         _demo.SampleReceived -= OnDemoSample;
+        _reconnectTimer?.Dispose();
         _triggerTimer?.Dispose();
         _mqtt?.Dispose();
         _http.Dispose();

@@ -45,6 +45,13 @@ Service-Conventions → [../CLAUDE.md](../CLAUDE.md).
 - **Nur 1 aktives Token/Account** (vor Anker-App 3.10): paralleler App-Login kickt das API-Token. Ggf. Zweitkonto.
 - **Kein Refresh-Token** — bei Ablauf (<60 s Restlaufzeit) vollständiges Re-Login.
 - **Realtime-Trigger ist Best-Effort.** Schlägt der 0057-Frame fehl, kommen weiterhin (langsamere) 0900-Status.
+- **Auto-Reconnect mit Backoff.** Bricht die MQTT-Verbindung unerwartet ab (Token abgelaufen, Netzwerk,
+  Broker), verbindet der Service selbsttätig neu (5/10/20/40/60 s); der erneute `LoginAsync` erneuert
+  zugleich das Token (deckt damit das fehlende Refresh-Token ab). Vorübergehende Connect-Fehler
+  (Netzwerk/TLS) werden ebenfalls neu versucht — echte Cloud-Fehler (`AnkerCloudException`, z.B.
+  falsches Passwort) **nicht**. Gewolltes Trennen (Tab-Wechsel/`Forget`) setzt `_wantConnected=false`
+  und stoppt den Reconnect. Fehler-Diagnose: `LastError` enthält die **vollständige Exception-Kette**
+  (`DescribeException`), damit die Ursache hinter „The SSL connection could not be established" sichtbar ist.
 - **Release-Härtung (offen):** `JsonSerializer.Serialize(new {…})` im Trigger nutzt Reflection — bei aggressivem
   Trimming/Native-AOT prüfen (Debug-Deploy unkritisch; aktuell keine IL-Warnung).
 - **Inoffiziell** — Anker kann den Zugang jederzeit ändern/kappen; firmwareabhängig.

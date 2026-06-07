@@ -23,6 +23,11 @@ public sealed class SunCompassRenderer : IDisposable
     public bool IsDaylight { get; set; } = true;
     public AlignmentQuality Quality { get; set; } = AlignmentQuality.Poor;
 
+    // Lokalisierte Zentrums-Texte (vom ViewModel gesetzt; englische Defaults für den Designer).
+    public string TiltToAlignLine1 { get; set; } = "Tilt panel";
+    public string TiltToAlignLine2 { get; set; } = "to align";
+    public string TargetLabel { get; set; } = "Target";
+
     private static readonly SKColor BgColor = new(20, 24, 43);
     private static readonly SKColor RingColor = new(154, 164, 189, 90);
     private static readonly SKColor TickColor = new(154, 164, 189, 170);
@@ -248,13 +253,13 @@ public sealed class SunCompassRenderer : IDisposable
     {
         if (!AzimuthReliable)
         {
-            canvas.DrawText("Panel neigen", cx, cy - 4f, SKTextAlign.Center, _centerSmallFont, _centerDimPaint);
-            canvas.DrawText("zum Ausrichten", cx, cy + 12f, SKTextAlign.Center, _centerSmallFont, _centerDimPaint);
+            canvas.DrawText(TiltToAlignLine1, cx, cy - 4f, SKTextAlign.Center, _centerSmallFont, _centerDimPaint);
+            canvas.DrawText(TiltToAlignLine2, cx, cy + 12f, SKTextAlign.Center, _centerSmallFont, _centerDimPaint);
             return;
         }
 
         canvas.DrawText($"{PanelAzimuth:0}°", cx, cy + 2f, SKTextAlign.Center, _centerBigFont, _centerTextPaint);
-        canvas.DrawText($"Soll {TargetAzimuth:0}°", cx, cy + 22f, SKTextAlign.Center, _centerSmallFont, _centerDimPaint);
+        canvas.DrawText($"{TargetLabel} {TargetAzimuth:0}°", cx, cy + 22f, SKTextAlign.Center, _centerSmallFont, _centerDimPaint);
     }
 
     private static (float sin, float cos) SinCos(double azimuthDeg)

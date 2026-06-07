@@ -130,7 +130,7 @@
   <data name="HintHoldPhone" xml:space="preserve"><value>Tieni lo smartphone con lo schermo piatto sul lato anteriore del pannello (verso il sole).</value></data>
   <data name="CardPower" xml:space="preserve"><value>POTENZA SOLARE</value></data>
   <data name="LabelCurrent" xml:space="preserve"><value>Attuale</value></data>
-  <data name="HintDemo" xml:space="preserve"><value>Dati demo dalla posizione solare. Il collegamento reale all'Anker C2000 (Cloud-MQTT) seguirà.</value></data>
+  <data name="HintDemo" xml:space="preserve"><value>Dati dimostrativi basati sulla posizione del sole. Inserisci sopra le credenziali Anker per mostrare la potenza solare in tempo reale della C2000.</value></data>
   <data name="CardTrend" xml:space="preserve"><value>ANDAMENTO (ultimi minuti)</value></data>
   <data name="LabelDailyYield" xml:space="preserve"><value>Resa giornaliera</value></data>
   <data name="LabelPeak" xml:space="preserve"><value>Picco oggi</value></data>
@@ -139,4 +139,10 @@
   <data name="StateConnecting" xml:space="preserve"><value>Connessione...</value></data>
   <data name="StateError" xml:space="preserve"><value>Errore di connessione</value></data>
   <data name="StateDisconnected" xml:space="preserve"><value>Disconnesso</value></data>
+  <data name="SunNeverSets" xml:space="preserve"><value>Non tramonta</value></data>
+  <data name="SunNeverRises" xml:space="preserve"><value>Non sorge</value></data>
+  <data name="TargetTiltFormat" xml:space="preserve"><value>{0}° inclinazione</value></data>
+  <data name="CompassTiltLine1" xml:space="preserve"><value>Inclina il pannello</value></data>
+  <data name="CompassTiltLine2" xml:space="preserve"><value>per allineare</value></data>
+  <data name="CompassTargetLabel" xml:space="preserve"><value>Obiettivo</value></data>
 </root>

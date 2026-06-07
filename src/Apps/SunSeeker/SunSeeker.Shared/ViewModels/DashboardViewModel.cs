@@ -158,14 +158,14 @@ public partial class DashboardViewModel : ObservableObject
         SunPathInvalidateRequested?.Invoke();
 
         var times = _solar.GetSunTimes(location, DateOnly.FromDateTime(nowUtc));
-        SunriseText = times.PolarNight ? "—" : times.PolarDay ? "geht nicht unter" : FormatLocalTime(times.SunriseUtc);
-        SunsetText = times.PolarDay ? "—" : times.PolarNight ? "geht nicht auf" : FormatLocalTime(times.SunsetUtc);
+        SunriseText = times.PolarNight ? "—" : times.PolarDay ? _loc.GetString("SunNeverSets") : FormatLocalTime(times.SunriseUtc);
+        SunsetText = times.PolarDay ? "—" : times.PolarNight ? _loc.GetString("SunNeverRises") : FormatLocalTime(times.SunsetUtc);
         SolarNoonText = FormatLocalTime(times.SolarNoonUtc);
 
         var panel = SelectedPanel;
         var rec = _alignment.GetRecommendation(location, nowUtc, SelectedGoal.Goal, panel);
         TargetAzimuthText = $"{rec.TargetAzimuth:0}° {Compass(rec.TargetAzimuth)}";
-        TargetTiltText = $"{rec.TargetTilt:0}° Neigung";
+        TargetTiltText = string.Format(_loc.GetString("TargetTiltFormat"), Num(rec.TargetTilt));
         ShowKickstand = panel.HasFixedTilts;
         KickstandText = panel.HasFixedTilts
             ? string.Format(_loc.GetString("KickstandSelect"), Num(rec.RecommendedKickstandTilt))

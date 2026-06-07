@@ -139,7 +139,7 @@
   <!-- Leistung -->
   <data name="CardPower" xml:space="preserve"><value>SOLAR-LEISTUNG</value></data>
   <data name="LabelCurrent" xml:space="preserve"><value>Aktuell</value></data>
-  <data name="HintDemo" xml:space="preserve"><value>Demo-Daten aus dem Sonnenstand. Die echte Anbindung an die Anker C2000 (Cloud-MQTT) folgt.</value></data>
+  <data name="HintDemo" xml:space="preserve"><value>Demo-Daten aus dem Sonnenstand. Gib oben deine Anker-Zugangsdaten ein, um die Live-Solarleistung der C2000 anzuzeigen.</value></data>
   <data name="CardTrend" xml:space="preserve"><value>VERLAUF (letzte Minuten)</value></data>
   <data name="LabelDailyYield" xml:space="preserve"><value>Tagesertrag</value></data>
   <data name="LabelPeak" xml:space="preserve"><value>Spitze heute</value></data>
@@ -148,4 +148,10 @@
   <data name="StateConnecting" xml:space="preserve"><value>Verbinde...</value></data>
   <data name="StateError" xml:space="preserve"><value>Verbindungsfehler</value></data>
   <data name="StateDisconnected" xml:space="preserve"><value>Getrennt</value></data>
+  <data name="SunNeverSets" xml:space="preserve"><value>geht nicht unter</value></data>
+  <data name="SunNeverRises" xml:space="preserve"><value>geht nicht auf</value></data>
+  <data name="TargetTiltFormat" xml:space="preserve"><value>{0}° Neigung</value></data>
+  <data name="CompassTiltLine1" xml:space="preserve"><value>Panel neigen</value></data>
+  <data name="CompassTiltLine2" xml:space="preserve"><value>zum Ausrichten</value></data>
+  <data name="CompassTargetLabel" xml:space="preserve"><value>Soll</value></data>
 </root>

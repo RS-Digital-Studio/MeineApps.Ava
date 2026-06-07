@@ -56,6 +56,11 @@ public partial class AlignViewModel : ObservableObject, IDisposable
         _selectedGoal = Goals[0];
         _azimuthGuidance = loc.GetString("GuidanceInitial");
 
+        // Lokalisierte Zentrums-Texte des Kompass-Renderers (Gerätesprache, kein Laufzeit-Wechsel).
+        Renderer.TiltToAlignLine1 = loc.GetString("CompassTiltLine1");
+        Renderer.TiltToAlignLine2 = loc.GetString("CompassTiltLine2");
+        Renderer.TargetLabel = loc.GetString("CompassTargetLabel");
+
         _heading.Changed += OnHeadingChanged;
         _location.LocationChanged += OnLocationChanged;
     }
@@ -93,8 +98,10 @@ public partial class AlignViewModel : ObservableObject, IDisposable
         if (_location.Current is { } loc)
             _heading.SetLocation(loc);
 
+        // GPS wird vom Android-Host am Vordergrund-Lifecycle (OnResume/OnPause) verwaltet — der
+        // Standort wird von mehreren Tabs gebraucht (Ausrichten + Übersicht), daher nicht tab-gebunden.
+        // Hier nur den nur-im-Ausricht-Tab benötigten Heading-Sensor starten.
         _heading.Start();
-        _location.Start();
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _timer.Tick += (_, _) => Recompute();

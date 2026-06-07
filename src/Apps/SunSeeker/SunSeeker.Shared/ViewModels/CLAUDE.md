@@ -21,6 +21,9 @@ ViewModel-First, Constructor Injection, `CommunityToolkit.Mvvm` (`[ObservablePro
 - **Sensor-/Monitor-Lifecycle:** `Activate()` startet die Hardware (`IHeadingService.Start` /
   `IAnkerMonitorService.ConnectAsync`) + einen Sekunden-Timer, `Deactivate()` stoppt sie. Vom
   Navigator bei Tab-Wechsel getrieben. `Dispose()` meldet Events ab + disposed den Renderer.
+  **GPS-Ausnahme:** Der Standort ist NICHT tab-gebunden (Ausrichten + Übersicht brauchen ihn) — er
+  läuft am Vordergrund-Lifecycle des Android-Hosts (`MainActivity.OnResume/OnPause`), daher startet/stoppt
+  `AlignViewModel` nur den Heading-Sensor, nicht `ILocationService`.
 - **Thread-Marshalling:** Sensor-/Monitor-Events kommen vom Background-Thread → `Dispatcher.UIThread.Post`.
 - **Renderer-Invalidate:** VM hält den SkiaSharp-Renderer + feuert ein `*InvalidateRequested`-Event;
   das View-Code-Behind ruft `InvalidateSurface()`.

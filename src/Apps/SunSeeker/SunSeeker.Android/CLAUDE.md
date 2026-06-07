@@ -10,7 +10,7 @@ Android-Einstiegsprojekt (`net10.0-android`). Hostet das Shared-Projekt via Aval
 | Datei | Zweck |
 |-------|-------|
 | `AndroidApp.cs` | `AvaloniaAndroidApplication<App>` — Avalonia-Bootstrap einmal pro Prozess. `WithInterFont()`. |
-| `MainActivity.cs` | `AvaloniaMainActivity`. Setzt `App.LocationServiceFactory` + `App.HeadingServiceFactory` + `App.LaunchSunAr` VOR `base.OnCreate`, fragt Location-Permission an, startet GPS nach Grant. |
+| `MainActivity.cs` | `AvaloniaMainActivity`. Setzt `App.LocationServiceFactory` + `App.HeadingServiceFactory` + `App.LaunchSunAr` VOR `base.OnCreate`, fragt Location-Permission an. GPS läuft am **Vordergrund-Lifecycle** (`OnResume` startet, `OnPause` stoppt — Akku; greift auch während der AR-Activity). |
 | `Services/AndroidLocationService.cs` | `ILocationService` via nativem `LocationManager` (GPS + Network). Kein Google Play Services — Kilometer-Genauigkeit genügt fürs Sonnenstand. `ILocationListener`. |
 | `Services/AndroidHeadingService.cs` | `IHeadingService` via `SensorManager`: `RotationVector` → Azimut der Display-Normale + Neigung, `GeomagneticField`-Missweisung (`SetLocation`), Accuracy-Status. `ISensorEventListener`. |
 | `Ar/` | AR-Sonnenbahn-Overlay (CameraX-Kamera-Activity + Canvas-Overlay) → [Ar/CLAUDE.md](Ar/CLAUDE.md). |
@@ -33,7 +33,12 @@ App.LaunchSunAr            = () => StartActivity(typeof(SunArActivity))   // AR-
 ```
 
 **NACH `base.OnCreate`:** `RequestLocationPermissionIfNeeded()` (natives `CheckSelfPermission`/
-`RequestPermissions`, kein AndroidX nötig). Nach Grant: `_locationService.Start()`.
+`RequestPermissions`, kein AndroidX nötig).
+
+**GPS-Lifecycle (Akku):** Der Standort wird von mehreren Tabs gebraucht (Ausrichten + Übersicht),
+daher **nicht** tab-gebunden, sondern am Vordergrund-Lifecycle: `OnResume` → `Start()` (wenn Permission
+erteilt), `OnPause` → `Stop()`. Nach frischem Grant startet `OnRequestPermissionsResult`. Der nur im
+Ausricht-Tab benötigte **Heading**-Sensor bleibt tab-gebunden (`AlignViewModel.Activate/Deactivate`).
 
 ---
 

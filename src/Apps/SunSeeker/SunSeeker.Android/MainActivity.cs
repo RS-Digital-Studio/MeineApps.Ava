@@ -60,12 +60,27 @@ public class MainActivity : AvaloniaMainActivity
     }
 #pragma warning restore CA1422
 
+    protected override void OnResume()
+    {
+        base.OnResume();
+        // GPS nur im Vordergrund betreiben (Akku). Start nur, wenn die Permission bereits erteilt ist;
+        // direkt nach einem frischen Grant übernimmt OnRequestPermissionsResult den Start.
+        if (CheckSelfPermission(global::Android.Manifest.Permission.AccessFineLocation) == Permission.Granted)
+            _locationService?.Start();
+    }
+
+    protected override void OnPause()
+    {
+        // Im Hintergrund (oder während der AR-Activity) keine Standort-Updates — spart Akku.
+        _locationService?.Stop();
+        base.OnPause();
+    }
+
     private void RequestLocationPermissionIfNeeded()
     {
         if (CheckSelfPermission(global::Android.Manifest.Permission.AccessFineLocation) != Permission.Granted)
             RequestPermissions([global::Android.Manifest.Permission.AccessFineLocation], LocationPermissionRequestCode);
-        else
-            _locationService?.Start();
+        // Bei bereits erteilter Permission startet OnResume den Provider.
     }
 
     public override void OnRequestPermissionsResult(

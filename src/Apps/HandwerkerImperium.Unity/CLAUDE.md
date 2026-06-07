@@ -5,10 +5,12 @@ Unity-6-Neuentwicklung von HandwerkerImperium, **parallel** zur produktiven Aval
 Projekts. Generische Arbeitsweise → globale CLAUDE.md. Avalonia-Architektur/-Conventions →
 Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 
-> **Stand:** Konzept-/Pre-MVP. Es existiert **noch kein Code** und **kein `Unity/`-Ordner** —
-> ausschließlich die Plandokumente (s. u.). Alles in ARCHITECTURE/DESIGN/ROADMAP beschriebene
-> (Save-Slices, Editor-Tools, Scenes, Facades, Performance-Budgets) ist **Soll**, nicht Ist.
-> Diese CLAUDE.md beschreibt die verbindlichen Conventions für die anstehende Implementierung.
+> **Stand:** Pre-MVP. Der **Domain-Layer** ist 1:1 aus dem Avalonia-Original portiert und liegt unter
+> `Unity/Assets/_Project/Scripts/Domain/` (Economy, Orders, Crafting, Progression, Research, Reputation,
+> Buildings, Guild-Kataloge) + EditMode-Tests unter `…/Tests/Domain/` — jede Schicht 3-fach verifiziert
+> (netstandard2.1/C#9-Compat-Compile + Werte-Run gegen Original + Quelltext-Diff). **Offen:** Guild-Entity/
+> War + Firebase-DTOs, GameState-Root + Rest-Models, Services, Game-/UI-/Bootstrap-Layer. Alles in
+> ARCHITECTURE/DESIGN/ROADMAP über die Präsentation/Infra Beschriebene ist weiterhin **Soll**, nicht Ist.
 
 ---
 
@@ -34,7 +36,7 @@ Avalonia-Original bleibt produktiv. Cutover erst nach erfolgreicher Beta.
 | Komponente | Wahl | Warum diese und keine andere |
 |------------|------|------------------------------|
 | Unity | 6000.4.8f1 (LTS) | Gleiche Version wie ArcaneKingdom — Engine-Patches geteilt |
-| C# | C# 12 (Unity-Backend) | records, pattern matching, file-scoped namespaces |
+| C# | **C# 9 / netstandard2.1** (empirisch verifiziert, NICHT C# 12) | Unity 6000.4.8f1-Default. VERBOTEN: file-scoped Namespaces, Collection-Expressions `[…]`, `Random.Shared`, generisches `Enum.GetValues<T>()`, `init`/positional records (kein `IsExternalInit`), Range/Index `[..n]`. ERLAUBT: block-Namespaces, `new[]{}`, pattern matching, switch-expressions, `get;set;`. Details → Memory `[[unity-domain-port]]` |
 | Scripting Backend | IL2CPP (Release), Mono (Editor) | AOT für Mobile |
 | Render-Pipeline | URP 17.0.4 | 2D + 3D, Mobile-optimiert |
 | DI | VContainer 1.16.9 | AOT-kompatibel mit IL2CPP (NICHT Zenject) |
@@ -90,10 +92,13 @@ Resources **nur** für Bootstrap-Scene. Vollständige Ordner-/Scene-Struktur →
 
 **Pattern:** `HandwerkerImperium.{Layer}.{Feature}` (kein `HWI`-Prefix). Beispiele:
 `HandwerkerImperium.Domain.Workshops`, `HandwerkerImperium.Game.Services`,
-`HandwerkerImperium.UI.Screens`, `HandwerkerImperium.Bootstrap`. File-scoped Namespaces Pflicht.
+`HandwerkerImperium.UI.Screens`, `HandwerkerImperium.Bootstrap`. **Block-Namespaces** (`namespace X { }`)
+— file-scoped sind C# 10 und brechen in Unity (C# 9).
 
-C#-12-Features (Primary Constructors, Records, Pattern Matching, Collection Expressions, Required
-Members, Raw Strings) verbindlich nutzen — entspricht der Root-C#-Doktrin, nur C# 12 statt 14.
+Erlaubte moderne C#-9-Features: Pattern Matching, switch-expressions, target-typed `new()`, relationale
+Patterns. **NICHT verfügbar** (C# 10+/.NET 5+, brechen in Unity 6000.4.8f1): Collection-Expressions,
+`init`/positional records, Required Members, file-scoped Namespaces. Stattdessen `new[]{}`/`new List<>{}`,
+`get;set;` + Ctor, block-Namespaces. Vollständige Grenze + Verifikations-Harness → Memory `[[unity-domain-port]]`.
 
 **Naming-Abweichungen ggü. Avalonia** (Rest wie Root):
 - `View` = UI-Toolkit-Screen, `Panel` = uGUI-Screen, `Behaviour`/`Component` = MonoBehaviour

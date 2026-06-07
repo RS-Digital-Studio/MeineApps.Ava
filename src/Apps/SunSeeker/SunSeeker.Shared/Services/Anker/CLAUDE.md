@@ -55,6 +55,14 @@ Service-Conventions → [../CLAUDE.md](../CLAUDE.md).
 - **Release-Härtung (offen):** `JsonSerializer.Serialize(new {…})` im Trigger nutzt Reflection — bei aggressivem
   Trimming/Native-AOT prüfen (Debug-Deploy unkritisch; aktuell keine IL-Warnung).
 - **Inoffiziell** — Anker kann den Zugang jederzeit ändern/kappen; firmwareabhängig.
+- **mTLS-Client-Zertifikat scheitert auf .NET-Android (`SslStream`-Limitierung).** Am Gerät verifiziert
+  (Galaxy S25 Ultra): Login/Geräteliste/MQTT-Info OK, aber der MQTTnet-TLS-Handshake mit Client-Cert wirft
+  `MqttCommunicationException → AuthenticationException → Interop+AndroidCrypto+SslException`. Das ist eine
+  bekannte .NET-Android-Limitierung (dotnet/runtime #74292, #109641 → #109532), KEIN Cert-/Logik-Fehler.
+  Auf Desktop funktioniert derselbe Pfad. **Lösung:** Client-Cert-TLS nativ über Androids `SSLContext` +
+  `KeyManager` + `SSLSocket` aufbauen (Java-Interop in `SunSeeker.Android`) und den resultierenden Stream
+  über einen eigenen MQTTnet-Channel (`IMqttClientAdapterFactory`/`IMqttChannel`) einspeisen; als
+  Plattform-Factory injizieren (analog Location/Heading). Bis dahin läuft der Demo-Fallback.
 
 ---
 

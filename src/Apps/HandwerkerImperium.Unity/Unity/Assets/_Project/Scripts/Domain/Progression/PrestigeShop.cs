@@ -1,0 +1,299 @@
+using System.Collections.Generic;
+using System.Linq;
+
+namespace HandwerkerImperium.Domain.Progression
+{
+    /// <summary>
+    /// Statische Definition aller Prestige-Shop-Items. Gecachte Liste - nur einmal erstellt.
+    ///
+    /// 1:1-Port aus dem Avalonia-Original (Models/PrestigeShop.cs). 27 Items (24 einmalig +
+    /// 3 wiederholbar + 1 tier-locked).
+    /// </summary>
+    public static class PrestigeShop
+    {
+        private static readonly List<PrestigeShopItem> _allItems = new List<PrestigeShopItem>
+        {
+            // ── Einkommen & Kosten ──
+            new PrestigeShopItem
+            {
+                Id = "pp_income_10",
+                NameKey = "PrestigeIncome10",
+                DescriptionKey = "PrestigeIncome10Desc",
+                Icon = "Cash",
+                Cost = 5,
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                Effect = new PrestigeEffect { IncomeMultiplier = 0.10m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_income_25",
+                NameKey = "PrestigeIncome25",
+                DescriptionKey = "PrestigeIncome25Desc",
+                Icon = "Cash",
+                Cost = 15,
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                Effect = new PrestigeEffect { IncomeMultiplier = 0.25m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_income_50",
+                NameKey = "PrestigeIncome50",
+                DescriptionKey = "PrestigeIncome50Desc",
+                Icon = "DiamondStone",
+                Cost = 40,
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                Effect = new PrestigeEffect { IncomeMultiplier = 0.50m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_income_100",
+                NameKey = "PrestigeIncome100",
+                DescriptionKey = "PrestigeIncome100Desc",
+                Icon = "CashMultiple",
+                Cost = 80,
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                Effect = new PrestigeEffect { IncomeMultiplier = 1.00m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_cost_15",
+                NameKey = "PrestigeCost15",
+                DescriptionKey = "PrestigeCost15Desc",
+                Icon = "TrendingDown",
+                Cost = 12,
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                Effect = new PrestigeEffect { CostReduction = 0.15m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_cost_30",
+                NameKey = "PrestigeCost30",
+                DescriptionKey = "PrestigeCost30Desc",
+                Icon = "TrendingDown",
+                Cost = 30,
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                Effect = new PrestigeEffect { CostReduction = 0.30m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_upgrade_discount",
+                NameKey = "PrestigeUpgradeDiscount",
+                DescriptionKey = "PrestigeUpgradeDiscountDesc",
+                Icon = "ArrowDown",
+                Cost = 50,
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                Effect = new PrestigeEffect { UpgradeDiscount = 0.15m }
+            },
+
+            // ── Arbeiter & Stimmung ──
+            new PrestigeShopItem
+            {
+                Id = "pp_better_start_worker",
+                NameKey = "PrestigeBetterStartWorker",
+                DescriptionKey = "PrestigeBetterStartWorkerDesc",
+                Icon = "HardHat",
+                Cost = 10,
+                Category = PrestigeShopCategory.WorkerAndMood,
+                Effect = new PrestigeEffect { StartingWorkerTier = "D" }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_start_worker_b",
+                NameKey = "PrestigeStartWorkerB",
+                DescriptionKey = "PrestigeStartWorkerBDesc",
+                Icon = "AccountStar",
+                Cost = 30,
+                Category = PrestigeShopCategory.WorkerAndMood,
+                Effect = new PrestigeEffect { StartingWorkerTier = "B" }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_mood_slow",
+                NameKey = "PrestigeMoodSlow",
+                DescriptionKey = "PrestigeMoodSlowDesc",
+                Icon = "EmoticonHappy",
+                Cost = 10,
+                Category = PrestigeShopCategory.WorkerAndMood,
+                Effect = new PrestigeEffect { MoodDecayReduction = 0.25m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_mood_immunity",
+                NameKey = "PrestigeMoodImmunity",
+                DescriptionKey = "PrestigeMoodImmunityDesc",
+                Icon = "ShieldHalfFull",
+                Cost = 25,
+                Category = PrestigeShopCategory.WorkerAndMood,
+                Effect = new PrestigeEffect { MoodDecayReduction = 0.50m }
+            },
+
+            // ── Beschleunigung & Automatisierung ──
+            new PrestigeShopItem
+            {
+                Id = "pp_rush_boost",
+                NameKey = "PrestigeRushBoost",
+                DescriptionKey = "PrestigeRushBoostDesc",
+                Icon = "LightningBolt",
+                Cost = 15,
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                Effect = new PrestigeEffect { RushMultiplierBonus = 0.50m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_delivery_speed",
+                NameKey = "PrestigeDeliverySpeed",
+                DescriptionKey = "PrestigeDeliverySpeedDesc",
+                Icon = "TruckDelivery",
+                Cost = 12,
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                Effect = new PrestigeEffect { DeliverySpeedBonus = 0.30m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_crafting_speed",
+                NameKey = "PrestigeCraftingSpeed",
+                DescriptionKey = "PrestigeCraftingSpeedDesc",
+                Icon = "Hammer",
+                Cost = 18,
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                Effect = new PrestigeEffect { CraftingSpeedBonus = 0.25m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_offline_hours",
+                NameKey = "PrestigeOfflineHours",
+                DescriptionKey = "PrestigeOfflineHoursDesc",
+                Icon = "ClockPlus",
+                Cost = 35,
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                Effect = new PrestigeEffect { OfflineHoursBonus = 4 }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_quickjob_limit",
+                NameKey = "PrestigeQuickJobLimit",
+                DescriptionKey = "PrestigeQuickJobLimitDesc",
+                Icon = "LightningBoltCircle",
+                Cost = 22,
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                Effect = new PrestigeEffect { ExtraQuickJobLimit = 10 }
+            },
+
+            // ── Währung & Start ──
+            new PrestigeShopItem
+            {
+                Id = "pp_start_money",
+                NameKey = "PrestigeStartMoney",
+                DescriptionKey = "PrestigeStartMoneyDesc",
+                Icon = "Bank",
+                Cost = 6,
+                Category = PrestigeShopCategory.CurrencyAndStart,
+                Effect = new PrestigeEffect { ExtraStartMoney = 5_000m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_start_money_big",
+                NameKey = "PrestigeStartMoneyBig",
+                DescriptionKey = "PrestigeStartMoneyBigDesc",
+                Icon = "Bank",
+                Cost = 18,
+                Category = PrestigeShopCategory.CurrencyAndStart,
+                Effect = new PrestigeEffect { ExtraStartMoney = 50_000m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_xp_15",
+                NameKey = "PrestigeXp15",
+                DescriptionKey = "PrestigeXp15Desc",
+                Icon = "Star",
+                Cost = 8,
+                Category = PrestigeShopCategory.CurrencyAndStart,
+                Effect = new PrestigeEffect { XpMultiplier = 0.15m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_xp_30",
+                NameKey = "PrestigeXp30",
+                DescriptionKey = "PrestigeXp30Desc",
+                Icon = "Star",
+                Cost = 20,
+                Category = PrestigeShopCategory.CurrencyAndStart,
+                Effect = new PrestigeEffect { XpMultiplier = 0.30m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_golden_screw_25",
+                NameKey = "PrestigeGoldenScrew25",
+                DescriptionKey = "PrestigeGoldenScrew25Desc",
+                Icon = "Screwdriver",
+                Cost = 25,
+                Category = PrestigeShopCategory.CurrencyAndStart,
+                Effect = new PrestigeEffect { GoldenScrewBonus = 0.25m }
+            },
+
+            // ── Wiederholbar (Endgame PP-Senke) ──
+            new PrestigeShopItem
+            {
+                Id = "pp_income_repeatable",
+                NameKey = "PrestigeIncomeRepeatable",
+                DescriptionKey = "PrestigeIncomeRepeatableDesc",
+                Icon = "Refresh",
+                Cost = 15,  // Basiskosten, verdoppeln sich pro Kauf (15/30/60/120/240...)
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                IsRepeatable = true,
+                Effect = new PrestigeEffect { IncomeMultiplier = 0.05m }  // +5% pro Kauf
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_order_reward_rep",
+                NameKey = "PrestigeOrderRewardRep",
+                DescriptionKey = "PrestigeOrderRewardRepDesc",
+                Icon = "ClipboardCheck",
+                Cost = 20,  // Basiskosten, verdoppeln sich pro Kauf (20/40/80/160...)
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                IsRepeatable = true,
+                Effect = new PrestigeEffect { OrderRewardBonus = 0.05m }  // +5% Auftragsbelohnungen pro Kauf
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_delivery_interval_rep",
+                NameKey = "PrestigeDeliveryIntervalRep",
+                DescriptionKey = "PrestigeDeliveryIntervalRepDesc",
+                Icon = "TruckFast",
+                Cost = 25,  // Basiskosten, verdoppeln sich pro Kauf (25/50/100/200...)
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                IsRepeatable = true,
+                Effect = new PrestigeEffect { DeliverySpeedBonus = 0.10m }  // +10% schnellerer Lieferant pro Kauf
+            },
+
+            // ── Tier-locked Items (sichtbar erst ab bestimmtem Prestige-Tier) ──
+            new PrestigeShopItem
+            {
+                Id = "pp_research_speed_tier",
+                NameKey = "PrestigeResearchSpeedTier",
+                DescriptionKey = "PrestigeResearchSpeedTierDesc",
+                Icon = "FlaskRoundBottom",
+                Cost = 45,
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                RequiredTier = PrestigeTier.Diamant,
+                Effect = new PrestigeEffect { ResearchSpeedBonus = 0.25m }  // -25% Forschungszeit
+            },
+        };
+
+        /// <summary>Gibt die gecachte Liste aller Prestige-Shop-Items zurück.</summary>
+        public static IReadOnlyList<PrestigeShopItem> GetAllItems() => _allItems;
+
+        /// <summary>Gecachtes HashSet aller gültigen Shop-Item-IDs (für SanitizeState Exploit-Schutz).</summary>
+        private static readonly HashSet<string> _validIds = new HashSet<string>(_allItems.Select(i => i.Id));
+
+        /// <summary>
+        /// Immutable View aller gültigen Shop-Item-IDs. Unity/netstandard2.1 kennt kein
+        /// <c>IReadOnlySet&lt;T&gt;</c> (.NET 5+) — daher <see cref="IReadOnlyCollection{T}"/>
+        /// als nicht-mutierbarer View. Bei nur 27 statischen IDs ist Contains via LINQ trivial.
+        /// </summary>
+        public static IReadOnlyCollection<string> GetValidIds() => _validIds;
+
+        /// <summary>O(1)-Gültigkeitsprüfung einer Shop-Item-ID (Ersatz für GetValidIds().Contains).</summary>
+        public static bool IsValidId(string id) => _validIds.Contains(id);
+    }
+}

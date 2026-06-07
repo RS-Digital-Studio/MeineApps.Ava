@@ -120,7 +120,9 @@
   <data name="QualityMeasuring" xml:space="preserve"><value>Misurazione orientamento in corso</value></data>
   <data name="GainShort" xml:space="preserve"><value>{0}% della radiazione diretta</value></data>
   <data name="SunInfo" xml:space="preserve"><value>Sole: {0}° {1} · {2}° alt.</value></data>
-  <data name="KickstandHintAlign" xml:space="preserve"><value>Imposta angolo {0}° sul pannello</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Angolo fisso {0}° va bene — basta terreno in piano</value></data>
+  <data name="KickstandSlopeSteeper" xml:space="preserve"><value>Angolo fisso {0}° — per {1}° metti il bordo anteriore un po' in salita (più ripido)</value></data>
+  <data name="KickstandSlopeFlatter" xml:space="preserve"><value>Angolo fisso {0}° — per {1}° metti il bordo anteriore un po' in discesa (meno ripido)</value></data>
   <data name="TiltToMeasure" xml:space="preserve"><value>— inclina —</value></data>
   <data name="WarnCalibration" xml:space="preserve"><value>Calibrare la bussola (movimento a otto) e tenere lo smartphone piatto sulla superficie inclinata del pannello. Metalli e magneti disturbano.</value></data>
   <data name="LabelPanelDirection" xml:space="preserve"><value>Direzione pannello (effettiva)</value></data>

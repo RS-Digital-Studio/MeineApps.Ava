@@ -120,7 +120,9 @@
   <data name="QualityMeasuring" xml:space="preserve"><value>Midiendo orientación</value></data>
   <data name="GainShort" xml:space="preserve"><value>{0}% de irradiancia directa</value></data>
   <data name="SunInfo" xml:space="preserve"><value>Sol: {0}° {1} · {2}° de altura</value></data>
-  <data name="KickstandHintAlign" xml:space="preserve"><value>Ajustar ángulo de soporte {0}° en el panel</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Ángulo fijo {0}° correcto — basta suelo nivelado</value></data>
+  <data name="KickstandSlopeSteeper" xml:space="preserve"><value>Ángulo fijo {0}° — para {1}° coloca el borde frontal algo cuesta arriba (más inclinado)</value></data>
+  <data name="KickstandSlopeFlatter" xml:space="preserve"><value>Ángulo fijo {0}° — para {1}° coloca el borde frontal algo cuesta abajo (menos inclinado)</value></data>
   <data name="TiltToMeasure" xml:space="preserve"><value>— inclinar —</value></data>
   <data name="WarnCalibration" xml:space="preserve"><value>Calibrar la brújula (movimiento en ocho) y apoyar el móvil plano sobre la superficie inclinada del panel. Los metales y magnetos interfieren.</value></data>
   <data name="LabelPanelDirection" xml:space="preserve"><value>Dirección del panel (real)</value></data>

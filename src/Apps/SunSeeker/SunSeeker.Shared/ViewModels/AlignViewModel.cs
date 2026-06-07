@@ -152,7 +152,10 @@ public partial class AlignViewModel : ObservableObject, IDisposable
         Renderer.SunAzimuth = sun.Azimuth;
         Renderer.SunElevation = sun.Elevation;
         Renderer.PanelTilt = panelTilt;
-        Renderer.TargetTilt = _recommendation.RecommendedKickstandTilt;
+        // Ziel ist die OPTIMALE Neigung (nicht der gesnappte Kickstand) — bei festem Standwinkel
+        // wird die Differenz über die Aufstell-Neigung (Hang) erreicht. Sonst würde die App z.B. bei
+        // "Jetzt maximal" vom echten Sonnen-Zenit weg auf 35° "korrigieren".
+        Renderer.TargetTilt = _recommendation.TargetTilt;
         Renderer.AzimuthReliable = reliable;
         Renderer.IsDaylight = sun.IsDaylight;
         Renderer.Quality = state.Quality;
@@ -161,12 +164,12 @@ public partial class AlignViewModel : ObservableObject, IDisposable
         PanelAzimuthText = reliable ? $"{panelAzimuth:0}° {Compass(panelAzimuth)}" : _loc.GetString("TiltToMeasure");
         PanelTiltText = $"{panelTilt:0}°";
         TargetAzimuthText = $"{_recommendation.TargetAzimuth:0}° {Compass(_recommendation.TargetAzimuth)}";
-        TargetTiltText = $"{_recommendation.RecommendedKickstandTilt:0}°";
+        TargetTiltText = $"{_recommendation.TargetTilt:0}°";
 
         ShowCalibrationWarning = !reliable || _lastHeading.Accuracy <= HeadingAccuracy.Low;
 
         AzimuthGuidance = BuildAzimuthGuidance(state.AzimuthError, reliable);
-        TiltGuidance = BuildTiltGuidance(panelTilt - _recommendation.RecommendedKickstandTilt);
+        TiltGuidance = BuildTiltGuidance(panelTilt - _recommendation.TargetTilt);
 
         GainText = sun.IsDaylight
             ? string.Format(_loc.GetString("GainShort"), Num(state.DirectGainFactor * 100))
@@ -176,11 +179,25 @@ public partial class AlignViewModel : ObservableObject, IDisposable
             Num(sun.Azimuth), Compass(sun.Azimuth), Num(sun.Elevation));
 
         ShowKickstandHint = SelectedPanel.HasFixedTilts;
-        KickstandHint = SelectedPanel.HasFixedTilts
-            ? string.Format(_loc.GetString("KickstandHintAlign"), Num(_recommendation.RecommendedKickstandTilt))
-            : "";
+        KickstandHint = SelectedPanel.HasFixedTilts ? BuildKickstandHint() : "";
 
         InvalidateRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Hinweis für Panels mit festem Standwinkel: der Kickstand allein liefert nur seinen Festwinkel —
+    /// die Differenz zur optimalen Neigung wird über die Aufstell-Neigung (Hang) geholt. Vorderseite
+    /// (zur Sonne) leicht bergauf = steiler, bergab = flacher. Basis: Soll-Optimum gegen Kickstand.
+    /// </summary>
+    private string BuildKickstandHint()
+    {
+        var kickstand = _recommendation.RecommendedKickstandTilt;
+        var ideal = _recommendation.TargetTilt;
+        var gap = ideal - kickstand;
+        var key = Math.Abs(gap) < 3 ? "KickstandHintAlign"
+                : gap > 0 ? "KickstandSlopeSteeper"
+                : "KickstandSlopeFlatter";
+        return string.Format(_loc.GetString(key), Num(kickstand), Num(ideal));
     }
 
     private string BuildAzimuthGuidance(double azimuthError, bool reliable)

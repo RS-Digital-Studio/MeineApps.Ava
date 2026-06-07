@@ -120,7 +120,9 @@
   <data name="QualityMeasuring" xml:space="preserve"><value>Mesure de l'orientation en cours</value></data>
   <data name="GainShort" xml:space="preserve"><value>{0}% de l'irradiance directe</value></data>
   <data name="SunInfo" xml:space="preserve"><value>Soleil : {0}° {1} · {2}° de hauteur</value></data>
-  <data name="KickstandHintAlign" xml:space="preserve"><value>Régler l'angle de support à {0}° sur le panneau</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Angle fixe {0}° correct — un sol plat suffit</value></data>
+  <data name="KickstandSlopeSteeper" xml:space="preserve"><value>Angle fixe {0}° — pour {1}° placer le bord avant légèrement en montée (plus incliné)</value></data>
+  <data name="KickstandSlopeFlatter" xml:space="preserve"><value>Angle fixe {0}° — pour {1}° placer le bord avant légèrement en descente (moins incliné)</value></data>
   <data name="TiltToMeasure" xml:space="preserve"><value>— incliner —</value></data>
   <data name="WarnCalibration" xml:space="preserve"><value>Calibrer la boussole (mouvement en huit) et poser le téléphone à plat sur la surface inclinée du panneau. Les métaux et aimants perturbent la mesure.</value></data>
   <data name="LabelPanelDirection" xml:space="preserve"><value>Direction du panneau (réel)</value></data>

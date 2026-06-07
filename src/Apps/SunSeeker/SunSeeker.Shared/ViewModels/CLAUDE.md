@@ -32,3 +32,10 @@ ViewModel-First, Constructor Injection, `CommunityToolkit.Mvvm` (`[ObservablePro
   `{loc:Translate}`. Erklärungs-/Tipp-/Quality-Texte werden aus Engine-Keys lokalisiert.
 - **Konvention Panel-Azimut** (Align): `PanelAzimuth = HeadingReading.DeviceAzimuth` (Handy mit
   Display flach an die Panel-Vorderseite).
+- **Ausricht-Ziel = OPTIMALE Neigung, nicht der gesnappte Kickstand** (Align): Marker, Soll-Text und
+  Neigungs-Hinweis zielen auf `AlignmentRecommendation.TargetTilt` (Saison-/Sonnen-Optimum), NICHT auf
+  `RecommendedKickstandTilt`. Sonst würde z.B. „Jetzt maximal" vom echten Sonnen-Zenit weg auf 35°
+  „korrigieren". Bei festem Standwinkel erklärt `BuildKickstandHint()` (Keys `KickstandHintAlign`/
+  `KickstandSlopeSteeper`/`KickstandSlopeFlatter`), die Differenz Optimum↔Kickstand über die Aufstell-
+  Neigung (Hang) zu holen — Vorderseite leicht bergauf = steiler, bergab = flacher. Der Neigungssensor
+  misst die ECHTE effektive Neigung inkl. Hang, die Ampel bewertet gegen das Optimum.

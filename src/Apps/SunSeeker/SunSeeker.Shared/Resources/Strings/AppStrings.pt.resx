@@ -120,7 +120,9 @@
   <data name="QualityMeasuring" xml:space="preserve"><value>A medir orientação</value></data>
   <data name="GainShort" xml:space="preserve"><value>{0}% da irradiância direta</value></data>
   <data name="SunInfo" xml:space="preserve"><value>Sol: {0}° {1} · {2}° de altura</value></data>
-  <data name="KickstandHintAlign" xml:space="preserve"><value>Definir ângulo {0}° no painel</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Ângulo fixo {0}° adequado — chão nivelado é suficiente</value></data>
+  <data name="KickstandSlopeSteeper" xml:space="preserve"><value>Ângulo fixo {0}° — para {1}° coloca a borda frontal ligeiramente a subir (mais inclinado)</value></data>
+  <data name="KickstandSlopeFlatter" xml:space="preserve"><value>Ângulo fixo {0}° — para {1}° coloca a borda frontal ligeiramente a descer (menos inclinado)</value></data>
   <data name="TiltToMeasure" xml:space="preserve"><value>— inclinar —</value></data>
   <data name="WarnCalibration" xml:space="preserve"><value>Calibrar a bússola (movimento em oito) e segurar o telemóvel plano contra a superfície inclinada do painel. Metal/ímanes causam interferência.</value></data>
   <data name="LabelPanelDirection" xml:space="preserve"><value>Direção do painel (real)</value></data>

@@ -120,7 +120,9 @@
   <data name="QualityMeasuring" xml:space="preserve"><value>Measuring alignment</value></data>
   <data name="GainShort" xml:space="preserve"><value>{0}% of direct irradiance</value></data>
   <data name="SunInfo" xml:space="preserve"><value>Sun: {0}° {1} · {2}° high</value></data>
-  <data name="KickstandHintAlign" xml:space="preserve"><value>Set kickstand to {0}° on the panel</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Fixed stand angle {0}° is fine — level ground is enough</value></data>
+  <data name="KickstandSlopeSteeper" xml:space="preserve"><value>Fixed stand angle {0}° — for {1}° place the front edge slightly uphill (steeper)</value></data>
+  <data name="KickstandSlopeFlatter" xml:space="preserve"><value>Fixed stand angle {0}° — for {1}° place the front edge slightly downhill (flatter)</value></data>
   <data name="TiltToMeasure" xml:space="preserve"><value>— tilt —</value></data>
   <data name="WarnCalibration" xml:space="preserve"><value>Calibrate compass (figure-eight motion) and hold phone flat against the tilted panel surface. Metal/magnets cause interference.</value></data>
   <data name="LabelPanelDirection" xml:space="preserve"><value>Panel Direction (Actual)</value></data>

@@ -128,7 +128,9 @@
   <data name="QualityMeasuring" xml:space="preserve"><value>Ausrichtung wird gemessen</value></data>
   <data name="GainShort" xml:space="preserve"><value>{0}% der Direktstrahlung</value></data>
   <data name="SunInfo" xml:space="preserve"><value>Sonne: {0}° {1} · {2}° hoch</value></data>
-  <data name="KickstandHintAlign" xml:space="preserve"><value>Standwinkel {0}° am Panel einstellen</value></data>
+  <data name="KickstandHintAlign" xml:space="preserve"><value>Fester Standwinkel {0}° passt — ebener Untergrund genügt</value></data>
+  <data name="KickstandSlopeSteeper" xml:space="preserve"><value>Fester Standwinkel {0}° — für {1}° die Vorderseite leicht bergauf stellen (steiler)</value></data>
+  <data name="KickstandSlopeFlatter" xml:space="preserve"><value>Fester Standwinkel {0}° — für {1}° die Vorderseite leicht bergab stellen (flacher)</value></data>
   <data name="TiltToMeasure" xml:space="preserve"><value>— neigen —</value></data>
   <data name="WarnCalibration" xml:space="preserve"><value>Kompass kalibrieren (Acht-Bewegung) und das Handy flach an die geneigte Panel-Fläche halten. Metall/Magnete stören.</value></data>
   <data name="LabelPanelDirection" xml:space="preserve"><value>Panel-Richtung (Ist)</value></data>

@@ -10,10 +10,14 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > Reputation, Buildings, Guild, Events, LiveOps, Settings, Statistics, Boosts, Cosmetics, Onboarding,
 > Notifications, Warehouse, **State/GameState** v7) + EditMode-Tests unter `…/Tests/Domain/`. Jede Schicht
 > 3-fach verifiziert (netstandard2.1/C#9-Compat-Compile + Werte-Run gegen Original + ggf. Quelltext-Diff),
-> der GameState-Root zusätzlich per **v7-JSON-Save-Roundtrip** (Newtonsoft). Roadmap + Hazards + 3D-Plan →
-> [DOMAIN_3D_PLAN.md](DOMAIN_3D_PLAN.md). **Offen:** Service-Formel-Extrakte (`*Formulas.cs`), dann Game-/UI-/
-> Bootstrap-Layer (3D-Präsentation). Bewusst in der Präsentations-/Netzwerk-Schicht: Firebase-DTOs, Guild-
-> Display-DTOs, ContextualHint/FtueStep-Definitionen, alle Lokalisierungs-/Icon-/Farb-Anteile. Alles in
+> der GameState-Root zusätzlich per **v7-JSON-Save-Roundtrip** (Newtonsoft). **Zusätzlich ist der gesamte
+> Domain + alle EditMode-Tests im ECHTEN Unity 6000.4.8f1 kompiliert und ausgeführt — 143 NUnit-Tests /
+> 26 Fixtures, 0 Fehler** (via unity-mcp). Dazu sind **alle 10 reinen Service-Formel-Kerne als `*Formulas.cs`
+> extrahiert** (Income/Offline/Market/Equipment/AutoProduction/Crafting/GuildBoss/DailyChallenge/WorkerTick/
+> Order — Service-/Gilden-/RNG-Eingaben als Parameter; State-Mutation/Netzwerk/Events bleiben im Game-Service).
+> Roadmap + Hazards + 3D-Plan → [DOMAIN_3D_PLAN.md](DOMAIN_3D_PLAN.md). **Offen:** Game-/UI-/Bootstrap-Layer
+> (3D-Präsentation). Bewusst in der Präsentations-/Netzwerk-Schicht: Firebase-DTOs, Guild-Display-DTOs,
+> ContextualHint/FtueStep-Definitionen, alle Lokalisierungs-/Icon-/Farb-Anteile. Alles in
 > ARCHITECTURE/DESIGN/ROADMAP über die Präsentation/Infra Beschriebene ist weiterhin **Soll**, nicht Ist.
 
 ---

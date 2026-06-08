@@ -48,5 +48,13 @@ namespace HandwerkerImperium.Domain.Tests.Achievements
             var ids = new List<string> { "orders_100", "prestige_1" }; // 20 + 50
             Assert.That(AchievementFormulas.TotalGemReward(cat, ids), Is.EqualTo(70));
         }
+
+        [Test]
+        public void TotalGemReward_CountsEachIdOnce_DespiteDuplicates()
+        {
+            var cat = Catalog();
+            var ids = new List<string> { "orders_100", "orders_100", "prestige_1" }; // Dup -> trotzdem 20 + 50
+            Assert.That(AchievementFormulas.TotalGemReward(cat, ids), Is.EqualTo(70));
+        }
     }
 }

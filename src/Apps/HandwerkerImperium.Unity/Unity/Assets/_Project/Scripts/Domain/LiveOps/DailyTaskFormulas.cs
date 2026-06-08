@@ -40,11 +40,10 @@ namespace HandwerkerImperium.Domain.LiveOps
         /// <summary>True, wenn der aktuelle Wert das Tagesziel erreicht.</summary>
         public static bool IsComplete(long current, long target) => target > 0 && current >= target;
 
-        /// <summary>Fortschritt 0..1 (geklemmt).</summary>
+        /// <summary>Fortschritt 0..1 (geklemmt). Ungültiges Ziel (≤0) gilt als 0 % (konsistent zu IsComplete=false).</summary>
         public static double Progress01(long current, long target)
         {
-            if (target <= 0) return 1.0;
-            if (current <= 0) return 0.0;
+            if (target <= 0 || current <= 0) return 0.0;
             double p = (double)current / target;
             return p > 1.0 ? 1.0 : p;
         }

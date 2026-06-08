@@ -31,8 +31,8 @@ namespace HandwerkerImperium.Domain.Save
             return CloudSyncResolution.InSync;
         }
 
-        /// <summary>True, wenn ein Upload sinnvoll ist (lokal mind. so neu wie Cloud).</summary>
+        /// <summary>True, wenn ein Upload sinnvoll ist (lokal strikt neuer als Cloud; bei Gleichstand InSync).</summary>
         public static bool ShouldUpload(long localRevision, long remoteRevision) =>
-            localRevision >= remoteRevision;
+            localRevision > remoteRevision;
     }
 }

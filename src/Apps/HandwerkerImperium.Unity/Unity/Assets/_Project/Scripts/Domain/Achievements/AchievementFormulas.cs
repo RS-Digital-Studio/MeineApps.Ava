@@ -41,11 +41,10 @@ namespace HandwerkerImperium.Domain.Achievements
         /// <summary>True, wenn der aktuelle Wert das Ziel erreicht.</summary>
         public static bool IsComplete(long current, long target) => target > 0 && current >= target;
 
-        /// <summary>Fortschritt 0..1 (geklemmt).</summary>
+        /// <summary>Fortschritt 0..1 (geklemmt). Ein ungültiges Ziel (≤0) gilt als 0 % (konsistent zu IsComplete=false).</summary>
         public static double Progress01(long current, long target)
         {
-            if (target <= 0) return 1.0;
-            if (current <= 0) return 0.0;
+            if (target <= 0 || current <= 0) return 0.0;
             double p = (double)current / target;
             return p > 1.0 ? 1.0 : p;
         }
@@ -60,25 +59,37 @@ namespace HandwerkerImperium.Domain.Achievements
         {
             var result = new List<string>();
             if (catalog == null) return result;
+            var seen = new HashSet<string>(); // doppelte Katalog-Ids nicht mehrfach emittieren
             foreach (var def in catalog)
             {
-                if (def == null || def.Metric != metric) continue;
+                if (def == null || def.Metric != metric || def.Id == null) continue;
                 if (!IsComplete(currentValue, def.Target)) continue;
                 if (alreadyClaimed != null && Contains(alreadyClaimed, def.Id)) continue;
-                result.Add(def.Id);
+                if (seen.Add(def.Id)) result.Add(def.Id);
             }
             return result;
         }
 
-        /// <summary>Summe der Gem-Belohnungen für eine Menge abgeschlossener Achievement-Ids.</summary>
+        /// <summary>Summe der Gem-Belohnungen für eine Menge abgeschlossener Achievement-Ids (jede Id zählt einmal).</summary>
         public static int TotalGemReward(IReadOnlyList<AchievementDefinition>? catalog, IReadOnlyCollection<string>? ids)
         {
             if (catalog == null || ids == null) return 0;
+            var counted = new HashSet<string>();
             int total = 0;
-            foreach (var def in catalog)
-                if (def != null && Contains(ids, def.Id))
-                    total += def.GemReward;
+            foreach (var id in ids)
+            {
+                if (id == null || !counted.Add(id)) continue; // distinkt: kein Doppelzählen bei Dup-Ids
+                var def = FindById(catalog, id);
+                if (def != null) total += def.GemReward;
+            }
             return total;
+        }
+
+        private static AchievementDefinition? FindById(IReadOnlyList<AchievementDefinition> catalog, string id)
+        {
+            foreach (var def in catalog)
+                if (def != null && def.Id == id) return def;
+            return null;
         }
 
         private static bool Contains(IReadOnlyCollection<string> set, string id)

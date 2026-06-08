@@ -22,7 +22,7 @@ namespace HandwerkerImperium.Domain.Tests.Save
         public void ShouldUpload_WhenLocalAtLeastAsNew()
         {
             Assert.That(CloudSaveFormulas.ShouldUpload(5, 3), Is.True);
-            Assert.That(CloudSaveFormulas.ShouldUpload(5, 5), Is.True);
+            Assert.That(CloudSaveFormulas.ShouldUpload(5, 5), Is.False, "Gleichstand = InSync, kein Upload");
             Assert.That(CloudSaveFormulas.ShouldUpload(3, 5), Is.False);
         }
     }

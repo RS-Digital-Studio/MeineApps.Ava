@@ -67,7 +67,7 @@ namespace HandwerkerImperium.Domain.Progression
                 new MasterToolDefinition("mt_crystal_chisel",  MasterToolRarity.Uncommon,  0.05m, MasterToolRequirementKind.PrestigeCount,     1),
                 new MasterToolDefinition("mt_obsidian_drill",  MasterToolRarity.Rare,      0.07m, MasterToolRequirementKind.MaxStationLevel, 750),
                 new MasterToolDefinition("mt_ruby_blade",      MasterToolRarity.Rare,      0.07m, MasterToolRequirementKind.PrestigeCount,     2),
-                new MasterToolDefinition("mt_emerald_toolbox", MasterToolRarity.Epic,      0.10m, MasterToolRequirementKind.MaxStationLevel, 500),
+                new MasterToolDefinition("mt_emerald_toolbox", MasterToolRarity.Epic,      0.10m, MasterToolRequirementKind.MaxStationLevel, 1000),
                 new MasterToolDefinition("mt_dragon_anvil",    MasterToolRarity.Epic,      0.10m, MasterToolRequirementKind.PrestigeCount,     3),
                 new MasterToolDefinition("mt_master_crown",    MasterToolRarity.Legendary, 0.15m, MasterToolRequirementKind.CollectedTools,   11),
             };
@@ -88,22 +88,26 @@ namespace HandwerkerImperium.Domain.Progression
             }
         }
 
-        /// <summary>Summe der Income-Boni aller gesammelten Werkzeuge (max. +74 % bei voller Sammlung).</summary>
+        /// <summary>Summe der Income-Boni aller gesammelten Werkzeuge (jede Id zählt einmal; max. +74 %).</summary>
         public static decimal TotalIncomeBonus(IReadOnlyCollection<string>? collectedIds, List<MasterToolDefinition> catalog)
         {
             if (collectedIds == null || collectedIds.Count == 0 || catalog == null) return 0m;
+            var counted = new HashSet<string>();
             decimal total = 0m;
-            foreach (var def in catalog)
-                if (def != null && Contains(collectedIds, def.Id))
-                    total += def.IncomeBonus;
+            foreach (var id in collectedIds)
+            {
+                if (id == null || !counted.Add(id)) continue; // distinkt: kein Doppelzählen bei Dup-Ids
+                var def = FindById(catalog, id);
+                if (def != null) total += def.IncomeBonus;
+            }
             return total;
         }
 
-        private static bool Contains(IReadOnlyCollection<string> ids, string id)
+        private static MasterToolDefinition? FindById(List<MasterToolDefinition> catalog, string id)
         {
-            foreach (var x in ids)
-                if (x == id) return true;
-            return false;
+            foreach (var def in catalog)
+                if (def != null && def.Id == id) return def;
+            return null;
         }
     }
 }

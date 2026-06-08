@@ -27,6 +27,8 @@ namespace HandwerkerImperium.Domain.LiveOps
         public static bool Start(RushEventState state, decimal multiplier, double durationSeconds, double cooldownSeconds, long nowUtcTicks)
         {
             if (!CanStart(state, nowUtcTicks)) return false;
+            if (double.IsNaN(durationSeconds) || double.IsInfinity(durationSeconds) || durationSeconds <= 0) return false;
+            if (double.IsNaN(cooldownSeconds) || double.IsInfinity(cooldownSeconds) || cooldownSeconds < 0) cooldownSeconds = 0;
             state.Active = true;
             state.Multiplier = multiplier < 1m ? 1m : multiplier;
             state.EndsAtUtcTicks = nowUtcTicks + (long)(durationSeconds * TicksPerSecond);

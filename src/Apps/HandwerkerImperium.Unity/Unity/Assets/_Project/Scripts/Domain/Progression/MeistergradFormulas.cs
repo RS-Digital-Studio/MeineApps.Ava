@@ -19,8 +19,10 @@ namespace HandwerkerImperium.Domain.Progression
         {
             if (grade < 0) grade = 0;
             double raw = (double)baseCost * Math.Pow(growth, grade);
-            if (double.IsNaN(raw) || double.IsInfinity(raw) || raw > (double)decimal.MaxValue) return decimal.MaxValue;
-            decimal cost = Math.Round((decimal)raw);
+            if (double.IsNaN(raw) || double.IsInfinity(raw)) return decimal.MaxValue;
+            decimal cost;
+            try { cost = Math.Round((decimal)raw); }
+            catch (OverflowException) { return decimal.MaxValue; }
             return cost < 1m ? 1m : cost;
         }
 

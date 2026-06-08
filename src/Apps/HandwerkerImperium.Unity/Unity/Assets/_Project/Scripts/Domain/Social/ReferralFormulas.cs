@@ -41,9 +41,10 @@ namespace HandwerkerImperium.Domain.Social
             return true;
         }
 
-        /// <summary>True, wenn jemand seinen eigenen Code eingibt (Selbst-Referral, gesperrt).</summary>
+        /// <summary>True, wenn jemand seinen eigenen Code eingibt (Selbst-Referral, gesperrt). Case-insensitiv,
+        /// damit die Sperre nicht durch Kleinschreibung umgangen werden kann.</summary>
         public static bool IsSelfReferral(string ownCode, string enteredCode) =>
-            !string.IsNullOrEmpty(ownCode) && string.Equals(ownCode, enteredCode);
+            !string.IsNullOrEmpty(ownCode) && string.Equals(ownCode, enteredCode, System.StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// Erreichte Belohnungs-Stufe (0..3) für die Anzahl geworbener Spieler gegen aufsteigende Schwellen

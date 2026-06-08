@@ -31,9 +31,10 @@ namespace HandwerkerImperium.Domain.Tests.Social
         }
 
         [Test]
-        public void IsSelfReferral_BlocksOwnCode()
+        public void IsSelfReferral_BlocksOwnCode_CaseInsensitive()
         {
             Assert.That(ReferralFormulas.IsSelfReferral("ABC123", "ABC123"), Is.True);
+            Assert.That(ReferralFormulas.IsSelfReferral("ABC123", "abc123"), Is.True, "Kleinschreibung umgeht die Sperre nicht");
             Assert.That(ReferralFormulas.IsSelfReferral("ABC123", "XYZ789"), Is.False);
         }
 

@@ -56,7 +56,8 @@ namespace HandwerkerImperium.Domain.LiveOps
 
             if (dayDiff == 1)
             {
-                int next = currentDay % ladderLength + 1; // 1..ladderLength, Wrap
+                int cd = currentDay < 1 ? 1 : (currentDay > ladderLength ? ladderLength : currentDay); // gegen out-of-range-Drift
+                int next = cd % ladderLength + 1; // 1..ladderLength, Wrap
                 return new DailyClaim { CanClaim = true, Day = next, StreakReset = false };
             }
 

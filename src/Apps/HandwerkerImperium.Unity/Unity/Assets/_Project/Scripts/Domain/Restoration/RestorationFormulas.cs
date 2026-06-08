@@ -36,8 +36,10 @@ namespace HandwerkerImperium.Domain.Restoration
         {
             if (phaseIndex < 0) phaseIndex = 0;
             double raw = (double)baseCost * Math.Pow(growth, phaseIndex);
-            if (double.IsNaN(raw) || double.IsInfinity(raw) || raw > (double)decimal.MaxValue) return decimal.MaxValue;
-            decimal cost = Math.Round((decimal)raw); // ganze Zahlen wie bei den Upgrade-Kosten
+            if (double.IsNaN(raw) || double.IsInfinity(raw)) return decimal.MaxValue;
+            decimal cost;
+            try { cost = Math.Round((decimal)raw); } // ganze Zahlen wie bei den Upgrade-Kosten
+            catch (OverflowException) { return decimal.MaxValue; }
             return cost < 1m ? 1m : cost;
         }
 

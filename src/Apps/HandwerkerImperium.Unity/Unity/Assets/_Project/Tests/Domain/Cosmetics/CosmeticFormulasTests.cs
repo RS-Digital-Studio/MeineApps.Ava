@@ -35,6 +35,9 @@ namespace HandwerkerImperium.Domain.Tests.Cosmetics
             Assert.That(CosmeticFormulas.EvaluatePurchase(ownedDef, 100m, owned), Is.EqualTo(CosmeticPurchaseResult.AlreadyOwned));
 
             Assert.That(CosmeticFormulas.EvaluatePurchase(null, 100m, owned), Is.EqualTo(CosmeticPurchaseResult.Invalid));
+
+            var negative = new CosmeticDefinition("skin_bad", CosmeticKind.AvatarSkin, CosmeticCurrency.Gems, -5m);
+            Assert.That(CosmeticFormulas.EvaluatePurchase(negative, 100m, owned), Is.EqualTo(CosmeticPurchaseResult.Invalid), "Negativ-Preis ungueltig");
         }
     }
 }

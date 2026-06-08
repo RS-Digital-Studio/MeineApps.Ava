@@ -24,31 +24,45 @@ namespace HandwerkerImperium.Domain.Notifications
     public static class NotificationScheduleFormulas
     {
         private const long TicksPerSecond = 10_000_000L;
+        private const long MaxDtTicks = 3155378975999999999L; // DateTime.MaxValue.Ticks
 
-        /// <summary>Zeitpunkt, an dem der Offline-Verdienst-Deckel voll ist (lastSeen + Cap-Stunden).</summary>
+        /// <summary>Zeitpunkt, an dem der Offline-Verdienst-Deckel voll ist (lastSeen + Cap-Stunden), gesättigt.</summary>
         public static long OfflineCapFullAt(long lastSeenUtcTicks, double capHours)
         {
             if (capHours < 0) capHours = 0;
-            return lastSeenUtcTicks + (long)(capHours * 3600.0 * TicksPerSecond);
+            return AddClamped(lastSeenUtcTicks, capHours * 3600.0 * TicksPerSecond);
         }
 
-        /// <summary>Nächste UTC-Mitternacht ab <paramref name="nowUtcTicks"/> (Daily-bereit-Erinnerung).</summary>
+        /// <summary>Nächste UTC-Mitternacht ab <paramref name="nowUtcTicks"/> (Daily-bereit-Erinnerung), eingabe-robust.</summary>
         public static long NextUtcMidnight(long nowUtcTicks)
         {
+            if (nowUtcTicks < 0) nowUtcTicks = 0;
+            if (nowUtcTicks > MaxDtTicks) nowUtcTicks = MaxDtTicks;
             DateTime now = new DateTime(nowUtcTicks, DateTimeKind.Utc);
-            DateTime midnight = now.Date.AddDays(1);
-            return midnight.Ticks;
+            if (now.Date >= DateTime.MaxValue.Date) return MaxDtTicks;
+            return now.Date.AddDays(1).Ticks;
         }
 
         /// <summary>Zeitpunkt, an dem ein Rush-Event wieder verfügbar ist (Cooldown-Ende), nie in der Vergangenheit.</summary>
         public static long AvailableAt(long cooldownUntilUtcTicks, long nowUtcTicks) =>
             cooldownUntilUtcTicks > nowUtcTicks ? cooldownUntilUtcTicks : nowUtcTicks;
 
-        /// <summary>Zeitpunkt in <paramref name="seconds"/> Sekunden ab jetzt (generischer relativer Trigger).</summary>
+        /// <summary>Zeitpunkt in <paramref name="seconds"/> Sekunden ab jetzt (generischer relativer Trigger), gesättigt.</summary>
         public static long InSeconds(long nowUtcTicks, double seconds)
         {
             if (seconds < 0) seconds = 0;
-            return nowUtcTicks + (long)(seconds * TicksPerSecond);
+            return AddClamped(nowUtcTicks, seconds * TicksPerSecond);
+        }
+
+        /// <summary>Addiert einen (nicht-negativen) Tick-Offset gesättigt auf [0, DateTime.MaxValue.Ticks].</summary>
+        private static long AddClamped(long baseTicks, double offsetTicks)
+        {
+            if (double.IsNaN(offsetTicks) || offsetTicks < 0) offsetTicks = 0;
+            if (baseTicks < 0) baseTicks = 0;
+            if (offsetTicks > (double)MaxDtTicks) return MaxDtTicks;
+            long o = (long)offsetTicks;
+            if (baseTicks > MaxDtTicks - o) return MaxDtTicks;
+            return baseTicks + o;
         }
     }
 }

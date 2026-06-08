@@ -54,7 +54,7 @@ namespace HandwerkerImperium.Domain.Cosmetics
         /// </summary>
         public static CosmeticPurchaseResult EvaluatePurchase(CosmeticDefinition? def, decimal balance, IReadOnlyCollection<string>? owned)
         {
-            if (def == null || string.IsNullOrEmpty(def.Id)) return CosmeticPurchaseResult.Invalid;
+            if (def == null || string.IsNullOrEmpty(def.Id) || def.Price < 0m) return CosmeticPurchaseResult.Invalid;
             if (IsOwned(owned, def.Id)) return CosmeticPurchaseResult.AlreadyOwned;
             if (!CanAfford(balance, def.Price)) return CosmeticPurchaseResult.NotEnoughCurrency;
             return CosmeticPurchaseResult.Success;

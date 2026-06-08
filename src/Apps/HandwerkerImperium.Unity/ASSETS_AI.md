@@ -1,5 +1,10 @@
 # HandwerkerImperium Unity — KI-Asset-Pipeline (3D + Audio + Animation)
 
+> ⚠️ **STATUS (8.6.2026): Pipeline gültig, Bedarf erweitert.** Die KI-Asset-Pipeline bleibt unverändert gültig.
+> **Zusätzlich** braucht das 3D-Idle (Neuausrichtung): spielbarer **Avatar (+Skins)**, **NPC-Arbeiter**,
+> **Geld-Pickups**, **Carry-Props**, modularer **Stadt-Kit (Ruine↔saniert)**, **Distrikt-Wahrzeichen** (5 Bauphasen)
+> und eine **Franchise-Karte**. Vollständige Bedarfsliste → **[3D_IDLE_GAME_PLAN.md §13](3D_IDLE_GAME_PLAN.md)**.
+
 > **Status:** Produktions-Plan (Stand 2026-05-26, recherchiert)
 > **Ziel:** Skalierbarer, EU-konformer und kommerziell sauberer Workflow für 3D-Assets, Animationen, Texturen und Audio mit KI-Tools — primär lokal (ComfyUI + EU-konforme OSS-Modelle), Cloud-Services als Production-Standard wo Qualität es rechtfertigt.
 > **Geltungsbereich:** Werkstätten, Arbeiter (inkl. sichtbares Equipment + Mood-States), Werkzeuge, Master-Tools, Crafting-Produkte, Buildings, Mini-Game-Props, Gilden-Hall-Gebäude, Mega-Projekte, Gilden-Bosse, City-Tiles, Cosmetics/Event-Visuals, Prestige-Cinematic-Assets, Animationen, Texturen, Game-Audio.

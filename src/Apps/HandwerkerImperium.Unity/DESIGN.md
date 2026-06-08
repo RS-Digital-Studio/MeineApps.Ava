@@ -1,5 +1,10 @@
 # DESIGN.md — HandwerkerImperium-Unity (Game Design Document)
 
+> ⚠️ **STATUS (8.6.2026): Referenz, nicht mehr Soll.** Dieses Original-Sim-GDD beschreibt das Avalonia-Spiel 1:1.
+> Verbindlich für die Unity-Version ist jetzt **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)** (3D-Walk-around-Idle-Tycoon,
+> Mechanik darf bewusst abweichen). Die Werte hier dienen als **Referenz-/Reaktivierungs-Quelle** für übernommene
+> Formeln und zurückgestellte Systeme — siehe GDD §12 (Wiederverwendung) & §15 (Weggelassenes + Reaktivierung).
+
 > **Vollständige Spielmechanik-Spezifikation mit konkreten Werten aus Avalonia v2.1.1.**
 > Alle Balancing-Werte 1:1 portiert (siehe `src/Apps/HandwerkerImperium/HandwerkerImperium.Shared/Models/GameBalanceConstants.cs` als Single-Source-of-Truth).
 > Visualisierungs-Direktiven entsprechen [ASSETS_AI.md](ASSETS_AI.md) (Low-Poly Stylized Toon, Handwerker-Stadt-Hub, 3D-Worker mit Mecanim).

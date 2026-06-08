@@ -1,5 +1,12 @@
 # HandwerkerImperium-Unity — Designplan v1.0
 
+> ⚠️ **ABGELÖST ALS SPIEL-DESIGN-QUELLE (8.6.2026).** Dieser Plan beschreibt die ursprüngliche Richtung
+> „Unity = dasselbe Spiel wie Avalonia, nur 3D". Diese Richtung ist **aufgegeben**. Die Unity-Version wird
+> **voll neu als 3D-Walk-around-Idle-Tycoon** konzipiert — verbindlich ist jetzt **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)**.
+> Aus diesem Dokument bleiben gültig: **Tech-Stack, Architektur, Tooling, Pipeline, Online-Infra**. Die
+> **Spielmechanik-/Feature-Parität-Abschnitte (§5, §6, §11, §16) sind Referenz, nicht mehr Soll** — das neue
+> Spiel ist schlanker und genre-orientiert (My Perfect Hotel / My Mini Mart / Idle Office Tycoon).
+
 > **Status:** Konzept (Pre-MVP) — Mai 2026
 > **Ziel:** Komplette Neuentwicklung von HandwerkerImperium in **Unity 6 (LTS)** parallel zur bestehenden Avalonia-Version. Tech-Foundation analog ArcaneKingdom. Avalonia-Version bleibt produktiv und wird weiter gepflegt, bis die Unity-Version Feature-Parität erreicht hat.
 > **Codename:** *HWI-Unity* (intern), Play-Store-Titel bleibt **HandwerkerImperium**

@@ -1,5 +1,11 @@
 # ORIGINAL_WERTE — Verbindliche Referenz (Single Source of Truth)
 
+> ⚠️ **STATUS (8.6.2026): Formel-Referenz, nicht mehr global verbindlich.** Die unten formulierte
+> „1:1 dasselbe Spiel"-Doktrin ist **abgelöst** — die Unity-Version wird voll neu als 3D-Idle-Tycoon konzipiert
+> (**[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)**). Diese Werte bleiben die **verbindliche Quelle für die
+> wiederverwendeten Formeln** (Income-Soft-Cap, Offline-Staffelung, Auto-Produktion u. a. — GDD §12); für die
+> **nicht** übernommenen Sim-Systeme sind sie **Reaktivierungs-Referenz** (GDD §15), nicht mehr das Soll.
+
 > **Zweck:** Diese Datei spiegelt die echten Mechaniken, Formeln und Balancing-Werte des produktiven **Avalonia-HandwerkerImperium** — direkt aus dem Quellcode extrahiert. Sie ist die **alleinige Wahrheit**, gegen die der Unity-Plan (PLAN/DESIGN/ARCHITECTURE/...) ausgerichtet wird.
 >
 > **Grundsatz:** HandwerkerImperium-Unity ist 1:1 dasselbe Spiel wie das Original — gleiche Mechanik, gleiche Formeln, gleiche Werte — nur besser und in 3D. Jede Abweichung eines Plan-Dokuments von dieser Referenz ist ein Fehler und auf diese Werte zu korrigieren. "Besser/3D" betrifft ausschliesslich Praesentation (Grafik, Hub, Cinematics, UX), niemals die hier dokumentierte Logik.

@@ -1,5 +1,11 @@
 # ARCHITECTURE.md — HandwerkerImperium-Unity
 
+> ⚠️ **STATUS (8.6.2026): Infra/Tech = Soll, Mechanik = Referenz.** Tech-Aufbau (Scenes, Lifetimes, Events,
+> Pipeline, Netz, HMAC-/Anti-Cheat-Pattern) bleibt gültig. Mechanik-spezifische Teile und das **Save-v7-1:1-Schema**
+> werden durch das neue **schlanke Genre-Schema** ersetzt — verbindlich: **[3D_IDLE_GAME_PLAN.md §12](3D_IDLE_GAME_PLAN.md)**.
+> Neue Game-Layer-Systeme (AvatarController, InteractionTrigger, WorkerAutomation, PlotUnlock, TownRestoration,
+> FranchisePrestige) ergänzen diese Architektur.
+
 > **Tech-Detailspezifikation auf Code-Level.**
 > Diese Datei beschreibt: Wie ist das System aufgebaut? Wer ruft wen? Welche Lifetimes? Welche Events? Welche Persistence-Pipeline?
 

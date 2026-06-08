@@ -1,5 +1,10 @@
 # HandwerkerImperium-Unity — Plan-Abgleich gegen das Avalonia-Original
 
+> ⚠️ **STATUS (8.6.2026): historischer Abgleich, abgelöst.** Dieser Soll-Ist-Abgleich prüft die **alte** Richtung
+> „1:1 dasselbe Spiel". Diese Richtung ist aufgegeben — verbindlich ist **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)**.
+> Abweichungen vom Original sind jetzt **gewollt** und kein Fehler mehr; dieses Dokument ist reine Referenz/Historie,
+> **kein Findings-Maßstab** für die Unity-Version mehr.
+
 > Massstab: Die Unity-Version soll **1:1 dasselbe Spiel** wie das produktive Avalonia-Original sein — gleiche Mechaniken, gleiche Formeln, gleiche Balancing-Werte — **nur besser und in 3D**. Jede mechanische oder Balancing-Abweichung des Plans vom Original ist daher ein Fehler; rein visuelle/UX-/3D-Ergaenzungen sind legitim und kein Finding.
 
 > Geprueft: 12 Subsysteme gegen 8 Plan-Dokumente (PLAN/DESIGN/ARCHITECTURE/ROADMAP/ASSETS_AI/SETUP/CLAUDE/README). Original-Umfang als Referenz: 91 Services, 77 Models, 80 ViewModels, 74 Views, ~28k LOC C#.

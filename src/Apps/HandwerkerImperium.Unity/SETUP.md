@@ -1,5 +1,8 @@
 # SETUP.md — HandwerkerImperium-Unity First-Time-Setup
 
+> ⚠️ **HINWEIS (8.6.2026):** Setup-Schritte unverändert gültig. Verbindliche **Spiel-Design**-Quelle ist jetzt
+> **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)** (3D-Idle-Neuausrichtung), nicht mehr die 1:1-Plandocs.
+
 > **Schritt-für-Schritt-Anleitung für die erstmalige Einrichtung.**
 > Geschätzte Dauer: 4-6 Stunden (Unity + Firebase + Tools + KI-Pipeline).
 > Voraussetzung: Windows 10/11, RTX 3090+ (für KI-Pipeline), 64 GB RAM empfohlen.

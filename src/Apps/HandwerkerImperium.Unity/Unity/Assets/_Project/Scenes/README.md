@@ -1,5 +1,10 @@
 # Scenes
 
+> **Hinweis (8.6.2026):** Tech-Scaffold unverändert gültig. Das **Spiel-Design** folgt dem neuen GDD
+> ([3D_IDLE_GAME_PLAN.md](../../../../3D_IDLE_GAME_PLAN.md), 3D-Walk-around-Idle): die Szenen-Hierarchie ist der
+> **begehbare Werkstatt-Stadt-Hub** + additive Szenen (gemäß ARCHITECTURE.md § 4). „MiniGame" ist hier nur noch
+> optionaler Boost (GDD §6.7), keine Pflicht-Szene je Auftrag.
+
 Dieser Ordner ist beim Scaffold absichtlich leer (nur `.gitkeep`). Die `Boot.unity`-Scene wird
 **nicht** von Hand als YAML angelegt, weil per Hand geschriebene Scene-/`.meta`-GUIDs Referenzen
 brechen.

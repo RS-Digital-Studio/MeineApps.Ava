@@ -1,5 +1,10 @@
 # ROADMAP.md — HandwerkerImperium-Unity (Wochenplan)
 
+> ⚠️ **STATUS (8.6.2026): an GDD-Phasen anzugleichen.** Dieser Wochenplan folgt der abgelösten 1:1-Richtung.
+> Maßgeblich sind die Phasen **P0–P4** in **[3D_IDLE_GAME_PLAN.md §14](3D_IDLE_GAME_PLAN.md)** (Greybox-Loop →
+> Vertical Slice → Content → Social/Beta → Polish/Cutover). Bis zur Neufassung gilt diese Datei nur für
+> Tech-/Pipeline-Aufwände als grobe Referenz.
+
 > **Vollständige Wochenweise-Aufschlüsselung der Entwicklungs-Phasen.**
 > Annahme: 1 Entwickler (Vollzeit) + KI-Asset-Pipeline (3D-Modelle, Animationen, Audio inhouse via ComfyUI/Cloud, KEIN Outsourcing — siehe [ASSETS_AI.md](ASSETS_AI.md)).
 > **Visualisierungs-Ansatz:** Kompromissloses 3D von Anfang an → KI-Asset-Pipeline parallel zur Code-Entwicklung.

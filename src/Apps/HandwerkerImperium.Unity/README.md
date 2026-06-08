@@ -1,10 +1,11 @@
 # HandwerkerImperium-Unity
 
 > **Neuentwicklung von HandwerkerImperium in Unity 6 (LTS), parallel zur Avalonia-Version.**
-> GENAU DASSELBE SPIEL wie das produktive Avalonia-Original — gleiche Mechaniken, Formeln und
-> Balancing-Werte — nur in 3D und mit besserer Präsentation. Idle-Incremental-Builder mit
-> Mini-Games, 7-Tier-Prestige, 10 Werkstätten in einer Handwerker-Stadt, Gilden, Co-op-Orders,
-> Boss-Kämpfen, Master-Tools und Mega-Projekten.
+> **NEUAUSRICHTUNG (8.6.2026):** ein **eigenständiger 3D-Walk-around-Idle-Tycoon** (Stil: My Perfect Hotel /
+> My Mini Mart / Idle Office Tycoon) — gleiches Thema (Handwerk) & Personal (Meister Hans), aber genre-typische
+> Schleife: Avatar läuft durch die Werkstatt-Stadt, sammelt Cash, stellt Arbeiter an, baut Werkstätten aus,
+> saniert die Stadt, expandiert (Prestige = neue Stadt). **Mechanik darf vom Avalonia-Original abweichen.**
+> Verbindlicher Spiel-Plan: **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)**. Das Avalonia-Original bleibt produktiv.
 
 | | |
 |---|---|
@@ -22,12 +23,13 @@
 
 ### Erstes Mal hier?
 
-1. **Verstehen:** Lies [PLAN.md](PLAN.md) (Vision, Strategie, MVP-Definition)
+0. **Spiel-Design (zuerst!):** Lies **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)** — der verbindliche GDD der 3D-Idle-Neuausrichtung.
+1. **Hintergrund:** [PLAN.md](PLAN.md) (alte Vision/Strategie — Tech gültig, Mechanik-Teil nur Referenz)
 2. **Setup:** Folge [SETUP.md](SETUP.md) (Unity, Firebase, KI-Pipeline)
-3. **Spielmechanik:** Lies [DESIGN.md](DESIGN.md) (alle Werte, Mechaniken, Mega-Projekte)
+3. **Original-Sim als Referenz:** [DESIGN.md](DESIGN.md) / [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) (Werte/Formeln zum Wiederverwenden — nicht mehr Soll)
 4. **Code:** Lies [CLAUDE.md](CLAUDE.md) (Conventions) und [ARCHITECTURE.md](ARCHITECTURE.md) (Tech-Details)
-5. **Roadmap:** [ROADMAP.md](ROADMAP.md) (72-Wochen-Sprint-Plan)
-6. **Assets:** [ASSETS_AI.md](ASSETS_AI.md) (KI-Asset-Pipeline)
+5. **Roadmap:** [ROADMAP.md](ROADMAP.md) (an GDD-Phasen anzugleichen)
+6. **Assets:** [ASSETS_AI.md](ASSETS_AI.md) (KI-Asset-Pipeline + neuer Bedarf: Avatar/NPC/Stadt)
 
 ### Existierende Codebase anschauen
 

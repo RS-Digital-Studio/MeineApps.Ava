@@ -1,5 +1,11 @@
 # HandwerkerImperium.Unity — Domain-Port-Roadmap + 3D-Remake-Leitlinie
 
+> ⚠️ **TEILWEISE ABGELÖST (8.6.2026).** Der **Domain-Port-Teil** (Schicht 10–16, Reihenfolge, Hazards,
+> `*Formulas.cs`-Extrakte) bleibt **gültig** — der portierte Code ist weiter wertvoll. Der **„3D-Präsentationsplan"**
+> weiter unten beruht aber auf der **abgelösten** Prämisse „Mechanik 1:1, nur Präsentation 3D". Die Unity-Version
+> wird **voll neu als 3D-Walk-around-Idle-Tycoon** konzipiert — verbindlich ist **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)**.
+> Welche der portierten Formeln/Systeme ins neue Spiel übernommen werden bzw. ruhen → [3D_IDLE_GAME_PLAN.md §12 & §15](3D_IDLE_GAME_PLAN.md).
+
 Dependency-geordnete Rest-Roadmap des Domain-Ports (netstandard2.1 / C# 9, Unity 6000.4.8f1),
 bewusst Zurückgestelltes, durchgehender 3D-Präsentationsplan und empfohlener nächster Schritt.
 Erstellt aus einer Klassifikations-Analyse aller Rest-Typen (6 Slices) + zwei 3D-Plan-Streams.

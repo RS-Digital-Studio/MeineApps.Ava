@@ -5,34 +5,52 @@ Unity-6-Neuentwicklung von HandwerkerImperium, **parallel** zur produktiven Aval
 Projekts. Generische Arbeitsweise → globale CLAUDE.md. Avalonia-Architektur/-Conventions →
 Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 
-> **Stand:** Pre-MVP. Der **komplette Domain-Layer (Schicht 1-16) ist 1:1 aus dem Avalonia-Original portiert**
-> und liegt unter `Unity/Assets/_Project/Scripts/Domain/` (Economy, Orders, Crafting, Progression, Research,
-> Reputation, Buildings, Guild, Events, LiveOps, Settings, Statistics, Boosts, Cosmetics, Onboarding,
-> Notifications, Warehouse, **State/GameState** v7) + EditMode-Tests unter `…/Tests/Domain/`. Jede Schicht
-> 3-fach verifiziert (netstandard2.1/C#9-Compat-Compile + Werte-Run gegen Original + ggf. Quelltext-Diff),
-> der GameState-Root zusätzlich per **v7-JSON-Save-Roundtrip** (Newtonsoft). **Zusätzlich ist der gesamte
-> Domain + alle EditMode-Tests im ECHTEN Unity 6000.4.8f1 kompiliert und ausgeführt — 143 NUnit-Tests /
-> 26 Fixtures, 0 Fehler** (via unity-mcp). Dazu sind **alle 10 reinen Service-Formel-Kerne als `*Formulas.cs`
-> extrahiert** (Income/Offline/Market/Equipment/AutoProduction/Crafting/GuildBoss/DailyChallenge/WorkerTick/
-> Order — Service-/Gilden-/RNG-Eingaben als Parameter; State-Mutation/Netzwerk/Events bleiben im Game-Service).
-> Roadmap + Hazards + 3D-Plan → [DOMAIN_3D_PLAN.md](DOMAIN_3D_PLAN.md). **Offen:** Game-/UI-/Bootstrap-Layer
-> (3D-Präsentation). Bewusst in der Präsentations-/Netzwerk-Schicht: Firebase-DTOs, Guild-Display-DTOs,
-> ContextualHint/FtueStep-Definitionen, alle Lokalisierungs-/Icon-/Farb-Anteile. Alles in
-> ARCHITECTURE/DESIGN/ROADMAP über die Präsentation/Infra Beschriebene ist weiterhin **Soll**, nicht Ist.
+> **NEUAUSRICHTUNG (8.6.2026) — verbindliche Spiel-Design-Quelle ist jetzt [3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md).**
+> Die Unity-Version wird **voll neu als 3D-Walk-around-Idle-Tycoon** (Stil: My Perfect Hotel / My Mini Mart /
+> Idle Office Tycoon) konzipiert — **Mechanik darf bewusst vom Avalonia-Original abweichen.** Die frühere
+> „dasselbe Spiel, nur 3D-Präsentation"-Doktrin ist **abgelöst** (siehe §1). Gleiches Thema (Handwerk) + Personal
+> (Meister Hans), aber genre-typische Schleife: Avatar läuft, sammelt Cash, stellt Arbeiter an, baut Werkstätten
+> aus, saniert die Stadt. **Tech-Stack & Unity-Conventions in dieser Datei bleiben unverändert gültig.** Der
+> alte 1:1-Domain-Port wurde **auf Nutzer-Entscheidung vollständig entfernt** (Clean-Slate) — `Domain/`
+> enthält jetzt **ausschließlich** den neuen 3D-Idle-Core. Reaktivierung des Alt-Ports über git-Tag
+> `hwi-unity-domain-port-pre-cleanslate`.
+>
+> **Stand:** Pre-MVP, **P0 komplett + headless verifiziert**, P1 läuft (Reihenfolge → [P1_VERTICAL_SLICE.md §7](P1_VERTICAL_SLICE.md)).
+> Der `Domain/`-Layer ist **clean-slate** und enthält nur noch das neue, Unity-freie 3D-Idle-System:
+> `Domain/Idle/` (IdleBalancing, GreyboxSimState, IdleEconomyFormulas, GreyboxSimulation) + `Domain/Offline/`
+> (pure, entkoppelte Staffel-Formel 0.80/0.35/0.15/0.05 — die **einzige** aus dem Alt-Port übernommene Mathematik).
+> Der **gesamte alte 1:1-Port (Schicht 1-16: Economy, Orders, Crafting, Progression, Research, Reputation,
+> Buildings, Guild, Events, LiveOps, Settings, Statistics, Boosts, Cosmetics, Onboarding, Notifications,
+> Warehouse, State/GameState v7) samt seinen ~143 Alt-Tests und allen 10 `*Formulas.cs`-Extrakten ist gelöscht**
+> — er ist über den git-Tag reaktivierbar, nicht mehr im Working-Tree. Die im GDD/P1 als „Reuse" genannten
+> Formeln (Income-Soft-Cap, AutoProduction, Worker, Equipment, Order) hingen an Alt-Typen und wurden mitgelöscht;
+> die wenigen davon benötigten Teile (z. B. Log2-Soft-Cap) werden in P1 **schlank neu** im Idle-Namespace gebaut.
+> Verifikation des neuen Stands: **netstandard2.1/C#9-Compat-Compile (0 Fehler)** + **echtes Unity 6000.4.8f1:
+> 19 NUnit-Tests / 3 Fixtures, 0 Fehler** (Idle-Core + Game-Service-Schicht, via unity-mcp-Reflection-Runner).
+> **Offen:** restliche P1-Systeme (StarRating, TownRestoration, FranchisePrestige, MonetizationGateway,
+> StoryBeat, Cinematic, OrderQueue) + Game-/UI-/Bootstrap-3D-Präsentation. **Spiel-Design** folgt dem GDD
+> ([3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)); ARCHITECTURE/DESIGN/ROADMAP-Mechanik gilt nur als Referenz,
+> Infra-/Tech-Beschreibungen (Scenes, Save, Netz, Pipeline) bleiben Soll.
 
 ---
 
 ## 1. Grundsatz (unverhandelbar)
 
-Die Unity-Version ist **dasselbe Spiel** wie das produktive Avalonia-Original — gleiche
-Mechaniken, Formeln, Balancing-Werte. "Besser/3D" betrifft **ausschließlich die Präsentation**
-(Grafik, 3D, Hub, Cinematics, Audio, Input, UI-Tech). JEDE mechanische oder Balancing-Abweichung
-ist ein Fehler.
+Die Unity-Version ist ein **eigenständiges, genre-typisches Spiel**: ein **3D-Walk-around-Idle-Tycoon**
+(Stil: My Perfect Hotel / My Mini Mart / Idle Office Tycoon). **Gleiches Thema** (Handwerk) und **Personal**
+(Meister Hans) wie das Avalonia-Original — aber die **Spiel-Mechanik darf bewusst abweichen** (Avatar läuft &
+sammelt, Arbeiter-Automatisierung, Plot-/Distrikt-Ausbau, Stadt-Wiederaufbau, ein Prestige = neue Stadt).
 
-Verbindliche Werte-Referenzen, im Zweifel gelten diese (niemals Werte erfinden):
-- [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) — echte Werte/Formeln aus dem Avalonia-Code
-- [DESIGN.md](DESIGN.md) — abgeglichenes GDD
-- [PLAN_ABGLEICH_ORIGINAL.md](PLAN_ABGLEICH_ORIGINAL.md) — System-für-System-Soll-Ist-Abgleich
+> Die alte Doktrin „dasselbe Spiel, jede Abweichung ist ein Bug" gilt **nicht mehr**. Verbindliche
+> Spiel-Design-Quelle ist **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)**.
+
+Werte-/Referenz-Quellen (Status unter der Neuausrichtung):
+- [3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md) — **verbindlicher GDD** (Loop, Systeme, Monetarisierung, Roadmap).
+- [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) — Original-Werte/Formeln: **Referenz** für wiederverwendete Formeln (Income/Offline/Auto-Produktion); nicht mehr global verbindlich.
+- [DESIGN.md](DESIGN.md) / [PLAN_ABGLEICH_ORIGINAL.md](PLAN_ABGLEICH_ORIGINAL.md) — Original-Sim als **Themen-/Reaktivierungs-Referenz**, nicht als Soll.
+
+**Balancing-Disziplin bleibt:** wo der GDD Original-Formeln wiederverwendet, gelten deren Werte (nicht neu
+erfinden); neue Genre-Mechaniken werden gegen Idle-Arcade-KPIs getunt (§14 GDD), nicht freihändig gesetzt.
 
 Migration: Closed Beta unter eigener App-ID (`com.meineapps.handwerkerimperium2.beta`).
 Avalonia-Original bleibt produktiv. Cutover erst nach erfolgreicher Beta.
@@ -161,10 +179,10 @@ Konkrete Code-Skelette → [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Service-Caches resetten:** Jeder Service mit Cache **muss** sich auf `StateLoadedEvent`
   **und** `PrestigeCompletedEvent` subscriben und dort die Caches leeren (Avalonia-Gotcha #1 —
   stale Werte nach Prestige/Load).
-- **Save-Schema:** Single-Source-of-Truth `SaveMigrator.CurrentSchemaVersion` (geplant v8 =
-  Avalonia-v7 + Unity-Slices). Save ist in modular migrierbare **Slices** unterteilt
-  (GameState, Workshops, Workers, Orders, Research, Prestige, … + `UnitySpecificSlice`).
-  Vollständige Slice-Liste & Persistenz-Trigger → [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Save-Schema:** Single-Source-of-Truth `SaveMigrator.CurrentSchemaVersion`. Unter der Neuausrichtung
+  **neues, schlankeres Schema** mit Genre-Slices (Town, Stations, Workers, Restoration, Franchise, Cosmetics,
+  Economy, …) statt Avalonia-v7-1:1. **Migrierbarkeit + HMAC-Signatur-Pattern bleiben.** Slice-Definition →
+  [3D_IDLE_GAME_PLAN.md §12](3D_IDLE_GAME_PLAN.md); Migrations-Infra-Mechanik → [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Anti-Cheat (HMAC):** Lokaler Haupt-Save → gerätegebundene Signatur über GameState-Kernwerte
   (`PlayerLevel|PrestigeCount|Money:F2|GoldenScrews|TotalOrders`), Verifikation lokal via
   `FixedTimeEquals`. Bei ungültiger Signatur **reparieren statt ablehnen** (`SanitizeState`
@@ -216,17 +234,25 @@ Time-Scaling); kein hardcoded `Animator.Play("State")` → typsicheres Wrapper.
 
 ## 10. Plandokumente
 
-| Datei | Inhalt |
-|-------|--------|
-| [PLAN.md](PLAN.md) | Vision, Strategie, MVP-Definition |
-| [DESIGN.md](DESIGN.md) | Game Design Document (alle Mechaniken/Werte) |
-| [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) | Echte Werte/Formeln aus dem Avalonia-Code |
-| [PLAN_ABGLEICH_ORIGINAL.md](PLAN_ABGLEICH_ORIGINAL.md) | System-für-System-Soll-Ist-Abgleich |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Tech-Details (Scenes, Save-Slices, Editor-Tools, Netz) |
-| [ROADMAP.md](ROADMAP.md) | Beta-gestufter Wochenplan |
-| [ASSETS_AI.md](ASSETS_AI.md) | KI-Asset-Pipeline (3D-Meshes/PBR/Audio/Voice) |
-| [SETUP.md](SETUP.md) | Unity-/Firebase-/Pipeline-Setup |
-| [README.md](README.md) | Schnelleinstieg |
+| Datei | Inhalt | Status (Neuausrichtung) |
+|-------|--------|-------------------------|
+| **[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)** | **Verbindlicher GDD** der 3D-Idle-Neuausrichtung (Loop, Systeme, Story, Monetarisierung, Roadmap) | **SOLL — Spiel-Design** |
+| **[PROGRESSION_BALANCING.md](PROGRESSION_BALANCING.md)** | Langzeit-Progression & Balancing: **max. 3 Prestige**, Meisterschaft, Endgame-Meistergrade, Monate-Pacing | **SOLL — Progression** |
+| **[P0_GREYBOX_PROTOTYP.md](P0_GREYBOX_PROTOTYP.md)** | Buildbare Spec des ersten Fun-Check-Prototyps (Go/No-Go) | **SOLL — nächster Schritt** |
+| [P1_VERTICAL_SLICE.md](P1_VERTICAL_SLICE.md) | Vertical Slice: 1 volle Stadt bis erstes Prestige + Kern-Monetarisierung | SOLL — Phase P1 |
+| [P2_CONTENT.md](P2_CONTENT.md) | Content: 4 Städte, Sanierung, Master-Tools, Meisterschaft/Perkboard, Cosmetics, Live-Ops, 6 Sprachen | SOLL — Phase P2 |
+| [P3_SOCIAL_BETA.md](P3_SOCIAL_BETA.md) | Telemetrie, Remote-Live-Ops, Push, Leaderboards, Closed Beta | SOLL — Phase P3 |
+| [P4_POLISH_CUTOVER.md](P4_POLISH_CUTOVER.md) | KPI-Balancing, Performance, Store, Cutover-Entscheidungsrahmen | SOLL — Phase P4 |
+| [PLAN.md](PLAN.md) | Vision, Strategie, MVP-Definition (Original-1:1-Richtung) | Reframt — Banner verweist auf GDD |
+| [DESIGN.md](DESIGN.md) | Original-Sim-GDD (alle Mechaniken/Werte) | Referenz/Reaktivierung, nicht Soll |
+| [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) | Echte Werte/Formeln aus dem Avalonia-Code | Referenz für wiederverwendete Formeln |
+| [PLAN_ABGLEICH_ORIGINAL.md](PLAN_ABGLEICH_ORIGINAL.md) | System-für-System-Soll-Ist-Abgleich | Referenz, nicht Soll |
+| [DOMAIN_3D_PLAN.md](DOMAIN_3D_PLAN.md) | Domain-Port-Roadmap + alter Mechanik-1:1-3D-Plan | Port-Teil gültig, Mechanik-1:1-Teil abgelöst |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Tech-Details (Scenes, Save-Slices, Editor-Tools, Netz) | Infra=Soll; Mechanik-Bezüge=Referenz |
+| [ROADMAP.md](ROADMAP.md) | Beta-gestufter Wochenplan | An GDD-Phasen (§14) anzugleichen |
+| [ASSETS_AI.md](ASSETS_AI.md) | KI-Asset-Pipeline (3D-Meshes/PBR/Audio/Voice) | Gültig + neuer Bedarf (Avatar/NPC/Stadt, GDD §13) |
+| [SETUP.md](SETUP.md) | Unity-/Firebase-/Pipeline-Setup | Gültig |
+| [README.md](README.md) | Schnelleinstieg | Reframt auf 3D-Idle |
 
 - Domain-Referenz: [Avalonia-Version](../HandwerkerImperium/CLAUDE.md)
 - Unity-Architektur-Referenz (echter Code): [ArcaneKingdom](../ArcaneKingdom/CLAUDE.md)

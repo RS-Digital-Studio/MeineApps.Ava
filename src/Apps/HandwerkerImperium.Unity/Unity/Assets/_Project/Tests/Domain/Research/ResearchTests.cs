@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using HandwerkerImperium.Domain.Research;
 using NUnit.Framework;
+using ResearchModel = HandwerkerImperium.Domain.Research.Research;
 
 namespace HandwerkerImperium.Domain.Tests.Research
 {
@@ -71,7 +72,7 @@ namespace HandwerkerImperium.Domain.Tests.Research
         [Test]
         public void InstantFinishScrewCost_MatchOriginal()
         {
-            int Cost(int level) => new Research { Level = level }.InstantFinishScrewCost;
+            int Cost(int level) => new ResearchModel { Level = level }.InstantFinishScrewCost;
             Assert.That(Cost(7), Is.EqualTo(0));
             Assert.That(Cost(8), Is.EqualTo(15));
             Assert.That(Cost(10), Is.EqualTo(40));
@@ -82,10 +83,10 @@ namespace HandwerkerImperium.Domain.Tests.Research
         [Test]
         public void Progress_And_RemainingTime_Compute()
         {
-            Assert.That(new Research { IsResearched = true }.Progress, Is.EqualTo(100.0));
-            Assert.That(new Research().RemainingTime, Is.Null);
+            Assert.That(new ResearchModel { IsResearched = true }.Progress, Is.EqualTo(100.0));
+            Assert.That(new ResearchModel().RemainingTime, Is.Null);
 
-            var active = new Research
+            var active = new ResearchModel
             {
                 Level = 20,
                 IsActive = true,

@@ -5,6 +5,7 @@ using HandwerkerImperium.Domain.Achievements;
 using HandwerkerImperium.Domain.LiveOps;
 using HandwerkerImperium.Domain.Orders;
 using NUnit.Framework;
+using AchievementsCatalog = HandwerkerImperium.Domain.Achievements.Achievements;
 
 namespace HandwerkerImperium.Domain.Tests.Catalogs
 {
@@ -19,7 +20,7 @@ namespace HandwerkerImperium.Domain.Tests.Catalogs
         [Test]
         public void Achievements_Catalog_MatchOriginal()
         {
-            var achs = Achievements.GetAll();
+            var achs = AchievementsCatalog.GetAll();
             Assert.That(achs.Count, Is.EqualTo(109));
             Assert.That(achs.Select(a => a.Id).Distinct().Count(), Is.EqualTo(109));
             Assert.That(achs.Count(a => a.Category == AchievementCategory.Workshops), Is.EqualTo(15));

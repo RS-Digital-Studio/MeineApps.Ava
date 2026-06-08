@@ -1,11 +1,12 @@
 using System;
 using HandwerkerImperium.Domain.Common;
 using HandwerkerImperium.Domain.Crafting;
+using HandwerkerImperium.Domain.Economy;
 using HandwerkerImperium.Domain.Events;
-using HandwerkerImperium.Domain.Research;
 using HandwerkerImperium.Domain.State;
 using HandwerkerImperium.Domain.Warehouse;
 using NUnit.Framework;
+using ResearchModel = HandwerkerImperium.Domain.Research.Research;
 
 namespace HandwerkerImperium.Domain.Tests.Formulas
 {
@@ -126,11 +127,11 @@ namespace HandwerkerImperium.Domain.Tests.Formulas
             Assert.That(MarketFormulas.IsMarketAvailable(noRes, false), Is.True);
 
             var withRes = GameState.CreateNew(); withRes.IsPremium = false;
-            withRes.Researches.Add(new Research { Id = "logi_05", IsResearched = true });
+            withRes.Researches.Add(new ResearchModel { Id = "logi_05", IsResearched = true });
             Assert.That(MarketFormulas.IsMarketAvailable(withRes, true), Is.True);
 
             var notDone = GameState.CreateNew(); notDone.IsPremium = false;
-            notDone.Researches.Add(new Research { Id = "logi_05", IsResearched = false });
+            notDone.Researches.Add(new ResearchModel { Id = "logi_05", IsResearched = false });
             Assert.That(MarketFormulas.IsMarketAvailable(notDone, true), Is.False);
         }
     }

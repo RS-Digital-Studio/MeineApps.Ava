@@ -71,5 +71,10 @@ namespace HandwerkerImperium.Domain.Idle
         // ── Offline ────────────────────────────────────────────────────────
         /// <summary>Deckel der angerechneten Offline-Zeit in Sekunden (P0: 2 h).</summary>
         public double OfflineCapSeconds = 7200;
+        /// <summary>
+        /// Optionaler flacher Offline-Bonus je automatisierter Station (P0-Spec §4 „offlineRatePerWorker").
+        /// Default 0 = nur die aus der Stations-Oekonomie abgeleitete Rate. &gt; 0 = additiver Bonus/Sekunde je Worker.
+        /// </summary>
+        public decimal OfflineRatePerWorker = 0m;
     }
 }

@@ -186,12 +186,26 @@ namespace HandwerkerImperium.Domain.Idle
             return sum;
         }
 
+        /// <summary>Anzahl freigeschalteter Stationen mit angestelltem Worker (Automatisierungsgrad).</summary>
+        public static int AutomatedWorkerCount(GreyboxSimState state)
+        {
+            int count = 0;
+            for (int i = 0; i < state.Stations.Count; i++)
+                if (state.Stations[i].Unlocked && state.Stations[i].HasWorker) count++;
+            return count;
+        }
+
         /// <summary>
         /// Berechnet den Offline-Verdienst fuer eine Abwesenheitsdauer (gestaffelt, gedeckelt) — ohne ihn
-        /// gutzuschreiben (der „Waehrend-du-weg-warst"-Dialog entscheidet).
+        /// gutzuschreiben (der „Waehrend-du-weg-warst"-Dialog entscheidet). Rate/Sekunde = abgeleitete
+        /// Stations-Oekonomie + optionaler flacher <see cref="IdleBalancing.OfflineRatePerWorker"/> je Worker.
         /// </summary>
-        public static decimal ComputeOfflineEarnings(GreyboxSimState state, IdleBalancing balancing, double elapsedSeconds) =>
-            IdleEconomyFormulas.OfflineEarnings(TotalAutomatedIncomePerSecond(state, balancing), elapsedSeconds, balancing.OfflineCapSeconds);
+        public static decimal ComputeOfflineEarnings(GreyboxSimState state, IdleBalancing balancing, double elapsedSeconds)
+        {
+            decimal ratePerSecond = TotalAutomatedIncomePerSecond(state, balancing)
+                                  + AutomatedWorkerCount(state) * balancing.OfflineRatePerWorker;
+            return IdleEconomyFormulas.OfflineEarnings(ratePerSecond, elapsedSeconds, balancing.OfflineCapSeconds);
+        }
 
         /// <summary>Schreibt einen berechneten Offline-Betrag gut und aktualisiert den Zeitstempel.</summary>
         public static void ApplyOfflineEarnings(GreyboxSimState state, decimal amount, long nowUtcTicks)

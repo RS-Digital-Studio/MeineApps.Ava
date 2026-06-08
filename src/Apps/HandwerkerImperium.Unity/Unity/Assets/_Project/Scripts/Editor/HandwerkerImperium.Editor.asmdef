@@ -8,7 +8,9 @@
         "HandwerkerImperium.UI",
         "Unity.Addressables.Editor",
         "Unity.Localization.Editor",
-        "Unity.Nuget.Newtonsoft-Json"
+        "Unity.Nuget.Newtonsoft-Json",
+        "VContainer",
+        "VContainer.Unity"
     ],
     "includePlatforms": [
         "Editor"

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using VContainer;
+using HandwerkerImperium.Domain.Idle;
 
 namespace HandwerkerImperium.Game
 {
@@ -8,7 +9,8 @@ namespace HandwerkerImperium.Game
     /// Zentraler Greybox-Coordinator (P0): tickt die P0-§3-Services pro Frame (Produktion +
     /// Worker-Automatisierung), rechnet den Offline-Verdienst beim Start an (P0-§3 OfflineProgressService),
     /// speichert periodisch und bei Pause/Quit (CLAUDE.md-Gotcha: Save in OnApplicationPause(true)).
-    /// Die Interaktions-/View-MonoBehaviours rufen die hier exponierten, injizierten Services.
+    /// Die View-/Interaktions-MonoBehaviours referenzieren diesen Controller (per Inspector) und nutzen
+    /// die hier exponierten, injizierten Services — robuste Verdrahtung ohne Per-View-DI.
     /// </summary>
     public sealed class GreyboxGameController : MonoBehaviour
     {
@@ -17,6 +19,8 @@ namespace HandwerkerImperium.Game
         private GreyboxSession _session;
         private StationService _stations;
         private WorkerAutomationService _workers;
+        private UpgradePadService _upgrades;
+        private PlotUnlockService _plots;
         private OfflineProgressService _offline;
         private EconomyService _economy;
         private float _saveTimer;
@@ -24,17 +28,24 @@ namespace HandwerkerImperium.Game
         public EconomyService Economy => _economy;
         public StationService Stations => _stations;
         public WorkerAutomationService Workers => _workers;
+        public UpgradePadService Upgrades => _upgrades;
+        public PlotUnlockService Plots => _plots;
+
+        /// <summary>Das aktive Balancing (fuer View-Werte wie WalkSpeed). Null bis zur DI-Injektion.</summary>
+        public IdleBalancing Balancing => _session != null ? _session.Balancing : null;
 
         /// <summary>Letzter berechneter Offline-Verdienst beim Start (fuer den „Waehrend du weg warst"-Dialog).</summary>
         public decimal LastOfflineEarned { get; private set; }
 
         [Inject]
         public void Construct(GreyboxSession session, StationService stations, WorkerAutomationService workers,
-            OfflineProgressService offline, EconomyService economy)
+            UpgradePadService upgrades, PlotUnlockService plots, OfflineProgressService offline, EconomyService economy)
         {
             _session = session;
             _stations = stations;
             _workers = workers;
+            _upgrades = upgrades;
+            _plots = plots;
             _offline = offline;
             _economy = economy;
         }

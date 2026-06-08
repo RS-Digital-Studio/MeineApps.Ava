@@ -15,22 +15,30 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > enthält jetzt **ausschließlich** den neuen 3D-Idle-Core. Reaktivierung des Alt-Ports über git-Tag
 > `hwi-unity-domain-port-pre-cleanslate`.
 >
-> **Stand:** Pre-MVP, **P0 komplett + headless verifiziert**, P1 läuft (Reihenfolge → [P1_VERTICAL_SLICE.md §7](P1_VERTICAL_SLICE.md)).
-> Der `Domain/`-Layer ist **clean-slate** und enthält nur noch das neue, Unity-freie 3D-Idle-System:
-> `Domain/Idle/` (IdleBalancing, GreyboxSimState, IdleEconomyFormulas, GreyboxSimulation) + `Domain/Offline/`
-> (pure, entkoppelte Staffel-Formel 0.80/0.35/0.15/0.05 — die **einzige** aus dem Alt-Port übernommene Mathematik).
-> Der **gesamte alte 1:1-Port (Schicht 1-16: Economy, Orders, Crafting, Progression, Research, Reputation,
-> Buildings, Guild, Events, LiveOps, Settings, Statistics, Boosts, Cosmetics, Onboarding, Notifications,
-> Warehouse, State/GameState v7) samt seinen ~143 Alt-Tests und allen 10 `*Formulas.cs`-Extrakten ist gelöscht**
-> — er ist über den git-Tag reaktivierbar, nicht mehr im Working-Tree. Die im GDD/P1 als „Reuse" genannten
-> Formeln (Income-Soft-Cap, AutoProduction, Worker, Equipment, Order) hingen an Alt-Typen und wurden mitgelöscht;
-> die wenigen davon benötigten Teile (z. B. Log2-Soft-Cap) werden in P1 **schlank neu** im Idle-Namespace gebaut.
-> Verifikation des neuen Stands: **netstandard2.1/C#9-Compat-Compile (0 Fehler)** + **echtes Unity 6000.4.8f1:
-> 19 NUnit-Tests / 3 Fixtures, 0 Fehler** (Idle-Core + Game-Service-Schicht, via unity-mcp-Reflection-Runner).
-> **Offen:** restliche P1-Systeme (StarRating, TownRestoration, FranchisePrestige, MonetizationGateway,
-> StoryBeat, Cinematic, OrderQueue) + Game-/UI-/Bootstrap-3D-Präsentation. **Spiel-Design** folgt dem GDD
-> ([3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)); ARCHITECTURE/DESIGN/ROADMAP-Mechanik gilt nur als Referenz,
-> Infra-/Tech-Beschreibungen (Scenes, Save, Netz, Pipeline) bleiben Soll.
+> **Stand:** Pre-MVP. **P0 komplett + headless verifiziert.** Der **gesamte Unity-freie Domain-Logik-Layer für
+> P1–P4 ist gebaut + getestet** (clean-slate, kein Alt-Port-Rest). Alt-Port (Schicht 1-16 + ~143 Alt-Tests +
+> 10 `*Formulas.cs`) ist gelöscht, via git-Tag `hwi-unity-domain-port-pre-cleanslate` reaktivierbar.
+>
+> **`Domain/`-Namespaces (alle pur, Unity-frei, NUnit-getestet):**
+> - `Idle` (P0-Core: IdleBalancing, GreyboxSimState, IdleEconomyFormulas, GreyboxSimulation) · `Offline` (pure Staffel 0.80/0.35/0.15/0.05)
+> - `Economy/IncomeSoftCap` (Log2 `T+log2(1+(M-T))`, validiert geborgen) · `Orders/OrderQueueFormulas` (Kunden-Queue + Eil-Auftrag)
+> - `Restoration` (Wahrzeichen-Bauphasen) · `Progression` (Prestige `floor(sqrt(money/100k))`+×3/×12/×60, Mastery `1.15^N`, Meistergrad `1.5^R`, Perkboard, MasterTools 12/+74%)
+> - `StarRating` (1-5★ Aggregat + Hysterese) · `Franchise/WorldTier` (4 Städte) · `MiniGames` (Tap-Boosts) · `Cosmetics`
+> - `LiveOps` (DailyReward `GetScaledMoney`, DailyTask, Seasonal, RushEvent, RemoteConfig A/B, WhatsNew) · `Achievements`
+> - `Social` (Referral, Leaderboard-HMAC, CrossPromo) · `Notifications` (Scheduling) · `Analytics` (Taxonomie) · `Common/StableHash` (FNV-1a)
+> - `Save` (GameSave-Slices + **HMAC über ALLE economy-kritischen Felder** + Migrator + Sanitizer + CloudSave) · `Monetization` (Ads/Premium + Avalonia-Migration) · `Story` (Hans-Beats)
+>
+> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **134 NUnit /
+> 0 Fehler** (125 Domain + 9 Game-Service, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale
+> Mehr-Agenten-Reviews** gegen die .md-Specs → alle gefundenen Bugs (Anti-Cheat-Lücken, Determinismus, Overflow,
+> Off-by-one) fix-forward behoben. **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews,
+> kein `PlayerLevel` (stattdessen `Mastery.Level` signiert) — bewusste Schema-Neuausrichtung.
+>
+> **Offen (externe/gated Schichten):** Game-Service-Runtime-Integration (GameModel + Services über den Domain-Formeln,
+> P0-Pattern), BalancingConfig-ScriptableObject (zentrale Tuning-Werte), Unity-Scene-Authoring/3D-Präsentation,
+> 3D-Assets (ComfyUI), Firebase-Backend/Push/Ad-IAP-SDK, Beta/Store/KPIs/Performance/Cutover. **Spiel-Design** folgt
+> dem GDD ([3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)); ARCHITECTURE/DESIGN/ROADMAP-Mechanik = Referenz,
+> Infra/Tech (Scenes, Save, Netz, Pipeline) = Soll.
 
 ---
 

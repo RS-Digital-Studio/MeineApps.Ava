@@ -1,7 +1,7 @@
 using System;
 using HandwerkerImperium.Domain.Idle;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// P0-Spec §3: Rueckkehr-Verdienst. Nutzt <see cref="GreyboxSimulation.ComputeOfflineEarnings"/>,

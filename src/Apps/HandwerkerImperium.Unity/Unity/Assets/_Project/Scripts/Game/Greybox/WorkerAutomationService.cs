@@ -1,6 +1,6 @@
 using HandwerkerImperium.Domain.Idle;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// P0-Spec §3: NPC-Anstellung (Hire-Pad) + Automatisierung — der Worker uebernimmt das Tragen

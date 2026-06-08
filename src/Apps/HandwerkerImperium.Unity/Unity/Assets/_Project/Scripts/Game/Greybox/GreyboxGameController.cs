@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using VContainer;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// Zentraler Greybox-Coordinator (P0): tickt die P0-§3-Services pro Frame (Produktion +

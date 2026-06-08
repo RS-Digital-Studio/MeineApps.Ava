@@ -1,6 +1,6 @@
 using HandwerkerImperium.Domain.Idle;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// Geteilter Laufzeit-Kontext (DI-Singleton): das aktuelle, Unity-freie Sim-Modell + das Balancing.

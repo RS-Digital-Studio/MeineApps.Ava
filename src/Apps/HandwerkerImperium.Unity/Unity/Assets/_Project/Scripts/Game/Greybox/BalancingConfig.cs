@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using HandwerkerImperium.Domain.Idle;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>Pro-Station-Tuning im Inspector (Unity serialisiert kein decimal -> float, Cast in ToDomain).</summary>
     [Serializable]

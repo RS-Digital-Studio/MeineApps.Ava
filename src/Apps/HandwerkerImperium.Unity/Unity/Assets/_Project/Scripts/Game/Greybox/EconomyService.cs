@@ -1,7 +1,7 @@
 using System;
 using HandwerkerImperium.Domain.Idle;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// P0-Spec §3: Geldstand, Verkauf am Tresen (Geld-Quelle) und der Auto-Collect-Radius.

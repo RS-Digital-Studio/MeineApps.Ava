@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 using UnityEngine;
 using HandwerkerImperium.Domain.Idle;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// P0-Save: simples JSON (Newtonsoft) in PlayerPrefs. Bewusst OHNE HMAC/Verschluesselung —

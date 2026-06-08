@@ -1,6 +1,6 @@
 using HandwerkerImperium.Domain.Idle;
 
-namespace HandwerkerImperium.Game.Greybox
+namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// P0-Spec §3: Produktion je Station (Intervall -> Waren-Stapel bis StackCap) + Spieler-Aufnahme.

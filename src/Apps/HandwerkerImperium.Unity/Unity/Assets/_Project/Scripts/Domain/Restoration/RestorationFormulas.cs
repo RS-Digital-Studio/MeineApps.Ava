@@ -35,7 +35,10 @@ namespace HandwerkerImperium.Domain.Restoration
         public static decimal PhaseCost(int phaseIndex, decimal baseCost, double growth)
         {
             if (phaseIndex < 0) phaseIndex = 0;
-            return baseCost * (decimal)Math.Pow(growth, phaseIndex);
+            double raw = (double)baseCost * Math.Pow(growth, phaseIndex);
+            if (double.IsNaN(raw) || double.IsInfinity(raw) || raw > (double)decimal.MaxValue) return decimal.MaxValue;
+            decimal cost = Math.Round((decimal)raw); // ganze Zahlen wie bei den Upgrade-Kosten
+            return cost < 1m ? 1m : cost;
         }
 
         /// <summary>
@@ -78,7 +81,7 @@ namespace HandwerkerImperium.Domain.Restoration
             if (landmarks == null) return 0;
             int sum = 0;
             for (int i = 0; i < landmarks.Count; i++)
-                sum += landmarks[i].PhasesComplete;
+                if (landmarks[i] != null) sum += landmarks[i].PhasesComplete;
             return sum;
         }
 

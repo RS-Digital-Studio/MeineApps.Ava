@@ -72,5 +72,27 @@ namespace HandwerkerImperium.Domain.Tests.Orders
             OrderQueueFormulas.StartRush(s, 0.5m, 10, 0); // < 1 wird auf 1 geklemmt
             Assert.That(s.Rush.RewardMultiplier, Is.EqualTo(1m));
         }
+
+        [Test]
+        public void Tick_FullQueue_RefillsAtMostOne_AfterServe()
+        {
+            var s = new OrderQueueState();
+            OrderQueueFormulas.Tick(s, 100.0, 2.0, 3); // fuellt auf 3, Akkumulator auf 2 gedeckelt
+            Assert.That(s.PendingCustomers, Is.EqualTo(3));
+            OrderQueueFormulas.Serve(s, 1); // -> 2
+            int spawned = OrderQueueFormulas.Tick(s, 0.0001, 2.0, 3); // genau EIN sofortiger Nachschub
+            Assert.That(spawned, Is.EqualTo(1));
+            Assert.That(s.PendingCustomers, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Guards_MaxQueueZero_AndZeroDurationRush()
+        {
+            var s = new OrderQueueState();
+            Assert.That(OrderQueueFormulas.Tick(s, 100.0, 2.0, 0), Is.EqualTo(0), "maxQueue<=0 -> keine Kunden");
+            Assert.That(s.PendingCustomers, Is.EqualTo(0));
+            OrderQueueFormulas.StartRush(s, 2m, 0, 1000); // durationSeconds<=0 -> kein Rush
+            Assert.That(s.Rush.Active, Is.False);
+        }
     }
 }

@@ -38,7 +38,7 @@ namespace HandwerkerImperium.Domain.Orders
         /// </summary>
         public static int Tick(OrderQueueState state, double dtSeconds, double spawnIntervalSeconds, int maxQueue)
         {
-            if (state == null || dtSeconds <= 0 || spawnIntervalSeconds <= 0) return 0;
+            if (state == null || dtSeconds <= 0 || spawnIntervalSeconds <= 0 || maxQueue <= 0) return 0;
             int spawned = 0;
             state.SpawnAccumulatorSeconds += dtSeconds;
             while (state.SpawnAccumulatorSeconds >= spawnIntervalSeconds && state.PendingCustomers < maxQueue)
@@ -47,7 +47,8 @@ namespace HandwerkerImperium.Domain.Orders
                 spawned++;
                 state.SpawnAccumulatorSeconds -= spawnIntervalSeconds;
             }
-            // Bei voller Queue nicht endlos akkumulieren (sofortiges Auffüllen nach Bedienung verhindern).
+            // Bei voller Queue den Akkumulator auf EIN Intervall deckeln: nach dem Bedienen rückt höchstens
+            // ein Kunde sofort nach (kein angestauter Burst), statt unbegrenzt zu akkumulieren.
             if (state.PendingCustomers >= maxQueue && state.SpawnAccumulatorSeconds > spawnIntervalSeconds)
                 state.SpawnAccumulatorSeconds = spawnIntervalSeconds;
             return spawned;
@@ -66,7 +67,7 @@ namespace HandwerkerImperium.Domain.Orders
         /// <summary>Startet einen Eil-Auftrag mit Bonus-Multiplikator und Laufzeit ab <paramref name="nowUtcTicks"/>.</summary>
         public static void StartRush(OrderQueueState state, decimal rewardMultiplier, double durationSeconds, long nowUtcTicks)
         {
-            if (state == null) return;
+            if (state == null || durationSeconds <= 0) return;
             state.Rush.Active = true;
             state.Rush.RewardMultiplier = rewardMultiplier < 1m ? 1m : rewardMultiplier;
             state.Rush.ExpiresAtUtcTicks = nowUtcTicks + (long)(durationSeconds * TicksPerSecond);

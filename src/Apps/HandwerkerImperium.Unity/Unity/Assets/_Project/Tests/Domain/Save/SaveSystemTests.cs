@@ -3,6 +3,7 @@ using System.Threading;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using HandwerkerImperium.Domain.Save;
+using HandwerkerImperium.Domain.Progression;
 
 namespace HandwerkerImperium.Domain.Tests.Save
 {
@@ -142,7 +143,7 @@ namespace HandwerkerImperium.Domain.Tests.Save
 
             Assert.That(s.Economy.Money, Is.EqualTo(0m));
             Assert.That(s.Economy.Gems, Is.EqualTo(0m));
-            Assert.That(s.Franchise.PrestigeCount, Is.EqualTo(SaveSanitizer.MaxPrestige));
+            Assert.That(s.Franchise.PrestigeCount, Is.EqualTo(PrestigeFormulas.MaxPrestige));
             Assert.That(s.Franchise.CityIndex, Is.EqualTo(0));
             Assert.That(s.Franchise.PrestigeMultiplier, Is.EqualTo(1m));
             Assert.That(s.Town.CurrentStar, Is.EqualTo(5));
@@ -188,6 +189,82 @@ namespace HandwerkerImperium.Domain.Tests.Save
 
             // Signatur überlebt den Roundtrip (decimal/Format stabil).
             Assert.That(SaveSignature.Verify(loaded, KeyA), Is.True);
+        }
+
+        [Test]
+        public void Tamper_PreviouslyUnsignedFields_NowDetected()
+        {
+            // Felder, die frueher NICHT signiert waren (Anti-Cheat-Loch) -> muessen jetzt erkannt werden.
+            var a = NewPopulatedSave(); SaveSignature.Sign(a, KeyA); a.Franchise.PrestigeMultiplier = 999m;
+            Assert.That(SaveSignature.Verify(a, KeyA), Is.False, "PrestigeMultiplier");
+
+            var b = NewPopulatedSave(); SaveSignature.Sign(b, KeyA); b.Stations.StationSpeedLevel = 50;
+            Assert.That(SaveSignature.Verify(b, KeyA), Is.False, "Stations-Level");
+
+            var c = NewPopulatedSave(); SaveSignature.Sign(c, KeyA); c.Stations.Stations[0].Stock = 99999;
+            Assert.That(SaveSignature.Verify(c, KeyA), Is.False, "Station-Stock");
+
+            var d = NewPopulatedSave(); SaveSignature.Sign(d, KeyA); d.Stations.Stations[1].Unlocked = true;
+            Assert.That(SaveSignature.Verify(d, KeyA), Is.False, "Station-Unlock");
+
+            var e = NewPopulatedSave(); SaveSignature.Sign(e, KeyA); e.Workers.Workers[0].Hired = false;
+            Assert.That(SaveSignature.Verify(e, KeyA), Is.False, "Worker-Hired");
+
+            var g = NewPopulatedSave(); SaveSignature.Sign(g, KeyA); g.Mastery.Level = 999;
+            Assert.That(SaveSignature.Verify(g, KeyA), Is.False, "Mastery-Level");
+
+            var h = NewPopulatedSave(); SaveSignature.Sign(h, KeyA); h.Restoration.Landmarks[0].PhasesComplete = 5;
+            Assert.That(SaveSignature.Verify(h, KeyA), Is.False, "Restoration-Fortschritt");
+
+            var i = NewPopulatedSave(); SaveSignature.Sign(i, KeyA); i.Franchise.PrestigeCurrency = 777m;
+            Assert.That(SaveSignature.Verify(i, KeyA), Is.False, "Prestige-Waehrung");
+        }
+
+        [Test]
+        public void EmptyOrNullDeviceKey_FailsVerify_NoBypass()
+        {
+            var s = NewPopulatedSave();
+            SaveSignature.Sign(s, KeyA);
+            Assert.That(SaveSignature.Verify(s, ""), Is.False, "Leerschluessel darf nicht bestaetigen");
+            Assert.That(SaveSignature.Verify(s, null!), Is.False, "Null-Schluessel darf nicht bestaetigen");
+            Assert.That(SaveSignature.Verify(s, KeyA), Is.True);
+        }
+
+        [Test]
+        public void Verify_OnNullSlice_DoesNotCrash()
+        {
+            var s = NewPopulatedSave();
+            SaveSignature.Sign(s, KeyA);
+            s.Economy = null!; // simuliert "Economy": null aus korruptem JSON
+            Assert.That(SaveSignature.Verify(s, KeyA), Is.False); // kein NRE, einfach ungueltig
+        }
+
+        [Test]
+        public void Sanitize_NullSlices_AreRepaired_NoCrash()
+        {
+            var s = NewPopulatedSave();
+            s.Economy = null!;
+            s.Town = null!;
+            s.Stations = null!;
+            s.Restoration = null!;
+            SaveSanitizer.Sanitize(s);
+            Assert.That(s.Economy, Is.Not.Null);
+            Assert.That(s.Town, Is.Not.Null);
+            Assert.That(s.Town.CurrentStar, Is.EqualTo(1), "Default-Stern gueltig");
+            Assert.That(s.Stations, Is.Not.Null);
+            Assert.That(s.Stations.Stations, Is.Not.Null);
+            Assert.That(s.Restoration.Landmarks, Is.Not.Null);
+        }
+
+        [Test]
+        public void Sanitize_ClampsPrestigeMultiplierUpper_And_RepairsNaNXp()
+        {
+            var s = NewPopulatedSave();
+            s.Franchise.PrestigeMultiplier = 1_000_000_000m;
+            s.Mastery.Xp = double.NaN;
+            SaveSanitizer.Sanitize(s);
+            Assert.That(s.Franchise.PrestigeMultiplier, Is.EqualTo(SaveSanitizer.MaxPrestigeMultiplier));
+            Assert.That(s.Mastery.Xp, Is.EqualTo(0.0), "NaN repariert");
         }
     }
 }

@@ -39,7 +39,11 @@ namespace HandwerkerImperium.Domain.Progression
             int n = prestigeCount < perStageMultipliers.Count ? prestigeCount : perStageMultipliers.Count;
             decimal product = 1m;
             for (int i = 0; i < n; i++)
-                product *= perStageMultipliers[i];
+            {
+                decimal factor = perStageMultipliers[i];
+                if (factor <= 0m) factor = 1m; // fehlkonfigurierte Stufe ignorieren statt Einkommen zu killen
+                product *= factor;
+            }
             return product;
         }
 

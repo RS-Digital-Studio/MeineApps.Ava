@@ -1,35 +1,65 @@
 #nullable enable
+using System.Collections.Generic;
+using HandwerkerImperium.Domain.Progression;
 
 namespace HandwerkerImperium.Domain.Save
 {
     /// <summary>
     /// Reparatur statt Ablehnung (CLAUDE.md §7): klemmt einen (ggf. manipulierten oder beschädigten) Save
-    /// auf strukturell gültige Invarianten — nie ein Wipe. Hier nur <b>strukturelle</b> Grenzen
-    /// (Nicht-Negativität, Stern 1–5, Prestige/Stadt 0–3, Bauphasen ≤ Total); spielbalance-abhängige
-    /// Caps liegen im BalancingConfig und werden vom Game-Layer angewandt. Idempotent + Unity-frei.
+    /// auf strukturell gültige Invarianten — nie ein Wipe, nie ein Crash. Stellt zuerst alle Slices/Listen
+    /// sicher (deserialisierte <c>null</c>-Slices), dann klemmt es strukturelle Grenzen (Nicht-Negativität,
+    /// Stern 1–5, Prestige 0–3, Stadt 0–3, Multiplikator-Bereich, Bauphasen ≤ Total). Idempotent + Unity-frei.
     /// </summary>
     public static class SaveSanitizer
     {
-        /// <summary>Maximale Prestige-Stufen (GDD §16: 4 Städte = 3 Prestige).</summary>
-        public const int MaxPrestige = 3;
+        /// <summary>Höchster Stadt-Index (4 Städte → 0..3). Eigene Größe, NICHT an MaxPrestige gekoppelt.</summary>
+        public const int MaxCityIndex = 3;
+
+        /// <summary>Großzügige Obergrenze des permanenten Prestige-Multiplikators gegen absurde Manipulation.</summary>
+        public const decimal MaxPrestigeMultiplier = 1000m;
+
+        /// <summary>
+        /// Stellt sicher, dass alle Slices und Listen instanziiert sind (Newtonsoft lässt fehlende/explizit
+        /// <c>null</c> gesetzte Slices auf <c>null</c>). MUSS vor Signatur-Verifikation/Sanitize laufen.
+        /// </summary>
+        public static GameSave EnsureSlices(GameSave save)
+        {
+            if (save == null) return null!;
+            save.Economy ??= new EconomySlice();
+            save.Stations ??= new StationsSlice();
+            save.Stations.Stations ??= new List<StationSaveData>();
+            save.Workers ??= new WorkersSlice();
+            save.Workers.Workers ??= new List<WorkerSaveData>();
+            save.Orders ??= new OrdersSlice();
+            save.Restoration ??= new RestorationSlice();
+            save.Restoration.Landmarks ??= new List<LandmarkSaveData>();
+            save.Franchise ??= new FranchiseSlice();
+            save.Town ??= new TownSlice();
+            save.Mastery ??= new MasterySlice();
+            save.Cosmetics ??= new CosmeticsSlice();
+            save.Cosmetics.OwnedSkins ??= new List<string>();
+            return save;
+        }
 
         public static GameSave Sanitize(GameSave save)
         {
             if (save == null) return null!;
+            EnsureSlices(save);
 
             if (save.Economy.Money < 0m) save.Economy.Money = 0m;
             if (save.Economy.Gems < 0m) save.Economy.Gems = 0m;
 
             var f = save.Franchise;
-            f.PrestigeCount = Clamp(f.PrestigeCount, 0, MaxPrestige);
-            f.CityIndex = Clamp(f.CityIndex, 0, MaxPrestige);
+            f.PrestigeCount = Clamp(f.PrestigeCount, 0, PrestigeFormulas.MaxPrestige);
+            f.CityIndex = Clamp(f.CityIndex, 0, MaxCityIndex);
             if (f.PrestigeMultiplier < 1m) f.PrestigeMultiplier = 1m;
+            if (f.PrestigeMultiplier > MaxPrestigeMultiplier) f.PrestigeMultiplier = MaxPrestigeMultiplier;
             if (f.PrestigeCurrency < 0m) f.PrestigeCurrency = 0m;
 
             save.Town.CurrentStar = Clamp(save.Town.CurrentStar, 1, 5);
 
             if (save.Mastery.Level < 0) save.Mastery.Level = 0;
-            if (save.Mastery.Xp < 0) save.Mastery.Xp = 0;
+            if (!(save.Mastery.Xp >= 0)) save.Mastery.Xp = 0; // fängt negativ UND NaN
 
             if (save.Orders.TotalServed < 0) save.Orders.TotalServed = 0;
             if (save.Orders.PendingCount < 0) save.Orders.PendingCount = 0;
@@ -39,13 +69,14 @@ namespace HandwerkerImperium.Domain.Save
             if (s.CollectRadiusLevel < 0) s.CollectRadiusLevel = 0;
             if (s.CarryCapacityLevel < 0) s.CarryCapacityLevel = 0;
             foreach (var st in s.Stations)
-                if (st.Stock < 0) st.Stock = 0;
+                if (st != null && st.Stock < 0) st.Stock = 0;
 
             foreach (var w in save.Workers.Workers)
-                if (w.Level < 0) w.Level = 0;
+                if (w != null && w.Level < 0) w.Level = 0;
 
             foreach (var lm in save.Restoration.Landmarks)
             {
+                if (lm == null) continue;
                 if (lm.TotalPhases < 0) lm.TotalPhases = 0;
                 lm.PhasesComplete = Clamp(lm.PhasesComplete, 0, lm.TotalPhases);
             }

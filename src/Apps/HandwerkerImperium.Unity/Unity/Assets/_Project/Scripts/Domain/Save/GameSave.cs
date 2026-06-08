@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Domain.Save
     public sealed class GameSave
     {
         /// <summary>Schema-Version (Single-Source-of-Truth: <see cref="SaveMigrator.CurrentSchemaVersion"/>).</summary>
-        public int SchemaVersion;
+        public int SchemaVersion = SaveMigrator.CurrentSchemaVersion;
 
         /// <summary>HMAC-Signatur über die sicherheitskritischen Kernwerte (gerätegebunden).</summary>
         public string Signature = "";

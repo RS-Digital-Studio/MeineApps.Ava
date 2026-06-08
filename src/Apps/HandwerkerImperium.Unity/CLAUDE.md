@@ -5,11 +5,15 @@ Unity-6-Neuentwicklung von HandwerkerImperium, **parallel** zur produktiven Aval
 Projekts. Generische Arbeitsweise → globale CLAUDE.md. Avalonia-Architektur/-Conventions →
 Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 
-> **Stand:** Pre-MVP. Der **Domain-Layer** ist 1:1 aus dem Avalonia-Original portiert und liegt unter
-> `Unity/Assets/_Project/Scripts/Domain/` (Economy, Orders, Crafting, Progression, Research, Reputation,
-> Buildings, Guild-Kataloge) + EditMode-Tests unter `…/Tests/Domain/` — jede Schicht 3-fach verifiziert
-> (netstandard2.1/C#9-Compat-Compile + Werte-Run gegen Original + Quelltext-Diff). **Offen:** Guild-Entity/
-> War + Firebase-DTOs, GameState-Root + Rest-Models, Services, Game-/UI-/Bootstrap-Layer. Alles in
+> **Stand:** Pre-MVP. Der **komplette Domain-Layer (Schicht 1-16) ist 1:1 aus dem Avalonia-Original portiert**
+> und liegt unter `Unity/Assets/_Project/Scripts/Domain/` (Economy, Orders, Crafting, Progression, Research,
+> Reputation, Buildings, Guild, Events, LiveOps, Settings, Statistics, Boosts, Cosmetics, Onboarding,
+> Notifications, Warehouse, **State/GameState** v7) + EditMode-Tests unter `…/Tests/Domain/`. Jede Schicht
+> 3-fach verifiziert (netstandard2.1/C#9-Compat-Compile + Werte-Run gegen Original + ggf. Quelltext-Diff),
+> der GameState-Root zusätzlich per **v7-JSON-Save-Roundtrip** (Newtonsoft). Roadmap + Hazards + 3D-Plan →
+> [DOMAIN_3D_PLAN.md](DOMAIN_3D_PLAN.md). **Offen:** Service-Formel-Extrakte (`*Formulas.cs`), dann Game-/UI-/
+> Bootstrap-Layer (3D-Präsentation). Bewusst in der Präsentations-/Netzwerk-Schicht: Firebase-DTOs, Guild-
+> Display-DTOs, ContextualHint/FtueStep-Definitionen, alle Lokalisierungs-/Icon-/Farb-Anteile. Alles in
 > ARCHITECTURE/DESIGN/ROADMAP über die Präsentation/Infra Beschriebene ist weiterhin **Soll**, nicht Ist.
 
 ---

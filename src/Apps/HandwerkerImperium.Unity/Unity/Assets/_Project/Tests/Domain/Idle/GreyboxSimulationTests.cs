@@ -75,6 +75,26 @@ namespace HandwerkerImperium.Domain.Tests.Idle
         }
 
         [Test]
+        public void PickupThenSell_EqualsDeposit()
+        {
+            var bal = Bal();
+            var st = GreyboxSimState.CreateNew(bal);
+            GreyboxSimulation.TickProduction(st, bal, 10.0); // Station 0: 5 Waren
+            // Schritt 1: aufnehmen (Stock sinkt, kein Geld)
+            int taken = GreyboxSimulation.PlayerPickup(st, bal, 0, 3);
+            Assert.That(taken, Is.EqualTo(3));
+            Assert.That(st.Stations[0].Stock, Is.EqualTo(2));
+            Assert.That(st.Money, Is.EqualTo(0m));
+            // Schritt 2: am Tresen verkaufen
+            decimal earned = GreyboxSimulation.SellCarried(st, bal, 0, taken);
+            Assert.That(earned, Is.EqualTo(15m));
+            Assert.That(st.Money, Is.EqualTo(15m));
+            // Nicht mehr aufnehmbar als vorhanden.
+            Assert.That(GreyboxSimulation.PlayerPickup(st, bal, 0, 99), Is.EqualTo(2));
+            Assert.That(st.Stations[0].Stock, Is.EqualTo(0));
+        }
+
+        [Test]
         public void Workers_AutomateStockToMoney()
         {
             var bal = Bal();

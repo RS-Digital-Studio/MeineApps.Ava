@@ -91,6 +91,34 @@ namespace HandwerkerImperium.Domain.Idle
             return earned;
         }
 
+        /// <summary>
+        /// Physischer Loop, Schritt 1: Avatar nimmt bis zu <paramref name="requestedCount"/> Waren von der
+        /// Station auf (Stock sinkt sichtbar). KEIN Geld — das gibt es erst bei <see cref="SellCarried"/> am Tresen.
+        /// Liefert die tatsaechlich aufgenommene Menge.
+        /// </summary>
+        public static int PlayerPickup(GreyboxSimState state, IdleBalancing balancing, int stationIndex, int requestedCount)
+        {
+            if (stationIndex < 0 || stationIndex >= state.Stations.Count) return 0;
+            var st = state.Stations[stationIndex];
+            if (!st.Unlocked || requestedCount <= 0) return 0;
+            int take = Math.Min(requestedCount, st.Stock);
+            if (take <= 0) return 0;
+            st.Stock -= take;
+            return take;
+        }
+
+        /// <summary>
+        /// Physischer Loop, Schritt 2: Avatar gibt <paramref name="count"/> getragene Waren der Herkunfts-Station
+        /// am Tresen ab -> Geld (count × Verkaufswert). Cash-Wuerfel im Game-Layer sind reine Optik; das Geld ist hier autoritativ.
+        /// </summary>
+        public static decimal SellCarried(GreyboxSimState state, IdleBalancing balancing, int stationIndex, int count)
+        {
+            if (stationIndex < 0 || stationIndex >= balancing.Stations.Count || count <= 0) return 0m;
+            decimal earned = count * balancing.Stations[stationIndex].SellValue;
+            state.Money += earned;
+            return earned;
+        }
+
         // ── Upgrades / Hire / Unlock ───────────────────────────────────────
 
         /// <summary>Aktuelle Kosten der naechsten Stufe einer Upgrade-Achse.</summary>

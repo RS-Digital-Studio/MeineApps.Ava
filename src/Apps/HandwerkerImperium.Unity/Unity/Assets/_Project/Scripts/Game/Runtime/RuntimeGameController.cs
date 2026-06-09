@@ -77,6 +77,16 @@ namespace HandwerkerImperium.Game
         public bool CanPrestige() => GameSimulation.CanPrestige(_model, _bal);
         public bool TryPrestige() => GameSimulation.TryPrestige(_model, _idleBal, _bal);
 
+        // ── Spieler-Aktionen (echte GameActions-Logik) ─────────────────────
+        public decimal ServeCustomer(int stationIndex) => GameActions.ServeCustomer(_model, _idleBal, stationIndex, DateTime.UtcNow.Ticks);
+        public bool BuyUpgrade(UpgradeTrack track) => GameActions.BuyUpgrade(_model, _idleBal, track);
+        public bool HireWorker(int stationIndex) => GameActions.HireWorker(_model, _idleBal, stationIndex);
+        public bool UnlockPlot(int stationIndex) => GameActions.UnlockPlot(_model, _idleBal, stationIndex);
+        public int GainMastery(double xp) => GameActions.GainMastery(_model, _bal, xp);
+
+        /// <summary>Convenience für die UI (ohne Domain-Typ): kauft eine Stations-Tempo-Upgrade-Stufe.</summary>
+        public bool BuyTempoUpgrade() => GameActions.BuyUpgrade(_model, _idleBal, UpgradeTrack.StationSpeed);
+
         public void PersistNow()
         {
             if (_model == null) return;

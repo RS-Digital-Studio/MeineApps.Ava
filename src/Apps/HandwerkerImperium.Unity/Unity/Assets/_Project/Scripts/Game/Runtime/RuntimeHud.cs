@@ -67,6 +67,9 @@ namespace HandwerkerImperium.Game
             if (GUILayout.Button("+1.000 Geld", _button)) m.Idle.Money += 1000m;
             if (hasStation && GUILayout.Button(m.Idle.Stations[0].HasWorker ? "Worker Station 0 ENTLASSEN" : "Worker an Station 0 anstellen", _button))
                 m.Idle.Stations[0].HasWorker = !m.Idle.Stations[0].HasWorker;
+            if (GUILayout.Button("Kunde bedienen (+Geld, wenn Kunde wartet)", _button)) controller.ServeCustomer(0);
+            if (GUILayout.Button("Tempo-Upgrade kaufen (kostet Geld)", _button)) controller.BuyTempoUpgrade();
+            if (GUILayout.Button("+250 Meisterschafts-XP", _button)) controller.GainMastery(250.0);
             if (GUILayout.Button("5 Sterne setzen (Prestige freischalten)", _button)) m.Meta.CurrentStar = 5;
             if (GUILayout.Button("Stern aus Fortschritt neu bewerten", _button)) controller.EvaluateStar();
 

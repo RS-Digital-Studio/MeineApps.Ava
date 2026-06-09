@@ -6,6 +6,8 @@ using HandwerkerImperium.Domain.Progression;
 using HandwerkerImperium.Domain.Achievements;
 using HandwerkerImperium.Domain.Restoration;
 using HandwerkerImperium.Domain.Story;
+using HandwerkerImperium.Domain.LiveOps;
+using HandwerkerImperium.Domain.Common;
 
 namespace HandwerkerImperium.Domain.Runtime
 {
@@ -78,6 +80,80 @@ namespace HandwerkerImperium.Domain.Runtime
             FireBeats(m, catalog, StoryTrigger.FirstLandmarkRestored, RestorationFormulas.CompletedLandmarks(m.Landmarks) > 0, played);
             FireBeats(m, catalog, StoryTrigger.FirstPrestige, m.Meta.PrestigeCount > 0, played);
             return played;
+        }
+
+        /// <summary>
+        /// Wertet die Tagesaufgaben aus: zieht bei neuem UTC-Tag (oder leerer Liste) 3 neue Aufgaben deterministisch
+        /// aus dem Pool (Basiswerte = aktuelle Metriken), und schreibt jede jetzt erfüllte, noch nicht abgeholte Aufgabe
+        /// gut (Gems auf <see cref="GameModel.Gems"/>). Liefert die in diesem Aufruf neu abgeholten Aufgaben-Ids.
+        /// </summary>
+        public static List<string> EvaluateDailyTasks(GameModel m, List<DailyTaskDefinition> pool, long nowUtcTicks)
+        {
+            var claimed = new List<string>();
+            if (m == null || pool == null || pool.Count == 0) return claimed;
+
+            if (DailyTaskFormulas.ShouldReset(m.DailyTaskRollDayUtc, nowUtcTicks) || m.DailyTasks.Count == 0)
+                RollDailyTasks(m, pool, nowUtcTicks);
+
+            int gems = 0;
+            foreach (var t in m.DailyTasks)
+            {
+                if (t.Claimed) continue;
+                long progress = DailyMetricValue(m, t.Metric) - t.Baseline;
+                if (DailyTaskFormulas.IsComplete(progress, t.Target))
+                {
+                    t.Claimed = true;
+                    gems += t.GemReward;
+                    claimed.Add(t.Id);
+                }
+            }
+            if (gems > 0) m.Gems += gems;
+            return claimed;
+        }
+
+        /// <summary>Aktueller Fortschritt 0..1 einer Tagesaufgabe (für die UI).</summary>
+        public static double DailyTaskProgress01(GameModel m, DailyTaskRuntime t)
+        {
+            if (m == null || t == null) return 0.0;
+            return DailyTaskFormulas.Progress01(DailyMetricValue(m, t.Metric) - t.Baseline, t.Target);
+        }
+
+        private static void RollDailyTasks(GameModel m, List<DailyTaskDefinition> pool, long nowUtcTicks)
+        {
+            m.DailyTasks.Clear();
+            m.DailyTaskRollDayUtc = nowUtcTicks;
+
+            long dayIndex = nowUtcTicks / TimeSpan.TicksPerDay;
+            int n = pool.Count;
+            int want = n < 3 ? n : 3;
+            var chosen = new List<int>();
+            for (int i = 0; chosen.Count < want && i < 256; i++)
+            {
+                int idx = StableHash.Bucket("dt|" + dayIndex + "|" + i, n);
+                if (!chosen.Contains(idx)) chosen.Add(idx);
+            }
+            foreach (var idx in chosen)
+            {
+                var def = pool[idx];
+                m.DailyTasks.Add(new DailyTaskRuntime
+                {
+                    Id = def.Id, Metric = def.Metric, Target = def.Target, GemReward = def.GemReward,
+                    Baseline = DailyMetricValue(m, def.Metric), Claimed = false
+                });
+            }
+        }
+
+        private static long DailyMetricValue(GameModel m, DailyTaskMetric metric)
+        {
+            switch (metric)
+            {
+                case DailyTaskMetric.ServeCustomers: return m.Orders.TotalServed;
+                case DailyTaskMetric.CollectCash: return m.Idle.Money > long.MaxValue ? long.MaxValue : (long)m.Idle.Money;
+                case DailyTaskMetric.BuyUpgrades: return m.Idle.StationSpeedLevel + m.Idle.CollectRadiusLevel + m.Idle.CarryCapacityLevel;
+                case DailyTaskMetric.HireWorker: return CountWorkers(m.Idle);
+                case DailyTaskMetric.CompleteRestorationPhase: return RestorationFormulas.TotalPhasesComplete(m.Landmarks);
+                default: return 0;
+            }
         }
 
         private static void FireBeats(GameModel m, IReadOnlyList<StoryBeatDefinition> catalog, StoryTrigger trigger, bool condition, List<string> played)

@@ -140,12 +140,28 @@ namespace HandwerkerImperium.Domain.Save
         public List<string> CollectedMasterTools = new List<string>();
     }
 
-    /// <summary>Live-Ops-/Story-Fortschritts-Flags (Tagesbelohnung, abgespielte Beats, eingelöste Achievements).</summary>
+    /// <summary>Live-Ops-/Story-Fortschritts-Flags (Tagesbelohnung, abgespielte Beats, eingelöste Achievements, Tagesaufgaben).</summary>
     public sealed class ProgressSlice
     {
         public long DailyLastClaimUtcTicks;
         public int DailyStreakDay;
         public List<string> PlayedStoryBeats = new List<string>();
         public List<string> ClaimedAchievements = new List<string>();
+
+        /// <summary>UTC-Ticks der letzten Tagesaufgaben-Ausgabe (Reset auf neuen UTC-Tag).</summary>
+        public long DailyTaskRollDayUtc;
+        /// <summary>Die 3 aktiven Tagesaufgaben des Tages (inkl. Basiswert + Abhol-Flag).</summary>
+        public List<DailyTaskSaveData> DailyTasks = new List<DailyTaskSaveData>();
+    }
+
+    /// <summary>Eine aktive Tagesaufgabe (Metrik/Ziel/Belohnung + Basiswert bei Ausgabe + Abhol-Flag).</summary>
+    public sealed class DailyTaskSaveData
+    {
+        public string Id = "";
+        public int Metric;
+        public long Target;
+        public int GemReward;
+        public long Baseline;
+        public bool Claimed;
     }
 }

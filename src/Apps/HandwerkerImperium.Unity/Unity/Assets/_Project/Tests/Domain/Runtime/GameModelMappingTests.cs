@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using HandwerkerImperium.Domain.Idle;
+using HandwerkerImperium.Domain.LiveOps;
 using HandwerkerImperium.Domain.Restoration;
 using HandwerkerImperium.Domain.Runtime;
 using HandwerkerImperium.Domain.Save;
@@ -40,6 +41,8 @@ namespace HandwerkerImperium.Domain.Tests.Runtime
             m.OwnedSkins.Add("premium"); m.ActiveSkin = "premium";
             m.DailyStreakDay = 4; m.DailyLastClaimUtcTicks = 123L;
             m.ClaimedAchievements.Add("orders_10");
+            m.DailyTaskRollDayUtc = 7777L;
+            m.DailyTasks.Add(new DailyTaskRuntime { Id = "dt_serve_10", Metric = DailyTaskMetric.ServeCustomers, Target = 10, GemReward = 15, Baseline = 5, Claimed = true });
 
             var save = GameModelMapping.ToSave(m);
             SaveSignature.Sign(save, Key);
@@ -66,6 +69,12 @@ namespace HandwerkerImperium.Domain.Tests.Runtime
             Assert.That(m2.CollectedMasterTools[0], Is.EqualTo("mt_golden_hammer"));
             Assert.That(m2.ActiveSkin, Is.EqualTo("premium"));
             Assert.That(m2.DailyStreakDay, Is.EqualTo(4));
+            Assert.That(m2.DailyTaskRollDayUtc, Is.EqualTo(7777L));
+            Assert.That(m2.DailyTasks.Count, Is.EqualTo(1));
+            Assert.That(m2.DailyTasks[0].Id, Is.EqualTo("dt_serve_10"));
+            Assert.That(m2.DailyTasks[0].Metric, Is.EqualTo(DailyTaskMetric.ServeCustomers));
+            Assert.That(m2.DailyTasks[0].Baseline, Is.EqualTo(5));
+            Assert.That(m2.DailyTasks[0].Claimed, Is.True);
             // abgeleitete Aggregate
             Assert.That(m2.Meta.RestorationPhases, Is.EqualTo(2));
             Assert.That(m2.Meta.OrdersServed, Is.EqualTo(80));

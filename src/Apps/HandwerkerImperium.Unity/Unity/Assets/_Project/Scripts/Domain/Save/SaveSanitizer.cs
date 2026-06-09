@@ -46,6 +46,7 @@ namespace HandwerkerImperium.Domain.Save
             save.Progress ??= new ProgressSlice();
             save.Progress.PlayedStoryBeats ??= new List<string>();
             save.Progress.ClaimedAchievements ??= new List<string>();
+            save.Progress.DailyTasks ??= new List<DailyTaskSaveData>();
             return save;
         }
 

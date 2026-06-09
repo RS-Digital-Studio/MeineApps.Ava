@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using HandwerkerImperium.Domain.Idle;
+using HandwerkerImperium.Domain.LiveOps;
 using HandwerkerImperium.Domain.Restoration;
 using HandwerkerImperium.Domain.Save;
 
@@ -59,6 +60,14 @@ namespace HandwerkerImperium.Domain.Runtime
             s.Progress.DailyStreakDay = m.DailyStreakDay;
             s.Progress.PlayedStoryBeats = new List<string>(m.PlayedStoryBeats);
             s.Progress.ClaimedAchievements = new List<string>(m.ClaimedAchievements);
+            s.Progress.DailyTaskRollDayUtc = m.DailyTaskRollDayUtc;
+            s.Progress.DailyTasks = new List<DailyTaskSaveData>();
+            foreach (var dt in m.DailyTasks)
+                s.Progress.DailyTasks.Add(new DailyTaskSaveData
+                {
+                    Id = dt.Id, Metric = (int)dt.Metric, Target = dt.Target,
+                    GemReward = dt.GemReward, Baseline = dt.Baseline, Claimed = dt.Claimed
+                });
             return s;
         }
 
@@ -115,6 +124,17 @@ namespace HandwerkerImperium.Domain.Runtime
             m.DailyStreakDay = s.Progress.DailyStreakDay;
             m.PlayedStoryBeats = new List<string>(s.Progress.PlayedStoryBeats);
             m.ClaimedAchievements = new List<string>(s.Progress.ClaimedAchievements);
+            m.DailyTaskRollDayUtc = s.Progress.DailyTaskRollDayUtc;
+            m.DailyTasks = new List<DailyTaskRuntime>();
+            foreach (var dt in s.Progress.DailyTasks)
+            {
+                if (dt == null) continue;
+                m.DailyTasks.Add(new DailyTaskRuntime
+                {
+                    Id = dt.Id ?? "", Metric = (DailyTaskMetric)dt.Metric, Target = dt.Target,
+                    GemReward = dt.GemReward, Baseline = dt.Baseline, Claimed = dt.Claimed
+                });
+            }
 
             // Abgeleitete Aggregat-Zähler (Stern-Scoring)
             m.Meta.RestorationPhases = RestorationFormulas.TotalPhasesComplete(m.Landmarks);

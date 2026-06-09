@@ -39,11 +39,27 @@ namespace HandwerkerImperium.Domain.Runtime
         public List<string> PlayedStoryBeats = new List<string>();
         public List<string> ClaimedAchievements = new List<string>();
 
+        /// <summary>UTC-Ticks der letzten Tagesaufgaben-Ausgabe (Reset auf neuen UTC-Tag).</summary>
+        public long DailyTaskRollDayUtc;
+        /// <summary>Die 3 aktiven Tagesaufgaben des Tages (Laufzeit-Repräsentation, persistiert via Mapping).</summary>
+        public List<DailyTaskRuntime> DailyTasks = new List<DailyTaskRuntime>();
+
         /// <summary>Frischer Start aus dem Idle-Balancing (Stationen 1:1, Stock 0, Geld 0); Meta = Akt 1, Stadt 0.</summary>
         public static GameModel CreateNew(IdleBalancing idleBalancing)
         {
             var m = new GameModel { Idle = GreyboxSimState.CreateNew(idleBalancing) };
             return m;
         }
+    }
+
+    /// <summary>Laufzeit-Zustand einer Tagesaufgabe: Ziel/Belohnung + Basiswert bei Ausgabe + Abhol-Flag.</summary>
+    public sealed class DailyTaskRuntime
+    {
+        public string Id = "";
+        public LiveOps.DailyTaskMetric Metric;
+        public long Target;
+        public int GemReward;
+        public long Baseline;
+        public bool Claimed;
     }
 }

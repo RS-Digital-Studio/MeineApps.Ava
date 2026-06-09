@@ -59,6 +59,16 @@ namespace HandwerkerImperium.Game
             GUILayout.Label($"Saison: {controller.CurrentSeason()}    Rush: <b>{(controller.RushActive() ? "AKTIV (2×)" : "inaktiv")}</b>", _label);
             if (!string.IsNullOrEmpty(controller.LatestStoryBeat))
                 GUILayout.Label($"Hans (Beat):    <i>{controller.LatestStoryBeat}</i>", _label);
+            if (m.DailyTasks != null && m.DailyTasks.Count > 0)
+            {
+                GUILayout.Label("<b>Tagesaufgaben:</b>", _label);
+                foreach (var t in m.DailyTasks)
+                {
+                    int pct = (int)(controller.DailyTaskProgress01(t) * 100.0);
+                    string state = t.Claimed ? "<b>fertig (+" + t.GemReward + " Gems)</b>" : pct + "%";
+                    GUILayout.Label($"  · {t.Id}: {state}", _label);
+                }
+            }
             if (hasStation)
             {
                 var s0 = m.Idle.Stations[0];

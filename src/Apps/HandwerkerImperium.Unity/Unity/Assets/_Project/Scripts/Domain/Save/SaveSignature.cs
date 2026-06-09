@@ -105,6 +105,15 @@ namespace HandwerkerImperium.Domain.Save
                 foreach (var id in pr.ClaimedAchievements)
                     sb.Append(",").Append(id ?? "");
 
+            // Tagesaufgaben: Ausgabe-Tag + je Aufgabe Id:Abgeholt (Gem-wirksam -> tamper-evident signiert)
+            sb.Append("|DT").Append(pr.DailyTaskRollDayUtc.ToString(ci));
+            if (pr.DailyTasks != null)
+                foreach (var dt in pr.DailyTasks)
+                {
+                    if (dt == null) continue;
+                    sb.Append("[").Append(dt.Id ?? "").Append(":").Append(dt.Claimed ? "1" : "0").Append("]");
+                }
+
             return sb.ToString();
         }
 

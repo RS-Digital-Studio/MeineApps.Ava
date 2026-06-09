@@ -30,6 +30,7 @@ namespace HandwerkerImperium.Game
         private List<MasterToolDefinition> _masterToolCatalog;
         private IReadOnlyList<AchievementDefinition> _achievementCatalog;
         private IReadOnlyList<StoryBeatDefinition> _storyCatalog;
+        private List<DailyTaskDefinition> _dailyTaskPool;
         private string _deviceKey;
         private float _autosaveTimer;
         private float _progressTimer;
@@ -48,6 +49,7 @@ namespace HandwerkerImperium.Game
             _masterToolCatalog = MasterToolFormulas.DefaultCatalog();
             _achievementCatalog = AchievementCatalog.Default();
             _storyCatalog = StoryCatalog.Default();
+            _dailyTaskPool = DailyTaskCatalog.Pool();
             _deviceKey = RuntimeSave.DeviceKey;
             _model = RuntimeSave.HasSave ? RuntimeSave.Load(_deviceKey, _idleBal) : GameModel.CreateNew(_idleBal);
             if (_model == null) _model = GameModel.CreateNew(_idleBal);
@@ -82,6 +84,7 @@ namespace HandwerkerImperium.Game
                 GameProgress.GrantNewAchievements(_model, _achievementCatalog);
                 var beats = GameProgress.EvaluateStory(_model, _storyCatalog);
                 if (beats.Count > 0) LatestStoryBeat = beats[beats.Count - 1];
+                GameProgress.EvaluateDailyTasks(_model, _dailyTaskPool, DateTime.UtcNow.Ticks);
             }
 
             _autosaveTimer += Time.deltaTime;
@@ -128,6 +131,9 @@ namespace HandwerkerImperium.Game
         /// <summary>Aktive Saison (oder „keine").</summary>
         public string CurrentSeason() =>
             SeasonalFormulas.TryGetActiveSeason(DateTime.UtcNow, out var s) ? s.ToString() : "keine";
+
+        /// <summary>Fortschritt 0..1 einer Tagesaufgabe (für die UI).</summary>
+        public double DailyTaskProgress01(DailyTaskRuntime t) => GameProgress.DailyTaskProgress01(_model, t);
 
         /// <summary>Free-Cash-Pad (per Ad): 2× Einkommen je Zeitblock. Liefert den gutgeschriebenen Betrag.</summary>
         public decimal ClaimFreeCash()

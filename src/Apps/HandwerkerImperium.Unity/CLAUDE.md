@@ -35,8 +35,13 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > `RuntimeHud` (IMGUI-Diagnose), `RuntimeSceneBuilder` (Editor-Menü `HandwerkerImperium/Runtime/Build Runtime Scene` →
 > spielbare `Runtime.unity`). Generierte `.unity`/`.asset` sind lokal (`*.meta`-Gitignore-Policy); der Builder ist versioniert.
 >
-> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **156 NUnit /
-> 0 Fehler** (142 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
+> **Live-Ops im Runtime aktiv:** Über die Formel-Sätze hinaus sind die Live-Systeme im `RuntimeGameController`
+> verdrahtet und periodisch ausgewertet: Master-Tool-Auto-Sammlung, Achievement-Gutschrift, Meister-Hans-Story-Beats,
+> Endgame-Renommee-Akkumulation, Rush-Event (2×), Saison-Erkennung, Free-Cash-Pad (Monetarisierung), Tagesaufgaben
+> (3/Tag → Gems, UTC-Reset, persistiert + HMAC-signiert). Der headless-baubare Logik-Layer ist damit komplett.
+>
+> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **169 NUnit /
+> 0 Fehler** (155 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
 > gegen die .md-Specs → alle gefundenen Bugs (Anti-Cheat-Lücken, Determinismus, Overflow, Off-by-one) fix-forward behoben.
 > **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews, kein `PlayerLevel` (stattdessen `Mastery.Level`
 > signiert) — bewusste Schema-Neuausrichtung.

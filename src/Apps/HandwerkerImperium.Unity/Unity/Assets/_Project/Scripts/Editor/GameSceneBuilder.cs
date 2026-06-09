@@ -75,7 +75,8 @@ namespace HandwerkerImperium.Editor
             var cc = avatarGo.AddComponent<CharacterController>();
             cc.center = new Vector3(0f, 1f, 0f);
             cc.height = 2f; cc.radius = 0.4f;
-            AttachModel(avatarGo.transform, ModelDir + "/avatar_hans.glb", 1.8f);
+            var avatarVisual = AttachModel(avatarGo.transform, ModelDir + "/avatar_hans.glb", 1.8f);
+            avatarVisual.AddComponent<ToonBob>(); // Lauf-Hüpfen + Idle-Atmen (bis zur Auto-Rig-Stufe)
             var carryAnchor = new GameObject("CarryAnchor").transform;
             carryAnchor.SetParent(avatarGo.transform);
             carryAnchor.localPosition = new Vector3(0f, 2.05f, 0f);
@@ -103,7 +104,10 @@ namespace HandwerkerImperium.Editor
             var customerRoot = new GameObject("Customer");
             customerRoot.transform.position = new Vector3(0f, 0f, 3.1f);   // Kunden-Seite, mit Abstand (überlappt sonst aus Kamerasicht den Tresen)
             customerRoot.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // schaut zum Tresen
-            AttachModel(customerRoot.transform, ModelDir + "/customer_npc.glb", 1.65f);
+            var customerVisual = AttachModel(customerRoot.transform, ModelDir + "/customer_npc.glb", 1.65f);
+            customerVisual.AddComponent<ToonBob>(); // Idle-Atmen
+            MakeSign("Verkauf", counterGo.transform.position + new Vector3(0f, 1.9f, 0f), 0.34f,
+                new Color(0.98f, 0.95f, 0.88f), new Color(0.30f, 0.22f, 0.15f));
 
             // Stationen: alle 10 Gewerke (GDD §6.1) im Hof-Layout, je eigenes Pipeline-Modell.
             // Nord-Reihe 0-4, Süd-Reihe 5-9, alle zur Hof-Mitte orientiert. Nur die Schreinerei startet offen;
@@ -121,6 +125,12 @@ namespace HandwerkerImperium.Editor
                 ModelDir + "/workshop_smith.glb",              // 8 meisterschmied
                 ModelDir + "/workshop_innovation_lab.glb"      // 9 innovationslabor
             };
+            string[] stationNames =
+            {
+                "Schreinerei", "Klempnerei", "Elektriker", "Malerei", "Dachdeckerei",
+                "Bauunternehmen", "Architekturbüro", "Generalunternehmer", "Meisterschmiede", "Innovationslabor"
+            };
+            var idleBalancing = idleConfig.ToDomain(); // für die Plot-Preise an den Bauzäunen
             int stationCount = stationModels.Length;
             var stationPos = new Vector3[stationCount];
             for (int i = 0; i < 5; i++) stationPos[i] = new Vector3(-16f + i * 8f, 0f, 9f);    // Nord-Reihe
@@ -166,13 +176,24 @@ namespace HandwerkerImperium.Editor
                 SetRef(view, "unlockedVisual", modelRoot);
                 stationTransforms[i] = stGo.transform;
 
-                // Gesperrte Plots: Bauzaun (lockedVisual + fenceVisual) + Hold-to-Pay-Zone davor
+                // Gewerk-Schild vor der Plot-Front auf Blickhöhe (über der Station läge es außerhalb des Kamera-Framings)
+                MakeSign(stationNames[i], pos + toCenter * 3.2f + Vector3.up * 2.65f, 0.40f,
+                    new Color(0.99f, 0.96f, 0.90f), new Color(0.33f, 0.24f, 0.16f));
+
+                // Gesperrte Plots: Bauzaun (lockedVisual + fenceVisual) + Preis-Schild + Hold-to-Pay-Zone
                 if (i > 0)
                 {
                     var fence = MakeBox($"Fence_{i}", pos + toCenter * 2.6f + Vector3.up * 0.6f, new Vector3(4.6f, 1.2f, 0.3f), fencePalette, trigger: false);
                     fence.transform.rotation = Quaternion.LookRotation(toCenter);
                     fence.transform.SetParent(stGo.transform, true);
                     SetRef(view, "lockedVisual", fence);
+
+                    // Preis am Zaun (Kind des Zauns -> verschwindet mit dem Unlock)
+                    decimal cost = HandwerkerImperium.Domain.Idle.GreyboxSimulation.UnlockCostFor(idleBalancing, i);
+                    string price = cost.ToString("N0", new System.Globalization.CultureInfo("de-DE"));
+                    var priceSign = MakeSign(price, pos + toCenter * 2.6f + Vector3.up * 1.75f, 0.36f,
+                        new Color(1.0f, 0.85f, 0.25f), new Color(0.25f, 0.20f, 0.12f));
+                    priceSign.transform.SetParent(fence.transform, true);
 
                     var payZone = MakeTriggerZone($"Fence_{i}_Pay", pos + toCenter * 4.2f + Vector3.up * 0.9f, new Vector3(2.8f, 2f, 2.4f));
                     var plotView = payZone.AddComponent<PlotFenceView>();
@@ -186,10 +207,13 @@ namespace HandwerkerImperium.Editor
                 MakeHirePad($"Hire_{i}", pos + toCenter * 2.2f + side * 3.0f + Vector3.up * 0.1f, i, controller, workerPrefab, stationTransforms[i], counterGo.transform);
             }
 
-            // Upgrade-Pads (3 Achsen) zentral links neben dem Tresen
+            // Upgrade-Pads (3 Achsen) zentral links neben dem Tresen, beschriftet
             MakeUpgradePad("Pad_Tempo", new Vector3(-6f, 0.1f, 2.5f), UpgradeTrack.StationSpeed, controller, new Color(0.9f, 0.4f, 0.4f));
             MakeUpgradePad("Pad_Radius", new Vector3(-6f, 0.1f, 0f), UpgradeTrack.CollectRadius, controller, new Color(0.4f, 0.9f, 0.4f));
             MakeUpgradePad("Pad_Kapazitaet", new Vector3(-6f, 0.1f, -2.5f), UpgradeTrack.CarryCapacity, controller, new Color(0.4f, 0.5f, 0.9f));
+            MakeSign("Tempo", new Vector3(-6f, 1.1f, 2.5f), 0.26f, new Color(0.95f, 0.40f, 0.40f));
+            MakeSign("Radius", new Vector3(-6f, 1.1f, 0f), 0.26f, new Color(0.35f, 0.85f, 0.35f));
+            MakeSign("Tragkraft", new Vector3(-6f, 1.1f, -2.5f), 0.26f, new Color(0.45f, 0.55f, 0.95f));
 
             // Avatar-/Kamera-Verdrahtung. WICHTIG: Start-Position UND Start-Rotation setzen —
             // FollowCamera richtet erst im Play-Mode aus, sonst schaut die Edit-Game-View horizontal in den Himmel.
@@ -216,8 +240,9 @@ namespace HandwerkerImperium.Editor
         /// <summary>
         /// Hängt das glTFast-importierte GLB als Visual-Kind an: bounds-basiert uniform auf
         /// <paramref name="targetHeight"/> skaliert, Füße/Basis auf der Eltern-Null (y=0), zentriert.
+        /// Liefert das Visual (z. B. für <see cref="ToonBob"/>).
         /// </summary>
-        private static void AttachModel(Transform parent, string assetPath, float targetHeight)
+        private static GameObject AttachModel(Transform parent, string assetPath, float targetHeight)
         {
             var prefab = AssetDatabase.LoadMainAssetAtPath(assetPath) as GameObject;
             if (prefab == null)
@@ -229,7 +254,7 @@ namespace HandwerkerImperium.Editor
                 ph.transform.SetParent(parent, false);
                 ph.transform.localScale = new Vector3(1f, targetHeight, 1f);
                 ph.transform.localPosition = new Vector3(0f, targetHeight * 0.5f, 0f);
-                return;
+                return ph;
             }
 
             var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
@@ -241,6 +266,47 @@ namespace HandwerkerImperium.Editor
             go.transform.localScale = Vector3.one * scale;
             // Nach der Skalierung: Basis auf 0, horizontal zentriert (Bounds skalieren mit)
             go.transform.localPosition = new Vector3(-bounds.center.x * scale, -bounds.min.y * scale, -bounds.center.z * scale);
+            return go;
+        }
+
+        /// <summary>
+        /// Welt-Schild (Billboard): Holzbrett + 3D-Text (built-in Font, kein TMP-Essentials-Zwang).
+        /// Genre-Lesbarkeit: Gewerk-Namen über den Stationen, Preise an den Bauzäunen, Pad-Beschriftung.
+        /// </summary>
+        private static GameObject MakeSign(string text, Vector3 worldPos, float textSize, Color textColor, Color? boardColor = null)
+        {
+            var root = new GameObject("Sign_" + text);
+            root.transform.position = worldPos;
+            root.AddComponent<BillboardLabel>();
+
+            if (boardColor.HasValue)
+            {
+                var board = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                board.name = "Board";
+                Object.DestroyImmediate(board.GetComponent<Collider>());
+                board.transform.SetParent(root.transform, false);
+                float w = Mathf.Max(1.4f, text.Length * textSize * 0.62f);
+                board.transform.localScale = new Vector3(w, textSize * 1.7f, 0.06f);
+                board.transform.localPosition = new Vector3(0f, 0f, 0.06f);
+                Paint(board, boardColor.Value);
+            }
+
+            var textGo = new GameObject("Text");
+            textGo.transform.SetParent(root.transform, false);
+            var tm = textGo.AddComponent<TextMesh>();
+            tm.text = text;
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.fontSize = 64;
+            tm.characterSize = textSize * 10f / 64f;
+            tm.color = textColor;
+            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font != null)
+            {
+                tm.font = font;
+                textGo.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+            }
+            return root;
         }
 
         private static Bounds CalcBounds(GameObject go)
@@ -288,7 +354,8 @@ namespace HandwerkerImperium.Editor
         private static GameObject MakeWorkerPrefab()
         {
             var go = new GameObject("Game_Worker");
-            AttachModel(go.transform, ModelDir + "/worker.glb", 1.6f);
+            var visual = AttachModel(go.transform, ModelDir + "/worker.glb", 1.6f);
+            visual.AddComponent<ToonBob>(); // läuft Station<->Tresen -> Lauf-Bob
             go.AddComponent<WorkerNpc>();
             return SavePrefab(go, "Game_Worker");
         }
@@ -333,6 +400,8 @@ namespace HandwerkerImperium.Editor
             SetRef(view, "stationPoint", stationPoint);
             SetRef(view, "counterPoint", counterPoint);
             SetRef(view, "spawnPoint", pad.transform);
+            var label = MakeSign("Arbeiter", pos + Vector3.up * 1.0f, 0.24f, new Color(0.15f, 0.75f, 0.85f));
+            label.transform.SetParent(pad.transform, true); // verschwindet mit dem Pad nach der Anstellung
         }
 
         private static GameObject MakeBox(string name, Vector3 pos, Vector3 scale, Color color, bool trigger)

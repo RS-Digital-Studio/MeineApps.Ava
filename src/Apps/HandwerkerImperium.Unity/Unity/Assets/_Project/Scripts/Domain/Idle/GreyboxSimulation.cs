@@ -147,14 +147,23 @@ namespace HandwerkerImperium.Domain.Idle
             return true;
         }
 
+        /// <summary>Plot-Freischalt-Kosten einer Station (per-Station-Progression; 0 im Def = globaler Fallback).</summary>
+        public static decimal UnlockCostFor(IdleBalancing balancing, int stationIndex)
+        {
+            if (stationIndex >= 0 && stationIndex < balancing.Stations.Count && balancing.Stations[stationIndex].UnlockCost > 0m)
+                return balancing.Stations[stationIndex].UnlockCost;
+            return balancing.PlotUnlockCost;
+        }
+
         /// <summary>Schaltet eine gesperrte Station (Plot) frei. Liefert true bei Erfolg.</summary>
         public static bool UnlockPlot(GreyboxSimState state, IdleBalancing balancing, int stationIndex)
         {
             if (stationIndex < 0 || stationIndex >= state.Stations.Count) return false;
             var st = state.Stations[stationIndex];
             if (st.Unlocked) return false;
-            if (state.Money < balancing.PlotUnlockCost) return false;
-            state.Money -= balancing.PlotUnlockCost;
+            decimal cost = UnlockCostFor(balancing, stationIndex);
+            if (state.Money < cost) return false;
+            state.Money -= cost;
             st.Unlocked = true;
             return true;
         }

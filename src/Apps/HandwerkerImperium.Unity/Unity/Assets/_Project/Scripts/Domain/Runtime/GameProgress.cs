@@ -76,7 +76,7 @@ namespace HandwerkerImperium.Domain.Runtime
             FireBeats(m, catalog, StoryTrigger.GameStart, true, played);
             FireBeats(m, catalog, StoryTrigger.FirstStationProduce, AnyStock(m.Idle), played);
             FireBeats(m, catalog, StoryTrigger.FirstWorkerHired, CountWorkers(m.Idle) > 0, played);
-            FireBeats(m, catalog, StoryTrigger.FirstPlotUnlocked, LastStationUnlocked(m.Idle), played);
+            FireBeats(m, catalog, StoryTrigger.FirstPlotUnlocked, UnlockedBeyondFirst(m.Idle), played);
             FireBeats(m, catalog, StoryTrigger.FirstLandmarkRestored, RestorationFormulas.CompletedLandmarks(m.Landmarks) > 0, played);
             FireBeats(m, catalog, StoryTrigger.FirstPrestige, m.Meta.PrestigeCount > 0, played);
             return played;
@@ -173,8 +173,13 @@ namespace HandwerkerImperium.Domain.Runtime
             return false;
         }
 
-        private static bool LastStationUnlocked(GreyboxSimState idle) =>
-            idle.Stations.Count > 0 && idle.Stations[idle.Stations.Count - 1].Unlocked;
+        /// <summary>True, sobald mehr als die Start-Station offen ist (= der erste Plot wurde gekauft).</summary>
+        private static bool UnlockedBeyondFirst(GreyboxSimState idle)
+        {
+            int n = 0;
+            foreach (var st in idle.Stations) if (st.Unlocked) n++;
+            return n > 1;
+        }
 
         private static MasterToolContext BuildMasterToolContext(GameModel m) => new MasterToolContext
         {

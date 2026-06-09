@@ -14,6 +14,8 @@ namespace HandwerkerImperium.Game
         public int stackCap = 8;
         public float sellValue = 5f;
         public bool unlockedAtStart = true;
+        [Tooltip("Plot-Freischalt-Kosten (0 = globaler plotUnlockCost-Fallback).")]
+        public float unlockCost;
     }
 
     /// <summary>
@@ -28,13 +30,19 @@ namespace HandwerkerImperium.Game
         public float collectRadius = 2.5f;
         public int carryCapacity = 5;
 
-        [Header("Stationen (3 offen + 1 ueber Plot-Unlock)")]
+        [Header("Stationen: 10 Gewerke (GDD §6.1), Start nur Schreinerei")]
         public StationConfig[] stations = new StationConfig[]
         {
             new StationConfig { id = "schreiner", produceInterval = 2f, stackCap = 8, sellValue = 5f, unlockedAtStart = true },
-            new StationConfig { id = "klempner", produceInterval = 2.5f, stackCap = 8, sellValue = 8f, unlockedAtStart = true },
-            new StationConfig { id = "elektriker", produceInterval = 3f, stackCap = 8, sellValue = 12f, unlockedAtStart = true },
-            new StationConfig { id = "dachdecker", produceInterval = 3.5f, stackCap = 8, sellValue = 20f, unlockedAtStart = false },
+            new StationConfig { id = "klempner", produceInterval = 2.5f, stackCap = 8, sellValue = 8f, unlockedAtStart = false, unlockCost = 500f },
+            new StationConfig { id = "elektriker", produceInterval = 3f, stackCap = 8, sellValue = 12f, unlockedAtStart = false, unlockCost = 1500f },
+            new StationConfig { id = "maler", produceInterval = 3f, stackCap = 10, sellValue = 16f, unlockedAtStart = false, unlockCost = 4000f },
+            new StationConfig { id = "dachdecker", produceInterval = 3.5f, stackCap = 10, sellValue = 22f, unlockedAtStart = false, unlockCost = 9000f },
+            new StationConfig { id = "bauunternehmer", produceInterval = 3.5f, stackCap = 10, sellValue = 30f, unlockedAtStart = false, unlockCost = 18000f },
+            new StationConfig { id = "architekt", produceInterval = 4f, stackCap = 12, sellValue = 42f, unlockedAtStart = false, unlockCost = 32000f },
+            new StationConfig { id = "generalunternehmer", produceInterval = 4f, stackCap = 12, sellValue = 60f, unlockedAtStart = false, unlockCost = 55000f },
+            new StationConfig { id = "meisterschmied", produceInterval = 4.5f, stackCap = 12, sellValue = 85f, unlockedAtStart = false, unlockCost = 90000f },
+            new StationConfig { id = "innovationslabor", produceInterval = 5f, stackCap = 15, sellValue = 120f, unlockedAtStart = false, unlockCost = 140000f },
         };
 
         [Header("Upgrades (geometrisch: base × growth^level)")]
@@ -46,7 +54,7 @@ namespace HandwerkerImperium.Game
         public float workerHireCost = 200f;
         public float workerCarrySpeed = 1f;
 
-        [Header("Plot-Unlock (4. Station)")]
+        [Header("Plot-Unlock-Fallback (greift nur bei unlockCost = 0)")]
         public float plotUnlockCost = 500f;
 
         [Header("Offline")]
@@ -76,7 +84,7 @@ namespace HandwerkerImperium.Game
                 for (int i = 0; i < stations.Length; i++)
                 {
                     var s = stations[i];
-                    b.Stations.Add(new StationBalance(s.id, s.produceInterval, s.stackCap, (decimal)s.sellValue, s.unlockedAtStart));
+                    b.Stations.Add(new StationBalance(s.id, s.produceInterval, s.stackCap, (decimal)s.sellValue, s.unlockedAtStart, (decimal)s.unlockCost));
                 }
             }
             return b;

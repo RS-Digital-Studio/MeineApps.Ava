@@ -14,21 +14,24 @@ namespace HandwerkerImperium.Domain.Idle
         public int StackCap;
         /// <summary>Geld je abgegebener Ware am Tresen.</summary>
         public decimal SellValue;
-        /// <summary>True wenn die Station zu Spielbeginn offen ist (Station 4 = false, Plot-Unlock).</summary>
+        /// <summary>True wenn die Station zu Spielbeginn offen ist (GDD §5.1: nur die Schreinerei).</summary>
         public bool UnlockedAtStart;
+        /// <summary>Plot-Freischalt-Kosten dieser Station (0 = Fallback auf <see cref="IdleBalancing.PlotUnlockCost"/>).</summary>
+        public decimal UnlockCost;
 
         public StationBalance() { }
 
-        public StationBalance(string id, double produceInterval, int stackCap, decimal sellValue, bool unlockedAtStart)
+        public StationBalance(string id, double produceInterval, int stackCap, decimal sellValue, bool unlockedAtStart, decimal unlockCost = 0m)
         {
             Id = id;
             ProduceInterval = produceInterval;
             StackCap = stackCap;
             SellValue = sellValue;
             UnlockedAtStart = unlockedAtStart;
+            UnlockCost = unlockCost;
         }
 
-        public StationBalance Clone() => new StationBalance(Id, ProduceInterval, StackCap, SellValue, UnlockedAtStart);
+        public StationBalance Clone() => new StationBalance(Id, ProduceInterval, StackCap, SellValue, UnlockedAtStart, UnlockCost);
     }
 
     /// <summary>
@@ -43,13 +46,21 @@ namespace HandwerkerImperium.Domain.Idle
         public double CollectRadius = 2.5;
         public int CarryCapacity = 5;
 
-        // ── Stationen (3 offen + 1 ueber Plot-Unlock) ──────────────────────
+        // ── Stationen: alle 10 Gewerke (GDD §6.1), Start nur Schreinerei (GDD §5.1) ──
+        // Plot-Kosten-Progression auf den Akt-1-Bogen getunt (Prestige ab ~100k+, PP=floor(sqrt(money/100k))):
+        // fruehe Plots in Minuten, spaete Plots tragen den Akt bis zur 5★-/Prestige-Reife.
         public List<StationBalance> Stations = new List<StationBalance>
         {
             new StationBalance("schreiner", 2.0, 8, 5m, true),
-            new StationBalance("klempner", 2.5, 8, 8m, true),
-            new StationBalance("elektriker", 3.0, 8, 12m, true),
-            new StationBalance("dachdecker", 3.5, 8, 20m, false),
+            new StationBalance("klempner", 2.5, 8, 8m, false, 500m),
+            new StationBalance("elektriker", 3.0, 8, 12m, false, 1500m),
+            new StationBalance("maler", 3.0, 10, 16m, false, 4000m),
+            new StationBalance("dachdecker", 3.5, 10, 22m, false, 9000m),
+            new StationBalance("bauunternehmer", 3.5, 10, 30m, false, 18000m),
+            new StationBalance("architekt", 4.0, 12, 42m, false, 32000m),
+            new StationBalance("generalunternehmer", 4.0, 12, 60m, false, 55000m),
+            new StationBalance("meisterschmied", 4.5, 12, 85m, false, 90000m),
+            new StationBalance("innovationslabor", 5.0, 15, 120m, false, 140000m),
         };
 
         // ── Upgrades (geometrische Kostenkurve, Effekt je Stufe) ───────────
@@ -65,7 +76,7 @@ namespace HandwerkerImperium.Domain.Idle
         /// <summary>Waren/Sekunde, die ein angestellter Worker Station->Tresen bewegt.</summary>
         public double WorkerCarrySpeed = 1.0;
 
-        // ── Plot-Unlock (4. Station) ───────────────────────────────────────
+        // ── Plot-Unlock-Fallback (greift nur, wenn StationBalance.UnlockCost = 0) ──
         public decimal PlotUnlockCost = 500m;
 
         // ── Offline ────────────────────────────────────────────────────────

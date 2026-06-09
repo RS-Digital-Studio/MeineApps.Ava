@@ -56,16 +56,16 @@ namespace HandwerkerImperium.Game.Tests
 
         // ── Balancing -> State-Mapping (Vertrag fuer Scene + Save) ──────────
         [Test]
-        public void CreateNew_MapsBalancing_FourStations_LastLocked()
+        public void CreateNew_MapsBalancing_TenStations_OnlyCarpenterOpen()
         {
             var r = NewRig();
-            Assert.AreEqual(4, r.State.Stations.Count, "Balancing hat 4 Stationen");
-            Assert.IsTrue(r.Stations.IsUnlocked(0), "schreiner offen");
-            Assert.IsTrue(r.Stations.IsUnlocked(1), "klempner offen");
-            Assert.IsTrue(r.Stations.IsUnlocked(2), "elektriker offen");
-            Assert.IsFalse(r.Stations.IsUnlocked(3), "dachdecker gesperrt (Plot-Unlock)");
+            Assert.AreEqual(10, r.State.Stations.Count, "Balancing hat alle 10 Gewerke (GDD §6.1)");
+            Assert.IsTrue(r.Stations.IsUnlocked(0), "schreiner offen (GDD §5.1: Start nur Schreinerei)");
+            for (int i = 1; i < 10; i++)
+                Assert.IsFalse(r.Stations.IsUnlocked(i), $"Station {i} startet gesperrt (Plot-Unlock)");
             Assert.AreEqual("schreiner", r.State.Stations[0].Id);
-            Assert.AreEqual("dachdecker", r.State.Stations[3].Id);
+            Assert.AreEqual("klempner", r.State.Stations[1].Id);
+            Assert.AreEqual("innovationslabor", r.State.Stations[9].Id);
         }
 
         // ── Geteilter Session-State ueber alle Services ────────────────────
@@ -154,22 +154,23 @@ namespace HandwerkerImperium.Game.Tests
             Assert.AreEqual(2, r.MoneyEvents, "Tick mit Geld-Delta feuert genau 1x zusaetzlich");
         }
 
-        // ── Plot-Unlock: schaltet 4. Station frei + feuert; sonst false ────
+        // ── Plot-Unlock: per-Station-Kosten, schaltet frei + feuert; sonst false ──
         [Test]
         public void Plot_Unlock_Succeeds_WithMoney_FailsWithout()
         {
             var ok = NewRig(startMoney: 500m);
-            Assert.IsFalse(ok.Plots.IsUnlocked(3));
-            Assert.AreEqual(500m, ok.Plots.UnlockCost);
-            Assert.IsTrue(ok.Plots.Unlock(3));
-            Assert.IsTrue(ok.Plots.IsUnlocked(3));
-            Assert.IsTrue(ok.Stations.IsUnlocked(3), "StationService sieht die Freischaltung");
+            Assert.IsFalse(ok.Plots.IsUnlocked(1));
+            Assert.AreEqual(500m, ok.Plots.UnlockCostFor(1), "klempner = erster Plot (500)");
+            Assert.AreEqual(4000m, ok.Plots.UnlockCostFor(3), "maler = vierter Plot (Progression)");
+            Assert.IsTrue(ok.Plots.Unlock(1));
+            Assert.IsTrue(ok.Plots.IsUnlocked(1));
+            Assert.IsTrue(ok.Stations.IsUnlocked(1), "StationService sieht die Freischaltung");
             Assert.AreEqual(0m, ok.Economy.Money);
             Assert.AreEqual(1, ok.MoneyEvents);
 
             var poor = NewRig(startMoney: 499m);
-            Assert.IsFalse(poor.Plots.Unlock(3), "zu wenig Geld -> kein Unlock");
-            Assert.IsFalse(poor.Plots.IsUnlocked(3));
+            Assert.IsFalse(poor.Plots.Unlock(1), "zu wenig Geld -> kein Unlock");
+            Assert.IsFalse(poor.Plots.IsUnlocked(1));
             Assert.AreEqual(0, poor.MoneyEvents);
         }
 
@@ -218,7 +219,7 @@ namespace HandwerkerImperium.Game.Tests
                 Assert.IsNotNull(loaded, "Load liefert State zurueck");
                 Assert.AreEqual(r.State.Money, loaded.Money, "decimal Money exakt");
                 Assert.AreEqual(r.State.CarryCapacityLevel, loaded.CarryCapacityLevel);
-                Assert.AreEqual(4, loaded.Stations.Count);
+                Assert.AreEqual(10, loaded.Stations.Count);
                 Assert.AreEqual(r.State.Stations[0].Stock, loaded.Stations[0].Stock);
                 Assert.IsTrue(loaded.Stations[0].HasWorker);
                 Assert.IsTrue(loaded.Stations[3].Unlocked, "Plot-Unlock ueberlebt Save");

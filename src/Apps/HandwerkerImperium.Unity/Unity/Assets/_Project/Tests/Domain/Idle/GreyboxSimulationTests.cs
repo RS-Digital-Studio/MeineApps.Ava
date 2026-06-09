@@ -27,7 +27,7 @@ namespace HandwerkerImperium.Domain.Tests.Idle
             // Weitere 10 s -> bleibt bei Cap.
             GreyboxSimulation.TickProduction(st, bal, 10.0);
             Assert.That(st.Stations[0].Stock, Is.EqualTo(8));
-            // Gesperrte Station 4 produziert nicht.
+            // Gesperrte Plots produzieren nicht (Start: nur die Schreinerei offen).
             Assert.That(st.Stations[3].Unlocked, Is.False);
             Assert.That(st.Stations[3].Stock, Is.EqualTo(0));
         }
@@ -119,14 +119,34 @@ namespace HandwerkerImperium.Domain.Tests.Idle
             Assert.That(st.Stations[0].HasWorker, Is.True);
             Assert.That(st.Money, Is.EqualTo(0m));
 
-            // Plot-Unlock Station 4
+            // Plot-Unlock: erster Plot (klempner) kostet seine Stations-UnlockCost (500)
             st.Money = 500m;
-            Assert.That(GreyboxSimulation.UnlockPlot(st, bal, 3), Is.True);
-            Assert.That(st.Stations[3].Unlocked, Is.True);
+            Assert.That(GreyboxSimulation.UnlockPlot(st, bal, 1), Is.True);
+            Assert.That(st.Stations[1].Unlocked, Is.True);
             Assert.That(st.Money, Is.EqualTo(0m));
             // Produziert jetzt.
-            GreyboxSimulation.TickProduction(st, bal, 7.0); // interval 3.5 -> 2 Waren
-            Assert.That(st.Stations[3].Stock, Is.EqualTo(2));
+            GreyboxSimulation.TickProduction(st, bal, 7.0); // klempner interval 2.5 -> 2 Waren
+            Assert.That(st.Stations[1].Stock, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void UnlockCost_PerStationProgression_WithFallback()
+        {
+            var bal = Bal();
+            Assert.That(GreyboxSimulation.UnlockCostFor(bal, 1), Is.EqualTo(500m), "klempner");
+            Assert.That(GreyboxSimulation.UnlockCostFor(bal, 4), Is.EqualTo(9000m), "dachdecker");
+            Assert.That(GreyboxSimulation.UnlockCostFor(bal, 9), Is.EqualTo(140000m), "innovationslabor");
+            // Progression streng steigend ueber alle Plots
+            for (int i = 2; i < bal.Stations.Count; i++)
+                Assert.That(GreyboxSimulation.UnlockCostFor(bal, i), Is.GreaterThan(GreyboxSimulation.UnlockCostFor(bal, i - 1)));
+            // UnlockCost 0 im Def -> globaler Fallback
+            bal.Stations[1].UnlockCost = 0m;
+            Assert.That(GreyboxSimulation.UnlockCostFor(bal, 1), Is.EqualTo(bal.PlotUnlockCost));
+            // Zu wenig Geld fuer teuren Plot -> kein Unlock
+            var st = GreyboxSimState.CreateNew(bal);
+            st.Money = 8999m;
+            Assert.That(GreyboxSimulation.UnlockPlot(st, bal, 4), Is.False, "dachdecker braucht 9000");
+            Assert.That(st.Money, Is.EqualTo(8999m));
         }
 
         [Test]
@@ -154,7 +174,7 @@ namespace HandwerkerImperium.Domain.Tests.Idle
             for (int s = 0; s < 200; s++)
             {
                 GreyboxSimulation.Tick(st, bal, 1.0);
-                // Spieler raeumt alle 3 Stationen ab (Trag-Kapazitaet beachtet).
+                // Spieler raeumt die offenen Stationen ab (gesperrte haben Stock 0 -> no-op).
                 int carry = GreyboxSimulation.EffectiveCarryCapacity(st, bal);
                 for (int i = 0; i < 3; i++)
                     GreyboxSimulation.PlayerDeposit(st, bal, i, carry);

@@ -46,9 +46,28 @@ Blender-Kontaktblatt qualitäts-geprüft (kohärent rundum, game-ready Toon).
 | `customer_npc.glb` | `customer_npc_v01` | **Kunde** am Tresen (distinkte Silhouette zum Avatar) |
 | `workshop_smith.glb` | `workshop_smith_v04` | **2. Stationstyp** (Schmiede mit Esse/Schornstein) |
 
+## Stations-Batch: alle 10 Gewerke komplett (GDD §6.1)
+
+Die restlichen 8 Stations-Gebäude, gleiche Kette (Konzept-Skript `station_concepts.py`, Sichtung
+mit Regen-Fix für painter/architect — "workshop/studio" kippt sonst in Innenräume → Exterieur-Prompt):
+
+| GLB | Gewerk (Stations-Index) | Charakter |
+|-----|--------------------------|-----------|
+| `workshop_plumber.glb` | Klempner (1) | blaues Haus, Kupferrohre, Wasserfass |
+| `workshop_electrician.glb` | Elektriker (2) | dunkles Holz, Laterne, Antennen-Mast |
+| `workshop_painter.glb` | Maler (3) | buntes Schindel-Dach, Farbeimer |
+| `workshop_roofer.glb` | Dachdecker (4) | rotes Fachwerk, markantes Schichtdach |
+| `workshop_contractor.glb` | Bauunternehmer (5) | zweistöckig, Veranda, Fässer |
+| `workshop_architect.glb` | Architekt (6) | helles Studio, Erkerfenster |
+| `workshop_general_contractor.glb` | Generalunternehmer (7) | Holz-HQ mit Flagge |
+| `workshop_innovation_lab.glb` | Innovationslabor (9) | Kupfer-Glas-Kuppel, Steampunk |
+
+(Schreiner (0) = `workshop.glb`, Meisterschmied (8) = `workshop_smith.glb`.) Alle per
+Blender-Kontaktblatt qualitäts-geprüft, je 12k Tris + PBR. Quelle: `…\genre_core\unity_glb\`.
+
 ## Offener Generierungs-Backlog (gleiche Kette, GPU)
 
-Noch offen: die übrigen **~8 Stations-Typen** (eigenes Modell + eigene Ware je Station),
+Noch offen: **eigene Trag-Ware je Station** (aktuell ein gemeinsamer Holz-Würfel),
 **Stadt-/Wahrzeichen-Props** (Sanierung). **Münze/Geld** + **Upgrade-Pad** + **Plot-Bauzaun** sind
 besser als **Unity-Primitive** (Zylinder/Quader + Material) — flach/einfach, Image-to-3D ungeeignet
 (wie City-Tiles, siehe `pilot_log.md`).

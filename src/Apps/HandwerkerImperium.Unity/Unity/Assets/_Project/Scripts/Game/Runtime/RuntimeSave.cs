@@ -15,6 +15,7 @@ namespace HandwerkerImperium.Game
     public static class RuntimeSave
     {
         private const string Key = "hwi_game_save_v1";
+        private const string CorruptBackupKey = "hwi_game_save_v1_corrupt";
 
         /// <summary>Gerätegebundener HMAC-Schlüssel (Anti-Cheat-Bindung an das Gerät).</summary>
         public static string DeviceKey => SystemInfo.deviceUniqueIdentifier;
@@ -37,15 +38,32 @@ namespace HandwerkerImperium.Game
         public static GameModel Load(string deviceKey, IdleBalancing idleBalancing)
         {
             if (!PlayerPrefs.HasKey(Key)) return null;
+            string raw = PlayerPrefs.GetString(Key);
             GameSave save;
-            try { save = JsonConvert.DeserializeObject<GameSave>(PlayerPrefs.GetString(Key)); }
-            catch { return null; }
-            if (save == null) return null;
+            try { save = JsonConvert.DeserializeObject<GameSave>(raw); }
+            catch (System.Exception ex)
+            {
+                // Nie still wipen: nicht-parsebaren Save sichern (Diagnose/Recovery), DANN frisch starten.
+                Debug.LogWarning("[RuntimeSave] Save nicht parsebar (" + ex.GetType().Name + "): " + ex.Message + " — Raw in Backup-Slot gesichert.");
+                PlayerPrefs.SetString(CorruptBackupKey, raw);
+                PlayerPrefs.Save();
+                return null;
+            }
+            if (save == null)
+            {
+                Debug.LogWarning("[RuntimeSave] Save deserialisiert zu null — Raw in Backup-Slot gesichert.");
+                PlayerPrefs.SetString(CorruptBackupKey, raw);
+                PlayerPrefs.Save();
+                return null;
+            }
 
             SaveSanitizer.EnsureSlices(save);
             save = SaveMigrator.Migrate(save);
             if (!SaveSignature.Verify(save, deviceKey))
+            {
+                Debug.LogWarning("[RuntimeSave] Signatur ungueltig — Save wird repariert (Sanitize), nicht verworfen.");
                 SaveSanitizer.Sanitize(save); // reparieren statt wipen
+            }
 
             return GameModelMapping.FromSave(save, idleBalancing);
         }

@@ -19,6 +19,10 @@ namespace HandwerkerImperium.Game
 
         public decimal UnlockCost => _session.Balancing.PlotUnlockCost;
 
+        /// <summary>Plot-Kosten der konkreten Station (per-Station-Progression, UI-Anzeige am Bauzaun).</summary>
+        public decimal UnlockCostFor(int stationIndex) =>
+            GreyboxSimulation.UnlockCostFor(_session.Balancing, stationIndex);
+
         public bool IsUnlocked(int stationIndex) =>
             stationIndex >= 0 && stationIndex < _session.State.Stations.Count && _session.State.Stations[stationIndex].Unlocked;
 

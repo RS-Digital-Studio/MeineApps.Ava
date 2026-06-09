@@ -36,7 +36,9 @@ namespace HandwerkerImperium.Game.Tests
             try
             {
                 var idle = so.ToIdleBalancing(); // kein Idle-Config gesetzt -> Default
-                Assert.That(idle.Stations.Count, Is.EqualTo(4));
+                Assert.That(idle.Stations.Count, Is.EqualTo(10), "alle 10 Gewerke (GDD §6.1)");
+                Assert.That(idle.Stations[0].UnlockedAtStart, Is.True, "Start nur Schreinerei");
+                Assert.That(idle.Stations[1].UnlockCost, Is.EqualTo(500m), "Plot-Kosten-Progression beginnt bei 500");
             }
             finally { UnityEngine.Object.DestroyImmediate(so); }
         }

@@ -14,6 +14,8 @@ namespace HandwerkerImperium.Game
         [SerializeField] private Transform stackAnchor;
         [SerializeField] private GameObject warePrefab;
         [SerializeField] private GameObject lockedVisual;
+        [Tooltip("Optional: das Stations-Modell — gesperrt ausgeblendet (Bauplatz-Look statt Box drueber).")]
+        [SerializeField] private GameObject unlockedVisual;
         [SerializeField] private float wareHeight = 0.5f;
 
         private int _visualCount;
@@ -25,6 +27,7 @@ namespace HandwerkerImperium.Game
             if (controller == null || controller.Stations == null) return;
             bool unlocked = controller.Stations.IsUnlocked(stationIndex);
             if (lockedVisual != null && lockedVisual.activeSelf == unlocked) lockedVisual.SetActive(!unlocked);
+            if (unlockedVisual != null && unlockedVisual.activeSelf != unlocked) unlockedVisual.SetActive(unlocked);
             SyncStack(unlocked ? controller.Stations.Stock(stationIndex) : 0);
         }
 

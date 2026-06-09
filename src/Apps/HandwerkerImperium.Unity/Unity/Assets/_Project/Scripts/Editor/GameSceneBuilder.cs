@@ -49,11 +49,13 @@ namespace HandwerkerImperium.Editor
             light.color = new Color(1.0f, 0.96f, 0.88f);
             lightGo.transform.rotation = Quaternion.Euler(48f, -32f, 0f);
 
-            // Boden
+            // Boden + warmes Ambiente
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
-            ground.transform.localScale = new Vector3(4.5f, 1f, 4.5f);
+            ground.transform.localScale = new Vector3(5.5f, 1f, 5.5f);
             Paint(ground, new Color(0.62f, 0.55f, 0.45f)); // warmer Hof-Boden
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.52f, 0.50f, 0.47f); // weiche warme Schatten
 
             // Runtime (einziger Ticker + HMAC-Save) + Diagnose-HUD
             var runtimeGo = new GameObject("RuntimeGameController");
@@ -103,65 +105,91 @@ namespace HandwerkerImperium.Editor
             customerRoot.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // schaut zum Tresen
             AttachModel(customerRoot.transform, ModelDir + "/customer_npc.glb", 1.65f);
 
-            // Stationen: 2× Schreinerei (workshop) + 2× Schmiede (workshop_smith), Station 3 gesperrt
+            // Stationen: alle 10 Gewerke (GDD §6.1) im Hof-Layout, je eigenes Pipeline-Modell.
+            // Nord-Reihe 0-4, Süd-Reihe 5-9, alle zur Hof-Mitte orientiert. Nur die Schreinerei startet offen;
+            // gesperrte Plots zeigen Bodenplatte + Bauzaun (Hold-to-Pay), das Gebäude erscheint erst nach Unlock.
             string[] stationModels =
             {
-                ModelDir + "/workshop.glb", ModelDir + "/workshop_smith.glb",
-                ModelDir + "/workshop.glb", ModelDir + "/workshop_smith.glb"
+                ModelDir + "/workshop.glb",                    // 0 schreiner
+                ModelDir + "/workshop_plumber.glb",            // 1 klempner
+                ModelDir + "/workshop_electrician.glb",        // 2 elektriker
+                ModelDir + "/workshop_painter.glb",            // 3 maler
+                ModelDir + "/workshop_roofer.glb",             // 4 dachdecker
+                ModelDir + "/workshop_contractor.glb",         // 5 bauunternehmer
+                ModelDir + "/workshop_architect.glb",          // 6 architekt
+                ModelDir + "/workshop_general_contractor.glb", // 7 generalunternehmer
+                ModelDir + "/workshop_smith.glb",              // 8 meisterschmied
+                ModelDir + "/workshop_innovation_lab.glb"      // 9 innovationslabor
             };
-            var stationPos = new[]
-            {
-                new Vector3(-8f, 0f, 7f), new Vector3(8f, 0f, 7f),
-                new Vector3(-8f, 0f, -7f), new Vector3(8f, 0f, -7f)
-            };
-            var stationTransforms = new Transform[4];
-            for (int i = 0; i < 4; i++)
-            {
-                var stGo = new GameObject($"Station_{i}");
-                stGo.transform.position = stationPos[i];
-                stGo.transform.rotation = Quaternion.LookRotation((Vector3.zero - stationPos[i]).WithY(0f)); // Front zur Mitte
-                AttachModel(stGo.transform, stationModels[i], 3.4f);
+            int stationCount = stationModels.Length;
+            var stationPos = new Vector3[stationCount];
+            for (int i = 0; i < 5; i++) stationPos[i] = new Vector3(-16f + i * 8f, 0f, 9f);    // Nord-Reihe
+            for (int i = 5; i < 10; i++) stationPos[i] = new Vector3(-16f + (i - 5) * 8f, 0f, -9f); // Süd-Reihe
 
-                // Pickup-Zone vor der Station (Richtung Mitte)
-                Vector3 toCenter = (Vector3.zero - stationPos[i]).WithY(0f).normalized;
-                var trig = MakeTriggerZone($"Station_{i}_Pickup", stationPos[i] + toCenter * 2.6f + Vector3.up * 0.9f, new Vector3(2.6f, 2f, 2.6f));
+            var fencePalette = new Color(0.85f, 0.68f, 0.20f); // Bauzaun-Gelb
+            var stationTransforms = new Transform[stationCount];
+            for (int i = 0; i < stationCount; i++)
+            {
+                Vector3 pos = stationPos[i];
+                Vector3 toCenter = (Vector3.zero - pos).WithY(0f).normalized;
+
+                var stGo = new GameObject($"Station_{i}");
+                stGo.transform.position = pos;
+                stGo.transform.rotation = Quaternion.LookRotation(toCenter);
+
+                // Plot-Bodenplatte (immer sichtbar — markiert den Bauplatz)
+                var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                plate.name = "PlotPlate";
+                UnityEngine.Object.DestroyImmediate(plate.GetComponent<Collider>());
+                plate.transform.SetParent(stGo.transform, false);
+                plate.transform.position = pos + new Vector3(0f, 0.025f, 0f);
+                plate.transform.rotation = stGo.transform.rotation;
+                plate.transform.localScale = new Vector3(5.6f, 0.05f, 5.6f);
+                Paint(plate, new Color(0.52f, 0.45f, 0.36f));
+
+                // Gebäude-Modell (unlockedVisual — gesperrt ausgeblendet)
+                var modelRoot = new GameObject("Model");
+                modelRoot.transform.SetParent(stGo.transform, false);
+                AttachModel(modelRoot.transform, stationModels[i], 3.4f);
+
+                // Pickup-Zone + Waren-Stapel vor der Station
+                var trig = MakeTriggerZone($"Station_{i}_Pickup", pos + toCenter * 2.9f + Vector3.up * 0.9f, new Vector3(2.6f, 2f, 2.6f));
                 var view = trig.AddComponent<StationView>();
                 var stackAnchor = new GameObject("StackAnchor").transform;
                 stackAnchor.SetParent(stGo.transform, false);
-                stackAnchor.position = stationPos[i] + toCenter * 1.9f + Vector3.up * 0.2f;
-
-                GameObject locked = null;
-                if (i == 3)
-                {
-                    locked = MakeBox("Locked", stationPos[i] + new Vector3(0f, 1.8f, 0f), new Vector3(3.8f, 3.8f, 3.8f), new Color(0.32f, 0.32f, 0.34f), trigger: false);
-                    locked.transform.SetParent(stGo.transform, true);
-                }
+                stackAnchor.position = pos + toCenter * 2.1f + Vector3.up * 0.25f;
 
                 SetInt(view, "stationIndex", i);
                 SetRef(view, "controller", controller);
                 SetRef(view, "stackAnchor", stackAnchor);
                 SetRef(view, "warePrefab", warePrefab);
-                if (locked != null) SetRef(view, "lockedVisual", locked);
+                SetRef(view, "unlockedVisual", modelRoot);
                 stationTransforms[i] = stGo.transform;
+
+                // Gesperrte Plots: Bauzaun (lockedVisual + fenceVisual) + Hold-to-Pay-Zone davor
+                if (i > 0)
+                {
+                    var fence = MakeBox($"Fence_{i}", pos + toCenter * 2.6f + Vector3.up * 0.6f, new Vector3(4.6f, 1.2f, 0.3f), fencePalette, trigger: false);
+                    fence.transform.rotation = Quaternion.LookRotation(toCenter);
+                    fence.transform.SetParent(stGo.transform, true);
+                    SetRef(view, "lockedVisual", fence);
+
+                    var payZone = MakeTriggerZone($"Fence_{i}_Pay", pos + toCenter * 4.2f + Vector3.up * 0.9f, new Vector3(2.8f, 2f, 2.4f));
+                    var plotView = payZone.AddComponent<PlotFenceView>();
+                    SetInt(plotView, "stationIndex", i);
+                    SetRef(plotView, "controller", controller);
+                    SetRef(plotView, "fenceVisual", fence);
+                }
+
+                // Worker-Hire-Pad seitlich vor jeder Station (zahlt erst nach Unlock — Domain prueft Unlocked)
+                Vector3 side = Vector3.Cross(Vector3.up, toCenter).normalized;
+                MakeHirePad($"Hire_{i}", pos + toCenter * 2.2f + side * 3.0f + Vector3.up * 0.1f, i, controller, workerPrefab, stationTransforms[i], counterGo.transform);
             }
 
-            // Upgrade-Pads (3 Achsen) am linken Rand
-            MakeUpgradePad("Pad_Tempo", new Vector3(-14f, 0.1f, 3f), UpgradeTrack.StationSpeed, controller, new Color(0.9f, 0.4f, 0.4f));
-            MakeUpgradePad("Pad_Radius", new Vector3(-14f, 0.1f, 0f), UpgradeTrack.CollectRadius, controller, new Color(0.4f, 0.9f, 0.4f));
-            MakeUpgradePad("Pad_Kapazitaet", new Vector3(-14f, 0.1f, -3f), UpgradeTrack.CarryCapacity, controller, new Color(0.4f, 0.5f, 0.9f));
-
-            // Worker-Hire-Pads (Station 0 + 1)
-            MakeHirePad("Hire_0", stationPos[0] + new Vector3(3.2f, 0.1f, -2.2f), 0, controller, workerPrefab, stationTransforms[0], counterGo.transform);
-            MakeHirePad("Hire_1", stationPos[1] + new Vector3(-3.2f, 0.1f, -2.2f), 1, controller, workerPrefab, stationTransforms[1], counterGo.transform);
-
-            // Plot-Bauzaun (Station 3)
-            var fenceGo = MakeBox("PlotFence", stationPos[3] + new Vector3(-2.2f, 0.6f, 2.2f), new Vector3(3.4f, 1.2f, 0.4f), new Color(0.8f, 0.7f, 0.2f), trigger: false);
-            fenceGo.transform.rotation = Quaternion.Euler(0f, 45f, 0f);
-            var fenceTrig = MakeTriggerZone("PlotFence_Pay", stationPos[3] + new Vector3(-3.1f, 0.1f, 3.1f), new Vector3(2.6f, 2f, 2.6f));
-            var plot = fenceTrig.AddComponent<PlotFenceView>();
-            SetInt(plot, "stationIndex", 3);
-            SetRef(plot, "controller", controller);
-            SetRef(plot, "fenceVisual", fenceGo);
+            // Upgrade-Pads (3 Achsen) zentral links neben dem Tresen
+            MakeUpgradePad("Pad_Tempo", new Vector3(-6f, 0.1f, 2.5f), UpgradeTrack.StationSpeed, controller, new Color(0.9f, 0.4f, 0.4f));
+            MakeUpgradePad("Pad_Radius", new Vector3(-6f, 0.1f, 0f), UpgradeTrack.CollectRadius, controller, new Color(0.4f, 0.9f, 0.4f));
+            MakeUpgradePad("Pad_Kapazitaet", new Vector3(-6f, 0.1f, -2.5f), UpgradeTrack.CarryCapacity, controller, new Color(0.4f, 0.5f, 0.9f));
 
             // Avatar-/Kamera-Verdrahtung. WICHTIG: Start-Position UND Start-Rotation setzen —
             // FollowCamera richtet erst im Play-Mode aus, sonst schaut die Edit-Game-View horizontal in den Himmel.

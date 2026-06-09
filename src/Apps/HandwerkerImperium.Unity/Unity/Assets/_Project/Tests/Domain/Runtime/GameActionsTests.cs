@@ -33,8 +33,8 @@ namespace HandwerkerImperium.Domain.Tests.Runtime
             Assert.That(m.Idle.Stations[0].HasWorker, Is.True);
 
             m.Idle.Money = 500m;
-            Assert.That(GameActions.UnlockPlot(m, ib, 3), Is.True);
-            Assert.That(m.Idle.Stations[3].Unlocked, Is.True);
+            Assert.That(GameActions.UnlockPlot(m, ib, 1), Is.True, "erster Plot (klempner) kostet 500");
+            Assert.That(m.Idle.Stations[1].Unlocked, Is.True);
         }
 
         [Test]

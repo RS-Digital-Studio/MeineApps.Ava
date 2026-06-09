@@ -515,7 +515,7 @@ public class BingXRestClient : IExchangeClient
             ParseSide(order.Side),
             ParseOrderType(order.Type),
             ParseDecimal(order.Price),
-            ParseDecimal(order.Quantity),
+            ParseDecimal(order.EffectiveQuantity),
             string.IsNullOrEmpty(order.StopPrice) ? null : ParseDecimal(order.StopPrice),
             FromUnixMs(order.CreateTime),
             ParseOrderStatus(order.Status));
@@ -684,7 +684,7 @@ public class BingXRestClient : IExchangeClient
                         ParseSide(detail.Side),
                         ParseOrderType(detail.Type),
                         ParseDecimal(detail.Price),
-                        ParseDecimal(detail.Quantity),
+                        ParseDecimal(detail.EffectiveQuantity),
                         string.IsNullOrEmpty(detail.StopPrice) ? null : ParseDecimal(detail.StopPrice),
                         FromUnixMs(detail.CreateTime),
                         ParseOrderStatus(detail.Status),
@@ -750,7 +750,12 @@ public class BingXRestClient : IExchangeClient
                     Math.Abs(quantity),
                     ParseDecimal(detail.UnrealizedProfit),
                     ParseDecimal(detail.Leverage),
-                    ParseMarginType(detail.MarginType),
+                    // BingX v2 liefert den Margin-Modus als bool "isolated" — das alte marginType-Feld
+                    // ist leer und fiel immer auf Cross zurueck (Anzeige-Artefakt).
+                    !string.IsNullOrEmpty(detail.Isolated)
+                        ? (detail.Isolated.Equals("true", StringComparison.OrdinalIgnoreCase)
+                            ? MarginType.Isolated : MarginType.Cross)
+                        : ParseMarginType(detail.MarginType),
                     DateTime.UtcNow)); // BingX liefert kein OpenTime in Positions-Response
             }
             catch (Exception ex)
@@ -1118,7 +1123,7 @@ public class BingXRestClient : IExchangeClient
 
         return new Order(
             order.OrderId, order.Symbol, ParseSide(order.Side), ParseOrderType(order.Type),
-            ParseDecimal(order.Price), ParseDecimal(order.Quantity),
+            ParseDecimal(order.Price), ParseDecimal(order.EffectiveQuantity),
             string.IsNullOrEmpty(order.StopPrice) ? null : ParseDecimal(order.StopPrice),
             FromUnixMs(order.CreateTime), ParseOrderStatus(order.Status));
     }

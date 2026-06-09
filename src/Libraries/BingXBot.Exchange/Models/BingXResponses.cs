@@ -66,6 +66,15 @@ public class BingXOrderDetail
     [JsonPropertyName("type")] public string Type { get; set; } = "";
     [JsonPropertyName("price"), JsonConverter(typeof(FlexibleStringConverter))] public string Price { get; set; } = "";
     [JsonPropertyName("quantity"), JsonConverter(typeof(FlexibleStringConverter))] public string Quantity { get; set; } = "";
+    /// <summary>
+    /// BingX liefert die Order-Menge in Order-Responses (openOrders, Order-Detail) als
+    /// <c>origQty</c>, NICHT als <c>quantity</c> — das Quantity-Mapping blieb dort immer 0.
+    /// Folge war u.a. eine wirkungslose TpOrderMatcher-Idempotenz-Probe (Match auf Quantity ± 0.5 %
+    /// gegen 0) → Doppel-TP-Risiko im Order-Retry-Pfad. Konsumenten nutzen <see cref="EffectiveQuantity"/>.
+    /// </summary>
+    [JsonPropertyName("origQty"), JsonConverter(typeof(FlexibleStringConverter))] public string? OrigQty { get; set; }
+    /// <summary>Order-Menge: bevorzugt <c>origQty</c> (BingX-Order-APIs), Fallback <c>quantity</c>.</summary>
+    public string EffectiveQuantity => !string.IsNullOrEmpty(OrigQty) ? OrigQty! : Quantity;
     [JsonPropertyName("stopPrice"), JsonConverter(typeof(FlexibleStringConverter))] public string? StopPrice { get; set; }
     [JsonPropertyName("status")] public string Status { get; set; } = "";
     [JsonPropertyName("createTime")] public long CreateTime { get; set; }
@@ -94,6 +103,12 @@ public class BingXPositionDetail
     [JsonPropertyName("unrealizedProfit"), JsonConverter(typeof(FlexibleStringConverter))] public string UnrealizedProfit { get; set; } = "";
     [JsonPropertyName("leverage"), JsonConverter(typeof(FlexibleStringConverter))] public string Leverage { get; set; } = "";
     [JsonPropertyName("marginType")] public string MarginType { get; set; } = "";
+    /// <summary>
+    /// BingX v2-Positions-Response liefert den Margin-Modus als bool <c>isolated</c>, nicht als
+    /// <c>marginType</c>-String — das leere MarginType-Feld liess ParseMarginType immer auf Cross
+    /// fallen (Anzeige-Artefakt: alle Positionen erschienen als Cross, obwohl der Bot Isolated setzt).
+    /// </summary>
+    [JsonPropertyName("isolated"), JsonConverter(typeof(FlexibleStringConverter))] public string? Isolated { get; set; }
 }
 
 // Kline

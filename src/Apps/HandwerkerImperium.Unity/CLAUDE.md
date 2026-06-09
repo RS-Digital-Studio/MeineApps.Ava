@@ -27,16 +27,22 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > - `LiveOps` (DailyReward `GetScaledMoney`, DailyTask, Seasonal, RushEvent, RemoteConfig A/B, WhatsNew) · `Achievements`
 > - `Social` (Referral, Leaderboard-HMAC, CrossPromo) · `Notifications` (Scheduling) · `Analytics` (Taxonomie) · `Common/StableHash` (FNV-1a)
 > - `Save` (GameSave-Slices + **HMAC über ALLE economy-kritischen Felder** + Migrator + Sanitizer + CloudSave) · `Monetization` (Ads/Premium + Avalonia-Migration) · `Story` (Hans-Beats)
+> - `Config/GameBalancing` (zentrale Tuning-Single-Source) · `Runtime` (**GameModel** = Idle+Meta+Sub-States, **GameModelMapping** ↔ Save, **GameSimulation**-Orchestrator: Tick/EffektivEinkommen/Stern/Prestige/Offline, **MetaProgression**)
 >
-> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **134 NUnit /
-> 0 Fehler** (125 Domain + 9 Game-Service, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale
-> Mehr-Agenten-Reviews** gegen die .md-Specs → alle gefundenen Bugs (Anti-Cheat-Lücken, Determinismus, Overflow,
-> Off-by-one) fix-forward behoben. **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews,
-> kein `PlayerLevel` (stattdessen `Mastery.Level` signiert) — bewusste Schema-Neuausrichtung.
+> **Runtime-Wiring (verdrahtet + verifiziert):** Der Domain-`GameSimulation`-Orchestrator komponiert alle Formel-Sätze
+> über EINEM `GameModel`; der Game-Layer ist dünne Verdrahtung: `GameBalancingConfig` (SO → IdleBalancing+GameBalancing),
+> `RuntimeSave` (PlayerPrefs+HMAC, reparieren statt wipen), `RuntimeGameController` (Szenen-Root: Load/Offline/Tick/Autosave),
+> `RuntimeHud` (IMGUI-Diagnose), `RuntimeSceneBuilder` (Editor-Menü `HandwerkerImperium/Runtime/Build Runtime Scene` →
+> spielbare `Runtime.unity`). Generierte `.unity`/`.asset` sind lokal (`*.meta`-Gitignore-Policy); der Builder ist versioniert.
 >
-> **Offen (externe/gated Schichten):** Game-Service-Runtime-Integration (GameModel + Services über den Domain-Formeln,
-> P0-Pattern), BalancingConfig-ScriptableObject (zentrale Tuning-Werte), Unity-Scene-Authoring/3D-Präsentation,
-> 3D-Assets (ComfyUI), Firebase-Backend/Push/Ad-IAP-SDK, Beta/Store/KPIs/Performance/Cutover. **Spiel-Design** folgt
+> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **156 NUnit /
+> 0 Fehler** (142 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
+> gegen die .md-Specs → alle gefundenen Bugs (Anti-Cheat-Lücken, Determinismus, Overflow, Off-by-one) fix-forward behoben.
+> **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews, kein `PlayerLevel` (stattdessen `Mastery.Level`
+> signiert) — bewusste Schema-Neuausrichtung.
+>
+> **Offen (externe/gated Schichten):** Premium-UI (UI Toolkit) statt Diagnose-HUD, volle 3D-Scene (Avatar/Stationen/
+> Cinematics) + 3D-Assets (ComfyUI), Firebase-Backend/Push/Ad-IAP-SDK, Beta/Store/KPIs/Performance/Cutover. **Spiel-Design** folgt
 > dem GDD ([3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)); ARCHITECTURE/DESIGN/ROADMAP-Mechanik = Referenz,
 > Infra/Tech (Scenes, Save, Netz, Pipeline) = Soll.
 

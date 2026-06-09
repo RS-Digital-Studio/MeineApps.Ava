@@ -39,8 +39,15 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > Stationen produzieren sichtbar, Tresen verkauft, Hold-to-Pay-Pads, Bauzaun) arbeitet im gekoppelten Modus des
 > `GreyboxGameController` (runtime-Ref) direkt auf `GameModel.Idle` — eine Wahrheit, EIN Ticker (`GameSimulation.Tick`),
 > EIN HMAC-Save; `CounterView`-Verkäufe bedienen die Runtime-Kunden-Queue (`NotifyPhysicalSale`), Prestige-Rebind inklusive.
-> `GameSceneBuilder` (Menü `…/Build Game Scene (3D)`) baut `Game.unity` lokal mit den echten Pipeline-Assets
-> (avatar_hans/workshop/workshop_smith/customer_npc/worker). **Szene-Builder-Gotchas:** Materialien über das
+> `GameSceneBuilder` (Menü `…/Build Game Scene (3D)`) baut `Game.unity` lokal: **alle 10 Gewerke-Stationen**
+> (GDD §6.1, Start nur Schreinerei, Plot-Kosten-Progression 500→140k via `StationBalance.UnlockCost` +
+> `GreyboxSimulation.UnlockCostFor`) im 2×5-Hof-Layout mit den echten Pipeline-Modellen je Gewerk, Bauzaun +
+> Hold-to-Pay je gesperrtem Plot (Gebäude erscheint erst nach Unlock — `StationView.unlockedVisual`).
+> **Welt-Lesbarkeit + Leben:** `MakeSign`/`BillboardLabel` (Holzbrett + built-in-Font-3D-Text, Breite gedeckelt,
+> dreht zur Kamera) für Gewerk-Namen, Plot-Preise, Pad-Beschriftung; `ToonBob` animiert die (noch) ungeriggten
+> Figuren prozedural (Lauf-Hüpfen/Idle-Atmen — Brücke bis zur Auto-Rig-Stufe). Kamera: Genre-Framing ~40°,
+> FOV 45, Look-Ahead; Builder setzt Start-Position UND -Rotation (sonst schaut die Edit-Game-View horizontal).
+> **Szene-Builder-Gotchas:** Materialien über das
 > Default-Material der aktiven Pipeline erzeugen (`Shader.Find` → magenta im Editor-Batch) und für Prefabs als
 > Asset persistieren (in-memory-Material überlebt `SaveAsPrefabAsset` nicht); `Application.runInBackground` setzt
 > der Controller (Editor/Desktop tickt ohne Fokus, sonst steht der Play-Mode bei frameCount≈2).
@@ -50,8 +57,8 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > Endgame-Renommee-Akkumulation, Rush-Event (2×), Saison-Erkennung, Free-Cash-Pad (Monetarisierung), Tagesaufgaben
 > (3/Tag → Gems, UTC-Reset, persistiert + HMAC-signiert). Der headless-baubare Logik-Layer ist damit komplett.
 >
-> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **169 NUnit /
-> 0 Fehler** (155 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
+> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **170 NUnit /
+> 0 Fehler** (156 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
 > gegen die .md-Specs → alle gefundenen Bugs (Anti-Cheat-Lücken, Determinismus, Overflow, Off-by-one) fix-forward behoben.
 > **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews, kein `PlayerLevel` (stattdessen `Mastery.Level`
 > signiert) — bewusste Schema-Neuausrichtung.

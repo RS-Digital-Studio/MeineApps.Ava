@@ -323,6 +323,19 @@ public class BingXRestClient : IExchangeClient
                     throw new BingXApiException(apiResponse.Code, apiResponse.Msg ?? "Unbekannter Fehler");
                 }
 
+                // Manche Auth-Endpoints (userDataStream/listenKey) antworten OHNE die übliche
+                // {code,msg,data}-Hülle, z.B. {"listenKey":"..."}. Dann ist Data ein
+                // default(JsonElement) (ValueKind.Undefined) — jeder Property-Zugriff darauf
+                // wirft InvalidOperationException ("Operation is not valid..."). In dem Fall das
+                // komplette Top-Level-Objekt zurückgeben, damit der Aufrufer es parsen kann.
+                if (typeof(T) == typeof(JsonElement)
+                    && apiResponse.Data is JsonElement je
+                    && je.ValueKind == JsonValueKind.Undefined)
+                {
+                    using var rawDoc = JsonDocument.Parse(content);
+                    return (T)(object)rawDoc.RootElement.Clone();
+                }
+
                 return apiResponse.Data!;
             }
             catch (HttpRequestException ex) when (attempt < MaxRetries)
@@ -1354,7 +1367,18 @@ public class BingXRestClient : IExchangeClient
             null,
             "queries");
 
-        var listenKey = data.TryGetProperty("listenKey", out var lk) ? lk.GetString() : null;
+        // BingX liefert den Key je nach Variante top-level ({"listenKey":...}) oder in einer
+        // data-Hülle ({"data":{"listenKey":...}}) — beide Formen tolerieren.
+        string? listenKey = null;
+        if (data.ValueKind == JsonValueKind.Object)
+        {
+            if (data.TryGetProperty("listenKey", out var lk))
+                listenKey = lk.GetString();
+            else if (data.TryGetProperty("data", out var inner)
+                && inner.ValueKind == JsonValueKind.Object
+                && inner.TryGetProperty("listenKey", out var lk2))
+                listenKey = lk2.GetString();
+        }
         if (string.IsNullOrEmpty(listenKey))
             throw new BingXApiException(-1, "ListenKey konnte nicht erstellt werden");
 

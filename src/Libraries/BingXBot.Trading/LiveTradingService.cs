@@ -204,7 +204,7 @@ public partial class LiveTradingService : TradingServiceBase
         if (_wsClient != null)
         {
             _ = SafeStartAsync("User-Data-Stream", () => StartUserDataStreamAsync(_cts!.Token));
-            _ = SafeStartAsync("Ticker-Stream", StartTickerStreamAsync);
+            _ = SafeStartAsync("Ticker-Stream", () => StartTickerStreamAsync(_cts!.Token));
         }
 
         // Reconcile-Loop (P0-1, 24.04.2026): alle 60 s Bot-State gegen BingX-Realitaet diffen.

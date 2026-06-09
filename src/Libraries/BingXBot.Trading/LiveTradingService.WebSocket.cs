@@ -16,13 +16,18 @@ public partial class LiveTradingService
     /// Startet den WebSocket-Ticker-Stream für Echtzeit-Preise.
     /// Erlaubt schnellere SL/TP-Reaktion als 5s REST-Polling.
     /// </summary>
-    private async Task StartTickerStreamAsync()
+    private async Task StartTickerStreamAsync(CancellationToken ct)
     {
         if (_wsClient == null) return;
         try
         {
             _tickerPriceHandler = (symbol, price) => _wsTickerPrices[symbol] = price;
             _wsClient.TickerPriceReceived += _tickerPriceHandler;
+            // Haupt-WS explizit verbinden — SubscribeAsync schickt das Abo sonst ins Leere
+            // (loggt nur "nicht verbunden" und merkt den Handler fuer einen Reconnect vor,
+            // der nie kommt) und IsWsTickerActive waere eine Fehlanzeige.
+            if (!_wsClient.IsConnected)
+                await _wsClient.ConnectAsync(ct).ConfigureAwait(false);
             await _wsClient.SubscribeAllTickersAsync().ConfigureAwait(false);
             IsWsTickerActive = true;
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "WebSocket",

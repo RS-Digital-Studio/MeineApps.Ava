@@ -37,6 +37,8 @@ namespace HandwerkerImperium.Game
 
         public GameModel Model => _model;
         public GameBalancing Balancing => _bal;
+        /// <summary>Idle-Balancing (für die physische 3D-Loop-Kopplung, siehe GreyboxGameController).</summary>
+        public IdleBalancing IdleBalancing => _idleBal;
         public decimal LastOfflineEarned { get; private set; }
         public string LatestStoryBeat { get; private set; } = "";
         public int CollectedToolsCount => _model != null ? _model.CollectedMasterTools.Count : 0;
@@ -44,6 +46,8 @@ namespace HandwerkerImperium.Game
 
         private void Awake()
         {
+            // Desktop/Editor: ohne Fenster-Fokus weiterticken (Android ignoriert das; dort sichert OnApplicationPause).
+            Application.runInBackground = true;
             _idleBal = config != null ? config.ToIdleBalancing() : new IdleBalancing();
             _bal = config != null ? config.ToGameBalancing() : new GameBalancing();
             _masterToolCatalog = MasterToolFormulas.DefaultCatalog();

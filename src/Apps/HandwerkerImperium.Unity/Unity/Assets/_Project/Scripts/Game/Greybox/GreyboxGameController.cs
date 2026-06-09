@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using VContainer;
 using HandwerkerImperium.Domain.Idle;
+using HandwerkerImperium.Domain.Orders;
 
 namespace HandwerkerImperium.Game
 {
@@ -11,10 +12,18 @@ namespace HandwerkerImperium.Game
     /// speichert periodisch und bei Pause/Quit (CLAUDE.md-Gotcha: Save in OnApplicationPause(true)).
     /// Die View-/Interaktions-MonoBehaviours referenzieren diesen Controller (per Inspector) und nutzen
     /// die hier exponierten, injizierten Services — robuste Verdrahtung ohne Per-View-DI.
+    /// <para>
+    /// <b>Gekoppelter Modus:</b> Ist <see cref="runtime"/> gesetzt, arbeiten die Services direkt auf dem
+    /// <c>GameModel.Idle</c> des <see cref="RuntimeGameController"/> (eine Wahrheit). Tick, Offline und
+    /// Persistenz übernimmt dann ausschließlich der Runtime (GameSimulation.Tick + HMAC-Save) — dieser
+    /// Controller liefert nur die Service-Fläche für die physischen Views (Avatar/Stationen/Pads/Tresen).
+    /// </para>
     /// </summary>
     public sealed class GreyboxGameController : MonoBehaviour
     {
         [SerializeField] private float autoSaveIntervalSeconds = 15f;
+        [Tooltip("Optional: koppelt die physischen Views an den vollen Runtime (eine Wahrheit, ein Save).")]
+        [SerializeField] private RuntimeGameController runtime;
 
         private GreyboxSession _session;
         private StationService _stations;
@@ -52,6 +61,11 @@ namespace HandwerkerImperium.Game
 
         private void Start()
         {
+            if (runtime != null)
+            {
+                BindToRuntime();
+                return; // Offline/Save macht der Runtime
+            }
             if (_offline == null) return;
             LastOfflineEarned = _offline.Claim(DateTime.UtcNow.Ticks);
             if (LastOfflineEarned > 0)
@@ -61,6 +75,15 @@ namespace HandwerkerImperium.Game
         private void Update()
         {
             if (_stations == null) return;
+
+            if (runtime != null)
+            {
+                // Prestige ersetzt GameModel.Idle (frischer Loop) -> Services auf den neuen State umbinden.
+                if (runtime.Model != null && !ReferenceEquals(_session.State, runtime.Model.Idle))
+                    BindToRuntime();
+                return; // Tick + Autosave laufen im RuntimeGameController (GameSimulation.Tick)
+            }
+
             double dt = Time.deltaTime;
             _stations.Tick(dt);
             _workers.Tick(dt);
@@ -73,6 +96,28 @@ namespace HandwerkerImperium.Game
             }
         }
 
+        /// <summary>
+        /// Physischer Verkauf am Tresen bedient wartende Kunden der Runtime-Queue (ohne Doppel-Bezahlung —
+        /// das Geld kam bereits aus dem Waren-Verkauf). Standalone-Greybox: no-op.
+        /// </summary>
+        public void NotifyPhysicalSale(int soldCount)
+        {
+            if (runtime == null || runtime.Model == null || soldCount <= 0) return;
+            OrderQueueFormulas.Serve(runtime.Model.Orders, soldCount);
+        }
+
+        private void BindToRuntime()
+        {
+            _session = new GreyboxSession(runtime.IdleBalancing, runtime.Model.Idle);
+            _economy = new EconomyService(_session);
+            _stations = new StationService(_session);
+            _workers = new WorkerAutomationService(_session, _economy);
+            _upgrades = new UpgradePadService(_session, _economy);
+            _plots = new PlotUnlockService(_session, _economy);
+            _offline = null; // Offline-Verdienst rechnet der Runtime (GameSimulation.ComputeOffline)
+            LastOfflineEarned = runtime.LastOfflineEarned;
+        }
+
         private void OnApplicationPause(bool pause)
         {
             if (pause) PersistNow();
@@ -82,6 +127,7 @@ namespace HandwerkerImperium.Game
 
         private void PersistNow()
         {
+            if (runtime != null) return; // HMAC-Save macht der Runtime selbst (eigene Pause/Quit-Hooks)
             if (_offline == null || _session == null) return;
             _offline.MarkSeen(DateTime.UtcNow.Ticks);
             GreyboxSave.Save(_session.State);

@@ -22,6 +22,7 @@ namespace HandwerkerImperium.Game
             if (avatar == null || avatar.CarriedCount <= 0) return;
 
             int sold = avatar.Deposit();
+            controller.NotifyPhysicalSale(sold); // gekoppelt: bedient wartende Kunden der Runtime-Queue
             SpawnCash(sold);
         }
 

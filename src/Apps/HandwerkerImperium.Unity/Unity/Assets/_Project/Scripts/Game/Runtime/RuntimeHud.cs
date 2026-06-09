@@ -4,46 +4,48 @@ namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// Diagnose-/Dev-HUD (IMGUI, asset-frei) über dem <see cref="RuntimeGameController"/>: zeigt den Live-Zustand
-    /// (Geld, effektives Einkommen/s, Stern, Prestige, Meisterschaft, Kunden, Offline-Verdienst) und bietet
-    /// Test-Buttons (Prestige/Speichern). DPI-skaliert + klar oben-links verankert, damit es auf hochauflösenden
-    /// Monitoren lesbar bleibt. So ist das verdrahtete Runtime <b>sofort im Play-Mode prüfbar</b> — ohne 3D-Assets.
-    /// Die finale Premium-UI (UI Toolkit) ersetzt dieses HUD in der Präsentations-Phase.
+    /// (Geld, effektives Einkommen/s, Stern, Prestige, Meisterschaft, Kunden, Offline-Verdienst) + Test-Buttons.
+    /// <b>Direkt skalierte Schriftgrößen</b> (kein GUI.matrix — das clippt BeginArea falsch) und ein Panel über die
+    /// volle Bildschirmhöhe, damit auf hochauflösenden Monitoren alles lesbar bleibt und nichts abgeschnitten wird.
+    /// Macht das verdrahtete Runtime sofort im Play-Mode prüfbar — die finale Premium-UI (UI Toolkit) ersetzt es später.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class RuntimeHud : MonoBehaviour
     {
         [SerializeField] private RuntimeGameController controller;
-        [Tooltip("Referenz-Bildschirmhöhe für die DPI-Skalierung des HUDs.")]
+        [Tooltip("Referenz-Bildschirmhöhe für die Schrift-Skalierung (kleiner = größeres HUD).")]
         [SerializeField] private float referenceHeight = 820f;
 
-        private GUIStyle _box;
-        private GUIStyle _label;
-        private GUIStyle _title;
-        private GUIStyle _button;
+        private float _k = -1f;
+        private GUIStyle _box, _label, _title, _button;
 
-        private void EnsureStyles()
+        private void BuildStyles(float k)
         {
-            if (_box != null) return;
-            _box = new GUIStyle(GUI.skin.box) { padding = new RectOffset(16, 16, 14, 14), alignment = TextAnchor.UpperLeft };
-            _label = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true, wordWrap = false };
-            _title = new GUIStyle(GUI.skin.label) { fontSize = 19, richText = true, fontStyle = FontStyle.Bold };
-            _button = new GUIStyle(GUI.skin.button) { fontSize = 15, padding = new RectOffset(10, 10, 7, 7) };
+            int Pad(float v) => Mathf.RoundToInt(v * k);
+            _box = new GUIStyle(GUI.skin.box)
+            {
+                padding = new RectOffset(Pad(16), Pad(16), Pad(14), Pad(14)),
+                alignment = TextAnchor.UpperLeft
+            };
+            _label = new GUIStyle(GUI.skin.label) { fontSize = Pad(16), richText = true, wordWrap = false };
+            _title = new GUIStyle(GUI.skin.label) { fontSize = Pad(20), richText = true, fontStyle = FontStyle.Bold };
+            _button = new GUIStyle(GUI.skin.button) { fontSize = Pad(15), padding = new RectOffset(Pad(10), Pad(10), Pad(8), Pad(8)) };
         }
 
         private void OnGUI()
         {
             if (controller == null || controller.Model == null) return;
-            EnsureStyles();
+
+            float k = Mathf.Clamp(Screen.height / referenceHeight, 1f, 3f);
+            if (_box == null || !Mathf.Approximately(k, _k)) { _k = k; BuildStyles(k); }
+
             var m = controller.Model;
+            float w = Mathf.Min(540f * k, Screen.width - 20f);
+            float h = Screen.height - 20f; // volle Höhe -> nichts wird abgeschnitten
 
-            // DPI-/Auflösungs-Skalierung: bei hoher Bildschirmhöhe wird das HUD entsprechend größer gezeichnet.
-            float scale = Mathf.Max(1f, Screen.height / referenceHeight);
-            Matrix4x4 prev = GUI.matrix;
-            GUI.matrix = Matrix4x4.TRS(new Vector3(24f, 24f, 0f), Quaternion.identity, new Vector3(scale, scale, 1f));
-
-            GUILayout.BeginArea(new Rect(0, 0, 470, 540), _box);
+            GUILayout.BeginArea(new Rect(10f, 10f, w, h), _box);
             GUILayout.Label("HandwerkerImperium — Runtime (Diagnose-HUD)", _title);
-            GUILayout.Space(8);
+            GUILayout.Space(8f * k);
             GUILayout.Label($"Geld:           <b>{m.Idle.Money:N0}</b>", _label);
             GUILayout.Label($"Gems:           {m.Gems:N0}", _label);
             GUILayout.Label($"Einkommen/s:    <b>{controller.EffectiveIncomePerSecond():N2}</b>  (effektiv)", _label);
@@ -54,7 +56,7 @@ namespace HandwerkerImperium.Game
             if (controller.LastOfflineEarned > 0m)
                 GUILayout.Label($"Offline-Verdienst: <b>{controller.LastOfflineEarned:N0}</b>", _label);
 
-            GUILayout.Space(10);
+            GUILayout.Space(10f * k);
             GUILayout.Label("<i>Test-Aktionen</i>", _label);
             if (GUILayout.Button("+1.000 Geld", _button)) m.Idle.Money += 1000m;
             if (GUILayout.Button("Worker an Station 0 anstellen", _button) && m.Idle.Stations.Count > 0)
@@ -67,8 +69,6 @@ namespace HandwerkerImperium.Game
 
             if (GUILayout.Button("Speichern", _button)) controller.PersistNow();
             GUILayout.EndArea();
-
-            GUI.matrix = prev;
         }
     }
 }

@@ -176,8 +176,9 @@ namespace HandwerkerImperium.Editor
                 SetRef(view, "unlockedVisual", modelRoot);
                 stationTransforms[i] = stGo.transform;
 
-                // Gewerk-Schild vor der Plot-Front auf Blickhöhe (über der Station läge es außerhalb des Kamera-Framings)
-                MakeSign(stationNames[i], pos + toCenter * 3.2f + Vector3.up * 2.65f, 0.40f,
+                // Gewerk-Schild knapp über dem Zaun an der Plot-Front (über der Station läge es außerhalb
+                // des Kamera-Framings; höher im Sichtkegel würde es den Avatar verdecken)
+                MakeSign(stationNames[i], pos + toCenter * 3.2f + Vector3.up * 2.2f, 0.36f,
                     new Color(0.99f, 0.96f, 0.90f), new Color(0.33f, 0.24f, 0.16f));
 
                 // Gesperrte Plots: Bauzaun (lockedVisual + fenceVisual) + Preis-Schild + Hold-to-Pay-Zone
@@ -191,7 +192,7 @@ namespace HandwerkerImperium.Editor
                     // Preis am Zaun (Kind des Zauns -> verschwindet mit dem Unlock)
                     decimal cost = HandwerkerImperium.Domain.Idle.GreyboxSimulation.UnlockCostFor(idleBalancing, i);
                     string price = cost.ToString("N0", new System.Globalization.CultureInfo("de-DE"));
-                    var priceSign = MakeSign(price, pos + toCenter * 2.6f + Vector3.up * 1.75f, 0.36f,
+                    var priceSign = MakeSign(price, pos + toCenter * 2.6f + Vector3.up * 1.4f, 0.36f,
                         new Color(1.0f, 0.85f, 0.25f), new Color(0.25f, 0.20f, 0.12f));
                     priceSign.transform.SetParent(fence.transform, true);
 
@@ -275,6 +276,12 @@ namespace HandwerkerImperium.Editor
         /// </summary>
         private static GameObject MakeSign(string text, Vector3 worldPos, float textSize, Color textColor, Color? boardColor = null)
         {
+            // Breite deckeln: lange Namen (z. B. "Generalunternehmer") skalieren den Text herunter,
+            // statt ein meterbreites Brett mitten ins Blickfeld zu haengen.
+            const float maxWidth = 3.2f;
+            float fitted = Mathf.Min(textSize, maxWidth / Mathf.Max(1, text.Length) / 0.62f);
+            textSize = fitted;
+
             var root = new GameObject("Sign_" + text);
             root.transform.position = worldPos;
             root.AddComponent<BillboardLabel>();

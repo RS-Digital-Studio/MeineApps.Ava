@@ -43,23 +43,32 @@ namespace HandwerkerImperium.Game
         private void DrawWindow(int id)
         {
             var m = controller.Model;
+            bool hasStation = m.Idle.Stations.Count > 0;
+
             GUILayout.Label("<b>HandwerkerImperium — Runtime</b>", _title);
             GUILayout.Space(6f * _k);
             GUILayout.Label($"Geld:           <b>{m.Idle.Money:N0}</b>", _label);
             GUILayout.Label($"Gems:           {m.Gems:N0}", _label);
             GUILayout.Label($"Einkommen/s:    <b>{controller.EffectiveIncomePerSecond():N2}</b>  (effektiv)", _label);
-            GUILayout.Label($"Stern:          {controller.EvaluateStar()}★   Stadt: {m.Meta.CityIndex}", _label);
+            // Stern nur LESEN (EvaluateStar mutiert -> nicht pro Frame aufrufen, sonst ueberschreibt es den Test-Wert)
+            GUILayout.Label($"Stern:          {m.Meta.CurrentStar}★   Stadt: {m.Meta.CityIndex}", _label);
             GUILayout.Label($"Prestige:       {m.Meta.PrestigeCount}  (x{m.Meta.PrestigeMultiplier})   Marken: {m.Meta.AvailableMarks}", _label);
             GUILayout.Label($"Meisterschaft:  Lv {m.Meta.MasteryLevel}    Meistergrad: {m.Meta.MeistergradGrade}", _label);
             GUILayout.Label($"Kunden:         {m.Orders.PendingCustomers} warten · {m.Orders.TotalServed} bedient", _label);
+            if (hasStation)
+            {
+                var s0 = m.Idle.Stations[0];
+                GUILayout.Label($"Station 0:      Stock {s0.Stock}   Worker: <b>{(s0.HasWorker ? "JA" : "nein")}</b>", _label);
+            }
             if (controller.LastOfflineEarned > 0m)
                 GUILayout.Label($"Offline-Verdienst: <b>{controller.LastOfflineEarned:N0}</b>", _label);
 
             GUILayout.Space(10f * _k);
             if (GUILayout.Button("+1.000 Geld", _button)) m.Idle.Money += 1000m;
-            if (GUILayout.Button("Worker an Station 0 anstellen", _button) && m.Idle.Stations.Count > 0)
-                m.Idle.Stations[0].HasWorker = true;
+            if (hasStation && GUILayout.Button(m.Idle.Stations[0].HasWorker ? "Worker Station 0 ENTLASSEN" : "Worker an Station 0 anstellen", _button))
+                m.Idle.Stations[0].HasWorker = !m.Idle.Stations[0].HasWorker;
             if (GUILayout.Button("5 Sterne setzen (Prestige freischalten)", _button)) m.Meta.CurrentStar = 5;
+            if (GUILayout.Button("Stern aus Fortschritt neu bewerten", _button)) controller.EvaluateStar();
 
             GUI.enabled = controller.CanPrestige();
             if (GUILayout.Button("PRESTIGE — Umzug in die nächste Stadt", _button)) controller.TryPrestige();
